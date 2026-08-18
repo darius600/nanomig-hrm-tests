@@ -1,2 +1,0 @@
-PAL Non-Interlaced: Max hpos=453 Max vpos=312 EOL_count=315
-PASS: Beamcounter tests passed.

@@ -1,5 +1,0 @@
-DMA active at hpos=37 address_out=0x11234 reg_out=0xaa
-DMA active at hpos=41 address_out=0x0 reg_out=0xba
-DMA active at hpos=45 address_out=0x0 reg_out=0xca
-DMA active at hpos=49 address_out=0x0 reg_out=0xda
-PASS: Audio DMA triggers correctly.
