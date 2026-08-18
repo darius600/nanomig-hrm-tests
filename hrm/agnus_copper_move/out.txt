@@ -1,0 +1,128 @@
+verilator --trace --cc --exe --build -j 0 --Mdir obj_dir --top-module agnus_copper -Wall -Wno-fatal ../../../src/minimig-aga/agnus_copper.v test_agnus_copper_move.cpp
+make[1]: Entering directory '/mnt/d/code/NanoMig-HRM-Tests/sim/hrm/agnus_copper_move/obj_dir'
+g++  -I.  -MMD -I/usr/local/share/verilator/include -I/usr/local/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -Os  -c -o test_agnus_copper_move.o ../test_agnus_copper_move.cpp
+g++ -Os  -I.  -MMD -I/usr/local/share/verilator/include -I/usr/local/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated.o /usr/local/share/verilator/include/verilated.cpp
+g++ -Os  -I.  -MMD -I/usr/local/share/verilator/include -I/usr/local/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_dpi.o /usr/local/share/verilator/include/verilated_dpi.cpp
+g++ -Os  -I.  -MMD -I/usr/local/share/verilator/include -I/usr/local/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_vcd_c.o /usr/local/share/verilator/include/verilated_vcd_c.cpp
+g++ -Os  -I.  -MMD -I/usr/local/share/verilator/include -I/usr/local/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o verilated_threads.o /usr/local/share/verilator/include/verilated_threads.cpp
+python3 /usr/local/share/verilator/bin/verilator_includer -DVL_INCLUDE_OPT=include Vagnus_copper.cpp Vagnus_copper___024root__DepSet_hf4363b64__0.cpp Vagnus_copper___024root__DepSet_h9aead177__0.cpp Vagnus_copper_agnus_copper__DepSet_hc0e8fda0__0.cpp Vagnus_copper__Dpi.cpp Vagnus_copper__Trace__0.cpp Vagnus_copper___024root__Slow.cpp Vagnus_copper___024root__DepSet_hf4363b64__0__Slow.cpp Vagnus_copper___024root__DepSet_h9aead177__0__Slow.cpp Vagnus_copper_agnus_copper__Slow.cpp Vagnus_copper_agnus_copper__DepSet_hc0e8fda0__0__Slow.cpp Vagnus_copper_agnus_copper__DepSet_h86b51333__0__Slow.cpp Vagnus_copper__Syms.cpp Vagnus_copper__Trace__0__Slow.cpp Vagnus_copper__TraceDecls__0__Slow.cpp > Vagnus_copper__ALL.cpp
+echo "" > Vagnus_copper__ALL.verilator_deplist.tmp
+g++ -Os  -I.  -MMD -I/usr/local/share/verilator/include -I/usr/local/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=1 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=1 -DVM_TRACE_SAIF=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-shadow -Wno-sign-compare -Wno-subobject-linkage -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable      -c -o Vagnus_copper__ALL.o Vagnus_copper__ALL.cpp
+g++    test_agnus_copper_move.o verilated.o verilated_dpi.o verilated_vcd_c.o verilated_threads.o Vagnus_copper__ALL.a    -pthread -lpthread -latomic   -o Vagnus_copper
+rm Vagnus_copper__ALL.verilator_deplist.tmp
+make[1]: Leaving directory '/mnt/d/code/NanoMig-HRM-Tests/sim/hrm/agnus_copper_move/obj_dir'
+- V e r i l a t i o n   R e p o r t: Verilator 5.038 2025-07-08 rev v5.038
+- Verilator: Built from 0.033 MB sources in 2 modules, into 0.137 MB in 15 C++ files needing 0.000 MB
+- Verilator: Walltime 18.027 s (elab=0.003, cvt=0.095, bld=17.557); cpu 0.168 s on 8 threads; alloced 28.148 MB
+./obj_dir/Vagnus_copper
+TICK before clk=1: time=0 hpos=5 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+DEBUG: Valid MOVE BPLCON0 - Reset Copper
+TICK before clk=1: time=2 hpos=6 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+clk posedge! reg_address_in=17 COPINS=08c match=0
+TICK before clk=1: time=6 hpos=8 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=8 hpos=9 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=10 hpos=10 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+DEBUG: Valid MOVE BPLCON0 - Dummy wait ended. timeout=47 reqdma=1
+TICK before clk=1: time=12 hpos=11 ackdma=1 reqdma=1 reg_address_out=ff reg_address_in=ff data_in=0
+clk posedge! reg_address_in=ff COPINS=08c match=0
+TICK before clk=1: time=14 hpos=12 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=16 hpos=13 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=18 hpos=14 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+DEBUG: Valid MOVE BPLCON0 - FETCH1 wait ended. timeout=47 reqdma=1
+DEBUG: Valid MOVE BPLCON0 - Before ack, reqdma=1 reg_address_out=46 state=4 dma_req=1 bus_ena=1 clk_ena=1
+TICK before clk=1: time=20 hpos=15 ackdma=1 reqdma=1 reg_address_out=46 reg_address_in=46 data_in=100
+COPPER DEBUG: COPINS write! data_in=0100 ir2=0000 reg_address_in=46 time=0
+clk posedge! reg_address_in=46 COPINS=08c match=1
+TICK before clk=1: time=22 hpos=16 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=24 hpos=17 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=26 hpos=18 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=28 hpos=19 ackdma=1 reqdma=1 reg_address_out=80 reg_address_in=80 data_in=1234
+clk posedge! reg_address_in=80 COPINS=08c match=0
+DEBUG: Illegal MOVE (cdang=0) - Reset Copper
+TICK before clk=1: time=30 hpos=20 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+clk posedge! reg_address_in=17 COPINS=08c match=0
+TICK before clk=1: time=34 hpos=22 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+DEBUG: Illegal MOVE (cdang=0) - Dummy wait ended. timeout=49 reqdma=1
+TICK before clk=1: time=36 hpos=23 ackdma=1 reqdma=1 reg_address_out=ff reg_address_in=ff data_in=0
+clk posedge! reg_address_in=ff COPINS=08c match=0
+TICK before clk=1: time=38 hpos=24 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=40 hpos=25 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=42 hpos=26 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+DEBUG: Illegal MOVE (cdang=0) - FETCH1 wait ended. timeout=47 reqdma=1
+DEBUG: Illegal MOVE (cdang=0) - Before ack, reqdma=1 reg_address_out=46 state=4 dma_req=1 bus_ena=1 clk_ena=1
+TICK before clk=1: time=44 hpos=27 ackdma=1 reqdma=1 reg_address_out=46 reg_address_in=46 data_in=40
+COPPER DEBUG: COPINS write! data_in=0040 ir2=0100 reg_address_in=46 time=0
+clk posedge! reg_address_in=46 COPINS=08c match=1
+TICK before clk=1: time=46 hpos=28 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=48 hpos=29 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=50 hpos=30 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=52 hpos=31 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=54 hpos=32 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=56 hpos=33 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=58 hpos=34 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=60 hpos=35 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=62 hpos=36 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=64 hpos=37 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=66 hpos=38 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=68 hpos=39 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=70 hpos=40 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=72 hpos=41 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=74 hpos=42 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=76 hpos=43 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=78 hpos=44 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=80 hpos=45 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=82 hpos=46 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=84 hpos=47 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=86 hpos=48 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=88 hpos=49 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=90 hpos=50 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=92 hpos=51 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=94 hpos=52 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=96 hpos=53 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=98 hpos=54 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=100 hpos=55 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=102 hpos=56 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=104 hpos=57 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=106 hpos=58 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=108 hpos=59 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=110 hpos=60 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=112 hpos=61 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=114 hpos=62 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=116 hpos=63 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=118 hpos=64 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=120 hpos=65 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=122 hpos=66 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=124 hpos=67 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=126 hpos=68 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=128 hpos=69 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=130 hpos=70 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=132 hpos=71 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=134 hpos=72 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=136 hpos=73 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=138 hpos=74 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=140 hpos=75 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=142 hpos=76 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=144 hpos=77 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+DEBUG: Valid MOVE (cdang=1) - Reset Copper
+TICK before clk=1: time=146 hpos=78 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+clk posedge! reg_address_in=17 COPINS=08c match=0
+TICK before clk=1: time=150 hpos=80 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=152 hpos=81 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=154 hpos=82 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+DEBUG: Valid MOVE (cdang=1) - Dummy wait ended. timeout=47 reqdma=1
+TICK before clk=1: time=156 hpos=83 ackdma=1 reqdma=1 reg_address_out=ff reg_address_in=ff data_in=0
+clk posedge! reg_address_in=ff COPINS=08c match=0
+TICK before clk=1: time=158 hpos=84 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=160 hpos=85 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=162 hpos=86 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+DEBUG: Valid MOVE (cdang=1) - FETCH1 wait ended. timeout=47 reqdma=1
+DEBUG: Valid MOVE (cdang=1) - Before ack, reqdma=1 reg_address_out=46 state=4 dma_req=1 bus_ena=1 clk_ena=1
+TICK before clk=1: time=164 hpos=87 ackdma=1 reqdma=1 reg_address_out=46 reg_address_in=46 data_in=40
+COPPER DEBUG: COPINS write! data_in=0040 ir2=0040 reg_address_in=46 time=0
+clk posedge! reg_address_in=46 COPINS=08c match=1
+TICK before clk=1: time=166 hpos=88 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=168 hpos=89 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=170 hpos=90 ackdma=0 reqdma=0 reg_address_out=ff reg_address_in=0 data_in=0
+TICK before clk=1: time=172 hpos=91 ackdma=1 reqdma=1 reg_address_out=20 reg_address_in=20 data_in=1234
+clk posedge! reg_address_in=20 COPINS=08c match=0
+PASS: All Copper MOVE cases tested successfully.
