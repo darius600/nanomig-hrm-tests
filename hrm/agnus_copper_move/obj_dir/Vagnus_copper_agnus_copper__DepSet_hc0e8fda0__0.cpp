@@ -160,10 +160,6 @@ VL_INLINE_OPT void Vagnus_copper_agnus_copper___nba_sequent__TOP__agnus_copper__
     // Body
     __Vdly__address_out = vlSelfRef.address_out;
     if (vlSymsp->TOP.clk7_en) {
-        if (vlSymsp->TOP.clk_ena_dbg) {
-            vlSelfRef.__PVT__bus_ena = (1U & ((IData)(vlSelfRef.__PVT__bus_blk) 
-                                              | (~ (IData)(vlSelfRef.__PVT__bus_ena))));
-        }
         if ((((IData)(vlSelfRef.__PVT__dma_ack) & (IData)(vlSelfRef.__PVT__strobe1)) 
              & (0U == (IData)(vlSelfRef.__PVT__copper_state)))) {
             __Vdly__address_out = (((IData)(vlSelfRef.__PVT__cop1lch) 
@@ -178,12 +174,52 @@ VL_INLINE_OPT void Vagnus_copper_agnus_copper___nba_sequent__TOP__agnus_copper__
             __Vdly__address_out = (0xfffffU & ((IData)(1U) 
                                                + vlSelfRef.address_out));
         }
-    }
-    vlSelfRef.address_out = __Vdly__address_out;
-    vlSelfRef.__VdfgRegularize_he23179ad_0_0 = ((IData)(vlSelfRef.__PVT__bus_ena) 
-                                                & (IData)(vlSymsp->TOP.clk_ena_dbg));
-    if (vlSymsp->TOP.clk7_en) {
+        if (vlSelfRef.__PVT__enable) {
+            vlSelfRef.__PVT__skip_flag = vlSelfRef.__PVT__skip;
+        }
+        if (vlSymsp->TOP.reset) {
+            vlSelfRef.__PVT__cdang = 0U;
+            vlSelfRef.__PVT__cop1lch = 0U;
+            vlSelfRef.__PVT__cop1lcl = 0U;
+            vlSelfRef.__PVT__cop2lch = 0U;
+            vlSelfRef.__PVT__cop2lcl = 0U;
+        } else {
+            if ((0x17U == (IData)(vlSymsp->TOP.reg_address_in))) {
+                vlSelfRef.__PVT__cdang = (1U & ((IData)(vlSymsp->TOP.data_in) 
+                                                >> 1U));
+            }
+            if ((0x40U == (IData)(vlSymsp->TOP.reg_address_in))) {
+                vlSelfRef.__PVT__cop1lch = (0x1fU & (IData)(vlSymsp->TOP.data_in));
+            }
+            if ((0x41U == (IData)(vlSymsp->TOP.reg_address_in))) {
+                vlSelfRef.__PVT__cop1lcl = (0x7fffU 
+                                            & ((IData)(vlSymsp->TOP.data_in) 
+                                               >> 1U));
+            }
+            if ((0x42U == (IData)(vlSymsp->TOP.reg_address_in))) {
+                vlSelfRef.__PVT__cop2lch = (0x1fU & (IData)(vlSymsp->TOP.data_in));
+            }
+            if ((0x43U == (IData)(vlSymsp->TOP.reg_address_in))) {
+                vlSelfRef.__PVT__cop2lcl = (0x7fffU 
+                                            & ((IData)(vlSymsp->TOP.data_in) 
+                                               >> 1U));
+            }
+        }
+        if (((IData)(vlSelfRef.__PVT__copjmp2) & (IData)(vlSymsp->TOP.clk_ena_dbg))) {
+            vlSelfRef.__PVT__strobe2 = 1U;
+        } else if (((0U == (IData)(vlSelfRef.__PVT__copper_state)) 
+                    & (IData)(vlSelfRef.__PVT__dma_ack))) {
+            vlSelfRef.__PVT__strobe2 = 0U;
+        }
+        if (((IData)(vlSelfRef.__PVT__copjmp1) & (IData)(vlSymsp->TOP.clk_ena_dbg))) {
+            vlSelfRef.__PVT__strobe1 = 1U;
+        } else if (((0U == (IData)(vlSelfRef.__PVT__copper_state)) 
+                    & (IData)(vlSelfRef.__PVT__dma_ack))) {
+            vlSelfRef.__PVT__strobe1 = 0U;
+        }
         if (vlSymsp->TOP.clk_ena_dbg) {
+            vlSelfRef.__PVT__bus_ena = (1U & ((IData)(vlSelfRef.__PVT__bus_blk) 
+                                              | (~ (IData)(vlSelfRef.__PVT__bus_ena))));
             vlSelfRef.__PVT__beam_match_wait = vlSelfRef.__PVT__beam_match_skip;
             vlSelfRef.__PVT__beam_match = ((((IData)(vlSymsp->TOP.vpos) 
                                              << 7U) 
@@ -327,72 +363,12 @@ VL_INLINE_OPT void Vagnus_copper_agnus_copper___nba_sequent__TOP__agnus_copper__
                                                                : 
                                                               ((IData)(vlSymsp->TOP.hpos) 
                                                                >> 2U))))))));
-            vlSelfRef.__PVT__bus_blk = (1U == (0xffU 
-                                               & ((IData)(vlSymsp->TOP.hpos) 
-                                                  >> 1U)));
         }
-        if (vlSelfRef.__PVT__enable) {
-            vlSelfRef.__PVT__skip_flag = vlSelfRef.__PVT__skip;
-        }
-        if (vlSymsp->TOP.reset) {
-            vlSelfRef.__PVT__cdang = 0U;
-            vlSelfRef.__PVT__cop1lch = 0U;
-            vlSelfRef.__PVT__cop1lcl = 0U;
-            vlSelfRef.__PVT__cop2lch = 0U;
-            vlSelfRef.__PVT__cop2lcl = 0U;
-        } else {
-            if ((0x17U == (IData)(vlSymsp->TOP.reg_address_in))) {
-                vlSelfRef.__PVT__cdang = (1U & ((IData)(vlSymsp->TOP.data_in) 
-                                                >> 1U));
-            }
-            if ((0x40U == (IData)(vlSymsp->TOP.reg_address_in))) {
-                vlSelfRef.__PVT__cop1lch = (0x1fU & (IData)(vlSymsp->TOP.data_in));
-            }
-            if ((0x41U == (IData)(vlSymsp->TOP.reg_address_in))) {
-                vlSelfRef.__PVT__cop1lcl = (0x7fffU 
-                                            & ((IData)(vlSymsp->TOP.data_in) 
-                                               >> 1U));
-            }
-            if ((0x42U == (IData)(vlSymsp->TOP.reg_address_in))) {
-                vlSelfRef.__PVT__cop2lch = (0x1fU & (IData)(vlSymsp->TOP.data_in));
-            }
-            if ((0x43U == (IData)(vlSymsp->TOP.reg_address_in))) {
-                vlSelfRef.__PVT__cop2lcl = (0x7fffU 
-                                            & ((IData)(vlSymsp->TOP.data_in) 
-                                               >> 1U));
-            }
-        }
-        if (((IData)(vlSelfRef.__PVT__copjmp2) & (IData)(vlSymsp->TOP.clk_ena_dbg))) {
-            vlSelfRef.__PVT__strobe2 = 1U;
-        } else if (((0U == (IData)(vlSelfRef.__PVT__copper_state)) 
-                    & (IData)(vlSelfRef.__PVT__dma_ack))) {
-            vlSelfRef.__PVT__strobe2 = 0U;
-        }
-        if (((IData)(vlSelfRef.__PVT__copjmp1) & (IData)(vlSymsp->TOP.clk_ena_dbg))) {
-            vlSelfRef.__PVT__strobe1 = 1U;
-        } else if (((0U == (IData)(vlSelfRef.__PVT__copper_state)) 
-                    & (IData)(vlSelfRef.__PVT__dma_ack))) {
-            vlSelfRef.__PVT__strobe1 = 0U;
-        }
-    }
-    if (vlSymsp->TOP.clk7_en) {
-        if (VL_UNLIKELY(((0x46U == (IData)(vlSymsp->TOP.reg_address_in))))) {
+        if ((0x46U == (IData)(vlSymsp->TOP.reg_address_in))) {
             vlSelfRef.__PVT__ir1 = (0x7fffU & ((IData)(vlSelfRef.__PVT__ir2) 
                                                >> 1U));
-            VL_WRITEF_NX("COPPER DEBUG: COPINS write! data_in=%x ir2=%x reg_address_in=%x time=%0t\n",0,
-                         16,vlSymsp->TOP.data_in,16,
-                         (IData)(vlSelfRef.__PVT__ir2),
-                         8,vlSymsp->TOP.reg_address_in,
-                         64,VL_TIME_UNITED_Q(1),-12);
             vlSelfRef.__PVT__ir2 = vlSymsp->TOP.data_in;
         }
-        if (VL_UNLIKELY(((0U != (IData)(vlSymsp->TOP.reg_address_in))))) {
-            VL_WRITEF_NX("clk posedge! reg_address_in=%x COPINS=08c match=%b\n",0,
-                         8,vlSymsp->TOP.reg_address_in,
-                         1,(0x46U == (IData)(vlSymsp->TOP.reg_address_in)));
-        }
-    }
-    if (vlSymsp->TOP.clk7_en) {
         if (((IData)(vlSymsp->TOP.reset) | ((IData)(vlSymsp->TOP.clk_ena_dbg) 
                                             & (IData)(vlSelfRef.__PVT__strobe)))) {
             vlSelfRef.__PVT__copper_state = 0U;
@@ -400,6 +376,9 @@ VL_INLINE_OPT void Vagnus_copper_agnus_copper___nba_sequent__TOP__agnus_copper__
             vlSelfRef.__PVT__copper_state = vlSelfRef.__PVT__copper_next;
         }
         if (vlSymsp->TOP.clk_ena_dbg) {
+            vlSelfRef.__PVT__bus_blk = (1U == (0xffU 
+                                               & ((IData)(vlSymsp->TOP.hpos) 
+                                                  >> 1U)));
             vlSelfRef.__PVT__strobe = ((IData)(vlSelfRef.__PVT__copjmp1) 
                                        | (IData)(vlSelfRef.__PVT__copjmp2));
         }
@@ -415,6 +394,13 @@ VL_INLINE_OPT void Vagnus_copper_agnus_copper___nba_sequent__TOP__agnus_copper__
             vlSelfRef.__PVT__copjmp1 = 0U;
         }
     }
+    vlSelfRef.address_out = __Vdly__address_out;
+    vlSelfRef.__VdfgRegularize_he23179ad_0_0 = ((IData)(vlSelfRef.__PVT__bus_ena) 
+                                                & (IData)(vlSymsp->TOP.clk_ena_dbg));
+    vlSelfRef.__PVT__enable = ((~ (IData)(vlSelfRef.__PVT__bus_blk)) 
+                               & (IData)(vlSelfRef.__VdfgRegularize_he23179ad_0_0));
+    vlSelfRef.__PVT__dma_ack = ((IData)(vlSymsp->TOP.ackdma) 
+                                & (IData)(vlSelfRef.__PVT__enable));
     vlSelfRef.__PVT__beam_match_skip = ((IData)(vlSelfRef.__PVT__beam_match) 
                                         & ((~ (IData)(vlSymsp->TOP.blit_busy)) 
                                            | ((IData)(vlSelfRef.__PVT__ir2) 
@@ -425,10 +411,6 @@ VL_INLINE_OPT void Vagnus_copper_agnus_copper___nba_sequent__TOP__agnus_copper__
                                    | ((~ (IData)(vlSymsp->TOP.ecs)) 
                                       & (0U == (0x1c0U 
                                                 & (IData)(vlSelfRef.__PVT__ir2)))));
-    vlSelfRef.__PVT__enable = ((~ (IData)(vlSelfRef.__PVT__bus_blk)) 
-                               & (IData)(vlSelfRef.__VdfgRegularize_he23179ad_0_0));
-    vlSelfRef.__PVT__dma_ack = ((IData)(vlSymsp->TOP.ackdma) 
-                                & (IData)(vlSelfRef.__PVT__enable));
     if ((4U & (IData)(vlSelfRef.__PVT__copper_state))) {
         if ((2U & (IData)(vlSelfRef.__PVT__copper_state))) {
             vlSelfRef.dma_req = (1U & ((1U & (~ (IData)(vlSelfRef.__PVT__copper_state))) 
