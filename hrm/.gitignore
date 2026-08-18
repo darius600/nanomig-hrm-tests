@@ -1,0 +1,4 @@
+obj_dir/
+*.vcd
+*.py
+out*.txt
