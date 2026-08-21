@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig sprite-DMA pointer, control, and data-fetch sequencing.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-022 specification and the NanoMig module interface contract.
+// Non-goals: This does not establish complete HRM sprite timing or all eight channels.
+
 #include <iostream>
 #include <verilated.h>
 #include "Vagnus_spritedma.h"

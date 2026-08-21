@@ -1,3 +1,8 @@
+// Test purpose: Validate that Copper SKIP suppresses exactly the next MOVE when its HRM condition matches.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2, printed pp. 31-32 and 36.
+// Non-goals: This does not prove complete Copper bus-cycle timing.
+
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include "Vagnus_copper.h"
@@ -45,8 +50,6 @@ int main(int argc, char** argv) {
         std::cout << "TICK before clk=1: time=" << time_step << " hpos=" << top->hpos 
                   << " ackdma=" << (int)top->ackdma 
                   << " reqdma=" << (int)top->reqdma 
-                  << " dma_req=" << (int)top->dma_req_dbg
-                  << " state=" << (int)top->copper_state_dbg
                   << " reg_address_out=" << std::hex << (int)top->reg_address_out
                   << " reg_address_in=" << std::hex << (int)top->reg_address_in 
                   << " data_in=" << std::hex << top->data_in << std::dec << "\n";

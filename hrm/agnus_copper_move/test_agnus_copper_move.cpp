@@ -1,3 +1,8 @@
+// Test purpose: Validate Copper MOVE protection, including the existing OCS/ECS CDANG cases.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-014/017 specifications; HRM Third Edition pp. 21 and 26 constrain the OCS cases.
+// Non-goals: This is not an independent HRM conformance proof for every ECS register-protection case.
+
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include "Vagnus_copper.h"

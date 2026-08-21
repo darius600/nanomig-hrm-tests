@@ -1,3 +1,8 @@
+// Test purpose: Validate selected CLXCON-controlled sprite and playfield collision bits.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 7, printed pp. 213-216.
+// Non-goals: This does not exhaust every collision pair or mask combination.
+
 #include <iostream>
 #include <iomanip>
 #include "Vdenise_collision.h"

@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig palette expansion, lookup latency, and EHB output behavior.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-027 specification; OCS/EHB cases are HRM-constrained but the 24-bit AGA mapping is internal.
+// Non-goals: This is not an AGA conformance test and does not cover all palette banks.
+
 #include <iostream>
 #include <iomanip>
 #include "Vdenise_colortable.h"

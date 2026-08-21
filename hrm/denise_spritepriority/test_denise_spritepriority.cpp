@@ -1,3 +1,8 @@
+// Test purpose: Validate selected sprite-versus-playfield priority cases controlled by BPLCON2.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 7, printed pp. 207-213.
+// Non-goals: This does not exhaust every sprite group and dual-playfield combination.
+
 #include <iostream>
 #include <iomanip>
 #include "Vdenise_spritepriority.h"

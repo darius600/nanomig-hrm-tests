@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig sprite arming, horizontal positioning, shifting, and attachment behavior.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-030 specification and the NanoMig module interface contract.
+// Non-goals: This does not prove complete sprite DMA or all priority interactions.
+
 #include <iostream>
 #include <iomanip>
 #include <vector>

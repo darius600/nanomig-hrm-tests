@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig OCS HAM sequencing and its separate AGA HAM8 implementation path.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-032 specification; only the OCS HAM cases are constrained by the Third Edition HRM.
+// Non-goals: The Third Edition HRM is not an oracle for AGA HAM8.
+
 #include <iostream>
 #include <iomanip>
 #include "Vdenise_hamgenerator.h"

@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig disk-DMA request slots and word-pointer progression.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-023 specification and the NanoMig module interface contract.
+// Non-goals: Exact internal hpos slots are not claimed as an HRM conformance oracle.
+
 #include <iostream>
 #include <verilated.h>
 #include "Vagnus_diskdma.h"

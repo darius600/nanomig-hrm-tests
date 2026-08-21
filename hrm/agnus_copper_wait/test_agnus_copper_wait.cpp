@@ -1,3 +1,8 @@
+// Test purpose: Validate Copper WAIT position, mask, and blitter-finished behavior.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2, printed pp. 22-24 and 35.
+// Non-goals: This does not prove complete cycle accuracy or all vertical-counter rollover cases.
+
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include "Vagnus_copper.h"

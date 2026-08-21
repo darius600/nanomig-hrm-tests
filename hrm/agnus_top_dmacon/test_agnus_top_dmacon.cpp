@@ -1,3 +1,8 @@
+// Test purpose: Smoke-test Agnus top-level construction and a basic DMACON bus write.
+// Test class: INTEGRATION_SMOKE
+// Primary oracle: NanoMig top-level bus contract; HRM Third Edition p. 222 supplies DMACON bit meaning.
+// Non-goals: This is not exhaustive DMACON or Agnus conformance coverage.
+
 #include <iostream>
 #include <iomanip>
 #include <vector>

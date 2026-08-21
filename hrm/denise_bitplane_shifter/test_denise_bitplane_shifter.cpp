@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig bitplane serialization rates and scroll handling.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-028 specification and the NanoMig module interface contract.
+// Non-goals: This does not prove the complete Denise display pipeline.
+
 #include <iostream>
 #include <iomanip>
 #include <vector>

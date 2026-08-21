@@ -1,66 +1,83 @@
+// Test purpose: Check the HRM stereo routing and retain a separate NanoMig mixer-arithmetic regression.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 5, printed p. 137.
+// Non-goals: This does not claim numeric DAC scaling for HRM volume-register value 64.
+
+#include <cstdint>
 #include <iostream>
-#include <iomanip>
+#include <string>
+#include <verilated.h>
 #include "Vpaula_audio_mixer.h"
-#include "verilated.h"
 
-int main(int argc, char** argv) {
+struct Stereo {
+    int left;
+    int right;
+};
+
+static int sign_extend_15(int value) {
+    return (value & 0x4000) ? (value | ~0x7FFF) : value;
+}
+
+int main(int argc, char **argv) {
     Verilated::commandArgs(argc, argv);
-    Vpaula_audio_mixer* dut = new Vpaula_audio_mixer;
+    auto *dut = new Vpaula_audio_mixer;
+    dut->clk7_en = 0;
 
-    std::cout << "Starting Paula Audio Mixer Test...\n";
-
-    bool pass = true;
-
-    auto test_mix = [&](int s0, int s1, int s2, int s3, int v0, int v1, int v2, int v3, int expected_l, int expected_r) {
+    auto mix = [&](int s0, int s1, int s2, int s3,
+                   int v0, int v1, int v2, int v3) -> Stereo {
         dut->clk = 0;
-        dut->sample0 = s0 & 0xFF;
-        dut->sample1 = s1 & 0xFF;
-        dut->sample2 = s2 & 0xFF;
-        dut->sample3 = s3 & 0xFF;
-        dut->vol0 = v0 & 0x7F;
-        dut->vol1 = v1 & 0x7F;
-        dut->vol2 = v2 & 0x7F;
-        dut->vol3 = v3 & 0x7F;
-        
+        dut->sample0 = static_cast<uint8_t>(s0);
+        dut->sample1 = static_cast<uint8_t>(s1);
+        dut->sample2 = static_cast<uint8_t>(s2);
+        dut->sample3 = static_cast<uint8_t>(s3);
+        dut->vol0 = v0;
+        dut->vol1 = v1;
+        dut->vol2 = v2;
+        dut->vol3 = v3;
         dut->eval();
         dut->clk = 1;
         dut->eval();
-        
-        // Output is 15-bit signed
-        int got_l = dut->ldatasum;
-        if (got_l & 0x4000) got_l |= ~0x3FFF; // sign extend 15-bit
+        dut->clk = 0;
+        dut->eval();
+        return {sign_extend_15(dut->ldatasum), sign_extend_15(dut->rdatasum)};
+    };
 
-        int got_r = dut->rdatasum;
-        if (got_r & 0x4000) got_r |= ~0x3FFF; // sign extend 15-bit
-
-        if (got_l != expected_l || got_r != expected_r) {
-            std::cerr << "FAIL: s0=" << s0 << " v0=" << v0 
-                      << " s3=" << s3 << " v3=" << v3 
-                      << " -> Left expected " << expected_l << " got " << got_l << "\n";
-            std::cerr << "FAIL: s1=" << s1 << " v1=" << v1 
-                      << " s2=" << s2 << " v2=" << v2 
-                      << " -> Right expected " << expected_r << " got " << got_r << "\n";
-            pass = false;
+    bool hrm_pass = true;
+    auto check_hrm = [&](const std::string &name,
+                         int s0, int s1, int s2, int s3,
+                         int expected_left, int expected_right) {
+        const Stereo got = mix(s0, s1, s2, s3, 1, 1, 1, 1);
+        if (got.left != expected_left || got.right != expected_right) {
+            std::cerr << "HRM FAIL " << name
+                      << ": expected L=" << expected_left << " R=" << expected_right
+                      << ", got L=" << got.left << " R=" << got.right << "\n";
+            hrm_pass = false;
         } else {
-            std::cout << "PASS: Left=" << got_l << " Right=" << got_r << "\n";
+            std::cout << "HRM PASS " << name << "\n";
         }
     };
 
-    // Test cases
-    // s0*v0 + s3*v3 = 100*63 + (-50)*32 = 6300 - 1600 = 4700
-    // s1*v1 + s2*v2 = 50*32 + 10*63 = 1600 + 630 = 2230
-    test_mix(100, 50, 10, -50, 64, 32, 64, 32, 4700, 2230);
+    // HRM p. 137: channels 1+2 feed LEFT; channels 0+3 feed RIGHT.
+    check_hrm("channel 0 routes right", 17, 0, 0, 0, 0, 17);
+    check_hrm("channel 1 routes left", 0, 23, 0, 0, 23, 0);
+    check_hrm("channel 2 routes left", 0, 0, 31, 0, 31, 0);
+    check_hrm("channel 3 routes right", 0, 0, 0, 47, 0, 47);
 
-    // Both positive max (127 * 63 = 8001; 8001 * 2 = 16002)
-    test_mix(127, 127, 127, 127, 64, 64, 64, 64, 16002, 16002);
-
-    // Both negative max (-128 * 63 = -8064; -8064 * 2 = -16128)
-    test_mix(-128, -128, -128, -128, 64, 64, 64, 64, -16128, -16128);
-
-    if (pass) {
-        std::cout << "All tests passed!\n";
+    // Secondary RTL regression: preserve the implementation's signed arithmetic
+    // independently of whether its left/right labels satisfy the HRM.
+    bool arithmetic_pass = true;
+    const Stereo arithmetic = mix(100, 50, 10, -50, 63, 32, 63, 32);
+    if (arithmetic.left != 4700 || arithmetic.right != 2230) {
+        std::cerr << "RTL REGRESSION FAIL: expected current mixer sums L=4700 R=2230, got L="
+                  << arithmetic.left << " R=" << arithmetic.right << "\n";
+        arithmetic_pass = false;
+    } else {
+        std::cout << "RTL REGRESSION PASS: signed scaling and summation vector.\n";
     }
 
+    std::cout << "HRM routing=" << (hrm_pass ? "PASS" : "FAIL")
+              << ", arithmetic regression=" << (arithmetic_pass ? "PASS" : "FAIL") << "\n";
+
     delete dut;
-    return pass ? 0 : 1;
+    return hrm_pass && arithmetic_pass ? 0 : 1;
 }

@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig audio-DMA request slots and pointer handoff behavior.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-019 specification and the NanoMig module interface contract.
+// Non-goals: This does not prove all four channels, pointer reloads, or physical Paula timing.
+
 #include <iostream>
 #include <verilated.h>
 #include "Vagnus_audiodma.h"

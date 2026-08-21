@@ -1,3 +1,8 @@
+// Test purpose: Smoke-test CPU-bus access to selected Agnus and Paula registers through the full Minimig system.
+// Test class: INTEGRATION_SMOKE
+// Primary oracle: NanoMig 68000 bridge contract plus HRM register addresses and set/clear semantics.
+// Non-goals: This does not prove complete bus timing, arbitration, or chipset conformance.
+
 #include <iostream>
 #include <iomanip>
 #include <vector>

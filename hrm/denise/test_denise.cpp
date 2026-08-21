@@ -1,3 +1,8 @@
+// Test purpose: Smoke-test Denise register writes, display-window generation, and the final RGB pipeline together.
+// Test class: INTEGRATION_SMOKE
+// Primary oracle: NanoMig integration contract and the frozen FPGA-034/035/036 specification.
+// Non-goals: The AGA BPLCON4 technique is not Third Edition HRM conformance evidence.
+
 #include <iostream>
 #include <iomanip>
 #include "Vdenise.h"

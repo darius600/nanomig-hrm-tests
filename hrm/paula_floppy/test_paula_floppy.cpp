@@ -1,3 +1,8 @@
+// Test purpose: Protect the NanoMig SD-sector-to-MFM floppy pipeline and its DSKLEN start path.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-045 specification and the NanoMig storage-adapter contract.
+// Non-goals: The SD-card protocol and generated FIFO layout are not physical Paula conformance evidence.
+
 #include <iostream>
 #include <iomanip>
 #include <vector>

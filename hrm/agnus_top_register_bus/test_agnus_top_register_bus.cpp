@@ -1,3 +1,8 @@
+// Test purpose: Smoke-test CPU and Copper register-address routing through the Agnus top level.
+// Test class: INTEGRATION_SMOKE
+// Primary oracle: NanoMig top-level bus contract and the frozen FPGA-026 specification.
+// Non-goals: This does not prove complete chipset-bus arbitration or register semantics.
+
 #include <iostream>
 #include <iomanip>
 #include <vector>

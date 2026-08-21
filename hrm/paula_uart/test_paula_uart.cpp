@@ -1,3 +1,8 @@
+// Test purpose: Validate selected Paula UART baud, frame, receive-data, interrupt, and SERDATR status behavior.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 8, printed pp. 255-259.
+// Non-goals: This does not cover nine-bit mode, overrun, break, or every SERPER value.
+
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -72,9 +77,9 @@ int main(int argc, char** argv) {
 
     // --- TEST 1: Transmit ---
     std::cout << "Test 1: Transmit...\n";
-    // Set SERPER to 10 (which means period is 11 clk7 cycles per bit, as counter is reloaded with period)
-    // Actually, let's use 10. Long bit (bit 15) = 0 for 8 bits data (9 total with start? No, 8 bits data + stop).
-    // The Amiga HRM says bit 15 = 1 means 9 data bits. Bit 15 = 0 means 8 data bits.
+    // SERPER=10 selects 11 color clocks per bit. NanoMig exposes two
+    // clk7-enable intervals per color clock, so the test samples a 22-enable bit cell.
+    // Bit 15 remains clear for eight data bits.
     write_reg(0x32, 10); 
     
     // Write SERDAT: bit 8 is a stop bit usually set to 1 if we're sending 8 data bits (Wait, Amiga SERDAT data is bits [7:0] + stop bits [8:9]?)
@@ -162,20 +167,46 @@ int main(int argc, char** argv) {
         std::cerr << "FAIL: Did not see rxint.\n";
         pass = false;
     } else {
-        // Acknowledge RBF by simulating Agnus reading it or clearing it
+        // rbfmirror is Paula's external receive-buffer-full state. Keep it
+        // asserted through the SERDATR read so bit 14 is actually observable.
         dut->rbfmirror = 1;
         tick(); tick(); tick(); tick();
-        dut->rbfmirror = 0;
-        
-        uint16_t serdatr = read_reg(0x18);
+
+        const uint16_t serdatr = read_reg(0x18);
         std::cout << "SERDATR = 0x" << std::hex << serdatr << std::dec << "\n";
-        
-        // Lower 8 bits should be 0xA3
-        if ((serdatr & 0xFF) != 0xA3) {
-            std::cerr << "FAIL: Received data is 0x" << std::hex << (serdatr & 0xFF) << ", expected 0xA3.\n";
+
+        auto expect_set = [&](uint16_t mask, const char *name) {
+            if ((serdatr & mask) == 0) {
+                std::cerr << "FAIL: SERDATR " << name << " flag is clear.\n";
+                pass = false;
+            }
+        };
+        auto expect_clear = [&](uint16_t mask, const char *name) {
+            if (serdatr & mask) {
+                std::cerr << "FAIL: SERDATR " << name << " flag is set.\n";
+                pass = false;
+            }
+        };
+
+        expect_clear(0x8000, "OVRUN");
+        expect_set(0x4000, "RBF");
+        expect_set(0x2000, "TBE");
+        expect_set(0x1000, "TSRE");
+        expect_set(0x0800, "RXD");
+        expect_clear(0x0400, "unused bit 10");
+        expect_set(0x0100, "8-bit stop");
+
+        if ((serdatr & 0x00FF) != 0x00A3) {
+            std::cerr << "FAIL: Received data is 0x" << std::hex
+                      << (serdatr & 0x00FF) << ", expected 0xA3.\n" << std::dec;
             pass = false;
-        } else {
-            std::cout << "PASS: Receive OK.\n";
+        }
+
+        dut->rbfmirror = 0;
+        tick(); tick(); tick(); tick();
+
+        if (pass) {
+            std::cout << "PASS: Receive byte, interrupt, stop bit, and SERDATR flags match the selected HRM case.\n";
         }
     }
 

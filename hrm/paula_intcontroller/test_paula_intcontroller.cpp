@@ -1,3 +1,8 @@
+// Test purpose: Validate Paula interrupt set/clear, request latching, and selected 68000 priority levels.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 7, printed pp. 217-222.
+// Non-goals: This does not exhaust all interrupt sources or simultaneous-priority combinations.
+
 #include <iostream>
 #include <iomanip>
 #include "Vpaula_intcontroller.h"

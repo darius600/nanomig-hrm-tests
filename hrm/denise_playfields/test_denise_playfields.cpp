@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig single/dual-playfield selection and the documented SWIV compatibility path.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-029 specification and the NanoMig module interface contract.
+// Non-goals: The SWIV-specific path is not attributed to the Third Edition HRM.
+
 #include <iostream>
 #include <iomanip>
 #include "Vdenise_playfields.h"

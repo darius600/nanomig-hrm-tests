@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig audio-channel DMA startup and high-byte/low-byte sample sequencing.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-042 specification; HRM Third Edition pp. 164-166 constrain the sample-state sequence.
+// Non-goals: Exact internal hpos/strhor coupling is not an HRM oracle.
+
 #include <iostream>
 #include <iomanip>
 #include <vector>

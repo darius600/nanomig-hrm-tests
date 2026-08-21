@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig bitplane-DMA fetch counts and internal window timing for selected modes.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-018 specification and the NanoMig module interface contract.
+// Non-goals: Exact internal hpos slots are not claimed as an HRM conformance oracle.
+
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include "Vagnus_bitplanedma.h"

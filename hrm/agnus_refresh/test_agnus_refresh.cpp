@@ -1,3 +1,8 @@
+// Test purpose: Protect NanoMig internal DRAM-refresh slot allocation.
+// Test class: RTL_REGRESSION
+// Primary oracle: Frozen FPGA-021 specification and the NanoMig module interface contract.
+// Non-goals: Exact internal hpos values are not claimed as an HRM conformance oracle.
+
 #include <iostream>
 #include <verilated.h>
 #include "Vagnus_refresh.h"
