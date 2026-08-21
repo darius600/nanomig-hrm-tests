@@ -1,0 +1,422 @@
+// Test purpose: Verify Copper WAIT/SKIP comparison semantics - greater-or-equal, compare-enable masks, the unmaskable top bit, BFD and counter rollover.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed pp. 22-23, 27, 30, 31, 32 and 33; frozen specification 2e6a42a.
+// Requirement IDs: COP-04, COP-08
+// Non-goals: Bus contention (needs the Agnus top level), exact release cycle counts, NTSC long/short line alternation, and interrupt generation are out of scope. No independent ECS WAIT/SKIP claim is made.
+
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include <verilated.h>
+#include "Vagnus_copper.h"
+
+namespace {
+
+constexpr uint16_t to_reg(uint16_t byte_address) { return static_cast<uint16_t>(byte_address >> 1); }
+
+constexpr uint16_t COP1LCH = to_reg(0x080);
+constexpr uint16_t COP1LCL = to_reg(0x082);
+constexpr uint16_t COPJMP1 = to_reg(0x088);
+constexpr uint16_t COPINS = to_reg(0x08C);
+constexpr uint16_t IDLE_REG = 0x0FF;
+
+constexpr uint16_t COLOR00 = to_reg(0x180);
+constexpr uint16_t COLOR01 = to_reg(0x182);
+
+constexpr uint32_t LIST_ADDRESS = 0x00002000;
+
+// Instruction word helpers, straight from the HRM encoding tables.
+// WAIT/SKIP IR1: bit0=1, bits15-8 = VP, bits7-1 = HP.
+constexpr uint16_t ir1_pos(uint8_t vp, uint8_t hp) {
+    return static_cast<uint16_t>((vp << 8) | ((hp & 0x7F) << 1) | 1);
+}
+// IR2: bit15 = BFD, bits14-8 = VE, bits7-1 = HE, bit0 = 0 for WAIT / 1 for SKIP.
+constexpr uint16_t ir2_mask(bool bfd, uint8_t ve, uint8_t he, bool skip) {
+    return static_cast<uint16_t>((bfd ? 0x8000 : 0) | ((ve & 0x7F) << 8) | ((he & 0x7F) << 1) | (skip ? 1 : 0));
+}
+// A MOVE is IR1 = register byte address (bit 0 clear), IR2 = data.
+constexpr uint16_t move_ir1(uint16_t reg) { return static_cast<uint16_t>(reg << 1); }
+
+struct MoveEvent {
+    uint16_t reg;
+    uint16_t data;
+    uint16_t vpos;
+    uint16_t hpos;
+};
+
+class CopperHarness {
+public:
+    CopperHarness() : dut(new Vagnus_copper) {
+        dut->clk = 0;
+        dut->clk7_en = 1;
+        dut->reset = 1;
+        dut->ecs = 0;
+        dut->enadma = 1;
+        dut->ackdma = 0;
+        dut->sof = 0;
+        dut->blit_busy = 0;
+        dut->hpos = 0;
+        dut->vpos = 0;
+        dut->data_in = 0;
+        dut->reg_address_in = IDLE_REG;
+        for (int i = 0; i < 12; ++i) cycle();
+        dut->reset = 0;
+        for (int i = 0; i < 4; ++i) cycle();
+    }
+
+    ~CopperHarness() { dut->final(); delete dut; }
+    CopperHarness(const CopperHarness&) = delete;
+    CopperHarness& operator=(const CopperHarness&) = delete;
+
+    void install(const std::vector<uint16_t>& words) {
+        for (size_t i = 0; i < words.size(); ++i) {
+            memory[LIST_ADDRESS + i] = words[i];
+        }
+    }
+
+    void seek_beam(uint16_t target_vpos) {
+        vpos = target_vpos;
+        hpos = 0;
+        dut->vpos = vpos;
+        dut->hpos = hpos;
+    }
+
+    void set_blitter_busy(bool busy) { dut->blit_busy = busy ? 1 : 0; }
+
+    void start_list() {
+        write_reg(COP1LCH, static_cast<uint16_t>((LIST_ADDRESS >> 15) & 0x1F));
+        write_reg(COP1LCL, static_cast<uint16_t>((LIST_ADDRESS & 0x7FFF) << 1));
+        write_reg(COPJMP1, 0x0000);
+        run_cycles(4);
+        dma_allowed = true;
+    }
+
+    void run_cycles(int count) { for (int i = 0; i < count; ++i) cycle(); }
+
+    int move_count(uint16_t reg) const {
+        int n = 0;
+        for (const auto& e : moves) if (e.reg == reg) ++n;
+        return n;
+    }
+
+    // vpos at which the first write to `reg` was observed, or -1.
+    int first_move_vpos(uint16_t reg) const {
+        for (const auto& e : moves) if (e.reg == reg) return static_cast<int>(e.vpos);
+        return -1;
+    }
+
+    bool dma_allowed = false;
+    std::vector<MoveEvent> moves;
+
+private:
+    Vagnus_copper* dut;
+    std::unordered_map<uint32_t, uint16_t> memory;
+    uint16_t hpos = 0;
+    uint16_t vpos = 0;
+
+    uint16_t read_memory(uint32_t word_address) const {
+        const auto it = memory.find(word_address);
+        return it == memory.end() ? 0xFFFF : it->second;
+    }
+
+    void write_reg(uint16_t word_reg, uint16_t data) { cycle(true, word_reg, data); }
+
+    void cycle(bool cpu_write = false, uint16_t cpu_reg = IDLE_REG, uint16_t cpu_data = 0) {
+        dut->eval();
+        const bool accepted_dma = !cpu_write && dma_allowed && dut->reqdma;
+        if (cpu_write) {
+            dut->ackdma = 0;
+            dut->reg_address_in = cpu_reg;
+            dut->data_in = cpu_data;
+        } else if (accepted_dma) {
+            const uint32_t address = dut->address_out;
+            const uint16_t reg = dut->reg_address_out;
+            const uint16_t data = read_memory(address);
+            dut->ackdma = 1;
+            dut->reg_address_in = reg;
+            dut->data_in = data;
+            dut->eval();
+            if (reg != COPINS && reg != IDLE_REG) {
+                moves.push_back({reg, data, vpos, hpos});
+            }
+        } else {
+            dut->ackdma = 0;
+            dut->reg_address_in = IDLE_REG;
+            dut->data_in = 0;
+        }
+        dut->clk = 1;
+        dut->eval();
+        dut->clk = 0;
+        dut->eval();
+        if (++hpos == 454) {
+            hpos = 0;
+            vpos = static_cast<uint16_t>((vpos + 1) & 0x00FF);
+        }
+        dut->hpos = hpos;
+        dut->vpos = vpos;
+    }
+};
+
+class Checks {
+public:
+    void expect(bool condition, const std::string& label) {
+        std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
+        condition ? ++passed : ++failed;
+    }
+    int passed = 0;
+    int failed = 0;
+};
+
+}  // namespace
+
+int main(int argc, char** argv) {
+    Verilated::commandArgs(argc, argv);
+    Checks checks;
+
+    // ---------------- WAIT (COP-04) ----------------
+
+    // W1 - HRM p.22 example: WAIT $9601,$FF00 waits for line $96 with the
+    // horizontal position masked off. ($FF00 has BFD=1, VE=$7F, HE=0.)
+    {
+        CopperHarness h;
+        h.seek_beam(0x90);
+        h.install({ir1_pos(0x96, 0x00), ir2_mask(true, 0x7F, 0x00, false),
+                   move_ir1(COLOR00), 0x0111,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(6000);
+        const int at = h.first_move_vpos(COLOR00);
+        checks.expect(h.move_count(COLOR00) == 1, "W1 WAIT line $96, HP masked: the following MOVE runs");
+        checks.expect(at >= 0x96, "W1 WAIT line $96: the MOVE does not run before line $96");
+    }
+
+    // W2 - p.27: greater-or-equal, so a WAIT for an already-passed position
+    // completes immediately instead of locking up.
+    {
+        CopperHarness h;
+        h.seek_beam(0x50);
+        h.install({ir1_pos(0x10, 0x00), ir2_mask(true, 0x7F, 0x00, false),
+                   move_ir1(COLOR00), 0x0222,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(2000);
+        checks.expect(h.move_count(COLOR00) == 1, "W2 WAIT for an already-passed line completes (greater-or-equal, p.27)");
+    }
+
+    // W3 - p.27 worked example: two WAITs for the same position, both MOVEs run.
+    {
+        CopperHarness h;
+        h.seek_beam(0x30);
+        h.install({ir1_pos(0x3C, 0x00), ir2_mask(true, 0x7F, 0x00, false),
+                   move_ir1(COLOR00), 0x0333,
+                   ir1_pos(0x3C, 0x00), ir2_mask(true, 0x7F, 0x00, false),
+                   move_ir1(COLOR01), 0x0444,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(6000);
+        checks.expect(h.move_count(COLOR00) == 1 && h.move_count(COLOR01) == 1,
+                      "W3 two WAITs for the same position: both MOVEs run (p.27)");
+    }
+
+    // W4 - p.22/p.30: the terminal WAIT $FFFF,$FFFE can never complete,
+    // because HP never exceeds $E2.
+    {
+        CopperHarness h;
+        h.seek_beam(0xF0);
+        h.install({0xFFFF, 0xFFFE,
+                   move_ir1(COLOR00), 0x0555});
+        h.start_list();
+        h.run_cycles(20000);
+        checks.expect(h.move_count(COLOR00) == 0, "W4 terminal WAIT $FFFF,$FFFE never releases (p.22, p.30)");
+    }
+
+    // W5 - p.32 masking rule: with VE=$0F only the low four vertical bits are
+    // compared, so a WAIT for VP=$0F matches on a line whose low nibble is $F.
+    {
+        CopperHarness h;
+        h.seek_beam(0x20);
+        h.install({ir1_pos(0x0F, 0x00), ir2_mask(true, 0x0F, 0x00, false),
+                   move_ir1(COLOR00), 0x0666,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(12000);
+        const int at = h.first_move_vpos(COLOR00);
+        checks.expect(h.move_count(COLOR00) == 1 && at >= 0 && (at & 0x0F) == 0x0F,
+                      "W5 VE=$0F: WAIT for VP=$0F releases on a line ending in $F (p.32)");
+    }
+
+    // W6 - p.32 worked example: the top bit cannot be masked, because IR2
+    // bit 15 is BFD. Once VP passes $80 the same WAIT is already true.
+    {
+        CopperHarness h;
+        h.seek_beam(0x80);
+        h.install({ir1_pos(0x0F, 0x00), ir2_mask(true, 0x0F, 0x00, false),
+                   move_ir1(COLOR00), 0x0777,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(2000);
+        const int at = h.first_move_vpos(COLOR00);
+        checks.expect(h.move_count(COLOR00) == 1 && at >= 0 && (at & 0x0F) != 0x0F,
+                      "W6 the top bit is unmaskable: past VP $80 the same WAIT is already true (p.32)");
+    }
+
+    // W7 - a horizontal position with HE enabled is honoured.
+    {
+        CopperHarness h;
+        h.seek_beam(0x40);
+        h.install({ir1_pos(0x41, 0x40), ir2_mask(true, 0x7F, 0x7F, false),
+                   move_ir1(COLOR00), 0x0888,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(6000);
+        checks.expect(h.move_count(COLOR00) == 1, "W7 WAIT with an enabled horizontal compare releases");
+    }
+
+    // ---------------- SKIP (COP-08) ----------------
+
+    // S1 - p.31: SKIP skips the next instruction when the beam is at or past
+    // the position. The instruction after the skipped one still runs.
+    {
+        CopperHarness h;
+        h.seek_beam(0x70);
+        h.install({ir1_pos(0x64, 0x00), ir2_mask(true, 0x7F, 0x00, true),
+                   move_ir1(COLOR00), 0x0999,
+                   move_ir1(COLOR01), 0x0AAA,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(4000);
+        checks.expect(h.move_count(COLOR00) == 0, "S1 SKIP with condition true: the next MOVE is skipped (p.31)");
+        checks.expect(h.move_count(COLOR01) == 1, "S1 SKIP with condition true: the MOVE after that still runs");
+    }
+
+    // S2 - condition false, so nothing is skipped.
+    {
+        CopperHarness h;
+        h.seek_beam(0x10);
+        h.install({ir1_pos(0x64, 0x00), ir2_mask(true, 0x7F, 0x00, true),
+                   move_ir1(COLOR00), 0x0BBB,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(4000);
+        checks.expect(h.move_count(COLOR00) == 1, "S2 SKIP with condition false: the next MOVE runs");
+    }
+
+    // S3 - with every compare enable clear the comparison is always true,
+    // so the SKIP always takes effect.
+    //
+    // The position must keep its top bit clear. IR2 bit 15 is BFD, so VP bit 7
+    // has no compare enable and is always compared (R4 of the specification).
+    // A VP of $FF would therefore *not* give an always-true comparison - an
+    // earlier revision of this test used $FF and failed for exactly that
+    // reason, which is a defect of the test case, not of the Copper.
+    {
+        CopperHarness h;
+        h.seek_beam(0x00);
+        h.install({ir1_pos(0x70, 0x00), ir2_mask(true, 0x00, 0x00, true),
+                   move_ir1(COLOR00), 0x0CCC,
+                   move_ir1(COLOR01), 0x0DDD,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(4000);
+        checks.expect(h.move_count(COLOR00) == 0 && h.move_count(COLOR01) == 1,
+                      "S3 all compare enables clear: comparison always true, SKIP takes effect (p.32)");
+    }
+
+    // S4 - the same two words with IR2 bit 0 clear are a WAIT, not a SKIP:
+    // the following MOVE runs instead of being skipped.
+    {
+        CopperHarness h;
+        h.seek_beam(0x70);
+        h.install({ir1_pos(0x64, 0x00), ir2_mask(true, 0x7F, 0x00, false),
+                   move_ir1(COLOR00), 0x0EEE,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(4000);
+        checks.expect(h.move_count(COLOR00) == 1, "S4 IR2 bit 0 alone distinguishes WAIT from SKIP");
+    }
+
+    // ---------------- BFD (COP-08, p.33) ----------------
+
+    // B1 - BFD=1 is the normal case: only the beam comparison controls the WAIT,
+    // even while the blitter is busy.
+    {
+        CopperHarness h;
+        h.seek_beam(0x50);
+        h.set_blitter_busy(true);
+        h.install({ir1_pos(0x10, 0x00), ir2_mask(true, 0x7F, 0x00, false),
+                   move_ir1(COLOR00), 0x1111,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(4000);
+        checks.expect(h.move_count(COLOR00) == 1, "B1 BFD=1: a busy blitter does not hold the WAIT (p.33)");
+    }
+
+    // B2 - BFD=0 additionally requires the blitter to have finished.
+    {
+        CopperHarness h;
+        h.seek_beam(0x50);
+        h.set_blitter_busy(true);
+        h.install({ir1_pos(0x10, 0x00), ir2_mask(false, 0x7F, 0x00, false),
+                   move_ir1(COLOR00), 0x2222,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(4000);
+        checks.expect(h.move_count(COLOR00) == 0, "B2 BFD=0: the WAIT is held while the blitter is busy (p.33)");
+    }
+
+    // B3 - and releases once the blitter reports finished.
+    {
+        CopperHarness h;
+        h.seek_beam(0x50);
+        h.set_blitter_busy(true);
+        h.install({ir1_pos(0x10, 0x00), ir2_mask(false, 0x7F, 0x00, false),
+                   move_ir1(COLOR00), 0x3333,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(2000);
+        const bool held = h.move_count(COLOR00) == 0;
+        h.set_blitter_busy(false);
+        h.run_cycles(2000);
+        checks.expect(held && h.move_count(COLOR00) == 1, "B3 BFD=0: the WAIT releases once the blitter finishes (p.33)");
+    }
+
+    // ---------------- Counter limits (COP-04) ----------------
+    //
+    // The specification listed a rollover case R1. It is NOT constructible at
+    // this module boundary and is deliberately not asserted:
+    //
+    // The comparison is greater-or-equal, so a WAIT for any position at or
+    // below the current counter is satisfied immediately. There is therefore no
+    // WAIT that is false just before the vertical counter wraps at $FF and true
+    // just after it - anything reachable is already true at $FF. Masking does
+    // not help, because masked-out bits are compared as equal.
+    //
+    // The observable consequence of the counter limits the HRM actually
+    // describes - that HP never exceeds $E2, so $FFFF,$FFFE can never be
+    // reached - is asserted by W4 above.
+    //
+    // W8 records the other half of the same reasoning: a WAIT whose vertical
+    // position is reachable *does* release even when its horizontal position is
+    // one that never occurs, because the vertical comparison alone carries it.
+    // This is the trap the HRM warns about on p.22 ("You may be tempted to wait
+    // for horizontal position $FE ... This will not lead to the desired
+    // result").
+    {
+        CopperHarness h;
+        h.seek_beam(0x40);
+        h.install({ir1_pos(0x50, 0x7F), ir2_mask(true, 0x7F, 0x7F, false),
+                   move_ir1(COLOR00), 0x4444,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(12000);
+        const int at = h.first_move_vpos(COLOR00);
+        checks.expect(h.move_count(COLOR00) == 1 && at > 0x50,
+                      "W8 VP reachable with an unreachable HP still releases once VP passes it (p.22 warning)");
+    }
+
+    std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
+    return checks.failed == 0 ? 0 : 1;
+}
