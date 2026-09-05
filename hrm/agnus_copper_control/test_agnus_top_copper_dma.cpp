@@ -3,6 +3,17 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed pp. 25-26, 30, 222, and 298; frozen specification a26e813.
 // Requirement IDs: COP-05, COP-07
 // Non-goals: This test does not mirror DMACON logic in C++, inspect private state, or assert exact Copper cycle timing.
+//
+// Machine-readable mutation records for tools/check_gates.py --tests. All five
+// T5 assertions were mutated at the STIMULUS on 05.09.2026, each reverted
+// immediately after observing red. Each mutation turned exactly the assertion
+// it aimed at red and left the other four green - which is what makes them
+// five independent checks rather than one restated.
+// MUTATION T5 stimulus red DMAEN set alongside COPEN in the COPEN-only case, so the Copper legitimately runs and the silence the assertion requires is gone
+// MUTATION T5 stimulus red COPEN set alongside DMAEN in the DMAEN-only case, same silence broken from the other side
+// MUTATION T5 stimulus red only COPEN enabled where the test means to enable both, so execution never starts
+// MUTATION T5 stimulus red COP1LC programmed two words above the installed list, so execution begins somewhere other than the strobed address
+// MUTATION T5 stimulus red COPEN left set where the test means to clear it, so the Copper keeps fetching and the assertion's freeze never happens
 
 #include <cstdint>
 #include <functional>

@@ -324,6 +324,17 @@ int main(int argc, char** argv) {
 // MUTATION LR4 oracle red total_width == 20 changed to == 18
 // MUTATION LR4 stimulus red inert-bit sweep {5,6,10,15} changed to {4,6,10,15}; bit 4 is inside the captured field and moved the landing address
 //
+// Added 05.09.2026 - LR1 and LR2 had only oracle mutations, and LR3 none at
+// all, so all three were mutated at the stimulus:
+// MUTATION LR1 stimulus red the low-field walk strobed through COPJMP2 while still writing COP1LC, so the pointer under measurement is never the one the jump reads
+// MUTATION LR2 stimulus red the same swap in the other direction: COP2LC written, COPJMP1 strobed, so the second pointer is never the one read
+// MUTATION LR3 stimulus red the walked bit moved from the high half to the low half, so the high register the assertion measures is never written
+//
+// LR1's and LR3's mutations also took LR4 down with them, which is expected
+// and worth stating: LR4 consumes LR1's measured width, so breaking the
+// measurement breaks what depends on it. That is a dependency between the
+// assertions, not a second defect.
+//
 // MUTATION RESULTS, each reverted immediately after observing red.
 //
 // A distinction independent validation insisted on, 05.09.2026, and it is

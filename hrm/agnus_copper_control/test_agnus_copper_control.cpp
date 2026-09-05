@@ -3,6 +3,24 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed pp. 25-26, 30, 32-35, 273, 290, and 298; frozen specification a26e813.
 // Requirement IDs: COP-05, COP-07
 // Non-goals: DMACON bit gating is tested separately at the real Agnus top level; this test does not inspect private Copper state.
+//
+// Machine-readable mutation records for tools/check_gates.py --tests. Each
+// assertion was mutated at the STIMULUS on 05.09.2026 - the scenario changed,
+// the expected value never - and each mutation was reverted immediately after
+// observing red. Where an ID carries several assertions, the mutation turned
+// exactly the ones it aimed at red; the others staying green is the evidence
+// that the mutation was specific.
+// MUTATION T1 stimulus red the strobe changed from COPJMP1 to COPJMP2, whose location register was never programmed, so the COP1LC list is never entered
+// MUTATION T2 stimulus red COP2LC programmed with list A instead of list B, so the second pointer no longer selects a list of its own and COPJMP2 cannot be told from COPJMP1
+// MUTATION T3 stimulus red a COPJMP1 strobe added after the location-only update, so the jump the assertion says must not happen does happen
+// MUTATION T4 stimulus red the odd low half changed from $2469 to $2479, which differs in bit 4 rather than bit 0, so the two fetch addresses genuinely differ and the bit-0 question is no longer being asked
+// MUTATION T6 stimulus red the start-of-frame pulse removed, so no automatic field restart occurs
+// MUTATION T7 stimulus red the start-of-frame pulse removed, so the restart that must select COP1LC never happens
+// MUTATION T8 stimulus red the start-of-frame pulse removed, so the updated COP1LC is never taken up
+//
+// "T4 OCS mode uses only the documented three high address bits" is RED at
+// baseline and stays red. That is the known FPGA-060 finding, not a mutation
+// result: the module latches more high bits than page 25 documents for OCS.
 
 #include <cstdint>
 #include <functional>

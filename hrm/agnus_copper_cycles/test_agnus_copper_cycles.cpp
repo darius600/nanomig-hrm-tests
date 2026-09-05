@@ -15,13 +15,23 @@
 // MUTATION C3 stimulus red: run_cycles after start() cut from 4000 to 2 (too short for the MOVE's second word)
 //   -> FAIL as expected.
 // MUTATION C4 stimulus red: same run_cycles cut (4000 -> 2) on the SKIP scenario -> FAIL as expected.
-// MUTATION C5/C6 stimulus red (already red at baseline - genuine finding, not a broken assertion): a debug
-//   probe showed the "blocks then wakes" WAIT actually consumes 2 memory cycles, identical to a MOVE (p.20
-//   claims 3, "one extra to wake up"). A stimulus mutation retargeting the WAIT to a position already
-//   satisfied on arrival (seek_beam 0x10, target VP $00) still produced FAIL for both checks with the same
-//   2-cycle count - the "extra wake-up cycle" is not reproducible from any reachable stimulus in this harness.
-//   Since C3 and C4 (same grants_for_instruction_at() mechanism, same file) both correctly confirm MOVE and
-//   SKIP each cost exactly 2, the counting mechanism itself is sound; C5/C6's FAIL is a genuine DUT/RTL gap.
+// MUTATION C5 stimulus red the WAIT retargeted to a position already satisfied on arrival (seek_beam 0x10, target VP $00); still FAIL with the same 2-cycle count
+// MUTATION C6 stimulus red the same retarget; still FAIL with the same 2-cycle count
+//
+//   Written as two lines because tools/check_gates.py --tests reads one
+//   assertion id per record, and the earlier single "C5/C6" line matched
+//   neither. The work behind them is unchanged; only the spelling was
+//   invisible to the gate.
+//
+//   Both were ALREADY RED at baseline - a genuine finding, not a broken
+//   assertion. A debug probe showed the "blocks then wakes" WAIT actually
+//   consumes 2 memory cycles, identical to a MOVE, where p.20 claims 3 ("one
+//   extra to wake up"). The mutation above changes the stimulus and the count
+//   does not move: the extra wake-up cycle is not reproducible from any
+//   reachable stimulus in this harness. Since C3 and C4 use the same
+//   grants_for_instruction_at() mechanism in this same file and both correctly
+//   confirm MOVE and SKIP cost exactly 2, the counting mechanism is sound and
+//   the FAIL is a DUT/RTL gap. Tracked as FPGA-064.
 
 #include <cstdint>
 #include <iostream>
