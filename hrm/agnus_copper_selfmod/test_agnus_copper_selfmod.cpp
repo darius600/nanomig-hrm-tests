@@ -4,17 +4,31 @@
 //   own instruction words in RAM.
 // Test class: HRM_CONFORMANCE (SM0 included: it re-measures an already-
 //   uncontested fact - a subsequent externally-issued strobe reading back a
-//   self-written location register - on the identical apparatus as SM1-SM4,
-//   so a red SM1-SM4 result cannot be dismissed as "the harness is broken.")
+//   self-written location register - on the identical apparatus as SM1-SM5,
+//   so a red result there cannot be dismissed as "the harness is broken."
+//   Its reach is narrower than that, and independent validation on
+//   05.09.2026 pinned it down: SM0 exercises the loopback for *location
+//   register* writes only. A rig fault specific to the *strobe* path would
+//   leave SM0 green, so SM0 is a control for one half of the mechanism, not
+//   for the whole of it.)
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2,
 //   print pages 26, 32 and 33. Frozen specification:
 //   fpga-lab/work/2026-09-05_fpga-077_copper-selfmod_testspecification.md
 // Requirement IDs: none of the frozen COP-01..COP-09 IDs owns this claim
 //   group; see the specification's "Disputed prior finding" section, which
 //   challenges docs/2026-08-21_hrm-coverage-matrix.md row COP-06.
+// Why the loopback is legitimate: it is not a fixture invention. In
+//   src/minimig-aga/agnus.v:235-239 the Copper's own register address is
+//   selected onto the shared bus when its cycle is acknowledged
+//   (ack_cop -> reg_address = reg_address_cop), and line 422 feeds that same
+//   reg_address back into this module as reg_address_in. The harness
+//   reproduces the wiring of the surrounding chip, which is why the module
+//   cannot distinguish its own writes from the CPU's - and why this package
+//   is measurable at all.
 // Non-goals: exact register-bus return latency (unspecified by module and
-//   chapter alike); sustained/repeated looping beyond the few iterations
-//   needed to demonstrate a loop closes; self-modification of instruction
+//   chapter alike); the p.32 requirement that COP1LC be repointed before the
+//   next vertical blanking (COP2-loops.c3 - a constraint on the programmer,
+//   not on this module); self-modification of instruction
 //   words in RAM (confirmed not constructible - no data output port);
 //   WAIT/SKIP/INTREQ semantics of the page-33 worked example; CDANG/illegal-
 //   register interaction; the sof-triggered automatic COP1LC restart
@@ -61,6 +75,10 @@ constexpr uint16_t MARK_SM1_TARGET = to_reg(0x182);
 constexpr uint16_t MARK_SM2_TARGET = to_reg(0x184);
 constexpr uint16_t MARK_SM3_LOOP   = to_reg(0x186);
 constexpr uint16_t MARK_SM4_LOOP   = to_reg(0x188);
+constexpr uint16_t MARK_SM5_LOOP   = to_reg(0x18A);
+// Placed only on the list a *wrong* strobe would reach. It must never be
+// granted; if it is, the strobe read the other location register.
+constexpr uint16_t MARK_WRONG_PATH = to_reg(0x18C);
 
 constexpr uint16_t WAIT_ALL = 0xFFFE;
 constexpr uint16_t TERMINAL_IR1 = 0xFFFF;
@@ -188,6 +206,9 @@ public:
 
 constexpr uint32_t SRC = 0x00002000;
 constexpr uint32_t DST = 0x00002100;
+// A third list head, used where a scenario must show that the *self-written*
+// pointer value is the one taken - it is never written externally.
+constexpr uint32_t ALT = 0x00002200;
 
 }  // namespace
 
@@ -286,6 +307,11 @@ int main(int argc, char** argv) {
     // COP1LC" (p.33). COP1LC is already the list's own head (ordinary
     // start() bootstrap); the list itself contains only a marker MOVE and a
     // self-issued MOVE to COPJMP1 - a genuine self-referencing loop.
+    //
+    // COP2LC is deliberately pointed at a *different* list carrying
+    // MARK_WRONG_PATH. Without that, COP2LC would sit at its reset value and
+    // the assertion would discriminate only by accident: a COPJMP1 that
+    // wrongly read COP2LC could not be told apart from one that read COP1LC.
     // Covers: COP2-loopex.c13/c14, COP2-a-copper-loop-example.c10/c11
     // ------------------------------------------------------------------
     {
@@ -294,33 +320,85 @@ int main(int argc, char** argv) {
             move_ir1(MARK_SM3_LOOP), 0x1234,
             move_ir1(COPJMP1), 0x0000,   // self-issued strobe -> jump back to COP1LC (= SRC itself)
         });
+        h.install(DST, {
+            move_ir1(MARK_WRONG_PATH), 0xBAD1,
+            TERMINAL_IR1, WAIT_ALL
+        });
         h.start(SRC);
+        h.preload_location(COP2LCH, COP2LCL, DST);   // the road not to be taken
         h.run_cycles(60000);
 
-        checks.expect(h.count_grants_for_register(MARK_SM3_LOOP) >= 3,
+        checks.expect(h.count_grants_for_register(MARK_SM3_LOOP) >= 3
+                      && h.count_grants_for_register(MARK_WRONG_PATH) == 0,
             "SM3 [conformance] a self-issued MOVE to COPJMP1 repeatedly "
-            "jumps to COP1LC, closing the loop (p.33 first worked loop)");
+            "jumps to COP1LC and never to the distinct COP2LC list "
+            "(p.33 first worked loop)");
     }
 
     // ------------------------------------------------------------------
     // SM4 - "To cause the second loop, write to the COPJMP2 register"
     // (p.33), which the same page's listing comments "Force a jump to
-    // COP2LC." Same self-referencing-loop construction as SM3.
+    // COP2LC."
+    //
+    // The pointers must differ, and an earlier revision of this test got that
+    // wrong: it set COP2LC to SRC, where COP1LC already pointed, so the
+    // assertion could not tell "COPJMP2 loaded COP2LC" from "COPJMP2 loaded
+    // COP1LC" - precisely the claim it carries. Found in independent
+    // validation, 05.09.2026. Now COP1LC = SRC and COP2LC = DST, and the
+    // looping marker lives only on the DST list: if the strobe took COP1LC,
+    // control would loop at SRC and MARK_SM4_LOOP would never be granted.
     // Covers: COP2-loopex.c20, COP2-a-copper-loop-example.c19
     // ------------------------------------------------------------------
     {
         CopperHarness h;
         h.install(SRC, {
-            move_ir1(MARK_SM4_LOOP), 0x5678,
-            move_ir1(COPJMP2), 0x0000,   // self-issued strobe -> jump back to COP2LC (= SRC itself)
+            move_ir1(MARK_WRONG_PATH), 0xBAD2,  // granted once on entry, never again
+            move_ir1(COPJMP2), 0x0000,          // self-issued strobe -> COP2LC (= DST)
         });
-        h.start(SRC);
-        h.preload_location(COP2LCH, COP2LCL, SRC);   // COP2LC also points at the list's own head
+        h.install(DST, {
+            move_ir1(MARK_SM4_LOOP), 0x5678,
+            move_ir1(COPJMP2), 0x0000,          // self-loop, again via COP2LC
+        });
+        h.start(SRC);                                // COP1LC = SRC
+        h.preload_location(COP2LCH, COP2LCL, DST);   // COP2LC = DST, deliberately distinct
         h.run_cycles(60000);
 
-        checks.expect(h.count_grants_for_register(MARK_SM4_LOOP) >= 3,
+        checks.expect(h.count_grants_for_register(MARK_SM4_LOOP) >= 3
+                      && h.count_grants_for_register(MARK_WRONG_PATH) <= 1,
             "SM4 [conformance] a self-issued MOVE to COPJMP2 repeatedly "
-            "jumps to COP2LC, closing the second loop (p.33 second worked loop)");
+            "jumps to COP2LC, which points elsewhere than COP1LC "
+            "(p.33 second worked loop)");
+    }
+
+    // ------------------------------------------------------------------
+    // SM5 - the two claims that ask for both halves at once: the Copper
+    // *changes* a location register itself, and the loop then runs on the
+    // value it wrote. SM1 changes a pointer but jumps once; SM3 and SM4 loop
+    // on pointers that were preloaded from outside. Neither covers this.
+    //
+    // COP2LC is never written externally here. The list at SRC writes it to
+    // ALT and strobes; the list at ALT re-strobes COPJMP2 and so loops on the
+    // self-written value.
+    // Covers: COP2-loops.c2, COP2-copper-loops-and-branches-and-comparison-enable.c2
+    // ------------------------------------------------------------------
+    {
+        CopperHarness h;
+        h.install(SRC, {
+            move_ir1(COP2LCH), loc_hi(ALT),   // self-written pointer, high
+            move_ir1(COP2LCL), loc_lo(ALT),   // self-written pointer, low
+            move_ir1(COPJMP2), 0x0000,        // jump to what was just written
+        });
+        h.install(ALT, {
+            move_ir1(MARK_SM5_LOOP), 0x9ABC,
+            move_ir1(COPJMP2), 0x0000,        // loop on the self-written value
+        });
+        h.start(SRC);
+        h.run_cycles(60000);
+
+        checks.expect(h.count_grants_for_register(MARK_SM5_LOOP) >= 3,
+            "SM5 [conformance] the Copper writes its own COP2LC and then loops "
+            "on that self-written address, with no external write to COP2LC at "
+            "any point (p.26 with p.33)");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
