@@ -8,6 +8,10 @@
 // inspected during FPGA-063 and FPGA-065 before this specification was written.
 // Every expected figure below is a verbatim printed-page quotation, and the unit
 // definition is derived from the HRM (p.194, p.23) rather than from the RTL.
+//
+// MUTATION P1 stimulus red: run_cycles after start() cut from 600 to 10 (too short to observe five
+//   consecutive grant pairs) -> FAIL as expected. Per the mutation campaign's file scope, only P1 was
+//   mutation-tested here; P2-P6 are out of scope for this pass.
 
 #include <cstdint>
 #include <iostream>
