@@ -244,10 +244,19 @@ public:
     int failed = 0;
 };
 
-// Runs a single MOVE of candidate `reg` and reports whether the FSM reached
-// the FETCH2-accepted cycle (events[2]) within the cycle budget, i.e.
-// whether `reg` is a member of the accepted destination set.
-bool probe(bool ecs, bool cdang, uint16_t reg, uint16_t hi_bits = 0, bool set_cdang_explicitly = true) {
+// Runs a single MOVE of candidate `reg` and returns the destination register
+// the module ACTUALLY emitted on reg_address_out for it, or -1 if the MOVE was
+// refused.
+//
+// The first revision of this file returned `events.size() >= 3` and the sweep
+// then recorded the *injected* candidate as accepted. That measured "did a
+// third DMA cycle occur", not "which register was addressed": a regression
+// routing every MOVE to one constant wrong destination would have passed all
+// four set comparisons unchanged. Found in cross-lineage validation,
+// 05.09.2026. Returning the emitted value is what makes the sweep a
+// measurement of the decoder rather than of the FSM's cycle count.
+int probe_emitted(bool ecs, bool cdang, uint16_t reg, uint16_t hi_bits = 0,
+                  bool set_cdang_explicitly = true) {
     CopperHarness h(ecs);
     if (set_cdang_explicitly) {
         h.set_cdang(cdang);
@@ -255,7 +264,12 @@ bool probe(bool ecs, bool cdang, uint16_t reg, uint16_t hi_bits = 0, bool set_cd
     h.install_single_move(reg, 0x0ABC, hi_bits);
     h.start_list();
     h.run_cycles(600);
-    return h.events.size() >= 3;
+    if (h.events.size() < 3) return -1;
+    return static_cast<int>(h.events[2].reg);
+}
+
+bool probe(bool ecs, bool cdang, uint16_t reg, uint16_t hi_bits = 0, bool set_cdang_explicitly = true) {
+    return probe_emitted(ecs, cdang, reg, hi_bits, set_cdang_explicitly) >= 0;
 }
 
 // Sweeps all 256 DA8-1 values for one (ecs, cdang) combination and returns
@@ -268,6 +282,21 @@ std::set<int> sweep_accepted_set(bool ecs, bool cdang) {
         }
     }
     return accepted;
+}
+
+// Every accepted candidate must be emitted as itself. Collects the ones that
+// are not: {injected, emitted} pairs. An empty result is the claim "the
+// decoder is bit-accurate across the whole accepted set", which the acceptance
+// sweep above cannot make on its own.
+std::vector<std::pair<int, int>> sweep_misrouted(bool ecs, bool cdang) {
+    std::vector<std::pair<int, int>> wrong;
+    for (int reg = 0; reg <= 0xFF; ++reg) {
+        const int emitted = probe_emitted(ecs, cdang, static_cast<uint16_t>(reg));
+        if (emitted >= 0 && emitted != reg) {
+            wrong.emplace_back(reg, emitted);
+        }
+    }
+    return wrong;
 }
 
 std::set<int> expected_set(int lo_inclusive) {
@@ -415,6 +444,35 @@ int main(int argc, char** argv) {
         checks.expect(h.events.size() < 3,
                        "RESET ecs=0: CDANG=1 set, then reset, then MOVE to $20 (CDANG-gated) is rejected -- "
                        "reset clears CDANG");
+    }
+
+    // ------------------------------------------------------------------
+    // DECODE - the accepted candidate must also be the destination emitted.
+    //
+    // Every set comparison above only asks whether a MOVE got through. None of
+    // them looks at reg_address_out, so a decoder that let the right addresses
+    // through but emitted the wrong one would pass them all. This closes that,
+    // across all four modes and all 256 candidates.
+    // ------------------------------------------------------------------
+    {
+        std::vector<std::pair<int, int>> all_wrong;
+        for (bool ecs : {false, true}) {
+            for (bool cdang : {false, true}) {
+                for (const auto& w : sweep_misrouted(ecs, cdang)) all_wrong.push_back(w);
+            }
+        }
+        std::ostringstream detail;
+        detail << "DECODE every accepted MOVE is emitted as the register it named, "
+               << "all four modes, 256 candidates each";
+        if (!all_wrong.empty()) {
+            detail << " - MISROUTED:";
+            for (size_t i = 0; i < all_wrong.size() && i < 8; ++i) {
+                detail << " $" << std::hex << all_wrong[i].first
+                       << "->$" << all_wrong[i].second << std::dec;
+            }
+            if (all_wrong.size() > 8) detail << " and " << (all_wrong.size() - 8) << " more";
+        }
+        checks.expect(all_wrong.empty(), detail.str());
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
