@@ -395,13 +395,37 @@ int main(int argc, char** argv) {
                        "SWEEP ecs=0 cdang=0 vs spec Reading B (HRM_CONFORMANCE, primary oracle)");
     expect_set_equals(checks, ocs_cdang1, expected_cdang1,
                        "SWEEP ecs=0 cdang=1 vs spec Reading B (HRM_CONFORMANCE, primary oracle)");
-    expect_set_equals(checks, ecs_cdang0, expected_cdang0,
-                       "SWEEP ecs=1 cdang=0 vs chapter-2-blind reading (informational: ch2 states no ecs "
-                       "dependency; Appendix C, out of source scope, may legitimately differ)");
-    expect_set_equals(checks, ecs_cdang1, expected_cdang1,
-                       "SWEEP ecs=1 cdang=1 vs chapter-2-blind reading (informational: ch2 states no ecs "
-                       "dependency; known Appendix-C ECS extension, cf. frozen agnus_copper_move_range T10, "
-                       "is expected to diverge here)");
+    // The two ECS rows are asserted against APPENDIX C, not against a
+    // chapter-2 extrapolation. Chapter 2 states no ECS rule at all, so
+    // asserting one was oracle invention - and it put the red in the wrong
+    // row: it reported NanoMig as violating a rule the manual does not make,
+    // while the row where NanoMig really does deviate passed. Found in
+    // cross-lineage validation, 05.09.2026; corrected here.
+    //
+    // Appendix C, on COPCON, in the manual's own words:
+    //   "Another register where the interpretation has been extended for the
+    //    ECS is COPCON. ... Now, in the ECS, if this bit is set, the Copper
+    //    can access all of the Amiga chip registers. If this bit is clear,
+    //    the Copper can access the address range from $DFF03E through
+    //    $DFF07E, THE SAME RANGE AS WHEN THE DANGER BIT IS SET IN THE
+    //    STANDARD CHIP SET."
+    //
+    // ECS + CDANG=1 is therefore every candidate. ECS + CDANG=0 is expressed
+    // through the equivalence the appendix itself states - the OCS CDANG=1
+    // range - rather than by re-deriving $03E/$07E into DA8-1 here. The
+    // conversion is byte-offset to word index and a one-off in it would
+    // silently produce a wrong oracle, so the manual's own equality is the
+    // safer formulation.
+    const std::set<int> expected_ecs_cdang1 = expected_set(0x00);   // "all of the chip registers"
+    const std::set<int>& expected_ecs_cdang0 = expected_cdang1;     // "the same range as OCS with CDANG set"
+
+    expect_set_equals(checks, ecs_cdang0, expected_ecs_cdang0,
+                       "SWEEP ecs=1 cdang=0 vs Appendix C (HRM_CONFORMANCE; the appendix gives the ECS "
+                       "CDANG=0 range as equal to the OCS CDANG=1 range). Expected to be RED: this is "
+                       "the deviation already tracked as FPGA-062");
+    expect_set_equals(checks, ecs_cdang1, expected_ecs_cdang1,
+                       "SWEEP ecs=1 cdang=1 vs Appendix C (HRM_CONFORMANCE; \"the Copper can access all "
+                       "of the Amiga chip registers\")");
 
     // --- Bit independence (data_in[15:9] of the MOVE first word must not
     // affect the decode; PKG-MOVE-DECODE, Table 2-2 "X" bits / COP2-summary-
