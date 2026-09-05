@@ -10,6 +10,23 @@
 // $80/$40-$7E/$00-$3E. The two are incompatible as byte addresses. Page 25 and
 // Appendix B are used as the oracle because they agree with each other and are
 // unambiguous full byte addresses.
+//
+// MUTATION T1 stimulus red: swapped move_reaches() target from COLOR00 to BLTCON0 (still CDANG=0) -> FAIL as expected.
+// MUTATION T2 stimulus red: swapped move_reaches() target from BPL1PTH to BLTCON0 (still CDANG=0) -> FAIL as expected.
+// MUTATION T3 stimulus red: flipped cdang argument false->true on the BLTCON0 call -> FAIL as expected (write now succeeds, unblocked assertion fails).
+// MUTATION T4 stimulus red: flipped cdang argument false->true on the BLTSIZE call -> FAIL as expected.
+// MUTATION T5 stimulus red: flipped cdang argument true->false on the BLTCON0 call -> FAIL as expected (write now blocked).
+// MUTATION T6 stimulus red: flipped cdang argument true->false on the BLTSIZE call -> FAIL as expected.
+// MUTATION T7 stimulus red: flipped ecs argument false->true on the COPCON call -> FAIL as expected (ECS+CDANG unlocks COPCON, per T10).
+// MUTATION T8 stimulus red: swapped move_reaches() target from DMACON to COPCON (still CDANG=1) -> FAIL as expected.
+// MUTATION T9 stimulus green: swapped move_reaches() target from BLTCON0 to COLOR00 (ecs=1,cdang=0, unprotected register) -> PASS as expected;
+//   confirms the harness/check mechanism does register a write in ECS mode, so T9's baseline FAIL is a genuine
+//   DUT non-conformance (Appendix C p.310 range scaling not implemented for ECS+CDANG=0), not a broken assertion.
+// MUTATION T9b stimulus red: swapped move_reaches() target from BLTCON0 to BLTSIZE (still ecs=1,cdang=0) -> still FAIL;
+//   the gap is range-wide (both CDANG-range boundaries), not isolated to one register constant, reinforcing it is a real RTL gap.
+// MUTATION T10 stimulus red: flipped ecs argument true->false on the COPCON call -> FAIL as expected (OCS+CDANG=1 still blocks COPCON, per T7).
+// MUTATION T11 stimulus red: forced cdang=true and set_cdang_explicitly=true (simulating "reset fails to clear CDANG") -> FAIL as expected.
+// MUTATION T12 stimulus red: changed the data written by install_single_move from 0xA55A to 0xA55B, oracle data left at 0xA55A -> FAIL as expected.
 
 #include <cstdint>
 #include <functional>
