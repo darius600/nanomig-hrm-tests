@@ -2,15 +2,18 @@
 //   counter by writing to its own control registers (COP1LC/COP2LC/COPJMP1/
 //   COPJMP2), as opposed to the already-refuted claim that it can rewrite its
 //   own instruction words in RAM.
-// Test class: HRM_CONFORMANCE (SM0 included: it re-measures an already-
-//   uncontested fact - a subsequent externally-issued strobe reading back a
-//   self-written location register - on the identical apparatus as SM1-SM5,
-//   so a red result there cannot be dismissed as "the harness is broken."
-//   Its reach is narrower than that, and independent validation on
-//   05.09.2026 pinned it down: SM0 exercises the loopback for *location
-//   register* writes only. A rig fault specific to the *strobe* path would
-//   leave SM0 green, so SM0 is a control for one half of the mechanism, not
-//   for the whole of it.)
+// Test class: HRM_CONFORMANCE (SM0 included as a control: it re-measures an
+//   already-uncontested fact - a subsequent externally-issued strobe reading
+//   back a self-written location register - on the same apparatus as the
+//   others. Two limits on how far that carries, both established in
+//   independent validation on 05.09.2026:
+//     - SM0 exercises the loopback for *location register* writes only. A rig
+//       fault specific to the *strobe* path leaves it green.
+//     - A red SM0 does NOT mean "the harness is broken rather than NanoMig".
+//       It also goes red if a self-issued MOVE to COP2LCL never reaches the
+//       register - a module fault. SM0 narrows where to look; it does not
+//       decide between rig and module, and an earlier revision of this header
+//       claimed that it did.)
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2,
 //   print pages 26, 32 and 33. Frozen specification:
 //   fpga-lab/work/2026-09-05_fpga-077_copper-selfmod_testspecification.md
@@ -76,6 +79,8 @@ constexpr uint16_t MARK_SM2_TARGET = to_reg(0x184);
 constexpr uint16_t MARK_SM3_LOOP   = to_reg(0x186);
 constexpr uint16_t MARK_SM4_LOOP   = to_reg(0x188);
 constexpr uint16_t MARK_SM5_LOOP   = to_reg(0x18A);
+constexpr uint16_t MARK_SM6_LOOP   = to_reg(0x18E);
+constexpr uint16_t MARK_SM7_TARGET = to_reg(0x190);
 // Placed only on the list a *wrong* strobe would reach. It must never be
 // granted; if it is, the strobe read the other location register.
 constexpr uint16_t MARK_WRONG_PATH = to_reg(0x18C);
@@ -209,6 +214,11 @@ constexpr uint32_t DST = 0x00002100;
 // A third list head, used where a scenario must show that the *self-written*
 // pointer value is the one taken - it is never written externally.
 constexpr uint32_t ALT = 0x00002200;
+// A fourth, deliberately above word address $8000 so that loc_hi() is NON-zero.
+// SRC/DST/ALT all sit low enough that their high halves are 0, which means a
+// COP1LCH/COP2LCH that did nothing at all would still pass every scenario built
+// on them. Independent validation, 05.09.2026.
+constexpr uint32_t FAR = 0x00018000;
 
 }  // namespace
 
@@ -399,6 +409,67 @@ int main(int argc, char** argv) {
             "SM5 [conformance] the Copper writes its own COP2LC and then loops "
             "on that self-written address, with no external write to COP2LC at "
             "any point (p.26 with p.33)");
+    }
+
+    // ------------------------------------------------------------------
+    // SM6 - the same as SM5 but through COP1LC, and to an address whose HIGH
+    // half is non-zero. Two blind spots at once, both found in independent
+    // validation on 05.09.2026:
+    //   - every scenario above self-writes COP2LC only, while the file header
+    //     claims the Copper writes "its own control registers
+    //     (COP1LC/COP2LC/COPJMP1/COPJMP2)". COP1LC was never self-written.
+    //   - SRC/DST/ALT are all below word address $8000, so loc_hi() is 0 for
+    //     all of them. A COP1LCH/COP2LCH write that did nothing whatsoever
+    //     would have passed every assertion in this file.
+    // FAR is above $8000, so its high half carries actual bits.
+    // ------------------------------------------------------------------
+    {
+        CopperHarness h;
+        h.install(SRC, {
+            move_ir1(COP1LCH), loc_hi(FAR),   // self-written, and NON-zero
+            move_ir1(COP1LCL), loc_lo(FAR),
+            move_ir1(COPJMP1), 0x0000,
+        });
+        h.install(FAR, {
+            move_ir1(MARK_SM6_LOOP), 0x0F1E,
+            move_ir1(COPJMP1), 0x0000,        // loop on the self-written COP1LC
+        });
+        h.start(SRC);
+        h.run_cycles(60000);
+
+        checks.expect(h.count_grants_for_register(MARK_SM6_LOOP) >= 3,
+            "SM6 [conformance] the Copper writes its own COP1LC - including a "
+            "non-zero high half - and then loops on that self-written address "
+            "(p.26 with p.33)");
+    }
+
+    // ------------------------------------------------------------------
+    // SM7 - COP2-jump.c3 says "*any* MOVE instruction that addresses COPJMP2
+    // strobes this indirect address into the program counter". Every strobe
+    // above carries the data word $0000, copied from the manual's own
+    // listing, so a module that strobed only on a zero data word would have
+    // passed all of them. The strobe is address-triggered; the data word is
+    // irrelevant, and that is what "any MOVE" asserts.
+    // Covers the "any" in: COP2-jump.c3
+    // ------------------------------------------------------------------
+    {
+        CopperHarness h;
+        h.install(SRC, {
+            move_ir1(COPJMP2), 0xFFFF,   // deliberately NOT $0000
+            TERMINAL_IR1, WAIT_ALL
+        });
+        h.install(DST, {
+            move_ir1(MARK_SM7_TARGET), 0x2468,
+            TERMINAL_IR1, WAIT_ALL
+        });
+        h.start(SRC);
+        h.preload_location(COP2LCH, COP2LCL, DST);
+        h.run_cycles(4000);
+
+        checks.expect(h.count_grants_for_register(MARK_SM7_TARGET) >= 1,
+            "SM7 [conformance] a self-issued MOVE to COPJMP2 strobes "
+            "regardless of its data word - $FFFF strobes as $0000 does "
+            "(p.26, \"any MOVE\")");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
