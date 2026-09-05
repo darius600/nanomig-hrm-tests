@@ -13,6 +13,23 @@
 // page 21 and print page 26 give incompatible register ranges for the same
 // rule. Register $00E is used below because both readings forbid it
 // unconditionally, so the conflict cannot influence the result.
+//
+// MUTATION R1 stimulus red: rejecting_list()'s first MOVE retargeted from FORBIDDEN to COLOR00 (a legal
+//   register), and R1's checked register updated to match -> FAIL as expected (write now reaches the bus).
+// MUTATION R3 stimulus red: same retarget of rejecting_list()'s first MOVE to COLOR00 -> FAIL as expected
+//   (the now-legal first MOVE causes its second word, at LIST+1, to be fetched).
+// MUTATION R4 stimulus red: same retarget of rejecting_list()'s first MOVE to COLOR00 -> FAIL as expected
+//   (with no halt, the following COLOR00 MOVE also executes).
+// MUTATION R2 stimulus green (unexpected on the R1/R3/R4 retarget): the same retarget left R2 PASSING - the
+//   sentinel WAIT (TERMINAL_IR1/WAIT_ALL) that follows still makes the Copper idle within the run window, so a
+//   >2000-cycle gap appears whether or not a rejection ever happened. See the dedicated R2 mutation below.
+// MUTATION R2 stimulus red: replaced the poked list with 200 back-to-back legal MOVEs to COLOR00 (no rejection
+//   at all) -> FAIL as expected (sustained bus activity keeps the last-grant gap under 2000 cycles, proving R2
+//   does distinguish "halted" from "still busy").
+// MUTATION R5 stimulus red: LIST2's MOVE retargeted from COLOR01 to COLOR00 (R5's check left at COLOR01) ->
+//   FAIL as expected (the relocated list's actual destination no longer matches what R5 expects to see).
+// MUTATION R6 stimulus red: same LIST2 retarget (COLOR01 -> COLOR00) applied to R6's own block -> FAIL as
+//   expected.
 
 #include <cstdint>
 #include <iostream>
