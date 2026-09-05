@@ -316,6 +316,14 @@ int main(int argc, char** argv) {
     return checks.failed == 0 ? 0 : 1;
 }
 
+// Machine-readable records for tools/check_gates.py --tests. One line per
+// mutation actually performed; assertions with no line here have never been
+// mutation-tested, and the gate says so rather than assuming they discriminate.
+// MUTATION LR1 oracle red survivors == 15 changed to == 16
+// MUTATION LR2 oracle red survivors == 15 changed to == 14
+// MUTATION LR4 oracle red total_width == 20 changed to == 18
+// MUTATION LR4 stimulus red inert-bit sweep {5,6,10,15} changed to {4,6,10,15}; bit 4 is inside the captured field and moved the landing address
+//
 // MUTATION RESULTS, each reverted immediately after observing red.
 //
 // A distinction independent validation insisted on, 05.09.2026, and it is

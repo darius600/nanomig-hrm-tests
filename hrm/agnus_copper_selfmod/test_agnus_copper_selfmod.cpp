@@ -1,3 +1,9 @@
+// Machine-readable mutation records for tools/check_gates.py --tests. Only
+// mutations actually performed are listed; assertions absent from this list
+// have never been mutation-tested and the gate reports them as such.
+// MUTATION SM4 stimulus red COP2LC pointed back at SRC, where COP1LC already points, restoring the original defect
+// MUTATION SM6 stimulus red COP1LCH written with a wrong high half
+//
 // Test purpose: Prove PKG-SELFMOD - that the Copper can modify its own program
 //   counter by writing to its own control registers (COP1LC/COP2LC/COPJMP1/
 //   COPJMP2), as opposed to the already-refuted claim that it can rewrite its

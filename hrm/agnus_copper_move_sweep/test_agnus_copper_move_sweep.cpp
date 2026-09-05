@@ -49,6 +49,10 @@
 //     candidate loop -> that check went red on the first iteration.
 //   - reset-clears-CDANG: assert_reset() call removed -> that check went
 //     red (CDANG stayed 1, $20 was accepted instead of rejected).
+// Machine-readable records for tools/check_gates.py --tests. Only mutations
+// actually performed appear here.
+// MUTATION DECODE stimulus red probe_emitted returned the emitted register xor 1, simulating a misrouted destination
+//
 // Baseline before and after each mutation: 10 passed, 1 failed (the known,
 // documented ecs=1/cdang=1 ECS-extension divergence, see above).
 
