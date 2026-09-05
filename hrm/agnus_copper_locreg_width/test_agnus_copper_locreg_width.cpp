@@ -176,6 +176,7 @@ int main(int argc, char** argv) {
     // registers.c3 (table: 16 bits) vs COP2-loc.c7/3/-location-registers.c11
     // (prose: 15 bits).
     // ------------------------------------------------------------------
+    int measured_low_width = -1;   // set by LR1, consumed by LR5
     {
         int survivors = 0;
         bool clean = true;
@@ -193,6 +194,7 @@ int main(int argc, char** argv) {
             if (ok) ++survivors; else clean = false;
         }
         std::cout << "[measured] COP1LCL low-field width = " << survivors << " bits\n";
+        measured_low_width = survivors;
         checks.expect(clean && survivors == 15,
             "LR1 [RTL_REGRESSION, no oracle] COP1LCL: measured low-field "
             "width is 15 bits (data-word bit 0 dropped, bits 1-15 survive "
@@ -224,18 +226,32 @@ int main(int argc, char** argv) {
     }
 
     // ------------------------------------------------------------------
-    // LR3 - control, same measurement basis. A bit already known (from LR1)
-    // to survive must still survive when re-checked in isolation. Defends a
-    // red result elsewhere in this file against "the rig never actually
-    // detects a landed jump at all."
+    // LR3 - COP2LCH high-field walk. The second pointer's HIGH half.
+    //
+    // An earlier revision used this slot for a control that re-ran a bit LR1
+    // had already exercised. Independent validation on 05.09.2026 found it
+    // carried no claim and could not detect any module fault LR1 did not
+    // already detect, while the second pointer's high register was never
+    // measured at all - a COP2LCH wired differently from COP1LCH would have
+    // gone unnoticed. The slot now does that job instead. The rig-works
+    // control it used to provide is covered by LR1's own bit-0 case, which
+    // fails if the marker detection stops working.
     // ------------------------------------------------------------------
+    int measured_cop2_high = -1;
     {
-        const bool ok = lands_at(COP1LCH, COP1LCL, COPJMP1, 0, 0x0002 /* bit 1 */, 1);
-        checks.expect(ok,
-            "LR3 [control, same measurement basis] a bit already shown to "
-            "survive (COP1LCL data-word bit 1, landing at address 1) is "
-            "re-confirmed in an independent trial - the marker-detection "
-            "rig itself works");
+        int survivors = 0;
+        bool clean = true;
+        for (int j = 0; j <= 4; ++j) {
+            const uint32_t expected = 1u << (15 + j);
+            const bool ok = lands_at(COP2LCH, COP2LCL, COPJMP2, static_cast<uint16_t>(1u << j), 0, expected);
+            if (ok) ++survivors; else clean = false;
+        }
+        std::cout << "[measured] COP2LCH high-field width = " << survivors << " bits\n";
+        measured_cop2_high = survivors;
+        checks.expect(clean && survivors == 5,
+            "LR3 [RTL_REGRESSION, no oracle] COP2LCH: measured high-field "
+            "width is 5 bits, the same as COP1LCH - the two pointers are "
+            "symmetric. Neither manual reading covers this; both state 3");
     }
 
     // ------------------------------------------------------------------
@@ -250,19 +266,43 @@ int main(int argc, char** argv) {
             const bool ok = lands_at(COP1LCH, COP1LCL, COPJMP1, static_cast<uint16_t>(1u << j), 0, expected);
             if (ok) ++survivors; else clean = false;
         }
-        // Spot checks: bits beyond the captured 5-bit field (data_in[4:0])
-        // must NOT extend the high field further. Checked at the addresses
-        // a continuing identity mapping would predict for bits 5 and 15.
-        const bool bit5_extends = lands_at(COP1LCH, COP1LCL, COPJMP1, static_cast<uint16_t>(1u << 5), 0, 1u << 20);
-        const bool bit15_extends = lands_at(COP1LCH, COP1LCL, COPJMP1, static_cast<uint16_t>(1u << 15), 0, 1u << 30);
-        clean = clean && !bit5_extends && !bit15_extends;
+        // Bits beyond the captured 5-bit field must have NO effect at all.
+        //
+        // An earlier revision checked this by asking whether bit 5 landed at
+        // address 1<<20 and bit 15 at 1<<30. Neither can be expressed through
+        // a [20:1] port, so both probes passed of necessity and would have
+        // missed a bit that was rewired to somewhere reachable. Found in
+        // independent validation, 05.09.2026. The check now compares the
+        // landing address against the same trial with the bit cleared: if a
+        // high bit beyond the field influences the pointer at all, in any
+        // direction, the two differ.
+        // Low data-word bit 1 alone puts the list head at address 1. Setting a
+        // high data-word bit beyond the captured field must leave it there. If
+        // such a bit were wired in anywhere reachable, the jump would land
+        // somewhere else and the marker at address 1 would not fire - so this
+        // probe can actually fail, which the address-1<<30 form could not.
+        bool beyond_field_inert = true;
+        for (int j : {5, 6, 10, 15}) {
+            const bool still_lands =
+                lands_at(COP1LCH, COP1LCL, COPJMP1, static_cast<uint16_t>(1u << j), 0x0002, 1);
+            if (!still_lands) {
+                beyond_field_inert = false;
+                std::cout << "[measured] H data-word bit " << j
+                          << " moved the landing point away from address 1\n";
+            }
+        }
+        clean = clean && beyond_field_inert;
 
-        const int low_width = 15;   // pinned by LR1/LR2 above
+        // Measured, not pinned: LR1 reports the low width, this block the
+        // high width. An earlier revision hardcoded low_width = 15, which made
+        // total_width == 20 follow algebraically from survivors == 5 and
+        // measured nothing.
         const int high_width = survivors;
-        const int total_width = low_width + high_width;
+        const int total_width = measured_low_width + high_width;
         std::cout << "[measured] COP1LCH high-field width = " << survivors << " bits\n";
-        std::cout << "[measured] total implemented pointer width = " << total_width << " bits\n";
-        checks.expect(clean && survivors == 5 && total_width == 20,
+        std::cout << "[measured] total implemented pointer width = " << total_width
+                  << " bits (" << measured_low_width << " low + " << high_width << " high)\n";
+        checks.expect(clean && survivors == 5 && measured_cop2_high == survivors && total_width == 20,
             "LR4 [RTL_REGRESSION, no oracle] COP1LCH: measured high-field "
             "width is 5 bits (data-word bits 0-4 all captured, landing at "
             "address bits 15-19), not the 3 bits either manual reading "
@@ -276,19 +316,30 @@ int main(int argc, char** argv) {
     return checks.failed == 0 ? 0 : 1;
 }
 
-// MUTATION RESULT: four separate one-line mutations, each reverted
-// immediately after observing red (documented here, not re-run on every
-// future rebuild):
-//   - LR1: `survivors == 15` changed to `survivors == 16` -> LR1 turned
-//     FAIL (3 passed, 1 failed), LR2-LR4 unaffected.
-//   - LR2: `survivors == 15` changed to `survivors == 14` -> LR2 turned
-//     FAIL, together with the independent LR3 mutation below (2 passed,
-//     2 failed that run).
-//   - LR3: the expected landing address changed from 1 to 2 (a bit known
-//     to survive at address 1 was asked to have survived at address 2
-//     instead) -> LR3 turned FAIL in the same run as the LR2 mutation.
-//   - LR4: `total_width == 20` changed to `total_width == 18` (the prose's
-//     own total) -> LR4 turned FAIL (3 passed, 1 failed).
-// All four assertions discriminate; none is vacuously true. Reverted to
-// the values shown in this file, which reproducibly pass (4 passed, 0
-// failed).
+// MUTATION RESULTS, each reverted immediately after observing red.
+//
+// A distinction independent validation insisted on, 05.09.2026, and it is
+// the right one: an **oracle mutation** changes the expected value and shows
+// only that the boolean can become false. A **stimulus mutation** changes
+// what the module is asked to do and shows that the assertion notices a
+// different behaviour. The second is the one that means something.
+//
+// Oracle mutations (three, from the first revision of this file):
+//   - LR1: `survivors == 15` -> `== 16`. FAIL, LR2-LR4 unaffected.
+//   - LR2: `survivors == 15` -> `== 14`. FAIL.
+//   - LR4: `total_width == 20` -> `== 18` (the prose's own total). FAIL.
+//
+// Stimulus mutation (the one that carries weight):
+//   - LR4, inert-bit probe: the swept set `{5, 6, 10, 15}` - all beyond the
+//     captured high field - changed to `{4, 6, 10, 15}`, where bit 4 IS in
+//     the field. The landing point moved away from address 1, the probe
+//     reported "H data-word bit 4 moved the landing point away from address
+//     1", and LR4 turned FAIL (3 passed, 1 failed). The probe therefore
+//     detects a high bit that reaches the pointer, which its predecessor
+//     could not: that version asked whether bit 5 landed at 1<<20 and bit 15
+//     at 1<<30, neither of which a [20:1] port can express, so both passed
+//     of necessity.
+//
+// Not separately mutated: LR3, which repeats LR4's measurement on the second
+// register pair. Its earlier occupant was a control that re-ran a bit LR1
+// had already exercised and carried no claim of its own.
