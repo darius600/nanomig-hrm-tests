@@ -3,6 +3,42 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed pp. 22-23, 27, 30, 31, 32 and 33; frozen specification 2e6a42a.
 // Requirement IDs: COP-04, COP-08
 // Non-goals: Bus contention (needs the Agnus top level), exact release cycle counts, NTSC long/short line alternation, and interrupt generation are out of scope. No independent ECS WAIT/SKIP claim is made.
+//
+// MUTATION W1 stimulus red: WAIT target retargeted from line $96 to $10 (already passed) -> the "does not run
+//   before line $96" check goes FAIL as expected. A second run retargeted it to $FF (unreachable in the run
+//   budget) -> both W1 checks FAIL as expected.
+// MUTATION W2 stimulus red: WAIT target moved from $10 (already-passed) to $90 (unreachable in the 2000-cycle
+//   budget) -> FAIL as expected.
+// MUTATION W3 stimulus red: the second WAIT's target moved from $3C (identical to the first) to $50
+//   (unreachable in the run budget) -> FAIL as expected (the COLOR01 MOVE never runs).
+// MUTATION W4 stimulus red: the terminal $FFFF/$FFFE sentinel replaced with an ordinary always-true WAIT
+//   ($00,$00 fully masked) -> FAIL as expected, confirming the check does notice a release when one occurs.
+// MUTATION W5 stimulus red: masked target nibble changed from $0F to $03 -> FAIL as expected (release now
+//   happens on a line ending in $3, not $F).
+// MUTATION W6 stimulus red: seek_beam moved from $80 down to $20 (before the unmaskable top bit is set) ->
+//   FAIL as expected (now behaves like W5: release only on a line ending in $F).
+// MUTATION W7 stimulus red: WAIT confined to the same line (VP target lowered from $41 to $40, matching the
+//   start position) with HP moved to $7F and the run budget cut from 6000 to 300 cycles -> FAIL as expected,
+//   proving the horizontal compare is not simply being skipped.
+// MUTATION S1 stimulus red: SKIP bit (IR2 bit0) cleared, turning the instruction into a WAIT -> the "next MOVE
+//   is skipped" check FAILs as expected. A second run kept the SKIP bit but retargeted the follow-up MOVE from
+//   COLOR01 to COLOR00 -> both S1 checks FAIL as expected.
+// MUTATION S2 stimulus red: SKIP target moved from $64 (future, condition false) to $00 (already passed,
+//   condition true) -> FAIL as expected.
+// MUTATION S3 stimulus red: SKIP target's VP changed from $70 to $F0, setting the unmaskable top bit while the
+//   beam starts at VP=0 -> FAIL as expected (the top bit is still compared even with every VE/HE bit clear, so
+//   "always true" no longer holds within the run budget) - this is the same top-bit gotcha the file's own
+//   comment warns about for $FF.
+// MUTATION S4 stimulus red: IR2 bit0 set (turning the WAIT into a SKIP) with the already-true position ->
+//   FAIL as expected.
+// MUTATION B1 stimulus red: BFD flipped from 1 to 0 while the blitter is busy -> FAIL as expected (the WAIT is
+//   now held, per B2).
+// MUTATION B2 stimulus red: blitter_busy changed from true to false -> FAIL as expected (nothing holds the
+//   WAIT, so it releases immediately).
+// MUTATION B3 stimulus red: the blitter is never actually un-busied (set_blitter_busy(false) changed to
+//   set_blitter_busy(true)) -> FAIL as expected (the WAIT never releases).
+// MUTATION W8 stimulus red: VP target moved from $50 (reachable) to $A0 (unreachable in the 12000-cycle
+//   budget) -> FAIL as expected.
 
 #include <cstdint>
 #include <iostream>
