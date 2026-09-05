@@ -7,6 +7,21 @@
 // Why this test exists: FPGA-056 to FPGA-058 all filtered COPINS out in order
 // to find MOVE writes, i.e. they relied on R1 without ever establishing it.
 // FPGA-059 then overclaimed that nothing further was testable at this boundary.
+//
+// MUTATION C1 stimulus red: run_cycles after start() cut from 4000 to 4 (too short to reach the second MOVE)
+//   -> FAIL as expected (only one instruction's first word gets fetched, not two).
+// MUTATION C2 stimulus red: same run_cycles cut (4000 -> 4) -> both C2 checks FAIL as expected (the second
+//   MOVE's destination cycle, and its register/data, never appear).
+// MUTATION C3 stimulus red: run_cycles after start() cut from 4000 to 2 (too short for the MOVE's second word)
+//   -> FAIL as expected.
+// MUTATION C4 stimulus red: same run_cycles cut (4000 -> 2) on the SKIP scenario -> FAIL as expected.
+// MUTATION C5/C6 stimulus red (already red at baseline - genuine finding, not a broken assertion): a debug
+//   probe showed the "blocks then wakes" WAIT actually consumes 2 memory cycles, identical to a MOVE (p.20
+//   claims 3, "one extra to wake up"). A stimulus mutation retargeting the WAIT to a position already
+//   satisfied on arrival (seek_beam 0x10, target VP $00) still produced FAIL for both checks with the same
+//   2-cycle count - the "extra wake-up cycle" is not reproducible from any reachable stimulus in this harness.
+//   Since C3 and C4 (same grants_for_instruction_at() mechanism, same file) both correctly confirm MOVE and
+//   SKIP each cost exactly 2, the counting mechanism itself is sound; C5/C6's FAIL is a genuine DUT/RTL gap.
 
 #include <cstdint>
 #include <iostream>
