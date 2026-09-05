@@ -10,6 +10,25 @@
 // there is no DMACON input on the port list. W3-W5 cover DMA unavailability in
 // general, not COPEN.
 //
+// Machine-readable mutation records for tools/check_gates.py --tests. Every
+// assertion was mutated at the STIMULUS on 05.09.2026 and each mutation was
+// reverted immediately after observing red.
+// MUTATION W1 stimulus red the WAIT target moved from line $20 to line $00, which the beam has already passed, so the WAIT never blocks and there is no off-the-bus stretch to observe
+// MUTATION W2 stimulus red the WAIT target moved to line $90, unreachable inside the cycle budget, so the Copper never wakes and never takes a memory cycle again
+// MUTATION W3 stimulus red a self-issued COPJMP1 strobe added to the list, so the Copper legitimately jumps back and its word offsets stop increasing
+// MUTATION W3a stimulus red the slot never actually withheld - the same 400 cycles run with DMA allowed - so cycles are granted inside the window the assertion says must stay empty
+// MUTATION W4 stimulus red the second MOVE retargeted to COLOR00, so one register is written twice and another not at all
+// MUTATION W5 stimulus red the withholding window shortened to zero cycles, so there is no stretch in which the Copper could be seen still asking
+//
+// W1 FAILED its first mutation, and the assertion was strengthened rather than
+// the mutation abandoned. It counted requests *between* the WAIT's second word
+// and the next fetch, which is vacuously zero when those two ticks are
+// adjacent - so a WAIT that never blocked at all passed it just as a properly
+// blocked one did. It could not tell "waited quietly" from "never waited". The
+// check now also requires the gap to exceed one scan line; see the comment at
+// the assertion. This is the second assertion in this suite found to hold for
+// the wrong reason (after SM4's), and both were found the same way.
+//
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was
 // inspected during FPGA-063 and FPGA-065 before this specification was written.
 
@@ -181,7 +200,20 @@ int main(int argc, char** argv) {
         const long wake_fetch  = h.first_tick_at(2);      // next instruction after the WAIT
         // Between the WAIT being fully fetched and it waking, the Copper must
         // not ask for the bus at all.
+        //
+        // The gap must also be a real one. Counting requests *between* two
+        // adjacent ticks yields zero whether the Copper waited quietly or never
+        // waited at all, and the assertion cannot tell those apart: on
+        // 05.09.2026 a stimulus mutation that moved the WAIT to an
+        // already-passed line left this check green. The beam starts at line
+        // $10 and the WAIT is for line $20, so a genuine block spans sixteen
+        // lines; requiring more than one line's worth of cycles admits the real
+        // wait and rejects the degenerate one, without pinning the exact
+        // duration this test does not claim to measure.
+        const long one_line = 454;
+        const long blocked_for = wake_fetch - second_word;
         checks.expect(second_word >= 0 && wake_fetch > second_word &&
+                          blocked_for > one_line &&
                           h.requests_between(second_word, wake_fetch) == 0,
                       "W1 [conformance] a blocked WAIT never asserts reqdma - off the bus, no memory cycles (p.22, p.19)");
 

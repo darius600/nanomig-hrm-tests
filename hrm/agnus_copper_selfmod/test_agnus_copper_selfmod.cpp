@@ -3,6 +3,21 @@
 // have never been mutation-tested and the gate reports them as such.
 // MUTATION SM4 stimulus red COP2LC pointed back at SRC, where COP1LC already points, restoring the original defect
 // MUTATION SM6 stimulus red COP1LCH written with a wrong high half
+// MUTATION SM0 stimulus red the externally-issued COPJMP2 strobe removed, so nothing ever reads the self-written COP2LC back
+// MUTATION SM1 stimulus red the self-issued strobe retargeted from COPJMP2 to COPJMP1, so the jump follows COP1LC instead of the self-written COP2LC
+// MUTATION SM2 stimulus red the external COP2LC preload removed entirely, so the self-issued COPJMP2 has no address of its own to jump to
+// MUTATION SM2 stimulus red the self-issued strobe retargeted from COPJMP2 to COPJMP1 while COP2LC still holds DST, so reaching DST would have to come from the wrong register
+// MUTATION SM3 stimulus red the loop's self-issued strobe changed from COPJMP1 to COPJMP2, which takes the road the assertion says is never taken
+// MUTATION SM5 stimulus red the self-written low half pointed back at SRC instead of ALT, so the Copper never reaches the marked list
+// MUTATION SM7 stimulus red the $FFFF-carrying MOVE retargeted from COPJMP2 to an ordinary register, so no strobe occurs at all
+//
+// One mutation SURVIVED and is recorded here because the survivor was the
+// mutation, not the assertion. Moving SM2's preload from COP2LC to COP1LC
+// (rather than removing it) left SM2 green: with DST in COP1LC there is a
+// second road to DST that does not pass through COPJMP2 at all, so the
+// scenario stopped discriminating. A mutation that installs the target address
+// in the *other* location register cannot test a strobe; it has to remove the
+// address or redirect the strobe. Both of those do turn SM2 red, above.
 //
 // Test purpose: Prove PKG-SELFMOD - that the Copper can modify its own program
 //   counter by writing to its own control registers (COP1LC/COP2LC/COPJMP1/

@@ -50,6 +50,16 @@
 //   All three assertions discriminate; none is vacuously true. Reverted to
 //   the values shown in this file, which reproducibly pass (3 passed, 0
 //   failed).
+//
+//   Those three are ORACLE mutations: they change the expected value and so
+//   show only that the comparison can go false. On 05.09.2026 each assertion
+//   was mutated again at the STIMULUS - the scenario moved, the expected value
+//   untouched - which is what asks whether the assertion binds to the
+//   behaviour it names. Machine-readable records for tools/check_gates.py
+//   --tests:
+// MUTATION MS1 stimulus red a no-op MOVE prepended to the list, so the measured instruction sits at SRC+2 and its second word at SRC+3 while the oracle still names SRC+1
+// MUTATION MS2 stimulus red the two MOVEs swapped, so each marker is fetched from the other's address and the advancing relationship no longer matches the marker it is checked against
+// MUTATION MS3 stimulus red the same no-op prepend at the high address FAR, so the control case's second word moves to FAR+3 while its oracle still names FAR+1
 
 #include <cstdint>
 #include <iostream>

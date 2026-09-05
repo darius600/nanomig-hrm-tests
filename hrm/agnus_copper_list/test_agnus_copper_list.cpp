@@ -3,6 +3,20 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed pp. 20, 21, 22, 26-27, 30, 31, 32 and 36; frozen specification d9cad33.
 // Requirement IDs: COP-02, COP-06
 // Non-goals: Reserved encodings are marked "X = don't care" on p.36, so no conformance claim about them is possible. Instruction cycle counts (p.20) are arbitration-level and need the Agnus top level. Beam-order list authoring advice is guidance, not hardware behaviour. The vertical-blank COP1LC reload belongs to COP-07.
+//
+// Machine-readable mutation records for tools/check_gates.py --tests. All eight
+// assertions were mutated at the STIMULUS on 05.09.2026 - the scenario changed,
+// never the expected value - and each was reverted immediately after observing
+// red. Where an ID carries two assertions, only the one named by the mutation
+// went red; that is the point of the mutation and not a partial result.
+// MUTATION L1 stimulus red the last two MOVEs swapped in the list, so all three still run but not in the order the assertion names
+// MUTATION L2 stimulus red the WAIT target moved from line $40 to line $10, which the beam has already passed, so the following MOVE runs immediately instead of waiting
+// MUTATION L3 stimulus red the SKIP bit cleared, turning the instruction into a WAIT, so nothing is suppressed and the MOVE the assertion expects to be skipped runs
+// MUTATION L4 stimulus red IR1 bit 0 cleared, so the word really is a MOVE to COLOR00 and the register the assertion says is never written gets written
+// MUTATION L5 stimulus red the rewrite of COP1LC removed, so the strobe restarts list A instead of relocating to list B
+// MUTATION L6 stimulus red COP2LC pointed at the uninstalled LIST_A instead of LIST_B, so running from the second pointer reaches no instruction at all
+// MUTATION L7 stimulus red the terminal WAIT removed, so the instructions the assertion says are unreachable become reachable
+// MUTATION L8 stimulus red the data word that deliberately looks like a MOVE opcode replaced by an ordinary constant, so the scenario no longer poses the question the assertion answers
 
 #include <cstdint>
 #include <iostream>
