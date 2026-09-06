@@ -615,6 +615,64 @@ int main(int argc, char** argv) {
         }
     }
 
+    // MUTATION EM0 stimulus red the mask clears the NEXT bit instead of the one under test, so every pairing asks about a mask bit governing a different comparison bit
+    // MUTATION EM1 stimulus red the same rotation
+    // MUTATION EM2 stimulus red the same rotation
+    // MUTATION EM3 stimulus red the same rotation
+    // MUTATION EM4 stimulus red the same rotation
+    // MUTATION EM5 stimulus red the same rotation
+    // MUTATION EM6 stimulus red the same rotation
+    //
+    // All seven fall together, which is right: a rotation breaks every pairing
+    // at once. That they fall together and not one at a time is what shows the
+    // assertions test a mapping rather than seven unrelated facts.
+
+    // ---------------- EM0-EM6: the VE mask field's bit mapping ----------------
+    //
+    // The IR2 half of appendix A's table: bits 14 down to 8 carry VE6 down to
+    // VE0, and page 275's legend calls them "Enable comparison (mask bit)".
+    // The note under the table adds the exception: "Note that the V7
+    // comparison cannot be masked" - which is why VE has seven bits for eight
+    // VP bits, and which W6 above already asserts.
+    //
+    // W5 exercises one mask value ($0F) and W6 the unmaskable bit. Neither
+    // establishes WHICH mask bit governs which comparison bit, and `ir2_mask()`
+    // encodes that assumption exactly as `ir1_pos()` encoded the other.
+    //
+    // The measurement pairs each bit against itself. A WAIT for VP = 2^j blocks
+    // until line 2^j when its mask bit is set - that is EV<j> above. Clear only
+    // that one mask bit and the comparison must ignore that position bit, so
+    // the same WAIT is satisfied on arrival. Anything else means the mask bit
+    // is wired to a different comparison bit, or to none.
+    {
+        auto release_line = [](uint8_t vp, uint8_t ve) -> int {
+            CopperHarness h;
+            h.seek_beam(0x00);
+            h.install({ir1_pos(vp, 0x00), ir2_mask(true, ve, 0x00, false),
+                       move_ir1(COLOR00), 0x5A5A,
+                       0xFFFF, 0xFFFE});
+            h.start_list();
+            h.run_cycles(160 * 454);
+            return h.move_count(COLOR00) == 1 ? h.first_move_vpos(COLOR00) : -1;
+        };
+
+        for (int bit = 0; bit <= 6; ++bit) {
+            const uint8_t vp = static_cast<uint8_t>(1u << bit);
+            const uint8_t masked_out = static_cast<uint8_t>(0x7F & ~(1u << bit));
+            const int with_mask = release_line(vp, 0x7F);
+            const int without   = release_line(vp, masked_out);
+            std::cout << "[measured] VE bit " << bit << ": enabled -> line " << with_mask
+                      << ", disabled -> line " << without << "\n";
+            checks.expect(with_mask == static_cast<int>(vp) && without == 0,
+                "EM" + std::to_string(bit) +
+                " IR2 bit " + std::to_string(bit + 8) + " carries VE" + std::to_string(bit) +
+                ": with it set the WAIT blocks to line " + std::to_string(vp) +
+                ", with it cleared the same WAIT is satisfied on arrival - the mask bit "
+                "governs exactly VP" + std::to_string(bit) +
+                " (appendix A p274 table, p275 \"Enable comparison (mask bit)\")");
+        }
+    }
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }

@@ -416,6 +416,53 @@ int main(int argc, char** argv) {
             " low + " + std::to_string(ocs_width) + " high");
     }
 
+    // ---------------- RM1-RM8: the register addresses, asserted ----------------
+    //
+    // Added 06.09.2026, FPGA-088, package PKG-APPX-REGMAP. Appendix A page 273
+    // gives each location register an address: COP1LCH $080, COP1LCL $082,
+    // COP2LCH $084, COP2LCL $086.
+    //
+    // Every Copper test in this suite already writes to those addresses through
+    // constants like `to_reg(0x080)` and would fail if the module decoded them
+    // differently - so the map is exercised. It is not asserted, and the
+    // difference matters in one direction: nothing here shows the module
+    // decodes ONLY that address. A decoder that also accepted a neighbour would
+    // pass every existing test.
+    //
+    // Each register is therefore checked twice: the stated address must work,
+    // and the address two bytes away must not. Two bytes is the neighbouring
+    // register in this map, so a decoder ignoring the low address bit would be
+    // caught.
+    {
+        // Bit 17 sits in the high half, so the target is only reachable when
+        // the high register really is the one that was written.
+        const uint32_t target = 1u << 17;
+
+        auto lands_with = [&](uint16_t hi_reg, uint16_t lo_reg, uint16_t jmp) {
+            return lands_at(hi_reg, lo_reg, jmp, 0x0004, 0x0000, target);
+        };
+
+        checks.expect(lands_with(COP1LCH, COP1LCL, COPJMP1),
+            "RM1 COP1LCH at $080 with COP1LCL at $082 places bit 17 of the pointer "
+            "(appendix A p273 register rows)");
+        checks.expect(!lands_with(COP1LCL, COP1LCH, COPJMP1),
+            "RM2 the same two addresses swapped does NOT - $080 and $082 are not "
+            "interchangeable, so the decode is address-specific (p273)");
+
+        checks.expect(lands_with(COP2LCH, COP2LCL, COPJMP2),
+            "RM3 COP2LCH at $084 with COP2LCL at $086 places bit 17 through the second "
+            "pointer (appendix A p273)");
+        checks.expect(!lands_with(COP2LCL, COP2LCH, COPJMP2),
+            "RM4 the second pair swapped does NOT (p273)");
+
+        // The two pairs must not be the same register under two names.
+        checks.expect(!lands_at(COP1LCH, COP1LCL, COPJMP2, 0x0004, 0x0000, target),
+            "RM5 writing the FIRST pair and strobing COPJMP2 does not reach the target - "
+            "$080/$082 and $084/$086 are distinct registers, not aliases (p273, p276)");
+        checks.expect(!lands_at(COP2LCH, COP2LCL, COPJMP1, 0x0004, 0x0000, target),
+            "RM6 and the converse (p273, p276)");
+    }
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }
@@ -455,6 +502,18 @@ int main(int argc, char** argv) {
 // (`cop1lch[20:16] <= data_in[4:0]`, agnus_copper.v:144, with no `ecs` in the
 // assignment). Same limitation class as AC4 in agnus_copper_cycle_times - the
 // forbidden behaviour cannot be induced from outside, only by changing the RTL.
+//
+// Added 06.09.2026 with RM1-RM6 (FPGA-088, PKG-APPX-REGMAP):
+// MUTATION RM1 stimulus red the target moved to bit 21, one place beyond the 20-bit address_out, so no correctly decoded write can reach it
+// MUTATION RM3 stimulus red the same move
+//
+// RM2, RM4, RM5 and RM6 are NEGATIVE assertions - they require that a wrongly
+// addressed write does NOT land. No stimulus can turn them red, because that
+// would mean producing the very decoder fault they forbid; only an RTL change
+// could. They are worth having anyway: nothing else in the suite shows the
+// module decodes ONLY the stated address, and a decoder that also accepted a
+// neighbour would pass every other test here. Third instance of this limitation
+// today, after AC4 and LW3.
 //
 // LR1's and LR3's mutations also took LR4 down with them, which is expected
 // and worth stating: LR4 consumes LR1's measured width, so breaking the
