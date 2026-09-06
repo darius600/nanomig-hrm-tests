@@ -377,6 +377,25 @@ int main(int argc, char** argv) {
             "appendix states two different values for the two chip sets, so a module "
             "giving the same width in both contradicts it whatever that width is "
             "(p273, p309)");
+
+        // LW4 - the total, stated outright rather than left to arithmetic.
+        //
+        // Appendix A p.276: "These are 18-bit pointer registers whose contents
+        // are used to modify the program counter for initialization or jumps."
+        //
+        // LR4 above computes the same total and asserts 20 as a REGRESSION,
+        // because chapter 2 could not settle it: page 25 gives both "low 16
+        // bits" (which would make 19) and "low 15 bits" (18), and the project
+        // recorded that as an unresolved source conflict. The appendix ends the
+        // conflict by stating the total directly, in a sentence that quotes no
+        // half-widths at all and so cannot be read two ways. This is therefore
+        // a conformance claim, and it is the number a programmer actually uses.
+        const int total_ocs = measured_low_width + ocs_width;
+        checks.expect(total_ocs == 18,
+            "LW4 [HRM_CONFORMANCE] the location registers are 18-bit pointers "
+            "(p276 \"These are 18-bit pointer registers\") - measured " +
+            std::to_string(total_ocs) + " = " + std::to_string(measured_low_width) +
+            " low + " + std::to_string(ocs_width) + " high");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
@@ -400,12 +419,18 @@ int main(int argc, char** argv) {
 // Added 06.09.2026 with LW1-LW3 (FPGA-085, PKG-APPX-LOCWIDTH):
 // MUTATION LW2 stimulus red the walk writes COP1LCH but strobes COPJMP2, so the pointer under measurement is never the one the jump reads and no bit lands anywhere
 //
-// LW1 and LW3 ARE RED AT BASELINE and no stimulus makes them green, so neither
-// carries a red-going mutation - there is nothing green to break. Their
+// LW1, LW3 and LW4 ARE RED AT BASELINE and no stimulus makes them green, so
+// none carries a red-going mutation - there is nothing green to break. Their
 // credibility rests on LW2 instead: the same walk, the same fixture, the same
 // counter, run with `ecs = 1`, measures exactly the 5 bits the appendix states.
 // The instrument is therefore not miscounting, and LW1's 5-where-3-is-stated
 // belongs to the module.
+//
+// LW4 IS NOT A SEPARATE DEFECT and should not be counted as one. 15 + 5 = 20
+// where the appendix says 18; given LW1, LW4 follows arithmetically. It is
+// asserted anyway because p276 states the total outright, in a sentence that
+// quotes no half-widths and so cannot be read two ways, and because 18 is the
+// number a programmer works with. One fault, two places it shows.
 //
 // LW3 additionally cannot be turned green by any stimulus at all: the module
 // has no chipset dependence in this register to exercise
