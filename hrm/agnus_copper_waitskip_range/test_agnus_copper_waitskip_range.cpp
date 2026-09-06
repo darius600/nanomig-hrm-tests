@@ -465,16 +465,9 @@ int main(int argc, char** argv) {
     // whole walk because the walk is one fixture: shifting the encoding by one
     // position turns every bit assertion red at once, which is the correct
     // shape -- they share a mapping, so they fail together or not at all.
-    // MUTATION EV0 stimulus red the walked bit shifted one position down before encoding, so every WAIT asks for half the line it is checked against
-    // MUTATION EV1 stimulus red the same shift; bit 9 then releases on line 1, not 2
-    // MUTATION EV2 stimulus red the same shift
-    // MUTATION EV3 stimulus red the same shift
-    // MUTATION EV4 stimulus red the same shift
-    // MUTATION EV5 stimulus red the same shift
-    // MUTATION EV6 stimulus red the same shift
-    // MUTATION EV7 stimulus red the same shift
     // MUTATION EVC stimulus red the beam started at line $10 instead of $00, so a WAIT for VP $00 is satisfied on a line other than the one the control names
 
+    // MUTATION EV stimulus red the walked bit shifted one position down before encoding, so every WAIT asks for half the line it is checked against - one shift breaks all eight at once, which is why the family carries one record
     // ---------------- EV0-EV7: the VP field's bit mapping ----------------
     //
     // Added 06.09.2026, FPGA-086, package PKG-APPX-WAITSKIP-DECODE, from
@@ -527,30 +520,31 @@ int main(int argc, char** argv) {
             const int at = release_line(vp);
             std::cout << "[measured] WAIT VP bit " << bit << " (VP=$" << std::hex
                       << static_cast<int>(vp) << std::dec << ") released on line " << at << "\n";
+            // The id is a literal so tools/check_gates.py can read it and tie
+            // it to the mutation records above. Composed ids - "EV" + the bit
+            // number - left all eight invisible to the gate, which then could
+            // not check that they had been mutated at all. The bit number moved
+            // into the text, where it reads just as well.
             checks.expect(at == static_cast<int>(vp),
-                "EV" + std::to_string(bit) +
-                " IR1 bit " + std::to_string(bit + 8) + " carries VP" + std::to_string(bit) +
-                ": a WAIT with only that vertical bit set releases on line " +
+                "EV walking one: IR1 bit " + std::to_string(bit + 8) +
+                " carries VP" + std::to_string(bit) +
+                ", so a WAIT with only that vertical bit set releases on line " +
                 std::to_string(vp) + " (appendix A p274 instruction table)");
         }
     }
 
-    // Machine-readable mutation records for the block below, both stimulus.
-    // MUTATION EH0 stimulus red the WAIT aimed at the current line instead of the next, restoring the start-up floor that makes the low bits indistinguishable
-    // MUTATION EH1 stimulus red bit 0 forced into every walked HP value, so each target gains 4 while the latency calibrated from bit 0 stays put
-    // MUTATION EH2 stimulus red the same forced bit
-    // MUTATION EH3 stimulus red the same forced bit
-    // MUTATION EH4 stimulus red the same forced bit
-    // MUTATION EH5 stimulus red the same forced bit
-    // MUTATION EH6 stimulus red the same forced bit
+    // Machine-readable mutation record for the block below. EVC's record sits
+    // with the EV block above, where it belongs.
     // MUTATION EHC stimulus red the same same-line change; the value calibrated from bit 0 is then not a latency at all
     //
-    // The same-line mutation leaves EH0 green and takes every other bit down,
+    // The same-line mutation leaves the lowest bit green and takes every other
+    // one down,
     // which is the correct shape: with the floor back, bit 0's own target is
     // below it and coincides with the floor by accident, while the bits above
     // it no longer separate. That is precisely why the walk waits for the next
     // line, and the mutation demonstrates the reason rather than only the rule.
 
+    // MUTATION EH stimulus red bit 0 forced into every walked HP value, so each target gains 4 while the latency calibrated from bit 0 stays put - all seven fall together
     // ---------------- EH0-EH6: the HP field's bit mapping ----------------
     //
     // The other half of appendix A's table on printed page 274: IR1 bits 7
@@ -607,26 +601,19 @@ int main(int argc, char** argv) {
             std::cout << "[measured] HP bit " << bit << " (HP" << (bit + 2)
                       << ") released at hpos " << at << ", expected " << expected << "\n";
             checks.expect(at == expected,
-                "EH" + std::to_string(bit) +
-                " IR1 bit " + std::to_string(bit + 1) + " carries HP" + std::to_string(bit + 2) +
-                ": a WAIT with only that horizontal bit set releases at hpos " +
+                "EH walking one: IR1 bit " + std::to_string(bit + 1) +
+                " carries HP" + std::to_string(bit + 2) +
+                ", so a WAIT with only that horizontal bit set releases at hpos " +
                 std::to_string(4 * (1 << bit)) + " plus the fetch latency "
                 "(appendix A p274 instruction table)");
         }
     }
-
-    // MUTATION EM0 stimulus red the mask clears the NEXT bit instead of the one under test, so every pairing asks about a mask bit governing a different comparison bit
-    // MUTATION EM1 stimulus red the same rotation
-    // MUTATION EM2 stimulus red the same rotation
-    // MUTATION EM3 stimulus red the same rotation
-    // MUTATION EM4 stimulus red the same rotation
-    // MUTATION EM5 stimulus red the same rotation
-    // MUTATION EM6 stimulus red the same rotation
     //
     // All seven fall together, which is right: a rotation breaks every pairing
     // at once. That they fall together and not one at a time is what shows the
     // assertions test a mapping rather than seven unrelated facts.
 
+    // MUTATION EM stimulus red the mask clears the NEXT bit instead of the one under test, so every pairing asks about a mask bit governing a different comparison bit - all seven fall together
     // ---------------- EM0-EM6: the VE mask field's bit mapping ----------------
     //
     // The IR2 half of appendix A's table: bits 14 down to 8 carry VE6 down to
@@ -664,10 +651,10 @@ int main(int argc, char** argv) {
             std::cout << "[measured] VE bit " << bit << ": enabled -> line " << with_mask
                       << ", disabled -> line " << without << "\n";
             checks.expect(with_mask == static_cast<int>(vp) && without == 0,
-                "EM" + std::to_string(bit) +
-                " IR2 bit " + std::to_string(bit + 8) + " carries VE" + std::to_string(bit) +
-                ": with it set the WAIT blocks to line " + std::to_string(vp) +
-                ", with it cleared the same WAIT is satisfied on arrival - the mask bit "
+                "EM walking one: IR2 bit " + std::to_string(bit + 8) +
+                " carries VE" + std::to_string(bit) +
+                ", so with it set the WAIT blocks to line " + std::to_string(vp) +
+                " and with it cleared the same WAIT is satisfied on arrival - the mask bit "
                 "governs exactly VP" + std::to_string(bit) +
                 " (appendix A p274 table, p275 \"Enable comparison (mask bit)\")");
         }

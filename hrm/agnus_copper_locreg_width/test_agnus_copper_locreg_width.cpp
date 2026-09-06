@@ -569,6 +569,14 @@ int main(int argc, char** argv) {
 // Added 06.09.2026 with RM1-RM6 (FPGA-088, PKG-APPX-REGMAP):
 // MUTATION RM1 stimulus red the target moved to bit 21, one place beyond the 20-bit address_out, so no correctly decoded write can reach it
 // MUTATION RM3 stimulus red the same move
+// MUTATION RM2 none impossible negative assertion - turning it red means producing the address aliasing it forbids, which no external stimulus can do
+// MUTATION RM4 none impossible negative assertion, same reason as RM2
+// MUTATION RM5 none impossible negative assertion, same reason as RM2
+// MUTATION RM6 none impossible negative assertion, same reason as RM2
+// MUTATION LW1 none impossible red at baseline and no LEGITIMATE stimulus makes it green - both high registers latch five bits unconditionally (agnus_copper.v:144, :161). An under-stimulated walk covering only bits 0-2 would turn it green, but that is a broken measurement, not compliant behaviour
+// MUTATION LW3 none impossible red at baseline; the module has no chipset dependence in this register to exercise
+// MUTATION LW4 none impossible red at baseline; follows arithmetically from LW1 and is not a separate defect
+// MUTATION LW5 none impossible green at baseline and asserts equality between the two register pairs; no stimulus makes them differ, because the two are written by near-identical RTL (agnus_copper.v:139-153 against :156-170)
 //
 // RM2, RM4, RM5 and RM6 are NEGATIVE assertions - they require that a wrongly
 // addressed write does NOT land. No stimulus can turn them red, because that
