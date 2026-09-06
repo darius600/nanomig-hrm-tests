@@ -12,6 +12,32 @@
 // MUTATION P1 stimulus red: run_cycles after start() cut from 600 to 10 (too short to observe five
 //   consecutive grant pairs) -> FAIL as expected. Per the mutation campaign's file scope, only P1 was
 //   mutation-tested here; P2-P6 are out of scope for this pass.
+//
+// AC1-AC7 added 06.09.2026 (FPGA-084, package PKG-APPX-TIMING). Machine-readable
+// records for tools/check_gates.py --tests:
+// MUTATION AC1 stimulus red a WAIT placed before the measured MOVE, so the window from word 0 to word 2 spans the WAIT instead
+// MUTATION AC2 stimulus red the same WAIT placement; the span measured is then the WAIT's, not a MOVE's
+// MUTATION AC3 stimulus red the same WAIT placement; the ratio measured is then the WAIT's
+// MUTATION AC7 stimulus red the run cut from 600 cycles to 6, too short to observe three grants, so the control correctly refuses to vouch for the fixture
+//
+// AC4 CANNOT BE STIMULUS-MUTATED AT THIS BOUNDARY, and that is worth stating
+// rather than hiding. It asserts that a SKIP is granted two bus cycles. No
+// stimulus produces a different grant count, because this module grants every
+// instruction form exactly two -- replacing the SKIP with a MOVE or a WAIT
+// leaves AC4 green. The assertion still discriminates against a real
+// alternative behaviour (a module granting three), but that behaviour cannot
+// be induced from outside; only an RTL change would show it. The playbook's
+// mutation rule assumes a stimulus mutation always exists. Here one does not.
+//
+// MUTATION AC5 stimulus green the SKIP in the window replaced by a plain MOVE -> AC5 and AC6 turn GREEN
+// MUTATION AC6 stimulus green the same replacement -> the ratio measures 2, not 4
+//
+// Those last two are POSITIVE CONTROLS, and they are what makes AC5/AC6's red
+// mean something. With a SKIP in the measurement window the module grants two
+// bus cycles and spans eight memory cycle times, ratio 4. With a MOVE in the
+// same window, on the same fixture and the same counters, it spans four, ratio
+// 2. The instrument is therefore not miscounting and the units are not
+// confused: the cost belongs to the SKIP.
 
 #include <cstdint>
 #include <iostream>
@@ -103,6 +129,24 @@ public:
         const long b = first_tick_at(next_first_word);
         if (a < 0 || b < 0) return -1;
         return static_cast<int>((b - a) / TICKS_PER_MEMORY_CYCLE_TIME);
+    }
+
+    // Granted bus cycles belonging to one instruction: the grants that fall
+    // between its own first word and the first word of the next instruction.
+    //
+    // The other unit. Appendix A p.275 names both and relates them: "All
+    // instructions (except for WAIT) require two bus cycles (and two
+    // instruction words).  Since only the odd bus cycles are requested, four
+    // memory cycle times are required per instruction". Counting them in the
+    // same run is what makes the ratio assertable -- two numbers from two
+    // fixtures would not share a time base.
+    int granted_bus_cycles(uint32_t own_first_word, uint32_t next_first_word) const {
+        const long a = first_tick_at(own_first_word);
+        const long b = first_tick_at(next_first_word);
+        if (a < 0 || b < 0) return -1;
+        int n = 0;
+        for (const auto& g : grants) if (g.tick >= a && g.tick < b) ++n;
+        return n;
     }
 
     std::vector<Grant> grants;
@@ -252,6 +296,88 @@ int main(int argc, char** argv) {
                          "P5 a satisfied WAIT spans six memory cycle times (p.20)");
         checks.expect_eq(wait_span - move_span, 2,
                          "P6 a WAIT spans two memory cycle times more than a MOVE (p.20: three cycles versus two)");
+    }
+
+    // ------------------------------------------------------------------
+    // AC1-AC7 - appendix A p.275, the CONVERSION between the two units.
+    // Specification: work/2026-09-06_fpga-084_appendix-cycle-conversion_
+    // testspecification.md. Package PKG-APPX-TIMING.
+    //
+    //   "All instructions (except for WAIT) require two bus cycles (and two
+    //    instruction words).  Since only the odd bus cycles are requested,
+    //    four memory cycle times are required per instruction (memory cycles
+    //    are 280 ns.)"
+    //
+    // P2-P4 above assert the memory-cycle-time counts on their own. These
+    // assert something the chapter never states: that the two units stand in a
+    // fixed ratio of two, because only every other slot is asked for. A module
+    // can satisfy both individual counts and still break the relation between
+    // them, and the relation is what the sentence actually claims.
+    //
+    // FPGA-064 has been blocked since 21.08.2026 on "first establish what
+    // 'memory cycle' means here". This paragraph establishes it: a bus cycle is
+    // a granted slot, a memory cycle time is 280 ns of elapsed time, and one
+    // costs two of the other.
+    // ------------------------------------------------------------------
+    {
+        CopperHarness h;
+        h.seek_beam(0x20);
+        h.install({move_ir1(COLOR00), 0x0444,
+                   move_ir1(COLOR01), 0x0555,
+                   TERMINAL_IR1, WAIT_ALL});
+        h.start();
+        h.run_cycles(600);
+
+        const int bus = h.granted_bus_cycles(0, 2);
+        const int span = h.span_in_memory_cycle_times(0, 2);
+
+        // AC7 first: the control. If grants are not two memory cycle times
+        // apart on this very fixture, the two counters do not share a time base
+        // and neither ratio below means anything. Without it a red AC6 cannot
+        // survive the objection that the instruments simply disagree.
+        bool spacing_ok = h.grants.size() >= 3;
+        for (size_t i = 1; i < h.grants.size() && spacing_ok; ++i) {
+            const long d = h.grants[i].tick - h.grants[i - 1].tick;
+            spacing_ok = (d / TICKS_PER_MEMORY_CYCLE_TIME) == 2;
+        }
+        checks.expect(spacing_ok,
+            "AC7 [control] on this fixture consecutive grants are two memory cycle times "
+            "apart - the two counters share a time base (p.275 \"only the odd bus cycles "
+            "are requested\")");
+
+        checks.expect_eq(bus, 2,
+            "AC1 a MOVE is granted two bus cycles (p.275 \"All instructions (except for "
+            "WAIT) require two bus cycles\")");
+        checks.expect_eq(span, 4,
+            "AC2 a MOVE spans four memory cycle times (p.275 \"four memory cycle times are "
+            "required per instruction\")");
+        checks.expect_eq(bus > 0 ? span / bus : -1, 2,
+            "AC3 for a MOVE, memory cycle times are exactly twice the granted bus cycles "
+            "(p.275 \"Since only the odd bus cycles are requested\")");
+    }
+
+    {
+        // The SKIP scenario of P3, measured with both instruments at once.
+        CopperHarness h;
+        h.seek_beam(0x70);
+        h.install({ir1_pos(0x10, 0x00), ir2_mask(true, 0x7F, 0x00, true),
+                   move_ir1(COLOR00), 0x0666,      // skipped
+                   move_ir1(COLOR01), 0x0777,
+                   TERMINAL_IR1, WAIT_ALL});
+        h.start();
+        h.run_cycles(4000);
+
+        const int bus = h.granted_bus_cycles(0, 2);
+        const int span = h.span_in_memory_cycle_times(0, 2);
+
+        checks.expect_eq(bus, 2,
+            "AC4 a SKIP is granted two bus cycles (p.275, SKIP is not the sentence's "
+            "exception)");
+        checks.expect_eq(span, 4,
+            "AC5 a SKIP spans four memory cycle times (p.275, same sentence)");
+        checks.expect_eq(bus > 0 ? span / bus : -1, 2,
+            "AC6 for a SKIP, memory cycle times are exactly twice the granted bus cycles "
+            "(p.275) - a module can satisfy AC4 and still break this");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
