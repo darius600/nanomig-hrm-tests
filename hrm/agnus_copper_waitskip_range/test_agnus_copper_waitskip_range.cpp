@@ -144,6 +144,13 @@ public:
         return -1;
     }
 
+    // The horizontal counterpart, for the HP-field walk. The event already
+    // carried hpos; nothing read it until 06.09.2026.
+    int first_move_hpos(uint16_t reg) const {
+        for (const auto& e : moves) if (e.reg == reg) return static_cast<int>(e.hpos);
+        return -1;
+    }
+
     bool dma_allowed = false;
     std::vector<MoveEvent> moves;
 
@@ -525,6 +532,86 @@ int main(int argc, char** argv) {
                 " IR1 bit " + std::to_string(bit + 8) + " carries VP" + std::to_string(bit) +
                 ": a WAIT with only that vertical bit set releases on line " +
                 std::to_string(vp) + " (appendix A p274 instruction table)");
+        }
+    }
+
+    // Machine-readable mutation records for the block below, both stimulus.
+    // MUTATION EH0 stimulus red the WAIT aimed at the current line instead of the next, restoring the start-up floor that makes the low bits indistinguishable
+    // MUTATION EH1 stimulus red bit 0 forced into every walked HP value, so each target gains 4 while the latency calibrated from bit 0 stays put
+    // MUTATION EH2 stimulus red the same forced bit
+    // MUTATION EH3 stimulus red the same forced bit
+    // MUTATION EH4 stimulus red the same forced bit
+    // MUTATION EH5 stimulus red the same forced bit
+    // MUTATION EH6 stimulus red the same forced bit
+    // MUTATION EHC stimulus red the same same-line change; the value calibrated from bit 0 is then not a latency at all
+    //
+    // The same-line mutation leaves EH0 green and takes every other bit down,
+    // which is the correct shape: with the floor back, bit 0's own target is
+    // below it and coincides with the floor by accident, while the bits above
+    // it no longer separate. That is precisely why the walk waits for the next
+    // line, and the mutation demonstrates the reason rather than only the rule.
+
+    // ---------------- EH0-EH6: the HP field's bit mapping ----------------
+    //
+    // The other half of appendix A's table on printed page 274: IR1 bits 7
+    // down to 1 carry HP8 down to HP2. Same reasoning as EV0-EV7 above - the
+    // mapping is encoded in `ir1_pos()` and was never asserted.
+    //
+    // The horizontal case needs one thing the vertical case did not. The beam
+    // comparison is on the combined (vertical, horizontal) position, not two
+    // independent ones, so a WAIT for line 0 and a small HP is satisfied before
+    // the Copper has even finished fetching it: measured, bits 0, 1 and 2 all
+    // released at hpos 31, the floor set by the list start, and were
+    // indistinguishable. Waiting for the NEXT line removes the floor - the
+    // Copper is already blocked when the line begins, so the horizontal target
+    // is met exactly where the field says.
+    //
+    // Measured with VP = 1, all seven bits separate cleanly and the offset from
+    // the predicted position is constant at 15 - the fetch latency of the MOVE
+    // that follows the WAIT. The assertion calibrates that latency from the
+    // first bit rather than hard-coding it, so it tests the MAPPING and not the
+    // fixture's timing.
+    //
+    // A caution about bit 6 (HP8). This fixture's line is 454 hpos units long
+    // (see cycle()); a real Amiga line is 227. HP8's target of 256 is therefore
+    // reachable here and is NOT reachable on hardware - which is the trap page
+    // 22 warns about and W4/W8 above assert. A green EH6 says the bit is wired
+    // where the table says, not that a program may use it.
+    {
+        auto release_hpos = [](uint8_t hp) -> int {
+            CopperHarness h;
+            h.seek_beam(0x00);
+            h.install({ir1_pos(0x01, hp), ir2_mask(true, 0x7F, 0x7F, false),
+                       move_ir1(COLOR00), 0x5A5A,
+                       0xFFFF, 0xFFFE});
+            h.start_list();
+            h.run_cycles(3 * 454);
+            return h.move_count(COLOR00) == 1 ? h.first_move_hpos(COLOR00) : -1;
+        };
+
+        // The HP field sits at IR1 bits 7..1 and is compared against the beam's
+        // horizontal position in units of four, so field value h means hpos 4h.
+        const int first = release_hpos(1);
+        const int latency = first - 4;
+        std::cout << "[measured] HP walk: bit 0 released at hpos " << first
+                  << ", so the MOVE's fetch latency is " << latency << "\n";
+
+        checks.expect(first > 0 && latency >= 0 && latency < 64,
+            "EHC [control] the HP walk's first bit releases at a plausible position, so "
+            "the fetch latency can be calibrated from it rather than assumed");
+
+        for (int bit = 0; bit <= 6; ++bit) {
+            const uint8_t hp = static_cast<uint8_t>(1u << bit);
+            const int expected = 4 * (1 << bit) + latency;
+            const int at = release_hpos(hp);
+            std::cout << "[measured] HP bit " << bit << " (HP" << (bit + 2)
+                      << ") released at hpos " << at << ", expected " << expected << "\n";
+            checks.expect(at == expected,
+                "EH" + std::to_string(bit) +
+                " IR1 bit " + std::to_string(bit + 1) + " carries HP" + std::to_string(bit + 2) +
+                ": a WAIT with only that horizontal bit set releases at hpos " +
+                std::to_string(4 * (1 << bit)) + " plus the fetch latency "
+                "(appendix A p274 instruction table)");
         }
     }
 
