@@ -76,8 +76,13 @@ struct Grant { long tick; uint32_t address; uint16_t reg; uint16_t data; };
 // Copper test.
 class CopperHarness {
 public:
-    CopperHarness() : dut(new Vagnus_copper) {
-        dut->clk = 0; dut->clk7_en = 1; dut->reset = 1; dut->ecs = 0;
+    // The chipset is a parameter since 06.09.2026, defaulting to the original
+    // chip set so every existing call is unchanged. Appendix A p.273 and
+    // appendix C p.309 state the high half's width per chipset -- "(high 3
+    // bits, high 5 bits if ECS)" and "(high 5 bits,was 3 bits)" -- so the width
+    // cannot be measured in one mode alone without assuming the answer.
+    explicit CopperHarness(bool ecs_mode = false) : dut(new Vagnus_copper) {
+        dut->clk = 0; dut->clk7_en = 1; dut->reset = 1; dut->ecs = ecs_mode;
         dut->enadma = 1; dut->ackdma = 0; dut->sof = 0; dut->blit_busy = 0;
         dut->hpos = 0; dut->vpos = 0; dut->data_in = 0; dut->reg_address_in = IDLE_REG;
         for (int i = 0; i < 12; ++i) cycle();
@@ -151,8 +156,9 @@ public:
 // its own harness, so there is no cross-trial contamination and no
 // candidate-address collision to manage.
 bool lands_at(uint16_t hi_reg, uint16_t lo_reg, uint16_t jmp_reg,
-              uint16_t hi_val, uint16_t lo_val, uint32_t expected_addr) {
-    CopperHarness h;
+              uint16_t hi_val, uint16_t lo_val, uint32_t expected_addr,
+              bool ecs_mode = false) {
+    CopperHarness h(ecs_mode);
     h.install(expected_addr, {
         move_ir1(MARK), 0xBEEF,
         TERMINAL_IR1, WAIT_ALL   // local trap: park here once the marker fires
@@ -312,6 +318,67 @@ int main(int argc, char** argv) {
             "COP2-loc.c8/-location-registers.c12)");
     }
 
+    // ------------------------------------------------------------------
+    // LW1-LW3 - the high half's width is CHIPSET-DEPENDENT, and the appendix
+    // states both values side by side. Added 06.09.2026, FPGA-085, package
+    // PKG-APPX-LOCWIDTH. Class: HRM_CONFORMANCE, not regression - LR1-LR4
+    // above carry "no oracle" because chapter 2 alone could not settle the
+    // width, and that is no longer the situation.
+    //
+    //   appendix A p.273:  "(high 3 bits, high 5 bits if ECS)"
+    //   appendix C p.309:  "COP1LCH  080  W  A  Coprocessor 1st location
+    //                       (high 5 bits,was 3 bits)"
+    //
+    // Appendix C is the stronger of the two because it names the ORIGINAL
+    // value explicitly, as "was 3 bits", rather than leaving it to be read out
+    // of a parenthesis.
+    //
+    // LR3/LR4 measure 5 bits with the harness in OCS (`ecs = 0`). The single
+    // number is already tracked - FPGA-060, and agnus_copper_control T4 is red
+    // on it. What could not be said before is the SHAPE of the defect: the
+    // module has no chipset dependence at all here. `cop1lch[20:16] <=
+    // data_in[4:0]` (agnus_copper.v:144) and the COP2LCH equivalent
+    // (agnus_copper.v:161) latch five bits unconditionally; `ecs` appears in
+    // neither assignment.
+    //
+    // LW2 is the positive control and it is what makes LW1 and LW3 mean
+    // something. If the ECS measurement also came out wrong, the instrument
+    // would be suspect rather than the module.
+    // ------------------------------------------------------------------
+    {
+        auto high_width = [](bool ecs_mode) {
+            int survivors = 0;
+            for (int j = 0; j <= 4; ++j) {
+                const uint32_t expected = 1u << (15 + j);
+                if (lands_at(COP1LCH, COP1LCL, COPJMP1,
+                             static_cast<uint16_t>(1u << j), 0, expected, ecs_mode)) {
+                    ++survivors;
+                }
+            }
+            return survivors;
+        };
+
+        const int ocs_width = high_width(false);
+        const int ecs_width = high_width(true);
+        std::cout << "[measured] COP1LCH high-field width: OCS " << ocs_width
+                  << " bits, ECS " << ecs_width << " bits\n";
+
+        checks.expect(ecs_width == 5,
+            "LW2 [control, HRM_CONFORMANCE] with ecs=1 the COP1LCH high field is 5 bits "
+            "wide (p309 \"high 5 bits\", p273 \"high 5 bits if ECS\") - the control: the "
+            "walk can measure a width correctly, so a wrong OCS result is the module's");
+
+        checks.expect(ocs_width == 3,
+            "LW1 [HRM_CONFORMANCE] with ecs=0 the COP1LCH high field is 3 bits wide "
+            "(p309 \"was 3 bits\", p273 \"high 3 bits\")");
+
+        checks.expect(ocs_width != ecs_width,
+            "LW3 [HRM_CONFORMANCE] the high-field width DEPENDS on the chipset - the "
+            "appendix states two different values for the two chip sets, so a module "
+            "giving the same width in both contradicts it whatever that width is "
+            "(p273, p309)");
+    }
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }
@@ -329,6 +396,22 @@ int main(int argc, char** argv) {
 // MUTATION LR1 stimulus red the low-field walk strobed through COPJMP2 while still writing COP1LC, so the pointer under measurement is never the one the jump reads
 // MUTATION LR2 stimulus red the same swap in the other direction: COP2LC written, COPJMP1 strobed, so the second pointer is never the one read
 // MUTATION LR3 stimulus red the walked bit moved from the high half to the low half, so the high register the assertion measures is never written
+//
+// Added 06.09.2026 with LW1-LW3 (FPGA-085, PKG-APPX-LOCWIDTH):
+// MUTATION LW2 stimulus red the walk writes COP1LCH but strobes COPJMP2, so the pointer under measurement is never the one the jump reads and no bit lands anywhere
+//
+// LW1 and LW3 ARE RED AT BASELINE and no stimulus makes them green, so neither
+// carries a red-going mutation - there is nothing green to break. Their
+// credibility rests on LW2 instead: the same walk, the same fixture, the same
+// counter, run with `ecs = 1`, measures exactly the 5 bits the appendix states.
+// The instrument is therefore not miscounting, and LW1's 5-where-3-is-stated
+// belongs to the module.
+//
+// LW3 additionally cannot be turned green by any stimulus at all: the module
+// has no chipset dependence in this register to exercise
+// (`cop1lch[20:16] <= data_in[4:0]`, agnus_copper.v:144, with no `ecs` in the
+// assignment). Same limitation class as AC4 in agnus_copper_cycle_times - the
+// forbidden behaviour cannot be induced from outside, only by changing the RTL.
 //
 // LR1's and LR3's mutations also took LR4 down with them, which is expected
 // and worth stating: LR4 consumes LR1's measured width, so breaking the
