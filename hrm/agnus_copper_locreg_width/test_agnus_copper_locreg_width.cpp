@@ -363,10 +363,28 @@ int main(int argc, char** argv) {
         std::cout << "[measured] COP1LCH high-field width: OCS " << ocs_width
                   << " bits, ECS " << ecs_width << " bits\n";
 
+        // LW2 is a CONSISTENCY CHECK, not a control, and calling it a control
+        // was wrong. Independent validation on 06.09.2026 pointed out that it
+        // would pass just as well with the `ecs` input disconnected or stuck,
+        // because the module latches five bits regardless - so it cannot show
+        // that the fixture is able to switch chipsets at all.
+        //
+        // What it does show is that the walk measures a width correctly against
+        // a value the manual states, which is worth having but is not the same
+        // claim.
+        //
+        // The evidence that `ecs` genuinely reaches this module comes from a
+        // different test on the same RTL: agnus_copper_move_sweep measures a
+        // different accepted-address set for ecs=0 and ecs=1 (its ecs=1/cdang=1
+        // sweep accepts the whole range where ecs=0 does not). The input is
+        // therefore connected and effective somewhere in the module; it simply
+        // has no effect on the location-register width, which is LW3's point.
         checks.expect(ecs_width == 5,
-            "LW2 [control, HRM_CONFORMANCE] with ecs=1 the COP1LCH high field is 5 bits "
-            "wide (p309 \"high 5 bits\", p273 \"high 5 bits if ECS\") - the control: the "
-            "walk can measure a width correctly, so a wrong OCS result is the module's");
+            "LW2 [consistency check, HRM_CONFORMANCE] with ecs=1 the COP1LCH high field is "
+            "5 bits wide (p309 \"high 5 bits\", p273 \"high 5 bits if ECS\") - the walk "
+            "measures a stated width correctly. NOT a control for `ecs` being connected: "
+            "it would also pass with that input dead, see agnus_copper_move_sweep for "
+            "evidence that it is not");
 
         checks.expect(ocs_width == 3,
             "LW1 [HRM_CONFORMANCE] with ecs=0 the COP1LCH high field is 3 bits wide "

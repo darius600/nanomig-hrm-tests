@@ -341,9 +341,9 @@ int main(int argc, char** argv) {
             spacing_ok = (d / TICKS_PER_MEMORY_CYCLE_TIME) == 2;
         }
         checks.expect(spacing_ok,
-            "AC7 [control] on this fixture consecutive grants are two memory cycle times "
-            "apart - the two counters share a time base (p.275 \"only the odd bus cycles "
-            "are requested\")");
+            "AC7 [control, MOVE fixture only] with nothing but MOVEs, consecutive grants "
+            "are two memory cycle times apart - the two counters are calibrated against "
+            "each other here (p.275 \"only the odd bus cycles are requested\")");
 
         checks.expect_eq(bus, 2,
             "AC1 a MOVE is granted two bus cycles (p.275 \"All instructions (except for "
@@ -369,6 +369,28 @@ int main(int argc, char** argv) {
 
         const int bus = h.granted_bus_cycles(0, 2);
         const int span = h.span_in_memory_cycle_times(0, 2);
+
+        // AC8 - what the AC7 control cannot say here, made visible instead.
+        //
+        // Independent validation on 06.09.2026 objected, correctly, that AC7
+        // runs only on the MOVE fixture and therefore cannot vouch for this
+        // one. It cannot, and the reason is the finding: in this fixture the
+        // grants are NOT evenly spaced. Measured, ticks 4 and 8 carry the
+        // SKIP's two words and nothing is granted again until tick 20 - a gap
+        // of six memory cycle times where a MOVE would have left two.
+        //
+        // So rather than lean on a control that was not run here, the gap is
+        // printed. AC6's red is that idle stretch, not a disagreement between
+        // two counters: AC4 shows the SKIP is granted exactly the two bus
+        // cycles the manual allows it, and the module then does nothing for
+        // four further memory cycle times.
+        long biggest_gap = 0;
+        for (size_t i = 1; i < h.grants.size(); ++i) {
+            const long d = (h.grants[i].tick - h.grants[i - 1].tick) / TICKS_PER_MEMORY_CYCLE_TIME;
+            if (d > biggest_gap) biggest_gap = d;
+        }
+        std::cout << "[measured] SKIP fixture, largest gap between consecutive grants: "
+                  << biggest_gap << " memory cycle times (a MOVE-only list gives 2)\n";
 
         checks.expect_eq(bus, 2,
             "AC4 a SKIP is granted two bus cycles (p.275, SKIP is not the sentence's "
