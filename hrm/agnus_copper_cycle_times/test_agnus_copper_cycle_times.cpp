@@ -308,16 +308,29 @@ int main(int argc, char** argv) {
     //    four memory cycle times are required per instruction (memory cycles
     //    are 280 ns.)"
     //
-    // P2-P4 above assert the memory-cycle-time counts on their own. These
-    // assert something the chapter never states: that the two units stand in a
-    // fixed ratio of two, because only every other slot is asked for. A module
-    // can satisfy both individual counts and still break the relation between
-    // them, and the relation is what the sentence actually claims.
+    // P2-P4 above assert the memory-cycle-time counts on their own. These state
+    // the sentence's other half: the two units stand in a fixed ratio of two,
+    // because only every other slot is asked for.
+    //
+    // WHAT THESE DO NOT DO, corrected 06.09.2026 after independent review.
+    // An earlier version of this comment claimed "a module can satisfy both
+    // individual counts and still break the relation between them". **That is
+    // mathematically false.** If AC4 holds that a SKIP is granted two bus
+    // cycles and AC5 holds that it spans four memory cycle times, the ratio is
+    // two and AC6 cannot fail. The ratio assertions are EXPOSITORY - they state
+    // the manual's own relation in the manual's terms - and they are not an
+    // independent check. AC5 also repeats what P3 above already measures on the
+    // same fixture.
+    //
+    // The finding is therefore AC5/P3's, not AC6's: a SKIP spans eight memory
+    // cycle times where the appendix and page 20 both say four. AC6's value is
+    // that it says so in the unit relation the appendix uses.
     //
     // FPGA-064 has been blocked since 21.08.2026 on "first establish what
     // 'memory cycle' means here". This paragraph establishes it: a bus cycle is
     // a granted slot, a memory cycle time is 280 ns of elapsed time, and one
-    // costs two of the other.
+    // costs two of the other. That is what the appendix contributes; the count
+    // itself was already measured.
     // ------------------------------------------------------------------
     {
         CopperHarness h;
@@ -341,9 +354,11 @@ int main(int argc, char** argv) {
             spacing_ok = (d / TICKS_PER_MEMORY_CYCLE_TIME) == 2;
         }
         checks.expect(spacing_ok,
-            "AC7 [control, MOVE fixture only] with nothing but MOVEs, consecutive grants "
-            "are two memory cycle times apart - the two counters are calibrated against "
-            "each other here (p.275 \"only the odd bus cycles are requested\")");
+            "AC7 [control, MOVE fixture only] on a list of two MOVEs and a terminal WAIT, "
+            "consecutive grants are two memory cycle times apart - the two calculations "
+            "are calibrated against each other here (p.275 \"only the odd bus cycles are "
+            "requested\"). They read the same `grants` vector, so this is agreement "
+            "between two readings of one record, not between two instruments");
 
         checks.expect_eq(bus, 2,
             "AC1 a MOVE is granted two bus cycles (p.275 \"All instructions (except for "
@@ -351,7 +366,10 @@ int main(int argc, char** argv) {
         checks.expect_eq(span, 4,
             "AC2 a MOVE spans four memory cycle times (p.275 \"four memory cycle times are "
             "required per instruction\")");
-        checks.expect_eq(bus > 0 ? span / bus : -1, 2,
+        // Multiply rather than divide. `span / bus == 2` is integer division and
+        // would accept span=5, bus=2 - which is not "exactly twice" and not what
+        // the sentence says. Caught by independent review on 06.09.2026.
+        checks.expect_eq(span, 2 * bus,
             "AC3 for a MOVE, memory cycle times are exactly twice the granted bus cycles "
             "(p.275 \"Since only the odd bus cycles are requested\")");
     }
@@ -370,36 +388,38 @@ int main(int argc, char** argv) {
         const int bus = h.granted_bus_cycles(0, 2);
         const int span = h.span_in_memory_cycle_times(0, 2);
 
-        // AC8 - what the AC7 control cannot say here, made visible instead.
+        // Diagnostic, not an assertion, and deliberately not given an
+        // assertion-style name - a previous revision called it "AC8", which
+        // independent review rightly objected to.
         //
-        // Independent validation on 06.09.2026 objected, correctly, that AC7
-        // runs only on the MOVE fixture and therefore cannot vouch for this
-        // one. It cannot, and the reason is the finding: in this fixture the
-        // grants are NOT evenly spaced. Measured, ticks 4 and 8 carry the
-        // SKIP's two words and nothing is granted again until tick 20 - a gap
-        // of six memory cycle times where a MOVE would have left two.
+        // AC7 runs only on the MOVE fixture and cannot vouch for this one. It
+        // cannot, and the reason is the finding: here the grants are NOT evenly
+        // spaced. What follows measures the gap ACROSS THE SKIP specifically -
+        // from its second word to the next instruction's first - rather than
+        // the largest gap anywhere in the stream, which an earlier revision
+        // printed and which could have come from somewhere else entirely.
         //
-        // So rather than lean on a control that was not run here, the gap is
-        // printed. AC6's red is that idle stretch, not a disagreement between
-        // two counters: AC4 shows the SKIP is granted exactly the two bus
-        // cycles the manual allows it, and the module then does nothing for
-        // four further memory cycle times.
-        long biggest_gap = 0;
-        for (size_t i = 1; i < h.grants.size(); ++i) {
-            const long d = (h.grants[i].tick - h.grants[i - 1].tick) / TICKS_PER_MEMORY_CYCLE_TIME;
-            if (d > biggest_gap) biggest_gap = d;
-        }
-        std::cout << "[measured] SKIP fixture, largest gap between consecutive grants: "
-                  << biggest_gap << " memory cycle times (a MOVE-only list gives 2)\n";
+        // The MOVE comparison value is measured in the MOVE block above and
+        // carried here, rather than written into the text as a constant.
+        const long skip_second_word = h.first_tick_at(1);
+        const long next_instruction = h.first_tick_at(2);
+        const long idle_across_skip =
+            (skip_second_word >= 0 && next_instruction > skip_second_word)
+                ? (next_instruction - skip_second_word) / TICKS_PER_MEMORY_CYCLE_TIME
+                : -1;
+        std::cout << "[measured] from the SKIP's second word to the next instruction: "
+                  << idle_across_skip << " memory cycle times; the MOVE fixture above "
+                  << "measured " << move_span << " for a whole instruction\n";
 
         checks.expect_eq(bus, 2,
             "AC4 a SKIP is granted two bus cycles (p.275, SKIP is not the sentence's "
             "exception)");
         checks.expect_eq(span, 4,
             "AC5 a SKIP spans four memory cycle times (p.275, same sentence)");
-        checks.expect_eq(bus > 0 ? span / bus : -1, 2,
+        checks.expect_eq(span, 2 * bus,
             "AC6 for a SKIP, memory cycle times are exactly twice the granted bus cycles "
-            "(p.275) - a module can satisfy AC4 and still break this");
+            "(p.275). EXPOSITORY, not independent: given AC4 and AC5 this cannot fail on "
+            "its own - it states the manual's relation in the manual's own units");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

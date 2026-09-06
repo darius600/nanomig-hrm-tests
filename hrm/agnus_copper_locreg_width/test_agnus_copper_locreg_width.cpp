@@ -210,8 +210,14 @@ int main(int argc, char** argv) {
     }
 
     // ------------------------------------------------------------------
-    // LR2 - COP2LCL low-field walk, same claims, via COPJMP2. Control on
-    // LR1: confirms the two location-register pairs behave symmetrically.
+    // LR2 - COP2LCL low-field walk, same claims, via COPJMP2.
+    //
+    // Called a "control on LR1" until 06.09.2026, which it is not. Symmetry
+    // cannot validate LR1: a fault shared by both register pairs - and the pairs
+    // are written by near-identical RTL, agnus_copper.v:147-153 against
+    // :164-170 - would leave both walks agreeing and both wrong. What LR2
+    // establishes is that the second pair matches the first, which is a claim
+    // the manual makes and worth testing on its own.
     // ------------------------------------------------------------------
     {
         int survivors = 0;
@@ -239,9 +245,15 @@ int main(int argc, char** argv) {
     // carried no claim and could not detect any module fault LR1 did not
     // already detect, while the second pointer's high register was never
     // measured at all - a COP2LCH wired differently from COP1LCH would have
-    // gone unnoticed. The slot now does that job instead. The rig-works
-    // control it used to provide is covered by LR1's own bit-0 case, which
-    // fails if the marker detection stops working.
+    // gone unnoticed. The slot now does that job instead.
+    //
+    // The sentence that used to follow here said the rig-works control was
+    // covered by LR1's bit-0 case, "which fails if the marker detection stops
+    // working". **That is backwards**, found by independent review on
+    // 06.09.2026: if marker detection died, `bit0_survives` would come out
+    // false, which is precisely what LR1 expects. LR1 would then fail only
+    // because the seven positive walks found no survivors - so the positive
+    // walks are the rig-works evidence, and the bit-0 case is not.
     // ------------------------------------------------------------------
     int measured_cop2_high = -1;
     {
@@ -287,8 +299,14 @@ int main(int argc, char** argv) {
         // such a bit were wired in anywhere reachable, the jump would land
         // somewhere else and the marker at address 1 would not fire - so this
         // probe can actually fail, which the address-1<<30 form could not.
+        // Every bit above the field, not a sample of four. The earlier version
+        // walked {5, 6, 10, 15} and the comment claimed the bits beyond the
+        // field had no effect "at all", leaving seven of them untested -
+        // independent review on 06.09.2026 pointed out the gap. Walking all
+        // eleven costs nothing and removes the overclaim rather than softening
+        // the wording.
         bool beyond_field_inert = true;
-        for (int j : {5, 6, 10, 15}) {
+        for (int j = 5; j <= 15; ++j) {
             const bool still_lands =
                 lands_at(COP1LCH, COP1LCL, COPJMP1, static_cast<uint16_t>(1u << j), 0x0002, 1);
             if (!still_lands) {
@@ -341,16 +359,21 @@ int main(int argc, char** argv) {
     // (agnus_copper.v:161) latch five bits unconditionally; `ecs` appears in
     // neither assignment.
     //
-    // LW2 is the positive control and it is what makes LW1 and LW3 mean
-    // something. If the ECS measurement also came out wrong, the instrument
-    // would be suspect rather than the module.
+    // LW2 is a consistency check, NOT a control - see the note at the
+    // assertion. An earlier revision of this comment called it the positive
+    // control and said it was what made LW1 and LW3 mean something. It is not:
+    // it would pass with `ecs` dead, because the module latches five bits
+    // whatever that input does. Corrected 06.09.2026 after two independent
+    // reviews said so; the first correction changed the assertion text and left
+    // this paragraph and the mutation appendix contradicting it, which the
+    // second review caught.
     // ------------------------------------------------------------------
     {
-        auto high_width = [](bool ecs_mode) {
+        auto high_width = [](uint16_t hi, uint16_t lo, uint16_t jmp, bool ecs_mode) {
             int survivors = 0;
             for (int j = 0; j <= 4; ++j) {
                 const uint32_t expected = 1u << (15 + j);
-                if (lands_at(COP1LCH, COP1LCL, COPJMP1,
+                if (lands_at(hi, lo, jmp,
                              static_cast<uint16_t>(1u << j), 0, expected, ecs_mode)) {
                     ++survivors;
                 }
@@ -358,10 +381,26 @@ int main(int argc, char** argv) {
             return survivors;
         };
 
-        const int ocs_width = high_width(false);
-        const int ecs_width = high_width(true);
+        const int ocs_width = high_width(COP1LCH, COP1LCL, COPJMP1, false);
+        const int ecs_width = high_width(COP1LCH, COP1LCL, COPJMP1, true);
         std::cout << "[measured] COP1LCH high-field width: OCS " << ocs_width
                   << " bits, ECS " << ecs_width << " bits\n";
+
+        // The second pointer, both chipsets. Independent review found that the
+        // ECS walk covered only COP1LCH, while LR3 measures COP2LCH in the
+        // default OCS mode - so the classified claim that COP2LCH carries five
+        // bits under ECS had no test at all. Appendices A and C state the
+        // widths for both pairs, not just the first.
+        const int ocs_width2 = high_width(COP2LCH, COP2LCL, COPJMP2, false);
+        const int ecs_width2 = high_width(COP2LCH, COP2LCL, COPJMP2, true);
+        std::cout << "[measured] COP2LCH high-field width: OCS " << ocs_width2
+                  << " bits, ECS " << ecs_width2 << " bits\n";
+
+        checks.expect(ocs_width2 == ocs_width && ecs_width2 == ecs_width,
+            "LW5 the second location register behaves identically to the first in both "
+            "chipsets - appendices A and C state the same widths for both pairs (p273, "
+            "p309), so a difference between them would contradict the manual whichever "
+            "pair were right");
 
         // LW2 is a CONSISTENCY CHECK, not a control, and calling it a control
         // was wrong. Independent validation on 06.09.2026 pointed out that it
@@ -424,15 +463,24 @@ int main(int argc, char** argv) {
     //
     // Every Copper test in this suite already writes to those addresses through
     // constants like `to_reg(0x080)` and would fail if the module decoded them
-    // differently - so the map is exercised. It is not asserted, and the
-    // difference matters in one direction: nothing here shows the module
-    // decodes ONLY that address. A decoder that also accepted a neighbour would
-    // pass every existing test.
+    // differently - so the map is exercised, and it is not asserted.
     //
-    // Each register is therefore checked twice: the stated address must work,
-    // and the address two bytes away must not. Two bytes is the neighbouring
-    // register in this map, so a decoder ignoring the low address bit would be
-    // caught.
+    // WHAT THESE SIX DO AND DO NOT SHOW, stated after independent review
+    // objected to an earlier, broader claim. They show that the four addresses
+    // are not interchangeable in the two specific ways tested: swapping a
+    // pair's high and low halves does not work (RM2, RM4), and the first pair's
+    // registers are not aliases of the second pair's (RM5, RM6).
+    //
+    // They do NOT show that the decoder accepts "only" these four addresses.
+    // That would need a sweep over the address space, which the move sweep does
+    // for MOVE destinations but nothing does for writes into the Copper's own
+    // registers.
+    //
+    // The earlier comment also claimed the swap would catch a decoder that
+    // ignored the low address bit. **It would not.** Under such a decoder both
+    // writes land in the same register and the second one - the zero - simply
+    // overwrites the first, so the case fails for the ordinary reason and tells
+    // you nothing about aliasing.
     {
         // Bit 17 sits in the high half, so the target is only reachable when
         // the high register really is the one that was written.
@@ -447,7 +495,7 @@ int main(int argc, char** argv) {
             "(appendix A p273 register rows)");
         checks.expect(!lands_with(COP1LCL, COP1LCH, COPJMP1),
             "RM2 the same two addresses swapped does NOT - $080 and $082 are not "
-            "interchangeable, so the decode is address-specific (p273)");
+            "interchangeable (p273). Says nothing about addresses outside this pair");
 
         checks.expect(lands_with(COP2LCH, COP2LCL, COPJMP2),
             "RM3 COP2LCH at $084 with COP2LCL at $086 places bit 17 through the second "
@@ -484,12 +532,27 @@ int main(int argc, char** argv) {
 // Added 06.09.2026 with LW1-LW3 (FPGA-085, PKG-APPX-LOCWIDTH):
 // MUTATION LW2 stimulus red the walk writes COP1LCH but strobes COPJMP2, so the pointer under measurement is never the one the jump reads and no bit lands anywhere
 //
-// LW1, LW3 and LW4 ARE RED AT BASELINE and no stimulus makes them green, so
-// none carries a red-going mutation - there is nothing green to break. Their
-// credibility rests on LW2 instead: the same walk, the same fixture, the same
-// counter, run with `ecs = 1`, measures exactly the 5 bits the appendix states.
-// The instrument is therefore not miscounting, and LW1's 5-where-3-is-stated
-// belongs to the module.
+// LW1, LW3 and LW4 ARE RED AT BASELINE, so none carries a red-going mutation -
+// there is nothing green to break, which is trivially true and not evidence of
+// anything.
+//
+// Two things an earlier revision got wrong here, both caught by independent
+// review on 06.09.2026:
+//
+//   - "no stimulus makes them green" is FALSE as an absolute. An
+//     under-stimulated walk covering only bits 0-2 yields ocs_width == 3 and
+//     turns LW1 and LW4 green; walking one mode differently from the other
+//     turns LW3 green. Those are broken measurements rather than compliant
+//     behaviour, and the true statement is narrower: no LEGITIMATE stimulus
+//     makes them green, because both high registers latch five bits
+//     unconditionally (agnus_copper.v:144 and :161).
+//
+//   - their credibility does NOT rest on LW2. LW2 would pass with `ecs` dead
+//     and therefore vouches for nothing about chipset switching. What it does
+//     show is that the walk can measure a stated width at all. The evidence
+//     that `ecs` reaches the module is external: agnus_copper_move_sweep
+//     requires ECS+CDANG=1 to accept addresses that OCS+CDANG=1 refuses, which
+//     a dead input would fail.
 //
 // LW4 IS NOT A SEPARATE DEFECT and should not be counted as one. 15 + 5 = 20
 // where the appendix says 18; given LW1, LW4 follows arithmetically. It is

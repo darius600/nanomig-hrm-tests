@@ -8,11 +8,15 @@
 // 29, 35, 36. OCS (ecs=0) accepted sets are asserted against the
 // specification's chosen "Reading B" (page 26 + register map: never $00-$3E,
 // CDANG-gated $40-$7E, always >=$80, in byte addresses / DA8-1 = byte>>1).
-// ECS (ecs=1) accepted sets are asserted against the SAME chapter-2-derived
-// sets, because chapter 2 states no ecs dependency (p36:49-52 defers ECS
-// behaviour to Appendix C, outside this task's source set) -- this is an
-// explicit literal-reading choice, not a claim that real ECS behaviour is
-// identical to OCS. See specification section 5.
+// ECS (ecs=1): this header said until 06.09.2026 that the ECS sets were
+// asserted against the SAME chapter-2-derived sets, "because chapter 2 states
+// no ecs dependency (p36:49-52 defers ECS behaviour to Appendix C, outside this
+// task's source set)". **That is no longer what the file does.** Appendix C was
+// brought into the corpus on 05.09.2026, and the ECS rows below are asserted
+// against p310's own statement of the CDANG ranges - which is what makes the
+// ecs=1/cdang=0 row a valid red finding (FPGA-062) rather than a literal-reading
+// choice. Stale header found by independent review; the assertions were already
+// right, only this paragraph described an older version of them.
 // Requirement IDs: COP-03 (covers PKG-MOVE-DECODE, PKG-CDANG from
 // work/2026-08-29_fpga-074_klassifikation.md)
 // Non-goals: MOVE cycle timing/count (agnus_copper_cycles,
