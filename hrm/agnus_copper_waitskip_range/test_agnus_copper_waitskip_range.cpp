@@ -453,6 +453,81 @@ int main(int argc, char** argv) {
                       "W8 VP reachable with an unreachable HP still releases once VP passes it (p.22 warning)");
     }
 
+    // Machine-readable mutation records for the block below, all stimulus,
+    // each reverted immediately after observing red. One mutation covers the
+    // whole walk because the walk is one fixture: shifting the encoding by one
+    // position turns every bit assertion red at once, which is the correct
+    // shape -- they share a mapping, so they fail together or not at all.
+    // MUTATION EV0 stimulus red the walked bit shifted one position down before encoding, so every WAIT asks for half the line it is checked against
+    // MUTATION EV1 stimulus red the same shift; bit 9 then releases on line 1, not 2
+    // MUTATION EV2 stimulus red the same shift
+    // MUTATION EV3 stimulus red the same shift
+    // MUTATION EV4 stimulus red the same shift
+    // MUTATION EV5 stimulus red the same shift
+    // MUTATION EV6 stimulus red the same shift
+    // MUTATION EV7 stimulus red the same shift
+    // MUTATION EVC stimulus red the beam started at line $10 instead of $00, so a WAIT for VP $00 is satisfied on a line other than the one the control names
+
+    // ---------------- EV0-EV7: the VP field's bit mapping ----------------
+    //
+    // Added 06.09.2026, FPGA-086, package PKG-APPX-WAITSKIP-DECODE, from
+    // appendix A's COPINS table on printed page 274. The table states the
+    // mapping row by row: IR1 bit 15 is VP7, bit 14 is VP6, down to bit 8 as
+    // VP0.
+    //
+    // WHY THIS WAS MISSING. Every Copper test in this suite builds its WAITs
+    // with `ir1_pos(vp, hp)`, which encodes that mapping in one line of C++
+    // (`(vp << 8) | ...`). No test asserts it. The helper is an assumption
+    // shared by every WAIT and SKIP case here, in agnus_copper_wait,
+    // agnus_copper_skip and agnus_copper_list -- and an assumption that wrong
+    // would make all of them build the wrong instruction, some of them still
+    // passing. The chapter states the field but not the bit positions; only the
+    // appendix table gives them, and the appendix was not in the corpus until
+    // 05.09.2026.
+    //
+    // The measurement is a walking one over the vertical comparison field: for
+    // each bit, a WAIT whose VP has only that bit set must release exactly when
+    // the beam reaches that line, because the comparison is greater-or-equal
+    // and the beam starts below it. A shifted mapping releases on a different
+    // line; a dropped bit never releases at all.
+    //
+    // Horizontal comparison is masked out (HE = 0) so the vertical bit under
+    // test is the only thing deciding release.
+    {
+        auto release_line = [](uint8_t vp) -> int {
+            CopperHarness h;
+            h.seek_beam(0x00);
+            h.install({ir1_pos(vp, 0x00), ir2_mask(true, 0x7F, 0x00, false),
+                       move_ir1(COLOR00), 0x5A5A,
+                       0xFFFF, 0xFFFE});
+            h.start_list();
+            // One scan line is 454 ticks; allow the full walk to reach line
+            // $80 with room to spare rather than scaling per bit.
+            h.run_cycles(160 * 454);
+            return h.move_count(COLOR00) == 1 ? h.first_move_vpos(COLOR00) : -1;
+        };
+
+        // Control first. VP = 0 is satisfied on arrival, so the MOVE must run
+        // on the starting line. If this does not hold, the fixture is not
+        // measuring release lines and none of EV0-EV7 means anything.
+        const int immediate = release_line(0x00);
+        checks.expect(immediate == 0x00,
+            "EVC [control] a WAIT for VP $00 releases on the starting line - the fixture "
+            "reports the line a WAIT releases on (p274 table, greater-or-equal per p.27)");
+
+        for (int bit = 0; bit <= 7; ++bit) {
+            const uint8_t vp = static_cast<uint8_t>(1u << bit);
+            const int at = release_line(vp);
+            std::cout << "[measured] WAIT VP bit " << bit << " (VP=$" << std::hex
+                      << static_cast<int>(vp) << std::dec << ") released on line " << at << "\n";
+            checks.expect(at == static_cast<int>(vp),
+                "EV" + std::to_string(bit) +
+                " IR1 bit " + std::to_string(bit + 8) + " carries VP" + std::to_string(bit) +
+                ": a WAIT with only that vertical bit set releases on line " +
+                std::to_string(vp) + " (appendix A p274 instruction table)");
+        }
+    }
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }
