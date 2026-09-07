@@ -81,13 +81,29 @@ All four are kept. They are independent second implementations of checks that no
 exist in stricter form; none of them is counted as coverage, and each says so in
 its own header.
 
-### 2. Eight blitter tests are prior art for chapter 6
+### 2. Eight blitter tests are prior art for chapter 6 — read 07.09.2026
 
-Chapter 6 is the next chapter due through the pipeline. The eight
-`agnus_blitter_*` tests already cover parts of it from the manual. When the
-pipeline runs, they are claims to reconcile with — the pipeline either confirms
-each one or shows what it leaves out. They are not to be replaced unread, and
-they are not to be counted as coverage in advance.
+Chapter 6 is in the pipeline now. The eight `agnus_blitter_*` tests already cover
+parts of it from the manual. They are claims to reconcile with — the pipeline
+either confirms each one or shows what it leaves out. They are not to be replaced
+unread, and they are not counted as coverage in advance.
+
+All eight have now been read file by file, before the pipeline's package list
+exists, so the list meets something measured rather than remembered. The audit is
+[blitter-prior-art.md](blitter-prior-art.md). It found three defects:
+
+1. `line_octant`, `mask` and `zero` compile a **local copy** of Verilog cut from
+   `agnus_blitter.v`, not the design. All three copies are still verbatim as of
+   07.09.2026, but a change to NanoMig cannot make those tests go red.
+2. Four assertions in `line_octant` **cannot fail** — they pick a shift value that
+   makes the outputs they check structurally impossible. Shown by mutation: the
+   `!sign_del` guard was removed from `lineinc` and the test stayed green.
+3. `fill`'s four hardcoded "HRM examples" are subsumed by its own exhaustive
+   sweep and cite no page.
+
+The fixes belong to the chapter-6 run, not before it: repairing `line_octant` now
+would mean re-deriving the octant encoding from the RTL, which is how the defect
+got there.
 
 ### 3. Layer B, chapter 2 — checked 07.09.2026, one contested
 
@@ -113,7 +129,11 @@ tests make no chapter-2 claim and are left for their own chapters.
 Layer C and the chapter-6 prior art are the same eight files, so there is one
 piece of work here, not two. Five of them state their oracle nowhere; giving them
 headers is worth doing as part of the chapter-6 run rather than before it, since
-the pipeline will have to establish what each one measures against anyway.
+the pipeline will have to establish what each one measures against anyway. Two of
+the five assert something specific enough for the pipeline to find the page —
+`modulo` reads the modulo register as a signed byte offset applied to a word
+address, and `zero` claims `BZERO` is never restored once cleared. Neither says
+where the manual states it.
 
 Nothing outside the blitter set is missing a header.
 
