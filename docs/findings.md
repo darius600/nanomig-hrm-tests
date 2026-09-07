@@ -1,4 +1,4 @@
-# Findings
+﻿# Findings
 
 Every red test in this suite points at a place where the RTL does something the
 *Amiga Hardware Reference Manual* does not describe. This file says which, so
@@ -33,34 +33,29 @@ contradicted elsewhere in the same manual.
 | FPGA-060 | pipeline | corroborated — p273 and p309 give two different widths |
 | FPGA-062 | pipeline | corroborated three ways |
 | FPGA-069 | pipeline | corroborated — p20 and p275, units settled by FPGA-084 |
-| FPGA-050 | hand-written, Aug | **contested** — the manual sanctions the measured value |
-| FPGA-051 | hand-written, Aug | **contested** — the manual states both sides |
+| FPGA-051 | hand-written, Aug | **stands** — the manual contradicts itself; two emulators settle it against the RTL |
+| FPGA-050 | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
 
-That is not a coincidence. Two independent readings, mechanical anchoring and an
-attack on the discards exist precisely to catch a claim that rests on one page
-while another page says otherwise.
+Both August findings rested on a manual that says two different things, and
+neither could be decided by reading the manual harder. They were settled by a
+third witness — see [`third-witness.md`](third-witness.md) — and they went
+opposite ways: one survived, one did not.
 
-## Withdrawn on 07.09.2026
+## FPGA-050 — withdrawn on 07.09.2026
 
-Both contested assertions were removed rather than left red. A red test is a
-claim that the RTL is wrong; neither of these could support that claim, and
-leaving them red would have kept two false accusations in the suite.
+The assertion was removed rather than left red. A red test is a claim that the
+RTL is wrong, and this one could not support that claim.
 
-Neither *file* was deleted — both carried checks unrelated to the contested
-claim, and those still run:
+The *file* was not deleted: `agnus_beamcounter` still asserts that a PAL field
+terminates with EOF and that the horizontal counter spans 0..453. The second one
+matters beyond this file — `agnus_copper_waitskip_range`'s W4b rests on the line
+being 454 units long.
 
-- `agnus_beamcounter` still asserts that a PAL field terminates with EOF and that
-  the horizontal counter spans 0..453. That second one matters beyond this file:
-  `agnus_copper_waitskip_range`'s W4b rests on the line being 454 units long.
-- `paula_audio_mixer` still guards the mixer's signed arithmetic, which is a
-  separate question from its left/right labels. Its class is now
-  `RTL_REGRESSION`, since the manual is no longer serving as its oracle.
+It was not replaced with a corrected assertion either. Doing that properly means
+driving the long-frame bit deliberately and checking both cases, which is work
+nobody has done, and an assertion guessing at it would be worse than none.
 
-Neither replaces the withdrawn assertion with a corrected one. Stating the right
-value needs a reading that has not been done, and an assertion guessing at it
-would be worse than none.
-
-The reasoning that withdrew them:
+The reasoning:
 
 ### FPGA-050 — PAL frame has one line too many
 
@@ -79,32 +74,35 @@ Chapter 3's "the beam produces 312 lines" is about the normal *display* field,
 and chapter 2 describes the alternation itself: *"in PAL, 312, then 313 lines"*.
 The test turned one of those sentences into a flat rule.
 
-This needs resolving as a reading of the manual before it is treated as an RTL
-defect at all.
+Both emulators do the same — the count follows the long-frame bit, and so does
+`agnus_beamcounter.v`, which sets a long frame at reset and toggles it only in
+interlace. The fixture ran non-interlaced from reset, so 313 is the right answer
+for what it drove. Details and permalinks in
+[`third-witness.md`](third-witness.md).
+
+## Open findings
 
 ### FPGA-051 — audio channels on the wrong stereo side
 
 | | |
 |---|---|
-| Test asserts | channels 1+2 feed left, channels 0+3 feed right (chapter 5, p.137) |
-| RTL does | `ldatasum <= msample0 + msample3; rdatasum <= msample1 + msample2` |
+| Manual, chapter 5 p.137 | channels 1+2 feed left, channels 0+3 feed right |
+| Manual, appendix pin list | the opposite: *"AUDO — Audio output from left (channels 0, 3) port"* |
+| RTL does | `ldatasum <= msample0 + msample3; rdatasum <= msample1 + msample2` — the pin list |
 | Test | `hrm/paula_audio_mixer` |
 
-**The manual says both.**
+**The manual says both**, in both editions, so it cannot decide this on its own.
+Two independent emulators can, and both agree with chapter 5: WinUAE hands
+channel 0 to `put_sound_word_right`, and vAmiga's default panning puts channels 0
+and 3 at `pan = 0.85` on an axis where 1 is fully right. The appendix pin list is
+the outlier.
 
-- Chapter 5, p.137: *"Channels 1 and 2 are connected to the left-side stereo
-  output jack. Channels 0 and 3 are connected to the right-side output jack."*
-- Appendix pin list: *"AUDO — Audio output from **left (channels 0, 3)** port"*,
-  *"AUDI — Audio input to **right (channels 1, 2)** port"*
+**The NanoMig stereo channels are swapped.** Permalinks into both emulators are
+in [`third-witness.md`](third-witness.md).
 
-The RTL implements the pin list. Both statements appear in both editions, so this
-is a contradiction inside the oracle, not a deviation from it.
-
-A third witness is needed — the same shape as the chapter-2 conflict between p.21
-and p.26, which appendix B's marker column settled. Until then, changing the RTL
-would mean picking a page.
-
-## Corroborated findings
+Where to correct it is still open: the swap may belong in the top level or the
+board wiring rather than in `paula_audio_mixer` itself, and fixing it in two
+places would swap it back.
 
 ### FPGA-060 — OCS Copper address uses five high bits instead of three
 

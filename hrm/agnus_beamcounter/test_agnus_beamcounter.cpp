@@ -90,9 +90,25 @@ int main(int argc, char **argv) {
     // rule the manual does not state, and it was the only thing making this
     // fixture red.
     //
-    // The vertical count is deliberately left unasserted. Stating what it should
-    // be needs a reading of the manual that has not been done, and an assertion
-    // guessing at it is worse than none.
+    // Confirmed the same day against two emulators, which both make the count
+    // depend on the long-frame bit rather than fixing it:
+    //
+    //   vAmiga, Core/Components/Agnus/Beam.h L84-L86 at commit 35de004:
+    //     vMaxPal() { return lof ? 312 : 311; }  vCntPal() { return lof ? 313 : 312; }
+    //     github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Beam.h#L84-L86
+    //
+    //   WinUAE, custom.cpp L1422 at commit ccc407e:
+    //     return maxvpos + (lof_store ? 1 : 0);   with MAXVPOS_PAL 312
+    //     github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L1422
+    //
+    // agnus_beamcounter.v does the same: long_frame is set at reset and toggles
+    // only in interlace. This fixture runs non-interlaced from reset, so 313 is
+    // the correct answer for what it drives.
+    //
+    // The vertical count is left unasserted rather than re-asserted with the
+    // other value: doing that properly means driving lof deliberately and
+    // checking both cases, which is work nobody has done. See
+    // docs/third-witness.md.
     std::cout << "vpos and EOL count are reported above, not asserted - see the note in the source\n";
 
     if (pass) {

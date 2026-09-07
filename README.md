@@ -17,13 +17,13 @@ checked out elsewhere? `make -C hrm/<test> NANOMIG=/path/to/NanoMig`.
 
 Requires Verilator; last verified with **5.052**.
 
-## Six tests are red, and that is the result
+## Seven tests are red, and that is the result
 
 ```
-tests: 37 passed, 6 failed, 0 build errors
+tests: 36 passed, 7 failed, 0 build errors
 ```
 
-Those six are **findings, not broken tests.** Each one marks a place where the
+Those seven are **findings, not broken tests.** Each one marks a place where the
 RTL does something the manual does not describe. Do not adjust an assertion to
 make it pass — that deletes the finding, and it is the one failure mode this
 suite exists to prevent.
@@ -33,15 +33,18 @@ suite exists to prevent.
 | FPGA-060 | OCS uses five high address bits; the manual documents three | `agnus_copper_control`, `agnus_copper_locreg_width` |
 | FPGA-062 | ECS with CDANG=0 rejects 32 addresses the appendix allows | `agnus_copper_move_range`, `agnus_copper_move_sweep` |
 | FPGA-069 | SKIP spans 8 memory cycle times instead of 4, a satisfied WAIT 8 instead of 6 | `agnus_copper_cycle_times`, `agnus_copper_cycles` |
+| FPGA-051 | the four audio channels sit on the wrong stereo side | `paula_audio_mixer` |
 
-All three came out of the pipeline and are witnessed more than once.
+The first three came out of the pipeline and are witnessed more than once.
 
-Two further findings were recorded in August and **withdrawn on 07.09.2026**
-after being checked: FPGA-050 (PAL line count) and FPGA-051 (audio stereo
-routing). Both rested on a single citation that another page of the same manual
-contradicts, and neither could support the claim that the RTL is wrong. The tests
-that carried them still run, with the unsupportable assertions removed and the
-reasoning kept in their sources.
+FPGA-051 and FPGA-050 were recorded in August, and both turned out to rest on a
+manual that contradicts itself. FPGA-050 (PAL line count) is **withdrawn**: the
+manual sanctions the measured value. FPGA-051 (stereo routing) is **restored**:
+WinUAE and vAmiga, read independently, both agree with the page the test cites.
+
+How that was decided, with permalinks into both emulators, is in
+[`docs/third-witness.md`](docs/third-witness.md). An emulator is not promoted to
+oracle there — it is admitted only to decide between two sentences of the manual.
 
 [`docs/findings.md`](docs/findings.md) carries each one with its measurement and
 its manual page. The `FPGA-nnn` keys come from the private workspace where this
