@@ -40,7 +40,27 @@ That is not a coincidence. Two independent readings, mechanical anchoring and an
 attack on the discards exist precisely to catch a claim that rests on one page
 while another page says otherwise.
 
-## Contested — do not change the RTL on these
+## Withdrawn on 07.09.2026
+
+Both contested assertions were removed rather than left red. A red test is a
+claim that the RTL is wrong; neither of these could support that claim, and
+leaving them red would have kept two false accusations in the suite.
+
+Neither *file* was deleted — both carried checks unrelated to the contested
+claim, and those still run:
+
+- `agnus_beamcounter` still asserts that a PAL field terminates with EOF and that
+  the horizontal counter spans 0..453. That second one matters beyond this file:
+  `agnus_copper_waitskip_range`'s W4b rests on the line being 454 units long.
+- `paula_audio_mixer` still guards the mixer's signed arithmetic, which is a
+  separate question from its left/right labels. Its class is now
+  `RTL_REGRESSION`, since the manual is no longer serving as its oracle.
+
+Neither replaces the withdrawn assertion with a corrected one. Stating the right
+value needs a reading that has not been done, and an assertion guessing at it
+would be worse than none.
+
+The reasoning that withdrew them:
 
 ### FPGA-050 — PAL frame has one line too many
 

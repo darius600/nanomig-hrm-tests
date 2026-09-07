@@ -1,6 +1,6 @@
-// Test purpose: Check the HRM stereo routing and retain a separate NanoMig mixer-arithmetic regression.
-// Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 5, printed p. 137.
+﻿// Test purpose: Guard the NanoMig mixer arithmetic. The HRM stereo routing check was withdrawn on 07.09.2026 - see the note in main().
+// Test class: RTL_REGRESSION
+// Primary oracle: the current NanoMig mixer arithmetic. The manual contradicts itself on the stereo assignment, so it is not an oracle here.
 // Non-goals: This does not claim numeric DAC scaling for HRM volume-register value 64.
 
 #include <cstdint>
@@ -42,29 +42,26 @@ int main(int argc, char **argv) {
         return {sign_extend_15(dut->ldatasum), sign_extend_15(dut->rdatasum)};
     };
 
-    bool hrm_pass = true;
-    auto check_hrm = [&](const std::string &name,
-                         int s0, int s1, int s2, int s3,
-                         int expected_left, int expected_right) {
-        const Stereo got = mix(s0, s1, s2, s3, 1, 1, 1, 1);
-        if (got.left != expected_left || got.right != expected_right) {
-            std::cerr << "HRM FAIL " << name
-                      << ": expected L=" << expected_left << " R=" << expected_right
-                      << ", got L=" << got.left << " R=" << got.right << "\n";
-            hrm_pass = false;
-        } else {
-            std::cout << "HRM PASS " << name << "\n";
-        }
-    };
-
-    // HRM p. 137: channels 1+2 feed LEFT; channels 0+3 feed RIGHT.
-    check_hrm("channel 0 routes right", 17, 0, 0, 0, 0, 17);
-    check_hrm("channel 1 routes left", 0, 23, 0, 0, 23, 0);
-    check_hrm("channel 2 routes left", 0, 0, 31, 0, 31, 0);
-    check_hrm("channel 3 routes right", 0, 0, 0, 47, 0, 47);
-
-    // Secondary RTL regression: preserve the implementation's signed arithmetic
-    // independently of whether its left/right labels satisfy the HRM.
+    // Four stereo-routing checks stood here until 07.09.2026, recorded as finding
+    // FPGA-051. They asserted chapter 5 p.137: "Channels 1 and 2 are connected to
+    // the left-side stereo output jack. Channels 0 and 3 are connected to the
+    // right-side output jack."
+    //
+    // Withdrawn, not fixed. The manual states the opposite in its appendix pin
+    // list: "AUDO - Audio output from left (channels 0, 3) port" and "AUDI -
+    // Audio input to right (channels 1, 2) port". Both statements appear in both
+    // the printed and the Developer-CD edition, so this is a contradiction inside
+    // the oracle, not a deviation from it. paula_audio_mixer.v implements the pin
+    // list.
+    //
+    // Re-asserting either side means picking a page. A third witness is needed
+    // first - the same shape as the chapter-2 conflict between p.21 and p.26,
+    // which appendix B's marker column settled. Until then the routing is left
+    // unasserted rather than asserted wrongly, which is what made this fixture
+    // red for three weeks.
+    //
+    // The mixer's arithmetic is a separate question from its left/right labels
+    // and is unaffected; it is kept below.
     bool arithmetic_pass = true;
     const Stereo arithmetic = mix(100, 50, 10, -50, 63, 32, 63, 32);
     if (arithmetic.left != 4700 || arithmetic.right != 2230) {
@@ -75,9 +72,9 @@ int main(int argc, char **argv) {
         std::cout << "RTL REGRESSION PASS: signed scaling and summation vector.\n";
     }
 
-    std::cout << "HRM routing=" << (hrm_pass ? "PASS" : "FAIL")
-              << ", arithmetic regression=" << (arithmetic_pass ? "PASS" : "FAIL") << "\n";
+    std::cout << "HRM routing=not asserted (see the note above), "
+              << "arithmetic regression=" << (arithmetic_pass ? "PASS" : "FAIL") << "\n";
 
     delete dut;
-    return hrm_pass && arithmetic_pass ? 0 : 1;
+    return arithmetic_pass ? 0 : 1;
 }
