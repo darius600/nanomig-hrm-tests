@@ -28,14 +28,18 @@ RTL does something the manual does not describe. Do not adjust an assertion to
 make it pass — that deletes the finding, and it is the one failure mode this
 suite exists to prevent.
 
-| Test | Findings |
-|---|---|
-| `agnus_copper_control` | FPGA-055, FPGA-060 |
-| `agnus_copper_cycle_times` | FPGA-063, FPGA-064, FPGA-065, FPGA-066, FPGA-084 |
-| `agnus_copper_cycles` | FPGA-056, FPGA-058, FPGA-059, FPGA-064, FPGA-087 |
-| `agnus_copper_locreg_width` | FPGA-060, FPGA-078, FPGA-085, FPGA-088 |
-| `agnus_copper_move_sweep` | FPGA-062, FPGA-074, FPGA-079 |
-| `agnus_beamcounter`, `agnus_copper_move_range`, `paula_audio_mixer` | older, no ID in the source |
+| Finding | What the RTL does that the manual does not describe | Tests |
+|---|---|---|
+| FPGA-050 | PAL non-interlace runs 313 lines; the manual says 312 | `agnus_beamcounter` |
+| FPGA-051 | all four audio channels land on the wrong stereo side | `paula_audio_mixer` |
+| FPGA-060 | OCS uses five high address bits; the manual documents three | `agnus_copper_control`, `agnus_copper_locreg_width` |
+| FPGA-062 | ECS with CDANG=0 rejects 32 addresses the appendix allows | `agnus_copper_move_range`, `agnus_copper_move_sweep` |
+| FPGA-069 | SKIP spans 8 memory cycle times instead of 4, a satisfied WAIT 8 instead of 6 | `agnus_copper_cycle_times`, `agnus_copper_cycles` |
+
+[`docs/findings.md`](docs/findings.md) carries each one with its measurement and
+its manual page. The `FPGA-nnn` keys come from the private workspace where this
+work is planned; that file explains what each finding is, so a red result is
+readable without access to anything outside this repository.
 
 Every assertion names the manual page it comes from. Where a check and the RTL
 disagree, the manual decides.
@@ -48,22 +52,27 @@ result, so it is stated here rather than left to be inferred.
 
 | Chapter | Tests | How they were built |
 |---|---:|---|
-| 2 — Coprocessor (Copper) | 16 | **pipeline**: two blind readings, mechanical anchoring, attack on the discards, stimulus mutations |
+| 2 — Coprocessor (Copper) | 16 | 12 through the **pipeline**, 4 predate it |
 | 6 — Blitter | 8 | by hand from the manual, one module at a time |
 | 3 / 4 — Playfield, Sprites (`denise_*`) | 8 | by hand |
 | 5 / 7 / 8 — Audio, interrupts, interfaces (`paula_*`) | 6 | by hand |
 | 3 / 7 — Agnus DMA, beam counter, register bus | 8 | by hand |
 
+The pipeline means two blind readings of the same pages, every quote anchored
+mechanically in the source text, an attack on whatever was discarded as
+untestable, and a stimulus mutation per assertion showing it would go red if the
+behaviour changed.
+
 The hand-written tests are not sloppy — they cite their manual pages, fix the
 expected behaviour before looking at the RTL, and some check exhaustively (the
 area-fill test walks all 262,144 input combinations). What they do **not** carry
-is the pipeline's completeness claim: nobody read their pages twice
-independently, anchored every quote, or attacked what was discarded as
-untestable. A green there means "this assertion holds", not "the manual's
-statements about this module are covered".
+is the pipeline's completeness claim. A green there means "this assertion holds",
+not "the manual's statements about this module are covered".
 
-Chapter 6 is next through the pipeline. Those eight blitter tests are prior art
-to reconcile with, not to replace unseen.
+**34 of the 46 tests are in that state, and four of them are Copper.**
+[`docs/test-inventory.md`](docs/test-inventory.md) lists every test by layer and
+holds the review backlog — including the eight blitter tests, which are prior art
+for chapter 6 rather than coverage of it.
 
 ## Layout
 

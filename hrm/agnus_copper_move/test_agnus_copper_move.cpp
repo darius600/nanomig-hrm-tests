@@ -2,6 +2,14 @@
 // Test class: RTL_REGRESSION
 // Primary oracle: Frozen FPGA-014/017 specifications; HRM Third Edition pp. 21 and 26 constrain the OCS cases.
 // Non-goals: This is not an independent HRM conformance proof for every ECS register-protection case.
+//
+// REVIEW PENDING - written 18.08.2026, before the pipeline existed. Note the
+// oracle above: this test measures against a frozen specification, NOT against
+// the manual. A green here says the implementation still behaves as it did, and
+// nothing about whether that behaviour is right - agnus_copper_move_range and
+// agnus_copper_move_sweep are both red on exactly this module's ECS range
+// (FPGA-062). It must never be counted as conformance coverage.
+// See docs/test-inventory.md and docs/findings.md.
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>

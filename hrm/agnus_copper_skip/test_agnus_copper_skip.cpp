@@ -2,6 +2,13 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2, printed pp. 31-32 and 36.
 // Non-goals: This does not prove complete Copper bus-cycle timing.
+//
+// REVIEW PENDING - written 18.08.2026, before the pipeline existed. This is
+// chapter 2 subject matter but it is not pipeline output: one collective PASS
+// rather than a result per proposition, and no stimulus mutation showing the
+// checks would go red if the behaviour changed. Its ground appears to be covered
+// by agnus_copper_waitskip_range, but that is an impression from reading, not a
+// measurement. See docs/test-inventory.md.
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>
