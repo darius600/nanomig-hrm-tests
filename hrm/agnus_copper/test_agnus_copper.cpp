@@ -1,14 +1,20 @@
 // Test purpose: Execute a short Copper list and prove that a matching HRM SKIP suppresses only the following MOVE.
-// Test class: HRM_CONFORMANCE
+// Test class: INTEGRATION_SMOKE
+//   (was HRM_CONFORMANCE until 07.09.2026 - corrected after measuring it against
+//   agnus_copper_waitskip_range, see the review note below)
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2, printed pp. 22-24, 31-32, and 36.
 // Non-goals: This does not prove every mask, blitter, rollover, or bus-contention case.
 //
-// REVIEW PENDING - written 18.08.2026, before the pipeline existed. This is
-// chapter 2 subject matter but it is not pipeline output: one collective PASS
-// rather than a result per proposition, and no stimulus mutation showing the
-// check would go red if the behaviour changed. Its ground appears to be covered
-// by agnus_copper_waitskip_range (43 assertions), but that is an impression from
-// reading, not a measurement. See docs/test-inventory.md.
+// REVIEWED 07.09.2026 - written 18.08.2026, before the pipeline existed, and
+// measured against agnus_copper_waitskip_range. Its single scenario - a WAIT
+// releases, the MOVE runs, a matching SKIP suppresses the next MOVE - is covered
+// by W1, S1 and S2 there, each as a separate assertion with its own mutation.
+//
+// What this file still does that no other test does is run those three steps as
+// one continuous Copper list rather than as three fixtures. That makes it a
+// smoke test of the list mechanism, not a conformance proof, and the class above
+// overstates it. Kept for that, with the label corrected below.
+// See docs/test-inventory.md.
 
 #include <cstdint>
 #include <iostream>

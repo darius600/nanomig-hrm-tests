@@ -31,6 +31,8 @@
 //   comment warns about for $FF.
 // MUTATION S4 stimulus red: IR2 bit0 set (turning the WAIT into a SKIP) with the already-true position ->
 //   FAIL as expected.
+// MUTATION B2s stimulus red: BFD flipped from 0 to 1 in the SKIP, so the busy blitter no longer holds the
+//   condition back -> FAIL as expected (the position alone satisfies the SKIP and the MOVE is suppressed).
 // MUTATION B1 stimulus red: BFD flipped from 1 to 0 while the blitter is busy -> FAIL as expected (the WAIT is
 //   now held, per B2).
 // MUTATION B2 stimulus red: blitter_busy changed from true to false -> FAIL as expected (nothing holds the
@@ -449,6 +451,30 @@ int main(int argc, char** argv) {
         h.start_list();
         h.run_cycles(4000);
         checks.expect(h.move_count(COLOR00) == 0, "B2 BFD=0: the WAIT is held while the blitter is busy (p.33)");
+    }
+
+    // B2s - the same for SKIP. p.33 puts BFD in IR2, which both instructions
+    // share, so the blitter term belongs to the SKIP condition as much as to the
+    // WAIT condition: with BFD=0 and the blitter busy the condition is not
+    // satisfied, so nothing is skipped and the following MOVE runs.
+    //
+    // This case was found on 07.09.2026 by measuring the pre-pipeline test
+    // agnus_copper_skip against this file rather than assuming it superseded.
+    // Every one of its other cases was already covered here and covered more
+    // strictly - this one was not covered at all. Five of six is what an
+    // impression would have called "redundant".
+    {
+        CopperHarness h;
+        h.seek_beam(0x50);
+        h.set_blitter_busy(true);
+        h.install({ir1_pos(0x10, 0x00), ir2_mask(false, 0x7F, 0x00, true),
+                   move_ir1(COLOR00), 0x3333,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(4000);
+        checks.expect(h.move_count(COLOR00) == 1,
+                      "B2s BFD=0: a busy blitter leaves the SKIP condition unsatisfied, "
+                      "so the following MOVE runs (p.33)");
     }
 
     // B3 - and releases once the blitter reports finished.

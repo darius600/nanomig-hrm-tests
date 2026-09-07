@@ -3,12 +3,20 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2, printed pp. 22-24 and 35.
 // Non-goals: This does not prove complete cycle accuracy or all vertical-counter rollover cases.
 //
-// REVIEW PENDING - written 18.08.2026, before the pipeline existed. This is
-// chapter 2 subject matter but it is not pipeline output: one collective PASS
-// rather than a result per proposition, and no stimulus mutation showing the
-// checks would go red if the behaviour changed. Its ground appears to be covered
-// by agnus_copper_waitskip_range, but that is an impression from reading, not a
-// measurement. See docs/test-inventory.md.
+// REVIEWED 07.09.2026 - written 18.08.2026, before the pipeline existed, and
+// measured case by case against agnus_copper_waitskip_range:
+//
+//   "Wait V=50"            -> covered by W1 plus the full EV walk, which asserts
+//                             every one of the eight VP bits separately
+//   "Wait V=60 (BFD=0)"    -> covered by B2 and B3, which separate "held while
+//                             busy" from "released once finished"; this file
+//                             only checked that it eventually released
+//   "Wait V=50 (H-Masked)" -> covered by W1's masked variant and the EM walk
+//
+// Fully superseded, and superseded more strictly in all three cases. Kept as an
+// independent second implementation, not as coverage: it still reports one
+// collective PASS rather than a result per proposition.
+// See docs/test-inventory.md.
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>

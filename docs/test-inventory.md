@@ -41,24 +41,33 @@ denise_bitplane_shifter                denise_colortable
 Nothing here is known to be wrong. It is work that has not been done, written
 down so that it is not mistaken for work that has.
 
-### 1. Four Copper tests predate the pipeline
+### 1. Four Copper tests predate the pipeline — three reviewed 07.09.2026
 
 `agnus_copper`, `agnus_copper_move`, `agnus_copper_skip`, `agnus_copper_wait`
-were written on 18.08.2026, before the pipeline existed. They sit in chapter 2's
-subject area but not in layer A, which makes "chapter 2 is covered" easy to
-misread.
+were written on 18.08.2026, before the pipeline existed. Three of them have now
+been measured case by case against the layer-A tests rather than judged by
+reading.
 
-They are table-driven and report a single collective PASS at the end rather than
-one result per proposition. Their subject matter overlaps
-`agnus_copper_waitskip_range` (43 assertions), `agnus_copper_move_range`,
-`agnus_copper_move_sweep` and `agnus_copper_locreg_width` — but *overlaps* is an
-impression from reading the headers, not a measurement. Each needs checking
-proposition by proposition before it is retired or kept.
+**The measurement found a real gap.** Of the six cases in `agnus_copper_skip` and
+`agnus_copper_wait`, five were already covered by
+`agnus_copper_waitskip_range` and covered more strictly — but one was not covered
+at all: **a SKIP with BFD=0 while the blitter is busy.** BFD lives in IR2, which
+WAIT and SKIP share, so the blitter term belongs to both conditions; the pipeline
+test asserted it only for WAIT (B1–B3). It is now asserted for SKIP as **B2s**,
+with a stimulus mutation, bringing that file to 44 assertions.
 
-`agnus_copper_move` additionally declares its oracle as the **frozen FPGA-014/017
-specification, not the manual**. It is a regression test against the
-implementation and says so; it should not be counted as conformance coverage
-under any circumstances.
+Five of six is exactly what an impression would have called "redundant".
+
+| Test | Outcome |
+|---|---|
+| `agnus_copper_wait` | superseded in all three cases, each more strictly |
+| `agnus_copper_skip` | superseded once B2s closed the BFD gap |
+| `agnus_copper` | superseded as conformance; reclassified `INTEGRATION_SMOKE`, since it is the only test that runs WAIT → MOVE → SKIP as one continuous list |
+| `agnus_copper_move` | **not reviewed.** Its oracle is the frozen FPGA-014/017 specification, not the manual — a regression test against the implementation. It must never count as conformance coverage. |
+
+All four are kept. They are independent second implementations of checks that now
+exist in stricter form; none of them is counted as coverage, and each says so in
+its own header.
 
 ### 2. Eight blitter tests are prior art for chapter 6
 

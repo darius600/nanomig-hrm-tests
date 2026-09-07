@@ -3,12 +3,24 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2, printed pp. 31-32 and 36.
 // Non-goals: This does not prove complete Copper bus-cycle timing.
 //
-// REVIEW PENDING - written 18.08.2026, before the pipeline existed. This is
-// chapter 2 subject matter but it is not pipeline output: one collective PASS
-// rather than a result per proposition, and no stimulus mutation showing the
-// checks would go red if the behaviour changed. Its ground appears to be covered
-// by agnus_copper_waitskip_range, but that is an impression from reading, not a
-// measurement. See docs/test-inventory.md.
+// REVIEWED 07.09.2026 - written 18.08.2026, before the pipeline existed, and
+// measured case by case against agnus_copper_waitskip_range:
+//
+//   "Skip (Beam past target)"    -> covered by S1, which additionally asserts
+//                                   that the MOVE after the skipped one runs
+//   "No Skip (Beam before target)" -> covered by S2
+//   "No Skip (Blitter busy)"     -> NOT COVERED. waitskip_range asserted BFD
+//                                   only for WAIT (B1-B3), never for SKIP.
+//
+// The gap is now closed there as B2s, with a stimulus mutation. Five of six
+// cases were already covered and covered more strictly; one was not covered at
+// all - which is what calling this file "redundant" from a reading would have
+// thrown away.
+//
+// This file is now fully superseded. It is kept as an independent second
+// implementation of the same checks, not as coverage: it still reports one
+// collective PASS rather than a result per proposition.
+// See docs/test-inventory.md.
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>
