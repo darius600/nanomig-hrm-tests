@@ -41,7 +41,9 @@
 //   budget) -> FAIL as expected.
 
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -154,6 +156,12 @@ public:
     bool dma_allowed = false;
     std::vector<MoveEvent> moves;
 
+    // How far this fixture actually drove the beam. Without these two numbers W4
+    // can be asserted but not justified: everything there turns on which values
+    // hpos and vpos could reach at all.
+    uint16_t max_hpos_driven = 0;
+    uint16_t max_vpos_driven = 0;
+
 private:
     Vagnus_copper* dut;
     std::unordered_map<uint32_t, uint16_t> memory;
@@ -200,6 +208,8 @@ private:
         }
         dut->hpos = hpos;
         dut->vpos = vpos;
+        if (hpos > max_hpos_driven) max_hpos_driven = hpos;
+        if (vpos > max_vpos_driven) max_vpos_driven = vpos;
     }
 };
 
@@ -264,8 +274,24 @@ int main(int argc, char** argv) {
                       "W3 two WAITs for the same position: both MOVEs run (p.27)");
     }
 
-    // W4 - p.22/p.30: the terminal WAIT $FFFF,$FFFE can never complete,
-    // because HP never exceeds $E2.
+    // W4 - p.22/p.30: the terminal WAIT $FFFF,$FFFE can never complete.
+    //
+    // The check below counts zero MOVEs, and that is true - but it was true for
+    // a reason that lived in this comment and not in any assertion. An
+    // independent pass drove the module's `hpos` input directly with raw values
+    // this fixture never produces and got the WAIT to release. `hpos` is an
+    // input (agnus_copper.v:70) and nothing inside the module bounds it; what
+    // bounds it is the beam counter of a real machine, and that is exactly what
+    // the manual's claim is about.
+    //
+    // So the reason is now asserted rather than described. W4a witnesses that
+    // the fixture really did drive a full line and reach the top of the vertical
+    // range - the vertical half of the terminal WAIT is therefore satisfied, and
+    // only the horizontal half holds it. W4b asserts that horizontal half: on a
+    // 454-count line the HP comparison field cannot reach the sentinel's $7F.
+    //
+    // Same shape as a defect found in W1 on 06.09.2026, where a check counted
+    // bus requests between two adjacent ticks and was vacuously true.
     {
         CopperHarness h;
         h.seek_beam(0xF0);
@@ -273,7 +299,22 @@ int main(int argc, char** argv) {
                    move_ir1(COLOR00), 0x0555});
         h.start_list();
         h.run_cycles(20000);
-        checks.expect(h.move_count(COLOR00) == 0, "W4 terminal WAIT $FFFF,$FFFE never releases (p.22, p.30)");
+
+        // The comparison field is hpos[8:2] and the line is 454 units long.
+        const int hp_reached = h.max_hpos_driven >> 2;
+        std::ostringstream hp_hex;
+        hp_hex << std::hex << std::uppercase << hp_reached;
+
+        checks.expect(h.max_vpos_driven >= 0xFF && h.max_hpos_driven >= 400,
+                      "W4a [domain witness] the fixture drove a full line and reached "
+                      "vertical $FF, so the terminal WAIT's vertical half is satisfied");
+        checks.expect(hp_reached < 0x7F,
+                      "W4b [the reason, asserted] on a 454-count line the HP comparison "
+                      "field only reaches $" + hp_hex.str() + ", below the terminal "
+                      "WAIT's $7F, so the horizontal half can never match (p.22, p.30)");
+        checks.expect(h.move_count(COLOR00) == 0,
+                      "W4 terminal WAIT $FFFF,$FFFE never releases - for the reason "
+                      "asserted in W4a/W4b (p.22, p.30)");
     }
 
     // W5 - p.32 masking rule: with VE=$0F only the low four vertical bits are

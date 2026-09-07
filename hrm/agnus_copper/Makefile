@@ -1,5 +1,8 @@
+# Wo liegt der NanoMig-Checkout? Standard ist das Submodul in diesem Repo.
+NANOMIG ?= ../../nanomig
+
 TOP_MODULE = agnus_copper
-SRC = ../../../src/minimig-aga/$(TOP_MODULE).v
+SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v
 
 test: $(TOP_MODULE)
 	./obj_dir/V$(TOP_MODULE)

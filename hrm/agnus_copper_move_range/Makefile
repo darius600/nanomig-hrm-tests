@@ -1,5 +1,8 @@
+# Wo liegt der NanoMig-Checkout? Standard ist das Submodul in diesem Repo.
+NANOMIG ?= ../../nanomig
+
 TOP = agnus_copper
-RTL = ../../../src/minimig-aga/agnus_copper.v
+RTL = $(NANOMIG)/src/minimig-aga/agnus_copper.v
 TEST_SRC = test_agnus_copper_move_range.cpp
 OBJ_DIR = obj_dir
 TEST_BIN = $(OBJ_DIR)/V$(TOP)

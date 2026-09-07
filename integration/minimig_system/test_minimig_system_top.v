@@ -155,9 +155,15 @@ module test_minimig_system_top(
         .ide_read(1'b0),
         .ide_readdata(),
 
-        .cpucfg(2'b0),
-        .cachecfg(3'b0),
-        .memcfg()
+        // cachecfg and memcfg were connected here until the source state of
+        // 07.09.2026. Upstream removed both from minimig.v's port list: the
+        // module now decides its cache configuration itself (new: cpu_cache_new.v),
+        // and memcfg was an output that stayed unconnected here anyway. cachecfg
+        // was tied to 3'b0, so "off"; what the module now determines internally
+        // is no longer set from here. This test exercises the Copper's access to
+        // the register bus and does not touch the cache; it produced the same
+        // result after the change.
+        .cpucfg(2'b0)
     );
 
 endmodule

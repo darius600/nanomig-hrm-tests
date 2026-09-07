@@ -1,7 +1,10 @@
+# Wo liegt der NanoMig-Checkout? Standard ist das Submodul in diesem Repo.
+NANOMIG ?= ../../nanomig
+
 VERILATOR = verilator
 VFLAGS = --no-timing --cc --exe --build -j 0 --Mdir obj_dir --top-module paula_intcontroller -Wall -Wno-fatal -Wno-pinmissing -Wno-lint
 
-SRC = ../../../src/minimig-aga/paula_intcontroller.v
+SRC = $(NANOMIG)/src/minimig-aga/paula_intcontroller.v
 TEST = test_paula_intcontroller.cpp
 
 all: test

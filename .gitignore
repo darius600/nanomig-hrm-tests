@@ -1,0 +1,16 @@
+# Everything a run produces.
+#
+# The rule used to live only in hrm/.gitignore and read "obj_dir/". That missed
+# obj_dir_agnus/ and obj_dir_copper/ in agnus_copper_control and minimig_system,
+# and integration/ had no .gitignore at all - the first commit of this repo
+# picked up 246 build artefacts, including .o and .a files. Hence the rule now
+# sits at the root and covers every obj_dir with a suffix.
+obj_dir*/
+
+# Waveforms and captured test output
+*.vcd
+*.fst
+out*.txt
+
+__pycache__/
+*.pyc

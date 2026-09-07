@@ -1,0 +1,4 @@
+[submodule "nanomig"]
+	path = nanomig
+	url = https://github.com/harbaum/NanoMig.git
+	branch = main

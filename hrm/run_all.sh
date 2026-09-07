@@ -1,5 +1,5 @@
 #!/bin/bash
-# Rebuild and run every HRM test under sim/hrm, one summary line per test.
+# Rebuild and run every HRM test under hrm/, one summary line per test.
 #
 #   ./run_all.sh            rebuild from scratch (make -B) and run
 #   ./run_all.sh --fast     use existing binaries where possible

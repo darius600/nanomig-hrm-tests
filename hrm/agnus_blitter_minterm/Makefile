@@ -1,8 +1,11 @@
+# Wo liegt der NanoMig-Checkout? Standard ist das Submodul in diesem Repo.
+NANOMIG ?= ../../nanomig
+
 VERILATOR ?= verilator
 
 TOP := agnus_blitter_minterm
 OBJ_DIR := obj_dir
-RTL := ../../../src/minimig-aga/agnus_blitter_minterm.v
+RTL := $(NANOMIG)/src/minimig-aga/agnus_blitter_minterm.v
 TEST_SRC := test_agnus_blitter_minterm.cpp
 TEST_BIN := $(OBJ_DIR)/V$(TOP)
 
