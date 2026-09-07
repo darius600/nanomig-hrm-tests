@@ -21,30 +21,70 @@ and what happens next. What this file holds is *what the finding is*, which is
 the part a reader of this repository needs. Where a key appears in a test source
 without further explanation, look it up here.
 
-## Open findings
+## Where each finding comes from, and whether it holds
+
+Five findings, but not of equal standing. Three came out of the pipeline and are
+witnessed more than once. Two came out of the earlier hand-written run, rest on a
+single citation each — and on 07.09.2026 both of those citations turned out to be
+contradicted elsewhere in the same manual.
+
+| Finding | Origin | Standing |
+|---|---|---|
+| FPGA-060 | pipeline | corroborated — p273 and p309 give two different widths |
+| FPGA-062 | pipeline | corroborated three ways |
+| FPGA-069 | pipeline | corroborated — p20 and p275, units settled by FPGA-084 |
+| FPGA-050 | hand-written, Aug | **contested** — the manual sanctions the measured value |
+| FPGA-051 | hand-written, Aug | **contested** — the manual states both sides |
+
+That is not a coincidence. Two independent readings, mechanical anchoring and an
+attack on the discards exist precisely to catch a claim that rests on one page
+while another page says otherwise.
+
+## Contested — do not change the RTL on these
 
 ### FPGA-050 — PAL frame has one line too many
 
 | | |
 |---|---|
-| Manual | normal PAL non-interlace is 312 lines, `vpos` 0..311 |
-| Measured | `max_vpos=312`, 313 end-of-line pulses before end of frame |
+| Test asserts | normal PAL non-interlace is 312 positions, `vpos` 0..311 |
+| Measured | `max_vpos=312`, 313 end-of-line pulses |
 | Test | `hrm/agnus_beamcounter` |
 
-Before changing the RTL, the interlace and long-frame side effects have to be
-checked — a beam counter is not a local decision.
+**The manual sanctions 313.** Table 7-5, VPOSR bit 0: *"High bit of the vertical
+position (V8). Allows PAL line counts (313) to appear in PAL versions of the
+Amiga."* Confirmed in both the printed edition and the Developer-CD edition of
+the same manual.
 
-### FPGA-051 — audio channels land on the wrong stereo side
+Chapter 3's "the beam produces 312 lines" is about the normal *display* field,
+and chapter 2 describes the alternation itself: *"in PAL, 312, then 313 lines"*.
+The test turned one of those sentences into a flat rule.
+
+This needs resolving as a reading of the manual before it is treated as an RTL
+defect at all.
+
+### FPGA-051 — audio channels on the wrong stereo side
 
 | | |
 |---|---|
-| Manual | channels 0 and 3 route right, channels 1 and 2 route left |
-| Measured | exactly inverted on all four channels (`expected L=0 R=17, got L=17 R=0`) |
+| Test asserts | channels 1+2 feed left, channels 0+3 feed right (chapter 5, p.137) |
+| RTL does | `ldatasum <= msample0 + msample3; rdatasum <= msample1 + msample2` |
 | Test | `hrm/paula_audio_mixer` |
 
-Open question is *where* to correct it: the swap may sit in the top-level or
-board wiring rather than in `paula_audio_mixer` itself. Fixing it in the wrong
-place would swap it twice.
+**The manual says both.**
+
+- Chapter 5, p.137: *"Channels 1 and 2 are connected to the left-side stereo
+  output jack. Channels 0 and 3 are connected to the right-side output jack."*
+- Appendix pin list: *"AUDO — Audio output from **left (channels 0, 3)** port"*,
+  *"AUDI — Audio input to **right (channels 1, 2)** port"*
+
+The RTL implements the pin list. Both statements appear in both editions, so this
+is a contradiction inside the oracle, not a deviation from it.
+
+A third witness is needed — the same shape as the chapter-2 conflict between p.21
+and p.26, which appendix B's marker column settled. Until then, changing the RTL
+would mean picking a page.
+
+## Corroborated findings
 
 ### FPGA-060 — OCS Copper address uses five high bits instead of three
 

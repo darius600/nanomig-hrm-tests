@@ -30,11 +30,16 @@ suite exists to prevent.
 
 | Finding | What the RTL does that the manual does not describe | Tests |
 |---|---|---|
-| FPGA-050 | PAL non-interlace runs 313 lines; the manual says 312 | `agnus_beamcounter` |
-| FPGA-051 | all four audio channels land on the wrong stereo side | `paula_audio_mixer` |
 | FPGA-060 | OCS uses five high address bits; the manual documents three | `agnus_copper_control`, `agnus_copper_locreg_width` |
 | FPGA-062 | ECS with CDANG=0 rejects 32 addresses the appendix allows | `agnus_copper_move_range`, `agnus_copper_move_sweep` |
 | FPGA-069 | SKIP spans 8 memory cycle times instead of 4, a satisfied WAIT 8 instead of 6 | `agnus_copper_cycle_times`, `agnus_copper_cycles` |
+| FPGA-050 | **contested** — the test asserts 312 PAL lines, but Table 7-5 sanctions 313 | `agnus_beamcounter` |
+| FPGA-051 | **contested** — the manual states both stereo assignments, in two places | `paula_audio_mixer` |
+
+The three corroborated findings came out of the pipeline. The two contested ones
+came out of the earlier hand-written run and each rests on a single citation that
+another page of the same manual contradicts. Do not change the RTL on those two
+before the reading is resolved.
 
 [`docs/findings.md`](docs/findings.md) carries each one with its measurement and
 its manual page. The `FPGA-nnn` keys come from the private workspace where this
