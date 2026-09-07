@@ -141,6 +141,32 @@ bus cycle against memory cycle time and gives the factor two, so the readings ar
 comparable and the deviation is real. AC6 is expository, not independent — given
 AC4 and AC5 it cannot fail on its own.
 
+## What the emulators say about the three Copper findings
+
+Read on 07.09.2026, out of interest rather than necessity — these three are not
+contested, so an emulator cannot cancel them. The result is worth knowing anyway:
+
+**On all three, WinUAE and vAmiga do what NanoMig does and not what the manual
+says.**
+
+| Finding | Manual | Both emulators, and NanoMig |
+|---|---|---|
+| FPGA-060 | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
+| FPGA-062 | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
+| FPGA-069 | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
+
+The citations are in [`third-witness.md`](third-witness.md).
+
+This does not close any of them, and none of the assertions was touched. It
+changes the question: not "is the RTL wrong" but "is the manual wrong about the
+hardware". Two independent implementations agreeing against a manual sentence is
+strong evidence, but choosing what NanoMig should follow — the manual it is
+tested against, or the hardware it emulates — is a decision, not a measurement.
+
+FPGA-062 is the sharpest case. Appendix C read literally says that *clearing* the
+danger bit grants the range that *setting* it grants, which would leave the bit
+with nothing to do.
+
 ## How a finding is meant to end
 
 A red test is closed by a decision about the RTL, never by relaxing the

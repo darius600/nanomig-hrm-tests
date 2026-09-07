@@ -112,6 +112,94 @@ This corrects a withdrawal made earlier the same day. The withdrawal was reasone
 from the manual alone — the manual said both things, so nothing could be asserted
 — and it was wrong to stop there rather than fetch a witness.
 
+## FPGA-060, FPGA-062, FPGA-069 — read out of interest, and the result is uncomfortable
+
+These three are not contested: the manual is clear and the RTL disagrees with it,
+so by the rule above an emulator cannot cancel them. They were read anyway, to see
+*why* the RTL deviates. **On all three, both emulators do what NanoMig does and
+not what the manual says.**
+
+That does not close the findings. It moves them: the question is no longer
+"is the RTL wrong" but "is the manual wrong about the hardware", and that is a
+decision, not a measurement.
+
+**Limits of this section.** The emulators were read, not run. The vAmiga cycle
+counts below come from following its event schedule in the source, not from
+instrumenting it.
+
+### FPGA-062 — the danger bit
+
+[vAmiga `Copper.cpp` L395–L402](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.cpp#L395-L402):
+
+```cpp
+bool Copper::isIllegalAddress(u32 addr) const
+{
+    if (cdang) {
+        return agnus.isOCS() ? addr < 0x40 : false;
+    } else {
+        return addr < 0x80;
+    }
+}
+```
+
+[WinUAE `custom.cpp` L2809](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2809)
+says the same thing in one line:
+
+```c
+if (addr < ((copcon & 2) ? (ecs_agnus ? 0 : 0x40) : 0x80)) {
+```
+
+Both: **CDANG=0 blocks below $80 regardless of chipset**; CDANG=1 opens $40 on
+OCS and everything on ECS. That is exactly what `agnus_copper.v` does, and it is
+what the test calls a deviation.
+
+The sentence the finding rests on is Appendix C, p.310:
+
+> "Now, in the ECS, if this bit is set, the Copper can access all of the Amiga
+> chip registers. **If this bit is clear**, the Copper can access the address
+> range from $DFF03E through $DFF07E, the same range as when the danger bit is
+> set in the standard chip set."
+
+Read literally, clearing the danger bit grants the range that setting it grants —
+which would make the bit do nothing. Neither emulator implements that.
+
+### FPGA-060 — the location register width
+
+Neither emulator narrows the Copper pointer by chipset.
+
+[vAmiga `Copper.cpp` L29–L31](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.cpp#L29-L31):
+`setPC(u32 addr) { coppc = addr; }` — no mask. The only `isOCS()` anywhere in
+vAmiga's Copper directory is the CDANG check above.
+
+[WinUAE `custom.cpp` L2888–L2890](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2888-L2890):
+`cop1lc = (cop1lc & 0xffff) | ((uae_u32)v << 16);` — the whole written word goes
+in.
+
+Both bound the effective address later, by chip RAM size, which is a different
+mechanism from the manual's "OCS has three high bits, ECS five".
+
+### FPGA-069 — WAIT and SKIP timing
+
+vAmiga schedules the Copper as an event chain,
+[`CopperEvents.cpp` L300–L303](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/CopperEvents.cpp#L300-L303):
+`schedule(next, delay = 2)` → `scheduleRel(DMA_CYCLES(delay), next)`, and
+`DMA_CYCLES(n) = n << 3`. Two DMA cycles per state transition. Counting the
+transitions from one `COP_FETCH` to the next:
+
+| instruction | vAmiga path | DMA cycles | NanoMig measured | manual |
+|---|---|---:|---:|---:|
+| MOVE | FETCH → MOVE → FETCH | 4 | 4 | 2 |
+| SKIP | FETCH → WAIT_OR_SKIP → SKIP1 → SKIP2 → FETCH | 8 | 8 | 4 |
+| satisfied WAIT | FETCH → WAIT_OR_SKIP → WAIT1 → WAIT2 → (`delay == 0` → `DMA_CYCLES(2)`) → FETCH | 8 | 8 | 6 |
+
+vAmiga and NanoMig agree on all three numbers.
+
+Note what that does to the manual's own figures. MOVE and SKIP differ from the
+implementations by exactly a factor of two — the unit question tracked as
+FPGA-064. The satisfied WAIT does not: 6 × 2 = 12, and both implementations give
+8. So the manual's WAIT figure does not fit its own MOVE and SKIP figures under
+any single unit convention, whichever one is chosen.
+
 ## FPGA-050 — PAL line count — WITHDRAWAL CONFIRMED
 
 **The claim.** The test asserted a flat 312 positions and reported 313 as an
