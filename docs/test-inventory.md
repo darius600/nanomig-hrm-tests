@@ -9,8 +9,8 @@ it carries.
 | Layer | Tests | What is established |
 |---|---:|---|
 | **A — through the pipeline** | 12 | class declared, oracle named, page cited, and **stimulus mutations run**: each assertion was shown to bind to the behaviour it claims |
-| **B — hand-written, declared** | 26 | class declared, oracle named, explicit non-goals — but no mutation evidence and no completeness claim |
-| **C — hand-written, undeclared** | 8 | neither test class nor primary oracle in the source header |
+| **B — hand-written, declared** | 23 | class declared, oracle named, explicit non-goals — but no mutation evidence and no completeness claim |
+| **C — no header in the source** | 8 | neither test class nor primary oracle in the `.cpp`; layer C is exactly the eight blitter tests |
 
 Layer B is not sloppy work. Those tests fix the expected behaviour from the
 manual before looking at the RTL, cite their pages, and state what they do *not*
@@ -28,13 +28,25 @@ agnus_copper_move_range      agnus_copper_move_src     agnus_copper_move_sweep
 agnus_copper_rejected_move   agnus_copper_selfmod      agnus_copper_waitskip_range
 ```
 
-### Layer C — no declared class or oracle
+### Layer C — no header in the source
 
 ```
-agnus_audiodma   agnus_bitplanedma   agnus_diskdma   agnus_refresh
-agnus_spritedma  agnus_top_register_bus
-denise_bitplane_shifter                denise_colortable
+agnus_blitter_barrelshifter  agnus_blitter_fill    agnus_blitter_line_octant
+agnus_blitter_mask           agnus_blitter_minterm agnus_blitter_modulo
+agnus_blitter_ptr            agnus_blitter_zero
 ```
+
+Layer C turns out to be exactly the blitter set, and it is less bad than "no
+header" suggests: three of the eight carry a `README.md` beside the source that
+names the manual pages — `agnus_blitter_barrelshifter` (179, 182, 267),
+`agnus_blitter_fill` (184, 185, 267), `agnus_blitter_minterm` (174, 175, 177,
+178). The other five state their oracle nowhere at all:
+`agnus_blitter_line_octant`, `_mask`, `_modulo`, `_ptr`, `_zero`.
+
+An earlier revision of this file listed the DMA and Denise tests here instead.
+That list was inferred from a group count rather than measured, and it was wrong:
+`agnus_top_register_bus`, named among them, declares `INTEGRATION_SMOKE` in line
+two of its source. The lists above are produced by the script in the method note.
 
 ## The review backlog
 
@@ -77,15 +89,20 @@ pipeline runs, they are claims to reconcile with — the pipeline either confirm
 each one or shows what it leaves out. They are not to be replaced unread, and
 they are not to be counted as coverage in advance.
 
-### 3. Layer C needs headers
+### 3. Layer C is the blitter set — same item as 2
 
-The eight tests without a declared class or oracle cannot be judged from their
-source at all. Deciding what each one actually tests against is the smallest of
-these three items and the prerequisite for the other two.
+Layer C and the chapter-6 prior art are the same eight files, so there is one
+piece of work here, not two. Five of them state their oracle nowhere; giving them
+headers is worth doing as part of the chapter-6 run rather than before it, since
+the pipeline will have to establish what each one measures against anyway.
+
+Nothing outside the blitter set is missing a header.
 
 ## Method note
 
-Layer membership here is derived mechanically, not by opinion: layer A is
-"contains `// MUTATION` records", layer B is "declares `Test class:` and
-`Primary oracle:`", layer C is neither. Re-deriving it after changes is a matter
-of grepping for those three markers.
+Layer membership is derived mechanically, not by opinion: layer A is "contains
+`// MUTATION` records", layer B is "declares both `Test class:` and
+`Primary oracle:`", layer C is neither. Re-deriving it after changes means
+grepping for those three markers **and printing the names** — an earlier revision
+of this file took the counts from a script and then wrote the name lists from
+memory, which put a test into layer C that declares its class in line two.

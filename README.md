@@ -1,4 +1,4 @@
-# NanoMig HRM Tests
+﻿# NanoMig HRM Tests
 
 Unit tests for the Amiga chipset RTL in [NanoMig](https://github.com/harbaum/NanoMig),
 derived from the *Amiga Hardware Reference Manual*, 3rd edition.
@@ -20,7 +20,7 @@ Requires Verilator; last verified with **5.052**.
 ## Eight tests are red, and that is the result
 
 ```
-tests: 38 passed, 8 failed, 0 build errors
+tests: 35 passed, 8 failed, 0 build errors
 ```
 
 Those eight are **findings, not broken tests.** Each one marks a place where the
@@ -52,7 +52,7 @@ result, so it is stated here rather than left to be inferred.
 
 | Chapter | Tests | How they were built |
 |---|---:|---|
-| 2 — Coprocessor (Copper) | 16 | 12 through the **pipeline**, 4 predate it |
+| 2 — Coprocessor (Copper) | 13 | 12 through the **pipeline**; `agnus_copper_move` is a regression test against a frozen spec, not against the manual |
 | 6 — Blitter | 8 | by hand from the manual, one module at a time |
 | 3 / 4 — Playfield, Sprites (`denise_*`) | 8 | by hand |
 | 5 / 7 / 8 — Audio, interrupts, interfaces (`paula_*`) | 6 | by hand |
@@ -69,15 +69,21 @@ area-fill test walks all 262,144 input combinations). What they do **not** carry
 is the pipeline's completeness claim. A green there means "this assertion holds",
 not "the manual's statements about this module are covered".
 
-**34 of the 46 tests are in that state, and four of them are Copper.**
+**31 of the 43 tests are in that state.**
 [`docs/test-inventory.md`](docs/test-inventory.md) lists every test by layer and
 holds the review backlog — including the eight blitter tests, which are prior art
 for chapter 6 rather than coverage of it.
 
+Three pre-pipeline Copper tests were removed on 07.09.2026 after being measured
+case by case against the layer-A tests. That measurement is not a formality: five
+of their six cases were already covered and covered more strictly, and the sixth
+was not covered at all. It is now asserted as `B2s` in
+`hrm/agnus_copper_waitskip_range`.
+
 ## Layout
 
 ```
-hrm/            46 fixtures, each against a single module
+hrm/            43 fixtures, each against a single module
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
 run_all.sh      everything; hrm/run_all.sh runs only the HRM suite
