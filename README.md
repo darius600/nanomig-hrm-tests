@@ -40,6 +40,31 @@ suite exists to prevent.
 Every assertion names the manual page it comes from. Where a check and the RTL
 disagree, the manual decides.
 
+## What is covered, and by which method
+
+The suite spans far more of the manual than one chapter, but only one chapter has
+been through the full pipeline. That difference matters when reading a green
+result, so it is stated here rather than left to be inferred.
+
+| Chapter | Tests | How they were built |
+|---|---:|---|
+| 2 — Coprocessor (Copper) | 16 | **pipeline**: two blind readings, mechanical anchoring, attack on the discards, stimulus mutations |
+| 6 — Blitter | 8 | by hand from the manual, one module at a time |
+| 3 / 4 — Playfield, Sprites (`denise_*`) | 8 | by hand |
+| 5 / 7 / 8 — Audio, interrupts, interfaces (`paula_*`) | 6 | by hand |
+| 3 / 7 — Agnus DMA, beam counter, register bus | 8 | by hand |
+
+The hand-written tests are not sloppy — they cite their manual pages, fix the
+expected behaviour before looking at the RTL, and some check exhaustively (the
+area-fill test walks all 262,144 input combinations). What they do **not** carry
+is the pipeline's completeness claim: nobody read their pages twice
+independently, anchored every quote, or attacked what was discarded as
+untestable. A green there means "this assertion holds", not "the manual's
+statements about this module are covered".
+
+Chapter 6 is next through the pipeline. Those eight blitter tests are prior art
+to reconcile with, not to replace unseen.
+
 ## Layout
 
 ```
@@ -76,4 +101,6 @@ Four rules carry the whole thing:
 > *Amiga Hardware Reference Manual*, Third Edition. Commodore-Amiga, Inc.
 > Addison-Wesley Publishing Company, 1991.
 
-Chapter 2 (Copper, printed pages 19–36 plus appendices A, B and C) is covered.
+Chapter 2 (Copper, printed pages 19–36 plus appendices A, B and C) has been
+through the pipeline in full. Everything else in the table above is hand-written
+coverage of individual modules.
