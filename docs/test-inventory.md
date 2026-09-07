@@ -89,7 +89,26 @@ pipeline runs, they are claims to reconcile with — the pipeline either confirm
 each one or shows what it leaves out. They are not to be replaced unread, and
 they are not to be counted as coverage in advance.
 
-### 3. Layer C is the blitter set — same item as 2
+### 3. Layer B, chapter 2 — checked 07.09.2026, one contested
+
+Layer B rests on single citations, which is how FPGA-050 and FPGA-051 came to be
+recorded as RTL defects when the manual contradicts itself on both. The same
+check was applied to the layer-B tests that touch chapter 2. They were found
+mechanically — Copper mentioned in the source, `agnus_copper.v` pulled into the
+build, or chapter 2 / pages 19–36 / 273–276 cited in the header — not by name.
+
+| Test | Chapter-2 claim | Result |
+|---|---|---|
+| `agnus_beamcounter` | PAL is 312 lines | **contested** — Table 7-5 sanctions 313 (see findings.md) |
+| `paula_intcontroller` | INTREQ bit 4 is the Copper interrupt; VERTB outranks it | **holds** — both editions give "Bit 4, COPER, level 3"; the priority table puts COPER at 5 and VERTB at 6 on the same hardware level |
+| `agnus_copper_move` | none | oracle is a frozen specification, not the manual |
+| `agnus_top_register_bus` | none | `INTEGRATION_SMOKE`, oracle is the bus contract and a frozen spec |
+| `agnus_top_dmacon` | none | `INTEGRATION_SMOKE`; cites p.222 only for DMACON bit meaning |
+
+So one further check was needed and it survived. The remaining eighteen layer-B
+tests make no chapter-2 claim and are left for their own chapters.
+
+### 4. Layer C is the blitter set — same item as 2
 
 Layer C and the chapter-6 prior art are the same eight files, so there is one
 piece of work here, not two. Five of them state their oracle nowhere; giving them
