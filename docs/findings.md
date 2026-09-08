@@ -141,6 +141,54 @@ bus cycle against memory cycle time and gives the factor two, so the readings ar
 comparable and the deviation is real. AC6 is expository, not independent — given
 AC4 and AC5 it cannot fail on its own.
 
+## Chapter 6 — read from the RTL, no test yet
+
+These came out of the chapter-6 classification stage on 08.09.2026, while it was
+looking for a fixture boundary. They are **not red tests**: nothing asserts them
+yet, and until something does they are observations, not findings in the sense
+this file otherwise uses.
+
+They carry no `FPGA-nnn` key. The keys are issued in the private workspace, and
+inventing one here would collide with that register. When the chapter-6 tests are
+built, each of these either gets a key and an assertion or is dropped with a
+reason.
+
+Every statement below was checked by reading the RTL directly, not taken from the
+classifier's report.
+
+### Appendix C's five ECS blitter changes are implemented five different ways
+
+Appendix C, printed page 309, lists what ECS changed in the blitter. NanoMig's
+`agnus_blitter` takes an `ecs` input. It uses it for two of the five:
+
+| Appendix C, p309 | `agnus_blitter.v` | Gated by `ecs`? |
+|---|---|---|
+| `BLTCON0L` $05A new — control 0, lower 8 bits | line 259 | **yes** |
+| `BLTSIZH` $05E new — H size and start | lines 500, 523, 557 | **yes** |
+| `BLTSIZV` $05C new — V size, 15-bit | line 548 | **no** — and the comment on that line calls it ECS |
+| `BLTxPTH` $050 chg — "high 5 bits, was 3 bits" | `agnus_blitter_adrgen.v:45`, `reg [20:16] bltpth [3:0]` | **no** — that module has no `ecs` port at all |
+| `DOFF`, BLTCON1 bit 7 — disable D output in line mode | nowhere | **not implemented** |
+
+`bltcon1[7]` does not appear in `agnus_blitter.v`. The bits it reads are 15-12,
+4, 3, 2, 1 and 0.
+
+The pointer row is the sibling of FPGA-060, one appendix over: the same register
+family, the same "three bits in OCS, five in ECS" sentence, and the same
+unconditional five bits in the RTL. The third-witness work already recorded that
+neither vAmiga nor WinUAE narrows a pointer by chipset at all, which is worth
+knowing before anyone calls the blitter case a defect on its own.
+
+What this is *not* is a claim that any of the five is wrong. A design that is
+always ECS/AGA has a defensible reason to widen a pointer unconditionally. What
+it is: the same appendix, the same five lines, handled four different ways, with
+no comment anywhere saying why the two ungated ones are ungated.
+
+### `agnus_top_dmacon` asserts nothing
+
+Found in the same pass and recorded where it belongs, in
+[`test-inventory.md`](test-inventory.md), backlog item 5. It is the only test in
+the suite that cannot fail.
+
 ## What the emulators say about the three Copper findings
 
 Read on 07.09.2026, out of interest rather than necessity — these three are not

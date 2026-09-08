@@ -9,7 +9,7 @@ it carries.
 | Layer | Tests | What is established |
 |---|---:|---|
 | **A — through the pipeline** | 12 | class declared, oracle named, page cited, and **stimulus mutations run**: each assertion was shown to bind to the behaviour it claims |
-| **B — hand-written, declared** | 23 | class declared, oracle named, explicit non-goals — but no mutation evidence and no completeness claim |
+| **B — hand-written, declared** | 23 | class declared, oracle named, explicit non-goals — but no mutation evidence and no completeness claim. **One of them asserts nothing at all** — see backlog item 5 |
 | **C — no header in the source** | 8 | neither test class nor primary oracle in the `.cpp`; layer C is exactly the eight blitter tests |
 
 Layer B is not sloppy work. Those tests fix the expected behaviour from the
@@ -119,7 +119,7 @@ build, or chapter 2 / pages 19–36 / 273–276 cited in the header — not by n
 | `paula_intcontroller` | INTREQ bit 4 is the Copper interrupt; VERTB outranks it | **holds** — both editions give "Bit 4, COPER, level 3"; the priority table puts COPER at 5 and VERTB at 6 on the same hardware level |
 | `agnus_copper_move` | none | oracle is a frozen specification, not the manual |
 | `agnus_top_register_bus` | none | `INTEGRATION_SMOKE`, oracle is the bus contract and a frozen spec |
-| `agnus_top_dmacon` | none | `INTEGRATION_SMOKE`; cites p.222 only for DMACON bit meaning |
+| `agnus_top_dmacon` | none | `INTEGRATION_SMOKE`; cites p.222 only for DMACON bit meaning — **and asserts nothing, see item 5** |
 
 So one further check was needed and it survived. The remaining eighteen layer-B
 tests make no chapter-2 claim and are left for their own chapters.
@@ -136,6 +136,42 @@ address, and `zero` claims `BZERO` is never restored once cleared. Neither says
 where the manual states it.
 
 Nothing outside the blitter set is missing a header.
+
+### 5. `agnus_top_dmacon` cannot fail — found 08.09.2026
+
+It builds the whole of `agnus` under Verilator, releases reset, sets up an
+address and a data word for a DMACON write, and then stops:
+
+```cpp
+    // Need selreg pulse
+    // TODO: The testbench needs to hook into the bus appropriately
+
+    std::cout << "PASS: Agnus Top-Level tests passed.\n";
+```
+
+It never pulses the register strobe, never reads an output, and prints PASS
+unconditionally. `return 0;` is the only return statement in the file. Nothing
+the RTL does can make it red, so its green has been worth nothing since it was
+written — and it has been counted in every suite result.
+
+It is the only one. Every other test in the suite has a failure path:
+`return 1`, `return pass ? 0 : 1`, `return fail_count == 0 ? 0 : 1`, or
+`return checks.failed == 0 ? 0 : 1`. That was checked by listing every return
+statement in all 43 sources, not by reading a sample.
+
+Two things follow, and they pull in opposite directions:
+
+- **It is not evidence and must stop being counted as any.** Until it asserts
+  something, the honest suite figure is one lower than the runner prints.
+- **It is still useful.** It is proof that an `agnus`-level fixture builds and
+  runs, which is exactly what the 82 discarded chapter-6 DMACON and DMACONR
+  claims were discarded for lacking. Finishing this file is the cheapest way to
+  find out whether that discard reason holds.
+
+It was found by the chapter-6 classification stage while looking for a fixture
+boundary — not by anything in this repository. Nothing here checks that a test
+can fail; that is what the layer-A mutation records are for, and this test has
+none because it is layer B.
 
 ## Method note
 
