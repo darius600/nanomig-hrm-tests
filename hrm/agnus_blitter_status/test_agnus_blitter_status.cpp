@@ -36,7 +36,8 @@
 //     c13/ch6-blockdiag.c13 actually state, and its testable content is
 //     exactly theirs (asserted as Z-D-CLEAR and Z-CLEAR/Z-NEVER-RESTORED
 //     below).
-//   6-blitter-done-flag.c7/c13, ch6-done.c14 (pp.186-187, the pre-Fat-Agnus
+//   6-blitter-done-flag.c7, 6-blitter-done-flag.c13, ch6-done.c14 (pp.186-187,
+//     the pre-Fat-Agnus
 //     busy timing: "gets its first DMA cycle") are NOT constructible at this
 //     boundary - chip generation is not a module input, so there is no
 //     stimulus that selects the pre-Fat-Agnus alternative. BUSY-NO-DMA-NEEDED
@@ -458,8 +459,11 @@ int main(int argc, char** argv) {
 
         checks.expect(h.busy(),
             "BUSY-SET: busy reads 1 on the cycle immediately after the BLTSIZE write "
-            "(p.187, 'be set as soon as you write to BLTSIZE to start the blit rather "
-            "than ... when the blitter gets its first DMA cycle')");
+            "(6-blitter-done-flag.c11, 6-blitter-done-flag.c12, ch6-done.c13, p.187, "
+            "'Starting with the Fat "
+            "Agnus the blitter busy bit has been \"fixed\" to be set as soon as you write "
+            "to BLTSIZE to start the blit rather than ... when the blitter gets its "
+            "first DMA cycle')");
 
         bool any_reqdma_seen = false;
         for (const auto& s : h.log) if (s.reqdma) any_reqdma_seen = true;
