@@ -102,44 +102,70 @@
 // "PASS: 4197376 HRM-derived blitter barrel shifter cases" line from the
 // kept exhaustive sweep.
 //
+// Every named assertion's PASS/FAIL line is a fixed label (Checks::expect
+// prints only the condition and the static message, not a computed actual
+// value), so "what actually printed" below is the PASS->FAIL transition of
+// that exact label plus the passed/failed tally; where a numeric result is
+// given in parentheses it was independently derived from the oracle/RTL
+// arithmetic to design the mutation, not echoed by the run itself, and is
+// marked as such.
+//
 // MUTATION RANGE stimulus red: the patterns-loop shift bound was
 //   temporarily shrunk from `shift < 16U` to `shift < 15U`, dropping
 //   shift=15 from that section's 8x8x16x2 cross product (128 fewer cases)
-//   while `expected_checks` (4197376) was left untouched -> printed
-//   "FAIL: RANGE: ..." (checks totalled 4197248, not 4197376); every other
-//   named assertion PASS. Reverted; rebuild-clean reproduced 4197376 and
-//   PASS again.
+//   while `expected_checks` (4197376) was left untouched -> the RANGE line
+//   printed FAIL instead of PASS, and the run additionally printed
+//   "FAIL: exhaustive sweep completed 4197248 cases, expected 4197376"
+//   (a real, dynamically computed diagnostic - this one line is printed
+//   verbatim from the run). Every other named assertion still PASS.
+//   Totalled "5 passed, 1 failed". Reverted; rebuild-clean reproduced
+//   "PASS: 4197376 ..." and "6 passed, 0 failed" again.
 // MUTATION RIGHT-ASCENDING stimulus red: both `dut.desc = 0` lines in the
-//   RIGHT-ASCENDING block were changed to `dut.desc = 1` (asking for a left/
-//   descending shift instead) while the expected constants 0x0800 and
-//   0x0001 were left untouched -> printed "FAIL: RIGHT-ASCENDING: ..."
-//   (measured out_a=0x0000, out_b=0x0000); every other named assertion
-//   PASS. Reverted.
+//   RIGHT-ASCENDING block were changed to `dut.desc = 1` (asking for a
+//   left/descending shift instead) while the expected constants 0x0800 and
+//   0x0001 were left untouched -> the RIGHT-ASCENDING line printed FAIL.
+//   (Independently derived from hrm_oracle(true, ...), not printed by the
+//   run: with desc=1 the two stimuli actually produce out=0x0000 - shift=4,
+//   new_val=0x8000: current<<4 truncates entirely out of the low 16 bits -
+//   and out=0x0004 - shift=1, new_val=0x0002: current<<1=0x0004 - neither
+//   matching the held-fixed expected constants 0x0800/0x0001.) Every other
+//   named assertion PASS. Totalled "5 passed, 1 failed". Reverted.
 // MUTATION LEFT-DESCENDING stimulus red: both `dut.desc = 1` lines in the
 //   LEFT-DESCENDING block were changed to `dut.desc = 0` while the expected
-//   constants 0x8000 and 0x0080 were left untouched -> printed
-//   "FAIL: LEFT-DESCENDING: ..." (measured out_a=0x2000, out_b=0x0008);
-//   every other named assertion PASS. Reverted.
+//   constants 0x8000 and 0x0080 were left untouched -> the LEFT-DESCENDING
+//   line printed FAIL. (Independently derived from hrm_oracle(false, ...):
+//   with desc=0 the two stimuli actually produce out=0x2000 - shift=1,
+//   new_val=0x4000: current>>1=0x2000 - and out=0x0000 - shift=4,
+//   new_val=0x0008: current>>4=0x0000, since 0x0008 has no set bits above
+//   position 3 - neither matching the held-fixed expected constants
+//   0x8000/0x0080.) Every other named assertion PASS. Totalled
+//   "5 passed, 1 failed". Reverted.
 // MUTATION STRUCTURE-WINDOW stimulus red: `dut.desc = 0` in the
 //   STRUCTURE-WINDOW block was changed to `dut.desc = 1` (descending
 //   instead of ascending) while `expected` stayed computed from
 //   `hrm_oracle(false, 8, 0x00AB, 0xCD00)` (i.e. still the ascending
-//   answer, 0xABCD) -> printed "FAIL: STRUCTURE-WINDOW: ..." (actual
-//   0x5500AB truncated to 0x00AB... see header note); every other named
-//   assertion PASS. Reverted.
+//   answer, 0xABCD) -> the STRUCTURE-WINDOW line printed FAIL.
+//   (Independently derived from hrm_oracle(true, 8, 0x00AB, 0xCD00): with
+//   desc=1 the same stimulus actually produces out=0x0000 - current<<8
+//   truncates entirely out of the low 16 bits and previous>>8 is 0 since
+//   0x00AB fits in 8 bits - nowhere near the ascending answer 0xABCD.)
+//   Every other named assertion PASS. Totalled "5 passed, 1 failed".
+//   Reverted.
 // MUTATION SHIFT-VALUE-SELECTS stimulus red: the second and third
 //   `dut.shift = 7;` / `dut.shift = 15;` lines were both changed to
 //   `dut.shift = 0;` (asking every sample for the same window position)
 //   while the expected constants 0x0001 and 0x0000 were left untouched ->
-//   printed "FAIL: SHIFT-VALUE-SELECTS: ..." (measured out_s7=0x0080,
-//   out_s15=0x0080, both equal to out_s0 since shift never actually
-//   varied); every other named assertion PASS. Reverted.
-// MUTATION MASK-UPSTREAM stimulus red: the second `dut.new_val = 0x1234;`
-//   (implicit, inherited) was made explicit and changed to
-//   `dut.new_val = 0x1235;` immediately before the `old_val = 0xFFFF` case,
-//   while the comparison still expected both samples to equal 0x1234 ->
-//   printed "FAIL: MASK-UPSTREAM (partial claim): ..." (measured
-//   out_hi=0x1235); every other named assertion PASS. Reverted.
+//   the SHIFT-VALUE-SELECTS line printed FAIL. (Independently derived:
+//   out_s7 and out_s15 both actually read 0x0080, identical to out_s0,
+//   since shift never varied.) Every other named assertion PASS. Totalled
+//   "5 passed, 1 failed". Reverted.
+// MUTATION MASK-UPSTREAM stimulus red: immediately before the
+//   `old_val = 0xFFFF` sample, `dut.new_val` was changed from the inherited
+//   0x1234 to 0x1235, while the comparison still expected both samples to
+//   equal 0x1234 -> the MASK-UPSTREAM line printed FAIL. (Independently
+//   derived: out_hi actually reads 0x1235, matching the new new_val, not
+//   the old comparison constant.) Every other named assertion PASS.
+//   Totalled "5 passed, 1 failed". Reverted.
 //
 // After every mutation above the file was reverted and rebuilt clean; the
 // final clean run reproduces "PASS: 4197376 HRM-derived blitter barrel
@@ -559,8 +585,16 @@ int main(int argc, char** argv) {
 
     dut.final();
 
-    std::puts(HRM_STRINGIFY(
-        PASS: 4197376 HRM-derived blitter barrel shifter cases));
+    // Gated on the real count (not printed unconditionally) so a shrunk
+    // sweep - the exact thing RANGE's own mutation drives - cannot leave a
+    // stale "PASS: 4197376 ..." line on screen next to a FAIL.
+    if (checks == expected_checks) {
+        std::puts(HRM_STRINGIFY(
+            PASS: 4197376 HRM-derived blitter barrel shifter cases));
+    } else {
+        std::printf("FAIL: exhaustive sweep completed %zu cases, expected %zu\n",
+                    checks, expected_checks);
+    }
     std::printf("%d passed, %d failed (named, cited assertions)\n",
                 named.passed, named.failed);
     return named.failed == 0 ? 0 : 1;
