@@ -6,42 +6,60 @@ it carries.
 
 ## Three layers
 
+Measured 09.09.2026, part-way through chapter 6's build stage.
+
 | Layer | Tests | What is established |
 |---|---:|---|
-| **A — through the pipeline** | 12 | class declared, oracle named, page cited, and **stimulus mutations run**: each assertion was shown to bind to the behaviour it claims |
+| **A — through the pipeline** | 20 | class declared, oracle named, page cited, and **stimulus mutations run**: each assertion was shown to bind to the behaviour it claims |
 | **B — hand-written, declared** | 23 | class declared, oracle named, explicit non-goals — but no mutation evidence and no completeness claim. **One of them asserts nothing at all** — see backlog item 5 |
-| **C — no header in the source** | 8 | neither test class nor primary oracle in the `.cpp`; layer C is exactly the eight blitter tests |
+| **C — no header in the source** | 5 | neither test class nor primary oracle in the `.cpp` |
 
 Layer B is not sloppy work. Those tests fix the expected behaviour from the
 manual before looking at the RTL, cite their pages, and state what they do *not*
-prove; `agnus_blitter_fill` walks all 262,144 input combinations. What they lack
-is the pipeline's evidence that each assertion would go red if the behaviour
-changed, and any claim that the manual's statements about that module are
-covered.
+prove. What they lack is the pipeline's evidence that each assertion would go red
+if the behaviour changed, and any claim that the manual's statements about that
+module are covered.
 
-### Layer A — chapter 2, through the pipeline
+### Layer A — 20
+
+Chapter 2's twelve Copper tests, and eight from chapter 6's build stage:
 
 ```
 agnus_copper_bus_behaviour   agnus_copper_control      agnus_copper_cycle_times
 agnus_copper_cycles          agnus_copper_list         agnus_copper_locreg_width
 agnus_copper_move_range      agnus_copper_move_src     agnus_copper_move_sweep
 agnus_copper_rejected_move   agnus_copper_selfmod      agnus_copper_waitskip_range
+
+agnus_blitter_adrgen         agnus_blitter_barrelshifter  agnus_blitter_fill
+agnus_blitter_line           agnus_blitter_masks          agnus_blitter_minterm
+agnus_blitter_shift_chain    agnus_blitter_status
 ```
 
-### Layer C — no header in the source
+Three of the chapter-6 eight are the *prior-art* files raised into layer A rather
+than new directories — `barrelshifter`, `fill` and `minterm` kept their exhaustive
+sweeps and gained a header, page citations and mutation records. The other five
+are new fixtures that compile the design.
+
+### Layer C — 5, and they are exactly the set awaiting deletion
 
 ```
-agnus_blitter_barrelshifter  agnus_blitter_fill    agnus_blitter_line_octant
-agnus_blitter_mask           agnus_blitter_minterm agnus_blitter_modulo
-agnus_blitter_ptr            agnus_blitter_zero
+agnus_blitter_line_octant  agnus_blitter_mask  agnus_blitter_modulo
+agnus_blitter_ptr          agnus_blitter_zero
 ```
 
-Layer C turns out to be exactly the blitter set, and it is less bad than "no
-header" suggests: three of the eight carry a `README.md` beside the source that
-names the manual pages — `agnus_blitter_barrelshifter` (179, 182, 267),
-`agnus_blitter_fill` (184, 185, 267), `agnus_blitter_minterm` (174, 175, 177,
-178). The other five state their oracle nowhere at all:
-`agnus_blitter_line_octant`, `_mask`, `_modulo`, `_ptr`, `_zero`.
+This was eight, and the three that left it — `barrelshifter`, `fill`, `minterm` —
+left by being extended rather than replaced. The five that remain are precisely
+the ones a chapter-6 package **supersedes**: `modulo` and `ptr` by
+`agnus_blitter_adrgen`, `mask` by `agnus_blitter_masks`, `zero` by
+`agnus_blitter_status`, `line_octant` by `agnus_blitter_line`. Each stays in the
+tree, unchanged and still passing, until its replacement has been reviewed; a
+superseded test is deleted after, never before. When the last of them goes, layer
+C is empty.
+
+That coincidence is not luck. Layer C was defined as "no header", and the reason
+those five had none is the reason they were superseded: three compile a local
+copy of RTL rather than the design, and two assert uncited expectations. The
+measurement and the supersession were finding the same thing from two directions.
 
 An earlier revision of this file listed the DMA and Denise tests here instead.
 That list was inferred from a group count rather than measured, and it was wrong:
@@ -123,6 +141,36 @@ build, or chapter 2 / pages 19–36 / 273–276 cited in the header — not by n
 
 So one further check was needed and it survived. The remaining eighteen layer-B
 tests make no chapter-2 claim and are left for their own chapters.
+
+### 2b. What the chapter-6 build has settled so far — 09.09.2026
+
+Eight of the sixteen chapter-6 packages are built, and they answer most of item 2.
+Each was reviewed by rebuilding it, deriving its claim coverage from the inventory
+rather than adopting the builder's count, and mutating the **RTL** in a scratch
+copy to confirm the test can fail:
+
+| Package | Test | Claims | Mutation that turned it red |
+|---|---|---:|---|
+| PKG-BLT-STATUS | `agnus_blitter_status` | 28 | `zero` clear condition disabled → 5 of 17 red |
+| PKG-BLT-FILL | `agnus_blitter_fill` | 51 | inclusive fill loses its OR → 4 of 13 red |
+| PKG-BLT-ADRGEN | `agnus_blitter_adrgen` | 92 | pointer increments by 2 units → 3 of 16 red |
+| PKG-BLT-MINTERM | `agnus_blitter_minterm` | 182 | `lf[2]`/`lf[4]` swapped → 25 of 56 red |
+| PKG-BLT-SHIFT | `agnus_blitter_barrelshifter` | 24 | `desc` inverted → sweep fails on case 1 |
+| PKG-BLT-SHIFT-CHAIN | `agnus_blitter_shift_chain` | 35 | `bltaold` cleared every word → 2 of 11 red |
+| PKG-BLT-MASKS | `agnus_blitter_masks` | 74 | first word takes BLTALWM → 8 of 19 red |
+| PKG-BLT-LINE | `agnus_blitter_line` | 225 | in progress |
+
+Defect 1 from [blitter-prior-art.md](blitter-prior-art.md) is answered by the
+supersessions: `mask`, `zero` and `line_octant` compiled a local copy of the RTL,
+and their replacements compile the design. Defect 3 is answered — `fill`'s worked
+examples now carry pp.184-185. Defect 2 is `agnus_blitter_line`'s to fix and is
+the reason that package must carry **both** probes, `ash = 15` against `lineinc`
+and `ash = 0` against `linedec`.
+
+Three of the eight builders found a **vacuous mutation** in their own work — a
+stimulus change that left the assertion green because the mutated value
+coincidentally matched the expected one — and each recorded it rather than
+quietly replacing it. That is the mutation records doing the job they exist for.
 
 ### 4. Layer C is the blitter set — same item as 2
 
