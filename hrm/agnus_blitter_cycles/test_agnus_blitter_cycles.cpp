@@ -811,8 +811,17 @@ int main(int argc, char** argv) {
             "in order - 'the [blitter] moves the data, one word at a time, whenever the "
             "data bus is available' (p.171). agnus_blitter.v:605 (`enable = enadma & "
             "clkena`, the FSM's sole progress gate), :687-688,708-709 (every state's "
-            "transition is conditioned on `enable`). "
-            "6-dma-channels.c40, ch6-dma.c36, ch6-dma.c37 .");
+            "transition is conditioned on `enable`). Also covered here: 'The blitter "
+            "performs its various data-fetch, modify, and store operations through DMA "
+            "sequences, and it shares memory access with other devices' (p.194) - the "
+            "same reqdma/ackdma handshake this assertion stalls and resumes IS the "
+            "mechanism by which fetch/modify/store are DMA sequences sharing the bus "
+            "with other requesters; the module's whole external activity is that "
+            "handshake plus address_out/we/data_out (agnus_blitter.v:87-97), and this "
+            "fixture answering ackdma only when it chooses to is what 'sharing' means "
+            "at this boundary. "
+            "6-dma-channels.c40, ch6-dma.c36, ch6-dma.c37, 6-system-dma.c1, "
+            "6-system-dma.c2, 6-system-dma.c3, 6-system-dma.c4 .");
     }
 
     // ---------------- RECTANGLE-BLIT-IS-WIDTH-BY-HEIGHT-WORDS (p.171) ----------------
@@ -962,8 +971,13 @@ int main(int argc, char** argv) {
             "the same [logic operation is used] on each point throughout the "
             "rectangular region' (p.174). agnus_blitter_minterm.v:29-40 - combinational, "
             "bit-parallel, all sixteen bit positions, re-evaluated fresh for every "
-            "word. 6-function-generator.c1, 6-function-generator.c3, "
-            "6-function-generator.c4, ch6-funcgen.c2 .");
+            "word. Also covered here: Figure 6-13's eight AND-gate outputs combined in a "
+            "single OR gate (p.199) IS this same minterm generator - eight minterm "
+            "product terms (agnus_blitter_minterm.v:32-39, one AND per line) OR-reduced "
+            "into one output (line 44) - the structure this assertion measures the "
+            "behaviour of. "
+            "6-function-generator.c1, 6-function-generator.c3, "
+            "6-function-generator.c4, ch6-funcgen.c2, ch6-fig613.f18 .");
     }
 
     // ---------------- MASK-BEFORE-SHIFT (p.200) ----------------
@@ -997,7 +1011,7 @@ int main(int argc, char** argv) {
             "barrel shifter's input port - the mask is applied before the value ever "
             "reaches the shifter, structurally, and this measurement confirms the "
             "structural fact operationally. 6-blitter-key-points.c8, ch6-keypoints.c9, "
-            "ch6-pipe.c1 .");
+            "6-pipeline.c1, ch6-pipe.c1 .");
     }
 
     // ---------------- SHIFT-BEFORE-COMBINE (p.200) ----------------
