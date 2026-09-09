@@ -161,14 +161,14 @@
 //   row-boundary delta differs between the two runs" is false.
 // MUTATION SHIFTING-ADDS-NO-CYCLES stimulus red: the ash=7 measurement's
 //   upper marginal width changed from 20 to 21 (the ash=0 measurement's
-//   widths, 10 and 20, left untouched) -> FAIL, ticks_shifted becomes 22
-//   (11 extra words' worth from the mismatched width pairing) while
-//   ticks_noshift stays 20 - the two per-word measurements no longer
-//   agree. (Shifting genuinely costs zero extra cycles at every shift
-//   amount in this RTL - no `ash`-only stimulus change can make this
-//   assertion fail honestly, since there is no bug to catch; the width-
-//   pairing mutation instead confirms the marginal-measurement technique
-//   itself is sensitive to a real change.)
+//   widths, 10 and 20, left untouched) -> FAIL, ticks_shifted becomes 44
+//   (11 words at 4 ticks/word each, from the mismatched width pairing)
+//   while ticks_noshift stays 40 (10 words at 4 ticks/word) - the two
+//   per-word measurements no longer agree. (Shifting genuinely costs zero
+//   extra cycles at every shift amount in this RTL - no `ash`-only
+//   stimulus change can make this assertion fail honestly, since there is
+//   no bug to catch; the width-pairing mutation instead confirms the
+//   marginal-measurement technique itself is sensitive to a real change.)
 // MUTATION FUNCTION-GENERATOR-COMBINES-THREE-SOURCES-PER-POINT stimulus
 //   red: word1's B value changed from 0x0000 to 0x0001 (expected constant
 //   left untouched) -> FAIL, that word's computed XOR no longer matches.
