@@ -39,32 +39,37 @@
 // fill-logic claims, and are asserted below as AREA-FILL-CONCURRENT-WITH-
 // COPY-IN-D-PATH.
 //
-// A MEASURED RTL-VS-MANUAL DISAGREEMENT, FLAGGED PER THIS TASK'S STANDING
-// RULE ("if the inventory's evidence and the RTL disagree, the RTL wins,
-// and you say so"): p.193's speed-table ABSOLUTE tick counts (minimum 4,
-// maximum 8, A+D=4, B+D=6, B+C+D=8, "B always adds two ticks", "use of
-// both C and D adds another two ticks") do NOT hold literally against this
-// RTL. Measured directly (marginal clk7_en-qualified ticks between two
-// blits of different width, eliminating start/flush overhead by
-// construction - see per_word_ticks() below), every one of those combos
-// comes out at EXACTLY HALF the manual's stated number: D-alone/A+D/A-
-// alone/none = 2 (not 4); B+D/C+D/A+B/A+B+D/A+C+D = 3 (not 6); B+C+D/
-// A+B+C+D = 4 (not 8); line mode = 4 ticks/pixel (not 8). The RELATIVE
-// structure the manual describes DOES hold exactly (A always contributes
-// zero; B always contributes a fixed constant; C and D together contribute
-// a fixed constant beyond either alone; neither C nor D alone contributes
-// anything) - only the absolute scale is off, by a clean, uniform,
-// reproducible factor of two across all eight combinations measured. This
-// is reported, not resolved: the absolute-count assertions below (MINIMUM-
-// BLITTER-CYCLE-FOUR-TICKS, MAXIMUM-BLITTER-CYCLE-EIGHT-TICKS, B-ADDS-TWO-
-// TICKS, C-AND-D-TOGETHER-ADDS-TWO-TICKS, FOUR-TICK-COPY-A-AND-D, SIX-
-// TICK-COPY-B-AND-D, EIGHT-TICK-GENERALIZED-COPY-B-C-D, LINE-MODE-EIGHT-
-// TICKS-PER-PIXEL) assert the manual's literal numbers and are RED against
-// this RTL, honestly, rather than being adjusted to the measured value.
-// The RELATIVE/qualitative claims (A-REGISTER-ALWAYS-FREE, C-ALONE-FREE,
-// D-ALONE-FREE, BLITTER-SPEED-DEPENDS-ON-ENABLED-CHANNELS, CONSTANT-
-// CHANNEL-DOESNT-COUNT-AGAINST-SPEED) do not depend on the absolute scale
-// and are GREEN.
+// A FIXTURE DEFECT FOUND AND FIXED DURING THIS BUILD, RECORDED HERE SO
+// NOBODY RE-DERIVES IT: the first version of this file held `clkena`
+// constantly high (copied from hrm/agnus_blitter_status, where it is
+// harmless because that package measures no durations). Every one of the
+// eight tick-count speed assertions below then measured EXACTLY HALF of
+// what p.193 states - minimum 2 not 4, maximum 4 not 8, A+D=2 not 4,
+// B+D=3 not 6, B+C+D=4 not 8, B adds 1 not 2, C+D together adds 1 not 2,
+// line mode 4 not 8 ticks/pixel - a clean, uniform, reproducible factor of
+// two across eight independently measured combinations, which is the
+// signature of a wrong timebase, not of eight separate defects. Confirmed
+// against the actual machine this module is instantiated into:
+// `agnus.v:437` wires the blitter's `clkena` port to `cck`
+// (`agnus_blitter bl1 ( ... .clkena(cck), ... )`), and `amiga_clk.v:19-38`
+// shows `cck` is a true divide-by-two of the `clk7_en` rate (`cck <= ~cck`
+// fires exactly once per clk7_en pulse, unconditionally). Since
+// `agnus_blitter.v:605`'s `assign enable = enadma & clkena` gates every
+// genuine FSM advance, holding clkena constantly high (instead of on
+// alternate clk7_en-qualified ticks, the way `agnus.v` actually drives it)
+// let the FSM advance on every tick instead of every other one - exactly
+// the observed 2x. Fixed in Harness::cycle(): `clkena_phase` toggles once
+// per cycle() call, matching cck's own toggle-once-per-tick behaviour (see
+// the member's own comment). Re-measured with the corrected timebase, all
+// eight combinations land EXACTLY on the manual's stated numbers (minimum
+// 4, maximum 8, A+D=4, B+D=6, B+C+D=8, B adds 2, C+D together adds 2, line
+// mode 8 ticks/pixel) - the earlier reading was a fixture defect, not an
+// RTL defect, and all eight tick-count assertions are green. A DURATION
+// MEASURED AT THIS BOUNDARY IS THEREFORE ONLY MEANINGFUL WITH `clkena`
+// DRIVEN THE WAY `agnus.v` DRIVES IT (alternating, never held high) - the
+// next package that measures a cycle count through this harness inherits
+// Harness::cycle()'s clkena toggle, not agnus_blitter_status's constant
+// one.
 //
 // THE ecs PORT: this file ties `ecs` to 0 throughout (every claim covered
 // here is chipset-independent DMA/pipeline/order-of-operations behaviour;
@@ -367,7 +372,7 @@ public:
         dut->clk7_en = 1;
         dut->reset = 1;
         dut->ecs = 0;
-        dut->clkena = 1;
+        dut->clkena = 1;  // cycle() drives the true alternation from here on
         dut->enadma = 1;
         dut->ackdma = 0;
         dut->data_in = 0;
@@ -444,6 +449,19 @@ private:
     bool last_granted = false;
     char last_grant_channel = 0;
     uint32_t last_grant_address = 0;
+    // agnus.v:437 wires the blitter's `clkena` to `cck`, the colour-clock
+    // enable - amiga_clk.v:19-38 shows cck is a true divide-by-2 of the
+    // clk7_en rate (`cck <= ~cck` fires exactly once per clk7_en pulse).
+    // agnus_blitter.v:605's `enable = enadma & clkena` gates every genuine
+    // FSM advance, so a harness that holds clkena constantly high (as this
+    // file's first version did, inherited from agnus_blitter_status, where
+    // it is harmless because that package measures no durations) makes the
+    // FSM advance on EVERY clk7_en-qualified tick instead of every other
+    // one - exactly a 2x-fast timebase relative to the design this module
+    // is instantiated into. Toggled once per cycle() call, matching cck's
+    // own toggle-once-per-tick behaviour, starting high (matching
+    // amiga_clk.v:28's `cck <= 1` reset value).
+    bool clkena_phase = true;
 
     void tick_bookkeeping() {
         Sample s{tick_count++, static_cast<bool>(dut->busy), static_cast<bool>(dut->zero),
@@ -459,6 +477,8 @@ private:
     }
 
     void cycle(bool cpu_write = false, uint16_t cpu_reg = IDLE_REG, uint16_t cpu_data = 0) {
+        dut->clkena = clkena_phase ? 1 : 0;
+        clkena_phase = !clkena_phase;
         dut->eval();
         // int3 (=done, agnus_blitter.v:507) is purely combinational off the
         // CURRENT (pre-edge) FSM state; sampling it here - before this
@@ -1346,10 +1366,10 @@ int main(int argc, char** argv) {
         checks.expect(min_cost == 4,
             "MINIMUM-BLITTER-CYCLE-FOUR-TICKS: measured minimum per-word cost (D alone, "
             "the lowest of all sixteen USE codes) is " + std::to_string(min_cost) +
-            " ticks, not the manual's stated 4 - 'The minimum blitter cycle is four "
-            "ticks' (p.193). See the file header's flagged RTL-vs-manual disagreement: "
-            "every combination measured comes out at exactly half the manual's stated "
-            "count. 6-blitter-speed.c3, ch6-speed.c3 .");
+            " ticks, matching the manual's stated 4 exactly - 'The minimum blitter "
+            "cycle is four ticks' (p.193). See the file header's fixture-defect note: "
+            "measured only correctly with `clkena` alternating as agnus.v:437 actually "
+            "drives it, not held constantly high. 6-blitter-speed.c3, ch6-speed.c3 .");
     }
 
     // ---------------- MAXIMUM-BLITTER-CYCLE-EIGHT-TICKS (p.193) ----------------
@@ -1358,10 +1378,11 @@ int main(int argc, char** argv) {
 
         checks.expect(max_cost == 8,
             "MAXIMUM-BLITTER-CYCLE-EIGHT-TICKS: measured maximum per-word cost (all "
-            "four channels enabled) is " + std::to_string(max_cost) + " ticks, not the "
-            "manual's stated 8 - 'the maximum is eight ticks' (p.193). See the file "
-            "header's flagged RTL-vs-manual disagreement. 6-blitter-speed.c4, "
-            "ch6-speed.c4 .");
+            "four channels enabled) is " + std::to_string(max_cost) + " ticks, matching "
+            "the manual's stated 8 exactly - 'the maximum is eight ticks' (p.193). See "
+            "the file header's fixture-defect note: measured only correctly with "
+            "`clkena` alternating as agnus.v:437 actually drives it. "
+            "6-blitter-speed.c4, ch6-speed.c4 .");
     }
 
     // ---------------- A-REGISTER-ALWAYS-FREE (p.193) ----------------
@@ -1374,8 +1395,10 @@ int main(int argc, char** argv) {
             "per-word cost from " + std::to_string(cost_d_alone) + " to " +
             std::to_string(cost_a_and_d) + " - zero difference - 'Use of the A "
             "register is always free' (p.193). This is a RELATIVE (zero-marginal-cost) "
-            "claim and holds regardless of the absolute-tick-count disagreement flagged "
-            "in the file header. agnus_blitter.v:668-689 - BLT_A is visited every word "
+            "claim, unaffected by the clkena timebase (see the file header's fixture-"
+            "defect note) since it compares two measurements taken with the same "
+            "timebase rather than against an absolute count. agnus_blitter.v:668-689 - "
+            "BLT_A is visited every word "
             "regardless of usea; only whether it REQUESTS a grant depends on usea, and "
             "requesting or not costs the same one cycle either way. 6-blitter-speed.c5, "
             "ch6-speed.c5 .");
@@ -1391,9 +1414,10 @@ int main(int argc, char** argv) {
             "the fetch cost is still measurable) costs the same per word (" +
             std::to_string(cost_c_alone) + ") as no channels enabled at all (" +
             std::to_string(cost_none) + ") - 'use of either C or D is free' (p.193, the "
-            "C half). This is a RELATIVE claim and holds regardless of the absolute-"
-            "tick-count disagreement flagged in the file header. agnus_blitter.v:712-"
-            "732 - BLT_C is visited (and, in fill modes, always visited) but does not "
+            "C half). This is a RELATIVE claim, unaffected by the clkena timebase (see "
+            "the file header's fixture-defect note) since both measurements share it. "
+            "agnus_blitter.v:712-732 - BLT_C is visited (and, in fill modes, always "
+            "visited) but does not "
             "by itself add a cycle beyond what BLT_A/BLT_D already cost when C is the "
             "only channel requesting. 6-blitter-speed.c7 .");
     }
@@ -1407,8 +1431,9 @@ int main(int argc, char** argv) {
             "D-ALONE-FREE: enabling only USED costs the same per word (" +
             std::to_string(cost_d_alone) + ") as no channels enabled at all (" +
             std::to_string(cost_none) + ") - 'use of either C or D is free' (p.193, the "
-            "D half). This is a RELATIVE claim and holds regardless of the absolute-"
-            "tick-count disagreement flagged in the file header. agnus_blitter.v:735-"
+            "D half). This is a RELATIVE claim, unaffected by the clkena timebase (see "
+            "the file header's fixture-defect note) since both measurements share it. "
+            "agnus_blitter.v:735-"
             "757 - BLT_D is visited every word regardless of used (see TABLE-6-2's "
             "evidence); enabling it alone adds nothing beyond the baseline two states "
             "(BLT_A, BLT_D) every USE code visits at minimum. 6-blitter-speed.c8, "
@@ -1425,11 +1450,11 @@ int main(int argc, char** argv) {
             "B-ADDS-TWO-TICKS: adding USEB to a D-alone blit raises the per-word cost "
             "from " + std::to_string(cost_d_alone) + " to " + std::to_string(cost_b_and_d) +
             " - a marginal cost of " + std::to_string(measured_marginal) + " tick(s), "
-            "not the manual's stated 2 - 'Use of the B register always adds two ticks "
-            "to the blitter cycle' (p.193). See the file header's flagged RTL-vs-manual "
-            "disagreement (measured marginal cost is consistently half the manual's "
-            "stated one). agnus_blitter.v:691-710 (BLT_B visited, and requests a grant, "
-            "iff useb). 6-blitter-speed.c6, ch6-speed.c6 .");
+            "matching the manual's stated 2 exactly - 'Use of the B register always "
+            "adds two ticks to the blitter cycle' (p.193). See the file header's "
+            "fixture-defect note: measured only correctly with `clkena` alternating as "
+            "agnus.v:437 actually drives it. agnus_blitter.v:691-710 (BLT_B visited, "
+            "and requests a grant, iff useb). 6-blitter-speed.c6, ch6-speed.c6 .");
     }
 
     // ---------------- C-AND-D-TOGETHER-ADDS-TWO-TICKS (p.193) ----------------
@@ -1448,13 +1473,14 @@ int main(int argc, char** argv) {
             "using both C and D together raises the per-word cost from " +
             std::to_string(cost_d_alone) + " to " + std::to_string(cost_c_and_d) +
             " - a marginal cost of " + std::to_string(measured_marginal) + " tick(s), "
-            "not the manual's stated 2 - 'Use of either C or D is free, but use of "
-            "both adds another two ticks' (p.193). See the file header's flagged "
-            "RTL-vs-manual disagreement. agnus_blitter.v:75 (the module's own change-"
-            "log: 'there is still incompatibility when C channel is selected without D: "
-            "extra idle cycle is inserted' - independent confirmation that channel "
-            "selection genuinely changes the cycle count, even though the exact "
-            "magnitude disagrees with the manual). 6-blitter-speed.c9, ch6-speed.c8 .");
+            "matching the manual's stated 2 exactly - 'Use of either C or D is free, "
+            "but use of both adds another two ticks' (p.193). See the file header's "
+            "fixture-defect note: measured only correctly with `clkena` alternating as "
+            "agnus.v:437 actually drives it. agnus_blitter.v:75 (the module's own "
+            "change-log: 'there is still incompatibility when C channel is selected "
+            "without D: extra idle cycle is inserted' - independent confirmation that "
+            "channel selection genuinely changes the cycle count, corroborating the "
+            "measurement). 6-blitter-speed.c9, ch6-speed.c8 .");
     }
 
     // ---------------- FOUR-TICK-COPY-A-AND-D (p.193) ----------------
@@ -1463,10 +1489,11 @@ int main(int argc, char** argv) {
 
         checks.expect(cost_a_and_d == 4,
             "FOUR-TICK-COPY-A-AND-D: measured per-word cost for A+D is " +
-            std::to_string(cost_a_and_d) + " ticks, not the manual's stated 4 - 'a "
-            "copy cycle, using A and D, takes four clock ticks per cycle' (p.193). See "
-            "the file header's flagged RTL-vs-manual disagreement. 6-blitter-speed.c10, "
-            "ch6-speed.c9 .");
+            std::to_string(cost_a_and_d) + " ticks, matching the manual's stated 4 "
+            "exactly - 'a copy cycle, using A and D, takes four clock ticks per cycle' "
+            "(p.193). See the file header's fixture-defect note: measured only "
+            "correctly with `clkena` alternating as agnus.v:437 actually drives it. "
+            "6-blitter-speed.c10, ch6-speed.c9 .");
     }
 
     // ---------------- SIX-TICK-COPY-B-AND-D (p.193) ----------------
@@ -1475,10 +1502,11 @@ int main(int argc, char** argv) {
 
         checks.expect(cost_b_and_d == 6,
             "SIX-TICK-COPY-B-AND-D: measured per-word cost for B+D is " +
-            std::to_string(cost_b_and_d) + " ticks, not the manual's stated 6 - 'a copy "
-            "cycle using B and D takes six ticks per cycle' (p.193). See the file "
-            "header's flagged RTL-vs-manual disagreement. 6-blitter-speed.c11, "
-            "ch6-speed.c10 .");
+            std::to_string(cost_b_and_d) + " ticks, matching the manual's stated 6 "
+            "exactly - 'a copy cycle using B and D takes six ticks per cycle' (p.193). "
+            "See the file header's fixture-defect note: measured only correctly with "
+            "`clkena` alternating as agnus.v:437 actually drives it. "
+            "6-blitter-speed.c11, ch6-speed.c10 .");
     }
 
     // ---------------- EIGHT-TICK-GENERALIZED-COPY-B-C-D (p.193) ----------------
@@ -1487,9 +1515,10 @@ int main(int argc, char** argv) {
 
         checks.expect(cost_bcd == 8,
             "EIGHT-TICK-GENERALIZED-COPY-B-C-D: measured per-word cost for B+C+D is " +
-            std::to_string(cost_bcd) + " ticks, not the manual's stated 8 - 'a "
-            "generalized bit copy using B, C, and D takes eight ticks per cycle' "
-            "(p.193). See the file header's flagged RTL-vs-manual disagreement. "
+            std::to_string(cost_bcd) + " ticks, matching the manual's stated 8 exactly "
+            "- 'a generalized bit copy using B, C, and D takes eight ticks per cycle' "
+            "(p.193). See the file header's fixture-defect note: measured only "
+            "correctly with `clkena` alternating as agnus.v:437 actually drives it. "
             "6-blitter-speed.c12, ch6-speed.c11 .");
     }
 
@@ -1517,12 +1546,14 @@ int main(int argc, char** argv) {
 
         checks.expect(per_pixel == 8,
             "LINE-MODE-EIGHT-TICKS-PER-PIXEL: measured per-pixel cost in line mode is " +
-            std::to_string(per_pixel) + " ticks, not the manual's stated 8 - 'When in "
-            "line mode, each pixel takes eight ticks' (p.193). See the file header's "
-            "flagged RTL-vs-manual disagreement (the same factor-of-two gap as every "
-            "normal-mode speed claim). agnus_blitter.v:795-869 - BLT_L1, BLT_L2, BLT_L3 "
-            "and BLT_L4 are each visited exactly once per pixel, unconditionally on "
-            "clkena. 6-blitter-speed.c13, ch6-speed.c12 .");
+            std::to_string(per_pixel) + " ticks, matching the manual's stated 8 exactly "
+            "- 'When in line mode, each pixel takes eight ticks' (p.193). See the file "
+            "header's fixture-defect note: measured only correctly with `clkena` "
+            "alternating as agnus.v:437 actually drives it (each of BLT_L1-BLT_L4, "
+            "agnus_blitter.v:795-869, is visited exactly once per pixel, but only every "
+            "other clk7_en-qualified tick is a genuine FSM advance once clkena is "
+            "driven correctly, doubling the measured cost from the 4 an always-high "
+            "clkena had produced). 6-blitter-speed.c13, ch6-speed.c12 .");
     }
 
     // ---------------- FIGURE-6-13-BIT-SLICE-REPLICATION (p.198) ----------------
