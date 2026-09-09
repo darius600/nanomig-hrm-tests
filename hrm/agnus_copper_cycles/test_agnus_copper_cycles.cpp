@@ -252,10 +252,10 @@ int main(int argc, char** argv) {
         h.run_cycles(20000);
         const int wait_cycles = h.grants_for_instruction_at(0);
         const int move_cycles = h.grants_for_instruction_at(2);
-        checks.expect(wait_cycles == 3, "C5 a satisfied WAIT consumes three memory cycles (p.20)");
+        checks.expect(wait_cycles == 3, "C5 a satisfied WAIT consumes three memory cycles (p.20) [FPGA-069, expected red]");
         // C6 - the claim stated as the relative one the HRM actually makes.
         checks.expect(wait_cycles == move_cycles + 1,
-                      "C6 a WAIT consumes exactly one memory cycle more than a MOVE (p.20 'one extra to wake up')");
+                      "C6 a WAIT consumes exactly one memory cycle more than a MOVE (p.20 'one extra to wake up') [FPGA-069, expected red]");
     }
 
     // ---------------- CI1-CI4: the "every ... except" of COPINS ----------------

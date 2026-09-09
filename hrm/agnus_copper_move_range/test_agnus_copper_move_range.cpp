@@ -265,7 +265,11 @@ int main(int argc, char** argv) {
     // T9, T10 - Appendix C p. 310: ECS shifts the scale by one step. With
     // CDANG clear the ECS Copper already reaches the blitter range, and with
     // CDANG set it reaches every chip register.
-    checks.expect(move_reaches(true, false, BLTCON0), "T9 ECS CDANG=0: MOVE to BLTCON0 ($040) is written (Appendix C p.310)");
+    // T9 is expected RED: this is FPGA-062, not a broken assertion. See
+    // docs/findings.md - with ECS and CDANG=0 appendix C p.310 gives the writable
+    // range as $20-$FF, the RTL gives $40-$FF, and 32 addresses $20-$3F are
+    // falsely rejected. Making this assertion pass would delete the finding.
+    checks.expect(move_reaches(true, false, BLTCON0), "T9 ECS CDANG=0: MOVE to BLTCON0 ($040) is written (Appendix C p.310) [FPGA-062, expected red]");
     checks.expect(move_reaches(true, true, COPCON), "T10 ECS CDANG=1: MOVE to COPCON ($02E) is written (Appendix C p.310)");
 
     // T11 - print page 25 warns CDANG is cleared by reset. Without any COPCON

@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(4000);
         checks.expect_eq(h.span_in_memory_cycle_times(0, 2), 4,
-                         "P3 a SKIP whose condition is true spans four memory cycle times (p.20)");
+                         "P3 a SKIP whose condition is true spans four memory cycle times (p.20) [FPGA-069, expected red]");
     }
 
     // P4 - the same claim with the condition false, so the following MOVE runs.
@@ -275,7 +275,7 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(4000);
         checks.expect_eq(h.span_in_memory_cycle_times(0, 2), 4,
-                         "P4 a SKIP whose condition is false spans four memory cycle times (p.20)");
+                         "P4 a SKIP whose condition is false spans four memory cycle times (p.20) [FPGA-069, expected red]");
     }
 
     // P5/P6 - p.20: "The WAIT instruction requires three memory cycles and six
@@ -293,9 +293,9 @@ int main(int argc, char** argv) {
         h.run_cycles(4000);
         const int wait_span = h.span_in_memory_cycle_times(0, 2);
         checks.expect_eq(wait_span, 6,
-                         "P5 a satisfied WAIT spans six memory cycle times (p.20)");
+                         "P5 a satisfied WAIT spans six memory cycle times (p.20) [FPGA-069, expected red]");
         checks.expect_eq(wait_span - move_span, 2,
-                         "P6 a WAIT spans two memory cycle times more than a MOVE (p.20: three cycles versus two)");
+                         "P6 a WAIT spans two memory cycle times more than a MOVE (p.20: three cycles versus two) [FPGA-069, expected red]");
     }
 
     // ------------------------------------------------------------------
