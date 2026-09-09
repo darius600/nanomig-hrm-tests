@@ -10,21 +10,31 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 182 and 200.
 // Non-goals:
-//   - THAT BLTCON1 bit 1 is the bit which selects descending mode (the BIT
-//     DECODE, as opposed to the behaviour the mode produces). That fact is
-//     already asserted at this identical `agnus_blitter` boundary, on the
-//     identical address_out-sequence measurement basis, as
-//     AREA-DESC-BIT1-SELECTS-DESCENDING-MODE in PKG-BLT-BLTCON-FIELDS
-//     (hrm/agnus_blitter_bltcon/test_agnus_blitter_bltcon.cpp). Rebuilding it
-//     here would be pure duplication of mechanism, not a second package
-//     "meeting the same fact from the opposite side" the way this package
-//     and PKG-BLT-SHIFT legitimately do (see below) - it is the SAME side,
-//     the SAME boundary, the SAME measurement. classify.package still filed
-//     two claims here that state exactly this bit-decode fact
-//     (6-descending-mode.c1, ch6-desc.c2, both p.182); both are reported as
-//     not-asserted-here, with this same reason, in CLAIM COVERAGE below,
-//     per the build brief's explicit instruction to read that assertion so
-//     as not to rebuild it.
+//   - THAT BLTCON1 bit 1, TO THE EXCLUSION OF EVERY OTHER BIT, is the one
+//     selecting descending mode - the exhaustive "no other bit does this"
+//     isolation sweep (bits 11,10,9,8,6,5 held unused, bit 1 the one control
+//     that moves the needle) is AREA-DESC-BIT1-SELECTS-DESCENDING-MODE's and
+//     AREA-MODE-BLTCON1-BITS-11-10-9-8-6-5-ARE-UNUSED's job in
+//     PKG-BLT-BLTCON-FIELDS (hrm/agnus_blitter_bltcon), on the p.267
+//     appendix-A TABLE basis - it cites 6-appa-control.c30,
+//     6-appa-control.c43, ch6-appa-bltcon0.area.b01.con1 and
+//     ch6-appa-bltcon0.legend.DESC, none of which this file cites or
+//     repeats.
+//   CORRECTION, 09.09.2026 (caught by the validating pipeline lead, not by
+//   this agent): an earlier version of this file deferred
+//   6-descending-mode.c1 and ch6-desc.c2 (both p.182 PROSE: "Descending mode
+//   is turned on by setting bit one of BLTCON1") to
+//   AREA-DESC-BIT1-SELECTS-DESCENDING-MODE above, on the mistaken belief
+//   that assertion already cited those two ids. It does not - it cites only
+//   the four p.267-table ids listed above, sourced from the appendix, not
+//   the chapter prose. A search of every .cpp under hrm/ turned up
+//   6-descending-mode.c1/ch6-desc.c2 nowhere except that mistaken deferral
+//   note - carried by no assertion at all. Fixed: DESCENDING-DECREMENTS-
+//   POINTER below now cites both directly, honestly - it sets BLTCON1 bit 1
+//   and, paired against the ASCENDING-INCREMENTS-POINTER control on the
+//   identical measurement, shows the pointer step reverse exactly as that
+//   sentence claims setting the bit will cause. No assertion's check
+//   changed; only its citation text did.
 //   - The leaf barrel shifter's own exhaustive shift-value sweep (all 16
 //     shift values, both directions, structural claims about the 32-bit
 //     window) - PKG-BLT-SHIFT's territory
@@ -129,9 +139,9 @@
 // that was not actually in it):
 //   ASCENDING-INCREMENTS-POINTER [control]  (2 ids: 6-blitter-key-points.c12,
 //     ch6-keypoints.c14 - p.200)
-//   DESCENDING-DECREMENTS-POINTER           (4 ids: 6-descending-mode.c3,
-//     ch6-desc.c4 - p.182; 6-blitter-key-points.c15, ch6-keypoints.c17 -
-//     p.200)
+//   DESCENDING-DECREMENTS-POINTER           (6 ids: 6-descending-mode.c1,
+//     ch6-desc.c2, 6-descending-mode.c3, ch6-desc.c4 - p.182;
+//     6-blitter-key-points.c15, ch6-keypoints.c17 - p.200)
 //   ASCENDING-ADDS-MODULO [control]         (2 ids: 6-blitter-key-points.c13,
 //     ch6-keypoints.c15 - p.200)
 //   DESCENDING-SUBTRACTS-MODULO             (4 ids: 6-descending-mode.c4,
@@ -141,13 +151,12 @@
 //     p.200)
 //   DESCENDING-SHIFTS-LEFT                  (1 id: 6-blitter-key-points.c17 -
 //     p.200)
-//   NOT ASSERTED HERE, with reason (2 ids): 6-descending-mode.c1, ch6-desc.c2
-//     (both p.182, both "BLTCON1 bit 1 [is what] enables/turns on descending
-//     mode") - the BIT-DECODE half of the DESC fact, already asserted at
-//     this identical boundary on the identical measurement basis as
-//     AREA-DESC-BIT1-SELECTS-DESCENDING-MODE in PKG-BLT-BLTCON-FIELDS; see
-//     Non-goals above.
-//   Total: 14 cited + 2 deferred = 16.
+//   Total: 16 cited, 0 deferred. (Corrected 09.09.2026 - see the Non-goals
+//   section's CORRECTION note: 6-descending-mode.c1/ch6-desc.c2 were
+//   originally deferred to a PKG-BLT-BLTCON-FIELDS assertion that, on
+//   inspection, does not cite them. They are cited directly above instead,
+//   inside DESCENDING-DECREMENTS-POINTER's own assertion string, where the
+//   bit they describe is actually set.)
 //
 // Every mutation below was actually applied by this agent (edit -> rebuild
 // -> run under WSL/Verilator -> revert -> rebuild-clean) on 09.09.2026, and
@@ -472,7 +481,12 @@ int main(int argc, char** argv) {
     checks.expect(descending_pointer_delta == -1,
         "DESCENDING-DECREMENTS-POINTER: with BLTCON1 bit 1 (DESC) set, the SAME "
         "measurement on the SAME 2-word blit falls by exactly 1 (2 bytes) instead of "
-        "rising - 'decremented by two (bytes) instead of incremented by two for each "
+        "rising. This fixture IS the switch p.182 describes in prose - 'Descending "
+        "mode is turned on by setting bit one of BLTCON1' (6-descending-mode.c1, "
+        "ch6-desc.c2, p.182): the bit is set directly here, paired against "
+        "ASCENDING-INCREMENTS-POINTER's identical measurement with the bit clear, and "
+        "the pointer step reverses exactly as that sentence claims it will - "
+        "'decremented by two (bytes) instead of incremented by two for each "
         "word' (6-descending-mode.c3, p.182), 'In descending mode the address "
         "pointers are decremented by two bytes for each word fetched, instead of "
         "incremented by two' (ch6-desc.c4, p.182), 'In descending mode, the blitter "
