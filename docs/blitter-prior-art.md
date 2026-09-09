@@ -60,8 +60,8 @@ through it. That is the finding, not the current state.
 uint8_t ash_major = (expected_major_x == 1) ? 15 : ((expected_major_x == 2) ? 0 : 8);
 ```
 
-For the four octants whose major axis is Y — 2, 3, 6 and 7 — `expected_major_x`
-is 0, so `ash` is 8. The RTL gates both X outputs on the shift value:
+For the four octants whose major axis is Y, `expected_major_x` is 0, so `ash` is
+8. The RTL gates both X outputs on the shift value:
 
 ```verilog
 wire lineinc = (...) && ash==4'b1111 ? 1'b1 : 1'b0;
@@ -100,6 +100,36 @@ So the assertion is recoverable without weakening it: the same claim, driven fro
 a state the RTL could get wrong. The complete fix needs both probes, `ash = 15`
 against `lineinc` and `ash = 0` against `linedec`; only the first was measured
 here.
+
+### Which octants those are — corrected 09.09.2026
+
+An earlier revision of this section named them "octants 2, 3, 6 and 7". That was
+wrong, and the mistake is worth keeping visible because of where it came from:
+the numbers were read out of `test_agnus_blitter_line_octant.cpp`'s own comments,
+which number the octants 1 to 8 in a scheme the file invented. The manual numbers
+them 0 to 7, and Table 6-3 on printed page 190 is the authority:
+
+| BLTCON1 4 3 2 (SUD SUL AUL) | Octant # |
+|---|---:|
+| 1 1 0 | 0 |
+| 0 0 1 | 1 |
+| 0 1 1 | 2 |
+| 1 1 1 | 3 |
+| 1 0 1 | 4 |
+| 0 1 0 | 5 |
+| 0 0 0 | 6 |
+| 1 0 0 | 7 |
+
+`SUD` selects the major axis, so the rows with `SUD = 0` — Y major, X minor — are
+octants **1, 2, 5 and 6**. Those are the four the vacuous assertion applies to.
+
+This was found by `PKG-BLT-LINE`'s builder, which re-derived the table from p190
+and appendix A p268 rather than from the test it was superseding, and said so.
+The correction had already propagated: the wrong numbering was repeated in
+`work/2026-09-08_fpga-090_packages.md`'s reconciliation and again in the build
+brief. Reading a superseded test's comments as if they were the manual is exactly
+the substitution this whole pipeline exists to prevent, and it happened in the
+document that records the pipeline's own findings.
 
 ## Defect 3 — `fill`'s four "HRM examples" prove nothing the sweep does not
 
