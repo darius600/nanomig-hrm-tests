@@ -1408,7 +1408,7 @@ int main(int argc, char** argv) {
             "ch6-appa-oct7.aul, ch6-appa-oct7.sud, ch6-appa-oct7.sul .");
     }
 
-    // ---------------- LINE-MODE-SING-BIT1-GATES-C-CHANNEL-TO-FIRST-PIXEL ----------------
+    // ---------------- LINE-MODE-SING-BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL ----------------
     {
         // FIXED (was: count grants with channel=='C', name said "GATES
         // C-CHANNEL"): agnus_blitter.v:860's `dma_req = usec & (~bltcon1[1]
