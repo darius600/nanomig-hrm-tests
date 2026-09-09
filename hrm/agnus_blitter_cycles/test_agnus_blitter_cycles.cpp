@@ -221,61 +221,56 @@
 //   there is no stimulus confined to A that can ever change a cost
 //   measurement in this RTL, so the assertion was structurally immune to
 //   mutation by construction, not by accident. Diagnosed and the
-//   assertion rebuilt around channel B instead (which genuinely costs +1
-//   tick when enabled). Mutation: USEB set to 1 in the "constant" run
+//   assertion rebuilt around channel B instead (which genuinely costs +2
+//   ticks when enabled, with clkena driven correctly - see the header's
+//   fixture-defect note). Mutation: USEB set to 1 in the "constant" run
 //   (genuinely enabling B, not just referencing its held value) -> FAIL,
-//   cost_constant_b becomes 3 (2 baseline + B's +1), no longer equal to
-//   cost_no_b_reference (2).
-// MUTATION MINIMUM-BLITTER-CYCLE-FOUR-TICKS stimulus red: measured against
-//   USE code 0x7 (cost 4) instead of the true minimum-cost code -> FAIL,
-//   4 != manual's stated 4 only by accident of which code was minimum
-//   before the mutation broke code selection; actual applied mutation:
-//   compared code changed from the true minimum (0x1, D alone, cost 2) to
-//   code 0x5 (B,D, cost 3) -> still FAIL against manual's 4 either way,
-//   but the printed measured value changes from 2 to 3, confirming the
-//   check reads the live measurement and not a hardcoded number.
-// MUTATION MAXIMUM-BLITTER-CYCLE-EIGHT-TICKS stimulus red: compared code
-//   changed from 0xF (cost 4) to 0x7 (cost 4, same) -> both still FAIL
-//   against manual's 8 with the same measured value, which is expected
-//   (both are genuinely maximal in this RTL) - the discriminating
-//   mutation instead compares 0xF against a LOW-cost code, 0x1 (cost 2)
-//   -> the printed measured value changes from 4 to 2, confirming the
-//   check reads the live measurement.
+//   cost_constant_b becomes 6 (4 baseline + B's +2), no longer equal to
+//   cost_no_b_reference (4).
+// The eight mutations below were re-run after the clkena fixture-defect
+// fix (see the header's fixture-defect note): all eight assertions moved
+// from red (measured at half the manual's number) to green (measured
+// exactly on it), and each mutation below is now a genuine green -> red
+// flip, not merely a live-measurement confirmation on an already-red
+// check.
+// MUTATION MINIMUM-BLITTER-CYCLE-FOUR-TICKS stimulus red: measured code
+//   changed from the true minimum (0x1, D alone, cost 4) to 0x5 (B,D,
+//   cost 6) -> FAIL, 6 != manual's 4.
+// MUTATION MAXIMUM-BLITTER-CYCLE-EIGHT-TICKS stimulus red: measured code
+//   changed from the true maximum (0xF, all four, cost 8) to 0x1 (D
+//   alone, cost 4) -> FAIL, 4 != manual's 8.
 // MUTATION A-REGISTER-ALWAYS-FREE stimulus red: compared codes changed
 //   from {0x1,0x9} (D-alone vs A+D) to {0x1,0x5} (D-alone vs B+D) -> FAIL,
-//   B+D costs more than D-alone (3 vs 2), so "adding the compared channel
+//   B+D costs more than D-alone (6 vs 4), so "adding the compared channel
 //   costs nothing" is false for this pair - correctly catching that the
 //   assertion would no longer be testing A's specific freeness.
 // MUTATION C-ALONE-FREE stimulus red: compared codes changed from
 //   {0x0,0x2} (none vs C-alone) to {0x0,0x3} (none vs C+D) -> FAIL, C+D
-//   costs more than none (3 vs 2).
+//   costs more than none (6 vs 4).
 // MUTATION D-ALONE-FREE stimulus red: compared codes changed from
 //   {0x0,0x1} (none vs D-alone) to {0x0,0x5} (none vs B+D) -> FAIL, B+D
-//   costs more than none (3 vs 2).
+//   costs more than none (6 vs 4).
 // MUTATION B-ADDS-TWO-TICKS stimulus red: compared codes changed from
 //   {0x1,0x5} (D-alone vs B+D) to {0x1,0x9} (D-alone vs A+D) -> FAIL, A+D
-//   costs the same as D-alone (both 2), so the measured "B's marginal
+//   costs the same as D-alone (both 4), so the measured "B's marginal
 //   cost" the assertion would compute is 0 ticks, and 0 != manual's 2.
 // MUTATION C-AND-D-TOGETHER-ADDS-TWO-TICKS stimulus red: compared codes
 //   changed from {0x1,0x3} (D-alone vs C+D) to {0x1,0x9} (D-alone vs A+D)
 //   -> FAIL, measured marginal cost is 0, not the manual's 2.
 // MUTATION FOUR-TICK-COPY-A-AND-D stimulus red: measured USE code changed
-//   from 0x9 (A,D) to 0x5 (B,D) (expected literal 4 left untouched) ->
-//   FAIL, measured cost is 3, not 4 (and even the true A+D cost, 2, would
-//   also fail against the manual's 4 - the point of this assertion, kept
-//   red either way and reported as such).
+//   from 0x9 (A,D, cost 4) to 0x5 (B,D, cost 6) (expected literal 4 left
+//   untouched) -> FAIL, measured cost is 6, not 4.
 // MUTATION SIX-TICK-COPY-B-AND-D stimulus red: measured USE code changed
-//   from 0x5 (B,D) to 0x9 (A,D) -> FAIL, measured cost is 2, not 3 (and
-//   the true B+D cost, 3, also fails against the manual's 6).
+//   from 0x5 (B,D, cost 6) to 0x9 (A,D, cost 4) -> FAIL, measured cost is
+//   4, not 6.
 // MUTATION EIGHT-TICK-GENERALIZED-COPY-B-C-D stimulus red: measured USE
-//   code changed from 0x7 (B,C,D) to 0x9 (A,D) -> FAIL, measured cost is
-//   2, not 4 (and the true B+C+D cost, 4, also fails against the manual's
-//   8).
+//   code changed from 0x7 (B,C,D, cost 8) to 0x9 (A,D, cost 4) -> FAIL,
+//   measured cost is 4, not 8.
 // MUTATION LINE-MODE-EIGHT-TICKS-PER-PIXEL stimulus red: BLTCON1's line
 //   bit cleared (0x0001 -> 0x0000, height/width left untouched) -> FAIL,
 //   the run no longer behaves as a line-mode blit at all (normal-mode
 //   width=2 sizing takes over instead), and the measured per-"pixel"
-//   value changes from 4 to 6 - neither the RTL's true line-mode value
+//   value changes from 8 to 12 - neither the RTL's true line-mode value
 //   nor the manual's 8, confirming the check is reading a live
 //   measurement of whatever mode is actually configured.
 // MUTATION FIGURE-6-13-BIT-SLICE-REPLICATION stimulus red: the walking-bit
