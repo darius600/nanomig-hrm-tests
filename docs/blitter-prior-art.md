@@ -199,6 +199,47 @@ should be able to find its page, and they are the ones to check first:
   non-zero word stored, and **never restored** by a later zero word. The last part
   is the interesting claim and it is uncited.
 
+## Deletion readiness — checked 09.09.2026, not yet acted on
+
+All five superseded tests now have a built, reviewed replacement. The policy is
+that a superseded test is deleted **after** its replacement is green, never
+before, so this records what a deletion would and would not lose.
+
+| Superseded | Replacement | Old DUT | Verdict |
+|---|---|---|---|
+| `agnus_blitter_modulo` | `agnus_blitter_adrgen` | the real module | covered, and now cited |
+| `agnus_blitter_ptr` | `agnus_blitter_adrgen` | the real module | covered, and now cited |
+| `agnus_blitter_zero` | `agnus_blitter_status` | local copy | all four of its cases covered, plus the sampling rule |
+| `agnus_blitter_mask` | `agnus_blitter_masks` | local copy | covered — **but see the volume note** |
+| `agnus_blitter_line_octant` | `agnus_blitter_line` | local copy | covered, and defect 2 fixed |
+
+### The volume note
+
+`agnus_blitter_mask` runs **101,024 cases** — 1,024 targeted plus 100,000
+randomised. `agnus_blitter_masks` runs nineteen assertions. On the face of it
+that is a large loss.
+
+It is not, and the reason is the whole point of the supersession: those 101,024
+cases run against `agnus_blitter_mask.v`, a copy of `agnus_blitter.v:311-319`
+pasted into the test's own directory. Volume against a copy is volume against
+nothing — the design could change under every one of those cases without one of
+them noticing.
+
+What *is* genuinely lost is the technique. A randomised sweep of the mask
+multiplexer cannot be reproduced at the `agnus_blitter` boundary at that scale,
+because each case there costs a whole blit rather than one `eval()`. A reduced
+sweep — a thousand cases rather than a hundred thousand — is affordable and would
+be worth adding to `agnus_blitter_masks`. That is a recommendation, not a defect,
+and it is recorded here so the deletion does not quietly bury it.
+
+### Why the deletion is being held
+
+Not because anything is unresolved, but because six of the chapter's sixteen
+packages are still unbuilt. If a later package moves a fixture boundary, the
+prior art is the thing to compare against, and it is cheap to keep and awkward to
+recover. The deletion belongs at the end of the chapter, in one commit, with this
+table as its justification.
+
 ## What this is for
 
 When the chapter-6 package list arrives, every package meets this file:
