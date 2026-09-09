@@ -268,64 +268,74 @@
 // setting, a preload) - never to nanomig/, which this task forbids
 // touching for any reason.
 //
+// Every mutation below was run as: 10 green + 2 required-red = baseline;
+// after the edit, the mutated assertion moves and every other assertion's
+// PASS/FAIL status is UNCHANGED from baseline - in particular the two
+// required-red assertions (BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS,
+// DOFF-NO-OBSERVABLE-EFFECT) stay red for their own documented reason in
+// every mutation run except their own, confirmed by the printed pass/fail
+// totals quoted below.
+//
 // MUTATION TEST-DATA-DELIVERY-ECS stimulus red: fed C word at index 2
 //   changed from 0x9ABC to 0x9ABD (expected constants left untouched) ->
-//   FAIL, only this assertion; every other assertion PASS (or, for the two
-//   required-red assertions, stays red for its own documented reason,
-//   unaffected by this unrelated fixture's data).
+//   FAIL, only this assertion newly fails; totals 9 passed, 3 failed (the
+//   mutated assertion plus the two required-red ones).
 // MUTATION BLTCON0L-GATED-BY-ECS stimulus red: h_on's `ecs` changed from
 //   true to false at construction (so BOTH harnesses now run with ecs=0) ->
 //   FAIL - h_on's BLTCON0L write is now also ignored, so its D word reads
 //   back as the untouched C-passthrough value (0x2222) instead of the
-//   A-passthrough value (0x1111) the assertion expects; every other
-//   assertion PASS.
+//   A-passthrough value (0x1111) the assertion expects; totals 9 passed,
+//   3 failed.
 // MUTATION BLTCON0L-WRITES-LOW-8-BITS-ONLY stimulus red: the ash value
 //   preloaded into BLTCON0 before the BLTCON0L write changed from 1 to 0
-//   (expected constant 0x4000 left untouched) -> FAIL, got 0x8000 (the
-//   unshifted value) instead of 0x4000 - with ash already 0, the BLTCON0L
-//   write cannot be shown to have left it alone, because there is nothing
-//   left to disturb; every other assertion PASS.
+//   (expected constant 0x4000 left untouched) -> FAIL - with ash already 0,
+//   shiftaout's formula (shift==0 -> return current unchanged) yields the
+//   unshifted 0x8000, not 0x4000, so the BLTCON0L write cannot be shown to
+//   have left ash alone, because there is nothing left to disturb; totals
+//   9 passed, 3 failed.
 // MUTATION BLTSIZH-GATED-BY-ECS stimulus red: h_on's `ecs` changed from
 //   true to false (so BOTH harnesses now run with ecs=0) -> FAIL - busy
-//   never sets in h_on either, so `on_busy_immediate` reads false; every
-//   other assertion PASS.
+//   never sets in h_on either, so `on_busy_immediate` reads false; totals
+//   9 passed, 3 failed.
 // MUTATION BLTSIZH-STARTS-BLIT stimulus red: the width written via BLTSIZH
 //   changed from 3 to 5 (expected constant 3 left untouched) -> FAIL, 5
-//   writes occur, not 3; every other assertion PASS.
+//   writes occur, not 3; totals 9 passed, 3 failed.
 // MUTATION BLTSIZH-WIDTH-TOP-BIT-FUNCTIONAL stimulus red: the width probe
 //   changed from 1024 (bit 10) to 512 (expected constant 1024 left
-//   untouched) -> FAIL, 512 writes occur, not 1024; every other assertion
-//   PASS.
+//   untouched) -> FAIL, 512 writes occur, not 1024; totals 9 passed,
+//   3 failed.
 // MUTATION BLTSIZH-WIDTH-UPPER-BITS-IGNORED stimulus red: the written value
 //   changed from (0x800|7) to (0x800|9) (expected constant 7 left
-//   untouched) -> FAIL, 9 writes occur, not 7; every other assertion PASS.
+//   untouched) -> FAIL, 9 writes occur, not 7; totals 9 passed, 3 failed.
 // MUTATION BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS stimulus, diagnosed rather
 //   than simply reported as "stayed red" per rule 3: the height value
 //   written in BOTH the ecs=0 and the ecs=1-control branches changed from 7
-//   to 9 (same value in both branches, as the original) -> both branches'
-//   measured row count become 9 (not 7), CONFIRMING the harness's counting
-//   mechanism genuinely tracks the height value written (not a stuck or
-//   hardcoded readout) - but the two branches remain EQUAL to each other (9
-//   == 9), so the assertion (which checks the two branches DIFFER) still
-//   FAILS, for the same reason it failed before the mutation: nothing in
-//   agnus_blitter.v reads `ecs` on BLTSIZV's own decode (line 548), so no
-//   value of the height stimulus can make the two branches diverge. This is
-//   the correct shape for a mutation against a genuinely absent gate, not a
-//   vacuous assertion - see BLTSIZH-GATED-BY-ECS above, which drives the
-//   IDENTICAL two-branch comparison structure against a register that DOES
-//   gate on ecs and DOES go green, proving the comparison mechanism itself
-//   is sound.
+//   to 9 (same value in both branches, as the original) -> MEASURED: both
+//   branches' row count become 9 (r1=9, r2=9, printed by the assertion
+//   itself), CONFIRMING the harness's counting mechanism genuinely tracks
+//   the height value written (not a stuck or hardcoded readout) - but the
+//   two branches remain EQUAL to each other (9 == 9), so the assertion
+//   (which checks the two branches DIFFER) still FAILS, for the same reason
+//   it failed before the mutation: nothing in agnus_blitter.v reads `ecs`
+//   on BLTSIZV's own decode (line 548), so no value of the height stimulus
+//   can make the two branches diverge. Totals unchanged: 10 passed,
+//   2 failed (this assertion, still red, plus DOFF). This is the correct
+//   shape for a mutation against a genuinely absent gate, not a vacuous
+//   assertion - see BLTSIZH-GATED-BY-ECS above, which drives the IDENTICAL
+//   two-branch comparison structure against a register that DOES gate on
+//   ecs and DOES go green, proving the comparison mechanism itself is
+//   sound.
 // MUTATION BLTSIZV-HEIGHT-TOP-BIT-FUNCTIONAL stimulus red: the height probe
 //   changed from 16384 (bit 14) to 8192 (expected constant 16384 left
-//   untouched) -> FAIL, 8192 writes occur, not 16384; every other assertion
-//   PASS.
+//   untouched) -> FAIL, 8192 writes occur, not 16384; totals 9 passed,
+//   3 failed.
 // MUTATION BLTSIZV-HEIGHT-UPPER-BIT-IGNORED stimulus red: the written value
 //   changed from (0x8000|7) to (0x8000|9) (expected constant 7 left
-//   untouched) -> FAIL, 9 writes occur, not 7; every other assertion PASS.
+//   untouched) -> FAIL, 9 writes occur, not 7; totals 9 passed, 3 failed.
 // MUTATION BACKWARD-COMPAT-BLTSIZE-WORKS-WITH-ECS stimulus red: the OCS
 //   BLTSIZE width changed from 3 to 5 (expected constant 3 left untouched,
-//   `ecs` left at 1) -> FAIL, 5 writes occur, not 3; every other assertion
-//   PASS. (Toggling `ecs` itself was tried first and rejected as the
+//   `ecs` left at 1) -> FAIL, 5 writes occur, not 3; totals 9 passed,
+//   3 failed. (Toggling `ecs` itself was tried first and rejected as the
 //   mutation: BLTSIZE's decode, agnus_blitter.v:500,521-522,555-556, has no
 //   `&& ecs` anywhere, so it is unconditional either way and flipping `ecs`
 //   changes nothing about this particular assertion - a mutation that
@@ -338,8 +348,13 @@
 //   GREEN): with the D channel genuinely disabled by a real, working gate
 //   (`used`, agnus_blitter.v:252,490-491), NEITHER harness ever writes, so
 //   "no D writes occurred" becomes true for a real reason instead of a
-//   coincidence. Reverting to the baseline (USED restored, only BLTCON1 bit
-//   7 differs between h_doff0/h_doff1) returns the assertion to FAIL/red -
+//   coincidence. MEASURED: totals move from 10 passed/2 failed (baseline) to
+//   11 passed/1 failed (only BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS still
+//   red) - this is the one mutation in the whole file that moves an
+//   assertion from red to green rather than green to red, which is the
+//   correct shape for a mutation against an already-required-red assertion.
+//   Reverting to the baseline (USED restored, only BLTCON1 bit 7 differs
+//   between h_doff0/h_doff1) returns the assertion to FAIL/red -
 //   confirming the comparison mechanism is sound and DOES detect a real
 //   D-disable condition when one exists; it is specifically insensitive to
 //   bit 7, which is the finding.
