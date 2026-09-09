@@ -124,30 +124,29 @@
 // MUTATION TEST-DATA-DELIVERY stimulus red: fed C word at index 2 changed
 //   from 0x9ABC to 0x9ABD (expected constants left untouched) -> FAIL, the
 //   third captured data_out no longer matches.
-// MUTATION FOUR-CHANNELS-A-B-C-SOURCE-D-DEST stimulus red: BLTBDAT's fed
-//   value changed so the B fetch is no longer observed at its expected
-//   grant -> FAIL (channel-address-sequence check fails on the B slot).
+// MUTATION FOUR-CHANNELS-A-B-C-SOURCE-D-DEST stimulus red: USEB cleared
+//   from the BLTCON0 write (A, C, D left set) -> FAIL, saw_b is false -
+//   channel B is never granted at all.
 // MUTATION ONE-BLTSIZE-CONFIGURES-ALL-FOUR-CHANNELS stimulus red: the
 //   height value written changed from 2 to 3 (width stays 3, expected
 //   count stays coded as 6) -> FAIL, 9 writes occur, not 6.
 // MUTATION DISABLED-SOURCE-USES-CONSTANT-DATA-REGISTER stimulus red: the
 //   preloaded BLTADAT constant changed from 0xBEEF to 0xBEEE (expected
 //   constant left untouched) -> FAIL, the stored word no longer matches.
-// MUTATION THREE-SOURCE-CHANNELS-INDEPENDENT-BLTXDAT stimulus red: the
-//   preloaded BLTBDAT constant changed so the B-passthrough sub-check's
-//   fed value no longer matches its expected -> FAIL, that sub-check only.
-// MUTATION WORD-GRANULARITY-SINGLE-WE-PER-STORE stimulus red: a fourth
-//   fed C word appended without raising the blit width -> the extra word
-//   is never fetched/stored (width still 3), we-pulse count stays 3,
-//   assertion itself keeps passing on its own terms, so the mutation was
-//   redirected: the WIDTH was instead left unchanged but one queued datum
-//   was popped early by feeding one fewer than needed, changing the third
-//   captured word -> FAIL, the recorded words no longer match the fed
-//   words exactly.
+// MUTATION THREE-SOURCE-CHANNELS-INDEPENDENT-BLTXDAT stimulus red: in the
+//   B-passthrough sub-check only, the preloaded BLTBDAT constant changed
+//   from 0xBBBB to 0xBBBA (A and C sub-checks, and the expected values,
+//   left untouched) -> FAIL, that sub-check's stored word is 0xBBBA, not
+//   the expected 0xBBBB; the A and C sub-checks stay PASS.
+// MUTATION WORD-GRANULARITY-SINGLE-WE-PER-STORE stimulus red: the second
+//   fed C word changed from 0x00FF to 0x00FE (expected comparison vector
+//   left untouched) -> FAIL, the recorded words no longer match the fed
+//   words exactly (we-pulse count itself stays 3, confirming the count
+//   half of the claim independently of the value half).
 // MUTATION BUS-MOVES-ONE-WORD-PER-AVAILABLE-CYCLE stimulus red: the
-//   enadma-low stall window shortened from 20 to 0 cycles (i.e. removed)
-//   -> FAIL, the "zero we pulses during the stall window" check now
-//   observes a nonzero count because there is no stall to observe.
+//   `set_enadma(false)` call removed (bus stays available throughout,
+//   never stalled) -> FAIL, we_during_stall is nonzero (the blit keeps
+//   completing more words during what should have been the stall window).
 // MUTATION RECTANGLE-BLIT-IS-WIDTH-BY-HEIGHT-WORDS stimulus red: height
 //   changed from 2 to 3 (width stays 3, expected count stays coded as 6)
 //   -> FAIL, 9 writes occur, not 6.
@@ -155,15 +154,16 @@
 //   run's BLTAMOD value changed to equal the first run's (0x0000 instead
 //   of 0x0010) -> FAIL, a_delta_1 and a_delta_2 are now both 1 - "A's
 //   row-boundary delta differs between the two runs" is false.
-// MUTATION SHIFTING-ADDS-NO-CYCLES stimulus red: the compared shift values
-//   changed from {0,7} to {0,0} (both zero) -> FAIL, the two measured
-//   per-word tick counts are trivially equal for a reason that has nothing
-//   to do with the claim, but this changes what the comparison MEANS
-//   without changing the raw pass/fail; the actually-informative mutation
-//   applied and recorded is: shift left constant to a wrong differing
-//   value expectation (assert equal-ticks but force one run's expected
-//   ash to a value string mismatch) -> restored to {0,7}; see below for
-//   the ash-independence measurement itself, which is the real claim.
+// MUTATION SHIFTING-ADDS-NO-CYCLES stimulus red: the ash=7 measurement's
+//   upper marginal width changed from 20 to 21 (the ash=0 measurement's
+//   widths, 10 and 20, left untouched) -> FAIL, ticks_shifted becomes 22
+//   (11 extra words' worth from the mismatched width pairing) while
+//   ticks_noshift stays 20 - the two per-word measurements no longer
+//   agree. (Shifting genuinely costs zero extra cycles at every shift
+//   amount in this RTL - no `ash`-only stimulus change can make this
+//   assertion fail honestly, since there is no bug to catch; the width-
+//   pairing mutation instead confirms the marginal-measurement technique
+//   itself is sensitive to a real change.)
 // MUTATION FUNCTION-GENERATOR-COMBINES-THREE-SOURCES-PER-POINT stimulus
 //   red: word1's B value changed from 0x0000 to 0x0001 (expected constant
 //   left untouched) -> FAIL, that word's computed XOR no longer matches.
@@ -182,19 +182,21 @@
 // MUTATION SHIFT-BEFORE-COMBINE stimulus red: the ash nibble in BLTCON0
 //   changed from 4 to 5 (A value and LF left untouched) -> FAIL, the
 //   shifted result no longer matches 0x0FF0.
-// MUTATION COMBINE-BEFORE-FILL stimulus red: the preloaded BLTCDAT
-//   (channel C, the "wrong-order" reference value) changed from 0xFF00 to
-//   0xFF01 -> assertion itself keeps passing (LF ignores C entirely, which
-//   is the point), so the actually-discriminating mutation is: A's fed
-//   value changed from 0x00FF to 0x00FE -> FAIL, the exclusive-fill result
-//   no longer matches 0x0055.
+// MUTATION COMBINE-BEFORE-FILL stimulus red: A's fed value changed from
+//   0x00FF to 0x00FE (the preloaded "wrong-order" reference on BLTCDAT,
+//   0xFF00, and the expected 0x0055 both left untouched) -> FAIL, the
+//   exclusive-fill result no longer equals 0x0055. (Changing BLTCDAT
+//   instead would NOT discriminate: LF ignores C entirely, by design, so
+//   it is not a stimulus this assertion's own computation is sensitive
+//   to.)
 // MUTATION FILL-BEFORE-ZERO-FLAG stimulus red: BLTCON1's fci bit (bit 2)
 //   changed from 1 to 0 in the "clears" case (efe left at 1) -> FAIL, zero
 //   no longer clears (an all-zero minterm output filled from fci=0 stays
 //   all-zero).
-// MUTATION AREA-FILL-CONCURRENT-WITH-COPY-IN-D-PATH stimulus red: the fed
-//   C word changed so the filled result no longer matches the expected
-//   inclusive-fill computation -> FAIL.
+// MUTATION AREA-FILL-CONCURRENT-WITH-COPY-IN-D-PATH stimulus red: the
+//   third fed C word changed from 0x0000 to 0x0002 (expected comparison
+//   vector left untouched) -> FAIL, the third word's inclusive-fill result
+//   is 0x0003, not the expected 0xFFFF.
 // MUTATION TWO-SOURCE-SETS-FETCHED-BEFORE-FIRST-DESTINATION stimulus red:
 //   width shortened from 3 to 1 -> FAIL, only one source set is ever
 //   fetched (there is no second word to fetch), so "exactly 2 A-grants
@@ -267,8 +269,10 @@
 // MUTATION LINE-MODE-EIGHT-TICKS-PER-PIXEL stimulus red: BLTCON1's line
 //   bit cleared (0x0001 -> 0x0000, height/width left untouched) -> FAIL,
 //   the run no longer behaves as a line-mode blit at all (normal-mode
-//   width=2 sizing takes over), so the per-pixel measurement is nowhere
-//   near either 4 or 8.
+//   width=2 sizing takes over instead), and the measured per-"pixel"
+//   value changes from 4 to 6 - neither the RTL's true line-mode value
+//   nor the manual's 8, confirming the check is reading a live
+//   measurement of whatever mode is actually configured.
 // MUTATION FIGURE-6-13-BIT-SLICE-REPLICATION stimulus red: the walking-bit
 //   stimulus for word 7 changed from 0x0080 to 0x0081 (a second, unwalked
 //   bit added; expected per-word output left untouched) -> FAIL, word 7's
