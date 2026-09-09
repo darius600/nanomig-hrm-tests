@@ -153,8 +153,8 @@
 //   -> FAIL, 9 writes occur, not 6.
 // MUTATION EACH-CHANNEL-INDEPENDENT-16BIT-MODULO stimulus red: the second
 //   run's BLTAMOD value changed to equal the first run's (0x0000 instead
-//   of 0x0010) -> FAIL, the "A's row-boundary delta differs between the
-//   two runs" half of the check now sees no difference.
+//   of 0x0010) -> FAIL, a_delta_1 and a_delta_2 are now both 1 - "A's
+//   row-boundary delta differs between the two runs" is false.
 // MUTATION SHIFTING-ADDS-NO-CYCLES stimulus red: the compared shift values
 //   changed from {0,7} to {0,0} (both zero) -> FAIL, the two measured
 //   per-word tick counts are trivially equal for a reason that has nothing
@@ -342,6 +342,7 @@ struct Sample {
 struct Grant {
     int tick;
     char channel;  // 'A','B','C','D'
+    uint32_t address;  // address_out at this grant (source/dest channels only)
 };
 
 class Harness {
@@ -427,13 +428,14 @@ private:
     bool last_int3 = false;
     bool last_granted = false;
     char last_grant_channel = 0;
+    uint32_t last_grant_address = 0;
 
     void tick_bookkeeping() {
         Sample s{tick_count++, static_cast<bool>(dut->busy), static_cast<bool>(dut->zero),
                   last_int3, last_we, last_data_out, static_cast<bool>(dut->reqdma)};
         log.push_back(s);
         if (s.we) data_writes.push_back(s.data_out);
-        if (last_granted) grants.push_back(Grant{s.tick, last_grant_channel});
+        if (last_granted) grants.push_back(Grant{s.tick, last_grant_channel, last_grant_address});
     }
 
     void tick() {
@@ -453,6 +455,7 @@ private:
         last_data_out = 0;
         last_granted = false;
         last_grant_channel = 0;
+        last_grant_address = 0;
         const bool granted = !cpu_write && dut->reqdma;
         if (cpu_write) {
             dut->ackdma = 0;
@@ -477,6 +480,7 @@ private:
             dut->eval();
             last_granted = true;
             last_grant_channel = ch;
+            last_grant_address = dut->address_out;
             if (dut->we) {
                 last_we = true;
                 last_data_out = dut->data_out;
@@ -817,62 +821,62 @@ int main(int argc, char** argv) {
 
     // ---------------- EACH-CHANNEL-INDEPENDENT-16BIT-MODULO (p.172) ----------------
     {
-        // Two 2-row blits, differing only in channel A's own modulo
-        // value; channel D's modulo is held fixed at 0 in both. address_out
-        // is not exposed through Harness's Sample log (it is not needed by
-        // any other assertion in this file), so the observable this
-        // boundary actually offers without adding a new probe is used
-        // instead: both runs must still complete with exactly 4 A-fetches
-        // and 4 D-stores (the control - modulo does not affect word COUNT,
-        // only address, so this confirms the fixture did not desync
-        // between the two runs for an unrelated reason), while genuinely
-        // driving two different 16-bit BLTAMOD values through the same
-        // register address that channel D's own modulo (BLTDMOD, held
-        // fixed at 0x0000 in both runs) occupies a DIFFERENT address from -
-        // establishing the two are distinct, independently addressable
-        // registers per agnus_blitter_adrgen.v:22-26's four-entry bank.
-        Harness h1, h2;
-        for (int i = 0; i < 8; ++i) { h1.a_words.push_back(0x0001); h1.c_words.push_back(0x0002); }
-        for (int i = 0; i < 8; ++i) { h2.a_words.push_back(0x0001); h2.c_words.push_back(0x0002); }
-        h1.write_reg(BLTAPTH, 0x0000); h1.write_reg(BLTAPTL, 0x0000);
-        h1.write_reg(BLTDPTH, 0x0000); h1.write_reg(BLTDPTL, 0x0000);
-        h1.write_reg(BLTAMOD, 0x0000); h1.write_reg(BLTDMOD, 0x0000);
-        start_blit(h1, USEA | USED, LF_A_PASSTHROUGH, 2, 2);
-        bool done1 = h1.run_until_done(300) >= 0;
-        h1.settle();
+        // Two 2-row, width=2 blits, differing ONLY in channel A's own
+        // BLTAMOD value (0x0000 vs 0x0010); channel D's BLTDMOD is held
+        // fixed at 0x0000 in both. address_out is read live (Grant::address)
+        // at each grant. Channel A's row-boundary address delta (address
+        // at A's 3rd grant, first word of row 2, minus address at A's 2nd
+        // grant, last word of row 1) must DIFFER between the two runs;
+        // channel D's own row-boundary delta, with BLTDMOD unchanged in
+        // both runs, must stay IDENTICAL - together showing the two
+        // channels' modulo registers are independently consumed.
+        auto row_boundary_delta = [](const Harness& h, char channel) -> long {
+            std::vector<uint32_t> addrs;
+            for (const auto& g : h.grants) if (g.channel == channel) addrs.push_back(g.address);
+            if (addrs.size() < 3) return -1;
+            return static_cast<long>(addrs[2]) - static_cast<long>(addrs[1]);
+        };
 
-        h2.write_reg(BLTAPTH, 0x0000); h2.write_reg(BLTAPTL, 0x0000);
-        h2.write_reg(BLTDPTH, 0x0000); h2.write_reg(BLTDPTL, 0x0000);
-        h2.write_reg(BLTAMOD, 0x0010); h2.write_reg(BLTDMOD, 0x0000);
-        start_blit(h2, USEA | USED, LF_A_PASSTHROUGH, 2, 2);
-        bool done2 = h2.run_until_done(300) >= 0;
-        h2.settle();
+        long a_delta_1, a_delta_2, d_delta_1, d_delta_2;
+        {
+            Harness h;
+            for (int i = 0; i < 8; ++i) { h.a_words.push_back(0x0001); h.c_words.push_back(0x0002); }
+            h.write_reg(BLTAPTH, 0x0000); h.write_reg(BLTAPTL, 0x0000);
+            h.write_reg(BLTDPTH, 0x0000); h.write_reg(BLTDPTL, 0x0000);
+            h.write_reg(BLTAMOD, 0x0000); h.write_reg(BLTDMOD, 0x0000);
+            start_blit(h, USEA | USED, LF_A_PASSTHROUGH, 2, 2);
+            h.run_until_done(300);
+            h.settle();
+            a_delta_1 = row_boundary_delta(h, 'A');
+            d_delta_1 = row_boundary_delta(h, 'D');
+        }
+        {
+            Harness h;
+            for (int i = 0; i < 8; ++i) { h.a_words.push_back(0x0001); h.c_words.push_back(0x0002); }
+            h.write_reg(BLTAPTH, 0x0000); h.write_reg(BLTAPTL, 0x0000);
+            h.write_reg(BLTDPTH, 0x0000); h.write_reg(BLTDPTL, 0x0000);
+            h.write_reg(BLTAMOD, 0x0010); h.write_reg(BLTDMOD, 0x0000);
+            start_blit(h, USEA | USED, LF_A_PASSTHROUGH, 2, 2);
+            h.run_until_done(300);
+            h.settle();
+            a_delta_2 = row_boundary_delta(h, 'A');
+            d_delta_2 = row_boundary_delta(h, 'D');
+        }
 
-        // Count A-channel grants in each run: agnus_blitter_adrgen has no
-        // dependency of REQUEST TIMING on the modulo value (addmod is
-        // combinational, applied the same cycle as the last word's fetch
-        // grant, never stalling the FSM) - so both runs must show
-        // IDENTICAL grant timing/count (the control half of this check)
-        // while genuinely differing only in BLTAMOD's value, proving the
-        // fixture did not desync between the two runs for an unrelated
-        // reason.
-        int a_grants_1 = 0, a_grants_2 = 0;
-        for (const auto& g : h1.grants) if (g.channel == 'A') ++a_grants_1;
-        for (const auto& g : h2.grants) if (g.channel == 'A') ++a_grants_2;
-
-        checks.expect(done1 && done2 && a_grants_1 == 4 && a_grants_2 == 4 &&
-                       h1.data_writes.size() == 4 && h2.data_writes.size() == 4,
-            "EACH-CHANNEL-INDEPENDENT-16BIT-MODULO [control]: two width=2,height=2 "
-            "blits with channel A's own BLTAMOD set to two different 16-bit values "
-            "(0x0000 and 0x0010) while channel D's BLTDMOD is held fixed at 0x0000 in "
-            "both both still complete normally with exactly 4 A-fetches and 4 D-stores "
-            "each - establishing that channel A's modulo is a genuinely distinct, "
-            "independently addressable 16-bit register from any other channel's, "
-            "consumed only by A's own row-boundary address step - 'Each of the four DMA "
-            "channels has a 16-bit modulo register called BLTxMOD' (p.172). "
+        checks.expect(a_delta_1 >= 0 && a_delta_2 >= 0 && a_delta_1 != a_delta_2 &&
+                       d_delta_1 >= 0 && d_delta_1 == d_delta_2,
+            "EACH-CHANNEL-INDEPENDENT-16BIT-MODULO: raising channel A's own BLTAMOD "
+            "from 0x0000 to 0x0010 changes A's own row-boundary address_out delta (" +
+            std::to_string(a_delta_1) + " -> " + std::to_string(a_delta_2) +
+            "), while channel D's row-boundary delta stays identical (" +
+            std::to_string(d_delta_1) + " both times) with BLTDMOD held fixed at "
+            "0x0000 throughout - the two channels' modulo registers are independently "
+            "addressed and independently consumed - 'Each of the four DMA channels has "
+            "a 16-bit modulo register called BLTxMOD' (p.172). "
             "agnus_blitter_adrgen.v:22-26 (BLTAMOD/BLTBMOD/BLTCMOD/BLTDMOD - four "
             "distinct register addresses, four distinct bank entries selected by "
-            "modsel==chsel). 6-dma-channels.c55, ch6-dma.c59 .");
+            "modsel==chsel) and :113-119 (addmod/submod applied only to the pointer "
+            "selected by ptrsel/modsel that cycle). 6-dma-channels.c55, ch6-dma.c59 .");
     }
 
     // ---------------- SHIFTING-ADDS-NO-CYCLES (p.179) ----------------
