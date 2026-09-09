@@ -174,10 +174,15 @@
 //   0xFFFF (the low nibble this block masks off is no longer masked) ->
 //   FAIL, word 2 no longer matches the unchanged expected value; every
 //   other assertion PASS.
-// MUTATION MASK-BIT-EXCLUDED-FROM-LOGIC stimulus red: b_word changed from
-//   0x0000 to 0x00FF (so B now contributes 1-bits into the same byte the
-//   mask forces A's bits to 0 in) -> FAIL, data_out no longer matches the
-//   unchanged expected 0x00FF; every other assertion PASS.
+// MUTATION MASK-BIT-EXCLUDED-FROM-LOGIC stimulus red: BLTAFWM and BLTALWM
+//   both changed from 0x00FF to 0xFFFF (masking removed entirely; b_word
+//   and the expected constant left untouched) -> FAIL, data_out reads
+//   0xFFFF, not the unchanged expected 0x00FF; every other assertion PASS.
+//   (A first attempt changed only b_word from 0x0000 to 0x00FF and stayed
+//   green - vacuous, because that b_word happens to equal the expected
+//   masked-A value already, so ORing it in changes nothing observable;
+//   diagnosed and replaced with the mask-removal stimulus above, which
+//   actually exercises what this assertion is about.)
 // MUTATION MASK-FWM-EVERY-ROW stimulus red: height changed from 2 to 1
 //   (only one row is blitted) -> FAIL, data_writes has only 2 entries, so
 //   the row-2 index this assertion reads does not exist; every other
@@ -223,9 +228,12 @@
 //   FAIL, the center-word check no longer matches; the first- and
 //   last-word checks in the same assertion still PASS on their own terms,
 //   but the assertion as a whole (which requires all three) FAILs.
-// MUTATION MASK-16-BITS-INDEPENDENT stimulus red: bit index 7's expected
-//   value computed with the wrong bit position (~(1<<8) instead of
-//   ~(1<<7)) -> FAIL at k=7; every other bit position and every other
+// MUTATION MASK-16-BITS-INDEPENDENT stimulus red: for k==7 only, an
+//   ADDITIONAL bit (bit 3) cleared in the value actually written to
+//   BLTAFWM, simulating a hypothetical crosstalk defect, while `expected`
+//   for that iteration was left computed from the original single-bit-k
+//   stimulus -> FAIL (only at k=7; every other bit position still PASS),
+//   lanes_independent==15, not the unchanged expected 16; every other
 //   assertion PASS.
 
 #include <cstdint>
