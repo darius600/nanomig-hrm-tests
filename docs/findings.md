@@ -141,12 +141,25 @@ bus cycle against memory cycle time and gives the factor two, so the readings ar
 comparable and the deviation is real. AC6 is expository, not independent — given
 AC4 and AC5 it cannot fail on its own.
 
-## Chapter 6 — read from the RTL, no test yet
+## Chapter 6 — two of these are now red tests
 
 These came out of the chapter-6 classification stage on 08.09.2026, while it was
-looking for a fixture boundary. They are **not red tests**: nothing asserts them
-yet, and until something does they are observations, not findings in the sense
-this file otherwise uses.
+looking for a fixture boundary, and were observations rather than findings
+because nothing asserted them.
+
+**Two of them became red tests on 09.09.2026**, in `hrm/agnus_blitter_ecs`
+(PKG-BLT-ECS), and both are required to fail:
+
+| Assertion | Measured |
+|---|---|
+| `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` | a BLTSIZV write with `ecs=0` and with `ecs=1` give the identical height, r1=7 and r2=7 |
+| `DOFF-NO-OBSERVABLE-EFFECT` | the same D write appears with BLTCON1 bit 7 clear and set |
+
+Each says so in its own message and names every claim it covers, so the red line
+is readable without this file. The remaining three rows of the table below still
+have no test: the pointer width is asserted in `hrm/agnus_blitter_adrgen` as the
+behaviour the design actually implements rather than as a defect, and BLTCON0L
+and BLTSIZH are gated correctly and pass.
 
 They carry no `FPGA-nnn` key. The keys are issued in the private workspace, and
 inventing one here would collide with that register. When the chapter-6 tests are
@@ -171,6 +184,32 @@ Appendix C, printed page 309, lists what ECS changed in the blitter. NanoMig's
 
 `bltcon1[7]` does not appear in `agnus_blitter.v`. The bits it reads are 15-12,
 4, 3, 2, 1 and 0.
+
+### The classified inventory says otherwise, in 109 records
+
+Worth recording because it is the one place a wrong statement could have made
+these findings disappear. **109 of the chapter-6 records carry an `evidence`
+field asserting that `ecs` gates BLTSIZV** — wording like "`ecs` ... gates the
+BLTCON0L, BLTSIZH and BLTSIZV decodes `agnus_blitter.v:500,523,557`". Those three
+line numbers are BLTSIZH's and BLTCON0L's, and they are correct for those two.
+BLTSIZV's decode is at line 548 and has no `&& ecs`:
+
+```verilog
+    else if (reg_address_in[8:1]==BLTSIZV[8:1]) // ECS BLTSIZV register
+        height[14:0] <= data_in[14:0];
+```
+
+The comment on that line calls it ECS; the code does not gate it. The
+classifier's evidence text generalised from the two registers that are gated to
+the third that is not, and repeated it 109 times.
+
+The **claims** are unaffected — appendix C does mark BLTSIZV "new" for ECS, and
+the classification as testable is right. It is the stated reason that
+misdescribes the RTL. A builder who had trusted it would have written an
+assertion expecting a difference, seen none, and had no way to tell a defect from
+its own mistake. PKG-BLT-ECS's builder read line 548 instead and sided with the
+RTL, which is what the build brief's "if the brief and the document disagree, the
+document wins — and if the RTL and both disagree, say so" rule is for.
 
 The pointer row is the sibling of FPGA-060, one appendix over: the same register
 family, the same "three bits in OCS, five in ECS" sentence, and the same
