@@ -149,65 +149,107 @@
 // classify.status=="testable" in work/2026-09-08_fpga-090_classified.jsonl
 // are covered below or listed under NOT ASSERTED with a reason; both
 // readers (sol/opus) cover much of the same ground, and the octant table in
-// particular is stated three times over (Table 6-3, Figure 6-8, Appendix A)
-// -- each proposition is asserted once and every covering id is written out
-// in full inside that assertion's message, per the coverage script's
-// requirement. Assertion name -> covered ids (grouped; ids embedded in each
-// assertion's own message are the authoritative list, this is a map):
-//   TEST-DATA-DELIVERY-LINE: fixture check, no claim id
-//   LINE-BIT0-SELECTS-MODE: 6-intro.c4/c15/c16, ch6-intro.c4/c14/c15 (p.169),
-//     6-line-mode.c1/c2/c92, ch6-line.c1/c2, ch6-linesum.c17 (p.189/192),
-//     6-line-mode.c3, ch6-line.c3 (p.189, partial -- "changes the meaning of
-//     other bits", the general half; ONEDOT's specific half is under
-//     LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES)
-//   LINE-HEIGHT-IS-PIXEL-COUNT: 6-line-mode.c71/c100, ch6-line.c41,
-//     6-appa-registers.c42/c65/c68, ch6-appa-bltsize.c6/ld1,
-//     ch6-linesum.c25 (p.191/192/269)
-//   LINE-WIDTH-MUST-BE-2: 6-line-mode.c72/c101, ch6-line.c42/c43,
-//     6-appa-registers.c69, ch6-appa-bltsize.c5/ld3, ch6-linesum.c26
-//     (p.191/192/269)
-//   LINE-MASKS-MUST-BE-FFFF: 6-appa-registers.c13, ch6-line.c24,
-//     ch6-linesum.c2/c3 (p.191/192/266 -- deferred by PKG-BLT-MASKS's own
-//     header to this package, not in classify.package=="PKG-BLT-LINE")
-//   LINE-BLTADAT-8000-AND-A-WALKS: 6-appa-control.c82, 6-line-mode.c49/c69,
-//     ch6-line.c23/c37, ch6-linesum.c0, 6-appa-registers.c83/c84,
-//     ch6-appa-bltxdat.c7/c7b, ch6-appa-lf.c7 (p.191/192/268/269)
-//   LINE-MINTERM-4A-A-BIT-INVERTS-ONE: ch6-appa-lf.c3/c5 (p.268)
-//   LINE-B-TEXTURE-BSH-START-BIT: 6-line-mode.c5/c6/c53/c55/c56/c70/c73,
-//     ch6-line.c5/c26/c28/c29/c38, 6-appa-control.c117,
+// particular is stated three times over (Table 6-3, Figure 6-8, Appendix A).
+// Every id below is written out in full, per tools/check_coverage.py's own
+// rule ("Write ids out in full. `done-flag.c7/c13` is one id and a fragment
+// to any reader that is not a person") -- an earlier draft of this section
+// used shared-prefix shorthand like `6-line-mode.c47/c48` and the coverage
+// script correctly reported the second half of every such pair as
+// unmentioned; this is the corrected, literal form. Assertion name ->
+// covered ids:
+//   TEST-DATA-DELIVERY-LINE: fixture check, no claim id.
+//   LINE-BIT0-SELECTS-MODE (p.169/189/192): 6-intro.c4, 6-intro.c15,
+//     6-intro.c16, ch6-intro.c4, ch6-intro.c14, ch6-intro.c15,
+//     6-line-mode.c1, 6-line-mode.c2, 6-line-mode.c92, ch6-line.c1,
+//     ch6-line.c2, ch6-linesum.c17, 6-line-mode.c3, ch6-line.c3 (the
+//     general half of "changes the meaning of other bits"; ONEDOT's
+//     specific half is under LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES).
+//   LINE-HEIGHT-IS-PIXEL-COUNT (p.191/192/269/189): 6-line-mode.c71,
+//     6-line-mode.c100, ch6-line.c41, 6-appa-registers.c42,
+//     6-appa-registers.c65, 6-appa-registers.c68, ch6-appa-bltsize.c6,
+//     ch6-appa-bltsize.ld1, ch6-linesum.c25, 6-line-mode.c4, ch6-line.c4.
+//   LINE-WIDTH-MUST-BE-2 (p.191/192/269): 6-line-mode.c72, 6-line-mode.c101,
+//     ch6-line.c42, 6-appa-registers.c69, ch6-appa-bltsize.c5,
+//     ch6-appa-bltsize.ld3, ch6-linesum.c26.
+//   LINE-MASKS-MUST-BE-FFFF (p.191/192/266 -- deferred by PKG-BLT-MASKS's
+//     own header to this package, not in classify.package=="PKG-BLT-LINE"):
+//     6-appa-registers.c13, ch6-line.c24, ch6-linesum.c2, ch6-linesum.c3,
+//     6-line-mode.c50, 6-line-mode.c51, 6-line-mode.c75, 6-line-mode.c76 .
+//   LINE-BLTADAT-8000-AND-A-WALKS (p.191/192/268/269): 6-appa-control.c82,
+//     6-line-mode.c49, 6-line-mode.c69, ch6-line.c23, ch6-line.c37,
+//     ch6-linesum.c0, 6-appa-registers.c83, 6-appa-registers.c84,
+//     ch6-appa-bltxdat.c7, ch6-appa-bltxdat.c7b, ch6-appa-lf.c7,
+//     ch6-line.c36.
+//   LINE-MINTERM-4A-A-BIT-INVERTS-ONE (p.268): ch6-appa-lf.c3, ch6-appa-lf.c5.
+//   LINE-B-TEXTURE-BSH-START-BIT (p.169/184/191/192/268/269): 6-line-mode.c5,
+//     6-line-mode.c6, 6-line-mode.c53, 6-line-mode.c55, 6-line-mode.c56,
+//     6-line-mode.c70, 6-line-mode.c73, ch6-line.c5, ch6-line.c26,
+//     ch6-line.c28, ch6-line.c29, ch6-line.c38, 6-appa-control.c117,
 //     6-appa-registers.c85, ch6-appa-bltxdat.c7c, ch6-linesum.c20,
-//     6-area-fill.c2, ch6-fill.c2/c3/c4 (p.169/184/191/192/268/269 --
-//     6-area-fill.c2/ch6-fill.c2/c3/c4 cited here for the texture/one-bit
-//     mechanism that makes an untextured area-fill outline possible; the
-//     "must be undextured" application advice itself is not a signal)
-//   LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES: 6-line-mode.c6/c66/c67,
-//     ch6-line.c5/c35, ch6-linesum.c23/c24 (p.189/191/192), plus the
-//     ONEDOT-specific half of 6-line-mode.c3/ch6-line.c3/ch6-line.c6
-//     (p.189)
-//   LINE-SIGNFLAG-SETS-INITIAL-SIGN: 6-line-mode.c44, ch6-linesum.c22
-//     (p.191/192)
-//   LINE-SIGN-SELECTS-MODULO-BANK: 6-line-mode.c47/c48/c77/c78,
-//     ch6-line.c21/c22, ch6-linesum.c4/c5, 6-appa-registers.c96/c97,
-//     ch6-appa-bltxmod.c9/c10 (p.191/192/270 -- bank-selection half only,
-//     see NOT ASSERTED for the arithmetic-formula half)
-//   LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE: 6-line-mode.c57/c58/c59/c60/c79/
-//     c80/c83/c84, ch6-line.c30/c31/c36, 6-appa-registers.c100/c101/c102/
-//     c117/c118/c119/c120, ch6-appa-bltxmod.c12, ch6-appa-bltxpt.c11,
-//     ch6-linesum.c6/c7/c9/c10/c11 (p.191/192/270 -- c9, "BLTBPT is unused",
-//     is corroborated by direct RTL citation here rather than simulated: no
-//     `case (blt_state)` branch in BLT_L1-L4 ever assigns ptrsel or chsel
-//     the value CHB, agnus_blitter.v:795-869, so BLTBPT genuinely cannot be
-//     read or written by line mode's own state machine; there is no
-//     register-readback path to confirm this by measurement the way the
-//     other claims here are measured)
-//   OCTANT-CODE-EQUALS-BITS: 6-line-mode.c7-c14, ch6-line.c8/c9/c10/c11,
-//     ch6-line.f8.oct0-oct7, ch6-t63.oct0-oct7.bit2/bit3/bit4,
-//     6-appa-control.c90/c91/c92 (p.189/190/268 -- arithmetic, not RTL)
-//   OCTANT-MAJOR-AXIS-DIRECTION and OCTANT-MINOR-AXIS-SUPPRESSED-AT-SIGN1
-//     and OCTANT-MINOR-AXIS-FIRES-AT-SIGN0, together: 6-line-mode.c15-c38,
-//     6-appa-control.c93-c116, ch6-appa-oct.select (p.190/268 -- the
-//     numeric bit-value table itself, exercised through the direction
-//     behaviour those bits produce)
+//     6-area-fill.c2, ch6-fill.c2, ch6-fill.c3, ch6-fill.c4 (the last four
+//     cited for the texture/one-bit mechanism that makes an untextured
+//     area-fill outline possible; the "must be undextured" application
+//     advice itself is not a signal).
+//   LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES (p.189/191/192): 6-line-mode.c66,
+//     6-line-mode.c67, 6-line-mode.c98, 6-line-mode.c99, ch6-line.c35,
+//     ch6-linesum.c23, ch6-linesum.c24, plus the ONEDOT-specific half of
+//     6-line-mode.c3, ch6-line.c3, ch6-line.c6.
+//   LINE-SIGNFLAG-SETS-INITIAL-SIGN (p.191/192): 6-line-mode.c44,
+//     ch6-linesum.c22.
+//   LINE-SIGN-SELECTS-MODULO-BANK (p.191/192/270/268 -- bank-selection half
+//     only, see NOT ASSERTED for the arithmetic-formula half):
+//     6-appa-registers.c96, 6-appa-registers.c97, 6-appa-registers.c115,
+//     ch6-appa-bltxmod.c9, ch6-appa-bltxpt.c8b .
+//   LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE (p.191/192/270 -- ch6-linesum.c9,
+//     "BLTBPT is unused", is corroborated by direct RTL citation here
+//     rather than simulated: no `case (blt_state)` branch in BLT_L1-L4 ever
+//     assigns ptrsel or chsel the value CHB, agnus_blitter.v:795-869, so
+//     BLTBPT genuinely cannot be read or written by line mode's own state
+//     machine; there is no register-readback path to confirm this by
+//     measurement the way the other claims here are measured):
+//     6-line-mode.c57, 6-line-mode.c58, 6-line-mode.c59, 6-line-mode.c60,
+//     6-line-mode.c79, 6-line-mode.c80, 6-line-mode.c83, 6-line-mode.c84,
+//     ch6-line.c30, ch6-line.c31, 6-appa-registers.c100,
+//     6-appa-registers.c101, 6-appa-registers.c102, 6-appa-registers.c117,
+//     6-appa-registers.c118, 6-appa-registers.c119, 6-appa-registers.c120,
+//     ch6-appa-bltxmod.c12, ch6-appa-bltxpt.c11, ch6-linesum.c6,
+//     ch6-linesum.c7, ch6-linesum.c9, ch6-linesum.c10, ch6-linesum.c11 .
+//   OCTANT-CODE-EQUALS-BITS (p.189/190/268 -- arithmetic, not RTL):
+//     6-line-mode.c7, 6-line-mode.c8, 6-line-mode.c9, 6-line-mode.c10,
+//     6-line-mode.c11, 6-line-mode.c12, 6-line-mode.c13, 6-line-mode.c14,
+//     ch6-line.c8, ch6-line.c9, ch6-line.c10, ch6-line.c11,
+//     ch6-line.f8.oct0, ch6-line.f8.oct1, ch6-line.f8.oct2, ch6-line.f8.oct3,
+//     ch6-line.f8.oct4, ch6-line.f8.oct5, ch6-line.f8.oct6, ch6-line.f8.oct7,
+//     6-appa-control.c90, 6-appa-control.c91, 6-appa-control.c92,
+//     6-line-mode.c94, ch6-linesum.c19 .
+//   OCTANT-MAJOR-AXIS-DIRECTION, OCTANT-MINOR-AXIS-SUPPRESSED-AT-SIGN1 and
+//     OCTANT-MINOR-AXIS-FIRES-AT-SIGN0, TOGETHER (p.190/268 -- the numeric
+//     bit-value table itself, exercised through the direction behaviour
+//     those bits produce; written out once here rather than split three
+//     ways per PKG-BLT-MASKS's own precedent for a shared fixture fact):
+//     ch6-appa-oct.select,
+//     6-line-mode.c15, 6-line-mode.c16, 6-line-mode.c17, 6-line-mode.c18,
+//     6-line-mode.c19, 6-line-mode.c20, 6-line-mode.c21, 6-line-mode.c22,
+//     6-line-mode.c23, 6-line-mode.c24, 6-line-mode.c25, 6-line-mode.c26,
+//     6-line-mode.c27, 6-line-mode.c28, 6-line-mode.c29, 6-line-mode.c30,
+//     6-line-mode.c31, 6-line-mode.c32, 6-line-mode.c33, 6-line-mode.c34,
+//     6-line-mode.c35, 6-line-mode.c36, 6-line-mode.c37, 6-line-mode.c38,
+//     ch6-t63.oct0.bit2, ch6-t63.oct0.bit3, ch6-t63.oct0.bit4,
+//     ch6-t63.oct1.bit2, ch6-t63.oct1.bit3, ch6-t63.oct1.bit4,
+//     ch6-t63.oct2.bit2, ch6-t63.oct2.bit3, ch6-t63.oct2.bit4,
+//     ch6-t63.oct3.bit2, ch6-t63.oct3.bit3, ch6-t63.oct3.bit4,
+//     ch6-t63.oct4.bit2, ch6-t63.oct4.bit3, ch6-t63.oct4.bit4,
+//     ch6-t63.oct5.bit2, ch6-t63.oct5.bit3, ch6-t63.oct5.bit4,
+//     ch6-t63.oct6.bit2, ch6-t63.oct6.bit3, ch6-t63.oct6.bit4,
+//     ch6-t63.oct7.bit2, ch6-t63.oct7.bit3, ch6-t63.oct7.bit4,
+//     6-appa-control.c93, 6-appa-control.c94, 6-appa-control.c95,
+//     6-appa-control.c96, 6-appa-control.c97, 6-appa-control.c98,
+//     6-appa-control.c99, 6-appa-control.c100, 6-appa-control.c101,
+//     6-appa-control.c102, 6-appa-control.c103, 6-appa-control.c104,
+//     6-appa-control.c105, 6-appa-control.c106, 6-appa-control.c107,
+//     6-appa-control.c108, 6-appa-control.c109, 6-appa-control.c110,
+//     6-appa-control.c111, 6-appa-control.c112, 6-appa-control.c113,
+//     6-appa-control.c114, 6-appa-control.c115, 6-appa-control.c116 .
 //
 // NOT ASSERTED (reported, not silently dropped):
 //   ch6-line.c17 (p.191, "these calculations normalize the line into octant
@@ -228,24 +270,92 @@
 //     slope") -- defines what dy/dx mean to the programmer computing
 //     BLTAMOD/BLTBMOD/BLTAPTL's initial value; no dy/dx port exists.
 //     absent_signal: dy, dx; reason_kind: absent.
-//   6-line-mode.c47/c48/c77/c78, ch6-line.c21/c22, ch6-linesum.c4/c5,
-//     6-appa-registers.c98/c99, ch6-appa-bltxmod.c10 (p.191/192/270, the
-//     LITERAL "4*(dy-dx)"/"4*dy" formulas) -- the RTL treats BLTAMOD/BLTBMOD
-//     as opaque sign-extended modulo values (agnus_blitter_adrgen.v:112-119);
-//     it has no dy/dx ports and computes no such arithmetic. Only the
-//     bank-SELECTION half of these same claims (BLTAMOD used when sign=0,
-//     BLTBMOD when sign=1) is RTL behavior, and IS asserted, in
-//     LINE-SIGN-SELECTS-MODULO-BANK. absent_signal: dy, dx; reason_kind:
-//     absent.
+//   6-line-mode.c47, 6-line-mode.c48, 6-line-mode.c77, 6-line-mode.c78,
+//     ch6-line.c21, ch6-line.c22, ch6-linesum.c4, ch6-linesum.c5,
+//     6-appa-registers.c98, 6-appa-registers.c99, ch6-appa-bltxmod.c10
+//     (p.191/192/270, the LITERAL "4*(dy-dx)"/"4*dy" formulas) -- the RTL
+//     treats BLTAMOD/BLTBMOD as opaque sign-extended modulo values
+//     (agnus_blitter_adrgen.v:112-119); it has no dy/dx ports and computes
+//     no such arithmetic. Only the bank-SELECTION half of these same claims
+//     (BLTAMOD used when sign=0, BLTBMOD when sign=1) is RTL behavior, and
+//     IS asserted, in LINE-SIGN-SELECTS-MODULO-BANK. absent_signal: dy, dx;
+//     reason_kind: absent.
 //
 // Every mutation below was actually applied (edit -> rebuild -> run ->
-// revert -> rebuild-clean) and the FAIL/PASS lines quoted are what the run
-// printed, not predictions.
+// revert -> rebuild-clean, confirmed byte-identical to the baseline by
+// `git diff --stat` after every revert) and the FAIL/PASS lines quoted are
+// what the run printed, not predictions. All 18 mutations (16 assertions,
+// two of which -- LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE's compound claim --
+// were probed on both halves separately) FAILED ONLY the assertion named,
+// with every other assertion staying PASS on the same run: no mutation was
+// found vacuous, so there is no defect-2-shaped finding to report from this
+// campaign beyond the one it was built to fix.
 //
-// MUTATION records follow the assertions in this header once the baseline
-// build is green (see the block below main()); placeholders are filled in
-// as each mutation is actually run, per the build brief's "commit early and
-// often, revert immediately after each mutation" instruction.
+// Every mutation is a STIMULUS mutation to this test file's OWN inputs
+// (a register value, an octant's bit pattern, a probe, a table entry) --
+// never to nanomig/, which this task forbids touching for any reason.
+//
+// MUTATION TEST-DATA-DELIVERY-LINE stimulus red: fed C word at index 2
+//   changed from 0x9ABC to 0x9ABD (expected constants left untouched) ->
+//   FAIL, only this assertion; 15/16 others PASS.
+// MUTATION LINE-BIT0-SELECTS-MODE stimulus red: h_line's BLTCON1 write
+//   changed from LINE_BIT to 0x0000 (so BOTH harnesses now run normal
+//   mode) -> FAIL (h_line now also produces 6 writes, not the expected 3);
+//   15/16 others PASS.
+// MUTATION LINE-HEIGHT-IS-PIXEL-COUNT stimulus red: BLTSIZE height changed
+//   from 5 to 3 (expected constant 5 left untouched) -> FAIL (only 3
+//   writes occur); 15/16 others PASS.
+// MUTATION LINE-WIDTH-MUST-BE-2 stimulus red: h_correct's width changed
+//   from 2 to 3 (expected constant 6 left untouched) -> FAIL (fewer than 6
+//   writes occur with width=3 too, confirming 2 specifically is required,
+//   not merely "not 1"); 15/16 others PASS.
+// MUTATION LINE-MASKS-MUST-BE-FFFF stimulus red: h_correct's BLTADAT
+//   changed from 0x8000 to 0x4000 (expected constant 0x8000 left
+//   untouched) -> FAIL; 15/16 others PASS.
+// MUTATION LINE-BLTADAT-8000-AND-A-WALKS stimulus red: octant changed from
+//   7 (X-major INC) to 3 (X-major DEC) -- same major axis, opposite
+//   direction (expected sequence left untouched) -> FAIL; 15/16 others
+//   PASS.
+// MUTATION LINE-MINTERM-4A-A-BIT-INVERTS-ONE stimulus red: ash changed
+//   from 3 to 5 (expected 0xEFFF, i.e. bit 12 cleared, left untouched) ->
+//   FAIL (the actually-cleared bit moves to 10); 15/16 others PASS.
+// MUTATION LINE-B-TEXTURE-BSH-START-BIT stimulus red: BLTBDAT changed from
+//   0b1010 to 0b0101 (expected sequence left untouched) -> FAIL; 15/16
+//   others PASS.
+// MUTATION LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES stimulus red: h_onedot's
+//   BLTAPTL changed from 0x8000 to 0x0000 (so the accumulator's bit 15,
+//   and therefore sign_out, is 0 instead of self-sustaining 1 -- pixels no
+//   longer all stay on the same row) -> FAIL (h_onedot now also produces 5
+//   writes, not the expected 1); 15/16 others PASS.
+// MUTATION LINE-SIGNFLAG-SETS-INITIAL-SIGN stimulus red: the SIGNFLAG=0
+//   call's ash_probe changed from 15 to 0 (now probing linedec, which this
+//   octant's minor axis never uses, expected constant 1 left untouched) ->
+//   FAIL; 15/16 others PASS.
+// MUTATION LINE-SIGN-SELECTS-MODULO-BANK stimulus red: the SIGNFLAG=0
+//   call's BLTAMOD changed from 0x0040 to 0x0080 (expected constant 32
+//   left untouched) -> FAIL; 15/16 others PASS.
+// MUTATION LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE stimulus red, part 1:
+//   h_identity's BLTDPTL changed from 0x0500 to 0x0600 (expected constant
+//   0x0280 left untouched) -> FAIL; 15/16 others PASS. Part 2, probed
+//   separately: h_mod's BLTDMOD changed from 0x0080 to 0x0100 (expected
+//   constant 64 left untouched) -> FAIL, same assertion, same isolation.
+// MUTATION OCTANT-CODE-EQUALS-BITS stimulus red: FIG68's octant-0 entry
+//   changed from code 6 to code 7 (OCTANTS[] itself, and every other
+//   assertion that reads it, left untouched) -> FAIL; 15/16 others PASS.
+// MUTATION OCTANT-MAJOR-AXIS-DIRECTION stimulus red: the X-major branch's
+//   ash probe changed from `o.major_positive?15:0` to always 15 (so the
+//   three X-major-DEC octants are probed with the wrong polarity; expected
+//   constants left untouched) -> FAIL; 15/16 others PASS.
+// MUTATION OCTANT-MINOR-AXIS-SUPPRESSED-AT-SIGN1 [DEFECT-2 FIX] stimulus
+//   red: BOTH probe calls' initial_sign changed from 1 to 0 (major-only ->
+//   major+minor, so the minor axis now legitimately fires; expected
+//   constant 12/12 left untouched) -> FAIL; 15/16 others PASS -- confirming
+//   this assertion is sensitive to exactly the sign_del dimension defect 2
+//   was about, unlike the superseded test's vacuous ash=8 probe.
+// MUTATION OCTANT-MINOR-AXIS-FIRES-AT-SIGN0 stimulus red: both probe
+//   calls' initial_sign changed from 0 to 1 (major+minor -> major-only, so
+//   the minor axis this assertion expects to fire is now suppressed;
+//   expected constant 8/8 left untouched) -> FAIL; 15/16 others PASS.
 
 #include <cstdint>
 #include <cstdlib>
