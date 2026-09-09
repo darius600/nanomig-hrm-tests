@@ -167,9 +167,18 @@
 // MUTATION FUNCTION-GENERATOR-COMBINES-THREE-SOURCES-PER-POINT stimulus
 //   red: word1's B value changed from 0x0000 to 0x0001 (expected constant
 //   left untouched) -> FAIL, that word's computed XOR no longer matches.
-// MUTATION MASK-BEFORE-SHIFT stimulus red: BLTAFWM changed from 0x0F0F to
-//   0x0FFF (BLTALWM, A and ash left untouched) -> FAIL, masked value is no
-//   longer 0x0F0F so the shifted result no longer matches 0x00F0.
+// MUTATION MASK-BEFORE-SHIFT: first attempt SURVIVED and was diagnosed
+//   before being counted, matching the pattern the build brief warns
+//   about (four earlier packages in this chapter each found one this
+//   way): BLTAFWM changed from 0x0F0F to 0x0FFF, BLTALWM left at
+//   0x0F0F -> PASS, unchanged. Cause: for a single-word blit the
+//   effective mask is BLTAFWM & BLTALWM (agnus_blitter.v:312-313), and
+//   0x0FFF is a strict superset of 0x0F0F, so ANDing with the unchanged
+//   BLTALWM produced the SAME effective mask (0x0F0F) - the mutation
+//   never reached the DUT as a different stimulus at all. Fixed by
+//   changing BLTAFWM to 0x00FF instead (effective mask becomes 0x000F,
+//   genuinely different) -> FAIL, the shifted result is no longer
+//   0x00F0.
 // MUTATION SHIFT-BEFORE-COMBINE stimulus red: the ash nibble in BLTCON0
 //   changed from 4 to 5 (A value and LF left untouched) -> FAIL, the
 //   shifted result no longer matches 0x0FF0.
