@@ -208,15 +208,17 @@
 //   compared USE codes changed to two that cost the same (0x1 and 0x9,
 //   both baseline) -> FAIL, the "the two measured costs differ" check now
 //   sees equal costs.
-// MUTATION CONSTANT-CHANNEL-DOESNT-COUNT-AGAINST-SPEED stimulus red: USEA
-//   set to 1 in the "constant" run (so A is now genuinely fetched, not
-//   just referenced as a preloaded constant) -> the measured cost is
-//   unaffected here too (A is free either way per this RTL), so the
-//   discriminating mutation actually applied is: LF changed in the
-//   "constant" run from 0xF0 (A-passthrough) to 0xCC (B-passthrough,
-//   which is not even the channel under test) -> FAIL, TEST-DATA-DELIVERY-
-//   style setup check for this sub-test no longer sees A's constant in
-//   the output at all, catching the fixture asserting the wrong thing.
+// MUTATION CONSTANT-CHANNEL-DOESNT-COUNT-AGAINST-SPEED: first design used
+//   channel A and SURVIVED every stimulus tried, because A is
+//   unconditionally free whether enabled or not (A-REGISTER-ALWAYS-FREE) -
+//   there is no stimulus confined to A that can ever change a cost
+//   measurement in this RTL, so the assertion was structurally immune to
+//   mutation by construction, not by accident. Diagnosed and the
+//   assertion rebuilt around channel B instead (which genuinely costs +1
+//   tick when enabled). Mutation: USEB set to 1 in the "constant" run
+//   (genuinely enabling B, not just referencing its held value) -> FAIL,
+//   cost_constant_b becomes 3 (2 baseline + B's +1), no longer equal to
+//   cost_no_b_reference (2).
 // MUTATION MINIMUM-BLITTER-CYCLE-FOUR-TICKS stimulus red: measured against
 //   USE code 0x7 (cost 4) instead of the true minimum-cost code -> FAIL,
 //   4 != manual's stated 4 only by accident of which code was minimum
@@ -1292,23 +1294,30 @@ int main(int argc, char** argv) {
 
     // ---------------- CONSTANT-CHANNEL-DOESNT-COUNT-AGAINST-SPEED (p.193) ----------------
     {
-        // A blit that references A only as a held constant (USEA=0, LF
-        // depends on A) costs the same per word as a blit that never
-        // references A at all (LF=0, USED only) - "using a channel as a
+        // A blit that references B only as a held constant (USEB=0, LF
+        // depends on B) costs the same per word as a blit that never
+        // references B at all (LF=0, USED only) - "using a channel as a
         // constant" adds nothing, matching "unless it is enabled, it does
-        // not count against you".
-        int cost_constant_a = per_word_ticks(USED, LF_A_PASSTHROUGH);
-        int cost_no_a_reference = per_word_ticks(USED, LF_ALWAYS_ZERO);
+        // not count against you". Channel B (not A) is used deliberately:
+        // A is unconditionally free whether enabled or not (see A-
+        // REGISTER-ALWAYS-FREE), so no stimulus mutation confined to A
+        // could ever move this measurement - B genuinely costs +1 tick
+        // when its USE bit is set, which is what makes "referencing it
+        // without enabling it costs nothing" a claim this fixture can
+        // actually falsify.
+        int cost_constant_b = per_word_ticks(USED, LF_B_PASSTHROUGH);
+        int cost_no_b_reference = per_word_ticks(USED, LF_ALWAYS_ZERO);
 
-        checks.expect(cost_constant_a == cost_no_a_reference,
-            "CONSTANT-CHANNEL-DOESNT-COUNT-AGAINST-SPEED: a blit using channel A only "
-            "as a held constant (USEA clear, LF selecting A-passthrough) costs the same "
-            "per word (" + std::to_string(cost_constant_a) + " ticks) as a blit that "
-            "never references A at all (" + std::to_string(cost_no_a_reference) +
+        checks.expect(cost_constant_b == cost_no_b_reference,
+            "CONSTANT-CHANNEL-DOESNT-COUNT-AGAINST-SPEED: a blit using channel B only "
+            "as a held constant (USEB clear, LF selecting B-passthrough) costs the same "
+            "per word (" + std::to_string(cost_constant_b) + " ticks) as a blit that "
+            "never references B at all (" + std::to_string(cost_no_b_reference) +
             " ticks) - 'You might be using a DMA channel as a constant, but unless it "
-            "is enabled, it does not count against you' (p.193). agnus_blitter.v:678 - "
-            "`dma_req = usea` gates only the FETCH; the minterm generator reads "
-            "whatever bltahold already holds regardless of usea. 6-blitter-speed.c2, "
+            "is enabled, it does not count against you' (p.193). agnus_blitter.v:701 - "
+            "`dma_req` at BLT_B is unconditional once BLT_B is reached, and BLT_B is "
+            "reached at all only when `useb` is set; the minterm generator reads "
+            "whatever bltbhold already holds regardless of useb. 6-blitter-speed.c2, "
             "ch6-speed.c2 .");
     }
 
