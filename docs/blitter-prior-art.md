@@ -253,3 +253,40 @@ When the chapter-6 package list arrives, every package meets this file:
 The three defects above are fixed as part of the chapter-6 run, not before it.
 Fixing `line_octant` now would mean guessing the octant encoding from the RTL
 again, which is how it got there.
+
+## Deletion — performed 10.09.2026, four of five
+
+All sixteen chapter-6 packages are built and validated, which is the condition
+the readiness check above held the deletion on. Four of the five superseded tests
+are deleted in this commit:
+
+| Deleted | Replacement | Green at |
+|---|---|---|
+| `agnus_blitter_modulo` | `agnus_blitter_adrgen` | 16 / 0 |
+| `agnus_blitter_ptr` | `agnus_blitter_adrgen` | 16 / 0 |
+| `agnus_blitter_zero` | `agnus_blitter_status` | 17 / 0 |
+| `agnus_blitter_line_octant` | `agnus_blitter_line` | 16 / 0 |
+
+Every replacement was re-run from a clean build on 10.09.2026 before its
+predecessor was removed, rather than trusted from this document. Three of the
+four deleted tests compiled a local copy of a slice of `agnus_blitter.v`; their
+replacements compile the design.
+
+### `agnus_blitter_mask` is deliberately NOT deleted
+
+It is the one whose deletion the volume note says would lose something real — not
+its 101,024 cases, which run against a pasted copy and prove nothing about the
+design, but the *technique* of sweeping the mask multiplexer randomly. The
+reduced sweep that would carry that technique into `agnus_blitter_masks` was
+dispatched on 10.09.2026 and did not get built: the build model's weekly quota
+ran out, resetting 14.09.
+
+Deleting `agnus_blitter_mask` now would bury exactly what the readiness check
+recorded so it would not be buried. So it stays until the sweep exists, and the
+"one commit at the end" this was supposed to be became two — the substance of the
+hold mattering more than its tidiness.
+
+**Outstanding, in order:** add the ~1000-case randomised sweep to
+`agnus_blitter_masks` (a builder's task, not the lead's — the model that
+validates must not build), then delete `agnus_blitter_mask` and close this
+document out.
