@@ -820,7 +820,9 @@ int main(int argc, char** argv) {
             "load-bearing on this design's actual pixel-count mechanism, not a "
             "stylistic convention ('BLTSIZE w must be $02 for line drawing'/'in line "
             "draw the w field must be set to 02', 6-appa-registers.c69, "
-            "ch6-appa-bltsize.c5/ld3, p.269; 'line-mode blit width must be two words'/"
+            "ch6-appa-bltsize.c5/ld3, p.269; 'the blitter operation (in line mode, "
+            "width must...'/'in line mode, BLTSIZE width must equal 2', "
+            "6-appa-registers.c41, p.269; 'line-mode blit width must be two words'/"
             "'the blit width must be set to two for all line drawing', 6-line-mode.c72/"
             "ch6-line.c42, p.191; 'BLTSIZE bits 5-0 with 2'/'BLTSIZE bits 5-0 = 2', "
             "6-line-mode.c101/ch6-linesum.c26, p.192)");
