@@ -79,10 +79,76 @@
 // HAM-CONTROL-01/10/11 modify assertion is measured against, on the
 // identical 24-bit rgb-readback basis, in the identical Harness session.
 //
-// MUTATION LOG: recorded after the RTL was opened and the build actually
-// run (see the entries below main() -- left empty in this spec-only commit,
-// filled in the follow-up commit once `make test` has actually executed
-// each mutation, per the build brief's order of work).
+// RTL OPENED, BUILT AND RUN, 10.09.2026 (all after the spec-only commit
+// above). denise_hamgenerator.v:80-92's three OCS modify-path expressions
+// ({rgb_prev[23:8],select_r[3:0],select_r[3:0]} etc.) and
+// denise_colortable_ram_mf.v's two parallel 12-bit RAMs (ram0/ram1, written
+// identically when loct=0, per denise_hamgenerator.v:31's `wr_ws = loct ?
+// 2'b01 : 2'b11`) match every numeric prediction this file's assertions
+// were written against before either file was opened -- no expected value,
+// stimulus shape or Harness mechanic needed changing. First build: 9
+// passed, 0 failed, exactly as committed. `bank` is 3 bits wide (not
+// checked before opening the file, held at 0 regardless, no effect) and
+// `reg_address_in` is declared `[9-1:1]` rather than `[8:0]` (an index-
+// naming detail that does not change the plain-integer C++ assignment
+// already in write_color()).
+//
+// MUTATION LOG (all 9 entries actually run by this agent under WSL/
+// Verilator on 10.09.2026: edit -> rebuild -> run -> confirm the named
+// assertion(s) red -> revert -> rebuild -> confirm the full suite green
+// again -- before moving to the next one. Every mutation is a STIMULUS
+// change to this file's own inputs; no expected value or oracle text was
+// ever touched, and nanomig/ was never touched. Final rebuild after the
+// last revert: 9 passed, 0 failed, confirmed again immediately before this
+// commit.):
+//
+// MUTATION TEST-DATA-DELIVERY stimulus red: register 7's fed colour
+//   changed from 0xC91 to 0xC92 -> FAIL ("8 passed, 1 failed"), only
+//   TEST-DATA-DELIVERY red, its own readback no longer matches. Reverted:
+//   9/0.
+// MUTATION HAM-CONTROL-00-NORMAL-SELECTION stimulus red: COLOR00's loaded
+//   value changed from 0xABC to 0xABD -> FAIL ("8 passed, 1 failed"), only
+//   HAM-CONTROL-00-NORMAL-SELECTION red (its own check hardcodes
+//   0xAABBCCu; every other assertion compares rgb0/rgb1/.../rgb4 to each
+//   other, not to a literal, so the whole chain shifted consistently and
+//   stayed green). Reverted: 9/0.
+// MUTATION HAM-HOLDS-PREVIOUS-VALUE-AND-MODIFIES-ONE-COMPONENT stimulus
+//   red: step 2's control code changed from 0x1 (modify blue) to 0x0
+//   (normal selection), data left at 0x5 -> FAIL ("7 passed, 2 failed"):
+//   HAM-HOLDS-... red (register 5, never loaded in this Harness, defaults
+//   to 0 in Verilator, so all three components changed, not one) AND
+//   HAM-CONTROL-01-MODIFIES-BLUE-HOLDS-RED-GREEN also red, as expected
+//   collateral of changing away from control=01 -- recorded here rather
+//   than hidden, per the standing rule against reporting a result not
+//   actually produced. Reverted: 9/0.
+// MUTATION HAM-CONTROL-01-MODIFIES-BLUE-HOLDS-RED-GREEN stimulus red: step
+//   2's data field changed from 0x5 to 0x6 (control left at 0x1) -> FAIL
+//   ("8 passed, 1 failed"), only this assertion red (blue now 0x66 against
+//   the still-0x55 expectation; HAM-HOLDS-... stayed green because exactly
+//   one component still changed, just to a different value). Reverted:
+//   9/0.
+// MUTATION HAM-CONTROL-10-MODIFIES-RED-HOLDS-GREEN-BLUE stimulus red: step
+//   3's data field changed from 0x3 to 0x4 (control left at 0x2) -> FAIL
+//   ("8 passed, 1 failed"), only this assertion red. Reverted: 9/0.
+// MUTATION HAM-CONTROL-11-MODIFIES-GREEN-HOLDS-RED-BLUE stimulus red: step
+//   4's data field changed from 0x9 to 0x8 (control left at 0x3) -> FAIL
+//   ("8 passed, 1 failed"), only this assertion red. Reverted: 9/0.
+// MUTATION HAM-SINGLE-REGISTER-TECHNIQUE-COLOR00 stimulus red: a stray
+//   `h.write_color(0, 0x000);` inserted between step 4 and the final
+//   re-select, rewriting COLOR00 -> FAIL ("8 passed, 1 failed"), only this
+//   assertion red (rgb4 now reads the rewritten black, not the original
+//   0xAABBCC; rgb0-rgb3 were already captured before the stray write, so
+//   nothing else moved). Reverted: 9/0.
+// MUTATION HAM-CONTROL-00-TABLE-MAPS-VALUES-TO-REGISTERS-0-15 stimulus
+//   red: a stray `h.write_color(5, 0x999);` inserted right after the
+//   15-register load loop, overwriting register 5's value -> FAIL ("8
+//   passed, 1 failed"), only this assertion red (register 5's readback no
+//   longer matches its own N*0x111 expectation). Reverted: 9/0.
+// MUTATION HAM-DATA-FIELD-SPANS-16-LEVELS stimulus red: the sweep's fed
+//   data value changed from `data` to `(data==7 ? 8 : data)` for one point
+//   in the loop, want_blue left computed from the unmutated `data` -> FAIL
+//   ("8 passed, 1 failed"), only this assertion red (data point 7 now
+//   measures 0x88 against a 0x77 expectation). Reverted: 9/0.
 
 #include <cstdint>
 #include <iostream>
