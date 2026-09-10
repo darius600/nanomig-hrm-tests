@@ -222,8 +222,12 @@
 //     driving vpos with a convention this module's own ports say nothing
 //     about, i.e. a wider fixture than agnus_bitplanedma alone.
 //
-// MUTATION LOG: appended in a separate commit after each mutation is
-// actually run under WSL/Verilator, per this repository's own convention.
+// MUTATION LOG: see the bottom of this file, after main(). Recorded there
+// so it can quote this file's own assertion labels; every entry was
+// actually run - edited, rebuilt under WSL/Verilator (`make clean test`),
+// run, the PASS/FAIL line for the named assertion read from real output
+// (quoted verbatim below, not predicted), then reverted and rebuilt clean
+// before the next entry.
 // ============================================================================
 
 #include <cstdint>
@@ -735,3 +739,115 @@ int main(int argc, char** argv) {
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
     return checks.failed == 0 ? 0 : 1;
 }
+
+// ============================================================================
+// MUTATION LOG (11.09.2026). Every entry below was actually applied by this
+// agent - edited into this file, rebuilt under WSL/Verilator (`make clean
+// test`, clean forced each time after a same-second Edit+build pair was
+// once seen to leave make's mtime check thinking nothing had changed), run,
+// the PASS/FAIL line for the named assertion read from real output (quoted
+// verbatim below, not predicted), then reverted and rebuilt clean before the
+// next entry. A final clean build after the last revert reproduced this
+// package's true baseline exactly: "14 passed, 0 failed", and `git diff`
+// against the committed file came back with no content differences,
+// confirming every edit below was fully reverted.
+//
+// Every mutation is a STIMULUS change - what the module is asked to do - not
+// an ORACLE change; no expected value or comparison inside any checks.expect()
+// call was ever touched. Each mutation was applied, run and reverted as its
+// own isolated build; no two assertions were mutated in the same build. This
+// package's baseline has no red assertion, so every entry below is a
+// "stimulus red" case - there is no "none impossible" entry to record.
+//
+// 1. FIXTURE-DELIVERS-KNOWN-VALUE: the wide-window config's DIWSTRT raw byte
+//    changed from $00 to $65 (VSTART=101, past the witness line 100).
+//    Result: "13 passed, 1 failed", only FIXTURE-DELIVERS-KNOWN-VALUE red
+//    (wide[100] became 0, line 100 no longer inside the window). Reverted:
+//    14/0.
+// 2. STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-LINES: DIWSTOP's raw byte
+//    changed from $F4 to $E4 (VSTOP composes to 228, not 244). Result:
+//    "13 passed, 1 failed", only STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-
+//    200-LINES red (c[0xF3] became 0, line $F3 now past the new, earlier
+//    VSTOP). Reverted: 14/0.
+// 3. VSTART-LIVES-IN-DIWSTRT-BITS-15-8 (H-bits irrelevant): config B's
+//    DIWSTRT high byte changed from $2C to $2D (so the two configs no
+//    longer share the same V, defeating the "H-bits are the only
+//    difference" premise). Result: "13 passed, 1 failed", only
+//    VSTART-LIVES-IN-DIWSTRT-BITS-15-8 (H-bits irrelevant) red (b[0x2C]
+//    became 0). Reverted: 14/0.
+// 4. VSTART-LIVES-IN-DIWSTRT-BITS-15-8 (+1 shifts the window by exactly 1
+//    line): this sub-case's own DIWSTRT high byte changed from $2D back to
+//    $2C (no shift applied). Result: "13 passed, 1 failed", only
+//    VSTART-LIVES-IN-DIWSTRT-BITS-15-8 (+1 shifts the window by exactly 1
+//    line) red (cc[0x2C] became >0, the boundary never moved). Reverted:
+//    14/0.
+// 5. VSTOP-LIVES-IN-DIWSTOP-BITS-15-8 (H-bits irrelevant): config B's
+//    DIWSTOP high byte changed from $F4 to $F5. Result: "13 passed, 1
+//    failed", only VSTOP-LIVES-IN-DIWSTOP-BITS-15-8 (H-bits irrelevant) red
+//    (b[0xF4] became 0). Reverted: 14/0.
+// 6. VSTOP-LIVES-IN-DIWSTOP-BITS-15-8 (+1 shifts the window by exactly 1
+//    line): this sub-case's own DIWSTOP high byte changed from $F5 back to
+//    $F4 (no shift applied). Result: "13 passed, 1 failed", only
+//    VSTOP-LIVES-IN-DIWSTOP-BITS-15-8 (+1 shifts the window by exactly 1
+//    line) red (cc[0xF4] became 0, the stop boundary never moved).
+//    Reverted: 14/0.
+// 7. VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 (min $80=128): the raw
+//    VSTOP byte changed from $80 to $90 (still V7=1/no complement, but now
+//    composes to 144, not 128). Result: "13 passed, 1 failed", only
+//    VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 (min $80=128) red (a[0x80]
+//    became >0, line 128 now inside the wider window). Reverted: 14/0.
+// 8. VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 (max $7F=$17F=383): the raw
+//    VSTOP byte changed from $7F to $6F (still V7=0/complement fires, but
+//    now composes to 256+111=367, not 383). Result: "13 passed, 1 failed",
+//    only VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 (max $7F=$17F=383) red
+//    (b[382] became 0, line 382 now past the new, shorter window).
+//    Reverted: 14/0.
+// 9. VSTART-RANGE-00-TO-FF-NO-COMPLEMENT (min $00=0): the raw VSTART byte
+//    changed from $00 to $01. Result: "13 passed, 1 failed", only
+//    VSTART-RANGE-00-TO-FF-NO-COMPLEMENT (min $00=0) red (a[0] became 0,
+//    line 0 no longer inside the window). Reverted: 14/0.
+// 10. VSTART-RANGE-00-TO-FF-NO-COMPLEMENT (max $FF=255): the raw VSTART byte
+//    changed from $FF to $FE (composes to 254, not 255). Result: "13
+//    passed, 1 failed", only VSTART-RANGE-00-TO-FF-NO-COMPLEMENT (max
+//    $FF=255) red (b[254] became >0, the witness line just below the
+//    expected boundary was now inside the window too). Reverted: 14/0.
+// 11. DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-BINARY-WEIGHTS (bit 8 = V8, weight
+//    256): the DIWHIGH write changed from $0100 (bit 8) to $0200 (bit 9).
+//    Result: "13 passed, 1 failed", only DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-
+//    BINARY-WEIGHTS (bit 8 = V8, weight 256) red (c8[256] became >0, VSTOP
+//    was actually 512, not 256). Reverted: 14/0.
+// 12. DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-BINARY-WEIGHTS (bit 9 = V9, weight
+//    512): the DIWHIGH write changed from $0200 (bit 9) to $0100 (bit 8).
+//    Result: "13 passed, 1 failed", only DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-
+//    BINARY-WEIGHTS (bit 9 = V9, weight 512) red (c9[511] became 0, VSTOP
+//    was actually 256, not 512). Reverted: 14/0.
+// 13. DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-BINARY-WEIGHTS (bit 10 = V10, weight
+//    1024): the DIWHIGH write changed from $0400 (bit 10) to $0200 (bit 9).
+//    Result: "13 passed, 1 failed", only DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-
+//    BINARY-WEIGHTS (bit 10 = V10, weight 1024) red (c10[1023] became 0,
+//    VSTOP was actually 512, not 1024). Reverted: 14/0.
+// 14. VERTICAL-BITPLANE-DMA-TIMING-MATCHES-DISPLAY-WINDOW: the second
+//    harness's (h2, the one summed over) DIWSTOP raw byte changed from $F4
+//    to $E4 (a narrower window than the first harness's, whose per-line
+//    count anchors the comparison). Result: "13 passed, 1 failed", only
+//    VERTICAL-BITPLANE-DMA-TIMING-MATCHES-DISPLAY-WINDOW red (total fell
+//    short of per_line*200 - the last ~16 lines of the summed range no
+//    longer fetch anything). Reverted: 14/0.
+//
+// Machine-readable records, one per line, read by tools/check_gates.py's
+// mutation gate (MUTATION_RE):
+// MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: wide-window config's DIWSTRT raw byte changed from $00 to $65 (VSTART=101, past witness line 100); wide[100] became 0.
+// MUTATION STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-LINES stimulus red: DIWSTOP raw byte changed from $F4 to $E4 (VSTOP composes to 228, not 244); c[0xF3] became 0.
+// MUTATION VSTART-LIVES-IN-DIWSTRT-BITS-15-8 stimulus red: (H-bits irrelevant) config B's DIWSTRT high byte changed from $2C to $2D, breaking the same-V premise; b[0x2C] became 0.
+// MUTATION VSTART-LIVES-IN-DIWSTRT-BITS-15-8 stimulus red: (+1 shifts the window by exactly 1 line) this sub-case's DIWSTRT high byte changed from $2D back to $2C, applying no shift; cc[0x2C] became >0.
+// MUTATION VSTOP-LIVES-IN-DIWSTOP-BITS-15-8 stimulus red: (H-bits irrelevant) config B's DIWSTOP high byte changed from $F4 to $F5, breaking the same-V premise; b[0xF4] became 0.
+// MUTATION VSTOP-LIVES-IN-DIWSTOP-BITS-15-8 stimulus red: (+1 shifts the window by exactly 1 line) this sub-case's DIWSTOP high byte changed from $F5 back to $F4, applying no shift; cc[0xF4] became 0.
+// MUTATION VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 stimulus red: (min $80=128) raw VSTOP byte changed from $80 to $90; composed VSTOP became 144, not 128, so a[0x80] became >0.
+// MUTATION VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 stimulus red: (max $7F=$17F=383) raw VSTOP byte changed from $7F to $6F; composed VSTOP became 367, not 383, so b[382] became 0.
+// MUTATION VSTART-RANGE-00-TO-FF-NO-COMPLEMENT stimulus red: (min $00=0) raw VSTART byte changed from $00 to $01; a[0] became 0.
+// MUTATION VSTART-RANGE-00-TO-FF-NO-COMPLEMENT stimulus red: (max $FF=255) raw VSTART byte changed from $FF to $FE; composed VSTART became 254, not 255, so b[254] became >0.
+// MUTATION DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-BINARY-WEIGHTS stimulus red: (bit 8 = V8, weight 256) DIWHIGH write changed from $0100 to $0200 (bit 9 instead of bit 8); c8[256] became >0.
+// MUTATION DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-BINARY-WEIGHTS stimulus red: (bit 9 = V9, weight 512) DIWHIGH write changed from $0200 to $0100 (bit 8 instead of bit 9); c9[511] became 0.
+// MUTATION DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-BINARY-WEIGHTS stimulus red: (bit 10 = V10, weight 1024) DIWHIGH write changed from $0400 to $0200 (bit 9 instead of bit 10); c10[1023] became 0.
+// MUTATION VERTICAL-BITPLANE-DMA-TIMING-MATCHES-DISPLAY-WINDOW stimulus red: the summed harness's DIWSTOP raw byte changed from $F4 to $E4, narrower than the per-line-anchor harness's window; total fell short of per_line*200.
+// ============================================================================
