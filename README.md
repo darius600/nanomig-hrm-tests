@@ -123,8 +123,12 @@ was not covered at all. It is now asserted as `B2s` in
 hrm/            50 fixtures, each against a single module
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
+docs/           what a red result means, and who decides — see docs/README.md
 run_all.sh      everything; hrm/run_all.sh runs only the HRM suite
 ```
+
+[`docs/README.md`](docs/README.md) says which document answers which question. If
+you have just watched the suite go red, that is the shortest way in.
 
 `run_all.sh` deliberately runs both. On 07.09.2026 an upstream change broke the
 integration test at build time — `PINNOTFOUND`, not a single line ran — while the

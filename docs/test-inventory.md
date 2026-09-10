@@ -10,8 +10,8 @@ Re-measured 10.09.2026, after chapter 6 closed and the five superseded tests wer
 
 | Layer | Tests | What is established |
 |---|---:|---|
-| **A — through the pipeline** | 28 | class declared, oracle named, page cited, and **stimulus mutations run**: each assertion was shown to bind to the behaviour it claims |
-| **B — hand-written, declared** | 22 | class declared, oracle named, explicit non-goals — but no mutation evidence and no completeness claim. **One of them asserts nothing at all** — see backlog item 5 |
+| **A — through the pipeline** | 28 | class declared, oracle named, page cited, and **stimulus mutations run**: each assertion was shown to bind to the behaviour it claims. **One of them asserts nothing at all** — see backlog item 5 |
+| **B — hand-written, declared** | 22 | class declared, oracle named, explicit non-goals — but no mutation evidence and no completeness claim |
 | **C — no header in the source** | **0** | neither test class nor primary oracle in the `.cpp` |
 
 Layer B is not sloppy work. Those tests fix the expected behaviour from the
@@ -46,6 +46,35 @@ other thirteen are new fixtures that compile the design.
 `agnus_top_dmacon` is in this list for a different reason than the rest: its
 directory existed before chapter 6, but as a stub whose testbench asserted
 nothing. It was replaced rather than extended.
+
+### Layer B — 22
+
+Named here because until 10.09.2026 this layer was a number and nothing else,
+while layers A and C were printed in full. A count nobody can check against the
+directory is the same defect as a coverage figure nobody derives.
+
+```
+agnus_audiodma          agnus_beamcounter        agnus_bitplanedma
+agnus_copper_move       agnus_diskdma            agnus_refresh
+agnus_spritedma         agnus_top_register_bus   denise
+denise_bitplane_shifter denise_collision         denise_colortable
+denise_hamgenerator     denise_playfields        denise_spritepriority
+denise_sprites          paula_audio_channel      paula_audio_mixer
+paula_audio_volume      paula_floppy             paula_intcontroller
+paula_uart
+```
+
+Two of these are not what the layer name suggests, and the difference matters
+when reading one of their greens:
+
+- `agnus_copper_move` is a regression test against a frozen specification, not
+  against the manual. It cannot produce a conformance finding by construction.
+- `agnus_top_register_bus` declares `INTEGRATION_SMOKE`: it establishes that the
+  bus works, not that any manual statement holds.
+
+The list is `ls hrm/` minus layer A. Derived, not maintained by hand — the
+previous revision of this file inferred a layer from a group count and got it
+wrong, which is recorded under layer C below.
 
 ### Layer C — empty
 
