@@ -193,27 +193,41 @@
 // predicted 4-tick-per-unit model precisely. No assertion's expected value
 // or oracle text was changed -- only the Harness's own write sequencing.
 //
-// A SECOND MEASUREMENT-METHOD FIX in HIRES-SCROLL-GRANULARITY-2-PIXELS:
-// the first build attempted to measure one hires pixel's raw-tick width
-// directly, by counting how many consecutive ticks bpldata's plane-1 bit
-// stayed high after a single-bit load. That measured a width of 1 tick,
-// not 2 -- not because the shift rate is wrong, but because denise_
-// bitplane_shifter.v's final output stage (`sh_scroller`, l.260-261)
-// resamples the scroller's combinational output every RAW clock tick
-// regardless of the underlying shift rate, so a single bit's own output
-// pulse shape is not a reliable proxy for the shift rate (confirmed by
-// tracing a two-bit test pattern through the same stage: a choppy,
-// non-uniform waveform, not a clean 2-tick plateau). The fix uses the
-// documented rate directly instead (kHiresPixelTicks=2, denise_bitplane_
-// shifter.v:212's `shift = ~c1 ^ c3 -- shifter enabled every other clock
-// cycle`, the same "hires every other" evidence already cited in this
-// package's own PACKAGE.md) rather than re-deriving it from a fragile
-// per-tick waveform measurement. The already-working delta measurement
-// (raw ticks per PF1H unit, identical in hires and lores) was unchanged.
+// A SECOND MEASUREMENT-METHOD FIX in HIRES-SCROLL-GRANULARITY-2-PIXELS,
+// made in two stages: the first build attempted to measure one hires
+// pixel's raw-tick width directly, by counting how many consecutive ticks
+// bpldata's plane-1 bit stayed high after a single-bit load. That measured
+// a width of 1 tick, not 2 -- not because the shift rate is wrong, but
+// because denise_bitplane_shifter.v's final output stage (`sh_scroller`,
+// l.260-261) resamples the scroller's combinational output every RAW clock
+// tick regardless of the underlying shift rate, so a single bit's own
+// output pulse shape is not a reliable proxy for the shift rate (confirmed
+// by tracing a two-bit test pattern through the same stage: a choppy,
+// non-uniform waveform, not a clean 2-tick plateau). That diagnosis
+// stands. The fix applied at the time replaced the fragile waveform
+// measurement with the shift rate documented at denise_bitplane_shifter.v:
+// 212 instead (`shift = ~c1 ^ c3`, every other clock cycle) -- which
+// removed the fragile measurement but left the oracle half-circular: the
+// "2 hires pixels" conclusion still depended on the RTL's own definition
+// of a hires pixel's duration, so a wrong shift rate in the RTL would have
+// moved the constant the same way and stayed green. Corrected on review
+// (second stage): the assertion now compares two RAW-TICK MEASUREMENTS
+// against each other (delta_hires vs. delta_lores, no RTL-derived pixel
+// duration at all) and carries the pixel arithmetic entirely in quoted
+// manual text -- p.82's "up to 15 pixels of delay" (the lores baseline)
+// and a page-41 fact newly read directly from the manual for this specific
+// purpose (Figure 3-2, "320 Pixels" vs "640 Pixels" over the same physical
+// display width) establish that a duration equal to 1 lores pixel is, by
+// that same width ratio, exactly 2 hires pixels -- independently of
+// anything the RTL calls a pixel. See that assertion's own comment for the
+// full chain.
 //
-// First build after these two fixes: 15 passed, 0 failed, matching every
+// First build after all three fixes: 15 passed, 0 failed, matching every
 // prediction this file's assertions were written against before the RTL
-// was opened.
+// was opened (the hires-granularity restatement came from review, not from
+// a wrong prediction -- delta_hires==delta_lores was already true in the
+// very first hires measurement taken; only which comparison expressed the
+// claim changed).
 //
 // MUTATION LOG (all 15 entries actually run by this agent under WSL/
 // Verilator on 10.09.2026: edit -> rebuild -> run -> confirm the named
@@ -301,10 +315,13 @@
 //   byte write changed from 0xFF07 to 0xFF08 (PF1H's own nibble corrupted
 //   from 7 to 8) -> FAIL ("14 passed, 1 failed"), only this assertion red
 //   (measured delay now matches sweep1[8], not sweep1[7]). Reverted: 15/0.
-// MUTATION HIRES-SCROLL-GRANULARITY-2-PIXELS stimulus red: the PF1H=1
+// MUTATION HIRES-SCROLL-GRANULARITY-2-PIXELS stimulus red: the hires PF1H=1
 //   comparison write changed to PF1H=2 -> FAIL ("14 passed, 1 failed"),
-//   only this assertion red (delta now two PF1H units' worth, not one, so
-//   delta != 2*kHiresPixelTicks). Reverted: 15/0.
+//   only this assertion red (delta_hires now spans two PF1H units' worth,
+//   not one, so delta_hires != delta_lores). Run against the restated
+//   (delta_hires==delta_lores) form of the assertion, after review; the
+//   assertion's own oracle text and expected relationship changed per that
+//   review, the mutation-testing procedure did not. Reverted: 15/0.
 
 #include <array>
 #include <cstdint>
@@ -357,11 +374,10 @@ constexpr uint16_t kBplxDatAddr[7] = {0, kBpl1DatAddr, kBpl2DatAddr, kBpl3DatAdd
 
 // One lores pixel, in raw 28MHz ticks, per denise_bitplane_shifter's own
 // documented and (in this repository's own sibling harness) measured rate.
+// (There is no equivalent kHiresPixelTicks constant: HIRES-SCROLL-
+// GRANULARITY-2-PIXELS below deliberately does not take a hires-pixel
+// duration from the RTL at all -- see that assertion's own header note.)
 constexpr long kLoresPixelTicks = 4;
-// One hires pixel, in raw 28MHz ticks: denise_bitplane_shifter.v:212 --
-// "shift = ~c1 ^ c3; // shifter enabled every other clock cycle" -- half
-// the lores rate, matching the evidence field's own "hires every other".
-constexpr long kHiresPixelTicks = 2;
 
 // Reused clocking mechanics for THIS module from this repository's own
 // already-committed sibling harnesses for other denise_* modules sharing
@@ -854,6 +870,15 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- HIRES-SCROLL-GRANULARITY-2-PIXELS ----------------
+    // The oracle for the equality below is the manual alone (pp.41, 82);
+    // the RTL is asked only "is one PF1H unit the same duration in both
+    // modes" -- a plain tick-count comparison that never asks the RTL what
+    // a pixel is. An earlier version of this assertion divided the
+    // measured hires delta by a constant taken from denise_bitplane_
+    // shifter.v:212's own shift rate, which made that half of the oracle
+    // circular: if the RTL's hires shift rate were itself wrong, the
+    // constant would be wrong the same way and the assertion would stay
+    // green. Restated per review.
     {
         Harness h0;
         h0.dut->hires = 1;
@@ -871,25 +896,39 @@ int main(int argc, char** argv) {
         h1.clear_reg();
         auto f1 = h1.measure_first_high_all(400);
 
-        // The raw-tick delay-per-PF1H-unit measured here in hires mode
-        // (delta) divided by one hires pixel's own duration in raw ticks
-        // (kHiresPixelTicks, the shifter's documented/RTL-derived "every
-        // other clock cycle" rate, not re-derived from this test's own
-        // noisy per-tick output waveform -- the final scroller-output
-        // stage resamples every raw tick regardless of shift rate, so
-        // measuring a single bit's own output pulse width directly is not
-        // a reliable proxy for the shift rate) gives the number of hires
-        // pixels one PF1H unit actually moves the display by.
-        long delta = f1[1] - f0[1];
+        // delta_hires: raw ticks per PF1H unit, measured here in hires
+        // mode. delta_lores: the identical quantity in lores mode -- reused
+        // from sweep1 (sweep1[1]-sweep1[0]) above, not re-derived, since it
+        // is the same stimulus under the same measurement already taken.
+        // The ONLY thing asked of the RTL in this assertion is whether
+        // these two raw-tick counts are equal; everything else below is
+        // pixel arithmetic carried by quoted manual text.
+        long delta_hires = f1[1] - f0[1];
+        long delta_lores = sweep1[1] - sweep1[0];
+
         checks.expect(
-            delta == 2 * kHiresPixelTicks,
-            "HIRES-SCROLL-GRANULARITY-2-PIXELS: in hires mode, one PF1H unit "
-            "(comparing PF1H=0 against PF1H=1) moves the measured delay by "
-            "exactly twice one hires pixel's own duration (denise_bitplane_"
-            "shifter.v:212's documented 'every other clock cycle' hires shift "
-            "rate) -- i.e. two hires pixels per unit -- 'In high resolution "
-            "mode, scrolling is in increments of 2 pixels' (p.82). "
-            "3-hscr.c07, 3-hscroll.c8 .");
+            delta_hires == delta_lores,
+            "HIRES-SCROLL-GRANULARITY-2-PIXELS: one PF1H unit takes the "
+            "identical raw-tick duration in hires mode as in lores mode -- "
+            "measured, not assumed; this is the only fact the RTL "
+            "contributes. Combined with two facts the manual itself states: "
+            "a hires pixel is half a lores pixel's physical width -- 'In low "
+            "resolution mode, the normal playfield has a width of 320 "
+            "pixels' against 'High resolution mode gives finer horizontal "
+            "resolution -- 640 pixels in the same physical display area' "
+            "(p.41; Figure 3-2's own captions read '320 Pixels' / '640 "
+            "Pixels', 'In normal resolution mode, 320 pixels fill a "
+            "horizontal line' / 'In high resolution mode, 640 pixels fill a "
+            "horizontal line') -- and that '[you] can have up to 15 pixels "
+            "of delay' (p.82) states the lores baseline of 1 pixel per "
+            "PF1H unit with no resolution qualifier, immediately before the "
+            "sentence under test. A duration that spans 1 lores pixel "
+            "therefore spans, at half the physical width per pixel, exactly "
+            "2 hires pixels -- 'In high resolution mode, scrolling is in "
+            "increments of 2 pixels' (p.82). Only the equality of the two "
+            "measured deltas comes from the Harness; the pixel arithmetic "
+            "comes entirely from pp.41 and 82. 3-hscr.c06, 3-hscr.c07, "
+            "3-hscroll.c8 .");
     }
 
     // ---------------- NOT ASSERTED: BPLXDAT DMA-ONLY DISPUTE ----------------
