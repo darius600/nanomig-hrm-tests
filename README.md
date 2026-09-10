@@ -89,7 +89,7 @@ through the pipeline, 22 did not.**
 | Chapter | Tests | How they were built |
 |---|---:|---|
 | 2 — Coprocessor (Copper) | 13 | 12 through the **pipeline**; `agnus_copper_move` is a regression test against a frozen spec, not against the manual |
-| 6 — Blitter | 16 | all 16 through the **pipeline**, 09.–10.09.2026; the eight hand-written blitter tests that preceded them were superseded and deleted |
+| 6 — Blitter | 16 | all 16 through the **pipeline**; the hand-written blitter tests that preceded them were superseded |
 | 3 / 4 — Playfield, Sprites (`denise_*`) | 8 | by hand |
 | 5 / 7 / 8 — Audio, interrupts, interfaces (`paula_*`) | 6 | by hand |
 | 3 / 7 — Agnus DMA, beam counter, register bus | 7 | by hand |
@@ -107,15 +107,14 @@ is the pipeline's completeness claim. A green there means "this assertion holds"
 not "the manual's statements about this module are covered".
 
 **22 of the 50 tests are in that state.**
-[`docs/test-inventory.md`](docs/test-inventory.md) lists every test by layer and
-holds the review backlog. The eight blitter tests that used to be listed there as
-prior art are gone: three were extended into pipeline packages and five were superseded and deleted, the last of them on 10.09.2026.
+[`docs/test-inventory.md`](docs/test-inventory.md) names every one of the 50 by
+layer and holds the review backlog.
 
-Three pre-pipeline Copper tests were removed on 07.09.2026 after being measured
-case by case against the layer-A tests. That measurement is not a formality: five
-of their six cases were already covered and covered more strictly, and the sixth
-was not covered at all. It is now asserted as `B2s` in
-`hrm/agnus_copper_waitskip_range`.
+Where a hand-written test has been replaced by a pipeline package, the old one is
+deleted only after its replacement is green from a clean build, and only after
+every case it covered was checked against the replacement case by case. That
+check is not a formality: one Copper case turned out not to be covered at all,
+and is now asserted as `B2s` in `hrm/agnus_copper_waitskip_range`.
 
 ## Layout
 

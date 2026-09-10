@@ -49,10 +49,6 @@ nothing. It was replaced rather than extended.
 
 ### Layer B — 22
 
-Named here because until 10.09.2026 this layer was a number and nothing else,
-while layers A and C were printed in full. A count nobody can check against the
-directory is the same defect as a coverage figure nobody derives.
-
 ```
 agnus_audiodma          agnus_beamcounter        agnus_bitplanedma
 agnus_copper_move       agnus_diskdma            agnus_refresh
@@ -72,9 +68,7 @@ when reading one of their greens:
 - `agnus_top_register_bus` declares `INTEGRATION_SMOKE`: it establishes that the
   bus works, not that any manual statement holds.
 
-The list is `ls hrm/` minus layer A. Derived, not maintained by hand — the
-previous revision of this file inferred a layer from a group count and got it
-wrong, which is recorded under layer C below.
+The list is `ls hrm/` minus layer A, derived rather than maintained by hand.
 
 ### Layer C — empty
 
