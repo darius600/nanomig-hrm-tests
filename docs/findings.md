@@ -504,3 +504,42 @@ machine.
 *F05 and F06 found by the FPGA-091 chapter-3 build, 11.09.2026, both confirmed
 against the RTL by the lead before recording. In both cases the RTL's own
 comments acknowledge the divergence.*
+
+## FPGA-091-F07 — SPRxCTL bit 0 (SH0) is honoured at every resolution, not only SuperHires
+
+**Package:** `hrm/ch3-sprite-registers`, assertion
+`SPRXCTL-BIT0-SH0-ONLY-IN-SUPERHIRES`. **Red.** Nine claim ids.
+
+Printed pages 297 and 303 make SH0 the SuperHires half-pixel bit. NanoMig loads
+it unconditionally and compares on it unconditionally,
+`denise_sprites_shifter.v:141` and `:119`:
+
+```verilog
+{attach,hstart[0]} <= {data_in[7],data_in[0]};
+load <= armed && (hpos[7:0] == hstart[7:0]) && (fmode[15] || (hpos[8] == hstart[8]));
+```
+
+`spres` appears nowhere in the comparator — its only use in the module is the
+`case` at line 161, which sets how fast the already-loaded shift register drains.
+So the sprite's start position responds to SH0 at all four `spres` encodings.
+
+*For the specialists:* the same shape as F01, where DDFSTRT's H3 is gated by the
+chipset strap rather than by resolution. Both are "a low-order position bit the
+manual scopes to one mode and the RTL honours always". Worth deciding together.
+
+## FPGA-091-F08 — SPRxCTL bits 3 and 4 are read nowhere in the module
+
+**Package:** `hrm/ch3-sprite-registers`, assertion
+`SPRXCTL-BITS-3-4-ARE-LIVE-FIELDS`. **Red.**
+
+The SPRxCTL write path captures exactly two bits — bit 7 (attach) and bit 0
+(SH0), in the line above. Bits 3 and 4 are not referenced anywhere in
+`denise_sprites.v` or `denise_sprites_shifter.v`.
+
+That is a stronger statement than "ECS only": they are unimplemented in every
+chip mode this module offers, including with `aga` asserted.
+
+---
+
+*F07 and F08 found by the FPGA-091 chapter-3 build, 11.09.2026, both confirmed
+against the RTL by the lead before recording.*
