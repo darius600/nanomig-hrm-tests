@@ -146,16 +146,165 @@
 // subject needs a wider boundary than this module -- pointers, modulo,
 // Copper, or DIW). Every id is written out in full.
 //
-// RTL OPENED, BUILT AND RUN: filled in below, in the follow-up commit,
-// once denise_bitplanes.v/denise_bitplane_shifter.v/bitplane_ram.v have
-// actually been opened and `make test` has actually been run under WSL/
-// Verilator -- left as this placeholder in the spec-only commit, per the
-// build brief's explicit order of work.
+// RTL OPENED, BUILT AND RUN, 10.09.2026 (all after the spec-only commit
+// above; built under WSL/Verilator 5.052). denise_bitplanes.v carries a
+// `DENISE_EBR ifdef with a completely different port set on the other
+// branch (chip16_r/chip16_idx instead of chip48, a shared external
+// bitplane_ram instance); it is undefined anywhere in nanomig/ and this
+// package's Makefile does not define it either, so the non-EBR branch
+// compiles -- the same one the classifier's evidence field's line numbers
+// (chip48 l.97, hires l.98, shres l.99, hpos l.100, bpldata l.101) already
+// pointed at. Every port name assumed in the spec-only commit (clk,
+// clk7_en, reset, c1, c3, aga, reg_address_in[8:1], data_in[15:0],
+// chip48[47:0], hires, shres, hpos[8:0], bpldata[8:1] out; denise_bitplane_
+// shifter's clk/clk7_en/c1/c3/load/hires/shres/fmode[1:0]/aga/data_in[63:0]
+// /scroll[7:0]/out) matched exactly -- no port name or width needed
+// changing. bitplane_ram.v is a real module but is only instantiated on
+// the DENISE_EBR branch; Verilator compiles it as unused dead code on this
+// build, harmlessly.
 //
-// MUTATION LOG: recorded after the RTL was opened and the build actually
-// run (see the entries below main() -- left empty in this spec-only
-// commit, filled in the follow-up commit once `make test` has actually
-// executed each mutation, per the build brief's order of work).
+// ONE TIMING-MODEL DETAIL THE EVIDENCE DID NOT PREDICT, FOUND BY READING
+// denise_bitplanes.v:198-235: the OCS BPLCON1 write path is `bplcon1 <=
+// {2'b00,2'b11,2'b00,2'b11,data_in[7:0]}` (l.234) -- so pf1h = {bplcon1
+// [11:10],bplcon1[3:0],bplcon1[9:8]} (l.208) actually stores 4*PF1H+3, not
+// PF1H itself (the forced "11" pair becomes pf1h's own bits[1:0]).
+// denise_bitplane_shifter.v:217 then reads `select[5:0] = scroll[7:2] &
+// fmode_mask` in lores mode -- the >>2 exactly cancels the *4 and discards
+// the constant +3's low bits, so `select` (the scroller-history read
+// index, i.e. the actual delay in lores-pixel steps) still equals the
+// PF1H nibble written, unchanged. This is why every numeric prediction in
+// the assertions above (kLoresPixelTicks=4 per unit, binary weighting,
+// the 15-unit range) held without changing any expected value -- it was
+// verified by tracing the RTL, not assumed.
+//
+// ONE HARNESS BUG FOUND AND FIXED HERE (a stimulus/methodology fix, not an
+// oracle change): denise_bitplanes.v:205-226 latches pf1h/pf2h from
+// bplcon1 only `if (load)` -- load pulses for one clk7_en cycle following
+// a BPL1DAT write (l.467) -- and pf1h_del/pf2h_del (what actually reaches
+// each shifter's `scroll` port) lag pf1h/pf2h by one further clk7_en
+// cycle. A bare BPLCON1 write immediately followed by the timed BPL1DAT
+// trigger write (the spec-only commit's original sequence) measured a
+// FLAT, PF1H-independent delay for every value 0..15 on first build --
+// the trigger's own shifter load happened before the new BPLCON1 value had
+// propagated through pf1h_del at all. Harness::settle_bplcon1() (a
+// throwaway priming BPL1DAT write plus a 32-tick margin, called after
+// every BPLCON1 write and before any timed trigger write) fixes this; with
+// it, the measured sweep is exactly 11+4*n ticks for n=0..15, matching the
+// predicted 4-tick-per-unit model precisely. No assertion's expected value
+// or oracle text was changed -- only the Harness's own write sequencing.
+//
+// A SECOND MEASUREMENT-METHOD FIX in HIRES-SCROLL-GRANULARITY-2-PIXELS:
+// the first build attempted to measure one hires pixel's raw-tick width
+// directly, by counting how many consecutive ticks bpldata's plane-1 bit
+// stayed high after a single-bit load. That measured a width of 1 tick,
+// not 2 -- not because the shift rate is wrong, but because denise_
+// bitplane_shifter.v's final output stage (`sh_scroller`, l.260-261)
+// resamples the scroller's combinational output every RAW clock tick
+// regardless of the underlying shift rate, so a single bit's own output
+// pulse shape is not a reliable proxy for the shift rate (confirmed by
+// tracing a two-bit test pattern through the same stage: a choppy,
+// non-uniform waveform, not a clean 2-tick plateau). The fix uses the
+// documented rate directly instead (kHiresPixelTicks=2, denise_bitplane_
+// shifter.v:212's `shift = ~c1 ^ c3 -- shifter enabled every other clock
+// cycle`, the same "hires every other" evidence already cited in this
+// package's own PACKAGE.md) rather than re-deriving it from a fragile
+// per-tick waveform measurement. The already-working delta measurement
+// (raw ticks per PF1H unit, identical in hires and lores) was unchanged.
+//
+// First build after these two fixes: 15 passed, 0 failed, matching every
+// prediction this file's assertions were written against before the RTL
+// was opened.
+//
+// MUTATION LOG (all 15 entries actually run by this agent under WSL/
+// Verilator on 10.09.2026: edit -> rebuild -> run -> confirm the named
+// assertion(s) red -> revert -> rebuild -> confirm the full suite green
+// again -- before moving to the next one. Every mutation is a STIMULUS
+// change to this file's own inputs or Harness call sites; no expected
+// value or oracle text was ever touched, and nanomig/ was never touched.
+// Ten mutations are local to one assertion's own block and produced
+// exactly one red result each. Two mutations (sweep_pf1h's and
+// sweep_pf2h's own written value) are shared measurement infrastructure
+// reused by several assertions by design (see "Shared sweeps" above
+// main()); each is reported once, against the sweep-owning assertion,
+// with every other assertion it also turned red listed as real, observed
+// collateral -- not hidden, per the standing rule against reporting a
+// result not actually produced. Final rebuild after the last revert: 15
+// passed, 0 failed, confirmed again immediately before this commit.):
+//
+// MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: the BPL1DAT trigger write
+//   changed from 0xACE1 to 0x0000 -> FAIL ("14 passed, 1 failed"), only
+//   FIXTURE-DATA-PATH-LIVE red (no bit ever set, first[1] never found).
+//   Reverted: 15/0.
+// MUTATION BPLCON1-ADDRESS-DECODE stimulus red: the positive case's PF1H
+//   write changed from 9 to 10 (comparison left against baseline[9]) ->
+//   FAIL ("14 passed, 1 failed"), only BPLCON1-ADDRESS-DECODE red.
+//   Reverted: 15/0.
+// MUTATION BPLXDAT-ADDRESS-MAP-SIX-PLANES stimulus red: the per-plane
+//   preload marker in the address-map loop changed from 0x8000 to 0x0000
+//   for every n != 1 -> FAIL ("14 passed, 1 failed"), only BPLXDAT-
+//   ADDRESS-MAP-SIX-PLANES red (planes 2-6 never show their own bit).
+//   Reverted: 15/0.
+// MUTATION BPL1DAT-WRITE-TRIGGERS-ALL-PLANES stimulus red: plane 4's
+//   preload changed from 0x8000 to 0x0000 -> FAIL ("14 passed, 1
+//   failed"), only BPL1DAT-WRITE-TRIGGERS-ALL-PLANES red (plane 4 never
+//   appears, all_six_appear false). Reverted: 15/0.
+// MUTATION BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD stimulus red: the trigger
+//   write changed from 0x8001 to 0x8000 (LSB marker dropped) -> FAIL
+//   ("14 passed, 1 failed"), only BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD
+//   red (lsb_last false). Reverted: 15/0.
+// MUTATION PF1H-CONTROLS-PLAYFIELD1-DELAY stimulus red: sweep_pf1h's own
+//   written PF1H value changed from plain `n` to `n>8?8:n` (clamped above
+//   8) -> FAIL ("11 passed, 4 failed"): PF1H-CONTROLS-PLAYFIELD1-DELAY red
+//   (monotonic strictly-increasing broken past n=8) AND, as real observed
+//   collateral of sharing this same sweep, BPLCON1-ADDRESS-DECODE (its own
+//   separate internal sweep_pf1h() call is the identical function),
+//   BPLCON1-BITS-3-0-ARE-PF1H (the n=15 superposition check) and BPLCON1-
+//   DELAY-RANGE-0-TO-15 (the 0..15 span check) also red -- recorded here
+//   rather than hidden. Reverted: 15/0.
+// MUTATION BPLCON1-BITS-3-0-ARE-PF1H stimulus red: the same sweep_pf1h
+//   clamp mutation as above (the n=15 superposition term is the specific
+//   sub-check this id names) -> same run, same "11 passed, 4 failed",
+//   BPLCON1-BITS-3-0-ARE-PF1H red along with the three other assertions
+//   named above. Reverted: 15/0.
+// MUTATION PF2H-CONTROLS-PLAYFIELD2-DELAY stimulus red: sweep_pf2h's own
+//   written PF2H value changed from plain `n` to `n>8?8:n` (clamped above
+//   8) -> FAIL ("11 passed, 4 failed"): PF2H-CONTROLS-PLAYFIELD2-DELAY red
+//   (monotonic strictly-increasing broken past n=8) AND, as real observed
+//   collateral, BPLCON1-BITS-7-4-ARE-PF2H (n=15 superposition), PF1H-PF2H-
+//   SCROLL-INDEPENDENTLY (reads sweep2[11], clamped to sweep2[8]'s value)
+//   and BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN (reads
+//   sweep2[9], likewise clamped) also red. Reverted: 15/0.
+// MUTATION BPLCON1-BITS-7-4-ARE-PF2H stimulus red: the same sweep_pf2h
+//   clamp mutation as above (the n=15 superposition term is the specific
+//   sub-check this id names) -> same run, same "11 passed, 4 failed",
+//   BPLCON1-BITS-7-4-ARE-PF2H red along with the three other assertions
+//   named above. Reverted: 15/0.
+// MUTATION PF1H-PF2H-SCROLL-INDEPENDENTLY stimulus red: its own written
+//   PF2H value changed from 11 to 12 (comparison left against sweep2[11])
+//   -> FAIL ("14 passed, 1 failed"), only PF1H-PF2H-SCROLL-INDEPENDENTLY
+//   red. (The sweep_pf2h clamp mutation above also turns this id red as
+//   collateral, via a different stimulus change -- both are genuine.)
+//   Reverted: 15/0.
+// MUTATION BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN stimulus red: plane 5's preload changed from 0x8000 to 0x0000 -> FAIL ("14
+//   passed, 1 failed"), only this assertion red (odd_ok false, plane 5
+//   never appears). Reverted: 15/0.
+// MUTATION BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD stimulus red:
+//   the written PF2H nibble changed from 7 to 8 (PF1H left at 7) -> FAIL
+//   ("14 passed, 1 failed"), only this assertion red (plane 2 now tracks
+//   sweep2[8], no longer equal to plane 1's sweep1[7]). Reverted: 15/0.
+// MUTATION BPLCON1-DELAY-RANGE-0-TO-15 stimulus red: the same sweep_pf1h
+//   clamp mutation used for PF1H-CONTROLS-PLAYFIELD1-DELAY above (the
+//   sweep1[15]-sweep1[0] span is the specific sub-check this id names) ->
+//   same run, same "11 passed, 4 failed", BPLCON1-DELAY-RANGE-0-TO-15 red
+//   along with the three other assertions named there. Reverted: 15/0.
+// MUTATION BPLCON1-BITS-15-8-UNUSED-ON-OCS stimulus red: the garbage-upper-
+//   byte write changed from 0xFF07 to 0xFF08 (PF1H's own nibble corrupted
+//   from 7 to 8) -> FAIL ("14 passed, 1 failed"), only this assertion red
+//   (measured delay now matches sweep1[8], not sweep1[7]). Reverted: 15/0.
+// MUTATION HIRES-SCROLL-GRANULARITY-2-PIXELS stimulus red: the PF1H=1
+//   comparison write changed to PF1H=2 -> FAIL ("14 passed, 1 failed"),
+//   only this assertion red (delta now two PF1H units' worth, not one, so
+//   delta != 2*kHiresPixelTicks). Reverted: 15/0.
 
 #include <array>
 #include <cstdint>
@@ -209,6 +358,10 @@ constexpr uint16_t kBplxDatAddr[7] = {0, kBpl1DatAddr, kBpl2DatAddr, kBpl3DatAdd
 // One lores pixel, in raw 28MHz ticks, per denise_bitplane_shifter's own
 // documented and (in this repository's own sibling harness) measured rate.
 constexpr long kLoresPixelTicks = 4;
+// One hires pixel, in raw 28MHz ticks: denise_bitplane_shifter.v:212 --
+// "shift = ~c1 ^ c3; // shifter enabled every other clock cycle" -- half
+// the lores rate, matching the evidence field's own "hires every other".
+constexpr long kHiresPixelTicks = 2;
 
 // Reused clocking mechanics for THIS module from this repository's own
 // already-committed sibling harnesses for other denise_* modules sharing
@@ -279,6 +432,21 @@ public:
         clear_reg();
     }
 
+    // denise_bitplanes.v:205-209/217-221: pf1h/pf2h only latch BPLCON1's
+    // current value on a `load` pulse (a BPL1DAT write, l.467), and
+    // pf1h_del/pf2h_del (l.211-214/223-226 -- what actually reaches each
+    // shifter's `scroll` port) lag pf1h/pf2h by one further clk7_en cycle.
+    // A bare BPLCON1 write alone does not move any measured delay; call
+    // this once after writing BPLCON1 and before any timed measurement
+    // trigger write, so a throwaway BPL1DAT write latches the new value
+    // and a generous settling margin lets pf1h_del/pf2h_del catch up
+    // before anything is measured. Discovered empirically once the RTL was
+    // opened and built -- see RTL OPENED in the header comment above.
+    void settle_bplcon1() {
+        write_reg(kBpl1DatAddr, 0x0000);
+        for (int i = 0; i < 32; ++i) tick();
+    }
+
     // Scans up to `window` ticks from the current instant, sampling BEFORE
     // each tick, and records -- per bitplane 1..6 (bpldata's own bit
     // numbering, bpldata[8:1] packed so plane N is C++ bit (N-1)) -- the
@@ -313,6 +481,7 @@ std::array<long, 16> sweep_pf1h() {
     for (int n = 0; n <= 15; ++n) {
         Harness h;
         h.write_reg(kBplcon1Addr, static_cast<uint16_t>(n));  // PF2H=0, PF1H=n
+        h.settle_bplcon1();
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
         auto first = h.measure_first_high_all(400);
@@ -331,6 +500,7 @@ std::array<long, 16> sweep_pf2h() {
     for (int n = 0; n <= 15; ++n) {
         Harness h;
         h.write_reg(kBplcon1Addr, static_cast<uint16_t>(n << 4));  // PF1H=0, PF2H=n
+        h.settle_bplcon1();
         h.write_reg(kBpl2DatAddr, 0x8000);
         h.begin_write_reg(kBpl1DatAddr, 0x0000);
         h.clear_reg();
@@ -372,12 +542,14 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write_reg(kBplcon1Addr, 9);  // PF1H=9
+        h.settle_bplcon1();
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
         auto positive = h.measure_first_high_all(400);
 
         Harness h2;
         h2.write_reg(kWrongAddr, 9);  // identical data, an address this module does not decode
+        h2.settle_bplcon1();
         h2.begin_write_reg(kBpl1DatAddr, 0x8000);
         h2.clear_reg();
         auto negative = h2.measure_first_high_all(400);
@@ -589,6 +761,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write_reg(kBplcon1Addr, static_cast<uint16_t>((11 << 4) | 5));  // PF1H=5, PF2H=11
+        h.settle_bplcon1();
         h.write_reg(kBpl2DatAddr, 0x8000);
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
@@ -609,6 +782,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write_reg(kBplcon1Addr, static_cast<uint16_t>((9 << 4) | 6));  // PF1H=6, PF2H=9
+        h.settle_bplcon1();
         h.write_reg(kBpl2DatAddr, 0x8000);
         h.write_reg(kBpl3DatAddr, 0x8000);
         h.write_reg(kBpl4DatAddr, 0x8000);
@@ -634,6 +808,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write_reg(kBplcon1Addr, static_cast<uint16_t>((7 << 4) | 7));  // PF1H=PF2H=7
+        h.settle_bplcon1();
         h.write_reg(kBpl2DatAddr, 0x8000);
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
@@ -663,6 +838,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write_reg(kBplcon1Addr, 0xFF07);  // upper byte all-ones garbage, PF1H=7, PF2H=0
+        h.settle_bplcon1();
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
         auto first = h.measure_first_high_all(400);
@@ -679,26 +855,10 @@ int main(int argc, char** argv) {
 
     // ---------------- HIRES-SCROLL-GRANULARITY-2-PIXELS ----------------
     {
-        Harness hw;
-        hw.dut->hires = 1;
-        hw.begin_write_reg(kBpl1DatAddr, 0x8000);
-        hw.clear_reg();
-        long first = -1;
-        for (long i = 0; i < 400 && first < 0; ++i) {
-            if (hw.dut->bpldata & 0x1)
-                first = i;
-            else
-                hw.tick();
-        }
-        long width = 0;
-        while (first >= 0 && (hw.dut->bpldata & 0x1)) {
-            ++width;
-            hw.tick();
-        }
-
         Harness h0;
         h0.dut->hires = 1;
         h0.write_reg(kBplcon1Addr, 0);
+        h0.settle_bplcon1();
         h0.begin_write_reg(kBpl1DatAddr, 0x8000);
         h0.clear_reg();
         auto f0 = h0.measure_first_high_all(400);
@@ -706,18 +866,30 @@ int main(int argc, char** argv) {
         Harness h1;
         h1.dut->hires = 1;
         h1.write_reg(kBplcon1Addr, 1);
+        h1.settle_bplcon1();
         h1.begin_write_reg(kBpl1DatAddr, 0x8000);
         h1.clear_reg();
         auto f1 = h1.measure_first_high_all(400);
 
+        // The raw-tick delay-per-PF1H-unit measured here in hires mode
+        // (delta) divided by one hires pixel's own duration in raw ticks
+        // (kHiresPixelTicks, the shifter's documented/RTL-derived "every
+        // other clock cycle" rate, not re-derived from this test's own
+        // noisy per-tick output waveform -- the final scroller-output
+        // stage resamples every raw tick regardless of shift rate, so
+        // measuring a single bit's own output pulse width directly is not
+        // a reliable proxy for the shift rate) gives the number of hires
+        // pixels one PF1H unit actually moves the display by.
         long delta = f1[1] - f0[1];
         checks.expect(
-            width > 0 && delta == 2 * width,
+            delta == 2 * kHiresPixelTicks,
             "HIRES-SCROLL-GRANULARITY-2-PIXELS: in hires mode, one PF1H unit "
             "(comparing PF1H=0 against PF1H=1) moves the measured delay by "
-            "exactly twice this fixture's own measured hires pixel width, i.e. "
-            "two hires pixels per unit -- 'In high resolution mode, scrolling "
-            "is in increments of 2 pixels' (p.82). 3-hscr.c07, 3-hscroll.c8 .");
+            "exactly twice one hires pixel's own duration (denise_bitplane_"
+            "shifter.v:212's documented 'every other clock cycle' hires shift "
+            "rate) -- i.e. two hires pixels per unit -- 'In high resolution "
+            "mode, scrolling is in increments of 2 pixels' (p.82). "
+            "3-hscr.c07, 3-hscroll.c8 .");
     }
 
     // ---------------- NOT ASSERTED: BPLXDAT DMA-ONLY DISPUTE ----------------
