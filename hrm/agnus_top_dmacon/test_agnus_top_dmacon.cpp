@@ -712,7 +712,14 @@ int main(int argc, char** argv) {
             "control write (clear or set)' (p.278) and Appendix B's 'DMACON "
             "at address 096' (p.290). 6-appa-dmacon.c1, 6-appa-dmacon.c2, "
             "6-appa-dmacon.c3, ch6-appa-dmacon.c1, ch6-appa-dmacon.c2, "
-            "ch6-appa-dmacon.c4, ch6-appa-dmacon.c9, ch6-appb-dmacon.addr.");
+            "ch6-appa-dmacon.c4, ch6-appa-dmacon.c9, ch6-appb-dmacon.addr, "
+            "ch6-appb-dmacon.rw (p.290, restated: 'Appendix B marks DMACON W "
+            "in the R/W column and A D P in the CHIP column' - verbatim "
+            "quotation pending: the corpus text extracted for printed p.290 "
+            "is defective (misaligned columns), so it is not quoted here; "
+            "this assertion demonstrates only the W/write-decoded half of "
+            "that claim - the CHIP column's 'A D P' half names which chips "
+            "decode the register and is not observable at any port).");
     }
 
     // ---------------- WRITE-ADDRESS-MUST-MATCH-DMACON [control, no page] ----------------
