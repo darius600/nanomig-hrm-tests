@@ -1,0 +1,774 @@
+// Test purpose: BPLCON1 as the horizontal-scroll delay register -- PF1H for
+//   the odd bitplanes (1,3,5), PF2H for the even bitplanes (2,4,6), the
+//   delay measured on the bitplane serial output, and the BPLxDAT registers
+//   that feed the shifters. Package ch3-bplcon1-scroll-delay, fixture
+//   denise_bitplanes (one Verilator build, this module + its own
+//   denise_bitplane_shifter and bitplane_ram instances, no other module).
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pp. 42, 57, 60, 71, 72, 80, 81, 82, 83, 84, 85, 90, 271, 272, 291.
+// Non-goals: vertical scrolling via bitplane pointer/modulo registers (pp.
+//   80-81), Copper-driven pointer resets during blanking (p.80), and the
+//   -2/-4 pointer and modulo adjustment for the non-scrolled playfield (p.
+//   72) are Agnus DMA-address concepts with no pointer, modulo or Copper
+//   port anywhere in this module's boundary -- declined below, not
+//   resolved. The display-window edge behaviour of rightward scrolling (p.
+//   82) needs DIWSTRT/DIWSTOP, also outside this boundary -- declined.
+//   Figures 3-25 and 3-27 (pp. 84) describe DMA memory-picture addressing,
+//   not a Denise-observable quantity -- declined. AGA's 6-bit-per-field
+//   BPLCON1 extension and fmode wide-fetch modes are out of scope: every
+//   stimulus below holds aga=0, matching the OCS/ECS 4-bit PF1H/PF2H text
+//   every claim in this package's inventory actually quotes.
+//
+// BOUNDARY (from the classifier's own evidence, not from opening the RTL --
+// see ORDER OF WORK below): denise_bitplanes.v:34-51 and 96-102 module
+// header -- reg_address_in[8:1] (l.42), data_in (l.43), chip48 (l.97),
+// hires (l.98), shres (l.99), hpos (l.100), bpldata[8:1] (l.101, this
+// module's composed per-pixel bitplane output -- the port every downstream
+// Denise submodule in this repository's own sibling harnesses, e.g.
+// denise_collision's bpldata input and denise_hamgenerator's select input,
+// receives its bitplane sample FROM). denise_bitplanes.v:106 -- BPLCON1 at
+// custom-register address 9'h102. denise_bitplanes.v:229-235 -- OCS write
+// path keeps only data_in[7:0]. denise_bitplanes.v:205-209 -- pf1h =
+// {bplcon1[11:10],bplcon1[3:0],bplcon1[9:8]} (OCS: only the [3:0] half is
+// populated). denise_bitplanes.v:217-221 -- pf2h from bplcon1[7:4].
+// denise_bitplanes.v:107-114 -- BPL1DAT..BPL8DAT at 9'h110..9'h11e.
+// denise_bitplanes.v:387-464 -- the six buffer registers. denise_bitplanes
+// .v:467 -- a BPL1DAT write's load strobe reaches every shifter.
+// denise_bitplane_shifter.v:166-180 module header -- clk (l.168), c1/c3
+// (l.170-171), load (l.172), hires (l.173), shres (l.174), fmode (l.175),
+// data_in[63:0] (l.177), scroll[7:0] (l.178), out (l.179); rate select at
+// l.205-219 (lores shifts once per four 28MHz clocks, hires every other,
+// shres always). clk, clk7_en, c1, c3, reset and aga are not individually
+// cited in the claim inventory's evidence field (no claim names their line
+// numbers) but are taken as this module's own top-level ports on the same
+// basis the Harness's whole clocking scheme rests on: they are the
+// identical port names, at the identical two-flip-flop-apart c1/c3
+// relationship, that this repository's OWN already-committed sibling
+// harnesses for two OTHER modules in the same denise_* family declare on
+// their Vdut objects -- hrm/denise_sprites/test_denise_sprites.cpp (clk,
+// clk7_en, c1, c3, reset, aga, reg_address_in, data_in, chip48, hpos, all
+// present) and hrm/denise_bitplane_shifter/test_denise_bitplane_shifter.cpp
+// (clk, clk7_en, c1, c3 on the shifter itself, the same module instantiated
+// inside this fixture). Reused as infrastructure, not read as a claim of
+// this package's own inventory.
+//
+// ORDER OF WORK: this file (Harness, expected values, claim-id coverage)
+// was written and committed from claims.jsonl's quotations and the
+// classifier's own evidence field, plus the two build-brief traps about
+// this specific module (the c1/c3 overlap and the hpos[3:2] write-position
+// delay) -- denise_bitplanes.v itself was not opened until after that
+// commit, per the build brief's explicit gate. A second commit follows
+// once the RTL is opened, the build actually run under WSL/Verilator, and
+// the MUTATION LOG below filled in with real results.
+//
+// THE C1/C3 TRAP (build-brief warning, not itself a claim): c3 is the
+// registered 7MHz clock and c1 = ~c3 delayed one further 28MHz cycle, so
+// across one 7MHz cycle's four 28MHz phases, c1 and c3 are BOTH high in one
+// phase and BOTH low in another -- they are not two disjoint two-phase
+// signals. denise_bitplanes.v:381 gates its BPLxDAT write strobe on c1&c3;
+// denise_bitplane_shifter.v:224 gates its shift-register load on
+// !c1&&!c3. Driving them as if disjoint (a pattern this repository's own
+// hrm/denise/test_denise.cpp uses: c1 true only at cycle 1, c3 true only at
+// cycle 3, so c1&c3 is NEVER true and no BPLxDAT write ever reaches a
+// shifter) would make every plane read colour 0 silently, with every
+// assertion below still "passing" as a false negative. This Harness uses
+// the measured-working four-phase pattern instead (clk7_en=(phase==0),
+// c1=(phase==0||phase==1), c3=(phase==1||phase==2) -- phase 1 has both
+// high, phase 3 has both low), the same relationship (rotated) already
+// proven live in this repository's own hrm/denise_sprites and
+// hrm/denise_bitplane_shifter harnesses. FIXTURE-DATA-PATH-LIVE below
+// exists specifically to prove this Harness's own c1/c3 pattern actually
+// delivers a loaded, non-zero BPLxDAT value to bpldata BEFORE any scroll
+// claim below is asserted from it -- not a formality here.
+//
+// HPOS[3:2] NOT A CLAIM, HELD CONSTANT: denise_bitplanes.v:146-152 decodes
+// hpos[3:2] into an extra 0/4/8/12 lores-pixel write-position delay folded
+// into the effective BPLCON1 value at l.198-213. No claim in this package's
+// 113-record inventory is about that decode. hpos is held at 0 (hpos[3:2]
+// == 0, the zero-offset case) throughout every stimulus below so this
+// mechanism contributes nothing to any measurement -- carried as a constant
+// non-goal, not measured or asserted.
+//
+// TIMING MODEL (a prediction, stated before the RTL was opened, corrected
+// only if the actual build disagrees -- see RTL OPENED below once filled
+// in): denise_bitplane_shifter shifts one lores pixel per four 28MHz ticks
+// (cited evidence above; independently measured by this repository's own
+// hrm/denise_bitplane_shifter harness: "Lowres bit width expected 4
+// ticks"). Page 82's "up to 15 pixels of delay" is read as PF1H/PF2H
+// counting in that same four-tick lores-pixel unit regardless of hires/
+// shres mode -- which is also the mechanism predicted to produce page 82's
+// "In high resolution mode, scrolling is in increments of 2 pixels" (a
+// fixed four-tick step, at a shifter rate of one hires pixel per two
+// ticks, is exactly two hires pixels per PF1H unit). HIRES-SCROLL-
+// GRANULARITY-2-PIXELS measures both quantities directly inside this same
+// fixture rather than assuming the ratio.
+//
+// THE SIX-VS-EIGHT-BITS DISPUTE (build-brief warning, not a claims.jsonl
+// record -- no claim id exists for it, so nothing below asserts or
+// declines it by id; recorded here as a measurement only, per the build
+// brief's own instruction not to resolve it): printed p.85 is reported to
+// tell the reader to set "all six bits" of the BPLCON1 delay value, while
+// the adjacent register definition (p.85's own bits-7-0 sentence, p.90's
+// PF1H(3-0)/PF2H(3-0) register summary, and appendix A's bit table, all
+// quoted below in claims that ARE asserted) allocates eight delay bits,
+// 7-0, four per playfield. That is a contradiction inside the manual
+// itself, at a page this package already tests from multiple undisputed
+// angles; it is not settled here. What IS asserted below (BPLCON1-BITS-3-
+// 0-ARE-PF1H, BPLCON1-BITS-7-4-ARE-PF2H, BPLCON1-DELAY-RANGE-0-TO-15) is
+// the undisputed eight-bit, two-nibble structure every other citation of
+// page 85 and page 90 agrees on.
+//
+// THE BPLXDAT DMA-ONLY DISPUTE: claims.jsonl flags exactly one record with
+// a source conflict, A-bpldat.c9 (p.272): its own quoted sentence ("The MSB
+// is output first...") is undisputed and IS asserted below (BPLXDAT-MSB-
+// FIRST-16-PIXELS-PER-WORD); the conflict recorded on that same id is
+// between appendix A p.272 ("They may also be written by either
+// microprocessor") and appendix B p.291, whose BPL1DAT..BPL6DAT table rows
+// carry a "&" glyph that six further claims (B-subject.c138/c143/c148/
+// c153/c158/c163) independently restate as "used only by a DMA channel" --
+// a reading with no legend for "&" quoted anywhere in this package's
+// inventory to confirm it. That specific "DMA-only" restatement is
+// declined below (not asserted, not resolved) -- see NOT ASSERTED.
+//
+// CONTROL CASE: FIXTURE-DATA-PATH-LIVE is the control every other
+// assertion in this file depends on being true first -- it is measured on
+// the identical reg_address_in/data_in write path and the identical
+// bpldata readback basis as BPLCON1-ADDRESS-DECODE, BPLXDAT-ADDRESS-MAP-
+// SIX-PLANES and every scroll-delay measurement below, in the identical
+// Harness session type. BPLCON1-ADDRESS-DECODE additionally carries its
+// own internal negative control (a write to an address this module does
+// not decode, on the same measurement basis as the positive case).
+//
+// CLAIM COVERAGE: all 113 records of claims.jsonl are accounted for below
+// -- 98 inside an expect() assertion string, 15 inside a note() call with a
+// stated reason (6 for the BPLxDAT DMA-only dispute, 9 for claims whose
+// subject needs a wider boundary than this module -- pointers, modulo,
+// Copper, or DIW). Every id is written out in full.
+//
+// RTL OPENED, BUILT AND RUN: filled in below, in the follow-up commit,
+// once denise_bitplanes.v/denise_bitplane_shifter.v/bitplane_ram.v have
+// actually been opened and `make test` has actually been run under WSL/
+// Verilator -- left as this placeholder in the spec-only commit, per the
+// build brief's explicit order of work.
+//
+// MUTATION LOG: recorded after the RTL was opened and the build actually
+// run (see the entries below main() -- left empty in this spec-only
+// commit, filled in the follow-up commit once `make test` has actually
+// executed each mutation, per the build brief's order of work).
+
+#include <array>
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include <verilated.h>
+#include "Vdenise_bitplanes.h"
+
+namespace {
+
+class Checks {
+public:
+    void expect(bool condition, const std::string& label) {
+        std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
+        condition ? ++passed : ++failed;
+    }
+    // A note is not a check: it prints and does not touch passed/failed.
+    // Used to record, in an actual C++ string (not only a `//` comment),
+    // every claim declined below -- so coverage is findable by grepping the
+    // file's own strings, not only its comments.
+    void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
+    int passed = 0;
+    int failed = 0;
+};
+
+// Custom chip-register addresses, as printed in the manual (appendix A/B,
+// pp. 271/272/291). reg_address_in is [8:1] -- an already-halved word
+// address -- the same convention this repository's own sibling Denise
+// harnesses use (e.g. hrm/ch3-ham-control-field's write_color: COLORBASE
+// $180 -> reg_address_in 0xC0 == $180>>1) and the same relationship
+// hrm/denise_sprites/test_denise_sprites.cpp assumes for its own
+// reg_address_in writes.
+constexpr uint16_t kBplcon1Addr = 0x102;
+constexpr uint16_t kBpl1DatAddr = 0x110;
+constexpr uint16_t kBpl2DatAddr = 0x112;
+constexpr uint16_t kBpl3DatAddr = 0x114;
+constexpr uint16_t kBpl4DatAddr = 0x116;
+constexpr uint16_t kBpl5DatAddr = 0x118;
+constexpr uint16_t kBpl6DatAddr = 0x11A;
+// A negative-control address this module's boundary does not include at
+// all (BPLCON2 on real hardware; no BPLCON2 port anywhere in this
+// fixture's cited evidence) -- used only to prove the $102 decode is
+// specific, never to claim anything about what $104 itself does.
+constexpr uint16_t kWrongAddr = 0x104;
+// Index 1..6 by plane number, matching bpldata's own bit numbering.
+constexpr uint16_t kBplxDatAddr[7] = {0, kBpl1DatAddr, kBpl2DatAddr, kBpl3DatAddr,
+                                       kBpl4DatAddr, kBpl5DatAddr, kBpl6DatAddr};
+
+// One lores pixel, in raw 28MHz ticks, per denise_bitplane_shifter's own
+// documented and (in this repository's own sibling harness) measured rate.
+constexpr long kLoresPixelTicks = 4;
+
+// Reused clocking mechanics for THIS module from this repository's own
+// already-committed sibling harnesses for other denise_* modules sharing
+// the identical clk/clk7_en/c1/c3/reset/aga/reg_address_in/data_in/chip48/
+// hpos port set (hrm/denise_sprites, hrm/denise_bitplane_shifter) -- not
+// learned from this package's own forbidden-until-committed RTL file.
+class Harness {
+public:
+    Harness() : dut(new Vdenise_bitplanes) {
+        dut->clk = 0;
+        dut->clk7_en = 0;
+        dut->c1 = 0;
+        dut->c3 = 0;
+        dut->reset = 1;
+        dut->aga = 0;
+        dut->reg_address_in = 0;
+        dut->data_in = 0;
+        dut->chip48 = 0;
+        dut->hires = 0;
+        dut->shres = 0;
+        dut->hpos = 0;  // hpos[3:2] == 0: the zero-offset case, held constant throughout.
+        for (int i = 0; i < 16; ++i) tick();
+        dut->reset = 0;
+        for (int i = 0; i < 16; ++i) tick();
+    }
+    ~Harness() { dut->final(); delete dut; }
+    Harness(const Harness&) = delete;
+    Harness& operator=(const Harness&) = delete;
+
+    // One 28MHz clock edge, then advance the four-phase c1/c3/clk7_en
+    // relationship for the NEXT edge -- see THE C1/C3 TRAP above. Phase 0
+    // is the clk7_en register-capture phase; phase 1 has c1 AND c3 both
+    // high (the BPLxDAT write-strobe phase, denise_bitplanes.v:381); phase
+    // 3 has both low (the shifter load phase, denise_bitplane_shifter.v:
+    // 224).
+    void tick() {
+        dut->eval();
+        dut->clk = 1;
+        dut->eval();
+        dut->clk = 0;
+        dut->eval();
+        phase = (phase + 1) % 4;
+        dut->clk7_en = (phase == 0);
+        dut->c1 = (phase == 0 || phase == 1);
+        dut->c3 = (phase == 1 || phase == 2);
+    }
+
+    // Advances to the clk7_en phase, presents (addr>>1, data), captures it
+    // on exactly the following clk7_en edge, and returns immediately --
+    // phase is left at 1 (the write-strobe phase) so a caller measuring
+    // timing from a trigger write has a known, minimal-latency starting
+    // point. The bus is left driven; call clear_reg() when done with it.
+    void begin_write_reg(uint16_t custom_addr, uint16_t data) {
+        while (phase != 0) tick();
+        dut->reg_address_in = static_cast<uint8_t>(custom_addr >> 1);
+        dut->data_in = data;
+        tick();
+    }
+    void clear_reg() {
+        dut->reg_address_in = 0;
+        dut->data_in = 0;
+    }
+    // Convenience wrapper for writes whose own timing is not being
+    // measured (BPLCON1 setup, preloading planes 2-6 before the BPL1DAT
+    // trigger write).
+    void write_reg(uint16_t custom_addr, uint16_t data) {
+        begin_write_reg(custom_addr, data);
+        clear_reg();
+    }
+
+    // Scans up to `window` ticks from the current instant, sampling BEFORE
+    // each tick, and records -- per bitplane 1..6 (bpldata's own bit
+    // numbering, bpldata[8:1] packed so plane N is C++ bit (N-1)) -- the
+    // tick offset at which that plane's bit is first seen high. -1 if
+    // never seen within the window. Index 0 is unused.
+    std::array<long, 7> measure_first_high_all(long window) {
+        std::array<long, 7> result{};
+        result.fill(-1);
+        for (long i = 0; i < window; ++i) {
+            for (int p = 1; p <= 6; ++p) {
+                if (result[p] < 0 && (dut->bpldata & (1u << (p - 1)))) result[p] = i;
+            }
+            bool all_found = true;
+            for (int p = 1; p <= 6; ++p)
+                if (result[p] < 0) all_found = false;
+            if (all_found) break;
+            tick();
+        }
+        return result;
+    }
+
+    Vdenise_bitplanes* dut;
+    int phase = 0;
+};
+
+// Sweeps BPLCON1's PF1H field 0..15 (PF2H held at 0), one fresh Harness per
+// point, and records the tick offset from the BPL1DAT trigger write to
+// bpldata's plane-1 bit first going high -- "the amount of delay" (p.82)
+// made concrete as a measurement.
+std::array<long, 16> sweep_pf1h() {
+    std::array<long, 16> t{};
+    for (int n = 0; n <= 15; ++n) {
+        Harness h;
+        h.write_reg(kBplcon1Addr, static_cast<uint16_t>(n));  // PF2H=0, PF1H=n
+        h.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h.clear_reg();
+        auto first = h.measure_first_high_all(400);
+        t[n] = first[1];
+    }
+    return t;
+}
+
+// Same sweep for PF2H 0..15 (PF1H held at 0), tracking plane 2's bit. The
+// trigger is still a BPL1DAT write (per A-bplxdat.c05/A-bpldat.c7 -- plane
+// 1's write triggers every plane's conversion, plane 2 included), with
+// BPL1DAT's own data left at 0 so it does not interfere with reading
+// plane 2's bit.
+std::array<long, 16> sweep_pf2h() {
+    std::array<long, 16> t{};
+    for (int n = 0; n <= 15; ++n) {
+        Harness h;
+        h.write_reg(kBplcon1Addr, static_cast<uint16_t>(n << 4));  // PF1H=0, PF2H=n
+        h.write_reg(kBpl2DatAddr, 0x8000);
+        h.begin_write_reg(kBpl1DatAddr, 0x0000);
+        h.clear_reg();
+        auto first = h.measure_first_high_all(400);
+        t[n] = first[2];
+    }
+    return t;
+}
+
+}  // namespace
+
+int main(int argc, char** argv) {
+    Verilated::commandArgs(argc, argv);
+    Checks checks;
+
+    // ---------------- FIXTURE-DATA-PATH-LIVE (control case) ----------------
+    {
+        Harness h;
+        h.begin_write_reg(kBpl1DatAddr, 0xACE1);  // MSB (bit15) set: a distinct, recognisable nonzero pattern.
+        h.clear_reg();
+        auto first = h.measure_first_high_all(400);
+        checks.expect(
+            first[1] > 0,
+            "FIXTURE-DATA-PATH-LIVE: a distinct nonzero value (0xACE1) written to "
+            "BPL1DAT arrives at bpldata's plane-1 bit as a non-zero pixel, and not "
+            "in the same instant as the write itself -- proving this Harness's own "
+            "four-phase c1/c3 pattern (phase 1: both high, the BPLxDAT write "
+            "strobe; phase 3: both low, the shifter load) actually delivers a "
+            "loaded value through to a shifter, unlike the disjoint c1/c3 pattern "
+            "in this repository's own hrm/denise/test_denise.cpp, under which no "
+            "BPLxDAT write ever reaches a shifter and every pixel reads colour 0 "
+            "silently. Also the basis for 'The hardware requires some time after "
+            "the first data fetch before it can actually display the data' (p.60) "
+            "-- the measured latency here is that same nonzero delay, at this "
+            "module's own boundary. 3-fetch.c7 .");
+    }
+
+    // ---------------- BPLCON1-ADDRESS-DECODE ----------------
+    {
+        Harness h;
+        h.write_reg(kBplcon1Addr, 9);  // PF1H=9
+        h.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h.clear_reg();
+        auto positive = h.measure_first_high_all(400);
+
+        Harness h2;
+        h2.write_reg(kWrongAddr, 9);  // identical data, an address this module does not decode
+        h2.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h2.clear_reg();
+        auto negative = h2.measure_first_high_all(400);
+
+        auto baseline = sweep_pf1h();
+        checks.expect(
+            positive[1] == baseline[9] && negative[1] == baseline[0],
+            "BPLCON1-ADDRESS-DECODE: a write of PF1H=9 to custom-register address "
+            "$102 measurably changes plane 1's scroll delay to the same value a "
+            "direct $102 write produces; the identical data written to $104 (a "
+            "negative control this module does not decode at all) leaves the "
+            "delay at its power-up default -- 'BPLCON1 102 W D Bitplane control "
+            "register' (appendix A, p.271), 'BPLCON1 102 W D Bitplane control "
+            "reg. (scroll value PF1, PF2)' (appendix B, p.291), 'Bitplane control "
+            "register (horizontal scroll control)' (appendix A, p.271). "
+            "A-bplcon.c4, A-bplcon1.addr, A-bplcon1.fn, B-bplcon1.addr, "
+            "B-subject.c114, B-subject.c117 .");
+    }
+
+    // ---------------- BPLXDAT-ADDRESS-MAP-SIX-PLANES ----------------
+    {
+        bool all_ok = true;
+        for (int n = 1; n <= 6; ++n) {
+            Harness h;
+            if (n != 1) h.write_reg(kBplxDatAddr[n], 0x8000);
+            h.begin_write_reg(kBpl1DatAddr, (n == 1) ? 0x8000 : 0x0000);
+            h.clear_reg();
+            auto first = h.measure_first_high_all(400);
+            for (int p = 1; p <= 6; ++p) {
+                bool want_seen = (p == n);
+                bool seen = (first[p] >= 0);
+                if (seen != want_seen) all_ok = false;
+            }
+        }
+        checks.expect(
+            all_ok,
+            "BPLXDAT-ADDRESS-MAP-SIX-PLANES: writing a distinct nonzero pattern to "
+            "exactly one of BPL1DAT ($110), BPL2DAT ($112), BPL3DAT ($114), "
+            "BPL4DAT ($116), BPL5DAT ($118) or BPL6DAT ($11A) -- with every other "
+            "plane's data left at 0 -- produces a pixel on that plane's own "
+            "bpldata bit and no other, for all six planes independently; the "
+            "write path used throughout (reg_address_in/data_in) is the "
+            "processor-style register bus this whole Harness is built on, "
+            "confirming it (not DMA-exclusive access) reaches BPLxDAT -- 'They "
+            "may also be written by either microprocessor' (p.272). "
+            "A-bpldat.c1, A-bpldat.c5, A-bplxdat.addr, A-bplxdat.c02, "
+            "B-bpl1dat.addr, B-bpl2dat.addr, B-bpl3dat.addr, B-bpl4dat.addr, "
+            "B-bpl5dat.addr, B-bpl6dat.addr, B-subject.c134, B-subject.c139, "
+            "B-subject.c144, B-subject.c149, B-subject.c154, B-subject.c159 .");
+    }
+
+    // ---------------- BPL1DAT-WRITE-TRIGGERS-ALL-PLANES ----------------
+    {
+        Harness h;
+        h.write_reg(kBpl2DatAddr, 0x8000);
+        h.write_reg(kBpl3DatAddr, 0x8000);
+        h.write_reg(kBpl4DatAddr, 0x8000);
+        h.write_reg(kBpl5DatAddr, 0x8000);
+        h.write_reg(kBpl6DatAddr, 0x8000);
+        bool quiescent = true;
+        for (int i = 0; i < 40; ++i) {
+            if (h.dut->bpldata != 0) quiescent = false;
+            h.tick();
+        }
+        h.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h.clear_reg();
+        auto first = h.measure_first_high_all(400);
+        bool all_six_appear = true;
+        for (int p = 1; p <= 6; ++p)
+            if (first[p] < 0) all_six_appear = false;
+        bool simultaneous = true;
+        for (int p = 2; p <= 6; ++p)
+            if (first[p] != first[1]) simultaneous = false;
+
+        checks.expect(
+            quiescent && all_six_appear && simultaneous,
+            "BPL1DAT-WRITE-TRIGGERS-ALL-PLANES: five planes (2-6) preloaded with "
+            "data stay entirely quiescent on bpldata until BPL1DAT is written, at "
+            "which point all six planes' loaded data appears together, at the "
+            "same tick -- 'The parallel-to-serial conversion is triggered "
+            "whenever bitplane #1 is written, indicating the completion of all "
+            "bitplanes for that word' (p.272), 'They act as a six-word "
+            "parallel-to-serial buffer for up to six memory bitplanes (x=1-6)' "
+            "(p.272), 'Bitplane x data (parallel-to-serial convert)' (p.272). "
+            "A-bpldat.c3, A-bpldat.c6, A-bpldat.c7, A-bplxdat.c03, A-bplxdat.c04, "
+            "A-bplxdat.c05, A-bplxdat.fn, B-subject.c137, B-subject.c142, "
+            "B-subject.c147, B-subject.c152, B-subject.c157, B-subject.c162 .");
+    }
+
+    // ---------------- BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD ----------------
+    {
+        Harness h;
+        h.begin_write_reg(kBpl1DatAddr, 0x8001);  // bit15 (MSB) and bit0 (LSB) set, all 14 bits between clear.
+        h.clear_reg();
+        long first = -1;
+        for (long i = 0; i < 400 && first < 0; ++i) {
+            if (h.dut->bpldata & 0x1)
+                first = i;
+            else
+                h.tick();
+        }
+        std::vector<bool> samples;
+        for (int px = 0; px < 16 && first >= 0; ++px) {
+            samples.push_back((h.dut->bpldata & 0x1) != 0);
+            for (long k = 0; k < kLoresPixelTicks; ++k) h.tick();
+        }
+        bool msb_first = samples.size() == 16 && samples[0];
+        bool middle_zero = true;
+        for (size_t px = 1; px < 15 && px < samples.size(); ++px)
+            if (samples[px]) middle_zero = false;
+        bool lsb_last = samples.size() == 16 && samples[15];
+
+        checks.expect(
+            first >= 0 && msb_first && middle_zero && lsb_last,
+            "BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD: loading BPL1DAT with bit15 and "
+            "bit0 set and the 14 bits between clear produces a pixel at the very "
+            "first lores-pixel position, nothing at the 14 in between, and a "
+            "pixel again exactly 15 lores-pixel positions later -- the MSB "
+            "output first (leftmost) and one word spanning exactly 16 pixels -- "
+            "'The MSB is output first, and is, therefore, always on the left' "
+            "(p.272), 'indicating the completion of all bitplanes for that word "
+            "(16 pixels)' (p.272). A-bpldat.c9, A-bpldat.c10, A-bplxdat.c07, "
+            "A-bplxdat.c08 .");
+    }
+
+    // Shared sweeps -- reused by every PF1H/PF2H-structural assertion below
+    // so the underlying measurement is run once, not once per claim.
+    auto sweep1 = sweep_pf1h();
+    auto sweep2 = sweep_pf2h();
+
+    // ---------------- PF1H-CONTROLS-PLAYFIELD1-DELAY ----------------
+    {
+        bool monotonic = true, constant_step = true;
+        for (int n = 1; n <= 15; ++n) {
+            if (!(sweep1[n] > sweep1[n - 1])) monotonic = false;
+            if (sweep1[n] - sweep1[n - 1] != kLoresPixelTicks) constant_step = false;
+        }
+        checks.expect(
+            monotonic && constant_step,
+            "PF1H-CONTROLS-PLAYFIELD1-DELAY: sweeping BPLCON1's PF1H field 0..15 "
+            "moves plane 1's first measured pixel strictly later, one lores-pixel "
+            "width per step, for every step -- 'A playfield ... can be scrolled "
+            "horizontally' (p.42), 'A larger playfield [can] scroll ... through "
+            "the window' (p.57), 'You control the speed of scrolling by "
+            "specifying the amount [of delay]' (p.82), 'The greater the delay, "
+            "the greater the speed of scrolling' (p.82), figure 3-24's "
+            "right-pointing 'As delay is added, onscreen display shifts this "
+            "direction' callout (p.83), 'PF1H=Playfield 1 horizontal scroll "
+            "code' (p.271). 3-bpl.c14, 3-bpl.c15, 3-video.c31, 3-window.c7, "
+            "3-hscr.c01, 3-hscroll.c6, 3-hscr.f04, A-bplcon.c84, A-leg.pf1h .");
+    }
+
+    // ---------------- BPLCON1-BITS-3-0-ARE-PF1H ----------------
+    {
+        bool bit0 = (sweep1[1] - sweep1[0]) == 1 * kLoresPixelTicks;
+        bool bit1 = (sweep1[2] - sweep1[0]) == 2 * kLoresPixelTicks;
+        bool bit2 = (sweep1[4] - sweep1[0]) == 4 * kLoresPixelTicks;
+        bool bit3 = (sweep1[8] - sweep1[0]) == 8 * kLoresPixelTicks;
+        bool superposed = (sweep1[15] - sweep1[0]) == 15 * kLoresPixelTicks;
+        checks.expect(
+            bit0 && bit1 && bit2 && bit3 && superposed,
+            "BPLCON1-BITS-3-0-ARE-PF1H: isolating each of PF1H's four bits in "
+            "turn (values 1,2,4,8) produces exactly 1,2,4,8 lores-pixel-widths "
+            "of extra delay respectively, and all four together (value 15) "
+            "produce their sum -- confirming bits 3-0 are a 4-bit binary field, "
+            "not four independent switches -- 'Bits 3-0 - PF1H(3-0) Playfield 1 "
+            "delay' (p.90), 'bits 3-0 for playfield 1' (p.85). "
+            "A-bplcon.c50, A-bplcon.c53, A-bplcon.c56, A-bplcon.c59, "
+            "A-bpc.b00.c1, A-bpc.b01.c1, A-bpc.b02.c1, A-bpc.b03.c1, "
+            "3-r1.c01, 3-regsum-bplcon1.c1 .");
+    }
+
+    // ---------------- PF2H-CONTROLS-PLAYFIELD2-DELAY ----------------
+    {
+        bool monotonic = true, constant_step = true;
+        for (int n = 1; n <= 15; ++n) {
+            if (!(sweep2[n] > sweep2[n - 1])) monotonic = false;
+            if (sweep2[n] - sweep2[n - 1] != kLoresPixelTicks) constant_step = false;
+        }
+        checks.expect(
+            monotonic && constant_step,
+            "PF2H-CONTROLS-PLAYFIELD2-DELAY: sweeping BPLCON1's PF2H field 0..15 "
+            "moves plane 2's first measured pixel strictly later, one lores-pixel "
+            "width per step, for every step, on the identical measurement basis "
+            "as PF1H-CONTROLS-PLAYFIELD1-DELAY above -- 'PF2H=Playfield 2 "
+            "horizontal scroll code' (p.271). A-bplcon.c83, A-leg.pf2h .");
+    }
+
+    // ---------------- BPLCON1-BITS-7-4-ARE-PF2H ----------------
+    {
+        bool bit0 = (sweep2[1] - sweep2[0]) == 1 * kLoresPixelTicks;
+        bool bit1 = (sweep2[2] - sweep2[0]) == 2 * kLoresPixelTicks;
+        bool bit2 = (sweep2[4] - sweep2[0]) == 4 * kLoresPixelTicks;
+        bool bit3 = (sweep2[8] - sweep2[0]) == 8 * kLoresPixelTicks;
+        bool superposed = (sweep2[15] - sweep2[0]) == 15 * kLoresPixelTicks;
+        checks.expect(
+            bit0 && bit1 && bit2 && bit3 && superposed,
+            "BPLCON1-BITS-7-4-ARE-PF2H: isolating each of PF2H's four bits in "
+            "turn (values 1,2,4,8, written into bits 7-4) produces exactly "
+            "1,2,4,8 lores-pixel-widths of extra delay on plane 2 respectively, "
+            "and all four together (value 15) produce their sum -- 'Bits 7-4 - "
+            "PF2H(3-0) Playfield 2 delay' (p.90), 'bits 7-4 for playfield 2' "
+            "(p.85). A-bplcon.c38, A-bplcon.c41, A-bplcon.c44, A-bplcon.c47, "
+            "A-bpc.b04.c1, A-bpc.b05.c1, A-bpc.b06.c1, A-bpc.b07.c1, "
+            "3-r1.c02, 3-regsum-bplcon1.c2 .");
+    }
+
+    // ---------------- PF1H-PF2H-SCROLL-INDEPENDENTLY ----------------
+    {
+        Harness h;
+        h.write_reg(kBplcon1Addr, static_cast<uint16_t>((11 << 4) | 5));  // PF1H=5, PF2H=11
+        h.write_reg(kBpl2DatAddr, 0x8000);
+        h.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h.clear_reg();
+        auto first = h.measure_first_high_all(400);
+        checks.expect(
+            first[1] == sweep1[5] && first[2] == sweep2[11],
+            "PF1H-PF2H-SCROLL-INDEPENDENTLY: with PF1H=5 and PF2H=11 written "
+            "together, plane 1's delay measures exactly PF1H=5's own "
+            "isolated-sweep value and plane 2's delay measures exactly "
+            "PF2H=11's own isolated-sweep value -- neither field perturbed by "
+            "the other's simultaneous nonzero value -- 'They can be scrolled "
+            "separately' (p.71), 'If you are using dual playfields, you can "
+            "scroll them separately' (p.80). 3-dual-control.c3, 3-dual.c33, "
+            "3-scroll.c1 .");
+    }
+
+    // ---------------- BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN ----------------
+    {
+        Harness h;
+        h.write_reg(kBplcon1Addr, static_cast<uint16_t>((9 << 4) | 6));  // PF1H=6, PF2H=9
+        h.write_reg(kBpl2DatAddr, 0x8000);
+        h.write_reg(kBpl3DatAddr, 0x8000);
+        h.write_reg(kBpl4DatAddr, 0x8000);
+        h.write_reg(kBpl5DatAddr, 0x8000);
+        h.write_reg(kBpl6DatAddr, 0x8000);
+        h.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h.clear_reg();
+        auto first = h.measure_first_high_all(400);
+        bool odd_ok = (first[1] == sweep1[6]) && (first[3] == sweep1[6]) && (first[5] == sweep1[6]);
+        bool even_ok = (first[2] == sweep2[9]) && (first[4] == sweep2[9]) && (first[6] == sweep2[9]);
+        checks.expect(
+            odd_ok && even_ok,
+            "BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN: with PF1H=6 and "
+            "PF2H=9 and all six planes loaded, planes 1, 3 and 5 all measure "
+            "exactly PF1H=6's delay and planes 2, 4 and 6 all measure exactly "
+            "PF2H=9's delay -- 'bits 3-0 for playfield 1 (bitplanes 1, 3, and 5) "
+            "and bits 7-4 for playfield 2 (bitplanes 2, 4, and 6)' (p.85). "
+            "3-hscr.c21, 3-hscr.c23, 3-hscr.c24, 3-hscroll.c27, 3-hscroll.c28, "
+            "3-hscroll.c30 .");
+    }
+
+    // ---------------- BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD ----------------
+    {
+        Harness h;
+        h.write_reg(kBplcon1Addr, static_cast<uint16_t>((7 << 4) | 7));  // PF1H=PF2H=7
+        h.write_reg(kBpl2DatAddr, 0x8000);
+        h.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h.clear_reg();
+        auto first = h.measure_first_high_all(400);
+        checks.expect(
+            first[1] == first[2] && first[1] == sweep1[7] && first[2] == sweep2[7],
+            "BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD: writing the same "
+            "nibble (7) to both PF1H and PF2H produces identical, matching "
+            "delay on planes 1 and 2 -- 'Set 3-0 and 7-4 to the same value if "
+            "you are using only one playfield' (p.85). 3-hscroll.c33 .");
+    }
+
+    // ---------------- BPLCON1-DELAY-RANGE-0-TO-15 ----------------
+    {
+        checks.expect(
+            (sweep1[15] - sweep1[0]) == 15 * kLoresPixelTicks,
+            "BPLCON1-DELAY-RANGE-0-TO-15: the full PF1H sweep spans exactly 15 "
+            "lores-pixel-widths from value 0 to value 15, its maximum -- 'You "
+            "can have up to 15 pixels of delay' (p.82), 'Set bits 7-0 in "
+            "BPLCON1 for 0 to 15 bits of delay' (p.85), figure 3-24's two "
+            "dashed window outlines identifying the displayed data at scroll "
+            "values 0 and 15 (p.83). 3-hscr.c06, 3-hscr.c30, 3-hscroll.c37, "
+            "3-hscroll.c21 .");
+    }
+
+    // ---------------- BPLCON1-BITS-15-8-UNUSED-ON-OCS ----------------
+    {
+        Harness h;
+        h.write_reg(kBplcon1Addr, 0xFF07);  // upper byte all-ones garbage, PF1H=7, PF2H=0
+        h.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h.clear_reg();
+        auto first = h.measure_first_high_all(400);
+        checks.expect(
+            first[1] == sweep1[7],
+            "BPLCON1-BITS-15-8-UNUSED-ON-OCS: writing $FF07 (an all-ones garbage "
+            "upper byte over a clean PF1H=7) measures the identical delay as a "
+            "clean $0007 write -- the upper byte has no effect -- 'Bits 15-8 not "
+            "used' (p.90), and appendix A's bit table marking bits 8-15 'X' "
+            "against BPLCON1 (p.271). A-bpc.b15.x, A-bplcon.c14, A-bplcon.c17, "
+            "A-bplcon.c20, A-bplcon.c23, A-bplcon.c26, A-bplcon.c29, "
+            "A-bplcon.c32, A-bplcon.c35, 3-r1.c03, 3-regsum-bplcon1.c3 .");
+    }
+
+    // ---------------- HIRES-SCROLL-GRANULARITY-2-PIXELS ----------------
+    {
+        Harness hw;
+        hw.dut->hires = 1;
+        hw.begin_write_reg(kBpl1DatAddr, 0x8000);
+        hw.clear_reg();
+        long first = -1;
+        for (long i = 0; i < 400 && first < 0; ++i) {
+            if (hw.dut->bpldata & 0x1)
+                first = i;
+            else
+                hw.tick();
+        }
+        long width = 0;
+        while (first >= 0 && (hw.dut->bpldata & 0x1)) {
+            ++width;
+            hw.tick();
+        }
+
+        Harness h0;
+        h0.dut->hires = 1;
+        h0.write_reg(kBplcon1Addr, 0);
+        h0.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h0.clear_reg();
+        auto f0 = h0.measure_first_high_all(400);
+
+        Harness h1;
+        h1.dut->hires = 1;
+        h1.write_reg(kBplcon1Addr, 1);
+        h1.begin_write_reg(kBpl1DatAddr, 0x8000);
+        h1.clear_reg();
+        auto f1 = h1.measure_first_high_all(400);
+
+        long delta = f1[1] - f0[1];
+        checks.expect(
+            width > 0 && delta == 2 * width,
+            "HIRES-SCROLL-GRANULARITY-2-PIXELS: in hires mode, one PF1H unit "
+            "(comparing PF1H=0 against PF1H=1) moves the measured delay by "
+            "exactly twice this fixture's own measured hires pixel width, i.e. "
+            "two hires pixels per unit -- 'In high resolution mode, scrolling "
+            "is in increments of 2 pixels' (p.82). 3-hscr.c07, 3-hscroll.c8 .");
+    }
+
+    // ---------------- NOT ASSERTED: BPLXDAT DMA-ONLY DISPUTE ----------------
+    checks.note(
+        "NOT ASSERTED (6 claims) B-subject.c138, B-subject.c143, "
+        "B-subject.c148, B-subject.c153, B-subject.c158, B-subject.c163 "
+        "(sol, p.291), each restating BPL1DAT/BPL2DAT/BPL3DAT/BPL4DAT/"
+        "BPL5DAT/BPL6DAT in turn as \"used only by a DMA channel\": that "
+        "reading comes from a \"&\" glyph in appendix B's table row (e.g. "
+        "'BPL1DAT & 110 W D Bitplane 1 data (parallel-to-serial convert)'), "
+        "with no legend for \"&\" quoted anywhere in this package's "
+        "inventory to confirm that meaning. It directly conflicts with "
+        "appendix A p.272's explicit 'They may also be written by either "
+        "microprocessor' (A-bpldat.c5, A-bplxdat.c02, asserted in "
+        "BPLXDAT-ADDRESS-MAP-SIX-PLANES above) -- the same conflict "
+        "claims.jsonl's own A-bpldat.c9 record already flags between "
+        "appendix A p.272 and appendix B p.291. This fixture's write path "
+        "(reg_address_in/data_in, the ordinary processor-style register "
+        "bus every assertion in this file is built on) does reach BPLxDAT "
+        "and does produce the measured effects above, matching appendix "
+        "A's reading -- but whether \"&\" in appendix B actually means "
+        "\"DMA-exclusive\" cannot be settled from the quotation available "
+        "here. Recorded as a measurement, not resolved either way.");
+
+    // ---------------- NOT ASSERTED: WIDER BOUNDARY THAN denise_bitplanes ----------------
+    checks.note(
+        "NOT ASSERTED (9 claims), each needing a boundary wider than this "
+        "module's own ports (reg_address_in, data_in, chip48, hires, "
+        "shres, hpos, bpldata, c1, c3, clk, clk7_en, reset, aga -- no "
+        "pointer, modulo, Copper or display-window port anywhere in this "
+        "fixture): "
+        "3-scroll-copper.c1 (sol, p.80) \"resetting of pointers or "
+        "data-fetch registers can be handled by the Copper\" -- no Copper "
+        "port here. "
+        "3-dual.c39 (opus, p.72) and 3-dual.c41 (opus, p.72), the -2/-4 "
+        "pointer and modulo adjustment for the non-scrolled playfield -- "
+        "no pointer or modulo port here. "
+        "3-scroll.c2 and 3-scroll.c3 (sol, p.80), vertical scrolling by "
+        "incrementing/decrementing the bitplane starting pointer -- no "
+        "pointer port here. "
+        "3-vscr.c02 (opus, p.81), the pointer-increase-scrolls-upward "
+        "relationship -- same reason. "
+        "3-hscroll.c4 (sol, p.82), bits disappearing off the display "
+        "window's right-hand edge as the display shifts -- needs "
+        "DIWSTRT/DIWSTOP, no display-window port here. "
+        "3-hscr.f09 (opus, p.84, figure 3-25) and 3-hscr.f11 (opus, p.84, "
+        "figure 3-27), memory-picture width and per-line DMA start address "
+        "-- Agnus DMA address generation, not observable at this Denise "
+        "boundary. None of these are resolved by declining them; they "
+        "would need a different, wider fixture.");
+
+    std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
+    return checks.failed == 0 ? 0 : 1;
+}
