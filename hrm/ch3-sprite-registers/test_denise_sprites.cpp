@@ -111,11 +111,55 @@
 // is alive -- the sprite becomes visible somewhere and invisible
 // elsewhere -- before any claim-based assertion depends on it.
 //
-// RESULTS: filled in below, after opening the RTL and building, in a
-// separate commit per the build brief's order of work.
+// RESULTS (after opening the RTL and building): 5 passed, 2 failed. Two
+// genuine findings account for both failures; neither assertion was
+// adjusted to hide them.
 //
-// MUTATION LOG: filled in below, after opening the RTL and building, in
-// a separate commit per the build brief's order of work.
+//   FINDING 1 -- SH0 is never gated by resolution. denise_sprites_shifter.v
+//     (non-EBR path) computes the sprite's position match purely as
+//     `hpos[7:0] == hstart[7:0]`, where hstart[8:1] comes from SPRxPOS and
+//     hstart[0] (SH0) comes from SPRxCTL bit 0 -- this comparison does not
+//     read `spres`/`shift` at all. `spres` only changes how fast the
+//     already-loaded shift register drains afterwards
+//     (denise_sprites.v:158-166, the `shift` case on `spres`), not whether
+//     SH0 participates in finding the start. Measured: toggling SH0 moves
+//     the start by 1 raw unit at EVERY one of the 4 spres encodings,
+//     including spres=0 -- not only at one SuperHires-like value, as
+//     C-library.c2/C-shr.c05/C-shres-sprite.c1/c2/c15/C-spr.c01/c10 read.
+//     SPRXCTL-BIT0-SH0-ONLY-IN-SUPERHIRES fails on its "inert at spres=0"
+//     clause for this reason; its own MEASURED note above records the
+//     four per-spres deltas (1,1,1,1) that show it.
+//   FINDING 2 -- SPRxCTL bits 3 and 4 are not implemented at all, on any
+//     chip mode. The ONLY bits denise_sprites_shifter.v's CTL-register
+//     write ever captures are bit 7 (attach) and bit 0 (SH0):
+//     `{attach,hstart[0]} <= {data_in[7],data_in[0]};` -- nothing in
+//     denise_sprites.v or denise_sprites_shifter.v (non-EBR path) ever
+//     reads data_in[3] or data_in[4] from a CTL write. This is a stronger
+//     deviation than "ECS chips only" (p.303's NOTE) describes: the bits
+//     are not chip-scoped, they are simply absent from this
+//     implementation, at aga=0 and (by the same dead-code reading) at
+//     aga=1 too.
+//   Both findings are read directly off the RTL cited above (file, line,
+//   the exact expression), not inferred from the test's failure alone.
+//
+// MUTATION LOG (all 4 stimulus entries actually run by this agent under
+// WSL/Verilator on 11.09.2026 -- edit -> rebuild -> run -> confirm the
+// named assertion, and only that assertion, changed colour -> revert ->
+// rebuild -> confirm the 5-passed/2-failed baseline restored -- before
+// moving to the next one. nanomig/ was never touched; no expected value,
+// oracle text or comparison logic was ever edited, only stimulus. The
+// first attempt at the SPRXPOS-BYTE mutation also moved
+// SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING, which reused that assertion's
+// pos_delta variable -- a coupling bug in the harness, not a finding; it
+// was fixed by giving JOINTLY-LOAD-BEARING its own independent
+// measurement before the mutation below was run for record):
+//
+// MUTATION PROCESSOR-WRITE-REACHES-SPRXPOS stimulus red: the second SPR0POS write's value changed from 0x50 to 0x10 (the same as the first), so the two writes stopped differing -> FAIL ("4 passed, 3 failed"), only PROCESSOR-WRITE-REACHES-SPRXPOS newly red (lo.start no longer < hi.start; they are equal). Reverted to 0x50: 5/2, same two findings.
+// MUTATION SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 stimulus red: the second SPR0POS write's value changed from 0x41 to 0x42, a byte step of 2 instead of 1 -> FAIL ("4 passed, 3 failed"), only SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 newly red (measured delta became 4, not the asserted 2). Reverted to 0x41: 5/2, same two findings.
+// MUTATION SH0-IS-HALF-OF-POS-BYTE-STEP stimulus red: the "hi" measurement's SPR0CTL value changed from 0x01 (SH0) to 0x02 (bit 1, a bit this RTL never stores anywhere) -> FAIL ("4 passed, 3 failed"), only SH0-IS-HALF-OF-POS-BYTE-STEP newly red (measured delta became 0, not the asserted 1). Reverted to 0x01: 5/2, same two findings.
+// MUTATION SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING stimulus red: the attached-case SPR1CTL write changed from 0x80 (ATTACH set) to 0x00, so sprite 1 is armed but never actually attached -> FAIL ("4 passed, 3 failed"), only SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING newly red (the attached measurement returned colour 1, the same as the unattached one, instead of 13). Reverted to 0x80: 5/2, same two findings.
+// MUTATION SPRXCTL-BIT0-SH0-ONLY-IN-SUPERHIRES none impossible: already red at baseline (FINDING 1). SH0 is live at every one of the 4 reachable spres values (deltas 1,1,1,1, printed by this assertion's own MEASURED note) -- there is no spres encoding this harness can present at which SH0 is inert, so no stimulus mutation can turn this assertion from green to red; there is nothing green here to break.
+// MUTATION SPRXCTL-BITS-3-4-ARE-LIVE-FIELDS none impossible: already red at baseline (FINDING 2). Bits 3 and 4 of SPRxCTL are not captured by any register in this RTL at all (only bits 7 and 0 are), so no stimulus this harness can present makes either bit observable; there is nothing green here to break.
 
 #include <cstdint>
 #include <iostream>
@@ -428,7 +472,12 @@ int main(int argc, char** argv) {
 
     // ---------------- SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING ----------------
     {
-        bool position_side = pos_delta == 2;  // SPRxPOS alone moves the output (measured above).
+        // Measured independently here (not reusing the outer pos_delta) so
+        // this assertion's own result cannot be moved by a mutation aimed at
+        // SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2's stimulus above.
+        Meas pa = measure(/*pos=*/0x20, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+        Meas pb = measure(/*pos=*/0x30, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+        bool position_side = pa.start != -1 && pb.start != -1 && pb.start != pa.start;
         uint8_t plain = measure_attach_color(/*pos=*/0x40, /*attach=*/false);
         uint8_t attached = measure_attach_color(/*pos=*/0x40, /*attach=*/true);
         bool feature_side = plain == 1 && attached == 13 && plain != attached;
