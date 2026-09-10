@@ -141,12 +141,46 @@
 // hrm/ch3-dual-playfield's CONTROL-KNOWN-VALUES-ARRIVE and
 // hrm/ch3-collision-registers' equivalent both use.
 //
-// RESULTS (after opening the RTL and building): see bottom of file /
-// commit message -- filled in after the first build, per the build brief's
-// explicit gate (spec written and committed BEFORE the RTL is opened).
+// RESULTS (after opening the RTL and building): 39 passed, 0 failed, plus
+// the 1 MEASURED note (printed, not counted as pass or fail).
+// denise_playfields.v turned out to implement the manual's single-
+// playfield colour-indirection description exactly as every assertion
+// above expected -- no finding in this package. One thing worth recording
+// precisely because it was checked, not assumed, on opening the RTL:
+//   - denise_playfields.v:96-99 hides an undocumented conditional inside
+//     the single-playfield branch PACKAGE.md's evidence field cited as a
+//     flat "plfdata = bpldata[8:1])" (line 100 only): when
+//     `(pf2p>5) && bpldata[5] && !aga` (pf2p = bplcon2[5:3], an
+//     "OCS/ECS undocumented feature...Swiv score display" per the RTL's
+//     own comment), plfdata is forced to 8'b00010000 (16) regardless of
+//     bpldata. No claim in this package's 272-record inventory describes
+//     this behaviour -- it is undocumented, so there is nothing in the
+//     manual to assert it against either way. It does not interfere with
+//     any assertion above: bplcon2 is held at 0 throughout this package
+//     (see Non-goals), so pf2p is always 0 and `pf2p>5` is always false,
+//     confirmed by the identity-mapping sweep's own N=16..31 rows (which
+//     all set bpldata[5]=1 and all read back correctly rather than
+//     collapsing to the constant 16 this exception would produce). This
+//     is a harness-wiring confirmation, not an oracle change -- no
+//     expected value anywhere in this file was altered after the RTL was
+//     opened.
 //
-// MUTATION LOG: see bottom of file -- filled in after the first build and
-// after each mutation is run and reverted, per the build brief.
+// One build-only fix was needed, and it was in the harness, not the
+// oracle: none. The Harness written in the spec-only commit compiled and
+// linked against Vdenise_playfields.h without modification -- PACKAGE.md's
+// port list (aga, bpldata, dblpf, pf2of, bplcon2, plfdata) matched the
+// actual module header exactly, and the eval()-only usage needed no clock
+// or reset handling.
+//
+// MUTATION LOG (each line below was actually built with its own flag
+// defined to 1 via `-CFLAGS -DMUT_X=1`, confirmed to turn only its own
+// assertion red -- 38 passed/1 failed in every case, the other 38
+// assertions unaffected -- then rebuilt with no flags and reconfirmed the
+// clean 39-passed/0-failed baseline):
+//
+// MUTATION COLOUR-INDIRECTION-MECHANISM stimulus red: the stimulus was changed from 21 (10101) to 20 (10100), so the reading no longer matches the value 21 the label and citations name.
+// MUTATION BIT-SIGNIFICANCE-ORDER stimulus red: bitplane 5's isolated case was changed to also present bitplane 1 alongside it, so the reading is no longer the clean, isolated MSB value of 16.
+// MUTATION IDENTITY-MAPPING-SWEEP stimulus red: row N=1's own stimulus was changed to present N=2's combination instead, so that row no longer reads back as register 1.
 
 #include <cstdint>
 #include <cstdio>
