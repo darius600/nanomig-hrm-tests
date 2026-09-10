@@ -118,7 +118,7 @@
 // what the run printed, not predictions. Clean baseline: "56 passed, 0
 // failed".
 //
-// MUTATION SWEEP-SELECTOR-DECOUPLE stimulus red: inside the exhaustive
+// MUTATION SWEEP-EXHAUSTIVE-SELECTORS stimulus red: inside the exhaustive
 //   selector sweep, the word actually driven onto ain/bin/cin was built from
 //   `selector ^ 1` while `expected` stayed computed from the original
 //   `selector` -> printed "FAIL: SWEEP-EXHAUSTIVE-SELECTORS ... first
@@ -126,18 +126,56 @@
 //   CAPABILITY-256-FUNCTIONS reuses the same sweep result it FAILED too, with
 //   the same first-mismatch text; every other assertion PASS. Totalled
 //   "54 passed, 2 failed" for that run.
-// MUTATION SWEEP-PACKED-OFFSET stimulus red: in the packed-selector-order
+// MUTATION CAPABILITY-256-FUNCTIONS stimulus red: the same edit as the
+//   SWEEP-EXHAUSTIVE-SELECTORS record immediately above (`selector ^ 1` driven
+//   onto ain/bin/cin while `expected` stayed computed from the original
+//   `selector`) -> CAPABILITY-256-FUNCTIONS reads the identical
+//   `exhaustive.mismatches` counter as SWEEP-EXHAUSTIVE-SELECTORS, so the same
+//   run printed "FAIL: CAPABILITY-256-FUNCTIONS ... first mismatch: LF=$01
+//   selector=0 expected D=$FFFF actual D=$0000" alongside it; every other
+//   assertion PASS. Same "54 passed, 2 failed" totals as above -- one edit,
+//   two assertions, recorded once each per their own ids.
+// MUTATION SWEEP-PACKED-SELECTOR-ORDER stimulus red: in the packed-selector-order
 //   sweep, the LF value driven onto the DUT was `lf ^ 0x01` while `expected`
 //   stayed computed as `lf | (lf << 8)` from the ORIGINAL lf -> printed
 //   "FAIL: SWEEP-PACKED-SELECTOR-ORDER ... first mismatch: LF=$00 expected
 //   D=$0000 actual D=$0101"; every other assertion PASS. Totalled
 //   "55 passed, 1 failed".
-// MUTATION SWEEP-MIXED-PATTERN-SWAP stimulus red: in the mixed-word sweep,
+// MUTATION SWEEP-MIXED-WORDS stimulus red: in the mixed-word sweep,
 //   the word pattern actually driven was taken from `kPatterns[(idx+1) %
 //   kPatterns.size()]` while hrm_oracle() was still called with `kPatterns
 //   [idx]` -> printed "FAIL: SWEEP-MIXED-WORDS ... first mismatch: LF=$01
 //   pattern=0 expected D=$8008 actual D=$4000"; every other assertion PASS.
 //   Totalled "55 passed, 1 failed".
+// MUTATION CASE-COUNT-EXHAUSTIVE stimulus red: a value-mutation cannot turn a
+//   CASE-COUNT-* assertion red, since it recomputes its own expectation per
+//   case and a wrong VALUE is not a wrong COUNT (confirmed by the three sweep
+//   mutations above, none of which moved any CASE-COUNT-* assertion). The
+//   correspondence a CASE-COUNT-* assertion actually checks is "the loop ran
+//   as many times as it should have" -- so the stimulus mutation that can
+//   break it is a skipped case: the exhaustive loop's first iteration
+//   (LF=$00, selector=0) was skipped with `if (lf == 0 && selector == 0)
+//   continue;` before the case is counted or compared -> printed "FAIL:
+//   CASE-COUNT-EXHAUSTIVE: 2047 of 2048 expected cases actually ran"; because
+//   the skipped case is never compared at all (not compared-and-wrong, simply
+//   never run), SWEEP-EXHAUSTIVE-SELECTORS and CAPABILITY-256-FUNCTIONS -
+//   which only count mismatches, not cases - stayed PASS; every other
+//   assertion PASS. Totalled "55 passed, 1 failed".
+// MUTATION CASE-COUNT-PACKED stimulus red: same reasoning and shape as
+//   CASE-COUNT-EXHAUSTIVE immediately above, applied to the packed-selector-
+//   order sweep: its first iteration (LF=$00) was skipped with `if (lf == 0)
+//   continue;` before the case is counted or compared -> printed "FAIL:
+//   CASE-COUNT-PACKED: 255 of 256 expected cases actually ran";
+//   SWEEP-PACKED-SELECTOR-ORDER stayed PASS (the skipped case was never
+//   compared, not compared-and-wrong); every other assertion PASS. Totalled
+//   "55 passed, 1 failed".
+// MUTATION CASE-COUNT-MIXED stimulus red: same reasoning and shape again,
+//   applied to the mixed-word sweep: its first iteration (pattern idx=0,
+//   LF=$00) was skipped with `if (idx == 0 && lf == 0) continue;` before the
+//   case is counted or compared -> printed "FAIL: CASE-COUNT-MIXED: 767 of
+//   768 expected cases actually ran"; SWEEP-MIXED-WORDS stayed PASS (the
+//   skipped case was never compared, not compared-and-wrong); every other
+//   assertion PASS. Totalled "55 passed, 1 failed".
 // MUTATION TRUTHTABLE-POS-3-PROBE stimulus red: only entry k=3 in the
 //   truth-table probe table had its driven (a,b,c) word swapped for k=2's
 //   pattern (A=0,B=1,C=0) while `lf` stayed `1<<3` and the expected output
@@ -163,7 +201,7 @@
 //   LINE-MODE-4A-EQUATION ... first mismatch: A=$5AA5 B=$3CC3 C=$0FF0
 //   expected D=$1551 actual D=$9559"; every other assertion PASS. Totalled
 //   "55 passed, 1 failed".
-// MUTATION LINE-MODE-TERM-A0-STIMULUS stimulus red: two attempts, both
+// MUTATION LINE-MODE-TERM-PASSTHROUGH stimulus red: two attempts, both
 //   recorded. First attempt: LINE-MODE-TERM-PASSTHROUGH's "A all-zero" case
 //   had `ain` changed from 0x0000 to 0x0001 while the expected value stayed
 //   `cin`=$5678 unchanged -> the run printed "56 passed, 0 failed", NOT red.
@@ -177,13 +215,24 @@
 //   "FAIL: LINE-MODE-TERM-PASSTHROUGH ... actual D=$567C"; LINE-MODE-TERM-
 //   INVERT (the A=all-one case, untouched) stayed PASS. Totalled
 //   "55 passed, 1 failed".
-// MUTATION MECHANISM-EXTRA-BIT stimulus red: in the allow/inhibit probe, the
+// MUTATION LINE-MODE-TERM-INVERT stimulus red: the sibling of the
+//   LINE-MODE-TERM-PASSTHROUGH mutation immediately above, applied to the
+//   OTHER half of the $4A equation. In the "A entirely 1" case, the word
+//   actually driven onto `bin` had bit 2 flipped (0x1234 ^ 0x0004 = 0x1230,
+//   chosen because bin's bit 2 is 1 and cin's bit 2 is 0, so the flip is
+//   non-vacuous the same way the PASSTHROUGH mutation's kept second attempt
+//   was) while `expected` stayed computed from the ORIGINAL bin=$1234 ->
+//   printed "FAIL: LINE-MODE-TERM-INVERT ... actual D=$0000" (expected was
+//   $0004, i.e. bin & ~cin with bit 2 set); LINE-MODE-TERM-PASSTHROUGH (the
+//   A=all-zero case, untouched) stayed PASS; every other assertion PASS.
+//   Totalled "55 passed, 1 failed".
+// MUTATION MECHANISM-ALLOW-INHIBIT stimulus red: in the allow/inhibit probe, the
 //   driven `lf` for every k became `(1<<k) | (1<<((k+1)%8))` (two bits set
 //   instead of one) while the expected pattern stayed "only selector k reads
 //   1" -> printed "FAIL: MECHANISM-ALLOW-INHIBIT ... first mismatch: k=0
 //   selector=1 expected D=$0000 actual D=$FFFF"; every other assertion PASS.
 //   Totalled "55 passed, 1 failed".
-// MUTATION BIT-INDEPENDENCE-WRONG-BIT stimulus red: the second BIT-
+// MUTATION BIT-INDEPENDENCE stimulus red: the second BIT-
 //   INDEPENDENCE probe drove the differing input bit at position 6 (instead
 //   of 0) while the comparison still checked that ONLY bit 0 of the output
 //   differed -> printed "FAIL: BIT-INDEPENDENCE ... actual changed
@@ -344,6 +393,8 @@ int main(int argc, char** argv) {
     SweepResult exhaustive;
     for (unsigned lf = 0; lf <= 0xFFU; ++lf) {
         for (unsigned selector = 0; selector < 8U; ++selector) {
+            // MUTATION HOOK (normally inert): no case skipped here.
+            // during MUTATION CASE-COUNT-EXHAUSTIVE: `if (lf == 0 && selector == 0) continue;`
             // MUTATION HOOK (normally inert): driven_selector == selector.
             const unsigned driven_selector = selector;  // ^ 1 during MUTATION SWEEP-SELECTOR-DECOUPLE
             const std::uint16_t a =
@@ -409,6 +460,8 @@ int main(int argc, char** argv) {
     // outputs, one per selector, produced together (p.199).
     SweepResult packed;
     for (unsigned lf = 0; lf <= 0xFFU; ++lf) {
+        // MUTATION HOOK (normally inert): no case skipped here.
+        // during MUTATION CASE-COUNT-PACKED: `if (lf == 0) continue;`
         // MUTATION HOOK (normally inert): driven_lf == lf.
         const unsigned driven_lf = lf;  // ^ 0x01 during MUTATION SWEEP-PACKED-OFFSET
         const auto expected = static_cast<std::uint16_t>(lf | (lf << 8U));
@@ -452,6 +505,8 @@ int main(int argc, char** argv) {
         const auto& driven = kPatterns[driven_idx];
         const auto& oracle_pattern = kPatterns[idx];
         for (unsigned lf = 0; lf <= 0xFFU; ++lf) {
+            // MUTATION HOOK (normally inert): no case skipped here.
+            // during MUTATION CASE-COUNT-MIXED: `if (idx == 0 && lf == 0) continue;`
             const auto expected = hrm_oracle(
                 static_cast<std::uint8_t>(lf),
                 oracle_pattern.a, oracle_pattern.b, oracle_pattern.c);
@@ -766,9 +821,11 @@ int main(int argc, char** argv) {
     }
     {
         // A entirely 1: D reduces to the inverting term, B & ~C.
+        // MUTATION HOOK (normally inert): driven_b == 0x1234.
+        const std::uint16_t driven_b = 0x1234U;  // ^ 0x0004 during MUTATION LINE-MODE-TERM-INVERT
         dut.lf = 0x4AU;
         dut.ain = 0xFFFFU;
-        dut.bin = 0x1234U;
+        dut.bin = driven_b;
         dut.cin = 0x5678U;
         dut.eval();
         const auto actual = static_cast<std::uint16_t>(dut.out);
