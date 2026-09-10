@@ -179,11 +179,82 @@ Appendix C, printed page 309, lists what ECS changed in the blitter. NanoMig's
 | `BLTCON0L` $05A new — control 0, lower 8 bits | line 259 | **yes** |
 | `BLTSIZH` $05E new — H size and start | lines 500, 523, 557 | **yes** |
 | `BLTSIZV` $05C new — V size, 15-bit | line 548 | **no** — and the comment on that line calls it ECS |
-| `BLTxPTH` $050 chg — "high 5 bits, was 3 bits" | `agnus_blitter_adrgen.v:45`, `reg [20:16] bltpth [3:0]` | **no** — that module has no `ecs` port at all |
+| `BLTxPTH` $050 chg — "high 5 bits, was 3 bits" | `agnus_blitter_adrgen.v:45`, `reg [20:16] bltpth [3:0]` | **no** — and now measured at the parent, see below |
 | `DOFF`, BLTCON1 bit 7 — disable D output in line mode | nowhere | **not implemented** |
 
 `bltcon1[7]` does not appear in `agnus_blitter.v`. The bits it reads are 15-12,
 4, 3, 2, 1 and 0.
+
+#### BLTxPTH, measured at the boundary that has the `ecs` port — 10.09.2026
+
+The row above used to read "no — that module has no `ecs` port at all", which was
+true and too weak. `agnus_blitter_adrgen` having no `ecs` input explains why the
+gating cannot happen *there*; it leaves open whether the parent, which does take
+`ecs`, gates it before handing the write down. It does not, and that is now
+measured rather than inferred.
+
+`hrm/agnus_blitter_ecs`'s `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` writes `BLTAPTH` with
+`$001F` — all five low bits — twice on the same fixture, once with `ecs` low and
+once with `ecs` high, and reads `agnus_blitter`'s own `address_out`:
+
+    ecs=0 -> 0xF8000
+    ecs=1 -> 0xF8000
+
+Identical. All five bits are taken in both chip sets, so appendix A p.270's
+"high 3 bits, 5 bits if ECS" is not implemented in either direction: an OCS
+machine gets ECS width, and `ecs` changes nothing about the pointer.
+
+The path is unbroken in the source. `agnus_blitter.v:588-592` instantiates the
+address generator passing `data_in`, `reg_address_in` and `address_out` and **no
+`ecs`**; the name does not occur anywhere in `agnus_blitter_adrgen.v`; and
+`agnus_blitter_adrgen.v:62` is
+`assign bltptr_in[20:1] = enaptr ? newptr[20:1] : {data_in[4:0], data_in[15:1]}`
+— five bits, unconditionally.
+
+**The control matters here.** A red that depends on toggling `ecs` is worthless if
+the fixture's `ecs` toggle does nothing, so the assertion names
+`BLTCON0L-GATED-BY-ECS` — green in the same file, on the same harness — as proof
+that this fixture's `ecs` does change behaviour elsewhere. And a mutation confirms
+the observable is live rather than stuck: driving `$0015` instead of `$001F` moves
+both readings to `0xA8000`, still identical.
+
+This finding exists because Prompt 8's independent validation rejected the earlier
+handling. The three claims behind it — `6-appa-registers.c110`,
+`ch6-appa-bltxpt.c2`, `ch6-appa-bltxpt.c6` — had been routed to `PKG-BLT-ADRGEN`,
+one fixture below the `ecs` port, where the builder correctly declined them as not
+constructible. The validator ruled that they needed real assertions at the parent
+rather than relocated citations. They did, and the assertion came out red.
+
+#### The same deviation, in both Agnus engines
+
+Noticed 10.09.2026, when the blitter measurement above landed next to FPGA-060 in
+this document. FPGA-060 is the copper's version of exactly this finding: "OCS uses
+five high address bits; the manual documents three." The blitter now shows the
+same thing — and not merely something similar. The two pointers are built the same
+way, from the same bits, with no chipset condition on either:
+
+    agnus_copper.v:144    cop1lch[20:16] <= data_in[4:0];
+    agnus_copper.v:197    address_out[20:1] <= {cop1lch[20:16], cop1lcl[15:1]};
+
+    agnus_blitter_adrgen.v:62
+        assign bltptr_in[20:1] = enaptr ? newptr[20:1]
+                                        : {data_in[4:0], data_in[15:1]};
+
+Five high bits from `data_in[4:0]`, fifteen low from `data_in[15:1]`, a 20-bit
+word address, unconditional. Both engines take the ECS width in both chipsets, and
+in both the manual documents three high bits for OCS and five for ECS.
+
+That reframes what the two findings are. Separately they read as two omissions.
+Together they look like one design decision applied consistently across Agnus:
+this implementation does not model the OCS pointer narrowing anywhere. Whether
+that is a deliberate simplification or an oversight is not something these tests
+can answer — but it is a question about the whole chip, not about a register, and
+neither the copper chapter nor the blitter chapter could have raised it alone.
+
+Recorded here rather than acted on. The copper half is already witnessed more than
+once and carries an FPGA number; the blitter half is new, has no number yet, and
+none is invented here — numbering lives in the project workspace, not in this
+repository.
 
 ### The classified inventory says otherwise, in 109 records
 
