@@ -543,3 +543,46 @@ chip mode this module offers, including with `aga` asserted.
 
 *F07 and F08 found by the FPGA-091 chapter-3 build, 11.09.2026, both confirmed
 against the RTL by the lead before recording.*
+
+## FPGA-091-F09 — the manual applies its own ECS pointer extension inconsistently
+
+**Package:** `hrm/ch3-register-map-agnus`, recorded as a note rather than an
+assertion. This is the resolution of the pointer-width conflict that
+`source_conflicts.md` lists first.
+
+Three sources, three widths:
+
+| source | says |
+|---|---|
+| chapter 3, printed p.54 | a **19-bit** address |
+| appendix A p.272 and appendix B p.291 | an **18-bit** pointer — "(high 3 bits)" plus low 15 |
+| NanoMig, `agnus_bitplanedma.v:82` | `reg [20:16] bplpth` — **5** high bits, so **20** |
+
+The deciding observation is inside appendix B itself. The manual **knows** about
+the ECS extension and writes it out — `DSKPTH` on printed page 289 reads
+
+    DSKPTH  + *020  W  A (E)  Disk pointer (high 3 bits, 5 bits if ECS)
+
+and two further pointer rows on page 290 carry the same note. But **all fourteen
+bitplane-pointer rows on page 291 say only "(high 3 bits)"**, with no ECS
+qualifier at all.
+
+So the likeliest reading is not that anybody is wrong about the hardware: it is
+that the appendix's ECS annotation was applied to the disk and coprocessor
+pointers and **not** carried through to the bitplane pointers. NanoMig implements
+the ECS width the manual documents three pages earlier.
+
+**What this means for the tests.** The pointer *addresses* are undisputed and are
+asserted — all sixteen of them, green. The bit-width descriptor is not asserted;
+it is recorded here. A package that asserted "high 3 bits" would go red against an
+ECS-capable implementation for a reason that is a gap in the manual's own
+editing.
+
+*For the specialists:* the check is cheap — does ECS Agnus extend BPLxPTH to five
+high bits the way it extends DSKPTH? If yes, page 291 needs the same qualifier the
+manual already uses elsewhere, and chapter 3's "19-bit" is a third, separate slip.
+
+---
+
+*F09 found by the FPGA-091 chapter-3 build, 11.09.2026, confirmed against the RTL
+and against appendix B's own DSKPTH row by the lead before recording.*
