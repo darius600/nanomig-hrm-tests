@@ -136,12 +136,19 @@
 //     disk_dmal already true) -> FAIL, refresh_count reads 0, not 4 (now the
 //     disk-DMA slot table's `speed`-gated entries are actually live).
 //     Reverted: all green again.
-//   MUTATION HIGHER-PRIORITY-DISK-DMA-DISPLACES-REFRESH-AT-DOUBLE-SPEED
-//     stimulus red: `set_floppy_speed(true)` changed to `false` (disk_dmal
-//     stays true) -> FAIL, refresh_count reads 4, not the expected 0 (without
-//     floppy_speed, disk's slot-table entries for these four hpos values are
-//     never live, so disk_dmal alone cannot take the cycles). Reverted: all
-//     green again.
+//   MUTATION HIGHER-PRIORITY-DISK-DMA-DISPLACES-REFRESH-AT-DOUBLE-SPEED stimulus red:
+//     `set_floppy_speed(true)` changed to `false` (disk_dmal stays true) ->
+//     FAIL, refresh_count reads 4, not the expected 0 (without floppy_speed,
+//     disk's slot-table entries for these four hpos values are never live, so
+//     disk_dmal alone cannot take the cycles). Reverted: all green again.
+//     Re-verified 10.09.2026 by this agent (FPGA-090 gate repair): edit,
+//     rebuild under WSL/Verilator, run, revert, rebuild clean -> confirmed
+//     FAIL with refresh_count=4 (printed via a temporary debug line, removed
+//     before revert), then confirmed 4 passed, 0 failed on the clean rebuild.
+//     Prior record was accurate but unparseable by tools/check_gates.py: the
+//     assertion id and the `stimulus red` tokens sat on two separate `//`
+//     lines, and MUTATION_RE requires them on one physical line. Reformatted
+//     only; the mutation itself was independently re-run, not just reworded.
 //
 // Every mutation is a STIMULUS change to this file's own Harness calls -
 // expected values and oracle text were never touched, and nanomig/ was never
