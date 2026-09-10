@@ -336,3 +336,59 @@ A red test is closed by a decision about the RTL, never by relaxing the
 assertion. If a deviation turns out to be intentional, the assertion stays and
 the reason is written down beside it — a test whose expectation was quietly moved
 to match the implementation stops being evidence about anything.
+
+
+## FPGA-091-F01 — DDFSTRT/DDFSTOP bit H3 is gated by the chipset, not by resolution
+
+**Package:** `hrm/ch3-ddf-fetch-window`, assertion
+`DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE`. **Red.**
+
+The manual, printed page 91 (and again on 277):
+
+> Bits 7-2 - pixel position H8-H3 (**bit H3 only respected in Hires Mode.**)
+
+NanoMig, `agnus_bitplanedma.v:339` and `:349`:
+
+```verilog
+if (hpos[8:1] == {ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0})
+if (hpos[8:1] == {ddfstop[8:3], ddfstop[2] & ecs, 1'b0})
+```
+
+`ddfstrt[2]` is H3, and it is ANDed with **`ecs`** — the chipset strap, declared
+on line 35 as *"ddfstrt/ddfstop ECS bits enable"*. Resolution never enters the
+expression. So H3 is honoured on an ECS machine in **lores** as well, and ignored
+on an OCS machine in **hires**, which is the opposite of both.
+
+**For the specialists:** the RTL author clearly intended ECS gating, and it is
+possible that real ECS Agnus behaves this way and the manual's sentence is an
+OCS-era statement never revised. That is the question — not whether the test is
+right. The test asserts what page 91 says.
+
+## FPGA-091-F02 — the hires fetch width cannot reach the manual's maximum of 49 words
+
+**Package:** `hrm/ch3-ddf-fetch-window`, assertion
+`MAX-WORDS-49-HIRES-AT-HW-LIMITS`. **Red.**
+
+The manual, printed page 80:
+
+> DDFSTRT of ($18). This gives a maximum of 25 words fetched in low resolution
+> mode. In high resolution mode the maximum here is **49 words**
+
+and its table gives `max words fetched   25   49`.
+
+Both DDF comparisons in `agnus_bitplanedma.v` force the low bit of the compared
+value to zero — the trailing `1'b0` above. Start and stop therefore both land on
+even `hpos[8:1]` positions, and the hires word count between them is structurally
+**even**. 25 is reachable in lores; 49 is not reachable in hires by any register
+pair. The measured maximum is 48.
+
+**For the specialists:** 25 and 49 are both odd because the manual counts the
+first word inclusively. Whether real Agnus can produce an odd hires count, or
+whether the manual is counting differently from the hardware, decides which side
+is wrong.
+
+---
+
+*Both found by the FPGA-091 chapter-3 build, 10.09.2026. Both confirmed against
+the RTL by the lead before recording. Neither is decided here: the manual is this
+project's oracle, so the test stays red until an Amiga specialist rules.*
