@@ -1,4 +1,9 @@
-﻿# Findings
+# Findings
+
+> **Deciding what to do about these:** see [`rtl-decisions.md`](rtl-decisions.md),
+> which sets each open finding beside WinUAE's and vAmiga's implementation of the
+> same question, with line citations verified against the commits
+> `third-witness.md` records.
 
 Every red test in this suite points at a place where the RTL does something the
 *Amiga Hardware Reference Manual* does not describe. This file says which, so

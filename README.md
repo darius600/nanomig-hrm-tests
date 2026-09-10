@@ -1,4 +1,4 @@
-﻿# NanoMig HRM Tests
+# NanoMig HRM Tests
 
 Unit tests for the Amiga chipset RTL in [NanoMig](https://github.com/harbaum/NanoMig),
 derived from the *Amiga Hardware Reference Manual*, 3rd edition.
@@ -40,6 +40,11 @@ suite exists to prevent.
 
 The first three came out of the pipeline and are witnessed more than once.
 
+**For a developer picking these up:** [`docs/rtl-decisions.md`](docs/rtl-decisions.md)
+states each open finding as the manual's words, what NanoMig measurably does, the
+assertion that measures it, and what WinUAE and vAmiga do about the same question
+— with verified file-and-line citations into both emulators. It is written to be
+the starting point, not a summary of one.
 The three chapter-6 entries have no FPGA number yet; numbering lives in the
 project workspace, not in this repository. They came out of the same pipeline and
 each is red in the suite today, with a control that passes on the same
