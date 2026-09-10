@@ -15,9 +15,10 @@
 //   that the assertion is wrong -- no assertion here was, or should be,
 //   adjusted to make the RTL pass.
 // Non-goals: anything that needs a port this module does not have. See
-//   "OUT OF SCOPE" below for the 18 claims that name a wider mechanism
-//   (BPLCON0, the bitplane-to-select assembly, the display-window border)
-//   than this fixture's boundary reaches.
+//   "OUT OF SCOPE" below for the 27 claims that name a wider mechanism
+//   (BPLCON0, the bitplane-to-select assembly, the display-window border,
+//   or a 16-bit bus this 12-bit port cannot receive) than this fixture's
+//   boundary reaches.
 //
 // BOUNDARY: top module `denise_colortable` only (one Verilator build,
 //   sources denise_colortable.v + denise_colortable_ram_mf.v), per
@@ -63,9 +64,6 @@
 //     -- 9 distinct 12-bit codes on one register read back pairwise
 //        distinct (the 12-bit field is used, not truncated to a handful
 //        of levels).
-//   HIGH-NIBBLE-NO-EFFECT (9 ids)
-//     -- presenting a 16-bit word with the top nibble set changes nothing
-//        versus presenting the plain 12-bit value (bits 15-12 unused).
 //   RED-FIELD-BITS-11-8, GREEN-FIELD-BITS-7-4, BLUE-FIELD-BITS-3-0
 //                     (12 + 11 + 11 = 34 ids)
 //     -- each of the four bits in a nibble moves only its own channel
@@ -101,9 +99,44 @@
 //   it) and the EHB group's own reproducibility control, both required by
 //   the package brief as the control basis for the suspect assertions.
 //
+// RETRACTED: a HIGH-NIBBLE-NO-EFFECT assertion (bits 15-12 unused) was
+//   written and first built in this shape: write data_in=$0456, read;
+//   write data_in=$F456 (top nibble deliberately set) to the same
+//   register, read; expect the two readings equal. Built and run before
+//   this retraction: it went RED, but not for a reason that says anything
+//   about the RTL. data_in is declared `[12-1:0]` in denise_colortable.v
+//   (confirmed only after this file's first commit, per the package
+//   brief's own ordering) -- there are only 12 wires here, none for bits
+//   15-12 at all, so "presenting $F456" was never a real 16-bit bus value
+//   landing on a 12-bit port; it was poking Verilator's wider C++ storage
+//   for that port past the width the generated model's own masking is
+//   written for. Measured directly: data_in read back as 0 immediately
+//   after that write (the $F456 value did not survive even as raw
+//   storage), and the two "identical low 12 bits" readings differed
+//   anyway -- $445566 vs $4455F6, blue only, not the all-or-nothing result
+//   a genuine masking question would produce. That is a Verilator/testbench
+//   boundary artifact, not a measurement of denise_colortable, so the
+//   assertion is removed rather than reported red. The 9 ids it covered
+//   move to OUT OF SCOPE below with this finding as their reason -- this
+//   is exactly PACKAGE.md's own "MEASURED (d_denise)" note for these same
+//   ids: it was already established one level up, at a boundary that
+//   actually has a 16-bit-wide bus to truncate, and cannot be re-derived
+//   from a 12-bit port that never received the extra bits in the first
+//   place. No RTL, oracle, or expected value was changed by this
+//   retraction; a stimulus that could not be legitimately applied at this
+//   boundary was removed.
+//
 // OUT OF SCOPE -- not asserted anywhere below; each names a mechanism
 //   this fixture's ports cannot reach (denise_colortable only sees
 //   `select`; nothing decides what `select` is fed to it):
+//   3-colortable.c13, 3-t3.c01, 3-colorsum.c6, 3-colorsum.c7, A-color.c10,
+//     A-color.c7, A-color.c8, A-color.c9, A-colorxx.bits1 (p.46/92/273):
+//     "bits 15-12 unused" -- data_in is declared exactly [11:0] at this
+//     boundary; see the RETRACTED note above. Settling this needs the
+//     wider boundary (denise.v / d_denise) where a real 16-bit bus exists
+//     and is truncated before reaching this module - PACKAGE.md's own
+//     evidence for these ids already places that measurement there, not
+//     here.
 //   3-colortable.c7, 3-colortable.c8, 3-colortable.c9, 3-ct.c03,
 //     3-ct.c04, 3-ct.c05 (p.46): "COLOR00 is reserved for background /
 //     shows wherever no object is present / in the border" -- which
@@ -126,9 +159,8 @@
 //     geometry/timing concern with no port on this boundary.
 //
 // MUTATION REG-09 stimulus red: register 9's two write calls were redirected to register 10 (write_idx = idx+1) while the read stayed at register 9; register 9 was never touched, so after_a == after_b instead of differing.
-// MUTATION ADDR-32-DISTINCT stimulus red: register 15's write reused register 14's pattern instead of its own distinct one, so two of the 32 registers held identical content and the pairwise-distinct check found a collision.
+// MUTATION ADDR-32-DISTINCT stimulus red: register 15 was written with register 14's 12-bit pattern instead of its own distinct one (register 15 still correctly targeted - only the value changed), so two of the 32 registers held identical content and the pairwise-distinct check found a collision. (An earlier version of this mutation redirected the address instead of the value - idx=15's write landing on register 14 - and stayed green: register 14 ends up holding pattern(15), a value still unique among the 32, and register 15's untouched reset/black value is also unique, so nothing collides. Recorded here since it is the reason this mutation is value-based, not address-based.)
 // MUTATION SWEEP-12BIT-DISTINCT stimulus red: sweep entry 4 (0x555) was replaced with entry 3's pattern (0x3F0) instead of its own value, producing a duplicate among the 9 writes and a collision in the distinctness check.
-// MUTATION HIGH-NIBBLE-NO-EFFECT stimulus red: the wide stimulus was changed from $F456 (same low 12 bits as the plain $0456 baseline, different top nibble) to $F123 (different low 12 bits), so the two reads legitimately differ and the equality check fails.
 // MUTATION RED-FIELD stimulus red: the bit probed for R3 (bit 11) was moved to bit 7 (G3) instead, so the green byte changes when the check expects only the red byte to move.
 // MUTATION GREEN-FIELD stimulus red: the bit probed for G3 (bit 7) was moved to bit 11 (R3) instead, so the red byte changes when the check expects only the green byte to move.
 // MUTATION BLUE-FIELD stimulus red: the bit probed for B3 (bit 3) was moved to bit 7 (G3) instead, so the green byte changes when the check expects only the blue byte to move.
@@ -158,9 +190,6 @@
 #endif
 #ifndef MUT_BITS12
 #define MUT_BITS12 0
-#endif
-#ifndef MUT_UNUSED
-#define MUT_UNUSED 0
 #endif
 #ifndef MUT_RED
 #define MUT_RED 0
@@ -221,13 +250,13 @@ public:
         dut->eval();
     }
 
-    // Writes `val` to color register `idx` (0..31) via reg_address_in/data_in,
-    // then parks reg_address_in on an address the write decode does not
-    // recognise so the value is not re-latched on later ticks (mirrors
-    // hrm/denise_colortable/'s harness). `val` may deliberately carry more
-    // than 12 bits (see HIGH-NIBBLE-NO-EFFECT) -- data_in is declared
-    // [11:0] in the RTL, so whatever the extra bits do is exactly the
-    // thing under test, not a C++-side mask applied here.
+    // Writes `val` (0..0xFFF; data_in is declared [11:0] in the RTL, so
+    // any caller-supplied bits above that are not meaningful here - see
+    // the RETRACTED note near the top of this file) to color register
+    // `idx` (0..31) via reg_address_in/data_in, then parks reg_address_in
+    // on an address the write decode does not recognise so the value is
+    // not re-latched on later ticks (mirrors hrm/denise_colortable/'s
+    // harness).
     void write_reg(int idx, uint32_t val) {
         dut->reg_address_in = static_cast<uint8_t>(COLOR_ADDR_BASE + idx);
         dut->data_in = val;
@@ -377,11 +406,11 @@ int main(int argc, char** argv) {
         Harness h;
         auto pattern = [](int idx) -> uint16_t { return static_cast<uint16_t>(((idx << 4) ^ 0x0A5) & 0xFFF); };
         for (int idx = 0; idx < 32; ++idx) {
-            int write_idx = idx;
+            uint16_t val = pattern(idx);
 #if MUT_ADDR32
-            if (idx == 15) write_idx = 14;
+            if (idx == 15) val = pattern(14);
 #endif
-            h.write_reg(write_idx, pattern(idx));
+            h.write_reg(idx, val);
         }
         uint32_t results[32];
         for (int idx = 0; idx < 32; ++idx) results[idx] = h.read_reg(idx);
@@ -435,41 +464,6 @@ int main(int argc, char** argv) {
             "colors' (p.46). 3-bpl.c13, 3-color.c14, 3-colortable.c11, "
             "3-colortable.c12, 3-ct.c07, 3-ct.c08, A-color.c4, "
             "A-colorxx.c02.");
-    }
-
-    // =========================================================================
-    // HIGH-NIBBLE-NO-EFFECT (p.46/92/273) -- bits 15-12 are unused: a wide
-    // (16-bit) stimulus with the top nibble set reads back identically to
-    // the plain 12-bit value with the same low 12 bits.
-    // =========================================================================
-    {
-        Harness h;
-        h.write_reg(7, 0x0456);
-        uint32_t low = h.read_reg(7);
-
-        uint32_t wide = 0xF456;
-#if MUT_UNUSED
-        wide = 0xF123;
-#endif
-        h.write_reg(7, wide);
-        uint32_t wide_val = h.read_reg(7);
-
-        // control leg: a genuinely different low-12-bit code on the same
-        // register DOES read back differently, ruling out a stuck/dead
-        // read path making "low == wide_val" vacuous.
-        h.write_reg(7, 0x0123);
-        uint32_t other = h.read_reg(7);
-
-        checks.expect(
-            low == wide_val && low != other,
-            "HIGH-NIBBLE-NO-EFFECT: presenting $F456 (top nibble set) reads "
-            "back identical to presenting the plain $0456 on the same "
-            "register, while a genuinely different low-12-bit code ($0123) "
-            "reads back different from both - 'Bits 15-12 Unused' (p.46, "
-            "Table 3-3), 'Unused (set these to 0)' (p.92, Table 3-15), and "
-            "Appendix A's 'X X X X R3...' bit map (p.273). 3-colortable.c13, "
-            "3-t3.c01, 3-colorsum.c6, 3-colorsum.c7, A-color.c10, "
-            "A-color.c7, A-color.c8, A-color.c9, A-colorxx.bits1.");
     }
 
     // =========================================================================
