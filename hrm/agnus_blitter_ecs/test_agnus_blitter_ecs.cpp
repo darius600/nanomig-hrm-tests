@@ -365,7 +365,7 @@
 //   unshifted 0x8000, not 0x4000, so the BLTCON0L write cannot be shown to
 //   have left ash alone, because there is nothing left to disturb; totals
 //   9 passed, 3 failed.
-// MUTATION BLTXPTH-WIDTH-REGARDLESS-OF-ECS stimulus, diagnosed rather than
+// MUTATION BLTXPTH-WIDTH-REGARDLESS-OF-ECS stimulus red: diagnosed rather than
 //   simply reported as "stayed red" per rule 3 (same treatment as
 //   BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS's own mutation below, since this
 //   assertion is also already red before the mutation): the BLTAPTH stimulus
@@ -404,7 +404,7 @@
 // MUTATION BLTSIZH-WIDTH-UPPER-BITS-IGNORED stimulus red: the written value
 //   changed from (0x800|7) to (0x800|9) (expected constant 7 left
 //   untouched) -> FAIL, 9 writes occur, not 7; totals 9 passed, 3 failed.
-// MUTATION BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS stimulus, diagnosed rather
+// MUTATION BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS stimulus red: diagnosed rather
 //   than simply reported as "stayed red" per rule 3: the height value
 //   written in BOTH the ecs=0 and the ecs=1-control branches changed from 7
 //   to 9 (same value in both branches, as the original) -> MEASURED: both
@@ -416,7 +416,8 @@
 //   it failed before the mutation: nothing in agnus_blitter.v reads `ecs`
 //   on BLTSIZV's own decode (line 548), so no value of the height stimulus
 //   can make the two branches diverge. Totals unchanged: 10 passed,
-//   2 failed (this assertion, still red, plus DOFF). This is the correct
+//   3 failed (this assertion, still red, plus BLTXPTH-WIDTH-REGARDLESS-OF-ECS
+//   and DOFF). This is the correct
 //   shape for a mutation against a genuinely absent gate, not a vacuous
 //   assertion - see BLTSIZH-GATED-BY-ECS above, which drives the IDENTICAL
 //   two-branch comparison structure against a register that DOES gate on
@@ -438,23 +439,25 @@
 //   changes nothing about this particular assertion - a mutation that
 //   provably cannot move is not a stimulus mutation, so the width value is
 //   the correct lever instead.)
-// MUTATION DOFF-NO-OBSERVABLE-EFFECT stimulus, diagnosed per rule 3: USED
-//   (BLTCON0 bit 8) removed from BOTH h_doff0 and h_doff1's BLTCON0 write,
-//   with everything else (including BLTCON1 bit 7) held fixed -> the
-//   assertion, which checks h_doff1.data_writes.empty(), now PASSES (goes
-//   GREEN): with the D channel genuinely disabled by a real, working gate
-//   (`used`, agnus_blitter.v:252,490-491), NEITHER harness ever writes, so
-//   "no D writes occurred" becomes true for a real reason instead of a
-//   coincidence. MEASURED: totals move from 10 passed/2 failed (baseline) to
-//   11 passed/1 failed (only BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS still
-//   red) - this is the one mutation in the whole file that moves an
-//   assertion from red to green rather than green to red, which is the
-//   correct shape for a mutation against an already-required-red assertion.
-//   Reverting to the baseline (USED restored, only BLTCON1 bit 7 differs
-//   between h_doff0/h_doff1) returns the assertion to FAIL/red -
-//   confirming the comparison mechanism is sound and DOES detect a real
-//   D-disable condition when one exists; it is specifically insensitive to
-//   bit 7, which is the finding.
+// MUTATION DOFF-NO-OBSERVABLE-EFFECT stimulus green: diagnosed per rule 3: USED
+//   (BLTCON0 bit 8) removed from h_doff1's BLTCON0 write only (h_doff0 left
+//   untouched as a live reference, still producing its one D write, 0x2222;
+//   BLTCON1 bit 7 unchanged in both) -> the assertion, which checks
+//   h_doff1.data_writes.empty(), now PASSES (goes GREEN): with the D channel
+//   genuinely disabled by a real, working gate (`used`, agnus_blitter.v:252,
+//   490-491), h_doff1 never writes, so "no D writes occurred" becomes true
+//   for a real reason instead of a coincidence. MEASURED: totals move from
+//   10 passed/3 failed (baseline) to 11 passed/2 failed (BLTXPTH-WIDTH-
+//   REGARDLESS-OF-ECS and BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS still red) -
+//   this is the one mutation in the whole file that moves an assertion from
+//   red to green rather than green to red, which is the correct shape for a
+//   mutation against an already-required-red assertion whose own check is a
+//   single value (h_doff1.data_writes.empty()) rather than a two-branch
+//   comparison, so the "stays red, numbers move" shape used for BLTXPTH and
+//   BLTSIZV above is not available here.
+//   Reverted to the baseline (USED restored in h_doff1) afterward; `diff`
+//   against a saved pre-mutation copy of the whole file showed zero bytes of
+//   difference, and a clean rebuild reproduced 10 passed, 3 failed.
 
 #include <cstdint>
 #include <cstdio>
