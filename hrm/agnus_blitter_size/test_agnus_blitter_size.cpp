@@ -594,7 +594,8 @@ int main(int argc, char** argv) {
             "`~|data_in[5:0]` agnus_blitter.v:522 turns a written zero width into "
             "64 (the seventh bit of the internal 11-bit `width` register is set "
             "only when all six written bits are zero). 6-dma-channels.c48, "
-            "ch6-dma.c48, ch6-dma.c56, 6-appa-registers.c63, ch6-appa-bltsize.w2 .");
+            "ch6-dma.c48, ch6-dma.c56, 6-appa-registers.c63, ch6-appa-bltsize.w2, "
+            "6-appa-registers.c64 .");
     }
 
     // ---------------- SIZE-ZERO-HEIGHT-WRAPS-TO-1024 (p.171) ----------------
@@ -609,9 +610,12 @@ int main(int argc, char** argv) {
             "fixed at 1, so the count is rows) produces exactly 1024 destination "
             "writes, counted, not read back from a register - 'with zero "
             "representing a height of 1024 rows' (p.171), 'Blit height is in lines "
-            "with a zero representing 1024 lines' (p.171). `~|data_in[15:6]` "
+            "with a zero representing 1024 lines' (p.171), 'h=height=vertical lines "
+            "(10 bits=1024 lines max)' (p.269, the maximum reachable only via this "
+            "wrap, corroborating SIZE-HEIGHT-FIELD-BITS-LITERAL's 1-to-1023 sweep "
+            "for the other end of the range). `~|data_in[15:6]` "
             "agnus_blitter.v:556 turns a written zero height into 1024. "
-            "6-dma-channels.c51, ch6-dma.c51, ch6-dma.c58b .");
+            "6-dma-channels.c51, ch6-dma.c51, ch6-dma.c58b, 6-appa-registers.c61 .");
     }
 
     // ---------------- SIZE-WIDTH-DEFINES-ROW-HEIGHT-COUNTS-ROWS (pp.171,172,200) ----------------
