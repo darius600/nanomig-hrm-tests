@@ -290,3 +290,34 @@ hold mattering more than its tidiness.
 `agnus_blitter_masks` (a builder's task, not the lead's — the model that
 validates must not build), then delete `agnus_blitter_mask` and close this
 document out.
+
+## Deletion completed — 10.09.2026, the fifth
+
+`agnus_blitter_mask` is now deleted too. The condition it was held on is met:
+`agnus_blitter_masks` carries `MASK-MUX-RANDOM-SWEEP` (commit `3ea0115`) — 1000
+randomised cases over BLTAFWM, BLTALWM, source-A data and word position, run
+against the **real compiled `agnus_blitter`** rather than a pasted copy of
+`agnus_blitter.v:311-319`.
+
+The technique the volume note said would be lost is therefore not lost, and it is
+now worth more than it was: the old test's 101,024 cases could not have noticed
+the design changing under them, because they never touched the design. These 1000
+would.
+
+Verified by the lead before deleting, not taken from the builder's report:
+
+- rebuilt from clean, 20/20 green, whole file 0.69s
+- expected values computed from the manual's rule (`if (first) mask &= fwm;
+  if (last) mask &= lwm;`), independent of the RTL
+- fixed seed `0xB17A5EED` stated in the assertion text, so a failure is
+  reproducible
+- its mutation reproduced by hand: driving `fwm3 ^ 0x0001` into the DUT while the
+  expectation kept using the unmutated value gives 19 passed / 1 failed, only the
+  sweep red, and the reported first mismatch reproduces exactly —
+  `fwm=0x1371 lwm=0x6462 first=1 last=0 a_in=0xc4c3 expected=0x41 actual=0x40`.
+  Reverted, 20/20 again.
+
+**All five superseded tests are now deleted, and this document is closed out.**
+None of the three local `.v` copies — `agnus_blitter_mask.v`,
+`agnus_blitter_zero.v`, `agnus_blitter_line_octant.v` — remains in the tree. Every
+blitter test in `hrm/` now compiles the design.
