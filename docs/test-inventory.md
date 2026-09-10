@@ -6,13 +6,13 @@ it carries.
 
 ## Three layers
 
-Measured 09.09.2026, part-way through chapter 6's build stage.
+Re-measured 10.09.2026, after chapter 6 closed and the five superseded tests were deleted.
 
 | Layer | Tests | What is established |
 |---|---:|---|
-| **A — through the pipeline** | 20 | class declared, oracle named, page cited, and **stimulus mutations run**: each assertion was shown to bind to the behaviour it claims |
-| **B — hand-written, declared** | 23 | class declared, oracle named, explicit non-goals — but no mutation evidence and no completeness claim. **One of them asserts nothing at all** — see backlog item 5 |
-| **C — no header in the source** | 5 | neither test class nor primary oracle in the `.cpp` |
+| **A — through the pipeline** | 28 | class declared, oracle named, page cited, and **stimulus mutations run**: each assertion was shown to bind to the behaviour it claims |
+| **B — hand-written, declared** | 22 | class declared, oracle named, explicit non-goals — but no mutation evidence and no completeness claim. **One of them asserts nothing at all** — see backlog item 5 |
+| **C — no header in the source** | **0** | neither test class nor primary oracle in the `.cpp` |
 
 Layer B is not sloppy work. Those tests fix the expected behaviour from the
 manual before looking at the RTL, cite their pages, and state what they do *not*
@@ -20,9 +20,9 @@ prove. What they lack is the pipeline's evidence that each assertion would go re
 if the behaviour changed, and any claim that the manual's statements about that
 module are covered.
 
-### Layer A — 20
+### Layer A — 28
 
-Chapter 2's twelve Copper tests, and eight from chapter 6's build stage:
+Chapter 2's twelve Copper tests, and sixteen from chapter 6's build stage:
 
 ```
 agnus_copper_bus_behaviour   agnus_copper_control      agnus_copper_cycle_times
@@ -30,41 +30,50 @@ agnus_copper_cycles          agnus_copper_list         agnus_copper_locreg_width
 agnus_copper_move_range      agnus_copper_move_src     agnus_copper_move_sweep
 agnus_copper_rejected_move   agnus_copper_selfmod      agnus_copper_waitskip_range
 
-agnus_blitter_adrgen         agnus_blitter_barrelshifter  agnus_blitter_fill
-agnus_blitter_line           agnus_blitter_masks          agnus_blitter_minterm
-agnus_blitter_shift_chain    agnus_blitter_status
+agnus_blitter_adrgen         agnus_blitter_barrelshifter  agnus_blitter_bltcon
+agnus_blitter_cycles         agnus_blitter_desc           agnus_blitter_ecs
+agnus_blitter_fill           agnus_blitter_line           agnus_blitter_masks
+agnus_blitter_minterm        agnus_blitter_regdecode      agnus_blitter_shift_chain
+agnus_blitter_size           agnus_blitter_status         agnus_slots
+agnus_top_dmacon
 ```
 
-Three of the chapter-6 eight are the *prior-art* files raised into layer A rather
-than new directories — `barrelshifter`, `fill` and `minterm` kept their exhaustive
-sweeps and gained a header, page citations and mutation records. The other five
-are new fixtures that compile the design.
+Three of the chapter-6 sixteen are the *prior-art* files raised into layer A
+rather than new directories — `barrelshifter`, `fill` and `minterm` kept their
+exhaustive sweeps and gained a header, page citations and mutation records. The
+other thirteen are new fixtures that compile the design.
 
-### Layer C — 5, and they are exactly the set awaiting deletion
+`agnus_top_dmacon` is in this list for a different reason than the rest: its
+directory existed before chapter 6, but as a stub whose testbench asserted
+nothing. It was replaced rather than extended.
+
+### Layer C — empty
 
 ```
-agnus_blitter_line_octant  agnus_blitter_mask  agnus_blitter_modulo
-agnus_blitter_ptr          agnus_blitter_zero
+(none)
 ```
 
-This was eight, and the three that left it — `barrelshifter`, `fill`, `minterm` —
-left by being extended rather than replaced. The five that remain are precisely
-the ones a chapter-6 package **supersedes**: `modulo` and `ptr` by
-`agnus_blitter_adrgen`, `mask` by `agnus_blitter_masks`, `zero` by
-`agnus_blitter_status`, `line_octant` by `agnus_blitter_line`. Each stays in the
-tree, unchanged and still passing, until its replacement has been reviewed; a
-superseded test is deleted after, never before. When the last of them goes, layer
-C is empty.
+**This layer is gone, and its emptying was predicted rather than arranged.** The
+previous revision of this file said "when the last of them goes, layer C is
+empty", listing the five that remained: `line_octant`, `mask`, `modulo`, `ptr`
+and `zero`. All five were deleted on 10.09.2026 (`b0cfb1e` and `19b2354`), each
+only after its replacement had been re-run green from a clean build.
 
-That coincidence is not luck. Layer C was defined as "no header", and the reason
-those five had none is the reason they were superseded: three compile a local
-copy of RTL rather than the design, and two assert uncited expectations. The
-measurement and the supersession were finding the same thing from two directions.
+That coincidence was not luck. Layer C was defined as "no header", and the reason
+those five had none is the reason they were superseded: three compiled a local
+copy of RTL rather than the design, and two asserted uncited expectations. The
+measurement and the supersession were finding the same thing from two directions
+— and the set emptied exactly when the supersessions completed, without anyone
+deleting a file to make a count come out.
 
-An earlier revision of this file listed the DMA and Denise tests here instead.
-That list was inferred from a group count rather than measured, and it was wrong:
-`agnus_top_register_bus`, named among them, declares `INTEGRATION_SMOKE` in line
-two of its source. The lists above are produced by the script in the method note.
+**No local `.v` copy remains anywhere under `hrm/`** — checked, not assumed. Every
+test in the suite now compiles the design.
+
+An earlier revision of this file listed the DMA and Denise tests in layer C
+instead. That list was inferred from a group count rather than measured, and it
+was wrong: `agnus_top_register_bus`, named among them, declares
+`INTEGRATION_SMOKE` in line two of its source. The lists above are produced by the
+method note's own rule, with the names printed, which is what that note demands.
 
 ## The review backlog
 
