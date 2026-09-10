@@ -361,10 +361,10 @@
 //   ash probe changed from `o.major_positive?15:0` to always 15 (so the
 //   three X-major-DEC octants are probed with the wrong polarity; expected
 //   constants left untouched) -> FAIL; 15/16 others PASS.
-// MUTATION OCTANT-MINOR-AXIS-SUPPRESSED-AT-SIGN1 [DEFECT-2 FIX] stimulus
-//   red: BOTH probe calls' initial_sign changed from 1 to 0 (major-only ->
+// MUTATION OCTANT-MINOR-AXIS-SUPPRESSED-AT-SIGN1 stimulus red: BOTH
+//   non-x-major probe calls' initial_sign changed from 1 to 0 (major-only ->
 //   major+minor, so the minor axis now legitimately fires; expected
-//   constant 12/12 left untouched) -> FAIL; 15/16 others PASS -- confirming
+//   constant 12/12 left untouched) -> FAIL; 16/16 others PASS -- confirming
 //   this assertion is sensitive to exactly the sign_del dimension defect 2
 //   was about, unlike the superseded test's vacuous ash=8 probe.
 // MUTATION OCTANT-MINOR-AXIS-FIRES-AT-SIGN0 stimulus red: both probe
