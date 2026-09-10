@@ -169,9 +169,9 @@
 //   stimulus change can make this assertion fail honestly, since there is
 //   no bug to catch; the width-pairing mutation instead confirms the
 //   marginal-measurement technique itself is sensitive to a real change.)
-// MUTATION FUNCTION-GENERATOR-COMBINES-THREE-SOURCES-PER-POINT stimulus
-//   red: word1's B value changed from 0x0000 to 0x0001 (expected constant
-//   left untouched) -> FAIL, that word's computed XOR no longer matches.
+// MUTATION FUNCTION-GENERATOR-COMBINES-THREE-SOURCES-PER-POINT stimulus red:
+//   word1's B value changed from 0x0000 to 0x0001 (expected constant left
+//   untouched) -> FAIL, that word's computed XOR no longer matches.
 // MUTATION MASK-BEFORE-SHIFT: first attempt SURVIVED and was diagnosed
 //   before being counted, matching the pattern the build brief warns
 //   about (four earlier packages in this chapter each found one this
