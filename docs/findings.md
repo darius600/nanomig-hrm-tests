@@ -449,3 +449,58 @@ as zero, or undefined. Every other assertion in the package masks the bit out wi
 
 *F03 and F04 found by the FPGA-091 chapter-3 build, 10.09.2026, both confirmed
 against the RTL by the lead before recording.*
+
+## FPGA-091-F05 — the horizontal line is a whole number of colour clocks, not 227.5
+
+**Package:** `hrm/ch3-beam-counters-and-blanking`, assertion
+`HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5`, both PAL and NTSC. **Red.**
+
+Printed page 304 gives the scan line as 227.5 colour clocks. `htotal_out` reads
+**452** — a whole 226 doubled — under both standards.
+
+NanoMig says so itself, `agnus_beamcounter.v:86`:
+
+```verilog
+parameter HTOTAL_VAL = 8'd227 - 8'd1;   // line length of 227 CCKs in PAL mode
+                                        // (NTSC line length of 227.5 CCKs is not supported)
+```
+
+and line 105 adds *"long lines are not supported yet"*.
+
+*For the specialists:* this is a known, deliberate simplification rather than a
+mistake, and the half-clock is what produces the long-line/short-line alternation
+the interlace machinery depends on. The question is whether anything in the
+chapter-3 material depends on it observably, or whether the simplification is
+invisible above this boundary.
+
+## FPGA-091-F06 — PAL vertical blanking is 26 lines, the manual says 29
+
+**Package:** `hrm/ch3-beam-counters-and-blanking`, assertion
+`VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL`. **Red.** Its NTSC twin passes and is
+the control.
+
+Table 3-13, printed page 79:
+
+    Vertical Blank Stop     $15 (21)    $1D (29)
+                              NTSC         PAL
+
+NanoMig, `agnus_beamcounter.v:89-90`:
+
+```verilog
+parameter VBSTOP_PAL_VAL  = 9'd25;   // vertical blanking end (PAL 26 lines, NTSC vblank 21 lines)
+parameter VBSTOP_NTSC_VAL = 9'd20;
+```
+
+NTSC matches exactly at 21. PAL is **26 against the manual's 29** — a three-line
+gap, and the RTL's own comment states 26 as the intent.
+
+*For the specialists:* the NTSC twin passing on the same measurement basis is what
+makes this survive the units-error objection. Either the manual's PAL figure is
+wrong or NanoMig loses three lines of blanking; both are checkable against a real
+machine.
+
+---
+
+*F05 and F06 found by the FPGA-091 chapter-3 build, 11.09.2026, both confirmed
+against the RTL by the lead before recording. In both cases the RTL's own
+comments acknowledge the divergence.*
