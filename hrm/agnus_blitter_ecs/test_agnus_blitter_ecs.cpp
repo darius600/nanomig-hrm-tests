@@ -2,17 +2,15 @@
 //   the agnus_blitter boundary (packages.md item 13): BLTCON0L ($05A, writes
 //   BLTCON0's lower 8 minterm bits, gated on ecs), BLTSIZH ($05E, an 11-bit
 //   width field that starts the blit, gated on ecs) and BLTSIZV ($05C, a
-//   15-bit height field), and DOFF (BLTCON1 bit 7, documented to disable
-//   channel D output). The ECS pointer width (BLTxPTH/BLTxPTL) is explicitly
-//   NOT this package's territory - packages.md item 13 says so in as many
-//   words ("The ECS pointer width lives in PKG-BLT-ADRGEN, one fixture
-//   down") - and is not reached for here.
+//   15-bit height field), DOFF (BLTCON1 bit 7, documented to disable
+//   channel D output), and - added by Prompt 8 independent validation, see
+//   "ROUTING CORRECTION" below - the OCS-vs-ECS width of BLTxPTH/BLTxPTL,
+//   because this is the only boundary in the chapter where `ecs` actually
+//   exists alongside the pointer registers.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 172, 189, 198-199, 267, 269-270, 308-310.
-// Non-goals: the ECS pointer width, BLTxPTH/BLTxPTL (PKG-BLT-ADRGEN, per
-//   packages.md item 13's own instruction not to reach for it here - see
-//   "NOT ASSERTED - REDIRECTED" below); the OCS BLTSIZE zero-means-64/1024
+// Non-goals: the OCS BLTSIZE zero-means-64/1024
 //   encoding's own numeric values (6-appc-big-blits.c22's "1024-line
 //   maximum") - that IS "zero meaning 64 and 1024", the exact phrase
 //   packages.md item 8 assigns to PKG-BLT-SIZE, and is orthogonal to `ecs`
@@ -82,12 +80,57 @@
 // `bltcon1[7]` for anything. DOFF-NO-OBSERVABLE-EFFECT below is REQUIRED to
 // go red for the same reason.
 //
+// ROUTING CORRECTION (Prompt 8 independent validation, 10.09.2026) and a
+// THIRD required-red finding it uncovered. 6-appa-registers.c110,
+// ch6-appa-bltxpt.c2 and ch6-appa-bltxpt.c6 - Appendix A p.270's "BLTxPTH ...
+// high 3 bits, 5 bits if ECS", corroborated by Appendix C p.309 - were
+// originally routed by classify.package to PKG-BLT-ADRGEN and built into
+// hrm/agnus_blitter_adrgen's ECS-FIVE-BIT-PTH. That was a routing error:
+// agnus_blitter_adrgen has no `ecs` port at all (its own port list,
+// agnus_blitter_adrgen.v:4-20), so the OCS alternative the claim describes
+// cannot be selected there, and ECS-FIVE-BIT-PTH says so plainly in its own
+// text - it is not wrong and was not touched here. agnus_blitter, this
+// package's boundary, DOES have an `ecs` port (agnus_blitter.v:84), so the
+// claim belongs here instead, per the same "everything gated on `ecs` and
+// observable on agnus_blitter" mandate this file already covers BLTCON0L,
+// BLTSIZH, BLTSIZV and DOFF under.
+//
+// BLTXPTH-WIDTH-REGARDLESS-OF-ECS below measures the pair the manual states -
+// a BLTAPTH write of all five low bits ($001F, the same stimulus
+// ECS-FIVE-BIT-PTH uses) with ecs=0 against the identical write with ecs=1 -
+// and finds them IDENTICAL (both 0xF8000: all five bits land regardless of
+// ecs). Read from the RTL before writing the assertion, and confirmed by
+// that measurement: agnus_blitter.v:590 wires reg_address_in straight into
+// agnus_blitter_adrgen's reg_address_in port with no `&& ecs` anywhere on
+// that connection, so the `ecs` this package's boundary genuinely has never
+// reaches the submodule that decodes BLTxPTH in the first place. This is a
+// NEW finding, not previously in docs/findings.md (that file's existing
+// "Appendix C's five ECS blitter changes" table already noted BLTxPTH is not
+// gated at the agnus_blitter_adrgen boundary, where no `ecs` port exists to
+// gate it WITH - it did not previously state the stronger fact that `ecs`
+// fails to reach the pointer decode even at the one boundary, agnus_blitter,
+// where the port exists). THIS ASSERTION IS REQUIRED TO FAIL, for the same
+// reason - a real absence of gating, not a fixture defect - as the other two
+// reds in this file; see BLTXPTH-WIDTH-REGARDLESS-OF-ECS's own assertion
+// text for the control that rules out a passive/broken fixture.
+//
 // CLAIM COVERAGE. All 135 records of classify.package=="PKG-BLT-ECS" and
-// classify.status=="testable" in work/2026-09-08_fpga-090_classified.jsonl
-// are covered below, either by an assertion or under NOT ASSERTED with a
-// reason - verified by script (a claim-id set built from the same filter,
-// diffed against every id cited anywhere in this file) before this header
-// was finalized, so the count is not a hand tally. Both readers (sol/opus)
+// classify.status=="testable" in work/2026-09-08_fpga-090_classified.jsonl,
+// PLUS the three routing-corrected ids above (classify.package=="PKG-BLT-
+// ADRGEN" in the inventory, reassigned here by Prompt 8 independent
+// validation), are covered below, either by an assertion or under NOT
+// ASSERTED with a reason. The original 135 were verified by script (a
+// claim-id set built from the classify.package filter, diffed against every
+// id cited anywhere in this file) before this file was first built, so that
+// count is not a hand tally; this addition did not re-run that script over
+// the full set, since it does not touch anything the script already checked.
+// What was checked for the three added ids specifically, directly: `grep` on
+// this file before any edit confirmed none of the three appeared anywhere in
+// it (a genuine gap, not already-covered ground under a different name), and
+// `grep` after confirms all three now appear inside
+// BLTXPTH-WIDTH-REGARDLESS-OF-ECS's own assertion string (not only in a
+// comment - checks.expect's second argument, the literal the test binary
+// prints on failure). Both readers (sol/opus)
 // cover much of the same ground - the appendix-C BLTSIZH/BLTSIZV bit tables
 // in particular are stated by both readers, one claim per bit, so many ids
 // below are the same proposition stated twice or split across a functional/
@@ -106,6 +149,12 @@
 //
 //   BLTCON0L-WRITES-LOW-8-BITS-ONLY (p269, p309): 6-appa-registers.c28,
 //     6-appc-modifications.c8, ch6-appc-ecs.c7 .
+//
+//   BLTXPTH-WIDTH-REGARDLESS-OF-ECS *** REQUIRED RED, SEE "ROUTING
+//     CORRECTION" ABOVE *** (p270, p309): 6-appa-registers.c110,
+//     ch6-appa-bltxpt.c2, ch6-appa-bltxpt.c6 . Routing-corrected from
+//     PKG-BLT-ADRGEN by Prompt 8 independent validation - not part of this
+//     package's original 135-claim filter (see "ROUTING CORRECTION" above).
 //
 //   BLTSIZH-GATED-BY-ECS (p172, p189, p269, p308, p310):
 //     6-appa-registers.c73, 6-appa-registers.c74, 6-appc-modifications.c13,
@@ -182,17 +231,18 @@
 //
 // NOT ASSERTED - REDIRECTED (reported, not silently dropped):
 //   6-appa-registers.c109 (p270, "BLTxPTL implements the pointer's low 15
-//     bits"), ch6-appa-bltxpt.c5 (p270, same claim, opus) - pointer width.
-//     packages.md item 13 says outright: "The ECS pointer width lives in
-//     PKG-BLT-ADRGEN, one fixture down" - this package does not reach for
-//     it. hrm/agnus_blitter_adrgen/test_agnus_blitter_adrgen.cpp's
-//     PTR-TWO-WORD-COMPOSITION assertion already measures exactly this (a
-//     BLTAPTL write alone leaves the high word - the pointer's upper bits -
-//     unchanged), even though it does not cite these two ids by name; this
-//     is a redirect to already-built, already-green territory, not a gap.
+//     bits"), ch6-appa-bltxpt.c5 (p270, same claim, opus) - BLTxPTL's own
+//     width, a DIFFERENT claim from the BLTxPTH high-word OCS-3-bit/ECS-5-bit
+//     claim that BLTXPTH-WIDTH-REGARDLESS-OF-ECS below now covers (see
+//     "ROUTING CORRECTION" below for that one). hrm/agnus_blitter_adrgen/
+//     test_agnus_blitter_adrgen.cpp's PTR-TWO-WORD-COMPOSITION assertion
+//     already measures this low-word claim (a BLTAPTL write alone leaves the
+//     high word - the pointer's upper bits - unchanged), even though it does
+//     not cite these two ids by name; this is a redirect to already-built,
+//     already-green territory, not a gap.
 //   6-dma-channels.c67 (p172, "larger pointer-register range"), ch6-dma.c69
-//     (p172, same, opus) - same redirect, general chapter-body statement of
-//     the same pointer-width fact.
+//     (p172, same, opus) - same redirect, a general chapter-body statement
+//     that does not itself distinguish 3 bits from 5.
 //   6-appc-big-blits.c22 (p308, "Original-chip-set BLTSIZE height has a
 //     1024-line maximum") - this is OCS's own zero-means-1024 height
 //     encoding, orthogonal to `ecs` (the encoding is identical regardless of
@@ -260,6 +310,22 @@
 //      which is not subject to the transient-sampling trap the way
 //      `we`/`data_out` are.
 //
+// A different readback technique for BLTXPTH-WIDTH-REGARDLESS-OF-ECS's
+// address_out(), added by the routing correction: unlike we/data_out,
+// address_out is a genuinely continuous assignment
+// (agnus_blitter_adrgen.v:72,80,82,84, wired straight to agnus_blitter's own
+// address_out port), not something that goes stale after the next tick -
+// this is the same property hrm/agnus_blitter_adrgen's own header documents
+// for its identical read_ptr() technique. Harness::write_reg leaves
+// reg_address_in/data_in parked at the just-written register (nothing in
+// cycle() resets them before returning), and the blitter's own `enaptr`
+// signal - which would otherwise steer the pointer-bank select away from
+// reg_address_in - is driven 0 by every state in the FSM this file's blocks
+// ever reach, since none of them write BLTSIZE/BLTSIZH before reading
+// (agnus_blitter.v:629-631, the idle state). So address_out() is valid to
+// call immediately after a write_reg() to BLTAPTH/BLTAPTL, with no further
+// tick needed.
+//
 // Every mutation below was actually applied (edit -> rebuild -> run ->
 // revert -> rebuild-clean, confirmed byte-identical to the baseline by
 // `git diff --stat` after every revert) and the PASS/FAIL lines quoted are
@@ -268,13 +334,19 @@
 // setting, a preload) - never to nanomig/, which this task forbids
 // touching for any reason.
 //
-// Every mutation below was run as: 10 green + 2 required-red = baseline;
-// after the edit, the mutated assertion moves and every other assertion's
-// PASS/FAIL status is UNCHANGED from baseline - in particular the two
-// required-red assertions (BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS,
-// DOFF-NO-OBSERVABLE-EFFECT) stay red for their own documented reason in
-// every mutation run except their own, confirmed by the printed pass/fail
-// totals quoted below.
+// Every mutation below (except BLTXPTH-WIDTH-REGARDLESS-OF-ECS's, added later
+// by Prompt 8 independent validation - see "ROUTING CORRECTION" above) was
+// run as: 10 green + 2 required-red = baseline; after the edit, the mutated
+// assertion moves and every other assertion's PASS/FAIL status is UNCHANGED
+// from baseline - in particular the two required-red assertions
+// (BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS, DOFF-NO-OBSERVABLE-EFFECT) stay
+// red for their own documented reason in every mutation run except their
+// own, confirmed by the printed pass/fail totals quoted below.
+// BLTXPTH-WIDTH-REGARDLESS-OF-ECS's own mutation was run against the
+// post-addition baseline, 10 green + 3 required-red (its own assertion is
+// already red before the mutation, like BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-
+// ECS's own mutation below) - see its own entry for what that baseline is
+// and why.
 //
 // MUTATION TEST-DATA-DELIVERY-ECS stimulus red: fed C word at index 2
 //   changed from 0x9ABC to 0x9ABD (expected constants left untouched) ->
@@ -293,6 +365,31 @@
 //   unshifted 0x8000, not 0x4000, so the BLTCON0L write cannot be shown to
 //   have left ash alone, because there is nothing left to disturb; totals
 //   9 passed, 3 failed.
+// MUTATION BLTXPTH-WIDTH-REGARDLESS-OF-ECS stimulus, diagnosed rather than
+//   simply reported as "stayed red" per rule 3 (same treatment as
+//   BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS's own mutation below, since this
+//   assertion is also already red before the mutation): the BLTAPTH stimulus
+//   written in BOTH the ecs=0 and the ecs=1 branches changed from 0x001F to
+//   0x0015 (same value in both branches, as the original; expected condition
+//   `ocs_ptr != ecs_ptr` left untouched) -> MEASURED: both branches' reported
+//   pointer become 0xA8000 (was 0xF8000/0xF8000), CONFIRMING the harness's
+//   address_out() readback genuinely tracks the written stimulus (not a
+//   stuck or hardcoded output) - but the two branches remain EQUAL to each
+//   other (0xA8000 == 0xA8000), so the assertion still FAILS, for the same
+//   reason it failed before the mutation: agnus_blitter.v:590 carries no
+//   `&& ecs` on the reg_address_in connection into agnus_blitter_adrgen, so
+//   no value written to BLTAPTH can make the two branches diverge. Totals
+//   unchanged: 10 passed, 3 failed (this assertion, still red, plus
+//   BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS and DOFF). This is the correct
+//   shape for a mutation against a genuinely absent gate, not a vacuous
+//   assertion - see BLTCON0L-GATED-BY-ECS above, cited in this assertion's
+//   own text, which drives an analogous construct-with-ecs/write/compare
+//   structure against a register that DOES gate on ecs and DOES go green,
+//   proving the harness's ecs toggle itself is sound. Reverted to 0x001F in
+//   both branches afterward; `git diff --stat` after the revert matched the
+//   pre-mutation file exactly (`diff` against a saved pre-mutation copy of
+//   the whole file, zero bytes of difference), and a clean rebuild reproduced
+//   10 passed, 3 failed.
 // MUTATION BLTSIZH-GATED-BY-ECS stimulus red: h_on's `ecs` changed from
 //   true to false (so BOTH harnesses now run with ecs=0) -> FAIL - busy
 //   never sets in h_on either, so `on_busy_immediate` reads false; totals
@@ -377,6 +474,8 @@ constexpr uint16_t BLTCON0  = to_reg(0x040);
 constexpr uint16_t BLTCON1  = to_reg(0x042);
 constexpr uint16_t BLTAFWM  = to_reg(0x044);
 constexpr uint16_t BLTALWM  = to_reg(0x046);
+constexpr uint16_t BLTAPTH  = to_reg(0x050);  // Appendix A p.270, generic BLTxPTH entry for x=A
+constexpr uint16_t BLTAPTL  = to_reg(0x052);
 constexpr uint16_t BLTCON0L = to_reg(0x05A);
 constexpr uint16_t BLTSIZV  = to_reg(0x05C);
 constexpr uint16_t BLTSIZH  = to_reg(0x05E);
@@ -467,6 +566,17 @@ public:
     void settle(int n = 6) { run_cycles(n); }
 
     bool busy() const { return dut->busy; }
+
+    // Continuous readback of the pointer bank, wired straight through from
+    // agnus_blitter_adrgen (agnus_blitter.v:96,576-591): bltptr_out selects on
+    // {reg_address_in[4],reg_address_in[2]} whenever enaptr is 0
+    // (agnus_blitter_adrgen.v:62-84), which holds throughout this Harness as
+    // long as no blit is started (enaptr only rises inside the blit FSM,
+    // agnus_blitter.v:629-876). write_reg leaves reg_address_in/data_in parked
+    // at the just-written register until the next cycle(), so this is valid to
+    // call immediately after a write_reg() targeting a BLTxPTH/BLTxPTL
+    // register, before any further tick.
+    uint32_t address_out() const { return static_cast<uint32_t>(dut->address_out); }
 
     std::deque<uint16_t> a_words, c_words;
     std::vector<uint16_t> data_writes;
@@ -630,6 +740,77 @@ int main(int argc, char** argv) {
             "by that decode and is written only by the ordinary BLTCON0 path "
             "(agnus_blitter.v:219-230). 6-appa-registers.c28, 6-appc-modifications.c8, "
             "ch6-appc-ecs.c7 .");
+    }
+
+    // ---------------- BLTXPTH-WIDTH-REGARDLESS-OF-ECS (p.270, p.309) ----------------
+    // *** NEW FINDING (see below) - do not adjust this assertion to pass. ***
+    // Routing correction (Prompt 8 independent validation): 6-appa-registers.c110,
+    // ch6-appa-bltxpt.c2 and ch6-appa-bltxpt.c6 were originally routed to
+    // PKG-BLT-ADRGEN and built at hrm/agnus_blitter_adrgen - that module has NO
+    // `ecs` port at all (its own port list, agnus_blitter_adrgen.v:4-20), so the
+    // OCS 3-bit alternative cannot be selected there; its ECS-FIVE-BIT-PTH
+    // assertion measures only the ECS-widened form and says in its own text that
+    // "the original chip set's 3-bit/18-bit alternative ... is not separately
+    // constructible at this boundary and is not asserted". That is correct and is
+    // not revisited here. agnus_blitter, unlike agnus_blitter_adrgen, DOES have an
+    // `ecs` input (agnus_blitter.v:84) and its own `address_out` output wired
+    // straight through from the same adrgen submodule (agnus_blitter.v:96,
+    // 576-591), so the pair the manual actually states - 3 bits without ECS, 5
+    // bits with it - is measurable here, at the boundary where `ecs` exists.
+    {
+        // Identical BLTAPTH stimulus ($001F, all five low bits of the high word
+        // set - the same write hrm/agnus_blitter_adrgen's ECS-FIVE-BIT-PTH uses),
+        // issued once on a harness constructed with ecs=0 and once with ecs=1.
+        // BLTAPTL is written first (to a known 0) exactly as ECS-FIVE-BIT-PTH
+        // does, so a non-zero result can only come from the BLTAPTH write.
+        Harness h_ocs(false);
+        h_ocs.write_reg(BLTAPTL, 0x0000);
+        h_ocs.write_reg(BLTAPTH, 0x001F);
+        const uint32_t ocs_ptr = h_ocs.address_out();
+
+        Harness h_ecs(true);
+        h_ecs.write_reg(BLTAPTL, 0x0000);
+        h_ecs.write_reg(BLTAPTH, 0x001F);
+        const uint32_t ecs_ptr = h_ecs.address_out();
+
+        char ocs_hex[8], ecs_hex[8];
+        std::snprintf(ocs_hex, sizeof(ocs_hex), "%05X", static_cast<unsigned>(ocs_ptr));
+        std::snprintf(ecs_hex, sizeof(ecs_hex), "%05X", static_cast<unsigned>(ecs_ptr));
+
+        checks.expect(ocs_ptr != ecs_ptr,
+            "BLTXPTH-WIDTH-REGARDLESS-OF-ECS: Appendix A p.270 describes BLTxPTH as "
+            "'Blitter pointer to x (high 3 bits, 5 bits if ECS)' - the original chip "
+            "set carries only the pointer's high 3 bits through this register, ECS "
+            "widens that to 5 (6-appa-registers.c110, quote 'This pair of registers "
+            "contains the 18-bit address', restating the OCS 3-high-bit/18-bit-total "
+            "form; ch6-appa-bltxpt.c2, quote 'BLTxPTH    050      W      A( E ) "
+            "Blitter pointer to x (high 3 bits,'; ch6-appa-bltxpt.c6, quote 'This "
+            "pair of registers contains the 18-bit address', restated as 'BLTxPTH "
+            "and BLTxPTL together contain the 18-bit address of blitter source or "
+            "destination DMA data' - all three p.270, corroborated by Appendix C "
+            "p.309's 'high 3 bits, was 5 bits if ECS' modification entry). Writing "
+            "BLTAPTH with $001F should therefore land differently depending on ecs: "
+            "only the top 3 of those 5 bits reaching the pointer's high word when "
+            "ecs=0, all 5 when ecs=1 - ocs_ptr and ecs_ptr are expected to differ. "
+            "MEASURED: ocs_ptr=0x" + std::string(ocs_hex) + ", ecs_ptr=0x" +
+            std::string(ecs_hex) + " - IDENTICAL. agnus_blitter.v:590 wires "
+            "reg_address_in straight into agnus_blitter_adrgen's own "
+            "reg_address_in port with no `&& ecs` anywhere on that connection or "
+            "on data_in's, and agnus_blitter_adrgen.v:62 takes `data_in[4:0]` into "
+            "the pointer's high bits unconditionally - the submodule has no `ecs` "
+            "port to gate it with in the first place (agnus_blitter_adrgen.v:4-20). "
+            "So the OCS 3-bit form is not implemented at THIS boundary either, for "
+            "the identical reason hrm/agnus_blitter_adrgen's own ECS-FIVE-BIT-PTH "
+            "already found and reported at ITS boundary - the difference is that "
+            "agnus_blitter, unlike agnus_blitter_adrgen, genuinely has an `ecs` "
+            "port (agnus_blitter.v:84) that the manual's claim could have been "
+            "wired to and was not. THIS ASSERTION IS REQUIRED TO FAIL. The control "
+            "proving this harness's ecs toggle DOES produce a real behavioural "
+            "difference when the RTL actually gates on it - so a failure here is "
+            "not evidence of a fixture that never varied ecs - is "
+            "BLTCON0L-GATED-BY-ECS immediately above, which drives the identical "
+            "construct-with-ecs/write/compare structure against a register that "
+            "agnus_blitter.v:259-260 DOES gate on ecs, and goes green.");
     }
 
     // ---------------- BLTSIZH-GATED-BY-ECS (p.172, p.189, p.269, p.308, p.310) ----------------
