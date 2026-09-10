@@ -17,16 +17,20 @@ checked out elsewhere? `make -C hrm/<test> NANOMIG=/path/to/NanoMig`.
 
 Requires Verilator; last verified with **5.052**.
 
-## Seven tests are red, and that is the result
+## Eight tests are red, and that is the result
 
 ```
-tests: 36 passed, 7 failed, 0 build errors
+tests: 42 passed, 8 failed, 0 build errors
+failing: agnus_blitter_ecs agnus_copper_control agnus_copper_cycle_times
+         agnus_copper_cycles agnus_copper_locreg_width agnus_copper_move_range
+         agnus_copper_move_sweep paula_audio_mixer
+plus both integration tests green
 ```
 
-Those seven are **findings, not broken tests.** Each one marks a place where the
-RTL does something the manual does not describe. Do not adjust an assertion to
-make it pass — that deletes the finding, and it is the one failure mode this
-suite exists to prevent.
+Those eight carry **seven findings, not broken tests** — `agnus_blitter_ecs`
+holds three of them. Each marks a place where the RTL does something the manual
+does not describe. Do not adjust an assertion to make it pass — that deletes the
+finding, and it is the one failure mode this suite exists to prevent.
 
 | Finding | What the RTL does that the manual does not describe | Tests |
 |---|---|---|
@@ -77,9 +81,10 @@ disagree, the manual decides.
 
 ## What is covered, and by which method
 
-The suite spans far more of the manual than one chapter, but only one chapter has
-been through the full pipeline. That difference matters when reading a green
-result, so it is stated here rather than left to be inferred.
+The suite spans far more of the manual than the two chapters that have been
+through the full pipeline. That difference matters when reading a green result,
+so it is stated here rather than left to be inferred: **28 of the 50 tests came
+through the pipeline, 22 did not.**
 
 | Chapter | Tests | How they were built |
 |---|---:|---|
@@ -89,10 +94,11 @@ result, so it is stated here rather than left to be inferred.
 | 5 / 7 / 8 — Audio, interrupts, interfaces (`paula_*`) | 6 | by hand |
 | 3 / 7 — Agnus DMA, beam counter, register bus | 7 | by hand |
 
-The pipeline means two blind readings of the same pages, every quote anchored
+The pipeline means two blind readings of the same pages, quotes anchored
 mechanically in the source text, an attack on whatever was discarded as
 untestable, and a stimulus mutation per assertion showing it would go red if the
-behaviour changed.
+behaviour changed. What that does and does not guarantee is set out in the
+pipeline repository's own README, weaknesses included.
 
 The hand-written tests are not sloppy — they cite their manual pages, fix the
 expected behaviour before looking at the RTL, and some check exhaustively (the
@@ -114,7 +120,7 @@ was not covered at all. It is now asserted as `B2s` in
 ## Layout
 
 ```
-hrm/            43 fixtures, each against a single module
+hrm/            50 fixtures, each against a single module
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
 run_all.sh      everything; hrm/run_all.sh runs only the HRM suite
@@ -147,6 +153,7 @@ Four rules carry the whole thing:
 > *Amiga Hardware Reference Manual*, Third Edition. Commodore-Amiga, Inc.
 > Addison-Wesley Publishing Company, 1991.
 
-Chapter 2 (Copper, printed pages 19–36 plus appendices A, B and C) has been
-through the pipeline in full. Everything else in the table above is hand-written
+Two chapters have been through the pipeline: chapter 2 (Copper, printed pages
+19–36 plus appendices A, B and C) and chapter 6 (Blitter, printed pages 169–206
+plus its appendix entries). Everything else in the table above is hand-written
 coverage of individual modules.
