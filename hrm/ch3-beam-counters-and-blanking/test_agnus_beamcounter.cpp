@@ -114,17 +114,17 @@
 //   VHPOSW write (hpos forced to 20<<1=40) injected after the 4th sampled
 //   CCK period -> FAIL, only RASTER-SWEEP-LEFT-TO-RIGHT-TOP-TO-BOTTOM red
 //   (the injected forward jump is neither +2 nor a wrap). Reverted: 27/3.
-// MUTATION PAL-FIELD-312-NTSC-FIELD-262-LINES (PAL) stimulus red: the
+// MUTATION PAL-FIELD-312-NTSC-FIELD-262-LINES stimulus red: (PAL) the
 //   shared force_vpos call's long_frame argument changed from false to
 //   true (both PAL and NTSC read this same line) -> FAIL, PAL-FIELD-312-
 //   NTSC-FIELD-262-LINES (PAL) AND (NTSC) both red together, as expected
 //   collateral of a shared setup line (313/263 lines measured instead of
 //   312/262). Reverted: 27/3.
-// MUTATION PAL-FIELD-312-NTSC-FIELD-262-LINES (NTSC) stimulus red: the
+// MUTATION PAL-FIELD-312-NTSC-FIELD-262-LINES stimulus red: (NTSC) the
 //   same edit as PAL-FIELD-312-NTSC-FIELD-262-LINES (PAL) immediately
 //   above -- both ids are red from that one shared-setup change; see that
 //   entry for the measured values. Reverted: 27/3.
-// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (reset default) stimulus red:
+// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION stimulus red: (reset default)
 //   an early `write_reg(A_BPLCON0, 1<<BP_LACE)` injected
 //   before this sub-case's own check -> FAIL ("25 passed, 5 failed"):
 //   LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (reset default) red (lace
@@ -132,12 +132,12 @@
 //   (LACE=0, control) also red, as expected collateral (with lace now 1,
 //   its own two-field measurement alternates instead of matching).
 //   Reverted: 27/3.
-// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (LACE=0, control) stimulus red:
+// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION stimulus red: (LACE=0, control)
 //   the same early injected write as
 //   LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (reset default)
 //   immediately above -- both ids are red from that one change; see that
 //   entry for the measured values. Reverted: 27/3.
-// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (write LACE=1) stimulus red:
+// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION stimulus red: (write LACE=1)
 //   this sub-case's own write changed from `1<<BP_LACE` to
 //   `1<<BP_ERSY` (wrong bit) -> FAIL ("25 passed, 5 failed"):
 //   LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (write LACE=1) red (lace
@@ -145,24 +145,24 @@
 //   LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (LACE=1) also red, as
 //   expected collateral (with lace never set, the two fields measured
 //   afterward do not alternate). Reverted: 27/3.
-// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (LACE=1) stimulus red:
+// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION stimulus red: (LACE=1)
 //   the same wrong-bit write as
 //   LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (write LACE=1)
 //   immediately above -- both ids are red from that one change; see that
 //   entry for the measured values. Reverted: 27/3.
-// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION (write LACE=0) stimulus red:
+// MUTATION LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION stimulus red: (write LACE=0)
 //   this sub-case's own write changed from `0` to
 //   `1<<BP_LACE` (leaves LACE set instead of clearing it) -> FAIL ("26
 //   passed, 4 failed"), only LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION
 //   (write LACE=0) red (lace still reads 1). Reverted: 27/3.
-// MUTATION ERSY-BIT-CONTROLS-EXTERNAL-RESYNC-HOLD (reset default, control) stimulus red:
+// MUTATION ERSY-BIT-CONTROLS-EXTERNAL-RESYNC-HOLD stimulus red: (reset default, control)
 //   an early `write_reg(A_BPLCON0, 1<<BP_ERSY)` injected
 //   before this sub-case's own loop -> FAIL ("26 passed, 4 failed"), only
 //   ERSY-BIT-CONTROLS-EXTERNAL-RESYNC-HOLD (reset default, control) red
 //   (hpos now holds at 0/1 instead of advancing past it; the (write
 //   ERSY=1) sub-case is unaffected because ERSY was already 1 by the time
 //   its own, now-redundant write runs). Reverted: 27/3.
-// MUTATION ERSY-BIT-CONTROLS-EXTERNAL-RESYNC-HOLD (write ERSY=1) stimulus red:
+// MUTATION ERSY-BIT-CONTROLS-EXTERNAL-RESYNC-HOLD stimulus red: (write ERSY=1)
 //   this sub-case's own write changed from `1<<BP_ERSY` to
 //   `1<<BP_LACE` (wrong bit) -> FAIL ("26 passed, 4 failed"), only
 //   ERSY-BIT-CONTROLS-EXTERNAL-RESYNC-HOLD (write ERSY=1) red (hpos
@@ -207,7 +207,7 @@
 //   HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT red (htotal_out stays at its
 //   default regardless of the pattern written to the wrong register).
 //   Reverted: 27/3.
-// MUTATION HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 (PAL) none impossible:
+// MUTATION HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 none impossible: (PAL)
 //   this assertion is red at baseline (a genuine finding -- htotal_out
 //   reads 452, not the manual's 455-equivalent 227.5 CCK). No stimulus can
 //   turn an already-red assertion red again; the meaningful check for a
@@ -215,7 +215,7 @@
 //   (HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT, a PASS using the identical
 //   htotal_out signal and write-then-read method), which is exercised by
 //   its own mutation above.
-// MUTATION HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 (NTSC) none impossible:
+// MUTATION HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 none impossible: (NTSC)
 //   same reasoning as HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 (PAL)
 //   immediately above -- baseline red, no stimulus applicable.
 // MUTATION BEAMCON0-INTRO-AND-VARBEAMEN-GATES-PROGRAMMABLE-TIMING stimulus red:
@@ -246,7 +246,7 @@
 //   BEAMCON0-PAL-BIT-SELECTS-DEFAULT-VTOTAL red (262 lines measured
 //   instead of 312 -- the ntsc input pin's own reset-time default is what
 //   is left in charge). Reverted: 27/3.
-// MUTATION VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA (non-interlaced) stimulus red:
+// MUTATION VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA stimulus red: (non-interlaced)
 //   the VTOTAL write changed from 5 to 6 -> FAIL ("25
 //   passed, 5 failed"): VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA
 //   (non-interlaced) red (7 lines measured, not the expected 6) AND
@@ -254,12 +254,12 @@
 //   expected collateral (8/7 measured instead of 7/6); the two same-basis
 //   default-VTOTAL sum sub-cases are unaffected, since they use a separate
 //   harness that never writes VTOTAL. Reverted: 27/3.
-// MUTATION VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA (interlaced) stimulus red:
+// MUTATION VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA stimulus red: (interlaced)
 //   the same VTOTAL 5->6 edit as
 //   VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA (non-interlaced)
 //   immediately above -- both ids are red from that one change; see that
 //   entry for the measured values. Reverted: 27/3.
-// MUTATION VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA (PAL default, sum of one long + one short field) stimulus red:
+// MUTATION VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA stimulus red: (PAL default, sum of one long + one short field)
 //   the shared sum-loop's
 //   `write_reg(A_BPLCON0, 1<<BP_LACE)` line removed (LACE never enabled)
 //   -> FAIL ("25 passed, 5 failed"):
@@ -269,7 +269,7 @@
 //   as expected collateral of one shared loop body (with LACE never set,
 //   both measured fields are the same length, and their sum no longer
 //   matches 625/525). Reverted: 27/3.
-// MUTATION VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA (NTSC default, sum of one long + one short field) stimulus red:
+// MUTATION VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA stimulus red: (NTSC default, sum of one long + one short field)
 //   the same removed LACE write
 //   as VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA (PAL default, sum of one
 //   long + one short field) immediately above -- both ids are red from
