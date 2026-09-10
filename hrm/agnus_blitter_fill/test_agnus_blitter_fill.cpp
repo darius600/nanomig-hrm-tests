@@ -115,16 +115,33 @@
 // -> rebuild-clean) under WSL/Verilator and the PASS/FAIL lines quoted are
 // what the run printed, not predictions.
 //
-// MUTATION SWEEP-MODE stimulus red: inside run_fill_sweep(), the mode passed
-//   to drive_fill() was flipped to its opposite (hrm_oracle() still computed
-//   the expectation for the ORIGINAL mode) -> printed: "FAIL:
-//   SWEEP-INCLUSIVE-SHAPE ... first mismatch: mode=0 FCI=1 IN=0001 expected
-//   OUT=0001 FCO=0 actual OUT=0000 FCO=0", the identical line under
-//   SWEEP-INCLUSIVE-FCI, "FAIL: SWEEP-EXCLUSIVE-SHAPE ... first mismatch:
-//   mode=1 FCI=1 IN=0001 expected OUT=0000 FCO=0 actual OUT=0001 FCO=0", the
-//   identical line under SWEEP-EXCLUSIVE-VERTEX, and every other assertion
-//   PASS - run totalled "9 passed, 4 failed".
-// MUTATION BYPASS-OFFSET stimulus red: in run_bypass_sweep(), the word driven
+// MUTATION SWEEP-INCLUSIVE-SHAPE stimulus red: inside run_fill_sweep(), the
+//   mode passed to drive_fill() was flipped to its opposite while
+//   hrm_oracle() still computed the expectation for the ORIGINAL mode - this
+//   is the "break the correspondence" shape a sweep needs, since the sweep
+//   recomputes its own expectation per case and a plain input change would
+//   not reliably go red -> printed "FAIL: SWEEP-INCLUSIVE-SHAPE ... first
+//   mismatch: mode=0 FCI=1 IN=0001 expected OUT=0001 FCO=0 actual OUT=0000
+//   FCO=0" - run totalled "9 passed, 4 failed".
+// MUTATION SWEEP-INCLUSIVE-FCI stimulus red: same run as
+//   SWEEP-INCLUSIVE-SHAPE immediately above - one edit to run_fill_sweep()
+//   turns both assertions red together because they read the same
+//   inclusive_sweep result -> printed the identical "FAIL:
+//   SWEEP-INCLUSIVE-FCI ... first mismatch: mode=0 FCI=1 IN=0001 expected
+//   OUT=0001 FCO=0 actual OUT=0000 FCO=0" - run totalled "9 passed, 4
+//   failed".
+// MUTATION SWEEP-EXCLUSIVE-SHAPE stimulus red: same run as
+//   SWEEP-INCLUSIVE-SHAPE above (one mode-flip edit in run_fill_sweep()
+//   affects both the inclusive and exclusive sweep calls) -> printed "FAIL:
+//   SWEEP-EXCLUSIVE-SHAPE ... first mismatch: mode=1 FCI=1 IN=0001 expected
+//   OUT=0000 FCO=0 actual OUT=0001 FCO=0" - run totalled "9 passed, 4
+//   failed".
+// MUTATION SWEEP-EXCLUSIVE-VERTEX stimulus red: same run as
+//   SWEEP-EXCLUSIVE-SHAPE immediately above - shares the exclusive_sweep
+//   result -> printed the identical "FAIL: SWEEP-EXCLUSIVE-VERTEX ... first
+//   mismatch: mode=1 FCI=1 IN=0001 expected OUT=0000 FCO=0 actual OUT=0001
+//   FCO=0" - run totalled "9 passed, 4 failed".
+// MUTATION SWEEP-BYPASS stimulus red: in run_bypass_sweep(), the word driven
 //   onto `dut.in` was changed to `word + 1` while the expected value stayed
 //   `word` -> printed "FAIL: SWEEP-BYPASS ... first mismatch: FCI=0 IN=0000
 //   expected OUT=0000 actual OUT=0001", every other assertion PASS - run
@@ -142,13 +159,21 @@
 //   from 0x0080 (bit 7) to 0x0040 (bit 6) while the expected 0xFF80/true was
 //   left untouched -> printed "FAIL: WHOLE-WORD ..." with no other assertion
 //   affected - run totalled "12 passed, 1 failed".
-// MUTATION WORKED-EXAMPLES stimulus red: all four hrm_examples[] entries had
-//   their driven `input` incremented by 1 (0x2418 -> 0x2419) while every
-//   expected output/carry-out field was left untouched -> printed "FAIL:
-//   WORKED-P184-INCLUSIVE ...", "FAIL: WORKED-P184-EXCLUSIVE ...", "FAIL:
-//   WORKED-P185-INCLUSIVE ..." and "FAIL: WORKED-P185-EXCLUSIVE ..." (all
-//   four, one mismatch apiece), every other assertion PASS - run totalled
-//   "9 passed, 4 failed".
+// MUTATION WORKED-P184-INCLUSIVE stimulus red: all four hrm_examples[]
+//   entries had their driven `input` incremented by 1 (0x2418 -> 0x2419)
+//   while every expected output/carry-out field was left untouched -> this
+//   entry printed "FAIL: WORKED-P184-INCLUSIVE ...", every non-worked-example
+//   assertion PASS - run totalled "9 passed, 4 failed".
+// MUTATION WORKED-P184-EXCLUSIVE stimulus red: same run as
+//   WORKED-P184-INCLUSIVE immediately above (one edit to all four
+//   hrm_examples[] entries) -> this entry printed "FAIL:
+//   WORKED-P184-EXCLUSIVE ..." - run totalled "9 passed, 4 failed".
+// MUTATION WORKED-P185-INCLUSIVE stimulus red: same run as
+//   WORKED-P184-INCLUSIVE above -> this entry printed "FAIL:
+//   WORKED-P185-INCLUSIVE ..." - run totalled "9 passed, 4 failed".
+// MUTATION WORKED-P185-EXCLUSIVE stimulus red: same run as
+//   WORKED-P184-INCLUSIVE above -> this entry printed "FAIL:
+//   WORKED-P185-EXCLUSIVE ..." - run totalled "9 passed, 4 failed".
 // MUTATION CASE-COUNT stimulus red: the exclusive sweep's upper bound was
 //   lowered to 0x7FFFU (half the domain) while the inclusive sweep's bound
 //   stayed 0xFFFFU -> printed "FAIL: CASE-COUNT: 327688 of 393224 expected
