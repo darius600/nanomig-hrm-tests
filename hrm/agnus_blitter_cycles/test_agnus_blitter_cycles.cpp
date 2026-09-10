@@ -172,18 +172,19 @@
 // MUTATION FUNCTION-GENERATOR-COMBINES-THREE-SOURCES-PER-POINT stimulus red:
 //   word1's B value changed from 0x0000 to 0x0001 (expected constant left
 //   untouched) -> FAIL, that word's computed XOR no longer matches.
-// MUTATION MASK-BEFORE-SHIFT: first attempt SURVIVED and was diagnosed
-//   before being counted, matching the pattern the build brief warns
-//   about (four earlier packages in this chapter each found one this
-//   way): BLTAFWM changed from 0x0F0F to 0x0FFF, BLTALWM left at
-//   0x0F0F -> PASS, unchanged. Cause: for a single-word blit the
-//   effective mask is BLTAFWM & BLTALWM (agnus_blitter.v:312-313), and
-//   0x0FFF is a strict superset of 0x0F0F, so ANDing with the unchanged
-//   BLTALWM produced the SAME effective mask (0x0F0F) - the mutation
-//   never reached the DUT as a different stimulus at all. Fixed by
-//   changing BLTAFWM to 0x00FF instead (effective mask becomes 0x000F,
-//   genuinely different) -> FAIL, the shifted result is no longer
-//   0x00F0.
+// MUTATION MASK-BEFORE-SHIFT stimulus green: first attempt, BLTAFWM
+//   changed from 0x0F0F to 0x0FFF (BLTALWM left at 0x0F0F) -> PASS, a
+//   miss - matching the pattern the build brief warns about (four
+//   earlier packages in this chapter each found one this way). Cause:
+//   for a single-word blit the effective mask is BLTAFWM & BLTALWM
+//   (agnus_blitter.v:312-313), and 0x0FFF is a strict superset of
+//   0x0F0F, so ANDing with the unchanged BLTALWM produced the SAME
+//   effective mask (0x0F0F) - the mutation never reached the DUT as a
+//   different stimulus at all.
+// MUTATION MASK-BEFORE-SHIFT stimulus red: replacement, BLTAFWM changed
+//   from 0x0F0F to 0x00FF instead (BLTALWM left at 0x0F0F, effective
+//   mask becomes 0x000F, genuinely different) -> FAIL, the shifted
+//   result is no longer 0x00F0.
 // MUTATION SHIFT-BEFORE-COMBINE stimulus red: the ash nibble in BLTCON0
 //   changed from 4 to 5 (A value and LF left untouched) -> FAIL, the
 //   shifted result no longer matches 0x0FF0.
@@ -215,18 +216,22 @@
 //   compared USE codes changed to two that cost the same (0x1 and 0x9,
 //   both baseline) -> FAIL, the "the two measured costs differ" check now
 //   sees equal costs.
-// MUTATION CONSTANT-CHANNEL-DOESNT-COUNT-AGAINST-SPEED: first design used
-//   channel A and SURVIVED every stimulus tried, because A is
-//   unconditionally free whether enabled or not (A-REGISTER-ALWAYS-FREE) -
-//   there is no stimulus confined to A that can ever change a cost
-//   measurement in this RTL, so the assertion was structurally immune to
-//   mutation by construction, not by accident. Diagnosed and the
-//   assertion rebuilt around channel B instead (which genuinely costs +2
-//   ticks when enabled, with clkena driven correctly - see the header's
-//   fixture-defect note). Mutation: USEB set to 1 in the "constant" run
-//   (genuinely enabling B, not just referencing its held value) -> FAIL,
-//   cost_constant_b becomes 6 (4 baseline + B's +2), no longer equal to
-//   cost_no_b_reference (4).
+// MUTATION CONSTANT-CHANNEL-DOESNT-COUNT-AGAINST-SPEED stimulus red: an
+//   earlier design of this assertion used channel A instead of B and
+//   SURVIVED every stimulus tried (not run against current code, so not
+//   logged as its own attempt) - A is unconditionally free whether
+//   enabled or not (A-REGISTER-ALWAYS-FREE), so no stimulus confined to
+//   A can ever change a cost measurement in this RTL, and the assertion
+//   was structurally immune to mutation by construction. Rebuilt around
+//   channel B instead (which genuinely costs +2 ticks when enabled, with
+//   clkena driven correctly - see the header's fixture-defect note).
+//   This mutation, run against the current code: USEB added to the use
+//   code in the "constant" measurement only (cost_no_b_reference left
+//   untouched), genuinely enabling B instead of merely referencing its
+//   held value -> FAIL, cost_constant_b becomes 6 (4 baseline + B's +2),
+//   no longer equal to cost_no_b_reference (4). No other tick-count
+//   assertion moved - this is a local per-block measurement, not a
+//   clkena-timebase disturbance.
 // The eight mutations below were re-run after the clkena fixture-defect
 // fix (see the header's fixture-defect note): all eight assertions moved
 // from red (measured at half the manual's number) to green (measured
