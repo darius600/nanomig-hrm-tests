@@ -634,7 +634,10 @@ int main(int argc, char** argv) {
             "and modulo)' (6-appa-registers.c114, ch6-appa-bltxpt.c8, p.270), "
             "and the same additive relationship 'width ... times two plus the "
             "modulo value (in bytes) should equal the full width' describes "
-            "(ch6-dma.c67, p.172)");
+            "(ch6-dma.c67, p.172); the same landing point - increments through "
+            "the row, then the modulo added at its end - is what 'address "
+            "point to the start of the next line' names (6-appa-registers.c93, "
+            "p.270; reclassified into this package)");
     }
 
     // ---------------- FIGURE-6-2-PTR-STIMULUS (p.173, figure) ----------------
