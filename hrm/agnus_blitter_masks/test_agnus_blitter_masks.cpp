@@ -152,6 +152,22 @@
 //     ch6-fig613.f07
 //   NOT ASSERTED (line mode, reason above): 6-appa-registers.c13,
 //     ch6-line.c24, ch6-linesum.c2, ch6-linesum.c3
+//   MASK-MUX-RANDOM-SWEEP: 6-blitter-block-diagram.c1, ch6-fig613.f03,
+//     ch6-fig613.f04, ch6-fig613.f05, 6-shifts-and-masks.c31,
+//     ch6-shifts.c27, ch6-blockdiag.c4, 6-shifts-and-masks.c28,
+//     ch6-shifts.c24, ch6-appa-masks.c10, 6-appa-registers.c11 (same
+//     propositions as MASK-MUX-THREE-REGIMES, MASK-BOTH-ON-ONE-WORD-ROW and
+//     MASK-BIT-EXCLUDED-FROM-LOGIC above, reasserted at random over ~1000
+//     cases rather than one worked value each)
+//
+// ADDED FOR FPGA-090 (build register 2026-09-08, "Still to do when the last
+// two packages land" item 3; commit 113acff's note on what the deletion of
+// hrm/agnus_blitter_mask would genuinely lose): MASK-MUX-RANDOM-SWEEP below
+// keeps that package's randomised-sweep TECHNIQUE, not its harness - it
+// compiles and drives the real agnus_blitter (this file's existing Harness,
+// unchanged), never agnus_blitter_mask.v's pasted copy of
+// agnus_blitter.v:311-319. See the assertion's own text for why ~1000 cases
+// at this boundary is worth more than that copy's 101,024.
 //
 // Every mutation below was actually applied (edit -> rebuild -> run ->
 // revert -> rebuild-clean) and the FAIL/PASS lines quoted are what the run
@@ -235,10 +251,20 @@
 //   stimulus -> FAIL (only at k=7; every other bit position still PASS),
 //   lanes_independent==15, not the unchanged expected 16; every other
 //   assertion PASS.
+// MUTATION MASK-MUX-RANDOM-SWEEP stimulus red: the width-3 blit's BLTAFWM
+//   write changed to drive fwm3^0x0001 into the DUT while check_case kept
+//   computing the expectation from the unmutated fwm3 - i.e. the fixture
+//   was made to drive a mask the expectation was not computed from -> FAIL,
+//   874 of 1000 cases matched (not the unchanged 1000), first mismatch
+//   "first-only: fwm=0x1371 lwm=0x6462 first=1 last=0 a_in=0xc4c3
+//   expected=0x41 actual=0x40"; every other assertion PASS (19 passed, 1
+//   failed). Reverted; rebuilt clean; 20/20 green again.
 
 #include <cstdint>
 #include <deque>
 #include <iostream>
+#include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -966,6 +992,135 @@ int main(int argc, char** argv) {
             "directly against agnus_blitter.v:337 (the masked value stored into "
             "bltaold every word) and :345 (the same AND feeding the shifter), not "
             "against the picture");
+    }
+
+    // ---------------- MASK-MUX-RANDOM-SWEEP (p.180-182, p.198-199, Figure 6-13) ----------------
+    // The technique kept from hrm/agnus_blitter_mask (the superseded
+    // package - see file header, "ADDED FOR FPGA-090"): a randomised sweep
+    // of the mask multiplexer, but run against the REAL compiled
+    // agnus_blitter above (this file's existing Harness, untouched), not
+    // agnus_blitter_mask.v's pasted copy of agnus_blitter.v:311-319. A
+    // change to the real multiplexer could never turn that old test red,
+    // because nothing kept the copy in step with the file it was pasted
+    // from - its 101,024 cases were volume against a copy, i.e. against
+    // nothing. A whole blit through the DMA arbiter, shifter and minterm
+    // generator at THIS boundary is not free the way one eval() against an
+    // isolated leaf module is, so the affordable volume here is roughly a
+    // thousand, not a hundred thousand - and a thousand cases that can
+    // actually go red on a real RTL change are worth more than a hundred
+    // thousand that cannot.
+    //
+    // Every case's expected value is computed from the manual's plain rule
+    // (p.180: "these masks are anded with the source data" on the first and
+    // last word of each row; p.198: "when the blit shrinks to one word
+    // wide, both masks are applied") - NOT from reading agnus_blitter.v -
+    // so a disagreement between this and the RTL is a red finding to
+    // report, not a formula to quietly bring into line.
+    {
+        // Fixed seed, printed in the assertion text below: a sweep nobody
+        // can re-run with the same cases is not evidence.
+        constexpr uint32_t kSeed = 0xB17A5EEDu;
+        std::mt19937 rng(kSeed);
+        std::uniform_int_distribution<uint16_t> rnd16(0, 0xFFFF);
+
+        // 250 iterations x 4 word-position cases (first-only, neither,
+        // last-only from one width-3 blit; both-at-once from one width-1
+        // blit) = 1000 cases total, at a cost of 500 whole blits.
+        constexpr int kIterations = 250;
+        int cases_run = 0, cases_matched = 0;
+        std::string first_mismatch;
+
+        // The manual's rule, applied to one case. `fwm`/`lwm` are what the
+        // fixture actually wrote to BLTAFWM/BLTALWM for this blit -
+        // MUTATION below breaks that link deliberately to prove the check
+        // is live.
+        auto check_case = [&](const char* label, uint16_t fwm, uint16_t lwm, bool first, bool last,
+                               uint16_t a_in, uint16_t actual) {
+            uint16_t expected_mask = 0xFFFF;
+            if (first) expected_mask &= fwm;
+            if (last) expected_mask &= lwm;
+            const uint16_t expected = static_cast<uint16_t>(a_in & expected_mask);
+            ++cases_run;
+            if (actual == expected) {
+                ++cases_matched;
+            } else if (first_mismatch.empty()) {
+                std::ostringstream oss;
+                oss << label << ": fwm=0x" << std::hex << fwm << " lwm=0x" << lwm << std::dec
+                    << " first=" << first << " last=" << last << " a_in=0x" << std::hex << a_in
+                    << " expected=0x" << expected << " actual=0x" << actual << std::dec;
+                first_mismatch = oss.str();
+            }
+        };
+
+        for (int i = 0; i < kIterations; ++i) {
+            const uint16_t fwm3 = rnd16(rng), lwm3 = rnd16(rng);
+            const uint16_t a0 = rnd16(rng), a1 = rnd16(rng), a2 = rnd16(rng);
+            {
+                // width=3, height=1: word 0 is first-word-only, word 1 is
+                // neither, word 2 is last-word-only - three of the mux's
+                // four branches (agnus_blitter.v:311-319) from one blit,
+                // the same construction MASK-MUX-THREE-REGIMES uses above
+                // with one fixed value each, here with random ones.
+                Harness h;
+                h.a_words = {a0, a1, a2};
+                h.write_reg(BLTAFWM, fwm3);
+                h.write_reg(BLTALWM, lwm3);
+                start_blit(h, static_cast<uint16_t>(USEA | USED | LF_A_PASSTHROUGH), 3, 1);
+                if (h.run_until_writes(3, 80) && h.data_writes.size() == 3) {
+                    check_case("first-only", fwm3, lwm3, true, false, a0, h.data_writes[0]);
+                    check_case("neither", fwm3, lwm3, false, false, a1, h.data_writes[1]);
+                    check_case("last-only", fwm3, lwm3, false, true, a2, h.data_writes[2]);
+                } else {
+                    ++cases_run;  // count the failed-to-complete blit itself as a mismatch
+                    if (first_mismatch.empty())
+                        first_mismatch = "width-3 blit at iteration " + std::to_string(i) +
+                                          " failed to complete (fewer than 3 writes)";
+                }
+            }
+            {
+                // width=1, height=1: the one word is simultaneously first
+                // and last - the mux's fourth branch, bltafwm & bltalwm.
+                const uint16_t fwm1 = rnd16(rng), lwm1 = rnd16(rng), b0 = rnd16(rng);
+                Harness h;
+                h.a_words = {b0};
+                h.write_reg(BLTAFWM, fwm1);
+                h.write_reg(BLTALWM, lwm1);
+                start_blit(h, static_cast<uint16_t>(USEA | USED | LF_A_PASSTHROUGH), 1, 1);
+                if (h.run_until_writes(1, 60) && h.data_writes.size() == 1) {
+                    check_case("both", fwm1, lwm1, true, true, b0, h.data_writes[0]);
+                } else {
+                    ++cases_run;
+                    if (first_mismatch.empty())
+                        first_mismatch = "width-1 blit at iteration " + std::to_string(i) +
+                                          " failed to complete (no write)";
+                }
+            }
+        }
+
+        std::ostringstream label;
+        label << "MASK-MUX-RANDOM-SWEEP: " << cases_run << " randomised cases (fixed seed 0x"
+              << std::hex << kSeed << std::dec << ", reproducible) swept over BLTAFWM, BLTALWM, "
+              << "source-A data and word position (first-only, last-only, both-at-once on a "
+              << "one-word row, and neither - the four branches agnus_blitter.v:311-319 actually "
+              << "selects between) at the REAL agnus_blitter boundary, " << cases_matched
+              << " matched the manual's rule that these masks are anded with the source data on "
+              << "each row's first/last word and both together on a one-word row - this is the "
+              << "same technique hrm/agnus_blitter_mask ran 101,024 times against a PASTED COPY "
+              << "of agnus_blitter.v:311-319 (worthless: a change to the real file cannot turn a "
+              << "copy red), run here at an affordable ~1000 against the real compiled RTL "
+              << "instead, where it CAN go red; covers the same propositions as "
+              << "MASK-MUX-THREE-REGIMES ('FW Mask and the A source combined in an AND gate "
+              << "enabled by \"first word time\"' 6-blitter-block-diagram.c1, ch6-fig613.f03, "
+              << "ch6-fig613.f04, ch6-fig613.f05, p.199), MASK-BOTH-ON-ONE-WORD-ROW ('if the "
+              << "width of the row is a single word, both masks are applied' "
+              << "6-shifts-and-masks.c31, ch6-shifts.c27, ch6-blockdiag.c4, p.180/198) and "
+              << "MASK-BIT-EXCLUDED-FROM-LOGIC ('a zero in any bit [of the mask overrides data "
+              << "from source A]' 6-shifts-and-masks.c28, ch6-shifts.c24, ch6-appa-masks.c10, "
+              << "6-appa-registers.c11, p.180/266) above, at random over ~1000 cases instead of "
+              << "one worked value each"
+              << (first_mismatch.empty() ? std::string()
+                                          : (" - FIRST MISMATCH: " + first_mismatch));
+        checks.expect(cases_run == kIterations * 4 && cases_matched == cases_run, label.str());
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
