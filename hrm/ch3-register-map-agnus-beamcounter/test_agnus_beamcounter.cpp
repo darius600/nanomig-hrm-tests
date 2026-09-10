@@ -49,11 +49,15 @@
 //   hrm/ch3-collision-registers/ (reusing an already-built sibling
 //   harness for the identical top module is not "opening the RTL"; the
 //   claims.jsonl evidence field already made every one of these addresses
-//   and port names public before this file was written). This agent has
-//   NOT opened agnus_beamcounter.v directly as of this commit. No
-//   PASS/FAIL threshold or expected value below was chosen or adjusted
-//   because of anything seen in the RTL -- every oracle is the manual
-//   quotation cited on its own assertion.
+//   and port names public before this file was written). agnus_beamcounter.v
+//   was opened for the first time AFTER the spec-only commit of this file
+//   (git history: "spec-only commit, written before opening the RTL"
+//   precedes this version) -- see IMPLEMENTATION NOTES below for what that
+//   reading corrected. No PASS/FAIL threshold or expected value was ever
+//   chosen or adjusted because of anything seen in the RTL -- every oracle
+//   below is still the manual quotation cited on its own assertion; only
+//   the STIMULUS/OBSERVATION mechanics (which BEAMCON0 bit to set, which
+//   edge of a signal to watch) were corrected once the real RTL was read.
 //
 // METHODOLOGY:
 //
@@ -98,35 +102,30 @@
 //   HTOTAL-H8-H1-BIT-MAPPING assertion, itself citing RTL l.108-115),
 //   with every other address's data_out defaulting to 0.
 //
-// (4) OBSERVATION SIGNAL PER REGISTER and its GATING PRECONDITION -- the
-//   four already-established facts below are reused verbatim from
-//   hrm/ch3-beam-counters-and-blanking (module-identical, RTL-cited
-//   there): HTOTAL/VTOTAL are muxed in by ecs=1 && BEAMCON0.VARBEAMEN=1
-//   (its own comment on HTOTAL-H8-H1-BIT-MAPPING, RTL l.223,235);
-//   HSSTRT/HSSTOP/HCENTER are additionally gated by BEAMCON0.VARHSYEN=1
-//   (its BEAMCON0-VARHSYEN-VARVSYEN-GATE-PROGRAMMABLE-SYNC comment, "gating
-//   hsstrt/hsstop/hcenter ... (l.224-226,230-231)"); VSSTRT/VSSTOP are
-//   gated the same way by BEAMCON0.VARVSYEN=1 (same comment, "and
-//   vsstrt/vsstop respectively"); VBSTOP is read through `vbl`, stated
-//   there as "vbl = (vpos <= vbstop) (l.444), continuous on vpos" (its
-//   VBLANK-DURATION comment) -- note vbl's formula names only vbstop, not
+// (4) OBSERVATION SIGNAL PER REGISTER and its GATING PRECONDITION, as
+//   CONFIRMED by reading agnus_beamcounter.v directly (see IMPLEMENTATION
+//   NOTES below for what this corrected from the spec-only commit's
+//   guesses): HTOTAL/VTOTAL are muxed in by ecs=1 && BEAMCON0.VARBEAMEN=1
+//   alone (l.223,229); HSSTRT/HSSTOP/HCENTER are additionally gated by
+//   BEAMCON0.VARHSYEN=1 (l.224-226: `varhsyen && varbeamen`); VSSTRT/VSSTOP
+//   are gated the same way by BEAMCON0.VARVSYEN=1 (l.230-231); HBSTRT/
+//   HBSTOP are gated by BEAMCON0.VARBEAMEN=1 ALONE, no VARVBEN or HARDDIS
+//   (l.227-228: `varbeamen ? hbstrt_reg : ...`); VBSTOP is gated by
+//   BEAMCON0.VARBEAMEN=1 AND VARVBEN=1 (bit 12) together (l.233: `varvben
+//   && varbeamen ? vbstop_reg : ...`), then read through `vbl = (vpos <=
+//   vbstop)` (l.444, continuous). Note vbl's formula names only vbstop, not
 //   a vbstrt, which is why VBSTRT is not one of this package's 33 claims:
 //   vertical blanking is always the leading part of the field, with no
 //   separate start register the way each LINE's horizontal blanking needs
-//   both HBSTRT and HBSTOP. For HBSTRT/HBSTOP specifically, and for
-//   whether VBSTOP additionally needs BEAMCON0.HARDDIS=1 (the fourth
-//   multiplexer BOUNDARY names as "varvben" -- "assign harddis_out =
-//   harddis || varbeamen || varvben (l.236)", per the same sibling file's
-//   BEAMCON0-HARDDIS comment), NEITHER already-built harness for this
-//   module exercises these three registers' own address (A_HBSTRT,
-//   A_HBSTOP and A_VBSTOP are each declared but never actually driven to a
-//   register-under-test address in hrm/ch3-beam-counters-and-blanking --
-//   confirmed by grep before this file was written). This file therefore
-//   drives them with ecs=1, BEAMCON0.VARBEAMEN=1 AND BEAMCON0.HARDDIS=1
-//   together as its best-effort gating guess, to be corrected (mechanics
-//   only, never an expected value) once agnus_beamcounter.v is actually
-//   opened, exactly as the build brief's step 3 anticipates.
+//   both HBSTRT and HBSTOP (l.450-458, a plain set-at-hbstrt/clear-at-
+//   hbstop window on hblank, which itself starts at Verilator's default 0).
+//   _hsync/_vsync are active-low (l.388-395, l.399-406): hsstrt/vsstrt
+//   control the FALL (1->0, pulse start) and hsstop/vsstop control the
+//   RISE (0->1, pulse end) -- the reverse of what their names might
+//   suggest at a glance. hcenter appears on the FALL when long_frame=0 and
+//   on the RISE when long_frame=1 (field1=~long_frame, l.371).
 //
+
 // CLAIM COVERAGE: all 33 records of claims.jsonl are cited, in full, inside
 //   an expect() label. 15 ADDRESS assertions (one per Group-B claim) plus
 //   10 DIRECTION/CHIP assertions (one per register named in Group C -- 8 of
@@ -143,11 +142,196 @@
 //   write-then-read pipe is alive on THIS package's own independently
 //   built obj_dir before anything else relies on it.
 //
-// MUTATION LOG: recorded after agnus_beamcounter.v is actually opened and
-//   `make test` has actually been run under WSL/Verilator (left empty in
-//   this spec-only commit, filled in the follow-up commit, per the build
-//   brief's order of work and the precedent in
-//   hrm/ch3-collision-registers/'s own spec-only commit).
+// IMPLEMENTATION NOTES (added once agnus_beamcounter.v was actually read,
+//   after the spec-only commit): none of the following changed any
+//   assertion's ORACLE (the manual quotation and what it asserts); each is
+//   a stimulus/observation-mechanics correction, confirmed by rereading the
+//   RTL, not by watching which way made a test pass:
+//   - VBSTOP's actual gating bit is VARVBEN (BEAMCON0 bit 12), not HARDDIS
+//     (bit 14) as originally guessed -- HARDDIS does not appear in any
+//     register mux, only in harddis_out's own OR combination (l.236).
+//     Confirmed the guess was live-wrong (not merely unverified): with
+//     HARDDIS=1 and VARVBEN left at its default 0, vbstop would have stayed
+//     on the pal-selected hardwired constant regardless of what was
+//     written to $1CE, making VBSTOP-ADDRESS-1CE fail even though the RTL
+//     correctly decodes the address -- a harness bug, not an RTL finding.
+//   - HBSTRT/HBSTOP need BEAMCON0.VARBEAMEN=1 alone; HARDDIS/VARVBEN play
+//     no role in their mux (l.227-228). The original best-effort guess
+//     (VARBEAMEN+HARDDIS) would not have broken these two -- HARDDIS is
+//     simply inert there -- but is removed for accuracy.
+//   - hblank is a plain set-at-hbstrt/clear-at-hbstop window starting from
+//     Verilator's default 0 (l.450-458), not a "blanked from hpos=0"
+//     prefix as originally assumed; the original hblank_prefix_length/
+//     hblank_active_run_after_prefix helpers would have measured 0 in
+//     every case regardless of either register, a silent no-op test.
+//     Replaced with next_hblank_rise_hpos/next_hblank_fall_hpos, the same
+//     edge-detection technique already used for _hsync/_vsync.
+//   - _hsync/_vsync are active-low, so hsstrt/vsstrt (the "start" registers
+//     by name) actually control each signal's FALL, and hsstop/vsstop
+//     (the "stop" registers) control the RISE -- the original draft had
+//     HSSTOP-ADDRESS-1C2/VSSTOP-ADDRESS-1CA measuring the fall (hsstrt's/
+//     vsstrt's effect, not hsstop's/vsstop's) and HSSTRT-ADDRESS-1DE/
+//     VSSTRT-ADDRESS-1E0 measuring the rise -- backwards for both pairs.
+//     Confirmed live-wrong the same way as the VBSTOP gating bug: each
+//     assertion would have compared a signal edge that its own
+//     "companion" register (fixed at a correct address in all three
+//     harnesses) already controls, so h_wrong and h_correct would read
+//     the same regardless of whether the address under test was right.
+//     All four assertions now measure the edge the RTL actually assigns.
+//   - HCENTER-ADDRESS-1E2 initially measured _vsync's rise on BOTH field
+//     parities and accepted an "either" pass, guessing the mechanism was
+//     uncertain. Reading l.399-406 directly shows hcenter controls the
+//     FALL when long_frame=0 and the RISE when long_frame=1 -- known
+//     exactly, not guessed -- so the assertion now measures the correct
+//     edge per parity and requires BOTH to show the effect. The block also
+//     dropped an unnecessary BPLCON0 LACE=1 write: LACE=1 makes
+//     `end_of_frame && lace` (l.347-348) flip long_frame every field,
+//     which would have changed which parity's condition was live partway
+//     through the guarded fall-detector's search across a field wrap.
+//     force_vpos already sets long_frame directly (VPOSW bit15), so LACE
+//     is left at its reset default 0 and long_frame stays fixed for the
+//     whole scan.
+//
+// MUTATION LOG (all entries below were actually run by this agent under
+//   WSL/Verilator: edit -> rebuild -> run -> confirm the named assertion(s)
+//   red -> revert -> rebuild -> confirm the full suite back to its
+//   committed baseline (26 passed, 0 failed) -- before moving to the next
+//   one. Every mutation is a STIMULUS change to this file's own inputs (a
+//   register write's target ADDRESS, or a written value/companion setup);
+//   no expected value or oracle text was ever touched, and nanomig/ was
+//   never touched. A final `diff` against the pre-mutation file (saved
+//   before this log was written) came back empty, confirming every edit
+//   below was fully reverted.
+//
+// MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: force_vpos's vpos11
+//   argument changed from 0x555 to 0x000 -> FAIL, only
+//   FIXTURE-DELIVERS-KNOWN-VALUE red (vpos[10:8] now reads 0b000, not
+//   0b101). Reverted: 26/0.
+// MUTATION VPOSR-ADDRESS-004 stimulus red: the second force_vpos call's
+//   hpos8_1 argument changed from 0x77 to 0x88 (so VHPOSR's low byte now
+//   genuinely changes too) -> FAIL, only VPOSR-ADDRESS-004 red
+//   (vhposr_low_byte_unaffected no longer holds). Reverted: 26/0.
+// MUTATION VHPOSR-ADDRESS-006 stimulus red: the second force_vpos call's
+//   vpos11 argument changed from 0x2AA to 0x155 (so VPOSR's readback now
+//   genuinely changes too) -> FAIL, only VHPOSR-ADDRESS-006 red
+//   (vposr_unaffected no longer holds). Reverted: 26/0.
+// MUTATION VPOSW-ADDRESS-02A stimulus red: the correct-address write's
+//   target changed from A_VPOSW to A_VHPOSW -> FAIL, only
+//   VPOSW-ADDRESS-02A red (after_correct no longer differs from base: both
+//   read 0x40960). Reverted: 26/0.
+// MUTATION VHPOSW-ADDRESS-02C stimulus red: the correct-address write's
+//   target changed from A_VHPOSW to A_VPOSW -> FAIL, only
+//   VHPOSW-ADDRESS-02C red (after_correct no longer differs from base:
+//   both read 0x0). Reverted: 26/0.
+// MUTATION BEAMCON0-ADDRESS-1DC stimulus red: the correct-address write's
+//   target changed from A_BEAMCON0 to A_HTOTAL -> FAIL, only
+//   BEAMCON0-ADDRESS-1DC red (correct_harddis/correct_varbeamen no longer
+//   set). Reverted: 26/0.
+// MUTATION HTOTAL-ADDRESS-1C0 stimulus red: the correct-address write's
+//   target changed from A_HTOTAL to A_HSSTOP -> FAIL ("24 passed, 2
+//   failed"): HTOTAL-ADDRESS-1C0 red (htotal_correct stays 452, matching
+//   baseline) AND HTOTAL-DIRECTION-WRITE-ONLY-AGNUS also red, as expected
+//   collateral (it reuses the same htotal_correct/htotal_base pair).
+//   Reverted: 26/0.
+// MUTATION HTOTAL-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   correct-address-write mutation as HTOTAL-ADDRESS-1C0 immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+// MUTATION HSSTOP-ADDRESS-1C2 stimulus red: the correct-address write's
+//   target changed from A_HSSTOP to A_VSSTOP -> FAIL ("24 passed, 2
+//   failed"): HSSTOP-ADDRESS-1C2 red (rise stays at hpos=70, matching
+//   baseline, instead of moving to 400) AND HSSTOP-DIRECTION-WRITE-ONLY-
+//   AGNUS also red, as expected collateral (shares hsstop_correct/
+//   hsstop_base). Reverted: 26/0.
+// MUTATION HSSTOP-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   correct-address-write mutation as HSSTOP-ADDRESS-1C2 immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+// MUTATION HSSTRT-ADDRESS-1DE stimulus red: the correct-address write's
+//   target changed from A_HSSTRT to A_HCENTER -> FAIL ("24 passed, 2
+//   failed"): HSSTRT-ADDRESS-1DE red (fall stays at hpos=39, matching
+//   baseline, instead of moving to 10) AND HSSTRT-DIRECTION-WRITE-ONLY-
+//   AGNUS also red, as expected collateral (shares hsstrt_correct/
+//   hsstrt_base). Reverted: 26/0.
+// MUTATION HSSTRT-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   correct-address-write mutation as HSSTRT-ADDRESS-1DE immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+// MUTATION HCENTER-ADDRESS-1E2 stimulus red: the measure lambda's
+//   write_correct branch changed from writing A_HCENTER to writing
+//   A_HSSTRT -> FAIL ("24 passed, 2 failed"): HCENTER-ADDRESS-1E2 red
+//   (hcenter_correct0/1 stay at baseline 264/264 on both parities, no
+//   longer moving to 40) AND HCENTER-DIRECTION-WRITE-ONLY-AGNUS also red,
+//   as expected collateral (shares the same field0_selective/
+//   field1_selective values). Reverted: 26/0.
+// MUTATION HCENTER-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   write_correct-branch mutation as HCENTER-ADDRESS-1E2 immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+// MUTATION HBSTOP-ADDRESS-1C6 stimulus red: the correct-address write's
+//   target changed from A_HBSTOP to A_VBSTOP -> FAIL ("24 passed, 2
+//   failed"): HBSTOP-ADDRESS-1C6 red (fall stays at hpos=102, matching
+//   baseline, instead of moving to 300) AND HBSTOP-DIRECTION-WRITE-ONLY-
+//   AGNUS also red, as expected collateral (shares hbstop_correct/
+//   hbstop_base). Reverted: 26/0.
+// MUTATION HBSTOP-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   correct-address-write mutation as HBSTOP-ADDRESS-1C6 immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+// MUTATION HBSTRT-ADDRESS-1C4 stimulus red: the correct-address write's
+//   target changed from A_HBSTRT to A_VTOTAL -> FAIL ("24 passed, 2
+//   failed"): HBSTRT-ADDRESS-1C4 red (rise stays at hpos=27, matching
+//   baseline, instead of moving to 40) AND HBSTRT-DIRECTION-WRITE-ONLY-
+//   AGNUS also red, as expected collateral (shares hbstrt_correct/
+//   hbstrt_base). Reverted: 26/0.
+// MUTATION HBSTRT-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   correct-address-write mutation as HBSTRT-ADDRESS-1C4 immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+// MUTATION VTOTAL-ADDRESS-1C8 stimulus red: the correct-address write's
+//   target changed from A_VTOTAL to A_VSSTOP -> FAIL ("24 passed, 2
+//   failed"): VTOTAL-ADDRESS-1C8 red (measured field length stays 313
+//   lines, matching baseline, instead of dropping to 5) AND
+//   VTOTAL-DIRECTION-WRITE-ONLY-AGNUS also red, as expected collateral
+//   (shares vtotal_correct/vtotal_base). Reverted: 26/0.
+// MUTATION VTOTAL-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   correct-address-write mutation as VTOTAL-ADDRESS-1C8 immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+// MUTATION VSSTOP-ADDRESS-1CA stimulus red: the correct-address write's
+//   target changed from A_VSSTOP to A_HBSTOP -> FAIL ("24 passed, 2
+//   failed"): VSSTOP-ADDRESS-1CA red (rise stays at vpos=5, matching
+//   baseline, instead of moving to 50) AND VSSTOP-DIRECTION-WRITE-ONLY-
+//   AGNUS also red, as expected collateral (shares vsstop_correct/
+//   vsstop_base). Reverted: 26/0.
+// MUTATION VSSTOP-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   correct-address-write mutation as VSSTOP-ADDRESS-1CA immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+// MUTATION VSSTRT-ADDRESS-1E0 stimulus red: the correct-address write's
+//   target changed from A_VSSTRT to A_VBSTOP -> FAIL ("24 passed, 2
+//   failed"): VSSTRT-ADDRESS-1E0 red (fall stays at vpos=3, matching
+//   baseline, instead of moving to 31) AND VSSTRT-DIRECTION-WRITE-ONLY-
+//   AGNUS also red, as expected collateral (shares vsstrt_correct/
+//   vsstrt_base). Reverted: 26/0.
+// MUTATION VSSTRT-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   correct-address-write mutation as VSSTRT-ADDRESS-1E0 immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+// MUTATION VBSTOP-ADDRESS-1CE stimulus red: the correct-address write's
+//   target changed from A_VBSTOP to A_VSSTOP -> FAIL ("24 passed, 2
+//   failed"): VBSTOP-ADDRESS-1CE red (vbl's blanked-line count stays 26,
+//   matching baseline, instead of dropping to 4) AND
+//   VBSTOP-DIRECTION-WRITE-ONLY-AGNUS also red, as expected collateral
+//   (shares vbstop_correct/vbstop_base). Reverted: 26/0.
+// MUTATION VBSTOP-DIRECTION-WRITE-ONLY-AGNUS stimulus red: the same
+//   correct-address-write mutation as VBSTOP-ADDRESS-1CE immediately
+//   above -- both ids are red from that one change; see that entry for
+//   the measured values.
+//
+// Final rebuild after the last revert: 26 passed, 0 failed, confirmed
+//   again immediately before this commit, and byte-identical (`diff`) to
+//   the file as it stood before this mutation log was written.
 
 #include <cstdint>
 #include <cstdlib>
@@ -193,8 +377,12 @@ constexpr int A_BEAMCON0= 0x1DC >> 1;
 constexpr int A_VSSTRT  = 0x1E0 >> 1;
 constexpr int A_HCENTER = 0x1E2 >> 1;
 
-// BEAMCON0 bit numbers (appendix C p.305, reused from the sibling file).
+// BEAMCON0 bit numbers (appendix C p.305, reused from the sibling file,
+// plus BC_VARVBEN, confirmed directly from agnus_beamcounter.v:130 --
+// `wire varvben = beamcon0_reg[12];` -- once this file's RTL was opened;
+// the sibling file never named its bit number, only that it exists).
 constexpr int BC_HARDDIS  = 14;
+constexpr int BC_VARVBEN  = 12;
 constexpr int BC_VARVSYEN = 9;
 constexpr int BC_VARHSYEN = 8;
 constexpr int BC_VARBEAMEN= 7;
@@ -365,30 +553,59 @@ int next_vsync_rise_hpos(Harness& h, int budget_ticks = 900000) {
     return -1;
 }
 
-// hblank's blanked-prefix length in CCK periods, counted from wherever the
-// harness currently sits (used right after reset, hpos=0) -- the
-// horizontal analogue of the sibling file's vbl "blanked_lines" technique
-// (vbl = (vpos <= vbstop), continuous -- its own VBLANK-DURATION comment,
-// RTL l.444). Used for HBSTOP.
-int hblank_prefix_length(Harness& h, int budget_periods = 300) {
-    int count = 0;
-    for (int i = 0; i < budget_periods; ++i) {
-        if (!h.dut->hblank) break;
-        ++count;
-        h.run_cck(1);
+// _vsync's next FALL, hpos version (not vpos) -- used for HCENTER's
+// long_frame=0 (field1=1) parity, where RTL l.401's second clause
+// (`vpos==vsstrt && hpos==hcenter && !long_frame`) puts hcenter on the
+// FALL, not the rise.
+int next_vsync_fall_hpos(Harness& h, int budget_ticks = 900000) {
+    bool prev = h.dut->_vsync;
+    bool saw_rise = false;
+    for (int i = 0; i < budget_ticks; ++i) {
+        h.dut->clk7_en = (i % 2 == 0);
+        h.dut->cck = (i % 4 < 2);
+        h.tick();
+        bool cur = h.dut->_vsync;
+        if (!prev && cur) saw_rise = true;
+        if (prev && !cur && saw_rise) return h.dut->hpos;
+        prev = cur;
     }
-    return count;
+    return -1;
 }
 
-// Skips whatever blanked prefix HBSTOP produced, then counts the active
-// (unblanked) run that follows -- locates HBSTRT's effective position
-// without needing to know HBSTOP's value in advance. Used for HBSTRT.
-int hblank_active_run_after_prefix(Harness& h, int budget_periods = 300) {
-    int i = 0;
-    for (; i < budget_periods && h.dut->hblank; ++i) h.run_cck(1);
-    int count = 0;
-    for (; i < budget_periods && !h.dut->hblank; ++i) { ++count; h.run_cck(1); }
-    return count;
+// hblank's next RISE (0->1, blanking START) -- RTL l.452-453:
+// `if (hpos==hbstrt) hblank<=1;`. hblank carries no reset branch but is
+// known to start at Verilator's default 0 (unlike _hsync/_vsync, which the
+// sibling file treats as ambiguous on their very first edge), so the first
+// rise found here is never a false one. Used for HBSTRT.
+int next_hblank_rise_hpos(Harness& h, int budget_ticks = 4000) {
+    bool prev = h.dut->hblank;
+    for (int i = 0; i < budget_ticks; ++i) {
+        h.dut->clk7_en = (i % 2 == 0);
+        h.dut->cck = (i % 4 < 2);
+        h.tick();
+        bool cur = h.dut->hblank;
+        if (!prev && cur) return h.dut->hpos;
+        prev = cur;
+    }
+    return -1;
+}
+
+// hblank's next FALL after a confirmed RISE -- RTL l.454-456:
+// `else if (hpos==hbstop) begin vblank<=vbl; hblank<=0; end`. Used for
+// HBSTOP.
+int next_hblank_fall_hpos(Harness& h, int budget_ticks = 4000) {
+    bool prev = h.dut->hblank;
+    bool saw_rise = false;
+    for (int i = 0; i < budget_ticks; ++i) {
+        h.dut->clk7_en = (i % 2 == 0);
+        h.dut->cck = (i % 4 < 2);
+        h.tick();
+        bool cur = h.dut->hblank;
+        if (!prev && cur) saw_rise = true;
+        if (prev && !cur && saw_rise) return h.dut->hpos;
+        prev = cur;
+    }
+    return -1;
 }
 
 // vbl's blanked-line count from vpos=0 -- reused technique (not reused
@@ -421,7 +638,7 @@ int main(int argc, char** argv) {
     // ================= FIXTURE-DELIVERS-KNOWN-VALUE (no page) =================
     {
         Harness h(/*ecs=*/true, /*ntsc=*/false);
-        force_vpos(h, /*vpos11=*/0x155, /*long_frame=*/true, /*hpos8_1=*/0x33);
+        force_vpos(h, /*vpos11=*/0x555, /*long_frame=*/true, /*hpos8_1=*/0x33);
         uint16_t vposr = h.read(A_VPOSR);
         uint16_t vhposr = h.read(A_VHPOSR);
         checks.expect(
@@ -615,25 +832,30 @@ int main(int argc, char** argv) {
     }
 
     // ================= HSSTOP-ADDRESS-1C2 =================
+    // agnus_beamcounter.v:388-395 -- `if (hpos==hsstrt) _hsync<=0; else if
+    // (hpos==hsstop) _hsync<=1;`. Since _hsync is active-low, hsstrt
+    // controls the FALL (1->0, pulse start) and hsstop controls the RISE
+    // (0->1, pulse end) -- so HSSTOP's own address-decode effect is
+    // measured on the rise, not the fall.
     int hsstop_base, hsstop_wrong, hsstop_correct;
     uint16_t hsstop_readback;
     {
         Harness h_base(/*ecs=*/true, /*ntsc=*/false);
         h_base.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARHSYEN));
         h_base.write_reg(A_HSSTRT, 20); // companion register, correct address
-        hsstop_base = next_hsync_fall_hpos(h_base);
+        hsstop_base = next_hsync_rise_hpos(h_base);
 
         Harness h_wrong(/*ecs=*/true, /*ntsc=*/false);
         h_wrong.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARHSYEN));
         h_wrong.write_reg(A_HSSTRT, 20);
         h_wrong.write_reg(A_VSSTOP, 200); // wrong address
-        hsstop_wrong = next_hsync_fall_hpos(h_wrong);
+        hsstop_wrong = next_hsync_rise_hpos(h_wrong);
 
         Harness h_correct(/*ecs=*/true, /*ntsc=*/false);
         h_correct.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARHSYEN));
         h_correct.write_reg(A_HSSTRT, 20);
         h_correct.write_reg(A_HSSTOP, 200);
-        hsstop_correct = next_hsync_fall_hpos(h_correct);
+        hsstop_correct = next_hsync_rise_hpos(h_correct);
         hsstop_readback = h_correct.read(A_HSSTOP);
 
         bool wrong_matches_base = std::abs(hsstop_wrong - hsstop_base) <= 4;
@@ -641,13 +863,14 @@ int main(int argc, char** argv) {
         checks.expect(
             wrong_matches_base && correct_differs,
             "HSSTOP-ADDRESS-1C2: with ecs=1, BEAMCON0.VARBEAMEN=1 and "
-            "VARHSYEN=1 (gates hsstop into the fall of _hsync -- see "
-            "METHODOLOGY), and HSSTRT fixed at 20 (correct address), "
-            "writing 200 to $1CA (VSSTOP, the wrong address) leaves "
-            "_hsync's fall at hpos=" + std::to_string(hsstop_wrong) +
-            " (baseline " + std::to_string(hsstop_base) +
+            "VARHSYEN=1 (gates hsstop into the rise of _hsync, which is "
+            "active-low -- see METHODOLOGY), and HSSTRT fixed at 20 "
+            "(correct address), writing 200 to $1CA (VSSTOP, the wrong "
+            "address) leaves _hsync's rise at hpos=" +
+            std::to_string(hsstop_wrong) + " (baseline " +
+            std::to_string(hsstop_base) +
             "); writing 200 to $1C2 (HSSTOP, the address the manual names) "
-            "moves the fall to hpos=" + std::to_string(hsstop_correct) +
+            "moves the rise to hpos=" + std::to_string(hsstop_correct) +
             " -- 'HSSTOP        1C2   W     A (E)    Horizontal line "
             "position for HSYNC stop' (p.293). B-hsstop.addr .");
     }
@@ -658,7 +881,7 @@ int main(int argc, char** argv) {
             hsstop_readback == 0 && std::abs(hsstop_correct - hsstop_base) > 4,
             "HSSTOP-DIRECTION-WRITE-ONLY-AGNUS: reading data_out at $1C2 "
             "after writing 200 there returns 0, not the written value, "
-            "even though the same write measurably moved _hsync's fall "
+            "even though the same write measurably moved _hsync's rise "
             "just above -- genuinely W not R/W; chip ownership structural "
             "(METHODOLOGY (2)) -- '   HSSTOP    W   A     Horizontal line "
             "position for HSYNC  stop' (p.304). C-hsstop.c01, "
@@ -666,25 +889,32 @@ int main(int argc, char** argv) {
     }
 
     // ================= HSSTRT-ADDRESS-1DE =================
+    // Symmetric to HSSTOP-ADDRESS-1C2 above: hsstrt controls _hsync's FALL
+    // (l.390-391), not its rise.
     int hsstrt_base, hsstrt_wrong, hsstrt_correct;
     uint16_t hsstrt_readback;
     {
         Harness h_base(/*ecs=*/true, /*ntsc=*/false);
         h_base.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARHSYEN));
         h_base.write_reg(A_HSSTOP, 200); // companion register, correct address
-        hsstrt_base = next_hsync_rise_hpos(h_base);
+        hsstrt_base = next_hsync_fall_hpos(h_base);
 
         Harness h_wrong(/*ecs=*/true, /*ntsc=*/false);
         h_wrong.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARHSYEN));
         h_wrong.write_reg(A_HSSTOP, 200);
-        h_wrong.write_reg(A_HCENTER, 20); // wrong address
-        hsstrt_wrong = next_hsync_rise_hpos(h_wrong);
+        h_wrong.write_reg(A_HCENTER, 5); // wrong address
+        hsstrt_wrong = next_hsync_fall_hpos(h_wrong);
 
         Harness h_correct(/*ecs=*/true, /*ntsc=*/false);
         h_correct.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARHSYEN));
         h_correct.write_reg(A_HSSTOP, 200);
-        h_correct.write_reg(A_HSSTRT, 20);
-        hsstrt_correct = next_hsync_rise_hpos(h_correct);
+        h_correct.write_reg(A_HSSTRT, 5); // doubles to 10 (l.207), far from
+                                           // the hardwired default's ~37-39
+                                           // measured fall -- 20 (->40) was
+                                           // tried first and landed too
+                                           // close to the default to clear
+                                           // this file's own >4 tick margin
+        hsstrt_correct = next_hsync_fall_hpos(h_correct);
         hsstrt_readback = h_correct.read(A_HSSTRT);
 
         bool wrong_matches_base = std::abs(hsstrt_wrong - hsstrt_base) <= 4;
@@ -692,11 +922,13 @@ int main(int argc, char** argv) {
         checks.expect(
             wrong_matches_base && correct_differs,
             "HSSTRT-ADDRESS-1DE: with ecs=1, BEAMCON0.VARBEAMEN=1 and "
-            "VARHSYEN=1, and HSSTOP fixed at 200 (correct address), writing "
-            "20 to $1E2 (HCENTER, the wrong address) leaves _hsync's rise "
-            "at hpos=" + std::to_string(hsstrt_wrong) + " (baseline " +
-            std::to_string(hsstrt_base) + "); writing 20 to $1DE (HSSTRT, "
-            "the address the manual names) moves the rise to hpos=" +
+            "VARHSYEN=1 (gates hsstrt into the fall of _hsync, which is "
+            "active-low -- see METHODOLOGY), and HSSTOP fixed at 200 "
+            "(correct address), writing 5 to $1E2 (HCENTER, the wrong "
+            "address) leaves _hsync's fall at hpos=" +
+            std::to_string(hsstrt_wrong) + " (baseline " +
+            std::to_string(hsstrt_base) + "); writing 5 to $1DE (HSSTRT, "
+            "the address the manual names) moves the fall to hpos=" +
             std::to_string(hsstrt_correct) + " -- 'HSSTRT        1DE   w   "
             "   A (E)   Horizontal sync start (VARHSY)' (p.293). "
             "B-hsstrt.addr .");
@@ -707,8 +939,8 @@ int main(int argc, char** argv) {
         checks.expect(
             hsstrt_readback == 0 && std::abs(hsstrt_correct - hsstrt_base) > 4,
             "HSSTRT-DIRECTION-WRITE-ONLY-AGNUS: reading data_out at $1DE "
-            "after writing 20 there returns 0, not the written value, even "
-            "though the same write measurably moved _hsync's rise just "
+            "after writing 5 there returns 0, not the written value, even "
+            "though the same write measurably moved _hsync's fall just "
             "above -- genuinely W not R/W; chip ownership structural "
             "(METHODOLOGY (2)) -- '   HSSTRT    W   A     Horizontal line "
             "position for HSYNC  start' (p.304). C-hsstrt.c01, "
@@ -716,48 +948,39 @@ int main(int argc, char** argv) {
     }
 
     // ================= HCENTER-ADDRESS-1E2 =================
-    // HCENTER only affects the vsync pulse's HORIZONTAL launch point, and
-    // only on the interlaced field it applies to -- which of the two
-    // field1 parities that is is not assumed, only measured: both are
-    // tried and the assertion passes if EITHER shows the address-decode
-    // effect, exactly as uncertain-mechanism assertions elsewhere in this
-    // repo are handled (see hrm/ch3-beam-counters-and-blanking's own
-    // INTERLACE-HALF-LINE-VERTICAL-OFFSET-VIA-VSYNC-TIMING).
+    // agnus_beamcounter.v:399-406 names hcenter in TWO places: the FALL
+    // (pulse start) when long_frame=0 (`vpos==vsstrt && hpos==hcenter &&
+    // !long_frame`) and the RISE (pulse end) when long_frame=1
+    // (`vpos==vsstop && hpos==hcenter && long_frame`) -- field1=~long_frame
+    // (l.371), so this is genuinely "on interlace", one edge per field
+    // parity. Both parities are tested, each against its own confirmed
+    // edge (not "either" as an uncertain guess -- the mechanism is now
+    // known exactly). LACE is deliberately left at its reset default 0 (not
+    // set via BPLCON0) so long_frame -- forced directly through VPOSW bit15
+    // by force_vpos -- stays FIXED for the whole scan: with LACE=1,
+    // `end_of_frame && lace` (l.347-348) flips long_frame every field,
+    // which would corrupt the guarded fall-detector's search across a
+    // field wrap (it needs long_frame to still be the parity under test
+    // when the wrap comes back around to vpos==vsstrt).
     int hcenter_base0, hcenter_wrong0, hcenter_correct0;
     int hcenter_base1, hcenter_wrong1, hcenter_correct1;
     uint16_t hcenter_readback;
     {
-        auto measure = [](bool field1_long_frame) {
+        auto measure = [](bool field1_long_frame, int wrong_addr, bool write_wrong,
+                           bool write_correct) {
             Harness h(/*ecs=*/true, /*ntsc=*/false);
-            h.write_reg(A_BPLCON0, 1 << BP_LACE);
             force_vpos(h, 0, /*long_frame=*/field1_long_frame);
             h.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARHSYEN));
-            return next_vsync_rise_hpos(h);
+            if (write_wrong) h.write_reg(wrong_addr, 20);
+            if (write_correct) h.write_reg(A_HCENTER, 20);
+            return field1_long_frame ? next_vsync_rise_hpos(h) : next_vsync_fall_hpos(h);
         };
-        hcenter_base0 = measure(false);
-        hcenter_base1 = measure(true);
-
-        auto measure_wrong = [](bool field1_long_frame) {
-            Harness h(/*ecs=*/true, /*ntsc=*/false);
-            h.write_reg(A_BPLCON0, 1 << BP_LACE);
-            force_vpos(h, 0, /*long_frame=*/field1_long_frame);
-            h.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARHSYEN));
-            h.write_reg(A_HSSTRT, 20); // wrong address
-            return next_vsync_rise_hpos(h);
-        };
-        hcenter_wrong0 = measure_wrong(false);
-        hcenter_wrong1 = measure_wrong(true);
-
-        auto measure_correct = [](bool field1_long_frame) {
-            Harness h(/*ecs=*/true, /*ntsc=*/false);
-            h.write_reg(A_BPLCON0, 1 << BP_LACE);
-            force_vpos(h, 0, /*long_frame=*/field1_long_frame);
-            h.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARHSYEN));
-            h.write_reg(A_HCENTER, 20);
-            return next_vsync_rise_hpos(h);
-        };
-        hcenter_correct0 = measure_correct(false);
-        hcenter_correct1 = measure_correct(true);
+        hcenter_base0 = measure(false, A_HSSTRT, false, false);
+        hcenter_base1 = measure(true, A_HSSTRT, false, false);
+        hcenter_wrong0 = measure(false, A_HSSTRT, true, false); // wrong address
+        hcenter_wrong1 = measure(true, A_HSSTRT, true, false);
+        hcenter_correct0 = measure(false, A_HSSTRT, false, true);
+        hcenter_correct1 = measure(true, A_HSSTRT, false, true);
 
         Harness h_ro(/*ecs=*/true, /*ntsc=*/false);
         h_ro.write_reg(A_HCENTER, 20);
@@ -768,21 +991,22 @@ int main(int argc, char** argv) {
         bool field1_selective = std::abs(hcenter_wrong1 - hcenter_base1) <= 4 &&
                                  std::abs(hcenter_correct1 - hcenter_base1) > 4;
         checks.expect(
-            field0_selective || field1_selective,
+            field0_selective && field1_selective,
             "HCENTER-ADDRESS-1E2: with LACE=1, ecs=1, BEAMCON0.VARBEAMEN=1 "
             "and VARHSYEN=1 (the same gate group as HSSTRT/HSSTOP -- see "
-            "METHODOLOGY), and testing BOTH interlace field parities "
-            "(long_frame false: base/wrong/correct hpos=" +
+            "METHODOLOGY), tested on BOTH interlace field parities against "
+            "the edge the RTL actually assigns HCENTER to on each one -- "
+            "_vsync's fall when long_frame=0 (base/wrong/correct hpos=" +
             std::to_string(hcenter_base0) + "/" + std::to_string(hcenter_wrong0) +
-            "/" + std::to_string(hcenter_correct0) + "; long_frame true: " +
+            "/" + std::to_string(hcenter_correct0) +
+            ") and its rise when long_frame=1 (" +
             std::to_string(hcenter_base1) + "/" + std::to_string(hcenter_wrong1) +
             "/" + std::to_string(hcenter_correct1) +
-            "), writing 20 to $1DE (HSSTRT, the wrong address) leaves "
-            "_vsync's horizontal launch point at its baseline on at least "
-            "one field parity, while writing 20 to $1E2 (HCENTER, the "
-            "address the manual names) moves it there -- 'HCENTER       "
-            "1E2   w      A (E)   Horizontal position for Vsync on "
-            "interlace' (p.293). B-hcenter.addr .");
+            ") -- writing 20 to $1DE (HSSTRT, the wrong address) leaves "
+            "that edge at its baseline on both parities, while writing 20 "
+            "to $1E2 (HCENTER, the address the manual names) moves it on "
+            "both -- 'HCENTER       1E2   w      A (E)   Horizontal "
+            "position for Vsync on interlace' (p.293). B-hcenter.addr .");
     }
 
     // ================= HCENTER-DIRECTION-WRITE-ONLY-AGNUS =================
@@ -803,97 +1027,114 @@ int main(int argc, char** argv) {
     }
 
     // ================= HBSTOP-ADDRESS-1C6 =================
+    // agnus_beamcounter.v:450-458: `if (hpos==hbstrt) hblank<=1; else if
+    // (hpos==hbstop) begin vblank<=vbl; hblank<=0; end`. hblank carries no
+    // reset branch but is known to start at Verilator's default 0
+    // (confirmed once the RTL was opened -- unlike _hsync/_vsync's genuine
+    // no-reset ambiguity), and the mux is gated by varbeamen ALONE (RTL
+    // l.228: `hbstop = varbeamen ? hbstop_reg : HBSTOP_VAL[8:0]`) -- no
+    // HARDDIS or VARVBEN involved, unlike this package's original
+    // best-effort guess. hbstop controls hblank's FALL (clear).
     int hbstop_base, hbstop_wrong, hbstop_correct;
     uint16_t hbstop_readback;
     {
         Harness h_base(/*ecs=*/true, /*ntsc=*/false);
-        h_base.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_HARDDIS));
-        hbstop_base = hblank_prefix_length(h_base);
+        h_base.write_reg(A_BEAMCON0, 1 << BC_VARBEAMEN);
+        h_base.write_reg(A_HBSTRT, 5); // companion register, correct address
+        hbstop_base = next_hblank_fall_hpos(h_base);
 
         Harness h_wrong(/*ecs=*/true, /*ntsc=*/false);
-        h_wrong.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_HARDDIS));
-        h_wrong.write_reg(A_VBSTOP, 3); // wrong address
-        hbstop_wrong = hblank_prefix_length(h_wrong);
+        h_wrong.write_reg(A_BEAMCON0, 1 << BC_VARBEAMEN);
+        h_wrong.write_reg(A_HBSTRT, 5);
+        h_wrong.write_reg(A_VBSTOP, 150); // wrong address
+        hbstop_wrong = next_hblank_fall_hpos(h_wrong);
 
         Harness h_correct(/*ecs=*/true, /*ntsc=*/false);
-        h_correct.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_HARDDIS));
-        h_correct.write_reg(A_HBSTOP, 3);
-        hbstop_correct = hblank_prefix_length(h_correct);
+        h_correct.write_reg(A_BEAMCON0, 1 << BC_VARBEAMEN);
+        h_correct.write_reg(A_HBSTRT, 5);
+        h_correct.write_reg(A_HBSTOP, 150);
+        hbstop_correct = next_hblank_fall_hpos(h_correct);
         hbstop_readback = h_correct.read(A_HBSTOP);
 
+        bool wrong_matches_base = std::abs(hbstop_wrong - hbstop_base) <= 4;
+        bool correct_differs = std::abs(hbstop_correct - hbstop_base) > 4;
         checks.expect(
-            hbstop_wrong == hbstop_base && hbstop_correct != hbstop_base,
-            "HBSTOP-ADDRESS-1C6: with ecs=1, BEAMCON0.VARBEAMEN=1 and "
-            "HARDDIS=1 (this package's best-effort gating guess for the "
-            "programmable blank-stop path -- see METHODOLOGY (4), to be "
-            "confirmed once the RTL is opened), writing 3 to $1CE (VBSTOP, "
-            "the wrong address) leaves hblank's blanked-prefix length at "
-            "baseline (" + std::to_string(hbstop_base) + " CCK periods); "
-            "writing 3 to $1C6 (HBSTOP, the address the manual names) "
-            "changes it (" + std::to_string(hbstop_correct) +
-            ") -- 'HBSTOP        1C6   W     A(E)     Horizontal line "
+            wrong_matches_base && correct_differs,
+            "HBSTOP-ADDRESS-1C6: with ecs=1 and BEAMCON0.VARBEAMEN=1 "
+            "(gates hbstop into the fall of hblank -- see METHODOLOGY), "
+            "and HBSTRT fixed at 5 (correct address), writing 150 to $1CE "
+            "(VBSTOP, the wrong address) leaves hblank's fall at hpos=" +
+            std::to_string(hbstop_wrong) + " (baseline " +
+            std::to_string(hbstop_base) +
+            "); writing 150 to $1C6 (HBSTOP, the address the manual "
+            "names) moves the fall to hpos=" + std::to_string(hbstop_correct) +
+            " -- 'HBSTOP        1C6   W     A(E)     Horizontal line "
             "position for HBLANK stop' (p.293). B-hbstop.addr .");
     }
 
     // ================= HBSTOP-DIRECTION-WRITE-ONLY-AGNUS =================
     {
         checks.expect(
-            hbstop_readback == 0 && hbstop_correct != hbstop_base,
+            hbstop_readback == 0 && std::abs(hbstop_correct - hbstop_base) > 4,
             "HBSTOP-DIRECTION-WRITE-ONLY-AGNUS: reading data_out at $1C6 "
-            "after writing 3 there returns 0, not the written value, even "
-            "though the same write measurably changed hblank's "
-            "blanked-prefix length just above -- genuinely W not R/W; chip "
-            "ownership structural (METHODOLOGY (2)) -- '   HBSTOP    W   A "
-            "    Horizontal line position for HBLANK stop' (p.304). "
-            "C-hbstop.c01, C-scan.c19 .");
+            "after writing 150 there returns 0, not the written value, "
+            "even though the same write measurably moved hblank's fall "
+            "just above -- genuinely W not R/W; chip ownership structural "
+            "(METHODOLOGY (2)) -- '   HBSTOP    W   A     Horizontal line "
+            "position for HBLANK stop' (p.304). C-hbstop.c01, "
+            "C-scan.c19 .");
     }
 
     // ================= HBSTRT-ADDRESS-1C4 =================
+    // Symmetric to HBSTOP-ADDRESS-1C6 above: hbstrt controls hblank's RISE
+    // (set), gated by varbeamen alone (RTL l.227).
     int hbstrt_base, hbstrt_wrong, hbstrt_correct;
     uint16_t hbstrt_readback;
     {
         Harness h_base(/*ecs=*/true, /*ntsc=*/false);
-        h_base.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_HARDDIS));
-        h_base.write_reg(A_HBSTOP, 3); // companion register, correct address
-        hbstrt_base = hblank_active_run_after_prefix(h_base);
+        h_base.write_reg(A_BEAMCON0, 1 << BC_VARBEAMEN);
+        h_base.write_reg(A_HBSTOP, 200); // companion register, correct address
+        hbstrt_base = next_hblank_rise_hpos(h_base);
 
         Harness h_wrong(/*ecs=*/true, /*ntsc=*/false);
-        h_wrong.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_HARDDIS));
-        h_wrong.write_reg(A_HBSTOP, 3);
+        h_wrong.write_reg(A_BEAMCON0, 1 << BC_VARBEAMEN);
+        h_wrong.write_reg(A_HBSTOP, 200);
         h_wrong.write_reg(A_VTOTAL, 20); // wrong address
-        hbstrt_wrong = hblank_active_run_after_prefix(h_wrong);
+        hbstrt_wrong = next_hblank_rise_hpos(h_wrong);
 
         Harness h_correct(/*ecs=*/true, /*ntsc=*/false);
-        h_correct.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_HARDDIS));
-        h_correct.write_reg(A_HBSTOP, 3);
+        h_correct.write_reg(A_BEAMCON0, 1 << BC_VARBEAMEN);
+        h_correct.write_reg(A_HBSTOP, 200);
         h_correct.write_reg(A_HBSTRT, 20);
-        hbstrt_correct = hblank_active_run_after_prefix(h_correct);
+        hbstrt_correct = next_hblank_rise_hpos(h_correct);
         hbstrt_readback = h_correct.read(A_HBSTRT);
 
+        bool wrong_matches_base = std::abs(hbstrt_wrong - hbstrt_base) <= 4;
+        bool correct_differs = std::abs(hbstrt_correct - hbstrt_base) > 4;
         checks.expect(
-            hbstrt_wrong == hbstrt_base && hbstrt_correct != hbstrt_base,
-            "HBSTRT-ADDRESS-1C4: with the same best-effort gating as "
-            "HBSTOP-ADDRESS-1C6 above and HBSTOP fixed at 3 (correct "
-            "address), writing 20 to $1C8 (VTOTAL, the wrong address) "
-            "leaves hblank's active-run length at baseline (" +
-            std::to_string(hbstrt_base) + " CCK periods); writing 20 to "
-            "$1C4 (HBSTRT, the address the manual names) changes it (" +
-            std::to_string(hbstrt_correct) + ") -- 'HBSTRT        1C4   W  "
-            "   A (E)    Horizontal line position for HBLANK start' "
-            "(p.293). B-hbstrt.addr .");
+            wrong_matches_base && correct_differs,
+            "HBSTRT-ADDRESS-1C4: with ecs=1 and BEAMCON0.VARBEAMEN=1, and "
+            "HBSTOP fixed at 200 (correct address), writing 20 to $1C8 "
+            "(VTOTAL, the wrong address) leaves hblank's rise at hpos=" +
+            std::to_string(hbstrt_wrong) + " (baseline " +
+            std::to_string(hbstrt_base) +
+            "); writing 20 to $1C4 (HBSTRT, the address the manual names) "
+            "moves the rise to hpos=" + std::to_string(hbstrt_correct) +
+            " -- 'HBSTRT        1C4   W     A (E)    Horizontal line "
+            "position for HBLANK start' (p.293). B-hbstrt.addr .");
     }
 
     // ================= HBSTRT-DIRECTION-WRITE-ONLY-AGNUS =================
     {
         checks.expect(
-            hbstrt_readback == 0 && hbstrt_correct != hbstrt_base,
+            hbstrt_readback == 0 && std::abs(hbstrt_correct - hbstrt_base) > 4,
             "HBSTRT-DIRECTION-WRITE-ONLY-AGNUS: reading data_out at $1C4 "
             "after writing 20 there returns 0, not the written value, even "
-            "though the same write measurably changed hblank's active-run "
-            "length just above -- genuinely W not R/W; chip ownership "
-            "structural (METHODOLOGY (2)) -- '   HBSTRT    W   A     "
-            "Horizontal line position for HBLANK start' (p.304). "
-            "C-hbstrt.c01, C-scan.c18 .");
+            "though the same write measurably moved hblank's rise just "
+            "above -- genuinely W not R/W; chip ownership structural "
+            "(METHODOLOGY (2)) -- '   HBSTRT    W   A     Horizontal line "
+            "position for HBLANK start' (p.304). C-hbstrt.c01, "
+            "C-scan.c18 .");
     }
 
     // ================= VTOTAL-ADDRESS-1C8 =================
@@ -968,25 +1209,30 @@ int main(int argc, char** argv) {
     }
 
     // ================= VSSTOP-ADDRESS-1CA =================
+    // agnus_beamcounter.v:399-406, long_frame=1 branch (this file's
+    // VSSTOP/VSSTRT harnesses never touch LACE or force_vpos, so long_frame
+    // stays at its reset default 1 throughout): FALL uses vsstrt+1, RISE
+    // uses vsstop -- so VSSTOP's own effect is on the RISE, symmetric to
+    // HSSTOP being on _hsync's rise.
     int vsstop_base, vsstop_wrong, vsstop_correct;
     uint16_t vsstop_readback;
     {
         Harness h_base(/*ecs=*/true, /*ntsc=*/false);
         h_base.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARVSYEN));
         h_base.write_reg(A_VSSTRT, 5); // companion register, correct address
-        vsstop_base = next_vsync_fall_vpos(h_base);
+        vsstop_base = next_vsync_rise_vpos(h_base);
 
         Harness h_wrong(/*ecs=*/true, /*ntsc=*/false);
         h_wrong.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARVSYEN));
         h_wrong.write_reg(A_VSSTRT, 5);
         h_wrong.write_reg(A_HBSTOP, 50); // wrong address
-        vsstop_wrong = next_vsync_fall_vpos(h_wrong);
+        vsstop_wrong = next_vsync_rise_vpos(h_wrong);
 
         Harness h_correct(/*ecs=*/true, /*ntsc=*/false);
         h_correct.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARVSYEN));
         h_correct.write_reg(A_VSSTRT, 5);
         h_correct.write_reg(A_VSSTOP, 50);
-        vsstop_correct = next_vsync_fall_vpos(h_correct);
+        vsstop_correct = next_vsync_rise_vpos(h_correct);
         vsstop_readback = h_correct.read(A_VSSTOP);
 
         bool wrong_matches_base = std::abs(vsstop_wrong - vsstop_base) <= 3;
@@ -994,13 +1240,13 @@ int main(int argc, char** argv) {
         checks.expect(
             wrong_matches_base && correct_differs,
             "VSSTOP-ADDRESS-1CA: with ecs=1, BEAMCON0.VARBEAMEN=1 and "
-            "VARVSYEN=1 (gates vsstop into the fall of _vsync -- "
-            "METHODOLOGY), and VSSTRT fixed at 5 (correct address), "
-            "writing 50 to $1C6 (HBSTOP, the wrong address) leaves "
-            "_vsync's fall at vpos=" + std::to_string(vsstop_wrong) +
+            "VARVSYEN=1 (gates vsstop into the rise of _vsync, which is "
+            "active-low -- see METHODOLOGY), and VSSTRT fixed at 5 (correct "
+            "address), writing 50 to $1C6 (HBSTOP, the wrong address) "
+            "leaves _vsync's rise at vpos=" + std::to_string(vsstop_wrong) +
             " (baseline " + std::to_string(vsstop_base) +
             "); writing 50 to $1CA (VSSTOP, the address the manual names) "
-            "moves the fall to vpos=" + std::to_string(vsstop_correct) +
+            "moves the rise to vpos=" + std::to_string(vsstop_correct) +
             " -- 'VSSTOP        1CA   W     A (E)    Vertical line "
             "position for VSYNC stop' (p.293). B-vsstop.addr .");
     }
@@ -1011,7 +1257,7 @@ int main(int argc, char** argv) {
             vsstop_readback == 0 && std::abs(vsstop_correct - vsstop_base) > 3,
             "VSSTOP-DIRECTION-WRITE-ONLY-AGNUS: reading data_out at $1CA "
             "after writing 50 there returns 0, not the written value, even "
-            "though the same write measurably moved _vsync's fall just "
+            "though the same write measurably moved _vsync's rise just "
             "above -- genuinely W not R/W; chip ownership structural "
             "(METHODOLOGY (2)) -- '   VSSTOP    W   A     Vertical line "
             "position for VSYNC  stop' (p.304). C-vsstop.c01, "
@@ -1019,25 +1265,33 @@ int main(int argc, char** argv) {
     }
 
     // ================= VSSTRT-ADDRESS-1E0 =================
+    // Symmetric to VSSTOP-ADDRESS-1CA above: vsstrt controls _vsync's FALL
+    // (via vsstrt+1), not its rise.
     int vsstrt_base, vsstrt_wrong, vsstrt_correct;
     uint16_t vsstrt_readback;
     {
         Harness h_base(/*ecs=*/true, /*ntsc=*/false);
         h_base.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARVSYEN));
         h_base.write_reg(A_VSSTOP, 50); // companion register, correct address
-        vsstrt_base = next_vsync_rise_vpos(h_base);
+        vsstrt_base = next_vsync_fall_vpos(h_base);
 
         Harness h_wrong(/*ecs=*/true, /*ntsc=*/false);
         h_wrong.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARVSYEN));
         h_wrong.write_reg(A_VSSTOP, 50);
-        h_wrong.write_reg(A_VBSTOP, 5); // wrong address
-        vsstrt_wrong = next_vsync_rise_vpos(h_wrong);
+        h_wrong.write_reg(A_VBSTOP, 30); // wrong address
+        vsstrt_wrong = next_vsync_fall_vpos(h_wrong);
 
         Harness h_correct(/*ecs=*/true, /*ntsc=*/false);
         h_correct.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARVSYEN));
         h_correct.write_reg(A_VSSTOP, 50);
-        h_correct.write_reg(A_VSSTRT, 5);
-        vsstrt_correct = next_vsync_rise_vpos(h_correct);
+        h_correct.write_reg(A_VSSTRT, 30); // no doubling for V-registers
+                                            // (l.213, direct {data_in[10:0]});
+                                            // 5 (->fall at 6) was tried
+                                            // first and landed only 3 lines
+                                            // from the hardwired default's
+                                            // fall at 3, failing this
+                                            // file's own >3-line margin
+        vsstrt_correct = next_vsync_fall_vpos(h_correct);
         vsstrt_readback = h_correct.read(A_VSSTRT);
 
         bool wrong_matches_base = std::abs(vsstrt_wrong - vsstrt_base) <= 3;
@@ -1045,11 +1299,12 @@ int main(int argc, char** argv) {
         checks.expect(
             wrong_matches_base && correct_differs,
             "VSSTRT-ADDRESS-1E0: with ecs=1, BEAMCON0.VARBEAMEN=1 and "
-            "VARVSYEN=1, and VSSTOP fixed at 50 (correct address), writing "
-            "5 to $1CE (VBSTOP, the wrong address) leaves _vsync's rise at "
+            "VARVSYEN=1 (gates vsstrt into the fall of _vsync, which is "
+            "active-low), and VSSTOP fixed at 50 (correct address), writing "
+            "30 to $1CE (VBSTOP, the wrong address) leaves _vsync's fall at "
             "vpos=" + std::to_string(vsstrt_wrong) + " (baseline " +
-            std::to_string(vsstrt_base) + "); writing 5 to $1E0 (VSSTRT, "
-            "the address the manual names) moves the rise to vpos=" +
+            std::to_string(vsstrt_base) + "); writing 30 to $1E0 (VSSTRT, "
+            "the address the manual names) moves the fall to vpos=" +
             std::to_string(vsstrt_correct) + " -- 'VSSTRT        1E0   w   "
             "   A (E)   Vertical sync start   (VARVSY)' (p.293). "
             "B-vsstrt.addr .");
@@ -1060,8 +1315,8 @@ int main(int argc, char** argv) {
         checks.expect(
             vsstrt_readback == 0 && std::abs(vsstrt_correct - vsstrt_base) > 3,
             "VSSTRT-DIRECTION-WRITE-ONLY-AGNUS: reading data_out at $1E0 "
-            "after writing 5 there returns 0, not the written value, even "
-            "though the same write measurably moved _vsync's rise just "
+            "after writing 30 there returns 0, not the written value, even "
+            "though the same write measurably moved _vsync's fall just "
             "above -- genuinely W not R/W; chip ownership structural "
             "(METHODOLOGY (2)) -- '   VSSTRT    W   A     Vertical line "
             "position for VSYNC  start' (p.304). C-vsstrt.c01, "
@@ -1069,20 +1324,26 @@ int main(int argc, char** argv) {
     }
 
     // ================= VBSTOP-ADDRESS-1CE =================
+    // agnus_beamcounter.v:233: `vbstop = varvben && varbeamen ? vbstop_reg
+    // : pal ? VBSTOP_PAL_VAL : VBSTOP_NTSC_VAL` -- the gate is varvben
+    // (BEAMCON0 bit 12), NOT HARDDIS (bit 14, this package's original
+    // best-effort guess, confirmed wrong now that the RTL is open: HARDDIS
+    // does not appear anywhere in this mux, only in harddis_out's own
+    // combination). vbl = (vpos <= vbstop) (l.444), continuous.
     int vbstop_base, vbstop_wrong, vbstop_correct;
     uint16_t vbstop_readback;
     {
         Harness h_base(/*ecs=*/true, /*ntsc=*/false);
-        h_base.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_HARDDIS));
+        h_base.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARVBEN));
         vbstop_base = vbl_blanked_lines(h_base);
 
         Harness h_wrong(/*ecs=*/true, /*ntsc=*/false);
-        h_wrong.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_HARDDIS));
+        h_wrong.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARVBEN));
         h_wrong.write_reg(A_HBSTOP, 3); // wrong address
         vbstop_wrong = vbl_blanked_lines(h_wrong);
 
         Harness h_correct(/*ecs=*/true, /*ntsc=*/false);
-        h_correct.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_HARDDIS));
+        h_correct.write_reg(A_BEAMCON0, (1 << BC_VARBEAMEN) | (1 << BC_VARVBEN));
         h_correct.write_reg(A_VBSTOP, 3);
         vbstop_correct = vbl_blanked_lines(h_correct);
         vbstop_readback = h_correct.read(A_VBSTOP);
@@ -1090,17 +1351,16 @@ int main(int argc, char** argv) {
         checks.expect(
             vbstop_wrong == vbstop_base && vbstop_correct != vbstop_base,
             "VBSTOP-ADDRESS-1CE: with ecs=1, BEAMCON0.VARBEAMEN=1 and "
-            "HARDDIS=1 (same best-effort gating guess as HBSTOP/HBSTRT -- "
-            "METHODOLOGY (4)), writing 3 to $1C6 (HBSTOP, the wrong "
-            "address) leaves vbl's blanked-line count at baseline (" +
-            std::to_string(vbstop_base) + " lines); writing 3 to $1CE "
-            "(VBSTOP, the address the manual names) changes it (" +
-            std::to_string(vbstop_correct) + ") -- no claim is made here "
-            "about the manual's specific blanking-duration numbers (that "
-            "is hrm/ch3-beam-counters-and-blanking's job), only that this "
-            "address, not a neighbour, controls vbl -- 'VBSTOP        1CE  "
-            " W     A (E)    Vertical line for VBLANK stop' (p.293). "
-            "B-vbstop.addr .");
+            "VARVBEN=1 (gates vbstop into vbl -- see METHODOLOGY), writing "
+            "3 to $1C6 (HBSTOP, the wrong address) leaves vbl's "
+            "blanked-line count at baseline (" + std::to_string(vbstop_base) +
+            " lines); writing 3 to $1CE (VBSTOP, the address the manual "
+            "names) changes it (" + std::to_string(vbstop_correct) +
+            ") -- no claim is made here about the manual's specific "
+            "blanking-duration numbers (that is hrm/ch3-beam-counters-and-"
+            "blanking's job), only that this address, not a neighbour, "
+            "controls vbl -- 'VBSTOP        1CE   W     A (E)    Vertical "
+            "line for VBLANK stop' (p.293). B-vbstop.addr .");
     }
 
     // ================= VBSTOP-DIRECTION-WRITE-ONLY-AGNUS =================
