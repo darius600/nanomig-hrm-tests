@@ -34,8 +34,24 @@ suite exists to prevent.
 | FPGA-062 | ECS with CDANG=0 rejects 32 addresses the appendix allows | `agnus_copper_move_range`, `agnus_copper_move_sweep` |
 | FPGA-069 | SKIP spans 8 memory cycle times instead of 4, a satisfied WAIT 8 instead of 6 | `agnus_copper_cycle_times`, `agnus_copper_cycles` |
 | FPGA-051 | the four audio channels sit on the wrong stereo side | `paula_audio_mixer` |
+| *chapter 6, unnumbered* | `DOFF` (BLTCON1 bit 7) is not implemented at all — appendix C p309 says it disables the D output in line mode; no expression in `agnus_blitter.v` reads that bit | `agnus_blitter_ecs` |
+| *chapter 6, unnumbered* | `BLTSIZV` loads the height whether or not `ecs` is set, though appendix C marks it ECS-new | `agnus_blitter_ecs` |
+| *chapter 6, unnumbered* | `BLTxPTH` takes five high pointer bits in **both** chipsets — p270 says three, five if ECS. `ecs` never reaches the pointer decode, even at `agnus_blitter` where the port exists | `agnus_blitter_ecs` |
 
 The first three came out of the pipeline and are witnessed more than once.
+
+The three chapter-6 entries have no FPGA number yet; numbering lives in the
+project workspace, not in this repository. They came out of the same pipeline and
+each is red in the suite today, with a control that passes on the same
+measurement basis so the result survives a units objection.
+
+The last of them is worth reading next to FPGA-060, because it is the same
+deviation in a different engine. Copper and blitter build their pointers
+identically — `data_in[4:0]` as five high bits, `data_in[15:1]` as fifteen low,
+unconditionally — and the manual documents three high bits for OCS in both cases.
+Separately they read as two omissions. Together they look like one decision not to
+model the OCS pointer narrowing anywhere in Agnus. Neither chapter could have
+raised that question alone; see [`docs/findings.md`](docs/findings.md).
 
 FPGA-051 and FPGA-050 were recorded in August, and both turned out to rest on a
 manual that contradicts itself. FPGA-050 (PAL line count) is **withdrawn**: the
@@ -63,10 +79,10 @@ result, so it is stated here rather than left to be inferred.
 | Chapter | Tests | How they were built |
 |---|---:|---|
 | 2 — Coprocessor (Copper) | 13 | 12 through the **pipeline**; `agnus_copper_move` is a regression test against a frozen spec, not against the manual |
-| 6 — Blitter | 8 | by hand from the manual, one module at a time |
+| 6 — Blitter | 16 | all 16 through the **pipeline**, 09.–10.09.2026; the eight hand-written blitter tests that preceded them were superseded and deleted |
 | 3 / 4 — Playfield, Sprites (`denise_*`) | 8 | by hand |
 | 5 / 7 / 8 — Audio, interrupts, interfaces (`paula_*`) | 6 | by hand |
-| 3 / 7 — Agnus DMA, beam counter, register bus | 8 | by hand |
+| 3 / 7 — Agnus DMA, beam counter, register bus | 7 | by hand |
 
 The pipeline means two blind readings of the same pages, every quote anchored
 mechanically in the source text, an attack on whatever was discarded as
@@ -79,10 +95,10 @@ area-fill test walks all 262,144 input combinations). What they do **not** carry
 is the pipeline's completeness claim. A green there means "this assertion holds",
 not "the manual's statements about this module are covered".
 
-**31 of the 43 tests are in that state.**
+**22 of the 50 tests are in that state.**
 [`docs/test-inventory.md`](docs/test-inventory.md) lists every test by layer and
-holds the review backlog — including the eight blitter tests, which are prior art
-for chapter 6 rather than coverage of it.
+holds the review backlog. The eight blitter tests that used to be listed there as
+prior art are gone: three were extended into pipeline packages and five were superseded and deleted, the last of them on 10.09.2026.
 
 Three pre-pipeline Copper tests were removed on 07.09.2026 after being measured
 case by case against the layer-A tests. That measurement is not a formality: five
