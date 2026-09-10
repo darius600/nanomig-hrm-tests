@@ -7,7 +7,9 @@
 //   repeat writes within a horizontal row; the SIGNFLAG bit (BLTCON1 bit 6)
 //   setting the first pixel's error sign; the sign flag driving the modulo
 //   bank choice (BLTAMOD vs BLTBMOD); BLTCPT/BLTDPT as separate registers in
-//   the same role; and the required BLTSIZE width of 2.
+//   the same role; the required BLTSIZE width of 2; and, added for FPGA-090's
+//   final gap, the h field's own tenth bit (bit 9, value 512) as a real
+//   pixel-counter bit in original-chip-set (ecs=0) line mode.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 169, 184, 189-192, 268-270.
@@ -19,10 +21,18 @@
 //   already-validated ascending_shift() formula (PKG-BLT-SHIFT, 4.2M-case
 //   sweep); BLTAFWM/BLTALWM's general masking semantics outside line mode
 //   (PKG-BLT-MASKS); the literal 1024-pixel OCS length maximum and BLTSIZE's
-//   10-bit zero-means-1024 height field width, which is the SAME field
-//   PKG-BLT-SIZE already tests exhaustively -- this package confirms only
-//   that line mode's per-pixel loop uses that field as a pixel counter, using
-//   a small height for runtime, not a 1024-pixel run; the modulo VALUE
+//   full 0-1023 exhaustive sweep over EVERY value the field can hold, which is
+//   the SAME field PKG-BLT-SIZE already tests that exhaustively -- this
+//   package's per-pixel loop uses that field as a pixel counter at small
+//   heights for runtime, EXCEPT for LINE-HEIGHT-FIELD-TEN-BITS-OCS below,
+//   which is not a non-goal: PKG-BLT-SIZE never sets LINE=1
+//   (`hrm/agnus_blitter_size` writes BLTCON1=0x0000 in every assertion), so
+//   it cannot reach 6-appa-registers.c67 ("the h field is ten bits wide in
+//   original-chip-set line mode", p.269), the one claim this chapter's build
+//   register (`work/2026-09-08_fpga-090_build_register.md`) names as
+//   demonstrated nowhere in the suite -- see that assertion for why height=600
+//   (not the full 1024) is the smallest round value that still needs bit 9;
+//   the modulo VALUE
 //   formulas (4*(dy-dx), 4*dy, "twice screen width") and the "normalize into
 //   octant 0" calculation, all of which are the programmer's arithmetic on
 //   dy/dx before writing a register -- no dy/dx port exists on this module,
@@ -168,6 +178,11 @@
 //     6-line-mode.c100, ch6-line.c41, 6-appa-registers.c42,
 //     6-appa-registers.c65, 6-appa-registers.c68, ch6-appa-bltsize.c6,
 //     ch6-appa-bltsize.ld1, ch6-linesum.c25, 6-line-mode.c4, ch6-line.c4.
+//   LINE-HEIGHT-FIELD-TEN-BITS-OCS (p.269 -- FPGA-090's final gap, added
+//     after the rest of this file; not in the original 225-record
+//     classify.package=="PKG-BLT-LINE" filter at build time, re-routed here
+//     from PKG-BLT-SIZE by the build register after that package's builder
+//     declined it): 6-appa-registers.c67.
 //   LINE-WIDTH-MUST-BE-2 (p.191/192/269): 6-line-mode.c72, 6-line-mode.c101,
 //     ch6-line.c42, 6-appa-registers.c69, ch6-appa-bltsize.c5,
 //     ch6-appa-bltsize.ld3, ch6-linesum.c26.
@@ -284,7 +299,7 @@
 // Every mutation below was actually applied (edit -> rebuild -> run ->
 // revert -> rebuild-clean, confirmed byte-identical to the baseline by
 // `git diff --stat` after every revert) and the FAIL/PASS lines quoted are
-// what the run printed, not predictions. All 18 mutations (16 assertions,
+// what the run printed, not predictions. All 19 mutations (17 assertions,
 // two of which -- LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE's compound claim --
 // were probed on both halves separately) FAILED ONLY the assertion named,
 // with every other assertion staying PASS on the same run: no mutation was
@@ -356,6 +371,14 @@
 //   calls' initial_sign changed from 0 to 1 (major+minor -> major-only, so
 //   the minor axis this assertion expects to fire is now suppressed;
 //   expected constant 8/8 left untouched) -> FAIL; 15/16 others PASS.
+//
+// MUTATION LINE-HEIGHT-FIELD-TEN-BITS-OCS stimulus red, added for FPGA-090:
+//   h_bit9's BLTSIZE write changed from bltsize_word(2, 600) to
+//   bltsize_word(2, 88) -- the exact 9-bit-truncated value -- with all three
+//   expected constants (600/88/600) left untouched -> FAIL: MEASURED
+//   writes_bit9=88 (not 600), writes_control=88, writes_ecs1=600; 16/17
+//   others PASS, only this assertion red. Reverted, rebuilt clean, confirmed
+//   byte-identical to the pre-mutation file by `diff -q` and back to 17/0.
 
 #include <cstdint>
 #include <cstdlib>
@@ -456,11 +479,15 @@ constexpr Octant OCTANTS[8] = {
 // both read in full before writing this file.
 class Harness {
 public:
-    Harness() : dut(new Vagnus_blitter) {
+    // ecs_in defaults to false (OCS) so every pre-existing call site
+    // (`Harness h;`) is unaffected -- only LINE-HEIGHT-FIELD-TEN-BITS-OCS
+    // below passes true, to measure the SAME stimulus against ECS for
+    // contrast (see that block's comment for why).
+    explicit Harness(bool ecs_in = false) : dut(new Vagnus_blitter) {
         dut->clk = 0;
         dut->clk7_en = 1;
         dut->reset = 1;
-        dut->ecs = 0;
+        dut->ecs = ecs_in ? 1 : 0;
         dut->clkena = 1;
         dut->enadma = 1;
         dut->ackdma = 0;
@@ -777,6 +804,128 @@ int main(int argc, char** argv) {
             "the SAME field PKG-BLT-SIZE already tests exhaustively -- confirmed here "
             "only to be the mechanism line mode actually uses, not re-run at full "
             "length)");
+    }
+
+    // ---------------- LINE-HEIGHT-FIELD-TEN-BITS-OCS (p.269) ----------------
+    // 6-appa-registers.c67, the chapter's one claim the build register
+    // (work/2026-09-08_fpga-090_build_register.md) names as demonstrated
+    // nowhere in the suite: PKG-BLT-SIZE never sets LINE=1, and every OTHER
+    // height in this file (1/3/4/5/6) fits in far fewer than 9 bits, let
+    // alone 10 -- LINE-HEIGHT-IS-PIXEL-COUNT's own assertion string says so
+    // ("not re-run at full length"). This block is that re-run, at the
+    // smallest value that actually needs bit 9.
+    //
+    // height_cnt[14:0] <= {4'b0000, ~|data_in[15:6], data_in[15:6]}
+    // (agnus_blitter.v:555-556) takes the FULL 10-bit slice data_in[15:6] as
+    // the pixel count (zero-means-1024 via the NOR term, irrelevant here
+    // since neither probe below is zero). bltsize_word(width, height)'s
+    // `height` parameter IS that 10-bit field verbatim (height << 6, then
+    // read back at data_in[15:6]) -- see the file's own comment on
+    // bltsize_word above.
+    //
+    // height=600 = 0b10_0100_1000_00 truncated -- as a 10-bit FIELD value,
+    // 600 = 0b10_0100_1000 = bit9(512)+bit6(64)+bit4(16)+bit3(8). If this
+    // design only read 9 bits (data_in[14:6], dropping bit 9/data_in[15]),
+    // the SAME write would be read back as 600-512=88 instead. height=88 is
+    // therefore not an arbitrary small control -- it is the EXACT wrong
+    // answer a 9-bit implementation would give for this same stimulus, run
+    // through the identical fixture (BLTSIZE write, run_until_done,
+    // data_writes.size()), which is what "same measurement basis" requires:
+    // a plain unrelated short line would only prove the fixture can count,
+    // not that bit 9 specifically is what separates the two results.
+    //
+    // ecs is driven LOW (Harness's default) for the primary measurement,
+    // matching the claim's own "original-chip-set" scope. A second harness
+    // repeats the IDENTICAL height=600 stimulus at ecs=1 and is included in
+    // the same AND, not as a second claim, but because BLTXPTH-WIDTH-
+    // REGARDLESS-OF-ECS (hrm/agnus_blitter_ecs) already found one p.269/270
+    // field this chapter that silently ignores `ecs`, and the build register
+    // explicitly raised the same possibility here. MEASURED (see the numbers
+    // printed below): ecs=1 gives the identical count. This is NOT a second
+    // instance of that finding: BLTXPTH and BLTSIZV are both marked "A( E )"
+    // in Appendix A (p.269) -- ECS-only, appendix C calls BLTSIZV "new" --
+    // so the manual itself requires their behaviour to depend on `ecs`, and
+    // agnus_blitter.v has no `&& ecs` on either decode, which is the genuine
+    // defect BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS (hrm/agnus_blitter_ecs)
+    // reports red. BLTSIZE ($058, this claim's own register) carries NO
+    // "(E)" mark on the SAME page -- it is the plain, chipset-invariant
+    // legacy register, and hrm/agnus_blitter_ecs's own
+    // BACKWARD-COMPAT-BLTSIZE-WORKS-WITH-ECS already measures and reports,
+    // GREEN, that it starts and sizes a blit identically at ecs=1
+    // (agnus_blitter.v:500,521-522,555-556 have no `&& ecs` anywhere on the
+    // BLTSIZE decode -- unconditional by design, not by omission). So the
+    // ecs=1 branch here is expected to match, and its match is corroboration
+    // of an already-established fact, not a fresh red flag -- the claim
+    // under test is the OCS-scoped proposition alone, and it does not assert
+    // that ECS must differ.
+    {
+        Harness h_bit9;  // ecs=0 (default) -- OCS, per the claim's own scope
+        h_bit9.write_reg(BLTADAT, 0x0000);
+        h_bit9.write_reg(BLTAFWM, 0xFFFF);
+        h_bit9.write_reg(BLTALWM, 0xFFFF);
+        h_bit9.write_reg(BLTCPTL, 0x0400);
+        h_bit9.write_reg(BLTDPTL, 0x0400);
+        h_bit9.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_bit9.write_reg(BLTCON1, LINE_BIT);
+        h_bit9.write_reg(BLTSIZE, bltsize_word(2, 600));  // needs bit 9 (512)
+        const bool done_bit9 = h_bit9.run_until_done(4000);
+        const size_t writes_bit9 = h_bit9.data_writes.size();
+
+        // Control: the EXACT value a 9-bit-only read of the same write would
+        // produce (600 - 512 = 88), same measurement basis, same fixture.
+        Harness h_control;
+        h_control.write_reg(BLTADAT, 0x0000);
+        h_control.write_reg(BLTAFWM, 0xFFFF);
+        h_control.write_reg(BLTALWM, 0xFFFF);
+        h_control.write_reg(BLTCPTL, 0x0400);
+        h_control.write_reg(BLTDPTL, 0x0400);
+        h_control.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_control.write_reg(BLTCON1, LINE_BIT);
+        h_control.write_reg(BLTSIZE, bltsize_word(2, 88));
+        const bool done_control = h_control.run_until_done(1000);
+        const size_t writes_control = h_control.data_writes.size();
+
+        // Same stimulus again at ecs=1 -- see the long comment above for why
+        // this is measured but not treated as a second falsifiable claim.
+        Harness h_ecs1(/*ecs_in=*/true);
+        h_ecs1.write_reg(BLTADAT, 0x0000);
+        h_ecs1.write_reg(BLTAFWM, 0xFFFF);
+        h_ecs1.write_reg(BLTALWM, 0xFFFF);
+        h_ecs1.write_reg(BLTCPTL, 0x0400);
+        h_ecs1.write_reg(BLTDPTL, 0x0400);
+        h_ecs1.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_ecs1.write_reg(BLTCON1, LINE_BIT);
+        h_ecs1.write_reg(BLTSIZE, bltsize_word(2, 600));
+        const bool done_ecs1 = h_ecs1.run_until_done(4000);
+        const size_t writes_ecs1 = h_ecs1.data_writes.size();
+
+        checks.expect(done_bit9 && writes_bit9 == 600 &&
+                       done_control && writes_control == 88 &&
+                       done_ecs1 && writes_ecs1 == 600,
+            "LINE-HEIGHT-FIELD-TEN-BITS-OCS: at ecs=0, BLTSIZE height=600 (field bits "
+            "9,6,4,3 set -- bit 9 is the field's top/tenth bit, value 512) produces "
+            "exactly 600 destination writes; the SAME fixture given height=88 (the exact "
+            "value a 9-bit-only read of the identical field would yield, 600-512) "
+            "produces exactly 88 -- the field genuinely carries a functional tenth bit, "
+            "not merely nine ('LINE DRAW controls the line length (10 bits gives', "
+            "6-appa-registers.c67, p.269 -- restated: the BLTSIZE h field is ten bits "
+            "wide in original-chip-set line mode). MEASURED: writes_bit9=" +
+            std::to_string(writes_bit9) + ", writes_control=" + std::to_string(writes_control) +
+            ", writes_ecs1(same 600 stimulus, ecs=1)=" + std::to_string(writes_ecs1) +
+            " -- ecs=1 matches ecs=0 exactly, which corroborates rather than contradicts "
+            "the claim: agnus_blitter.v:521-522,555-556 put no `&& ecs` on BLTSIZE's own "
+            "decode (contrast BLTSIZH/BLTSIZV two-three lines below, which DO carry "
+            "`&& ecs` and are correctly gated), and hrm/agnus_blitter_ecs's "
+            "BACKWARD-COMPAT-BLTSIZE-WORKS-WITH-ECS already reports this same "
+            "chipset-invariance, green, as this register's documented legacy behaviour "
+            "(p.269 marks BLTSIZE plain 'A', not 'A( E )' the way BLTSIZH/BLTSIZV/BLTxPTH "
+            "are) -- so this is deliberately NOT run as a BLTXPTH-WIDTH-REGARDLESS-OF-ECS-"
+            "shaped required-red: that shape applies to a field the manual marks "
+            "ECS-only and the RTL fails to gate, and BLTSIZE's h field is not one. "
+            "6-appa-registers.c67 is the only id this assertion cites: it is the sole "
+            "claim of its exact shape ('BLTSIZE h field is 10 bits in OCS line mode') in "
+            "the classified inventory, and the general 0-1023 sweep over every value "
+            "remains PKG-BLT-SIZE's job, not re-run here");
     }
 
     // ---------------- LINE-WIDTH-MUST-BE-2 (p.191, p.192, p.269) ----------------
