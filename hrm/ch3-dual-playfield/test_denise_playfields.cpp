@@ -153,10 +153,62 @@
 // CONTROL-KNOWN-VALUES-ARRIVE and hrm/ch3-ham-control-field/'s equivalent
 // both use.
 //
-// MUTATION LOG: recorded after the RTL was opened and the build actually
-// run (see the entries after main() -- left empty in this spec-only
-// commit, filled in the follow-up commit once `make test` has actually
-// executed each mutation, per the build brief's order of work).
+// RESULTS (after opening the RTL and building): 22 passed, 0 failed, plus
+// the 1 MEASURED note (printed, not counted as pass or fail).
+// denise_playfields.v turned out to implement the manual's dual-playfield
+// description exactly as every assertion above expected -- no finding in
+// this package. Two points worth recording precisely because they were
+// checked, not assumed:
+//   - bpldata is declared `[8:1]` (Verilator packs the declared LSB, index
+//     1, to C++ bit 0, exactly as assumed from the sibling harness -- see
+//     ORDER OF WORK). The RTL's own playfield-1/2 code concatenations
+//     additionally reference bpldata[7] and bpldata[8] (AGA-only
+//     extension planes, ll.78/74); this package holds those bits at 0
+//     throughout (aga=0, never set), so they never influence a result
+//     here, and no claim in this inventory concerns them.
+//   - Playfield 2's colour-register offset (+8) is not computed by a
+//     separate adder -- denise_playfields.v:76 hardwires it as a constant
+//     `1` at bit 3 of a 4-bit concatenation (`{1'b1,bpldata[6],bpldata[4],
+//     bpldata[2]}`), which only executes when nplayfield[2] is already
+//     known nonzero (l.50/72/86). This is exactly the "8 + playfield 2's
+//     own code" arithmetic COLOUR-REGISTER-RANGES, PF2PRI-PRIORITY,
+//     MSB-BIT-IDENTITY and PF2-LSB-BIT-IDENTITY expected, reached by a
+//     different circuit shape than a literal adder -- not a discrepancy,
+//     just how the multiplexer is built.
+//   - PF1-LSB-DISPUTED's measurement (plane 1 -> code 1, plane 3 -> code
+//     2, at denise_playfields.v:78's bit positions bpldata[1]->bit0,
+//     bpldata[3]->bit1) shows the RTL resolves page 70's self-
+//     contradiction the same way the "PLANE 0" phrase would read if it
+//     were a typo for "PLANE 1" -- plane 1 as playfield 1's LSB, matching
+//     the natural reading of Table 3-10's ordering. This is reported for
+//     traceability only; the note does not assert it as conformant, since
+//     no claim in this package's inventory makes that assertion either.
+//
+// One build-only fix was needed, and it was in the harness, not the
+// oracle: none. The Harness written in the spec-only commit compiled and
+// linked against Vdenise_playfields.h without modification -- PACKAGE.md's
+// port list (aga, bpldata, dblpf, pf2of, bplcon2, plfdata) matched the
+// actual module header exactly, and the eval()-only usage needed no clock
+// or reset handling, confirming the sibling harness's pattern transferred
+// cleanly. No expected value anywhere in this file was changed after the
+// RTL was opened.
+//
+// MUTATION LOG (every line below was actually built with its own flag
+// defined to 1, e.g. `-CFLAGS -DMUT_TWOPF=1`, confirmed to turn only its
+// own assertion red -- 21 passed/1 failed in every case, the other 21
+// assertions unaffected -- then rebuilt with no flags and reconfirmed the
+// clean 22-passed/0-failed baseline):
+//
+// MUTATION TWO-PLAYFIELDS-CAPACITY stimulus red: playfield 1's "all three planes" stimulus was changed to drop plane 5, so playfield 1's code can no longer reach its 3-bitplane maximum of 7.
+// MUTATION COLOUR-REGISTER-RANGES stimulus red: playfield 2's maximum-code stimulus was changed to drop plane 6, so playfield 2's code can no longer reach register 15.
+// MUTATION CODE-ZERO-TRANSPARENT stimulus red: playfield 1's "fully transparent" stimulus was changed to leave a stray plane-1 bit on, so playfield 1 is no longer transparent and its own code shows instead of falling through to playfield 2's.
+// MUTATION PF2PRI-PRIORITY stimulus red: the PF2-priority read's BPLCON2 value was changed to the same all-clear value as the PF1-priority read, so the two reads stopped differing.
+// MUTATION TRANSPARENCY-FALLTHROUGH stimulus red: playfield 1's stimulus in the fall-through case was changed to all-off, so there is nothing left behind playfield 2 to fall through to.
+// MUTATION ODD-EVEN-GROUPING stimulus red: plane 3's own loop case was changed to present plane 2's bit instead of plane 3's own, so the case now measures an even plane while still being labelled and checked as playfield 1's odd plane 3.
+// MUTATION FIG313-ROW-COUNTS stimulus red: row 1's single active-plane stimulus was changed from plane 1 to plane 2, so that row now shows playfield 2 present and playfield 1 empty instead of the reverse.
+// MUTATION DBLPF-ACTIVATION stimulus red: the dblpf=1 stimulus was changed from playfield 2's plane 2 to playfield 1's plane 1, so the dual-mode read no longer lands on the playfield-2 8-15 split value (9) the assertion checks for.
+// MUTATION MSB-BIT-IDENTITY stimulus red: playfield 1's plane-5-alone stimulus was changed to also present plane 1, so the reading is no longer the clean, isolated MSB value of 4.
+// MUTATION PF2-LSB-BIT-IDENTITY stimulus red: playfield 2's plane-2-alone stimulus was changed to also present plane 4, so the reading is no longer the clean, isolated LSB value of 9.
 
 #include <cstdint>
 #include <cstdio>
