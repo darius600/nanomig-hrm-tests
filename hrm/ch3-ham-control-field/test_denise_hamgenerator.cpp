@@ -112,8 +112,7 @@
 //   0xAABBCCu; every other assertion compares rgb0/rgb1/.../rgb4 to each
 //   other, not to a literal, so the whole chain shifted consistently and
 //   stayed green). Reverted: 9/0.
-// MUTATION HAM-HOLDS-PREVIOUS-VALUE-AND-MODIFIES-ONE-COMPONENT stimulus
-//   red: step 2's control code changed from 0x1 (modify blue) to 0x0
+// MUTATION HAM-HOLDS-PREVIOUS-VALUE-AND-MODIFIES-ONE-COMPONENT stimulus red: step 2's control code changed from 0x1 (modify blue) to 0x0
 //   (normal selection), data left at 0x5 -> FAIL ("7 passed, 2 failed"):
 //   HAM-HOLDS-... red (register 5, never loaded in this Harness, defaults
 //   to 0 in Verilator, so all three components changed, not one) AND
@@ -139,8 +138,7 @@
 //   assertion red (rgb4 now reads the rewritten black, not the original
 //   0xAABBCC; rgb0-rgb3 were already captured before the stray write, so
 //   nothing else moved). Reverted: 9/0.
-// MUTATION HAM-CONTROL-00-TABLE-MAPS-VALUES-TO-REGISTERS-0-15 stimulus
-//   red: a stray `h.write_color(5, 0x999);` inserted right after the
+// MUTATION HAM-CONTROL-00-TABLE-MAPS-VALUES-TO-REGISTERS-0-15 stimulus red: a stray `h.write_color(5, 0x999);` inserted right after the
 //   15-register load loop, overwriting register 5's value -> FAIL ("8
 //   passed, 1 failed"), only this assertion red (register 5's readback no
 //   longer matches its own N*0x111 expectation). Reverted: 9/0.
