@@ -88,65 +88,69 @@
 // MUTATION PTR-READBACK stimulus red: read_ptr(CHA) changed to read_ptr(CHB) (a
 //   channel that was never written) -> PTR-WRITE-READBACK-BASELINE FAIL, got 0
 //   instead of 0x1000; every other assertion PASS.
-// MUTATION PTR-COMPOSE stimulus red: the second bus_write in the block changed
-//   from BLTAPTL to BLTAPTH (so the "low word alone" step re-writes the high
-//   word instead) -> PTR-TWO-WORD-COMPOSITION FAIL; every other assertion PASS.
-// MUTATION PTR-LSB stimulus red: the odd stimulus BLTAPTL=0x2001 changed to the
-//   even 0x2002 (a genuinely different word address) -> PTR-BYTE-LSB-IGNORED
-//   FAIL, the two writes no longer produce the same address_out; every other
-//   assertion PASS.
-// MUTATION MOD-LSB stimulus red: the odd stimulus BLTAMOD=0x0009 changed to the
-//   even 0x000A (a genuinely different modulo) -> MOD-BYTE-LSB-IGNORED FAIL;
-//   every other assertion PASS.
-// MUTATION PTR-INC stimulus red: apply()'s incptr argument changed to decptr in
-//   the PTR-INC-ONE-WORD block (asks the module to decrement instead of
-//   increment) -> PTR-INC-ONE-WORD FAIL, got 0x0FFF instead of 0x1001; every
+// MUTATION PTR-TWO-WORD-COMPOSITION stimulus red: the second bus_write in the
+//   block changed from BLTAPTL to BLTAPTH (so the "low word alone" step
+//   re-writes the high word instead) -> PTR-TWO-WORD-COMPOSITION FAIL; every
 //   other assertion PASS.
-// MUTATION PTR-DEC stimulus red: apply()'s decptr argument changed to incptr in
-//   the PTR-DEC-ONE-WORD block -> PTR-DEC-ONE-WORD FAIL, got 0x1001 instead of
-//   0x0FFF; every other assertion PASS.
-// MUTATION MOD-ADD stimulus red: apply()'s addmod argument changed to submod in
-//   the MOD-ADD-SIGN-EXTENDED block (asks the module to subtract the modulo
-//   instead of add it) -> MOD-ADD-SIGN-EXTENDED FAIL, got 0x1003 instead of
-//   0x0FFD; every other assertion PASS.
-// MUTATION MOD-SUB stimulus red: apply()'s submod argument changed to addmod in
-//   the MOD-SUB-SIGN-EXTENDED block -> MOD-SUB-SIGN-EXTENDED FAIL, got 0x1005
-//   instead of 0x0FFB; every other assertion PASS.
-// MUTATION MOD-000A stimulus red: the second stimulus in the block, BLTAMOD=
-//   0xFFF6, changed to 0xFFF7 (still negative, but now odd - an LSB-ignored
-//   value equal to 0xFFF6 after the drop) -> stayed PASS, which is the CORRECT
-//   shape (0xFFF7's dropped-bit-0 form is identical to 0xFFF6's), so this was
-//   replaced with 0xFFF4 (a genuinely different negative modulo, -6 words) ->
-//   MOD-ARITH-000A-PLUS5-WORDS FAIL, got 0x0FFA instead of the expected 0x0FFB;
+// MUTATION PTR-BYTE-LSB-IGNORED stimulus red: the odd stimulus BLTAPTL=0x2001
+//   changed to the even 0x2002 (a genuinely different word address) ->
+//   PTR-BYTE-LSB-IGNORED FAIL, the two writes no longer produce the same
+//   address_out; every other assertion PASS.
+// MUTATION MOD-BYTE-LSB-IGNORED stimulus red: the odd stimulus BLTAMOD=0x0009
+//   changed to the even 0x000A (a genuinely different modulo) ->
+//   MOD-BYTE-LSB-IGNORED FAIL; every other assertion PASS.
+// MUTATION PTR-INC-ONE-WORD stimulus red: apply()'s incptr argument changed to
+//   decptr in the PTR-INC-ONE-WORD block (asks the module to decrement instead
+//   of increment) -> PTR-INC-ONE-WORD FAIL, got 0x0FFF instead of 0x1001;
 //   every other assertion PASS.
-// MUTATION MOD-NEG-REPEAT stimulus red: the three incptr applies (simulating a
-//   3-word row) reduced to two, while the modulo stimulus stayed the negative
-//   equivalent of 3 words (-6 bytes) -> MOD-NEGATIVE-REPEATS-ROW FAIL, the
-//   pointer landed one word short of the row start (0x0FFF instead of 0x1000);
-//   every other assertion PASS.
-// MUTATION PTR-BANKS stimulus red: channel D's bus writes (BLTDPTH/BLTDPTL)
-//   changed to reuse channel C's offsets (BLTCPTH/BLTCPTL), so what was meant
-//   as channel D's pointer silently overwrites channel C's -> FOUR-INDEPENDENT-
-//   PTR-BANKS FAIL, channel C's read-back no longer matched its own stimulus;
-//   every other assertion PASS.
-// MUTATION MOD-BANKS stimulus red: channel D's modulo bus write (BLTDMOD)
-//   changed to BLTBMOD, so channel D's addmod silently applies channel B's
-//   modulo instead of its own -> FOUR-INDEPENDENT-MOD-BANKS FAIL, channel D's
-//   result no longer matched its own stimulus; every other assertion PASS.
-// MUTATION ROW-ADVANCE stimulus red: the row's word-transfer count changed from
-//   three incptr applies to two -> POINTER-VALUE-AFTER-BLIT FAIL, got 0x1005
-//   instead of the expected 0x1006; every other assertion PASS.
-// MUTATION FIG-PTR stimulus red: the figure's BLTxPTR stimulus, byte address
-//   0x0214 (532), changed to 0x0216 (534, a value the figure does not state)
-//   -> FIGURE-6-2-PTR-STIMULUS FAIL, got 0x010B instead of the expected 0x010A;
-//   every other assertion PASS.
-// MUTATION FIG-MOD stimulus red: the figure's BLTxMOD stimulus, 0x001E (30
-//   bytes), changed to 0x0020 (32 bytes, a value the figure does not state) ->
-//   FIGURE-6-2-MOD-STIMULUS FAIL, got 0x0010 instead of the expected 0x000F;
-//   every other assertion PASS.
-// MUTATION ECS-5BIT stimulus red: the stimulus BLTAPTH=0x001F (all five bits
-//   set) changed to 0x000F (only four bits set, well short of the ECS width) ->
-//   ECS-FIVE-BIT-PTH FAIL, got 0x78000 instead of the expected 0xF8000; every
+// MUTATION PTR-DEC-ONE-WORD stimulus red: apply()'s decptr argument changed to
+//   incptr in the PTR-DEC-ONE-WORD block -> PTR-DEC-ONE-WORD FAIL, got 0x1001
+//   instead of 0x0FFF; every other assertion PASS.
+// MUTATION MOD-ADD-SIGN-EXTENDED stimulus red: apply()'s addmod argument
+//   changed to submod in the MOD-ADD-SIGN-EXTENDED block (asks the module to
+//   subtract the modulo instead of add it) -> MOD-ADD-SIGN-EXTENDED FAIL, got
+//   0x1003 instead of 0x0FFD; every other assertion PASS.
+// MUTATION MOD-SUB-SIGN-EXTENDED stimulus red: apply()'s submod argument
+//   changed to addmod in the MOD-SUB-SIGN-EXTENDED block -> MOD-SUB-SIGN-
+//   EXTENDED FAIL, got 0x1005 instead of 0x0FFB; every other assertion PASS.
+// MUTATION MOD-ARITH-000A-PLUS5-WORDS stimulus red: the second stimulus in the
+//   block, BLTAMOD=0xFFF6, changed to 0xFFF7 (still negative, but now odd - an
+//   LSB-ignored value equal to 0xFFF6 after the drop) -> stayed PASS, which is
+//   the CORRECT shape (0xFFF7's dropped-bit-0 form is identical to 0xFFF6's),
+//   so this was replaced with 0xFFF4 (a genuinely different negative modulo,
+//   -6 words) -> MOD-ARITH-000A-PLUS5-WORDS FAIL, got 0x0FFA instead of the
+//   expected 0x0FFB; every other assertion PASS.
+// MUTATION MOD-NEGATIVE-REPEATS-ROW stimulus red: the three incptr applies
+//   (simulating a 3-word row) reduced to two, while the modulo stimulus stayed
+//   the negative equivalent of 3 words (-6 bytes) -> MOD-NEGATIVE-REPEATS-ROW
+//   FAIL, the pointer landed one word short of the row start (0x0FFF instead
+//   of 0x1000); every other assertion PASS.
+// MUTATION FOUR-INDEPENDENT-PTR-BANKS stimulus red: channel D's bus writes
+//   (BLTDPTH/BLTDPTL) changed to reuse channel C's offsets (BLTCPTH/BLTCPTL),
+//   so what was meant as channel D's pointer silently overwrites channel C's
+//   -> FOUR-INDEPENDENT-PTR-BANKS FAIL, channel C's read-back no longer
+//   matched its own stimulus; every other assertion PASS.
+// MUTATION FOUR-INDEPENDENT-MOD-BANKS stimulus red: channel D's modulo bus
+//   write (BLTDMOD) changed to BLTBMOD, so channel D's addmod silently applies
+//   channel B's modulo instead of its own -> FOUR-INDEPENDENT-MOD-BANKS FAIL,
+//   channel D's result no longer matched its own stimulus; every other
+//   assertion PASS.
+// MUTATION POINTER-VALUE-AFTER-BLIT stimulus red: the row's word-transfer
+//   count changed from three incptr applies to two -> POINTER-VALUE-AFTER-BLIT
+//   FAIL, got 0x1005 instead of the expected 0x1006; every other assertion
+//   PASS.
+// MUTATION FIGURE-6-2-PTR-STIMULUS stimulus red: the figure's BLTxPTR
+//   stimulus, byte address 0x0214 (532), changed to 0x0216 (534, a value the
+//   figure does not state) -> FIGURE-6-2-PTR-STIMULUS FAIL, got 0x010B instead
+//   of the expected 0x010A; every other assertion PASS.
+// MUTATION FIGURE-6-2-MOD-STIMULUS stimulus red: the figure's BLTxMOD
+//   stimulus, 0x001E (30 bytes), changed to 0x0020 (32 bytes, a value the
+//   figure does not state) -> FIGURE-6-2-MOD-STIMULUS FAIL, got 0x0010 instead
+//   of the expected 0x000F; every other assertion PASS.
+// MUTATION ECS-FIVE-BIT-PTH stimulus red: the stimulus BLTAPTH=0x001F (all
+//   five bits set) changed to 0x000F (only four bits set, well short of the
+//   ECS width) -> ECS-FIVE-BIT-PTH FAIL, got 0x78000 instead of the expected
+//   0xF8000; every
 //   other assertion PASS.
 
 #include <cstdint>
