@@ -174,80 +174,123 @@
 // evidence -- a mutation with an unintended side effect on an unrelated
 // assertion would have been suspect, not just noted.
 //
-//   A1: h1's BLTCON0 write retargeted to the unused offset 0x035 (leaving
-//     its LF byte at the post-reset default, 0) -> RED (h1's result read
-//     0x0000, not the expected 0xFFFF). Reverted.
-//   A2: hdesc's BLTCON1 write retargeted to 0x035 -> RED (both runs showed
-//     ascending stepping, DESC never took effect: "65536->65537" both
-//     times instead of one descending). Reverted.
-//   A3: he2's BLTCON0L write (the ecs=1 case) retargeted to 0x035 -> RED
-//     (LF stayed 0, D result read 0x0000 not 0xFFFF). Reverted.
-//   A4: hmask's BLTAFWM write retargeted to 0x035 -> RED (the word came
-//     out masked to 0x0000, not unmasked 0xBEEF). Reverted.
-//   A5: hmask's BLTALWM write retargeted to 0x035 -> RED (last word came
-//     out masked to 0x0000, not unmasked 0x5678). Reverted.
-//   A6-A9: the "mod" run's BLTAMOD/BLTBMOD/BLTCMOD/BLTDMOD write
-//     retargeted to 0x035 in each -> RED for all four (measured delta fell
-//     back to the plain +1 increment, 1, instead of 1+0x100=257).
+//   MUTATION A1 stimulus red: h1's BLTCON0 write retargeted to the unused
+//     offset 0x035 (leaving its LF byte at the post-reset default, 0) ->
+//     RED (h1's result read 0x0000, not the expected 0xFFFF). Reverted.
+//   MUTATION A2 stimulus red: hdesc's BLTCON1 write retargeted to 0x035
+//     -> RED (both runs showed ascending stepping, DESC never took
+//     effect: "65536->65537" both times instead of one descending).
 //     Reverted.
-//   A10-A13: BLTAPTH/BLTBPTH/BLTCPTH/BLTDPTH (the high-bits half of each
-//     pointer pair) retargeted to 0x035 -> RED for all four (the grant
-//     address's high 5 bits stayed at their post-reset default instead of
-//     the written pattern -- e.g. A10 measured 9029, not 0x12345=74565).
+//   MUTATION A3 stimulus red: he2's BLTCON0L write (the ecs=1 case)
+//     retargeted to 0x035 -> RED (LF stayed 0, D result read 0x0000 not
+//     0xFFFF). Reverted.
+//   MUTATION A4 stimulus red: hmask's BLTAFWM write retargeted to 0x035
+//     -> RED (the word came out masked to 0x0000, not unmasked 0xBEEF).
 //     Reverted.
-//   A14: the source pointer's BLTAPTH write retargeted to 0x035 -> RED
-//     (the strengthened address check, added during this build once the
-//     first version proved insensitive to this mutation -- see build note
-//     below -- caught the now-wrong channel-A grant address; data content
-//     was unaffected, confirming the strengthening was necessary).
+//   MUTATION A5 stimulus red: hmask's BLTALWM write retargeted to 0x035
+//     -> RED (last word came out masked to 0x0000, not unmasked 0x5678).
 //     Reverted.
-//   A15: h1's BLTSIZE write (via start_blit's now-mutable bltsize_reg
-//     parameter) retargeted to 0x035 -> RED (h1 produced 0 destination
-//     writes instead of 1 -- the blit never started at all). Reverted.
-//   A16: the BLTSIZE write retargeted to 0x035 -> RED (`busy` stayed 0).
+//   MUTATION A6 stimulus red: the "mod" run's BLTAMOD write retargeted to
+//     0x035 -> RED (measured delta fell back to the plain +1 increment, 1,
+//     instead of 1+0x100=257). Run together with A7-A9 in the same batch
+//     (independent, non-overlapping edits); Reverted.
+//   MUTATION A7 stimulus red: the "mod" run's BLTBMOD write retargeted to
+//     0x035 -> RED (measured delta fell back to the plain +1 increment, 1,
+//     instead of 1+0x100=257). Run together with A6, A8, A9 in the same
+//     batch; Reverted.
+//   MUTATION A8 stimulus red: the "mod" run's BLTCMOD write retargeted to
+//     0x035 -> RED (measured delta fell back to the plain +1 increment, 1,
+//     instead of 1+0x100=257). Run together with A6, A7, A9 in the same
+//     batch; Reverted.
+//   MUTATION A9 stimulus red: the "mod" run's BLTDMOD write retargeted to
+//     0x035 -> RED (measured delta fell back to the plain +1 increment, 1,
+//     instead of 1+0x100=257). Run together with A6-A8 in the same batch;
 //     Reverted.
-//   A17: he's BLTSIZH write (the ecs=1 case) retargeted to 0x035 -> RED
-//     (`busy` stayed 0 even with ecs=1). Reverted.
-//   A18: the marker word moved from `a_words` to `b_words` (channel A's
-//     queue left empty) -> RED (D read back 0x0000, not 0x5A5A -- the
-//     fixture is sensitive to which channel's queue actually feeds the
-//     fetch, not just that some queue is non-empty). Reverted.
-//   A19: marker moved from `b_words` to `c_words` -> RED (0x0000, not
-//     0x6B6B). Reverted.
-//   A20: marker moved from `c_words` to `a_words` -> RED (0x0000, not
-//     0x7C7C). Reverted.
-//   A21: `b_words` emptied while the `expected` computation (a literal
-//     XOR of the three intended words) was left untouched -> RED (measured
-//     0x13260 against the now-stale expected 0x15555 -- B's contribution
-//     silently defaulted to 0, exactly the "stuck or shared register"
-//     failure mode this assertion exists to catch). Reverted.
-//   A22: ATTEMPTED, RECORDED AS A MISS. The probed address was moved from
-//     BLTDDAT's 0x000 to BLTADAT's real, decoded 0x074, expecting the
-//     read-back check to now show something -- it did NOT go red (still
-//     PASS). Diagnosis, not a fixture defect: `data_out` is gated on
-//     `ackdma && chsel==CHD` regardless of what `reg_address_in` carries
-//     during a plain write, so a plain write to ANY register -- decoded or
-//     not -- produces no read-back through this port. A22's own
-//     proposition ("no processor-visible address, cannot be read") is true
-//     of every register in this module, not uniquely falsifiable against
-//     BLTDDAT by retargeting alone. THE MUTATION THAT REPLACES IT is A23's
-//     (below), which DOES flip red on the identical underlying fact --
-//     BLTDDAT's write never reaching any internal register -- by using a
-//     measurement (does the value surface in a blit result) that a plain
-//     write's absence of read-back cannot distinguish. A22 is retained
-//     because its own two citations (6-appa-registers.c29/.c30 -- "no
-//     processor-visible register address", "not processor-readable or
-//     -writable") are propositions about the ADDRESS FIELD and the READ
-//     half specifically, which A23 does not separately name.
-//   A23: hadat's control write (BLTADAT, the arm that is SUPPOSED to
-//     matter) retargeted to 0x035 -> RED (0xDEAD no longer surfaced;
-//     `adat_affected` went false, and the assertion's `ddat_unaffected &&
-//     adat_affected` conjunction correctly flipped). Reverted.
-//   A24: the self-contained control blit's BLTSIZE write (added to this
-//     assertion during this build -- see build note) retargeted to 0x035
-//     -> RED (`control_fired` went false: no D-channel grant ever occurred,
-//     so the sweep's all-zero result could no longer be told apart from a
-//     dead data_out/we probe). Reverted.
+//   MUTATION A10 stimulus red: BLTAPTH (the high-bits half of channel A's
+//     pointer pair) retargeted to 0x035 -> RED (the grant address's high 5
+//     bits stayed at their post-reset default instead of the written
+//     pattern -- measured 9029, not 0x12345=74565). Run together with
+//     A11-A13 in the same batch; Reverted.
+//   MUTATION A11 stimulus red: BLTBPTH (the high-bits half of channel B's
+//     pointer pair) retargeted to 0x035 -> RED (the grant address's high 5
+//     bits stayed at their post-reset default instead of the written
+//     pattern). Run together with A10, A12, A13 in the same batch;
+//     Reverted.
+//   MUTATION A12 stimulus red: BLTCPTH (the high-bits half of channel C's
+//     pointer pair) retargeted to 0x035 -> RED (the grant address's high 5
+//     bits stayed at their post-reset default instead of the written
+//     pattern). Run together with A10, A11, A13 in the same batch;
+//     Reverted.
+//   MUTATION A13 stimulus red: BLTDPTH (the high-bits half of channel D's
+//     pointer pair) retargeted to 0x035 -> RED (the grant address's high 5
+//     bits stayed at their post-reset default instead of the written
+//     pattern). Run together with A10-A12 in the same batch; Reverted.
+//   MUTATION A14 stimulus red: the source pointer's BLTAPTH write
+//     retargeted to 0x035 -> RED (the strengthened address check, added
+//     during this build once the first version proved insensitive to this
+//     mutation -- see build note below -- caught the now-wrong channel-A
+//     grant address; data content was unaffected, confirming the
+//     strengthening was necessary). Reverted.
+//   MUTATION A15 stimulus red: h1's BLTSIZE write (via start_blit's
+//     now-mutable bltsize_reg parameter) retargeted to 0x035 -> RED (h1
+//     produced 0 destination writes instead of 1 -- the blit never started
+//     at all). Reverted.
+//   MUTATION A16 stimulus red: the BLTSIZE write retargeted to 0x035 ->
+//     RED (`busy` stayed 0). Reverted.
+//   MUTATION A17 stimulus red: he's BLTSIZH write (the ecs=1 case)
+//     retargeted to 0x035 -> RED (`busy` stayed 0 even with ecs=1).
+//     Reverted.
+//   MUTATION A18 stimulus red: the marker word moved from `a_words` to
+//     `b_words` (channel A's queue left empty) -> RED (D read back 0x0000,
+//     not 0x5A5A -- the fixture is sensitive to which channel's queue
+//     actually feeds the fetch, not just that some queue is non-empty).
+//     Reverted.
+//   MUTATION A19 stimulus red: marker moved from `b_words` to `c_words`
+//     -> RED (0x0000, not 0x6B6B). Reverted.
+//   MUTATION A20 stimulus red: marker moved from `c_words` to `a_words`
+//     -> RED (0x0000, not 0x7C7C). Reverted.
+//   MUTATION A21 stimulus red: `b_words` emptied while the `expected`
+//     computation (a literal XOR of the three intended words) was left
+//     untouched -> RED (measured 0x13260 against the now-stale expected
+//     0x15555 -- B's contribution silently defaulted to 0, exactly the
+//     "stuck or shared register" failure mode this assertion exists to
+//     catch). Reverted.
+//   MUTATION A22 stimulus green: ATTEMPTED, RECORDED AS A MISS. The
+//     probed address was moved from BLTDDAT's 0x000 to BLTADAT's real,
+//     decoded 0x074, expecting the read-back check to now show something
+//     -- it did NOT go red (still PASS). Diagnosis, not a fixture defect:
+//     `data_out` is gated on `ackdma && chsel==CHD` regardless of what
+//     `reg_address_in` carries during a plain write, so a plain write to
+//     ANY register -- decoded or not -- produces no read-back through this
+//     port. A22's own proposition ("no processor-visible address, cannot
+//     be read") is true of every register in this module, not uniquely
+//     falsifiable against BLTDDAT by retargeting alone. THE MUTATION THAT
+//     REPLACES IT is A23's (below), which DOES flip red on the identical
+//     underlying fact -- BLTDDAT's write never reaching any internal
+//     register -- by using a measurement (does the value surface in a
+//     blit result) that a plain write's absence of read-back cannot
+//     distinguish. A22 is retained because its own two citations
+//     (6-appa-registers.c29/.c30 -- "no processor-visible register
+//     address", "not processor-readable or -writable") are propositions
+//     about the ADDRESS FIELD and the READ half specifically, which A23
+//     does not separately name.
+//   MUTATION A23 stimulus red: hadat's control write (BLTADAT, the arm
+//     that is SUPPOSED to matter) retargeted to 0x035 -> RED (0xDEAD no
+//     longer surfaced; `adat_affected` went false, and the assertion's
+//     `ddat_unaffected && adat_affected` conjunction correctly flipped).
+//     Reverted.
+//   MUTATION A24 stimulus red: the self-contained control blit's BLTSIZE
+//     write (added to this assertion during this build -- see build note)
+//     retargeted to 0x035 -> RED (`control_fired` went false: no
+//     D-channel grant ever occurred, so the sweep's all-zero result could
+//     no longer be told apart from a dead data_out/we probe). Reverted.
+//   MUTATION TEST-DATA-DELIVERY stimulus red: re-run for this gate
+//     repair (no prior record existed for this precondition check -- see
+//     PKG-BLT-REGDECODE gate-repair commit). h.a_words's last word changed
+//     from 0x4444 to 0x9999 (stimulus only, the expected 0x1111/0x2222/
+//     0x3333/0x4444 sequence in the assertion left untouched) -> RED
+//     (25 passed, 1 failed; only TEST-DATA-DELIVERY flipped, all other 25
+//     checks stayed green). Reverted, rebuilt, confirmed back to 26/0.
 //
 // BUILD NOTE, recorded rather than smoothed over: A23's first draft
 // (writing 0xDEAD to BLTADAT and expecting it to surface via LF_A_
@@ -598,8 +641,10 @@ int main() {
                            "6-appa-registers.c14, 6-appa-registers.c15, "
                            "6-appa-registers.c17, ch6-appb-bltcon0.addr, "
                            "ch6-appb-bltcon0.rw]");
-        // MUTATION A1: retarget the LF=0xFF write from BLTCON0 (UNUSED_REG
-        // below) to the unused offset 0x035 -- confirm below.
+        // MUTATION A1 stimulus red: h1's BLTCON0 write retargeted to the
+        // unused offset 0x035 -> RED (h1's result read 0x0000, not the
+        // expected 0xFFFF). Reverted. Full mutation log above, before the
+        // includes.
     }
 
     // ---------------------------------------------------------------
