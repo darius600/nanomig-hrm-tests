@@ -1121,45 +1121,49 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG (updated 10.09.2026, FPGA-090 gate repair). Every entry below
-// was actually applied by this agent in this session - edited into this
-// file, rebuilt under WSL/Verilator (`make test`), run, the PASS/FAIL line
-// for the named assertion read from real output (quoted verbatim below, not
+// MUTATION LOG (updated 10.09.2026, FPGA-090 gate repair, two passes). Every
+// entry below was actually applied by this agent - edited into this file,
+// rebuilt under WSL/Verilator (`make test`), run, the PASS/FAIL line for the
+// named assertion read from real output (quoted verbatim below, not
 // predicted), then reverted and rebuilt clean before the next entry. Every
-// one of the 10 assertion ids tools/check_gates.py's mutation gate names for
-// this package got its OWN separate mutate/build/run/revert cycle - no
-// record below is reused across two ids, even where two assertions share an
+// assertion id tools/check_gates.py's mutation gate has ever named for this
+// package got its OWN separate mutate/build/run/revert cycle - no record
+// below is reused across two ids, even where two assertions share an
 // identical BLTEN-dropped shape (entries 3 and 4). Baseline before this
-// session's first mutation and final clean run after the last revert were
-// both "25 passed, 0 failed".
+// log's first mutation and final clean run after the last revert were both
+// "25 passed, 0 failed", in both passes.
 //
 // SCOPE. This file has 25 checks.expect() calls but the gate's mutation
 // requirement applies only to the assertion ids its own parser can read -
-// confirmed by calling tools/check_gates.py's assertion_ids() directly
-// against this file before writing this log, not assumed:
+// confirmed both times by calling tools/check_gates.py's assertion_ids()
+// directly against this file, not assumed. Pass 1 (entries 1-10) found two
+// causes hiding ids from the gate:
 //   - the 13 WALKING-BIT-* labels are built as
 //     std::string("WALKING-BIT-") + std::to_string(b.bit) + "-" + b.label +
 //     ": ..."; the gate's id parser reads only the FIRST string literal of
 //     the call, and that literal by itself ("WALKING-BIT-") has no trailing
 //     whitespace or ':' of its own for the id-boundary regex to match on -
-//     so these 13 calls yield no assertion id the gate can see, and it does
-//     not ask for a mutation record on any of them.
-//   - DMACON-WRITE-DECODED-AT-096's label is one readable id followed by
+//     so these 13 calls yield no assertion id the gate can see.
+//   - DMACON-WRITE-DECODED-AT-096's label was one readable id followed by
 //     ": ..." prose that itself contains a literal ';' ("...is not quoted
 //     here; this assertion demonstrates..."); the gate's EXPECT_CALL_RE
-//     stops at the first '...);' pattern it can find and a bare ';' inside
-//     the string breaks that search before it reaches this call's real
-//     closing "); ", so the call is never parsed and this id is never read
-//     either.
-// Neither omission is this agent's choice of what to cover; both are
-// upstream parser behaviour in tools/check_gates.py, and the 10 ids listed
-// below are the complete set the gate actually names as missing for this
-// package. A prior version of this log (see this package's own git history)
-// mutated one representative per shared "mechanism" instead of one per
-// assertion id and covered DMACON-WRITE-DECODED-AT-096 and a WALKING-BIT
-// representative on that basis; this session does not repeat those claims
-// as verified fact and replaces that log with one entry, separately run,
-// per id the gate actually requires.
+//     stopped at the first '...);' pattern it could find and a bare ';'
+//     inside the string broke that search before it reached this call's
+//     real closing ");", so the call was never parsed and this id was never
+//     read.
+// Neither omission was this agent's choice of what to cover; both were
+// upstream parser behaviour in tools/check_gates.py, reported to the
+// pipeline lead rather than worked around locally. The lead fixed the second
+// cause gate-wide on 10.09.2026 (EXPECT_CALL_RE widened to let a complete
+// quoted string carry its own semicolons; LEADING_ID_RE widened to allow
+// hyphens and ids over 16 characters) - DMACON-WRITE-DECODED-AT-096 is
+// readable as of that fix and entry 11 below covers it, run after the fix
+// landed. The first cause (WALKING-BIT-* ids composed at runtime) is
+// deliberately NOT fixed: the gate has a separate "composed ids" path for
+// exactly this shape and reports it as a note, not a violation - rewriting
+// working assertions to satisfy a parser would be the wrong trade, per the
+// lead's own instruction. The 11 ids covered below are the complete set the
+// gate has named as missing for this package across both passes.
 //
 // 1. DMACONR-READ-DECODED-AT-002: both read_reg calls' target address
 //    changed from DMACONR_ADDR (0x002) to 0x004. Result: "24 passed, 1
@@ -1234,8 +1238,23 @@ int main(int argc, char** argv) {
 //     to writes_share, so the writes_hog==W*H completion requirement
 //     failed). Reverted; rebuilt clean (25 passed, 0 failed).
 //
+// 11. DMACON-WRITE-DECODED-AT-096 (added in pass 2, after the lead's
+//     EXPECT_CALL_RE/LEADING_ID_RE fix made this id readable): the write's
+//     target address changed from DMACON_ADDR (0x096) to 0x098, a nearby
+//     but non-decoded address (agnus.v's write decode is
+//     reg_address[8:1]==DMACON[8:1], DMACON=9'h096, and 0x098[8:1] !=
+//     0x096[8:1]). The label's own text - including the honest caveat that
+//     the Appendix B "A D P" CHIP-column quotation is pending because the
+//     extracted corpus text for printed p.290 is defective - was NOT
+//     touched; only the write's target address, inside the assertion body,
+//     changed. Result: "24 passed, 1 failed" - DMACON-WRITE-DECODED-AT-096
+//     went red on the first try (after read back 0x0000, not DMAEN, since
+//     the write landed nowhere DMACONR reads from). Reverted to
+//     DMACON_ADDR; rebuilt clean (25 passed, 0 failed).
+//
 // Machine-readable records, one per line, read by tools/check_gates.py's
 // mutation gate (MUTATION_RE):
+// MUTATION DMACON-WRITE-DECODED-AT-096 stimulus red: write's target address moved from $096 to $098 (not decoded by agnus.v's DMACON path); after read back 0x0000, not DMAEN.
 // MUTATION DMACONR-READ-DECODED-AT-002 stimulus red: both read_reg targets moved from $002 to $004; read_a==read_b, no longer distinguishes the two dmacon states.
 // MUTATION SETCLR-MULTIBIT-DIRECTION stimulus red: CLR write retargeted from DSKEN (set by the prior SET) to AUD1EN (never set); after_clr came back unchanged, matching after_set.
 // MUTATION BBUSY-READONLY-WITH-POSITIVE-CONTROL stimulus red: BLTEN dropped from the write-attempt's setup, breaking the positive-control blit's FSM; during_blit's bit 14 never reached 1.
@@ -1248,8 +1267,13 @@ int main(int argc, char** argv) {
 // MUTATION BLTPRI-BUS-SHARE-UNDER-CONTENTION stimulus red: BLTPRI dropped from the hog run's setup write; writes_hog fell to 0, equal to the share run.
 //
 // Not machine-recorded, and not required by the gate (see SCOPE above):
-// DMACON-WRITE-DECODED-AT-096, its own control WRITE-ADDRESS-MUST-MATCH-
-// DMACON, and the 13 WALKING-BIT-* assertions. Left unmutated in this
-// session; a prior log's claims about them are superseded, not repeated.
+// DMACON-WRITE-DECODED-AT-096's own control, "[control] WRITE-ADDRESS-MUST-
+// MATCH-DMACON" (its label starts with "[control]", not an uppercase
+// letter, so LEADING_ID_RE still does not match it even after the 10.09.2026
+// widening), and the 13 WALKING-BIT-* assertions (composed ids, the gate's
+// own "note, not violation" path - left unmutated deliberately, per the
+// lead's instruction not to rewrite working assertions to satisfy a
+// parser). Left unmutated; a prior log's unrelated claims about these are
+// superseded, not repeated.
 // ============================================================================
 
