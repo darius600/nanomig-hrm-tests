@@ -174,6 +174,63 @@
 // MUTATION Z-AND stimulus red: b_words[1] changed from 0x2222 to 0x1111 (now
 //   equal to a_words[1]), so the second word's AND is 0x1111, not 0 -> both
 //   Z-AND-RESULT and Z-AND-STAYS FAIL as expected.
+//
+// SEVEN MORE, added after the gate's mutation check pointed out these seven
+// assertions were only ever discussed inside another assertion's record above,
+// never carrying one of their own under their own id. Each was re-run to get
+// its own line; none of the ten records above were altered.
+//
+// MUTATION BUSY-RELEASES stimulus red: same edit as BUSY-SET above (the
+//   register written to start the blit changed from BLTSIZE to BLTCON1, same
+//   data, same timing) -> BUSY-RELEASES FAILs too: busy is never set in the
+//   first place, so run_until_done(200) never sees it fall and returns -1 even
+//   after enadma is restored. (BUSY-SET FAILs for the same root cause;
+//   BUSY-NO-DMA-NEEDED stays PASS, vacuously, as already noted above.)
+// MUTATION BUSY-FLAG-ON-COMPLETION stimulus red: same edit as BUSY-MIDBLIT
+//   above (width shortened from 4 to 1 in that fixture) -> FAILs: the
+//   completion search finds a stale/absent transition, done_at stays -1, so
+//   "busy reads 0 after that same completion tick" has no real tick to check.
+// MUTATION INT3-ON-COMPLETION stimulus red: same edit as BUSY-MIDBLIT above
+//   (width shortened from 4 to 1) -> FAILs for the same reason as
+//   BUSY-FLAG-ON-COMPLETION just above: done_at stays -1, so
+//   "int3_tick == done_at" cannot hold.
+// MUTATION Z-CLEAR stimulus red: same edit as Z-FINAL above (the trailing
+//   nonzero word changed from 0x8000 to 0x0000, making the whole run
+//   all-zero) -> Z-CLEAR FAILs alongside Z-FINAL: with nothing ever clearing
+//   zero, the search for a post-zero_set_tick clearing tick finds none and
+//   clear_tick stays -1.
+// MUTATION Z0 stimulus red: enadma held low (h.set_enadma(false), the same
+//   device BUSY-SET's block uses) added across the whole Z0/Z-CTRL/Z-CLEAR/
+//   Z-FINAL fixture -> enable (= enadma & clkena) stays 0, the FSM cannot
+//   leave BLT_IDLE, so BLT_INIT - the only state that sets zero <= 1
+//   (agnus_blitter.v:483-484, gated on enable && init) - is never entered;
+//   zero never becomes 1 within the 20-cycle budget, so run_until_zero_becomes
+//   returns false and Z0 FAILs (zero_set is false). Z-CTRL and Z-CLEAR FAIL
+//   too, same root cause. Z-FINAL stays PASS, but for the wrong reason: zero
+//   defaults to 0 and, with BLT_INIT never reached, was simply never touched,
+//   so "!zero()" reads true by accident rather than by the blit having
+//   cleared it - not a defect in Z-FINAL, which already has its own
+//   discriminating mutation above, just a reminder that this stimulus is not
+//   the one that exercises it.
+// MUTATION BUSY-NO-DMA-NEEDED stimulus red: enadma left true (the
+//   h.set_enadma(false) call removed) across the BLTSIZE write. FIRST
+//   ATTEMPT, wait left at h.run_cycles(1): MISS, stayed PASS (green) - one
+//   cycle is not enough for the FSM to reach a DMA-requesting state (BLT_INIT
+//   has no dma_req; BLT_A's dma_req is `usea`, and this fixture never sets
+//   USEA), so no request had appeared yet at the point the check runs.
+//   REPLACEMENT, same enadma change with the wait widened from 1 to 20
+//   cycles: FAILs - reqdma is seen and the single word is actually delivered
+//   before the check runs. Collateral in the replacement run: BUSY-SET and
+//   BUSY-RELEASES FAIL too, because with 20 cycles and enadma on throughout,
+//   this 1-word blit runs to completion and busy has already fallen back to 0
+//   by the time BUSY-SET samples it - not a counterexample to their own
+//   (separately recorded, narrower) mutations above, just this wider window
+//   doing more than the one thing it was aimed at.
+// MUTATION Z-AND-STAYS stimulus red: same edit as the "Z-AND" record above
+//   (b_words[1] changed from 0x2222 to 0x1111) -> Z-AND-STAYS FAILs alongside
+//   Z-AND-RESULT. The existing record above used the id "Z-AND", which is not
+//   the same token as either "Z-AND-RESULT" or "Z-AND-STAYS"; this line
+//   closes that gap for Z-AND-STAYS under its own actual id.
 
 #include <cstdint>
 #include <deque>
