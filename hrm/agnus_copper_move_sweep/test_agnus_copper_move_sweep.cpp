@@ -58,14 +58,17 @@
 // MUTATION DECODE stimulus red probe_emitted returned the emitted register xor 1, simulating a misrouted destination
 // MUTATION CTRL stimulus red the control destination moved from COLOR00 ($180, always writable) to BLTCON0 ($040, CDANG-gated), so the case that must be accepted under every combination is one that is legitimately refused without CDANG
 // MUTATION RESET stimulus red the reset removed after CDANG is set, so CDANG survives and the MOVE the assertion expects to be refused is accepted
+// MUTATION BITS15-9 stimulus red the ecs=0/cdang=0 hi-bits loop's probed register changed from CONTROL_REG ($C0, always accepted) to $00 (never accepted under cdang=0), so all_stable goes false on the first iteration (hi=0) instead of holding true across the 128-value sweep
 //
 // The CTRL mutation turned the two cdang=0 rows red and left the two cdang=1
 // rows green, which is the correct discrimination and not a partial result:
 // BLTCON0 really is writable once CDANG is set. It also took the BITS15-9
 // sweep down, which shares CONTROL_REG - a dependency, not a second defect.
 //
-// Baseline before and after each mutation: 10 passed, 1 failed (the known,
-// documented ecs=1/cdang=1 ECS-extension divergence, see above).
+// Baseline before and after each mutation: 11 passed, 1 failed (the known,
+// documented ecs=1/cdang=0 ECS-extension divergence, see above; corrected
+// 10.09.2026 -- this sentence said cdang=1 and undercounted by one check
+// (DECODE was added after it was written), verified by rerunning `make test`).
 
 #include <cstdint>
 #include <functional>
