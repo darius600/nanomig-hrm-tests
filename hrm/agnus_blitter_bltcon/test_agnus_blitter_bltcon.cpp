@@ -243,6 +243,32 @@
 // FIXTURE FIXES noted inline at each affected assertion are a separate,
 // earlier step -- these mutations were all run against the FIXED file):
 //
+// GATE-FORMAT REPAIR, 10.09.2026: tools/check_gates.py requires
+// `// MUTATION <id> <oracle|stimulus|none> <red|green|impossible>` on ONE
+// physical line (its regex needs the id and both keywords joined by
+// whitespace that never crosses a `//` continuation prefix). Five entries
+// below failed that exact match and the gate reported "no mutation
+// recorded" for all five, even though four of them describe a real,
+// already-run mutation: LINE-MODE-BLTCON0-BITS-11-10-8-ARE-NOT-HARDWARE-
+// ENFORCED, LINE-MODE-BLTCON1-BITS-11-10-9-8-7-5-ARE-UNUSED-OR-RESERVED,
+// LINE-MODE-SIGN-BIT6-LOADS-INITIAL-ACCUMULATOR-SIGN and LINE-MODE-SING-
+// BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL each had their id on its own
+// line, with "stimulus red:" only starting on the continuation line. AREA-
+// EFE-BIT4-ENABLES-EXCLUSIVE-FILL's actually-valid mutation was never given
+// a machine-readable line at all -- only prose under "CORRECTED MUTATION:".
+// None of the five had a stale record left under a former name (grepped
+// this file and the rest of the repository tree for the one known former
+// name, LINE-MODE-SING-BIT1-GATES-C-CHANNEL: the only hit was the already-
+// corrected section banner fixed in 694387d, not a mutation-log line).
+// Rather than trust the prior wording and just reflow it, this agent re-ran
+// all five today under WSL/Verilator, one at a time (edit -> rebuild -> run
+// -> confirm 18 passed/1 failed with the target assertion the one red line
+// -> revert -> rebuild -> confirm 19/0) before touching this log. Every one
+// reproduced exactly the FAIL text already on record below, so the prior
+// agent's account stands verified, not merely retyped; wording of what was
+// observed is otherwise unchanged, only reflowed onto one line so the gate
+// can read it. Final rebuild after the last revert: 19 passed, 0 failed.
+//
 // MUTATION TEST-DATA-DELIVERY stimulus red: fed C word at index 2 changed
 //   from 0x9ABC to 0x9ABD -> FAIL ("18 passed, 1 failed"), the third
 //   captured data_out no longer matches. Reverted, rebuilt: 19/0.
@@ -273,14 +299,16 @@
 //   bit, genuinely wired) -> FAIL, that entry's "identical to baseline"
 //   check fails (DESC really does reverse the address_out sequence).
 //   Reverted: 19/0.
-// MUTATION AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL, FIRST ATTEMPT (recorded,
-//   not hidden, per the standing rule): the C-channel fed word changed
-//   from 0x0000 to 0x0002 -> all 19 STILL PASSED. Not a valid mutation:
-//   LF=0xF0 (this test's D=A-passthrough function) has lf[3:0]=0, so no
-//   minterm reading cin ever contributes, and hand-tracing
+// AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL, FIRST ATTEMPT (recorded, not
+//   hidden, per the standing rule -- this line deliberately does not start
+//   with "MUTATION" since it was never a valid one): the C-channel fed word
+//   changed from 0x0000 to 0x0002 -> all 19 STILL PASSED. Not a valid
+//   mutation: LF=0xF0 (this test's D=A-passthrough function) has
+//   lf[3:0]=0, so no minterm reading cin ever contributes, and hand-tracing
 //   agnus_blitter_minterm.v:32-39 confirms C never reaches this test's
 //   output at all -- the mutation touched a value the assertion provably
-//   cannot see. CORRECTED MUTATION: the BLTCON1 write changed from
+//   cannot see.
+// MUTATION AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL stimulus red: (corrected from the first attempt above) the BLTCON1 write changed from
 //   `efe ? (1u<<4) : 0` to an unconditional 0x0000, so the "on" run no
 //   longer actually sets EFE -> FAIL, "on != off" fails (both runs produce
 //   the unfilled result). Reverted: 19/0.
@@ -297,13 +325,11 @@
 //   unconditional `USEA|USED|USEC`, so the "usec clear" run secretly keeps
 //   USEC set -> FAIL, "!without_usec" fails (C is still granted). Reverted:
 //   19/0.
-// MUTATION LINE-MODE-BLTCON0-BITS-11-10-8-ARE-NOT-HARDWARE-ENFORCED
-//   stimulus red: the control run's use_bits changed from (USEA|USED) to
+// MUTATION LINE-MODE-BLTCON0-BITS-11-10-8-ARE-NOT-HARDWARE-ENFORCED stimulus red: the control run's use_bits changed from (USEA|USED) to
 //   (USEA|USEC|USED), so the control no longer actually clears USEC ->
 //   FAIL, "documented != control_no_c" fails (they're now identical).
 //   Reverted: 19/0.
-// MUTATION LINE-MODE-BLTCON1-BITS-11-10-9-8-7-5-ARE-UNUSED-OR-RESERVED
-//   stimulus red: the control run's con1_extra changed from
+// MUTATION LINE-MODE-BLTCON1-BITS-11-10-9-8-7-5-ARE-UNUSED-OR-RESERVED stimulus red: the control run's con1_extra changed from
 //   (SING|SUD|SIGN) to 0, colliding with the baseline -> FAIL, "control !=
 //   baseline" fails. Reverted: 19/0.
 // MUTATION LINE-MODE-START-BITS-15-12-REUSE-THE-ASH-FIELD stimulus red:
@@ -314,8 +340,7 @@
 //   the "maxshift" run's bsh argument changed from 15 to 0, so both runs
 //   now use no shift -> FAIL, "maxshift != noshift" fails (identical
 //   0xFFFF result). Reverted: 19/0.
-// MUTATION LINE-MODE-SIGN-BIT6-LOADS-INITIAL-ACCUMULATOR-SIGN stimulus
-//   red: the SIGN-setting line changed from `if (sign) con1 |= (1u<<6);`
+// MUTATION LINE-MODE-SIGN-BIT6-LOADS-INITIAL-ACCUMULATOR-SIGN stimulus red: the SIGN-setting line changed from `if (sign) con1 |= (1u<<6);`
 //   to `if (false) con1 |= (1u<<6);`, so the "sign=true" run no longer
 //   actually sets bit 6 -> FAIL, "sign1 != sign0" fails (identical
 //   D-write counts). Reverted: 19/0.
@@ -324,8 +349,7 @@
 //   AUL|SUD (matching octant 4's stimulus) -> FAIL, "sud_live" (oct1 !=
 //   oct4) fails (identical 4-pixel D-write address sequences). Reverted:
 //   19/0.
-// MUTATION LINE-MODE-SING-BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL
-//   stimulus red: the SING-setting line changed from `if (sing) con1 |=
+// MUTATION LINE-MODE-SING-BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL stimulus red: the SING-setting line changed from `if (sing) con1 |=
 //   (1u<<1);` to `if (false) con1 |= (1u<<1);`, so the "sing=true" run no
 //   longer actually sets bit 1 -> FAIL, "sing_on < normal" fails (identical
 //   D-write counts). Reverted: 19/0.
