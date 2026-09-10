@@ -392,3 +392,60 @@ is wrong.
 *Both found by the FPGA-091 chapter-3 build, 10.09.2026. Both confirmed against
 the RTL by the lead before recording. Neither is decided here: the manual is this
 project's oracle, so the test stays red until an Amiga specialist rules.*
+
+
+## FPGA-091-F03 — playfield-1 collision depends on playfield 2, by design, undocumented
+
+**Package:** `hrm/ch3-collision-registers`, the four `BITMAP-PAIR` cases involving
+playfield 1. **Red.**
+
+Appendix A's CLXDAT bit table, printed page 273, gives each collision pair its own
+bit and treats them independently. NanoMig, `denise_collision.v:62-63`:
+
+```verilog
+assign oddmatch  = bm[6] & bm[4] & bm[2] & bm[0] & (dblpf | evenmatch);
+assign evenmatch = bm[7] & bm[5] & bm[3] & bm[1];
+```
+
+With `dblpf = 0` — single playfield — `oddmatch` additionally requires
+`evenmatch`. Playfield 1's presence is made to depend on playfield 2's.
+
+**This is deliberate, and the RTL says so itself** in the comment directly above:
+
+> this is the implementation of an undocumented function in the real Denise chip,
+> developed by Yaqube. trigger was the game Rotor. mentioned in WinUAE sources to
+> be the only known game needing this feature. it also fixes the Spaceport
+> instantly helicopter crash at takeoff and Archon-1 'sticky effect' of player
+> sprite at the battlefield.
+
+**So this is very likely a case where the RTL is more correct than the manual.**
+The manual documents the documented behaviour; the chip has more. The test is red
+because the manual is this project's oracle, and that is the right outcome — but
+the finding to carry forward is that appendix A's independence is incomplete, not
+that NanoMig is wrong.
+
+*For the specialists:* worth checking against WinUAE and vAmiga, which the comment
+already points at. If they agree with NanoMig, the manual's table needs a footnote
+rather than the RTL needing a change.
+
+## FPGA-091-F04 — CLXDAT bit 15 reads as 1, not 0
+
+**Package:** `hrm/ch3-collision-registers`, assertion `BIT15-UNUSED`. **Red.**
+
+Printed page 273 lists CLXDAT bit 15 as not used. NanoMig,
+`denise_collision.v:117`:
+
+```verilog
+assign data_out = reg_address_in[8:1]==CLXDAT[8:1] ? {1'b1,clxdat[14:0]} : 16'd0;
+```
+
+Bit 15 is hard-wired high on every successful read and can never be 0.
+
+*For the specialists:* the question is what "not used" means in this table — reads
+as zero, or undefined. Every other assertion in the package masks the bit out with
+`& 0x7FFF`, which scopes the measurement without weakening any oracle.
+
+---
+
+*F03 and F04 found by the FPGA-091 chapter-3 build, 10.09.2026, both confirmed
+against the RTL by the lead before recording.*
