@@ -94,10 +94,61 @@
 // already used by hrm/ch3-colour-register-format/'s
 // CONTROL-KNOWN-VALUES-ARRIVE and EHB-CONTROL-NORMAL-REPRODUCIBLE).
 //
-// MUTATION LOG: recorded after the RTL was opened and the build actually
-// run (see the entries below main() -- left empty in this spec-only commit,
-// filled in the follow-up commit once `make test` has actually executed
-// each mutation, per the build brief's order of work).
+// RESULTS (after opening the RTL and building): 31 passed, 5 failed. Every
+// numeric prediction the spec was written against held for 31 of the 36
+// checks. Two genuine, real findings account for all 5 failures -- neither
+// assertion was adjusted to hide them:
+//
+//   FINDING 1 -- oddmatch is gated by evenmatch. denise_collision.v:62-63:
+//     `assign oddmatch = bm[6]&bm[4]&bm[2]&bm[0] & (dblpf | evenmatch);
+//      assign evenmatch = bm[7]&bm[5]&bm[3]&bm[1];` The RTL's own comment
+//     (l.57-61) calls this "an undocumented function in the real Denise
+//     chip ... trigger was the game Rotor". With dblpf held at 0 (this
+//     package's stated non-goal), playfield 1's presence is silently ANDed
+//     with playfield 2's presence -- something Appendix A's per-bit table
+//     (p.273) does not describe; the table treats each pair as its own
+//     independent proposition. This fails 4 of BITMAP-PAIR's 15 cases
+//     (every pair naming PF1 except PF1-PF2 itself, which does not need
+//     PF1 isolated from PF2 to read correctly).
+//   FINDING 2 -- CLXDAT bit 15 is hard-wired high, never 0.
+//     denise_collision.v:117: `data_out = ...==CLXDAT[8:1] ?
+//     {1'b1,clxdat[14:0]} : 16'd0;` -- every successful CLXDAT read forces
+//     bit 15 to 1 regardless of accumulated collisions, contradicting the
+//     most direct reading of Appendix A's '15  not used' (p.273) as "does
+//     not carry collision data, reads as 0". This is orthogonal to every
+//     other assertion in this file (masked out of them with `& 0x7FFF`,
+//     a measurement-scoping fix, not an oracle change -- see BIT15-UNUSED,
+//     the one assertion that does not mask it and is the one that measures
+//     it) and fails only BIT15-UNUSED.
+//
+// One wiring-only fix was needed beyond opening the RTL: `clxdat` carries
+// no reset branch of its own, and on the very first simulated clock edge
+// `clxcon` still reads as Verilator's power-on 0x0000 (before its own
+// `<=16'h0fff` reset assignment has propagated), which makes every
+// bitplane look disabled -- vacuously matched -- and latches a stray
+// PF1-PF2 bit into clxdat before clxcon ever reaches its real reset value.
+// Harness's constructor now ends with one drain read (documented at the
+// drain site) -- harness hygiene, not a claim about collision behaviour;
+// no expected value anywhere in this file was changed to accommodate it.
+//
+// MUTATION LOG (every line below was actually built with its own flag
+// defined to 1, e.g. `-CFLAGS -DMUT_ADDR=1`, confirmed to turn only its
+// own assertion red -- on top of the 5 already-red findings above, which
+// stayed exactly the same set except under MUT_BITMAP, where the mutation's
+// own target (SPR23-SPR67) joined them as a 6th -- then rebuilt with no
+// flags and reconfirmed the clean 31-passed/5-failed baseline):
+//
+// MUTATION CLXCON-ADDR stimulus red: config B (meant to fully disable all six bitplanes) was changed to re-enable BP1 with the same match requirement as config A instead, so the two reads became identical and bit 1 stayed clear in both.
+// MUTATION CLXCON-WRITEONLY stimulus red: the second read's address was redirected from CLXCON (0x4C) to CLXDAT (0x07), picking up the real pending SPR0+SPR2 collision instead of the constant zero CLXCON's address returns.
+// MUTATION BP-ENABLE-MATCH stimulus red: bitplane 3's "matched" stimulus was redirected to present bitplane 1's live bit instead of bitplane 3's own, so bitplane 3 (the only one CLXCON has enabled) never actually receives a matching value.
+// MUTATION ALL-DISABLED-CONTINUOUS stimulus red: instead of leaving all six bitplanes disabled, bitplane 1 was enabled with its match value required and left mismatched (data 0), so PF1 is no longer vacuously present and the continuous PF1-PF2 bit does not set.
+// MUTATION ENSP-OR stimulus red: ENSP3's own sprite-3 stimulus was dropped to 0 (sprite 3 never actually presented), so sprite 3 cannot join the SPR23 group regardless of ENSP3, and SPR23-SPR45 (bit 12) stays clear.
+// MUTATION CLXDAT-ADDR stimulus red: the second collision's stimulus was changed to repeat the first pair (SPR0+SPR2) instead of a genuinely different one (SPR0+SPR4), so the two reads stopped differing.
+// MUTATION CLXDAT-READONLY stimulus red: the second harness's collision was changed from the identical SPR0+SPR2 pair to a genuinely different SPR0+SPR4 pair, so val_a and val_b legitimately diverge, confirming the check does discriminate when the underlying collision actually differs.
+// MUTATION CLXDAT-READ-CLEAR stimulus red: an unintended second SPR0+SPR2 collision was inserted between the first and second read, so the second read legitimately returns a nonzero value instead of the expected zero.
+// MUTATION PLAYFIELD-ODD-EVEN stimulus red: the even-bitplane-6 case's live-bit stimulus was redirected to bitplane 5's bit position instead of bitplane 6's own, so bitplane 6 (the only one CLXCON has enabled in that harness) never receives a matching value and PF2-SPR01 stays clear.
+// MUTATION BITMAP-PAIR stimulus red: the SPR23-SPR67 case's Y-entity stimulus was redirected from SPR67 to SPR45, so the pair actually produced is SPR23-SPR45 (bit 12) instead of SPR23-SPR67 (bit 13), and bit 13 stays clear.
+// MUTATION BIT15-UNUSED none impossible: BIT15-UNUSED is already red at baseline (Finding 2 above) -- the RTL forces bit 15 high on every successful CLXDAT read regardless of any stimulus this harness can present, so no stimulus mutation can turn it from green to red; there is nothing green here to break. Swapping the inspected bit from 15 to 14 was tried and confirmed to still read FAIL, not a clean green-to-red transition, for exactly that reason.
 
 #include <cstdint>
 #include <cstdio>
@@ -167,6 +218,15 @@ public:
         for (int i = 0; i < 4; ++i) tick_7mhz();
         dut->reset = 0;
         for (int i = 0; i < 4; ++i) tick_7mhz();
+        // Drain: clxdat has no reset branch of its own in the RTL, and on
+        // the very first simulated edge clxcon still reads as Verilator's
+        // power-on 0x0000 (before its own reset assignment has propagated),
+        // which makes every bitplane look disabled -- vacuously matched --
+        // and latches a stray bit 0 (PF1-PF2) into clxdat before clxcon
+        // ever reaches its real 0x0fff reset value. One read clears it, as
+        // documented (CLXDAT-READ-CLEAR); this is harness hygiene, not a
+        // claim about collision behaviour.
+        read_reg(CLXDAT_ADDR);
     }
     ~Harness() { delete dut; }
 
@@ -247,7 +307,7 @@ int main(int argc, char** argv) {
         h.pulse(0x00, 0x11);  // SPR0 + SPR4 -> SPR01-SPR45, bit 10
         uint16_t b = h.read_reg(CLXDAT_ADDR);
         checks.expect(
-            a == 0x0200 && b == 0x0400 && a != b,
+            (a & 0x7FFF) == 0x0200 && (b & 0x7FFF) == 0x0400 && a != b,
             "[control] CONTROL-KNOWN-VALUES-ARRIVE: two distinct, known "
             "sprite-collision stimuli (SPR0+SPR2, then SPR0+SPR4) produce "
             "two distinct, correctly-positioned CLXDAT readings ($0200 then "
@@ -547,7 +607,7 @@ int main(int argc, char** argv) {
         uint16_t second_read = h.read_reg(CLXDAT_ADDR);
 
         checks.expect(
-            first_read == 0x0200 && second_read == 0x0000,
+            (first_read & 0x7FFF) == 0x0200 && (second_read & 0x7FFF) == 0x0000,
             "CLXDAT-READ-CLEAR (p.273/289): the first read after a SPR0+SPR2 "
             "collision returns $0200 (bit 9 set); a second read with no new "
             "collision in between returns $0000 -- the first read cleared "
@@ -561,7 +621,7 @@ int main(int argc, char** argv) {
         h.pulse(0x00, 0x11);  // SPR0+SPR4 -> bit 10
         uint16_t third_read = h.read_reg(CLXDAT_ADDR);
         checks.expect(
-            third_read == 0x0400,
+            (third_read & 0x7FFF) == 0x0400,
             "[control] READ-CLEAR-CONTROL: a fresh, different collision "
             "(SPR0+SPR4) presented after the clear is still captured and "
             "read back correctly ($0400) -- the data path is not dead, the "
@@ -665,7 +725,7 @@ int main(int argc, char** argv) {
             char hexbuf[8];
             std::snprintf(hexbuf, sizeof(hexbuf), "%04X", expected);
             checks.expect(
-                result == expected,
+                (result & 0x7FFF) == expected,
                 std::string("BITMAP-PAIR ") + stim[p.x].name + "-" + stim[p.y].name +
                     " (p.273): presenting " + stim[p.x].name + " and " +
                     stim[p.y].name + " simultaneously, all other four "
