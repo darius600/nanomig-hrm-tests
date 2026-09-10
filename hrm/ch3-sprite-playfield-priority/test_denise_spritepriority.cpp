@@ -73,10 +73,74 @@
 // sprsel basis: it proves sprsel is a live, responsive signal before any
 // BPLCON2-based claim depends on reading it.
 //
-// MUTATION LOG: recorded after the RTL was opened and the build actually
-// run (see the entries below main() -- left empty in this spec-only
-// commit, filled in the follow-up commit once `make test` has actually
-// executed each mutation, per the build brief's order of work).
+// RTL OPENED, BUILT AND RUN, 10.09.2026 (all after the spec-only commit
+// above). First build under WSL/Verilator, with the loop as originally
+// committed (both playfields enabled while sweeping each 3-bit-group bit):
+// 4 passed, 6 failed -- all six BITn-IS-PFxPy checks red. Investigation
+// showed this was a bug in the STIMULUS, not a finding: with the other
+// playfield also enabled and its own priority code pinned at 0, that
+// playfield's sprite-versus-playfield branch is unconditionally true, so
+// its "else if" arm in denise_spritepriority.v's final always block
+// (ll.43-53) wins outright and masks every one of the six bits
+// identically -- a saturation trap in the harness, not a manual-vs-RTL
+// conflict. Fixed by isolating each bit's own playfield (PF1_ON for bits
+// 0-2, PF2_ON for bits 3-5), exactly as the two PF1P/PF2P-GOVERNS-...
+// checks already did; see that loop's own comment for the full account.
+// Rebuild after the fix: 6 passed, 4 failed -- BIT0-IS-PF1P0,
+// BIT1-IS-PF1P1, BIT3-IS-PF2P0 and BIT4-IS-PF2P1 red; BIT2-IS-PF1P2 and
+// BIT5-IS-PF2P2 green; all four other assertions green. This is a real,
+// structural, explained result, kept as committed here (not adjusted to
+// pass): denise_spritepriority.v's sprite-priority encoder (ll.19-36)
+// only ever emits raw code values {1,2,3,4,7} -- it never emits 5 or 6 --
+// and the comparison at ll.39-40 (`sprcode[2:0]>bplcon2[2:0]` /
+// `>bplcon2[5:3]`) is a strict, ordinary greater-than against that
+// 3-bit priority field. For the LOW bit of each group (bit 0 / bit 3,
+// value 1) there is exactly one of the four "other two bits" contexts
+// whose threshold pair (V, V+1) is (4,5) -- and since no reachable sprcode
+// equals 5, that specific pair is indistinguishable, so BIT0/BIT3 read
+// red. For the MIDDLE bit (bit 1 / bit 4, value 2) the analogous pair is
+// (4,6) -- again straddling the unreachable 5/6 gap, so BIT1/BIT4 read
+// red. For the HIGH bit (bit 2 / bit 5, value 4) every one of its four
+// threshold pairs (0,4)/(1,5)/(2,6)/(3,7) still contains a reachable code
+// (1, 2, 3 or 4/7 respectively), so BIT2/BIT5 read green. None of the 18
+// claims quotes this encoder's specific code range or the priority-
+// code-to-outcome table, so this is reported as a plain, factual
+// consequence of exhaustively testing what IS claimed (that each bit is
+// an individually significant part of a live priority code) against this
+// module's actual, measured behaviour -- not a claim this package
+// resolves either way about whether the encoder's 5/6 gap itself is
+// correct or incorrect per the manual.
+//
+// MUTATION LOG (all 10 entries actually run by this agent under WSL/
+// Verilator on 10.09.2026: edit -> rebuild -> run -> confirm the named
+// assertion(s) change colour as described -> revert -> rebuild -> confirm
+// the genuine baseline (6 passed, 4 failed) restored -- before moving to
+// the next one. Every mutation is a STIMULUS change to this file's own
+// inputs (which nsprite/nplayfield/bplcon2 values are fed, or which bit
+// index a shared check is asked to test); no expected value, oracle text
+// or comparison logic was ever touched, and nanomig/ was never touched.
+// Four of the ten assertions (BIT0-IS-PF1P0, BIT1-IS-PF1P1,
+// BIT3-IS-PF2P0, BIT4-IS-PF2P1) are genuinely red at the committed
+// baseline (see above) -- for exactly those four, "confirm goes red" does
+// not apply (they are already red), so the mutation instead feeds the
+// shared bit_significant_in_every_context() check a DIFFERENT bit index
+// known to read green (2 or 5, from the SAME group) and confirms the
+// result flips to green -- proving the check is a live, sensitive
+// evaluation of its actual stimulus rather than a hardcoded or vacuous
+// failure -- then reverts to the real bit index, confirming the genuine,
+// documented red returns. Final rebuild after the last revert: 6 passed,
+// 4 failed, confirmed again immediately before this commit.):
+//
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: the swept nplayfield/nsprite stimulus sets were both shrunk from four points each to a single point (nplayfield={0x00}, nsprite={0x00}) -> FAIL ("5 passed, 5 failed"), only FIXTURE-LIVE-DATA-PATH red (a lone sample point can only ever produce a set of size 1, never 2). Reverted: 6/4.
+// MUTATION BPLCON2-BITS-0-5-ARE-LIVE-PRIORITY-FIELD stimulus red: the swept-bplcon2 loop's fixed nsprite argument changed from 0xFF (all eight sprites active) to 0x00 (no sprite active) -> FAIL ("5 passed, 5 failed"), only BPLCON2-BITS-0-5-ARE-LIVE-PRIORITY-FIELD red (with no sprite active, sprcode is always 7 and the module's own first branch forces sprsel=0 regardless of bplcon2, collapsing the observed set to size 1). Reverted: 6/4.
+// MUTATION BIT0-IS-PF1P0 stimulus green: the call argument changed from bit_significant_in_every_context(0) to bit_significant_in_every_context(2) -> PASS ("7 passed, 3 failed"), BIT0-IS-PF1P0 flips from its genuine red to green when fed bit 2's stimulus instead of bit 0's, confirming the check is live and stimulus-sensitive, not a stub. Reverted to bit 0: back to its documented red, 6/4.
+// MUTATION BIT1-IS-PF1P1 stimulus green: the call argument changed from bit_significant_in_every_context(1) to bit_significant_in_every_context(2) -> PASS ("7 passed, 3 failed"), BIT1-IS-PF1P1 flips to green under bit 2's stimulus. Reverted to bit 1: back to its documented red, 6/4.
+// MUTATION BIT2-IS-PF1P2 stimulus red: the call argument changed from bit_significant_in_every_context(2) to bit_significant_in_every_context(0) -> FAIL ("5 passed, 5 failed"), BIT2-IS-PF1P2 flips from its genuine green to red when fed bit 0's stimulus instead of bit 2's. Reverted to bit 2: back to green, 6/4.
+// MUTATION BIT3-IS-PF2P0 stimulus green: the call argument changed from bit_significant_in_every_context(3) to bit_significant_in_every_context(5) -> PASS ("7 passed, 3 failed"), BIT3-IS-PF2P0 flips to green under bit 5's stimulus. Reverted to bit 3: back to its documented red, 6/4.
+// MUTATION BIT4-IS-PF2P1 stimulus green: the call argument changed from bit_significant_in_every_context(4) to bit_significant_in_every_context(5) -> PASS ("7 passed, 3 failed"), BIT4-IS-PF2P1 flips to green under bit 5's stimulus. Reverted to bit 4: back to its documented red, 6/4.
+// MUTATION BIT5-IS-PF2P2 stimulus red: the call argument changed from bit_significant_in_every_context(5) to bit_significant_in_every_context(3) -> FAIL ("5 passed, 5 failed"), BIT5-IS-PF2P2 flips from its genuine green to red when fed bit 3's stimulus instead of bit 5's. Reverted to bit 5: back to green, 6/4.
+// MUTATION PF1P-GOVERNS-PLAYFIELD1-INDEPENDENT-OF-PF2P stimulus red: the inner comparison's nplayfield argument changed from PF1_ON to (PF1_ON | PF2_ON), so PF2 is also enabled while PF2P is swept -> FAIL ("5 passed, 5 failed"), only PF1P-GOVERNS-PLAYFIELD1-INDEPENDENT-OF-PF2P red (PF2P now genuinely affects sprsel once PF2 is enabled, breaking the claimed invariance). Reverted: 6/4.
+// MUTATION PF2P-GOVERNS-PLAYFIELD2-INDEPENDENT-OF-PF1P stimulus red: the inner comparison's nplayfield argument changed from PF2_ON to (PF1_ON | PF2_ON), so PF1 is also enabled while PF1P is swept -> FAIL ("5 passed, 5 failed"), only PF2P-GOVERNS-PLAYFIELD2-INDEPENDENT-OF-PF1P red. Reverted: 6/4.
 
 #include <cstdint>
 #include <iostream>
@@ -180,6 +244,21 @@ int main(int argc, char** argv) {
     // and page inline in the string argument, so a text search over the
     // assertion strings finds each id sitting next to its own check rather
     // than in a shared table elsewhere in the file.
+    //
+    // ONLY the bit's own playfield is enabled (PF1_ON for bits 0-2, PF2_ON
+    // for bits 3-5) -- an EARLIER draft of this loop enabled both
+    // playfields while holding the OTHER 3-bit group at 0. That was a bug
+    // in the stimulus, not a finding about the RTL: with the other
+    // playfield also enabled and its own priority code pinned at 0, that
+    // playfield's sprite-versus-playfield branch is unconditionally true
+    // (every reachable sprite code is >0) and its "else if" arm in the
+    // module's priority chain wins outright regardless of the field under
+    // test, masking every one of the six bits identically. First build
+    // under that draft: 4 passed, 6 failed, all six BITn-IS-PFxPy checks
+    // red for this reason (see the follow-up commit message for the full
+    // trace). Isolating each bit's own playfield -- exactly as the two
+    // PF1P/PF2P-GOVERNS-...-INDEPENDENT-OF-... checks below already do --
+    // removes the masking and is what is committed here.
     // MUTATE-HERE(bit-significance): the diff between `others` and
     // `others | bit_mask` below is the only thing a mutation changes; the
     // "does sprsel differ" comparison itself is never touched.
@@ -188,12 +267,13 @@ int main(int argc, char** argv) {
         int other0 = group_start + ((bit - group_start + 1) % 3);
         int other1 = group_start + ((bit - group_start + 2) % 3);
         uint8_t bit_mask = static_cast<uint8_t>(1u << bit);
+        uint8_t nplayfield_for_group = (group_start == 0) ? PF1_ON : PF2_ON;
         for (int p = 0; p < 4; ++p) {
             uint8_t others = static_cast<uint8_t>(((p & 1) << other0) | (((p >> 1) & 1) << other1));
             bool found_difference = false;
             for (int spr = 0; spr < 256 && !found_difference; ++spr) {
-                uint8_t base_val = h.read(others, static_cast<uint8_t>(PF1_ON | PF2_ON), static_cast<uint8_t>(spr));
-                uint8_t mut_val = h.read(static_cast<uint8_t>(others | bit_mask), static_cast<uint8_t>(PF1_ON | PF2_ON), static_cast<uint8_t>(spr));
+                uint8_t base_val = h.read(others, nplayfield_for_group, static_cast<uint8_t>(spr));
+                uint8_t mut_val = h.read(static_cast<uint8_t>(others | bit_mask), nplayfield_for_group, static_cast<uint8_t>(spr));
                 if (base_val != mut_val) found_difference = true;
             }
             if (!found_difference) return false;
@@ -203,7 +283,7 @@ int main(int argc, char** argv) {
 
     checks.expect(bit_significant_in_every_context(0),
         "BIT0-IS-PF1P0: bit 0 of bplcon2 is field PF1P0 -- toggling only "
-        "this bit (both playfields enabled, the other two bits of its "
+        "this bit (only this field's own playfield enabled, the other two bits of its "
         "3-bit group held at each of their four combinations, sprite "
         "activity swept across all 256 values of nsprite) changes sprsel "
         "for at least one stimulus in every one of those four "
@@ -214,7 +294,7 @@ int main(int argc, char** argv) {
 
     checks.expect(bit_significant_in_every_context(1),
         "BIT1-IS-PF1P1: bit 1 of bplcon2 is field PF1P1 -- toggling only "
-        "this bit (both playfields enabled, the other two bits of its "
+        "this bit (only this field's own playfield enabled, the other two bits of its "
         "3-bit group held at each of their four combinations, sprite "
         "activity swept across all 256 values of nsprite) changes sprsel "
         "for at least one stimulus in every one of those four "
@@ -225,7 +305,7 @@ int main(int argc, char** argv) {
 
     checks.expect(bit_significant_in_every_context(2),
         "BIT2-IS-PF1P2: bit 2 of bplcon2 is field PF1P2 -- toggling only "
-        "this bit (both playfields enabled, the other two bits of its "
+        "this bit (only this field's own playfield enabled, the other two bits of its "
         "3-bit group held at each of their four combinations, sprite "
         "activity swept across all 256 values of nsprite) changes sprsel "
         "for at least one stimulus in every one of those four "
@@ -236,7 +316,7 @@ int main(int argc, char** argv) {
 
     checks.expect(bit_significant_in_every_context(3),
         "BIT3-IS-PF2P0: bit 3 of bplcon2 is field PF2P0 -- toggling only "
-        "this bit (both playfields enabled, the other two bits of its "
+        "this bit (only this field's own playfield enabled, the other two bits of its "
         "3-bit group held at each of their four combinations, sprite "
         "activity swept across all 256 values of nsprite) changes sprsel "
         "for at least one stimulus in every one of those four "
@@ -247,7 +327,7 @@ int main(int argc, char** argv) {
 
     checks.expect(bit_significant_in_every_context(4),
         "BIT4-IS-PF2P1: bit 4 of bplcon2 is field PF2P1 -- toggling only "
-        "this bit (both playfields enabled, the other two bits of its "
+        "this bit (only this field's own playfield enabled, the other two bits of its "
         "3-bit group held at each of their four combinations, sprite "
         "activity swept across all 256 values of nsprite) changes sprsel "
         "for at least one stimulus in every one of those four "
@@ -258,7 +338,7 @@ int main(int argc, char** argv) {
 
     checks.expect(bit_significant_in_every_context(5),
         "BIT5-IS-PF2P2: bit 5 of bplcon2 is field PF2P2 -- toggling only "
-        "this bit (both playfields enabled, the other two bits of its "
+        "this bit (only this field's own playfield enabled, the other two bits of its "
         "3-bit group held at each of their four combinations, sprite "
         "activity swept across all 256 values of nsprite) changes sprsel "
         "for at least one stimulus in every one of those four "
