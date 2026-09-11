@@ -123,13 +123,13 @@
 //   scan with the sprite disarmed (DATA=DATB=0, i.e. genuinely undriven,
 //   not merely "value 0" -- see FIXTURE-SPR0-TRANSPARENT-AT-VALUE0, which
 //   is the one place this file measures "value 0" deliberately, precisely
-//   to confirm it is indistinguishable from disarmed). The one arithmetic
-//   assumption this file makes about denise.v itself -- the channel width
-//   red/green/blue expose (assumed 4 bits, the standard OCS/ECS DAC width
-//   this whole repository's other Denise packages already use, e.g.
-//   kColor00Value=0x0F0 in the ch3-horizontal-display-window sibling) -- is
-//   confirmed or corrected as a HARNESS FIX after the RTL is opened, never
-//   silently assumed into a passing result.
+//   to confirm it is indistinguishable from disarmed). Register content
+//   under test is always compared at BOTH BPLCON0.shres settings (as a
+//   SET of distinct colours, not a raw sample trace) rather than against
+//   an absolute predicted value, specifically so a genuine colour-
+//   encoding difference cannot be confused with the sprite-shifter's own
+//   shres-dependent drain RATE (a timing/width effect, unrelated to
+//   colour, found once the RTL was opened -- see HARNESS FIXES below).
 //
 // ORDER OF WORK: this file (Harness, oracle tables, expected values,
 //   claim-id coverage, register/bit-symbol derivation above) was written
@@ -158,11 +158,161 @@
 //     and four legend ids is actually exercised.
 //   16 + 240 + 12 + 4 + 3 = 275. No claim id is declined.
 //
-// [RTL OPENED / BUILD / HARNESS FIXES / MUTATION LOG: filled in below this
-// line after the RTL was actually read, per ORDER OF WORK above.]
+// RTL OPENED -- FINDING (read directly off denise.v/denise_colortable.v/
+//   denise_sprites.v/denise_sprites_shifter.v, the exact lines cited,
+//   before any Harness fix below or any build was attempted):
+//
+//   SuperHires sprite colour encoding -- the whole page-301/302 scheme of
+//   sixteen registers redundantly packing four reduced-precision "sprite
+//   colours" via a slot-A/slot-B split selected by SuperHires timing --
+//   IS NOT IMPLEMENTED at this boundary. denise_colortable.v (the only
+//   module that ever turns a stored 12-bit register value into an RGB
+//   pixel) takes no `shres` input at all (its full port list, l.7-20, has
+//   none); its read address (`rd_adr`, l.34) is simply `select_xored`
+//   (i.e. denise.v's `clut_data`, i.e. `sprdata` when a sprite is
+//   selected) with no shres-conditional term anywhere; and its RGB
+//   packing (l.56-58) always duplicates each stored 4-bit nibble across
+//   the full 8-bit channel ({nibble,nibble}) -- the SAME expansion at
+//   shres=0 and shres=1. denise_sprites.v's sprite-colour-index
+//   construction (l.480-522, the `sprdata[7:0] = {esprm/osprm, ...}`
+//   case statement) never reads `spres`/`shres` either. The only place
+//   `spres`/`shres` reaches the sprite path at all is denise_sprites.v:
+//   158-166's `shift` case on `spres` (falling back to a shres-derived
+//   `spres_d` in denise.v:390-391 when BPLCON3.spres itself is zero,
+//   which it always is here since aga=0) -- and denise_sprites_shifter.v:
+//   119/209 confirms this `shift` signal controls ONLY how fast an
+//   already-loaded 16-bit shift register drains (twice as fast at
+//   SuperHires resolution), never what value gets loaded or displayed.
+//   The claims below are therefore tested, correctly, against an RTL that
+//   has no SuperHires-specific colour path to find: every register-level
+//   and the one general assertion compare the SET of distinct colours a
+//   sprite pixel can show between BPLCON0.shres=0 and shres=1 (not an
+//   absolute value against the manual's slot-A prediction), because an
+//   absolute-value check would have passed "by coincidence" on an
+//   ordinary, always-on 12-bit colour register -- exactly what this RTL
+//   implements -- without actually confirming anything SuperHires-
+//   specific, which is what every one of these 275 claims is about.
+//
+// HARNESS FIXES (documented, oracle text never touched):
+//   - red/green/blue are 8 bits wide (denise.v:44-46: `output wire
+//     [8-1:0]`), not the pre-RTL 4-bit guess -- kChannelBits corrected;
+//     harmless in practice since it is only used for the diagnostic
+//     describeColour()/describeSet() text now (see RTL OPENED finding
+//     above for why no expect() condition uses an absolute channel
+//     value).
+//   - The original pre-RTL per-register measurement (absolute slot-A
+//     value check + a separate "slot-B has some effect somewhere" probe)
+//     was replaced, before ever being built or run, by the shres=0-vs-
+//     shres=1 distinct-colour-SET comparison used below and in SHRES-
+//     MODE-CHANGES-OUTPUT -- a methodology fix triggered directly by
+//     reading denise_sprites_shifter.v's shres-dependent drain rate
+//     (confirmed it is a pure timing/width effect that a raw-trace
+//     comparison could mistake for a colour difference). No expected
+//     VALUE from claims.jsonl was altered by this fix -- only how the RTL
+//     is queried to check it.
+//   - Register addresses (COLOR16-31 at word address 0xC0+offset,
+//     matching COLORBASE 9'h180 and denise_colortable.v:30's
+//     `wr_adr={bank[2:0],reg_address_in[5:1]}` with bank forced 0 at
+//     aga=0), the SPRPOSCTLBASE/ATTACH sprite register convention, and
+//     the four-phase clocking all matched this file's pre-RTL
+//     assumptions exactly (reused, per BOUNDARY above, from already-
+//     committed sibling harnesses for these same modules).
+//   - THREE further fixes found only once the package was actually built
+//     and run (the pre-RTL draft compiled and linked cleanly; these are
+//     runtime/behavioural bugs a compiler cannot catch):
+//     1) FIXTURE-SPRITE-DATA-PATH-LIVE itself failed on the first run
+//        (no sprite pixel ever reached red/green/blue, for ANY register).
+//        denise.v:410 gates every sprite with `sprena = display_ena |
+//        brdsprt`; `display_ena` (denise.v:146-153, "in OCS sprites are
+//        visible between first write to BPL1DAT and end of scanline")
+//        only ever becomes 1 after a BPL1DAT write, and this package,
+//        deliberately BPU=0 throughout, never wrote it. Fix: setupDisplay
+//        now writes BPL1DAT once (value 0 -- harmless, since l_bpu stays
+//        0 so the bitplane path stays inert regardless) purely to set
+//        this gate -- see kBpl1DatAddr's own comment.
+//     2) activeSamples() never called reset_line() before scanning, so
+//        hpos free-ran from the Harness constructor's own reset through
+//        every setup/arm register write -- a sprite's fixed hstart could
+//        already have been reached, or fully drained past, before
+//        scan_line() ever sampled anything, intermittently and (because
+//        a faster SuperHires drain empties a shift register sooner)
+//        mode-sensitively. Fix: reset_line() now runs after all setup/
+//        arming and before every scan.
+//     3) armPair() originally loaded DATA/DATB with a single MSB bit
+//        (0x8000, the hrm/ch3-sprite-registers/ sibling's own
+//        convention) -- a pulse exactly ONE shift-event wide. denise_
+//        sprites_shifter.v's shift register advances TWICE per clk7_en
+//        period at SuperHires resolution (denise_sprites.v:158-166), so
+//        a one-shift-wide pulse can shift past entirely between two
+//        consecutive once-per-clk7_en samples -- confirmed by a
+//        temporary raw-trace dump showing an all-zero shres=1 trace
+//        where shres=0 showed exactly one non-zero sample. Fix: DATA/
+//        DATB now fill all 16 shift positions with the same bit
+//        (0xFFFF/0x0000), giving a colour that is CONSTANT for the
+//        sprite's whole ~16-clk7_en-period lifetime, immune to sampling
+//        phase or drain rate. None of these three fixes touched an
+//        expected VALUE from claims.jsonl -- only how the stimulus
+//        reaches the RTL and when the response is sampled.
+//
+// BUILD / RESULTS: built and run under WSL (Ubuntu-24.04)/Verilator
+// 5.052, `make` in this directory, 11.09.2026. 2 passed (both fixture
+// controls), 17 failed (SHRES-MODE-CHANGES-OUTPUT and all 16 REG-0x10..
+// REG-0x1F register assertions) -- every one of the 275 claim ids is
+// covered, and every failure is read directly off the RTL cited above,
+// not from the test's failure alone:
+//   FINDING -- SuperHires sprite colour encoding (the entire page-301/
+//   302 scheme) is NOT IMPLEMENTED at this boundary. Measured: for every
+//   one of the 15 live-testable registers (COLOR17-31; COLOR16 is
+//   separately unreachable, see REG-0x10's own reasoning), the SET of
+//   distinct colours a sprite pixel selecting that register can show is
+//   IDENTICAL at BPLCON0.shres=0 and shres=1 -- always exactly the
+//   register's own top-two-bit ("slot A") value, e.g. REG-0x11 measured
+//   "{R=2 G=1 B=3}" at BOTH settings. This matches the RTL OPENED finding
+//   above (denise_colortable.v has no `shres` input at all; its RGB
+//   packing duplicates each stored nibble the same way regardless of
+//   mode) and is now confirmed empirically, not merely read from source.
+//   REG-0x10 (COLOR16) additionally cannot be display-tested at all, for
+//   the separate, architectural reason given in its own assertion
+//   (combined sprite index 0 is universally transparent).
+//
+// MUTATION LOG (all 4 stimulus entries actually run by this agent under
+// WSL/Verilator on 11.09.2026 -- edit -> rebuild -> run -> confirm the
+// named assertion, and only that assertion, changed colour -> revert ->
+// rebuild -> confirm the 2-passed/17-failed baseline restored -- before
+// moving to the next one. nanomig/ was never touched; no expected value,
+// oracle text or comparison logic was ever edited, only stimulus. The
+// first attempt at the FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 mutation chose
+// a stimulus (arming value 1 while still reading COLOR16, which the
+// mutated arming no longer addresses) that coincidentally produced the
+// same black-on-black result as the unmutated baseline -- not a finding,
+// a mutation-design mistake; fixed by also moving the read address to
+// COLOR17, the register the mutated arming actually selects, before the
+// result below was recorded):
+//
+// MUTATION FIXTURE-SPRITE-DATA-PATH-LIVE stimulus red: the arming value changed from 1 to 0 (disarmed, identical to the baseline it is diffed against) -> FAIL ("1 passed, 18 failed"), only FIXTURE-SPRITE-DATA-PATH-LIVE newly red (diffs became empty). Reverted to 1: 2/17, same finding.
+// MUTATION FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 stimulus red: the arming value changed from 0 to 1 AND the read register from COLOR16 to COLOR17 (the register that arming value actually addresses, now loaded with the same all-ones pattern) -> FAIL ("1 passed, 18 failed"), only FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 newly red (diffs became non-empty -- value 1 is not transparent). Reverted to even=0/COLOR16: 2/17, same finding.
+// MUTATION SHRES-MODE-CHANGES-OUTPUT none impossible: already red at baseline (the FINDING above). The measured distinct-colour set is identical at shres=0 and shres=1 for every register content this file can write, so no stimulus this harness can present makes this assertion's condition (the two sets differing) true; there is nothing green here to break.
+// MUTATION REG-0x10 none impossible: already red at baseline, by construction (checks.expect(false, ...) -- combined sprite index 0 is universally transparent, confirmed by the FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 control, so no stimulus reaches this register's own display at all); there is nothing green here to break.
+// MUTATION REG-0x11 none impossible: already red at baseline (the FINDING above -- shres=0/shres=1 distinct-colour sets identical); no stimulus this harness can present makes them differ.
+// MUTATION REG-0x12 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x13 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x14 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x15 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x16 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x17 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x18 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x19 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x1A none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x1B none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x1C none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x1D none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x1E none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION REG-0x1F none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
 
 #include <cstdint>
+#include <cstdio>
 #include <iostream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -191,6 +341,19 @@ public:
 constexpr uint16_t kDiwstrtAddr = 0x08E;
 constexpr uint16_t kDiwstopAddr = 0x090;
 constexpr uint16_t kBplcon0Addr = 0x100;
+// BPL1DAT (9'h110): NOT written for its own data -- BPU stays 0
+// throughout this file, so denise.v's own l_bpu latch (l.194-203) stays
+// 0 and every bitplane shift register reads permanently inert (l.367-
+// 374) regardless of what is written here. Written ONCE per Harness,
+// value 0, purely to set `display_ena` (denise.v:146-153, "in OCS
+// sprites are visible between first write to BPL1DAT and end of
+// scanline"): sprites are gated by `sprena = display_ena | brdsprt`
+// (denise.v:410) and this file never sets brdsprt (BPLCON3 stays at its
+// reset default), so without this one write no sprite pixel -- of any
+// colour, at any register -- ever reaches the RGB output at all. Found
+// via FIXTURE-SPRITE-DATA-PATH-LIVE failing on the first build attempt;
+// a Harness/mechanics fix, not an oracle change (see HARNESS FIXES).
+constexpr uint16_t kBpl1DatAddr = 0x110;
 constexpr uint16_t kColorbaseAddr = 0x180;  // COLOR00
 constexpr uint16_t kColorAddr(int n) { return static_cast<uint16_t>(kColorbaseAddr + 2 * n); }  // COLOR n, n=0..31
 
@@ -207,9 +370,14 @@ constexpr uint16_t kSprCtlAttachBit = 0x80;
 constexpr uint16_t kBplcon0Shres = 0x0040;   // bit 6
 constexpr uint16_t kBplcon0Ecsena = 0x0001;  // bit 0
 
-// Best-guess channel width, pending confirmation once the RTL is opened
-// (see MEASUREMENT METHOD above) -- standard OCS/ECS DAC nibble width.
-constexpr int kChannelBits = 4;
+// Channel width, CONFIRMED after opening the RTL (denise.v:44-46: red/
+// green/blue are `output wire [8-1:0]`, 8 bits each -- see HARNESS FIXES
+// below). denise_colortable.v:56-58 packs each 4-bit stored nibble into
+// its own 8-bit channel by literal duplication ({nibble,nibble}), so a
+// channel's top two bits (bits 7:6) always equal the stored nibble's own
+// top two bits -- used only for the MEASURED diagnostic notes below, not
+// for any expect() gating condition (see HARNESS FIXES).
+constexpr int kChannelBits = 8;
 
 // ---------------------------------------------------------------------
 // THE ORACLE -- transcribed verbatim from claims.jsonl's sixteen row
@@ -390,28 +558,40 @@ constexpr int kScanSamples = 240;
 constexpr uint16_t kDiwstrtWide = 0x10;
 constexpr uint16_t kDiwstopWide = 0xF0;
 
-// Programs a wide-open display window, ECS+SHRES BPLCON0, and no
-// bitplanes (BPU=0 -- background is COLOR00 wherever no sprite draws).
-void setupDisplay(Harness& h) {
+// Programs a wide-open display window, ECS BPLCON0 (SHRES per `shres`),
+// and no bitplanes (BPU=0 -- background is COLOR00 wherever no sprite
+// draws).
+void setupDisplay(Harness& h, bool shres = true) {
     h.write_reg(kDiwstrtAddr, kDiwstrtWide);
     h.write_reg(kDiwstopAddr, kDiwstopWide);
-    h.write_reg(kBplcon0Addr, kBplcon0Shres | kBplcon0Ecsena);
+    h.write_reg(kBplcon0Addr, (shres ? kBplcon0Shres : 0) | kBplcon0Ecsena);
+    h.write_reg(kBpl1DatAddr, 0x0000);  // sets display_ena -- see kBpl1DatAddr's own comment.
 }
 
 // Arms sprite pair (SPR0=even/low, SPR1=odd/high) at the fixed position,
 // each with its own 2-bit pixel value (0-3), attach set on SPR1 only when
 // useOdd is true (the "unattached single sprite" case never touches
-// SPR1 at all -- SPR1 stays disarmed, its own value irrelevant).
+// SPR1 at all -- SPR1 stays disarmed, its own value irrelevant). DATA/
+// DATB are filled with the SAME bit (0xFFFF or 0x0000) across all 16
+// shift positions -- not just the MSB -- so the sprite shows a CONSTANT
+// pixel value for its entire ~16-clk7_en-period lifetime. A second-build
+// fix (see HARNESS FIXES): a single-MSB-bit pulse (0x8000) is only ONE
+// shift-event wide, and denise_sprites_shifter.v's shift register
+// advances TWICE per clk7_en period at SuperHires resolution
+// (denise_sprites.v:158-166) -- a single shift-event-wide pulse can
+// shift past entirely between two consecutive once-per-clk7_en samples,
+// which is exactly what happened (an all-zero trace at shres=1,
+// discovered via a temporary raw-trace dump, not assumed).
 void armPair(Harness& h, int evenVal, int oddVal, bool useOdd) {
-    uint16_t evenData = (evenVal & 1) ? 0x8000 : 0x0000;
-    uint16_t evenDatb = (evenVal & 2) ? 0x8000 : 0x0000;
+    uint16_t evenData = (evenVal & 1) ? 0xFFFF : 0x0000;
+    uint16_t evenDatb = (evenVal & 2) ? 0xFFFF : 0x0000;
     h.write_reg(kSprPosAddr(0), kSpritePosByte);
     h.write_reg(kSprCtlAddr(0), kSpriteCtlSh0);
     h.write_reg(kSprDatbAddr(0), evenDatb);
     h.write_reg(kSprDataAddr(0), evenData);
     if (useOdd) {
-        uint16_t oddData = (oddVal & 1) ? 0x8000 : 0x0000;
-        uint16_t oddDatb = (oddVal & 2) ? 0x8000 : 0x0000;
+        uint16_t oddData = (oddVal & 1) ? 0xFFFF : 0x0000;
+        uint16_t oddDatb = (oddVal & 2) ? 0xFFFF : 0x0000;
         h.write_reg(kSprPosAddr(1), kSpritePosByte);
         h.write_reg(kSprCtlAddr(1), kSpriteCtlSh0 | kSprCtlAttachBit);
         h.write_reg(kSprDatbAddr(1), oddDatb);
@@ -421,19 +601,39 @@ void armPair(Harness& h, int evenVal, int oddVal, bool useOdd) {
 
 // The set of samples that differ from a same-setup, same-position,
 // disarmed-sprite baseline (DATA=DATB=0 for both SPR0 and SPR1) -- i.e.
-// exactly the samples this sprite's own pixel(s) drove.
+// exactly the samples this sprite's own pixel(s) drove. `shres` selects
+// BPLCON0.shres for BOTH the live and the baseline scan (so a pure
+// SuperHires drain-RATE difference -- denise_sprites.v:158-166's `shift`
+// case on spres/spres_d, confirmed after opening the RTL to affect only
+// how fast an already-loaded shift register drains, never the loaded
+// VALUE itself -- cannot by itself make this function return a
+// differently-SIZED diff list; see distinctValues() below for the
+// colour-only comparison that does not depend on how many samples were
+// active). Calls reset_line() AFTER all setup/arming and BEFORE
+// scanning (a second-build fix -- see HARNESS FIXES): without it, hpos
+// free-runs from the Harness constructor's own reset, so the sprite's
+// FIXED hstart could already have been reached, or even fully drained
+// past, during the setup/arming writes themselves, before scan_line
+// ever samples anything -- intermittently and mode-sensitively (a
+// faster SuperHires drain empties a shift register that started
+// draining mid-setup sooner), not because of any actual colour
+// difference. reset_line() gives every measurement the same known
+// hpos=2 starting point regardless of setup length or shres.
 std::vector<uint32_t> activeSamples(uint16_t regAddr, uint16_t regValue,
-                                     int evenVal, int oddVal, bool useOdd) {
+                                     int evenVal, int oddVal, bool useOdd,
+                                     bool shres = true) {
     Harness base;
-    setupDisplay(base);
+    setupDisplay(base, shres);
     base.write_reg(regAddr, regValue);
     armPair(base, 0, 0, useOdd);  // disarmed: both members value 0
+    base.reset_line();  // known hpos=2 start -- see this function's own comment above.
     auto baseline = base.scan_line(kScanSamples);
 
     Harness live;
-    setupDisplay(live);
+    setupDisplay(live, shres);
     live.write_reg(regAddr, regValue);
     armPair(live, evenVal, oddVal, useOdd);
+    live.reset_line();
     auto trace = live.scan_line(kScanSamples);
 
     std::vector<uint32_t> diffs;
@@ -443,14 +643,50 @@ std::vector<uint32_t> activeSamples(uint16_t regAddr, uint16_t regValue,
     return diffs;
 }
 
+// The set of DISTINCT colour values among `samples`, sorted -- comparing
+// two of these (one per BPLCON0.shres setting) isolates a genuine colour-
+// encoding difference from a mere width/duration difference (which would
+// change how many samples are active, and at which sample indices, but
+// not which distinct colours appear).
+std::vector<uint32_t> distinctValues(const std::vector<uint32_t>& samples) {
+    std::set<uint32_t> s(samples.begin(), samples.end());
+    return std::vector<uint32_t>(s.begin(), s.end());
+}
+
 // Extracts channel `ch` ('R','G','B') top-2-bit value (0-3) from a
-// packed RGB sample, per kChannelBits.
+// packed RGB sample, per kChannelBits. Diagnostic use only (MEASURED
+// notes below) -- no expect() condition depends on this decomposition,
+// since it cannot by itself tell "SuperHires-specific" apart from
+// "ordinary colour register, ordinary nibble-to-byte duplication".
 int top2(uint32_t rgb, char ch) {
     uint32_t v;
     if (ch == 'R') v = (rgb >> 16) & ((1u << kChannelBits) - 1);
     else if (ch == 'G') v = (rgb >> 8) & ((1u << kChannelBits) - 1);
     else v = rgb & ((1u << kChannelBits) - 1);
     return static_cast<int>(v >> (kChannelBits - 2)) & 0x3;
+}
+
+// Diagnostic-only rendering of a colour or a colour SET, e.g. for a
+// MEASURED note explaining exactly what this file observed.
+std::string describeColour(uint32_t rgb) {
+    return "R=" + std::to_string(top2(rgb, 'R')) +
+           " G=" + std::to_string(top2(rgb, 'G')) +
+           " B=" + std::to_string(top2(rgb, 'B')) +
+           " (raw 0x" + [&] {
+               char buf[8];
+               std::snprintf(buf, sizeof(buf), "%06X", rgb);
+               return std::string(buf);
+           }() + ")";
+}
+std::string describeSet(const std::vector<uint32_t>& colours) {
+    if (colours.empty()) return "{}";
+    std::string s = "{";
+    for (size_t i = 0; i < colours.size(); ++i) {
+        if (i) s += ", ";
+        s += describeColour(colours[i]);
+    }
+    s += "}";
+    return s;
 }
 
 // Builds a 12-bit COLOR-register write value from six independently
@@ -522,44 +758,46 @@ int main(int argc, char** argv) {
     // ==================== SHRES-MODE-CHANGES-OUTPUT (general) ====================
     {
         // Register COLOR17/$11 (offset 1, unattached sprite value=1),
-        // written so slot A's R field (bits 11:10) and the FULL 4-bit R
-        // nibble (bits 11:8) differ: slot A R = 10b (2), full nibble =
-        // 1011b (0xB=11). If SuperHires colour multiplexing occurs at
-        // all, the displayed R value with shres=1 must differ from the
-        // displayed R value with shres=0 for this SAME register content.
+        // written so its top-two-bit ('slot A') R field (bits 11:10 = 2)
+        // and its bottom-two-bit ('slot B') R field (bits 9:8 = 1) differ.
+        // If SuperHires colour multiplexing -- the p.301/p.302 scheme --
+        // occurs at all, the DISTINCT colour values a sprite pixel
+        // selecting this register can show must differ between
+        // BPLCON0.shres=0 and BPLCON0.shres=1. Compared as a SET of
+        // distinct colours (distinctValues), not as a raw sample-by-
+        // sample trace, specifically so that denise_sprites.v:158-166's
+        // OWN shres/spres-dependent shift RATE (confirmed after opening
+        // the RTL: SuperHires drains an already-loaded sprite shift
+        // register twice as fast, changing how WIDE the sprite is on
+        // screen, not what colour it is) cannot by itself make this
+        // comparison read "differs" for a reason that has nothing to do
+        // with colour.
         uint16_t regv = buildRegValue(/*rA*/ 1, 0, /*gA*/ 0, 0, /*bA*/ 0, 0,
-                                       /*rB*/ 1, 1, /*gB*/ 0, 0, /*bB*/ 0, 0, 0);
-        Harness h0;
-        h0.write_reg(kDiwstrtAddr, kDiwstrtWide);
-        h0.write_reg(kDiwstopAddr, kDiwstopWide);
-        h0.write_reg(kBplcon0Addr, kBplcon0Ecsena);  // shres=0
-        h0.write_reg(kColorAddr(17), regv);
-        armPair(h0, 1, 0, false);
-        auto t0 = h0.scan_line(kScanSamples);
+                                       /*rB*/ 0, 1, /*gB*/ 0, 0, /*bB*/ 0, 0, 0);
+        auto set0 = distinctValues(activeSamples(kColorAddr(17), regv, 1, 0, false, /*shres=*/false));
+        auto set1 = distinctValues(activeSamples(kColorAddr(17), regv, 1, 0, false, /*shres=*/true));
 
-        Harness h1;
-        h1.write_reg(kDiwstrtAddr, kDiwstrtWide);
-        h1.write_reg(kDiwstopAddr, kDiwstopWide);
-        h1.write_reg(kBplcon0Addr, kBplcon0Shres | kBplcon0Ecsena);  // shres=1
-        h1.write_reg(kColorAddr(17), regv);
-        armPair(h1, 1, 0, false);
-        auto t1 = h1.scan_line(kScanSamples);
-
-        bool differs = (t0 != t1);
+        bool differs = (set0 != set1);
         checks.expect(differs,
             "SHRES-MODE-CHANGES-OUTPUT: with register COLOR17/$11 loaded so "
-            "its full 4-bit R nibble (1011b) differs from its own top-two-"
-            "bit slot-A R field (10b), the whole-line RGB trace for a "
-            "sprite pixel selecting this register differs between "
-            "BPLCON0.shres=0 and BPLCON0.shres=1 -- confirming that "
-            "SuperHires mode actually changes how sprite colour data is "
-            "read out of these registers, not merely that the registers "
-            "exist: 'In order to decode sprite and bitplane color "
-            "information in SuperHires mode, certain multiplexing occurs "
-            "in the use of the registers.' (p.301). 'SuperHires sprites are "
-            "encoded in the upper sixteen color registers using a similar "
-            "scheme:' (p.302, quoted twice by two independent readers). "
-            "C-shrc.c03, C-shres-color.c8, C-shrs.c01 .");
+            "its top-two-bit ('slot A') R field (bits 11:10, printed '10') "
+            "differs from its bottom-two-bit ('slot B') R field (bits 9:8, "
+            "printed '01'), the SET of distinct colours a sprite pixel "
+            "selecting this register can show (measured across the whole "
+            "scanned line, at BOTH BPLCON0.shres settings, so a pure width/"
+            "timing difference cannot be mistaken for a colour difference) "
+            "differs between BPLCON0.shres=0 and BPLCON0.shres=1 -- "
+            "confirming that SuperHires mode actually changes how sprite "
+            "colour data is read out of these registers, not merely that "
+            "the registers exist: 'In order to decode sprite and bitplane "
+            "color information in SuperHires mode, certain multiplexing "
+            "occurs in the use of the registers.' (p.301). 'SuperHires "
+            "sprites are encoded in the upper sixteen color registers "
+            "using a similar scheme:' (p.302, quoted twice by two "
+            "independent readers). C-shrc.c03, C-shres-color.c8, "
+            "C-shrs.c01 .");
+        checks.note("SHRES-MODE-CHANGES-OUTPUT: shres=0 distinct colours " +
+                     describeSet(set0) + "; shres=1 distinct colours " + describeSet(set1) + ".");
     }
 
     // ==================== REG-0x10 .. REG-0x1F ====================
@@ -619,71 +857,72 @@ int main(int argc, char** argv) {
                 "not a per-bit finding about any ONE of these ids -- kept "
                 "red rather than silently dropped. " + ids + " .");
         } else {
+            // Distinguishing content: slot A (bits 11:10/7:6/3:2) =
+            // R2,G1,B3; slot B (bits 9:8/5:4/1:0) = the complement,
+            // R1,G2,B0 -- this row's own printed pattern determines WHICH
+            // of slot A/slot B (or, per HARNESS FIXES below, neither,
+            // since no shres-dependent split exists in this RTL at all)
+            // is what the RGB output actually reflects.
             uint16_t regv = buildRegValue(hi(rA), lo(rA), hi(gA), lo(gA), hi(bA), lo(bA),
                                            hi(rB), lo(rB), hi(gB), lo(gB), hi(bB), lo(bB),
                                            /*unused4=*/0x0);
-            auto diffs = activeSamples(regAddr, regv, evenTarget, oddTarget, useOdd);
 
-            bool slotAOk = !diffs.empty();
-            for (uint32_t s : diffs) {
-                if (top2(s, 'R') != rA || top2(s, 'G') != gA || top2(s, 'B') != bA) slotAOk = false;
-            }
-
-            // Unused-bits (15-12) no-effect check: same slot-A/slot-B
-            // content, unused nibble flipped from 0x0 to 0xF.
+            // Unused-bits (15-12) no-effect check: same register content
+            // otherwise, unused nibble flipped from 0x0 to 0xF, measured
+            // at shres=1 (this package's own claimed mode) -- mode-
+            // independent by construction (denise_colortable.v:32,
+            // confirmed after opening the RTL: wr_dat=data_in[11:0]
+            // truncates bits 15-12 before they are ever latched,
+            // regardless of shres).
             uint16_t regvUnused = buildRegValue(hi(rA), lo(rA), hi(gA), lo(gA), hi(bA), lo(bA),
                                                  hi(rB), lo(rB), hi(gB), lo(gB), hi(bB), lo(bB),
                                                  /*unused4=*/0xF);
-            auto diffsUnused = activeSamples(regAddr, regvUnused, evenTarget, oddTarget, useOdd);
+            auto diffs = activeSamples(regAddr, regv, evenTarget, oddTarget, useOdd, /*shres=*/true);
+            auto diffsUnused = activeSamples(regAddr, regvUnused, evenTarget, oddTarget, useOdd, /*shres=*/true);
             bool unusedNoEffect = (diffs == diffsUnused);
 
-            // Slot-B (bits 9,8 / 5,4 / 1,0) effect probe: two WHOLE-LINE
-            // traces (not diffed against a baseline, so a slot-B effect
-            // showing up anywhere -- including outside the samples slot-A
-            // already marked "active", e.g. a separate SuperHires
-            // sub-pixel sample point -- is still caught), sharing the
-            // SAME slot-A content and the SAME sprite arming, differing
-            // ONLY in slot B (000000 vs 111111).
-            Harness pb0;
-            setupDisplay(pb0);
-            pb0.write_reg(regAddr, buildRegValue(hi(rA), lo(rA), hi(gA), lo(gA), hi(bA), lo(bA),
-                                                  0, 0, 0, 0, 0, 0, 0x0));
-            armPair(pb0, evenTarget, oddTarget, useOdd);
-            auto slotBLow = pb0.scan_line(kScanSamples);
-            Harness pb1;
-            setupDisplay(pb1);
-            pb1.write_reg(regAddr, buildRegValue(hi(rA), lo(rA), hi(gA), lo(gA), hi(bA), lo(bA),
-                                                  1, 1, 1, 1, 1, 1, 0x0));
-            armPair(pb1, evenTarget, oddTarget, useOdd);
-            auto slotBHigh = pb1.scan_line(kScanSamples);
-            bool slotBHasEffect = (slotBLow != slotBHigh);
+            // THE DECISIVE check, same methodology as SHRES-MODE-CHANGES-
+            // OUTPUT above and for the same reason (isolating a genuine
+            // colour-encoding difference from denise_sprites.v's own
+            // shres/spres-dependent shift RATE, confirmed after opening
+            // the RTL to affect only sprite WIDTH on screen, never the
+            // loaded pixel VALUE -- see HARNESS FIXES): the SET of
+            // distinct colours this register's own combined index can
+            // show must differ between BPLCON0.shres=0 and shres=1 if
+            // this row's printed slot-A/slot-B split is actually being
+            // read out as the manual describes.
+            auto set0 = distinctValues(activeSamples(regAddr, regv, evenTarget, oddTarget, useOdd, /*shres=*/false));
+            auto set1 = distinctValues(activeSamples(regAddr, regv, evenTarget, oddTarget, useOdd, /*shres=*/true));
+            bool shresChangesColour = (set0 != set1);
 
             std::string ids = kRegIds[idx];
 
-            checks.expect(slotAOk && unusedNoEffect && slotBHasEffect,
+            checks.expect(unusedNoEffect && shresChangesColour,
                 std::string("REG-0x") + row.hex +
                 ": with register COLOR" + std::to_string(16 + offset) + "/$" + row.hex +
                 " loaded so its top-two-bit ('slot A') fields (bits 11:10 R "
                 "/ 7:6 G / 3:2 B, this row's own printed pattern, p.302) "
-                "read R=2 G=1 B=3, and the sprite arming that this "
-                "register's own combined index (" + std::to_string(offset) +
+                "read R=2 G=1 B=3 and its bottom-two-bit ('slot B') fields "
+                "(bits 9:8/5:4/1:0, this row's OTHER printed symbols) read "
+                "R=1 G=2 B=0, and the sprite arming that this register's "
+                "own combined index (" + std::to_string(offset) +
                 ") naturally reaches " +
                 (useOdd ? "(an ATTACHED pair, SPR0 own value " + std::to_string(evenTarget) +
                           ", SPR1 own value " + std::to_string(oddTarget) + ")"
                         : "(an UNATTACHED sprite, own value " + std::to_string(evenTarget) + ")") +
-                ": every RGB sample this sprite pixel drives reads back "
-                "exactly R=2 G=1 B=3 (bits 11:10/7:6/3:2 carry what this "
-                "row's printed symbols say they carry); flipping this SAME "
-                "register's unused bits 15-12 from 0x0 to 0xF changes none "
-                "of those samples (matching 'bit 15/14/13/12 is unused' for "
-                "this row); and flipping this SAME register's 'slot B' "
-                "bits (9,8/5,4/1,0, this row's OTHER printed symbols) from "
-                "000000 to 111111, with slot A and the sprite arming both "
-                "held fixed, changes at least one sample somewhere across "
-                "the whole scanned line -- showing bits 9,8,5,4,1,0 are "
-                "not simply inert padding either, matching this row's own "
-                "printed symbol assignment for those six bit positions "
-                "too. " + ids + " .");
+                ": flipping this SAME register's unused bits 15-12 from "
+                "0x0 to 0xF changes none of the RGB samples this sprite "
+                "pixel drives (matching 'bit 15/14/13/12 is unused' for "
+                "this row); AND, measured at BOTH BPLCON0.shres settings "
+                "to isolate colour from the SuperHires drain-rate/width "
+                "effect, the SET of distinct colours this sprite pixel "
+                "can show differs between shres=0 and shres=1 -- i.e. "
+                "this register's slot-A/slot-B split from this row's own "
+                "printed symbols is actually read out as SuperHires-mode-"
+                "specific data, not as an ordinary always-on colour "
+                "value. " + ids + " .");
+            checks.note(std::string("REG-0x") + row.hex + ": shres=0 distinct colours " +
+                        describeSet(set0) + "; shres=1 distinct colours " + describeSet(set1) + ".");
         }
     }
 
