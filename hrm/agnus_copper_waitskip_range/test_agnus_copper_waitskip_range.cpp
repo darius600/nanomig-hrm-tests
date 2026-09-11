@@ -11,6 +11,18 @@
 //   budget) -> FAIL as expected.
 // MUTATION W3 stimulus red: the second WAIT's target moved from $3C (identical to the first) to $50
 //   (unreachable in the run budget) -> FAIL as expected (the COLOR01 MOVE never runs).
+// MUTATION W4a stimulus red: the fixture's run shortened from 20000 cycles to 200,
+//   so it no longer drives a full line -> 43 passed, 1 failed, W4a the only
+//   assertion that moves. W4b stays green (a smaller hpos is still below $7F) and
+//   W4 stays green (the MOVE still never runs). Reverted: 44 passed, 0 failed.
+// MUTATION W4b none impossible: W4b asserts that the HP comparison field reaches
+//   only $6E on this fixture, below the terminal WAIT's $7F. The bound comes from
+//   the LINE LENGTH -- 454 counts, hpos[8:2] -- and no stimulus in this package
+//   varies it. The attempt is recorded rather than the conclusion alone: the run
+//   was lengthened from 20000 cycles to 200000, ten times over, and the result was
+//   44 passed 0 failed, unchanged, because hpos wraps every line and the maximum
+//   does not grow. Lengthening the line needs a BEAMCON0/HTOTAL write, which this
+//   package's harness does not offer.
 // MUTATION W4 stimulus red: the terminal $FFFF/$FFFE sentinel replaced with an ordinary always-true WAIT
 //   ($00,$00 fully masked) -> FAIL as expected, confirming the check does notice a release when one occurs.
 // MUTATION W5 stimulus red: masked target nibble changed from $0F to $03 -> FAIL as expected (release now
