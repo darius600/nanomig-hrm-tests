@@ -620,3 +620,61 @@ confirming that nothing downstream silently depends on the border being opaque.
 
 *F10 found by the FPGA-091 chapter-3 build, 11.09.2026, confirmed against the RTL
 by the lead before recording.*
+
+## FPGA-091-F11 — SuperHires sprite colour encoding is not implemented
+
+**Package:** `hrm/ch3-shres-sprite-colour-encoding`. **17 red, 2 green.**
+Pages 301, 302. The largest single red result in chapter 3.
+
+Pages 301–302 give the ECS SuperHires sprite colour scheme: in SuperHires the
+sixteen colour registers `$10`–`$1F` are read as *two* colour slots each — slot A
+in the top bit of every 2-bit field (bits 11:10 R, 7:6 G, 3:2 B) and slot B in
+the bottom (9:8, 5:4, 1:0) — so that a sprite can carry colour at the doubled
+pixel rate. NanoMig reads them as ordinary colour registers in every mode.
+
+**Root cause, verified in the RTL:** `denise_colortable.v` has no `shres` or
+`spres` port at all. Its whole interface is mode-blind:
+
+```verilog
+module denise_colortable (
+  clk, clk7_en, reg_address_in, data_in, rdram,
+  select, bplxor, bank, loct, ehb_en, rgb );   // no shres, no spres
+```
+
+`spres` reaches the sprite path in exactly one place — `denise_sprites.v:158-166`,
+where it sets `shift`, the shift-register drain rate. That changes how **wide** a
+SuperHires sprite is, never what colour it is.
+
+**What makes this measured rather than merely read.** The drain-rate effect is a
+real confound: at `shres=1` a sprite is half as wide, so a raw sample trace
+differs between modes for a reason that has nothing to do with colour. The
+package therefore compares the *set of distinct colours* a sprite pixel can show,
+which is width-invariant. Every live register returns the identical set:
+
+```
+MEASURED: REG-0x11: shres=0 distinct colours {R=2 G=1 B=3 (raw 0x9966CC)};
+                    shres=1 distinct colours {R=2 G=1 B=3 (raw 0x9966CC)}.
+```
+
+— the same for `$11` through `$1F`. Reproduced by the lead from a deleted
+`obj_dir`, not taken from the builder's run.
+
+**Two controls hold the result up.** `FIXTURE-SPRITE-DATA-PATH-LIVE` and
+`FIXTURE-SPR0-TRANSPARENT-AT-VALUE0` are green, so the fixture demonstrably
+drives sprite pixels and observes their colour; the seventeen reds are an absent
+feature, not a dark fixture. Both controls were mutated red and reverted.
+
+**One claim group is architecturally unreachable, not undecided.** The 21 ids on
+COLOR16 (`$10`) cannot be reached by live sprite display at all — combined sprite
+index 0 is universally transparent. That is recorded `none impossible` and
+confirmed by its own control rather than assumed.
+
+*For the specialists:* this is a feature-completeness gap in an ECS mode, of the
+same character as [F10] — not a wrong behaviour but an unbuilt one. Whether
+SuperHires sprite colour is worth implementing is a scope question for NanoMig,
+not a defect report.
+
+---
+
+*F11 found by the FPGA-091 chapter-3 build, 11.09.2026; RTL root cause and the
+measurement independently reproduced by the lead before recording.*
