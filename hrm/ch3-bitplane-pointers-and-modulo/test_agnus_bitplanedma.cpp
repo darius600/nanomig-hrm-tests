@@ -1159,7 +1159,7 @@ int main(int argc, char** argv) {
             "matching Figure 3-10/3-11's own worked numbers and the chapter "
             "summary's 'Set modulo to 0 for non-interlaced' (p.64). "
             "3-mem.c10, 3-mod.c01, 3-mod.c02, 3-modulo.c1, 3-mod.c03, "
-            "3-modulo.c2, 3-mod.c05, 3-modulo.c5, 3-modulo.c6, 3-modulo.c7, "
+            "3-modulo.c2, 3-modulo.c3, 3-mod.c05, 3-modulo.c5, 3-modulo.c6, 3-modulo.c7, "
             "3-mod.f01, 3-mod.f04, 3-modulo.c10, 3-modulo.c11, "
             "3-modulo.c12, 3-ptr.c07, 3-ptr.c08, 3-ptr.c11, 3-sum.c18, "
             "3-summary.c5, A-bplmod.c9, A-bplmod.c10, A-mod.c01, B-mod.c1, "
