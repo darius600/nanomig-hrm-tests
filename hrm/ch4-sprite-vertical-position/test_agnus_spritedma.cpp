@@ -186,11 +186,98 @@
 // already measured (40..44, then 40..46) -- before any claim-based
 // assertion below depends on the same write -> sweep -> observe path.
 //
-// RESULTS: filled in below, after opening the RTL and building, in a
-// separate commit per the build brief's order of work.
+// STIMULUS FIXES (this pass, after opening agnus_spritedma.v -- neither
+// changes an expected value, only stimulus): (1) SPRXCTL-BIT2-SV8-IS-
+// VSTART-HIGH-BIT's SV8=0 case originally armed SPR0CTL with the SAME
+// byte (0xFF) used for SPR0POS, making VSTART and VSTOP both 255; per
+// agnus_spritedma.v:242 (VSTOP is checked before VSTART on a
+// simultaneous vpos match, giving VSTOP precedence), that sprite would
+// never have activated at all, and the assertion would have measured
+// start==-1 for the wrong reason. Fixed by giving that case's SPR0CTL an
+// EV8-set (VSTOP=511) value instead, comfortably clear of VSTART=255; the
+// asserted value (start==255) is unchanged. (2) SPRXPOS-SPRXCTL-ADDRESS-
+// MAP's and SPRXPOS-SPRXCTL-WRITE-BUS-HAS-BOTH-DMA-AND-PROCESSOR-PATHS's
+// own address-set sweeps originally started at vpos=0; every sprite
+// channel's own (never-written) VSTOP defaults to 0, which coincidentally
+// equals vpos=0 on that first line and independently latches `sprvstop`
+// (agnus_spritedma.v:255-258), triggering the very POS/CTL-prefetch cycle
+// these two assertions observe THROUGH A DIFFERENT PATH than the one
+// (`vblend`) they meant to exercise -- discovered when the MUT_ADDRMAP/
+// MUT_WRITEBUS mutations below (withholding vblend) failed to move either
+// assertion on the first mutation pass. Fixed by starting both sweeps at
+// vpos=1 instead (no channel's default VSTOP=0 matches vpos=1); the
+// addresses asserted for are unchanged, and both mutations now correctly
+// turn only their own assertion red (see MUTATION LOG below).
 //
-// MUTATION LOG: filled in below, after opening the RTL and building, in
-// a separate commit per the build brief's order of work.
+// RESULTS: 9 passed, 0 failed. No RTL deviation found among the 176
+// claims carried by a checks.expect() (the remaining 2 are the declined
+// SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED). agnus_spritedma.v conforms, at this
+// boundary, to every printed proposition this package could test: the
+// SV7-SV0/EV7-EV0 byte fields, the SV8/EV8 high bits, the full 16-address
+// POS/CTL map for all 8 channels, Agnus's own genuine write-target status
+// for SPRxPOS/SPRxCTL, and the structural existence of both a DMA path
+// and a processor path for SPRxPOS/SPRxCTL (DMA-only for SPRxDATA/
+// SPRxDATB, per the module's own decode). The one MEASURED (non-claim)
+// finding -- SPRxCTL bits 6/5 are vstart[9]/vstop[9], gated by `ecs`,
+// each contributing exactly +512 to the measured line when set (base=4
+// bit6=4 at ecs=0, base=4 bit6=516 at ecs=1; base=8 bit5=8 at ecs=0,
+// base=8 bit5=520 at ecs=1) -- is not a deviation against any claim (no
+// claim in this package's 178 records states what these bits do), so it
+// is reported, not scored red or green, per this package's own build
+// brief.
+//
+// MUTATION LOG (all 9 stimulus entries below were run by this agent under
+// WSL/Verilator (5.052) on 12.09.2026, against the 9-passed/0-failed
+// baseline above -- build with -DMUT_NAME=1 -> rebuild -> run -> confirm
+// the named assertion, and only that assertion, changed colour -> rebuild
+// with no flags -> confirm the 9/0 baseline restored -- before moving to
+// the next one. nanomig/ was never touched; no expected value, oracle
+// text or comparison logic was ever edited, only stimulus, each guarded
+// behind its own #if MUT_NAME flag so the baseline file is unchanged by
+// default:
+//
+// MUTATION FIXTURE-DELIVERS-DISTINCT-VALUES-IN-ORDER stimulus red: -DMUT_CONTROL=1 makes the second measurement's SPR0CTL write 0x2C (the SAME as the first measurement's) instead of 0x2E, so the two windows stop differing -> FAIL ("8 passed, 1 failed"), only this control case newly red (w2.end became 44, not the asserted 46). Rebuilt with no flags: 9/0 restored.
+// MUTATION SPRXPOS-SPRXCTL-ADDRESS-MAP stimulus red: -DMUT_ADDRMAP=1 withholds vblend (held low instead of high) across the sweep -> FAIL ("8 passed, 1 failed"), only this assertion newly red (the collected address set came back empty -- see STIMULUS FIXES above for why the sweep had to start at vpos=1, not 0, for this mutation to be meaningful at all). Rebuilt with no flags: 9/0 restored.
+// MUTATION SPRXPOS-BYTE-IS-SV70-VSTART stimulus red: -DMUT_SV70=1 makes the second SPR0POS write 0x20 (the same as the first) instead of 0x21 -> FAIL ("8 passed, 1 failed"), only this assertion newly red (wb.start no longer differs from wa.start by 1; the two are equal). Rebuilt with no flags: 9/0 restored.
+// MUTATION SPRXCTL-BYTE-IS-EV70-VSTOP stimulus red: -DMUT_EV70=1 makes the second SPR0CTL write 0x20 (the same as the first) instead of 0x21 -> FAIL ("8 passed, 1 failed"), only this assertion newly red (wb.end no longer differs from wa.end by 1). Rebuilt with no flags: 9/0 restored.
+// MUTATION SPRXCTL-BIT2-SV8-IS-VSTART-HIGH-BIT stimulus red: -DMUT_SV8=1 withholds the SV8 stimulus in the "hb" measurement (SPR0CTL held at $FF/SV8=0 instead of SV8=1) -> FAIL ("8 passed, 1 failed"), only this assertion newly red (wb.start no longer 511). Rebuilt with no flags: 9/0 restored.
+// MUTATION SPRXCTL-BIT1-EV8-IS-VSTOP-HIGH-BIT stimulus red: -DMUT_EV8=1 withholds the EV8 stimulus in the "hb" measurement (EV8=0 instead of 1) -> FAIL ("8 passed, 1 failed"), only this assertion newly red (wb.end no longer 511). Rebuilt with no flags: 9/0 restored.
+// MUTATION AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL stimulus red: -DMUT_AGNUSTARGET=1 makes the second SPR0POS write in this assertion's own independent measurement 0x10 (the same as the first) instead of 0x18 -> FAIL ("8 passed, 1 failed"), only this assertion newly red (pos_reaches_agnus became false); SPRXPOS-BYTE-IS-SV70-VSTART, which shares no variable with this assertion's own measurement, stayed green, confirming the isolation held. Rebuilt with no flags: 9/0 restored.
+// MUTATION SPRXPOS-SPRXCTL-WRITE-BUS-HAS-BOTH-DMA-AND-PROCESSOR-PATHS stimulus red: -DMUT_WRITEBUS=1 withholds vblend in this assertion's own independent address-set sweep -> FAIL ("8 passed, 1 failed"), only this assertion newly red (dma_side became false); SPRXPOS-SPRXCTL-ADDRESS-MAP, which uses the same technique but its own separate sweep, stayed green. Rebuilt with no flags: 9/0 restored.
+// MUTATION SPRXDATA-SPRXDATB-DMA-PATH-ONLY-AT-THIS-BOUNDARY stimulus red: -DMUT_DATADATB=1 changes the arming SPR0POS write to 0x20 (VSTART=32) instead of 0x28 (VSTART=40), so the measured window no longer starts at line 40 -> FAIL ("8 passed, 1 failed"), only this assertion newly red (wd.start became 32, not 40). Rebuilt with no flags: 9/0 restored.
+// MUTATION SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED: no record -- this claim is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
+
+// MUT_*: replay stimulus for this file's own mutation records (RESULTS/
+// MUTATION LOG below), one flag per non-declined assertion, each
+// isolated to that assertion's own call site so a mutation build changes
+// only the named assertion's colour. -DMUT_NAME=1 to replay one.
+#ifndef MUT_CONTROL
+#define MUT_CONTROL 0
+#endif
+#ifndef MUT_ADDRMAP
+#define MUT_ADDRMAP 0
+#endif
+#ifndef MUT_SV70
+#define MUT_SV70 0
+#endif
+#ifndef MUT_EV70
+#define MUT_EV70 0
+#endif
+#ifndef MUT_SV8
+#define MUT_SV8 0
+#endif
+#ifndef MUT_EV8
+#define MUT_EV8 0
+#endif
+#ifndef MUT_AGNUSTARGET
+#define MUT_AGNUSTARGET 0
+#endif
+#ifndef MUT_WRITEBUS
+#define MUT_WRITEBUS 0
+#endif
+#ifndef MUT_DATADATB
+#define MUT_DATADATB 0
+#endif
 
 #include <cstdint>
 #include <iostream>
@@ -357,11 +444,12 @@ Window measure_window(Harness& h, int sprite_idx, int vpos_max) {
 // POS/CTL fetch" exercises), collecting the SET of byte addresses this
 // module's own DMA sequencer requests on its own -- no register is
 // written before this call; the Harness is used at its power-on default.
-std::set<int> sweep_prefetch_addresses(Harness& h, int vpos_lo, int vpos_hi) {
+std::set<int> sweep_prefetch_addresses(Harness& h, int vpos_lo, int vpos_hi,
+                                        bool assert_vblend = true) {
     std::set<int> seen;
     for (int line = vpos_lo; line < vpos_hi; ++line) {
         h.dut->vpos = line;
-        h.dut->vblend = 1;
+        h.dut->vblend = assert_vblend ? 1 : 0;
         for (int hp = 0; hp < 454; ++hp) {
             h.dut->hpos = hp;
             h.dut->clk7_en = 1;
@@ -403,7 +491,11 @@ int main(int argc, char** argv) {
 
         Harness h2;
         write_pos(h2, 0, 0x28);
+#if MUT_CONTROL
+        write_ctl(h2, 0, 0x2C, false, false);  // MUTATION: same VSTOP as h1 (was 0x2E).
+#else
         write_ctl(h2, 0, 0x2E, false, false);
+#endif
         Window w2 = measure_window(h2, 0, 50);
         bool second_pair_ok = (w2.start == 40 && w2.end == 46);
 
@@ -424,7 +516,20 @@ int main(int argc, char** argv) {
     // ------------- SPRXPOS-SPRXCTL-ADDRESS-MAP -------------
     {
         Harness h;
-        std::set<int> seen = sweep_prefetch_addresses(h, 0, 30);
+        // Sweep starts at vpos=1, not 0: at vpos=0, every sprite's own
+        // (never-written, default-0) vstop coincidentally equals vpos,
+        // which independently latches sprvstop true regardless of
+        // vblend (agnus_spritedma.v:255-258) -- a fixture-default
+        // coincidence discovered only once the RTL was open and the
+        // MUT_ADDRMAP mutation below failed to move this assertion at
+        // first. Starting at vpos=1 avoids it (no channel's default
+        // vstop=0 matches vpos=1); the addresses asserted for are
+        // unchanged.
+#if MUT_ADDRMAP
+        std::set<int> seen = sweep_prefetch_addresses(h, 1, 30, /*assert_vblend=*/false);  // MUTATION: vblend withheld.
+#else
+        std::set<int> seen = sweep_prefetch_addresses(h, 1, 30);
+#endif
         bool all_present = true;
         std::vector<int> missing;
         for (int n = 0; n < 8; ++n) {
@@ -435,7 +540,7 @@ int main(int argc, char** argv) {
         }
         checks.expect(all_present,
             "SPRXPOS-SPRXCTL-ADDRESS-MAP: from a freshly reset DUT (no "
-            "register written), sweeping vpos 0..29 with vblend held high "
+            "register written), sweeping vpos 1..29 with vblend held high "
             "-- the automatic POS/CTL-prefetch trigger -- and granting "
             "ackdma on every reqdma, this module's own DMA sequencer "
             "requests all 16 of the printed word addresses on its own: "
@@ -472,7 +577,11 @@ int main(int argc, char** argv) {
         Window wa = measure_window(ha, 0, 50);
 
         Harness hb;
+#if MUT_SV70
+        write_pos(hb, 0, 0x20);  // MUTATION: same byte as ha (was 0x21).
+#else
         write_pos(hb, 0, 0x21);
+#endif
         write_ctl(hb, 0, 0xFF, false, false);
         Window wb = measure_window(hb, 0, 50);
 
@@ -503,7 +612,11 @@ int main(int argc, char** argv) {
 
         Harness hb;
         write_pos(hb, 0, 0x02);
+#if MUT_EV70
+        write_ctl(hb, 0, 0x20, false, false);  // MUTATION: same byte as ha (was 0x21).
+#else
         write_ctl(hb, 0, 0x21, false, false);
+#endif
         Window wb = measure_window(hb, 0, 50);
 
         bool ok = wa.end != -1 && wb.end != -1 && (wb.end - wa.end) == 1;
@@ -526,13 +639,29 @@ int main(int argc, char** argv) {
     // ------------- SPRXCTL-BIT2-SV8-IS-VSTART-HIGH-BIT -------------
     {
         Harness ha;
-        write_pos(ha, 0, 0xFF);              // VSTART low byte maxed (255).
-        write_ctl(ha, 0, 0xFF, false, false); // SV8=0, VSTOP far out.
+        write_pos(ha, 0, 0xFF);               // VSTART low byte maxed (255).
+        write_ctl(ha, 0, 0xFF, false, true);   // SV8=0, VSTOP=511 (EV8 set) so
+                                                // VSTOP cannot coincide with
+                                                // VSTART=255 -- a real RTL fact
+                                                // (agnus_spritedma.v:242, VSTOP
+                                                // is checked before VSTART on a
+                                                // simultaneous match) discovered
+                                                // only after opening the RTL; an
+                                                // earlier draft of this stimulus
+                                                // used VSTOP=255 too, which would
+                                                // have made this sprite never
+                                                // activate at all. Stimulus fix
+                                                // only -- the expected value
+                                                // (start==255) is unchanged.
         Window wa = measure_window(ha, 0, 260);
 
         Harness hb;
         write_pos(hb, 0, 0xFF);
+#if MUT_SV8
+        write_ctl(hb, 0, 0xFF, false, false);  // MUTATION: SV8 withheld (was true).
+#else
         write_ctl(hb, 0, 0xFF, true, false);  // SV8=1.
+#endif
         Window wb = measure_window(hb, 0, 520);
 
         bool ok = wa.start == 255 && wb.start == 511;
@@ -558,7 +687,11 @@ int main(int argc, char** argv) {
 
         Harness hb;
         write_pos(hb, 0, 0x02);
+#if MUT_EV8
+        write_ctl(hb, 0, 0xFF, false, false);  // MUTATION: EV8 withheld (was true).
+#else
         write_ctl(hb, 0, 0xFF, false, true);   // EV8=1.
+#endif
         Window wb = measure_window(hb, 0, 520);
 
         bool ok = wa.end == 255 && wb.end == 511;
@@ -595,37 +728,49 @@ int main(int argc, char** argv) {
 
     // MEASURED note: bits 6 and 5 are silent in every printed source this
     // package's 178 claims draw on (see the header note above). Reported,
-    // not asserted -- no claim id, no pass/fail.
+    // not asserted -- no claim id, no pass/fail. bit6 feeds vstart[9] (so
+    // its effect shows on Window::start) and bit5 feeds vstop[9] (so its
+    // effect shows on Window::end) -- two DIFFERENT fields, per
+    // agnus_spritedma.v:221/225, read directly once the RTL was open
+    // (this file's own classify.evidence already said as much before
+    // that, at the spec-only stage). VSTART=4/VSTOP=8 (baseline, both
+    // bits clear) are chosen distinct from each other and small, so a
+    // +512 shift on either stays inside a single, shared sweep ceiling
+    // without the two colliding.
     {
-        auto probe = [](bool ecs, bool bit6, bool bit5) -> int {
+        auto probe = [](bool ecs, bool bit6, bool bit5) -> Window {
             Harness h(ecs);
-            write_pos(h, 0, 0x02);
-            write_ctl(h, 0, 0xF0, false, false, bit6, bit5);
-            Window w = measure_window(h, 0, 520);
-            return w.start;
+            write_pos(h, 0, 0x04);                          // VSTART low byte = 4.
+            write_ctl(h, 0, 0x08, false, false, bit6, bit5); // VSTOP low byte = 8.
+            return measure_window(h, 0, 530);
         };
-        int ecs0_base = probe(false, false, false);
-        int ecs0_bit6 = probe(false, true, false);
-        int ecs0_bit5 = probe(false, false, true);
-        int ecs1_base = probe(true, false, false);
-        int ecs1_bit6 = probe(true, true, false);
-        int ecs1_bit5 = probe(true, false, true);
+        Window ecs0_base = probe(false, false, false);
+        Window ecs0_bit6 = probe(false, true, false);
+        Window ecs0_bit5 = probe(false, false, true);
+        Window ecs1_base = probe(true, false, false);
+        Window ecs1_bit6 = probe(true, true, false);
+        Window ecs1_bit5 = probe(true, false, true);
         checks.note(
-            "SPRxCTL bits 6/5 (SPR0POS=0x02, SPR0CTL upper byte=0xF0, "
-            "SV8/EV8 both clear, swept vpos 0..519): measured start line "
-            "-- ecs=0: base=" + std::to_string(ecs0_base) +
-            " bit6=" + std::to_string(ecs0_bit6) +
-            " bit5=" + std::to_string(ecs0_bit5) +
-            "; ecs=1: base=" + std::to_string(ecs1_base) +
-            " bit6=" + std::to_string(ecs1_bit6) +
-            " bit5=" + std::to_string(ecs1_bit5) + ". Per this package's "
-            "own classify.evidence, bit6 is vstart[9] and bit5 is "
-            "vstop[9] (rtl/agnus_spritedma.v:221/225), gated by the ecs "
-            "input (:242/244) -- a fact no printed source in this "
-            "package's 178 claims states. If either delta lands outside "
-            "the swept range (vpos wraps or this module's own vpos port "
-            "does not extend that far), that too is part of what was "
-            "measured, not assumed.");
+            "SPRxCTL bits 6/5 (SPR0POS=0x04/VSTART=4, SPR0CTL upper "
+            "byte=0x08/VSTOP=8, SV8/EV8 both clear, swept vpos 0..529): "
+            "bit6's effect on the measured START line -- ecs=0: base=" +
+            std::to_string(ecs0_base.start) + " bit6=" +
+            std::to_string(ecs0_bit6.start) + "; ecs=1: base=" +
+            std::to_string(ecs1_base.start) + " bit6=" +
+            std::to_string(ecs1_bit6.start) +
+            ". bit5's effect on the measured END line -- ecs=0: base=" +
+            std::to_string(ecs0_base.end) + " bit5=" +
+            std::to_string(ecs0_bit5.end) + "; ecs=1: base=" +
+            std::to_string(ecs1_base.end) + " bit5=" +
+            std::to_string(ecs1_bit5.end) + ". Per this package's own "
+            "classify.evidence, and confirmed directly against "
+            "agnus_spritedma.v:221 ('{data_in[15:8],data_in[6],"
+            "data_in[5],data_in[2],data_in[1]}') and :225/242/244 once "
+            "the RTL was opened: bit6 is vstart[9] and bit5 is vstop[9], "
+            "each gated by the ecs input -- a fact no printed source in "
+            "this package's 178 claims states. If a delta lands outside "
+            "the swept range, that too is part of what was measured, not "
+            "assumed.");
     }
 
     // ------------- AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL -------------
@@ -640,7 +785,11 @@ int main(int argc, char** argv) {
         Window wp1 = measure_window(hp1, 0, 60);
 
         Harness hp2;
+#if MUT_AGNUSTARGET
+        write_pos(hp2, 0, 0x10);  // MUTATION: same byte as hp1 (was 0x18).
+#else
         write_pos(hp2, 0, 0x18);
+#endif
         write_ctl(hp2, 0, 0xFF, false, false);
         Window wp2 = measure_window(hp2, 0, 60);
 
@@ -710,7 +859,16 @@ int main(int argc, char** argv) {
         // SPRXPOS-SPRXCTL-ADDRESS-MAP above) unprompted by any write --
         // re-measured here, independently, restricted to sprite 0.
         Harness hd;
-        std::set<int> seen = sweep_prefetch_addresses(hd, 0, 5);
+        // Sweep starts at vpos=1, not 0, for the same reason
+        // SPRXPOS-SPRXCTL-ADDRESS-MAP's own sweep does (see its comment
+        // above): at vpos=0 every channel's default (never-written)
+        // vstop=0 coincidentally matches, latching sprvstop regardless
+        // of vblend.
+#if MUT_WRITEBUS
+        std::set<int> seen = sweep_prefetch_addresses(hd, 1, 5, /*assert_vblend=*/false);  // MUTATION: vblend withheld.
+#else
+        std::set<int> seen = sweep_prefetch_addresses(hd, 1, 5);
+#endif
         bool dma_side = seen.count(0x140) && seen.count(0x142);
 
         // Processor side: a direct reg_address_in/data_in write (the
@@ -782,7 +940,11 @@ int main(int argc, char** argv) {
         // these two addresses; doing so would test nothing this module
         // can answer.
         Harness hd;
+#if MUT_DATADATB
+        write_pos(hd, 0, 0x20);  // MUTATION: VSTART=32 instead of 40.
+#else
         write_pos(hd, 0, 0x28);
+#endif
         write_ctl(hd, 0, 0x2C, false, false);
         Window wd = measure_window(hd, 0, 50);
         bool dma_side = wd.start == 40 && wd.end == 44;
