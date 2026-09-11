@@ -97,7 +97,7 @@ contradicted elsewhere in the same manual.
 | Finding | Origin | Standing |
 |---|---|---|
 | FPGA-060 | pipeline | corroborated — p273 and p309 give two different widths |
-| FPGA-062 | pipeline | corroborated three ways |
+| FPGA-062 | pipeline | corroborated — two editions carry the appendix C sentence; challenged 11.09. and upheld |
 | FPGA-069 | pipeline | corroborated — p20 and p275, units settled by FPGA-084 |
 | FPGA-051 | hand-written, Aug | **stands** — the manual contradicts itself; two emulators settle it against the RTL |
 | FPGA-050 | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
@@ -186,13 +186,52 @@ manual whatever that width is.
 
 | | |
 |---|---|
-| Manual | Appendix C p310: with ECS and CDANG=0 the writable range equals the OCS CDANG=1 range, `$20`–`$FF` |
-| Measured | `$40`–`$FF`; 32 addresses `$20`–`$3F` are falsely rejected, none falsely accepted |
+| Manual | Appendix C p310: with ECS and CDANG clear the Copper reaches `$DFF03E`–`$DFF07E`, "the same range as when the danger bit is set in the standard chip set" |
+| Measured | that range is rejected; with CDANG clear the accepted set is `$080`–`$1FE` at `ecs=0` and `ecs=1` alike, so 32 addresses `$040`–`$07E` are falsely rejected and none falsely accepted |
 | Tests | `hrm/agnus_copper_move_range` (T9), `hrm/agnus_copper_move_sweep` |
 
-Corroborated three ways: the exhaustive address sweep, the appendix text, and the
-appendix B marker column, which lists 25 registers `$040`–`$07E` as CDANG-gated
-and 32 registers `$000`–`$03E` as never Copper-writable.
+Addresses here are the manual's byte addresses. A Copper instruction encodes
+DA8-1, so the module's register ports carry them halved and the sweep prints them
+that way; an earlier version of this entry quoted the halved form without saying
+so, which made it unreconcilable with the test it cites.
+
+**Corroborated on both sides, but not three ways.** The manual side carries in two
+editions: the Developer-CD text and the OCR of the printed book give the sentence
+word for word. The measured side has the single-address probe and the exhaustive
+sweep agreeing.
+
+An earlier version counted appendix B's marker column as a third corroboration.
+It is not one. That column describes the standard chip set, where the RTL already
+agrees with it, so it cannot disagree with the design here — and a record that
+cannot disagree with the design is not evidence. What it does contribute is the
+*referent* of appendix C's comparison: it fixes which addresses "the danger bit
+set in the standard chip set" denotes. Every one of the 26 register rows in
+`$040`–`$07E` carries the CDANG marker, without exception, and the 32 addresses
+below `$040` are marked `*`, not writable by the Copper at all.
+
+#### Challenged 11.09.2026, and upheld
+
+The chapter-2 appendix classification proposed that T9's oracle is wrong rather
+than the RTL. It measured the same `$080`–`$1FE` at both chipsets and preferred
+appendix B's legend to appendix C p310. Appendix B cannot govern this case, and
+says so itself:
+
+> "About the ECS registers. Registers denoted with an "(E)" in the chip column
+> means that those registers have been changed in the Enhanced Chip Set (ECS).
+> [...] See the register map in Appendix C for information on which ECS registers
+> are new and which have been modified." — appendix B p288
+
+COPCON is listed there as `*02E W A(E)`: marked ECS-changed, with the change
+documented only in appendix C. The manual states its own order of precedence for
+exactly this register, and the challenge inverts it. Neither appendix B's legend
+nor the chapter body on p26 mentions ECS at all, so neither can settle the ECS
+case. The oracle stands and T9's red is unchanged.
+
+One imprecision inside appendix C is recorded rather than resolved: it gives the
+lower bound as `$DFF03E`, which is STRLONG, a strobe that appendix B marks `& *`,
+never Copper-writable. The sentence's stated purpose is to permit writes "to the
+Blitter hardware", whose first register is BLTCON0 at `$040`. T9 targets `$040`
+and holds on either reading of the bound.
 
 ### FPGA-069 — WAIT and SKIP take longer than the manual states
 
