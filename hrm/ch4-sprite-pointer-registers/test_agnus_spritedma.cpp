@@ -76,16 +76,39 @@
 // sprite x (SPRxPOS=$2000 i.e. vstart=32, SPRxCTL=$2200 i.e. vstop=34,
 // the same window hrm/agnus_spritedma/test_agnus_spritedma.cpp already
 // uses for sprite 0) on a freshly reset DUT, writes that sprite's own
-// SPRxPTH/SPRxPTL, sweeps vpos 31..35 and, for each line, the full hpos
-// 0..453 DMA slot table, and records `address_out` at the FIRST cycle
+// SPRxPTH/SPRxPTL, sweeps vpos 32..33 (vstart and one body line -- NOT
+// the vblend line the sibling harness also sweeps, see FIRST-GRANT-IS-
+// CLEAN below) and, for each line, the full hpos 0..453 DMA slot table,
+// and records `address_out` at the FIRST and SECOND cycles
 // reg_address_out (word address, restored to a byte address by <<1)
 // matches that sprite's own SPRxDATA or SPRxDATB register while
 // reqdma&&ackdma -- i.e. the address presented for that sprite's own
-// bitplane-data DMA fetch, sampled once, before any auto-increment a
-// second fetch might carry. No assertion below depends on the absolute
+// bitplane-data DMA fetch. No assertion below depends on the absolute
 // value of that address (which carries whatever fixed relationship
 // PTH/PTL->address_out this RTL happens to implement) -- every check
 // instead compares two or more such measurements against each other.
+//
+// FIRST-GRANT-IS-CLEAN (found only once the RTL was open, in Phase 2):
+// every granted DMA cycle -- not only a SPRxDATA/SPRxDATB one -- writes
+// `sprpth[ptsel]`/`sprptl[ptsel]` from an auto-incremented `newptr`
+// whenever ackdma=1 (agnus_spritedma.v:171-196), because on real
+// hardware a granted SPRxPOS/SPRxCTL fetch also advances the pointer
+// and expects its fetched word written back through reg_address_in/
+// data_in on a later cycle. This harness never drives that write-back
+// (it has no memory model), so a vblend-triggered SPRxPOS/SPRxCTL grant
+// -- which the sibling harness's own sweep (vpos 31..35, vblend=1 on
+// line 31) exercises -- would silently auto-increment the pointer bank
+// twice before this file's first SPRxDATA/SPRxDATB sample, without ever
+// changing SPRxPOS/SPRxCTL's content. The first build of this file did
+// exactly that and its MEASURED-WIDTH note read back 1, not the raw
+// composed value -- a plumbing artefact of the simplified harness, not
+// an RTL finding. Fixed by never asserting vblend and starting the
+// sweep at vpos=vstart directly (this module's own write path already
+// lets a plain bus write set SPRxPOS/SPRxCTL without any DMA fetch, so
+// nothing about arming the window depends on vblend) -- the FIRST
+// SPRxDATA/SPRxDATB grant of the sweep is then the pointer's first ever
+// use, un-incremented. This is a stimulus/harness correction, not an
+// oracle change: no expected relationship below was altered by it.
 //
 // CLAIM COVERAGE: all 145 records of claims.jsonl are cited below, in
 // full, inside an expect() label, grouped by the single proposition each
@@ -121,9 +144,35 @@
 // same measurement basis P1/P3/P4 depend on -- before any claim-based
 // assertion relies on that path being alive.
 //
-// RESULTS: (filled in after the build/run commit)
+// RESULTS: built and run under WSL/Verilator 5.052 against
+// nanomig/src/minimig-aga/agnus_spritedma.v (the pinned submodule).
+// 5 passed, 0 failed -- the control case and all four propositions are
+// GREEN. No RTL deviation was found at this boundary for any of the 145
+// claims: every sprite's pointer pair is independently addressable and
+// distinct (P1), the registers live and take effect inside this Agnus
+// module (P2), SPRxPTL's low bit is provably not part of the fetched
+// address (P3), and SPRxPTH is provably the more significant half of
+// the one composed pointer (P4). MEASURED-WIDTH's own fresh measurement
+// (SPR0PTH=SPR0PTL=$FFFF -> address_out=0xfffff, 20 bits) independently
+// reproduces the classify-stage's own prior 20-bit reading exactly,
+// confirming both measurements agree and that number sits outside all
+// four of the manual's own disputed readings (3+15=18, 18, 32) -- as
+// the build brief anticipated, it is reported here, not scored.
+// Opening the RTL (agnus_spritedma.v:171-196) also explained a plumbing
+// bug this file's own first build caught in itself, not in the RTL: see
+// FIRST-GRANT-IS-CLEAN above -- fixed before this RESULTS section was
+// written, so every PASS/FAIL and MUTATION record here reflects the
+// corrected harness.
 //
-// MUTATION LOG: (filled in after the build/run commit)
+// MUTATION LOG: each entry is one hand-edit -> rebuild -> rerun ->
+// confirm ONLY the named assertion changed colour -> revert -> rebuild
+// -> confirm the 5/0 baseline restored, run under WSL/Verilator.
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: sprite 1's stimulus changed from (0x0002,0x2000) to (0x0001,0x1000) -- the same pattern already used for sprite 0 -- so the two sprites' address_out values collided -> FAIL ("4 passed, 1 failed"), only [control] FIXTURE-LIVE-DATA-PATH newly red (a.address_out == b.address_out). Reverted to (0x0002,0x2000): 5/0 restored.
+// MUTATION SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT stimulus red: sprite 1's stimulus in the P1 loop was overwritten to reuse sprite 0's own (pth[0],ptl[0]) pattern instead of its own (x+1, 0x1000*(x+1)) -> FAIL ("4 passed, 1 failed"), only SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT newly red (m[0].address_out == m[1].address_out, all_distinct false). Reverted the loop body: 5/0 restored.
+// MUTATION SPRITE-POINTER-REGISTERS-ARE-AGNUS stimulus red: the "written" measurement's stimulus changed from (0x0006,0x6000) to (0x0000,0x0000) -- identical to the "unwritten" measurement -- so writing no longer changed anything observable -> FAIL ("4 passed, 1 failed"), only SPRITE-POINTER-REGISTERS-ARE-AGNUS newly red (unwritten.address_out == written.address_out). Reverted to (0x0006,0x6000): 5/0 restored.
+// MUTATION SPRITE-POINTER-EVEN-ADDRESS-PAIR stimulus red: the "odd_low" measurement's SPR0PTL stimulus changed from $1001 (bit 0, the claimed-ignored bit) to $1002 (bit 1, a meaningful address bit) -> FAIL ("4 passed, 1 failed"), only SPRITE-POINTER-EVEN-ADDRESS-PAIR newly red (even_low.address_out != odd_low.address_out, since bit 1 does reach address_out). Reverted to $1001: 5/0 restored, confirming the check mechanism is sound and that specifically bit 0, not bit 1, is the one the RTL ignores.
+// MUTATION SPRXPTH-HIGH-SPRXPTL-LOW stimulus red: hi_h and hi_l's stimuli were swapped -- hi_h given SPRxPTL's own +1-on-bit-1 stimulus (0x0010,0x1002) and hi_l given SPRxPTH's own +1 stimulus (0x0011,0x1000), i.e. mislabelling which register's step is measured as the "high" one -> FAIL ("4 passed, 1 failed"), only SPRXPTH-HIGH-SPRXPTL-LOW newly red (delta_h, now measuring PTL's step, no longer exceeds delta_l, now measuring PTH's step). Reverted both lines to their original stimuli: 5/0 restored.
+// No MUTATION record for the MEASURED-WIDTH note: it is a note(), not an expect() -- there is no red/green state for a mutation to move, per the build brief's own distinction between what is asserted and what is measured and reported.
 
 #include <cstdint>
 #include <iostream>
@@ -169,18 +218,24 @@ constexpr int DATB_BYTE(int x) { return 0x146 + 8 * x; }
 
 struct FetchMeas {
     bool seen = false;          // a DATA or DATB fetch for this sprite was granted at all
-    uint32_t address_out = 0;   // address_out sampled at that first grant
-    int posctl_fetches = 0;     // sanity: the arming window itself was serviced
+    uint32_t address_out = 0;   // address_out at that FIRST grant -- un-incremented, see FIRST-GRANT-IS-CLEAN
+    bool seen2 = false;         // a second DATA/DATB fetch was also granted
+    uint32_t address_out2 = 0;  // address_out at that SECOND grant
     int data_fetches = 0;
 };
 
 // Isolated measurement: fresh DUT, reset, arm sprite `sprite` alone with
-// SPRxPOS=$2000 (vstart=32)/SPRxCTL=$2200 (vstop=34) -- the same window
-// the sibling harness uses for sprite 0 -- write that sprite's own
-// SPRxPTH=pth/SPRxPTL=ptl, then sweep vpos 31..35 x hpos 0..453 (one full
-// line's DMA slot table, the sibling harness's own sweep range) watching
-// for reqdma while granting every request (ackdma=1), classifying each
-// grant by its reg_address_out (word address, restored to bytes by <<1).
+// SPRxPOS=$2000 (vstart=32)/SPRxCTL=$2200 (vstop=34) via a plain bus
+// write (this module's own write path for SPRxPOS/SPRxCTL never checks
+// ackdma -- agnus_spritedma.v:203-223 -- so no DMA fetch, and therefore
+// no vblend, is needed to arm the window), write that sprite's own
+// SPRxPTH=pth/SPRxPTL=ptl, then sweep vpos 32..33 (vstart and one body
+// line -- never vblend, so the pointer is never auto-incremented before
+// its own first use, see FIRST-GRANT-IS-CLEAN above) x hpos 0..453 (one
+// full line's DMA slot table, the sibling harness's own sweep range)
+// watching for reqdma while granting every request (ackdma=1),
+// classifying each grant by its reg_address_out (word address, restored
+// to bytes by <<1).
 FetchMeas measure_sprite(int sprite, uint16_t pth, uint16_t ptl) {
     Vagnus_spritedma* top = new Vagnus_spritedma;
 
@@ -226,12 +281,10 @@ FetchMeas measure_sprite(int sprite, uint16_t pth, uint16_t ptl) {
     FetchMeas result;
     const int data_addr = DATA_BYTE(sprite);
     const int datb_addr = DATB_BYTE(sprite);
-    const int pos_addr = POS_BYTE(sprite);
-    const int ctl_addr = CTL_BYTE(sprite);
 
-    for (int line = 31; line <= 35; ++line) {
+    for (int line = 32; line <= 33; ++line) {
         top->vpos = line;
-        top->vblend = (line == 31) ? 1 : 0;
+        top->vblend = 0;
 
         for (int h = 0; h < 454; ++h) {
             top->hpos = h;
@@ -242,13 +295,14 @@ FetchMeas measure_sprite(int sprite, uint16_t pth, uint16_t ptl) {
                 top->ackdma = 1;
                 top->eval();
                 int reg_out = top->reg_address_out << 1;
-                if (reg_out == pos_addr || reg_out == ctl_addr) {
-                    result.posctl_fetches++;
-                } else if (reg_out == data_addr || reg_out == datb_addr) {
+                if (reg_out == data_addr || reg_out == datb_addr) {
                     result.data_fetches++;
                     if (!result.seen) {
                         result.seen = true;
                         result.address_out = static_cast<uint32_t>(top->address_out);
+                    } else if (!result.seen2) {
+                        result.seen2 = true;
+                        result.address_out2 = static_cast<uint32_t>(top->address_out);
                     }
                 }
             } else {
@@ -275,13 +329,18 @@ int main(int argc, char** argv) {
     {
         FetchMeas a = measure_sprite(0, 0x0001, 0x1000);
         FetchMeas b = measure_sprite(1, 0x0002, 0x2000);
-        c.expect(a.seen && b.seen && a.address_out != b.address_out,
+        c.expect(a.seen && b.seen && a.address_out != b.address_out &&
+                 a.seen2 && a.address_out2 == a.address_out + 1,
             "[control] FIXTURE-LIVE-DATA-PATH: two sprites armed with two "
-            "different SPRxPTH/SPRxPTL pointers each reach a granted "
-            "SPRxDATA/SPRxDATB DMA fetch and present two different "
-            "address_out values -- the write-pointer -> arm -> DMA-grant "
-            "-> address_out path this whole file depends on is alive "
-            "before any claim-based assertion below relies on it.");
+            "different, known SPRxPTH/SPRxPTL pointers each reach a "
+            "granted SPRxDATA/SPRxDATB DMA fetch and present two "
+            "different address_out values, AND sprite 0's own two "
+            "successive grants deliver address_out then address_out+1, "
+            "in that order, at the two cycles they were actually granted "
+            "on (not some fixed or zero value) -- the write-pointer -> "
+            "arm -> DMA-grant -> address_out path this whole file depends "
+            "on is alive, and delivers known, ordered words, before any "
+            "claim-based assertion below relies on it.");
     }
 
     // ---- P1: SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT (36 ids) ----
