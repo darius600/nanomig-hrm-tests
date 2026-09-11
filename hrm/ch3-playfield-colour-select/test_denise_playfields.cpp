@@ -178,10 +178,13 @@
 // is the control every page-cited assertion below shares: the fixture is
 // shown to deliver two distinct, known plfdata values (5 and 22) through
 // the same eval() path used everywhere else, before anything below trusts
-// it. It carries no claim id and is prefixed "[control]" so the mutation
-// gate does not require a mutation record for it -- the convention
-// hrm/ch3-dual-playfield's CONTROL-KNOWN-VALUES-ARRIVE and
-// hrm/ch3-collision-registers' equivalent both use.
+// it. It carries no claim id and is prefixed "[control]"; an earlier
+// convention (shared with hrm/ch3-dual-playfield's and
+// hrm/ch3-collision-registers' equivalents) treated that prefix as
+// exempting it from a mutation record too -- a gate blind spot, since a
+// passing control only proves the fixture is alive once the control has
+// itself been shown able to go red. Corrected here: see MUTATION
+// CONTROL-KNOWN-VALUES-ARRIVE below, same as every other assertion.
 //
 // RESULTS (after opening the RTL and building): 70 passed, 0 failed, plus
 // the 1 MEASURED note (printed, not counted as pass or fail). No finding
@@ -212,6 +215,7 @@
 // assertion red -- every other assertion unaffected -- then rebuilt with
 // no flags and reconfirmed the clean 70-passed/0-failed baseline):
 //
+// MUTATION CONTROL-KNOWN-VALUES-ARRIVE stimulus red: the first control stimulus was changed from 5 to 4, so the first reading no longer matches the value 5 the check expects; reverted, and the clean 70-passed/0-failed baseline was reconfirmed.
 // MUTATION COLOUR-INDIRECTION-MECHANISM stimulus red: the stimulus was changed from 21 (10101) to 20 (10100), so the reading no longer matches the value 21 the label and citations name.
 // MUTATION BIT-SIGNIFICANCE-ORDER stimulus red: bitplane 5's isolated case was changed to also present bitplane 1 alongside it, so the reading is no longer the clean, isolated MSB value of 16.
 // MUTATION IDENTITY-MAPPING-SWEEP stimulus red: row N=1's own stimulus was changed to present N=2's combination instead, so that row no longer reads back as register 1.
@@ -229,6 +233,9 @@
 #include "Vdenise_playfields.h"
 #include "verilated.h"
 
+#ifndef MUT_CONTROL
+#define MUT_CONTROL 0
+#endif
 #ifndef MUT_MECH
 #define MUT_MECH 0
 #endif
@@ -434,7 +441,11 @@ int main(int argc, char** argv) {
     // =========================================================================
     {
         Harness h;
-        uint8_t v1 = h.sample(5);   // 00101 -> expect register 5
+        uint8_t stim1 = 5;
+#if MUT_CONTROL
+        stim1 = 4;  // the first control stimulus is changed from 5 to 4, so the reading no longer matches the value 5 the check expects
+#endif
+        uint8_t v1 = h.sample(stim1);   // 00101 -> expect register 5
         uint8_t v2 = h.sample(22);  // 10110 -> expect register 22
         checks.expect(
             v1 == 5 && v2 == 22 && v1 != v2,

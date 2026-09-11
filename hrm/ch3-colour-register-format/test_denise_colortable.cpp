@@ -167,6 +167,8 @@
 // MUTATION SAMPLE stimulus red: the Light green entry ($8E0) was replaced with $000 (black) instead of its own code, so its readback equals the black baseline and the liveness check fails.
 // MUTATION EHB-HALVES-INTENSITY stimulus red: the EHB read was moved from register 15 (the register just loaded and read in normal mode) to register 16 (loaded with a different, unrelated pattern), so halved(normal) no longer matches the EHB reading.
 // MUTATION NO-READBACK-PORT stimulus red: the read after each write moved from register 20 (the register actually written) to register 21 (never written), so the two reads no longer differ.
+// MUTATION CONTROL-KNOWN-VALUES-ARRIVE stimulus red: the control's second write (originally to register 2, the same register the two reads target) was redirected to register 3 instead, so register 2 was never rewritten and the second read came back equal to the first ($1F0 both times, a == b) instead of distinct; reverted to writing register 2 again and confirmed the 55-passed/0-failed baseline returned.
+// MUTATION EHB-CONTROL-NORMAL-REPRODUCIBLE stimulus red: the post-EHB normal-mode re-read was redirected from register 15 (the register loaded and read earlier in the same block) to register 16 (never written, still at its power-on value), so the re-read no longer matched the value recorded before the EHB reading; reverted to reading register 15 again and confirmed the 55-passed/0-failed baseline returned.
 //
 // Every MUTATION above was actually built and run (see the commit history
 // for this package for the per-mutation pass/fail counts) with the flag
@@ -208,6 +210,12 @@
 #endif
 #ifndef MUT_WO
 #define MUT_WO 0
+#endif
+#ifndef MUT_CTRL
+#define MUT_CTRL 0
+#endif
+#ifndef MUT_EHBCTRL
+#define MUT_EHBCTRL 0
 #endif
 
 namespace {
@@ -306,7 +314,11 @@ int main(int argc, char** argv) {
         Harness h;
         h.write_reg(2, 0x1F0);
         uint32_t a = h.read_reg(2);
-        h.write_reg(2, 0x00F);
+        int second_write_idx = 2;
+#if MUT_CTRL
+        second_write_idx = 3;
+#endif
+        h.write_reg(second_write_idx, 0x00F);
         uint32_t b = h.read_reg(2);
         checks.expect(
             a != b,
@@ -676,7 +688,11 @@ int main(int argc, char** argv) {
             "assertion. 3-ehb.c06, 3-ehb.c07, 3-ehb.c6, A-bplcon.c66, "
             "A-leg.homod4.");
 
-        uint32_t normal2 = h.read_reg(15, false);
+        int normal2_read_idx = 15;
+#if MUT_EHBCTRL
+        normal2_read_idx = 16;
+#endif
+        uint32_t normal2 = h.read_reg(normal2_read_idx, false);
         checks.expect(
             normal2 == normal,
             "[control] EHB-CONTROL-NORMAL-REPRODUCIBLE: re-reading register "

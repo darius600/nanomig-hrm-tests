@@ -197,10 +197,11 @@
 //     still fully asserted below (BPLCON2-WO, BPLCON3-WO) -- only the
 //     address-specific half is left unsettled.
 //
-// MUTATION log (8 groups; the 60-id COLOR-ADDR loop and the 32-id COLOR-WO
-//   loop each carry one mutation covering the whole loop, matching
+// MUTATION-LOG SUMMARY (9 groups; the 60-id COLOR-ADDR loop and the 32-id
+//   COLOR-WO loop each carry one mutation covering the whole loop, matching
 //   hrm/ch3-colour-register-format/'s REG-09/ADDR-32-DISTINCT convention).
 //
+// MUTATION CONTROL-FIXTURE-ALIVE stimulus red: CLXDAT's read address was redirected from $00E to DENISEID's own address ($07C), so both reads returned the same value ($FFFC) instead of two independently-decoded registers and the distinctness check failed (69/0 baseline went to 68 passed/1 failed, only this assertion); reverted (MUT_CONTROL back to 0) and rebuilt to confirm the 69/0 baseline was restored.
 // MUTATION DENISEID-ADDR-RO stimulus red: the "at its own address" read was redirected from $07C to $100 (an unrelated write-only address), so the reading came back $0000 instead of $FFFC.
 // MUTATION BPLCON0-ADDR stimulus red: the BPL1DAT write's data was changed from $FFFF (bitplane held high) to $0000, so the window pixel never differs from the border and the inside/outside comparison found no difference.
 // MUTATION BPLCON0-WO stimulus red: the post-write read was redirected from BPLCON0's own address ($100) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000.
@@ -210,7 +211,7 @@
 // MUTATION COLOR-ADDR stimulus red: index 5's second COLOR write was redirected to COLOR06's address ($18A) instead of COLOR05's ($188), so COLOR05's own reading never changed between the first and second write.
 // MUTATION COLOR-WO stimulus red: index 5's post-write read was redirected from COLOR05's own address to DENISEID's, so the reading came back $FFFC instead of $0000.
 //
-// Every MUTATION above was actually built and run (see the commit history
+// Every mutation record listed above was actually built and run (see the commit history
 // for this package for the per-mutation pass/fail counts) with the flag
 // named after it defined to 1 (e.g. -DMUT_DENISEID=1), confirmed to turn
 // only its own assertion red, then rebuilt with no flags to confirm a
@@ -224,6 +225,9 @@
 #include "Vdenise.h"
 #include "verilated.h"
 
+#ifndef MUT_CONTROL
+#define MUT_CONTROL 0
+#endif
 #ifndef MUT_DENISEID
 #define MUT_DENISEID 0
 #endif
@@ -455,7 +459,11 @@ int main(int argc, char** argv) {
     {
         Harness h;
         uint16_t deniseid = h.read_reg(DENISEID_ADDR);
-        uint16_t clxdat = h.read_reg(CLXDAT_ADDR);
+        uint16_t clxdat_addr = CLXDAT_ADDR;
+#if MUT_CONTROL
+        clxdat_addr = DENISEID_ADDR;
+#endif
+        uint16_t clxdat = h.read_reg(clxdat_addr);
         checks.expect(
             deniseid != 0 && clxdat != 0 && deniseid != clxdat,
             "[control] CONTROL-FIXTURE-ALIVE: DENISEID ($07C, denise.v:322) "

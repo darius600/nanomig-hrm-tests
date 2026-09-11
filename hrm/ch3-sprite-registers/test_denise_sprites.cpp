@@ -142,7 +142,7 @@
 //   Both findings are read directly off the RTL cited above (file, line,
 //   the exact expression), not inferred from the test's failure alone.
 //
-// MUTATION LOG (all 4 stimulus entries actually run by this agent under
+// MUTATION LOG (all 5 stimulus entries actually run by this agent under
 // WSL/Verilator on 11.09.2026 -- edit -> rebuild -> run -> confirm the
 // named assertion, and only that assertion, changed colour -> revert ->
 // rebuild -> confirm the 5-passed/2-failed baseline restored -- before
@@ -154,6 +154,7 @@
 // was fixed by giving JOINTLY-LOAD-BEARING its own independent
 // measurement before the mutation below was run for record):
 //
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: measure() was given a fifth, defaulted arm_data parameter (default 0x8000, unchanged for every other call site) and the control block's own call was changed to pass arm_data=0x0000, so only its SPR0DATA write stopped arming sprite 0 -> FAIL ("4 passed, 3 failed"), only [control] FIXTURE-LIVE-DATA-PATH newly red (sprdata stayed 0 for the whole hpos 0..511 sweep, so took_both_values was false). Reverted both the call site and the measure() signature to their original form (no arm_data parameter, arming hardcoded to 0x8000): 5/2, same two findings.
 // MUTATION PROCESSOR-WRITE-REACHES-SPRXPOS stimulus red: the second SPR0POS write's value changed from 0x50 to 0x10 (the same as the first), so the two writes stopped differing -> FAIL ("4 passed, 3 failed"), only PROCESSOR-WRITE-REACHES-SPRXPOS newly red (lo.start no longer < hi.start; they are equal). Reverted to 0x50: 5/2, same two findings.
 // MUTATION SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 stimulus red: the second SPR0POS write's value changed from 0x41 to 0x42, a byte step of 2 instead of 1 -> FAIL ("4 passed, 3 failed"), only SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 newly red (measured delta became 4, not the asserted 2). Reverted to 0x41: 5/2, same two findings.
 // MUTATION SH0-IS-HALF-OF-POS-BYTE-STEP stimulus red: the "hi" measurement's SPR0CTL value changed from 0x01 (SH0) to 0x02 (bit 1, a bit this RTL never stores anywhere) -> FAIL ("4 passed, 3 failed"), only SH0-IS-HALF-OF-POS-BYTE-STEP newly red (measured delta became 0, not the asserted 1). Reverted to 0x01: 5/2, same two findings.

@@ -199,6 +199,7 @@
 // assertions unaffected -- then rebuilt with no flags and reconfirmed the
 // clean 22-passed/0-failed baseline):
 //
+// MUTATION CONTROL-KNOWN-VALUES-ARRIVE stimulus red: the second reading's own bpldata stimulus was changed from PF2_ALL (playfield 2's three planes) to PF1_ALL (playfield 1's three planes), so it collapsed onto the first reading's value (7) instead of producing its own distinct known value (15) -- confirmed 21 passed/1 failed with only CONTROL-KNOWN-VALUES-ARRIVE red, then reverted, restoring the clean 22-passed/0-failed baseline.
 // MUTATION TWO-PLAYFIELDS-CAPACITY stimulus red: playfield 1's "all three planes" stimulus was changed to drop plane 5, so playfield 1's code can no longer reach its 3-bitplane maximum of 7.
 // MUTATION COLOUR-REGISTER-RANGES stimulus red: playfield 2's maximum-code stimulus was changed to drop plane 6, so playfield 2's code can no longer reach register 15.
 // MUTATION CODE-ZERO-TRANSPARENT stimulus red: playfield 1's "fully transparent" stimulus was changed to leave a stray plane-1 bit on, so playfield 1 is no longer transparent and its own code shows instead of falling through to playfield 2's.
@@ -246,6 +247,9 @@
 #endif
 #ifndef MUT_LSB
 #define MUT_LSB 0
+#endif
+#ifndef MUT_CONTROL
+#define MUT_CONTROL 0
 #endif
 
 namespace {
@@ -312,8 +316,12 @@ int main(int argc, char** argv) {
     // =========================================================================
     {
         Harness h;
+        uint8_t v2_stim = PF2_ALL;
+#if MUT_CONTROL
+        v2_stim = PF1_ALL;  // second reading driven with playfield 1's data instead of playfield 2's
+#endif
         uint8_t v1 = h.sample(PF1_ALL, true, 0x00);         // PF1 priority, PF1 fully opaque
-        uint8_t v2 = h.sample(PF2_ALL, true, PF2PRI_BIT);   // PF2 priority, PF2 fully opaque
+        uint8_t v2 = h.sample(v2_stim, true, PF2PRI_BIT);   // PF2 priority, PF2 fully opaque
         checks.expect(
             v1 == 7 && v2 == 15 && v1 != v2,
             "[control] CONTROL-KNOWN-VALUES-ARRIVE: two distinct, known "

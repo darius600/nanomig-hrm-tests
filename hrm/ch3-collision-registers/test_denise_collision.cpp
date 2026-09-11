@@ -138,14 +138,17 @@
 // own target (SPR23-SPR67) joined them as a 6th -- then rebuilt with no
 // flags and reconfirmed the clean 31-passed/5-failed baseline):
 //
+// MUTATION CONTROL-KNOWN-VALUES-ARRIVE stimulus red: the second stimulus was changed from SPR0+SPR4 (0x11) to a repeat of the first pair, SPR0+SPR2 (0x05), so reading b came back equal to a instead of the expected distinct $0400, and the two-distinct-known-values check failed; reverted to 0x11 and the 31-passed/5-failed baseline returned.
 // MUTATION CLXCON-ADDR stimulus red: config B (meant to fully disable all six bitplanes) was changed to re-enable BP1 with the same match requirement as config A instead, so the two reads became identical and bit 1 stayed clear in both.
 // MUTATION CLXCON-WRITEONLY stimulus red: the second read's address was redirected from CLXCON (0x4C) to CLXDAT (0x07), picking up the real pending SPR0+SPR2 collision instead of the constant zero CLXCON's address returns.
 // MUTATION BP-ENABLE-MATCH stimulus red: bitplane 3's "matched" stimulus was redirected to present bitplane 1's live bit instead of bitplane 3's own, so bitplane 3 (the only one CLXCON has enabled) never actually receives a matching value.
 // MUTATION ALL-DISABLED-CONTINUOUS stimulus red: instead of leaving all six bitplanes disabled, bitplane 1 was enabled with its match value required and left mismatched (data 0), so PF1 is no longer vacuously present and the continuous PF1-PF2 bit does not set.
+// MUTATION ALL-DISABLED-CONTINUOUS-CONTROL stimulus red: the control harness's own CLXCON write was changed from bitplane 1 enabled+required (0x0041) back to all-disabled (0x0000), so PF1 became vacuously present again and the PF1-PF2 bit set -- exactly the continuous result this control exists to rule out; reverted to enabling+requiring bitplane 1 and the 31-passed/5-failed baseline returned.
 // MUTATION ENSP-OR stimulus red: ENSP3's own sprite-3 stimulus was dropped to 0 (sprite 3 never actually presented), so sprite 3 cannot join the SPR23 group regardless of ENSP3, and SPR23-SPR45 (bit 12) stays clear.
 // MUTATION CLXDAT-ADDR stimulus red: the second collision's stimulus was changed to repeat the first pair (SPR0+SPR2) instead of a genuinely different one (SPR0+SPR4), so the two reads stopped differing.
 // MUTATION CLXDAT-READONLY stimulus red: the second harness's collision was changed from the identical SPR0+SPR2 pair to a genuinely different SPR0+SPR4 pair, so val_a and val_b legitimately diverge, confirming the check does discriminate when the underlying collision actually differs.
 // MUTATION CLXDAT-READ-CLEAR stimulus red: an unintended second SPR0+SPR2 collision was inserted between the first and second read, so the second read legitimately returns a nonzero value instead of the expected zero.
+// MUTATION READ-CLEAR-CONTROL stimulus red: the fresh SPR0+SPR4 collision meant to be presented after the clear was withheld (stimulus changed from 0x11 to 0x00), so the third read came back $0000 instead of the expected $0400, failing the "clear is not a dead data path" check; reverted to presenting 0x11 and the 31-passed/5-failed baseline returned.
 // MUTATION PLAYFIELD-ODD-EVEN stimulus red: the even-bitplane-6 case's live-bit stimulus was redirected to bitplane 5's bit position instead of bitplane 6's own, so bitplane 6 (the only one CLXCON has enabled in that harness) never receives a matching value and PF2-SPR01 stays clear.
 // MUTATION BITMAP-PAIR stimulus red: the SPR23-SPR67 case's Y-entity stimulus was redirected from SPR67 to SPR45, so the pair actually produced is SPR23-SPR45 (bit 12) instead of SPR23-SPR67 (bit 13), and bit 13 stays clear.
 // MUTATION BIT15-UNUSED none impossible: BIT15-UNUSED is already red at baseline (Finding 2 above) -- the RTL forces bit 15 high on every successful CLXDAT read regardless of any stimulus this harness can present, so no stimulus mutation can turn it from green to red; there is nothing green here to break. Swapping the inspected bit from 15 to 14 was tried and confirmed to still read FAIL, not a clean green-to-red transition, for exactly that reason.
@@ -189,6 +192,15 @@
 #endif
 #ifndef MUT_BIT15
 #define MUT_BIT15 0
+#endif
+#ifndef MUT_CONTROL
+#define MUT_CONTROL 0
+#endif
+#ifndef MUT_ALLDISCTRL
+#define MUT_ALLDISCTRL 0
+#endif
+#ifndef MUT_RCCTRL
+#define MUT_RCCTRL 0
 #endif
 
 namespace {
@@ -304,7 +316,11 @@ int main(int argc, char** argv) {
         h.read_reg(CLXDAT_ADDR);  // drain whatever accumulated before this config took effect
         h.pulse(0x00, 0x05);  // SPR0 + SPR2 -> SPR01-SPR23, bit 9
         uint16_t a = h.read_reg(CLXDAT_ADDR);
-        h.pulse(0x00, 0x11);  // SPR0 + SPR4 -> SPR01-SPR45, bit 10
+        uint8_t second_stim = 0x11;  // SPR0 + SPR4 -> SPR01-SPR45, bit 10
+#if MUT_CONTROL
+        second_stim = 0x05;  // repeat the first pair instead of a genuinely different one
+#endif
+        h.pulse(0x00, second_stim);
         uint16_t b = h.read_reg(CLXDAT_ADDR);
         checks.expect(
             (a & 0x7FFF) == 0x0200 && (b & 0x7FFF) == 0x0400 && a != b,
@@ -460,8 +476,12 @@ int main(int argc, char** argv) {
         // bitplane and mismatching it stops the continuous PF1-PF2 result,
         // so the result above is not a stuck-at-1 harness bug.
         Harness h2;
-        h2.write_reg(CLXCON_ADDR, ENBP(1) | MVBP(1));
-        h2.pulse(0x00, 0x00);  // BP1 data=0, mismatched against MVBP1=1
+        bool ctrl_bp1_enabled = true;
+#if MUT_ALLDISCTRL
+        ctrl_bp1_enabled = false;  // fall back to all-disabled, defeating the control
+#endif
+        h2.write_reg(CLXCON_ADDR, ctrl_bp1_enabled ? (ENBP(1) | MVBP(1)) : 0x0000);
+        h2.pulse(0x00, 0x00);  // BP1 data=0, mismatched against MVBP1=1 (when enabled)
         uint16_t control_result = h2.read_reg(CLXDAT_ADDR);
         checks.expect(
             (control_result & 0x0001) == 0,
@@ -618,7 +638,11 @@ int main(int argc, char** argv) {
         // paired control: a fresh, different collision after the clear is
         // still captured -- rules out the second read's zero being a dead
         // data path rather than a genuine clear.
-        h.pulse(0x00, 0x11);  // SPR0+SPR4 -> bit 10
+        uint8_t third_stim = 0x11;  // SPR0+SPR4 -> bit 10
+#if MUT_RCCTRL
+        third_stim = 0x00;  // withhold the fresh collision entirely
+#endif
+        h.pulse(0x00, third_stim);
         uint16_t third_read = h.read_reg(CLXDAT_ADDR);
         checks.expect(
             (third_read & 0x7FFF) == 0x0400,
