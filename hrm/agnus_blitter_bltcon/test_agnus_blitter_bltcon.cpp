@@ -353,8 +353,8 @@
 //   (1u<<1);` to `if (false) con1 |= (1u<<1);`, so the "sing=true" run no
 //   longer actually sets bit 1 -> FAIL, "sing_on < normal" fails (identical
 //   D-write counts). Reverted: 19/0.
-// MUTATION LINE-MODE-LF-VALUE-0x4A-SELECTS-DOCUMENTED-FUNCTION stimulus
-//   red: word index 3's C-input bit flipped (`c[3] ^= 0x8000`) after the
+// MUTATION LINE-MODE-LF-VALUE-0x4A-SELECTS-DOCUMENTED-FUNCTION stimulus red:
+//   word index 3's C-input bit flipped (`c[3] ^= 0x8000`) after the
 //   expected-output vector was already computed from the unmutated (A,B,C)
 //   -> FAIL, that word's computed function no longer matches its own
 //   expectation. Reverted: 19/0.

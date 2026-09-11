@@ -189,6 +189,14 @@
 //   `h.write_reg(BLTCON1, static_cast<uint16_t>(1u << 1))` changed to
 //   `h.write_reg(BLTCON1, 0x0000)` (expected word `0x8000` left untouched)
 //   -> FAIL, the stored word is now 0x0080. Reverted.
+// MUTATION TEST-DATA-DELIVERY stimulus red: the fixture check's own stimulus
+//   `h.c_words = {0x1234, 0x5678, 0x9ABC, 0xDEF0}` changed at index 2 to
+//   `0x9ABD`, the expected vector left as it was -> FAIL, 6 passed 1 failed,
+//   and TEST-DATA-DELIVERY is the only assertion that moves (every other
+//   assertion builds its own harness). Reverted: 7 passed, 0 failed, the
+//   baseline exactly. Added 11.09.2026: this assertion carried no record
+//   because the gate could not read an id out of a "[fixture check] " prefix,
+//   so nothing had ever reported it as unmutated.
 //
 // Every mutation was confirmed reverted by re-running `make test` (7/7
 // green again) before moving to the next one; the final clean rebuild after

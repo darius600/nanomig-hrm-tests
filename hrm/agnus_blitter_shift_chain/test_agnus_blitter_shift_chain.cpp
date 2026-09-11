@@ -141,6 +141,29 @@
 //   result now equals R2, matching the reversed-order control, not R4). The
 //   [control] SHIFT-CONTROLS-DIFFER check (built from two entirely separate
 //   harnesses) is untouched by this edit and stays PASS.
+// MUTATION PREV-WORD1-BASELINE stimulus red: the PREV-WORD-BITS fixture's
+//   `h.a_words = {0xABCD, 0x0000}` changed to `{0xBBCD, 0x0000}`, expectations
+//   untouched -> 10 passed 1 failed, PREV-WORD1-BASELINE the only assertion
+//   that moves (word 1 becomes 0x0BBC against its expected 0x0ABC; word 2 is
+//   still 0xD000, since only the low nibble reaches it). Reverted: 11/0.
+//   Worth recording because the first attempt did NOT work: changing 0xABCD to
+//   0xABCE left PREV-WORD1-BASELINE green and reddened PREV-WORD-BITS instead
+//   -- an ash=4 shift discards the low nibble out of word 1 and delivers it
+//   into word 2, so the two assertions read genuinely different bits. The
+//   failed attempt is the better evidence that they are independent.
+// MUTATION SHIFT-CONTROLS-DIFFER stimulus red: control B's
+//   `h.write_reg(BLTCON1, static_cast<uint16_t>(2u << 12))` changed to
+//   `4u << 12`, making both reference shifts identical -> 9 passed 2 failed:
+//   SHIFT-CONTROLS-DIFFER (r_bsh4 == r_bsh2, so the two shifts are no longer
+//   distinguishable) and SHIFT-ON-LOAD with it. Both were expected: this
+//   control exists precisely to establish that SHIFT-ON-LOAD's comparison
+//   measures something, so collapsing it must take the assertion it supports
+//   down as well. Reverted: 11/0.
+// MUTATION UNSHIFTED-WORD-COUNT stimulus red: the control's
+//   `h.a_words = {0x1111, 0x2222, 0x3333}` changed at index 1 to `0x2223`,
+//   the expected vector left as it was -> 10 passed 1 failed, and
+//   UNSHIFTED-WORD-COUNT is the only assertion that moves (its harness is
+//   its own block). Reverted: 11/0.
 // MUTATION EXTRA-WORD-COST-IN-CYCLES stimulus red: the shifted case's width
 //   reduced from 4 back to 3 (i.e. the "extra" word is not requested) ->
 //   FAIL: exactly 3 words are fetched/stored, not the hardcoded expected 4.
