@@ -586,3 +586,37 @@ manual already uses elsewhere, and chapter 3's "19-bit" is a third, separate sli
 
 *F09 found by the FPGA-091 chapter-3 build, 11.09.2026, confirmed against the RTL
 and against appendix B's own DSKPTH row by the lead before recording.*
+
+## FPGA-091-F10 — BRDNTRAN is declared and never connected
+
+**Package:** `hrm/ch3-horizontal-display-window`, assertion
+`D-BRDNTRAN-HAS-NO-EFFECT`. **Red.** Pages 296, 297, 307.
+
+Appendix C gives BPLCON3 bit 4 as **BRDNTRAN**, "border opaque" — one of the
+four new ECS genlock features. In NanoMig it is commented out twice, at its
+declaration and at its assignment:
+
+```verilog
+wire          brdrblnk;   // border blank enable; disabled when ECSENA is low
+//wire        brdntran;   // border area is non-transparent; disabled when ECSENA is low
+
+assign brdrblnk = bplcon3[5] & ecsena;
+//assign brdntran = bplcon3[4] & ecsena;
+```
+
+Writing bit 4 therefore changes nothing observable at this boundary.
+
+**What makes this finding solid is the neighbour.** BRDRBLNK, bit 5 of the same
+register, gated by the same `ecsena`, *is* wired — line 253 — and reaches
+`t_blank` at line 515. The package asserts it (`G11-BRDRBLNK-WORKS`, green) on
+the same measurement basis. So the fixture demonstrably can observe a BPLCON3
+border control; bit 4 simply is not one.
+
+*For the specialists:* this reads as unimplemented rather than wrong — the
+commented-out lines look like work left for later, not a decision. Worth
+confirming that nothing downstream silently depends on the border being opaque.
+
+---
+
+*F10 found by the FPGA-091 chapter-3 build, 11.09.2026, confirmed against the RTL
+by the lead before recording.*
