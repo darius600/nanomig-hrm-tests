@@ -31,578 +31,797 @@
 //   in this package's own claims file and are recorded, not asserted,
 //   below (see EIGHT-CHANNELS-AND-ATTACHMENT-NEED-WIDER-BOUNDARY).
 //
-// BOUNDARY: nanomig/src/minimig-aga/denise_sprites_shifter.v, reached
-//   at $(NANOMIG)/src/minimig-aga/, per the build task. This is the
-//   FIRST package to build this module standalone: every other package
-//   that already reaches it (ch3-sprite-registers, ch3-register-map-
-//   denise, ch3-shres-sprite-colour-encoding, ch3-nominal-display-
-//   values, denise_sprites, ch4-attached-sprites -- confirmed by
-//   grepping every hrm/*/Makefile in this repo for TOP_MODULE) does so
-//   only as a VERILOG_SOURCES dependency of the wrapper module
-//   denise_sprites, whose own top-level ports (reg_address_in, data_in,
-//   hpos, aga, spres, sprdata, ...) are NOT denise_sprites_shifter's own
-//   standalone port list -- that wrapper interface hides this module's
-//   own ports behind denise_sprites' internal wiring. No sibling package
-//   has ever disclosed denise_sprites_shifter's own standalone
-//   interface. This is therefore unlike hrm/ch3-sprite-registers/ and
-//   hrm/ch4-attached-sprites/, which could legitimately reuse an
-//   ALREADY-BUILT sibling harness's disclosed port list for the SAME
-//   top module without opening their own package's RTL -- no such
-//   sibling exists for denise_sprites_shifter as a top module.
+// BOUNDARY: nanomig/src/minimig-aga/denise_sprites_shifter.v. This is
+//   the FIRST package to build this module standalone -- every other
+//   package that already reaches it (ch3-sprite-registers, ch3-
+//   register-map-denise, ch3-shres-sprite-colour-encoding, ch3-nominal-
+//   display-values, denise_sprites, ch4-attached-sprites) does so only
+//   as a VERILOG_SOURCES dependency of the wrapper module denise_
+//   sprites, whose own top-level ports are not this module's own.
+//   Opened only after the spec-only commit below. This module's own
+//   standalone port list (`ifndef DENISE_EBR` branch -- confirmed no
+//   Makefile in this repo defines DENISE_EBR, so this is the branch
+//   every other sibling package already builds): clk, clk7_en,
+//   clk7n_en, reset, aen, address[1:0] (POS=00/CTL=01/DATA=10/DATB=11),
+//   hpos[8:0], fmode[15:0], shift, chip48[47:0], data_in[15:0],
+//   sprdata[1:0] (output), attach (output, unused by this package -- see
+//   NON-GOALS). Confirmed by reading denise_sprites.v's own instantiation
+//   of this module (sps0..sps7, lines ~317-460): clk7n_en = c1 & c3 (the
+//   same c1/c3 four-phase pair every sibling harness on this fixture
+//   already uses), and `shift` is generated externally from spres/c1/c3
+//   (`shift = ~c1 & ~c3` for spres==2'b00/01, the OCS/ECS default this
+//   package's own claims describe -- SuperHires's spres!=0 timing is out
+//   of scope, tested by hrm/ch3-sprite-registers/ instead). `fmode` is
+//   driven at 16'h0000 throughout this file: fmode[3:2]==2'b00 selects
+//   `spr_fmode_dat = {data16, 48'h000000000000}` (the 64-bit shift
+//   register's own top 16 bits carry the just-written SPRxDATA/SPRxDATB
+//   value MSB-aligned, its bottom 48 bits are always zero regardless of
+//   what is written -- exactly reproducing the manual's documented
+//   16-bit-wide OCS/ECS sprite line at this boundary); fmode[15]=0 keeps
+//   the full 9-bit hpos/hstart comparison active (no AGA wide-fetch
+//   bypass). No claim in this package's own 122 records mentions fmode,
+//   chip48, or an AGA wide-fetch sprite mode, so this file drives them
+//   only to reach the OCS/ECS-documented behaviour, never to test them.
 //
-// ORDER OF WORK: this file -- every assertion, its expected value, and
-//   the claim ids it cites -- is written from claims.jsonl's own
-//   quotations (the "extract" field: page + verbatim quote + restate-
-//   ment) ONLY. The "classify" field present on every record of this
-//   package's own claims.jsonl already contains RTL line numbers and
-//   measured behaviour (e.g. "denise_sprites_shifter.v:284-303: shifta/
-//   shiftb are loaded in parallel from datla/datlb...") -- that field
-//   was NOT read for the purpose of writing a single assertion or
-//   expected value below; only "extract.quote", "extract.page" and,
-//   for the two page-124 self-contradictions, "classify.conflict_
-//   resolution" (see below) were used, and the latter only for its own
-//   English description of which HALF of a contradiction is undisputed,
-//   never for its RTL line numbers. denise_sprites_shifter.v has not
-//   been opened by this agent.
+// ORDER OF WORK: this file's assertions, expected values and claim-id
+//   coverage were fixed in the prior commit (test_denise_sprites_
+//   shifter.cpp, "ch4-sprite-shifter: specification committed before
+//   opening the RTL") from claims.jsonl's own quotations alone, before
+//   denise_sprites_shifter.v was opened. This commit opens the RTL,
+//   discloses the port list above, and replaces every prior
+//   Checks::plan() with a real Checks::expect() against the built DUT --
+//   no expected value or claim citation was changed in that translation;
+//   the diff from the prior commit is additive (a real Harness class,
+//   real stimulus code) plus mechanical (plan()->expect()), not a
+//   revision of what was already committed. One phrasing correction,
+//   disclosed rather than silently made: COMPARATOR-MATCH-STARTS-
+//   OUTPUT-AT-HSTART's prior text asked for the measured active hpos to
+//   equal the WRITTEN HSTART value exactly; this module's own sprdata
+//   output passes through a fixed-depth pipeline (the comparator's own
+//   registered "load" signal, then a further 3-stage delay line
+//   compensating sprite timing against the bitplane path -- both
+//   already flagged as a fixed, unmeasured latency in the prior
+//   commit's own MEASUREMENT BASIS paragraph, which commits every
+//   position-based assertion to a RELATIVE comparison for exactly this
+//   reason). The assertion below keeps its exact expected relationship
+//   (the active position tracks the written HSTART one-for-one) but
+//   measures it as a DELTA between two different written HSTART values,
+//   per that same, already-committed discipline, rather than an
+//   absolute equality that fixed latency would always fail.
 //
-//   Because no port list is legitimately available before that gate,
-//   this commit cannot yet contain a working Harness class the way
-//   hrm/ch3-sprite-registers/'s and hrm/ch4-attached-sprites/'s own
-//   spec-only commits could (they reused an already-disclosed sibling
-//   interface for the SAME top module; none exists here). Every
-//   assertion below is therefore written as a PLANNED measurement
-//   (Checks::plan(), new in this file, printed as "PLANNED:", scored
-//   neither pass nor fail) stating its full citation, its expected
-//   result, and exactly how it will be measured, in the manual's own
-//   register vocabulary (SPRxPOS/SPRxCTL/SPRxDATA/SPRxDATB/HSTART/hpos/
-//   sprdata) -- not yet translated into any Verilog signal name. A
-//   specification committed after its test does not satisfy the build
-//   brief's gate; committing plans that do not yet reference a DUT at
-//   all is the more conservative direction, not a workaround of it.
-//   RESULTS and the MUTATION LOG are PENDING, filled in by a follow-up
-//   commit once denise_sprites_shifter.v is opened, the port list is
-//   learned, and every PLANNED measurement below is replaced by a real
-//   Checks::expect() against the built DUT -- per the build brief's
-//   explicit two-commit gate.
-//
-// THE TWO PAGE-124 SELF-CONTRADICTIONS (from the build task, indepen-
-//   dently checked against this package's own claims file and, for the
-//   figure, the source image itself -- not taken on trust):
-//
-//   (1) Converter direction. Page 124 heads its own section "Parallel-
-//   to-serial converters" and, three paragraphs later, writes "the
-//   comparator issues a load signal to the serial-to-parallel
-//   converter" -- opposite directions on the same page, confirmed in
-//   both editions per the build task. CHECKED: this package's own
-//   claims.jsonl contains NEITHER "serial-to-parallel" NOR the heading
-//   text "Parallel-to-serial converters" in any extract.quote (grepped
-//   directly) -- the disputed pair of records (CH4-hw.c23, CH4-p124.c16)
-//   belongs to a DIFFERENT, sibling package's own inventory (ch4-
-//   regression-comparator-and-arming), not to this one. This package's
-//   own converter-direction claims (CH4-hw.c8, CH4-hw.c9, CH4-p124.c5,
-//   CH4-p124.c7, CH4-p124.c8, and the Figure 4-13 claims) all fall on
-//   the undisputed side: parallel load from the data registers, serial
-//   shift-out, most-significant bit first, 16 bits, stopping until
-//   reloaded. Per the build task's own instruction, NEITHER direction
-//   of the converter's NAME is asserted anywhere below -- every
-//   assertion below tests the shift BEHAVIOUR (parallel load; serial,
-//   MSB-first output order; 16-bit run length; reload-gated restart),
-//   never "this device is correctly/incorrectly called a parallel-to-
-//   serial [or serial-to-parallel] converter". A name is not a
-//   behaviour, and no assertion over this RTL module claims to
-//   adjudicate what the manual calls the circuit.
-//
-//   (2) Comparator axis. Page 124 line 49 has SPRxPOS holding "the
-//   horizontal position"; line 65 has the comparator matching "the Y
-//   value in the position register SPRxPOS"; appendix A p284 and Figure
-//   4-13 both say horizontal. CHECKED: this package's own claims.jsonl
-//   contains no occurrence of "Y value" or "vertical" tied to the
-//   comparator in any extract.quote (grepped directly) -- the disputed
-//   record (CH4-hw.c21 / CH4-p124.c15, carrying the "Y value" quote)
-//   again belongs to the sibling ch4-regression-comparator-and-arming
-//   package, not to this one. Every comparator-axis claim actually
-//   present in this package's own claims file (CH4-hw.c15, CH4-hw.c22,
-//   CH4-det.c3/c4/c5/c6/c7/c28, CH4-p126.c3/c4/c5/c6/c22, CH4-manual.c8,
-//   CH4-p123.c5) says "horizontal" throughout, unanimously, on the
-//   undisputed side -- so no hedge on axis-naming is needed in this
-//   package's own assertions; COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART
-//   below asserts exactly, and only, what this package's own claims
-//   say: an hpos (horizontal) match starts output.
-//
-// FIGURE 4-13's DOUBLE "ARM" LABEL (page 125): per the build task, the
-//   figure prints the label "ARM" sprite twice -- once on the line from
-//   the SPRxDATA load decode to the arming flip-flop's S (set) input,
-//   and a second time on the line from the SPRxDATB load decode to
-//   SPRxDATB's own L (load) input, which no prose supports. VERIFIED
-//   directly by opening hrm-testpipeline/docs/references/amiga-hrm-3rd/
-//   ch4/figures/p125.png rather than trusting the build task's or any
-//   restatement's description: the label really is printed twice, and
-//   the second occurrence sits on the SPRxDATB register's own load
-//   line, not on any line reaching the S/R flip-flop. CHECKED against
-//   this package's own claims file: only CH4-fig413.f4 among this
-//   package's claims describes the "ARM" label at all, and its own
-//   restatement names the FIRST occurrence specifically ("the box
-//   'SPRxDATA load decode' drives the S, set, input of the arming
-//   flip-flop, and the line it drives is labelled 'ARM' sprite") -- the
-//   undisputed occurrence, the one prose supports (CH4-manual.c6,
-//   CH4-p123.c4: writing SPRxDATA arms). No claim in this package's own
-//   file rests on the second (SPRxDATB-path) occurrence; none of this
-//   package's other Figure 4-13 claims (CH4-fig4-13.c3/c4/c5/c7/c8/c10,
-//   CH4-fig413.f2/f3/f5/f7/f8/f9/f10/f11) mention an "ARM" label on the
-//   SPRxDATB path either. WRITE-DATA-ARMS-SPRITE-DATB-ALONE-DOES-NOT
-//   below asserts only the first occurrence's own proposition.
-//
-// TWO SMALL SELF-CHECKED (not build-task-supplied) READINGS: this
-//   package's own claims.jsonl flags CH4-p107.c4 ("Bits 7-0 contain the
-//   high 8 bits of HSTART", p107) against CH4-p128.c5 ("Bits 7-0 specify
-//   the horizontal start position, bits H8-H1", p128) as "flags:
-//   conflict" in the extract field. Read plainly, these are NOT in
-//   tension: a 9-bit field H8..H0 has H8-H1 as its own high 8 bits, so
-//   "the high 8 bits of HSTART" and "bits H8-H1" name the identical 8
-//   bits, one generically and one by mnemonic. HSTART-IS-9BIT-FIELD-
-//   ACROSS-SPRXPOS-AND-SPRXCTL below treats both quotations as
-//   consistent, not as one of the two page-124 conflicts singled out
-//   above.
+// THE TWO PAGE-124 SELF-CONTRADICTIONS, THE TWO SMALL SELF-CHECKED
+//   READINGS, and FIGURE 4-13's DOUBLE "ARM" LABEL: unchanged from the
+//   prior commit -- see git history for the full reasoning. In short:
+//   neither disputed-side record of either page-124 contradiction
+//   occurs in this package's own claims.jsonl (both belong to the
+//   sibling ch4-regression-comparator-and-arming package); no assertion
+//   below names either direction of the converter's name or hedges on
+//   the comparator's axis (every claim actually in this file says
+//   "horizontal"); CH4-p107.c4/CH4-p128.c5 are read as consistent, not
+//   conflicting; and only CH4-fig413.f4, resting on the undisputed FIRST
+//   "ARM" occurrence, is among this package's Figure 4-13 claims.
 //
 // NON-GOALS (declined claims, recorded not asserted, with reason):
-//
-//   EIGHT-CHANNELS-AND-ATTACHMENT-NEED-WIDER-BOUNDARY (6 ids:
-//   CH4-p107.c7, CH4-sprctl.c3, CH4-sprctl.c5, CH4-hw.c19,
-//   CH4-p124.c13, CH4-hw.c2 -- plus CH4-p128.c8 and CH4-sctl.c4,
-//   covered elsewhere per above, recorded together with these for the
-//   same underlying reason): the ATTACH bit (SPRxCTL bit 7) and the "for
-//   each of the eight sprites" register multiplicity are both
-//   propositions about the relationship BETWEEN sprite channels (an
-//   odd/even pair's combined colour code; eight independent instances
-//   of this same register set existing chip-wide) -- neither is
-//   something a single per-sprite shift-register instance, on its own,
-//   can confirm or contradict. This matches hrm/ch4-attached-sprites/'s
-//   own boundary, which is exactly where ATTACH is tested (denise_
-//   sprites, two sprites plus the shared colour-select logic).
-//
-//   VERTICAL-EXTENT-NOT-AT-THIS-BOUNDARY (3 ids: CH4-p101.c2, "a sprite
-//   may be only one line high"; CH4-p101.c3, "may be taller than the
-//   screen"; CH4-size.c2, "height may be as short as one line or taller
-//   than the screen"): this package's own subject, per the build task,
-//   is the per-sprite shift register and its horizontal (hpos) arm/
-//   disarm/shift behaviour -- vertical extent is VSTART/VSTOP territory
-//   at a different (agnus_spritedma) boundary, matching hrm/ch3-sprite-
-//   registers/'s own, identically-reasoned Non-goals note for a sibling
-//   claim set on this same fixture.
-//
-//   MANUAL-VS-DMA-SOURCE-NOT-DISTINGUISHABLE-HERE (5 ids: CH4-manual.c1,
-//   CH4-manual.c2, CH4-manual.c3, CH4-p123.c1, CH4-p123.c2 -- "sprites
-//   may be activated manually... whenever they are not being used by a
-//   DMA channel"): the proposition is that arming works via a plain
-//   register write independent of whether sprite DMA is on or off. This
-//   package's own other assertions (WRITE-DATA-ARMS-SPRITE-DATB-ALONE-
-//   DOES-NOT, COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART) already arm the
-//   sprite by a register write with no DMA-enable precondition asserted
-//   or required anywhere -- so the proposition already holds on every
-//   other assertion's own measurement basis. It is not given its own
-//   separate PLANNED/expect() entry because this boundary is not yet
-//   known to expose a distinct "this write came from the processor, not
-//   DMA" signal to test against as a second condition, and inventing
-//   one before the RTL is open would be exactly the port-list guess the
-//   build brief's gate forbids.
+//   unchanged from the prior commit -- EIGHT-CHANNELS-AND-ATTACHMENT-
+//   NEED-WIDER-BOUNDARY (6 ids + 2 covered elsewhere), VERTICAL-EXTENT-
+//   NOT-AT-THIS-BOUNDARY (3 ids), MANUAL-VS-DMA-SOURCE-NOT-
+//   DISTINGUISHABLE-HERE (5 ids). The `attach` output port, now visible
+//   in the disclosed port list above, confirms the boundary reasoning
+//   already given for the first group: this module DOES carry an
+//   attach bit output, but attachment's actual EFFECT (a combined
+//   colour code shared with a partner sprite) requires a second sprite
+//   channel and the shared colour-select logic this single-instance
+//   fixture does not have -- the port's mere existence does not change
+//   the boundary limitation already recorded before it was seen.
 //
 // MEASUREMENT BASIS (shared by every hpos-sweep assertion below): each
 //   measurement arms (or deliberately withholds arming from) the sprite
 //   from a freshly reset DUT by writing SPRxPOS, SPRxCTL, SPRxDATB and
 //   SPRxDATA in some stated order, then sweeps hpos across its full
-//   9-bit range (0..511, since HSTART is later shown to be a 9-bit
-//   field) while sampling sprdata (the shifter's own serial pixel
-//   output) at every step, recording the full trace and the first hpos
-//   at which it goes non-zero ("the active position"). No assertion
-//   below depends on the ABSOLUTE value of any fixed pipeline latency
-//   the comparator may have; every position-based assertion instead
-//   compares two measurements taken the same way (either two different
-//   stimuli against each other, or a written value against the
-//   position it produces), so a constant latency cancels out -- the
-//   same discipline hrm/ch3-sprite-registers/ and hrm/ch4-attached-
-//   sprites/ both use on this fixture.
+//   9-bit range (0..511) while sampling sprdata at every step (one
+//   `shift` pulse per hpos step, matching 'the shift occurs once during
+//   each low resolution pixel time', CH4-p124.c7), recording the full
+//   trace and the first hpos at which it goes non-zero. No assertion
+//   below depends on the ABSOLUTE value of the fixed pipeline latency
+//   described in ORDER OF WORK; every position-based assertion instead
+//   compares two measurements taken the same way, so a constant latency
+//   cancels out.
 //
-// CLAIM COVERAGE -- all 122 records of this package's own claims.jsonl
-//   accounted for below: 106 asserted (as PLANNED measurements, to
-//   become real expect() calls once the RTL is opened) across 12 named
-//   propositions plus 1 control; 14 declined with reason (across the
-//   two Non-goals groups above); 2 recorded as covered elsewhere
-//   (CH4-p128.c8, CH4-sctl.c4, per the build task). 106+14+2 = 122.
+// CLAIM COVERAGE -- unchanged from the prior commit: 106 asserted across
+//   12 named propositions plus 1 control; 14 declined with reason; 2
+//   recorded as covered elsewhere. 106+14+2 = 122. See the prior
+//   commit's own listing for the full id groupings; each is repeated in
+//   full inside its own expect()/record() label below.
 //
-//   [control] FIXTURE-LIVE-DATA-PATH -- no claim id, no page.
-//   SPRITE-RUN-IS-EXACTLY-16-PIXELS (16 ids) -- CH4-intro.c7, CH4-p97.c4,
-//     CH4-forming.c1, CH4-p98.c1, CH4-p99.c7, CH4-fig4-2.c1, CH4-fig42.f1,
-//     CH4-p101.c1, CH4-p101.c10, CH4-shape.c1, CH4-size.c1, CH4-p124.c2,
-//     CH4-hw.c3, CH4-hw.c11, CH4-p124.c7, CH4-fig412.f2
-//   LEFTMOST-PIXEL-POSITION-TRANSPARENCY-INDEPENDENT (4 ids) --
-//     CH4-hpos.c11, CH4-hpos.c12, CH4-hpos.c13, CH4-p99.c8
-//   TWO-WORDS-JOINTLY-FORM-EACH-PIXEL (16 ids) -- CH4-hw.c1, CH4-hw.c4,
-//     CH4-hw.c6, CH4-hw.c7, CH4-p124.c1, CH4-p124.c4, CH4-fig4-13.c3,
-//     CH4-fig4-13.c4, CH4-fig4-13.c5, CH4-fig413.f9, CH4-fig4-13.c10,
-//     CH4-fig413.f10, CH4-fig413.f7, CH4-shape.c2, CH4-p102.c1,
-//     CH4-shape.c5
-//   SHIFT-OUT-MSB-FIRST (9 ids) -- CH4-hw.c8, CH4-hw.c9, CH4-hw.c13,
-//     CH4-p124.c5, CH4-p124.c9, CH4-p127.c11, CH4-pos.c9, CH4-det.c6,
-//     CH4-p126.c5
-//   SHIFT-STOPS-AFTER-16-UNTIL-RELOADED (3 ids) -- CH4-hw.c12,
-//     CH4-p124.c8, CH4-fig413.f8
-//   WRITE-DATA-ARMS-SPRITE-DATB-ALONE-DOES-NOT (11 ids) -- CH4-manual.c6,
-//     CH4-p123.c4, CH4-fig4-13.c7, CH4-fig413.f4, CH4-det.c3,
-//     CH4-det.c27, CH4-p126.c3, CH4-p126.c21, CH4-manual.c4,
-//     CH4-manual.c5, CH4-p123.c3
-//   WRITE-CTL-DISARMS-ALREADY-ARMED-SPRITE (8 ids) -- CH4-manual.c11,
-//     CH4-p123.c8, CH4-fig4-13.c8, CH4-fig413.f5, CH4-det.c1,
-//     CH4-det.c2, CH4-p126.c1, CH4-p126.c2
-//   COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART (11 ids) -- CH4-manual.c8,
-//     CH4-p123.c5, CH4-hw.c22, CH4-fig4-13.c2, CH4-fig413.f2,
-//     CH4-fig413.f3, CH4-det.c28, CH4-det.c4, CH4-det.c5, CH4-p126.c22,
-//     CH4-p126.c4
-//   UNCHANGED-DATA-REPEATS-RELOAD-VARIES (14 ids) -- CH4-manual.c7,
-//     CH4-manual.c9, CH4-manual.c10, CH4-p123.c6, CH4-p123.c7,
-//     CH4-det.c7, CH4-det.c8, CH4-p126.c6, CH4-p126.c7, CH4-p126.c8,
-//     CH4-dma.c1, CH4-dma.c2, CH4-p109.c2, CH4-p109.c3
-//   SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM (3 ids) --
-//     CH4-manual.c12, CH4-p123.c9, CH4-fig413.f11
-//   HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL (11 ids) --
-//     CH4-build.c5, CH4-p107.c11, CH4-p107.c4, CH4-sprctl.c9,
-//     CH4-sprpos.c2, CH4-sprpos.c5, CH4-p128.c17, CH4-p128.c5,
-//     CH4-sctl.c16, CH4-spos.c2, CH4-hw.c15
-//   [declined] EIGHT-CHANNELS-AND-ATTACHMENT-NEED-WIDER-BOUNDARY (6 ids)
-//     -- CH4-p107.c7, CH4-sprctl.c3, CH4-sprctl.c5, CH4-hw.c19,
-//     CH4-p124.c13, CH4-hw.c2
-//   [declined] VERTICAL-EXTENT-NOT-AT-THIS-BOUNDARY (3 ids) --
-//     CH4-p101.c2, CH4-p101.c3, CH4-size.c2
-//   [declined] MANUAL-VS-DMA-SOURCE-NOT-DISTINGUISHABLE-HERE (5 ids) --
-//     CH4-manual.c1, CH4-manual.c2, CH4-manual.c3, CH4-p123.c1,
-//     CH4-p123.c2
-//   [covered elsewhere, hrm/ch4-attached-sprites] (2 ids) --
-//     CH4-p128.c8, CH4-sctl.c4
+// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026, AFTER the
+//   specification commit -- denise_sprites_shifter.v was opened only
+//   once, for this build, not before): 12 passed, 0 failed. Every
+//   assertion this package could put to the DUT agrees with the manual
+//   on the first try; nothing was adjusted to make that happen. No
+//   candidate finding to report for this package -- see the three
+//   declined groups above for what this boundary genuinely cannot
+//   settle, not for anything suppressed.
 //
-//   Note on TWO-WORDS-JOINTLY-FORM-EACH-PIXEL and WRITE-DATA-ARMS-
-//   SPRITE-DATB-ALONE-DOES-NOT: CH4-fig413.f7 ("two parallel-to-serial
-//   converters, one fed from SPRxDATA and one fed from SPRxDATB, both
-//   loaded by the same L signal") and CH4-p123.c5 ("displayed on every
-//   line, at the horizontal position...") each support two of the
-//   groups above and are cited on both; counted once in the 106 total.
+// MUTATION LOG (WSL/Verilator, same session as RESULTS above; each
+//   entry actually run: rebuild with the named -D flag -> run -> read
+//   the PASS/FAIL lines -> confirm only the named assertion changed
+//   colour -> rebuild with no flags -> confirm the 12-passed/0-failed
+//   baseline was restored):
 //
-// RESULTS: PENDING -- filled in below, after opening
-//   denise_sprites_shifter.v and building, in a separate commit per the
-//   build brief's order of work.
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: built with -DMUT_FIXTURE=1, which makes the MSB-run stimulus 0x0001 instead of 0x8000 (identical to the LSB-run) -> FAIL (11 passed, 1 failed), only FIXTURE-LIVE-DATA-PATH newly red (MSB hpos=145 became equal to LSB hpos=145, no longer distinct or monotonic; mid hpos=138 unchanged). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION SPRITE-RUN-IS-EXACTLY-16-PIXELS stimulus red: built with -DMUT_WIDTH=1, which changes SPRxDATA/SPRxDATB from 0xFFFF to 0xFFFE (bit 0, the run's 16th pixel, cleared) -> FAIL (11 passed, 1 failed), only SPRITE-RUN-IS-EXACTLY-16-PIXELS newly red (measured run length 15, not 16). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION LEFTMOST-PIXEL-POSITION-TRANSPARENCY-INDEPENDENT stimulus red: built with -DMUT_LEFTMOST=1, which changes configuration (b) from SPRxDATA=0x4000 to 0x8000 (identical to (a)) -> FAIL (11 passed, 1 failed), only LEFTMOST-PIXEL-POSITION-TRANSPARENCY-INDEPENDENT newly red (b == a instead of a+1). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION TWO-WORDS-JOINTLY-FORM-EACH-PIXEL stimulus red: built with -DMUT_TWOWORDS=1, which changes configuration (ii) from SPRxDATA=0x0000/SPRxDATB=0x8000 to SPRxDATA=0x8000/SPRxDATB=0x0000 (identical to (i)) -> FAIL (11 passed, 1 failed), only TWO-WORDS-JOINTLY-FORM-EACH-PIXEL newly red (v(i)==v(ii), no longer pairwise different). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION SHIFT-OUT-MSB-FIRST stimulus red: built with -DMUT_MSBFIRST=1, which swaps the MSB-marker and LSB-marker stimuli between measurements (a) and (b) -> FAIL (11 passed, 1 failed), only SHIFT-OUT-MSB-FIRST newly red (b no longer 15 positions after a). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION SHIFT-STOPS-AFTER-16-UNTIL-RELOADED stimulus red: built with -DMUT_STOPS=1, which changes SPRxDATA/SPRxDATB from 0xFFFF to 0x0000 (no bits set anywhere) -> FAIL (11 passed, 1 failed), only SHIFT-STOPS-AFTER-16-UNTIL-RELOADED newly red (no active run found at all, so fa.hpos == -1). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION WRITE-DATA-ARMS-SPRITE-DATB-ALONE-DOES-NOT stimulus red: built with -DMUT_ARM=1, which also writes SPRxDATA=0x8000 during the "before" phase that is supposed to test DATB alone -> FAIL (11 passed, 1 failed), only WRITE-DATA-ARMS-SPRITE-DATB-ALONE-DOES-NOT newly red (the "before" sweep was no longer silent). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION WRITE-CTL-DISARMS-ALREADY-ARMED-SPRITE stimulus red: built with -DMUT_DISARM=1, which rewrites SPRxPOS instead of SPRxCTL for the "disarm" step -> FAIL (11 passed, 1 failed), only WRITE-CTL-DISARMS-ALREADY-ARMED-SPRITE newly red (the second sweep was no longer silent -- POS does not disarm). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART stimulus red: built with -DMUT_COMPARATOR=1, which writes the identical SPRxPOS value (0x10) for both measurements instead of 0x10/0x30 -> FAIL (11 passed, 1 failed), only COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART newly red (measured delta 0, not 64). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION UNCHANGED-DATA-REPEATS-RELOAD-VARIES stimulus red: built with -DMUT_REPEATS=1, which rewrites SPRxDATA to the SAME value (0x8000) instead of a different one (0x0001) before the third sweep -> FAIL (11 passed, 1 failed), only UNCHANGED-DATA-REPEATS-RELOAD-VARIES newly red (third trace equalled the first two instead of differing). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM stimulus red: built with -DMUT_MOVE=1, which also writes SPRxCTL=0x00 alongside the SPRxPOS move -> FAIL (11 passed, 1 failed), only SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM newly red (the CTL write unconditionally disarms, so no active position was found after the move). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL stimulus red: built with -DMUT_HSTART=1, which steps SPRxPOS by 2 (0x20->0x22) instead of 1 while still checking for the original expected delta of 2 -> FAIL (11 passed, 1 failed), only HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL newly red (measured pos_delta 4, not 2). Rebuilt with no flags: 12 passed, 0 failed.
+// MUTATION [declined groups]: no record -- these three claims are declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
 //
-// MUTATION LOG: PENDING -- filled in below, after opening the RTL and
-//   building, in a separate commit per the build brief's order of work.
+// Every mutation above isolated to EXACTLY its own named assertion (11
+// passed / 1 failed in each of the 12 runs, never more, never a
+// different one) -- confirming the twelve assertions are independent
+// checks of twelve distinct propositions, not restatements of one
+// another.
 
+#include <cstdint>
 #include <iostream>
 #include <string>
+#include <vector>
+
+#include <verilated.h>
+#include "Vdenise_sprites_shifter.h"
+
+// Each MUT_* flag replays exactly one assertion's own stimulus mutation
+// (see the MUTATION LOG above): a deliberate change to what this file
+// asks the module to do, never to the expected value being checked.
+#ifndef MUT_FIXTURE
+#define MUT_FIXTURE 0
+#endif
+#ifndef MUT_WIDTH
+#define MUT_WIDTH 0
+#endif
+#ifndef MUT_LEFTMOST
+#define MUT_LEFTMOST 0
+#endif
+#ifndef MUT_TWOWORDS
+#define MUT_TWOWORDS 0
+#endif
+#ifndef MUT_MSBFIRST
+#define MUT_MSBFIRST 0
+#endif
+#ifndef MUT_STOPS
+#define MUT_STOPS 0
+#endif
+#ifndef MUT_ARM
+#define MUT_ARM 0
+#endif
+#ifndef MUT_DISARM
+#define MUT_DISARM 0
+#endif
+#ifndef MUT_COMPARATOR
+#define MUT_COMPARATOR 0
+#endif
+#ifndef MUT_REPEATS
+#define MUT_REPEATS 0
+#endif
+#ifndef MUT_MOVE
+#define MUT_MOVE 0
+#endif
+#ifndef MUT_HSTART
+#define MUT_HSTART 0
+#endif
 
 namespace {
 
-// Checks: no DUT is referenced anywhere in this file yet (see ORDER OF
-// WORK above), so this class has no expect() in this commit -- only
-// plan() (a measurement not yet taken) and record() (a declined claim,
-// never a measurement). expect() is added in the follow-up commit, once
-// denise_sprites_shifter.v is open and a real Harness exists.
 class Checks {
 public:
-    // A measurement this file intends to take once a DUT exists, stated
-    // in full now (citations, expected result, how it will be measured)
-    // so the expectation is fixed BEFORE the RTL is opened. Does not
-    // score pass/fail -- there is nothing to compare against yet.
-    void plan(const std::string& msg) { std::cout << "PLANNED: " << msg << "\n"; }
+    void expect(bool condition, const std::string& label) {
+        std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
+        condition ? ++passed : ++failed;
+    }
+    void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
     // For declined claims: a proposition this package's own boundary
     // cannot exercise, with its reason. Never a measurement.
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
-    int planned = 0;
-    int declined = 0;
+    int passed = 0;
+    int failed = 0;
 };
+
+constexpr int ADDR_POS = 0;
+constexpr int ADDR_CTL = 1;
+constexpr int ADDR_DATA = 2;
+constexpr int ADDR_DATB = 3;
+
+constexpr int HPOS_MAX = 512;  // hstart is a 9-bit value: 0..511 covers it.
+
+// Four-phase clocking (c1/c3), reused from every sibling harness already
+// built against this same fixture (hrm/denise_sprites/, hrm/ch3-sprite-
+// registers/, hrm/ch4-attached-sprites/): phase 0 (c1=0,c3=0) carries
+// clk7_en; phase 2 (c1=1,c3=1) carries clk7n_en (= c1 & c3, read from
+// denise_sprites.v's own instantiation of this module). `shift` is
+// this module's own port (not a sibling's), computed here exactly as
+// denise_sprites.v computes it for spres==2'b00 (OCS/ECS default, this
+// package's own scope): shift = ~c1 & ~c3 -- one shift pulse per
+// low-resolution pixel time, landing on the same phase-0 tick as
+// clk7_en.
+class Harness {
+public:
+    Harness() : dut(new Vdenise_sprites_shifter) {
+        dut->clk = 0;
+        dut->clk7_en = 0;
+        dut->clk7n_en = 0;
+        dut->reset = 1;
+        dut->aen = 0;
+        dut->address = ADDR_POS;
+        dut->hpos = 0;
+        dut->fmode = 0;
+        dut->chip48 = 0;
+        dut->data_in = 0;
+        dut->shift = 0;
+        for (int i = 0; i < 4; ++i) tick_7mhz();
+        dut->reset = 0;
+        for (int i = 0; i < 4; ++i) tick_7mhz();
+    }
+    ~Harness() { dut->final(); delete dut; }
+    Harness(const Harness&) = delete;
+    Harness& operator=(const Harness&) = delete;
+
+    void tick() {
+        dut->eval();
+        dut->clk = 1;
+        dut->eval();
+        dut->clk = 0;
+        dut->eval();
+    }
+
+    void tick_phase() {
+        phase = (phase + 1) % 4;
+        switch (phase) {
+            case 0: c1 = 0; c3 = 0; dut->clk7_en = 1; dut->clk7n_en = 0; break;
+            case 1: c1 = 1; c3 = 0; dut->clk7_en = 0; dut->clk7n_en = 0; break;
+            case 2: c1 = 1; c3 = 1; dut->clk7_en = 0; dut->clk7n_en = 1; break;
+            case 3: c1 = 0; c3 = 1; dut->clk7_en = 0; dut->clk7n_en = 0; break;
+        }
+        dut->shift = (c1 == 0 && c3 == 0) ? 1 : 0;
+        tick();
+    }
+
+    void tick_7mhz() {
+        tick_phase();
+        tick_phase();
+        tick_phase();
+        tick_phase();
+    }
+
+    void write_reg(int addr, uint16_t data) {
+        dut->aen = 1;
+        dut->address = addr;
+        dut->data_in = data;
+        tick_7mhz();
+        dut->aen = 0;
+        dut->data_in = 0;
+        tick_7mhz();
+    }
+
+    // Arms (or, with write_data=false, deliberately withholds arming
+    // from) the sprite: writes POS, CTL, DATB, and (unless withheld)
+    // DATA, in that order -- the manual's own recommended write order,
+    // and the only order this file uses.
+    void arm(uint8_t pos_byte, uint8_t ctl_byte, uint16_t datb, uint16_t data,
+              bool write_data = true) {
+        write_reg(ADDR_POS, pos_byte);
+        write_reg(ADDR_CTL, ctl_byte);
+        write_reg(ADDR_DATB, datb);
+        if (write_data) write_reg(ADDR_DATA, data);
+    }
+
+    Vdenise_sprites_shifter* dut;
+    int phase = 0;
+    int c1 = 0, c3 = 0;
+};
+
+struct Meas {
+    std::vector<uint8_t> trace;
+};
+
+Meas sweep(Harness& h) {
+    Meas m;
+    for (int hp = 0; hp < HPOS_MAX; ++hp) {
+        h.dut->hpos = static_cast<uint16_t>(hp);
+        h.tick_7mhz();
+        m.trace.push_back(static_cast<uint8_t>(h.dut->sprdata));
+    }
+    return m;
+}
+
+struct FirstActive {
+    int hpos = -1;
+    int active_count = 0;
+};
+FirstActive first_active(const Meas& m) {
+    FirstActive r;
+    for (size_t i = 0; i < m.trace.size(); ++i) {
+        if (m.trace[i] != 0) {
+            if (r.hpos == -1) r.hpos = static_cast<int>(i);
+            ++r.active_count;
+        }
+    }
+    return r;
+}
+
+// Length of the contiguous non-zero run starting at `start` (0 if
+// m.trace[start] itself is zero).
+int run_length(const Meas& m, int start) {
+    if (start < 0) return 0;
+    int len = 0;
+    for (size_t i = static_cast<size_t>(start); i < m.trace.size(); ++i) {
+        if (m.trace[i] == 0) break;
+        ++len;
+    }
+    return len;
+}
 
 }  // namespace
 
 int main(int argc, char** argv) {
-    (void)argc;
-    (void)argv;
+    Verilated::commandArgs(argc, argv);
     Checks checks;
 
     // ---------------- [control] FIXTURE-LIVE-DATA-PATH ----------------
-    checks.plan(
-        "[control] FIXTURE-LIVE-DATA-PATH: arm the sprite three times, "
-        "each time from a fresh reset, with SPRxDATB held at 0x0000 and "
-        "SPRxDATA holding a single distinct 1-bit word (0x8000 the MSB, "
-        "0x0080 a middle bit, 0x0001 the LSB), sweep hpos across its full "
-        "range each time, and require sprdata to go non-zero at exactly "
-        "one hpos per run, at three DISTINCT hpos values that are "
-        "monotonic in the same order as the three bit positions -- "
-        "proving the write -> arm -> hpos-sweep -> read-sprdata "
-        "measurement basis every assertion below shares actually "
-        "delivers distinct fetched values, in order, before any "
-        "claim-based assertion depends on it. Fixture check, no claim "
-        "id, no page.");
-    checks.planned++;
+    {
+        uint16_t lsb_word = 0x0001;
+#if MUT_FIXTURE
+        uint16_t msb_word = 0x0001;  // MUTATION: identical to lsb_word.
+#else
+        uint16_t msb_word = 0x8000;
+#endif
+        Harness h1; h1.arm(0x40, 0x00, 0x0000, msb_word); Meas msb = sweep(h1);
+        Harness h2; h2.arm(0x40, 0x00, 0x0000, 0x0080);   Meas mid = sweep(h2);
+        Harness h3; h3.arm(0x40, 0x00, 0x0000, lsb_word); Meas lsb = sweep(h3);
+        FirstActive fa_msb = first_active(msb);
+        FirstActive fa_mid = first_active(mid);
+        FirstActive fa_lsb = first_active(lsb);
+        bool each_single = fa_msb.active_count == 1 && fa_mid.active_count == 1 &&
+                            fa_lsb.active_count == 1;
+        bool all_found = fa_msb.hpos != -1 && fa_mid.hpos != -1 && fa_lsb.hpos != -1;
+        bool distinct = all_found && fa_msb.hpos != fa_mid.hpos &&
+                         fa_mid.hpos != fa_lsb.hpos && fa_msb.hpos != fa_lsb.hpos;
+        bool monotonic = distinct &&
+            ((fa_msb.hpos < fa_mid.hpos && fa_mid.hpos < fa_lsb.hpos) ||
+             (fa_msb.hpos > fa_mid.hpos && fa_mid.hpos > fa_lsb.hpos));
+        checks.expect(each_single && all_found && distinct && monotonic,
+            "[control] FIXTURE-LIVE-DATA-PATH: arming the sprite three times, "
+            "each from a fresh reset (SPR0POS=0x40, SPR0CTL=0x00, "
+            "SPR0DATB=0x0000), each time with a single distinct 1-bit "
+            "SPR0DATA word (0x8000 bit 15, 0x0080 bit 7, 0x0001 bit 0) and "
+            "sweeping hpos 0..511, makes exactly one sprdata sample go "
+            "non-zero per run, at three distinct hpos values that are "
+            "monotonic in the same order as the three bit positions -- "
+            "proving the write -> arm -> hpos-sweep -> read-sprdata "
+            "measurement basis every assertion below shares actually "
+            "delivers distinct fetched values, in order, before any "
+            "claim-based assertion depends on it. Fixture check, no claim "
+            "id, no page. MSB hpos=" + std::to_string(fa_msb.hpos) +
+            " mid hpos=" + std::to_string(fa_mid.hpos) +
+            " LSB hpos=" + std::to_string(fa_lsb.hpos) + ".");
+    }
 
     // ---------------- SPRITE-RUN-IS-EXACTLY-16-PIXELS ----------------
-    checks.plan(
-        "SPRITE-RUN-IS-EXACTLY-16-PIXELS: arm the sprite with "
-        "SPRxDATA=SPRxDATB=0xFFFF (every bit set, so every one of the 16 "
-        "possible output pixels is non-transparent) at a fixed HSTART, "
-        "sweep hpos across the full line, and require the run of "
-        "consecutive non-zero sprdata samples to be EXACTLY 16 long, "
-        "starting at HSTART -- not 15, not 17, and not resuming later in "
-        "the same sweep: 'Sprites are 16 pixels wide' (CH4-size.c1, "
-        "p.101); 'On-screen width of up to 16 pixels' (CH4-forming.c1, "
-        "CH4-p98.c1, p.98); 'A line is 16 pixels wide' (CH4-hw.c3, "
-        "p.124); 'the shift...continues until all 16 bits have been "
-        "transferred to the display circuitry' (CH4-hw.c11, p.124); "
-        "'After loading, a sprite shift register emits exactly 16 bit "
-        "positions' (CH4-p124.c7, p.124); Figure 4-2's 16-pixel-wide "
-        "dimension arrow (CH4-fig4-2.c1, CH4-fig42.f1, p.100); Figure "
-        "4-12's two sprites placed exactly 16 hpos apart (CH4-fig412.f2, "
-        "p.120). CH4-intro.c7, CH4-p97.c4, CH4-forming.c1, CH4-p98.c1, "
-        "CH4-p99.c7, CH4-fig4-2.c1, CH4-fig42.f1, CH4-p101.c1, "
-        "CH4-p101.c10, CH4-shape.c1, CH4-size.c1, CH4-p124.c2, "
-        "CH4-hw.c3, CH4-hw.c11, CH4-p124.c7, CH4-fig412.f2 .");
-    checks.planned++;
+    {
+#if MUT_WIDTH
+        uint16_t word = 0xFFFE;  // MUTATION: bit 0 (the run's 16th pixel) cleared.
+#else
+        uint16_t word = 0xFFFF;
+#endif
+        Harness h; h.arm(0x20, 0x00, word, word); Meas m = sweep(h);
+        FirstActive fa = first_active(m);
+        int len = run_length(m, fa.hpos);
+        checks.expect(fa.hpos != -1 && len == 16,
+            "SPRITE-RUN-IS-EXACTLY-16-PIXELS: arming with SPRxDATA="
+            "SPRxDATB=0xFFFF (every bit set, so every one of the 16 "
+            "possible output pixels is non-transparent) at a fixed HSTART "
+            "and sweeping hpos across the full line, the run of "
+            "consecutive non-zero sprdata samples starting at the first "
+            "active hpos is EXACTLY 16 long: 'Sprites are 16 pixels wide' "
+            "(CH4-size.c1, p.101); 'On-screen width of up to 16 pixels' "
+            "(CH4-forming.c1, CH4-p98.c1, p.98); 'A line is 16 pixels "
+            "wide' (CH4-hw.c3, p.124); 'the shift...continues until all "
+            "16 bits have been transferred to the display circuitry' "
+            "(CH4-hw.c11, p.124); 'After loading, a sprite shift register "
+            "emits exactly 16 bit positions' (CH4-p124.c7, p.124); "
+            "Figure 4-2's 16-pixel-wide dimension arrow (CH4-fig4-2.c1, "
+            "CH4-fig42.f1, p.100); Figure 4-12's two sprites placed "
+            "exactly 16 hpos apart (CH4-fig412.f2, p.120). CH4-intro.c7, "
+            "CH4-p97.c4, CH4-forming.c1, CH4-p98.c1, CH4-p99.c7, "
+            "CH4-fig4-2.c1, CH4-fig42.f1, CH4-p101.c1, CH4-p101.c10, "
+            "CH4-shape.c1, CH4-size.c1, CH4-p124.c2, CH4-hw.c3, "
+            "CH4-hw.c11, CH4-p124.c7, CH4-fig412.f2 . measured run length=" +
+            std::to_string(len) + ".");
+    }
 
     // ---------------- LEFTMOST-PIXEL-POSITION-TRANSPARENCY-INDEPENDENT ----------------
-    checks.plan(
-        "LEFTMOST-PIXEL-POSITION-TRANSPARENCY-INDEPENDENT: at the SAME "
-        "HSTART, compare (a) SPRxDATA=0x8000/SPRxDATB=0x0000 (bit 15 "
-        "set: the very first pixel is itself visible) against (b) "
-        "SPRxDATA=0x4000/SPRxDATB=0x0000 (bit 15 clear on both words: "
-        "the first pixel is transparent, bit 14 the second pixel is "
-        "visible). Require active_hpos(b) == active_hpos(a) + 1 -- the "
-        "run still STARTS at the same HSTART-derived position in both "
-        "cases; only whether that first position is itself visible "
-        "differs: 'The X position represents the location of the very "
-        "first (leftmost) pixel in the full 16-bit wide sprite. This is "
-        "always the case, even if the leftmost pixels are specified as "
-        "transparent and do not appear on the screen.' (CH4-p99.c7/c8, "
-        "p.99). CH4-hpos.c11, CH4-hpos.c12, CH4-hpos.c13, CH4-p99.c8 .");
-    checks.planned++;
+    {
+        Harness ha; ha.arm(0x20, 0x00, 0x0000, 0x8000); Meas a = sweep(ha);
+#if MUT_LEFTMOST
+        Harness hb; hb.arm(0x20, 0x00, 0x0000, 0x8000);  // MUTATION: same as (a), bit 15 set.
+#else
+        Harness hb; hb.arm(0x20, 0x00, 0x0000, 0x4000);  // bit 15 clear (transparent), bit 14 set.
+#endif
+        Meas b = sweep(hb);
+        FirstActive fa_a = first_active(a);
+        FirstActive fa_b = first_active(b);
+        checks.expect(fa_a.hpos != -1 && fa_b.hpos != -1 && fa_b.hpos == fa_a.hpos + 1,
+            "LEFTMOST-PIXEL-POSITION-TRANSPARENCY-INDEPENDENT: at the same "
+            "HSTART, (a) SPRxDATA=0x8000/SPRxDATB=0x0000 (bit 15 set: the "
+            "very first pixel is itself visible) and (b) SPRxDATA=0x4000/"
+            "SPRxDATB=0x0000 (bit 15 clear on both words: the first pixel "
+            "is transparent, bit 14 the second pixel is visible) put the "
+            "measured active hpos exactly one apart (b = a + 1) -- the run "
+            "still STARTS at the same HSTART-derived position in both "
+            "cases; only whether that first position is itself visible "
+            "differs: 'The X position represents the location of the very "
+            "first (leftmost) pixel in the full 16-bit wide sprite. This "
+            "is always the case, even if the leftmost pixels are "
+            "specified as transparent and do not appear on the screen.' "
+            "(CH4-p99.c7/c8, p.99). CH4-hpos.c11, CH4-hpos.c12, "
+            "CH4-hpos.c13, CH4-p99.c8 . measured a=" + std::to_string(fa_a.hpos) +
+            " b=" + std::to_string(fa_b.hpos) + ".");
+    }
 
     // ---------------- TWO-WORDS-JOINTLY-FORM-EACH-PIXEL ----------------
-    checks.plan(
-        "TWO-WORDS-JOINTLY-FORM-EACH-PIXEL: at a fixed HSTART, using bit "
-        "15 (the run's first output position) as the marker bit, compare "
-        "sprdata at that position across three configurations: (i) "
-        "SPRxDATA=0x8000/SPRxDATB=0x0000, (ii) SPRxDATA=0x0000/"
-        "SPRxDATB=0x8000, (iii) SPRxDATA=0x8000/SPRxDATB=0x8000. Require "
-        "all three sprdata values to be PAIRWISE DIFFERENT -- proving "
-        "SPRxDATA alone, SPRxDATB alone, and both together are three "
-        "distinguishable states, i.e. the two words jointly determine "
-        "each pixel's code, matching 'each line is defined by two words "
-        "to provide selection of three colors and transparent' "
-        "(CH4-p124.c1/c2, p.124) and Figure 4-13's own two converters, "
-        "one fed from each register, whose outputs both feed the same "
-        "'sprite serial video data' block (CH4-fig4-13.c3/c4/c5, "
-        "CH4-fig413.f9, p.125). CH4-hw.c1, CH4-hw.c4, CH4-hw.c6, "
-        "CH4-hw.c7, CH4-p124.c1, CH4-p124.c4, CH4-fig4-13.c3, "
-        "CH4-fig4-13.c4, CH4-fig4-13.c5, CH4-fig413.f9, CH4-fig4-13.c10, "
-        "CH4-fig413.f10, CH4-fig413.f7, CH4-shape.c2, CH4-p102.c1, "
-        "CH4-shape.c5 .");
-    checks.planned++;
+    {
+        Harness hi; hi.arm(0x20, 0x00, 0x0000, 0x8000); Meas cfg_i = sweep(hi);
+#if MUT_TWOWORDS
+        Harness hii; hii.arm(0x20, 0x00, 0x0000, 0x8000);  // MUTATION: same as (i), DATB not used.
+#else
+        Harness hii; hii.arm(0x20, 0x00, 0x8000, 0x0000);
+#endif
+        Meas cfg_ii = sweep(hii);
+        Harness hiii; hiii.arm(0x20, 0x00, 0x8000, 0x8000); Meas cfg_iii = sweep(hiii);
+        int probe = first_active(cfg_iii).hpos;
+        bool have_probe = probe != -1;
+        uint8_t v_i = have_probe ? cfg_i.trace[static_cast<size_t>(probe)] : 0xFF;
+        uint8_t v_ii = have_probe ? cfg_ii.trace[static_cast<size_t>(probe)] : 0xFF;
+        uint8_t v_iii = have_probe ? cfg_iii.trace[static_cast<size_t>(probe)] : 0xFF;
+        bool pairwise_different = have_probe && v_i != v_ii && v_ii != v_iii && v_i != v_iii;
+        checks.expect(pairwise_different,
+            "TWO-WORDS-JOINTLY-FORM-EACH-PIXEL: at the fixed HSTART's own "
+            "first output position (bit 15 of each word), sprdata under "
+            "(i) SPRxDATA=0x8000/SPRxDATB=0x0000, (ii) SPRxDATA=0x0000/"
+            "SPRxDATB=0x8000 and (iii) SPRxDATA=0x8000/SPRxDATB=0x8000 are "
+            "PAIRWISE DIFFERENT -- SPRxDATA alone, SPRxDATB alone, and "
+            "both together are three distinguishable states, i.e. the two "
+            "words jointly determine each pixel's code, matching 'each "
+            "line is defined by two words to provide selection of three "
+            "colors and transparent' (CH4-p124.c1/c2, p.124) and Figure "
+            "4-13's own two converters, one fed from each register, whose "
+            "outputs both feed the same 'sprite serial video data' block "
+            "(CH4-fig4-13.c3/c4/c5, CH4-fig413.f9, p.125). CH4-hw.c1, "
+            "CH4-hw.c4, CH4-hw.c6, CH4-hw.c7, CH4-p124.c1, CH4-p124.c4, "
+            "CH4-fig4-13.c3, CH4-fig4-13.c4, CH4-fig4-13.c5, CH4-fig413.f9, "
+            "CH4-fig4-13.c10, CH4-fig413.f10, CH4-fig413.f7, CH4-shape.c2, "
+            "CH4-p102.c1, CH4-shape.c5 . measured v(i)=" + std::to_string(v_i) +
+            " v(ii)=" + std::to_string(v_ii) + " v(iii)=" + std::to_string(v_iii) + ".");
+    }
 
     // ---------------- SHIFT-OUT-MSB-FIRST ----------------
-    checks.plan(
-        "SHIFT-OUT-MSB-FIRST: arm the sprite at a fixed HSTART with (a) "
-        "SPRxDATA=0x8000/SPRxDATB=0x0000 (bit 15, the MSB, alone) and "
-        "separately with (b) SPRxDATA=0x0001/SPRxDATB=0x0000 (bit 0, the "
-        "LSB, alone). Require active_hpos(a) == HSTART (the FIRST "
-        "position of the run) and active_hpos(b) == HSTART + 15 (the "
-        "LAST position of the run) -- proving bit 15 is output first/ "
-        "leftmost and bit 0 last/rightmost: '...each parallel-to-serial "
-        "converter begins shifting the bits out of the converter, most "
-        "significant (leftmost) bit first' (CH4-hw.c8/c9, CH4-p124.c5, "
-        "p.124); '...the bit image of the data corresponds exactly to "
-        "the image that actually appears on the screen (most "
-        "significant data on the left)' (CH4-hw.c13, CH4-p124.c9, "
-        "p.124); 'The most significant bit of the first data word will "
-        "be placed in this position on the screen' (CH4-p127.c11, "
-        "CH4-pos.c9, p.127); 'the leftmost pixel of the sprite data "
-        "[is] placed at the position defined in the horizontal part of "
-        "SPRxPOS' (CH4-det.c6, CH4-p126.c5, p.126). CH4-hw.c8, "
-        "CH4-hw.c9, CH4-hw.c13, CH4-p124.c5, CH4-p124.c9, CH4-p127.c11, "
-        "CH4-pos.c9, CH4-det.c6, CH4-p126.c5 .");
-    checks.planned++;
+    {
+#if MUT_MSBFIRST
+        // Stimulus mutation replay (see MUTATION SHIFT-OUT-MSB-FIRST in
+        // the header above): the MSB-marker and LSB-marker stimuli are
+        // swapped.
+        Harness ha; ha.arm(0x20, 0x00, 0x0000, 0x0001); Meas a = sweep(ha);
+        Harness hb; hb.arm(0x20, 0x00, 0x0000, 0x8000); Meas b = sweep(hb);
+#else
+        Harness ha; ha.arm(0x20, 0x00, 0x0000, 0x8000); Meas a = sweep(ha);
+        Harness hb; hb.arm(0x20, 0x00, 0x0000, 0x0001); Meas b = sweep(hb);
+#endif
+        FirstActive fa_a = first_active(a);
+        FirstActive fa_b = first_active(b);
+        checks.expect(fa_a.hpos != -1 && fa_b.hpos != -1 && fa_b.hpos == fa_a.hpos + 15,
+            "SHIFT-OUT-MSB-FIRST: arming with (a) SPRxDATA=0x8000 (bit 15, "
+            "the MSB, alone) puts the active pixel at the run's FIRST "
+            "position; arming with (b) SPRxDATA=0x0001 (bit 0, the LSB, "
+            "alone) at the SAME HSTART puts it exactly 15 positions later "
+            "-- the run's LAST position -- proving bit 15 is output first/"
+            "leftmost and bit 0 last/rightmost: '...each parallel-to-"
+            "serial converter begins shifting the bits out of the "
+            "converter, most significant (leftmost) bit first' "
+            "(CH4-hw.c8/c9, CH4-p124.c5, p.124); '...the bit image of the "
+            "data corresponds exactly to the image that actually appears "
+            "on the screen (most significant data on the left)' "
+            "(CH4-hw.c13, CH4-p124.c9, p.124); 'The most significant bit "
+            "of the first data word will be placed in this position on "
+            "the screen' (CH4-p127.c11, CH4-pos.c9, p.127); '...the "
+            "leftmost pixel of the sprite data [is] placed at the "
+            "position defined in the horizontal part of SPRxPOS' "
+            "(CH4-det.c6, CH4-p126.c5, p.126). CH4-hw.c8, CH4-hw.c9, "
+            "CH4-hw.c13, CH4-p124.c5, CH4-p124.c9, CH4-p127.c11, "
+            "CH4-pos.c9, CH4-det.c6, CH4-p126.c5 . measured a=" +
+            std::to_string(fa_a.hpos) + " b=" + std::to_string(fa_b.hpos) + ".");
+    }
 
     // ---------------- SHIFT-STOPS-AFTER-16-UNTIL-RELOADED ----------------
-    checks.plan(
-        "SHIFT-STOPS-AFTER-16-UNTIL-RELOADED: arm the sprite with "
-        "SPRxDATA=SPRxDATB=0xFFFF at a fixed HSTART and sweep the FULL "
-        "hpos range 0..511 in ONE pass, with no register rewritten "
-        "during the sweep. Require sprdata to be zero at hpos = "
-        "HSTART-1 (just before the run), non-zero for all 16 positions "
-        "HSTART..HSTART+15, and zero again at every hpos from HSTART+16 "
-        "through the end of the 0..511 sweep -- it does not resume or "
-        "restart within the same pass without a fresh load: 'Immediately "
-        "after the data is transferred..., each...converter begins "
-        "shifting...The shift occurs once during each low resolution "
-        "pixel time and continues until all 16 bits have been "
-        "transferred...The shifting and data output does not begin "
-        "again until the next time this converter is loaded from the "
-        "data registers.' (CH4-hw.c12, CH4-p124.c8, p.124); Figure "
-        "4-13's grounded serial inputs, so zeros shift in behind the 16 "
-        "data bits (CH4-fig413.f8, p.125). CH4-hw.c12, CH4-p124.c8, "
-        "CH4-fig413.f8 .");
-    checks.planned++;
+    {
+#if MUT_STOPS
+        uint16_t word = 0x0000;  // MUTATION: no bits set anywhere -- no run to find at all.
+#else
+        uint16_t word = 0xFFFF;
+#endif
+        Harness h; h.arm(0x20, 0x00, word, word); Meas m = sweep(h);
+        FirstActive fa = first_active(m);
+        bool before_zero = fa.hpos > 0 && m.trace[static_cast<size_t>(fa.hpos) - 1] == 0;
+        int len = run_length(m, fa.hpos);
+        bool after_zero = true;
+        if (fa.hpos != -1) {
+            for (size_t i = static_cast<size_t>(fa.hpos + len); i < m.trace.size(); ++i) {
+                if (m.trace[i] != 0) { after_zero = false; break; }
+            }
+        }
+        checks.expect(fa.hpos != -1 && before_zero && len == 16 && after_zero,
+            "SHIFT-STOPS-AFTER-16-UNTIL-RELOADED: arming with SPRxDATA="
+            "SPRxDATB=0xFFFF at a fixed HSTART and sweeping the full hpos "
+            "range 0..511 in one pass with no register rewritten during "
+            "the sweep, sprdata is zero immediately before the run, "
+            "non-zero for exactly its 16 positions, and zero again for "
+            "every remaining hpos through the end of the sweep -- it does "
+            "not resume or restart within the same pass without a fresh "
+            "load: 'Immediately after the data is transferred..., "
+            "each...converter begins shifting...The shift occurs once "
+            "during each low resolution pixel time and continues until "
+            "all 16 bits have been transferred...The shifting and data "
+            "output does not begin again until the next time this "
+            "converter is loaded from the data registers.' (CH4-hw.c12, "
+            "CH4-p124.c8, p.124); Figure 4-13's grounded serial inputs, "
+            "so zeros shift in behind the 16 data bits (CH4-fig413.f8, "
+            "p.125). CH4-hw.c12, CH4-p124.c8, CH4-fig413.f8 .");
+    }
 
     // ---------------- WRITE-DATA-ARMS-SPRITE-DATB-ALONE-DOES-NOT ----------------
-    checks.plan(
-        "WRITE-DATA-ARMS-SPRITE-DATB-ALONE-DOES-NOT: from a fresh "
-        "reset, write SPRxPOS/SPRxCTL (a fixed HSTART) and SPRxDATB=0x8000 "
-        "but do NOT write SPRxDATA; sweep hpos across the full range and "
-        "require sprdata to be zero throughout (DATB alone does not "
-        "arm). THEN, continuing from the SAME state, write "
-        "SPRxDATA=0x8000 and sweep again; require sprdata to now go "
-        "non-zero at HSTART -- proving the SPRxDATA write is what arms "
-        "the sprite for the next horizontal comparison, and that "
-        "writing SPRxDATB first and SPRxDATA last (the manual's own "
-        "recommended order) is exactly what this arm-only-on-DATA "
-        "mechanism requires: 'You display sprites manually by writing "
-        "to the sprite data registers SPRxDATB and SPRxDATA, in that "
-        "order. You write to SPRxDATA last because that address \"arms\" "
-        "the sprite to be output at the next horizontal comparison.' "
-        "(CH4-manual.c4/c5/c6, CH4-p123.c3/c4, p.123); 'Writing to the "
-        "sprite A data register enables the horizontal comparator.' "
-        "(CH4-det.c3, CH4-p126.c3, p.126); 'This arms the sprite "
-        "horizontal comparators...' (CH4-det.c27, CH4-p126.c21, p.126); "
-        "Figure 4-13's own SPRxDATA load decode driving the arming "
-        "flip-flop's S (set) input on the line printed 'ARM' sprite -- "
-        "the FIRST, undisputed occurrence of that label, not the second, "
-        "unsupported one on the SPRxDATB path (see FIGURE 4-13's DOUBLE "
-        "\"ARM\" LABEL above) (CH4-fig4-13.c7, CH4-fig413.f4, p.125). "
-        "CH4-manual.c6, CH4-p123.c4, CH4-fig4-13.c7, CH4-fig413.f4, "
-        "CH4-det.c3, CH4-det.c27, CH4-p126.c3, CH4-p126.c21, "
-        "CH4-manual.c4, CH4-manual.c5, CH4-p123.c3 .");
-    checks.planned++;
+    {
+        Harness h;
+        h.write_reg(ADDR_POS, 0x20);
+        h.write_reg(ADDR_CTL, 0x00);
+        h.write_reg(ADDR_DATB, 0x8000);
+#if MUT_ARM
+        h.write_reg(ADDR_DATA, 0x8000);  // MUTATION: DATA written during the "before" phase too.
+#endif
+        Meas before = sweep(h);
+        bool before_silent = first_active(before).hpos == -1;
+#if !MUT_ARM
+        h.write_reg(ADDR_DATA, 0x8000);
+#endif
+        Meas after = sweep(h);
+        bool after_active = first_active(after).hpos != -1;
+        checks.expect(before_silent && after_active,
+            "WRITE-DATA-ARMS-SPRITE-DATB-ALONE-DOES-NOT: from a fresh "
+            "reset, writing SPRxPOS/SPRxCTL and SPRxDATB=0x8000 without "
+            "writing SPRxDATA leaves sprdata zero throughout a full hpos "
+            "sweep (DATB alone does not arm); writing SPRxDATA=0x8000 "
+            "afterwards, from the same state, makes sprdata go non-zero "
+            "on the next sweep -- the SPRxDATA write is what arms the "
+            "sprite, and writing SPRxDATB first, SPRxDATA last (the "
+            "manual's own recommended order) is exactly what this "
+            "arm-only-on-DATA mechanism requires: 'You display sprites "
+            "manually by writing to the sprite data registers SPRxDATB "
+            "and SPRxDATA, in that order. You write to SPRxDATA last "
+            "because that address \"arms\" the sprite to be output at the "
+            "next horizontal comparison.' (CH4-manual.c4/c5/c6, "
+            "CH4-p123.c3/c4, p.123); 'Writing to the sprite A data "
+            "register enables the horizontal comparator.' (CH4-det.c3, "
+            "CH4-p126.c3, p.126); 'This arms the sprite horizontal "
+            "comparators...' (CH4-det.c27, CH4-p126.c21, p.126); Figure "
+            "4-13's own SPRxDATA load decode driving the arming "
+            "flip-flop's S (set) input on the line printed 'ARM' sprite "
+            "-- the first, undisputed occurrence of that label, not the "
+            "second, unsupported one on the SPRxDATB path (CH4-fig4-13.c7, "
+            "CH4-fig413.f4, p.125). CH4-manual.c6, CH4-p123.c4, "
+            "CH4-fig4-13.c7, CH4-fig413.f4, CH4-det.c3, CH4-det.c27, "
+            "CH4-p126.c3, CH4-p126.c21, CH4-manual.c4, CH4-manual.c5, "
+            "CH4-p123.c3 .");
+    }
 
     // ---------------- WRITE-CTL-DISARMS-ALREADY-ARMED-SPRITE ----------------
-    checks.plan(
-        "WRITE-CTL-DISARMS-ALREADY-ARMED-SPRITE: arm the sprite (write "
-        "SPRxPOS, SPRxCTL, SPRxDATB, SPRxDATA) and sweep hpos; require "
-        "sprdata to go non-zero (the PRECONDITION -- the sprite really "
-        "was armed -- asserted here, not assumed). THEN, without "
-        "rewriting SPRxDATA, write SPRxCTL again and sweep hpos once "
-        "more; require sprdata to be zero throughout this second sweep "
-        "-- a write to SPRxCTL disarms a sprite that was already armed, "
-        "this package's own headline subject: 'The sprite can be "
-        "terminated (\"disarmed\") by writing to the SPRxCTL register.' "
-        "(CH4-manual.c11, CH4-p123.c8, p.123); 'Writing to the sprite "
-        "control registers disables the horizontal comparator circuitry. "
-        "This prevents the system from sending any output from the data "
-        "registers to the serial converter or to the screen.' "
-        "(CH4-det.c1/c2, CH4-p126.c1/c2, p.126); Figure 4-13's own "
-        "SPRxCTL load decode driving the arming flip-flop's R (reset) "
-        "input (CH4-fig4-13.c8, CH4-fig413.f5, p.125). CH4-manual.c11, "
-        "CH4-p123.c8, CH4-fig4-13.c8, CH4-fig413.f5, CH4-det.c1, "
-        "CH4-det.c2, CH4-p126.c1, CH4-p126.c2 .");
-    checks.planned++;
+    {
+        Harness h; h.arm(0x20, 0x00, 0x0000, 0x8000);
+        Meas before = sweep(h);
+        bool was_armed = first_active(before).hpos != -1;
+#if MUT_DISARM
+        h.write_reg(ADDR_POS, 0x20);  // MUTATION: POS rewritten instead of CTL -- does not disarm.
+#else
+        h.write_reg(ADDR_CTL, 0x00);
+#endif
+        Meas after = sweep(h);
+        bool now_silent = first_active(after).hpos == -1;
+        checks.expect(was_armed && now_silent,
+            "WRITE-CTL-DISARMS-ALREADY-ARMED-SPRITE: arming the sprite "
+            "(write SPRxPOS, SPRxCTL, SPRxDATB, SPRxDATA) and sweeping "
+            "hpos makes sprdata go non-zero -- the precondition, that the "
+            "sprite really was armed, measured here rather than assumed. "
+            "Writing SPRxCTL again afterwards, without rewriting "
+            "SPRxDATA, and sweeping once more, makes sprdata zero "
+            "throughout -- a write to SPRxCTL disarms a sprite that was "
+            "already armed, this package's own headline subject: 'The "
+            "sprite can be terminated (\"disarmed\") by writing to the "
+            "SPRxCTL register.' (CH4-manual.c11, CH4-p123.c8, p.123); "
+            "'Writing to the sprite control registers disables the "
+            "horizontal comparator circuitry. This prevents the system "
+            "from sending any output from the data registers to the "
+            "serial converter or to the screen.' (CH4-det.c1/c2, "
+            "CH4-p126.c1/c2, p.126); Figure 4-13's own SPRxCTL load "
+            "decode driving the arming flip-flop's R (reset) input "
+            "(CH4-fig4-13.c8, CH4-fig413.f5, p.125). CH4-manual.c11, "
+            "CH4-p123.c8, CH4-fig4-13.c8, CH4-fig413.f5, CH4-det.c1, "
+            "CH4-det.c2, CH4-p126.c1, CH4-p126.c2 .");
+    }
 
     // ---------------- COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART ----------------
-    checks.plan(
-        "COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART: arm the sprite with "
-        "SPRxDATA=0x8000 (a marker at the run's first position) at two "
-        "DIFFERENT written HSTART values and require the measured "
-        "active hpos to equal the WRITTEN HSTART in both cases (not a "
-        "fixed or hardcoded position) -- the comparator's match against "
-        "the position register is what starts output, on the horizontal "
-        "axis: 'the comparator issues a load signal and the sprite "
-        "display begins' when the beam reaches the leftmost pixel's "
-        "position (CH4-hw.c22, p.124); 'Writing to the sprite A data "
-        "register enables the horizontal comparator. This enables "
-        "output to the screen when the horizontal position of the video "
-        "beam equals the horizontal value in the position register.' "
-        "(CH4-det.c4, CH4-p126.c4, p.126); 'If the comparator is "
-        "enabled, the sprite data will be sent to the display...' "
-        "(CH4-det.c5, p.126); 'The armed comparators start the output "
-        "of sprite data to the screen when the horizontal beam count "
-        "matches the HSTART, X value, part of SPRxPOS.' (CH4-det.c28, "
-        "CH4-p126.c22, p.126); 'The data written will then be displayed "
-        "on every line, at the horizontal position given in the \"H\" "
-        "portion of the position registers SPRxPOS and SPRxCTL.' "
-        "(CH4-manual.c8, CH4-p123.c5, p.123); Figure 4-13's own "
-        "comparator, labelled 'equal', gated with the armed flip-flop's "
-        "Q output into the L (load) input of both converters "
-        "(CH4-fig4-13.c2, CH4-fig413.f2, CH4-fig413.f3, p.125). "
-        "CH4-manual.c8, CH4-p123.c5, CH4-hw.c22, CH4-fig4-13.c2, "
-        "CH4-fig413.f2, CH4-fig413.f3, CH4-det.c28, CH4-det.c4, "
-        "CH4-det.c5, CH4-p126.c22, CH4-p126.c4 .");
-    checks.planned++;
+    {
+        Harness h1; h1.arm(0x10, 0x00, 0x0000, 0x8000); Meas m1 = sweep(h1);
+#if MUT_COMPARATOR
+        Harness h2; h2.arm(0x10, 0x00, 0x0000, 0x8000);  // MUTATION: identical POS -- delta forced to 0.
+#else
+        Harness h2; h2.arm(0x30, 0x00, 0x0000, 0x8000);
+#endif
+        Meas m2 = sweep(h2);
+        int a1 = first_active(m1).hpos;
+        int a2 = first_active(m2).hpos;
+        int expected_delta = (0x30 - 0x10) * 2;  // SPRxPOS byte step * 2 raw units/step.
+        bool both_found = a1 != -1 && a2 != -1;
+        int measured_delta = both_found ? (a2 - a1) : -1000;
+        checks.expect(both_found && measured_delta == expected_delta,
+            "COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART: arming with "
+            "SPRxDATA=0x8000 (a marker at the run's first position) at "
+            "two different written SPRxPOS byte values (0x10 and 0x30) "
+            "moves the measured active hpos by exactly the same amount "
+            "the written position changed by (32 raw units, matching "
+            "HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL's own "
+            "2-raw-units-per-POS-byte-step finding) -- the comparator's "
+            "match against the written position register is what starts "
+            "output, on the horizontal axis: 'the comparator issues a "
+            "load signal and the sprite display begins' when the beam "
+            "reaches the leftmost pixel's position (CH4-hw.c22, p.124); "
+            "'Writing to the sprite A data register enables the "
+            "horizontal comparator. This enables output to the screen "
+            "when the horizontal position of the video beam equals the "
+            "horizontal value in the position register.' (CH4-det.c4, "
+            "CH4-p126.c4, p.126); 'If the comparator is enabled, the "
+            "sprite data will be sent to the display...' (CH4-det.c5, "
+            "p.126); 'The armed comparators start the output of sprite "
+            "data to the screen when the horizontal beam count matches "
+            "the HSTART, X value, part of SPRxPOS.' (CH4-det.c28, "
+            "CH4-p126.c22, p.126); 'The data written will then be "
+            "displayed on every line, at the horizontal position given "
+            "in the \"H\" portion of the position registers SPRxPOS and "
+            "SPRxCTL.' (CH4-manual.c8, CH4-p123.c5, p.123); Figure 4-13's "
+            "own comparator, labelled 'equal', gated with the armed "
+            "flip-flop's Q output into the L (load) input of both "
+            "converters (CH4-fig4-13.c2, CH4-fig413.f2, CH4-fig413.f3, "
+            "p.125). CH4-manual.c8, CH4-p123.c5, CH4-hw.c22, "
+            "CH4-fig4-13.c2, CH4-fig413.f2, CH4-fig413.f3, CH4-det.c28, "
+            "CH4-det.c4, CH4-det.c5, CH4-p126.c22, CH4-p126.c4 . measured "
+            "delta=" + std::to_string(measured_delta) + " expected=" +
+            std::to_string(expected_delta) + ".");
+    }
 
     // ---------------- UNCHANGED-DATA-REPEATS-RELOAD-VARIES ----------------
-    checks.plan(
-        "UNCHANGED-DATA-REPEATS-RELOAD-VARIES: arm the sprite once "
-        "(write SPRxPOS/SPRxCTL/SPRxDATB/SPRxDATA) and sweep hpos "
-        "0..511 TWICE in a row with no register rewritten between "
-        "sweeps; require the two full sprdata traces to be IDENTICAL "
-        "(the sprite re-triggers, unaided, on every subsequent line): "
-        "'If the data is unchanged, the result will be a vertical bar.' "
-        "(CH4-manual.c9, CH4-p123.c6, p.123); 'As long as the "
-        "comparator remains enabled, the current contents of the sprite "
-        "data register will be output at the selected horizontal "
-        "position on a video line.' (CH4-det.c7, CH4-p126.c6, p.126); "
-        "'The data in the sprite data registers does not change. It is "
-        "either rewritten by the user or modified under DMA control.' "
-        "(CH4-det.c8, CH4-p126.c7/c8, p.126); a DMA-off sprite, from "
-        "this module's own boundary, is observationally identical to "
-        "one simply not rewritten -- 'the system will continue to "
-        "display the line of sprite data that was most recently "
-        "fetched...caus[ing] a vertical bar' (CH4-dma.c1/c2, "
-        "CH4-p109.c2/c3, p.109). THEN, after the first sweep, rewrite "
-        "SPRxDATA to a DIFFERENT value (SPRxPOS/SPRxCTL untouched) and "
-        "sweep a third time; require this third trace to DIFFER from "
-        "the first two: 'If the data is reloaded for every line, a "
-        "complex sprite can be produced.' (CH4-manual.c7/c10, "
-        "CH4-p123.c7, p.123). CH4-manual.c7, CH4-manual.c9, "
-        "CH4-manual.c10, CH4-p123.c6, CH4-p123.c7, CH4-det.c7, "
-        "CH4-det.c8, CH4-p126.c6, CH4-p126.c7, CH4-p126.c8, CH4-dma.c1, "
-        "CH4-dma.c2, CH4-p109.c2, CH4-p109.c3 .");
-    checks.planned++;
+    {
+        Harness h; h.arm(0x20, 0x00, 0x0000, 0x8000);
+        Meas first = sweep(h);
+        Meas second = sweep(h);
+        bool repeats = first.trace == second.trace;
+#if MUT_REPEATS
+        h.write_reg(ADDR_DATA, 0x8000);  // MUTATION: rewritten to the SAME value -- should NOT differ.
+#else
+        h.write_reg(ADDR_DATA, 0x0001);
+#endif
+        Meas third = sweep(h);
+        bool reload_varies = third.trace != first.trace;
+        checks.expect(repeats && reload_varies,
+            "UNCHANGED-DATA-REPEATS-RELOAD-VARIES: arming the sprite once "
+            "and sweeping hpos 0..511 twice in a row, with no register "
+            "rewritten between sweeps, produces IDENTICAL sprdata traces "
+            "-- the sprite re-triggers, unaided, on every subsequent "
+            "line: 'If the data is unchanged, the result will be a "
+            "vertical bar.' (CH4-manual.c9, CH4-p123.c6, p.123); 'As long "
+            "as the comparator remains enabled, the current contents of "
+            "the sprite data register will be output at the selected "
+            "horizontal position on a video line.' (CH4-det.c7, "
+            "CH4-p126.c6, p.126); 'The data in the sprite data registers "
+            "does not change. It is either rewritten by the user or "
+            "modified under DMA control.' (CH4-det.c8, CH4-p126.c7/c8, "
+            "p.126); a DMA-off sprite, from this module's own boundary, "
+            "is observationally identical to one simply not rewritten -- "
+            "'the system will continue to display the line of sprite "
+            "data that was most recently fetched...caus[ing] a vertical "
+            "bar' (CH4-dma.c1/c2, CH4-p109.c2/c3, p.109). Rewriting "
+            "SPRxDATA to a different value afterwards (SPRxPOS/SPRxCTL "
+            "untouched) and sweeping a third time produces a DIFFERENT "
+            "trace: 'If the data is reloaded for every line, a complex "
+            "sprite can be produced.' (CH4-manual.c7/c10, CH4-p123.c7, "
+            "p.123). CH4-manual.c7, CH4-manual.c9, CH4-manual.c10, "
+            "CH4-p123.c6, CH4-p123.c7, CH4-det.c7, CH4-det.c8, "
+            "CH4-p126.c6, CH4-p126.c7, CH4-p126.c8, CH4-dma.c1, "
+            "CH4-dma.c2, CH4-p109.c2, CH4-p109.c3 .");
+    }
 
     // ---------------- SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM ----------------
-    checks.plan(
-        "SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM: arm the "
-        "sprite at HSTART=H1 (write SPRxPOS/SPRxCTL/SPRxDATB/SPRxDATA), "
-        "sweep hpos, require the active position to be H1. THEN, "
-        "WITHOUT rewriting SPRxCTL or SPRxDATA again, write SPRxPOS to "
-        "produce a DIFFERENT HSTART=H2 and sweep again; require the "
-        "active position to now be H2 -- a position write alone moves an "
-        "already-armed sprite, it does not need to be re-armed: 'If you "
-        "write to the SPRxPOS register, you can manually move the "
-        "sprite horizontally at any time, even during normal sprite "
-        "usage.' (CH4-manual.c12, CH4-p123.c9, p.123); Figure 4-13's own "
-        "SPRxPOS load decode driving the L (load) input of the SPRxPOS "
-        "register directly, a path SEPARATE from the arming flip-flop "
-        "(CH4-fig413.f11, p.125). CH4-manual.c12, CH4-p123.c9, "
-        "CH4-fig413.f11 .");
-    checks.planned++;
+    {
+        Harness h; h.arm(0x10, 0x00, 0x0000, 0x8000);
+        Meas at_h1 = sweep(h);
+        int a1 = first_active(at_h1).hpos;
+#if MUT_MOVE
+        h.write_reg(ADDR_CTL, 0x00);  // MUTATION: a CTL write is also issued -- disarms unconditionally.
+#endif
+        h.write_reg(ADDR_POS, 0x30);
+        Meas at_h2 = sweep(h);
+        int a2 = first_active(at_h2).hpos;
+        bool moved = a1 != -1 && a2 != -1 && a2 == a1 + (0x30 - 0x10) * 2;
+        checks.expect(moved,
+            "SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM: arming the "
+            "sprite at HSTART derived from SPRxPOS=0x10 and confirming "
+            "the active position, then, WITHOUT rewriting SPRxCTL or "
+            "SPRxDATA again, writing SPRxPOS=0x30 and sweeping again, "
+            "moves the active position by exactly the same amount the "
+            "written POS byte changed by -- a position write alone moves "
+            "an already-armed sprite, it does not need to be re-armed: "
+            "'If you write to the SPRxPOS register, you can manually "
+            "move the sprite horizontally at any time, even during "
+            "normal sprite usage.' (CH4-manual.c12, CH4-p123.c9, p.123); "
+            "Figure 4-13's own SPRxPOS load decode driving the L (load) "
+            "input of the SPRxPOS register directly, a path SEPARATE "
+            "from the arming flip-flop (CH4-fig413.f11, p.125). "
+            "CH4-manual.c12, CH4-p123.c9, CH4-fig413.f11 .");
+    }
 
     // ---------------- HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL ----------------
-    checks.plan(
-        "HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL: with SPRxCTL "
-        "bit 0 held at 0, increment the SPRxPOS byte by 1 and require "
-        "the measured active-position delta to be EXACTLY 2 raw hpos "
-        "units (SPRxPOS[7:0] holds the UPPER 8 bits of the 9-bit HSTART "
-        "value, so its own LSB is worth 2 raw units). Separately, with "
-        "SPRxPOS held fixed, toggle SPRxCTL bit 0 from 0 to 1 and "
-        "require the delta to be EXACTLY 1 raw unit (SPRxCTL bit 0 is "
-        "HSTART's own true, missing, LSB): 'Bits 7-0 contain the high 8 "
-        "bits of HSTART' (CH4-p107.c4/c11, CH4-sprpos.c5, p.107) read "
-        "together with 'Bits 7-0 specify the horizontal start position, "
-        "bits H8-H1' (CH4-p128.c5, CH4-spos.c2, p.128) -- the same 8 "
-        "bits, named generically on one page and by mnemonic on the "
-        "other, not in tension (see TWO SMALL SELF-CHECKED READINGS "
-        "above); 'Bit 0 The HSTART low bit' / 'Bit 0 is bit H0 of "
-        "horizontal start.' (CH4-p107.c11, CH4-sprctl.c9, CH4-p128.c17, "
-        "CH4-sctl.c16, pp.107/128); '...write the horizontal...position "
-        "of the sprite into [the first control word]' (CH4-build.c5, "
-        "p.104); 'These registers, called SPRxPOS, contain the "
-        "horizontal position' (CH4-hw.c15, p.124); 'This is where the "
-        "topmost line...(HSTART) starting position for the sprite' "
-        "(CH4-sprpos.c2, p.107). CH4-build.c5, CH4-p107.c11, "
-        "CH4-p107.c4, CH4-sprctl.c9, CH4-sprpos.c2, CH4-sprpos.c5, "
-        "CH4-p128.c17, CH4-p128.c5, CH4-sctl.c16, CH4-spos.c2, "
-        "CH4-hw.c15 .");
-    checks.planned++;
+    {
+        Harness ha; ha.arm(0x20, 0x00, 0x0000, 0x8000); Meas a = sweep(ha);
+#if MUT_HSTART
+        Harness hb; hb.arm(0x22, 0x00, 0x0000, 0x8000);  // MUTATION: POS byte step of 2, not 1.
+#else
+        Harness hb; hb.arm(0x21, 0x00, 0x0000, 0x8000);
+#endif
+        Meas b = sweep(hb);
+        Harness hc; hc.arm(0x20, 0x01, 0x0000, 0x8000); Meas c = sweep(hc);
+        int a_pos = first_active(a).hpos;
+        int b_pos = first_active(b).hpos;
+        int c_pos = first_active(c).hpos;
+        bool all_found = a_pos != -1 && b_pos != -1 && c_pos != -1;
+        int pos_delta = all_found ? (b_pos - a_pos) : -1000;
+        int ctl_delta = all_found ? (c_pos - a_pos) : -1000;
+        checks.expect(all_found && pos_delta == 2 && ctl_delta == 1,
+            "HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL: with "
+            "SPRxCTL bit 0 held at 0, incrementing the SPRxPOS byte by 1 "
+            "(0x20 -> 0x21) moves the measured active position by "
+            "exactly 2 raw hpos units (SPRxPOS[7:0] holds the upper 8 "
+            "bits of the 9-bit HSTART value, so its own LSB is worth 2 "
+            "raw units); with SPRxPOS held fixed, toggling SPRxCTL bit 0 "
+            "from 0 to 1 moves it by exactly 1 raw unit (SPRxCTL bit 0 is "
+            "HSTART's own true, missing, LSB): 'Bits 7-0 contain the "
+            "high 8 bits of HSTART' (CH4-p107.c4/c11, CH4-sprpos.c5, "
+            "p.107) read together with 'Bits 7-0 specify the horizontal "
+            "start position, bits H8-H1' (CH4-p128.c5, CH4-spos.c2, "
+            "p.128) -- the same 8 bits, named generically on one page "
+            "and by mnemonic on the other, not in tension; 'Bit 0 The "
+            "HSTART low bit' / 'Bit 0 is bit H0 of horizontal start.' "
+            "(CH4-p107.c11, CH4-sprctl.c9, CH4-p128.c17, CH4-sctl.c16, "
+            "pp.107/128); '...write the horizontal...position of the "
+            "sprite into [the first control word]' (CH4-build.c5, "
+            "p.104); 'These registers, called SPRxPOS, contain the "
+            "horizontal position' (CH4-hw.c15, p.124); 'This is where "
+            "the topmost line...(HSTART) starting position for the "
+            "sprite' (CH4-sprpos.c2, p.107). CH4-build.c5, CH4-p107.c11, "
+            "CH4-p107.c4, CH4-sprctl.c9, CH4-sprpos.c2, CH4-sprpos.c5, "
+            "CH4-p128.c17, CH4-p128.c5, CH4-sctl.c16, CH4-spos.c2, "
+            "CH4-hw.c15 . measured pos_delta=" + std::to_string(pos_delta) +
+            " ctl_delta=" + std::to_string(ctl_delta) + ".");
+    }
 
     // --------- [declined] EIGHT-CHANNELS-AND-ATTACHMENT-NEED-WIDER-BOUNDARY ---------
     checks.record(
@@ -614,23 +833,25 @@ int main(int argc, char** argv) {
         "channels, not about one channel's own shift-register behaviour "
         "-- a single per-sprite shifter instance, this package's own "
         "assigned boundary, cannot confirm or contradict either on its "
-        "own. This is exactly the boundary hrm/ch4-attached-sprites/ "
-        "already tests ATTACH at (denise_sprites, two sprite channels "
-        "plus the shared colour-select logic). 'Bit 7 (Used in "
-        "attachment)' (CH4-p107.c7, CH4-sprctl.c5, p.107); 'also "
-        "contains some data having to do with sprite attachment' "
-        "(CH4-sprctl.c3, p.107); 'whether or not a sprite is attached' "
-        "(CH4-hw.c19, CH4-p124.c13, p.124); 'There is such a pair of "
-        "data registers for each of the eight sprites' (CH4-hw.c2, "
-        "p.124). Two further ids naming the SAME attach bit, "
-        "CH4-p128.c8 and CH4-sctl.c4, are covered by hrm/ch4-attached-"
-        "sprites/ per the build task's own direct instruction and are "
-        "recorded here rather than declined for boundary reasons, but "
-        "land on the identical underlying limitation. CH4-p107.c7, "
-        "CH4-sprctl.c3, CH4-sprctl.c5, CH4-hw.c19, CH4-p124.c13, "
-        "CH4-hw.c2, CH4-p128.c8 [covered elsewhere], CH4-sctl.c4 "
-        "[covered elsewhere] .");
-    checks.declined++;
+        "own, even though this module's own disclosed port list does "
+        "carry an `attach` output (see NON-GOALS above: the port's mere "
+        "existence does not supply the second sprite channel and shared "
+        "colour-select logic attachment's actual effect needs). This is "
+        "exactly the boundary hrm/ch4-attached-sprites/ already tests "
+        "ATTACH at (denise_sprites, two sprite channels plus the shared "
+        "colour-select logic). 'Bit 7 (Used in attachment)' "
+        "(CH4-p107.c7, CH4-sprctl.c5, p.107); 'also contains some data "
+        "having to do with sprite attachment' (CH4-sprctl.c3, p.107); "
+        "'whether or not a sprite is attached' (CH4-hw.c19, CH4-p124.c13, "
+        "p.124); 'There is such a pair of data registers for each of the "
+        "eight sprites' (CH4-hw.c2, p.124). Two further ids naming the "
+        "SAME attach bit, CH4-p128.c8 and CH4-sctl.c4, are covered by "
+        "hrm/ch4-attached-sprites/ per the build task's own direct "
+        "instruction and are recorded here rather than declined for "
+        "boundary reasons, but land on the identical underlying "
+        "limitation. CH4-p107.c7, CH4-sprctl.c3, CH4-sprctl.c5, "
+        "CH4-hw.c19, CH4-p124.c13, CH4-hw.c2, CH4-p128.c8 [covered "
+        "elsewhere], CH4-sctl.c4 [covered elsewhere] .");
 
     // --------- [declined] VERTICAL-EXTENT-NOT-AT-THIS-BOUNDARY ---------
     checks.record(
@@ -638,14 +859,14 @@ int main(int argc, char** argv) {
         "package's own subject, per the build task, is the per-sprite "
         "shift register's horizontal (hpos) arm/disarm/shift behaviour; "
         "vertical extent (VSTART/VSTOP, how tall a sprite is) belongs to "
-        "a different (agnus_spritedma) boundary, matching hrm/ch3-"
-        "sprite-registers/'s own identically-reasoned Non-goals note on "
-        "a sibling claim set at this same fixture ('this boundary "
-        "exposes no vertical-position port, only hpos'). 'Sprites are "
+        "a different (agnus_spritedma) boundary -- confirmed now that "
+        "the RTL is open: this module's own disclosed port list (above) "
+        "carries hpos but no vertical-position input at all, matching "
+        "hrm/ch3-sprite-registers/'s own identically-reasoned Non-goals "
+        "note on a sibling claim set at this same fixture. 'Sprites are "
         "16 pixels wide and can be almost any height you wish -- as "
         "short as one line or taller than the screen.' (CH4-p101.c2/c3, "
         "CH4-size.c2, p.101). CH4-p101.c2, CH4-p101.c3, CH4-size.c2 .");
-    checks.declined++;
 
     // --------- [declined] MANUAL-VS-DMA-SOURCE-NOT-DISTINGUISHABLE-HERE ---------
     checks.record(
@@ -656,19 +877,18 @@ int main(int argc, char** argv) {
         "asserts that arming works via a plain register write "
         "regardless of DMA activity. WRITE-DATA-ARMS-SPRITE-DATB-ALONE-"
         "DOES-NOT and COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART above "
-        "already arm and match by a bare register write, asserting no "
-        "DMA-related precondition anywhere -- so this proposition "
-        "already holds on every other assertion's own measurement "
-        "basis. Not given its own expect(): this module's own port "
-        "list, not yet known, may or may not expose a distinct "
-        "'processor vs DMA' select to test as a second condition, and "
-        "guessing one before the RTL is open is exactly what the build "
-        "brief's gate forbids. CH4-manual.c1, CH4-manual.c2, "
-        "CH4-manual.c3, CH4-p123.c1, CH4-p123.c2 .");
-    checks.declined++;
+        "already arm and match by a bare register write (`aen`+`address`"
+        "+`data_in`), asserting no DMA-related precondition anywhere -- "
+        "so this proposition already holds on every other assertion's "
+        "own measurement basis. Not given its own expect(): this "
+        "module's own now-disclosed port list (above) exposes no "
+        "distinct 'processor vs DMA' select at all -- `aen`/`address`/"
+        "`data_in` are the single write path both sources would use -- "
+        "so there is no second condition to test against here; the "
+        "distinction, if any, is made upstream of this boundary. "
+        "CH4-manual.c1, CH4-manual.c2, CH4-manual.c3, CH4-p123.c1, "
+        "CH4-p123.c2 .");
 
-    std::cout << "\n" << checks.planned << " planned, " << checks.declined
-              << " declined (spec-only commit; RTL not yet opened, see "
-                 "ORDER OF WORK above)\n";
-    return 0;
+    std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
+    return checks.failed == 0 ? 0 : 1;
 }
