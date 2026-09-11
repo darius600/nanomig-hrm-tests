@@ -331,6 +331,12 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
+    // For records that state what the SOURCE says, or why a claim is declined.
+    // They are not measurements and must not be printed as though they were:
+    // a constant string under a MEASURED label is a record no run can
+    // contradict, which is how a false "measured" fact survived a day in
+    // ch3-sprite-playfield-priority.
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -767,7 +773,7 @@ int main(int argc, char** argv) {
     // MEASURED -- print defects, recorded for traceability only (not
     // asserted; see header PRINT DEFECT #1/#2).
     // =========================================================================
-    checks.note(
+    checks.record(
         "Table 3-17 (printed p.93) prints the same hold-and-modify code, "
         "0100, on both its 00100 row and its 00110 row -- a transcription "
         "error in that column, out of this module's boundary regardless "

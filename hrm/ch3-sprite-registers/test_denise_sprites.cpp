@@ -254,6 +254,12 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
+    // For records that state what the SOURCE says, or why a claim is declined.
+    // They are not measurements and must not be printed as though they were:
+    // a constant string under a MEASURED label is a record no run can
+    // contradict, which is how a false "measured" fact survived a day in
+    // ch3-sprite-playfield-priority.
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -491,7 +497,7 @@ int main(int argc, char** argv) {
             if (armed[sp] && delta[sp] != 0) found = sp;
         }
         superhires_spres = found;
-        checks.note("SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT: per-spres SH0 "
+        checks.record("SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT: per-spres SH0 "
             "deltas, measured for SH0-IS-HALF-OF-POS-BYTE-STEP's own use "
             "below (spres0=" + std::to_string(delta[0]) +
             " spres1=" + std::to_string(delta[1]) + " spres2=" + std::to_string(delta[2]) +
