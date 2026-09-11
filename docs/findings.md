@@ -343,9 +343,26 @@ collides with nothing, so that objection is gone.
 
 | | |
 |---|---|
-| Manual | Appendix C pp.309/310 marks BLTSIZV `$05C` **new for ECS**, the same status it gives BLTSIZH `$05E` and BLTCON0L `$05A` |
+| Manual | Appendix C's ECS register map, printed page 298, marks BLTSIZV `$05C` **new for ECS**, the same status it gives BLTSIZH `$05E` and BLTCON0L `$05A` |
 | Measured | a BLTSIZV write with `ecs=0` and with `ecs=1` gives the identical height, r1=7 and r2=7 |
 | Test | `hrm/agnus_blitter_ecs` (`BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS`) |
+
+**Page corrected 11.09.2026, and no verdict moves with it.** This entry cited
+"Appendix C pp.309/310" for the `$05C BLTSIZV new` row. That row is on printed
+page **298**, where appendix C's ECS register map is printed whole under *"The
+register map listed below shows the changes and new registers in the Amiga's
+Enhanced Chip Set"*. Pages 309 and 310 carry the prose sections *Other ECS
+Modifications* and *Interpretational Differences*, which is why the neighbouring
+citations are right: DOFF really is on 309, the pointer widths really are on 309,
+and the CDANG range really is on 310.
+
+The corpus splits page 298's one printed table across two files named `p309.txt`
+and `p310.txt`, and **printed page 298 is in no corpus slice at all** — nothing
+existed to disagree with the attribution. Found while chapter 4 rendered the
+printed pages to place a sprite row; recorded in the pipeline repository at
+`docs/references/amiga-hrm-3rd/appC-blitter/page-placement.md`. The row exists and
+says what this entry says it says; only the number a reader would turn to in the
+printed book was wrong.
 
 **The control is the point.** `BLTCON0L-GATED-BY-ECS` is green on the same
 fixture, so this fixture's `ecs` demonstrably changes behaviour elsewhere. Three
@@ -416,7 +433,7 @@ classifier's report.
 Appendix C, printed page 309, lists what ECS changed in the blitter. NanoMig's
 `agnus_blitter` takes an `ecs` input. It uses it for two of the five:
 
-| Appendix C, p309 | `agnus_blitter.v` | Gated by `ecs`? |
+| Appendix C | `agnus_blitter.v` | Gated by `ecs`? |
 |---|---|---|
 | `BLTCON0L` $05A new — control 0, lower 8 bits | line 259 | **yes** |
 | `BLTSIZH` $05E new — H size and start | lines 500, 523, 557 | **yes** |
