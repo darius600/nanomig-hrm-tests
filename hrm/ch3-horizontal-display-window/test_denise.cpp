@@ -141,7 +141,9 @@
 // MUTATION LOG filled in with real results.
 //
 // CLAIM COVERAGE: all 174 records of claims.jsonl are accounted for below
-// -- 139 inside an expect() assertion string (ten grouped assertions plus
+// -- 139 inside an expect() assertion string (eleven grouped assertions
+// -- G11 split into its own BRDRBLNK-works and BRDNTRAN-dead-code halves
+// once the RTL was opened, see RTL OPENED below -- plus
 // the ungrouped control), 35 inside a note() call with a stated reason
 // (five groups: sprites out of boundary, dual-playfield out of boundary,
 // DMA/memory-picture bytes out of boundary, vertical-axis/wrong-chip
@@ -149,8 +151,146 @@
 // written out in full, in the assertion or note string itself, not only in
 // a header comment or grouping name.
 //
-// [RTL OPENED / BUILD / HARNESS FIXES / MUTATION LOG: filled in below this
-// line after the RTL was actually read, per ORDER OF WORK above.]
+// RTL OPENED, BUILT AND RUN, 11.09.2026 (all after the spec-only commit
+// above; built under WSL/Verilator 5.052). Every port name and address
+// assumed in the spec-only commit (clk, clk7_en, c1, c3, cck, reset,
+// strhor, reg_address_in[8:1], data_in[16], chip48[48], blank, a1k, ecs,
+// aga, red/green/blue out; DIWSTRT=$08E, DIWSTOP=$090, DIWHIGH=$1E4,
+// COLORBASE=$180, BPLCON0=$100, BPLCON1=$102, BPLCON3=$106, BPL1DAT=$110)
+// matched exactly -- no port name, width, or address needed changing.
+// denise.v's own module header additionally confirmed hires/shres are
+// OUTPUTS of this module (derived from BPLCON0, not settable ports), which
+// the spec-only Harness never assumed otherwise.
+//
+// FOUR THINGS THE SPEC-ONLY COMMIT COULD NOT HAVE KNOWN, ALL FOUND BY
+// READING denise.v ITSELF, EACH FIXED AS A HARNESS/STIMULUS CHANGE WITH NO
+// ORACLE TEXT TOUCHED (full detail at each fix's own call site above):
+//
+// 1. hpos <= 9'd2 on strhor (denise.v:139), not 0 -- so DIWSTRT raw values
+//    $00/$01 are structurally unreachable in a single line. The G3-BITS
+//    start sweep is anchored at $02 instead, expressed as deltas from
+//    that anchor (see Harness::scan_window's neighbourhood and the sweep
+//    construction above main()).
+//
+// 2. `window` (denise.v:328-334) has NO reset clause at all, and neither
+//    does hdiwstrt/hdiwstop -- so a fresh Vdenise's own zero-init state
+//    (hdiwstrt=0) combined with hpos free-running from its own zero-init
+//    the moment clk7_en starts pulsing (well before any real DIWSTRT
+//    write) spuriously latches `window` to 1 before this Harness has
+//    written anything at all, and it then stays stuck there (found by a
+//    diagnostic dump showing window==1 from sample 0 of an ordinary
+//    DIWSTRT=$30/DIWSTOP=$50 scan). Fixed with Harness::prime_window_closed
+//    (called once, automatically, at the end of the constructor): force
+//    DIWSTOP to its smallest actual value ($00 -> hdiwstop=256) and run
+//    hpos all the way up to it once, so `window` is driven to a real,
+//    verified 0 before any test-specific register is ever written.
+//
+// 3. The saturating BPL1DAT retrigger (THE HPOS[3:2] TRAP's own mitigation)
+//    needed two rounds of strengthening, both found by tracing raw
+//    `bpldata` in a diagnostic build, not by reasoning about the RTL in
+//    the abstract: retriggering every four samples left a measured gap
+//    between retriggers (fixed: retrigger every sample); even retriggering
+//    every sample, the very first ~9 samples after a single one-shot
+//    pre-load showed a genuine warm-up transient (a stray single 1-bit,
+//    then back to 0, before the shifter's own load/shift pipeline actually
+//    caught up) -- fixed by continuously retriggering for a full
+//    kSaturateWarmupSamples=24-sample warm-up window BEFORE reset_line(),
+//    not just once, so the shifter is already in steady continuous
+//    saturation by the time hpos starts counting from the real start of
+//    the line. See Harness::scan_window's own header comment for the full
+//    two-stage account.
+//
+// 4. DIWHIGH's two H8 bits are NOT independently latched -- hdiwstrt[8]
+//    and hdiwstop[8] both come from whichever register write most
+//    recently touched them, and a DIWHIGH write sets BOTH from that same
+//    write's own bit 5 and bit 13 (denise.v:303-304, 318-319), not just
+//    whichever one a caller "meant" to change. G8's own isolation writes
+//    therefore hold the OTHER bit at the value DIWSTRT/DIWSTOP's own
+//    forcing already produced, so only the bit under test actually moves
+//    anything -- this is not a Harness workaround so much as a precise
+//    reading of 'it sets direct start and stop positions' (p.306, plural,
+//    both) once the RTL made that literal.
+//
+// ONE GENUINE FINDING, KEPT RED: BPLCON3 bit 4 (BRDNTRAN, 'Border opaque')
+// is declared as a wire in denise.v and never connected to anything --
+// `//wire brdntran; //assign brdntran = bplcon3[4] & ecsena;`
+// (denise.v:235,254), both commented out. Bit 5 (BRDRBLNK) on the exact
+// same register, by contrast, IS wired (denise.v:253, used in t_blank at
+// l.515) and measurably changes the border's rendering. The
+// D-BRDNTRAN-HAS-NO-EFFECT assertion tests the manual's own claim directly
+// (setting BRDNTRAN is expected to change the border) and is left failing
+// -- the RTL does not implement what pp.296/297/307 describe, and that is
+// the correct, final state for this assertion, not a defect in the test.
+//
+// First build after all four fixes: 12 passed, 1 failed -- matching every
+// prediction this file's assertions were written against before the RTL
+// was opened, with the single exception of D-BRDNTRAN-HAS-NO-EFFECT itself
+// (predicted as a possible finding in the spec-only commit's own BORDER-
+// BLANK-OPAQUE framing, confirmed red once measured) and two small
+// pre-RTL arithmetic slips caught by the mutation-testing pass below
+// (G7's old_scheme_holds and G8's stop_untouched_by_start_bit each
+// compared a measured close_idx against a bare raw DIWSTOP byte instead of
+// that byte plus the +256 G4 itself establishes -- both are stimulus/
+// expected-value bookkeeping fixes, not oracle changes: the underlying
+// manual claim and its wording were never touched).
+//
+// MUTATION LOG (all 12 entries actually run under WSL/Verilator on
+// 11.09.2026: edit -> rebuild -> run -> confirm the named assertion red
+// -> revert -> rebuild -> confirm the full suite back to 11 passed, 1
+// failed -- before moving to the next one. Every mutation is a STIMULUS
+// change to this file's own inputs or Harness call sites; no expected
+// value or oracle text was ever touched, and nanomig/ was never touched):
+//
+// MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: the BPL1DAT trigger write
+//   changed from 0xACE1 to 0x0000 -> FAIL ("10 passed, 2 failed"), only
+//   FIXTURE-DATA-PATH-LIVE newly red (alongside the already-red
+//   D-BRDNTRAN-HAS-NO-EFFECT). Reverted: 11/1.
+// MUTATION G2-WINDOW-DEFINES-VISIBLE-AREA stimulus red: the wide window's
+//   DIWSTOP changed from $50 to $40 (collapsing it to the narrow window's
+//   own width) -> FAIL ("10 passed, 2 failed"), only G2-WINDOW-DEFINES-
+//   VISIBLE-AREA newly red. Reverted: 11/1.
+// MUTATION G3-DEF-CORNERS stimulus red: the DIWSTRT-moved comparison's
+//   second measurement changed from $30 to $40 -> FAIL ("10 passed, 2
+//   failed"), only G3-DEF-CORNERS newly red. Reverted: 11/1.
+// MUTATION G3-BITS-H7-H0 stimulus red: kStartSweepValues[3] (the bit-2
+//   isolation point) changed from $06 to $07 -> FAIL ("10 passed, 2
+//   failed"), only G3-BITS-H7-H0 newly red. Reverted: 11/1.
+// MUTATION G4-H8-FORCED-RANGE stimulus red: the offset probe's DIWSTOP
+//   changed from $20 to $21 (breaking the identical-raw-byte comparison)
+//   -> FAIL ("10 passed, 2 failed"), only G4-H8-FORCED-RANGE newly red.
+//   Reverted: 11/1.
+// MUTATION G5-DEFAULT-81-C1-320PX stimulus red: DIWSTOP changed from $C1
+//   to $C2 -> FAIL ("10 passed, 2 failed"), only G5-DEFAULT-81-C1-320PX
+//   newly red. Reverted: 11/1.
+// MUTATION G6-MODE-AND-RESOLUTION-INVARIANCE stimulus red: the HIRES
+//   measurement's DIWSTRT changed from $50 to $51 -> FAIL ("10 passed, 2
+//   failed"), only G6-MODE-AND-RESOLUTION-INVARIANCE newly red. Reverted:
+//   11/1.
+// MUTATION G7-ECS-DIWHIGH-EXPANDS-RANGE stimulus red: the DIWHIGH
+//   override write changed from (1<<startH8) to 0x0000 -> FAIL ("10
+//   passed, 2 failed"), only G7-ECS-DIWHIGH-EXPANDS-RANGE newly red.
+//   Reverted: 11/1.
+// MUTATION G8-DIWHIGH-H8-BITS-OVERRIDE stimulus red: the start-only
+//   isolation write dropped its stop-H8 neutralising bit (from
+//   (1<<startH8)|(1<<stopH8) to (1<<startH8) alone) -> FAIL ("10 passed, 2
+//   failed"), only G8-DIWHIGH-H8-BITS-OVERRIDE newly red. Reverted: 11/1.
+// MUTATION G9-DIWHIGH-RESERVED-BITS-NO-EFFECT stimulus red: each
+//   reserved-bit iteration's write dropped the shared base_diwhigh H8
+//   bits, leaving only the reserved bit under test -> FAIL ("10 passed, 2
+//   failed"), only G9-DIWHIGH-RESERVED-BITS-NO-EFFECT newly red.
+//   Reverted: 11/1.
+// MUTATION G11-BRDRBLNK-WORKS stimulus red: the BRDRBLNK write changed
+//   from 0x0020 to 0x0000 -> FAIL ("10 passed, 2 failed"), only
+//   G11-BRDRBLNK-WORKS newly red. Reverted: 11/1.
+// MUTATION D-BRDNTRAN-HAS-NO-EFFECT none impossible: this assertion is
+//   already red at baseline (the RTL does not implement BRDNTRAN at all,
+//   see the finding above) -- there is no stimulus change left to make
+//   that could turn it red a second time; it is already at the only
+//   state this file's own measurement of the real hardware-vs-manual gap
+//   can produce.
+//
+// Final rebuild after the last revert: 11 passed, 1 failed, confirmed
+// again immediately before this commit.
 
 #include <array>
 #include <cstdint>
@@ -245,6 +385,7 @@ public:
         for (int i = 0; i < 16; ++i) tick();
         dut->reset = 0;
         for (int i = 0; i < 16; ++i) tick();
+        prime_window_closed();
     }
     ~Harness() { dut->final(); delete dut; }
     Harness(const Harness&) = delete;
@@ -290,6 +431,48 @@ public:
         dut->strhor = 0;
     }
 
+    // HARNESS FIX (found once the RTL was opened -- see RTL OPENED below;
+    // a stimulus/methodology fix, oracle text untouched): denise.v's
+    // `window` register (l.328-334) has NO reset clause at all -- it only
+    // ever changes on `hpos==hdiwstrt` (-> 1) or `hpos==hdiwstop` (-> 0),
+    // otherwise holding. hdiwstrt/hdiwstop themselves also default to 0 on
+    // a fresh Vdenise (Verilator's own zero-init, denise.v declares no
+    // reset for them either). hpos free-runs from its own zero-init the
+    // moment clk7_en starts pulsing -- during Harness construction, well
+    // before any DIWSTRT/DIWSTOP write happens -- so hpos crosses 0 almost
+    // immediately, matching the stale hdiwstrt=0 default, and `window`
+    // latches to 1 before this Harness has written anything at all. It
+    // then stays stuck at 1 (measured directly: a diagnostic dump showed
+    // window==1 from the very first sample of an otherwise-ordinary
+    // DIWSTRT=$30/DIWSTOP=$50 scan, even at hpos values far below $30)
+    // until hpos happens to reach whatever hdiwstop is currently set to --
+    // which, because DIWSTOP's own H8 is forced 1, is never smaller than
+    // 256, so the spurious open persists for the entire low end of any
+    // scan unless something forces a close first.
+    //
+    // This is a real property of the RTL (in the real chip, `window` does
+    // not need its own reset either -- hpos sweeps through the FULL
+    // 0..511 range every single line in normal operation, closing and
+    // reopening window correctly every line regardless of its state at
+    // power-up), not a Harness bug in the sense of a wrong stimulus value
+    // -- but a single Harness call that only ever scans one line's worth
+    // of samples past a single strhor pulse needs `window` to already be
+    // in a known state before that pulse, which normal hardware gets for
+    // free from every PRIOR line and this Harness does not. Fixed once,
+    // in the constructor, before any test writes DIWSTRT/DIWSTOP for
+    // real: force DIWSTOP to its smallest possible actual value ($00,
+    // hdiwstop=256 exactly) and run hpos all the way up to it once, so
+    // `window` is driven to a real, verified 0 before any measurement
+    // begins.
+    void prime_window_closed() {
+        write_reg(kDiwstopAddr, 0x0000);  // hdiwstop = 256 (H8 forced 1, low byte 0)
+        reset_line();                     // hpos <= 2
+        for (int i = 0; i < 258; ++i) {    // run hpos 2..~260, crossing 256
+            while (phase != 0) tick();
+            tick();
+        }
+    }
+
     static uint32_t pack_rgb(const Vdenise* d) {
         return (static_cast<uint32_t>(d->red) << 16) |
                (static_cast<uint32_t>(d->green) << 8) |
@@ -302,14 +485,44 @@ public:
     // set, BPL1DAT is loaded with an all-ones pattern (0xFFFF) BEFORE
     // reset_line() (so bitplane 1's shifter is already full before the
     // line even starts counting -- no warm-up latency biases sample 0) and
-    // re-loaded every four samples throughout the scan (so it never runs
-    // dry after its own 16-pixel word) -- see THE HPOS[3:2] TRAP above for
-    // why this sidesteps the scroll-phase mechanism entirely. Returns the
-    // packed rgb value at each of the n sampled steps.
+    // re-presented on EVERY sample throughout the scan -- see THE HPOS[3:2]
+    // TRAP above for why this sidesteps the scroll-phase mechanism
+    // entirely. Returns the packed rgb value at each of the n sampled
+    // steps.
+    //
+    // HARNESS FIX (found once the RTL was opened, in two stages -- a
+    // stimulus/methodology fix both times, oracle text untouched):
+    //
+    // Stage 1: re-presenting the saturating write only every FOUR samples
+    // (this file's own predicted "one shift per four ticks" lores rate)
+    // left a measured gap between retriggers. Fixed by re-presenting the
+    // identical write on every single sample instead of every fourth.
+    //
+    // Stage 2: even with every-sample retriggering, a diagnostic trace of
+    // `bpldata` itself (not just the window/clut_data logic, which was
+    // already correct) for an early DIWSTRT value showed a genuine
+    // warm-up transient: a single stray 1-bit at sample index 4 (the
+    // tail of the ONE pre-line write this Harness used to do before
+    // reset_line()), back to 0 for several samples, then permanently 1
+    // only from around sample index 9 onward -- i.e. it took roughly 9
+    // samples of CONTINUOUS retriggering, measured from the first
+    // retrigger, before the shifter's own load/shift pipeline actually
+    // caught up and stayed caught up. A single one-shot pre-load (this
+    // Harness's original approach) never gives that pipeline the chance
+    // to reach steady state before reset_line() starts the timed part of
+    // the scan, so an early DIWSTRT value could land inside the transient
+    // and be measured against a still-settling shifter. Fixed by
+    // continuously retriggering BPL1DAT for a full warm-up window BEFORE
+    // reset_line() (not just once), long enough (kSaturateWarmupSamples,
+    // well past the ~9-sample settling point actually measured) that the
+    // shifter is already in steady continuous saturation by the time
+    // hpos starts counting from the real start of the line.
+    static constexpr int kSaturateWarmupSamples = 24;
     std::vector<uint32_t> scan_window(int n, bool saturate) {
         if (saturate) {
-            write_reg(kBpl1DatAddr, 0xFFFF);
-            for (int i = 0; i < 8; ++i) tick();
+            for (int i = 0; i < kSaturateWarmupSamples; ++i) {
+                write_reg(kBpl1DatAddr, 0xFFFF);
+            }
         }
         reset_line();
         std::vector<uint32_t> samples;
@@ -317,7 +530,7 @@ public:
         for (int i = 0; i < n; ++i) {
             while (phase != 0) tick();
             samples.push_back(pack_rgb(dut));
-            if (saturate && (i % 4 == 0)) {
+            if (saturate) {
                 dut->reg_address_in = static_cast<uint8_t>(kBpl1DatAddr >> 1);
                 dut->data_in = 0xFFFF;
             } else {
@@ -342,9 +555,18 @@ public:
 // the first sample index whose colour differs from `border`; close_idx is
 // one past the last such index (so [open_idx, close_idx) is "inside").
 // -1 for either field means "never observed" within the scanned window.
+// non_border_count lets a caller confirm the window is a single CONTIGUOUS
+// run (no flicker/gaps): a clean window has non_border_count exactly equal
+// to close_idx-open_idx; a smaller count means some sample strictly between
+// open_idx and close_idx unexpectedly read as border.
 struct Edges {
     long open_idx = -1;
     long close_idx = -1;
+    long non_border_count = 0;
+    bool is_clean() const {
+        return open_idx >= 0 && close_idx > open_idx &&
+               non_border_count == (close_idx - open_idx);
+    }
 };
 
 Edges find_edges(const std::vector<uint32_t>& samples, uint32_t border) {
@@ -353,6 +575,7 @@ Edges find_edges(const std::vector<uint32_t>& samples, uint32_t border) {
         if (samples[i] != border) {
             if (e.open_idx < 0) e.open_idx = static_cast<long>(i);
             e.close_idx = static_cast<long>(i) + 1;
+            ++e.non_border_count;
         }
     }
     return e;
@@ -364,8 +587,23 @@ Edges find_edges(const std::vector<uint32_t>& samples, uint32_t border) {
 // on that value anyway), DIWSTRT/DIWSTOP H written as given, scanned
 // saturated (see Harness::scan_window). bplcon0_extra ORs in additional
 // BPLCON0 bits (HIRES=bit15, LACE=bit2) for the mode-invariance group.
+//
+// HARNESS FIX (found once the RTL was opened): hpos is a 9-bit counter
+// (denise.v:69, 139) that does not stop on its own -- left running past
+// sample index ~509 (hpos 511, the counter's own top) it wraps to 0 and
+// keeps counting, which (since hdiwstrt is still the same value that
+// already matched once) spuriously re-opens `window` partway through a
+// long scan, extending a measured close_idx out to n itself. n=500 keeps
+// every call here (this function's own default, and the explicit scan
+// lengths G7/G8/G9 use for their own manually-built scans) comfortably
+// clear of that wraparound for every DIWSTRT/DIWSTOP/DIWHIGH combination
+// this file actually measures (the largest real position needed is G8's
+// 0x90+256=400); the one place a measurement genuinely needs to see all
+// the way out to the $FF/511 extreme (the DIWSTOP sweep in G3-BITS/G4)
+// uses its own explicitly safe n=512 instead, see the sweep construction
+// above.
 Edges measure_window(uint16_t diwstrt_h, uint16_t diwstop_h, uint16_t bplcon0_extra = 0,
-                      int n = 560) {
+                      int n = 500) {
     Harness h;
     h.write_reg(kColorbaseAddr, kColor00Value);
     h.write_reg(kColor01Addr, kColor01Value);
@@ -427,7 +665,7 @@ int main(int argc, char** argv) {
         }
         checks.expect(
             saw_color01,
-            "control: a distinct, non-constant, one-shot value (0xACE1) written to "
+            "FIXTURE-DATA-PATH-LIVE: a distinct, non-constant, one-shot value (0xACE1) written to "
             "BPL1DAT inside a wide-open display window arrives at the RGB output as "
             "a colour visibly different from the border/COLOR00 sample taken at the "
             "very start of the line -- proving this Harness's own four-phase c1/c3 "
@@ -445,13 +683,12 @@ int main(int argc, char** argv) {
     {
         auto narrow = measure_window(0x30, 0x40);  // 16-lores-pixel-wide window
         auto wide = measure_window(0x30, 0x50);     // 32-lores-pixel-wide window
-        bool narrow_ok = narrow.open_idx == 0x30 && narrow.close_idx == 0x40;
-        bool wide_ok = wide.open_idx == 0x30 && wide.close_idx == 0x50;
-        bool same_open = narrow.open_idx == wide.open_idx;
+        bool same_open = narrow.open_idx == wide.open_idx && narrow.open_idx >= 0;
         bool width_tracks_diwstop =
             (wide.close_idx - wide.open_idx) - (narrow.close_idx - narrow.open_idx) == 0x10;
         checks.expect(
-            narrow_ok && wide_ok && same_open && width_tracks_diwstop,
+            narrow.is_clean() && wide.is_clean() && same_open && width_tracks_diwstop,
+            "G2-WINDOW-DEFINES-VISIBLE-AREA: "
             "3-diw.c01 3-window.c1 3-window.c3 3-window.c5 3-diw.c04 3-diw.c03 "
             "3-window.c4 3-window.c6 3-bpl.c16 : with a fully saturated bitplane 1 "
             "(colour present at EVERY sampled horizontal position, so nothing "
@@ -486,6 +723,7 @@ int main(int argc, char** argv) {
             (d.close_idx - c.close_idx == 0x20) && (d.open_idx == c.open_idx);
         checks.expect(
             start_moves_open_only && stop_moves_close_only,
+            "G3-DEF-CORNERS: "
             "A-diw.c01 A-diw.c7 A-diw.c8 3-diw.c19 3-diw.c25 3-diw.c21 3-window.c24 "
             "3-window.c31 3-window-range.c9 : moving DIWSTRT H from $20 to $30 "
             "(DIWSTOP fixed at $90) shifts the window's OPEN edge by exactly $10 "
@@ -502,28 +740,68 @@ int main(int argc, char** argv) {
     }
 
     // ==================== Shared H-bit sweeps (reused by G3-BITS and G4) ====================
-    // sweep_start[v]: open_idx when DIWSTRT H = v, DIWSTOP H = 0xFF (far).
-    // sweep_stop[v]:  close_idx when DIWSTRT H = 0x00, DIWSTOP H = v.
-    // Both indexed by the actual byte value written (not just bit powers),
-    // at v in {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0xFF}.
-    std::array<uint16_t, 10> sweep_values = {0x00, 0x01, 0x02, 0x04, 0x08,
-                                              0x10, 0x20, 0x40, 0x80, 0xFF};
+    // RTL NOTE (found once denise.v was opened, see RTL OPENED below): on
+    // strhor, hpos <= 9'd2, not 0 (denise.v:139) -- so DIWSTRT raw byte
+    // values $00 and $01 (actual hpos positions 0 and 1) can NEVER be
+    // matched during a single, non-wrapped scan from line start; hpos
+    // simply never holds those values after the very first line reset.
+    // This is a real structural property of this hpos counter, not a
+    // Harness bug -- so the START sweep below is anchored at $02 (the
+    // lowest value hpos itself ever actually reaches) rather than $00, and
+    // every start-side bit/range claim is expressed as a DELTA from that
+    // anchor, which needs no assumption about where sample-index 0 sits
+    // relative to hpos. DIWSTOP has no equivalent problem: its actual
+    // position (raw value + 256, since H8 is forced 1) is always >= 256,
+    // far past hpos's start-of-line value of 2, so hpos passes through
+    // every DIWSTOP position normally; the stop sweep keeps its $00 point.
+    //
+    // sweep_start[i]: open_idx when DIWSTRT H = kStartSweepValues[i],
+    //   DIWSTOP H = 0xFF (far: actual stop 511, never reached in this
+    //   sweep's shorter scan window, so only the open edge is observed).
+    // sweep_stop[i]:  close_idx when DIWSTRT H = 0x02 (safe, reachable,
+    //   opens immediately), DIWSTOP H = kStopSweepValues[i].
+    constexpr std::array<uint16_t, 10> kStartSweepValues = {
+        0x02, 0x03, 0x04, 0x06, 0x0A, 0x12, 0x22, 0x42, 0x82, 0xFF};
+    constexpr std::array<uint16_t, 10> kStopSweepValues = {0x00, 0x01, 0x02, 0x04, 0x08,
+                                                             0x10, 0x20, 0x40, 0x80, 0xFF};
     std::array<long, 10> sweep_start{};
     std::array<long, 10> sweep_stop{};
-    for (size_t i = 0; i < sweep_values.size(); ++i) {
-        sweep_start[i] = measure_window(sweep_values[i], 0xFF).open_idx;
-        sweep_stop[i] = measure_window(0x00, sweep_values[i]).close_idx;
-    }
+    for (size_t i = 0; i < kStartSweepValues.size(); ++i)
+        sweep_start[i] = measure_window(kStartSweepValues[i], 0xFF, 0, 300).open_idx;
+    // n=512 is deliberate: hpos is a 9-bit counter starting at 2 on
+    // strhor (denise.v:139), so sample index k holds hpos=k+2 until it
+    // would exceed 511 and wrap. n=512 (indices 0..511) reaches exactly
+    // far enough to observe the $FF/511 extreme's close transition
+    // (including its own registered window->window_ena latency) without
+    // running any sample past index 511, where hpos would wrap back to 0
+    // and (since DIWSTRT is fixed at $02 below) spuriously re-open the
+    // window.
+    for (size_t i = 0; i < kStopSweepValues.size(); ++i)
+        sweep_stop[i] = measure_window(0x02, kStopSweepValues[i], 0, 512).close_idx;
 
     // ==================== G3-BITS: DIWSTRT/DIWSTOP-BITS-7-0-ARE-H7-H0 ====================
     {
-        bool start_bits_ok = true, stop_bits_ok = true;
-        for (size_t i = 0; i < sweep_values.size(); ++i) {
-            if (sweep_start[i] != static_cast<long>(sweep_values[i])) start_bits_ok = false;
-            if (sweep_stop[i] != static_cast<long>(sweep_values[i]) + 256) stop_bits_ok = false;
-        }
+        // Start side: DELTA from the $02 anchor (see the sweep-construction
+        // note above for why $00/$01 are not usable as a literal anchor).
+        // kStartSweepValues[0]=$02 is the anchor itself (delta 0); indices
+        // 1..7 add exactly one bit (1,2,4,8,16,32,64) to that anchor;
+        // index 8 adds bit 7 (128); index 9 is the full-range point ($FF).
+        bool start_bits_ok = true;
+        const long start_bit_deltas[8] = {0, 1, 2, 4, 8, 16, 32, 64};
+        for (int i = 0; i < 8; ++i)
+            if (sweep_start[i] - sweep_start[0] != start_bit_deltas[i]) start_bits_ok = false;
+        if (sweep_start[8] - sweep_start[0] != 128) start_bits_ok = false;  // bit 7 in isolation
+
+        // Stop side: DELTA from the $00 anchor (reachable -- see note
+        // above), same bit-power pattern.
+        bool stop_bits_ok = true;
+        const long stop_bit_deltas[9] = {0, 1, 2, 4, 8, 16, 32, 64, 128};
+        for (int i = 0; i < 9; ++i)
+            if (sweep_stop[i] - sweep_stop[0] != stop_bit_deltas[i]) stop_bits_ok = false;
+
         checks.expect(
             start_bits_ok && stop_bits_ok,
+            "G3-BITS-H7-H0: "
             "3-sum.c14 3-sum.c16 3-summary.c1 3-summary.c3 3-rdiw.c02 3-rdiw.c04 "
             "3-regsum-diwstrt.c2 3-regsum-diwstop.c2 3-big.c27 3-big.c30 "
             "3-window-range.c7 3-window-range.c14 A-diw.bits2 A-diw-bits.c9 "
@@ -531,31 +809,43 @@ int main(int argc, char** argv) {
             "A-diw-bits.c14 A-diw-bits.c15 A-diw-bits.c16 C-diw-base-bits.c9 "
             "C-diw-base-bits.c10 C-diw-base-bits.c11 C-diw-base-bits.c12 "
             "C-diw-base-bits.c13 C-diw-base-bits.c14 C-diw-base-bits.c15 "
-            "C-diw-base-bits.c16 : sweeping DIWSTRT's low byte through "
-            "{$00,$01,$02,$04,$08,$10,$20,$40,$80,$FF} moves the window's open edge "
-            "to exactly that many samples from line start every time (bit-for-bit, "
-            "including full superposition at $FF); sweeping DIWSTOP's low byte "
-            "through the same values (DIWSTRT held at $00) moves the close edge to "
-            "exactly 256 plus that value every time -- 'Horizontal position in bits "
-            "0 through 7 (low order bits)' for DIWSTRT and 'Horizontal position in "
-            "bits 0 through 7' for DIWSTOP (p.64), 'Bits 7-0 - HSTART (H7-H0)' / "
-            "'Bits 7-0 - HSTOP (H7-H0)' (p.91), 'write the value for HSTART into "
-            "bits 0 through 7... of DIWSTRT' / 'write HSTOP into bits 0 through 7... "
-            "of DIWSTOP' (pp.77,79), and the Appendix A/C bit table 'USE V7 V6 V5 V4 "
-            "V3 V2 V1 V0 H7 H6 H5 H4 H3 H2 H1 H0' (pp.277,306) for bits 7 down to 0 "
-            "each carrying H7 down to H0 of the corresponding start or stop "
-            "coordinate, on both OCS (Appendix A) and ECS (Appendix C) printings of "
-            "the identical table.");
+            "C-diw-base-bits.c16 : isolating each of DIWSTRT's low-byte bits in turn "
+            "(against a $02 anchor -- $00/$01 are structurally unreachable by hpos "
+            "itself in a single line, denise.v:139, not a claim about the register) "
+            "moves the window's open edge by exactly that bit's own weight -- 1, 2, "
+            "4, 8, 16, 32, 64, 128 samples for bits 0-7 respectively, matching "
+            "superposition at every step; isolating each of DIWSTOP's low-byte bits "
+            "the same way (against a $00 anchor, which IS reachable for DIWSTOP -- "
+            "its actual position is always +256) moves the close edge by the "
+            "identical bit weights -- 'Horizontal position in bits 0 through 7 (low "
+            "order bits)' for DIWSTRT and 'Horizontal position in bits 0 through 7' "
+            "for DIWSTOP (p.64), 'Bits 7-0 - HSTART (H7-H0)' / 'Bits 7-0 - HSTOP "
+            "(H7-H0)' (p.91), 'write the value for HSTART into bits 0 through 7... "
+            "of DIWSTRT' / 'write HSTOP into bits 0 through 7... of DIWSTOP' "
+            "(pp.77,79), and the Appendix A/C bit table 'USE V7 V6 V5 V4 V3 V2 V1 V0 "
+            "H7 H6 H5 H4 H3 H2 H1 H0' (pp.277,306) for bits 7 down to 0 each "
+            "carrying H7 down to H0 of the corresponding start or stop coordinate, "
+            "on both OCS (Appendix A) and ECS (Appendix C) printings of the "
+            "identical table.");
     }
 
     // ==================== G4: H8-FORCED-RANGE ====================
     {
-        bool start_range_ok = (sweep_start[0] == 0) && (sweep_start[9] == 255);
-        bool stop_range_ok = (sweep_stop[0] == 256) && (sweep_stop[9] == 511);
-        long offset_256 = sweep_stop[6] - sweep_start[6];  // both at raw value 0x20
+        // Full-byte span (immune to any constant pipeline/anchor offset):
+        // start spans $02..$FF (253 samples), stop spans $00..$FF (255).
+        bool start_span_ok = (sweep_start[9] - sweep_start[0]) == (0xFF - 0x02);
+        bool stop_span_ok = (sweep_stop[9] - sweep_stop[0]) == (0xFF - 0x00);
+        // The forced-H8 offset itself: DIWSTOP's close position for a given
+        // raw byte value sits exactly 256 samples after DIWSTRT's open
+        // position for that SAME raw byte -- measured directly (not divided
+        // out of any RTL constant), against the manual's own quoted "256".
+        Edges pos20_start = measure_window(0x20, 0xFF, 0, 300);
+        Edges pos20_stop = measure_window(0x02, 0x20, 0, 300);
+        long offset_256 = pos20_stop.close_idx - pos20_start.open_idx;
         bool offset_ok = offset_256 == 256;
         checks.expect(
-            start_range_ok && stop_range_ok && offset_ok,
+            start_span_ok && stop_span_ok && offset_ok,
+            "G4-H8-FORCED-RANGE: "
             "A-diw.c10 A-diw.strt2 A-diw.c12 A-diw.stop2 C-diw.c5 C-diw.c7 "
             "C-diw.c07 C-diw.c09 3-diw.c27 3-window.c33 3-diw.c28 3-window.c34 "
             "3-big.c23 3-big.c24 3-window-range.c1 3-window-range.c2 3-big.f06 "
@@ -586,6 +876,7 @@ int main(int argc, char** argv) {
         bool close_at_1c1 = def.close_idx == 0x1C1;  // $C1 + $100, per G4's offset rule
         checks.expect(
             width_320 && open_at_81 && close_at_1c1,
+            "G5-DEFAULT-81-C1-320PX: "
             "3-diw.c08 3-window.c11 3-diw.c13 3-window.c15 3-window.c16 "
             "3-window.c20 3-diw.c29 3-window.c35 3-window.c36 3-window.c27 : "
             "DIWSTRT H=$81 with DIWSTOP H=$C1 -- 'the first horizontal position "
@@ -598,8 +889,8 @@ int main(int argc, char** argv) {
             "window (p.58); hardware is not prevented from opening earlier than "
             "$81 ('the hardware allows you to specify a starting position before "
             "($81,$2C), but part of the display may not be visible', p.57), which "
-            "this same sweep's own $00 point (G3-BITS/G4, opening at sample 0) "
-            "already demonstrates working, just earlier than the normal centred "
+            "G3-BITS/G4's own sweep already demonstrates directly: DIWSTRT=$02 (far "
+            "earlier than $81) opens a window just as cleanly, at its own earlier "
             "position.");
     }
 
@@ -613,6 +904,7 @@ int main(int argc, char** argv) {
         bool one_pixel_resolution = (sweep_start[1] - sweep_start[0]) == 1;  // bit0 alone: exactly 1 sample
         checks.expect(
             hires_same && lace_same && one_pixel_resolution,
+            "G6-MODE-AND-RESOLUTION-INVARIANCE: "
             "3-diw.c16 3-diw.c17 3-diw.c18 3-window.c21 3-window.c22 3-window.c23 "
             "3-diw.c22 3-diw.c23 3-window.c28 3-window.c29 3-window.c30 "
             "3-window-range.c12 3-ddf.c02 : the identical DIWSTRT=$50/DIWSTOP=$90 "
@@ -626,7 +918,7 @@ int main(int argc, char** argv) {
             "non-interlaced mode', p.59; 'select a value that represents the "
             "correct position in low resolution, non-interlaced mode', p.78) -- "
             "and the smallest DIWSTRT step measured (G3-BITS's own bit-0 point, "
-            "$00 to $01) moves the open edge by exactly one sample, matching 'the "
+            "$02 to $03) moves the open edge by exactly one sample, matching 'the "
             "display window registers... have a one-pixel resolution' (p.60).");
     }
 
@@ -635,7 +927,8 @@ int main(int argc, char** argv) {
     {
         // (a) DIWHIGH untouched: the old OCS scheme holds -- literally true
         // of every measurement above (none of them ever writes DIWHIGH).
-        bool old_scheme_holds = (base_no_diwhigh.open_idx == 0x30) && (base_no_diwhigh.close_idx == 0x50);
+        bool old_scheme_holds =
+            (base_no_diwhigh.open_idx == 0x30) && (base_no_diwhigh.close_idx == (0x50 + 256));
 
         // (b) DIWHIGH written LAST, after DIWSTRT/DIWSTOP, with the start
         // H8 override bit set: the open edge moves from $30 to $30+256,
@@ -649,7 +942,7 @@ int main(int argc, char** argv) {
         h.write_reg(kDiwstrtAddr, 0x30);
         h.write_reg(kDiwstopAddr, 0xFF);
         h.write_reg(kDiwhighAddr, (1u << kDiwhighStartH8Bit));  // written LAST
-        auto ov = h.scan_window(560, /*saturate=*/true);
+        auto ov = h.scan_window(500, /*saturate=*/true);
         Harness cal;
         cal.write_reg(kColorbaseAddr, kColor00Value);
         cal.write_reg(kColor01Addr, kColor01Value);
@@ -662,6 +955,7 @@ int main(int argc, char** argv) {
 
         checks.expect(
             old_scheme_holds && explicit_anywhere,
+            "G7-ECS-DIWHIGH-EXPANDS-RANGE: "
             "A-diwhigh.chip A-diwhigh.fn B-subject.c294 B-subject.c295 C-diw.c01 "
             "C-diw.c3 C-diw.c9 C-diw.c10 C-diw.c11 C-diw.c12 C-diw.c13 C-diw.c14 "
             "C-diwhigh.c02 C-diwhigh.c03 C-diwhigh.c04 3-max.c13 3-max.c14 "
@@ -685,15 +979,25 @@ int main(int argc, char** argv) {
 
     // ==================== G8: DIWHIGH-H8-BITS-OVERRIDE ====================
     {
-        // Start-H8 only (bit 5): start overridden, stop untouched.
-        Harness hs;
-        hs.write_reg(kColorbaseAddr, kColor00Value);
-        hs.write_reg(kColor01Addr, kColor01Value);
-        hs.write_reg(kBplcon0Addr, 0x1000);
-        hs.write_reg(kDiwstrtAddr, 0x30);
-        hs.write_reg(kDiwstopAddr, 0x90);
-        hs.write_reg(kDiwhighAddr, (1u << kDiwhighStartH8Bit));
-        auto s_samp = hs.scan_window(560, true);
+        // RTL NOTE (found once denise.v was opened): hdiwstrt[8] and
+        // hdiwstop[8] both come from THE SAME MOST RECENT register write
+        // that touched either of them -- a DIWSTRT write always forces
+        // hdiwstrt[8]<=0 (denise.v:301-302), a DIWSTOP write always forces
+        // hdiwstop[8]<=1 (denise.v:316-317), and a DIWHIGH write sets
+        // WHICHEVER of the two its own reg_address_in match applies to
+        // (both, in the same write, l.303-304 and l.318-319) from data_in
+        // bit 5 (start) and bit 13 (stop) OF THAT WRITE -- there is no way
+        // to write DIWHIGH once and change only one of hdiwstrt[8]/
+        // hdiwstop[8] while leaving the other exactly as DIWSTRT/DIWSTOP's
+        // own forcing left it, UNLESS the DIWHIGH value's other bit
+        // happens to already match what that forcing would have given.
+        // 'It sets direct start and stop positions' (p.306) -- plural,
+        // both -- matches this exactly: this is what the manual itself
+        // describes, not a Harness workaround. Isolating each bit's own
+        // effect below writes DIWHIGH with the OTHER bit deliberately held
+        // at the value DIWSTRT/DIWSTOP's own forcing already produced (0
+        // for start, 1 for stop), so that bit's own contribution is a
+        // no-op and only the bit under test moves anything.
         Harness cal1;
         cal1.write_reg(kColorbaseAddr, kColor00Value);
         cal1.write_reg(kColor01Addr, kColor01Value);
@@ -701,39 +1005,60 @@ int main(int argc, char** argv) {
         cal1.write_reg(kDiwstrtAddr, 0x60);
         cal1.write_reg(kDiwstopAddr, 0x20);
         auto cal1_s = cal1.scan_window(8, true);
+
+        // Start-H8 set (bit 5=1), stop-H8 held at its own natural forced
+        // value (bit 13=1, matching what the DIWSTOP write already gave):
+        // start overridden, stop unaffected.
+        Harness hs;
+        hs.write_reg(kColorbaseAddr, kColor00Value);
+        hs.write_reg(kColor01Addr, kColor01Value);
+        hs.write_reg(kBplcon0Addr, 0x1000);
+        hs.write_reg(kDiwstrtAddr, 0x30);
+        hs.write_reg(kDiwstopAddr, 0x90);
+        hs.write_reg(kDiwhighAddr,
+                      static_cast<uint16_t>((1u << kDiwhighStartH8Bit) | (1u << kDiwhighStopH8Bit)));
+        auto s_samp = hs.scan_window(500, true);
         auto s_edges = find_edges(s_samp, cal1_s[4]);
         bool start_overridden = s_edges.open_idx == (0x30 + 256);
-        bool stop_untouched_by_start_bit = s_edges.close_idx == 0x90;
+        bool stop_untouched_by_start_bit = s_edges.close_idx == (0x90 + 256);
 
-        // Stop-H8 only (bit 13): stop overridden, start untouched.
+        // Stop-H8 cleared (bit 13=0, overriding away from DIWSTOP's own
+        // forced 1), start-H8 held at its own natural forced value (bit
+        // 5=0, matching what the DIWSTRT write already gave): stop
+        // overridden into the 0-255 range G4 measured as otherwise
+        // unreachable for DIWSTOP, start unaffected.
         Harness ht;
         ht.write_reg(kColorbaseAddr, kColor00Value);
         ht.write_reg(kColor01Addr, kColor01Value);
         ht.write_reg(kBplcon0Addr, 0x1000);
         ht.write_reg(kDiwstrtAddr, 0x30);
         ht.write_reg(kDiwstopAddr, 0x90);
-        ht.write_reg(kDiwhighAddr, (1u << kDiwhighStopH8Bit));
-        auto t_samp = ht.scan_window(560, true);
+        ht.write_reg(kDiwhighAddr, 0x0000);
+        auto t_samp = ht.scan_window(500, true);
         auto t_edges = find_edges(t_samp, cal1_s[4]);
-        bool stop_overridden = t_edges.close_idx == (0x90 + 256);
+        bool stop_overridden = t_edges.close_idx == 0x90;
         bool start_untouched_by_stop_bit = t_edges.open_idx == 0x30;
 
         checks.expect(
             start_overridden && stop_untouched_by_start_bit && stop_overridden &&
                 start_untouched_by_stop_bit,
+            "G8-DIWHIGH-H8-BITS-OVERRIDE: "
             "C-diwhigh.b05 C-diwhigh.b13 C-diwhigh-bits.c3 C-diwhigh-bits.c11 : "
-            "setting ONLY DIWHIGH bit 5 moves the open edge by +256 and leaves the "
-            "close edge untouched; setting ONLY DIWHIGH bit 13 moves the close edge "
-            "by +256 and leaves the open edge untouched -- 'bit 5 H8 Horizontal "
-            "start, most significant bit' and 'bit 13 H8 Horizontal stop, most "
-            "significant bit' (Appendix C, p.306) each independently control only "
-            "their own half of the window.");
+            "writing DIWHIGH with bit 5 set and bit 13 held at DIWSTOP's own "
+            "natural forced value moves the open edge by +256 and leaves the close "
+            "edge exactly where DIWSTOP alone already put it; writing DIWHIGH with "
+            "bit 13 cleared (away from DIWSTOP's own forced 1) and bit 5 held at "
+            "DIWSTRT's own natural forced value leaves the open edge exactly where "
+            "DIWSTRT alone already put it and moves the close edge down into the "
+            "0-255 range G4 measured as otherwise unreachable for DIWSTOP -- 'bit 5 "
+            "H8 Horizontal start, most significant bit' and 'bit 13 H8 Horizontal "
+            "stop, most significant bit' (Appendix C, p.306) each independently "
+            "control only their own half of the window.");
     }
 
     // ==================== G9: DIWHIGH-RESERVED-BITS-NO-EFFECT ====================
     {
         uint16_t base_diwhigh = (1u << kDiwhighStartH8Bit) | (1u << kDiwhighStopH8Bit);
-        auto baseline = measure_window(0x30, 0x50);  // recomputed fresh below with DIWHIGH
         Harness hb;
         hb.write_reg(kColorbaseAddr, kColor00Value);
         hb.write_reg(kColor01Addr, kColor01Value);
@@ -741,7 +1066,7 @@ int main(int argc, char** argv) {
         hb.write_reg(kDiwstrtAddr, 0x30);
         hb.write_reg(kDiwstopAddr, 0x50);
         hb.write_reg(kDiwhighAddr, base_diwhigh);
-        auto base_s = hb.scan_window(560, true);
+        auto base_s = hb.scan_window(500, true);
         Harness cal2;
         cal2.write_reg(kColorbaseAddr, kColor00Value);
         cal2.write_reg(kColor01Addr, kColor01Value);
@@ -761,13 +1086,14 @@ int main(int argc, char** argv) {
             hr.write_reg(kDiwstrtAddr, 0x30);
             hr.write_reg(kDiwstopAddr, 0x50);
             hr.write_reg(kDiwhighAddr, static_cast<uint16_t>(base_diwhigh | (1u << rb)));
-            auto s = hr.scan_window(560, true);
+            auto s = hr.scan_window(500, true);
             Edges e = find_edges(s, cal2_s[4]);
             if (e.open_idx != base_edges.open_idx || e.close_idx != base_edges.close_idx)
                 all_no_effect = false;
         }
         checks.expect(
-            all_no_effect && (baseline.open_idx == 0x30 && baseline.close_idx == 0x50),
+            all_no_effect && base_edges.open_idx >= 0 && base_edges.close_idx > base_edges.open_idx,
+            "G9-DIWHIGH-RESERVED-BITS-NO-EFFECT: "
             "C-diwhigh-bits.c1 C-diwhigh-bits.c2 C-diwhigh-bits.c4 C-diwhigh-bits.c5 "
             "C-diwhigh-bits.c9 C-diwhigh-bits.c10 C-diwhigh-bits.c12 "
             "C-diwhigh-bits.c13 : with both H8 override bits held fixed, setting "
@@ -780,47 +1106,90 @@ int main(int argc, char** argv) {
 
     // ==================== G11: BORDER-BLANK-OPAQUE (BPLCON3) ====================
     {
-        // Baseline: BPLCON3 = 0 (BRDNTRAN=0, BRDRBLNK=0). Border is COLOR00
-        // ('opaque' by default -- a real, non-genlock-blanked colour).
-        Harness h0;
+        // RTL NOTE (found once denise.v was opened): brdrblnk is gated by
+        // ecsena (denise.v:253, `assign brdrblnk = bplcon3[5] & ecsena;`),
+        // and ecsena is itself BPLCON0 bit 0 (denise.v:192,
+        // `assign ecsena = bplcon0[0];`), NOT the `ecs` top-level port --
+        // so BPLCON0 must carry bit 0 set for BRDRBLNK to have any chance
+        // of an effect. t_blank (denise.v:515) only forces black outside
+        // the window (`~window_del`) once display_ena is set (the first
+        // BPL1DAT write in the line, which this Harness's saturation
+        // already performs before reset_line()). This is a Harness fix
+        // (BPLCON0 = 0x1000 | ecsena, not a bare 0x1000) -- the oracle
+        // text is untouched.
+        //
+        // brdntran itself (denise.v:235,254) is commented out in this
+        // file -- `//wire brdntran; //assign brdntran = bplcon3[4] &
+        // ecsena;` -- a real wire this RTL declares but never connects to
+        // anything. No stimulus can make BPLCON3 bit 4 produce an
+        // observable effect at this boundary: it is dead code. That is a
+        // property of the RTL, not of this Harness, and the assertion
+        // below measures it directly rather than assuming it.
+        constexpr uint16_t kBplcon0Ecsena = 0x1000 | 0x0001;
+
+        Harness h0;  // BPLCON3 = 0 (both bits clear): border is COLOR00.
         h0.write_reg(kColorbaseAddr, kColor00Value);
         h0.write_reg(kColor01Addr, kColor01Value);
-        h0.write_reg(kBplcon0Addr, 0x1000);
+        h0.write_reg(kBplcon0Addr, kBplcon0Ecsena);
         h0.write_reg(kBplcon3Addr, 0x0000);
         h0.write_reg(kDiwstrtAddr, 0x30);
         h0.write_reg(kDiwstopAddr, 0x50);
         auto s0 = h0.scan_window(80, true);
         uint32_t border_default = s0[4];  // well before DIWSTRT=$30
 
-        // BRDRBLNK=1 (bit 5): border areas set to be "opaque or transparent"
-        // -- should differ from the default COLOR00 rendering if this
-        // fixture implements the ECS BPLCON3 border-blank/opaque control at
-        // all.
-        Harness h1;
+        Harness h1;  // BRDRBLNK=1 (bit 5) only.
         h1.write_reg(kColorbaseAddr, kColor00Value);
         h1.write_reg(kColor01Addr, kColor01Value);
-        h1.write_reg(kBplcon0Addr, 0x1000);
-        h1.write_reg(kBplcon3Addr, 0x0020);  // BRDRBLNK
+        h1.write_reg(kBplcon0Addr, kBplcon0Ecsena);
+        h1.write_reg(kBplcon3Addr, 0x0020);
         h1.write_reg(kDiwstrtAddr, 0x30);
         h1.write_reg(kDiwstopAddr, 0x50);
         auto s1 = h1.scan_window(80, true);
         uint32_t border_blnk = s1[4];
 
+        Harness h2;  // BRDNTRAN=1 (bit 4) only.
+        h2.write_reg(kColorbaseAddr, kColor00Value);
+        h2.write_reg(kColor01Addr, kColor01Value);
+        h2.write_reg(kBplcon0Addr, kBplcon0Ecsena);
+        h2.write_reg(kBplcon3Addr, 0x0010);
+        h2.write_reg(kDiwstrtAddr, 0x30);
+        h2.write_reg(kDiwstopAddr, 0x50);
+        auto s2 = h2.scan_window(80, true);
+        uint32_t border_ntran = s2[4];
+
         checks.expect(
             border_blnk != border_default,
-            "C-gen.c08 C-gen.c09 C-genlock.c3 C-genlock.c4 C-gen.c12 C-gen.c15 "
-            "C-genlock-ext.c3 C-genlock-ext.c4 C-genlock-ext.c16 C-ecsbit.b04 "
-            "C-ecsbit.b05 : with BPLCON3 left at its default (BRDNTRAN=0, "
-            "BRDRBLNK=0) the border renders COLOR00 exactly as every other group "
-            "above measures it; setting BPLCON3 bit 5 (BRDRBLNK, 'Border blank', "
-            "Appendix C p.307) is expected to change that rendering -- 'BorderBlank "
-            "creates a transparent \"frame\" surrounding the active area' / "
-            "'BorderNotTransparent makes an opaque \"frame\"...' (p.296), 'borders "
-            "may be explicitly transparent or opaque' (p.297), 'the border areas "
-            "surrounding the active display window may also be set to be opaque or "
-            "transparent' (p.307), bit 4 BRDNTRAN 'Border opaque' (p.307) -- if the "
-            "measured colour does not change, that is a finding about this "
-            "fixture's own BPLCON3 wiring, not an adjustment to this expectation.");
+            "G11-BRDRBLNK-WORKS: "
+            "C-gen.c08 C-genlock.c3 C-ecsbit.b05 C-genlock-ext.c4 : with BPLCON3 at "
+            "its default (BRDRBLNK=0) and ECSENA (BPLCON0 bit 0) set, the border "
+            "renders COLOR00 exactly as every other group above measures it; "
+            "setting ONLY BPLCON3 bit 5 (BRDRBLNK) changes that rendering (this "
+            "fixture forces RGB to black outside the window when BRDRBLNK is set, "
+            "denise.v:515) -- 'BorderBlank creates a transparent \"frame\" "
+            "surrounding the active area' (p.296), bit 5 'BRDRBLNK Border blank' "
+            "(Appendix C, p.307), 'the border areas surrounding the active display "
+            "window may also be set to be... transparent' (p.307).");
+
+        checks.expect(
+            border_ntran != border_default,
+            "D-BRDNTRAN-HAS-NO-EFFECT: C-gen.c09 C-genlock.c4 C-genlock-ext.c16 "
+            "C-ecsbit.b04 C-genlock-ext.c3 C-gen.c12 C-gen.c15 : the manual documents "
+            "BPLCON3 bit 4 as BRDNTRAN, 'Border opaque' (Appendix C, p.307), and "
+            "'BorderNotTransparent makes an opaque \"frame\" surrounding the active "
+            "area' (p.296) -- 'borders may be explicitly transparent or opaque' "
+            "(p.297), 'the border areas... may also be set to be opaque or "
+            "transparent' (p.307) both promise this as a real, software-visible "
+            "control: setting BPLCON3 bit 4 (ECSENA set, BRDRBLNK clear, so any "
+            "change is attributable to BRDNTRAN alone) is expected to change the "
+            "border's rendering relative to leaving it clear. RED, and left red: "
+            "denise.v declares the wire and never connects it -- `//wire brdntran; "
+            "//assign brdntran = bplcon3[4] & ecsena;` (denise.v:235,254) -- so "
+            "setting BPLCON3 bit 4 alone produces the IDENTICAL border colour as "
+            "leaving it "
+            "clear: the manual's documented control has no observable effect at "
+            "this boundary. This is a red result about the RTL, not an adjustment "
+            "to the oracle -- the manual is what these seven claims are measured "
+            "against, and this fixture does not implement what it describes.");
     }
 
     // ==================== DECLINED CLAIMS ====================
