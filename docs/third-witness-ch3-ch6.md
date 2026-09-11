@@ -255,12 +255,100 @@ conditional on more than that, in its own way.
 
 ---
 
-## D. Chapters 3's fetch-window and beam findings
+### B4 — Hires fetches 50 words at both hardware limits, not 49 (3 assertions)
 
-Three families — `MAX-WORDS-49-HIRES` (3 assertions across two packages),
-`DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE`, and
-`VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL` — are still being read against the
-two trees. This section is filled in when that reading lands.
+| | |
+|---|---|
+| Manual | p.80: "In high resolution mode the maximum here is 49 words, because the rightmost limit remains ($D8) and only one word is fetched at this limit" |
+| NanoMig | 50, with DDFSTRT=$0018 and DDFSTOP=$00D8 |
+| Tests | `ch3-ddf-fetch-window` (2), `ch3-bitplane-memory-layout` (1) |
+
+Neither emulator has a formula the answer can be read off — vAmiga has none at
+all, and WinUAE's is a secondary buffer-sizing calculation. So the reading
+re-implemented **both** cycle-by-cycle DDF state machines, OCS and ECS branches
+separately, and ran them at that register pair rather than asserting a result.
+
+**Four independent paths, all 50.** vAmiga OCS, vAmiga ECS, WinUAE OCS, WinUAE
+ECS/AGA. WinUAE's separate closed-form `storelinestate` (`custom.cpp:10435-10444`)
+lands on 50 as well:
+
+```c
+int len = ((stop - ddfstrt) + fetchunit - 1) / fetchunit + 1;   // (192+7)/8+1 = 25
+len = len * fetchunit / fetchstart;                              // 25*8/4      = 50
+```
+
+**Both give the same mechanism**, and it explains the manual's error rather than
+merely contradicting it: `$D8 − $18 = 192`, an exact multiple of the 8-CCK fetch
+block. The stop request therefore lands *on* a block boundary and only arms the
+last fetch unit, so one whole further block completes — two more fetches, 48 + 2.
+The manual's "only one word is fetched at this limit" describes a stop that
+lands mid-block, which this register pair never produces.
+
+### B5 — DDFSTRT bit H3 is respected in lores too
+
+| | |
+|---|---|
+| Manual | pp.91, 277: "(bit H3 only respected in Hires Mode.)" |
+| NanoMig | changing it moves fetch timing in lores as well |
+| Test | `ch3-ddf-fetch-window` / `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE` |
+
+Both emulators mask DDFSTRT and DDFSTOP **by chipset generation only**, never by
+resolution, and both masks keep bit 3:
+
+```cpp
+// vAmiga, Agnus.h:405        0xFC = 11111100, 0xFE = 11111110
+u16 ddfMask() const { return isOCS() ? 0xFC : 0xFE; }
+// WinUAE, custom.cpp:1210
+ddf_mask = ecs_agnus ? 0xfe : 0xfc;
+```
+
+`isOCS()` and `ecs_agnus` are both chipset-model settings, unrelated to BPLCON0.
+The reading searched both trees for any resolution-conditional masking of that
+bit and found none in either.
+
+### B6 — PAL vertical blank lasts 26 lines, not 29
+
+| | |
+|---|---|
+| Manual | Table 3-13: PAL "Vertical Blank Stop" $1D — 29 blanked lines, printed with 312 − 29 = 283 displayable |
+| NanoMig | vbl reads high for 26 consecutive lines from vpos=0 |
+| Test | `ch3-beam-counters-and-blanking` / `VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL` |
+
+Both hardcode 26, neither derives it from a register:
+
+```cpp
+// vAmiga, Agnus.h:429 -- true for vpos 0..25
+bool inVBlankArea(isize posv) const { return posv < (isPAL() ? 26 : 20); }
+// WinUAE, custom.cpp:10088 in the PAL branch, plus
+// include/custom.h:122   #define VBLANK_ENDLINE_PAL 26
+if (vpos == 25) { agnus_vb = 0; agnus_vb_end_line = true; }
+```
+
+In vAmiga this gates real DMA behaviour, not just display geometry — sprite DMA
+enable is conditioned on it at `Agnus.cpp:854` and `AgnusRegs.cpp:489`, `:543`.
+
+---
+
+## The tally
+
+| | findings | assertions |
+|---|---:|---:|
+| **A** — both emulators with the manual, against NanoMig | 2 | 36 |
+| **B** — both emulators with NanoMig, against the manual | 6 | 10 |
+| **C** — the emulators disagree with each other | 2 | 2 |
+
+Six of the ten reds are places where two independently written implementations
+do what NanoMig does. That does not make the manual wrong — **this project does
+not get to decide that**, and a red stays a red until someone who can, does. What
+it does mean is that six of these are not usefully described as "the RTL departs
+from the specification"; the honest description is that the printed sentence and
+three implementations disagree, and only one of the four can be checked against
+silicon.
+
+Two are the other shape, and those are where an RTL change would be worth
+discussing: **super-hires colour reinterpretation**, absent from
+`denise_colortable.v` entirely, and **BLTSIZV's missing `&& ecs`**, a single term
+its own comment implies should be there.
 
 ---
 
