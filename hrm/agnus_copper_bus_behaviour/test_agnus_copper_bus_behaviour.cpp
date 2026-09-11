@@ -176,6 +176,9 @@ public:
         std::cout << (c ? "PASS: " : "FAIL: ") << l << "\n";
         c ? ++passed : ++failed;
     }
+    // Prints a record for a claim this file does NOT bind to any assertion
+    // here. Never touches passed/failed - this is not an assertion.
+    void note(const std::string& l) { std::cout << "NOTE: " << l << "\n"; }
     int passed = 0, failed = 0;
 };
 
@@ -215,10 +218,14 @@ int main(int argc, char** argv) {
         checks.expect(second_word >= 0 && wake_fetch > second_word &&
                           blocked_for > one_line &&
                           h.requests_between(second_word, wake_fetch) == 0,
-                      "W1 [conformance] a blocked WAIT never asserts reqdma - off the bus, no memory cycles (p.22, p.19)");
+                      "W1 [conformance] a blocked WAIT never asserts reqdma - off the bus, no memory cycles (p.22, p.19) "
+                      "[claims: COP2-about-the-copper.c13, COP2-about-the-copper.c14, COP2-the-wait-instruction.c3, COP2-the-wait-instruction.c4, "
+                      "COP2-copins-kinds.c3, COP2-copins-kinds.c4, COP2-copins-kinds.c5, COP2-copins-kinds.c6, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c8]");
 
         checks.expect(wake_fetch > 0 && h.count_grants_for_register(COLOR00) == 1,
-                      "W2 [conformance] once the WAIT is satisfied the Copper takes memory cycles again (p.19)");
+                      "W2 [conformance] once the WAIT is satisfied the Copper takes memory cycles again (p.19) "
+                      "[claims: COP2-copins-kinds.c3, COP2-copins-kinds.c4, COP2-copins-kinds.c5]");
     }
 
     // W3/W4/W5 - the slot is withheld in the middle of a MOVE list.

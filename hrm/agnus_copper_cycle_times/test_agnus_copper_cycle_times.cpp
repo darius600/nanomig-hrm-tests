@@ -198,6 +198,9 @@ public:
                   << "  [expected " << expected << ", observed " << actual << "]\n";
         ok ? ++passed : ++failed;
     }
+    // Records an unbound-claim reason without checking anything: does not
+    // touch passed/failed, so it cannot change the suite's pass/fail counts.
+    void note(const std::string& l) { std::cout << "NOTE: " << l << "\n"; }
     int passed = 0, failed = 0;
 };
 
@@ -232,7 +235,22 @@ int main(int argc, char** argv) {
             prev = g.tick;
         }
         checks.expect(pairs >= 5 && wrong == 0,
-                      "P1 consecutive Copper bus grants are two memory cycle times apart (p.19, p.20)");
+                      "P1 consecutive Copper bus grants are two memory cycle times apart (p.19, p.20) "
+                      "[claims: COP2-about-the-copper.c20, COP2-copins-timing.c1, COP2-copins-timing.c2]");
+
+        // COP2-about-the-copper.c21 ("the Copper requests the bus only during
+        // odd-numbered memory cycles") is UNBOUND. P1 above tests the same
+        // sentence's SPACING (every other cycle), by this test's own design
+        // and comment ("Asserted as spacing rather than absolute parity: the
+        // numbering origin is a property of the surrounding beam counter,
+        // which the HRM does not fix at this boundary."). c21 requires the
+        // parity itself (why "odd" rather than "even"), which is a labelling
+        // convention this fixture explicitly declines to pin down - no
+        // stimulus here could distinguish "odd" from "even" without also
+        // fixing an origin the HRM does not give. Reason: no assertion
+        // measures it.
+        checks.note("UNBOUND COP2-about-the-copper.c21 -- no assertion measures it "
+                     "(odd/even is a numbering-origin convention this fixture does not fix, see P1's own comment)");
     }
 
     // P2 - p.20: "The MOVE and SKIP instructions require two memory cycles ...
@@ -247,7 +265,9 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(600);
         move_span = h.span_in_memory_cycle_times(0, 2);
-        checks.expect_eq(move_span, 4, "P2 a MOVE spans four memory cycle times (p.20)");
+        checks.expect_eq(move_span, 4, "P2 a MOVE spans four memory cycle times (p.20) "
+                         "[claims: COP2-what-is-a-copper-instruction.c16, COP2-copins-timing.c4, "
+                         "COP2-copins-timing.c5]");
     }
 
     // P3 - p.20, same sentence: SKIP is stated at four as well. Condition true,
@@ -262,7 +282,8 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(4000);
         checks.expect_eq(h.span_in_memory_cycle_times(0, 2), 4,
-                         "P3 a SKIP whose condition is true spans four memory cycle times (p.20) [FPGA-069, expected red]");
+                         "P3 a SKIP whose condition is true spans four memory cycle times (p.20) [FPGA-069, expected red] "
+                         "[claims: COP2-what-is-a-copper-instruction.c17]");
     }
 
     // P4 - the same claim with the condition false, so the following MOVE runs.
@@ -275,7 +296,8 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(4000);
         checks.expect_eq(h.span_in_memory_cycle_times(0, 2), 4,
-                         "P4 a SKIP whose condition is false spans four memory cycle times (p.20) [FPGA-069, expected red]");
+                         "P4 a SKIP whose condition is false spans four memory cycle times (p.20) [FPGA-069, expected red] "
+                         "[claims: COP2-what-is-a-copper-instruction.c17]");
     }
 
     // P5/P6 - p.20: "The WAIT instruction requires three memory cycles and six
@@ -293,9 +315,11 @@ int main(int argc, char** argv) {
         h.run_cycles(4000);
         const int wait_span = h.span_in_memory_cycle_times(0, 2);
         checks.expect_eq(wait_span, 6,
-                         "P5 a satisfied WAIT spans six memory cycle times (p.20) [FPGA-069, expected red]");
+                         "P5 a satisfied WAIT spans six memory cycle times (p.20) [FPGA-069, expected red] "
+                         "[claims: COP2-what-is-a-copper-instruction.c19]");
         checks.expect_eq(wait_span - move_span, 2,
-                         "P6 a WAIT spans two memory cycle times more than a MOVE (p.20: three cycles versus two) [FPGA-069, expected red]");
+                         "P6 a WAIT spans two memory cycle times more than a MOVE (p.20: three cycles versus two) [FPGA-069, expected red] "
+                         "[claims: COP2-what-is-a-copper-instruction.c20]");
     }
 
     // ------------------------------------------------------------------
@@ -358,14 +382,17 @@ int main(int argc, char** argv) {
             "consecutive grants are two memory cycle times apart - the two calculations "
             "are calibrated against each other here (p.275 \"only the odd bus cycles are "
             "requested\"). They read the same `grants` vector, so this is agreement "
-            "between two readings of one record, not between two instruments");
+            "between two readings of one record, not between two instruments "
+            "[claims: COP2-copins-timing.c2]");
 
         checks.expect_eq(bus, 2,
             "AC1 a MOVE is granted two bus cycles (p.275 \"All instructions (except for "
-            "WAIT) require two bus cycles\")");
+            "WAIT) require two bus cycles\") "
+            "[claims: COP2-copins-instructions.c5]");
         checks.expect_eq(span, 4,
             "AC2 a MOVE spans four memory cycle times (p.275 \"four memory cycle times are "
-            "required per instruction\")");
+            "required per instruction\") "
+            "[claims: COP2-copins-timing.c4, COP2-copins-timing.c5]");
         // Multiply rather than divide. `span / bus == 2` is integer division and
         // would accept span=5, bus=2 - which is not "exactly twice" and not what
         // the sentence says. Caught by independent review on 06.09.2026.
@@ -413,7 +440,8 @@ int main(int argc, char** argv) {
 
         checks.expect_eq(bus, 2,
             "AC4 a SKIP is granted two bus cycles (p.275, SKIP is not the sentence's "
-            "exception)");
+            "exception) "
+            "[claims: COP2-copins-instructions.c6, COP2-copins-instructions.c8]");
         checks.expect_eq(span, 4,
             "AC5 a SKIP spans four memory cycle times (p.275, same sentence)");
         checks.expect_eq(span, 2 * bus,
@@ -421,6 +449,17 @@ int main(int argc, char** argv) {
             "(p.275). EXPOSITORY, not independent: given AC4 and AC5 this cannot fail on "
             "its own - it states the manual's relation in the manual's own units");
     }
+
+    // ------------------------------------------------------------------
+    // Appendix claims considered for this package and left UNBOUND, with
+    // reasons. None of these change any assertion above; they are a printed
+    // record only.
+    // ------------------------------------------------------------------
+    checks.note("UNBOUND (COP2-copins-timing.c3: the claim's own restatement flags it "
+        "as a cycle-COUNT claim distinct from elapsed-cycle-TIME. Every assertion in "
+        "this file - P1/P2/AC1-AC7 - measures elapsed time via tick differences "
+        "converted through TICKS_PER_MEMORY_CYCLE_TIME, not an independent count; no "
+        "instrument here tests a 'memory cycles' notion separate from that time base)");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

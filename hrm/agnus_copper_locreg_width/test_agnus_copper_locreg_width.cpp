@@ -146,6 +146,11 @@ public:
         std::cout << (c ? "PASS: " : "FAIL: ") << l << "\n";
         c ? ++passed : ++failed;
     }
+    // Prints a record for a claim this file does NOT bind to any assertion
+    // here. Never touches passed/failed - this is not an assertion.
+    void note(const std::string& l) {
+        std::cout << "NOTE: " << l << "\n";
+    }
     int passed = 0, failed = 0;
 };
 
@@ -206,7 +211,8 @@ int main(int argc, char** argv) {
             "width is 15 bits (data-word bit 0 dropped, bits 1-15 survive "
             "individually at address 2^(bit-1)) - matches the prose's "
             "\"low 15 bits\", not the table's \"low 16 bits\" (p25:20 vs "
-            "p25:28-30, both cited, neither adjudicated)");
+            "p25:28-30, both cited, neither adjudicated) "
+            "[claims: COP2-cop1lcl.c5, COP2-location-registers.c10]");
     }
 
     // ------------------------------------------------------------------
@@ -234,7 +240,7 @@ int main(int argc, char** argv) {
             "LR2 [RTL_REGRESSION, no oracle] COP2LCL: same measurement "
             "repeated via COPJMP2 - width and bit-0 exclusion match COP1LCL "
             "(COP2-loc.c5/-location-registers.c5 vs COP2-loc.c7/3/"
-            "-location-registers.c11)");
+            "-location-registers.c11) [claims: COP2-cop2lcl.c5, COP2-location-registers.c10]");
     }
 
     // ------------------------------------------------------------------
@@ -269,7 +275,8 @@ int main(int argc, char** argv) {
         checks.expect(clean && survivors == 5,
             "LR3 [RTL_REGRESSION, no oracle] COP2LCH: measured high-field "
             "width is 5 bits, the same as COP1LCH - the two pointers are "
-            "symmetric. Neither manual reading covers this; both state 3");
+            "symmetric. Neither manual reading covers this; both state 3 "
+            "[claims: COP2-location-registers.c4]");
     }
 
     // ------------------------------------------------------------------
@@ -333,7 +340,8 @@ int main(int argc, char** argv) {
             "states. Combined with the 15-bit low field, NanoMig's total "
             "implemented pointer is 20 bits - matching NEITHER the table's "
             "19 (3+16) NOR the prose's 18 (3+15) (p25:19-22, p25:28-30, "
-            "COP2-loc.c8/-location-registers.c12)");
+            "COP2-loc.c8/-location-registers.c12) "
+            "[claims: COP2-location-registers.c2, COP2-location-registers.c8]");
     }
 
     // ------------------------------------------------------------------
@@ -400,7 +408,15 @@ int main(int argc, char** argv) {
             "LW5 the second location register behaves identically to the first in both "
             "chipsets - appendices A and C state the same widths for both pairs (p273, "
             "p309), so a difference between them would contradict the manual whichever "
-            "pair were right");
+            "pair were right "
+            "[claims: COP2-cop2lch.c5, COP2-cop2lch.c6, COP2-ecs-location-width.c3, "
+            "COP2-ecs-location-width.c4, COP2-cop2lch-ecs.c5, COP2-cop2lch-ecs.c6, "
+            "COP2-cop-location-pointers.c7]");
+
+        checks.note("LW5 bridges COP1LCH's separately-measured widths (LW1, red; LW2, "
+            "green) onto COP2LCH by equality, which is how COP2-cop2lch.c5/c6 and the "
+            "ECS-appendix COP2-cop2lch-ecs.c5/c6 counterparts are covered above - no "
+            "assertion states an absolute expected width for COP2LCH on its own.");
 
         // LW2 is a CONSISTENCY CHECK, not a control, and calling it a control
         // was wrong. Independent validation on 06.09.2026 pointed out that it
@@ -423,11 +439,13 @@ int main(int argc, char** argv) {
             "5 bits wide (p309 \"high 5 bits\", p273 \"high 5 bits if ECS\") - the walk "
             "measures a stated width correctly. NOT a control for `ecs` being connected: "
             "it would also pass with that input dead, see agnus_copper_move_sweep for "
-            "evidence that it is not");
+            "evidence that it is not "
+            "[claims: COP2-cop1lch.c6, COP2-ecs-location-width.c1, COP2-ecs-location-width.c2, COP2-cop1lch-ecs.c5]");
 
         checks.expect(ocs_width == 3,
             "LW1 [HRM_CONFORMANCE] with ecs=0 the COP1LCH high field is 3 bits wide "
-            "(p309 \"was 3 bits\", p273 \"high 3 bits\")");
+            "(p309 \"was 3 bits\", p273 \"high 3 bits\") "
+            "[claims: COP2-cop1lch.c5, COP2-cop1lch-ecs.c6, COP2-location-registers.c2]");
 
         checks.expect(ocs_width != ecs_width,
             "LW3 [HRM_CONFORMANCE] the high-field width DEPENDS on the chipset - the "
@@ -452,7 +470,8 @@ int main(int argc, char** argv) {
             "LW4 [HRM_CONFORMANCE] the location registers are 18-bit pointers "
             "(p276 \"These are 18-bit pointer registers\") - measured " +
             std::to_string(total_ocs) + " = " + std::to_string(measured_low_width) +
-            " low + " + std::to_string(ocs_width) + " high");
+            " low + " + std::to_string(ocs_width) + " high "
+            "[claims: COP2-cop-location-pointers.c4, COP2-cop-location-pointers.c7]");
     }
 
     // ---------------- RM1-RM8: the register addresses, asserted ----------------
@@ -492,14 +511,21 @@ int main(int argc, char** argv) {
 
         checks.expect(lands_with(COP1LCH, COP1LCL, COPJMP1),
             "RM1 COP1LCH at $080 with COP1LCL at $082 places bit 17 of the pointer "
-            "(appendix A p273 register rows)");
+            "(appendix A p273 register rows) "
+            "[claims: COP2-cop1lch.c1, COP2-cop1lch.c2, COP2-cop1lch.c4, "
+            "COP2-cop1lcl.c1, COP2-cop1lcl.c2, COP2-cop1lcl.c4, COP2-cop-locations.c1, "
+            "COP2-location-registers.c7]");
         checks.expect(!lands_with(COP1LCL, COP1LCH, COPJMP1),
             "RM2 the same two addresses swapped does NOT - $080 and $082 are not "
-            "interchangeable (p273). Says nothing about addresses outside this pair");
+            "interchangeable (p273). Says nothing about addresses outside this pair "
+            "[claims: COP2-location-registers.c7, COP2-location-registers.c10]");
 
         checks.expect(lands_with(COP2LCH, COP2LCL, COPJMP2),
             "RM3 COP2LCH at $084 with COP2LCL at $086 places bit 17 through the second "
-            "pointer (appendix A p273)");
+            "pointer (appendix A p273) "
+            "[claims: COP2-cop2lch.c1, COP2-cop2lch.c2, COP2-cop2lch.c4, "
+            "COP2-cop2lcl.c1, COP2-cop2lcl.c2, COP2-cop2lcl.c4, COP2-cop-locations.c1, "
+            "COP2-location-registers.c7]");
         checks.expect(!lands_with(COP2LCL, COP2LCH, COPJMP2),
             "RM4 the second pair swapped does NOT (p273)");
 
@@ -510,6 +536,17 @@ int main(int argc, char** argv) {
         checks.expect(!lands_at(COP2LCH, COP2LCL, COPJMP1, 0x0004, 0x0000, target),
             "RM6 and the converse (p273, p276)");
     }
+
+    // ------------------------------------------------------------------
+    // Appendix claims considered for this package and left UNBOUND, with
+    // reasons. None of these change any assertion above; they are a printed
+    // record only.
+    // ------------------------------------------------------------------
+    checks.note("UNBOUND (address/access-type exercised as stimulus only, not "
+        "independently asserted - unlike RM1/RM3 above, no bit-arithmetic walk "
+        "isolates the ECS-table row's own address for COP1LCH/COP2LCH): "
+        "COP2-cop1lch-ecs.c1, COP2-cop1lch-ecs.c2, COP2-cop1lch-ecs.c4, "
+        "COP2-cop2lch-ecs.c1, COP2-cop2lch-ecs.c2, COP2-cop2lch-ecs.c4");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

@@ -227,6 +227,9 @@ public:
         std::cout << (c ? "PASS: " : "FAIL: ") << l << "\n";
         c ? ++passed : ++failed;
     }
+    // Prints a record for a claim this file does NOT bind to any assertion
+    // here. Never touches passed/failed - this is not an assertion.
+    void note(const std::string& l) { std::cout << "NOTE: " << l << "\n"; }
     int passed = 0, failed = 0;
 };
 
@@ -302,7 +305,9 @@ int main(int argc, char** argv) {
         checks.expect(h.count_grants_for_register(MARK_SM1_TARGET) >= 1,
             "SM1 [conformance] a self-issued MOVE into COP2LC followed by a "
             "self-issued MOVE to COPJMP2 reloads address_out with the "
-            "self-written value (p.26)");
+            "self-written value (p.26) "
+            "[claims: COP2-copjmp-strobes.c7, COP2-copjmp-strobes.c8, "
+            "COP2-jump-strobe-address.c2, COP2-jump-strobe-address.c3, COP2-jump-strobe-address.c4]");
     }
 
     // ------------------------------------------------------------------
@@ -329,7 +334,8 @@ int main(int argc, char** argv) {
         checks.expect(h.count_grants_for_register(MARK_SM2_TARGET) >= 1,
             "SM2 [conformance] a self-issued MOVE addressing COPJMP2 strobes "
             "the externally-preloaded COP2LC address into the program "
-            "counter (p.26)");
+            "counter (p.26) "
+            "[claims: COP2-copjmp-strobes.c7, COP2-copjmp-strobes.c8, COP2-jump-strobe-address.c3]");
     }
 
     // ------------------------------------------------------------------
@@ -363,7 +369,9 @@ int main(int argc, char** argv) {
                       && h.count_grants_for_register(MARK_WRONG_PATH) == 0,
             "SM3 [conformance] a self-issued MOVE to COPJMP1 repeatedly "
             "jumps to COP1LC and never to the distinct COP2LC list "
-            "(p.33 first worked loop)");
+            "(p.33 first worked loop) "
+            "[claims: COP2-copjmp-strobes.c5, COP2-copjmp-strobes.c6, "
+            "COP2-a-copper-loop-example.c10, COP2-a-copper-loop-example.c11]");
     }
 
     // ------------------------------------------------------------------
@@ -398,7 +406,8 @@ int main(int argc, char** argv) {
                       && h.count_grants_for_register(MARK_WRONG_PATH) <= 1,
             "SM4 [conformance] a self-issued MOVE to COPJMP2 repeatedly "
             "jumps to COP2LC, which points elsewhere than COP1LC "
-            "(p.33 second worked loop)");
+            "(p.33 second worked loop) "
+            "[claims: COP2-a-copper-loop-example.c19]");
     }
 
     // ------------------------------------------------------------------
@@ -429,7 +438,8 @@ int main(int argc, char** argv) {
         checks.expect(h.count_grants_for_register(MARK_SM5_LOOP) >= 3,
             "SM5 [conformance] the Copper writes its own COP2LC and then loops "
             "on that self-written address, with no external write to COP2LC at "
-            "any point (p.26 with p.33)");
+            "any point (p.26 with p.33) "
+            "[claims: COP2-copper-loops-and-branches-and-comparison-enable.c2, COP2-jump-strobe-address.c2]");
     }
 
     // ------------------------------------------------------------------
@@ -461,7 +471,8 @@ int main(int argc, char** argv) {
         checks.expect(h.count_grants_for_register(MARK_SM6_LOOP) >= 3,
             "SM6 [conformance] the Copper writes its own COP1LC - including a "
             "non-zero high half - and then loops on that self-written address "
-            "(p.26 with p.33)");
+            "(p.26 with p.33) "
+            "[claims: COP2-jump-strobe-address.c2]");
     }
 
     // ------------------------------------------------------------------
@@ -490,8 +501,19 @@ int main(int argc, char** argv) {
         checks.expect(h.count_grants_for_register(MARK_SM7_TARGET) >= 1,
             "SM7 [conformance] a self-issued MOVE to COPJMP2 strobes "
             "regardless of its data word - $FFFF strobes as $0000 does "
-            "(p.26, \"any MOVE\")");
+            "(p.26, \"any MOVE\") "
+            "[claims: COP2-copjmp-strobes.c2, COP2-jump-strobe-address.c3]");
     }
+
+    // ------------------------------------------------------------------
+    // Appendix claims considered for this package and left UNBOUND, with
+    // reasons. None of these change any assertion above; they are a printed
+    // record only.
+    // ------------------------------------------------------------------
+    checks.note("UNBOUND (COP2-copjmp-strobes.c1: \"COPJMP1 is a strobe address\" - "
+        "SM7 above tests data-word independence specifically for COPJMP2; no "
+        "equivalent scenario here varies COPJMP1's own strobe data word, so the same "
+        "data-independence fact is not separately established for COPJMP1)");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

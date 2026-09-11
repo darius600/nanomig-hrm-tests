@@ -238,6 +238,12 @@ public:
         }
     }
 
+    // Prints a record for a claim this file does NOT bind to any assertion
+    // here. Never touches `failures` - this is not an assertion.
+    void note(const std::string& label) {
+        std::cout << "NOTE: " << label << "\n";
+    }
+
     int result() const { return failures == 0 ? 0 : 1; }
     int count() const { return failures; }
 
@@ -271,12 +277,18 @@ int main(int argc, char** argv) {
         h.strobe(1);
         h.dma_allowed = true;
         checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
-                      "T1 COPJMP1 executes the COP1LC signature list");
+                      "T1 COPJMP1 executes the COP1LC signature list "
+                      "[claims: COP2-using-the-copper-registers.c1, COP2-using-the-copper-registers.c2, COP2-location-registers.c1, "
+                      "COP2-location-registers.c14, COP2-location-registers.c17, COP2-location-registers.c18, "
+                      "COP2-jump-strobe-address.c1, COP2-jump-strobe-address.c5, COP2-jump-strobe-address.c6, "
+                      "COP2-cop-location-pointers.c1, COP2-cop-location-pointers.c2, COP2-cop-location-pointers.c6, "
+                      "COP2-cop-location-pointers.c10, COP2-copjmp-strobes.c3]");
         const bool sequential = h.fetches.size() >= 2
                              && h.fetches[0] == A
                              && h.fetches[1] == A + 1;
         checks.expect(sequential,
-                      "T1 first two instruction words are fetched sequentially from COP1LC");
+                      "T1 first two instruction words are fetched sequentially from COP1LC "
+                      "[claims: COP2-location-registers.c19]");
         if (!sequential) {
             std::cerr << "  observed fetch word addresses:";
             for (const uint32_t address : h.fetches) {
@@ -295,7 +307,11 @@ int main(int argc, char** argv) {
         h.strobe(2);
         h.dma_allowed = true;
         checks.expect(h.run_until([&]() { return h.move_count(COLOR01) == 1; }),
-                      "T2 COPJMP2 executes the COP2LC signature list");
+                      "T2 COPJMP2 executes the COP2LC signature list "
+                      "[claims: COP2-location-registers.c1, COP2-location-registers.c14, COP2-jump-strobe-address.c5, "
+                      "COP2-jump-strobe-address.c7, COP2-location-registers.c17, COP2-location-registers.c18, COP2-jump-strobe-address.c1, "
+                      "COP2-cop-location-pointers.c3, COP2-cop-location-pointers.c9, "
+                      "COP2-cop-location-pointers.c11, COP2-copjmp-strobes.c4]");
         checks.expect(h.move_count(COLOR00) == 0,
                       "T2 COPJMP2 does not select COP1LC");
         h.strobe(1);
@@ -311,10 +327,12 @@ int main(int argc, char** argv) {
         h.strobe(1);
         h.dma_allowed = true;
         checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
-                      "T3 list A begins before COP1LC is updated");
+                      "T3 list A begins before COP1LC is updated "
+                      "[claims: COP2-copper-loops-and-branches-and-comparison-enable.c1]");
         h.program_location(1, C);
         checks.expect(h.run_until([&]() { return h.move_count(COLOR01) == 1; }),
-                      "T3 current list remains sequential after a location-only update");
+                      "T3 current list remains sequential after a location-only update "
+                      "[claims: COP2-location-registers.c20]");
         checks.expect(h.move_count(COLOR02) == 0,
                       "T3 rewriting COP1LC alone does not jump to the new list");
     }
@@ -333,7 +351,8 @@ int main(int argc, char** argv) {
         const uint32_t ocs_fetch = observe_first_fetch(false, high, low_even);
         const uint32_t ocs_expected = ((high & 0x0007u) << 15) | expected_low;
         checks.expect(ocs_fetch == ocs_expected,
-                      "T4 OCS mode uses only the documented three high address bits");
+                      "T4 OCS mode uses only the documented three high address bits "
+                      "[claims: COP2-location-registers.c2]");
         if (ocs_fetch != ocs_expected) {
             std::cerr << "  observed word address 0x" << std::hex << ocs_fetch
                       << ", HRM expected 0x" << ocs_expected << std::dec << "\n";
@@ -358,7 +377,9 @@ int main(int argc, char** argv) {
                       "T6 instruction after $FFFF,$FFFE is not executed in the same field");
         h.pulse_sof();
         checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 2; }),
-                      "T6 automatic field restart executes COP1LC again");
+                      "T6 automatic field restart executes COP1LC again "
+                      "[claims: COP2-starting-the-copper-after-reset.c3, COP2-stopping-the-copper.c5, COP2-location-registers.c24, "
+                      "COP2-cop-location-pointers.c5, COP2-cop-location-pointers.c12]");
     }
 
     {
@@ -373,7 +394,9 @@ int main(int argc, char** argv) {
                       "T7 COPJMP2 starts list B before vertical blank");
         h.pulse_sof();
         checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
-                      "T7 automatic field restart selects COP1LC list A");
+                      "T7 automatic field restart selects COP1LC list A "
+                      "[claims: COP2-location-registers.c24, "
+                      "COP2-cop-location-pointers.c5, COP2-cop-location-pointers.c12]");
         checks.expect(h.move_count(COLOR01) == 1,
                       "T7 automatic field restart does not select COP2LC again");
     }
@@ -393,8 +416,25 @@ int main(int argc, char** argv) {
                       "T8 updated COP1LC does not redirect the current field without a strobe");
         h.pulse_sof();
         checks.expect(h.run_until([&]() { return h.move_count(COLOR02) == 1; }),
-                      "T8 next automatic field restart uses the updated COP1LC");
+                      "T8 next automatic field restart uses the updated COP1LC "
+                      "[claims: COP2-location-registers.c24]");
     }
+
+    // ------------------------------------------------------------------
+    // Appendix claims considered for this package and left UNBOUND, with
+    // reasons. None of these change any assertion above; they are a printed
+    // record only.
+    // ------------------------------------------------------------------
+    checks.note("UNBOUND (address/access-type exercised as stimulus only, not "
+        "independently asserted - unlike agnus_copper_locreg_width's RM1/RM3, no "
+        "bit-arithmetic walk isolates COPJMP1/COPJMP2's own address; every T1-T8 "
+        "scenario above trusts the 0x088/0x08A constants rather than testing them): "
+        "COP2-copjmp1.c1, COP2-copjmp1.c2, COP2-copjmp1.c4, "
+        "COP2-copjmp2.c1, COP2-copjmp2.c2, COP2-copjmp2.c4");
+    checks.note("UNBOUND (COP2-cop-location-pointers.c8: \"contents of COP2LC can "
+        "modify PC for initialization\" - only COP1LC auto-reloads at start-of-frame "
+        "here (T6-T8, via pulse_sof()); COP2LC's own reload for 'initialization' as "
+        "opposed to an explicit jump is never exercised)");
 
     if (checks.count() == 0) {
         std::cout << "FPGA-055 Copper register/control module checks passed.\n";

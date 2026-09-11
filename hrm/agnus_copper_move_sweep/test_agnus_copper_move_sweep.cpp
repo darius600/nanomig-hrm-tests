@@ -258,6 +258,12 @@ public:
         }
     }
 
+    // Prints a record for a claim this file does NOT bind to any assertion
+    // here. Never touches passed/failed - this is not an assertion.
+    void note(const std::string& label) {
+        std::cout << "NOTE: " << label << "\n";
+    }
+
     int passed = 0;
     int failed = 0;
 };
@@ -410,9 +416,11 @@ int main(int argc, char** argv) {
     const auto ecs_cdang1 = sweep_accepted_set(true, true);
 
     expect_set_equals(checks, ocs_cdang0, expected_cdang0,
-                       "SWEEP ecs=0 cdang=0 vs spec Reading B (HRM_CONFORMANCE, primary oracle)");
+                       "SWEEP ecs=0 cdang=0 vs spec Reading B (HRM_CONFORMANCE, primary oracle) "
+                       "[claims: COP2-about-the-copper.c5, COP2-control-register.c4]");
     expect_set_equals(checks, ocs_cdang1, expected_cdang1,
-                       "SWEEP ecs=0 cdang=1 vs spec Reading B (HRM_CONFORMANCE, primary oracle)");
+                       "SWEEP ecs=0 cdang=1 vs spec Reading B (HRM_CONFORMANCE, primary oracle) "
+                       "[claims: COP2-about-the-copper.c5, COP2-control-register.c13]");
     // The two ECS rows are asserted against APPENDIX C, not against a
     // chapter-2 extrapolation. Chapter 2 states no ECS rule at all, so
     // asserting one was oracle invention - and it put the red in the wrong
@@ -440,10 +448,12 @@ int main(int argc, char** argv) {
     expect_set_equals(checks, ecs_cdang0, expected_ecs_cdang0,
                        "SWEEP ecs=1 cdang=0 vs Appendix C (HRM_CONFORMANCE; the appendix gives the ECS "
                        "CDANG=0 range as equal to the OCS CDANG=1 range). Expected to be RED: this is "
-                       "the deviation already tracked as FPGA-062");
+                       "the deviation already tracked as FPGA-062 "
+                       "[claims: COP2-copcon-ecs.c14]");
     expect_set_equals(checks, ecs_cdang1, expected_ecs_cdang1,
                        "SWEEP ecs=1 cdang=1 vs Appendix C (HRM_CONFORMANCE; \"the Copper can access all "
-                       "of the Amiga chip registers\")");
+                       "of the Amiga chip registers\") "
+                       "[claims: COP2-copcon-ecs.c11]");
 
     // --- Bit independence (data_in[15:9] of the MOVE first word must not
     // affect the decode; PKG-MOVE-DECODE, Table 2-2 "X" bits / COP2-summary-
@@ -458,7 +468,14 @@ int main(int argc, char** argv) {
             }
         }
         checks.expect(all_stable,
-                       "BITS15-9 ecs=0 cdang=0: CONTROL_REG stays accepted for all 128 values of data_in[15:9]");
+                       "BITS15-9 ecs=0 cdang=0: CONTROL_REG stays accepted for all 128 values of data_in[15:9] "
+                       "[claims: COP2-copins-encoding.c1, COP2-copins-encoding.c7, COP2-copins-encoding.c13, "
+                       "COP2-copins-encoding.c19, COP2-copins-encoding.c25, COP2-copins-encoding.c31, "
+                       "COP2-copins-encoding.c37, COP2-the-move-instruction.c6, "
+                       "COP2-summary-of-copper-instructions.c1, COP2-summary-of-copper-instructions.c7, "
+                       "COP2-summary-of-copper-instructions.c13, COP2-summary-of-copper-instructions.c19, "
+                       "COP2-summary-of-copper-instructions.c25, COP2-summary-of-copper-instructions.c31, "
+                       "COP2-summary-of-copper-instructions.c37, COP2-summary-of-copper-instructions.c97]");
     }
     {
         constexpr uint16_t NEVER_REG = 0x00;  // never-writable in both readings, both CDANG states
@@ -469,7 +486,14 @@ int main(int argc, char** argv) {
             }
         }
         checks.expect(all_stable,
-                       "BITS15-9 ecs=0 cdang=1: NEVER_REG ($00) stays rejected for all 128 values of data_in[15:9]");
+                       "BITS15-9 ecs=0 cdang=1: NEVER_REG ($00) stays rejected for all 128 values of data_in[15:9] "
+                       "[claims: COP2-copins-encoding.c1, COP2-copins-encoding.c7, COP2-copins-encoding.c13, "
+                       "COP2-copins-encoding.c19, COP2-copins-encoding.c25, COP2-copins-encoding.c31, "
+                       "COP2-copins-encoding.c37, COP2-the-move-instruction.c6, "
+                       "COP2-summary-of-copper-instructions.c1, COP2-summary-of-copper-instructions.c7, "
+                       "COP2-summary-of-copper-instructions.c13, COP2-summary-of-copper-instructions.c19, "
+                       "COP2-summary-of-copper-instructions.c25, COP2-summary-of-copper-instructions.c31, "
+                       "COP2-summary-of-copper-instructions.c37, COP2-summary-of-copper-instructions.c97]");
     }
 
     // --- Reset clears CDANG (COP2-ctrl.c14 / COP2-control-register.c15):
@@ -485,7 +509,8 @@ int main(int argc, char** argv) {
         h.run_cycles(600);
         checks.expect(h.events.size() < 3,
                        "RESET ecs=0: CDANG=1 set, then reset, then MOVE to $20 (CDANG-gated) is rejected -- "
-                       "reset clears CDANG");
+                       "reset clears CDANG "
+                       "[claims: COP2-copcon-appa.c7, COP2-copcon-appa.c8, COP2-control-register.c15]");
     }
 
     // ------------------------------------------------------------------
@@ -505,7 +530,15 @@ int main(int argc, char** argv) {
         }
         std::ostringstream detail;
         detail << "DECODE every accepted MOVE is emitted as the register it named, "
-               << "all four modes, 256 candidates each";
+               << "all four modes, 256 candidates each "
+               << "[claims: COP2-copins-encoding.c43, COP2-copins-encoding.c49, "
+               << "COP2-copins-encoding.c55, COP2-copins-encoding.c61, COP2-copins-encoding.c67, "
+               << "COP2-copins-encoding.c73, COP2-copins-encoding.c79, COP2-copins-encoding.c85, "
+               << "COP2-the-move-instruction.c3, COP2-the-move-instruction.c5, "
+               << "COP2-summary-of-copper-instructions.c43, COP2-summary-of-copper-instructions.c49, "
+               << "COP2-summary-of-copper-instructions.c55, COP2-summary-of-copper-instructions.c61, "
+               << "COP2-summary-of-copper-instructions.c67, COP2-summary-of-copper-instructions.c73, "
+               << "COP2-summary-of-copper-instructions.c79, COP2-summary-of-copper-instructions.c85]";
         if (!all_wrong.empty()) {
             detail << " - MISROUTED:";
             for (size_t i = 0; i < all_wrong.size() && i < 8; ++i) {

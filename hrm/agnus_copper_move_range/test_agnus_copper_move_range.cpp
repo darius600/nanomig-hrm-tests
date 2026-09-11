@@ -221,6 +221,12 @@ public:
         }
     }
 
+    // Prints a record for a claim this file does NOT bind to any assertion
+    // here. Never touches passed/failed - this is not an assertion.
+    void note(const std::string& label) {
+        std::cout << "NOTE: " << label << "\n";
+    }
+
     int passed = 0;
     int failed = 0;
 };
@@ -245,22 +251,36 @@ int main(int argc, char** argv) {
 
     // T1, T2, T8 - permitted destinations must actually work, otherwise a
     // negative result below would not be meaningful.
-    checks.expect(move_reaches(false, false, COLOR00), "T1 OCS CDANG=0: MOVE to COLOR00 ($180) is written");
-    checks.expect(move_reaches(false, false, BPL1PTH), "T2 OCS CDANG=0: MOVE to BPL1PTH ($0E0) is written");
-    checks.expect(move_reaches(false, true, DMACON), "T8 OCS CDANG=1: MOVE to DMACON ($096) is written");
+    checks.expect(move_reaches(false, false, COLOR00), "T1 OCS CDANG=0: MOVE to COLOR00 ($180) is written "
+                  "[claims: COP2-control-register.c1]");
+    checks.expect(move_reaches(false, false, BPL1PTH), "T2 OCS CDANG=0: MOVE to BPL1PTH ($0E0) is written "
+                  "[claims: COP2-control-register.c1]");
+    checks.expect(move_reaches(false, true, DMACON), "T8 OCS CDANG=1: MOVE to DMACON ($096) is written "
+                  "[claims: COP2-control-register.c1]");
 
     // T3, T4 - the CDANG-protected range is blocked while CDANG is clear.
-    checks.expect(!move_reaches(false, false, BLTCON0), "T3 OCS CDANG=0: MOVE to BLTCON0 ($040) is blocked");
-    checks.expect(!move_reaches(false, false, BLTSIZE), "T4 OCS CDANG=0: MOVE to BLTSIZE ($07E) is blocked");
+    checks.expect(!move_reaches(false, false, BLTCON0), "T3 OCS CDANG=0: MOVE to BLTCON0 ($040) is blocked "
+                  "[claims: COP2-control-register.c2]");
+    checks.expect(!move_reaches(false, false, BLTSIZE), "T4 OCS CDANG=0: MOVE to BLTSIZE ($07E) is blocked "
+                  "[claims: COP2-control-register.c2]");
 
     // T5, T6 - and permitted once CDANG is set.
-    checks.expect(move_reaches(false, true, BLTCON0), "T5 OCS CDANG=1: MOVE to BLTCON0 ($040) is written");
-    checks.expect(move_reaches(false, true, BLTSIZE), "T6 OCS CDANG=1: MOVE to BLTSIZE ($07E) is written");
+    checks.expect(move_reaches(false, true, BLTCON0),
+                  "T5 OCS CDANG=1: MOVE to BLTCON0 ($040) is written "
+                  "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, COP2-copcon-appa.c10, "
+                  "COP2-copcon-appa.c11, COP2-copcon-ecs.c7, COP2-copcon-ecs.c8, "
+                  "COP2-control-register.c2, COP2-control-register.c13, COP2-the-move-instruction.c13]");
+    checks.expect(move_reaches(false, true, BLTSIZE),
+                  "T6 OCS CDANG=1: MOVE to BLTSIZE ($07E) is written "
+                  "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, COP2-copcon-appa.c10, "
+                  "COP2-copcon-appa.c11, COP2-copcon-ecs.c7, COP2-copcon-ecs.c8, "
+                  "COP2-control-register.c2, COP2-control-register.c13]");
 
     // T7 - below the protected range nothing is writable in OCS, not even with
     // CDANG set. COPCON itself lives here, so the Copper cannot set its own
     // danger bit.
-    checks.expect(!move_reaches(false, true, COPCON), "T7 OCS CDANG=1: MOVE to COPCON ($02E) is blocked");
+    checks.expect(!move_reaches(false, true, COPCON), "T7 OCS CDANG=1: MOVE to COPCON ($02E) is blocked "
+                  "[claims: COP2-control-register.c3, COP2-using-the-copper-registers.c3, COP2-control-register.c6]");
 
     // T9, T10 - Appendix C p. 310: ECS shifts the scale by one step. With
     // CDANG clear the ECS Copper already reaches the blitter range, and with
@@ -270,12 +290,15 @@ int main(int argc, char** argv) {
     // range as $20-$FF, the RTL gives $40-$FF, and 32 addresses $20-$3F are
     // falsely rejected. Making this assertion pass would delete the finding.
     checks.expect(move_reaches(true, false, BLTCON0), "T9 ECS CDANG=0: MOVE to BLTCON0 ($040) is written (Appendix C p.310) [FPGA-062, expected red]");
-    checks.expect(move_reaches(true, true, COPCON), "T10 ECS CDANG=1: MOVE to COPCON ($02E) is written (Appendix C p.310)");
+    checks.expect(move_reaches(true, true, COPCON),
+                  "T10 ECS CDANG=1: MOVE to COPCON ($02E) is written (Appendix C p.310) "
+                  "[claims: COP2-copcon-ecs.c11]");
 
     // T11 - print page 25 warns CDANG is cleared by reset. Without any COPCON
     // write the Copper must behave as CDANG = 0.
     checks.expect(!move_reaches(false, false, BLTCON0, /*set_cdang_explicitly=*/false),
-                  "T11 OCS after reset, no COPCON write: MOVE to BLTCON0 ($040) is blocked");
+                  "T11 OCS after reset, no COPCON write: MOVE to BLTCON0 ($040) is blocked "
+                  "[claims: COP2-control-register.c15]");
 
     // T12 - the 16 bits of IR2 reach the destination unmodified.
     {
@@ -284,8 +307,43 @@ int main(int argc, char** argv) {
         h.install_single_move(COLOR00, 0xA55A);
         h.start_list();
         h.run_cycles(600);
-        checks.expect(h.saw_move(COLOR00, 0xA55A), "T12 OCS: IR2 data $A55A arrives at COLOR00 unmodified");
+        checks.expect(h.saw_move(COLOR00, 0xA55A),
+                      "T12 OCS: IR2 data $A55A arrives at COLOR00 unmodified "
+                      "[claims: COP2-copins-kinds.c2, COP2-what-is-a-copper-instruction.c9]");
     }
+
+    // ------------------------------------------------------------------
+    // Appendix claims considered for this package and left UNBOUND, with
+    // reasons. None of these change any assertion above; they are a printed
+    // record only.
+    // ------------------------------------------------------------------
+    checks.note("UNBOUND (COPCON address/access-type exercised as stimulus only via "
+        "set_cdang(), not independently asserted - no bit-arithmetic walk like "
+        "agnus_copper_locreg_width's RM1/RM3 isolates $02E as COPCON's own address; "
+        "T5/T6's contrast with T3/T4 shows writing there has *some* gating effect, "
+        "but not specifically that $02E is the address doing it): "
+        "COP2-copcon-appa.c1, COP2-copcon-appa.c2, COP2-copcon-appa.c4, "
+        "COP2-copcon-ecs.c1, COP2-copcon-ecs.c2, COP2-copcon-ecs.c3, "
+        "COP2-copcon-ecs.c5, COP2-copcon-ecs.c6");
+    checks.note("UNBOUND (COP2-copcon-appa.c5: \"COPCON has one implemented control "
+        "bit\" - set_cdang() only ever writes 0x0000 or 0x0002; no assertion sweeps "
+        "COPCON's other bits to show they are unimplemented/inert)");
+    checks.note("UNBOUND COP2-control-register.c8 (\"COPCON bit 1 is the only bit "
+        "currently used by the system\") -- no assertion measures it. Same gap as "
+        "COP2-copcon-appa.c5 above, independently found: set_cdang() only ever writes "
+        "0x0000 or 0x0002 (bit 1 alone); no assertion sweeps COPCON's other 15 bits to "
+        "show they have no effect on the accepted-register set.");
+    checks.note("UNBOUND (exact byte-address floor/ceiling not discriminated: "
+        "COP2-copcon-ecs.c9 and COP2-copcon-ecs.c10 state the OCS+CDANG=1 range as "
+        "$DFF03E through $DFF07E, and COP2-copcon-ecs.c12, COP2-copcon-ecs.c13 restate "
+        "the same two figures for the ECS CDANG=0 case. T3-T7 above probe BLTCON0 "
+        "($040) and BLTSIZE ($07E) and COPCON "
+        "($02E), but never probe $03E itself or anything between $02E and $040 "
+        "exclusive - so a RTL that actually gates at $040, not $03E, would pass every "
+        "assertion here unchanged. See agnus_copper_move_sweep, which uses the same "
+        "$040 floor under the name \"Reading B\" rather than $03E, and whose own "
+        "ecs=1/cdang=0 sweep has the identical gap: it asserts the whole accepted SET "
+        "against a $040-based expectation, never against $03E specifically)");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

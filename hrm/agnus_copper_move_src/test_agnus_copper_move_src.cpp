@@ -184,6 +184,11 @@ public:
         std::cout << (c ? "PASS: " : "FAIL: ") << l << "\n";
         c ? ++passed : ++failed;
     }
+    // Prints a record for a claim this file does NOT bind to any assertion
+    // here. Never touches passed/failed - this is not an assertion.
+    void note(const std::string& l) {
+        std::cout << "NOTE: " << l << "\n";
+    }
     int passed = 0, failed = 0;
 };
 
@@ -220,7 +225,11 @@ int main(int argc, char** argv) {
             "MS1 [conformance] on the granted MOVE cycle, address_out carries "
             "the instruction's second-word address (first word's address + "
             "1) while reg_address_out carries the destination register "
-            "(p19:41-43, p20:26-27, p21:8-11)");
+            "(p19:41-43, p20:26-27, p21:8-11) "
+            "[claims: COP2-copins-fields-p275.c1, COP2-copins-fields-p275.c2, "
+            "COP2-copins-fields-p275.c3, COP2-copins-fields-p275.c4, "
+            "COP2-the-move-instruction.c2, COP2-what-is-a-copper-instruction.c8, "
+            "COP2-what-is-a-copper-instruction.c14, COP2-what-is-a-copper-instruction.c10]");
     }
 
     // ------------------------------------------------------------------
@@ -246,7 +255,8 @@ int main(int argc, char** argv) {
             "MS2 [conformance] the second-word-address relationship holds "
             "for each instruction as the list advances (second MOVE's "
             "granted cycle shows its own first-word address + 1 = SRC+3, "
-            "not SRC+1 again and not a fixed offset)");
+            "not SRC+1 again and not a fixed offset) "
+            "[claims: COP2-the-move-instruction.c2, COP2-what-is-a-copper-instruction.c10]");
     }
 
     // ------------------------------------------------------------------
@@ -270,8 +280,22 @@ int main(int argc, char** argv) {
         checks.expect(found && g.address == FAR + 1,
             "MS3 [control, same measurement basis] the same relationship "
             "holds at a base address above word $8000, ruling out "
-            "truncation or wraparound in the measurement rig itself");
+            "truncation or wraparound in the measurement rig itself "
+            "[claims: COP2-the-move-instruction.c2, COP2-what-is-a-copper-instruction.c10]");
     }
+
+    // COP2-what-is-a-copper-instruction.c21 ("the Copper can directly affect
+    // only machine registers") is UNBOUND. It is a claim about the ABSENCE of
+    // a memory-write mechanism (no data-out port, no write strobe, in the
+    // module's port list). There is nothing to drive or observe for a write
+    // that cannot happen in the first place: MS1-MS3 above show address_out
+    // and reg_address_out on the granted MOVE cycle, but a fixture can only
+    // fail to find a memory-write port, it cannot behaviourally demonstrate
+    // that one does not exist anywhere. Reason: observable only at a boundary
+    // none of these fixtures drives.
+    checks.note("UNBOUND COP2-what-is-a-copper-instruction.c21 -- observable only at a "
+                 "boundary none of these fixtures drives (absence of a memory-write port; "
+                 "not a behaviour any stimulus here could vary)");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

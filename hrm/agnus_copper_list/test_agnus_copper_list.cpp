@@ -184,6 +184,9 @@ public:
         std::cout << (c ? "PASS: " : "FAIL: ") << l << "\n";
         c ? ++passed : ++failed;
     }
+    // Records an unbound-claim reason without checking anything: does not
+    // touch passed/failed, so it cannot change the suite's pass/fail counts.
+    void note(const std::string& l) { std::cout << "NOTE: " << l << "\n"; }
     int passed = 0, failed = 0;
 };
 
@@ -195,6 +198,19 @@ constexpr uint16_t TERMINAL_IR1 = 0xFFFF;
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks checks;
+
+    // COP2-what-is-a-copper-instruction.c2 ("the instruction set contains
+    // exactly three instructions") and COP2-stopping-the-copper.c1 ("no stop
+    // instruction is provided") are both UNBOUND. Both are exhaustiveness/
+    // completeness claims about the whole instruction SET - no 4th form and
+    // no stop opcode exist - and every assertion in this suite tests the
+    // BEHAVIOUR of a decoded MOVE, WAIT or SKIP, never the absence of a
+    // fourth kind. Demonstrating that negative would need a claim this task
+    // does not license writing. Reason: no assertion measures it.
+    checks.note("UNBOUND COP2-what-is-a-copper-instruction.c2 -- no assertion measures it "
+                 "(exhaustiveness of the 3-instruction set; no assertion tests for the absence of a 4th form)");
+    checks.note("UNBOUND COP2-stopping-the-copper.c1 -- no assertion measures it "
+                 "(absence of a stop opcode; not testable as a positive behavioural assertion)");
 
     // L1 - p.27: multiple MOVEs may follow a single WAIT, and they execute in
     // list order.
@@ -209,7 +225,8 @@ int main(int argc, char** argv) {
         h.start(1, LIST_A);
         h.run_cycles(8000);
         const bool all_ran = h.move_count(COLOR00) == 1 && h.move_count(COLOR01) == 1 && h.move_count(COLOR02) == 1;
-        checks.expect(all_ran, "L1 three MOVEs after one WAIT all execute (p.27)");
+        checks.expect(all_ran, "L1 three MOVEs after one WAIT all execute (p.27) "
+                      "[claims: COP2-putting-together-a-copper-instruction-list.c17]");
         checks.expect(all_ran && h.order_of(COLOR00) < h.order_of(COLOR01) && h.order_of(COLOR01) < h.order_of(COLOR02),
                       "L1 the three MOVEs execute in list order");
     }
@@ -260,7 +277,10 @@ int main(int argc, char** argv) {
                            TERMINAL_IR1, WAIT_ALL});
         h.start(1, LIST_A);
         h.run_cycles(8000);
-        checks.expect(h.move_count(COLOR00) == 0, "L4 IR1 bit 0 set: the word is a beam compare, not a MOVE to that register");
+        checks.expect(h.move_count(COLOR00) == 0, "L4 IR1 bit 0 set: the word is a beam compare, not a MOVE to that register "
+                      "[claims: COP2-the-move-instruction.c4, COP2-the-wait-instruction.c10, COP2-the-skip-instruction.c6, "
+                      "COP2-summary-of-copper-instructions.c91, COP2-summary-of-copper-instructions.c93, COP2-summary-of-copper-instructions.c95, "
+                      "COP2-copins-encoding.c91, COP2-copins-encoding.c93, COP2-copins-encoding.c95]");
         checks.expect(h.move_count(COLOR01) == 1, "L4 the list continues past it");
     }
 
@@ -320,7 +340,9 @@ int main(int argc, char** argv) {
         h.run_cycles(8000);
         const bool paired = h.move_count(COLOR00) == 1 && h.data_of(COLOR00) == move_ir1(COLOR01)
                          && h.move_count(COLOR02) == 1 && h.data_of(COLOR02) == 0x1234;
-        checks.expect(paired, "L8 instructions are consumed as word pairs, the data word is not decoded (p.20)");
+        checks.expect(paired, "L8 instructions are consumed as word pairs, the data word is not decoded (p.20) "
+                      "[claims: COP2-what-is-a-copper-instruction.c8, COP2-what-is-a-copper-instruction.c14, "
+                      "COP2-copins-instructions.c7, COP2-copins-instructions.c8]");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

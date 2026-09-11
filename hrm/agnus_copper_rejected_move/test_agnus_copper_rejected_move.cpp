@@ -196,7 +196,8 @@ int main(int argc, char** argv) {
 
         // R1 - HRM p.21/p.26: the write must not reach the register.
         checks.expect(!h.any_grant_for_register(FORBIDDEN),
-                      "R1 [conformance] the forbidden register is never presented on the register bus (p.21, p.26)");
+                      "R1 [conformance] the forbidden register is never presented on the register bus (p.21, p.26) "
+                      "[claims: COP2-control-register.c3]");
 
         // R3 - the second instruction word is never fetched.
         checks.expect(h.any_grant_fetching(LIST) && !h.any_grant_fetching(LIST + 1),
@@ -249,7 +250,8 @@ int main(int argc, char** argv) {
         h.run_cycles(2000);
 
         checks.expect(h.grants_after(halted_at) > 0 && h.any_grant_for_register(COLOR01),
-                      "R6 [regression] a start-of-frame pulse releases the halt in the same way");
+                      "R6 [regression] a start-of-frame pulse releases the halt in the same way "
+                      "[claims: COP2-location-registers.c24]");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

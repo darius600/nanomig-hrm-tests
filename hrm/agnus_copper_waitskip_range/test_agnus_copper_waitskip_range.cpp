@@ -221,6 +221,9 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    // Prints a record for a claim this file does NOT bind to any assertion
+    // here. Never touches passed/failed - this is not an assertion.
+    void note(const std::string& label) { std::cout << "NOTE: " << label << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -244,8 +247,11 @@ int main(int argc, char** argv) {
         h.start_list();
         h.run_cycles(6000);
         const int at = h.first_move_vpos(COLOR00);
-        checks.expect(h.move_count(COLOR00) == 1, "W1 WAIT line $96, HP masked: the following MOVE runs");
-        checks.expect(at >= 0x96, "W1 WAIT line $96: the MOVE does not run before line $96");
+        checks.expect(h.move_count(COLOR00) == 1, "W1 WAIT line $96, HP masked: the following MOVE runs "
+                      "[claims: COP2-about-the-copper.c11, COP2-what-is-a-copper-instruction.c3, "
+                      "COP2-the-wait-instruction.c5]");
+        checks.expect(at >= 0x96, "W1 WAIT line $96: the MOVE does not run before line $96 "
+                      "[claims: COP2-copper-loops-and-branches-and-comparison-enable.c9]");
     }
 
     // W2 - p.27: greater-or-equal, so a WAIT for an already-passed position
@@ -258,7 +264,11 @@ int main(int argc, char** argv) {
                    0xFFFF, 0xFFFE});
         h.start_list();
         h.run_cycles(2000);
-        checks.expect(h.move_count(COLOR00) == 1, "W2 WAIT for an already-passed line completes (greater-or-equal, p.27)");
+        checks.expect(h.move_count(COLOR00) == 1, "W2 WAIT for an already-passed line completes (greater-or-equal, p.27) "
+                      "[claims: COP2-copins-kinds.c4, COP2-copins-kinds.c5, "
+                      "COP2-the-wait-instruction.c2, COP2-putting-together-a-copper-instruction-list.c15, "
+                      "COP2-putting-together-a-copper-instruction-list.c16, COP2-the-wait-instruction.c30, "
+                      "COP2-the-wait-instruction.c31, COP2-the-wait-instruction.c32, COP2-a-copper-loop-example.c6]");
     }
 
     // W3 - p.27 worked example: two WAITs for the same position, both MOVEs run.
@@ -316,7 +326,9 @@ int main(int argc, char** argv) {
                       "WAIT's $7F, so the horizontal half can never match (p.22, p.30)");
         checks.expect(h.move_count(COLOR00) == 0,
                       "W4 terminal WAIT $FFFF,$FFFE never releases - for the reason "
-                      "asserted in W4a/W4b (p.22, p.30)");
+                      "asserted in W4a/W4b (p.22, p.30) "
+                      "[claims: COP2-stopping-the-copper.c2, COP2-stopping-the-copper.c8, "
+                      "COP2-a-copper-loop-example.c20]");
     }
 
     // W5 - p.32 masking rule: with VE=$0F only the low four vertical bits are
@@ -331,7 +343,10 @@ int main(int argc, char** argv) {
         h.run_cycles(12000);
         const int at = h.first_move_vpos(COLOR00);
         checks.expect(h.move_count(COLOR00) == 1 && at >= 0 && (at & 0x0F) == 0x0F,
-                      "W5 VE=$0F: WAIT for VP=$0F releases on a line ending in $F (p.32)");
+                      "W5 VE=$0F: WAIT for VP=$0F releases on a line ending in $F (p.32) "
+                      "[claims: COP2-the-wait-instruction.c7, COP2-the-wait-instruction.c8, "
+                      "COP2-the-wait-instruction.c9, COP2-copper-loops-and-branches-and-comparison-enable.c10, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c11]");
     }
 
     // W6 - p.32 worked example: the top bit cannot be masked, because IR2
@@ -346,7 +361,11 @@ int main(int argc, char** argv) {
         h.run_cycles(2000);
         const int at = h.first_move_vpos(COLOR00);
         checks.expect(h.move_count(COLOR00) == 1 && at >= 0 && (at & 0x0F) != 0x0F,
-                      "W6 the top bit is unmaskable: past VP $80 the same WAIT is already true (p.32)");
+                      "W6 the top bit is unmaskable: past VP $80 the same WAIT is already true (p.32) "
+                      "[claims: COP2-copins-bfd.c7, COP2-copper-loops-and-branches-and-comparison-enable.c12, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c16, COP2-a-copper-loop-example.c1, "
+                      "COP2-a-copper-loop-example.c2, COP2-a-copper-loop-example.c3, COP2-a-copper-loop-example.c15, "
+                      "COP2-a-copper-loop-example.c17, COP2-a-copper-loop-example.c12]");
     }
 
     // W7 - a horizontal position with HE enabled is honoured.
@@ -358,7 +377,9 @@ int main(int argc, char** argv) {
                    0xFFFF, 0xFFFE});
         h.start_list();
         h.run_cycles(6000);
-        checks.expect(h.move_count(COLOR00) == 1, "W7 WAIT with an enabled horizontal compare releases");
+        checks.expect(h.move_count(COLOR00) == 1, "W7 WAIT with an enabled horizontal compare releases "
+                      "[claims: COP2-the-wait-instruction.c6, COP2-the-wait-instruction.c17, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c4]");
     }
 
     // ---------------- SKIP (COP-08) ----------------
@@ -374,7 +395,10 @@ int main(int argc, char** argv) {
                    0xFFFF, 0xFFFE});
         h.start_list();
         h.run_cycles(4000);
-        checks.expect(h.move_count(COLOR00) == 0, "S1 SKIP with condition true: the next MOVE is skipped (p.31)");
+        checks.expect(h.move_count(COLOR00) == 0, "S1 SKIP with condition true: the next MOVE is skipped (p.31) "
+                      "[claims: COP2-copins-kinds.c8, COP2-copins-kinds.c9, COP2-copins-encoding.c96, "
+                      "COP2-what-is-a-copper-instruction.c7, COP2-the-skip-instruction.c2, "
+                      "COP2-the-skip-instruction.c10, COP2-the-skip-instruction.c17]");
         checks.expect(h.move_count(COLOR01) == 1, "S1 SKIP with condition true: the MOVE after that still runs");
     }
 
@@ -387,7 +411,8 @@ int main(int argc, char** argv) {
                    0xFFFF, 0xFFFE});
         h.start_list();
         h.run_cycles(4000);
-        checks.expect(h.move_count(COLOR00) == 1, "S2 SKIP with condition false: the next MOVE runs");
+        checks.expect(h.move_count(COLOR00) == 1, "S2 SKIP with condition false: the next MOVE runs "
+                      "[claims: COP2-the-skip-instruction.c7, COP2-the-skip-instruction.c17]");
     }
 
     // S3 - with every compare enable clear the comparison is always true,
@@ -408,7 +433,10 @@ int main(int argc, char** argv) {
         h.start_list();
         h.run_cycles(4000);
         checks.expect(h.move_count(COLOR00) == 0 && h.move_count(COLOR01) == 1,
-                      "S3 all compare enables clear: comparison always true, SKIP takes effect (p.32)");
+                      "S3 all compare enables clear: comparison always true, SKIP takes effect (p.32) "
+                      "[claims: COP2-the-skip-instruction.c14, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c7, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c11]");
     }
 
     // S4 - the same two words with IR2 bit 0 clear are a WAIT, not a SKIP:
@@ -421,7 +449,12 @@ int main(int argc, char** argv) {
                    0xFFFF, 0xFFFE});
         h.start_list();
         h.run_cycles(4000);
-        checks.expect(h.move_count(COLOR00) == 1, "S4 IR2 bit 0 alone distinguishes WAIT from SKIP");
+        checks.expect(h.move_count(COLOR00) == 1, "S4 IR2 bit 0 alone distinguishes WAIT from SKIP "
+                      "[claims: COP2-copins-encoding.c94, COP2-copins-encoding.c96, "
+                      "COP2-the-skip-instruction.c3, COP2-summary-of-copper-instructions.c94, "
+                      "COP2-summary-of-copper-instructions.c96, COP2-the-skip-instruction.c12, "
+                      "COP2-the-skip-instruction.c4, COP2-the-skip-instruction.c5, "
+                      "COP2-the-wait-instruction.c13]");
     }
 
     // ---------------- BFD (COP-08, p.33) ----------------
@@ -437,7 +470,13 @@ int main(int argc, char** argv) {
                    0xFFFF, 0xFFFE});
         h.start_list();
         h.run_cycles(4000);
-        checks.expect(h.move_count(COLOR00) == 1, "B1 BFD=1: a busy blitter does not hold the WAIT (p.33)");
+        checks.expect(h.move_count(COLOR00) == 1, "B1 BFD=1: a busy blitter does not hold the WAIT (p.33) "
+                      "[claims: COP2-copins-bfd.c1, COP2-copins-bfd.c2, COP2-copins-encoding.c4, "
+                      "COP2-the-wait-instruction.c14, COP2-copper-loops-and-branches-and-comparison-enable.c13, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
+                      "COP2-using-the-copper-with-the-blitter.c5, "
+                      "COP2-summary-of-copper-instructions.c4]");
     }
 
     // B2 - BFD=0 additionally requires the blitter to have finished.
@@ -450,7 +489,13 @@ int main(int argc, char** argv) {
                    0xFFFF, 0xFFFE});
         h.start_list();
         h.run_cycles(4000);
-        checks.expect(h.move_count(COLOR00) == 0, "B2 BFD=0: the WAIT is held while the blitter is busy (p.33)");
+        checks.expect(h.move_count(COLOR00) == 0, "B2 BFD=0: the WAIT is held while the blitter is busy (p.33) "
+                      "[claims: COP2-copins-bfd.c1, COP2-copins-bfd.c3, COP2-copins-bfd.c5, COP2-copins-encoding.c4, "
+                      "COP2-the-wait-instruction.c14, COP2-copper-loops-and-branches-and-comparison-enable.c13, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
+                      "COP2-using-the-copper-with-the-blitter.c6, COP2-using-the-copper-with-the-blitter.c8, "
+                      "COP2-summary-of-copper-instructions.c4]");
     }
 
     // B2s - the same for SKIP. p.33 puts BFD in IR2, which both instructions
@@ -474,7 +519,9 @@ int main(int argc, char** argv) {
         h.run_cycles(4000);
         checks.expect(h.move_count(COLOR00) == 1,
                       "B2s BFD=0: a busy blitter leaves the SKIP condition unsatisfied, "
-                      "so the following MOVE runs (p.33)");
+                      "so the following MOVE runs (p.33) "
+                      "[claims: COP2-copins-bfd.c4, COP2-copins-bfd.c6, "
+                      "COP2-the-skip-instruction.c13, COP2-summary-of-copper-instructions.c6]");
     }
 
     // B3 - and releases once the blitter reports finished.
@@ -490,7 +537,9 @@ int main(int argc, char** argv) {
         const bool held = h.move_count(COLOR00) == 0;
         h.set_blitter_busy(false);
         h.run_cycles(2000);
-        checks.expect(held && h.move_count(COLOR00) == 1, "B3 BFD=0: the WAIT releases once the blitter finishes (p.33)");
+        checks.expect(held && h.move_count(COLOR00) == 1, "B3 BFD=0: the WAIT releases once the blitter finishes (p.33) "
+                      "[claims: COP2-copins-bfd.c3, COP2-copins-bfd.c5, "
+                      "COP2-using-the-copper-with-the-blitter.c8]");
     }
 
     // ---------------- Counter limits (COP-04) ----------------
@@ -580,8 +629,34 @@ int main(int argc, char** argv) {
         const int immediate = release_line(0x00);
         checks.expect(immediate == 0x00,
             "EVC [control] a WAIT for VP $00 releases on the starting line - the fixture "
-            "reports the line a WAIT releases on (p274 table, greater-or-equal per p.27)");
+            "reports the line a WAIT releases on (p274 table, greater-or-equal per p.27) "
+            "[claims: COP2-copins-fields-p275.c10, COP2-the-wait-instruction.c1, "
+            "COP2-the-wait-instruction.c30, COP2-putting-together-a-copper-instruction-list.c14, "
+            "COP2-what-is-a-copper-instruction.c4, COP2-vertical-beam-position.c5, "
+            "COP2-vertical-beam-position.c6, COP2-vertical-beam-position.c8]");
 
+        // COP2-copins-encoding claim ids as a literal array, one per bit,
+        // rather than built from an arithmetic expression at runtime: the same
+        // reason the comment above gives for keeping "EV" itself a literal - a
+        // claim id assembled only from std::to_string(45 - 6*bit) never
+        // appears as a full, grep-able substring anywhere in this file's text.
+        static const char* const kEvApxClaimId[8] = {
+            "COP2-copins-encoding.c45", "COP2-copins-encoding.c39",
+            "COP2-copins-encoding.c33", "COP2-copins-encoding.c27",
+            "COP2-copins-encoding.c21", "COP2-copins-encoding.c15",
+            "COP2-copins-encoding.c9",  "COP2-copins-encoding.c3",
+        };
+        // Same reasoning as kEvApxClaimId above, for the body-claims id family:
+        // a claim id built only from std::to_string(45 - 6*bit) never appears as
+        // a literal substring anywhere in this file's text, so a static search
+        // over assertion strings would not find it even though the compiled
+        // program prints it correctly. Kept as a literal array instead.
+        static const char* const kEvBodyClaimId[8] = {
+            "COP2-summary-of-copper-instructions.c45", "COP2-summary-of-copper-instructions.c39",
+            "COP2-summary-of-copper-instructions.c33", "COP2-summary-of-copper-instructions.c27",
+            "COP2-summary-of-copper-instructions.c21", "COP2-summary-of-copper-instructions.c15",
+            "COP2-summary-of-copper-instructions.c9",  "COP2-summary-of-copper-instructions.c3",
+        };
         for (int bit = 0; bit <= 7; ++bit) {
             const uint8_t vp = static_cast<uint8_t>(1u << bit);
             const int at = release_line(vp);
@@ -596,7 +671,10 @@ int main(int argc, char** argv) {
                 "EV walking one: IR1 bit " + std::to_string(bit + 8) +
                 " carries VP" + std::to_string(bit) +
                 ", so a WAIT with only that vertical bit set releases on line " +
-                std::to_string(vp) + " (appendix A p274 instruction table)");
+                std::to_string(vp) + " (appendix A p274 instruction table) "
+                "[claims: " + std::string(kEvApxClaimId[bit]) +
+                ", " + std::string(kEvBodyClaimId[bit]) +
+                ", COP2-the-wait-instruction.c11, COP2-the-wait-instruction.c32]");
         }
     }
 
@@ -659,8 +737,23 @@ int main(int argc, char** argv) {
 
         checks.expect(first > 0 && latency >= 0 && latency < 64,
             "EHC [control] the HP walk's first bit releases at a plausible position, so "
-            "the fetch latency can be calibrated from it rather than assumed");
+            "the fetch latency can be calibrated from it rather than assumed "
+            "[claims: COP2-copins-fields-p275.c11, COP2-the-wait-instruction.c12]");
 
+        static const char* const kEhApxClaimId[7] = {
+            "COP2-copins-encoding.c87", "COP2-copins-encoding.c81",
+            "COP2-copins-encoding.c75", "COP2-copins-encoding.c69",
+            "COP2-copins-encoding.c63", "COP2-copins-encoding.c57",
+            "COP2-copins-encoding.c51",
+        };
+        // Body-claims counterpart, literal for the same grep-ability reason as
+        // kEhApxClaimId and kEvBodyClaimId above.
+        static const char* const kEhBodyClaimId[7] = {
+            "COP2-summary-of-copper-instructions.c87", "COP2-summary-of-copper-instructions.c81",
+            "COP2-summary-of-copper-instructions.c75", "COP2-summary-of-copper-instructions.c69",
+            "COP2-summary-of-copper-instructions.c63", "COP2-summary-of-copper-instructions.c57",
+            "COP2-summary-of-copper-instructions.c51",
+        };
         for (int bit = 0; bit <= 6; ++bit) {
             const uint8_t hp = static_cast<uint8_t>(1u << bit);
             const int expected = 4 * (1 << bit) + latency;
@@ -672,7 +765,9 @@ int main(int argc, char** argv) {
                 " carries HP" + std::to_string(bit + 2) +
                 ", so a WAIT with only that horizontal bit set releases at hpos " +
                 std::to_string(4 * (1 << bit)) + " plus the fetch latency "
-                "(appendix A p274 instruction table)");
+                "(appendix A p274 instruction table) "
+                "[claims: " + std::string(kEhApxClaimId[bit]) +
+                ", " + std::string(kEhBodyClaimId[bit]) + "]");
         }
     }
     //
@@ -710,6 +805,20 @@ int main(int argc, char** argv) {
             return h.move_count(COLOR00) == 1 ? h.first_move_vpos(COLOR00) : -1;
         };
 
+        static const char* const kEmApxClaimId[7] = {
+            "COP2-copins-encoding.c46", "COP2-copins-encoding.c40",
+            "COP2-copins-encoding.c34", "COP2-copins-encoding.c28",
+            "COP2-copins-encoding.c22", "COP2-copins-encoding.c16",
+            "COP2-copins-encoding.c10",
+        };
+        // Body-claims counterpart, literal for the same grep-ability reason as
+        // kEmApxClaimId and kEvBodyClaimId above.
+        static const char* const kEmBodyClaimId[7] = {
+            "COP2-summary-of-copper-instructions.c46", "COP2-summary-of-copper-instructions.c40",
+            "COP2-summary-of-copper-instructions.c34", "COP2-summary-of-copper-instructions.c28",
+            "COP2-summary-of-copper-instructions.c22", "COP2-summary-of-copper-instructions.c16",
+            "COP2-summary-of-copper-instructions.c10",
+        };
         for (int bit = 0; bit <= 6; ++bit) {
             const uint8_t vp = static_cast<uint8_t>(1u << bit);
             const uint8_t masked_out = static_cast<uint8_t>(0x7F & ~(1u << bit));
@@ -717,15 +826,169 @@ int main(int argc, char** argv) {
             const int without   = release_line(vp, masked_out);
             std::cout << "[measured] VE bit " << bit << ": enabled -> line " << with_mask
                       << ", disabled -> line " << without << "\n";
+            // p275's "Enable comparison (mask bit)" legend itself is
+            // COP2-copins-fields-p275.c12, bound once here (bit 0) rather than
+            // repeated on all seven - it is one naming claim, not seven.
             checks.expect(with_mask == static_cast<int>(vp) && without == 0,
                 "EM walking one: IR2 bit " + std::to_string(bit + 8) +
                 " carries VE" + std::to_string(bit) +
                 ", so with it set the WAIT blocks to line " + std::to_string(vp) +
                 " and with it cleared the same WAIT is satisfied on arrival - the mask bit "
                 "governs exactly VP" + std::to_string(bit) +
-                " (appendix A p274 table, p275 \"Enable comparison (mask bit)\")");
+                " (appendix A p274 table, p275 \"Enable comparison (mask bit)\") "
+                "[claims: " + std::string(kEmApxClaimId[bit]) +
+                ", " + std::string(kEmBodyClaimId[bit]) +
+                (bit == 0 ? std::string(", COP2-copins-fields-p275.c12, COP2-the-wait-instruction.c16, "
+                                        "COP2-copper-loops-and-branches-and-comparison-enable.c5")
+                          : std::string()) + "]");
         }
     }
+
+    // ------------------------------------------------------------------
+    // Appendix claims considered for this package and left UNBOUND, with
+    // reasons. None of these change any assertion above; they are a printed
+    // record only.
+    // ------------------------------------------------------------------
+    checks.note("UNBOUND (SKIP's own IR1 field values at every bit position - EV0-EV7 "
+        "and EH0-EH6 above walk only the WAIT form, skip=false throughout; S1-S4 and "
+        "B2s exercise SKIP's condition at fixed positions but never isolate individual "
+        "bit positions the way the EV/EH walks do for WAIT, so a SKIP-specific decode "
+        "fault distinct from WAIT's would go undetected): "
+        "COP2-copins-encoding.c5, COP2-copins-encoding.c11, COP2-copins-encoding.c17, "
+        "COP2-copins-encoding.c23, COP2-copins-encoding.c29, COP2-copins-encoding.c35, "
+        "COP2-copins-encoding.c41, COP2-copins-encoding.c47, COP2-copins-encoding.c53, "
+        "COP2-copins-encoding.c59, COP2-copins-encoding.c65, COP2-copins-encoding.c71, "
+        "COP2-copins-encoding.c77, COP2-copins-encoding.c83, COP2-copins-encoding.c89");
+    checks.note("UNBOUND (SKIP's own IR2 field values at every bit position, same reason "
+        "as the IR1 note above - no per-bit walk exists for the SKIP form; c96, bit 0, "
+        "is bound at S1/S4 separately): "
+        "COP2-copins-encoding.c6, COP2-copins-encoding.c12, COP2-copins-encoding.c18, "
+        "COP2-copins-encoding.c24, COP2-copins-encoding.c30, COP2-copins-encoding.c36, "
+        "COP2-copins-encoding.c42, COP2-copins-encoding.c48, COP2-copins-encoding.c54, "
+        "COP2-copins-encoding.c60, COP2-copins-encoding.c66, COP2-copins-encoding.c72, "
+        "COP2-copins-encoding.c78, COP2-copins-encoding.c84, COP2-copins-encoding.c90");
+    checks.note("UNBOUND (the HE field's own bit-position mapping and masking - EM0-EM6 "
+        "walk VE's masking role bit by bit, but no equivalent walk exists for HE; W7 "
+        "sets HE=$7F generally and W1 sets HE=$00, but W1's target HP happens to be 0, "
+        "which a HE=0 comparison-against-hpos-itself would satisfy trivially regardless "
+        "of whether masking actually works, so it does not discriminate): "
+        "COP2-copins-encoding.c52, COP2-copins-encoding.c58, COP2-copins-encoding.c64, "
+        "COP2-copins-encoding.c70, COP2-copins-encoding.c76, COP2-copins-encoding.c82, "
+        "COP2-copins-encoding.c88, COP2-copins-fields-p275.c13");
+    checks.note("UNBOUND (COP2-copins-fields.c1, COP2-copins-fields.c2: the page-274 "
+        "legend \"IR1=First instruction register\" / \"IR2=Second instruction register\" "
+        "is a purely definitional naming claim, not independently RTL-observable - and "
+        "the RTL's own internal register naming inverts the manual's IR1/IR2 labels per "
+        "the classifier's own evidence note on the MOVE-decode claims, which this file "
+        "does not attempt to adjudicate)");
+
+    // ------------------------------------------------------------------
+    // Body claims (body_claims.jsonl) considered for this package and left
+    // UNBOUND, with reasons. None of these change any assertion above; they
+    // are a printed record only. Several land on exactly the same table rows
+    // the appendix notes above already flag, reached independently.
+    // ------------------------------------------------------------------
+    checks.note("UNBOUND COP2-the-wait-instruction.c20, COP2-the-wait-instruction.c21 "
+        "(\"line 255 is a valid WAIT target\" / \"255 is the max representable VP value\") "
+        "-- no assertion measures it. No WAIT target in this file uses VP=$FF; EV's walk "
+        "stops at bit 7 (VP=$80) and never exercises the fully-set field.");
+    checks.note("UNBOUND COP2-the-wait-instruction.c24 (\"the line number in the comparison "
+        "never exceeds $FF\") -- no assertion measures it. This is the vpos port's 8-bit "
+        "width, a fixed interface fact no stimulus here varies independently of it.");
+    checks.note("UNBOUND COP2-horizontal-beam-position.c2, COP2-vertical-beam-position.c2 "
+        "(\"the HP field's LSB does not participate\" / \"max vertical value is 255\") -- "
+        "no assertion measures it. EH measures the field in units of 4 hpos ticks on this "
+        "454-tick fixture line (2x a real 227-tick line), which is a different, "
+        "fixture-scaled quantity from the manual's 1-bit/113-position claim, and no "
+        "assertion here converts between them; the vertical claim is the same 8-bit-width "
+        "fact as c21 above, restated.");
+    checks.note("UNBOUND COP2-summary-of-copper-instructions.c52, "
+        "COP2-summary-of-copper-instructions.c58, COP2-summary-of-copper-instructions.c64, "
+        "COP2-summary-of-copper-instructions.c70, COP2-summary-of-copper-instructions.c76, "
+        "COP2-summary-of-copper-instructions.c82, COP2-summary-of-copper-instructions.c88 "
+        "(\"bit N of the second WAIT word carries HEn\", the HE per-bit mapping) -- no "
+        "assertion measures it. Same gap as the appendix note above for "
+        "COP2-copins-encoding.c52/58/64/70/76/82/88: EM0-EM6 walk VE bit by bit, nothing "
+        "walks HE the same way, and W1/W7 only exercise HE at its extremes (all-clear, "
+        "all-set), which cannot show which bit governs which comparison bit.");
+    checks.note("UNBOUND COP2-using-the-copper-with-the-blitter.c7 (\"BFD cleared: WAIT "
+        "requires a true beam-counter comparison\") -- no assertion measures it. B2 and B3 "
+        "both start with the position already satisfied (seek_beam past the WAIT's target), "
+        "so neither can tell \"BFD=0 needs position true\" apart from \"BFD=0 ignores "
+        "position and waits on the blitter alone\" - both hypotheses predict the same "
+        "observed hold-then-release. Only the blitter-finished half (c8, bound at B2/B3) is "
+        "actually discriminated.");
+    checks.note("UNBOUND (SKIP's own per-bit VP/HP field mapping in the page-36 summary "
+        "table, IR1 side - same gap as the appendix IR1 note above, independently found: "
+        "S1-S4 and B2s exercise SKIP at fixed combined positions, never isolate one bit at "
+        "a time the way EV/EH do for WAIT): "
+        "COP2-summary-of-copper-instructions.c5, COP2-summary-of-copper-instructions.c11, "
+        "COP2-summary-of-copper-instructions.c17, COP2-summary-of-copper-instructions.c23, "
+        "COP2-summary-of-copper-instructions.c29, COP2-summary-of-copper-instructions.c35, "
+        "COP2-summary-of-copper-instructions.c41, COP2-summary-of-copper-instructions.c47, "
+        "COP2-summary-of-copper-instructions.c53, COP2-summary-of-copper-instructions.c59, "
+        "COP2-summary-of-copper-instructions.c65, COP2-summary-of-copper-instructions.c71, "
+        "COP2-summary-of-copper-instructions.c77, COP2-summary-of-copper-instructions.c83, "
+        "COP2-summary-of-copper-instructions.c89");
+    checks.note("UNBOUND (SKIP's own per-bit VE/HE/BFD field mapping in the page-36 summary "
+        "table, IR2 side - same gap, same reason as the IR1 note just above; c6 is bound at "
+        "B2s separately and listed there, not repeated as unbound here): "
+        "COP2-summary-of-copper-instructions.c12, COP2-summary-of-copper-instructions.c18, "
+        "COP2-summary-of-copper-instructions.c24, COP2-summary-of-copper-instructions.c30, "
+        "COP2-summary-of-copper-instructions.c36, COP2-summary-of-copper-instructions.c42, "
+        "COP2-summary-of-copper-instructions.c48, COP2-summary-of-copper-instructions.c54, "
+        "COP2-summary-of-copper-instructions.c60, COP2-summary-of-copper-instructions.c66, "
+        "COP2-summary-of-copper-instructions.c72, COP2-summary-of-copper-instructions.c78, "
+        "COP2-summary-of-copper-instructions.c84, COP2-summary-of-copper-instructions.c90");
+    checks.note("UNBOUND COP2-the-skip-instruction.c1, COP2-the-skip-instruction.c9 "
+        "(\"SKIP skips when the beam counter EQUALS the encoded value\") -- no assertion "
+        "measures it. Every SKIP scenario in this file (S1-S4) places the beam either "
+        "already past the target or short of it within the run budget; none arranges an "
+        "exact equality hit the way W3's WAIT scenario does by letting the beam increment "
+        "up to a fixed line. Only the greater-than half of \"equal to or greater than\" is "
+        "exercised for SKIP.");
+    checks.note("UNBOUND COP2-the-skip-instruction.c8, COP2-the-skip-instruction.c15, "
+        "COP2-the-skip-instruction.c16 (\"bits 7-1 of the first/second SKIP word carry HP / "
+        "HE\") -- no assertion measures it. Every SKIP install() in this file uses hp=0x00 "
+        "and he=0x00 throughout; the horizontal half of the SKIP position/mask is never "
+        "varied, so nothing here shows those bits function as HP or HE for SKIP "
+        "specifically (as opposed to being wired to nothing).");
+    checks.note("UNBOUND COP2-the-skip-instruction.c11 (\"bits 15 through 1 of the first "
+        "SKIP word form the combined comparison position\") -- no assertion measures it as "
+        "a combined field. S1/S2 vary only the VP half (bits 15-8); with HP fixed at 0 "
+        "throughout, the claim's HP-bits-7-1 half is untested, so the full 15-bit "
+        "combination is not established, only the VP sub-field (see the bound "
+        "COP2-the-skip-instruction.c7 at S1/S2).");
+    checks.note("UNBOUND COP2-copper-loops-and-branches-and-comparison-enable.c6 (\"bits "
+        "14-1 of SKIP word 2 select horizontal-position bits for the comparison\") -- no "
+        "assertion measures it, same reason as the HE notes above: he=0x00 throughout every "
+        "SKIP scenario in this file.");
+    checks.note("UNBOUND COP2-copper-loops-and-branches-and-comparison-enable.c17 (\"SKIP "
+        "cannot mask the most significant beam-position bit\") -- no assertion measures it. "
+        "W6 establishes this for WAIT (VP=$0F with the top bit reached by the live beam); "
+        "S3, the nearest SKIP analogue, uses VP=$70 (top bit clear) and never drives the "
+        "beam or the target past $80 for a SKIP, so the SKIP-specific version of the "
+        "unmaskable-top-bit behaviour is asserted nowhere.");
+    checks.note("UNBOUND COP2-stopping-the-copper.c3 (\"while an impossible WAIT is "
+        "pending, the Copper does nothing\") -- no assertion measures it in full. The "
+        "claim's own evidence names three simultaneous observations (reqdma low, "
+        "address_out unchanged, no destination on reg_address_out); W4 here checks only "
+        "the third (move_count(COLOR00)==0). This harness never records reqdma or "
+        "address_out directly, so a hypothetical implementation that cycled the bus "
+        "without ever completing a MOVE would still pass W4. COP2-stopping-the-copper.c8 "
+        "(\"the final WAIT never completes\"), the narrower claim that the Copper does not "
+        "advance past it, IS bound at W4 above.");
+    checks.note("UNBOUND COP2-a-copper-loop-example.c9, COP2-a-copper-loop-example.c13, "
+        "COP2-a-copper-loop-example.c14, COP2-a-copper-loop-example.c18 (worked-example "
+        "narrative detail - waiting for HP $E2 forcing the next line; the first loop "
+        "instruction being skipped at VP>=127 and control dropping into the second loop; "
+        "the high-bit-set rule applying to the example's horizontal WAIT) -- no assertion "
+        "measures it. These restate the general WAIT/SKIP greater-or-equal and "
+        "unmaskable-top-bit mechanisms (already bound at W2/W6 above) in the specific "
+        "narrative shape of the book's worked example; no fixture here reproduces that "
+        "exact program to check the narrative claims themselves, and c18 specifically needs "
+        "a horizontal WAIT case this file's masking tests never build (see the HE notes "
+        "above).");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
