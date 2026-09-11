@@ -34,6 +34,21 @@ validator's word, and each affected finding carries its own note below.
 | **Hold with a correction** | F11 (evidential count) |
 | **Source observations, not test-backed** | F05, F09, F12 |
 | **Withdrawn** | F04, F07, F08, F13 |
+| **Established while correcting one of them** | **F14** |
+
+Every withdrawal was also carried back into its package the same day, so no test
+is left asserting something the manual does not say. Three of those corrections
+answered the question the withdrawal raised: with an expectation the page
+actually supports, **F04 and F07 turn green** — the implementation was right and
+the oracle was not — and **F05's claim became a recorded decline**, because no
+faithful assertion could be written without importing an RTL constant.
+
+**F08 is the instructive one.** It asserted that SPRxCTL bits 3 *and* 4 are live.
+Bit 3 the manual itself calls `(unimplemented)`; bit 4 it specifies. Split apart,
+bit 3 is declined and bit 4 stays red on a claim that holds — recorded as F14.
+The original finding pointed at something real and described it incorrectly, and
+only reading the printed page again separated the two. That is the whole case for
+this step.
 
 Four of the withdrawals share one cause: **the assertion, not the RTL, was wrong.**
 Each read a permission or a silence in the manual as a requirement — "not used" as
