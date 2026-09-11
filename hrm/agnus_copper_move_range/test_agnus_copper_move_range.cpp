@@ -269,12 +269,12 @@ int main(int argc, char** argv) {
     checks.expect(move_reaches(false, true, BLTCON0),
                   "T5 OCS CDANG=1: MOVE to BLTCON0 ($040) is written "
                   "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, "
-                  "COP2-copcon-appa.c11, COP2-copcon-ecs.c7, COP2-copcon-ecs.c8, "
+                  "COP2-copcon-appa.c11, COP2-copcon-ecs.c8, "
                   "COP2-control-register.c2, COP2-control-register.c13, COP2-the-move-instruction.c13, ch2-appa-copcon.c11, ch2-appa-copcon.c6, ch2-appb-legend.c2, ch2-appb-table.c7, ch2-appc-ecs.c18, ch2-control-register.c7]");
     checks.expect(move_reaches(false, true, BLTSIZE),
                   "T6 OCS CDANG=1: MOVE to BLTSIZE ($07E) is written "
                   "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, "
-                  "COP2-copcon-appa.c11, COP2-copcon-ecs.c7, COP2-copcon-ecs.c8, "
+                  "COP2-copcon-appa.c11, COP2-copcon-ecs.c8, "
                   "COP2-control-register.c2, COP2-control-register.c13]");
 
     // T7 - below the protected range nothing is writable in OCS, not even with
@@ -335,6 +335,11 @@ int main(int argc, char** argv) {
         "COP2-copcon-appa.c1, COP2-copcon-appa.c2, COP2-copcon-appa.c4, "
         "COP2-copcon-ecs.c1, COP2-copcon-ecs.c2, COP2-copcon-ecs.c3, "
         "COP2-copcon-ecs.c5, COP2-copcon-ecs.c6, ch2-appa-copcon.c1, ch2-appa-copcon.c2, ch2-appa-copcon.c4, ch2-appb-table.c3, ch2-appb-table.c4, ch2-appb-table.c6, ch2-appc-ecs.c13, ch2-appc-ecs.c14, ch2-appc-ecs.c16, ch2-appc-ecs.c17, ch2-the-move-instruction.c10");
+    checks.note("UNBOUND (COP2-copcon-ecs.c7: the one COPCON bit \"is the danger bit "
+        "named CDANG\" - the name again, and a second thing besides: that no OTHER "
+        "COPCON bit exists. T5/T6 show the driven bit changes MOVE access, which is "
+        "the separate claim .c8; the other-bit sweep this would need is itself unbound "
+        "a few lines below)");
     checks.note("UNBOUND (COP2-copcon-appa.c10: \"Bit 01 is named CDANG\" - a name, not "
         "a requirement, and nothing in the module can disagree with one. T5/T6 listed "
         "this claim until 11.09.2026; they drive set_cdang(), which writes the VALUE "

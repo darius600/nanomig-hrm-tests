@@ -198,6 +198,20 @@ public:
     // $FF and DA8-1 == COPINS's own field value are legitimate sweep
     // candidates and must not be silently confused with the idle/fetch
     // markers that happen to carry the same numeric value.
+    //
+    // What that costs, raised by the independent validation on 11.09.2026 and
+    // recorded here rather than repaired: reading position [2] encodes THIS
+    // implementation's cycle sequence, dummy cycle included. A conforming
+    // Copper that fetched or strobed in a different order would be classified
+    // wrongly by every assertion in this package, and the expected register
+    // sets -- which are well sourced from the manual -- would not save it.
+    //
+    // The alternative the validator proposed, identifying the destination
+    // event by what it is rather than where it sits, is the one the paragraph
+    // above already rejects, and for a reason that still holds: it misreads
+    // exactly the two sweep candidates that collide with the markers. So the
+    // positional read stays, and what is added is the disclosure that the
+    // measurement is implementation-shaped even though the oracle is not.
     std::vector<DmaEvent> events;
 
     bool dma_allowed = false;

@@ -346,7 +346,14 @@ int main(int argc, char** argv) {
         const uint32_t aligned_even = observe_first_fetch(false, 0x0001, low_even);
         const uint32_t aligned_odd = observe_first_fetch(false, 0x0001, low_odd);
         checks.expect(aligned_even == aligned_odd,
-                      "T4 COP1LCL bit 0 does not change the fetch word address");
+                      "T4 [RTL_REGRESSION, no oracle] COP1LCL bit 0 does not change the fetch word "
+                      "address - this is the low-15-versus-low-16 question, and print "
+                      "page 25 contradicts itself on it: the register table says "
+                      "\"Low 16 bits\", the prose eleven lines on says \"low 15 bits\" of "
+                      "the same register. agnus_copper_locreg_width states that in its "
+                      "header and labels its own width measurements accordingly; this "
+                      "assertion did not, until 11.09.2026. It pins the implementation, "
+                      "not the manual, and carries no claim for that reason");
 
         const uint32_t ocs_fetch = observe_first_fetch(false, high, low_even);
         const uint32_t ocs_expected = ((high & 0x0007u) << 15) | expected_low;

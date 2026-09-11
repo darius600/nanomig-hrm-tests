@@ -642,7 +642,7 @@ int main(int argc, char** argv) {
         checks.expect(immediate == 0x00,
             "EVC [control] a WAIT for VP $00 releases on the starting line - the fixture "
             "reports the line a WAIT releases on (p274 table, greater-or-equal per p.27) "
-            "[claims: COP2-copins-fields-p275.c10, COP2-the-wait-instruction.c1, "
+            "[claims: COP2-the-wait-instruction.c1, "
             "COP2-the-wait-instruction.c30, COP2-putting-together-a-copper-instruction-list.c14, "
             "COP2-what-is-a-copper-instruction.c4, COP2-vertical-beam-position.c5, "
             "COP2-vertical-beam-position.c6, COP2-vertical-beam-position.c8, ch2-appa-copins.c117]");
@@ -750,7 +750,7 @@ int main(int argc, char** argv) {
         checks.expect(first > 0 && latency >= 0 && latency < 64,
             "EHC [control] the HP walk's first bit releases at a plausible position, so "
             "the fetch latency can be calibrated from it rather than assumed "
-            "[claims: COP2-copins-fields-p275.c11, ch2-appa-copins.c118]");
+            "[claims: ch2-appa-copins.c118]");
 
         static const char* const kEhApxClaimId[7] = {
             "COP2-copins-encoding.c87, ch2-appa-copins.c100", "COP2-copins-encoding.c81, ch2-appa-copins.c94",
@@ -852,7 +852,7 @@ int main(int argc, char** argv) {
                 "[claims: " + std::string(kEmApxClaimId[bit]) +
                 ", " + std::string(kEmBodyClaimId[bit]) +
                 ", COP2-the-wait-instruction.c16" +
-                (bit == 0 ? std::string(", COP2-copins-fields-p275.c12, "
+                (bit == 0 ? std::string(", "
                                         "COP2-copper-loops-and-branches-and-comparison-enable.c5")
                           : std::string()) + "]");
         }
@@ -881,6 +881,14 @@ int main(int argc, char** argv) {
         "COP2-copins-encoding.c42, COP2-copins-encoding.c48, COP2-copins-encoding.c54, "
         "COP2-copins-encoding.c60, COP2-copins-encoding.c66, COP2-copins-encoding.c72, "
         "COP2-copins-encoding.c78, COP2-copins-encoding.c84, COP2-copins-encoding.c90, ch2-appa-copins.c103, ch2-appa-copins.c19, ch2-appa-copins.c25, ch2-appa-copins.c31, ch2-appa-copins.c37, ch2-appa-copins.c43, ch2-appa-copins.c49, ch2-appa-copins.c55, ch2-appa-copins.c61, ch2-appa-copins.c67, ch2-appa-copins.c73, ch2-appa-copins.c79, ch2-appa-copins.c85, ch2-appa-copins.c91, ch2-appa-copins.c97, ch2-the-skip-instruction.c10");
+    checks.note("UNBOUND (COP2-copins-fields-p275.c10, .c11 and .c12: \"VP\" denotes a "
+        "vertical-beam-position bit, \"HP\" a horizontal one, \"VE\" a comparison-enable "
+        "mask bit - three names, not three requirements. EVC measures release at line "
+        "zero, EHC measures release latency and EM0 measures bit 8's masking, and each "
+        "does what it says; none could fail because a field is CALLED something else. "
+        "They were bound there until 11.09.2026, while this same file already treated "
+        "the IR1, IR2 and BFD naming claims as unbound - the inconsistency was with "
+        "its own neighbours)");
     checks.note("UNBOUND (the HE field's own bit-position mapping and masking - EM0-EM6 "
         "walk VE's masking role bit by bit, but no equivalent walk exists for HE; W7 "
         "sets HE=$7F generally and W1 sets HE=$00, but W1's target HP happens to be 0, "

@@ -445,7 +445,7 @@ int main(int argc, char** argv) {
         checks.expect(ocs_width == 3,
             "LW1 [HRM_CONFORMANCE] with ecs=0 the COP1LCH high field is 3 bits wide "
             "(p309 \"was 3 bits\", p273 \"high 3 bits\") "
-            "[claims: COP2-cop1lch.c5, COP2-cop1lch-ecs.c6, COP2-location-registers.c2, ch2-appa-location-registers.c4, ch2-appb-table.c18, ch2-appc-ecs.c6, ch2-location-registers.c2, ch2-location-registers.c7]");
+            "[claims: COP2-cop1lch.c5, COP2-cop1lch-ecs.c6, COP2-location-registers.c2, ch2-appa-location-registers.c4, ch2-appb-table.c18, ch2-appc-ecs.c6, ch2-location-registers.c2, ch2-location-registers.c7, COP2-cop2lch.c5, COP2-cop-location-pointers.c7, COP2-location-registers.c4]");
 
         checks.expect(ocs_width != ecs_width,
             "LW3 [HRM_CONFORMANCE] the high-field width DEPENDS on the chipset - the "
