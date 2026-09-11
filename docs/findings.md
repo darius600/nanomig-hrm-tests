@@ -144,8 +144,9 @@ specialist rules on it.
 | NM-HRM-020 | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** -- both with the manual |
 | NM-HRM-021 | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1** -- the emulators disagree |
 | NM-HRM-022 | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** -- both with NanoMig |
+| NM-HRM-023 | the ATTACH bit is honoured in the even sprite, not only the odd | **red** | `hrm/ch4-attached-sprites` | not read |
 
-Chapters 1, 4, 7 and 8 have not been extracted, so no finding below comes from
+Chapters 1, 7 and 8 have not been extracted, so no finding below comes from
 them. The register is a record of what has been looked at, not of what is there.
 
 ## Where the five oldest findings come from, and whether they hold
@@ -427,6 +428,50 @@ one: the manual is this project's oracle, and an emulator never promotes to that
 
 Every statement below was checked by reading the RTL directly, not taken from the
 classifier's report.
+
+
+### NM-HRM-023 — the ATTACH bit is honoured in the even sprite, not only the odd
+
+| | |
+|---|---|
+| Manual, p128 | "Bit 7 is the attach bit. This bit is valid only for odd-numbered" sprites |
+| Manual, p122 | "Attachment is in effect only when the ATTACH bit, bit 7 in sprite control word 2, is set to 1 in the data structure for the odd-numbered" sprite |
+| Measured | with `aga = 0`, setting bit 7 of **SPR0**CTL — the even sprite of the pair — opens the combined-colour path on its own |
+| Test | `hrm/ch4-attached-sprites` (`ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE`) |
+
+`denise_sprites.v:484`:
+
+```verilog
+if (attach1 || (!aga && attach0)) // sprites are attached -> 15 colors + transparant
+```
+
+`attach0` is the even sprite's bit, and `!aga` is the only thing gating it.
+
+**The manual says it twice, on two pages**, and neither sentence admits an
+exception. The chapter's own design depends on it: the odd sprite's control word
+is what carries the attachment, which is why its data words supply the high two
+bits of the 4-bit colour index.
+
+**Scoped by its own mutation.** Setting `aga = 1` zeroes the `!aga` term and the
+implementation then matches the manual — so this is an OCS/ECS behaviour, exactly
+the chipset the package drives, and not an AGA one.
+
+**What holds it up.** `ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT` is green on the
+same fixture and the same measurement basis: the odd sprite's bit does attach the
+pair, so the fixture demonstrably observes attachment. A separate
+`[control] FIXTURE-LIVE-DATA-PATH` proves the sprite data path delivers distinct
+known values in order before anything reads one.
+
+**Found three times before it was built.** Two classifiers working different lots
+of chapter 4 measured it independently, neither having seen the other's work; the
+lead then verified it against the source and both printed pages; and the builder
+reproduced it from the quotations alone, having written and committed its
+specification before opening the RTL.
+
+*For the specialists:* the `!aga` term looks deliberate rather than accidental —
+somebody wrote a chipset condition here on purpose. Whether real OCS Denise
+honours the even sprite's attach bit is the question, and it is cheap to check
+against a real machine.
 
 ### Appendix C's five ECS blitter changes are implemented five different ways
 
