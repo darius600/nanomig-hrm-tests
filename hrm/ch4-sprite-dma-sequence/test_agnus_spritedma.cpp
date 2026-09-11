@@ -69,6 +69,26 @@
 //   VSTOP-VSTART, the 9-bit split) follows from claims.jsonl's quotations
 //   alone, not from the RTL.
 //
+//   AFTER the spec above was committed, agnus_spritedma.v was opened to
+//   build this package (WSL/Verilator), which surfaced two harness bugs --
+//   fixed here, with no assertion's expected value touched:
+//   (1) the sibling-reused port set was complete and every port name
+//   compiled clean on the first try, but this file's first draft presented
+//   a granted cycle's word only on data_in, leaving reg_address_in at its
+//   idle value -- so nothing ever actually landed in a register (every
+//   assertion but the pure-ordering A1 read back empty). The RTL's
+//   SPRxPOS/SPRxCTL write path (agnus_spritedma.v:205,220) is gated on
+//   reg_address_in matching, not on ackdma -- a real shared CPU/DMA
+//   register-write bus, exactly the shape hrm/ch3-sprite-registers/ already
+//   documented for denise_sprites' own register writes. Fixed by mirroring
+//   the granted reg_address_out back onto reg_address_in alongside data_in
+//   (Harness::run()'s own comment). (2) that same read (agnus_spritedma.v:
+//   286-296) showed reqdma is raised by "vblend || (sprvstop && ~vbl)", not
+//   vblend alone, and that the module multiplexes all eight sprite channels
+//   internally (register blocks SPR0.. through SPR7.., each requesting its
+//   own control pair) -- see A7's own comment and the Dc CORRECTION above
+//   for what that changed.
+//
 // MEASUREMENT BASIS: each assertion below builds a fresh Harness (fresh
 //   DUT, fresh reset) and sweeps vpos over a line range and hpos over
 //   0..453 (the sibling harness's own proven hpos bound) each line,
@@ -171,10 +191,28 @@
 //     CH4-p114.c3, CH4-p114.c4, CH4-p127.c4, CH4-p127.c6, CH4-p97.c3,
 //     CH4-ptr.c3, CH4-ptr.c4, CH4-ptrs.c1, CH4-ptrs.c10, CH4-ptrs.c11,
 //     CH4-ptrs.c5, CH4-ptrs.c6, CH4-ptrs.c7, CH4-ptrs.c8, CH4-ptrs.c9,
-//     CH4-regs.c1, CH4-regs.c3 -- a single fixed-instance fixture cannot
-//     observe "eight channels exist", the SPR0..SPR7 naming convention, or
-//     "all eight pointers must be initialised" (which needs a multi-channel
-//     system and visible video output, neither in this boundary).
+//     CH4-regs.c1, CH4-regs.c3 -- declined when this spec was written and
+//     committed (a single-instance fixture, which is all a pre-RTL reading
+//     of the claims gave any reason to expect, cannot observe "eight
+//     channels exist"). CORRECTION, after the RTL was opened per ORDER OF
+//     WORK: agnus_spritedma is in fact not single-channel -- it multiplexes
+//     all eight sprite channels internally, at register blocks SPR0.. (word
+//     addresses 0xA0-0xA3) through SPR7.. (0xBC-0xBF), each independently
+//     requesting its own initial control-pair fetch (A1's own baseline log
+//     shows exactly this: 16 grants on the first active line, eight
+//     POS-then-CTL pairs). That makes CH4-more.c6/CH4-p114.c3 ("all eight
+//     sprite pointers must be initialised") and the SPR0..SPR7 naming
+//     convention structurally observable after all. No new assertion was
+//     added for them here -- per the build brief's own gate, a claim's
+//     testability is judged when the spec is written, and re-opening the
+//     claim list after reading the RTL to add a newly-possible assertion is
+//     exactly the RTL-shapes-the-spec ordering that gate forbids. Recorded
+//     here, not acted on; the 23 ids remain uncited. "The other seven
+//     register sets are the same except for the name" (CH4-p127.c6,
+//     CH4-regs.c3) is not covered by this correction -- this package never
+//     compared channel 1-7's own behaviour against channel 0's, so that
+//     specific claim is still genuinely undecided by this file, correction
+//     or not.
 //   Dw SPRITE-PIXEL-WIDTH-AND-UNLIMITED-HEIGHT (4 ids) -- CH4-forming.c2,
 //     CH4-intro.c8, CH4-p97.c5, CH4-p98.c2 -- pixel width is Denise's
 //     domain, not this DMA channel's; "unlimited" is not falsifiable by any
@@ -402,14 +440,25 @@ public:
                     } else {
                         val = (uint16_t)(0xD000 | ((line & 0x3F) << 2) | (reg & 0x3));
                     }
+                    // Mirror the granted request's own register address back onto
+                    // reg_address_in alongside data_in: the module's SPRxPOS/SPRxCTL write
+                    // path (confirmed once the RTL was opened, per ORDER OF WORK -- this is
+                    // a harness fix, not an oracle change) is gated on reg_address_in
+                    // matching, exactly like a real shared CPU/DMA register-write bus. A
+                    // granted DMA cycle that presented data_in without also presenting the
+                    // matching reg_address_in would be the chapter-6 failure mode this
+                    // package's own CONTROL case exists to catch.
+                    dut->reg_address_in = reg;
                     dut->data_in = val;
                     dut->eval();
                     log.push_back(Grant{line, hp, reg, val});
                 } else {
                     dut->ackdma = 0;
+                    dut->reg_address_in = 0;
                 }
                 tick();
                 dut->clk7_en = 0;
+                dut->reg_address_in = 0;
                 tick();
                 tick();
                 tick();
@@ -485,16 +534,20 @@ int main(int argc, char** argv) {
 
     // ---- A1: CONTROL-PAIR-FETCHED-FIRST-POS-THEN-CTL ----
     {
+        // Starts at line 5, not line 0: opening the RTL (see A7's own comment on when that
+        // happened) showed reqdma is also raised whenever vpos already equals the reset value
+        // of VSTOP (0), independent of vblend, so sweeping from line 0 cannot isolate vblend's
+        // own contribution the way starting past that coincidence can.
         Harness h;
         bool useVblend = true;
 #ifdef MUT_A1
         useVblend = false;  // withhold vblend: the channel is never told it may fetch
 #endif
         std::vector<std::pair<int, int>> pairs = {{40, 44}};
-        auto log = h.run(0, 10, pairs, useVblend);
+        auto log = h.run(5, 15, pairs, useVblend);
 
         bool ok = log.size() >= 2 && log[0].reg == SPR0POS && log[1].reg == SPR0CTL &&
-                  log[0].line == 0 && log[1].line == 0;
+                  log[0].line == 5 && log[1].line == 5;
         c.note("First two DMA grants: " + std::to_string(log.size()) + " total; first=" +
                (log.empty() ? std::string("<none>") : regName(log[0].reg)) + ", second=" +
                (log.size() < 2 ? std::string("<none>") : regName(log[1].reg)));
@@ -746,27 +799,45 @@ int main(int argc, char** argv) {
                         } else {
                             val = (uint16_t)(0xD000 | ((line & 0x3F) << 2) | (reg & 0x3));
                         }
+                        h.dut->reg_address_in = reg;  // see run()'s own comment on this mirroring
                         h.dut->data_in = val;
                         h.dut->eval();
                         log.push_back(Grant{line, hp, reg, val});
                     } else {
                         h.dut->ackdma = 0;
+                        h.dut->reg_address_in = 0;
                     }
                 } else {
                     h.dut->ackdma = 0;
+                    h.dut->reg_address_in = 0;
                 }
                 h.tick();
                 h.dut->clk7_en = 0;
+                h.dut->reg_address_in = 0;
                 h.tick();
                 h.tick();
                 h.tick();
             }
         }
-        auto m = byLine(log);
+        // Opening the RTL (per ORDER OF WORK, after this spec's own commit) showed
+        // agnus_spritedma is not a single-channel instance: it internally cycles through all
+        // eight sprite channels, each with its own register block (SPR0.. at 0xA0-0xA3, SPR1..
+        // at 0xA4-0xA7, ... SPR7.. at 0xBC-0xBF -- line 0's 16 grants are each of the eight
+        // channels' own initial POS/CTL fetch, exactly the "each of the eight channels" this
+        // package's own Dc decline bucket wasn't able to observe before that RTL read). This
+        // package still exercises only channel 0, as the CLAIM COVERAGE ledger's own citations
+        // (CH4-p117.c2, CH4-reuse.c12, CH4-reuse.c13) are about "each ... channel"
+        // individually, not the combined 8-channel bus, so the per-line count below is
+        // filtered to channel 0's own four register addresses -- a harness fix (which
+        // addresses count), not a change to the expected value (still exactly two).
+        std::vector<Grant> ch0log;
+        for (auto& g : log)
+            if (g.reg == SPR0POS || g.reg == SPR0CTL || g.reg == SPR0DATA || g.reg == SPR0DATB) ch0log.push_back(g);
+        auto m = byLine(ch0log);
         bool allTwo = !m.empty() && std::all_of(m.begin(), m.end(),
             [](const std::pair<const int, std::vector<int>>& kv) { return kv.second.size() == 2; });
 
-        c.note("Active lines and their grant counts: " + std::to_string(m.size()) + " lines active");
+        c.note("Channel 0's own active lines and grant counts: " + std::to_string(m.size()) + " lines active");
         c.expect(allTwo,
             "A7-EXACTLY-TWO-DMA-GRANTS-PER-ACTIVE-LINE: across three chained usages, every line the "
             "channel is active on (control-pair or image-pair lines alike) receives exactly two "
@@ -852,9 +923,75 @@ int main(int argc, char** argv) {
     return c.failed > 0 ? 1 : 0;
 }
 
-// MUTATION LOG: pending -- to be filled in after this spec's own commit,
-// once agnus_spritedma.v is opened and the package is actually built and
-// run under WSL/Verilator, per this file's own ORDER OF WORK gate. Each
-// assertion above is already guarded by its own -DMUT_<id>=1 compile flag
-// (MUTFLAGS in the Makefile) so replaying a mutation needs no hand-edit or
-// revert of this source file.
+// RESULTS: baseline (make, no MUTFLAGS) is 12 passed, 0 failed -- every
+// claim-based and control expect() below is GREEN against agnus_spritedma.v
+// as built today. No finding is on record for this package; the two
+// deviations from this file's first draft (see ORDER OF WORK above) were
+// both this harness's own bugs, fixed before any result was read as a
+// finding, not RTL disagreements. Each `make MUTFLAGS=-DMUT_<id>=1` run
+// below was built and run in isolation, confirmed to flip ONLY its own
+// named assertion red (all 11 others staying exactly at the green
+// baseline), then rebuilt with no MUTFLAGS to confirm the 12/0 baseline
+// returned before moving to the next id.
+//
+// MUTATION LOG (one physical line each; run today, in this order, under
+// WSL/Verilator, immediately after the harness fixes above):
+// MUTATION MUT_CTRL stimulus red: Run B's fed pair changed from
+//   (VSTART=12,VSTOP=15) to Run A's own (40,44), so the two runs stop
+//   differing -> FAIL ("11 passed, 1 failed"), only [control]
+//   FIXTURE-LIVE-DATA-PATH newly red (both runs' image-fetch lines became
+//   [40,41,42,43], no longer distinct). Reverted: 12/0.
+// MUTATION A1 stimulus red: vblend withheld for the whole run (also moved
+//   the sweep to start at line 5 rather than 0, once opening the RTL showed
+//   reqdma is independently raised whenever vpos already equals VSTOP's
+//   reset value of 0 -- see ORDER OF WORK -- which had been masking this
+//   exact mutation at line 0) -> FAIL ("11 passed, 1 failed"), only
+//   A1-CONTROL-PAIR-FETCHED-FIRST-POS-THEN-CTL newly red (no grant at all
+//   within the swept window). Reverted: 12/0.
+// MUTATION A2 stimulus red: fed VSTOP changed from 44 to 45 -> FAIL ("11
+//   passed, 1 failed"), only A2-TWO-WORDS-PER-LINE-HEIGHT-EQUALS-VSTOP-
+//   MINUS-VSTART newly red (measured window grew to [40,41,42,43,44], not
+//   the asserted [40,41,42,43]). Reverted: 12/0.
+// MUTATION A3u stimulus red: fed pair changed from (40,44) to (100,104), so
+//   lines 40-43 (the lines this check inspects) go idle -> FAIL ("11
+//   passed, 1 failed"), only A3u-TWO-DISTINCT-REGISTERS-RECEIVE-THE-
+//   FETCHED-PAIR newly red (m[40..43] all empty). Reverted: 12/0.
+// MUTATION A4a stimulus red: usage 1's fed VSTOP changed from 44 to 200, so
+//   its reload never appears inside the swept window -> FAIL ("11 passed,
+//   1 failed"), only A4a-END-OF-DATA-PAIR-DECODED-AS-NEXT-CONTROL-PAIR
+//   newly red (only one control-pair line measured, the initial one).
+//   Reverted: 12/0.
+// MUTATION A4b stimulus red: usage 1's fed VSTOP changed from 20 (equal to
+//   its own VSTART) to 25, so it is no longer a zero-height usage -> FAIL
+//   ("11 passed, 1 failed"), only A4b-VSTOP-EQUALS-VSTART-PRODUCES-NO-
+//   IMAGE-OUTPUT-BUT-CHAIN-CONTINUES newly red (line 20 now shows image
+//   output). Reverted: 12/0.
+// MUTATION A5 stimulus red: usage 2's fed VSTOP changed from 53 to 54 ->
+//   FAIL ("11 passed, 1 failed"), only A5-CHANNEL-REUSED-MULTIPLE-TIMES-
+//   WITHIN-ONE-FIELD newly red (measured line list gained a 53). Reverted:
+//   12/0.
+// MUTATION A6a stimulus red: usage 2's fed VSTOP changed from 48 to 49 ->
+//   FAIL ("11 passed, 1 failed"), only A6a-ONE-LINE-GAP-IS-SUFFICIENT-FOR-
+//   NEXT-USAGE newly red (measured line list gained a 48). Reverted: 12/0.
+// MUTATION A6b stimulus red: the next-usage VSTART fed at the reload
+//   changed from 42 (behind the beam) to 46 (ahead of it) -> FAIL ("11
+//   passed, 1 failed"), only A6b-NEXT-USAGE-VSTART-BEHIND-CURRENT-BEAM-
+//   NEVER-ACTIVATES-THIS-FIELD newly red (a second image window appeared).
+//   Reverted: 12/0.
+// MUTATION A7 stimulus red: every third observed reqdma request (across all
+//   eight channels, counted globally) had its ackdma withheld -> FAIL ("11
+//   passed, 1 failed"), only A7-EXACTLY-TWO-DMA-GRANTS-PER-ACTIVE-LINE
+//   newly red (some of channel 0's own active lines dropped to one grant).
+//   Reverted: 12/0.
+// MUTATION A8 stimulus red: field 2's fed VSTOP changed from 8 to 9 ->
+//   FAIL ("11 passed, 1 failed"), only A8-CONTROL-WORDS-FRESHLY-FETCHED-
+//   EACH-DISPLAY-FIELD newly red (field 2's measured window gained an 8).
+//   Reverted: 12/0.
+// MUTATION A9 stimulus red: fed VSTOP changed from 310 to 311 -> FAIL ("11
+//   passed, 1 failed"), only A9-VSTART-VSTOP-ARE-9BIT-VALUES-SPLIT-ACROSS-
+//   SPRXPOS-AND-SPRXCTL newly red (measured window gained a 310, breaking
+//   the exact expected 300..309). Reverted: 12/0.
+// MUTATION A3-order none impossible: not an expect() (checks.record() only,
+//   no checks.expect) -- the disputed fetch order is measured and printed,
+//   never compared against an expected value, so there is no red/green
+//   state for a mutation to move.
