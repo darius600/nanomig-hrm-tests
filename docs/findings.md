@@ -205,9 +205,15 @@ It is not one. That column describes the standard chip set, where the RTL alread
 agrees with it, so it cannot disagree with the design here — and a record that
 cannot disagree with the design is not evidence. What it does contribute is the
 *referent* of appendix C's comparison: it fixes which addresses "the danger bit
-set in the standard chip set" denotes. Every one of the 26 register rows in
-`$040`–`$07E` carries the CDANG marker, without exception, and the 32 addresses
-below `$040` are marked `*`, not writable by the Copper at all.
+set in the standard chip set" denotes, and it does so exactly. All 32 word
+addresses in `$040`–`$07E` appear in the table and **all 32 carry the CDANG
+marker** — the 26 named registers and the six reserved gaps that carry a marker
+and an address with no name beside them (`$068`, `$06A`, `$06C`, `$06E`, `$076`,
+`$07A`). None is unmarked and none is missing. Below `$040` the 32 addresses are
+marked `*`, not writable by the Copper at all.
+
+The marked set and the measured set of falsely rejected addresses are therefore
+the same 32 addresses, one for one.
 
 #### Challenged 11.09.2026, and upheld
 

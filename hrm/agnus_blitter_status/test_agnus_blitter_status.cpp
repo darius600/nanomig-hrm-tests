@@ -115,7 +115,7 @@
 // Z-FINAL mutation for the wrong reason (see below) and was fixed before being
 // counted as covered.
 //
-// MUTATION DATA-DELIVERY stimulus red: fed C word at index 2 changed from
+// MUTATION TEST-DATA-DELIVERY stimulus red: fed C word at index 2 changed from
 //   0x9ABC to 0x9ABD (expected constants left untouched) -> FAIL, the third
 //   captured data_out no longer matches; every other assertion PASS.
 // MUTATION BUSY-SET stimulus red: the register written to start the blit
@@ -133,7 +133,7 @@
 //   (whatever it is, for a 1-word blit) the blit has already run to
 //   completion and back to idle, so busy reads 0 where BUSY-MIDBLIT expects 1,
 //   and the subsequent completion search finds a stale/absent transition.
-// MUTATION DONE-BUDGET stimulus red: width raised from 4 to 64 in the same
+// MUTATION INT3-ON-COMPLETION stimulus red: width raised from 4 to 64 in the same
 //   fixture as above, run budgets left at 60 cycles -> BUSY-MIDBLIT stays
 //   PASS (2 of 64 words store well inside 60 cycles, so busy is genuinely
 //   still 1 there) while INT3-ON-COMPLETION and BUSY-FLAG-ON-COMPLETION FAIL
@@ -171,7 +171,7 @@
 // MUTATION Z-D-CLEAR stimulus red: the fed C word changed from 0x4321 to
 //   0x0000 while `used` stayed 0 -> Z-D-CLEAR FAILs (zero stays 1);
 //   Z-D-PRECOND stays PASS (`we` still correctly never fires).
-// MUTATION Z-AND stimulus red: b_words[1] changed from 0x2222 to 0x1111 (now
+// MUTATION Z-AND-RESULT stimulus red: b_words[1] changed from 0x2222 to 0x1111 (now
 //   equal to a_words[1]), so the second word's AND is 0x1111, not 0 -> both
 //   Z-AND-RESULT and Z-AND-STAYS FAIL as expected.
 //
@@ -226,7 +226,7 @@
 //   by the time BUSY-SET samples it - not a counterexample to their own
 //   (separately recorded, narrower) mutations above, just this wider window
 //   doing more than the one thing it was aimed at.
-// MUTATION Z-AND-STAYS stimulus red: same edit as the "Z-AND" record above
+// MUTATION Z-AND-STAYS stimulus red: same edit as the "Z-AND-RESULT" record above
 //   (b_words[1] changed from 0x2222 to 0x1111) -> Z-AND-STAYS FAILs alongside
 //   Z-AND-RESULT. The existing record above used the id "Z-AND", which is not
 //   the same token as either "Z-AND-RESULT" or "Z-AND-STAYS"; this line

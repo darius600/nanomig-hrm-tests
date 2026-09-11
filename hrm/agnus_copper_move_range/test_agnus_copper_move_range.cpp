@@ -267,12 +267,12 @@ int main(int argc, char** argv) {
     // T5, T6 - and permitted once CDANG is set.
     checks.expect(move_reaches(false, true, BLTCON0),
                   "T5 OCS CDANG=1: MOVE to BLTCON0 ($040) is written "
-                  "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, COP2-copcon-appa.c10, "
+                  "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, "
                   "COP2-copcon-appa.c11, COP2-copcon-ecs.c7, COP2-copcon-ecs.c8, "
                   "COP2-control-register.c2, COP2-control-register.c13, COP2-the-move-instruction.c13]");
     checks.expect(move_reaches(false, true, BLTSIZE),
                   "T6 OCS CDANG=1: MOVE to BLTSIZE ($07E) is written "
-                  "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, COP2-copcon-appa.c10, "
+                  "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, "
                   "COP2-copcon-appa.c11, COP2-copcon-ecs.c7, COP2-copcon-ecs.c8, "
                   "COP2-control-register.c2, COP2-control-register.c13]");
 
@@ -334,6 +334,13 @@ int main(int argc, char** argv) {
         "COP2-copcon-appa.c1, COP2-copcon-appa.c2, COP2-copcon-appa.c4, "
         "COP2-copcon-ecs.c1, COP2-copcon-ecs.c2, COP2-copcon-ecs.c3, "
         "COP2-copcon-ecs.c5, COP2-copcon-ecs.c6");
+    checks.note("UNBOUND (COP2-copcon-appa.c10: \"Bit 01 is named CDANG\" - a name, not "
+        "a requirement, and nothing in the module can disagree with one. T5/T6 listed "
+        "this claim until 11.09.2026; they drive set_cdang(), which writes the VALUE "
+        "0x0002, and observe the range unlock - which happens identically whatever the "
+        "bit is called, so neither assertion could ever have failed on it. The sibling "
+        "c9, that the control occupies bit 01, stays bound: writing 0x0002 unlocks "
+        "nothing if the module reads a different bit)");
     checks.note("UNBOUND (COP2-copcon-appa.c5: \"COPCON has one implemented control "
         "bit\" - set_cdang() only ever writes 0x0000 or 0x0002; no assertion sweeps "
         "COPCON's other bits to show they are unimplemented/inert)");

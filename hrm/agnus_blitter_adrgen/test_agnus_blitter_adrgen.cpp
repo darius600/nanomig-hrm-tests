@@ -85,7 +85,7 @@
 // -> rebuild-clean) and the FAIL lines quoted are what the run printed, not
 // predictions.
 //
-// MUTATION PTR-READBACK stimulus red: read_ptr(CHA) changed to read_ptr(CHB) (a
+// MUTATION PTR-WRITE-READBACK-BASELINE stimulus red: read_ptr(CHA) changed to read_ptr(CHB) (a
 //   channel that was never written) -> PTR-WRITE-READBACK-BASELINE FAIL, got 0
 //   instead of 0x1000; every other assertion PASS.
 // MUTATION PTR-TWO-WORD-COMPOSITION stimulus red: the second bus_write in the

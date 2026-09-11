@@ -173,7 +173,7 @@
 // revert -> rebuild-clean) and the FAIL/PASS lines quoted are what the run
 // printed, not predictions.
 //
-// MUTATION DATA-DELIVERY stimulus red: fed C word at index 2 changed from
+// MUTATION TEST-DATA-DELIVERY stimulus red: fed C word at index 2 changed from
 //   0x9ABC to 0x9ABD (expected constants left untouched) -> FAIL, the third
 //   captured data_out no longer matches; every other assertion PASS.
 // MUTATION MASK-REG-BLTAFWM-IDENTITY stimulus red: the sentinel written to
