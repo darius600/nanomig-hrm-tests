@@ -32,7 +32,8 @@ validator's word, and each affected finding carries its own note below.
 |---|---|
 | **Hold as test-backed findings** | F01, F02, F03, F06, F10 |
 | **Hold with a correction** | F11 (evidential count) |
-| **Source observations, not test-backed** | F05, F09, F12 |
+| **Source observations, not test-backed** | F05, F09 |
+| **Downgraded, then restored once the witness was fixed** | F12 |
 | **Withdrawn** | F04, F07, F08, F13 |
 | **Established while correcting one of them** | **F14** |
 
@@ -60,8 +61,10 @@ The two source-only downgrades share a different cause, and it is the one this
 pipeline exists to prevent: **an expected value that came from the implementation.**
 F05 computes `227.5 CCK × 2 hpos-ticks/CCK`, taking the factor 2 from the RTL's
 internal representation. F12 is its mirror image — an assertion that could not have
-passed against a perfect implementation, because it tests a bit *rearrangement*
-using a value made of identical bits.
+passed against a perfect implementation, because it tested a bit *rearrangement*
+using a value made of identical bits. **F12 is the one that came back:** given a
+witness whose nibbles differ top-half from bottom-half, it is still red, and the
+finding now rests on a measurement that could have gone the other way.
 
 ## About the keys
 
@@ -765,7 +768,26 @@ measurement independently reproduced by the lead before recording.*
 
 ## FPGA-091-F12 — SuperHires bitplane colour encoding is not implemented
 
-> **SOURCE OBSERVATION, not test-backed** — validation 11.09.2026.
+> **SOURCE OBSERVATION on 11.09.2026 — RESTORED as test-backed the same day,
+> once the witness was fixed.** The validator's objection was correct and the
+> correction answers it: with `COLOR01 = 0x0C39` — every nibble's top two bits
+> differing from its bottom two, so a rearrangement is visible in all three
+> channels — the assertion still measures `ocs = shres = 0xCC3399`. Identical.
+> Reproduced by the lead from a clean build. The finding stands, now on evidence
+> that could have gone the other way.
+>
+> Two further corrections came out of the same pass. The sweep had been running
+> at `bpu=4`, a depth page 300 does not define for SuperHires (*"The maximum
+> plane depth for a SuperHires viewport is 2 bitplanes"*, and the register row
+> `13  BPU1  } Depth of SuperHires mode (1 or 2)`); at a compliant depth
+> `denise.v:369` forces `bpldata[3]` to zero, so registers 4–15 are not merely
+> un-reinterpreted but unaddressable, and they are now declined on that ground.
+> And `OCS-BASELINE-0RGB-FORMAT` had baked `denise_colortable.v`'s nibble-to-byte
+> duplication into its expected value; it now checks only the top nibble of each
+> component, which follows from "COLORxx stores 0x0RGB" alone. Still green.
+>
+> The original objection, preserved because it is the reason the finding is now
+> worth more than it was:
 >
 > `denise_colortable.v` has no `shres` port -- that reading holds, and the lead confirmed it. The test does not establish it. `SHRES-REINTERPRETS-SAME-REGISTERS` writes `COLOR01 = 0x0FFF`, all ones in every nibble, and the claimed SuperHires encoding is a **rearrangement** of bits: rearranging all ones yields all ones. The assertion could not have gone green even against a perfect implementation, so its red is not evidence. This is the mirror of a circular oracle -- an assertion that cannot pass, for a reason unrelated to the design.
 

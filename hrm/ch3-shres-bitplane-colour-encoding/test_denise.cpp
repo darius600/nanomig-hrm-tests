@@ -104,6 +104,40 @@
 // under WSL/Verilator, and the MUTATION LOG below reflects real,
 // individually-confirmed results.
 //
+// BITPLANE COUNT CORRECTION (third pass, this agent, 11.09.2026): an
+// independent validator flagged that the main sweep below selected
+// registers using FOUR bitplanes (bpu=4) while page 300 caps SuperHires
+// plane depth at TWO -- "The maximum plane depth for a SuperHires
+// viewport is 2 bitplanes"; BPLCON0 bits 14-12 are documented as "Depth
+// of SuperHires mode (1 or 2)". Checked against the printed page: holds.
+// Checked against the RTL (denise.v): `assign bpldata[3] = l_bpu > 2 ?
+// bpldata_out[3] : 1'b0;` and the equivalent line for bpldata[4] force
+// planes 3 and 4 out of the colour-table address whenever l_bpu<=2 --
+// i.e. whenever BPLCON0 encodes any page-300-compliant SuperHires depth
+// at all. Consequence: with shres=1 held to a compliant bpu (1 or 2),
+// only registers 0-3 (planes 1-2 alone) can ever be selected via
+// bitplane-driven addressing in this RTL; registers 4-15 need plane 3
+// and/or 4 live and are architecturally unreachable under ANY BPLCON0
+// configuration the manual permits for SuperHires -- not merely "not
+// reinterpreted" (the pre-existing finding) but never even addressable
+// that way. Fix: SHRES-BITPLANE-TABLE-COLOR-00 through -03 now measure
+// at bpu=2 (was 4); -04 through -0F are declined (checks.expect(false,
+// ...), own ids still cited in full -- the sibling ch3-shres-sprite-
+// colour-encoding package's own REG-0x10 convention for a register no
+// live measurement can reach), not silently dropped. SELECT-REGISTER-
+// ADDRESSES-CORRECTLY (shres=0 throughout, not a SuperHires-mode claim)
+// and SHRES-REINTERPRETS-SAME-REGISTERS (bpu=1 throughout, already
+// compliant) needed no change and were left untouched, per the build
+// brief's own instruction to leave the four existing MUT_* controls
+// alone. Re-run: SHRES-BITPLANE-TABLE-COLOR-00..-03 still FAIL at bpu=2
+// (shres=1's reading is bit-identical to shres=0's for every register
+// this RTL can still reach that way, same underlying reason as always:
+// denise_colortable.v has no `shres` input at all) -- the pass/fail
+// COUNT is unchanged (still 19 of 23 red), but registers 4-15's own
+// FAIL is now honest ("cannot be tested," not "tested and found wanting
+// on an out-of-spec configuration") rather than an artefact of the same
+// kind SHRES-REINTERPRETS-SAME-REGISTERS's own witness was.
+//
 // WHAT p.301'S OWN TABLE PROVES (self-consistency check performed on
 // claims.jsonl's 256 C-shres-bpl-bits.cNNN restatements alone, by script,
 // before writing kRegRow below): every one of the sixteen rows has bits
@@ -168,7 +202,11 @@
 //     C-shres-bpl-bits.cNNN bit ids (272 ids across the sixteen); COLOR-00,
 //     -05, -0A and -0F (the four diagonal, single-source-colour rows)
 //     additionally cite that source colour's own legend row and its three
-//     symbol ids (C-shrc.srcbN + C-shres-symbols.cNN, 16 ids total).
+//     symbol ids (C-shrc.srcbN + C-shres-symbols.cNN, 16 ids total). Of
+//     these sixteen, -00..-03 are live measurements (bpu=2, corrected --
+//     see BITPLANE COUNT CORRECTION above); -04..-0F are declined
+//     (checks.expect(false, ...), unreachable under any compliant bpu),
+//     ids still cited in full either way.
 //   SHRES-USES-SIXTEEN-LOWER-REGISTERS (2 ids)     -- C-shrc.c04, c05,
 //     asserted as an aggregate over the sixteen sweeps' own pass/fail.
 //   SHRES-TWO-BITS-RESOLUTION (2 ids)              -- C-shrc.c01, c02,
@@ -177,34 +215,49 @@
 //   sweeps, rows+bits+legend) + 2 (SIXTEEN-LOWER-REGISTERS) + 2 (TWO-BITS-
 //   RESOLUTION) = 298 distinct ids. Declined: 3. 298 + 3 = 301.
 //
-// RESULTS (RTL OPENED, built and run under WSL/Verilator 5.052, 11.09.2026):
-// 4 passed, 19 failed (23 assertions total), exactly as follows --
-// CONTROL-KNOWN-VALUES-ARRIVE, FIXTURE-DATA-PATH-LIVE, OCS-BASELINE-
-// 0RGB-FORMAT and SELECT-REGISTER-ADDRESSES-CORRECTLY (the four controls,
-// none carrying a claim id) PASS; SHRES-REINTERPRETS-SAME-REGISTERS, all
-// sixteen SHRES-BITPLANE-TABLE-COLOR-00..-0F sweeps, SHRES-USES-SIXTEEN-
-// LOWER-REGISTERS and SHRES-TWO-BITS-RESOLUTION (19 assertions, all 298
-// cited ids between them) FAIL. Every "unused bits 15-12" half of each
-// per-register sweep is
-// consistent with the table (the plain 12-bit truncation the manual's own
-// table also shows as unused); every "used bits 11-0 must make shres=1's
-// own reading differ from shres=0's own reading for that same bit" half
-// fails, for all sixteen registers without exception -- denise_colortable
-// .v (l.7-69, read in full) has no `shres` input at all, so shres=1 and
-// shres=0 produce bit-identical output for every one of these 192 (16
-// registers x 12 bits) measurements. SHRES-TWO-BITS-RESOLUTION measured
-// 4 of COLOR01's own four B-nibble bits as independently significant
-// under shres=1 (not <=2). This is the finding the build brief
-// anticipated ("If SuperHires is not implemented at this boundary at
-// all, that is a finding, not a reason to weaken the test"): the ECS
-// SuperHires bitplane colour encoding of p.301 has no counterpart in
-// this RTL at the denise/denise_bitplanes/denise_colortable/
-// denise_playfields boundary -- `shres` only ever changes the bitplane
-// shifter's own shift RATE (denise_bitplane_shifter.v:206-219), never
-// which colour-table address is formed or how a stored 12-bit register
-// value is interpreted. No assertion's expected value or oracle text was
-// changed to reach this result -- every "FAIL" above is denise.v
-// disagreeing with the manual, kept red.
+// RESULTS (RTL OPENED, built and run under WSL/Verilator 5.052, 11.09.2026;
+// re-confirmed after the WITNESS FIX and BITPLANE COUNT CORRECTION above,
+// same date): 4 passed, 19 failed (23 assertions total), unchanged from
+// the pre-correction count -- CONTROL-KNOWN-VALUES-ARRIVE, FIXTURE-DATA-
+// PATH-LIVE, OCS-BASELINE-0RGB-FORMAT and SELECT-REGISTER-ADDRESSES-
+// CORRECTLY (the four controls, none carrying a claim id) PASS;
+// SHRES-REINTERPRETS-SAME-REGISTERS, all sixteen SHRES-BITPLANE-TABLE-
+// COLOR-00..-0F entries, SHRES-USES-SIXTEEN-LOWER-REGISTERS and
+// SHRES-TWO-BITS-RESOLUTION (19 assertions, all 298 cited ids between
+// them) FAIL. SHRES-REINTERPRETS-SAME-REGISTERS now uses a discriminating
+// witness (COLOR01=0x0C39, each nibble's own top two bits differing from
+// its own bottom two bits) in place of the old all-ones 0x0FFF that could
+// not have gone green against any implementation -- re-measured FAIL
+// (ocs=shres=0xCC3399), the finding properly established this time, not
+// withdrawn. Of the sixteen SHRES-BITPLANE-TABLE-COLOR-XX entries, only
+// -00 through -03 are live measurements now (bpu corrected 4->2, the
+// manual's own SuperHires plane-depth ceiling, p.300); every "unused bits
+// 15-12" half is consistent with the table (the plain 12-bit truncation
+// the manual's own table also shows as unused), and every "used bits
+// 11-0 must make shres=1's own reading differ from shres=0's own reading
+// for that same bit" half fails, for all four still-live registers
+// without exception -- denise_colortable.v (l.7-69, read in full) has no
+// `shres` input at all, so shres=1 and shres=0 produce bit-identical
+// output for every one of these 48 (4 registers x 12 bits) measurements.
+// -04 through -0F are declined: their own index bits need plane 3 and/or
+// 4 live, which denise.v forces to constant 0 whenever BPLCON0 encodes a
+// compliant SuperHires depth (BPU<=2) at all, so no live measurement can
+// reach them under any configuration the manual permits -- kept red by
+// construction, ids still cited in full, not silently dropped.
+// SHRES-TWO-BITS-RESOLUTION measured 4 of COLOR01's own four B-nibble
+// bits as independently significant under shres=1 (not <=2), unaffected
+// by either correction (COLOR01 was already reachable at bpu<=2). This is
+// the finding the build brief anticipated ("If SuperHires is not
+// implemented at this boundary at all, that is a finding, not a reason to
+// weaken the test"): the ECS SuperHires bitplane colour encoding of p.301
+// has no counterpart in this RTL at the denise/denise_bitplanes/
+// denise_colortable/denise_playfields boundary -- `shres` only ever
+// changes the bitplane shifter's own shift RATE
+// (denise_bitplane_shifter.v:206-219), never which colour-table address
+// is formed or how a stored 12-bit register value is interpreted. No
+// assertion's expected value or oracle text was changed to reach this
+// result -- every "FAIL" above is denise.v disagreeing with the manual,
+// kept red.
 //
 // ONE HARNESS BUG FOUND AND FIXED HERE (methodology, not the oracle): the
 // spec-only commit's Harness never opened denise's own display window
@@ -251,47 +304,65 @@
 // MUTATION OCS-BASELINE-0RGB-FORMAT stimulus red: COLOR01's write changed
 //   from 0x0A5C to 0x0000 (no longer a distinguishable pattern) -> FAIL
 //   ("3 passed, 20 failed"), only OCS-BASELINE-0RGB-FORMAT red (measured
-//   0x000000, not 0xAA55CC). Reverted: 4/19.
+//   top nibbles 0x000, expected 0xA5C). Reverted: 4/19. Expected-value
+//   correction (this agent, 11.09.2026, see the assertion's own comment
+//   above): the check now asserts only the top nibble of each 8-bit
+//   component (0xA5C), not the full byte (0xAA55CC) -- the old full-byte
+//   expectation baked in denise_colortable.v:56-58's own nibble-
+//   duplication choice, which no printed page this package cites states;
+//   re-ran this same mutation against the corrected check, same result.
 // MUTATION SELECT-REGISTER-ADDRESSES-CORRECTLY stimulus red: COLOR0C's
 //   write changed from 0x00F0 to 0x0F00 (identical to COLOR03) -> FAIL
 //   ("3 passed, 20 failed"), only SELECT-REGISTER-ADDRESSES-CORRECTLY red
 //   (v3==vC==0xFF0000, no longer distinct). Reverted: 4/19.
-// MUTATION SHRES-REINTERPRETS-SAME-REGISTERS none impossible: already red
-//   at baseline (denise_colortable.v has no `shres` input for any
-//   stimulus to reach).
+// WITNESS FIX (SHRES-REINTERPRETS-SAME-REGISTERS, this agent, 11.09.2026):
+// the previous witness wrote COLOR01=0x0FFF (all ones in every nibble) --
+// rearranging which bits feed which colour slot cannot change an all-ones
+// value, so that witness could not have gone green even against a perfect
+// SuperHires implementation; its FAIL proved nothing. Replaced with
+// COLOR01=0x0C39 (R=0xC,G=0x3,B=0x9 -- each nibble's own top two bits
+// differ from its own bottom two bits, the same slot-A/slot-B-differ
+// reasoning the sibling ch3-shres-sprite-colour-encoding package's own
+// witness already uses). Re-measured: ocs=shres=0xCC3399 -- STILL FAILS,
+// now for the first time on a witness that could have shown a pass. The
+// finding stands, more firmly than before.
+// MUTATION SHRES-REINTERPRETS-SAME-REGISTERS stimulus red: -DMUT_REINTERP=1 reverts BOTH harnesses' COLOR01 write from 0x0C39 back to the old non-discriminating 0x0FFF -> still FAIL, "4 passed, 19 failed" unchanged (ocs=shres=0xFFFFFF under the mutation vs ocs=shres=0xCC3399 at baseline) -- confirms the flag correctly reproduces the old witness, and that this assertion's FAIL does not depend on which witness is used: denise_colortable.v has no `shres` input for any stimulus, discriminating or not, to reach. Reverted: baseline 4/19 restored.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-00 none impossible: already red at
 //   baseline (same reason; this register's own twelve used-bit checks
-//   all fail identically).
+//   all fail identically). bpu corrected 4->2 (BITPLANE COUNT CORRECTION
+//   above); still reachable with planes 1-2 alone, still red, same reason.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-01 none impossible: already red at
-//   baseline, same reason.
+//   baseline, same reason. bpu corrected 4->2, still red, same reason.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-02 none impossible: already red at
-//   baseline, same reason.
+//   baseline, same reason. bpu corrected 4->2, still red, same reason.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-03 none impossible: already red at
-//   baseline, same reason.
+//   baseline, same reason. bpu corrected 4->2, still red, same reason.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-04 none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction (checks.expect(false, ...) -- unreachable
+//   under any compliant bpu, see BITPLANE COUNT CORRECTION above); there
+//   is nothing green here to break.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-05 none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-06 none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-07 none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-08 none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-09 none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-0A none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-0B none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-0C none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-0D none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-0E none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-BITPLANE-TABLE-COLOR-0F none impossible: already red at
-//   baseline, same reason.
+//   baseline, by construction, same reason as -04.
 // MUTATION SHRES-USES-SIXTEEN-LOWER-REGISTERS none impossible: already
 //   red at baseline (it aggregates the sixteen sweeps above, all sixteen
 //   already red).
@@ -320,6 +391,9 @@
 #endif
 #ifndef MUT_SELECTREG
 #define MUT_SELECTREG 0
+#endif
+#ifndef MUT_REINTERP
+#define MUT_REINTERP 0
 #endif
 
 namespace {
@@ -716,6 +790,21 @@ int main(int argc, char** argv) {
     // OCS-BASELINE-0RGB-FORMAT (p.301) -- the control the build brief asks
     // for: the plain, non-SuperHires 0x0RGB format, on the same write/read
     // basis as every SuperHires measurement below.
+    // EXPECTED VALUE CORRECTED (this agent, 11.09.2026): the previous
+    // expected value 0xAA55CC baked in denise_colortable.v:56-58's own
+    // choice of HOW a 4-bit nibble becomes this RTL's 8-bit red/green/blue
+    // port value (duplicating it into both nibble halves, "{nibble,
+    // nibble}") -- an RTL-read implementation detail, not anything the
+    // printed pages (295, 296, 299, 300, 301 -- the only pages this
+    // package cites) state. Those 8-bit ports do not exist in the 1985
+    // chip's own analog video path the manual describes at all; nothing
+    // printed says how a stored 4-bit component maps onto them. What the
+    // page DOES support is narrower and does not need the RTL to state:
+    // COLORxx stores a 0x0RGB value, so the plain (non-SuperHires) reading
+    // of a written 4-bit R/G/B nibble must appear, unaltered, as the TOP
+    // four bits of whichever output width this boundary happens to use --
+    // asserted below without assuming anything about the bottom four bits
+    // of each 8-bit component, which the printed page never specifies.
     // =====================================================================
     {
         Harness h;
@@ -728,45 +817,81 @@ int main(int argc, char** argv) {
 #endif
         h.drive_plane1(true);
         uint32_t v = h.rgb();
-        checks.expect(v == 0xAA55CC,
+        uint32_t rTop = (v >> 20) & 0xF, gTop = (v >> 12) & 0xF, bTop = (v >> 4) & 0xF;
+        std::ostringstream topNibbles;
+        topNibbles << std::hex << std::uppercase << rTop << gTop << bTop;
+        checks.expect(rTop == 0xA && gTop == 0x5 && bTop == 0xC,
             "OCS-BASELINE-0RGB-FORMAT (p.301, " +
             join({"C-shres-color.c4", "C-shres-color.c5", "C-shres-color.c6",
                   "C-shres-color.c7"}) +
-            "): with shres=0, COLOR01 written as 0x0A5C reproduces the "
-            "plain 4-bit-per-component 0x0RGB format (each nibble doubled "
-            "to an 8-bit DAC value, denise_colortable.v:56-58) directly on "
-            "denise's red/green/blue pins (measured " + hex6(v) +
-            ", expected 0xAA55CC) -- no SuperHires multiplexing. "
-            "'Instead of 4 bits of red, green, and blue for bitplane "
-            "registers 0-3 stored as 0x0RGB in four color registers, "
-            "SuperHires bitplane colors are specially encoded...' read as "
-            "describing what happens WITHOUT SuperHires active. Control: "
-            "same write-register/read-RGB measurement basis as every "
-            "SuperHires assertion below.");
+            "): with shres=0, COLOR01 written as 0x0A5C (R=0xA, G=0x5, "
+            "B=0xC) reproduces the plain 4-bit-per-component 0x0RGB format "
+            "-- each written nibble appears, unaltered, as the top four "
+            "bits of denise's red/green/blue pins (measured top nibbles 0x" +
+            topNibbles.str() + ", expected 0xA5C; full 8-bit-per-component "
+            "reading " + hex6(v) + ") -- no SuperHires multiplexing. "
+            "Deliberately does NOT assert the bottom four bits of each "
+            "8-bit component: this boundary's ports are 8 bits wide (an "
+            "RTL/interface fact, not a manual claim), and the printed "
+            "pages cited by this package say nothing about how a stored "
+            "4-bit value fills the other four -- asserting a specific "
+            "fill (e.g. nibble duplication, denise_colortable.v:56-58's "
+            "own choice) would be an RTL-derived expectation dressed as a "
+            "page one. 'Instead of 4 bits of red, green, and blue for "
+            "bitplane registers 0-3 stored as 0x0RGB in four color "
+            "registers, SuperHires bitplane colors are specially "
+            "encoded...' read as describing what happens WITHOUT "
+            "SuperHires active. Control: same write-register/read-RGB "
+            "measurement basis as every SuperHires assertion below.");
     }
 
     // =====================================================================
     // SHRES-REINTERPRETS-SAME-REGISTERS (p.297) -- the same register
     // contents, same colour index, read differently once shres=1.
+    // WITNESS CORRECTED (was: COLOR01=0x0FFF, all ones in every nibble).
+    // The p.301 table's own mechanism is a REARRANGEMENT of which stored
+    // bits feed which colour slot, not a value transform -- rearranging a
+    // register made entirely of ones yields ones no matter which bits move
+    // where, so the old witness could not have gone green even against a
+    // perfect SuperHires implementation; its FAIL proved nothing about
+    // NanoMig. Fixed the same way the sibling ch3-shres-sprite-colour-
+    // encoding package's own witness does (buildRegValue: slot A = R2/G1/B3,
+    // slot B = the bitwise complement, so a leak or rearrangement reads as a
+    // different, wrong value, never an accidental match): COLOR01 is now
+    // written so each nibble's own top two bits differ from its own bottom
+    // two bits (R=0xC=1100, G=0x3=0011, B=0x9=1001). Any mechanism that
+    // reads only two of a nibble's four physical bits and duplicates them
+    // (p.301's own "only two bits of ... resolution" claim) -- whichever
+    // two bits it picks -- necessarily disagrees with the plain, straight-
+    // through 4-bit OCS reading, for R, G and B alike: this witness is
+    // discriminating by construction, not by accident.
     // =====================================================================
     {
+#if MUT_REINTERP
+        const uint16_t kWitnessColor1 = 0x0FFF; // MUTATION: back to the non-discriminating all-ones witness (the old bug) for BOTH harnesses
+#else
+        const uint16_t kWitnessColor1 = 0x0C39;
+#endif
         Harness h;
         h.set_mode(false, 1);
         h.write_color(0, 0x0000);
-        h.write_color(1, 0x0FFF);
+        h.write_color(1, kWitnessColor1);
         h.drive_plane1(true);
         uint32_t ocs = h.rgb();
         Harness h2;
         h2.write_color(0, 0x0000);
-        h2.write_color(1, 0x0FFF);
+        h2.write_color(1, kWitnessColor1);
         h2.set_mode(true, 1);
         h2.drive_plane1(true);
         uint32_t shres = h2.rgb();
         checks.expect(ocs != shres,
             "SHRES-REINTERPRETS-SAME-REGISTERS (p.297, " +
             join({"C-shr.c06", "C-superhires-color.c1"}) +
-            "): identical COLOR00/COLOR01 register contents (0x000, "
-            "0xFFF), same colour index, same read path -- shres alone "
+            "): COLOR01 written as 0x0C39 (R=0xC, G=0x3, B=0x9 -- each "
+            "nibble's own top two bits differ from its own bottom two "
+            "bits, a discriminating witness: no rearrangement of WHICH "
+            "bits feed a colour slot can accidentally reproduce the plain "
+            "reading), same colour index, same read path -- shres alone "
             "changes nothing: OCS/plain reading " + hex6(ocs) +
             " vs SuperHires reading " + hex6(shres) +
             " (RTL OPENED: denise_colortable.v declares no `shres` port "
@@ -849,14 +974,63 @@ int main(int argc, char** argv) {
     std::array<bool, 16> regOk{};
     bool reg1_bit_used_count[4] = {false, false, false, false}; // B-nibble, for SHRES-TWO-BITS-RESOLUTION
     for (int reg = 0; reg < 16; ++reg) {
+        std::string label = "SHRES-BITPLANE-TABLE-COLOR-" + hexReg(reg) +
+            " (p.301, " + std::string(kRowIds[reg]) + ", " + join16(kBitIds[reg]) + ")";
+        for (auto& lc : kLegend) {
+            if (lc.reg == reg) {
+                label += ", legend " + std::string(lc.srcb) + ", " +
+                         join({lc.sym[0], lc.sym[1], lc.sym[2]});
+            }
+        }
+
+        if (reg >= 4) {
+            // UNREACHABLE UNDER A COMPLIANT BPU -- see BITPLANE COUNT
+            // CORRECTION in the header above. This register's own combined
+            // bitplane-driven index needs plane 3 and/or plane 4 live
+            // (index bits 2/3), but denise.v (l.367-370) forces
+            // bpldata[3]/bpldata[4] to constant 0 whenever l_bpu<=2 --
+            // i.e. whenever BPLCON0 encodes a page-300-compliant SuperHires
+            // depth (BPU=1 or 2, "the maximum plane depth for a SuperHires
+            // viewport is 2 bitplanes") at all. Registers 0-3 are still
+            // measured below (planes 1-2 alone suffice); this one cannot
+            // be, on ANY BPLCON0 configuration the manual allows for
+            // SuperHires -- declined, not silently dropped, its own ids
+            // still cited in full, the same convention the sibling
+            // ch3-shres-sprite-colour-encoding package's own REG-0x10 uses
+            // for an architecturally-unreachable register.
+            regOk[reg] = false;
+            label += ": register COLOR" + hexReg(reg) + "'s own combined "
+                "bitplane-driven index needs plane 3 and/or plane 4 live "
+                "(this register's own index bits 2/3) to select it, but "
+                "page 300 caps SuperHires plane depth at BPU=1 or 2 ('The "
+                "maximum plane depth for a SuperHires viewport is 2 "
+                "bitplanes'; BPLCON0 bits 14-12, 'Depth of SuperHires mode "
+                "(1 or 2)'), and denise.v forces bpldata[3]/bpldata[4] to "
+                "constant 0 whenever l_bpu<=2 -- so this register can never "
+                "be addressed via bitplane-driven selection under any "
+                "BPLCON0 configuration the manual permits for SuperHires. "
+                "Not measured via live display for that reason -- kept red "
+                "rather than silently dropped.";
+            checks.expect(false, label);
+            continue;
+        }
+
+        // Registers 0-3: reachable with planes 1-2 alone -- bpu=2, the
+        // manual's own maximum SuperHires plane depth (p.300), corrects
+        // the previous bpu=4 (an independent validator's finding, checked
+        // against the page and confirmed: SuperHires is capped at 2
+        // bitplanes, so shres=1 combined with bpu=4 is a BPLCON0
+        // configuration the manual never defines -- testing there proves
+        // nothing about SuperHires conformance. See BITPLANE COUNT
+        // CORRECTION in the header above.)
         Harness hbp;
-        hbp.set_mode(false, 4);
+        hbp.set_mode(false, 2);
         hbp.write_color(reg, 0x0000);
         hbp.select_register(reg);
         uint32_t base_plain = hbp.rgb();
 
         Harness hbs;
-        hbs.set_mode(true, 4);
+        hbs.set_mode(true, 2);
         hbs.write_color(reg, 0x0000);
         hbs.select_register(reg);
         uint32_t base_shres = hbs.rgb();
@@ -864,13 +1038,13 @@ int main(int argc, char** argv) {
         bool all_ok = true;
         for (int bit = 15; bit >= 0; --bit) {
             Harness hp;
-            hp.set_mode(false, 4);
+            hp.set_mode(false, 2);
             hp.write_color(reg, static_cast<uint16_t>(1u << bit));
             hp.select_register(reg);
             uint32_t vp = hp.rgb();
 
             Harness hs;
-            hs.set_mode(true, 4);
+            hs.set_mode(true, 2);
             hs.write_color(reg, static_cast<uint16_t>(1u << bit));
             hs.select_register(reg);
             uint32_t vs = hs.rgb();
@@ -894,14 +1068,6 @@ int main(int argc, char** argv) {
         }
         regOk[reg] = all_ok;
 
-        std::string label = "SHRES-BITPLANE-TABLE-COLOR-" + hexReg(reg) +
-            " (p.301, " + std::string(kRowIds[reg]) + ", " + join16(kBitIds[reg]) + ")";
-        for (auto& lc : kLegend) {
-            if (lc.reg == reg) {
-                label += ", legend " + std::string(lc.srcb) + ", " +
-                         join({lc.sym[0], lc.sym[1], lc.sym[2]});
-            }
-        }
         label += ": walking-bit sweep of COLOR" + hexReg(reg) +
                  " -- each of the sixteen bits must either move nothing "
                  "under shres=0 AND shres=1 alike (bits 15-12, printed "
