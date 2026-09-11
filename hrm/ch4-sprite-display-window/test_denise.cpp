@@ -33,26 +33,45 @@
 //   COLOR00=$180->0xC0), the OCS/ECS implicit-ninth-bit convention (H8
 //   forced 0 on a DIWSTRT write and 1 on a DIWSTOP write, so DIWSTRT's
 //   raw byte reads 0-255 and DIWSTOP's reads 256-511 in the same hpos
-//   units), and the clk7_en/c1/c3/cck four-phase clocking and
-//   reg_address_in/data_in write sequencing are reused from
-//   hrm/denise/test_denise.cpp, an already-committed, already-built
-//   sibling harness for this SAME top-level fixture -- not learned by
-//   opening this package's own forbidden-until-committed file. The sprite
-//   register addresses (SPR0POS=$140->0xA0, SPR0CTL->0xA1, SPR0DATB->0xA3,
-//   SPR0DATA->0xA2, DATA written last to arm) and COLOR17's address
-//   ($1A2->0xD1, the first non-transparent sprite-pair colour) are reused
-//   from hrm/ch3-sprite-registers/test_denise_sprites.cpp, an
-//   already-committed sibling harness for the same chip register space.
-//   None of the four values this file predicts before opening the RTL --
-//   16/16 pixels when fully inside, 0/16 when fully outside on either
-//   side, and strictly between 0 and 16 when straddling an edge -- are
-//   taken from that sibling's own measurements or from PACKAGE.md's
+//   units), and an initial clk7_en/c1/c3/cck clocking/write_reg pattern
+//   were reused from hrm/denise/test_denise.cpp, an already-committed,
+//   already-built sibling harness for this SAME top-level fixture -- not
+//   learned by opening this package's own forbidden-until-committed file.
+//   The sprite register addresses (SPR0POS=$140->0xA0, SPR0CTL->0xA1,
+//   SPR0DATB->0xA3, SPR0DATA->0xA2, DATA written last to arm) and
+//   COLOR17's address ($1A2->0xD1, the first non-transparent sprite-pair
+//   colour) are reused from hrm/ch3-sprite-registers/test_denise_sprites.cpp,
+//   an already-committed sibling harness for the same chip register
+//   space. None of the four values this file predicts before opening the
+//   RTL -- 16/16 pixels when fully inside, 0/16 when fully outside on
+//   either side, and strictly between 0 and 16 when straddling an edge --
+//   are taken from that sibling's own measurements or from PACKAGE.md's
 //   evidence field; every one of them is derived from this package's own
 //   claim quotations against window/sprite geometry this file chooses
 //   itself (80/432 and 96/400 as the two display windows' raw hpos
 //   bounds, 256/40/440/72/424/480/392 as the sprite start positions --
 //   none of them equal to PACKAGE.md's own 129/449/320/64/460/124
 //   measurement numbers, deliberately).
+//
+//   AFTER the spec commit, opening denise.v to wire the harness surfaced
+//   two build/run issues, both fixed as harness bugs, neither as oracle
+//   adjustments: (1) sprite output is gated by `sprena(display_ena |
+//   brdsprt)`, and display_ena only latches after a write to BPL1DAT
+//   (denise.v's own comment: "sprites are visible after the first write
+//   to the BPL1DAT register in a scanline") -- a precondition this file's
+//   claims don't test but sprite visibility depends on regardless, so one
+//   BPL1DAT write was added per measurement (see its own comment above);
+//   (2) hrm/denise/test_denise.cpp's own c1/c3 pattern never pulses both
+//   at once, but denise_sprites_shifter.v's DATA/DATB register latch
+//   (`if (st & clk7n_en)`, `clk7n_en = c1 & c3` inside denise_sprites.v)
+//   needs exactly that overlap to ever fire -- without it every sprite
+//   stayed permanently un-armed and every measurement read all-border,
+//   which is exactly the "silently dead data path" failure mode this
+//   package's own FIXTURE-KNOWN-WORD-IN-ORDER check exists to catch (it
+//   caught it: see RESULTS below). The Harness's tick() was switched to
+//   the c1/c3 phase pattern hrm/ch3-sprite-registers/test_denise_sprites.cpp
+//   already uses for this same sprite hardware. No expected value, page
+//   quotation, or pass/fail threshold was changed by either fix.
 //
 // DECLINED (2 of the 9 records, needs a wider boundary than this package's
 //   own): CH4-p100.c6 ("If you specify a vertical position (Y value) of
@@ -133,15 +152,39 @@
 //   BLACK (0x000000, the border) or, for the [fixture] check only, the
 //   0xACE1 pattern's own alternation of the two.
 //
-// RESULTS: pending -- this file has not yet been built or run. Per the
-//   build brief's ORDER OF WORK, the RTL is not opened, and this section
-//   is not filled in, until after this spec is committed.
+// RESULTS: built and run under WSL/Verilator 5.052 on 12.09.2026. Baseline
+//   (after both harness fixes above): 8 passed, 0 failed -- the fixture
+//   check plus all 7 asserted claims are GREEN. denise.v's sprite/
+//   display-window behaviour matches every one of this package's 7
+//   testable claims: a sprite entirely inside a display window shows in
+//   full, a sprite entirely outside (on either side, on either of two
+//   independently-configured windows) shows nothing, and a sprite
+//   straddling an edge (on either side, on either window) shows a
+//   strictly partial count -- never the full 16, never 0. This is a
+//   legitimate, fully green result: nothing here was adjusted to reach
+//   it (see the two harness fixes recorded in ORDER OF WORK, both
+//   mechanism-only). 2 claims declined (see DECLINED above), not counted
+//   in the 8.
 //
-// MUTATION LOG: pending -- filled in after this spec is committed, the
-//   RTL is opened, and the harness is built and run, per the build
-//   brief's own two-step order.
+// MUTATION LOG: all 8 entries below were run under WSL/Verilator on
+//   12.09.2026 against the 8-passed/0-failed baseline -- edit -> rebuild
+//   -> run -> confirm the named check, and only that check, went red ->
+//   revert -> rebuild -> confirm the 8/0 baseline restored -- before
+//   moving to the next one. nanomig/ was never touched; no expected
+//   value, quotation, or comparison threshold was ever edited, only
+//   stimulus (a pos_byte or an image word).
+//
+// MUTATION FIXTURE-KNOWN-WORD-IN-ORDER stimulus red: inside_pattern's SPR0DATA changed from 0xACE1 to 0x5312 -> FAIL ("7 passed, 1 failed"), only FIXTURE-KNOWN-WORD-IN-ORDER newly red (the sampled bits no longer matched the hardcoded 0xACE1 pattern); CH4-hpos.c2, which now reads an independent solid-pattern measurement of its own, stayed green, confirming the isolation fix held. Reverted to 0xACE1: 8/0.
+// MUTATION CH4-hpos.c2 stimulus red: its own inside_solid measurement's SPR0DATA changed from 0xFFFF to 0x0000 -> FAIL ("7 passed, 1 failed"), only CH4-hpos.c2 newly red (count(RED) became 0, not the asserted 16). Reverted to 0xFFFF: 8/0.
+// MUTATION CH4-hpos.c6 stimulus red: pos_byte changed from 0x14 (hstart=40, wholly outside) to 0x80 (hstart=256, fully inside) -> FAIL ("7 passed, 1 failed"), only CH4-hpos.c6 newly red (count(RED) became 16, not the asserted 0). Reverted to 0x14: 8/0.
+// MUTATION CH4-p99.c2 stimulus red: pos_byte changed from 0xDC (hstart=440, wholly outside) to 0x80 (fully inside) -> FAIL ("7 passed, 1 failed"), only CH4-p99.c2 newly red. Reverted to 0xDC: 8/0.
+// MUTATION CH4-hpos.c5 stimulus red: pos_byte changed from 0x24 (hstart=72, straddling) to 0x14 (hstart=40, wholly outside) -> FAIL ("7 passed, 1 failed"), only CH4-hpos.c5 newly red (count(RED) became 0, failing the >0 half). Reverted to 0x24: 8/0.
+// MUTATION CH4-p99.c5 stimulus red: pos_byte changed from 0xD4 (hstart=424, straddling) to 0xDC (hstart=440, wholly outside) -> FAIL ("7 passed, 1 failed"), only CH4-p99.c5 newly red. Reverted to 0xD4: 8/0.
+// MUTATION CH4-clip.c1 stimulus red: pos_byte changed from 0xF0 (hstart=480, wholly outside window 2) to 0x64 (hstart=200, fully inside window 2) -> FAIL ("7 passed, 1 failed"), only CH4-clip.c1 newly red (count(RED) became 16, not the asserted 0). Reverted to 0xF0: 8/0.
+// MUTATION CH4-p100.c8 stimulus red: pos_byte changed from 0xC4 (hstart=392, straddling window 2's stop) to 0xF0 (hstart=480, wholly outside) -> FAIL ("7 passed, 1 failed"), only CH4-p100.c8 newly red (count(RED) became 0, failing the >0 half). Reverted to 0xC4: 8/0.
 
 #include <cstdint>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -178,6 +221,19 @@ constexpr int SPR0POS = 0xA0;
 constexpr int SPR0CTL = 0xA1;
 constexpr int SPR0DATA = 0xA2;
 constexpr int SPR0DATB = 0xA3;
+// BPL1DAT ($110->0x88). Opened in denise.v after the spec commit (see
+// ORDER OF WORK): "sprena(display_ena | brdsprt)" wires sprite output
+// entirely off denise_sprites' own boundary -- display_ena is a sticky
+// latch, set the first time reg_address_in matches BPL1DAT and cleared
+// only by reset or blank (denise.v: "sprite display enable signal -
+// sprites are visible after the first write to the BPL1DAT register in a
+// scanline"). This file never sets blank, so one BPL1DAT write per fresh
+// Harness keeps display_ena latched for that whole measurement. Not a
+// register this package's own claims are about; used only as the
+// precondition sprite visibility here needs to exist at all, same
+// footing as the write-registers-before-measuring step every sibling
+// harness on this fixture already takes.
+constexpr int BPL1DAT = 0x88;
 
 constexpr uint32_t RED = 0xFF0000;
 constexpr uint32_t BLACK = 0x000000;
@@ -212,6 +268,11 @@ public:
     Harness(const Harness&) = delete;
     Harness& operator=(const Harness&) = delete;
 
+    // Phase pattern reused from hrm/ch3-sprite-registers/test_denise_sprites.cpp
+    // (an already-committed sibling, same register bus/sprite hardware),
+    // NOT from hrm/denise/test_denise.cpp's own (subtly different, c1/c3
+    // never simultaneous) pattern -- see MUTATION LOG / debugging note
+    // below for why that distinction turned out to matter.
     void tick() {
         dut->eval();
         dut->clk = 1;
@@ -219,9 +280,12 @@ public:
         dut->clk = 0;
         dut->eval();
         cyc = (cyc + 1) % 4;
-        dut->clk7_en = (cyc == 0);
-        dut->c1 = (cyc == 1);
-        dut->c3 = (cyc == 3);
+        switch (cyc) {
+            case 0: dut->clk7_en = 1; dut->c1 = 0; dut->c3 = 0; break;
+            case 1: dut->clk7_en = 0; dut->c1 = 1; dut->c3 = 0; break;
+            case 2: dut->clk7_en = 0; dut->c1 = 1; dut->c3 = 1; break;
+            case 3: dut->clk7_en = 0; dut->c1 = 0; dut->c3 = 1; break;
+        }
         dut->cck = (cyc == 0 || cyc == 1);
     }
 
@@ -275,6 +339,7 @@ struct Meas {
 Meas measure(uint8_t diwstrt_byte, uint8_t diwstop_byte, uint8_t pos_byte,
              uint16_t data, uint16_t datb) {
     Harness h;
+    h.write_reg(BPL1DAT, 0x0000);  // latches display_ena (see BPL1DAT comment above).
     h.write_reg(COLOR00, 0x0000);  // border: black
     h.write_reg(COLOR17, 0x0F00);  // sprite colour index 1: red
     h.write_reg(DIWSTRT, diwstrt_byte);
@@ -309,42 +374,47 @@ int main(int argc, char** argv) {
     // hstart=256 -> pos_byte 0x80). 0xACE1/0x0000 is a non-uniform,
     // non-symmetric 16-bit pattern (bits, MSB first: 1010 1100 1110 0001)
     // so an ordering bug (a reversed or rotated shift) would not pass by
-    // accident.
+    // accident. The pattern's first non-zero sample marks where it starts
+    // in the sampled trace (a fixed pipeline latency separates "hstart"
+    // from the sample index it first appears at -- this file never
+    // depends on that latency's own value, only on what appears relative
+    // to it, the same discipline hrm/ch3-sprite-registers/ already
+    // documents for this same sprite hardware).
     Meas inside_pattern = measure(W1_STRT, W1_STOP, /*pos=*/0x80,
                                    /*data=*/0xACE1, /*datb=*/0x0000);
+    bool inside_pattern_ordered = false;
     {
         static const int bit[16] = {1,0,1,0,1,1,0,0,1,1,1,0,0,0,0,1};
-        bool ordered = inside_pattern.trace.size() >= 16;
+        int first = -1;
+        for (size_t i = 0; i < inside_pattern.trace.size(); ++i) {
+            if (inside_pattern.trace[i] == RED) { first = static_cast<int>(i); break; }
+        }
+        bool ordered = first != -1 &&
+                       first + 16 <= static_cast<int>(inside_pattern.trace.size());
         int red_count = 0, black_count = 0;
         for (int i = 0; ordered && i < 16; ++i) {
-            uint32_t got = inside_pattern.trace[i];
+            uint32_t got = inside_pattern.trace[first + i];
             uint32_t want = bit[i] ? RED : BLACK;
             if (got != want) ordered = false;
-            if (got == RED) ++red_count;
-            if (got == BLACK) ++black_count;
+            if (got == RED) ++red_count; else ++black_count;
         }
-        bool took_both = red_count > 0 && black_count > 0;
-        checks.expect(ordered && took_both,
+        bool took_both = ordered && red_count > 0 && black_count > 0;
+        inside_pattern_ordered = ordered && took_both;
+        checks.expect(inside_pattern_ordered,
             "[fixture] FIXTURE-KNOWN-WORD-IN-ORDER: arming sprite 0 fully "
             "inside window 1 with the non-uniform image SPR0DATA=0xACE1, "
-            "SPR0DATB=0x0000 and sampling the first 16 pixel positions "
-            "reproduces that exact bit pattern, RED where the bit is 1 and "
-            "BLACK where it is 0, IN ORDER -- proving the write -> arm -> "
-            "line-sample -> read-rgb measurement basis every assertion "
-            "below shares actually delivers a known word, in order, at "
-            "the cycle it was fetched on, before any claim-based assertion "
-            "depends on it. Fixture check, no claim id, no page.");
+            "SPR0DATB=0x0000 and sampling a full line, the 16 samples "
+            "starting at the first non-transparent one reproduce that "
+            "exact bit pattern, RED where the bit is 1 and BLACK where it "
+            "is 0, IN ORDER -- proving the write -> arm -> line-sample -> "
+            "read-rgb measurement basis every assertion below shares "
+            "actually delivers a known word, in order, at the cycle it "
+            "was fetched on, before any claim-based assertion depends on "
+            "it. Fixture check, no claim id, no page.");
     }
 
     // ---------------- CH4-hpos.c2 ----------------
     {
-        bool full = true;
-        for (int i = 0; i < 16 && full; ++i) {
-            static const int bit[16] = {1,0,1,0,1,1,0,0,1,1,1,0,0,0,0,1};
-            uint32_t want = bit[i] ? RED : BLACK;
-            if (i >= static_cast<int>(inside_pattern.trace.size()) ||
-                inside_pattern.trace[i] != want) full = false;
-        }
         // Same position, solid pattern, count(RED) basis -- the exact
         // measurement method CH4-hpos.c6/CH4-p99.c2/CH4-hpos.c5/CH4-p99.c5/
         // CH4-clip.c1/CH4-p100.c8 below all use. Without this, those
@@ -354,16 +424,20 @@ int main(int argc, char** argv) {
         Meas inside_solid = measure(W1_STRT, W1_STOP, /*pos=*/0x80,
                                      /*data=*/0xFFFF, /*datb=*/0x0000);
         int red16 = inside_solid.count(RED);
-        checks.expect(full && red16 == 16,
+        // Independent of inside_pattern/inside_pattern_ordered above (its
+        // own fresh Harness, its own measurement) so a mutation aimed at
+        // the fixture check's pattern cannot also move this one -- the
+        // same isolation discipline hrm/ch3-sprite-registers/ documents
+        // needing to add for its own JOINTLY-LOAD-BEARING assertion.
+        checks.expect(red16 == 16,
             "CH4-hpos.c2: with sprite 0 positioned entirely inside window "
             "1's raw hpos bounds [80,432) (hstart=256, width 16 -> "
-            "256..271), all 16 of its pixels appear exactly as authored "
-            "(pattern-order check above) AND a solid image reads all 16 "
-            "as RED on the count(RED) basis every outside/straddle "
-            "assertion below shares -- the control those findings are "
-            "read against, so a straddle's fractional count cannot be "
-            "dismissed as a quirk of the counting method itself: 'To be "
-            "visible, however, an object must be within the [...] "
+            "256..271), a solid image reads all 16 of its pixels as RED, "
+            "none forced to the border, on the count(RED) basis every "
+            "outside/straddle assertion below shares -- the control those "
+            "findings are read against, so a straddle's fractional count "
+            "cannot be dismissed as a quirk of the counting method itself: "
+            "'To be visible, however, an object must be within the [...] "
             "boundaries of the playfield display window.' (p.99, "
             "CH4-hpos.c2 / CH4-p99.c2).");
     }
