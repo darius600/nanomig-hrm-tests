@@ -258,9 +258,10 @@ int main(int argc, char** argv) {
         }
         checks.expect(pairs >= 5 && wrong == 0,
                       "P1 consecutive Copper bus grants are two memory cycle times apart (p.19, p.20) "
-                      "[claims: COP2-about-the-copper.c20, COP2-copins-timing.c1, COP2-copins-timing.c2, ch2-about-the-copper.c19, ch2-appa-copins.c126]");
+                      "[claims: COP2-about-the-copper.c20, COP2-copins-timing.c1, ch2-about-the-copper.c19, ch2-appa-copins.c126]");
 
-        // COP2-about-the-copper.c21 ("the Copper requests the bus only during
+        // COP2-about-the-copper.c21 and COP2-copins-timing.c2 ("the Copper
+        // requests the bus only during
         // odd-numbered memory cycles") is UNBOUND. P1 above tests the same
         // sentence's SPACING (every other cycle), by this test's own design
         // and comment ("Asserted as spacing rather than absolute parity: the
@@ -404,8 +405,7 @@ int main(int argc, char** argv) {
             "consecutive grants are two memory cycle times apart - the two calculations "
             "are calibrated against each other here (p.275 \"only the odd bus cycles are "
             "requested\"). They read the same `grants` vector, so this is agreement "
-            "between two readings of one record, not between two instruments "
-            "[claims: COP2-copins-timing.c2]");
+            "between two readings of one record, not between two instruments ");
 
         checks.expect_eq(bus, 2,
             "AC1 a MOVE is granted two bus cycles (p.275 \"All instructions (except for "

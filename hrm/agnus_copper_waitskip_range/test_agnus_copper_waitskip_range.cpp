@@ -378,7 +378,7 @@ int main(int argc, char** argv) {
         h.start_list();
         h.run_cycles(6000);
         checks.expect(h.move_count(COLOR00) == 1, "W7 WAIT with an enabled horizontal compare releases "
-                      "[claims: COP2-the-wait-instruction.c6, COP2-the-wait-instruction.c17, "
+                      "[claims: COP2-the-wait-instruction.c6, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c4, ch2-the-wait-instruction.c5]");
     }
 
@@ -454,7 +454,7 @@ int main(int argc, char** argv) {
                       "COP2-the-skip-instruction.c3, COP2-summary-of-copper-instructions.c94, "
                       "COP2-summary-of-copper-instructions.c96, COP2-the-skip-instruction.c12, "
                       "COP2-the-skip-instruction.c4, COP2-the-skip-instruction.c5, "
-                      "COP2-the-wait-instruction.c13, ch2-appa-copins.c107, ch2-appa-copins.c109]");
+                      "COP2-the-wait-instruction.c13, ch2-appa-copins.c107, ch2-appa-copins.c109, ch2-summary-of-copper-instructions.c94, ch2-summary-of-copper-instructions.c96, ch2-the-skip-instruction.c2, ch2-the-skip-instruction.c3, ch2-the-skip-instruction.c8, ch2-the-wait-instruction.c10]");
     }
 
     // ---------------- BFD (COP-08, p.33) ----------------
@@ -471,7 +471,7 @@ int main(int argc, char** argv) {
         h.start_list();
         h.run_cycles(4000);
         checks.expect(h.move_count(COLOR00) == 1, "B1 BFD=1: a busy blitter does not hold the WAIT (p.33) "
-                      "[claims: COP2-copins-bfd.c1, COP2-copins-bfd.c2, COP2-copins-encoding.c4, "
+                      "[claims: COP2-copins-bfd.c2, COP2-copins-encoding.c4, "
                       "COP2-the-wait-instruction.c14, COP2-copper-loops-and-branches-and-comparison-enable.c13, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
@@ -490,7 +490,7 @@ int main(int argc, char** argv) {
         h.start_list();
         h.run_cycles(4000);
         checks.expect(h.move_count(COLOR00) == 0, "B2 BFD=0: the WAIT is held while the blitter is busy (p.33) "
-                      "[claims: COP2-copins-bfd.c1, COP2-copins-bfd.c3, COP2-copins-bfd.c5, COP2-copins-encoding.c4, "
+                      "[claims: COP2-copins-bfd.c3, COP2-copins-bfd.c5, COP2-copins-encoding.c4, "
                       "COP2-the-wait-instruction.c14, COP2-copper-loops-and-branches-and-comparison-enable.c13, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
@@ -738,7 +738,7 @@ int main(int argc, char** argv) {
         checks.expect(first > 0 && latency >= 0 && latency < 64,
             "EHC [control] the HP walk's first bit releases at a plausible position, so "
             "the fetch latency can be calibrated from it rather than assumed "
-            "[claims: COP2-copins-fields-p275.c11, COP2-the-wait-instruction.c12, ch2-appa-copins.c118]");
+            "[claims: COP2-copins-fields-p275.c11, ch2-appa-copins.c118]");
 
         static const char* const kEhApxClaimId[7] = {
             "COP2-copins-encoding.c87, ch2-appa-copins.c100", "COP2-copins-encoding.c81, ch2-appa-copins.c94",
@@ -767,7 +767,8 @@ int main(int argc, char** argv) {
                 std::to_string(4 * (1 << bit)) + " plus the fetch latency "
                 "(appendix A p274 instruction table) "
                 "[claims: " + std::string(kEhApxClaimId[bit]) +
-                ", " + std::string(kEhBodyClaimId[bit]) + "]");
+                ", " + std::string(kEhBodyClaimId[bit]) +
+                ", COP2-the-wait-instruction.c12]");
         }
     }
     //
@@ -838,7 +839,8 @@ int main(int argc, char** argv) {
                 " (appendix A p274 table, p275 \"Enable comparison (mask bit)\") "
                 "[claims: " + std::string(kEmApxClaimId[bit]) +
                 ", " + std::string(kEmBodyClaimId[bit]) +
-                (bit == 0 ? std::string(", COP2-copins-fields-p275.c12, COP2-the-wait-instruction.c16, "
+                ", COP2-the-wait-instruction.c16" +
+                (bit == 0 ? std::string(", COP2-copins-fields-p275.c12, "
                                         "COP2-copper-loops-and-branches-and-comparison-enable.c5")
                           : std::string()) + "]");
         }
@@ -874,7 +876,7 @@ int main(int argc, char** argv) {
         "of whether masking actually works, so it does not discriminate): "
         "COP2-copins-encoding.c52, COP2-copins-encoding.c58, COP2-copins-encoding.c64, "
         "COP2-copins-encoding.c70, COP2-copins-encoding.c76, COP2-copins-encoding.c82, "
-        "COP2-copins-encoding.c88, COP2-copins-fields-p275.c13, ch2-appa-copins.c101, ch2-appa-copins.c120, ch2-appa-copins.c65, ch2-appa-copins.c71, ch2-appa-copins.c77, ch2-appa-copins.c83, ch2-appa-copins.c89, ch2-appa-copins.c95, ch2-copper-loops-and-branches.c6, ch2-copper-loops-and-branches.c7, ch2-the-wait-instruction.c13, ch2-the-wait-instruction.c14");
+        "COP2-copins-encoding.c88, COP2-copins-fields-p275.c13, COP2-the-wait-instruction.c17, ch2-appa-copins.c101, ch2-appa-copins.c120, ch2-appa-copins.c65, ch2-appa-copins.c71, ch2-appa-copins.c77, ch2-appa-copins.c83, ch2-appa-copins.c89, ch2-appa-copins.c95, ch2-copper-loops-and-branches.c6, ch2-copper-loops-and-branches.c7, ch2-the-wait-instruction.c13, ch2-the-wait-instruction.c14");
     checks.note("UNBOUND (COP2-copins-fields.c1, COP2-copins-fields.c2: the page-274 "
         "legend \"IR1=First instruction register\" / \"IR2=Second instruction register\" "
         "is a purely definitional naming claim, not independently RTL-observable - and "
@@ -911,6 +913,10 @@ int main(int argc, char** argv) {
         "COP2-copins-encoding.c52/58/64/70/76/82/88: EM0-EM6 walk VE bit by bit, nothing "
         "walks HE the same way, and W1/W7 only exercise HE at its extremes (all-clear, "
         "all-set), which cannot show which bit governs which comparison bit. [claims: ch2-summary-of-copper-instructions.c52, ch2-summary-of-copper-instructions.c58, ch2-summary-of-copper-instructions.c64, ch2-summary-of-copper-instructions.c70, ch2-summary-of-copper-instructions.c76, ch2-summary-of-copper-instructions.c82, ch2-summary-of-copper-instructions.c88]");
+    checks.note("UNBOUND (COP2-copins-bfd.c1: \"BFD denotes blitter-finished "
+        "disable\" - a name, not a requirement. B1 and B2 listed it until 11.09.2026 "
+        "alongside c2, the behaviour they do check; no assertion can fail because a "
+        "bit is called something else)");
     checks.note("UNBOUND COP2-using-the-copper-with-the-blitter.c7 (\"BFD cleared: WAIT "
         "requires a true beam-counter comparison\") -- no assertion measures it. B2 and B3 "
         "both start with the position already satisfied (seek_beam past the WAIT's target), "

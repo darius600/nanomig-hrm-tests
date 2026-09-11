@@ -276,7 +276,7 @@ int main(int argc, char** argv) {
             "LR3 [RTL_REGRESSION, no oracle] COP2LCH: measured high-field "
             "width is 5 bits, the same as COP1LCH - the two pointers are "
             "symmetric. Neither manual reading covers this; both state 3 "
-            "[claims: COP2-location-registers.c4]");
+            "[claims: ]");
     }
 
     // ------------------------------------------------------------------
@@ -411,7 +411,7 @@ int main(int argc, char** argv) {
             "pair were right "
             "[claims: COP2-cop2lch.c5, COP2-cop2lch.c6, COP2-ecs-location-width.c3, "
             "COP2-ecs-location-width.c4, COP2-cop2lch-ecs.c5, COP2-cop2lch-ecs.c6, "
-            "COP2-cop-location-pointers.c7, ch2-appa-location-registers.c12.s2, ch2-appa-location-registers.c13, ch2-appa-location-registers.c14, ch2-appb-table.c27.s2, ch2-appb-table.c28, ch2-appb-table.c29, ch2-appc-ecs.c10, ch2-appc-ecs.c11, ch2-location-registers.c4]");
+            "COP2-cop-location-pointers.c7, ch2-appa-location-registers.c12.s2, ch2-appa-location-registers.c13, ch2-appa-location-registers.c14, ch2-appb-table.c27.s2, ch2-appb-table.c28, ch2-appb-table.c29, ch2-appc-ecs.c10, ch2-appc-ecs.c11, ch2-location-registers.c4, COP2-location-registers.c4]");
 
         checks.note("LW5 bridges COP1LCH's separately-measured widths (LW1, red; LW2, "
             "green) onto COP2LCH by equality, which is how COP2-cop2lch.c5/c6 and the "

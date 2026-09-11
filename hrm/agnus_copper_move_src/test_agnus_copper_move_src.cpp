@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
             "[claims: COP2-copins-fields-p275.c1, COP2-copins-fields-p275.c2, "
             "COP2-copins-fields-p275.c3, COP2-copins-fields-p275.c4, "
             "COP2-the-move-instruction.c2, COP2-what-is-a-copper-instruction.c8, "
-            "COP2-what-is-a-copper-instruction.c14, COP2-what-is-a-copper-instruction.c10, ch2-what-is-a-copper-instruction.c8]");
+            "COP2-what-is-a-copper-instruction.c14, COP2-what-is-a-copper-instruction.c10, ch2-what-is-a-copper-instruction.c8, ch2-appa-copins.c112, ch2-appa-copins.c113, ch2-appa-copins.c114, ch2-the-move-instruction.c1, ch2-the-move-instruction.c2]");
     }
 
     // ------------------------------------------------------------------
@@ -295,7 +295,7 @@ int main(int argc, char** argv) {
     // none of these fixtures drives.
     checks.note("UNBOUND COP2-what-is-a-copper-instruction.c21 -- observable only at a "
                  "boundary none of these fixtures drives (absence of a memory-write port; "
-                 "not a behaviour any stimulus here could vary)");
+                 "not a behaviour any stimulus here could vary) [claims: ch2-what-is-a-copper-instruction.c19]");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

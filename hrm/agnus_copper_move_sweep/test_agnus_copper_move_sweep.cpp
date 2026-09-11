@@ -417,7 +417,7 @@ int main(int argc, char** argv) {
 
     expect_set_equals(checks, ocs_cdang0, expected_cdang0,
                        "SWEEP ecs=0 cdang=0 vs spec Reading B (HRM_CONFORMANCE, primary oracle) "
-                       "[claims: COP2-about-the-copper.c5, COP2-control-register.c4]");
+                       "[claims: COP2-about-the-copper.c5, COP2-control-register.c4, ch2-about-the-copper.c6, ch2-appb-table.c10, ch2-appb-table.c12, ch2-appb-table.c13, ch2-appb-table.c46, ch2-appb-table.c8, ch2-appb-table.c9]");
     expect_set_equals(checks, ocs_cdang1, expected_cdang1,
                        "SWEEP ecs=0 cdang=1 vs spec Reading B (HRM_CONFORMANCE, primary oracle) "
                        "[claims: COP2-about-the-copper.c5, COP2-control-register.c13]");
@@ -449,11 +449,11 @@ int main(int argc, char** argv) {
                        "SWEEP ecs=1 cdang=0 vs Appendix C (HRM_CONFORMANCE; the appendix gives the ECS "
                        "CDANG=0 range as equal to the OCS CDANG=1 range). Expected to be RED: this is "
                        "the deviation already tracked as FPGA-062 "
-                       "[claims: COP2-copcon-ecs.c14]");
+                       "[claims: COP2-copcon-ecs.c14, ch2-appc-ecs.c22]");
     expect_set_equals(checks, ecs_cdang1, expected_ecs_cdang1,
                        "SWEEP ecs=1 cdang=1 vs Appendix C (HRM_CONFORMANCE; \"the Copper can access all "
                        "of the Amiga chip registers\") "
-                       "[claims: COP2-copcon-ecs.c11]");
+                       "[claims: COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
 
     // --- Bit independence (data_in[15:9] of the MOVE first word must not
     // affect the decode; PKG-MOVE-DECODE, Table 2-2 "X" bits / COP2-summary-
@@ -475,7 +475,7 @@ int main(int argc, char** argv) {
                        "COP2-summary-of-copper-instructions.c1, COP2-summary-of-copper-instructions.c7, "
                        "COP2-summary-of-copper-instructions.c13, COP2-summary-of-copper-instructions.c19, "
                        "COP2-summary-of-copper-instructions.c25, COP2-summary-of-copper-instructions.c31, "
-                       "COP2-summary-of-copper-instructions.c37, COP2-summary-of-copper-instructions.c97]");
+                       "COP2-summary-of-copper-instructions.c37, COP2-summary-of-copper-instructions.c97, ch2-appa-copins.c14, ch2-appa-copins.c20, ch2-appa-copins.c26, ch2-appa-copins.c32, ch2-appa-copins.c38, ch2-appa-copins.c44, ch2-appa-copins.c50, ch2-summary-of-copper-instructions.c1, ch2-summary-of-copper-instructions.c13, ch2-summary-of-copper-instructions.c19, ch2-summary-of-copper-instructions.c25, ch2-summary-of-copper-instructions.c31, ch2-summary-of-copper-instructions.c37, ch2-summary-of-copper-instructions.c7, ch2-the-move-instruction.c6]");
     }
     {
         constexpr uint16_t NEVER_REG = 0x00;  // never-writable in both readings, both CDANG states
@@ -510,7 +510,7 @@ int main(int argc, char** argv) {
         checks.expect(h.events.size() < 3,
                        "RESET ecs=0: CDANG=1 set, then reset, then MOVE to $20 (CDANG-gated) is rejected -- "
                        "reset clears CDANG "
-                       "[claims: COP2-copcon-appa.c7, COP2-copcon-appa.c8, COP2-control-register.c15]");
+                       "[claims: COP2-copcon-appa.c7, COP2-copcon-appa.c8, COP2-control-register.c15, ch2-appa-copcon.c7, ch2-appa-copcon.c8]");
     }
 
     // ------------------------------------------------------------------
@@ -538,7 +538,7 @@ int main(int argc, char** argv) {
                << "COP2-summary-of-copper-instructions.c43, COP2-summary-of-copper-instructions.c49, "
                << "COP2-summary-of-copper-instructions.c55, COP2-summary-of-copper-instructions.c61, "
                << "COP2-summary-of-copper-instructions.c67, COP2-summary-of-copper-instructions.c73, "
-               << "COP2-summary-of-copper-instructions.c79, COP2-summary-of-copper-instructions.c85]";
+               << "COP2-summary-of-copper-instructions.c79, COP2-summary-of-copper-instructions.c85, ch2-about-the-copper.c7, ch2-appa-copins.c56, ch2-appa-copins.c62, ch2-appa-copins.c68, ch2-appa-copins.c74, ch2-appa-copins.c80, ch2-appa-copins.c86, ch2-appa-copins.c92, ch2-appa-copins.c98, ch2-summary-of-copper-instructions.c43, ch2-summary-of-copper-instructions.c49, ch2-summary-of-copper-instructions.c55, ch2-summary-of-copper-instructions.c61, ch2-summary-of-copper-instructions.c67, ch2-summary-of-copper-instructions.c73, ch2-summary-of-copper-instructions.c79, ch2-summary-of-copper-instructions.c85, ch2-the-move-instruction.c3, ch2-the-move-instruction.c5]";
         if (!all_wrong.empty()) {
             detail << " - MISROUTED:";
             for (size_t i = 0; i < all_wrong.size() && i < 8; ++i) {

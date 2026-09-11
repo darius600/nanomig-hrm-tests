@@ -208,9 +208,9 @@ int main(int argc, char** argv) {
     // fourth kind. Demonstrating that negative would need a claim this task
     // does not license writing. Reason: no assertion measures it.
     checks.note("UNBOUND COP2-what-is-a-copper-instruction.c2 -- no assertion measures it "
-                 "(exhaustiveness of the 3-instruction set; no assertion tests for the absence of a 4th form)");
+                 "(exhaustiveness of the 3-instruction set; no assertion tests for the absence of a 4th form) [claims: ch2-what-is-a-copper-instruction.c1]");
     checks.note("UNBOUND COP2-stopping-the-copper.c1 -- no assertion measures it "
-                 "(absence of a stop opcode; not testable as a positive behavioural assertion)");
+                 "(absence of a stop opcode; not testable as a positive behavioural assertion) [claims: ch2-stopping-the-copper.c1]");
 
     // L1 - p.27: multiple MOVEs may follow a single WAIT, and they execute in
     // list order.
@@ -280,7 +280,7 @@ int main(int argc, char** argv) {
         checks.expect(h.move_count(COLOR00) == 0, "L4 IR1 bit 0 set: the word is a beam compare, not a MOVE to that register "
                       "[claims: COP2-the-move-instruction.c4, COP2-the-wait-instruction.c10, COP2-the-skip-instruction.c6, "
                       "COP2-summary-of-copper-instructions.c91, COP2-summary-of-copper-instructions.c93, COP2-summary-of-copper-instructions.c95, "
-                      "COP2-copins-encoding.c91, COP2-copins-encoding.c93, COP2-copins-encoding.c95, ch2-appa-copins.c106]");
+                      "COP2-copins-encoding.c91, COP2-copins-encoding.c93, COP2-copins-encoding.c95, ch2-appa-copins.c106, ch2-appa-copins.c104, ch2-summary-of-copper-instructions.c91, ch2-summary-of-copper-instructions.c93, ch2-summary-of-copper-instructions.c95, ch2-the-move-instruction.c4, ch2-the-skip-instruction.c4, ch2-the-wait-instruction.c7]");
         checks.expect(h.move_count(COLOR01) == 1, "L4 the list continues past it");
     }
 
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
                          && h.move_count(COLOR02) == 1 && h.data_of(COLOR02) == 0x1234;
         checks.expect(paired, "L8 instructions are consumed as word pairs, the data word is not decoded (p.20) "
                       "[claims: COP2-what-is-a-copper-instruction.c8, COP2-what-is-a-copper-instruction.c14, "
-                      "COP2-copins-instructions.c7, COP2-copins-instructions.c8, ch2-what-is-a-copper-instruction.c11, ch2-what-is-a-copper-instruction.c6]");
+                      "COP2-copins-instructions.c7, ch2-what-is-a-copper-instruction.c11, ch2-what-is-a-copper-instruction.c6]");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
