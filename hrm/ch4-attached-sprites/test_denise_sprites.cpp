@@ -172,37 +172,40 @@
 //   sibling assertion passing on the same basis rules out a units-
 //   error in the harness itself.
 //
-// RESULTS: PENDING -- this file is committed before denise_sprites.v /
-//   denise_sprites_shifter.v have been opened or built, per the build
-//   brief's gate ("write the specification, commit it, only then open
-//   the RTL"). Filled in by a follow-up commit after the WSL/Verilator
-//   build and the mutation runs below.
+// RESULTS (WSL/Verilator 5.052, built and run 11.09.2026, AFTER the
+//   specification commit -- denise_sprites.v and denise_sprites_
+//   shifter.v were opened only once, for this build, not before):
+//   3 passed, 1 failed. FIXTURE-LIVE-DATA-PATH, ATTACH-BIT-ODD-SPRITE-
+//   ENABLES-ATTACHMENT, and CODE-0000-YIELDS-TRANSPARENT-PIXEL are all
+//   GREEN. ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE is RED -- the
+//   candidate finding is CONFIRMED, exactly as classified, not
+//   adjusted to pass.
 //
-// MUTATION LOG: PENDING -- filled in by the same follow-up commit,
-//   after each mutation below is actually run (edit -> rebuild -> run
-//   -> confirm only the named assertion changed colour -> revert ->
-//   rebuild -> confirm baseline restored), not asserted in advance.
-//   Planned, one stimulus change per graded assertion, expected zero
-//   change to any expected value or comparison logic:
-//     FIXTURE-LIVE-DATA-PATH: make the MSB-run and LSB-run stimuli
-//       identical (both 0x8000) so the three active hpos values are no
-//       longer distinct -- expect only this assertion to go red.
-//     ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT: withhold the ATTACH
-//       stimulus in case (ii) (SPR1CTL bit7 0 instead of 1) so
-//       trace(ii) becomes identical to trace(i) -- expect only this
-//       assertion to go red.
-//     ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE: change case (iii)'s own
-//       SPR0DATA image (0x4000 instead of 0x8000, ATTACH stimulus
-//       itself untouched) so trace(iii) differs from trace(i) for a
-//       plain image-mismatch reason -- expect only this assertion to
-//       go red, proving the equality check is not vacuously true.
-//     CODE-0000-YIELDS-TRANSPARENT-PIXEL: change the stimulus from
-//       all-zero DATA/DATB to a non-zero SPR0DATA (0x8000) so the
-//       combined code is no longer 0000 -- expect only this assertion
-//       to go red.
-//   TABLE45-ROW0-REGISTER-NUMBER-CONFLICT is declined (record(), no
-//   expect()) -- no red/green state exists for a mutation to move, matching
-//   hrm/ch3-sprite-registers/'s own convention for its one declined id.
+//   FINDING -- denise_sprites.v:484 reads `if (attach1 || (!aga &&
+//   attach0))`. At aga=0 (OCS/ECS -- this package's own measurement
+//   basis, matching the sibling harnesses' own default), the EVEN
+//   sprite's own ATTACH bit (attach0) alone -- with the ODD sprite's
+//   own bit (attach1) clear -- is enough to open the combined-colour
+//   path, the same path the ODD sprite's own bit opens. This
+//   contradicts 'This bit is valid only for odd-numbered' (p.128) and
+//   '...set to 1 in the data structure for the odd-numbered' (p.122):
+//   on this RTL, at aga=0, the bit is not odd-only. The MUTATION LOG's
+//   own ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE entry below additionally
+//   shows the finding is SCOPED to aga=0 -- at aga=1 (AGA) the same
+//   line's `!aga` term is 0, attach0 can no longer open the path, and
+//   the RTL matches the manual.
+//
+// MUTATION LOG (WSL/Verilator, same session as RESULTS above; each
+//   entry actually run: rebuild with the named -D flag -> run -> read
+//   the PASS/FAIL lines -> confirm only the named assertion changed
+//   colour -> rebuild with no flags -> confirm the 3-passed/1-failed
+//   baseline was restored):
+//
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: built with -DMUT_FIXTURE=1, which makes the MSB-run stimulus 0x0001 instead of 0x8000 (identical to the LSB-run) -> FAIL (2 passed, 2 failed), only FIXTURE-LIVE-DATA-PATH newly red (MSB hpos=145 became equal to LSB hpos=145, no longer distinct or monotonic; mid hpos=138 unchanged). Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged.
+// MUTATION ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT stimulus red: built with -DMUT_ODD=1, which withholds the ATTACH stimulus in case (ii) (SPR1CTL bit7 measured at 0 instead of 1) -> FAIL (2 passed, 2 failed), only ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT newly red (trace(ii) became identical to trace(i), no longer distinct); ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE, already red at baseline, stayed red for its own reason, confirming the isolation held. Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged.
+// MUTATION ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE stimulus green: built with -DMUT_EVEN=1, which re-measures case (iii) and a fresh case-(i)-shaped baseline both at aga=1 instead of aga=0 (denise_sprites.v:484's own `!aga` term, read while diagnosing the baseline red result above) -> PASS (4 passed, 0 failed), only ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE newly green -- confirming the finding is scoped to aga=0 (OCS/ECS): at aga=1 (AGA) this RTL matches the manual. Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged. CORRECTION, recorded rather than dropped: this mutation's first design instead changed case (iii)'s own SPR0DATA image (0x4000 instead of 0x8000, aga left at 0) -- built and run, it produced NO colour change at all (3 passed, 1 failed, identical to baseline), because the finding holds for any non-zero image once attach0 opens the path at aga=0. Replaced by the aga-based mutation above, which does move the assertion; the assertion's own expected value and comparison (trace equality) were never touched in either attempt.
+// MUTATION CODE-0000-YIELDS-TRANSPARENT-PIXEL stimulus red: built with -DMUT_ZERO=1, which changes SPR0DATA from 0x0000 to 0x8000 (combined code no longer 0000) -> FAIL (2 passed, 2 failed), only CODE-0000-YIELDS-TRANSPARENT-PIXEL newly red (sprdata went non-zero at the expected shifted-out position); ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE, already red at baseline, stayed red for its own reason. Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged.
+// MUTATION TABLE45-ROW0-REGISTER-NUMBER-CONFLICT: no record -- this claim is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
 
 #include <cstdint>
 #include <iostream>
@@ -361,9 +364,11 @@ Meas measure_single(uint8_t pos_byte, uint16_t data_word) {
 // hrm/ch3-sprite-registers/'s own measure_attach_color() recipe for this
 // module), with independently chosen bit-7 (ATTACH) values on each
 // sprite's own control word. Used by the two ATTACH-BIT-* assertions.
+// `aga` defaults to 0 (OCS/ECS, this package's own measurement basis);
+// MUT_EVEN's own mutation below is the only caller that overrides it.
 Meas measure_pair(uint8_t pos_byte, uint8_t ctl0_bit7, uint8_t ctl1_bit7,
-                   uint16_t spr0data_override = 0x8000) {
-    Harness h(/*aga=*/0, /*spres=*/0);
+                   uint16_t spr0data_override = 0x8000, uint8_t aga = 0) {
+    Harness h(aga, /*spres=*/0);
     h.write_reg(SPR0POS, pos_byte);
     h.write_reg(SPR0CTL, static_cast<uint16_t>(ctl0_bit7 ? 0x80 : 0x00));
     h.write_reg(SPR0DATB, 0x0000);
@@ -499,11 +504,21 @@ int main(int argc, char** argv) {
     // ATTACHMENT passing on that basis is this assertion's control.
     {
 #if MUT_EVEN
-        Meas even_set = measure_pair(/*pos=*/0x40, /*ctl0_bit7=*/1, /*ctl1_bit7=*/0, /*spr0data_override=*/0x4000);  // MUTATION: SPR0's own image changed too.
+        // MUTATION: aga changed from 0 to 1 for BOTH sides of the
+        // comparison (a fresh, self-contained pair, not the outer aga=0
+        // `baseline`). denise_sprites.v:484 reads `attach1 || (!aga &&
+        // attach0)` -- at aga=1 the `!aga` term is 0, so attach0 (the
+        // even sprite's own bit) can no longer open the attach path, and
+        // this assertion is expected to flip from red to green.
+        Meas baseline_mut = measure_pair(/*pos=*/0x40, /*ctl0_bit7=*/0, /*ctl1_bit7=*/0,
+                                          /*spr0data_override=*/0x8000, /*aga=*/1);
+        Meas even_set = measure_pair(/*pos=*/0x40, /*ctl0_bit7=*/1, /*ctl1_bit7=*/0,
+                                      /*spr0data_override=*/0x8000, /*aga=*/1);
+        bool matches_baseline = even_set.trace == baseline_mut.trace;
 #else
         Meas even_set = measure_pair(/*pos=*/0x40, /*ctl0_bit7=*/1, /*ctl1_bit7=*/0);
-#endif
         bool matches_baseline = even_set.trace == baseline.trace;
+#endif
         checks.expect(matches_baseline,
             "ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE: with the same two "
             "images as the control above, setting bit 7 of SPR0CTL -- the "
