@@ -678,3 +678,49 @@ not a defect report.
 
 *F11 found by the FPGA-091 chapter-3 build, 11.09.2026; RTL root cause and the
 measurement independently reproduced by the lead before recording.*
+
+## FPGA-091-F12 — SuperHires bitplane colour encoding is not implemented
+
+**Package:** `hrm/ch3-shres-bitplane-colour-encoding`. **19 red, 4 green.**
+Pages 297, 301. **Same root cause as [F11], reached down a different path.**
+
+Page 301 says SuperHires reinterprets the sixteen lower colour registers: the
+stored 12-bit value is read as two-bit-per-channel data rather than as an
+ordinary RGB triple. NanoMig reads every register identically in every mode.
+
+**Verified in the RTL by the lead.** `denise_colortable.v` has no `shres` port —
+the same absence that produces F11. Every occurrence of `shres` in the bitplane
+path is shift-rate logic, and `denise_bitplanes.v:298` says so in its own words:
+
+```verilog
+// shifter enable: lowres shifts once every 4 cycles, hires every other, shres always
+if (shres)      shift = 1'b1;
+```
+
+The remaining uses are all inside `denise_bitplane_shifter.v`. Nothing
+mode-dependent reaches the colour table: `clut0` is instantiated with `select`,
+`bplxor`, `bank`, `loct` and `ehb_en`, none of which carries the mode. So
+`shres` changes how fast pixels are shifted out, never which colour-table
+address is formed nor how a stored value is read back.
+
+**The green that makes the reds meaningful.** `OCS-BASELINE-0RGB-FORMAT` passes:
+the same fixture reads the same registers correctly in plain mode, on page
+301's own 0RGB format. Three further controls pass
+(`CONTROL-KNOWN-VALUES-ARRIVE`, `FIXTURE-DATA-PATH-LIVE`,
+`SELECT-REGISTER-ADDRESSES-CORRECTLY`), each mutated red via its own build flag
+and reverted. The nineteen reds are an absent feature, not a dark fixture.
+Reproduced by the lead from a deleted `obj_dir`.
+
+**Why F11 and F12 are recorded separately.** They share a cause but not a
+measurement: F11 drives the sprite colour path, F12 the bitplane colour path,
+and neither result depends on the other's fixture. One absent port, demonstrated
+twice from opposite directions, is a firmer result than either package alone.
+
+*For the specialists:* together F11 and F12 say that ECS SuperHires colour is
+unimplemented in NanoMig as a whole, not in one corner of it. Whether that is
+worth building is a scope question for the project.
+
+---
+
+*F12 found by the FPGA-091 chapter-3 build, 11.09.2026; RTL path and measurement
+independently reproduced by the lead before recording.*
