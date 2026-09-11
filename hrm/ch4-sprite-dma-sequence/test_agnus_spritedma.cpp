@@ -936,62 +936,62 @@ int main(int argc, char** argv) {
 //
 // MUTATION LOG (one physical line each; run today, in this order, under
 // WSL/Verilator, immediately after the harness fixes above):
-// MUTATION MUT_CTRL stimulus red: Run B's fed pair changed from
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: Run B's fed pair changed from
 //   (VSTART=12,VSTOP=15) to Run A's own (40,44), so the two runs stop
 //   differing -> FAIL ("11 passed, 1 failed"), only [control]
 //   FIXTURE-LIVE-DATA-PATH newly red (both runs' image-fetch lines became
 //   [40,41,42,43], no longer distinct). Reverted: 12/0.
-// MUTATION A1 stimulus red: vblend withheld for the whole run (also moved
+// MUTATION A1-CONTROL-PAIR-FETCHED-FIRST-POS-THEN-CTL stimulus red: vblend withheld for the whole run (also moved
 //   the sweep to start at line 5 rather than 0, once opening the RTL showed
 //   reqdma is independently raised whenever vpos already equals VSTOP's
 //   reset value of 0 -- see ORDER OF WORK -- which had been masking this
 //   exact mutation at line 0) -> FAIL ("11 passed, 1 failed"), only
 //   A1-CONTROL-PAIR-FETCHED-FIRST-POS-THEN-CTL newly red (no grant at all
 //   within the swept window). Reverted: 12/0.
-// MUTATION A2 stimulus red: fed VSTOP changed from 44 to 45 -> FAIL ("11
+// MUTATION A2-TWO-WORDS-PER-LINE-HEIGHT-EQUALS-VSTOP-MINUS-VSTART stimulus red: fed VSTOP changed from 44 to 45 -> FAIL ("11
 //   passed, 1 failed"), only A2-TWO-WORDS-PER-LINE-HEIGHT-EQUALS-VSTOP-
 //   MINUS-VSTART newly red (measured window grew to [40,41,42,43,44], not
 //   the asserted [40,41,42,43]). Reverted: 12/0.
-// MUTATION A3u stimulus red: fed pair changed from (40,44) to (100,104), so
+// MUTATION A3u-TWO-DISTINCT-REGISTERS-RECEIVE-THE-FETCHED-PAIR stimulus red: fed pair changed from (40,44) to (100,104), so
 //   lines 40-43 (the lines this check inspects) go idle -> FAIL ("11
 //   passed, 1 failed"), only A3u-TWO-DISTINCT-REGISTERS-RECEIVE-THE-
 //   FETCHED-PAIR newly red (m[40..43] all empty). Reverted: 12/0.
-// MUTATION A4a stimulus red: usage 1's fed VSTOP changed from 44 to 200, so
+// MUTATION A4a-END-OF-DATA-PAIR-DECODED-AS-NEXT-CONTROL-PAIR stimulus red: usage 1's fed VSTOP changed from 44 to 200, so
 //   its reload never appears inside the swept window -> FAIL ("11 passed,
 //   1 failed"), only A4a-END-OF-DATA-PAIR-DECODED-AS-NEXT-CONTROL-PAIR
 //   newly red (only one control-pair line measured, the initial one).
 //   Reverted: 12/0.
-// MUTATION A4b stimulus red: usage 1's fed VSTOP changed from 20 (equal to
+// MUTATION A4b-VSTOP-EQUALS-VSTART-PRODUCES-NO-IMAGE-OUTPUT-BUT-CHAIN-CONTINUES stimulus red: usage 1's fed VSTOP changed from 20 (equal to
 //   its own VSTART) to 25, so it is no longer a zero-height usage -> FAIL
 //   ("11 passed, 1 failed"), only A4b-VSTOP-EQUALS-VSTART-PRODUCES-NO-
 //   IMAGE-OUTPUT-BUT-CHAIN-CONTINUES newly red (line 20 now shows image
 //   output). Reverted: 12/0.
-// MUTATION A5 stimulus red: usage 2's fed VSTOP changed from 53 to 54 ->
+// MUTATION A5-CHANNEL-REUSED-MULTIPLE-TIMES-WITHIN-ONE-FIELD stimulus red: usage 2's fed VSTOP changed from 53 to 54 ->
 //   FAIL ("11 passed, 1 failed"), only A5-CHANNEL-REUSED-MULTIPLE-TIMES-
 //   WITHIN-ONE-FIELD newly red (measured line list gained a 53). Reverted:
 //   12/0.
-// MUTATION A6a stimulus red: usage 2's fed VSTOP changed from 48 to 49 ->
+// MUTATION A6a-ONE-LINE-GAP-IS-SUFFICIENT-FOR-NEXT-USAGE stimulus red: usage 2's fed VSTOP changed from 48 to 49 ->
 //   FAIL ("11 passed, 1 failed"), only A6a-ONE-LINE-GAP-IS-SUFFICIENT-FOR-
 //   NEXT-USAGE newly red (measured line list gained a 48). Reverted: 12/0.
-// MUTATION A6b stimulus red: the next-usage VSTART fed at the reload
+// MUTATION A6b-NEXT-USAGE-VSTART-BEHIND-CURRENT-BEAM-NEVER-ACTIVATES-THIS-FIELD stimulus red: the next-usage VSTART fed at the reload
 //   changed from 42 (behind the beam) to 46 (ahead of it) -> FAIL ("11
 //   passed, 1 failed"), only A6b-NEXT-USAGE-VSTART-BEHIND-CURRENT-BEAM-
 //   NEVER-ACTIVATES-THIS-FIELD newly red (a second image window appeared).
 //   Reverted: 12/0.
-// MUTATION A7 stimulus red: every third observed reqdma request (across all
+// MUTATION A7-EXACTLY-TWO-DMA-GRANTS-PER-ACTIVE-LINE stimulus red: every third observed reqdma request (across all
 //   eight channels, counted globally) had its ackdma withheld -> FAIL ("11
 //   passed, 1 failed"), only A7-EXACTLY-TWO-DMA-GRANTS-PER-ACTIVE-LINE
 //   newly red (some of channel 0's own active lines dropped to one grant).
 //   Reverted: 12/0.
-// MUTATION A8 stimulus red: field 2's fed VSTOP changed from 8 to 9 ->
+// MUTATION A8-CONTROL-WORDS-FRESHLY-FETCHED-EACH-DISPLAY-FIELD stimulus red: field 2's fed VSTOP changed from 8 to 9 ->
 //   FAIL ("11 passed, 1 failed"), only A8-CONTROL-WORDS-FRESHLY-FETCHED-
 //   EACH-DISPLAY-FIELD newly red (field 2's measured window gained an 8).
 //   Reverted: 12/0.
-// MUTATION A9 stimulus red: fed VSTOP changed from 310 to 311 -> FAIL ("11
+// MUTATION A9-VSTART-VSTOP-ARE-9BIT-VALUES-SPLIT-ACROSS-SPRXPOS-AND-SPRXCTL stimulus red: fed VSTOP changed from 310 to 311 -> FAIL ("11
 //   passed, 1 failed"), only A9-VSTART-VSTOP-ARE-9BIT-VALUES-SPLIT-ACROSS-
 //   SPRXPOS-AND-SPRXCTL newly red (measured window gained a 310, breaking
 //   the exact expected 300..309). Reverted: 12/0.
-// MUTATION A3-order none impossible: not an expect() (checks.record() only,
+// MUTATION A3-order-DATA-VS-DATB-FETCH-ORDER none impossible: not an expect() (checks.record() only,
 //   no checks.expect) -- the disputed fetch order is measured and printed,
 //   never compared against an expected value, so there is no red/green
 //   state for a mutation to move.
