@@ -453,24 +453,27 @@ supports selecting it -- confirmed on RTL open; if the fixture is OCS-only, ever
 category is asserted as "not reachable in this fixture's chipset configuration" rather than
 adjusted to pass, per the instruction never to adjust an oracle to match what the fixture can
 reach), set bit 0 (ENBPLCN3) and confirm it gates BPLCON3 register writes taking effect; set
-bit 6 (SHRES) and confirm the SuperHires pixel-rate behaviour (SHRES category) activates; bits
-4 (SPRHWRM) and 5 (BPLHWRM) are asserted only as the appendix's bit-to-name table entries (their
-sprite/bitplane horizontal-window-repositioning function is DIW/scroll territory belonging to
-sibling packages, not measured here beyond confirming the name/position mapping itself, the
-same treatment as the BITID category). Every assertion in this category names ECS explicitly.
+bit 6 (SHRES) and confirm the SuperHires pixel-rate behaviour (SHRES category) activates; bit 5
+(BPLHWRM) is declined (its sprite/bitplane horizontal-window-repositioning function is DIW/scroll
+territory belonging to sibling packages, and this fixture does not decode it to any observable
+port). Bit 4 (SPRHWRM) is declined too, but for a different, printed-page reason -- see R8 in
+"Claims not asserted in this package" below: p.300's row for bit 4 carries a mnemonic and no
+description column at all, unlike bit 6 three rows above which states its behaviour in full, so
+the manual requires nothing of the RTL at this bit; independently SPRHWRM names a sprite
+function and this fixture drives bitplanes only. Every assertion remaining in this category
+names ECS explicitly.
 
 | claim id | page | reader | restatement |
 |---|---|---|---|
-| `C-bplcon0.b04` | 300 | opus | BPLCON0 bit 4 is SPRHWRM in the ECS. |
 | `C-bplcon0.b05` | 300 | opus | BPLCON0 bit 5 is BPLHWRM in the ECS. |
 | `C-bplcon0.b06` | 300 | opus | BPLCON0 bit 6 is SHRES, the SuperHires 35 ns pixel enable bit. |
 | `C-ecsbit.b00` | 307 | opus | BPLCON0 bit 0 is ENBPLCN3; the table says it enables the new 'BLPCON3' register. |
 | `C-genlock-ext.c17` | 307 | sol | ECS BPLCON0 bit 0 ENBPLCN3 enables the new BPLCON3 register. |
 | `C-shres.c16` | 300 | sol | ECS BPLCON0 bit 6 is SHRES; setting it enables 35-ns SuperHires pixels. |
 | `C-shres.c17` | 300 | sol | ECS BPLCON0 bit 5 is BPLHWRM. |
-| `C-shres.c18` | 300 | sol | ECS BPLCON0 bit 4 is SPRHWRM. |
 
-8 assertion(s) in this category.
+6 assertion(s) in this category. (`C-bplcon0.b04` and `C-shres.c18`, ECS bit 4, are declined --
+see R8 in "Claims not asserted in this package" below.)
 
 ### 13. SHRES (bit 6) -- SuperHires 35 ns pixel rate
 
@@ -604,7 +607,7 @@ not adjusted.
 10 assertion(s) in this category.
 
 
-Total claim-rows assigned to a measurement category: 237
+Total claim-rows assigned to a measurement category: 235
 
 ## Claims not asserted in this package
 
@@ -686,11 +689,36 @@ Describes the printed manual's own typographic convention (what an "(E)" mark in
 | `B-ecsmark.c1` | 288 | sol | An (E) chip-column mark identifies a register changed in ECS. |
 | `B-ecsmark.c2` | 288 | sol | Some (E)-marked registers are new in ECS. |
 
+### R8-no-printed-behaviour
 
-Total not-asserted claim ids: 26
+Page 300's ECS bit-assignment table gives BPLCON0 bit 4 only the mnemonic SPRHWRM -- unlike bit
+6, three rows above, which carries a full description ("SuperHires 35ns pixel enable bit"):
+
+```
+            06       SHRES       SuperHires 35ns pixel enable bit
+            05       BPLHWRM
+            04       SPRHWRM
+            03       LPEN        Compatible with SuperHires mode
+```
+
+A row that names a bit and states no behaviour requires nothing of the RTL at this or any
+boundary -- not that an effect exists, and not that it doesn't; both would be adjusting an
+oracle the manual never wrote. Independently, SPRHWRM names a sprite-horizontal function and
+this package's fixture drives bitplanes only, so it could not observe a sprite effect even if
+page 300 had printed one. (Previously asserted via `assertEcsReassignBit4`, which required a
+measurable effect the manual never specified; that assertion was itself the misstatement and
+is withdrawn here in favour of declining the claim -- see MUTATIONS.md.)
+
+| claim id | page | reader | restatement |
+|---|---|---|---|
+| `C-bplcon0.b04` | 300 | opus | BPLCON0 bit 4 is SPRHWRM in the ECS. |
+| `C-shres.c18` | 300 | sol | ECS BPLCON0 bit 4 is SPRHWRM. |
 
 
-Grand total: 237 asserted claim-rows + 26 not-asserted claim ids = 263 (263 claim rows over 258 unique claim ids; 5 ids in the HAM category are each backed by two independent reader rows, opus and sol, both asserted separately).
+Total not-asserted claim ids: 28
+
+
+Grand total: 235 asserted claim-rows + 28 not-asserted claim ids = 263 (263 claim rows over 258 unique claim ids; 5 ids in the HAM category are each backed by two independent reader rows, opus and sol, both asserted separately).
 
 ## Two manual defects in this package's area (not mine to resolve)
 

@@ -797,6 +797,8 @@ independently reproduced by the lead before recording.*
 > **WITHDRAWN as a conformance finding** — validation 11.09.2026.
 >
 > Page 300's row reads, in full, `04       SPRHWRM` -- a mnemonic with no description column, unlike `06  SHRES  SuperHires 35ns pixel enable bit` three rows above. The manual gives bit 4 a name and no behaviour, so there is no printed behaviour for NanoMig to diverge from. The fixture also drives bitplanes only and could not observe a sprite-horizontal function in any case. What remains true is a source observation: `denise.v:181` gives the bit its AGA meaning (`bplcon0[4] & aga`) and no ECS meaning. Recorded by the lead earlier the same day; the overreach was the lead's.
+>
+> **Corrected the same day.** Both claims are now declined rather than asserted, with the reason printed: the manual states no behaviour for this bit, and the fixture drives bitplanes while the mnemonic names a sprite function. Neither is asserted true nor false — the source simply does not define anything to test. 225/2 became 225/0.
 
 **Package:** `hrm/ch3-bplcon0-display-modes` (225 green, 2 red). Page 300.
 

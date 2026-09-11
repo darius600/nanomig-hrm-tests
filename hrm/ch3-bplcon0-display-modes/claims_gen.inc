@@ -294,19 +294,28 @@ static void assertEcsReassignBit6(const std::string& id, int page, const std::st
     "an observable pixel-rate effect was measured -- " + restatement);
 }
 
-static void assertEcsReassignBit4(const std::string& id, int page, const std::string& reader,
-                                   const std::string& restatement) {
-  bool hasEffect = bplcon0EffectCached(4, true);
-  char buf[512];
-  std::snprintf(buf, sizeof(buf),
-                "ECS (ecs=1, aga=0): BPLCON0 bit4 (SPRHWRM per appendix C p.300) "
-                "toggled against a working baseline -> %s. denise.v:181 only "
-                "gates bit4 with `aga`, not `ecs` (assign bpu={bplcon0[4]&aga,...}); "
-                "under this fixture's ECS-only configuration bit4 is measurably "
-                "dead, which disagrees with the appendix's ECS bit assignment -- %s",
-                hasEffect ? "an effect WAS measured (unexpected)" : "no effect was measured",
-                restatement.c_str());
-  A(id, page, reader, hasEffect, buf);  // expected to be a genuine, kept-red finding
+// C-bplcon0.b04 / C-shres.c18: appendix C p.300's row for bit4 carries only
+// the mnemonic SPRHWRM, with NO description column at all -- unlike bit6,
+// three rows above, which states its behaviour in full ("SuperHires 35ns
+// pixel enable bit"). A row that names a bit and states no behaviour
+// requires nothing of the RTL at this or any boundary: this is not an
+// assertion that an effect exists, nor that it doesn't -- it is declined.
+// Independently, SPRHWRM names a sprite-horizontal function and this
+// package's fixture drives bitplanes only, so it could not observe a
+// sprite effect even if the manual had printed one. (Formerly measured via
+// bplcon0EffectCached(4, ...) and asserted to require an effect; that was
+// itself the misstatement -- withdrawn, see SPEC.md and MUTATIONS.md.)
+static void declineBit4NoManualBehavior(const std::string& id, int page,
+                                         const std::string& reader,
+                                         const std::string& restatement) {
+  SKIP(id, page, reader,
+       "appendix C p.300's row for bit4 carries the mnemonic SPRHWRM and no "
+       "description column at all (unlike bit6 three rows above, which "
+       "states its behaviour in full) -- the manual requires nothing of the "
+       "RTL at this bit, so this claim (\"" + restatement + "\") is declined "
+       "rather than asserted true or false. Independently, SPRHWRM names a "
+       "sprite function and this fixture drives bitplanes only, so it could "
+       "not observe a sprite effect even if one were defined.");
 }
 
 static std::map<int, bool> g_bplcon2EffectCache;
@@ -641,7 +650,7 @@ static void runAllClaims() {
   SKIP("C-vposr.c07", 299, "opus", "outside the denise-only fixture boundary (Agnus/DMA/timing function)");
   SKIP("C-bplcon0.b02", 300, "opus", "bit exists per the manual but is not decoded to any observable port in this fixture");
   SKIP("C-bplcon0.b03", 300, "opus", "bit exists per the manual but is not decoded to any observable port in this fixture");
-  assertEcsReassignBit4("C-bplcon0.b04", 300, "opus", "BPLCON0 bit 4 is SPRHWRM in the ECS.");
+  declineBit4NoManualBehavior("C-bplcon0.b04", 300, "opus", "BPLCON0 bit 4 is SPRHWRM in the ECS.");
   SKIP("C-bplcon0.b05", 300, "opus", "bit exists per the manual but is not decoded to any observable port in this fixture");
   assertEcsReassignBit6("C-bplcon0.b06", 300, "opus", "BPLCON0 bit 6 is SHRES, the SuperHires 35 ns pixel enable bit.");
   assertDblpfGroup("C-bplcon0.b10", 300, "opus", "BPLCON0 bit 10 (DPF) is compatible with SuperHires mode.");
@@ -663,7 +672,7 @@ static void runAllClaims() {
   assertDblpfGroup("C-shres.c15", 300, "sol", "Dual-playfield mode is compatible with ECS SuperHires.");
   assertEcsReassignBit6("C-shres.c16", 300, "sol", "ECS BPLCON0 bit 6 is SHRES; setting it enables 35-ns SuperHires pixels.");
   SKIP("C-shres.c17", 300, "sol", "bit exists per the manual but is not decoded to any observable port in this fixture");
-  assertEcsReassignBit4("C-shres.c18", 300, "sol", "ECS BPLCON0 bit 4 is SPRHWRM.");
+  declineBit4NoManualBehavior("C-shres.c18", 300, "sol", "ECS BPLCON0 bit 4 is SPRHWRM.");
   SKIP("C-shres.c19", 300, "sol", "bit exists per the manual but is not decoded to any observable port in this fixture");
   assertShresRate4x("C-shres.c2", 300, "sol", "ECS SuperHires has twice the horizontal resolution of Hires.");
   SKIP("C-shres.c20", 300, "sol", "bit exists per the manual but is not decoded to any observable port in this fixture");
