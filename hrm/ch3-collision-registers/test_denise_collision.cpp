@@ -81,8 +81,9 @@
 //   CLXDAT-READ-CLEAR (2 ids)  -- read returns, then clears.
 //   PLAYFIELD-ODD-EVEN (4 ids) -- odd bitplanes are PF1, even are PF2.
 //   BITMAP-PAIR (30 ids, loop x15)     -- each CLXDAT bit's collision pair.
-//   BIT15-UNUSED (2 ids)       -- bit 15 stays clear even under maximal
-//                                  stimulation.
+//   BIT15-UNUSED (2 ids)       -- bit 15 does not move in response to any
+//                                  collision stimulus (its own column
+//                                  heading is COLLISIONS REGISTERED).
 //   7+4+27+3+10+6+3+2+4+30+2 = 98.
 //
 // CONTROL CASES: CONTROL-KNOWN-VALUES-ARRIVE (the write->collide->read data
@@ -94,10 +95,10 @@
 // already used by hrm/ch3-colour-register-format/'s
 // CONTROL-KNOWN-VALUES-ARRIVE and EHB-CONTROL-NORMAL-REPRODUCIBLE).
 //
-// RESULTS (after opening the RTL and building): 31 passed, 5 failed. Every
-// numeric prediction the spec was written against held for 31 of the 36
-// checks. Two genuine, real findings account for all 5 failures -- neither
-// assertion was adjusted to hide them:
+// RESULTS (after opening the RTL and building): 32 passed, 4 failed. Every
+// numeric prediction the spec was written against held for 32 of the 36
+// checks. One genuine, real finding accounts for all 4 failures -- no
+// assertion was adjusted to hide it:
 //
 //   FINDING 1 -- oddmatch is gated by evenmatch. denise_collision.v:62-63:
 //     `assign oddmatch = bm[6]&bm[4]&bm[2]&bm[0] & (dblpf | evenmatch);
@@ -110,16 +111,22 @@
 //     independent proposition. This fails 4 of BITMAP-PAIR's 15 cases
 //     (every pair naming PF1 except PF1-PF2 itself, which does not need
 //     PF1 isolated from PF2 to read correctly).
-//   FINDING 2 -- CLXDAT bit 15 is hard-wired high, never 0.
-//     denise_collision.v:117: `data_out = ...==CLXDAT[8:1] ?
-//     {1'b1,clxdat[14:0]} : 16'd0;` -- every successful CLXDAT read forces
-//     bit 15 to 1 regardless of accumulated collisions, contradicting the
-//     most direct reading of Appendix A's '15  not used' (p.273) as "does
-//     not carry collision data, reads as 0". This is orthogonal to every
-//     other assertion in this file (masked out of them with `& 0x7FFF`,
-//     a measurement-scoping fix, not an oracle change -- see BIT15-UNUSED,
-//     the one assertion that does not mask it and is the one that measures
-//     it) and fails only BIT15-UNUSED.
+//   FINDING 2 (RETRACTED -- was an oracle mistake, not an RTL mistake) --
+//     CLXDAT bit 15 is hard-wired high, never 0. denise_collision.v:117:
+//     `data_out = ...==CLXDAT[8:1] ? {1'b1,clxdat[14:0]} : 16'd0;` -- every
+//     successful CLXDAT read forces bit 15 to 1 regardless of accumulated
+//     collisions. The original BIT15-UNUSED assertion took Appendix A's
+//     '15  not used' (p.273) to mean "reads as 0" and went red against
+//     this wiring -- but the table's own column heading is COLLISIONS
+//     REGISTERED, and the row says only that bit 15 registers no
+//     collision, not what constant value it holds; a fixed 1 satisfies
+//     that reading exactly as a fixed 0 would. BIT15-UNUSED was corrected
+//     to measure invariance -- bit 15 unmoved by any collision this
+//     harness can drive -- instead of a specific idle value, and now
+//     passes. This is orthogonal to every other assertion in this file
+//     (masked out of them with `& 0x7FFF`, a measurement-scoping fix, not
+//     an oracle change -- see BIT15-UNUSED, the one assertion that does
+//     not mask it and is the one that measures it).
 //
 // One wiring-only fix was needed beyond opening the RTL: `clxdat` carries
 // no reset branch of its own, and on the very first simulated clock edge
@@ -151,7 +158,7 @@
 // MUTATION READ-CLEAR-CONTROL stimulus red: the fresh SPR0+SPR4 collision meant to be presented after the clear was withheld (stimulus changed from 0x11 to 0x00), so the third read came back $0000 instead of the expected $0400, failing the "clear is not a dead data path" check; reverted to presenting 0x11 and the 31-passed/5-failed baseline returned.
 // MUTATION PLAYFIELD-ODD-EVEN stimulus red: the even-bitplane-6 case's live-bit stimulus was redirected to bitplane 5's bit position instead of bitplane 6's own, so bitplane 6 (the only one CLXCON has enabled in that harness) never receives a matching value and PF2-SPR01 stays clear.
 // MUTATION BITMAP-PAIR stimulus red: the SPR23-SPR67 case's Y-entity stimulus was redirected from SPR67 to SPR45, so the pair actually produced is SPR23-SPR45 (bit 12) instead of SPR23-SPR67 (bit 13), and bit 13 stays clear.
-// MUTATION BIT15-UNUSED none impossible: BIT15-UNUSED is already red at baseline (Finding 2 above) -- the RTL forces bit 15 high on every successful CLXDAT read regardless of any stimulus this harness can present, so no stimulus mutation can turn it from green to red; there is nothing green here to break. Swapping the inspected bit from 15 to 14 was tried and confirmed to still read FAIL, not a clean green-to-red transition, for exactly that reason.
+// MUTATION BIT15-UNUSED stimulus red: the assertion was corrected (Finding 2 above, retracted) to measure invariance -- the pre-stimulus "idle" read and the post-maximal-stimulus read must return the same bit-15 value -- and now passes at baseline (32-passed/4-failed). The idle read's address was redirected from CLXDAT (0x07) to CLXCON (0x4C), an address-mismatch read that always returns 16'd0 (CLXCON-WRITEONLY), standing in for the real idle CLXDAT read; its bit 15 then reads 0 while the post-stimulus CLXDAT read still forces bit 15 to 1, breaking the invariant and failing the check alone -- confirmed the other 4 findings-of-record (BITMAP-PAIR's PF1-SPR01/23/45/67) stayed exactly that same set, no more no fewer; reverted the idle read to CLXDAT and the 32-passed/4-failed baseline returned.
 
 #include <cstdint>
 #include <cstdio>
@@ -761,30 +768,43 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // BIT15-UNUSED (p.273) -- CLXDAT bit 15 stays clear even under maximal
+    // BIT15-UNUSED (p.273) -- the table's own column heading is "COLLISIONS
+    // REGISTERED"; its bit-15 row, '15  not used', says under that heading
+    // that no collision registers at bit 15 -- it does not say what value
+    // the bit holds. Measured as invariance: a read taken before any
+    // collision stimulus is presented and a read taken after maximal
     // stimulation (all six entities present at once, setting every one of
-    // the 15 used bits simultaneously).
+    // the other 15 used bits) return the same bit-15 value, i.e. no
+    // collision this harness can drive moves it. NanoMig wiring bit 15 to a
+    // fixed 1 on every successful read satisfies that reading exactly as a
+    // fixed 0 would; this assertion does not take a side between them.
     // =========================================================================
     {
         Harness h;
         h.write_reg(CLXCON_ADDR,
                      ENBP(1) | MVBP(1) | ENBP(2) | MVBP(2) |
                      ENSP(1) | ENSP(3) | ENSP(5) | ENSP(7));
+
+        int idle_read_addr = CLXDAT_ADDR;
+#if MUT_BIT15
+        idle_read_addr = CLXCON_ADDR;  // an address-mismatch read (always 16'd0, per CLXCON-WRITEONLY) stands in for the real idle CLXDAT read
+#endif
+        uint16_t idle = h.read_reg(idle_read_addr);  // no collision stimulus presented yet
+
         h.pulse(0x03, 0x55);  // PF1+PF2 (bpldata bits0,1) and all four sprite groups (nsprite 0,2,4,6)
         uint16_t result = h.read_reg(CLXDAT_ADDR);
 
-        int check_bit = 15;
-#if MUT_BIT15
-        check_bit = 14;  // a bit that DOES get set under this maximal stimulus
-#endif
-        bool bit_clear = (result & (1u << check_bit)) == 0;
+        bool bit15_unmoved_by_stimulus = ((idle ^ result) & 0x8000) == 0;
 
         checks.expect(
-            bit_clear && (result & 0x7FFF) == 0x7FFF,
-            "BIT15-UNUSED (p.273): under maximal stimulation (all six "
-            "entities present at once, all 15 used bits 0-14 set, "
-            "CLXDAT=$7FFF), bit 15 stays clear -- '15  not used' (p.273). "
-            "A-clxdat.b15, A-clxdat.c6.");
+            bit15_unmoved_by_stimulus && (result & 0x7FFF) == 0x7FFF,
+            "BIT15-UNUSED (p.273): CLXDAT bit 15 reads the same value with "
+            "no collision stimulus presented as it does under maximal "
+            "stimulation (all six entities present at once, all 15 used "
+            "bits 0-14 set, CLXDAT&0x7FFF=$7FFF) -- no collision this "
+            "harness can drive moves bit 15, matching the table's own "
+            "column heading 'COLLISIONS REGISTERED' and its row '15  not "
+            "used' (p.273). A-clxdat.b15, A-clxdat.c6.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
