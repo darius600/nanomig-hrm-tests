@@ -281,3 +281,352 @@
 // shape against this fixture, and the mutation log, are answered in the next
 // commit, after agnus.v is read.
 // ============================================================================
+
+// ============================================================================
+// IMPLEMENTATION NOTES (added in this commit, after agnus.v was opened for
+// the first time - the specification comment above this point was committed
+// on its own first, per the chapter's spec-before-RTL gate; see this
+// package's own git history, commit f16df80).
+//
+// agnus.v confirms every fact the claims' own classify.evidence already
+// handed over, at the exact lines cited there: `localparam DMACON = 9'h096`
+// (:103), `localparam DMACONR = 9'h002` (:104), `reg [12:0] dmacon` (:271,
+// 13 bits), `assign data_out = data_bmc | dmaconr | data_blt` (:277),
+// DMACONR's read mux - `if (reg_address[8:1]==DMACONR[8:1]) dmaconr[15:0] =
+// {1'b0, blit_busy, blit_zero, dmacon[12:0]}; else dmaconr = 0` (:281-282),
+// and DMACON's write - `else if (reg_address[8:1]==DMACON[8:1]) ... if
+// (data_in[15]) dmacon[12:0] <= dmacon[12:0] | data_in[12:0]; else
+// dmacon[12:0] <= dmacon[12:0] & ~data_in[12:0]` (:289,291-292). Nothing
+// here was a surprise against the inventory; opening the file confirmed the
+// spec above rather than revising it.
+//
+// Two things follow directly from that read-mux shape that the three
+// assertions below depend on:
+//   - DMACON-IS-WRITE-ONLY-AT-096: `dmaconr` is the ONLY driver of
+//     `data_out` that ever depends on `reg_address` matching anything
+//     related to `dmacon`'s storage, and its own `if` (:281) only fires for
+//     DMACONR[8:1] ($002[8:1]), not DMACON[8:1] ($096[8:1]) - the two
+//     addresses differ in bits [8:1] (0x096>>1=0x4B vs 0x002>>1=0x01), so a
+//     read at $096 takes dmaconr's `else` arm (:282, dmaconr=0) and neither
+//     data_bmc nor data_blt (the other two OR terms, sourced from
+//     agnus_bmc/agnus_blitter's own register windows, not DMACON's address)
+//     has any reason to decode $096 either - data_out is 0 at that address,
+//     not merely "not equal to the pattern written".
+//   - DMACONR-IS-READ-ONLY-AT-002: the write's `else if` (:289) tests
+//     DMACON[8:1], not DMACONR[8:1] - a write with address_in=$002 (i.e.
+//     $002>>1=0x001) fails that comparison against DMACON[8:1]=0x4B and
+//     never reaches the `dmacon[12:0] <= ...` assignment at all, regardless
+//     of data_in or the SET/CLR bit.
+//
+// The write_reg/read_reg retry-on-pre-edge-dbr shape (copied unchanged
+// below from hrm/agnus_top_dmacon's Harness) is still the correct way to
+// drive this fixture: the write at :289 is gated by the SAME `reg_address`
+// wire the arbiter overwrites on every cycle some DMA engine holds the bus
+// (agnus.v's priority mux, documented in hrm/agnus_top_dmacon's own
+// IMPLEMENTATION NOTES), and this package never sets any DMA engine's own
+// enable bit as its own subject, but agnus_refresh's unconditional periodic
+// pulse still contends for the bus regardless of any DMACON bit - the retry
+// loop is what makes a register access land on the first available
+// non-refresh cycle instead of assuming one is always immediately free.
+//
+// MUTATION LOG: see the bottom of this file, after main(). Every entry was
+// actually applied - edited into this file, rebuilt under WSL/Verilator
+// (`make test`), run, the PASS/FAIL line read from real output, then
+// reverted and rebuilt clean before the next entry.
+// ============================================================================
+
+#include <cstdint>
+#include <iostream>
+#include <string>
+
+#include <verilated.h>
+#include "Vagnus.h"
+
+namespace {
+
+// ---- register addresses (9-bit custom-chip offsets, agnus.v:103-104) ----
+constexpr uint16_t DMACON_ADDR  = 0x096;
+constexpr uint16_t DMACONR_ADDR = 0x002;
+
+// ---- DMACON/DMACONR bit masks used by this package's own assertions ----
+constexpr uint16_t SET_CLR = 0x8000;  // bit 15
+constexpr uint16_t SPREN   = 1u << 5;
+constexpr uint16_t BPLEN   = 1u << 8;
+constexpr uint16_t DMAEN   = 1u << 9;
+
+// Harness: copied from hrm/agnus_top_dmacon's own Harness class unchanged
+// (same fixture, same arbitrated register bus, same reason for the
+// pre-edge-dbr retry - see IMPLEMENTATION NOTES above). Only the members
+// this package's own assertions actually call are kept: write_reg, read_reg
+// and the tick machinery they depend on. The DMA-consumption helpers
+// (count_nonrefresh_dbr_over_lines, count_dbwe_over_ticks,
+// sync_to_line_boundary, start_blit/copper/sprite/bitplane, set_bls) are
+// hrm/agnus_top_dmacon's own job, not copied here - this package does not
+// duplicate what that package already measures.
+class Harness {
+public:
+    Harness() : dut(new Vagnus) {
+        dut->clk = 0;
+        dut->clk7_en = 1;
+        dut->cck = 0;
+        dut->reset = 1;
+        dut->aen = 0;
+        dut->rd = 0;
+        dut->hwr = 0;
+        dut->lwr = 0;
+        dut->data_in = 0;
+        dut->address_in = 0;
+        dut->audio_dmal = 0;
+        dut->audio_dmas = 0;
+        dut->disk_dmal = 0;
+        dut->disk_dmas = 0;
+        dut->bls = 0;
+        dut->ntsc = 0;
+        dut->a1k = 0;
+        dut->ecs = 0;
+        dut->aga = 0;
+        dut->floppy_speed = 0;
+        for (int i = 0; i < 16; ++i) tick();
+        dut->reset = 0;
+        for (int i = 0; i < 16; ++i) tick();
+    }
+    ~Harness() { dut->final(); delete dut; }
+    Harness(const Harness&) = delete;
+    Harness& operator=(const Harness&) = delete;
+
+    // One CPU register write, held for up to `max_ticks` ticks and applied
+    // on the first tick where `dbr==0` (see IMPLEMENTATION NOTES). Returns
+    // whether a dbr==0 tick was actually seen via `write_ok`, checked at
+    // every call site so a silently-missed write cannot masquerade as a
+    // passing assertion.
+    void write_reg(uint16_t reg9, uint16_t data, int max_ticks = 8) {
+        dut->aen = 1;
+        dut->hwr = 1;
+        dut->lwr = 1;
+        dut->rd = 0;
+        dut->address_in = static_cast<uint16_t>(reg9 >> 1);
+        dut->data_in = data;
+        write_ok = false;
+        for (int i = 0; i < max_ticks; ++i) {
+            bool pre_dbr = tick_pre_edge_dbr();
+            if (!pre_dbr) { write_ok = true; break; }
+        }
+        dut->aen = 0;
+        dut->hwr = 0;
+        dut->lwr = 0;
+        dut->address_in = 0;
+        dut->data_in = 0;
+    }
+
+    // One CPU register read, same dbr==0 retry as write_reg. `read_ok`
+    // reports whether a clean sample was taken.
+    uint16_t read_reg(uint16_t reg9, int max_ticks = 8) {
+        dut->aen = 1;
+        dut->rd = 1;
+        dut->hwr = 0;
+        dut->lwr = 0;
+        dut->address_in = static_cast<uint16_t>(reg9 >> 1);
+        uint16_t val = 0xFFFF;
+        read_ok = false;
+        for (int i = 0; i < max_ticks; ++i) {
+            tick();
+            if (!last_dbr) { val = last_data_out; read_ok = true; break; }
+        }
+        dut->aen = 0;
+        dut->rd = 0;
+        dut->address_in = 0;
+        return val;
+    }
+
+    void tick() { tick_pre_edge_dbr(); }
+
+    // Advances one clk7_en tick (cck toggle, then a clk 0->1->0 pulse) and
+    // returns the PRE-edge value of `dbr` - the value the RTL's own
+    // `always @(posedge clk)` write logic actually saw for this edge.
+    bool tick_pre_edge_dbr() {
+        dut->cck = cck_phase ? 1 : 0;
+        cck_phase = !cck_phase;
+        dut->eval();
+        bool pre_dbr = dut->dbr;
+        dut->clk = 1;
+        dut->eval();
+        dut->clk = 0;
+        dut->eval();
+        last_dbr = dut->dbr;
+        last_data_out = dut->data_out;
+        return pre_dbr;
+    }
+
+    bool last_dbr = false;
+    uint16_t last_data_out = 0;
+    bool write_ok = false;
+    bool read_ok = false;
+
+    Vagnus* dut;
+
+private:
+    bool cck_phase = false;
+};
+
+class Checks {
+public:
+    void expect(bool condition, const std::string& label) {
+        std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
+        condition ? ++passed : ++failed;
+    }
+    int passed = 0;
+    int failed = 0;
+};
+
+}  // namespace
+
+int main(int argc, char** argv) {
+    Verilated::commandArgs(argc, argv);
+    Checks checks;
+
+    // ---------------- DMACON-SEQUENTIAL-WRITES-READ-BACK-IN-ORDER (p.278) ----------------
+    // The fixture-integrity proof this chapter's own build brief requires:
+    // three DIFFERENT DMACON patterns are written in sequence and DMACONR is
+    // sampled after EACH one (not just the final state), confirming each
+    // arrives distinct and in the order it was written - the same harness
+    // cannot be silently returning a stale or zero value and still pass all
+    // three. This is also this package's control case, expected to PASS on
+    // the same read_reg/write_reg measurement basis as the two suspicion
+    // cases below.
+    {
+        Harness h;
+        h.write_reg(DMACON_ADDR, SET_CLR | SPREN | DMAEN);
+        uint16_t after_a = h.read_reg(DMACONR_ADDR);
+        bool ok_a = h.read_ok && h.write_ok;
+
+        h.write_reg(DMACON_ADDR, SET_CLR | BPLEN);
+        uint16_t after_b = h.read_reg(DMACONR_ADDR);
+        bool ok_b = h.read_ok && h.write_ok;
+
+        h.write_reg(DMACON_ADDR, 0x0000 | SPREN);  // CLR only SPREN
+        uint16_t after_c = h.read_reg(DMACONR_ADDR);
+        bool ok_c = h.read_ok && h.write_ok;
+
+        checks.expect(
+            ok_a && ok_b && ok_c &&
+                after_a == (SPREN | DMAEN) &&
+                after_b == (SPREN | DMAEN | BPLEN) &&
+                after_c == (DMAEN | BPLEN),
+            "DMACON-SEQUENTIAL-WRITES-READ-BACK-IN-ORDER: three distinct "
+            "DMACON writes, sampled through DMACONR after each one, arrive "
+            "in the order written - SET SPREN|DMAEN (0x0220), then SET BPLEN "
+            "additionally (0x0320), then CLR only SPREN, leaving DMAEN and "
+            "BPLEN untouched (0x0300) - proving the harness delivers a known, "
+            "freshly-fetched word at each step rather than a stale or "
+            "zero-flag one, and demonstrating the SET-then-partial-CLR "
+            "direction ('bits written with a zero are unchanged') under this "
+            "package's own measurement. 'DMACON 096 W ... DMA control write "
+            "(clear or set)' / 'DMACONR 002 R ... DMA control (and blitter "
+            "status) read' / '15 SET/CLR ... Bits written with a zero ... "
+            "unchanged' (p.278). APPA-dmacon.c1, APPA-dmacon.c3, "
+            "APPA-dmacon.c4, APPA-dmacon.c5, CH4-appA-dmacon.c1, "
+            "CH4-appA-dmacon.c2, CH4-appA-dmacon.c3, CH4-appA-dmacon.c4, "
+            "CH4-appA-dmacon.c11, CH4-appA-dmacon.c12, APPA-dmacon.c2, "
+            "CH4-appA-dmacon.c5, CH4-appA-dmacon.c6, CH4-appA-dmacon.c7, "
+            "CH4-appA-dmacon.c8, CH4-appA-dmacon.c9, CH4-appA-dmacon.c10.");
+    }
+
+    // ---------------- DMACON-IS-WRITE-ONLY-AT-096 (p.278) ----------------
+    {
+        Harness h;
+        h.write_reg(DMACON_ADDR, SET_CLR | SPREN | DMAEN);
+        uint16_t at_002 = h.read_reg(DMACONR_ADDR);   // positive control: same run, other address
+        bool ok_002 = h.read_ok;
+        uint16_t at_096 = h.read_reg(DMACON_ADDR);    // the address under test
+        bool ok_096 = h.read_ok;
+
+        checks.expect(
+            ok_002 && ok_096 && at_002 == (SPREN | DMAEN) && at_096 == 0x0000,
+            "DMACON-IS-WRITE-ONLY-AT-096: after a write of SPREN|DMAEN "
+            "through $096, a read through the SAME aen/rd/address_in path "
+            "AIMED AT $096 itself returns 0x0000, not the pattern just "
+            "written, while the SAME state read at $002 (DMACONR) in the "
+            "SAME run - the paired control on the same measurement basis - "
+            "DOES return it (0x0220) - 'DMACON 096 W ... DMA control write "
+            "(clear or set)' (p.278), the R/W column showing DMACON as write "
+            "only. APPA-dmacon.c1, APPA-dmacon.c3, CH4-appA-dmacon.c1, "
+            "CH4-appA-dmacon.c2, CH4-appA-dmacon.c3.");
+    }
+
+    // ---------------- DMACONR-IS-READ-ONLY-AT-002 (p.278) ----------------
+    {
+        Harness h;
+        h.write_reg(DMACON_ADDR, SET_CLR | DMAEN | BPLEN);  // establish a known baseline
+        uint16_t baseline = h.read_reg(DMACONR_ADDR);
+        bool ok_baseline = h.read_ok && h.write_ok;
+
+        h.write_reg(DMACONR_ADDR, SET_CLR | SPREN);  // attempt a write AT $002 itself
+        uint16_t after_attempt = h.read_reg(DMACONR_ADDR);
+        bool ok_attempt = h.read_ok && h.write_ok;   // write_ok only reports a dbr==0 cycle was seen, not that the write landed in dmacon
+
+        h.write_reg(DMACON_ADDR, SET_CLR | SPREN);   // the paired control: a REAL write, through $096, in the SAME run
+        uint16_t after_real_write = h.read_reg(DMACONR_ADDR);
+        bool ok_real = h.read_ok && h.write_ok;
+
+        checks.expect(
+            ok_baseline && ok_attempt && ok_real &&
+                baseline == (DMAEN | BPLEN) &&
+                after_attempt == (DMAEN | BPLEN) &&
+                after_real_write == (DMAEN | BPLEN | SPREN),
+            "DMACONR-IS-READ-ONLY-AT-002: a write attempted AT $002 itself "
+            "(DMACONR's own address) leaves DMACONR's later read unchanged "
+            "(0x0300 before and after the attempt) even though the attempt's "
+            "own data pattern (SET_CLR|SPREN) would have changed it had it "
+            "landed, while a REAL write of the SAME pattern through $096, in "
+            "the SAME run - the paired control on the same measurement basis "
+            "- DOES change it (0x0320) - proving the write path itself is "
+            "live and the $002 attempt's silence is not a dead harness. "
+            "'DMACONR 002 R ... DMA control (and blitter status) read' "
+            "(p.278), the R/W column showing DMACONR as read only. "
+            "APPA-dmacon.c2, CH4-appA-dmacon.c5, CH4-appA-dmacon.c6, "
+            "CH4-appA-dmacon.c7.");
+    }
+
+    std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
+    return checks.failed == 0 ? 0 : 1;
+}
+
+// ============================================================================
+// MUTATION LOG (11-12.09.2026). Every entry below was actually applied by
+// this agent - edited into this file, rebuilt under WSL/Verilator
+// (`make test`), run, the PASS/FAIL line read from real output (quoted
+// verbatim below, not predicted), then reverted and rebuilt clean before the
+// next entry. Baseline before this log's first mutation and final clean run
+// after the last revert were both "3 passed, 0 failed".
+//
+// 1. DMACON-SEQUENTIAL-WRITES-READ-BACK-IN-ORDER: the first write's target
+//    address changed from DMACON_ADDR (0x096) to 0x098, a nearby but
+//    non-decoded address (agnus.v's write decode is
+//    reg_address[8:1]==DMACON[8:1], and 0x098[8:1] != 0x096[8:1]). Result:
+//    "2 passed, 1 failed" - DMACON-SEQUENTIAL-WRITES-READ-BACK-IN-ORDER went
+//    red (after_a read back 0x0000, not SPREN|DMAEN, since the write landed
+//    nowhere DMACONR reads from). Reverted to DMACON_ADDR; rebuilt clean (3
+//    passed, 0 failed).
+//
+// 2. DMACON-IS-WRITE-ONLY-AT-096: the second read's target address changed
+//    from DMACON_ADDR (the address under test) to DMACONR_ADDR, so both
+//    reads in the assertion aimed at $002. Result: "2 passed, 1 failed" -
+//    DMACON-IS-WRITE-ONLY-AT-096 went red (at_096 read back 0x0220, equal
+//    to at_002, instead of the expected 0x0000 - the assertion's own
+//    "returns 0x0000, not the pattern just written" check failed). Reverted
+//    to DMACON_ADDR; rebuilt clean (3 passed, 0 failed).
+//
+// 3. DMACONR-IS-READ-ONLY-AT-002: the write-attempt's target address
+//    changed from DMACONR_ADDR (0x002, the address under test) to
+//    DMACON_ADDR (0x096), turning the "attempt" into a real write. Result:
+//    "2 passed, 1 failed" - DMACONR-IS-READ-ONLY-AT-002 went red
+//    (after_attempt read back 0x0320 = DMAEN|BPLEN|SPREN, not the expected
+//    0x0300 = DMAEN|BPLEN unchanged - the write landed because it now used
+//    DMACON's own address). Reverted to DMACONR_ADDR; rebuilt clean (3
+//    passed, 0 failed).
+//
+// Machine-readable records, one per line:
+// MUTATION DMACON-SEQUENTIAL-WRITES-READ-BACK-IN-ORDER stimulus red: first write's target address moved from $096 to $098 (not decoded by agnus.v's DMACON path); after_a read back 0x0000, not SPREN|DMAEN.
+// MUTATION DMACON-IS-WRITE-ONLY-AT-096 stimulus red: the read aimed at $096 was retargeted to $002, so both reads returned the same value (0x0220) instead of 0x0000 vs 0x0220.
+// MUTATION DMACONR-IS-READ-ONLY-AT-002 stimulus red: the write attempt's target address moved from $002 to $096, turning the attempt into a real write; after_attempt came back 0x0320 instead of the unchanged 0x0300.
+// ============================================================================
