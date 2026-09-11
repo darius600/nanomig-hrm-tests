@@ -8,7 +8,7 @@
 // the manual. A green here says the implementation still behaves as it did, and
 // nothing about whether that behaviour is right - agnus_copper_move_range and
 // agnus_copper_move_sweep are both red on exactly this module's ECS range
-// (FPGA-062). It must never be counted as conformance coverage.
+// (NM-HRM-004). It must never be counted as conformance coverage.
 // See docs/test-inventory.md and docs/findings.md.
 
 #include <verilated.h>

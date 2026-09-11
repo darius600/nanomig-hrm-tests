@@ -41,7 +41,7 @@ contain.
 Both were shallow-cloned outside the repositories, never built, and nothing from
 them is copied into a test.
 
-## FPGA-051 — audio stereo routing — FINDING RESTORED
+## NM-HRM-002 — audio stereo routing — FINDING RESTORED
 
 **The conflict.** Chapter 5, p.137: *"Channels 1 and 2 are connected to the
 left-side stereo output jack. Channels 0 and 3 are connected to the right-side
@@ -112,7 +112,7 @@ This corrects a withdrawal made earlier the same day. The withdrawal was reasone
 from the manual alone — the manual said both things, so nothing could be asserted
 — and it was wrong to stop there rather than fetch a witness.
 
-## FPGA-060, FPGA-062, FPGA-069 — read out of interest, and the result is uncomfortable
+## NM-HRM-003, NM-HRM-004, NM-HRM-005 — read out of interest, and the result is uncomfortable
 
 These three are not contested: the manual is clear and the RTL disagrees with it,
 so by the rule above an emulator cannot cancel them. They were read anyway, to see
@@ -127,7 +127,7 @@ decision, not a measurement.
 counts below come from following its event schedule in the source, not from
 instrumenting it.
 
-### FPGA-062 — the danger bit
+### NM-HRM-004 — the danger bit
 
 [vAmiga `Copper.cpp` L395–L402](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.cpp#L395-L402):
 
@@ -163,7 +163,7 @@ The sentence the finding rests on is Appendix C, p.310:
 Read literally, clearing the danger bit grants the range that setting it grants —
 which would make the bit do nothing. Neither emulator implements that.
 
-### FPGA-060 — the location register width
+### NM-HRM-003 — the location register width
 
 Neither emulator narrows the Copper pointer by chipset.
 
@@ -178,7 +178,7 @@ in.
 Both bound the effective address later, by chip RAM size, which is a different
 mechanism from the manual's "OCS has three high bits, ECS five".
 
-### FPGA-069 — WAIT and SKIP timing
+### NM-HRM-005 — WAIT and SKIP timing
 
 vAmiga schedules the Copper as an event chain,
 [`CopperEvents.cpp` L300–L303](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/CopperEvents.cpp#L300-L303):
@@ -200,7 +200,7 @@ FPGA-064. The satisfied WAIT does not: 6 × 2 = 12, and both implementations giv
 8. So the manual's WAIT figure does not fit its own MOVE and SKIP figures under
 any single unit convention, whichever one is chosen.
 
-## FPGA-050 — PAL line count — WITHDRAWAL CONFIRMED
+## NM-HRM-001 — PAL line count — WITHDRAWAL CONFIRMED
 
 **The claim.** The test asserted a flat 312 positions and reported 313 as an
 error.

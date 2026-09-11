@@ -157,7 +157,7 @@ got there.
 
 ### 3. Layer B, chapter 2 — checked 07.09.2026, one contested
 
-Layer B rests on single citations, which is how FPGA-050 and FPGA-051 came to be
+Layer B rests on single citations, which is how NM-HRM-001 and NM-HRM-002 came to be
 recorded as RTL defects when the manual contradicts itself on both. The same
 check was applied to the layer-B tests that touch chapter 2. They were found
 mechanically — Copper mentioned in the source, `agnus_copper.v` pulled into the

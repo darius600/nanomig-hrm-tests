@@ -34,10 +34,10 @@ finding, and it is the one failure mode this suite exists to prevent.
 
 | Finding | What the RTL does that the manual does not describe | Tests |
 |---|---|---|
-| FPGA-060 | OCS uses five high address bits; the manual documents three | `agnus_copper_control`, `agnus_copper_locreg_width` |
-| FPGA-062 | ECS with CDANG=0 rejects 32 addresses the appendix allows | `agnus_copper_move_range`, `agnus_copper_move_sweep` |
-| FPGA-069 | SKIP spans 8 memory cycle times instead of 4, a satisfied WAIT 8 instead of 6 | `agnus_copper_cycle_times`, `agnus_copper_cycles` |
-| FPGA-051 | the four audio channels sit on the wrong stereo side | `paula_audio_mixer` |
+| NM-HRM-003 | OCS uses five high address bits; the manual documents three | `agnus_copper_control`, `agnus_copper_locreg_width` |
+| NM-HRM-004 | ECS with CDANG=0 rejects 32 addresses the appendix allows | `agnus_copper_move_range`, `agnus_copper_move_sweep` |
+| NM-HRM-005 | SKIP spans 8 memory cycle times instead of 4, a satisfied WAIT 8 instead of 6 | `agnus_copper_cycle_times`, `agnus_copper_cycles` |
+| NM-HRM-002 | the four audio channels sit on the wrong stereo side | `paula_audio_mixer` |
 | *chapter 6, unnumbered* | `DOFF` (BLTCON1 bit 7) is not implemented at all — appendix C p309 says it disables the D output in line mode; no expression in `agnus_blitter.v` reads that bit | `agnus_blitter_ecs` |
 | *chapter 6, unnumbered* | `BLTSIZV` loads the height whether or not `ecs` is set, though appendix C marks it ECS-new | `agnus_blitter_ecs` |
 | *chapter 6, unnumbered* | `BLTxPTH` takes five high pointer bits in **both** chipsets — p270 says three, five if ECS. `ecs` never reaches the pointer decode, even at `agnus_blitter` where the port exists | `agnus_blitter_ecs` |
@@ -54,7 +54,7 @@ project workspace, not in this repository. They came out of the same pipeline an
 each is red in the suite today, with a control that passes on the same
 measurement basis so the result survives a units objection.
 
-The last of them is worth reading next to FPGA-060, because it is the same
+The last of them is worth reading next to NM-HRM-003, because it is the same
 deviation in a different engine. Copper and blitter build their pointers
 identically — `data_in[4:0]` as five high bits, `data_in[15:1]` as fifteen low,
 unconditionally — and the manual documents three high bits for OCS in both cases.
@@ -62,9 +62,9 @@ Separately they read as two omissions. Together they look like one decision not 
 model the OCS pointer narrowing anywhere in Agnus. Neither chapter could have
 raised that question alone; see [`docs/findings.md`](docs/findings.md).
 
-FPGA-051 and FPGA-050 were recorded in August, and both turned out to rest on a
-manual that contradicts itself. FPGA-050 (PAL line count) is **withdrawn**: the
-manual sanctions the measured value. FPGA-051 (stereo routing) is **restored**:
+NM-HRM-002 and NM-HRM-001 were recorded in August, and both turned out to rest on a
+manual that contradicts itself. NM-HRM-001 (PAL line count) is **withdrawn**: the
+manual sanctions the measured value. NM-HRM-002 (stereo routing) is **restored**:
 WinUAE and vAmiga, read independently, both agree with the page the test cites.
 
 How that was decided, with permalinks into both emulators, is in

@@ -43,7 +43,7 @@
 //   module's boundary, never to choose or adjust an expected value. Every
 //   EXPECTED value below (313 lines, 1/60s, 1/50s, vpos==0, htotal_out
 //   equality, $00/$10/$20/$30) comes from a claims.jsonl quotation or from
-//   docs/findings.md's already-corroborated FPGA-050 resolution (the one
+//   docs/findings.md's already-corroborated NM-HRM-001 resolution (the one
 //   control not drawn from this package's own inventory, marked as such
 //   below), never from having watched the RTL run first.
 //
@@ -172,7 +172,7 @@
 //   the eol/eof cycle-counting technique NTSC-FIELD-PERIOD-APPROX-1-60S and
 //   PAL-FIELD-PERIOD-APPROX-1-50S both use: it reproduces the 313-line PAL
 //   default already corroborated in docs/findings.md (the withdrawn
-//   FPGA-050, sanctioned by Table 7-5 and confirmed against two emulators),
+//   NM-HRM-001, sanctioned by Table 7-5 and confirmed against two emulators),
 //   proving the counting method used below lands on a value the lead has
 //   already confirmed independently, on the same reset/no-lace basis.
 //   Neither of these two checks quotes claims.jsonl and neither counts
@@ -267,7 +267,7 @@ static void tick(Vagnus_beamcounter& dut) {
 // same driving pattern hrm/agnus_beamcounter/test_agnus_beamcounter.cpp
 // uses for this identical fixture, which already produced a public,
 // lead-confirmed 313-line PAL field on this scheme (docs/findings.md,
-// FPGA-050). 4 iterations = 1 CCK cycle.
+// NM-HRM-001). 4 iterations = 1 CCK cycle.
 static void step(Vagnus_beamcounter& dut, long i) {
     dut.clk7_en = (i % 2 == 0) ? 1 : 0;
     dut.cck     = (i % 4 < 2) ? 1 : 0;
@@ -374,7 +374,7 @@ static void check_precondition_long_frame(Checks& c) {
 // package's inventory. Cross-validates the eol/eof cycle-counting
 // technique the two field-period assertions below use, against the
 // already-corroborated 313-line PAL default in docs/findings.md
-// (withdrawn FPGA-050).
+// (withdrawn NM-HRM-001).
 // ---------------------------------------------------------------------
 static void check_control_pal_313(Checks& c) {
     Vagnus_beamcounter* dut = new Vagnus_beamcounter;
@@ -396,7 +396,7 @@ static void check_control_pal_313(Checks& c) {
         if (dut->eof) { eof_seen = true; break; }
     }
     bool ok = eof_seen && (eol_count == 313);
-    c.report("CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES (control, no claim id -- cross-validated against docs/findings.md FPGA-050, not asserted from this package's own inventory): eol pulses from reset to first eof = " +
+    c.report("CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES (control, no claim id -- cross-validated against docs/findings.md NM-HRM-001, not asserted from this package's own inventory): eol pulses from reset to first eof = " +
               std::to_string(eol_count) + ", eof_seen=" + std::to_string(eof_seen), ok);
     dut->final();
     delete dut;

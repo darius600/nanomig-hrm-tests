@@ -813,7 +813,8 @@ int main(int argc, char** argv) {
             "not evidence of a fixture that never varied ecs - is "
             "BLTCON0L-GATED-BY-ECS immediately above, which drives the identical "
             "construct-with-ecs/write/compare structure against a register that "
-            "agnus_blitter.v:259-260 DOES gate on ecs, and goes green.");
+            "agnus_blitter.v:259-260 DOES gate on ecs, and goes green. "
+            "Registered as NM-HRM-022 in docs/findings.md.");
     }
 
     // ---------------- BLTSIZH-GATED-BY-ECS (p.172, p.189, p.269, p.308, p.310) ----------------
@@ -948,10 +949,11 @@ int main(int argc, char** argv) {
             "`&& ecs` on BLTSIZV's decode (contrast BLTSIZH two lines below it, "
             "agnus_blitter.v:523-524, which does), so the write takes effect whether or not "
             "ecs is set. THIS ASSERTION IS REQUIRED TO FAIL - see docs/findings.md, "
-            "'Chapter 6 - read from the RTL, no test yet', and the file header above. "
+            "NM-HRM-020, and the file header above. "
             "6-appc-modifications.c12, ch6-appc-map.bltsizv, 6-appa-registers.c70, "
             "6-appa-registers.c71, ch6-appc-bltsizv.c1, 6-appc-big-blits.c65, "
-            "ch6-appc-bigblits.c8 .");
+            "ch6-appc-bigblits.c8 . "
+            "Registered as NM-HRM-020 in docs/findings.md.");
     }
 
     // ---------------- BLTSIZV-HEIGHT-TOP-BIT-FUNCTIONAL (p.269, p.308) ----------------
@@ -1058,13 +1060,14 @@ int main(int argc, char** argv) {
             "every BLTCON1 write with no per-bit exception (agnus_blitter.v:277-283) and no "
             "expression anywhere in the file reads bltcon1[7]; the D write gate is `used` "
             "and `chsel`, agnus_blitter.v:252,490-491 - DOFF genuinely has no wire into "
-            "either. THIS ASSERTION IS REQUIRED TO FAIL - see docs/findings.md, 'Chapter 6 - "
-            "read from the RTL, no test yet', and the file header above. "
+            "either. THIS ASSERTION IS REQUIRED TO FAIL - see docs/findings.md, "
+            "NM-HRM-021, and the file header above. "
             "6-appc-modifications.c4, 6-appc-modifications.c5, 6-appc-modifications.c6, "
             "6-appc-modifications.c7, 6-appc-modifications.c9, ch6-appc-ecs.c4, "
             "ch6-appc-ecs.c6, ch6-appc-map.bltcon1, 6-appa-control.c18, "
             "ch6-appa-bltcon0.area.b07.con1, 6-appa-registers.c20, ch6-appa-bltcon0.c6, "
-            "ch6-blockdiag.c10, 6-blitter-block-diagram.c11 .");
+            "ch6-blockdiag.c10, 6-blitter-block-diagram.c11 . "
+            "Registered as NM-HRM-021 in docs/findings.md.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

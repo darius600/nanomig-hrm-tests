@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
     // T9, T10 - Appendix C p. 310: ECS shifts the scale by one step. With
     // CDANG clear the ECS Copper already reaches the blitter range, and with
     // CDANG set it reaches every chip register.
-    // T9 is expected RED: this is FPGA-062, not a broken assertion. See
+    // T9 is expected RED: this is NM-HRM-004, not a broken assertion. See
     // docs/findings.md - with ECS and CDANG clear appendix C p.310 gives the
     // Copper the byte range $DFF03E-$DFF07E, the RTL accepts only $080 and above
     // at either chipset, and the 32 byte addresses $040-$07E are falsely
@@ -299,7 +299,7 @@ int main(int argc, char** argv) {
     // appendix C. COPCON is one of them ($02E, chip column A(E)). Neither that
     // legend nor the chapter body on p.26 mentions ECS at all, so neither can
     // govern the ECS case. Oracle unchanged.
-    checks.expect(move_reaches(true, false, BLTCON0), "T9 ECS CDANG=0: MOVE to BLTCON0 ($040) is written (Appendix C p.310) [FPGA-062, expected red], ch2-appc-ecs.c21");
+    checks.expect(move_reaches(true, false, BLTCON0), "T9 ECS CDANG=0: MOVE to BLTCON0 ($040) is written (Appendix C p.310) [NM-HRM-004, expected red], ch2-appc-ecs.c21");
     checks.expect(move_reaches(true, true, COPCON),
                   "T10 ECS CDANG=1: MOVE to COPCON ($02E) is written (Appendix C p.310) "
                   "[claims: COP2-copcon-ecs.c11, ch2-appa-copcon.c3.s2, ch2-appb-legend.c9, ch2-appb-table.c5.s2, ch2-appc-ecs.c12]");

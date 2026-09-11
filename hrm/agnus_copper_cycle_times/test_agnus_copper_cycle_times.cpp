@@ -42,13 +42,13 @@
 //   beam at 0x70), so the Copper blocks instead of stepping over the skipped
 //   MOVE and fewer grants fall inside word offsets 0..2 -> 6 passed, 7 failed;
 //   AC4 is the only assertion that moves. Reverted: 7 passed, 6 failed.
-// MUTATION P3 none impossible: P3 is RED at baseline and is one of FPGA-069's
+// MUTATION P3 none impossible: P3 is RED at baseline and is one of NM-HRM-005's
 //   assertions - the manual gives a SKIP four memory cycle times and the module
 //   takes eight. A stimulus mutation has to take a green assertion red, and
 //   there is nothing green here to break. Recorded rather than left out:
 //   an unrecorded assertion and a forgotten one look the same.
-// MUTATION P4 none impossible: same, the SKIP-not-taken half of FPGA-069.
-// MUTATION P5 none impossible: same, the satisfied-WAIT half of FPGA-069 - six
+// MUTATION P4 none impossible: same, the SKIP-not-taken half of NM-HRM-005.
+// MUTATION P5 none impossible: same, the satisfied-WAIT half of NM-HRM-005 - six
 //   memory cycle times in the manual, eight measured.
 // MUTATION P6 none impossible: same. P6 asserts the DIFFERENCE between a WAIT
 //   and a MOVE and is red for the same reason; with P5 red there is no green
@@ -305,7 +305,7 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(4000);
         checks.expect_eq(h.span_in_memory_cycle_times(0, 2), 4,
-                         "P3 a SKIP whose condition is true spans four memory cycle times (p.20) [FPGA-069, expected red] "
+                         "P3 a SKIP whose condition is true spans four memory cycle times (p.20) [NM-HRM-005, expected red] "
                          "[claims: COP2-what-is-a-copper-instruction.c17]");
     }
 
@@ -319,7 +319,7 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(4000);
         checks.expect_eq(h.span_in_memory_cycle_times(0, 2), 4,
-                         "P4 a SKIP whose condition is false spans four memory cycle times (p.20) [FPGA-069, expected red] "
+                         "P4 a SKIP whose condition is false spans four memory cycle times (p.20) [NM-HRM-005, expected red] "
                          "[claims: COP2-what-is-a-copper-instruction.c17]");
     }
 
@@ -338,10 +338,10 @@ int main(int argc, char** argv) {
         h.run_cycles(4000);
         const int wait_span = h.span_in_memory_cycle_times(0, 2);
         checks.expect_eq(wait_span, 6,
-                         "P5 a satisfied WAIT spans six memory cycle times (p.20) [FPGA-069, expected red] "
+                         "P5 a satisfied WAIT spans six memory cycle times (p.20) [NM-HRM-005, expected red] "
                          "[claims: COP2-what-is-a-copper-instruction.c19, ch2-what-is-a-copper-instruction.c17]");
         checks.expect_eq(wait_span - move_span, 2,
-                         "P6 a WAIT spans two memory cycle times more than a MOVE (p.20: three cycles versus two) [FPGA-069, expected red] "
+                         "P6 a WAIT spans two memory cycle times more than a MOVE (p.20: three cycles versus two) [NM-HRM-005, expected red] "
                          "[claims: COP2-what-is-a-copper-instruction.c20]");
     }
 

@@ -74,20 +74,82 @@ using a value made of identical bits. **F12 is the one that came back:** given a
 witness whose nibbles differ top-half from bottom-half, it is still red, and the
 finding now rests on a measurement that could have gone the other way.
 
-## About the keys
+## The finding keys
 
-The `FPGA-nnn` keys come from the private workspace where this work is planned,
-and they are already embedded in the test sources and in commit messages. They
-are kept rather than renumbered: a second numbering would break the trail from a
-failing assertion back to the reasoning that produced it, and would have to be
-maintained in two places forever.
+Findings are numbered **`NM-HRM-nnn`** -- `NM` for the implementation under test,
+`HRM` for the *Amiga Hardware Reference Manual* that judges it. The key names the
+**pair that disagrees**, and it does so deliberately, because it must not
+prejudge which side is wrong: on six of the findings below, two independent
+emulators do what NanoMig does and the printed sentence is the outlier.
 
-What the workspace holds is the *status* of each item — who decided what, when,
-and what happens next. What this file holds is *what the finding is*, which is
-the part a reader of this repository needs. Where a key appears in a test source
-without further explanation, look it up here.
+A number is issued once. It is never reused, never reordered, and a withdrawn
+finding keeps both its number and its entry -- the reasoning that withdrew it is
+the result, not a deletion.
 
-## Where each finding comes from, and whether it holds
+**Renumbered on 11.09.2026, and this is the reason.** Findings previously carried
+`FPGA-nnn` keys borrowed from the private workspace where this work is planned.
+That workspace is not published. No reader outside it can resolve such a
+reference, so a failing assertion printed a key that led nowhere -- and the
+borrowed numbers carried the gaps of a task sequence (`050, 051, 060, 062, 069`)
+that has nothing to do with findings. Where an older commit message or artefact
+cites an `FPGA` number, this resolves it:
+
+| now | was | | now | was | | now | was |
+|---|---|---|---|---|---|---|---|
+| NM-HRM-001 | FPGA-050 | | NM-HRM-009 | FPGA-091-F04 | | NM-HRM-016 | FPGA-091-F11 |
+| NM-HRM-002 | FPGA-051 | | NM-HRM-010 | FPGA-091-F05 | | NM-HRM-017 | FPGA-091-F12 |
+| NM-HRM-003 | FPGA-060 | | NM-HRM-011 | FPGA-091-F06 | | NM-HRM-018 | FPGA-091-F13 |
+| NM-HRM-004 | FPGA-062 | | NM-HRM-012 | FPGA-091-F07 | | NM-HRM-019 | FPGA-091-F14 |
+| NM-HRM-005 | FPGA-069 | | NM-HRM-013 | FPGA-091-F08 | | NM-HRM-020 | *newly issued* |
+| NM-HRM-006 | FPGA-091-F01 | | NM-HRM-014 | FPGA-091-F09 | | NM-HRM-021 | *newly issued* |
+| NM-HRM-007 | FPGA-091-F02 | | NM-HRM-015 | FPGA-091-F10 | | NM-HRM-022 | *newly issued* |
+| NM-HRM-008 | FPGA-091-F03 | | | | | | |
+
+`FPGA-nnn` still appears in test sources in a second, unrelated role, and those
+references are kept: `// Primary oracle: Frozen FPGA-019 specification` marks a
+package whose oracle is a frozen module specification rather than the manual, and
+therefore **not** an HRM-conformance test. That distinction is worth more than
+the resolvability of the number.
+
+## The register
+
+Every finding, with the package that measures it and what the third witness says.
+**The emulators are not an oracle and never decide a finding** -- they are read
+only for the report to the hardware developers
+([`third-witness-ch3-ch6.md`](third-witness-ch3-ch6.md), whose section letters
+this column cites). The manual decides; a red result stands until an Amiga
+specialist rules on it.
+
+| Key | Subject | Status | Package | Third witness |
+|---|---|---|---|---|
+| NM-HRM-001 | PAL field terminates at 313 lines, not 312 | **withdrawn** 07.09. | `hrm/agnus_beamcounter` | both agree with the RTL; Table 7-5 sanctions 313 |
+| NM-HRM-002 | audio channels on the wrong stereo side | **red** | `hrm/paula_audio_mixer` | both side with chapter 5, against the RTL |
+| NM-HRM-003 | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | neither narrows a pointer by chipset at all |
+| NM-HRM-004 | ECS danger bit admits too small a range | **red** | `hrm/agnus_copper_move_range`, `hrm/agnus_copper_move_sweep` | both block below `$80` regardless of chipset |
+| NM-HRM-005 | WAIT and SKIP take longer than the manual states | **red** | `hrm/agnus_copper_cycle_times`, `hrm/agnus_copper_cycles` | vAmiga gives NanoMig's three numbers |
+| NM-HRM-006 | DDFSTRT bit H3 gated by chipset, not by resolution | **red** | `hrm/ch3-ddf-fetch-window` | **B5** -- both with NanoMig |
+| NM-HRM-007 | hires fetch cannot reach the manual's 49 words | **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** -- both with NanoMig, at 50 |
+| NM-HRM-008 | playfield-1 collision depends on playfield 2 | **red** | `hrm/ch3-collision-registers` | **B1** -- both with NanoMig |
+| NM-HRM-009 | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** 11.09. | `hrm/ch3-collision-registers` | not read |
+| NM-HRM-010 | the scan line is a whole number of colour clocks | source observation | `hrm/ch3-beam-counters-and-blanking` | not read |
+| NM-HRM-011 | PAL vertical blanking is 26 lines, manual says 29 | **red** | `hrm/ch3-beam-counters-and-blanking` | **B6** -- both with NanoMig |
+| NM-HRM-012 | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** 11.09. | `hrm/ch3-sprite-registers` | not read |
+| NM-HRM-013 | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn** 11.09., split into NM-HRM-019 | `hrm/ch3-sprite-registers` | not read |
+| NM-HRM-014 | the manual applies its own ECS pointer note inconsistently | source observation | `hrm/ch3-register-map-agnus` | not read |
+| NM-HRM-015 | BRDNTRAN is declared and never connected | **red** | `hrm/ch3-horizontal-display-window` | **B3** -- both with NanoMig |
+| NM-HRM-016 | SuperHires sprite colour encoding not implemented | **red** | `hrm/ch3-shres-sprite-colour-encoding` | **A1** -- both with the manual |
+| NM-HRM-017 | SuperHires bitplane colour encoding not implemented | **red** | `hrm/ch3-shres-bitplane-colour-encoding` | **A1** -- both with the manual |
+| NM-HRM-018 | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** 11.09. | `hrm/ch3-bplcon0-display-modes` | not read |
+| NM-HRM-019 | SPRxCTL bit 4 (SHSH1) is not implemented | **red** | `hrm/ch3-sprite-registers` | **C2** -- the emulators disagree |
+| NM-HRM-020 | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** -- both with the manual |
+| NM-HRM-021 | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1** -- the emulators disagree |
+| NM-HRM-022 | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** -- both with NanoMig |
+
+Chapters 1, 4, 7 and 8 have not been extracted, so no finding below comes from
+them. The register is a record of what has been looked at, not of what is there.
+
+## Where the five oldest findings come from, and whether they hold
+
 
 Five findings, but not of equal standing. Three came out of the pipeline and are
 witnessed more than once. Two came out of the earlier hand-written run, rest on a
@@ -96,18 +158,18 @@ contradicted elsewhere in the same manual.
 
 | Finding | Origin | Standing |
 |---|---|---|
-| FPGA-060 | pipeline | corroborated — p273 and p309 give two different widths |
-| FPGA-062 | pipeline | corroborated — two editions carry the appendix C sentence; challenged 11.09. and upheld |
-| FPGA-069 | pipeline | corroborated — p20 and p275, units settled by FPGA-084 |
-| FPGA-051 | hand-written, Aug | **stands** — the manual contradicts itself; two emulators settle it against the RTL |
-| FPGA-050 | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
+| NM-HRM-003 | pipeline | corroborated — p273 and p309 give two different widths |
+| NM-HRM-004 | pipeline | corroborated — two editions carry the appendix C sentence; challenged 11.09. and upheld |
+| NM-HRM-005 | pipeline | corroborated — p20 and p275, units settled on p275 itself |
+| NM-HRM-002 | hand-written, Aug | **stands** — the manual contradicts itself; two emulators settle it against the RTL |
+| NM-HRM-001 | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
 
 Both August findings rested on a manual that says two different things, and
 neither could be decided by reading the manual harder. They were settled by a
 third witness — see [`third-witness.md`](third-witness.md) — and they went
 opposite ways: one survived, one did not.
 
-## FPGA-050 — withdrawn on 07.09.2026
+## NM-HRM-001, withdrawn on 07.09.2026 — and why the entry stays
 
 The assertion was removed rather than left red. A red test is a claim that the
 RTL is wrong, and this one could not support that claim.
@@ -123,7 +185,7 @@ nobody has done, and an assertion guessing at it would be worse than none.
 
 The reasoning:
 
-### FPGA-050 — PAL frame has one line too many
+### NM-HRM-001 — PAL frame has one line too many
 
 | | |
 |---|---|
@@ -148,7 +210,7 @@ for what it drove. Details and permalinks in
 
 ## Open findings
 
-### FPGA-051 — audio channels on the wrong stereo side
+### NM-HRM-002 — audio channels on the wrong stereo side
 
 | | |
 |---|---|
@@ -170,7 +232,7 @@ Where to correct it is still open: the swap may belong in the top level or the
 board wiring rather than in `paula_audio_mixer` itself, and fixing it in two
 places would swap it back.
 
-### FPGA-060 — OCS Copper address uses five high bits instead of three
+### NM-HRM-003 — OCS Copper address uses five high bits instead of three
 
 | | |
 |---|---|
@@ -182,7 +244,7 @@ LW3 is the assertion that matters: the appendix gives *two different* widths for
 the two chipsets, so a module reporting the same width in both contradicts the
 manual whatever that width is.
 
-### FPGA-062 — ECS danger bit admits too small a range
+### NM-HRM-004 — ECS danger bit admits too small a range
 
 | | |
 |---|---|
@@ -239,7 +301,7 @@ never Copper-writable. The sentence's stated purpose is to permit writes "to the
 Blitter hardware", whose first register is BLTCON0 at `$040`. T9 targets `$040`
 and holds on either reading of the bound.
 
-### FPGA-069 — WAIT and SKIP take longer than the manual states
+### NM-HRM-005 — WAIT and SKIP take longer than the manual states
 
 | | |
 |---|---|
@@ -247,12 +309,12 @@ and holds on either reading of the bound.
 | Measured | SKIP 8, satisfied WAIT 8, WAIT-minus-MOVE 4 |
 | Tests | `hrm/agnus_copper_cycle_times` (P3–P6, AC5, AC6), `hrm/agnus_copper_cycles` (C5, C6) |
 
-The unit question this depended on is settled (FPGA-064): appendix A p275 defines
+The unit question this depended on is settled: appendix A p275 defines
 bus cycle against memory cycle time and gives the factor two, so the readings are
 comparable and the deviation is real. AC6 is expository, not independent — given
 AC4 and AC5 it cannot fail on its own.
 
-## Chapter 6 — two of these are now red tests
+## Chapter 6 — the ECS blitter registers
 
 These came out of the chapter-6 classification stage on 08.09.2026, while it was
 looking for a fixture boundary, and were observations rather than findings
@@ -267,15 +329,84 @@ because nothing asserted them.
 | `DOFF-NO-OBSERVABLE-EFFECT` | the same D write appears with BLTCON1 bit 7 clear and set |
 
 Each says so in its own message and names every claim it covers, so the red line
-is readable without this file. The remaining three rows of the table below still
-have no test: the pointer width is asserted in `hrm/agnus_blitter_adrgen` as the
-behaviour the design actually implements rather than as a defect, and BLTCON0L
-and BLTSIZH are gated correctly and pass.
+is readable without this file. A third followed on 10.09.2026 --
+`BLTXPTH-WIDTH-REGARDLESS-OF-ECS`, measured at the parent module that actually
+has the `ecs` port. The two remaining rows of the five-way table below are not
+defects: BLTCON0L and BLTSIZH are gated correctly and pass.
 
-They carry no `FPGA-nnn` key. The keys are issued in the private workspace, and
-inventing one here would collide with that register. When the chapter-6 tests are
-built, each of these either gets a key and an assertion or is dropped with a
-reason.
+**All three now carry keys**, issued below. Until 11.09.2026 they carried none,
+on the reasoning that keys were issued in the private workspace and inventing one
+here would collide with it. `NM-HRM-nnn` is this repository's own sequence and
+collides with nothing, so that objection is gone.
+
+### NM-HRM-020 — BLTSIZV is not gated on ECS, while its two siblings are
+
+| | |
+|---|---|
+| Manual | Appendix C pp.309/310 marks BLTSIZV `$05C` **new for ECS**, the same status it gives BLTSIZH `$05E` and BLTCON0L `$05A` |
+| Measured | a BLTSIZV write with `ecs=0` and with `ecs=1` gives the identical height, r1=7 and r2=7 |
+| Test | `hrm/agnus_blitter_ecs` (`BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS`) |
+
+**The control is the point.** `BLTCON0L-GATED-BY-ECS` is green on the same
+fixture, so this fixture's `ecs` demonstrably changes behaviour elsewhere. Three
+registers given one status by one appendix page; two honour it, one does not.
+
+`agnus_blitter.v:548` carries the contradiction in its own text -- the comment
+calls the register ECS and the code does not gate it:
+
+```verilog
+    else if (reg_address_in[8:1]==BLTSIZV[8:1]) // ECS BLTSIZV register
+        height[14:0] <= data_in[14:0];
+```
+
+against line 259, where the sibling is gated: `… BLTCON0L[8:1] && ecs`.
+
+**Third witness: both emulators side with the manual** (section A2). This is one
+of only two findings in chapters 3 and 6 where the manual, vAmiga and WinUAE all
+stand on the same side and NanoMig alone is the outlier -- which makes it the
+strongest of the three here.
+
+### NM-HRM-021 — DOFF (BLTCON1 bit 7) has no observable effect
+
+| | |
+|---|---|
+| Manual | Appendix C p.309 lists `DOFF` among the five ECS blitter changes: disable D output in line mode |
+| Measured | the same D write appears with BLTCON1 bit 7 clear and with it set |
+| Test | `hrm/agnus_blitter_ecs` (`DOFF-NO-OBSERVABLE-EFFECT`) |
+
+`bltcon1[7]` does not occur in `agnus_blitter.v` at all. The bits that module
+reads are 15-12, 4, 3, 2, 1 and 0. This is an unbuilt feature rather than a wrong
+one.
+
+**Third witness: the two emulators disagree with each other** (section C1) --
+the only place in this chapter where the third witness cannot break a tie. It
+therefore says nothing about this finding in either direction, and the manual
+decides alone, which it does clearly.
+
+### NM-HRM-022 — BLTxPTH carries five high bits in both chipsets
+
+| | |
+|---|---|
+| Manual | Appendix A p.270: "Blitter pointer to x (high 3 bits, 5 bits if ECS)" |
+| Measured | writing `BLTAPTH` with `$001F` gives `address_out = 0xF8000` at `ecs=0` **and** at `ecs=1` -- identical |
+| Test | `hrm/agnus_blitter_ecs` (`BLTXPTH-WIDTH-REGARDLESS-OF-ECS`) |
+
+Measured at `agnus_blitter`, the parent that has the `ecs` port, after Prompt 8's
+validation rejected handling it one fixture lower where the port does not exist.
+The full measurement, its control and its mutation are recorded below.
+
+**Same root cause as NM-HRM-003, and recorded separately on purpose.** The Copper
+and the blitter build their pointers from the same bits with no chipset condition
+on either, so the two findings very likely have one answer. They keep separate
+numbers because they rest on separate measurements at separate boundaries --
+the same rule that keeps NM-HRM-016 and NM-HRM-017 apart. Whether they should be
+closed by one decision is a question for the specialists, and the cross-reference
+below is what puts it to them.
+
+**Third witness: both emulators side with NanoMig** (section B2) -- neither
+narrows a pointer by chipset at all. Read with NM-HRM-003, where the same is
+true, this points at the manual rather than at the RTL. It does not close either
+one: the manual is this project's oracle, and an emulator never promotes to that.
 
 Every statement below was checked by reading the RTL directly, not taken from the
 classifier's report.
@@ -338,8 +469,8 @@ rather than relocated citations. They did, and the assertion came out red.
 
 #### The same deviation, in both Agnus engines
 
-Noticed 10.09.2026, when the blitter measurement above landed next to FPGA-060 in
-this document. FPGA-060 is the copper's version of exactly this finding: "OCS uses
+Noticed 10.09.2026, when the blitter measurement above landed next to NM-HRM-003 in
+this document. NM-HRM-003 is the copper's version of exactly this finding: "OCS uses
 five high address bits; the manual documents three." The blitter now shows the
 same thing — and not merely something similar. The two pointers are built the same
 way, from the same bits, with no chipset condition on either:
@@ -362,10 +493,9 @@ that is a deliberate simplification or an oversight is not something these tests
 can answer — but it is a question about the whole chip, not about a register, and
 neither the copper chapter nor the blitter chapter could have raised it alone.
 
-Recorded here rather than acted on. The copper half is already witnessed more than
-once and carries an FPGA number; the blitter half is new, has no number yet, and
-none is invented here — numbering lives in the project workspace, not in this
-repository.
+Recorded rather than acted on. The copper half is NM-HRM-003 and is witnessed
+more than once; the blitter half is NM-HRM-022, issued 11.09.2026. Whether one
+decision closes both is the question this cross-reference exists to raise.
 
 ### The classified inventory says otherwise, in 109 records
 
@@ -393,7 +523,7 @@ its own mistake. PKG-BLT-ECS's builder read line 548 instead and sided with the
 RTL, which is what the build brief's "if the brief and the document disagree, the
 document wins — and if the RTL and both disagree, say so" rule is for.
 
-The pointer row is the sibling of FPGA-060, one appendix over: the same register
+The pointer row is the sibling of NM-HRM-003, one appendix over: the same register
 family, the same "three bits in OCS, five in ECS" sentence, and the same
 unconditional five bits in the RTL. The third-witness work already recorded that
 neither vAmiga nor WinUAE narrows a pointer by chipset at all, which is worth
@@ -420,9 +550,9 @@ says.**
 
 | Finding | Manual | Both emulators, and NanoMig |
 |---|---|---|
-| FPGA-060 | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
-| FPGA-062 | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
-| FPGA-069 | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
+| NM-HRM-003 | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
+| NM-HRM-004 | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
+| NM-HRM-005 | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
 
 The citations are in [`third-witness.md`](third-witness.md).
 
@@ -432,7 +562,7 @@ hardware". Two independent implementations agreeing against a manual sentence is
 strong evidence, but choosing what NanoMig should follow — the manual it is
 tested against, or the hardware it emulates — is a decision, not a measurement.
 
-FPGA-062 is the sharpest case. Appendix C read literally says that *clearing* the
+NM-HRM-004 is the sharpest case. Appendix C read literally says that *clearing* the
 danger bit grants the range that *setting* it grants, which would leave the bit
 with nothing to do.
 
@@ -444,7 +574,7 @@ the reason is written down beside it — a test whose expectation was quietly mo
 to match the implementation stops being evidence about anything.
 
 
-## FPGA-091-F01 — DDFSTRT/DDFSTOP bit H3 is gated by the chipset, not by resolution
+### NM-HRM-006 — DDFSTRT/DDFSTOP bit H3 is gated by the chipset, not by resolution
 
 **Package:** `hrm/ch3-ddf-fetch-window`, assertion
 `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE`. **Red.**
@@ -470,7 +600,7 @@ possible that real ECS Agnus behaves this way and the manual's sentence is an
 OCS-era statement never revised. That is the question — not whether the test is
 right. The test asserts what page 91 says.
 
-## FPGA-091-F02 — the hires fetch width cannot reach the manual's maximum of 49 words
+### NM-HRM-007 — the hires fetch width cannot reach the manual's maximum of 49 words
 
 **Package:** `hrm/ch3-ddf-fetch-window`, assertion
 `MAX-WORDS-49-HIRES-AT-HW-LIMITS`. **Red.**
@@ -495,12 +625,12 @@ is wrong.
 
 ---
 
-*Both found by the FPGA-091 chapter-3 build, 10.09.2026. Both confirmed against
+*Both found by the chapter-3 build, 10.09.2026. Both confirmed against
 the RTL by the lead before recording. Neither is decided here: the manual is this
 project's oracle, so the test stays red until an Amiga specialist rules.*
 
 
-## FPGA-091-F03 — playfield-1 collision depends on playfield 2, by design, undocumented
+### NM-HRM-008 — playfield-1 collision depends on playfield 2, by design, undocumented
 
 **Package:** `hrm/ch3-collision-registers`, the four `BITMAP-PAIR` cases involving
 playfield 1. **Red.**
@@ -534,7 +664,7 @@ that NanoMig is wrong.
 already points at. If they agree with NanoMig, the manual's table needs a footnote
 rather than the RTL needing a change.
 
-## FPGA-091-F04 — CLXDAT bit 15 reads as 1, not 0
+### NM-HRM-009 — CLXDAT bit 15 reads as 1, not 0
 
 > **WITHDRAWN** — validation 11.09.2026.
 >
@@ -559,10 +689,10 @@ as zero, or undefined. Every other assertion in the package masks the bit out wi
 
 ---
 
-*F03 and F04 found by the FPGA-091 chapter-3 build, 10.09.2026, both confirmed
+*F03 and F04 found by the chapter-3 build, 10.09.2026, both confirmed
 against the RTL by the lead before recording.*
 
-## FPGA-091-F05 — the horizontal line is a whole number of colour clocks, not 227.5
+### NM-HRM-010 — the horizontal line is a whole number of colour clocks, not 227.5
 
 > **SOURCE OBSERVATION, not test-backed** — validation 11.09.2026.
 >
@@ -591,7 +721,7 @@ the interlace machinery depends on. The question is whether anything in the
 chapter-3 material depends on it observably, or whether the simplification is
 invisible above this boundary.
 
-## FPGA-091-F06 — PAL vertical blanking is 26 lines, the manual says 29
+### NM-HRM-011 — PAL vertical blanking is 26 lines, the manual says 29
 
 **Package:** `hrm/ch3-beam-counters-and-blanking`, assertion
 `VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL`. **Red.** Its NTSC twin passes and is
@@ -619,11 +749,11 @@ machine.
 
 ---
 
-*F05 and F06 found by the FPGA-091 chapter-3 build, 11.09.2026, both confirmed
+*F05 and F06 found by the chapter-3 build, 11.09.2026, both confirmed
 against the RTL by the lead before recording. In both cases the RTL's own
 comments acknowledge the divergence.*
 
-## FPGA-091-F07 — SPRxCTL bit 0 (SH0) is honoured at every resolution, not only SuperHires
+### NM-HRM-012 — SPRxCTL bit 0 (SH0) is honoured at every resolution, not only SuperHires
 
 > **WITHDRAWN** — validation 11.09.2026.
 >
@@ -651,7 +781,7 @@ So the sprite's start position responds to SH0 at all four `spres` encodings.
 chipset strap rather than by resolution. Both are "a low-order position bit the
 manual scopes to one mode and the RTL honours always". Worth deciding together.
 
-## FPGA-091-F08 — SPRxCTL bits 3 and 4 are read nowhere in the module
+### NM-HRM-013 — SPRxCTL bits 3 and 4 are read nowhere in the module
 
 > **WITHDRAWN** — validation 11.09.2026.
 >
@@ -671,10 +801,10 @@ chip mode this module offers, including with `aga` asserted.
 
 ---
 
-*F07 and F08 found by the FPGA-091 chapter-3 build, 11.09.2026, both confirmed
+*F07 and F08 found by the chapter-3 build, 11.09.2026, both confirmed
 against the RTL by the lead before recording.*
 
-## FPGA-091-F09 — the manual applies its own ECS pointer extension inconsistently
+### NM-HRM-014 — the manual applies its own ECS pointer extension inconsistently
 
 > **SOURCE OBSERVATION, not test-backed (as this entry already stated)** — validation 11.09.2026.
 >
@@ -720,10 +850,10 @@ manual already uses elsewhere, and chapter 3's "19-bit" is a third, separate sli
 
 ---
 
-*F09 found by the FPGA-091 chapter-3 build, 11.09.2026, confirmed against the RTL
+*F09 found by the chapter-3 build, 11.09.2026, confirmed against the RTL
 and against appendix B's own DSKPTH row by the lead before recording.*
 
-## FPGA-091-F10 — BRDNTRAN is declared and never connected
+### NM-HRM-015 — BRDNTRAN is declared and never connected
 
 **Package:** `hrm/ch3-horizontal-display-window`, assertion
 `D-BRDNTRAN-HAS-NO-EFFECT`. **Red.** Pages 296, 297, 307.
@@ -754,10 +884,10 @@ confirming that nothing downstream silently depends on the border being opaque.
 
 ---
 
-*F10 found by the FPGA-091 chapter-3 build, 11.09.2026, confirmed against the RTL
+*F10 found by the chapter-3 build, 11.09.2026, confirmed against the RTL
 by the lead before recording.*
 
-## FPGA-091-F11 — SuperHires sprite colour encoding is not implemented
+### NM-HRM-016 — SuperHires sprite colour encoding is not implemented
 
 > **HOLDS, with the count corrected** — validation 11.09.2026.
 >
@@ -816,10 +946,10 @@ not a defect report.
 
 ---
 
-*F11 found by the FPGA-091 chapter-3 build, 11.09.2026; RTL root cause and the
+*F11 found by the chapter-3 build, 11.09.2026; RTL root cause and the
 measurement independently reproduced by the lead before recording.*
 
-## FPGA-091-F12 — SuperHires bitplane colour encoding is not implemented
+### NM-HRM-017 — SuperHires bitplane colour encoding is not implemented
 
 > **SOURCE OBSERVATION on 11.09.2026 — RESTORED as test-backed the same day,
 > once the witness was fixed.** The validator's objection was correct and the
@@ -885,10 +1015,10 @@ worth building is a scope question for the project.
 
 ---
 
-*F12 found by the FPGA-091 chapter-3 build, 11.09.2026; RTL path and measurement
+*F12 found by the chapter-3 build, 11.09.2026; RTL path and measurement
 independently reproduced by the lead before recording.*
 
-## FPGA-091-F13 — ECS BPLCON0 bit 4 (SPRHWRM) has no effect
+### NM-HRM-018 — ECS BPLCON0 bit 4 (SPRHWRM) has no effect
 
 > **WITHDRAWN as a conformance finding** — validation 11.09.2026.
 >
@@ -940,10 +1070,10 @@ ECS behaviour is absent.
 
 ---
 
-*F13 found by the FPGA-091 chapter-3 build, 11.09.2026; RTL and both claim
+*F13 found by the chapter-3 build, 11.09.2026; RTL and both claim
 quotations checked by the lead before recording.*
 
-## FPGA-091-F14 — SPRxCTL bit 4 (SHSH1) is not implemented
+### NM-HRM-019 — SPRxCTL bit 4 (SHSH1) is not implemented
 
 **Package:** `hrm/ch3-sprite-registers`, assertion
 `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`. **Red.** Page 303.

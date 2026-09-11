@@ -12,7 +12,7 @@
 //   either width. Frozen specification:
 //   fpga-lab/work/2026-09-05_fpga-078_locreg-width_testspecification.md
 // Requirement IDs: COP-05 (Using the Copper Registers, p.25). Additive;
-//   does not touch the existing red finding on that row (FPGA-060).
+//   does not touch the existing red finding on that row (NM-HRM-003).
 // Non-goals: declaring 15, 16, or any other number "correct" for the real
 //   Amiga; CDANG/ECS gating of location-register writes; the automatic
 //   sof-triggered restart; jump-strobe timing beyond "the write becomes
@@ -360,7 +360,7 @@ int main(int argc, char** argv) {
     // of a parenthesis.
     //
     // LR3/LR4 measure 5 bits with the harness in OCS (`ecs = 0`). The single
-    // number is already tracked - FPGA-060, and agnus_copper_control T4 is red
+    // number is already tracked - NM-HRM-003, and agnus_copper_control T4 is red
     // on it. What could not be said before is the SHAPE of the defect: the
     // module has no chipset dependence at all here. `cop1lch[20:16] <=
     // data_in[4:0]` (agnus_copper.v:144) and the COP2LCH equivalent

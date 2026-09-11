@@ -19,7 +19,7 @@
 // MUTATION T8 stimulus red the start-of-frame pulse removed, so the updated COP1LC is never taken up
 //
 // "T4 OCS mode uses only the documented three high address bits" is RED at
-// baseline and stays red. That is the known FPGA-060 finding, not a mutation
+// baseline and stays red. That is the known NM-HRM-003 finding, not a mutation
 // result: the module latches more high bits than page 25 documents for OCS.
 
 #include <cstdint>

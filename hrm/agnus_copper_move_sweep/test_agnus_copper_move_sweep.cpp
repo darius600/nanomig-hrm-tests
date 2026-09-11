@@ -14,7 +14,7 @@
 // task's source set)". **That is no longer what the file does.** Appendix C was
 // brought into the corpus on 05.09.2026, and the ECS rows below are asserted
 // against p310's own statement of the CDANG ranges - which is what makes the
-// ecs=1/cdang=0 row a valid red finding (FPGA-062) rather than a literal-reading
+// ecs=1/cdang=0 row a valid red finding (NM-HRM-004) rather than a literal-reading
 // choice. Stale header found by independent review; the assertions were already
 // right, only this paragraph described an older version of them.
 // Requirement IDs: COP-03 (covers PKG-MOVE-DECODE, PKG-CDANG from
@@ -62,7 +62,7 @@
 //   `sweep_accepted_set(false, false)` changed to `sweep_accepted_set(false, true)`,
 //   the expected set left as {$40..$FF} -> 10 passed, 2 failed, and the newly red
 //   row is SWEEP ecs=0 cdang=0 exactly (the accepted set becomes {$20..$FF}).
-//   SWEEP ecs=1 cdang=0 is red at baseline as well and stays so: that is FPGA-062,
+//   SWEEP ecs=1 cdang=0 is red at baseline as well and stays so: that is NM-HRM-004,
 //   not this mutation. Reverted: 11 passed, 1 failed.
 //   The four assertions here all begin their label with the word SWEEP, so the
 //   gate reads one id for the family; this record covers it.
@@ -470,7 +470,7 @@ int main(int argc, char** argv) {
     expect_set_equals(checks, ecs_cdang0, expected_ecs_cdang0,
                        "SWEEP ecs=1 cdang=0 vs Appendix C (HRM_CONFORMANCE; the appendix gives the ECS "
                        "CDANG=0 range as equal to the OCS CDANG=1 range). Expected to be RED: this is "
-                       "the deviation already tracked as FPGA-062 "
+                       "the deviation already tracked as NM-HRM-004 "
                        "[claims: COP2-copcon-ecs.c14, ch2-appc-ecs.c22]");
     expect_set_equals(checks, ecs_cdang1, expected_ecs_cdang1,
                        "SWEEP ecs=1 cdang=1 vs Appendix C (HRM_CONFORMANCE; \"the Copper can access all "

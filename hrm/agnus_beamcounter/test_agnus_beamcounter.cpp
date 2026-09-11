@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
         pass = false;
     }
     // A check asserting max_vpos==311 and exactly 312 EOL pulses stood here until
-    // 07.09.2026, recorded as finding FPGA-050. It was withdrawn, not fixed: the
+    // 07.09.2026, recorded as finding NM-HRM-001. It was withdrawn, not fixed: the
     // manual sanctions the value it called an error. Table 7-5, VPOSR bit 0 reads
     // "High bit of the vertical position (V8). Allows PAL line counts (313) to
     // appear in PAL versions of the Amiga", in both the printed and the

@@ -84,17 +84,17 @@ int main(int argc, char **argv) {
         }
     };
 
-    // All four are expected RED: this is FPGA-051, not a broken assertion.
+    // All four are expected RED: this is NM-HRM-002, not a broken assertion.
     // See docs/findings.md and docs/third-witness.md - the
     // manual says both things, chapter 5 p.137 putting channels 1+2 left and
     // 0+3 right while the appendix pin list says the opposite, and two
     // independent emulators side with chapter 5 against the RTL. Making these
     // pass would delete the finding, and where to correct it is still open:
     // the swap may belong in the top level rather than in this module.
-    check_hrm("channel 0 routes right [FPGA-051, expected red]", 17, 0, 0, 0, 0, 17);
-    check_hrm("channel 1 routes left [FPGA-051, expected red]", 0, 23, 0, 0, 23, 0);
-    check_hrm("channel 2 routes left [FPGA-051, expected red]", 0, 0, 31, 0, 31, 0);
-    check_hrm("channel 3 routes right [FPGA-051, expected red]", 0, 0, 0, 47, 0, 47);
+    check_hrm("channel 0 routes right [NM-HRM-002, expected red]", 17, 0, 0, 0, 0, 17);
+    check_hrm("channel 1 routes left [NM-HRM-002, expected red]", 0, 23, 0, 0, 23, 0);
+    check_hrm("channel 2 routes left [NM-HRM-002, expected red]", 0, 0, 31, 0, 31, 0);
+    check_hrm("channel 3 routes right [NM-HRM-002, expected red]", 0, 0, 0, 47, 0, 47);
 
     // Secondary RTL regression: preserve the implementation's signed arithmetic
     // independently of whether its left/right labels satisfy the HRM.

@@ -6,8 +6,8 @@ changes a test**, and no expectation in the suite comes from an emulator.
 ## Why this exists
 
 `tools/list_reds.py` counts 67 failing assertions in 32 families. Chapters 2 and
-5 have every family registered in [`findings.md`](findings.md) — FPGA-060,
-FPGA-062, FPGA-069, FPGA-051 — and three of those already carry an emulator
+5 have every family registered in [`findings.md`](findings.md) — NM-HRM-003,
+NM-HRM-004, NM-HRM-005, NM-HRM-002 — and three of those already carry an emulator
 comparison in [`third-witness.md`](third-witness.md).
 
 Chapters 3 and 6 have seventeen families between them and **not one is in the
@@ -156,7 +156,7 @@ blitter alike, through the same `Memory::peek16<Accessor::AGNUS>`. WinUAE has no
 chipset test at all in that path (`custom.cpp:3800-3805`), only the configured
 chip-RAM size.
 
-**This is FPGA-060's shape at a second register.** That finding already records
+**This is NM-HRM-003's shape at a second register.** That finding already records
 both emulators declining to narrow the *Copper's* pointer by chipset; vAmiga
 funnels both through the same masking function, so the two are one behaviour.
 Consider registering them together.

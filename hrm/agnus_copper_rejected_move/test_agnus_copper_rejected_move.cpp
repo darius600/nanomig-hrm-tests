@@ -2,7 +2,7 @@
 // Test class: RTL_REGRESSION (R1 is a secondary HRM_CONFORMANCE check)
 // Primary oracle: NanoMig interface contract. The HRM (3rd edition, print pages 21 and 26) states only that the write does not occur; it does not define what the Copper does next. Frozen specification 8ad61bd.
 // Requirement IDs: COP-03
-// Non-goals: The register-range boundaries themselves (FPGA-056, red as FPGA-062). ECS and CDANG=1 rejection variants. Whether halting is correct for real Agnus silicon - this protects observed behaviour, it does not endorse it. Any claim that the single-word fetch violates the HRM.
+// Non-goals: The register-range boundaries themselves (FPGA-056, red as NM-HRM-004). ECS and CDANG=1 rejection variants. Whether halting is correct for real Agnus silicon - this protects observed behaviour, it does not endorse it. Any claim that the single-word fetch violates the HRM.
 //
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was
 // inspected during FPGA-063 and FPGA-065 before this specification was written.

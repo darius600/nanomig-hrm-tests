@@ -11,7 +11,7 @@ Read them in this order if you have just seen the suite go red.
 |---|---|
 | [`findings.md`](findings.md) | **Start here.** Every finding, with the measurement that produced it and the manual page it contradicts. Written so a red result is readable without access to the private workspace where the `FPGA-nnn` numbers are assigned. |
 | [`rtl-decisions.md`](rtl-decisions.md) | The nine open findings stated as the manual's words, what NanoMig measurably does, the assertion that measures it, and what WinUAE and vAmiga do about the same question — with verified file-and-line citations into both emulators. This is the document written for a developer who has to decide something. |
-| [`third-witness.md`](third-witness.md) | When an emulator may be consulted at all, and when it may not. The manual is the oracle; an emulator is admitted only to decide between two sentences of the manual that disagree with each other. FPGA-050 was withdrawn this way and FPGA-051 restored. |
+| [`third-witness.md`](third-witness.md) | When an emulator may be consulted at all, and when it may not. The manual is the oracle; an emulator is admitted only to decide between two sentences of the manual that disagree with each other. NM-HRM-001 was withdrawn this way and NM-HRM-002 restored. |
 | [`test-inventory.md`](test-inventory.md) | Which of the 50 tests came through the pipeline and which are hand-written, by name, and the review backlog. A green means different things in the two layers, and this is where that difference is written down. |
 
 ## Record

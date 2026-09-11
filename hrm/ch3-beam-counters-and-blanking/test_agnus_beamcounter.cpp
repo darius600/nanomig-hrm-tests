@@ -601,7 +601,7 @@ int main(int argc, char** argv) {
     // long_frame defaults to 1 out of reset and this module's own
     // last_line/extra_line logic makes a long_frame=1 non-interlaced field
     // run one line longer (a question already litigated and WITHDRAWN for
-    // the sibling hrm/agnus_beamcounter fixture as FPGA-050 -- the manual
+    // the sibling hrm/agnus_beamcounter fixture as NM-HRM-001 -- the manual
     // itself sanctions 313 PAL lines elsewhere, see docs/third-witness.md).
     // Chapter 3's own claim here is the plain "312"/"262" figure, so this
     // assertion sidesteps the LOF dispute entirely rather than re-litigate
@@ -1404,7 +1404,7 @@ int main(int argc, char** argv) {
     // Unambiguous SUM check using the REAL PAL/NTSC hardwired defaults
     // (varbeamen left at 0) -- sidesteps which single field is "the" field
     // length (the same long_frame-out-of-reset question the sibling
-    // hrm/agnus_beamcounter fixture withdrew as FPGA-050) by checking the
+    // hrm/agnus_beamcounter fixture withdrew as NM-HRM-001) by checking the
     // total of one long plus one short field, which is the same number
     // regardless of which one comes first.
     for (bool ntsc : {false, true}) {

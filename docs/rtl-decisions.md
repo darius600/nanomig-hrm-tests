@@ -1,4 +1,4 @@
-# The nine RTL decisions, and how two emulators answered them
+# Six RTL decisions, and how two emulators answered them
 
 Every finding in this suite ends the same way: the manual says one thing, the
 measurement says another, and **the pipeline stops there**. Deciding what the RTL
@@ -48,7 +48,7 @@ definition is not an implementation.
 
 # Chapter 6 - Blitter
 
-## 1. BLTSIZV is not gated on ECS - and both emulators gate it
+## NM-HRM-020 — BLTSIZV is not gated on ECS - and both emulators gate it
 
 **Unanimous. The clearest of the nine.**
 
@@ -88,7 +88,7 @@ close to settled as this project's evidence gets, and the remaining question is
 only whether NanoMig deliberately targets a machine where the distinction cannot
 matter.
 
-## 2. DOFF is not implemented - and the emulators disagree with each other
+## NM-HRM-021 — DOFF is not implemented - and the emulators disagree with each other
 
 **Split. The most interesting of the nine.**
 
@@ -123,7 +123,7 @@ That is a signal about how much software depends on it, not about what the manua
 says. The manual is unambiguous, so the finding stands either way - but the cost
 of leaving it out is evidently something a widely used emulator has been willing
 to pay.
-## 3. BLTxPTH takes five high pointer bits in both chipsets
+## NM-HRM-022 — BLTxPTH takes five high pointer bits in both chipsets
 
 | | |
 |---|---|
@@ -174,7 +174,7 @@ and that is exactly the question this suite cannot answer.
 
 # Chapter 2 - Copper
 
-## 4. OCS Copper address uses five high bits - the same decision as finding 3
+## NM-HRM-003 — OCS Copper address uses five high bits - the same decision as NM-HRM-022
 
 | | |
 |---|---|
@@ -202,7 +202,7 @@ and both emulators answer it the same way in both. Fixing one and not the other
 would leave Agnus internally inconsistent in a way neither the manual nor either
 emulator is.
 
-## 5. ECS with CDANG=0 rejects 32 addresses the appendix allows
+## NM-HRM-004 — ECS with CDANG=0 rejects 32 addresses the appendix allows
 
 **The one finding where the emulators disagree with the manual as well - and with
 NanoMig, in the other direction.**
@@ -251,7 +251,7 @@ re-read p.310 against the printed scan and ask whether the sentence means what t
 inventory took it to mean. `third-witness.md` rule 1 admits an emulator for
 exactly that question.
 
-## 6. WAIT and SKIP take longer than the manual states - **not yet compared**
+## NM-HRM-005 — WAIT and SKIP take longer than the manual states - **not yet compared**
 
 | | |
 |---|---|
@@ -280,19 +280,19 @@ is the obvious next piece if this is the finding you want to act on first.
 
 # Summary
 
-| # | Finding | Manual | NanoMig | WinUAE | vAmiga |
+| Key | Finding | Manual | NanoMig | WinUAE | vAmiga |
 |---|---|---|---|---|---|
-| 1 | `BLTSIZV` ECS gating | ECS-only | **not gated** | gated | gated |
-| 2 | `DOFF` line-mode D disable | ECS, disables D | **absent** | implemented | **absent** (constant only) |
-| 3 | `BLTxPTH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register | wide register, narrowed on access by chipset |
-| 4 | `COP1LCH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register | wide register, narrowed on access by chipset |
-| 5 | CDANG=0 lowest address | `$20` on ECS | `$40` | `$80` | `$80` |
-| 6 | WAIT/SKIP cycle times | 4 / 6 | 8 / 8 | not compared | not compared |
+| NM-HRM-020 | `BLTSIZV` ECS gating | ECS-only | **not gated** | gated | gated |
+| NM-HRM-021 | `DOFF` line-mode D disable | ECS, disables D | **absent** | implemented | **absent** (constant only) |
+| NM-HRM-022 | `BLTxPTH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register | wide register, narrowed on access by chipset |
+| NM-HRM-003 | `COP1LCH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register | wide register, narrowed on access by chipset |
+| NM-HRM-004 | CDANG=0 lowest address | `$20` on ECS | `$40` | `$80` | `$80` |
+| NM-HRM-005 | WAIT/SKIP cycle times | 4 / 6 | 8 / 8 | not compared | not compared |
 
-**Findings 3 and 4 are one decision.** Findings 1 and 2 are independent, and 1 is
-the cheapest to act on. Finding 5 should start with a re-reading of the manual
-rather than with RTL. Finding 6 needs the comparison above before it is worth
-deciding.
+**NM-HRM-022 and NM-HRM-003 are one decision.** NM-HRM-020 and NM-HRM-021 are
+independent, and NM-HRM-020 is the cheapest to act on. NM-HRM-004 should start
+with a re-reading of the manual rather than with RTL. NM-HRM-005 needs the
+comparison above before it is worth deciding.
 
 Every red assertion named here re-runs with `make -C hrm/<package> test` from
 `nanomig-hrm-tests`. Each carries its page citation in its own text and a recorded
