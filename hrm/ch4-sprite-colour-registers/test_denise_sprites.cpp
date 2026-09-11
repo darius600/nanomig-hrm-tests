@@ -136,8 +136,36 @@
 //   claim-based assertion depends on it (reused, same shape, from
 //   hrm/ch4-attached-sprites/'s own control of the same name).
 //
-// RESULTS: filled in after the WSL/Verilator build below (see bottom of
-//   this file, updated post-build, pre-commit-of-results).
+// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026, AFTER the
+//   specification commit -- denise_sprites.v and denise_sprites_shifter.v
+//   were opened only once, for this build, not before): 8 passed, 0
+//   failed. All 8 assertions (the control and all 7 propositions) are
+//   GREEN -- on every relationship tested (transparent-vs-visible,
+//   code ordering, pair distinctness, word significance, attached-pair
+//   bit independence, attached odd-sprite higher order, and pixel-15-is-
+//   leftmost), denise_sprites.v/denise_sprites_shifter.v match the
+//   manual. No red findings from this package. Measured values: code00
+//   sprdata=0, code01=1, code10=2, code11=3 (sprite 0); sprite 2 at code
+//   01=5 (distinct from sprite 0's 1); DATB-only=2, DATA-only=1
+//   (distinct); attached baseline=0, SPR0-alone code01=1, SPR1-alone
+//   code01=4 (4 > 1, confirming odd = higher order); MSB-bit pixel at
+//   hpos=130, LSB-bit pixel at hpos=145 (130 < 145, confirming pixel 15
+//   is leftmost).
+//
+// MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
+//   actually run: rebuild with the named -CFLAGS -D flag -> run -> read
+//   the PASS/FAIL lines -> confirm only the named assertion changed
+//   colour -> rebuild with no flags -> confirm the 8-passed/0-failed
+//   baseline was restored):
+//
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: built with -CFLAGS -DMUT_FIXTURE=1, making the MSB-run stimulus 0x0001 instead of 0x8000 (identical to the LSB-run) -> FAIL (7 passed, 1 failed), only FIXTURE-LIVE-DATA-PATH newly red (MSB hpos=145 became equal to LSB hpos=145). Reverted: 8 passed, 0 failed.
+// MUTATION TRANSPARENT-CODE-IS-INVISIBLE-NONZERO-CODE-IS-VISIBLE stimulus red: built with -CFLAGS -DMUT_A=1, making the code-00 stimulus non-zero (SPR0DATA=0xFFFF, same pattern as code01) -> FAIL (7 passed, 1 failed), only this assertion newly red (the "stays invisible" half failed). Reverted: 8 passed, 0 failed.
+// MUTATION NONZERO-CODES-ORDER-MONOTONICALLY-WITHIN-A-GROUP stimulus red: built with -CFLAGS -DMUT_C=1, swapping the code01 and code11 stimulus patterns -> FAIL (7 passed, 1 failed), only this assertion newly red (v01=3, v10=2, v11=1 -- ordering reversed, no longer monotonic). Reverted: 8 passed, 0 failed.
+// MUTATION DIFFERENT-PAIRS-SELECT-DIFFERENT-REGISTER-GROUPS stimulus red: built with -CFLAGS -DMUT_D=1, measuring "pair 1" from SPR0 again instead of SPR2 -> FAIL (7 passed, 1 failed), only this assertion newly red (v_pair0 == v_pair1_mut, both 1, no longer distinct). Reverted: 8 passed, 0 failed.
+// MUTATION HIGH-AND-LOW-ORDER-WORDS-BOTH-CONTRIBUTE-TO-THE-CODE stimulus red: built with -CFLAGS -DMUT_E=1, measuring the "DATB-only" case with the DATA-only (code01) stimulus instead -> FAIL (7 passed, 1 failed), only this assertion newly red (v_datb_only == v_data_only). Reverted: 8 passed, 0 failed.
+// MUTATION ATTACHED-PAIR-BOTH-SPRITES-CONTRIBUTE-DISTINCT-BITS stimulus red: built with -CFLAGS -DMUT_F1=1, withholding SPR0's own stimulus in the "even only" case (SPR0 held at code 00, identical to baseline) -> FAIL (7 passed, 1 failed), only this assertion newly red (v_even_only == 0, fails the "!= 0" half); ATTACHED-ODD-SPRITE-CONTRIBUTES-HIGHER-ORDER-BITS stayed green (v_odd_only=4 > 0 still holds), confirming the mutation is isolated to this one assertion. Reverted: 8 passed, 0 failed. CORRECTION, recorded rather than dropped: this mutation's first design instead withheld SPR1's own stimulus in the "odd only" case, which zeroed v_odd_only and made BOTH this assertion and ATTACHED-ODD-SPRITE-CONTRIBUTES-HIGHER-ORDER-BITS go red at once, since the latter's own v_odd_only > v_even_only depends on the same measurement; replaced by the SPR0-side version above so each assertion's own mutation isolates to itself.
+// MUTATION ATTACHED-ODD-SPRITE-CONTRIBUTES-HIGHER-ORDER-BITS stimulus red: built with -CFLAGS -DMUT_F2=1, swapping which sprite's measurement is labelled "even only" vs "odd only" -> FAIL (7 passed, 1 failed), only this assertion newly red (the mislabelled odd/even values reverse the comparison). Reverted: 8 passed, 0 failed.
+// MUTATION TABLE44-PIXEL-15-IS-LEFTMOST-PIXEL-0-IS-RIGHTMOST stimulus red: built with -CFLAGS -DMUT_G=1, swapping the bit-15 and bit-0 stimulus words -> FAIL (7 passed, 1 failed), only this assertion newly red (hpos_msb no longer smaller than hpos_lsb). Reverted: 8 passed, 0 failed.
 
 #include <cstdint>
 #include <iostream>
@@ -169,8 +197,8 @@
 #define MUT_E 0
 #endif
 // MUT_F1: replay ATTACHED-PAIR-BOTH-SPRITES-CONTRIBUTE-DISTINCT-BITS's own
-// mutation (-DMUT_F1=1). Withholds SPR1's own stimulus in the "odd only"
-// case (measured with SPR1 held at code 00, same as baseline).
+// mutation (-DMUT_F1=1). Withholds SPR0's own stimulus in the "even only"
+// case (measured with SPR0 held at code 00, same as baseline).
 #ifndef MUT_F1
 #define MUT_F1 0
 #endif
@@ -625,10 +653,13 @@ int main(int argc, char** argv) {
     Meas attach_odd_only = measure_pair(0, 1, 0x0000, 0xFFFF, 0x0000, 0x0000);
 #elif MUT_F1
     // MUTATION (ATTACHED-PAIR-BOTH-SPRITES-CONTRIBUTE-DISTINCT-BITS): the
-    // "odd only" case withholds SPR1's own stimulus (SPR1 held at code 00,
-    // identical to the baseline).
-    Meas attach_even_only = measure_pair(0, 1, 0x0000, 0xFFFF, 0x0000, 0x0000);
-    Meas attach_odd_only = measure_pair(0, 1, 0x0000, 0x0000, 0x0000, 0x0000);
+    // "even only" case withholds SPR0's own stimulus (SPR0 held at code
+    // 00, identical to the baseline), isolating the break to this
+    // assertion's own "v_even_only != 0" half -- v_odd_only is untouched,
+    // so ATTACHED-ODD-SPRITE-CONTRIBUTES-HIGHER-ORDER-BITS's own
+    // v_odd_only > v_even_only (now v_odd_only > 0) stays true/green.
+    Meas attach_even_only = measure_pair(0, 1, 0x0000, 0x0000, 0x0000, 0x0000);
+    Meas attach_odd_only = measure_pair(0, 1, 0x0000, 0x0000, 0x0000, 0xFFFF);
 #else
     Meas attach_even_only = measure_pair(0, 1, 0x0000, 0xFFFF, 0x0000, 0x0000);
     Meas attach_odd_only = measure_pair(0, 1, 0x0000, 0x0000, 0x0000, 0xFFFF);
