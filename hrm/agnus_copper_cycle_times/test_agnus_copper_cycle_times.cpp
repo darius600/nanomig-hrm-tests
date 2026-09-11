@@ -31,6 +31,28 @@
 //
 // MUTATION AC5 stimulus green the SKIP in the window replaced by a plain MOVE -> AC5 and AC6 turn GREEN
 // MUTATION AC6 stimulus green the same replacement -> the ratio measures 2, not 4
+// MUTATION P2 stimulus red: the first instruction of P2's own list changed from
+//   a MOVE (move_ir1(COLOR00), 0x0444) to a WAIT already satisfied on arrival
+//   (ir1_pos(0x10, 0x00), ir2_mask(true, 0x7F, 0x00, false)) with the beam at
+//   0x70, so the span from word 0 to word 2 is a WAIT's and not a MOVE's ->
+//   6 passed, 7 failed; P2 is the only assertion that moves. Reverted: 7
+//   passed, 6 failed, the baseline exactly.
+// MUTATION AC4 stimulus red: the SKIP in AC4's own list replaced by a WAIT for
+//   a line the beam has not reached (ir1_pos(0xF0, 0x00) with skip cleared, the
+//   beam at 0x70), so the Copper blocks instead of stepping over the skipped
+//   MOVE and fewer grants fall inside word offsets 0..2 -> 6 passed, 7 failed;
+//   AC4 is the only assertion that moves. Reverted: 7 passed, 6 failed.
+// MUTATION P3 none impossible: P3 is RED at baseline and is one of FPGA-069's
+//   assertions - the manual gives a SKIP four memory cycle times and the module
+//   takes eight. A stimulus mutation has to take a green assertion red, and
+//   there is nothing green here to break. Recorded rather than left out:
+//   an unrecorded assertion and a forgotten one look the same.
+// MUTATION P4 none impossible: same, the SKIP-not-taken half of FPGA-069.
+// MUTATION P5 none impossible: same, the satisfied-WAIT half of FPGA-069 - six
+//   memory cycle times in the manual, eight measured.
+// MUTATION P6 none impossible: same. P6 asserts the DIFFERENCE between a WAIT
+//   and a MOVE and is red for the same reason; with P5 red there is no green
+//   baseline for it either.
 //
 // Those last two are POSITIVE CONTROLS, and they are what makes AC5/AC6's red
 // mean something. With a SKIP in the measurement window the module grants two

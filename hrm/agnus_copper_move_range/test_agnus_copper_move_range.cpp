@@ -22,7 +22,8 @@
 // MUTATION T9 stimulus green: swapped move_reaches() target from BLTCON0 to COLOR00 (ecs=1,cdang=0, unprotected register) -> PASS as expected;
 //   confirms the harness/check mechanism does register a write in ECS mode, so T9's baseline FAIL is a genuine
 //   DUT non-conformance (Appendix C p.310 range scaling not implemented for ECS+CDANG=0), not a broken assertion.
-// MUTATION T9b stimulus red: swapped move_reaches() target from BLTCON0 to BLTSIZE (still ecs=1,cdang=0) -> still FAIL;
+// MUTATION T9 stimulus red: a second probe for the same assertion - swapped
+//   move_reaches() target from BLTCON0 to BLTSIZE (still ecs=1,cdang=0) -> still FAIL;
 //   the gap is range-wide (both CDANG-range boundaries), not isolated to one register constant, reinforcing it is a real RTL gap.
 // MUTATION T10 stimulus red: flipped ecs argument true->false on the COPCON call -> FAIL as expected (OCS+CDANG=1 still blocks COPCON, per T7).
 // MUTATION T11 stimulus red: forced cdang=true and set_cdang_explicitly=true (simulating "reset fails to clear CDANG") -> FAIL as expected.
