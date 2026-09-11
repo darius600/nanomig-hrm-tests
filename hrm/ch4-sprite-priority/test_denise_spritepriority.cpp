@@ -139,11 +139,9 @@
 // eval()-then-read-sprsel measurement basis every claim-based assertion
 // below shares is actually live before any of them depends on it.
 //
-// RESULTS and MUTATION LOG: pending -- filled in after this file was
-// committed and the RTL step (build + run) was performed, per ORDER OF
-// WORK above. MUT_ID 1-4 below are pre-wired (MUT_ID != 0 perturbs
-// exactly one assertion's own stimulus, in source order); the log at the
-// end of this file records what each one actually did when built and run.
+// RESULTS and MUTATION LOG: see the end of this file, filled in after the
+// RTL-open step (this file's own header commentary and assertions above
+// were written and committed first, per ORDER OF WORK above).
 
 #include <cstdint>
 #include <iostream>
@@ -376,10 +374,46 @@ int main(int argc, char** argv) {
     return checks.failed == 0 ? 0 : 1;
 }
 
-// RESULTS: pending -- filled in after this file was committed and the RTL
-// step (build + run) was performed, per ORDER OF WORK above.
+// RESULTS: built and run under WSL/Verilator 5.052 against the pinned
+// nanomig submodule, after this file's own header/assertions/expected
+// values were committed (see ORDER OF WORK above). 4 passed, 0 failed --
+// all 7 asserted claims hold at the denise_spritepriority boundary, as
+// tested here. No red findings.
 //
-// MUTATION LOG: pending -- filled in after the baseline run, per the same
-// gate. MUT_ID 1-4 above are pre-wired (MUT_ID != 0 perturbs exactly one
-// assertion's own stimulus, in source order); the log below records what
-// each one actually did when built and run.
+// denise_spritepriority.v, read for the first time after the spec-only
+// commit: sprgroup[0..3] are each `nsprite[2n+1:2n] != 2'd0` (an OR of
+// the pair's two bits, ll.20-23) -- confirms FIXTURE BOUNDARY(a): the
+// module genuinely never distinguishes which sprite within a pair is
+// active, only that the pair is. sprcode is a priority encoder over
+// sprgroup[0..3] in ascending order, defaulting to 3'd7 when none are set
+// (ll.26-36) -- computed from nsprite alone, before bplcon2 is consulted
+// at all, confirming SPRITE-PRIORITY-FIXED-BY-GROUP-NUMBER's design
+// needed no numeric threshold knowledge to be correct: with groups i<j
+// both active, sprgroup[i] is tested first in the if/else-if chain
+// regardless of sprgroup[j], so sprcode is always i's code, matching "i
+// alone"'s sprcode exactly, for every bplcon2/nplayfield combination --
+// exactly what the assertion measured. sprcode==3'd7 forces sprsel=1'b0
+// unconditionally (l.45-46), before nplayfield is even read -- confirms
+// ABSENT-SPRITE-CEDES-TO-LOWER-PRIORITY holds for every bplcon2 AND would
+// have held for nplayfield=0x00 too (not swept here, since this
+// assertion's own claim -- CH4-color.c13 -- is about a playfield actually
+// being shown, so the sweep was restricted to playfield-enabled contexts
+// on purpose, not by necessity). All three pre-RTL boundary assumptions
+// (group-pair granularity, group-encoding independent of bplcon2/
+// nplayfield, nsprite=0 forcing sprsel=0 unconditionally) held exactly;
+// nothing in this file was corrected after opening the RTL.
+//
+// MUTATION LOG: one stimulus mutation per assertion, each built with
+// `-CFLAGS -DMUT_ID=N` (N = the numbered `MUT_ID == N` site inside that
+// assertion, in source order: 1=control, 2=SPRITE-PRIORITY-FIXED-BY-
+// GROUP-NUMBER, 3=ABSENT-SPRITE-CEDES-TO-LOWER-PRIORITY, 4=SPRITE-DATA-
+// REACHES-PRIORITY-CIRCUIT), run, confirmed to turn ONLY that assertion
+// red (the other three stayed green -- checked directly in each run's
+// full output, not spot-checked), then reverted (plain `make`, no
+// MUT_ID). Baseline re-verified clean (4 passed, 0 failed) after all
+// four.
+//
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red
+// MUTATION SPRITE-PRIORITY-FIXED-BY-GROUP-NUMBER stimulus red
+// MUTATION ABSENT-SPRITE-CEDES-TO-LOWER-PRIORITY stimulus red
+// MUTATION SPRITE-DATA-REACHES-PRIORITY-CIRCUIT stimulus red
