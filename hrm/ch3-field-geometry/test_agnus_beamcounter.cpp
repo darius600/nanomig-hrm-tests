@@ -47,27 +47,45 @@
 //   control not drawn from this package's own inventory, marked as such
 //   below), never from having watched the RTL run first.
 //
-// RELATION TO EXISTING FINDINGS (docs/findings.md F05/F06, both at this
-//   exact boundary): HTOTAL-IDENTICAL-NTSC-PAL below measures the same
-//   htotal_out signal FPGA-091-F05 already measured (452, fixed, under
-//   both standards, against the manual's page-304 "227.5 CCK for NTSC").
-//   This package's claim (page 80, "these numbers are the same both for
-//   NTSC and for PAL") is not re-deriving F05 and does not contradict it:
-//   F05 is red because chapter 8/appendix A gives NTSC a fractional value
-//   the RTL does not implement; this claim is a DIFFERENT, chapter-3
-//   sentence that the same RTL fact happens to make GREEN. Both are
-//   reported; neither is hidden behind the other. F06 (PAL vertical
-//   blanking, VBSTOP) is not touched here -- no claim in this package's
-//   inventory concerns VBSTOP.
+// D4 FIX, 11.09.2026 (independent-review defect correction): this package
+//   originally carried an HTOTAL-IDENTICAL-NTSC-PAL assertion citing
+//   3-max-window.c17 and 3-max.c11 against page 80's "These numbers are the
+//   same both for NTSC and for PAL", measuring htotal_out. Page 80 was
+//   re-read from docs/references/amiga-hrm-3rd/ch3/p80.txt (the scan, not
+//   this file) to confirm what "these numbers" refers to: the paragraph's
+//   subject is DDFSTOP's hardware limit ($D8), DDFSTRT's hardware limit
+//   ($18), the resulting 25-lores/49-hires maximum FETCHED WORDS, and the
+//   368-pixel maximum DISPLAYABLE width -- Table 3-14, "Maximum Allowable
+//   Horizontal Screen Video". Total line length (HTOTAL) is not mentioned
+//   anywhere on the page; the classifier's own restatements in claims.jsonl
+//   agree ("The horizontal fetch and visible-width limits stated above are
+//   identical", "The horizontal maxima are identical"). Neither restatement
+//   says total line length either. DDFSTRT/DDFSTOP are, per this file's own
+//   header above, NOT part of agnus_beamcounter's register map -- the exact
+//   same "wrong register pair for this module" mismatch the header's own
+//   OUT OF BOUNDARY category (b) already excludes 13 DIWSTRT/DIWSTOP claims
+//   for. The removed assertion was also green partly BECAUSE of a recorded
+//   finding rather than in spite of one: htotal_out read 452 under both
+//   ntsc=0 and ntsc=1 only because NTSC's manual-specified 227.5 CCK value
+//   (docs/findings.md F05) is unimplemented in this RTL -- a real defect
+//   making an assertion of the WRONG proposition read green is not
+//   corroboration. HTOTAL-IDENTICAL-NTSC-PAL (the whole check_htotal_
+//   identical() function and its call) has been removed; 3-max-window.c17
+//   and 3-max.c11 now sit in OUT OF BOUNDARY category (e) below. Baseline
+//   was 11/11 PASS before this fix; 10/10 PASS after (one assertion fewer,
+//   no other assertion touched). docs/findings.md F05 itself is untouched
+//   by this fix -- it was never this package's own finding to begin with,
+//   only cross-validation context for an assertion that no longer exists.
 //
 // CLAIM COVERAGE (55 claims total, claims.jsonl lines 1-55):
 //
-//   IN BOUNDARY -- 17 claims, 8 assertions below cite them by id:
+//   IN BOUNDARY -- 15 claims, 7 assertions below cite them by id (D4 FIX:
+//   was 17 claims/8 assertions; 3-max-window.c17 and 3-max.c11 moved to OUT
+//   OF BOUNDARY category (e) below -- see D4 FIX note above):
 //     3-video.c09                                -> NTSC-FIELD-PERIOD-APPROX-1-60S
 //     3-video.c10 (opus, "approximately 1/50th"), -> PAL-FIELD-PERIOD-APPROX-1-50S
 //     3-video.c13
 //     3-video.c15                                 -> BEAM-RETURNS-TO-TOP-BETWEEN-FIELDS
-//     3-max-window.c17, 3-max.c11                 -> HTOTAL-IDENTICAL-NTSC-PAL
 //     C-chipid.c6, C-chipid.c7, C-vposr.c09        -> VPOSR-CHIPID-PAL-AGNUS-0x00
 //     C-chipid.c4, C-vposr.c08                     -> VPOSR-CHIPID-NTSC-AGNUS-0x10
 //     C-chipid.c8, C-chipid.c10, C-vposr.c10       -> VPOSR-CHIPID-PAL-HIRES-0x20
@@ -91,7 +109,8 @@
 //     searches assertion text for the bare id string cannot distinguish
 //     the two records.
 //
-//   OUT OF BOUNDARY -- 38 claims, none forced onto this fixture:
+//   OUT OF BOUNDARY -- 40 claims, none forced onto this fixture (D4 FIX:
+//   was 38; category (e) added):
 //
 //     (a) needs the display window (DIWSTRT/DIWSTOP, agnus_bitplanedma) --
 //     "N of M lines normally/normally visible" is a DIW-gated concept
@@ -122,7 +141,23 @@
 //     (2 claims):
 //       3-lace.f03, 3-big.f11
 //
-//   19 + 13 + 4 + 2 = 38 out-of-boundary; 38 + 17 = 55.
+//     (e) is a DDFSTRT/DDFSTOP register VALUE or a data-fetch-limit
+//     quantity derived from it (Table 3-14's 25-lores/49-hires maximum
+//     fetched words, 368-pixel maximum displayable width) -- like DIWSTRT/
+//     DIWSTOP in category (b) above, DDFSTRT/DDFSTOP is not part of
+//     agnus_beamcounter's register map (parameters l.60-76) at all, so
+//     there is no port or register here to read it back from. D4 FIX,
+//     moved out of IN BOUNDARY: page 80's "These numbers are the same both
+//     for NTSC and for PAL" (docs/references/amiga-hrm-3rd/ch3/p80.txt,
+//     re-read directly) names DDFSTOP/DDFSTRT's hardware limits and the
+//     word/pixel maxima drawn from them, Table 3-14 -- not htotal, the
+//     quantity this fixture's own htotal_out port actually carries. See D4
+//     FIX note above for the full re-reading and why the removed
+//     HTOTAL-IDENTICAL-NTSC-PAL assertion was testing the wrong
+//     proposition even though it read green (2 claims):
+//       3-max-window.c17, 3-max.c11
+//
+//   19 + 13 + 4 + 2 + 2 = 40 out-of-boundary; 40 + 15 = 55.
 //
 // CONTROL AND PRECONDITION, NOT FROM THIS PACKAGE'S OWN INVENTORY:
 //   PRECONDITION-LONG-FRAME-DEFAULT-AT-RESET checks the ground every
@@ -141,36 +176,41 @@
 //   proving the counting method used below lands on a value the lead has
 //   already confirmed independently, on the same reset/no-lace basis.
 //   Neither of these two checks quotes claims.jsonl and neither counts
-//   toward the 17/55 claim coverage above.
+//   toward the 15/55 claim coverage above.
 //
 // MUTATION LOG (every entry below was actually run under WSL/Verilator on
 //   11.09.2026: `make clean && make MUT=<NAME>` -> confirm the named
 //   assertion(s) red/green/impossible as stated -> `make clean && make`
 //   (no MUT) to rebuild the unmutated baseline and confirm the full suite
-//   returns to 11/0. Every mutation is a STIMULUS change (a driven input
-//   pin or an injected/altered register write, each guarded by its own
+//   returns to 10/0 (D4 FIX: was 11/0 -- HTOTAL-IDENTICAL-NTSC-PAL and its
+//   mutation entry were removed, see D4 FIX note above; the other ten
+//   entries below are otherwise exactly as originally run and reverted,
+//   only their pass/total counts corrected for the now-smaller suite).
+//   Every mutation is a STIMULUS change (a driven input pin or an
+//   injected/altered register write, each guarded by its own
 //   `#ifndef MUT_<NAME>` / `#ifdef MUT_<NAME>`); no expected value or
 //   oracle text was ever touched, and nanomig/ was never touched. Replay
 //   any one entry with `make clean && make MUT=<NAME>` (NAME matches the id
 //   with '-' turned into '_').
 //
-// MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: `make clean && make MUT=FIXTURE_DATA_PATH_LIVE` (second VHPOSW write value forced equal to the first, 0x3C7A instead of 0x91E4) -> 10/11 PASS, only FIXTURE-DATA-PATH-LIVE red (word2 readback hpos=0x7A vpos=0x3C, the first word's pattern again, not the hardcoded 0xE4/0x91 expectation). `make clean && make` reverted to 11/11.
-// MUTATION PRECONDITION-LONG-FRAME-DEFAULT-AT-RESET stimulus red: `make clean && make MUT=PRECONDITION_LONG_FRAME_DEFAULT_AT_RESET` (VPOSW write with data_in=0x0000 injected immediately after reset) -> 10/11 PASS, only PRECONDITION-LONG-FRAME-DEFAULT-AT-RESET red (field1 reads 1, long_frame forced to 0). Reverted to 11/11.
-// MUTATION CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES stimulus red: `make clean && make MUT=CONTROL_PAL_DEFAULT_FIELD_LENGTH_313_LINES` (ntsc pin 0->1, check still expects 313) -> 10/11 PASS, only CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES red (263 EOL pulses counted, the NTSC default, not 313). Reverted to 11/11.
-// MUTATION NTSC-FIELD-PERIOD-APPROX-1-60S stimulus red: `make clean && make MUT=NTSC_FIELD_PERIOD_APPROX_1_60S` (ntsc pin 1->0, check still compares against the 1/60s nominal) -> 10/11 PASS, only NTSC-FIELD-PERIOD-APPROX-1-60S red (measured 19.849171 ms -- the PAL cck-cycle count divided by the NTSC clock constant -- against a 16.666667 ms nominal, 19.1% relative error, outside the 5% band). Reverted to 11/11.
-// MUTATION PAL-FIELD-PERIOD-APPROX-1-50S stimulus red: `make clean && make MUT=PAL_FIELD_PERIOD_APPROX_1_50S` (ntsc pin 0->1, check still compares against the 1/50s nominal) -> 10/11 PASS, only PAL-FIELD-PERIOD-APPROX-1-50S red (measured 16.831905 ms -- the NTSC cck-cycle count divided by the PAL clock constant -- against a 20.000000 ms nominal, 15.8% relative error, outside the 5% band). Reverted to 11/11.
-// MUTATION BEAM-RETURNS-TO-TOP-BETWEEN-FIELDS stimulus red: `make clean && make MUT=BEAM_RETURNS_TO_TOP_BETWEEN_FIELDS` (VPOSW write with data_in=0x0005 injected on the step immediately after eof) -> 10/11 PASS, only BEAM-RETURNS-TO-TOP-BETWEEN-FIELDS red (vpos reads back 1336 instead of 0: the injected write hits vpos[10:8] only, per the RTL's own priority chain, leaving vpos[7:0]'s pre-wrap value -- 56 -- in place, 5*256+56=1336). Reverted to 11/11.
-// MUTATION HTOTAL-IDENTICAL-NTSC-PAL stimulus red: `make clean && make MUT=HTOTAL_IDENTICAL_NTSC_PAL` (ntsc=1 harness's ecs pin 0->1, BEAMCON0/HTOTAL writes enabled for it alone) -> 10/11 PASS, only HTOTAL-IDENTICAL-NTSC-PAL red (htotal_out(ntsc=1) reads the programmed 200, htotal_out(ntsc=0) still reads the hardwired 452, no longer equal). Reverted to 11/11.
-// MUTATION VPOSR-CHIPID-PAL-AGNUS-0x00 stimulus red: `make clean && make MUT=VPOSR_CHIPID_PAL_AGNUS_0X00` (ntsc pin 0->1, check still expects 0x00) -> 10/11 PASS, only VPOSR-CHIPID-PAL-AGNUS-0x00 red (VPOSR[13:12] masked reads 0x10, not 0x00). Reverted to 11/11.
-// MUTATION VPOSR-CHIPID-NTSC-AGNUS-0x10 stimulus red: `make clean && make MUT=VPOSR_CHIPID_NTSC_AGNUS_0X10` (ntsc pin 1->0, check still expects 0x10) -> 10/11 PASS, only VPOSR-CHIPID-NTSC-AGNUS-0x10 red (VPOSR[13:12] masked reads 0x00, not 0x10). Reverted to 11/11.
-// MUTATION VPOSR-CHIPID-PAL-HIRES-0x20 stimulus red: `make clean && make MUT=VPOSR_CHIPID_PAL_HIRES_0X20` (ecs pin 1->0, check still expects 0x20) -> 10/11 PASS, only VPOSR-CHIPID-PAL-HIRES-0x20 red (VPOSR[13:12] masked reads 0x00, not 0x20). Reverted to 11/11.
-// MUTATION VPOSR-CHIPID-NTSC-HIRES-0x30 stimulus red: `make clean && make MUT=VPOSR_CHIPID_NTSC_HIRES_0X30` (ecs pin 1->0, check still expects 0x30) -> 10/11 PASS, only VPOSR-CHIPID-NTSC-HIRES-0x30 red (VPOSR[13:12] masked reads 0x10, not 0x30). Reverted to 11/11.
+// MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: `make clean && make MUT=FIXTURE_DATA_PATH_LIVE` (second VHPOSW write value forced equal to the first, 0x3C7A instead of 0x91E4) -> 9/10 PASS, only FIXTURE-DATA-PATH-LIVE red (word2 readback hpos=0x7A vpos=0x3C, the first word's pattern again, not the hardcoded 0xE4/0x91 expectation). `make clean && make` reverted to 10/10.
+// MUTATION PRECONDITION-LONG-FRAME-DEFAULT-AT-RESET stimulus red: `make clean && make MUT=PRECONDITION_LONG_FRAME_DEFAULT_AT_RESET` (VPOSW write with data_in=0x0000 injected immediately after reset) -> 9/10 PASS, only PRECONDITION-LONG-FRAME-DEFAULT-AT-RESET red (field1 reads 1, long_frame forced to 0). Reverted to 10/10.
+// MUTATION CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES stimulus red: `make clean && make MUT=CONTROL_PAL_DEFAULT_FIELD_LENGTH_313_LINES` (ntsc pin 0->1, check still expects 313) -> 9/10 PASS, only CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES red (263 EOL pulses counted, the NTSC default, not 313). Reverted to 10/10.
+// MUTATION NTSC-FIELD-PERIOD-APPROX-1-60S stimulus red: `make clean && make MUT=NTSC_FIELD_PERIOD_APPROX_1_60S` (ntsc pin 1->0, check still compares against the 1/60s nominal) -> 9/10 PASS, only NTSC-FIELD-PERIOD-APPROX-1-60S red (measured 19.849171 ms -- the PAL cck-cycle count divided by the NTSC clock constant -- against a 16.666667 ms nominal, 19.1% relative error, outside the 5% band). Reverted to 10/10.
+// MUTATION PAL-FIELD-PERIOD-APPROX-1-50S stimulus red: `make clean && make MUT=PAL_FIELD_PERIOD_APPROX_1_50S` (ntsc pin 0->1, check still compares against the 1/50s nominal) -> 9/10 PASS, only PAL-FIELD-PERIOD-APPROX-1-50S red (measured 16.831905 ms -- the NTSC cck-cycle count divided by the PAL clock constant -- against a 20.000000 ms nominal, 15.8% relative error, outside the 5% band). Reverted to 10/10.
+// MUTATION BEAM-RETURNS-TO-TOP-BETWEEN-FIELDS stimulus red: `make clean && make MUT=BEAM_RETURNS_TO_TOP_BETWEEN_FIELDS` (VPOSW write with data_in=0x0005 injected on the step immediately after eof) -> 9/10 PASS, only BEAM-RETURNS-TO-TOP-BETWEEN-FIELDS red (vpos reads back 1336 instead of 0: the injected write hits vpos[10:8] only, per the RTL's own priority chain, leaving vpos[7:0]'s pre-wrap value -- 56 -- in place, 5*256+56=1336). Reverted to 10/10.
+// MUTATION VPOSR-CHIPID-PAL-AGNUS-0x00 stimulus red: `make clean && make MUT=VPOSR_CHIPID_PAL_AGNUS_0X00` (ntsc pin 0->1, check still expects 0x00) -> 9/10 PASS, only VPOSR-CHIPID-PAL-AGNUS-0x00 red (VPOSR[13:12] masked reads 0x10, not 0x00). Reverted to 10/10.
+// MUTATION VPOSR-CHIPID-NTSC-AGNUS-0x10 stimulus red: `make clean && make MUT=VPOSR_CHIPID_NTSC_AGNUS_0X10` (ntsc pin 1->0, check still expects 0x10) -> 9/10 PASS, only VPOSR-CHIPID-NTSC-AGNUS-0x10 red (VPOSR[13:12] masked reads 0x00, not 0x10). Reverted to 10/10.
+// MUTATION VPOSR-CHIPID-PAL-HIRES-0x20 stimulus red: `make clean && make MUT=VPOSR_CHIPID_PAL_HIRES_0X20` (ecs pin 1->0, check still expects 0x20) -> 9/10 PASS, only VPOSR-CHIPID-PAL-HIRES-0x20 red (VPOSR[13:12] masked reads 0x00, not 0x20). Reverted to 10/10.
+// MUTATION VPOSR-CHIPID-NTSC-HIRES-0x30 stimulus red: `make clean && make MUT=VPOSR_CHIPID_NTSC_HIRES_0X30` (ecs pin 1->0, check still expects 0x30) -> 9/10 PASS, only VPOSR-CHIPID-NTSC-HIRES-0x30 red (VPOSR[13:12] masked reads 0x10, not 0x30). Reverted to 10/10.
 //
-// Every one of the 11 mutations above was built and run under WSL/Verilator
+// Every one of the 10 mutations above was built and run under WSL/Verilator
 // on 11.09.2026 exactly as described, flipped exactly the one named
 // assertion red and no other, and was reverted before the next one; the
-// final rebuild with no MUT flag returned to 11 passed, 0 failed, matching
-// the committed baseline exactly.
+// final rebuild with no MUT flag returned to 10 passed, 0 failed, matching
+// the committed baseline exactly (D4 FIX: HTOTAL-IDENTICAL-NTSC-PAL's own
+// mutation entry, previously here, is removed along with the assertion --
+// see D4 FIX note above).
 
 #include <cstdint>
 #include <cstdio>
@@ -187,8 +227,9 @@
 static const uint16_t A_VPOSR    = 0x004 >> 1; // 0x002
 static const uint16_t A_VPOSW    = 0x02A >> 1; // 0x015
 static const uint16_t A_VHPOSW   = 0x02C >> 1; // 0x016
-static const uint16_t A_BEAMCON0 = 0x1DC >> 1; // 0x0EE
-static const uint16_t A_HTOTAL   = 0x1C0 >> 1; // 0x0E0
+// D4 FIX: A_BEAMCON0/A_HTOTAL (used only by the removed HTOTAL-IDENTICAL-
+// NTSC-PAL check) dropped along with it -- see D4 FIX note near the top of
+// this file.
 static const uint16_t A_NONE     = 0x0FF;      // matches none of the above
 
 struct Checks {
@@ -197,6 +238,15 @@ struct Checks {
     void report(const std::string& line, bool ok) {
         std::cout << (ok ? "PASS" : "FAIL") << ": " << line << "\n";
         if (ok) ++passed; else ++failed;
+    }
+    // D4 FIX: this file previously had no runtime-printed decline path --
+    // all 38 (now 40) OUT OF BOUNDARY claims lived only in the header
+    // comment's CLAIM COVERAGE list. A claim id named only in a C++ comment
+    // reads as uncovered; note() prints one so the two ids D4 moved here
+    // (3-max-window.c17, 3-max.c11) are visible in the actual run output,
+    // not only in source comments. Does not affect passed/failed.
+    void note(const std::string& line) {
+        std::cout << "NOTE: " << line << "\n";
     }
 };
 
@@ -461,36 +511,14 @@ static void check_beam_returns_to_top(Checks& c) {
 }
 
 // ---------------------------------------------------------------------
-// HTOTAL-IDENTICAL-NTSC-PAL (3-max-window.c17, 3-max.c11, page 80, "These
-// numbers are the same both for NTSC and for PAL"). See RELATION TO
-// EXISTING FINDINGS above for how this relates to FPGA-091-F05.
+// D4 FIX: HTOTAL-IDENTICAL-NTSC-PAL (formerly here, citing 3-max-window.c17
+// and 3-max.c11 against page 80's "These numbers are the same both for
+// NTSC and for PAL") has been removed -- page 80's "these numbers" are
+// DDFSTOP/DDFSTRT's hardware limits and the fetched-word/displayed-pixel
+// maxima drawn from them (Table 3-14), not htotal_out. Both ids now sit in
+// this file's own OUT OF BOUNDARY category (e) above. See the D4 FIX note
+// near the top of this file for the full page re-read and reasoning.
 // ---------------------------------------------------------------------
-static void check_htotal_identical(Checks& c) {
-    Vagnus_beamcounter* dut_pal = new Vagnus_beamcounter;
-    do_reset(*dut_pal, 0, 0, 0, 0);
-    dut_pal->eval();
-    uint32_t htotal_ntsc0 = dut_pal->htotal_out;
-    dut_pal->final();
-    delete dut_pal;
-
-    Vagnus_beamcounter* dut_ntsc = new Vagnus_beamcounter;
-#ifndef MUT_HTOTAL_IDENTICAL_NTSC_PAL
-    do_reset(*dut_ntsc, 1, 0, 0, 0); // unmutated: ecs=0, hardwired HTOTAL
-#else
-    do_reset(*dut_ntsc, 1, 1, 0, 0); // MUTATION: ecs=1, enabling a programmable HTOTAL for this branch only
-    long i = 0;
-    write_reg(*dut_ntsc, i, A_BEAMCON0, 0x0080); // VARBEAMEN = bit 7
-    write_reg(*dut_ntsc, i, A_HTOTAL, 0x0064);   // program a different total
-#endif
-    dut_ntsc->eval();
-    uint32_t htotal_ntsc1 = dut_ntsc->htotal_out;
-    dut_ntsc->final();
-    delete dut_ntsc;
-
-    bool ok = (htotal_ntsc0 == htotal_ntsc1);
-    c.report("HTOTAL-IDENTICAL-NTSC-PAL (3-max-window.c17, 3-max.c11, page 80, \"These numbers are the same both for NTSC and for PAL\"): htotal_out(ntsc=0)=" +
-              std::to_string(htotal_ntsc0) + " htotal_out(ntsc=1)=" + std::to_string(htotal_ntsc1), ok);
-}
 
 // ---------------------------------------------------------------------
 // VPOSR chip-identification group (page 299, Appendix C). VPOSR bits
@@ -563,11 +591,29 @@ int main(int argc, char** argv) {
     check_ntsc_field_period(c);
     check_pal_field_period(c);
     check_beam_returns_to_top(c);
-    check_htotal_identical(c);
     check_chipid_pal_agnus(c);
     check_chipid_ntsc_agnus(c);
     check_chipid_pal_hires(c);
     check_chipid_ntsc_hires(c);
+
+    // D4 FIX: page 80 was re-read directly
+    // (docs/references/amiga-hrm-3rd/ch3/p80.txt) to confirm what "These
+    // numbers are the same both for NTSC and for PAL" refers to -- DDFSTOP
+    // ($D8)/DDFSTRT ($18) hardware limits and the 25-lores/49-hires
+    // maximum fetched words / 368-pixel maximum displayed width drawn from
+    // them (Table 3-14), not total line length (htotal). See D4 FIX note
+    // near the top of this file for the full reasoning.
+    c.note(
+        "3-max-window.c17, 3-max.c11 (p80, \"These numbers are the same "
+        "both for NTSC and for PAL\"): the antecedent of \"these numbers\" "
+        "is DDFSTOP's hardware limit ($D8), DDFSTRT's hardware limit ($18), "
+        "the 25-lores/49-hires maximum fetched words, and the 368-pixel "
+        "maximum displayed width (Table 3-14) -- not htotal, which this "
+        "fixture's own htotal_out port carries. DDFSTRT/DDFSTOP is not "
+        "part of agnus_beamcounter's register map (parameters l.60-76), "
+        "the same category (b) mismatch this file already excludes 13 "
+        "DIWSTRT/DIWSTOP claims for -- see this file's OUT OF BOUNDARY "
+        "category (e).");
 
     std::cout << c.passed << "/" << (c.passed + c.failed) << " PASS, " << c.failed << " FAIL\n";
     return (c.failed == 0) ? 0 : 1;

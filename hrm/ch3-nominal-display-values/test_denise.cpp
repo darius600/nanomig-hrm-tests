@@ -193,20 +193,20 @@
 // MUTATION DIW-NOMINAL-HSTART stimulus red: the measured DIWSTRT word changed from $2C81 to $2C82 (H byte $82 instead of $81), so the open edge landed at $82 instead of the expected $81; reverted.
 // MUTATION DIW-NOMINAL-HSTOP stimulus red: the PAL DIWSTOP word changed from $2CC1 to $2CC2 (H byte $C2), so its close edge no longer matched the NTSC word's $C1-based close edge or the expected $1C1; reverted.
 // MUTATION DIW-ONE-PIXEL-RESOLUTION stimulus red: the second DIWSTRT measurement changed from $31 (one count past $30) to $34 (four counts), so the open-edge delta came back 4 instead of the expected 1; reverted.
-// MUTATION BPLCON1-WO stimulus red: the post-write read redirected from BPLCON1's own address ($102) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
-// MUTATION BPL1DAT-WO stimulus red: the post-write read redirected from BPL1DAT's own address ($110) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
-// MUTATION BPL2DAT-WO stimulus red: the post-write read redirected from BPL2DAT's own address ($112) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
-// MUTATION BPL3DAT-WO stimulus red: the post-write read redirected from BPL3DAT's own address ($114) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
-// MUTATION BPL4DAT-WO stimulus red: the post-write read redirected from BPL4DAT's own address ($116) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
-// MUTATION BPL5DAT-WO stimulus red: the post-write read redirected from BPL5DAT's own address ($118) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
-// MUTATION BPL6DAT-WO stimulus red: the post-write read redirected from BPL6DAT's own address ($11A) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
-// MUTATION DIWSTRT-WO stimulus red: the post-write read redirected from DIWSTRT's own address ($08E) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
-// MUTATION DIWSTOP-WO stimulus red: the post-write read redirected from DIWSTOP's own address ($090) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
-// MUTATION DIWHIGH-WO stimulus red: the post-write read redirected from DIWHIGH's own address ($1E4) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION BPLCON1-WO stimulus red: the scroll-delay write was suppressed (BPLCON1's own address redirected to $1FE, the bus NO-OP), so the register's effect was never exercised and the write-effect half of the pairing failed (edge stayed at sample 2 for both PF1H=0 and PF1H=15 instead of moving from 2 to 17); reverted.
+// MUTATION BPL1DAT-WO stimulus red: the same redirect applied to BPL1DAT's own write, so plane 1 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR1's $AABB; reverted.
+// MUTATION BPL2DAT-WO stimulus red: the same redirect applied to BPL2DAT's own write, so plane 2 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR2's $AABB; reverted.
+// MUTATION BPL3DAT-WO stimulus red: the same redirect applied to BPL3DAT's own write, so plane 3 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR4's $AABB; reverted.
+// MUTATION BPL4DAT-WO stimulus red: the same redirect applied to BPL4DAT's own write, so plane 4 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR8's $AABB -- this is the exact register the reviewer's own proof pointed at $0A0 (a Paula audio pointer) and left green; reverted.
+// MUTATION BPL5DAT-WO stimulus red: the same redirect applied to BPL5DAT's own write, so plane 5 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR16's $AABB -- this is the exact register the reviewer's own proof pointed at $1FE (the same bus NO-OP used as this file's redirect target) and left green; reverted.
+// MUTATION BPL6DAT-WO stimulus red: the same redirect applied to BPL6DAT's own write, so plane 6 (the EHB flag) was never actually set and the index-6 pixel stayed at $BBAA instead of darkening to $5D55; reverted.
+// MUTATION DIWSTRT-WO stimulus red: the same redirect applied to DIWSTRT's own write, so the $7777 pattern never reached the real register and the open edge was never found (open_idx=-1) instead of landing at $77=119; reverted.
+// MUTATION DIWSTOP-WO stimulus red: the same redirect applied to DIWSTOP's own write, so the $8888 pattern never reached the real register and the close edge stayed at the DIWSTRT-driven default (256) instead of $88+256=392; reverted.
+// MUTATION DIWHIGH-WO stimulus red: the same redirect applied to DIWHIGH's own write, so the $9999 pattern (bit13=0) never reached the real register and hdiwstop[8] kept its reset default, leaving the close edge at 449 both before and after instead of pulling in to $C1=193; reverted.
 // MUTATION DENISEID-IS-REVISION-REGISTER stimulus red: the ecs=0 reading's address redirected from DENISEID's own ($07C) to BPLCON0's ($100), so it came back $0000 instead of $FFFF and the "both non-zero" half failed; reverted.
 // MUTATION DENISEID-ECS-VALUE stimulus red: the ecs=1 reading forced to $0000 in the comparison, so its low byte no longer matched $FC; reverted.
 // MUTATION COLOR-BITS-15-12-UNUSED stimulus red: the second COLOR01 write changed from $F345 to $F346 (a low, observable bit flipped, not only bits 15-12), so the two renderings genuinely differed and the equality check failed; reverted.
-// MUTATION EHB-HALF-INTENSITY stimulus red: the second (plane-6-set) measurement's plane 6 input forced back to false, so it read the identical un-halved colour instead of a darker one and both the "differs" precondition and the "strictly smaller" check failed; reverted.
+// MUTATION EHB-HALF-INTENSITY stimulus red: the second (plane-6-set) measurement's plane 6 input forced back to false, so it read the identical un-halved colour ($BBAA88) instead of the exact per-component >>1 halving ($5D5544) D6 FIX now checks; reverted.
 // MUTATION FIGURE-COLOR-SELECT-INDEX6 stimulus red: the second write's target address changed from COLOR6's own ($18C) to COLOR7's ($18E), so COLOR6's own reading never changed between the first and second write; reverted.
 // MUTATION HAM-MODIFY-WRITES-PIXEL stimulus red: plane 5 in the second (modify) phase forced to false, changing the 6-5 combo from 01 (modify blue) to 00 (plain colour select), so the sampled pixel read $0000 instead of a colour differing from the held COLOR01 only in blue; reverted.
 //
@@ -214,6 +214,92 @@
 // was restored each time (verified via a full sweep with no flags set,
 // immediately before this commit). No oracle/expected value was changed
 // by any of them; only what each check asks the module to do.
+//
+// D5 FIX, 11.09.2026 (independent-review defect correction; no oracle text
+//   touched, only what each of the nine WO assertions below checks): a
+//   reviewer proved BPLCON1-WO, BPL1DAT-WO..BPL6DAT-WO, DIWSTRT-WO,
+//   DIWSTOP-WO and DIWHIGH-WO were all vacuous. denise.v:102/130 is
+//   `data_out = col_out | deniseid_out | rgb_out` -- exactly three read
+//   sources -- so "the written address reads back $0000" is true of nearly
+//   every address in the map, including ones Denise does not implement at
+//   all: pointing BPL4DAT-WO at $0A0 (a Paula audio pointer) and
+//   BPL5DAT-WO at $1FE (the bus NO-OP) left both PASS and the suite still
+//   read 21/0. Reading back zero is half of write-only, and the worthless
+//   half; the half that carries information is that the write had an
+//   effect. All nine now assert (a) a write EFFECT specific to that named
+//   register, observed directly on this fixture, AND (b) that address then
+//   reads $0000 -- with the assertion text stating outright that (b) alone
+//   is structural. Effects found, all measured on this fixture, none cited
+//   without also being repeated locally so a redirect mutation has
+//   something to break:
+//     BPLCON1  -- PF1H (bits 3-0) delays a one-shot BPL1DAT bit's rendered
+//                 sample by exactly 1 per unit (swept all 16 values: idx=
+//                 nib+2 exactly); p.307's own "horizontal scroll control".
+//     BPL1DAT  -- toggling plane 1 alone (bpu=5 colour-select, planes 2-5
+//                 held at 0) moves the index from 0 to 1.
+//     BPL2DAT  -- same, plane 2 alone, index 0 to 2.
+//     BPL3DAT  -- same, plane 3 alone, index 0 to 4.
+//     BPL4DAT  -- same, plane 4 alone, index 0 to 8 (the reviewer's own
+//                 $0A0 example).
+//     BPL5DAT  -- same, plane 5 alone, index 0 to 16 (the reviewer's own
+//                 $1FE example).
+//     BPL6DAT  -- at bpu=6/ham=0, plane 6 is the EHB flag (denise.v:
+//                 ehb_en=!killehb&&!a1k&&!ham&&!dpf&&l_bpu==6), not an
+//                 index bit; toggling it alone darkens the index-6 pixel,
+//                 the same mechanism EHB-HALF-INTENSITY above measures,
+//                 repeated here through this assertion's own address.
+//     DIWSTRT  -- the $7777 this assertion already writes opens the window
+//                 at exactly $77=119 (open_idx=raw_start).
+//     DIWSTOP  -- the $8888 this assertion already writes closes the
+//                 window at exactly $88+256=392 (close_idx=raw_stop+256).
+//     DIWHIGH  -- denise.v:314-319: hdiwstop[8] defaults to 1 unless
+//                 DIWHIGH (ecs=1) loads data_in[13] into it; the $9999
+//                 this assertion already writes has bit13=0 and pulls the
+//                 close edge in from $C1+256=449 to exactly $C1=193.
+//   All nine effects are genuine measurements, not stretched claims -- no
+//   register in this group needed a decline. Each register's own write
+//   address is now a local variable, redirected to NOOP_ADDR ($1FE, the
+//   same bus NO-OP the reviewer used) under its `#ifndef MUT_<NAME>` guard
+//   -- ONLY that one register's write moves, leaving every other write at
+//   its real address, the same single-register-only redirect the
+//   reviewer's own proof used. `make MUT=<NAME>` was run for all nine in
+//   turn: every one flipped its OWN assertion red (the write-effect half
+//   failing while the $0000 read-back half stayed vacuously true, exactly
+//   demonstrating why the pairing is the fix) and left the other 20 green,
+//   then a clean rebuild with no flags restored 21/0. Makefile gained the
+//   MUT= plumbing (MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)) this
+//   package previously lacked, modelled on hrm/ch3-field-geometry's own.
+//
+// D6 FIX, 11.09.2026 (independent-review defect correction, same review as
+//   D5 above): EHB-HALF-INTENSITY asserted only "no component greater, at
+//   least one strictly smaller" -- a check quarter-intensity, or a
+//   blue-only darkening, would also pass, even though neither is what
+//   "half-intensity" means. Page 95 was re-read directly
+//   (docs/references/amiga-hrm-3rd/ch3/p95.txt): "shifted to
+//   half-intensity" -- SHIFTED, a specific bit operation -- and the value
+//   this fixture already measured ($BBAA88 -> $5D5544) is exactly every
+//   component right-shifted by one bit, not a coincidental "somewhat
+//   darker" reading. The check now asserts exact_half (component ==
+//   normal_component>>1 for R, G AND B) instead of the three-part
+//   loose-inequality check. The exact check costs nothing extra to run and
+//   was confirmed to still pass: 21/0 unchanged. Its mutation entry above
+//   was updated to describe the new failure mode (un-halved colour vs the
+//   exact >>1 target, rather than "differs"/"strictly smaller").
+//
+// D9 FIX, 11.09.2026 (independent-review defect correction, same review as
+//   D5/D6 above): HAM-MODIFY-WRITES-PIXEL's boolean check (hr==mr &&
+//   hg==mg && hb!=mb) was already correct -- red/green held, blue
+//   modified, exactly what p.86 describes -- but both printed values used
+//   hex4(rgb>>8), which right-shifts away the LOW byte, i.e. exactly the
+//   blue component this assertion exists to show changed. Both phases
+//   printed the visually identical "$FF00" regardless of what blue
+//   actually did, so a reader could not see the one thing the assertion
+//   claims to have found. Printed values now use the new hex6() helper
+//   (full 24-bit R:G:B) plus an explicit "blue $xx -> $xx" fragment, so the
+//   held red/green and the changed blue are all visible in the evidence.
+//   No change to the assertion's own boolean condition or to its mutation
+//   (MUTATION HAM-MODIFY-WRITES-PIXEL above, unchanged, still applies) --
+//   this was a print-only fix.
 
 #include <cstdio>
 #include <cstring>
@@ -308,10 +394,36 @@ constexpr uint16_t BPL5DAT_ADDR  = 0x8C;  // 9'h118 >> 1
 constexpr uint16_t BPL6DAT_ADDR  = 0x8D;  // 9'h11A >> 1, per B-subject.c160's own quoted address
 constexpr uint16_t COLOR_BASE    = 0xC0;  // 9'h180 >> 1; COLORi = COLOR_BASE+i
 constexpr uint16_t DIWHIGH_ADDR  = 0xF2;  // 9'h1E4 >> 1
+// D5 FIX: the bus NO-OP address (per denise.v/the manual's own "no chip
+// register decodes here" convention) -- reading OR writing it touches no
+// register denise.v implements at all. Used only inside a MUT_<NAME> guard
+// to redirect a single register's own write to prove the write-effect half
+// of that register's WO pairing actually depends on the real address, the
+// same single-register redirect the reviewer's own BPL4DAT-WO/BPL5DAT-WO
+// proof used (there: $0A0 and $1FE, two different unimplemented addresses;
+// here: $1FE alone, reused for every one of this package's nine).
+constexpr uint16_t NOOP_ADDR     = 0xFF;  // 9'h1FE >> 1
 
 std::string hex4(uint16_t v) {
     char buf[8];
     std::snprintf(buf, sizeof(buf), "$%04X", static_cast<unsigned>(v));
+    return std::string(buf);
+}
+
+// D9 FIX: full 24-bit R:G:B, used where the blue byte matters and must not
+// be silently dropped by hex4(rgb>>8) -- see EHB-HALF-INTENSITY and
+// HAM-MODIFY-WRITES-PIXEL below.
+std::string hex6(uint32_t rgb) {
+    char buf[10];
+    std::snprintf(buf, sizeof(buf), "$%06X", static_cast<unsigned>(rgb & 0xFFFFFFu));
+    return std::string(buf);
+}
+
+// D9 FIX: a single 8-bit component, two hex digits -- used alongside hex6
+// so a single R/G/B byte prints as e.g. "$FF", not hex4's padded "$00FF".
+std::string hex2(uint8_t v) {
+    char buf[6];
+    std::snprintf(buf, sizeof(buf), "$%02X", static_cast<unsigned>(v));
     return std::string(buf);
 }
 
@@ -450,6 +562,45 @@ public:
 
     uint32_t read_rgb_now() { return pack_rgb(dut); }
 
+    // D5 FIX (write-effect infrastructure): samples n consecutive
+    // clk7_en-aligned pixels with NO further writes in between (unlike
+    // scan_window_bpu1, which continuously rewrites BPL1DAT to saturate the
+    // shifter). Used by BPLCON1-WO's own write-effect measurement below to
+    // locate where a one-shot BPL1DAT bit renders, so a change in
+    // BPLCON1's PF1H scroll field can be seen as a shift in that position.
+    std::vector<uint32_t> scan_static(int n) {
+        std::vector<uint32_t> samples;
+        samples.reserve(n);
+        for (int i = 0; i < n; ++i) {
+            while (phase != 0) tick();
+            samples.push_back(pack_rgb(dut));
+            tick();
+        }
+        return samples;
+    }
+
+    // D5 FIX (write-effect infrastructure): like refresh_bitplanes, but the
+    // ONE named plane's BPLxDAT write is issued at `mut_addr` instead of its
+    // own real address. mut_plane==0 means no redirection (identical to
+    // refresh_bitplanes). Lets a per-register mutation redirect exactly the
+    // one write under test -- and nothing else -- to an address Denise does
+    // not decode, the same single-register-only redirect the reviewer's own
+    // BPL4DAT-WO/BPL5DAT-WO proof used.
+    void refresh_bitplanes_mut(bool b1, bool b2, bool b3, bool b4, bool b5, bool b6,
+                                int rounds, int mut_plane, uint16_t mut_addr) {
+        auto addr_for = [&](int p, uint16_t real_addr) -> uint16_t {
+            return (p == mut_plane) ? mut_addr : real_addr;
+        };
+        for (int r = 0; r < rounds; ++r) {
+            write_reg(addr_for(2, BPL2DAT_ADDR), b2 ? 0xFFFF : 0x0000);
+            write_reg(addr_for(3, BPL3DAT_ADDR), b3 ? 0xFFFF : 0x0000);
+            write_reg(addr_for(4, BPL4DAT_ADDR), b4 ? 0xFFFF : 0x0000);
+            write_reg(addr_for(5, BPL5DAT_ADDR), b5 ? 0xFFFF : 0x0000);
+            write_reg(addr_for(6, BPL6DAT_ADDR), b6 ? 0xFFFF : 0x0000);
+            write_reg(addr_for(1, BPL1DAT_ADDR), b1 ? 0xFFFF : 0x0000);
+        }
+    }
+
     // RTL-INFORMED FIX (denise.v:436-444: clut_data = 0 (border) whenever
     // !window_ena, regardless of bitplane content; denise.v:446-452:
     // window_del lags window_ena by one 28MHz edge, not gated by clk7_en)
@@ -521,14 +672,22 @@ Edges find_edges(const std::vector<uint32_t>& samples, uint32_t border) {
 // from a SEPARATE, guaranteed-empty-range calibration window on a fresh
 // Harness sharing the identical COLOR00/COLOR01 programming (same technique
 // as hrm/ch3-horizontal-display-window's own measure_window).
-Edges measure_window(uint16_t diwstrt_h, uint16_t diwstop_h, int n = 500) {
+// D5 FIX: diwstrt_addr/diwstop_addr default to the real registers (every
+// pre-existing call site below is unaffected); DIWSTRT-WO/DIWSTOP-WO/
+// DIWHIGH-WO's own write-effect measurements pass a possibly-MUT-redirected
+// address for the ONE register under test, so a mutation that sends that
+// register's write to NOOP_ADDR shows up here as the window failing to move
+// to where the written value says it should.
+Edges measure_window(uint16_t diwstrt_h, uint16_t diwstop_h, int n = 500,
+                      uint16_t diwstrt_addr = DIWSTRT_ADDR,
+                      uint16_t diwstop_addr = DIWSTOP_ADDR) {
     Harness h;
     h.write_reg(COLOR_BASE + 0, 0x0F0);
     h.write_reg(COLOR_BASE + 1, 0xF00);
     h.write_reg(BPLCON0_ADDR, 0x1000);  // bpu=1
     h.write_reg(BPLCON1_ADDR, 0x0000);
-    h.write_reg(DIWSTRT_ADDR, diwstrt_h);
-    h.write_reg(DIWSTOP_ADDR, diwstop_h);
+    h.write_reg(diwstrt_addr, diwstrt_h);
+    h.write_reg(diwstop_addr, diwstop_h);
     auto samples = h.scan_window_bpu1(n);
 
     Harness cal;
@@ -723,23 +882,62 @@ int main(int argc, char** argv) {
     // A-bplcon.c5 (p271, "BPLCON1 102 W D Bitplane control register"),
     // A-bplcon1.rw (p271, same), B-subject.c115 (p291, same),
     // C-genlock-ext.c6 (p307, "BPLCON1 W D Bitplane control (horizontal
-    // scroll control)"): a distinct pattern written to BPLCON1 ($102)
-    // reads back $0000 at that same address.
+    // scroll control)").
+    //
+    // D5 FIX: a $0000 readback alone is structural at this boundary (see
+    // file header's D5 FIX note -- data_out is only ever col_out |
+    // deniseid_out | rgb_out, so nearly every unimplemented address reads
+    // $0000 too). Paired here with BPLCON1's own measured write EFFECT:
+    // PF1H (bits 3-0, non-aga) is the horizontal-scroll-control field p.307
+    // itself names -- denise_bitplanes.v's pf1h/pf1h_del/select chain delays
+    // which shifter-history sample reaches the output. Measured directly on
+    // this fixture: sweeping PF1H from 0 to 15 (all 16 values, one-shot
+    // BPL1DAT=$8000 inside a wide-open window) moved a fixed bit's rendered
+    // sample index in lockstep, exactly idx=nib+2 for every nib -- a clean,
+    // monotonic, one-sample-per-unit delay, not a coincidental difference.
     {
-        Harness h;
-        h.write_reg(BPLCON1_ADDR, 0x5A5A);
-        uint16_t read_addr = BPLCON1_ADDR;
+        auto measure_pf1h_edge = [](uint16_t pf1h_nibble, uint16_t bplcon1_addr) -> long {
+            Harness h;
+            h.write_reg(COLOR_BASE + 0, 0x000);
+            h.write_reg(COLOR_BASE + 1, 0xF00);
+            h.write_reg(BPLCON0_ADDR, 0x1000);  // bpu=1
+            h.write_reg(bplcon1_addr, pf1h_nibble & 0xF);
+            h.enter_wide_window();
+            for (int i = 0; i < 60; ++i) h.tick();  // well clear of the open edge
+            auto base = h.scan_static(4);
+            uint32_t border = base[0];
+            h.write_reg(BPL1DAT_ADDR, 0x8000);  // one-shot: single leading bit
+            auto samples = h.scan_static(80);
+            for (size_t i = 0; i < samples.size(); ++i)
+                if (samples[i] != border) return static_cast<long>(i);
+            return -1;
+        };
+        uint16_t bplcon1_addr = BPLCON1_ADDR;
 #if MUT_BPLCON1_WO
-        read_addr = DENISEID_ADDR;
+        bplcon1_addr = NOOP_ADDR;  // the scroll-delay write goes nowhere real
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        long idx_lo = measure_pf1h_edge(0x0, bplcon1_addr);
+        long idx_hi = measure_pf1h_edge(0xF, bplcon1_addr);
+        bool effect_ok = (idx_hi - idx_lo) == 15;
+
+        Harness h;
+        h.write_reg(bplcon1_addr, 0x5A5A);
+        uint16_t r = h.read_reg(bplcon1_addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "BPLCON1-WO: a distinct non-zero pattern ($5A5A) written to "
-            "BPLCON1 ($102) reads back $0000 at that same address "
-            "(write-only) - 'BPLCON1 102 W D Bitplane control register' "
-            "(p.271/291), 'BPLCON1 W D Bitplane control (horizontal scroll "
-            "control)' (p.307). A-bplcon.c5, A-bplcon1.rw, B-subject.c115, "
+            effect_ok && readback_ok,
+            "BPLCON1-WO: (a) writing BPLCON1's PF1H field (bits 3-0) from 0 "
+            "to 15 moves a one-shot BPL1DAT bit's rendered sample from " +
+            std::to_string(idx_lo) + " to " + std::to_string(idx_hi) +
+            " -- exactly 15, one sample per PF1H unit -- making 'BPLCON1 W D "
+            "Bitplane control (horizontal scroll control)' (p.307) an "
+            "observed effect, not an assumption; (b) a distinct non-zero "
+            "pattern ($5A5A) written to BPLCON1 ($102) then reads back "
+            "$0000 at that same address, 'BPLCON1 102 W D Bitplane control "
+            "register' (p.271/291) -- (b) alone is structural at this "
+            "boundary (see file header) and is asserted only paired with "
+            "(a). A-bplcon.c5, A-bplcon1.rw, B-subject.c115, "
             "C-genlock-ext.c6.");
     }
 
@@ -748,106 +946,259 @@ int main(int argc, char** argv) {
     // A-bplxdat.rw (p272, same), B-subject.c135 (p291, "BPL1DAT & 110 W D
     // Bitplane 1 data"): representative of the general write-only claim
     // plus BPL1DAT specifically.
+    //
+    // D5 FIX: paired with an observable write EFFECT specific to THIS
+    // register, not merely "some $0000 address": with bpu=5 colour-select
+    // mode (COLOR0=$000, COLOR1=$0ABC) and planes 2-5 held at 0, toggling
+    // ONLY plane 1 moves the colour index from 0 to 1 -- the pixel must go
+    // from COLOR0's black to a non-black colour. A per-register mutation
+    // redirects exactly this one plane's own BPLxDAT write (and nothing
+    // else) to NOOP_ADDR ($1FE, decoded nowhere in denise.v), the same
+    // single-register redirect the reviewer's own BPL4DAT-WO/BPL5DAT-WO
+    // proof used -- see file header.
     {
-        Harness h;
-        h.write_reg(BPL1DAT_ADDR, 0x1111);
-        uint16_t read_addr = BPL1DAT_ADDR;
+        uint16_t addr = BPL1DAT_ADDR;
 #if MUT_BPL1DAT_WO
-        read_addr = DENISEID_ADDR;
+        addr = NOOP_ADDR;
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        Harness h;
+        h.write_reg(COLOR_BASE + 0, 0x000);
+        h.write_reg(COLOR_BASE + 1, 0x0ABC);
+        h.write_reg(BPLCON0_ADDR, 0x5000);  // bpu=5
+        h.enter_wide_window();
+        h.refresh_bitplanes_mut(false, false, false, false, false, false, 6, 0, 0);
+        uint32_t before = h.read_rgb_now();
+        h.refresh_bitplanes_mut(/*b1=*/true, false, false, false, false, false, 6,
+                                 /*mut_plane=*/1, addr);
+        uint32_t after = h.read_rgb_now();
+        bool effect_ok = (before == 0x000000) && (after != before);
+
+        Harness h2;
+        h2.write_reg(addr, 0x1111);
+        uint16_t r = h2.read_reg(addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "BPL1DAT-WO: a distinct pattern ($1111) written to BPL1DAT "
-            "($110) reads back $0000 at that same address (write-only) - "
-            "'BPLxDAT 110 W D Bitplane x data (parallel-to-serial' (p.272), "
-            "'BPL1DAT & 110 W D Bitplane 1 data (parallel-to-serial "
-            "convert)' (p.291). A-bpldat.c2, A-bplxdat.rw, B-subject.c135.");
+            effect_ok && readback_ok,
+            "BPL1DAT-WO: (a) with planes 2-5 held at 0 (colour index 0, "
+            "COLOR0=" + hex4(0) + "), toggling ONLY BPL1DAT (plane 1) moves "
+            "the rendered pixel from " + hex4(static_cast<uint16_t>(before >> 8)) +
+            " to " + hex4(static_cast<uint16_t>(after >> 8)) +
+            " (COLOR1's programmed colour) -- a write effect specific to "
+            "this register; (b) a distinct pattern ($1111) written to "
+            "BPL1DAT ($110) then reads back $0000 at that same address -- "
+            "(b) alone is structural at this boundary (see file header) and "
+            "is asserted only paired with (a). 'BPLxDAT 110 W D Bitplane x "
+            "data (parallel-to-serial' (p.272), 'BPL1DAT & 110 W D Bitplane "
+            "1 data (parallel-to-serial convert)' (p.291). A-bpldat.c2, "
+            "A-bplxdat.rw, B-subject.c135.");
     }
 
     // ==================== BPL2DAT-WO ==================== B-subject.c140 (p291)
+    // D5 FIX: same per-plane isolation as BPL1DAT-WO above, plane 2 (index
+    // bit 1, value 2).
     {
-        Harness h;
-        h.write_reg(BPL2DAT_ADDR, 0x2222);
-        uint16_t read_addr = BPL2DAT_ADDR;
+        uint16_t addr = BPL2DAT_ADDR;
 #if MUT_BPL2DAT_WO
-        read_addr = DENISEID_ADDR;
+        addr = NOOP_ADDR;
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        Harness h;
+        h.write_reg(COLOR_BASE + 0, 0x000);
+        h.write_reg(COLOR_BASE + 2, 0x0ABC);
+        h.write_reg(BPLCON0_ADDR, 0x5000);  // bpu=5
+        h.enter_wide_window();
+        h.refresh_bitplanes_mut(false, false, false, false, false, false, 6, 0, 0);
+        uint32_t before = h.read_rgb_now();
+        h.refresh_bitplanes_mut(false, /*b2=*/true, false, false, false, false, 6,
+                                 /*mut_plane=*/2, addr);
+        uint32_t after = h.read_rgb_now();
+        bool effect_ok = (before == 0x000000) && (after != before);
+
+        Harness h2;
+        h2.write_reg(addr, 0x2222);
+        uint16_t r = h2.read_reg(addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "BPL2DAT-WO: a distinct pattern ($2222) written to BPL2DAT "
-            "($112) reads back $0000 at that same address (write-only) - "
-            "'BPL2DAT & 112 W D Bitplane 2 data (parallel-to-serial "
-            "convert)' (p.291). B-subject.c140.");
+            effect_ok && readback_ok,
+            "BPL2DAT-WO: (a) with planes 1,3-5 held at 0, toggling ONLY "
+            "BPL2DAT (plane 2) moves the rendered pixel from " +
+            hex4(static_cast<uint16_t>(before >> 8)) + " to " +
+            hex4(static_cast<uint16_t>(after >> 8)) +
+            " (COLOR2's programmed colour) -- a write effect specific to "
+            "this register; (b) a distinct pattern ($2222) written to "
+            "BPL2DAT ($112) then reads back $0000 at that same address -- "
+            "(b) alone is structural at this boundary (see file header) and "
+            "is asserted only paired with (a). 'BPL2DAT & 112 W D Bitplane "
+            "2 data (parallel-to-serial convert)' (p.291). B-subject.c140.");
     }
 
     // ==================== BPL3DAT-WO ==================== B-subject.c145 (p291)
+    // D5 FIX: same per-plane isolation, plane 3 (index bit 2, value 4).
     {
-        Harness h;
-        h.write_reg(BPL3DAT_ADDR, 0x3333);
-        uint16_t read_addr = BPL3DAT_ADDR;
+        uint16_t addr = BPL3DAT_ADDR;
 #if MUT_BPL3DAT_WO
-        read_addr = DENISEID_ADDR;
+        addr = NOOP_ADDR;
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        Harness h;
+        h.write_reg(COLOR_BASE + 0, 0x000);
+        h.write_reg(COLOR_BASE + 4, 0x0ABC);
+        h.write_reg(BPLCON0_ADDR, 0x5000);  // bpu=5
+        h.enter_wide_window();
+        h.refresh_bitplanes_mut(false, false, false, false, false, false, 6, 0, 0);
+        uint32_t before = h.read_rgb_now();
+        h.refresh_bitplanes_mut(false, false, /*b3=*/true, false, false, false, 6,
+                                 /*mut_plane=*/3, addr);
+        uint32_t after = h.read_rgb_now();
+        bool effect_ok = (before == 0x000000) && (after != before);
+
+        Harness h2;
+        h2.write_reg(addr, 0x3333);
+        uint16_t r = h2.read_reg(addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "BPL3DAT-WO: a distinct pattern ($3333) written to BPL3DAT "
-            "($114) reads back $0000 at that same address (write-only) - "
-            "'BPL3DAT & 114 W D Bitplane 3 data (parallel-to-serial "
-            "convert)' (p.291). B-subject.c145.");
+            effect_ok && readback_ok,
+            "BPL3DAT-WO: (a) with planes 1,2,4,5 held at 0, toggling ONLY "
+            "BPL3DAT (plane 3) moves the rendered pixel from " +
+            hex4(static_cast<uint16_t>(before >> 8)) + " to " +
+            hex4(static_cast<uint16_t>(after >> 8)) +
+            " (COLOR4's programmed colour) -- a write effect specific to "
+            "this register; (b) a distinct pattern ($3333) written to "
+            "BPL3DAT ($114) then reads back $0000 at that same address -- "
+            "(b) alone is structural at this boundary (see file header) and "
+            "is asserted only paired with (a). 'BPL3DAT & 114 W D Bitplane "
+            "3 data (parallel-to-serial convert)' (p.291). B-subject.c145.");
     }
 
     // ==================== BPL4DAT-WO ==================== B-subject.c150 (p291)
+    // D5 FIX: same per-plane isolation, plane 4 (index bit 3, value 8).
+    // This is exactly the register the reviewer's own proof pointed at
+    // $0A0 (a Paula audio pointer) to show a green that meant nothing.
     {
-        Harness h;
-        h.write_reg(BPL4DAT_ADDR, 0x4444);
-        uint16_t read_addr = BPL4DAT_ADDR;
+        uint16_t addr = BPL4DAT_ADDR;
 #if MUT_BPL4DAT_WO
-        read_addr = DENISEID_ADDR;
+        addr = NOOP_ADDR;
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        Harness h;
+        h.write_reg(COLOR_BASE + 0, 0x000);
+        h.write_reg(COLOR_BASE + 8, 0x0ABC);
+        h.write_reg(BPLCON0_ADDR, 0x5000);  // bpu=5
+        h.enter_wide_window();
+        h.refresh_bitplanes_mut(false, false, false, false, false, false, 6, 0, 0);
+        uint32_t before = h.read_rgb_now();
+        h.refresh_bitplanes_mut(false, false, false, /*b4=*/true, false, false, 6,
+                                 /*mut_plane=*/4, addr);
+        uint32_t after = h.read_rgb_now();
+        bool effect_ok = (before == 0x000000) && (after != before);
+
+        Harness h2;
+        h2.write_reg(addr, 0x4444);
+        uint16_t r = h2.read_reg(addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "BPL4DAT-WO: a distinct pattern ($4444) written to BPL4DAT "
-            "($116) reads back $0000 at that same address (write-only) - "
-            "'BPL4DAT & 116 W D Bitplane 4 data (parallel-to-serial "
-            "convert)' (p.291). B-subject.c150.");
+            effect_ok && readback_ok,
+            "BPL4DAT-WO: (a) with planes 1-3,5 held at 0, toggling ONLY "
+            "BPL4DAT (plane 4) moves the rendered pixel from " +
+            hex4(static_cast<uint16_t>(before >> 8)) + " to " +
+            hex4(static_cast<uint16_t>(after >> 8)) +
+            " (COLOR8's programmed colour) -- a write effect specific to "
+            "this register; (b) a distinct pattern ($4444) written to "
+            "BPL4DAT ($116) then reads back $0000 at that same address -- "
+            "(b) alone is structural at this boundary (see file header) and "
+            "is asserted only paired with (a). 'BPL4DAT & 116 W D Bitplane "
+            "4 data (parallel-to-serial convert)' (p.291). B-subject.c150.");
     }
 
     // ==================== BPL5DAT-WO ==================== B-subject.c155 (p291)
+    // D5 FIX: same per-plane isolation, plane 5 (index bit 4, value 16).
+    // This is exactly the register the reviewer's own proof pointed at
+    // $1FE (the bus NO-OP) to show a green that meant nothing.
     {
-        Harness h;
-        h.write_reg(BPL5DAT_ADDR, 0x5555);
-        uint16_t read_addr = BPL5DAT_ADDR;
+        uint16_t addr = BPL5DAT_ADDR;
 #if MUT_BPL5DAT_WO
-        read_addr = DENISEID_ADDR;
+        addr = NOOP_ADDR;
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        Harness h;
+        h.write_reg(COLOR_BASE + 0, 0x000);
+        h.write_reg(COLOR_BASE + 16, 0x0ABC);
+        h.write_reg(BPLCON0_ADDR, 0x5000);  // bpu=5
+        h.enter_wide_window();
+        h.refresh_bitplanes_mut(false, false, false, false, false, false, 6, 0, 0);
+        uint32_t before = h.read_rgb_now();
+        h.refresh_bitplanes_mut(false, false, false, false, /*b5=*/true, false, 6,
+                                 /*mut_plane=*/5, addr);
+        uint32_t after = h.read_rgb_now();
+        bool effect_ok = (before == 0x000000) && (after != before);
+
+        Harness h2;
+        h2.write_reg(addr, 0x5555);
+        uint16_t r = h2.read_reg(addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "BPL5DAT-WO: a distinct pattern ($5555) written to BPL5DAT "
-            "($118) reads back $0000 at that same address (write-only) - "
-            "'BPL5DAT & 118 W D Bitplane 5 data (parallel-to-serial "
-            "convert)' (p.291). B-subject.c155.");
+            effect_ok && readback_ok,
+            "BPL5DAT-WO: (a) with planes 1-4 held at 0, toggling ONLY "
+            "BPL5DAT (plane 5) moves the rendered pixel from " +
+            hex4(static_cast<uint16_t>(before >> 8)) + " to " +
+            hex4(static_cast<uint16_t>(after >> 8)) +
+            " (COLOR16's programmed colour) -- a write effect specific to "
+            "this register; (b) a distinct pattern ($5555) written to "
+            "BPL5DAT ($118) then reads back $0000 at that same address -- "
+            "(b) alone is structural at this boundary (see file header) and "
+            "is asserted only paired with (a). 'BPL5DAT & 118 W D Bitplane "
+            "5 data (parallel-to-serial convert)' (p.291). B-subject.c155.");
     }
 
     // ==================== BPL6DAT-WO ==================== B-subject.c160 (p291)
+    // D5 FIX: plane 6 does NOT contribute an index bit in bpu=6/ham=0 mode
+    // -- it is the EHB half-intensity flag (denise.v: ehb_en = !killehb &&
+    // !a1k && !ham && !dpf && l_bpu==6), exactly what EHB-HALF-INTENSITY
+    // above already measures and mutation-tests. Paired here with that
+    // SAME mechanism, repeated through this assertion's own (possibly
+    // redirected) address rather than merely citing it, so a mutation
+    // pointed at this specific claim still has something local to break.
     {
-        Harness h;
-        h.write_reg(BPL6DAT_ADDR, 0x6666);
-        uint16_t read_addr = BPL6DAT_ADDR;
+        uint16_t addr = BPL6DAT_ADDR;
 #if MUT_BPL6DAT_WO
-        read_addr = DENISEID_ADDR;
+        addr = NOOP_ADDR;
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        Harness h;
+        h.write_reg(COLOR_BASE + 6, 0x0BA8);
+        h.enter_wide_window();
+        h.write_bitplane_pattern(/*bpu=*/6, /*ham_on=*/false,
+                                  /*b1=*/false, /*b2=*/true, /*b3=*/true,
+                                  /*b4=*/false, /*b5=*/false, /*b6=*/false, 10);
+        uint32_t normal = h.read_rgb_now();
+        h.refresh_bitplanes_mut(false, true, true, false, false, /*b6=*/true, 10,
+                                 /*mut_plane=*/6, addr);
+        uint32_t halved = h.read_rgb_now();
+        uint8_t nr = (normal >> 16) & 0xFF, ng = (normal >> 8) & 0xFF, nb = normal & 0xFF;
+        uint8_t hr = (halved >> 16) & 0xFF, hg = (halved >> 8) & 0xFF, hb = halved & 0xFF;
+        bool effect_ok = (normal != halved) && hr <= nr && hg <= ng && hb <= nb &&
+                          (hr < nr || hg < ng || hb < nb);
+
+        Harness h2;
+        h2.write_reg(addr, 0x6666);
+        uint16_t r = h2.read_reg(addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "BPL6DAT-WO: a distinct pattern ($6666) written to BPL6DAT "
-            "($11A) reads back $0000 at that same address (write-only) - "
-            "'BPL6DAT & 11A W D Bitplane 6 data (parallel-to-serial "
-            "convert)' (p.291). B-subject.c160.");
+            effect_ok && readback_ok,
+            "BPL6DAT-WO: (a) toggling ONLY BPL6DAT (plane 6, the EHB flag "
+            "at bpu=6/ham=0) darkens the same index-6 pixel from " +
+            hex4(static_cast<uint16_t>(normal >> 8)) + " to " +
+            hex4(static_cast<uint16_t>(halved >> 8)) +
+            " (every RGB component no greater, at least one strictly "
+            "smaller) -- the same EHB half-intensity effect "
+            "EHB-HALF-INTENSITY above measures, repeated here through this "
+            "assertion's own address; (b) a distinct pattern ($6666) "
+            "written to BPL6DAT ($11A) then reads back $0000 at that same "
+            "address -- (b) alone is structural at this boundary (see file "
+            "header) and is asserted only paired with (a). 'BPL6DAT & 11A "
+            "W D Bitplane 6 data (parallel-to-serial convert)' (p.291). "
+            "B-subject.c160.");
     }
 
     // ==================== DIWSTRT-WO ====================
@@ -860,68 +1211,141 @@ int main(int argc, char** argv) {
     // register (BPLCON0 visibly affects window/border rendering yet still
     // reads $0000 at $100 -- the manual's "W" column means no readback
     // path at this boundary, not that the write has no internal effect).
+    //
+    // D5 FIX: that prior text already correctly CITES DIW-NOMINAL-HSTART as
+    // corroboration -- kept below -- but citation alone still let a
+    // mutation that redirects the WHOLE assertion (write AND read) to an
+    // unimplemented address pass (the reviewer's own proof, on BPL4DAT-WO/
+    // BPL5DAT-WO). So the SAME $7777 write this assertion already makes is
+    // now also used to measure the window opening exactly where it says:
+    // open_idx must equal $77 (the RTL-informed formula this file's own
+    // header derives: open_idx=raw_start), through this assertion's own
+    // (possibly redirected) address.
     {
-        Harness h;
-        h.write_reg(DIWSTRT_ADDR, 0x7777);
-        uint16_t read_addr = DIWSTRT_ADDR;
+        uint16_t addr = DIWSTRT_ADDR;
 #if MUT_DIWSTRT_WO
-        read_addr = DENISEID_ADDR;
+        addr = NOOP_ADDR;
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        Edges e = measure_window(0x7777, 0x00FF, 300, /*diwstrt_addr=*/addr);
+        bool effect_ok = (e.open_idx == 0x77);
+
+        Harness h;
+        h.write_reg(addr, 0x7777);
+        uint16_t r = h.read_reg(addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "DIWSTRT-WO: a distinct pattern ($7777) written to DIWSTRT "
-            "($08E) reads back $0000 at that same address (write-only, no "
-            "readback path at this boundary, even though the same write "
-            "visibly moves the display window -- see DIW-NOMINAL-HSTART "
-            "above) - 'DIWSTRT 08E W A Display window start (upper left' "
-            "(p.277), 'DIWSTRT 08E W A Display window start (upper left' "
-            "(p.290), 'DIWSTRT W A D Display Window Start (upper left "
-            "vert-hor pos)' (p.306). A-diw.c6, A-diwstrt.rw, B-subject.c10, "
-            "C-diw.c1.");
+            effect_ok && readback_ok,
+            "DIWSTRT-WO: (a) writing $7777 to DIWSTRT opens the display "
+            "window at sample " + std::to_string(e.open_idx) +
+            ", exactly $77 -- the same write DIW-NOMINAL-HSTART above "
+            "measures with a different pattern, repeated here through this "
+            "assertion's own address; (b) that same $7777 pattern then "
+            "reads back $0000 at DIWSTRT's own address ($08E) -- (b) alone "
+            "is structural at this boundary (see file header) and is "
+            "asserted only paired with (a). 'DIWSTRT 08E W A Display window "
+            "start (upper left' (p.277), 'DIWSTRT 08E W A Display window "
+            "start (upper left' (p.290), 'DIWSTRT W A D Display Window "
+            "Start (upper left vert-hor pos)' (p.306). A-diw.c6, "
+            "A-diwstrt.rw, B-subject.c10, C-diw.c1.");
     }
 
     // ==================== DIWSTOP-WO ====================
     // A-diw.c4, A-diwstop.rw (p277), B-subject.c14 (p290), C-diw.c2 (p306).
+    //
+    // D5 FIX: same reasoning as DIWSTRT-WO above -- the $8888 already
+    // written by this assertion also closes the window exactly where the
+    // RTL-informed formula (close_idx=raw_stop+256) says: $88+256=392.
     {
-        Harness h;
-        h.write_reg(DIWSTOP_ADDR, 0x8888);
-        uint16_t read_addr = DIWSTOP_ADDR;
+        uint16_t addr = DIWSTOP_ADDR;
 #if MUT_DIWSTOP_WO
-        read_addr = DENISEID_ADDR;
+        addr = NOOP_ADDR;
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        Edges e = measure_window(0x0002, 0x8888, 450, DIWSTRT_ADDR, /*diwstop_addr=*/addr);
+        bool effect_ok = (e.close_idx == 392);
+
+        Harness h;
+        h.write_reg(addr, 0x8888);
+        uint16_t r = h.read_reg(addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "DIWSTOP-WO: a distinct pattern ($8888) written to DIWSTOP "
-            "($090) reads back $0000 at that same address (write-only, no "
-            "readback path at this boundary, even though the same write "
-            "visibly moves the display window -- see DIW-NOMINAL-HSTOP "
-            "above) - 'DIWSTOP 090 W A Display window stop (lower right' "
-            "(p.277/290), 'DIWSTOP W A D Display Window Stop (lower right "
-            "vert-hor pos)' (p.306). A-diw.c4, A-diwstop.rw, B-subject.c14, "
-            "C-diw.c2.");
+            effect_ok && readback_ok,
+            "DIWSTOP-WO: (a) writing $8888 to DIWSTOP closes the display "
+            "window at sample " + std::to_string(e.close_idx) +
+            ", exactly $88+256=392 -- the same write DIW-NOMINAL-HSTOP "
+            "above measures with different patterns, repeated here through "
+            "this assertion's own address; (b) that same $8888 pattern "
+            "then reads back $0000 at DIWSTOP's own address ($090) -- (b) "
+            "alone is structural at this boundary (see file header) and is "
+            "asserted only paired with (a). 'DIWSTOP 090 W A Display window "
+            "stop (lower right' (p.277/290), 'DIWSTOP W A D Display Window "
+            "Stop (lower right vert-hor pos)' (p.306). A-diw.c4, "
+            "A-diwstop.rw, B-subject.c14, C-diw.c2.");
     }
 
     // ==================== DIWHIGH-WO ====================
     // A-diw.c2, A-diwhigh.rw (p277), B-subject.c293 (p293), C-diw.c8,
     // C-diwhigh.c01 (p306).
+    //
+    // D5 FIX: DIWHIGH has a real, ECS-gated effect at THIS boundary --
+    // denise.v:314-319: hdiwstop[8] defaults to 1 (close edge = raw_stop+
+    // 256) unless DIWHIGH is written with ecs=1, which loads data_in[13]
+    // into it instead. The $9999 pattern this assertion already writes has
+    // bit13=0, so writing it must pull the close edge in from $C1+256=449
+    // down to exactly $C1=193 -- measured directly on this fixture.
     {
-        Harness h;
-        h.write_reg(DIWHIGH_ADDR, 0x9999);
-        uint16_t read_addr = DIWHIGH_ADDR;
+        uint16_t addr = DIWHIGH_ADDR;
 #if MUT_DIWHIGH_WO
-        read_addr = DENISEID_ADDR;
+        addr = NOOP_ADDR;
 #endif
-        uint16_t r = h.read_reg(read_addr);
+        auto measure_close = [&](bool write_diwhigh) -> long {
+            Harness h;
+            h.write_reg(COLOR_BASE + 0, 0x0F0);
+            h.write_reg(COLOR_BASE + 1, 0xF00);
+            h.write_reg(BPLCON0_ADDR, 0x1000);
+            h.write_reg(BPLCON1_ADDR, 0x0000);
+            h.write_reg(DIWSTRT_ADDR, 0x0002);
+            h.write_reg(DIWSTOP_ADDR, 0x00C1);
+            if (write_diwhigh) h.write_reg(addr, 0x9999);  // bit13=0
+            auto samples = h.scan_window_bpu1(470);
+            Harness cal;
+            cal.write_reg(COLOR_BASE + 0, 0x0F0);
+            cal.write_reg(COLOR_BASE + 1, 0xF00);
+            cal.write_reg(BPLCON0_ADDR, 0x1000);
+            cal.write_reg(BPLCON1_ADDR, 0x0000);
+            cal.write_reg(DIWSTRT_ADDR, 0x60);
+            cal.write_reg(DIWSTOP_ADDR, 0x20);
+            auto cal_samples = cal.scan_window_bpu1(8);
+            uint32_t border = cal_samples[4];
+            Edges e = find_edges(samples, border);
+            return e.close_idx;
+        };
+        long close_default = measure_close(false);
+        long close_forced = measure_close(true);
+        bool effect_ok = (close_default == 449) && (close_forced == 0x00C1);
+
+        Harness h;
+        h.write_reg(addr, 0x9999);
+        uint16_t r = h.read_reg(addr);
+        bool readback_ok = (r == 0x0000);
+
         checks.expect(
-            r == 0x0000,
-            "DIWHIGH-WO: a distinct pattern ($9999) written to DIWHIGH "
-            "($1E4) reads back $0000 at that same address (write-only) - "
-            "'DIWHIGH 1E4 W A,D( E ) Display window - upper bits for start, "
-            "stop' (p.277), 'DIWHIGH 1E4 w A, D(E) Display window - upper "
-            "bits for start, stop' (p.293), 'DIWHIGH W A D Display Window "
-            "upper bits for start,stop' (p.306, both printings). A-diw.c2, "
+            effect_ok && readback_ok,
+            "DIWHIGH-WO: (a) with DIWSTOP=$00C1 alone the close edge sits "
+            "at the default " + std::to_string(close_default) +
+            " ($C1+256, hdiwstop[8]'s reset default); writing this "
+            "assertion's own $9999 pattern (bit13=0) afterward pulls it in "
+            "to " + std::to_string(close_forced) +
+            ", exactly $C1 -- 'DIWHIGH ... Display window - upper bits for "
+            "start, stop' (p.277/293/306) made observable; (b) that same "
+            "$9999 pattern then reads back $0000 at DIWHIGH's own address "
+            "($1E4) -- (b) alone is structural at this boundary (see file "
+            "header) and is asserted only paired with (a). 'DIWHIGH 1E4 "
+            "W A,D( E ) Display window - upper bits for start, stop' "
+            "(p.277), 'DIWHIGH 1E4 w A, D(E) Display window - upper bits "
+            "for start, stop' (p.293), 'DIWHIGH W A D Display Window upper "
+            "bits for start,stop' (p.306, both printings). A-diw.c2, "
             "A-diwhigh.rw, B-subject.c293, C-diw.c8, C-diwhigh.c01.");
     }
 
@@ -1069,11 +1493,22 @@ int main(int argc, char** argv) {
     // with BPU=6 (six-bitplane mode -- page 86/87's own "Bits BPU2, BPU1,
     // BPU0... 101 or 110" for six-plane operation) and a fixed low-5-plane
     // pattern selecting COLOR06, plane 6 clear reads COLOR06's own colour
-    // and plane 6 set reads a STRICTLY DARKER colour (every RGB component
-    // no greater, at least one strictly smaller) -- "half-intensity" as a
-    // qualitative, not a specific-formula, proposition (the exact halving
-    // arithmetic is not pinned by the manual's own wording and is not
-    // asserted here).
+    // and plane 6 set reads exactly HALF that colour, component by
+    // component.
+    //
+    // D6 FIX: page 95 was re-read directly
+    // (docs/references/amiga-hrm-3rd/ch3/p95.txt) -- it says "SHIFTED to
+    // half-intensity", not merely "darker" or "reduced": a shift is a
+    // specific bit operation, not a vague qualitative one, and the values
+    // this fixture actually measures ($BBAA88 -> component-wise >>1 =
+    // $5D5544) match a literal >>1 (integer halving, truncating) on EVERY
+    // component, exactly. The previous "no component greater, at least one
+    // strictly smaller" check is also satisfied by quarter-intensity or a
+    // blue-only darkening -- neither of which is what page 95 says, and
+    // both of which this exact check now correctly rejects. Printed values
+    // are now the full 24-bit R:G:B (hex6), not rgb>>8, so the blue
+    // component -- previously invisible in the printed evidence -- is
+    // shown too.
     {
         Harness h;
         h.write_reg(COLOR_BASE + 6, 0x0BA8);  // bright, non-degenerate colour
@@ -1091,22 +1526,25 @@ int main(int argc, char** argv) {
         uint32_t halved = h.read_rgb_now();
         uint8_t nr = (normal >> 16) & 0xFF, ng = (normal >> 8) & 0xFF, nb = normal & 0xFF;
         uint8_t hr = (halved >> 16) & 0xFF, hg = (halved >> 8) & 0xFF, hb = halved & 0xFF;
-        bool precondition_differs = (normal != halved);  // the precondition this green depends on
-        bool no_component_increased = hr <= nr && hg <= ng && hb <= nb;
-        bool at_least_one_strictly_smaller = hr < nr || hg < ng || hb < nb;
+        bool exact_half = (hr == static_cast<uint8_t>(nr >> 1)) &&
+                           (hg == static_cast<uint8_t>(ng >> 1)) &&
+                           (hb == static_cast<uint8_t>(nb >> 1));
         checks.expect(
-            precondition_differs && no_component_increased && at_least_one_strictly_smaller,
+            exact_half,
             "EHB-HALF-INTENSITY: with a 6th-bitplane (EHB) flag clear, the "
-            "index-6 pixel reads " + hex4(static_cast<uint16_t>(normal >> 8)) +
+            "index-6 pixel reads " + hex6(normal) +
             "; with the flag set (same low-5-plane index), it reads " +
-            hex4(static_cast<uint16_t>(halved >> 8)) + " -- every RGB "
-            "component no greater and at least one strictly smaller, "
-            "matching 'The color register output selected by the first "
-            "five bitplanes is shifted to half-intensity by the sixth "
-            "bitplane' (p.95) as a qualitative darkening (the precondition "
-            "that this comparison is even meaningful -- the two readings "
-            "actually differ -- is asserted in the same condition). "
-            "3-ehb.c7.");
+            hex6(halved) + " -- EVERY RGB component (R, G, and B) is "
+            "exactly its normal value right-shifted by one bit "
+            "(component>>1, verified for all three, not merely 'no "
+            "component greater'), matching 'The color register output "
+            "selected by the first "
+            "five bitplanes is SHIFTED to half-intensity by the sixth "
+            "bitplane' (p.95) -- 'shifted' names a specific bit operation, "
+            "not a vague darkening, and this check now rejects "
+            "quarter-intensity or a blue-only darkening, either of which "
+            "would have passed the prior 'no component greater, at least "
+            "one strictly smaller' check. 3-ehb.c7.");
     }
 
     // ==================== HAM-MODIFY-WRITES-PIXEL ====================
@@ -1122,6 +1560,15 @@ int main(int argc, char** argv) {
     // while its blue component visibly differs from COLOR01's own blue --
     // "the value... is held, and one of the three components... is
     // modified", tested as: two components held, one changed.
+    //
+    // D9 FIX: the boolean check (hr==mr && hg==mg && hb!=mb) was already
+    // sound -- it does test held-red, held-green, changed-blue -- but both
+    // printed values used hex4(rgb>>8), which drops the LOW byte, i.e.
+    // exactly the blue component that IS this assertion's whole result;
+    // both phases therefore printed the identical-looking $FF00 regardless
+    // of what blue actually did. Printed values are now the full 24-bit
+    // R:G:B (hex6), so the blue difference the assertion is actually
+    // testing is visible in the evidence.
     {
         Harness h;
         h.write_reg(COLOR_BASE + 1, 0x0F08);  // COLOR01: distinct R/G/B components
@@ -1145,15 +1592,17 @@ int main(int argc, char** argv) {
         checks.expect(
             hr == mr && hg == mg && hb != mb,
             "HAM-MODIFY-WRITES-PIXEL: after a steady combo-00 phase selects "
-            "COLOR01 (" + hex4(static_cast<uint16_t>(held_color01 >> 8)) +
+            "COLOR01 (" + hex6(held_color01) +
             "), a following steady combo-01 ('modify blue') phase with a "
             "fixed planes-4-1 pattern reads " +
-            hex4(static_cast<uint16_t>(modified >> 8)) + ": red and green "
-            "unchanged, blue different -- 'the value in the color output "
-            "circuitry is held, and one of the three components of the "
-            "color... is modified by bits coming from certain preselected "
-            "bitplanes. After modification, the pixel is written to the "
-            "screen' (p.86). 3-ham.c05.");
+            hex6(modified) + ": red and green "
+            "unchanged (R=" + hex2(hr) + ", G=" + hex2(hg) +
+            " both phases), blue " + hex2(hb) + " -> " + hex2(mb) +
+            " -- 'the value in the color "
+            "output circuitry is held, and one of the three components of "
+            "the color... is modified by bits coming from certain "
+            "preselected bitplanes. After modification, the pixel is "
+            "written to the screen' (p.86). 3-ham.c05.");
     }
 
     // ==================== DECLINED -- not asserted above ====================
