@@ -240,37 +240,49 @@
 //   half, measured the same way, is right there in the same
 //   expect().
 //
-// RESULTS: PENDING -- this file is committed before denise_sprites.v /
-//   denise_sprites_shifter.v have been opened or built, per the build
-//   brief's gate ("write the specification, commit it, only then open
-//   the RTL"). Filled in by a follow-up commit after the WSL/Verilator
-//   build and the mutation runs below.
+// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026, AFTER the
+//   specification commit -- denise_sprites.v and denise_sprites_
+//   shifter.v were opened only once, for this build, not before): 4
+//   passed, 0 failed. All four graded assertions are GREEN: FIXTURE-
+//   LIVE-DATA-PATH (MSB hpos=130, mid hpos=138, LSB hpos=145 --
+//   distinct and monotonic), CODE-00-SELECTS-TRANSPARENT-UNATTACHED-
+//   OCS (all four representative sprites 0/2/4/6 live=yes and
+//   code00-transparent=yes), CODE-0000-SELECTS-TRANSPARENT-ATTACHED-
+//   OCS, and SPRITE-DATA-WORDS-COMBINE-TO-SELECT-COLOUR (runA(DATA-
+//   only)=1, runB(DATB-only)=2, runC(both)=3, all at hpos=130 --
+//   non-zero and pairwise distinct). No red result on this package's
+//   own 13 asserted claim ids; nothing was adjusted to make it so.
 //
-// MUTATION LOG: PENDING -- filled in by the same follow-up commit,
-//   after each mutation below is actually run (edit -> rebuild -> run
-//   -> confirm only the named assertion changed colour -> revert ->
-//   rebuild -> confirm baseline restored), not asserted in advance.
-//   Planned, one stimulus change per graded assertion, expected zero
-//   change to any expected value or comparison logic:
-//     FIXTURE-LIVE-DATA-PATH: make the MSB-run and LSB-run stimuli
-//       identical (both 0x0001) so the three active hpos values are no
-//       longer distinct -- expect only this assertion to go red.
-//     CODE-00-SELECTS-TRANSPARENT-UNATTACHED-OCS: change sprite 4's
-//       own CODE-00 stimulus from DATA=0x0000 to DATA=0x8000 (its own
-//       LIVENESS sub-check untouched) so sprite 4's trace is no longer
-//       all-zero -- expect only this assertion to go red.
-//     CODE-0000-SELECTS-TRANSPARENT-ATTACHED-OCS: change SPR1's own
-//       CODE-0000 stimulus from DATA=0x0000 to DATA=0x8000 so the
-//       combined code is no longer 0000 -- expect only this assertion
-//       to go red.
-//     SPRITE-DATA-WORDS-COMBINE-TO-SELECT-COLOUR: change run B's own
-//       stimulus to match run A's (DATB=0x0000, DATA=0x8000 instead of
-//       DATB=0x8000, DATA=0x0000) so colourB becomes identical to
-//       colourA, breaking pairwise distinctness -- expect only this
-//       assertion to go red.
-//   OUT-OF-SCOPE-REGISTER-MAPPING is declined (record(), no expect())
-//   -- no red/green state exists for a mutation to move, matching
-//   hrm/ch4-attached-sprites/'s own convention for its declined id.
+//   NOTE (DATA/DATB ORDER) FOLLOW-UP, now that the RTL is open: reading
+//   denise_sprites_shifter.v directly (not this package's own claims.
+//   jsonl, which names no page for this) explains WHY runA < runB <
+//   runC above: the shift register's own load line is `shifta <=
+//   datla` (DATA) and `shiftb <= datlb` (DATB), and the output tap is
+//   `sprdata_r <= {shiftb[63], shifta[63], sprdata_r[7:2]}` -- shiftb's
+//   own bit is written one position ABOVE shifta's own bit on every
+//   injection and that relative order survives the shift, so at the
+//   2-bit output DATB supplies the MORE significant bit and DATA the
+//   LESS significant one (matching denise_sprites.v:279-284's own
+//   {..,sprdat1,sprdat0} concatenation for the attached case one level
+//   up, e.g. the pair value 11 at runC(both) above rather than a
+//   simple OR). This is an RTL fact about THIS repository's copy of
+//   the module, reported for the record as the build task's own
+//   dispatch note asked -- it does not adjudicate the p107/p121-vs-
+//   p126 printed-page dispute (still not present anywhere in this
+//   package's own 67-record claims file) and is not graded as a
+//   finding either way.
+//
+// MUTATION LOG (WSL/Verilator, same session as RESULTS above; each
+//   entry actually run: rebuild with `-CFLAGS -DMUT_*=1` -> run -> read
+//   the PASS/FAIL lines -> confirm only the named assertion changed
+//   colour -> rebuild with no flags -> confirm the 4-passed/0-failed
+//   baseline was restored):
+//
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: built with -DMUT_FIXTURE=1, which makes the MSB-run stimulus 0x0001 instead of 0x8000 (identical to the LSB-run) -> FAIL (3 passed, 1 failed), only FIXTURE-LIVE-DATA-PATH newly red (MSB hpos=145 became equal to LSB hpos=145, no longer distinct or monotonic; mid hpos=138 unchanged). Rebuilt with no flags: 4 passed, 0 failed, baseline restored.
+// MUTATION CODE-00-SELECTS-TRANSPARENT-UNATTACHED-OCS stimulus red: built with -DMUT_PAIR4=1, which changes sprite 4's own CODE-00 stimulus from DATA=0x0000 to DATA=0x8000 (its own LIVENESS sub-check, and every other sprite's own stimulus, untouched) -> FAIL (3 passed, 1 failed), only CODE-00-SELECTS-TRANSPARENT-UNATTACHED-OCS newly red (detail string read "sprite 4 (pair 4/5) live=yes code00-transparent=no", the other three pairs unchanged). Rebuilt with no flags: 4 passed, 0 failed, baseline restored.
+// MUTATION CODE-0000-SELECTS-TRANSPARENT-ATTACHED-OCS stimulus red: built with -DMUT_ATTACH0000=1, which changes SPR1's own CODE-0000 stimulus from DATA=0x0000 to DATA=0x8000 (combined code no longer 0000) -> FAIL (3 passed, 1 failed), only CODE-0000-SELECTS-TRANSPARENT-ATTACHED-OCS newly red. Rebuilt with no flags: 4 passed, 0 failed, baseline restored.
+// MUTATION SPRITE-DATA-WORDS-COMBINE-TO-SELECT-COLOUR stimulus red: built with -DMUT_COMBINE=1, which makes run B's own stimulus identical to run A's (DATB=0x0000/DATA=0x8000 instead of DATB=0x8000/DATA=0x0000) -> FAIL (3 passed, 1 failed), only SPRITE-DATA-WORDS-COMBINE-TO-SELECT-COLOUR newly red (runB(DATB-only)=1, now equal to runA(DATA-only)=1, breaking pairwise distinctness; runC unchanged at 3). Rebuilt with no flags: 4 passed, 0 failed, baseline restored.
+// MUTATION OUT-OF-SCOPE-REGISTER-MAPPING: no record -- this set of 54 ids is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move, matching hrm/ch4-attached-sprites/'s own convention for its declined id.
 
 #include <cstdint>
 #include <iostream>
