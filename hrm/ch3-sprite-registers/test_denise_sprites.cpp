@@ -497,7 +497,7 @@ int main(int argc, char** argv) {
             if (armed[sp] && delta[sp] != 0) found = sp;
         }
         superhires_spres = found;
-        checks.record("SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT: per-spres SH0 "
+        checks.note("SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT: per-spres SH0 "
             "deltas, measured for SH0-IS-HALF-OF-POS-BYTE-STEP's own use "
             "below (spres0=" + std::to_string(delta[0]) +
             " spres1=" + std::to_string(delta[1]) + " spres2=" + std::to_string(delta[2]) +
@@ -633,7 +633,7 @@ int main(int argc, char** argv) {
     // Replaces (its bit-3 half of) SPRXCTL-BITS-3-4-ARE-LIVE-FIELDS (see
     // CORRECTION above). No checks.expect() and no MUTATION record: there
     // is no assertion here for a stimulus to turn red.
-    checks.note(
+    checks.record(
         "SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED [declined]: C-shres-sprite.c13 "
         "-- the manual prints bit 3's own row with its verdict already in "
         "it: '03      SHSH0     Start horizontal (SHR mode) 35ns "
