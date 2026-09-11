@@ -674,5 +674,9 @@ int main(int argc, char** argv) {
               g_pass, g_total, g_fail);
 
   delete dut;
-  return 0;
+  // A red assertion must reach the suite runner. Until 11.09.2026 this returned
+  // 0 unconditionally, so run_all.sh reported this package green while it was
+  // printing "225/227 PASS, 2 FAIL" -- the two SPRHWRM reds (F13) were invisible
+  // outside this directory.
+  return g_fail ? 1 : 0;
 }

@@ -724,3 +724,52 @@ worth building is a scope question for the project.
 
 *F12 found by the FPGA-091 chapter-3 build, 11.09.2026; RTL path and measurement
 independently reproduced by the lead before recording.*
+
+## FPGA-091-F13 — ECS BPLCON0 bit 4 (SPRHWRM) has no effect
+
+**Package:** `hrm/ch3-bplcon0-display-modes` (225 green, 2 red). Page 300.
+
+Appendix C's BPLCON0 table gives bit 4 as **SPRHWRM**. Both readers took that row
+independently and wrote the same thing — `C-bplcon0.b04` (opus) and `C-shres.c18`
+(sol), each quoting `04  SPRHWRM` from print page 300. Independent agreement
+between the two readings is the strongest claim evidence this pipeline produces.
+
+NanoMig gives bit 4 the **AGA** meaning instead, as the top bit of the
+bitplane-count field, and gates it on `aga` alone:
+
+```verilog
+assign bpu = {bplcon0[4] & aga, bplcon0[14:12]};   // denise.v:181
+```
+
+With `ecs=1, aga=0` the bit is therefore dead. The package toggles it against a
+working baseline and measures no effect anywhere at the boundary.
+
+**The gating pattern next to it is what makes this a finding rather than an
+oversight in our reading.** `denise.v` gates other ECS functions on `ecs`
+exactly as expected — `killehb = bplcon2[9] & ecs`, `brdrblnk = bplcon3[5] &
+ecsena`, `brdsprt`, `shres & ecs`, and DIWHIGH's writes. ECS gating is present
+and used throughout the file. Bit 4 is simply not part of it.
+
+### The finding was hidden by the test's own exit code
+
+`main()` returned `0` unconditionally while printing
+`=== ch3-bplcon0-display-modes: 225/227 PASS, 2 FAIL ===`. `run_all.sh` reads the
+exit status, so the suite listed this package as **passing** for as long as it
+existed, with both reds visible only inside its own directory. Fixed to
+`return g_fail ? 1 : 0;` — a harness correction, no oracle touched. The package
+now reports red to the suite, as it always should have.
+
+This is the third instance in one day of the same shape: **a green report from
+something that was not measuring.** The other two were the mutation gate reading
+one assertion of nineteen, and six control assertions never mutated because a
+`[control] ` prefix hid them.
+
+*For the specialists:* NanoMig implements the AGA meaning of this bit and not the
+ECS one. Whether SPRHWRM is worth having, or whether the AGA reading should win
+outright, is a scope decision for the project — we only record that the printed
+ECS behaviour is absent.
+
+---
+
+*F13 found by the FPGA-091 chapter-3 build, 11.09.2026; RTL and both claim
+quotations checked by the lead before recording.*
