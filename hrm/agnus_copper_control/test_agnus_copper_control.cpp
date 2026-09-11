@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
         checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 2; }),
                       "T6 automatic field restart executes COP1LC again "
                       "[claims: COP2-starting-the-copper-after-reset.c3, COP2-stopping-the-copper.c5, COP2-location-registers.c24, "
-                      "COP2-cop-location-pointers.c5, COP2-cop-location-pointers.c12]");
+                      "COP2-cop-location-pointers.c5, COP2-cop-location-pointers.c12, appB-note.c10]");
     }
 
     {
