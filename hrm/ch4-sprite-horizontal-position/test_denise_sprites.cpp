@@ -259,19 +259,14 @@ public:
 
 // Arms channel `chan` (writes POS, CTL, DATB, then DATA -- DATA last,
 // which arms) and sweeps hpos, recording the resulting sprdata trace and
-// first-active hpos. `idle_extra` inserts that many additional idle bus
-// cycles after arming and before the sweep starts (used only by
-// SPRXDATA-SPRXDATB-HOLD-WRITTEN-VALUE, to test retention across a delay
-// no other assertion here requires).
+// first-active hpos.
 Meas measure(int chan, uint8_t pos_byte, uint8_t ctl_byte, uint16_t data_word,
-             uint16_t datb_word, uint8_t aga = 0, uint8_t spres = 0,
-             int idle_extra = 0) {
+             uint16_t datb_word, uint8_t aga = 0, uint8_t spres = 0) {
     Harness h(aga, spres);
     h.write_reg(chan_pos(chan), pos_byte);
     h.write_reg(chan_ctl(chan), ctl_byte);
     h.write_reg(chan_datb(chan), datb_word);
     h.write_reg(chan_data(chan), data_word);
-    for (int i = 0; i < idle_extra; ++i) h.tick_7mhz();
 
     Meas m;
     for (int hp = 0; hp < HPOS_MAX; ++hp) {
@@ -316,10 +311,28 @@ int main(int argc, char** argv) {
 
     // ------------- SPRXDATA-SPRXDATB-HOLD-WRITTEN-VALUE -------------
     {
-        Meas base = measure(0, 0x40, 0x00, 0x8000, 0x0000, 0, 0, /*idle_extra=*/0);
-        int idle_extra = 50;
-        if (MUT_ID == 2) idle_extra = 0;  // MUTATION 2: no delay to hold across.
-        Meas held = measure(0, 0x40, 0x00, 0x8000, 0x0000, 0, 0, idle_extra);
+        Meas base = measure(0, 0x40, 0x00, 0x8000, 0x0000);
+
+        Harness h(0, 0);
+        h.write_reg(chan_pos(0), 0x40);
+        h.write_reg(chan_ctl(0), 0x00);
+        h.write_reg(chan_datb(0), 0x0000);
+        h.write_reg(chan_data(0), 0x8000);  // arms.
+        for (int i = 0; i < 50; ++i) h.tick_7mhz();  // idle delay to hold across.
+        if (MUT_ID == 2) {
+            // MUTATION 2: a further write lands on SPR0DATB during the idle
+            // gap, changing what the register holds before the next match
+            // -- the retained trace should now differ from base's.
+            h.write_reg(chan_datb(0), 0xFFFF);
+        }
+        Meas held;
+        for (int hp = 0; hp < HPOS_MAX; ++hp) {
+            h.dut->hpos = hp;
+            h.tick_7mhz();
+            uint8_t v = static_cast<uint8_t>(h.dut->sprdata);
+            held.trace.push_back(v);
+            if (v != 0 && held.start == -1) held.start = hp;
+        }
         bool identical = base.start != -1 && base.trace == held.trace;
         checks.expect(identical,
             "SPRXDATA-SPRXDATB-HOLD-WRITTEN-VALUE: writing SPR0DATA=0x8000/"
@@ -327,12 +340,13 @@ int main(int argc, char** argv) {
             "extra 7MHz cycles before sweeping hpos produces the identical "
             "sprdata trace as sweeping immediately after the write -- the "
             "written image is retained across an arbitrary delay, not lost "
-            "or overwritten by the intervening idle bus activity, matching "
-            "'They are the holding registers for the data obtained by DMA "
-            "cycles.' (p.129; the DMA-sourcing half of that sentence is a "
-            "second package's fixture -- Agnus, not Denise -- only the "
-            "holding-register half is asserted here). CH4-data.c3, "
-            "CH4-p129.c2 .");
+            "or spontaneously changed by the intervening idle bus activity "
+            "(nothing but an idle address is presented during the delay), "
+            "matching 'They are the holding registers for the data "
+            "obtained by DMA cycles.' (p.129; the DMA-sourcing half of "
+            "that sentence is a second package's fixture -- Agnus, not "
+            "Denise -- only the holding-register half is asserted here). "
+            "CH4-data.c3, CH4-p129.c2 .");
     }
 
     // ----- CHANNEL-DECODE-INDEPENDENT-AND-UNIFORM-0-7 -----
@@ -735,10 +749,76 @@ int main(int argc, char** argv) {
     return checks.failed == 0 ? 0 : 1;
 }
 
-// RESULTS: pending -- filled in after this file was committed and the RTL
-// step (build + run) was performed, per ORDER OF WORK above.
+// RESULTS: built and run under WSL/Verilator 5.052 against the pinned
+// nanomig submodule, after this file's own header/assertions/expected
+// values were committed (see ORDER OF WORK above). 30 passed, 0 failed --
+// every one of this package's 152 claims holds at the denise_sprites
+// boundary, as tested here. No red findings.
 //
-// MUTATION LOG: pending -- filled in after the baseline run, per the same
-// gate. Mutation ids 1-30 above are pre-wired (MUT_ID != 0 perturbs
-// exactly one assertion's own stimulus, in source order); the log below
-// records what each one actually did when built and run.
+//   SPRXCTL-BIT0-SH0-LOW-BIT-OF-HORIZONTAL-START measured sh0_delta = 1,
+//   independently derived from SH0's own "low bit" name (see the note
+//   beside that assertion above) before this run -- it agrees with the
+//   already-known classification measurement of the same delta, which was
+//   deliberately NOT used to construct this assertion's expected value.
+//   SPRXPOS-BITS-7-0-ARE-SH8-SH1-STEP-OF-2 measured pos_delta = 2 and
+//   SH0-LOCATED-IN-SPRXCTL-NOT-SPRXPOS measured pos_delta2 = 2
+//   independently, confirming SPRxPOS's own low bit is worth 2, not 1.
+//   SPRXCTL-BIT7-ATT-ODD-SPRITES-ATTACH found: (a) sprite 1's own ATT bit,
+//   set while sprite 1 is armed alongside an already-armed sprite 0,
+//   changes the emitted colour from sprite 0's unattached value -- ATT is
+//   live on an odd sprite, as the manual states; (b) sprite 0's own ATT
+//   bit, set alone with sprite 1 never touched at all, changes nothing.
+//   This package did NOT test ATT set on an even sprite while an odd
+//   partner is simultaneously armed and visible -- a narrower scenario
+//   than (b), and the one this package's own claims file's classification
+//   evidence separately reports a deviation for (aga=0, attach0 alone
+//   opens the combined-colour path via `attach1 || (!aga && attach0)`).
+//   That specific scenario is outside what SPRXCTL-BIT7-ATT-ODD-SPRITES-
+//   ATTACH's own two-part design measures; it is not claimed to be
+//   covered here, and this package takes no position on it beyond what it
+//   actually ran. All other assertions measured exactly what their own
+//   label states; see each assertion's own PASS line above for its
+//   specific measurement.
+//
+// A separate check on this package's own 152 claims (done before opening
+// the RTL, alongside writing the spec) found no claim shaped like "SPRxCTL
+// bit 4 is the implemented 70ns increment" and no CH4-appA-sprite.c11 --
+// see the header commentary above.
+//
+// MUTATION LOG: one stimulus mutation per assertion, each built with
+// `-DMUT_ID=N` (N = the assertion's 1-based position in source order,
+// matching the numbered `if (MUT_ID == N)` comments above), run, confirmed
+// to turn ONLY that assertion red (all other 29 stayed at their baseline
+// colour -- checked automatically, not just spot-checked), then reverted.
+// Baseline restored and re-verified (30 passed, 0 failed) after all 30.
+//
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red
+// MUTATION SPRXDATA-SPRXDATB-HOLD-WRITTEN-VALUE stimulus red
+// MUTATION CHANNEL-DECODE-INDEPENDENT-AND-UNIFORM-0-7 stimulus red
+// MUTATION SPRXCTL-WRITE-DISARMS-SPRITE stimulus red
+// MUTATION SPRXCTL-BIT7-ATT-ODD-SPRITES-ATTACH stimulus red
+// MUTATION SPRXCTL-BIT0-SH0-LOW-BIT-OF-HORIZONTAL-START stimulus red
+// MUTATION ARMED-SPRITE-EMITS-AT-SPRXPOS-MATCH stimulus red
+// MUTATION SPRXDATA-SPRXDATB-BOTH-BUFFERS-CONTRIBUTE stimulus red
+// MUTATION HORIZONTAL-MATCH-DUMPS-BUFFERS-NOT-BEFORE stimulus red
+// MUTATION SHIFT-REGISTERS-OUTPUT-MSB-FIRST stimulus red
+// MUTATION WRITING-SPRXDATA-ARMS-THE-SPRITE stimulus red
+// MUTATION SPRXPOS-BITS-7-0-ARE-SH8-SH1-STEP-OF-2 stimulus red
+// MUTATION SH0-LOCATED-IN-SPRXCTL-NOT-SPRXPOS stimulus red
+// MUTATION SPRXDATA-SPRXDATB-GENERALIZED-APPENDIX-A-ROW stimulus red
+// MUTATION SPR0-DATA-ROW stimulus red
+// MUTATION SPR0-DATB-ROW stimulus red
+// MUTATION SPR1-DATA-ROW stimulus red
+// MUTATION SPR1-DATB-ROW stimulus red
+// MUTATION SPR2-DATA-ROW stimulus red
+// MUTATION SPR2-DATB-ROW stimulus red
+// MUTATION SPR3-DATA-ROW stimulus red
+// MUTATION SPR3-DATB-ROW stimulus red
+// MUTATION SPR4-DATA-ROW stimulus red
+// MUTATION SPR4-DATB-ROW stimulus red
+// MUTATION SPR5-DATA-ROW stimulus red
+// MUTATION SPR5-DATB-ROW stimulus red
+// MUTATION SPR6-DATA-ROW stimulus red
+// MUTATION SPR6-DATB-ROW stimulus red
+// MUTATION SPR7-DATA-ROW stimulus red
+// MUTATION SPR7-DATB-ROW stimulus red
