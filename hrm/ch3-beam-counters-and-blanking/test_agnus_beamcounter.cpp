@@ -78,21 +78,35 @@
 //   demonstrated by PAL-FIELD-312-NTSC-FIELD-262-LINES below and the id is
 //   cited once there, covering both, per the precedent in
 //   hrm/ch3-ham-control-field/test_denise_hamgenerator.cpp. C-scan.c01 and
-//   C-scan.c03 are each cited in two different assertions (their quoted
-//   sentence carries both a line-count fact and a colour-clocks-per-line
-//   fact, and the two halves land in two different, independently
-//   measured assertions -- VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA and
-//   HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5).
+//   C-scan.c03 are each cited twice: once inside
+//   VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA below (the line-count half
+//   of their quoted sentence) and again inside the DECLINED note on the
+//   colour-clocks-per-line half of that same sentence (see REVIEW FINDING,
+//   RESOLVED below) -- one assertion and one decline, not two assertions.
+//
+// REVIEW FINDING, RESOLVED: an independent read flagged two assertions in
+//   an earlier version of this file as circular -- HTOTAL-FIXED-NOT-
+//   FRACTIONAL-227POINT5 (`want_227p5_in_ticks = 455`, i.e. 227.5 CCK * 2
+//   hpos-ticks/CCK) and HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT (`want =
+//   pattern << 1`) -- because both took their "2 hpos-ticks per colour
+//   clock" conversion factor from this module's own write-decode
+//   (agnus_beamcounter.v:206) rather than from any printed page. Neither
+//   assertion's PASS/FAIL threshold was adjusted to make the RTL pass;
+//   HTOTAL-H8-H1-BIT-MAPPING was instead restated below to test only the
+//   bit-weight-ordering relation the manual's own 'Use' row actually
+//   states (see that assertion's own comment for the restatement), and
+//   HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 was found to have no faithful
+//   restatement available at this boundary -- htotal_out carries no
+//   manual-stated real-time unit at all -- and was converted to a declined
+//   claim rather than kept circular (see the NOT ASSERTED note below).
 //
 // CONTROL CASES: every assertion built on a measurement this file also
 //   suspects of disagreeing with the RTL is paired with a same-basis control
 //   that is expected to PASS: VBLANK-DURATION-NTSC-MATCHES-MANUAL is the
 //   control for VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL (identical vbl
-//   sweep, only ntsc differs); HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT (a
-//   PASS, same htotal_out signal, same write-then-read method) is the
-//   control for HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 (a suspected RED); the
-//   ERSY=0 sweep inside ERSY-BIT-CONTROLS-EXTERNAL-RESYNC-HOLD is the control
-//   for its own ERSY=1 case, on the identical hpos-holds-at-zero measurement.
+//   sweep, only ntsc differs); the ERSY=0 sweep inside
+//   ERSY-BIT-CONTROLS-EXTERNAL-RESYNC-HOLD is the control for its own
+//   ERSY=1 case, on the identical hpos-holds-at-zero measurement.
 //
 // MUTATION LOG (all entries actually run by this agent under WSL/Verilator
 //   on 10-11.09.2026: edit -> rebuild -> run -> confirm the named
@@ -201,23 +215,7 @@
 //   hpos_r, which stays 0 throughout, so two of the three swept patterns
 //   -- 0x500 and 0x700 -- no longer match their expected 5 and 7).
 //   Reverted: 27/3.
-// MUTATION HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT stimulus red: the
-//   walking-bit write's target address changed from A_HTOTAL to A_HSSTOP
-//   -> FAIL ("26 passed, 4 failed"), only
-//   HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT red (htotal_out stays at its
-//   default regardless of the pattern written to the wrong register).
-//   Reverted: 27/3.
-// MUTATION HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 none impossible: (PAL)
-//   this assertion is red at baseline (a genuine finding -- htotal_out
-//   reads 452, not the manual's 455-equivalent 227.5 CCK). No stimulus can
-//   turn an already-red assertion red again; the meaningful check for a
-//   baseline-red assertion is the same-basis control
-//   (HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT, a PASS using the identical
-//   htotal_out signal and write-then-read method), which is exercised by
-//   its own mutation above.
-// MUTATION HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 none impossible: (NTSC)
-//   same reasoning as HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 (PAL)
-//   immediately above -- baseline red, no stimulus applicable.
+// MUTATION HTOTAL-H8-H1-BIT-MAPPING stimulus red: `make clean && make MUT=HTOTAL_H8_H1_BIT_MAPPING` (the walking-bit write's target register changed from A_HTOTAL to A_HSSTOP, guarded by `#ifndef MUT_HTOTAL_H8_H1_BIT_MAPPING` around that one write_reg call) -> 26 passed, 2 failed, only HTOTAL-H8-H1-BIT-MAPPING newly red (htotal_out never moves off its constant post-reset value for any of the eight written patterns, so the got[0]>0 base case fails outright; VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL stays red throughout, unaffected, exactly as at baseline). `make clean && make` reverted to 27 passed, 1 failed, matching the baseline exactly. (HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5, formerly logged here as a baseline-red "none impossible" case, was converted to a declined claim per REVIEW FINDING, RESOLVED above and no longer exists as an assertion to mutate.)
 // MUTATION BEAMCON0-INTRO-AND-VARBEAMEN-GATES-PROGRAMMABLE-TIMING stimulus red:
 //   the second harness's ecs argument changed from false to true (so
 //   its BEAMCON0 write is no longer ignored) -> FAIL ("26 passed, 4
@@ -299,6 +297,23 @@
 // Final rebuild after the last revert: 27 passed, 3 failed, matching the
 // committed baseline exactly, and confirmed byte-for-byte identical to it
 // by `diff`.
+//
+// ADDENDUM, 11.09.2026: an independent read flagged HTOTAL-H8-H1-BIT-
+//   MAPPING-AND-280NS-UNIT and HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 as
+//   circular -- both took their "2 hpos-ticks per colour clock" factor
+//   from agnus_beamcounter.v's own write-decode rather than from any
+//   printed page (see REVIEW FINDING, RESOLVED near the top of this
+//   file). HTOTAL-H8-H1-BIT-MAPPING was restated to the bit-weight-
+//   ordering relation the manual's 'Use' row actually states, with its
+//   own guarded mutation (see the dedicated MUTATION HTOTAL-H8-H1-BIT-
+//   MAPPING entry above); HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 was found
+//   to have no faithful restatement available at this boundary and was
+//   converted to a declined claim instead (no assertion, so no mutation
+//   to run -- see the DECLINED note near the end of this file). Baseline
+//   after this change, confirmed by the same edit -> rebuild -> run ->
+//   revert -> rebuild procedure: 27 passed, 1 failed
+//   (VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL only, left completely
+//   alone throughout, per instruction).
 
 #include <cstdint>
 #include <cstdlib>
@@ -1056,80 +1071,75 @@ int main(int argc, char** argv) {
             "C-vposr-bits.c16, C-vposr.c04, C-vposr.c05 .");
     }
 
-    // ================= HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT =================
+    // ================= HTOTAL-H8-H1-BIT-MAPPING =================
     // HTOTAL has no read-mux case at all (l.108-115 only handles VPOSR/
     // VPOSW/VHPOSR/VHPOSW; every other address falls through to
     // `data_out[15:0]=0`), so the only way to observe what a HTOTAL write
     // did is through its effect on htotal_out (l.223,235), which requires
     // ecs=1 and BEAMCON0 VARBEAMEN=1 first so `htotal` actually multiplexes
     // to `htotal_reg` (l.223) instead of the hardwired default.
+    //
+    // RESTATED, CIRCULARITY REMOVED (review finding): this assertion was
+    // named HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT and compared htotal_out
+    // against `pattern << 1`, importing that "<<1" from this module's own
+    // write-decode (`htotal_reg <= {data_in[7:0], 1'b0}`, l.206) as the
+    // expected value -- the RTL supplying its own oracle. No cited page
+    // states what one written HTOTAL unit is worth in htotal_out ticks:
+    // htotal_out is not a register or signal the manual names anywhere;
+    // the manual's own unit for HTOTAL is colour clocks / 280ns increments
+    // (p.304), not "htotal_out ticks", and this module gives THAT tick a
+    // duration nowhere the manual does -- its own port declaration reads
+    // "output reg [8:0] hpos, // horizontal beam counter (140ns)" (l.40),
+    // an RTL-internal fact, not a printed one. What the manual's 'Use' row
+    // DOES state, and what is asserted below instead, is a pure bit-weight
+    // ORDERING claim: h1 through h8, named in that order at increasing bit
+    // positions, carry successively doubling significance -- plain binary
+    // place value, true for any consistent linear encoding regardless of
+    // its absolute scale. Each measured htotal_out value below is compared
+    // only against the OTHER measured htotal_out values from this same
+    // sweep; no expected value is computed from an assumed tick duration.
     {
         Harness h(/*ecs=*/true, /*ntsc=*/false);
         h.write_reg(A_BEAMCON0, 1 << BC_VARBEAMEN);
-        bool walking_bit_ok = true;
+        int got[8];
         for (int bit = 0; bit < 8; ++bit) {
             uint16_t pattern = static_cast<uint16_t>(1u << bit);
+#ifndef MUT_HTOTAL_H8_H1_BIT_MAPPING
             h.write_reg(A_HTOTAL, pattern);
-            int got = h.dut->htotal_out;
-            int want = pattern << 1; // htotal_reg <= {data_in[7:0], 1'b0}, l.206
-            if (got != want) walking_bit_ok = false;
+#else
+            h.write_reg(A_HSSTOP, pattern); // MUTATION: wrong register, htotal_out never moves
+#endif
+            got[bit] = h.dut->htotal_out;
+        }
+        // Base case: the lowest bit alone must already move htotal_out off
+        // zero (otherwise "each next one doubles the last" would hold
+        // vacuously for a register stuck at 0). Step case: each next bit,
+        // written alone, reads back exactly double the htotal_out value of
+        // the bit below it -- seven ratios, no absolute magnitude anywhere.
+        bool walking_bit_ok = got[0] > 0;
+        for (int bit = 1; bit < 8 && walking_bit_ok; ++bit) {
+            walking_bit_ok = (got[bit] == 2 * got[bit - 1]);
         }
         checks.expect(
             walking_bit_ok,
-            "HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT: walking a single 1 "
-            "through each of HTOTAL's eight low bits (which the manual "
-            "names h1 through h8 by POSITION in the 'Use' row -- printed "
-            "page 304 misprints the column header numeral above the "
-            "fifteenth entry as '10' where it should read '01', but the "
-            "'Use' row itself is not misprinted, and no assertion here "
-            "depends on the corrupted header numeral) and reading it back "
-            "through htotal_out shows each bit landing at exactly double "
-            "its written position -- consistent with 'the value in this "
-            "register represents the number of 280ns increments on the "
-            "horizontal line' (p.304) once htotal_out's own 140ns tick unit "
-            "is accounted for (each written increment doubles htotal_out, "
-            "matching a register that counts in units twice as long as "
-            "htotal_out's own tick). 'Bit 15 14 13 12 11 10 09 08 07 06 05 "
-            "04 03 02 [01] 00 / Use 0 0 0 0 0 0 0 0 h8 h7 h6 h5 h4 h3 h2 h1' "
-            "(p.304). C-htotal-bits.c9, C-htotal-bits.c10, "
-            "C-htotal-bits.c11, C-htotal-bits.c12, C-htotal-bits.c13, "
-            "C-htotal-bits.c14, C-htotal-bits.c15, C-htotal-bits.c16, "
-            "C-htotal.c02, C-htotal.c03, C-scan.c8 .");
-    }
-
-    // ================= HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 =================
-    // GIVEN MEASUREMENT, used directly rather than re-run: htotal_out reads
-    // 452 under both standards at reset (ecs=0/varbeamen=0 default path).
-    // The manual's programmable scan-rate table states 227.5 colour clocks
-    // per line for BOTH the NTSC and the PAL preset -- a fractional CCK
-    // count. htotal_out is a whole-tick counter (htotal_reg<={data_in[7:0],
-    // 1'b0}, l.206, and the hardwired default HTOTAL_VAL<<1, l.223) with no
-    // half-CCK representation anywhere, and the RTL says so itself:
-    // "NTSC line length of 227.5 CCKs is not supported" (l.86 comment).
-    {
-        for (bool ntsc : {false, true}) {
-            Harness h(/*ecs=*/false, ntsc);
-            int got = h.dut->htotal_out;
-            int want_227p5_in_ticks = 455; // 227.5 CCK * 2 hpos-ticks/CCK
-            checks.expect(
-                got == want_227p5_in_ticks,
-                std::string("HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 (") +
-                    (ntsc ? "NTSC" : "PAL") +
-                    "): the manual's programmable scan-rate table states "
-                    "227.5 colour clocks per scan line for this standard "
-                    "(455 140ns-ticks); htotal_out reads " +
-                    std::to_string(got) +
-                    " instead, the same whole-CCK value for both standards, "
-                    "with no fractional-CCK line length implemented "
-                    "anywhere in this module -- on the identical "
-                    "htotal_out measurement basis as "
-                    "HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT above (a "
-                    "PASS), which is this assertion's control. '   NTSC "
-                    "(525 lines, 227.5 colorclocks per scan line)' / '   "
-                    "PAL  (625 lines, 227.5 colorclocks per scan line)' "
-                    "(p.304). C-scan.c01, C-scan.c02, C-scan.c03, "
-                    "C-scan.c04 .");
-        }
+            "HTOTAL-H8-H1-BIT-MAPPING: walking a single 1 through each of "
+            "HTOTAL's eight low bits (which the manual names h1 through h8 "
+            "by POSITION in the 'Use' row -- printed page 304 misprints "
+            "the column header numeral above the fifteenth entry as '10' "
+            "where it should read '01', but the 'Use' row itself is not "
+            "misprinted, and no assertion here depends on the corrupted "
+            "header numeral) and reading it back through htotal_out shows "
+            "the lowest bit alone already produces a nonzero reading, and "
+            "each next bit produces exactly double the htotal_out reading "
+            "of the bit below it, all seven ratios in a row -- matching "
+            "h1..h8 named in increasing-significance order at increasing "
+            "bit positions, plain binary place value, with no claim made "
+            "anywhere about what one step is worth in real time. 'Bit 15 "
+            "14 13 12 11 10 09 08 07 06 05 04 03 02 [01] 00 / Use 0 0 0 0 "
+            "0 0 0 0 h8 h7 h6 h5 h4 h3 h2 h1' (p.304). C-htotal-bits.c9, "
+            "C-htotal-bits.c10, C-htotal-bits.c11, C-htotal-bits.c12, "
+            "C-htotal-bits.c13, C-htotal-bits.c14, C-htotal-bits.c15, "
+            "C-htotal-bits.c16 .");
     }
 
     // ================= BEAMCON0-INTRO-AND-VARBEAMEN-GATES-PROGRAMMABLE-TIMING =================
@@ -1581,8 +1591,50 @@ int main(int argc, char** argv) {
         "'rejected because bits 15:8 must be 0' from 'ignored because only "
         "the low byte was ever read' by observing htotal_out, the only "
         "externally visible effect of a HTOTAL write. "
-        "HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT above asserts the half of "
+        "HTOTAL-H8-H1-BIT-MAPPING above asserts the half of "
         "the same quoted row (h8..h1) that IS observable this way.");
+
+    checks.note(
+        "DECLINED (translating manual colour-clock/280ns quantities into "
+        "htotal_out's raw tick count needs an RTL-supplied conversion "
+        "factor -- 6 claims): C-htotal.c02, C-htotal.c03, C-scan.c8, "
+        "C-scan.c01, C-scan.c02, C-scan.c03, C-scan.c04. Formerly asserted "
+        "as HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5: 'HTOTAL W A Highest "
+        "number count in horizontal line' / 'The value in this register "
+        "represents the number of 280ns increments on the horizontal "
+        "line' and '   NTSC (525 lines, 227.5 colorclocks per scan "
+        "line)' / '   PAL  (625 lines, 227.5 colorclocks per scan line)' "
+        "(p.304), against htotal_out's hardwired-default reading (452, "
+        "both standards, GIVEN MEASUREMENT) via a hardcoded `want = 455` "
+        "(227.5 CCK * 2 hpos-ticks/CCK). That '2 hpos-ticks/CCK' factor is "
+        "not written on p.304 or anywhere else this file cites: p.304 "
+        "states only that HTOTAL's WRITTEN value 'represents the number "
+        "of 280ns increments on the horizontal line', and a colour clock "
+        "is independently given as approximately 280ns on an uncited page "
+        "('there are 227.5 \"color clocks\", or memory access cycles. A "
+        "memory cycle is approximately 280 ns in duration', p.194) -- "
+        "neither page says what one raw htotal_out tick (this module's "
+        "own output, not a manual-named register) is worth in colour "
+        "clocks or nanoseconds. That correspondence exists only inside "
+        "agnus_beamcounter.v's own write-decode (`htotal_reg <= "
+        "{data_in[7:0], 1'b0}`, l.206), its hardwired default "
+        "(`HTOTAL_VAL << 1`, l.223) and its own port comment ('output reg "
+        "[8:0] hpos, // horizontal beam counter (140ns)', l.40). Any "
+        "comparison between the manual's 227.5-CCK figure and a raw "
+        "htotal_out count would have to import that doubling from the "
+        "RTL to even be stated in the same unit, making the RTL its own "
+        "oracle -- exactly the defect HTOTAL-H8-H1-BIT-MAPPING above was "
+        "restated to avoid (see REVIEW FINDING, RESOLVED near the top of "
+        "this file). The underlying observation may still be correct -- "
+        "agnus_beamcounter.v's own HTOTAL_VAL comment reads 'NTSC line "
+        "length of 227.5 CCKs is not supported' (l.86) -- but this module "
+        "gives no manual-anchored unit to state that claim in at this "
+        "boundary, so no tick-count assertion is made here. What IS "
+        "observable without that conversion -- the h1..h8 bit-weight "
+        "ordering, and PAL vblank duration disagreeing with the manual on "
+        "a plain line-count basis -- is already covered by "
+        "HTOTAL-H8-H1-BIT-MAPPING and VBLANK-DURATION-PAL-DISAGREES-WITH-"
+        "MANUAL above.");
 
     checks.note(
         "NOT ASSERTED (ports this module does not have -- 3 claims): "
@@ -1630,7 +1682,7 @@ int main(int argc, char** argv) {
         "there is no third, VGA-specific default anywhere in this module "
         "to compare 114.0 colorclocks against. A program COULD write "
         "114*2=228 into HTOTAL to get a VGA-like line length, but that "
-        "would be demonstrating HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT's "
+        "would be demonstrating HTOTAL-H8-H1-BIT-MAPPING's "
         "already-asserted write path again, not a VGA-specific default.");
 
     checks.note(

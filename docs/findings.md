@@ -496,6 +496,8 @@ against the RTL by the lead before recording.*
 > **SOURCE OBSERVATION, not test-backed** — validation 11.09.2026.
 >
 > The manual's 227.5 CCKs and the RTL's own admission that half-clocks are unsupported are both real. The test is not evidence for it: `want_227p5_in_ticks = 455` is `227.5 CCK * 2 hpos-ticks/CCK`, and that factor 2 is the RTL's internal representation, not the manual's. The expected value therefore comes from the implementation -- the same circularity as the `kHiresPixelTicks = 2` defect caught during the build, found a second time.
+>
+> **Resolved the same day by declining it.** No way was found to state the 227.5-colour-clock disagreement without an RTL-supplied conversion: the manual never names `htotal_out`, and the factor 2 lives in `agnus_beamcounter.v:206`'s write-doubling. The claim is now a recorded decline rather than an assertion — the honest outcome, and the one the correction brief explicitly permitted. The neighbouring `HTOTAL-H8-H1-BIT-MAPPING` was rebuilt as a pure relation instead — each bit's reading exactly double the one below, which is what page 304's `h8..h1` Use-row states — and it **passes**, with no unit conversion anywhere in it.
 
 **Package:** `hrm/ch3-beam-counters-and-blanking`, assertion
 `HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5`, both PAL and NTSC. **Red.**
@@ -555,6 +557,8 @@ comments acknowledge the divergence.*
 > **WITHDRAWN** — validation 11.09.2026.
 >
 > Page 303 reads `00  SH0  Start horiz. value Low bit 140 ns increment`. SH0 is the 140-ns low bit; the SuperHires positions are bits 4 (70 ns) and 3 (35 ns). The assertion imported a SuperHires-only restriction the manual does not state.
+>
+> **Corrected the same day, and it settles the question.** The assertion now requires only what the row states — toggling SPRxCTL bit 0 moves the start by exactly one raw unit, with no mode gate. It is **green**. The implementation was right; the oracle was not.
 
 **Package:** `hrm/ch3-sprite-registers`, assertion
 `SPRXCTL-BIT0-SH0-ONLY-IN-SUPERHIRES`. **Red.** Nine claim ids.
@@ -581,6 +585,8 @@ manual scopes to one mode and the RTL honours always". Worth deciding together.
 > **WITHDRAWN** — validation 11.09.2026.
 >
 > Page 303 reads `03  SHSH0  Start horizontal (SHR mode) 35ns (unimplemented)` -- the manual itself calls bit 3 unimplemented. The note `bits 3 and 4 are in the ECS chips only` is a scope statement, not a promise that both alter output. Requiring bit 3 to be a live field contradicts the oracle.
+>
+> **Split the same day, and one half survives as F14.** Bit 3 is now declined, quoting the manual's own `(unimplemented)`. Bit 4 — which the manual *does* specify — was re-asserted on its own and is red for a reason that holds. The original finding was right that something is missing, and wrong about what.
 
 **Package:** `hrm/ch3-sprite-registers`, assertion
 `SPRXCTL-BITS-3-4-ARE-LIVE-FIELDS`. **Red.**
@@ -846,3 +852,56 @@ ECS behaviour is absent.
 
 *F13 found by the FPGA-091 chapter-3 build, 11.09.2026; RTL and both claim
 quotations checked by the lead before recording.*
+
+## FPGA-091-F14 — SPRxCTL bit 4 (SHSH1) is not implemented
+
+**Package:** `hrm/ch3-sprite-registers`, assertion
+`SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`. **Red.** Page 303.
+
+**This is the half of the withdrawn F08 that survives**, re-established on a
+claim the manual actually makes. F08 asserted that SPRxCTL bits 3 *and* 4 are
+live fields, resting on the note `bits 3 and 4 are in the ECS chips only` — a
+statement about which chips have them, not about what they do. For bit 3 the
+manual settles it in the opposite direction, printing `(unimplemented)`. For bit
+4 it prints a behaviour:
+
+```
+04      SHSH1     Start horizontal (SHR mode) 70ns increment
+```
+
+scoped by the page's own Warning (`70ns sprite positions are only available in
+SuperHires mode`) and by the ECS note. That is a requirement, and NanoMig does
+not meet it.
+
+**Verified in the RTL by the lead.** The sprite shifter's CTL write keeps two
+bits and discards the rest:
+
+```verilog
+// CTL register                          denise_sprites_shifter.v:137-142
+always @(posedge clk)
+  if (clk7_en) begin
+    if (aen && address==CTL)
+      {attach,hstart[0]} <= {data_in[7],data_in[0]};
+  end
+```
+
+Only `data_in[7]` (attach) and `data_in[0]` (SH0) are captured. `data_in[4]` and
+`data_in[3]` appear **nowhere** in `denise_sprites_shifter.v` or
+`denise_sprites.v`. Bit 4 is dead at this boundary under any stimulus, which is
+why its mutation is honestly recorded `none impossible`.
+
+**What holds this up.** `SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT` is green on the same
+fixture and the same measurement basis — a neighbouring bit of the same register,
+written by the same CTL access, demonstrably observable. The fixture can see a
+SPRxCTL bit move the sprite; bit 4 simply is not one.
+
+*For the specialists:* 70 ns SuperHires sprite positioning is unbuilt, of a piece
+with F11 and F12 — the ECS SuperHires feature set is broadly absent rather than
+wrong in detail.
+
+---
+
+*F14 established 11.09.2026 while correcting F08, and confirmed in the RTL by the
+lead before recording. Its existence is the argument for the validation step: the
+original finding pointed at something real and described it incorrectly, and only
+reading the printed page again separated the two.*
