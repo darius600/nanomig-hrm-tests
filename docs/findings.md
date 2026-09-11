@@ -37,6 +37,14 @@ validator's word, and each affected finding carries its own note below.
 | **Withdrawn** | F04, F07, F08, F13 |
 | **Established while correcting one of them** | **F14** |
 
+**F02's evidence was sharpened on 11.09.2026.** Page 80 does not merely give the
+number 49; it gives the reason — *"because the rightmost limit remains ($D8) and
+only one word is fetched at this limit"*. The package measured only the total (50,
+not 49). A second assertion now measures the mechanism the sentence names, and it
+is red for a sharper reason: the hires word count is structurally even, so 49 is
+not individually reachable at all — 48 and 50 are, 49 is not. The finding is the
+same; the evidence now matches the clause the manual actually argues from.
+
 Every withdrawal was also carried back into its package the same day, so no test
 is left asserting something the manual does not say. Three of those corrections
 answered the question the withdrawal raised: with an expectation the page

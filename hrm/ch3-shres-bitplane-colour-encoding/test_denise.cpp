@@ -220,7 +220,10 @@
 // same date): 4 passed, 19 failed (23 assertions total), unchanged from
 // the pre-correction count -- CONTROL-KNOWN-VALUES-ARRIVE, FIXTURE-DATA-
 // PATH-LIVE, OCS-BASELINE-0RGB-FORMAT and SELECT-REGISTER-ADDRESSES-
-// CORRECTLY (the four controls, none carrying a claim id) PASS;
+// CORRECTLY (the four controls, none carrying a claim id) PASS. (A fifth
+// pass, SHRES-BPL01-BIT11-ISOLATES-RED, was added in a later defect-
+// correction pass the same date -- see DEFECT CORRECTION below; current
+// totals are 5 passed, 19 failed, 24 assertions.)
 // SHRES-REINTERPRETS-SAME-REGISTERS, all sixteen SHRES-BITPLANE-TABLE-
 // COLOR-00..-0F entries, SHRES-USES-SIXTEEN-LOWER-REGISTERS and
 // SHRES-TWO-BITS-RESOLUTION (19 assertions, all 298 cited ids between
@@ -258,6 +261,24 @@
 // assertion's expected value or oracle text was changed to reach this
 // result -- every "FAIL" above is denise.v disagreeing with the manual,
 // kept red.
+//
+// DEFECT CORRECTION (independent validator, this agent, 11.09.2026): the
+// validator found that SHRES-BITPLANE-TABLE-COLOR-01's own per-bit check
+// (in the sweep above) only asks whether shres=1's reading differs from
+// shres=0's reading SOMEWHERE in the RGB word for a given bit -- for
+// C-shres-bpl-bits.c21 ("COLOR01 bit 11 carries symbol g from bitplane
+// color 1 red"), that check never confirms the difference actually lands
+// in the RED channel the symbol names. Added SHRES-BPL01-BIT11-ISOLATES-
+// RED (below, no page beyond 301, isolates C-shres-bpl-bits.c21 on its
+// own): with every other bit at 0, bit 11 alone measurably moves ONLY the
+// red channel (0x880000 vs a 0x000000 baseline) -- PASSES, confirming the
+// position-to-channel half of the claim is real and RTL-observable. The
+// colour-1-vs-colour-0 half of the claim is not independently observable
+// at this boundary (denise_colortable.v reads a register's R nibble as
+// one undifferentiated 4-bit value, shres or not) and is not re-tested by
+// the new assertion; SHRES-BITPLANE-TABLE-COLOR-01's own sweep above
+// already carries that half and stays red for exactly that reason. No
+// existing assertion's oracle text or expected value was changed.
 //
 // ONE HARNESS BUG FOUND AND FIXED HERE (methodology, not the oracle): the
 // spec-only commit's Harness never opened denise's own display window
@@ -369,6 +390,7 @@
 // MUTATION SHRES-TWO-BITS-RESOLUTION none impossible: already red at
 //   baseline (COLOR01's own sweep already shows all four B-nibble bits
 //   independently significant).
+// MUTATION SHRES-BPL01-BIT11-ISOLATES-RED stimulus red: -DMUT_BPL01BIT11RED=1 replaces the bit-11 stimulus with bit 7 (a green-channel bit); the measured reading no longer moved the red channel, so the assertion's own red-channel-isolation check went red alone. Reverted: green baseline restored.
 
 #include <array>
 #include <cstdint>
@@ -394,6 +416,9 @@
 #endif
 #ifndef MUT_REINTERP
 #define MUT_REINTERP 0
+#endif
+#ifndef MUT_BPL01BIT11RED
+#define MUT_BPL01BIT11RED 0
 #endif
 
 namespace {
@@ -1128,6 +1153,63 @@ int main(int argc, char** argv) {
             "resolution per hires pixel' requires at most two. 'SuperHires "
             "mode has a coarser granularity of color control than either "
             "Hires or Lores modes.'");
+    }
+
+    // =====================================================================
+    // SHRES-BPL01-BIT11-ISOLATES-RED (p.301) -- an independent validator
+    // found that SHRES-BITPLANE-TABLE-COLOR-01's own per-bit check above
+    // only asks whether ANY part of the RGB reading differs between
+    // shres=0 and shres=1 for a given bit -- it never confirms the
+    // reading actually lands in the CHANNEL that bit's own printed symbol
+    // names. This isolates C-shres-bpl-bits.c21 ("COLOR01 bit 11 carries
+    // symbol g from bitplane color 1 red") directly: with every other bit
+    // held at 0, does bit 11 alone move the RED channel specifically, and
+    // leave green/blue untouched -- the position-to-channel half of the
+    // claim, the part this boundary CAN observe. The other half -- that
+    // this is specifically bitplane COLOUR 1's own red, distinct from
+    // colour 0's own red at bit 9 (symbol a) -- has no independent
+    // circuit to observe at all: this RTL reads a register's R nibble
+    // (bits 11-8) as ONE undifferentiated 4-bit value (denise_colortable.v
+    // has no shres input, confirmed above), so no measurement at this
+    // boundary can tell "colour 1's own bit" apart from "colour 0's own
+    // bit" within the same nibble -- that half is NOT re-tested here;
+    // SHRES-BITPLANE-TABLE-COLOR-01's own per-bit sweep above already
+    // carries it (and stays red, for exactly that reason).
+    // =====================================================================
+    {
+        Harness hbit;
+        hbit.set_mode(true, 2);  // shres=1, this package's own claimed mode
+#if MUT_BPL01BIT11RED
+        hbit.write_color(1, 0x0080);  // MUTATION: bit 7 (green) instead of bit 11 (red)
+#else
+        hbit.write_color(1, 0x0800);  // COLOR01 bit 11 alone
+#endif
+        hbit.select_register(1);
+        uint32_t v_bit11 = hbit.rgb();
+
+        Harness hbase;
+        hbase.set_mode(true, 2);
+        hbase.write_color(1, 0x0000);
+        hbase.select_register(1);
+        uint32_t v_base = hbase.rgb();
+
+        bool red_moves = ((v_bit11 >> 16) & 0xFFu) != ((v_base >> 16) & 0xFFu);
+        bool green_still = ((v_bit11 >> 8) & 0xFFu) == ((v_base >> 8) & 0xFFu);
+        bool blue_still = (v_bit11 & 0xFFu) == (v_base & 0xFFu);
+
+        checks.expect(
+            red_moves && green_still && blue_still,
+            "SHRES-BPL01-BIT11-ISOLATES-RED (p.301, C-shres-bpl-bits.c21): "
+            "with every other bit of COLOR01 held at 0, bit 11 alone (" +
+            hex6(v_bit11) + " vs baseline " + hex6(v_base) + ", shres=1) "
+            "moves the RED channel and leaves green/blue untouched -- "
+            "'O  01   .   .   .   .   g   h   a   b   i   j   c   d   k   "
+            "l   e   f' (p.301) names bit 11 as symbol g, bitplane colour "
+            "1's own red. This confirms the position-to-channel half of "
+            "the claim (bit 11 is wired to red, not green or blue); it "
+            "does NOT confirm the colour-1-distinct-from-colour-0 half "
+            "(see this block's own comment above) -- that half stays red "
+            "under SHRES-BITPLANE-TABLE-COLOR-01's own sweep.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

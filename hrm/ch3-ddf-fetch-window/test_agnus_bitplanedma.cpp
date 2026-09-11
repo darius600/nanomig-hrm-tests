@@ -1737,8 +1737,62 @@ int main(int argc, char** argv) {
                 "otherwise-even progression is not implemented in this "
                 "RTL. RED against the manual's own stated number - per "
                 "this package's instructions, the RTL is what is wrong "
-                "here, not the assertion. 3-max-window.c13, "
-                "3-max-window.c14, 3-max.c06, 3-max.c07, 3-t14.c10.");
+                "here, not the assertion. 3-max-window.c13, 3-max.c06, "
+                "3-max.c07, 3-t14.c10.");
+    }
+
+    // ---------------- MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT (p.80) ----------------
+    // Isolates 3-max-window.c14 specifically, split out of the assertion
+    // above: an independent validator found that a flat "total is 49"
+    // check does not isolate "one word at the rightmost limit" - a total
+    // of 49 could in principle be reached many ways, and the assertion
+    // above never shows the LAST word is what makes it odd. This measures
+    // the claim directly: at the SAME DDFSTOP=$00D8 rightmost limit, the
+    // p.60 formula's own DDFSTRT for the ODD target n=49 is compared
+    // against its neighbours n=48 and n=50 - if the manual's "only one
+    // word is fetched at this limit" mechanism existed in this RTL, n=49
+    // would be its own, individually reachable count (one word more than
+    // 48, one word less than 50), not indistinguishable from either
+    // neighbour.
+    {
+        auto count_for_n = [&](int n) {
+            uint16_t ddfstrt = static_cast<uint16_t>(DDFSTOP_HW_LIMIT - 4 * (n - 2));
+            Harness h;
+            h.setup_standard();
+            h.write_reg(DDFSTOP_ADDR, DDFSTOP_HW_LIMIT);
+            h.write_reg(BPLCON0_ADDR, bplcon0_word(true, 1));
+            h.write_reg(DDFSTRT_ADDR, ddfstrt);
+            return run_to_line(h, 0x50).count;
+        };
+        int at_48 = count_for_n(48);
+        int at_49 = count_for_n(49);
+        int at_50 = count_for_n(50);
+
+        checks.expect(
+            at_49 == 49 && at_49 != at_48 && at_49 != at_50,
+            "MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT: at the SAME DDFSTOP="
+            "$00D8 rightmost limit, targeting n=49 via the p.60 formula "
+            "measures " +
+                std::to_string(at_49) + " words (targeting n=48 measures " +
+                std::to_string(at_48) + ", n=50 measures " + std::to_string(at_50) +
+                ") - the manual's claim is that the rightmost limit ITSELF "
+                "contributes a single, odd word (49), individually "
+                "reachable one word more than 48 and one word less than "
+                "50, not indistinguishable from either neighbour. 'In "
+                "high resolution mode the maximum here is 49 words, "
+                "because the rightmost limit remains ($D8) and only one "
+                "word is fetched at this limit' (p.80, cited here for the "
+                "'only one word...at this limit' half specifically - the "
+                "flat 49-word maximum itself is MAX-WORDS-49-HIRES-AT-HW-"
+                "LIMITS' own claim, isolated there). Measured: n=49 is "
+                "UNREACHABLE and indistinguishable from n=50 - this RTL's "
+                "hires fetched word count is structurally always EVEN (the "
+                "same fact MAX-WORDS-49-HIRES-AT-HW-LIMITS' own comment "
+                "records from sweeping n=26..34), so no DDFSTRT position "
+                "produces a lone extra word at the boundary; the odd "
+                "target rounds up to the next even count instead. RED "
+                "against the manual - the RTL is what is wrong here, not "
+                "the assertion. 3-max-window.c14.");
     }
 
     // ---------------- HSCROLL-EXTRA-WORD-21-FOR-20 (p.80,82,83,84,85) ----------------
@@ -2042,15 +2096,14 @@ int main(int argc, char** argv) {
 //    equals addrs_m0 (uniformly offset by 40 bytes), failing the equality
 //    check. Reverted; rebuilt clean.
 //
-// 18-19. MAX-WORDS-49-HIRES-AT-HW-LIMITS and DDFSTRT-H3-BIT-RESPECTED-ONLY-
-//    IN-HIRES-MODE are RECORDED AS "none impossible", not stimulus-mutated,
-//    for the reason the rule itself allows: both are ALREADY RED at this
-//    package's true baseline (measured, not assumed - the baseline run
-//    above this log shows "17 passed, 2 failed" with exactly these two
-//    names), so there is no green result for a stimulus mutation to break.
-//    Both were also checked for the OTHER direction - could any legitimate
-//    stimulus this assertion explores turn them green - and confirmed
-//    structurally impossible, not merely untried:
+// 18-20. MAX-WORDS-49-HIRES-AT-HW-LIMITS, MAX-WORDS-49-HIRES-ONE-WORD-AT-
+//    LIMIT and DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE are RECORDED AS
+//    "none impossible", not stimulus-mutated, for the reason the rule
+//    itself allows: all three are ALREADY RED at this package's true
+//    baseline, so there is no green result for a stimulus mutation to
+//    break. All three were also checked for the OTHER direction - could
+//    any legitimate stimulus this assertion explores turn them green - and
+//    confirmed structurally impossible, not merely untried:
 //      - MAX-WORDS-49-HIRES-AT-HW-LIMITS: sweeping the hires word-count
 //        formula for every target n from 26 to 34 (see DDF-16-PIXEL-
 //        EFFECTIVE-GRANULARITY's and this assertion's own comments) showed
@@ -2058,6 +2111,13 @@ int main(int argc, char** argv) {
 //        count. 49 is odd. No DDFSTRT/DDFSTOP pair in this RTL produces it,
 //        so no stimulus mutation of THIS assertion (which only varies
 //        DDFSTRT/DDFSTOP/hires) can turn it green.
+//      - MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT (added to isolate
+//        3-max-window.c14, see this package's own defect-correction note):
+//        the SAME structural fact as the assertion above - hires word
+//        counts are always even in this RTL - means n=49 is unreachable by
+//        ANY DDFSTRT this assertion could instead choose, at DDFSTOP=$D8
+//        or anywhere else; there is no stimulus this assertion explores
+//        that can make n=49 distinguishable from its even neighbours.
 //      - DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE: the RTL's own H3
 //        compare term is `ddfstrt[2] & ecs` (l.339,349) - ecs and hires are
 //        read independently everywhere in the file, with no expression
@@ -2087,5 +2147,6 @@ int main(int argc, char** argv) {
 // MUTATION END-OF-LINE-MODULO-AFTER-LAST-WORD stimulus red: the "40" modulo case changed from $0028 to $0014 (20 decimal); gap_m40 became 60, not 80.
 // MUTATION WIDER-PLAYFIELD-FIRST-LINE-UNCHANGED stimulus red: shared pointer helper made to add the modulo to the base address; addrs_m40 no longer equalled addrs_m0.
 // MUTATION MAX-WORDS-49-HIRES-AT-HW-LIMITS none impossible: already red at this package's true baseline; 49 is structurally unreachable (hires word count is always even in this RTL, confirmed by sweeping n=26..34), so no stimulus this assertion explores can turn it green.
+// MUTATION MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT none impossible: already red at baseline (the same structural fact as MAX-WORDS-49-HIRES-AT-HW-LIMITS - hires word counts are always even, so n=49 is unreachable by any DDFSTRT this assertion could choose); there is nothing green here to break.
 // MUTATION DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE none impossible: already red at baseline; the RTL's H3 gate (`ddfstrt[2] & ecs`) never reads `hires`, so no ecs/hires/DDFSTRT combination this assertion drives can satisfy the manual's mode-based condition.
 // ============================================================================

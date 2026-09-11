@@ -275,6 +275,36 @@
 //   the separate, architectural reason given in its own assertion
 //   (combined sprite index 0 is universally transparent).
 //
+// DEFECT CORRECTION (independent validator, this agent, 11.09.2026), two
+// separate findings:
+//   1) REG-0x10 was checks.expect(false, ...) -- an unconditional failing
+//      "assertion" with nothing to measure, a declaration, not a
+//      measurement. Converted to Checks::decline() (see REG-0x10's own
+//      code comment): printed, not counted in passed/failed, and no
+//      longer gated for a mutation record. Its own twenty sibling ids
+//      (sixteen per-bit, three symbol, one legend) are declined together
+//      with it, for the identical reason. Counts become: 2 passed, 16
+//      failed, 1 declined (REG-0x10, 21 ids) of the 19 checks.expect()
+//      calls this file now makes.
+//   2) REG-0x11's own aggregate check (like every REG-0x1X entry) asks
+//      only whether the SET of distinct colours differs between shres
+//      modes for ONE combined, multi-bit stimulus -- it never isolates a
+//      single bit, so it does not verify C-shres-sprite-bits.c21's own
+//      claim ("COLOR11 bit 11 carries symbol G from sprite color 17
+//      red"). Added SHRES-SPR11-BIT11-ISOLATES-RED (below, isolates
+//      C-shres-sprite-bits.c21 on its own, same reasoning and same
+//      channel-only scope as the sibling ch3-shres-bitplane-colour-
+//      encoding package's own SHRES-BPL01-BIT11-ISOLATES-RED): with only
+//      bit 11 set, the resulting sprite pixel moves the red channel and
+//      no other -- PASSES. The colour-17-vs-colour-16 half is not
+//      independently observable here (same underlying reason as the
+//      bitplane sibling) and is not re-tested; REG-0x11's own sweep
+//      above already carries it, red for the reason given in the FINDING
+//      above. Current totals: 3 passed, 16 failed, 1 declined (20
+//      checks.expect() calls, 1 decline). No existing assertion's oracle
+//      text, expected value or comparison logic was changed by either
+//      correction.
+//
 // MUTATION LOG (all 4 stimulus entries actually run by this agent under
 // WSL/Verilator on 11.09.2026 -- edit -> rebuild -> run -> confirm the
 // named assertion, and only that assertion, changed colour -> revert ->
@@ -292,7 +322,7 @@
 // MUTATION FIXTURE-SPRITE-DATA-PATH-LIVE stimulus red: the arming value changed from 1 to 0 (disarmed, identical to the baseline it is diffed against) -> FAIL ("1 passed, 18 failed"), only FIXTURE-SPRITE-DATA-PATH-LIVE newly red (diffs became empty). Reverted to 1: 2/17, same finding.
 // MUTATION FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 stimulus red: the arming value changed from 0 to 1 AND the read register from COLOR16 to COLOR17 (the register that arming value actually addresses, now loaded with the same all-ones pattern) -> FAIL ("1 passed, 18 failed"), only FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 newly red (diffs became non-empty -- value 1 is not transparent). Reverted to even=0/COLOR16: 2/17, same finding.
 // MUTATION SHRES-MODE-CHANGES-OUTPUT none impossible: already red at baseline (the FINDING above). The measured distinct-colour set is identical at shres=0 and shres=1 for every register content this file can write, so no stimulus this harness can present makes this assertion's condition (the two sets differing) true; there is nothing green here to break.
-// MUTATION REG-0x10 none impossible: already red at baseline, by construction (checks.expect(false, ...) -- combined sprite index 0 is universally transparent, confirmed by the FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 control, so no stimulus reaches this register's own display at all); there is nothing green here to break.
+// REG-0x10 carries no mutation record: a defect-correction pass (this agent, 11.09.2026, see REG-0x10's own code comment) converted it from checks.expect(false, ...) to Checks::decline() -- a declared-unreachable claim, not an assertion, so tools/check_gates.py's mutation gate no longer requires or expects a record for it.
 // MUTATION REG-0x11 none impossible: already red at baseline (the FINDING above -- shres=0/shres=1 distinct-colour sets identical); no stimulus this harness can present makes them differ.
 // MUTATION REG-0x12 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
 // MUTATION REG-0x13 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
@@ -308,6 +338,11 @@
 // MUTATION REG-0x1D none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
 // MUTATION REG-0x1E none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
 // MUTATION REG-0x1F none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
+// MUTATION SHRES-SPR11-BIT11-ISOLATES-RED stimulus red: -DMUT_SPR11BIT11RED=1 replaces the bit-11 stimulus with bit 7 (a green-channel bit); the measured sprite pixel no longer moved the red channel, so the assertion's own red-channel-isolation check went red alone. Reverted: green baseline restored.
+
+#ifndef MUT_SPR11BIT11RED
+#define MUT_SPR11BIT11RED 0
+#endif
 
 #include <cstdint>
 #include <cstdio>
@@ -328,8 +363,20 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
+    // A DECLINED claim: a proposition this boundary cannot measure at all
+    // (not a pass, not a fail -- a false measurement dressed up as one
+    // would be worse than an honest non-measurement). Printed but not
+    // counted in passed/failed, and deliberately NOT named expect()/
+    // report() -- tools/check_gates.py's mutation gate reads only those
+    // two call names as assertions, so a decline correctly asks for no
+    // mutation record.
+    void decline(const std::string& label) {
+        std::cout << "DECLINED: " << label << "\n";
+        ++declined;
+    }
     int passed = 0;
     int failed = 0;
+    int declined = 0;
 };
 
 // ---------------------------------------------------------------------
@@ -840,8 +887,23 @@ int main(int argc, char** argv) {
             // REG-0x10 (colour 16): cannot be confirmed via live sprite
             // display -- see FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 above and
             // the header note "WHY REGISTER $10 IS TREATED SEPARATELY".
+            //
+            // DEFECT CORRECTION (independent validator, this agent,
+            // 11.09.2026): this was previously checks.expect(false, ...) --
+            // an unconditional failing "assertion" with nothing to measure,
+            // i.e. a declaration dressed up as a measurement. Converted to
+            // a genuine declined claim (Checks::decline, printed but not
+            // counted in passed/failed, and not gated for a mutation
+            // record, since it asserts nothing that could be mutated). The
+            // other twenty ids on this same register (the sixteen per-bit
+            // ids, its own three symbol ids and its one legend id) belong
+            // with the row id for the identical reason -- every one of
+            // them is a fact ABOUT this same universally-unreachable
+            // register's stored content, not a claim this Harness can
+            // separately measure or fail to measure -- so all twenty-one
+            // are declined together here, ids still cited in full.
             std::string ids = kRegIds[idx];
-            checks.expect(false,
+            checks.decline(
                 "REG-0x10: register COLOR16/$10's sixteen bit positions "
                 "(this row: \"C  10   .   .   .   .   A   B   A   B   C   D "
                 "  C   D   E   F   E   F\", p.302) can never be confirmed "
@@ -854,8 +916,9 @@ int main(int argc, char** argv) {
                 "VALUE0 above): no RGB sample this Harness can produce ever "
                 "reflects this register's stored content. This is an "
                 "architectural property of the sprite/transparency path, "
-                "not a per-bit finding about any ONE of these ids -- kept "
-                "red rather than silently dropped. " + ids + " .");
+                "not a per-bit finding about any ONE of these ids -- "
+                "declined rather than silently dropped or asserted false "
+                "with nothing measured. " + ids + " .");
         } else {
             // Distinguishing content: slot A (bits 11:10/7:6/3:2) =
             // R2,G1,B3; slot B (bits 9:8/5:4/1:0) = the complement,
@@ -926,6 +989,54 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
+    // ==================== SHRES-SPR11-BIT11-ISOLATES-RED ====================
+    {
+        // Isolates C-shres-sprite-bits.c21 ("COLOR11 bit 11 carries symbol
+        // G from sprite color 17 red") from REG-0x11's own aggregate check
+        // above: an independent validator found that check only asks
+        // whether the WHOLE set of distinct colours a sprite pixel can
+        // show differs between shres=0 and shres=1 for ONE combined,
+        // multi-bit stimulus -- it never isolates bit 11 alone, nor
+        // confirms the reading lands in the RED channel specifically. This
+        // writes COLOR11/$11 (= COLOR17 decimal) with ONLY bit 11 set (all
+        // fifteen other bits 0) and measures the resulting sprite pixel's
+        // own RED channel against a same-setup, same-position baseline
+        // with COLOR11=0 -- the position-to-channel half of the claim, the
+        // part this boundary can observe. The colour-17-distinct-from-
+        // colour-16 half has no independent circuit to observe at all
+        // (same reason as the sibling ch3-shres-bitplane-colour-encoding
+        // package's own SHRES-BPL01-BIT11-ISOLATES-RED: denise_colortable.v
+        // reads a register's R nibble as ONE undifferentiated 4-bit value,
+        // shres or not) -- not re-tested here; REG-0x11's own sweep above
+        // already carries it, and stays red for exactly that reason.
+#if MUT_SPR11BIT11RED
+        uint16_t bitOnly = 0x0080;  // MUTATION: bit 7 (green) instead of bit 11 (red)
+#else
+        uint16_t bitOnly = 0x0800;  // COLOR11/$11 bit 11 alone
+#endif
+        auto diffs = activeSamples(kColorAddr(17), bitOnly, /*even=*/1, /*odd=*/0,
+                                    /*useOdd=*/false, /*shres=*/true);
+        bool moved = false, onlyRed = true;
+        for (uint32_t s : diffs) {
+            if (top2(s, 'R') != 0) moved = true;
+            if (top2(s, 'G') != 0 || top2(s, 'B') != 0) onlyRed = false;
+        }
+        checks.expect(moved && onlyRed,
+            "SHRES-SPR11-BIT11-ISOLATES-RED (p.302, C-shres-sprite-bits.c21): "
+            "with every other bit of COLOR11/$11 held at 0, bit 11 alone, "
+            "read via an unattached sprite selecting combined index 1 "
+            "(register COLOR17), moves the sprite pixel's RED channel and "
+            "leaves green/blue at 0 -- 'O  11   .   .   .   .   G   H   A   "
+            "B   I   J   C   D   K   L   E   F' (p.302) names bit 11 as "
+            "symbol G, sprite colour 17's own red. Confirms the position-"
+            "to-channel half of the claim; the colour-17-distinct-from-"
+            "colour-16 half is not re-tested here (see this block's own "
+            "comment above) -- REG-0x11's own sweep carries it, red for "
+            "the same underlying reason.");
+        checks.note("SHRES-SPR11-BIT11-ISOLATES-RED: bit-11-only diffs " + describeSet(diffs) + ".");
+    }
+
+    std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed, "
+              << checks.declined << " declined\n";
     return checks.failed == 0 ? 0 : 1;
 }
