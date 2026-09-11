@@ -110,6 +110,15 @@
 // the PASS/FAIL counts quoted are what `make test` printed that run, not
 // predictions):
 //
+//   MUTATION SOL-MARKS-A-STABLE-LINE-LENGTH stimulus red: between capturing
+//     l2 and l3, BEAMCON0=0x0080 written (varbeamen=1, ecs held true for that
+//     one write) and then HTOTAL=0x0064 -> FAIL, l2.length_ticks (454) no
+//     longer equals l3.length_ticks (~201). Reverted: all green again. The
+//     attempt that came first and did not work is kept immediately below,
+//     because it is the better evidence of what this assertion can and cannot
+//     see. (Header added 11.09.2026: the record opened "MUTATION <id>, FIRST
+//     ATTEMPT" and the gate reads a header of the form "MUTATION <id> stimulus
+//     red:", so a record that was here read as no record at all.)
 //   MUTATION SOL-MARKS-A-STABLE-LINE-LENGTH, FIRST ATTEMPT (recorded, not
 //     hidden, per the standing rule against reporting a result not actually
 //     produced): `set_ntsc(true)` inserted between capturing l2 and l3 ->

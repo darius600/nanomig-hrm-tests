@@ -1265,6 +1265,7 @@ int main(int argc, char** argv) {
 // MUTATION BPLEN-GATES-BITPLANE-DMA stimulus red: BPLEN dropped from the enabled run's setup write; cycles_en fell to 0, equal to the disabled control.
 // MUTATION DMAEN-MASTER-GATES-ALL-DMA-BELOW stimulus red: DMAEN dropped from the enabled run's setup write (SPREN/BLTEN/COPEN/BPLEN left set); cycles_en fell to 0.
 // MUTATION BLTPRI-BUS-SHARE-UNDER-CONTENTION stimulus red: BLTPRI dropped from the hog run's setup write; writes_hog fell to 0, equal to the share run.
+// MUTATION WRITE-ADDRESS-MUST-MATCH-DMACON stimulus red: the decoy write's address changed from BLTAFWM_ADDR back to DMACON_ADDR, same data pattern (SET_CLR | DMAEN) -> 24 passed, 1 failed, only this assertion moves: the write now lands and DMACONR reads back non-zero, so `after == 0x0000` fails. Reverted: 25 passed, 0 failed. Added 11.09.2026; the assertion had no record because the gate could not read an id out of its "[...]" prefix and never reported it missing.
 //
 // Not machine-recorded, and not required by the gate (see SCOPE above):
 // DMACON-WRITE-DECODED-AT-096's own control, "[control] WRITE-ADDRESS-MUST-

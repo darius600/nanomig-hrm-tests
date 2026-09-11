@@ -182,7 +182,7 @@
 //   stayed 0xFFFF -> printed "FAIL: TRUTHTABLE-POS-3 ... actual D=$0000" and
 //   no other TRUTHTABLE-POS-n assertion affected. Totalled
 //   "55 passed, 1 failed".
-// MUTATION NAMEDFN-3F-CODE-SWAP stimulus red: only the $3F entry in the
+// MUTATION TABLE61-$3F stimulus red: only the $3F entry in the
 //   named-function table had its driven `lf` changed to $CF while the
 //   equation lambda (~A|~B, the code proper to $3F) was left untouched ->
 //   printed "FAIL: TABLE61-$3F ... first mismatch: A=$5AA5 B=$3CC3 C=$0FF0
@@ -190,12 +190,12 @@
 //   LINE-MODE assertion affected (in particular TABLE61-$CF, which drives
 //   the genuine $CF row, stayed PASS since it is a separate table entry).
 //   Totalled "55 passed, 1 failed".
-// MUTATION COOKIE-CUT-CODE-SWAP stimulus red: the COOKIE-CUT entry's driven
+// MUTATION COOKIE-CUT stimulus red: the COOKIE-CUT entry's driven
 //   `lf` was changed from $CA to $CB while the equation ((A&B)|(~A&C))
 //   stayed untouched -> printed "FAIL: COOKIE-CUT ... first mismatch: A=$5AA5
 //   B=$3CC3 C=$0FF0 expected D=$1DD1 actual D=$9DD9"; every other assertion
 //   PASS. Totalled "55 passed, 1 failed".
-// MUTATION LINE-MODE-CODE-SWAP stimulus red: the LINE-MODE-4A-EQUATION
+// MUTATION LINE-MODE-4A-EQUATION stimulus red: the LINE-MODE-4A-EQUATION
 //   entry's driven `lf` was changed from $4A to $4B while the equation
 //   ((~A&C)|(A&B&~C)) stayed untouched -> printed "FAIL:
 //   LINE-MODE-4A-EQUATION ... first mismatch: A=$5AA5 B=$3CC3 C=$0FF0
