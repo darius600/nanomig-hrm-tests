@@ -50,14 +50,37 @@
 //   vector) and hrm/ch3-collision-registers/test_denise_collision.cpp
 //   (the HRM-format harness for the same module, which documents this
 //   same reuse in its own ORDER OF WORK section, and additionally
-//   discloses the CLXCON bit-position helpers (MVBP/ENBP), the CLXDAT
-//   bit->collision-pair table, the pulse()/write_reg()/read_reg() timing
-//   convention, and a harness-hygiene drain-read needed because clxdat
+//   discloses the CLXCON reset default (0x0fff), the CLXDAT
+//   bit->collision-pair table, the pulse()/read_reg() timing
+//   convention (this package's own harness has no need of write_reg(),
+//   since every assertion below either relies on CLXCON's own default
+//   or drives no register at all), and a harness-hygiene drain-read
+//   needed because clxdat
 //   carries no reset branch of its own). denise_collision.v itself was
 //   not opened by this agent to obtain any of this -- reusing an
 //   already-committed sibling harness's disclosed interface is the
 //   precedent hrm/ch4-attached-sprites/ already relies on for this same
 //   gate, and is followed the same way here.
+//
+// RTL OPENED (this commit only): denise_collision.v was read for the
+//   first time after the specification commit above. Its port list and
+//   CLXCON reset default matched the disclosed-interface assumptions the
+//   spec commit was written from exactly -- no HALT was needed. One
+//   measurement-only refinement was made to
+//   SPRITE-TO-PLAYFIELD-COLLISION-EITHER's stimulus (not to its
+//   proposition, expected value, or claim ids): the spec commit's draft
+//   used a per-playfield CLXCON write enabling only that playfield's
+//   own bitplane, which this module's bm/oddmatch/evenmatch formulas
+//   (denise_collision.v:54-63) would have left the OTHER playfield's
+//   three bitplanes vacuously matched (CLXCON-disabled bitplanes read
+//   as matched, not absent -- Appendix A's own documented rule, already
+//   covered by hrm/ch3-collision-registers/'s ALL-DISABLED-CONTINUOUS),
+//   so both playfields would have appeared to collide in each leg
+//   instead of only the one under test. Replaced with the default-CLXCON
+//   stimulus described in MEASUREMENT BASIS below, which drives all six
+//   bitplanes as genuinely enabled and isolates the two playfields by
+//   stimulus alone. The proposition tested, its expected value, and its
+//   claim id (CH4-coll.c2) are unchanged.
 //
 // ALREADY-COVERED BOUNDARY: hrm/ch3-collision-registers/ already records
 //   a finding at exactly the playfield/sprite collision boundary this
@@ -103,12 +126,20 @@
 //
 // MEASUREMENT BASIS (SPRITE-TO-PLAYFIELD-COLLISION-EITHER, CH4-coll.c2):
 //   dual-playfield mode (dblpf=1, see ALREADY-COVERED BOUNDARY above).
-//   Two independent legs, each its own fresh, freshly-reset harness: (a)
-//   only bitplane 1 (odd, playfield 1) enabled+required in CLXCON, its
-//   own live bit presented as a match, sprite 0 presented at the same
-//   cycle; (b) only bitplane 2 (even, playfield 2) enabled+required,
-//   its own live bit matched, sprite 0 presented. Each leg must show
-//   sprite 0 colliding with the one playfield under test.
+//   CLXCON is left at its own power-up default (0x0fff -- all six
+//   ECS/OCS bitplanes enabled, match=1 required each -- the same basis
+//   SPRITE-TO-SPRITE-COLLISION-OCCURS above already relies on), so no
+//   CLXCON write is needed: bpldata alone selects which playfield's
+//   three bitplanes present a matching '1' -- bitplanes 1, 3, 5 (odd,
+//   playfield 1) or bitplanes 2, 4, 6 (even, playfield 2) -- the other
+//   three stay at 0 (genuinely mismatched, not vacuously disabled,
+//   since all six are enabled by the same default). Two independent
+//   legs, each its own fresh, freshly-reset harness: (a) bitplanes
+//   1/3/5 all matched, playfield 2's own three left mismatched, sprite
+//   0 presented at the same cycle; (b) bitplanes 2/4/6 all matched,
+//   playfield 1's own three left mismatched, sprite 0 presented. Each
+//   leg must show sprite 0 colliding with the one playfield under test,
+//   and only that one.
 //
 // MEASUREMENT BASIS (COLLISION-DETECTABLE-VIA-REGISTER-READ, CH4-coll.
 //   c3): a single harness, read once with nothing presented (idle,
@@ -164,34 +195,28 @@
 //   of the harness. Two distinct, known sprite-pair stimuli must produce
 //   two distinct, correctly-positioned CLXDAT readings.
 //
-// RESULTS: PENDING -- this file is committed before denise_collision.v
-//   has been opened or built, per the build brief's gate ("write the
-//   specification, commit it, only then open the RTL"). Filled in by a
-//   follow-up commit after the WSL/Verilator build and the mutation runs
-//   below.
+// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026, AFTER the
+//   specification commit -- denise_collision.v was opened only once,
+//   for this build, not before): 4 passed, 0 failed. All three graded
+//   propositions -- SPRITE-TO-SPRITE-COLLISION-OCCURS, SPRITE-TO-
+//   PLAYFIELD-COLLISION-EITHER, COLLISION-DETECTABLE-VIA-REGISTER-READ
+//   -- and the FIXTURE-LIVE-DATA-PATH control are all GREEN: what
+//   chapter 4 itself states about sprite collision on page 113 holds at
+//   this module boundary. No finding. The two declined claims remain
+//   recorded, not asserted.
 //
-// MUTATION LOG: PENDING -- filled in by the same follow-up commit, after
-//   each mutation below is actually run (edit -> rebuild -> run -> confirm
-//   only the named assertion changed colour -> revert -> rebuild ->
-//   confirm baseline restored), not asserted in advance. Planned, one
-//   stimulus change per graded assertion plus the control, expected zero
-//   change to any expected value or comparison logic:
-//     FIXTURE-LIVE-DATA-PATH: repeat the first known stimulus instead of
-//       presenting a genuinely different second one -- expect only this
-//       assertion to go red.
-//     SPRITE-TO-SPRITE-COLLISION-OCCURS: withhold sprite 2 from the
-//       "together" measurement (sprite 0 stays alone) -- expect only this
-//       assertion to go red.
-//     SPRITE-TO-PLAYFIELD-COLLISION-EITHER: withhold bitplane 1's own
-//       live-bit stimulus in leg (a) -- expect only this assertion to go
-//       red.
-//     COLLISION-DETECTABLE-VIA-REGISTER-READ: withhold the sprite 4 +
-//       sprite 6 stimulus from the "after" measurement -- expect only
-//       this assertion to go red.
-//   SPRITE-OVERLAP-DETECT-DECLINED and PLAYFIELD-OVERLAP-DETECT-DECLINED
-//   are declined (record(), no expect()) -- no red/green state exists for
-//   a mutation to move, matching hrm/ch4-attached-sprites/'s own
-//   convention for its declined claim.
+// MUTATION LOG (WSL/Verilator, same session as RESULTS above; each
+//   entry actually run: rebuild with the named -CFLAGS -DMUT_*=1 flag
+//   -> run -> read the PASS/FAIL lines -> confirm only the named
+//   assertion changed colour -> rebuild with no flags (`make clean &&
+//   make`) -> confirm the 4-passed/0-failed baseline was restored):
+//
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: built with -DMUT_CONTROL=1, which repeats the first known stimulus (SPR0+SPR2) as the second instead of presenting SPR0+SPR4 -> FAIL (3 passed, 1 failed), only FIXTURE-LIVE-DATA-PATH newly red (b came back equal to a instead of the expected distinct $0400). Rebuilt with no flags: 4 passed, 0 failed, baseline restored.
+// MUTATION SPRITE-TO-SPRITE-COLLISION-OCCURS stimulus red: built with -DMUT_COLL=1, which withholds sprite 2 from the "together" measurement (nsprite stimulus stays 0x01, sprite 0 alone) -> FAIL (3 passed, 1 failed), only SPRITE-TO-SPRITE-COLLISION-OCCURS newly red (the "together" read came back with bit 9 still clear, identical to the "alone" read). Rebuilt with no flags: 4 passed, 0 failed, baseline restored.
+// MUTATION SPRITE-TO-PLAYFIELD-COLLISION-EITHER stimulus red: built with -DMUT_PF=1, which withholds bitplane 1's own live bit from leg (a)'s stimulus (0x15 -> 0x14; bitplanes 3 and 5 stay matched) -> FAIL (3 passed, 1 failed), only SPRITE-TO-PLAYFIELD-COLLISION-EITHER newly red (oddmatch's own AND across bitplanes 1/3/5 no longer satisfied, so CLXDAT bit 1 stayed clear). Rebuilt with no flags: 4 passed, 0 failed, baseline restored.
+// MUTATION COLLISION-DETECTABLE-VIA-REGISTER-READ stimulus red: built with -DMUT_DETECT=1, which withholds the sprite 4 + sprite 6 stimulus from the "after" measurement (nothing presented) -> FAIL (3 passed, 1 failed), only COLLISION-DETECTABLE-VIA-REGISTER-READ newly red (the "after" read came back identical to the "idle" read, no detectable change). Rebuilt with no flags: 4 passed, 0 failed, baseline restored.
+// MUTATION SPRITE-OVERLAP-DETECT-DECLINED: no record -- this claim is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
+// MUTATION PLAYFIELD-OVERLAP-DETECT-DECLINED: no record -- same reason, declined, no checks.expect().
 
 #include <cstdint>
 #include <iostream>
@@ -215,15 +240,8 @@
 
 namespace {
 
-constexpr int CLXCON_ADDR = 0x4C;  // $098 >> 1
 constexpr int CLXDAT_ADDR = 0x07;  // $00E >> 1
-constexpr int IDLE_ADDR = 0x00;    // outside both decoded addresses.
-
-// CLXCON bit positions (disclosed by hrm/ch3-collision-registers/'s own
-// harness for this same module): MVBPn at bit (n-1), ENBPn at bit
-// (6+n-1).
-constexpr uint16_t MVBP(int n) { return static_cast<uint16_t>(1u << (n - 1)); }
-constexpr uint16_t ENBP(int n) { return static_cast<uint16_t>(1u << (6 + n - 1)); }
+constexpr int IDLE_ADDR = 0x00;    // outside the decoded address.
 
 class Harness {
 public:
@@ -265,15 +283,6 @@ public:
     void tick_7mhz() {
         dut->clk7_en = 1; tick();
         dut->clk7_en = 0; tick(); tick(); tick();
-    }
-
-    void write_reg(int addr, uint16_t data) {
-        dut->reg_address_in = addr;
-        dut->data_in = data;
-        tick_7mhz();
-        dut->reg_address_in = IDLE_ADDR;
-        dut->data_in = 0;
-        tick_7mhz();
     }
 
     uint16_t read_reg(int addr) {
@@ -366,32 +375,31 @@ int main(int argc, char** argv) {
     // ------------- SPRITE-TO-PLAYFIELD-COLLISION-EITHER -------------
     // Dual-playfield mode (dblpf=1); see ALREADY-COVERED BOUNDARY above
     // for why single-playfield mode is deliberately not measured here.
+    // CLXCON stays at its power-up default (0x0fff); see MEASUREMENT
+    // BASIS and RTL OPENED above for why bpldata alone isolates the two
+    // playfields under that default.
     {
         Harness ha;
         ha.dut->dblpf = 1;
-        ha.write_reg(CLXCON_ADDR, ENBP(1) | MVBP(1));  // BP1 (odd, PF1) enabled+required
-        ha.read_reg(CLXDAT_ADDR);  // drain whatever accumulated before this config took effect
-        uint8_t bp1_live = 0x01;   // bitplane 1's own live bit
+        uint8_t pf1_live = 0x15;  // bitplanes 1,3,5 (odd, PF1) matched; 2,4,6 at 0
 #if MUT_PF
-        bp1_live = 0x00;  // MUTATION: bitplane 1's own live bit withheld
+        pf1_live = 0x14;  // MUTATION: bitplane 1's own bit withheld (3,5 still matched)
 #endif
-        ha.pulse(bp1_live, 0x01);  // BP1 matched, SPR0 present
+        ha.pulse(pf1_live, 0x01);  // PF1 matched, SPR0 present
         uint16_t pf1_hit = ha.read_reg(CLXDAT_ADDR);
 
         Harness hb;
         hb.dut->dblpf = 1;
-        hb.write_reg(CLXCON_ADDR, ENBP(2) | MVBP(2));  // BP2 (even, PF2) enabled+required
-        hb.read_reg(CLXDAT_ADDR);
-        hb.pulse(0x02, 0x01);  // BP2 matched (its own live bit), SPR0 present
+        hb.pulse(0x2A, 0x01);  // bitplanes 2,4,6 (even, PF2) matched; 1,3,5 at 0; SPR0 present
         uint16_t pf2_hit = hb.read_reg(CLXDAT_ADDR);
 
         checks.expect(
             (pf1_hit & 0x0002) != 0 && (pf2_hit & 0x0020) != 0,
             "SPRITE-TO-PLAYFIELD-COLLISION-EITHER: measured in "
             "dual-playfield mode (dblpf=1), sprite 0 registers a "
-            "collision against playfield 1 (bitplane 1 alone enabled and "
-            "matched -> CLXDAT bit 1) and, independently, against "
-            "playfield 2 (bitplane 2 alone enabled and matched -> CLXDAT "
+            "collision against playfield 1 (bitplanes 1,3,5 matched, "
+            "2,4,6 not -> CLXDAT bit 1) and, independently, against "
+            "playfield 2 (bitplanes 2,4,6 matched, 1,3,5 not -> CLXDAT "
             "bit 5): sprites collide with EITHER of the two playfields, "
             "not only one of them. 'with either of the two playfields. "
             "You can use the hardware to detect' (p.113). CH4-coll.c2.");
