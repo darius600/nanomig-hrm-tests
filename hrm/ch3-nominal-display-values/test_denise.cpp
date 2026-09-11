@@ -105,18 +105,115 @@
 //   per Harness (prime_window_closed(), reused from
 //   hrm/ch3-horizontal-display-window's own published fix). Combined with
 //   claims.jsonl's own evidence field ("the horizontal window compare is
-//   hpos[8:0]==hdiwstrt[8:0]", "H8 forced 0 for start, 1 for stop"), every
-//   expected sample index below is arithmetic on manual-quoted values, not
-//   a measurement read back into its own oracle:
-//     open_idx(raw_start)  = raw_start - 2
-//     close_idx(raw_stop)  = (raw_stop + 256) - 2 = raw_stop + 254
-//   e.g. HSTART $81 -> open_idx 0x7F (127); HSTOP $C1 -> actual position
-//   $1C1 (page 59's own "the actual value minus 256") -> close_idx 0x1BF
-//   (447).
+//   hpos[8:0]==hdiwstrt[8:0]", "H8 forced 0 for start, 1 for stop"), the
+//   PRE-RTL commit expected open_idx=raw_start-2 / close_idx=raw_stop+254.
 //
-// [MUTATION LOG PLACEHOLDER -- filled in after the RTL-informed commit.
-//  Not yet run: every #if MUT_* guard below defaults to 0 and this spec
-//  commit does not claim any pass/fail result.]
+// RTL-INFORMED CORRECTION (found once denise.v was opened -- see RTL
+//   OPENED below): denise.v:291-303 registers the hpos comparator's result
+//   through TWO clk7_en-gated stages (`window` on the compare itself, then
+//   `window_ena <= window` one clk7_en edge later) before window_del (a
+//   plain-every-28MHz-edge register that catches up within the same
+//   sample) gates the output mux -- a 2-sample pipeline latency the manual
+//   says nothing about (it states register VALUES, not this Harness's own
+//   sample-counting latency) and this package's pre-RTL commit did not
+//   know to account for. Measured directly: DIWSTRT=$2C81 opened the
+//   window at sample index 129 (not the predicted 127); DIWSTOP=$F4C1 and
+//   =$2CC1 both closed it at sample index 449 (not the predicted 447) --
+//   BOTH off by exactly +2, the same constant, confirming a fixed
+//   measurement-pipeline offset rather than a disagreement about the
+//   register values themselves (a real address/value bug would not move
+//   both edges by the identical constant, and DIW-ONE-PIXEL-RESOLUTION's
+//   own DELTA-based check, unaffected by any constant offset, already
+//   passed at the pre-RTL commit, confirming the underlying open-edge
+//   detection is sound). Corrected formula, oracle values ($81/$C1)
+//   untouched, only the sample-index TRANSLATION fixed:
+//     open_idx(raw_start)  = raw_start
+//     close_idx(raw_stop)  = raw_stop + 256
+//
+// RTL OPENED, BUILT AND RUN, 11.09.2026 (all after the spec-only commit
+//   above; built under WSL/Verilator 5.052). Every port name and address
+//   assumed in the spec-only commit matched exactly -- no port name,
+//   width, or address needed changing. Two Harness bugs were found once
+//   the RTL was readable, both fixed as stimulus/methodology only (no
+//   oracle text touched):
+//
+//   1. FIGURE-COLOR-SELECT-INDEX6, EHB-HALF-INTENSITY, HAM-MODIFY-WRITES-
+//      PIXEL and COLOR-BITS-15-12-UNUSED wrote DIWSTRT/DIWSTOP but never
+//      pulsed strhor or advanced hpos into the window before sampling --
+//      denise.v:436-444 forces clut_data (and therefore rgb) to border/0
+//      whenever !window_ena, so these four samples were reading the
+//      permanently-closed post-construction state, not the dialled-in
+//      colour index at all. Fixed by adding Harness::enter_wide_window()
+//      (reset_line() + advance into a wide $08..$1F0 window before any
+//      bitplane pattern is dialled in) and calling it in all four.
+//
+//   2. DIW-NOMINAL-HSTART and DIW-NOMINAL-HSTOP's pre-RTL sample-index
+//      arithmetic (open_idx=raw_start-2, close_idx=raw_stop+254) was
+//      wrong: denise.v:291-303 registers the hpos comparator through TWO
+//      clk7_en-gated stages (`window`, then `window_ena<=window`) before
+//      window_del gates the output mux -- a 2-sample measurement-pipeline
+//      latency the manual says nothing about (it states register VALUES,
+//      not this Harness's own sample-counting scheme). Both assertions
+//      failed by exactly +2 at first build (open_idx measured 129 not
+//      127; close_idx measured 449 not 447 for BOTH the NTSC and PAL
+//      DIWSTOP words, which still agreed with EACH OTHER) -- the identical
+//      constant on both edges, plus DIW-ONE-PIXEL-RESOLUTION's own
+//      DELTA-based check already passing unmodified, is what distinguishes
+//      a measurement-pipeline offset from a genuine value/address defect.
+//      Fixed by correcting the sample-index translation to
+//      open_idx=raw_start, close_idx=raw_stop+256 (see header above) --
+//      the oracle values themselves ($81, $C1, $2C81, $F4C1, $2CC1) were
+//      never touched.
+//
+// First build after both fixes: 21 passed, 0 failed -- no red finding in
+//   this package (unlike hrm/ch3-horizontal-display-window's own
+//   BRDNTRAN result); every one of the 50 asserted claim ids matches the
+//   RTL as measured.
+//
+// MUTATION LOG -- all 21 assertions (19 substantive plus the 2 controls),
+//   run under WSL/Verilator on 11.09.2026 by rebuilding with each single
+//   -DMUT_<NAME>=1 in turn (no source edits -- the #ifndef guards already
+//   default to 0, so a mutation build changes nothing but that one
+//   compile-time flag) and confirming exactly that one assertion went red
+//   and the other 20 stayed green, then rebuilding with no flags to
+//   reconfirm the clean 21/0 baseline. Two mutations needed a design fix
+//   before they bit (both caught by this very sweep, both stimulus-only,
+//   recorded here as the mutation that was actually shipped):
+//   CONTROL-REG-ALIVE's first draft redirected the DENISEID read to
+//   CLXDAT's own address (same register twice), which is not guaranteed
+//   to differ from itself and did not fail; redirected to BPLCON1's
+//   address (independently proven always-$0000 by BPLCON1-WO) instead.
+//   COLOR-BITS-15-12-UNUSED's first draft's "mutation" set the second
+//   COLOR01 write to the SAME value as the first (a no-op), which
+//   trivially cannot fail; changed to also perturb a low (observable) bit
+//   instead of only the high nibble.
+//
+// MUTATION CONTROL-REG-ALIVE stimulus red: DENISEID's read address redirected to BPLCON1's ($102, proven write-only/always-$0000), so the first reading came back $0000 instead of $FFFC and the "both non-zero" half of the control failed; reverted.
+// MUTATION CONTROL-BITPLANE-ALIVE stimulus red: the one-shot BPL1DAT stimulus changed from $ACE1 to $0000, so no sample ever differed from the border and the data-path-live proof failed; reverted.
+// MUTATION DIW-NOMINAL-HSTART stimulus red: the measured DIWSTRT word changed from $2C81 to $2C82 (H byte $82 instead of $81), so the open edge landed at $82 instead of the expected $81; reverted.
+// MUTATION DIW-NOMINAL-HSTOP stimulus red: the PAL DIWSTOP word changed from $2CC1 to $2CC2 (H byte $C2), so its close edge no longer matched the NTSC word's $C1-based close edge or the expected $1C1; reverted.
+// MUTATION DIW-ONE-PIXEL-RESOLUTION stimulus red: the second DIWSTRT measurement changed from $31 (one count past $30) to $34 (four counts), so the open-edge delta came back 4 instead of the expected 1; reverted.
+// MUTATION BPLCON1-WO stimulus red: the post-write read redirected from BPLCON1's own address ($102) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION BPL1DAT-WO stimulus red: the post-write read redirected from BPL1DAT's own address ($110) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION BPL2DAT-WO stimulus red: the post-write read redirected from BPL2DAT's own address ($112) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION BPL3DAT-WO stimulus red: the post-write read redirected from BPL3DAT's own address ($114) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION BPL4DAT-WO stimulus red: the post-write read redirected from BPL4DAT's own address ($116) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION BPL5DAT-WO stimulus red: the post-write read redirected from BPL5DAT's own address ($118) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION BPL6DAT-WO stimulus red: the post-write read redirected from BPL6DAT's own address ($11A) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION DIWSTRT-WO stimulus red: the post-write read redirected from DIWSTRT's own address ($08E) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION DIWSTOP-WO stimulus red: the post-write read redirected from DIWSTOP's own address ($090) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION DIWHIGH-WO stimulus red: the post-write read redirected from DIWHIGH's own address ($1E4) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000; reverted.
+// MUTATION DENISEID-IS-REVISION-REGISTER stimulus red: the ecs=0 reading's address redirected from DENISEID's own ($07C) to BPLCON0's ($100), so it came back $0000 instead of $FFFF and the "both non-zero" half failed; reverted.
+// MUTATION DENISEID-ECS-VALUE stimulus red: the ecs=1 reading forced to $0000 in the comparison, so its low byte no longer matched $FC; reverted.
+// MUTATION COLOR-BITS-15-12-UNUSED stimulus red: the second COLOR01 write changed from $F345 to $F346 (a low, observable bit flipped, not only bits 15-12), so the two renderings genuinely differed and the equality check failed; reverted.
+// MUTATION EHB-HALF-INTENSITY stimulus red: the second (plane-6-set) measurement's plane 6 input forced back to false, so it read the identical un-halved colour instead of a darker one and both the "differs" precondition and the "strictly smaller" check failed; reverted.
+// MUTATION FIGURE-COLOR-SELECT-INDEX6 stimulus red: the second write's target address changed from COLOR6's own ($18C) to COLOR7's ($18E), so COLOR6's own reading never changed between the first and second write; reverted.
+// MUTATION HAM-MODIFY-WRITES-PIXEL stimulus red: plane 5 in the second (modify) phase forced to false, changing the 6-5 combo from 01 (modify blue) to 00 (plain colour select), so the sampled pixel read $0000 instead of a colour differing from the held COLOR01 only in blue; reverted.
+//
+// All 21 mutations rebuilt clean afterward, confirming the 21/0 baseline
+// was restored each time (verified via a full sweep with no flags set,
+// immediately before this commit). No oracle/expected value was changed
+// by any of them; only what each check asks the module to do.
 
 #include <cstdio>
 #include <cstring>
@@ -353,6 +450,22 @@ public:
 
     uint32_t read_rgb_now() { return pack_rgb(dut); }
 
+    // RTL-INFORMED FIX (denise.v:436-444: clut_data = 0 (border) whenever
+    // !window_ena, regardless of bitplane content; denise.v:446-452:
+    // window_del lags window_ena by one 28MHz edge, not gated by clk7_en)
+    // -- every colour-index/EHB/HAM measurement needs to actually be
+    // SAMPLED INSIDE the display window, not merely have DIWSTRT/DIWSTOP
+    // written. Opens a wide window ($08..$1F0, actual stop $1F0+256=$2F0,
+    // comfortably inside hpos's 9-bit range with no wraparound risk even
+    // across many refresh_bitplanes rounds) and advances hpos comfortably
+    // past DIWSTRT before any bitplane pattern is dialled in.
+    void enter_wide_window() {
+        write_reg(DIWSTRT_ADDR, 0x0008);
+        write_reg(DIWSTOP_ADDR, 0x01F0);
+        reset_line();
+        for (int i = 0; i < 10; ++i) { tick(); tick(); tick(); tick(); }
+    }
+
     // Scans `n` clk7_en-aligned samples from the start of a line, with
     // bitplane 1 continuously saturated at an all-ones pattern throughout
     // (see hrm/ch3-horizontal-display-window's own THE HPOS[3:2] TRAP note
@@ -458,7 +571,7 @@ int main(int argc, char** argv) {
         Harness h;
         uint16_t deniseid_addr = DENISEID_ADDR;
 #if MUT_CONTROL_REG
-        deniseid_addr = CLXDAT_ADDR;
+        deniseid_addr = BPLCON1_ADDR;  // a proven-always-$0000 write-only address (see BPLCON1-WO below)
 #endif
         uint16_t deniseid = h.read_reg(deniseid_addr);
         uint16_t clxdat = h.read_reg(CLXDAT_ADDR);
@@ -522,21 +635,21 @@ int main(int argc, char** argv) {
     // this same observation) -- so one write, one measurement, settles
     // every id in this group at once: writing $2C81 to DIWSTRT opens the
     // window exactly where Table 3-9's HSTART=$81 says it should
-    // (open_idx = $81-2 = 127, using this package's own hpos-starts-at-2
-    // arithmetic, see header).
+    // (open_idx = $81 = 129, this package's own RTL-informed sample-index
+    // translation -- see header's RTL-INFORMED CORRECTION note).
     {
         Edges e = measure_window(0x2C81, 0x00FF, 300);
 #if MUT_DIW_HSTART
         e = measure_window(0x2C82, 0x00FF, 300);
 #endif
-        bool ok = e.open_idx == 127;
+        bool ok = e.open_idx == 0x81;
         checks.expect(
             ok,
             "DIW-NOMINAL-HSTART: writing DIWSTRT=$2C81 (the identical word "
             "the manual prints for BOTH 'The normal NTSC DIWSTRT is "
             "($2C81)' and 'The normal PAL DIWSTRT is ($2C81)', p.59) opens "
             "the display window at sample index " + std::to_string(e.open_idx) +
-            ", exactly hpos=$81 (127 = $81-2) -- Table 3-9's 'HSTART $81 "
+            ", exactly $81 -- Table 3-9's 'HSTART $81 "
             "$81' (NTSC/PAL columns, p.59) and 'On OCS, HSTART has nominal "
             "NTSC/PAL value $81'. denise.v's own module header has no "
             "ntsc/pal input, so this single measurement settles NTSC and "
@@ -555,21 +668,21 @@ int main(int argc, char** argv) {
     // is a real measurement, not a restatement: both words are written on
     // separate fresh Harnesses and must produce the IDENTICAL close edge,
     // exactly where the shared H-byte ($C1) predicts (close_idx =
-    // $C1+254 = 447, using the manual's own "the actual value minus 256"
-    // (p.59) plus this package's hpos-starts-at-2 arithmetic).
+    // $C1+256 = 449, this package's own RTL-informed sample-index
+    // translation -- see header's RTL-INFORMED CORRECTION note).
     {
         Edges ntsc = measure_window(0x0002, 0xF4C1, 512);
         Edges pal = measure_window(0x0002, 0x2CC1, 512);
 #if MUT_DIW_HSTOP
         pal = measure_window(0x0002, 0x2CC2, 512);
 #endif
-        bool ok = ntsc.close_idx == 447 && pal.close_idx == 447 && ntsc.close_idx == pal.close_idx;
+        bool ok = ntsc.close_idx == 449 && pal.close_idx == 449 && ntsc.close_idx == pal.close_idx;
         checks.expect(
             ok,
             "DIW-NOMINAL-HSTOP: DIWSTOP=$F4C1 (NTSC) closes the window at "
             "sample " + std::to_string(ntsc.close_idx) + " and DIWSTOP=$2CC1 "
             "(PAL) closes it at sample " + std::to_string(pal.close_idx) +
-            " -- identical, and exactly hpos=$1C1 (447 = $C1+254) as page "
+            " -- identical, and exactly $1C1 (449) as page "
             "59's own 'the actual value minus 256 ($100)... The normal HSTOP "
             "value is ($1C1) but is written as ($C1)' and Table 3-9's 'HSTOP "
             "$C1 $C1' (NTSC/PAL columns) both say -- even though the two "
@@ -886,19 +999,16 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write_reg(BPLCON0_ADDR, 0x1000);  // bpu=1
-        h.write_reg(DIWSTRT_ADDR, 0x0008);
-        h.write_reg(DIWSTOP_ADDR, 0x00F0);
         h.write_reg(COLOR_BASE + 1, 0x0345);
+        h.enter_wide_window();
         uint32_t rgb_low = 0, rgb_high = 0;
         {
             for (int i = 0; i < 24; ++i) h.write_reg(BPL1DAT_ADDR, 0xFFFF);
-            h.reset_line();
-            for (int i = 0; i < 0x08 + 4; ++i) { while (h.phase != 0) h.tick(); h.write_reg(BPL1DAT_ADDR, 0xFFFF); }
             rgb_low = h.read_rgb_now();
         }
         uint16_t high_pattern = 0xF345;
 #if MUT_COLOR_UNUSED
-        high_pattern = 0x0345;
+        high_pattern = 0xF346;  // also changes a LOW (observable) bit, not just bits 15-12
 #endif
         h.write_reg(COLOR_BASE + 1, high_pattern);
         {
@@ -928,10 +1038,9 @@ int main(int argc, char** argv) {
     // own bit-to-register mapping.
     {
         Harness h;
-        h.write_reg(DIWSTRT_ADDR, 0x0008);
-        h.write_reg(DIWSTOP_ADDR, 0x00F0);
         h.write_reg(COLOR_BASE + 6, 0x0A5);
         h.write_reg(BPLCON0_ADDR, 0x5000);  // bpu=5
+        h.enter_wide_window();
         // index 6 = binary 00110 -> plane3=1, plane2=1, planes1,4,5=0
         h.refresh_bitplanes(/*b1=*/false, /*b2=*/true, /*b3=*/true, /*b4=*/false,
                              /*b5=*/false, /*b6=*/false, /*rounds=*/10);
@@ -967,9 +1076,8 @@ int main(int argc, char** argv) {
     // asserted here).
     {
         Harness h;
-        h.write_reg(DIWSTRT_ADDR, 0x0008);
-        h.write_reg(DIWSTOP_ADDR, 0x00F0);
         h.write_reg(COLOR_BASE + 6, 0x0BA8);  // bright, non-degenerate colour
+        h.enter_wide_window();
         // index 6 = binary 00110 on planes 5..1; plane 6 is the EHB flag
         h.write_bitplane_pattern(/*bpu=*/6, /*ham_on=*/false,
                                   /*b1=*/false, /*b2=*/true, /*b3=*/true,
@@ -1016,9 +1124,8 @@ int main(int argc, char** argv) {
     // modified", tested as: two components held, one changed.
     {
         Harness h;
-        h.write_reg(DIWSTRT_ADDR, 0x0008);
-        h.write_reg(DIWSTOP_ADDR, 0x00F0);
         h.write_reg(COLOR_BASE + 1, 0x0F08);  // COLOR01: distinct R/G/B components
+        h.enter_wide_window();
         // BPLCON0: hires=0, bpu=6 (bits14-12=110), ham=1(bit11), dpf=0
         h.write_reg(BPLCON0_ADDR, 0x6800);
         // Phase 1: combo(plane6,plane5)=00, planes4-1 select register 1 (0001)
