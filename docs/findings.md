@@ -468,6 +468,8 @@ rather than the RTL needing a change.
 > **WITHDRAWN** — validation 11.09.2026.
 >
 > Page 273 lists bit 15 as `not used` under the heading **COLLISIONS REGISTERED** -- it says no collision is registered there. It does not say the bit reads zero. NanoMig wires it high, which contradicts nothing printed. The expected zero was invented by the assertion, so the red measured the oracle, not the RTL.
+>
+> **Corrected the same day, and it settles the question.** The assertion now requires bit 15 to hold the *same* value before and after maximal collision stimulus, without claiming which value — which is what the page supports. It passes; 31/5 became 32/4. The implementation was right all along.
 
 **Package:** `hrm/ch3-collision-registers`, assertion `BIT15-UNUSED`. **Red.**
 
