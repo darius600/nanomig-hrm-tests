@@ -542,7 +542,7 @@ int main(int argc, char** argv) {
             if (row.n == 1) stim = 2;  // N=1's own stimulus is presented as N=2's combination instead
 #endif
             uint8_t out = h.sample(stim);
-            std::string label = "IDENTITY-MAPPING (p.93" +
+            std::string label = "IDENTITY-MAPPING-SWEEP (p.93" +
                 std::string(row.p94 ? "/94" : "") + "): bit combination " +
                 std::to_string(row.n) + " selects colour register " +
                 std::to_string(row.n) + ". " + std::string(row.note) +

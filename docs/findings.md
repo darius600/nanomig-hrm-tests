@@ -13,6 +13,41 @@ repository.
 **These are not broken tests.** Adjusting an assertion to make one pass deletes
 the finding.
 
+**There is exactly one exception, and the 11.09.2026 validation found four cases
+of it:** an assertion that misstates the source must be corrected, not because
+the implementation fails it, but because it never said what the manual says. The
+test is the thing being fixed there, not the finding. Telling the two apart is
+the whole discipline — the question is never "does this pass?" but "does the
+printed page require what this asserts?".
+
+## Validation, 11.09.2026 — read this before any finding below
+
+An independent validator (Codex Sol, which wrote none of these tests) audited the
+built packages against the printed manual. **Seven of the thirteen findings did not
+survive in the form they were written.** Every disposition was re-checked against
+the manual page by the lead before being accepted; none was taken on the
+validator's word, and each affected finding carries its own note below.
+
+| | findings |
+|---|---|
+| **Hold as test-backed findings** | F01, F02, F03, F06, F10 |
+| **Hold with a correction** | F11 (evidential count) |
+| **Source observations, not test-backed** | F05, F09, F12 |
+| **Withdrawn** | F04, F07, F08, F13 |
+
+Four of the withdrawals share one cause: **the assertion, not the RTL, was wrong.**
+Each read a permission or a silence in the manual as a requirement — "not used" as
+"reads zero", a bare mnemonic as a mandated effect, "ECS-only" as "must be live",
+in one case even where the manual prints the word *unimplemented*. A red result is
+a finding only where the manual actually says otherwise.
+
+The two source-only downgrades share a different cause, and it is the one this
+pipeline exists to prevent: **an expected value that came from the implementation.**
+F05 computes `227.5 CCK × 2 hpos-ticks/CCK`, taking the factor 2 from the RTL's
+internal representation. F12 is its mirror image — an assertion that could not have
+passed against a perfect implementation, because it tests a bit *rearrangement*
+using a value made of identical bits.
+
 ## About the keys
 
 The `FPGA-nnn` keys come from the private workspace where this work is planned,
@@ -430,6 +465,10 @@ rather than the RTL needing a change.
 
 ## FPGA-091-F04 — CLXDAT bit 15 reads as 1, not 0
 
+> **WITHDRAWN** — validation 11.09.2026.
+>
+> Page 273 lists bit 15 as `not used` under the heading **COLLISIONS REGISTERED** -- it says no collision is registered there. It does not say the bit reads zero. NanoMig wires it high, which contradicts nothing printed. The expected zero was invented by the assertion, so the red measured the oracle, not the RTL.
+
 **Package:** `hrm/ch3-collision-registers`, assertion `BIT15-UNUSED`. **Red.**
 
 Printed page 273 lists CLXDAT bit 15 as not used. NanoMig,
@@ -451,6 +490,10 @@ as zero, or undefined. Every other assertion in the package masks the bit out wi
 against the RTL by the lead before recording.*
 
 ## FPGA-091-F05 — the horizontal line is a whole number of colour clocks, not 227.5
+
+> **SOURCE OBSERVATION, not test-backed** — validation 11.09.2026.
+>
+> The manual's 227.5 CCKs and the RTL's own admission that half-clocks are unsupported are both real. The test is not evidence for it: `want_227p5_in_ticks = 455` is `227.5 CCK * 2 hpos-ticks/CCK`, and that factor 2 is the RTL's internal representation, not the manual's. The expected value therefore comes from the implementation -- the same circularity as the `kHiresPixelTicks = 2` defect caught during the build, found a second time.
 
 **Package:** `hrm/ch3-beam-counters-and-blanking`, assertion
 `HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5`, both PAL and NTSC. **Red.**
@@ -507,6 +550,10 @@ comments acknowledge the divergence.*
 
 ## FPGA-091-F07 — SPRxCTL bit 0 (SH0) is honoured at every resolution, not only SuperHires
 
+> **WITHDRAWN** — validation 11.09.2026.
+>
+> Page 303 reads `00  SH0  Start horiz. value Low bit 140 ns increment`. SH0 is the 140-ns low bit; the SuperHires positions are bits 4 (70 ns) and 3 (35 ns). The assertion imported a SuperHires-only restriction the manual does not state.
+
 **Package:** `hrm/ch3-sprite-registers`, assertion
 `SPRXCTL-BIT0-SH0-ONLY-IN-SUPERHIRES`. **Red.** Nine claim ids.
 
@@ -529,6 +576,10 @@ manual scopes to one mode and the RTL honours always". Worth deciding together.
 
 ## FPGA-091-F08 — SPRxCTL bits 3 and 4 are read nowhere in the module
 
+> **WITHDRAWN** — validation 11.09.2026.
+>
+> Page 303 reads `03  SHSH0  Start horizontal (SHR mode) 35ns (unimplemented)` -- the manual itself calls bit 3 unimplemented. The note `bits 3 and 4 are in the ECS chips only` is a scope statement, not a promise that both alter output. Requiring bit 3 to be a live field contradicts the oracle.
+
 **Package:** `hrm/ch3-sprite-registers`, assertion
 `SPRXCTL-BITS-3-4-ARE-LIVE-FIELDS`. **Red.**
 
@@ -546,9 +597,15 @@ against the RTL by the lead before recording.*
 
 ## FPGA-091-F09 — the manual applies its own ECS pointer extension inconsistently
 
+> **SOURCE OBSERVATION, not test-backed (as this entry already stated)** — validation 11.09.2026.
+>
+> Recorded in the package as `checks.note(...)`, whose own text says `Not folded into any PASS/FAIL above`. The manual/RTL disagreement is real; no assertion, red result or control stands behind it. Listed here for completeness of the audit.
+
 **Package:** `hrm/ch3-register-map-agnus`, recorded as a note rather than an
 assertion. This is the resolution of the pointer-width conflict that
-`source_conflicts.md` lists first.
+the chapter's source-conflict register lists first
+(`work/2026-09-10_fpga-091_chapter3_source_conflicts.md` in the pipeline repo;
+it is not a file in this one).
 
 Three sources, three widths:
 
@@ -623,6 +680,10 @@ by the lead before recording.*
 
 ## FPGA-091-F11 — SuperHires sprite colour encoding is not implemented
 
+> **HOLDS, with the count corrected** — validation 11.09.2026.
+>
+> The finding stands: fifteen live registers and the general mode comparison all measure identical colour sets at both `shres` settings, using deliberately asymmetric slot-A/slot-B values so a rearrangement would be visible. But **`REG-0x10` is an unconditional `expect(false)`**, so it is a declaration, not a measurement: the evidential count is sixteen reds, not seventeen. The per-register assertions also test only that *some* mode difference exists, not the exact symbol-to-bit mapping their claim ids cite.
+
 **Package:** `hrm/ch3-shres-sprite-colour-encoding`. **17 red, 2 green.**
 Pages 301, 302. The largest single red result in chapter 3.
 
@@ -681,6 +742,10 @@ measurement independently reproduced by the lead before recording.*
 
 ## FPGA-091-F12 — SuperHires bitplane colour encoding is not implemented
 
+> **SOURCE OBSERVATION, not test-backed** — validation 11.09.2026.
+>
+> `denise_colortable.v` has no `shres` port -- that reading holds, and the lead confirmed it. The test does not establish it. `SHRES-REINTERPRETS-SAME-REGISTERS` writes `COLOR01 = 0x0FFF`, all ones in every nibble, and the claimed SuperHires encoding is a **rearrangement** of bits: rearranging all ones yields all ones. The assertion could not have gone green even against a perfect implementation, so its red is not evidence. This is the mirror of a circular oracle -- an assertion that cannot pass, for a reason unrelated to the design.
+
 **Package:** `hrm/ch3-shres-bitplane-colour-encoding`. **19 red, 4 green.**
 Pages 297, 301. **Same root cause as [F11], reached down a different path.**
 
@@ -726,6 +791,10 @@ worth building is a scope question for the project.
 independently reproduced by the lead before recording.*
 
 ## FPGA-091-F13 — ECS BPLCON0 bit 4 (SPRHWRM) has no effect
+
+> **WITHDRAWN as a conformance finding** — validation 11.09.2026.
+>
+> Page 300's row reads, in full, `04       SPRHWRM` -- a mnemonic with no description column, unlike `06  SHRES  SuperHires 35ns pixel enable bit` three rows above. The manual gives bit 4 a name and no behaviour, so there is no printed behaviour for NanoMig to diverge from. The fixture also drives bitplanes only and could not observe a sprite-horizontal function in any case. What remains true is a source observation: `denise.v:181` gives the bit its AGA meaning (`bplcon0[4] & aga`) and no ECS meaning. Recorded by the lead earlier the same day; the overreach was the lead's.
 
 **Package:** `hrm/ch3-bplcon0-display-modes` (225 green, 2 red). Page 300.
 

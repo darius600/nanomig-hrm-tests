@@ -877,7 +877,11 @@ int main(int argc, char** argv) {
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed
               << " failed\n";
-    return 0;  // a red result is a valid, finished outcome -- never fail the build over it
+    // A red result IS a valid, finished outcome -- that principle forbids
+    // changing the assertion until it passes. It does not license hiding the
+    // red from the suite. run_all.sh classifies a package solely by its exit
+    // status, so returning 0 here launders any future red into a suite PASS.
+    return checks.failed ? 1 : 0;
 }
 
 // ============================================================================
