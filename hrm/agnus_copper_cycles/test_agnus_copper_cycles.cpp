@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
                       "C1 each MOVE's instruction-word fetch presents COPINS (Appendix A) "
                       "[claims: COP2-about-the-copper.c2, COP2-location-registers.c15, COP2-what-is-a-copper-instruction.c11, "
                       "COP2-copins-summary.c1, COP2-copins-summary.c4, COP2-copins-summary.c5, COP2-copins-summary.c6, "
-                      "COP2-copins-summary.c7]");
+                      "COP2-copins-summary.c7, ch2-appa-copins.c1, ch2-appa-copins.c4, ch2-appa-copins.c5, ch2-appb-table.c42, ch2-appb-table.c45]");
         checks.expect(dest_on_second_words == 2 && violations == 0,
                       "C2 a MOVE's second cycle presents the destination register, never COPINS (Appendix A) "
                       "[claims: COP2-what-is-a-copper-instruction.c11, COP2-copins-summary.c7, COP2-copins-summary.c8]");
@@ -226,7 +226,7 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(4000);
         checks.expect(h.grants_for_instruction_at(0) == 2, "C3 a MOVE consumes two memory cycles (p.20) "
-                      "[claims: COP2-what-is-a-copper-instruction.c12]");
+                      "[claims: COP2-what-is-a-copper-instruction.c12, ch2-what-is-a-copper-instruction.c10, ch2-what-is-a-copper-instruction.c9]");
     }
 
     // C4 - p.20: a SKIP also consumes two.
@@ -240,7 +240,7 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(4000);
         checks.expect(h.grants_for_instruction_at(0) == 2, "C4 a SKIP consumes two memory cycles (p.20) "
-                      "[claims: COP2-what-is-a-copper-instruction.c13, COP2-what-is-a-copper-instruction.c15]");
+                      "[claims: COP2-what-is-a-copper-instruction.c13, COP2-what-is-a-copper-instruction.c15, ch2-appa-copins.c136, ch2-what-is-a-copper-instruction.c12, ch2-what-is-a-copper-instruction.c13]");
     }
 
     // C5 - p.20: a WAIT consumes three, "one extra memory cycle to wake up".
@@ -262,11 +262,11 @@ int main(int argc, char** argv) {
         const int wait_cycles = h.grants_for_instruction_at(0);
         const int move_cycles = h.grants_for_instruction_at(2);
         checks.expect(wait_cycles == 3, "C5 a satisfied WAIT consumes three memory cycles (p.20) [FPGA-069, expected red] "
-                      "[claims: COP2-what-is-a-copper-instruction.c18]");
+                      "[claims: COP2-what-is-a-copper-instruction.c18, ch2-what-is-a-copper-instruction.c16]");
         // C6 - the claim stated as the relative one the HRM actually makes.
         checks.expect(wait_cycles == move_cycles + 1,
                       "C6 a WAIT consumes exactly one memory cycle more than a MOVE (p.20 'one extra to wake up') [FPGA-069, expected red] "
-                      "[claims: COP2-what-is-a-copper-instruction.c20]");
+                      "[claims: COP2-what-is-a-copper-instruction.c20, ch2-what-is-a-copper-instruction.c18]");
     }
 
     // ---------------- CI1-CI4: the "every ... except" of COPINS ----------------
@@ -341,7 +341,7 @@ int main(int argc, char** argv) {
             "CI4 across a list holding all three instruction forms, the ONLY cycle without "
             "COPINS is the MOVE's second - \"every Copper cycle except\" is exact, with no "
             "further exceptions (appendix A p274) "
-            "[claims: COP2-copins-summary.c7, COP2-copins-summary.c8]");
+            "[claims: COP2-copins-summary.c7, COP2-copins-summary.c8, ch2-appa-copins.c6]");
     }
 
     // ------------------------------------------------------------------
@@ -353,19 +353,19 @@ int main(int argc, char** argv) {
         "assertion here or anywhere in the suite models read-vs-write bus framing; "
         "every harness only exercises writes. COP2-copins-summary.c3: \"chip field A "
         "(Agnus)\" - the module under test IS Agnus's Copper block by construction, so "
-        "chip assignment is not independently falsifiable by any simulation of it)");
+        "chip assignment is not independently falsifiable by any simulation of it) [claims: ch2-appa-copins.c2, ch2-appb-table.c43]");
     checks.note("UNBOUND (COP2-copins-kinds.c1: \"the Copper has three instruction "
         "types\" and COP2-copins-kinds.c7: SKIP's condition includes exact equality - "
         "c1 is an exhaustiveness claim no assertion enumerates or excludes a fourth "
         "form; c7's equality case is never isolated from the greater-than case by any "
-        "SKIP scenario here, unlike WAIT's EVC control in agnus_copper_waitskip_range)");
+        "SKIP scenario here, unlike WAIT's EVC control in agnus_copper_waitskip_range) [claims: ch2-appa-copins.c11, ch2-appa-copins.c7]");
     checks.note("UNBOUND (COP2-copins-instructions.c1, COP2-copins-instructions.c2, "
         "COP2-copins-instructions.c3, COP2-copins-instructions.c4: page 275's "
         "restatement that there are exactly three instruction types and their names - "
         "MOVE immediate/WAIT until/SKIP if. Same reason as copins-kinds.c1 above: no "
         "assertion tests for the absence of a fourth form, and the three names "
         "themselves are not independently falsifiable beyond what their individual "
-        "behavioural claims already establish elsewhere in this suite)");
+        "behavioural claims already establish elsewhere in this suite) [claims: ch2-appa-copins.c134]");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

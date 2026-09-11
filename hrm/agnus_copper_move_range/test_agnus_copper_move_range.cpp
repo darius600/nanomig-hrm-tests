@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
         "but not specifically that $02E is the address doing it): "
         "COP2-copcon-appa.c1, COP2-copcon-appa.c2, COP2-copcon-appa.c4, "
         "COP2-copcon-ecs.c1, COP2-copcon-ecs.c2, COP2-copcon-ecs.c3, "
-        "COP2-copcon-ecs.c5, COP2-copcon-ecs.c6");
+        "COP2-copcon-ecs.c5, COP2-copcon-ecs.c6, ch2-appa-copcon.c1, ch2-appa-copcon.c2, ch2-appa-copcon.c4, ch2-appb-table.c3, ch2-appb-table.c4, ch2-appb-table.c6, ch2-appc-ecs.c13, ch2-appc-ecs.c14, ch2-appc-ecs.c16, ch2-appc-ecs.c17");
     checks.note("UNBOUND (COP2-copcon-appa.c10: \"Bit 01 is named CDANG\" - a name, not "
         "a requirement, and nothing in the module can disagree with one. T5/T6 listed "
         "this claim until 11.09.2026; they drive set_cdang(), which writes the VALUE "
@@ -344,7 +344,7 @@ int main(int argc, char** argv) {
         "nothing if the module reads a different bit)");
     checks.note("UNBOUND (COP2-copcon-appa.c5: \"COPCON has one implemented control "
         "bit\" - set_cdang() only ever writes 0x0000 or 0x0002; no assertion sweeps "
-        "COPCON's other bits to show they are unimplemented/inert)");
+        "COPCON's other bits to show they are unimplemented/inert) [claims: ch2-appa-copcon.c5]");
     checks.note("UNBOUND COP2-control-register.c8 (\"COPCON bit 1 is the only bit "
         "currently used by the system\") -- no assertion measures it. Same gap as "
         "COP2-copcon-appa.c5 above, independently found: set_cdang() only ever writes "

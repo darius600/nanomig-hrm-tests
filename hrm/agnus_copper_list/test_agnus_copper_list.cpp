@@ -226,7 +226,7 @@ int main(int argc, char** argv) {
         h.run_cycles(8000);
         const bool all_ran = h.move_count(COLOR00) == 1 && h.move_count(COLOR01) == 1 && h.move_count(COLOR02) == 1;
         checks.expect(all_ran, "L1 three MOVEs after one WAIT all execute (p.27) "
-                      "[claims: COP2-putting-together-a-copper-instruction-list.c17]");
+                      "[claims: COP2-putting-together-a-copper-instruction-list.c17, ch2-putting-together-a-copper-instruction-list.c21]");
         checks.expect(all_ran && h.order_of(COLOR00) < h.order_of(COLOR01) && h.order_of(COLOR01) < h.order_of(COLOR02),
                       "L1 the three MOVEs execute in list order");
     }
@@ -280,7 +280,7 @@ int main(int argc, char** argv) {
         checks.expect(h.move_count(COLOR00) == 0, "L4 IR1 bit 0 set: the word is a beam compare, not a MOVE to that register "
                       "[claims: COP2-the-move-instruction.c4, COP2-the-wait-instruction.c10, COP2-the-skip-instruction.c6, "
                       "COP2-summary-of-copper-instructions.c91, COP2-summary-of-copper-instructions.c93, COP2-summary-of-copper-instructions.c95, "
-                      "COP2-copins-encoding.c91, COP2-copins-encoding.c93, COP2-copins-encoding.c95]");
+                      "COP2-copins-encoding.c91, COP2-copins-encoding.c93, COP2-copins-encoding.c95, ch2-appa-copins.c106]");
         checks.expect(h.move_count(COLOR01) == 1, "L4 the list continues past it");
     }
 
@@ -299,7 +299,7 @@ int main(int argc, char** argv) {
         h.program_location(1, LIST_B);
         h.strobe(1);
         h.run_cycles(2000);
-        checks.expect(a_ran, "L5 list A runs first");
+        checks.expect(a_ran, "L5 list A runs first [claims: ch2-using-the-copper-in-interlaced-mode.c20, ch2-using-the-copper-in-interlaced-mode.c22]");
         checks.expect(h.move_count(COLOR01) == 1, "L5 after rewriting COP1LC and strobing COPJMP1 execution continues in list B (p.32)");
     }
 
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
                          && h.move_count(COLOR02) == 1 && h.data_of(COLOR02) == 0x1234;
         checks.expect(paired, "L8 instructions are consumed as word pairs, the data word is not decoded (p.20) "
                       "[claims: COP2-what-is-a-copper-instruction.c8, COP2-what-is-a-copper-instruction.c14, "
-                      "COP2-copins-instructions.c7, COP2-copins-instructions.c8]");
+                      "COP2-copins-instructions.c7, COP2-copins-instructions.c8, ch2-what-is-a-copper-instruction.c11, ch2-what-is-a-copper-instruction.c6]");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

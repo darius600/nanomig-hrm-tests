@@ -307,7 +307,7 @@ int main(int argc, char** argv) {
             "self-issued MOVE to COPJMP2 reloads address_out with the "
             "self-written value (p.26) "
             "[claims: COP2-copjmp-strobes.c7, COP2-copjmp-strobes.c8, "
-            "COP2-jump-strobe-address.c2, COP2-jump-strobe-address.c3, COP2-jump-strobe-address.c4]");
+            "COP2-jump-strobe-address.c2, COP2-jump-strobe-address.c3, COP2-jump-strobe-address.c4, ch2-jump-address-strobes.c2, ch2-jump-address-strobes.c3]");
     }
 
     // ------------------------------------------------------------------
@@ -335,7 +335,7 @@ int main(int argc, char** argv) {
             "SM2 [conformance] a self-issued MOVE addressing COPJMP2 strobes "
             "the externally-preloaded COP2LC address into the program "
             "counter (p.26) "
-            "[claims: COP2-copjmp-strobes.c7, COP2-copjmp-strobes.c8, COP2-jump-strobe-address.c3]");
+            "[claims: COP2-copjmp-strobes.c7, COP2-copjmp-strobes.c8, COP2-jump-strobe-address.c3, ch2-jump-address-strobes.c4]");
     }
 
     // ------------------------------------------------------------------
@@ -371,7 +371,7 @@ int main(int argc, char** argv) {
             "jumps to COP1LC and never to the distinct COP2LC list "
             "(p.33 first worked loop) "
             "[claims: COP2-copjmp-strobes.c5, COP2-copjmp-strobes.c6, "
-            "COP2-a-copper-loop-example.c10, COP2-a-copper-loop-example.c11]");
+            "COP2-a-copper-loop-example.c10, COP2-a-copper-loop-example.c11, ch2-a-copper-loop-example.c10, ch2-a-copper-loop-example.c11, ch2-appa-copjmp.c10]");
     }
 
     // ------------------------------------------------------------------
@@ -407,7 +407,7 @@ int main(int argc, char** argv) {
             "SM4 [conformance] a self-issued MOVE to COPJMP2 repeatedly "
             "jumps to COP2LC, which points elsewhere than COP1LC "
             "(p.33 second worked loop) "
-            "[claims: COP2-a-copper-loop-example.c19]");
+            "[claims: COP2-a-copper-loop-example.c19, ch2-a-copper-loop-example.c16]");
     }
 
     // ------------------------------------------------------------------

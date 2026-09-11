@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
                              && h.fetches[1] == A + 1;
         checks.expect(sequential,
                       "T1 first two instruction words are fetched sequentially from COP1LC "
-                      "[claims: COP2-location-registers.c19]");
+                      "[claims: COP2-location-registers.c19, ch2-appa-copins.c139, ch2-appa-copins.c142, ch2-appa-copjmp.c4, ch2-appa-copjmp.c9, ch2-appa-location-registers.c19, ch2-appb-legend.c5, ch2-appb-table.c37, ch2-jump-address-strobes.c1, ch2-jump-address-strobes.c6, ch2-location-registers.c10, ch2-location-registers.c13, ch2-location-registers.c14, ch2-location-registers.c15, ch2-location-registers.c16, ch2-location-registers.c17, ch2-using-the-copper-registers.c1]");
         if (!sequential) {
             std::cerr << "  observed fetch word addresses:";
             for (const uint32_t address : h.fetches) {
@@ -313,7 +313,7 @@ int main(int argc, char** argv) {
                       "COP2-cop-location-pointers.c3, COP2-cop-location-pointers.c9, "
                       "COP2-cop-location-pointers.c11, COP2-copjmp-strobes.c4]");
         checks.expect(h.move_count(COLOR00) == 0,
-                      "T2 COPJMP2 does not select COP1LC");
+                      "T2 COPJMP2 does not select COP1LC [claims: ch2-appa-copjmp.c8, ch2-appb-table.c41, ch2-jump-address-strobes.c5, ch2-jump-address-strobes.c7, ch2-location-registers.c1]");
         h.strobe(1);
         checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
                       "T2 COPJMP1 subsequently selects COP1LC");
@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
                       "T3 current list remains sequential after a location-only update "
                       "[claims: COP2-location-registers.c20]");
         checks.expect(h.move_count(COLOR02) == 0,
-                      "T3 rewriting COP1LC alone does not jump to the new list");
+                      "T3 rewriting COP1LC alone does not jump to the new list [claims: ch2-copper-loops-and-branches.c1, ch2-location-registers.c18]");
     }
 
     {
@@ -374,7 +374,7 @@ int main(int argc, char** argv) {
                       "T6 signature before the terminal WAIT executes");
         h.run_cycles(5000);
         checks.expect(h.move_count(COLOR01) == 0,
-                      "T6 instruction after $FFFF,$FFFE is not executed in the same field");
+                      "T6 instruction after $FFFF,$FFFE is not executed in the same field [claims: ch2-appb-legend.c8, ch2-copper-loops-and-branches.c3, ch2-location-registers.c19, ch2-location-registers.c20, ch2-putting-together-a-copper-instruction-list.c2, ch2-starting-the-copper-after-reset.c5, ch2-starting-the-copper-after-reset.c6, ch2-starting-the-copper-after-reset.c7, ch2-stopping-the-copper.c5, ch2-the-wait-instruction.c18]");
         h.pulse_sof();
         checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 2; }),
                       "T6 automatic field restart executes COP1LC again "
@@ -398,7 +398,7 @@ int main(int argc, char** argv) {
                       "[claims: COP2-location-registers.c24, "
                       "COP2-cop-location-pointers.c5, COP2-cop-location-pointers.c12]");
         checks.expect(h.move_count(COLOR01) == 1,
-                      "T7 automatic field restart does not select COP2LC again");
+                      "T7 automatic field restart does not select COP2LC again [claims: ch2-appa-copins.c143]");
     }
 
     {
@@ -413,7 +413,7 @@ int main(int argc, char** argv) {
         h.program_location(1, C);
         h.run_cycles(1200);
         checks.expect(h.move_count(COLOR02) == 0,
-                      "T8 updated COP1LC does not redirect the current field without a strobe");
+                      "T8 updated COP1LC does not redirect the current field without a strobe [claims: ch2-copper-loops-and-branches.c2, ch2-using-the-copper-in-interlaced-mode.c23]");
         h.pulse_sof();
         checks.expect(h.run_until([&]() { return h.move_count(COLOR02) == 1; }),
                       "T8 next automatic field restart uses the updated COP1LC "
@@ -430,11 +430,11 @@ int main(int argc, char** argv) {
         "bit-arithmetic walk isolates COPJMP1/COPJMP2's own address; every T1-T8 "
         "scenario above trusts the 0x088/0x08A constants rather than testing them): "
         "COP2-copjmp1.c1, COP2-copjmp1.c2, COP2-copjmp1.c4, "
-        "COP2-copjmp2.c1, COP2-copjmp2.c2, COP2-copjmp2.c4");
+        "COP2-copjmp2.c1, COP2-copjmp2.c2, COP2-copjmp2.c4, ch2-appa-copjmp.c1, ch2-appa-copjmp.c2, ch2-appa-copjmp.c5, ch2-appa-copjmp.c6, ch2-appb-table.c34, ch2-appb-table.c35, ch2-appb-table.c38, ch2-appb-table.c39");
     checks.note("UNBOUND (COP2-cop-location-pointers.c8: \"contents of COP2LC can "
         "modify PC for initialization\" - only COP1LC auto-reloads at start-of-frame "
         "here (T6-T8, via pulse_sof()); COP2LC's own reload for 'initialization' as "
-        "opposed to an explicit jump is never exercised)");
+        "opposed to an explicit jump is never exercised) [claims: ch2-appa-copins.c141]");
 
     if (checks.count() == 0) {
         std::cout << "FPGA-055 Copper register/control module checks passed.\n";

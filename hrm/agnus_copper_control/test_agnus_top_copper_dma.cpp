@@ -230,7 +230,7 @@ int main(int argc, char** argv) {
         h.clear_events();
         h.run_cycles(3000);
         checks.expect(h.events.empty(),
-                      "T5 COPEN without DMAEN produces no Copper fetch or MOVE effect");
+                      "T5 COPEN without DMAEN produces no Copper fetch or MOVE effect [claims: ch2-appa-copins.c144, ch2-appa-copins.c145, ch2-appa-copins.c146, ch2-starting-the-copper-after-reset.c3, ch2-stopping-the-copper.c7]");
     }
 
     {

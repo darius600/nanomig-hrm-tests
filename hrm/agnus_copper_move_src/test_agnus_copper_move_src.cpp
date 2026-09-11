@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
             "[claims: COP2-copins-fields-p275.c1, COP2-copins-fields-p275.c2, "
             "COP2-copins-fields-p275.c3, COP2-copins-fields-p275.c4, "
             "COP2-the-move-instruction.c2, COP2-what-is-a-copper-instruction.c8, "
-            "COP2-what-is-a-copper-instruction.c14, COP2-what-is-a-copper-instruction.c10]");
+            "COP2-what-is-a-copper-instruction.c14, COP2-what-is-a-copper-instruction.c10, ch2-what-is-a-copper-instruction.c8]");
     }
 
     // ------------------------------------------------------------------

@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
             "individually at address 2^(bit-1)) - matches the prose's "
             "\"low 15 bits\", not the table's \"low 16 bits\" (p25:20 vs "
             "p25:28-30, both cited, neither adjudicated) "
-            "[claims: COP2-cop1lcl.c5, COP2-location-registers.c10]");
+            "[claims: COP2-cop1lcl.c5, COP2-location-registers.c10, ch2-appa-location-registers.c6, ch2-appa-location-registers.c7, ch2-appa-location-registers.c9, ch2-appb-table.c20, ch2-appb-table.c22, ch2-appb-table.c23, ch2-location-registers.c9]");
     }
 
     // ------------------------------------------------------------------
@@ -240,7 +240,7 @@ int main(int argc, char** argv) {
             "LR2 [RTL_REGRESSION, no oracle] COP2LCL: same measurement "
             "repeated via COPJMP2 - width and bit-0 exclusion match COP1LCL "
             "(COP2-loc.c5/-location-registers.c5 vs COP2-loc.c7/3/"
-            "-location-registers.c11) [claims: COP2-cop2lcl.c5, COP2-location-registers.c10]");
+            "-location-registers.c11) [claims: COP2-cop2lcl.c5, COP2-location-registers.c10, ch2-appa-location-registers.c15, ch2-appa-location-registers.c16, ch2-appa-location-registers.c18, ch2-appb-table.c30, ch2-appb-table.c32, ch2-appb-table.c33]");
     }
 
     // ------------------------------------------------------------------
@@ -411,7 +411,7 @@ int main(int argc, char** argv) {
             "pair were right "
             "[claims: COP2-cop2lch.c5, COP2-cop2lch.c6, COP2-ecs-location-width.c3, "
             "COP2-ecs-location-width.c4, COP2-cop2lch-ecs.c5, COP2-cop2lch-ecs.c6, "
-            "COP2-cop-location-pointers.c7]");
+            "COP2-cop-location-pointers.c7, ch2-appa-location-registers.c12.s2, ch2-appa-location-registers.c13, ch2-appa-location-registers.c14, ch2-appb-table.c27.s2, ch2-appb-table.c28, ch2-appb-table.c29, ch2-appc-ecs.c10, ch2-appc-ecs.c11, ch2-location-registers.c4]");
 
         checks.note("LW5 bridges COP1LCH's separately-measured widths (LW1, red; LW2, "
             "green) onto COP2LCH by equality, which is how COP2-cop2lch.c5/c6 and the "
@@ -440,18 +440,18 @@ int main(int argc, char** argv) {
             "measures a stated width correctly. NOT a control for `ecs` being connected: "
             "it would also pass with that input dead, see agnus_copper_move_sweep for "
             "evidence that it is not "
-            "[claims: COP2-cop1lch.c6, COP2-ecs-location-width.c1, COP2-ecs-location-width.c2, COP2-cop1lch-ecs.c5]");
+            "[claims: COP2-cop1lch.c6, COP2-ecs-location-width.c1, COP2-ecs-location-width.c2, COP2-cop1lch-ecs.c5, ch2-appa-location-registers.c5, ch2-appb-table.c19, ch2-appc-ecs.c1, ch2-appc-ecs.c5]");
 
         checks.expect(ocs_width == 3,
             "LW1 [HRM_CONFORMANCE] with ecs=0 the COP1LCH high field is 3 bits wide "
             "(p309 \"was 3 bits\", p273 \"high 3 bits\") "
-            "[claims: COP2-cop1lch.c5, COP2-cop1lch-ecs.c6, COP2-location-registers.c2]");
+            "[claims: COP2-cop1lch.c5, COP2-cop1lch-ecs.c6, COP2-location-registers.c2, ch2-appa-location-registers.c4, ch2-appb-table.c18, ch2-appc-ecs.c6, ch2-location-registers.c2, ch2-location-registers.c7]");
 
         checks.expect(ocs_width != ecs_width,
             "LW3 [HRM_CONFORMANCE] the high-field width DEPENDS on the chipset - the "
             "appendix states two different values for the two chip sets, so a module "
             "giving the same width in both contradicts it whatever that width is "
-            "(p273, p309)");
+            "(p273, p309) [claims: ch2-appa-location-registers.c3.s2, ch2-appb-table.c17.s2]");
 
         // LW4 - the total, stated outright rather than left to arithmetic.
         //
@@ -471,7 +471,7 @@ int main(int argc, char** argv) {
             "(p276 \"These are 18-bit pointer registers\") - measured " +
             std::to_string(total_ocs) + " = " + std::to_string(measured_low_width) +
             " low + " + std::to_string(ocs_width) + " high "
-            "[claims: COP2-cop-location-pointers.c4, COP2-cop-location-pointers.c7]");
+            "[claims: COP2-cop-location-pointers.c4, COP2-cop-location-pointers.c7, ch2-appa-copins.c140]");
     }
 
     // ---------------- RM1-RM8: the register addresses, asserted ----------------
@@ -514,18 +514,18 @@ int main(int argc, char** argv) {
             "(appendix A p273 register rows) "
             "[claims: COP2-cop1lch.c1, COP2-cop1lch.c2, COP2-cop1lch.c4, "
             "COP2-cop1lcl.c1, COP2-cop1lcl.c2, COP2-cop1lcl.c4, COP2-cop-locations.c1, "
-            "COP2-location-registers.c7]");
+            "COP2-location-registers.c7, ch2-appa-location-registers.c1, ch2-appa-location-registers.c2, ch2-appb-legend.c3, ch2-appb-table.c14, ch2-appb-table.c15, ch2-appb-table.c16, ch2-appb-table.c21, ch2-location-registers.c12, ch2-location-registers.c6]");
         checks.expect(!lands_with(COP1LCL, COP1LCH, COPJMP1),
             "RM2 the same two addresses swapped does NOT - $080 and $082 are not "
             "interchangeable (p273). Says nothing about addresses outside this pair "
-            "[claims: COP2-location-registers.c7, COP2-location-registers.c10]");
+            "[claims: COP2-location-registers.c7, COP2-location-registers.c10, ch2-location-registers.c8]");
 
         checks.expect(lands_with(COP2LCH, COP2LCL, COPJMP2),
             "RM3 COP2LCH at $084 with COP2LCL at $086 places bit 17 through the second "
             "pointer (appendix A p273) "
             "[claims: COP2-cop2lch.c1, COP2-cop2lch.c2, COP2-cop2lch.c4, "
             "COP2-cop2lcl.c1, COP2-cop2lcl.c2, COP2-cop2lcl.c4, COP2-cop-locations.c1, "
-            "COP2-location-registers.c7]");
+            "COP2-location-registers.c7, ch2-appa-location-registers.c10, ch2-appa-location-registers.c11, ch2-appb-table.c24, ch2-appb-table.c25, ch2-appb-table.c26, ch2-appb-table.c31]");
         checks.expect(!lands_with(COP2LCL, COP2LCH, COPJMP2),
             "RM4 the second pair swapped does NOT (p273)");
 
@@ -546,7 +546,7 @@ int main(int argc, char** argv) {
         "independently asserted - unlike RM1/RM3 above, no bit-arithmetic walk "
         "isolates the ECS-table row's own address for COP1LCH/COP2LCH): "
         "COP2-cop1lch-ecs.c1, COP2-cop1lch-ecs.c2, COP2-cop1lch-ecs.c4, "
-        "COP2-cop2lch-ecs.c1, COP2-cop2lch-ecs.c2, COP2-cop2lch-ecs.c4");
+        "COP2-cop2lch-ecs.c1, COP2-cop2lch-ecs.c2, COP2-cop2lch-ecs.c4, ch2-appc-ecs.c2, ch2-appc-ecs.c3, ch2-appc-ecs.c7, ch2-appc-ecs.c8");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

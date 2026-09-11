@@ -249,7 +249,7 @@ int main(int argc, char** argv) {
         const int at = h.first_move_vpos(COLOR00);
         checks.expect(h.move_count(COLOR00) == 1, "W1 WAIT line $96, HP masked: the following MOVE runs "
                       "[claims: COP2-about-the-copper.c11, COP2-what-is-a-copper-instruction.c3, "
-                      "COP2-the-wait-instruction.c5]");
+                      "COP2-the-wait-instruction.c5, ch2-about-the-copper.c12, ch2-about-the-copper.c18, ch2-copper-loops-and-branches.c5, ch2-the-wait-instruction.c15, ch2-the-wait-instruction.c4, ch2-what-is-a-copper-instruction.c3]");
         checks.expect(at >= 0x96, "W1 WAIT line $96: the MOVE does not run before line $96 "
                       "[claims: COP2-copper-loops-and-branches-and-comparison-enable.c9]");
     }
@@ -268,7 +268,7 @@ int main(int argc, char** argv) {
                       "[claims: COP2-copins-kinds.c4, COP2-copins-kinds.c5, "
                       "COP2-the-wait-instruction.c2, COP2-putting-together-a-copper-instruction-list.c15, "
                       "COP2-putting-together-a-copper-instruction-list.c16, COP2-the-wait-instruction.c30, "
-                      "COP2-the-wait-instruction.c31, COP2-the-wait-instruction.c32, COP2-a-copper-loop-example.c6]");
+                      "COP2-the-wait-instruction.c31, COP2-the-wait-instruction.c32, COP2-a-copper-loop-example.c6, ch2-a-copper-loop-example.c6, ch2-appa-copins.c9, ch2-putting-together-a-copper-instruction-list.c14, ch2-putting-together-a-copper-instruction-list.c15, ch2-putting-together-a-copper-instruction-list.c17, ch2-the-wait-instruction.c1, ch2-the-wait-instruction.c29, ch2-the-wait-instruction.c30]");
     }
 
     // W3 - p.27 worked example: two WAITs for the same position, both MOVEs run.
@@ -283,7 +283,7 @@ int main(int argc, char** argv) {
         h.start_list();
         h.run_cycles(6000);
         checks.expect(h.move_count(COLOR00) == 1 && h.move_count(COLOR01) == 1,
-                      "W3 two WAITs for the same position: both MOVEs run (p.27)");
+                      "W3 two WAITs for the same position: both MOVEs run (p.27) [claims: ch2-putting-together-a-copper-instruction-list.c16, ch2-putting-together-a-copper-instruction-list.c18, ch2-putting-together-a-copper-instruction-list.c19, ch2-putting-together-a-copper-instruction-list.c20]");
     }
 
     // W4 - p.22/p.30: the terminal WAIT $FFFF,$FFFE can never complete.
@@ -328,7 +328,7 @@ int main(int argc, char** argv) {
                       "W4 terminal WAIT $FFFF,$FFFE never releases - for the reason "
                       "asserted in W4a/W4b (p.22, p.30) "
                       "[claims: COP2-stopping-the-copper.c2, COP2-stopping-the-copper.c8, "
-                      "COP2-a-copper-loop-example.c20]");
+                      "COP2-a-copper-loop-example.c20, ch2-a-copper-loop-example.c17, ch2-stopping-the-copper.c2, ch2-stopping-the-copper.c3, ch2-stopping-the-copper.c6, ch2-the-wait-instruction.c16, ch2-the-wait-instruction.c17]");
     }
 
     // W5 - p.32 masking rule: with VE=$0F only the low four vertical bits are
@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
                       "W5 VE=$0F: WAIT for VP=$0F releases on a line ending in $F (p.32) "
                       "[claims: COP2-the-wait-instruction.c7, COP2-the-wait-instruction.c8, "
                       "COP2-the-wait-instruction.c9, COP2-copper-loops-and-branches-and-comparison-enable.c10, "
-                      "COP2-copper-loops-and-branches-and-comparison-enable.c11]");
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c11, ch2-a-copper-loop-example.c1, ch2-copper-loops-and-branches.c8, ch2-the-wait-instruction.c6, ch2-vertical-beam-position.c9]");
     }
 
     // W6 - p.32 worked example: the top bit cannot be masked, because IR2
@@ -365,7 +365,7 @@ int main(int argc, char** argv) {
                       "[claims: COP2-copins-bfd.c7, COP2-copper-loops-and-branches-and-comparison-enable.c12, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c16, COP2-a-copper-loop-example.c1, "
                       "COP2-a-copper-loop-example.c2, COP2-a-copper-loop-example.c3, COP2-a-copper-loop-example.c15, "
-                      "COP2-a-copper-loop-example.c17, COP2-a-copper-loop-example.c12]");
+                      "COP2-a-copper-loop-example.c17, COP2-a-copper-loop-example.c12, ch2-a-copper-loop-example.c12, ch2-a-copper-loop-example.c2, ch2-a-copper-loop-example.c3, ch2-a-copper-loop-example.c4, ch2-a-copper-loop-example.c5, ch2-appa-copins.c125, ch2-copper-loops-and-branches.c9]");
     }
 
     // W7 - a horizontal position with HE enabled is honoured.
@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
         h.run_cycles(6000);
         checks.expect(h.move_count(COLOR00) == 1, "W7 WAIT with an enabled horizontal compare releases "
                       "[claims: COP2-the-wait-instruction.c6, COP2-the-wait-instruction.c17, "
-                      "COP2-copper-loops-and-branches-and-comparison-enable.c4]");
+                      "COP2-copper-loops-and-branches-and-comparison-enable.c4, ch2-the-wait-instruction.c5]");
     }
 
     // ---------------- SKIP (COP-08) ----------------
@@ -398,7 +398,7 @@ int main(int argc, char** argv) {
         checks.expect(h.move_count(COLOR00) == 0, "S1 SKIP with condition true: the next MOVE is skipped (p.31) "
                       "[claims: COP2-copins-kinds.c8, COP2-copins-kinds.c9, COP2-copins-encoding.c96, "
                       "COP2-what-is-a-copper-instruction.c7, COP2-the-skip-instruction.c2, "
-                      "COP2-the-skip-instruction.c10, COP2-the-skip-instruction.c17]");
+                      "COP2-the-skip-instruction.c10, COP2-the-skip-instruction.c17, ch2-the-skip-instruction.c13, ch2-what-is-a-copper-instruction.c5]");
         checks.expect(h.move_count(COLOR01) == 1, "S1 SKIP with condition true: the MOVE after that still runs");
     }
 
@@ -454,7 +454,7 @@ int main(int argc, char** argv) {
                       "COP2-the-skip-instruction.c3, COP2-summary-of-copper-instructions.c94, "
                       "COP2-summary-of-copper-instructions.c96, COP2-the-skip-instruction.c12, "
                       "COP2-the-skip-instruction.c4, COP2-the-skip-instruction.c5, "
-                      "COP2-the-wait-instruction.c13]");
+                      "COP2-the-wait-instruction.c13, ch2-appa-copins.c107, ch2-appa-copins.c109]");
     }
 
     // ---------------- BFD (COP-08, p.33) ----------------
@@ -476,7 +476,7 @@ int main(int argc, char** argv) {
                       "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
                       "COP2-using-the-copper-with-the-blitter.c5, "
-                      "COP2-summary-of-copper-instructions.c4]");
+                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c122, ch2-appa-copins.c17, ch2-copper-loops-and-branches.c10, ch2-copper-loops-and-branches.c11, ch2-summary-of-copper-instructions.c4, ch2-the-wait-instruction.c11, ch2-using-the-copper-with-the-blitter.c3, ch2-using-the-copper-with-the-blitter.c5]");
     }
 
     // B2 - BFD=0 additionally requires the blitter to have finished.
@@ -495,7 +495,7 @@ int main(int argc, char** argv) {
                       "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
                       "COP2-using-the-copper-with-the-blitter.c6, COP2-using-the-copper-with-the-blitter.c8, "
-                      "COP2-summary-of-copper-instructions.c4]");
+                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c17, ch2-using-the-copper-with-the-blitter.c6]");
     }
 
     // B2s - the same for SKIP. p.33 puts BFD in IR2, which both instructions
@@ -521,7 +521,7 @@ int main(int argc, char** argv) {
                       "B2s BFD=0: a busy blitter leaves the SKIP condition unsatisfied, "
                       "so the following MOVE runs (p.33) "
                       "[claims: COP2-copins-bfd.c4, COP2-copins-bfd.c6, "
-                      "COP2-the-skip-instruction.c13, COP2-summary-of-copper-instructions.c6]");
+                      "COP2-the-skip-instruction.c13, COP2-summary-of-copper-instructions.c6, ch2-appa-copins.c124, ch2-summary-of-copper-instructions.c6, ch2-the-skip-instruction.c9]");
     }
 
     // B3 - and releases once the blitter reports finished.
@@ -633,7 +633,7 @@ int main(int argc, char** argv) {
             "[claims: COP2-copins-fields-p275.c10, COP2-the-wait-instruction.c1, "
             "COP2-the-wait-instruction.c30, COP2-putting-together-a-copper-instruction-list.c14, "
             "COP2-what-is-a-copper-instruction.c4, COP2-vertical-beam-position.c5, "
-            "COP2-vertical-beam-position.c6, COP2-vertical-beam-position.c8]");
+            "COP2-vertical-beam-position.c6, COP2-vertical-beam-position.c8, ch2-appa-copins.c117]");
 
         // COP2-copins-encoding claim ids as a literal array, one per bit,
         // rather than built from an arithmetic expression at runtime: the same
@@ -641,10 +641,10 @@ int main(int argc, char** argv) {
         // claim id assembled only from std::to_string(45 - 6*bit) never
         // appears as a full, grep-able substring anywhere in this file's text.
         static const char* const kEvApxClaimId[8] = {
-            "COP2-copins-encoding.c45", "COP2-copins-encoding.c39",
-            "COP2-copins-encoding.c33", "COP2-copins-encoding.c27",
-            "COP2-copins-encoding.c21", "COP2-copins-encoding.c15",
-            "COP2-copins-encoding.c9",  "COP2-copins-encoding.c3",
+            "COP2-copins-encoding.c45, ch2-appa-copins.c58", "COP2-copins-encoding.c39, ch2-appa-copins.c52",
+            "COP2-copins-encoding.c33, ch2-appa-copins.c46", "COP2-copins-encoding.c27, ch2-appa-copins.c40",
+            "COP2-copins-encoding.c21, ch2-appa-copins.c34", "COP2-copins-encoding.c15, ch2-appa-copins.c28",
+            "COP2-copins-encoding.c9, ch2-appa-copins.c22",  "COP2-copins-encoding.c3, ch2-appa-copins.c16",
         };
         // Same reasoning as kEvApxClaimId above, for the body-claims id family:
         // a claim id built only from std::to_string(45 - 6*bit) never appears as
@@ -652,10 +652,10 @@ int main(int argc, char** argv) {
         // over assertion strings would not find it even though the compiled
         // program prints it correctly. Kept as a literal array instead.
         static const char* const kEvBodyClaimId[8] = {
-            "COP2-summary-of-copper-instructions.c45", "COP2-summary-of-copper-instructions.c39",
-            "COP2-summary-of-copper-instructions.c33", "COP2-summary-of-copper-instructions.c27",
-            "COP2-summary-of-copper-instructions.c21", "COP2-summary-of-copper-instructions.c15",
-            "COP2-summary-of-copper-instructions.c9",  "COP2-summary-of-copper-instructions.c3",
+            "COP2-summary-of-copper-instructions.c45, ch2-summary-of-copper-instructions.c45", "COP2-summary-of-copper-instructions.c39, ch2-summary-of-copper-instructions.c39",
+            "COP2-summary-of-copper-instructions.c33, ch2-summary-of-copper-instructions.c33", "COP2-summary-of-copper-instructions.c27, ch2-summary-of-copper-instructions.c27",
+            "COP2-summary-of-copper-instructions.c21, ch2-summary-of-copper-instructions.c21", "COP2-summary-of-copper-instructions.c15, ch2-summary-of-copper-instructions.c15",
+            "COP2-summary-of-copper-instructions.c9, ch2-summary-of-copper-instructions.c9",  "COP2-summary-of-copper-instructions.c3, ch2-summary-of-copper-instructions.c3",
         };
         for (int bit = 0; bit <= 7; ++bit) {
             const uint8_t vp = static_cast<uint8_t>(1u << bit);
@@ -738,21 +738,21 @@ int main(int argc, char** argv) {
         checks.expect(first > 0 && latency >= 0 && latency < 64,
             "EHC [control] the HP walk's first bit releases at a plausible position, so "
             "the fetch latency can be calibrated from it rather than assumed "
-            "[claims: COP2-copins-fields-p275.c11, COP2-the-wait-instruction.c12]");
+            "[claims: COP2-copins-fields-p275.c11, COP2-the-wait-instruction.c12, ch2-appa-copins.c118]");
 
         static const char* const kEhApxClaimId[7] = {
-            "COP2-copins-encoding.c87", "COP2-copins-encoding.c81",
-            "COP2-copins-encoding.c75", "COP2-copins-encoding.c69",
-            "COP2-copins-encoding.c63", "COP2-copins-encoding.c57",
-            "COP2-copins-encoding.c51",
+            "COP2-copins-encoding.c87, ch2-appa-copins.c100", "COP2-copins-encoding.c81, ch2-appa-copins.c94",
+            "COP2-copins-encoding.c75, ch2-appa-copins.c88", "COP2-copins-encoding.c69, ch2-appa-copins.c82",
+            "COP2-copins-encoding.c63, ch2-appa-copins.c76", "COP2-copins-encoding.c57, ch2-appa-copins.c70",
+            "COP2-copins-encoding.c51, ch2-appa-copins.c64",
         };
         // Body-claims counterpart, literal for the same grep-ability reason as
         // kEhApxClaimId and kEvBodyClaimId above.
         static const char* const kEhBodyClaimId[7] = {
-            "COP2-summary-of-copper-instructions.c87", "COP2-summary-of-copper-instructions.c81",
-            "COP2-summary-of-copper-instructions.c75", "COP2-summary-of-copper-instructions.c69",
-            "COP2-summary-of-copper-instructions.c63", "COP2-summary-of-copper-instructions.c57",
-            "COP2-summary-of-copper-instructions.c51",
+            "COP2-summary-of-copper-instructions.c87, ch2-summary-of-copper-instructions.c87", "COP2-summary-of-copper-instructions.c81, ch2-summary-of-copper-instructions.c81",
+            "COP2-summary-of-copper-instructions.c75, ch2-summary-of-copper-instructions.c75", "COP2-summary-of-copper-instructions.c69, ch2-summary-of-copper-instructions.c69",
+            "COP2-summary-of-copper-instructions.c63, ch2-summary-of-copper-instructions.c63", "COP2-summary-of-copper-instructions.c57, ch2-summary-of-copper-instructions.c57",
+            "COP2-summary-of-copper-instructions.c51, ch2-summary-of-copper-instructions.c51",
         };
         for (int bit = 0; bit <= 6; ++bit) {
             const uint8_t hp = static_cast<uint8_t>(1u << bit);
@@ -806,18 +806,18 @@ int main(int argc, char** argv) {
         };
 
         static const char* const kEmApxClaimId[7] = {
-            "COP2-copins-encoding.c46", "COP2-copins-encoding.c40",
-            "COP2-copins-encoding.c34", "COP2-copins-encoding.c28",
-            "COP2-copins-encoding.c22", "COP2-copins-encoding.c16",
-            "COP2-copins-encoding.c10",
+            "COP2-copins-encoding.c46, ch2-appa-copins.c119, ch2-appa-copins.c59", "COP2-copins-encoding.c40, ch2-appa-copins.c53",
+            "COP2-copins-encoding.c34, ch2-appa-copins.c47", "COP2-copins-encoding.c28, ch2-appa-copins.c41",
+            "COP2-copins-encoding.c22, ch2-appa-copins.c35", "COP2-copins-encoding.c16, ch2-appa-copins.c29",
+            "COP2-copins-encoding.c10, ch2-appa-copins.c23",
         };
         // Body-claims counterpart, literal for the same grep-ability reason as
         // kEmApxClaimId and kEvBodyClaimId above.
         static const char* const kEmBodyClaimId[7] = {
-            "COP2-summary-of-copper-instructions.c46", "COP2-summary-of-copper-instructions.c40",
-            "COP2-summary-of-copper-instructions.c34", "COP2-summary-of-copper-instructions.c28",
-            "COP2-summary-of-copper-instructions.c22", "COP2-summary-of-copper-instructions.c16",
-            "COP2-summary-of-copper-instructions.c10",
+            "COP2-summary-of-copper-instructions.c46, ch2-summary-of-copper-instructions.c46", "COP2-summary-of-copper-instructions.c40, ch2-summary-of-copper-instructions.c40",
+            "COP2-summary-of-copper-instructions.c34, ch2-summary-of-copper-instructions.c34", "COP2-summary-of-copper-instructions.c28, ch2-summary-of-copper-instructions.c28",
+            "COP2-summary-of-copper-instructions.c22, ch2-summary-of-copper-instructions.c22", "COP2-summary-of-copper-instructions.c16, ch2-summary-of-copper-instructions.c16",
+            "COP2-summary-of-copper-instructions.c10, ch2-summary-of-copper-instructions.c10",
         };
         for (int bit = 0; bit <= 6; ++bit) {
             const uint8_t vp = static_cast<uint8_t>(1u << bit);
@@ -858,7 +858,7 @@ int main(int argc, char** argv) {
         "COP2-copins-encoding.c23, COP2-copins-encoding.c29, COP2-copins-encoding.c35, "
         "COP2-copins-encoding.c41, COP2-copins-encoding.c47, COP2-copins-encoding.c53, "
         "COP2-copins-encoding.c59, COP2-copins-encoding.c65, COP2-copins-encoding.c71, "
-        "COP2-copins-encoding.c77, COP2-copins-encoding.c83, COP2-copins-encoding.c89");
+        "COP2-copins-encoding.c77, COP2-copins-encoding.c83, COP2-copins-encoding.c89, ch2-appa-copins.c102, ch2-appa-copins.c18, ch2-appa-copins.c24, ch2-appa-copins.c30, ch2-appa-copins.c36, ch2-appa-copins.c42, ch2-appa-copins.c48, ch2-appa-copins.c54, ch2-appa-copins.c60, ch2-appa-copins.c66, ch2-appa-copins.c72, ch2-appa-copins.c78, ch2-appa-copins.c84, ch2-appa-copins.c90, ch2-appa-copins.c96, ch2-summary-of-copper-instructions.c12, ch2-summary-of-copper-instructions.c18, ch2-summary-of-copper-instructions.c24, ch2-summary-of-copper-instructions.c30, ch2-summary-of-copper-instructions.c36, ch2-summary-of-copper-instructions.c42, ch2-summary-of-copper-instructions.c48, ch2-summary-of-copper-instructions.c54, ch2-summary-of-copper-instructions.c60, ch2-summary-of-copper-instructions.c66, ch2-summary-of-copper-instructions.c72, ch2-summary-of-copper-instructions.c78, ch2-summary-of-copper-instructions.c84, ch2-summary-of-copper-instructions.c90, ch2-the-skip-instruction.c11, ch2-the-skip-instruction.c5, ch2-the-skip-instruction.c6, ch2-the-wait-instruction.c8, ch2-the-wait-instruction.c9, ch2-vertical-beam-position.c6, ch2-vertical-beam-position.c7");
     checks.note("UNBOUND (SKIP's own IR2 field values at every bit position, same reason "
         "as the IR1 note above - no per-bit walk exists for the SKIP form; c96, bit 0, "
         "is bound at S1/S4 separately): "
@@ -866,7 +866,7 @@ int main(int argc, char** argv) {
         "COP2-copins-encoding.c24, COP2-copins-encoding.c30, COP2-copins-encoding.c36, "
         "COP2-copins-encoding.c42, COP2-copins-encoding.c48, COP2-copins-encoding.c54, "
         "COP2-copins-encoding.c60, COP2-copins-encoding.c66, COP2-copins-encoding.c72, "
-        "COP2-copins-encoding.c78, COP2-copins-encoding.c84, COP2-copins-encoding.c90");
+        "COP2-copins-encoding.c78, COP2-copins-encoding.c84, COP2-copins-encoding.c90, ch2-appa-copins.c103, ch2-appa-copins.c19, ch2-appa-copins.c25, ch2-appa-copins.c31, ch2-appa-copins.c37, ch2-appa-copins.c43, ch2-appa-copins.c49, ch2-appa-copins.c55, ch2-appa-copins.c61, ch2-appa-copins.c67, ch2-appa-copins.c73, ch2-appa-copins.c79, ch2-appa-copins.c85, ch2-appa-copins.c91, ch2-appa-copins.c97, ch2-the-skip-instruction.c10");
     checks.note("UNBOUND (the HE field's own bit-position mapping and masking - EM0-EM6 "
         "walk VE's masking role bit by bit, but no equivalent walk exists for HE; W7 "
         "sets HE=$7F generally and W1 sets HE=$00, but W1's target HP happens to be 0, "
@@ -874,13 +874,13 @@ int main(int argc, char** argv) {
         "of whether masking actually works, so it does not discriminate): "
         "COP2-copins-encoding.c52, COP2-copins-encoding.c58, COP2-copins-encoding.c64, "
         "COP2-copins-encoding.c70, COP2-copins-encoding.c76, COP2-copins-encoding.c82, "
-        "COP2-copins-encoding.c88, COP2-copins-fields-p275.c13");
+        "COP2-copins-encoding.c88, COP2-copins-fields-p275.c13, ch2-appa-copins.c101, ch2-appa-copins.c120, ch2-appa-copins.c65, ch2-appa-copins.c71, ch2-appa-copins.c77, ch2-appa-copins.c83, ch2-appa-copins.c89, ch2-appa-copins.c95, ch2-copper-loops-and-branches.c6, ch2-copper-loops-and-branches.c7, ch2-the-wait-instruction.c13, ch2-the-wait-instruction.c14");
     checks.note("UNBOUND (COP2-copins-fields.c1, COP2-copins-fields.c2: the page-274 "
         "legend \"IR1=First instruction register\" / \"IR2=Second instruction register\" "
         "is a purely definitional naming claim, not independently RTL-observable - and "
         "the RTL's own internal register naming inverts the manual's IR1/IR2 labels per "
         "the classifier's own evidence note on the MOVE-decode claims, which this file "
-        "does not attempt to adjudicate)");
+        "does not attempt to adjudicate) [claims: ch2-appa-copins.c110, ch2-appa-copins.c111]");
 
     // ------------------------------------------------------------------
     // Body claims (body_claims.jsonl) considered for this package and left
@@ -891,17 +891,17 @@ int main(int argc, char** argv) {
     checks.note("UNBOUND COP2-the-wait-instruction.c20, COP2-the-wait-instruction.c21 "
         "(\"line 255 is a valid WAIT target\" / \"255 is the max representable VP value\") "
         "-- no assertion measures it. No WAIT target in this file uses VP=$FF; EV's walk "
-        "stops at bit 7 (VP=$80) and never exercises the fully-set field.");
+        "stops at bit 7 (VP=$80) and never exercises the fully-set field., ch2-the-wait-instruction.c19, ch2-the-wait-instruction.c20");
     checks.note("UNBOUND COP2-the-wait-instruction.c24 (\"the line number in the comparison "
         "never exceeds $FF\") -- no assertion measures it. This is the vpos port's 8-bit "
-        "width, a fixed interface fact no stimulus here varies independently of it.");
+        "width, a fixed interface fact no stimulus here varies independently of it. [claims: ch2-the-wait-instruction.c23]");
     checks.note("UNBOUND COP2-horizontal-beam-position.c2, COP2-vertical-beam-position.c2 "
         "(\"the HP field's LSB does not participate\" / \"max vertical value is 255\") -- "
         "no assertion measures it. EH measures the field in units of 4 hpos ticks on this "
         "454-tick fixture line (2x a real 227-tick line), which is a different, "
         "fixture-scaled quantity from the manual's 1-bit/113-position claim, and no "
         "assertion here converts between them; the vertical claim is the same 8-bit-width "
-        "fact as c21 above, restated.");
+        "fact as c21 above, restated. [claims: ch2-horizontal-beam-position.c2, ch2-vertical-beam-position.c1, ch2-vertical-beam-position.c2, ch2-vertical-beam-position.c5]");
     checks.note("UNBOUND COP2-summary-of-copper-instructions.c52, "
         "COP2-summary-of-copper-instructions.c58, COP2-summary-of-copper-instructions.c64, "
         "COP2-summary-of-copper-instructions.c70, COP2-summary-of-copper-instructions.c76, "
@@ -910,14 +910,14 @@ int main(int argc, char** argv) {
         "assertion measures it. Same gap as the appendix note above for "
         "COP2-copins-encoding.c52/58/64/70/76/82/88: EM0-EM6 walk VE bit by bit, nothing "
         "walks HE the same way, and W1/W7 only exercise HE at its extremes (all-clear, "
-        "all-set), which cannot show which bit governs which comparison bit.");
+        "all-set), which cannot show which bit governs which comparison bit. [claims: ch2-summary-of-copper-instructions.c52, ch2-summary-of-copper-instructions.c58, ch2-summary-of-copper-instructions.c64, ch2-summary-of-copper-instructions.c70, ch2-summary-of-copper-instructions.c76, ch2-summary-of-copper-instructions.c82, ch2-summary-of-copper-instructions.c88]");
     checks.note("UNBOUND COP2-using-the-copper-with-the-blitter.c7 (\"BFD cleared: WAIT "
         "requires a true beam-counter comparison\") -- no assertion measures it. B2 and B3 "
         "both start with the position already satisfied (seek_beam past the WAIT's target), "
         "so neither can tell \"BFD=0 needs position true\" apart from \"BFD=0 ignores "
         "position and waits on the blitter alone\" - both hypotheses predict the same "
         "observed hold-then-release. Only the blitter-finished half (c8, bound at B2/B3) is "
-        "actually discriminated.");
+        "actually discriminated. [claims: ch2-appa-copins.c123, ch2-using-the-copper-with-the-blitter.c7]");
     checks.note("UNBOUND (SKIP's own per-bit VP/HP field mapping in the page-36 summary "
         "table, IR1 side - same gap as the appendix IR1 note above, independently found: "
         "S1-S4 and B2s exercise SKIP at fixed combined positions, never isolate one bit at "
@@ -929,7 +929,7 @@ int main(int argc, char** argv) {
         "COP2-summary-of-copper-instructions.c53, COP2-summary-of-copper-instructions.c59, "
         "COP2-summary-of-copper-instructions.c65, COP2-summary-of-copper-instructions.c71, "
         "COP2-summary-of-copper-instructions.c77, COP2-summary-of-copper-instructions.c83, "
-        "COP2-summary-of-copper-instructions.c89");
+        "COP2-summary-of-copper-instructions.c89, ch2-summary-of-copper-instructions.c11, ch2-summary-of-copper-instructions.c17, ch2-summary-of-copper-instructions.c23, ch2-summary-of-copper-instructions.c29, ch2-summary-of-copper-instructions.c35, ch2-summary-of-copper-instructions.c41, ch2-summary-of-copper-instructions.c47, ch2-summary-of-copper-instructions.c5, ch2-summary-of-copper-instructions.c53, ch2-summary-of-copper-instructions.c59, ch2-summary-of-copper-instructions.c65, ch2-summary-of-copper-instructions.c71, ch2-summary-of-copper-instructions.c77, ch2-summary-of-copper-instructions.c83, ch2-summary-of-copper-instructions.c89");
     checks.note("UNBOUND (SKIP's own per-bit VE/HE/BFD field mapping in the page-36 summary "
         "table, IR2 side - same gap, same reason as the IR1 note just above; c6 is bound at "
         "B2s separately and listed there, not repeated as unbound here): "
@@ -939,36 +939,36 @@ int main(int argc, char** argv) {
         "COP2-summary-of-copper-instructions.c48, COP2-summary-of-copper-instructions.c54, "
         "COP2-summary-of-copper-instructions.c60, COP2-summary-of-copper-instructions.c66, "
         "COP2-summary-of-copper-instructions.c72, COP2-summary-of-copper-instructions.c78, "
-        "COP2-summary-of-copper-instructions.c84, COP2-summary-of-copper-instructions.c90");
+        "COP2-summary-of-copper-instructions.c84, COP2-summary-of-copper-instructions.c90, ch2-summary-of-copper-instructions.c12, ch2-summary-of-copper-instructions.c18, ch2-summary-of-copper-instructions.c24, ch2-summary-of-copper-instructions.c30, ch2-summary-of-copper-instructions.c36, ch2-summary-of-copper-instructions.c42, ch2-summary-of-copper-instructions.c48, ch2-summary-of-copper-instructions.c54, ch2-summary-of-copper-instructions.c60, ch2-summary-of-copper-instructions.c66, ch2-summary-of-copper-instructions.c72, ch2-summary-of-copper-instructions.c78, ch2-summary-of-copper-instructions.c84, ch2-summary-of-copper-instructions.c90");
     checks.note("UNBOUND COP2-the-skip-instruction.c1, COP2-the-skip-instruction.c9 "
         "(\"SKIP skips when the beam counter EQUALS the encoded value\") -- no assertion "
         "measures it. Every SKIP scenario in this file (S1-S4) places the beam either "
         "already past the target or short of it within the run budget; none arranges an "
         "exact equality hit the way W3's WAIT scenario does by letting the beam increment "
         "up to a fixed line. Only the greater-than half of \"equal to or greater than\" is "
-        "exercised for SKIP.");
+        "exercised for SKIP. [claims: ch2-the-skip-instruction.c1]");
     checks.note("UNBOUND COP2-the-skip-instruction.c8, COP2-the-skip-instruction.c15, "
         "COP2-the-skip-instruction.c16 (\"bits 7-1 of the first/second SKIP word carry HP / "
         "HE\") -- no assertion measures it. Every SKIP install() in this file uses hp=0x00 "
         "and he=0x00 throughout; the horizontal half of the SKIP position/mask is never "
         "varied, so nothing here shows those bits function as HP or HE for SKIP "
-        "specifically (as opposed to being wired to nothing).");
+        "specifically (as opposed to being wired to nothing). [claims: ch2-the-skip-instruction.c11, ch2-the-skip-instruction.c12, ch2-the-skip-instruction.c6, ch2-the-wait-instruction.c31]");
     checks.note("UNBOUND COP2-the-skip-instruction.c11 (\"bits 15 through 1 of the first "
         "SKIP word form the combined comparison position\") -- no assertion measures it as "
         "a combined field. S1/S2 vary only the VP half (bits 15-8); with HP fixed at 0 "
         "throughout, the claim's HP-bits-7-1 half is untested, so the full 15-bit "
         "combination is not established, only the VP sub-field (see the bound "
-        "COP2-the-skip-instruction.c7 at S1/S2).");
+        "COP2-the-skip-instruction.c7 at S1/S2)., ch2-the-skip-instruction.c7");
     checks.note("UNBOUND COP2-copper-loops-and-branches-and-comparison-enable.c6 (\"bits "
         "14-1 of SKIP word 2 select horizontal-position bits for the comparison\") -- no "
         "assertion measures it, same reason as the HE notes above: he=0x00 throughout every "
-        "SKIP scenario in this file.");
+        "SKIP scenario in this file. [claims: ch2-copper-loops-and-branches.c4]");
     checks.note("UNBOUND COP2-copper-loops-and-branches-and-comparison-enable.c17 (\"SKIP "
         "cannot mask the most significant beam-position bit\") -- no assertion measures it. "
         "W6 establishes this for WAIT (VP=$0F with the top bit reached by the live beam); "
         "S3, the nearest SKIP analogue, uses VP=$70 (top bit clear) and never drives the "
         "beam or the target past $80 for a SKIP, so the SKIP-specific version of the "
-        "unmaskable-top-bit behaviour is asserted nowhere.");
+        "unmaskable-top-bit behaviour is asserted nowhere., ch2-copper-loops-and-branches.c12");
     checks.note("UNBOUND COP2-stopping-the-copper.c3 (\"while an impossible WAIT is "
         "pending, the Copper does nothing\") -- no assertion measures it in full. The "
         "claim's own evidence names three simultaneous observations (reqdma low, "
@@ -988,7 +988,7 @@ int main(int argc, char** argv) {
         "narrative shape of the book's worked example; no fixture here reproduces that "
         "exact program to check the narrative claims themselves, and c18 specifically needs "
         "a horizontal WAIT case this file's masking tests never build (see the HE notes "
-        "above).");
+        "above). [claims: ch2-a-copper-loop-example.c13, ch2-a-copper-loop-example.c14, ch2-a-copper-loop-example.c15]");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
