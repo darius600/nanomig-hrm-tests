@@ -106,11 +106,11 @@
 //   (SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL) is recorded as "impossible",
 //   not skipped.
 //
-// CLAIM COVERAGE -- all 94 ids in ch5-audio-channel-registers.jsonl are cited
-//   in full inside an expect()/note() call's own text below (never only in a
-//   header comment). Eighteen assertion groups, ids folded onto whichever
-//   group tests the identical underlying proposition (many ids are the same
-//   quotation or the same fact independently read by both lots):
+// CLAIM COVERAGE -- all 94 original ids in ch5-audio-channel-registers.jsonl
+//   are cited in full inside an expect()/note() call's own text below (never
+//   only in a header comment). Eighteen assertion groups, ids folded onto
+//   whichever group tests the identical underlying proposition (many ids are
+//   the same quotation or the same fact independently read by both lots):
 //     SAMPLE-ITEM-WIDTH-EIGHT-BITS                    4 ids
 //     WORD-CONTAINS-TWO-SAMPLES                       14 ids
 //     SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL         4 ids
@@ -132,6 +132,16 @@
 //   DIRECT-WRITE-PATH) carry no claim id -- pure liveness controls -- and
 //   still get their own mutation, matching hrm/ch5-audio-volume-scale/'s own
 //   CONTROL-CLOCKED-LIVENESS convention.
+//
+// GAP CLOSURE (V-10 reclassification): one further claim, previously
+//   discarded as `not-hardware`, is asserted below as a nineteenth group:
+//     SAMPLE-SIGNED-RANGE-FULL-SCALE                  1 id (5-noise.c1)
+//   V-10's argument was that no port carries a Hertz-valued frequency, which
+//   is true but irrelevant here: 5-noise.c1 states a digitally observable
+//   endpoint pair, not a frequency. Both signed two's-complement extremes,
+//   -128 and +127, are shown reaching `sample` intact through the eight-bit
+//   path and its sign extension -- no clock, tick count, or Hz figure is
+//   involved on either side of this one. New total = 94 + 1 = 95.
 //
 // WHAT IS RECORDED, NOT ASSERTED (measure-and-report, per this chapter's own
 //   silence/conflict rulings -- never forced into a graded pass/fail that
@@ -174,30 +184,32 @@
 //   below is about the mixer; every volume-bearing assertion below names its
 //   own port so a reader cannot conflate the two.
 //
-// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026): 18 passed, 0
-//   failed. Every graded assertion in this package came back green: the
-//   register widths, read-back and effects claimed by chapter 5's body,
-//   appendix A, appendix B and appendix C for AUDxLEN/AUDxPER/AUDxVOL/AUDxDAT
-//   all match what paula_audio_channel.v implements, including the two
-//   scenarios this package had to design itself rather than reuse an
-//   already-measured fact (LENGTH-IS-A-BACKUP-REGISTER, INTERRUPT-CADENCE-
-//   TIED-TO-LENGTH) and the direct contradiction of appendix B's DMA-only
-//   gloss by appendix A's own "the processor can also write directly"
-//   (CPU-CAN-WRITE-AUDXDAT-DIRECTLY). No red arose, and none was manufactured
-//   to arise -- the disputes this chapter's own materials flagged in advance
+// RESULTS (WSL/Verilator 5.052): 19 passed, 0 failed (18 original groups +
+//   the SAMPLE-SIGNED-RANGE-FULL-SCALE gap closure). Every graded assertion
+//   in this package came back green: the register widths, read-back and
+//   effects claimed by chapter 5's body, appendix A, appendix B and appendix
+//   C for AUDxLEN/AUDxPER/AUDxVOL/AUDxDAT all match what
+//   paula_audio_channel.v implements, including the two scenarios this
+//   package had to design itself rather than reuse an already-measured fact
+//   (LENGTH-IS-A-BACKUP-REGISTER, INTERRUPT-CADENCE-TIED-TO-LENGTH), the
+//   direct contradiction of appendix B's DMA-only gloss by appendix A's own
+//   "the processor can also write directly" (CPU-CAN-WRITE-AUDXDAT-
+//   DIRECTLY), and the reclassified signed-range endpoint pair (SAMPLE-
+//   SIGNED-RANGE-FULL-SCALE). No red arose, and none was manufactured to
+//   arise -- the disputes this chapter's own materials flagged in advance
 //   (the six-vs-seven-bit volume width, the interrupt's exact moment, the
 //   period/length counters' terminal value) were, per this task's own
 //   conflict-resolution guidance, recorded rather than forced into a graded
 //   comparison that would have tested wording, not behaviour.
 //
-// MUTATION LOG: all 18 groups' mutations were actually built (17 with their
+// MUTATION LOG: all 19 groups' mutations were actually built (18 with their
 //   own -DMUT_X=1 flag via CFLAGS_EXTRA, one recorded "impossible" with no
-//   build) and run against the 18-passed/0-failed baseline above. Each of
-//   the 17 buildable mutations was confirmed, by diffing every group's
+//   build) and run against the 19-passed/0-failed baseline above. Each of
+//   the 18 buildable mutations was confirmed, by diffing every group's
 //   PASS/FAIL label against the baseline, to flip EXACTLY its own named
-//   group to FAIL and no other -- 17 separate builds, 17 two-line diffs (one
+//   group to FAIL and no other -- 18 separate builds, 18 two-line diffs (one
 //   PASS->FAIL pair each), nothing else moved. Every build was then reverted
-//   (baseline rebuilt with no flags) and reconfirmed at 18/0 before moving to
+//   (baseline rebuilt with no flags) and reconfirmed at 19/0 before moving to
 //   the next. The individual mutation records, with what was actually
 //   changed and observed, are printed by this program itself at each
 //   assertion group above (search for "// MUTATION" in this file's own
@@ -270,6 +282,9 @@
 #endif
 #ifndef MUT_DIRECT
 #define MUT_DIRECT 0
+#endif
+#ifndef MUT_NOISERANGE
+#define MUT_NOISERANGE 0
 #endif
 
 namespace {
@@ -633,6 +648,45 @@ int main(int argc, char** argv) {
                   "built with -DMUT_WIDTH=1, which writes 0x0000 instead of 0xA55A -- both "
                   "delivered bytes read 0x00, and the exact-byte check (0xA5 then 0x5A) goes "
                   "red. Reverted, baseline restored.");
+    }
+
+    // =========================================================================
+    // SAMPLE-SIGNED-RANGE-FULL-SCALE (5-noise.c1) -- GAP CLOSURE (V-10
+    // reclassification): "try to use the full range of -128 to 127" states a
+    // digitally observable endpoint pair, not a frequency -- V-10's Hertz
+    // objection does not apply to it. Same technique as SAMPLE-ITEM-WIDTH-
+    // EIGHT-BITS above, a different byte pattern chosen to hit both signed
+    // two's-complement extremes exactly.
+    // =========================================================================
+    {
+        Harness h;
+        h.dut->dmaena = 0;
+        h.write_reg(REG_AUDPER, 4);
+        uint16_t word;
+#if MUT_NOISERANGE
+        word = 0x817E;  // stimulus mutation: one code in from each endpoint
+#else
+        word = 0x807F;  // 0x80 = -128 (sign bit set, all-zero magnitude);
+                         // 0x7F = +127 (sign bit clear, all-one magnitude)
+#endif
+        h.write_reg(REG_AUDDAT, word);
+        std::vector<uint8_t> seq;
+        uint8_t last = h.dut->sample;
+        for (int i = 0; i < 400 && seq.size() < 2; i++) {
+            h.tick(); h.beam_step();
+            if (h.dut->cck && h.dut->sample != last) { last = h.dut->sample; seq.push_back(last); }
+        }
+        bool ok = seq.size() == 2 && seq[0] == 0x80 && seq[1] == 0x7F;
+        CHECK("SAMPLE-SIGNED-RANGE-FULL-SCALE (5-noise.c1) (p154) \"try to use the full range of "
+              "-128 to 127 when you represent a waveform\": writing AUDxDAT=0x807F delivers "
+              "exactly 0x80 (signed -128, sign bit set, all-zero magnitude) then 0x7F (signed "
+              "+127, sign bit clear, all-one magnitude) on `sample` -- both signed two's-"
+              "complement endpoints are digitally reachable, in order, through this eight-bit "
+              "sample path and its sign extension", ok);
+        MUTATION("5-noise.c1", "stimulus", "red",
+                  "built with -DMUT_NOISERANGE=1, which writes 0x817E instead of 0x807F -- one "
+                  "code in from each endpoint -- and delivers 0x81/0x7E instead of the expected "
+                  "0x80/0x7F; the exact-endpoint check goes red. Reverted, baseline restored.");
     }
 
     // =========================================================================
