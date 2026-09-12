@@ -118,3 +118,8 @@ Only the half whose stimulus **and** consequence are both on real ports of
 The other half — a modulator's word reaching another channel's period or volume
 register — is not testable at any boundary in this design, because no audio
 module has an attach port to observe it on. It is recorded rather than asserted.
+
+**This is an absent feature, of the same character as `NM-HRM-015` and
+`NM-HRM-021`:** declared in a register, accepted by the decode, reaching nothing.
+The three together are the register's clearest group — each is a bit the manual
+specifies, the RTL stores, and no logic consumes.

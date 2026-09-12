@@ -76,6 +76,14 @@ Three separate patches in three engines is the option to avoid.
 
 ## What holds the finding up
 
+**Measured at `agnus_blitter`, the parent that has the `ecs` port** — after an
+independent validation rejected handling it one fixture lower, where that port
+does not exist. A test cannot demonstrate that a chipset input is ignored from
+inside a module the input never reaches.
+
+Every statement on this page was checked by reading the RTL directly rather than
+taken from the classifier's report.
+
 The measurement, its control and its mutation are recorded in the package. The
 finding is kept separate from `NM-HRM-003` because the two rest on separate
 measurements at separate module boundaries — the same rule that keeps

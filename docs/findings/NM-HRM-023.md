@@ -84,10 +84,24 @@ not.
 
 ## What holds the finding up
 
-The finding is **scoped by its own mutation**: setting `aga = 1` zeroes the
-`!aga` term and the assertion goes green. So the red is a property of the chipset
-the package drives, not of the fixture, and the assertion is measuring exactly
-the term it names.
+- **Scoped by its own mutation.** Setting `aga = 1` zeroes the `!aga` term and
+  the implementation then matches the manual — so this is an OCS/ECS behaviour,
+  exactly the chipset the package drives, and not an AGA one.
+- **The positive case is green on the same fixture.**
+  `ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT` passes: the odd sprite's bit does
+  attach the pair, so the fixture demonstrably observes attachment.
+- **The data path is proven live first.** A separate
+  `[control] FIXTURE-LIVE-DATA-PATH` shows the sprite path delivers distinct
+  known values in order before anything reads one.
+
+### Found three times before it was built
+
+Two classifiers working different lots of chapter 4 measured it independently,
+neither having seen the other's work; the lead then verified it against the
+source and both printed pages; and the builder reproduced it from the quotations
+alone, having written and committed its specification before opening the RTL.
+
+That is the strongest provenance any finding in this register has.
 
 ---
 

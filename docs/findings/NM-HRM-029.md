@@ -45,6 +45,40 @@ been tested.
 
 ---
 
+## What the manual actually says, and what the RTL does
+
+**Figure 5-8's boxed NOTE, printed p. 166:**
+
+> "Except for this case, dmasen is true only when LENFIN=1. Also,
+> AUDxDSR=AUDxDR · dmasen"
+
+The excepted case is the `000→001` transition, whose action bracket is
+`[lencntrld, AUDxDR, dmasen]`.
+
+**Measured:** `dmasen` never correlates with `lenfin` anywhere outside that
+stated exception. The note's own AND equation holds at the first restart and at
+neither later, `lenfin`-driven one.
+
+**RTL:** `dmasen` is raised only in the idle-state DMA branch
+([`paula_audio_channel.v:276`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L276)); the block-end restart comes from
+[`:220`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L220), `dmas <= dmasen | lenfin`. The implemented relation is therefore
+
+    AUDxDSR = AUDxDR ∧ (dmasen ∨ lenfin)
+
+— the `lenfin` term sits **one register level further out** than the figure puts
+it, computing the same output.
+
+## The sibling assertion is a separate question, and also not a failure
+
+The `AUDxDSR = AUDxDR · dmasen` equation compares the public `dmas` port against
+**two internal signals** reached through `--public-flat-rw`. So it asks whether
+NanoMig arranges two terms the way the figure draws them, not whether the chip
+behaves as the manual requires. An implementation is free to place the term
+wherever it likes if the output is the same, and here it is.
+
+Whether the printed arrangement is normative is a question about the figure, not
+about the design.
+
 ## Why this entry is kept
 
 Four other withdrawals in this register read a **permission or a silence** as a
