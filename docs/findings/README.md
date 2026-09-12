@@ -35,21 +35,14 @@ every quotation was verified in a local checkout at that revision.
 All six are checked out locally under `_emulators/` in the workspace, outside
 either repository, so a citation can be re-checked rather than trusted.
 
-### Minimig-AGA is not a fifth witness
+### Minimig-AGA is the ancestor, not a fifth witness
 
-It is the **ancestor**. NanoMig's audio files carry the same names and, where
-checked so far, the same content. So for every finding there is a question the
-four emulators cannot answer and this one can:
-
-> **Is this NanoMig's, or did it come down from Minimig-AGA?**
-
-That decides where a fix belongs, and whether fixing it in NanoMig means
-diverging from upstream. `NM-HRM-025` is the first entry to carry the answer:
-inherited, byte-identical.
-
-An emulator agreeing with the manual is one more reading of the manual. Upstream
-agreeing with NanoMig is a different fact entirely — it is the same decision,
-made once, further back.
+NanoMig is a port of Minimig-AGA and almost everything comes from there, which is
+neither news nor a problem. So the `Upstream` row is one line and nothing more —
+unless upstream has **changed** the code a finding is about and NanoMig has not
+picked it up. That is the only case with something to act on, and it gets a
+section. The full comparison is in
+[`../upstream-minimig-aga.md`](../upstream-minimig-aga.md).
 
 ## Withdrawn findings are kept, and here is why
 

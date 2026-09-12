@@ -7,7 +7,7 @@
 | **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale), [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map) |
 | **Chapter** | 5 — Audio |
 | **Verdict of the four** | all four clamp at 64 and keep it distinct from 63 |
-| **Upstream** | **inherited** — MiSTer Minimig-AGA has the identical wiring |
+| **Upstream** | inherited from Minimig-AGA, unchanged there |
 
 ---
 
@@ -77,28 +77,6 @@ assign volgate = (volcnt < audvol);
 |---|---|---|
 | multiply (`ldata`/`rdata`) | `ldatasum = 4032` for **all five** | 64 distinct |
 | PWM (`ldata_okk`/`rdata_okk`) | open-tick counts 0, 4, 128, 252, 256 for volumes 0, 1, 32, 63, 64 — exactly 4× each written value | **65 distinct** |
-
----
-
-## Where it comes from: Minimig-AGA has the same wiring
-
-NanoMig descends from MiSTer's Minimig-AGA, and **this is inherited, not
-introduced**. The upstream file is byte-identical here:
-
-[`rtl/paula_audio_mixer.v#L25-L33`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L25-L33)
-
-```verilog
-  .volume({  (vol0[6] | vol0[5]),
-            (vol0[6] | vol0[4]),
-            (vol0[6] | vol0[3]),
-            (vol0[6] | vol0[2]),
-            (vol0[6] | vol0[1]),
-            (vol0[6] | vol0[0]) }),
-```
-
-So the decision is upstream's, and a fix in NanoMig alone is a divergence from
-Minimig-AGA. That is a thing to know before changing it, not an argument against
-changing it.
 
 ---
 
