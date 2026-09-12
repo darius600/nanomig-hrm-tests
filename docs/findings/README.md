@@ -20,25 +20,36 @@ The register table with statuses and packages stays in
 
 ## Pinned revisions
 
+Every link in these pages is a permalink at the revision that was read, and
+every quotation was verified in a local checkout at that revision.
+
 | what | repository | revision |
 |---|---|---|
-| NanoMig | <https://github.com/harbaum/NanoMig> | `d6f7df957fad655bc07f6a381e5094a9edff0be0` (v0.14-beta-33-gd6f7df9) |
-| WinUAE | — | **not recorded** |
-| vAmiga | — | **not recorded** |
-| Denise | — | **not recorded** |
-| Copperline | <https://github.com/CopperlineHQ/Copperline> | **not recorded** |
+| **NanoMig** — the design under test | [harbaum/NanoMig](https://github.com/harbaum/NanoMig) | [`d6f7df9`](https://github.com/harbaum/NanoMig/tree/d6f7df957fad655bc07f6a381e5094a9edff0be0) · v0.14-beta-33 |
+| **Minimig-AGA** — what NanoMig descends from | [MiSTer-devel/Minimig-AGA_MiSTer](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer) | [`da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/tree/da7632e44498840850e78966947f8770166e6e77) |
+| WinUAE | [tonioni/WinUAE](https://github.com/tonioni/WinUAE) | [`ccc407e`](https://github.com/tonioni/WinUAE/tree/ccc407e9c636668b99b5f19d6e9aa03ea04b3052) |
+| vAmiga | [dirkwhoffmann/vAmiga](https://github.com/dirkwhoffmann/vAmiga) | [`35de004`](https://github.com/dirkwhoffmann/vAmiga/tree/35de004a2f1502c2811b9a8ebcde4d0979a98937) |
+| Denise | [piciji/denise](https://github.com/piciji/denise) | [`1cb7d45`](https://github.com/piciji/denise/tree/1cb7d45117893c76025d32260edb6008001344f9) |
+| Copperline | [CopperlineHQ/Copperline](https://github.com/CopperlineHQ/Copperline) | [`726bed0`](https://github.com/CopperlineHQ/Copperline/tree/726bed00c407727c1f5bd32c7193587986638941) |
 
-**The emulator citations cannot be turned into permalinks yet, and that is a
-defect in this register rather than a formatting choice.** Every emulator
-citation in these pages is a bare `file:line` with the line quoted. Line numbers
-drift; without the revision that was read, a reader cannot confirm the quotation
-is where it is claimed to be. The NanoMig citations do not have this problem —
-the test repository pins the RTL as a submodule, so every NanoMig link here is
-exact and will stay exact.
+All six are checked out locally under `_emulators/` in the workspace, outside
+either repository, so a citation can be re-checked rather than trusted.
 
-Closing that gap means re-reading the four emulators once, at a recorded
-revision, and filling in the links. Until then the quoted code is the evidence
-and the path is a pointer, not a proof.
+### Minimig-AGA is not a fifth witness
+
+It is the **ancestor**. NanoMig's audio files carry the same names and, where
+checked so far, the same content. So for every finding there is a question the
+four emulators cannot answer and this one can:
+
+> **Is this NanoMig's, or did it come down from Minimig-AGA?**
+
+That decides where a fix belongs, and whether fixing it in NanoMig means
+diverging from upstream. `NM-HRM-025` is the first entry to carry the answer:
+inherited, byte-identical.
+
+An emulator agreeing with the manual is one more reading of the manual. Upstream
+agreeing with NanoMig is a different fact entirely — it is the same decision,
+made once, further back.
 
 ## Withdrawn findings are kept, and here is why
 

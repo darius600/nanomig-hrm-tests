@@ -7,6 +7,7 @@
 | **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale), [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map) |
 | **Chapter** | 5 — Audio |
 | **Verdict of the four** | all four clamp at 64 and keep it distinct from 63 |
+| **Upstream** | **inherited** — MiSTer Minimig-AGA has the identical wiring |
 
 ---
 
@@ -79,25 +80,51 @@ assign volgate = (volcnt < audvol);
 
 ---
 
+## Where it comes from: Minimig-AGA has the same wiring
+
+NanoMig descends from MiSTer's Minimig-AGA, and **this is inherited, not
+introduced**. The upstream file is byte-identical here:
+
+[`rtl/paula_audio_mixer.v#L25-L33`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L25-L33)
+
+```verilog
+  .volume({  (vol0[6] | vol0[5]),
+            (vol0[6] | vol0[4]),
+            (vol0[6] | vol0[3]),
+            (vol0[6] | vol0[2]),
+            (vol0[6] | vol0[1]),
+            (vol0[6] | vol0[0]) }),
+```
+
+So the decision is upstream's, and a fix in NanoMig alone is a divergence from
+Minimig-AGA. That is a thing to know before changing it, not an argument against
+changing it.
+
+---
+
 ## What the others say
 
-Nobody decides this but the manual. A dash means the source has not been read
-for this finding.
+Nobody decides this but the manual. Every line below was read in a checkout at
+the pinned revision and the quotation verified there.
 
-| | code | revision |
+| | code | |
 |---|---|---|
-| **WinUAE** | `audio.cpp:1541-1543`<br>`v &= 127; if (v > 64) v = 64;`<br>under the comment *"7 bit register in Paula"* | not recorded |
-| **vAmiga** | `StateMachineRegs.cpp:38`<br>`std::min(value & 0x7F, 64)`<br>with *"All values greater than 64 are treated as 64 (max volume)"* in the code | not recorded |
-| **Denise** | `paula/audio.cpp:153`<br>`if (value & 0x40) value = 0x40;` | not recorded |
-| **Copperline** | `chipset/paula.rs:228`<br>`((word & 0x007F) as u8).min(64)` | not recorded |
+| **WinUAE** | [`audio.cpp:1540-1543`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1540-L1543) | <pre>// 7 bit register in Paula.<br>v &= 127;<br>if (v > 64)<br>&nbsp;&nbsp;&nbsp;&nbsp;v = 64;</pre> |
+| **vAmiga** | [`Core/Components/Paula/Audio/StateMachineRegs.cpp:36-38`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachineRegs.cpp#L36-L38) | <pre>// 2. All values greater than 64 are treated as 64 (max volume)<br>audvolLatch = (u16)std::min(value & 0x7F, 64);</pre> |
+| **Denise** | [`emulation/libami/paula/audio.cpp:153-154`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L153-L154) | <pre>value &= 127;<br>if (value & 0x40) value = 0x40;</pre> |
+| **Copperline** | [`src/chipset/paula.rs:227-229`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L227-L229) | <pre>fn paula_volume_from_word(word: u16) -> u8 {<br>&nbsp;&nbsp;&nbsp;&nbsp;((word & 0x007F) as u8).min(64)<br>}</pre> |
 
 **All four clamp at 64 and keep it distinct from 63.** Two say why in their own
 comments.
 
 Denise's line is the one to put beside NanoMig's, because both implement
 appendix A's "bit 6 forces maximum" and they arrive at different answers: Denise
-forces the **value** to `0x40` — 64 — while `paula_audio_mixer` ORs bit 6 down
-into the low six bits and arrives at 63.
+masks to seven bits and then forces the **value** to `0x40` — 64 — while
+`paula_audio_mixer` ORs bit 6 down into the low six bits and arrives at 63.
+
+*Citation corrected when the sources were checked out: the register previously
+gave Denise's line as `paula/audio.cpp:153`. The clamp is at **154**; 153 is the
+seven-bit mask above it.*
 
 ---
 
