@@ -71,24 +71,24 @@ specialist rules on it.
 
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
-| [NM-HRM-001](#nm-hrm-001--pal-frame-has-one-line-too-many) | PAL field terminates at 313 lines, not 312 | **withdrawn** 07.09. | `hrm/agnus_beamcounter` | both agree with the RTL; Table 7-5 sanctions 313 |
+| [NM-HRM-001](#nm-hrm-001--pal-frame-has-one-line-too-many) | PAL field terminates at 313 lines, not 312 | **withdrawn** 07.09. | `hrm/agnus_beamcounter` | **all four** run a 313-line PAL field; Table 7-5 sanctions 313 |
 | [NM-HRM-002](#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | audio channels on the wrong stereo side | **red** | `hrm/paula_audio_mixer` | **2–2**: WinUAE and vAmiga with chapter 5; Denise and Copperline with the pin list |
 | [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | **Copperline narrows to 19 bits on OCS**, matching the manual; the other three do not |
 | [NM-HRM-004](#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | ECS danger bit admits too small a range | **red** | `hrm/agnus_copper_move_range`, `hrm/agnus_copper_move_sweep` | both block below `$80` regardless of chipset |
 | [NM-HRM-005](#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | WAIT and SKIP take longer than the manual states | **red** | `hrm/agnus_copper_cycle_times`, `hrm/agnus_copper_cycles` | vAmiga gives NanoMig's three numbers |
-| [NM-HRM-006](#nm-hrm-006--ddfstrtddfstop-bit-h3-is-gated-by-the-chipset-not-by-resolution) | DDFSTRT bit H3 gated by chipset, not by resolution | **red** | `hrm/ch3-ddf-fetch-window` | **B5** -- both with NanoMig |
-| [NM-HRM-007](#nm-hrm-007--the-hires-fetch-width-cannot-reach-the-manuals-maximum-of-49-words) | hires fetch cannot reach the manual's 49 words | **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** -- both with NanoMig, at 50 |
-| [NM-HRM-008](#nm-hrm-008--playfield-1-collision-depends-on-playfield-2-by-design-undocumented) | playfield-1 collision depends on playfield 2 | **red** | `hrm/ch3-collision-registers` | **B1** -- both with NanoMig |
-| [NM-HRM-009](#nm-hrm-009--clxdat-bit-15-reads-as-1-not-0) | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** 11.09. | `hrm/ch3-collision-registers` | not read |
-| [NM-HRM-010](#nm-hrm-010--the-horizontal-line-is-a-whole-number-of-colour-clocks-not-2275) | the scan line is a whole number of colour clocks | source observation | `hrm/ch3-beam-counters-and-blanking` | not read |
-| [NM-HRM-011](#nm-hrm-011--pal-vertical-blanking-is-26-lines-the-manual-says-29) | PAL vertical blanking is 26 lines, manual says 29 | **red** | `hrm/ch3-beam-counters-and-blanking` | **B6** -- both with NanoMig |
-| [NM-HRM-012](#nm-hrm-012--sprxctl-bit-0-sh0-is-honoured-at-every-resolution-not-only-superhires) | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** 11.09. | `hrm/ch3-sprite-registers` | not read |
-| [NM-HRM-013](#nm-hrm-013--sprxctl-bits-3-and-4-are-read-nowhere-in-the-module) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn** 11.09., split into NM-HRM-019 | `hrm/ch3-sprite-registers` | not read |
-| [NM-HRM-014](#nm-hrm-014--the-manual-applies-its-own-ecs-pointer-extension-inconsistently) | the manual applies its own ECS pointer note inconsistently | source observation | `hrm/ch3-register-map-agnus` | not read |
+| [NM-HRM-006](#nm-hrm-006--ddfstrtddfstop-bit-h3-is-gated-by-the-chipset-not-by-resolution) | DDFSTRT bit H3 gated by chipset, not by resolution | **red** | `hrm/ch3-ddf-fetch-window` | **all four** gate DDF on the chipset; none on resolution |
+| [NM-HRM-007](#nm-hrm-007--the-hires-fetch-width-cannot-reach-the-manuals-maximum-of-49-words) | hires fetch cannot reach the manual's 49 words | **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** for the first two; Copperline asserts an even hires word count in its own test |
+| [NM-HRM-008](#nm-hrm-008--playfield-1-collision-depends-on-playfield-2-by-design-undocumented) | playfield-1 collision depends on playfield 2 | **red** | `hrm/ch3-collision-registers` | **all four** gate playfield 1 on playfield 2 in single-playfield mode |
+| [NM-HRM-009](#nm-hrm-009--clxdat-bit-15-reads-as-1-not-0) | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** 11.09. | `hrm/ch3-collision-registers` | **all four** set bit 15 on every CLXDAT read |
+| [NM-HRM-010](#nm-hrm-010--the-horizontal-line-is-a-whole-number-of-colour-clocks-not-2275) | the scan line is a whole number of colour clocks | source observation | `hrm/ch3-beam-counters-and-blanking` | Denise and Copperline both alternate whole line lengths |
+| [NM-HRM-011](#nm-hrm-011--pal-vertical-blanking-is-26-lines-the-manual-says-29) | PAL vertical blanking is 26 lines, manual says 29 | **red** | `hrm/ch3-beam-counters-and-blanking` | **B6** for the first two; Denise's PAL-NTSC gap is 5 lines like NanoMig's, not the manual's 8 |
+| [NM-HRM-012](#nm-hrm-012--sprxctl-bit-0-sh0-is-honoured-at-every-resolution-not-only-superhires) | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** 11.09. | `hrm/ch3-sprite-registers` | three of four take SH0 at every resolution, as NanoMig does |
+| [NM-HRM-013](#nm-hrm-013--sprxctl-bits-3-and-4-are-read-nowhere-in-the-module) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn** 11.09., split into NM-HRM-019 | `hrm/ch3-sprite-registers` | bit 4 is real from ECS on, bit 3 only on AGA -- the split this was withdrawn into |
+| [NM-HRM-014](#nm-hrm-014--the-manual-applies-its-own-ecs-pointer-extension-inconsistently) | the manual applies its own ECS pointer note inconsistently | source observation | `hrm/ch3-register-map-agnus` | one of four extends every DMA pointer by chipset; no implementation can settle a question about the manual's own text |
 | [NM-HRM-015](#nm-hrm-015--brdntran-is-declared-and-never-connected) | BRDNTRAN is declared and never connected | **red** | `hrm/ch3-horizontal-display-window` | **B3** for the first two; **Copperline implements it, with a test** |
-| [NM-HRM-016](#nm-hrm-016--superhires-sprite-colour-encoding-is-not-implemented) | SuperHires sprite colour encoding not implemented | **red** | `hrm/ch3-shres-sprite-colour-encoding` | **A1** -- both with the manual |
-| [NM-HRM-017](#nm-hrm-017--superhires-bitplane-colour-encoding-is-not-implemented) | SuperHires bitplane colour encoding not implemented | **red** | `hrm/ch3-shres-bitplane-colour-encoding` | **A1** -- both with the manual |
-| [NM-HRM-018](#nm-hrm-018--ecs-bplcon0-bit-4-sprhwrm-has-no-effect) | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** 11.09. | `hrm/ch3-bplcon0-display-modes` | not read |
+| [NM-HRM-016](#nm-hrm-016--superhires-sprite-colour-encoding-is-not-implemented) | SuperHires sprite colour encoding not implemented | **red** | `hrm/ch3-shres-sprite-colour-encoding` | **2-2**: WinUAE and vAmiga reinterpret; Denise and Copperline do not |
+| [NM-HRM-017](#nm-hrm-017--superhires-bitplane-colour-encoding-is-not-implemented) | SuperHires bitplane colour encoding not implemented | **red** | `hrm/ch3-shres-bitplane-colour-encoding` | **2-2**: the same split as NM-HRM-016, from the same reading |
+| [NM-HRM-018](#nm-hrm-018--ecs-bplcon0-bit-4-sprhwrm-has-no-effect) | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** 11.09. | `hrm/ch3-bplcon0-display-modes` | neither Denise nor Copperline gives bit 4 an effect on ECS |
 | [NM-HRM-019](#nm-hrm-019--sprxctl-bit-4-shsh1-is-not-implemented) | SPRxCTL bit 4 (SHSH1) is not implemented | **red** | `hrm/ch3-sprite-registers` | **C2** for the first two; Denise and Copperline both implement bit 4 |
 | [NM-HRM-020](#nm-hrm-020--bltsizv-is-not-gated-on-ecs-while-its-two-siblings-are) | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** — **all four** gate it; NanoMig alone does not |
 | [NM-HRM-021](#nm-hrm-021--doff-bltcon1-bit-7-has-no-observable-effect) | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1**; Denise implements it and ECS-gates it |
@@ -148,9 +148,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| follows the long-frame bit | follows the long-frame bit | — | — |
+| follows the long-frame bit | follows the long-frame bit | `agnus.cpp:178` `lines = ntsc ? 261 : 311`, frame restarts at `vPos == lines + lof` | `agnus.rs:7` `PAL_LINES = 313`; non-interlaced fields are all long frames |
 
-Both agree with the RTL; Table 7-5 sanctions 313.
+**All four run a 313-line PAL field.** Table 7-5 sanctions 313.
 
 **The manual sanctions 313.** Table 7-5, VPOSR bit 0: *"High bit of the vertical
 position (V8). Allows PAL line counts (313) to appear in PAL versions of the
@@ -660,9 +660,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| respects H3 in lores too | respects H3 in lores too | — | — |
+| `custom.cpp:1210` `ddf_mask = ecs_agnus ? 0xfe : 0xfc`, applied at `:3663`/`:3674` | respects H3 in lores too | `agnus/register.cpp:293`, `:306` `value & (ecsAndHigher() ? 0xfe : 0xfc)` | `agnus.rs:490` masks by revision; `:498` takes `bplcon0` and discards it |
 
-The manual, printed page 91 (and again on 277):
+**All four gate the DDF granularity on the chipset. None gates it on resolution** — Copperline's function takes the resolution register as a parameter and throws it away with `let _ = bplcon0;`. Page 91's *"only respected in Hires Mode"* is the outlier.
 
 > Bits 7-2 - pixel position H8-H3 (**bit H3 only respected in Hires Mode.**)
 
@@ -693,9 +693,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| 50 words at the limits | 50 words at the limits | — | — |
+| 50 words at the limits | 50 words at the limits | — | `ddf_sequencer.rs:662` asserts `plane0 % 2 == 0` — two words per plane per 8-cck hires unit |
 
-The manual, printed page 80:
+Copperline states the even word count as an invariant in its own test, which is NanoMig's structural argument arrived at independently. Denise not read for this.
 
 > DDFSTRT of ($18). This gives a maximum of 25 words fetched in low resolution
 > mode. In high resolution mode the maximum here is **49 words**
@@ -725,9 +725,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| PF1 gated by PF2 | PF1 gated by PF2 | — | — |
+| PF1 gated by PF2 | PF1 gated by PF2 | `denise.cpp:478-486` sets the PF1 group only when `_doublePlayfield` | `bitplane.rs:6797` `odd_match_raw && (dual_playfield || even_match)` |
 
-The RTL's own comment credits an undocumented Denise function.
+**All four gate playfield 1 on playfield 2 in single-playfield mode** — NanoMig's expression, term for term, and Copperline has a test named for it (`collision_pixel_single_playfield_odd_match_requires_even_match`). Appendix A's table of independent bits is incomplete.
 
 Appendix A's CLXDAT bit table, printed page 273, gives each collision pair its own
 bit and treats them independently. NanoMig, `denise_collision.v:62-63`:
@@ -773,10 +773,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| — | — | — | — |
+| `custom.cpp:4016` `clxdat | 0x8000` | `DeniseRegs.cpp:319` `clxdat | 0x8000` | `denise.cpp:313` `clxDat | 0x8000` | `denise.rs:538` `take(&mut self.clxdat) | 0x8000` |
 
-Printed page 273 lists CLXDAT bit 15 as not used. NanoMig,
-`denise_collision.v:117`:
+**All four set bit 15 on every CLXDAT read.** The withdrawal is unanimous.
 
 ```verilog
 assign data_out = reg_address_in[8:1]==CLXDAT[8:1] ? {1'b1,clxdat[14:0]} : 16'd0;
@@ -805,10 +804,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| — | — | — | — |
+| — | — | `agnus.cpp:1030-1032` — NTSC `227.5 * 263.0` with long/short lines toggling, PAL `227.0 * 313.0` | an integer `COLORCLOCKS_PER_LINE` with a separate `NTSC_LONG_COLORCLOCKS_PER_LINE` |
 
-Printed page 304 gives the scan line as 227.5 colour clocks. `htotal_out` reads
-**452** — a whole 226 doubled — under both standards.
+Both model the half clock as **alternating whole lines**, not as a fractional one — which is what the observation says the manual's 227.5 must mean.
 
 NanoMig says so itself, `agnus_beamcounter.v:86`:
 
@@ -836,9 +834,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| 26 lines | 26 lines | — | — |
+| 26 lines | 26 lines | `agnus/agnus.cpp:448` — fixed blank clears at `vPos == (ntsc ? 19 : 24)` | programmable blank only (VBSTRT/VBSTOP under VARVBEN); no fixed PAL stop to compare |
 
-Table 3-13, printed page 79:
+Denise's PAL-minus-NTSC gap is **five lines, like NanoMig's**; the manual's is eight. Copperline models a programmable blank, which is a different quantity from Table 3-13's fixed figure and is not comparable without running it.
 
     Vertical Blank Stop     $15 (21)    $1D (29)
                               NTSC         PAL
@@ -875,11 +873,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| — | — | — | — |
+| `custom.cpp:1203` keeps `0x01` in every chipset | — | `denise.cpp:298` `spr.x |= value & 1;` — unconditional | `sprite.rs:1854` `((pos & 0x00FF) << 1) | (ctl & 0x0001)` — unconditional |
 
-Printed pages 297 and 303 make SH0 the SuperHires half-pixel bit. NanoMig loads
-it unconditionally and compares on it unconditionally,
-`denise_sprites_shifter.v:141` and `:119`:
+**Three of four take SH0 at every resolution**, as NanoMig does. WinUAE's `sprite_sprctlmask` is computed at `:1199-1203` and **read nowhere in this checkout**, so it names an intent, not a measured behaviour.
 
 ```verilog
 {attach,hstart[0]} <= {data_in[7],data_in[0]};
@@ -910,11 +906,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| — | — | — | — |
+| `custom.cpp:1199-1203` — bit 3 AGA only, bit 4 ECS and later | — | `denise.cpp:299` reads bit 4 into `shsh10`; bit 3 not read | `sprite.rs:1858` reads bit 4; bit 3 not read |
 
-The SPRxCTL write path captures exactly two bits — bit 7 (attach) and bit 0
-(SH0), in the line above. Bits 3 and 4 are not referenced anywhere in
-`denise_sprites.v` or `denise_sprites_shifter.v`.
+The split this finding was withdrawn into is the one the other implementations make: **bit 4 is real from ECS on, bit 3 only on AGA.** See [NM-HRM-019](#nm-hrm-019--sprxctl-bit-4-shsh1-is-not-implemented).
 
 That is a stronger statement than "ECS only": they are unimplemented in every
 chip mode this module offers, including with `aga` asserted.
@@ -945,10 +939,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| respects H3 in lores too | respects H3 in lores too | — | — |
+| wide register | wide, narrowed on access by chipset | no mask on the high word at all | **narrows every DMA pointer by Agnus revision** — `agnus.rs:113` |
 
-The deciding observation is inside appendix B itself. The manual **knows** about
-the ECS extension and writes it out — `DSKPTH` on printed page 289 reads
+One of four extends the pointers by chipset everywhere. The manual's inconsistency is about which register entries carry the note, and no implementation settles a question about the manual's own text.
 
     DSKPTH  + *020  W  A (E)  Disk pointer (high 3 bits, 5 bits if ECS)
 
@@ -1025,9 +1018,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| reinterprets, ECS Denise only | reinterprets, ECS Denise only | — | — |
+| reinterprets, ECS Denise only | reinterprets, ECS Denise only | `denise.cpp:200` `colors[pos] = value;` — one table, no mode | `tests.rs:7563` — *"each 35 ns half resolves palette[1], never a pair-encoded entry"* |
 
-Both side with the manual; NanoMig is the outlier.
+**Two against two**, and it is the second finding after NM-HRM-002 where the four split evenly. Denise stores one colour per register in every mode; Copperline states the absence of pair encoding deliberately, in a test's own words.
 
 Pages 301–302 give the ECS SuperHires sprite colour scheme: in SuperHires the
 sixteen colour registers `$10`–`$1F` are read as *two* colour slots each — slot A
@@ -1110,9 +1103,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| reinterprets, ECS Denise only | reinterprets, ECS Denise only | — | — |
+| reinterprets, ECS Denise only | reinterprets, ECS Denise only | `denise.cpp:200` `colors[pos] = value;` — one table, no mode | `tests.rs:7563` — *"each 35 ns half resolves palette[1], never a pair-encoded entry"* |
 
-Both side with the manual; NanoMig is the outlier.
+**Two against two**, the same split as NM-HRM-016 and from the same reading: neither Denise nor Copperline reinterprets a colour register by resolution.
 
 Page 301 says SuperHires reinterprets the sixteen lower colour registers: the
 stored 12-bit value is read as two-bit-per-channel data rather than as an
@@ -1166,12 +1159,9 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| — | — | — | — |
+| — | — | `setBplCon0` (`denise.cpp:318-350`) never reads bit 4 | `denise.rs:345` uses bit 4 as AGA's BPU3, inside `if aga` |
 
-Appendix C's BPLCON0 table gives bit 4 as **SPRHWRM**. Both readers took that row
-independently and wrote the same thing — `C-bplcon0.b04` (opus) and `C-shres.c18`
-(sol), each quoting `04  SPRHWRM` from print page 300. Independent agreement
-between the two readings is the strongest claim evidence this pipeline produces.
+**Neither gives BPLCON0 bit 4 an effect on ECS.** Copperline gives it one on AGA, where it selects eight bitplanes — which is a different register function, not the SPRHWRM the ECS appendix names.
 
 NanoMig gives bit 4 the **AGA** meaning instead, as the top bit of the
 bitplane-count field, and gates it on `aga` alone:

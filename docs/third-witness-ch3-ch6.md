@@ -1,7 +1,17 @@
 # Chapters 3 and 6: what two emulators do about ten unregistered reds
 
-11.09.2026. A report for whoever decides what NanoMig should do. **Nothing here
-changes a test**, and no expectation in the suite comes from an emulator.
+A report for whoever decides what NanoMig should do. **Nothing here changes a
+test**, and no expectation in the suite comes from an emulator.
+
+> **Read the A/B/C letters as "two of four", not "the answer".** This document
+> compares WinUAE and vAmiga only. Two further implementations have since been
+> read against the same findings in
+> [`fourth-witness-denise-copperline.md`](fourth-witness-denise-copperline.md),
+> and they moved three of the verdicts below: **NM-HRM-016 and NM-HRM-017 are
+> not A1 but a two-against-two split**, and **NM-HRM-006 and NM-HRM-008 are not
+> B-with-two but B-with-four.** The sections here are left as they were written,
+> because what two emulators did is still what two emulators did; the register
+> table in [`findings.md`](findings.md) carries the current count.
 
 ## Why this exists
 
