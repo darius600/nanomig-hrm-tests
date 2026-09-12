@@ -765,11 +765,12 @@ int main(int argc, char** argv) {
               "5-appA-p265.c41): AUDxDAT=0x1234's high byte (0x12 -- the lower/first byte "
               "address on a 68000) appears on `sample` at an earlier cck tick than the low byte "
               "(0x34); the two never coincide at the same tick -- output is sequential, one "
-              "8-bit port value at a time. A-audxdat.c4 states this same sequential-output fact "
-              "bundled with a digital-to-analog/audio-output-pin clause in one sentence; only "
-              "the sequential half is measured here, so A-audxdat.c4 itself is withdrawn -- "
-              "NOT COVERED BY THIS PACKAGE, needs an analog/DAC output-pin boundary that does "
-              "not exist at this or any RTL port in this project", ok);
+              "8-bit port value at a time. One further appendix-A claim states this same "
+              "sequential-output fact bundled with a digital-to-analog/audio-output-pin clause "
+              "in one sentence; only the sequential half is measured here, so that id is "
+              "withdrawn whole and is named in this file's header, NOT on this line -- an id "
+              "printed on a graded assertion is counted asserted by the coverage ledger even "
+              "where the same sentence calls it uncovered", ok);
         MUTATION("SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL", "stimulus", "impossible",
                   "no build attempted. paula_audio_channel's sample mux (penhi selects "
                   "datbuf[15:8] vs datbuf[7:0]) and the penhi set/clear timing have no mode, "

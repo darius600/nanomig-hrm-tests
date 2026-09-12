@@ -121,11 +121,41 @@
 //   B-aud2lch.mark/B-aud2lcl.mark/B-aud3lch.mark/B-aud3lcl.mark) - state
 //   that chip-memory clause and are withdrawn from assertion 6's cited-
 //   claims text. NOT COVERED BY THIS PACKAGE - needs gary.v. The remaining
-//   two ids (5-appA-p263.c6, A-pre.c7) state only "the lowest bit of all
-//   pointers must be written as zero," with no chip-memory clause, and stay
-//   - the even-address measurement is both necessary and sufficient for
-//   those. Neither assertion's booleans, mutation, or PASS/FAIL behaviour
-//   changed; only the cited-claims text and this header were edited.
+//   two ids (5-appA-p263.c6, A-pre.c7) state "the lowest bit of all
+//   pointers must be written as zero," with no chip-memory clause. They were
+//   kept on that reading and are now WITHDRAWN TOO - see COVERAGE REPAIR 3.
+//
+// COVERAGE REPAIR 3, 2026-09-12, final-audit blockers 1 and 2. Two further
+//   defects, both of the same shape: an id credited to a predicate that does
+//   not establish the whole of what the claim says.
+//
+//   (a) SLOT-PER-CHANNEL-PER-LINE printed 5-rate.c1, 5-appA-p263.c11 and
+//   5-p139.c4 inside its own "NOT ESTABLISHED HERE" sentence. Naming them
+//   there does not withdraw them: the coverage ledger counts every id on a
+//   graded PASS/FAIL line, so all three were counted ASSERTED by the very
+//   sentence that called them uncovered. The ids are now off the line
+//   entirely and the sentence keeps its wording without them. They need,
+//   respectively: a cycle-accurate multi-line elapsed-time measurement; an
+//   integrated Agnus-Paula-Denise path with a real RAM source; and a DAC
+//   output boundary.
+//
+//   (b) POINTER-LSB-ALWAYS-ZERO kept 5-appA-p263.c6 and A-pre.c7 on the
+//   reading that the even-address measurement is "necessary and sufficient"
+//   for them. It is not. Both quantify over EVERY pointer-type register in
+//   the machine; the predicate probes ONE, AUD0LCL. A universal claim is not
+//   established by a single witness, however structural the mechanism looks
+//   - agnus_audiodma.v:89 is evidence about this module's port, not about
+//   the bitplane, sprite, disk, copper or blitter pointers. Both are
+//   withdrawn whole. They need either a predicate over every pointer family
+//   (a top-level fixture) or narrower split ids scoped to the audio pointer.
+//
+//   Assertion 6 now credits NO claim id and still runs, because what it
+//   measures is true and is the control for the withdrawal. An assertion
+//   without a credited id is not a defect; an id without an assertion that
+//   establishes it is.
+//
+//   No predicate, boolean, mutation or PASS/FAIL outcome changed in either
+//   repair - only cited-claims text and this header.
 //
 // ============================================================================
 // SPECIFICATION - written from the 176 claims' manual quotations alone,
@@ -154,7 +184,7 @@
 //    assertion below that depends on data actually moving through this
 //    module.
 //
-// 1. SLOT-PER-CHANNEL-PER-LINE (3 claim ids; repaired 2026-09-12, see
+// 1. SLOT-PER-CHANNEL-PER-LINE (3 claim ids credited; repaired 2026-09-12, see
 //    COVERAGE REPAIR below and COVERAGE REPAIR 2 above -- 12 ids formerly
 //    cited here are NOT COVERED BY THIS PACKAGE, and a further 3 withdrawn
 //    2026-09-12 are also NOT COVERED BY THIS PACKAGE).
@@ -268,9 +298,11 @@
 //    B-aud3lch.chip, B-aud3lcl.addr, B-aud3lcl.chip, C-map.lch.addr,
 //    C-map.lch.chip, C-prose.lch .
 //
-// 6. POINTER-LSB-ALWAYS-ZERO (2 claim ids; repaired 2026-09-12, revalidation
-//    blocker 1a -- 18 ids formerly cited here are NOT COVERED BY THIS
-//    PACKAGE, see COVERAGE REPAIR 2 in the file header above).
+// 6. POINTER-LSB-ALWAYS-ZERO (NO claim id credited; repaired 2026-09-12
+//    twice -- 18 ids withdrawn at revalidation blocker 1a, see COVERAGE
+//    REPAIR 2, and the last 2 withdrawn at final-audit blocker 2, see
+//    COVERAGE REPAIR 3. The assertion still runs as the control for that
+//    withdrawal).
 //    Quotes: appendix A p.263 "The least significant bit of every pointer-
 //    type register ... must always be written with a zero."
 //    Expected: whatever is written to AUDxLCL, the stored/fetched address's
@@ -625,10 +657,10 @@ int main(int argc, char** argv) {
             "that the channel's DAC is DMA-driven, that the slot's word "
             "supplies two samples, that memory data is automatically "
             "retrieved into AUDxDAT, that the sampling period is bounded by "
-            "this allocation across elapsed time (5-rate.c1), that Paula, "
+            "this allocation across elapsed time, that Paula, "
             "Agnus and Denise actually transfer data to each other over "
-            "this address (5-appA-p263.c11), or that output occurs on the "
-            "addressed channel (the output-occurrence clause of 5-p139.c4) "
+            "this address, or that output occurs on the "
+            "addressed channel (an output-occurrence clause) "
             "- this fixture is agnus_audiodma.v alone, with no RAM input, "
             "no delivered word, no observed sample byte, no DAC boundary "
             "and no elapsed-period or cross-chip measurement; those "
@@ -914,8 +946,12 @@ int main(int argc, char** argv) {
             "register-pair id that carries it (both duplicate-reader "
             "spellings) are NOT COVERED BY THIS PACKAGE - needs gary.v; "
             "only the appendix A p.263 even-address wording, which has no "
-            "chip-memory clause, is asserted. "
-            "[claims: 5-appA-p263.c6, A-pre.c7]");
+            "chip-memory clause, is measured. NO CLAIM ID IS CREDITED HERE: "
+            "the two appendix-A ids that state this even-address rule "
+            "quantify over EVERY pointer-type register, and this predicate "
+            "probes one - AUD0LCL. A universal claim is not established by "
+            "one witness, so both are withdrawn whole; the header records "
+            "what would settle them.");
     }
 
     // ---------------- 7. POINTER-REGISTER-SPACE-LONGWORD ----------------
