@@ -121,12 +121,66 @@
 //   run, not merely assumed; GROUP D and GROUP I each check that intpen was
 //   actually in the state (raised / held low) their claim depends on.
 //
-// RESULTS: PENDING -- this commit is the specification from claims.jsonl's
-//   quotations alone; paula_audio_channel.v has not been opened yet. Filled
-//   in after the build/run commit.
+// RESULTS (after opening paula_audio_channel.v and building/running):
+//   11 PASS, 1 FAIL, 0 declined -- all 19 claim ids covered. The single FAIL
+//   is GROUP C / candidate 5 (5-p157.c13 5-direct.c4), disclosed as expected
+//   before this file was built: measured first AUDxIR/intreq at the very
+//   AUDxDAT-write tick, state still 000, sample still the pre-write value --
+//   paula_audio_channel.v:283-285 sets AUDxIR unconditionally in the
+//   idle-exit CPU branch, before any byte of the word has left the channel,
+//   where the manual (printed p157) puts it after one full word is output.
+//   Not assigned an NM-HRM-nnn key here.
+//   GROUP H (the control case, same trace event) reads GREEN, so the red is
+//   not a broken-harness artifact.
+//   Reading the RTL also settled BOUNDARY (2) empirically rather than by
+//   assumption: paula_audio_channel.v:163-185 (the length/silence block) has
+//   NO reset branch of its own, and `silence`/`silence_d` are set to 1 only
+//   by (a) a lencntrld pulse when audlen<=1 -- gated on AUDxON (line 271),
+//   i.e. only reachable through the DMA-enabled path -- or (b) a dmaena 1->0
+//   edge (lines 174-178). This package's dmaena is fixed at 0 for its entire
+//   life (never even raised once, let alone lowered), so neither path is
+//   ever reachable here; `silence`/`silence_d` never leave their power-on
+//   value of 0 in this fixture, and the FIXTURE-LIVENESS check confirms this
+//   on the actual trace (no stray silent sample observed before word1's own
+//   first byte).
+//   Two bugs were found and fixed in this harness while building, both
+//   caught by actually running it rather than assumed correct from the
+//   spec: (1) the "normal entry" code searched the recorded trace for the
+//   AUDxDAT pulse immediately after write_reg() returned, before any further
+//   tick() had produced the cck-tagged sample that would show it -- fixed by
+//   settling 16 more ticks before searching. (2) GROUP F's period comparison
+//   compared a raw-tick timestamp delta directly against AUDPER (a cck-tick
+//   count) -- Sample.t is in raw ticks and 8 raw ticks make one cck tick
+//   here (clk7_en divides by 4, cck divides that by 2 again), so the
+//   comparison needed an 8x conversion. GROUP I's and the never/early-intpen
+//   mutation scenarios' "did it return to idle" searches also originally
+//   started AT the word1 AUDxDAT-pulse sample, whose own recorded state is
+//   still 000 (mid-transition, one cck edge before the register updates) --
+//   a trivial false-positive "already idle" match, fixed by starting each
+//   such search only after the machine is first observed in the output
+//   state. None of these three fixes touched an expected value, a
+//   quotation, or which claim ids a CHECK covers -- all three were fixes to
+//   this harness's own bookkeeping, caught by running it and reading the
+//   trace, not by adjusting anything to make a result come out a particular
+//   way.
 //
-// MUTATION LOG: PENDING -- filled in after the build/run commit, alongside
-//   RESULTS.
+// MUTATION LOG: all 10 groups' mutations ran as designed; see each group's
+//   own `// MUTATION <id> ...` line above for the per-assertion detail. In
+//   summary: GROUPS A, B, F, G, H (stimulus removed/blocked/skipped) all
+//   correctly went red under a stimulus that should defeat their claim.
+//   GROUP C's mutation (a different written word, 0x0000 instead of
+//   0xA5C3) reproduces the SAME red, confirming the deviation is a
+//   control-path fact and not an artifact of one specific data value.
+//   GROUP D's and GROUP J's mutations are the same rerun (intpen never
+//   raised): GROUP D correctly goes red (output does NOT cease when the
+//   claim's own precondition is absent) and GROUP J correctly goes green
+//   (the machine correctly never falls back when the "otherwise" trigger
+//   never arises) -- one rerun, two different claims, two different
+//   correct readings of the same outcome. GROUP E's mutation (a write
+//   sneaked into the "held" window) correctly shows the held value DOES
+//   change, proving the constancy check is not vacuous. GROUP I's mutation
+//   (intpen raised right after word1 instead of after word3) correctly
+//   shows the loop is left early.
 
 #include <cstdint>
 #include <cstddef>
@@ -134,9 +188,11 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "verilated.h"
 #include "Vpaula_audio_channel.h"
+#include "Vpaula_audio_channel___024root.h"
 
 // ---------------------------------------------------------------------------
 // Bookkeeping
@@ -192,14 +248,21 @@ struct Sample {
 // hrm/paula_audio_channel/test_paula_audio_channel.cpp.
 // ---------------------------------------------------------------------------
 struct Harness {
-    Vpaula_audio_channel* dut;
+    // unique_ptr, not a raw owning pointer: TimelineResult (which embeds a
+    // Harness by value) is returned by value from run_timeline(), which has
+    // several early `return r;` statements -- NRVO is not guaranteed there,
+    // so a raw pointer + hand-written destructor risks two Harnesses
+    // sharing, and each deleting, the same DUT (a double-free -- this is
+    // exactly what produced this build's first "make test" segfault, fixed
+    // here). unique_ptr makes Harness move-only: an accidental copy is now a
+    // compile error instead of a silent double-free.
+    std::unique_ptr<Vpaula_audio_channel> dut;
     int clk7_cycle = 0, cck_cycle = 0, hpos = 0;
     long main_time = 0;
     bool record = false;
     std::vector<Sample> history;
 
-    Harness() { dut = new Vpaula_audio_channel; }
-    ~Harness() { delete dut; }
+    Harness() : dut(new Vpaula_audio_channel) {}
 
     void tick() {
         dut->eval();
@@ -225,16 +288,16 @@ struct Harness {
             if (record) {
                 Sample s;
                 s.t = main_time;
-                s.state = dut->audio_state;
+                s.state = dut->rootp->paula_audio_channel__DOT__audio_state;
                 s.sample = dut->sample;
                 s.dmareq = dut->dmareq;
                 s.dmas = dut->dmas;
                 s.intreq = dut->intreq;
-                s.audxon = dut->AUDxON;
-                s.audxip = dut->AUDxIP;
-                s.audxir = dut->AUDxIR;
-                s.audxdat = dut->AUDxDAT;
-                s.perfin = dut->perfin;
+                s.audxon = dut->rootp->paula_audio_channel__DOT__AUDxON;
+                s.audxip = dut->rootp->paula_audio_channel__DOT__AUDxIP;
+                s.audxir = dut->rootp->paula_audio_channel__DOT__AUDxIR;
+                s.audxdat = dut->rootp->paula_audio_channel__DOT__AUDxDAT;
+                s.perfin = dut->rootp->paula_audio_channel__DOT__perfin;
                 s.volume = dut->volume;
                 s.dmaena = dut->dmaena;
                 s.intpen = dut->intpen;
@@ -370,6 +433,16 @@ static TimelineResult run_timeline(const TimelineParams& p) {
         size_t before = h.history.size();
         h.write_reg(REG_AUDDAT, p.word1);
         r.word1_write_tick = h.main_time;
+        // Settle a full cck period before searching the recorded trace for
+        // the AUDxDAT pulse: write_reg() returns as soon as the register
+        // write itself is issued, but this harness only records a Sample on
+        // a cck-tagged tick() call, and the pulse's own cck-tagged sample
+        // can land a few raw ticks AFTER write_reg() has already returned.
+        // Searching immediately (the first version of this file did) finds
+        // nothing and silently reports have_word1=false even though entry
+        // demonstrably happens (confirmed by dumping the raw trace: t=80
+        // audxdat=1/audxir=1 in state 0, t=88 state=2 sample=0xa5).
+        for (int i = 0; i < 16; i++) h.tick();
         size_t idx = idxAtOrAfter(h, before, isAudxdat);
         if (idx != (size_t)-1) { r.have_word1 = true; r.word1_pulse_idx = idx; }
     }
@@ -378,7 +451,13 @@ static TimelineResult run_timeline(const TimelineParams& p) {
         for (int i = 0; i < 200; i++) h.tick();
         h.dut->intpen = 1;
         for (long i = 0; i < p.starve_wait_ticks; i++) h.tick();
-        size_t idx = idxAtOrAfter(h, r.word1_pulse_idx, isIdle);
+        // Search for idle strictly AFTER the machine has actually finished
+        // entering the loop, not from word1_pulse_idx itself: that sample
+        // still shows state==000 (mid-transition, settling on the next cck
+        // edge) and would otherwise match "isIdle" trivially at the very
+        // tick of entry, before any real dwell in the loop or fallback.
+        size_t hiIdx = idxAtOrAfter(h, r.word1_pulse_idx, isHi);
+        size_t idx = (hiIdx == (size_t)-1) ? (size_t)-1 : idxAtOrAfter(h, hiIdx + 1, isIdle);
         r.fallback_tick = (idx == (size_t)-1) ? -1 : h.history[idx].t;
         return r;
     }
@@ -391,7 +470,10 @@ static TimelineResult run_timeline(const TimelineParams& p) {
 
     if (p.never_raise_intpen) {
         for (long i = 0; i < p.starve_wait_ticks; i++) h.tick();
-        size_t idx = idxAtOrAfter(h, r.word1_pulse_idx, isIdle);
+        // Same fix as the raise_intpen_early branch above: search from past
+        // the loop-entry transition, not from word1_pulse_idx itself.
+        size_t hiIdx = idxAtOrAfter(h, r.word1_pulse_idx, isHi);
+        size_t idx = (hiIdx == (size_t)-1) ? (size_t)-1 : idxAtOrAfter(h, hiIdx + 1, isIdle);
         r.fallback_tick = (idx == (size_t)-1) ? -1 : h.history[idx].t;
         return r;
     }
@@ -675,30 +757,41 @@ int main(int argc, char** argv) {
     // GROUP F -- 5-p157.c16
     // -------------------------------------------------------------------
     {
+        // Sample.t is a raw main_time tick count (Harness::tick()'s own
+        // counter, incremented once per raw call), not a cck-tick count:
+        // clk7_en fires once every 4 raw ticks and cck fires once every 2
+        // clk7_en pulses, so one cck period is 8 raw ticks. perfin (line
+        // 161: percnt==1 && cck) pulses once per cck period of the period
+        // counter, i.e. once every audper cck ticks = audper*8 raw ticks.
+        static const int RAW_TICKS_PER_CCK = 8;
         int volumeReadback = H.dut->volume;
         std::vector<long> perfinTicks;
         for (auto& s : H.history) if (s.t > base.word1_write_tick && s.perfin) perfinTicks.push_back(s.t);
-        long measuredPeriod = -1;
-        if (perfinTicks.size() >= 2) measuredPeriod = perfinTicks[1] - perfinTicks[0];
-        bool g_f = (volumeReadback == baseP.audvol) && (measuredPeriod == baseP.audper);
+        long measuredPeriodRaw = -1;
+        if (perfinTicks.size() >= 2) measuredPeriodRaw = perfinTicks[1] - perfinTicks[0];
+        long measuredPeriodCck = (measuredPeriodRaw >= 0) ? (measuredPeriodRaw / RAW_TICKS_PER_CCK) : -1;
+        bool g_f = (volumeReadback == baseP.audvol) && (measuredPeriodCck == baseP.audper);
         CHECK("5-p157.c16 (p157) \"The volume and period registers are set as usual\": "
               "AUDVOL written " + std::to_string(baseP.audvol) + ", volume port reads " +
               std::to_string(volumeReadback) + "; AUDPER written " +
               std::to_string(baseP.audper) + ", measured perfin-to-perfin period = " +
-              std::to_string(measuredPeriod) + " cck ticks (both while dmaena=0 the whole "
+              std::to_string(measuredPeriodRaw) + " raw ticks = " +
+              std::to_string(measuredPeriodCck) + " cck ticks (both while dmaena=0 the whole "
               "run)", g_f);
 
         TimelineParams mp = baseP; mp.skip_audper_write = true;
         TimelineResult mr = run_timeline(mp);
         std::vector<long> mPerfinTicks;
         for (auto& s : mr.h.history) if (s.t > mr.word1_write_tick && s.perfin) mPerfinTicks.push_back(s.t);
-        long mPeriod = (mPerfinTicks.size() >= 2) ? (mPerfinTicks[1] - mPerfinTicks[0]) : -1;
-        bool matchesBaseline = (mPeriod == baseP.audper);
+        long mPeriodRaw = (mPerfinTicks.size() >= 2) ? (mPerfinTicks[1] - mPerfinTicks[0]) : -1;
+        long mPeriodCck = (mPeriodRaw >= 0) ? (mPeriodRaw / RAW_TICKS_PER_CCK) : -1;
+        bool matchesBaseline = (mPeriodCck == baseP.audper);
         MUTATION("5-p157.c16", "stimulus", matchesBaseline ? "green" : "red",
                   "AUDPER write skipped (register left at its power-on default instead of "
                   "the " + std::to_string(baseP.audper) + " this package wrote); measured "
-                  "period now = " + std::to_string(mPeriod) + " -- correctly no longer "
-                  "matches the value this claim's baseline relies on having been written.");
+                  "period now = " + std::to_string(mPeriodCck) + " cck ticks -- correctly no "
+                  "longer matches the value this claim's baseline relies on having been "
+                  "written.");
     }
 
     // -------------------------------------------------------------------
@@ -771,20 +864,30 @@ int main(int argc, char** argv) {
     // GROUP I -- 5-p164.c12 5-sm.c14
     // -------------------------------------------------------------------
     {
+        // Window starts once the machine has actually FINISHED entering the
+        // loop (first sample with state==MANUAL_HI at/after the word1
+        // pulse), not at word1_write_tick itself: the recorded sample right
+        // at the write (t=word1_write_tick+~4 raw ticks) still shows
+        // state==000 mid-transition (the register update lands on the next
+        // cck edge), and starting the "never idle" window there flagged
+        // that ordinary settle tick as a false "returned to idle" -- caught
+        // by actually running this and reading the trace, not assumed.
+        long loopEnteredTick = base.have_word1 ? tickAtOrAfter(H, base.word1_pulse_idx, isHi) : -1;
         bool intpenHeldLow = true;
         for (auto& s : H.history) {
-            if (s.t > base.word1_write_tick && s.t < base.starve_start_tick && s.intpen) intpenHeldLow = false;
+            if (s.t > loopEnteredTick && s.t < base.starve_start_tick && s.intpen) intpenHeldLow = false;
         }
-        bool stayedInLoop = true;
+        bool stayedInLoop = loopEnteredTick >= 0;
         for (auto& s : H.history) {
-            if (s.t > base.word1_write_tick && s.t < base.starve_start_tick && s.state == MANUAL_IDLE)
+            if (s.t > loopEnteredTick && s.t < base.starve_start_tick && s.state == MANUAL_IDLE)
                 stayedInLoop = false;
         }
         CHECK("5-p164.c12 5-sm.c14 (p164) \"As long as the interrupt is cleared by the "
               "processor in time, the machine remains in the main loop\": precondition -- "
-              "intpen measured held low across the whole word2/word3 loop window = " +
-              std::string(intpenHeldLow?"yes":"no") + "; machine never returned to idle "
-              "during that same window = " + std::string(stayedInLoop?"yes":"no"),
+              "intpen measured held low across the whole word2/word3 loop window (tick " +
+              std::to_string(loopEnteredTick) + " to " + std::to_string(base.starve_start_tick) +
+              ") = " + std::string(intpenHeldLow?"yes":"no") + "; machine never returned to "
+              "idle during that same window = " + std::string(stayedInLoop?"yes":"no"),
               intpenHeldLow && stayedInLoop);
 
         TimelineParams mp = baseP; mp.raise_intpen_early = true;
