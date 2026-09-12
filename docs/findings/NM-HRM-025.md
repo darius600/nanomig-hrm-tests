@@ -1,0 +1,142 @@
+# NM-HRM-025 — volume 64 and volume 63 are the same gain on the multiply path
+
+| | |
+|---|---|
+| **Status** | open · red |
+| **Module** | `paula_audio_mixer.v` |
+| **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale), [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map) |
+| **Chapter** | 5 — Audio |
+| **Verdict of the four** | all four clamp at 64 and keep it distinct from 63 |
+
+---
+
+## What the HRM says
+
+**Table 5-9, printed p. 163** gives each volume setting a decibel value. The two
+at the top are distinct:
+
+> volume 63 → −0.1 dB  
+> volume 64 → 0.0 dB
+
+**Appendix A, printed p. 266**, on `AUDxVOL`:
+
+> "65 linear volume levels"
+
+and describes bit 6 as forcing maximum output.
+
+So the manual asks for 65 distinct levels, and for 63 and 64 to differ.
+
+---
+
+## What NanoMig does
+
+`paula_audio_mixer` wires bit 6 of the seven-bit volume register *down into* the
+six-bit input of the volume helper, by OR-ing it into every bit:
+
+[`src/minimig-aga/paula_audio_mixer.v#L23-L33`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_mixer.v#L23-L33)
+
+```verilog
+// when volume MSB is set, volume is always maximum
+paula_audio_volume sv0
+(
+  .sample(sample0),
+  .volume({  (vol0[6] | vol0[5]),
+            (vol0[6] | vol0[4]),
+            (vol0[6] | vol0[3]),
+            (vol0[6] | vol0[2]),
+            (vol0[6] | vol0[1]),
+            (vol0[6] | vol0[0]) }),
+  .out(msample0)
+```
+
+With `vol0 = 64` (`1000000`), bit 6 is set, so every one of the six bits handed
+to the helper is forced high — the helper sees `111111`, which is **63**.
+
+**The same design implements volume a second time, and that one is correct.**
+The PWM path keeps the register at its full seven bits and compares across
+widths, so 64 stays above 63:
+
+[`src/minimig-aga/paula_audio_channel.v#L101-L103`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L101-L103)
+
+```verilog
+      audvol[6:0] <= 7'b000_0000;
+    else if (aen && (reg_address_in[3:1]==AUDVOL[3:1]))
+      audvol[6:0] <= data[6:0];
+```
+
+[`src/minimig-aga/paula_audio_channel.v#L149`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L149)
+
+```verilog
+assign volgate = (volcnt < audvol);
+```
+
+### Measured
+
+| path | volumes 63, 64, 65, 96, 127 | levels |
+|---|---|---|
+| multiply (`ldata`/`rdata`) | `ldatasum = 4032` for **all five** | 64 distinct |
+| PWM (`ldata_okk`/`rdata_okk`) | open-tick counts 0, 4, 128, 252, 256 for volumes 0, 1, 32, 63, 64 — exactly 4× each written value | **65 distinct** |
+
+---
+
+## What the others say
+
+Nobody decides this but the manual. A dash means the source has not been read
+for this finding.
+
+| | code | revision |
+|---|---|---|
+| **WinUAE** | `audio.cpp:1541-1543`<br>`v &= 127; if (v > 64) v = 64;`<br>under the comment *"7 bit register in Paula"* | not recorded |
+| **vAmiga** | `StateMachineRegs.cpp:38`<br>`std::min(value & 0x7F, 64)`<br>with *"All values greater than 64 are treated as 64 (max volume)"* in the code | not recorded |
+| **Denise** | `paula/audio.cpp:153`<br>`if (value & 0x40) value = 0x40;` | not recorded |
+| **Copperline** | `chipset/paula.rs:228`<br>`((word & 0x007F) as u8).min(64)` | not recorded |
+
+**All four clamp at 64 and keep it distinct from 63.** Two say why in their own
+comments.
+
+Denise's line is the one to put beside NanoMig's, because both implement
+appendix A's "bit 6 forces maximum" and they arrive at different answers: Denise
+forces the **value** to `0x40` — 64 — while `paula_audio_mixer` ORs bit 6 down
+into the low six bits and arrives at 63.
+
+---
+
+## Suggested change
+
+Clamp rather than OR, which is what the other four do and what the manual's
+"65 levels" requires. The helper's input is six bits, so the seventh level needs
+the helper itself to widen, or the mixer to special-case it:
+
+```verilog
+// 64 is a level of its own, not a saturated 63.
+.volume(vol0[6] ? 7'd64 : {1'b0, vol0[5:0]}),
+```
+
+with `paula_audio_volume`'s `volume` port widened to `[6:0]`. That change makes
+the multiply path agree with the PWM path already in the same file.
+
+**This is a suggestion, not a decision.** Whether it matters depends on which
+path reaches the DAC in a real build — see the closing note.
+
+---
+
+## What holds the finding up
+
+- **A control on the same fixture and the same measurement basis.**
+  `MULTIPLY-PATH-DISTINGUISHES-ADJACENT-VOLUMES` compares 62 against 63 and is
+  **green**, so the collapse at 64 is a property of that value and not a dead
+  sweep.
+- **The other path in the same design.** `VOLUME-65-LEVELS` is green on the PWM
+  output, which rules out the test's own arithmetic.
+- The collapse assertion's stimulus mutation is recorded `impossible`: the OR is
+  unconditional and no port gates it, so nothing can be changed to make the
+  assertion go red for a different reason. The adjacency control stands in its
+  place.
+
+---
+
+## For the specialists
+
+The whole of Table 5-9 runs **+0.10 to +0.18 dB high** on the multiply path and
+reproduces to the printed decimal on the PWM path. Which of the two reaches the
+DAC in a real build decides whether this is audible or bookkeeping.
