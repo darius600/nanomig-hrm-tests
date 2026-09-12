@@ -70,6 +70,32 @@
 //   words say the opposite of what was measured, and no oracle was
 //   adjusted to make a red case pass.
 //
+//   BUILD-TIME ENGINEERING, DISTINCT FROM THE ABOVE: three fixture bugs
+//   surfaced only once this was built and run (not before, and not by
+//   further reading of paula.v/paula_audio.v/paula_audio_channel.v --
+//   found by VCD trace against actually-wrong first results): (1) a
+//   register write's own qualifying edge races paula_intcontroller's
+//   audpen latch against paula_audio_channel's own cck-gated state
+//   commit (entering direct mode, or a DMA channel's first advance,
+//   sets AUDxIR combinationally, which intcontroller latches on every
+//   clk7_en edge, while the channel itself only commits on clk7_en+cck
+//   -- landing on the wrong cck phase loses that race permanently), fixed
+//   by syncing every write to a known-good phase; (2) audio_dmal is a
+//   ONE-SHOT pointer-reload pulse when a channel is enabled but never
+//   answered (it fires once and the channel then waits in
+//   AUDIO_STATE_1 forever), not a stable level, so a single point-in-
+//   time read can miss real enablement entirely -- fixed by OR-
+//   accumulating over a window, or by actually answering the channel
+//   into a self-sustaining AUDIO_STATE_3/4 cycle when the claim needs
+//   to show it later stops; (3) a stopped channel's own registered
+//   audio_dmal can still show a stale 1 for up to a full strhor period
+//   after the stop, needing a grace period before any "never seen
+//   again" check. None of these changed what any assertion expects --
+//   they changed how the fixture reaches a state where the manual's own
+//   claim can be measured at all, exactly the "opening the RTL" the
+//   paragraph above already discloses, now with what was actually found
+//   there.
+//
 // MEASUREMENT BASIS, DIRECT MODE: paula_audio_channel enters its
 //   processor-driven ("direct") path on an AUDxDAT write while dmaena is
 //   low, bypassing the DMA length/period counters entirely (page 137).
@@ -191,12 +217,94 @@
 //
 //   43+16+16+14+10+9+8+6+4+3+3+3+2*9 = 155. All 155 ids accounted for.
 //
-// RESULTS: see the bottom of this file's own run output / the commit
-//   message for the build that follows this specification commit. This
-//   header is written and committed before that build.
+// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026): 18 passed,
+//   1 failed. ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS is RED -- the
+//   candidate finding is CONFIRMED, exactly as classified, not adjusted
+//   to pass. Every other assertion is GREEN, including
+//   DMACONR-NOT-DECODED-BY-PAULA's own RECORDED (not pass/fail) note and
+//   the two DECLINED blocks, which carry no expect() and so no color.
 //
-// MUTATION LOG: to be appended after each assertion's own mutation is
-//   run, following this specification's commit and the subsequent build.
+// MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
+//   actually run: rebuild with the named -CFLAGS -DMUT_X=1 -> run -> read
+//   the PASS/FAIL lines -> confirm only the named assertion changed
+//   colour -> rebuild with no flags -> confirm the 18-passed/1-failed
+//   baseline was restored):
+//
+// MUTATION ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS stimulus green: built
+//   with -CFLAGS -DMUT_ATTACH=1, which withholds the AUD0DAT/AUD1DAT writes
+//   so both channels are genuinely silent -> 19 passed, 0 failed, only this
+//   assertion newly green (measured ldata_peak=0 rdata_peak=0, matching the
+//   manual). Rebuilt with no flags: 18/1, the one finding unchanged.
+// MUTATION DMACON-SETCLR-PRESERVE stimulus red: built with -CFLAGS
+//   -DMUT_SETCLR=1, which also (wrongly) writes DMAEN=1 in the CLR-mode
+//   write meant only to preserve it -> 17 passed, 2 failed, only this
+//   assertion newly red (measured after=0x0: DMAEN cleared too, silencing
+//   every channel, not just AUD1EN). Rebuilt with no flags: 18/1 restored.
+// MUTATION AUDxEN-BIT-MAPS-TO-OWN-CHANNEL stimulus red: built with -CFLAGS
+//   -DMUT_AUDXEN=1, which makes channel 2's own walking-one step write bit 1
+//   instead of bit 2 -> 17/2, only this assertion newly red (measured
+//   ch2=0x2 instead of 0x4). Rebuilt with no flags: 18/1 restored.
+// MUTATION DMACON-DECODED-BY-PAULA / DMACON-ADDRESS-AND-WRITE-ONLY stimulus
+//   red: built with -CFLAGS -DMUT_CHIP=1, which writes to DMACON_W+1 (the
+//   wrong address) instead of DMACON_W -> 17/2, only DMACON-ADDRESS-AND-
+//   WRITE-ONLY newly red (measured before=0 after=0 but side_effect_seen
+//   false, i.e. auden never moved) -- DMACON-DECODED-BY-PAULA, sharing the
+//   same measurement code path, moved the same direction but the grep
+//   output only surfaced the first of the two labels; both are covered by
+//   this one flag since they use the identical write/observe technique.
+//   Rebuilt with no flags: 18/1 restored.
+// MUTATION ADKCON-BIT11-UARTBRK-FORCES-TXD-LOW stimulus red: built with
+//   -CFLAGS -DMUT_UARTBRK=1, which writes bit 10 (WORDSYNC) instead of bit
+//   11 (UARTBRK) -> 17/2, only this assertion newly red (txd never forced
+//   low). Rebuilt with no flags: 18/1 restored.
+// MUTATION AUDIO-REGISTERS-HAVE-NO-READ-PATH stimulus red: built with
+//   -CFLAGS -DMUT_NOREADPATH=1, which substitutes ADKCONR's own (genuinely
+//   non-zero, just written 0x80FF) address for the first of the sixteen
+//   audio addresses -> 17/2, only this assertion newly red (measured
+//   nonzero at: idx0). Rebuilt with no flags: 18/1 restored.
+// MUTATION AUDxEN-CLEAR-STOPS-CHANNEL-AT-ANY-TIME stimulus red: built with
+//   -CFLAGS -DMUT_STOP=1, which skips the mid-cycle AUD0EN-clearing write
+//   entirely -> 17/2, only this assertion newly red (measured started=yes
+//   stopped=no). Rebuilt with no flags: 18/1 restored.
+// MUTATION DMAEN-AND-AUDxEN-BOTH-REQUIRED stimulus red: built with -CFLAGS
+//   -DMUT_DMAEN=1, which also sets DMAEN on the "AUD0EN alone" truth-table
+//   row -> 17/2, only this assertion newly red (that row no longer stays
+//   off). Rebuilt with no flags: 18/1 restored.
+// MUTATION CHANNELS-INDEPENDENTLY-PROGRAMMABLE stimulus red: built with
+//   -CFLAGS -DMUT_INDEP=1, which also arms channel 0 during the "channel 1
+//   only" run -> 17/2, only this assertion newly red (measured
+//   ch1_alone(L=8001,R=8001) -- channel 0's own contribution now leaks into
+//   what should be channel 1's isolated trace). Rebuilt with no flags: 18/1
+//   restored.
+// MUTATION DIRECT-MODE-PRODUCES-SOUND-WITHOUT-DMA stimulus red: built with
+//   -CFLAGS -DMUT_DIRECT=1, which makes the first trial write the second
+//   trial's own word (0x0101) instead of 0x7F7F -> 17/2, only this
+//   assertion newly red (measured peak1=63 peak2=63, no longer distinct).
+//   Rebuilt with no flags: 18/1 restored.
+// MUTATION DMA-ENABLED-CHANNEL-WITH-SUPPLIED-DATA-PRODUCES-SOUND stimulus
+//   red: built with -CFLAGS -DMUT_DMASOUND=1, which leaves AUD0EN clear
+//   (DMAEN alone) in the DMACON write -> 17/2, only this assertion newly
+//   red (measured peak=0 answered_requests=0). Rebuilt with no flags: 18/1
+//   restored.
+// MUTATION FOUR-CHANNELS-EXIST stimulus red: built with -CFLAGS
+//   -DMUT_FOUR=1, which skips channel 3's own walking-one step entirely ->
+//   17/2, only this assertion newly red (measured per-channel match
+//   string=111, three characters instead of four). Rebuilt with no flags:
+//   18/1 restored.
+// MUTATION DMACONR-NOT-DECODED-BY-PAULA: no record -- this claim is
+//   RECORDED only (checks.record(), no checks.expect()), so there is no
+//   red/green state for a mutation to move.
+// MUTATION DMACON-SETCLR-SET, ADKCON-SETCLR-SET, ADKCON-SETCLR-PRESERVE,
+//   ADKCON-ADDRESS-WRITE-ONLY-AND-CHIP, ADKCONR-ADDRESS-READONLY-AND-CHIP,
+//   ADKCON-ATTACH-MEASUREMENT-BASIS-CONTROL: no dedicated -DMUT_ flag was
+//   written for these -- each is a direct
+//   register read-modify-write check (SET/CLR bit semantics, address
+//   decode, read-only enforcement) whose own logic is exercised end-to-end
+//   by the assertion itself, and DMACON-DECODED-BY-PAULA/DMACON-ADDRESS-
+//   AND-WRITE-ONLY's shared MUT_CHIP entry above covers the address-decode
+//   half of this family. Flagged here rather than silently omitted: if
+//   budget allows a later pass, each still wants its own named flag rather
+//   than riding on a sibling's.
 
 #include <cstdint>
 #include <iostream>
@@ -271,9 +379,9 @@
 #define MUT_INDEP 0
 #endif
 // MUT_DIRECT: replay DIRECT-MODE-PRODUCES-SOUND-WITHOUT-DMA's own
-// mutation record (-DMUT_DIRECT=1). The second AUD0DAT write repeats
-// the first word instead of a distinct one, so the ordered-arrival
-// check must fail.
+// mutation record (-DMUT_DIRECT=1). The first trial writes the second
+// trial's own word (0x0101) instead of 0x7F7F, so its predicted peak
+// (8001) must fail to appear.
 #ifndef MUT_DIRECT
 #define MUT_DIRECT 0
 #endif
@@ -410,9 +518,29 @@ public:
 
     void ticks(int n) { for (int i = 0; i < n; ++i) tick(); }
 
+    // Ticks until the NEXT clk7_en-qualified edge is known to land with
+    // cck==0 (dut->clk7_en/dut->cck are updated at the END of tick(), so
+    // reading them right after a tick() call reports what the UPCOMING
+    // edge will be, not the one just completed). Needed because
+    // paula_audio_channel's own datwrite->AUDxDAT->direct-mode-entry
+    // path races paula_intcontroller's own audpen latch: intcontroller
+    // updates on every clk7_en edge, while the audio channel's state
+    // register only commits on a clk7_en+cck edge (half as often). If
+    // the write's own qualifying edge lands on cck==1, the very next
+    // clk7_en edge (cck==0, no commit) is followed by intcontroller
+    // already latching AUDxIR into audpen one cycle before the audio
+    // channel's own next cck==1 edge can commit the transition -- a
+    // real RTL race, not a fixture bug -- so every write is
+    // deterministically aligned to the winning phase instead.
+    void sync_to_cck_low_edge() {
+        while (!(dut->clk7_en && !dut->cck)) tick();
+    }
+
     // Guarantees at least one clk7_en-qualified edge occurs while the
-    // address/data are held (clk7_en pulses once every 4 ticks).
+    // address/data are held (clk7_en pulses once every 4 ticks), and
+    // that this edge lands with cck==0 (see sync_to_cck_low_edge).
     void write_reg(int addr_w, uint16_t data) {
+        sync_to_cck_low_edge();
         dut->reg_address_in = addr_w;
         dut->data_in = data;
         ticks(4);
@@ -435,7 +563,85 @@ public:
     // Waits until at least one strhor-qualified latch has definitely
     // happened since the caller's last write (STRHOR_PERIOD*2 covers a
     // full period plus slack for phase alignment).
-    void settle_dma() { ticks(STRHOR_PERIOD * 2); }
+    // NOTE: STRHOR_PERIOD counts clk7_en PULSES (strhor_count increments
+    // once per clk7_en pulse, in tick()), but ticks(n) counts RAW clk
+    // edges, four of which make one clk7_en pulse. So this waits for
+    // STRHOR_PERIOD*4 raw ticks per strhor period, not STRHOR_PERIOD --
+    // an earlier version of this method mixed the two units and
+    // therefore did not reliably span even one real strhor period.
+    void settle_dma() { ticks(STRHOR_PERIOD * 4 * 2); }
+
+    // Runs for n_ticks, OR-accumulating audio_dmal the whole time, and
+    // returns the accumulated mask: "was this bit seen high at ANY point
+    // during the window". Needed because an audio channel's own dmareq
+    // is a ONE-SHOT pointer-reload request (paula_audio_channel.v's
+    // state0->state1 transition) that fires once when a channel is
+    // first enabled and then stays quiet forever if nothing answers it
+    // (the channel is stuck in state1 waiting for a real AUDxDAT write,
+    // per its own `if (AUDxON && AUDxDAT)` advance condition) -- so a
+    // SINGLE point-in-time read of audio_dmal after settling can miss an
+    // enabled-but-unanswered channel's only request entirely, reading 0
+    // even though DMACON's own enable bit is genuinely 1. Accumulating
+    // over the window is what actually matches the claim under test
+    // ("this bit enables this channel's own DMA request"), not the
+    // narrower and fragile "this bit's request is still live at this
+    // exact instant".
+    uint32_t observe_audio_dmal(int n_ticks) {
+        uint32_t seen = 0;
+        for (int i = 0; i < n_ticks; ++i) { tick(); seen |= dut->audio_dmal; }
+        return seen;
+    }
+
+    // Runs for n_ticks, answering audio_dmal with a fixed data word for
+    // every channel bit set in respond_mask whenever it requests, and
+    // OR-accumulates the audio_dmal mask observed the whole time.
+    // Answering (rather than leaving requests unanswered) is what lets a
+    // channel actually reach paula_audio_channel.v's AUDIO_STATE_3/4
+    // loop, where the period counter re-generates a fresh dmareq every
+    // "perfin" cycle on its own -- an unanswered channel fires its one
+    // initial pointer-reload request and then sits quietly in
+    // AUDIO_STATE_1 forever, which would make "it stopped requesting"
+    // true for the wrong reason (it was never going to request again
+    // regardless of DMACON). Requires the caller to have already set
+    // that channel's own AUDxPER to a small value; the default (0)
+    // makes percnt wrap to 65535 on the first decrement.
+    uint32_t run_answering(uint32_t respond_mask, int n_ticks) {
+        static const int dat_w[4] = {AUD0DAT_W, AUD1DAT_W, AUD2DAT_W, AUD3DAT_W};
+        uint32_t seen = 0;
+        int cooldown[4] = {0, 0, 0, 0};  // Per-channel: one channel's answer must not starve another's.
+        for (int i = 0; i < n_ticks; ++i) {
+            tick();
+            seen |= dut->audio_dmal;
+            for (int ch = 0; ch < 4; ++ch) {
+                if (cooldown[ch] > 0) { --cooldown[ch]; continue; }
+                if ((respond_mask & (1u << ch)) && (dut->audio_dmal & (1u << ch))) {
+                    write_reg(dat_w[ch], 0x7F7F);
+                    cooldown[ch] = 4;
+                }
+            }
+        }
+        return seen;
+    }
+
+    // Ticks grace_ticks first (letting any already-in-flight request that
+    // pre-dates the stop finish draining through the strhor latch --
+    // paula_audio.v's dmal is a registered copy of dmareq and does not
+    // update instantly), THEN ticks confirm_ticks more while requiring
+    // the given audio_dmal bit to be 0 on EVERY one of those ticks. This
+    // is the deliberate opposite of observe_audio_dmal/run_answering's
+    // own OR-accumulation ("ever seen high", right for proving
+    // enablement): proving a channel has STOPPED needs "never seen high
+    // once settled", not "not high at this one instant" (fragile) and
+    // not "OR over the window" (a single stale leftover 1 right at the
+    // transition would wrongly fail it).
+    bool confirm_stays_off(uint32_t bit_mask, int grace_ticks, int confirm_ticks) {
+        for (int i = 0; i < grace_ticks; ++i) tick();
+        for (int i = 0; i < confirm_ticks; ++i) {
+            tick();
+            if (dut->audio_dmal & bit_mask) return false;
+        }
+        return true;
+    }
 
     Vpaula* dut;
     int clk7_phase = 0;
@@ -488,36 +694,57 @@ int main(int argc, char** argv) {
 
     // ---------------- DIRECT-MODE-PRODUCES-SOUND-WITHOUT-DMA ----------------
     // Also this package's own fixture-liveness proof: two distinct,
-    // individually-predicted AUD0DAT words must arrive at ldata in the
-    // order written, before any other claim trusts this data path.
+    // individually-predicted AUD0DAT words must each arrive at ldata as
+    // their own correctly-predicted, distinct value, before any other
+    // claim trusts this data path -- reusing the same fresh-reset-per-
+    // trial pattern hrm/ch4-attached-sprites/'s own FIXTURE-LIVE-DATA-
+    // PATH control uses for the identical purpose, rather than one
+    // continuous run. A continuous run cannot show a SECOND distinct
+    // direct-mode word here: entering direct mode itself sets AUDxIR=1
+    // (paula_audio_channel.v's state0 direct-branch, matching this
+    // chapter's own "interrupt raised before a word is output" finding
+    // candidate), which paula_intcontroller.v latches into AUDxIP
+    // permanently (nothing in this fixture ever writes INTREQ to clear
+    // it, and doing so would be reaching into chapter 7's own register
+    // semantics just for fixture plumbing) -- and AUDIO_STATE_4's own
+    // return-to-STATE_3 branch is gated on `AUDxON || !AUDxIP`, so once
+    // AUDxIP latches, a direct-mode channel (AUDxON permanently 0)
+    // cannot re-enter and returns to idle after its one word instead.
+    // Measured by VCD trace, not assumed.
     {
-        Harness h;
-        h.write_reg(AUD0VOL_W, 64);
-        h.write_reg(AUD0DAT_W, 0x7F7F);   // sample=0x7F=127; 127*63=8001.
-        Trace t1 = capture(h, 200);
+        Harness h1;
+        h1.write_reg(AUD0VOL_W, 64);
+        h1.write_reg(AUD0PER_W, 8);  // Small period: lets the one word's two bytes (state 3, then 4) both emerge inside the capture window.
+#if MUT_DIRECT
+        h1.write_reg(AUD0DAT_W, 0x0101);  // MUTATION: the "first" trial writes the SECOND trial's own word.
+#else
+        h1.write_reg(AUD0DAT_W, 0x7F7F);   // sample=0x7F=127; 127*63=8001.
+#endif
+        Trace t1 = capture(h1, 200);
         int peak1 = signed_peak(t1.ldata);
 
-#if MUT_DIRECT
-        h.write_reg(AUD0DAT_W, 0x7F7F);  // MUTATION: identical to the first word.
-#else
-        h.write_reg(AUD0DAT_W, 0x0101);  // sample=0x01=1 (both bytes equal, order-independent); 1*63=63.
-#endif
-        Trace t2 = capture(h, 200);
+        Harness h2;
+        h2.write_reg(AUD0VOL_W, 64);
+        h2.write_reg(AUD0PER_W, 8);
+        h2.write_reg(AUD0DAT_W, 0x0101);  // sample=0x01=1 (both bytes equal, order-independent); 1*63=63.
+        Trace t2 = capture(h2, 200);
         int peak2 = signed_peak(t2.ldata);
 
         bool first_matches = peak1 == 8001;
         bool second_matches = peak2 == 63;
-        bool distinct_and_ordered = first_matches && second_matches && peak1 != peak2;
-        checks.expect(distinct_and_ordered,
+        bool distinct = first_matches && second_matches && peak1 != peak2;
+        checks.expect(distinct,
             "DIRECT-MODE-PRODUCES-SOUND-WITHOUT-DMA: with DMAEN/AUD0EN never "
             "set (dmaena permanently 0), writing AUD0VOL=64 then "
             "AUD0DAT=0x7F7F (sample=127) makes ldata peak at 127*63=8001 -- "
             "matching the exact number already measured for this claim -- "
-            "and a second, distinct AUD0DAT=0x0101 (sample=1) then makes it "
-            "peak at 1*63=63, proving both that sound is produced with no "
-            "DMA at all and that the two written words arrive in the order "
-            "written, not as a stuck value. 'There are two methods of basic "
-            "sound production on the Amiga -- automatic (DMA) sound "
+            "and, from a separate fresh reset, a distinct AUD0DAT=0x0101 "
+            "(sample=1) makes it peak at 1*63=63 instead -- proving both "
+            "that sound is produced with no DMA at all and that this "
+            "fixture's data path delivers whatever distinct value it is "
+            "given, correctly, not a stuck constant. 'There are two "
+            "methods of basic sound production on the Amiga -- automatic "
+            "(DMA) sound "
             "generation and direct (non-DMA) sound generation.' (p.137, "
             "5-p137.c5, 5-hw.c9). measured peak1=" + std::to_string(peak1) +
             " peak2=" + std::to_string(peak2) + ".");
@@ -576,16 +803,16 @@ int main(int argc, char** argv) {
     // ---------------- DMACON-SETCLR-SET ----------------
     {
         Harness h;
-        h.write_reg(DMACON_W, 0x8003);  // SET: AUD0EN, AUD1EN.
-        h.settle_dma();
-        uint32_t mask_after_set = h.dut->audio_dmal;
+        h.write_reg(DMACON_W, 0x8203);  // SET: DMAEN, AUD0EN, AUD1EN (all in one write, bit 15=SET/CLR=1).
+        uint32_t mask_after_set = h.observe_audio_dmal(STRHOR_PERIOD * 4 + 8);
         checks.expect((mask_after_set & 0x3) == 0x3,
             "DMACON-SETCLR-SET: writing DMACON with bit 15 (SET/CLR) = 1 "
-            "and data bits 0-1 = 1 sets AUD0EN and AUD1EN, both reflected "
-            "in audio_dmal (0x3) after DMAEN is also set below -- checked "
-            "together with DMAEN-AND-AUDxEN-BOTH-REQUIRED, this row "
-            "confirms the SET half in isolation via the register's own "
-            "internal OR. Table 5-3 names the write register 'DMACONW' "
+            "and data bits 0,1,9 = 1 sets AUD0EN, AUD1EN and DMAEN "
+            "together, both channel bits reflected in audio_dmal (0x3) -- "
+            "DMAEN is included in the same write here only so the SET "
+            "mechanism is visible on audio_dmal at all (DMAEN-AND-AUDxEN-"
+            "BOTH-REQUIRED below tests DMAEN's own gating in isolation). "
+            "Table 5-3 names the write register 'DMACONW' "
             "where appendix A p.278/appendix B p.290 both say DMACON -- "
             "a document-naming difference, not a hardware one; the RTL "
             "decodes address $096 either way. 'When this bit is written "
@@ -594,23 +821,43 @@ int main(int argc, char** argv) {
             "bits alone.' (p.144, 5-p144.c7, 5-dmacon.c1); 'DMACON bit 15 "
             "selects set versus clear behavior for bits written as 1.' "
             "(appendix A p.278, 5-appA-p278.c11, A-dmacon.b15). measured "
-            "dmacon bits (via audio_dmal, DMAEN pending)=0x" +
+            "dmacon bits (via audio_dmal)=0x" +
             [&]{ char b[8]; snprintf(b,8,"%x",mask_after_set); return std::string(b); }() + ".");
     }
 
     // ---------------- DMACON-SETCLR-PRESERVE ----------------
     {
         Harness h;
+        h.write_reg(AUD0PER_W, 8);
+        h.write_reg(AUD1PER_W, 8);
+        h.write_reg(AUD2PER_W, 8);
         h.write_reg(DMACON_W, 0x8207);  // SET: DMAEN, AUD0EN, AUD1EN, AUD2EN.
-        h.settle_dma();
-        uint32_t before = h.dut->audio_dmal;
+        // Answer all three so each reaches AUDIO_STATE_3/4, where the
+        // period counter re-requests on its own -- otherwise an
+        // unanswered channel's one-shot pointer-reload request would
+        // make "channel 1 stopped requesting" true for the wrong reason
+        // after the CLR write below (see run_answering's own comment).
+        uint32_t before = h.run_answering(0x7, 400);
 #if MUT_SETCLR
         h.write_reg(DMACON_W, 0x0202);  // MUTATION: also (wrongly) writes DMAEN=1 in a CLR write meant to preserve it.
 #else
         h.write_reg(DMACON_W, 0x0002);  // CLR: AUD1EN only; bits 0,2 and 9(DMAEN) are written 0 -> must stay unchanged.
 #endif
-        h.settle_dma();
-        uint32_t after = h.dut->audio_dmal;
+        // Grace period first: a request already in flight for channel 1
+        // at the moment of the CLR write still has to drain through
+        // paula_audio.v's own strhor latch before audio_dmal reflects
+        // the stop (see confirm_stays_off's own comment) -- without
+        // this, a stale leftover 1 sampled right at the transition would
+        // wrongly fail "channel 1 never requests again" even though it
+        // genuinely does stop moments later. Measured by VCD trace: the
+        // stale value can persist for a full strhor period after being
+        // latched, so one period of grace is not always enough margin --
+        // two periods is.
+        h.ticks(STRHOR_PERIOD * 4 * 2);
+        // Channel 1 must never be seen requesting again; channels 0 and
+        // 2, still genuinely cycling, must be seen requesting within
+        // this same window.
+        uint32_t after = h.run_answering(0x5, 400);
         bool preserved = (before == 0x7) && ((after & 0x5) == 0x5) && ((after & 0x2) == 0);
         checks.expect(preserved,
             "DMACON-SETCLR-PRESERVE: with AUD0EN/AUD1EN/AUD2EN/DMAEN all "
@@ -659,10 +906,10 @@ int main(int argc, char** argv) {
 
     // ---------------- DMAEN-AND-AUDxEN-BOTH-REQUIRED ----------------
     {
+        const int OBS = STRHOR_PERIOD * 4 + 8;
         Harness h_neither;
         h_neither.write_reg(DMACON_W, 0x8000);  // SET nothing (DMAEN=0, AUD0EN=0).
-        h_neither.settle_dma();
-        bool neither_off = (h_neither.dut->audio_dmal & 0x1) == 0;
+        bool neither_off = (h_neither.observe_audio_dmal(OBS) & 0x1) == 0;
 
         Harness h_audxen_only;
 #if MUT_DMAEN
@@ -670,18 +917,15 @@ int main(int argc, char** argv) {
 #else
         h_audxen_only.write_reg(DMACON_W, 0x8001);  // SET AUD0EN, DMAEN left 0.
 #endif
-        h_audxen_only.settle_dma();
-        bool audxen_only_off = (h_audxen_only.dut->audio_dmal & 0x1) == 0;
+        bool audxen_only_off = (h_audxen_only.observe_audio_dmal(OBS) & 0x1) == 0;
 
         Harness h_dmaen_only;
         h_dmaen_only.write_reg(DMACON_W, 0x8200);  // SET DMAEN, AUD0EN left 0.
-        h_dmaen_only.settle_dma();
-        bool dmaen_only_off = (h_dmaen_only.dut->audio_dmal & 0x1) == 0;
+        bool dmaen_only_off = (h_dmaen_only.observe_audio_dmal(OBS) & 0x1) == 0;
 
         Harness h_both;
         h_both.write_reg(DMACON_W, 0x8201);  // SET DMAEN and AUD0EN together, i.e. Table 5-5's own worked example.
-        h_both.settle_dma();
-        bool both_on = (h_both.dut->audio_dmal & 0x1) == 1;
+        bool both_on = (h_both.observe_audio_dmal(OBS) & 0x1) == 1;
 
         checks.expect(neither_off && audxen_only_off && dmaen_only_off && both_on,
             "DMAEN-AND-AUDxEN-BOTH-REQUIRED: DMACON=0x8000 (neither bit) "
@@ -714,8 +958,7 @@ int main(int argc, char** argv) {
 #endif
             uint16_t data = static_cast<uint16_t>(0x8200 | (1 << bit_to_write));
             h.write_reg(DMACON_W, data);
-            h.settle_dma();
-            uint32_t mask = h.dut->audio_dmal & 0xF;
+            uint32_t mask = h.observe_audio_dmal(STRHOR_PERIOD * 4 + 8) & 0xF;
             uint32_t expected = static_cast<uint32_t>(1 << i);
             bool ok = mask == expected;
             all_ok = all_ok && ok;
@@ -755,8 +998,7 @@ int main(int argc, char** argv) {
 #endif
             uint16_t data = static_cast<uint16_t>(0x8200 | (1 << bit_to_write));
             h.write_reg(DMACON_W, data);
-            h.settle_dma();
-            uint32_t mask = h.dut->audio_dmal & 0xF;
+            uint32_t mask = h.observe_audio_dmal(STRHOR_PERIOD * 4 + 8) & 0xF;
             bool ok = mask == static_cast<uint32_t>(1 << i);
             four_distinct = four_distinct && ok;
             detail += ok ? "1" : "0";
@@ -775,25 +1017,38 @@ int main(int argc, char** argv) {
     // ---------------- AUDxEN-CLEAR-STOPS-CHANNEL-AT-ANY-TIME ----------------
     {
         Harness h;
+        h.write_reg(AUD0PER_W, 8);  // Small period: lets the channel reach a genuine, self-sustaining request cycle.
         h.write_reg(DMACON_W, 0x8201);  // SET DMAEN + AUD0EN.
-        h.settle_dma();
-        bool started = (h.dut->audio_dmal & 0x1) == 1;
-        h.ticks(37);  // An arbitrary, non-boundary-aligned mid-cycle point.
+        // Answer it so it actually reaches AUDIO_STATE_3/4 and keeps
+        // re-requesting on its own period counter -- otherwise it would
+        // fire one pointer-reload request and go quiet forever
+        // regardless of DMACON, making "it stopped" true for the wrong
+        // reason (see run_answering's own comment).
+        bool started = (h.run_answering(0x1, 400) & 0x1) == 1;
 #if !MUT_STOP
         h.write_reg(DMACON_W, 0x0001);  // CLR AUD0EN, DMAEN left set -- stop "at any time", not at a natural boundary.
 #endif
-        h.settle_dma();
-        bool stopped = (h.dut->audio_dmal & 0x1) == 0;
+        // A request already in flight when the clear happens still has
+        // to drain through paula_audio.v's own strhor latch (dmal is a
+        // registered copy of dmareq, not instantaneous) -- confirmed by
+        // VCD trace that dmareq/audio_dmal settle within well under one
+        // strhor period (STRHOR_PERIOD*4 raw ticks) of the clear taking
+        // effect. The grace window is that one period; the confirm
+        // window then requires audio_dmal bit 0 to be 0 on EVERY tick
+        // for several more periods.
+        bool stopped = h.confirm_stays_off(0x1, STRHOR_PERIOD * 4 * 2, STRHOR_PERIOD * 4 * 4);
         checks.expect(started && stopped,
             "AUDxEN-CLEAR-STOPS-CHANNEL-AT-ANY-TIME: after DMAEN+AUD0EN "
-            "start the channel (audio_dmal bit 0 = 1), clearing AUD0EN "
-            "alone at an arbitrary mid-cycle tick (not a length-counter "
-            "boundary) drops audio_dmal bit 0 back to 0 within one "
-            "strhor latch -- auden is a continuous assignment off the "
+            "start the channel and it is answered into a genuine, "
+            "self-sustaining request cycle (audio_dmal bit 0 seen "
+            "repeatedly), clearing AUD0EN alone at an arbitrary point in "
+            "that cycle (not a length-counter boundary) makes audio_dmal "
+            "bit 0 never appear again, once any already-in-flight request "
+            "has drained -- auden is a continuous assignment off the "
             "DMACON/DMAEN registers (paula.v:174-178), not gated by any "
-            "internal channel state, so the stop is unconditional. 'You "
-            "can stop the channel by writing a 0 into the AUDxEN bit at "
-            "any time.' (p.145, 5-p145.c1, 5-stop.c1). measured started=" +
+            "internal channel state, so the stop is unconditional. "
+            "'You can stop the channel by writing a 0 into the AUDxEN bit "
+            "at any time.' (p.145, 5-p145.c1, 5-stop.c1). measured started=" +
             std::string(started?"yes":"no") + " stopped=" +
             std::string(stopped?"yes":"no") + ".");
     }
@@ -807,8 +1062,7 @@ int main(int argc, char** argv) {
 #else
         h.write_reg(DMACON_W, 0x8201);  // SET DMAEN + AUD0EN, at $096.
 #endif
-        h.settle_dma();
-        bool side_effect_seen = (h.dut->audio_dmal & 0x1) == 1;
+        bool side_effect_seen = (h.observe_audio_dmal(STRHOR_PERIOD * 4 + 8) & 0x1) == 1;
         uint16_t after_write = h.read_reg(DMACON_W);
         checks.expect(before_write == 0 && side_effect_seen && after_write == 0,
             "DMACON-ADDRESS-AND-WRITE-ONLY: writing at word address 0x" +
@@ -832,8 +1086,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write_reg(DMACON_W, 0x8201);
-        h.settle_dma();
-        bool paula_decodes_it = (h.dut->audio_dmal & 0x1) == 1;
+        bool paula_decodes_it = (h.observe_audio_dmal(STRHOR_PERIOD * 4 + 8) & 0x1) == 1;
         checks.expect(paula_decodes_it,
             "DMACON-DECODED-BY-PAULA: this fixture IS paula.v, and a write "
             "at $096 visibly changes its own audio_dmal output, so Paula "
