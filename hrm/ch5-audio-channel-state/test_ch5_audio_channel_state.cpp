@@ -178,20 +178,50 @@
 //   audio_state and clocks the real next-state logic for a full settle,
 //   observing that all three collapse to idle). Neither form forces a value
 //   into audio_state and reads the SAME register back without an
-//   intervening clock/legal transition. F58.sqbits is recorded MEASURED
-//   (not-asserted): the RTL declares audio_state as a single opaque
-//   `reg [2:0]`, not three separately named sq2/sq1/sq0 nets, so which bit
-//   the figure draws "leftmost" is a labelling convention of the manual's
-//   own diagram, not a DUT behaviour either form can settle.
+//   intervening clock/legal transition.
+//
+//   V-08 REPAIR (2026-09-12, second pass): a re-validation found the first
+//   repair's "eight states" predicate genuine but incomplete -- it counted
+//   liveStatesReached.size()==5 plus a hardcoded "+3==8", which never proved
+//   a UNION and never proved a forced seed took effect. 5-p164.c2/5-sm.c2
+//   and F58.states now require BOTH of two preconditions, each asserted (not
+//   assumed) in Scenario E:
+//     PRECONDITION 1 (exact, disjoint union): liveStatesReached must equal
+//     the expected five-code set {000,001,010,011,110} EXACTLY (not just
+//     have size 5); the forced set {100,101,111} must be DISJOINT from it
+//     (std::set_intersection, asserted empty); and the std::set_union of
+//     both groups must equal all eight 3-bit codes {0..7} exactly. A
+//     repeated live code, or a live/forced coincidence, would no longer
+//     pass -- it would fail the exact-match or disjointness term even
+//     though a bare count could still reach 5+3==8.
+//     PRECONDITION 2 (seed observed before the clock edge):
+//     run_forced_transition() now returns BOTH a preState (audio_state read
+//     back immediately after the forced write, BEFORE the first clock edge)
+//     and a postState (after the 8-tick settle). Scenario B asserts preState
+//     == the requested code for all three forced codes (forcedSeedsObserved)
+//     before rtlUnusedFunnelToIdle's "settled to idle" is allowed to count
+//     for anything -- otherwise an unwritten register that already reads
+//     idle would look identical to a genuine forced transition once clocked.
+//   Both preconditions measured TRUE on this RTL (liveStatesReached == the
+//   expected set, forced/live groups disjoint, union == all eight codes, all
+//   three seeds observed pre-clock, all three settle to idle) -- 5-p164.c2/
+//   5-sm.c2, F58.states and 5-sig.sq all stay green, now on sound grounds.
+//   F58.sqbits is recorded MEASURED (not-asserted): the RTL declares
+//   audio_state as a single opaque `reg [2:0]`, not three separately named
+//   sq2/sq1/sq0 nets, so which bit the figure draws "leftmost" is a
+//   labelling convention of the manual's own diagram, not a DUT behaviour
+//   either form can settle.
 //
 //   Every other assertion -- all fixture-liveness, DMA-start, discard/second-
 //   word handshake, length-counter count/reload, interrupt-cadence,
 //   direct-mode, and DMA-off-exit checks -- is green.
 //
-// MUTATION LOG: all 44 entries below were run in this same build (see
+// MUTATION LOG: all 48 entries below were run in this same build (see
 //   MUTATION METHOD above for why independent, fresh-reset reruns were used
 //   instead of an edit/rebuild/revert cycle). None flipped an unrelated
-//   assertion; each detail line names exactly what was changed.
+//   assertion; each detail line names exactly what was changed. The last
+//   four entries (two ids x two new experiments) are the V-08 repair's new
+//   mutations, appended in the order Scenario E actually runs them.
 //
 // MUTATION 5-p164.c2 stimulus red
 //   Agnus never answers a single word (suppress_responder_after=0); only 2 distinct LEGALLY-reached codes remain (want 5) -- the reachability half of this check is stimulus-sensitive, not satisfied by the host loop regardless of what the DUT does.
@@ -281,6 +311,14 @@
 //   also raised dmaena before the first AUDxDAT write (so AUDxON=1, turning this into DMA-driven entry instead of direct/interrupt-driven); direct-cause arc observed=no -- correctly no longer taken once AUDxON is asserted.
 // MUTATION 5-p164.c14 stimulus green
 //   same also-raise-dmaena rerun; intreq count dropped from 64 to 1 once AUDxON=1 gates AUDxIR down to the block-end-only case.
+// MUTATION 5-p164.c2 stimulus red
+//   V-08 PRECONDITION 1 (overlap): force+clock code 110 (a LIVE code, already in liveStatesReached) instead of 111; overlap between the live and forced groups = {6} (want empty) -- the new disjoint-union precondition correctly fails even though seeding and settle-to-idle both still hold and both group sizes (5 and 3) are unchanged, exactly what the removed 5+3==8 count could not detect.
+// MUTATION F58.states stimulus red
+//   same overlap rerun as 5-p164.c2's new mutation.
+// MUTATION 5-p164.c2 stimulus red
+//   V-08 PRECONDITION 2 (seed suppressed): run_forced_transition(...,101,applySeed=false) skips the force-write, leaving audio_state at its post-reset idle value; pre-clock audio_state observed=0 (want 101) -- the new pre-clock seed-observed precondition correctly fails, closing the false-green path where an unwritten, already-idle register would look identical to a genuine forced transition once clocked.
+// MUTATION F58.states stimulus red
+//   same seed-suppression rerun as 5-p164.c2's new mutation.
 
 #include <cstdint>
 #include <cmath>
@@ -551,14 +589,32 @@ static bool byteEverAppears(Harness& h, uint8_t v, long afterTick, long beforeTi
 // run_encoding() this DOES clock the real next-state logic (8 ticks) before
 // reading anything back -- a statement about the machine's own transition
 // function, not a readback of what the host just wrote.
+//
+// V-08 repair, PRECONDITION 2: "settled to idle" alone cannot distinguish a
+// genuine forced transition from a seed that was never applied to an
+// already-idle register. preState below is read back right after the forced
+// write + eval() and BEFORE the first clock edge, so a caller can assert the
+// seed actually took effect before trusting postState at all. applySeed=false
+// (used only by the seed-suppression mutation below) skips the force-write
+// entirely, leaving audio_state at whatever reset_all() left it -- the exact
+// false-green shape this precondition exists to catch.
 // ---------------------------------------------------------------------------
-static int run_forced_transition(Harness& h, int forced_code) {
+struct ForcedTransitionResult {
+    int preState = -1;   // audio_state read back BEFORE the qualifying clock edge
+    int postState = -1;  // audio_state read back AFTER the 8-tick settle
+};
+
+static ForcedTransitionResult run_forced_transition(Harness& h, int forced_code,
+                                                      bool applySeed = true) {
+    ForcedTransitionResult r;
     h.reset_all();
     h.dut->dmaena = 0;
-    h.dut->rootp->paula_audio_channel__DOT__audio_state = forced_code;
+    if (applySeed) h.dut->rootp->paula_audio_channel__DOT__audio_state = forced_code;
     h.dut->eval();
+    r.preState = h.dut->rootp->paula_audio_channel__DOT__audio_state;
     for (int i = 0; i < 8; i++) h.tick();
-    return h.dut->rootp->paula_audio_channel__DOT__audio_state;
+    r.postState = h.dut->rootp->paula_audio_channel__DOT__audio_state;
+    return r;
 }
 
 // ---------------------------------------------------------------------------
@@ -737,6 +793,8 @@ int main(int argc, char** argv) {
     // below; consumed only after all three have actually run.
     std::set<int> liveStatesReached;
     bool rtlUnusedFunnelToIdle = false;
+    bool forcedSeedsObserved = false; // V-08 PRECONDITION 2: each forced code (100,101,111)
+                                       // actually read back as itself BEFORE its clock edge
 
     // =========================================================================
     // SCENARIO A -- state register width / post-reset encoding
@@ -771,9 +829,10 @@ int main(int argc, char** argv) {
     // =========================================================================
     {
         Harness h;
-        int n100 = run_forced_transition(h, 0b100);
-        int n110 = run_forced_transition(h, 0b110);
-        int n111 = run_forced_transition(h, 0b111);
+        auto r100 = run_forced_transition(h, 0b100);
+        auto r110 = run_forced_transition(h, 0b110);
+        auto r111 = run_forced_transition(h, 0b111);
+        int n100 = r100.postState, n110 = r110.postState, n111 = r111.postState;
         bool manual_all_idle = (n100==0) && (n110==0) && (n111==0);
         std::ostringstream d;
         d << "forced 100->" << n100 << ", 110->" << n110 << ", 111->" << n111
@@ -787,15 +846,28 @@ int main(int argc, char** argv) {
         CHECK("5-p166.c1 F58.unused (fig p166) arrows from 100, 110 and 111 all point to 000: " +
               d.str(), manual_all_idle);
 
-        int n101 = run_forced_transition(h, 0b101);
+        auto r101 = run_forced_transition(h, 0b101);
+        int n101 = r101.postState;
+        // V-08 repair, PRECONDITION 2: each forced code must be OBSERVED in audio_state
+        // BEFORE its qualifying clock edge -- otherwise "settled to idle" cannot tell a
+        // genuine forced transition from a seed that was never applied to an
+        // already-idle register. Checked here for the RTL's own measured unused set
+        // {100,101,111}, the exact set SCENARIO E's "eight states" check relies on.
+        forcedSeedsObserved = (r100.preState == 0b100) && (r101.preState == 0b101) &&
+                               (r111.preState == 0b111);
         bool rtl_all_idle = (n100==0) && (n101==0) && (n111==0);
         rtlUnusedFunnelToIdle = rtl_all_idle; // consumed by SCENARIO E's honest "eight states" check
         std::ostringstream d2;
         d2 << "retested the SAME proposition against the RTL's own measured unused set "
-              "{100,101,111} instead of the manual's {100,110,111}: 100->" << n100
+              "{100,101,111} instead of the manual's {100,110,111}: pre-clock seed observed "
+              "(100=" << (r100.preState==0b100?"yes":"no") << ", 101="
+           << (r101.preState==0b101?"yes":"no") << ", 111="
+           << (r111.preState==0b111?"yes":"no") << "); post-clock 100->" << n100
            << ", 101->" << n101 << ", 111->" << n111;
-        MUTATION("5-p164.c4", "stimulus", rtl_all_idle ? "green" : "red", d2.str());
-        MUTATION("5-p166.c1", "stimulus", rtl_all_idle ? "green" : "red", d2.str());
+        MUTATION("5-p164.c4", "stimulus", (forcedSeedsObserved && rtl_all_idle) ? "green" : "red",
+                  d2.str());
+        MUTATION("5-p166.c1", "stimulus", (forcedSeedsObserved && rtl_all_idle) ? "green" : "red",
+                  d2.str());
     }
 
     // =========================================================================
@@ -1616,17 +1688,59 @@ int main(int argc, char** argv) {
     //       machine actually goes. That is a statement about the machine's own transition
     //       function, not a readback of what the host just forced.
     {
-        bool eightStates = (liveStatesReached.size() == 5) && rtlUnusedFunnelToIdle &&
-                            (liveStatesReached.size() + 3 == 8);
+        // -----------------------------------------------------------------
+        // V-08 repair, PRECONDITION 1: prove the actual SET union, not a
+        // count. liveStatesReached (Scenario C's DMA run + Scenario D's
+        // direct run, both legal stimulus, no force) must equal EXACTLY the
+        // RTL's own measured five-code live set -- not merely have
+        // cardinality 5 -- the RTL's own measured unused set {100,101,111}
+        // must be DISJOINT from it, and the union of both groups must be
+        // EXACTLY the eight 3-bit codes 0..7. The old "size()==5 &&
+        // size()+3==8" never checked any of this: a repeated live code, or a
+        // live/forced coincidence, would still reach a count of eight.
+        // -----------------------------------------------------------------
+        std::set<int> expectedLiveSet = {0b000, 0b001, 0b010, 0b011, 0b110};
+        std::set<int> forcedSet       = {0b100, 0b101, 0b111};
+        std::set<int> allEightCodes   = {0,1,2,3,4,5,6,7};
+
+        bool liveSetIsExpected = (liveStatesReached == expectedLiveSet);
+
+        std::set<int> overlap;
+        std::set_intersection(liveStatesReached.begin(), liveStatesReached.end(),
+                               forcedSet.begin(), forcedSet.end(),
+                               std::inserter(overlap, overlap.begin()));
+        bool groupsDisjoint = overlap.empty();
+
+        std::set<int> unionSet;
+        std::set_union(liveStatesReached.begin(), liveStatesReached.end(),
+                       forcedSet.begin(), forcedSet.end(),
+                       std::inserter(unionSet, unionSet.begin()));
+        bool unionIsAllEight = (unionSet == allEightCodes);
+
+        bool exactDisjointUnion = liveSetIsExpected && groupsDisjoint && unionIsAllEight;
+
+        // V-08 repair, PRECONDITION 2 (forcedSeedsObserved, established in
+        // SCENARIO B): each of the three forced codes was actually read back
+        // AS ITSELF in audio_state BEFORE its qualifying clock edge --
+        // otherwise rtlUnusedFunnelToIdle's "all settle to idle" cannot
+        // distinguish a genuine forced transition from a seed that was never
+        // applied to an already-idle register.
+        bool eightStates = exactDisjointUnion && forcedSeedsObserved && rtlUnusedFunnelToIdle;
+
         std::ostringstream lsr; for (int v : liveStatesReached) lsr << v << " ";
+        std::ostringstream ovr; for (int v : overlap) ovr << v << " ";
+        std::ostringstream unr; for (int v : unionSet) unr << v << " ";
         std::string eightDet = "LEGAL STIMULUS: " + std::to_string(liveStatesReached.size()) +
             " codes reached via real transitions in Scenario C's DMA run + Scenario D's direct "
-            "run = {" + lsr.str() + "}; FORCE+CLOCK: the remaining 3 codes (100,101,111, this "
-            "RTL's own measured unused set) forced into audio_state and then CLOCKED through the "
-            "real next-state logic (Scenario B, run_forced_transition, 8 ticks) all settle to "
-            "idle (000) = " + std::string(rtlUnusedFunnelToIdle?"yes":"no") + " -- 5 legally-live "
-            "codes plus 3 that force+clock shows collapse to idle accounts for all eight 3-bit "
-            "codes";
+            "run = {" + lsr.str() + "}, equals the expected five-code set {0 1 2 3 6} exactly = " +
+            std::string(liveSetIsExpected?"yes":"no") + "; FORCE+CLOCK set {100 101 111} is "
+            "DISJOINT from the live set = " + std::string(groupsDisjoint?"yes":"no") + " (overlap "
+            "= {" + ovr.str() + "}); UNION of both groups = {" + unr.str() + "} equals all eight "
+            "3-bit codes 0..7 = " + std::string(unionIsAllEight?"yes":"no") + "; each forced code "
+            "(100,101,111) OBSERVED in audio_state before its qualifying clock edge = " +
+            std::string(forcedSeedsObserved?"yes":"no") + "; then CLOCKED through the real "
+            "next-state logic (Scenario B, run_forced_transition, 8 ticks) and all three settle "
+            "to idle (000) = " + std::string(rtlUnusedFunnelToIdle?"yes":"no");
 
         CHECK("5-p164.c2 5-sm.c2 (p164) \"The machine has eight states\": " + eightDet, eightStates);
         CHECK("F58.states (fig p166) \"eight state circles, labelled 000..111\": " + eightDet, eightStates);
@@ -1657,12 +1771,14 @@ int main(int argc, char** argv) {
         DmaResult noAnswerR = run_dma(noAnswerP);
         std::set<int> noAnswerStates;
         for (auto& s : noAnswerR.h.history) noAnswerStates.insert(s.state);
-        MUTATION("5-p164.c2", "stimulus", (noAnswerStates.size() < 5) ? "red" : "green",
+        bool noAnswerMatches = (noAnswerStates == expectedLiveSet);
+        MUTATION("5-p164.c2", "stimulus", noAnswerMatches ? "green" : "red",
                   "Agnus never answers a single word (suppress_responder_after=0); only " +
                   std::to_string(noAnswerStates.size()) + " distinct LEGALLY-reached codes remain "
-                  "(want 5) -- the reachability half of this check is stimulus-sensitive, not "
-                  "satisfied by the host loop regardless of what the DUT does.");
-        MUTATION("F58.states", "stimulus", (noAnswerStates.size() < 5) ? "red" : "green",
+                  "(want the exact expected 5-code set {0 1 2 3 6}) -- the reachability half of "
+                  "this check is stimulus-sensitive, not satisfied by the host loop regardless of "
+                  "what the DUT does.");
+        MUTATION("F58.states", "stimulus", noAnswerMatches ? "green" : "red",
                   "same no-answer rerun as 5-p164.c2's mutation.");
 
         DmaParams earlyP2; earlyP2.suppress_responder_after = 1; // discard word only, loop never entered
@@ -1681,6 +1797,65 @@ int main(int argc, char** argv) {
                   "manual's own figure labels SQ2/SQ1/SQ0 and which digit position its arrow "
                   "points at, not DUT behaviour -- there is no experiment on the DUT, forced or "
                   "legally-stimulated, that could move this from not-asserted to a colour.");
+
+        // ---- NEW MUTATION (V-08 PRECONDITION 1): the two groups overlap ----
+        // Force+clock code 110 instead of 111 -- 110 is one of the FIVE
+        // legally-live codes (already a member of liveStatesReached), not one
+        // of the RTL's own three disjoint unused codes. This is a genuine
+        // stimulus change (which code the force+clock experiment is asked to
+        // seed) and is exactly the false-green shape the removed "5+3==8"
+        // count could not see: both group sizes stay 5 and 3, but the forced
+        // group now shares a member with the live group.
+        Harness hOverlap;
+        auto r100o = run_forced_transition(hOverlap, 0b100);
+        auto r101o = run_forced_transition(hOverlap, 0b101);
+        auto r110o = run_forced_transition(hOverlap, 0b110); // substituted for 111
+        std::set<int> mutForcedSet = {0b100, 0b101, 0b110};
+        std::set<int> mutOverlap;
+        std::set_intersection(liveStatesReached.begin(), liveStatesReached.end(),
+                               mutForcedSet.begin(), mutForcedSet.end(),
+                               std::inserter(mutOverlap, mutOverlap.begin()));
+        bool mutDisjoint = mutOverlap.empty();
+        std::set<int> mutUnion;
+        std::set_union(liveStatesReached.begin(), liveStatesReached.end(),
+                       mutForcedSet.begin(), mutForcedSet.end(),
+                       std::inserter(mutUnion, mutUnion.begin()));
+        bool mutUnionAllEight = (mutUnion == allEightCodes);
+        bool mutSeeds  = (r100o.preState==0b100) && (r101o.preState==0b101) && (r110o.preState==0b110);
+        bool mutSettle = (r100o.postState==0) && (r101o.postState==0) && (r110o.postState==0);
+        bool mutEightStates = liveSetIsExpected && mutDisjoint && mutUnionAllEight && mutSeeds && mutSettle;
+        std::ostringstream ovd; for (int v : mutOverlap) ovd << v << " ";
+        std::string overlapDetail = "forced set changed to {100,101,110} (110 substituted for 111 "
+            "-- 110 is a LIVE code, already a member of liveStatesReached, not one of the RTL's "
+            "own disjoint unused codes); overlap between the live and forced groups = {" +
+            ovd.str() + "} (want empty), so the two groups are no longer disjoint -- the new "
+            "disjoint-union precondition correctly fails even though seeding and settle-to-idle "
+            "both still hold for this rerun (seeds observed=" + std::string(mutSeeds?"yes":"no") +
+            ", all settle to idle=" + std::string(mutSettle?"yes":"no") + ") and both group sizes "
+            "(5 and 3) are unchanged -- exactly what the removed 5+3==8 count could not detect.";
+        MUTATION("5-p164.c2", "stimulus", mutEightStates ? "green" : "red", overlapDetail);
+        MUTATION("F58.states", "stimulus", mutEightStates ? "green" : "red", overlapDetail);
+
+        // ---- NEW MUTATION (V-08 PRECONDITION 2): seeding suppressed ----
+        // run_forced_transition(..., applySeed=false) skips the force-write
+        // entirely, leaving audio_state at reset_all()'s post-reset value
+        // (idle, 000) instead of the requested seed 101. This is exactly the
+        // false-green path PRECONDITION 2 exists to catch: without the
+        // pre-clock seed-observed check, an unwritten register that already
+        // reads idle settles to idle "for free" and would look identical to a
+        // genuine forced transition.
+        Harness hNoSeed;
+        auto r101ns = run_forced_transition(hNoSeed, 0b101, /*applySeed=*/false);
+        bool noSeedObserved = (r101ns.preState == 0b101);
+        std::string noSeedDetail = "seeding suppressed for forced code 101 (applySeed=false, "
+            "audio_state left at its post-reset value instead of being force-written): pre-clock "
+            "audio_state observed = " + std::to_string(r101ns.preState) + " (want 101, the "
+            "requested seed); post-clock state=" + std::to_string(r101ns.postState) + " -- the "
+            "new pre-clock seed-observed precondition correctly fails, which is exactly the "
+            "false-green path PRECONDITION 2 closes: an unwritten register that already reads "
+            "idle would otherwise look identical to a genuine forced transition once clocked.";
+        MUTATION("5-p164.c2", "stimulus", noSeedObserved ? "green" : "red", noSeedDetail);
+        MUTATION("F58.states", "stimulus", noSeedObserved ? "green" : "red", noSeedDetail);
     }
 
     std::cout << "\n=== TOTAL: " << g_pass << " passed, " << g_fail << " failed ===\n";
