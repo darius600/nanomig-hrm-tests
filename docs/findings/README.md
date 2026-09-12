@@ -87,17 +87,24 @@ meantime.
 
 | finding | subject | status |
 |---|---|---|
+| [NM-HRM-001](NM-HRM-001.md) | PAL frame has one line too many | WITHDRAWN — the manual sanctions the measured value |
+| [NM-HRM-002](NM-HRM-002.md) | audio channels on the wrong stereo side | open · red |
 | [NM-HRM-003](NM-HRM-003.md) | OCS Copper address uses five high bits instead of three | open · red |
 | [NM-HRM-004](NM-HRM-004.md) | ECS danger bit admits too small a range | open · red |
 | [NM-HRM-005](NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | open · red |
 | [NM-HRM-006](NM-HRM-006.md) | DDFSTRT/DDFSTOP bit H3 is gated by the chipset, not by resolution | open · red |
 | [NM-HRM-007](NM-HRM-007.md) | the hires fetch width cannot reach the manual's maximum of 49 words | open · red |
-| [NM-HRM-008](NM-HRM-008.md) | playfield-1 collision depends on playfield 2, by design, undocumented | open · red |
-| [NM-HRM-010](NM-HRM-010.md) | the horizontal line is a whole number of colour clocks, not 227.5 | source observation |
+| [NM-HRM-008](NM-HRM-008.md) | playfield-1 collision depends on playfield 2, by design, undocumented | open · red — but see the first section |
+| [NM-HRM-009](NM-HRM-009.md) | CLXDAT bit 15 reads as 1, not 0 | WITHDRAWN — the expected value was invented by the assertion |
+| [NM-HRM-010](NM-HRM-010.md) | the horizontal line is a whole number of colour clocks, not 227.5 | source observation, not test-backed |
 | [NM-HRM-011](NM-HRM-011.md) | PAL vertical blanking is 26 lines, the manual says 29 | open · red |
+| [NM-HRM-012](NM-HRM-012.md) | SPRxCTL bit 0 (SH0) is honoured at every resolution, not only SuperHires | WITHDRAWN — the assertion imported a restriction the manual does not state |
+| [NM-HRM-013](NM-HRM-013.md) | SPRxCTL bits 3 and 4 are read nowhere | WITHDRAWN, split into [NM-HRM-019](NM-HRM-019.md) |
+| [NM-HRM-014](NM-HRM-014.md) | the manual applies its own ECS pointer extension inconsistently | source observation, not test-backed |
 | [NM-HRM-015](NM-HRM-015.md) | BRDNTRAN is declared and never connected | open · red |
-| [NM-HRM-016](NM-HRM-016.md) | SuperHires sprite colour encoding is not implemented | open · red |
+| [NM-HRM-016](NM-HRM-016.md) | SuperHires sprite colour encoding is not implemented | open · red — 16 evidential reds, the largest single red result in chapter 3 |
 | [NM-HRM-017](NM-HRM-017.md) | SuperHires bitplane colour encoding is not implemented | open · red |
+| [NM-HRM-018](NM-HRM-018.md) | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | WITHDRAWN as a conformance finding — a source observation remains |
 | [NM-HRM-019](NM-HRM-019.md) | SPRxCTL bit 4 (SHSH1) is not implemented | open · red |
 | [NM-HRM-020](NM-HRM-020.md) | BLTSIZV is not gated on ECS, while its two siblings are | open · red |
 | [NM-HRM-021](NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | open · red |
@@ -105,8 +112,9 @@ meantime.
 | [NM-HRM-023](NM-HRM-023.md) | the ATTACH bit is honoured in the even sprite, not only the odd | open · red |
 | [NM-HRM-024](NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | open · red |
 | [NM-HRM-025](NM-HRM-025.md) | volume 64 and volume 63 are the same gain on the multiply path | open · red |
-| [NM-HRM-026](NM-HRM-026.md) | the audio state codes are not the ones Figure 5-8 prints | source observation |
+| [NM-HRM-026](NM-HRM-026.md) | the audio state codes are not the ones Figure 5-8 prints | source observation, not a conformance failure |
 | [NM-HRM-027](NM-HRM-027.md) | in direct mode the interrupt is raised before a word is output | open · red |
 | [NM-HRM-028](NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | open · red |
+| [NM-HRM-029](NM-HRM-029.md) | Figure 5-8's `dmasen` note does not hold outside its own exception | WITHDRAWN — the assertion was logically false |
 | [NM-HRM-030](NM-HRM-030.md) | Paula does not decode DMACONR, though the appendix gives it part ownership | open · red |
 | [NM-HRM-031](NM-HRM-031.md) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | open · red |
