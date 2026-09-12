@@ -13,17 +13,15 @@ repository.
 **These are not broken tests.** Adjusting an assertion to make one pass deletes
 the finding.
 
-**There is exactly one exception, and the 11.09.2026 validation found four cases
-of it:** an assertion that misstates the source must be corrected, not because
+**There is exactly one exception:** an assertion that misstates the source must be corrected, not because
 the implementation fails it, but because it never said what the manual says. The
 test is the thing being fixed there, not the finding. Telling the two apart is
 the whole discipline — the question is never "does this pass?" but "does the
 printed page require what this asserts?".
 
-> **A validation round on 11.09.2026 revised seven of chapter 3's thirteen
-> findings**, and every affected entry below carries its own note. The round's
-> own account is at the end of this file, under
-> [Record: the validation round of 11.09.2026](#record-the-validation-round-of-11092026).
+> **An independent validation revised seven of chapter 3's findings.** Every
+> affected entry below carries its own note; the round's own account is in
+> [`record-2026-09-11-validation.md`](record-2026-09-11-validation.md).
 
 ## The finding keys
 
@@ -37,7 +35,7 @@ A number is issued once. It is never reused, never reordered, and a withdrawn
 finding keeps both its number and its entry -- the reasoning that withdrew it is
 the result, not a deletion.
 
-**Renumbered on 11.09.2026, and this is the reason.** Findings previously carried
+**Why the keys were renumbered.** Findings previously carried
 `FPGA-nnn` keys borrowed from the private workspace where this work is planned.
 That workspace is not published. No reader outside it can resolve such a
 reference, so a failing assertion printed a key that led nowhere -- and the
@@ -47,14 +45,14 @@ cites an `FPGA` number, this resolves it:
 
 | now | was | | now | was | | now | was |
 |---|---|---|---|---|---|---|---|
-| NM-HRM-001 | FPGA-050 | | NM-HRM-009 | FPGA-091-F04 | | NM-HRM-016 | FPGA-091-F11 |
-| NM-HRM-002 | FPGA-051 | | NM-HRM-010 | FPGA-091-F05 | | NM-HRM-017 | FPGA-091-F12 |
-| NM-HRM-003 | FPGA-060 | | NM-HRM-011 | FPGA-091-F06 | | NM-HRM-018 | FPGA-091-F13 |
-| NM-HRM-004 | FPGA-062 | | NM-HRM-012 | FPGA-091-F07 | | NM-HRM-019 | FPGA-091-F14 |
-| NM-HRM-005 | FPGA-069 | | NM-HRM-013 | FPGA-091-F08 | | NM-HRM-020 | *newly issued* |
-| NM-HRM-006 | FPGA-091-F01 | | NM-HRM-014 | FPGA-091-F09 | | NM-HRM-021 | *newly issued* |
-| NM-HRM-007 | FPGA-091-F02 | | NM-HRM-015 | FPGA-091-F10 | | NM-HRM-022 | *newly issued* |
-| NM-HRM-008 | FPGA-091-F03 | | | | | | |
+| NM-HRM-001 | FPGA-050 | | NM-HRM-009 | FPGA-091-NM-HRM-009 | | NM-HRM-016 | FPGA-091-NM-HRM-016 |
+| NM-HRM-002 | FPGA-051 | | NM-HRM-010 | FPGA-091-NM-HRM-010 | | NM-HRM-017 | FPGA-091-NM-HRM-017 |
+| NM-HRM-003 | FPGA-060 | | NM-HRM-011 | FPGA-091-NM-HRM-011 | | NM-HRM-018 | FPGA-091-NM-HRM-018 |
+| NM-HRM-004 | FPGA-062 | | NM-HRM-012 | FPGA-091-NM-HRM-012 | | NM-HRM-019 | FPGA-091-NM-HRM-019 |
+| NM-HRM-005 | FPGA-069 | | NM-HRM-013 | FPGA-091-NM-HRM-013 | | NM-HRM-020 | *newly issued* |
+| NM-HRM-006 | FPGA-091-NM-HRM-006 | | NM-HRM-014 | FPGA-091-NM-HRM-014 | | NM-HRM-021 | *newly issued* |
+| NM-HRM-007 | FPGA-091-NM-HRM-007 | | NM-HRM-015 | FPGA-091-NM-HRM-015 | | NM-HRM-022 | *newly issued* |
+| NM-HRM-008 | FPGA-091-NM-HRM-008 | | | | | | |
 
 `FPGA-nnn` still appears in test sources in a second, unrelated role, and those
 references are kept: `// Primary oracle: Frozen FPGA-019 specification` marks a
@@ -105,8 +103,8 @@ them. The register is a record of what has been looked at, not of what is there.
 
 Five findings, but not of equal standing. Three came out of the pipeline and are
 witnessed more than once. Two came out of the earlier hand-written run, rest on a
-single citation each — and on 07.09.2026 both of those citations turned out to be
-contradicted elsewhere in the same manual.
+single citation each, and both of those citations turn out to be contradicted
+elsewhere in the same manual.
 
 | Finding | Origin | Standing |
 |---|---|---|
@@ -121,7 +119,7 @@ neither could be decided by reading the manual harder. They were settled by a
 third witness — see [`third-witness.md`](third-witness.md) — and they went
 opposite ways: one survived, one did not.
 
-## NM-HRM-001, withdrawn on 07.09.2026 — and why the entry stays
+## NM-HRM-001 is withdrawn — and why the entry stays
 
 The assertion was removed rather than left red. A red test is a claim that the
 RTL is wrong, and this one could not support that claim.
@@ -144,6 +142,15 @@ The reasoning:
 | Test asserts | normal PAL non-interlace is 312 positions, `vpos` 0..311 |
 | Measured | `max_vpos=312`, 313 end-of-line pulses |
 | Test | `hrm/agnus_beamcounter` |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| follows the long-frame bit | follows the long-frame bit | — | — |
+
+Both agree with the RTL; Table 7-5 sanctions 313.
 
 **The manual sanctions 313.** Table 7-5, VPOSR bit 0: *"High bit of the vertical
 position (V8). Allows PAL line counts (313) to appear in PAL versions of the
@@ -171,9 +178,18 @@ for what it drove. Details and permalinks in
 | RTL does | `ldatasum <= msample0 + msample3; rdatasum <= msample1 + msample2` — the pin list |
 | Test | `hrm/paula_audio_mixer` |
 
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| channel 0 right — chapter 5 | channels 0,3 at pan 0.85 — chapter 5 | `paula.cpp:354` sums 0+3 into **left** — the pin list | `paula.rs:2180` puts 0+3 **left**, knowingly |
+
+**Two against two.** Nothing outside the manual settles it.
+
 **The manual says both**, in both editions, so it cannot decide this on its own.
 
-**Four implementations split two against two — corrected 12.09.2026.** WinUAE and
+**Four implementations split two against two.** WinUAE and
 vAmiga agree with chapter 5: WinUAE hands channel 0 to `put_sound_word_right`,
 and vAmiga's default panning puts channels 0 and 3 at `pan = 0.85` on an axis
 where 1 is fully right. **Denise and Copperline agree with the appendix pin list**,
@@ -201,6 +217,15 @@ places would swap it back.
 | Measured | five high bits in both chipsets; 20-bit pointer (15 low + 5 high); `cop1lch[20:16] <= data_in[4:0]` latches unconditionally |
 | Tests | `hrm/agnus_copper_control` (T4), `hrm/agnus_copper_locreg_width` (LW1, LW3, LW4) |
 
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| no chipset narrowing | no chipset narrowing | `copper.cpp:347` takes the whole write, no mask | **narrows to 19 bits on OCS** — the manual's width |
+
+One of four implements what the manual describes.
+
 LW3 is the assertion that matters: the appendix gives *two different* widths for
 the two chipsets, so a module reporting the same width in both contradicts the
 manual whatever that width is.
@@ -212,6 +237,15 @@ manual whatever that width is.
 | Manual | Appendix C p310: with ECS and CDANG clear the Copper reaches `$DFF03E`–`$DFF07E`, "the same range as when the danger bit is set in the standard chip set" |
 | Measured | that range is rejected; with CDANG clear the accepted set is `$080`–`$1FE` at `ecs=0` and `ecs=1` alike, so 32 addresses `$040`–`$07E` are falsely rejected and none falsely accepted |
 | Tests | `hrm/agnus_copper_move_range` (T9), `hrm/agnus_copper_move_sweep` |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| blocks below $80 | blocks below $80 | `copper.cpp:342` floor $80 when the danger bit is clear | `dma_slots.rs:697` needs the bit **set** for $040–$07E |
+
+All four read appendix C p310 the other way round.
 
 Addresses here are the manual's byte addresses. A Copper instruction encodes
 DA8-1, so the module's register ports carry them halved and the sweep prints them
@@ -238,7 +272,7 @@ marked `*`, not writable by the Copper at all.
 The marked set and the measured set of falsely rejected addresses are therefore
 the same 32 addresses, one for one.
 
-#### Challenged 11.09.2026, and upheld
+#### The challenge, and why this entry stands
 
 The chapter-2 appendix classification proposed that T9's oracle is wrong rather
 than the RTL. It measured the same `$080`–`$1FE` at both chipsets and preferred
@@ -270,6 +304,15 @@ and holds on either reading of the bound.
 | Measured | SKIP 8, satisfied WAIT 8, WAIT-minus-MOVE 4 |
 | Tests | `hrm/agnus_copper_cycle_times` (P3–P6, AC5, AC6), `hrm/agnus_copper_cycles` (C5, C6) |
 
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| not compared | 4 / 8 / 8 — NanoMig's three numbers | — | — |
+
+vAmiga measures what NanoMig measures.
+
 The unit question this depended on is settled: appendix A p275 defines
 bus cycle against memory cycle time and gives the factor two, so the readings are
 comparable and the deviation is real. AC6 is expository, not independent — given
@@ -277,28 +320,19 @@ AC4 and AC5 it cannot fail on its own.
 
 ## Chapter 6 — the ECS blitter registers
 
-These came out of the chapter-6 classification stage on 08.09.2026, while it was
-looking for a fixture boundary, and were observations rather than findings
-because nothing asserted them.
-
-**Two of them became red tests on 09.09.2026**, in `hrm/agnus_blitter_ecs`
-(PKG-BLT-ECS), and both are required to fail:
+Appendix C lists five ECS changes to the blitter. `agnus_blitter` takes an `ecs`
+input and uses it for two of them. Three are findings and they all live in
+`hrm/agnus_blitter_ecs`, each required to fail:
 
 | Assertion | Measured |
 |---|---|
-| `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` | a BLTSIZV write with `ecs=0` and with `ecs=1` give the identical height, r1=7 and r2=7 |
+| `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` | a BLTSIZV write with `ecs=0` and with `ecs=1` gives the identical height, r1=7 and r2=7 |
 | `DOFF-NO-OBSERVABLE-EFFECT` | the same D write appears with BLTCON1 bit 7 clear and set |
+| `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` | `BLTAPTH` written with `$001F` gives `address_out = 0xF8000` at both `ecs` settings |
 
-Each says so in its own message and names every claim it covers, so the red line
-is readable without this file. A third followed on 10.09.2026 --
-`BLTXPTH-WIDTH-REGARDLESS-OF-ECS`, measured at the parent module that actually
-has the `ecs` port. The two remaining rows of the five-way table below are not
+Each names every claim it covers in its own message, so the red line is readable
+without this file. The two remaining rows of the five-way table below are not
 defects: BLTCON0L and BLTSIZH are gated correctly and pass.
-
-**All three now carry keys**, issued below. Until 11.09.2026 they carried none,
-on the reasoning that keys were issued in the private workspace and inventing one
-here would collide with it. `NM-HRM-nnn` is this repository's own sequence and
-collides with nothing, so that objection is gone.
 
 ### NM-HRM-020 — BLTSIZV is not gated on ECS, while its two siblings are
 
@@ -308,22 +342,14 @@ collides with nothing, so that objection is gone.
 | Measured | a BLTSIZV write with `ecs=0` and with `ecs=1` gives the identical height, r1=7 and r2=7 |
 | Test | `hrm/agnus_blitter_ecs` (`BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS`) |
 
-**Page corrected 11.09.2026, and no verdict moves with it.** This entry cited
-"Appendix C pp.309/310" for the `$05C BLTSIZV new` row. That row is on printed
-page **298**, where appendix C's ECS register map is printed whole under *"The
-register map listed below shows the changes and new registers in the Amiga's
-Enhanced Chip Set"*. Pages 309 and 310 carry the prose sections *Other ECS
-Modifications* and *Interpretational Differences*, which is why the neighbouring
-citations are right: DOFF really is on 309, the pointer widths really are on 309,
-and the CDANG range really is on 310.
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
 
-The corpus splits page 298's one printed table across two files named `p309.txt`
-and `p310.txt`, and **printed page 298 is in no corpus slice at all** — nothing
-existed to disagree with the attribution. Found while chapter 4 rendered the
-printed pages to place a sprite row; recorded in the pipeline repository at
-`docs/references/amiga-hrm-3rd/appC-blitter/page-placement.md`. The row exists and
-says what this entry says it says; only the number a reader would turn to in the
-printed book was wrong.
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| gates all three | gates all three | `register.cpp:220-230` gates all three | `custom_regs.rs:787` gates it |
+
+**All four gate BLTSIZV on ECS. NanoMig alone does not.**
 
 **The control is the point.** `BLTCON0L-GATED-BY-ECS` is green on the same
 fixture, so this fixture's `ecs` demonstrably changes behaviour elsewhere. Three
@@ -352,6 +378,15 @@ strongest of the three here.
 | Measured | the same D write appears with BLTCON1 bit 7 clear and with it set |
 | Test | `hrm/agnus_blitter_ecs` (`DOFF-NO-OBSERVABLE-EFFECT`) |
 
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| implements DOFF | absent, a constant only | `blitter.cpp:297` implements **and** ECS-gates it | no decode found for BLTCON1 bit 7 |
+
+Two of four implement it.
+
 `bltcon1[7]` does not occur in `agnus_blitter.v` at all. The bits that module
 reads are 15-12, 4, 3, 2, 1 and 0. This is an unbuilt feature rather than a wrong
 one.
@@ -368,6 +403,15 @@ decides alone, which it does clearly.
 | Manual | Appendix A p.270: "Blitter pointer to x (high 3 bits, 5 bits if ECS)" |
 | Measured | writing `BLTAPTH` with `$001F` gives `address_out = 0xF8000` at `ecs=0` **and** at `ecs=1` -- identical |
 | Test | `hrm/agnus_blitter_ecs` (`BLTXPTH-WIDTH-REGARDLESS-OF-ECS`) |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| wide register | wide, narrowed on access by chipset | no mask on the high word | **narrows every DMA pointer by Agnus revision** |
+
+The same question as NM-HRM-003, one engine over.
 
 Measured at `agnus_blitter`, the parent that has the `ecs` port, after Prompt 8's
 validation rejected handling it one fixture lower where the port does not exist.
@@ -398,6 +442,15 @@ classifier's report.
 | Manual, p122 | "Attachment is in effect only when the ATTACH bit, bit 7 in sprite control word 2, is set to 1 in the data structure for the odd-numbered" sprite |
 | Measured | with `aga = 0`, setting bit 7 of **SPR0**CTL — the even sprite of the pair — opens the combined-colour path on its own |
 | Test | `hrm/ch4-attached-sprites` (`ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE`) |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | `denise.cpp:300` — `(nr & 1) && (value & 0x80)`, the manual's rule exactly | reads the bit without the odd-sprite condition *(source reading, not run)* |
+
+Denise matches the manual; Copperline appears to do what NanoMig does.
 
 `denise_sprites.v:484`:
 
@@ -449,7 +502,7 @@ Appendix C, printed page 309, lists what ECS changed in the blitter. NanoMig's
 `bltcon1[7]` does not appear in `agnus_blitter.v`. The bits it reads are 15-12,
 4, 3, 2, 1 and 0.
 
-#### BLTxPTH, measured at the boundary that has the `ecs` port — 10.09.2026
+#### BLTxPTH, measured at the boundary that has the `ecs` port
 
 The row above used to read "no — that module has no `ecs` port at all", which was
 true and too weak. `agnus_blitter_adrgen` having no `ecs` input explains why the
@@ -491,8 +544,8 @@ rather than relocated citations. They did, and the assertion came out red.
 
 #### The same deviation, in both Agnus engines
 
-Noticed 10.09.2026, when the blitter measurement above landed next to NM-HRM-003 in
-this document. NM-HRM-003 is the copper's version of exactly this finding: "OCS uses
+The blitter measurement above sits next to NM-HRM-003 in this document, and the
+two are worth reading together. NM-HRM-003 is the copper's version of exactly this finding: "OCS uses
 five high address bits; the manual documents three." The blitter now shows the
 same thing — and not merely something similar. The two pointers are built the same
 way, from the same bits, with no chipset condition on either:
@@ -516,7 +569,7 @@ can answer — but it is a question about the whole chip, not about a register, 
 neither the copper chapter nor the blitter chapter could have raised it alone.
 
 Recorded rather than acted on. The copper half is NM-HRM-003 and is witnessed
-more than once; the blitter half is NM-HRM-022, issued 11.09.2026. Whether one
+more than once; the blitter half is NM-HRM-022. Whether one
 decision closes both is the question this cross-reference exists to raise.
 
 ### The classified inventory says otherwise, in 109 records
@@ -564,7 +617,7 @@ the suite that cannot fail.
 
 ## What the emulators say about the three Copper findings
 
-Read on 07.09.2026, out of interest rather than necessity — these three are not
+Read out of interest rather than necessity — these three are not
 contested, so an emulator cannot cancel them. The result is worth knowing anyway:
 
 **On all three, WinUAE and vAmiga do what NanoMig does and not what the manual
@@ -601,6 +654,13 @@ to match the implementation stops being evidence about anything.
 **Package:** `hrm/ch3-ddf-fetch-window`, assertion
 `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE`. **Red.**
 
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| respects H3 in lores too | respects H3 in lores too | — | — |
+
 The manual, printed page 91 (and again on 277):
 
 > Bits 7-2 - pixel position H8-H3 (**bit H3 only respected in Hires Mode.**)
@@ -627,6 +687,13 @@ right. The test asserts what page 91 says.
 **Package:** `hrm/ch3-ddf-fetch-window`, assertion
 `MAX-WORDS-49-HIRES-AT-HW-LIMITS`. **Red.**
 
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| 50 words at the limits | 50 words at the limits | — | — |
+
 The manual, printed page 80:
 
 > DDFSTRT of ($18). This gives a maximum of 25 words fetched in low resolution
@@ -645,17 +712,21 @@ first word inclusively. Whether real Agnus can produce an odd hires count, or
 whether the manual is counting differently from the hardware, decides which side
 is wrong.
 
----
-
-*Both found by the chapter-3 build, 10.09.2026. Both confirmed against
-the RTL by the lead before recording. Neither is decided here: the manual is this
-project's oracle, so the test stays red until an Amiga specialist rules.*
 
 
 ### NM-HRM-008 — playfield-1 collision depends on playfield 2, by design, undocumented
 
 **Package:** `hrm/ch3-collision-registers`, the four `BITMAP-PAIR` cases involving
 playfield 1. **Red.**
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| PF1 gated by PF2 | PF1 gated by PF2 | — | — |
+
+The RTL's own comment credits an undocumented Denise function.
 
 Appendix A's CLXDAT bit table, printed page 273, gives each collision pair its own
 bit and treats them independently. NanoMig, `denise_collision.v:62-63`:
@@ -688,13 +759,20 @@ rather than the RTL needing a change.
 
 ### NM-HRM-009 — CLXDAT bit 15 reads as 1, not 0
 
-> **WITHDRAWN** — validation 11.09.2026.
+> **WITHDRAWN.**
 >
 > Page 273 lists bit 15 as `not used` under the heading **COLLISIONS REGISTERED** -- it says no collision is registered there. It does not say the bit reads zero. NanoMig wires it high, which contradicts nothing printed. The expected zero was invented by the assertion, so the red measured the oracle, not the RTL.
 >
-> **Corrected the same day, and it settles the question.** The assertion now requires bit 15 to hold the *same* value before and after maximal collision stimulus, without claiming which value — which is what the page supports. It passes; 31/5 became 32/4. The implementation was right all along.
+> **The correction settles it.** The assertion now requires bit 15 to hold the *same* value before and after maximal collision stimulus, without claiming which value — which is what the page supports. It passes; 31/5 became 32/4. The implementation was right all along.
 
 **Package:** `hrm/ch3-collision-registers`, assertion `BIT15-UNUSED`. **Red.**
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | — | — |
 
 Printed page 273 lists CLXDAT bit 15 as not used. NanoMig,
 `denise_collision.v:117`:
@@ -709,21 +787,24 @@ Bit 15 is hard-wired high on every successful read and can never be 0.
 as zero, or undefined. Every other assertion in the package masks the bit out with
 `& 0x7FFF`, which scopes the measurement without weakening any oracle.
 
----
-
-*F03 and F04 found by the chapter-3 build, 10.09.2026, both confirmed
-against the RTL by the lead before recording.*
 
 ### NM-HRM-010 — the horizontal line is a whole number of colour clocks, not 227.5
 
-> **SOURCE OBSERVATION, not test-backed** — validation 11.09.2026.
+> **SOURCE OBSERVATION, not test-backed.**
 >
 > The manual's 227.5 CCKs and the RTL's own admission that half-clocks are unsupported are both real. The test is not evidence for it: `want_227p5_in_ticks = 455` is `227.5 CCK * 2 hpos-ticks/CCK`, and that factor 2 is the RTL's internal representation, not the manual's. The expected value therefore comes from the implementation -- the same circularity as the `kHiresPixelTicks = 2` defect caught during the build, found a second time.
 >
-> **Resolved the same day by declining it.** No way was found to state the 227.5-colour-clock disagreement without an RTL-supplied conversion: the manual never names `htotal_out`, and the factor 2 lives in `agnus_beamcounter.v:206`'s write-doubling. The claim is now a recorded decline rather than an assertion — the honest outcome, and the one the correction brief explicitly permitted. The neighbouring `HTOTAL-H8-H1-BIT-MAPPING` was rebuilt as a pure relation instead — each bit's reading exactly double the one below, which is what page 304's `h8..h1` Use-row states — and it **passes**, with no unit conversion anywhere in it.
+> **Resolved by declining it.** No way was found to state the 227.5-colour-clock disagreement without an RTL-supplied conversion: the manual never names `htotal_out`, and the factor 2 lives in `agnus_beamcounter.v:206`'s write-doubling. The claim is now a recorded decline rather than an assertion — the honest outcome, and the one the correction brief explicitly permitted. The neighbouring `HTOTAL-H8-H1-BIT-MAPPING` was rebuilt as a pure relation instead — each bit's reading exactly double the one below, which is what page 304's `h8..h1` Use-row states — and it **passes**, with no unit conversion anywhere in it.
 
 **Package:** `hrm/ch3-beam-counters-and-blanking`, assertion
 `HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5`, both PAL and NTSC. **Red.**
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | — | — |
 
 Printed page 304 gives the scan line as 227.5 colour clocks. `htotal_out` reads
 **452** — a whole 226 doubled — under both standards.
@@ -749,6 +830,13 @@ invisible above this boundary.
 `VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL`. **Red.** Its NTSC twin passes and is
 the control.
 
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| 26 lines | 26 lines | — | — |
+
 Table 3-13, printed page 79:
 
     Vertical Blank Stop     $15 (21)    $1D (29)
@@ -769,22 +857,24 @@ makes this survive the units-error objection. Either the manual's PAL figure is
 wrong or NanoMig loses three lines of blanking; both are checkable against a real
 machine.
 
----
-
-*F05 and F06 found by the chapter-3 build, 11.09.2026, both confirmed
-against the RTL by the lead before recording. In both cases the RTL's own
-comments acknowledge the divergence.*
 
 ### NM-HRM-012 — SPRxCTL bit 0 (SH0) is honoured at every resolution, not only SuperHires
 
-> **WITHDRAWN** — validation 11.09.2026.
+> **WITHDRAWN.**
 >
 > Page 303 reads `00  SH0  Start horiz. value Low bit 140 ns increment`. SH0 is the 140-ns low bit; the SuperHires positions are bits 4 (70 ns) and 3 (35 ns). The assertion imported a SuperHires-only restriction the manual does not state.
 >
-> **Corrected the same day, and it settles the question.** The assertion now requires only what the row states — toggling SPRxCTL bit 0 moves the start by exactly one raw unit, with no mode gate. It is **green**. The implementation was right; the oracle was not.
+> **The correction settles it.** The assertion now requires only what the row states — toggling SPRxCTL bit 0 moves the start by exactly one raw unit, with no mode gate. It is **green**. The implementation was right; the oracle was not.
 
 **Package:** `hrm/ch3-sprite-registers`, assertion
 `SPRXCTL-BIT0-SH0-ONLY-IN-SUPERHIRES`. **Red.** Nine claim ids.
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | — | — |
 
 Printed pages 297 and 303 make SH0 the SuperHires half-pixel bit. NanoMig loads
 it unconditionally and compares on it unconditionally,
@@ -799,20 +889,27 @@ load <= armed && (hpos[7:0] == hstart[7:0]) && (fmode[15] || (hpos[8] == hstart[
 `case` at line 161, which sets how fast the already-loaded shift register drains.
 So the sprite's start position responds to SH0 at all four `spres` encodings.
 
-*For the specialists:* the same shape as F01, where DDFSTRT's H3 is gated by the
+*For the specialists:* the same shape as NM-HRM-006, where DDFSTRT's H3 is gated by the
 chipset strap rather than by resolution. Both are "a low-order position bit the
 manual scopes to one mode and the RTL honours always". Worth deciding together.
 
 ### NM-HRM-013 — SPRxCTL bits 3 and 4 are read nowhere in the module
 
-> **WITHDRAWN** — validation 11.09.2026.
+> **WITHDRAWN.**
 >
 > Page 303 reads `03  SHSH0  Start horizontal (SHR mode) 35ns (unimplemented)` -- the manual itself calls bit 3 unimplemented. The note `bits 3 and 4 are in the ECS chips only` is a scope statement, not a promise that both alter output. Requiring bit 3 to be a live field contradicts the oracle.
 >
-> **Split the same day, and one half survives as F14.** Bit 3 is now declined, quoting the manual's own `(unimplemented)`. Bit 4 — which the manual *does* specify — was re-asserted on its own and is red for a reason that holds. The original finding was right that something is missing, and wrong about what.
+> **Split the same day, and one half survives as NM-HRM-019.** Bit 3 is now declined, quoting the manual's own `(unimplemented)`. Bit 4 — which the manual *does* specify — was re-asserted on its own and is red for a reason that holds. The original finding was right that something is missing, and wrong about what.
 
 **Package:** `hrm/ch3-sprite-registers`, assertion
 `SPRXCTL-BITS-3-4-ARE-LIVE-FIELDS`. **Red.**
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | — | — |
 
 The SPRxCTL write path captures exactly two bits — bit 7 (attach) and bit 0
 (SH0), in the line above. Bits 3 and 4 are not referenced anywhere in
@@ -821,14 +918,10 @@ The SPRxCTL write path captures exactly two bits — bit 7 (attach) and bit 0
 That is a stronger statement than "ECS only": they are unimplemented in every
 chip mode this module offers, including with `aga` asserted.
 
----
-
-*F07 and F08 found by the chapter-3 build, 11.09.2026, both confirmed
-against the RTL by the lead before recording.*
 
 ### NM-HRM-014 — the manual applies its own ECS pointer extension inconsistently
 
-> **SOURCE OBSERVATION, not test-backed (as this entry already stated)** — validation 11.09.2026.
+> **SOURCE OBSERVATION, not test-backed (as this entry already stated).**
 >
 > Recorded in the package as `checks.note(...)`, whose own text says `Not folded into any PASS/FAIL above`. The manual/RTL disagreement is real; no assertion, red result or control stands behind it. Listed here for completeness of the audit.
 
@@ -845,6 +938,13 @@ Three sources, three widths:
 | chapter 3, printed p.54 | a **19-bit** address |
 | appendix A p.272 and appendix B p.291 | an **18-bit** pointer — "(high 3 bits)" plus low 15 |
 | NanoMig, `agnus_bitplanedma.v:82` | `reg [20:16] bplpth` — **5** high bits, so **20** |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| respects H3 in lores too | respects H3 in lores too | — | — |
 
 The deciding observation is inside appendix B itself. The manual **knows** about
 the ECS extension and writes it out — `DSKPTH` on printed page 289 reads
@@ -870,15 +970,20 @@ editing.
 high bits the way it extends DSKPTH? If yes, page 291 needs the same qualifier the
 manual already uses elsewhere, and chapter 3's "19-bit" is a third, separate slip.
 
----
-
-*F09 found by the chapter-3 build, 11.09.2026, confirmed against the RTL
-and against appendix B's own DSKPTH row by the lead before recording.*
 
 ### NM-HRM-015 — BRDNTRAN is declared and never connected
 
 **Package:** `hrm/ch3-horizontal-display-window`, assertion
 `D-BRDNTRAN-HAS-NO-EFFECT`. **Red.** Pages 296, 297, 307.
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| no border effect | no border effect | name not present anywhere in its Amiga core | **implements it**, with its own test |
+
+One of four treats BRDNTRAN as real border behaviour.
 
 Appendix C gives BPLCON3 bit 4 as **BRDNTRAN**, "border opaque" — one of the
 four new ECS genlock features. In NanoMig it is commented out twice, at its
@@ -904,19 +1009,24 @@ border control; bit 4 simply is not one.
 commented-out lines look like work left for later, not a decision. Worth
 confirming that nothing downstream silently depends on the border being opaque.
 
----
-
-*F10 found by the chapter-3 build, 11.09.2026, confirmed against the RTL
-by the lead before recording.*
 
 ### NM-HRM-016 — SuperHires sprite colour encoding is not implemented
 
-> **HOLDS, with the count corrected** — validation 11.09.2026.
+> **HOLDS, with the count corrected.**
 >
 > The finding stands: fifteen live registers and the general mode comparison all measure identical colour sets at both `shres` settings, using deliberately asymmetric slot-A/slot-B values so a rearrangement would be visible. But **`REG-0x10` is an unconditional `expect(false)`**, so it is a declaration, not a measurement: the evidential count is sixteen reds, not seventeen. The per-register assertions also test only that *some* mode difference exists, not the exact symbol-to-bit mapping their claim ids cite.
 
 **Package:** `hrm/ch3-shres-sprite-colour-encoding`. **17 red, 2 green.**
 Pages 301, 302. The largest single red result in chapter 3.
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| reinterprets, ECS Denise only | reinterprets, ECS Denise only | — | — |
+
+Both side with the manual; NanoMig is the outlier.
 
 Pages 301–302 give the ECS SuperHires sprite colour scheme: in SuperHires the
 sixteen colour registers `$10`–`$1F` are read as *two* colour slots each — slot A
@@ -962,19 +1072,14 @@ index 0 is universally transparent. That is recorded `none impossible` and
 confirmed by its own control rather than assumed.
 
 *For the specialists:* this is a feature-completeness gap in an ECS mode, of the
-same character as [F10] — not a wrong behaviour but an unbuilt one. Whether
+same character as NM-HRM-015 — not a wrong behaviour but an unbuilt one. Whether
 SuperHires sprite colour is worth implementing is a scope question for NanoMig,
 not a defect report.
 
----
-
-*F11 found by the chapter-3 build, 11.09.2026; RTL root cause and the
-measurement independently reproduced by the lead before recording.*
 
 ### NM-HRM-017 — SuperHires bitplane colour encoding is not implemented
 
-> **SOURCE OBSERVATION on 11.09.2026 — RESTORED as test-backed the same day,
-> once the witness was fixed.** The validator's objection was correct and the
+> **SOURCE OBSERVATION, then RESTORED as test-backed once the witness was fixed.** The validator's objection was correct and the
 > correction answers it: with `COLOR01 = 0x0C39` — every nibble's top two bits
 > differing from its bottom two, so a rearrangement is visible in all three
 > channels — the assertion still measures `ocs = shres = 0xCC3399`. Identical.
@@ -997,14 +1102,23 @@ measurement independently reproduced by the lead before recording.*
 > `denise_colortable.v` has no `shres` port -- that reading holds, and the lead confirmed it. The test does not establish it. `SHRES-REINTERPRETS-SAME-REGISTERS` writes `COLOR01 = 0x0FFF`, all ones in every nibble, and the claimed SuperHires encoding is a **rearrangement** of bits: rearranging all ones yields all ones. The assertion could not have gone green even against a perfect implementation, so its red is not evidence. This is the mirror of a circular oracle -- an assertion that cannot pass, for a reason unrelated to the design.
 
 **Package:** `hrm/ch3-shres-bitplane-colour-encoding`. **19 red, 4 green.**
-Pages 297, 301. **Same root cause as [F11], reached down a different path.**
+Pages 297, 301. **Same root cause as NM-HRM-016, reached down a different path.**
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| reinterprets, ECS Denise only | reinterprets, ECS Denise only | — | — |
+
+Both side with the manual; NanoMig is the outlier.
 
 Page 301 says SuperHires reinterprets the sixteen lower colour registers: the
 stored 12-bit value is read as two-bit-per-channel data rather than as an
 ordinary RGB triple. NanoMig reads every register identically in every mode.
 
 **Verified in the RTL by the lead.** `denise_colortable.v` has no `shres` port —
-the same absence that produces F11. Every occurrence of `shres` in the bitplane
+the same absence that produces NM-HRM-016. Every occurrence of `shres` in the bitplane
 path is shift-rate logic, and `denise_bitplanes.v:298` says so in its own words:
 
 ```verilog
@@ -1026,29 +1140,32 @@ the same fixture reads the same registers correctly in plain mode, on page
 and reverted. The nineteen reds are an absent feature, not a dark fixture.
 Reproduced by the lead from a deleted `obj_dir`.
 
-**Why F11 and F12 are recorded separately.** They share a cause but not a
-measurement: F11 drives the sprite colour path, F12 the bitplane colour path,
+**Why NM-HRM-016 and NM-HRM-017 are recorded separately.** They share a cause but not a
+measurement: NM-HRM-016 drives the sprite colour path, NM-HRM-017 the bitplane colour path,
 and neither result depends on the other's fixture. One absent port, demonstrated
 twice from opposite directions, is a firmer result than either package alone.
 
-*For the specialists:* together F11 and F12 say that ECS SuperHires colour is
+*For the specialists:* together NM-HRM-016 and NM-HRM-017 say that ECS SuperHires colour is
 unimplemented in NanoMig as a whole, not in one corner of it. Whether that is
 worth building is a scope question for the project.
 
----
-
-*F12 found by the chapter-3 build, 11.09.2026; RTL path and measurement
-independently reproduced by the lead before recording.*
 
 ### NM-HRM-018 — ECS BPLCON0 bit 4 (SPRHWRM) has no effect
 
-> **WITHDRAWN as a conformance finding** — validation 11.09.2026.
+> **WITHDRAWN as a conformance finding.**
 >
 > Page 300's row reads, in full, `04       SPRHWRM` -- a mnemonic with no description column, unlike `06  SHRES  SuperHires 35ns pixel enable bit` three rows above. The manual gives bit 4 a name and no behaviour, so there is no printed behaviour for NanoMig to diverge from. The fixture also drives bitplanes only and could not observe a sprite-horizontal function in any case. What remains true is a source observation: `denise.v:181` gives the bit its AGA meaning (`bplcon0[4] & aga`) and no ECS meaning. Recorded by the lead earlier the same day; the overreach was the lead's.
 >
 > **Corrected the same day.** Both claims are now declined rather than asserted, with the reason printed: the manual states no behaviour for this bit, and the fixture drives bitplanes while the mnemonic names a sprite function. Neither is asserted true nor false — the source simply does not define anything to test. 225/2 became 225/0.
 
 **Package:** `hrm/ch3-bplcon0-display-modes` (225 green, 2 red). Page 300.
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | — | — |
 
 Appendix C's BPLCON0 table gives bit 4 as **SPRHWRM**. Both readers took that row
 independently and wrote the same thing — `C-bplcon0.b04` (opus) and `C-shres.c18`
@@ -1090,18 +1207,24 @@ ECS one. Whether SPRHWRM is worth having, or whether the AGA reading should win
 outright, is a scope decision for the project — we only record that the printed
 ECS behaviour is absent.
 
----
-
-*F13 found by the chapter-3 build, 11.09.2026; RTL and both claim
-quotations checked by the lead before recording.*
 
 ### NM-HRM-019 — SPRxCTL bit 4 (SHSH1) is not implemented
 
 **Package:** `hrm/ch3-sprite-registers`, assertion
 `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`. **Red.** Page 303.
 
-**This is the half of the withdrawn F08 that survives**, re-established on a
-claim the manual actually makes. F08 asserted that SPRxCTL bits 3 *and* 4 are
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| implements bit 4 | does not | `denise.cpp:299` reads bit 4, compared only when `_shres` | `sprite.rs:1857` — `ctl & 0x0010` |
+
+Three of four implement it, and Denise scopes it exactly as page 303's Warning
+states.
+
+**This is the half of the withdrawn NM-HRM-013 that survives**, re-established
+on a claim the manual actually makes. NM-HRM-013 asserted that SPRxCTL bits 3 *and* 4 are
 live fields, resting on the note `bits 3 and 4 are in the ECS chips only` — a
 statement about which chips have them, not about what they do. For bit 3 the
 manual settles it in the opposite direction, printing `(unimplemented)`. For bit
@@ -1138,74 +1261,8 @@ written by the same CTL access, demonstrably observable. The fixture can see a
 SPRxCTL bit move the sprite; bit 4 simply is not one.
 
 *For the specialists:* 70 ns SuperHires sprite positioning is unbuilt, of a piece
-with F11 and F12 — the ECS SuperHires feature set is broadly absent rather than
+with NM-HRM-016 and NM-HRM-017 — the ECS SuperHires feature set is broadly absent rather than
 wrong in detail.
 
----
-
-*F14 established 11.09.2026 while correcting F08, and confirmed in the RTL by the
-lead before recording. Its existence is the argument for the validation step: the
-original finding pointed at something real and described it incorrectly, and only
-reading the printed page again separated the two.*
 
 ---
-
-*What follows is a record of one day, not an instruction. It is kept because
-the reasoning that revised a finding is part of the result — and it is at the
-end rather than the front because a reader looking up a finding should reach
-the register first.*
-
-## Record: the validation round of 11.09.2026
-
-An independent validator (Codex Sol, which wrote none of these tests) audited the
-built packages against the printed manual. **Seven of the thirteen findings did not
-survive in the form they were written.** Every disposition was re-checked against
-the manual page by the lead before being accepted; none was taken on the
-validator's word, and each affected finding carries its own note below.
-
-| | findings |
-|---|---|
-| **Hold as test-backed findings** | F01, F02, F03, F06, F10 |
-| **Hold with a correction** | F11 (evidential count) |
-| **Source observations, not test-backed** | F05, F09 |
-| **Downgraded, then restored once the witness was fixed** | F12 |
-| **Withdrawn** | F04, F07, F08, F13 |
-| **Established while correcting one of them** | **F14** |
-
-**F02's evidence was sharpened on 11.09.2026.** Page 80 does not merely give the
-number 49; it gives the reason — *"because the rightmost limit remains ($D8) and
-only one word is fetched at this limit"*. The package measured only the total (50,
-not 49). A second assertion now measures the mechanism the sentence names, and it
-is red for a sharper reason: the hires word count is structurally even, so 49 is
-not individually reachable at all — 48 and 50 are, 49 is not. The finding is the
-same; the evidence now matches the clause the manual actually argues from.
-
-Every withdrawal was also carried back into its package the same day, so no test
-is left asserting something the manual does not say. Three of those corrections
-answered the question the withdrawal raised: with an expectation the page
-actually supports, **F04 and F07 turn green** — the implementation was right and
-the oracle was not — and **F05's claim became a recorded decline**, because no
-faithful assertion could be written without importing an RTL constant.
-
-**F08 is the instructive one.** It asserted that SPRxCTL bits 3 *and* 4 are live.
-Bit 3 the manual itself calls `(unimplemented)`; bit 4 it specifies. Split apart,
-bit 3 is declined and bit 4 stays red on a claim that holds — recorded as F14.
-The original finding pointed at something real and described it incorrectly, and
-only reading the printed page again separated the two. That is the whole case for
-this step.
-
-Four of the withdrawals share one cause: **the assertion, not the RTL, was wrong.**
-Each read a permission or a silence in the manual as a requirement — "not used" as
-"reads zero", a bare mnemonic as a mandated effect, "ECS-only" as "must be live",
-in one case even where the manual prints the word *unimplemented*. A red result is
-a finding only where the manual actually says otherwise.
-
-The two source-only downgrades share a different cause, and it is the one this
-pipeline exists to prevent: **an expected value that came from the implementation.**
-F05 computes `227.5 CCK × 2 hpos-ticks/CCK`, taking the factor 2 from the RTL's
-internal representation. F12 is its mirror image — an assertion that could not have
-passed against a perfect implementation, because it tested a bit *rearrangement*
-using a value made of identical bits. **F12 is the one that came back:** given a
-witness whose nibbles differ top-half from bottom-half, it is still red, and the
-finding now rests on a measurement that could have gone the other way.
-

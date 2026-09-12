@@ -1,6 +1,6 @@
 # What is in here, and what each document is for
 
-Seven documents. A red test is not self-explanatory: someone reading `FAIL` needs
+Eight documents. A red test is not self-explanatory: someone reading `FAIL` needs
 to know what the manual says, what the RTL does, whether anyone else agrees, and
 who decides. Six of these answer that. One is a record of tests that no longer
 exist.
@@ -32,6 +32,7 @@ Read them in this order.
 
 | | | |
 |---|---|---|
+| [`record-2026-09-11-validation.md`](record-2026-09-11-validation.md) | record | An independent validator's audit of chapter 3's thirteen findings: seven did not survive in the form they were written, four were withdrawn, two became source observations, one was corrected, and one new finding was established while correcting another. Every finding it revised carries its own note in `findings.md`; this is the round's own account of why. |
 | [`blitter-prior-art.md`](blitter-prior-art.md) | record | The eight `agnus_blitter_*` tests that existed before chapter 6 went through the pipeline, read one by one to decide what each was worth. Three were extended into pipeline packages and five were superseded and deleted, each only after its replacement was green from a clean build. The tests are gone; the reasoning is why the deletions were safe. |
 
 ## Where the rest of it is
