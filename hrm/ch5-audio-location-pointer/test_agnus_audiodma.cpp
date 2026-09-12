@@ -78,6 +78,55 @@
 //   inter-chip transfer, stay on assertion 1 - its measurement is both
 //   necessary and sufficient for those.
 //
+// COVERAGE REPAIR 2 (2026-09-12, revalidation blocker 1a,
+//   work/2026-09-12_ch5_sol_revalidation.md): re-examination of assertion 1's
+//   remaining six ids found three more that the same two booleans do not
+//   establish - a single-line hpos sweep with no RAM input, no delivered
+//   word, no DAC boundary and no elapsed-time measurement is necessary but
+//   not sufficient for any of them:
+//     - 5-rate.c1 ("the sampling period is limited by the number of DMA
+//       cycles allocated to an audio channel") states a bound on elapsed
+//       time; this fixture never measures elapsed time across repeated
+//       grants. NOT COVERED BY THIS PACKAGE - needs a cycle-accurate,
+//       multi-line/multi-sample timing fixture.
+//     - 5-appA-p263.c11 ("Paula, Agnus, and Denise ... transferring data
+//       among themselves") states an actual cross-chip data transfer; this
+//       fixture only shows the address on reg_address_out; no data crosses
+//       to Paula or Denise anywhere in this module. NOT COVERED BY THIS
+//       PACKAGE - needs an integrated Agnus-Paula(-Denise) data-path fixture
+//       with a real RAM/data source (the same gap the twelve V-09 ids
+//       above need).
+//     - 5-p139.c4 is one claim id for one sentence with two clauses ("the
+//       'x' ... stands for the number of the audio channel WHERE THE OUTPUT
+//       WILL OCCUR. The channels are numbered 0, 1, 2, and 3."). This
+//       fixture measures the numbering clause - also separately claimed by
+//       5-loc.c4, which stays - but never measures the output-occurrence
+//       clause: nothing here observes a sample, a DAC, or an output pin.
+//       Because the id names the whole two-clause sentence, partial support
+//       does not license keeping it - it is withdrawn entirely, not split.
+//       NOT COVERED BY THIS PACKAGE - needs a DAC/output-pin boundary
+//       (paula_audio_channel.v plus an analog output observation point)
+//       that this single-module fixture does not have.
+//   Assertion 6, POINTER-LSB-ALWAYS-ZERO, formerly cited 20 ids for the
+//   appendix-B "+" legend and the eight AUDxLCH/AUDxLCL register-pair rows
+//   that carry it. Its own predicate measures only that data_in bit 0 is
+//   never sampled (agnus_audiodma.v:89) - the EVEN-ADDRESS half. The
+//   "... pointing to CHIP MEMORY" half of the "+" gloss has never been
+//   measured; it needs the memory decoder, gary.v, outside this module and
+//   outside this package's assigned boundary. Eighteen of the twenty ids -
+//   the legend itself in both duplicate readings (5-appB-p287.c4,
+//   B-legend.plus) and all eight register-pair rows in both duplicate
+//   readings (5-appB-p290.c25/c32/c60/c67/c95/c102/c130/c137 and
+//   B-aud0lch.mark/B-aud0lcl.mark/B-aud1lch.mark/B-aud1lcl.mark/
+//   B-aud2lch.mark/B-aud2lcl.mark/B-aud3lch.mark/B-aud3lcl.mark) - state
+//   that chip-memory clause and are withdrawn from assertion 6's cited-
+//   claims text. NOT COVERED BY THIS PACKAGE - needs gary.v. The remaining
+//   two ids (5-appA-p263.c6, A-pre.c7) state only "the lowest bit of all
+//   pointers must be written as zero," with no chip-memory clause, and stay
+//   - the even-address measurement is both necessary and sufficient for
+//   those. Neither assertion's booleans, mutation, or PASS/FAIL behaviour
+//   changed; only the cited-claims text and this header were edited.
+//
 // ============================================================================
 // SPECIFICATION - written from the 176 claims' manual quotations alone,
 // before agnus_audiodma.v was opened. Ten assertions. Originally, every one
@@ -90,8 +139,11 @@
 // withdrew twelve of those ids from assertion 1 as not actually established
 // by its own measurement; they are listed, with the fixture they need, in
 // assertion 1's own text below and are deliberately absent from every
-// assertion string in this file, so 164 ids remain asserted here and 12 are
-// reported not covered by this package.
+// assertion string in this file - 164 ids remained asserted and 12 were
+// reported not covered after that repair. COVERAGE REPAIR 2 above withdrew
+// three more ids from assertion 1 and eighteen ids from assertion 6, for the
+// same necessary-but-not-sufficient reason; 143 ids now remain asserted here
+// and 33 are reported not covered by this package.
 // ============================================================================
 //
 // 0. TEST-DATA-DELIVERY (fixture check, no claim id, no manual page).
@@ -102,22 +154,17 @@
 //    assertion below that depends on data actually moving through this
 //    module.
 //
-// 1. SLOT-PER-CHANNEL-PER-LINE (6 claim ids; repaired 2026-09-12, see
-//    COVERAGE REPAIR below -- 12 ids formerly cited here are NOT COVERED BY
-//    THIS PACKAGE).
-//    Quotes: p.139 the x suffix "specifies the audio channel" (0-3),
-//    restated at p.139 "The channels are numbered 0, 1, 2, and 3"; p.141
-//    "Each audio channel is allocated one DMA slot per horizontal scan
-//    line" and "The sampling period is limited by the number of DMA cycles
-//    allocated to an audio channel"; appendix A p.263, the inter-chip
-//    register-address transfer.
+// 1. SLOT-PER-CHANNEL-PER-LINE (3 claim ids; repaired 2026-09-12, see
+//    COVERAGE REPAIR below and COVERAGE REPAIR 2 above -- 12 ids formerly
+//    cited here are NOT COVERED BY THIS PACKAGE, and a further 3 withdrawn
+//    2026-09-12 are also NOT COVERED BY THIS PACKAGE).
+//    Quotes: p.139 "The channels are numbered 0, 1, 2, and 3"; p.141 "Each
+//    audio channel is allocated one DMA slot per horizontal scan line".
 //    Expected if NanoMig conforms: each of the four channels (x=0..3) has
 //    its own DMA slot, once per horizontal scan line, addressed through
 //    that channel's own AUDxDAT register - not a shared or interleaved
-//    resource, and the DMA-slot's own address transfer is Agnus's half of
-//    the inter-chip bus these ids describe.
-//    Claims: 5-p139.c4, 5-p141.c1, 5-rate.c1, 5-rate.c2, 5-loc.c4,
-//    5-appA-p263.c11 .
+//    resource.
+//    Claims: 5-p141.c1, 5-rate.c2, 5-loc.c4 .
 //
 //    COVERAGE REPAIR (independent validation finding V-09): this
 //    assertion's two booleans (one_slot_each, right_register) prove only
@@ -137,6 +184,20 @@
 //        5-hw.c7, 5-rate.c3.
 //      - memory data is automatically retrieved into AUDxDAT: 5-p137.c6,
 //        5-hw.c10, 5-p148.c5, 5-join.c10, 5-appA-p265.c44, A-audxdat.c6.
+//
+//    COVERAGE REPAIR 2 (2026-09-12, revalidation blocker 1a): three more
+//    ids withdrawn, same necessary-but-not-sufficient reason. NOT COVERED
+//    BY THIS PACKAGE:
+//      - 5-rate.c1 (sampling-period bound) needs an elapsed-time
+//        measurement fixture.
+//      - 5-appA-p263.c11 (Paula/Agnus/Denise transfer data among
+//        themselves) needs an integrated Agnus-Paula(-Denise) data-path
+//        fixture with a real RAM/data source.
+//      - 5-p139.c4 (channel numbering AND output-occurrence, one sentence)
+//        needs a DAC/output-pin boundary for its output-occurrence clause;
+//        withdrawn whole, not split, because the id names the whole
+//        sentence. Its numbering clause stays covered via 5-loc.c4.
+//    See COVERAGE REPAIR 2 in the file header above for the full text.
 //
 // 2. WORD-ALIGNED-FETCH-AND-LC-PAIR (6 claim ids).
 //    Quotes: p.138 "the first byte of data must start at a word-address
@@ -207,21 +268,20 @@
 //    B-aud3lch.chip, B-aud3lcl.addr, B-aud3lcl.chip, C-map.lch.addr,
 //    C-map.lch.chip, C-prose.lch .
 //
-// 6. POINTER-LSB-ALWAYS-ZERO (20 claim ids).
+// 6. POINTER-LSB-ALWAYS-ZERO (2 claim ids; repaired 2026-09-12, revalidation
+//    blocker 1a -- 18 ids formerly cited here are NOT COVERED BY THIS
+//    PACKAGE, see COVERAGE REPAIR 2 in the file header above).
 //    Quotes: appendix A p.263 "The least significant bit of every pointer-
-//    type register ... must always be written with a zero"; appendix B
-//    p.287/290 the "+" legend, "Address register pair; must be an even
-//    address pointing to chip memory."
+//    type register ... must always be written with a zero."
 //    Expected: whatever is written to AUDxLCL, the stored/fetched address's
-//    bit 0 reads back as zero - the EVEN-ADDRESS half of the claim. The
-//    "... pointing to CHIP memory" half needs the memory decoder (gary.v),
-//    outside this module, and is named, not measured, in this assertion.
-//    Claims: 5-appA-p263.c6, 5-appB-p287.c4, 5-appB-p290.c25,
-//    5-appB-p290.c32, 5-appB-p290.c60, 5-appB-p290.c67, 5-appB-p290.c95,
-//    5-appB-p290.c102, 5-appB-p290.c130, 5-appB-p290.c137, A-pre.c7,
-//    B-legend.plus, B-aud0lch.mark, B-aud0lcl.mark, B-aud1lch.mark,
-//    B-aud1lcl.mark, B-aud2lch.mark, B-aud2lcl.mark, B-aud3lch.mark,
-//    B-aud3lcl.mark .
+//    bit 0 reads back as zero - the EVEN-ADDRESS half of appendix B's "+"
+//    legend, "Address register pair; must be an even address pointing to
+//    chip memory." The "... pointing to CHIP memory" half needs the memory
+//    decoder (gary.v), outside this module, and is not measured here, so
+//    the legend id and the eight plus-marked register-pair ids (in both
+//    duplicate readings) were withdrawn - NOT COVERED BY THIS PACKAGE,
+//    needs gary.v.
+//    Claims: 5-appA-p263.c6, A-pre.c7 .
 //
 // 7. POINTER-REGISTER-SPACE-LONGWORD (3 claim ids).
 //    Quotes: appendix A p.263 "All pointer-type registers are 32 bits wide"
@@ -547,36 +607,36 @@ int main(int argc, char** argv) {
             if (!granted || reg != DAT[ch]) right_register = false;
         }
         checks.expect(one_slot_each && right_register,
-            "SLOT-PER-CHANNEL-PER-LINE (p.139: \"The 'x' in the register "
-            "names ... specifies the audio channel\", \"The channels are "
+            "SLOT-PER-CHANNEL-PER-LINE (p.139: \"The channels are "
             "numbered 0, 1, 2, and 3\"; p.141: \"Each audio channel is "
-            "allocated one DMA slot per horizontal scan line\", \"The "
-            "sampling period is limited by the number of DMA cycles "
-            "allocated to an audio channel\"; appendix A p.263: register "
-            "addresses \"used by ... Agnus ... for transferring data among "
-            "themselves\"): each of the four channels gets EXACTLY one "
+            "allocated one DMA slot per horizontal scan line\"): each of "
+            "the four channels gets EXACTLY one "
             "qualifying hpos value across the entire 0-511 range (measured "
             "at hpos 0x025/0x029/0x02D/0x031, matching CANDIDATES.md), and "
             "at that value reg_address_out names that channel's own "
             "AUDxDAT ($0AA/$0BA/$0CA/$0DA) - a dedicated per-channel slot "
             "and register address, never shared or interleaved. This "
-            "establishes: channel numbering/addressing (5-p139.c4, "
-            "5-loc.c4), one-DMA-slot-per-line allocation (5-p141.c1, "
-            "5-rate.c2), the resulting sampling-rate bound (5-rate.c1), and "
-            "the register-address half of the inter-chip transfer "
-            "(5-appA-p263.c11). hpos repeating every scan line is a fact "
+            "establishes: channel numbering (5-loc.c4) and "
+            "one-DMA-slot-per-line allocation (5-p141.c1, 5-rate.c2). hpos "
+            "repeating every scan line is a fact "
             "about the surrounding beam counter, outside this module; what "
             "is measured here is that within any one sweep of the hpos "
             "range a channel is granted only once. NOT ESTABLISHED HERE: "
             "that the channel's DAC is DMA-driven, that the slot's word "
-            "supplies two samples, or that memory data is automatically "
-            "retrieved into AUDxDAT - this fixture is agnus_audiodma.v "
-            "alone, with no RAM input, no delivered word, no observed "
-            "sample byte and no DAC boundary; those propositions need an "
-            "integrated Agnus-to-Paula data path and are reported NOT "
-            "COVERED BY THIS PACKAGE (see this file's header for the ids). "
-            "[claims: 5-p139.c4, 5-p141.c1, 5-rate.c1, 5-rate.c2, 5-loc.c4, "
-            "5-appA-p263.c11]");
+            "supplies two samples, that memory data is automatically "
+            "retrieved into AUDxDAT, that the sampling period is bounded by "
+            "this allocation across elapsed time (5-rate.c1), that Paula, "
+            "Agnus and Denise actually transfer data to each other over "
+            "this address (5-appA-p263.c11), or that output occurs on the "
+            "addressed channel (the output-occurrence clause of 5-p139.c4) "
+            "- this fixture is agnus_audiodma.v alone, with no RAM input, "
+            "no delivered word, no observed sample byte, no DAC boundary "
+            "and no elapsed-period or cross-chip measurement; those "
+            "propositions need an integrated Agnus-to-Paula(-Denise) data "
+            "path, an elapsed-time measurement, and a DAC/output boundary, "
+            "and are reported NOT COVERED BY THIS PACKAGE (see this file's "
+            "header for the ids and the fixture each needs). "
+            "[claims: 5-p141.c1, 5-rate.c2, 5-loc.c4]");
     }
 
     // ---------------- 2. WORD-ALIGNED-FETCH-AND-LC-PAIR ----------------
@@ -840,24 +900,22 @@ int main(int argc, char** argv) {
         checks.expect(lsb_has_no_effect && bit1_does_change_it,
             "POINTER-LSB-ALWAYS-ZERO (appendix A p.263: \"The least "
             "significant bit of every pointer-type register ... must always "
-            "be written with a zero\"; appendix B pp.287/290 the \"+\" "
-            "legend, \"Address register pair; must be an even address "
-            "pointing to chip memory\"): writing data_in bit 0 alone changes "
+            "be written with a zero\"): writing data_in bit 0 alone changes "
             "nothing (agnus_audiodma.v:89 reads only data_in[15:1] - bit 0 "
             "is never even sampled), so the stored/fetched address's own bit "
-            "0 is always zero, structurally - the EVEN-ADDRESS half of the "
-            "claim. Control: writing bit 1 alone DOES change the pointer by "
-            "exactly 1, proving this is a live, sensitive measurement, not a "
-            "stuck fixture. The \"... pointing to CHIP memory\" half needs "
-            "the memory decoder (gary.v), outside this module, and is named, "
-            "not measured, here. "
-            "[claims: 5-appA-p263.c6, 5-appB-p287.c4, 5-appB-p290.c25, "
-            "5-appB-p290.c32, 5-appB-p290.c60, 5-appB-p290.c67, "
-            "5-appB-p290.c95, 5-appB-p290.c102, 5-appB-p290.c130, "
-            "5-appB-p290.c137, A-pre.c7, B-legend.plus, B-aud0lch.mark, "
-            "B-aud0lcl.mark, B-aud1lch.mark, B-aud1lcl.mark, "
-            "B-aud2lch.mark, B-aud2lcl.mark, B-aud3lch.mark, "
-            "B-aud3lcl.mark]");
+            "0 is always zero, structurally - the EVEN-ADDRESS half of "
+            "appendix B's \"+\" legend, \"Address register pair; must be an "
+            "even address pointing to chip memory.\" Control: writing bit 1 "
+            "alone DOES change the pointer by exactly 1, proving this is a "
+            "live, sensitive measurement, not a stuck fixture. The "
+            "\"... pointing to CHIP memory\" half of that legend needs the "
+            "memory decoder (gary.v), outside this module, and is not "
+            "measured here, so the legend id and every plus-marked "
+            "register-pair id that carries it (both duplicate-reader "
+            "spellings) are NOT COVERED BY THIS PACKAGE - needs gary.v; "
+            "only the appendix A p.263 even-address wording, which has no "
+            "chip-memory clause, is asserted. "
+            "[claims: 5-appA-p263.c6, A-pre.c7]");
     }
 
     // ---------------- 7. POINTER-REGISTER-SPACE-LONGWORD ----------------
@@ -1026,7 +1084,12 @@ int main(int argc, char** argv) {
 //   (assertion 1's cited-claims text was narrowed from 18 to 6 ids; its two
 //   booleans and their code were not touched): identical result, only this
 //   assertion newly red, reverted byte-identical, clean rebuild reproduced
-//   9 passed/1 failed.
+//   9 passed/1 failed. Re-run again 2026-09-12 after COVERAGE REPAIR 2
+//   (assertion 1's cited-claims text was narrowed further from 6 to 3 ids;
+//   its two booleans and their code again not touched): identical result -
+//   8 passed, 2 failed with only this assertion newly red, reverted
+//   byte-identical (`diff` against a saved pre-mutation copy), clean
+//   rebuild reproduced 9 passed/1 failed.
 // MUTATION WORD-ALIGNED-FETCH-AND-LC-PAIR stimulus red: the second write_reg in the block changed from
 //   `write_reg(AUD0LCH, 0x0015)` to `write_reg(AUD1LCH, 0x0015)` (a
 //   one-character channel-index typo) while channel 0 is what gets read
@@ -1066,7 +1129,12 @@ int main(int argc, char** argv) {
 //   0x0000 (identical to the base-case write) -> FAIL, "bit1_does_change_it"
 //   becomes false because the two measurements are now identical by
 //   construction, not because of a real gate - correctly catching that this
-//   mutation makes the control meaningless; 8 passed, 2 failed.
+//   mutation makes the control meaningless; 8 passed, 2 failed. Re-run
+//   2026-09-12 after COVERAGE REPAIR 2 (assertion 6's cited-claims text was
+//   narrowed from 20 to 2 ids; its two booleans and their code were not
+//   touched): identical result - 8 passed, 2 failed with only this
+//   assertion newly red, reverted byte-identical (`diff` against a saved
+//   pre-mutation copy), clean rebuild reproduced 9 passed/1 failed.
 // MUTATION POINTER-REGISTER-SPACE-LONGWORD stimulus red: the long-word-alignment table's channel-2 entry
 //   changed from 0x0C0 to 0x0C1 (one byte off) -> FAIL, 0x0C1 % 4 != 0;
 //   8 passed, 2 failed.
