@@ -60,16 +60,38 @@
 //   Agnus-attribution claims (assertion 5) - both need a module outside this
 //   package's assigned fixture and are named, not measured, where they occur.
 //
+// COVERAGE REPAIR (2026-09-12, independent validation finding V-09):
+//   assertion 1, SLOT-PER-CHANNEL-PER-LINE, formerly cited 18 ids. Its own
+//   two booleans (one_slot_each, right_register) establish only that each
+//   channel has its own DMA slot and that, at that slot, reg_address_out
+//   names that channel's own AUDxDAT address - this fixture has no RAM
+//   input, delivers no word into Paula, observes neither sample byte, and
+//   has no DAC boundary. Twelve of the eighteen ids stated a DAC-is-DMA-
+//   driven, two-samples-per-word, or automatic-RAM-to-AUDxDAT proposition
+//   the slot/address measurement is necessary for but not sufficient to
+//   prove, so they were withdrawn from assertion 1's own cited-claims text.
+//   They are NOT COVERED BY THIS PACKAGE - see assertion 1's own
+//   specification below for the full breakdown and the fixture they need
+//   (an integrated Agnus-to-Paula data path with a real RAM/data source).
+//   The remaining six ids, all about channel numbering, slot allocation, the
+//   resulting sampling-rate bound, or the register-address half of the
+//   inter-chip transfer, stay on assertion 1 - its measurement is both
+//   necessary and sufficient for those.
+//
 // ============================================================================
 // SPECIFICATION - written from the 176 claims' manual quotations alone,
-// before agnus_audiodma.v was opened. Ten assertions. Every one of the 176
-// claim ids appears in exactly the assertion(s) below whose proposition it
-// states (five ids that state BOTH the ECS reading and the OCS/18-bit reading
-// in the same sentence are cited under both assertion 8 and assertion 9, per
-// the same "cited under both assertions it actually supports" convention
-// hrm/agnus_blitter_ecs's header documents). Verified by script against the
-// full 176-line claim file: every id used exactly where listed here, no id
-// invented, none left out.
+// before agnus_audiodma.v was opened. Ten assertions. Originally, every one
+// of the 176 claim ids appeared in exactly the assertion(s) below whose
+// proposition it stated (five ids that state BOTH the ECS reading and the
+// OCS/18-bit reading in the same sentence are cited under both assertion 8
+// and assertion 9, per the same "cited under both assertions it actually
+// supports" convention hrm/agnus_blitter_ecs's header documents), verified by
+// script against the full 176-line claim file. The COVERAGE REPAIR above
+// withdrew twelve of those ids from assertion 1 as not actually established
+// by its own measurement; they are listed, with the fixture they need, in
+// assertion 1's own text below and are deliberately absent from every
+// assertion string in this file, so 164 ids remain asserted here and 12 are
+// reported not covered by this package.
 // ============================================================================
 //
 // 0. TEST-DATA-DELIVERY (fixture check, no claim id, no manual page).
@@ -80,24 +102,41 @@
 //    assertion below that depends on data actually moving through this
 //    module.
 //
-// 1. SLOT-PER-CHANNEL-PER-LINE (18 claim ids).
-//    Quotes: p.137 "Each audio channel includes an eight-bit digital-to-
-//    analog converter driven by a direct memory access (DMA) channel."; "The
-//    audio DMA can retrieve two data samples during each horizontal video
-//    scan line."; "When you use automatic sound generation, the system
-//    retrieves data automatically by direct memory access."; p.139 the x
-//    suffix "specifies the audio channel" (0-3); p.141 the DMA-slot
-//    allocation; p.148 "Audio DMA begins retrieving data" in each allocated
-//    slot; appendix A p.263/265, the inter-chip register-address transfer
-//    and AUDxDAT's automatic load from RAM.
-//    Expected if NanoMig conforms: each of the four channels (x=0..3) has its
-//    own DMA slot, once per horizontal scan line, that word carrying two
-//    samples, addressed through that channel's own AUDxDAT register - not a
-//    shared or interleaved resource.
-//    Claims: 5-p137.c2, 5-p137.c3, 5-p137.c6, 5-p139.c4, 5-p141.c1,
-//    5-p141.c2, 5-hw.c6, 5-hw.c7, 5-hw.c10, 5-rate.c1, 5-rate.c2, 5-rate.c3,
-//    5-loc.c4, 5-join.c10, 5-p148.c5, 5-appA-p263.c11, 5-appA-p265.c44,
-//    A-audxdat.c6 .
+// 1. SLOT-PER-CHANNEL-PER-LINE (6 claim ids; repaired 2026-09-12, see
+//    COVERAGE REPAIR below -- 12 ids formerly cited here are NOT COVERED BY
+//    THIS PACKAGE).
+//    Quotes: p.139 the x suffix "specifies the audio channel" (0-3),
+//    restated at p.139 "The channels are numbered 0, 1, 2, and 3"; p.141
+//    "Each audio channel is allocated one DMA slot per horizontal scan
+//    line" and "The sampling period is limited by the number of DMA cycles
+//    allocated to an audio channel"; appendix A p.263, the inter-chip
+//    register-address transfer.
+//    Expected if NanoMig conforms: each of the four channels (x=0..3) has
+//    its own DMA slot, once per horizontal scan line, addressed through
+//    that channel's own AUDxDAT register - not a shared or interleaved
+//    resource, and the DMA-slot's own address transfer is Agnus's half of
+//    the inter-chip bus these ids describe.
+//    Claims: 5-p139.c4, 5-p141.c1, 5-rate.c1, 5-rate.c2, 5-loc.c4,
+//    5-appA-p263.c11 .
+//
+//    COVERAGE REPAIR (independent validation finding V-09): this
+//    assertion's two booleans (one_slot_each, right_register) prove only
+//    that each channel gets its own hpos slot and that, at that slot,
+//    reg_address_out names that channel's own AUDxDAT address. There is no
+//    RAM input anywhere in this fixture, no word is ever delivered into
+//    Paula, neither sample byte is observed, and there is no DAC boundary -
+//    the slot and register address are NECESSARY for the following twelve
+//    ids' propositions but not SUFFICIENT to prove them, so their citation
+//    here was withdrawn. They are NOT COVERED BY THIS PACKAGE and their ids
+//    are deliberately absent from every assertion string in this file,
+//    grouped by the proposition each needs an integrated Agnus-to-Paula
+//    data path (a real fetched word reaching paula_audio_channel's AUDxDAT
+//    latch, from a RAM/data source) to establish:
+//      - each channel's DAC is DMA-driven: 5-p137.c2, 5-hw.c6.
+//      - one DMA word supplies two samples per line: 5-p137.c3, 5-p141.c2,
+//        5-hw.c7, 5-rate.c3.
+//      - memory data is automatically retrieved into AUDxDAT: 5-p137.c6,
+//        5-hw.c10, 5-p148.c5, 5-join.c10, 5-appA-p265.c44, A-audxdat.c6.
 //
 // 2. WORD-ALIGNED-FETCH-AND-LC-PAIR (6 claim ids).
 //    Quotes: p.138 "the first byte of data must start at a word-address
@@ -508,29 +547,36 @@ int main(int argc, char** argv) {
             if (!granted || reg != DAT[ch]) right_register = false;
         }
         checks.expect(one_slot_each && right_register,
-            "SLOT-PER-CHANNEL-PER-LINE (p.137: \"Each audio channel includes "
-            "an eight-bit digital-to-analog converter driven by a direct "
-            "memory access (DMA) channel\"; \"The audio DMA can retrieve two "
-            "data samples during each horizontal video scan line\"; \"When "
-            "you use automatic sound generation, the system retrieves data "
-            "automatically by direct memory access\"; p.139 the x suffix "
-            "\"specifies the audio channel\"; p.141 the per-line DMA-slot "
-            "allocation; p.148 \"Audio DMA begins retrieving data\" in each "
-            "allocated slot; appendix A p.263/265, register-address transfer "
-            "and AUDxDAT's automatic load from RAM): each of the four "
-            "channels gets EXACTLY one qualifying hpos value across the "
-            "entire 0-511 range (measured at hpos 0x025/0x029/0x02D/0x031, "
-            "matching CANDIDATES.md), and at that value reg_address_out "
-            "names that channel's own AUDxDAT ($0AA/$0BA/$0CA/$0DA) - a "
-            "dedicated per-channel slot, one word (two samples) per line, "
-            "never a shared or interleaved resource. hpos repeating every "
-            "scan line is a fact about the surrounding beam counter, outside "
-            "this module; what is measured here is that within any one "
-            "sweep of the hpos range a channel is granted only once. "
-            "[claims: 5-p137.c2, 5-p137.c3, 5-p137.c6, 5-p139.c4, "
-            "5-p141.c1, 5-p141.c2, 5-hw.c6, 5-hw.c7, 5-hw.c10, 5-rate.c1, "
-            "5-rate.c2, 5-rate.c3, 5-loc.c4, 5-join.c10, 5-p148.c5, "
-            "5-appA-p263.c11, 5-appA-p265.c44, A-audxdat.c6]");
+            "SLOT-PER-CHANNEL-PER-LINE (p.139: \"The 'x' in the register "
+            "names ... specifies the audio channel\", \"The channels are "
+            "numbered 0, 1, 2, and 3\"; p.141: \"Each audio channel is "
+            "allocated one DMA slot per horizontal scan line\", \"The "
+            "sampling period is limited by the number of DMA cycles "
+            "allocated to an audio channel\"; appendix A p.263: register "
+            "addresses \"used by ... Agnus ... for transferring data among "
+            "themselves\"): each of the four channels gets EXACTLY one "
+            "qualifying hpos value across the entire 0-511 range (measured "
+            "at hpos 0x025/0x029/0x02D/0x031, matching CANDIDATES.md), and "
+            "at that value reg_address_out names that channel's own "
+            "AUDxDAT ($0AA/$0BA/$0CA/$0DA) - a dedicated per-channel slot "
+            "and register address, never shared or interleaved. This "
+            "establishes: channel numbering/addressing (5-p139.c4, "
+            "5-loc.c4), one-DMA-slot-per-line allocation (5-p141.c1, "
+            "5-rate.c2), the resulting sampling-rate bound (5-rate.c1), and "
+            "the register-address half of the inter-chip transfer "
+            "(5-appA-p263.c11). hpos repeating every scan line is a fact "
+            "about the surrounding beam counter, outside this module; what "
+            "is measured here is that within any one sweep of the hpos "
+            "range a channel is granted only once. NOT ESTABLISHED HERE: "
+            "that the channel's DAC is DMA-driven, that the slot's word "
+            "supplies two samples, or that memory data is automatically "
+            "retrieved into AUDxDAT - this fixture is agnus_audiodma.v "
+            "alone, with no RAM input, no delivered word, no observed "
+            "sample byte and no DAC boundary; those propositions need an "
+            "integrated Agnus-to-Paula data path and are reported NOT "
+            "COVERED BY THIS PACKAGE (see this file's header for the ids). "
+            "[claims: 5-p139.c4, 5-p141.c1, 5-rate.c1, 5-rate.c2, 5-loc.c4, "
+            "5-appA-p263.c11]");
     }
 
     // ---------------- 2. WORD-ALIGNED-FETCH-AND-LC-PAIR ----------------
@@ -976,7 +1022,11 @@ int main(int argc, char** argv) {
 //   `SLOT_HPOS[ch]` to `SLOT_HPOS[(ch + 1) % 4]` while `audio_dmal` and the
 //   DAT[ch] comparison still target channel ch -> FAIL, the grant never
 //   lands on ch's own slot so `granted` reads false for every channel;
-//   8 passed, 2 failed.
+//   8 passed, 2 failed. Re-run 2026-09-12 after the V-09 coverage repair
+//   (assertion 1's cited-claims text was narrowed from 18 to 6 ids; its two
+//   booleans and their code were not touched): identical result, only this
+//   assertion newly red, reverted byte-identical, clean rebuild reproduced
+//   9 passed/1 failed.
 // MUTATION WORD-ALIGNED-FETCH-AND-LC-PAIR stimulus red: the second write_reg in the block changed from
 //   `write_reg(AUD0LCH, 0x0015)` to `write_reg(AUD1LCH, 0x0015)` (a
 //   one-character channel-index typo) while channel 0 is what gets read
