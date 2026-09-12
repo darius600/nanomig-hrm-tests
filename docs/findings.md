@@ -448,9 +448,10 @@ A dash means nobody has read that source for this finding.
 
 | WinUAE | vAmiga | Denise | Copperline |
 |---|---|---|---|
-| — | — | `denise.cpp:300` — `(nr & 1) && (value & 0x80)`, the manual's rule exactly | reads the bit without the odd-sprite condition *(source reading, not run)* |
+| `drawing.cpp:2838` — `dspr[num & ~1].attached = (dspr[num \| 1].ctl & 0x80)`, the **odd** sprite only | `Denise.cpp:1130` reads `sprctl[sprite2]`, and `sprite2 = 2*pair + 1` — the odd one | `denise.cpp:300` — `(nr & 1) && (value & 0x80)`, the manual's rule exactly | reads the bit without the odd-sprite condition *(source reading, not run)* |
 
-Denise matches the manual; Copperline appears to do what NanoMig does.
+**Three of four take the attach bit from the odd sprite only, as the manual states.**
+Copperline appears to accept either — a source reading, not a measurement.
 
 `denise_sprites.v:484`:
 

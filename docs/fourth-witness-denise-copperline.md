@@ -235,3 +235,28 @@ NM-HRM-007 (49-word hires fetch), NM-HRM-008 (playfield-1 collision),
 NM-HRM-011 (PAL vertical blank), NM-HRM-016 and NM-HRM-017 (SuperHires colour
 encoding). Those need a reading rather than a grep, and this pass did not do one.
 Saying so is cheaper than a half-answer.
+
+## What a grep could not settle, and what that means for the dashes
+
+The seven findings left unchecked above were searched for in both sources. What
+came back was enough to say *where* the answer lives and not enough to say what
+it is, so they keep their dashes rather than a guess:
+
+- **NM-HRM-006 and NM-HRM-007 (DDF).** Copperline's DDF sequencer is fully split
+  by chipset — `ddf_sequencer.rs:175` branches into `process_signal_ecs` or
+  `process_signal_ocs`, and `:336` gives OCS its own state teardown. So the
+  question *is* modelled there. Whether DDFSTRT bit H3 is gated by resolution or
+  by chipset needs the state machine read, not a pattern match.
+- **NM-HRM-011 (PAL vertical blank).** Copperline models a *programmable*
+  vertical blank (`agnus.rs:920`), which is a different thing from the fixed
+  figure Table 3-13 gives. Comparing them needs care about which one the manual's
+  29 is about.
+- **NM-HRM-016 and NM-HRM-017 (SuperHires colour).** Copperline has a test named
+  `shres_playfield_output_resolves_each_35ns_sample_through_the_palette`, so it
+  models SuperHires palette resolution — but a test name is not an
+  implementation reading.
+- **NM-HRM-001, NM-HRM-005, NM-HRM-008.** Nothing decisive found by search.
+
+**A dash in a finding's table means nobody has read that source for that
+finding.** It does not mean the source is silent, and it should not be quoted as
+if it were.
