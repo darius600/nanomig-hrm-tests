@@ -931,42 +931,42 @@ int main(int argc, char** argv) {
 // failed. This package has no required-red assertion - every proposition
 // it turned into an assertion is one the RTL was measured to satisfy.
 //
-// MUTATION 0 stimulus red: assertion 0's INTENA write pattern changed from
+// MUTATION TEST-DATA-DELIVERY stimulus red: assertion 0's INTENA write pattern changed from
 //   0x2AAA to 0x2AAB (one bit different) while the read-back oracle
 //   (`back == 0x2AAA`) was untouched -> FAIL, back reads 0x2AAB, the
 //   comparison fails; 8 passed, 1 failed.
-// MUTATION 1 stimulus red: assertion 1's per-channel pulse changed from
+// MUTATION AUDIO-INTERRUPT-SIGNAL-ROUNDTRIP stimulus red: assertion 1's per-channel pulse changed from
 //   `pulse_pin(BIT_AUD0 + ch)` to `pulse_pin(BIT_AUD0 + ((ch + 1) % 4))` (a
 //   channel-index rotation) while the read-back still checks channel ch's
 //   own audpen bit -> FAIL, every channel's audpen sample now belongs to
 //   its neighbour instead of itself; 8 passed, 1 failed.
-// MUTATION 2 stimulus red: assertion 2's INTREQ-path probe changed from
+// MUTATION REGISTER-MAP-ADDRESS-ACCESS-OWNER stimulus red: assertion 2's INTREQ-path probe changed from
 //   `pulse_pin(BIT_AUD2)` to `pulse_pin(BIT_AUD1)` while the INTREQR check
 //   still reads bit 9 (AUD2) -> FAIL, bit 9 never gets set; 8 passed, 1
 //   failed.
-// MUTATION 3 stimulus red: assertion 3's first (matching-positions) scenario
+// MUTATION SHARED-BIT-LAYOUT-INTENA-INTREQ stimulus red: assertion 3's first (matching-positions) scenario
 //   changed its INTENA enable from BIT_AUD0 to BIT_AUD1 while still pulsing
 //   BIT_AUD0 -> FAIL, the positions no longer match, so the interrupt that
 //   was supposed to fire does not; 8 passed, 1 failed.
-// MUTATION 4 stimulus red: assertion 4's "two writes reach target" second
+// MUTATION SET-CLR-BIT15-SEMANTICS stimulus red: assertion 4's "two writes reach target" second
 //   write changed from setting BIT_DSKSYN to setting BIT_EXTER, while the
 //   target_mask oracle (RBF|DSKSYN) was untouched -> FAIL, the two writes
 //   now land on {AUD0 cleared, RBF, EXTER} - DSKSYN never gets set, so the
 //   result no longer equals the target; 8 passed, 1 failed.
-// MUTATION 5 stimulus red: assertion 5's audint pulse changed from 0xF to
+// MUTATION MASTER-ENABLE-BIT14-GATE stimulus red: assertion 5's audint pulse changed from 0xF to
 //   0x0 (nothing actually requested) while INTEN is still set afterward ->
 //   FAIL, _ipl stays 7/inactive instead of reaching level 4, because
 //   nothing was ever pending to gate through; 8 passed, 1 failed.
-// MUTATION 6 stimulus red: assertion 6's per-source enable changed from
+// MUTATION INTERRUPT-SOURCE-BIT-AND-PRIORITY-LEVEL-TABLE stimulus red: assertion 6's per-source enable changed from
 //   `(1 << s.bit)` to `(1 << ((s.bit + 1) % 15))` (an off-by-one bit
 //   position) for all 14 sources in the sweep -> FAIL, every source's
 //   enable now lands one bit away from its own request, so nothing in the
 //   whole table fires as expected; 8 passed, 1 failed.
-// MUTATION 7 stimulus red: assertion 7's VERTB probe changed from
+// MUTATION PENDING-BITS-POLLABLE-INDEPENDENT-OF-ENABLE stimulus red: assertion 7's VERTB probe changed from
 //   `pulse_pin(BIT_VERTB)` to `pulse_pin(BIT_BLIT)` while the poll check
 //   still reads bit 5 (VERTB) -> FAIL, bit 5 never becomes pending; 8
 //   passed, 1 failed.
-// MUTATION 8 stimulus red: assertion 8's initial pulse changed from
+// MUTATION STICKY-UNTIL-EXPLICIT-CLEAR stimulus red: assertion 8's initial pulse changed from
 //   `pulse_pin(BIT_AUD1)` to `pulse_pin(BIT_AUD2)` while the sticky-bit
 //   check still reads bit 8 (AUD1) -> FAIL, bit 8 is never set in the
 //   first place, so "stayed set" is false from the very first sample; 8

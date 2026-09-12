@@ -150,7 +150,7 @@
 // MUTATION CH0-CH3-ROUTE-RIGHT stimulus green: built with -DMUT_CH03=1, which drives the test's stimulus into channels 1 and 2 instead of 0 and 3 while still comparing against rdatasum -> rdatasum now equals the driven sum, flipping green. Reverted, baseline (red) restored.
 // MUTATION SAMPLE-RANGE-MIN-128 stimulus red: built with -DMUT_SMIN=1, which drives sample0=0 instead of -128 -> the expected extremal product (-8064) no longer matches (0), assertion goes red. Reverted, baseline restored.
 // MUTATION SAMPLE-RANGE-MAX-127 stimulus red: built with -DMUT_SMAX=1, which drives sample0=0 instead of +127 -> the expected extremal product (8001) no longer matches, assertion goes red. Reverted, baseline restored.
-// MUTATION TABLE-5-9-HAS-65-LEVELS stimulus red: built with -DMUT_COUNT=1, which skips the table row for volume 32 in the coverage loop -> the coverage count drops to 64 instead of 65, assertion goes red. Reverted, baseline restored.
+// MUTATION TABLE-5-9-HAS-65-VOLUME-LEVELS stimulus red: built with -DMUT_COUNT=1, which skips the table row for volume 32 in the coverage loop -> the coverage count drops to 64 instead of 65, assertion goes red. Reverted, baseline restored.
 // MUTATION FIGURE-AXIS-LOWER-BOUND: no record -- this is a note() (a measurement recorded for the reader, not a checks.expect()), matching hrm/ch4-attached-sprites/'s own convention that a declined/non-pass-fail record carries no mutation entry.
 
 #include <cmath>

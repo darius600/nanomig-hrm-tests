@@ -965,33 +965,33 @@ int main(int argc, char** argv) {
 // failed. The one failure is assertion 9, LCH-OCS-THREE-BIT-READING-
 // DOES-NOT-HOLD, which is REQUIRED to be red per FINDING CANDIDATE 1 above.
 //
-// MUTATION 0 stimulus red: the read-back after channel ch's own grant
+// MUTATION TEST-DATA-DELIVERY stimulus red: the read-back after channel ch's own grant
 //   changed from `h.read_pointer(ch)` to `h.read_pointer((ch + 1) % 4)` (the
 //   `want[]` oracle constants left untouched) -> FAIL, "order_ok" breaks
 //   because every channel's read now samples its neighbour instead of
 //   itself; 8 passed, 2 failed (assertion 0 newly red, assertion 9 still red
 //   at baseline).
-// MUTATION 1 stimulus red: the right-register probe's hpos changed from
+// MUTATION SLOT-PER-CHANNEL-PER-LINE stimulus red: the right-register probe's hpos changed from
 //   `SLOT_HPOS[ch]` to `SLOT_HPOS[(ch + 1) % 4]` while `audio_dmal` and the
 //   DAT[ch] comparison still target channel ch -> FAIL, the grant never
 //   lands on ch's own slot so `granted` reads false for every channel;
 //   8 passed, 2 failed.
-// MUTATION 2 stimulus red: the second write_reg in the block changed from
+// MUTATION WORD-ALIGNED-FETCH-AND-LC-PAIR stimulus red: the second write_reg in the block changed from
 //   `write_reg(AUD0LCH, 0x0015)` to `write_reg(AUD1LCH, 0x0015)` (a
 //   one-character channel-index typo) while channel 0 is what gets read
 //   back -> FAIL, both "low survived" and "high took the LCH write" break
 //   because channel 0 never receives the second write at all; 8 passed,
 //   2 failed.
-// MUTATION 3 stimulus red: the fourth grant() call's restart flag changed
+// MUTATION LOCATION-REGISTER-VS-WORKING-POINTER stimulus red: the fourth grant() call's restart flag changed
 //   from false (advance) to true (restart) -> FAIL, p4 lands back on v1
 //   instead of v0+3, breaking "rewrite does not disturb an active transfer";
 //   8 passed, 2 failed.
-// MUTATION 4 stimulus red: the walked-bit write's target changed from
+// MUTATION LCL-LOW-15-BITS stimulus red: the walked-bit write's target changed from
 //   `write_reg(LCL[ch], ...)` to `write_reg(LCL[(ch + 1) % 4], ...)` (a
 //   channel-index typo, oracle untouched) -> FAIL, channel ch's own pointer
 //   never receives any of the fifteen walked bits, so every one of the 4x15
 //   sub-checks fails; 8 passed, 2 failed.
-// MUTATION 5 stimulus red, WITH A GENUINE FIXTURE GAP FOUND ALONG THE WAY.
+// MUTATION REGISTER-MAP-ADDRESSES-AND-AGNUS-DECODE stimulus red, WITH A GENUINE FIXTURE GAP FOUND ALONG THE WAY.
 //   First attempt: the LCL write target changed from `LCL[ch]` to
 //   `LCL[(ch + 2) % 4]` (oracle untouched) against the assertion as it stood
 //   at that point -> RESULT: 9 passed, 1 failed - the mutation did NOT turn
@@ -1011,19 +1011,19 @@ int main(int argc, char** argv) {
 //   correctly breaks in the closing sweep; 8 passed, 2 failed. The fixture
 //   fix is committed; the reported baseline and every other mutation in this
 //   list were run against the fixed version.
-// MUTATION 6 stimulus red: the "bit1 only" write changed from 0x0002 to
+// MUTATION POINTER-LSB-ALWAYS-ZERO stimulus red: the "bit1 only" write changed from 0x0002 to
 //   0x0000 (identical to the base-case write) -> FAIL, "bit1_does_change_it"
 //   becomes false because the two measurements are now identical by
 //   construction, not because of a real gate - correctly catching that this
 //   mutation makes the control meaningless; 8 passed, 2 failed.
-// MUTATION 7 stimulus red: the long-word-alignment table's channel-2 entry
+// MUTATION POINTER-REGISTER-SPACE-LONGWORD stimulus red: the long-word-alignment table's channel-2 entry
 //   changed from 0x0C0 to 0x0C1 (one byte off) -> FAIL, 0x0C1 % 4 != 0;
 //   8 passed, 2 failed.
-// MUTATION 8 stimulus red: the walked bit range changed from 0..4 (five
+// MUTATION LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS stimulus red: the walked bit range changed from 0..4 (five
 //   bits) to 0..2 (three bits) -> FAIL, "all_four_channels_identical" breaks
 //   because `survivors` measures 3, not 5, on every channel; 8 passed,
 //   2 failed.
-// MUTATION 9 stimulus red, diagnosed rather than simply reported as "stayed
+// MUTATION LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD stimulus red, diagnosed rather than simply reported as "stayed
 //   red" per the same rule hrm/agnus_blitter_ecs's header documents for its
 //   own required-reds (assertion 9 is already required-red at baseline, so a
 //   mutation that leaves it red proves nothing by itself): the probed bit
