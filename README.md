@@ -120,13 +120,21 @@ through the pipeline, 24 did not.**
 | 6 — Blitter | 14 | all through the **pipeline**; the hand-written blitter tests that preceded them were superseded |
 | 7 / 8 and module-level tests | 24 | by hand |
 
-**Chapter 5's coverage figure is a floor, not a measurement of record.** At least
-869 of its 970 testable claims are cited by an assertion that ran and printed the
-id; the rest is a limit of how that was measured, and eighteen ids were removed
-from assertions deliberately, each with the fixture it would need. The reasoning
-is in the pipeline repository's `work/2026-09-12_ch5_coverage.md`. A coverage
-number that counts ids named anywhere in a source — including in comments — is
-the thing that file exists to stop being quoted.
+**Chapter 5's coverage figure is 923 of its 970 testable claims**, and it comes
+from a per-claim ledger that is committed rather than from a number that is
+remembered: 923 cited by an assertion that ran and graded PASS or FAIL, 5
+recorded by a measurement that was deliberately not graded, and 42 not covered —
+each of the 42 listed with the fixture it would need. Twenty-four ids were taken
+off assertions on purpose, on one rule: **an id whose claim bundles a clause this
+package does not test is withdrawn whole, not kept with a caveat in the prose.**
+Naming an id inside a passing assertion in order to disclaim it still puts the id
+on a graded line, and an independent validator caught six that were being counted
+as covered by the very sentence calling them uncovered.
+
+The reasoning, the ledger and the four earlier measurements that were wrong are
+in the pipeline repository's `work/2026-09-12_ch5_coverage.md`. A coverage number
+that counts ids named anywhere in a source — including in comments — is the thing
+that file exists to stop being quoted.
 
 **The pipeline** means two blind readings of the same pages by two different
 models, every quotation anchored mechanically in the source text, an attack on
