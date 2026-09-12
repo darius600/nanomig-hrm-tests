@@ -1,28 +1,42 @@
-# What is in here
+# What is in here, and what each document is for
 
-Five documents. Four of them exist because a red test is not self-explanatory:
-someone reading `8 failed` needs to know what the manual says, what the RTL does,
-whether anyone else agrees, and who decides. One is a record of tests that no
-longer exist.
+Six documents. A red test is not self-explanatory: someone reading `FAIL` needs
+to know what the manual says, what the RTL does, whether anyone else agrees, and
+who decides. Five of these answer that. One is a record of tests that no longer
+exist.
 
-Read them in this order if you have just seen the suite go red.
+Each entry below says what the document *is*, so an instruction is not mistaken
+for a record:
 
-| | |
-|---|---|
-| [`findings.md`](findings.md) | **Start here.** Every finding, with the measurement that produced it and the manual page it contradicts. Written so a red result is readable without access to the private workspace where the `FPGA-nnn` numbers are assigned. |
-| [`rtl-decisions.md`](rtl-decisions.md) | The nine open findings stated as the manual's words, what NanoMig measurably does, the assertion that measures it, and what WinUAE and vAmiga do about the same question — with verified file-and-line citations into both emulators. This is the document written for a developer who has to decide something. |
-| [`third-witness.md`](third-witness.md) | When an emulator may be consulted at all, and when it may not. The manual is the oracle; an emulator is admitted only to decide between two sentences of the manual that disagree with each other. NM-HRM-001 was withdrawn this way and NM-HRM-002 restored. |
-| [`test-inventory.md`](test-inventory.md) | Which of the 50 tests came through the pipeline and which are hand-written, by name, and the review backlog. A green means different things in the two layers, and this is where that difference is written down. |
+- **reference** — look things up in it. It describes what is true now.
+- **decision support** — written for someone who has to choose what to do.
+- **method** — the rule for when something is allowed.
+- **record** — what was true on the date in its title. Not an instruction, and
+  not to be updated to match today; that is how a repository loses the ability to
+  say when something changed.
+
+## If you have just watched the suite go red
+
+Read them in this order.
+
+| | | |
+|---|---|---|
+| [`findings.md`](findings.md) | reference | **Start here.** A register table of all 23 findings — key, subject, status, package, third witness — then one entry per finding with its measurement and the manual page it contradicts. Written so a red result is readable without access to anything outside this repository. |
+| [`rtl-decisions.md`](rtl-decisions.md) | decision support | Six findings stated as the manual's words, what NanoMig measurably does, the assertion that measures it, and what WinUAE and vAmiga do about the same question — with verified file-and-line citations into both emulators. The document for a developer who has to decide something. |
+| [`third-witness.md`](third-witness.md) | method | When an emulator may be consulted at all, and when it may not. The manual is the oracle; an emulator is admitted only to decide between two sentences of the manual that disagree with each other. NM-HRM-001 was withdrawn this way and NM-HRM-002 restored. |
+| [`third-witness-ch3-ch6.md`](third-witness-ch3-ch6.md) | decision support | The same comparison carried out for chapters 3 and 6, ten findings at a time, sorted by which side the two emulators fall on. Section **A** is where both emulators agree with the manual and NanoMig is the outlier — the strongest case for looking at the RTL. Section **B** is where both agree with NanoMig and the printed sentence is the outlier. Section **C** is where the two emulators disagree with each other and settle nothing. |
+| [`test-inventory.md`](test-inventory.md) | reference | Which of the 87 packages came through the pipeline and which are hand-written, by name, and the review backlog. A green means different things in the two layers, and this is where that difference is written down. |
 
 ## Record
 
-| | |
-|---|---|
-| [`blitter-prior-art.md`](blitter-prior-art.md) | The eight `agnus_blitter_*` tests that existed before chapter 6 went through the pipeline, read one by one to decide what each was worth. Three were extended into pipeline packages and five were superseded and deleted, each only after its replacement was green from a clean build. The tests are gone; the reasoning is why the deletions were safe. |
+| | | |
+|---|---|---|
+| [`blitter-prior-art.md`](blitter-prior-art.md) | record | The eight `agnus_blitter_*` tests that existed before chapter 6 went through the pipeline, read one by one to decide what each was worth. Three were extended into pipeline packages and five were superseded and deleted, each only after its replacement was green from a clean build. The tests are gone; the reasoning is why the deletions were safe. |
 
 ## Where the rest of it is
 
 The method that produces the pipeline tests — the claim extraction, the gates,
 the mutation campaign, and an honest account of what all that does and does not
-guarantee — is in the [`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline)
-repository, not here. This repository holds the tests and the findings.
+guarantee — is in the
+[`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) repository,
+not here. This repository holds the tests and the findings.

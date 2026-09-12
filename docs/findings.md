@@ -20,59 +20,10 @@ test is the thing being fixed there, not the finding. Telling the two apart is
 the whole discipline — the question is never "does this pass?" but "does the
 printed page require what this asserts?".
 
-## Validation, 11.09.2026 — read this before any finding below
-
-An independent validator (Codex Sol, which wrote none of these tests) audited the
-built packages against the printed manual. **Seven of the thirteen findings did not
-survive in the form they were written.** Every disposition was re-checked against
-the manual page by the lead before being accepted; none was taken on the
-validator's word, and each affected finding carries its own note below.
-
-| | findings |
-|---|---|
-| **Hold as test-backed findings** | F01, F02, F03, F06, F10 |
-| **Hold with a correction** | F11 (evidential count) |
-| **Source observations, not test-backed** | F05, F09 |
-| **Downgraded, then restored once the witness was fixed** | F12 |
-| **Withdrawn** | F04, F07, F08, F13 |
-| **Established while correcting one of them** | **F14** |
-
-**F02's evidence was sharpened on 11.09.2026.** Page 80 does not merely give the
-number 49; it gives the reason — *"because the rightmost limit remains ($D8) and
-only one word is fetched at this limit"*. The package measured only the total (50,
-not 49). A second assertion now measures the mechanism the sentence names, and it
-is red for a sharper reason: the hires word count is structurally even, so 49 is
-not individually reachable at all — 48 and 50 are, 49 is not. The finding is the
-same; the evidence now matches the clause the manual actually argues from.
-
-Every withdrawal was also carried back into its package the same day, so no test
-is left asserting something the manual does not say. Three of those corrections
-answered the question the withdrawal raised: with an expectation the page
-actually supports, **F04 and F07 turn green** — the implementation was right and
-the oracle was not — and **F05's claim became a recorded decline**, because no
-faithful assertion could be written without importing an RTL constant.
-
-**F08 is the instructive one.** It asserted that SPRxCTL bits 3 *and* 4 are live.
-Bit 3 the manual itself calls `(unimplemented)`; bit 4 it specifies. Split apart,
-bit 3 is declined and bit 4 stays red on a claim that holds — recorded as F14.
-The original finding pointed at something real and described it incorrectly, and
-only reading the printed page again separated the two. That is the whole case for
-this step.
-
-Four of the withdrawals share one cause: **the assertion, not the RTL, was wrong.**
-Each read a permission or a silence in the manual as a requirement — "not used" as
-"reads zero", a bare mnemonic as a mandated effect, "ECS-only" as "must be live",
-in one case even where the manual prints the word *unimplemented*. A red result is
-a finding only where the manual actually says otherwise.
-
-The two source-only downgrades share a different cause, and it is the one this
-pipeline exists to prevent: **an expected value that came from the implementation.**
-F05 computes `227.5 CCK × 2 hpos-ticks/CCK`, taking the factor 2 from the RTL's
-internal representation. F12 is its mirror image — an assertion that could not have
-passed against a perfect implementation, because it tested a bit *rearrangement*
-using a value made of identical bits. **F12 is the one that came back:** given a
-witness whose nibbles differ top-half from bottom-half, it is still red, and the
-finding now rests on a measurement that could have gone the other way.
+> **A validation round on 11.09.2026 revised seven of chapter 3's thirteen
+> findings**, and every affected entry below carries its own note. The round's
+> own account is at the end of this file, under
+> [Record: the validation round of 11.09.2026](#record-the-validation-round-of-11092026).
 
 ## The finding keys
 
@@ -122,29 +73,29 @@ specialist rules on it.
 
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
-| NM-HRM-001 | PAL field terminates at 313 lines, not 312 | **withdrawn** 07.09. | `hrm/agnus_beamcounter` | both agree with the RTL; Table 7-5 sanctions 313 |
-| NM-HRM-002 | audio channels on the wrong stereo side | **red** | `hrm/paula_audio_mixer` | both side with chapter 5, against the RTL |
-| NM-HRM-003 | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | neither narrows a pointer by chipset at all |
-| NM-HRM-004 | ECS danger bit admits too small a range | **red** | `hrm/agnus_copper_move_range`, `hrm/agnus_copper_move_sweep` | both block below `$80` regardless of chipset |
-| NM-HRM-005 | WAIT and SKIP take longer than the manual states | **red** | `hrm/agnus_copper_cycle_times`, `hrm/agnus_copper_cycles` | vAmiga gives NanoMig's three numbers |
-| NM-HRM-006 | DDFSTRT bit H3 gated by chipset, not by resolution | **red** | `hrm/ch3-ddf-fetch-window` | **B5** -- both with NanoMig |
-| NM-HRM-007 | hires fetch cannot reach the manual's 49 words | **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** -- both with NanoMig, at 50 |
-| NM-HRM-008 | playfield-1 collision depends on playfield 2 | **red** | `hrm/ch3-collision-registers` | **B1** -- both with NanoMig |
-| NM-HRM-009 | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** 11.09. | `hrm/ch3-collision-registers` | not read |
-| NM-HRM-010 | the scan line is a whole number of colour clocks | source observation | `hrm/ch3-beam-counters-and-blanking` | not read |
-| NM-HRM-011 | PAL vertical blanking is 26 lines, manual says 29 | **red** | `hrm/ch3-beam-counters-and-blanking` | **B6** -- both with NanoMig |
-| NM-HRM-012 | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** 11.09. | `hrm/ch3-sprite-registers` | not read |
-| NM-HRM-013 | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn** 11.09., split into NM-HRM-019 | `hrm/ch3-sprite-registers` | not read |
-| NM-HRM-014 | the manual applies its own ECS pointer note inconsistently | source observation | `hrm/ch3-register-map-agnus` | not read |
-| NM-HRM-015 | BRDNTRAN is declared and never connected | **red** | `hrm/ch3-horizontal-display-window` | **B3** -- both with NanoMig |
-| NM-HRM-016 | SuperHires sprite colour encoding not implemented | **red** | `hrm/ch3-shres-sprite-colour-encoding` | **A1** -- both with the manual |
-| NM-HRM-017 | SuperHires bitplane colour encoding not implemented | **red** | `hrm/ch3-shres-bitplane-colour-encoding` | **A1** -- both with the manual |
-| NM-HRM-018 | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** 11.09. | `hrm/ch3-bplcon0-display-modes` | not read |
-| NM-HRM-019 | SPRxCTL bit 4 (SHSH1) is not implemented | **red** | `hrm/ch3-sprite-registers` | **C2** -- the emulators disagree |
-| NM-HRM-020 | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** -- both with the manual |
-| NM-HRM-021 | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1** -- the emulators disagree |
-| NM-HRM-022 | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** -- both with NanoMig |
-| NM-HRM-023 | the ATTACH bit is honoured in the even sprite, not only the odd | **red** | `hrm/ch4-attached-sprites` | not read |
+| [NM-HRM-001](#nm-hrm-001--pal-frame-has-one-line-too-many) | PAL field terminates at 313 lines, not 312 | **withdrawn** 07.09. | `hrm/agnus_beamcounter` | both agree with the RTL; Table 7-5 sanctions 313 |
+| [NM-HRM-002](#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | audio channels on the wrong stereo side | **red** | `hrm/paula_audio_mixer` | both side with chapter 5, against the RTL |
+| [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | neither narrows a pointer by chipset at all |
+| [NM-HRM-004](#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | ECS danger bit admits too small a range | **red** | `hrm/agnus_copper_move_range`, `hrm/agnus_copper_move_sweep` | both block below `$80` regardless of chipset |
+| [NM-HRM-005](#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | WAIT and SKIP take longer than the manual states | **red** | `hrm/agnus_copper_cycle_times`, `hrm/agnus_copper_cycles` | vAmiga gives NanoMig's three numbers |
+| [NM-HRM-006](#nm-hrm-006--ddfstrtddfstop-bit-h3-is-gated-by-the-chipset-not-by-resolution) | DDFSTRT bit H3 gated by chipset, not by resolution | **red** | `hrm/ch3-ddf-fetch-window` | **B5** -- both with NanoMig |
+| [NM-HRM-007](#nm-hrm-007--the-hires-fetch-width-cannot-reach-the-manuals-maximum-of-49-words) | hires fetch cannot reach the manual's 49 words | **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** -- both with NanoMig, at 50 |
+| [NM-HRM-008](#nm-hrm-008--playfield-1-collision-depends-on-playfield-2-by-design-undocumented) | playfield-1 collision depends on playfield 2 | **red** | `hrm/ch3-collision-registers` | **B1** -- both with NanoMig |
+| [NM-HRM-009](#nm-hrm-009--clxdat-bit-15-reads-as-1-not-0) | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** 11.09. | `hrm/ch3-collision-registers` | not read |
+| [NM-HRM-010](#nm-hrm-010--the-horizontal-line-is-a-whole-number-of-colour-clocks-not-2275) | the scan line is a whole number of colour clocks | source observation | `hrm/ch3-beam-counters-and-blanking` | not read |
+| [NM-HRM-011](#nm-hrm-011--pal-vertical-blanking-is-26-lines-the-manual-says-29) | PAL vertical blanking is 26 lines, manual says 29 | **red** | `hrm/ch3-beam-counters-and-blanking` | **B6** -- both with NanoMig |
+| [NM-HRM-012](#nm-hrm-012--sprxctl-bit-0-sh0-is-honoured-at-every-resolution-not-only-superhires) | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** 11.09. | `hrm/ch3-sprite-registers` | not read |
+| [NM-HRM-013](#nm-hrm-013--sprxctl-bits-3-and-4-are-read-nowhere-in-the-module) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn** 11.09., split into NM-HRM-019 | `hrm/ch3-sprite-registers` | not read |
+| [NM-HRM-014](#nm-hrm-014--the-manual-applies-its-own-ecs-pointer-extension-inconsistently) | the manual applies its own ECS pointer note inconsistently | source observation | `hrm/ch3-register-map-agnus` | not read |
+| [NM-HRM-015](#nm-hrm-015--brdntran-is-declared-and-never-connected) | BRDNTRAN is declared and never connected | **red** | `hrm/ch3-horizontal-display-window` | **B3** -- both with NanoMig |
+| [NM-HRM-016](#nm-hrm-016--superhires-sprite-colour-encoding-is-not-implemented) | SuperHires sprite colour encoding not implemented | **red** | `hrm/ch3-shres-sprite-colour-encoding` | **A1** -- both with the manual |
+| [NM-HRM-017](#nm-hrm-017--superhires-bitplane-colour-encoding-is-not-implemented) | SuperHires bitplane colour encoding not implemented | **red** | `hrm/ch3-shres-bitplane-colour-encoding` | **A1** -- both with the manual |
+| [NM-HRM-018](#nm-hrm-018--ecs-bplcon0-bit-4-sprhwrm-has-no-effect) | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** 11.09. | `hrm/ch3-bplcon0-display-modes` | not read |
+| [NM-HRM-019](#nm-hrm-019--sprxctl-bit-4-shsh1-is-not-implemented) | SPRxCTL bit 4 (SHSH1) is not implemented | **red** | `hrm/ch3-sprite-registers` | **C2** -- the emulators disagree |
+| [NM-HRM-020](#nm-hrm-020--bltsizv-is-not-gated-on-ecs-while-its-two-siblings-are) | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** -- both with the manual |
+| [NM-HRM-021](#nm-hrm-021--doff-bltcon1-bit-7-has-no-observable-effect) | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1** -- the emulators disagree |
+| [NM-HRM-022](#nm-hrm-022--bltxpth-carries-five-high-bits-in-both-chipsets) | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** -- both with NanoMig |
+| [NM-HRM-023](#nm-hrm-023--the-attach-bit-is-honoured-in-the-even-sprite-not-only-the-odd) | the ATTACH bit is honoured in the even sprite, not only the odd | **red** | `hrm/ch4-attached-sprites` | not read |
 
 Chapters 1, 7 and 8 have not been extracted, so no finding below comes from
 them. The register is a record of what has been looked at, not of what is there.
@@ -159,11 +110,11 @@ contradicted elsewhere in the same manual.
 
 | Finding | Origin | Standing |
 |---|---|---|
-| NM-HRM-003 | pipeline | corroborated — p273 and p309 give two different widths |
-| NM-HRM-004 | pipeline | corroborated — two editions carry the appendix C sentence; challenged 11.09. and upheld |
-| NM-HRM-005 | pipeline | corroborated — p20 and p275, units settled on p275 itself |
-| NM-HRM-002 | hand-written, Aug | **stands** — the manual contradicts itself; two emulators settle it against the RTL |
-| NM-HRM-001 | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
+| [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | pipeline | corroborated — p273 and p309 give two different widths |
+| [NM-HRM-004](#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | pipeline | corroborated — two editions carry the appendix C sentence; challenged 11.09. and upheld |
+| [NM-HRM-005](#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | pipeline | corroborated — p20 and p275, units settled on p275 itself |
+| [NM-HRM-002](#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | hand-written, Aug | **stands** — the manual contradicts itself; two emulators settle it against the RTL |
+| [NM-HRM-001](#nm-hrm-001--pal-frame-has-one-line-too-many) | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
 
 Both August findings rested on a manual that says two different things, and
 neither could be decided by reading the manual harder. They were settled by a
@@ -612,9 +563,9 @@ says.**
 
 | Finding | Manual | Both emulators, and NanoMig |
 |---|---|---|
-| NM-HRM-003 | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
-| NM-HRM-004 | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
-| NM-HRM-005 | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
+| [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
+| [NM-HRM-004](#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
+| [NM-HRM-005](#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
 
 The citations are in [`third-witness.md`](third-witness.md).
 
@@ -1187,3 +1138,65 @@ wrong in detail.
 lead before recording. Its existence is the argument for the validation step: the
 original finding pointed at something real and described it incorrectly, and only
 reading the printed page again separated the two.*
+
+---
+
+*What follows is a record of one day, not an instruction. It is kept because
+the reasoning that revised a finding is part of the result — and it is at the
+end rather than the front because a reader looking up a finding should reach
+the register first.*
+
+## Record: the validation round of 11.09.2026
+
+An independent validator (Codex Sol, which wrote none of these tests) audited the
+built packages against the printed manual. **Seven of the thirteen findings did not
+survive in the form they were written.** Every disposition was re-checked against
+the manual page by the lead before being accepted; none was taken on the
+validator's word, and each affected finding carries its own note below.
+
+| | findings |
+|---|---|
+| **Hold as test-backed findings** | F01, F02, F03, F06, F10 |
+| **Hold with a correction** | F11 (evidential count) |
+| **Source observations, not test-backed** | F05, F09 |
+| **Downgraded, then restored once the witness was fixed** | F12 |
+| **Withdrawn** | F04, F07, F08, F13 |
+| **Established while correcting one of them** | **F14** |
+
+**F02's evidence was sharpened on 11.09.2026.** Page 80 does not merely give the
+number 49; it gives the reason — *"because the rightmost limit remains ($D8) and
+only one word is fetched at this limit"*. The package measured only the total (50,
+not 49). A second assertion now measures the mechanism the sentence names, and it
+is red for a sharper reason: the hires word count is structurally even, so 49 is
+not individually reachable at all — 48 and 50 are, 49 is not. The finding is the
+same; the evidence now matches the clause the manual actually argues from.
+
+Every withdrawal was also carried back into its package the same day, so no test
+is left asserting something the manual does not say. Three of those corrections
+answered the question the withdrawal raised: with an expectation the page
+actually supports, **F04 and F07 turn green** — the implementation was right and
+the oracle was not — and **F05's claim became a recorded decline**, because no
+faithful assertion could be written without importing an RTL constant.
+
+**F08 is the instructive one.** It asserted that SPRxCTL bits 3 *and* 4 are live.
+Bit 3 the manual itself calls `(unimplemented)`; bit 4 it specifies. Split apart,
+bit 3 is declined and bit 4 stays red on a claim that holds — recorded as F14.
+The original finding pointed at something real and described it incorrectly, and
+only reading the printed page again separated the two. That is the whole case for
+this step.
+
+Four of the withdrawals share one cause: **the assertion, not the RTL, was wrong.**
+Each read a permission or a silence in the manual as a requirement — "not used" as
+"reads zero", a bare mnemonic as a mandated effect, "ECS-only" as "must be live",
+in one case even where the manual prints the word *unimplemented*. A red result is
+a finding only where the manual actually says otherwise.
+
+The two source-only downgrades share a different cause, and it is the one this
+pipeline exists to prevent: **an expected value that came from the implementation.**
+F05 computes `227.5 CCK × 2 hpos-ticks/CCK`, taking the factor 2 from the RTL's
+internal representation. F12 is its mirror image — an assertion that could not have
+passed against a perfect implementation, because it tested a bit *rearrangement*
+using a value made of identical bits. **F12 is the one that came back:** given a
+witness whose nibbles differ top-half from bottom-half, it is still red, and the
+finding now rests on a measurement that could have gone the other way.
+
