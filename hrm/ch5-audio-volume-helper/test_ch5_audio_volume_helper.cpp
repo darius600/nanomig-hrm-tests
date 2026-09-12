@@ -62,12 +62,18 @@
 //   zero-volume samples (-1) changed from 0 to 1 (the expected 0 for that
 //   sample left untouched) -> FAIL, actual -1 != expected 0; every other
 //   assertion PASS.
-// MUTATION VOLUME-64-OUT-OF-SCOPE stimulus red: the truncated operand
-//   changed from 64 to 65 (the hardcoded expected 0 left untouched) ->
-//   FAIL, 65 & 0x3F == 1, 1 != 0; every other assertion PASS. This is a
-//   fixed-point arithmetic fact about a six-bit field, not a DUT
-//   measurement, but the mutation was still applied and reverted so this
-//   check is proven non-vacuous like every other assertion in this file.
+//
+// VOLUME-64-OUT-OF-SCOPE, REPAIRED per NM-HRM audit V-11: this block was a
+//   host-arithmetic assertion (`64 & 0x3F == 0`, computed in C++, never
+//   applied to the Verilated module) that inflated the green/non-vacuous
+//   count without being a DUT check. It is now DEMOTED to a note() -- a
+//   real DUT observation (eval_case(127, 64) against the Verilated module),
+//   printed as MEASURED, carrying no claim id, no pass/fail, and no
+//   mutation record, per BRIEF.md's own rule that a row the manual does not
+//   rule on gets a recorded number, not an assertion. See the block's own
+//   comment, just above it, for why neither candidate expected value (the
+//   0 a real 6-bit register write would truncate to, or the 8128 this
+//   fixture's unmasked port actually produces) has an HRM oracle behind it.
 
 #include <algorithm>
 #include <cstdint>
@@ -86,6 +92,7 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -170,18 +177,50 @@ int main(int argc, char** argv) {
             "the signal, not a stuck-low fixture.");
     }
 
-    // ---------------- VOLUME-64-OUT-OF-SCOPE (boundary demonstration, not a claim) ----------------
+    // ---------------- VOLUME-64-OUT-OF-SCOPE (boundary demonstration, DEMOTED from an assertion to a note -- NM-HRM audit V-11) ----------------
+    // V-11 found the previous version of this block computed `64 & 0x3F` in
+    // host C++ and asserted the result was zero, never applying 64 to the
+    // Verilated module at all -- its mutation changed a host constant, so it
+    // was a host-arithmetic green, not a DUT check. Repaired by choosing the
+    // "recorded note" option BRIEF.md itself names for exactly this
+    // situation ("a row the manual does not rule on gets a recorded number,
+    // not a pass/fail"): Appendix A gives no ruling for register values
+    // above 64 at this six-bit port, so there is no manual oracle for a
+    // pass/fail here. It is not left as pure host arithmetic either -- the
+    // note below now actually drives volume=64 into the DUT's volume[5:0]
+    // port via eval_case() and reports what paula_audio_volume.v itself
+    // produces, which turns out to be informative on its own: the Verilated
+    // harness does NOT itself truncate an out-of-range value to the port's
+    // declared width (unlike a real hardware register write, which would),
+    // so 64 passes through unmasked and multiplies as if it were 64, not 0
+    // -- reproducing the exact 127*64=8128 artifact CANDIDATES.md already
+    // recorded under "What is NOT a finding: Volume 64 at
+    // paula_audio_volume". Asserting either 0 (the truncation a real
+    // register write would perform) or 8128 (what this fixture happens to
+    // pass through) would both be asserting a fact with no HRM oracle behind
+    // it, so this stays a note(), with no claim id and no mutation record --
+    // matching hrm/ch4-attached-sprites/'s own convention for note()s.
     {
-        const int truncated = 64 & 0x3F;  // this port is six bits: bit 6 is not wired
-        checks.expect(truncated == 0,
-            "VOLUME-64-OUT-OF-SCOPE [boundary demonstration, not an HRM claim - "
-            "volume 64 is not asserted at this boundary]: writing 64 into "
-            "paula_audio_volume's six-bit volume[5:0] port truncates to 0 (64 mod 64 "
-            "= 0) - this is why an earlier attempt at this boundary measured "
-            "127*64=8128, a product the hardware cannot produce here "
-            "(CANDIDATES.md, 'What is NOT a finding: Volume 64 at "
-            "paula_audio_volume'). Volume 64 is asserted, red, at the mixer/PWM "
-            "boundary in hrm/ch5-audio-volume-scale instead.");
+        const int at_64 = eval_case(127, 64);
+        const int at_0 = eval_case(127, 0);
+        checks.note(
+            "VOLUME-64-OUT-OF-SCOPE [boundary demonstration, not an HRM "
+            "claim, not asserted - volume 64 is not asserted at this "
+            "boundary]: driving volume=64 directly into paula_audio_volume's "
+            "six-bit volume[5:0] port (a real Verilated eval() of the DUT, "
+            "not host arithmetic) with sample=127 gives out=" +
+            std::to_string(at_64) + " (== 127*64, i.e. unmasked - compare "
+            "out=" + std::to_string(at_0) + " for volume=0, which is what a "
+            "real six-bit hardware register write would have reduced 64 to "
+            "before this module ever saw it). The Verilated harness does not "
+            "enforce the port's declared width the way a real register write "
+            "does, so this reproduces the exact 127*64=8128 artifact "
+            "CANDIDATES.md already recorded (\"What is NOT a finding: Volume "
+            "64 at paula_audio_volume\") - a fixture boundary fact, not a "
+            "hardware behaviour the manual rules on. Volume 64 is asserted, "
+            "red, at the mixer/PWM boundary in hrm/ch5-audio-volume-scale "
+            "instead, where the DUT's own OR-collapse (not fixture leakage) "
+            "is what is measured.");
     }
 
     std::cout << "Checked " << (checks.passed + checks.failed)
