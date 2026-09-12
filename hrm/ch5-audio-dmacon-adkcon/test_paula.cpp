@@ -342,8 +342,38 @@
 //   genuinely different) -- proving the check is not vacuously red
 //   regardless of what address it reads. Rebuilt with no flags: 18/2
 //   restored.
-// MUTATION DMACON-SETCLR-SET, ADKCON-SETCLR-SET, ADKCON-SETCLR-PRESERVE,
-//   ADKCON-ADDRESS-WRITE-ONLY-AND-CHIP, ADKCONR-ADDRESS-READONLY-AND-CHIP,
+// These five had no stimulus mutation until 12.09.2026. They carried one
+// comma-separated prose entry saying no -DMUT_ flag had been written for them,
+// which is not the record grammar and was never parsed as one -- and the gate
+// could not see the five assertions either, because their labels formatted
+// numbers with an inline lambda. The two blind spots covered for each other:
+// the gate did not read the assertions, so it never asked for their records.
+// Found by an independent validator after the labels were made readable.
+//
+// Each flag below changes only the STIMULUS. Baseline 18 passed / 2 failed;
+// every one of the five gives 17/3, with exactly its own assertion newly red.
+// MUTATION DMACON-SETCLR-SET stimulus red: built with -CFLAGS -DMUT_DMSET=1,
+//   which writes DMACON as 0x0203 instead of 0x8203 -- SET/CLR clear, so the
+//   three enables are cleared rather than set and audio_dmal never shows them.
+//   17/3, only this assertion newly red. Reverted, 18/2 restored.
+// MUTATION ADKCON-SETCLR-SET stimulus red: built with -CFLAGS -DMUT_ADKSET=1,
+//   which writes ADKCON as 0x00FF instead of 0x80FF -- the eight attach bits
+//   are cleared rather than set, and ADKCONR reads back without them. 17/3,
+//   only this assertion newly red. Reverted, 18/2 restored.
+// MUTATION ADKCON-SETCLR-PRESERVE stimulus red: built with -CFLAGS
+//   -DMUT_ADKPRES=1, which makes the CLR-mode write 0x005F instead of 0x000A,
+//   so it also clears bits 0,2,4,6 -- the very bits the assertion requires to
+//   be preserved. 17/3, only this assertion newly red. Reverted, 18/2 restored.
+// MUTATION ADKCON-ADDRESS-WRITE-ONLY-AND-CHIP stimulus red: built with -CFLAGS
+//   -DMUT_ADKADDR=1, which writes the UARTBRK bit at ADKCON_W+2 instead of
+//   ADKCON_W -- the neighbouring address -- so txd never goes low and the
+//   side effect that proves the address decode disappears. 17/3, only this
+//   assertion newly red. Reverted, 18/2 restored.
+// MUTATION ADKCONR-ADDRESS-READONLY-AND-CHIP stimulus red: built with -CFLAGS
+//   -DMUT_ADKRONLY=1, which seeds ADKCON with 0x0033 instead of 0x8033 --
+//   SET/CLR clear, so the seed bits are never set and the read-back value the
+//   read-only check compares against is not there. 17/3, only this assertion
+//   newly red. Reverted, 18/2 restored.
 // MUTATION ADKCON-ATTACH-MEASUREMENT-BASIS-CONTROL none impossible: this is the
 //   control case for ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS, whose purpose
 //   is to hold the measurement basis fixed while the attach bits move. Any
@@ -352,15 +382,14 @@
 //   as `none` rather than left out: an unrecorded mutation is indistinguishable
 //   from a forgotten one. The paragraph below is the reasoning in full.
 //
-//   ADKCON-ATTACH-MEASUREMENT-BASIS-CONTROL: no dedicated -DMUT_ flag was
-//   written for these -- each is a direct
-//   register read-modify-write check (SET/CLR bit semantics, address
-//   decode, read-only enforcement) whose own logic is exercised end-to-end
-//   by the assertion itself, and DMACON-DECODED-BY-PAULA/DMACON-ADDRESS-
-//   AND-WRITE-ONLY's shared MUT_CHIP entry above covers the address-decode
-//   half of this family. Flagged here rather than silently omitted: if
-//   budget allows a later pass, each still wants its own named flag rather
-//   than riding on a sibling's.
+//   The paragraph that used to stand here said no dedicated -DMUT_ flag had
+//   been written for the five SET/CLR and address assertions, that each was
+//   "exercised end-to-end by the assertion itself", and that a sibling's
+//   MUT_CHIP entry covered the address-decode half. It ended by asking for a
+//   later pass giving each its own flag. That later pass is the five records
+//   above, and the reasoning it replaced was wrong in the way this suite keeps
+//   finding: an assertion exercising its own logic is not evidence that the
+//   assertion would notice if the logic changed.
 
 #include <cstdint>
 #include <iostream>
@@ -369,6 +398,27 @@
 
 #include <verilated.h>
 #include "Vpaula.h"
+
+
+// A label is string literals and simple concatenation. These fourteen sites
+// used to format their numbers with an immediately-invoked lambda:
+//
+//     [&]{ char b[8]; snprintf(b,8,"%x",v); return std::string(b); }()
+//
+// which is valid C++ and reads fine, and which put semicolons inside the
+// expect() call outside any string literal. check_gates' call regex cannot
+// cross those, so it read 12 of this file's 20 assertions and reported on the
+// package as though it had read all of it. Five of the eight it could not see
+// had no valid per-assertion mutation record -- the blindness was hiding
+// missing evidence, not a false alarm.
+//
+// The buffer also grew from 8 to 16: "%x" of a 32-bit value needs 9 bytes with
+// its terminator, so the original form could truncate.
+static std::string hex(unsigned v) {
+    char b[16];
+    snprintf(b, sizeof b, "%x", v);
+    return std::string(b);
+}
 
 // MUT_ATTACH: replay ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS's own
 // mutation record (-DMUT_ATTACH=1). Leaves channel 0 and channel 1's own
@@ -866,7 +916,11 @@ int main(int argc, char** argv) {
     // ---------------- DMACON-SETCLR-SET ----------------
     {
         Harness h;
+#if MUT_DMSET
+        h.write_reg(DMACON_W, 0x0203);  // stimulus mutation: SET/CLR=0, so this CLEARS the three bits.
+#else
         h.write_reg(DMACON_W, 0x8203);  // SET: DMAEN, AUD0EN, AUD1EN (all in one write, bit 15=SET/CLR=1).
+#endif
         uint32_t mask_after_set = h.observe_audio_dmal(STRHOR_PERIOD * 4 + 8);
         checks.expect((mask_after_set & 0x3) == 0x3,
             "DMACON-SETCLR-SET: writing DMACON with bit 15 (SET/CLR) = 1 "
@@ -885,7 +939,7 @@ int main(int argc, char** argv) {
             "selects set versus clear behavior for bits written as 1.' "
             "(appendix A p.278, 5-appA-p278.c11, A-dmacon.b15). measured "
             "dmacon bits (via audio_dmal)=0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",mask_after_set); return std::string(b); }() + ".");
+            hex(mask_after_set) + ".");
     }
 
     // ---------------- DMACON-SETCLR-PRESERVE ----------------
@@ -933,14 +987,18 @@ int main(int argc, char** argv) {
             "the same non-selected-bits-untouched rule] (p.144, "
             "5-p144.c8); 'DMACON bits written as zero remain unchanged.' "
             "(appendix A p.278, 5-appA-p278.c12). measured before=0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",before); return std::string(b); }() +
-            " after=0x" + [&]{ char b[8]; snprintf(b,8,"%x",after); return std::string(b); }() + ".");
+            hex(before) +
+            " after=0x" + hex(after) + ".");
     }
 
     // ---------------- ADKCON-SETCLR-SET ----------------
     {
         Harness h;
+#if MUT_ADKSET
+        h.write_reg(ADKCON_W, 0x00FF);  // stimulus mutation: SET/CLR=0, so the eight bits are cleared, not set.
+#else
         h.write_reg(ADKCON_W, 0x80FF);  // SET: bits 0-7 (the audio attach/modulate bits).
+#endif
         uint16_t back = h.read_reg(ADKCONR_W);
         checks.expect((back & 0x00FF) == 0x00FF,
             "ADKCON-SETCLR-SET: writing ADKCON with bit 15 (SET/CLR)=1 and "
@@ -949,14 +1007,18 @@ int main(int argc, char** argv) {
             "written with a 1 get set or cleared. Bits written with a "
             "zero are always unchanged.' (appendix A p.265, "
             "5-appA-p265.c9, 5-appA-p265.c10, A-adkcon.b15). measured "
-            "ADKCONR=0x" + [&]{ char b[8]; snprintf(b,8,"%x",back); return std::string(b); }() + ".");
+            "ADKCONR=0x" + hex(back) + ".");
     }
 
     // ---------------- ADKCON-SETCLR-PRESERVE ----------------
     {
         Harness h;
         h.write_reg(ADKCON_W, 0x8055);  // SET: bits 0,2,4,6.
+#if MUT_ADKPRES
+        h.write_reg(ADKCON_W, 0x005F);  // stimulus mutation: also clears bits 0,2,4,6, which must be preserved.
+#else
         h.write_reg(ADKCON_W, 0x000A);  // CLR: bits 1,3 (written 0 elsewhere) -- must leave 0,2,4,6 alone.
+#endif
         uint16_t back = h.read_reg(ADKCONR_W);
         checks.expect((back & 0x00FF) == 0x0055,
             "ADKCON-SETCLR-PRESERVE: after ADKCON bits 0,2,4,6 are set, a "
@@ -964,7 +1026,7 @@ int main(int argc, char** argv) {
             "0) leaves bits 0,2,4,6 set -- 'Bits written with a zero are "
             "always unchanged.' (appendix A p.265, 5-appA-p265.c11, "
             "A-adkcon.b15). measured ADKCONR=0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",back); return std::string(b); }() + ".");
+            hex(back) + ".");
     }
 
     // ---------------- DMAEN-AND-AUDxEN-BOTH-REQUIRED ----------------
@@ -1026,7 +1088,7 @@ int main(int argc, char** argv) {
             bool ok = mask == expected;
             all_ok = all_ok && ok;
             detail += " ch" + std::to_string(i) + "=0x" +
-                [&]{ char b[8]; snprintf(b,8,"%x",mask); return std::string(b); }();
+                hex(mask);
         }
         checks.expect(all_ok,
             "AUDxEN-BIT-MAPS-TO-OWN-CHANNEL: a walking-one sweep -- SET "
@@ -1129,7 +1191,7 @@ int main(int argc, char** argv) {
         uint16_t after_write = h.read_reg(DMACON_W);
         checks.expect(before_write == 0 && side_effect_seen && after_write == 0,
             "DMACON-ADDRESS-AND-WRITE-ONLY: writing at word address 0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",DMACON_W); return std::string(b); }() +
+            hex(DMACON_W) +
             " ($096>>1, i.e. byte address $096) is the write that reaches "
             "auden (proving the address decode is exactly $096), yet "
             "reading back that same address, before or after, returns 0 "
@@ -1196,13 +1258,13 @@ int main(int argc, char** argv) {
             "DMACONR-NOT-DECODED-BY-PAULA: after ADKCON is set to 0x33 and "
             "DMACON is written 0x8203 (DMAEN, AUD0EN, AUD1EN all set), "
             "reading word address 0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",DMACONR_W); return std::string(b); }() +
+            hex(DMACONR_W) +
             " ($002>>1) through paula.v's own read multiplexer "
             "(paula.v:152: uartdata_out | intdata_out | diskdata_out | "
             "adkconr -- no DMACONR term at all) still returns 0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",v); return std::string(b); }() +
+            hex(v) +
             ", identical to the pre-write idle readback 0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",idle); return std::string(b); }() +
+            hex(idle) +
             " -- paula.v does not decode DMACONR at all, so the 'P' half "
             "of the chip-ownership claim cannot hold at this boundary. "
             "'DMACONR 002 R A P DMA control (and blitter status) read' "
@@ -1217,13 +1279,17 @@ int main(int argc, char** argv) {
     {
         Harness h;
         uint16_t before_write = h.read_reg(ADKCON_W);
+#if MUT_ADKADDR
+        h.write_reg(ADKCON_W + 2, 0x8800);  // stimulus mutation: the neighbouring address, not ADKCON.
+#else
         h.write_reg(ADKCON_W, 0x8800);  // SET bit 11 (UARTBRK) -- a visible side effect (txd) proves the address.
+#endif
         h.ticks(8);
         bool side_effect_seen = h.dut->txd == 0;
         uint16_t after_write = h.read_reg(ADKCON_W);
         checks.expect(before_write == 0 && side_effect_seen && after_write == 0,
             "ADKCON-ADDRESS-WRITE-ONLY-AND-CHIP: writing word address 0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",ADKCON_W); return std::string(b); }() +
+            hex(ADKCON_W) +
             " ($09E>>1, byte address $09E, this fixture's own paula.v) "
             "with bit 11 set forces txd low (its own side effect, "
             "proving the address and that Paula decodes it), yet reading "
@@ -1249,7 +1315,11 @@ int main(int argc, char** argv) {
     // ---------------- ADKCONR-ADDRESS-READONLY-AND-CHIP ----------------
     {
         Harness h;
+#if MUT_ADKRONLY
+        h.write_reg(ADKCON_W, 0x0033);  // stimulus mutation: SET/CLR=0, so the seed bits never get set.
+#else
         h.write_reg(ADKCON_W, 0x8033);  // SET bits 0,1,4,5.
+#endif
         uint16_t readback = h.read_reg(ADKCONR_W);
         // Attempt a "write" at ADKCONR's own address: paula.v has no
         // write decode there, so the stored register must not move.
@@ -1257,7 +1327,7 @@ int main(int argc, char** argv) {
         uint16_t after_attempted_write = h.read_reg(ADKCONR_W);
         checks.expect((readback & 0x33) == 0x33 && after_attempted_write == readback,
             "ADKCONR-ADDRESS-READONLY-AND-CHIP: reading word address 0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",ADKCONR_W); return std::string(b); }() +
+            hex(ADKCONR_W) +
             " ($010>>1) after ADKCON bits 0,1,4,5 are set returns exactly "
             "those bits, proving both the address and that Paula "
             "implements it; a subsequent write attempt AT that same "
@@ -1270,9 +1340,9 @@ int main(int argc, char** argv) {
             "register read' (appendix B p.289, 5-appB-p289.c6, "
             "5-appB-p289.c7, 5-appB-p289.c8, 5-appB-p289.c9, "
             "B-adkconr.addr, B-adkconr.acc, B-adkconr.chip). measured "
-            "readback=0x" + [&]{ char b[8]; snprintf(b,8,"%x",readback); return std::string(b); }() +
+            "readback=0x" + hex(readback) +
             " after_attempted_write=0x" +
-            [&]{ char b[8]; snprintf(b,8,"%x",after_attempted_write); return std::string(b); }() + ".");
+            hex(after_attempted_write) + ".");
     }
 
     // ---------------- ADKCON-BIT11-UARTBRK-FORCES-TXD-LOW ----------------
