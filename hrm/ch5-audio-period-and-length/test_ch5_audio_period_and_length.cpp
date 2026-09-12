@@ -126,16 +126,47 @@
 //   changed and the observed result. No expected value, quotation, or
 //   comparison threshold is ever changed by a mutation -- only stimulus.
 //
-// CLAIM COVERAGE: all 53 records of claims.jsonl are cited below, in full,
-//   inside a CHECK(...) call's own text -- merged into 31 assertions where
-//   two, three or four ids extract the IDENTICAL quoted sentence (sol's
+// CLAIM COVERAGE: all 53 original records of claims.jsonl are cited below, in
+//   full, inside a CHECK(...) call's own text -- merged into 31 assertions
+//   where two, three or four ids extract the IDENTICAL quoted sentence (sol's
 //   page-based lot and opus's page/glossary-based lot independently read
 //   the same page-164 "period counter is reloaded" prose, the same
 //   page-165 glossary entries, and the same page-158 "doubling the period/
 //   sample size" sentences). Merging is by identical quotation only, and
 //   every merged id still appears, spelled out, inside its group's CHECK
 //   text -- coverage is counted per id, not per group. No claim in this
-//   package's 53 is declined; classify already marked all 53 "testable".
+//   package's original 53 is declined; classify already marked all 53
+//   "testable".
+//
+// GAP CLOSURE (V-10 reclassification): nine further claims, previously
+//   discarded as `not-hardware` on the reasoning that no port carries a
+//   Hertz-valued frequency, are asserted below as the DIMENSIONLESS ratios
+//   they actually state (a ratio needs no seconds-valued constant; only an
+//   absolute Hz figure does):
+//     G_FORMULA_P141 (5-p141.c7, 5-p141.c8, 5-rate.c11, page 141) and
+//       G_FORMULA_P142 (5-p142.c1, 5-p142.c2, 5-per.c13, page 142) assert
+//       the tick-domain half of "Period value = sample/desired interval /
+//       clock interval [= clock constant / samples per second]": measured
+//       sample interval, in cck ticks, equals the programmed AUDxPER, at a
+//       value not already exercised by G_PER_VALUE/G_FORMULA above. The
+//       clock-constant/samples-per-second half of each printed equation is
+//       an absolute-Hz statement and stays out of this boundary -- see NOT
+//       ASSERTED (2) below; it is not re-derived or approximated here.
+//     G_OCTAVE_RATIO (5-p159.c8, 5-scale.c25, page 159) asserts only the
+//       ratio the sentence states: AUDxPER held fixed, AUDxLEN halved, the
+//       measured block duration halves. The octave/pitch reading of that
+//       sentence is a separate, Hz-domain claim and is not asserted here.
+//     G_INTERRUPT_RATE (5-eff.c3, page 153) asserts that a longer AUDxLEN
+//       table yields fewer of this channel's own buffered-interrupt-request
+//       pulses per identical cck-tick window than a shorter one -- measured
+//       on `intreq2`, the internal register `intreq`/AUDxIR buffers
+//       (--public-flat-rw; the raw port pulses too unconditionally at
+//       DMA-enable/pointer-reload to serve as a per-block marker on this
+//       harness, the same limitation hrm/ch5-audio-channel-registers'
+//       dma_advance() already documents for this identical port on this
+//       identical fixture).
+//   All nine are measured and asserted in cck ticks alone; none computes a
+//   frequency or introduces a seconds-valued constant.
 //
 // NOT ASSERTED (measured and reported only, per this chapter's own brief):
 //   (1) AUDxLEN=1 specifically. The G_LEN_VALUE family below asserts
@@ -162,17 +193,18 @@
 //       specialists, not because any claim in this package's 53 asserts it.
 //
 // RESULTS: built and run under WSL (verilator 5.052) against
-//   $(NANOMIG)/src/minimig-aga/paula_audio_channel.v. 31/31 assertions
-//   GREEN, 0 red, 0 declined. Every one of the 53 claim ids is cited inside
-//   a passing CHECK's own text. No red result was found against this
-//   package's own claims -- Chapter 5's registered deviations (state-code
-//   identity, the interrupt moment, volume's two disagreeing paths) belong
-//   to other packages' own claims.jsonl files, not this one's.
+//   $(NANOMIG)/src/minimig-aga/paula_audio_channel.v. 35/35 assertions
+//   GREEN, 0 red, 0 declined. Every one of the 62 claim ids (53 original +
+//   9 from the V-10 gap closure) is cited inside a passing CHECK's own text.
+//   No red result was found against this package's own claims -- Chapter 5's
+//   registered deviations (state-code identity, the interrupt moment,
+//   volume's two disagreeing paths) belong to other packages' own
+//   claims.jsonl files, not this one's.
 //
-// MUTATION LOG: 18 mutation records, one per assertion GROUP (a handful of
+// MUTATION LOG: 22 mutation records, one per assertion GROUP (a handful of
 //   groups share one shared, unparametrised scenario function across
 //   several near-identical numeric cases -- see MUTATION METHOD above and
-//   each record's own detail line for which case was mutated). 15 stimulus
+//   each record's own detail line for which case was mutated). 19 stimulus
 //   mutations went red as required (the assertion's own expected value,
 //   unchanged, disagreed with the mutated run's measurement); 3
 //   (5-p165.c11/percount, 5-p165.c12/perfin, F54.even's starvation variant)
@@ -182,7 +214,9 @@
 //   different AUDPER and observing no change), and the third because a
 //   responder that stops mid-block starves the state machine into waiting
 //   forever rather than producing a wrong count to compare. None was
-//   manufactured by touching an expected value.
+//   manufactured by touching an expected value. The four gap-closure
+//   mutations (G_FORMULA_P141, G_FORMULA_P142, G_OCTAVE_RATIO,
+//   G_INTERRUPT_RATE) all went red as expected; none is `impossible`.
 
 #include <cstdint>
 #include <cstdio>
@@ -319,6 +353,18 @@ struct Harness {
     int pbufld1()    { return dut->rootp->paula_audio_channel__DOT__pbufld1; }
     int silence()    { return dut->rootp->paula_audio_channel__DOT__silence; }
     int AUDxDR()     { return dut->rootp->paula_audio_channel__DOT__AUDxDR; }
+    // Internal, REGISTERED "buffered interrupt request" (RTL's own comment,
+    // paula_audio_channel.v:67), used only by G_INTERRUPT_RATE below. The
+    // sibling package hrm/ch5-audio-channel-registers already measured, at
+    // this same fixture, that the top-level `intreq` PORT is unusable as a
+    // once-per-block marker (it pulses unconditionally at DMA-enable/first
+    // pointer-reload, unrelated to AUDxLEN, and its periodic per-block pulse
+    // is a same-step, unlatched combinational read that this tick()
+    // discipline cannot reliably externally observe -- see that package's
+    // dma_advance() header comment). `intreq2` is what AUDxIR/intreq
+    // actually buffers: fully synchronous, set on the delivery that
+    // completes a length block and self-clearing one period-cycle later.
+    int intreq2()    { return dut->rootp->paula_audio_channel__DOT__intreq2; }
 };
 
 // ---------------------------------------------------------------------------
@@ -1094,6 +1140,154 @@ int main(int argc, char** argv) {
                       "AUDLEN stimulus changed from 8 to 5 on the doubled side; checked against "
                       "the ORIGINAL expected factor-of-two relation (== 2x the AUDLEN=4 "
                       "duration): mismatched as expected, reverted.");
+        }
+    }
+
+    // -------------------------------------------------------------------
+    // GAP CLOSURE (V-10 reclassification) -- four further assertion groups,
+    // nine claim ids, all measured in cck ticks alone. See this file's own
+    // header for why each was previously discarded and why the discard was
+    // too broad.
+    // -------------------------------------------------------------------
+
+    // -------------------------------------------------------------------
+    // G_FORMULA_P141 -- "Period value = sample interval / clock interval
+    // [= clock constant / samples per second]" (5-p141.c7, 5-p141.c8,
+    // 5-rate.c11): the dimensionless half only. AUDxPER=200 is not already
+    // exercised by G_PER_VALUE/G_FORMULA above.
+    // -------------------------------------------------------------------
+    {
+        PeriodRun r = runPeriod(/*audper*/200, 64, 0x5AA5, 5);
+        long gap = (r.changeT.size() >= 5) ? (r.changeT[4] - r.changeT[3]) : -1;
+        bool ok = (gap == 200);
+        std::ostringstream d;
+        d << "5-p141.c7 5-p141.c8 5-rate.c11 (p141) \"Period value = sample interval / clock "
+             "interval = clock constant / samples per second\" (dimensionless half only -- the "
+             "ratio side, not the clock-constant/samples-per-second Hz side, which stays outside "
+             "this cck-tick boundary, see NOT ASSERTED (2) below): AUDxPER=200 -- measured gap "
+          << gap << " cck ticks between two steady-state sample changes, i.e. sample interval == "
+             "200 clock intervals, exactly AUDxPER";
+        CHECK(d.str(), ok);
+        {
+            PeriodRun m = runPeriod(201, 64, 0x5AA5, 5); // stimulus: AUDPER changed
+            long mgap = (m.changeT.size() >= 5) ? (m.changeT[4] - m.changeT[3]) : -1;
+            bool mutRed = (mgap != 200); // checked against the ORIGINAL expected gap 200
+            MUTATION("5-p141.c7", "stimulus", mutRed ? "red" : "green",
+                      "AUDPER stimulus changed from 200 to 201; checked against the ORIGINAL "
+                      "expected gap 200: mismatched (201) as expected, reverted.");
+        }
+    }
+
+    // -------------------------------------------------------------------
+    // G_FORMULA_P142 -- page 142 reprints the identical formula for a
+    // DESIRED interval rather than a measured sample interval
+    // (5-p142.c1, 5-p142.c2, 5-per.c13): same dimensionless ratio, a fresh
+    // AUDxPER value (77) so this is a real, independent measurement rather
+    // than a restatement of G_FORMULA_P141's own numbers.
+    // -------------------------------------------------------------------
+    {
+        PeriodRun r = runPeriod(/*audper*/77, 64, 0x5AA5, 5);
+        long gap = (r.changeT.size() >= 5) ? (r.changeT[4] - r.changeT[3]) : -1;
+        bool ok = (gap == 77);
+        std::ostringstream d;
+        d << "5-p142.c1 5-p142.c2 5-per.c13 (p142) \"Period value = desired interval / clock "
+             "interval = clock constant / samples per second\" (dimensionless half only, same "
+             "caveat as 5-p141.c7 above): AUDxPER=77 -- measured gap " << gap << " cck ticks "
+             "between two steady-state sample changes, exactly AUDxPER";
+        CHECK(d.str(), ok);
+        {
+            PeriodRun m = runPeriod(78, 64, 0x5AA5, 5); // stimulus: AUDPER changed
+            long mgap = (m.changeT.size() >= 5) ? (m.changeT[4] - m.changeT[3]) : -1;
+            bool mutRed = (mgap != 77); // checked against the ORIGINAL expected gap 77
+            MUTATION("5-p142.c1", "stimulus", mutRed ? "red" : "green",
+                      "AUDPER stimulus changed from 77 to 78; checked against the ORIGINAL "
+                      "expected gap 77: mismatched (78) as expected, reverted.");
+        }
+    }
+
+    // -------------------------------------------------------------------
+    // G_OCTAVE_RATIO -- "Notice that in each octave period values are the
+    // same but the sample size is halved" (5-p159.c8, 5-scale.c25): the
+    // RATIO only -- same AUDxPER, half AUDxLEN, half block duration. The
+    // octave/pitch reading of the sentence is a separate Hz-domain claim
+    // and is not asserted here. AUDxPER=10 is not already exercised by
+    // G_LEN_FACTOR2 (AUDxPER=6) or G_FORMULA (AUDxPER=4) above.
+    // -------------------------------------------------------------------
+    {
+        auto wordFnFull = [](int i) { return (uint16_t)(0xD000 + i); };
+        auto wordFnHalf  = [](int i) { return (uint16_t)(0xE000 + i); };
+        DmaRun rFull = runDma(/*audlen*/16, /*audper*/10, /*nRestarts*/4, wordFnFull);
+        DmaRun rHalf = runDma(/*audlen*/8,  /*audper*/10, /*nRestarts*/4, wordFnHalf);
+        long durFull = (rFull.dmasT.size() >= 2)
+            ? (rFull.dmasT[rFull.dmasT.size()-1] - rFull.dmasT[rFull.dmasT.size()-2]) : -1;
+        long durHalf = (rHalf.dmasT.size() >= 2)
+            ? (rHalf.dmasT[rHalf.dmasT.size()-1] - rHalf.dmasT[rHalf.dmasT.size()-2]) : -1;
+        bool ok = (durHalf > 0) && (durFull == 2 * durHalf);
+        std::ostringstream d;
+        d << "5-p159.c8 5-scale.c25 (p159) \"Notice that in each octave period values are the same "
+             "but the sample size is halved\" (RATIO only -- same AUDxPER, half AUDxLEN, half "
+             "block duration; octave/pitch equivalence itself is a separate Hz-domain claim, not "
+             "asserted here): holding AUDxPER fixed at 10 and halving AUDxLEN from 16 to 8 halves "
+             "the measured block duration, " << durFull << " -> " << durHalf << " cck ticks, "
+             "exactly 2x";
+        CHECK(d.str(), ok);
+        {
+            auto wordFnMut = [](int i) { return (uint16_t)(0xF000 + i); };
+            DmaRun m = runDma(/*audlen*/9, /*audper*/10, /*nRestarts*/4, wordFnMut); // stimulus: 9 not 8
+            long mdurHalf = (m.dmasT.size() >= 2)
+                ? (m.dmasT[m.dmasT.size()-1] - m.dmasT[m.dmasT.size()-2]) : -1;
+            bool mutRed = (durFull != 2 * mdurHalf); // checked against the ORIGINAL relation durFull==2*durHalf
+            MUTATION("5-p159.c8", "stimulus", mutRed ? "red" : "green",
+                      "the halved side's AUDxLEN stimulus changed from 8 to 9 (AUDxPER, and the "
+                      "full-side AUDxLEN=16 run, unchanged); checked against the ORIGINAL expected "
+                      "2x relation (durFull == 2*durHalf): mismatched as expected, reverted.");
+        }
+    }
+
+    // -------------------------------------------------------------------
+    // G_INTERRUPT_RATE -- "[a longer table] minimiz[es] the number of
+    // interrupts to which the 680x0 must respond" (5-eff.c3): a longer
+    // AUDxLEN table yields fewer of this channel's own buffered-interrupt-
+    // request pulses (`intreq2`, see Harness::intreq2()'s own comment for
+    // why the raw `intreq` port is not used) per identical cck-tick window
+    // than a shorter one, at the same AUDxPER.
+    // -------------------------------------------------------------------
+    {
+        auto countIntreq2Edges = [](uint16_t audlen_val, uint16_t audper_val, long tickBudget) {
+            Harness h;
+            h.write_reg(REG_AUDPER, audper_val);
+            h.write_reg(REG_AUDVOL, 64);
+            h.write_reg(REG_AUDLEN, audlen_val);
+            h.dut->dmaena = 1;
+            int wordIdx = 0, count = 0, lastI2 = 0;
+            while (h.cck_ticks < tickBudget) {
+                bool freshRequest = h.dut->cck && h.AUDxDR();
+                h.outerStep();
+                int i2 = h.intreq2();
+                if (i2 && !lastI2) count++;
+                lastI2 = i2;
+                if (freshRequest) h.write_reg(REG_AUDDAT, (uint16_t)(0xC000 + (wordIdx++)));
+            }
+            return count;
+        };
+        const long window = 6000; // identical cck-tick window for both AUDxLEN values
+        int cShort = countIntreq2Edges(8,  4, window);
+        int cLong  = countIntreq2Edges(16, 4, window);
+        bool ok = cShort > 0 && cLong > 0 && cLong < cShort;
+        std::ostringstream d;
+        d << "5-eff.c3 (p153) \"[a longer table] minimiz[es] the number of interrupts to which "
+             "the 680x0 must respond\": over an identical " << window << "-cck-tick window at the "
+             "same AUDxPER=4, AUDxLEN=16 produced " << cLong << " buffered-interrupt-request "
+             "pulses (intreq2, --public-flat-rw) versus " << cShort << " for AUDxLEN=8 -- fewer "
+             "interrupts to service for the longer table, at the same DMA-answering rate";
+        CHECK(d.str(), ok);
+        {
+            int cLongMut = countIntreq2Edges(8, 4, window); // stimulus: long-side AUDxLEN=8, same as short
+            bool mutRed = !(cLongMut > 0 && cShort > 0 && cLongMut < cShort); // checked vs ORIGINAL long<short
+            MUTATION("5-eff.c3", "stimulus", mutRed ? "red" : "green",
+                      "the 'long' run's AUDxLEN stimulus changed from 16 to 8 (equal to the "
+                      "'short' run); checked against the ORIGINAL expected relation (long count < "
+                      "short count): the counts came out equal instead, as expected, reverted.");
         }
     }
 
