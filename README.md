@@ -150,7 +150,7 @@ and is now asserted as `B2s` in `hrm/agnus_copper_waitskip_range`.
 ## Layout
 
 ```
-hrm/            87 packages, each against a single module boundary
+hrm/            97 packages, each against a single module boundary
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
 docs/           what a red result means, and who decides — see docs/README.md
