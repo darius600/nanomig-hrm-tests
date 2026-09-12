@@ -62,19 +62,32 @@
 //   it even if there were one. See the build report for the same statement
 //   made to the lead directly.
 //
-// WHAT THIS PACKAGE RECORDS BUT DOES NOT ASSERT (per the task's own
-//   instruction, and confirmed against the RTL below): appendix A p.280
-//   gives bit 14 (INTEN) as "Master interrupt (enable only, no request)".
-//   paula_intcontroller.v implements the ENABLE half exactly as printed
-//   (assertion 5 below asserts it, and it is GREEN) but also implements a
-//   REQUEST half for the same bit - `intreq[14] <= tmp[14]` - that the
-//   manual's "no request" wording says should not exist. paula.v's own
-//   comment on the wire that carries this into the module calls it the
-//   "implementation of intreq[14] (Unreal needs it)", i.e. a deliberate
-//   compatibility addition, not an oversight. Per the task's explicit
-//   instruction this half is MEASURED, not asserted (see assertion 5's
-//   MEASURED block) - claims 5-appA-p280.c20 and A-int.b14 are cited there,
-//   not folded into a pass/fail check for the half that does not hold.
+// REPAIR (2026-09-12, following independent validation finding V-07): bit 14
+//   (INTEN) is "Master interrupt (enable only, no request)" (appendix A
+//   p.280) - TWO separable propositions in one sentence. The original build
+//   of this package asserted only the enable-gate half (assertion 5) but
+//   cited BOTH claim ids on that single passing assertion, then printed the
+//   "no request" half's known failure as a MEASURED-only line - so two
+//   claims whose full text is known to fail were reported covered by a
+//   green. That was wrong: a claim citation on an assertion means that
+//   assertion actually exercises it. The proposition is now split into two
+//   assertions, each with its own citation, its own control and its own
+//   mutation:
+//     5.  MASTER-ENABLE-BIT14-GATE      - the ENABLE half. GREEN (RTL
+//         conforms). Claims 5-appA-p280.c20, A-int.b14.
+//     5B. MASTER-BIT14-NO-REQUEST       - the "no request" half. RED, AND
+//         EXPECTED TO BE RED: paula_intcontroller.v:134 `intreq[14] <=
+//         tmp[14]` gives this bit a genuine request path (the RTL's own
+//         comment there calls it "undocumented interrupt"; paula.v's
+//         instantiation comment calls the same wire "implementation of
+//         intreq[14] (Unreal needs it)" - a deliberate compatibility
+//         addition, not an oversight, but still a deviation from the
+//         printed claim). Claims 5-appA-p280.c20, A-int.b14 - the SAME two
+//         ids as assertion 5, legitimately cited on both assertions because
+//         each half is now genuinely, separately exercised.
+//   This package's result moves from 9/9 green to 9 green / 1 red. The red
+//   is this project's product: it is the correct, honestly-reported outcome
+//   for a claim whose text the RTL does not fully satisfy.
 //
 // Non-goals: anything about paula_audio_channel's own state machine or the
 //   moment it decides to raise AUDxIR (separate packages' territory, and the
@@ -176,11 +189,19 @@
 //    pending, _ipl stays inactive (7) while INTEN (bit 14 of INTENA) is
 //    clear, and goes active the instant INTEN is set - a master gate over
 //    every other enable bit.
-//    NOT asserted (see the MEASURED block at this assertion's own site,
-//    and the header note above): the second half of the same two claims,
-//    "no request", which paula_intcontroller.v does not implement - a
-//    genuine REQUEST bit exists at intreq[14] in the RTL. Recording this
-//    rather than asserting it away is the task's explicit instruction.
+//    Claims: 5-appA-p280.c20, A-int.b14 .
+//
+// 5B. MASTER-BIT14-NO-REQUEST (same 2 claim ids; ASSERTS ONLY THE "NO
+//    REQUEST" HALF - added in the 2026-09-12 repair, see the header note
+//    above).
+//    Quote: appendix A p.280 "14 INTEN Master interrupt (enable only, no
+//    request)".
+//    Expected if NanoMig conforms: a plain SET write to INTREQ naming only
+//    bit 14 leaves INTREQR bit 14 at 0 - there is no request path for this
+//    bit to land in.
+//    ASSERTED, and EXPECTED RED: paula_intcontroller.v:134 gives bit 14 a
+//    real request path (`intreq[14] <= tmp[14]`); a SET write to it reads
+//    back set. The manual's "no request" half does not hold for this RTL.
 //    Claims: 5-appA-p280.c20, A-int.b14 .
 //
 // 6. INTERRUPT-SOURCE-BIT-AND-PRIORITY-LEVEL-TABLE (42 claim ids).
@@ -733,41 +754,61 @@ int main(int argc, char** argv) {
         std::snprintf(buf, sizeof(buf),
             "MASTER-ENABLE-BIT14-GATE, ENABLE HALF ONLY (appendix A p.280: "
             "\"14 INTEN Master interrupt (enable only, no request)\" - "
-            "ASSERTING ONLY THE ENABLE-GATE HALF; see the MEASURED, NOT "
-            "ASSERTED note printed separately below for the other half): "
-            "with all four audio bits enabled and pending, _ipl stayed 7 "
-            "(inactive) while INTEN was clear, and went active (_ipl=%d, "
-            "level 4) the instant INTEN was set with no other stimulus "
-            "changed - INTEN gates every other enable bit at once. "
+            "ASSERTING ONLY THE ENABLE-GATE HALF; the \"no request\" half "
+            "is assertion 5B below, its own assertion with its own claim "
+            "citation): with all four audio bits enabled and pending, _ipl "
+            "stayed 7 (inactive) while INTEN was clear, and went active "
+            "(_ipl=%d, level 4) the instant INTEN was set with no other "
+            "stimulus changed - INTEN gates every other enable bit at once. "
             "[claims: 5-appA-p280.c20, A-int.b14]",
             active_ipl);
         checks.expect(inactive_without_inten && active_with_inten, buf);
+    }
 
-        // MEASURED, NOT ASSERTED: the RTL also implements a REQUEST half for
-        // bit 14 (paula_intcontroller.v:134, `intreq[14] <= tmp[14]`, its
-        // own comment there reads "undocumented interrupt"), contrary to
-        // "no request". Printed as a measurement only - never gated through
-        // checks.expect(), per the task's explicit instruction not to
-        // assert this half away.
+    // ---------------- 5B. MASTER-BIT14-NO-REQUEST (EXPECTED RED) ----------
+    // Split out of assertion 5 per the 2026-09-12 repair (independent
+    // validation finding V-07): the enable half above is asserted and
+    // green; this is the "no request" half of the SAME appendix A p.280
+    // sentence, asserted on its own and EXPECTED TO GO RED, because
+    // paula_intcontroller.v:134 gives bit 14 a real request path that the
+    // manual's wording says should not exist.
+    {
+        Harness h;
         h.reset_registers();
+
+        // CONTROL, same write_reg/read_reg basis as the main check below:
+        // with bit 14 never written, INTREQR bit 14 reads 0 - proves this
+        // is a live 0/1 read, not a stuck bit that would make either
+        // outcome meaningless.
+        const uint16_t baseline_reqr = h.read_reg(INTREQR);
+        const bool control_starts_clear = ((baseline_reqr >> BIT_INTEN) & 1) == 0;
+
+        // MAIN CHECK: a plain SET write to INTREQ naming ONLY bit 14 must
+        // NOT make it pending, per "enable only, no request". It does.
         h.write_reg(INTREQ, 0x8000 | (1 << BIT_INTEN));  // SET, bit14 only
-        const uint16_t intreq14_readback = h.read_reg(INTREQR);
+        const uint16_t after_write = h.read_reg(INTREQR);
+        const bool no_request_created = ((after_write >> BIT_INTEN) & 1) == 0;
         h.reset_registers();
+
         std::snprintf(buf, sizeof(buf),
-            "MEASURED, NOT ASSERTED [claims: 5-appA-p280.c20, A-int.b14]: "
-            "appendix A p.280 gives bit 14 as \"enable only, no request\", "
-            "but a plain SET write to INTREQ naming only bit 14 (0x%04X) "
-            "reads back at INTREQR with bit 14 set (0x%04X) - a genuine "
-            "request landed, with no hardware pin anywhere on this module "
-            "feeding it (paula_intcontroller.v:134's own comment calls it "
-            "\"undocumented interrupt\"; paula.v's instantiation comment "
-            "calls the same wire \"implementation of intreq[14] (Unreal "
-            "needs it)\"). This half of the claim does NOT hold and is "
-            "recorded here as a measurement, not folded into a pass/fail "
-            "check, per this package's own task instruction.",
-            static_cast<unsigned>(0x8000 | (1 << BIT_INTEN)),
-            static_cast<unsigned>(intreq14_readback));
-        std::cout << buf << "\n";
+            "MASTER-BIT14-NO-REQUEST (appendix A p.280: \"14 INTEN Master "
+            "interrupt (enable only, no request)\" - ASSERTING ONLY THE "
+            "\"NO REQUEST\" HALF; the enable-gate half is assertion 5 "
+            "above, its own assertion with its own control and mutation): "
+            "control - with bit 14 never written, INTREQR bit 14 reads 0 "
+            "(0x%04X), proving this read is live and not stuck; main check "
+            "- a plain SET write to INTREQ naming only bit 14 must leave "
+            "INTREQR bit 14 at 0 under \"no request\", but it instead reads "
+            "back 0x%04X with bit 14 SET - paula_intcontroller.v:134 "
+            "`intreq[14] <= tmp[14]` gives this bit a genuine request path "
+            "(the RTL's own comment there calls it \"undocumented "
+            "interrupt\"; paula.v's instantiation comment calls the same "
+            "wire \"implementation of intreq[14] (Unreal needs it)\"), "
+            "contradicting the manual's \"no request\" wording. EXPECTED "
+            "RED: this is the deviation from the printed claim, not a "
+            "harness defect. [claims: 5-appA-p280.c20, A-int.b14]",
+            baseline_reqr, after_write);
+        checks.expect(control_starts_clear && no_request_created, buf);
     }
 
     // ---------------- 6. INTERRUPT-SOURCE-BIT-AND-PRIORITY-LEVEL-TABLE ----
@@ -926,10 +967,10 @@ int main(int argc, char** argv) {
 // what the module was ASKED TO DO was changed, per the build brief's own
 // rule that flipping an expected value proves nothing.
 //
-// Baseline, confirmed by a clean `make clean && make` immediately before
-// this series and reproduced after every single revert: 9 passed, 0
-// failed. This package has no required-red assertion - every proposition
-// it turned into an assertion is one the RTL was measured to satisfy.
+// Baseline for assertions 0-4 and 6-8, confirmed by a clean
+// `make clean && make` immediately before this series and reproduced after
+// every single revert: 9 passed, 0 failed (this was the whole package's
+// result before the 2026-09-12 repair below split assertion 5).
 //
 // MUTATION TEST-DATA-DELIVERY stimulus red: assertion 0's INTENA write pattern changed from
 //   0x2AAA to 0x2AAB (one bit different) while the read-back oracle
@@ -975,6 +1016,26 @@ int main(int argc, char** argv) {
 // Every mutation above was reverted immediately after observing its
 // printed result, and a final `diff` against the pre-mutation file showed
 // byte-identical content before a clean `make clean && make` reproduced
-// the 9 passed / 0 failed baseline one more time.
+// the 9 passed / 0 failed baseline (assertions 0-4, 6-8) one more time.
+//
+// ----------------------------------------------------------------------------
+// REPAIR (2026-09-12, V-07) - assertion 5B added. New whole-package baseline,
+// confirmed by a clean `make clean && make` before this mutation and
+// reproduced by another clean `make clean && make` after the revert below:
+// 9 passed, 1 failed (assertion 5B, MASTER-BIT14-NO-REQUEST, is the one
+// failure - EXPECTED, per its own header note and the RTL disclosure above).
+//
+// MUTATION MASTER-BIT14-NO-REQUEST stimulus green: assertion 5B's SET write
+//   changed from `(1 << BIT_INTEN)` to `(1 << BIT_TBE)` (a different,
+//   legitimate request bit) while the check still reads back bit 14 only
+//   -> PASS, INTREQR bit 14 stays 0 because bit 14 itself was never
+//   written (the control also still reads 0x0000, unaffected) -> whole
+//   package 10 passed, 0 failed. This is the expected DIRECTION for a
+//   baseline-red assertion's mutation: it proves the check is sensitive to
+//   what the module is asked to do (green under a stimulus that does not
+//   touch bit 14) rather than being permanently red regardless of input,
+//   which would make the red meaningless. Reverted immediately; a `diff`
+//   against the pre-mutation file showed byte-identical content, and a
+//   clean `make clean && make` reproduced 9 passed / 1 failed once more.
 // ============================================================================
 
