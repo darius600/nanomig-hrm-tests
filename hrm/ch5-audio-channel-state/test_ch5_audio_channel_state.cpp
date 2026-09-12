@@ -1473,7 +1473,12 @@ int main(int argc, char** argv) {
         {
             auto actualSeqSwap = sampleSequenceAfter(swapR.h, swapR.dma_on_tick);
             bool fixtureLiveSwap = isSubsequence(expectedSeq, actualSeqSwap);
-            MUTATION("[fixture]", "stimulus", (!fixtureLiveSwap) ? "red" : "green",
+            // The id must be the assertion's OWN leading id, not a placeholder.
+            // This record said "[fixture]", so the gate saw a mutation naming
+            // nothing it recognised and reported the liveness control as having
+            // no mutation at all -- the one assertion in the chapter whose whole
+            // job is to prove the data path before everything else leans on it.
+            MUTATION("FIXTURE-KNOWN-WORD-IN-ORDER", "stimulus", (!fixtureLiveSwap) ? "red" : "green",
                       "same word1-byte-swap rerun as 5-p164.c8's mutation; the expected in-order "
                       "16-byte sequence is " + std::string(fixtureLiveSwap?"still":"no longer") +
                       " a subsequence of what `sample` produced -- the liveness check is sensitive "

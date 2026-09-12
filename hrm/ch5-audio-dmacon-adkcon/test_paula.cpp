@@ -278,8 +278,15 @@
 //   -DMUT_AUDXEN=1, which makes channel 2's own walking-one step write bit 1
 //   instead of bit 2 -> 17/2, only this assertion newly red (measured
 //   ch2=0x2 instead of 0x4). Rebuilt with no flags: 18/1 restored.
-// MUTATION DMACON-DECODED-BY-PAULA / DMACON-ADDRESS-AND-WRITE-ONLY stimulus
-//   red: built with -CFLAGS -DMUT_CHIP=1, which writes to DMACON_W+1 (the
+// One edit, two assertions, so TWO records naming the same edit -- correct
+// attribution, not duplication. Written as one record with both ids joined by
+// "/" it matched nothing: the grammar is <id> <kind> <result> with no token
+// between the id and the kind, so both assertions read as unmutated.
+// MUTATION DMACON-DECODED-BY-PAULA stimulus red: built with -CFLAGS -DMUT_CHIP=1,
+//   which writes to DMACON_W+1 (the wrong address) instead of DMACON_W -> 17/2.
+//   See the DMACON-ADDRESS-AND-WRITE-ONLY record below for the same edit.
+// MUTATION DMACON-ADDRESS-AND-WRITE-ONLY stimulus red: built with -CFLAGS
+//   -DMUT_CHIP=1, which writes to DMACON_W+1 (the
 //   wrong address) instead of DMACON_W -> 17/2, only DMACON-ADDRESS-AND-
 //   WRITE-ONLY newly red (measured before=0 after=0 but side_effect_seen
 //   false, i.e. auden never moved) -- DMACON-DECODED-BY-PAULA, sharing the
@@ -315,8 +322,10 @@
 //   trial's own word (0x0101) instead of 0x7F7F -> 17/2, only this
 //   assertion newly red (measured peak1=63 peak2=63, no longer distinct).
 //   Rebuilt with no flags: 18/1 restored.
-// MUTATION DMA-ENABLED-CHANNEL-WITH-SUPPLIED-DATA-PRODUCES-SOUND stimulus
-//   red: built with -CFLAGS -DMUT_DMASOUND=1, which leaves AUD0EN clear
+// The whole token run must sit on ONE physical line: `//` is not whitespace, so
+// a record whose result token wrapped to the next comment line matched nothing.
+// MUTATION DMA-ENABLED-CHANNEL-WITH-SUPPLIED-DATA-PRODUCES-SOUND stimulus red:
+//   built with -CFLAGS -DMUT_DMASOUND=1, which leaves AUD0EN clear
 //   (DMAEN alone) in the DMACON write -> 17/2, only this assertion newly
 //   red (measured peak=0 answered_requests=0). Rebuilt with no flags: 18/1
 //   restored.
@@ -335,6 +344,14 @@
 //   restored.
 // MUTATION DMACON-SETCLR-SET, ADKCON-SETCLR-SET, ADKCON-SETCLR-PRESERVE,
 //   ADKCON-ADDRESS-WRITE-ONLY-AND-CHIP, ADKCONR-ADDRESS-READONLY-AND-CHIP,
+// MUTATION ADKCON-ATTACH-MEASUREMENT-BASIS-CONTROL none impossible: this is the
+//   control case for ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS, whose purpose
+//   is to hold the measurement basis fixed while the attach bits move. Any
+//   stimulus that changes what it measures destroys the comparison it exists to
+//   make, so there is no stimulus mutation that leaves it meaningful. Recorded
+//   as `none` rather than left out: an unrecorded mutation is indistinguishable
+//   from a forgotten one. The paragraph below is the reasoning in full.
+//
 //   ADKCON-ATTACH-MEASUREMENT-BASIS-CONTROL: no dedicated -DMUT_ flag was
 //   written for these -- each is a direct
 //   register read-modify-write check (SET/CLR bit semantics, address

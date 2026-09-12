@@ -696,7 +696,11 @@ int main(int argc, char** argv) {
               "+127, sign bit clear, all-one magnitude) on `sample` -- both signed two's-"
               "complement endpoints are digitally reachable, in order, through this eight-bit "
               "sample path and its sign extension", ok);
-        MUTATION("5-noise.c1", "stimulus", "red",
+        // Named for the assertion, not for one of the claims it cites: the gate
+        // matches a record against the assertion's own leading id, and a record
+        // named `5-noise.c1` left SAMPLE-SIGNED-RANGE-FULL-SCALE looking
+        // unmutated while naming something the gate knew was not an assertion.
+        MUTATION("SAMPLE-SIGNED-RANGE-FULL-SCALE", "stimulus", "red",
                   "built with -DMUT_NOISERANGE=1, which writes 0x817E instead of 0x807F -- one "
                   "code in from each endpoint -- and delivers 0x81/0x7E instead of the expected "
                   "0x80/0x7F; the exact-endpoint check goes red. Reverted, baseline restored.");
