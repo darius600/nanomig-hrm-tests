@@ -16,7 +16,12 @@ cd nanomig-hrm-tests
 Already cloned without `--recursive`? `git submodule update --init`. Have NanoMig
 checked out elsewhere? `make -C hrm/<test> NANOMIG=/path/to/NanoMig`.
 
-Requires Verilator; last verified with **5.052**.
+Requires Verilator and `make`; last verified with Verilator **5.052**.
+
+If `run_all.sh` reports *every* package as a build error, the toolchain is
+missing rather than the tree being broken — check `verilator --version` first. On
+Windows the two commonly live only inside WSL, and a run started from Git Bash or
+PowerShell then fails all 86 packages at once while the tree is perfectly healthy.
 
 ## Where the suite stands
 
