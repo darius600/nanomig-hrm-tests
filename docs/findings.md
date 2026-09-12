@@ -1,5 +1,15 @@
 # Findings
 
+> **One page per finding now lives in [`findings/`](findings/).** Each has the
+> same six parts — what the HRM says, what NanoMig does, what the other four say,
+> a suggested change, what holds the finding up, and what is left for
+> specialists — with every source quoted and permalinked at a pinned revision.
+> Those pages are the maintained form and are written to be readable by someone
+> who has never seen this project.
+>
+> This file stays as the **register**: the table below is what
+> `tools/list_reds.py` reads, and the sections under it are the original text.
+
 > **Deciding what to do about these:** see [`rtl-decisions.md`](rtl-decisions.md),
 > which sets each open finding beside WinUAE's and vAmiga's implementation of the
 > same question, with line citations verified against the commits
@@ -71,37 +81,37 @@ specialist rules on it.
 
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
-| [NM-HRM-001](#nm-hrm-001--pal-frame-has-one-line-too-many) | PAL field terminates at 313 lines, not 312 | **withdrawn** | `hrm/agnus_beamcounter` | **all four** run a 313-line PAL field; Table 7-5 sanctions 313 |
-| [NM-HRM-002](#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | audio channels on the wrong stereo side | **red** | `hrm/paula_audio_mixer` | **2–2**: WinUAE and vAmiga with chapter 5; Denise and Copperline with the pin list |
-| [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | **Copperline narrows to 19 bits on OCS**, matching the manual; the other three do not |
-| [NM-HRM-004](#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | ECS danger bit admits too small a range | **red** | `hrm/agnus_copper_move_range`, `hrm/agnus_copper_move_sweep` | both block below `$80` regardless of chipset |
-| [NM-HRM-005](#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | WAIT and SKIP take longer than the manual states | **red** | `hrm/agnus_copper_cycle_times`, `hrm/agnus_copper_cycles` | vAmiga gives NanoMig's three numbers |
-| [NM-HRM-006](#nm-hrm-006--ddfstrtddfstop-bit-h3-is-gated-by-the-chipset-not-by-resolution) | DDFSTRT bit H3 gated by chipset, not by resolution | **red** | `hrm/ch3-ddf-fetch-window` | **all four** gate DDF on the chipset; none on resolution |
-| [NM-HRM-007](#nm-hrm-007--the-hires-fetch-width-cannot-reach-the-manuals-maximum-of-49-words) | hires fetch cannot reach the manual's 49 words | **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** for the first two; Copperline asserts an even hires word count in its own test |
-| [NM-HRM-008](#nm-hrm-008--playfield-1-collision-depends-on-playfield-2-by-design-undocumented) | playfield-1 collision depends on playfield 2 | **red** | `hrm/ch3-collision-registers` | **all four** gate playfield 1 on playfield 2 in single-playfield mode |
-| [NM-HRM-009](#nm-hrm-009--clxdat-bit-15-reads-as-1-not-0) | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** | `hrm/ch3-collision-registers` | **all four** set bit 15 on every CLXDAT read |
-| [NM-HRM-010](#nm-hrm-010--the-horizontal-line-is-a-whole-number-of-colour-clocks-not-2275) | the scan line is a whole number of colour clocks | source observation | `hrm/ch3-beam-counters-and-blanking` | Denise and Copperline both alternate whole line lengths |
-| [NM-HRM-011](#nm-hrm-011--pal-vertical-blanking-is-26-lines-the-manual-says-29) | PAL vertical blanking is 26 lines, manual says 29 | **red** | `hrm/ch3-beam-counters-and-blanking` | **B6** for the first two; Denise's PAL-NTSC gap is 5 lines like NanoMig's, not the manual's 8 |
-| [NM-HRM-012](#nm-hrm-012--sprxctl-bit-0-sh0-is-honoured-at-every-resolution-not-only-superhires) | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** | `hrm/ch3-sprite-registers` | three of four take SH0 at every resolution, as NanoMig does |
-| [NM-HRM-013](#nm-hrm-013--sprxctl-bits-3-and-4-are-read-nowhere-in-the-module) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn**, split into NM-HRM-019 | `hrm/ch3-sprite-registers` | bit 4 is real from ECS on, bit 3 only on AGA -- the split this was withdrawn into |
-| [NM-HRM-014](#nm-hrm-014--the-manual-applies-its-own-ecs-pointer-extension-inconsistently) | the manual applies its own ECS pointer note inconsistently | source observation | `hrm/ch3-register-map-agnus` | one of four extends every DMA pointer by chipset; no implementation can settle a question about the manual's own text |
-| [NM-HRM-015](#nm-hrm-015--brdntran-is-declared-and-never-connected) | BRDNTRAN is declared and never connected | **red** | `hrm/ch3-horizontal-display-window` | **B3** for the first two; **Copperline implements it, with a test** |
-| [NM-HRM-016](#nm-hrm-016--superhires-sprite-colour-encoding-is-not-implemented) | SuperHires sprite colour encoding not implemented | **red** | `hrm/ch3-shres-sprite-colour-encoding` | **2-2**: WinUAE and vAmiga reinterpret; Denise and Copperline do not |
-| [NM-HRM-017](#nm-hrm-017--superhires-bitplane-colour-encoding-is-not-implemented) | SuperHires bitplane colour encoding not implemented | **red** | `hrm/ch3-shres-bitplane-colour-encoding` | **2-2**: the same split as NM-HRM-016, from the same reading |
-| [NM-HRM-018](#nm-hrm-018--ecs-bplcon0-bit-4-sprhwrm-has-no-effect) | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** | `hrm/ch3-bplcon0-display-modes` | neither Denise nor Copperline gives bit 4 an effect on ECS |
-| [NM-HRM-019](#nm-hrm-019--sprxctl-bit-4-shsh1-is-not-implemented) | SPRxCTL bit 4 (SHSH1) is not implemented | **red** | `hrm/ch3-sprite-registers` | **C2** for the first two; Denise and Copperline both implement bit 4 |
-| [NM-HRM-020](#nm-hrm-020--bltsizv-is-not-gated-on-ecs-while-its-two-siblings-are) | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** — **all four** gate it; NanoMig alone does not |
-| [NM-HRM-021](#nm-hrm-021--doff-bltcon1-bit-7-has-no-observable-effect) | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1**; Denise implements it and ECS-gates it |
-| [NM-HRM-022](#nm-hrm-022--bltxpth-carries-five-high-bits-in-both-chipsets) | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** — but Copperline narrows every DMA pointer by Agnus revision |
-| [NM-HRM-023](#nm-hrm-023--the-attach-bit-is-honoured-in-the-even-sprite-not-only-the-odd) | the ATTACH bit is honoured in the even sprite, not only the odd | **red** | `hrm/ch4-attached-sprites` | **Denise applies the manual's rule exactly**: `(nr & 1) && (value & 0x80)` |
-| [NM-HRM-024](#nm-hrm-024--the-audio-dma-pointer-takes-five-high-bits-in-both-chipsets) | the audio DMA pointer takes five high bits in both chipsets | **red** | `hrm/ch5-audio-location-pointer` | **B2**, as NM-HRM-003 and NM-HRM-022 — Copperline alone narrows by revision |
-| [NM-HRM-025](#nm-hrm-025--volume-64-and-volume-63-are-the-same-gain-on-the-multiply-path) | volume 64 and volume 63 are the same gain on the multiply path | **red** | `hrm/ch5-audio-volume-scale`, `hrm/ch5-audio-register-map` | **all four** clamp at 64 and keep it distinct; two say why in their own comments |
-| [NM-HRM-026](#nm-hrm-026--the-audio-state-codes-are-not-the-ones-figure-5-8-prints) | the audio state codes are not the ones Figure 5-8 prints | source observation | `hrm/ch5-audio-channel-state` | **all four** use the figure's numbering; Copperline names the five constants with it |
-| [NM-HRM-027](#nm-hrm-027--in-direct-mode-the-interrupt-is-raised-before-a-word-is-output) | in direct mode the interrupt is raised before a word is output | **red** | `hrm/ch5-audio-direct-output` | not read — and the manual states the moment four different ways |
-| [NM-HRM-028](#nm-hrm-028--adkcons-audio-attach-bits-are-stored-and-reach-nothing) | ADKCON's audio attach bits are stored and reach nothing | **red** | `hrm/ch5-audio-dmacon-adkcon` | **all four** implement attach and modulation; NanoMig's own first line says it does not |
-| [NM-HRM-029](#nm-hrm-029--figure-5-8s-dmasen-note-does-not-hold-outside-its-own-exception) | Figure 5-8's `dmasen` note does not hold outside its own exception | **withdrawn** | `hrm/ch5-audio-channel-state` | not comparable — `dmasen` appears at no pin |
-| [NM-HRM-030](#nm-hrm-030--paula-does-not-decode-dmaconr-though-the-appendix-gives-it-part-ownership) | Paula does not decode DMACONR, though the appendix gives it part ownership | **red** | `hrm/ch5-audio-dmacon-adkcon` | not read — the emulators are monolithic and model no per-chip decode |
-| [NM-HRM-031](#nm-hrm-031--intreq-bit-14-is-a-settable-request-bit-where-the-appendix-says-enable-only) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | **red** | `hrm/ch5-audio-interrupt` | **vAmiga and Denise also allow it**; NanoMig's own comment calls it undocumented |
+| [NM-HRM-001](findings/NM-HRM-001.md) | PAL field terminates at 313 lines, not 312 | **withdrawn** | `hrm/agnus_beamcounter` | **all four** run a 313-line PAL field; Table 7-5 sanctions 313 |
+| [NM-HRM-002](findings/NM-HRM-002.md) | audio channels on the wrong stereo side | **red** | `hrm/paula_audio_mixer` | **2–2**: WinUAE and vAmiga with chapter 5; Denise and Copperline with the pin list |
+| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | **Copperline narrows to 19 bits on OCS**, matching the manual; the other three do not |
+| [NM-HRM-004](findings/NM-HRM-004.md) | ECS danger bit admits too small a range | **red** | `hrm/agnus_copper_move_range`, `hrm/agnus_copper_move_sweep` | both block below `$80` regardless of chipset |
+| [NM-HRM-005](findings/NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | **red** | `hrm/agnus_copper_cycle_times`, `hrm/agnus_copper_cycles` | vAmiga gives NanoMig's three numbers |
+| [NM-HRM-006](findings/NM-HRM-006.md) | DDFSTRT bit H3 gated by chipset, not by resolution | **red** | `hrm/ch3-ddf-fetch-window` | **all four** gate DDF on the chipset; none on resolution |
+| [NM-HRM-007](findings/NM-HRM-007.md) | hires fetch cannot reach the manual's 49 words | **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** for the first two; Copperline asserts an even hires word count in its own test |
+| [NM-HRM-008](findings/NM-HRM-008.md) | playfield-1 collision depends on playfield 2 | **red** | `hrm/ch3-collision-registers` | **all four** gate playfield 1 on playfield 2 in single-playfield mode |
+| [NM-HRM-009](findings/NM-HRM-009.md) | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** | `hrm/ch3-collision-registers` | **all four** set bit 15 on every CLXDAT read |
+| [NM-HRM-010](findings/NM-HRM-010.md) | the scan line is a whole number of colour clocks | source observation | `hrm/ch3-beam-counters-and-blanking` | Denise and Copperline both alternate whole line lengths |
+| [NM-HRM-011](findings/NM-HRM-011.md) | PAL vertical blanking is 26 lines, manual says 29 | **red** | `hrm/ch3-beam-counters-and-blanking` | **B6** for the first two; Denise's PAL-NTSC gap is 5 lines like NanoMig's, not the manual's 8 |
+| [NM-HRM-012](findings/NM-HRM-012.md) | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** | `hrm/ch3-sprite-registers` | three of four take SH0 at every resolution, as NanoMig does |
+| [NM-HRM-013](findings/NM-HRM-013.md) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn**, split into NM-HRM-019 | `hrm/ch3-sprite-registers` | bit 4 is real from ECS on, bit 3 only on AGA -- the split this was withdrawn into |
+| [NM-HRM-014](findings/NM-HRM-014.md) | the manual applies its own ECS pointer note inconsistently | source observation | `hrm/ch3-register-map-agnus` | one of four extends every DMA pointer by chipset; no implementation can settle a question about the manual's own text |
+| [NM-HRM-015](findings/NM-HRM-015.md) | BRDNTRAN is declared and never connected | **red** | `hrm/ch3-horizontal-display-window` | **B3** for the first two; **Copperline implements it, with a test** |
+| [NM-HRM-016](findings/NM-HRM-016.md) | SuperHires sprite colour encoding not implemented | **red** | `hrm/ch3-shres-sprite-colour-encoding` | **2-2**: WinUAE and vAmiga reinterpret; Denise and Copperline do not |
+| [NM-HRM-017](findings/NM-HRM-017.md) | SuperHires bitplane colour encoding not implemented | **red** | `hrm/ch3-shres-bitplane-colour-encoding` | **2-2**: the same split as NM-HRM-016, from the same reading |
+| [NM-HRM-018](findings/NM-HRM-018.md) | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** | `hrm/ch3-bplcon0-display-modes` | neither Denise nor Copperline gives bit 4 an effect on ECS |
+| [NM-HRM-019](findings/NM-HRM-019.md) | SPRxCTL bit 4 (SHSH1) is not implemented | **red** | `hrm/ch3-sprite-registers` | **C2** for the first two; Denise and Copperline both implement bit 4 |
+| [NM-HRM-020](findings/NM-HRM-020.md) | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** — **all four** gate it; NanoMig alone does not |
+| [NM-HRM-021](findings/NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1**; Denise implements it and ECS-gates it |
+| [NM-HRM-022](findings/NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** — but Copperline narrows every DMA pointer by Agnus revision |
+| [NM-HRM-023](findings/NM-HRM-023.md) | the ATTACH bit is honoured in the even sprite, not only the odd | **red** | `hrm/ch4-attached-sprites` | **Denise applies the manual's rule exactly**: `(nr & 1) && (value & 0x80)` |
+| [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | **red** | `hrm/ch5-audio-location-pointer` | **B2**, as NM-HRM-003 and NM-HRM-022 — Copperline alone narrows by revision |
+| [NM-HRM-025](findings/NM-HRM-025.md) | volume 64 and volume 63 are the same gain on the multiply path | **red** | `hrm/ch5-audio-volume-scale`, `hrm/ch5-audio-register-map` | **all four** clamp at 64 and keep it distinct; two say why in their own comments |
+| [NM-HRM-026](findings/NM-HRM-026.md) | the audio state codes are not the ones Figure 5-8 prints | source observation | `hrm/ch5-audio-channel-state` | **all four** use the figure's numbering; Copperline names the five constants with it |
+| [NM-HRM-027](findings/NM-HRM-027.md) | in direct mode the interrupt is raised before a word is output | **red** | `hrm/ch5-audio-direct-output` | not read — and the manual states the moment four different ways |
+| [NM-HRM-028](findings/NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | **red** | `hrm/ch5-audio-dmacon-adkcon` | **all four** implement attach and modulation; NanoMig's own first line says it does not |
+| [NM-HRM-029](findings/NM-HRM-029.md) | Figure 5-8's `dmasen` note does not hold outside its own exception | **withdrawn** | `hrm/ch5-audio-channel-state` | not comparable — `dmasen` appears at no pin |
+| [NM-HRM-030](findings/NM-HRM-030.md) | Paula does not decode DMACONR, though the appendix gives it part ownership | **red** | `hrm/ch5-audio-dmacon-adkcon` | not read — the emulators are monolithic and model no per-chip decode |
+| [NM-HRM-031](findings/NM-HRM-031.md) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | **red** | `hrm/ch5-audio-interrupt` | **vAmiga and Denise also allow it**; NanoMig's own comment calls it undocumented |
 
 Chapters 1, 7 and 8 have not been extracted, so no finding below comes from
 them. The register is a record of what has been looked at, not of what is there.
@@ -116,11 +126,11 @@ elsewhere in the same manual.
 
 | Finding | Origin | Standing |
 |---|---|---|
-| [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | pipeline | corroborated — p273 and p309 give two different widths |
-| [NM-HRM-004](#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | pipeline | corroborated — two editions carry the appendix C sentence; challenged and upheld |
-| [NM-HRM-005](#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | pipeline | corroborated — p20 and p275, units settled on p275 itself |
-| [NM-HRM-002](#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | hand-written, Aug | **stands** — the manual contradicts itself, and four implementations split two against two |
-| [NM-HRM-001](#nm-hrm-001--pal-frame-has-one-line-too-many) | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
+| [NM-HRM-003](findings/NM-HRM-003.md) | pipeline | corroborated — p273 and p309 give two different widths |
+| [NM-HRM-004](findings/NM-HRM-004.md) | pipeline | corroborated — two editions carry the appendix C sentence; challenged and upheld |
+| [NM-HRM-005](findings/NM-HRM-005.md) | pipeline | corroborated — p20 and p275, units settled on p275 itself |
+| [NM-HRM-002](findings/NM-HRM-002.md) | hand-written, Aug | **stands** — the manual contradicts itself, and four implementations split two against two |
+| [NM-HRM-001](findings/NM-HRM-001.md) | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
 
 Both August findings rested on a manual that says two different things, and
 neither could be decided by reading the manual harder. They were settled by a
@@ -144,6 +154,9 @@ nobody has done, and an assertion guessing at it would be worse than none.
 The reasoning:
 
 ### NM-HRM-001 — PAL frame has one line too many
+
+> **The maintained form of this entry is [`findings/NM-HRM-001.md`](findings/NM-HRM-001.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 | | |
 |---|---|
@@ -178,6 +191,9 @@ for what it drove. Details and permalinks in
 ## Open findings
 
 ### NM-HRM-002 — audio channels on the wrong stereo side
+
+> **The maintained form of this entry is [`findings/NM-HRM-002.md`](findings/NM-HRM-002.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 | | |
 |---|---|
@@ -219,6 +235,9 @@ places would swap it back.
 
 ### NM-HRM-003 — OCS Copper address uses five high bits instead of three
 
+> **The maintained form of this entry is [`findings/NM-HRM-003.md`](findings/NM-HRM-003.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 | | |
 |---|---|
 | Manual | p273, p309: OCS has three high address bits, ECS five; the location registers are 18-bit pointers (p276) |
@@ -239,6 +258,9 @@ the two chipsets, so a module reporting the same width in both contradicts the
 manual whatever that width is.
 
 ### NM-HRM-004 — ECS danger bit admits too small a range
+
+> **The maintained form of this entry is [`findings/NM-HRM-004.md`](findings/NM-HRM-004.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 | | |
 |---|---|
@@ -306,6 +328,9 @@ and holds on either reading of the bound.
 
 ### NM-HRM-005 — WAIT and SKIP take longer than the manual states
 
+> **The maintained form of this entry is [`findings/NM-HRM-005.md`](findings/NM-HRM-005.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 | | |
 |---|---|
 | Manual | p20, p275: a SKIP spans four memory cycle times, a satisfied WAIT six, a WAIT two more than a MOVE |
@@ -344,6 +369,9 @@ defects: BLTCON0L and BLTSIZH are gated correctly and pass.
 
 ### NM-HRM-020 — BLTSIZV is not gated on ECS, while its two siblings are
 
+> **The maintained form of this entry is [`findings/NM-HRM-020.md`](findings/NM-HRM-020.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 | | |
 |---|---|
 | Manual | Appendix C's ECS register map, printed page 298, marks BLTSIZV `$05C` **new for ECS**, the same status it gives BLTSIZH `$05E` and BLTCON0L `$05A` |
@@ -380,6 +408,9 @@ strongest of the three here.
 
 ### NM-HRM-021 — DOFF (BLTCON1 bit 7) has no observable effect
 
+> **The maintained form of this entry is [`findings/NM-HRM-021.md`](findings/NM-HRM-021.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 | | |
 |---|---|
 | Manual | Appendix C p.309 lists `DOFF` among the five ECS blitter changes: disable D output in line mode |
@@ -405,6 +436,9 @@ therefore says nothing about this finding in either direction, and the manual
 decides alone, which it does clearly.
 
 ### NM-HRM-022 — BLTxPTH carries five high bits in both chipsets
+
+> **The maintained form of this entry is [`findings/NM-HRM-022.md`](findings/NM-HRM-022.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 | | |
 |---|---|
@@ -443,6 +477,9 @@ classifier's report.
 
 
 ### NM-HRM-023 — the ATTACH bit is honoured in the even sprite, not only the odd
+
+> **The maintained form of this entry is [`findings/NM-HRM-023.md`](findings/NM-HRM-023.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 | | |
 |---|---|
@@ -634,9 +671,9 @@ says.**
 
 | Finding | Manual | Both emulators, and NanoMig |
 |---|---|---|
-| [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
-| [NM-HRM-004](#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
-| [NM-HRM-005](#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
+| [NM-HRM-003](findings/NM-HRM-003.md) | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
+| [NM-HRM-004](findings/NM-HRM-004.md) | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
+| [NM-HRM-005](findings/NM-HRM-005.md) | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
 
 The citations are in [`third-witness.md`](third-witness.md).
 
@@ -659,6 +696,9 @@ to match the implementation stops being evidence about anything.
 
 
 ### NM-HRM-006 — DDFSTRT/DDFSTOP bit H3 is gated by the chipset, not by resolution
+
+> **The maintained form of this entry is [`findings/NM-HRM-006.md`](findings/NM-HRM-006.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 **Package:** `hrm/ch3-ddf-fetch-window`, assertion
 `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE`. **Red.**
@@ -693,6 +733,9 @@ right. The test asserts what page 91 says.
 
 ### NM-HRM-007 — the hires fetch width cannot reach the manual's maximum of 49 words
 
+> **The maintained form of this entry is [`findings/NM-HRM-007.md`](findings/NM-HRM-007.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 **Package:** `hrm/ch3-ddf-fetch-window`, assertion
 `MAX-WORDS-49-HIRES-AT-HW-LIMITS`. **Red.**
 
@@ -724,6 +767,9 @@ is wrong.
 
 
 ### NM-HRM-008 — playfield-1 collision depends on playfield 2, by design, undocumented
+
+> **The maintained form of this entry is [`findings/NM-HRM-008.md`](findings/NM-HRM-008.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 **Package:** `hrm/ch3-collision-registers`, the four `BITMAP-PAIR` cases involving
 playfield 1. **Red.**
@@ -768,6 +814,9 @@ rather than the RTL needing a change.
 
 ### NM-HRM-009 — CLXDAT bit 15 reads as 1, not 0
 
+> **The maintained form of this entry is [`findings/NM-HRM-009.md`](findings/NM-HRM-009.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 > **WITHDRAWN.**
 >
 > Page 273 lists bit 15 as `not used` under the heading **COLLISIONS REGISTERED** -- it says no collision is registered there. It does not say the bit reads zero. NanoMig wires it high, which contradicts nothing printed. The expected zero was invented by the assertion, so the red measured the oracle, not the RTL.
@@ -797,6 +846,9 @@ as zero, or undefined. Every other assertion in the package masks the bit out wi
 
 
 ### NM-HRM-010 — the horizontal line is a whole number of colour clocks, not 227.5
+
+> **The maintained form of this entry is [`findings/NM-HRM-010.md`](findings/NM-HRM-010.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 > **SOURCE OBSERVATION, not test-backed.**
 >
@@ -833,6 +885,9 @@ invisible above this boundary.
 
 ### NM-HRM-011 — PAL vertical blanking is 26 lines, the manual says 29
 
+> **The maintained form of this entry is [`findings/NM-HRM-011.md`](findings/NM-HRM-011.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 **Package:** `hrm/ch3-beam-counters-and-blanking`, assertion
 `VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL`. **Red.** Its NTSC twin passes and is
 the control.
@@ -867,6 +922,9 @@ machine.
 
 ### NM-HRM-012 — SPRxCTL bit 0 (SH0) is honoured at every resolution, not only SuperHires
 
+> **The maintained form of this entry is [`findings/NM-HRM-012.md`](findings/NM-HRM-012.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 > **WITHDRAWN.**
 >
 > Page 303 reads `00  SH0  Start horiz. value Low bit 140 ns increment`. SH0 is the 140-ns low bit; the SuperHires positions are bits 4 (70 ns) and 3 (35 ns). The assertion imported a SuperHires-only restriction the manual does not state.
@@ -900,6 +958,9 @@ manual scopes to one mode and the RTL honours always". Worth deciding together.
 
 ### NM-HRM-013 — SPRxCTL bits 3 and 4 are read nowhere in the module
 
+> **The maintained form of this entry is [`findings/NM-HRM-013.md`](findings/NM-HRM-013.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 > **WITHDRAWN.**
 >
 > Page 303 reads `03  SHSH0  Start horizontal (SHR mode) 35ns (unimplemented)` -- the manual itself calls bit 3 unimplemented. The note `bits 3 and 4 are in the ECS chips only` is a scope statement, not a promise that both alter output. Requiring bit 3 to be a live field contradicts the oracle.
@@ -916,13 +977,16 @@ A dash means nobody has read that source for this finding.
 |---|---|---|---|
 | `custom.cpp:1199-1203` — bit 3 AGA only, bit 4 ECS and later | — | `denise.cpp:299` reads bit 4 into `shsh10`; bit 3 not read | `sprite.rs:1858` reads bit 4; bit 3 not read |
 
-The split this finding was withdrawn into is the one the other implementations make: **bit 4 is real from ECS on, bit 3 only on AGA.** See [NM-HRM-019](#nm-hrm-019--sprxctl-bit-4-shsh1-is-not-implemented).
+The split this finding was withdrawn into is the one the other implementations make: **bit 4 is real from ECS on, bit 3 only on AGA.** See [NM-HRM-019](findings/NM-HRM-019.md).
 
 That is a stronger statement than "ECS only": they are unimplemented in every
 chip mode this module offers, including with `aga` asserted.
 
 
 ### NM-HRM-014 — the manual applies its own ECS pointer extension inconsistently
+
+> **The maintained form of this entry is [`findings/NM-HRM-014.md`](findings/NM-HRM-014.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 > **SOURCE OBSERVATION, not test-backed (as this entry already stated).**
 >
@@ -975,6 +1039,9 @@ manual already uses elsewhere, and chapter 3's "19-bit" is a third, separate sli
 
 ### NM-HRM-015 — BRDNTRAN is declared and never connected
 
+> **The maintained form of this entry is [`findings/NM-HRM-015.md`](findings/NM-HRM-015.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 **Package:** `hrm/ch3-horizontal-display-window`, assertion
 `D-BRDNTRAN-HAS-NO-EFFECT`. **Red.** Pages 296, 297, 307.
 
@@ -1013,6 +1080,9 @@ confirming that nothing downstream silently depends on the border being opaque.
 
 
 ### NM-HRM-016 — SuperHires sprite colour encoding is not implemented
+
+> **The maintained form of this entry is [`findings/NM-HRM-016.md`](findings/NM-HRM-016.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 > **HOLDS, with the count corrected.**
 >
@@ -1080,6 +1150,9 @@ not a defect report.
 
 
 ### NM-HRM-017 — SuperHires bitplane colour encoding is not implemented
+
+> **The maintained form of this entry is [`findings/NM-HRM-017.md`](findings/NM-HRM-017.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 > **SOURCE OBSERVATION, then RESTORED as test-backed once the witness was fixed.** The validator's objection was correct and the
 > correction answers it: with `COLOR01 = 0x0C39` — every nibble's top two bits
@@ -1154,6 +1227,9 @@ worth building is a scope question for the project.
 
 ### NM-HRM-018 — ECS BPLCON0 bit 4 (SPRHWRM) has no effect
 
+> **The maintained form of this entry is [`findings/NM-HRM-018.md`](findings/NM-HRM-018.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 > **WITHDRAWN as a conformance finding.**
 >
 > Page 300's row reads, in full, `04       SPRHWRM` -- a mnemonic with no description column, unlike `06  SHRES  SuperHires 35ns pixel enable bit` three rows above. The manual gives bit 4 a name and no behaviour, so there is no printed behaviour for NanoMig to diverge from. The fixture also drives bitplanes only and could not observe a sprite-horizontal function in any case. What remains true is a source observation: `denise.v:181` gives the bit its AGA meaning (`bplcon0[4] & aga`) and no ECS meaning. Recorded by the lead earlier the same day; the overreach was the lead's.
@@ -1208,6 +1284,9 @@ ECS behaviour is absent.
 
 
 ### NM-HRM-019 — SPRxCTL bit 4 (SHSH1) is not implemented
+
+> **The maintained form of this entry is [`findings/NM-HRM-019.md`](findings/NM-HRM-019.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 **Package:** `hrm/ch3-sprite-registers`, assertion
 `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`. **Red.** Page 303.
@@ -1266,6 +1345,9 @@ wrong in detail.
 
 ### NM-HRM-024 — the audio DMA pointer takes five high bits in both chipsets
 
+> **The maintained form of this entry is [`findings/NM-HRM-024.md`](findings/NM-HRM-024.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 | | |
 |---|---|
 | Manual | Chapter 5 p.139 and p.145: the location registers "contain the high three bits". Appendix A p.266: "(high 3 bits, 5 bits if ECS)" and "18 bit starting address". Appendix C's ECS register map, printed p.298: `0A0 AUDxLCH chg W A Audio channel x location(high 5 bits was 3 bits)` |
@@ -1303,6 +1385,9 @@ If not, three engines need the same narrowing.
 
 ### NM-HRM-025 — volume 64 and volume 63 are the same gain on the multiply path
 
+> **The maintained form of this entry is [`findings/NM-HRM-025.md`](findings/NM-HRM-025.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 | | |
 |---|---|
 | Manual | Table 5-9, printed p.163, gives volume 63 as −0.1 dB and volume 64 as 0.0 dB. Appendix A p.266 describes "65 linear volume levels" with bit 6 forcing maximum |
@@ -1338,6 +1423,9 @@ reaches the DAC in a real build decides whether this is audible or bookkeeping.
 
 
 ### NM-HRM-026 — the audio state codes are not the ones Figure 5-8 prints
+
+> **The maintained form of this entry is [`findings/NM-HRM-026.md`](findings/NM-HRM-026.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 > **SOURCE OBSERVATION, not a conformance failure.** An independent validator
 > objected that `audio_state` is not a port of `paula_audio_channel` and is
@@ -1400,6 +1488,9 @@ encoding at all.
 
 ### NM-HRM-027 — in direct mode the interrupt is raised before a word is output
 
+> **The maintained form of this entry is [`findings/NM-HRM-027.md`](findings/NM-HRM-027.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 | | |
 |---|---|
 | Manual | Printed p.157: in direct (non-DMA) audio output "the interrupt occurs after one data word has been output" |
@@ -1435,6 +1526,9 @@ choosing one of them.
 
 ### NM-HRM-028 — ADKCON's audio attach bits are stored and reach nothing
 
+> **The maintained form of this entry is [`findings/NM-HRM-028.md`](findings/NM-HRM-028.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 | | |
 |---|---|
 | Manual | Printed pp.149–151 describe modulating one channel with another: with an attach bit set the modulating channel's own output is silenced and its words are used as period or volume data for the next channel. Appendix A p.265 gives ADKCON bits 7–0 as ATPER3–0 and ATVOL3–0 |
@@ -1468,6 +1562,9 @@ openly rather than leaving it to be discovered.
 
 
 ### NM-HRM-029 — Figure 5-8's `dmasen` note does not hold outside its own exception
+
+> **The maintained form of this entry is [`findings/NM-HRM-029.md`](findings/NM-HRM-029.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 > **WITHDRAWN. The assertion is logically false.** Figure 5-8's NOTE says, after
 > its exception, *"dmasen is true only when LENFIN=1"* — the implication
@@ -1535,6 +1632,9 @@ how a state diagram should be read, not about what the chip does at its pins.
 
 ### NM-HRM-030 — Paula does not decode DMACONR, though the appendix gives it part ownership
 
+> **The maintained form of this entry is [`findings/NM-HRM-030.md`](findings/NM-HRM-030.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
+
 | | |
 |---|---|
 | Manual | Appendix A, printed p.278, gives `DMACONR` at `$002` the chip column **`A D P`** — Agnus, Denise and Paula. Appendix B, printed p.289, lists it among the read registers |
@@ -1569,6 +1669,9 @@ a description of the physical parts.
 
 
 ### NM-HRM-031 — INTREQ bit 14 is a settable request bit where the appendix says enable-only
+
+> **The maintained form of this entry is [`findings/NM-HRM-031.md`](findings/NM-HRM-031.md)** — same facts, fixed structure, permalinked and quoted sources. What follows is the original register text.
+
 
 | | |
 |---|---|
