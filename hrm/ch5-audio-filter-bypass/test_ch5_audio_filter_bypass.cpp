@@ -3,6 +3,23 @@
 //   drives the red "power" LED, exists, is independently writable and reads
 //   back - at the ciaa module boundary. This does NOT and CANNOT assert any
 //   audio consequence of that bit (see Non-goals).
+//
+// COVERAGE JUDGEMENT (2026-09-12 repair, independent validation finding
+//   V-04): the two claim ids below, 5-p157.c8 and 5-filt.c9, each name a
+//   single sentence with TWO clauses - a register clause ("this bit exists,
+//   is independently writable, and reads back") and a downstream-identity
+//   clause ("this is the same output bit that drives the power LED and the
+//   audio low-pass filter"). Only the register clause is exercised by either
+//   assertion in this file. The downstream/connection clause is NOT
+//   asserted, NOT measured, and NOT CONSTRUCTIBLE anywhere in this project:
+//   NanoMig's audio path has no low-pass filter, no cutoff constant and no
+//   signal this bit could plausibly gate (see Non-goals below), so there is
+//   no boundary in this design where "the bit drives the filter" could ever
+//   be observed, pass or fail. CONCLUSION: 5-p157.c8 and 5-filt.c9 should
+//   NOT count as fully covered by this package - only their register half is
+//   covered. This is stated here, in the "Claims covered" note below, and in
+//   each assertion's own text, per the repair's instruction that the honest
+//   fix is a split classification, not an invented assertion.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, chapter 5,
 //   printed p.157.
@@ -42,13 +59,17 @@
 //   select 0, following data_in bit 1) come from the chapter's printed
 //   p.157 quotation, not from tuning to whatever ciaa.v happens to do.
 //
-// Claims covered (work/ch5_packages/ch5-audio-filter-bypass.jsonl, both):
-//   CIA-A-PRA-BIT1-WRITABLE  : 5-p157.c8, 5-filt.c9
-//   CIA-A-PRA-BIT1-READS-BACK: 5-p157.c8, 5-filt.c9
+// Claims PARTIALLY covered (work/ch5_packages/ch5-audio-filter-bypass.jsonl,
+//   both) - REGISTER HALF ONLY, see COVERAGE JUDGEMENT above:
+//   CIA-A-PRA-BIT1-WRITABLE  : 5-p157.c8, 5-filt.c9 (register half only)
+//   CIA-A-PRA-BIT1-READS-BACK: 5-p157.c8, 5-filt.c9 (register half only)
 //   (Both ids quote the identical sentence from the two independent readers
 //   who found it; there is exactly one proposition here, restated once as
 //   "writable" and once as "reads back" because those are two separable,
-//   separately falsifiable facts about the same bit.)
+//   separately falsifiable facts about the same bit - both restricted to
+//   the register half. Neither restatement reaches the downstream-identity
+//   clause of the same sentence; that clause is not covered by this
+//   package and is not constructible in this project at all.)
 //
 // FIXTURE. New harness for this package, following the write_reg/tick
 // pattern already established in hrm/agnus_audiodma and hrm/agnus_blitter_*
@@ -76,6 +97,19 @@
 //   changed from 0b00000010 to 0b00000000 (the expected ==1 comparison left
 //   untouched) -> FAIL, the PRA read-back bit 1 reads 0, not the expected 1;
 //   every other assertion PASS.
+//
+// REPAIR (2026-09-12, V-04): only the assertion TEXT changed (added the
+// PARTIAL COVERAGE ONLY wording above and the header's COVERAGE JUDGEMENT);
+// no assertion's condition changed. Baseline (3 passed, 0 failed) and both
+// CIA-A-PRA-BIT1-WRITABLE/-READS-BACK mutations above were re-applied,
+// re-observed (each -> 2 passed, 1 failed, same FAIL line as originally
+// recorded) and reverted against the new text, each revert confirmed
+// byte-identical by `diff` before a clean `make clean && make` reproduced
+// 3 passed / 0 failed once more. No claim was reassigned and no assertion
+// was added or removed - claim ids 5-p157.c8 and 5-filt.c9 are now
+// explicitly recorded, in this header and in both assertions' own text, as
+// covering the register half only. They should NOT be counted as fully
+// covered by this package.
 
 #include <cstdint>
 #include <iostream>
@@ -218,7 +252,16 @@ int main(int argc, char** argv) {
             "is a real, independently writable output bit at this boundary; "
             "ciaa.v:262 `porta_out[3:0] = {(~ddrporta[7:6] | regporta[3:2]), "
             "(~ddrporta[1:0] | regporta[1:0])}` with regporta[1] loaded from "
-            "data_in[1] (ciaa.v:238).");
+            "data_in[1] (ciaa.v:238). PARTIAL COVERAGE ONLY: this exercises the "
+            "register clause of 5-p157.c8/5-filt.c9 alone. The same sentence's "
+            "downstream-identity clause - that this bit IS the power-LED/audio-"
+            "filter output - is NOT exercised here and is NOT CONSTRUCTIBLE in "
+            "this project: no low-pass filter, cutoff constant, or gated signal "
+            "exists anywhere in NanoMig's audio path (paula_audio.v, "
+            "paula_audio_channel.v, paula_audio_volume.v, paula_audio_mixer.v, "
+            "paula_intcontroller.v), so there is no boundary at which that clause "
+            "could ever be observed. 5-p157.c8/5-filt.c9 should NOT be counted as "
+            "fully covered on the strength of this assertion.");
     }
 
     // ---------------- CIA-A-PRA-BIT1-READS-BACK (chapter 5, p.157) ----------------
@@ -235,7 +278,15 @@ int main(int argc, char** argv) {
             "bit 1 = 0 - the same 'CIA A $BFE001 - Bit 1: /LED' bit (5-p157.c8, "
             "5-filt.c9, chapter 5, printed p.157) is not write-only: software can "
             "observe the value it set, over the same PRA register - ciaa.v:253-254 "
-            "`pa_out[7:0] = {porta_in2[7:2],porta_out[1:0]}` on a PRA read.");
+            "`pa_out[7:0] = {porta_in2[7:2],porta_out[1:0]}` on a PRA read. PARTIAL "
+            "COVERAGE ONLY: this exercises the register clause of 5-p157.c8/"
+            "5-filt.c9 alone. The same sentence's downstream-identity clause - "
+            "that this bit IS the power-LED/audio-filter output - is NOT exercised "
+            "here and is NOT CONSTRUCTIBLE in this project: no low-pass filter, "
+            "cutoff constant, or gated signal exists anywhere in NanoMig's audio "
+            "path, so there is no boundary at which that clause could ever be "
+            "observed. 5-p157.c8/5-filt.c9 should NOT be counted as fully covered "
+            "on the strength of this assertion.");
     }
 
     std::cout << "Checked " << (checks.passed + checks.failed)
