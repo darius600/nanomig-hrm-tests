@@ -1,0 +1,97 @@
+# NM-HRM-030 — Paula does not decode DMACONR, though the appendix gives it part ownership
+
+| | |
+|---|---|
+| **Status** | open · red |
+| **Module** | `paula.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v) |
+| **Upstream** | inherited — `DMACONR` appears in none of the lines where the two trees differ |
+| **Report to** | **probably nowhere** — see *Suggested change* |
+| **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon) |
+| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Verdict of the four** | unanswerable by an emulator — see below |
+
+---
+
+## What the HRM says
+
+**Appendix A, printed p. 278** gives `DMACONR` at `$002` the chip column:
+
+> `A D P`
+
+— Agnus, Denise and Paula. **Appendix B, printed p. 289** lists it among the read
+registers.
+
+The claim under test is narrow: that Paula is one of the chips answering a read
+of `$002`.
+
+---
+
+## What NanoMig does
+
+`paula.v` decodes `DMACON $096`, `ADKCON $09E` and `ADKCONR $010`. There is **no
+`DMACONR` decode at all**; `data_out` is the OR of the UART, interrupt, disk and
+`ADKCONR` sources only.
+
+### Measured
+
+| | `$002` read through `paula.v` |
+|---|---|
+| before a `DMACON` write | `0x0` |
+| after `DMACON = 0x8203` sets DMAEN, AUD0EN, AUD1EN | `0x0` |
+
+The value never changes. Paula is not driving that address.
+
+---
+
+## What the others say
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | — | — |
+
+**Nobody has read any implementation here, and for once that is structural rather
+than an omission.** All four emulators decode the custom register space in one
+place; none of them models *which physical chip* answers a read. The question
+this finding asks — does Paula drive `$002`? — is one only a per-chip RTL can be
+asked. The manual's chip column is the only oracle available.
+
+---
+
+## Suggested change
+
+**Most likely none.** Agnus decodes `DMACONR` in NanoMig, so a read of `$002` is
+answered at the top level and nothing is broken on a real machine. What fails is
+the appendix's statement that Paula is *one of* the chips answering it.
+
+Whether that matters depends on how the chip column is read:
+
+- as a **specification** of which silicon drives which address — then Paula
+  should contribute its DMA-enable bits to `$002`, and this is a partitioning
+  defect inherited from Minimig-AGA;
+- as **documentation of the original machine's wiring** — then consolidating the
+  decode into Agnus is a legitimate implementation choice for an FPGA core that
+  has no separate chips, and the finding is a note rather than a defect.
+
+An independent reviewer called it "a boundary artifact of unit-level testing…
+faithful to the appendix text, but reflecting architectural partitioning rather
+than system functional failure". That reading is probably right.
+
+---
+
+## What holds the finding up
+
+The assertion's mutation substitutes `ADKCONR` — an address Paula genuinely does
+decode — and the assertion **flips green**. So the red is a property of `$002`
+and not a dead fixture or an unreachable read path.
+
+---
+
+## A note on how this entry came to exist
+
+The package measured this and then declined to assert it, recording the result as
+a measurement instead. An independent validator found the suppression and named
+it. The assertion exists because of that.
+
+It is worth keeping in the record: a result that is recorded but not asserted
+does not appear in any count, and that is indistinguishable from not having
+looked.

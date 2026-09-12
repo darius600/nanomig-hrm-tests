@@ -87,5 +87,10 @@ meantime.
 
 | finding | subject | status |
 |---|---|---|
+| [NM-HRM-024](NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | open · red |
 | [NM-HRM-025](NM-HRM-025.md) | volume 64 and volume 63 are the same gain on the multiply path | open · red |
+| [NM-HRM-026](NM-HRM-026.md) | the audio state codes are not the ones Figure 5-8 prints | source observation |
+| [NM-HRM-027](NM-HRM-027.md) | in direct mode the interrupt is raised before a word is output | open · red |
+| [NM-HRM-028](NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | open · red |
+| [NM-HRM-030](NM-HRM-030.md) | Paula does not decode DMACONR, though the appendix gives it part ownership | open · red |
 | [NM-HRM-031](NM-HRM-031.md) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | open · red |
