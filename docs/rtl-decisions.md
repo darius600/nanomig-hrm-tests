@@ -54,7 +54,7 @@ definition is not an implementation.
 
 | | |
 |---|---|
-| Manual | Appendix C p.309 lists `BLTSIZV $05C` among what ECS added - "V size, 15-bit" |
+| Manual | Appendix C's ECS register map, printed p.298, marks `BLTSIZV $05C` **new**; printed p.308 names it among "Two new registers ... which make larger blits possible", "h = Height (15 bit height = 32768 lines max)" |
 | NanoMig | `agnus_blitter.v:548` loads `height[14:0]` with **no `&& ecs`** - and the comment on that same line calls it ECS |
 | Measured | height loads identically at `ecs=0` and `ecs=1` |
 | Test | `hrm/agnus_blitter_ecs`, `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` (red) |
