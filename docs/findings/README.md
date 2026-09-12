@@ -87,6 +87,9 @@ meantime.
 
 | finding | subject | status |
 |---|---|---|
+| [NM-HRM-020](NM-HRM-020.md) | BLTSIZV is not gated on ECS, while its two siblings are | open · red |
+| [NM-HRM-021](NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | open · red |
+| [NM-HRM-022](NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | open · red |
 | [NM-HRM-024](NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | open · red |
 | [NM-HRM-025](NM-HRM-025.md) | volume 64 and volume 63 are the same gain on the multiply path | open · red |
 | [NM-HRM-026](NM-HRM-026.md) | the audio state codes are not the ones Figure 5-8 prints | source observation |
