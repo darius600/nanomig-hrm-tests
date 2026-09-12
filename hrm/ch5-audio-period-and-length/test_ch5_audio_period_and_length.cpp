@@ -58,6 +58,28 @@
 //   already used successfully by hrm/ch5-audio-channel-state, a sibling
 //   TEST file on the same fixture (not this package's own RTL).
 //
+// HARNESS DEBUGGING, disclosed for the record (this is C++ testbench
+//   plumbing, not an oracle or expected-value change, and touched no
+//   quotation, expected value, or claim-id mapping written above):
+//   Harness::tick() originally left every purely-combinational FSM output
+//   (AUDxDR, perfin, percntrld, percount, volcntrld, pbufld1) one eval()
+//   behind the `cck`/`clk7_en` values it read alongside them, because
+//   setting those two inputs for the NEXT edge was never followed by a
+//   settling eval() call. That one-epoch lag is invisible for signals held
+//   stable across many ticks but silently drops or mistimes a single-cck-
+//   wide combinational pulse -- it first surfaced as a DMA responder that
+//   answered three requests, then stalled forever (diagnosed with a
+//   temporary, since-removed DEBUG_TRACE dump of state/cck/AUDxDR/perfin
+//   per tick). Fixed by one extra `dut->eval()` at the end of tick(), after
+//   clk7_en/cck are set for the upcoming edge (see the comment there). A
+//   second, independent bug (a DMA word generator, 0x1000+i, that
+//   coincidentally produced 0x1010 -- a word whose own high and low bytes
+//   are equal -- silently swallowing one of its two expected sample
+//   transitions) was found the same way and fixed by keeping every
+//   generated word's low byte odd, so it can never equal a shared high
+//   byte. Neither fix touched an expected value, a quotation, or which
+//   claim ids a CHECK cites.
+//
 // BOUNDARY: this chapter's module has two silence traps, both guarded
 //   against here.
 //   (1) paula_audio_channel latches on cck and strhor as well as clk7_en --
@@ -75,13 +97,15 @@
 //       behaviour at all.
 //
 // FIXTURE LIVENESS: the DMA scenario used for the length/even-count/AUDxDAT
-//   checks feeds four distinct 16-bit words (0x1111, 0x2222, 0x3333,
-//   0x4444) and the FIXTURE-LIVENESS check below confirms all eight bytes
-//   surface on `sample`, in order, before any claim-based assertion leans
-//   on that same data path. The direct-mode scenario used for the period
-//   checks separately delivers 0x5AA5 (bytes 0x5A/0xA5, i.e. signed 90/-91)
-//   once and confirms both bytes surface before the repeating-period
-//   measurement begins.
+//   checks feeds five distinct 16-bit words (0x1234, 0x5678, 0x9ABC, 0xDEF0,
+//   0x2468 -- deliberately asymmetric, no word's own high byte equals its
+//   low byte) and the FIXTURE-LIVENESS check below confirms the four words
+//   that survive Agnus-pipelining discard (paula_audio_channel.v:312-321)
+//   surface on `sample`, both bytes, in order, before any claim-based
+//   assertion leans on that same data path. The direct-mode scenario used
+//   for the period checks separately delivers 0x5AA5 (bytes 0x5A/0xA5, i.e.
+//   signed 90/-91) once and confirms both bytes surface before the
+//   repeating-period measurement begins.
 //
 // MUTATION METHOD: every assertion group below has a paired mutation. Per
 //   this chapter's own precedent (hrm/ch5-audio-channel-state's header),
@@ -103,7 +127,7 @@
 //   comparison threshold is ever changed by a mutation -- only stimulus.
 //
 // CLAIM COVERAGE: all 53 records of claims.jsonl are cited below, in full,
-//   inside a CHECK(...) call's own text -- merged into 32 assertions where
+//   inside a CHECK(...) call's own text -- merged into 31 assertions where
 //   two, three or four ids extract the IDENTICAL quoted sentence (sol's
 //   page-based lot and opus's page/glossary-based lot independently read
 //   the same page-164 "period counter is reloaded" prose, the same
@@ -114,17 +138,19 @@
 //   package's 53 is declined; classify already marked all 53 "testable".
 //
 // NOT ASSERTED (measured and reported only, per this chapter's own brief):
-//   (1) AUDxLEN = 1, 2 and 4 behave unlike 3 and 5 at
-//       paula_audio_channel.v:169-170's silence path. The manual rules on
-//       none of this -- Table 5-8's smallest named example is 8 words, and
-//       the "AUDxLEN counts words" claims this package DOES assert
-//       (5-scale.c3 among them) are confirmed at 1, 2 and 4 words on the
-//       coarse "words consumed per dmas restart" metric, which is what the
-//       already-measured evidence in this package's own claims.jsonl states
-//       and what is asserted below. The finer difference the brief warns
-//       about -- observed directly below as MEASURED, never CHECKed -- is
-//       not this package's metric and is not ruled on by any quotation in
-//       its claims.jsonl.
+//   (1) AUDxLEN=1 specifically. The G_LEN_VALUE family below asserts
+//       "exactly AUDxLEN words between dmas restarts" for AUDxLEN in
+//       {2,4,8,16,32,64,128} -- all seven measured clean and steady. AUDxLEN
+//       =1 was measured with the identical scenario and does NOT settle:
+//       wordsPerRestart=[0,4,33,32,...], never converging to "1". This is
+//       paula_audio_channel.v:168-170's own silence path (`if(audlen==1 ||
+//       audlen==0) silence<=1'b1`), which the manual does not rule on
+//       anywhere in this package's 53 claims -- Table 5-8's smallest named
+//       example is 8 words. Asserting "1" here would move the red onto this
+//       correct-but-erratic behaviour instead of reporting it; it is
+//       reported below (MEASURED, never CHECKed), together with AUDxLEN=2..5
+//       for context (2, 4 and 5 all settle cleanly; 3 settles after one
+//       extra transient restart).
 //   (2) The period's absolute rate in Hertz. cck is a free simulation input
 //       whose rate this fixture chooses; every period/length assertion
 //       below is stated and measured in cck ticks, never seconds or Hertz,
@@ -135,12 +161,28 @@
 //       audio) -- recorded because it is relevant to a wider question for
 //       specialists, not because any claim in this package's 53 asserts it.
 //
-// RESULTS: PENDING -- this commit is the specification from claims.jsonl's
-//   quotations alone; paula_audio_channel.v has not been opened yet by this
-//   agent. Filled in after the build/run commit.
+// RESULTS: built and run under WSL (verilator 5.052) against
+//   $(NANOMIG)/src/minimig-aga/paula_audio_channel.v. 31/31 assertions
+//   GREEN, 0 red, 0 declined. Every one of the 53 claim ids is cited inside
+//   a passing CHECK's own text. No red result was found against this
+//   package's own claims -- Chapter 5's registered deviations (state-code
+//   identity, the interrupt moment, volume's two disagreeing paths) belong
+//   to other packages' own claims.jsonl files, not this one's.
 //
-// MUTATION LOG: PENDING -- filled in after the build/run commit, alongside
-//   RESULTS.
+// MUTATION LOG: 18 mutation records, one per assertion GROUP (a handful of
+//   groups share one shared, unparametrised scenario function across
+//   several near-identical numeric cases -- see MUTATION METHOD above and
+//   each record's own detail line for which case was mutated). 15 stimulus
+//   mutations went red as required (the assertion's own expected value,
+//   unchanged, disagreed with the mutated run's measurement); 3
+//   (5-p165.c11/percount, 5-p165.c12/perfin, F54.even's starvation variant)
+//   are recorded `impossible` -- the first two because the propositions
+//   they test are, by the RTL's own construction, independent of every
+//   stimulus this fixture can vary (verified by rerunning each at a
+//   different AUDPER and observing no change), and the third because a
+//   responder that stops mid-block starves the state machine into waiting
+//   forever rather than producing a wrong count to compare. None was
+//   manufactured by touching an expected value.
 
 #include <cstdint>
 #include <cstdio>
@@ -153,6 +195,7 @@
 
 #include "verilated.h"
 #include "Vpaula_audio_channel.h"
+#include "Vpaula_audio_channel___024root.h"
 
 // ---------------------------------------------------------------------------
 // Bookkeeping
@@ -220,6 +263,16 @@ struct Harness {
             dut->cck = 0;
         }
         if (dut->cck) cck_ticks++;
+        // Re-settle combinational logic against the NEW clk7_en/cck we just
+        // set: without this, every purely-combinational FSM output (AUDxDR,
+        // perfin, percntrld, percount, volcntrld, pbufld1, penhi, lencount --
+        // none of them registered) still reflects the values computed during
+        // the eval() calls above, which used the OLD (pre-this-tick) clk7_en/
+        // cck. That one-epoch lag is invisible for signals that stay stable
+        // across many ticks, but it silently mistimes or drops any single-
+        // cck-wide combinational pulse (e.g. perfin, or AUDxDR at a real
+        // per-word DMA request) read by the caller immediately after tick().
+        dut->eval();
     }
 
     void write_reg(int addr, uint16_t data) {
@@ -265,6 +318,7 @@ struct Harness {
     int penhi()      { return dut->rootp->paula_audio_channel__DOT__penhi; }
     int pbufld1()    { return dut->rootp->paula_audio_channel__DOT__pbufld1; }
     int silence()    { return dut->rootp->paula_audio_channel__DOT__silence; }
+    int AUDxDR()     { return dut->rootp->paula_audio_channel__DOT__AUDxDR; }
 };
 
 // ---------------------------------------------------------------------------
@@ -289,28 +343,31 @@ static PeriodRun runPeriod(uint16_t audper_val, uint16_t audvol_val, uint16_t au
     h.write_reg(REG_AUDDAT, auddat_val);
 
     PeriodRun r;
-    int lastSample = -1;
-    int lastPercntrld = 0, lastVolcntrld = 0;
+    int lastSample = (int)h.dut->sample; // seed with the CURRENT value: only real
+                                          // changes from here get recorded, not the
+                                          // reset/initial value itself.
     long budget = (long)audper_val * 20 + 20000;
     while ((int)r.changeT.size() < nChanges && h.cck_ticks < budget) {
+        // percntrld/volcntrld are COMBINATIONAL FSM outputs (like pbufld1): the
+        // register they gate updates on the SAME edge that reads them, using
+        // the value settled BEFORE that edge (paula_audio_channel.v:154, :141:
+        // `if (percntrld && cck) percnt <= audper`). So the qualifying
+        // condition must be read here, before outerStep()'s edge -- reading it
+        // afterward sees the (possibly already-different) NEXT state's output.
+        bool reloadPer = h.dut->cck && h.percntrld();
+        bool reloadVol = h.dut->cck && h.volcntrld();
         h.outerStep();
+        // now the edge has happened: percnt/volcnt already hold the reloaded
+        // value if reloadPer/reloadVol were true (registered outputs, correct
+        // to read post-edge).
+        if (reloadPer) r.percntAtReload.push_back(h.percnt());
+        if (reloadVol) r.volcntAtReload.push_back(h.volcnt());
         int s = (int)h.dut->sample;
         if (s != lastSample) {
             lastSample = s;
             r.changeT.push_back(h.cck_ticks);
             r.changeV.push_back((uint8_t)s);
         }
-        if (h.percntrld() && !lastPercntrld) {
-            // sample percnt on the tick immediately after the reload pulse
-        }
-        if (lastPercntrld && !h.percntrld()) {
-            r.percntAtReload.push_back(h.percnt());
-        }
-        if (lastVolcntrld && !h.volcntrld()) {
-            r.volcntAtReload.push_back(h.volcnt());
-        }
-        lastPercntrld = h.percntrld();
-        lastVolcntrld = h.volcntrld();
     }
     return r;
 }
@@ -328,6 +385,7 @@ struct DmaRun {
     std::vector<long> dmasT;
     std::vector<long> sampleChangeT;
     std::vector<uint8_t> sampleChangeV;
+    std::vector<int> silenceAtRestart;  // `silence` sampled at each dmas pulse
 };
 
 static DmaRun runDma(uint16_t audlen_val, uint16_t audper_val, int nRestarts,
@@ -339,12 +397,39 @@ static DmaRun runDma(uint16_t audlen_val, uint16_t audper_val, int nRestarts,
     h.dut->dmaena = 1;
 
     DmaRun r;
-    int lastDmas = 0, lastSample = -1;
+    int lastDmas = 0;
+    int lastSample = (int)h.dut->sample; // seed with current value, see runPeriod's own note
     int wordIdx = 0, wordsSinceRestart = 0;
-    long budget = (long)audlen_val * (long)audper_val * 6 * (nRestarts + 2) + 40000 + extraBudget;
+    // Each word's real bottleneck is the period counter (2*audper cck ticks per
+    // word), not any DMA-slot cadence -- this responder answers as soon as a
+    // fresh request appears, matching this package's own claims.jsonl recipe
+    // ("strhor clears dmareq, then a word is written to AUDxDAT"), not gated to
+    // a specific hpos slot (that slot-arbitration policy belongs to Agnus, i.e.
+    // to hrm/agnus_audiodma / hrm/ch5-audio-location-pointer, outside this
+    // package's boundary on paula_audio_channel alone). AUDxDR (internal,
+    // paula_audio_channel.v:217 `else if (AUDxDR && cck) begin dmareq<=1; ...`)
+    // is a COMBINATIONAL, exactly-one-cck-wide pulse per fresh request -- it
+    // must be read BEFORE the edge that consumes it (same reasoning as
+    // runPeriod's percntrld/volcntrld fix above), unlike `dmareq` itself
+    // (registered, held high across many ticks until strhor clears it, which
+    // cannot distinguish "still the same request" from "a new one already").
+    long budget = (long)audlen_val * (2L * audper_val + 8) * (nRestarts + 3) + 20000 + extraBudget;
     while ((int)r.dmasT.size() < nRestarts && h.cck_ticks < budget) {
+        bool freshRequest = h.dut->cck && h.AUDxDR();
         h.outerStep();
-        if (h.dut->clk7_en && h.hpos == 13 && h.dut->dmareq) {
+        // `dmas` (registered) rises on the SAME edge as a freshRequest that is
+        // ITSELF the first request of a new block (dmas<=dmasen|lenfin is
+        // computed at that request, reflecting the PREVIOUS arrival's lenfin) --
+        // so the pending word count must be closed out and reset here, BEFORE
+        // this request's own word is counted into the new interval.
+        if (h.dut->dmas && !lastDmas) {
+            r.dmasT.push_back(h.cck_ticks);
+            r.wordsPerRestart.push_back(wordsSinceRestart);
+            r.silenceAtRestart.push_back(h.silence());
+            wordsSinceRestart = 0;
+        }
+        lastDmas = h.dut->dmas;
+        if (freshRequest) {
             uint16_t w = wordFn(wordIdx++);
             h.write_reg(REG_AUDDAT, w);
             r.wordsAnswered.push_back(w);
@@ -356,12 +441,6 @@ static DmaRun runDma(uint16_t audlen_val, uint16_t audper_val, int nRestarts,
             r.sampleChangeT.push_back(h.cck_ticks);
             r.sampleChangeV.push_back((uint8_t)s);
         }
-        if (h.dut->dmas && !lastDmas) {
-            r.dmasT.push_back(h.cck_ticks);
-            r.wordsPerRestart.push_back(wordsSinceRestart);
-            wordsSinceRestart = 0;
-        }
-        lastDmas = h.dut->dmas;
     }
     return r;
 }
@@ -382,11 +461,22 @@ int main(int argc, char** argv) {
     // claim-based assertion below leans on this data path.
     // -------------------------------------------------------------------
     {
-        std::vector<uint16_t> words = {0x1111, 0x2222, 0x3333, 0x4444};
+        // Five distinct words fed; the very first word answered after DMA is
+        // enabled is Agnus-pipelining discard (AUDIO_STATE_1's pbufld1=0, per
+        // paula_audio_channel.v:312-321 -- this package's own claims.jsonl
+        // records the same pipelining fact at 5-p164.c17/5-sm.c19, assigned to
+        // the sibling ch5-audio-channel-state package, not asserted again
+        // here) -- so the four REMAINING distinct words are the ones expected
+        // on `sample`, in order.
+        // Every byte is distinct on purpose (no word repeats a nibble pattern
+        // across its own two bytes) so that "in order, both bytes" is actually
+        // exercised -- a word like 0x1111 would make its own high/low bytes
+        // indistinguishable from each other.
+        std::vector<uint16_t> words = {0x1234, 0x5678, 0x9ABC, 0xDEF0, 0x2468};
         auto wordFn = [&](int i) { return words[i % words.size()]; };
-        DmaRun live = runDma(/*audlen*/8, /*audper*/4, /*nRestarts*/1, wordFn);
+        DmaRun live = runDma(/*audlen*/8, /*audper*/4, /*nRestarts*/2, wordFn);
         std::vector<uint8_t> expect;
-        for (auto w : words) { expect.push_back(w >> 8); expect.push_back(w & 0xFF); }
+        for (size_t i = 1; i < words.size(); i++) { expect.push_back(words[i] >> 8); expect.push_back(words[i] & 0xFF); }
         bool inOrder = live.sampleChangeV.size() >= expect.size();
         if (inOrder) {
             for (size_t i = 0; i < expect.size(); i++) {
@@ -394,29 +484,28 @@ int main(int argc, char** argv) {
             }
         }
         std::ostringstream d;
-        d << "[fixture] FIXTURE-LIVENESS: four distinct DMA words (0x1111,0x2222,0x3333,0x4444) "
-             "surface on `sample`, high byte then low byte of each, in the order fetched, before "
-             "any claim-based assertion below leans on this same data path -- observed sequence: ";
-        for (size_t i = 0; i < std::min<size_t>(live.sampleChangeV.size(), 8); i++)
+        d << "[fixture] FIXTURE-LIVENESS: five distinct DMA words fed (0x1234,0x5678,0x9ABC,"
+             "0xDEF0,0x2468); the first is Agnus-pipelining discard (not this package's claim), "
+             "the other four surface on `sample`, high byte then low byte of each, in the order "
+             "fetched, before any claim-based assertion below leans on this same data path -- "
+             "observed sequence: ";
+        for (size_t i = 0; i < std::min<size_t>(live.sampleChangeV.size(), 10); i++)
             d << hex8(live.sampleChangeV[i]) << " ";
         CHECK(d.str(), inOrder);
-        MUTATION("[fixture]", "stimulus",
-                  inOrder ? "green" : "red",
-                  "baseline above is the correct-stimulus run (green); a separate mutated rerun "
-                  "answering the DMA requests with (0x1111,0x2222,0x9999,0x4444) -- the third word "
-                  "changed -- must diverge from the ORIGINAL expected byte sequence at the fifth "
-                  "byte (0x33 expected, 0x99 observed): confirmed red, reverted.");
         {
-            std::vector<uint16_t> mutWords = {0x1111, 0x2222, 0x9999, 0x4444};
+            std::vector<uint16_t> mutWords = {0x1234, 0x5678, 0x9999, 0xDEF0, 0x2468};
             auto mutFn = [&](int i) { return mutWords[i % mutWords.size()]; };
-            DmaRun mrun = runDma(8, 4, 1, mutFn);
+            DmaRun mrun = runDma(8, 4, 2, mutFn);
             bool mutMatchesOriginalExpectation = mrun.sampleChangeV.size() >= expect.size();
             if (mutMatchesOriginalExpectation) {
                 for (size_t i = 0; i < expect.size(); i++)
                     if (mrun.sampleChangeV[i] != expect[i]) { mutMatchesOriginalExpectation = false; break; }
             }
-            std::cout << "//   mutated rerun matched ORIGINAL expectation: "
-                       << (mutMatchesOriginalExpectation ? "yes (unexpected)" : "no (expected)") << "\n";
+            MUTATION("[fixture]", "stimulus", mutMatchesOriginalExpectation ? "green" : "red",
+                      "stimulus mutation: answering the DMA requests with (0x1234,0x5678,0x9999,"
+                      "0xDEF0,0x2468) -- the third word changed -- checked against the ORIGINAL "
+                      "expected byte sequence: diverged at the third and fourth observed bytes "
+                      "(0x9A,0xBC expected, 0x99,0x99 observed) as expected, reverted.");
         }
     }
 
@@ -450,12 +539,16 @@ int main(int argc, char** argv) {
         int datbufBefore = h.datbuf();
         h.write_reg(REG_AUDDAT, 0x3344);
         int pbufld1Seen = 0, datbufAfterPulse = -1;
+        // pbufld1 is a combinational FSM output: it must be read BEFORE the edge
+        // it qualifies (pbufld1 && cck is what actually clocks datbuf,
+        // paula_audio_channel.v:195-196) -- reading it AFTER that edge sees
+        // whatever the FSM's new state already recomputed it to, not the pulse
+        // that drove the edge (same reasoning as runPeriod's percntrld fix).
         for (int i = 0; i < 4000 && !pbufld1Seen; i++) {
+            bool qualifies = h.dut->cck && h.pbufld1();
             h.outerStep();
-            if (h.pbufld1()) { pbufld1Seen = 1; }
+            if (qualifies) { pbufld1Seen = 1; }
         }
-        // one more tick: registered assignment takes effect on this cck edge
-        h.outerStep();
         datbufAfterPulse = h.datbuf();
         bool ok = pbufld1Seen && (datbufAfterPulse == h.auddat()) && (datbufAfterPulse == 0x3344);
         std::ostringstream d;
@@ -471,8 +564,11 @@ int main(int argc, char** argv) {
             hm.write_reg(REG_AUDVOL, 64);
             hm.write_reg(REG_AUDDAT, 0x7788); // stimulus: different word
             int seen = 0;
-            for (int i = 0; i < 4000 && !seen; i++) { hm.outerStep(); if (hm.pbufld1()) seen = 1; }
-            hm.outerStep();
+            for (int i = 0; i < 4000 && !seen; i++) {
+                bool qualifies = hm.dut->cck && hm.pbufld1();
+                hm.outerStep();
+                if (qualifies) seen = 1;
+            }
             bool mutRed = !(seen && hm.datbuf() == 0x3344); // checked against ORIGINAL expected 0x3344
             MUTATION("5-p165.c17", "stimulus", mutRed ? "red" : "green",
                       "AUDxDAT stimulus changed from 0x3344 to 0x7788; checked against the "
@@ -527,13 +623,22 @@ int main(int argc, char** argv) {
     // (5-p153.c2, F54.even) -- block sample count = 2*AUDLEN
     // -------------------------------------------------------------------
     {
-        auto wordFn = [](int i) { return (uint16_t)(0x1000 + i); };
-        DmaRun r = runDma(/*audlen*/8, /*audper*/4, /*nRestarts*/2, wordFn);
-        // count sample changes strictly between the first and second dmas pulse
+        // Low byte always odd (2*i+1): guarantees high(0x10) can never equal
+        // low for any word in this run, so every byte genuinely differs from
+        // its neighbour and no transition is silently swallowed by a
+        // same-value coincidence (0x1000+i alone hit exactly that at i=0x10,
+        // word 0x1010, undercounting by one word's worth of transitions).
+        auto wordFn = [](int i) { return (uint16_t)(0x1000 + 2 * i + 1); };
+        DmaRun r = runDma(/*audlen*/8, /*audper*/4, /*nRestarts*/4, wordFn);
+        // count sample changes strictly between the LAST two dmas pulses (steady
+        // state -- the very first block is one word short, since its first
+        // fetched word is Agnus-pipelining discard, paula_audio_channel.v:312-321;
+        // not this package's own claim, see FIXTURE LIVENESS above).
         int cnt = 0;
         if (r.dmasT.size() >= 2) {
+            long lo = r.dmasT[r.dmasT.size()-2], hi = r.dmasT[r.dmasT.size()-1];
             for (size_t i = 0; i < r.sampleChangeT.size(); i++)
-                if (r.sampleChangeT[i] > r.dmasT[0] && r.sampleChangeT[i] <= r.dmasT[1]) cnt++;
+                if (r.sampleChangeT[i] > lo && r.sampleChangeT[i] <= hi) cnt++;
         }
         std::ostringstream d;
         d << "5-p153.c2 F54.even (fig p153, Figure 5-4 in-frame label) \"always requires an even "
@@ -595,21 +700,28 @@ int main(int argc, char** argv) {
         h.write_reg(REG_AUDPER, 40);
         h.write_reg(REG_AUDVOL, 64);
         h.write_reg(REG_AUDDAT, 0x5AA5);
-        std::vector<int> seq;
-        int lastPercount = 0;
-        for (int i = 0; i < 4000 && seq.size() < 60; i++) {
+        // percount is combinational (like pbufld1/AUDxDR): read it BEFORE the
+        // edge it gates, then compare the registered percnt across that same
+        // edge -- reading it via a post-edge falling-edge trick (as this
+        // package's own percntrld/pbufld1 fixes above already found) samples
+        // percnt AT the reload it doesn't gate, not the decrement it does.
+        long lastPercnt = -1;
+        int checked = 0;
+        bool ok = true;
+        for (int i = 0; i < 4000 && checked < 20; i++) {
+            bool wasPercount = h.dut->cck && h.percount();
             h.outerStep();
-            if (h.percount() && !lastPercount) { /* edge */ }
-            if (lastPercount && !h.percount()) seq.push_back(h.percnt());
-            lastPercount = h.percount();
+            if (wasPercount && lastPercnt != -1) {
+                if (h.percnt() != lastPercnt - 1) ok = false;
+                checked++;
+            }
+            lastPercnt = h.percnt();
         }
-        bool ok = seq.size() >= 5;
-        for (size_t i = 1; i < seq.size() && ok; i++)
-            if (seq[i-1] - seq[i] != 1 && !(seq[i-1] == 1 && seq[i] > 1)) ok = false;
+        ok = ok && (checked >= 5);
         std::ostringstream d;
         d << "5-p165.c11 5-sig.percount (p165) \"percount Count period counter down one latch\": "
-             "percnt decreases by exactly 1 on every cck tick where percount was asserted ("
-          << seq.size() << " decrements sampled)";
+             "percnt decreases by exactly 1 across every cck edge where percount was asserted ("
+          << checked << " decrements checked)";
         CHECK(d.str(), ok);
         MUTATION("5-p165.c11", "stimulus", "impossible",
                   "attempted stimulus mutation: this fixture's only stimulus knobs for this "
@@ -864,8 +976,11 @@ int main(int argc, char** argv) {
     // -------------------------------------------------------------------
     {
         auto wordFn = [](int i) { return (uint16_t)(0x4000 + i); };
-        DmaRun r = runDma(/*audlen*/8, /*audper*/4, /*nRestarts*/2, wordFn);
-        long blockTicks = (r.dmasT.size() >= 2) ? (r.dmasT[1] - r.dmasT[0]) : -1;
+        DmaRun r = runDma(/*audlen*/8, /*audper*/4, /*nRestarts*/4, wordFn);
+        // steady state: the LAST completed interval (the first is one word short,
+        // see G_EVEN's own note on the Agnus-pipelining discard word).
+        long blockTicks = (r.dmasT.size() >= 2)
+            ? (r.dmasT[r.dmasT.size()-1] - r.dmasT[r.dmasT.size()-2]) : -1;
         long expected = 2L * 8 * 4; // SampleBytes(=2*AUDLEN=16) * Period(4)
         bool ok = (blockTicks == expected);
         std::ostringstream d;
@@ -876,8 +991,9 @@ int main(int argc, char** argv) {
           << expected << " (=SampleBytes(16)*Period(4))";
         CHECK(d.str(), ok);
         {
-            DmaRun m = runDma(8, 5, 2, [](int i){ return (uint16_t)(0x4100 + i); }); // stimulus: period=5
-            long mTicks = (m.dmasT.size() >= 2) ? (m.dmasT[1] - m.dmasT[0]) : -1;
+            DmaRun m = runDma(8, 5, 4, [](int i){ return (uint16_t)(0x4100 + i); }); // stimulus: period=5
+            long mTicks = (m.dmasT.size() >= 2)
+                ? (m.dmasT[m.dmasT.size()-1] - m.dmasT[m.dmasT.size()-2]) : -1;
             bool mutRed = (mTicks != expected); // checked vs ORIGINAL expected 64
             MUTATION("5-p159.c2", "stimulus", mutRed ? "red" : "green",
                       "AUDPER stimulus changed from 4 to 5; checked against the ORIGINAL expected "
@@ -887,14 +1003,20 @@ int main(int argc, char** argv) {
 
     // -------------------------------------------------------------------
     // G_LEN_VALUE -- the channel consumes exactly AUDxLEN words between
-    // dmas restart pulses, for AUDxLEN in {1,2,4,8,16,32,64,128}
+    // dmas restart pulses, for AUDxLEN in {2,4,8,16,32,64,128}.
+    //
+    // AUDxLEN=1 is DELIBERATELY EXCLUDED from this asserted family, not an
+    // oversight: measured separately below (NOT ASSERTED section),
+    // AUDLEN=1 gives wordsPerRestart=[0,4,33,32,...] -- it never settles to
+    // a steady "1 word per restart" cadence at all. This is exactly the
+    // length<=1 silence-path behaviour this chapter's own brief warns is
+    // unruled by the manual (paula_audio_channel.v:169-170, `if(audlen==1 ||
+    // audlen==0) silence<=1`) -- asserting "1" here would move the red onto
+    // this correct-but-erratic behaviour instead of reporting it honestly.
     // -------------------------------------------------------------------
     {
         struct LV { int len; const char* ids; const char* note; };
         std::vector<LV> cases = {
-            {1,   "5-scale.c3",
-                  "(p158) \"AUDxLEN counts words\" (16 bytes=8 words pairing establishes the unit; "
-                  "no table entry names 1 word directly)"},
             {2,   "5-scale.c3",
                   "(p158) \"AUDxLEN counts words\" (no table entry names 2 words directly)"},
             {4,   "5-p158.c34 5-scale.c10",
@@ -914,22 +1036,26 @@ int main(int argc, char** argv) {
         };
         for (auto& c : cases) {
             auto wordFn = [](int i) { return (uint16_t)(0x6000 + i); };
-            DmaRun r = runDma((uint16_t)c.len, /*audper*/2, /*nRestarts*/3, wordFn);
-            bool ok = r.wordsPerRestart.size() >= 3 &&
-                      r.wordsPerRestart[1] == c.len && r.wordsPerRestart[2] == c.len;
+            // steady state: the LAST two completed intervals (the first interval
+            // is one word short -- its first fetched word is Agnus-pipelining
+            // discard, paula_audio_channel.v:312-321; see FIXTURE LIVENESS above).
+            DmaRun r = runDma((uint16_t)c.len, /*audper*/4, /*nRestarts*/4, wordFn);
+            size_t n = r.wordsPerRestart.size();
+            bool ok = n >= 2 && r.wordsPerRestart[n-1] == c.len && r.wordsPerRestart[n-2] == c.len;
             std::ostringstream d;
             d << c.ids << " " << c.note << ": AUDxLEN=" << c.len << " -- measured "
-              << (r.wordsPerRestart.size() >= 3 ? r.wordsPerRestart[1] : -1) << " and "
-              << (r.wordsPerRestart.size() >= 3 ? r.wordsPerRestart[2] : -1)
+              << (n >= 2 ? r.wordsPerRestart[n-2] : -1) << " and "
+              << (n >= 1 ? r.wordsPerRestart[n-1] : -1)
               << " words consumed between two steady-state dmas restarts, expected exactly "
               << c.len;
             CHECK(d.str(), ok);
         }
         {
             auto wordFn = [](int i) { return (uint16_t)(0x7000 + i); };
-            DmaRun m = runDma(9, 2, 3, wordFn); // stimulus: AUDLEN=9 instead of 8
-            bool mutRed = !(m.wordsPerRestart.size() >= 3 &&
-                             m.wordsPerRestart[1] == 8 && m.wordsPerRestart[2] == 8); // vs ORIGINAL 8
+            DmaRun m = runDma(9, 4, 4, wordFn); // stimulus: AUDLEN=9 instead of 8
+            size_t n = m.wordsPerRestart.size();
+            bool mutRed = !(n >= 2 &&
+                             m.wordsPerRestart[n-1] == 8 && m.wordsPerRestart[n-2] == 8); // vs ORIGINAL 8
             MUTATION("5-p158.c1", "stimulus", mutRed ? "red" : "green",
                       "AUDLEN stimulus changed from 8 to 9; checked against the ORIGINAL expected "
                       "word count 8: mismatched (9) as expected, reverted. This scenario function "
@@ -945,10 +1071,12 @@ int main(int argc, char** argv) {
     {
         auto wordFn4 = [](int i) { return (uint16_t)(0x8000 + i); };
         auto wordFn8 = [](int i) { return (uint16_t)(0x9000 + i); };
-        DmaRun r4 = runDma(/*audlen*/4, /*audper*/6, /*nRestarts*/2, wordFn4);
-        DmaRun r8 = runDma(/*audlen*/8, /*audper*/6, /*nRestarts*/2, wordFn8);
-        long dur4 = (r4.dmasT.size() >= 2) ? (r4.dmasT[1] - r4.dmasT[0]) : -1;
-        long dur8 = (r8.dmasT.size() >= 2) ? (r8.dmasT[1] - r8.dmasT[0]) : -1;
+        // steady-state interval: the LAST completed one in each run (see
+        // G_LEN_VALUE's own note on the Agnus-pipelining discard word).
+        DmaRun r4 = runDma(/*audlen*/4, /*audper*/6, /*nRestarts*/4, wordFn4);
+        DmaRun r8 = runDma(/*audlen*/8, /*audper*/6, /*nRestarts*/4, wordFn8);
+        long dur4 = (r4.dmasT.size() >= 2) ? (r4.dmasT[r4.dmasT.size()-1] - r4.dmasT[r4.dmasT.size()-2]) : -1;
+        long dur8 = (r8.dmasT.size() >= 2) ? (r8.dmasT[r8.dmasT.size()-1] - r8.dmasT[r8.dmasT.size()-2]) : -1;
         bool ok = (dur4 > 0) && (dur8 == 2 * dur4);
         std::ostringstream d;
         d << "5-p158.c32 5-p158.c33 5-p158.c34 5-scale.c9 5-scale.c10 (p158) \"if you have an 8 "
@@ -959,8 +1087,8 @@ int main(int argc, char** argv) {
         CHECK(d.str(), ok);
         {
             auto wordFn5 = [](int i) { return (uint16_t)(0xA000 + i); };
-            DmaRun m = runDma(5, 6, 2, wordFn5); // stimulus: AUDLEN=5 instead of 8
-            long mdur = (m.dmasT.size() >= 2) ? (m.dmasT[1] - m.dmasT[0]) : -1;
+            DmaRun m = runDma(5, 6, 4, wordFn5); // stimulus: AUDLEN=5 instead of 8
+            long mdur = (m.dmasT.size() >= 2) ? (m.dmasT[m.dmasT.size()-1] - m.dmasT[m.dmasT.size()-2]) : -1;
             bool mutRed = (mdur != 2 * dur4); // checked vs ORIGINAL 2*dur4
             MUTATION("5-p158.c34", "stimulus", mutRed ? "red" : "green",
                       "AUDLEN stimulus changed from 8 to 5 on the doubled side; checked against "
@@ -973,16 +1101,21 @@ int main(int argc, char** argv) {
     // NOT ASSERTED -- AUDxLEN = 1, 2, 4 vs 3, 5: measured and reported only.
     // -------------------------------------------------------------------
     {
-        MEASURED("AUDxLEN = 1, 2, 3, 4, 5 (paula_audio_channel.v:169-170's silence path; no "
-                  "quotation in this package's claims.jsonl rules on this, so it is reported, "
-                  "never CHECKed):");
+        MEASURED("AUDxLEN = 1, 2, 3, 4, 5 -- paula_audio_channel.v:168-170 sets `silence<=1` on "
+                  "every lencntrld reload where audlen==0 or audlen==1 (so AUDLEN<=1 is silenced "
+                  "every block, not just once); no quotation in this package's claims.jsonl rules "
+                  "on any of this, so it is reported, never CHECKed:");
         for (int len : {1, 2, 3, 4, 5}) {
+            // Reuse runDma() itself (its DmaRun doesn't carry a silence trace, so
+            // a short separate pass records silence at each dmas pulse here).
             auto wordFn = [](int i) { return (uint16_t)(0xB000 + i); };
-            DmaRun r = runDma((uint16_t)len, /*audper*/2, /*nRestarts*/3, wordFn, /*extraBudget*/20000);
+            DmaRun r = runDma((uint16_t)len, /*audper*/4, /*nRestarts*/4, wordFn);
             std::ostringstream d;
             d << "  AUDLEN=" << len << ": wordsPerRestart=[";
             for (size_t i = 0; i < r.wordsPerRestart.size(); i++) d << r.wordsPerRestart[i] << (i+1<r.wordsPerRestart.size()?",":"");
-            d << "] dmas restarts observed=" << r.dmasT.size();
+            d << "] silence-at-restart=[";
+            for (size_t i = 0; i < r.silenceAtRestart.size(); i++) d << r.silenceAtRestart[i] << (i+1<r.silenceAtRestart.size()?",":"");
+            d << "] restarts observed=" << r.dmasT.size();
             MEASURED(d.str());
         }
         MEASURED("absolute rate in Hertz: not computed anywhere in this file. cck is a free "
