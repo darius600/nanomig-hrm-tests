@@ -21,16 +21,16 @@ Requires Verilator and `make`; last verified with Verilator **5.052**.
 If `run_all.sh` reports *every* package as a build error, the toolchain is
 missing rather than the tree being broken — check `verilator --version` first. On
 Windows the two commonly live only inside WSL, and a run started from Git Bash or
-PowerShell then fails all 86 packages at once while the tree is perfectly healthy.
+PowerShell then fails every package at once while the tree is perfectly healthy.
 
 ## Where the suite stands
 
 | | |
 |---|---:|
-| test packages | **87** |
-| failing assertions | **68**, in 33 families |
-| registered findings | **23** — 16 open, 5 withdrawn, 2 source observations |
-| chapters through the full pipeline | **4** — 2 Copper, 3 Playfield, 4 Sprites, 6 Blitter |
+| test packages | **98** |
+| failing assertions | **87**, in 52 families |
+| registered findings | **31** — 22 open, 6 withdrawn, 3 source observations |
+| chapters through the full pipeline | **5** — 2 Copper, 3 Playfield, 4 Sprites, 5 Audio, 6 Blitter |
 
 **A red test is a result, not a bug in the test.** Each one marks a place where
 the RTL does something the manual does not describe. Adjusting an assertion to
@@ -40,7 +40,7 @@ exists to prevent.
 Every assertion names the manual page it comes from. Where a check and the RTL
 disagree, the manual decides.
 
-## The sixteen open findings
+## The twenty-two open findings
 
 Each is keyed `NM-HRM-nnn` — `NM` for the implementation under test, `HRM` for
 the manual that judges it. The key names the **pair that disagrees**, deliberately:
@@ -65,18 +65,31 @@ sentence is the outlier — see the fourth-witness document below.
 | [NM-HRM-021](docs/findings.md#nm-hrm-021--doff-bltcon1-bit-7-has-no-observable-effect) | DOFF (BLTCON1 bit 7) has no observable effect; no expression reads that bit | 6 |
 | [NM-HRM-022](docs/findings.md#nm-hrm-022--bltxpth-carries-five-high-bits-in-both-chipsets) | BLTxPTH takes five high pointer bits in **both** chipsets | 6 |
 | [NM-HRM-023](docs/findings.md#nm-hrm-023--the-attach-bit-is-honoured-in-the-even-sprite-not-only-the-odd) | the sprite ATTACH bit is honoured in the even sprite, not only the odd | 4 |
+| [NM-HRM-024](docs/findings.md#nm-hrm-024--the-audio-dma-pointer-takes-five-high-bits-in-both-chipsets) | the audio DMA pointer takes five high bits in both chipsets | 5 |
+| [NM-HRM-025](docs/findings.md#nm-hrm-025--volume-64-and-volume-63-are-the-same-gain-on-the-multiply-path) | volume 64 and volume 63 are the same gain on the multiply path | 5 |
+| [NM-HRM-027](docs/findings.md#nm-hrm-027--in-direct-mode-the-interrupt-is-raised-before-a-word-is-output) | in direct mode the interrupt is raised before a word is output | 5 |
+| [NM-HRM-028](docs/findings.md#nm-hrm-028--adkcons-audio-attach-bits-are-stored-and-reach-nothing) | ADKCON's audio attach bits are stored and reach nothing | 5 |
+| [NM-HRM-030](docs/findings.md#nm-hrm-030--paula-does-not-decode-dmaconr-though-the-appendix-gives-it-part-ownership) | Paula does not decode DMACONR, though the appendix gives it part ownership | 5 |
+| [NM-HRM-031](docs/findings.md#nm-hrm-031--intreq-bit-14-is-a-settable-request-bit-where-the-appendix-says-enable-only) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | 5 |
 
-Two of these are worth reading together. **NM-HRM-003 and NM-HRM-022 are the same
-deviation in two different engines** — Copper and blitter build their pointers
-identically, `data_in[4:0]` as five high bits and `data_in[15:1]` as fifteen low,
-unconditionally, and the manual documents three high bits for OCS in both cases.
-Separately they read as two omissions. Together they look like one decision not to
-model the OCS pointer narrowing anywhere in Agnus. Neither chapter could have
-raised that question alone.
+Three of these are one finding in three places. **NM-HRM-003, NM-HRM-022 and
+NM-HRM-024 are the same deviation in three different engines** — Copper, blitter
+and audio build their pointers identically, `data_in[4:0]` as five high bits and
+`data_in[15:1]` as fifteen low, unconditionally, and the manual documents three
+high bits for OCS in every case. Separately they read as three omissions.
+Together they are one decision not to model the OCS pointer narrowing anywhere in
+Agnus — and `agnus_audiodma.v` is the case that settles it, because the module
+has no chipset input at all, so there is nothing there to gate on even in
+principle. No chapter could have raised that question alone.
 
-**Five findings were withdrawn** and their entries kept, because the reasoning
-that withdrew them is the result. Four of the five withdrew for one reason: the
-assertion had read a permission or a silence in the manual as a requirement.
+**Six findings were withdrawn** and their entries kept, because the reasoning
+that withdrew them is the result. Four withdrew for one reason: the assertion had
+read a permission or a silence in the manual as a requirement. The sixth,
+NM-HRM-029, is a different shape and worth the minute it takes to read — its
+assertion tested *"dmasen is true only when LENFIN=1"* by searching for a case
+where both were true and failing when none existed. Absence satisfies "only
+when". A one-way implication had been tested as a biconditional, which is the
+same error as the other four in the direction nobody was watching for.
 
 ## Where to go next
 
@@ -93,9 +106,9 @@ go red, that is the shortest way in.
 
 ## What is covered, and by which method
 
-The suite spans more of the manual than the four chapters that have been through
+The suite spans more of the manual than the five chapters that have been through
 the full pipeline. That difference matters when reading a **green** result, so it
-is stated here rather than left to be inferred: **63 of the 87 packages came
+is stated here rather than left to be inferred: **74 of the 98 packages came
 through the pipeline, 24 did not.**
 
 | Chapter | Packages | How they were built |
@@ -103,8 +116,17 @@ through the pipeline, 24 did not.**
 | 2 — Coprocessor (Copper) | 13 | 12 through the **pipeline**; `agnus_copper_move` is a regression test against a frozen spec, not against the manual |
 | 3 — Playfield | 22 | all through the **pipeline** |
 | 4 — Sprites | 14 | all through the **pipeline** |
+| 5 — Audio | 11 | all through the **pipeline**; the five hand-written audio tests that preceded them still stand beside them |
 | 6 — Blitter | 14 | all through the **pipeline**; the hand-written blitter tests that preceded them were superseded |
-| 5 / 7 / 8 and module-level tests | 24 | by hand |
+| 7 / 8 and module-level tests | 24 | by hand |
+
+**Chapter 5's coverage figure is a floor, not a measurement of record.** At least
+869 of its 970 testable claims are cited by an assertion that ran and printed the
+id; the rest is a limit of how that was measured, and eighteen ids were removed
+from assertions deliberately, each with the fixture it would need. The reasoning
+is in the pipeline repository's `work/2026-09-12_ch5_coverage.md`. A coverage
+number that counts ids named anywhere in a source — including in comments — is
+the thing that file exists to stop being quoted.
 
 **The pipeline** means two blind readings of the same pages by two different
 models, every quotation anchored mechanically in the source text, an attack on

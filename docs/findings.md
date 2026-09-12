@@ -100,6 +100,8 @@ specialist rules on it.
 | [NM-HRM-027](#nm-hrm-027--in-direct-mode-the-interrupt-is-raised-before-a-word-is-output) | in direct mode the interrupt is raised before a word is output | **red** | `hrm/ch5-audio-direct-output` | not read — and the manual states the moment four different ways |
 | [NM-HRM-028](#nm-hrm-028--adkcons-audio-attach-bits-are-stored-and-reach-nothing) | ADKCON's audio attach bits are stored and reach nothing | **red** | `hrm/ch5-audio-dmacon-adkcon` | **all four** implement attach and modulation; NanoMig's own first line says it does not |
 | [NM-HRM-029](#nm-hrm-029--figure-5-8s-dmasen-note-does-not-hold-outside-its-own-exception) | Figure 5-8's `dmasen` note does not hold outside its own exception | **withdrawn** | `hrm/ch5-audio-channel-state` | not comparable — `dmasen` appears at no pin |
+| [NM-HRM-030](#nm-hrm-030--paula-does-not-decode-dmaconr-though-the-appendix-gives-it-part-ownership) | Paula does not decode DMACONR, though the appendix gives it part ownership | **red** | `hrm/ch5-audio-dmacon-adkcon` | not read — the emulators are monolithic and model no per-chip decode |
+| [NM-HRM-031](#nm-hrm-031--intreq-bit-14-is-a-settable-request-bit-where-the-appendix-says-enable-only) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | **red** | `hrm/ch5-audio-interrupt` | **vAmiga and Denise also allow it**; NanoMig's own comment calls it undocumented |
 
 Chapters 1, 7 and 8 have not been extracted, so no finding below comes from
 them. The register is a record of what has been looked at, not of what is there.
@@ -1520,3 +1522,76 @@ how a state diagram should be read, not about what the chip does at its pins.
 
 
 ---
+
+
+### NM-HRM-030 — Paula does not decode DMACONR, though the appendix gives it part ownership
+
+| | |
+|---|---|
+| Manual | Appendix A, printed p.278, gives `DMACONR` at `$002` the chip column **`A D P`** — Agnus, Denise and Paula. Appendix B, printed p.289, lists it among the read registers |
+| Measured | Reading word address `$002` through `paula.v`'s own read multiplexer returns the idle value `0x0`, before and after a `DMACON` write that sets DMAEN, AUD0EN and AUD1EN. The value never changes |
+| RTL | `paula.v` decodes `DMACON $096`, `ADKCON $09E` and `ADKCONR $010`. There is no `DMACONR` decode; `data_out` is the OR of the UART, interrupt, disk and ADKCONR sources only |
+| Test | `hrm/ch5-audio-dmacon-adkcon`, `DMACONR-NOT-DECODED-BY-PAULA` (red) |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | — | — |
+
+**Nobody has read any implementation for this finding, and for once that is
+structural rather than an omission.** All four emulators decode the custom
+register space in one place; none of them models which physical chip answers a
+read. The question this finding asks — *does Paula drive `$002`?* — is one only a
+per-chip RTL can be asked. The manual's chip column is the sole oracle available.
+
+**This was measured and then suppressed.** The package had recorded the result as
+a measurement and declined to assert it; an independent validator found the
+suppression and named it. The assertion exists now because of that, and its
+mutation substitutes `ADKCONR`, an address Paula genuinely does decode, which
+flips it green — so the red is a property of `$002` and not a dead fixture.
+
+*For the specialists:* Agnus decodes `DMACONR` in NanoMig, so a read of `$002`
+is answered at the top level and nothing is broken at the machine. What fails is
+the appendix's statement that Paula is one of the chips answering it. Whether
+that matters depends on whether the chip column is read as a specification or as
+a description of the physical parts.
+
+
+### NM-HRM-031 — INTREQ bit 14 is a settable request bit where the appendix says enable-only
+
+| | |
+|---|---|
+| Manual | Appendix A, printed p.280: `14  INTEN  Master interrupt (enable only, no request)` |
+| Measured | A `SET` write to `INTREQ` naming only bit 14 leaves bit 14 **set** in `INTREQR`. The control — bit 14 read back when never written — returns 0, so the fixture is live |
+| RTL | `paula_intcontroller.v:134`, `intreq[14] <= tmp[14]`, under the module's own comment calling it an undocumented interrupt |
+| Test | `hrm/ch5-audio-interrupt`, `MASTER-BIT14-NO-REQUEST` (red); its enable-gating sibling `MASTER-ENABLE-BIT14-GATE` is green |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | `PaulaRegs.cpp:92-93` — `intreq \|= value` with no mask; bit 14 is settable | `paula/irq.cpp:18` — `intreq \|= value & 0x7fff`, which masks **only** bit 15 | — |
+
+**Two of the four let bit 14 be set as a request, and Denise's mask says so
+precisely**: it strips the SET/CLR bit and nothing else, so bit 14 survives
+deliberately. NanoMig is not alone here, and the printed "no request" is the
+outlier among the implementations that have been read.
+
+**This finding exists because a claim was being counted as covered while its own
+text was known to fail.** The package asserted only the enable-gating half and
+cited both claim ids on it, then measured the request path and printed the
+result as a measurement. That is my instruction's fault — I told the builder to
+record it and not assert it — and an independent validator was right to call it
+a suppression. The claim is now split: each half has its own assertion, its own
+control and its own mutation, and both halves cite the ids because both are
+genuinely exercised.
+
+*For the specialists:* the RTL calls the extra request bit undocumented, which
+explains the deviation and does not make the manual's sentence pass. If real
+Paula latches a request there, the appendix is incomplete rather than NanoMig
+being wrong — and two emulators behaving the same way is the evidence pointing
+that direction.
+
