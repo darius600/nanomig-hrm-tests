@@ -1,0 +1,83 @@
+# NM-HRM-015 — BRDNTRAN is declared and never connected
+
+| | |
+|---|---|
+| **Status** | open · red |
+| **Module** | `denise.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v) |
+| **Upstream** | inherited — `BRDNTRAN` appears in none of the lines where the two trees differ |
+| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
+| **Test** | [`hrm/ch3-horizontal-display-window`](../../hrm/ch3-horizontal-display-window) |
+| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Verdict of the four** | one of four treats `BRDNTRAN` as real border behaviour |
+
+---
+
+## What the HRM says
+
+**Appendix C, printed pp. 296, 297, 307** gives `BPLCON3` bit 4 as **BRDNTRAN**,
+"border opaque" — one of the four new ECS genlock features.
+
+---
+
+## What NanoMig does
+
+Nothing. The signal is **commented out twice**, at its declaration and at its
+assignment, while its neighbour is live:
+
+```verilog
+wire          brdrblnk;   // border blank enable; disabled when ECSENA is low
+//wire        brdntran;   // border area is non-transparent; disabled when ECSENA is low
+
+assign brdrblnk = bplcon3[5] & ecsena;
+//assign brdntran = bplcon3[4] & ecsena;
+```
+
+Writing bit 4 changes nothing observable at this boundary.
+
+**This reads as unimplemented rather than wrong.** The commented-out lines look
+like work left for later, not a decision to omit the feature.
+
+---
+
+## What the others say
+
+| | |
+|---|---|
+| **WinUAE** | no border effect |
+| **vAmiga** | no border effect |
+| **Denise** | the name is not present anywhere in its Amiga core |
+| **Copperline** | **implements it**, with its own test |
+
+One of four treats `BRDNTRAN` as real border behaviour. Three do not — which is
+worth weighing before calling this urgent.
+
+---
+
+## Suggested change
+
+Uncomment the two lines and wire the signal where the border is composed. The
+neighbour two lines up is the model: `brdrblnk` is gated identically and reaches
+`t_blank`.
+
+```verilog
+wire          brdntran;   // border area is non-transparent; disabled when ECSENA is low
+assign        brdntran = bplcon3[4] & ecsena;
+```
+
+The work is then in the border composition, not the decode.
+
+**Worth confirming first** that nothing downstream silently depends on the border
+being transparent — a signal that has never been connected has never had its
+consumers written.
+
+---
+
+## What holds the finding up
+
+**The neighbour is the control.** `BRDRBLNK`, bit 5 of the same register, gated
+by the same `ecsena`, **is** wired — and the package asserts it as
+`G11-BRDRBLNK-WORKS`, **green**, on the same fixture and the same measurement
+basis.
+
+So the fixture demonstrably can observe a `BPLCON3` border control. Bit 4 simply
+is not one.

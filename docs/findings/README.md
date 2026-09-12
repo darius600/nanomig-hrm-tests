@@ -93,6 +93,9 @@ meantime.
 | [NM-HRM-006](NM-HRM-006.md) | DDFSTRT/DDFSTOP bit H3 is gated by the chipset, not by resolution | open · red |
 | [NM-HRM-007](NM-HRM-007.md) | the hires fetch width cannot reach the manual's maximum of 49 words | open · red |
 | [NM-HRM-008](NM-HRM-008.md) | playfield-1 collision depends on playfield 2, by design, undocumented | open · red |
+| [NM-HRM-010](NM-HRM-010.md) | the horizontal line is a whole number of colour clocks, not 227.5 | source observation |
+| [NM-HRM-011](NM-HRM-011.md) | PAL vertical blanking is 26 lines, the manual says 29 | open · red |
+| [NM-HRM-015](NM-HRM-015.md) | BRDNTRAN is declared and never connected | open · red |
 | [NM-HRM-020](NM-HRM-020.md) | BLTSIZV is not gated on ECS, while its two siblings are | open · red |
 | [NM-HRM-021](NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | open · red |
 | [NM-HRM-022](NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | open · red |
