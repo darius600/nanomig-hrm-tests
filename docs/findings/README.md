@@ -44,6 +44,25 @@ picked it up. That is the only case with something to act on, and it gets a
 section. The full comparison is in
 [`../upstream-minimig-aga.md`](../upstream-minimig-aga.md).
 
+**Checking it is not optional, though.** Every page carries the answer, because
+"has this already been fixed upstream?" is the question that decides whether
+there is work to do at all.
+
+### These pages are written to be filed upstream
+
+Where a finding is inherited — which so far is all of chapter 5 — it is the
+**ancestor's** finding, and a fix in Minimig-AGA reaches NanoMig by the usual
+route. Reporting it there is likely to get it reviewed by people who know that
+code better than anyone here does.
+
+So each page is written to stand on its own for a reader who has never seen this
+project: the manual quoted rather than referenced, the code quoted rather than
+cited, the reasoning stated rather than assumed, and the `Report to` row naming
+the repository the fix belongs in. A page should be usable as the body of an
+issue with no editing beyond deleting this paragraph's worth of context.
+
+Nothing is filed anywhere without the maintainer of this repository saying so.
+
 ## Withdrawn findings are kept, and here is why
 
 Six entries are withdrawn. They are **not** relevant to the question "what should
