@@ -88,3 +88,4 @@ meantime.
 | finding | subject | status |
 |---|---|---|
 | [NM-HRM-025](NM-HRM-025.md) | volume 64 and volume 63 are the same gain on the multiply path | open · red |
+| [NM-HRM-031](NM-HRM-031.md) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | open · red |
