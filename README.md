@@ -7,6 +7,17 @@ Reference Manual*, 3rd edition. **The manual is the oracle, never the RTL.**
 This is an **add-on, not a fork**. NanoMig comes in as a submodule, pinned to the
 commit the tests were last verified against. Nothing under `nanomig/` is modified.
 
+**The oracle is OCS and ECS. It is not AGA, and the RTL is.** The third edition
+documents the original chip set and the Enhanced Chip Set; across the whole
+extracted corpus `ECS` appears 490 times and `AGA` appears on no page at all. The
+RTL under test is `minimig-aga` and implements AGA throughout. So every
+AGA-specific behaviour in the design is **outside what this suite can adjudicate
+by construction** — not untested yet, but untestable here, because there is no
+printed page to test it against. Where a finding touches a bit whose meaning
+differs between ECS and AGA, it says so and scopes itself to the chipset the
+fixture drives; `NM-HRM-023` is the worked example, and `NM-HRM-013` was
+withdrawn and split for exactly this reason.
+
 ```sh
 git clone --recursive <this repo>
 cd nanomig-hrm-tests

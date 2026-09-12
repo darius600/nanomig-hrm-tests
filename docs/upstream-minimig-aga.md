@@ -74,8 +74,19 @@ and a fix for a phantom read, with the reason in the comment:
   // a w/o register, momentarily enabling line mode and wiping out bltbhold
 ```
 
-Neither is one of this suite's findings. They are upstream work NanoMig has not
-picked up, which is worth knowing separately.
+**Neither is a finding this suite could ever have, and the reason is worth
+stating once.** *Contraz Domination* is an AGA demo, and **the oracle has no
+AGA**. Counted over the whole corpus: `ECS` appears 490 times in the extracted
+text and `AGA` appears zero times — the single match is inside the PDF's own
+bytes, not on any page. The third edition documents OCS and the Enhanced Chip
+Set, and its preamble says so directly:
+
+> "registers have been changed the Enhanced Chip Set (ECS). The ECS is …"
+
+So this is not upstream work we happen not to have tested. It is upstream work
+**outside what this suite can adjudicate at all** — as is every other
+AGA-specific behaviour in the RTL, because the RTL implements AGA and the manual
+does not describe it. See the scope note in the top-level README.
 
 ## Per-finding answers established so far
 
