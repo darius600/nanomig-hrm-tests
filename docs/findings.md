@@ -1354,11 +1354,19 @@ reaches the DAC in a real build decides whether this is audible or bookkeeping.
 > nothing outside the chip can observe — so it is a note for whoever reads
 > Figure 5-8 as a specification, not a defect at the pins.
 >
-> The same validator found that **four of this package's greens are
-> force/readback tautologies**: `run_encoding()` writes `audio_state` directly
-> and reads it back without a clock, which proves the generated storage accepts
-> eight 3-bit patterns and not that eight states are reachable. Those four
-> greens are not evidence and the package needs them rebuilt.
+> **Nothing here is observable at a pin, and that is the whole of it.** All
+> eight of this entry's red assertions read `audio_state` directly; without
+> `--public-flat-rw` they do not compile. Reformulated at the ports they pass:
+> `sample`, `dmareq`, `dmas` and `intreq` carry the figure's actions, ordering
+> and timing exactly as printed. The disagreement is confined to which bit
+> pattern the implementation happens to store.
+>
+> The package's four force-and-readback greens — `run_encoding()` wrote
+> `audio_state` and read it back with no clock, proving only that the generated
+> storage holds eight 3-bit patterns — have been rebuilt. Reachable states are
+> now proven by legal stimulus, unused codes are force-seeded and clocked
+> through the real next-state logic, the two sets are asserted disjoint and
+> their union asserted to be all eight codes.
 
 
 | | |
@@ -1395,9 +1403,10 @@ encoding at all.
 | | |
 |---|---|
 | Manual | Printed p.157: in direct (non-DMA) audio output "the interrupt occurs after one data word has been output" |
-| Measured | `AUDxIR` is set at the `AUDxDAT` write itself, with the state still `000` and `sample` still at its pre-write value |
-| RTL | `paula_audio_channel.v:283-285` — the branch leaving the idle state for `AUDIO_STATE_3` sets `AUDxIR = 1'b1` at the write |
+| Measured | `intreq` pulses at the `AUDxDAT` write itself — tick 80 in the trace — while the word's high byte reaches `sample` at tick 92 and its low byte at tick 136 |
+| RTL | `paula_audio_channel.v:283-285` — the branch leaving the idle state for `AUDIO_STATE_3` sets `AUDxIR = 1'b1` at the write; `paula_audio_channel.v:133` is `assign intreq = AUDxIR` |
 | Test | `hrm/ch5-audio-direct-output`, assertion C on p.157 (red) |
+| Boundary | **at the pins.** `intreq` and `sample` are both top-level ports of `paula_audio_channel`; this finding needs no internal access, unlike `NM-HRM-026` in the same chapter |
 
 **What the four implementations do.** They decide nothing — the manual does.
 A dash means nobody has read that source for this finding.
