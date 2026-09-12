@@ -94,6 +94,12 @@ specialist rules on it.
 | [NM-HRM-021](#nm-hrm-021--doff-bltcon1-bit-7-has-no-observable-effect) | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1**; Denise implements it and ECS-gates it |
 | [NM-HRM-022](#nm-hrm-022--bltxpth-carries-five-high-bits-in-both-chipsets) | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** — but Copperline narrows every DMA pointer by Agnus revision |
 | [NM-HRM-023](#nm-hrm-023--the-attach-bit-is-honoured-in-the-even-sprite-not-only-the-odd) | the ATTACH bit is honoured in the even sprite, not only the odd | **red** | `hrm/ch4-attached-sprites` | **Denise applies the manual's rule exactly**: `(nr & 1) && (value & 0x80)` |
+| [NM-HRM-024](#nm-hrm-024--the-audio-dma-pointer-takes-five-high-bits-in-both-chipsets) | the audio DMA pointer takes five high bits in both chipsets | **red** | `hrm/ch5-audio-location-pointer` | **B2**, as NM-HRM-003 and NM-HRM-022 — Copperline alone narrows by revision |
+| [NM-HRM-025](#nm-hrm-025--volume-64-and-volume-63-are-the-same-gain-on-the-multiply-path) | volume 64 and volume 63 are the same gain on the multiply path | **red** | `hrm/ch5-audio-volume-scale`, `hrm/ch5-audio-register-map` | **all four** clamp at 64 and keep it distinct; two say why in their own comments |
+| [NM-HRM-026](#nm-hrm-026--the-audio-state-codes-are-not-the-ones-figure-5-8-prints) | the audio state codes are not the ones Figure 5-8 prints | **red** | `hrm/ch5-audio-channel-state` | **all four** use the figure's numbering; Copperline names the five constants with it |
+| [NM-HRM-027](#nm-hrm-027--in-direct-mode-the-interrupt-is-raised-before-a-word-is-output) | in direct mode the interrupt is raised before a word is output | **red** | `hrm/ch5-audio-direct-output` | not read — and the manual states the moment four different ways |
+| [NM-HRM-028](#nm-hrm-028--adkcons-audio-attach-bits-are-stored-and-reach-nothing) | ADKCON's audio attach bits are stored and reach nothing | **red** | `hrm/ch5-audio-dmacon-adkcon` | **all four** implement attach and modulation; NanoMig's own first line says it does not |
+| [NM-HRM-029](#nm-hrm-029--figure-5-8s-dmasen-note-does-not-hold-outside-its-own-exception) | Figure 5-8's `dmasen` note does not hold outside its own exception | **red** | `hrm/ch5-audio-channel-state` | not comparable — `dmasen` appears at no pin |
 
 Chapters 1, 7 and 8 have not been extracted, so no finding below comes from
 them. The register is a record of what has been looked at, not of what is there.
@@ -1254,6 +1260,211 @@ SPRxCTL bit move the sprite; bit 4 simply is not one.
 *For the specialists:* 70 ns SuperHires sprite positioning is unbuilt, of a piece
 with NM-HRM-016 and NM-HRM-017 — the ECS SuperHires feature set is broadly absent rather than
 wrong in detail.
+
+
+### NM-HRM-024 — the audio DMA pointer takes five high bits in both chipsets
+
+| | |
+|---|---|
+| Manual | Chapter 5 p.139 and p.145: the location registers "contain the high three bits". Appendix A p.266: "(high 3 bits, 5 bits if ECS)" and "18 bit starting address". Appendix C's ECS register map, printed p.298: `0A0 AUDxLCH chg W A Audio channel x location(high 5 bits was 3 bits)` |
+| Measured | A walking one through all five bits of `AUDxLCH` lands at `address_out` bits 16–20 on every one of the four channels; all-ones gives word address `0xFFFFF`. Bit 3 alone gives `0x40000`, bit 4 alone `0x80000` — neither is zero |
+| RTL | `agnus_audiodma.v:82`, `audlch[audlcsel] <= data_in[4:0]`. The module has **no `ecs` port, no chipset input and no mention of the chipset in its 157 lines** |
+| Test | `hrm/ch5-audio-location-pointer`, `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` (red) |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| no chipset narrowing | no chipset narrowing | no mask on the high word at all | **narrows every DMA pointer by Agnus revision** — `bus.rs:4990` applies the mask to Agnus, Denise, the blitter, Paula and the floppy alike |
+
+The same question as NM-HRM-003 and NM-HRM-022, in a third engine.
+
+**This is the third engine, and that is what makes it worth reading.** Copper
+(`agnus_copper.v:144`), blitter (`BLTxPTH`) and audio all build their pointer as
+`data_in[4:0]` for the high bits and `data_in[15:1]` for the low, unconditionally.
+Separately they read as three omissions. Together they are one decision not to
+model the OCS pointer narrowing anywhere in Agnus — and audio is the case where
+the module has nothing to gate on even in principle.
+
+**The assertion's wording matters and was chosen deliberately.** It asserts that
+the OCS three-bit reading does **not** hold, not that "AUDxLCH is five bits".
+NanoMig implements the ECS width unconditionally; the OCS alternative cannot be
+selected for. Its control is `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS`, green, on the
+identical walking-one methodology — so the red is the claim failing, not a dark
+fixture.
+
+*For the specialists:* if the intent is an ECS-only core, the manual's OCS
+sentences are simply out of scope and the three findings are one scope decision.
+If not, three engines need the same narrowing.
+
+
+### NM-HRM-025 — volume 64 and volume 63 are the same gain on the multiply path
+
+| | |
+|---|---|
+| Manual | Table 5-9, printed p.163, gives volume 63 as −0.1 dB and volume 64 as 0.0 dB. Appendix A p.266 describes "65 linear volume levels" with bit 6 forcing maximum |
+| Measured | `ldatasum = 4032` for volumes 63, 64, 65, 96 **and** 127. On the PWM output of the same design, open-tick counts are 0, 4, 128, 252, 256 — exactly 4× each written value, all 65 distinct |
+| RTL | `paula_audio_mixer.v:25-31` wires the helper's six-bit input as `{(vol[6] \| vol[5]), (vol[6] \| vol[4]), … (vol[6] \| vol[0])}`, so bit 6 sets every bit and the helper sees **63**. The PWM path keeps `audvol` seven bits (`paula_audio_channel.v:103`) and compares across widths, `volgate = (volcnt < audvol)` (`:149`) |
+| Test | `hrm/ch5-audio-volume-scale`, `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63` and `TABLE-5-9-VOLUME-TO-DECIBEL vol0=64` (red); `hrm/ch5-audio-register-map`, `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` (red) with `VOLUME-65-LEVELS` green on the PWM output |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| `audio.cpp:1541-1543` — `v &= 127; if (v > 64) v = 64;` under the comment "7 bit register in Paula" | `StateMachineRegs.cpp:38` — `std::min(value & 0x7F, 64)`, with "All values greater than 64 are treated as 64 (max volume)" in the code | `paula/audio.cpp:153` — `if (value & 0x40) value = 0x40;` | `chipset/paula.rs:228` — `((word & 0x007F) as u8).min(64)` |
+
+**All four clamp at 64 and keep it distinct from 63.** Two of them say why in
+their own comments. NanoMig's multiply path is alone in making the two equal.
+
+**NanoMig implements volume twice and the two implementations disagree.** This is
+the finding, and it is why every assertion touching it names the port it
+measured. Denise's line is worth putting next to NanoMig's: both implement
+appendix A's "bit 6 forces maximum", but Denise forces the **value** to 64 while
+`paula_audio_mixer` ORs bit 6 down into the low six bits and arrives at 63.
+
+**What holds it up.** `MULTIPLY-PATH-DISTINGUISHES-ADJACENT-VOLUMES` (62 against
+63) is green on the same fixture and the same measurement basis, so the collapse
+is a property of 64 and not a dead sweep. The collapse assertion's own mutation
+is recorded `impossible` — the OR is unconditional and no port gates it — and
+that adjacency control is what stands in its place.
+
+*For the specialists:* the whole of Table 5-9 runs +0.10 to +0.18 dB high on the
+multiply path and reproduces to the printed decimal on the PWM path. Which path
+reaches the DAC in a real build decides whether this is audible or bookkeeping.
+
+
+### NM-HRM-026 — the audio state codes are not the ones Figure 5-8 prints
+
+| | |
+|---|---|
+| Manual | Figure 5-8, printed p.166, labels its states `000`, `001`, `101`, `010`, `011`, and names `sq2,1,0` as "The name of the state flip-flops, MSB to LSB" — so the printed patterns are bit values, not just node names |
+| Measured | An 80 000-tick sweep reaches `000`, `001`, `010`, `011`, `110` and **never** `100`, `101` or `111`. "In the 011 state the lower byte is output" measures `sample = 0x0` there; the `010→011→010` loop measures its destination as `6` |
+| RTL | `paula_audio_channel.v:242-246` — `AUDIO_STATE_2 = 3'b011` where the figure has `101`, and `AUDIO_STATE_4 = 3'b110` where the figure has `011` |
+| Test | `hrm/ch5-audio-channel-state`, six assertions including `5-p164.c9` and `5-p164.c10` (red) |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| `audio.cpp` states 0, 1, 2, 3 | `StateMachine.cpp` — `0b000`, `0b001`, `0b010`, `0b101` | `paula/audio.cpp` — states 0, 1, 2, 3 and **5** | `chipset/paula.rs:107-111` names them: `AUD_IDLE 0b000`, `AUD_DMA_FIRST 0b001`, `AUD_DMA_SECOND 0b101`, `AUD_OUT_HI 0b010`, `AUD_OUT_LO 0b011` |
+
+**All four use the figure's own numbering, including `101`.** Copperline writes
+the five constants out with the manual's bit patterns and the manual's meanings.
+That is what makes this more than an internal-encoding quibble: four independent
+implementations treat the printed patterns as the specification.
+
+**The behaviour is right and the encoding is not.** Every affected assertion is
+otherwise green — correct actions, correct timing — and fails only on the bit
+pattern. That distinction is the finding.
+
+*For the specialists:* nothing outside the chip can observe `sq2,1,0`, so this
+costs nothing at the pins. It matters if the figure is ever used as a
+specification for a rewrite, and it is the only place chapter 5 prints a state
+encoding at all.
+
+
+### NM-HRM-027 — in direct mode the interrupt is raised before a word is output
+
+| | |
+|---|---|
+| Manual | Printed p.157: in direct (non-DMA) audio output "the interrupt occurs after one data word has been output" |
+| Measured | `AUDxIR` is set at the `AUDxDAT` write itself, with the state still `000` and `sample` still at its pre-write value |
+| RTL | `paula_audio_channel.v:283-285` — the branch leaving the idle state for `AUDIO_STATE_3` sets `AUDxIR = 1'b1` at the write |
+| Test | `hrm/ch5-audio-direct-output`, assertion C on p.157 (red) |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | — | — |
+
+Nobody has read any implementation for this finding.
+
+**This sits inside a four-way conflict in the manual itself.** The audio
+interrupt's moment is stated four different ways: printed 147 (after the location
+and length are copied to the back-up registers), printed 157 (after a data
+address has been read), printed 164 (as the last word starts output), and
+appendix A printed 265 (when words-output equals length **and** the buffered word
+has been used). The classification carries all four; the assertion tests page
+157's, because page 157 is the direct-mode page and this is the direct-mode case.
+
+**What holds it up.** Assertion H, "immediate transfer to the main loop" from the
+same page and the same trace event, is green and is the control.
+
+*For the specialists:* read this together with the four-way conflict before
+deciding anything. A manual that gives four answers may not be settled by
+choosing one of them.
+
+
+### NM-HRM-028 — ADKCON's audio attach bits are stored and reach nothing
+
+| | |
+|---|---|
+| Manual | Printed pp.149–151 describe modulating one channel with another: with an attach bit set the modulating channel's own output is silenced and its words are used as period or volume data for the next channel. Appendix A p.265 gives ADKCON bits 7–0 as ATPER3–0 and ATVOL3–0 |
+| Measured | With **every** attach bit set, a channel armed for a peaked output still peaks `ldata`/`rdata` at 8001 — sample 127 × effective volume 63, the manual's own arithmetic for an unmodulated channel |
+| RTL | `paula.v` instantiates `paula_audio ad1 (…)` with **no ADKCON port at all**. `adkcon[14:0]` is stored (`:186-192`) and read back through `adkconr` (`:198`); only bits 11 (`uartbrk`, `:211`) and 10 (`wordsync`, `:269`) reach anything, both disk and UART. `paula_audio_channel.v`'s first line: *"This module handles a single amiga audio channel. attached modes are not supported"* |
+| Test | `hrm/ch5-audio-dmacon-adkcon`, `ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS` (red) |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| `audio.cpp` — `audio_update_adkmasks()` builds a per-channel `adk_mask` from `adkcon \| (adkcon >> 4)` | `StateMachine.cpp:120,130` — `AUDxAV()` and `AUDxAP()`, with an attach-period path | `paula/audio.cpp:79-81` — `audav = adkcon & (0x01 << nr)`, `audap = adkcon & (0x10 << nr)`, `napnav` | `chipset/paula.rs:1190` — `channel_attached_as_modulator()`, documented as "AUDxAV: attach-volume (this channel's words modulate ch+1's volume)" |
+
+**Four implementations implement attach and modulation. NanoMig alone does not**,
+and its own source says so in its first line. This is the best-corroborated
+finding chapter 5 produced.
+
+**What is asserted and what is not.** Only the half whose stimulus and
+consequence are both on real ports of `paula.v`: write ADKCON, observe that the
+modulating channel is **not** silenced. The other half — a modulator word
+reaching another channel's period or volume register — is not testable at any
+boundary, because no audio module has an attach port, and it is recorded
+`not-asserted` rather than asserted and failed.
+`ADKCON-ATTACH-MEASUREMENT-BASIS-CONTROL` is green on the same basis.
+
+*For the specialists:* this is a whole documented feature of chapter 5 that is
+absent, of the same character as NM-HRM-015 and NM-HRM-021 — declared in a
+register and never connected — but larger, and the RTL states the decision
+openly rather than leaving it to be discovered.
+
+
+### NM-HRM-029 — Figure 5-8's `dmasen` note does not hold outside its own exception
+
+| | |
+|---|---|
+| Manual | Figure 5-8's boxed NOTE, printed p.166: *"Except for this case, dmasen is true only when LENFIN=1. Also, AUDxDSR=AUDxDR · dmasen"*. The excepted case is the `000→001` transition, whose action bracket is `[lencntrld, AUDxDR, dmasen]` |
+| Measured | `dmasen` never correlates with `lenfin` anywhere outside that stated exception. The note's own AND equation holds at the first restart and at neither later, `lenfin`-driven one |
+| RTL | `dmasen` is raised only in the idle-state DMA branch (`paula_audio_channel.v:276`); the block-end restart comes from `:220`, `dmas <= dmasen \| lenfin`. So the implemented relation is `AUDxDSR = AUDxDR ∧ (dmasen ∨ lenfin)` — the `lenfin` term sits one register level further out than the figure puts it |
+| Test | `hrm/ch5-audio-channel-state`, `F58.note.dmasen` and `F58.note.dsr` (red) |
+
+**What the four implementations do.** They decide nothing — the manual does.
+A dash means nobody has read that source for this finding.
+
+| WinUAE | vAmiga | Denise | Copperline |
+|---|---|---|---|
+| — | — | — | — |
+
+`dmasen` and `AUDxDSR` are internal to Paula and appear at no pin, so an
+implementation is free to place the term wherever it likes. Reading the four for
+this finding would say what they chose, not what is required.
+
+**This finding exists because the qualifier was honoured.** An earlier
+restatement of the same note dropped "Except for this case" and stated the rule
+unconditionally, which inverts what the figure says about the one transition the
+note exists to exempt. The cross-read caught it and the restatement was
+corrected before any test was written.
+
+*For the specialists:* this is the weakest of chapter 5's six findings and is
+listed as such. The figure describes one internal signal's relationship to
+another; NanoMig computes the same output through a different arrangement of the
+same two terms. Whether the printed arrangement is normative is a question about
+how a state diagram should be read, not about what the chip does at its pins.
 
 
 ---
