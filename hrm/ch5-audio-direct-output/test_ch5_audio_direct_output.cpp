@@ -93,20 +93,38 @@
 //   changed stimulus).
 //
 // CLAIM COVERAGE: all 19 ids of claims.jsonl are cited below, in full,
-//   inside a CHECK(...) call's own text:
+//   inside a CHECK(...) call's own text, PLUS one further id added
+//   2026-09-12 (see GAP CLOSURE below) -- 20 in total:
 //   GROUP A  5-p157.c10 5-direct.c1
 //   GROUP B  5-p157.c11 5-direct.c2
 //   GROUP C  5-p157.c13 5-direct.c4   (CANDIDATE 5 -- expected RED)
 //   GROUP D  5-p157.c14 5-direct.c5
 //   GROUP E  5-p157.c15 5-direct.c6
-//   GROUP F  5-p157.c16                (opus twin 5-direct.c7 was discarded
-//                                       upstream by crossread, per the
-//                                       claims.jsonl record itself; not one
-//                                       of this package's 19)
+//   GROUP F  5-p157.c16 5-direct.c7   (5-direct.c7 added 2026-09-12, see
+//                                       GAP CLOSURE below)
 //   GROUP G  5-p164.c5  5-sm.c6
 //   GROUP H  5-p164.c7  5-sm.c9
 //   GROUP I  5-p164.c12 5-sm.c14
 //   GROUP J  5-p164.c13 5-sm.c15
+//
+// GAP CLOSURE (2026-09-12, revalidation blocker 3): 5-direct.c7 is the opus
+//   twin of 5-p157.c16 -- the identical sentence, "The volume and period
+//   registers are set as usual," independently read a second time. When
+//   this package's own claims.jsonl was built, that twin's crossread
+//   verdict was "defect: not_behaviour" (a programming instruction, not a
+//   stated hardware response) and it was left out of this package's 19
+//   ids. Independent validation finding V-10 reclassified it TESTABLE: the
+//   sentence states a dimensionless, in-cck-ticks timing/value proposition
+//   ("set as usual" = matches the DMA-mode encoding), the same kind of
+//   claim hrm/ch5-audio-period-and-length already asserts in cck ticks, and
+//   no Hertz-valued or absolute-frequency reading is required. GROUP F
+//   already measures exactly that proposition -- AUDVOL/AUDPER read back
+//   as written, and the measured perfin-to-perfin period in cck ticks
+//   matches AUDPER, all while dmaena=0 (direct mode) -- so 5-direct.c7 is
+//   added to GROUP F's own CHECK and MUTATION text rather than given a new
+//   assertion. The stale claims.jsonl-era note that 5-direct.c7 "was
+//   discarded upstream" is superseded by this reclassification and is
+//   removed from this header.
 //
 // CONTROL CASE: GROUP H (immediate transfer to the output state on a
 //   qualifying write) is measured from the exact same trace event as GROUP
@@ -122,7 +140,9 @@
 //   actually in the state (raised / held low) their claim depends on.
 //
 // RESULTS (after opening paula_audio_channel.v and building/running):
-//   11 PASS, 1 FAIL, 0 declined -- all 19 claim ids covered. The single FAIL
+//   11 PASS, 1 FAIL, 0 declined -- all 20 claim ids covered (19 from
+//   claims.jsonl plus 5-direct.c7, added to GROUP F 2026-09-12 per GAP
+//   CLOSURE above). The single FAIL
 //   is GROUP C / candidate 5 (5-p157.c13 5-direct.c4), disclosed as expected
 //   before this file was built: measured first AUDxIR/intreq at the very
 //   AUDxDAT-write tick, state still 000, sample still the pre-write value --
@@ -754,7 +774,7 @@ int main(int argc, char** argv) {
     }
 
     // -------------------------------------------------------------------
-    // GROUP F -- 5-p157.c16
+    // GROUP F -- 5-p157.c16 5-direct.c7
     // -------------------------------------------------------------------
     {
         // Sample.t is a raw main_time tick count (Harness::tick()'s own
@@ -771,13 +791,15 @@ int main(int argc, char** argv) {
         if (perfinTicks.size() >= 2) measuredPeriodRaw = perfinTicks[1] - perfinTicks[0];
         long measuredPeriodCck = (measuredPeriodRaw >= 0) ? (measuredPeriodRaw / RAW_TICKS_PER_CCK) : -1;
         bool g_f = (volumeReadback == baseP.audvol) && (measuredPeriodCck == baseP.audper);
-        CHECK("5-p157.c16 (p157) \"The volume and period registers are set as usual\": "
-              "AUDVOL written " + std::to_string(baseP.audvol) + ", volume port reads " +
+        CHECK("5-p157.c16 5-direct.c7 (p157) \"The volume and period registers are set as "
+              "usual\": AUDVOL written " + std::to_string(baseP.audvol) + ", volume port reads " +
               std::to_string(volumeReadback) + "; AUDPER written " +
               std::to_string(baseP.audper) + ", measured perfin-to-perfin period = " +
               std::to_string(measuredPeriodRaw) + " raw ticks = " +
               std::to_string(measuredPeriodCck) + " cck ticks (both while dmaena=0 the whole "
-              "run)", g_f);
+              "run) -- both cited ids restate the identical sentence (5-direct.c7 is the opus "
+              "twin, reclassified testable by V-10 and added here 2026-09-12); one measurement "
+              "establishes both", g_f);
 
         TimelineParams mp = baseP; mp.skip_audper_write = true;
         TimelineResult mr = run_timeline(mp);
@@ -791,7 +813,9 @@ int main(int argc, char** argv) {
                   "the " + std::to_string(baseP.audper) + " this package wrote); measured "
                   "period now = " + std::to_string(mPeriodCck) + " cck ticks -- correctly no "
                   "longer matches the value this claim's baseline relies on having been "
-                  "written.");
+                  "written. Covers 5-direct.c7 as well as 5-p157.c16 (added 2026-09-12): both "
+                  "ids restate the same sentence and this CHECK's single g_f boolean is what "
+                  "either id's own claim reduces to, so one mutation discriminates both.");
     }
 
     // -------------------------------------------------------------------
