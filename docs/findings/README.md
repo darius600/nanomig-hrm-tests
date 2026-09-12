@@ -96,9 +96,13 @@ meantime.
 | [NM-HRM-010](NM-HRM-010.md) | the horizontal line is a whole number of colour clocks, not 227.5 | source observation |
 | [NM-HRM-011](NM-HRM-011.md) | PAL vertical blanking is 26 lines, the manual says 29 | open · red |
 | [NM-HRM-015](NM-HRM-015.md) | BRDNTRAN is declared and never connected | open · red |
+| [NM-HRM-016](NM-HRM-016.md) | SuperHires sprite colour encoding is not implemented | open · red |
+| [NM-HRM-017](NM-HRM-017.md) | SuperHires bitplane colour encoding is not implemented | open · red |
+| [NM-HRM-019](NM-HRM-019.md) | SPRxCTL bit 4 (SHSH1) is not implemented | open · red |
 | [NM-HRM-020](NM-HRM-020.md) | BLTSIZV is not gated on ECS, while its two siblings are | open · red |
 | [NM-HRM-021](NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | open · red |
 | [NM-HRM-022](NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | open · red |
+| [NM-HRM-023](NM-HRM-023.md) | the ATTACH bit is honoured in the even sprite, not only the odd | open · red |
 | [NM-HRM-024](NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | open · red |
 | [NM-HRM-025](NM-HRM-025.md) | volume 64 and volume 63 are the same gain on the multiply path | open · red |
 | [NM-HRM-026](NM-HRM-026.md) | the audio state codes are not the ones Figure 5-8 prints | source observation |
