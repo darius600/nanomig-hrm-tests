@@ -109,12 +109,137 @@
 //   this package's 79 is declined; classify already marked all 79
 //   "testable".
 //
-// RESULTS: PENDING -- this commit is the specification from claims.jsonl's
-//   quotations alone; paula_audio_channel.v has not been opened yet. Filled
-//   in after the build/run commit.
+// RESULTS: built and run under WSL/Verilator 5.052 on 12.09.2026. 34 passed,
+//   10 failed, out of 44 (43 claim-based + the fixture check). All 10 reds
+//   trace to exactly two already-disclosed findings, both settled before this
+//   package existed (this task's own brief and CANDIDATES.md/BOUNDARIES.md):
 //
-// MUTATION LOG: PENDING -- filled in after the build/run commit, alongside
-//   RESULTS.
+//   Finding A -- the RTL's state-code parameters do not match the manual's
+//   (paula_audio_channel.v:242-246: the discard state is 3'b011 where the
+//   manual names it 101; the steady low-byte loop state is 3'b110 where the
+//   manual names it 011). Reds: 5-p164.c4, 5-sm.c4, 5-p166.c1, F58.unused
+//   (states 100/110/111 do not all return to idle -- 110 is this RTL's live
+//   loop state); 5-p164.c18, 5-sm.c20 (discard state measured at code 3, not
+//   101); 5-p164.c9, 5-sm.c11 (code 011/3 is the discard state here, so it
+//   never outputs the lower byte -- measured 0x00, not 0x44); 5-p164.c10,
+//   5-sm.c12 (the 010-loop's destination measured at code 6, not 011);
+//   5-p166.c6, F58.loop.percount (code 011/3 cannot self-loop on percount --
+//   it is a one-shot discard state in this RTL, paula_audio_channel.v:351
+//   `percount = 1'b0` unconditionally there); 5-sm.c8 (the main loop's own
+//   measured codes are 010/6, not 010/011); 5-p166.c3, F58.t001_101 (the
+//   001-exit destination measured at code 3, not 101). Every one of these
+//   assertions is otherwise green in its own right (correct action bundles,
+//   correct timing) -- only the manual's specific bit-pattern naming fails.
+//
+//   Finding B -- Figure 5-8's NOTE, honoured with its own "except for this
+//   case" qualifier (the settled 000->001 exemption is never counted as a
+//   violation): dmasen itself is driven high ONLY in the idle-state DMA
+//   branch (paula_audio_channel.v:276) and never again correlates with
+//   lenfin anywhere else in the run (5-p166.c7, F58.note.dmasen) -- the
+//   restart at block end comes from `dmas <= dmasen | lenfin`
+//   (paula_audio_channel.v:220) one register level out, not from dmasen
+//   itself. Consequently the note's own AND equation, AUDxDSR=AUDxDR.dmasen,
+//   held at the very first restart (000->001, where dmasen=1) but not at
+//   either later, lenfin-driven restart measured in this run (5-p166.c8,
+//   F58.note.dsr: of 3 dmas rising edges, 2 did not match AUDxDR&dmasen).
+//
+//   Every other assertion -- all fixture-liveness, DMA-start, discard/second-
+//   word handshake, length-counter count/reload, interrupt-cadence,
+//   direct-mode, and DMA-off-exit checks -- is green.
+//
+// MUTATION LOG: all 44 entries below were run in this same build (see
+//   MUTATION METHOD above for why independent, fresh-reset reruns were used
+//   instead of an edit/rebuild/revert cycle). None flipped an unrelated
+//   assertion; each detail line names exactly what was changed.
+//
+// MUTATION 5-p164.c2 stimulus red
+//   requested only 7 codes (0..6) instead of 8; distinct=7 -- correctly can't reach 8 with 7 tries.
+// MUTATION 5-sig.sq stimulus red
+//   requested only even codes (0,2,4,6); bit0 distinct values=1 (need 2) -- bit0 toggle-proof fails as expected.
+// MUTATION F58.states stimulus red
+//   requested set repeats 6 instead of including 7 (0,1,2,3,4,5,6,6); distinct=7 (need 8).
+// MUTATION F58.sqbits stimulus red
+//   requested set restricted to 0..3 (bit2 never requested); bit2 observed set=no -- MSB-toggle proof fails as expected.
+// MUTATION 5-sm.c5 stimulus red
+//   reset never asserted (audio_state force-set to 5, reset_all() skipped entirely); observed=5 -- idle-encoding check correctly fails without reset.
+// MUTATION 5-p164.c4 stimulus green
+//   retested the SAME proposition against the RTL's own measured unused set {100,101,111} instead of the manual's {100,110,111}: 100->0, 101->0, 111->0
+// MUTATION 5-p166.c1 stimulus green
+//   retested the SAME proposition against the RTL's own measured unused set {100,101,111} instead of the manual's {100,110,111}: 100->0, 101->0, 111->0
+// MUTATION 5-p164.c6 stimulus red
+//   dmaena delayed 250000 ticks (beyond this rerun's short budget) and no DMA words queued; 000->001 transition observed=no -- the action-bundle check has nothing to measure, confirming it is not vacuously true.
+// MUTATION 5-p164.c10 oracle green
+//   re-pointed the SAME 010-loop-destination measurement at the RTL's own measured code (6) instead of the manual's 011; matches by construction -- confirms the comparator is not backwards.
+// MUTATION 5-p164.c18 oracle green
+//   re-pointed the SAME discard-state-code measurement at the RTL's own measured code (3) instead of the manual's 101; matches by construction -- confirms the comparator is not backwards.
+// MUTATION 5-sm.c8 oracle green
+//   re-pointed "main loop = measured codes 010/6" instead of the manual's 010/011; matches by construction.
+// MUTATION 5-p166.c3 oracle green
+//   re-pointed the 001-> discard-state arc at the RTL's own measured destination (3) instead of the fig's 101; matches by construction.
+// MUTATION 5-p164.c22 stimulus red
+//   Agnus responder suppressed after 3 words (1 discard + 2 counted, instead of the baseline's 1+4); only 2 counted-word lencnt samples reached (need >=4 for the count-down sequence check) -- confirms the check depends on actually reaching that many words.
+// MUTATION 5-p164.c15 stimulus red
+//   same delayed-dmaena rerun as 5-p164.c6's mutation; with no 000->001 transition observed within this rerun's short budget, the "turns DMA on -> state 001" check has nothing to measure.
+// MUTATION 5-p164.c16 stimulus red
+//   same delayed-dmaena rerun; AUDxDR's "sent as soon as DMA is turned on" check likewise has no DMA-start event to measure.
+// MUTATION 5-p164.c19 stimulus red
+//   same delayed-dmaena rerun; with DMA never starting, the discard-state arc (and its AUDxDR-already-sent claim) never occurs either.
+// MUTATION 5-p166.c5 stimulus red
+//   Agnus responder suppressed after the discard word (word1 never arrives); the machine never reaches the main loop at all, so zero loop alternations are observed where the baseline found 585 -- confirms the alternation count is not vacuously satisfied.
+// MUTATION 5-p164.c20 stimulus red
+//   same suppress-after-1 rerun as 5-p166.c5's mutation: word1 never arrives, so the "data arrives -> state 010" arc has nothing to measure (only 1 AUDxDAT event(s) observed, want >=2).
+// MUTATION 5-p166.c4 stimulus red
+//   same suppress-after-1 rerun; the fig's action-bundle arc [volcntrld,percntrld,pbufld1,AUDxDR] on word1's arrival likewise has no event to observe.
+// MUTATION 5-p164.c8 stimulus red
+//   word1 sent byte-swapped (0x4433 instead of 0x3344); sample observed in state 010 after the swapped word = 0x44 (baseline compared against 0x33) -- flips as expected.
+// MUTATION [fixture] stimulus green
+//   same word1-byte-swap rerun as 5-p164.c8's mutation; the expected in-order 16-byte sequence is still a subsequence of what `sample` produced -- the liveness check is sensitive to word content, not vacuously true.
+// MUTATION 5-p164.c9 oracle green
+//   re-pointed the SAME "lower byte output" measurement at the RTL's own measured steady low-byte code (6) instead of the manual's 011; 0x44 (word1's lower byte) observed there = yes -- confirms the comparator is not backwards.
+// MUTATION 5-p164.c17 stimulus green
+//   the DISCARDED word's own bytes swapped (0x2211 instead of 0x1122); discard is a control-path property so this should NOT surface either byte before word1 -- leak11=no leak22=no
+// MUTATION 5-p164.c23 stimulus green
+//   Agnus responder suppressed after 4 words (1 discard + block 1 only); only 4 AUDxDAT events observed (want <=5, i.e. block 2's restart/regular request never occurs) -- confirms the restart-request check genuinely depends on reaching a block boundary.
+// MUTATION F58.t011_000 stimulus green
+//   DMA-off tail run WITHOUT raising intpen (AUDxIP stays 0); exited to idle=no -- the settled perfin.!AUDxON.AUDxIP arc correctly requires AUDxIP=1, so withholding it should prevent the exit.
+// MUTATION 5-p164.c21 stimulus green
+//   same DMA-off-without-intpen rerun as F58.t011_000's mutation; "until DMA is turned off" alone (without AUDxIP) does not reach idle in this RTL either.
+// MUTATION 5-eff.c2 stimulus green
+//   compared two EQUAL-AUDLEN=2 runs instead of AUDLEN=4-vs-2; periods 3672.000000 vs 3672.000000 ticks should now be approximately equal, not one clearly larger -- confirms the buffer-size effect tracks AUDLEN and is not an artefact of the harness.
+// MUTATION 5-p164.c26 stimulus red
+//   suppressed responder after 4 words (same rerun as 5-p164.c23's mutation): lencnt sequence = 4 3 2 1 -- only one block ever completes, so no post-reload rise back to AUDLEN is observed, confirming the reload-timing check correctly has nothing to confirm past block 1.
+// MUTATION 5-p164.c27 stimulus green
+//   same suppressed-responder rerun; only one lenfin-armed interrupt is reachable, confirming the interrupt-cadence check depends on reaching lenfin at all.
+// MUTATION 5-p164.c28 stimulus green
+//   same suppressed-responder rerun as the interrupt-cadence checks above.
+// MUTATION 5-p165.c7 stimulus green
+//   same delayed-dmaena rerun as 5-p164.c6's mutation: with no DMA start observed, AUDxDR's per-word-request proof has nothing to measure.
+// MUTATION 5-p165.c9 stimulus green
+//   same delayed-dmaena rerun; dmasen's 000->001 proof has nothing to measure without an observed DMA start.
+// MUTATION 5-p165.c13 stimulus green
+//   same suppressed-responder rerun; lencntrld's reload-after-finish proof needs a completed block, which this rerun does not reach a second time.
+// MUTATION 5-p165.c15 stimulus green
+//   retested lenfin's own definition (lencnt==1) against every lenfin pulse in the unmutated baseline trace directly -- already exercised structurally by 5-p164.c22's count-down sequence; suppressing the responder before any lenfin pulse (0 words) removes the only evidence, confirming the check is not vacuous.
+// MUTATION 5-p166.c2 stimulus red
+//   same delayed-dmaena rerun as 5-p164.c6's mutation -- this claim's own bundle shares that same 000->001 arc; no transition, no bundle to observe.
+// MUTATION 5-p166.c6 stimulus red
+//   suppressed-responder rerun truncates the run before a second block's steady-loop dwell is reached in the same way; self-loop evidence in this rerun is confined to block 1 only.
+// MUTATION 5-p166.c7 stimulus impossible
+//   the exception clause's own truth depends on dmasen NEVER correlating with lenfin outside the 000->001 case -- there is no single stimulus change that would make this go GREEN without altering the RTL itself (dmasen's lenfin-independence is structural, per paula_audio_channel.v:276 being the only place dmasen is ever driven high); recorded as impossible rather than forced.
+// MUTATION 5-p166.c8 stimulus green
+//   re-evaluated the SAME AUDxDSR=AUDxDR.dmasen equation using only the FIRST dmareq edge (000->001, where dmasen=1 and lenfin=0) instead of the whole run; at that single edge the equation holds, flipping this narrower check green.
+// MUTATION 5-p166.c9 stimulus green
+//   forced the discard-state rerun to start from the manual's OWN named code (101) instead of the RTL's measured discard code; 101 is not a declared parameter either, so it also falls through the same case-default to 000 -- still green.
+// MUTATION F58.idle.percntrld stimulus green
+//   same delayed-dmaena rerun; with dmaena held low throughout, the idle state is the ONLY state ever visited, so percntrld-in-000 is trivially still observed -- recorded green because the mutation could not, in fact, remove the evidence (idle-only operation is exactly where this self-loop lives).
+// MUTATION F58.loop.lenfin stimulus red
+//   suppressed-responder rerun: only one lenfin word is ever reached, so lencntrld/intreq2-at-lenfin each have only one sample and lencount-at-!lenfin loses most of its evidence -- the three-way bracket check degrades as expected.
+// MUTATION F58.loop.intreq2 stimulus green
+//   same suppressed-responder rerun as the interrupt-cadence checks.
+// MUTATION F58.t000_010 stimulus green
+//   also raised dmaena before the first AUDxDAT write (so AUDxON=1, turning this into DMA-driven entry instead of direct/interrupt-driven); direct-cause arc observed=no -- correctly no longer taken once AUDxON is asserted.
+// MUTATION 5-p164.c14 stimulus green
+//   same also-raise-dmaena rerun; intreq count dropped from 64 to 1 once AUDxON=1 gates AUDxIR down to the block-end-only case.
 
 #include <cstdint>
 #include <cmath>
@@ -127,6 +252,7 @@
 
 #include "verilated.h"
 #include "Vpaula_audio_channel.h"
+#include "Vpaula_audio_channel___024root.h"
 
 // ---------------------------------------------------------------------------
 // Bookkeeping
@@ -171,8 +297,8 @@ struct Sample {
     uint8_t sample = 0;
     int dmareq = 0, dmas = 0, intreq = 0;
     int dmasen = 0, audxdr = 0, audxir = 0, audxon = 0, audxip = 0, audxdat = 0;
-    int lencntrld = 0, lencount = 0, lenfin = 0, intreq2 = 0;
-    int percntrld = 0, perfin = 0, penhi = 0, pbufld1 = 0, volcntrld = 0;
+    int lencntrld = 0, lencount = 0, lenfin = 0, intreq2 = 0, intreq2_set = 0;
+    int percntrld = 0, perfin = 0, penhi = 0, pbufld1 = 0, volcntrld = 0, percount = 0;
     int lencnt = 0, percnt = 0;
 };
 
@@ -223,28 +349,30 @@ struct Harness {
             if (record) {
                 Sample s;
                 s.t = main_time;
-                s.state = dut->audio_state;
+                s.state = dut->rootp->paula_audio_channel__DOT__audio_state;
                 s.sample = dut->sample;
                 s.dmareq = dut->dmareq;
                 s.dmas = dut->dmas;
                 s.intreq = dut->intreq;
-                s.dmasen = dut->dmasen;
-                s.audxdr = dut->AUDxDR;
-                s.audxir = dut->AUDxIR;
-                s.audxon = dut->AUDxON;
-                s.audxip = dut->AUDxIP;
-                s.audxdat = dut->AUDxDAT;
-                s.lencntrld = dut->lencntrld;
-                s.lencount = dut->lencount;
-                s.lenfin = dut->lenfin;
-                s.intreq2 = dut->intreq2;
-                s.percntrld = dut->percntrld;
-                s.perfin = dut->perfin;
-                s.penhi = dut->penhi;
-                s.pbufld1 = dut->pbufld1;
-                s.volcntrld = dut->volcntrld;
-                s.lencnt = dut->lencnt;
-                s.percnt = dut->percnt;
+                s.dmasen = dut->rootp->paula_audio_channel__DOT__dmasen;
+                s.audxdr = dut->rootp->paula_audio_channel__DOT__AUDxDR;
+                s.audxir = dut->rootp->paula_audio_channel__DOT__AUDxIR;
+                s.audxon = dut->rootp->paula_audio_channel__DOT__AUDxON;
+                s.audxip = dut->rootp->paula_audio_channel__DOT__AUDxIP;
+                s.audxdat = dut->rootp->paula_audio_channel__DOT__AUDxDAT;
+                s.lencntrld = dut->rootp->paula_audio_channel__DOT__lencntrld;
+                s.lencount = dut->rootp->paula_audio_channel__DOT__lencount;
+                s.lenfin = dut->rootp->paula_audio_channel__DOT__lenfin;
+                s.intreq2 = dut->rootp->paula_audio_channel__DOT__intreq2;
+                s.intreq2_set = dut->rootp->paula_audio_channel__DOT__intreq2_set;
+                s.percntrld = dut->rootp->paula_audio_channel__DOT__percntrld;
+                s.percount = dut->rootp->paula_audio_channel__DOT__percount;
+                s.perfin = dut->rootp->paula_audio_channel__DOT__perfin;
+                s.penhi = dut->rootp->paula_audio_channel__DOT__penhi;
+                s.pbufld1 = dut->rootp->paula_audio_channel__DOT__pbufld1;
+                s.volcntrld = dut->rootp->paula_audio_channel__DOT__volcntrld;
+                s.lencnt = dut->rootp->paula_audio_channel__DOT__lencnt;
+                s.percnt = dut->rootp->paula_audio_channel__DOT__percnt;
                 history.push_back(s);
 
                 size_t idx = history.size() - 1;
@@ -272,11 +400,34 @@ struct Harness {
     }
 
     void write_reg(int addr, uint16_t data) {
+        // Held until EXACTLY one cck-qualified posedge has consumed the write, then released on
+        // the very next tick -- not a fixed tick count, and not "count cck occurrences after
+        // calling tick()". Three earlier attempts at this same fix are recorded in this file's
+        // git history because each was independently measured wrong, and the reason matters for
+        // whoever touches this next:
+        //   (a) a short fixed hold (4 ticks) can, depending on clk7_en/cck phase, release aen
+        //       before any cck-qualified edge ever sees AUDxDAT=1, silently dropping the write
+        //       (measured: broke the direct-mode scenario's single, unretried write).
+        //   (b) a longer fixed hold (12 ticks) can instead span TWO cck-qualified edges, so one
+        //       logical write gets consumed twice (measured: lencnt read "4 2 4 2..." instead of
+        //       "4 3 2 1...").
+        //   (c) checking dut->cck AFTER calling tick() -- as this function itself first did --
+        //       reports the flag for the NEXT posedge, not the one the call just used (tick()'s
+        //       own bookkeeping updates clk7_en/cck only at the very end of each call, for the
+        //       following call to consume) -- so a hold that was "already" cck-aligned before the
+        //       loop even started gets missed by this check, the loop keeps waiting, and BOTH that
+        //       already-consumed edge and the next real one land while aen is still held: measured
+        //       directly via a per-tick rootp trace, one physical AUDDAT write rippled through
+        //       audio_state 001->011->010 (two transitions) before this was caught.
+        // The fix: read dut->cck BEFORE calling tick() -- that is what tells you whether the
+        // UPCOMING posedge (inside the tick() you are about to call) will be cck-qualified, since
+        // tick() only ever updates clk7_en/cck for its own successor.
         while (!dut->clk7_en) tick();
         dut->aen = 1;
         dut->reg_address_in = (addr >> 1) & 0x7;
         dut->data = data;
-        tick(); tick(); tick(); tick();
+        while (!dut->cck) tick();
+        tick(); // this call's own posedge is the one cck-qualified edge; nothing after it is held
         dut->aen = 0;
         dut->reg_address_in = 0;
         dut->data = 0;
@@ -289,8 +440,21 @@ struct Harness {
 // that this agent has not yet verified by opening the file).
 // ---------------------------------------------------------------------------
 static std::vector<size_t> audxdatEvents(Harness& h) {
+    // The LAST recorded sample of each contiguous AUDxDAT==1 run, not the first. AUDxDAT
+    // (paula_audio_channel.v:120-127) latches high on a write and stays high across every
+    // recorded cck sample until write_reg() releases aen; Harness::tick() itself only pushes a
+    // recorded Sample when its OWN freshly-computed "cck for the next posedge" flag is set, which
+    // (given the same one-tick lag documented on write_reg's own event-driven hold) means the
+    // FIRST recorded sample of a run does not reliably reflect state AFTER that write's actual
+    // cck-qualified update has taken effect -- measured directly: sampling lencnt at the first
+    // sample of each run produced "4 2 4 2..." (looked plausible, was wrong) while a raw
+    // rootp-level trace of the same run's write_reg calls showed a clean, single "4->3->2->1->4"
+    // decrement per write throughout. The LAST sample of each run is always taken well after the
+    // write's own update has settled and been recorded, regardless of exactly how many ticks the
+    // write was held for.
     std::vector<size_t> v;
-    for (size_t i = 0; i < h.history.size(); i++) if (h.history[i].audxdat) v.push_back(i);
+    for (size_t i = 0; i < h.history.size(); i++)
+        if (h.history[i].audxdat && (i + 1 == h.history.size() || !h.history[i+1].audxdat)) v.push_back(i);
     return v;
 }
 
@@ -346,9 +510,9 @@ static EncodingResult run_encoding(Harness& h, const std::vector<int>& codes) {
     EncodingResult r;
     std::set<int> seen;
     for (int c : codes) {
-        h.dut->audio_state = c;
+        h.dut->rootp->paula_audio_channel__DOT__audio_state = c;
         h.dut->eval();
-        int got = h.dut->audio_state;
+        int got = h.dut->rootp->paula_audio_channel__DOT__audio_state;
         r.requested.push_back(c);
         r.readback.push_back(got);
         seen.insert(got);
@@ -364,10 +528,10 @@ static EncodingResult run_encoding(Harness& h, const std::vector<int>& codes) {
 static int run_forced_transition(Harness& h, int forced_code) {
     h.reset_all();
     h.dut->dmaena = 0;
-    h.dut->audio_state = forced_code;
+    h.dut->rootp->paula_audio_channel__DOT__audio_state = forced_code;
     h.dut->eval();
     for (int i = 0; i < 8; i++) h.tick();
-    return h.dut->audio_state;
+    return h.dut->rootp->paula_audio_channel__DOT__audio_state;
 }
 
 // ---------------------------------------------------------------------------
@@ -396,6 +560,13 @@ struct DmaResult {
     std::vector<long> word_sent_tick;
     long dma_on_tick = -1;
     bool exited_to_idle_after_off = false;
+    // The 000->001 combinational bundle (AUDxON/AUDxDR/lencntrld/dmasen all 1, audio_state STILL
+    // 000) exists for exactly one delta-cycle, immediately after dmaena is raised and before the
+    // next cck-gated clock edge visibly moves audio_state to 001 -- it does not persist across a
+    // full cck period, so no periodically-recorded trace sample ever shows it (discovered via a
+    // debug dump of the trace after opening the RTL). Captured directly, once, right here.
+    bool pre_state_is_idle = false;
+    bool pre_audxon = false, pre_audxdr = false, pre_lencntrld = false, pre_dmasen = false;
 };
 
 static DmaResult run_dma(const DmaParams& p) {
@@ -409,14 +580,47 @@ static DmaResult run_dma(const DmaParams& p) {
 
     for (long i = 0; i < p.dma_on_delay_ticks; i++) h.tick();
     h.dut->dmaena = 1;
+    h.dut->eval(); // propagate AUDxON=dmaena and recompute audio_next combinationally, audio_state still 000
+    r.pre_state_is_idle = (h.dut->rootp->paula_audio_channel__DOT__audio_state == MANUAL_IDLE);
+    r.pre_audxon = h.dut->rootp->paula_audio_channel__DOT__AUDxON;
+    r.pre_audxdr = h.dut->rootp->paula_audio_channel__DOT__AUDxDR;
+    r.pre_lencntrld = h.dut->rootp->paula_audio_channel__DOT__lencntrld;
+    r.pre_dmasen = h.dut->rootp->paula_audio_channel__DOT__dmasen;
     r.dma_on_tick = h.main_time;
 
     size_t widx = 0;
     int words_sent = 0;
-    long hard_budget = 300000;
+    long hard_budget = 2000000;
+    // Answer only at hpos==13, once per 227-cck line -- the exact pacing
+    // hrm/paula_audio_channel/test_paula_audio_channel.cpp's own proven, already-working sibling
+    // harness uses. Two harness bugs were found and fixed by first departing from this pacing
+    // (documented in git history of this file): (1) answering the same tick dmareq first appears
+    // races the FSM's own cck-gated update, since a write only needs clk7_en (every 4 ticks) while
+    // the state register only updates on cck (every 8) -- a too-fast answer can land before the
+    // edge that would have cleanly consumed it; (2) a from-scratch replacement pacing scheme that
+    // tried to answer "as soon as safely possible" re-fired on every subsequent tick once its own
+    // threshold was first crossed, bursting through every remaining word in a handful of ticks
+    // (confirmed directly: the fixture-liveness sequence showed only the LAST word's bytes,
+    // repeating). Both go away by reusing the sibling's own proven, generously-spaced pacing
+    // exactly. AUDIO_STATE_1/2 (the discard-state waits) have no timeout, so the long spacing
+    // is free there; AUDIO_STATE_3/4 (the main loop) self-advance on perfin regardless of new
+    // data, so slower answers there just mean a few extra spurious stale-data self-loop
+    // iterations before the real word lands -- harmless, since every check below locates its
+    // event by searching for the actual write's own effect, never by assuming a fixed iteration
+    // count or tick offset.
+    // h.hpos==13 stays true for a full cck period (up to 8 raw ticks, not just one), so without a
+    // guard the responder condition below can fire more than once within the SAME hpos==13
+    // window -- if the FSM already re-armed AUDxDR for the following word within that same
+    // window (e.g. once the discard/second-word arcs are behind us and the steady loop is
+    // running), a second write_reg() call can go out before hpos ever leaves 13, silently
+    // consuming a word the loop never actually got around to asking for on its own and shifting
+    // every later word's identity by one (measured: the fixture-liveness sequence was missing
+    // 0x99AA entirely). answeredThisSlot forces at most one answer per hpos==13 occurrence.
+    bool answeredThisSlot = false;
     while (hard_budget-- > 0) {
         h.tick();
-        if (h.dut->clk7_en && h.hpos == 13 && h.dut->dmareq && widx < p.words.size()) {
+        if (h.hpos != 13) answeredThisSlot = false;
+        if (h.dut->clk7_en && h.hpos == 13 && !answeredThisSlot && h.dut->dmareq && widx < p.words.size()) {
             if (p.suppress_responder_after >= 0 && words_sent >= p.suppress_responder_after) {
                 // mutation: Agnus stops answering -- leave dmareq unserviced
             } else {
@@ -428,6 +632,7 @@ static DmaResult run_dma(const DmaParams& p) {
                 r.word_sent_tick.push_back(h.main_time);
                 widx++;
                 words_sent++;
+                answeredThisSlot = true;
             }
         }
         if (widx >= p.words.size()) break;
@@ -438,7 +643,7 @@ static DmaResult run_dma(const DmaParams& p) {
         h.dut->dmaena = 0;
         if (p.off_tail_raise_intpen) h.dut->intpen = 1;
         for (int i = 0; i < (p.audper * 3 + 40) * 8; i++) h.tick();
-        r.exited_to_idle_after_off = (h.dut->audio_state == MANUAL_IDLE);
+        r.exited_to_idle_after_off = (h.dut->rootp->paula_audio_channel__DOT__audio_state == MANUAL_IDLE);
     }
     return r;
 }
@@ -478,7 +683,7 @@ static DirectResult run_direct(const DirectParams& p) {
     for (size_t i = before; i < h.history.size(); i++) {
         if (h.history[i].audxdat && !h.history[i].audxon && !h.history[i].audxip) saw_direct_cause = true;
     }
-    r.direct_entry_state = h.dut->audio_state;
+    r.direct_entry_state = h.dut->rootp->paula_audio_channel__DOT__audio_state;
     r.entered_via_direct_arc = saw_direct_cause && (r.direct_entry_state == MANUAL_HI);
 
     for (int i = 0; i < p.n_writes; i++) h.write_reg(REG_AUDDAT, (uint16_t)(0x1000 + i));
@@ -531,7 +736,7 @@ int main(int argc, char** argv) {
               "right digit\": requested MSB (bit2) matches readback MSB across all 8 codes", msb_is_bit2);
 
         Harness h2; h2.reset_all();
-        int post_reset_state = h2.dut->audio_state;
+        int post_reset_state = h2.dut->rootp->paula_audio_channel__DOT__audio_state;
         CHECK("5-sm.c5 (p164) \"the idle state is encoded 000\": audio_state==0 immediately after "
               "reset, got " + std::to_string(post_reset_state), post_reset_state == 0);
 
@@ -562,8 +767,8 @@ int main(int argc, char** argv) {
         Harness h3;
         h3.dut->clk=0; h3.dut->clk7_en=0; h3.dut->cck=0; h3.dut->reset=0; h3.dut->aen=0;
         h3.dut->dmaena=0; h3.dut->reg_address_in=0; h3.dut->data=0; h3.dut->intpen=0; h3.dut->strhor=0;
-        h3.dut->audio_state = 5; h3.dut->eval();
-        int m5 = h3.dut->audio_state;
+        h3.dut->rootp->paula_audio_channel__DOT__audio_state = 5; h3.dut->eval();
+        int m5 = h3.dut->rootp->paula_audio_channel__DOT__audio_state;
         MUTATION("5-sm.c5", "stimulus", (m5==0) ? "green" : "red",
                   "reset never asserted (audio_state force-set to 5, reset_all() skipped entirely); "
                   "observed=" + std::to_string(m5) + " -- idle-encoding check correctly fails "
@@ -613,6 +818,28 @@ int main(int argc, char** argv) {
 
         int t_dma_on = firstTransitionFrom(H, MANUAL_IDLE);
 
+#ifdef DEBUG_DUMP
+        std::cerr << "DEBUG t_dma_on idx=" << t_dma_on << " hidx=" << (t_dma_on>=0?(long)H.transitions[t_dma_on].hidx:-1)
+                   << " total transitions=" << H.transitions.size() << "\n";
+        if (t_dma_on >= 0) {
+            long h0 = (long)H.transitions[t_dma_on].hidx;
+            for (long k = std::max(0L, h0-4); k <= std::min((long)H.history.size()-1, h0+2); k++) {
+                auto& s = H.history[k];
+                std::cerr << "  hist[" << k << "] t=" << s.t << " state=" << s.state
+                          << " audxon=" << s.audxon << " audxdr=" << s.audxdr
+                          << " lencntrld=" << s.lencntrld << " dmasen=" << s.dmasen
+                          << " audxdat=" << s.audxdat << "\n";
+            }
+        }
+        std::cerr << "DEBUG dma_on_tick=" << base.dma_on_tick << "\n";
+        std::cerr << "DEBUG adEvents.size()=" << adEvents.size() << " word_sent_tick.size()=" << base.word_sent_tick.size() << "\n";
+        for (size_t i = 0; i < adEvents.size(); i++)
+            std::cerr << "  adEvents[" << i << "] hidx=" << adEvents[i] << " t=" << H.history[adEvents[i]].t
+                      << " lencnt=" << H.history[adEvents[i]].lencnt << "\n";
+        for (size_t i = 0; i < base.word_sent_tick.size(); i++)
+            std::cerr << "  word_sent_tick[" << i << "]=" << base.word_sent_tick[i] << "\n";
+#endif
+
         // ---- [fixture] FIXTURE-KNOWN-WORD-IN-ORDER -- no claim id, no page. Proves the write ->
         // DMA-answer -> state-machine -> sample path actually delivers DISTINCT values, in order,
         // before any claim-based assertion below leans on that same path. The 8 counted words
@@ -635,15 +862,16 @@ int main(int argc, char** argv) {
         }
 
         // ---- G3: DMA-driven path description ----
-        bool g3 = false; std::string g3det;
-        if (t_dma_on >= 0 && H.transitions[t_dma_on].hidx > 0) {
-            const Sample& pre = H.history[H.transitions[t_dma_on].hidx - 1];
-            g3 = pre.audxon && pre.audxdr && pre.lencntrld && pre.dmasen;
-            std::ostringstream o;
-            o << "at the 000->001 arc: AUDxON=" << pre.audxon << " AUDxDR=" << pre.audxdr
-              << " lencntrld=" << pre.lencntrld << " dmasen=" << pre.dmasen;
-            g3det = o.str();
-        } else g3det = "000->001 transition not observed";
+        // Captured directly at the instant dmaena is raised (base.pre_*), not by searching the
+        // periodic trace: the combinational bundle exists for one delta-cycle only, before the
+        // next cck-gated edge visibly advances audio_state -- see DmaResult's own comment.
+        bool g3 = base.pre_state_is_idle && base.pre_audxon && base.pre_audxdr &&
+                  base.pre_lencntrld && base.pre_dmasen;
+        std::ostringstream g3o;
+        g3o << "at the instant dmaena is raised (audio_state still " << base.pre_state_is_idle
+            << "=idle): AUDxON=" << base.pre_audxon << " AUDxDR=" << base.pre_audxdr
+            << " lencntrld=" << base.pre_lencntrld << " dmasen=" << base.pre_dmasen;
+        std::string g3det = g3o.str();
         CHECK("5-p164.c6 5-sm.c7 (p164) \"the other path is designed for DMA-driven operation "
               "(the Agnus special chip provides the data)\": " + g3det, g3);
 
@@ -654,11 +882,9 @@ int main(int argc, char** argv) {
               (t_dma_on>=0?std::to_string(H.transitions[t_dma_on].to):std::string("none")) +
               " (want 001)", g8);
 
-        bool g9 = false;
-        if (t_dma_on >= 0) g9 = H.transitions[t_dma_on].hidx > 0 &&
-                                 H.history[H.transitions[t_dma_on].hidx-1].audxdr;
+        bool g9 = base.pre_audxdr;
         CHECK("5-p164.c16 5-sm.c18 (p164) \"DMA requests are sent to Agnus as soon as DMA is "
-              "turned on\": AUDxDR observed at the 000->001 arc = " + std::string(g9?"1":"0"), g9);
+              "turned on\": AUDxDR observed at the instant dmaena is raised = " + std::string(g9?"1":"0"), g9);
 
         // ---- G11/G12: discard-state entry named 101, request already sent ----
         int discardTo = -1, discardFrom = -1;
@@ -690,11 +916,18 @@ int main(int argc, char** argv) {
               "; word1's hi byte (0x33) does appear=" + std::string(laterWordAppears?"yes":"no"), g10);
 
         // ---- G13/G30: second word -> destination 010, with action bundle ----
+        // The action bundle (volcntrld/percntrld/pbufld1) is combinational output computed WHILE
+        // still in the discard state (paula_audio_channel.v:359-361, inside the "data has arrived"
+        // branch of AUDIO_STATE_2), one delta-cycle before the transition visibly lands in the new
+        // state -- the same pre/post distinction as G3's fix. The POST sample (now in the new
+        // state) instead reflects AUDIO_STATE_3's own top-of-block defaults (percntrld/pbufld1/
+        // volcntrld = 0 there), which is why this previously read "NOT set".
         int secondTo=-1; bool secondActions=false;
         if (adEvents.size()>1 && wTrans[1]>=0) {
             secondTo = H.transitions[wTrans[1]].to;
-            const Sample& at = H.history[H.transitions[wTrans[1]].hidx];
-            secondActions = at.volcntrld || at.percntrld || at.pbufld1; // sampled at/near the arc
+            size_t hi2 = H.transitions[wTrans[1]].hidx;
+            const Sample& at = (hi2>0) ? H.history[hi2-1] : H.history[hi2];
+            secondActions = at.volcntrld || at.percntrld || at.pbufld1; // sampled just before the arc
         }
         bool g13 = (secondTo == MANUAL_HI);
         CHECK("5-p164.c20 5-sm.c22 (p164) \"When the data arrives, state 010 is entered\": "
@@ -735,6 +968,8 @@ int main(int argc, char** argv) {
               std::to_string(loopTo) + " (manual wants 011); perfin observed at the arc=" +
               std::string(perfinAtEdge?"yes":"no"), g6);
 
+        int actualLoopCode = loopTo; // the RTL's real steady low-byte code, measured above
+
         // ---- G31: fig "010 and 011 alternate when perfin asserted" (crossread: this loose,
         // unqualified reading is accepted -- the chapter's own p164 prose uses the same
         // simplification, omitting the AUDxIP qualifier the figure's own arc actually carries).
@@ -757,17 +992,14 @@ int main(int argc, char** argv) {
               std::to_string(loopAlternationsAtPerfin), g31);
 
         // ---- G32: percount self-loop + penhi in both loop states (fig) ----
+        // `percount` (distinct from `percntrld`) is the RTL's actual decrement-enable signal for
+        // the self-loop branch (paula_audio_channel.v:407,448) -- a real, repeated count-down,
+        // not merely "not reloading" (percnt can sit frozen without percount ever being asserted).
         bool loop010_selfloop=false, loop011_selfloop=false;
         for (auto& s : H.history) {
             if (s.t < beforeWord1) continue;
-            if (s.state == MANUAL_HI && s.percntrld==0 && s.perfin==0) loop010_selfloop = true; // dwelling, counting
-        }
-        // MANUAL_LO (011) in this RTL is the one-shot discard state -- it cannot self-loop on
-        // percount because it is left on the very next cck via the AUDxDAT-gated arc, not perfin.
-        int actualLoopCode = loopTo; // the RTL's real steady low-byte code, measured above
-        for (auto& s : H.history) {
-            if (s.t < beforeWord1) continue;
-            if (s.state == actualLoopCode && s.percntrld==0 && s.perfin==0) loop011_selfloop = true;
+            if (s.state == MANUAL_HI && s.percount) loop010_selfloop = true;
+            if (s.state == actualLoopCode && s.percount) loop011_selfloop = true;
         }
         bool g32 = loop010_selfloop && (actualLoopCode == MANUAL_LO ? loop011_selfloop : false);
         CHECK("5-p166.c6 F58.loop.percount (fig p166) \"percount self-loops in states 010 and "
@@ -792,55 +1024,102 @@ int main(int argc, char** argv) {
               base.exited_to_idle_after_off);
 
         // ---- G15: length counter decrements once per word (+ p165 glossary "notch") ----
+        // Sampled DIRECTLY at each AUDxDAT arrival (H.history[adEvents[i]], where audxdat==1 by
+        // construction), not via the transition it may or may not immediately cause: lencount/
+        // lencntrld/intreq2_set in AUDIO_STATE_4 (paula_audio_channel.v:414-417) are gated by
+        // AUDxDAT alone, evaluated the instant a write lands, regardless of whether perfin has
+        // fired yet -- a write that lands while already sitting in the steady loop does NOT
+        // itself cause a visible state transition (that only happens at the next perfin edge), so
+        // transitionAtOrAfter() would attribute it to an unrelated later transition. Discovered by
+        // re-deriving the RTL's own lencnt sequence after this fix showed "2 1 4 4 2 1 4 4" instead
+        // of the previously-assumed "4 3 2 1" -- the discard word (adEvents[0]) ALSO decrements
+        // lencnt (paula_audio_channel.v:317 `lencount = ~lenfin` in AUDIO_STATE_1 is unconditional
+        // on AUDxDAT, not skipped for the discard), which this package's own written spec did not
+        // anticipate. Fixed as a measurement-method bug: the manual's claim under test (one notch
+        // per incoming word) is unchanged; only how "per incoming word" is located in the trace.
         std::vector<int> lencntAtWord;
-        for (size_t i = 1; i < adEvents.size(); i++) { // skip discard word (doesn't count)
-            if (wTrans[i] >= 0) lencntAtWord.push_back(H.history[H.transitions[wTrans[i]].hidx].lencnt);
+        for (size_t i = 0; i < adEvents.size(); i++) lencntAtWord.push_back(H.history[adEvents[i]].lencnt);
+#ifdef DEBUG_LENCNT
+        for (size_t i = 0; i < adEvents.size(); i++) {
+            size_t idx = adEvents[i];
+            std::cerr << "DEBUG lencnt word#" << i << " hidx=" << idx << " t=" << H.history[idx].t
+                      << " lencnt=" << H.history[idx].lencnt << " audxdat=" << H.history[idx].audxdat << "\n";
+            for (long k = std::max((long)0, (long)idx - 3); k <= std::min((long)H.history.size()-1, (long)idx + 3); k++) {
+                std::cerr << "    ctx[" << k << "] t=" << H.history[k].t << " audxdat=" << H.history[k].audxdat
+                          << " lencnt=" << H.history[k].lencnt << " lencount=" << H.history[k].lencount
+                          << " state=" << H.history[k].state << "\n";
+            }
         }
-        bool g15 = lencntAtWord.size() >= 4 &&
-                   lencntAtWord[0] > lencntAtWord[1] && lencntAtWord[1] > lencntAtWord[2] &&
-                   (lencntAtWord[0]-lencntAtWord[1] == 1) && (lencntAtWord[1]-lencntAtWord[2] == 1);
+#endif
+        bool g15 = true;
+        for (size_t i = 1; i < lencntAtWord.size(); i++) {
+            bool reloaded = (lencntAtWord[i] == baseP.audlen && lencntAtWord[i-1] == 1);
+            bool decremented = (lencntAtWord[i] == lencntAtWord[i-1] - 1);
+            if (!reloaded && !decremented) g15 = false;
+        }
+        g15 = g15 && lencntAtWord.size() >= 5;
         std::ostringstream lseq; for (int v: lencntAtWord) lseq << v << " ";
         CHECK("5-p164.c22 5-sm.c24 5-p165.c14 (p164/p165) \"The length counter counts down once "
               "with each word that comes in\" / \"lencount Count length counter down one notch\": "
-              "measured lencnt at successive counted words = " + lseq.str(), g15);
+              "measured lencnt at every AUDxDAT arrival (discard word included) = " + lseq.str() +
+              "-- each step is either -1 or a reload to AUDLEN", g15);
 
         // ---- G16: restart request + regular request together at block end ----
-        bool g16 = false; std::string g16det = "no lenfin-tagged word found";
-        for (size_t i = 1; i < adEvents.size(); i++) {
-            if (wTrans[i] < 0) continue;
-            const Sample& at = H.history[H.transitions[wTrans[i]].hidx];
-            const Sample& pre = H.transitions[wTrans[i]].hidx>0 ? H.history[H.transitions[wTrans[i]].hidx-1] : at;
-            if (pre.lenfin || at.lenfin) {
-                g16 = (pre.dmas || at.dmas) && (pre.dmareq || at.dmareq);
-                std::ostringstream o; o << "at word #" << i << " (lenfin): dmas=" << (pre.dmas||at.dmas)
-                                        << " dmareq=" << (pre.dmareq||at.dmareq);
-                g16det = o.str();
-                break;
+        // Anchored on a dmas RISING EDGE directly (the same concept G34 below already uses for
+        // the note's AND equation), not on a word index: dmas is set at the next PERFIN-driven
+        // loop transition after lenfin becomes true (paula_audio_channel.v:220, `dmas <= dmasen |
+        // lenfin` on `AUDxDR && cck`), and perfin cycles every AUDPER cck regardless of word
+        // arrivals -- so the restart can fire, and dmareq/dmas can already have been cleared again
+        // by strhor, well BEFORE the next word's own arrival. Correlating through "the word where
+        // lenfin first appears, then the following transition" (this check's first version) could
+        // land on a LATER, unrelated loop transition after the real restart had already come and
+        // gone -- measured directly via a per-sample trace: dmas was already 1 several samples
+        // before the word-based anchor tick, and back to 0 by the transition that anchor pointed
+        // at.
+        // The FIRST dmas rising edge in the whole run is the 000->001 DMA-start arc itself
+        // (dmasen=1, lenfin=0 there) -- G3/G28 already cover that one. This claim is specifically
+        // about the LENFIN-driven restart, so skip that first edge and take the next one.
+        bool g16 = false; std::string g16det = "no lenfin-driven dmas rising edge observed";
+        int dmasEdgesSeen = 0;
+        for (size_t i = 1; i < H.history.size(); i++) {
+            if (H.history[i].dmas && !H.history[i-1].dmas) {
+                dmasEdgesSeen++;
+                if (dmasEdgesSeen == 2) {
+                    g16 = H.history[i].dmareq;
+                    std::ostringstream o; o << "2nd dmas rising edge (the first lenfin-driven "
+                                            << "restart) at t=" << H.history[i].t << ": dmareq="
+                                            << H.history[i].dmareq << " (same edge)";
+                    g16det = o.str();
+                    break;
+                }
             }
         }
         CHECK("5-p164.c23 5-p164.c24 5-sm.c25 (p164) \"When it finishes, a DMA restart request "
               "goes to Agnus along with the regular DMA request\": " + g16det, g16);
 
         // ---- G17: length counter reloaded at block end ----
-        bool g17 = lencntAtWord.size()>=5 && lencntAtWord[3] < lencntAtWord[4];
+        bool g17 = false;
+        for (size_t i = 1; i < lencntAtWord.size(); i++)
+            if (lencntAtWord[i] == baseP.audlen && lencntAtWord[i-1] == 1) g17 = true;
         CHECK("5-p164.c26 5-sm.c27 (p164) \"the length counter is reloaded\" (soon after it "
-              "finishes): lencnt sequence = " + lseq.str() + " (expect a rise back up after the "
-              "4th counted word)", g17);
+              "finishes): lencnt sequence = " + lseq.str() + " (expect a rise back up to AUDLEN="
+              + std::to_string(baseP.audlen) + " immediately after a 1)", g17);
 
         // ---- G18/G19: interrupt soon after / at last-word-start ----
+        // Unlike dmas (perfin-gated, see G16 above), intreq2_set is gated directly by AUDxDAT
+        // (paula_audio_channel.v:415 `intreq2_set = lenfin & AUDxON & AUDxDAT`), so it genuinely
+        // does arm at the word's own arrival -- this word-index anchor is correct here.
+        int lenfinWordIdx = -1;
+        for (size_t i = 0; i < adEvents.size(); i++)
+            if (H.history[adEvents[i]].lenfin) { lenfinWordIdx = (int)i; break; }
         bool g19 = false; std::string g19det = "no lenfin-armed interrupt observed";
-        for (size_t i = 1; i < adEvents.size(); i++) {
-            if (wTrans[i] < 0) continue;
-            size_t hi = H.transitions[wTrans[i]].hidx;
-            if (H.history[hi].intreq2 || (hi>0 && H.history[hi-1].intreq2)) {
-                // find the next intreq pulse after this word
-                bool found=false; long armT = H.history[hi].t;
-                for (auto& s : H.history) if (s.t > armT && s.intreq) { found=true; break; }
-                g19 = found;
-                g19det = std::string("intreq2 armed at word #") + std::to_string(i) +
-                         ", intreq pulse observed afterward=" + (found?"yes":"no");
-                break;
-            }
+        if (lenfinWordIdx >= 0) {
+            long armT = H.history[adEvents[lenfinWordIdx]].t;
+            bool found=false;
+            for (auto& s : H.history) if (s.t > armT && s.intreq) { found=true; break; }
+            g19 = found;
+            g19det = std::string("intreq2 armed at word #") + std::to_string(lenfinWordIdx) +
+                     ", intreq pulse observed afterward=" + (found?"yes":"no");
         }
         CHECK("5-p164.c27 5-sm.c28 5-p165.c5 5-sig.intreq2 (p164/p165) \"an interrupt request goes "
               "out soon after the length counter finishes\" / \"intreq2 ... Request comes out after "
@@ -856,7 +1135,6 @@ int main(int argc, char** argv) {
         // ---- G22/G23: dmasen def, lencntrld def ----
         CHECK("5-p165.c9 5-sig.dmasen (p165) \"dmasen Restart request enable\": dmasen observed "
               "high at the 000->001 arc = " + g3det, g3);
-        bool g23 = lencntAtWord.size()>0; // lencntrld's reload effect already shown by G15/G17
         CHECK("5-p165.c13 5-sig.lencntrld (p165) \"lencntrld Reload length counter from back-up "
               "latch\": lencnt reload-then-count sequence observed = " + lseq.str(), g17);
 
@@ -897,28 +1175,40 @@ int main(int argc, char** argv) {
               " -- the note's remaining claim requires 'yes'", dmasen_true_elsewhere_at_lenfin);
 
         // ---- G34: fig NOTE AND equation AUDxDSR(=dmas)=AUDxDR.dmasen ----
-        bool eqn_holds_everywhere = true; int mismatches=0;
-        for (auto& s : H.history) {
-            bool predicted = s.audxdr && s.dmasen;
-            if (s.dmas && !predicted) { eqn_holds_everywhere = false; mismatches++; }
+        // dmas is a LATCHED register (paula_audio_channel.v:220 `dmas <= dmasen | lenfin` on
+        // `AUDxDR && cck`) that stays at its set value for many samples until strhor next clears
+        // it, while AUDxDR/dmasen are transient, combinational values valid only at the instant of
+        // that same latching edge -- comparing dmas against audxdr/dmasen at every later sample
+        // (while dmas is still latched high but audxdr/dmasen have long since gone back to 0)
+        // produces spurious mismatches with no bearing on the equation itself. Restricted to
+        // dmas's own RISING EDGES, checking the combinational values one sample before each edge
+        // (the same pre/post distinction G3's fix already established).
+        int mismatches=0, risingEdges=0;
+        for (size_t i = 1; i < H.history.size(); i++) {
+            if (H.history[i].dmas && !H.history[i-1].dmas) {
+                risingEdges++;
+                bool predicted = H.history[i-1].audxdr && H.history[i-1].dmasen;
+                if (!predicted) mismatches++;
+            }
         }
-        CHECK("5-p166.c8 F58.note.dsr (fig p166, NOTE) \"AUDxDSR=AUDxDR . dmasen\": dmas asserted "
-              "without (AUDxDR & dmasen) both true, at " + std::to_string(mismatches) +
-              " sampled point(s) (0 wanted for the note's equation to hold as stated)",
-              eqn_holds_everywhere);
+        bool eqn_holds_everywhere = (risingEdges > 0) && (mismatches == 0);
+        CHECK("5-p166.c8 F58.note.dsr (fig p166, NOTE) \"AUDxDSR=AUDxDR . dmasen\": of " +
+              std::to_string(risingEdges) + " dmas rising edge(s) observed, " +
+              std::to_string(mismatches) + " did not match (AUDxDR & dmasen) at the edge (0 "
+              "wanted for the note's equation to hold as stated)", eqn_holds_everywhere);
 
         // ---- G35: fig AUDxON-deasserted arcs to idle (both start states) ----
         // Exercised via the forced-transition scenario B semantics: from MANUAL_ENTRY (001) and
         // from the RTL's own discard code, !AUDxON should return to idle.
         Harness hb;
         hb.reset_all();
-        hb.dut->audio_state = MANUAL_ENTRY; hb.dut->dmaena = 0; hb.dut->eval();
+        hb.dut->rootp->paula_audio_channel__DOT__audio_state = MANUAL_ENTRY; hb.dut->dmaena = 0; hb.dut->eval();
         for (int i=0;i<8;i++) hb.tick();
-        int from001 = hb.dut->audio_state;
+        int from001 = hb.dut->rootp->paula_audio_channel__DOT__audio_state;
         hb.reset_all();
-        hb.dut->audio_state = discardTo; hb.dut->dmaena = 0; hb.dut->eval();
+        hb.dut->rootp->paula_audio_channel__DOT__audio_state = discardTo; hb.dut->dmaena = 0; hb.dut->eval();
         for (int i=0;i<8;i++) hb.tick();
-        int fromDiscard = hb.dut->audio_state;
+        int fromDiscard = hb.dut->rootp->paula_audio_channel__DOT__audio_state;
         bool g35 = (from001==0) && (fromDiscard==0);
         CHECK("5-p166.c9 F58.t001_000 F58.t101_000 (fig p166) \"!AUDxON returns to idle from both "
               "001 and the discard state\": from 001->" + std::to_string(from001) + ", from "
@@ -933,18 +1223,26 @@ int main(int argc, char** argv) {
         // ---- G40: fig big arc 000->010 (direct/interrupt-driven entry) -- see Scenario D ----
 
         // ---- G41: fig main-loop bracket, lencount uses barred lenfin, lencntrld/intreq2 don't ----
-        bool sawLencountAtNotLenfin=false, sawLencntrldAtLenfin=false, sawIntreq2AtLenfin=false;
+        // intreq2_set (the combinational arming condition, paula_audio_channel.v:415
+        // `intreq2_set = lenfin & AUDxON & AUDxDAT`), not the registered intreq2 flip-flop itself,
+        // is what the figure's bracket actually gates on lenfin: intreq2 (the flip-flop) only
+        // becomes visibly 1 one cck after intreq2_set was momentarily true, by which point
+        // lencntrld has (on that same original edge) already reloaded lencnt away from 1, so
+        // lenfin has itself already gone false again -- checking the registered flip-flop against
+        // lenfin at the same sample can never find them both true simultaneously, regardless of
+        // whether the RTL conforms.
+        bool sawLencountAtNotLenfin=false, sawLencntrldAtLenfin=false, sawIntreq2SetAtLenfin=false;
         for (auto& s : H.history) {
             if (s.lencount && !s.lenfin) sawLencountAtNotLenfin = true;
             if (s.lencntrld && s.lenfin) sawLencntrldAtLenfin = true;
-            if (s.intreq2 && s.lenfin) sawIntreq2AtLenfin = true;
+            if (s.intreq2_set && s.lenfin) sawIntreq2SetAtLenfin = true;
         }
-        bool g41 = sawLencountAtNotLenfin && sawLencntrldAtLenfin && sawIntreq2AtLenfin;
+        bool g41 = sawLencountAtNotLenfin && sawLencntrldAtLenfin && sawIntreq2SetAtLenfin;
         CHECK("F58.loop.lenfin (fig p166) bracket [lencntrld if lenfin, lencount if NOT lenfin, "
               "intreq2 if lenfin] (crossread-corrected: lencount alone uses the barred term): "
               "lencount-at-!lenfin=" + std::string(sawLencountAtNotLenfin?"yes":"no") +
               " lencntrld-at-lenfin=" + std::string(sawLencntrldAtLenfin?"yes":"no") +
-              " intreq2-at-lenfin=" + std::string(sawIntreq2AtLenfin?"yes":"no"), g41);
+              " intreq2_set-at-lenfin=" + std::string(sawIntreq2SetAtLenfin?"yes":"no"), g41);
 
         // ---- G42: fig AUDxIR emission bracket, one transition after intreq2 armed ----
         CHECK("F58.loop.intreq2 (fig p166) \"AUDxIR ... a transition after intreq2 was armed\": "
@@ -1076,13 +1374,16 @@ int main(int argc, char** argv) {
         // 5-p164.c9's baseline is red for the same structural code-name reason as c10/c18/sm.c8/
         // p166.c3 above (manual's 011 is this RTL's one-shot discard state, not its steady
         // low-byte output state) -- an ORACLE-kind probe, not a stimulus one, for the same reason.
-        uint8_t sampleInActualLoopCode = 0xFF;
-        for (auto& s : H.history) if (s.t >= beforeWord1 && s.state == actualLoopCode) sampleInActualLoopCode = s.sample;
-        MUTATION("5-p164.c9", "oracle", (sampleInActualLoopCode == 0x44) ? "green" : "red",
+        // Whether 0x44 (word1's own lower byte) EVER appears while state==actualLoopCode, not just
+        // at the last such sample in the whole run (which would instead reflect whichever word
+        // happened to be current when the run ended, not necessarily 0x44).
+        bool sawWord1LowByteInActualLoopCode = false;
+        for (auto& s : H.history) if (s.t >= beforeWord1 && s.state == actualLoopCode && s.sample == 0x44) sawWord1LowByteInActualLoopCode = true;
+        MUTATION("5-p164.c9", "oracle", sawWord1LowByteInActualLoopCode ? "green" : "red",
                   "re-pointed the SAME \"lower byte output\" measurement at the RTL's own measured "
                   "steady low-byte code (" + std::to_string(actualLoopCode) + ") instead of the "
-                  "manual's 011; sample observed = 0x" +
-                  [&]{std::ostringstream o;o<<std::hex<<(int)sampleInActualLoopCode;return o.str();}() +
+                  "manual's 011; 0x44 (word1's lower byte) observed there = " +
+                  std::string(sawWord1LowByteInActualLoopCode?"yes":"no") +
                   " -- confirms the comparator is not backwards.");
 
         DmaParams swap0; swap0.byte_swap_word_index = 0; // swap the DISCARDED word -- must not matter
@@ -1132,10 +1433,19 @@ int main(int argc, char** argv) {
 
         // remaining Scenario-C-derived groups reuse the same isolated-rerun pattern with a
         // single targeted parameter change:
-        MUTATION("5-p164.c26", "stimulus", (lencntAtWord.size()>=5 && !(lencntAtWord[3]<lencntAtWord[4])) ? "impossible" : "red",
-                  "suppressed responder after 4 words (same rerun as 5-p164.c23's mutation): only "
-                  "one block ever completes, so no post-reload lencnt rise can be observed -- "
-                  "reload-timing check correctly has nothing to confirm past block 1.");
+        std::vector<int> lencntAtWordSupp;
+        for (size_t i = 0; i < adSupp.size(); i++) lencntAtWordSupp.push_back(suppR.h.history[adSupp[i]].lencnt);
+        bool suppReloadObserved = false;
+        for (size_t i = 1; i < lencntAtWordSupp.size(); i++)
+            if (lencntAtWordSupp[i] == suppP.audlen && lencntAtWordSupp[i-1] == 1) suppReloadObserved = true;
+        {
+            std::ostringstream lseqSupp; for (int v : lencntAtWordSupp) lseqSupp << v << " ";
+            MUTATION("5-p164.c26", "stimulus", suppReloadObserved ? "green" : "red",
+                      "suppressed responder after 4 words (same rerun as 5-p164.c23's mutation): "
+                      "lencnt sequence = " + lseqSupp.str() + "-- only one block ever completes, so "
+                      "no post-reload rise back to AUDLEN is observed, confirming the reload-timing "
+                      "check correctly has nothing to confirm past block 1.");
+        }
         MUTATION("5-p164.c27", "stimulus", (adSupp.size()<=5) ? "green" : "red",
                   "same suppressed-responder rerun; only one lenfin-armed interrupt is reachable, "
                   "confirming the interrupt-cadence check depends on reaching lenfin at all.");
@@ -1156,8 +1466,8 @@ int main(int argc, char** argv) {
                   "count-down sequence; suppressing the responder before any lenfin pulse (0 words) "
                   "removes the only evidence, confirming the check is not vacuous.");
         MUTATION("5-p166.c2", "stimulus", "red",
-                  "same delayed-dmaena rerun as 5-p164.c6/28.p166.c2's own action bundle shares that "
-                  "arc; no transition, no bundle to observe.");
+                  "same delayed-dmaena rerun as 5-p164.c6's mutation -- this claim's own bundle "
+                  "shares that same 000->001 arc; no transition, no bundle to observe.");
         MUTATION("5-p166.c6", "stimulus", (loop010_selfloop) ? "red" : "impossible",
                   "suppressed-responder rerun truncates the run before a second block's steady-loop "
                   "dwell is reached in the same way; self-loop evidence in this rerun is confined to "
