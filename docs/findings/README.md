@@ -90,6 +90,9 @@ meantime.
 | [NM-HRM-003](NM-HRM-003.md) | OCS Copper address uses five high bits instead of three | open · red |
 | [NM-HRM-004](NM-HRM-004.md) | ECS danger bit admits too small a range | open · red |
 | [NM-HRM-005](NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | open · red |
+| [NM-HRM-006](NM-HRM-006.md) | DDFSTRT/DDFSTOP bit H3 is gated by the chipset, not by resolution | open · red |
+| [NM-HRM-007](NM-HRM-007.md) | the hires fetch width cannot reach the manual's maximum of 49 words | open · red |
+| [NM-HRM-008](NM-HRM-008.md) | playfield-1 collision depends on playfield 2, by design, undocumented | open · red |
 | [NM-HRM-020](NM-HRM-020.md) | BLTSIZV is not gated on ECS, while its two siblings are | open · red |
 | [NM-HRM-021](NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | open · red |
 | [NM-HRM-022](NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | open · red |

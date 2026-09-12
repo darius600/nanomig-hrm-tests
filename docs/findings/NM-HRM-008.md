@@ -1,0 +1,93 @@
+# NM-HRM-008 — playfield-1 collision depends on playfield 2, by design, undocumented
+
+| | |
+|---|---|
+| **Status** | open · red — but see the first section |
+| **Module** | `denise_collision.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise_collision.v#L62-L63) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_collision.v#L62-L63) |
+| **Upstream** | inherited — `denise_collision.v` is content-identical to upstream |
+| **Report to** | **nowhere. The RTL is very likely more correct than the manual** |
+| **Test** | [`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers) |
+| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Verdict of the four** | **all four gate playfield 1 on playfield 2** — NanoMig's expression, term for term |
+
+---
+
+## This is a manual defect, not an RTL defect
+
+The test is red because the manual is this project's oracle, and that is the
+correct outcome of the process. But **the finding to carry forward is that
+appendix A's table of independent collision bits is incomplete** — not that
+NanoMig is wrong.
+
+Everything below is evidence for that reading.
+
+---
+
+## What the HRM says
+
+**Appendix A's `CLXDAT` bit table, printed p. 273**, gives each collision pair its
+own bit and treats them as independent.
+
+---
+
+## What NanoMig does
+
+[`src/minimig-aga/denise_collision.v#L62-L63`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise_collision.v#L62-L63)
+
+```verilog
+assign oddmatch = bm[6] & bm[4] & bm[2] & bm[0] & (dblpf | evenmatch);
+assign evenmatch = bm[7] & bm[5] & bm[3] & bm[1];
+```
+
+With `dblpf = 0` — single playfield — `oddmatch` additionally requires
+`evenmatch`. Playfield 1's presence is made to depend on playfield 2's.
+
+**And the RTL says why, in the comment directly above it:**
+
+> this is the implementation of an undocumented function in the real Denise chip,
+> developed by Yaqube. trigger was the game Rotor. mentioned in WinUAE sources to
+> be the only known game needing this feature. it also fixes the Spaceport
+> instantly helicopter crash at takeoff and Archon-1 'sticky effect' of player
+> sprite at the battlefield.
+
+---
+
+## What the others say
+
+| | code | |
+|---|---|---|
+| **WinUAE** | — | PF1 gated by PF2 |
+| **vAmiga** | — | PF1 gated by PF2 |
+| **Denise** | [`emulation/libami/video/denise.cpp:478-480`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L478-L480) | <pre>if (!clxNoCol)&nbsp;clxDat \|= (v1 &lt;&lt; 5) \| (v1 &lt;&lt; 1) \| 1;<br>else if ((clxNoCol & 2) == 0)&nbsp;clxDat \|= (v1 &lt;&lt; 5);<br>else if (((clxNoCol & 1) == 0) && _doublePlayfield)&nbsp;clxDat \|= (v1 &lt;&lt; 1);</pre> the PF1 group only when `_doublePlayfield` |
+| **Copperline** | [`src/video/bitplane.rs:6797`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane.rs#L6797) | <pre>let odd_match = odd_match_raw && (dual_playfield \|\| even_match);</pre> |
+
+**All four gate playfield 1 on playfield 2 in single-playfield mode** — and
+Copperline's line is NanoMig's expression term for term, with a test named after
+the behaviour: `collision_pixel_single_playfield_odd_match_requires_even_match`
+([`src/video/bitplane/tests.rs:6626`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L6626)).
+
+---
+
+## Suggested change
+
+**None to the RTL.** Four independent implementations, three named games and a
+reverse-engineering note all say real Denise behaves this way. Changing NanoMig
+to match the manual would break Rotor, Spaceport and Archon-1.
+
+What the evidence supports is a **footnote to appendix A's table**: the collision
+bits are not independent in single-playfield mode, where playfield 1's bit
+additionally requires playfield 2's match. That is a documentation change, and
+this project does not own the document.
+
+---
+
+## For the specialists
+
+This is the clearest case in the register of the manual being the incomplete
+party. The RTL documents the behaviour, names the games, and credits the person
+who reverse-engineered it; four implementations agree; and the manual's table
+simply predates the knowledge.
+
+The red result is the process working correctly — the manual is the oracle, the
+oracle says something else, and the disagreement is recorded rather than
+silently resolved in the implementation's favour.
