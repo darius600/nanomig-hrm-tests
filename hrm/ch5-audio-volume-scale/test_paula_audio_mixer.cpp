@@ -115,31 +115,41 @@
 //   about REGISTER values, not register WRITES. No HALT was needed on this
 //   account.
 //
-// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026): 70 passed, 4
-//   failed. The 4 reds are exactly the ones this file predicts, no others:
-//   MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63 [candidate finding 2],
-//   TABLE-5-9-VOLUME-TO-DECIBEL vol0=64 (the same defect, independent
-//   measurement basis), CH1-CH2-ROUTE-LEFT and CH0-CH3-ROUTE-RIGHT (both
-//   reproducing NM-HRM-002). All 70 others are green, including all 64
-//   other Table 5-9 rows, both liveness/adjacency controls, both sample-
-//   range assertions, the stereo-combine capability check, and the
-//   65-level coverage check.
+// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026, REPAIRED per
+//   NM-HRM audit V-01): 69 passed, 5 failed. The 5 reds are exactly the
+//   ones this file predicts, no others: MULTIPLY-PATH-COLLAPSES-VOLUME-64-
+//   ONTO-63 [candidate finding 2], TABLE-5-9-VOLUME-TO-DECIBEL vol0=64 (the
+//   same defect, independent measurement basis), CH1-CH2-ROUTE-LEFT and
+//   CH0-CH3-ROUTE-RIGHT (both reproducing NM-HRM-002), and (newly red as of
+//   this repair) TABLE-5-9-HAS-65-VOLUME-LEVELS: repaired to count DISTINCT
+//   DUT ldatasum outputs across the documented 0..64 register sweep instead
+//   of counting host loop iterations (see V-01 above the assertion itself);
+//   it measures distinct_count=64, not 65, for the same 63/64-collapse
+//   reason as its neighbour, and is EXPECTED to be red -- a green here
+//   would contradict MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63. All 69
+//   others are green, including all 64 other Table 5-9 rows, both
+//   liveness/adjacency controls, both sample-range assertions, and the
+//   stereo-combine capability check.
 //
 // MUTATION LOG: every entry below was actually built with its own flag
 //   (verilator ... -CFLAGS -DMUT_X=1 ...), run, diffed line-by-line against
-//   the 70-passed/4-failed baseline above to confirm ONLY its own named
-//   assertion changed colour, then rebuilt with no flags to confirm the
-//   exact baseline returned. All 9 confirmed exactly as described, moving
-//   exactly one label each and no other:
-//   MUT_LIVE (69/5, CONTROL-CLOCKED-LIVENESS red only, ldatasum read as 0
-//     instead of 4032), MUT_ADJ (69/5, MULTIPLY-PATH-DISTINGUISHES-
-//     ADJACENT-VOLUMES red only, both sides read 3968), MUT_TABLE (69/5,
-//     the vol0=32 table row red only), MUT_COMBINE (69/5, STEREO-COMBINE-
-//     TWO-CHANNELS red only), MUT_CH12 (71/3, CH1-CH2-ROUTE-LEFT flips red
-//     to GREEN), MUT_CH03 (71/3, CH0-CH3-ROUTE-RIGHT flips red to GREEN),
-//     MUT_SMIN (69/5, SAMPLE-RANGE-MIN-128 red only), MUT_SMAX (69/5,
-//     SAMPLE-RANGE-MAX-127 red only), MUT_COUNT (69/5, TABLE-5-9-HAS-65-
-//     VOLUME-LEVELS red only).
+//   the 69-passed/5-failed baseline above to confirm ONLY its own named
+//   assertion's colour or measured count changed, then rebuilt with no
+//   flags to confirm the exact baseline returned. All 9 confirmed exactly
+//   as described:
+//   MUT_LIVE (69/5, CONTROL-CLOCKED-LIVENESS flips green to RED, ldatasum
+//     read as 0 instead of 4032), MUT_ADJ (69/5, MULTIPLY-PATH-
+//     DISTINGUISHES-ADJACENT-VOLUMES flips green to RED, both sides read
+//     3968), MUT_TABLE (69/5, the vol0=32 table row flips green to RED),
+//     MUT_COMBINE (69/5, STEREO-COMBINE-TWO-CHANNELS flips green to RED),
+//     MUT_CH12 (70/4, CH1-CH2-ROUTE-LEFT flips red to GREEN), MUT_CH03
+//     (70/4, CH0-CH3-ROUTE-RIGHT flips red to GREEN), MUT_SMIN (69/5,
+//     SAMPLE-RANGE-MIN-128 flips green to RED), MUT_SMAX (69/5, SAMPLE-
+//     RANGE-MAX-127 flips green to RED), MUT_COUNT (69/5, TABLE-5-9-HAS-65-
+//     VOLUME-LEVELS stays RED both before and after -- distinct_count drops
+//     64 -> 63, the total pass/fail split is unchanged because this
+//     assertion was already red at baseline; see its own MUTATION entry
+//     below for why "impossible" rather than "red" is the honest record).
 //
 // MUTATION CONTROL-CLOCKED-LIVENESS stimulus red: built with -DMUT_LIVE=1, which reads ldatasum immediately after reset with zero clock edges instead of two -> the registered output has not yet latched sample0=+64/vol0=63's product, and the assertion (ldatasum==4032) goes red. Reverted (0 edges -> 2 edges), baseline restored.
 // MUTATION MULTIPLY-PATH-DISTINGUISHES-ADJACENT-VOLUMES stimulus red: built with -DMUT_ADJ=1, which drives vol0=62 for BOTH sides of the comparison instead of 62 and 63 -> the two measurements become identical and the control (expected: distinct) goes red. Reverted, baseline restored.
@@ -150,14 +160,16 @@
 // MUTATION CH0-CH3-ROUTE-RIGHT stimulus green: built with -DMUT_CH03=1, which drives the test's stimulus into channels 1 and 2 instead of 0 and 3 while still comparing against rdatasum -> rdatasum now equals the driven sum, flipping green. Reverted, baseline (red) restored.
 // MUTATION SAMPLE-RANGE-MIN-128 stimulus red: built with -DMUT_SMIN=1, which drives sample0=0 instead of -128 -> the expected extremal product (-8064) no longer matches (0), assertion goes red. Reverted, baseline restored.
 // MUTATION SAMPLE-RANGE-MAX-127 stimulus red: built with -DMUT_SMAX=1, which drives sample0=0 instead of +127 -> the expected extremal product (8001) no longer matches, assertion goes red. Reverted, baseline restored.
-// MUTATION TABLE-5-9-HAS-65-VOLUME-LEVELS stimulus red: built with -DMUT_COUNT=1, which skips the table row for volume 32 in the coverage loop -> the coverage count drops to 64 instead of 65, assertion goes red. Reverted, baseline restored.
+// MUTATION TABLE-5-9-HAS-65-VOLUME-LEVELS stimulus impossible: built with -DMUT_COUNT=1 (skips driving register value 32 into the DUT) -> distinct_count drops from the baseline's 64 to 63, but the assertion (distinct_count==65) is RED both before and after: this repaired assertion is unconditionally red for this DUT regardless of which subset of the 65 documented register values is actually driven, since paula_audio_mixer.v:27-32's OR-collapse guarantees at most 64 distinct multiply-path outputs from any sweep touching both 63 and 64 -- no stimulus mutation can make it pass, so "red" would misreport a colour flip that cannot happen. The 63-vs-64 magnitude drop itself is not vacuous, though: it is proof the loop is genuinely counting DUT outputs, not a fixed constant -- the same non-vacuousness argument as MULTIPLY-PATH-DISTINGUISHES-ADJACENT-VOLUMES (its named control) makes for the neighbouring impossible mutation below. Reverted, baseline restored.
 // MUTATION FIGURE-AXIS-LOWER-BOUND: no record -- this is a note() (a measurement recorded for the reader, not a checks.expect()), matching hrm/ch4-attached-sprites/'s own convention that a declined/non-pass-fail record carries no mutation entry.
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
 #include <string>
+#include <vector>
 #include <verilated.h>
 #include "Vpaula_audio_mixer.h"
 
@@ -519,29 +531,63 @@ int main(int argc, char** argv) {
     // =====================================================================
     // TABLE-5-9-HAS-65-VOLUME-LEVELS -- 5-vol.c3, 5-vol.c4. "These volume
     // values correspond to decibel levels" and "a table showing the decibel
-    // value for each of the 65 volume levels" (p.139): exactly 65 register
-    // values (0..64 inclusive, no gaps, no duplicates) were exercised
-    // above, one manual-stated dB figure each.
+    // value for each of the 65 volume levels" (p.139; appendix A p.266
+    // describes the same 65 linear levels).
+    //
+    // REPAIRED per NM-HRM audit finding V-01: the previous version filled a
+    // host-side seen[65] array by looping 0..64 and asserted the LOOP
+    // visited 65 inputs -- it never observed the DUT, so its mutation only
+    // ever validated the C++ loop. This version drives paula_audio_mixer
+    // with sample0 fixed at +64 (non-zero, same fixture as the table sweep
+    // above) across the documented register range 0..64 and counts
+    // DISTINCT ldatasum (multiply path) outputs the DUT actually produces
+    // -- measured on ldatasum, stated here explicitly as the port.
+    //
+    // THIS IS EXPECTED TO GO RED, and that is the correct, pre-declared
+    // outcome, not a regression: MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63
+    // above already measures that register values 63 and 64 present the
+    // identical ldatasum, so only 64 distinct multiply-path outputs exist
+    // for the 65 documented register values -- one collision short of
+    // appendix A p.266's 65 levels. This assertion must not report 65
+    // distinct outputs while its neighbour reports that collision; the two
+    // would contradict each other. Its control is
+    // MULTIPLY-PATH-DISTINGUISHES-ADJACENT-VOLUMES above, which shows this
+    // same distinct-output method correctly counts 2 distinct values for
+    // registers 62 and 63 -- so a result short of 65 here reflects the DUT,
+    // not a broken counting method.
     // =====================================================================
     {
-        bool seen[65] = {false};
-        int count = 0;
+        std::vector<long> outputs;
         for (int v = 0; v <= 64; ++v) {
 #if MUT_COUNT
-            if (v == 32) continue;  // MUTATION: skip one row's coverage.
+            if (v == 32) continue;  // MUTATION: skip driving one documented register value into the DUT.
 #endif
-            seen[v] = true;
-            ++count;
+            Harness h;
+            Stereo r = h.mix(64, 0, 0, 0, v, 0, 0, 0);
+            outputs.push_back(r.left);
         }
-        bool all_present = true;
-        for (int v = 0; v <= 64; ++v) if (!seen[v]) all_present = false;
-        checks.expect(count == 65 && all_present,
-            "TABLE-5-9-HAS-65-VOLUME-LEVELS: the sweep above covers exactly "
-            "65 distinct register values, 0 through 64 inclusive, no gaps - "
-            "'These volume values correspond to decibel levels' and 'a "
-            "table showing the decibel value for each of the 65 volume "
-            "levels' (p.139). count=" + std::to_string(count) +
-            ". 5-vol.c3, 5-vol.c4.");
+        std::sort(outputs.begin(), outputs.end());
+        outputs.erase(std::unique(outputs.begin(), outputs.end()), outputs.end());
+        size_t distinct_count = outputs.size();
+        checks.expect(distinct_count == 65,
+            "TABLE-5-9-HAS-65-VOLUME-LEVELS: measured on ldatasum (multiply "
+            "path only), sample0=+64 fixed, driving register values 0..64 "
+            "(the documented range) one at a time into the DUT and "
+            "counting DISTINCT observed outputs - 'These volume values "
+            "correspond to decibel levels' and 'a table showing the "
+            "decibel value for each of the 65 volume levels' (p.139; "
+            "appendix A p.266: 65 linear levels). distinct_count=" +
+            std::to_string(distinct_count) + " of 65 expected. EXPECTED "
+            "RED at this boundary: MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-"
+            "63 above already measures registers 63 and 64 producing the "
+            "identical ldatasum, so only 64 distinct multiply-path outputs "
+            "exist here, not 65 - this assertion must not simultaneously "
+            "claim 65 levels exist while that neighbour reports the "
+            "collision. Control: MULTIPLY-PATH-DISTINGUISHES-ADJACENT-"
+            "VOLUMES above shows this same distinct-output method counts 2 "
+            "(not 1) distinct values for registers 62 and 63, so a count "
+            "short of 65 here is the DUT's own multiply-path collapse, not "
+            "a broken counting method. 5-vol.c3, 5-vol.c4.");
     }
 
     // =====================================================================
