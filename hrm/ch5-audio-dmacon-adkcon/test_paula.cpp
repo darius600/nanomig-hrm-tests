@@ -983,7 +983,7 @@ int main(int argc, char** argv) {
             "any direct memory access occur.' (p.144, 5-p144.c9, "
             "5-dmacon.c2); 'For any audio DMA to occur (or any other DMA, "
             "for that matter), the DMAEN bit in DMACON must be set.' "
-            "(p.144, 5-play.c5); 'When both DMAEN and AUDxEN are set, the "
+            "(p.144, 5-p144.c5, 5-play.c5); 'When both DMAEN and AUDxEN are set, the "
             "DMA will start for channel x.' (p.144, 5-p144.c6, "
             "5-play.c6); 'Enable all DMA below' (appendix A p.278, "
             "5-appA-p278.c16, A-dmacon.b09); 'Start the audio DMA by "
