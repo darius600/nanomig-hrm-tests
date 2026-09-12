@@ -1,8 +1,8 @@
 # What is in here, and what each document is for
 
-Six documents. A red test is not self-explanatory: someone reading `FAIL` needs
+Seven documents. A red test is not self-explanatory: someone reading `FAIL` needs
 to know what the manual says, what the RTL does, whether anyone else agrees, and
-who decides. Five of these answer that. One is a record of tests that no longer
+who decides. Six of these answer that. One is a record of tests that no longer
 exist.
 
 Each entry below says what the document *is*, so an instruction is not mistaken
@@ -23,8 +23,9 @@ Read them in this order.
 |---|---|---|
 | [`findings.md`](findings.md) | reference | **Start here.** A register table of all 23 findings — key, subject, status, package, third witness — then one entry per finding with its measurement and the manual page it contradicts. Written so a red result is readable without access to anything outside this repository. |
 | [`rtl-decisions.md`](rtl-decisions.md) | decision support | Six findings stated as the manual's words, what NanoMig measurably does, the assertion that measures it, and what WinUAE and vAmiga do about the same question — with verified file-and-line citations into both emulators. The document for a developer who has to decide something. |
-| [`third-witness.md`](third-witness.md) | method | When an emulator may be consulted at all, and when it may not. The manual is the oracle; an emulator is admitted only to decide between two sentences of the manual that disagree with each other. NM-HRM-001 was withdrawn this way and NM-HRM-002 restored. |
+| [`third-witness.md`](third-witness.md) | method | When an emulator may be consulted at all, and when it may not. The manual is the oracle; an emulator is admitted only to decide between two sentences of the manual that disagree with each other. NM-HRM-001 was withdrawn this way and NM-HRM-002 restored — and two further implementations have since split NM-HRM-002 two against two. |
 | [`third-witness-ch3-ch6.md`](third-witness-ch3-ch6.md) | decision support | The same comparison carried out for chapters 3 and 6, ten findings at a time, sorted by which side the two emulators fall on. Section **A** is where both emulators agree with the manual and NanoMig is the outlier — the strongest case for looking at the RTL. Section **B** is where both agree with NanoMig and the printed sentence is the outlier. Section **C** is where the two emulators disagree with each other and settle nothing. |
+| [`fourth-witness-denise-copperline.md`](fourth-witness-denise-copperline.md) | decision support | Two further independent implementations — **Denise** (C++) and **Copperline** (Rust) — read against the findings, with a file and line for each. Neither is an oracle. The pass corrected NM-HRM-002 from *two emulators settle it* to a two-against-two split, found the first implementation that narrows a DMA pointer by chipset exactly as the manual describes, and made NM-HRM-020 the best-corroborated finding in the register: four implementations gate BLTSIZV on ECS and NanoMig alone does not. |
 | [`test-inventory.md`](test-inventory.md) | reference | Which of the 87 packages came through the pipeline and which are hand-written, by name, and the review backlog. A green means different things in the two layers, and this is where that difference is written down. |
 
 ## Record

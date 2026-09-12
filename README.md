@@ -39,8 +39,8 @@ disagree, the manual decides.
 
 Each is keyed `NM-HRM-nnn` — `NM` for the implementation under test, `HRM` for
 the manual that judges it. The key names the **pair that disagrees**, deliberately:
-on several of these, two independent emulators do what NanoMig does and the
-printed sentence is the outlier.
+on several of these, independent emulators do what NanoMig does and the printed
+sentence is the outlier — see the fourth-witness document below.
 
 | Finding | What the RTL does that the manual does not describe | Chapter |
 |---|---|---|
@@ -80,6 +80,7 @@ assertion had read a permission or a silence in the manual as a requirement.
 | decide what to do about a finding | [`docs/rtl-decisions.md`](docs/rtl-decisions.md) — each open finding as the manual's words, what NanoMig measurably does, the assertion that measures it, and what WinUAE and vAmiga do about the same question, with verified file-and-line citations into both emulators |
 | know what a specific finding is | [`docs/findings.md`](docs/findings.md) — the register, then one entry per finding with its measurement and its manual page |
 | know whether an emulator was allowed to decide | [`docs/third-witness.md`](docs/third-witness.md) and [`docs/third-witness-ch3-ch6.md`](docs/third-witness-ch3-ch6.md) |
+| see what four independent implementations do about the same question | [`docs/fourth-witness-denise-copperline.md`](docs/fourth-witness-denise-copperline.md) — Denise and Copperline read against the findings, file and line each |
 | know what a green result means here | the coverage section below, and [`docs/test-inventory.md`](docs/test-inventory.md) |
 
 [`docs/README.md`](docs/README.md) is the map. If you have just watched the suite

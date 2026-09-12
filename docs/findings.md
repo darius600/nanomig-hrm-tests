@@ -74,8 +74,8 @@ specialist rules on it.
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
 | [NM-HRM-001](#nm-hrm-001--pal-frame-has-one-line-too-many) | PAL field terminates at 313 lines, not 312 | **withdrawn** 07.09. | `hrm/agnus_beamcounter` | both agree with the RTL; Table 7-5 sanctions 313 |
-| [NM-HRM-002](#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | audio channels on the wrong stereo side | **red** | `hrm/paula_audio_mixer` | both side with chapter 5, against the RTL |
-| [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | neither narrows a pointer by chipset at all |
+| [NM-HRM-002](#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | audio channels on the wrong stereo side | **red** | `hrm/paula_audio_mixer` | **2–2**: WinUAE and vAmiga with chapter 5; Denise and Copperline with the pin list |
+| [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | **Copperline narrows to 19 bits on OCS**, matching the manual; the other three do not |
 | [NM-HRM-004](#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | ECS danger bit admits too small a range | **red** | `hrm/agnus_copper_move_range`, `hrm/agnus_copper_move_sweep` | both block below `$80` regardless of chipset |
 | [NM-HRM-005](#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | WAIT and SKIP take longer than the manual states | **red** | `hrm/agnus_copper_cycle_times`, `hrm/agnus_copper_cycles` | vAmiga gives NanoMig's three numbers |
 | [NM-HRM-006](#nm-hrm-006--ddfstrtddfstop-bit-h3-is-gated-by-the-chipset-not-by-resolution) | DDFSTRT bit H3 gated by chipset, not by resolution | **red** | `hrm/ch3-ddf-fetch-window` | **B5** -- both with NanoMig |
@@ -87,15 +87,15 @@ specialist rules on it.
 | [NM-HRM-012](#nm-hrm-012--sprxctl-bit-0-sh0-is-honoured-at-every-resolution-not-only-superhires) | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** 11.09. | `hrm/ch3-sprite-registers` | not read |
 | [NM-HRM-013](#nm-hrm-013--sprxctl-bits-3-and-4-are-read-nowhere-in-the-module) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn** 11.09., split into NM-HRM-019 | `hrm/ch3-sprite-registers` | not read |
 | [NM-HRM-014](#nm-hrm-014--the-manual-applies-its-own-ecs-pointer-extension-inconsistently) | the manual applies its own ECS pointer note inconsistently | source observation | `hrm/ch3-register-map-agnus` | not read |
-| [NM-HRM-015](#nm-hrm-015--brdntran-is-declared-and-never-connected) | BRDNTRAN is declared and never connected | **red** | `hrm/ch3-horizontal-display-window` | **B3** -- both with NanoMig |
+| [NM-HRM-015](#nm-hrm-015--brdntran-is-declared-and-never-connected) | BRDNTRAN is declared and never connected | **red** | `hrm/ch3-horizontal-display-window` | **B3** for the first two; **Copperline implements it, with a test** |
 | [NM-HRM-016](#nm-hrm-016--superhires-sprite-colour-encoding-is-not-implemented) | SuperHires sprite colour encoding not implemented | **red** | `hrm/ch3-shres-sprite-colour-encoding` | **A1** -- both with the manual |
 | [NM-HRM-017](#nm-hrm-017--superhires-bitplane-colour-encoding-is-not-implemented) | SuperHires bitplane colour encoding not implemented | **red** | `hrm/ch3-shres-bitplane-colour-encoding` | **A1** -- both with the manual |
 | [NM-HRM-018](#nm-hrm-018--ecs-bplcon0-bit-4-sprhwrm-has-no-effect) | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** 11.09. | `hrm/ch3-bplcon0-display-modes` | not read |
-| [NM-HRM-019](#nm-hrm-019--sprxctl-bit-4-shsh1-is-not-implemented) | SPRxCTL bit 4 (SHSH1) is not implemented | **red** | `hrm/ch3-sprite-registers` | **C2** -- the emulators disagree |
-| [NM-HRM-020](#nm-hrm-020--bltsizv-is-not-gated-on-ecs-while-its-two-siblings-are) | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** -- both with the manual |
-| [NM-HRM-021](#nm-hrm-021--doff-bltcon1-bit-7-has-no-observable-effect) | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1** -- the emulators disagree |
-| [NM-HRM-022](#nm-hrm-022--bltxpth-carries-five-high-bits-in-both-chipsets) | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** -- both with NanoMig |
-| [NM-HRM-023](#nm-hrm-023--the-attach-bit-is-honoured-in-the-even-sprite-not-only-the-odd) | the ATTACH bit is honoured in the even sprite, not only the odd | **red** | `hrm/ch4-attached-sprites` | not read |
+| [NM-HRM-019](#nm-hrm-019--sprxctl-bit-4-shsh1-is-not-implemented) | SPRxCTL bit 4 (SHSH1) is not implemented | **red** | `hrm/ch3-sprite-registers` | **C2** for the first two; Denise and Copperline both implement bit 4 |
+| [NM-HRM-020](#nm-hrm-020--bltsizv-is-not-gated-on-ecs-while-its-two-siblings-are) | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** — **all four** gate it; NanoMig alone does not |
+| [NM-HRM-021](#nm-hrm-021--doff-bltcon1-bit-7-has-no-observable-effect) | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1**; Denise implements it and ECS-gates it |
+| [NM-HRM-022](#nm-hrm-022--bltxpth-carries-five-high-bits-in-both-chipsets) | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** — but Copperline narrows every DMA pointer by Agnus revision |
+| [NM-HRM-023](#nm-hrm-023--the-attach-bit-is-honoured-in-the-even-sprite-not-only-the-odd) | the ATTACH bit is honoured in the even sprite, not only the odd | **red** | `hrm/ch4-attached-sprites` | **Denise applies the manual's rule exactly**: `(nr & 1) && (value & 0x80)` |
 
 Chapters 1, 7 and 8 have not been extracted, so no finding below comes from
 them. The register is a record of what has been looked at, not of what is there.
@@ -113,7 +113,7 @@ contradicted elsewhere in the same manual.
 | [NM-HRM-003](#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | pipeline | corroborated — p273 and p309 give two different widths |
 | [NM-HRM-004](#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | pipeline | corroborated — two editions carry the appendix C sentence; challenged 11.09. and upheld |
 | [NM-HRM-005](#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | pipeline | corroborated — p20 and p275, units settled on p275 itself |
-| [NM-HRM-002](#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | hand-written, Aug | **stands** — the manual contradicts itself; two emulators settle it against the RTL |
+| [NM-HRM-002](#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | hand-written, Aug | **stands** — the manual contradicts itself, and four implementations split two against two |
 | [NM-HRM-001](#nm-hrm-001--pal-frame-has-one-line-too-many) | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
 
 Both August findings rested on a manual that says two different things, and
@@ -172,10 +172,19 @@ for what it drove. Details and permalinks in
 | Test | `hrm/paula_audio_mixer` |
 
 **The manual says both**, in both editions, so it cannot decide this on its own.
-Two independent emulators can, and both agree with chapter 5: WinUAE hands
-channel 0 to `put_sound_word_right`, and vAmiga's default panning puts channels 0
-and 3 at `pan = 0.85` on an axis where 1 is fully right. The appendix pin list is
-the outlier.
+
+**Four implementations split two against two — corrected 12.09.2026.** WinUAE and
+vAmiga agree with chapter 5: WinUAE hands channel 0 to `put_sound_word_right`,
+and vAmiga's default panning puts channels 0 and 3 at `pan = 0.85` on an axis
+where 1 is fully right. **Denise and Copperline agree with the appendix pin list**,
+which is what NanoMig does — `paula/paula.cpp:354` sums channels 0 and 3 into the
+left sample, and Copperline's own comment says it knows the HRM prose describes
+the opposite side and keeps the pin-list routing anyway. See
+[`fourth-witness-denise-copperline.md`](fourth-witness-denise-copperline.md).
+
+This entry previously said two emulators settle it against the RTL. They do not.
+The red stands — the manual contradicts itself and an implementation has to pick
+a side — but nothing outside the manual settles which side is right.
 
 **The NanoMig stereo channels are swapped.** Permalinks into both emulators are
 in [`third-witness.md`](third-witness.md).
