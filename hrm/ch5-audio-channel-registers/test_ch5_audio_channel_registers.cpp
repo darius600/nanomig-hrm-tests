@@ -106,14 +106,24 @@
 //   (SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL) is recorded as "impossible",
 //   not skipped.
 //
-// CLAIM COVERAGE -- all 94 original ids in ch5-audio-channel-registers.jsonl
+// CLAIM COVERAGE -- 93 of the 94 original ids in ch5-audio-channel-registers.jsonl
 //   are cited in full inside an expect()/note() call's own text below (never
-//   only in a header comment). Eighteen assertion groups, ids folded onto
+//   only in a header comment). The remaining one, A-audxdat.c4, was withdrawn
+//   2026-09-12 (revalidation blocker 1b): its sentence bundles a measured
+//   sequential-output-order clause (also separately claimed by 5-appA-p265.c41,
+//   which stays on SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL) with a digital-to-
+//   analog/audio-output-pin clause that is not measured anywhere in this
+//   fixture -- crediting the whole id on a partial predicate is a coverage
+//   defect, not conservative wording, so the id itself is withdrawn rather
+//   than kept with a caveat. A-audxdat.c4 is NOT COVERED BY THIS PACKAGE and
+//   needs an analog/DAC output-pin boundary that does not exist anywhere in
+//   this project (no port on any module in this chipset carries a voltage or
+//   analog signal). Eighteen assertion groups, ids folded onto
 //   whichever group tests the identical underlying proposition (many ids are
 //   the same quotation or the same fact independently read by both lots):
 //     SAMPLE-ITEM-WIDTH-EIGHT-BITS                    4 ids
 //     WORD-CONTAINS-TWO-SAMPLES                       14 ids
-//     SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL         4 ids
+//     SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL         3 ids (A-audxdat.c4 withdrawn -- NOT COVERED BY THIS PACKAGE, see above)
 //     AUDXDAT-IS-PERCHANNEL-DATA-BUFFER               2 ids
 //     AUDXLEN-SETS-WORDS-PER-BLOCK                    10 ids (incl. 2 terminal-count ids, recorded in a trailing note)
 //     DMA-CONTINUES-UNTIL-STOPPED-REPLAYS             4 ids
@@ -127,7 +137,7 @@
 //     VOLUME-REGISTER-SEVEN-BITS-READBACK             9 ids
 //     PWM-PATH-DISTINGUISHES-ALL-65-LEVELS            2 ids
 //     CPU-CAN-WRITE-AUDXDAT-DIRECTLY                  10 ids
-//   Total = 4+14+4+2+10+4+4+3+6+14+5+2+1+9+2+10 = 94.
+//   Total = 4+14+3+2+10+4+4+3+6+14+5+2+1+9+2+10 = 93.
 //   Two further scenarios (FIXTURE-LIVENESS-DMA-PATH, FIXTURE-LIVENESS-
 //   DIRECT-WRITE-PATH) carry no claim id -- pure liveness controls -- and
 //   still get their own mutation, matching hrm/ch5-audio-volume-scale/'s own
@@ -141,7 +151,7 @@
 //   endpoint pair, not a frequency. Both signed two's-complement extremes,
 //   -128 and +127, are shown reaching `sample` intact through the eight-bit
 //   path and its sign extension -- no clock, tick count, or Hz figure is
-//   involved on either side of this one. New total = 94 + 1 = 95.
+//   involved on either side of this one. New total = 93 + 1 = 94.
 //
 // WHAT IS RECORDED, NOT ASSERTED (measure-and-report, per this chapter's own
 //   silence/conflict rulings -- never forced into a graded pass/fail that
@@ -160,8 +170,11 @@
 //     cadence are asserted, the moment is recorded.
 //   - 5-sum.c3's restart-address half (AUDxLC): agnus_audiodma's register,
 //     outside this module's boundary; only the word-count half is asserted.
-//   - A-audxdat.c4's DAC/output-pin half: no analog boundary exists at any
-//     port this or any other module in this chipset exposes.
+//   - A-audxdat.c4 is not recorded here at all -- it is WITHDRAWN (see "CLAIM
+//     COVERAGE" above), not partially credited: no analog boundary exists at
+//     any port this or any other module in this chipset exposes, so its
+//     digital-to-analog/output-pin clause cannot even be measured-and-
+//     reported, let alone asserted.
 //   - the six-vs-seven-bit VOLUME REGISTER WIDTH dispute itself (p139/p140
 //     say six bits/bits 5-0; p149 and appendix A p266 say seven bits/bits
 //     6-0): the RTL's own seven-bit storage is measured and asserted; which
@@ -727,7 +740,9 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL
-    // (5-p138.c4, 5-data.c4, A-audxdat.c4, 5-appA-p265.c41)
+    // (5-p138.c4, 5-data.c4, 5-appA-p265.c41; A-audxdat.c4 withdrawn 2026-09-12,
+    // revalidation blocker 1b -- see "CLAIM COVERAGE" and "WHAT IS RECORDED, NOT
+    // ASSERTED" in the file header)
     // =========================================================================
     {
         Harness h;
@@ -746,12 +761,15 @@ int main(int argc, char** argv) {
         }
         bool ok = seq.size() == 2 && seq[0].second == 0x12 && seq[1].second == 0x34 &&
                   seq[1].first > seq[0].first;
-        CHECK("SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL (5-p138.c4, 5-data.c4, A-audxdat.c4, "
+        CHECK("SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL (5-p138.c4, 5-data.c4, "
               "5-appA-p265.c41): AUDxDAT=0x1234's high byte (0x12 -- the lower/first byte "
               "address on a 68000) appears on `sample` at an earlier cck tick than the low byte "
               "(0x34); the two never coincide at the same tick -- output is sequential, one "
-              "8-bit port value at a time. The DAC/output-pin half of A-audxdat.c4 is NOT "
-              "asserted here: no analog boundary exists at this or any RTL port", ok);
+              "8-bit port value at a time. A-audxdat.c4 states this same sequential-output fact "
+              "bundled with a digital-to-analog/audio-output-pin clause in one sentence; only "
+              "the sequential half is measured here, so A-audxdat.c4 itself is withdrawn -- "
+              "NOT COVERED BY THIS PACKAGE, needs an analog/DAC output-pin boundary that does "
+              "not exist at this or any RTL port in this project", ok);
         MUTATION("SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL", "stimulus", "impossible",
                   "no build attempted. paula_audio_channel's sample mux (penhi selects "
                   "datbuf[15:8] vs datbuf[7:0]) and the penhi set/clear timing have no mode, "
@@ -759,7 +777,12 @@ int main(int argc, char** argv) {
                   "package's own Makefile builds against) -- no AUDxDAT value or register-write "
                   "order can make the low byte appear first or make both bytes appear at the "
                   "same tick. The WORD-CONTAINS-TWO-SAMPLES control above, same measurement "
-                  "basis, is what proves this is not vacuously green.");
+                  "basis, is what proves this is not vacuously green. Re-checked 2026-09-12 "
+                  "after withdrawing A-audxdat.c4 from this CHECK's cited-claims text "
+                  "(revalidation blocker 1b): `ok` and its code are untouched, only the string "
+                  "changed, so there is still no port to build a discriminating mutation "
+                  "against; clean rebuild reproduced this assertion PASS within the package's "
+                  "19 passed/0 failed baseline.");
     }
 
     // =========================================================================
