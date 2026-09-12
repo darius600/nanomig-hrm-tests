@@ -28,9 +28,30 @@
 //
 // CLAIM SOURCE: C:\code4nanomig\code\hrm-testpipeline\work\ch5_packages\
 //   ch5-audio-dmacon-adkcon.jsonl -- 155 claim records, all classified
-//   "testable" at paula.v. Every one of the 155 ids is either cited
-//   inside an assertion below or named in a DECLINED block with its own
-//   reason. None is silently dropped.
+//   "testable" at paula.v.
+//
+// COVERAGE REPAIR (2026-09-12, independent validation finding V-02): the
+//   prior revision of this file cited all 155 ids either inside an
+//   assertion or inside a checks.record() call, and treated "cited
+//   somewhere, not silently dropped" as if it meant "covered" -- letting a
+//   plain ID-search coverage gate credit nine ids that had no pass/fail
+//   check at all. Repaired two ways, neither of which leaves an id sitting
+//   only in a comment or record() call pretending to be a check:
+//   - DMACONR-NOT-DECODED-BY-PAULA (5-appA-p278.c7, 5-appB-p289.c3,
+//     A-dmaconr.chip) was a checks.record() with no color; it is now a
+//     real checks.expect() and its own genuine RED (see the assertion
+//     itself and RESULTS below) -- the manual's Paula-ownership half of
+//     DMACONR's chip column does not hold at this boundary.
+//   - The other six ids (ADKCON-BIT10-WORDSYNC's 2, DSKEN-BIT-NOT-
+//     INDEPENDENTLY-TESTABLE's 2, AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE's
+//     2) cannot be exercised at this boundary at all. They are named, with
+//     the fixture each needs, in the CLAIM COVERAGE list below and NOWHERE
+//     ELSE in this file -- deliberately absent from every checks.expect()/
+//     checks.record() string, so no per-string coverage scan reads them as
+//     tested here. They are NOT COVERED BY THIS PACKAGE.
+//   149 of the 155 ids are asserted (pass, or a genuine/expected red) with
+//   their id cited inside the assertion's own text; 6 are explicitly not
+//   covered here.
 //
 // BOUNDARY: paula.v, reached at $(NANOMIG)/src/minimig-aga/paula.v.
 //   paula.v itself instantiates paula_uart, paula_intcontroller,
@@ -171,8 +192,8 @@
 //     A-dmacon.addr, A-dmacon.acc
 //   DMACON-DECODED-BY-PAULA (2, plus one DECLINED half): 5-appA-p278.c3,
 //     A-dmacon.chip
-//   DMACONR-NOT-DECODED-BY-PAULA -- DECLINED, measured only (3):
-//     5-appA-p278.c7, 5-appB-p289.c3, A-dmaconr.chip
+//   DMACONR-NOT-DECODED-BY-PAULA -- ASSERTED, EXPECTED RED, THE OWNERSHIP
+//     FINDING (3): 5-appA-p278.c7, 5-appB-p289.c3, A-dmaconr.chip
 //   ADKCON-ADDRESS-WRITE-ONLY-AND-CHIP (16): 5-appA-p265.c1,
 //     5-appA-p265.c2, 5-appA-p265.c3, 5-appA-p265.c4, 5-appB-p290.c14,
 //     5-appB-p290.c15, 5-appB-p290.c16, 5-appB-p290.c17, A-pre.c2,
@@ -185,8 +206,11 @@
 //     B-adkconr.chip
 //   ADKCON-BIT11-UARTBRK-FORCES-TXD-LOW (2): 5-appA-p265.c18,
 //     A-adkcon.b11
-//   ADKCON-BIT10-WORDSYNC -- DECLINED, needs the SD-card floppy fixture
-//     (2): 5-appA-p265.c19, A-adkcon.b10
+//   ADKCON-BIT10-WORDSYNC -- NOT COVERED BY THIS PACKAGE, needs the
+//     SD-card floppy fixture (2): 5-appA-p265.c19, A-adkcon.b10. Named
+//     here only -- the record() call below that explains the decision
+//     does not repeat these ids, so an ID-search coverage gate finds them
+//     in no assertion or record string at all.
 //   AUDIO-REGISTERS-HAVE-NO-READ-PATH (43): 5-appA-p265.c34,
 //     5-appA-p266.c15, 5-appA-p266.c20, 5-appA-p266.c28,
 //     5-appB-p290.c34, 5-appB-p290.c39, 5-appB-p290.c44, 5-appB-p290.c49,
@@ -209,20 +233,30 @@
 //     a harness that always reports "not silenced".
 //   DMA-ENABLED-CHANNEL-WITH-SUPPLIED-DATA-PRODUCES-SOUND (3):
 //     5-p144.c1, 5-p149.c11, 5-play.c1
-//   DSKEN-BIT-NOT-INDEPENDENTLY-TESTABLE -- DECLINED (2):
-//     5-appA-p278.c21, A-dmacon.b04
-//   AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE -- DECLINED, belongs to the
-//     already-built sibling package's own boundary (2): 5-p148.c4,
-//     5-join.c9
+//   DSKEN-BIT-NOT-INDEPENDENTLY-TESTABLE -- NOT COVERED BY THIS PACKAGE,
+//     needs the same SD-card floppy fixture (2): 5-appA-p278.c21,
+//     A-dmacon.b04. Same treatment as ADKCON-BIT10-WORDSYNC above.
+//   AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE -- NOT COVERED BY THIS PACKAGE,
+//     belongs to the already-built sibling package hrm/paula_audio_channel
+//     (intreq port, RTL_REGRESSION) or chapter 7's paula_intcontroller
+//     (_ipl/INTENA) (2): 5-p148.c4, 5-join.c9
 //
-//   43+16+16+14+10+9+8+6+4+3+3+3+2*9 = 155. All 155 ids accounted for.
+//   43+16+16+14+10+9+8+6+4+3+3+3+2*9 = 155. All 155 ids named above; 149
+//   are asserted inside this file's checks.expect() text (the DMACONR
+//   finding included), 6 are explicitly NOT COVERED BY THIS PACKAGE and
+//   appear only in this header, never inside an assertion or record()
+//   string.
 //
-// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026): 18 passed,
-//   1 failed. ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS is RED -- the
-//   candidate finding is CONFIRMED, exactly as classified, not adjusted
-//   to pass. Every other assertion is GREEN, including
-//   DMACONR-NOT-DECODED-BY-PAULA's own RECORDED (not pass/fail) note and
-//   the two DECLINED blocks, which carry no expect() and so no color.
+// RESULTS (WSL/Verilator 5.052, rebuilt and rerun 12.09.2026 after the
+//   coverage repair above): 18 passed, 2 failed. ADKCON-ATTACH-BITS-DO-
+//   NOT-SILENCE-CHANNELS and DMACONR-NOT-DECODED-BY-PAULA are both RED --
+//   both are genuine findings, confirmed exactly as classified, neither
+//   adjusted to pass. Every other assertion is GREEN. The three remaining
+//   claim groups (ADKCON-BIT10-WORDSYNC, DSKEN-BIT-NOT-INDEPENDENTLY-
+//   TESTABLE, AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE) cite no id of their
+//   own inside any expect()/record() string and are NOT COUNTED as
+//   covered by this package; see CLAIM COVERAGE above for the fixture
+//   each would need.
 //
 // MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
 //   actually run: rebuild with the named -CFLAGS -DMUT_X=1 -> run -> read
@@ -291,9 +325,14 @@
 //   17/2, only this assertion newly red (measured per-channel match
 //   string=111, three characters instead of four). Rebuilt with no flags:
 //   18/1 restored.
-// MUTATION DMACONR-NOT-DECODED-BY-PAULA: no record -- this claim is
-//   RECORDED only (checks.record(), no checks.expect()), so there is no
-//   red/green state for a mutation to move.
+// MUTATION DMACONR-NOT-DECODED-BY-PAULA stimulus green: built with -CFLAGS
+//   -DMUT_DMACONR=1, which substitutes ADKCONR_W (an address Paula
+//   genuinely decodes, holding 0x33 from this same assertion's own ADKCON
+//   write) for DMACONR_W on the post-write read -> 19 passed, 1 failed,
+//   only this assertion newly green (measured idle=0x0 after=0x33,
+//   genuinely different) -- proving the check is not vacuously red
+//   regardless of what address it reads. Rebuilt with no flags: 18/2
+//   restored.
 // MUTATION DMACON-SETCLR-SET, ADKCON-SETCLR-SET, ADKCON-SETCLR-PRESERVE,
 //   ADKCON-ADDRESS-WRITE-ONLY-AND-CHIP, ADKCONR-ADDRESS-READONLY-AND-CHIP,
 //   ADKCON-ATTACH-MEASUREMENT-BASIS-CONTROL: no dedicated -DMUT_ flag was
@@ -391,6 +430,13 @@
 // non-zero peak.
 #ifndef MUT_DMASOUND
 #define MUT_DMASOUND 0
+#endif
+// MUT_DMACONR: replay DMACONR-NOT-DECODED-BY-PAULA's own mutation record
+// (-DMUT_DMACONR=1). Substitutes ADKCONR_W (an address Paula genuinely
+// decodes) for DMACONR_W on the post-write read, so the "identical to
+// idle" comparison must find a genuine difference and flip green.
+#ifndef MUT_DMACONR
+#define MUT_DMACONR 0
 #endif
 // MUT_FOUR: replay FOUR-CHANNELS-EXIST's own mutation record
 // (-DMUT_FOUR=1). Channel 3's own walking-one step is skipped (treated
@@ -1108,31 +1154,46 @@ int main(int argc, char** argv) {
             "5-appA-p278.c3, A-dmacon.chip.");
     }
 
-    // ---------------- DMACONR-NOT-DECODED-BY-PAULA [RECORDED, not asserted] ----------------
+    // ---------------- DMACONR-NOT-DECODED-BY-PAULA ----------------
+    // Repaired per independent validation finding V-02: this was a
+    // checks.record() with no expect() at all, even though the package
+    // already measured that paula.v has no DMACONR decode and that the
+    // manual's own Paula-ownership claim cannot hold -- the resulting red
+    // was being suppressed instead of reported. Now a real assertion: the
+    // manual's claim (chip column "A P") is that Paula is one of DMACONR's
+    // two decoders, so if that held, this address's readback would track
+    // paula.v's own internal DMA-control state the same way ADKCONR
+    // (a register Paula genuinely does decode) tracks ADKCON. It does not.
     {
         Harness h;
-        uint16_t v = h.read_reg(DMACONR_W);
-        checks.record(
-            "DMACONR-NOT-DECODED-BY-PAULA [RECORDED, not asserted as "
-            "pass/fail per this package's own build instructions]: "
+        uint16_t idle = h.read_reg(DMACONR_W);
+        h.write_reg(ADKCON_W, 0x8033);  // SET bits 0,1,4,5 -- gives ADKCONR a genuinely non-zero value for the mutation below.
+        h.write_reg(DMACON_W, 0x8203);  // SET: DMAEN, AUD0EN, AUD1EN -- if Paula decoded DMACONR, its DMA-control state just changed.
+#if !MUT_DMACONR
+        uint16_t v = h.read_reg(DMACONR_W);  // $002>>1 -- DMACONR's own claimed address.
+#else
+        uint16_t v = h.read_reg(ADKCONR_W);  // MUTATION: substitute an address Paula genuinely decodes.
+#endif
+        bool paula_decodes_dmaconr = (v != idle);
+        checks.expect(paula_decodes_dmaconr,
+            "DMACONR-NOT-DECODED-BY-PAULA: after ADKCON is set to 0x33 and "
+            "DMACON is written 0x8203 (DMAEN, AUD0EN, AUD1EN all set), "
             "reading word address 0x" +
             [&]{ char b[8]; snprintf(b,8,"%x",DMACONR_W); return std::string(b); }() +
-            " ($002>>1) returns data_out=0x" +
+            " ($002>>1) through paula.v's own read multiplexer "
+            "(paula.v:152: uartdata_out | intdata_out | diskdata_out | "
+            "adkconr -- no DMACONR term at all) still returns 0x" +
             [&]{ char b[8]; snprintf(b,8,"%x",v); return std::string(b); }() +
-            " -- paula.v has no DMACONR decode anywhere (paula.v:152's "
-            "own read multiplexer carries uartdata_out, intdata_out, "
-            "diskdata_out and adkconr only), so appendix A p.278's 'P' "
-            "for DMACONR ('DMACONR 002 R A P DMA control (and blitter "
-            "status) read', 5-appA-p278.c7) and appendix B p.289's "
-            "matching row ('DMACONR *002 R A P...', 5-appB-p289.c3, "
-            "A-dmaconr.chip) cannot hold at this fixture -- Agnus alone "
-            "decodes it (agnus.v:104 `localparam DMACONR = 9'h002` and "
-            "agnus.v:281). This is a measurement of what the printed page "
-            "claims against what this module does, not a claim the "
-            "manual leaves unsettled -- deliberately not built into a "
-            "pass/fail per this package's own build instructions, since "
-            "the 'A' half of 'A P' is Agnus's own boundary, outside this "
-            "fixture.");
+            ", identical to the pre-write idle readback 0x" +
+            [&]{ char b[8]; snprintf(b,8,"%x",idle); return std::string(b); }() +
+            " -- paula.v does not decode DMACONR at all, so the 'P' half "
+            "of the chip-ownership claim cannot hold at this boundary. "
+            "'DMACONR 002 R A P DMA control (and blitter status) read' "
+            "(appendix A p.278, 5-appA-p278.c7, A-dmaconr.chip); "
+            "'DMACONR *002 R A P...' (appendix B p.289, 5-appB-p289.c3). "
+            "Agnus alone decodes it (agnus.v:104 `localparam DMACONR = "
+            "9'h002` and agnus.v:281), outside this package's own paula.v "
+            "boundary -- the 'A' half of 'A P' is not measured here.");
     }
 
     // ---------------- ADKCON-ADDRESS-WRITE-ONLY-AND-CHIP ----------------
@@ -1220,19 +1281,25 @@ int main(int argc, char** argv) {
             "if true.' (appendix A p.265, 5-appA-p265.c18, A-adkcon.b11).");
     }
 
-    // ---------------- ADKCON-BIT10-WORDSYNC [DECLINED] ----------------
+    // ---------------- ADKCON-BIT10-WORDSYNC [NOT COVERED BY THIS PACKAGE] ----------------
+    // Per independent validation finding V-02: this claim's ids are named
+    // only in this file's own header (CLAIM COVERAGE section above), never
+    // in this record() call or any assertion, so an ID-search coverage
+    // gate finds them nowhere in this file's runtime text and does not
+    // credit this package with testing them.
     checks.record(
-        "ADKCON-BIT10-WORDSYNC [DECLINED, not asserted]: paula.v:269 "
+        "ADKCON-BIT10-WORDSYNC [NOT COVERED BY THIS PACKAGE]: paula.v:269 "
         "wires adkcon[10] to paula_floppy's wordsync port, and "
         "paula_floppy.v:924-925 gates trackrdok on a sync-code match "
         "against real disk data. This module's own disk interface is the "
         "MiSTeryNano SD-card protocol (sdc_busy/sdc_done/byte-strobe), "
         "not a raw serial bitstream this fixture can trivially drive -- "
-        "exercising wordsync's own effect needs a working floppy-image "
-        "fixture, out of this audio/DMACON/ADKCON-focused package's own "
-        "declared scope. 'Enables disk read synchronizing on a word "
-        "equal to DISK SYNC CODE, located in address (3F)*2.' (appendix "
-        "A p.265, 5-appA-p265.c19, A-adkcon.b10).");
+        "exercising wordsync's own effect needs a working SD-card "
+        "floppy-image fixture, out of this audio/DMACON/ADKCON-focused "
+        "package's own declared scope. 'Enables disk read synchronizing "
+        "on a word equal to DISK SYNC CODE, located in address (3F)*2.' "
+        "(appendix A p.265). See this file's header for the specific "
+        "claim ids.");
 
     // ---------------- AUDIO-REGISTERS-HAVE-NO-READ-PATH ----------------
     {
@@ -1392,39 +1459,45 @@ int main(int argc, char** argv) {
             " answered_requests=" + std::to_string(answered) + ".");
     }
 
-    // ---------------- DSKEN-BIT-NOT-INDEPENDENTLY-TESTABLE [DECLINED] ----------------
+    // ---------------- DSKEN-BIT-NOT-INDEPENDENTLY-TESTABLE [NOT COVERED BY THIS PACKAGE] ----------------
+    // Per independent validation finding V-02: same treatment as
+    // ADKCON-BIT10-WORDSYNC above -- ids named only in the header, not
+    // repeated in this record() call.
     checks.record(
-        "DSKEN-BIT-NOT-INDEPENDENTLY-TESTABLE [DECLINED, not asserted]: "
-        "dsken (paula.v:174, `dsken = dmacon[4] & dmaen`) is an internal "
-        "wire, not a paula.v port -- its only externally observable "
-        "consequence is disk_dmal, which is paula_floppy's own dmal "
-        "output and depends on paula_floppy's own DSKLEN/state machine, "
-        "not on dsken alone. Exercising it would need the same "
-        "SD-card-floppy fixture ADKCON-BIT10-WORDSYNC above declines for, "
-        "out of this audio/DMACON/ADKCON-focused package's own declared "
-        "scope. 'Disk DMA enable' (appendix A p.278, 5-appA-p278.c21, "
-        "A-dmacon.b04).");
+        "DSKEN-BIT-NOT-INDEPENDENTLY-TESTABLE [NOT COVERED BY THIS "
+        "PACKAGE]: dsken (paula.v:174, `dsken = dmacon[4] & dmaen`) is an "
+        "internal wire, not a paula.v port -- its only externally "
+        "observable consequence is disk_dmal, which is paula_floppy's own "
+        "dmal output and depends on paula_floppy's own DSKLEN/state "
+        "machine, not on dsken alone. Exercising it would need the same "
+        "SD-card-floppy fixture ADKCON-BIT10-WORDSYNC above needs, out of "
+        "this audio/DMACON/ADKCON-focused package's own declared scope. "
+        "'Disk DMA enable' (appendix A p.278). See this file's header "
+        "for the specific claim ids.");
 
-    // ---------------- AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE [DECLINED] ----------------
+    // ---------------- AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE [NOT COVERED BY THIS PACKAGE] ----------------
+    // Per independent validation finding V-02: same treatment as the two
+    // record() calls above -- ids named only in the header, not repeated
+    // here.
     checks.record(
-        "AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE [DECLINED, not asserted "
-        "at this boundary]: the audio interrupt request itself (an "
-        "existence-plus-cadence claim, with a three-way conflict over "
-        "the exact moment: printed pp.147/148 vs 164 vs appendix A "
-        "p.265) is directly observable at paula_audio_channel's own "
-        "intreq port -- the boundary of the already-committed "
-        "hrm/paula_audio_channel package (RTL_REGRESSION). At paula.v's "
-        "own boundary the only observable is _ipl, which additionally "
-        "requires configuring paula_intcontroller's INTENA masking -- "
-        "register semantics BOUNDARIES.md's own prior-art table assigns "
-        "to chapter 7 (hrm/paula_intcontroller, pp.217-222), not this "
-        "chapter. Reaching _ipl would just be a more roundabout "
-        "measurement of the identical fact through chapter-7-owned "
-        "register semantics this package has no need of for its own "
-        "assigned DMACON/ADKCON register pair. 'Create an interrupt for "
-        "the 680x0 saying that it has completed retrieving working "
-        "copies of length and location registers.' (p.148, 5-p148.c4, "
-        "5-join.c9).");
+        "AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE [NOT COVERED BY THIS "
+        "PACKAGE]: the audio interrupt request itself (an existence-"
+        "plus-cadence claim, with a three-way conflict over the exact "
+        "moment: printed pp.147/148 vs 164 vs appendix A p.265) is "
+        "directly observable at paula_audio_channel's own intreq port -- "
+        "the boundary of the already-committed hrm/paula_audio_channel "
+        "package (RTL_REGRESSION). At paula.v's own boundary the only "
+        "observable is _ipl, which additionally requires configuring "
+        "paula_intcontroller's INTENA masking -- register semantics "
+        "BOUNDARIES.md's own prior-art table assigns to chapter 7 "
+        "(hrm/paula_intcontroller, pp.217-222), not this chapter. "
+        "Reaching _ipl would just be a more roundabout measurement of "
+        "the identical fact through chapter-7-owned register semantics "
+        "this package has no need of for its own assigned DMACON/ADKCON "
+        "register pair. 'Create an interrupt for the 680x0 saying that "
+        "it has completed retrieving working copies of length and "
+        "location registers.' (p.148). See this file's header for the "
+        "specific claim ids.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
