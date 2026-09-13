@@ -90,27 +90,73 @@
 // MUTATION-LOG SUMMARY (15 assertions, 15 mutation flags; each was actually
 //   built with its own flag defined to 1, confirmed to turn only its own
 //   assertion red with no change to any expected value, then rebuilt with
-//   no flags to confirm the clean baseline returned):
+//   no flags to confirm the clean baseline returned). One `// MUTATION`
+//   line per assertion below, second token the exact expect() label (the
+//   token check_gates.py's LEADING_ID_RE reads: the leading uppercase
+//   token of the label, up to the first space or colon) -- corrected from
+//   an earlier draft that used the MUT_ flag's shortened name instead,
+//   which paired with nothing:
 //
-// MUTATION CONTROL stimulus red: the second sample's index was kept at 0
-//   instead of switching to 1 (BPL1DAT stayed $0000), so the "arrives in
-//   order, distinct" check saw the same COLOR00 reading twice.
-// MUTATION EHB_PRECONDITION stimulus red: BPL6DAT was held at $0000 instead
-//   of $FFFF for the precondition's own sample, so the select index stayed
-//   0 instead of 32, the EHB fold never engaged, and the sampled pixel came
-//   back as COLOR00's raw value instead of its halved value.
-// MUTATION BIT15_OCS / BIT15_ECS / BIT14_OCS / BIT13_OCS / BIT12_OCS /
-//   BIT11_OCS / BIT10_OCS / BIT9_OCS / BIT8_OCS / BIT8_ECS / BIT7_OCS /
-//   BIT7_ECS stimulus red (12 dead-bit assertions, same shape): the
-//   BASELINE arm's own index was pushed off 32 (BPL1DAT driven to $FFFF
-//   instead of $0000, adding 1 to the index) while the bit-under-test arm
-//   was left alone, so the two 120-sample sweeps differed for a reason
-//   having nothing to do with the tested BPLCON2 bit, and the "diff==0"
-//   check failed.
-// MUTATION BIT9_ECS stimulus red: the bit-set arm wrote BPLCON2 bit 10
-//   (ZDCTEN, appendix C p.307, not implemented in this design) instead of
-//   bit 9 (KILLEHB), so the two sweeps no longer differed and the
-//   "diff>0" check failed.
+// MUTATION CONTROL-FIXTURE-ALIVE stimulus red: the second sample's index
+//   was kept at 0 instead of switching to 1 (BPL1DAT stayed $0000), so the
+//   "arrives in order, distinct" check saw the same COLOR00 reading twice.
+//   (MUT_CONTROL)
+// MUTATION EHB-ACTIVE-PRECONDITION stimulus red: BPL6DAT was held at
+//   $0000 instead of $FFFF for the precondition's own sample, so the
+//   select index stayed 0 instead of 32, the EHB fold never engaged, and
+//   the sampled pixel came back as COLOR00's raw value instead of its
+//   halved value. (MUT_EHB_PRECONDITION)
+// MUTATION BPLCON2-BIT15-DEAD-OCS stimulus red: the BASELINE arm's own
+//   index was pushed off 32 (BPL1DAT driven to $FFFF instead of $0000)
+//   while the bit-under-test arm was left alone, so the two 120-sample
+//   sweeps differed for a reason having nothing to do with bit 15, and
+//   the "diff==0" check failed. (MUT_BIT15_OCS)
+// MUTATION BPLCON2-BIT15-DEAD-ECS stimulus red: same injection as
+//   BPLCON2-BIT15-DEAD-OCS, run at ecs=1. (MUT_BIT15_ECS)
+// MUTATION BPLCON2-BIT14-DEAD-OCS stimulus red: same injection shape,
+//   bit 14. (MUT_BIT14_OCS)
+// MUTATION BPLCON2-BIT13-DEAD-OCS stimulus red: same injection shape,
+//   bit 13. (MUT_BIT13_OCS)
+// MUTATION BPLCON2-BIT12-DEAD-OCS stimulus red: same injection shape,
+//   bit 12. (MUT_BIT12_OCS)
+// MUTATION BPLCON2-BIT11-DEAD-OCS stimulus red: same injection shape,
+//   bit 11. (MUT_BIT11_OCS)
+// MUTATION BPLCON2-BIT10-DEAD-OCS stimulus red: same injection shape,
+//   bit 10. (MUT_BIT10_OCS)
+// MUTATION BPLCON2-BIT9-DEAD-OCS stimulus red: same injection shape,
+//   bit 9 at ecs=0. (MUT_BIT9_OCS)
+// MUTATION BPLCON2-BIT9-KILLEHB-LIVE-ECS stimulus red: the bit-set arm
+//   wrote BPLCON2 bit 10 (ZDCTEN, appendix C p.307, not implemented in
+//   this design) instead of bit 9 (KILLEHB), so the two sweeps no longer
+//   differed and the "diff>0" check failed. (MUT_BIT9_ECS)
+// MUTATION BPLCON2-BIT8-DEAD-OCS stimulus red: same injection shape,
+//   bit 8 at ecs=0. (MUT_BIT8_OCS)
+// MUTATION BPLCON2-BIT8-DEAD-ECS stimulus red: same injection shape,
+//   bit 8 at ecs=1. (MUT_BIT8_ECS)
+// MUTATION BPLCON2-BIT7-DEAD-OCS stimulus red: same injection shape,
+//   bit 7 at ecs=0. (MUT_BIT7_OCS)
+// MUTATION BPLCON2-BIT7-DEAD-ECS stimulus red: same injection shape,
+//   bit 7 at ecs=1. (MUT_BIT7_ECS)
+//
+// GATE READABILITY -- said here rather than left looking like a gap: the
+//   twelve BPLCON2-BITn-DEAD-* records above name assertions that are all
+//   graded through ONE shared function, `assert_bit_dead()` (below), whose
+//   own `checks.expect(diff == 0, label + " diff=" + ...)` call appears
+//   exactly once in this file's text with `label` a parameter, not a
+//   literal. A mechanical scan for `expect(` therefore reads that one call
+//   site once and cannot recover any of the twelve per-call labels from it
+//   -- the same "label built outside a literal" shape BUILD-BRIEF warns
+//   about for a lambda, one level removed (a shared function instead of a
+//   lambda). This is disclosed, not hidden: the twelve MUTATION records
+//   above are real (each was built with its own MUT_ flag, produced
+//   exactly 14 passed/1 failed, and reverted -- see the paragraph below),
+//   but a structural, mechanical scan of this file cannot independently
+//   confirm that on its own for these twelve, only for the three whose
+//   label is a literal at the call site (CONTROL-FIXTURE-ALIVE,
+//   EHB-ACTIVE-PRECONDITION, BPLCON2-BIT9-KILLEHB-LIVE-ECS). Making the
+//   twelve independently legible would mean inlining each call so its own
+//   label is a literal at its own call site -- a change to the assertion
+//   code itself, out of scope for this pass.
 //
 // Baseline (no MUT_ flag defined): 15 passed, 0 failed. Every one of the 15
 // mutations above was built and run individually (`make
