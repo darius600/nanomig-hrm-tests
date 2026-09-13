@@ -117,9 +117,25 @@
 // expect(), not a comment, since a green "cleared/restored" reading is
 // meaningless if the signal was never in the opposite state to begin with.
 //
-// RESULTS and MUTATION LOG: recorded in the PR/commit message after the
-// baseline run and all 6 mutation builds (MUT_RESET, MUT_1..MUT_5) were
-// each built and run -- see the final report back to the lead.
+// RESULTS: baseline (no MUT flag) is 10 passed, 1 failed -- the DDRA
+// finding below is the one red. Full pass/fail-by-assertion listing is in
+// the report already sent to the lead.
+//
+// PER-ASSERTION MUTATION RECORD. Six variants, each its own full build+run
+// (`make MUT=<switch>`, e.g. `make MUT=MUT_1`), already built, run,
+// confirmed and reverted -- not re-run for this header update. Format
+// (tools/check_gates.py): // MUTATION <assertion-label> <oracle|stimulus|
+// none> <red|green|impossible> <what changed>. Every mutation below is
+// `stimulus` -- what the module is asked to do -- never `oracle`; the
+// expected value in the matching expect() is never touched, per
+// BUILD-BRIEF.md's "flipping an expected value proves nothing".
+//
+// MUTATION CONTROL-RESET-RELEASES stimulus red MUT_RESET holds rst_ext (master reset) asserted forever, so minimig_syscontrol.v's rst_cnt never advances and _cpu_reset never rises within the 3,000,000-tick budget; baseline PASS (measured tick=2,273,642) goes red.
+// MUTATION OVL-BIT-WRITE-CLEARS-OVERLAY stimulus red MUT_1 issues a read instead of a write to the same CIA-A PRA address ($BFE001), so cpu_lwr/cpu_hwr never assert; baseline PASS (ovl clears) goes red (ovl stays 1).
+// MUTATION OTHER-CIA-A-REGISTER-ALSO-CLEARS stimulus green MUT_2 skips the CIA-A DDRA write ($BFE201) entirely -- no bus cycle at all. This is the one assertion that is ALREADY red at baseline (the manual/RTL disagreement this package exists to report), so its mutation runs the opposite direction from every other assertion here: a red claim's mutation must go GREEN under a genuinely different stimulus, or the red would be unfalsifiable/vacuous instead of a real measurement. With no CIA-A access at all, ovl stays at its precondition value (1), so "ovl==1 after" reads green -- proof the baseline FAIL is attributable to the write happening, not to an always-red assertion. (An earlier draft of this mutation swapped DDRA for PRA instead; that was rejected before being recorded here because both addresses already clear ovl identically on this RTL, so the swap changes nothing observable and would not have been a real mutation -- see the inline comment at MUT_2 in the body.)
+// MUTATION CIAB-WRITE-DOES-NOT-CLEAR stimulus red MUT_3 redirects the same write from CIA-B ($BFD000) to CIA-A PRA ($BFE001); baseline PASS (ovl stays set) goes red (ovl clears).
+// MUTATION CHIPRAM-WRITE-DOES-NOT-CLEAR stimulus red MUT_4 redirects the same write from chip RAM ($000100) to CIA-A PRA ($BFE001); baseline PASS (ovl stays set) goes red (ovl clears).
+// MUTATION RESET-LINE-RESTORES-OVERLAY stimulus red MUT_5 skips the _cpu_reset_in low/high pulse entirely; baseline PASS (ovl restored to 1) goes red (ovl stays at 0).
 
 #include <cstdint>
 #include <cstdio>
