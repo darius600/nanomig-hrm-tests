@@ -944,67 +944,52 @@ int main(int argc, char** argv) {
 //   Not asserted:   sol:7-appC-loldis.c1, opus:7-appC-beamcon0.c21 (2)
 //   3+4+7+4+2+2+2+2+2+6+2+2+2+2 = 42.
 //
-// MUTATION LOG (all entries actually run under WSL/Verilator on
-// 13.09.2026: edit -> rebuild -> run -> confirm the named assertion(s)
-// flip -> revert -> rebuild -> confirm the full suite matches the
-// committed baseline exactly (9 passed, 3 failed) -- before moving to the
-// next one). Baseline: 9 passed (INSTRUMENT-CHECK, P2, P4, P5, P6, P7, P8,
-// P9, P10), 3 failed (P11, P12, P13 -- the deliberate OVERRULE reds). Every
-// mutation is a STIMULUS change (a written register value or address); no
-// expected value or oracle text was ever touched, and nanomig/ was never
-// touched. A final `diff` against the pre-mutation file came back empty.
+// PER-ASSERTION MUTATION RECORDS (all entries actually run under
+// WSL/Verilator on 13.09.2026: edit -> rebuild -> run -> confirm the named
+// assertion(s) flip -> revert -> rebuild -> confirm the full suite matches
+// the committed baseline exactly (9 passed, 3 failed) -- before moving to
+// the next one). Baseline: 9 passed (INSTRUMENT-CHECK, P2, P4, P5, P6, P7,
+// P8, P9, P10), 3 failed (P11, P12, P13 -- the deliberate OVERRULE reds).
+// Every mutation is a STIMULUS change (a written register value or
+// address); no expected value or oracle text was ever touched, and
+// nanomig/ was never touched. A final `diff` against the pre-mutation file
+// came back empty.
 //
-// MUTATION INSTRUMENT-CHECK stimulus red: the neighbour-address write
-//   changed from A_HTOTAL to A_BEAMCON0 -> FAIL (8 passed, 4 failed), only
-//   INSTRUMENT-CHECK newly red (neighbour_ignored now false: the "neighbour"
-//   write landed on BEAMCON0 itself). P11-P13 stayed red throughout,
-//   unaffected. Reverted: 9/3.
-// MUTATION P2 stimulus red: the readback address changed from A_BEAMCON0 to
-//   A_VPOSR -> FAIL (8/4), only P2 red (VPOSR's own status bits, not 0,
-//   fail the beamcon0_read==0 check). Reverted: 9/3.
-// MUTATION P4 stimulus red: the write changed from `1 << BC_HARDDIS` to
-//   `1 << BC_LOLDIS` -> FAIL (8/4), only P4 red (harddis_out stays 0,
-//   HARDDIS was never actually written). Reverted: 9/3.
-// MUTATION P5 stimulus red: the combo write's VARBEAMEN bit was omitted
-//   (`(1<<BC_VARVBEN)` alone) -> FAIL (8/4), only P5 red (vbl at vpos=10
-//   stays 1, the written VBSTOP=6 never takes over without VARBEAMEN).
-//   Reverted: 9/3.
-// MUTATION P6 stimulus red: the combo write's VARBEAMEN bit was omitted
-//   (`(1<<BC_LOLDIS)` alone) -> FAIL (8/4), only P6 red (LOL keeps
-//   toggling, matching the exact single-bit-sweep mistake STEP3-NOTES
-//   describes). Reverted: 9/3.
-// MUTATION P7 stimulus red: the combo write's VARBEAMEN bit was omitted
-//   (`(1<<BC_VARVSYEN)` alone) -> FAIL (8/4), only P7 red (_vsync keeps
-//   falling at the hardwired default, vpos==3, not the written 81).
-//   Reverted: 9/3.
-// MUTATION P8 stimulus red: the combo write's VARBEAMEN bit was omitted
-//   (`(1<<BC_VARHSYEN)` alone) -> FAIL (8/4), only P8 red (_hsync keeps
-//   falling near the hardwired default, not the written 200). Reverted:
-//   9/3.
-// MUTATION P9 stimulus red: the enabling write changed from
-//   `1 << BC_VARBEAMEN` to `0` -> FAIL (8/4), only P9 red (htotal_out stays
-//   452, the written HTOTAL=500 never takes over). Reverted: 9/3.
-// MUTATION P10 stimulus red: the field's enabling write changed from
-//   `1 << BC_PAL` to `1 << BC_HARDDIS` -> FAIL (8/4), only P10 red (262
-//   lines measured for both harnesses, PAL was never actually written).
-//   Reverted: 9/3.
-// MUTATION P11/P12/P13 SENSITIVITY-PROBE stimulus green (already-red
-//   assertions -- no stimulus can turn an already-red assertion red again,
-//   so each was instead shown capable of reading PASS on a real
-//   difference, on the identical compare_sync_traces measurement):
-//   - P11: csytrue_min/csytrue_max's comparison substituted VARHSYEN + a
-//     written HSSTRT=100 (proven live at P8) for CSYTRUE -> PASS (10/2,
-//     only P11 flipped green). Reverted: 9/3.
-//   - P12: vsytrue_min/vsytrue_max's comparison substituted VARVSYEN + a
-//     written VSSTRT=80 (proven live at P7) for VSYTRUE -> PASS (10/2,
-//     only P12 flipped green). Reverted: 9/3.
-//   - P13: hsytrue_min/hsytrue_max's comparison substituted VARHSYEN + a
-//     written HSSTRT=100 (proven live at P8) for HSYTRUE -> PASS (10/2,
-//     only P13 flipped green). Reverted: 9/3.
-//   Each probe confirms the SAME comparator that reports CSYTRUE/VSYTRUE/
-//   HSYTRUE as "no effect" correctly reports "an effect" when one is
-//   actually present -- the RED on P11-P13 is a property of the RTL, not
-//   of a vacuous or broken comparison.
+// Record grammar: `// MUTATION <assertion-label> stimulus <red|green> ...`,
+// the second token pairing exactly against the leading id of the
+// expect()'s own label, the two keywords immediately adjacent to it.
+//
+// P11, P12 and P13 are RED at baseline, and a failing assertion cannot be
+// made to fail harder: unlike a green assertion, no stimulus mutation can
+// turn an already-red one red again. What a mutation CAN still show there
+// is that the comparator itself is not vacuous -- so each was instead run
+// with a proven-live mechanism substituted through the very same
+// compare_sync_traces() comparison the real assertion uses, and it flipped
+// to GREEN, exactly as CSYTRUE/VSYTRUE/HSYTRUE would have if they were
+// wired. Recorded below with `green` as the third token for that reason.
+//
+// MUTATION INSTRUMENT-CHECK-FRESH-MODEL-DELIVERS-DISTINCT-KNOWN-WORDS stimulus red: the neighbour-address write changed from A_HTOTAL to A_BEAMCON0 -> FAIL (8 passed, 4 failed), only this assertion newly red (neighbour_ignored now false: the "neighbour" write landed on BEAMCON0 itself). P11-P13 stayed red throughout, unaffected. Reverted: 9/3.
+// MUTATION P2-BEAMCON0-WRITE-ONLY-READS-AS-CONSTANT-ZERO stimulus red: the readback address changed from A_BEAMCON0 to A_VPOSR -> FAIL (8/4), only this assertion red (VPOSR's own status bits, not 0, fail the beamcon0_read==0 check). Reverted: 9/3.
+// MUTATION P4-BEAMCON0-HARDDIS-BIT14-RAISES-HARDDIS-OUT stimulus red: the write changed from `1 << BC_HARDDIS` to `1 << BC_LOLDIS` -> FAIL (8/4), only this assertion red (harddis_out stays 0, HARDDIS was never actually written). Reverted: 9/3.
+// MUTATION P5-BEAMCON0-VARVBEN-BIT12-WITH-VARBEAMEN-SELECTS-WRITTEN-VBSTOP stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_VARVBEN)` alone) -> FAIL (8/4), only this assertion red (vbl at vpos=10 stays 1, the written VBSTOP=6 never takes over without VARBEAMEN). Reverted: 9/3.
+// MUTATION P6-BEAMCON0-LOLDIS-BIT11-WITH-VARBEAMEN-FREEZES-LONG-LINE-TOGGLE stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_LOLDIS)` alone) -> FAIL (8/4), only this assertion red (LOL keeps toggling, matching the exact single-bit-sweep mistake STEP3-NOTES describes). Reverted: 9/3.
+// MUTATION P7-BEAMCON0-VARVSYEN-BIT9-WITH-VARBEAMEN-SELECTS-WRITTEN-VSSTRT stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_VARVSYEN)` alone) -> FAIL (8/4), only this assertion red (_vsync keeps falling at the hardwired default, vpos==3, not the written 81). Reverted: 9/3.
+// MUTATION P8-BEAMCON0-VARHSYEN-BIT8-WITH-VARBEAMEN-SELECTS-WRITTEN-HSSTRT stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_VARHSYEN)` alone) -> FAIL (8/4), only this assertion red (_hsync keeps falling near the hardwired default, not the written 200). Reverted: 9/3.
+// MUTATION P9-BEAMCON0-VARBEAMEN-BIT7-ALONE-SELECTS-WRITTEN-HTOTAL stimulus red: the enabling write changed from `1 << BC_VARBEAMEN` to `0` -> FAIL (8/4), only this assertion red (htotal_out stays 452, the written HTOTAL=500 never takes over). Reverted: 9/3.
+// MUTATION P10-BEAMCON0-PAL-BIT5-SELECTS-VTOTAL-312-OVER-262 stimulus red: the field's enabling write changed from `1 << BC_PAL` to `1 << BC_HARDDIS` -> FAIL (8/4), only this assertion red (262 lines measured for both harnesses, PAL was never actually written). Reverted: 9/3.
+// MUTATION P11-BEAMCON0-CSYTRUE-BIT2-POLARITY-CONTROL-FOR-C-SYNC-PIN stimulus green: already red at baseline, so csytrue_min/csytrue_max's comparison substituted VARHSYEN + a written HSSTRT=100 (proven live at P8) for CSYTRUE, through the same compare_sync_traces() this assertion uses -> PASS (10 passed, 2 failed), only this assertion flipped green -- a failing assertion cannot be made to fail harder, so this proves the comparator is not vacuous instead. Reverted: 9/3.
+// MUTATION P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN stimulus green: already red at baseline, same reasoning as P11 -- vsytrue_min/vsytrue_max's comparison substituted VARVSYEN + a written VSSTRT=80 (proven live at P7) for VSYTRUE -> PASS (10/2), only this assertion flipped green. Reverted: 9/3.
+// MUTATION P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN stimulus green: already red at baseline, same reasoning as P11 -- hsytrue_min/hsytrue_max's comparison substituted VARHSYEN + a written HSSTRT=100 (proven live at P8) for HSYTRUE -> PASS (10/2), only this assertion flipped green. Reverted: 9/3.
+//
+// NOT A RE-RUN, A READABILITY NOTE: tools/check_gates.py reads only the
+// FIRST string literal of an expect() call for the assertion's id. P5, P6,
+// P7 and P8's own labels split their id across two adjacent literals at a
+// source line-wrap (e.g. "...SELECTS-WRITTEN-" / "VBSTOP: ..."), so the
+// gate currently cannot read those four ids at all and reports them as
+// opaque expect() calls rather than as a violation. The four records above
+// for P5-P8 are written against each assertion's true, full, compiler-seen
+// label regardless, and are already correct if that line-wrap is ever
+// reflowed. Left alone here because this pass is header-only.
 //
 // Final rebuild after the last revert: 9 passed, 3 failed, byte-for-byte
 // identical (`diff`) to the file before the mutation sweep began.
