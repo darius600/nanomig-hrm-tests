@@ -50,10 +50,10 @@ there is work to do at all.
 
 ### These pages are written to be filed upstream
 
-Where a finding is inherited — which so far is all of chapter 5 — it is the
+Where a finding is inherited — which so far is all of chapter 5 and all of chapter 7, the latter checked line by line because two of its files differ substantially from upstream — it is the
 **ancestor's** finding, and a fix in Minimig-AGA reaches NanoMig by the usual
 route. Reporting it there is likely to get it reviewed by people who know that
-code better than anyone here does.
+code better than anyone here does. Two of chapter 7's five name nobody in their `Report to` row all the same: the other implementations agree with NanoMig there, and the printed sentence is the more likely defect.
 
 So each page is written to stand on its own for a reader who has never seen this
 project: the manual quoted rather than referenced, the code quoted rather than
