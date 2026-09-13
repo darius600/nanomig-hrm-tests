@@ -502,7 +502,12 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks checks;
-    char buf[4096];
+    // 8192, not 4096: one assertion's citation list reached 1532 bytes when
+    // chapter 7's claims were cited here, and `detail` below may hold 2048,
+    // so GCC's worst case no longer fits. Nothing is truncated in practice
+    // -- the longest line printed is 2565 characters -- but a silent cut
+    // would drop citations and make covered claims read as uncovered.
+    char buf[8192];
 
     // ---------------- 0. TEST-DATA-DELIVERY (fixture check) ----------------
     {
