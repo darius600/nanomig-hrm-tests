@@ -367,7 +367,7 @@ int main(int argc, char** argv) {
             "all bitplanes disabled (bit1 set, PF1 vacuously present) -- "
             "'CLXCON 098 W D Collision control' (p.272). A-clxcon.addr, "
             "A-clxcon.c1, A-clxcon.fn, B-clxcon.addr, B-clxcon.chip, "
-            "B-subject.c22, B-subject.c25.");
+            "B-subject.c22, B-subject.c25, sol:7-appA-clxcon.c1, sol:7-appA-clxcon.c4, opus:7-appA-clxcon.c1, opus:7-cd.c28.");
     }
 
     // =========================================================================
@@ -394,7 +394,7 @@ int main(int argc, char** argv) {
             "after two different CLXCON writes ($0FFF then $0000) returns "
             "the same value both times -- no per-content readback exists at "
             "that address -- 'CLXCON 098 W D Collision control' (p.272). "
-            "A-clxcon.c2, A-clxcon.rw, B-clxcon.rw, B-subject.c23.");
+            "A-clxcon.c2, A-clxcon.rw, B-clxcon.rw, B-subject.c23, sol:7-collision.c48, sol:7-appA-clxcon.c2, opus:7-cd.c49.");
     }
 
     // =========================================================================
@@ -411,12 +411,12 @@ int main(int argc, char** argv) {
         };
         static const BpCase cases[6] = {
             {1, true,  "A-clxcon.b00, A-clxcon.b06, A-clxcon.c22, A-clxcon.c16, "
-                       "A-clxcon.c01, A-clxcon.c4, A-clxcon.c5"},
-            {2, false, "A-clxcon.b01, A-clxcon.b07, A-clxcon.c21, A-clxcon.c15"},
-            {3, true,  "A-clxcon.b02, A-clxcon.b08, A-clxcon.c20, A-clxcon.c14"},
-            {4, false, "A-clxcon.b03, A-clxcon.b09, A-clxcon.c19, A-clxcon.c13"},
-            {5, true,  "A-clxcon.b04, A-clxcon.b10, A-clxcon.c18, A-clxcon.c12"},
-            {6, false, "A-clxcon.b05, A-clxcon.b11, A-clxcon.c17, A-clxcon.c11"},
+                       "A-clxcon.c01, A-clxcon.c4, A-clxcon.c5, sol:7-appA-clxcon.c5, sol:7-collision.c46, sol:7-collision.c47, sol:7-collision.c38, sol:7-collision.c44, sol:7-appA-clxcon.c16, sol:7-appA-clxcon.c22, opus:7-appA-clxcon.c2, opus:7-cd.c47, opus:7-cd.c48, opus:7-cd.c38, opus:7-cd.c44, opus:7-appA-clxcon.c13, opus:7-appA-clxcon.c19"},
+            {2, false, "A-clxcon.b01, A-clxcon.b07, A-clxcon.c21, A-clxcon.c15, sol:7-collision.c37, sol:7-collision.c43, sol:7-appA-clxcon.c15, sol:7-appA-clxcon.c21, opus:7-cd.c37, opus:7-cd.c43, opus:7-appA-clxcon.c12, opus:7-appA-clxcon.c18"},
+            {3, true,  "A-clxcon.b02, A-clxcon.b08, A-clxcon.c20, A-clxcon.c14, sol:7-collision.c36, sol:7-collision.c42, sol:7-appA-clxcon.c14, sol:7-appA-clxcon.c20, opus:7-cd.c36, opus:7-cd.c42, opus:7-appA-clxcon.c11, opus:7-appA-clxcon.c17"},
+            {4, false, "A-clxcon.b03, A-clxcon.b09, A-clxcon.c19, A-clxcon.c13, sol:7-collision.c35, sol:7-collision.c41, sol:7-appA-clxcon.c13, sol:7-appA-clxcon.c19, opus:7-cd.c35, opus:7-cd.c41, opus:7-appA-clxcon.c10, opus:7-appA-clxcon.c16"},
+            {5, true,  "A-clxcon.b04, A-clxcon.b10, A-clxcon.c18, A-clxcon.c12, sol:7-collision.c34, sol:7-collision.c40, sol:7-appA-clxcon.c12, sol:7-appA-clxcon.c18, opus:7-cd.c34, opus:7-cd.c40, opus:7-appA-clxcon.c9, opus:7-appA-clxcon.c15"},
+            {6, false, "A-clxcon.b05, A-clxcon.b11, A-clxcon.c17, A-clxcon.c11, sol:7-collision.c33, sol:7-collision.c39, sol:7-appA-clxcon.c11, sol:7-appA-clxcon.c17, opus:7-cd.c33, opus:7-cd.c39, opus:7-appA-clxcon.c8, opus:7-appA-clxcon.c14"},
         };
         for (const auto& bc : cases) {
             Harness h;
@@ -477,7 +477,7 @@ int main(int argc, char** argv) {
             "'Disabled bitplanes cannot prevent collisions. Therefore if "
             "all bitplanes are disabled, collisions will be continuous, "
             "regardless of the match values.' (p.272 NOTE). A-clxcon.note, "
-            "A-clxcon.c23, A-clxcon.c24.");
+            "A-clxcon.c23, A-clxcon.c24, sol:7-collision.c49, sol:7-appA-clxcon.c23, sol:7-appA-clxcon.c24, opus:7-cd.c50, opus:7-appA-clxcon.c20, opus:7-appA-clxcon.c21.");
 
         // paired control, on the same measurement basis: enabling one
         // bitplane and mismatching it stops the continuous PF1-PF2 result,
@@ -513,10 +513,10 @@ int main(int argc, char** argv) {
             const char* ids;
         };
         static const EnspCase cases[4] = {
-            {1, 0x02, 0x04, 9,  "A-clxcon.b12, A-clxcon.c10, A-clxcon.c02, A-clxcon.c6"},  // SPR1 + SPR2 -> SPR01-SPR23 bit9
-            {3, 0x08, 0x10, 12, "A-clxcon.b13, A-clxcon.c9"},   // SPR3 + SPR4 -> SPR23-SPR45 bit12
-            {5, 0x20, 0x40, 14, "A-clxcon.b14, A-clxcon.c8"},   // SPR5 + SPR6 -> SPR45-SPR67 bit14
-            {7, 0x80, 0x01, 11, "A-clxcon.b15, A-clxcon.c7"},   // SPR7 + SPR0 -> SPR01-SPR67 bit11
+            {1, 0x02, 0x04, 9,  "A-clxcon.b12, A-clxcon.c10, A-clxcon.c02, A-clxcon.c6, sol:7-collision.c26, sol:7-collision.c45, sol:7-collision.c32, sol:7-appA-clxcon.c6, sol:7-appA-clxcon.c10, opus:7-cd.c24, opus:7-cd.c25, opus:7-cd.c32, opus:7-cd.c45, opus:7-cd.c46, opus:7-appA-clxcon.c3, opus:7-appA-clxcon.c7"},  // SPR1 + SPR2 -> SPR01-SPR23 bit9
+            {3, 0x08, 0x10, 12, "A-clxcon.b13, A-clxcon.c9, sol:7-collision.c31, sol:7-appA-clxcon.c9, opus:7-cd.c31, opus:7-appA-clxcon.c6"},   // SPR3 + SPR4 -> SPR23-SPR45 bit12
+            {5, 0x20, 0x40, 14, "A-clxcon.b14, A-clxcon.c8, sol:7-collision.c30, sol:7-appA-clxcon.c8, opus:7-cd.c30, opus:7-appA-clxcon.c5"},   // SPR5 + SPR6 -> SPR45-SPR67 bit14
+            {7, 0x80, 0x01, 11, "A-clxcon.b15, A-clxcon.c7, sol:7-collision.c29, sol:7-appA-clxcon.c7, opus:7-cd.c29, opus:7-appA-clxcon.c4"},   // SPR7 + SPR0 -> SPR01-SPR67 bit11
         };
         for (const auto& ec : cases) {
             Harness h;
@@ -567,7 +567,7 @@ int main(int argc, char** argv) {
             "correctly-positioned values ($0200 then $0400) -- 'CLXDAT  00E "
             "R  D  Collision data register (read and clear)' (p.273/289). "
             "A-clxdat.addr, A-clxdat.c1, A-clxdat.fn, B-clxdat.addr, "
-            "B-clxdat.addr-verbatim, B-subject.c1.");
+            "B-clxdat.addr-verbatim, B-subject.c1, sol:7-appA-clxdat.c1, sol:7-appA-clxdat.c4, opus:7-appA-clxdat.c1.");
     }
 
     // =========================================================================
@@ -608,7 +608,7 @@ int main(int argc, char** argv) {
             "addressing CLXDAT, reads back identically -- CLXDAT's content "
             "does not depend on data_in -- 'CLXDAT  00E  R  D  Collision "
             "data register (read and clear)' (p.273/289). A-clxdat.rw, "
-            "A-clxdat.c2, B-subject.c2.");
+            "A-clxdat.c2, B-subject.c2, sol:7-collision.c8, sol:7-appA-clxdat.c2, opus:7-cd.c6.");
     }
 
     // =========================================================================
@@ -640,7 +640,7 @@ int main(int argc, char** argv) {
             "collision in between returns $0000 -- the first read cleared "
             "the accumulated bits -- 'This address reads (and clears) the "
             "collision detection register.' / 'Collision data register "
-            "(read and clear)' (p.273/289). A-clxdat.c3, B-subject.c4.");
+            "(read and clear)' (p.273/289). A-clxdat.c3, B-subject.c4, sol:7-collision.c9, sol:7-appA-clxdat.c5, opus:7-cd.c7, opus:7-appA-clxdat.c2.");
 
         // paired control: a fresh, different collision after the clear is
         // still captured -- rules out the second read's zero being a dead
@@ -722,21 +722,21 @@ int main(int argc, char** argv) {
 
         struct Pair { Entity x, y; int bit; const char* ids; };
         static const Pair pairs[15] = {
-            {PF1, PF2,   0,  "A-clxdat.b00, A-clxdat.c21"},
-            {PF1, SPR01, 1,  "A-clxdat.b01, A-clxdat.c20"},
-            {PF1, SPR23, 2,  "A-clxdat.b02, A-clxdat.c19"},
-            {PF1, SPR45, 3,  "A-clxdat.b03, A-clxdat.c18"},
-            {PF1, SPR67, 4,  "A-clxdat.b04, A-clxdat.c17"},
-            {PF2, SPR01, 5,  "A-clxdat.b05, A-clxdat.c16"},
-            {PF2, SPR23, 6,  "A-clxdat.b06, A-clxdat.c15"},
-            {PF2, SPR45, 7,  "A-clxdat.b07, A-clxdat.c14"},
-            {PF2, SPR67, 8,  "A-clxdat.b08, A-clxdat.c13"},
-            {SPR01, SPR23, 9,  "A-clxdat.b09, A-clxdat.c12"},
-            {SPR01, SPR45, 10, "A-clxdat.b10, A-clxdat.c11"},
-            {SPR01, SPR67, 11, "A-clxdat.b11, A-clxdat.c10"},
-            {SPR23, SPR45, 12, "A-clxdat.b12, A-clxdat.c9"},
-            {SPR23, SPR67, 13, "A-clxdat.b13, A-clxdat.c8"},
-            {SPR45, SPR67, 14, "A-clxdat.b14, A-clxdat.c7"},
+            {PF1, PF2,   0,  "A-clxdat.b00, A-clxdat.c21, sol:7-collision.c25, sol:7-appA-clxdat.c23, opus:7-cd.c23, opus:7-appA-clxdat.c20"},
+            {PF1, SPR01, 1,  "A-clxdat.b01, A-clxdat.c20, sol:7-collision.c24, sol:7-appA-clxdat.c22, opus:7-cd.c22, opus:7-appA-clxdat.c19"},
+            {PF1, SPR23, 2,  "A-clxdat.b02, A-clxdat.c19, sol:7-collision.c23, sol:7-appA-clxdat.c21, opus:7-cd.c21, opus:7-appA-clxdat.c18"},
+            {PF1, SPR45, 3,  "A-clxdat.b03, A-clxdat.c18, sol:7-collision.c22, sol:7-appA-clxdat.c20, opus:7-cd.c20, opus:7-appA-clxdat.c17"},
+            {PF1, SPR67, 4,  "A-clxdat.b04, A-clxdat.c17, sol:7-collision.c21, sol:7-appA-clxdat.c19, opus:7-cd.c19, opus:7-appA-clxdat.c16"},
+            {PF2, SPR01, 5,  "A-clxdat.b05, A-clxdat.c16, sol:7-collision.c20, sol:7-appA-clxdat.c18, opus:7-cd.c18, opus:7-appA-clxdat.c15"},
+            {PF2, SPR23, 6,  "A-clxdat.b06, A-clxdat.c15, sol:7-collision.c19, sol:7-appA-clxdat.c17, opus:7-cd.c17, opus:7-appA-clxdat.c14"},
+            {PF2, SPR45, 7,  "A-clxdat.b07, A-clxdat.c14, sol:7-collision.c18, sol:7-appA-clxdat.c16, opus:7-cd.c16, opus:7-appA-clxdat.c13"},
+            {PF2, SPR67, 8,  "A-clxdat.b08, A-clxdat.c13, sol:7-collision.c17, sol:7-appA-clxdat.c15, opus:7-cd.c15, opus:7-appA-clxdat.c12"},
+            {SPR01, SPR23, 9,  "A-clxdat.b09, A-clxdat.c12, sol:7-collision.c16, sol:7-appA-clxdat.c14, opus:7-cd.c14, opus:7-appA-clxdat.c11"},
+            {SPR01, SPR45, 10, "A-clxdat.b10, A-clxdat.c11, sol:7-collision.c15, sol:7-appA-clxdat.c13, opus:7-cd.c13, opus:7-appA-clxdat.c10"},
+            {SPR01, SPR67, 11, "A-clxdat.b11, A-clxdat.c10, sol:7-collision.c14, sol:7-appA-clxdat.c12, opus:7-cd.c12, opus:7-appA-clxdat.c9"},
+            {SPR23, SPR45, 12, "A-clxdat.b12, A-clxdat.c9, sol:7-collision.c13, sol:7-appA-clxdat.c11, opus:7-cd.c11, opus:7-appA-clxdat.c8"},
+            {SPR23, SPR67, 13, "A-clxdat.b13, A-clxdat.c8, sol:7-collision.c12, sol:7-appA-clxdat.c10, opus:7-cd.c10, opus:7-appA-clxdat.c7"},
+            {SPR45, SPR67, 14, "A-clxdat.b14, A-clxdat.c7, sol:7-collision.c11, sol:7-appA-clxdat.c9, opus:7-cd.c9, opus:7-appA-clxdat.c6"},
         };
 
         for (const auto& p : pairs) {
@@ -804,7 +804,7 @@ int main(int argc, char** argv) {
             "bits 0-14 set, CLXDAT&0x7FFF=$7FFF) -- no collision this "
             "harness can drive moves bit 15, matching the table's own "
             "column heading 'COLLISIONS REGISTERED' and its row '15  not "
-            "used' (p.273). A-clxdat.b15, A-clxdat.c6.");
+            "used' (p.273). A-clxdat.b15, A-clxdat.c6, sol:7-collision.c10, sol:7-appA-clxdat.c8, opus:7-cd.c8, opus:7-appA-clxdat.c5.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
