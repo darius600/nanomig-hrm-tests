@@ -617,7 +617,7 @@ int main(int argc, char** argv) {
             "5-appB-p290.c11, 5-appB-p290.c12, A-intena.addr, "
             "A-intena.acc, A-intena.chip, A-intenar.addr, A-intenar.acc, "
             "A-intenar.chip, A-intreq.addr, A-intreq.acc, A-intreq.chip, "
-            "A-intreqr.addr, A-intreqr.acc, A-intreqr.chip, A-intreq.c1]",
+            "A-intreqr.addr, A-intreqr.acc, A-intreqr.chip, A-intreq.c1, sol:7-appA-int.c1, sol:7-appA-int.c2, sol:7-appA-int.c3, sol:7-appA-int.c4, sol:7-appA-int.c5, sol:7-appA-int.c6, sol:7-appA-int.c7, sol:7-appA-int.c8, sol:7-appA-int.c25, sol:7-appA-int.c26, sol:7-appA-int.c27, sol:7-appA-int.c28, sol:7-appA-int.c29, sol:7-appA-int.c30, sol:7-appA-int.c31, sol:7-appA-int.c32, opus:7-appA-int.c1, opus:7-appA-int.c2, opus:7-appA-int.c35, opus:7-appA-int.c36]",
             0xffff, 0xffff);
         checks.expect(ok, buf);
     }
@@ -659,7 +659,7 @@ int main(int argc, char** argv) {
             "enabled/something-pending is true - proving the two registers "
             "are read against ONE shared bit numbering, not matched by "
             "channel identity through separate logic. [claims: "
-            "5-appA-p280.c17, 5-appA-p280.c40, A-intena.c1, A-intreq.c5]",
+            "5-appA-p280.c17, 5-appA-p280.c40, A-intena.c1, A-intreq.c5, opus:7-appA-int.c3, sol:7-appA-int.c38, opus:7-appA-int.c40]",
             matching_ipl);
         checks.expect(matching_positions_fire && mismatched_positions_silent, buf);
     }
@@ -730,7 +730,7 @@ int main(int argc, char** argv) {
             "(got 0x%04X), but one SET plus one CLR does (got 0x%04X, "
             "target 0x%04X) - loading an arbitrary pattern genuinely needs "
             "both operations, not one. [claims: 5-appA-p280.c18, "
-            "5-appA-p280.c19, 5-appA-p280.c37, A-int.b15, A-intreq.c3]",
+            "5-appA-p280.c19, 5-appA-p280.c37, A-int.b15, A-intreq.c3, sol:7-appA-int.c9, opus:7-appA-int.c4, opus:7-appA-int.c5, sol:7-appA-int.c35, opus:7-appA-int.c38]",
             after1, after2, after3, start, one_set_only, one_clr_only,
             two_writes, target_mask);
         checks.expect(zero_bits_unchanged && clr_leaves_zero_bits_unchanged &&
@@ -900,7 +900,7 @@ int main(int argc, char** argv) {
             "A-int.b07.lvl, A-int.b06.bit, A-int.b06.lvl, A-int.b05.bit, "
             "A-int.b05.lvl, A-int.b04.bit, A-int.b04.lvl, A-int.b03.bit, "
             "A-int.b03.lvl, A-int.b02.bit, A-int.b02.lvl, A-int.b01.bit, "
-            "A-int.b01.lvl, A-int.b00.bit, A-int.b00.lvl]",
+            "A-int.b01.lvl, A-int.b00.bit, A-int.b00.lvl, sol:7-appA-int.c11, sol:7-appA-int.c12, sol:7-appA-int.c13, sol:7-appA-int.c14, sol:7-appA-int.c15, sol:7-appA-int.c16, sol:7-appA-int.c17, sol:7-appA-int.c18, sol:7-appA-int.c19, sol:7-appA-int.c20, sol:7-appA-int.c21, sol:7-appA-int.c22, sol:7-appA-int.c23, sol:7-appA-int.c24, opus:7-appA-int.c7, opus:7-appA-int.c8, opus:7-appA-int.c9, opus:7-appA-int.c10, opus:7-appA-int.c11, opus:7-appA-int.c12, opus:7-appA-int.c13, opus:7-appA-int.c14, opus:7-appA-int.c15, opus:7-appA-int.c16, opus:7-appA-int.c17, opus:7-appA-int.c18, opus:7-appA-int.c19, opus:7-appA-int.c20, opus:7-appA-int.c21, opus:7-appA-int.c22, opus:7-appA-int.c23, opus:7-appA-int.c24, opus:7-appA-int.c25, opus:7-appA-int.c26, opus:7-appA-int.c27, opus:7-appA-int.c28, opus:7-appA-int.c29, opus:7-appA-int.c30, opus:7-appA-int.c31, opus:7-appA-int.c32, opus:7-appA-int.c33, opus:7-appA-int.c34]",
             detail);
         checks.expect(control_inactive && all_bits_ok && all_levels_ok, buf);
     }
@@ -944,7 +944,7 @@ int main(int argc, char** argv) {
             "(VERTB level 3, AUD0 level 4) - polling and causing a "
             "processor interrupt are genuinely two different things here, "
             "not the same behaviour tested twice. [claims: "
-            "5-appA-p280.c35, 5-appA-p280.c36, A-intreq.c2]",
+            "5-appA-p280.c35, 5-appA-p280.c36, A-intreq.c2, sol:7-appA-int.c33, sol:7-appA-int.c34, opus:7-appA-int.c37]",
             polled_vertb, polled_aud0);
         checks.expect(vertb_visible_unenabled && vertb_no_interrupt_yet &&
                       vertb_fires_once_enabled && aud0_visible_unenabled &&
@@ -976,7 +976,7 @@ int main(int argc, char** argv) {
             "clk7_en cycles with no stimulus at all (nothing 'services' "
             "it automatically), and cleared (0x%04X, bit gone) only after "
             "an explicit CLR write to INTREQ naming it. [claims: "
-            "5-appA-p280.c38, 5-appA-p280.c39, A-intreq.c4]",
+            "5-appA-p280.c38, 5-appA-p280.c39, A-intreq.c4, sol:7-appA-int.c36, sol:7-appA-int.c37, opus:7-appA-int.c39]",
             after_clear);
         checks.expect(stayed_set && cleared_by_write, buf);
     }
