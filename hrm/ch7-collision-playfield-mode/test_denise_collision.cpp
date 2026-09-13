@@ -129,44 +129,64 @@
 // A2 (content-sensitivity, dblpf=1) holds cleanly, and the
 // HARNESS-DATA-PATH-ALIVE control passes.
 //
+// ASSERTION-ID GRANULARITY, checked against tools/check_gates.py itself
+// (LEADING_ID_RE), not assumed: the gate reads an assertion's id as the
+// leading run of `[A-Z0-9_-]` characters at the start of its expect()
+// label, up to the first whitespace or colon. A1's 15 pair-checks and
+// A3/A4's two dblpf sub-cases each put their per-iteration suffix (the
+// pair name; "dblpf=1"/"dblpf=0") AFTER a space, so that suffix falls
+// outside the id the gate reads -- all 15 A1 calls read back as the SAME
+// id, A1-PLAYFIELD-MODE-INVARIANCE, and both A3 calls read back as
+// A3-PLAYFIELD-1-IS-ODD-BITPLANES (A4 likewise). This is not a gap being
+// worked around: it is the same convention hrm/ch3-collision-registers's
+// own BITMAP-PAIR (15 pairs) and PLAYFIELD-ODD-EVEN (2 cases) groups use,
+// one mutation record per shared id, because every iteration of a loop
+// calls the identical shared mechanism (capture_pair() for A1, the run()
+// closure for A3/A4) -- a mutation on any one iteration demonstrates that
+// shared mechanism is stimulus-sensitive for all of them. One recorded
+// mutation per id below is therefore the correct count, not thirteen
+// missing ones.
+//
 // MUTATION LOG (each flag built alone via `-CFLAGS -DMUT_X=1`, run,
 // confirmed to flip only its own named assertion(s) red with every other
 // line identical to the 16-passed/5-failed baseline, then rebuilt with no
-// flags and reconfirmed that baseline):
+// flags and reconfirmed that baseline). Second token on each line is the
+// assertion's own label id, exactly as read from its expect() call:
 //
-// MUTATION HARNESS-DATA-PATH-ALIVE (MUT_CONTROL) stimulus red: the second
-//   sprite stimulus was changed from SPR0+SPR4 (0x11) to a repeat of the
-//   first pair, SPR0+SPR2 (0x05), so the second read came back equal to
-//   the first ($0200 both) instead of the expected distinct $0400; only
-//   this control's own line flipped (15 passed/6 failed); reverted and the
-//   16/5 baseline returned.
-// MUTATION A1 (MUT_A1) stimulus red: pair index 9 (SPR01-SPR23, a pair
-//   this proposition predicts and measures as invariant) had its dblpf=1
+// MUTATION HARNESS-DATA-PATH-ALIVE stimulus red: (flag MUT_CONTROL) the
+//   second sprite stimulus was changed from SPR0+SPR4 (0x11) to a repeat
+//   of the first pair, SPR0+SPR2 (0x05), so the second read came back
+//   equal to the first ($0200 both) instead of the expected distinct
+//   $0400; only this control's own line flipped (15 passed/6 failed);
+//   reverted and the 16/5 baseline returned.
+// MUTATION A1-PLAYFIELD-MODE-INVARIANCE stimulus red: (flag MUT_A1)
+//   representative case pair index 9 (SPR01-SPR23, a pair this
+//   proposition predicts and measures as invariant) had its dblpf=1
 //   capture present SPR45 instead of SPR23, so that one capture actually
 //   measured a different pair (bit 10, $0400) than the dblpf=0 capture
 //   (bit 9, $0200); only the SPR01-SPR23 line flipped from PASS to FAIL
 //   (15 passed/6 failed), all 14 other pairs and every other assertion
 //   stayed exactly at baseline; reverted and the 16/5 baseline returned.
-// MUTATION A2 (MUT_A2) stimulus red: case B's BP1 stimulus was changed
-//   from mismatched (0x00) to matched (0x01), identical to case A, so the
-//   two stimuli no longer differ and bit 1 came back set in both; only
-//   the A2 line flipped (15 passed/6 failed); reverted and the 16/5
-//   baseline returned.
-// MUTATION A3 (MUT_A3) stimulus red: in the dblpf=1 representative case,
-//   run2 (meant to match only BP2) was changed to also match BP1, so
-//   PF1-SPR01 (bit 1) incorrectly set in the run this assertion requires
-//   it clear in; only A3-dblpf=1 flipped from PASS to FAIL (15 passed/6
-//   failed) -- A4-dblpf=1 stayed PASS (BP2's own bit 5 is untouched by
-//   BP1 also matching), and both dblpf=0 lines were untouched since the
-//   mutation is gated to the dblpf=1 case only; reverted and the 16/5
-//   baseline returned.
-// MUTATION A4 (MUT_A4) stimulus red: symmetric to MUT_A3 -- in the
-//   dblpf=1 representative case, run1 (meant to match only BP1) was
-//   changed to also match BP2, so PF2-SPR01 (bit 5) incorrectly set in
-//   the run this assertion requires it clear in; only A4-dblpf=1 flipped
-//   (15 passed/6 failed) -- A3-dblpf=1 stayed PASS (BP1's own bit 1 is
-//   untouched by BP2 also matching); reverted and the 16/5 baseline
-//   returned.
+// MUTATION A2-BITPLANE-CONTENT-DETERMINES-COLLISION stimulus red: (flag
+//   MUT_A2) case B's BP1 stimulus was changed from mismatched (0x00) to
+//   matched (0x01), identical to case A, so the two stimuli no longer
+//   differ and bit 1 came back set in both; only the A2 line flipped (15
+//   passed/6 failed); reverted and the 16/5 baseline returned.
+// MUTATION A3-PLAYFIELD-1-IS-ODD-BITPLANES stimulus red: (flag MUT_A3)
+//   representative case dblpf=1: run2 (meant to match only BP2) was
+//   changed to also match BP1, so PF1-SPR01 (bit 1) incorrectly set in
+//   the run this assertion requires it clear in; only A3-dblpf=1 flipped
+//   from PASS to FAIL (15 passed/6 failed) -- A4-dblpf=1 stayed PASS
+//   (BP2's own bit 5 is untouched by BP1 also matching), and both
+//   dblpf=0 lines were untouched since the mutation is gated to the
+//   dblpf=1 case only; reverted and the 16/5 baseline returned.
+// MUTATION A4-PLAYFIELD-2-IS-EVEN-BITPLANES stimulus red: (flag MUT_A4)
+//   symmetric to MUT_A3, representative case dblpf=1: run1 (meant to
+//   match only BP1) was changed to also match BP2, so PF2-SPR01 (bit 5)
+//   incorrectly set in the run this assertion requires it clear in; only
+//   A4-dblpf=1 flipped (15 passed/6 failed) -- A3-dblpf=1 stayed PASS
+//   (BP1's own bit 1 is untouched by BP2 also matching); reverted and the
+//   16/5 baseline returned.
 
 #include <cstdint>
 #include <cstdio>
