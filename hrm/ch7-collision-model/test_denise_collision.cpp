@@ -177,33 +177,37 @@
 //   colour, no other assertion moved -> rebuild with no flags -> confirm
 //   the 8-passed/0-failed baseline was restored):
 //
-// MUTATION MUT_CONTROL stimulus red: built with -DMUT_CONTROL=1 (repeats
-//   the first stimulus as the second) -> FAIL (7 passed, 1 failed), only
-//   [control] FIXTURE-LIVE-DATA-PATH newly red. Baseline restored after.
-// MUTATION MUT_A1 stimulus red: built with -DMUT_A1=1 (sprite 2 withheld
-//   from the "together" stimulus) -> FAIL (7 passed, 1 failed), only
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: (MUT_CONTROL) built with
+//   -DMUT_CONTROL=1, repeats the first stimulus as the second -> FAIL (7
+//   passed, 1 failed), only FIXTURE-LIVE-DATA-PATH newly red. Baseline
+//   restored after.
+// MUTATION SPRITE-GROUP-TO-SPRITE-GROUP-COLLISION stimulus red: (MUT_A1)
+//   built with -DMUT_A1=1, withholds sprite 2 from the "together" stimulus
+//   -> FAIL (7 passed, 1 failed), only
 //   SPRITE-GROUP-TO-SPRITE-GROUP-COLLISION newly red. Baseline restored.
-// MUTATION MUT_A2 stimulus red: built with -DMUT_A2=1 (sprite withheld from
-//   both playfield "together" legs) -> FAIL (7 passed, 1 failed), only
+// MUTATION SPRITE-GROUP-TO-PLAYFIELD-COLLISION stimulus red: (MUT_A2) built
+//   with -DMUT_A2=1, withholds the sprite from both playfield "together"
+//   legs -> FAIL (7 passed, 1 failed), only
 //   SPRITE-GROUP-TO-PLAYFIELD-COLLISION newly red. Baseline restored.
-// MUTATION MUT_A3 stimulus red: built with -DMUT_A3=1 (playfield 1's own
-//   bitplanes withheld from the "both" stimulus) -> FAIL (7 passed, 1
-//   failed), only PLAYFIELD-TO-PLAYFIELD-COLLISION newly red. Baseline
-//   restored.
-// MUTATION MUT_A4 stimulus red: built with -DMUT_A4=1 (sprite 2 withheld,
-//   removing the sprite-sprite class from the combined stimulus) -> FAIL
-//   (7 passed, 1 failed), only COMBINATION-OF-CLASSES newly red. Baseline
-//   restored.
-// MUTATION MUT_A5 stimulus red: built with -DMUT_A5=1 (sprite 0 added to
-//   the third "alone" leg) -> FAIL (7 passed, 1 failed), only
-//   MULTIPLICITY-REQUIRED newly red. Baseline restored.
-// MUTATION MUT_A6 stimulus red: built with -DMUT_A6=1 (sprite 0 re-asserted
-//   in the same pulse as sprite 2's far-apart presentation, making the pair
-//   co-resident) -> FAIL (7 passed, 1 failed), only SAME-PIXEL-REQUIRED
-//   newly red. Baseline restored.
-// MUTATION MUT_A7 stimulus red: built with -DMUT_A7=1 (the collision
-//   stimulus withheld from the "after" measurement) -> FAIL (7 passed, 1
-//   failed), only COLLISION-SETS-CLXDAT-BIT newly red. Baseline restored.
+// MUTATION PLAYFIELD-TO-PLAYFIELD-COLLISION stimulus red: (MUT_A3) built
+//   with -DMUT_A3=1, withholds playfield 1's own bitplanes from the "both"
+//   stimulus -> FAIL (7 passed, 1 failed), only
+//   PLAYFIELD-TO-PLAYFIELD-COLLISION newly red. Baseline restored.
+// MUTATION COMBINATION-OF-CLASSES stimulus red: (MUT_A4) built with
+//   -DMUT_A4=1, withholds sprite 2, removing the sprite-sprite class from
+//   the combined stimulus -> FAIL (7 passed, 1 failed), only
+//   COMBINATION-OF-CLASSES newly red. Baseline restored.
+// MUTATION MULTIPLICITY-REQUIRED stimulus red: (MUT_A5) built with
+//   -DMUT_A5=1, adds sprite 0 to the third "alone" leg -> FAIL (7 passed, 1
+//   failed), only MULTIPLICITY-REQUIRED newly red. Baseline restored.
+// MUTATION SAME-PIXEL-REQUIRED stimulus red: (MUT_A6) built with
+//   -DMUT_A6=1, sprite 0 re-asserted in the same pulse as sprite 2's
+//   far-apart presentation, making the pair co-resident -> FAIL (7 passed,
+//   1 failed), only SAME-PIXEL-REQUIRED newly red. Baseline restored.
+// MUTATION COLLISION-SETS-CLXDAT-BIT stimulus red: (MUT_A7) built with
+//   -DMUT_A7=1, withholds the collision stimulus from the "after"
+//   measurement -> FAIL (7 passed, 1 failed), only
+//   COLLISION-SETS-CLXDAT-BIT newly red. Baseline restored.
 //
 // Every one of the 8 mutations moved exactly the one assertion it named and
 // no other; the final rebuild with no flags reproduced the original
@@ -347,9 +351,9 @@ int main(int argc, char** argv) {
             "then $0400) through write/pulse/read, before any assertion "
             "below trusts that path. No manual page: the control for "
             "every assertion in this file, on the same measurement basis.");
-        // MUTATION MUT_CONTROL stimulus red: -DMUT_CONTROL=1 repeats the
-        // first stimulus as the second instead of a genuinely different
-        // one.
+        // MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: (MUT_CONTROL)
+        // repeats the first stimulus as the second instead of a genuinely
+        // different one.
     }
 
     // ---------------- SPRITE-GROUP-TO-SPRITE-GROUP-COLLISION ----------------
@@ -376,8 +380,9 @@ int main(int argc, char** argv) {
             "sets. 'You can use the hardware to detect collisions between "
             "one sprite group and another sprite group' (p.213). "
             "sol:7-collision.c1, opus:7-cd.c1.");
-        // MUTATION MUT_A1 stimulus red: -DMUT_A1=1 withholds sprite 2 from
-        // the "together" stimulus, so sprite 0 stays alone.
+        // MUTATION SPRITE-GROUP-TO-SPRITE-GROUP-COLLISION stimulus red:
+        // (MUT_A1) withholds sprite 2 from the "together" stimulus, so
+        // sprite 0 stays alone.
     }
 
     // ---------------- SPRITE-GROUP-TO-PLAYFIELD-COLLISION ----------------
@@ -418,9 +423,9 @@ int main(int argc, char** argv) {
             "is unambiguous; see this file's CORRECTION note for why. "
             "'any sprite group and either of the playfields' (p.213). "
             "sol:7-collision.c2, opus:7-cd.c1.");
-        // MUTATION MUT_A2 stimulus red: -DMUT_A2=1 withholds the sprite
-        // from both "together" legs, so only the playfield is present in
-        // each.
+        // MUTATION SPRITE-GROUP-TO-PLAYFIELD-COLLISION stimulus red:
+        // (MUT_A2) withholds the sprite from both "together" legs, so only
+        // the playfield is present in each.
     }
 
     // ---------------- PLAYFIELD-TO-PLAYFIELD-COLLISION ----------------
@@ -449,9 +454,9 @@ int main(int argc, char** argv) {
             "oddmatch/dblpf gate either way, per this file's CORRECTION "
             "note. 'the two playfields' (p.213). sol:7-collision.c3, "
             "opus:7-cd.c1.");
-        // MUTATION MUT_A3 stimulus red: -DMUT_A3=1 withholds playfield 1's
-        // own bitplanes from the "both" stimulus, leaving only playfield 2
-        // matched.
+        // MUTATION PLAYFIELD-TO-PLAYFIELD-COLLISION stimulus red: (MUT_A3)
+        // withholds playfield 1's own bitplanes from the "both" stimulus,
+        // leaving only playfield 2 matched.
     }
 
     // ---------------- COMBINATION-OF-CLASSES ----------------
@@ -475,9 +480,9 @@ int main(int argc, char** argv) {
             "CLXDAT read -- the three classes combine, not only one at a "
             "time. 'or any combination of these items' (p.213). "
             "sol:7-collision.c4, opus:7-cd.c1.");
-        // MUTATION MUT_A4 stimulus red: -DMUT_A4=1 withholds sprite 2,
-        // removing the sprite-to-sprite class from the combined stimulus
-        // while the other two classes' content is left intact.
+        // MUTATION COMBINATION-OF-CLASSES stimulus red: (MUT_A4) withholds
+        // sprite 2, removing the sprite-to-sprite class from the combined
+        // stimulus while the other two classes' content is left intact.
     }
 
     // ---------------- MULTIPLICITY-REQUIRED ----------------
@@ -506,8 +511,9 @@ int main(int argc, char** argv) {
             "second object joins. 'Collisions are detected when two or "
             "more objects attempt to overlap' (p.213). sol:7-collision.c6, "
             "opus:7-cd.c4.");
-        // MUTATION MUT_A5 stimulus red: -DMUT_A5=1 adds sprite 0 to the
-        // third stimulus, so it is no longer a single object alone.
+        // MUTATION MULTIPLICITY-REQUIRED stimulus red: (MUT_A5) adds
+        // sprite 0 to the third stimulus, so it is no longer a single
+        // object alone.
     }
 
     // ---------------- SAME-PIXEL-REQUIRED ----------------
@@ -548,9 +554,9 @@ int main(int argc, char** argv) {
             "this package's own finding. 'Collisions are detected ... when "
             "... [objects] attempt to overlap in the same pixel position' "
             "(p.213). sol:7-collision.c6, opus:7-cd.c4.");
-        // MUTATION MUT_A6 stimulus red: -DMUT_A6=1 re-asserts sprite 0 in
-        // the same pulse as sprite 2's far-apart presentation, making the
-        // pair co-resident after all.
+        // MUTATION SAME-PIXEL-REQUIRED stimulus red: (MUT_A6) re-asserts
+        // sprite 0 in the same pulse as sprite 2's far-apart presentation,
+        // making the pair co-resident after all.
     }
 
     // ---------------- COLLISION-SETS-CLXDAT-BIT ----------------
@@ -575,8 +581,9 @@ int main(int argc, char** argv) {
             "collision is visible by reading the register, not only an "
             "internal condition. 'This will set a bit in the collision "
             "data register' (p.213). sol:7-collision.c7, opus:7-cd.c5.");
-        // MUTATION MUT_A7 stimulus red: -DMUT_A7=1 withholds the collision
-        // stimulus from the "after" measurement, so nothing is presented.
+        // MUTATION COLLISION-SETS-CLXDAT-BIT stimulus red: (MUT_A7)
+        // withholds the collision stimulus from the "after" measurement,
+        // so nothing is presented.
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

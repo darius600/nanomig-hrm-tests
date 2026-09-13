@@ -402,7 +402,7 @@ int main(int argc, char** argv) {
 //   6 = SPGRP-B12-DISTINCT   7 = SPGRP-B34-DISTINCT
 //   8 = SPGRP-B56-DISTINCT   9 = SPGRP-B70-DISTINCT
 //
-// MUTATION [control] FIXTURE-LIVE stimulus red (MUT_ID=1: active-sprite
+// MUTATION FIXTURE-LIVE stimulus red ([control], MUT_ID=1: active-sprite
 //   stimulus neutralized to 0x00) -- confirmed red, reverted.
 // MUTATION SPGRP-01-SAME stimulus red (MUT_ID=2: second run armed sprite 2
 //   instead of sprite 1) -- confirmed red, reverted.

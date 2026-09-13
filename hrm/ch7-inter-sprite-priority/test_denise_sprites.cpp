@@ -102,37 +102,49 @@
 // MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
 //   actually run: `make MUT=<NAME>` -> read the PASS/FAIL lines -> confirm
 //   only the named assertion changed colour -> `make` with no flag ->
-//   confirm the 18-passed/0-failed baseline was restored):
+//   confirm the 18-passed/0-failed baseline was restored). Gate grammar:
+//   `// MUTATION <assertion-label> <oracle|stimulus|none> <red|green|
+//   impossible> <what changed>` -- the second token is the assertion's OWN
+//   label, exactly as passed to expect(), not the -D switch that drives it;
+//   the switch name is kept in the description so a reader can still find
+//   the build. All eighteen below are STIMULUS mutations: each changes what
+//   the module is ASKED to do (an arming write withheld) and leaves the
+//   expected value untouched, per the build brief's "flipping an expected
+//   value proves nothing".
 //
-// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: MUT_FIXTURE=1 makes the
-//   MSB-run stimulus 0x0001, identical to the LSB-run -> FAIL (17 passed,
-//   1 failed), only FIXTURE-LIVE-DATA-PATH newly red (MSB hpos=145 became
-//   equal to LSB hpos=145, no longer distinct or monotonic; mid hpos=138
-//   unchanged). Rebuilt with no flag: 18 passed, 0 failed restored.
-// MUTATION SPR-0..SPR-7 stimulus red (8 entries, MUT_SPR0..MUT_SPR7): each
-//   withholds arming for exactly that one sprite (its own four registers
-//   are never written) -> FAIL (17 passed, 1 failed) each time, only that
-//   one SPR-N newly red (hit hpos=-1, count=0 -- nothing on sprdata at
-//   all), the other seven SPR-* and all other assertions unchanged.
-//   Confirms the eight liveness checks fail independently, not as one
-//   check wearing eight labels. Rebuilt with no flag after each: baseline
-//   restored every time.
-// MUTATION PRI-01..PRI-67 stimulus red (7 entries, MUT_PRI01..MUT_PRI67):
-//   each withholds arming for the lower-numbered sprite of that one pair
-//   only -> FAIL (17 passed, 1 failed) each time, only that one PRI-*
-//   newly red (the cascade falls through to the higher sprite, or to the
-//   next group down for the three pairs that cross a group boundary, so
-//   sprdata's low bits read 2'b10 instead of the expected 2'b01). Rebuilt
-//   with no flag after each: baseline restored every time.
-// MUTATION INV-01, INV-67 stimulus red (2 entries, MUT_INV01, MUT_INV67):
-//   each withholds arming for the pair's lower sprite in the REVERSE-armed
-//   run only (the forward-armed run is untouched) -> FAIL (17 passed, 1
-//   failed) each time, only that one INV-* newly red (the forward trace
-//   still shows the lower sprite's code; the reverse trace now shows the
-//   higher sprite's, so the two traces the assertion compares to EACH
-//   OTHER disagree). Rebuilt with no flag after each: baseline restored
-//   every time.
-// MUTATION opus:7-fig7-1.c1/c2..c8 [declined]: no record -- these two
+//   INV-01 and INV-67 are the two where the mutation itself needs a reason,
+//   not just a result: they grade fwd.trace == rev.trace, a comparison of
+//   two MEASUREMENTS to each other, not to a constant, so a mutation that
+//   changed both sides alike (e.g. a symmetric arm-order swap) would leave
+//   the two traces agreeing and would not have failed -- it would only
+//   re-demonstrate the same order-invariance the assertion already asserts.
+//   Both are built asymmetrically instead: the lower sprite is withheld in
+//   the REVERSE-armed run ONLY, so the forward run still shows the lower
+//   sprite's code while the reverse run now shows the higher sprite's --
+//   the two sides the equality compares are forced to disagree, and the
+//   assertion goes red because ITS OWN comparison is sensitive, not because
+//   a hand-picked expected byte changed.
+//
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: MUT_FIXTURE=1 makes the MSB-run stimulus 0x0001, identical to the LSB-run -> FAIL (17 passed, 1 failed), only FIXTURE-LIVE-DATA-PATH newly red (MSB hpos=145 became equal to LSB hpos=145, no longer distinct or monotonic; mid hpos=138 unchanged). Rebuilt with no flag: 18 passed, 0 failed restored.
+// MUTATION SPR-0 stimulus red: MUT_SPR0=1 withholds arming for sprite 0 (its own four registers are never written) -> FAIL (17 passed, 1 failed), only SPR-0 newly red (hit hpos=-1, count=0 -- nothing on sprdata at all), the other seven SPR-* and all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-1 stimulus red: MUT_SPR1=1 withholds arming for sprite 1 -> FAIL (17 passed, 1 failed), only SPR-1 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-2 stimulus red: MUT_SPR2=1 withholds arming for sprite 2 -> FAIL (17 passed, 1 failed), only SPR-2 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-3 stimulus red: MUT_SPR3=1 withholds arming for sprite 3 -> FAIL (17 passed, 1 failed), only SPR-3 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-4 stimulus red: MUT_SPR4=1 withholds arming for sprite 4 -> FAIL (17 passed, 1 failed), only SPR-4 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-5 stimulus red: MUT_SPR5=1 withholds arming for sprite 5 -> FAIL (17 passed, 1 failed), only SPR-5 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-6 stimulus red: MUT_SPR6=1 withholds arming for sprite 6 -> FAIL (17 passed, 1 failed), only SPR-6 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-7 stimulus red: MUT_SPR7=1 withholds arming for sprite 7 -> FAIL (17 passed, 1 failed), only SPR-7 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-01 stimulus red: MUT_PRI01=1 withholds arming for sprite 0 (the lower of the pair); group(0,1) then has only sprite 1 active, so sprdata's low bits read 2'b10 (sprite 1's code) instead of the expected 2'b01 -> FAIL (17 passed, 1 failed), only PRI-01 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-12 stimulus red: MUT_PRI12=1 withholds arming for sprite 1 (the lower of the pair); group(0,1) is then entirely inactive and the cascade falls through to group(2,3), where sprite 2 is the only active sprite, so sprdata reads sprite 2's code (2'b10) instead of sprite 1's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-12 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-23 stimulus red: MUT_PRI23=1 withholds arming for sprite 2 (the lower of the pair); group(2,3) then has only sprite 3 active, so sprdata reads sprite 3's code (2'b10) instead of sprite 2's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-23 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-34 stimulus red: MUT_PRI34=1 withholds arming for sprite 3 (the lower of the pair); group(2,3) is then entirely inactive and the cascade falls through to group(4,5), where sprite 4 is the only active sprite, so sprdata reads sprite 4's code (2'b10) instead of sprite 3's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-34 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-45 stimulus red: MUT_PRI45=1 withholds arming for sprite 4 (the lower of the pair); group(4,5) then has only sprite 5 active, so sprdata reads sprite 5's code (2'b10) instead of sprite 4's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-45 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-56 stimulus red: MUT_PRI56=1 withholds arming for sprite 5 (the lower of the pair); group(4,5) is then entirely inactive and the cascade falls through to group(6,7), where sprite 6 is the only active sprite, so sprdata reads sprite 6's code (2'b10) instead of sprite 5's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-56 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-67 stimulus red: MUT_PRI67=1 withholds arming for sprite 6 (the lower of the pair); group(6,7) then has only sprite 7 active, so sprdata reads sprite 7's code (2'b10) instead of sprite 6's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-67 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION INV-01 stimulus red: MUT_INV01=1 withholds arming for sprite 0 (the pair's lower sprite) in the REVERSE-armed run only, leaving the forward-armed run untouched; the forward trace still shows sprite 0's code (2'b01) while the reverse trace now shows sprite 1's (2'b10), so the two traces the assertion compares to EACH OTHER disagree -> FAIL (17 passed, 1 failed), only INV-01 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION INV-67 stimulus red: MUT_INV67=1 withholds arming for sprite 6 (the pair's lower sprite) in the REVERSE-armed run only, leaving the forward-armed run untouched; the forward trace still shows sprite 6's code (2'b01) while the reverse trace now shows sprite 7's (2'b10), so the two traces the assertion compares to EACH OTHER disagree -> FAIL (17 passed, 1 failed), only INV-67 newly red. Rebuilt with no flag: baseline restored.
+//
+// No mutation record for opus:7-fig7-1.c1/c2..c8 [declined]: these two
 //   claims.record() calls carry no checks.expect(), so there is no
 //   red/green state for a mutation to move.
 
