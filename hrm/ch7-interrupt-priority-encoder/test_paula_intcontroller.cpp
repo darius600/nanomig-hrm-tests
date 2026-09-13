@@ -387,6 +387,38 @@ int main(int argc, char** argv) {
         clear_requests();
     }
 
+    // ---- P4C (p.219, sol:7-interrupts.c34, opus:7-int.c31): the
+    // ---- vertical-blank source lands on request bit 5. The line-0 timing
+    // ---- half of the same sentence is graded at the beam counter, by
+    // ---- hrm/ch7-vertb-vertical-blank-timing's VBL-INT-AT-LINE-0; that
+    // ---- package recorded THIS half as needing this fixture.
+    {
+        clear_requests();
+        dut->vblint = 1; settle(8); dut->vblint = 0; settle(8);
+        uint16_t rq = rd(INTREQR);
+        bool bit5 = (rq & (1 << 5)) != 0;
+        uint16_t others = (uint16_t)(rq & ~(uint16_t)(1 << 5) & 0x7FFF);
+        checks.expect(bit5 && others == 0,
+            "P4C-VBLINT-SETS-BIT5-ONLY: asserting the vertical-blank input "
+            "sets request bit 5 (VERTB) and no other request bit "
+            "(sol:7-interrupts.c34, opus:7-int.c31, request-bit half; "
+            "INTREQR=" + hex16(rq) + ")");
+        clear_requests();
+    }
+    // MUTATION P4C-VBLINT-SETS-BIT5-ONLY stimulus red: pulse INT2 instead of
+    // the vertical-blank input, and recheck the SAME condition (bit 5 set).
+    {
+        dut->int2 = 1; settle(8); dut->int2 = 0; settle(8);
+        uint16_t rq = rd(INTREQR);
+        bool bit5 = (rq & (1 << 5)) != 0;
+        checks.note("mutation demonstration for P4C-VBLINT-SETS-BIT5-ONLY: "
+            "pulsing INT2 instead of the vertical-blank input, bit 5 (VERTB) "
+            "reads " + std::string(bit5 ? "set" : "clear") + " (expected set "
+            "if the vertical-blank input had actually been asserted -- "
+            "checked against that expectation this goes FAIL)");
+        clear_requests();
+    }
+
     // ==================================================================
     // P5-P18: the 14 per-bit hardware-level propositions. Baseline values
     // come from the exhaustive sweep above (single_bit_level[b], the
