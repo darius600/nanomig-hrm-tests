@@ -19,6 +19,44 @@
 // 0 throughout, so the hardwired-range assertions are provably measuring the
 // OCS path and not an unstated default.
 //
+// MUTATION HONESTY NOTE: four assertions below carry `none impossible`. Two
+// of the four are genuinely unfalsifiable at this module boundary, full
+// stop; the other two merely have no convenient mutation inside the OCS
+// scope this PACKAGE is assigned, and ARE falsifiable by a stimulus this
+// same MODULE accepts, one step outside that scope. The two are not the
+// same claim and are not interchangeable:
+//
+//   Genuinely unfalsifiable here, under OCS or ECS alike --
+//   NTSC-VBLANK-STARTS-LINE-0, PAL-VBLANK-STARTS-LINE-0: vbstop is
+//   represented as a non-negative value everywhere in this module, both the
+//   hardwired OCS constants (20/25, agnus_beamcounter.v:89-90) and the
+//   ECS-programmable vbstop_reg (an unsigned 11-bit register,
+//   agnus_beamcounter.v:188). vbl=(vpos<=vbstop) with vpos==0 (:444), so
+//   this holds for every value vbstop can ever take on this module. No
+//   stimulus anywhere in agnus_beamcounter's input space -- OCS or ECS --
+//   falsifies it; it is a tautology of the comparison's operand widths, not
+//   OCS-scope-limited coverage. Widening the boundary to ECS would not help:
+//   the register vbstop_reg that ECS makes writable is itself unsigned.
+//
+//   Falsifiable on this same module, but only outside this package's
+//   assigned OCS scope (ecs=0) -- not exercised here, and said so rather
+//   than left looking unfalsifiable:
+//   PRECOND-HARDDIS-LOW-ECS0 -- ecs=1 plus a BEAMCON0 write setting HARDDIS
+//   (bit 14) would drive harddis_out high (agnus_beamcounter.v:123 gates the
+//   write on ecs; :128 reads the bit; :236 ORs it into harddis_out). A real
+//   stimulus on a real port of this exact module, rejected only because
+//   ecs=1 is ch7-beamcon0-ecs-control-bits' territory, not this package's.
+//   PAL-VBLANK-ENDS-BY-LINE-26 -- ecs=1 plus BEAMCON0 VARVBEN=1/VARBEAMEN=1
+//   plus a VBSTOP register write to >=26 (agnus_beamcounter.v:216 writes
+//   vbstop_reg unconditionally on ecs, but it only reaches vbl once
+//   varvben&&varbeamen select it at :233, and those two bits are themselves
+//   behind the ecs-gated BEAMCON0 write) would put line 26 inside blanking.
+//   Same rejection, same reason.
+//
+// If either of the second pair turns out to matter, the honest fix is not a
+// cleverer mutation here -- it is a claim built against
+// ch7-beamcon0-ecs-control-bits, where vbstop is actually writable.
+//
 // BOUNDARY NOTE (line 20 NTSC / line 25 PAL): p.219 gives two figures for the
 // same range that disagree by one if "ends at line N" is read as inclusive:
 // "minimum time ... is 20 [/25] horizontal scan lines" (a plain count) versus
@@ -243,12 +281,13 @@ int main(int argc, char **argv) {
         "PRECOND-HARDDIS-LOW-ECS0: harddis_out reads 0 throughout both scenarios "
         "(ecs held at 0 the whole run), so the assertions below are provably "
         "measuring the hardwired OCS path, not an unstated default");
-    // MUTATION PRECOND-HARDDIS-LOW-ECS0 none impossible: within this package's assigned OCS
-    // scope (ecs=0 for the whole run), the RTL only lets the bus write
-    // beamcon0_reg -- and so only lets harddis/varvben/varbeamen become
-    // nonzero -- when ecs is asserted (agnus_beamcounter.v:123, ":172). No
-    // in-scope stimulus can drive harddis_out high; doing so needs ecs=1,
-    // which is ch7-beamcon0-ecs-control-bits' boundary, not this package's.
+    // MUTATION PRECOND-HARDDIS-LOW-ECS0 none impossible: NOT a structural
+    // invariant -- falsifiable on this exact module by ecs=1 plus a BEAMCON0
+    // write setting HARDDIS (agnus_beamcounter.v:123,:128,:236), rejected
+    // only because that stimulus is outside this package's assigned OCS
+    // scope (ecs=0) and belongs to ch7-beamcon0-ecs-control-bits. See the
+    // MUTATION HONESTY NOTE in the file header for why this is grouped apart
+    // from the two truly unfalsifiable ones below.
 
     // ---- P1 (p.219, uid sol:7-interrupts.c34 / opus:7-int.c31, twins; plus
     // ---- the denotation half of opus:7-fig7-4.c18, Figure 7-4 p.221): VERTB
@@ -338,12 +377,13 @@ int main(int argc, char **argv) {
     checks.expect(ntsc.vbl_by_line.count(0) && ntsc.vbl_by_line[0] == 1,
         "NTSC-VBLANK-STARTS-LINE-0: vertical blanking holds at line 0 of an "
         "NTSC-timed OCS frame (sol:7-interrupts.c37, opus:7-int.c34)");
-    // MUTATION NTSC-VBLANK-STARTS-LINE-0 none impossible: within this package's OCS scope
-    // vbstop is a hardwired non-negative constant (20 for NTSC, 25 for PAL;
-    // never negative in this scope) and vbl=(vpos<=vbstop), so vpos==0 is
-    // inside blanking under every reachable in-scope stimulus. No in-scope
-    // mutation can turn this assertion red -- it is an invariant of the
-    // comparison, not an untested corner.
+    // MUTATION NTSC-VBLANK-STARTS-LINE-0 none impossible: genuinely
+    // unfalsifiable at this module boundary, not merely out of scope --
+    // vbstop is a non-negative value everywhere in this module (the
+    // hardwired OCS constants and the ECS-programmable vbstop_reg alike), so
+    // vpos==0<=vbstop holds for every value vbstop can ever take, under OCS
+    // or ECS. No stimulus anywhere on agnus_beamcounter falsifies it; see the
+    // MUTATION HONESTY NOTE in the file header.
 
     checks.expect(ntsc.vbl_by_line.count(21) && ntsc.vbl_by_line[21] == 0,
         "NTSC-VBLANK-ENDS-BY-LINE-21: vertical blanking no longer holds at line "
@@ -366,20 +406,22 @@ int main(int argc, char **argv) {
     checks.expect(pal.vbl_by_line.count(0) && pal.vbl_by_line[0] == 1,
         "PAL-VBLANK-STARTS-LINE-0: vertical blanking holds at line 0 of a "
         "PAL-timed OCS frame (sol:7-interrupts.c38, opus:7-int.c35)");
-    // MUTATION PAL-VBLANK-STARTS-LINE-0 none impossible: same invariant as
-    // NTSC-VBLANK-STARTS-LINE-0 above -- vpos==0 is always inside blanking in
-    // this OCS scope, for either hardwired constant.
+    // MUTATION PAL-VBLANK-STARTS-LINE-0 none impossible: same genuine,
+    // module-wide invariant as NTSC-VBLANK-STARTS-LINE-0 above, not scope-
+    // limited coverage -- see the MUTATION HONESTY NOTE in the file header.
 
     checks.expect(pal.vbl_by_line.count(26) && pal.vbl_by_line[26] == 0,
         "PAL-VBLANK-ENDS-BY-LINE-26: vertical blanking no longer holds at line "
         "26 of a PAL-timed OCS frame -- the control case for the range assertion "
         "above, on the same measurement basis (sol:7-interrupts.c38, opus:7-int.c35)");
-    // MUTATION PAL-VBLANK-ENDS-BY-LINE-26 none impossible: the largest hardwired vbstop
-    // reachable in this OCS scope is 25 (PAL); 26 > 25 under either hardwired
-    // constant (20 or 25), so no in-scope stimulus can make line 26 blanked.
-    // Unlike NTSC-VBLANK-ENDS-BY-LINE-21, switching modes cannot flip this one
-    // (PAL->NTSC only shrinks the blanked range further) -- provably
-    // impossible to stimulus-mutate at this boundary, not merely untried.
+    // MUTATION PAL-VBLANK-ENDS-BY-LINE-26 none impossible: NOT a structural
+    // invariant -- unlike NTSC-VBLANK-ENDS-BY-LINE-21, switching ntsc/pal
+    // cannot flip this one (PAL->NTSC only shrinks the blanked range
+    // further), but it IS falsifiable on this exact module by ecs=1 +
+    // BEAMCON0 VARVBEN=1/VARBEAMEN=1 + a VBSTOP register write to >=26
+    // (agnus_beamcounter.v:216,:233), rejected only because that stimulus is
+    // outside this package's assigned OCS scope. See the MUTATION HONESTY
+    // NOTE in the file header.
 
     // ---- Boundary lines the manual does not settle: measured, not graded.
 
