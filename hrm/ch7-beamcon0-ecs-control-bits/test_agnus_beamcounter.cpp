@@ -434,7 +434,8 @@ int main(int argc, char** argv) {
         "the alternative (Denise), so this is recorded, not graded, "
         "exactly as SPECIFICATION.md's P3 says.");
     checks.note(
-        "P3b, NEW-vs-CHANGED marking (sol:7-appC-map-beamcon0.c2): "
+        "P3b, NEW-vs-CHANGED marking (sol:7-appC-map-beamcon0.c2, "
+        "sol:7-appA-beamcon0.c4): "
         "measured to be constructible -- beamcon0_reg only loads when "
         "'(reg_address_in==BEAMCON0[8:1]) && ecs' (l.123), so an identical "
         "BEAMCON0 write has an effect with ecs=1 and none with ecs=0 (a "
