@@ -103,24 +103,47 @@
 //   returns checks.failed!=0 -- a valid, finished outcome per
 //   BUILD-BRIEF.md's oracle rule, not a build failure.
 //
-// MUTATION LOG (each rebuilt with `verilator ... -CFLAGS -D<FLAG>=1
-//   ... gary.v test_gary.cpp`, run, then reverted): MUT_A1 flips
-//   GARY-DMA-DIRECT-CHIP-ACCESS PASS->FAIL (dbr forced 0: sel_chip=0,
-//   sel_kick=1, ram_address_out=$7C0000, tracking cpu_address_in instead of
-//   dma_address_in). MUT_CTRL0 flips OVL-CONTROL-BASELINE-000000
-//   PASS->FAIL (ovl forced 1: sel_chip=0, sel_kick=1). MUT_B1 flips
-//   OVERLAY-ROM-AT-000000 PASS->FAIL (ovl forced 0: sel_kick=0). MUT_C1
-//   flips OVERLAY-RAM-UNAVAILABLE-WRITE-000000 PASS->FAIL (ovl forced 0:
-//   sel_chip=1, the write now lands in RAM). MUT_D2 flips
-//   RESET-ALL-MEMORY-DISAPPEARS-CONTROL-BANK0-ONLY PASS->FAIL (ovl forced
-//   0: all four bank-0 points read sel_chip=1). MUT_D1 flips
-//   RESET-ALL-MEMORY-DISAPPEARS-SWEEP FAIL->PASS (all four sample points
-//   moved inside bank 0: sel_chip=0 at all four, proving the FAIL above is
-//   a property of banks 1-3's own address decode, not of this check).
-//   MUT_E1 flips RESET-ROM-REAPPEARS-000000 PASS->FAIL (ovl forced 0:
-//   sel_kick=0, sel_chip=1). Every assertion in this file changed exactly
-//   as predicted under its own mutation; none was unaffected or moved the
-//   wrong way.
+// MUTATION LOG. Each rebuilt with `verilator ... -CFLAGS -D<FLAG>=1 ...
+//   gary.v test_gary.cpp`, run, then reverted -- see RESULTS above for the
+//   default-build baseline every line below is measured against.
+//   Machine-readable records for tools/check_gates.py --tests, one per
+//   assertion, id first (exactly the label passed to expect()):
+//
+// MUTATION GARY-DMA-DIRECT-CHIP-ACCESS stimulus red: MUT_A1 forces dbr=0
+//   (Agnus does not have the bus); sel_chip/ram_address_out then track
+//   cpu_address_in instead of dma_address_in and sel_kick raises ->
+//   GARY-DMA-DIRECT-CHIP-ACCESS FAIL (sel_chip=0, sel_kick=1,
+//   ram_address_out=$7C0000); every other assertion unchanged.
+// MUTATION OVL-CONTROL-BASELINE-000000 stimulus red: MUT_CTRL0 forces ovl=1
+//   (the overlay state this control exists to rule out) ->
+//   OVL-CONTROL-BASELINE-000000 FAIL (sel_chip=0, sel_kick=1); every other
+//   assertion unchanged.
+// MUTATION OVERLAY-ROM-AT-000000 stimulus red: MUT_B1 forces ovl=0 (overlay
+//   released) -> OVERLAY-ROM-AT-000000 FAIL (sel_kick=0); every other
+//   assertion unchanged.
+// MUTATION OVERLAY-RAM-UNAVAILABLE-WRITE-000000 stimulus red: MUT_C1 forces
+//   ovl=0 -> OVERLAY-RAM-UNAVAILABLE-WRITE-000000 FAIL (the write now lands
+//   in RAM, sel_chip=1); every other assertion unchanged.
+// MUTATION RESET-ALL-MEMORY-DISAPPEARS-CONTROL-BANK0-ONLY stimulus red:
+//   MUT_D2 forces ovl=0 -> RESET-ALL-MEMORY-DISAPPEARS-CONTROL-BANK0-ONLY
+//   FAIL (all four bank-0 points read sel_chip=1 instead of 0); every other
+//   assertion unchanged.
+// MUTATION RESET-ALL-MEMORY-DISAPPEARS-SWEEP stimulus green: this
+//   assertion's baseline is already RED (a genuine finding -- banks 1-3
+//   stay mapped under ovl=1, see RESULTS above and its own MEASURED note),
+//   so the shape that proves it is live runs the other way from every
+//   other record in this file: MUT_D1 confines all four sample points to
+//   bank 0 (the one bank the manual's claim actually holds for in this
+//   RTL) instead of one per bank -> RESET-ALL-MEMORY-DISAPPEARS-SWEEP PASS
+//   (sel_chip=0 at all four); every other assertion unchanged. FAIL->PASS
+//   here is correct, not backwards: it proves the baseline red comes from
+//   banks 1-3's own address decode (gary.v:160-162 carry no `ovl` term),
+//   not from a stuck harness -- the always-green RESET-ALL-MEMORY-
+//   DISAPPEARS-CONTROL-BANK0-ONLY above makes the same point by
+//   construction, on the same measurement basis.
+// MUTATION RESET-ROM-REAPPEARS-000000 stimulus red: MUT_E1 forces ovl=0 ->
+//   RESET-ROM-REAPPEARS-000000 FAIL (sel_kick=0, sel_chip=1); every other
+//   assertion unchanged.
 
 #include <cstdint>
 #include <cstdio>
