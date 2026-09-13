@@ -30,14 +30,12 @@
 // the shared chip-data-bus word to the interrupt controller only at the
 // cycle the Copper is actually granted the bus -- see that file's header.
 //
-// MUTATION P1: word2 of the MOVE to INTREQ was temporarily changed from
-// 0x8010 to 0x8000 (SET-nothing), the expected value left unchanged ("bit 4
-// became set and no other bit moved"). Result: P1 went red -- bit 4 stayed
-// clear. Reverted, rebuilt, back to green.
-// MUTATION CONTROL: the control's readback was temporarily moved from before
-// the Copper's writes to after them, the expected value left unchanged ("bit
-// 4 reads 0"). Result: CONTROL went red -- bit 4 read 1. Reverted, rebuilt,
-// back to green.
+// MUTATION P1 stimulus red: word2 of the MOVE to INTREQ changed from 0x8010
+// to 0x8000 (SET-nothing), expected value left unchanged. P1 went red (bit 4
+// stayed clear, before=after=0x0000). Reverted, rebuilt, back to green.
+// MUTATION CONTROL stimulus red: the control's readback moved from before
+// the Copper's writes to after them, expected value left unchanged. CONTROL
+// went red (bit 4 read 1). Reverted, rebuilt, back to green.
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>
