@@ -204,8 +204,16 @@ Four rules carry the whole thing:
 > *Amiga Hardware Reference Manual*, Third Edition. Commodore-Amiga, Inc.
 > Addison-Wesley Publishing Company, 1991.
 
-Four chapters have been through the pipeline: chapter 2 (Copper, printed pages
-19–36), chapter 3 (Playfield, 39–95), chapter 4 (Sprites, 97–131) and chapter 6
-(Blitter, 169–205), each with its appendix A, B and C entries. Chapters 1, 5, 7
-and 8 have not been extracted; the packages listed against them above are
-hand-written coverage of individual modules.
+Five chapters have been through the pipeline and are accepted: chapter 2
+(Copper, printed pages 19–36), chapter 3 (Playfield, 39–95), chapter 4 (Sprites,
+97–131), chapter 5 (Audio, 133–167) and chapter 6 (Blitter, 169–205), each with
+its appendix A, B and C entries.
+
+Chapter 7 (System Control, 207–226) has been extracted, built and independently
+validated, and is **not yet accepted** — its 18 packages are in `hrm/ch7-*` and
+its findings are registered, but `acceptance/ch7.json` carries no frozen
+measurement until the second half of its validation is in. The counts in the
+table above are those of the five accepted chapters.
+
+Chapters 1 and 8 have not been extracted; the packages listed against them above
+are hand-written coverage of individual modules.
