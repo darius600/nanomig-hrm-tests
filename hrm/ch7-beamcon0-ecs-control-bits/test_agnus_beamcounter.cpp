@@ -915,7 +915,7 @@ int main(int argc, char** argv) {
 
     // ================= SUMMARY =================
     std::cout << checks.passed << " passed, " << checks.failed << " failed\n";
-    return checks.failed == 0 ? 0 : 0; // a red result is a valid, finished outcome -- not a build failure
+    return checks.failed == 0 ? 0 : 1;
 }
 
 // CLAIM COVERAGE: all 42 claims in ch7-beamcon0-ecs-control-bits-spec-stage.jsonl
