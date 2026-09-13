@@ -466,7 +466,13 @@ int main(int argc, char** argv) {
             "p.288, cited jointly, not scored on their own) -- 'VPOSR "
             "        *004   R     A (E)      Read vert most signif. bit "
             "(and frame flop)' (p.289), extension per Appendix C p.299. "
-            "sol:7-appB-vposr.c6.");
+            "sol:7-appB-vposr.c6. Legend cited jointly, not scored on its "
+            "own: sol:7-appA-legend.c5, opus:7-appA-pre.c15 (Appendix A "
+            "p.264, defines the '(E)' mark), sol:7-appA-legend.c6, "
+            "opus:7-appA-pre.c17 (Appendix A p.264, the two classes an "
+            "'(E)' mark can mean -- this is the 'extended' one), "
+            "sol:7-appB-legend.c8, opus:7-appB.c11 (Appendix B p.288, "
+            "restates the mark).");
     }
 
     // ============================================================
@@ -766,7 +772,13 @@ int main(int argc, char** argv) {
             "measurement with BEAMCON0-DIRECTION-WRITE-ONLY above -- one "
             "RTL mechanism (the `&& ecs` write gate), two manual "
             "propositions (see the INDEPENDENCE note above the "
-            "PER-ASSERTION MUTATION RECORDS).");
+            "PER-ASSERTION MUTATION RECORDS). Legend cited jointly, not "
+            "scored on its own: sol:7-appA-legend.c5, opus:7-appA-pre.c15 "
+            "(Appendix A p.264, defines the '(E)' mark), sol:7-appA-legend.c6, "
+            "opus:7-appA-pre.c17 (Appendix A p.264, the two classes an "
+            "'(E)' mark can mean -- this is the 'completely new' one), "
+            "sol:7-appB-legend.c8, opus:7-appB.c11 (Appendix B p.288, "
+            "restates the mark).");
     }
 
     std::cout << checks.passed << " passed, " << checks.failed << " failed\n";
