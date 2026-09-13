@@ -75,8 +75,8 @@
 //   mutation:
 //     5.  MASTER-ENABLE-BIT14-GATE      - the ENABLE half. GREEN (RTL
 //         conforms). Claims 5-appA-p280.c20, A-int.b14.
-//     5B. MASTER-BIT14-NO-REQUEST       - the "no request" half. RED, AND
-//         EXPECTED TO BE RED: paula_intcontroller.v:134 `intreq[14] <=
+//     5B. MASTER-BIT14-NO-REQUEST       - the "no request" half. MEASURED
+//         AND REPORTED, NOT GRADED, since 13.09.2026: paula_intcontroller.v:134 `intreq[14] <=
 //         tmp[14]` gives this bit a genuine request path (the RTL's own
 //         comment there calls it "undocumented interrupt"; paula.v's
 //         instantiation comment calls the same wire "implementation of
@@ -85,9 +85,11 @@
 //         printed claim). Claims 5-appA-p280.c20, A-int.b14 - the SAME two
 //         ids as assertion 5, legitimately cited on both assertions because
 //         each half is now genuinely, separately exercised.
-//   This package's result moves from 9/9 green to 9 green / 1 red. The red
-//   is this project's product: it is the correct, honestly-reported outcome
-//   for a claim whose text the RTL does not fully satisfy.
+//   This package reads 9 passed, 0 failed. 5B was graded and red from
+//   12.09.2026 until 13.09.2026, when it was demoted: appendix A p.280's
+//   parenthesis has two readings the manual does not settle between, and
+//   chapter 7 declined the same proposition from the same pages. The
+//   deviation is not withdrawn -- it is NM-HRM-031.
 //
 // Non-goals: anything about paula_audio_channel's own state machine or the
 //   moment it decides to raise AUDxIR (separate packages' territory, and the
@@ -485,6 +487,12 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    // The other two of BUILD-BRIEF's three verbs, added 13.09.2026 when
+    // assertion 5B was demoted: note() MEASURES without grading, record()
+    // DECLINES with a reason. Neither is coverage, and the difference is
+    // load-bearing -- a decline is not a measurement.
+    void note(const std::string& msg)   { std::cout << "MEASURED: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -792,7 +800,7 @@ int main(int argc, char** argv) {
 
         std::snprintf(buf, sizeof(buf),
             "MASTER-BIT14-NO-REQUEST (appendix A p.280: \"14 INTEN Master "
-            "interrupt (enable only, no request)\" - ASSERTING ONLY THE "
+            "interrupt (enable only, no request)\" - MEASURING ONLY THE "
             "\"NO REQUEST\" HALF; the enable-gate half is assertion 5 "
             "above, its own assertion with its own control and mutation): "
             "control - with bit 14 never written, INTREQR bit 14 reads 0 "
@@ -804,11 +812,30 @@ int main(int argc, char** argv) {
             "(the RTL's own comment there calls it \"undocumented "
             "interrupt\"; paula.v's instantiation comment calls the same "
             "wire \"implementation of intreq[14] (Unreal needs it)\"), "
-            "contradicting the manual's \"no request\" wording. EXPECTED "
-            "RED: this is the deviation from the printed claim, not a "
-            "harness defect. [claims: 5-appA-p280.c20, A-int.b14]",
+            "which is what the manual's \"no request\" wording is read by some "
+            "to forbid. REPORTED, NOT GRADED -- see the record below for "
+            "why the page does not settle it. [claims: 5-appA-p280.c20, "
+            "A-int.b14]",
             baseline_reqr, after_write);
-        checks.expect(control_starts_clear && no_request_created, buf);
+        checks.note(buf);
+        checks.record(
+            "MASTER-BIT14-NO-REQUEST-NOT-GRADED (5-appA-p280.c20, A-int.b14): "
+            "the measurement above is reported, not graded. Appendix A p.280's "
+            "\"enable only, no request\" has two readings the manual does not "
+            "settle between -- p.218 says INTREQ exists so the processor can "
+            "FORCE an interrupt, which makes \"no request\" a statement that "
+            "bit 14 has no HARDWARE source (what the RTL implements, its own "
+            "comment calling the bit undocumented), while p.221's Figure 7-4 "
+            "lists INTEN among the sources. reason_kind source-silent. "
+            "Chapter 7 measured the same proposition from the same pages and "
+            "declined it too, as P19-INTEN-SELF-REQUEST-DISPUTED in "
+            "hrm/ch7-interrupt-priority-encoder. Graded as EXPECTED RED from "
+            "12.09.2026 until 13.09.2026; demoted because an assertion that is "
+            "red on conformant behaviour moves the red onto correct behaviour "
+            "and leaves a real deviation green. The deviation itself is not "
+            "withdrawn: it is NM-HRM-031, which records that two of the four "
+            "emulators also let bit 14 be set as a request and that Denise's "
+            "0x7fff mask spares it deliberately.");
     }
 
     // ---------------- 6. INTERRUPT-SOURCE-BIT-AND-PRIORITY-LEVEL-TABLE ----
@@ -1025,7 +1052,10 @@ int main(int argc, char** argv) {
 // 9 passed, 1 failed (assertion 5B, MASTER-BIT14-NO-REQUEST, is the one
 // failure - EXPECTED, per its own header note and the RTL disclosure above).
 //
-// MUTATION MASTER-BIT14-NO-REQUEST stimulus green: assertion 5B's SET write
+// WITHDRAWN 13.09.2026 -- MASTER-BIT14-NO-REQUEST is now the note()/record()
+//   pair described at the assertion, so this no longer pairs with an
+//   assertion. The run it records happened and is kept as evidence.
+//   (was: MUTATION MASTER-BIT14-NO-REQUEST stimulus green) Assertion 5B's SET write
 //   changed from `(1 << BIT_INTEN)` to `(1 << BIT_TBE)` (a different,
 //   legitimate request bit) while the check still reads back bit 14 only
 //   -> PASS, INTREQR bit 14 stays 0 because bit 14 itself was never
