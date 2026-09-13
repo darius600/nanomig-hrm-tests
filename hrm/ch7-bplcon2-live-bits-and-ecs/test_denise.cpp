@@ -138,25 +138,20 @@
 // MUTATION BPLCON2-BIT7-DEAD-ECS stimulus red: same injection shape,
 //   bit 7 at ecs=1. (MUT_BIT7_ECS)
 //
-// GATE READABILITY -- said here rather than left looking like a gap: the
-//   twelve BPLCON2-BITn-DEAD-* records above name assertions that are all
-//   graded through ONE shared function, `assert_bit_dead()` (below), whose
-//   own `checks.expect(diff == 0, label + " diff=" + ...)` call appears
-//   exactly once in this file's text with `label` a parameter, not a
-//   literal. A mechanical scan for `expect(` therefore reads that one call
-//   site once and cannot recover any of the twelve per-call labels from it
-//   -- the same "label built outside a literal" shape BUILD-BRIEF warns
-//   about for a lambda, one level removed (a shared function instead of a
-//   lambda). This is disclosed, not hidden: the twelve MUTATION records
-//   above are real (each was built with its own MUT_ flag, produced
-//   exactly 14 passed/1 failed, and reverted -- see the paragraph below),
-//   but a structural, mechanical scan of this file cannot independently
-//   confirm that on its own for these twelve, only for the three whose
-//   label is a literal at the call site (CONTROL-FIXTURE-ALIVE,
-//   EHB-ACTIVE-PRECONDITION, BPLCON2-BIT9-KILLEHB-LIVE-ECS). Making the
-//   twelve independently legible would mean inlining each call so its own
-//   label is a literal at its own call site -- a change to the assertion
-//   code itself, out of scope for this pass.
+// GATE READABILITY, closed: an earlier draft graded all twelve
+//   BPLCON2-BITn-DEAD-* assertions through one shared function,
+//   `assert_bit_dead()`, whose own `checks.expect(diff == 0, label + ...)`
+//   call appeared exactly once in this file's text with `label` a
+//   parameter, not a literal -- the "label built outside a literal" shape
+//   BUILD-BRIEF warns about for a lambda, one level removed (a shared
+//   function instead of a lambda), and disclosure of that gap was judged
+//   not enough (a chapter-5 package was found to have reasoned the same
+//   way and had it recounted, backwards, by an independent validator).
+//   `bit_dead_diff()` below now only measures; each of the twelve call
+//   sites does its own grading with its own string-literal label, so every
+//   assertion's id is readable from its own `expect()` call. No predicate,
+//   expected value, stimulus or measurement changed -- confirmed by
+//   rebuilding to the identical 15 passed, 0 failed baseline afterward.
 //
 // Baseline (no MUT_ flag defined): 15 passed, 0 failed. Every one of the 15
 // mutations above was built and run individually (`make
@@ -391,16 +386,20 @@ public:
     int passed = 0, failed = 0;
 };
 
-// One dead-bit assertion: bit `bplcon2_bit` of BPLCON2, at the given `ecs`
-// setting, changes none of the 120 sampled pixels relative to a baseline of
-// BPLCON2=$0000. `inject` (only true under the assertion's own MUT_ flag)
-// pushes the baseline off-index so the check is not vacuous.
-void assert_bit_dead(Checks& checks, bool ecs, uint16_t bplcon2_bit,
-                      bool inject, const std::string& label) {
+// Measures bit `bplcon2_bit` of BPLCON2, at the given `ecs` setting: how
+// many of the 120 sampled pixels differ from a baseline of BPLCON2=$0000.
+// Measurement only -- grading happens at each call site, in its own
+// `checks.expect()` call with its own string-literal label, so a
+// mechanical scan for `expect(` can read every assertion's id from its own
+// call (this replaces an earlier, gate-invisible shape: the grading used
+// to happen once, in here, with a `label` function parameter instead of a
+// literal -- see the coordinator's note on ch7-bplcon2-live-bits-and-ecs).
+// `inject` (true only under the calling assertion's own MUT_ flag) pushes
+// the baseline off-index so a "0 of 120" result is not vacuous.
+int bit_dead_diff(bool ecs, uint16_t bplcon2_bit, bool inject) {
     auto baseline = run_sweep(ecs, 0x0000, inject);
     auto bitset   = run_sweep(ecs, bplcon2_bit, false);
-    int diff = count_diff(baseline, bitset);
-    checks.expect(diff == 0, label + " diff=" + std::to_string(diff) + " of 120 sampled pixels.");
+    return count_diff(baseline, bitset);
 }
 
 }  // namespace
@@ -530,13 +529,21 @@ int main(int argc, char** argv) {
     // (p.271, Appendix A, BPLCON2 column). sol:7-video.c18, opus:7-vp.c17,
     // sol:7-appA-bplcon2.c6, opus:7-appA-bplcon2.c5.
     // =========================================================================
-    assert_bit_dead(checks, false, BIT15, MUT_BIT15_OCS,
-        "BPLCON2-BIT15-DEAD-OCS (sol:7-video.c18, opus:7-vp.c17, "
-        "sol:7-appA-bplcon2.c6, opus:7-appA-bplcon2.c5; p.210/271):");
-    assert_bit_dead(checks, true, BIT15, MUT_BIT15_ECS,
-        "BPLCON2-BIT15-DEAD-ECS (sol:7-video.c18, opus:7-vp.c17, "
-        "sol:7-appA-bplcon2.c6, opus:7-appA-bplcon2.c5; p.210/271, undisputed on ECS too "
-        "-- appendix C p.307's table never reaches bit 15):");
+    {
+        int diff = bit_dead_diff(false, BIT15, MUT_BIT15_OCS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT15-DEAD-OCS (sol:7-video.c18, opus:7-vp.c17, "
+            "sol:7-appA-bplcon2.c6, opus:7-appA-bplcon2.c5; p.210/271): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
+    {
+        int diff = bit_dead_diff(true, BIT15, MUT_BIT15_ECS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT15-DEAD-ECS (sol:7-video.c18, opus:7-vp.c17, "
+            "sol:7-appA-bplcon2.c6, opus:7-appA-bplcon2.c5; p.210/271, undisputed on ECS too "
+            "-- appendix C p.307's table never reaches bit 15): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
 
     // =========================================================================
     // BPLCON2-BIT14 -- OCS half asserted (SPECIFICATION.md P2); ECS half
@@ -545,8 +552,12 @@ int main(int argc, char** argv) {
     // all"), confirmed here: bit 14 is latched at denise.v:215 but never
     // read anywhere else in denise.v or any sub-module it instantiates.
     // =========================================================================
-    assert_bit_dead(checks, false, BIT14, MUT_BIT14_OCS,
-        "BPLCON2-BIT14-DEAD-OCS (opus:7-appA-bplcon2.c6; p.271):");
+    {
+        int diff = bit_dead_diff(false, BIT14, MUT_BIT14_OCS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT14-DEAD-OCS (opus:7-appA-bplcon2.c6; p.271): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
     {
         auto baseline = run_sweep(true, 0x0000, false);
         auto bitset   = run_sweep(true, BIT14, false);
@@ -564,8 +575,12 @@ int main(int argc, char** argv) {
     // BPLCON2-BIT13 -- same shape as BIT14 (SPECIFICATION.md P3). ECS name:
     // ZDBPSEL1.
     // =========================================================================
-    assert_bit_dead(checks, false, BIT13, MUT_BIT13_OCS,
-        "BPLCON2-BIT13-DEAD-OCS (opus:7-appA-bplcon2.c7; p.271):");
+    {
+        int diff = bit_dead_diff(false, BIT13, MUT_BIT13_OCS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT13-DEAD-OCS (opus:7-appA-bplcon2.c7; p.271): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
     {
         auto baseline = run_sweep(true, 0x0000, false);
         auto bitset   = run_sweep(true, BIT13, false);
@@ -580,8 +595,12 @@ int main(int argc, char** argv) {
     // =========================================================================
     // BPLCON2-BIT12 -- same shape (SPECIFICATION.md P4). ECS name: ZDBPSEL0.
     // =========================================================================
-    assert_bit_dead(checks, false, BIT12, MUT_BIT12_OCS,
-        "BPLCON2-BIT12-DEAD-OCS (opus:7-appA-bplcon2.c8; p.271):");
+    {
+        int diff = bit_dead_diff(false, BIT12, MUT_BIT12_OCS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT12-DEAD-OCS (opus:7-appA-bplcon2.c8; p.271): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
     {
         auto baseline = run_sweep(true, 0x0000, false);
         auto bitset   = run_sweep(true, BIT12, false);
@@ -596,8 +615,12 @@ int main(int argc, char** argv) {
     // =========================================================================
     // BPLCON2-BIT11 -- same shape (SPECIFICATION.md P5). ECS name: ZDBPEN.
     // =========================================================================
-    assert_bit_dead(checks, false, BIT11, MUT_BIT11_OCS,
-        "BPLCON2-BIT11-DEAD-OCS (opus:7-appA-bplcon2.c9; p.271):");
+    {
+        int diff = bit_dead_diff(false, BIT11, MUT_BIT11_OCS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT11-DEAD-OCS (opus:7-appA-bplcon2.c9; p.271): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
     {
         auto baseline = run_sweep(true, 0x0000, false);
         auto bitset   = run_sweep(true, BIT11, false);
@@ -612,8 +635,12 @@ int main(int argc, char** argv) {
     // =========================================================================
     // BPLCON2-BIT10 -- same shape (SPECIFICATION.md P6). ECS name: ZDCTEN.
     // =========================================================================
-    assert_bit_dead(checks, false, BIT10, MUT_BIT10_OCS,
-        "BPLCON2-BIT10-DEAD-OCS (opus:7-appA-bplcon2.c10; p.271):");
+    {
+        int diff = bit_dead_diff(false, BIT10, MUT_BIT10_OCS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT10-DEAD-OCS (opus:7-appA-bplcon2.c10; p.271): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
     {
         auto baseline = run_sweep(true, 0x0000, false);
         auto bitset   = run_sweep(true, BIT10, false);
@@ -628,8 +655,12 @@ int main(int argc, char** argv) {
     // =========================================================================
     // BPLCON2-BIT9 -- OCS half asserted dead (SPECIFICATION.md P7 OCS half).
     // =========================================================================
-    assert_bit_dead(checks, false, BIT9, MUT_BIT9_OCS,
-        "BPLCON2-BIT9-DEAD-OCS (opus:7-appA-bplcon2.c11; p.271):");
+    {
+        int diff = bit_dead_diff(false, BIT9, MUT_BIT9_OCS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT9-DEAD-OCS (opus:7-appA-bplcon2.c11; p.271): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
 
     // =========================================================================
     // BPLCON2-BIT9 -- ECS half asserted LIVE (SPECIFICATION.md P7 ECS half,
@@ -663,21 +694,37 @@ int main(int argc, char** argv) {
     // (denise.v:219 `rdram = bplcon2[8] & aga`), and aga=0 throughout this
     // file, so it is dead on the same OCS/ECS basis as bits 15/7.
     // =========================================================================
-    assert_bit_dead(checks, false, BIT8, MUT_BIT8_OCS,
-        "BPLCON2-BIT8-DEAD-OCS (opus:7-appA-bplcon2.c12; p.271):");
-    assert_bit_dead(checks, true, BIT8, MUT_BIT8_ECS,
-        "BPLCON2-BIT8-DEAD-ECS (opus:7-appA-bplcon2.c12; p.271, dead on ECS too within this "
-        "package's aga=0 scope -- bit 8 is gated by aga, not ecs):");
+    {
+        int diff = bit_dead_diff(false, BIT8, MUT_BIT8_OCS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT8-DEAD-OCS (opus:7-appA-bplcon2.c12; p.271): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
+    {
+        int diff = bit_dead_diff(true, BIT8, MUT_BIT8_ECS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT8-DEAD-ECS (opus:7-appA-bplcon2.c12; p.271, dead on ECS too within this "
+            "package's aga=0 scope -- bit 8 is gated by aga, not ecs): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
 
     // =========================================================================
     // BPLCON2-BIT7 -- undisputed dead on both chipsets (SPECIFICATION.md
     // P9).
     // =========================================================================
-    assert_bit_dead(checks, false, BIT7, MUT_BIT7_OCS,
-        "BPLCON2-BIT7-DEAD-OCS (opus:7-appA-bplcon2.c13; p.271):");
-    assert_bit_dead(checks, true, BIT7, MUT_BIT7_ECS,
-        "BPLCON2-BIT7-DEAD-ECS (opus:7-appA-bplcon2.c13; p.271, undisputed on ECS too "
-        "-- appendix C p.307's table never reaches bit 7):");
+    {
+        int diff = bit_dead_diff(false, BIT7, MUT_BIT7_OCS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT7-DEAD-OCS (opus:7-appA-bplcon2.c13; p.271): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
+    {
+        int diff = bit_dead_diff(true, BIT7, MUT_BIT7_ECS);
+        checks.expect(diff == 0,
+            "BPLCON2-BIT7-DEAD-ECS (opus:7-appA-bplcon2.c13; p.271, undisputed on ECS too "
+            "-- appendix C p.307's table never reaches bit 7): diff="
+            + std::to_string(diff) + " of 120 sampled pixels.");
+    }
 
     // =========================================================================
     // ENBPLCN3-NOT-ASSERTED -- opus:7-appC-bplcon2.c9 (p.307, "00 ENBPLCN3

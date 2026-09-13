@@ -342,18 +342,18 @@ int main(int argc, char** argv) {
         bool bit3 = (rq & (1 << 3)) != 0;
         bool bit13 = (rq & (1 << 13)) != 0;
         checks.expect(bit3 && !bit13,
-            "P4a-INT2-SETS-BIT3-ONLY: pulsing the INT2 pin sets request bit "
+            "P4A-INT2-SETS-BIT3-ONLY: pulsing the INT2 pin sets request bit "
             "3 (PORTS) and does not set bit 13 (EXTER) (sol:7-interrupts.c6, "
             "opus:7-int.c7; INTREQR=" + hex16(rq) + ")");
         clear_requests();
     }
-    // MUTATION P4a-INT2-SETS-BIT3-ONLY stimulus red: pulse INT6 instead of
+    // MUTATION P4A-INT2-SETS-BIT3-ONLY stimulus red: pulse INT6 instead of
     // INT2, and recheck the SAME condition (bit 3 set).
     {
         dut->int6 = 1; settle(8); dut->int6 = 0; settle(8);
         uint16_t rq = rd(INTREQR);
         bool bit3 = (rq & (1 << 3)) != 0;
-        checks.note("mutation demonstration for P4a-INT2-SETS-BIT3-ONLY: "
+        checks.note("mutation demonstration for P4A-INT2-SETS-BIT3-ONLY: "
             "pulsing INT6 instead of INT2, bit 3 (PORTS) reads "
             + std::string(bit3 ? "set" : "clear") + " (expected set if INT2 "
             "had actually been pulsed -- checked against that expectation "
@@ -366,18 +366,18 @@ int main(int argc, char** argv) {
         bool bit3 = (rq & (1 << 3)) != 0;
         bool bit13 = (rq & (1 << 13)) != 0;
         checks.expect(bit13 && !bit3,
-            "P4b-INT6-SETS-BIT13-ONLY: pulsing the INT6 pin sets request "
+            "P4B-INT6-SETS-BIT13-ONLY: pulsing the INT6 pin sets request "
             "bit 13 (EXTER) and does not set bit 3 (PORTS) "
             "(sol:7-interrupts.c6, opus:7-int.c7; INTREQR=" + hex16(rq) + ")");
         clear_requests();
     }
-    // MUTATION P4b-INT6-SETS-BIT13-ONLY stimulus red: pulse INT2 instead of
+    // MUTATION P4B-INT6-SETS-BIT13-ONLY stimulus red: pulse INT2 instead of
     // INT6, and recheck the SAME condition (bit 13 set).
     {
         dut->int2 = 1; settle(8); dut->int2 = 0; settle(8);
         uint16_t rq = rd(INTREQR);
         bool bit13 = (rq & (1 << 13)) != 0;
-        checks.note("mutation demonstration for P4b-INT6-SETS-BIT13-ONLY: "
+        checks.note("mutation demonstration for P4B-INT6-SETS-BIT13-ONLY: "
             "pulsing INT2 instead of INT6, bit 13 (EXTER) reads "
             + std::string(bit13 ? "set" : "clear") + " (expected set if "
             "INT6 had actually been pulsed -- checked against that "
@@ -579,12 +579,16 @@ int main(int argc, char** argv) {
         "sol:7-fig7-4.c39, opus:7-fig7-4.c37)");
     // MUTATION P17-BIT12-DSKSYN-LEVEL5 stimulus red: bit 9 (AUD2, level 4)
     // set instead of bit 12. Run now, reverted after.
-    // MUTATION P17-BIT12-DSKSYN-LEVEL5 oracle green: performed by hand
-    // during development -- with the expected value edited from 5 to 4,
-    // the check correctly went FAIL (measured stayed 5, the real RTL
-    // behaviour); reverted to 5 before this file was finalized. Confirms
-    // the check discriminates a wrong oracle rather than passing
-    // regardless of it.
+    // MUTATION P17-BIT12-DSKSYN-LEVEL5 oracle red: performed by hand during
+    // development -- baseline is GREEN (measured level is really 5); with
+    // the expected value edited from 5 to 4, the check correctly went FAIL
+    // (measured stayed 5, the real RTL behaviour); reverted to 5 before
+    // this file was finalized. This is the opposite direction from the
+    // gate's recognised "oracle green" pattern (a RED baseline corrected to
+    // GREEN) -- labelled "red" because a wrong oracle against a green
+    // baseline is expected to fail, and did. Confirms the check
+    // discriminates a wrong oracle rather than passing regardless of it;
+    // the graded requirement is still met by the stimulus record above.
     run_mutation("P17-BIT12-DSKSYN-LEVEL5", 12, 9);   // partner: AUD2, level 4
 
     // P18 -- bit 13, EXTER, level 6. pp.217,219,221; sol:7-interrupts.c9/

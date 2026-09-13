@@ -502,8 +502,8 @@ int main(int argc, char** argv) {
 
         checks.expect(
             control_default && combo_uses_written,
-            "P5-BEAMCON0-VARVBEN-BIT12-WITH-VARBEAMEN-SELECTS-WRITTEN-"
-            "VBSTOP: at a forced vpos=10 with VBSTOP written to 6, vbl "
+            "P5-BEAMCON0-VARVBEN-BIT12-WITH-VARBEAMEN-SELECTS-WRITTEN-VBSTOP: "
+            "at a forced vpos=10 with VBSTOP written to 6, vbl "
             "reads 1 (still the NTSC-default vbstop=20, 10<=20) with "
             "BEAMCON0=0, and reads 0 (the written vbstop=6 now governs, "
             "10>6) once VARVBEN and VARBEAMEN are both set -- 'assign vbl "
@@ -577,8 +577,8 @@ int main(int argc, char** argv) {
 
         checks.expect(
             control_toggles && combo_frozen,
-            "P6-BEAMCON0-LOLDIS-BIT11-WITH-VARBEAMEN-FREEZES-LONG-LINE-"
-            "TOGGLE: under NTSC (pal=0), VPOSR's LOL bit (bit 7) toggles "
+            "P6-BEAMCON0-LOLDIS-BIT11-WITH-VARBEAMEN-FREEZES-LONG-LINE-TOGGLE: "
+            "under NTSC (pal=0), VPOSR's LOL bit (bit 7) toggles "
             "line by line with BEAMCON0=0 (control) but stays frozen with "
             "LOLDIS and VARBEAMEN both set -- 'if (pal || (loldis && "
             "varbeamen)) long_line <= 0; else if (!(loldis && varbeamen)) "
@@ -636,8 +636,8 @@ int main(int argc, char** argv) {
 
         checks.expect(
             vpos_fall_default == 3 && vpos_fall_combo == 81,
-            "P7-BEAMCON0-VARVSYEN-BIT9-WITH-VARBEAMEN-SELECTS-WRITTEN-"
-            "VSSTRT: with VARBEAMEN=1 but VARVSYEN=0, _vsync still falls "
+            "P7-BEAMCON0-VARVSYEN-BIT9-WITH-VARBEAMEN-SELECTS-WRITTEN-VSSTRT: "
+            "with VARBEAMEN=1 but VARVSYEN=0, _vsync still falls "
             "at the hardwired default (vpos==3, measured " +
                 std::to_string(vpos_fall_default) +
                 ") despite VSSTRT having been written to 80; enabling "
@@ -681,8 +681,8 @@ int main(int argc, char** argv) {
         auto close_enough = [](int a, int b) { return std::abs(a - b) <= 2; };
         checks.expect(
             close_enough(hpos_fall_default, 37) && close_enough(hpos_fall_combo, 200),
-            "P8-BEAMCON0-VARHSYEN-BIT8-WITH-VARBEAMEN-SELECTS-WRITTEN-"
-            "HSSTRT: with VARBEAMEN=1 but VARHSYEN=0, _hsync still falls "
+            "P8-BEAMCON0-VARHSYEN-BIT8-WITH-VARBEAMEN-SELECTS-WRITTEN-HSSTRT: "
+            "with VARBEAMEN=1 but VARHSYEN=0, _hsync still falls "
             "near the hardwired default hsstrt (37, measured " +
                 std::to_string(hpos_fall_default) +
                 ") despite HSSTRT having been written to 100 (200 once "
@@ -981,15 +981,26 @@ int main(int argc, char** argv) {
 // MUTATION P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN stimulus green: already red at baseline, same reasoning as P11 -- vsytrue_min/vsytrue_max's comparison substituted VARVSYEN + a written VSSTRT=80 (proven live at P7) for VSYTRUE -> PASS (10/2), only this assertion flipped green. Reverted: 9/3.
 // MUTATION P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN stimulus green: already red at baseline, same reasoning as P11 -- hsytrue_min/hsytrue_max's comparison substituted VARHSYEN + a written HSSTRT=100 (proven live at P8) for HSYTRUE -> PASS (10/2), only this assertion flipped green. Reverted: 9/3.
 //
-// NOT A RE-RUN, A READABILITY NOTE: tools/check_gates.py reads only the
-// FIRST string literal of an expect() call for the assertion's id. P5, P6,
-// P7 and P8's own labels split their id across two adjacent literals at a
-// source line-wrap (e.g. "...SELECTS-WRITTEN-" / "VBSTOP: ..."), so the
-// gate currently cannot read those four ids at all and reports them as
-// opaque expect() calls rather than as a violation. The four records above
-// for P5-P8 are written against each assertion's true, full, compiler-seen
-// label regardless, and are already correct if that line-wrap is ever
-// reflowed. Left alone here because this pass is header-only.
+// READABILITY FIX, NOT A RE-RUN: tools/check_gates.py reads only the FIRST
+// string literal of an expect() call, and its id pattern requires a
+// whitespace-or-colon character immediately after the id WITHIN THAT SAME
+// LITERAL. P5, P6, P7 and P8's own labels originally split their id across
+// two adjacent literals at a source line-wrap (e.g. "...SELECTS-WRITTEN-" /
+// "VBSTOP: ..."), which made the gate unable to read those four ids at all
+// -- it reported them as opaque expect() calls rather than as a violation,
+// and the package's "all gates passed" therefore did not mean those four
+// assertions had been checked. Moving the wrap to right after the id but
+// BEFORE its colon (`"...WRITTEN-VBSTOP"` / `": at a forced..."`) was tried
+// first and measured to still leave the id unreadable -- the first literal
+// then ends at the id with no trailing separator for the pattern to match,
+// same defect in a new place. The colon was moved to the end of the first
+// literal instead (`"...WRITTEN-VBSTOP: "` / `"at a forced..."`), which
+// keeps it immediately after the id in the same literal and reads clean;
+// checked directly against check_gates.py's own assertion_ids() before
+// rebuilding. No label text, predicate, expected value or stimulus changed
+// -- the printed output byte-for-byte matches the pre-fix run. The four
+// MUTATION records above needed no change: they were already keyed on the
+// full, compiler-seen id.
 //
 // Final rebuild after the last revert: 9 passed, 3 failed, byte-for-byte
 // identical (`diff`) to the file before the mutation sweep began.
