@@ -160,6 +160,31 @@ Cited by: `sol:7-interrupts.c6`, `opus:7-int.c7` (twin, same proposition),
 `sol:7-interrupts.c29`, `opus:7-int.c26` (twin, same proposition, the
 bit-number framing).
 
+#### P4C -- The vertical-blank source lands on request bit 5
+
+> "Bit 5, VERTB, causes an interrupt at line 0 (start of vertical blank) of
+> the video display frame." (printed p.219)
+
+The sentence states two things. *When* the interrupt is raised -- at display
+line 0 -- is a beam-position proposition and is asserted at the beam counter,
+by `hrm/ch7-vertb-vertical-blank-timing`'s `VBL-INT-AT-LINE-0`. *Which bit it
+arrives on* is a proposition about this module, and that package recorded it as
+needing this fixture, where the vertical-blank input is a free input with no
+beam-position port of its own.
+
+Testable form at this boundary: the module has an input dedicated to the
+vertical-blank source, and asserting it sets bit 5 of the interrupt request
+register and no other bit. This is the same shape as P4A and P4B above, for the
+third hardware source the manual names by bit number.
+
+What this does **not** assert: that the input is driven at line 0 (not
+observable here -- no beam position exists at this boundary), and that "VERTB"
+is the mnemonic of bit 5 in any printed table (that is P10's citation).
+
+Cited by: the request-bit half of `sol:7-interrupts.c34` and `opus:7-int.c31`
+(twin, same proposition). The line-0 half of both stays with
+`hrm/ch7-vertb-vertical-blank-timing`.
+
 ### Per-bit hardware level map
 
 Each row below is one proposition: bit N (the manual's mnemonic) drives
