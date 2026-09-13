@@ -770,5 +770,5 @@ int main(int argc, char** argv) {
     }
 
     std::cout << checks.passed << " passed, " << checks.failed << " failed\n";
-    return 0;
+    return checks.failed == 0 ? 0 : 1;
 }
