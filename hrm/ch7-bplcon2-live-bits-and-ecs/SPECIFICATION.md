@@ -22,7 +22,8 @@ ECS account. The 18 claims fall into three groups:
   table (p.307) never assigns any of the three a name either.
 - **Disputed between the OCS pages and Appendix C, resolved by chipset, not by
   one page being wrong** -- BPLCON2 bits 14, 13, 12, 11, 10 and 9. On OCS all
-  six are inert (undisputed, asserted). On ECS, Appendix C p.307 assigns each
+  six are inert-looking (undisputed, measured -- not graded, per repair;
+  see P1's repair note). On ECS, Appendix C p.307 assigns each
   a name; per this package's own conflict records, five of those (bits
   14-10: ZDBPSEL2, ZDBPSEL1, ZDBPSEL0, ZDBPEN, ZDCTEN) are stated by the
   classification to be unimplemented in this design and are recorded, not
@@ -45,9 +46,22 @@ accounted for at the bottom of this document.
 > "15-7 Not used (keep at 0)" (printed p.210, Table 7-1)
 > "15 HIRES X X" (printed p.271, Appendix A bit matrix, BPLCON2 column)
 
-Testable form: writing BPLCON2 bit 15 alone, against a known baseline,
-produces no change in Denise's display output, under `ecs=0` and under
-`ecs=1` alike.
+Testable form (as first written, before repair): writing BPLCON2 bit 15
+alone, against a known baseline, produces no change in Denise's display
+output, under `ecs=0` and under `ecs=1` alike.
+
+**Repair note** (independent validation,
+`work/2026-09-13_ch7_sol_validation_B2.md`, finding 1): this "no change"
+reading was withdrawn. "Not used (keep at 0)" (p.210) and "X" (p.271) tell
+software what to write; the Appendix-A preamble (p.264) warns that setting
+an unused bit "may cause serious future software incompatibility if
+[it is] implemented in the future" -- a forward-compatibility warning to
+programmers, not a specification that today's hardware must ignore a bit
+already written 1. The built package measures this (still reports the
+diff count) but no longer grades it as pass/fail. The same reasoning
+applies, and the same note is not repeated, at every other "OCS half
+asserted" / "undisputed on both chipsets" proposition below (P2-P9's
+"no change" halves).
 
 Undisputed on both chipsets: Appendix C's Genlock Extensions table (p.307)
 runs from bit 14 down to bit 0 and never reaches bit 15, so nothing in the
@@ -62,8 +76,9 @@ sub-claim).
 
 > "14 BPU2 X X" (printed p.271, BPLCON2 column)
 
-Testable form (OCS half, asserted): writing BPLCON2 bit 14 alone, against a
-known baseline, produces no change in Denise's display output under `ecs=0`.
+Testable form (OCS half, measured -- not graded; see P1's repair note):
+writing BPLCON2 bit 14 alone, against a known baseline, produces no change
+in Denise's display output under `ecs=0`.
 
 Recorded, not asserted (ECS half): this claim's own `conflict_resolution`
 names Appendix C p.307's assignment of bit 14 as ZDBPSEL2 on ECS, and states
@@ -76,9 +91,9 @@ Cited by: `opus:7-appA-bplcon2.c6`.
 
 > "13 BPU1 X X" (printed p.271, BPLCON2 column)
 
-Same shape as P2: OCS half asserted (no change under `ecs=0`); ECS half
-recorded per this claim's own `conflict_resolution` (Appendix C p.307 names
-bit 13 as ZDBPSEL1 on ECS, unimplemented in this design).
+Same shape as P2: OCS half measured, not graded (see P1's repair note); ECS
+half recorded per this claim's own `conflict_resolution` (Appendix C p.307
+names bit 13 as ZDBPSEL1 on ECS, unimplemented in this design).
 
 Cited by: `opus:7-appA-bplcon2.c7`.
 
@@ -86,9 +101,9 @@ Cited by: `opus:7-appA-bplcon2.c7`.
 
 > "12 BPU0 X X" (printed p.271, BPLCON2 column)
 
-Same shape as P2: OCS half asserted (no change under `ecs=0`); ECS half
-recorded per this claim's own `conflict_resolution` (Appendix C p.307 names
-bit 12 as ZDBPSEL0 on ECS, unimplemented in this design).
+Same shape as P2: OCS half measured, not graded (see P1's repair note); ECS
+half recorded per this claim's own `conflict_resolution` (Appendix C p.307
+names bit 12 as ZDBPSEL0 on ECS, unimplemented in this design).
 
 Cited by: `opus:7-appA-bplcon2.c8`.
 
@@ -96,9 +111,9 @@ Cited by: `opus:7-appA-bplcon2.c8`.
 
 > "11 HOMOD X X" (printed p.271, BPLCON2 column)
 
-Same shape as P2: OCS half asserted (no change under `ecs=0`); ECS half
-recorded per this claim's own `conflict_resolution` (Appendix C p.307 names
-bit 11 as ZDBPEN on ECS, unimplemented in this design).
+Same shape as P2: OCS half measured, not graded (see P1's repair note); ECS
+half recorded per this claim's own `conflict_resolution` (Appendix C p.307
+names bit 11 as ZDBPEN on ECS, unimplemented in this design).
 
 Cited by: `opus:7-appA-bplcon2.c9`.
 
@@ -106,9 +121,9 @@ Cited by: `opus:7-appA-bplcon2.c9`.
 
 > "10 DBLPF X X" (printed p.271, BPLCON2 column)
 
-Same shape as P2: OCS half asserted (no change under `ecs=0`); ECS half
-recorded per this claim's own `conflict_resolution` (Appendix C p.307 names
-bit 10 as ZDCTEN on ECS, unimplemented in this design).
+Same shape as P2: OCS half measured, not graded (see P1's repair note); ECS
+half recorded per this claim's own `conflict_resolution` (Appendix C p.307
+names bit 10 as ZDCTEN on ECS, unimplemented in this design).
 
 Cited by: `opus:7-appA-bplcon2.c10`.
 
@@ -119,13 +134,24 @@ Cited by: `opus:7-appA-bplcon2.c10`.
 
 Testable form:
 
-- OCS half (asserted): writing BPLCON2 bit 9 alone, against a known
-  baseline, produces no change in Denise's display output under `ecs=0`.
+- OCS half (measured, not graded -- see P1's repair note): writing BPLCON2
+  bit 9 alone, against a known baseline, produces no change in Denise's
+  display output under `ecs=0`.
 - ECS half (asserted -- the one Appendix-C BPLCON2 bit this design
   implements, per the classification): with Extra Half-Brite active in the
   baseline stimulus (see Precondition, below) and `ecs=1`, setting BPLCON2
   bit 9 (KILLEHB) removes the Extra-Half-Brite effect from Denise's display
   output; clearing it restores that effect.
+
+**Repair note** (finding 5): the ECS half was originally graded only
+`diff > 0` between a baseline and a bit-set sweep, which passes for
+blanking, inversion or any other unrelated perturbation of bit 9 -- none of
+which is "kill halfbrite." The built package now grades an exact colour
+pair instead: killehb=0 reads Extra-Half-Brite's own folded-and-halved
+COLOR00; killehb=1 reads a distinct, categorically different value (on this
+package's rig, a colour-table entry the automatic half-brite fold no longer
+redirects through COLOR00), demonstrating the fold itself stopped rather
+than merely that "something" changed.
 
 Both halves resolve the page-210/271-versus-307 conflict by chipset, not by
 one page being wrong: OCS and ECS are each right about their own chipset.
@@ -146,10 +172,10 @@ proposition.
 > "08 GAUD X X" (printed p.271, Appendix A bit matrix, BPLCON2 column)
 
 Same shape as P1: undisputed on both chipsets (Appendix C's table never
-reaches bit 8 either). Also corroborated by the Table 7-1 / Appendix A range
-claims cited under P1 (`sol:7-video.c18`, `opus:7-vp.c17`,
-`sol:7-appA-bplcon2.c6`), whose undisputed sub-claim spans bits 15, 8 and 7
-together.
+reaches bit 8 either); measured, not graded (see P1's repair note). Also
+corroborated by the Table 7-1 / Appendix A range claims cited under P1
+(`sol:7-video.c18`, `opus:7-vp.c17`, `sol:7-appA-bplcon2.c6`), whose
+undisputed sub-claim spans bits 15, 8 and 7 together.
 
 Cited by: `opus:7-appA-bplcon2.c12`.
 
@@ -158,30 +184,57 @@ Cited by: `opus:7-appA-bplcon2.c12`.
 > "07 X PF2H3 X" (printed p.271, Appendix A bit matrix -- the BPLCON2 cell is
 > the third column)
 
-Same shape as P1: undisputed on both chipsets. Also corroborated by the
-Table 7-1 / Appendix A range claims cited under P1, per the same
-undisputed-sub-claim span noted under P8.
+Same shape as P1: undisputed on both chipsets; measured, not graded (see
+P1's repair note). Also corroborated by the Table 7-1 / Appendix A range
+claims cited under P1, per the same undisputed-sub-claim span noted under
+P8.
 
 Cited by: `opus:7-appA-bplcon2.c13`.
 
+### P10 -- BPLCON2 governs video priority: PF2PRI (bit 6) is live
+
+> "You control the video priorities by using the bits in BPLCON2 (for
+> \"bitplane control register number 2\") as shown in Table 7-1." (printed
+> p.210)
+
+Added by repair (independent validation,
+`work/2026-09-13_ch7_sol_validation_B2.md`, finding 6). Originally read as
+framing only -- the manual's own licence for using Denise's pixel output as
+the "is this bit live" observable throughout this package -- and recorded
+rather than asserted, with the licence exercised only by
+`CONTROL-FIXTURE-ALIVE`, a check that never writes BPLCON2. The
+classification's own evidence for this claim already names a concrete,
+testable experiment (writing word address $104/BPLCON2 with bit 6 clear
+paints a dual-playfield line in COLOR01, and with bit 6 set paints it in
+COLOR09), so the claim is testable, not merely framing.
+
+Testable form: in a dual-playfield configuration with both playfields fully
+covered, PF2PRI=0 selects playfield 1's colour and PF2PRI=1 selects
+playfield 2's colour, at the same pixel.
+
+Cited by: `opus:7-vp.c16`.
+
+### P11 -- ENBPLCN3 (BPLCON0 bit 0) gates BRDRBLNK
+
+> "00 ENBPLCN3 ... Enable new BLPCON3 register." (printed p.307, Appendix C
+> Genlock Extensions)
+> "05 BRDRBLNK Border blank" (same table, printed p.307)
+
+Added by repair (independent validation,
+`work/2026-09-13_ch7_sol_validation_B2.md`, finding 7). Originally declined
+for lack of a quoted BPLCON3 field to observe ENBPLCN3's enabling effect
+through -- but p.307, the same page this package already cites for
+KILLEHB, defines BRDRBLNK on the same table, so a BPLCON3 field is in fact
+available without leaving this package's own cited page.
+
+Testable form: with BPLCON3's BRDRBLNK bit fixed at 1 and a border-region
+pixel sampled (outside the display window), ENBPLCN3=0 shows the border's
+own colour and ENBPLCN3=1 blanks it to black.
+
+Cited by: `opus:7-appC-bplcon2.c9`.
+
 ## Not turned into assertions
 
-- `opus:7-vp.c16` (p.210): "You control the video priorities by using the
-  bits in BPLCON2 (for \"bitplane control register number 2\") as shown in
-  Table 7-1." This is framing, not a proposition of its own: it is the
-  manual's own statement that BPLCON2 governs a directly observable display
-  characteristic, which is what licenses using Denise's pixel/priority
-  output as the "is this bit live" observable for P1-P9 and the KILLEHB
-  test. Recorded as the methodological basis for the package rather than
-  asserted as a separate claim.
-- `opus:7-appC-bplcon2.c9` (p.307): "00 ENBPLCN3 ... Enable new BLPCON3
-  register" (a BPLCON0 bit). This claim's own `scope_note` says it stands in
-  this package only because it shares Appendix C p.307's genlock table with
-  the BPLCON2 columns this package owns. Its stated behaviour --  enabling
-  another register -- can only be observed by exercising that other
-  register's own fields, and no BPLCON3 field is quoted anywhere in this
-  package's claims file; that belongs to a package built against BPLCON3's
-  own claims. Recorded, not asserted, here.
 - The ECS-side reading of BPLCON2 bits 14, 13, 12, 11 and 10 (Appendix C
   p.307's ZDBPSEL2, ZDBPSEL1, ZDBPSEL0, ZDBPEN and ZDCTEN) -- see P2-P6
   above. Each of these claims is otherwise turned into an assertion (its OCS
@@ -212,14 +265,16 @@ these claims:
 
 ## Control case
 
-P1, P8 and P9 (bits 15, 8, 7) are undisputed dead on both chipsets and are
-measured on the identical basis as P7's ECS half: same fixture, same
-"does the display output change" observable, same per-bit mutation. They are
-this package's control cases against the units-error objection -- if the
-measurement itself were broken (stuck output, wrong cycle sampled), a dead
-bit would falsely read as live exactly the way a real live bit would, and
-P1/P8/P9 passing establishes that the measurement correctly reports "no
-change" when no change is the true condition.
+P1, P8 and P9 (bits 15, 8, 7) are undisputed inert-looking on both chipsets
+and are measured on the identical basis as P7's ECS half: same fixture,
+same "does the display output change" observable, same per-bit stimulus.
+They remain this package's units-error control against a broken
+measurement (stuck output, wrong cycle sampled) reading a dead bit as
+live -- but after the repair (finding 1, P1's repair note above) this is
+demonstrated by `CONTROL-FIXTURE-ALIVE` directly, not by grading P1/P8/P9's
+own "no change" result: `CONTROL-FIXTURE-ALIVE` shows two known, distinct
+values arrive in order, on the same rig, without relying on a "no change"
+reading to prove the fixture is not stuck.
 
 ## Claims accounted for
 
@@ -237,6 +292,7 @@ All 18 claims in `ch7-bplcon2-live-bits-and-ecs-spec-stage.jsonl`:
   `sol:7-appB-bplcon2.c5` (5)
 - P8: `opus:7-appA-bplcon2.c12` (1)
 - P9: `opus:7-appA-bplcon2.c13` (1)
-- Not turned into assertions: `opus:7-vp.c16`, `opus:7-appC-bplcon2.c9` (2)
+- P10 (added by repair): `opus:7-vp.c16` (1)
+- P11 (added by repair): `opus:7-appC-bplcon2.c9` (1)
 
-4 + 1 + 1 + 1 + 1 + 1 + 5 + 1 + 1 + 2 = 18.
+4 + 1 + 1 + 1 + 1 + 1 + 5 + 1 + 1 + 1 + 1 = 18.
