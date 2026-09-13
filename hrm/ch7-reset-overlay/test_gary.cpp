@@ -322,12 +322,26 @@ int main() {
             "$00000000.' (p.223, sol:7-reset.c4, opus:7-reset.c1 -- ROM-half "
             "only; that record's other half, 'the memory map is in a "
             "special state' from 'turned on or externally reset,' is "
-            "classified under sol:7-reset.c3 at fixture minimig and is out "
-            "of scope here). Its 'before' precondition is asserted "
+            "classified at fixture minimig and is out of scope here -- see "
+            "RESET-SPECIAL-STATE-HALF-NOT-ASSERTED below, which is where "
+            "that claim's uid is cited). Its 'before' precondition is asserted "
             "separately at OVL-CONTROL-BASELINE-000000. measured sel_kick(" +
             hexaddr(0x000000) + ", ovl=" + std::to_string((int)h.top->ovl) +
             ")=" + std::to_string((int)h.top->sel_kick) + ".");
     }
+
+    checks.record(
+        "RESET-SPECIAL-STATE-HALF-NOT-ASSERTED (sol:7-reset.c3, p.223): the "
+        "'turned on or externally reset' half of p.223's sentence -- that the "
+        "memory map enters a special state -- is classified at fixture "
+        "minimig, not gary, and is out of this package's scope. Declined here "
+        "with a reason rather than tested.\n"
+        "        Cited on this line and NOT on any graded line, deliberately: "
+        "until stage 8 the uid appeared inside OVERLAY-ROM-AT-000000's label, "
+        "where it said this very thing -- that the claim is out of scope -- "
+        "and the coverage ledger, which searches graded lines for uids, read "
+        "that mention as coverage. A negative citation on a graded line is "
+        "read by the ledger as the opposite of what it says.");
 
     // ---------------- OVERLAY-RAM-UNAVAILABLE-WRITE-000000 ----------------
     {
