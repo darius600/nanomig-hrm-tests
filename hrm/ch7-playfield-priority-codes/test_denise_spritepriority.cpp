@@ -286,45 +286,45 @@ int main(int argc, char** argv) {
     // full per-cell citation list in SPECIFICATION.md.
     // -----------------------------------------------------------------
     checks.expect(measure_pf1((kActiveMutation == 7) ? 1 : 0, 0x01),
-        "PF1P-000-SP01: PF1P=000 (code 0), SP01 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-000-SP01: PF1P=000 (code 0), SP01 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c8, sol:7-video.c23, opus:7-vp.c24, sol:7-video.c32, opus:7-vp.c34, opus:7-vp.c36, opus:7-vp.c37, sol:7-video.c35, sol:7-video.c36, sol:7-fig7-3.c2)");
     checks.expect(measure_pf1((kActiveMutation == 8) ? 2 : 0, 0x04),
-        "PF1P-000-SP23: PF1P=000 (code 0), SP23 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-000-SP23: PF1P=000 (code 0), SP23 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c8, sol:7-video.c23, opus:7-vp.c24)");
     checks.expect(measure_pf1((kActiveMutation == 9) ? 3 : 0, 0x10),
-        "PF1P-000-SP45: PF1P=000 (code 0), SP45 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-000-SP45: PF1P=000 (code 0), SP45 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c8, sol:7-video.c23, opus:7-vp.c24)");
     checks.expect(measure_pf1((kActiveMutation == 10) ? 4 : 0, 0x40),
-        "PF1P-000-SP67: PF1P=000 (code 0), SP67 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-000-SP67: PF1P=000 (code 0), SP67 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c8, sol:7-video.c23, opus:7-vp.c24)");
     checks.expect(!measure_pf1((kActiveMutation == 11) ? 0 : 1, 0x01),
-        "PF1P-001-SP01: PF1P=001 (code 1), SP01 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-001-SP01: PF1P=001 (code 1), SP01 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c9, sol:7-video.c24, opus:7-vp.c25, opus:7-fig7-2.c10, sol:7-fig7-2.c5)");
     checks.expect(measure_pf1((kActiveMutation == 12) ? 2 : 1, 0x04),
-        "PF1P-001-SP23: PF1P=001 (code 1), SP23 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-001-SP23: PF1P=001 (code 1), SP23 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c9, sol:7-video.c24, opus:7-vp.c25, opus:7-fig7-2.c10, sol:7-fig7-2.c6)");
     checks.expect(measure_pf1((kActiveMutation == 13) ? 3 : 1, 0x10),
-        "PF1P-001-SP45: PF1P=001 (code 1), SP45 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-001-SP45: PF1P=001 (code 1), SP45 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c9, sol:7-video.c24, opus:7-vp.c25)");
     checks.expect(measure_pf1((kActiveMutation == 14) ? 4 : 1, 0x40),
-        "PF1P-001-SP67: PF1P=001 (code 1), SP67 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-001-SP67: PF1P=001 (code 1), SP67 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c9, sol:7-video.c24, opus:7-vp.c25)");
     checks.expect(!measure_pf1((kActiveMutation == 15) ? 0 : 2, 0x01),
-        "PF1P-010-SP01: PF1P=010 (code 2), SP01 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-010-SP01: PF1P=010 (code 2), SP01 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c10, sol:7-video.c25, opus:7-vp.c26)");
     checks.expect(!measure_pf1((kActiveMutation == 16) ? 1 : 2, 0x04),
-        "PF1P-010-SP23: PF1P=010 (code 2), SP23 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-010-SP23: PF1P=010 (code 2), SP23 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c10, sol:7-video.c25, opus:7-vp.c26)");
     checks.expect(measure_pf1((kActiveMutation == 17) ? 3 : 2, 0x10),
-        "PF1P-010-SP45: PF1P=010 (code 2), SP45 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-010-SP45: PF1P=010 (code 2), SP45 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c10, sol:7-video.c25, opus:7-vp.c26)");
     checks.expect(measure_pf1((kActiveMutation == 18) ? 4 : 2, 0x40),
-        "PF1P-010-SP67: PF1P=010 (code 2), SP67 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-010-SP67: PF1P=010 (code 2), SP67 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c10, sol:7-video.c25, opus:7-vp.c26)");
     checks.expect(!measure_pf1((kActiveMutation == 19) ? 0 : 3, 0x01),
-        "PF1P-011-SP01: PF1P=011 (code 3), SP01 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-011-SP01: PF1P=011 (code 3), SP01 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c11, sol:7-video.c26, opus:7-vp.c27)");
     checks.expect(!measure_pf1((kActiveMutation == 20) ? 1 : 3, 0x04),
-        "PF1P-011-SP23: PF1P=011 (code 3), SP23 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-011-SP23: PF1P=011 (code 3), SP23 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c11, sol:7-video.c26, opus:7-vp.c27)");
     checks.expect(!measure_pf1((kActiveMutation == 21) ? 2 : 3, 0x10),
-        "PF1P-011-SP45: PF1P=011 (code 3), SP45 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-011-SP45: PF1P=011 (code 3), SP45 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c11, sol:7-video.c26, opus:7-vp.c27)");
     checks.expect(measure_pf1((kActiveMutation == 22) ? 4 : 3, 0x40),
-        "PF1P-011-SP67: PF1P=011 (code 3), SP67 armed -> PF1 front (p.210 Table 7-2)");
+        "PF1P-011-SP67: PF1P=011 (code 3), SP67 armed -> PF1 front (p.210 Table 7-2; sol:7-video.c11, sol:7-video.c26, opus:7-vp.c27)");
     checks.expect(!measure_pf1((kActiveMutation == 23) ? 0 : 4, 0x01),
-        "PF1P-100-SP01: PF1P=100 (code 4), SP01 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-100-SP01: PF1P=100 (code 4), SP01 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c12, sol:7-video.c27, opus:7-vp.c28)");
     checks.expect(!measure_pf1((kActiveMutation == 24) ? 1 : 4, 0x04),
-        "PF1P-100-SP23: PF1P=100 (code 4), SP23 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-100-SP23: PF1P=100 (code 4), SP23 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c12, sol:7-video.c27, opus:7-vp.c28)");
     checks.expect(!measure_pf1((kActiveMutation == 25) ? 2 : 4, 0x10),
-        "PF1P-100-SP45: PF1P=100 (code 4), SP45 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-100-SP45: PF1P=100 (code 4), SP45 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c12, sol:7-video.c27, opus:7-vp.c28)");
     checks.expect(!measure_pf1((kActiveMutation == 26) ? 3 : 4, 0x40),
-        "PF1P-100-SP67: PF1P=100 (code 4), SP67 armed -> PF1 behind (p.210 Table 7-2)");
+        "PF1P-100-SP67: PF1P=100 (code 4), SP67 armed -> PF1 behind (p.210 Table 7-2; sol:7-video.c12, sol:7-video.c27, opus:7-vp.c28)");
 
     // -----------------------------------------------------------------
     // PF2 exhaustive sweep -- PF2P-<code>-<group> (20 cells, ids 27-46),
@@ -337,45 +337,45 @@ int main(int argc, char** argv) {
     // holds in this RTL.
     // -----------------------------------------------------------------
     checks.expect(measure_pf2((kActiveMutation == 27) ? 1 : 0, 0x01),
-        "PF2P-000-SP01: PF2P=000 (code 0), SP01 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-000-SP01: PF2P=000 (code 0), SP01 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(measure_pf2((kActiveMutation == 28) ? 2 : 0, 0x04),
-        "PF2P-000-SP23: PF2P=000 (code 0), SP23 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-000-SP23: PF2P=000 (code 0), SP23 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(measure_pf2((kActiveMutation == 29) ? 3 : 0, 0x10),
-        "PF2P-000-SP45: PF2P=000 (code 0), SP45 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-000-SP45: PF2P=000 (code 0), SP45 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(measure_pf2((kActiveMutation == 30) ? 4 : 0, 0x40),
-        "PF2P-000-SP67: PF2P=000 (code 0), SP67 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-000-SP67: PF2P=000 (code 0), SP67 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(!measure_pf2((kActiveMutation == 31) ? 0 : 1, 0x01),
-        "PF2P-001-SP01: PF2P=001 (code 1), SP01 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-001-SP01: PF2P=001 (code 1), SP01 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(measure_pf2((kActiveMutation == 32) ? 2 : 1, 0x04),
-        "PF2P-001-SP23: PF2P=001 (code 1), SP23 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-001-SP23: PF2P=001 (code 1), SP23 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(measure_pf2((kActiveMutation == 33) ? 3 : 1, 0x10),
-        "PF2P-001-SP45: PF2P=001 (code 1), SP45 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-001-SP45: PF2P=001 (code 1), SP45 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(measure_pf2((kActiveMutation == 34) ? 4 : 1, 0x40),
-        "PF2P-001-SP67: PF2P=001 (code 1), SP67 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-001-SP67: PF2P=001 (code 1), SP67 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(!measure_pf2((kActiveMutation == 35) ? 0 : 2, 0x01),
-        "PF2P-010-SP01: PF2P=010 (code 2), SP01 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-010-SP01: PF2P=010 (code 2), SP01 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30, sol:7-video.c33, opus:7-vp.c34, opus:7-vp.c36, opus:7-vp.c37, sol:7-video.c35, sol:7-fig7-3.c1, opus:7-fig7-3.c1)");
     checks.expect(!measure_pf2((kActiveMutation == 36) ? 1 : 2, 0x04),
-        "PF2P-010-SP23: PF2P=010 (code 2), SP23 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-010-SP23: PF2P=010 (code 2), SP23 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30, sol:7-video.c33, opus:7-vp.c34, opus:7-vp.c36, opus:7-vp.c37, opus:7-fig7-2.c11, sol:7-fig7-2.c7)");
     checks.expect(measure_pf2((kActiveMutation == 37) ? 3 : 2, 0x10),
-        "PF2P-010-SP45: PF2P=010 (code 2), SP45 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-010-SP45: PF2P=010 (code 2), SP45 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30, opus:7-fig7-2.c11, sol:7-fig7-2.c8)");
     checks.expect(measure_pf2((kActiveMutation == 38) ? 4 : 2, 0x40),
-        "PF2P-010-SP67: PF2P=010 (code 2), SP67 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-010-SP67: PF2P=010 (code 2), SP67 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(!measure_pf2((kActiveMutation == 39) ? 0 : 3, 0x01),
-        "PF2P-011-SP01: PF2P=011 (code 3), SP01 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-011-SP01: PF2P=011 (code 3), SP01 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(!measure_pf2((kActiveMutation == 40) ? 1 : 3, 0x04),
-        "PF2P-011-SP23: PF2P=011 (code 3), SP23 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-011-SP23: PF2P=011 (code 3), SP23 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(!measure_pf2((kActiveMutation == 41) ? 2 : 3, 0x10),
-        "PF2P-011-SP45: PF2P=011 (code 3), SP45 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-011-SP45: PF2P=011 (code 3), SP45 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(measure_pf2((kActiveMutation == 42) ? 4 : 3, 0x40),
-        "PF2P-011-SP67: PF2P=011 (code 3), SP67 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-011-SP67: PF2P=011 (code 3), SP67 armed -> PF2 front (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(!measure_pf2((kActiveMutation == 43) ? 0 : 4, 0x01),
-        "PF2P-100-SP01: PF2P=100 (code 4), SP01 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-100-SP01: PF2P=100 (code 4), SP01 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(!measure_pf2((kActiveMutation == 44) ? 1 : 4, 0x04),
-        "PF2P-100-SP23: PF2P=100 (code 4), SP23 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-100-SP23: PF2P=100 (code 4), SP23 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(!measure_pf2((kActiveMutation == 45) ? 2 : 4, 0x10),
-        "PF2P-100-SP45: PF2P=100 (code 4), SP45 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-100-SP45: PF2P=100 (code 4), SP45 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
     checks.expect(!measure_pf2((kActiveMutation == 46) ? 3 : 4, 0x40),
-        "PF2P-100-SP67: PF2P=100 (code 4), SP67 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2)");
+        "PF2P-100-SP67: PF2P=100 (code 4), SP67 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
 
     // -----------------------------------------------------------------
     // Measured, not graded -- undefined codes 5-7. Page 209: "The numbers
@@ -427,6 +427,12 @@ int main(int argc, char** argv) {
         "crossread's PF2PRI) is out of scope -- no claim in this "
         "package's 46 states a proposition about it; see SPECIFICATION.md "
         "\"Out of scope for this package\"");
+    checks.record("opus:7-vp.c3 (priority relative to sprites is changeable, p.207), opus:7-vp.c10 (either playfield can be positioned in front of or "
+        "behind the sprites, p.209), sol:7-video.c7 and its twin opus:7-vp.c11 (each playfield has five selectable positions, p.209), and opus:7-vp.c21 "
+        "(PF1P2-PF1P0 bits determine Table 7-2 position, p.210): general/definitional premises, not tied to one cell -- demonstrated collectively by "
+        "the PF1P-*/PF2P-* sweep below (40 cells: 5 codes each, changing the front/behind outcome, is the demonstration that priority is changeable and "
+        "that five positions exist per playfield), not re-asserted individually to avoid inventing a fabricated per-cell citation for a claim "
+        "that is not about one cell.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
     delete dut;
