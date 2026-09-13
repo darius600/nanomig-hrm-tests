@@ -586,7 +586,7 @@ int main(int argc, char** argv) {
             "'COLOR00 180 w D Color table 00' / 'COLOR01 182 w D Color "
             "table 01' (p.292). A-bplcon.c1, A-bplcon0.addr, B-bplcon0.addr, "
             "B-subject.c110, A-color.c1, A-colorxx.addr, B-color00.addr, "
-            "B-subject.c164, B-color01.addr, B-subject.c168.");
+            "B-subject.c164, B-color01.addr, B-subject.c168, opus:7-appA-bplcon2.c2.");
     }
 
     // =========================================================================
@@ -612,7 +612,7 @@ int main(int argc, char** argv) {
             "'affects ECS Agnus and Denise' / 'used by Agnus and Denise' - "
             "Agnus's own decode of $100 is outside this boundary and is not "
             "asserted here. A-bplcon.c2, A-bplcon0.rw, B-subject.c111, "
-            "C-shres.c8, C-genlock-ext.c5.");
+            "C-shres.c8, C-genlock-ext.c5, opus:7-appA-bplcon2.c2.");
     }
 
     // =========================================================================
@@ -636,7 +636,7 @@ int main(int argc, char** argv) {
             "(p.307). This fixture observes only the Denise half of 'used "
             "by ... Denise' - not independently verified here beyond that. "
             "A-bplcon.c8, A-bplcon2.rw, "
-            "B-subject.c119, C-genlock-ext.c7.");
+            "B-subject.c119, C-genlock-ext.c7, sol:7-appA-bplcon2.c2, sol:7-appC-bplcon2.c1, opus:7-appA-bplcon2.c1, opus:7-appC-bplcon2.c1.");
     }
 
     // =========================================================================
@@ -659,7 +659,7 @@ int main(int argc, char** argv) {
             "(p.271/291), 'BPLCON3 W D Bitplane control (enhanced "
             "features)' (p.307), a write-only Denise register for enhanced "
             "features. A-bplcon.c11, A-bplcon3.rw, B-subject.c123, "
-            "C-genlock-ext.c8.");
+            "C-genlock-ext.c8, opus:7-appA-bplcon2.c4.");
     }
 
     // =========================================================================

@@ -447,7 +447,7 @@ int main(int argc, char** argv) {
         "live, individually significant element of the priority code, as "
         "named in Appendix A's bit table: "
         "'                 00        X         PF1H0      PF1P0' "
-        "(p.271). A-bpc.b00.c2, A-bplcon.c60 .");
+        "(p.271). A-bpc.b00.c2, A-bplcon.c60, opus:7-appA-bplcon2.c20 .");
 
     checks.expect(
 #ifndef MUT_BIT1_IS_PF1P1
@@ -465,7 +465,7 @@ int main(int argc, char** argv) {
         "live, individually significant element of the priority code, as "
         "named in Appendix A's bit table: "
         "'                 01       ERSY       PF1H1      PF1P1' "
-        "(p.271). A-bpc.b01.c2, A-bplcon.c57 .");
+        "(p.271). A-bpc.b01.c2, A-bplcon.c57, opus:7-appA-bplcon2.c19 .");
 
     checks.expect(bit_significant_in_every_context(2),
         "BIT2-IS-PF1P2: bit 2 of bplcon2 is field PF1P2 -- toggling only "
@@ -476,7 +476,7 @@ int main(int argc, char** argv) {
         "combinations, proving bit 2 is a live, individually significant "
         "element of the priority code -- Appendix A's bit table: "
         "'                 02       LACE       PF1H2      PF1P2' "
-        "(p.271). A-bpc.b02.c2, A-bplcon.c54 .");
+        "(p.271). A-bpc.b02.c2, A-bplcon.c54, opus:7-appA-bplcon2.c18 .");
 
     checks.expect(
 #ifndef MUT_BIT3_IS_PF2P0
@@ -494,7 +494,7 @@ int main(int argc, char** argv) {
         "live, individually significant element of the priority code, as "
         "named in Appendix A's bit table: "
         "'                 03       LPEN       PF1H3      PF2P0' "
-        "(p.271). A-bpc.b03.c2, A-bplcon.c51 .");
+        "(p.271). A-bpc.b03.c2, A-bplcon.c51, opus:7-appA-bplcon2.c17 .");
 
     checks.expect(
 #ifndef MUT_BIT4_IS_PF2P1
@@ -512,7 +512,7 @@ int main(int argc, char** argv) {
         "live, individually significant element of the priority code, as "
         "named in Appendix A's bit table: "
         "'                 04        X         PF2H0      PF2P1' "
-        "(p.271). A-bpc.b04.c2, A-bplcon.c48 .");
+        "(p.271). A-bpc.b04.c2, A-bplcon.c48, opus:7-appA-bplcon2.c16 .");
 
     checks.expect(bit_significant_in_every_context(5),
         "BIT5-IS-PF2P2: bit 5 of bplcon2 is field PF2P2 -- toggling only "
@@ -523,7 +523,7 @@ int main(int argc, char** argv) {
         "combinations, proving bit 5 is a live, individually significant "
         "element of the priority code -- Appendix A's bit table: "
         "'                 05        X         PF2H1      PF2P2' "
-        "(p.271). A-bpc.b05.c2, A-bplcon.c45 .");
+        "(p.271). A-bpc.b05.c2, A-bplcon.c45, opus:7-appA-bplcon2.c15 .");
 
     // ---------------- MEASURED (not asserted, computed at run time): the dead contexts ----------------
     // Neither of the two notes below is a claim of this package's 18-record
@@ -662,7 +662,7 @@ int main(int argc, char** argv) {
             "each individually significant (measured: " + std::to_string(w0) +
             " / " + std::to_string(w1) + " / " + std::to_string(w2) +
             "). A-bpc.b00.c2, A-bplcon.c60, A-bpc.b01.c2, A-bplcon.c57, "
-            "A-bpc.b02.c2, A-bplcon.c54 .");
+            "A-bpc.b02.c2, A-bplcon.c54, sol:7-video.c21, opus:7-vp.c20, sol:7-appA-bplcon2.c9 .");
     }
     {
         int w3 = flips_at_others_zero(3);
@@ -679,7 +679,7 @@ int main(int argc, char** argv) {
             "three unspecified bits are each individually significant "
             "(measured: " + std::to_string(w3) + " / " + std::to_string(w4) +
             " / " + std::to_string(w5) + "). A-bpc.b03.c2, A-bplcon.c51, "
-            "A-bpc.b04.c2, A-bplcon.c48, A-bpc.b05.c2, A-bplcon.c45 .");
+            "A-bpc.b04.c2, A-bplcon.c48, A-bpc.b05.c2, A-bplcon.c45, sol:7-video.c20, opus:7-vp.c19, sol:7-appA-bplcon2.c8 .");
     }
 
     // ---------------- PF1P-GOVERNS-PLAYFIELD1-INDEPENDENT-OF-PF2P ----------------
@@ -708,7 +708,7 @@ int main(int argc, char** argv) {
             "nsprite -- PF2P has no effect when only playfield 1 is being "
             "decided, as its own name states: 'PF1P=Playfield 1 priority "
             "code (with respect to sprites)' (p.271). A-leg.pf1p, "
-            "A-bplcon.c82 .");
+            "A-bplcon.c82, sol:7-appA-bplcon2.c12, opus:7-appA-bplcon2.c23 .");
     }
 
     // ---------------- PF2P-GOVERNS-PLAYFIELD2-INDEPENDENT-OF-PF1P ----------------
@@ -737,7 +737,7 @@ int main(int argc, char** argv) {
             "nsprite -- PF1P has no effect when only playfield 2 is being "
             "decided, as its own name states: 'PF2P=Playfield 2 priority "
             "code (with respect to sprites)' (p.271). A-leg.pf2p, "
-            "A-bplcon.c81 .");
+            "A-bplcon.c81, sol:7-appA-bplcon2.c11, opus:7-appA-bplcon2.c22 .");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";

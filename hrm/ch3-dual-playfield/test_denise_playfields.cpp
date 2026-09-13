@@ -447,7 +447,7 @@ int main(int argc, char** argv) {
             "3-priority.c4, 3-priority.c5, 3-pri.c06, 3-r2.c01, 3-r2.c02, "
             "3-r2.c03, 3-regsum-bplcon2.c1, 3-regsum-bplcon2.c2, "
             "A-bpc.b06.c2, A-bplcon.c42, A-bplcon.c79, A-bplcon.c80, "
-            "A-leg.pf2pri.");
+            "A-leg.pf2pri, sol:7-video.c15, sol:7-video.c16, sol:7-video.c17, sol:7-video.c19, sol:7-video.c29, sol:7-appA-bplcon2.c7, sol:7-appA-bplcon2.c10, opus:7-vp.c13, opus:7-vp.c14, opus:7-vp.c15, opus:7-vp.c18, opus:7-vp.c31, opus:7-appA-bplcon2.c14, opus:7-appA-bplcon2.c21, opus:7-fig7-2.c12.");
     }
 
     // =========================================================================
@@ -524,7 +524,7 @@ int main(int argc, char** argv) {
                 "3-dual-planes.c1, 3-dual-planes.c2, 3-dual-planes.c3, "
                 "3-dual.c16, 3-dual.c17, 3-dual.c44, 3-dual.c45, "
                 "A-leg.dblpf, 3-dual-color.c1, 3-dual-color.c12, "
-                "3-dual.c49, 3-dual.c50.");
+                "3-dual.c49, 3-dual.c50, opus:7-appA-bplcon2.c24.");
         }
     }
 
