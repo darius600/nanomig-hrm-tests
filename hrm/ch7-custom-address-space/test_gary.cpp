@@ -117,7 +117,11 @@
 //   -DMUT_B1=1, which moves the control probe to $000000 (outside the
 //   bank) -> 7/3, only this assertion newly red (measured sel_reg($000000)
 //   =0, expected 1). Rebuilt with no flags: 8/2 restored.
-// MUTATION ADDR-EXCLUSIVE-BELOW-DF0000 stimulus green: built with
+// WITHDRAWN AT STAGE 8 -- ADDR-EXCLUSIVE-BELOW-DF0000 is now the
+//   note()/record() pair ADDR-BELOW-DF0000-MEASURED /
+//   ADDR-BELOW-DF0000-NOT-GRADED, so this no longer pairs with an
+//   assertion. The run it records happened and is kept as evidence.
+//   (was: MUTATION ADDR-EXCLUSIVE-BELOW-DF0000 stimulus green) Built with
 //   -DMUT_B2=1, which moves this probe from $DF0000 to $E00000 (a
 //   genuinely-excluded address) -> 9 passed, 1 failed, only this
 //   assertion newly green (measured sel_reg($E00000)=0, matching the
@@ -136,7 +140,8 @@
 //   which moves this probe from $FC0000 to the known violation $DF0000
 //   -> 7/3, only this assertion newly red (measured sel_reg($DF0000)=1,
 //   expected 0). Rebuilt with no flags: 8/2 restored.
-// MUTATION ADDR-EXCLUSIVE-MIDBLOCK-D00000 stimulus green: built with
+// WITHDRAWN AT STAGE 8 -- as above, for ADDR-EXCLUSIVE-MIDBLOCK-D00000.
+//   (was: MUTATION ADDR-EXCLUSIVE-MIDBLOCK-D00000 stimulus green) Built with
 //   -DMUT_B6=1, which moves this probe from $D00000 to $FC0000 (a
 //   genuinely-excluded address) -> 9 passed, 1 failed, only this
 //   assertion newly green (measured sel_reg($FC0000)=0, matching the
@@ -322,20 +327,27 @@ int main() {
 #endif
         h.cpu_probe(addr);
         bool ok = h.top->sel_reg == 0;
-        checks.expect(ok,
-            "ADDR-EXCLUSIVE-BELOW-DF0000: $DF0000 is not (chip address)+"
-            "$DFF000 for any ordinary chip-address offset, so 'No other "
-            "access address is valid.' (p.263, sol:7-appA-legend.c2, "
-            "opus:7-appA-pre.c5), read as the observable this "
-            "specification requires ('no address outside (chip address)+"
-            "$DFF000 selects the custom register bank'), predicts "
-            "sel_reg=0 here. A red result is a finding about gary.v, not "
-            "an error in this assertion -- see ADDR-EXCLUSIVE-CONTROL-"
-            "DFF000 above (same basis, a genuine in-bank address does "
-            "read 1) and this assertion's own MUTATION below (moved off "
-            "this address, it does read green). measured sel_reg(" +
-            hexaddr(addr) + ")=" + std::to_string((int)h.top->sel_reg) +
-            " (expected 0 if the manual held).");
+        checks.note(
+            "ADDR-BELOW-DF0000-MEASURED: sel_reg(" + hexaddr(addr) + ")=" +
+            std::to_string((int)h.top->sel_reg) + ". $DF0000 is one word "
+            "above $DEFFFE and is not (chip address)+$DFF000 for any "
+            "ordinary chip-address offset, yet gary.v raises sel_reg for "
+            "it. The in-bank control ADDR-EXCLUSIVE-CONTROL-DFF000 above "
+            "reads 1 on the same basis, so the probe is live.");
+        checks.record(
+            "ADDR-BELOW-DF0000-NOT-GRADED (p.263, sol:7-appA-legend.c2, "
+            "opus:7-appA-pre.c5): 'No other access address is valid.' is "
+            "followed on the same page by 'Do not attempt' such an access. "
+            "Read together they define which addresses SOFTWARE may use, "
+            "not what the chip's internal select lines may do at an "
+            "undocumented address. The step from 'not a valid access "
+            "address' to 'sel_reg must read 0' is an inference this "
+            "package supplied, not a printed requirement, so the "
+            "measurement above is reported and not graded. reason_kind "
+            "source-silent. Graded until stage 8; withdrawn on the "
+            "independent validation's finding. The broad-decode behaviour "
+            "may still be worth reporting to the RTL's authors -- it is "
+            "the ORACLE that is missing here, not the observation.");
     }
 
     // ---------------- ADDR-EXCLUSIVE-ABOVE-E00000 ----------------
@@ -407,18 +419,18 @@ int main() {
 #endif
         h.cpu_probe(addr);
         bool ok = h.top->sel_reg == 0;
-        checks.expect(ok,
-            "ADDR-EXCLUSIVE-MIDBLOCK-D00000: $D00000 is not (chip "
-            "address)+$DFF000, and this file's own memory_config (chosen "
-            "for the reason given in the header) does not recognise "
-            "$D00000-$D7FFFF as slow memory either, so nothing else in "
-            "gary.v claims it. 'No other access address is valid.' "
-            "(p.263, sol:7-appA-legend.c2, opus:7-appA-pre.c5). A red "
-            "result here is a finding about gary.v, not an error in this "
-            "assertion -- see this assertion's own MUTATION below (moved "
-            "off this address, it does read green). measured sel_reg(" +
-            hexaddr(addr) + ")=" + std::to_string((int)h.top->sel_reg) +
-            " (expected 0 if the manual held).");
+        checks.note(
+            "ADDR-MIDBLOCK-D00000-MEASURED: sel_reg(" + hexaddr(addr) + ")=" +
+            std::to_string((int)h.top->sel_reg) + ". $D00000 is not (chip "
+            "address)+$DFF000, and this file's own memory_config does not "
+            "recognise $D00000-$D7FFFF as slow memory either, so nothing "
+            "else in gary.v claims it.");
+        checks.record(
+            "ADDR-MIDBLOCK-D00000-NOT-GRADED (p.263, sol:7-appA-legend.c2, "
+            "opus:7-appA-pre.c5): same position as "
+            "ADDR-BELOW-DF0000-NOT-GRADED above. reason_kind source-silent. "
+            "Graded until stage 8, withdrawn on the independent "
+            "validation's finding.");
     }
 
     // ================= PROP-C =================

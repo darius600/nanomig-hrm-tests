@@ -132,7 +132,7 @@
 //
 // MUTATION CONTROL-RESET-RELEASES stimulus red MUT_RESET holds rst_ext (master reset) asserted forever, so minimig_syscontrol.v's rst_cnt never advances and _cpu_reset never rises within the 3,000,000-tick budget; baseline PASS (measured tick=2,273,642) goes red.
 // MUTATION OVL-BIT-WRITE-CLEARS-OVERLAY stimulus red MUT_1 issues a read instead of a write to the same CIA-A PRA address ($BFE001), so cpu_lwr/cpu_hwr never assert; baseline PASS (ovl clears) goes red (ovl stays 1).
-// MUTATION OTHER-CIA-A-REGISTER-ALSO-CLEARS stimulus green MUT_2 skips the CIA-A DDRA write ($BFE201) entirely -- no bus cycle at all. This is the one assertion that is ALREADY red at baseline (the manual/RTL disagreement this package exists to report), so its mutation runs the opposite direction from every other assertion here: a red claim's mutation must go GREEN under a genuinely different stimulus, or the red would be unfalsifiable/vacuous instead of a real measurement. With no CIA-A access at all, ovl stays at its precondition value (1), so "ovl==1 after" reads green -- proof the baseline FAIL is attributable to the write happening, not to an always-red assertion. (An earlier draft of this mutation swapped DDRA for PRA instead; that was rejected before being recorded here because both addresses already clear ovl identically on this RTL, so the swap changes nothing observable and would not have been a real mutation -- see the inline comment at MUT_2 in the body.)
+// MUTATION OTHER-CIA-A-REGISTER-ALSO-CLEARS stimulus green MUT_2 skips the CIA-A timer-A write ($BFE401) entirely -- no bus cycle at all. This is the one assertion that is ALREADY red at baseline (the manual/RTL disagreement this package exists to report), so its mutation runs the opposite direction from every other assertion here: a red claim's mutation must go GREEN under a genuinely different stimulus, or the red would be unfalsifiable/vacuous instead of a real measurement. With no CIA-A access at all, ovl stays at its precondition value (1), so "ovl==1 after" reads green -- proof the baseline FAIL is attributable to the write happening, not to an always-red assertion. (An earlier draft of this mutation swapped DDRA for PRA instead; that was rejected before being recorded here because both addresses already clear ovl identically on this RTL, so the swap changes nothing observable and would not have been a real mutation -- see the inline comment at MUT_2 in the body.)
 // MUTATION CIAB-WRITE-DOES-NOT-CLEAR stimulus red MUT_3 redirects the same write from CIA-B ($BFD000) to CIA-A PRA ($BFE001); baseline PASS (ovl stays set) goes red (ovl clears).
 // MUTATION CHIPRAM-WRITE-DOES-NOT-CLEAR stimulus red MUT_4 redirects the same write from chip RAM ($000100) to CIA-A PRA ($BFE001); baseline PASS (ovl stays set) goes red (ovl clears).
 // MUTATION RESET-LINE-RESTORES-OVERLAY stimulus red MUT_5 skips the _cpu_reset_in low/high pulse entirely; baseline PASS (ovl restored to 1) goes red (ovl stays at 0).
@@ -204,7 +204,8 @@ struct ClkGen {
 // on the high byte lane (even, UDS) -- minimig.v:617-618 vs :642-643
 // (ciaa.v data_out feeds cpu_data_out[7:0], ciab.v feeds [15:8]).
 constexpr uint32_t CIAA_PRA      = 0xBFE001; // CIA-A PRA -- the OVL bit lives here (manual p.223 + Appendix F)
-constexpr uint32_t CIAA_DDRA     = 0xBFE201; // CIA-A DDRA -- CIA-A, but NOT the OVL bit
+constexpr uint32_t CIAA_DDRA     = 0xBFE201; // CIA-A DDRA -- port A DIRECTION, so NOT unrelated to OVL
+constexpr uint32_t CIAA_TALO     = 0xBFE401; // CIA-A timer A low -- CIA-A, and nothing to do with port A
 constexpr uint32_t CIAB_PRA      = 0xBFD000; // CIA-B -- a different chip entirely
 constexpr uint32_t CHIPRAM_ADDR  = 0x000100; // not CIA space at all
 
@@ -448,16 +449,26 @@ int main(int argc, char** argv) {
     // overlay. Reproducing STEP3-NOTES-ch7-overlay-source.md's candidate
     // finding independently: minimig.v:862 keys on `sel_cia_a &
     // (cpu_lwr|cpu_hwr)` alone -- it never reads `cpu_address_out[11:8]`
-    // (register select) or the data written -- so a write to CIA-A DDRA
-    // (not the OVL bit at all) is expected, by the manual's specific
-    // wording, NOT to clear ovl. A red result here is the RTL disagreeing
-    // with the manual, not a wrong assertion.
+    // (register select) or the data written -- so a write to a CIA-A
+    // register that has nothing to do with port A is expected, by the
+    // manual's specific wording, NOT to clear ovl. A red result here is
+    // the RTL disagreeing with the manual, not a wrong assertion.
+    //
+    // STIMULUS CHANGED AT STAGE 8. This wrote CIA-A DDRA ($BFE201) until
+    // the independent validation pointed out that DDRA is the DIRECTION
+    // register for port A -- including the OVL bit itself -- so writing it
+    // is not "a register that is not the OVL bit", and the manual says
+    // nothing about what the overlay does when OVL's own direction is
+    // changed. Timer A low ($BFE401) carries no relation to port A at all.
+    // The measured outcome is the same, because minimig.v:862 ignores the
+    // register select entirely -- which is the finding -- but the red now
+    // rests on a stimulus the manual's wording actually licenses.
     // =========================================================================
     {
         h.pulse_reset_line();
         checks.expect(h.dut->ovl == 1,
             "OTHER-CIA-A-REGISTER-ALSO-CLEARS precondition: ovl==1 before "
-            "the CIA-A DDRA write.");
+            "the CIA-A timer-A write.");
 
 #if MUT_2
         // MUTATION: do not perform the DDRA write at all. Baseline on this
@@ -473,18 +484,19 @@ int main(int argc, char** argv) {
         // FAIL above is attributable to the write happening, not to a
         // vacuous/always-red assertion.
 #else
-        h.write_word(CIAA_DDRA);
+        h.write_word(CIAA_TALO);
 #endif
         checks.expect(h.dut->ovl == 1,
             "OTHER-CIA-A-REGISTER-ALSO-CLEARS (p.223): a write to CIA-A "
-            "DDRA ($BFE201 -- CIA-A, but NOT the OVL bit) leaves ovl set, "
-            "per \"THE OVL bit ... disables the overlay\" (p.223) naming "
-            "one specific bit, not the whole chip's address range. "
+            "timer A low ($BFE401 -- CIA-A, and unrelated to port A, so "
+            "neither the OVL bit nor its direction) leaves ovl set, per "
+            "\"THE OVL bit ... disables the overlay\" (p.223) naming one "
+            "specific bit, not the whole chip's address range. "
             "sol:7-reset.c8, opus:7-reset.c4 (same sentence's narrower "
-            "half). MUTATION: do not perform the DDRA write at all -- ovl "
+            "half). MUTATION: do not perform the timer write at all -- ovl "
             "must then stay at 1 (see the MUT_2 comment above for why "
-            "swapping DDRA for PRA would not have been a real mutation "
-            "on this RTL).");
+            "swapping one CIA-A register for another would not have been a "
+            "real mutation on this RTL).");
     }
 
     // =========================================================================

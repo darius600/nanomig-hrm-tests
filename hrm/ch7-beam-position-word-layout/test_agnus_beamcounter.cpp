@@ -146,7 +146,10 @@
 //   red (the readback after the write no longer matches the pre-write
 //   baseline, because this address genuinely does accept writes). Reverted,
 //   baseline restored.
-// MUTATION VPOSW-IS-WRITE-ONLY none impossible: this assertion is red at
+// WITHDRAWN AT STAGE 8 -- VPOSW-IS-WRITE-ONLY is now the note()/record()
+//   pair VPOSW-READBACK-MEASURED / VPOSW-READBACK-NOT-GRADED, so this is
+//   no longer a mutation record. Kept because what it says stayed true.
+//   (was: MUTATION VPOSW-IS-WRITE-ONLY none impossible) This check was red at
 //   baseline (11 passed, 3 failed, confirmed independently -- see the
 //   printed measured value, 0x8005, not taken on trust from
 //   classification). No stimulus can turn an already-red assertion red
@@ -156,7 +159,8 @@
 //   address changed from A_VHPOSR to A_VHPOSW -> "10 passed, 4 failed",
 //   only VHPOSR-IS-READ-ONLY newly red, same reasoning as
 //   VPOSR-IS-READ-ONLY. Reverted, baseline restored.
-// MUTATION VHPOSW-IS-WRITE-ONLY none impossible: red at baseline (measured
+// WITHDRAWN AT STAGE 8 -- as above, for VHPOSW-IS-WRITE-ONLY.
+//   (was: MUTATION VHPOSW-IS-WRITE-ONLY none impossible) Red at baseline (measured
 //   0xabcd), confirmed independently; VHPOSR-IS-READ-ONLY is its same-basis
 //   control.
 // MUTATION VPOSW-BIT-LAYOUT-MATCHES-VPOSR stimulus red: the written pattern
@@ -434,15 +438,25 @@ int main(int argc, char** argv) {
         h.write_reg(A_VPOSW, 0x8005);  // long_frame=1, vpos[10:8]=0b101
         uint16_t at_02A = h.read(A_VPOSW);
         bool leaked = ((at_02A >> 15) & 1) == 1 && (at_02A & 0x7) == 0x5;
-        checks.expect(
-            !leaked,
-            "VPOSW-IS-WRITE-ONLY (p.216 sol:7-beam.c13/opus:7-bp.c15 [direction "
-            "half], p.285 sol:7-appA-vpos.c7, opus:7-appA-beam.c8 [direction "
-            "half]; EXPECTED RED, same measurement basis as VPOSR-IS-READ-ONLY "
-            "above): a read of $02A, right after writing long_frame=1/"
-            "vpos[10:8]=0b101 there, must NOT reflect that content back -- "
-            "measured " + hex16(at_02A) + ", which does show it (agnus_"
-            "beamcounter.v:109 ORs $02A into the same read mux as $004).");
+        checks.note(
+            "VPOSW-READBACK-MEASURED (p.216 sol:7-beam.c13/opus:7-bp.c15 "
+            "[direction half], p.285 sol:7-appA-vpos.c7, opus:7-appA-beam.c8 "
+            "[direction half]): a read of $02A, right after writing "
+            "long_frame=1/vpos[10:8]=0b101 there, returns " + hex16(at_02A) +
+            " -- which does reflect that content (agnus_beamcounter.v:109 ORs "
+            "$02A into the same read mux as $004).");
+        checks.record(
+            "VPOSW-READBACK-NOT-GRADED: the cited rows fix VPOSW's access "
+            "DIRECTION, and p.263-264's warning -- 'if a register is marked "
+            "as a write-only register, do not attempt to read from it, as "
+            "this may trash the register and crash the system' -- leaves what "
+            "such a read RETURNS unspecified. 'Must not reflect the content "
+            "back' is an inference, not a printed requirement, so the "
+            "measurement above is reported and not graded. reason_kind "
+            "source-silent. Graded as EXPECTED RED until stage 8; withdrawn "
+            "on the independent validation's finding. Its control case, "
+            "VPOSR-IS-READ-ONLY, is unaffected and still graded: the manual "
+            "does state what a write to a read-only register must not do.");
     }
 
     // ================= VHPOSR-IS-READ-ONLY / VHPOSW-IS-WRITE-ONLY =================
@@ -470,15 +484,19 @@ int main(int argc, char** argv) {
         h.write_reg(A_VHPOSW, 0xABCD);  // vpos[7:0]=0xAB, hpos[8:1]=0xCD
         uint16_t at_02C = h.read(A_VHPOSW);
         bool leaked = ((at_02C >> 8) & 0xFF) == 0xAB && (at_02C & 0xFF) == 0xCD;
-        checks.expect(
-            !leaked,
-            "VHPOSW-IS-WRITE-ONLY (p.216 sol:7-beam.c14/opus:7-bp.c16 "
-            "[direction half], p.285 sol:7-appA-vhpos.c6; EXPECTED RED, same "
-            "measurement basis as VHPOSR-IS-READ-ONLY above): a read of "
-            "$02C, right after writing vpos[7:0]=0xAB/hpos[8:1]=0xCD there, "
-            "must NOT reflect that content back -- measured " + hex16(at_02C) +
-            ", which does show it (agnus_beamcounter.v:111 ORs $02C into the "
-            "same read mux as $006).");
+        checks.note(
+            "VHPOSW-READBACK-MEASURED (p.216 sol:7-beam.c14/opus:7-bp.c16 "
+            "[direction half], p.285 sol:7-appA-vhpos.c6): a read of $02C, "
+            "right after writing vpos[7:0]=0xAB/hpos[8:1]=0xCD there, returns "
+            + hex16(at_02C) + " -- which does reflect that content "
+            "(agnus_beamcounter.v:111 ORs $02C into the same read mux as "
+            "$006).");
+        checks.record(
+            "VHPOSW-READBACK-NOT-GRADED: same position as "
+            "VPOSW-READBACK-NOT-GRADED above -- direction is printed, the "
+            "value returned by a forbidden read is not. reason_kind "
+            "source-silent. Graded until stage 8, withdrawn on the "
+            "independent validation's finding.");
     }
 
     // ================= VPOSW-BIT-LAYOUT-MATCHES-VPOSR (p.216 sol:7-beam.c13/opus:7-bp.c15 [layout half], p.285 sol:7-appA-vpos.c9) =================

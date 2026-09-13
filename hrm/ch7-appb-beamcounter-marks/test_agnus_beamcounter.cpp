@@ -172,11 +172,17 @@
 // PER-ASSERTION MUTATION RECORDS (every entry below was actually run by this agent under
 //   WSL/Verilator: edit -> rebuild -> run -> confirm the named assertion(s)
 //   flip -> revert -> rebuild -> confirm the full suite back to its
-//   committed baseline (15 passed, 2 failed) -- before moving to the next
+//   committed baseline -- before moving to the next
 //   one. No oracle text or expected-value literal was ever touched;
-//   nanomig/ was never touched. Baseline before this log: 15 passed
-//   (2 expected, documented reds: VPOSW-DIRECTION-WRITE-ONLY,
-//   VHPOSW-DIRECTION-WRITE-ONLY).
+//   nanomig/ was never touched. Baseline when this log was written: 15
+//   passed, 2 failed -- the two reds being VPOSW-DIRECTION-WRITE-ONLY and
+//   VHPOSW-DIRECTION-WRITE-ONLY, both WITHDRAWN at stage 8 because p.263
+//   leaves the result of reading a write-only register unspecified. The
+//   baseline is now 15 passed, 0 failed, and the '-> 14/3' and '-> 16/1'
+//   counts in the entries below are what those runs produced AT THE TIME,
+//   against the older baseline. They are not restated against the new one:
+//   rewriting a measured number to match a later state is the one thing a
+//   mutation log must never do.
 //
 // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: force_vpos's vpos11
 //   argument changed from 0x2AA to 0x000 -> 14 passed, 3 failed; only
@@ -205,7 +211,13 @@
 //   targets changed from A_VHPOSR to A_VPOSR (the marked register) ->
 //   14/3; only VHPOSR-NO-ECS-DEPENDENCE newly red (0x2002 vs 0x0002, now
 //   DOES differ by ecs). Reverted: 15/2.
-// MUTATION VPOSW-DIRECTION-WRITE-ONLY stimulus green: this assertion is
+// WITHDRAWN AT STAGE 8 -- this was a mutation record for the graded
+//   assertion VPOSW-DIRECTION-WRITE-ONLY, which is now the note()/record()
+//   pair VPOSW-READBACK-MEASURED / VPOSW-READBACK-NOT-GRADED. The run it
+//   describes was real and is kept as evidence that the READ TARGET, not
+//   the harness, decided the result; it is no longer a MUTATION record
+//   because there is no longer an assertion for it to pair with.
+//   (was: MUTATION VPOSW-DIRECTION-WRITE-ONLY stimulus green) This check was
 //   RED at baseline (a documented finding -- see METHODOLOGY (2)), so a red
 //   cannot be made to fail harder; its mutation instead runs the other way,
 //   turning it green, to prove the check is live rather than stuck. The
@@ -224,7 +236,9 @@
 //   written value changed from 0x8005 to 0x8006 -> 14/3; only
 //   VPOSW-NO-ECS-DEPENDENCE newly red (masked readback now 0x8005 vs
 //   0x8006). Reverted: 15/2.
-// MUTATION VHPOSW-DIRECTION-WRITE-ONLY stimulus green: symmetric to
+// WITHDRAWN AT STAGE 8 -- as above, for VHPOSW-DIRECTION-WRITE-ONLY, now
+//   VHPOSW-READBACK-MEASURED / VHPOSW-READBACK-NOT-GRADED.
+//   (was: MUTATION VHPOSW-DIRECTION-WRITE-ONLY stimulus green) Symmetric to
 //   VPOSW-DIRECTION-WRITE-ONLY above -- this assertion is also RED at
 //   baseline (documented finding), so its mutation likewise runs
 //   red-to-green to prove the check is live rather than stuck: the read
@@ -546,22 +560,30 @@ int main(int argc, char** argv) {
             "VPOSW reference: an address this module never decodes at all "
             "($00E, Denise's CLXDAT) reads " + hex16(undecoded) +
             " under the same harness.");
-        checks.expect(
-            vposw_read == undecoded,
-            "VPOSW-DIRECTION-WRITE-ONLY: reading $02A after writing a "
-            "distinct pattern there should be indistinguishable from an "
-            "address this module never decodes (" + hex16(undecoded) +
-            ") if $02A is genuinely write-only. MEASURED instead: $02A "
-            "reads " + hex16(vposw_read) + ", equal to VPOSR's own live "
-            "readback at $004 (" + hex16(vposr_alias) +
-            ") in the same harness -- agnus_beamcounter.v:109-112 decodes "
-            "$004 and $02A into the identical data_out mux arm, so this "
-            "address is readable, contradicting 'VPOSW        *02A   W    "
-            " A          Write vert most signif. bit (and frame flop)' "
-            "(p.289). This is the counter-example opus:7-appA-pre.c10 "
-            "(p.263, 'Registers are either read-only or write-only') is "
-            "cited for in this package. sol:7-appB-vposw.c2, confirmed by "
-            "opus:7-appB.c25.");
+        checks.note(
+            "VPOSW-READBACK-MEASURED: $02A, after writing 0x8005 there, "
+            "reads " + hex16(vposw_read) + " -- equal to VPOSR's own live "
+            "readback at $004 (" + hex16(vposr_alias) + ") and not equal to "
+            "an address this module never decodes (" + hex16(undecoded) +
+            "). agnus_beamcounter.v:109-112 decodes $004 and $02A into the "
+            "identical data_out mux arm.");
+        checks.record(
+            "VPOSW-READBACK-NOT-GRADED (sol:7-appB-vposw.c2, confirmed by "
+            "opus:7-appB.c25; the p.263 general rule is opus:7-appA-pre.c10): "
+            "'VPOSW        *02A   W     A          Write vert most signif. "
+            "bit (and frame flop)' (p.289) fixes the access DIRECTION, and "
+            "p.263-264's warning -- 'if a register is marked as a write-only "
+            "register, do not attempt to read from it, as this may trash the "
+            "register and crash the system' -- makes the result of such a "
+            "read dangerous and UNSPECIFIED. The manual nowhere says it "
+            "returns zero, nor that it cannot return the live value, so "
+            "there is no oracle here and the measurement above is reported "
+            "rather than graded. reason_kind source-silent. This assertion "
+            "was graded until stage 8; withdrawn on the independent "
+            "validation's finding, which also corrects the chapter "
+            "narrative: Appendix B's `*` means NOT WRITABLE BY THE COPPER "
+            "(p.287), not write-only -- this package's own citation of `W` "
+            "was right, only the inference from it was not.");
 
         Harness h_c3_base(/*ecs=*/true, /*ntsc=*/false);
         uint16_t c3_base = h_c3_base.read(A_VPOSR);
@@ -622,21 +644,22 @@ int main(int argc, char** argv) {
             "VHPOSW reference: an address this module never decodes at "
             "all ($01C, Paula's INTENAR) reads " + hex16(undecoded) +
             " under the same harness.");
-        checks.expect(
-            vhposw_read == undecoded,
-            "VHPOSW-DIRECTION-WRITE-ONLY: reading $02C after writing a "
-            "distinct pattern there should be indistinguishable from an "
-            "address this module never decodes (" + hex16(undecoded) +
-            ") if $02C is genuinely write-only. MEASURED instead: $02C "
-            "reads " + hex16(vhposw_read) + ", equal to VHPOSR's own live "
-            "readback at $006 (" + hex16(vhposr_alias) +
-            ") in the same harness -- agnus_beamcounter.v:111-112 decodes "
-            "$006 and $02C into the identical data_out mux arm, so this "
-            "address is readable, contradicting 'VHPOSW       *02C   W    "
-            " A          Write vert and horiz position of beam' (p.289). "
-            "Second instance of opus:7-appA-pre.c10's (p.263) "
-            "counter-example. sol:7-appB-vhposw.c2, confirmed by "
-            "opus:7-appB.c27.");
+        checks.note(
+            "VHPOSW-READBACK-MEASURED: $02C, after writing a distinct "
+            "pattern there, reads " + hex16(vhposw_read) + " -- equal to "
+            "VHPOSR's own live readback at $006 (" + hex16(vhposr_alias) +
+            ") and not equal to an address this module never decodes (" +
+            hex16(undecoded) + "). agnus_beamcounter.v:111-112 decodes $006 "
+            "and $02C into the identical data_out mux arm.");
+        checks.record(
+            "VHPOSW-READBACK-NOT-GRADED (sol:7-appB-vhposw.c2, confirmed by "
+            "opus:7-appB.c27; the p.263 general rule is opus:7-appA-pre.c10): "
+            "same position as VPOSW-READBACK-NOT-GRADED above. 'VHPOSW      "
+            " *02C   W     A          Write vert and horiz position of beam' "
+            "(p.289) fixes the direction; p.263-264 leaves the result of "
+            "reading a write-only register unspecified. reason_kind "
+            "source-silent. Graded until stage 8, withdrawn on the "
+            "independent validation's finding.");
 
         Harness h_c4_base(/*ecs=*/true, /*ntsc=*/false);
         uint16_t c4_base = h_c4_base.read(A_VHPOSR);
