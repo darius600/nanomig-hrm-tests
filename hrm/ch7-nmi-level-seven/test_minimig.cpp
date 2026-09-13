@@ -143,31 +143,56 @@
 //   _cpu_ipl=0x7, int7 and _cpu_ipl both taking their post-freeze values
 //   at raw tick 2272045, _iplx=0x7 at that same tick).
 //
-// MUTATION LOG (each entry actually run: `make MUT=<NAME>` -> read the
-//   PASS/FAIL lines -> confirm only the named assertion(s) changed colour
-//   -> `make` with no MUT -> confirm the 4-passed/0-failed baseline was
-//   restored):
+// RUN LOG -- STIMULUS MUTATIONS ACTUALLY BUILT, RUN AND REVERTED THIS
+//   SESSION (each: `make MUT=<NAME>` -> read the PASS/FAIL lines -> confirm
+//   only the intended assertion(s) changed colour -> `make` with no MUT ->
+//   confirm the 4-passed/0-failed baseline was restored). One record below
+//   per assertion, each record's own first line naming that assertion's own
+//   `expect()` label as its second word, per tools/check_gates.py's own
+//   parsing rule (label, then "stimulus", then the result, immediately
+//   adjacent).
 //
-// MUTATION ENABLE-CART-COMPILED-IN / NMI-HARDWARE-PRIORITY-7 /
-//   NMI-NON-MASKABLE stimulus red: built with `make MUT=MUT_NOFREEZE`,
-//   which withholds the freeze stimulus entirely (kbd_mouse_type/
-//   kbd_mouse_data/kms_level stay idle) -> 1 passed, 3 failed. Only these
-//   three assertions turned red (measured: "int7 (internal) never reached
-//   1", "_cpu_ipl never reached 0x0"); NMI-IDLE-BASELINE-NOT-LEVEL-7 stayed
-//   green, unaffected. One edit, three assertions, so three records naming
-//   the same edit -- correct attribution (all three depend on int7 ever
-//   rising at all), not duplication, same reasoning
-//   hrm/ch5-audio-dmacon-adkcon/test_paula.cpp's own MUT_CHIP entry gives
-//   for one edit covering two of its assertions. Rebuilt with no flags:
-//   4/0 restored.
-// MUTATION NMI-IDLE-BASELINE-NOT-LEVEL-7 stimulus red: built with
+// MUTATION NMI-IDLE-BASELINE-NOT-LEVEL-7 stimulus red -- built with
 //   `make MUT=MUT_PREFREEZE`, which applies the freeze stimulus BEFORE
-//   sampling the control instead of after -> 3 passed, 1 failed. Only this
-//   assertion turned red (measured: idle sample now reads 0x0, because the
-//   freeze stimulus had already fired by the time it was taken); the other
-//   three stayed green (freeze still happens, merely earlier, so
-//   ENABLE-CART-COMPILED-IN/NMI-HARDWARE-PRIORITY-7/NMI-NON-MASKABLE are
-//   unaffected). Rebuilt with no flags: 4/0 restored.
+//   sampling this assertion's own idle baseline instead of after -> 3
+//   passed, 1 failed. Only this assertion turned red (measured: the idle
+//   sample now reads 0x0, because the freeze stimulus had already fired by
+//   the time it was taken); ENABLE-CART-COMPILED-IN, NMI-HARDWARE-
+//   PRIORITY-7 and NMI-NON-MASKABLE all stayed green (freeze still
+//   happens, merely earlier). This mutation isolates the control on its
+//   own, moving only this one label and nothing else -- which is what
+//   shows the control can fail independently of the other three. Rebuilt
+//   with no flags: 4/0 restored.
+// MUTATION ENABLE-CART-COMPILED-IN stimulus red -- built with
+//   `make MUT=MUT_NOFREEZE`, which withholds the freeze stimulus entirely
+//   (kbd_mouse_type/kbd_mouse_data/kms_level stay idle) -> 1 passed, 3
+//   failed (measured: "int7 (internal) never reached 1"). NMI-IDLE-
+//   BASELINE-NOT-LEVEL-7 stayed green, unaffected. This same edit also
+//   turns NMI-HARDWARE-PRIORITY-7 and NMI-NON-MASKABLE red at the same
+//   time: all three depend on the same net, int7, ever rising at all, so
+//   one edit turning three assertions red is one piece of evidence, not
+//   three -- see those two records for the identical caveat, restated
+//   rather than assumed known from this one. Rebuilt with no flags: 4/0
+//   restored.
+// MUTATION NMI-HARDWARE-PRIORITY-7 stimulus red -- built with
+//   `make MUT=MUT_NOFREEZE`, the same edit as ENABLE-CART-COMPILED-IN's own
+//   record above (withholds the freeze stimulus entirely) -> 1 passed, 3
+//   failed (measured: "_cpu_ipl never reached 0x0"). All three of
+//   ENABLE-CART-COMPILED-IN, NMI-HARDWARE-PRIORITY-7 and NMI-NON-MASKABLE
+//   depend on the same net, int7, ever rising at all, so this one edit
+//   turning all three red is one piece of evidence, not three separate
+//   ones. NMI-IDLE-BASELINE-NOT-LEVEL-7 stayed green, unaffected. Rebuilt
+//   with no flags: 4/0 restored.
+// MUTATION NMI-NON-MASKABLE stimulus red -- built with
+//   `make MUT=MUT_NOFREEZE`, the same edit as the two records above
+//   (withholds the freeze stimulus entirely) -> 1 passed, 3 failed
+//   (measured: "_cpu_ipl never reached 0x0", so this assertion's own
+//   _iplx-at-that-tick comparison never runs). All three of
+//   ENABLE-CART-COMPILED-IN, NMI-HARDWARE-PRIORITY-7 and NMI-NON-MASKABLE
+//   depend on the same net, int7, ever rising at all, so this one edit
+//   turning all three red is one piece of evidence, not three separate
+//   ones. NMI-IDLE-BASELINE-NOT-LEVEL-7 stayed green, unaffected. Rebuilt
+//   with no flags: 4/0 restored.
 
 #include <cstdio>
 #include <cstdint>
