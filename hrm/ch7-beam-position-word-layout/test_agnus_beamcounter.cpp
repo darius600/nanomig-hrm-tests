@@ -494,7 +494,8 @@ int main(int argc, char** argv) {
         bool layout_ok = ((via_vposr >> 15) & 1) == 1 && (via_vposr & 0x7) == 0x5;
         checks.expect(
             layout_ok,
-            "VPOSW-BIT-LAYOUT-MATCHES-VPOSR: writing long_frame=1 and "
+            "VPOSW-BIT-LAYOUT-MATCHES-VPOSR (p.285 sol:7-appA-vpos.c9): "
+            "writing long_frame=1 and "
             "vpos[10:8]=0b101 to VPOSW places them at bit 15 and bits 2:0 "
             "respectively, the same positions VPOSR reads them at -- "
             "measured " + hex16(via_vposr) + ".");
@@ -538,7 +539,9 @@ int main(int argc, char** argv) {
         uint16_t vhposr = h.read(A_VHPOSR);
         checks.expect(
             ((vhposr >> 8) & 0xFF) == 0x37,
-            "VHPOSR-BITS-15-8-ARE-V7-V0: VHPOSR bits 15:8 carry vpos[7:0] "
+            "VHPOSR-BITS-15-8-ARE-V7-V0 (p.216 sol:7-beam.c10, opus:7-bp.c12; "
+            "p.285 sol:7-appA-vhpos.c9, opus:7-appA-beam.c3): VHPOSR bits "
+            "15:8 carry vpos[7:0] "
             "(V7-V0) -- forced 0x37, measured " + hex16(vhposr) + ".");
     }
     {
@@ -552,7 +555,9 @@ int main(int argc, char** argv) {
         uint16_t vhposr = h.read(A_VHPOSR);
         checks.expect(
             (vhposr & 0xFF) == 0x5A,
-            "VHPOSR-BITS-7-0-ARE-H8-H1: VHPOSR bits 7:0 carry hpos[8:1] "
+            "VHPOSR-BITS-7-0-ARE-H8-H1 (p.216 sol:7-beam.c11, opus:7-bp.c13; "
+            "p.285 sol:7-appA-vhpos.c10, opus:7-appA-beam.c4): VHPOSR bits "
+            "7:0 carry hpos[8:1] "
             "(H8-H1) -- forced 0x5A, measured " + hex16(vhposr) + ".");
     }
 
@@ -578,7 +583,9 @@ int main(int argc, char** argv) {
         uint16_t band_14_1 = (vposr >> 1) & 0x3FFF;
         checks.expect(
             band_14_1 == 0,
-            "VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0): bits 14 down to 1 of a "
+            "VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0) (p.216 sol:7-beam.c7, "
+            "opus:7-bp.c7; p.285 sol:7-appA-vpos.c5, sol:7-appA-vpos.c11, "
+            "opus:7-appA-beam.c10): bits 14 down to 1 of a "
             "VPOSR read carry no value under the OCS table's reading -- "
             "measured band=" + hex16(band_14_1) + " (full word " +
             hex16(vposr) + ").");
@@ -590,7 +597,9 @@ int main(int argc, char** argv) {
         uint16_t band_14_1 = (vposr >> 1) & 0x3FFF;
         checks.expect(
             band_14_1 == 0,
-            "VPOSR-OCS-BITS-14-1-UNUSED (ntsc=1): same claim, ntsc=1 -- "
+            "VPOSR-OCS-BITS-14-1-UNUSED (ntsc=1) (p.216 sol:7-beam.c7, "
+            "opus:7-bp.c7; p.285 sol:7-appA-vpos.c5, sol:7-appA-vpos.c11, "
+            "opus:7-appA-beam.c10): same claim, ntsc=1 -- "
             "reproduced independently (not adopted from classification): "
             "measured band=" + hex16(band_14_1) + " (full word " +
             hex16(vposr) + "); the module echoes ntsc into bit 12 "
@@ -631,7 +640,7 @@ int main(int argc, char** argv) {
 #endif
         checks.expect(
             msw_ok,
-            "MSW-IS-VPOSR-VPOSW: within each long-word pair, VPOSR ($004) "
+            "MSW-IS-VPOSR-VPOSW (p.216 sol:7-beam.c17): within each long-word pair, VPOSR ($004) "
             "sits below VHPOSR ($006) and VPOSW ($02A) sits below VHPOSW "
             "($02C) -- the lower/most-significant address in each pair is "
             "VPOSR's or VPOSW's, per agnus_beamcounter.v:60-63's own "
