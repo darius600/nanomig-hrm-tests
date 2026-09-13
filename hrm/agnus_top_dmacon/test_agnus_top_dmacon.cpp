@@ -712,7 +712,7 @@ int main(int argc, char** argv) {
             "control write (clear or set)' (p.278) and Appendix B's 'DMACON "
             "at address 096' (p.290). 6-appa-dmacon.c1, 6-appa-dmacon.c2, "
             "6-appa-dmacon.c3, ch6-appa-dmacon.c1, ch6-appa-dmacon.c2, "
-            "ch6-appa-dmacon.c4, ch6-appa-dmacon.c9, ch6-appb-dmacon.addr, "
+            "ch6-appa-dmacon.c4, ch6-appa-dmacon.c9, ch6-appb-dmacon.addr, sol:7-dma.c1, sol:7-dma.c3, opus:7-dma.c1, opus:7-dma.c3, sol:7-appA-dmacon.c1, sol:7-appA-dmacon.c2, sol:7-appA-dmacon.c3, sol:7-appA-dmacon.c4, sol:7-appA-dmacon.c9, opus:7-appA-dmacon.c1, opus:7-appA-dmacon.c3, sol:7-appB-dmacon.c3, opus:7-appB.c29, "
             "ch6-appb-dmacon.rw (p.290, restated: 'Appendix B marks DMACON W "
             "in the R/W column and A D P in the CHIP column' - verbatim "
             "quotation pending: the corpus text extracted for printed p.290 "
@@ -754,7 +754,7 @@ int main(int argc, char** argv) {
             "blitter status) read' (p.278) and Appendix B's 'DMACONR at address "
             "002' (p.289). 6-appa-dmacon.c4, 6-appa-dmacon.c5, 6-appa-dmacon.c6, "
             "6-appa-dmacon.c7, ch6-appa-dmacon.c5, ch6-appa-dmacon.c6, "
-            "ch6-appa-dmacon.c8, ch6-appa-dmacon.c10, ch6-appb-dmaconr.addr.");
+            "ch6-appa-dmacon.c8, ch6-appa-dmacon.c10, ch6-appb-dmaconr.addr, sol:7-dma.c1, sol:7-dma.c2, sol:7-dma.c4, opus:7-dma.c1, opus:7-dma.c2, opus:7-dma.c4, sol:7-appA-dmacon.c5, sol:7-appA-dmacon.c6, sol:7-appA-dmacon.c7, sol:7-appA-dmacon.c8, sol:7-appA-dmacon.c10, opus:7-appA-dmacon.c2, opus:7-appA-dmacon.c3.");
     }
 
     // ---------------- WALKING-BIT assertions, DMACON/DMACONR bits 0-12 (p.278) ----------------
@@ -774,21 +774,21 @@ int main(int argc, char** argv) {
             std::string ids;
         };
         const std::vector<BitCase> bits = {
-            {0, AUD0EN, "AUD0EN", "ch6-appa-dmacon.bit00"},
-            {1, AUD1EN, "AUD1EN", "ch6-appa-dmacon.bit01"},
-            {2, AUD2EN, "AUD2EN", "ch6-appa-dmacon.bit02"},
-            {3, AUD3EN, "AUD3EN", "ch6-appa-dmacon.bit03"},
-            {4, DSKEN, "DSKEN", "ch6-appa-dmacon.bit04"},
-            {5, SPREN, "SPREN", "6-appa-dmacon.c26, ch6-appa-dmacon.bit05"},
-            {6, BLTEN, "BLTEN", "6-appa-dmacon.c25, ch6-appa-dmacon.bit06"},
-            {7, COPEN, "COPEN", "6-appa-dmacon.c24, ch6-appa-dmacon.bit07"},
-            {8, BPLEN, "BPLEN", "6-appa-dmacon.c23, ch6-appa-dmacon.bit08"},
+            {0, AUD0EN, "AUD0EN", "ch6-appa-dmacon.bit00, sol:7-dma.c21, opus:7-dma.c22, sol:7-appA-dmacon.c26, opus:7-appA-dmacon.c21"},
+            {1, AUD1EN, "AUD1EN", "ch6-appa-dmacon.bit01, sol:7-dma.c20, opus:7-dma.c21, sol:7-appA-dmacon.c25, opus:7-appA-dmacon.c20"},
+            {2, AUD2EN, "AUD2EN", "ch6-appa-dmacon.bit02, sol:7-dma.c19, opus:7-dma.c20, sol:7-appA-dmacon.c24, opus:7-appA-dmacon.c19"},
+            {3, AUD3EN, "AUD3EN", "ch6-appa-dmacon.bit03, sol:7-dma.c18, opus:7-dma.c19, sol:7-appA-dmacon.c23, opus:7-appA-dmacon.c18"},
+            {4, DSKEN, "DSKEN", "ch6-appa-dmacon.bit04, sol:7-dma.c17, opus:7-dma.c18, sol:7-appA-dmacon.c22, opus:7-appA-dmacon.c17"},
+            {5, SPREN, "SPREN", "6-appa-dmacon.c26, ch6-appa-dmacon.bit05, sol:7-dma.c16, opus:7-dma.c17, sol:7-appA-dmacon.c21, opus:7-appA-dmacon.c16"},
+            {6, BLTEN, "BLTEN", "6-appa-dmacon.c25, ch6-appa-dmacon.bit06, sol:7-dma.c15, opus:7-dma.c16, sol:7-appA-dmacon.c20, opus:7-appA-dmacon.c15"},
+            {7, COPEN, "COPEN", "6-appa-dmacon.c24, ch6-appa-dmacon.bit07, sol:7-dma.c14, opus:7-dma.c15, sol:7-appA-dmacon.c19, opus:7-appA-dmacon.c14"},
+            {8, BPLEN, "BPLEN", "6-appa-dmacon.c23, ch6-appa-dmacon.bit08, sol:7-dma.c13, opus:7-dma.c14, sol:7-appA-dmacon.c18, opus:7-appA-dmacon.c13"},
             {9, DMAEN, "DMAEN",
-             "6-appa-dmacon.c22, ch6-appa-dmacon.bit09, ch6-appa-dmacon.dmaen2"},
+             "6-appa-dmacon.c22, ch6-appa-dmacon.bit09, ch6-appa-dmacon.dmaen2, sol:7-dma.c11, opus:7-dma.c12, sol:7-dma.c12, opus:7-dma.c13, sol:7-appA-dmacon.c17, opus:7-appA-dmacon.c12"},
             {10, BLTPRI, "BLTPRI",
-             "6-appa-dmacon.c17, ch6-appa-dmacon.bit10, ch6-appa-dmacon.bltpri1"},
-            {11, BIT11_X, "bit11(X)", "6-appa-dmacon.c16, ch6-appa-dmacon.bit11"},
-            {12, BIT12_X, "bit12(X)", "6-appa-dmacon.c15, ch6-appa-dmacon.bit12"},
+             "6-appa-dmacon.c17, ch6-appa-dmacon.bit10, ch6-appa-dmacon.bltpri1, sol:7-dma.c9, opus:7-dma.c10, sol:7-appA-dmacon.c15, opus:7-appA-dmacon.c10"},
+            {11, BIT11_X, "bit11(X)", "6-appa-dmacon.c16, ch6-appa-dmacon.bit11, sol:7-dma.c8, opus:7-dma.c9, sol:7-appA-dmacon.c14, opus:7-appA-dmacon.c9"},
+            {12, BIT12_X, "bit12(X)", "6-appa-dmacon.c15, ch6-appa-dmacon.bit12, sol:7-dma.c8, opus:7-dma.c9, sol:7-appA-dmacon.c14, opus:7-appA-dmacon.c8"},
         };
         constexpr uint16_t ALL13 = 0x1FFF;
         for (const auto& b : bits) {
@@ -834,7 +834,7 @@ int main(int argc, char** argv) {
             "exercise on its own. 'if bits written with a 1 get set or "
             "cleared. Bits written with a zero...' (p.278). 6-appa-dmacon.c8, "
             "6-appa-dmacon.c9, 6-appa-dmacon.c10, ch6-appa-dmacon.bit15, "
-            "ch6-appa-dmacon.setclr, ch6-appa-dmacon.setclr2.");
+            "ch6-appa-dmacon.setclr, ch6-appa-dmacon.setclr2, sol:7-dma.c5, opus:7-dma.c5, sol:7-appA-dmacon.c11, opus:7-appA-dmacon.c4, opus:7-appA-dmacon.c5.");
     }
 
     // ---------------- BBUSY-READONLY-WITH-POSITIVE-CONTROL (p.186/278) ----------------
@@ -881,7 +881,7 @@ int main(int argc, char** argv) {
             "simply always 0. '14 BBUSY Blitter busy status bit (read only)' "
             "(p.278). 6-appa-dmacon.c11, 6-appa-dmacon.c12, "
             "ch6-appa-dmacon.bit14, ch6-appa-dmacon.bbusy2, "
-            "6-blitter-done-flag.c5, ch6-done.c5, ch6-done.c6.");
+            "6-blitter-done-flag.c5, ch6-done.c5, ch6-done.c6, sol:7-dma.c6, opus:7-dma.c6, sol:7-appA-dmacon.c12, opus:7-appA-dmacon.c6.");
     }
 
     // ---------------- BZERO-READONLY-WITH-POSITIVE-CONTROL (p.187/278) ----------------
@@ -927,7 +927,7 @@ int main(int argc, char** argv) {
             "DMACONR' / '13 BZERO Blitter logic zero status bit (read only)' "
             "(p.187/278). 6-appa-dmacon.c13, 6-appa-dmacon.c14, "
             "ch6-appa-dmacon.bit13, ch6-appa-dmacon.bzero2, 6-zero-flag.c5, "
-            "ch6-zero.c5, ch6-zero.c6.");
+            "ch6-zero.c5, ch6-zero.c6, sol:7-dma.c7, opus:7-dma.c7, opus:7-dma.c8, sol:7-appA-dmacon.c13, opus:7-appA-dmacon.c7.");
     }
 
     // =========================================================================
@@ -962,7 +962,7 @@ int main(int argc, char** argv) {
                 "measurement with SPREN left clear [control] grants none (" +
                 std::to_string(cycles_dis) +
                 "). '05 SPREN Sprite DMA enable' (p.278). 6-appa-dmacon.c26, "
-                "ch6-appa-dmacon.bit05.");
+                "ch6-appa-dmacon.bit05, sol:7-dma.c16, opus:7-dma.c17, sol:7-appA-dmacon.c21, opus:7-appA-dmacon.c16.");
     }
 
     // ---------------- BLTEN-GATES-BLITTER-DMA (bit 6, p.278) ----------------
@@ -986,7 +986,7 @@ int main(int argc, char** argv) {
                 "measurement with BLTEN left clear [control] grants none (" +
                 std::to_string(writes_dis) +
                 "). '06 BLTEN Blitter DMA enable' (p.278). 6-appa-dmacon.c25, "
-                "ch6-appa-dmacon.bit06.");
+                "ch6-appa-dmacon.bit06, sol:7-dma.c15, opus:7-dma.c16, sol:7-appA-dmacon.c20, opus:7-appA-dmacon.c15.");
     }
 
     // ---------------- COPEN-GATES-COPPER-DMA (bit 7, p.278) ----------------
@@ -1011,7 +1011,7 @@ int main(int argc, char** argv) {
                 "measurement with COPEN left clear [control] grants none (" +
                 std::to_string(cycles_dis) +
                 "). '07 COPEN Copper DMA enable' (p.278). 6-appa-dmacon.c24, "
-                "ch6-appa-dmacon.bit07.");
+                "ch6-appa-dmacon.bit07, sol:7-dma.c14, opus:7-dma.c15, sol:7-appA-dmacon.c19, opus:7-appA-dmacon.c14.");
     }
 
     // ---------------- BPLEN-GATES-BITPLANE-DMA (bit 8, p.278) ----------------
@@ -1038,7 +1038,7 @@ int main(int argc, char** argv) {
                 "measurement with BPLEN left clear [control] grants none (" +
                 std::to_string(cycles_dis) +
                 "). '08 BPLEN Bitplane DMA enable' (p.278). 6-appa-dmacon.c23, "
-                "ch6-appa-dmacon.bit08.");
+                "ch6-appa-dmacon.bit08, sol:7-dma.c13, opus:7-dma.c14, sol:7-appA-dmacon.c18, opus:7-appA-dmacon.c13.");
     }
 
     // ---------------- DMAEN-MASTER-GATES-ALL-DMA-BELOW (bit 9, p.278) ----------------
@@ -1077,7 +1077,7 @@ int main(int argc, char** argv) {
                 std::to_string(cycles_dis) +
                 "), confirming DMAEN gates all four together, not by coincidence "
                 "of any one of them. '09 DMAEN Enable all DMA below' (p.278). "
-                "6-appa-dmacon.c22, ch6-appa-dmacon.bit09, ch6-appa-dmacon.dmaen2.");
+                "6-appa-dmacon.c22, ch6-appa-dmacon.bit09, ch6-appa-dmacon.dmaen2, sol:7-dma.c12, opus:7-dma.c13, sol:7-appA-dmacon.c17, opus:7-appA-dmacon.c12.");
     }
 
     // ---------------- BLTPRI-BUS-SHARE-UNDER-CONTENTION (bit 10, p.198/278) ----------------
@@ -1113,7 +1113,7 @@ int main(int argc, char** argv) {
                 "6-blitter-priority.c8, 6-blitter-priority.c9, ch6-sysdma.c57, "
                 "ch6-sysdma.c58, ch6-sysdma.c59, ch6-sysdma.c61, "
                 "6-appa-dmacon.c20, 6-appa-dmacon.c21, ch6-appa-dmacon.bltpri4, "
-                "ch6-appa-dmacon.bltpri5.");
+                "ch6-appa-dmacon.bltpri5, sol:7-dma.c10, opus:7-dma.c11, sol:7-appA-dmacon.c16, opus:7-appA-dmacon.c11.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
