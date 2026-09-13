@@ -8,7 +8,10 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.217-218 (chapter 7 body), corroborated by appendix A p.280 and Figure
-//   7-4 p.221 for the INTEN master-gate claim group only.
+//   7-4 p.221 for the INTEN master-gate claim group, and by appendix A p.280
+//   alone (its "not automatically reset ... writing to this address"
+//   sentence) for P7-STICKY-PERSISTS's persistence half - a citation-mapping
+//   repair, see the MUTATION METHODOLOGY note below.
 // Fixture boundary: paula_intcontroller.v ONLY. No other module is
 //   instantiated anywhere in this file.
 //
@@ -54,29 +57,51 @@
 //
 // P10 - "reads zero" is an experiment, not a claim (coordinator's
 //   correction). The quotation this package is built from ("bit 15 has no
-//   meaning in the read-only addresses") does not name a constant. P10 below
-//   `note`s the measured constant and `expect`s only what the quotation
-//   supports: that bit 15 of a read from INTENAR/INTREQR does not track
-//   stored content.
+//   meaning in the read-only addresses") does not name a constant and does
+//   not promise the value is stable across write histories either - a bit
+//   declared meaningless is not thereby declared constant. P10 below only
+//   `note`s the measured constant (both `expect()`s that once compared
+//   stability across two write histories were DEMOTED to `record()` in the
+//   independent-validation repair; see MUTATION METHODOLOGY below).
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup - not a compile-time #ifdef - so one build serves the real run
-//   (MUTATE unset) and all 29 mutation runs (MUTATE=<id>, one id per
+//   (MUTATE unset) and all 26 mutation runs (MUTATE=<id>, one id per
 //   assertion). Each mutation changes what the module is ASKED TO DO (a
 //   written value, a selected address, a skipped stimulus step) and leaves
 //   the `expect()` call's own expected-value code untouched, per BUILD-BRIEF.
-//   Every one of the 29 below was run with its own id and confirmed red, then
+//   Every one of the 26 below was run with its own id and confirmed red, then
 //   reverted (MUTATE unset) and confirmed green again; results are logged
 //   next to each assertion and summarised in the build report.
 //
+//   Repaired against an independent validation
+//   (work/2026-09-13_ch7_sol_validation_B1.md, findings 1/3/4/5/7): P4, P6's
+//   write-only readback and both P10 bit15-stability checks were DEMOTED
+//   (they graded a read value or a stability guarantee the manual never
+//   specifies for a write-only or "no meaning" address - pp.217-218, 263-264
+//   - so they are now `note()`+`record()`, reason_kind source-silent, with
+//   their MUTATE ids and mutation records retired along with them).
+//   P16-ONE-WRITE-RESULT was PROMOTED from `note()` to a graded `expect()`
+//   (the two-write assertion alone had no failing predicate for a device
+//   that reached the mixed target in one write - finding 1) and gained its
+//   own MUTATE=P16_ONE record below. P3-FOUR-DISTINCT-ADDRESSES was
+//   rewritten (finding 4): it no longer probes an unrelated, manual-silent
+//   address and instead shows the two register pairs hold independent,
+//   non-aliased content. P2, P3, both A0 pairs, both P5, both P8, P14 and
+//   P15 each gained an explicit all-clear write (CLR encoding, P13) before
+//   the equality check they already made, so exact-equality no longer
+//   silently assumes an undocumented reset value of zero (finding 5) - same
+//   assertions, same expected numbers, grounded precondition. P7-STICKY-
+//   PERSISTS's citation was remapped from p.218 to p.280, which is what
+//   actually states the persistence half (finding 7).
 //
 // MUTATION RECORDS. One per assertion, in BUILD-BRIEF's fixed grammar so the
 //   gate can pair them. The switch is the MUTATE environment variable
 //   described above; the trailing (MUTATE=<id>) names it. Every colour below
 //   was MEASURED -- each id was run against this build and the assertion it
 //   turns red was read off that run, not taken from the mutation's intent.
-//   Baseline with MUTATE unset: 29 passed, 0 failed.
+//   Baseline with MUTATE unset: 26 passed, 0 failed.
 //
 //   Three ids redden a neighbouring assertion as well, which is recorded here
 //   rather than tidied away: P18_CTRL also reddens P18b-MASTER-GATE-OPENS,
@@ -91,23 +116,20 @@
 // MUTATION P1-MASK-ENABLE-CLEAR stimulus red: bit 3 is also enabled early, before the cleared-mask read (MUTATE=P1)
 // MUTATION P1-MASK-ENABLE-SET stimulus red: bit 3 is never actually enabled (MUTATE=P1B)
 // MUTATION P2-TWO-REGISTERS-INDEPENDENT stimulus red: INTENAR is re-read and treated as the request register (MUTATE=P2)
-// MUTATION P3-FOUR-DISTINCT-ADDRESSES stimulus red: the 'unrelated' address is secretly INTENAR (MUTATE=P3)
-// MUTATION P4-INTENA-WRITE-ONLY stimulus red: the readback is taken from INTENAR, the real content address (MUTATE=P4)
+// MUTATION P3-FOUR-DISTINCT-ADDRESSES stimulus red: the request pair's read address is secretly read and called the enable pair's (MUTATE=P3)
 // MUTATION P5-INTENAR-MIRRORS stimulus red: a different word (0x001F) is written than the one checked for (MUTATE=P5A)
 // MUTATION P5-INTENAR-READONLY stimulus red: the spurious cycle is issued at INTENA, the real write address (MUTATE=P5B)
 // MUTATION P6-INTREQ-FORCE-SOFTWARE stimulus red: the bus write is skipped entirely (MUTATE=P6_FORCE)
-// MUTATION P6-INTREQ-WRITE-ONLY stimulus red: the readback is taken from INTREQR, the real content address (MUTATE=P6_WO)
 // MUTATION P7-STICKY-PERSISTS stimulus red: a clear is sneaked in before the idle stretch ends (MUTATE=P7_PERSIST)
 // MUTATION P7-STICKY-CLEARS stimulus red: the explicit clear write is skipped (MUTATE=P7_CLEARS)
 // MUTATION P8-INTREQR-MIRRORS stimulus red: a different word (0x0041) is written than the one checked for (MUTATE=P8A)
 // MUTATION P8-INTREQR-READONLY stimulus red: the spurious cycle is issued at INTREQ, the real write address (MUTATE=P8B)
-// MUTATION P10-BIT15-NO-MEANING-ENA stimulus red: INTENA's constant is sampled instead of INTENAR's (MUTATE=P10_ENA)
-// MUTATION P10-BIT15-NO-MEANING-REQ stimulus red: INTREQ's constant is sampled instead of INTREQR's (MUTATE=P10_REQ)
 // MUTATION P11-BIT15-SETCLR-ALSO-INTREQ stimulus red: the CLR half of the pair is never issued (MUTATE=P11)
 // MUTATION P12-SET-ENCODING stimulus red: CLR is sent where the assertion asks for SET (MUTATE=P12)
 // MUTATION P13-CLR-ENCODING stimulus red: SET is sent again where the assertion asks for CLR (MUTATE=P13)
 // MUTATION P14-MULTI-BIT-SELECTORS stimulus red: bit 12 is dropped from the multi-bit write (MUTATE=P14)
 // MUTATION P15-ZERO-POSITIONS-UNAFFECTED stimulus red: a different bit is selected than the one checked for (MUTATE=P15)
+// MUTATION P16-ONE-WRITE-RESULT stimulus red: bit3 is never written by either the establishing step or the one-write attempt's own selector, so an untouched bit3 trivially reads as "cleared" (MUTATE=P16_ONE)
 // MUTATION P16-TWO-WRITES-ACHIEVE-MIX stimulus red: the corrective second write is skipped (MUTATE=P16)
 // MUTATION P17-INTEN-IS-NOT-AN-ORDINARY-ENABLE stimulus red: the ordinary bit is also enabled (MUTATE=P17)
 // MUTATION P18-CONTROL-SOURCE-REACHES-OUTPUT stimulus red: the ordinary source is never actually enabled (MUTATE=P18_CTRL)
@@ -226,6 +248,10 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
+        // Establish a known all-clear state explicitly (CLR encoding, P13)
+        // before checking exact equality below, instead of relying on an
+        // undocumented reset value for the bits outside the pattern written.
+        write_reg(INTENA, CLR | 0x7FFF);
         uint16_t first = mutating("A0_ENA1") ? 0x00AA : 0x0055;  // MUTATION: wrong first word
         write_reg(INTENA, SET | first);
         uint16_t ena1 = read_reg(INTENAR);
@@ -243,6 +269,10 @@ int main(int argc, char** argv) {
     {
         // bits 2 and 4: no hardware source at all (paula_intcontroller.v:110,:114) -- a clean
         // bus-only round trip with nothing else able to interfere.
+        // Establish a known all-clear state explicitly (CLR encoding, P13)
+        // before checking exact equality below, instead of relying on an
+        // undocumented reset value for the bits outside the pattern written.
+        write_reg(INTREQ, CLR | 0x7FFF);
         uint16_t first = mutating("A0_REQ1") ? 0x0041 : 0x0014;  // MUTATION: wrong first word
         write_reg(INTREQ, SET | first);
         uint16_t req1 = read_reg(INTREQR);
@@ -292,17 +322,30 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
+        // Establish a known all-clear state on both registers explicitly (via
+        // the already-tested CLR encoding, P13) before checking exact
+        // equality below, instead of relying on an undocumented reset value.
+        write_reg(INTENA, CLR | 0x7FFF);
+        write_reg(INTREQ, CLR | 0x7FFF);
+
         write_reg(INTENA, SET | 0x0021);  // nonzero pattern in the enable register only
         uint16_t enar = read_reg(INTENAR);
         int req_addr = mutating("P2") ? INTENAR : INTREQR;  // MUTATION: re-read INTENAR and call it the request register
         uint16_t reqr = read_reg(req_addr);
         checks.expect(enar == 0x0021 && reqr == 0x0000,
-            "P2-TWO-REGISTERS-INDEPENDENT (p.217, sol:7-interrupts.c10, opus:7-int.c9): writing only the enable register leaves the request register's own readback at 0");
+            "P2-TWO-REGISTERS-INDEPENDENT (p.217, sol:7-interrupts.c10, opus:7-int.c9): writing only the enable register, from an explicit all-clear baseline, leaves the request register's own readback at 0");
 
-        int unrelated_addr = mutating("P3") ? INTENAR : 0x00;  // MUTATION: "unrelated" address is secretly a real one
-        uint16_t unrelated = read_reg(unrelated_addr);
-        checks.expect(unrelated == 0x0000,
-            "P3-FOUR-DISTINCT-ADDRESSES (p.217, sol:7-interrupts.c11, opus:7-int.c9): an address outside the four named registers returns 0 even though a real register holds nonzero content");
+        // P3 does not probe an unrelated, manual-silent address (that proved
+        // nothing about the four NAMED addresses). Instead it writes a
+        // second, distinct known pattern into the request pair and confirms
+        // each pair's own read address reflects only its own pair's write --
+        // the actual test of "four distinct addresses" printed p.217 claims.
+        write_reg(INTREQ, SET | 0x0044);
+        int enar_addr = mutating("P3") ? INTREQR : INTENAR;  // MUTATION: secretly read the request pair's read address and call it the enable pair's
+        uint16_t enar2 = read_reg(enar_addr);
+        uint16_t reqr2 = read_reg(INTREQR);
+        checks.expect(enar2 == 0x0021 && reqr2 == 0x0044,
+            "P3-FOUR-DISTINCT-ADDRESSES (p.217, sol:7-interrupts.c11, opus:7-int.c9): after writing distinct known patterns into the two write addresses, each pair's own read address still reflects only its own pair's write -- the four named addresses decode to independent storage, not a shared one");
     }
 
     // ========================================================================
@@ -313,10 +356,15 @@ int main(int argc, char** argv) {
     do_reset();
     {
         write_reg(INTENA, SET | 0x0021);
-        int read_addr = mutating("P4") ? INTENAR : INTENA;  // MUTATION: read the real content address instead
-        uint16_t val = read_reg(read_addr);
-        checks.expect(val == 0xFFFF,
-            "P4-INTENA-WRITE-ONLY (p.217, sol:7-interrupts.c12, opus:7-int.c10): presenting INTENA's own write address to the read path never exposes stored content");
+        uint16_t val = read_reg(INTENA);
+        char val_buf[8];
+        std::snprintf(val_buf, sizeof val_buf, "0x%04X", val);
+        checks.note(std::string("P4-INTENA-WRITE-ONLY-MEASURED: reading INTENA's own write address after a SET write returns ") + val_buf);
+        checks.record(std::string(
+            "P4-INTENA-WRITE-ONLY (p.217, sol:7-interrupts.c12, opus:7-int.c10): not asserted -- 'write only' (p.217) fixes the "
+            "access direction, not a read value, and printed pp.263-264 warns that reading a write-only address 'may trash the "
+            "register and crash the system' (undefined), not that it returns ") + val_buf + " or any other particular constant. "
+            "reason_kind source-silent.");
     }
 
     // ========================================================================
@@ -326,6 +374,10 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
+        // Establish a known all-clear state explicitly (CLR encoding, P13)
+        // before checking exact equality below, instead of relying on an
+        // undocumented reset value for the bits outside the pattern written.
+        write_reg(INTENA, CLR | 0x7FFF);
         uint16_t stim = mutating("P5A") ? 0x001F : 0x0079;  // MUTATION: write a different word than the one checked for
         write_reg(INTENA, SET | stim);
         uint16_t mirrored = read_reg(INTENAR);
@@ -360,10 +412,15 @@ int main(int argc, char** argv) {
         checks.expect(((reqr >> 4) & 1u) == 1u,
             "P6-INTREQ-FORCE-SOFTWARE (p.218, sol:7-interrupts.c14, sol:7-interrupts.c15, opus:7-int.c12): a bus write alone, no hardware pin involved, sets a pending request bit");
 
-        int read_addr = mutating("P6_WO") ? INTREQR : INTREQ;  // MUTATION: read the real content address instead
-        uint16_t wo = read_reg(read_addr);
-        checks.expect(wo == 0xFFFF,
-            "P6-INTREQ-WRITE-ONLY (p.218, sol:7-interrupts.c14, opus:7-int.c12): presenting INTREQ's own write address to the read path never exposes stored content");
+        uint16_t wo = read_reg(INTREQ);
+        char wo_buf[8];
+        std::snprintf(wo_buf, sizeof wo_buf, "0x%04X", wo);
+        checks.note(std::string("P6-INTREQ-WRITE-ONLY-MEASURED: reading INTREQ's own write address returns ") + wo_buf);
+        checks.record(std::string(
+            "P6-INTREQ-WRITE-ONLY (p.218, sol:7-interrupts.c14, opus:7-int.c12): not asserted -- 'write only' (p.218) fixes the "
+            "access direction, not a read value, and printed pp.263-264 warns that reading a write-only address is undefined "
+            "('may trash the register and crash the system'), not that it returns ") + wo_buf + " or any other particular constant. "
+            "reason_kind source-silent.");
     }
 
     // ========================================================================
@@ -382,7 +439,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 100; i++) tick();  // long idle stretch, no other stimulus
         uint16_t after_idle = read_reg(INTREQR);
         checks.expect(((after_idle >> 4) & 1u) == 1u,
-            "P7-STICKY-PERSISTS (p.218, sol:7-interrupts.c16, opus:7-int.c13): a pending request bit survives 100 idle clocks with no clearing write");
+            "P7-STICKY-PERSISTS (p.280: 'these status bits are not automatically reset when the interrupt is serviced ... must be reset when desired by writing to this address' -- corrected citation; p.218's sol:7-interrupts.c16/opus:7-int.c13 extract only the clearing sentence and remain cited on P7-STICKY-CLEARS below, not this persistence half; no uid in this package's own 41-claim ledger covers the p.280 sentence): a pending request bit survives 100 idle clocks with no clearing write");
 
         bool do_clear = !mutating("P7_CLEARS");  // MUTATION: skip the explicit clear write
         if (do_clear) write_reg(INTREQ, CLR | (1u << 4));
@@ -416,6 +473,10 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
+        // Establish a known all-clear state explicitly (CLR encoding, P13)
+        // before checking exact equality below, instead of relying on an
+        // undocumented reset value for the bits outside the pattern written.
+        write_reg(INTREQ, CLR | 0x7FFF);
         uint16_t stim = mutating("P8A") ? 0x0041 : 0x0014;  // MUTATION: write a different word than the one checked for
         write_reg(INTREQ, SET | stim);
         uint16_t mirrored = read_reg(INTREQR);
@@ -452,8 +513,11 @@ int main(int argc, char** argv) {
     // ========================================================================
     // P10 -- bit 15 has no meaning on the read-only addresses. printed p.218:
     // "bit 15 has no meaning in the read-only addresses." An EXPERIMENT, not
-    // a claim (see header note): measure the actual constant and assert only
-    // what the quotation supports -- it does not track stored content.
+    // a claim (see header note): measure the actual constant only. Demoted
+    // (independent-validation repair, finding 3) from an `expect()` that
+    // compared the constant across two write histories for stability -- "no
+    // meaning" rules out tracking stored content but does not promise a
+    // stable value either, so nothing here is graded.
     // Cited: sol:7-interrupts.c20, opus:7-int.c16.
     // ========================================================================
     do_reset();
@@ -461,24 +525,26 @@ int main(int argc, char** argv) {
         write_reg(INTENA, SET | 0x0011);
         uint16_t enar_a = read_reg(INTENAR);
         write_reg(INTENA, CLR | 0x0011);
-        int sample_addr = mutating("P10_ENA") ? INTENA : INTENAR;  // MUTATION: sample the write address's constant instead
-        uint16_t enar_b = read_reg(sample_addr);
+        uint16_t enar_b = read_reg(INTENAR);
         checks.note(std::string("P10-BIT15-MEASURED-ENA: INTENAR bit15 reads ")
             + (((enar_a >> 15) & 1u) ? "1" : "0") + " after a SET write and "
             + (((enar_b >> 15) & 1u) ? "1" : "0") + " after a CLR write");
-        checks.expect(((enar_a >> 15) & 1u) == ((enar_b >> 15) & 1u),
-            "P10-BIT15-NO-MEANING-ENA (p.218, sol:7-interrupts.c20, opus:7-int.c16): bit15 of an INTENAR read does not track the write history behind the stored content");
+        checks.record(
+            "P10-BIT15-NO-MEANING-ENA (p.218, sol:7-interrupts.c20, opus:7-int.c16): not asserted -- 'bit 15 has no meaning in "
+            "the read-only addresses' rules out bit15 tracking stored content, but does not promise bit15 is STABLE across "
+            "different write histories either; a bit the manual declares meaningless is not thereby declared constant. "
+            "reason_kind source-silent.");
 
         write_reg(INTREQ, SET | 0x0011);
         uint16_t reqr_a = read_reg(INTREQR);
         write_reg(INTREQ, CLR | 0x0011);
-        int sample_addr2 = mutating("P10_REQ") ? INTREQ : INTREQR;  // MUTATION: sample the write address's constant instead
-        uint16_t reqr_b = read_reg(sample_addr2);
+        uint16_t reqr_b = read_reg(INTREQR);
         checks.note(std::string("P10-BIT15-MEASURED-REQ: INTREQR bit15 reads ")
             + (((reqr_a >> 15) & 1u) ? "1" : "0") + " after a SET write and "
             + (((reqr_b >> 15) & 1u) ? "1" : "0") + " after a CLR write");
-        checks.expect(((reqr_a >> 15) & 1u) == ((reqr_b >> 15) & 1u),
-            "P10-BIT15-NO-MEANING-REQ (p.218, sol:7-interrupts.c20, opus:7-int.c16): bit15 of an INTREQR read does not track the write history behind the stored content either");
+        checks.record(
+            "P10-BIT15-NO-MEANING-REQ (p.218, sol:7-interrupts.c20, opus:7-int.c16): not asserted, same reason as "
+            "P10-BIT15-NO-MEANING-ENA above -- 'no meaning' does not promise a stable value either. reason_kind source-silent.");
     }
 
     // ========================================================================
@@ -534,6 +600,10 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
+        // Establish a known all-clear state explicitly (CLR encoding, P13)
+        // before checking exact equality below, instead of relying on an
+        // undocumented reset value for the bits outside the mask written.
+        write_reg(INTENA, CLR | 0x7FFF);
         const uint16_t mask = (1u << 1) | (1u << 3) | (1u << 6) | (1u << 9) | (1u << 12);
         uint16_t stim = mutating("P14")
             ? (uint16_t)((1u << 1) | (1u << 3) | (1u << 6) | (1u << 9))  // MUTATION: drop bit12 from the write
@@ -552,6 +622,10 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
+        // Establish a known all-clear state explicitly (CLR encoding, P13)
+        // before checking exact equality below, instead of relying on an
+        // undocumented reset value for the bits outside base|bit4.
+        write_reg(INTENA, CLR | 0x7FFF);
         const uint16_t base = (1u << 2) | (1u << 7) | (1u << 11);
         write_reg(INTENA, SET | base);
         uint16_t second_bit = mutating("P15") ? (1u << 5) : (1u << 4);  // MUTATION: select a different bit than the one checked for
@@ -569,15 +643,23 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
-        write_reg(INTENA, SET | (1u << 3));  // establish bit3=1, bit1=0
+        // MUTATION: bit3 is never actually written by either the establishing
+        // step or the one-write attempt's own selector, so an untouched bit3
+        // would trivially read as "cleared" after the one-write attempt --
+        // the very false positive P16-ONE-WRITE-RESULT exists to catch.
+        bool touch_bit3 = !mutating("P16_ONE");
+        if (touch_bit3) write_reg(INTENA, SET | (1u << 3));  // establish bit3=1, bit1=0
         // Naive one-write attempt at "set bit1 AND clear bit3": bit15 is one
         // shared value for the whole write (P11-P13), so this cannot reach
-        // the mixed target. Reported for context, not graded.
-        write_reg(INTENA, SET | (1u << 1) | (1u << 3));
+        // the mixed target.
+        uint16_t one_write_stim = touch_bit3 ? (SET | (1u << 1) | (1u << 3)) : (uint16_t)(SET | (1u << 1));
+        write_reg(INTENA, one_write_stim);
         uint16_t after_one_write = read_reg(INTENAR);
         bool mixed_reached_in_one = (((after_one_write >> 1) & 1u) == 1u) && (((after_one_write >> 3) & 1u) == 0u);
         checks.note(std::string("P16-ONE-WRITE-RESULT: after a single SET write naming both bit1 and bit3, the mixed target (bit1 set, bit3 cleared) was ")
             + (mixed_reached_in_one ? "reached (unexpected)" : "NOT reached, as bit15's single value applies to both selected bits alike"));
+        checks.expect(!mixed_reached_in_one,
+            "P16-ONE-WRITE-RESULT (p.218, opus:7-int.c22): a single SET write naming both bit1 and bit3 does not reach the mixed target (bit1 set, bit3 cleared) -- the failing predicate the manual's 'you will have to write this register twice' consequence requires");
 
         bool do_second_write = !mutating("P16");  // MUTATION: skip the corrective second write
         if (do_second_write) write_reg(INTENA, CLR | (1u << 3));  // second write: now clear bit3 (bit1 already set)
