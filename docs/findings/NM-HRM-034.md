@@ -8,6 +8,7 @@
 | **Report to** | **nobody yet** — two of the four implementations do the same thing; see *For the specialists* |
 | **Test** | [`hrm/ch7-beam-position-word-layout`](../../hrm/ch7-beam-position-word-layout) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Assertions** | `VPOSR-OCS-BITS-14-1-UNUSED (ntsc=1)` — red. `VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0)` is the green control, same label stem |
 | **Verdict of the four** | **2–2**: WinUAE and Denise expose the video standard in an OCS read exactly as NanoMig does; vAmiga and Copperline do not |
 
 ---

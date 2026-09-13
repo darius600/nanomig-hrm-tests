@@ -8,6 +8,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Assertions** | `P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE` — red. The two-bit measurement beside it is `P6-COMBINATION-MEASURED`, a `note()` |
 | **Verdict of the four** | **all four implement LOLDIS on its own**; NanoMig is alone in also requiring VARBEAMEN |
 
 ---

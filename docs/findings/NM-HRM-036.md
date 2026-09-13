@@ -8,6 +8,7 @@
 | **Report to** | **nobody.** Three of the four implementations do the same thing |
 | **Test** | [`hrm/ch7-reset-overlay`](../../hrm/ch7-reset-overlay) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Assertions** | `RESET-ALL-MEMORY-DISAPPEARS-SWEEP` — red. `OVERLAY-ROM-AT-000000` is green in the same package: the overlay works, the question is how far it reaches |
 | **Verdict of the four** | **3–1**: vAmiga, Denise and Copperline each replace only the ROM's own 512K; only WinUAE makes "all memory" literally true |
 
 ---

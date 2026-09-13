@@ -8,6 +8,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch7-overlay-source`](../../hrm/ch7-overlay-source) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Assertions** | `OTHER-CIA-A-REGISTER-ALSO-CLEARS` — red. Its precondition line shares the label stem and is green; `CIAB-WRITE-DOES-NOT-CLEAR` is the control |
 | **Verdict of the four** | **all four tie the overlay to the value of the OVL bit**; three say in code that only port-A registers can move it |
 
 ---
