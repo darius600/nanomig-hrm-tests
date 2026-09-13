@@ -154,6 +154,36 @@ to a page.
   interrupt-priority encoder in `paula_intcontroller`, out of this
   fixture's boundary for the same reason as above. Recorded, not asserted.
 
+## Addendum (written during step 3, before any assertion was coded): resolving the P2/P4 and P3/P5 off-by-one
+
+Page 219 states, in the same paragraph: "The minimum time of vertical
+blanking is 20 horizontal scan lines for an NTSC system and 25 horizontal
+scan lines for a PAL system. The range starts at line 0 and ends at line 20
+for NTSC or line 25 for PAL. After the minimum vertical blanking range, you
+can control where the display actually starts..."
+
+Read inclusively, "starts at line 0 and ends at line 20" spans 21 lines,
+one more than "is 20 horizontal scan lines" states two sentences earlier.
+The page does not otherwise say which of the two governs whether line 20
+(NTSC) / line 25 (PAL) itself still counts as blanking -- both readings are
+grammatically available and the third sentence ("after the ... range you
+can control...") is consistent with either.
+
+This is decided per-proposition rather than punted whole:
+
+- P2 and P3 ("minimum time ... is N horizontal scan lines") state a plain
+  count, with no dependency on which specific line is the boundary. They
+  are asserted as counts: the number of lines for which blanking holds, in
+  a frame, equals 20 (NTSC) / 25 (PAL). Unambiguous, fully testable.
+- P4 and P5 ("the range starts at line 0 and ends at line N") are asserted
+  only for what both readings of "ends at" agree on: blanking holds at
+  line 0 (the unambiguous start), and blanking has ended by one line past
+  the disputed boundary (line 21 for NTSC, line 26 for PAL -- outside the
+  range under either reading, and the control case BUILD-BRIEF requires,
+  on the same measurement basis as the assertion above it).
+- The disputed line itself (20 for NTSC, 25 for PAL) is measured and
+  reported (`record()`), not graded -- see the test's two boundary records.
+
 ## Claims accounted for
 
 All 11 claims in `ch7-vertb-vertical-blank-timing.jsonl` are accounted for
