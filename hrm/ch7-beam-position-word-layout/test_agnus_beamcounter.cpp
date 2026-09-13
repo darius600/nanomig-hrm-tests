@@ -177,13 +177,13 @@
 //   stimulus changed from 0x5A to 0x37 -> "10 passed, 4 failed", only
 //   VHPOSR-BITS-7-0-ARE-H8-H1 newly red (bits 7:0 now read 0x37, not the
 //   expected 0x5A). Reverted, baseline restored.
-// MUTATION VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0) stimulus red: the "ntsc=0"
+// MUTATION VPOSR-OCS-BITS-14-1-UNUSED stimulus red: (the ntsc=0 variant) the "ntsc=0"
 //   harness's ntsc argument changed from false to true -> "10 passed, 4
 //   failed", only "VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0)" newly red (band now
 //   reads 0x0800, the same value the ntsc=1 case below measures at
 //   baseline, via the same mechanism: bit 12 of the readback echoes ntsc
 //   unconditionally). Reverted, baseline restored.
-// MUTATION VPOSR-OCS-BITS-14-1-UNUSED (ntsc=1) none impossible: this is the
+// MUTATION VPOSR-OCS-BITS-14-1-UNUSED none impossible: (the ntsc=1 variant) this is the
 //   reproduction the lead asked for and is red at baseline by measurement
 //   (band=0x0800, full word 0x1001), not by construction. Its same-basis,
 //   same-harness-family control is the (ntsc=0) case immediately above,

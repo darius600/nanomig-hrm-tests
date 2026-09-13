@@ -70,6 +70,50 @@
 //   reverted (MUTATE unset) and confirmed green again; results are logged
 //   next to each assertion and summarised in the build report.
 //
+//
+// MUTATION RECORDS. One per assertion, in BUILD-BRIEF's fixed grammar so the
+//   gate can pair them. The switch is the MUTATE environment variable
+//   described above; the trailing (MUTATE=<id>) names it. Every colour below
+//   was MEASURED -- each id was run against this build and the assertion it
+//   turns red was read off that run, not taken from the mutation's intent.
+//   Baseline with MUTATE unset: 29 passed, 0 failed.
+//
+//   Three ids redden a neighbouring assertion as well, which is recorded here
+//   rather than tidied away: P18_CTRL also reddens P18b-MASTER-GATE-OPENS,
+//   P5A also reddens P5-INTENAR-READONLY, and P8A also reddens
+//   P8-INTREQR-READONLY. Each is still the sole record for the assertion it
+//   is named against.
+//
+// MUTATION A0-LIVENESS-INTENA-FIRST stimulus red: a different first word (0x00AA) is written to INTENA (MUTATE=A0_ENA1)
+// MUTATION A0-LIVENESS-INTENA-SECOND stimulus red: the stale first word is replayed as the second (MUTATE=A0_ENA2)
+// MUTATION A0-LIVENESS-INTREQ-FIRST stimulus red: a different first word (0x0041) is written to INTREQ (MUTATE=A0_REQ1)
+// MUTATION A0-LIVENESS-INTREQ-SECOND stimulus red: the stale first word is replayed as the second (MUTATE=A0_REQ2)
+// MUTATION P1-MASK-ENABLE-CLEAR stimulus red: bit 3 is also enabled early, before the cleared-mask read (MUTATE=P1)
+// MUTATION P1-MASK-ENABLE-SET stimulus red: bit 3 is never actually enabled (MUTATE=P1B)
+// MUTATION P2-TWO-REGISTERS-INDEPENDENT stimulus red: INTENAR is re-read and treated as the request register (MUTATE=P2)
+// MUTATION P3-FOUR-DISTINCT-ADDRESSES stimulus red: the 'unrelated' address is secretly INTENAR (MUTATE=P3)
+// MUTATION P4-INTENA-WRITE-ONLY stimulus red: the readback is taken from INTENAR, the real content address (MUTATE=P4)
+// MUTATION P5-INTENAR-MIRRORS stimulus red: a different word (0x001F) is written than the one checked for (MUTATE=P5A)
+// MUTATION P5-INTENAR-READONLY stimulus red: the spurious cycle is issued at INTENA, the real write address (MUTATE=P5B)
+// MUTATION P6-INTREQ-FORCE-SOFTWARE stimulus red: the bus write is skipped entirely (MUTATE=P6_FORCE)
+// MUTATION P6-INTREQ-WRITE-ONLY stimulus red: the readback is taken from INTREQR, the real content address (MUTATE=P6_WO)
+// MUTATION P7-STICKY-PERSISTS stimulus red: a clear is sneaked in before the idle stretch ends (MUTATE=P7_PERSIST)
+// MUTATION P7-STICKY-CLEARS stimulus red: the explicit clear write is skipped (MUTATE=P7_CLEARS)
+// MUTATION P8-INTREQR-MIRRORS stimulus red: a different word (0x0041) is written than the one checked for (MUTATE=P8A)
+// MUTATION P8-INTREQR-READONLY stimulus red: the spurious cycle is issued at INTREQ, the real write address (MUTATE=P8B)
+// MUTATION P10-BIT15-NO-MEANING-ENA stimulus red: INTENA's constant is sampled instead of INTENAR's (MUTATE=P10_ENA)
+// MUTATION P10-BIT15-NO-MEANING-REQ stimulus red: INTREQ's constant is sampled instead of INTREQR's (MUTATE=P10_REQ)
+// MUTATION P11-BIT15-SETCLR-ALSO-INTREQ stimulus red: the CLR half of the pair is never issued (MUTATE=P11)
+// MUTATION P12-SET-ENCODING stimulus red: CLR is sent where the assertion asks for SET (MUTATE=P12)
+// MUTATION P13-CLR-ENCODING stimulus red: SET is sent again where the assertion asks for CLR (MUTATE=P13)
+// MUTATION P14-MULTI-BIT-SELECTORS stimulus red: bit 12 is dropped from the multi-bit write (MUTATE=P14)
+// MUTATION P15-ZERO-POSITIONS-UNAFFECTED stimulus red: a different bit is selected than the one checked for (MUTATE=P15)
+// MUTATION P16-TWO-WRITES-ACHIEVE-MIX stimulus red: the corrective second write is skipped (MUTATE=P16)
+// MUTATION P17-INTEN-IS-NOT-AN-ORDINARY-ENABLE stimulus red: the ordinary bit is also enabled (MUTATE=P17)
+// MUTATION P18-CONTROL-SOURCE-REACHES-OUTPUT stimulus red: the ordinary source is never actually enabled (MUTATE=P18_CTRL)
+// MUTATION P18a-MASTER-GATE-CLOSES stimulus red: the master bit is never actually cleared (MUTATE=P18_CLOSE)
+// MUTATION P18b-MASTER-GATE-OPENS stimulus red: the master bit is never set back (MUTATE=P18_OPEN)
+//
 // FIXTURE-INTEGRITY PRECONDITION (A0). Per BUILD-BRIEF's silence-trap rule,
 //   distinct known words are written and read back through both register
 //   pairs, in sequence, before any later assertion that depends on a read
