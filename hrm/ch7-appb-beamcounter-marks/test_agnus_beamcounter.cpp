@@ -149,7 +149,8 @@
 //   - BEAMCON0's DIRECTION assertion and its "(E)"-mark assertion likewise
 //     share one mechanism (the single `&& ecs` write-gate, l.121/172) --
 //     independent PROPOSITIONS, not independent RTL facts; a change to that
-//     one gate moves both together (see MUTATION LOG).
+//     one gate moves both together (see the PER-ASSERTION MUTATION RECORDS
+//     below).
 //   - The two "(E)"-mark assertions (VPOSR "extended" vs BEAMCON0
 //     "completely new") ARE independent RTL facts: one is a bit inside a
 //     shared read mux, the other is a whole write-always-block's own gate
@@ -168,7 +169,7 @@
 //   one module-boundary structural fact reused 5x, plus VPOSW's and
 //   VHPOSW's own write blocks) -- reported here rather than left implicit.
 //
-// MUTATION LOG (every entry below was actually run by this agent under
+// PER-ASSERTION MUTATION RECORDS (every entry below was actually run by this agent under
 //   WSL/Verilator: edit -> rebuild -> run -> confirm the named assertion(s)
 //   flip -> revert -> rebuild -> confirm the full suite back to its
 //   committed baseline (15 passed, 2 failed) -- before moving to the next
@@ -204,10 +205,12 @@
 //   targets changed from A_VHPOSR to A_VPOSR (the marked register) ->
 //   14/3; only VHPOSR-NO-ECS-DEPENDENCE newly red (0x2002 vs 0x0002, now
 //   DOES differ by ecs). Reverted: 15/2.
-// MUTATION VPOSW-DIRECTION-WRITE-ONLY stimulus GREEN (this assertion's
-//   baseline is the package's own documented red -- see METHODOLOGY (2)):
-//   the read target changed from A_VPOSW to A_UNDECODED_CLXDAT (i.e. read
-//   the reference address instead of the address under test) -> 16 passed,
+// MUTATION VPOSW-DIRECTION-WRITE-ONLY stimulus green: this assertion is
+//   RED at baseline (a documented finding -- see METHODOLOGY (2)), so a red
+//   cannot be made to fail harder; its mutation instead runs the other way,
+//   turning it green, to prove the check is live rather than stuck. The
+//   read target changed from A_VPOSW to A_UNDECODED_CLXDAT (i.e. read the
+//   reference address instead of the address under test) -> 16 passed,
 //   1 failed; VPOSW-DIRECTION-WRITE-ONLY flips FAIL->PASS (now trivially
 //   compares the undecoded address to itself), VHPOSW-DIRECTION-WRITE-ONLY
 //   stays red. This shows the FAIL above is a real address-decode-aliasing
@@ -221,10 +224,13 @@
 //   written value changed from 0x8005 to 0x8006 -> 14/3; only
 //   VPOSW-NO-ECS-DEPENDENCE newly red (masked readback now 0x8005 vs
 //   0x8006). Reverted: 15/2.
-// MUTATION VHPOSW-DIRECTION-WRITE-ONLY stimulus GREEN (symmetric to
-//   VPOSW's above): the read target changed from A_VHPOSW to
-//   A_UNDECODED_INTENAR -> 16 passed, 1 failed; VHPOSW-DIRECTION-WRITE-ONLY
-//   flips FAIL->PASS, VPOSW-DIRECTION-WRITE-ONLY stays red. Reverted: 15/2.
+// MUTATION VHPOSW-DIRECTION-WRITE-ONLY stimulus green: symmetric to
+//   VPOSW-DIRECTION-WRITE-ONLY above -- this assertion is also RED at
+//   baseline (documented finding), so its mutation likewise runs
+//   red-to-green to prove the check is live rather than stuck: the read
+//   target changed from A_VHPOSW to A_UNDECODED_INTENAR -> 16 passed,
+//   1 failed; VHPOSW-DIRECTION-WRITE-ONLY flips FAIL->PASS,
+//   VPOSW-DIRECTION-WRITE-ONLY stays red. Reverted: 15/2.
 // MUTATION VHPOSW-CHIP-AGNUS stimulus red: the "correct address" write
 //   target changed from A_VHPOSW to A_UNDECODED_INTENAR -> 14/3; only
 //   VHPOSW-CHIP-AGNUS newly red. Reverted: 15/2.
@@ -241,7 +247,11 @@
 // MUTATION BEAMCON0-DIRECTION-WRITE-ONLY stimulus red: the write's target
 //   changed from A_BEAMCON0 to A_UNDECODED_CLXDAT -> 14/3; only
 //   BEAMCON0-DIRECTION-WRITE-ONLY newly red (harddis_out/varbeamen_out
-//   stay false). Reverted: 15/2.
+//   stay false). Reverted: 15/2. Note this assertion is ALSO moved, as
+//   expected collateral, by the separate PRECONDITION-BEAMCON0-EFFECTIVE-
+//   ECS1 mutation above (forcing ecs=0 on the same harness makes this
+//   assertion red too, since the write no longer takes effect) -- two
+//   different stimulus changes each independently flip this one id.
 // MUTATION BEAMCON0-CHIP-AGNUS-ENHANCED stimulus red: the "correct
 //   address" write target changed from A_BEAMCON0 to A_UNDECODED_CLXDAT ->
 //   14/3; only BEAMCON0-CHIP-AGNUS-ENHANCED newly red. Reverted: 15/2.
@@ -756,7 +766,7 @@ int main(int argc, char** argv) {
             "measurement with BEAMCON0-DIRECTION-WRITE-ONLY above -- one "
             "RTL mechanism (the `&& ecs` write gate), two manual "
             "propositions (see the INDEPENDENCE note above the "
-            "MUTATION LOG).");
+            "PER-ASSERTION MUTATION RECORDS).");
     }
 
     std::cout << checks.passed << " passed, " << checks.failed << " failed\n";
