@@ -112,9 +112,20 @@ specialist rules on it.
 | [NM-HRM-029](findings/NM-HRM-029.md) | Figure 5-8's `dmasen` note does not hold outside its own exception | **withdrawn** | `hrm/ch5-audio-channel-state` | not comparable — `dmasen` appears at no pin |
 | [NM-HRM-030](findings/NM-HRM-030.md) | Paula does not decode DMACONR, though the appendix gives it part ownership | **red** | `hrm/ch5-audio-dmacon-adkcon` | not read — the emulators are monolithic and model no per-chip decode |
 | [NM-HRM-031](findings/NM-HRM-031.md) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | **red** | `hrm/ch5-audio-interrupt` | **vAmiga and Denise also allow it**; NanoMig's own comment calls it undocumented |
+| [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | **red** | `hrm/ch7-beamcon0-ecs-control-bits` | **split**: only WinUAE implements all three, Denise implements CSYTRUE alone, two model none |
+| [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | **red** | `hrm/ch7-beamcon0-ecs-control-bits` | **all four** use LOLDIS alone; NanoMig also requires VARBEAMEN |
+| [NM-HRM-034](findings/NM-HRM-034.md) | VPOSR reports the video standard in bit 12 of an OCS configuration | **red · contested** | `hrm/ch7-beam-position-word-layout` | **2-2**: WinUAE and Denise do the same; and no implementation leaves bits 14-1 unused |
+| [NM-HRM-035](findings/NM-HRM-035.md) | any write to CIA-A clears the kickstart overlay, not only a write to the OVL bit | **red** | `hrm/ch7-overlay-source` | **all four** follow the OVL bit's value; three name the only registers that may move it |
+| [NM-HRM-036](findings/NM-HRM-036.md) | chip memory banks 1-3 stay reachable while the overlay is active | **red · manual likely wrong** | `hrm/ch7-reset-overlay` | **3-1**: vAmiga, Denise and Copperline replace only the ROM's 512K, as NanoMig does |
 
-Chapters 1, 7 and 8 have not been extracted, so no finding below comes from
-them. The register is a record of what has been looked at, not of what is there.
+Chapters 1 and 8 have not been extracted, so no finding below comes from them.
+The register is a record of what has been looked at, not of what is there.
+
+**Chapter 7 also strengthened two existing findings without adding a number.**
+NM-HRM-008 gains two printed sources it did not have, and NM-HRM-011 gains
+chapter 7's own page and a contradiction inside it. Each says so on its own page.
+A chapter that corroborates an existing finding from a different page has done
+more for it than a new number would.
 
 ## Where the five oldest findings come from, and whether they hold
 

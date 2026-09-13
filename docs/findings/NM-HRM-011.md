@@ -6,9 +6,50 @@
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L89-L90) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L89-L90) |
 | **Upstream** | inherited — the parameters are unchanged upstream |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's figure is upheld — see *Suggested change* |
-| **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) · [`hrm/ch7-vertb-vertical-blank-timing`](../../hrm/ch7-vertb-vertical-blank-timing) |
+| **Chapter** | 3 — Playfield, and 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | Denise's PAL−NTSC gap is five lines like NanoMig's; the manual's is eight |
+
+---
+
+## Chapter 7: the manual gives two numbers for this on one page
+
+Chapter 7 measured the same quantity from its own page and found that **p. 219
+contradicts itself**:
+
+> "The minimum time of vertical blanking is 20 horizontal scan lines for an NTSC
+> system and 25 horizontal scan lines for a PAL system." (printed p. 219)
+
+> the range "starts at line 0 and ends at line 20" (printed p. 219)
+
+Read as a count the first sentence gives 20; read inclusively the second gives
+21. They are on the same page, about the same thing.
+
+| | NanoMig | p.219 as a count | p.219 read inclusively | Table 3-13 |
+|---|---|---|---|---|
+| NTSC | 21 | 20 | 21 | 21 (stop `$15`) |
+| PAL | **26** | 25 | 26 | **29** (stop `$1D`) |
+
+`agnus_beamcounter.v` says which reading it implements, in its own comment on the
+constant it uses:
+
+```verilog
+parameter VBSTOP_PAL_VAL  = 9'd25;           // vertical blanking end (PAL 26 lines, NTSC vblank 21 lines)
+parameter VBSTOP_NTSC_VAL = 9'd20;           // vertical blanking end (PAL 26 lines, NTSC vblank 21 lines)
+```
+
+So NanoMig implements the inclusive reading deliberately, and for NTSC that
+agrees with Table 3-13 as well. **For NTSC there is no deviation at all except
+against one of the two sentences on p. 219.**
+
+PAL is where this finding lives, and chapter 7 narrows it: NanoMig's 26 agrees
+with p. 219 read inclusively and disagrees only with Table 3-13's 29. The gap
+this finding reports is therefore between **two places in the manual**, with
+NanoMig sitting on one of them.
+
+`hrm/ch7-vertb-vertical-blank-timing` grades the count reading — because it is
+printed and it is a requirement — and `record()`s the inclusive reading beside
+it rather than choosing silently. Both of its assertions are red.
 
 ---
 

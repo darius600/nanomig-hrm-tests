@@ -6,8 +6,8 @@
 | **Module** | `denise_collision.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise_collision.v#L62-L63) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_collision.v#L62-L63) |
 | **Upstream** | inherited — `denise_collision.v` is content-identical to upstream |
 | **Report to** | **nowhere. The RTL is very likely more correct than the manual** |
-| **Test** | [`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers) |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Test** | [`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers) · [`hrm/ch7-collision-playfield-mode`](../../hrm/ch7-collision-playfield-mode) |
+| **Chapter** | 3 — Playfield, and 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | **all four gate playfield 1 on playfield 2** — NanoMig's expression, term for term |
 
 ---
@@ -20,6 +20,33 @@ appendix A's table of independent collision bits is incomplete** — not that
 NanoMig is wrong.
 
 Everything below is evidence for that reading.
+
+---
+
+## Chapter 7 found the same thing from two more pages
+
+This finding was opened from appendix A's table of collision bits. Chapter 7
+reached it independently, from the chapter body and from a different appendix
+page, and five assertions in `hrm/ch7-collision-playfield-mode` are red on it.
+
+> "collision detection does not change when you select either single- or
+> dual-playfield mode" (printed p. 214)
+
+> "Playfield 1 is all odd-numbered enabled bitplanes" (printed p. 273)
+
+Measured there: `CLXDAT & 0x7FFF` for the same PF1-SPR stimulus differs between
+`dblpf=0` and `dblpf=1` for all four sprite pairs, and with both an odd and an
+even bitplane enabled, a match on the odd plane alone does not set the PF1 bit.
+
+**That changes this finding's argument.** It is no longer one incomplete table in
+an appendix: the manual states the independence in body text *and* in appendix A,
+and the implementations — all four of them — contradict all of it. A single
+incomplete table is an editing slip; the same proposition printed three times in
+three places is what the manual means.
+
+The obvious objection was checked and rejected by the independent validation:
+pp. 211-212 do not limit collision independence to dual-playfield mode, they
+discuss display priority.
 
 ---
 
