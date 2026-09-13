@@ -337,12 +337,23 @@ int main(int argc, char **argv) {
         // still not 20, so the assertion stays red for a verifiably different
         // reason (proving the measurement tracks the mode, not a frozen
         // number). Verified: PAL count below.
-        // MUTATION NTSC-VBLANK-DURATION-20-LINES oracle green: performed by
-        // hand during development -- with the expected value edited from 20
-        // to 21 (agnus_beamcounter.v's own actual NTSC count) the assertion
-        // passed; reverted to 20 before this file was finalized. Confirms the
-        // FAIL above is a real, reproducible measurement and not a harness
-        // defect.
+        // MUTATION NTSC-VBLANK-DURATION-20-LINES none impossible: no stimulus
+        // inside this package's boundary can make the measured count 20, so
+        // there is no `stimulus green` to run. At ecs=0 -- which every run here
+        // drives explicitly -- agnus_beamcounter.v:233 makes vbstop the
+        // constant `pal ? 25 : 20`; the programmable path is gated on VARVBEN
+        // and VARBEAMEN, which arrive through a BEAMCON0 write the module gates
+        // on ecs, and that territory is ch7-beamcon0-ecs-control-bits' by this
+        // package's own scope note above. What demonstrates the check is live
+        // is the stimulus mutation recorded above: swapping the mode moves the
+        // measured count (21 <-> 26), so the number tracks what the module is
+        // asked to do.
+        //
+        // An `oracle green` record stood here until stage 8: the expected value
+        // had been edited from 20 to 21 by hand and the assertion passed. That
+        // demonstrates nothing -- BUILD-BRIEF says flipping an expected value
+        // proves nothing, and it is the assertion's own oracle -- so it is
+        // withdrawn rather than kept as evidence.
         checks.note("NTSC-VBLANK-DURATION-20-LINES measured count is "
             + std::to_string(ntsc_vbl_lines) + " (vpos 0.." + std::to_string(ntsc_vbl_lines - 1) + ")");
     }
@@ -361,10 +372,14 @@ int main(int argc, char **argv) {
         // stimulus to NTSC timing while leaving the expected value (25)
         // alone -- measured count changes to 21 (see NTSC count above), still
         // not 25. Same reasoning as the NTSC assertion's stimulus mutation.
-        // MUTATION PAL-VBLANK-DURATION-25-LINES oracle green: performed by
-        // hand during development -- expected value edited from 25 to 26
-        // (the RTL's actual PAL count) made the assertion pass; reverted to
-        // 25 before this file was finalized.
+        // MUTATION PAL-VBLANK-DURATION-25-LINES none impossible: same position
+        // as the NTSC assertion above -- at ecs=0 vbstop is the constant 25 and
+        // nothing this package may drive can change it, so no `stimulus green`
+        // exists. The live-measurement demonstration is the stimulus mutation
+        // recorded above (the count moves 26 <-> 21 with the mode).
+        //
+        // An `oracle green` record stood here until stage 8, editing the
+        // expected value from 25 to 26; withdrawn for the same reason.
         checks.note("PAL-VBLANK-DURATION-25-LINES measured count is "
             + std::to_string(pal_vbl_lines) + " (vpos 0.." + std::to_string(pal_vbl_lines - 1) + ")");
     }

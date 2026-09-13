@@ -576,9 +576,13 @@ int main(int argc, char** argv) {
             lol_combo[0] == lol_combo[1] && lol_combo[1] == lol_combo[2] &&
             lol_combo[2] == lol_combo[3];
 
-        checks.expect(
-            control_toggles && combo_frozen,
-            "P6-BEAMCON0-LOLDIS-BIT11-WITH-VARBEAMEN-FREEZES-LONG-LINE-TOGGLE: "
+        checks.note(
+            std::string("P6-COMBINATION-MEASURED (control toggles: ") +
+            (control_toggles ? "yes" : "no") + "; LOLDIS+VARBEAMEN frozen: " +
+            (combo_frozen ? "yes" : "no") + ") -- reported, not graded: no "
+            "printed sentence makes the two-bit combination a proposition. "
+            "This was a graded assertion until stage 8, and grading it meant "
+            "grading what the RTL does against itself. "
             "under NTSC (pal=0), VPOSR's LOL bit (bit 7) toggles "
             "line by line with BEAMCON0=0 (control) but stays frozen with "
             "LOLDIS and VARBEAMEN both set -- 'if (pal || (loldis && "
@@ -603,6 +607,45 @@ int main(int argc, char** argv) {
             lol_varbeamen_alone[1] != lol_varbeamen_alone[2] &&
             lol_varbeamen_alone[2] != lol_varbeamen_alone[3];
 
+        checks.expect(
+            control_toggles && !loldis_alone_still_toggles,
+            "P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE: under NTSC "
+            "(pal=0), VPOSR's LOL bit (bit 7) toggles line by line with "
+            "BEAMCON0=0 -- the same-basis control, measured on a fresh model "
+            "-- and setting LOLDIS ALONE must stop it. '11 LOLDIS Disable "
+            "long line/short line toggle' (p.305) states no further "
+            "condition, and p.309's 'The Strobe Long Line register (STRLONG) "
+            "can be disabled if the Disable Long Line (LOLDIS) bit is set' "
+            "names none either. MEASURED: with LOLDIS alone the toggle "
+            "continues (still toggling: " +
+            std::string(loldis_alone_still_toggles ? "yes" : "no") + ") -- "
+            "agnus_beamcounter.v:292-300 gates the freeze on '(loldis && "
+            "varbeamen)', a dependency neither printed sentence carries. RED "
+            "is the correct outcome: the RTL, not the assertion, is what "
+            "disagrees with the manual. sol:7-appC-beamcon0.c6, "
+            "opus:7-appC-beamcon0.c6.");
+        // MUTATION P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE stimulus green: set VARBEAMEN alongside LOLDIS in the stimulus
+        //   green: leaving the
+        //   expected value ("the toggle must stop") untouched. Run below on its
+        //   own fresh model, and its result printed, because an assertion that
+        //   is red at baseline needs a demonstration that it can move at all.
+        {
+            Harness h_mut(/*ecs=*/true, /*ntsc=*/true);
+            h_mut.write_reg(A_BEAMCON0, (1 << BC_LOLDIS) | (1 << BC_VARBEAMEN));
+            auto lol_mut = sample_lol(h_mut, 4);
+            bool mut_still_toggles = lol_mut.size() == 4 &&
+                lol_mut[0] != lol_mut[1] &&
+                lol_mut[1] != lol_mut[2] &&
+                lol_mut[2] != lol_mut[3];
+            bool mut_predicate = control_toggles && !mut_still_toggles;
+            checks.note(
+                std::string("mutation demonstration for P6-BEAMCON0-LOLDIS-"
+                "BIT11-DISABLES-LONG-LINE-TOGGLE: adding VARBEAMEN to the "
+                "stimulus, the identical predicate reads ") +
+                (mut_predicate ? "GREEN" : "RED") + " -- so the assertion "
+                "responds to what the module is asked to do and is not stuck "
+                "red. The expected value was not touched.");
+        }
         checks.note(
             "companion table for P6, reproducing (independently, fresh "
             "models per leg) the measurement STEP3-NOTES-ch7-beamcon0-ecs-"
@@ -973,7 +1016,12 @@ int main(int argc, char** argv) {
 // MUTATION P2-BEAMCON0-WRITE-ONLY-READS-AS-CONSTANT-ZERO stimulus red: the readback address changed from A_BEAMCON0 to A_VPOSR -> FAIL (8/4), only this assertion red (VPOSR's own status bits, not 0, fail the beamcon0_read==0 check). Reverted: 9/3.
 // MUTATION P4-BEAMCON0-HARDDIS-BIT14-RAISES-HARDDIS-OUT stimulus red: the write changed from `1 << BC_HARDDIS` to `1 << BC_LOLDIS` -> FAIL (8/4), only this assertion red (harddis_out stays 0, HARDDIS was never actually written). Reverted: 9/3.
 // MUTATION P5-BEAMCON0-VARVBEN-BIT12-WITH-VARBEAMEN-SELECTS-WRITTEN-VBSTOP stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_VARVBEN)` alone) -> FAIL (8/4), only this assertion red (vbl at vpos=10 stays 1, the written VBSTOP=6 never takes over without VARBEAMEN). Reverted: 9/3.
-// MUTATION P6-BEAMCON0-LOLDIS-BIT11-WITH-VARBEAMEN-FREEZES-LONG-LINE-TOGGLE stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_LOLDIS)` alone) -> FAIL (8/4), only this assertion red (LOL keeps toggling, matching the exact single-bit-sweep mistake STEP3-NOTES describes). Reverted: 9/3.
+// WITHDRAWN AT STAGE 8 -- P6-BEAMCON0-LOLDIS-BIT11-WITH-VARBEAMEN-FREEZES-LONG-LINE-TOGGLE
+//   is now the measurement P6-COMBINATION-MEASURED, because no printed sentence makes
+//   the two-bit combination a proposition. The run below happened and is kept as
+//   evidence; it is no longer a MUTATION record because it has no assertion to pair
+//   with, and its 9/3 baseline is what the package read AT THE TIME.
+//   (was: MUTATION ... stimulus red) The combo write's VARBEAMEN bit was omitted (`(1<<BC_LOLDIS)` alone) -> FAIL (8/4), only this assertion red (LOL keeps toggling, matching the exact single-bit-sweep mistake STEP3-NOTES describes). Reverted: 9/3.
 // MUTATION P7-BEAMCON0-VARVSYEN-BIT9-WITH-VARBEAMEN-SELECTS-WRITTEN-VSSTRT stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_VARVSYEN)` alone) -> FAIL (8/4), only this assertion red (_vsync keeps falling at the hardwired default, vpos==3, not the written 81). Reverted: 9/3.
 // MUTATION P8-BEAMCON0-VARHSYEN-BIT8-WITH-VARBEAMEN-SELECTS-WRITTEN-HSSTRT stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_VARHSYEN)` alone) -> FAIL (8/4), only this assertion red (_hsync keeps falling near the hardwired default, not the written 200). Reverted: 9/3.
 // MUTATION P9-BEAMCON0-VARBEAMEN-BIT7-ALONE-SELECTS-WRITTEN-HTOTAL stimulus red: the enabling write changed from `1 << BC_VARBEAMEN` to `0` -> FAIL (8/4), only this assertion red (htotal_out stays 452, the written HTOTAL=500 never takes over). Reverted: 9/3.
