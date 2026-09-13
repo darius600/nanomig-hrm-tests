@@ -42,8 +42,8 @@
 //   classify.evidence field, per the coordinator's instruction after the
 //   specification commit.
 //
-// STIMULUS DESIGN: for the seven adjacency assertions (PRI-*) and the two
-//   order-invariance assertions (INV-*), the two competing sprites of a
+// STIMULUS DESIGN: for the twenty-eight pairwise assertions (PRI-*) and the
+//   two order-invariance assertions (INV-*), the two competing sprites of a
 //   pair are given DISTINGUISHABLE non-zero 2-bit pixel codes -- the
 //   lower-numbered sprite's own DATA register gets 0x8000 (pixel code
 //   2'b01), the higher-numbered sprite's own DATB register gets 0x8000
@@ -54,13 +54,57 @@
 //   "distinguishable 2-bit codes" method the claims file's own
 ///  classify.evidence already describes as MEASURED.
 //
+// REPAIR (2026-09-13, following independent validation slice B2, findings
+//   2 and 4): the original build (18 passed, 0 failed, commit noted below)
+//   had two defects.
+//
+//   Finding 2 (critical, WIDEN): PRI-01..PRI-67 graded only the seven
+//   ADJACENT pairs. p.207's own sentence -- "You cannot change the relative
+//   priorities of the sprites. They will always appear on the screen with
+//   the lower-numbered sprites appearing in front of ... the
+//   higher-numbered sprites" -- states the rule for every overlapping pair,
+//   C(8,2)=28 of them, not only the 7 adjacent ones; a design where sprite
+//   0 lost to sprite 2 would have passed every assertion this package
+//   graded. Fixed by adding PRI-02..PRI-57, the 21 non-adjacent pairs, same
+//   measurement basis and mutation pattern as PRI-01..PRI-67 (see the
+//   "PRI-02 .. PRI-57" block below for the full citation reasoning: they
+//   use sol:7-video.c1/opus:7-vp.c1/opus:7-vp.c9, the page-207/209 general
+//   wording, not opus:7-vp.c2, whose own recorded evidence covers only the
+//   seven adjacent boxes).
+//
+//   Finding 4 (high, narrow expect() to what p.208/207/209 actually say):
+//   SPR-0..SPR-7 required the FULL packed sprdata byte --
+//   expected_single_byte()'s ((n/2)<<2) group-id term, taken from
+//   denise_sprites.v's own cascade packing -- plus an exact one-sample
+//   pulse width; p.208 establishes eight sprites numbered 0-7 and neither
+//   of those. INV-01/INV-67 required fwd.trace==rev.trace, equality of all
+//   512 internal sprdata samples; p.207/209 state an invariance about which
+//   sprite wins the overlap, not about internal state at every other hpos.
+//   Both are now narrowed to their page-grounded core (liveness + code
+//   identity for SPR-*; same winner at the same hpos in both arm orders for
+//   INV-*); the dropped RTL-derived parts are still measured and printed
+//   (SPR-N-ENCODING-MEASURED, INV-0N-FULLTRACE-MEASURED) but no longer
+//   required by expect(), each with its own NOT-GRADED record(),
+//   reason_kind source-silent.
+//
+//   Net effect: 18 -> 39 graded assertions (+21 PRI, SPR-*/INV-* counts
+//   unchanged but narrowed). New baseline 39 passed, 0 failed -- see
+//   RESULTS below. No new red: the RTL's own cascade (denise_sprites.v:
+//   whichever group -- (0,1), then (2,3), then (4,5), then (6,7) -- is
+//   checked first and, within it, the lower sprite wins if it is active at
+//   all) already implements full transitive lower-wins priority, not only
+//   adjacent-pair priority, so every added PRI-* assertion PASSED.
+//
 // CLAIM COVERAGE -- all 23 records cited, each inside an expect() or
-//   record() label:
+//   record() label. Citation set is unchanged by the repair (WIDEN reused
+//   existing universal-claim ids on the 21 new pairs; no new claim record
+//   was created):
 //   FIXTURE-LIVE-DATA-PATH [control, no claim id, no page]
 //   SPR-0 .. SPR-7 (8 assertions, p.208) -- opus:7-fig7-1.c1 (hardware
-//     half only)
-//   PRI-01 .. PRI-67 (7 assertions, p.208, plus p.209 group-crossing
-//     support on PRI-12/34/56):
+//     half only; the RTL-derived packed-byte/pulse-width half is measured
+//     and recorded, not graded -- see REPAIR above)
+//   PRI-01 .. PRI-67 (7 adjacent-pair assertions, p.208, plus p.209
+//     group-crossing support on PRI-12/34/56):
 //     PRI-01: sol:7-fig7-1.c1, opus:7-fig7-1.c2, opus:7-vp.c2
 //     PRI-12: sol:7-fig7-1.c2, opus:7-fig7-1.c3, opus:7-fig7-2.c6, opus:7-vp.c2
 //     PRI-23: sol:7-fig7-1.c3, opus:7-fig7-1.c4, opus:7-vp.c2
@@ -69,80 +113,119 @@
 //     PRI-56: sol:7-fig7-1.c6, opus:7-fig7-1.c7, sol:7-fig7-2.c9,
 //             opus:7-fig7-2.c8, opus:7-vp.c2
 //     PRI-67: sol:7-fig7-1.c7, opus:7-fig7-1.c8, opus:7-vp.c2
+//   PRI-02 .. PRI-57 (21 non-adjacent-pair assertions, p.207+209, added by
+//     the repair): sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 on each --
+//     the same three ids INV-01/INV-67 already use, because these are the
+//     claims that actually state the rule without an adjacency qualifier.
 //   INV-01, INV-67 (2 assertions, p.207+209): sol:7-video.c1, opus:7-vp.c1,
 //     opus:7-vp.c9
 //   Declined [no expect(), record() only]:
 //     opus:7-fig7-1.c1's drawing-inventory half (p.208)
 //     opus:7-fig7-1.c2 through opus:7-fig7-1.c8's ink-description halves
 //       (p.208, 7 ids)
-//   23 records = 8 (SPR, sharing opus:7-fig7-1.c1's hardware half) + 7 PRI +
-//   2 INV citation sets + 2 declined records, with opus:7-fig7-1.c1 (both
-//   halves), opus:7-vp.c2 and the three fig7-2 group-crossing ids each
-//   doing double duty exactly as SPECIFICATION.md said they would.
+//   23 records = 8 (SPR, sharing opus:7-fig7-1.c1's hardware half) + 7
+//   adjacent PRI + 2 INV citation sets + 2 declined records, with
+//   opus:7-fig7-1.c1 (both halves), opus:7-vp.c2, the three fig7-2
+//   group-crossing ids, and now sol:7-video.c1/opus:7-vp.c1/opus:7-vp.c9
+//   (21 more times, on PRI-02..PRI-57) each doing multiple duty.
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id) proves the
 //   write -> arm -> hpos-sweep -> read-sprdata measurement basis every
 //   other assertion in this file shares is alive, per the build brief's
 //   own chapter-6 warning. PRI-01 and SPR-0 are also nominated controls in
 //   SPECIFICATION.md: none of this package's assertions are under
-//   suspicion, and all seventeen graded assertions share this same basis.
+//   suspicion, and all thirty-eight other graded assertions share this
+//   same basis.
 //
-// RESULTS (WSL/Verilator 5.052, built and run 13.09.2026, AFTER the
-//   specification commit -- denise_sprites.v and denise_sprites_shifter.v
-//   were opened only once, for this build, not before): 18 passed, 0
-//   failed. All eighteen graded assertions (FIXTURE-LIVE-DATA-PATH,
-//   SPR-0..SPR-7, PRI-01..PRI-67, INV-01, INV-67) are GREEN. No finding:
-//   the manual's claims held under measurement exactly as classified.
+// RESULTS (WSL/Verilator 5.052; original build run 13.09.2026 AFTER the
+//   specification commit, denise_sprites.v and denise_sprites_shifter.v
+//   opened only once, not before; repair built and run the same day,
+//   13.09.2026, against independent-validation slice B2): 39 passed, 0
+//   failed. All thirty-nine graded assertions (FIXTURE-LIVE-DATA-PATH,
+//   SPR-0..SPR-7, PRI-01..PRI-67, PRI-02..PRI-57, INV-01, INV-67) are
+//   GREEN. No new finding from the repair itself: the manual's universal
+//   priority rule held under measurement for every one of the 28 pairs, not
+//   only the 7 originally graded.
 //   Measured hpos values: FIXTURE-LIVE-DATA-PATH MSB hpos=130, mid
 //   hpos=138, LSB hpos=145 (distinct, monotonic); every one of SPR-0..
-//   SPR-7, armed alone at the same horizontal start, hits at hpos=130
-//   with count=1, confirming all eight sprites' own register-to-shifter
-//   paths are independently live.
+//   SPR-7, and every PRI-*/INV-* pair (all armed at the same horizontal
+//   start, pos_byte=0x40), hits at hpos=130, confirming all eight sprites'
+//   own register-to-shifter paths are independently live and that the
+//   pairwise measurement basis is the same one FIXTURE-LIVE-DATA-PATH
+//   proved alive. SPR-N-ENCODING-MEASURED bytes (still recorded, no longer
+//   graded): SPR-0/1=0x01, SPR-2/3=0x05, SPR-4/5=0x09, SPR-6/7=0x0D, each
+//   with exactly 1 active sample -- denise_sprites.v's own packing
+//   prediction held, it is just no longer a p.208 requirement.
+//   INV-01/INV-67-FULLTRACE-MEASURED (still recorded, no longer graded):
+//   both true (fwd.trace==rev.trace over all 512 samples) on the
+//   unmutated build.
 //
-// MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
-//   actually run: `make MUT=<NAME>` -> read the PASS/FAIL lines -> confirm
-//   only the named assertion changed colour -> `make` with no flag ->
-//   confirm the 18-passed/0-failed baseline was restored). Gate grammar:
-//   `// MUTATION <assertion-label> <oracle|stimulus|none> <red|green|
-//   impossible> <what changed>` -- the second token is the assertion's OWN
-//   label, exactly as passed to expect(), not the -D switch that drives it;
-//   the switch name is kept in the description so a reader can still find
-//   the build. All eighteen below are STIMULUS mutations: each changes what
-//   the module is ASKED to do (an arming write withheld) and leaves the
-//   expected value untouched, per the build brief's "flipping an expected
-//   value proves nothing".
+// MUTATION LOG (WSL/Verilator, same repair session as RESULTS above; each
+//   entry actually run: `make MUT=<NAME>` -> read the PASS/FAIL lines ->
+//   confirm only the named assertion changed colour -> `make` with no flag
+//   -> confirm the 39-passed/0-failed baseline was restored). Gate
+//   grammar: `// MUTATION <assertion-label> <oracle|stimulus|none>
+//   <red|green|impossible> <what changed>` -- the second token is the
+//   assertion's OWN label, exactly as passed to expect(), not the -D
+//   switch that drives it; the switch name is kept in the description so a
+//   reader can still find the build. All thirty-nine below are STIMULUS
+//   mutations: each changes what the module is ASKED to do (an arming
+//   write withheld) and leaves the expected value untouched, per the build
+//   brief's "flipping an expected value proves nothing".
 //
 //   INV-01 and INV-67 are the two where the mutation itself needs a reason,
-//   not just a result: they grade fwd.trace == rev.trace, a comparison of
-//   two MEASUREMENTS to each other, not to a constant, so a mutation that
-//   changed both sides alike (e.g. a symmetric arm-order swap) would leave
-//   the two traces agreeing and would not have failed -- it would only
-//   re-demonstrate the same order-invariance the assertion already asserts.
-//   Both are built asymmetrically instead: the lower sprite is withheld in
-//   the REVERSE-armed run ONLY, so the forward run still shows the lower
+//   not just a result: even under the repair's narrower same-hpos/
+//   same-code grading (finding 4), the two runs' WINNER is compared to
+//   EACH OTHER, not to a constant, so a mutation that changed both sides
+//   alike (e.g. a symmetric arm-order swap) would leave them agreeing and
+//   would not have failed -- it would only re-demonstrate the same
+//   order-invariance the assertion already asserts. Both are built
+//   asymmetrically instead: the lower sprite is withheld in the
+//   REVERSE-armed run ONLY, so the forward run still shows the lower
 //   sprite's code while the reverse run now shows the higher sprite's --
-//   the two sides the equality compares are forced to disagree, and the
+//   the two sides the comparison compares are forced to disagree, and the
 //   assertion goes red because ITS OWN comparison is sensitive, not because
 //   a hand-picked expected byte changed.
 //
-// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: MUT_FIXTURE=1 makes the MSB-run stimulus 0x0001, identical to the LSB-run -> FAIL (17 passed, 1 failed), only FIXTURE-LIVE-DATA-PATH newly red (MSB hpos=145 became equal to LSB hpos=145, no longer distinct or monotonic; mid hpos=138 unchanged). Rebuilt with no flag: 18 passed, 0 failed restored.
-// MUTATION SPR-0 stimulus red: MUT_SPR0=1 withholds arming for sprite 0 (its own four registers are never written) -> FAIL (17 passed, 1 failed), only SPR-0 newly red (hit hpos=-1, count=0 -- nothing on sprdata at all), the other seven SPR-* and all other assertions unchanged. Rebuilt with no flag: baseline restored.
-// MUTATION SPR-1 stimulus red: MUT_SPR1=1 withholds arming for sprite 1 -> FAIL (17 passed, 1 failed), only SPR-1 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
-// MUTATION SPR-2 stimulus red: MUT_SPR2=1 withholds arming for sprite 2 -> FAIL (17 passed, 1 failed), only SPR-2 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
-// MUTATION SPR-3 stimulus red: MUT_SPR3=1 withholds arming for sprite 3 -> FAIL (17 passed, 1 failed), only SPR-3 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
-// MUTATION SPR-4 stimulus red: MUT_SPR4=1 withholds arming for sprite 4 -> FAIL (17 passed, 1 failed), only SPR-4 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
-// MUTATION SPR-5 stimulus red: MUT_SPR5=1 withholds arming for sprite 5 -> FAIL (17 passed, 1 failed), only SPR-5 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
-// MUTATION SPR-6 stimulus red: MUT_SPR6=1 withholds arming for sprite 6 -> FAIL (17 passed, 1 failed), only SPR-6 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
-// MUTATION SPR-7 stimulus red: MUT_SPR7=1 withholds arming for sprite 7 -> FAIL (17 passed, 1 failed), only SPR-7 newly red (hit hpos=-1, count=0), all other assertions unchanged. Rebuilt with no flag: baseline restored.
-// MUTATION PRI-01 stimulus red: MUT_PRI01=1 withholds arming for sprite 0 (the lower of the pair); group(0,1) then has only sprite 1 active, so sprdata's low bits read 2'b10 (sprite 1's code) instead of the expected 2'b01 -> FAIL (17 passed, 1 failed), only PRI-01 newly red. Rebuilt with no flag: baseline restored.
-// MUTATION PRI-12 stimulus red: MUT_PRI12=1 withholds arming for sprite 1 (the lower of the pair); group(0,1) is then entirely inactive and the cascade falls through to group(2,3), where sprite 2 is the only active sprite, so sprdata reads sprite 2's code (2'b10) instead of sprite 1's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-12 newly red. Rebuilt with no flag: baseline restored.
-// MUTATION PRI-23 stimulus red: MUT_PRI23=1 withholds arming for sprite 2 (the lower of the pair); group(2,3) then has only sprite 3 active, so sprdata reads sprite 3's code (2'b10) instead of sprite 2's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-23 newly red. Rebuilt with no flag: baseline restored.
-// MUTATION PRI-34 stimulus red: MUT_PRI34=1 withholds arming for sprite 3 (the lower of the pair); group(2,3) is then entirely inactive and the cascade falls through to group(4,5), where sprite 4 is the only active sprite, so sprdata reads sprite 4's code (2'b10) instead of sprite 3's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-34 newly red. Rebuilt with no flag: baseline restored.
-// MUTATION PRI-45 stimulus red: MUT_PRI45=1 withholds arming for sprite 4 (the lower of the pair); group(4,5) then has only sprite 5 active, so sprdata reads sprite 5's code (2'b10) instead of sprite 4's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-45 newly red. Rebuilt with no flag: baseline restored.
-// MUTATION PRI-56 stimulus red: MUT_PRI56=1 withholds arming for sprite 5 (the lower of the pair); group(4,5) is then entirely inactive and the cascade falls through to group(6,7), where sprite 6 is the only active sprite, so sprdata reads sprite 6's code (2'b10) instead of sprite 5's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-56 newly red. Rebuilt with no flag: baseline restored.
-// MUTATION PRI-67 stimulus red: MUT_PRI67=1 withholds arming for sprite 6 (the lower of the pair); group(6,7) then has only sprite 7 active, so sprdata reads sprite 7's code (2'b10) instead of sprite 6's (2'b01) -> FAIL (17 passed, 1 failed), only PRI-67 newly red. Rebuilt with no flag: baseline restored.
-// MUTATION INV-01 stimulus red: MUT_INV01=1 withholds arming for sprite 0 (the pair's lower sprite) in the REVERSE-armed run only, leaving the forward-armed run untouched; the forward trace still shows sprite 0's code (2'b01) while the reverse trace now shows sprite 1's (2'b10), so the two traces the assertion compares to EACH OTHER disagree -> FAIL (17 passed, 1 failed), only INV-01 newly red. Rebuilt with no flag: baseline restored.
-// MUTATION INV-67 stimulus red: MUT_INV67=1 withholds arming for sprite 6 (the pair's lower sprite) in the REVERSE-armed run only, leaving the forward-armed run untouched; the forward trace still shows sprite 6's code (2'b01) while the reverse trace now shows sprite 7's (2'b10), so the two traces the assertion compares to EACH OTHER disagree -> FAIL (17 passed, 1 failed), only INV-67 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: MUT_FIXTURE=1 makes the MSB-run stimulus 0x0001, identical to the LSB-run -> FAIL (38 passed, 1 failed), only FIXTURE-LIVE-DATA-PATH newly red (MSB hpos=145 became equal to LSB hpos=145, no longer distinct or monotonic; mid hpos=138 unchanged). Rebuilt with no flag: 39 passed, 0 failed restored.
+// MUTATION SPR-0 stimulus red: MUT_SPR0=1 withholds arming for sprite 0 (its own four registers are never written) -> FAIL (38 passed, 1 failed), only SPR-0 newly red (hit hpos=-1 -- nothing on sprdata at all), the other seven SPR-* and all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-1 stimulus red: MUT_SPR1=1 withholds arming for sprite 1 -> FAIL (38 passed, 1 failed), only SPR-1 newly red (hit hpos=-1), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-2 stimulus red: MUT_SPR2=1 withholds arming for sprite 2 -> FAIL (38 passed, 1 failed), only SPR-2 newly red (hit hpos=-1), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-3 stimulus red: MUT_SPR3=1 withholds arming for sprite 3 -> FAIL (38 passed, 1 failed), only SPR-3 newly red (hit hpos=-1), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-4 stimulus red: MUT_SPR4=1 withholds arming for sprite 4 -> FAIL (38 passed, 1 failed), only SPR-4 newly red (hit hpos=-1), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-5 stimulus red: MUT_SPR5=1 withholds arming for sprite 5 -> FAIL (38 passed, 1 failed), only SPR-5 newly red (hit hpos=-1), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-6 stimulus red: MUT_SPR6=1 withholds arming for sprite 6 -> FAIL (38 passed, 1 failed), only SPR-6 newly red (hit hpos=-1), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION SPR-7 stimulus red: MUT_SPR7=1 withholds arming for sprite 7 -> FAIL (38 passed, 1 failed), only SPR-7 newly red (hit hpos=-1), all other assertions unchanged. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-01 stimulus red: MUT_PRI01=1 withholds arming for sprite 0 (the lower of the pair); group(0,1) then has only sprite 1 active, so sprdata's low bits read 2'b10 (sprite 1's code) instead of the expected 2'b01 -> FAIL (38 passed, 1 failed), only PRI-01 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-12 stimulus red: MUT_PRI12=1 withholds arming for sprite 1 (the lower of the pair); group(0,1) is then entirely inactive and the cascade falls through to group(2,3), where sprite 2 is the only active sprite, so sprdata reads sprite 2's code (2'b10) instead of sprite 1's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-12 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-23 stimulus red: MUT_PRI23=1 withholds arming for sprite 2 (the lower of the pair); group(2,3) then has only sprite 3 active, so sprdata reads sprite 3's code (2'b10) instead of sprite 2's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-23 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-34 stimulus red: MUT_PRI34=1 withholds arming for sprite 3 (the lower of the pair); group(2,3) is then entirely inactive and the cascade falls through to group(4,5), where sprite 4 is the only active sprite, so sprdata reads sprite 4's code (2'b10) instead of sprite 3's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-34 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-45 stimulus red: MUT_PRI45=1 withholds arming for sprite 4 (the lower of the pair); group(4,5) then has only sprite 5 active, so sprdata reads sprite 5's code (2'b10) instead of sprite 4's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-45 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-56 stimulus red: MUT_PRI56=1 withholds arming for sprite 5 (the lower of the pair); group(4,5) is then entirely inactive and the cascade falls through to group(6,7), where sprite 6 is the only active sprite, so sprdata reads sprite 6's code (2'b10) instead of sprite 5's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-56 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-67 stimulus red: MUT_PRI67=1 withholds arming for sprite 6 (the lower of the pair); group(6,7) then has only sprite 7 active, so sprdata reads sprite 7's code (2'b10) instead of sprite 6's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-67 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-02 stimulus red: MUT_PRI02=1 withholds arming for sprite 0 (the lower of the pair); only sprite 2 is armed, so group(2,3) wins by default and sprdata reads sprite 2's code (2'b10) instead of sprite 0's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-02 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-03 stimulus red: MUT_PRI03=1 withholds arming for sprite 0; only sprite 3 armed, group(2,3) wins by default, sprdata reads sprite 3's code (2'b10) instead of sprite 0's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-03 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-04 stimulus red: MUT_PRI04=1 withholds arming for sprite 0; only sprite 4 armed, group(4,5) wins by default, sprdata reads sprite 4's code (2'b10) instead of sprite 0's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-04 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-05 stimulus red: MUT_PRI05=1 withholds arming for sprite 0; only sprite 5 armed, group(4,5) wins by default, sprdata reads sprite 5's code (2'b10) instead of sprite 0's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-05 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-06 stimulus red: MUT_PRI06=1 withholds arming for sprite 0; only sprite 6 armed, group(6,7) wins by default, sprdata reads sprite 6's code (2'b10) instead of sprite 0's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-06 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-07 stimulus red: MUT_PRI07=1 withholds arming for sprite 0; only sprite 7 armed, group(6,7) wins by default, sprdata reads sprite 7's code (2'b10) instead of sprite 0's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-07 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-13 stimulus red: MUT_PRI13=1 withholds arming for sprite 1; only sprite 3 armed, group(2,3) wins by default, sprdata reads sprite 3's code (2'b10) instead of sprite 1's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-13 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-14 stimulus red: MUT_PRI14=1 withholds arming for sprite 1; only sprite 4 armed, group(4,5) wins by default, sprdata reads sprite 4's code (2'b10) instead of sprite 1's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-14 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-15 stimulus red: MUT_PRI15=1 withholds arming for sprite 1; only sprite 5 armed, group(4,5) wins by default, sprdata reads sprite 5's code (2'b10) instead of sprite 1's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-15 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-16 stimulus red: MUT_PRI16=1 withholds arming for sprite 1; only sprite 6 armed, group(6,7) wins by default, sprdata reads sprite 6's code (2'b10) instead of sprite 1's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-16 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-17 stimulus red: MUT_PRI17=1 withholds arming for sprite 1; only sprite 7 armed, group(6,7) wins by default, sprdata reads sprite 7's code (2'b10) instead of sprite 1's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-17 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-24 stimulus red: MUT_PRI24=1 withholds arming for sprite 2; only sprite 4 armed, group(4,5) wins by default, sprdata reads sprite 4's code (2'b10) instead of sprite 2's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-24 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-25 stimulus red: MUT_PRI25=1 withholds arming for sprite 2; only sprite 5 armed, group(4,5) wins by default, sprdata reads sprite 5's code (2'b10) instead of sprite 2's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-25 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-26 stimulus red: MUT_PRI26=1 withholds arming for sprite 2; only sprite 6 armed, group(6,7) wins by default, sprdata reads sprite 6's code (2'b10) instead of sprite 2's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-26 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-27 stimulus red: MUT_PRI27=1 withholds arming for sprite 2; only sprite 7 armed, group(6,7) wins by default, sprdata reads sprite 7's code (2'b10) instead of sprite 2's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-27 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-35 stimulus red: MUT_PRI35=1 withholds arming for sprite 3; only sprite 5 armed, group(4,5) wins by default, sprdata reads sprite 5's code (2'b10) instead of sprite 3's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-35 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-36 stimulus red: MUT_PRI36=1 withholds arming for sprite 3; only sprite 6 armed, group(6,7) wins by default, sprdata reads sprite 6's code (2'b10) instead of sprite 3's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-36 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-37 stimulus red: MUT_PRI37=1 withholds arming for sprite 3; only sprite 7 armed, group(6,7) wins by default, sprdata reads sprite 7's code (2'b10) instead of sprite 3's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-37 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-46 stimulus red: MUT_PRI46=1 withholds arming for sprite 4; only sprite 6 armed, group(6,7) wins by default, sprdata reads sprite 6's code (2'b10) instead of sprite 4's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-46 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-47 stimulus red: MUT_PRI47=1 withholds arming for sprite 4; only sprite 7 armed, group(6,7) wins by default, sprdata reads sprite 7's code (2'b10) instead of sprite 4's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-47 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION PRI-57 stimulus red: MUT_PRI57=1 withholds arming for sprite 5; only sprite 7 armed, group(6,7) wins by default, sprdata reads sprite 7's code (2'b10) instead of sprite 5's (2'b01) -> FAIL (38 passed, 1 failed), only PRI-57 newly red. Rebuilt with no flag: baseline restored.
+// MUTATION INV-01 stimulus red: MUT_INV01=1 withholds arming for sprite 0 (the pair's lower sprite) in the REVERSE-armed run only, leaving the forward-armed run untouched; the forward run's winner at hpos=130 is still sprite 0's code (2'b01), but the reverse run's winner at the same hpos is now sprite 1's (2'b10), so same_winner's code-identity check fails on the reverse side even though fwd.hpos==rev.hpos -> FAIL (38 passed, 1 failed), only INV-01 newly red (INV-01-FULLTRACE-MEASURED also flips true->false, corroborating but not required for the red). Rebuilt with no flag: baseline restored.
+// MUTATION INV-67 stimulus red: MUT_INV67=1 withholds arming for sprite 6 (the pair's lower sprite) in the REVERSE-armed run only, leaving the forward-armed run untouched; same mechanism as INV-01 at the opposite end of the cascade: forward winner stays sprite 6's code (2'b01), reverse winner becomes sprite 7's (2'b10) at the same hpos -> FAIL (38 passed, 1 failed), only INV-67 newly red. Rebuilt with no flag: baseline restored.
 //
 // No mutation record for opus:7-fig7-1.c1/c2..c8 [declined]: these two
 //   claims.record() calls carry no checks.expect(), so there is no
@@ -206,6 +289,73 @@
 #endif
 #ifndef MUT_PRI67
 #define MUT_PRI67 0
+#endif
+// Non-adjacent pairs added for independent-validation finding 2 (WIDEN: the
+// universal p.207 rule -- "the lower-numbered sprites appearing in front of
+// ... the higher-numbered sprites" -- covers every overlapping pair, not
+// only the seven adjacent ones PRI-01..PRI-67 graded).
+#ifndef MUT_PRI02
+#define MUT_PRI02 0
+#endif
+#ifndef MUT_PRI03
+#define MUT_PRI03 0
+#endif
+#ifndef MUT_PRI04
+#define MUT_PRI04 0
+#endif
+#ifndef MUT_PRI05
+#define MUT_PRI05 0
+#endif
+#ifndef MUT_PRI06
+#define MUT_PRI06 0
+#endif
+#ifndef MUT_PRI07
+#define MUT_PRI07 0
+#endif
+#ifndef MUT_PRI13
+#define MUT_PRI13 0
+#endif
+#ifndef MUT_PRI14
+#define MUT_PRI14 0
+#endif
+#ifndef MUT_PRI15
+#define MUT_PRI15 0
+#endif
+#ifndef MUT_PRI16
+#define MUT_PRI16 0
+#endif
+#ifndef MUT_PRI17
+#define MUT_PRI17 0
+#endif
+#ifndef MUT_PRI24
+#define MUT_PRI24 0
+#endif
+#ifndef MUT_PRI25
+#define MUT_PRI25 0
+#endif
+#ifndef MUT_PRI26
+#define MUT_PRI26 0
+#endif
+#ifndef MUT_PRI27
+#define MUT_PRI27 0
+#endif
+#ifndef MUT_PRI35
+#define MUT_PRI35 0
+#endif
+#ifndef MUT_PRI36
+#define MUT_PRI36 0
+#endif
+#ifndef MUT_PRI37
+#define MUT_PRI37 0
+#endif
+#ifndef MUT_PRI46
+#define MUT_PRI46 0
+#endif
+#ifndef MUT_PRI47
+#define MUT_PRI47 0
+#endif
+#ifndef MUT_PRI57
+#define MUT_PRI57 0
 #endif
 #ifndef MUT_INV01
 #define MUT_INV01 0
@@ -392,6 +542,16 @@ uint8_t expected_single_byte(int n) {
     return static_cast<uint8_t>(((n / 2) & 0x3) << 2 | 0x1);
 }
 
+// Formats a byte as "0xNN" for MEASURED lines -- used only to print what was
+// actually read back, never to compute a graded condition.
+std::string hex2(uint8_t v) {
+    static const char digits[] = "0123456789ABCDEF";
+    std::string s = "0x";
+    s += digits[(v >> 4) & 0xF];
+    s += digits[v & 0xF];
+    return s;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -450,6 +610,17 @@ int main(int argc, char** argv) {
     // numbered 0 to 7" -- as eight independently-failing checks, not one
     // check with eight labels: each run is its own fresh Harness, touching
     // only sprite n's own four registers.
+    //
+    // Independent-validation finding 4: the graded condition used to
+    // require the FULL packed byte (expected_single_byte()'s ((n/2)<<2)
+    // group-id term, read out of denise_sprites.v's own cascade packing)
+    // and an exact one-sample pulse width. p.208 establishes eight sprites
+    // numbered 0-7 and neither of those; only liveness (some sample went
+    // non-zero) plus code fidelity (its low 2 bits match the 2'b01 pixel
+    // code this file wrote) are page-grounded. The dropped half is still
+    // measured and printed on every run (SPR-N-ENCODING-MEASURED below),
+    // just no longer required by expect() -- see the combined
+    // SPR-*-ENCODING-NOT-GRADED record after SPR-7.
     {
         bool arm = true;
 #if MUT_SPR0
@@ -457,13 +628,15 @@ int main(int argc, char** argv) {
 #endif
         Meas m = measure_single(0, 0x40, 0x8000, arm);
         FirstActive fa = first_active(m);
-        bool ok = fa.active_count == 1 && fa.hpos != -1 &&
-                  m.trace[fa.hpos] == expected_single_byte(0);
-        checks.expect(ok, "SPR-0: sprite 0, armed alone with a known non-zero code, is "
-            "the sprite whose code denise_sprites delivers (hit hpos=" +
-            std::to_string(fa.hpos) + ", count=" + std::to_string(fa.active_count) +
+        bool ok = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(ok, "SPR-0: sprite 0, armed alone with a known non-zero code, "
+            "delivers that code (hit hpos=" + std::to_string(fa.hpos) +
             "). Grounds 'there are eight sprites and they are numbered 0 to 7' "
             "(opus:7-fig7-1.c1, hardware half, p.208).");
+        checks.note("SPR-0-ENCODING-MEASURED: full sprdata byte=" +
+            hex2(fa.hpos != -1 ? m.trace[fa.hpos] : 0) + ", " +
+            std::to_string(fa.active_count) + " active sample(s) (denise_sprites.v's own "
+            "packing predicts " + hex2(expected_single_byte(0)) + ", one sample).");
     }
     {
         bool arm = true;
@@ -472,13 +645,15 @@ int main(int argc, char** argv) {
 #endif
         Meas m = measure_single(1, 0x40, 0x8000, arm);
         FirstActive fa = first_active(m);
-        bool ok = fa.active_count == 1 && fa.hpos != -1 &&
-                  m.trace[fa.hpos] == expected_single_byte(1);
-        checks.expect(ok, "SPR-1: sprite 1, armed alone with a known non-zero code, is "
-            "the sprite whose code denise_sprites delivers (hit hpos=" +
-            std::to_string(fa.hpos) + ", count=" + std::to_string(fa.active_count) +
+        bool ok = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(ok, "SPR-1: sprite 1, armed alone with a known non-zero code, "
+            "delivers that code (hit hpos=" + std::to_string(fa.hpos) +
             "). Grounds 'there are eight sprites and they are numbered 0 to 7' "
             "(opus:7-fig7-1.c1, hardware half, p.208).");
+        checks.note("SPR-1-ENCODING-MEASURED: full sprdata byte=" +
+            hex2(fa.hpos != -1 ? m.trace[fa.hpos] : 0) + ", " +
+            std::to_string(fa.active_count) + " active sample(s) (denise_sprites.v's own "
+            "packing predicts " + hex2(expected_single_byte(1)) + ", one sample).");
     }
     {
         bool arm = true;
@@ -487,13 +662,15 @@ int main(int argc, char** argv) {
 #endif
         Meas m = measure_single(2, 0x40, 0x8000, arm);
         FirstActive fa = first_active(m);
-        bool ok = fa.active_count == 1 && fa.hpos != -1 &&
-                  m.trace[fa.hpos] == expected_single_byte(2);
-        checks.expect(ok, "SPR-2: sprite 2, armed alone with a known non-zero code, is "
-            "the sprite whose code denise_sprites delivers (hit hpos=" +
-            std::to_string(fa.hpos) + ", count=" + std::to_string(fa.active_count) +
+        bool ok = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(ok, "SPR-2: sprite 2, armed alone with a known non-zero code, "
+            "delivers that code (hit hpos=" + std::to_string(fa.hpos) +
             "). Grounds 'there are eight sprites and they are numbered 0 to 7' "
             "(opus:7-fig7-1.c1, hardware half, p.208).");
+        checks.note("SPR-2-ENCODING-MEASURED: full sprdata byte=" +
+            hex2(fa.hpos != -1 ? m.trace[fa.hpos] : 0) + ", " +
+            std::to_string(fa.active_count) + " active sample(s) (denise_sprites.v's own "
+            "packing predicts " + hex2(expected_single_byte(2)) + ", one sample).");
     }
     {
         bool arm = true;
@@ -502,13 +679,15 @@ int main(int argc, char** argv) {
 #endif
         Meas m = measure_single(3, 0x40, 0x8000, arm);
         FirstActive fa = first_active(m);
-        bool ok = fa.active_count == 1 && fa.hpos != -1 &&
-                  m.trace[fa.hpos] == expected_single_byte(3);
-        checks.expect(ok, "SPR-3: sprite 3, armed alone with a known non-zero code, is "
-            "the sprite whose code denise_sprites delivers (hit hpos=" +
-            std::to_string(fa.hpos) + ", count=" + std::to_string(fa.active_count) +
+        bool ok = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(ok, "SPR-3: sprite 3, armed alone with a known non-zero code, "
+            "delivers that code (hit hpos=" + std::to_string(fa.hpos) +
             "). Grounds 'there are eight sprites and they are numbered 0 to 7' "
             "(opus:7-fig7-1.c1, hardware half, p.208).");
+        checks.note("SPR-3-ENCODING-MEASURED: full sprdata byte=" +
+            hex2(fa.hpos != -1 ? m.trace[fa.hpos] : 0) + ", " +
+            std::to_string(fa.active_count) + " active sample(s) (denise_sprites.v's own "
+            "packing predicts " + hex2(expected_single_byte(3)) + ", one sample).");
     }
     {
         bool arm = true;
@@ -517,13 +696,15 @@ int main(int argc, char** argv) {
 #endif
         Meas m = measure_single(4, 0x40, 0x8000, arm);
         FirstActive fa = first_active(m);
-        bool ok = fa.active_count == 1 && fa.hpos != -1 &&
-                  m.trace[fa.hpos] == expected_single_byte(4);
-        checks.expect(ok, "SPR-4: sprite 4, armed alone with a known non-zero code, is "
-            "the sprite whose code denise_sprites delivers (hit hpos=" +
-            std::to_string(fa.hpos) + ", count=" + std::to_string(fa.active_count) +
+        bool ok = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(ok, "SPR-4: sprite 4, armed alone with a known non-zero code, "
+            "delivers that code (hit hpos=" + std::to_string(fa.hpos) +
             "). Grounds 'there are eight sprites and they are numbered 0 to 7' "
             "(opus:7-fig7-1.c1, hardware half, p.208).");
+        checks.note("SPR-4-ENCODING-MEASURED: full sprdata byte=" +
+            hex2(fa.hpos != -1 ? m.trace[fa.hpos] : 0) + ", " +
+            std::to_string(fa.active_count) + " active sample(s) (denise_sprites.v's own "
+            "packing predicts " + hex2(expected_single_byte(4)) + ", one sample).");
     }
     {
         bool arm = true;
@@ -532,13 +713,15 @@ int main(int argc, char** argv) {
 #endif
         Meas m = measure_single(5, 0x40, 0x8000, arm);
         FirstActive fa = first_active(m);
-        bool ok = fa.active_count == 1 && fa.hpos != -1 &&
-                  m.trace[fa.hpos] == expected_single_byte(5);
-        checks.expect(ok, "SPR-5: sprite 5, armed alone with a known non-zero code, is "
-            "the sprite whose code denise_sprites delivers (hit hpos=" +
-            std::to_string(fa.hpos) + ", count=" + std::to_string(fa.active_count) +
+        bool ok = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(ok, "SPR-5: sprite 5, armed alone with a known non-zero code, "
+            "delivers that code (hit hpos=" + std::to_string(fa.hpos) +
             "). Grounds 'there are eight sprites and they are numbered 0 to 7' "
             "(opus:7-fig7-1.c1, hardware half, p.208).");
+        checks.note("SPR-5-ENCODING-MEASURED: full sprdata byte=" +
+            hex2(fa.hpos != -1 ? m.trace[fa.hpos] : 0) + ", " +
+            std::to_string(fa.active_count) + " active sample(s) (denise_sprites.v's own "
+            "packing predicts " + hex2(expected_single_byte(5)) + ", one sample).");
     }
     {
         bool arm = true;
@@ -547,13 +730,15 @@ int main(int argc, char** argv) {
 #endif
         Meas m = measure_single(6, 0x40, 0x8000, arm);
         FirstActive fa = first_active(m);
-        bool ok = fa.active_count == 1 && fa.hpos != -1 &&
-                  m.trace[fa.hpos] == expected_single_byte(6);
-        checks.expect(ok, "SPR-6: sprite 6, armed alone with a known non-zero code, is "
-            "the sprite whose code denise_sprites delivers (hit hpos=" +
-            std::to_string(fa.hpos) + ", count=" + std::to_string(fa.active_count) +
+        bool ok = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(ok, "SPR-6: sprite 6, armed alone with a known non-zero code, "
+            "delivers that code (hit hpos=" + std::to_string(fa.hpos) +
             "). Grounds 'there are eight sprites and they are numbered 0 to 7' "
             "(opus:7-fig7-1.c1, hardware half, p.208).");
+        checks.note("SPR-6-ENCODING-MEASURED: full sprdata byte=" +
+            hex2(fa.hpos != -1 ? m.trace[fa.hpos] : 0) + ", " +
+            std::to_string(fa.active_count) + " active sample(s) (denise_sprites.v's own "
+            "packing predicts " + hex2(expected_single_byte(6)) + ", one sample).");
     }
     {
         bool arm = true;
@@ -562,14 +747,25 @@ int main(int argc, char** argv) {
 #endif
         Meas m = measure_single(7, 0x40, 0x8000, arm);
         FirstActive fa = first_active(m);
-        bool ok = fa.active_count == 1 && fa.hpos != -1 &&
-                  m.trace[fa.hpos] == expected_single_byte(7);
-        checks.expect(ok, "SPR-7: sprite 7, armed alone with a known non-zero code, is "
-            "the sprite whose code denise_sprites delivers (hit hpos=" +
-            std::to_string(fa.hpos) + ", count=" + std::to_string(fa.active_count) +
+        bool ok = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(ok, "SPR-7: sprite 7, armed alone with a known non-zero code, "
+            "delivers that code (hit hpos=" + std::to_string(fa.hpos) +
             "). Grounds 'there are eight sprites and they are numbered 0 to 7' "
             "(opus:7-fig7-1.c1, hardware half, p.208).");
+        checks.note("SPR-7-ENCODING-MEASURED: full sprdata byte=" +
+            hex2(fa.hpos != -1 ? m.trace[fa.hpos] : 0) + ", " +
+            std::to_string(fa.active_count) + " active sample(s) (denise_sprites.v's own "
+            "packing predicts " + hex2(expected_single_byte(7)) + ", one sample).");
     }
+    checks.record(
+        "SPR-0-ENCODING-NOT-GRADED through SPR-7-ENCODING-NOT-GRADED (p.208, "
+        "independent-validation finding 4): the full packed byte each SPR-* used to "
+        "require (denise_sprites.v's own {esprm/osprm=0, group-id=(n/2), pixel} "
+        "packing) and the 'exactly one active sample' pulse width are denise_sprites.v's "
+        "own internal encoding. p.208 establishes eight sprites numbered 0-7 and defines "
+        "neither the packing nor a pulse width. Both stay measured and printed above "
+        "(SPR-N-ENCODING-MEASURED); neither is required by expect() any more. "
+        "reason_kind source-silent.");
 
     // ---------------- PRI-01 .. PRI-67 ----------------
     // Each adjacent pair, armed together at the same horizontal start with
@@ -680,6 +876,298 @@ int main(int argc, char** argv) {
             "sol:7-fig7-1.c7, opus:7-fig7-1.c8, opus:7-vp.c2 .");
     }
 
+    // ---------------- PRI-02 .. PRI-57 (non-adjacent pairs) ----------------
+    // Independent-validation finding 2 (WIDEN): p.207 states the rule for
+    // EVERY overlapping pair -- "You cannot change the relative priorities
+    // of the sprites. They will always appear on the screen with the
+    // lower-numbered sprites appearing in front of ... the higher-numbered
+    // sprites" -- not only the seven adjacent pairs PRI-01..PRI-67 above
+    // graded. Of C(8,2)=28 total pairs, 7 are adjacent (above); these 21
+    // cover the rest. opus:7-vp.c2 is NOT cited here: its own classify.
+    // evidence in the claims file is written strictly over the seven
+    // adjacent boxes of Figure 7-1's cascade, so citing it on a
+    // non-adjacent pair would repeat exactly the over-generalisation the
+    // validation found. sol:7-video.c1 / opus:7-vp.c1 (p.207 body text) and
+    // opus:7-vp.c9 (p.209 hand analogy) carry the actual universal wording
+    // and are cited instead -- the same claim ids INV-01/INV-67 already
+    // use for the same reason. Same measurement basis, same mutation
+    // pattern (withhold the lower sprite of the pair) as PRI-01..PRI-67.
+    {
+        bool arm_lo = true;
+#if MUT_PRI02
+        arm_lo = false;  // MUTATION: sprite 0 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(0, 2, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-02: sprites 0 and 2 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 0's code is the one that reaches "
+            "sprdata, not sprite 2's -- p.207's rule applies to every overlapping pair, "
+            "not only adjacent ones. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI03
+        arm_lo = false;  // MUTATION: sprite 0 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(0, 3, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-03: sprites 0 and 3 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 0's code is the one that reaches "
+            "sprdata, not sprite 3's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI04
+        arm_lo = false;  // MUTATION: sprite 0 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(0, 4, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-04: sprites 0 and 4 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 0's code is the one that reaches "
+            "sprdata, not sprite 4's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI05
+        arm_lo = false;  // MUTATION: sprite 0 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(0, 5, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-05: sprites 0 and 5 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 0's code is the one that reaches "
+            "sprdata, not sprite 5's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI06
+        arm_lo = false;  // MUTATION: sprite 0 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(0, 6, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-06: sprites 0 and 6 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 0's code is the one that reaches "
+            "sprdata, not sprite 6's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI07
+        arm_lo = false;  // MUTATION: sprite 0 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(0, 7, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-07: sprites 0 and 7 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 0's code is the one that reaches "
+            "sprdata, not sprite 7's -- the two ends of the cascade. sol:7-video.c1, "
+            "opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI13
+        arm_lo = false;  // MUTATION: sprite 1 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(1, 3, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-13: sprites 1 and 3 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 1's code is the one that reaches "
+            "sprdata, not sprite 3's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI14
+        arm_lo = false;  // MUTATION: sprite 1 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(1, 4, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-14: sprites 1 and 4 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 1's code is the one that reaches "
+            "sprdata, not sprite 4's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI15
+        arm_lo = false;  // MUTATION: sprite 1 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(1, 5, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-15: sprites 1 and 5 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 1's code is the one that reaches "
+            "sprdata, not sprite 5's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI16
+        arm_lo = false;  // MUTATION: sprite 1 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(1, 6, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-16: sprites 1 and 6 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 1's code is the one that reaches "
+            "sprdata, not sprite 6's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI17
+        arm_lo = false;  // MUTATION: sprite 1 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(1, 7, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-17: sprites 1 and 7 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 1's code is the one that reaches "
+            "sprdata, not sprite 7's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI24
+        arm_lo = false;  // MUTATION: sprite 2 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(2, 4, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-24: sprites 2 and 4 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 2's code is the one that reaches "
+            "sprdata, not sprite 4's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI25
+        arm_lo = false;  // MUTATION: sprite 2 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(2, 5, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-25: sprites 2 and 5 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 2's code is the one that reaches "
+            "sprdata, not sprite 5's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI26
+        arm_lo = false;  // MUTATION: sprite 2 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(2, 6, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-26: sprites 2 and 6 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 2's code is the one that reaches "
+            "sprdata, not sprite 6's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI27
+        arm_lo = false;  // MUTATION: sprite 2 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(2, 7, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-27: sprites 2 and 7 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 2's code is the one that reaches "
+            "sprdata, not sprite 7's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI35
+        arm_lo = false;  // MUTATION: sprite 3 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(3, 5, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-35: sprites 3 and 5 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 3's code is the one that reaches "
+            "sprdata, not sprite 5's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI36
+        arm_lo = false;  // MUTATION: sprite 3 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(3, 6, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-36: sprites 3 and 6 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 3's code is the one that reaches "
+            "sprdata, not sprite 6's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI37
+        arm_lo = false;  // MUTATION: sprite 3 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(3, 7, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-37: sprites 3 and 7 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 3's code is the one that reaches "
+            "sprdata, not sprite 7's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI46
+        arm_lo = false;  // MUTATION: sprite 4 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(4, 6, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-46: sprites 4 and 6 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 4's code is the one that reaches "
+            "sprdata, not sprite 6's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI47
+        arm_lo = false;  // MUTATION: sprite 4 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(4, 7, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-47: sprites 4 and 7 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 4's code is the one that reaches "
+            "sprdata, not sprite 7's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+    {
+        bool arm_lo = true;
+#if MUT_PRI57
+        arm_lo = false;  // MUTATION: sprite 5 (the lower of the pair) withheld.
+#endif
+        Meas m = measure_pair(5, 7, 0x40, /*lo_first=*/true, arm_lo, true);
+        FirstActive fa = first_active(m);
+        bool lower_wins = fa.hpos != -1 && (m.trace[fa.hpos] & 0x3) == 0x1;
+        checks.expect(lower_wins,
+            "PRI-57: sprites 5 and 7 armed together at the same horizontal start with "
+            "distinguishable non-zero codes; sprite 5's code is the one that reaches "
+            "sprdata, not sprite 7's. sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+    }
+
     // ---------------- INV-01, INV-67 ----------------
     // "You cannot change the relative priorities of the sprites" (p.207)
     // read as an invariance claim distinct from the static picture: not
@@ -690,6 +1178,16 @@ int main(int argc, char** argv) {
     // hypothetical order-dependent bug (whichever sprite is armed LAST
     // wins, say) would show up as the two traces disagreeing, not as
     // either one failing to match a hand-picked expected byte.
+    //
+    // Independent-validation finding 4: the graded condition used to be
+    // fwd.trace == rev.trace, full equality of all 512 internal sprdata
+    // samples across the sweep. p.207/209 state an invariance about WHICH
+    // sprite wins the overlap, not about denise_sprites.v's internal
+    // sample-for-sample state outside that overlap. The graded condition
+    // now checks the one thing the page claims: the same sprite (the
+    // lower-numbered one) wins, at the same hpos, in both arm orders. Full
+    // 512-sample equality is still measured and printed (not required) --
+    // see the record after INV-67 below.
     {
         Meas fwd = measure_pair(0, 1, 0x40, /*lo_first=*/true, true, true);
         bool arm_lo_rev = true;
@@ -697,18 +1195,27 @@ int main(int argc, char** argv) {
         arm_lo_rev = false;  // MUTATION: sprite 0 withheld in the reverse-armed run only.
 #endif
         Meas rev = measure_pair(0, 1, 0x40, /*lo_first=*/false, arm_lo_rev, true);
-        bool same = (fwd.trace == rev.trace);
-        checks.expect(same,
+        FirstActive fa_fwd = first_active(fwd);
+        FirstActive fa_rev = first_active(rev);
+        bool same_winner = fa_fwd.hpos != -1 && fa_rev.hpos != -1 &&
+                            fa_fwd.hpos == fa_rev.hpos &&
+                            (fwd.trace[fa_fwd.hpos] & 0x3) == 0x1 &&
+                            (rev.trace[fa_rev.hpos] & 0x3) == 0x1;
+        checks.expect(same_winner,
             "INV-01: sprites 0 and 1 armed with IDENTICAL final register contents in "
             "two runs that differ only in which sprite's own four registers are "
-            "WRITTEN first (sprite-0-then-1 vs sprite-1-then-0); the two full sprdata "
-            "traces across hpos 0..511 are compared to EACH OTHER. 'You cannot change "
+            "WRITTEN first (sprite-0-then-1 vs sprite-1-then-0); sprite 0's code wins "
+            "at the same hpos (fwd=" + std::to_string(fa_fwd.hpos) + ", rev=" +
+            std::to_string(fa_rev.hpos) + ") in BOTH arm orders. 'You cannot change "
             "the relative priorities of the sprites. They will always appear on the "
             "screen with the lower-numbered sprites appearing in front of...the "
             "higher-numbered sprites' (p.207); 'Just as you cannot change the "
             "sequence of the four fingers on the one hand, neither can you change the "
             "relative priority of the sprites' (p.209). sol:7-video.c1, opus:7-vp.c1, "
             "opus:7-vp.c9 .");
+        checks.note("INV-01-FULLTRACE-MEASURED: fwd.trace == rev.trace across all 512 "
+            "hpos samples is " + std::string(fwd.trace == rev.trace ? "true" : "false") +
+            ".");
     }
     {
         Meas fwd = measure_pair(6, 7, 0x40, /*lo_first=*/true, true, true);
@@ -717,18 +1224,35 @@ int main(int argc, char** argv) {
         arm_lo_rev = false;  // MUTATION: sprite 6 withheld in the reverse-armed run only.
 #endif
         Meas rev = measure_pair(6, 7, 0x40, /*lo_first=*/false, arm_lo_rev, true);
-        bool same = (fwd.trace == rev.trace);
-        checks.expect(same,
+        FirstActive fa_fwd = first_active(fwd);
+        FirstActive fa_rev = first_active(rev);
+        bool same_winner = fa_fwd.hpos != -1 && fa_rev.hpos != -1 &&
+                            fa_fwd.hpos == fa_rev.hpos &&
+                            (fwd.trace[fa_fwd.hpos] & 0x3) == 0x1 &&
+                            (rev.trace[fa_rev.hpos] & 0x3) == 0x1;
+        checks.expect(same_winner,
             "INV-67: sprites 6 and 7 armed with IDENTICAL final register contents in "
             "two runs that differ only in which sprite's own four registers are "
-            "WRITTEN first (sprite-6-then-7 vs sprite-7-then-6); the two full sprdata "
-            "traces across hpos 0..511 are compared to EACH OTHER. Same two "
+            "WRITTEN first (sprite-6-then-7 vs sprite-7-then-6); sprite 6's code wins "
+            "at the same hpos (fwd=" + std::to_string(fa_fwd.hpos) + ", rev=" +
+            std::to_string(fa_rev.hpos) + ") in BOTH arm orders. Same two "
             "quotations as INV-01, the opposite end of the cascade: 'You cannot "
             "change the relative priorities of the sprites...' (p.207); 'Just as you "
             "cannot change the sequence of the four fingers on the one hand, neither "
             "can you change the relative priority of the sprites' (p.209). "
             "sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 .");
+        checks.note("INV-67-FULLTRACE-MEASURED: fwd.trace == rev.trace across all 512 "
+            "hpos samples is " + std::string(fwd.trace == rev.trace ? "true" : "false") +
+            ".");
     }
+    checks.record(
+        "INV-01-FULLTRACE-NOT-GRADED, INV-67-FULLTRACE-NOT-GRADED (p.207, p.209, "
+        "independent-validation finding 4): full 512-sample sprdata-trace equality "
+        "between the two arm orders was the graded condition; p.207/209 state an "
+        "invariance about which sprite wins the overlap, not about denise_sprites.v's "
+        "internal state at every other hpos. Still measured and printed above "
+        "(INV-0N-FULLTRACE-MEASURED); no longer required by expect(). reason_kind "
+        "source-silent.");
 
     // --------- Declined: drawing-ink descriptions [no expect()] ---------
     // A drawing's ink is not a hardware signal (build brief: "where the
