@@ -231,13 +231,13 @@ int main(int argc, char** argv) {
         dut->int2 = 1; tick(); tick(); tick(); tick(); dut->int2 = 0;  // bit3 becomes pending
         settle(3);
         checks.expect(dut->_ipl == 7,
-            "P1-MASK-ENABLE-CLEAR: bit3 pending with bit3's own enable clear leaves the interrupt output inactive even though the master enable is set");
+            "P1-MASK-ENABLE-CLEAR (p.217, sol:7-interrupts.c5, opus:7-int.c6): bit3 pending with bit3's own enable clear leaves the interrupt output inactive even though the master enable is set");
 
         bool enable_bit3 = !mutating("P1B");  // MUTATION: never actually enable bit3
         if (enable_bit3) write_reg(INTENA, SET | (1u << 3));
         settle(3);
         checks.expect(dut->_ipl != 7,
-            "P1-MASK-ENABLE-SET: enabling bit3 releases the still-pending request to the interrupt output");
+            "P1-MASK-ENABLE-SET (p.217, sol:7-interrupts.c5, opus:7-int.c6): enabling bit3 releases the still-pending request to the interrupt output");
     }
 
     // ========================================================================
@@ -253,12 +253,12 @@ int main(int argc, char** argv) {
         int req_addr = mutating("P2") ? INTENAR : INTREQR;  // MUTATION: re-read INTENAR and call it the request register
         uint16_t reqr = read_reg(req_addr);
         checks.expect(enar == 0x0021 && reqr == 0x0000,
-            "P2-TWO-REGISTERS-INDEPENDENT: writing only the enable register leaves the request register's own readback at 0");
+            "P2-TWO-REGISTERS-INDEPENDENT (p.217, sol:7-interrupts.c10, opus:7-int.c9): writing only the enable register leaves the request register's own readback at 0");
 
         int unrelated_addr = mutating("P3") ? INTENAR : 0x00;  // MUTATION: "unrelated" address is secretly a real one
         uint16_t unrelated = read_reg(unrelated_addr);
         checks.expect(unrelated == 0x0000,
-            "P3-FOUR-DISTINCT-ADDRESSES: an address outside the four named registers returns 0 even though a real register holds nonzero content");
+            "P3-FOUR-DISTINCT-ADDRESSES (p.217, sol:7-interrupts.c11, opus:7-int.c9): an address outside the four named registers returns 0 even though a real register holds nonzero content");
     }
 
     // ========================================================================
@@ -272,7 +272,7 @@ int main(int argc, char** argv) {
         int read_addr = mutating("P4") ? INTENAR : INTENA;  // MUTATION: read the real content address instead
         uint16_t val = read_reg(read_addr);
         checks.expect(val == 0xFFFF,
-            "P4-INTENA-WRITE-ONLY: presenting INTENA's own write address to the read path never exposes stored content");
+            "P4-INTENA-WRITE-ONLY (p.217, sol:7-interrupts.c12, opus:7-int.c10): presenting INTENA's own write address to the read path never exposes stored content");
     }
 
     // ========================================================================
@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
         write_reg(INTENA, SET | stim);
         uint16_t mirrored = read_reg(INTENAR);
         checks.expect(mirrored == 0x0079,
-            "P5-INTENAR-MIRRORS: INTENAR returns exactly what was last written to INTENA");
+            "P5-INTENAR-MIRRORS (p.217, sol:7-interrupts.c13, opus:7-int.c11): INTENAR returns exactly what was last written to INTENA");
 
         int spurious_addr = mutating("P5B") ? INTENA : INTENAR;  // MUTATION: issue the spurious cycle at the real write address instead
         while (!dut->clk7_en) tick();
@@ -297,7 +297,7 @@ int main(int argc, char** argv) {
         dut->data_in = 0;
         uint16_t after = read_reg(INTENAR);
         checks.expect(after == 0x0079,
-            "P5-INTENAR-READONLY: a write-shaped bus cycle at INTENAR's address changes nothing in the stored enable content");
+            "P5-INTENAR-READONLY (p.217, sol:7-interrupts.c13, opus:7-int.c11): a write-shaped bus cycle at INTENAR's address changes nothing in the stored enable content");
     }
 
     // ========================================================================
@@ -314,12 +314,12 @@ int main(int argc, char** argv) {
         if (do_write) write_reg(INTREQ, SET | (1u << 4));
         uint16_t reqr = read_reg(INTREQR);
         checks.expect(((reqr >> 4) & 1u) == 1u,
-            "P6-INTREQ-FORCE-SOFTWARE: a bus write alone, no hardware pin involved, sets a pending request bit");
+            "P6-INTREQ-FORCE-SOFTWARE (p.218, sol:7-interrupts.c14, sol:7-interrupts.c15, opus:7-int.c12): a bus write alone, no hardware pin involved, sets a pending request bit");
 
         int read_addr = mutating("P6_WO") ? INTREQR : INTREQ;  // MUTATION: read the real content address instead
         uint16_t wo = read_reg(read_addr);
         checks.expect(wo == 0xFFFF,
-            "P6-INTREQ-WRITE-ONLY: presenting INTREQ's own write address to the read path never exposes stored content");
+            "P6-INTREQ-WRITE-ONLY (p.218, sol:7-interrupts.c14, opus:7-int.c12): presenting INTREQ's own write address to the read path never exposes stored content");
     }
 
     // ========================================================================
@@ -338,13 +338,13 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 100; i++) tick();  // long idle stretch, no other stimulus
         uint16_t after_idle = read_reg(INTREQR);
         checks.expect(((after_idle >> 4) & 1u) == 1u,
-            "P7-STICKY-PERSISTS: a pending request bit survives 100 idle clocks with no clearing write");
+            "P7-STICKY-PERSISTS (p.218, sol:7-interrupts.c16, opus:7-int.c13): a pending request bit survives 100 idle clocks with no clearing write");
 
         bool do_clear = !mutating("P7_CLEARS");  // MUTATION: skip the explicit clear write
         if (do_clear) write_reg(INTREQ, CLR | (1u << 4));
         uint16_t after_clear = read_reg(INTREQR);
         checks.expect(((after_clear >> 4) & 1u) == 0u,
-            "P7-STICKY-CLEARS: an explicit CLR write to INTREQ naming that bit clears it");
+            "P7-STICKY-CLEARS (p.218, sol:7-interrupts.c16, opus:7-int.c13): an explicit CLR write to INTREQ naming that bit clears it");
     }
     // Measured, not asserted -- the manual rules on neither case (no
     // interrupt-acknowledge signal exists on this claim's evidence to test
@@ -376,7 +376,7 @@ int main(int argc, char** argv) {
         write_reg(INTREQ, SET | stim);
         uint16_t mirrored = read_reg(INTREQR);
         checks.expect(mirrored == 0x0014,
-            "P8-INTREQR-MIRRORS: INTREQR returns exactly the pending bits established by request writes");
+            "P8-INTREQR-MIRRORS (p.218, sol:7-interrupts.c17, sol:7-interrupts.c18, opus:7-int.c14): INTREQR returns exactly the pending bits established by request writes");
 
         int spurious_addr = mutating("P8B") ? INTREQ : INTREQR;  // MUTATION: issue the spurious cycle at the real write address instead
         while (!dut->clk7_en) tick();
@@ -387,14 +387,23 @@ int main(int argc, char** argv) {
         dut->data_in = 0;
         uint16_t after = read_reg(INTREQR);
         checks.expect(after == 0x0014,
-            "P8-INTREQR-READONLY: a write-shaped bus cycle at INTREQR's address changes nothing in the stored request content");
+            "P8-INTREQR-READONLY (p.218, sol:7-interrupts.c17, opus:7-int.c14): a write-shaped bus cycle at INTREQR's address changes nothing in the stored request content");
     }
 
-    // P9 -- bit-position correspondence between INTREQ and INTENA (printed
-    // p.218) is NOT reasserted here. sol:7-interrupts.c19's own note: "Already
-    // asserted from appendix A by hrm/ch5-audio-interrupt assertion 3; ledger
-    // cross-reference only." Cited (cross-reference, no assertion):
-    // sol:7-interrupts.c19, opus:7-int.c15.
+    // ========================================================================
+    // P9 -- bit-position correspondence between INTREQ and INTENA. printed
+    // p.218: "The bit positions in the interrupt request register correspond
+    // directly to those same positions in the interrupt enable register."
+    // NOT reasserted here: sol:7-interrupts.c19's own note says
+    // hrm/ch5-audio-interrupt's assertion 3 already tests this exact fact.
+    // Declined with that reason, not graded -- a ledger cross-reference, the
+    // same load-bearing distinction as P19's disputed half.
+    // ========================================================================
+    checks.record(
+        "P9-BIT-POSITION-CORRESPONDENCE (p.218, sol:7-interrupts.c19, opus:7-int.c15): "
+        "not tested by this package -- hrm/ch5-audio-interrupt's SHARED-BIT-LAYOUT-INTENA-INTREQ "
+        "assertion already covers this exact proposition against the same module; declined here "
+        "to avoid a duplicate assertion, not for lack of a way to test it.");
 
     // ========================================================================
     // P10 -- bit 15 has no meaning on the read-only addresses. printed p.218:
@@ -414,7 +423,7 @@ int main(int argc, char** argv) {
             + (((enar_a >> 15) & 1u) ? "1" : "0") + " after a SET write and "
             + (((enar_b >> 15) & 1u) ? "1" : "0") + " after a CLR write");
         checks.expect(((enar_a >> 15) & 1u) == ((enar_b >> 15) & 1u),
-            "P10-BIT15-NO-MEANING-ENA: bit15 of an INTENAR read does not track the write history behind the stored content");
+            "P10-BIT15-NO-MEANING-ENA (p.218, sol:7-interrupts.c20, opus:7-int.c16): bit15 of an INTENAR read does not track the write history behind the stored content");
 
         write_reg(INTREQ, SET | 0x0011);
         uint16_t reqr_a = read_reg(INTREQR);
@@ -425,7 +434,7 @@ int main(int argc, char** argv) {
             + (((reqr_a >> 15) & 1u) ? "1" : "0") + " after a SET write and "
             + (((reqr_b >> 15) & 1u) ? "1" : "0") + " after a CLR write");
         checks.expect(((reqr_a >> 15) & 1u) == ((reqr_b >> 15) & 1u),
-            "P10-BIT15-NO-MEANING-REQ: bit15 of an INTREQR read does not track the write history behind the stored content either");
+            "P10-BIT15-NO-MEANING-REQ (p.218, sol:7-interrupts.c20, opus:7-int.c16): bit15 of an INTREQR read does not track the write history behind the stored content either");
     }
 
     // ========================================================================
@@ -442,7 +451,7 @@ int main(int argc, char** argv) {
         if (do_clr) write_reg(INTREQ, CLR | (1u << 5));
         uint16_t after_clr = read_reg(INTREQR);
         checks.expect(((after_set >> 5) & 1u) == 1u && ((after_clr >> 5) & 1u) == 0u,
-            "P11-BIT15-SETCLR-ALSO-INTREQ: bit15 selects SET vs CLR on INTREQ too, the same convention already shown on INTENA");
+            "P11-BIT15-SETCLR-ALSO-INTREQ (p.218, sol:7-interrupts.c21, opus:7-int.c17): bit15 selects SET vs CLR on INTREQ too, the same convention already shown on INTENA");
     }
 
     // ========================================================================
@@ -456,7 +465,7 @@ int main(int argc, char** argv) {
         write_reg(INTENA, stim);
         uint16_t val = read_reg(INTENAR);
         checks.expect(((val >> 6) & 1u) == 1u,
-            "P12-SET-ENCODING: bit15=1 with selector bit6=1 sets stored bit6");
+            "P12-SET-ENCODING (p.218, sol:7-interrupts.c22, opus:7-int.c18): bit15=1 with selector bit6=1 sets stored bit6");
     }
 
     // ========================================================================
@@ -471,7 +480,7 @@ int main(int argc, char** argv) {
         write_reg(INTENA, stim);
         uint16_t val = read_reg(INTENAR);
         checks.expect(((val >> 6) & 1u) == 0u,
-            "P13-CLR-ENCODING: bit15=0 with selector bit6=1 clears stored bit6");
+            "P13-CLR-ENCODING (p.218, sol:7-interrupts.c23, opus:7-int.c19): bit15=0 with selector bit6=1 clears stored bit6");
     }
 
     // ========================================================================
@@ -488,7 +497,7 @@ int main(int argc, char** argv) {
         write_reg(INTENA, SET | stim);
         uint16_t val = read_reg(INTENAR);
         checks.expect(val == mask,
-            "P14-MULTI-BIT-SELECTORS: several bits 14-0 set to 1 in one write select and set all of them together, none other");
+            "P14-MULTI-BIT-SELECTORS (p.218, sol:7-interrupts.c24, opus:7-int.c20): several bits 14-0 set to 1 in one write select and set all of them together, none other");
     }
 
     // ========================================================================
@@ -505,7 +514,7 @@ int main(int argc, char** argv) {
         write_reg(INTENA, SET | second_bit);
         uint16_t val = read_reg(INTENAR);
         checks.expect(val == (base | (1u << 4)),
-            "P15-ZERO-POSITIONS-UNAFFECTED: a write that leaves positions 14-0 at 0 does not disturb bits an earlier write established");
+            "P15-ZERO-POSITIONS-UNAFFECTED (p.218, sol:7-interrupts.c25, opus:7-int.c21): a write that leaves positions 14-0 at 0 does not disturb bits an earlier write established");
     }
 
     // ========================================================================
@@ -530,7 +539,7 @@ int main(int argc, char** argv) {
         if (do_second_write) write_reg(INTENA, CLR | (1u << 3));  // second write: now clear bit3 (bit1 already set)
         uint16_t after_two_writes = read_reg(INTENAR);
         checks.expect(((after_two_writes >> 1) & 1u) == 1u && ((after_two_writes >> 3) & 1u) == 0u,
-            "P16-TWO-WRITES-ACHIEVE-MIX: a second write reaches the set-bit1-and-clear-bit3 target that one write could not");
+            "P16-TWO-WRITES-ACHIEVE-MIX (p.218, opus:7-int.c22): a second write reaches the set-bit1-and-clear-bit3 target that one write could not");
     }
 
     // ========================================================================
@@ -546,17 +555,19 @@ int main(int argc, char** argv) {
         dut->int2 = 1; tick(); tick(); tick(); tick(); dut->int2 = 0;
         settle(3);
         checks.expect(dut->_ipl == 7,
-            "P17-INTEN-IS-NOT-AN-ORDINARY-ENABLE: bit14 set alone, with an ordinary source's own enable still clear, does not release that source");
+            "P17-INTEN-IS-NOT-AN-ORDINARY-ENABLE (p.218, sol:7-interrupts.c26, opus:7-int.c23): bit14 set alone, with an ordinary source's own enable still clear, does not release that source");
     }
 
     // ========================================================================
     // P18 -- INTEN as master gate over every other enable (the undisputed
     // half of the P19 conflict group). printed p.218: "If this bit is a 0,
-    // it disables all other interrupts." Corroborated (undisputed half only):
-    // appendix A p.280 and Figure 7-4 p.221's own gloss "special (master
-    // enable)". Cited: sol:7-interrupts.c27, opus:7-int.c24; corroborating:
-    // sol:7-appA-int.c10, opus:7-appA-int.c6, opus:7-fig7-4.c45 (gloss half
-    // only -- its hardware-priority-6 placement belongs to P19).
+    // it disables all other interrupts." Cited: sol:7-interrupts.c27,
+    // opus:7-int.c24. Appendix A p.280 and Figure 7-4 p.221's "special
+    // (master enable)" gloss say the same thing, but both of those claim
+    // rows are classified report-only as a whole (they carry the disputed
+    // "no request" / hardware-priority-6 half too) -- their uids are cited
+    // on P19's record() line, which tells the truth about the whole row,
+    // not split across an expect() and a record().
     // ========================================================================
     do_reset();
     {
@@ -573,13 +584,13 @@ int main(int argc, char** argv) {
         if (clear_master) write_reg(INTENA, CLR | (1u << 14));
         settle(3);
         checks.expect(dut->_ipl == 7,
-            "P18a-MASTER-GATE-CLOSES: clearing INTEN alone silences the still-enabled, still-pending ordinary source");
+            "P18a-MASTER-GATE-CLOSES (p.218, sol:7-interrupts.c27, opus:7-int.c24): clearing INTEN alone silences the still-enabled, still-pending ordinary source");
 
         bool set_master = !mutating("P18_OPEN");  // MUTATION: never set the master bit back
         if (set_master) write_reg(INTENA, SET | (1u << 14));
         settle(3);
         checks.expect(dut->_ipl != 7,
-            "P18b-MASTER-GATE-OPENS: setting INTEN alone releases the same already-enabled, already-pending source");
+            "P18b-MASTER-GATE-OPENS (p.218, sol:7-interrupts.c27, opus:7-int.c24): setting INTEN alone releases the same already-enabled, already-pending source");
     }
 
     // ========================================================================
@@ -598,7 +609,9 @@ int main(int argc, char** argv) {
         char level_buf[8];
         std::snprintf(level_buf, sizeof level_buf, "%d", (int)dut->_ipl);
         checks.record(std::string(
-            "P19-INTEN-SELF-REQUEST-DISPUTED: printed p.218 and appendix A p.280 say INTEN 'creates no interrupt request'; "
+            "P19-INTEN-SELF-REQUEST-DISPUTED (pp.218/280/221, sol:7-interrupts.c28, opus:7-int.c25, "
+            "sol:7-appA-int.c10, opus:7-appA-int.c6, opus:7-fig7-4.c45): printed p.218 and appendix A p.280 say "
+            "INTEN 'creates no interrupt request'; "
             "Figure 7-4 p.221 places it at hardware priority 6. Measured: setting bit14 alone in both INTENA and INTREQ, "
             "with nothing else enabled or pending, drives _ipl=") + level_buf +
             " (7=inactive; any other value means the RTL treats INTEN as its own request source, matching Figure 7-4's "

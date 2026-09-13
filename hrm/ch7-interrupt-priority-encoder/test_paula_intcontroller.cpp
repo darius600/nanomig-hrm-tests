@@ -257,7 +257,8 @@ int main(int argc, char** argv) {
     checks.expect(all_six_reachable,
         "P1-LEVELS-1-6-REACHABLE: across the exhaustive 32768-pattern sweep, "
         "every one of levels 1,2,3,4,5,6 is produced by at least one pattern "
-        "(sol:7-interrupts.c1/c4, opus:7-int.c2/c5)");
+        "(sol:7-interrupts.c1, sol:7-interrupts.c4, opus:7-int.c2, "
+        "opus:7-int.c5)");
     // MUTATION P1-LEVELS-1-6-REACHABLE stimulus red: restrict the swept
     // input space to only bit 0 varying (patterns {0,1} instead of the full
     // 0..32767) -- a real, narrower stimulus, not a fabricated one -- and
@@ -344,7 +345,8 @@ int main(int argc, char** argv) {
         checks.expect(bit3 && !bit13,
             "P4A-INT2-SETS-BIT3-ONLY: pulsing the INT2 pin sets request bit "
             "3 (PORTS) and does not set bit 13 (EXTER) (sol:7-interrupts.c6, "
-            "opus:7-int.c7; INTREQR=" + hex16(rq) + ")");
+            "opus:7-int.c7, sol:7-interrupts.c29, opus:7-int.c26; INTREQR="
+            + hex16(rq) + ")");
         clear_requests();
     }
     // MUTATION P4A-INT2-SETS-BIT3-ONLY stimulus red: pulse INT6 instead of
@@ -414,8 +416,8 @@ int main(int argc, char** argv) {
     checks.expect(single_bit_level[0] == 1,
         "P5-BIT0-TBE-LEVEL1: bit 0 (TBE) alone drives 68000 level 1 "
         "(measured " + std::to_string(single_bit_level[0])
-        + "; sol:7-interrupts.c60/c61, opus:7-int.c59, sol:7-fig7-4.c9, "
-        "opus:7-fig7-4.c7)");
+        + "; sol:7-interrupts.c60, sol:7-interrupts.c61, opus:7-int.c59, "
+        "sol:7-fig7-4.c9, opus:7-fig7-4.c7)");
     // MUTATION P5-BIT0-TBE-LEVEL1 stimulus red: bit 3 (PORTS, level 2) set
     // instead of bit 0 -- a different hardware-priority group, so the
     // measured level must differ from 1. Run now, reverted after.
@@ -426,8 +428,8 @@ int main(int argc, char** argv) {
     checks.expect(single_bit_level[1] == 1,
         "P6-BIT1-DSKBLK-LEVEL1: bit 1 (DSKBLK) alone drives 68000 level 1 "
         "(measured " + std::to_string(single_bit_level[1])
-        + "; sol:7-interrupts.c56/c57, opus:7-int.c55, sol:7-fig7-4.c6, "
-        "opus:7-fig7-4.c4)");
+        + "; sol:7-interrupts.c56, sol:7-interrupts.c57, opus:7-int.c55, "
+        "sol:7-fig7-4.c6, opus:7-fig7-4.c4)");
     // MUTATION P6-BIT1-DSKBLK-LEVEL1 stimulus red: bit 4 (COPER, level 3)
     // set instead of bit 1. Run now, reverted after.
     run_mutation("P6-BIT1-DSKBLK-LEVEL1", 1, 4);   // partner: COPER, level 3
@@ -447,8 +449,9 @@ int main(int argc, char** argv) {
     checks.expect(single_bit_level[3] == 2,
         "P8-BIT3-PORTS-LEVEL2: bit 3 (PORTS) alone drives 68000 level 2 "
         "(measured " + std::to_string(single_bit_level[3])
-        + "; sol:7-interrupts.c8/c32/c33, opus:7-int.c8/c29/c30, "
-        "sol:7-fig7-4.c12, opus:7-fig7-4.c10)");
+        + "; sol:7-interrupts.c8, sol:7-interrupts.c32, sol:7-interrupts.c33, "
+        "opus:7-int.c8, opus:7-int.c29, opus:7-int.c30, sol:7-fig7-4.c12, "
+        "opus:7-fig7-4.c10)");
     // MUTATION P8-BIT3-PORTS-LEVEL2 stimulus red: bit 0 (TBE, level 1) set
     // instead of bit 3. Run now, reverted after.
     run_mutation("P8-BIT3-PORTS-LEVEL2", 3, 0);   // partner: TBE, level 1
@@ -483,8 +486,8 @@ int main(int argc, char** argv) {
     checks.expect(single_bit_level[4] == 3,
         "P9-BIT4-COPER-LEVEL3: bit 4 (COPER) alone drives 68000 level 3 "
         "(measured " + std::to_string(single_bit_level[4])
-        + "; sol:7-interrupts.c40, opus:7-int.c38, sol:7-fig7-4.c15, "
-        "opus:7-fig7-4.c13)");
+        + "; sol:7-interrupts.c40, opus:7-int.c38, opus:7-int.c79, "
+        "sol:7-fig7-4.c15, opus:7-fig7-4.c13)");
     // MUTATION P9-BIT4-COPER-LEVEL3 stimulus red: bit 11 (RBF, level 5) set
     // instead of bit 4. Run now, reverted after.
     run_mutation("P9-BIT4-COPER-LEVEL3", 4, 11);   // partner: RBF, level 5
@@ -506,8 +509,8 @@ int main(int argc, char** argv) {
     checks.expect(single_bit_level[6] == 3,
         "P11-BIT6-BLIT-LEVEL3: bit 6 (BLIT) alone drives 68000 level 3 "
         "(measured " + std::to_string(single_bit_level[6])
-        + "; sol:7-interrupts.c50/c53, opus:7-int.c48/c50, sol:7-fig7-4.c21, "
-        "opus:7-fig7-4.c19)");
+        + "; sol:7-interrupts.c50, sol:7-interrupts.c53, opus:7-int.c48, "
+        "opus:7-int.c50, sol:7-fig7-4.c21, opus:7-fig7-4.c19)");
     // MUTATION P11-BIT6-BLIT-LEVEL3 stimulus red: bit 1 (DSKBLK, level 1)
     // set instead of bit 6. Run now, reverted after.
     run_mutation("P11-BIT6-BLIT-LEVEL3", 6, 1);   // partner: DSKBLK, level 1
@@ -517,8 +520,9 @@ int main(int argc, char** argv) {
     checks.expect(single_bit_level[7] == 4,
         "P12-BIT7-AUD0-LEVEL4: bit 7 (AUD0) alone drives 68000 level 4 "
         "(measured " + std::to_string(single_bit_level[7])
-        + "; sol:7-interrupts.c46/c42/c47, opus:7-int.c44/c40/c45, "
-        "sol:7-fig7-4.c27, opus:7-fig7-4.c25/c27)");
+        + "; sol:7-interrupts.c46, sol:7-interrupts.c42, sol:7-interrupts.c47, "
+        "opus:7-int.c44, opus:7-int.c40, opus:7-int.c45, opus:7-int.c80, "
+        "sol:7-fig7-4.c27, opus:7-fig7-4.c25, opus:7-fig7-4.c27)");
     // MUTATION P12-BIT7-AUD0-LEVEL4 stimulus red: bit 2 (SOFTINT, level 1)
     // set instead of bit 7. Run now, reverted after.
     run_mutation("P12-BIT7-AUD0-LEVEL4", 7, 2);   // partner: SOFTINT, level 1
@@ -561,8 +565,8 @@ int main(int argc, char** argv) {
     checks.expect(single_bit_level[11] == 5,
         "P16-BIT11-RBF-LEVEL5: bit 11 (RBF) alone drives 68000 level 5 "
         "(measured " + std::to_string(single_bit_level[11])
-        + "; sol:7-interrupts.c58/c59, opus:7-int.c57, sol:7-fig7-4.c36, "
-        "opus:7-fig7-4.c34)");
+        + "; sol:7-interrupts.c58, sol:7-interrupts.c59, opus:7-int.c57, "
+        "opus:7-int.c81, sol:7-fig7-4.c36, opus:7-fig7-4.c34)");
     // MUTATION P16-BIT11-RBF-LEVEL5 stimulus red: bit 6 (BLIT, level 3) set
     // instead of bit 11. Run now, reverted after.
     run_mutation("P16-BIT11-RBF-LEVEL5", 11, 6);   // partner: BLIT, level 3
@@ -575,8 +579,9 @@ int main(int argc, char** argv) {
     checks.expect(single_bit_level[12] == 5,
         "P17-BIT12-DSKSYN-LEVEL5: bit 12 (DSKSYN/DSKSYNC) alone drives "
         "68000 level 5 (measured " + std::to_string(single_bit_level[12])
-        + "; sol:7-interrupts.c54/c55, opus:7-int.c51/c52/c53, "
-        "sol:7-fig7-4.c39, opus:7-fig7-4.c37)");
+        + "; sol:7-interrupts.c54, sol:7-interrupts.c55, opus:7-int.c51, "
+        "opus:7-int.c52, opus:7-int.c53, sol:7-fig7-4.c39, "
+        "opus:7-fig7-4.c37)");
     // MUTATION P17-BIT12-DSKSYN-LEVEL5 stimulus red: bit 9 (AUD2, level 4)
     // set instead of bit 12. Run now, reverted after.
     // MUTATION P17-BIT12-DSKSYN-LEVEL5 oracle red: performed by hand during
@@ -596,8 +601,9 @@ int main(int argc, char** argv) {
     checks.expect(single_bit_level[13] == 6,
         "P18-BIT13-EXTER-LEVEL6: bit 13 (EXTER) alone drives 68000 level 6 "
         "(measured " + std::to_string(single_bit_level[13])
-        + "; sol:7-interrupts.c9/c30/c31, opus:7-int.c8/c27/c28, "
-        "sol:7-fig7-4.c42, opus:7-fig7-4.c40)");
+        + "; sol:7-interrupts.c9, sol:7-interrupts.c30, sol:7-interrupts.c31, "
+        "opus:7-int.c8, opus:7-int.c27, opus:7-int.c28, sol:7-fig7-4.c42, "
+        "opus:7-fig7-4.c40)");
     // MUTATION P18-BIT13-EXTER-LEVEL6 stimulus red: bit 10 (AUD3, level 4)
     // set instead of bit 13. Run now, reverted after.
     run_mutation("P18-BIT13-EXTER-LEVEL6", 13, 10);   // partner: AUD3, level 4
