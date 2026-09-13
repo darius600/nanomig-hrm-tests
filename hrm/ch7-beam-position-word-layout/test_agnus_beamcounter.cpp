@@ -125,7 +125,13 @@
 //   hpos8_1 stimulus changed from 0xCD to 0x00. FIRST ATTEMPT stayed green
 //   (11/3, unchanged) -- the draft compared VHPOSR's low byte against
 //   stim_hpos8_1 itself rather than a fixed 0xCD, so the oracle silently
-//   tracked the mutated stimulus and the check proved nothing. Fixed to
+//   tracked the mutated stimulus and the check proved nothing. WHAT MADE ME
+//   LOOK TWICE: all eleven mutations were run in one batch and every other
+//   one shifted the count from the 11-passed/3-failed baseline to exactly
+//   "10 passed, 4 failed" -- this was the one run that came back identical
+//   to baseline, the only outlier in an otherwise uniform pattern. A single
+//   green mutation result looks like success; a green result sitting alone
+//   in a column of ten identical shifts looks like a question. Fixed to
 //   compare against the literal 0xCD (see the comment at that assertion);
 //   rebuilt -> "10 passed, 4 failed", only BEAM-COUNTER-DELIVERS-KNOWN-VALUE
 //   newly red. Reverted, baseline (11/3) confirmed restored.
@@ -717,5 +723,10 @@ int main(int argc, char** argv) {
         "blank-cell half of opus:7-appA-beam.c8 ('carries no ECS mark' -- "
         "an empty table cell states nothing).");
 
+    // Summary MUST be the last thing printed -- the coverage ledger reads
+    // the run's terminal line as proof the binary reached its own end
+    // rather than being truncated partway through. Every record() above
+    // therefore has to come BEFORE this line, not after it.
+    std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
     return checks.failed == 0 ? 0 : 1;
 }
