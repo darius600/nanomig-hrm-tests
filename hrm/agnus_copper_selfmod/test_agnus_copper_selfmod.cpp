@@ -501,8 +501,15 @@ int main(int argc, char** argv) {
         checks.expect(h.count_grants_for_register(MARK_SM7_TARGET) >= 1,
             "SM7 [conformance] a self-issued MOVE to COPJMP2 strobes "
             "regardless of its data word - $FFFF strobes as $0000 does "
-            "(p.26, \"any MOVE\") "
-            "[claims: COP2-copjmp-strobes.c2, COP2-jump-strobe-address.c3]");
+            "(p.26, \"any MOVE\") - the same address-triggered, "
+            "data-independent effect appendix B's own legend names: "
+            "\"S Strobe (write address with no register bits). Writing "
+            "the register causes the effect.\" (p.287) - COPJMP2 IS such "
+            "a strobe register, demonstrated here directly: an arbitrary, "
+            "non-zero data word ($FFFF) causes the identical effect a "
+            "zero data word causes, because no register bits are ever "
+            "read from the write at all "
+            "[claims: COP2-copjmp-strobes.c2, COP2-jump-strobe-address.c3, opus:7-appB.c10]");
     }
 
     // ------------------------------------------------------------------

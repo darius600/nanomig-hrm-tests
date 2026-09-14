@@ -299,6 +299,7 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -683,6 +684,48 @@ int main(int argc, char** argv) {
             "asserted as conformant or nonconformant to either reading "
             "of page 70.");
     }
+
+    // =========================================================================
+    // CHAPTER 7 REOFFER -- 6 claims offered to this package in an earlier lot,
+    // declined then, never recorded then. Examined again here on their own
+    // merits and declined again, in the ledger's own vocabulary. No predicate,
+    // stimulus or expected value above is touched by this block.
+    // =========================================================================
+    checks.record(
+        "opus:7-vp.c22, sol:7-video.c22 (p.210, \"PF2P2 - PF2P0, bits 5-3, are "
+        "the priority bits for normal (non-dual) playfields\"): not asserted "
+        "-- this claim is about BPLCON2's sprite-priority field (PF2P, bits "
+        "5-3) governing a SINGLE, non-dual playfield's priority against "
+        "sprites, not about the dual-playfield colour-register split this "
+        "module's own boundary tests (aga, bpldata, dblpf, pf2of, bplcon2[6] "
+        "in; nplayfield, plfdata out -- see BOUNDARY above). "
+        "denise_playfields has no sprite input, and this package's own "
+        "header states nplayfield is never read (\"no claim in this "
+        "inventory describes its semantics\"); PF2PRI-PRIORITY above tests "
+        "bplcon2 bit 6 only, never bits 5-3. What would settle it: a "
+        "sprite-vs-playfield priority fixture in non-dual mode -- outside "
+        "this module's ports.");
+    checks.record(
+        "opus:7-vp.c33, sol:7-video.c31 (p.211, the front-to-back sprite/"
+        "playfield order PF1, SP01, SP23, PF2, SP45, SP67): not asserted -- "
+        "names four sprite groups (SP01/SP23/SP45/SP67) interleaved with "
+        "the two playfields; this module has no sprite port at all "
+        "(BOUNDARY: aga, bpldata, dblpf, pf2of, bplcon2 in; nplayfield, "
+        "plfdata out only), the same reason 3-dual-color.c24 is declined "
+        "above (DECLINED CLAIMS). Sprite/playfield composition is "
+        "ch3-sprite-playfield-priority's boundary, not this one.");
+    checks.record(
+        "opus:7-vp.c35, sol:7-video.c34 (p.211, \"playfield 2 is in front "
+        "of playfield 1 ... where playfield 2 is not blocked by sprites 0 "
+        "through 3\"): not asserted as a whole -- the PF2PRI-decides-"
+        "front/back half is established by PF2PRI-PRIORITY above, but the "
+        "claim's own qualifying clause (unblocked by sprite group "
+        "SP01/SP23) needs a sprite input this module does not have (same "
+        "gap as the two records just above). This suite's own precedent "
+        "(hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a "
+        "multi-clause claim is not partially kept on the one clause that "
+        "happens to be established, so this id is declined as a whole "
+        "rather than added to PF2PRI-PRIORITY's citation list.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

@@ -848,6 +848,46 @@ int main(int argc, char** argv) {
         "BPLCON0-WO/BPLCON2-WO/BPLCON3-WO pattern -- a distinct pattern written to $098 reads back $0000 at that same "
         "address (write-only).");
 
+    // =========================================================================
+    // CHAPTER 7 REOFFER, ROUND 2 -- 5 claims offered to this package in an
+    // earlier lot, declined then, never recorded then. Examined again here on
+    // their own merits and declined again, in the ledger's own vocabulary.
+    // No predicate, stimulus or expected value above is touched by this block.
+    // =========================================================================
+    checks.record(
+        "sol:7-appA-bplcon2.c1, sol:7-appA-bplcon2.c5 (p.271, BPLCON2's address and function -- appendix A's "
+        "per-register table entry, the same two clauses already declined above from appendix B's legend as "
+        "sol:7-appB-bplcon2.c1/sol:7-appB-bplcon2.c4): not asserted, for the identical reason -- this file's own OUT "
+        "OF SCOPE section declines BPLCON2-ADDR (killehb needs a 6th bitplane and the EHB comparison the sibling "
+        "package owns; the dual-playfield priority fields need dpf=1 and a second full bitplane set) and this file's "
+        "own Non-goals paragraph excludes BPLCON2's individual bit *semantics*, which is what 'controls video "
+        "priority' states. BPLCON2's WRITE-ONLY direction is asserted at BPLCON2-WO above; only the "
+        "address-specific and function-specific halves are left unsettled here too.");
+    checks.record(
+        "sol:7-appA-bplcon2.c3 (p.271, BPLCON2 is implemented in Denise -- appendix A's chip-attribution reading, "
+        "the twin of sol:7-appB-bplcon2.c3 declined above): not asserted, for the identical reason -- BPLCON2-WO's "
+        "own text says this fixture observes only the Denise half of BPLCON2's write path and is not independently "
+        "verified here beyond that write-only measurement; a single-chip fixture producing an effect does not, on "
+        "its own text's own reading, settle which chip's column entry the manual meant.");
+    checks.record(
+        "opus:7-appA-bplcon2.c3 (p.271, BPLCON1 -- address $102, write-only, Denise, no ECS mark, function "
+        "horizontal scroll control): not asserted -- BPLCON1 has no address constant and no assertion anywhere in "
+        "this file; unlike BPLCON0/BPLCON2/BPLCON3, this package never writes or reads $102 at all. What would "
+        "settle it: a BPLCON1-WO assertion mirroring the existing BPLCON0-WO/BPLCON2-WO/BPLCON3-WO pattern (a "
+        "distinct pattern written to $102 reads back $0000 at that same address); the address-specific and "
+        "function-specific halves would need the same wider bitplane-scroll fixture this file's OUT OF SCOPE "
+        "section already declines to build for BPLCON2/BPLCON3.");
+    checks.record(
+        "opus:7-appC-bplcon2.c8 (p.307, appendix C's ECS chip-assignment table for all four bitplane control "
+        "registers -- BPLCON0 Agnus+Denise, BPLCON1/BPLCON2/BPLCON3 Denise, all four write-only): not asserted as a "
+        "whole -- only the write-only clause is established for three of the four registers (BPLCON0-WO, "
+        "BPLCON2-WO, BPLCON3-WO above); BPLCON1 is untested here at all (see the opus:7-appA-bplcon2.c3 record just "
+        "above) and the chip-attribution clause for BPLCON2/BPLCON3 is explicitly not independently verified beyond "
+        "write-only (see the sol:7-appA-bplcon2.c3 and sol:7-appB-bplcon2.c3 records). This suite's own precedent "
+        "(hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a multi-clause id bundling several registers "
+        "and several properties is not partially kept on the clauses that happen to be established, so this bundled "
+        "id is declined as a whole, matching this file's own opus:7-appB.c34 record above.");
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }

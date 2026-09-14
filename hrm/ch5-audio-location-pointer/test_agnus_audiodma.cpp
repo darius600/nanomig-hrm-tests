@@ -566,6 +566,7 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -1085,6 +1086,45 @@ int main(int argc, char** argv) {
             p_bit3, p_bit3 * 2, p_bit4, p_bit4 * 2, ch0_ecs_survivors);
         checks.expect(ocs_reading_holds, buf);
     }
+
+    // =========================================================================
+    // CHAPTER 7 REOFFER -- 2 claims offered to this package in an earlier lot,
+    // declined then, never recorded then. Examined again here and declined
+    // again, agreeing with the reasoning already written into this file's own
+    // COVERAGE REPAIR 3 (assertion 6) and REGISTER-MAP-ADDRESSES-AND-
+    // AGNUS-DECODE (assertion 5) text. No predicate, stimulus or expected
+    // value above is touched by this block.
+    // =========================================================================
+    checks.record(
+        "opus:7-appA-pre.c7 (p.263, \"The lowest bit of all pointers must be "
+        "written as zero\"): not asserted -- this package's own COVERAGE "
+        "REPAIR 3 already withdrew the twin id A-pre.c7 from "
+        "POINTER-LSB-ALWAYS-ZERO for the identical reason: that predicate "
+        "(agnus_audiodma.v:89, data_in bit 0 never sampled) probes ONE "
+        "pointer-type register, AUD0LCL. Both this id and A-pre.c7 quantify "
+        "over EVERY pointer-type register in the machine; a universal claim "
+        "is not established by one witness, however structural the "
+        "mechanism looks. Agreed with that repair; no new measurement "
+        "changes it. Would need a predicate over every pointer family (a "
+        "top-level fixture) or a narrower split id scoped to the audio "
+        "pointer.");
+    checks.record(
+        "opus:7-appA-pre.c2 (p.263, \"The addresses shown here are used by "
+        "the special custom chips ('Paula', 'Agnus', and 'Denise') for "
+        "transferring data among themselves\"): not asserted -- declined "
+        "today at both hrm/ch5-audio-location-pointer and "
+        "hrm/agnus_top_register_bus. This package's own "
+        "REGISTER-MAP-ADDRESSES-AND-AGNUS-DECODE assertion (5) already "
+        "disclaims the Paula side in its own text: the \"and NOT decoded by "
+        "Paula\" half some of the register-map ids' own evidence states "
+        "\"needs paula_audio_channel.v, outside this package's assigned "
+        "single-module fixture, and is not re-measured here.\" This fixture "
+        "is agnus_audiodma.v alone -- it shows Agnus's own decode, never a "
+        "transfer to or from Paula or Denise. Agreed with the earlier "
+        "decline; no new measurement changes it. Would need an integrated "
+        "Agnus-Paula(-Denise) data-path fixture with a real RAM/data source "
+        "-- the same gap COVERAGE REPAIR 2 already named for "
+        "5-appA-p263.c11's identical proposition.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
