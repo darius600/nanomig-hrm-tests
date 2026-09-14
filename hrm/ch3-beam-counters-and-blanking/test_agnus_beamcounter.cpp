@@ -1706,6 +1706,32 @@ int main(int argc, char** argv) {
         "an assumed unit conversion, not the manual's claim; this needs "
         "the bitplane-DMA-channel boundary.");
 
+    // Chapter 8 routes opus:8-lpen.c22 / sol:8-pen.c24 here. They are NOT
+    // asserted, by an explicit decision on 14.09.2026: the manual
+    // contradicts itself about this band, and picking a winner between two
+    // of its own printed pages is adjudicating a manual error, which is not
+    // this suite's job. Graded either way it would mislead -- red reads as
+    // an implementation defect, green reads as p.238 being satisfied.
+    checks.note(
+        "NOT ASSERTED (the manual contradicts itself, and this suite does "
+        "not adjudicate that -- 2 claims): opus:8-lpen.c22, sol:8-pen.c24. "
+        "Printed p.238 says 'Bits 14-1  Chip ID code.  Do not depend on "
+        "value!'. Printed p.299, on the same register, says 'Use LOF I6 I5 "
+        "I4 I3 I2 I1 I0 LOL -- -- -- -- v10 v9 V8' -- bits 2, 1 and 0 are "
+        "the high vertical-position bits. Bits 2 and 1 lie inside p.238's "
+        "band, so the two pages cannot both be true. MEASURED on this "
+        "fixture, both halves: bits 13 and 12 follow the ecs and ntsc "
+        "inputs and bits 9-8 follow aga, so the upper part of the band IS a "
+        "readable identification field (VPOSR-IDENTIFICATION-FIELD-BITS-14-7 "
+        "above, green); and stepping vpos[10:8] from 0b000 to 0b111 changes "
+        "VPOSR by 0x0007, so bits 2 and 1 carry V10 and V9 "
+        "(VPOSR-BITS-2-0-VERTICAL-POSITION above, green). This design "
+        "follows p.299. Asserting p.238 literally would put a red in an "
+        "accepted chapter that reads as a NanoMig defect when NanoMig "
+        "conforms to the manual's own other page; asserting the opposite "
+        "would silently declare p.238 wrong. Both are decisions for someone "
+        "who knows the hardware, not for this package. Recorded for them.");
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
     return checks.failed == 0 ? 0 : 1;
 }
