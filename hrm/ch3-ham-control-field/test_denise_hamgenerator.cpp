@@ -290,7 +290,7 @@ int main(int argc, char** argv) {
         "color registers' (p.86), 'Planes 5 and 6 are used to modify the "
         "way bits from planes 1-4 are treated' (p.86), '0 0 Normal "
         "operation (use color register itself)' (Table 3-19, p.95). "
-        "3-ham.c09, 3-ham.c10, 3-ham.c11, 3-ham.c8, 3-ham.c9, 3-t19.c00, "
+        "3-ham.c09, opus:3-ham.c10, sol:3-ham.c10, opus:3-ham.c11, 3-ham.c8, 3-ham.c9, 3-t19.c00, "
         "3-table3-19.c1 .");
 
     // ---------------- HAM-HOLDS-PREVIOUS-VALUE-AND-MODIFIES-ONE-COMPONENT ----------------
@@ -323,7 +323,7 @@ int main(int argc, char** argv) {
         "modified. The bit combinations from planes 4-1 are used to "
         "replace the four \"blue\" bits' (pp.86-87), '0 1 Hold green and "
         "red  B = Bitplane 4-1 contents' (Table 3-19, p.95). "
-        "3-ham.c12, 3-ham.c13, 3-ham.c14, 3-t19.c01, 3-table3-19.c2, "
+        "sol:3-ham.c12, opus:3-ham.c13, sol:3-ham.c13, opus:3-ham.c14, 3-t19.c01, 3-table3-19.c2, "
         "3-table3-19.c3, 3-table3-19.c4 .");
 
     // ---------------- HAM-CONTROL-10-MODIFIES-RED-HOLDS-GREEN-BLUE ----------------
@@ -338,7 +338,7 @@ int main(int argc, char** argv) {
         "bit combinations from planes 4-1 are used to replace the four "
         "\"red\" bits' (p.87), '1 0 Hold green and blue  R = Bitplane 4-1 "
         "contents' (Table 3-19, p.95). "
-        "3-ham.c14, 3-ham.c15, 3-ham.c18, 3-t19.c10, 3-table3-19.c5, "
+        "sol:3-ham.c14, opus:3-ham.c15, sol:3-ham.c15, opus:3-ham.c18, 3-t19.c10, 3-table3-19.c5, "
         "3-table3-19.c6, 3-table3-19.c7 .");
 
     // ---------------- HAM-CONTROL-11-MODIFIES-GREEN-HOLDS-RED-BLUE ----------------
@@ -353,7 +353,7 @@ int main(int argc, char** argv) {
         "modified. The bit combinations from planes 4-1 are used to "
         "replace the four \"green\" bits' (p.87), '1 1 Hold blue and red  "
         "G = Bitplane 4-1 contents' (Table 3-19, p.95). "
-        "3-ham.c16, 3-ham.c17, 3-t19.c11, 3-table3-19.c10, 3-table3-19.c8, "
+        "opus:3-ham.c16, sol:3-ham.c16, opus:3-ham.c17, sol:3-ham.c17, 3-t19.c11, 3-table3-19.c10, 3-table3-19.c8, "
         "3-table3-19.c9 .");
 
     // ---------------- HAM-SINGLE-REGISTER-TECHNIQUE-COLOR00 ----------------
@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
         "color register, which is COLOR00, the color of the background. "
         "You treat the entire screen as a modification of that original "
         "color, according to the scheme above' (p.87). "
-        "3-ham.c18, 3-ham.c19 .");
+        "sol:3-ham.c18, opus:3-ham.c19, sol:3-ham.c19 .");
 
     // ---------------- HAM-CONTROL-00-TABLE-MAPS-VALUES-TO-REGISTERS-0-15 ----------------
     {

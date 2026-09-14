@@ -475,7 +475,7 @@ static void check_pal_field_period(Checks& c) {
     double nominal = 1.0 / 50.0;
     double rel_err = have ? std::fabs(seconds - nominal) / nominal : 1.0;
     bool ok = have && rel_err < 0.05;
-    c.report("PAL-FIELD-PERIOD-APPROX-1-50S (3-video.c10, 3-video.c13, page 40, \"approximately 1/50th of a second for PAL\"): measured " +
+    c.report("PAL-FIELD-PERIOD-APPROX-1-50S (opus:3-video.c10, 3-video.c13, page 40, \"approximately 1/50th of a second for PAL\"): measured " +
               std::to_string(seconds * 1000.0) + " ms vs nominal " + std::to_string(nominal * 1000.0) +
               " ms, relative error " + std::to_string(rel_err * 100.0) + "% (bound 5%)", ok);
 }

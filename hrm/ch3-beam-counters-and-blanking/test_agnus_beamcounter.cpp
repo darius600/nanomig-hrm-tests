@@ -663,7 +663,7 @@ int main(int argc, char** argv) {
                 "lines that are not visible on the screen and returns to "
                 "the top of the screen to produce another display field' "
                 "(p.40). 3-video.c04, 3-video.c06, 3-video.c08, "
-                "3-video.c11, 3-video.c14, 3-video.c7, 3-video.c9 .");
+                "opus:3-video.c11, sol:3-video.c11, 3-video.c14, 3-video.c7, 3-video.c9 .");
     }
 
     // ================= LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION =================

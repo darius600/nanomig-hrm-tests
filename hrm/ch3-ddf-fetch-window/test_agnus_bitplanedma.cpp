@@ -1207,7 +1207,7 @@ int main(int argc, char** argv) {
             "exactly 20 words/line = 320 pixels - 'the normal playfield has "
             "a width of 320 pixels' (p.41), 'Low resolution mode provides "
             "320 pixels for each horizontal line' (p.49), '320 pixels in "
-            "each horizontal line' (p.63 summary). 3-video.c12, 3-video.c16, "
+            "each horizontal line' (p.63 summary). opus:3-video.c12, 3-video.c16, "
             "3-res.c01, 3-res.f01, 3-video.c17, 3-video.c19, 3-video.c21, "
             "3-basic-size.c1, 3-basic.c01, 3-res.c07, 3-resolution.c1, "
             "3-sum.c03, 3-ddf.c11, 3-ddf.c16, 3-fetch.c9, 3-fetch.c14.");
