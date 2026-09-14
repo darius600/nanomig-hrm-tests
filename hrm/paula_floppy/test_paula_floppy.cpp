@@ -93,6 +93,11 @@ int main(int argc, char** argv) {
     };
     
     bool pass = true;
+    // PER-TEST RESULTS, so the summary below can carry a count the
+    // coverage ledger can read, and so one test's failure does not
+    // suppress the other's PASS line.
+    bool t1_ok = false;
+    bool t2_ok = false;
     
     // Set up disk presence (mock)
     dut->floppy_drives = 1; // 1 drive connected
@@ -122,6 +127,7 @@ int main(int argc, char** argv) {
         std::cerr << "FAIL: Floppy module did not request sector read from SD card.\n";
         pass = false;
     } else {
+        t1_ok = true;
         std::cout << "PASS: Floppy requested sector read. (sdc_rd=" << (int)dut->sdc_rd << ")\n";
         
         // Acknowledge the SD read
@@ -182,13 +188,34 @@ int main(int argc, char** argv) {
             std::cerr << "FAIL: Did not find 0x4489 sync mark in MFM stream.\n";
             pass = false;
         } else {
+            t2_ok = true;
             std::cout << "PASS: Floppy MFM Synchronization Sync-word 0x4489 found.\n";
         }
     }
 
-    if (pass) {
-        std::cout << "All tests passed!\n";
-    }
+    // THREE OF CHAPTER 7's CLAIMS WERE ROUTED HERE AND DECLINED.
+    // Declining is a result, but a decline that is never printed is
+    // indistinguishable from a claim nobody examined, so it is printed.
+    std::cout << "RECORDED: opus:7-int.c54, opus:7-fig7-4.c6, "
+                 "opus:7-fig7-4.c39 (disk interrupts, DSKBLK and DSKSYNC): "
+                 "NOT ASSERTED here. This file is an RTL_REGRESSION against "
+                 "the frozen FPGA-045 specification and carries an explicit "
+                 "non-goal disclaiming HRM conformance; it exercises the SD-card "
+                 "read path and MFM sync-word recovery, not the manual's "
+                 "interrupt semantics. paula_floppy.v does expose blckint and "
+                 "syncint, and neither is referenced anywhere in this test. "
+                 "What would settle them: a check of blckint after a DMA block "
+                 "completes (DSKBLK), and of syncint against a programmed "
+                 "DSKSYNC value -- which is a conformance package against this "
+                 "module, not an extension of this regression test.\n";
+
+    // A SUMMARY THE COVERAGE LEDGER CAN READ. "All tests passed!" carries
+    // no count, so nothing can show the run reached its own end, and the
+    // ledger is right to refuse it -- which also made the decline above
+    // invisible until this line existed.
+    const int n_pass = (t1_ok ? 1 : 0) + (t2_ok ? 1 : 0);
+    std::cout << "\n" << n_pass << " passed, " << (2 - n_pass)
+              << " failed\n";
 
     tfp->close();
     delete dut;

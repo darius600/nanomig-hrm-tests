@@ -74,6 +74,13 @@ int main(int argc, char** argv) {
     };
     
     bool pass = true;
+    // PER-TEST RESULTS. The global `pass` stays as the process exit
+    // code. These two exist so the summary line below can carry a count
+    // the coverage ledger can read, and so one test's failure cannot
+    // suppress the other's PASS line -- which would take four of chapter
+    // 7's claim citations with it.
+    bool t1_ok = false;
+    bool t2_fail = false;
 
     // --- TEST 1: Transmit ---
     std::cout << "Test 1: Transmit...\n";
@@ -127,6 +134,7 @@ int main(int argc, char** argv) {
             std::cerr << "FAIL: Transmitted bits do not match expected 0x55.\n";
             pass = false;
         } else {
+            t1_ok = true;
             std::cout << "PASS: Transmit OK.\n";
         }
     }
@@ -166,6 +174,7 @@ int main(int argc, char** argv) {
     if (!rx_int_seen) {
         std::cerr << "FAIL: Did not see rxint.\n";
         pass = false;
+        t2_fail = true;
     } else {
         // rbfmirror is Paula's external receive-buffer-full state. Keep it
         // asserted through the SERDATR read so bit 14 is actually observable.
@@ -179,12 +188,14 @@ int main(int argc, char** argv) {
             if ((serdatr & mask) == 0) {
                 std::cerr << "FAIL: SERDATR " << name << " flag is clear.\n";
                 pass = false;
+                t2_fail = true;
             }
         };
         auto expect_clear = [&](uint16_t mask, const char *name) {
             if (serdatr & mask) {
                 std::cerr << "FAIL: SERDATR " << name << " flag is set.\n";
                 pass = false;
+                t2_fail = true;
             }
         };
 
@@ -200,19 +211,26 @@ int main(int argc, char** argv) {
             std::cerr << "FAIL: Received data is 0x" << std::hex
                       << (serdatr & 0x00FF) << ", expected 0xA3.\n" << std::dec;
             pass = false;
+            t2_fail = true;
         }
 
         dut->rbfmirror = 0;
         tick(); tick(); tick(); tick();
 
-        if (pass) {
+        if (!t2_fail) {
             std::cout << "PASS: Receive byte, interrupt, stop bit, and SERDATR flags match the selected HRM case. opus:7-int.c56, opus:7-int.c58, opus:7-fig7-4.c9, opus:7-fig7-4.c36 .\n";
         }
     }
 
-    if (pass) {
-        std::cout << "All tests passed!\n";
-    }
+    // A SUMMARY THE COVERAGE LEDGER CAN READ. "All tests passed!" is not
+    // one: it carries no count, so nothing can show the run reached its
+    // own end, and the ledger is right to refuse it. This package carries
+    // four of chapter 7's claim citations, which were invisible until
+    // this line existed.
+    const bool t2_ok = rx_int_seen && !t2_fail;
+    const int n_pass = (t1_ok ? 1 : 0) + (t2_ok ? 1 : 0);
+    std::cout << "\n" << n_pass << " passed, " << (2 - n_pass)
+              << " failed\n";
 
     tfp->close();
     delete dut;
