@@ -111,38 +111,38 @@
 // MUTATION LIVE-WRITE stimulus red: the post-JOYTEST-write verification
 //   read was redirected from JOY0DAT's address ($00A) to POTGO's ($034),
 //   so it read back $0000 instead of the expected $FCFC.
-// MUTATION ADDR-JOY0DAT stimulus red: the "own address" read was
+// MUTATION PROP-ADDR-JOY0DAT stimulus red: the "own address" read was
 //   redirected from $00A to JOY1DAT's address ($00C).
-// MUTATION ADDR-JOY1DAT stimulus red: the "own address" read was
+// MUTATION PROP-ADDR-JOY1DAT stimulus red: the "own address" read was
 //   redirected from $00C to JOY0DAT's address ($00A).
-// MUTATION ADDR-POT0DAT stimulus red: the pot_cnt_en pulse count was
+// MUTATION PROP-ADDR-POT0DAT stimulus red: the pot_cnt_en pulse count was
 //   changed from 6 to 0, so POT0DAT's reading never left its baseline.
-// MUTATION ADDR-POT1DAT stimulus red: the pot_cnt_en pulse count was
+// MUTATION PROP-ADDR-POT1DAT stimulus red: the pot_cnt_en pulse count was
 //   changed from 6 to 0, so POT1DAT's reading never left its baseline.
-// MUTATION ADDR-POTGOR stimulus red: the POTGO-freeing write ($2000) was
+// MUTATION PROP-ADDR-POTGOR stimulus red: the POTGO-freeing write ($2000) was
 //   redirected from $034 to POT0DAT's address ($012), so POTGOR's reading
 //   never changed from its 0x1000 baseline.
-// MUTATION ADDR-POTGO stimulus red: the $2000 write was redirected from
+// MUTATION PROP-ADDR-POTGO stimulus red: the $2000 write was redirected from
 //   $034 to $012 (POT0DAT's address), so POTGOR's reading never changed --
 //   the same redirection as ADDR-POTGOR, confirming POTGO's own address is
 //   what causes the effect, not merely that the effect occurred.
-// MUTATION ADDR-JOYTEST stimulus red: the $FFFF write was redirected from
+// MUTATION PROP-ADDR-JOYTEST stimulus red: the $FFFF write was redirected from
 //   $036 to $034 (POTGO's address), so JOY0DAT/JOY1DAT never became $FCFC.
-// MUTATION RW-JOY0DAT stimulus red: the post-write-attempt verification
+// MUTATION PROP-RW-JOY0DAT stimulus red: the post-write-attempt verification
 //   read was redirected from JOY0DAT's address to JOY1DAT's, so it read
 //   back $0000 instead of the driven value V.
-// MUTATION RW-JOY1DAT stimulus red: the post-write-attempt verification
+// MUTATION PROP-RW-JOY1DAT stimulus red: the post-write-attempt verification
 //   read was redirected from JOY1DAT's address to JOY0DAT's.
-// MUTATION RW-POT0DAT stimulus red: the post-write-attempt verification
+// MUTATION PROP-RW-POT0DAT stimulus red: the post-write-attempt verification
 //   read was redirected from POT0DAT's address to JOY0DAT's.
-// MUTATION RW-POT1DAT stimulus red: the post-write-attempt verification
+// MUTATION PROP-RW-POT1DAT stimulus red: the post-write-attempt verification
 //   read was redirected from POT1DAT's address to JOY1DAT's.
-// MUTATION RW-POTGOR stimulus red: the post-write-attempt verification
+// MUTATION PROP-RW-POTGOR stimulus red: the post-write-attempt verification
 //   read was redirected from POTGOR's address to POT0DAT's.
-// MUTATION RW-POTGO stimulus red: the state-reaching write's target was
+// MUTATION PROP-RW-POTGO stimulus red: the state-reaching write's target was
 //   redirected from POTGO's address ($034) to POT0DAT's ($012), so
 //   POTGOR's reading never left its 0x1000 baseline.
-// MUTATION RW-JOYTEST stimulus red: the state-reaching write's target was
+// MUTATION PROP-RW-JOYTEST stimulus red: the state-reaching write's target was
 //   redirected from JOYTEST's address ($036) to POTGO's ($034), so
 //   JOY0DAT never left $0000.
 //
