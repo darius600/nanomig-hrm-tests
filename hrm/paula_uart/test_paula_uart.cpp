@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
         tick(); tick(); tick(); tick();
 
         if (pass) {
-            std::cout << "PASS: Receive byte, interrupt, stop bit, and SERDATR flags match the selected HRM case.\n";
+            std::cout << "PASS: Receive byte, interrupt, stop bit, and SERDATR flags match the selected HRM case. opus:7-int.c56, opus:7-int.c58, opus:7-fig7-4.c9, opus:7-fig7-4.c36 .\n";
         }
     }
 

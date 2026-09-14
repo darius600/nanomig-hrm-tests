@@ -1161,7 +1161,7 @@ int main(int argc, char** argv) {
             "register in the enhanced Agnus, BEAMCON0, provides a "
             "programmable signal generator' (p.305), '7 VARBEAMEN Variable "
             "beam counter comparator enable' (p.305). C-beamcon0.c1, "
-            "C-beam.c01, C-beamcon0.c9, C-beam.b07 .");
+            "C-beam.c01, C-beamcon0.c9, C-beam.b07, opus:7-appC-beam.c1 .");
     }
 
     // ================= BEAMCON0-VARHSYEN-VARVSYEN-GATE-PROGRAMMABLE-SYNC =================
@@ -1377,7 +1377,7 @@ int main(int argc, char** argv) {
             "to reset the vertical position counter' (p.304), 'This value "
             "represents the number of lines in a field(+1). The exception "
             "is if the INTERLACE bit is set (BPLCON0)' (p.304). C-scan.c9, "
-            "C-vtotal.c02, C-vtotal.c03 .");
+            "C-vtotal.c02, C-vtotal.c03, opus:7-appC-beam.c5, opus:7-appC-beam.c6 .");
 
         // (b) LACE=1: alternating VTOTAL+2 / VTOTAL+1 = 7/6. As in
         // LACE-BIT-CONTROLS-INTERLACE-FIELD-ALTERNATION above, force a
@@ -1398,7 +1398,7 @@ int main(int argc, char** argv) {
             "is if the INTERLACE bit is set (BPLCON0). In this case ... "
             "long field (+2) ... short field (+1)' (p.304 x2). C-scan.c10, "
             "C-scan.c11, C-scan.c12, C-vtotal.c04, C-vtotal.c05, "
-            "C-vtotal.c06 .");
+            "C-vtotal.c06, opus:7-appC-beam.c7 .");
     }
 
     // Unambiguous SUM check using the REAL PAL/NTSC hardwired defaults
@@ -1425,7 +1425,7 @@ int main(int argc, char** argv) {
                 std::to_string(sum) +
                 ") -- '" + (ntsc ? "NTSC (525 lines, 227.5 colorclocks per scan line)"
                                  : "PAL  (625 lines, 227.5 colorclocks per scan line)") +
-                "' (p.304). C-scan.c01, C-scan.c03 .");
+                "' (p.304). C-scan.c01, C-scan.c03, opus:7-appC-beam.c2, opus:7-appC-beam.c3 .");
     }
 
     // ================= VBLANK-DURATION-NTSC-MATCHES-MANUAL / VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL =================
@@ -1674,9 +1674,9 @@ int main(int argc, char** argv) {
         "pulse this module has no pin to receive.");
 
     checks.note(
-        "NOT ASSERTED (no fixed VGA default in this RTL -- 2 claims): "
-        "C-scan.c05, C-scan.c06 ('VGA (525 lines, 114.0 colorclocks per "
-        "scan line)'). BEAMCON0 has no 'select VGA' bit -- htotal/vtotal "
+        "NOT ASSERTED (no fixed VGA default in this RTL -- 3 claims): "
+        "C-scan.c05, C-scan.c06, opus:7-appC-beam.c4 ('VGA (525 lines, "
+        "114.0 colorclocks per scan line)'). BEAMCON0 has no 'select VGA' bit -- htotal/vtotal "
         "under ECS are either the hardwired PAL/NTSC constants or whatever "
         "value software explicitly writes into HTOTAL/VTOTAL (l.223,229); "
         "there is no third, VGA-specific default anywhere in this module "

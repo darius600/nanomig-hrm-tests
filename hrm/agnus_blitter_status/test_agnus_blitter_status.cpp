@@ -569,13 +569,13 @@ int main(int argc, char** argv) {
             "INT3-ON-COMPLETION: int3 pulses on exactly the tick busy falls from 1 to "
             "0 - 'the blitter also has an interrupt flag that is set whenever a blit "
             "[finishes]' (6-interrupt-flag.c1, ch6-int.c1, p.187), corroborated by "
-            "p.171's 'and an interrupt' (6-dma-channels.c42, ch6-dma.c39)");
+            "p.171's 'and an interrupt' (6-dma-channels.c42, ch6-dma.c39). sol:7-interrupts.c51, opus:7-int.c49, opus:7-fig7-4.c21 .");
 
         checks.expect(done_at >= 0 && !h.busy(),
             "BUSY-FLAG-ON-COMPLETION: busy reads 0 after that same completion tick - "
             "'when the transfer is complete, the blitter will signal the processor "
             "with a flag' (6-dma-channels.c41, ch6-dma.c38, p.171), the same busy/done "
-            "bit described on p.186-187");
+            "bit described on p.186-187. sol:7-interrupts.c52, opus:7-int.c49 .");
     }
 
     // ---------------- zero / BZERO (p.187, p.198) ----------------

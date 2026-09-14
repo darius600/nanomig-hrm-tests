@@ -1203,7 +1203,7 @@ int main(int argc, char** argv) {
             g19det = std::string("intreq2 armed at word #") + std::to_string(lenfinWordIdx) +
                      ", intreq pulse observed afterward=" + (found?"yes":"no");
         }
-        CHECK("5-p164.c27 5-sm.c28 5-p165.c5 5-sig.intreq2 (p164/p165) \"an interrupt request goes "
+        CHECK("5-p164.c27 5-sm.c28 5-p165.c5 5-sig.intreq2 sol:7-interrupts.c48 opus:7-int.c46 (p164/p165) \"an interrupt request goes "
               "out soon after the length counter finishes\" / \"intreq2 ... Request comes out after "
               "the next 011->010 transition\": " + g19det, g19);
         CHECK("5-p164.c28 5-sm.c29 (p164) \"The request goes out just as the last word of the "
@@ -1655,7 +1655,7 @@ int main(int argc, char** argv) {
         // (intreq2&AUDxON)|~AUDxON, which is unconditionally 1 whenever AUDxON=0, so intreq should
         // pulse on every loop-return transition, not just at block ends.
         bool manyIntreq = d.intreq_count >= 3;
-        CHECK("5-p164.c14 5-sm.c16 (p164) \"Interrupts are generated on every word transition "
+        CHECK("5-p164.c14 5-sm.c16 sol:7-interrupts.c49 opus:7-int.c47 (p164) \"Interrupts are generated on every word transition "
               "(011->010)\" (interrupt-driven/direct mode): intreq pulses observed over the run = " +
               std::to_string(d.intreq_count) + " across " + std::to_string(d.transition_count) +
               " state transitions (manual names the loop 011->010; measured loop code differs, "
