@@ -186,6 +186,15 @@ inside `paula`'s own hierarchy serves this role for the rows that are not:
 same fixture, same address-bus protocol, same round-trip-and-compare method,
 differing only in which address is driven and what the RTL does with it.
 
+SUPERSEDED by the REPAIR below: after 15.09.2026, no T1-T7 row is graded
+with `expect()`, so none of them can serve as this package's PASS control.
+The control-case requirement is instead satisfied entirely by the A0
+fixture-liveness assertions (ADKCON round-trip), which are on the same
+address-bus protocol and round-trip-and-compare method as every declined
+row, and remain PASS. A package that declines every claim-bearing row is a
+legitimate outcome under BUILD-BRIEF's HALT/decline provisions provided its
+liveness control still stands -- it does here.
+
 ## What step 2 will determine, not invent
 
 This document names no port, no address width, no clock or reset protocol,
@@ -193,3 +202,51 @@ and no submodule `paula` itself instantiates -- BUILD-BRIEF's gate against a
 specification anchored to the implementation. Those are read from the RTL
 only after this file is committed, and the assert/decline split for T1-T7 is
 decided there, not here.
+
+SUPERSEDED by the REPAIR below for the same reason: the "split" language
+above assumed a real two-way split existed. After the repair, all seven T1-T7
+rows land on the same side.
+
+## REPAIR (15.09.2026) -- correcting an asymmetric rule assumed above
+
+The "Testable propositions" section above committed, before the RTL was
+opened, to a two-branch rule: grade a *present* decode with `expect()`,
+decline an *absent* one with `record()`. Step 2 found both branches actually
+fire in this RTL -- POT0DAT/POT1DAT/POTGOR/POTGO are decoded nowhere in
+`paula`'s own hierarchy (declined), while SERDATR/SERDAT/SERPER are decoded
+inside paula_uart.v, itself instantiated inside `paula` (originally graded
+`expect()`-green). Independent validation
+(`2026-09-14_ch8_s1_sol_validation_A.md`, defect 8) found that split
+indefensible: the same kind of structural fact -- an address's presence or
+absence inside this fixture's own compiled module hierarchy -- was treated
+as proof when present and as merely unobservable when absent, in the same
+package, argued from the same legend.
+
+Printed p.287 settles which reading is correct. Its CHIP-column legend reads
+only:
+
+    A,D,P
+        A=Agnus chip, D=Denise chip, P=Paula chip.
+
+This names a physical 1985 chip; it does not mention a module hierarchy, an
+RTL boundary, or an instantiation tree -- those concepts do not appear on
+p.287 at all. `paula`, `userio` and `denise` are this open-source FPGA
+clone's own engineering partition of the reimplemented logic; nothing on
+p.287 or p.289 establishes that this partition tracks the three original
+chips' silicon boundaries. So a decode's presence inside the Verilog module
+named `paula` is evidence about this clone's source layout, not evidence
+that the physical Paula chip answers there -- exactly as its absence was
+already (correctly) treated as no evidence either way for the POT rows.
+
+The corrected rule, applied identically to both this package and sibling
+`ch8-appb-chip-column-denise`: presence and absence inside this clone's
+module hierarchy are the same kind of structural fact, and both are
+DECLINED with `record()`. All seven T1-T7 rows (14 claims) are declined;
+none is asserted with `expect()`. SERDATR/SERDAT/SERPER's former `expect()`
+grading and their three MUTATION records are walked back accordingly -- see
+`test_paula.cpp`'s file-header REPAIR note for the disposition-level detail,
+including why this is a legitimate, reportable outcome rather than a defect
+in the fixture: this suite, bounded to RTL-module-hierarchy observation,
+cannot settle any of these fourteen claims, because the legend's letters
+assert physical chip identity, which this FPGA clone's module partitioning
+is not shown anywhere to track.
