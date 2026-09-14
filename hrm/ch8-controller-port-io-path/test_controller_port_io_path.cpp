@@ -80,13 +80,20 @@
 //     future sibling package) can observe. `cia_porta_out` (the CIA's own
 //     internal output-driver signal) is therefore evidence of a necessary
 //     precondition, never of the manual's connector-level "output" claim
-//     itself. Per assertion below: where a claim is satisfied by a true
-//     disjunct that IS connector-level (opus:8-intro.c10's input half),
-//     it is graded, scoped in its own label/note. Where a claim requires
-//     the connector-level output half specifically (opus:8-regs.c6,
-//     sol:8-reg.c6, sol:8-overview.c3), it is declined via `record()`,
-//     naming this boundary, rather than graded on the weaker
-//     `cia_porta_out` signal.
+//     itself. Every claim below whose text includes "output"
+//     (`opus:8-intro.c10`, `opus:8-regs.c6`, `sol:8-reg.c6`,
+//     `sol:8-overview.c3`) is declined via `record()`, naming this
+//     boundary, rather than graded on the weaker `cia_porta_out` signal or
+//     on an unstated half of the claim -- the coverage ledger counts a
+//     uid on a graded `expect()` line as fully ASSERTED regardless of
+//     what the label or an adjacent `note()` says, so a claim only
+//     partly demonstrated (a real input half, an unreachable output half)
+//     cannot be left on a graded line even with disclosure. Where a real,
+//     connector-level fact survives from these measurements (the input
+//     half of opus:8-intro.c10; the register-level output-driver
+//     behaviour), it is kept printed via `note()` or reused by a
+//     uid-free graded line elsewhere (`PROP-PORT-LOW6`) rather than
+//     discarded.
 //
 // KNOWN CONFLICT 3 (carried forward, and restated from SPECIFICATION.md
 //   because it governs four claims below): printed p.233 numbers the
@@ -141,7 +148,7 @@
 //   STIMULUS value the fixture is asked to drive; no `expect()` call's own
 //   comparison was ever edited to produce a result. `record()` lines are
 //   declines, not assertions -- they carry no `expect()` label and
-//   therefore need no mutation entry. Every one of the 7 ids below was run
+//   therefore need no mutation entry. Every one of the 6 ids below was run
 //   standalone (`MUTATE=<id> ./obj_dir/Vcontroller_port_io_path`),
 //   confirmed red, then reverted and confirmed green again with MUTATE
 //   unset; the baseline (MUTATE unset) and each mutation run's actual
@@ -150,7 +157,6 @@
 //
 // MUTATION control:userio-fire-tap-liveness stimulus red: _joy2 pin 6 is never actually driven low (stays 0xFFFF), so fire0_tap never leaves the idle level
 // MUTATION control:ciaa-porta-liveness stimulus red: extra_wprot/extra_change are driven to the same idle pattern the baseline used, so the second read is indistinguishable from the first
-// MUTATION opus:8-intro.c10 stimulus red: _joy2 pin 6 is never driven low, so the input half of "input or output" is never demonstrated
 // MUTATION opus:8-mbtn.c3 stimulus red: mouse_btn[0] is never asserted, so the mouse-button-to-CIAAPRA path is never exercised
 // MUTATION PROP-PORT-LOW6 stimulus red: the mouse-shared port's (_joy2) pin 6 is never driven low
 // MUTATION PROP-PORT-HIGH7 stimulus red: the joystick-only port's (_joy1) pin 6 is never driven low
@@ -322,33 +328,34 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // P227-1 -- opus:8-intro.c10 (p.227): "The nine-pin connectors can be
-    // used for input or for output." "Input or output" is a disjunction:
-    // a true disjunct is a complete proof of it. The INPUT disjunct is
-    // real and connector-level -- a distinct stimulus at pin 6 of the
-    // mouse-shared port arrives, and departs, at CIAAPRA bit 6, below.
-    // The OUTPUT disjunct is not graded on this line: no boundary in this
-    // RTL tree merges a CIAAPRA-driven value onto a connector-facing pin
-    // (see header WHAT STEP 2 ESTABLISHED) -- but a genuine disjunction
-    // needs only one true side, so this is not a partial proof of a
-    // stronger conjunctive claim (contrast opus:8-regs.c6 below, which IS
-    // conjunctive and is declined for exactly that reason).
+    // opus:8-intro.c10 (p.227): "The nine-pin connectors can be used for
+    // input or for output." Read as a capability statement, "can be used
+    // for A or B" asserts that both A and B are possible usage modes, not
+    // that showing one suffices -- proving the input half shows the
+    // sentence is not false, it does not show it true. The input half is
+    // real and connector-level (measured below, same mechanism as
+    // PROP-PORT-LOW6 below). The output half cannot be observed at any
+    // boundary in this RTL tree: no signal here carries a CIAAPRA-driven
+    // value to a connector-facing pin (see header WHAT STEP 2
+    // ESTABLISHED). Declined via record(), naming that boundary, rather
+    // than graded on half the claim -- the coverage ledger counts a uid on
+    // a graded line as fully ASSERTED regardless of a label's disclaimer,
+    // so a half-proof cannot be left there even when disclosed.
     // ========================================================================
     do_reset();
     {
         set_port(JOY_IDLE, JOY_IDLE, 0);
         uint8_t idle_v = cia_read_pra();
-
-        uint16_t joy2_pressed = mutating("opus:8-intro.c10") ? JOY_IDLE : JOY_FIRE_PRESSED;
-        set_port(JOY_IDLE, joy2_pressed, 0);
+        set_port(JOY_IDLE, JOY_FIRE_PRESSED, 0);
         uint8_t pressed_v = cia_read_pra();
 
         checks.note("P227-1: idle CIAAPRA=0x" + hex(idle_v, 2) + ", pin-6-pressed CIAAPRA=0x" + hex(pressed_v, 2));
-        checks.note("P227-1-SCOPE: graded on the input disjunct alone, a real connector-level path; "
-            "the output disjunct is not exercised here -- no boundary in this RTL tree carries a "
-            "CIAAPRA-driven value to a connector-facing pin.");
-        checks.expect(bit(idle_v, 6) == true && bit(pressed_v, 6) == false,
-            "opus:8-intro.c10 (input disjunct only, see P227-1-SCOPE)");
+        checks.record("opus:8-intro.c10 (p.227, \"The nine-pin connectors can be used for input or for "
+            "output\"): the input half is measured true above, a real connector-level fact (also proven "
+            "by PROP-PORT-LOW6 below). The output half cannot be observed at any boundary in this RTL "
+            "tree -- no signal here carries a CIAAPRA-driven value to a connector-facing pin (see "
+            "header). \"Can be used for input or output\" is a capability statement needing both halves "
+            "shown; declined rather than graded on half of it.");
     }
 
     // ========================================================================
