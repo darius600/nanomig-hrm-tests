@@ -93,6 +93,10 @@
 //   the targeted assertion reddens), then reverted and confirmed back to
 //   8 passed, 0 failed.
 //
+// MUTATION A0-LIVENESS-PORTA-TO-CIAAPRA-VIA-RIG stimulus red: second liveness word driven identical to the first, so the two readings are indistinguishable (MUTATE=A0). RUN: baseline 8 passed 0 failed -> 7 passed 1 failed, only this label red; reverted 8/0.
+// MUTATION PRE-AEN-ASSERTED-AT-BFE001 stimulus red: a non-CIA address presented while the check still expects sel_cia_a asserted (MUTATE=PRE). RUN: baseline 8 passed 0 failed -> 7 passed 1 failed, only this label red; reverted 8/0.
+// MUTATION PRE-NEG-AEN-DEASSERTED-OUTSIDE-CIA-WINDOW stimulus red: the CIA address itself presented, so the decode asserts and the isolation control fails (MUTATE=PRE-NEG). RUN: baseline 8 passed 0 failed -> 7 passed 1 failed, only this label red; reverted 8/0.
+// MUTATION CTRL-DDRA-DISTINCT-FROM-PRA stimulus red: 0x00 written to DDRA while the read-back is still compared against 0xA5 (MUTATE=CTRL). RUN: baseline 8 passed 0 failed -> 7 passed 1 failed, only this label red; reverted 8/0.
 // MUTATION A1-BFE001-SELECTS-PRA-OPUS-REGS stimulus red: read address redirected from $BFE001 to $BFE201 (DDRA) while the check still expects PRA's pattern (MUTATE=A1)
 // MUTATION A2-BFE001-SELECTS-PRA-SOL-REG stimulus red: read address redirected from $BFE001 to $BFE201 (DDRA) while the check still expects PRA's pattern (MUTATE=A2)
 // MUTATION A3-BFE001-SELECTS-PRA-OPUS-MBTN stimulus red: read address redirected from $BFE001 to $BFE201 (DDRA) while the check still expects PRA's pattern (MUTATE=A3)
@@ -227,7 +231,10 @@ int main(int argc, char** argv) {
             return (uint8_t)((w6 & 0x3F) << 2);
         };
         const uint8_t word1 = 0b101010;
-        const uint8_t word2 = 0b010101;  // bitwise complement (within 6 bits)
+        // MUTATE=A0: drive the second word IDENTICAL to the first, so the
+        // two readings cannot be told apart and `distinct` is false.
+        const uint8_t word2 = mutating("A0") ? word1
+                                             : (uint8_t)0b010101;  // complement
 
         set_porta_word(word1);
         settle();
@@ -257,7 +264,9 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
-        set_address(ADDR_BFE001_PRA);
+        // MUTATE=PRE: present a non-CIA address while the check still
+        // expects sel_cia_a asserted.
+        set_address(mutating("PRE") ? ADDR_NONCIA : ADDR_BFE001_PRA);
         checks.note("PRE-STIMULUS: cpu_address=0x" + hex2((uint8_t)(ADDR_BFE001_PRA >> 16)) +
                     hex2((uint8_t)(ADDR_BFE001_PRA >> 8)) + hex2((uint8_t)ADDR_BFE001_PRA) +
                     " (real address $BFE001); sel_cia=" + std::to_string((int)dut->sel_cia) +
@@ -276,7 +285,9 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
-        set_address(ADDR_NONCIA);
+        // MUTATE=PRE-NEG: present the CIA address itself, so the decode
+        // asserts and the isolation control fails.
+        set_address(mutating("PRE-NEG") ? ADDR_BFE001_PRA : ADDR_NONCIA);
         checks.expect(dut->sel_cia == 0 && dut->sel_cia_a == 0,
             "PRE-NEG-AEN-DEASSERTED-OUTSIDE-CIA-WINDOW (isolation control, not a manual citation): presenting a "
             "non-CIA address ($000000) leaves sel_cia and sel_cia_a deasserted (gary.v:190) -- the decode "
@@ -292,7 +303,9 @@ int main(int argc, char** argv) {
     // ========================================================================
     do_reset();
     {
-        cia_write(ADDR_BFE201_DDRA, 0xA5);
+        // MUTATE=CTRL: write a different byte to DDRA while the check
+        // still compares the read-back against 0xA5.
+        cia_write(ADDR_BFE201_DDRA, mutating("CTRL") ? 0x00 : 0xA5);
         uint8_t ddra_val = cia_read(ADDR_BFE201_DDRA);
         set_porta_word(0b110011);
         settle();
