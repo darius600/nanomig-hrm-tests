@@ -122,3 +122,45 @@ declined — gets one stimulus mutation recorded in the file header: change
 what the fixture is *asked to do*, leave the expected value alone, confirm
 the assertion goes red, then revert. `record()` declines are not assertions
 and get no mutation entry. Exact mutation mechanics are named in Step 2.
+
+## REPAIR (15.09.2026) — correcting an asymmetric rule assumed above
+
+The "Test approach" section above committed, before the RTL was opened, to a
+two-branch rule: grade a *present* decode with `expect()`, decline an
+*absent* one with `record()`. In practice only the absent branch ever fired
+in this package — JOY0DAT/JOY1DAT/JOYTEST are decoded nowhere in `denise`'s
+own hierarchy, confirmed independently in Step 2 — so this package's own
+dispositions (all three declined) were never wrong. But the *rule itself*,
+as stated above, was asymmetric, and independent validation
+(`2026-09-14_ch8_s1_sol_validation_A.md`, defect 8) found that sibling
+package `ch8-appb-chip-column-paula` did hit the present branch and, under
+the identical rule, graded three of its own rows `expect()`-green on
+structural presence alone while declining the rest on structural absence —
+treating the same kind of evidence as proof one way and as inconclusive the
+other.
+
+Printed p.287 settles which reading is correct. Its CHIP-column legend reads
+only:
+
+    A,D,P
+        A=Agnus chip, D=Denise chip, P=Paula chip.
+
+This names a physical 1985 chip; it does not mention a module hierarchy, an
+RTL boundary, or an instantiation tree — those concepts do not appear on
+p.287 at all. Nothing on p.287 or p.289 establishes that this FPGA clone's
+`denise`/`paula`/`userio` module partition tracks the three original chips'
+silicon boundaries. So a decode's presence inside the Verilog module sharing
+a chip's name is not, by the legend's own words, evidence that the physical
+chip answers there — the same non-evidentiary status this package already
+gave (correctly in disposition, though not yet stated as a general rule) to
+absence.
+
+The corrected rule, applied identically to both packages: presence and
+absence inside this clone's module hierarchy are the same kind of structural
+fact, and both are DECLINED with `record()`. The two-branch rule in "Test
+approach" above is superseded by this single rule; its first branch (grade
+presence with `expect()`) is not entered by either package after this
+repair. See `test_denise.cpp`'s file-header REPAIR note for the
+disposition-level detail, and `ch8-appb-chip-column-paula`'s own REPAIR
+(same date) for where the superseded branch actually fired and was walked
+back.

@@ -46,18 +46,44 @@
 //   `reg_address`/`custom_data_in` buses in minimig.v (minimig.v:556-557,
 //   588-589), confirming they are address-bus siblings, not a
 //   parent/submodule pair.
-//   A CHIP-column letter is a claim about which chip answers at an address;
-//   a fixture that never receives userio.v's decode logic can return neither
-//   a yes nor a no about it -- denise.v's own data_out is an unconditional
-//   OR of its own sub-signals (denise.v:102/130, `col_out | deniseid_out |
-//   rgb_out`) with no chip-select/acknowledge output of any kind, so driving
-//   an address absent from denise's own table simply reads back 0x0000,
-//   which is indistinguishable from "claimed and returns zero". All three
-//   rows are DECLINED with record(), naming userio.v, per this task's
-//   carried-forward rule for CHIP-column claims (the accepted shape used by
-//   ch8-appb-chip-column-paula on this same manual page, for its own
-//   userio.v-decoded rows) -- the fixture is not widened to force an answer,
-//   and this is not graded as a manual-vs-RTL disagreement.
+//
+//   Why this absence settles nothing either way -- grounded in the legend,
+//   not in precedent. Printed p.287 defines a CHIP-column letter as:
+//
+//       A,D,P
+//           A=Agnus chip, D=Denise chip, P=Paula chip.
+//
+//   That sentence names which of three physical 1985 custom chips answers a
+//   register. It says nothing about a module hierarchy, an RTL boundary, or
+//   an instantiation tree -- those concepts do not appear on p.287 at all.
+//   `denise` and `userio` are this open-source FPGA clone's own engineering
+//   partition of the reimplemented logic; nothing on p.287 or p.289
+//   establishes that this partition tracks the original chips' silicon
+//   boundaries. So JOY0DAT/JOY1DAT/JOYTEST's absence from `denise`'s own
+//   hierarchy is a fact about this clone's source layout, not evidence that
+//   the physical *Denise chip* fails to answer there -- denise.v's own
+//   data_out is an unconditional OR of its own sub-signals (denise.v:102/130,
+//   `col_out | deniseid_out | rgb_out`) with no chip-select/acknowledge
+//   output of any kind, so driving an address absent from denise's own table
+//   simply reads back 0x0000, which is indistinguishable from "claimed and
+//   returns zero". All three rows are DECLINED with record(), naming
+//   userio.v -- the fixture is not widened to force an answer, and this is
+//   not graded as a manual-vs-RTL disagreement, nor as evidence against the
+//   manual's letter.
+//
+//   REPAIR 15.09.2026 -- sibling package ch8-appb-chip-column-paula
+//   previously treated this exact kind of absence-from-own-hierarchy as
+//   non-probative (declined) while treating presence-in-own-hierarchy for
+//   its own SERDATR/SERDAT/SERPER rows as sufficient proof of ownership
+//   (asserted green) -- an asymmetric use of the identical structural
+//   evidence, flagged by independent validation
+//   (2026-09-14_ch8_s1_sol_validation_A.md, defect 8). This package's
+//   reasoning was already symmetric (it only ever encountered the absence
+//   case, and already declined rather than asserted-red on it), so its
+//   dispositions are unchanged by that repair; paula's file was brought into
+//   line with the same rule this package already applied, argued directly
+//   from the p.287 legend quoted above rather than from either package's
+//   prior reasoning.
 //
 // FIXTURE LIVENESS (A0). Independent of any claim: denise.v's OWN internal
 //   BPLCON0 register ($100, denise.v:59/175-176) is round-tripped with two
@@ -80,7 +106,9 @@
 //   call's own expected-value code untouched. Both were run with their own
 //   id, confirmed red, then reverted (MUTATE unset) and confirmed green
 //   again; results are logged next to each assertion and summarised in the
-//   build report. Baseline with MUTATE unset: 2 passed, 0 failed.
+//   build report. Baseline with MUTATE unset: 2 passed, 0 failed (unchanged
+//   by the 15.09.2026 REPAIR above -- this package's dispositions did not
+//   change, only its stated reasoning).
 //
 // MUTATION A0-LIVENESS-BPLCON0-HIRES stimulus red: the written word's bit 15 is cleared (0x0000 instead of 0x8000), so hires never goes high (MUTATE=A0_1)
 // MUTATION A0-LIVENESS-BPLCON0-SHRES stimulus red: the second word replays the first (0x8000) instead of a different one (0x0040), so shres never goes high and the observation does not change from the first (MUTATE=A0_2)
@@ -236,7 +264,9 @@ int main(int argc, char** argv) {
             "module instantiated as USERIO1 in minimig.v:551 -- never inside denise.v, which is instantiated separately "
             "as DENISE1 at minimig.v:579, and not in this package's Makefile SRC list. A CHIP-column letter names which "
             "chip answers at an address; this fixture never receives userio.v's decode logic and so can return neither "
-            "a yes nor a no about it. userio.v is the module that would decide this claim.");
+            "a yes nor a no about it. userio.v is the module that would decide this claim -- p.287's legend names a "
+            "chip, not a module, so this absence is not read as disproof, the symmetric counterpart of "
+            "ch8-appb-chip-column-paula's own presence-based rows being declined the same way after its REPAIR.");
     }
     do_reset();
     {
@@ -249,7 +279,8 @@ int main(int argc, char** argv) {
             "(measured: grep, zero hits, same file list as P1). It IS decoded in userio.v (parameter JOY1DAT = 9'h00c, "
             "userio.v:55, used at userio.v:294), instantiated as USERIO1 in minimig.v:551, never inside denise.v "
             "(DENISE1, minimig.v:579) and not in this package's SRC list. userio.v is the module that would decide "
-            "this claim.");
+            "this claim -- p.287's legend names a chip, not a module, so this absence is not read as disproof, "
+            "symmetric with ch8-appb-chip-column-paula's own presence-based rows being declined the same way.");
     }
     do_reset();
     {
@@ -262,7 +293,9 @@ int main(int argc, char** argv) {
             "instantiates (measured: grep, zero hits, same file list as P1). It IS decoded in userio.v (parameter "
             "JOYTEST = 9'h036, userio.v:61, used at userio.v:317), instantiated as USERIO1 in minimig.v:551, never "
             "inside denise.v (DENISE1, minimig.v:579) and not in this package's SRC list. userio.v is the module that "
-            "would decide this claim.");
+            "would decide this claim -- p.287's legend names a chip, not a module, so this absence is not read as "
+            "disproof, symmetric with ch8-appb-chip-column-paula's own presence-based rows being declined the same "
+            "way.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
