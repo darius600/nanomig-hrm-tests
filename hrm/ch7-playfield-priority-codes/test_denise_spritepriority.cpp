@@ -2,7 +2,11 @@
 //   p.210) and its PF2P2-PF2P0 mirror (p.211, "in exactly the same way"),
 //   swept exhaustively -- all 5 defined codes x all 4 sprite groups, for
 //   both playfields (40 cells) -- plus the six-object fixture-liveness
-//   precondition those 40 cells depend on.
+//   precondition those 40 cells depend on, plus two aggregate assertions
+//   (ids 47/48, added in the ch7 slice B1 finding-8 repair) over the
+//   relationship BETWEEN those 40 cells: that each playfield's outcome is
+//   changeable and reaches both front and behind, and that its five
+//   defined codes produce five distinct placements.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 207-212 (Table 7-2, its p.209 descriptive-prose twin, the p.211
@@ -73,8 +77,12 @@
 // no assertion changed colour.
 //
 // MUTATION MECHANISM (unchanged in substance from the first version):
-// every one of the 46 graded assertions is numbered 1-46 via kActiveMutation,
-// matching the literal id in its own label 1:1 (see the table below).
+// every one of the (then) 46 graded assertions is numbered 1-46 via
+// kActiveMutation, matching the literal id in its own label 1:1 (see the
+// table below). Two more graded assertions, ids 47-48, were added on
+// 14.09.2026 (finding-8 repair, see "SWEEP-SUMMARY" below and its own
+// dated mutation-log addendum after the original 46-entry log) -- the
+// mechanism is identical, just extended by two more kActiveMutation values.
 // `make MUT=<n>` defines MUT_ID=<n> for the build (see Makefile), and the
 // one call site whose sequential number matches substitutes its mutated
 // stimulus for its normal stimulus while leaving the expected value
@@ -150,7 +158,40 @@
 // MUTATION PF2P-100-SP23 stimulus red: PF2P code 4->1 -> 45 passed, 1 failed (PF2P-100-SP23 only). Reverted.
 // MUTATION PF2P-100-SP45 stimulus red: PF2P code 4->2 -> 45 passed, 1 failed (PF2P-100-SP45 only). Reverted.
 // MUTATION PF2P-100-SP67 stimulus red: PF2P code 4->3 -> 45 passed, 1 failed (PF2P-100-SP67 only). Reverted.
+//
+// FINDING-8 REPAIR, 14.09.2026 (independent validation, ch7 slice B1): the
+// final checks.record() used to carry opus:7-vp.c3, opus:7-vp.c10,
+// sol:7-video.c7, opus:7-vp.c11 and opus:7-vp.c21, saying they were
+// "demonstrated collectively" by the 40-cell sweep -- a record() cannot
+// demonstrate anything, so the coverage ledger (correctly) read them as
+// recorded-only while the sentence claimed otherwise. Checked directly
+// against pp.207-211: all five ARE genuinely demonstrated, but only in
+// aggregate across cells (changeability / both front and behind reached;
+// five distinct placements per playfield), never by any single cell alone
+// -- so neither leaving them recorded-while-claiming-tested nor attaching
+// them as citations on individual PF1P-*/PF2P-* labels (which would be a
+// fabricated per-cell citation, the exact thing this file's own PF2-
+// derivation comment already warns against) is correct. Fix: two new
+// aggregate assertions, SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS (id 47)
+// and SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS (id 48), re-deriving the
+// same 40 measurements' profiles and grading the aggregate fact directly;
+// the stale record() removed. Baseline before this repair: 46 passed, 0
+// failed. Baseline after: 48 passed, 0 failed -- 2 new PASS lines, all 46
+// original lines unchanged, 0 new fails at baseline. Built, run and
+// reverted this session (`make` between each MUT run; final `make`
+// confirmed 48 passed, 0 failed restored):
+// MUTATION SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS stimulus red: built with
+//   `make MUT=47`, which substitutes PF1 code 4's stimulus with code 0's
+//   inside this summary section's own re-derivation loop only (ids 1-46
+//   above do not re-run this loop and are untouched) -> 47 passed, 1
+//   failed (id 47 alone; all 46 original PF1P-*/PF2P-* lines and id 48
+//   stayed PASS). Reverted, rebuilt: 48/0 restored.
+// MUTATION SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS stimulus red: built
+//   with `make MUT=48`, the same substitution applied to PF2's code 4
+//   instead -> 47 passed, 1 failed (id 48 alone; all 46 original lines and
+//   id 47 stayed PASS). Reverted, rebuilt: 48/0 restored.
 
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
@@ -378,6 +419,90 @@ int main(int argc, char** argv) {
         "PF2P-100-SP67: PF2P=100 (code 4), SP67 armed -> PF2 behind (derived from p.211 \"in exactly the same way\" + p.210 Table 7-2; sol:7-video.c13, sol:7-video.c28, opus:7-vp.c30)");
 
     // -----------------------------------------------------------------
+    // SWEEP-SUMMARY -- aggregate assertions (ids 47, 48) for the general/
+    // definitional claims that are ABOUT the sweep as a whole, not about
+    // any one cell: opus:7-vp.c3 ("priority... changeable", p.207),
+    // opus:7-vp.c10 ("either playfield can be positioned in front of or
+    // behind the sprites", p.209), sol:7-video.c7 / its twin opus:7-vp.c11
+    // ("each playfield has five selectable positions", p.209), and
+    // opus:7-vp.c21 ("the binary value in PF1P2-PF1P0... as shown in
+    // Table 7-2", p.210 -- PF1 only, per its own text).
+    //
+    // REPAIR (independent validation, ch7 slice B1, finding 8): these five
+    // UIDs used to sit only in a checks.record() at the end of this file,
+    // whose own text said they were "demonstrated collectively by the
+    // PF1P-*/PF2P-* sweep" -- but a record() cannot demonstrate anything,
+    // only an expect() can, so the coverage ledger correctly read them as
+    // recorded-only while the prose claimed otherwise. They were never
+    // attached to individual PF1P-*/PF2P-* labels for a sound reason
+    // (still true, unchanged): none of the five is about one cell, so
+    // citing them there would be a fabricated per-cell citation --
+    // BUILD-BRIEF's ban this file's own PF2-derivation comment already
+    // invokes elsewhere. Checking pp.207-211 directly: all five ARE
+    // genuinely demonstrated by the sweep, but only as an AGGREGATE fact
+    // across cells (the outcome actually differs across codes; the five
+    // codes give five DISTINCT profiles) -- a fact about the relationship
+    // BETWEEN cells, not identical to any single cell's own front/behind
+    // value, and therefore assertable on its own graded line without
+    // duplicating or replacing any of the 40 cells above. That line is
+    // added here, re-deriving the same profiles the 40 cells above already
+    // measured from the same measure_pf1/measure_pf2 stimulus (no new
+    // fixture behaviour introduced).
+    // -----------------------------------------------------------------
+    auto profile = [&](bool pf1, int code) -> std::array<bool,4> {
+        std::array<bool,4> p{};
+        for (int gi = 0; gi < 4; gi++)
+            p[gi] = pf1 ? measure_pf1(code, GROUPS[gi].bit)
+                        : measure_pf2(code, GROUPS[gi].bit);
+        return p;
+    };
+    std::array<std::array<bool,4>,5> pf1_profiles{}, pf2_profiles{};
+    for (int code = 0; code <= 4; code++) {
+        // MUTATION SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS / SWEEP-PF2-
+        // VARIABILITY-AND-FIVE-POSITIONS (ids 47/48): substitute code 4's
+        // stimulus with code 0's for the named playfield only, collapsing
+        // that playfield's five profiles to four distinct ones. Local to
+        // this summary re-derivation -- none of PF1P-*/PF2P-* ids 7-46
+        // above re-run this loop, so they are untouched by ids 47/48.
+        int pf1_code = (kActiveMutation == 47 && code == 4) ? 0 : code;
+        int pf2_code = (kActiveMutation == 48 && code == 4) ? 0 : code;
+        pf1_profiles[code] = profile(true, pf1_code);
+        pf2_profiles[code] = profile(false, pf2_code);
+    }
+    bool pf1_has_front = false, pf1_has_behind = false, pf1_all_distinct = true;
+    bool pf2_has_front = false, pf2_has_behind = false, pf2_all_distinct = true;
+    for (int c = 0; c <= 4; c++) {
+        for (int g = 0; g < 4; g++) {
+            (pf1_profiles[c][g] ? pf1_has_front : pf1_has_behind) = true;
+            (pf2_profiles[c][g] ? pf2_has_front : pf2_has_behind) = true;
+        }
+        for (int c2 = c + 1; c2 <= 4; c2++) {
+            if (pf1_profiles[c] == pf1_profiles[c2]) pf1_all_distinct = false;
+            if (pf2_profiles[c] == pf2_profiles[c2]) pf2_all_distinct = false;
+        }
+    }
+    checks.expect(pf1_has_front && pf1_has_behind && pf1_all_distinct,
+        "SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS: across PF1's five defined "
+        "codes (0-4) swept against all four sprite groups above, playfield 1 "
+        "reaches BOTH front and behind against some group (opus:7-vp.c3 p.207 "
+        "'priority... may be changed relative to sprites'; opus:7-vp.c10 p.209 "
+        "'you can position the playfields in front of or behind the sprites'), "
+        "and the five codes produce five pairwise-DISTINCT front/behind "
+        "profiles (sol:7-video.c7, opus:7-vp.c11 p.209 'five possible "
+        "positions'; opus:7-vp.c21 p.210 'the binary values... determine "
+        "where playfield 1 occurs in the priority chain as shown in Table "
+        "7-2' -- PF1 only, per that claim's own text)");
+    checks.expect(pf2_has_front && pf2_has_behind && pf2_all_distinct,
+        "SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS: across PF2's five defined "
+        "codes (0-4) swept against all four sprite groups above, playfield 2 "
+        "reaches BOTH front and behind against some group (opus:7-vp.c3 p.207; "
+        "opus:7-vp.c10 p.209, both stated for 'either playfield'), and the "
+        "five codes produce five pairwise-DISTINCT front/behind profiles "
+        "(sol:7-video.c7, opus:7-vp.c11 p.209, 'you have the same "
+        "possibilities for playfield 2'); opus:7-vp.c21 is PF1-specific by "
+        "its own text and is not cited here");
+
+    // -----------------------------------------------------------------
     // Measured, not graded -- undefined codes 5-7. Page 209: "The numbers
     // 0 through 4 shown in parentheses ... are the actual values you use
     // to select the playfield priority positions" (sol:7-video.c14, twin
@@ -427,12 +552,6 @@ int main(int argc, char** argv) {
         "crossread's PF2PRI) is out of scope -- no claim in this "
         "package's 46 states a proposition about it; see SPECIFICATION.md "
         "\"Out of scope for this package\"");
-    checks.record("opus:7-vp.c3 (priority relative to sprites is changeable, p.207), opus:7-vp.c10 (either playfield can be positioned in front of or "
-        "behind the sprites, p.209), sol:7-video.c7 and its twin opus:7-vp.c11 (each playfield has five selectable positions, p.209), and opus:7-vp.c21 "
-        "(PF1P2-PF1P0 bits determine Table 7-2 position, p.210): general/definitional premises, not tied to one cell -- demonstrated collectively by "
-        "the PF1P-*/PF2P-* sweep below (40 cells: 5 codes each, changing the front/behind outcome, is the demonstration that priority is changeable and "
-        "that five positions exist per playfield), not re-asserted individually to avoid inventing a fabricated per-cell citation for a claim "
-        "that is not about one cell.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
     delete dut;

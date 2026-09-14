@@ -2,15 +2,17 @@
 // the Copper's own interrupt condition sets bit 4 (COPER) of
 // paula_intcontroller's interrupt-request register, and only bit 4, when it
 // travels the Copper's real register-write path (agnus_copper ->
-// paula_intcontroller), per SPECIFICATION.md.
+// paula_intcontroller); and whether that same condition, carried through
+// the same real path, reaches the CPU as 68000 hardware level 3 (_ipl's
+// active-low encoding of it), per SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: the manual quotations cited inline (sol:7-interrupts.c41,
 // printed p.219; opus:7-fig7-4.c15, printed p.221), not the RTL. A red result
 // is a valid, finished outcome.
-// Non-goals: whole-system exclusivity of bit 4 to the Copper, and the CPU
-// interrupt-priority-encoder value (Exec software priority / hardware
-// priority) for COPER -- both out of this package's two claims; see
-// SPECIFICATION.md "Not turned into assertions."
+// Non-goals: whole-system exclusivity of bit 4 to the Copper, the convention
+// half of "reserved for identifying" (not a runtime behaviour), and the Exec
+// software-priority-5 half of opus:7-fig7-4.c15 -- all out of this
+// package's two claims; see SPECIFICATION.md "Not turned into assertions."
 //
 // The residual (see paula_intcontroller.v:114, 'intreq[4] <= tmp[4];' -- the
 // generic SET/CLR mask and nothing else): the hardware cannot distinguish a
@@ -36,6 +38,14 @@
 // MUTATION CONTROL stimulus red: the control's readback moved from before
 // the Copper's writes to after them, expected value left unchanged. CONTROL
 // went red (bit 4 read 1). Reverted, rebuilt, back to green.
+// MUTATION P2 stimulus red: word2 of the MOVE to INTENA changed from 0xC010
+// to 0xC000 (drops intena[4], COPER's own enable bit; intena[14], master
+// enable, stays set), expected value left unchanged. P1 and both CONTROLs
+// stayed green (intreq[4] itself, and the pre-stimulus idle read, do not
+// depend on intena); P2 alone went red (_ipl read 7, the idle value,
+// instead of 4 -- bit 4 was still set in INTREQR but never reached the
+// priority encoder because it was masked off). 3 passed, 1 failed. Reverted,
+// rebuilt, back to green (4 passed, 0 failed).
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>
@@ -157,6 +167,20 @@ int main(int argc, char** argv) {
     provide_word(static_cast<uint16_t>(INTENA_ADDR) << 1); // word1: INTENA's own address, MOVE-encoded
     provide_word(0xC010);                                  // word2: SET intena[14] and intena[4]
 
+    // CONTROL for P2, same measurement basis (_ipl) as P2 below: COPER is
+    // now enabled but its interrupt condition has not yet been presented,
+    // so no source is pending and the priority encoder reports the idle
+    // value 7 (paula_intcontroller.v's all-zero/default casez branch).
+    // Same one-cycle settle as P2 needs (see the comment at P2's tick()).
+    tick();
+    int ipl_idle = top->_ipl;
+    char ipl_idle_str[4];
+    snprintf(ipl_idle_str, sizeof ipl_idle_str, "%d", ipl_idle);
+    checks.expect(ipl_idle == 7,
+        "CONTROL for P2 (same measurement basis as P2): with COPER's own "
+        "enable bit set but its interrupt condition not yet presented, "
+        "_ipl=" + std::string(ipl_idle_str) + " (idle, no source pending) -- expected 7");
+
     // MOVE INTREQ,#$8010 -- the claim's actual stimulus: the Copper's own
     // interrupt condition (SPECIFICATION.md P1), travelling the Copper's
     // real register-write path into paula_intcontroller.
@@ -187,11 +211,17 @@ int main(int argc, char** argv) {
     int ipl = top->_ipl;
     char ipl_str[4];
     snprintf(ipl_str, sizeof ipl_str, "%d", ipl);
-    checks.note("reproduction of the step-3 attack-pass measurement: after MOVE "
-                "INTENA,#$C010 / MOVE INTREQ,#$8010, _ipl=" + std::string(ipl_str)
-                + " (step-3 reported 4, i.e. 68000 hardware level 3, Figure 7-4's "
-                "COPER row) -- priority-encoder value, not asserted: out of this "
-                "package's two claims, see SPECIFICATION.md");
+    checks.expect(ipl == 4,
+        "P2 (opus:7-fig7-4.c15 p.221, hardware-priority half -- pp.219+221 "
+        "together give the same numeral: p.219 states plainly 'Bit 4, COPER, "
+        "is used by the Copper to issue a level 3 interrupt', and Figure 7-4 "
+        "places COPER at hardware priority 3; that p.219 sentence's own claim "
+        "UID, 7-interrupts.c40, belongs to a different package and is not "
+        "cited here -- only opus:7-fig7-4.c15, already this package's claim, "
+        "is): the same Copper MOVE that sets bit 4 above also reaches the CPU "
+        "as 68000 hardware level 3 -- _ipl=" + std::string(ipl_str) +
+        " is the active-low encoding of level 3 (paula_intcontroller.v's "
+        "priority encoder: intreqena[4] alone drives _ipl<=4) -- expected 4");
 
     // --- claims recorded, not asserted ---
     checks.record(
@@ -208,11 +238,11 @@ int main(int argc, char** argv) {
         "nothing in this fixture distinguishes a Copper write from a CPU write "
         "to the same address)");
     checks.record(
-        "opus:7-fig7-4.c15 (p.221), priority-encoder half: Figure 7-4's row also "
-        "carries Exec software priority 5 and hardware priority 3 for COPER; "
-        "that is paula_intcontroller's priority-encoding logic (the _ipl "
-        "measurement above), a distinct proposition from naming, out of this "
-        "package's two claims");
+        "opus:7-fig7-4.c15 (p.221), Exec-software-priority half only: Figure 7-4's "
+        "row also carries Exec software priority 5 for COPER, exec.library's "
+        "server-chain numbering -- a distinct proposition from both naming (P1) "
+        "and the hardware-priority-3 value that reaches the CPU (P2, now "
+        "asserted above), out of this package's two claims");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
 

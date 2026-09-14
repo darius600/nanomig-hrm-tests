@@ -83,6 +83,16 @@ presents toward the CPU is 7 — the same level the manual prints as this
 row's hardware priority, and (per the row's own name) one that cannot be
 masked off.
 
+**Correlation, not two independent observations (repair, ch7 slice B1
+independent validation, finding 6).** "The interrupt priority level the
+module presents toward the CPU is 7" is a statement about one cycle, not
+about two separate facts ("the NMI condition happened at some point" and
+"the module's output was 7 at some point") that could be true for
+unrelated reasons. Step 3 must grade this by requiring the NMI condition
+and the level-7 presentation to be observed in the same cycle, not by
+latching each independently over a monitoring window and requiring only
+that both eventually became true.
+
 This is the only proposition PROP-1 tests. It is **not** the proposition
 that no other source in this module can ever produce level 7 — the claims
 file's own `classify.note` on `sol:7-fig7-4.c48` says that complement "is
@@ -171,6 +181,18 @@ already visible from the claims alone:
   check, that the build actually has the NMI path's compile-time define
   set — this is not a mutation of PROP-1, it is the gate PROP-1's grading
   depends on.
+- **Mutation for the correlation repair, added after step 3:** because
+  `_cpu_ipl` is a continuous assignment purely of `int7` at this
+  boundary, and Paula's own priority encoder never legitimately outputs
+  level 7 on any input pattern, no *real* stimulus on this correct RTL can
+  ever present the NMI condition and the level-7 output apart in time —
+  correlation always holds here by construction. A stimulus mutation
+  therefore cannot exercise the correlation-checking logic itself; step 3
+  instead fabricates the false-positive sequence directly (forcing the
+  `_cpu_ipl` port from the harness) to prove the repaired check rejects
+  data an independent-flags check would have accepted. See the test
+  file's own header and `MUT_DECORRELATE` for the exact mechanism and its
+  run record.
 
 This section states a strategy, not the assertions themselves; the actual
 `expect()` calls, their exact stimulus values, the define's name, and the

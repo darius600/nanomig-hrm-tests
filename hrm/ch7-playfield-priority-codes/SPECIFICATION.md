@@ -220,6 +220,54 @@ Rows 000, 001, 011 and 100 carry no worked-example or figure citation; their
 basis is the derivation alone, which is exactly why each of their 16 cells
 is graded independently rather than assumed.
 
+### Sweep summary — `SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS`, `SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS` (repair, ch7 slice B1 finding 8)
+
+Five claims are general/definitional statements ABOUT the sweep as a whole,
+not about any one cell: `opus:7-vp.c3` ("priority... may be changed
+relative to sprites", p.207), `opus:7-vp.c10` ("you can position the
+playfields in front of or behind the sprites", p.209), `sol:7-video.c7` /
+its twin `opus:7-vp.c11` ("five possible positions", p.209), and
+`opus:7-vp.c21` ("the binary values... determine where playfield 1 occurs
+in the priority chain as shown in Table 7-2", p.210 — PF1 only, by its own
+text). These were originally left in a `record()`, whose own text claimed
+they were "demonstrated collectively" by the 40-cell sweep — but a
+`record()` cannot demonstrate anything; only a graded `expect()` can, and
+the coverage ledger correctly read these five as recorded-only while the
+sentence claimed the opposite.
+
+Checked directly against pp.207–211, all five genuinely **are**
+demonstrated by the sweep, but only as an aggregate fact across cells, not
+by any single cell on its own:
+
+- **Changeability / "either... front or behind"** (`opus:7-vp.c3`,
+  `opus:7-vp.c10`): true iff, for at least one sprite group, the front/
+  behind outcome differs across the five codes — a fact about the set of
+  five cells for that group, not any one of them.
+- **"Five selectable positions"** (`sol:7-video.c7`, `opus:7-vp.c11`,
+  and, for PF1 only, `opus:7-vp.c21`): true iff the five codes' four-group
+  profiles are pairwise distinct — again a relationship between cells.
+
+Proposition (one per playfield): across that playfield's five defined
+codes swept against all four sprite groups, the playfield reaches both
+front and behind against some group, and the five codes produce five
+pairwise-distinct front/behind profiles.
+
+- Expected: PASS, both.
+- Mutation (per playfield): substitute code 4's stimulus with code 0's in
+  this aggregate re-derivation only (leaving ids 1–46's own stimulus and
+  every other code's stimulus untouched), collapsing that playfield's five
+  profiles to four distinct ones; the check must go red; then restore code
+  4's own stimulus to revert.
+
+This does **not** attach any of the five UIDs to an individual
+`PF1P-*`/`PF2P-*` label — none of them is about one cell, and doing so
+would be a fabricated per-cell citation, exactly the failure mode "How
+PF2's grid is derived" above already avoids for the derivation claims.
+It also does not duplicate any of the 40 individual cells: the aggregate
+fact (distinctness/reachability across the row) is not the same
+proposition as any single cell's own front/behind value, even though it
+is computed from the same stimulus.
+
 ### Mutation rule for both sweeps
 
 One rule covers all 40 cells, realized per-cell in the harness: for cell
@@ -291,24 +339,24 @@ package's inventory actually carries a claim about it, not this one.
   is the pixel where playfield 1's data stops being colour 0"): the claim's
   own note says this belongs to chapter 3's colour-0 claims and is already
   asserted at `ch3-dual-playfield`'s `CODE-ZERO-TRANSPARENT`, not here.
-- `opus:7-vp.c11` (the five-position umbrella) and `opus:7-vp.c21`
-  (PF1P2-PF1P0 bits determine Table 7-2 position): general/definitional,
-  folded into the PF1 sweep section as supporting citations rather than
-  given a separate assertion — their content is exactly the conjunction of
-  the 20 PF1 cells.
-- `opus:7-vp.c3` (priority is changeable, p.207) and `opus:7-vp.c10` (either
-  playfield can be in front of or behind the sprites, p.209): general
-  package-level support, cited here rather than asserted on their own — they
-  are the premise the whole sweep exists to test, not an additional fact
-  beyond it.
+
+`opus:7-vp.c11`/`sol:7-video.c7` (five-position umbrella), `opus:7-vp.c21`
+(PF1P2-PF1P0 bits determine Table 7-2 position), `opus:7-vp.c3` (priority
+is changeable, p.207) and `opus:7-vp.c10` (either playfield can be in
+front of or behind the sprites, p.209) are **no longer declined** — see
+"Sweep summary" above (repair, ch7 slice B1 finding 8): all five are
+genuinely demonstrated by the sweep in aggregate and are now graded via
+`SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS` / `SWEEP-PF2-VARIABILITY-AND-
+FIVE-POSITIONS`, not folded in as uncredited support.
 
 No claim in this package's 46 was left with no disposition: each is either a
 primary or additional citation on a graded assertion above (`LIVE-*`,
-`PF1P-*`, `PF2P-*`), a basis for a measured-not-graded note, folded in as
-general support, or declined above with a reason tied to the claims file's
-own classification. No HALT condition was met — a testable specification,
-with all 40 truth-table cells swept exhaustively rather than sampled, was
-possible without any module port name.
+`PF1P-*`, `PF2P-*`, or, for the five just listed, the two sweep-summary
+assertions), a basis for a measured-not-graded note, or declined above
+with a reason tied to the claims file's own classification. No HALT
+condition was met — a testable specification, with all 40 truth-table
+cells swept exhaustively rather than sampled, was possible without any
+module port name.
 
 ## Assertion accounting
 
@@ -316,6 +364,8 @@ possible without any module port name.
   `LIVE-SP45`, `LIVE-SP67`)
 - 20 PF1 sweep assertions (`PF1P-000-SP01` .. `PF1P-100-SP67`)
 - 20 PF2 sweep assertions (`PF2P-000-SP01` .. `PF2P-100-SP67`)
-- 46 graded assertions in total, plus 6 measured-not-graded notes
+- 2 sweep-summary assertions (`SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS`,
+  `SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS`; repair, ch7 slice B1 finding 8)
+- 48 graded assertions in total, plus 6 measured-not-graded notes
   (`MEASURE-PF1P-101/110/111`, `MEASURE-PF2P-101/110/111`)
 - 2 nominated controls: `LIVE-PF1`, `PF1P-000-SP01`
