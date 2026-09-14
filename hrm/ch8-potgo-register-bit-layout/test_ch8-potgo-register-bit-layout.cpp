@@ -74,8 +74,18 @@
 // bit 14 stayed the bit read -> FAIL as expected. Reverted.
 // MUTATION PROP-3 stimulus red: redirected the write from bit 13 (OUTRX) to
 // bit 11 (OUTLY) while still reading bit 12 -> FAIL as expected. Reverted.
-// MUTATION PROP-4 stimulus red: redirected the write from bit 12 (DATRX) to
-// bit 10 (DATLY) while still reading bit 12 -> FAIL as expected. Reverted.
+// MUTATION PROP-4 stimulus green (substitution proof): PROP-4 grades both
+// halves, exactly as PROP-2/6/8 do -- the "OUT=1 forces" half (verified
+// same as before) and the "OUT=0 senses external state" half, which is
+// genuinely red (see the RTL fact above: potcap[2] has no external term).
+// Per the build brief, an already-red assertion is not mutated further
+// with a stimulus change; instead the identical two-sample sense
+// comparator that fails on bit 12 is run, unchanged, against bit 10
+// (DATLY, a channel PROP-6/PROP-11 already prove live) using the same
+// stimulus pair -> reads green, proving the comparator is not vacuous.
+// Measured: 13 passed, 1 failed (PROP-4 red) with the substitution note
+// printed immediately after showing "green". Not reverted -- this is now
+// the committed assertion, not a temporary mutation build.
 // MUTATION PROP-5 stimulus red: redirected the write from bit 11 (OUTLY) to
 // bit 9 (OUTLX) while still reading bit 10 -> FAIL as expected. Reverted.
 // MUTATION PROP-6 stimulus red: redirected the write from bit 10 (DATLY) to
@@ -103,8 +113,9 @@
 // the same `8'h00` constant PROP-9 cites (userio.v:305) -- none of the five
 // is a function of any signal. Unfalsifiable at this boundary.
 //
-// All twelve stimulus mutations and both `none impossible` records above
-// were run/verified as described; see the per-run pass/fail counts in this
+// Eleven stimulus-red mutations, one stimulus-green substitution proof
+// (PROP-4, see above), and both `none impossible` records above were
+// run/verified as described; see the per-run pass/fail counts in this
 // package's build report.
 
 #include <cstdint>
@@ -306,9 +317,12 @@ bool prop2_datry(UserioHarness& h) {
 // ---------------------------------------------------------------------
 // PROP-3 / PROP-4 -- OUTRX (bit 13) / DATRX (bit 12). No external term
 // reaches this pair at all (userio.v: potcap[2] <= joy2_pin5, a pure
-// function of potreg[13:12]) -- confirmed independently here. Only the
-// "OUT=1 forces" half of PROP-4 is assertable; the "OUT=0 senses external
-// state" half is recorded, not asserted, for lack of any signal to sense.
+// function of potreg[13:12]) -- confirmed independently here. Both halves
+// of PROP-4 are graded, exactly as for every other DAT bit (PROP-2/6/8):
+// the "OUT=1 forces" half passes; the "OUT=0 senses external state" half
+// genuinely fails, because no signal this fixture can drive moves bit 12
+// -- see the substitution-proof note printed after PROP-4's expect() call
+// in main(), which shows the same comparator is not vacuous on a live bit.
 // ---------------------------------------------------------------------
 bool prop3_outrx(UserioHarness& h, int drive_out_bit = 13) {
     h.write_potgo(potgo_word(drive_out_bit == 15, false, drive_out_bit == 13, false,
@@ -322,6 +336,8 @@ bool prop3_outrx(UserioHarness& h, int drive_out_bit = 13) {
 }
 
 bool prop4_datrx(UserioHarness& h) {
+    // Forcing half (OUTRX=1): DATRX's write value controls bit 12's
+    // readback, same mechanism as every other DAT bit.
     h.write_potgo(potgo_word(false, false, true, false, false, false, false, false));
     uint16_t r1 = h.read_potgor();
     bool a = !rd(r1, 12);
@@ -330,7 +346,27 @@ bool prop4_datrx(UserioHarness& h) {
     bool b = rd(r2, 12);
     bool nocross = rd(r1, 14) && rd(r1, 10) && rd(r1, 8)
                  && rd(r2, 14) && rd(r2, 10) && rd(r2, 8);
-    return a && b && nocross;
+
+    // Sensing half (OUTRX=0): p.240's general framing ("To use the entire
+    // register as an input, sensing the current state of the pot pins...")
+    // and p.282's "4-bit bi-directional I/O port" require bit 12 to track
+    // an external line when left as an input -- exactly what PROP-2/6/8
+    // demonstrate for their own bits. Every external line this fixture
+    // exposes (both joystick pin5 lines, all three mouse buttons) is
+    // driven through two maximally opposite configurations; a bit that
+    // senses anything must differ between them.
+    h.write_potgo(potgo_word(false, false, false, false, false, false, false, false));
+    h.set_joy1_bit5(false);
+    h.set_joy2_bit5(false);
+    h.set_mouse_btn(0x07);
+    uint16_t s1 = h.read_potgor();
+    h.set_joy1_bit5(true);
+    h.set_joy2_bit5(true);
+    h.set_mouse_btn(0x00);
+    uint16_t s2 = h.read_potgor();
+    bool senses = rd(s1, 12) != rd(s2, 12);
+
+    return a && b && nocross && senses;
 }
 
 // ---------------------------------------------------------------------
@@ -554,12 +590,48 @@ int main(int argc, char** argv) {
 
     { UserioHarness h; checks.expect(prop4_datrx(h),
         "PROP-4: with OUTRX=1, POTGO bit 12 (DATRX) forces POTGOR bit 12 to "
-        "its own written value (0 or 1); the other three pairs do not move "
-        "-- output-forcing half only, per this fixture's own RTL (see "
-        "header note and the RECORDED line below for the sensing half) "
+        "its own written value (0 or 1); with OUTRX=0, per p.240's general "
+        "framing (\"sensing the current state of the pot pins\") and "
+        "p.282's \"4-bit bi-directional I/O port\", bit 12 must instead "
+        "track an external line, exactly as PROP-2/PROP-6/PROP-8 require "
+        "for their own bits -- it does not: userio.v's potcap[2] is wired "
+        "to potreg alone (see header note), so no stimulus this fixture "
+        "can drive moves it. This half FAILS: a genuine manual/RTL "
+        "deviation, not a boundary condition. The other three pairs do "
+        "not move in the forcing half "
         "[p.240 \"12 DATRX data for port 2, pin 5\"; p.282 \"I/O data Paula "
         "pin 35\"; Figure 8-6 p.237]"
         " [6 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c15, opus:8-dio.c13, sol:8-appa-pot.c43, sol:8-dio.c11, sol:8-fig8-6r.c15, sol:8-fig8-6r.c25]"); }
+
+    {
+        // Substitution proof for PROP-4 (already-red once the sensing half
+        // is graded honestly): the build brief bars a further stimulus
+        // mutation on an assertion that already fails -- it cannot fail
+        // harder. Instead, the identical two-sample "differs between two
+        // opposite configurations" comparator that fails on bit 12 is run,
+        // unchanged, against bit 10 (DATLY), a channel PROP-6/PROP-11
+        // already prove live, using the exact same stimulus pair prop4_datrx
+        // applies to bit 12. This is not itself a claim and touches no
+        // uid -- it demonstrates the comparator is not vacuous.
+        UserioHarness h;
+        h.write_potgo(0x0000);
+        h.set_joy1_bit5(false);
+        h.set_joy2_bit5(false);
+        h.set_mouse_btn(0x07);
+        uint16_t sub1 = h.read_potgor();
+        h.set_joy1_bit5(true);
+        h.set_joy2_bit5(true);
+        h.set_mouse_btn(0x00);
+        uint16_t sub2 = h.read_potgor();
+        bool substitution_green = rd(sub1, 10) != rd(sub2, 10);
+        checks.note(
+            "PROP-4 substitution proof: the same two-sample sense "
+            "comparator that fails on bit 12 (DATRX -- no external term "
+            "reaches potcap[2]) reads " +
+            std::string(substitution_green ? "green" : "red") +
+            " when applied, unchanged, to bit 10 (DATLY) under the "
+            "identical stimulus pair -- the comparator is not vacuous.");
+    }
 
     { UserioHarness h; checks.expect(prop5_outly(h),
         "PROP-5: POTGO bit 11 (OUTLY) gates whether bit 10's write value "
@@ -646,16 +718,23 @@ int main(int argc, char** argv) {
     // Claim considered for this package and left unbound, with the reason.
     // Does not touch passed/failed -- this is not an assertion.
     // ------------------------------------------------------------------
-    checks.record("PROP-4's \"OUTRX=0, DATRX senses the external pin\" half "
-        "(the mirror of PROP-2's third/fourth sub-check and PROP-6's) is not "
-        "assertable: userio.v's potcap[2] <= joy2_pin5 = ~(potreg[13] & "
-        "~potreg[12]) is a pure function of potreg alone (userio.v:153,169) "
-        "-- no _joy2/_joy1/mouse_btn term reaches it, so with OUTRX=0 this "
-        "bit reads a constant 1 regardless of any input this fixture can "
-        "drive. This is the same asymmetry this package's own claims file "
-        "had already found (8-dio.c13/c11, 8-appa-potgo.c15/sol.c43 `split` "
-        "fields: \"no input reaches bit 12\"), confirmed independently here "
-        "by reading the RTL directly in step 2, not assumed from that file.");
+    checks.note("PROP-4's \"OUTRX=0, DATRX senses the external pin\" half "
+        "(the mirror of PROP-2's third/fourth sub-check and PROP-6's) is "
+        "graded above, not declined: userio.v's potcap[2] <= joy2_pin5 = "
+        "~(potreg[13] & ~potreg[12]) is a pure function of potreg alone "
+        "(userio.v:153,169) -- no _joy2/_joy1/mouse_btn term reaches it, so "
+        "with OUTRX=0 this bit reads a constant 1 regardless of any input "
+        "this fixture can drive, and PROP-4 fails on that half. This is the "
+        "same asymmetry this package's own claims file had already found "
+        "(8-dio.c13/c11, 8-appa-potgo.c15/sol.c43 `split` fields: \"no "
+        "input reaches bit 12\"), confirmed independently here by reading "
+        "the RTL directly in step 2. The same physical gap is separately "
+        "reported at the whole-register level by hrm/ch8-pot-pins-as-"
+        "digital-io's ENTIRE-REGISTER-SENSES finding (opus:8-dio.c32/c33, "
+        "sol:8-dio.c30/c31) -- a distinct claim-id set testing the general "
+        "framing paragraph across all four pairs at once. Neither this "
+        "assertion nor that one duplicates the other: each grades its own "
+        "claims against the same real defect.");
 
     // The sixteen claims this package does not score, each with the
     // reason its own SPECIFICATION.md gives. They were only in that
