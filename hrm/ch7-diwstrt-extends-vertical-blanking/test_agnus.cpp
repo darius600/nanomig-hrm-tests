@@ -619,6 +619,20 @@ int main(int argc, char** argv) {
 // BASELINE (measured after this file's `sync_to_sof`/`measure_lines` timing
 // bugs, below, were found and fixed): 5 passed, 1 failed.
 //
+// THE BASELINE THIS LOG WAS RECORDED AGAINST IS NOT THIS FILE'S BASELINE.
+// Every "5 passed, 1 failed" below was measured while
+// P3-VSTART-INSIDE-MINIMUM-BLANKING was still a graded assertion, and it was
+// the one failure. P3 was afterwards WITHDRAWN on reading p.219 -- the page's
+// passage is advice on gaining housekeeping time during blanking, not a floor
+// the hardware must hold -- and it now prints through `record()` rather than
+// `expect()`. Running this file today gives 5 passed, 0 failed, 1 RECORDED.
+//
+// The recorded results below are left exactly as they were measured. A
+// measurement edited after the fact to agree with a later tally reads like
+// evidence and is not one. The five assertions the log covers are unchanged
+// and their mutation evidence stands as written; read every tally below as
+// "of the six graded propositions this file had at the time".
+//
 // Two harness bugs were found and fixed while first bringing this package
 // up, disclosed here rather than silently corrected, since both changed
 // measured numbers before any mutation was ever run:
@@ -648,21 +662,24 @@ int main(int argc, char** argv) {
 // measured PAL vblank duration (26 lines) on the same agnus_beamcounter
 // submodule -- a cross-package sanity check, not assumed going in.
 //
-// MUTATION CONTROL_VBLANK_HOLDS_THEN_RELEASES stimulus red: the `pre`
+// replay: make clean && make MUT=CONTROL_VBLANK_HOLDS_THEN_RELEASES
+// MUTATION CONTROL-VBLANK-HOLDS-THEN-RELEASES stimulus red: the `pre`
 //   measurement window shortened from 50 lines to 1 (the write/isolation
 //   setup untouched) -> "4 passed, 2 failed", only
 //   CONTROL-VBLANK-HOLDS-THEN-RELEASES newly red (a 1-line window can never
 //   see a release line 26 lines in) -- P3 stays red throughout, unaffected,
 //   for its own already-red reason (see below). Reverted: `make clean &&
 //   make` -> 5 passed, 1 failed, matching baseline exactly.
-// MUTATION CONTROL_DIWSTRT_WRITE_CHANGES_DMA_ACTIVITY stimulus red: the
+// replay: make clean && make MUT=CONTROL_DIWSTRT_WRITE_CHANGES_DMA_ACTIVITY
+// MUTATION CONTROL-DIWSTRT-WRITE-CHANGES-SOMETHING stimulus red: the
 //   DIWSTOP/DIWSTRT write pair guarded under this flag is skipped entirely
 //   (both registers stay at their closed vdiwstrt==vdiwstop==0 default for
 //   the whole run) -> "4 passed, 2 failed", only
 //   CONTROL-DIWSTRT-WRITE-CHANGES-SOMETHING newly red (post_write_any_dma
 //   stays false, matching pre_write_any_dma -- nothing changed because
 //   nothing was written). Reverted: 5 passed, 1 failed.
-// MUTATION P1_DIWSTRT_MOVES_DISPLAY_START_LINE_FOR_LINE stimulus red: the
+// replay: make clean && make MUT=P1_DIWSTRT_MOVES_DISPLAY_START_LINE_FOR_LINE
+// MUTATION P1-DIWSTRT-VSTART-MOVES-DISPLAY-START-LINE-FOR-LINE stimulus red: the
 //   THIRD sweep point (nominal VSTART=75) is actually written as 76 instead
 //   (the comparison logic still uses the nominal vstarts[] deltas) ->
 //   "4 passed, 2 failed", only P1-DIWSTRT-VSTART-MOVES-DISPLAY-START-LINE-
@@ -671,7 +688,8 @@ int main(int argc, char** argv) {
 //   baseline-red P3 are both unaffected (P2 still measures blank_end=26 on
 //   all four runs; blanking is orthogonal to which VSTART byte gets
 //   written). Reverted: 5 passed, 1 failed.
-// MUTATION P2_MINIMUM_BLANKING_RANGE_UNCHANGED_ACROSS_VSTART stimulus red:
+// replay: make clean && make MUT=P2_MINIMUM_BLANKING_RANGE_UNCHANGED_ACROSS_VSTART
+// MUTATION P2-MINIMUM-BLANKING-RANGE-UNCHANGED-ACROSS-VSTART stimulus red:
 //   the LAST sweep point alone (VSTART=90) is run with `ntsc=1` instead of
 //   0, all three other points staying PAL -> "4 passed, 2 failed", only
 //   P2-MINIMUM-BLANKING-RANGE-UNCHANGED-ACROSS-VSTART newly red (measured
@@ -682,7 +700,8 @@ int main(int argc, char** argv) {
 //   only the unrelated minimum-blanking count P2 measures does. P3
 //   unaffected (still red, own basis, PAL only, never touched by this
 //   mutation). Reverted: 5 passed, 1 failed.
-// MUTATION P3_CONTROL_VSTART_OUTSIDE_MINIMUM_BLANKING stimulus red: the
+// replay: make clean && make MUT=P3_CONTROL_VSTART_OUTSIDE_MINIMUM_BLANKING
+// MUTATION P3-CONTROL-VSTART-OUTSIDE-MINIMUM-BLANKING stimulus red: the
 //   control's own VSTART (nominally control_release_line+40=66, safely past
 //   blanking) is collapsed under this flag to the SAME computation P3 above
 //   uses (control_release_line/2=13, inside blanking) -> "4 passed, 2
@@ -714,5 +733,6 @@ int main(int argc, char** argv) {
 //   finding.
 //
 // Final rebuild after the last revert: 5 passed, 1 failed, matching the
-// baseline above exactly.
+// baseline above exactly -- six graded propositions, before P3 was
+// withdrawn. Today: 5 passed, 0 failed, 1 RECORDED.
 // ============================================================================
