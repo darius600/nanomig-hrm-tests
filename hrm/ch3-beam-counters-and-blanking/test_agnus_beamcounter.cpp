@@ -594,7 +594,7 @@ int main(int argc, char** argv) {
             "which is \"painting\" the picture as it goes along'. "
             "3-video.c01, 3-video.c02, 3-video.c03, 3-video.c1, 3-video.c2, "
             "3-video.c3, 3-video.c5, 3-video.c6, 3-video.f01, 3-video.f02, "
-            "3-video.f03 .");
+            "3-video.f03. Chapter 8 restates the same sweep from a second printed page -- 'The video beam starts to create the picture, sweeping from left to right for each horizontal line as it paints the picture from the top of the screen to the bottom' (p.238) -- opus:8-lpen.c13, opus:8-lpen.c14, sol:8-pen.c13, sol:8-pen.c14 .");
     }
 
     // ================= PAL-FIELD-312-NTSC-FIELD-262-LINES =================
@@ -954,7 +954,7 @@ int main(int argc, char** argv) {
             "03 02 01 00 / Use LOF I6 I5 I4 I3 I2 I1 I0 LOL -- -- -- -- v10 "
             "v9 V8' (appendix C p.299), 'VPOSR - Read vertical most "
             "significant bits (and frame flop)' (p.299). C-vposr-bits.c1, "
-            "C-vposr.c02 .");
+            "C-vposr.c02. Chapter 8 states the same bit from a second printed page -- 'VPOSR: Bit 15 Long frame/short frame. 0=short frame' (p.238) -- opus:8-lpen.c20, opus:8-lpen.c21, sol:8-pen.c22, sol:8-pen.c23 .");
     }
 
     // ================= VPOSR-IDENTIFICATION-FIELD-BITS-14-7 =================
@@ -1068,7 +1068,7 @@ int main(int argc, char** argv) {
             "-- 'Use LOF I6 I5 I4 I3 I2 I1 I0 LOL -- -- -- -- v10 v9 V8' "
             "(p.299), naming bits 2,1,0 as v10, v9, V8, the high vertical "
             "position bits. C-vposr-bits.c14, C-vposr-bits.c15, "
-            "C-vposr-bits.c16, C-vposr.c04, C-vposr.c05 .");
+            "C-vposr-bits.c16, C-vposr.c04, C-vposr.c05. Chapter 8 names the same bit from a second printed page -- 'Bit 0 V8 (most significant bit of vertical position)' (p.238) -- opus:8-lpen.c24, sol:8-pen.c25 .");
     }
 
     // ================= HTOTAL-H8-H1-BIT-MAPPING =================
@@ -1476,7 +1476,7 @@ int main(int argc, char** argv) {
                     "(Table 3-13, p.79), '=525-(21*2)' (Table 3-13, p.79). "
                     "3-max-window.c2, 3-max-window.c4, 3-max-window.c6, "
                     "3-max-window.c7, 3-t13.c01, 3-t13.c03, 3-t13.c05, "
-                    "3-t13.c06, 3-t13.c09, 3-max.c02, 3-max-window.c1 .");
+                    "3-t13.c06, 3-t13.c09, 3-max.c02, 3-max-window.c1. Chapter 8 states this same boundary as a POSITION where this assertion measures a COUNT: 'This freeze is released at the end of internal vertical blanking (vertical position 20)' (p.239) and 'the light pen has not triggered since the last top-of-screen (V = 20)' (p.239). Position 20 is the last of the 21 lines measured here -- lines 0 through 20 -- which is the same fact counted the other way. opus:8-lpen.c40, opus:8-lpen.c44 .");
         } else {
             checks.expect(
                 blanked_lines == manual_value,
