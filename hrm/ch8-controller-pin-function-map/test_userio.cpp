@@ -32,6 +32,10 @@
 // MUTATION sol:8-pin.c35 stimulus red pin9 (_joy1[5]) never pressed before the pot-gate count window
 // MUTATION opus:8-tbl8-1.c33 stimulus red pin9 (_joy1[5]) never pressed before the pot-gate count window
 // MUTATION sol:8-pin.c36 stimulus red pin9 (_joy1[5]) never pressed before the pot-gate count window
+// MUTATION opus:8-tbl8-1.c15 stimulus green already red at baseline (port 2's pin5 copy has no external term, see Group B2 below): port 1's live mouse_btn[2] pin5 channel substituted for port 2's dead joy2_pin5 channel in the identical two-port comparator, shown green
+// MUTATION sol:8-pin.c17 stimulus green same substitution, same comparator, independently guarded
+// MUTATION opus:8-tbl8-1.c16 stimulus green same substitution, same comparator
+// MUTATION sol:8-pin.c18 stimulus green same substitution, same comparator, independently guarded
 // MUTATION opus:8-tbl8-1.c35 stimulus red POTGO OUTLX/DATLX (potreg[9:8]) never written to force pin 5
 // MUTATION sol:8-pin.c39 stimulus red POTGO OUTLX/DATLX (potreg[9:8]) never written to force pin 5
 // MUTATION opus:8-tbl8-1.c37 stimulus red POTGO OUTLY/DATLY (potreg[15:14]) never written to force pin 9
@@ -383,28 +387,106 @@ int main(int argc, char** argv) {
     }
 
     // =====================================================================
+    // Group B2 -- pin 5, proportional-controller pot gating (repaired: was
+    // declined "no port carries pin 5 into the X/Right-POT gate"; that is
+    // the deviation itself, not a reason the claim stops being testable --
+    // classify.status is "testable" for all four uids with no narrowing
+    // "split" field, unlike Group C below, where classify's own "split"
+    // text concedes the device-identity gap up front. p.282's register
+    // table lists pin 5 on BOTH connectors feeding a pot counter ("RIGHT X
+    // RX 5 35 (POT1X)", "LEFT X LX 5 32 (POT0X)"), so a Table-8-1 claim
+    // that is worded the same for both physical ports (see KNOWN CONFLICT 3
+    // handling above) needs both copies of the gate to sense it.
+    //
+    // Measured directly against userio.v: port 1's copy (potcap[0],
+    // POT0DAT's X byte) is `_mthird & joy1_pin5` -- a real external signal
+    // (mouse_btn[2]) reaches it and it senses correctly. Port 2's copy
+    // (potcap[2], POT1DAT's X byte) is `joy2_pin5 = ~(potreg[13] &
+    // ~potreg[12])`, a function of the POTGO write register ALONE; no
+    // combination of this fixture's inputs (mouse buttons, _joy1, _joy2)
+    // ever moves it. The identical RX/potcap[2] gap is independently
+    // reported RED by the sibling hrm/ch8-pot-pins-as-digital-io (Group 5,
+    // ENTIRE-REGISTER-SENSES) against the same RTL fact.
+    // =====================================================================
+    {
+        write_reg(POTGO, 0x0001); // START: reset counters, release forcing
+        settle(4);
+
+        // --- Port 1 (POT0DAT): press/release mouse_btn[2], the live pin5
+        // substitute (userio.v: potcap[0] <= _mthird & joy1_pin5). ---
+        top->mouse_btn = 0x00; // pin5 idle
+        settle(4);
+        uint16_t port1_before = read_reg(POT0DAT);
+        top->mouse_btn = 0x04; // press pin5 (mouse middle-button term, bit2)
+        settle(4);
+        for (int i = 0; i < PULSES; i++) { top->pot_cnt_en = 1; tick(); top->pot_cnt_en = 0; tick(); }
+        uint16_t port1_held = read_reg(POT0DAT);
+        top->mouse_btn = 0x00; // release pin5
+        settle(4);
+        for (int i = 0; i < PULSES; i++) { top->pot_cnt_en = 1; tick(); top->pot_cnt_en = 0; tick(); }
+        uint16_t port1_released = read_reg(POT0DAT);
+
+        // --- Port 2 (POT1DAT): every input this fixture has, driven to its
+        // most active combination at once -- all mouse buttons pressed,
+        // every _joy1/_joy2 line pressed. ---
+        uint16_t port2_before = read_reg(POT1DAT);
+        top->mouse_btn = 0x07;
+        joy1_val = 0x0000; top->_joy1 = joy1_val;
+        joy2_val = 0x0000; top->_joy2 = joy2_val;
+        settle(4);
+        for (int i = 0; i < PULSES; i++) { top->pot_cnt_en = 1; tick(); top->pot_cnt_en = 0; tick(); }
+        uint16_t port2_after = read_reg(POT1DAT);
+        // restore idle defaults for what follows
+        top->mouse_btn = 0x00;
+        joy1_val = 0xFFFF; top->_joy1 = joy1_val;
+        joy2_val = 0xFFFF; top->_joy2 = joy2_val;
+        settle(4);
+
+        uint8_t port1_x_before = port1_before & 0xFF, port1_x_held = port1_held & 0xFF, port1_x_released = port1_released & 0xFF;
+        uint8_t port1_y_before = (port1_before >> 8) & 0xFF, port1_y_held = (port1_held >> 8) & 0xFF, port1_y_released = (port1_released >> 8) & 0xFF;
+        uint8_t port2_x_before = port2_before & 0xFF, port2_x_after = port2_after & 0xFF;
+
+        // port2's Y-byte (potcap[3], pin9) is incidentally unblocked by this
+        // section's "every input pressed" stimulus -- irrelevant to the
+        // pin5/X claim under test, so the note prints X-bytes only (masked)
+        // to keep the comparison unambiguous; the full registers are still
+        // in port1_before/held/released and port2_before/after above.
+        note("pin5 X-gate (X-byte only): port1 POT0DAT.X before=0x" + hex16(port1_x_before) +
+             " held=0x" + hex16(port1_x_held) + " released=0x" + hex16(port1_x_released) +
+             "; port2 POT1DAT.X before=0x" + hex16(port2_x_before) +
+             " after-max-stimulus=0x" + hex16(port2_x_after));
+
+        bool port1_advanced_while_pressed = port1_x_held != port1_x_before;
+        bool port1_frozen_after_release = port1_x_released == port1_x_held;
+        bool port1_y_static = (port1_y_before == port1_y_held) && (port1_y_held == port1_y_released);
+        bool port1_senses_pin5 = port1_advanced_while_pressed && port1_frozen_after_release && port1_y_static;
+
+        bool port2_senses_pin5 = port2_x_after != port2_x_before;
+
+        // Table 8-1's pin map is port-agnostic (Groups A, B and E all rest
+        // on this too); the claim needs both physical copies to sense
+        // pin 5, so the graded boolean is their conjunction -- port 2's
+        // absence makes it false.
+        bool gate_ok = port1_senses_pin5 && port2_senses_pin5;
+        expect(gate_ok, "opus:8-tbl8-1.c15");
+        expect(gate_ok, "sol:8-pin.c17");
+        expect(gate_ok, "opus:8-tbl8-1.c16");
+        expect(gate_ok, "sol:8-pin.c18");
+
+        // Substitution proof (newly-red assertion, per the build brief: an
+        // already-red assertion is not stimulus-mutated further). A
+        // mechanism proven live above -- port 1's mouse_btn[2] channel --
+        // put through the identical two-port comparator alone, shown green.
+        bool substitution_green = port1_senses_pin5;
+        note(std::string("Substitution check for opus:8-tbl8-1.c15/c16, ") +
+             "sol:8-pin.c17/c18: port 1's live pin5 channel, run through the " +
+             "same comparator port 2 fails, reads " +
+             (substitution_green ? "green" : "red") + " -- the comparator is not vacuous.");
+    }
+
+    // =====================================================================
     // Declined claims -- named individually, one record() line per uid.
     // =====================================================================
-
-    // Group B2 -- pin 5's pot-gating cells: no port behind them (see
-    // SPECIFICATION.md, "RTL boundary finding"). Port 2's X-gate
-    // (joy2_pin5 = ~(potreg[13] & ~potreg[12])) reads no external input at
-    // all; port 1's substitute is mouse_btn[2], a "mouse device button"
-    // abstraction, not a bit of the per-pin _joy1/_joy2 connector vector the
-    // way pin 9 (_joy1[5]/_joy2[5]) is.
-    record("opus:8-tbl8-1.c15 (pin 5 = Right POT) declined: no module port in "
-           "userio.v carries the DB9 connector's pin 5 into the X/Right-POT "
-           "gate on either controller port -- port 2's gate reads no external "
-           "input at all, port 1's substitute (mouse_btn[2]) is a differently-"
-           "scoped mouse-button abstraction, not a connector-vector bit. "
-           "Absent signal at this boundary.");
-    record("sol:8-pin.c17 (pin 5 = Right POT) declined: same reason as "
-           "opus:8-tbl8-1.c15.");
-    record("opus:8-tbl8-1.c16 (pin 5 = POT X) declined: same reason as "
-           "opus:8-tbl8-1.c15 -- POT X and Right POT name the same absent "
-           "byte-gate.");
-    record("sol:8-pin.c18 (pin 5 = POT X) declined: same reason as "
-           "opus:8-tbl8-1.c15.");
 
     // Group C -- pin 5/9 device-identity claims: the pin is a readable
     // digital level; which named external device produced that level is

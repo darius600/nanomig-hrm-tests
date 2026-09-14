@@ -111,11 +111,11 @@ gated is a structural fact independent of the naming convention, so both
 names are asserted, not declined — unlike Group C, where the two names
 describe mutually exclusive external devices with no such shared fact.
 
-**Addendum, written after the RTL was opened (§ "RTL boundary finding"
-below):** this group originally held pin 5's two equivalent cells as well
-(Right POT / POT X). Opening `userio.v` for the port list (order-of-work step
-2) found that pin 5's cells cannot be tested at this boundary at all — moved
-to Group B2 (decline) below. Pin 9 is unaffected and stands as originally
+**Note (§ "RTL boundary finding" below):** pin 5's two equivalent cells
+(Right POT / POT X) are graded separately as Group B2 below rather than
+folded into this one — `userio.v` wires pin 5 asymmetrically between the two
+physical ports (one port's copy of the gate has no external term at all),
+unlike pin 9's clean, symmetric wiring here. Pin 9 stands as originally
 planned.
 
 | uid | pin | column | claim |
@@ -131,7 +131,7 @@ byte of that port's two-byte pot data register and leaves the "X"/"Right POT"
 byte unmoved. All four uids are graded against the same measured
 byte-selection fact.
 
-### Group B2 — pin 5, proportional-controller pot gating (1 fact, 4 uids, DECLINE — absent port)
+### Group B2 — pin 5, proportional-controller pot gating (1 fact, 4 uids, ASSERT — red)
 
 | uid | pin | column | claim |
 |---|---|---|---|
@@ -140,24 +140,38 @@ byte-selection fact.
 | `opus:8-tbl8-1.c16` | 5 | XY Prop. Joystick | pin 5 = POT X |
 | `sol:8-pin.c18` | 5 | XY Prop. Joystick | pin 5 = POT X |
 
-**Decline reason (`record()`), found only once `userio.v` was opened:** the
-"X"/"Right POT" byte's pot-gate (`potcap[0]` for port 1, `potcap[2]` for port
-2) is the one asymmetric case in this module. Port 2's gate,
-`joy2_pin5 = ~(potreg[13] & ~potreg[12])`, is a function of the POTGO write
-register alone — no external input reaches it at all, on either controller
-port's copy of this logic pattern for the other three pin functions (1-4, 6,
-9 are each a specific bit of the 16-bit `_joy1`/`_joy2` connector vectors).
-Port 1's gate substitutes `mouse_btn[2]`, a 3-bit bus scoped to "the mouse
-device's button state" (its siblings `mouse_btn[0]`/`[1]` are pins 6 and 9's
-Mouse-column cells in Group C below) — not a bit of the per-pin connector
-vector the way pin 9 (`_joy1[5]`/`_joy2[5]`) is. Table 8-1's claim is about the
-connector pin, uniformly across both physical ports; one of the two ports
-demonstrably has no wire representing it at all, so the claim cannot be
-settled at this boundary on either port. This is the case the carried-forward
-guidance names directly: a pin with no port behind it, an absent signal, not
-a fixture to widen. What would carry it: whichever top-level file drives
-`mouse_btn` and wires the physical DB9 pin 5 into this design — outside
-`userio.v`.
+**Verdict — ASSERT, RED:** a module port carrying no external signal into a
+gate the manual requires is the deviation itself, not a reason the claim
+stops being testable. `classify.status` is `testable` for all four uids with
+no narrowing `split` field (contrast Group C below, where `classify`'s own
+`split` text concedes the device-identity gap up front). Appendix A p.282's
+register table lists pin 5 on BOTH connectors feeding a pot counter ("RIGHT X
+RX 5 35 (POT1X)", "LEFT X LX 5 32 (POT0X)"), so a Table-8-1 claim worded
+identically for both physical ports (per KNOWN CONFLICT 3 above) needs both
+copies of the gate to sense it.
+
+**What was measured:** the "X"/"Right POT" byte's pot-gate (`potcap[0]` for
+port 1, `potcap[2]` for port 2) is the one asymmetric case in this module.
+Port 1's gate, `potcap[0] <= _mthird & joy1_pin5`, is live: `_mthird`
+(`mouse_btn[2]`) is a real external signal and holding/releasing it correctly
+advances and freezes port 1's X byte while port 1's Y byte stays put. Port
+2's gate, `joy2_pin5 = ~(potreg[13] & ~potreg[12])`, is a function of the
+POTGO write register alone — no combination of this fixture's inputs (both
+mouse buttons, every `_joy1`/`_joy2` line) ever moves it. Graded against the
+conjunction of both copies (the claim needs both ports to carry pin 5, the
+same way Group A/B's assertions rest on port-agnostic wording), all four
+uids come out RED: sound on one port, absent on the other, and Table 8-1
+grants no exception for either port. The identical `potcap[2]`/RX gap is
+independently reported RED by the sibling `hrm/ch8-pot-pins-as-digital-io`
+(Group 5, ENTIRE-REGISTER-SENSES) against the same RTL fact — the same
+physical omission cannot be a finding there and an unobservable boundary
+here.
+
+**Mutation:** already red at baseline, so per the build brief this is a
+substitution proof, not a stimulus mutation — port 1's live `mouse_btn[2]`
+channel, proven live in the same measurement, is put through the identical
+two-port comparator alone and shown to read green, proving the comparator
+is not vacuous.
 
 ### Group C — pins 5/9, device-identity button/pen claims (10 uids, DECLINE)
 
@@ -221,10 +235,11 @@ input-only. Two facts (pin 5, pin 9), each graded against both readers' uids.
 ## Claim accounting
 
 Originally planned: 28 ASSERT (Groups A, B, E) + 14 DECLINE (Groups C, D) = 42.
-After opening `userio.v` (order-of-work step 2) and finding pin 5's pot-gating
-has no port behind it on either controller port: **24 ASSERT (Groups A, B, E)
-+ 18 DECLINE (Groups B2, C, D) = 42.** Every uid in the 42-line claims file
-appears exactly once above.
+After opening `userio.v` (order-of-work step 2) and measuring pin 5's
+pot-gating asymmetry between the two controller ports (see Group B2 above and
+"RTL boundary finding" below): **28 ASSERT (Groups A, B, B2, E) + 14 DECLINE
+(Groups C, D) = 42.** Every uid in the 42-line claims file appears exactly
+once above.
 
 ## Test plan
 
@@ -257,10 +272,10 @@ appears exactly once above.
     mutation record substitutes a different, already-proven-live mechanism
     through the same comparator to show the comparator itself is not vacuous,
     per the brief.
-- **Declined claims.** Every Group B2, Group C and Group D uid gets a
-  `record()` line naming the pin, the column, and the reason (absent port,
-  device-identity not observable at this boundary, or wrong fixture —
-  `ch8-ciaapra-fire-buttons`).
+- **Declined claims.** Every Group C and Group D uid gets a `record()` line
+  naming the pin, the column, and the reason (device-identity not observable
+  at this boundary, or wrong fixture — `ch8-ciaapra-fire-buttons`). Group B2
+  is graded via `expect()`, the same as Groups A, B and E — see above.
 
 ## RTL boundary finding (step 2, after commit)
 
@@ -270,13 +285,12 @@ Pin 5 breaks that uniformity: port 2's X/"Right POT" gate
 (`joy2_pin5 = ~(potreg[13] & ~potreg[12])`) reads no external input at all,
 and port 1's substitute is `mouse_btn[2]`, a differently-scoped 3-bit "mouse
 button state" bus, not a connector-vector bit. This was not knowable from the
-quotations alone — it is exactly the case the order-of-work gate exists to
-keep out of the specification proper, and exactly the case the carried-forward
-"pin with no port behind it" guidance describes. Group B2 records the decline
-this produced; nothing else in the specification changed as a result of
-opening the RTL. This addendum, and the corresponding edits to Groups B/B2
-above, were made in the second commit (the built package), after the first
-commit (this specification) was already in place.
+quotations alone. Table 8-1's pin map is worded identically for both physical
+ports, and Appendix A p.282's register table confirms pin 5 feeds a pot
+counter on both connectors ("RIGHT X RX 5", "LEFT X LX 5") — so a gate that
+is live on one port and driven by nothing at all on the other is a genuine
+RTL deviation from the manual, graded RED, not a boundary this fixture cannot
+see. Group B2 above carries the ASSERT and its measurement.
 
 ## HALT check
 
