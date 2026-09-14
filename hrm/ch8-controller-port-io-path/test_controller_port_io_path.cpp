@@ -75,34 +75,44 @@
 //     `_fire0`, `_fire1`, or any output port. So no RTL boundary in this
 //     tree -- not this rig, not even the whole of minimig.v -- can show a
 //     CIAAPRA write reaching the physical connector pin; that merge is
-//     off-chip (open-drain pad behaviour). This package therefore grades
-//     "output" at the CIAAPRA/CIA-register level (does the write change
-//     the chip's own output-driver signal), not at the physical pin, and
-//     says so on every assertion whose claim includes the word "output".
-//     The register-level output check does not need `userio` at all --
-//     disclosed on those assertions rather than left implicit, per
-//     SPECIFICATION.md's warning against a rig used for convenience.
+//     off-chip, open-drain pad behaviour that no synchronous RTL
+//     testbench at any boundary (this rig, the whole of minimig.v, or any
+//     future sibling package) can observe. `cia_porta_out` (the CIA's own
+//     internal output-driver signal) is therefore evidence of a necessary
+//     precondition, never of the manual's connector-level "output" claim
+//     itself. Per assertion below: where a claim is satisfied by a true
+//     disjunct that IS connector-level (opus:8-intro.c10's input half),
+//     it is graded, scoped in its own label/note. Where a claim requires
+//     the connector-level output half specifically (opus:8-regs.c6,
+//     sol:8-reg.c6, sol:8-overview.c3), it is declined via `record()`,
+//     naming this boundary, rather than graded on the weaker
+//     `cia_porta_out` signal.
 //
 // KNOWN CONFLICT 3 (carried forward, and restated from SPECIFICATION.md
-//   because it governs four assertions below): printed p.233 numbers the
+//   because it governs four claims below): printed p.233 numbers the
 //   controller ports 0 and 1 where p.240 and the rest of the chapter
 //   number them 1 and 2. This package's own three pages never quote the
 //   disputed numeral, but four claims (`opus:8-mbtn.c5`, `opus:8-mbtn.c6`,
-//   `sol:8-button.c4`, `sol:8-button.c5`) assert a specific numeral paired
-//   with a specific bit. Graded here: the two ports' buttons occupy two
-//   distinct, non-overlapping CIAAPRA bits, and the mouse-shared port (the
-//   RTL fact establishing "port 1" on a real Amiga) is the one on bit 6.
-//   NOT graded: that the manual's printed numeral "1" is the physically
-//   correct name for that connector -- no RTL measurement settles a
-//   disputed page's numbering.
+//   `sol:8-button.c4`, `sol:8-button.c5`) restate a specific numeral
+//   paired with a specific bit ("port 1 -> bit 6", "port 2 -> bit 7").
+//   The undisputed sub-claim -- the two ports' buttons occupy two
+//   distinct, non-overlapping CIAAPRA bits, and the lower-numbered port
+//   under EITHER printed scheme is the one on bit 6 -- is graded below on
+//   two uid-free lines, `PROP-PORT-LOW6` and `PROP-PORT-HIGH7`. The
+//   numeral itself is not graded -- no RTL measurement settles a disputed
+//   page's numbering -- so none of the four claims above is fully
+//   exercised by that ordering fact alone; each is declined via
+//   `record()` next to the proposition it partially supports, naming the
+//   p.232-versus-p.233 conflict, rather than kept on a graded line whose
+//   uid would be counted ASSERTED for a numeral never checked.
 //   A second RTL fact not modelled: only one mouse is wired in this
 //   design (`mouse_btn`, hardwired only into the `_joy2`/bit-6 path).
 //   There is no second mouse to press for the "port 2" claims
-//   (`opus:8-mbtn.c6`, `sol:8-button.c5`) -- they are graded using the
-//   joystick-fire signal on `_joy1` instead, which is the identical
-//   physical pin 6 / CIAAPRA-bit-7 path a second mouse's left button
-//   would use if this RTL modelled one. Disclosed here, not silently
-//   substituted.
+//   (`opus:8-mbtn.c6`, `sol:8-button.c5`) -- `PROP-PORT-HIGH7` is graded
+//   using the joystick-fire signal on `_joy1` instead, which is the
+//   identical physical pin 6 / CIAAPRA-bit-7 path a second mouse's left
+//   button would use if this RTL modelled one. Disclosed here, not
+//   silently substituted.
 //
 // FIXTURE LIVENESS. Two checks, no uid, no page citation, run before any
 //   claim-bearing assertion is trusted -- this rig has two joins (the
@@ -129,8 +139,10 @@
 //   assertion), the technique disclosed as read from
 //   ch8-appb-chip-column-denise's test_denise.cpp. Each mutation changes a
 //   STIMULUS value the fixture is asked to drive; no `expect()` call's own
-//   comparison was ever edited to produce a result. Every one of the 12
-//   ids below was run standalone (`MUTATE=<id> ./obj_dir/Vcontroller_port_io_path`),
+//   comparison was ever edited to produce a result. `record()` lines are
+//   declines, not assertions -- they carry no `expect()` label and
+//   therefore need no mutation entry. Every one of the 7 ids below was run
+//   standalone (`MUTATE=<id> ./obj_dir/Vcontroller_port_io_path`),
 //   confirmed red, then reverted and confirmed green again with MUTATE
 //   unset; the baseline (MUTATE unset) and each mutation run's actual
 //   result are recorded in the build report, not invented here before
@@ -140,14 +152,9 @@
 // MUTATION control:ciaa-porta-liveness stimulus red: extra_wprot/extra_change are driven to the same idle pattern the baseline used, so the second read is indistinguishable from the first
 // MUTATION opus:8-intro.c10 stimulus red: _joy2 pin 6 is never driven low, so the input half of "input or output" is never demonstrated
 // MUTATION opus:8-mbtn.c3 stimulus red: mouse_btn[0] is never asserted, so the mouse-button-to-CIAAPRA path is never exercised
-// MUTATION opus:8-mbtn.c5 stimulus red: the mouse-shared port's (_joy2) pin 6 is never driven low
-// MUTATION sol:8-button.c4 stimulus red: the mouse-shared port's (_joy2) pin 6 is never driven low
-// MUTATION opus:8-mbtn.c6 stimulus red: the joystick-only port's (_joy1) pin 6 is never driven low
-// MUTATION sol:8-button.c5 stimulus red: the joystick-only port's (_joy1) pin 6 is never driven low
+// MUTATION PROP-PORT-LOW6 stimulus red: the mouse-shared port's (_joy2) pin 6 is never driven low
+// MUTATION PROP-PORT-HIGH7 stimulus red: the joystick-only port's (_joy1) pin 6 is never driven low
 // MUTATION sol:8-reg.c7 stimulus red: port A's (_joy1) pin 6 is never driven low, so only one of the two ports' pin-6 claim is shown
-// MUTATION opus:8-regs.c6 stimulus red: the input half's stimulus (_joy2 pin 6) is never driven low, though the output-register half is still exercised
-// MUTATION sol:8-reg.c6 stimulus red: DDRA is written leaving bit 6 configured as input (0x80 instead of 0xC0), so the output-register half of the claim is never demonstrated for bit 6
-// MUTATION sol:8-overview.c3 stimulus red: DDRA is written leaving bit 6 configured as input (0x80 instead of 0xC0), so only one of the two ports' output claim is shown
 
 #include <cstdint>
 #include <cstdio>
@@ -316,9 +323,16 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // P227-1 -- opus:8-intro.c10 (p.227): "The nine-pin connectors can be
-    // used for input or for output." Graded on the INPUT half, which
-    // alone satisfies the disjunction: a distinct stimulus at pin 6 of the
-    // mouse-shared port arrives, and departs, at CIAAPRA bit 6.
+    // used for input or for output." "Input or output" is a disjunction:
+    // a true disjunct is a complete proof of it. The INPUT disjunct is
+    // real and connector-level -- a distinct stimulus at pin 6 of the
+    // mouse-shared port arrives, and departs, at CIAAPRA bit 6, below.
+    // The OUTPUT disjunct is not graded on this line: no boundary in this
+    // RTL tree merges a CIAAPRA-driven value onto a connector-facing pin
+    // (see header WHAT STEP 2 ESTABLISHED) -- but a genuine disjunction
+    // needs only one true side, so this is not a partial proof of a
+    // stronger conjunctive claim (contrast opus:8-regs.c6 below, which IS
+    // conjunctive and is declined for exactly that reason).
     // ========================================================================
     do_reset();
     {
@@ -330,8 +344,11 @@ int main(int argc, char** argv) {
         uint8_t pressed_v = cia_read_pra();
 
         checks.note("P227-1: idle CIAAPRA=0x" + hex(idle_v, 2) + ", pin-6-pressed CIAAPRA=0x" + hex(pressed_v, 2));
+        checks.note("P227-1-SCOPE: graded on the input disjunct alone, a real connector-level path; "
+            "the output disjunct is not exercised here -- no boundary in this RTL tree carries a "
+            "CIAAPRA-driven value to a connector-facing pin.");
         checks.expect(bit(idle_v, 6) == true && bit(pressed_v, 6) == false,
-            "opus:8-intro.c10");
+            "opus:8-intro.c10 (input disjunct only, see P227-1-SCOPE)");
     }
 
     // ========================================================================
@@ -354,62 +371,64 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // P232-2/3 -- opus:8-mbtn.c5 and sol:8-button.c4 (p.232): the
-    // mouse-shared port's pin 6 appears at bit 6, and only bit 6
-    // (isolation from bit 7). Same fact, independent uids, independent
-    // expect() lines and independent mutation runs.
+    // PROP-PORT-LOW6 -- the undisputed ordering sub-claim behind
+    // opus:8-mbtn.c5 and sol:8-button.c4 (p.232): the lower-numbered port
+    // under EITHER printed scheme (p.232's "port 1", p.233's "port 0") is
+    // the one whose pin 6 reaches CIAAPRA bit 6, isolated from bit 7 (see
+    // KNOWN CONFLICT 3 in the header). Graded uid-free -- see the two
+    // record() lines below for why the disputed numeral itself stays off
+    // this graded line.
     // ========================================================================
     do_reset();
     {
         set_port(JOY_IDLE, JOY_IDLE, 0);
         uint8_t idle_v = cia_read_pra();
-        uint16_t joy2_pressed = mutating("opus:8-mbtn.c5") ? JOY_IDLE : JOY_FIRE_PRESSED;
+        uint16_t joy2_pressed = mutating("PROP-PORT-LOW6") ? JOY_IDLE : JOY_FIRE_PRESSED;
         set_port(JOY_IDLE, joy2_pressed, 0);
         uint8_t v = cia_read_pra();
         checks.note("P232-2: idle CIAAPRA=0x" + hex(idle_v, 2) + ", mouse-shared-port-pin6-pressed CIAAPRA=0x" + hex(v, 2));
         checks.expect(bit(idle_v, 6) == true && bit(idle_v, 7) == true && bit(v, 6) == false && bit(v, 7) == true,
-            "opus:8-mbtn.c5");
-    }
-    do_reset();
-    {
-        set_port(JOY_IDLE, JOY_IDLE, 0);
-        uint8_t idle_v = cia_read_pra();
-        uint16_t joy2_pressed = mutating("sol:8-button.c4") ? JOY_IDLE : JOY_FIRE_PRESSED;
-        set_port(JOY_IDLE, joy2_pressed, 0);
-        uint8_t v = cia_read_pra();
-        checks.note("P232-3: idle CIAAPRA=0x" + hex(idle_v, 2) + ", mouse-shared-port-pin6-pressed CIAAPRA=0x" + hex(v, 2));
-        checks.expect(bit(idle_v, 6) == true && bit(idle_v, 7) == true && bit(v, 6) == false && bit(v, 7) == true,
-            "sol:8-button.c4");
+            "PROP-PORT-LOW6");
+
+        checks.record("opus:8-mbtn.c5 (p.232, \"The left button of port 1 appears in bit 6 of "
+            "CIAAPRA\"): the bit pairing is asserted by PROP-PORT-LOW6 above, but this claim's own "
+            "restatement names the numeral \"port 1\", and p.232 numbers the connectors 1 and 2 where "
+            "p.233 numbers the same two connectors 0 and 1 -- no RTL measurement settles a disputed "
+            "page's numbering. Not fully exercised by PROP-PORT-LOW6; conflict-recorded, not asserted.");
+        checks.record("sol:8-button.c4 (p.232, \"Controller port 1's left mouse button uses CIAAPRA bit "
+            "6\"): same p.232-versus-p.233 conflict as opus:8-mbtn.c5 above -- the bit pairing is "
+            "asserted by PROP-PORT-LOW6, the numeral \"port 1\" is not.");
     }
 
     // ========================================================================
-    // P232-4/5 -- opus:8-mbtn.c6 and sol:8-button.c5 (p.232): the
-    // joystick-only port's pin 6 appears at bit 7, and only bit 7. No
-    // second mouse exists in this RTL (see header) -- the joystick-fire
-    // signal on the same physical pin is used instead, disclosed rather
-    // than silently substituted.
+    // PROP-PORT-HIGH7 -- the undisputed ordering sub-claim behind
+    // opus:8-mbtn.c6 and sol:8-button.c5 (p.232): the higher-numbered port
+    // under either printed scheme is the one whose pin 6 reaches CIAAPRA
+    // bit 7, isolated from bit 6. No second mouse exists in this RTL (see
+    // header) -- the joystick-fire signal on the same physical pin is used
+    // instead, disclosed rather than silently substituted. Graded
+    // uid-free -- see the two record() lines below for the disputed
+    // numeral.
     // ========================================================================
     do_reset();
     {
         set_port(JOY_IDLE, JOY_IDLE, 0);
         uint8_t idle_v = cia_read_pra();
-        uint16_t joy1_pressed = mutating("opus:8-mbtn.c6") ? JOY_IDLE : JOY_FIRE_PRESSED;
+        uint16_t joy1_pressed = mutating("PROP-PORT-HIGH7") ? JOY_IDLE : JOY_FIRE_PRESSED;
         set_port(joy1_pressed, JOY_IDLE, 0);
         uint8_t v = cia_read_pra();
         checks.note("P232-4: idle CIAAPRA=0x" + hex(idle_v, 2) + ", joystick-only-port-pin6-pressed CIAAPRA=0x" + hex(v, 2));
         checks.expect(bit(idle_v, 6) == true && bit(idle_v, 7) == true && bit(v, 7) == false && bit(v, 6) == true,
-            "opus:8-mbtn.c6");
-    }
-    do_reset();
-    {
-        set_port(JOY_IDLE, JOY_IDLE, 0);
-        uint8_t idle_v = cia_read_pra();
-        uint16_t joy1_pressed = mutating("sol:8-button.c5") ? JOY_IDLE : JOY_FIRE_PRESSED;
-        set_port(joy1_pressed, JOY_IDLE, 0);
-        uint8_t v = cia_read_pra();
-        checks.note("P232-5: idle CIAAPRA=0x" + hex(idle_v, 2) + ", joystick-only-port-pin6-pressed CIAAPRA=0x" + hex(v, 2));
-        checks.expect(bit(idle_v, 6) == true && bit(idle_v, 7) == true && bit(v, 7) == false && bit(v, 6) == true,
-            "sol:8-button.c5");
+            "PROP-PORT-HIGH7");
+
+        checks.record("opus:8-mbtn.c6 (p.232, \"The left button of port 2 appears in bit 7 of "
+            "CIAAPRA\"): the bit pairing is asserted by PROP-PORT-HIGH7 above, but this claim's own "
+            "restatement names the numeral \"port 2\", and p.232 numbers the connectors 1 and 2 where "
+            "p.233 numbers the same two connectors 0 and 1 -- no RTL measurement settles a disputed "
+            "page's numbering. Not fully exercised by PROP-PORT-HIGH7; conflict-recorded, not asserted.");
+        checks.record("sol:8-button.c5 (p.232, \"Controller port 2's left mouse button uses CIAAPRA bit "
+            "7\"): same p.232-versus-p.233 conflict as opus:8-mbtn.c6 above -- the bit pairing is "
+            "asserted by PROP-PORT-HIGH7, the numeral \"port 2\" is not.");
     }
 
     // ========================================================================
@@ -436,39 +455,17 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // P229-1 -- opus:8-regs.c6 (p.229): "CIAAPRA is input and output for
-    // pin 6, the port 1 and port 2 fire buttons." Graded as a conjunction:
-    // INPUT (the mouse-shared port's pin 6 arrives at bit 6, the
-    // wide-boundary fact only this rig can show) AND OUTPUT (writing
-    // CIAAPRA with DDRA configured for bit 6 changes the chip's own
-    // output-driver signal -- a ciaa-internal fact; disclosed, not hidden,
-    // per the header note on the physical-pin boundary).
-    // ========================================================================
-    do_reset();
-    {
-        set_port(JOY_IDLE, JOY_IDLE, 0);
-        uint8_t idle_v = cia_read_pra();
-        uint16_t joy2_pressed = mutating("opus:8-regs.c6") ? JOY_IDLE : JOY_FIRE_PRESSED;
-        set_port(JOY_IDLE, joy2_pressed, 0);
-        uint8_t pressed_v = cia_read_pra();
-        bool input_ok = bit(idle_v, 6) == true && bit(pressed_v, 6) == false;
-
-        cia_write(DDRA_RS, 0xC0);
-        cia_write(PRA_RS, 0x00);
-        bool out_low = bit(dut->cia_porta_out, 2) == false;
-        cia_write(PRA_RS, 0xC0);
-        bool out_high = bit(dut->cia_porta_out, 2) == true;
-        bool output_ok = out_low && out_high;
-
-        checks.note("P229-1: input_ok=" + std::to_string(input_ok) + " output_ok=" + std::to_string(output_ok));
-        checks.expect(input_ok && output_ok, "opus:8-regs.c6");
-    }
-
-    // ========================================================================
-    // P229-2 -- sol:8-reg.c6 (p.229): same fact as opus:8-regs.c6,
-    // independent uid. This run's stimulus mutation targets the OUTPUT
-    // half instead of the input half, so the two assertions' mutation
-    // runs are not identical even though the graded fact is the same.
+    // opus:8-regs.c6 / sol:8-reg.c6 (p.229): "CIAAPRA is input and output
+    // for pin 6" is a CONJUNCTION, unlike opus:8-intro.c10's disjunction
+    // above. The input half is real and connector-level (measured below,
+    // identical mechanism to opus:8-intro.c10 and PROP-PORT-LOW6). The
+    // output half can only be measured at cia_porta_out, the CIA's own
+    // internal output-driver signal (ciaa.v:262) -- no boundary in this
+    // RTL tree carries that value to a connector-facing pin (see header
+    // WHAT STEP 2 ESTABLISHED). A conjunction needs BOTH sides true; the
+    // weaker chip-internal signal cannot stand in for the missing
+    // connector-level side, so both uids are declined below rather than
+    // graded on it.
     // ========================================================================
     do_reset();
     {
@@ -478,31 +475,39 @@ int main(int argc, char** argv) {
         uint8_t pressed_v = cia_read_pra();
         bool input_ok = bit(idle_v, 6) == true && bit(pressed_v, 6) == false;
 
-        uint8_t ddra_val = mutating("sol:8-reg.c6") ? 0x80 : 0xC0;
-        cia_write(DDRA_RS, ddra_val);
+        cia_write(DDRA_RS, 0xC0);
         cia_write(PRA_RS, 0x00);
         bool out_low = bit(dut->cia_porta_out, 2) == false;
         cia_write(PRA_RS, 0xC0);
         bool out_high = bit(dut->cia_porta_out, 2) == true;
-        bool output_ok = out_low && out_high;
+        bool output_ok_at_register = out_low && out_high;
 
-        checks.note("P229-2: input_ok=" + std::to_string(input_ok) + " output_ok=" + std::to_string(output_ok) + " ddra=0x" + hex(ddra_val, 2));
-        checks.expect(input_ok && output_ok, "sol:8-reg.c6");
+        checks.note("P229-1: input_ok=" + std::to_string(input_ok) + " output_ok_at_register=" + std::to_string(output_ok_at_register));
+        checks.record("opus:8-regs.c6 (p.229, \"CIAAPRA is input and output for pin 6, the port 1 and "
+            "port 2 fire buttons\"): input_ok measured true above, a real connector-level fact. "
+            "output_ok_at_register measured true above too, but that is cia_porta_out (ciaa.v:262), the "
+            "CIA's own internal driver signal -- not a connector-facing one. No boundary in this RTL "
+            "tree exposes the further merge onto the physical pin (see header). The conjunction as "
+            "printed on p.229 is not fully exercised by either signal alone; declined rather than "
+            "graded on the weaker one.");
+        checks.record("sol:8-reg.c6 (p.229, \"CIAAPRA provides input and output for controller pin 6 on "
+            "both ports\"): same measurement and same boundary as opus:8-regs.c6 above.");
     }
 
     // ========================================================================
-    // P227-2 -- sol:8-overview.c3 (p.227): "Each controller connector can
-    // carry output." Graded at the CIAAPRA-register level (see header):
-    // BOTH ports' own output-driver bit (porta_out[2] for the mouse-shared
-    // port, porta_out[3] for the joystick-only port) can be independently
-    // commanded low and high. This specific sub-fact does not require
-    // userio at all -- disclosed here rather than left implicit, per
-    // SPECIFICATION.md's caution about this particular claim.
+    // sol:8-overview.c3 (p.227): "Each controller connector can carry
+    // output." Unlike opus:8-intro.c10 (a disjunction with a provable
+    // connector-level input disjunct), this claim is output-only -- there
+    // is no input fallback. Measured at the same cia_porta_out boundary as
+    // opus:8-regs.c6/sol:8-reg.c6 above; declined for the same reason (no
+    // connector-facing merge exists anywhere in this RTL tree). This
+    // sub-fact does not require `userio` at all -- disclosed here rather
+    // than left implicit, per SPECIFICATION.md's caution about this
+    // particular claim.
     // ========================================================================
     do_reset();
     {
-        uint8_t ddra_val = mutating("sol:8-overview.c3") ? 0x80 : 0xC0;
-        cia_write(DDRA_RS, ddra_val);
+        cia_write(DDRA_RS, 0xC0);
         cia_write(PRA_RS, 0x00);
         bool b6_lo = bit(dut->cia_porta_out, 2) == false;
         bool b7_lo = bit(dut->cia_porta_out, 3) == false;
@@ -510,17 +515,13 @@ int main(int argc, char** argv) {
         bool b6_hi = bit(dut->cia_porta_out, 2) == true;
         bool b7_hi = bit(dut->cia_porta_out, 3) == true;
 
-        checks.note("P227-2: ddra=0x" + hex(ddra_val, 2) + " b6_lo=" + std::to_string(b6_lo) + " b7_lo=" + std::to_string(b7_lo) + " b6_hi=" + std::to_string(b6_hi) + " b7_hi=" + std::to_string(b7_hi));
-        checks.expect(b6_lo && b7_lo && b6_hi && b7_hi, "sol:8-overview.c3");
+        checks.note("P227-2: b6_lo=" + std::to_string(b6_lo) + " b7_lo=" + std::to_string(b7_lo) + " b6_hi=" + std::to_string(b6_hi) + " b7_hi=" + std::to_string(b7_hi));
+        checks.record("sol:8-overview.c3 (p.227, \"Each controller connector can carry output\"): both "
+            "ports' own CIA output-driver bits (porta_out[2]/porta_out[3]) are measured commandable low "
+            "and high above, but that is cia_porta_out, the CIA's internal driver signal, not the "
+            "connector itself -- no boundary in this RTL tree carries it further (see header). Declined "
+            "rather than graded on the weaker signal.");
     }
-
-    // The physical-pin-arrival half of "output" (does the CIAAPRA-driven
-    // value reach the DB9 connector pin, not just the chip's own output
-    // signal) is not graded by any assertion above: no boundary in this
-    // RTL tree can observe it. See the header for the specific lines
-    // (minimig.v:200-201, 358-359; userio.v:181-208) that establish this
-    // rather than assuming it.
-    checks.note("OUTPUT-SCOPE: every assertion above whose claim includes the word 'output' is graded at the CIAAPRA/chip output-driver signal (cia_porta_out), never at the physical connector pin -- no RTL boundary in this tree exposes that merge (see header).");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
     return checks.failed == 0 ? 0 : 1;
