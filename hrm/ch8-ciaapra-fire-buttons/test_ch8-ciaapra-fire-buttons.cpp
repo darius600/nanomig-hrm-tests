@@ -78,6 +78,7 @@
 //   (MUTATE unset) and confirmed green again. Baseline with MUTATE unset:
 //   9 passed, 0 failed (A0 plus A1-A8; P4 is a record(), not graded).
 //
+// MUTATION A0-LIVENESS-PORTA-TO-CIAAPRA stimulus red: the second liveness word driven identical to the first instead of its complement, so the two readings are indistinguishable (MUTATE=A0). RUN: baseline 9 passed 0 failed; mutated 8 passed 1 failed, only this label red; reverted 9/0.
 // MUTATION A1-BIT6-READS-1-WHEN-OPEN stimulus red: porta_in[6] driven low while the assertion still expects "open" (MUTATE=A1)
 // MUTATION A2-BIT6-READS-0-WHEN-CLOSED stimulus red: porta_in[6] driven high while the assertion still expects "closed" (MUTATE=A2)
 // MUTATION A3-BIT7-READS-1-WHEN-OPEN stimulus red: porta_in[7] driven low while the assertion still expects "open" (MUTATE=A3)
@@ -210,7 +211,13 @@ int main(int argc, char** argv) {
             return (uint8_t)((w6 & 0x3F) << 2);
         };
         const uint8_t word1 = 0b101010;
-        const uint8_t word2 = 0b010101;  // bitwise complement (within 6 bits)
+        // Stimulus mutation (MUTATE=A0): the second word is driven
+        // IDENTICAL to the first instead of its complement, so the two
+        // readings cannot be told apart and the liveness check fails.
+        // Expected values untouched. A control that cannot fail proves
+        // nothing, and this one carried no mutation at all.
+        const uint8_t word2 = mutating("A0") ? word1
+                                             : (uint8_t)0b010101;  // complement
 
         set_porta_word(word1);
         settle();

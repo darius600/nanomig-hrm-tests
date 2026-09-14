@@ -20,6 +20,14 @@
 //   identical "== value after N released ticks" comparator used for the red
 //   port2-X half, confirming that comparator is not vacuously false.
 // MUTATION sol:8-pot.c1 oracle green (same substitute as opus:8-pot.c1)
+// MUTATION harness-selfcheck stimulus red MUT_SELFCHECK: the POTGO arm
+//   gate for pot0x is held closed in G1s first measurement, so it never
+//   counts and
+//   x_tracks is false. Expected values untouched. RUN: baseline 74 passed
+//   15 failed; mutated 73 passed 16 failed, exactly one harness-selfcheck
+//   newly red, the fifteen baseline reds unchanged. Reverted: 74/15.
+//   A first attempt omitted the POTGO arm step instead and changed nothing;
+//   it was replaced, not recorded.
 // MUTATION opus:8-pot.c11 stimulus red MUT_G2: the arm step of part (a) is
 //   built with POTGO=$0000 (bit 0 clear) instead of $0001, so the counters
 //   never start; expected value (an unstarted-vs-started equality) is
@@ -267,7 +275,18 @@ static void set_joy2_pin5(int asserted) {
 static void group_G1() {
     full_reset();
     arm_potgo(0x0001);
+    // MUT_SELFCHECK holds pot0x PRESSED instead of releasing it, so its gate
+    // never opens, the counter stays at 0 and x_tracks is false. Expected
+    // values untouched: this changes what the module is asked to do.
+    //
+    // A first attempt omitted the arm_potgo() call here instead and changed
+    // NOTHING -- the counter runs without it. A mutation that does not move
+    // the result is worse than none, so it was replaced rather than recorded.
+#ifdef MUT_SELFCHECK
+    set_mouse(0, 0, 0); // hold pot0x pressed: its gate never opens
+#else
     set_mouse(0, 0, 1); // release pot0x only (mouse button 3)
+#endif
     settle(3);
     pulse(6);
     uint16_t r1 = pot0dat();

@@ -81,12 +81,12 @@
 // MUTATION FIXTURE-LIVE stimulus red: the second DDRA write changed from
 //   the distinct sentinel 0x5A to a repeat of the first (0xA5) -> FAIL,
 //   second reading no longer differs from the first (both 0xA5). Reverted.
-// MUTATION PROP-1 stimulus red: the "different position" stimulus in the
+// MUTATION opus:8-dio.c44 stimulus red: (PROP-1) the "different position" stimulus in the
 //   positional-independence step changed from DDRA=0x04 (bit 2 only) to
 //   DDRA=0x05 (bit 2 AND bit 0), leaving the expected value (PRA bit 0
 //   reads 1) unchanged -> FAIL, PRA bit 0 now reads 0, because bit 0 itself
 //   was also switched to output by the mutated stimulus. Reverted.
-// MUTATION PROP-2 stimulus red: the DDRA write that sets bit 0 to output
+// MUTATION opus:8-dio.c46 stimulus red: (PROP-2) the DDRA write that sets bit 0 to output
 //   (0x01) was omitted, leaving ddrporta at its reset default (0/input),
 //   while the same PRA bit-0 write/read sequence ran unchanged -> FAIL, PRA
 //   bit 0 reads 1 (pulled), not the expected 0. Reverted.
