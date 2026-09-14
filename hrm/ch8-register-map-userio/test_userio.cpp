@@ -96,9 +96,18 @@
 //     state (observed elsewhere) AND the address does not answer its own
 //     content.
 //   44 FUNCTION/semantic-content ids -- declined, recorded, not graded;
-//     out of this package's own scope per its subject line, owned by
-//     named sibling packages (see SPECIFICATION.md and the record() calls
-//     below).
+//     out of this package's own scope per its subject line. Checked
+//     directly against ch8-s1-runs/<package>.txt for all twenty chapter-8
+//     packages: the sibling each record below names DOES already grade the
+//     equivalent fact for every one of these 44 uids, under that sibling's
+//     OWN claim uids -- never under the exact uid these 44 claims carry
+//     (no sibling's own claims.jsonl contains any of these 44 uids at all).
+//     Each record below is therefore worded as ASSIGNED to its named
+//     sibling, not yet cited by it -- not as already tested under this
+//     uid. This package cannot add that citation itself (another
+//     package's file, other agents working in this repository); the
+//     sibling/line mapping each record states is what the citation there
+//     should match.
 //
 // MUTATION-LOG SUMMARY (16 groups, one per expect()). Every mutation below
 //   is a STIMULUS change (a target address, or how many steps/pulses are
@@ -805,63 +814,121 @@ int main() {
     // DECLINED -- 44 FUNCTION/semantic-content claims. This package's own
     // subject is address, access direction, and the appendix-B row/legend
     // claims that state those two facts (SPECIFICATION.md). What a
-    // register's bits mean is the explicit subject of named sibling
-    // packages in this same build lot. No predicate, stimulus or expected
-    // value above is touched by this block.
+    // register's bits mean is out of that subject. No predicate, stimulus
+    // or expected value above is touched by this block.
+    //
+    // REPAIR (see this package's repair report): every one of these 44
+    // uids was checked against ch8-s1-runs/<package>.txt for all twenty
+    // chapter-8 packages. None of the 44 appears on any graded (PASS/FAIL)
+    // line anywhere, including this file's own -- and none of the 44
+    // exists in any sibling's own claims.jsonl either, so no sibling could
+    // literally carry this exact uid today. Each record below therefore
+    // says ASSIGNED to a named sibling, not CITED by it: that sibling's
+    // own claims restate the identical manual fact under its own uids, and
+    // its own captured PASS output already grades that restated fact. The
+    // citation of the specific uid named here still belongs on that
+    // sibling's file -- this package cannot add it there.
     // =========================================================================
     checks.record(
         "opus:8-regs.c2, sol:8-reg.c2 (p.229), opus:8-appa-joy.c4, "
         "sol:8-appa-joy.c4, sol:8-appa-joy.c5 (p.281), opus:8-appB.c11, "
         "sol:8-appB.c10 (p.289) -- JOY0DAT's semantic content (digital "
         "mouse-input counter for port 1, vertical/horizontal split): not "
-        "asserted -- this package's own subject is address and access "
-        "direction only; the quadrature semantics these claims state are "
-        "hrm/ch8-mouse-quadrature-decode's own subject, and that "
-        "package's own claims.evidence already discloses the underlying "
-        "measurement this package declines to repeat.");
+        "asserted here -- this package's own subject is address and "
+        "access direction only. ASSIGNED, not yet cited: the "
+        "vertical=bits15-8/horizontal=bits7-0 split is graded PASS in "
+        "hrm/ch8-joydat-counter-layout under its own uids opus:8-joydat.c5 "
+        "/ opus:8-joydat.c6 (stated jointly for JOY0DAT and JOY1DAT) and "
+        "opus:8-appa-joy.c9 / opus:8-appa-joy.c10 ('reads a pair of "
+        "8-bit counters'); the "
+        "counter/quadrature-decode half is graded PASS in "
+        "hrm/ch8-mouse-quadrature-decode under LIVENESS-KNOWN-DISTINCT-"
+        "AXIS-COUNTS, ONE-COUNT-PER-QUADRATURE-STATE-CHANGE and EXACTLY-"
+        "TWO-LINES-PER-AXIS. Both checked in ch8-s1-runs/ against their "
+        "printed output before this wording was written.");
     checks.record(
         "opus:8-regs.c4, sol:8-reg.c4 (p.229), opus:8-appa-joy.c8, "
         "sol:8-appa-joy.c9, sol:8-appa-joy.c10 (p.281), opus:8-appB.c16, "
         "sol:8-appB.c15 (p.289) -- JOY1DAT's semantic content: not "
-        "asserted, for the identical reason as the JOY0DAT record above; "
-        "owned by hrm/ch8-mouse-quadrature-decode.");
+        "asserted here, for the identical reason as the JOY0DAT record "
+        "above. ASSIGNED, not yet cited: the byte-split half is graded "
+        "PASS in hrm/ch8-joydat-counter-layout, the same two uids "
+        "(opus:8-joydat.c5, opus:8-joydat.c6) as for JOY0DAT since that "
+        "package states the fact jointly for both registers; the "
+        "counter/mirroring half "
+        "is graded PASS in hrm/ch8-mouse-quadrature-decode under "
+        "JOY1DAT-MIRRORS-JOY0DAT. Both checked in ch8-s1-runs/ against "
+        "their printed output before this wording was written.");
     checks.record(
         "opus:8-regs.c8, sol:8-reg.c9 (p.229), opus:8-appa-pot.c4, "
         "sol:8-appa-pot.c4, sol:8-appa-pot.c5 (p.282), opus:8-appB.c21, "
         "sol:8-appB.c20 (p.289) -- POT0DAT's semantic content (pot "
-        "counter data, left pair vertical/horizontal): not asserted -- "
-        "owned by hrm/ch8-pot-counter-start-and-charge. The p.289 pair "
-        "(opus:8-appB.c21/sol:8-appB.c20) also carries the CHIP column's "
-        "'(E)' mark abutting the FUNCTION cell with no separating space; "
-        "this package does not resolve that boundary either way -- p.288 "
-        "defines what '(E)' means (SPECIFICATION.md), and this package's "
-        "own subject does not require reading the CHIP/FUNCTION cell "
-        "split at all.");
+        "counter data, left pair vertical/horizontal): not asserted here. "
+        "ASSIGNED, not yet cited: hrm/ch8-pot-counter-start-and-charge "
+        "grades PASS under its own uids opus:8-potreg.c1/sol:8-pot.c26/"
+        "sol:8-pot.c27 ('POT0DAT is the mouse-connector register, port "
+        "1' / port-1 vertical+horizontal data), opus:8-potreg.c3/"
+        "sol:8-pot.c30 (bits15-8 hold the Y value) and opus:8-appa-pot.c9/"
+        "sol:8-appa-pot.c11 ('reads a pair of 8-bit counters') -- checked "
+        "in ch8-s1-runs/ch8-pot-counter-start-and-charge.txt. The p.289 "
+        "pair (opus:8-appB.c21/sol:8-appB.c20) also carries the CHIP "
+        "column's '(E)' mark abutting the FUNCTION cell with no "
+        "separating space; this package does not resolve that boundary "
+        "either way -- p.288 defines what '(E)' means (SPECIFICATION.md), "
+        "and neither this package's nor the assigned sibling's subject "
+        "requires reading the CHIP/FUNCTION cell split.");
     checks.record(
         "opus:8-regs.c10, sol:8-reg.c11 (p.229), opus:8-appa-pot.c8, "
         "sol:8-appa-pot.c9, sol:8-appa-pot.c10 (p.282), opus:8-appB.c26, "
         "sol:8-appB.c25 (p.289) -- POT1DAT's semantic content: not "
-        "asserted, for the identical reason as POT0DAT above (same '(E)' "
-        "boundary note applies to opus:8-appB.c26/sol:8-appB.c25); owned "
-        "by hrm/ch8-pot-counter-start-and-charge.");
+        "asserted here, for the identical reason as POT0DAT above (same "
+        "'(E)' boundary note applies to opus:8-appB.c26/sol:8-appB.c25). "
+        "ASSIGNED, not yet cited: hrm/ch8-pot-counter-start-and-charge "
+        "grades PASS under opus:8-potreg.c1/sol:8-pot.c26/sol:8-pot.c27 "
+        "('POT1DAT is the other one', port 2), opus:8-potreg.c3/"
+        "sol:8-pot.c30 (bits15-8 hold the Y value) and opus:8-appa-pot.c9/"
+        "sol:8-appa-pot.c12 ('reads a pair of 8-bit counters') -- checked "
+        "in ch8-s1-runs/ch8-pot-counter-start-and-charge.txt.");
     checks.record(
         "opus:8-regs.c14, sol:8-reg.c16 (p.229), opus:8-appa-potgo.c8, "
         "sol:8-appa-pot.c36 (p.282), opus:8-appB.c31, sol:8-appB.c30 "
         "(p.289) -- POTGOR's semantic content (reads proportional pin "
-        "values, formerly POTINP): not asserted -- owned by "
-        "hrm/ch8-potgo-register-bit-layout.");
+        "values, formerly POTINP): not asserted here. ASSIGNED, not yet "
+        "cited: hrm/ch8-potgo-register-bit-layout grades PASS under its "
+        "own PROP-2, PROP-4, PROP-6 and PROP-8 ('...DATxx irrelevant, bit "
+        "instead tracks the external line'), and concretely under PROP-11 "
+        "/ PROP-12 (POTGOR bit tracks the right/middle mouse button "
+        "through the same pot pin) -- checked in "
+        "ch8-s1-runs/ch8-potgo-register-bit-layout.txt. The '(formerly "
+        "called POTINP)' naming half of opus:8-appB.c31/sol:8-appB.c30 is "
+        "not testable at any boundary, not even the assigned sibling's: "
+        "that package's own RECORDED line for opus:8-fig8-6r.c13/"
+        "sol:8-fig8-6r.c23 already found this independently -- 'no port "
+        "carries a register name' -- for the identical naming fact.");
     checks.record(
         "opus:8-regs.c12, sol:8-reg.c13, sol:8-reg.c14 (p.229), "
         "opus:8-appa-potgo.c4, sol:8-appa-pot.c31, sol:8-appa-pot.c32 "
         "(p.282), opus:8-appB.c51, sol:8-appB.c50 (p.289) -- POTGO's "
         "semantic content (writes proportional-pin values, starts pot "
-        "conversion): not asserted -- owned by "
-        "hrm/ch8-potgo-register-bit-layout and "
-        "hrm/ch8-pot-counter-start-and-charge.");
+        "conversion): not asserted here. ASSIGNED, not yet cited: the "
+        "'writes pin values' half is graded PASS in "
+        "hrm/ch8-potgo-register-bit-layout under PROP-2, PROP-4, PROP-6 "
+        "and PROP-8 ('DATxx forces the bit to its own written value'); "
+        "the 'starts counters' half is graded PASS both there, under "
+        "PROP-10 ('writing POTGO bit 0 zeroes pot0x, counting resumes'), "
+        "and in hrm/ch8-pot-counter-start-and-charge under its own "
+        "opus:8-potreg.c5/sol:8-pot.c32 ('all pot counts reset to zero "
+        "when POTGO is written with bit zero high') -- checked in both "
+        "packages' ch8-s1-runs/ files.");
     checks.record(
         "opus:8-appB.c56, sol:8-appB.c55 (p.289) -- JOYTEST's semantic "
         "content (writes all four joystick-mouse counters at once): not "
-        "asserted -- owned by hrm/ch8-joytest-counter-write.");
+        "asserted here. ASSIGNED, not yet cited: "
+        "hrm/ch8-joytest-counter-write grades PASS the identical fact "
+        "(restated from p.282 instead of p.289) under its own G0 check, "
+        "labelled opus:8-appa-joytest.c4 / sol:8-appa-joytest.c4 -- 'one "
+        "write reaches all four counter halves', checked in "
+        "ch8-s1-runs/ch8-joytest-counter-write.txt.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
