@@ -62,11 +62,36 @@ across those same VSTART values. This is what makes "effective" mean something:
 the page says DIWSTRT extends the *effective* blanking time, and says DIWSTRT
 acts *after* the minimum range, so the minimum must be indifferent to it.
 
-**P3 -- "AFTER THE MINIMUM" IS A FLOOR.**
-A VSTART set inside the minimum blanking range does not make the display start
-before hardware blanking has ended. The page grants DIWSTRT control only
-*after* the minimum range; if a VSTART below it pulled the display start into
-the blanked region, the sentence would be false as printed.
+**P3 -- WITHDRAWN. Measured and reported, not graded.**
+
+This was specified as a floor: *a VSTART set inside the minimum blanking range
+does not make the display start before hardware blanking has ended, because the
+page grants DIWSTRT control only after the minimum range.* It was built, it
+graded RED, and reading the page is what showed the assertion was wrong rather
+than the RTL.
+
+**The page does not require it.** In context, p.219's passage is advice on how a
+programmer gains more housekeeping time during vertical blanking. The sentence
+before it gives the minimum as 20 lines NTSC / 25 PAL; the sentence after reads
+*"If you find that you still require additional time during vertical blanking,
+you can use the Copper to create a level 3 interrupt."* The DIWSTRT sentence
+offers another way to get that time. It says where the useful control is. It
+says nothing about what the hardware does with a VSTART inside the blanked
+region -- and silence is not a requirement.
+
+**And the observable could not have carried it.** This fixture's marker for the
+display start is a bitplane DMA bus request. P1 and P2 need only a marker that
+*moves*, and it is sound for that. A floor needs the absolute claim *the display
+started*, and a fetch inside the blanked region is not a display: the data is
+fetched and the video output is blanked regardless.
+
+The measurement is kept in full on a `record()` line, with its numbers. Settling
+the printed sentence's floor, if anyone wants it settled, needs a boundary that
+sees Denise's video output rather than Agnus's bus requests.
+
+A control assertion stays green beside it, showing the same measurement
+mechanism finds no premature activity when VSTART is set outside the blanking
+range -- so the recorded number is a real measurement and not an artefact.
 
 **CONTROL -- the fixture is alive and the two signals are independent.**
 Before any of the above is trusted: vertical blanking is observed to hold and
@@ -103,3 +128,15 @@ build commit will say which and why.
 If no port distinguishes bitplane DMA from the other DMA channels sharing the
 bus, P1 and P3 cannot be graded here either, and this package will `record()`
 that with the reason rather than grading a weaker proposition.
+
+**Settled when the RTL was opened:** `agnus.v` has no port for bitplane DMA
+activity -- `agnus_bitplanedma`'s own `dma` output reaches only an internal wire,
+and `hde` turns out to be purely horizontal. The marker used is `dbr && !refresh`
+with every DMA channel but bitplane disabled in DMACON and the disk and audio
+request pins held idle, which is the isolation `hrm/agnus_top_dmacon`'s own
+committed BPLEN-GATES-BITPLANE-DMA assertion already established. Ports and
+ordinary stimulus only; no internal signal is read through `rootp`.
+
+That marker is sound for a claim about movement, which is what P1 and P2 make.
+It is not sound for a claim about the display having started, which is why P3
+was withdrawn above.
