@@ -435,6 +435,7 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -636,7 +637,7 @@ int main(int argc, char** argv) {
             "(p.307). This fixture observes only the Denise half of 'used "
             "by ... Denise' - not independently verified here beyond that. "
             "A-bplcon.c8, A-bplcon2.rw, "
-            "B-subject.c119, C-genlock-ext.c7, sol:7-appA-bplcon2.c2, sol:7-appC-bplcon2.c1, opus:7-appA-bplcon2.c1, opus:7-appC-bplcon2.c1.");
+            "B-subject.c119, C-genlock-ext.c7, sol:7-appA-bplcon2.c2, sol:7-appC-bplcon2.c1, opus:7-appA-bplcon2.c1, opus:7-appC-bplcon2.c1, sol:7-appB-bplcon2.c2.");
     }
 
     // =========================================================================
@@ -800,6 +801,52 @@ int main(int argc, char** argv) {
                     wc.subj_id + ".");
         }
     }
+
+    // =========================================================================
+    // APPENDIX B REOFFER -- 14 claims reasoned about in this file's own header
+    // (OUT OF SCOPE, CLAIM GROUPS) but never before printed to output, so the
+    // coverage ledger read them as untouched. Declined here, in the ledger's
+    // own vocabulary, with the reason already sitting in this file's prose.
+    // No predicate, stimulus or expected value above is touched by this block.
+    // =========================================================================
+    checks.record(
+        "sol:7-appB-bplcon2.c1, sol:7-appB-bplcon2.c4 (p.291, BPLCON2's address and function): not asserted -- this "
+        "file's own OUT OF SCOPE section declines BPLCON2-ADDR: BPLCON2's only fields with any observable path out of "
+        "this fixture are killehb (needs a 6th bitplane and the EHB half-brite comparison the sibling package already "
+        "owns) and the dual-playfield priority fields (need dpf=1 and a second full bitplane set) -- reaching either "
+        "would mean re-deriving a second multi-bitplane behavioural rig purpose-built for a single register. BPLCON2's "
+        "WRITE-ONLY direction is asserted at BPLCON2-WO above; only the address-specific and function-specific halves "
+        "are left unsettled.");
+    checks.record(
+        "sol:7-appB-bplcon2.c3 (p.291, BPLCON2's chip attribution -- Appendix B associates BPLCON2 with Denise): not "
+        "asserted -- BPLCON2-WO's own text says this fixture observes only the Denise half of BPLCON2's write path and "
+        "is not independently verified here beyond that write-only measurement; a single-chip fixture producing an "
+        "effect does not, on its own text's own reading, settle which chip's column entry the manual meant, unlike this "
+        "file's DENISEID-ADDR-RO or the sibling ch3-register-map-agnus-beamcounter package's structural chip reasoning "
+        "-- this package's own author chose not to make that inference for BPLCON2/BPLCON3, and this record keeps that "
+        "same choice rather than overriding it on a PASS line.");
+    checks.record(
+        "opus:7-appB.c34 (p.291): one id bundling BPLCON2's address, write-only direction, chip and function in a "
+        "single claim -- only the write-only clause is established here (BPLCON2-WO above); address and function are "
+        "declined two records above (OUT OF SCOPE) and chip is declined in the sol:7-appB-bplcon2.c3 record just above. "
+        "This suite's precedent "
+        "(hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a multi-clause id is not partially kept on the one "
+        "clause that happens to be established, so this bundled id is declined as a whole, not weakened onto "
+        "BPLCON2-WO's citation list.");
+    checks.record(
+        "sol:7-appB-clxdat.c1, sol:7-appB-clxdat.c2, sol:7-appB-clxdat.c3, sol:7-appB-clxdat.c4, opus:7-appB.c19 "
+        "(p.289, CLXDAT address/direction/chip/function): not asserted -- CLXDAT appears in this file only inside "
+        "CONTROL-FIXTURE-ALIVE, which this file's own CLAIM GROUPS section lists as carrying no claim id by design (it "
+        "exists to prove the fixture is not stuck at zero, not to test CLXDAT itself). What would settle these: a "
+        "CLXDAT-ADDR-RO assertion mirroring the existing DENISEID-ADDR-RO -- reading $00E returns CLXDAT's own content, "
+        "an unrelated write-only address reads $0000 through the same mux, and an attempted write to $00E does not "
+        "change the next reading.");
+    checks.record(
+        "sol:7-appB-clxcon.c1, sol:7-appB-clxcon.c2, sol:7-appB-clxcon.c3, sol:7-appB-clxcon.c4, opus:7-appB.c30 "
+        "(p.290, CLXCON address/direction/chip/function): not asserted -- CLXCON has no address constant and no "
+        "assertion anywhere in this file. What would settle these: a CLXCON-WO assertion mirroring the existing "
+        "BPLCON0-WO/BPLCON2-WO/BPLCON3-WO pattern -- a distinct pattern written to $098 reads back $0000 at that same "
+        "address (write-only).");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

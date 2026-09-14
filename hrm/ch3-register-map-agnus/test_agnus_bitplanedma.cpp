@@ -540,6 +540,7 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -874,6 +875,31 @@ int main(int argc, char** argv) {
             "address/W only, not cited for chip ownership). A-ddf.c1, "
             "A-ddfstop.addr, B-ddfstop.addr, B-subject.c19.");
     }
+
+    // =========================================================================
+    // APPENDIX B/A REOFFER -- 2 claims declined here, in the ledger's own
+    // vocabulary, having been offered at ch3-register-map-agnus in error (per
+    // this file's own reasoning below) and correctly declined there in an
+    // earlier pass; now reasoned about on record rather than left unprinted.
+    // No predicate, stimulus or expected value above is touched.
+    // =========================================================================
+    checks.record(
+        "opus:7-appA-pre.c6 (p.263, 'All of the pointer type registers are organized as 32 bits on a long word "
+        "boundary'): not asserted -- this claim quantifies over EVERY pointer-type register in the machine (bitplane, "
+        "audio, sprite, disk, copper, blitter); this package's own 12 pointer-address assertions above (BPL1PTH-ADDRESS-"
+        "0E0 through BPL6PTL-ADDRESS-0F6) demonstrate only the bitplane pointer family -- same ground as "
+        "hrm/ch5-audio-location-pointer's COVERAGE REPAIR 3: a universal claim is not established by a single family's "
+        "witness, however structural the mechanism looks. Needs either a predicate over every pointer family (a "
+        "top-level fixture spanning all of them) or a narrower split id scoped to the bitplane pointers this package "
+        "actually tests.");
+    checks.record(
+        "opus:7-appB.c9 (p.287, Appendix B's 'ER' early-read legend -- a DMA transfer to RAM initiated by Agnus timing "
+        "rather than a read address on the destination bus, because RAM timing needs the data on the bus earlier than a "
+        "microprocessor read cycle would put it there): not asserted -- this file's own BOUNDARY note states "
+        "agnus_bitplanedma.v 'has no data_out at all, so nothing can be \"read back\" through the register bus the way "
+        "some sibling modules allow'; the early-read timing relationship ER describes is a property of a destination "
+        "read port this module does not have. Needs a fixture with an actual RAM-side read port (e.g. the memory "
+        "arbiter/gary.v boundary) to observe timing against a real microprocessor read cycle.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed
               << " failed\n";

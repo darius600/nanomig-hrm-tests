@@ -651,6 +651,7 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -712,7 +713,7 @@ int main(int argc, char** argv) {
             "control write (clear or set)' (p.278) and Appendix B's 'DMACON "
             "at address 096' (p.290). 6-appa-dmacon.c1, 6-appa-dmacon.c2, "
             "6-appa-dmacon.c3, ch6-appa-dmacon.c1, ch6-appa-dmacon.c2, "
-            "ch6-appa-dmacon.c4, ch6-appa-dmacon.c9, ch6-appb-dmacon.addr, sol:7-dma.c1, sol:7-dma.c3, opus:7-dma.c1, opus:7-dma.c3, sol:7-appA-dmacon.c1, sol:7-appA-dmacon.c2, sol:7-appA-dmacon.c3, sol:7-appA-dmacon.c4, sol:7-appA-dmacon.c9, opus:7-appA-dmacon.c1, opus:7-appA-dmacon.c3, sol:7-appB-dmacon.c3, opus:7-appB.c29, "
+            "ch6-appa-dmacon.c4, ch6-appa-dmacon.c9, ch6-appb-dmacon.addr, sol:7-dma.c1, sol:7-dma.c3, opus:7-dma.c1, opus:7-dma.c3, sol:7-appA-dmacon.c1, sol:7-appA-dmacon.c2, sol:7-appA-dmacon.c3, sol:7-appA-dmacon.c4, sol:7-appA-dmacon.c9, opus:7-appA-dmacon.c1, opus:7-appA-dmacon.c3, sol:7-appB-dmacon.c1, sol:7-appB-dmacon.c2, sol:7-appB-dmacon.c3, sol:7-appB-dmacon.c4, opus:7-appB.c29, "
             "ch6-appb-dmacon.rw (p.290, restated: 'Appendix B marks DMACON W "
             "in the R/W column and A D P in the CHIP column' - verbatim "
             "quotation pending: the corpus text extracted for printed p.290 "
@@ -754,7 +755,9 @@ int main(int argc, char** argv) {
             "blitter status) read' (p.278) and Appendix B's 'DMACONR at address "
             "002' (p.289). 6-appa-dmacon.c4, 6-appa-dmacon.c5, 6-appa-dmacon.c6, "
             "6-appa-dmacon.c7, ch6-appa-dmacon.c5, ch6-appa-dmacon.c6, "
-            "ch6-appa-dmacon.c8, ch6-appa-dmacon.c10, ch6-appb-dmaconr.addr, sol:7-dma.c1, sol:7-dma.c2, sol:7-dma.c4, opus:7-dma.c1, opus:7-dma.c2, opus:7-dma.c4, sol:7-appA-dmacon.c5, sol:7-appA-dmacon.c6, sol:7-appA-dmacon.c7, sol:7-appA-dmacon.c8, sol:7-appA-dmacon.c10, opus:7-appA-dmacon.c2, opus:7-appA-dmacon.c3.");
+            "ch6-appa-dmacon.c8, ch6-appa-dmacon.c10, ch6-appb-dmaconr.addr, sol:7-dma.c1, sol:7-dma.c2, sol:7-dma.c4, opus:7-dma.c1, opus:7-dma.c2, opus:7-dma.c4, sol:7-appA-dmacon.c5, sol:7-appA-dmacon.c6, sol:7-appA-dmacon.c7, sol:7-appA-dmacon.c8, sol:7-appA-dmacon.c10, opus:7-appA-dmacon.c2, opus:7-appA-dmacon.c3, "
+            "sol:7-appB-dmaconr.c1, sol:7-appB-dmaconr.c2, sol:7-appB-dmaconr.c4 (address, direction and function). The chip clause and the bundled appendix-B id are declined on their own RECORDED line below and are "
+            "deliberately NOT NAMED on this line: the coverage ledger counts every uid printed on a graded line as asserted, whatever the sentence around it says.");
     }
 
     // ---------------- WALKING-BIT assertions, DMACON/DMACONR bits 0-12 (p.278) ----------------
@@ -1115,6 +1118,18 @@ int main(int argc, char** argv) {
                 "6-appa-dmacon.c20, 6-appa-dmacon.c21, ch6-appa-dmacon.bltpri4, "
                 "ch6-appa-dmacon.bltpri5, sol:7-dma.c10, opus:7-dma.c11, sol:7-appA-dmacon.c16, opus:7-appA-dmacon.c11.");
     }
+
+    checks.record(
+        "sol:7-appB-dmaconr.c3 (p.289, 'Appendix B associates DMACONR with Agnus and Paula') and the bundled "
+        "opus:7-appB.c13 (address, direction, chip and function together): not asserted -- DMACONR-READ-DECODED-AT-002 "
+        "above demonstrates only the Agnus half of the chip claim (this DUT's own decode and readback reflect the "
+        "write); Paula's own decode of $002 is outside this fixture's boundary (no Paula module is compiled into "
+        "agnus_top_dmacon, per this Makefile's SRC list) and is not asserted here, the same 'not observable at any "
+        "port' limit DMACON-WRITE-DECODED-AT-096 states for its own chip column. This row's address, direction "
+        "and function clauses are cited on DMACONR-READ-DECODED-AT-002 above (named there, not here, so this "
+        "decline does not read as a decline of them). The bundled id "
+        "bundles a fourth (chip) clause this package cannot establish, so per this suite's multi-clause convention "
+        "(a bundled id is not partially kept) it is declined here rather than cited alongside its sibling clauses.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

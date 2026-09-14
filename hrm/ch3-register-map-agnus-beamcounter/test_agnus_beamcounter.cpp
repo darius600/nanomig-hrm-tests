@@ -351,6 +351,7 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -678,7 +679,7 @@ int main(int argc, char** argv) {
             "hpos-derived low byte of data_out read at $006 unchanged -- the "
             "vpos/long_frame content is decoded AT $004, not aliased "
             "elsewhere -- 'VPOSR        *004   R     A (E)      Read vert "
-            "most signif. bit (and frame flop)' (p.289). B-vposr.addr .");
+            "most signif. bit (and frame flop)' (p.289). B-vposr.addr, sol:7-appB-vposr.c1 .");
     }
 
     // ================= VHPOSR-ADDRESS-006 =================
@@ -701,7 +702,7 @@ int main(int argc, char** argv) {
             "no horizontal component at all) -- the hpos content is decoded "
             "AT $006, not aliased elsewhere -- 'VHPOSR       *006   R     A "
             "          Read vert and horiz. position of beam' (p.289). "
-            "B-vhposr.addr .");
+            "B-vhposr.addr, sol:7-appB-vhposr.c1 .");
     }
 
     // ---- VPOSW / VHPOSW: write registers, tested by address-decode
@@ -728,7 +729,7 @@ int main(int argc, char** argv) {
             "the identical 0x8005 to $02A (VPOSW, the address the manual "
             "names) changes it (0x" + std::to_string(after_correct) +
             ") -- 'VPOSW        *02A   W     A          Write vert most "
-            "signif. bit (and frame flop)' (p.289). B-vposw.addr .");
+            "signif. bit (and frame flop)' (p.289). B-vposw.addr, sol:7-appB-vposw.c1 .");
     }
 
     // ================= VHPOSW-ADDRESS-02C =================
@@ -752,7 +753,7 @@ int main(int argc, char** argv) {
             "the identical 0x3344 to $02C (VHPOSW, the address the manual "
             "names) changes it (0x" + std::to_string(after_correct) +
             ") -- 'VHPOSW       *02C   W     A          Write vert and "
-            "horiz position of beam' (p.289). B-vhposw.addr .");
+            "horiz position of beam' (p.289). B-vhposw.addr, sol:7-appB-vhposw.c1 .");
     }
 
     // ================= BEAMCON0-ADDRESS-1DC =================
@@ -779,7 +780,7 @@ int main(int argc, char** argv) {
             "at their untouched baseline; writing the identical bits to "
             "$1DC (BEAMCON0, the address the manual names) sets both -- "
             "'BEAMCON0      1DC   w      A (E)   Beam counter control "
-            "register (SHRES,PAL)' (p.293). B-beamcon0.addr .");
+            "register (SHRES,PAL)' (p.293). B-beamcon0.addr, sol:7-appB-beamcon0.c1 .");
     }
 
     // ================= HTOTAL-ADDRESS-1C0 =================
@@ -1375,6 +1376,37 @@ int main(int argc, char** argv) {
             "Vertical   line position for VBLANK stop' (p.304). "
             "C-vbstop.c01, C-scan.c21 .");
     }
+
+    // =========================================================================
+    // APPENDIX B REOFFER -- 5 claims reasoned about in this file's own header
+    // but never before printed to output. Declined here, in the ledger's own
+    // vocabulary, with the reason already stated in this file's own opening
+    // paragraph. No predicate, stimulus or expected value above is touched.
+    // =========================================================================
+    checks.record(
+        "sol:7-appB-vposr.c4 (p.289, VPOSR's function/content -- vert most signif. bit and frame flop): not asserted "
+        "-- this file's own header says every assertion below tests exactly one of two propositions, this register's "
+        "address or its write-direction, 'never as a check that the VALUE produced matches any manual-stated duration, "
+        "count or formula.' VPOSR's own bit-field content (the vertical MSB and frame-flop semantics this claim states) "
+        "is hrm/ch3-beam-counters-and-blanking's job, already built and green -- not re-tested here.");
+    checks.record(
+        "sol:7-appB-vhposr.c4 (p.289, VHPOSR's function/content -- vert and horiz. beam position): not asserted, same "
+        "reason as sol:7-appB-vposr.c4 above -- this file tests VHPOSR-ADDRESS-006 only (address, not the beam-position "
+        "value it reads); the bit-field content is hrm/ch3-beam-counters-and-blanking's job.");
+    checks.record(
+        "sol:7-appB-vposw.c4 (p.289, VPOSW's function/content -- write vert most signif. bit and frame flop): not "
+        "asserted, same reason -- this file tests VPOSW-ADDRESS-02A only (address-decode selectivity via VPOSR's "
+        "readback, not the written field's own semantics); the bit-field content is hrm/ch3-beam-counters-and-"
+        "blanking's job.");
+    checks.record(
+        "sol:7-appB-vhposw.c4 (p.289, VHPOSW's function/content -- write vert and horiz position of beam): not "
+        "asserted, same reason -- this file tests VHPOSW-ADDRESS-02C only (address-decode selectivity via VHPOSR's "
+        "readback); the bit-field content is hrm/ch3-beam-counters-and-blanking's job.");
+    checks.record(
+        "sol:7-appB-beamcon0.c4 (p.293, BEAMCON0's function/content -- beam counter control for SHRES/PAL): not "
+        "asserted, same reason -- this file tests BEAMCON0-ADDRESS-1DC only (does HARDDIS|VARBEAMEN reach this address "
+        "at all, via harddis_out/varbeamen_out), not what each individual control bit of BEAMCON0 does; the bit-field "
+        "content is hrm/ch3-beam-counters-and-blanking's job.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed
               << " failed\n";

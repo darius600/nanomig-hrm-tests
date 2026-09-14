@@ -345,7 +345,7 @@ int main(int argc, char** argv) {
         uint16_t enar2 = read_reg(enar_addr);
         uint16_t reqr2 = read_reg(INTREQR);
         checks.expect(enar2 == 0x0021 && reqr2 == 0x0044,
-            "P3-FOUR-DISTINCT-ADDRESSES (p.217, sol:7-interrupts.c11, opus:7-int.c9): after writing distinct known patterns into the two write addresses, each pair's own read address still reflects only its own pair's write -- the four named addresses decode to independent storage, not a shared one");
+            "P3-FOUR-DISTINCT-ADDRESSES (p.217, sol:7-interrupts.c11, opus:7-int.c9; also grades appendix B's reoffered address rows sol:7-appB-intena.c1, sol:7-appB-intenar.c1, sol:7-appB-intreq.c1, sol:7-appB-intreqr.c1): after writing distinct known patterns into the two write addresses, each pair's own read address still reflects only its own pair's write -- the four named addresses decode to independent storage, not a shared one");
     }
 
     // ========================================================================
@@ -361,7 +361,8 @@ int main(int argc, char** argv) {
         std::snprintf(val_buf, sizeof val_buf, "0x%04X", val);
         checks.note(std::string("P4-INTENA-WRITE-ONLY-MEASURED: reading INTENA's own write address after a SET write returns ") + val_buf);
         checks.record(std::string(
-            "P4-INTENA-WRITE-ONLY (p.217, sol:7-interrupts.c12, opus:7-int.c10): not asserted -- 'write only' (p.217) fixes the "
+            "P4-INTENA-WRITE-ONLY (p.217, sol:7-interrupts.c12, opus:7-int.c10; also carries appendix B's reoffered "
+            "sol:7-appB-intena.c2, the same write-only access-direction claim): not asserted -- 'write only' (p.217) fixes the "
             "access direction, not a read value, and printed pp.263-264 warns that reading a write-only address 'may trash the "
             "register and crash the system' (undefined), not that it returns ") + val_buf + " or any other particular constant. "
             "reason_kind source-silent.");
@@ -382,7 +383,7 @@ int main(int argc, char** argv) {
         write_reg(INTENA, SET | stim);
         uint16_t mirrored = read_reg(INTENAR);
         checks.expect(mirrored == 0x0079,
-            "P5-INTENAR-MIRRORS (p.217, sol:7-interrupts.c13, opus:7-int.c11): INTENAR returns exactly what was last written to INTENA");
+            "P5-INTENAR-MIRRORS (p.217, sol:7-interrupts.c13, opus:7-int.c11; also grades appendix B's reoffered sol:7-appB-intenar.c3, sol:7-appB-intenar.c4 -- function and chip: this measured content IS the interrupt-enable bits INTENAR reads, and chip ownership is structural, this file's only DUT being paula_intcontroller.v with no other chip's decode logic present): INTENAR returns exactly what was last written to INTENA");
 
         int spurious_addr = mutating("P5B") ? INTENA : INTENAR;  // MUTATION: issue the spurious cycle at the real write address instead
         while (!dut->clk7_en) tick();
@@ -393,7 +394,7 @@ int main(int argc, char** argv) {
         dut->data_in = 0;
         uint16_t after = read_reg(INTENAR);
         checks.expect(after == 0x0079,
-            "P5-INTENAR-READONLY (p.217, sol:7-interrupts.c13, opus:7-int.c11): a write-shaped bus cycle at INTENAR's address changes nothing in the stored enable content");
+            "P5-INTENAR-READONLY (p.217, sol:7-interrupts.c13, opus:7-int.c11; also grades appendix B's reoffered sol:7-appB-intenar.c2, the same read-only access-direction claim): a write-shaped bus cycle at INTENAR's address changes nothing in the stored enable content");
     }
 
     // ========================================================================
@@ -417,7 +418,8 @@ int main(int argc, char** argv) {
         std::snprintf(wo_buf, sizeof wo_buf, "0x%04X", wo);
         checks.note(std::string("P6-INTREQ-WRITE-ONLY-MEASURED: reading INTREQ's own write address returns ") + wo_buf);
         checks.record(std::string(
-            "P6-INTREQ-WRITE-ONLY (p.218, sol:7-interrupts.c14, opus:7-int.c12): not asserted -- 'write only' (p.218) fixes the "
+            "P6-INTREQ-WRITE-ONLY (p.218, sol:7-interrupts.c14, opus:7-int.c12; also carries appendix B's reoffered "
+            "sol:7-appB-intreq.c2, the same write-only access-direction claim): not asserted -- 'write only' (p.218) fixes the "
             "access direction, not a read value, and printed pp.263-264 warns that reading a write-only address is undefined "
             "('may trash the register and crash the system'), not that it returns ") + wo_buf + " or any other particular constant. "
             "reason_kind source-silent.");
@@ -481,7 +483,7 @@ int main(int argc, char** argv) {
         write_reg(INTREQ, SET | stim);
         uint16_t mirrored = read_reg(INTREQR);
         checks.expect(mirrored == 0x0014,
-            "P8-INTREQR-MIRRORS (p.218, sol:7-interrupts.c17, sol:7-interrupts.c18, opus:7-int.c14): INTREQR returns exactly the pending bits established by request writes");
+            "P8-INTREQR-MIRRORS (p.218, sol:7-interrupts.c17, sol:7-interrupts.c18, opus:7-int.c14; also grades appendix B's reoffered sol:7-appB-intreqr.c3, sol:7-appB-intreqr.c4 -- function and chip: this measured content IS the interrupt-request bits INTREQR reads, and chip ownership is structural, this file's only DUT being paula_intcontroller.v): INTREQR returns exactly the pending bits established by request writes");
 
         int spurious_addr = mutating("P8B") ? INTREQ : INTREQR;  // MUTATION: issue the spurious cycle at the real write address instead
         while (!dut->clk7_en) tick();
@@ -492,7 +494,7 @@ int main(int argc, char** argv) {
         dut->data_in = 0;
         uint16_t after = read_reg(INTREQR);
         checks.expect(after == 0x0014,
-            "P8-INTREQR-READONLY (p.218, sol:7-interrupts.c17, opus:7-int.c14): a write-shaped bus cycle at INTREQR's address changes nothing in the stored request content");
+            "P8-INTREQR-READONLY (p.218, sol:7-interrupts.c17, opus:7-int.c14; also grades appendix B's reoffered sol:7-appB-intreqr.c2, the same read-only access-direction claim): a write-shaped bus cycle at INTREQR's address changes nothing in the stored request content");
     }
 
     // ========================================================================
@@ -561,7 +563,7 @@ int main(int argc, char** argv) {
         if (do_clr) write_reg(INTREQ, CLR | (1u << 5));
         uint16_t after_clr = read_reg(INTREQR);
         checks.expect(((after_set >> 5) & 1u) == 1u && ((after_clr >> 5) & 1u) == 0u,
-            "P11-BIT15-SETCLR-ALSO-INTREQ (p.218, sol:7-interrupts.c21, opus:7-int.c17): bit15 selects SET vs CLR on INTREQ too, the same convention already shown on INTENA");
+            "P11-BIT15-SETCLR-ALSO-INTREQ (p.218, sol:7-interrupts.c21, opus:7-int.c17; also grades appendix B's reoffered sol:7-appB-intreq.c3, sol:7-appB-intreq.c4 -- function and chip: this SET/CLR behaviour IS the clear/set interrupt-request write port appendix B names, and chip ownership is structural, this file's only DUT being paula_intcontroller.v): bit15 selects SET vs CLR on INTREQ too, the same convention already shown on INTENA");
     }
 
     // ========================================================================
@@ -575,7 +577,7 @@ int main(int argc, char** argv) {
         write_reg(INTENA, stim);
         uint16_t val = read_reg(INTENAR);
         checks.expect(((val >> 6) & 1u) == 1u,
-            "P12-SET-ENCODING (p.218, sol:7-interrupts.c22, opus:7-int.c18): bit15=1 with selector bit6=1 sets stored bit6");
+            "P12-SET-ENCODING (p.218, sol:7-interrupts.c22, opus:7-int.c18; also grades appendix B's reoffered sol:7-appB-intena.c3, sol:7-appB-intena.c4 -- chip and, together with P13-CLR-ENCODING below, function: this SET half plus P13's CLR half together are the clear/set interrupt-enable write port appendix B names, and chip ownership is structural, this file's only DUT being paula_intcontroller.v): bit15=1 with selector bit6=1 sets stored bit6");
     }
 
     // ========================================================================
@@ -590,7 +592,7 @@ int main(int argc, char** argv) {
         write_reg(INTENA, stim);
         uint16_t val = read_reg(INTENAR);
         checks.expect(((val >> 6) & 1u) == 0u,
-            "P13-CLR-ENCODING (p.218, sol:7-interrupts.c23, opus:7-int.c19): bit15=0 with selector bit6=1 clears stored bit6");
+            "P13-CLR-ENCODING (p.218, sol:7-interrupts.c23, opus:7-int.c19; also grades appendix B's reoffered sol:7-appB-intena.c4, function: this CLR half plus P12-SET-ENCODING's SET half above together are the clear/set interrupt-enable write port appendix B names): bit15=0 with selector bit6=1 clears stored bit6");
     }
 
     // ========================================================================
@@ -743,6 +745,43 @@ int main(int argc, char** argv) {
             " (7=inactive; any other value means the RTL treats INTEN as its own request source, matching Figure 7-4's "
             "reading rather than the prose's). Not graded -- the manual contradicts itself here.");
     }
+
+    // ========================================================================
+    // APPENDIX B REOFFER -- the four opus:7-appB bundled rows (c21/c23/c31/c32)
+    // each restate ONE appendix-B print row as a single claim id spanning four
+    // clauses: address, access direction, chip, and function. Every one of
+    // those four clauses does have a home above (address on P3; access
+    // direction on P4/P5/P6/P8; function on P12+P13/P11/P5-MIRRORS/
+    // P8-MIRRORS; chip riding structurally on those same function lines,
+    // since this file's only DUT is paula_intcontroller.v with no other
+    // chip's decode logic present) -- but no SINGLE assertion in this file
+    // grades the four-clause conjunction the printed row states as one
+    // sentence. Per this suite's convention that a multi-clause id is not
+    // partially kept on a citation that only covers part of it (the same
+    // shape as hrm/ch3-register-map-denise's opus:7-appB.c34 and
+    // hrm/ch5-audio-location-pointer's COVERAGE REPAIR 2), each bundled id
+    // below is declined, not weakened onto one of its own clauses' lines.
+    // ========================================================================
+    checks.record(
+        "APPB-BUNDLE-INTENA opus:7-appB.c31 (p.290): not asserted as the bundled row it is -- its four clauses each "
+        "have a home (address: P3-FOUR-DISTINCT-ADDRESSES; access direction: P4-INTENA-WRITE-ONLY, declined there for the "
+        "same reason; function and chip: P12-SET-ENCODING/P13-CLR-ENCODING) but no one assertion grades all four together. "
+        "Per this suite's multi-clause convention the bundled id is declined, not partially kept.");
+    checks.record(
+        "APPB-BUNDLE-INTENAR opus:7-appB.c21 (p.289): not asserted as the bundled row it is -- its four clauses each "
+        "have a home (address: P3-FOUR-DISTINCT-ADDRESSES; access direction: P5-INTENAR-READONLY; function and chip: "
+        "P5-INTENAR-MIRRORS) but no one assertion grades all four together. Per this suite's multi-clause convention the "
+        "bundled id is declined, not partially kept.");
+    checks.record(
+        "APPB-BUNDLE-INTREQ opus:7-appB.c32 (p.290): not asserted as the bundled row it is -- its four clauses each "
+        "have a home (address: P3-FOUR-DISTINCT-ADDRESSES; access direction: P6-INTREQ-WRITE-ONLY, declined there for the "
+        "same reason; function and chip: P11-BIT15-SETCLR-ALSO-INTREQ) but no one assertion grades all four together. Per "
+        "this suite's multi-clause convention the bundled id is declined, not partially kept.");
+    checks.record(
+        "APPB-BUNDLE-INTREQR opus:7-appB.c23 (p.289): not asserted as the bundled row it is -- its four clauses each "
+        "have a home (address: P3-FOUR-DISTINCT-ADDRESSES; access direction: P8-INTREQR-READONLY; function and chip: "
+        "P8-INTREQR-MIRRORS) but no one assertion grades all four together. Per this suite's multi-clause convention the "
+        "bundled id is declined, not partially kept.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
     delete dut;
