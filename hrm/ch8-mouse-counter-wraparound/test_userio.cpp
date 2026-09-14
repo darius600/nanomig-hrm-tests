@@ -189,14 +189,32 @@ int main(int argc, char** argv) {
     // ---- Fixture liveness (not a page-231 claim) --------------------------
     // The harness must prove it can deliver a known word on each of the two
     // counters, and that the two are not aliased, before anything reads one.
+    // These are graded through expect(), so per the (corrected) brief they
+    // get real stimulus mutations too -- a liveness check that cannot fail
+    // would report "the data path is live" whether or not it actually is.
+    // MUTATION harness:fixture-liveness-joy0dat-known-word stimulus red drove 6 steps into JOY0DAT's channel instead of 7 (comparator still checks for 7); measured (MUT=L1) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
+    // MUTATION harness:fixture-liveness-joy1dat-known-word stimulus red drove 12 steps into JOY1DAT's channel instead of 13 (comparator still checks for 13); measured (MUT=L2) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
+    // MUTATION harness:fixture-liveness-not-aliased stimulus red forced JOY1DAT's channel to the same driven count as JOY0DAT's (7 instead of 13), so the two independently-wired counters legitimately read equal; this unavoidably also flips harness:fixture-liveness-joy1dat-known-word (its 13 no longer arrives), since both checks are read off the same two measured words and there is no third, independent quantity to perturb -- measured (MUT=L3) 13 passed/3 failed -> 11 passed/5 failed, two lines flipped (documented, not concealed)
     {
         reset_counters();
-        drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 7, INC);  // JOY0DAT low byte
-        drive_quadrature(joy1_raw, idx_joy1x, 0, 2, 13, INC); // JOY1DAT low byte
+        int steps_j0 = 7;
+#ifdef MUT_L1
+        steps_j0 = 6;
+#endif
+        int steps_j1 = 13;
+#ifdef MUT_L2
+        steps_j1 = 12;
+#endif
+#ifdef MUT_L3
+        steps_j1 = steps_j0; // collapse the two channels' driven counts together
+#endif
+        drive_quadrature(joy2_raw, idx_joy2x, 0, 2, steps_j0, INC); // JOY0DAT low byte
+        drive_quadrature(joy1_raw, idx_joy1x, 0, 2, steps_j1, INC); // JOY1DAT low byte
         uint16_t j0 = read_reg(JOY0DAT_ADDR) & 0xFF;
         uint16_t j1 = read_reg(JOY1DAT_ADDR) & 0xFF;
-        note("fixture liveness: drove JOY0DAT low byte +7, JOY1DAT low byte +13 from a cleared baseline; read back " +
-             std::to_string(j0) + " and " + std::to_string(j1));
+        note("fixture liveness: drove JOY0DAT low byte +" + std::to_string(steps_j0) +
+             ", JOY1DAT low byte +" + std::to_string(steps_j1) +
+             " from a cleared baseline; read back " + std::to_string(j0) + " and " + std::to_string(j1));
         expect(j0 == 7,  "harness:fixture-liveness-joy0dat-known-word");
         expect(j1 == 13, "harness:fixture-liveness-joy1dat-known-word");
         expect(j0 != j1, "harness:fixture-liveness-not-aliased");
@@ -311,10 +329,15 @@ int main(int argc, char** argv) {
         expect(r1 == 100 && r2 == 100 && r3 == 100 && r4 == 100, "opus:8-limits.c15");
     }
     // MUTATION opus:8-limits.c15 stimulus green already RED (rows 3-4 measure 101, not 100); substituted row 1's proven-live 100-step transition through the same required-steps-equals-100 comparator to show it is not vacuously always-false
+    // MUTATION opus:8-limits.c15,substitute-check stimulus red broke the substitute's own transition (99 decrementing steps instead of the needed 100), leaving the comparator (v==100) untouched; measured (MUT=A6SUB) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
     {
         reset_counters();
         drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 200, INC);
-        drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 100, DEC);
+        int sub_steps = 100;
+#ifdef MUT_A6SUB
+        sub_steps = 99;
+#endif
+        drive_quadrature(joy2_raw, idx_joy2x, 0, 2, sub_steps, DEC);
         uint16_t v = read_reg(JOY0DAT_ADDR) & 0xFF;
         expect(v == 100, "opus:8-limits.c15,substitute-check");
     }
@@ -363,10 +386,15 @@ int main(int argc, char** argv) {
                "opus:8-limits.c18,opus:8-limits.c20,sol:8-mouse-limit.c15,sol:8-mouse-limit.c17");
     }
     // MUTATION opus:8-limits.c18,opus:8-limits.c20,sol:8-mouse-limit.c15,sol:8-mouse-limit.c17 stimulus green already RED (measured 101, not 100); substituted row 1's proven-live 100-step transition through the same required-steps-equals-100 comparator
+    // MUTATION opus:8-limits.c18,opus:8-limits.c20,sol:8-mouse-limit.c15,sol:8-mouse-limit.c17,substitute-check stimulus red broke the substitute's own transition (99 decrementing steps instead of the needed 100), leaving the comparator (v==100) untouched; measured (MUT=A9SUB) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
     {
         reset_counters();
         drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 200, INC);
-        drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 100, DEC);
+        int sub_steps = 100;
+#ifdef MUT_A9SUB
+        sub_steps = 99;
+#endif
+        drive_quadrature(joy2_raw, idx_joy2x, 0, 2, sub_steps, DEC);
         uint16_t v = read_reg(JOY0DAT_ADDR) & 0xFF;
         expect(v == 100, "opus:8-limits.c18,opus:8-limits.c20,sol:8-mouse-limit.c15,sol:8-mouse-limit.c17,substitute-check");
     }
@@ -383,10 +411,15 @@ int main(int argc, char** argv) {
                "opus:8-limits.c19,opus:8-limits.c21,sol:8-mouse-limit.c16,sol:8-mouse-limit.c18");
     }
     // MUTATION opus:8-limits.c19,opus:8-limits.c21,sol:8-mouse-limit.c16,sol:8-mouse-limit.c18 stimulus green already RED (measured 101, not 100); substituted row 2's proven-live 100-step transition through the same required-steps-equals-100 comparator
+    // MUTATION opus:8-limits.c19,opus:8-limits.c21,sol:8-mouse-limit.c16,sol:8-mouse-limit.c18,substitute-check stimulus red broke the substitute's own transition (99 incrementing steps instead of the needed 100), leaving the comparator (v==200) untouched; measured (MUT=A10SUB) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
     {
         reset_counters();
         drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 100, INC);
-        drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 100, INC);
+        int sub_steps = 100;
+#ifdef MUT_A10SUB
+        sub_steps = 99;
+#endif
+        drive_quadrature(joy2_raw, idx_joy2x, 0, 2, sub_steps, INC);
         uint16_t v = read_reg(JOY0DAT_ADDR) & 0xFF;
         expect(v == 200, "opus:8-limits.c19,opus:8-limits.c21,sol:8-mouse-limit.c16,sol:8-mouse-limit.c18,substitute-check");
     }
