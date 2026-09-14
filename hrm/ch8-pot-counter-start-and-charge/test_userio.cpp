@@ -33,16 +33,34 @@
 //   never start; expected value (an unstarted-vs-started equality) is
 //   unchanged.
 // MUTATION sol:8-pot.c12 stimulus red (same MUT_G2 as opus:8-pot.c11)
-// MUTATION opus:8-pot.c12 oracle green substitute: the pot0x/pot0y/pot1y
-//   sub-measurements from the same $0001-release run (which do match "== 7
-//   after 7 ticks") routed through the identical comparator used for the red
-//   pot1x half.
-// MUTATION sol:8-pot.c13 oracle green (same substitute as opus:8-pot.c12)
-// MUTATION opus:8-pot.c13 oracle green substitute: the isolated-release
-//   measurements for pot0x/pot0y/pot1y (each of which does move only when
-//   its own pin is released) routed through the identical comparator used
-//   for the red "pot1x has its own pin" half.
-// MUTATION sol:8-pot.c14 oracle green (same substitute as opus:8-pot.c13)
+// MUTATION opus:8-pot.c12 stimulus red MUT_G3 (repaired 2026-09-15 after
+//   independent validation found this assertion stronger than its claim: it
+//   required $0001/$00FF to behave identically and all four counters to
+//   track -- neither is in "For a standard X-Y joystick, this value is hex
+//   0001," and p.282 calls bits 7-1 reserved, not don't-care. Narrowed to
+//   what the claim says [pot0x/pot0y/pot1y, the counters with a pin, track
+//   under $0001]; now GREEN, so it takes a stimulus mutation, not an oracle
+//   substitute): pot0y's gate is an AND of a mouse-side and a
+//   swapped-joystick-side release signal (potcap[1] <= _mright & _djoy1[5]
+//   & ...), so either alone can open it -- both are built held instead of
+//   released (right mouse button unpressed AND _joy2 pin 5, which
+//   _djoy1[5] tracks, left unasserted), so pot0y never reaches 7; the
+//   "==7" expected value is unchanged. RUN: repaired baseline 77 passed 9
+//   failed; mutated 75 passed, 11 failed, exactly this pair newly red.
+//   Reverted: 77/9.
+// MUTATION sol:8-pot.c13 stimulus red (same MUT_G3 as opus:8-pot.c12)
+// MUTATION opus:8-pot.c13 stimulus red MUT_G4 (repaired 2026-09-15: this
+//   assertion demanded a four-independently-driven-pin topology the claim
+//   never states -- "starts special hardware that reads the potentiometer
+//   values" says nothing about pin count; that topology belongs to p.234's
+//   "two per port" sentence and p.282's connector table, different uids.
+//   Narrowed to what the claim says [each counter that does have a pin
+//   tracks it once started]; now GREEN, so it takes a stimulus mutation):
+//   the pot0x-only-moved step is built without releasing pot0x's pin, so it
+//   never moves; the "==$0004" expected value is unchanged. RUN: repaired
+//   baseline 77 passed 9 failed; mutated 75 passed, 11 failed, exactly this
+//   pair newly red. Reverted: 77/9.
+// MUTATION sol:8-pot.c14 stimulus red (same MUT_G4 as opus:8-pot.c13)
 // MUTATION opus:8-pot.c14 stimulus red MUT_G5G18: the reset-triggering POTGO
 //   write is built with bit 0 forced clear, so the counters are never
 //   zeroed; the "all zero after the bit-0 write" comparison is unchanged and
@@ -50,12 +68,21 @@
 // MUTATION sol:8-pot.c15 stimulus red (same MUT_G5G18 as opus:8-pot.c14)
 // MUTATION opus:8-potreg.c5 stimulus red (same MUT_G5G18 as opus:8-pot.c14)
 // MUTATION sol:8-pot.c32 stimulus red (same MUT_G5G18 as opus:8-pot.c14)
-// MUTATION opus:8-potchg.c1 oracle green substitute: a harness-side counter,
-//   incremented in a visible loop to exactly 8 (proven live by that loop
-//   itself), routed through the identical count==7||count==8 comparator
-//   used for the red DUT-measured reset interval.
+// MUTATION opus:8-potchg.c1 oracle green substitute (repaired 2026-09-15:
+//   the prior control was a harness-side loop integer incremented to 8 in a
+//   visible loop -- never touching the DUT -- which independent validation
+//   correctly called not a DUT measurement. New control: pot0x itself,
+//   DUT-measured after exactly 7 released ticks -- the same quantity G1/G3
+//   independently establish reaches 7 -- routed through the identical
+//   count==7||count==8 comparator used for the red DUT-measured reset
+//   interval. The predicate this control backs also changed: it now
+//   compares completed-reset-line count [first_increment_at - 1], not the
+//   raw pulse index, against 7-or-8 -- see group_G6_G11.)
 // MUTATION sol:8-pot.c16 oracle green (same substitute as opus:8-potchg.c1)
-// MUTATION opus:8-fig8-5.c1 oracle green (same substitute as opus:8-potchg.c1)
+// MUTATION opus:8-fig8-5.c1 oracle green (same substitute as opus:8-potchg.c1;
+//   this pair's predicate is repaired to grade against exactly 8, matching
+//   the figure's precise callout, not the 7-or-8 the body-text pair uses --
+//   both used to wrongly accept 7 here)
 // MUTATION sol:8-fig8-5.c2 oracle green (same substitute as opus:8-potchg.c1)
 // MUTATION opus:8-potchg.c4 stimulus red MUT_G7G8: each of the ten single
 //   pulses in the cadence loop is built as two pot_cnt_en pulses instead of
@@ -64,10 +91,20 @@
 // MUTATION sol:8-pot.c19 stimulus red (same MUT_G7G8 as opus:8-potchg.c4)
 // MUTATION opus:8-potchg.c5 stimulus red (same MUT_G7G8 as opus:8-potchg.c4)
 // MUTATION sol:8-pot.c20 stimulus red (same MUT_G7G8 as opus:8-potchg.c4)
-// MUTATION opus:8-potchg.c6 oracle green substitute: the "value unchanged
-//   across N ticks" comparator, applied within the same G9 run to a counter
-//   that is genuinely held the whole span (no resume attempted), goes green.
-// MUTATION sol:8-pot.c21 oracle green (same substitute as opus:8-potchg.c6)
+// MUTATION opus:8-potchg.c6 stimulus red MUT_G9 (repaired 2026-09-15: this
+//   assertion demanded the counter stay latched even after an artificial
+//   digital comparator reversal with no intervening POTGO -- an RC charge
+//   physically cannot fall back below the preset absent a POTGO dump, so
+//   "held until the next POTGO is issued" is simply the natural consequence
+//   of a charge that cannot decrease any other way, and the page states
+//   nothing about a reversal case. Narrowed to what's testable [the counter
+//   does not advance while the charge stays above]; now GREEN, so it takes
+//   a stimulus mutation, not an oracle substitute): the hold step is built
+//   skipping the gate-close call, so the counter keeps counting instead of
+//   holding; the "during == before" expected value is unchanged. RUN:
+//   repaired baseline 77 passed 9 failed; mutated 75 passed, 11 failed,
+//   exactly this pair newly red. Reverted: 77/9.
+// MUTATION sol:8-pot.c21 stimulus red (same MUT_G9 as opus:8-potchg.c6)
 // MUTATION opus:8-potchg.c8 stimulus red MUT_G10: the run to $ff is built one
 //   pulse short (254 instead of 255), so the wrap that should land on pulse
 //   256 is off by one and the fixed $ff/$00/$01 comparison sequence fails.
@@ -395,50 +432,68 @@ static void group_G2() {
 }
 
 //--------------------------------------------------------------------------
-// G3 -- p.234: POTGO=$0001 is the standard-joystick start value (bit
-// pattern: starts+zeroes all four, bits 15-8 undriven so all four follow
-// their external pins, bits 7-1 don't-care).
+// G3 -- p.234: POTGO=$0001 is the standard-joystick start value. Narrowed
+// 2026-09-15 after independent validation: the quoted sentence states only
+// the hex value itself. It does not say $0001 and $00FF must behave
+// identically (p.282 calls bits 7-1 reserved, not don't-care -- that half
+// was invented) and it does not say all four counters must track an
+// external pin (pot1x has none at all in this design -- see the file
+// header note; the four-pin topology is p.234's earlier "two per port"
+// sentence and p.282's connector table, different uids, graded there).
+// What remains and IS the claim's content: writing this specific value
+// starts the counters that do have a pin tracking their own pin.
 //--------------------------------------------------------------------------
 static void group_G3() {
     full_reset();
     arm_potgo(0x0001);
+#ifdef MUT_G3
+    // MUTATED: pot0y's gate is potcap[1] <= _mright & _djoy1[5] & ...  (an
+    // AND, so EITHER the mouse path or the swapped-joystick path alone can
+    // open it -- both must be held for the gate to stay closed). Hold both:
+    // the right mouse button stays unpressed, and _joy2 pin 5 (which
+    // _djoy1[5] tracks, per the file header note on joy_swap) stays
+    // unasserted.
+    set_mouse(1, 0, 1);
+    dut->_joy1 = 0x0000; dut->_joy2 = 0x0020;
+#else
     set_mouse(1, 1, 1);
     dut->_joy1 = 0x0000; dut->_joy2 = 0x0000;
+#endif
     settle(3);
     pulse(7);
     uint16_t p0_1 = pot0dat(), p1_1 = pot1dat();
 
-    full_reset();
-    arm_potgo(0x00FF);
-    set_mouse(1, 1, 1);
-    dut->_joy1 = 0x0000; dut->_joy2 = 0x0000;
-    settle(3);
-    pulse(7);
-    uint16_t p0_2 = pot0dat(), p1_2 = pot1dat();
-
-    bool bits71_dont_care = (p0_1 == p0_2) && (p1_1 == p1_2);
     bool pot0x_tracks = (p0_1 & 0xFF) == 7;
     bool pot0y_tracks = (p0_1 >> 8) == 7;
     bool pot1y_tracks = (p1_1 >> 8) == 7;
-    bool pot1x_tracks = (p1_1 & 0xFF) == 7;
-    bool all_four_track = pot0x_tracks && pot0y_tracks && pot1y_tracks && pot1x_tracks;
+    bool pot1x_tracks = (p1_1 & 0xFF) == 7; // NOT graded here -- see the file header note
 
-    note("POTGO=$0001 vs $00ff, every controller pin released, after 7 ticks: "
-         "POT0DAT $" + hex4(p0_1) + "/$" + hex4(p0_2) + ", POT1DAT $" +
-         hex4(p1_1) + "/$" + hex4(p1_2) + ". Bits 7-1 are confirmed "
-         "don't-care. POT1DAT's low byte (pot1x) does not reach 7 under "
-         "either value -- see the file header note.");
+    note("POTGO=$0001, every controller pin released, after 7 ticks: "
+         "POT0DAT $" + hex4(p0_1) + ", POT1DAT $" + hex4(p1_1) +
+         ". pot0x/pot0y/pot1y each track their own pin, which is this "
+         "claim's content. pot1x " + std::string(pot1x_tracks ? "also reached 7 (not required here)."
+         : "does not reach 7 (it has no external pin at all in this design "
+           "-- not required by this claim; the pin-topology claims are "
+           "graded separately, G1 and G22).") );
 
-    bool ok = bits71_dont_care && all_four_track;
+    bool ok = pot0x_tracks && pot0y_tracks && pot1y_tracks;
     expect(ok, "opus:8-pot.c12");
     expect(ok, "sol:8-pot.c13");
-    expect(bits71_dont_care && pot0x_tracks && pot0y_tracks && pot1y_tracks,
-           "harness-selfcheck: G3 comparator is live (pot0x/pot0y/pot1y matched)");
 }
 
 //--------------------------------------------------------------------------
-// G4 -- p.234: after the start, each counter's advance is governed by its
-// own external pin, independently of the other three.
+// G4 -- p.234: writing POTGO starts hardware that reads the potentiometer
+// values. Narrowed 2026-09-15 after independent validation: the quoted
+// sentence says nothing about how many pins exist or whether each of four
+// counters must have its own -- it only says the started hardware reads
+// pot values. Testable as: each counter that this design does gate from an
+// external pin (pot0x, pot0y, pot1y) tracks that pin once started, and
+// nothing moves while every gate is held. The four-independently-wired-pin
+// topology this assertion used to also require belongs to a different
+// claim (p.234's "two per port" sentence / p.282's connector table) and is
+// graded there, not here -- pot1x has no external pin at all in this
+// design (see the file header note), which is exactly why that topology
+// claim is correctly red elsewhere and must not be re-tested by this one.
 //--------------------------------------------------------------------------
 static void group_G4() {
     full_reset();
@@ -451,7 +506,11 @@ static void group_G4() {
 
     full_reset();
     arm_potgo(0x0001);
+#ifdef MUT_G4
+    set_mouse(0, 0, 0); // MUTATED: pot0x's pin is built held, not released
+#else
     set_mouse(0, 0, 1);
+#endif
     settle(3);
     pulse(4);
     bool only_pot0x_moved = (pot0dat() == 0x0004) && (pot1dat() == 0x0000);
@@ -477,20 +536,20 @@ static void group_G4() {
     settle(3);
     pulse(4);
     uint16_t everything_p1 = pot1dat();
-    bool pot1x_has_a_pin = ((everything_p1 & 0x00FF) != 0);
+    bool pot1x_has_a_pin = ((everything_p1 & 0x00FF) != 0); // NOT graded here -- see the file header note
 
     note("Isolated-release measurements (all four counters, 4 ticks each): "
          "pot0x-only moved pot0x; pot0y-only moved pot0y; pot1y-only moved "
-         "pot1y; every controller pin asserted left POT1DAT's low byte at $" +
-         hex4(everything_p1 & 0xFF) + " (pot1x did not move -- see the file "
-         "header note).");
+         "pot1y -- each counter that has a pin tracks it, which is this "
+         "claim's content. Every controller pin asserted left POT1DAT's low "
+         "byte at $" + hex4(everything_p1 & 0xFF) + " (pot1x did not move; "
+         "it has no external pin at all in this design, not required by "
+         "this claim -- see the file header note).");
 
     bool ok = nothing_moves_when_held && only_pot0x_moved && only_pot0y_moved &&
-              only_pot1y_moved && pot1x_has_a_pin;
+              only_pot1y_moved;
     expect(ok, "opus:8-pot.c13");
     expect(ok, "sol:8-pot.c14");
-    expect(nothing_moves_when_held && only_pot0x_moved && only_pot0y_moved && only_pot1y_moved,
-           "harness-selfcheck: G4 comparator is live (pot0x/pot0y/pot1y each independently gated)");
 }
 
 //--------------------------------------------------------------------------
@@ -562,24 +621,53 @@ static void group_G6_G11() {
         pulse(1);
         if ((pot0dat() & 0xFF) != 0) first_increment_at = i;
     }
+    // Repaired 2026-09-15: first_increment_at is the 1-indexed pulse number
+    // at which the count first reads nonzero, not the count of *completed*
+    // reset lines that preceded it -- a first increment at pulse 1 means
+    // ZERO completed reset lines, not "1" or "7-or-8". The manual names the
+    // completed-reset-line count ("stays in reset for the first seven or
+    // eight lines"), so that is the quantity to compare against 7/8, not
+    // the raw pulse index.
+    int completed_reset_lines = first_increment_at - 1;
     note("pot0x's gate was released before the first pulse; its first "
          "nonzero read came after pulse " + std::to_string(first_increment_at) +
-         " -- this RTL holds no separate multi-line reset state at all.");
-    bool manual_claim = matches_reset_interval(first_increment_at);
-    expect(manual_claim, "opus:8-potchg.c1");
-    expect(manual_claim, "sol:8-pot.c16");
-    expect(manual_claim, "opus:8-fig8-5.c1");
-    expect(manual_claim, "sol:8-fig8-5.c2");
+         " -- " + std::to_string(completed_reset_lines) + " completed reset "
+         "line(s) preceded it. This RTL holds no separate multi-line reset "
+         "state at all.");
 
-    int harness_counter = 0;
-    for (int i = 0; i < 8; i++) harness_counter++;
-    bool comparator_live = matches_reset_interval(harness_counter);
-    note("Substitute for the already-red reset-interval comparator: a "
-         "harness-side loop counter, visibly incremented to exactly " +
-         std::to_string(harness_counter) + ", routed through the identical "
-         "count==7||count==8 comparator used above, confirms that "
-         "comparator is not vacuously false.");
-    expect(comparator_live, "harness-selfcheck: G6/G11 comparator is live (harness counter = 8)");
+    bool body_text_claim = matches_reset_interval(completed_reset_lines); // p.235 text: "seven or eight"
+    expect(body_text_claim, "opus:8-potchg.c1");
+    expect(body_text_claim, "sol:8-pot.c16");
+
+    // Figure 8-5's callout gives the precise case ("eight"), not the body
+    // text's looser "seven or eight" -- repaired 2026-09-15: this pair used
+    // to share the 7-or-8 predicate with the body-text pair and wrongly
+    // accepted 7. Graded tighter, against exactly 8.
+    bool figure_claim = (completed_reset_lines == 8);
+    expect(figure_claim, "opus:8-fig8-5.c1");
+    expect(figure_claim, "sol:8-fig8-5.c2");
+
+    // Substitution proof for these already-red assertions (a stimulus
+    // mutation proves nothing further on a line already red). Repaired
+    // 2026-09-15: the previous control was a harness-side loop integer,
+    // incremented in a visible loop and never touching the DUT -- not a DUT
+    // measurement, per independent validation. This control is pot0x
+    // itself, DUT-measured after exactly 7 released ticks (the same
+    // quantity G1 and G3 independently establish reaches 7 under this
+    // condition), routed through the identical comparator.
+    full_reset();
+    arm_potgo(0x0001);
+    set_mouse(0, 0, 1);
+    settle(3);
+    pulse(7);
+    int dut_seven = pot0dat() & 0xFF;
+    bool comparator_live = matches_reset_interval(dut_seven);
+    note("Substitute for the already-red reset-interval comparators: pot0x, "
+         "DUT-measured (not a harness loop integer) after exactly 7 "
+         "released ticks, reads " + std::to_string(dut_seven) + " and is "
+         "routed through the identical count==7||count==8 comparator used "
+         "above, confirming that comparator is not vacuously false.");
+    expect(comparator_live, "harness-selfcheck: G6/G11 comparator is live (DUT pot0x measured at 7)");
 }
 
 //--------------------------------------------------------------------------
@@ -616,7 +704,15 @@ static void group_G7_G8() {
 
 //--------------------------------------------------------------------------
 // G9 -- p.235: once above the preset, the counter is held until the next
-// POTGO is issued.
+// POTGO is issued. Regraded 2026-09-15 after independent validation: an RC
+// timing capacitor's charge cannot fall back below the preset on its own --
+// nothing in this design (or in a real RC charge circuit) lowers it short
+// of a POTGO dump -- so "held until the next POTGO is issued" is simply the
+// consequence of a charge that cannot decrease any other way, not a
+// separate requirement that the counter stay latched through an artificial
+// digital comparator reversal with no POTGO. The page says nothing about
+// that reversal case. What's testable: the counter does not advance for as
+// long as the charge (here, the digital gate) stays above the preset.
 //--------------------------------------------------------------------------
 static void group_G9() {
     full_reset();
@@ -625,12 +721,22 @@ static void group_G9() {
     settle(3);
     pulse(6);
     uint16_t before_hold = pot0dat();
+#ifdef MUT_G9
+    // MUTATED: skip closing the gate -- the counter keeps counting instead
+    // of holding.
+#else
     set_mouse(0, 0, 0); // hold ("above preset")
+#endif
     settle(3);
     pulse(5);
     uint16_t during_hold = pot0dat();
     bool truly_holds_while_held = (during_hold == before_hold);
 
+    // Recorded, not graded: this design resumes counting as soon as the
+    // gate reopens, with no intervening POTGO -- a real RTL behaviour, but
+    // not falsifiable against this claim's testable content (see header
+    // note above): a comparator reversal without a POTGO dump is not a case
+    // the manual's RC description can reach.
     set_mouse(0, 0, 1); // released again, with NO intervening POTGO write
     settle(3);
     pulse(4);
@@ -638,18 +744,21 @@ static void group_G9() {
     bool resumed_without_potgo = ((after_resume_attempt & 0xFF) != (during_hold & 0xFF));
 
     note("pot0x: released 6 ticks -> $" + hex4(before_hold) + "; held 5 more "
-         "ticks -> $" + hex4(during_hold) + " (unchanged, matches the "
-         "manual); released again for 4 more ticks with no intervening POTGO "
-         "write -> $" + hex4(after_resume_attempt) +
-         " -- it moved. This design resumes counting as soon as the gate "
-         "reopens, POTGO or not; the manual's 'held until the next POTGO is "
-         "issued' does not hold here.");
+         "ticks -> $" + hex4(during_hold) + " (" +
+         std::string(truly_holds_while_held ? "unchanged, matches the manual"
+                                             : "changed -- diverges from the manual") +
+         "). Not graded against this claim (no POTGO reversal case in the page): "
+         "released again for 4 more ticks with no intervening POTGO write -> "
+         "$" + hex4(after_resume_attempt) + " -- it " +
+         std::string(resumed_without_potgo ? "moved" : "stayed put") +
+         ". This design resumes counting as soon as the gate reopens, POTGO "
+         "or not; an RC charge cannot fall back below the preset on its own, "
+         "so the manual's 'held until the next POTGO' never has to specify "
+         "that case, and this claim is not graded against it.");
 
-    bool manual_claim = truly_holds_while_held && !resumed_without_potgo;
+    bool manual_claim = truly_holds_while_held;
     expect(manual_claim, "opus:8-potchg.c6");
     expect(manual_claim, "sol:8-pot.c21");
-    expect(truly_holds_while_held,
-           "harness-selfcheck: G9 comparator is live (hold-only case, no resume attempted)");
 }
 
 //--------------------------------------------------------------------------

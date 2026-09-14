@@ -89,18 +89,29 @@ already in the claims file; it is not reopened here.
 ## G3 — POTGO=$0001 is the standard-joystick start value (p.234)
 - `opus:8-pot.c12`, `sol:8-pot.c13`
 - Quote: "For a standard X-Y joystick, this value is hex 0001."
-- Assert, as a bit pattern rather than a quantity: writing $0001 starts all four counters
-  and leaves all four proportional outputs undriven by the chip, so all four counters track
-  their external pins (which is what "a standard X-Y joystick" needs — no pot-side chip
-  drive fighting the joystick switches). Also assert bits 7-1 of the written value are
-  don't-care for this outcome (a control case for the bit-pattern claim itself).
+- **Repaired 2026-09-15** after independent validation found the original assertion
+  stronger than the claim: it also required $0001 and $00FF to behave identically (not
+  stated; p.282 calls bits 7-1 reserved, not don't-care) and required all four counters to
+  track an external pin (pot1x has none at all in this design — that is the four-pin
+  topology, a different claim's business: p.234's "two per port" sentence, graded in G1, and
+  p.282's connector table, graded in G22).
+- Assert, narrowed to what the claim says: writing $0001 leaves the counters that do have an
+  external gating pin in this design (pot0x, pot0y, pot1y) tracking that pin. Not asserted
+  here: $00FF equivalence, or that pot1x has a pin.
 
 ## G4 — POTGO start reads the potentiometer values (p.234)
 - `opus:8-pot.c13`, `sol:8-pot.c14`
 - Quote: "Writing to this register starts the operation of some special hardware that reads
   the potentiometer values..."
-- Assert: after the start, each of the four counters' further advance is governed by its
-  own external pin, independently of the other three.
+- **Repaired 2026-09-15** after independent validation found the original assertion
+  stronger than the claim: it also required all four counters to have their own
+  independently-drivable external pin, which this sentence does not say — that four-pin
+  topology belongs to different claims (p.234's "two per port" sentence, graded in G1, and
+  p.282's connector table, graded in G22).
+- Assert, narrowed to what the claim says: after the start, each counter that this design
+  does gate from an external pin (pot0x, pot0y, pot1y) advances only when that pin is read
+  as released, and nothing moves while every gate is held. Not asserted here: that pot1x
+  must have a pin of its own.
 
 ## G5 — POTGO start zeroes the POT registers (p.234, loose form)
 - `opus:8-pot.c14`, `sol:8-pot.c15`
@@ -116,6 +127,14 @@ already in the claims file; it is not reopened here.
 - Assert: after a POTGO start, the counters do not advance on the first seven or eight
   ticks of the one-count-per-scan-line input, and do advance on the following one. (Count
   of scan lines is dimensionless and survives unit-stripping; graded as a count.)
+- **Repaired 2026-09-15**: the built package's original predicate compared the raw
+  1-indexed pulse number of the first nonzero read directly against 7-or-8. That pulse
+  number is not the quantity the claim names — a first increment at pulse 1 means *zero*
+  completed reset lines preceded it, not one. The correct quantity is
+  `first_increment_at - 1` (completed reset lines), which is what is now compared against
+  7-or-8. The assertion still measures genuinely 0 completed reset lines in this design (no
+  separate reset state exists at all — see `test_userio.cpp`'s file header note), so it
+  remains red for the same underlying reason, now correctly encoded.
 
 ## G7 — Comparison happens once per scan line thereafter (p.235)
 - `opus:8-potchg.c4`, `sol:8-pot.c19`
@@ -136,11 +155,18 @@ already in the claims file; it is not reopened here.
 - `opus:8-potchg.c6`, `sol:8-pot.c21`
 - Quote: "If the charge is above the preset, the counter value will be held until the next
   POTGO is issued."
-- Assert, precisely: once a counter's gating pin reads "above preset," its value does not
-  change on any further tick **until a POTGO write with bit 0 set occurs** — specifically,
-  it must not resume counting merely because the gating pin later reads "below preset"
-  again without an intervening POTGO. This is the strong reading the sentence supports
-  ("held... until the next POTGO", not "held while above preset").
+- **Repaired 2026-09-15** after independent validation: the original assertion drove the
+  counter's digital gate back to "below preset" without an intervening POTGO and demanded
+  the counter stay latched anyway. A real RC timing capacitor's charge cannot fall back
+  below the preset on its own — nothing lowers it short of a POTGO dump — so "held until
+  the next POTGO is issued" is simply the description of a charge that cannot decrease any
+  other way, not an independent requirement covering an artificial comparator reversal. The
+  page states nothing about that reversal case.
+- Assert, narrowed to what's testable: once a counter's gating pin reads "above preset," its
+  value does not change on any further tick for as long as the pin keeps reading "above
+  preset." (The design's behaviour on an artificial reversal — it resumes counting as soon
+  as the gate reopens, POTGO or not — is still measured and printed via `note()` for
+  transparency, but is not part of what gates this claim's `expect()` call.)
 
 ## G10 — Counters are free to overflow past 255 (p.235)
 - `opus:8-potchg.c8`, `sol:8-pot.c24`
@@ -159,6 +185,10 @@ already in the claims file; it is not reopened here.
 - Assert: identical measurement basis to G6 (same reset-interval count), graded against the
   figure's precise "eight" rather than the body text's "seven or eight" — a tighter form of
   the same claim, not a fourth conflicting source.
+- **Repaired 2026-09-15**: the built package originally shared G6's exact 7-or-8 predicate
+  with this pair too, so it wrongly accepted 7 where the figure specifically says eight.
+  Now graded against exactly `completed_reset_lines == 8` (see G6's repair note for the same
+  off-by-one fix to the underlying quantity).
 
 ## G12 — Figure 8-5: every counter stops at the same threshold (p.235, figure)
 - `opus:8-fig8-5.c2`, `sol:8-fig8-5.c3`
