@@ -208,6 +208,35 @@
 //     to the display windows described above."
 //   Tested by VERTICAL-BITPLANE-DMA-TIMING-MATCHES-DISPLAY-WINDOW.
 //
+// -- LATE ADDITION, routed 14.09.2026 from chapter 7's lot (not part of this
+//    package's original 63, and not from this package's own claims.jsonl --
+//    see AUFTRAG-ch3-vertical-display-window.md, a correction to an earlier
+//    sheet that misread the routing field's parenthesis as a destination) --
+//    p.219, two readers' versions of one sentence immediately following the
+//    vertical-blanking-range claims already graded by
+//    hrm/ch7-vertb-vertical-blank-timing/ (built on agnus_beamcounter, a
+//    different module; sol:7-interrupts.c34-c38 / opus:7-int.c31-c35 there) --
+//   sol:7-interrupts.c39 (sol p219): "After the minimum vertical blanking
+//     range, you can control where the display actually starts by using the
+//     DIWSTRT (display window start) register to extend the effective
+//     vertical blanking time."
+//   opus:7-int.c36 (opus p219): same sentence, opus's own extraction.
+//   Compound claim; this fixture has only the display-start half. The
+//   "you can control where the display actually starts by using DIWSTRT"
+//   half is genuinely demonstrated by the already-graded
+//   VSTART-LIVES-IN-DIWSTRT-BITS-15-8 (+1 shifts the window by exactly 1
+//   line): moving DIWSTRT's value moves the display-start boundary by
+//   exactly the expected amount, which is what "control ... by using
+//   DIWSTRT" means. The "extend the effective vertical blanking time" half
+//   needs a vertical-blanking signal, which this module's port list (see
+//   BOUNDARY above) does not have -- its only output is dma, gated on the
+//   display window, not on any blanking signal. Declined with a reason
+//   rather than graded here or forced onto a citation that does not fit;
+//   see the checks.record() call immediately after that assertion.
+//   Tested (display-start half only) by VSTART-LIVES-IN-DIWSTRT-BITS-15-8
+//   (+1 shifts the window by exactly 1 line); blanking half recorded, not
+//   asserted, on this fixture.
+//
 // -- NOT ASSERTED (1 claim, needs a wider boundary) --
 //   3-resolution.c16 (sol p50, fig 3-5): "the combined display has 400
 //     lines in the same physical space as a 200-line noninterlaced
@@ -370,6 +399,13 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
+    // Added 14.09.2026 to receive the routed p.219 DIWSTRT-vs-blanking claims
+    // below (AUFTRAG-ch3-vertical-display-window.md): declines a claim, or
+    // half of one, with a stated reason instead of dropping it silently.
+    // Prints, counts nothing (neither passed nor failed) -- same signature
+    // and behaviour already used this way in ~30 other packages in this
+    // suite (e.g. hrm/ch7-vertb-vertical-blank-timing/test_agnus_beamcounter.cpp).
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -491,8 +527,45 @@ int main(int argc, char** argv) {
             "moves the start boundary from line $2C to line $2D, not "
             "anywhere else -- 'Vertical position in bits 8 through 15 "
             "(high order bits)' (p.64), 'the value for VSTART into bits 8 "
-            "through 15' (p.77). 3-sum.c15, 3-summary.c2, 3-big.c28 .");
+            "through 15' (p.77); and this is the same control p.219 "
+            "describes in different words -- 'you can control where the "
+            "display actually starts by using the DIWSTRT ... register' -- "
+            "raising the byte by exactly 1 moves the start by exactly 1 "
+            "line, demonstrating that control directly. 3-sum.c15, "
+            "3-summary.c2, 3-big.c28, sol:7-interrupts.c39, "
+            "opus:7-int.c36 (display-start half only -- see the recorded "
+            "blanking half immediately below).");
     }
+
+    // ---- sol:7-interrupts.c39 / opus:7-int.c36 (p.219, two readers' versions
+    // ---- of one sentence, routed here 14.09.2026 -- see
+    // ---- AUFTRAG-ch3-vertical-display-window.md): "After the minimum
+    // ---- vertical blanking range, you can control where the display
+    // ---- actually starts by using the DIWSTRT (display window start)
+    // ---- register to extend the effective vertical blanking time." A
+    // ---- compound claim, graded here only on its display-start half (the
+    // ---- expect() immediately above); the blanking half is out of this
+    // ---- fixture's boundary and recorded, not asserted --
+    checks.record(
+        "sol:7-interrupts.c39, opus:7-int.c36 (p.219): the 'extend the "
+        "effective vertical blanking time' half is NOT graded on this "
+        "fixture. agnus_bitplanedma has exactly one output port, dma, "
+        "gated through vdiwena/ddfrun on the display window (VSTART/VSTOP) "
+        "-- it has no vertical-blanking signal of its own to measure "
+        "'blanking time' against, extended or otherwise (see BOUNDARY "
+        "above: the port list names no such output). Vertical blanking is "
+        "agnus_beamcounter's vbl, a different module -- already graded by "
+        "hrm/ch7-vertb-vertical-blank-timing/ (P2-P5: NTSC 20 lines / PAL "
+        "25 lines minimum, both ranges starting at line 0) -- and that "
+        "package's own vbl computation (vpos<=vbstop) does not read DIWSTRT "
+        "either, so no package in this suite currently holds a fixture that "
+        "can watch a real blanking signal move in response to a DIWSTRT "
+        "write. Declined here with this stated reason rather than graded on "
+        "a signal this fixture does not have. The display-start half of the "
+        "same sentence -- 'you can control where the display actually "
+        "starts by using DIWSTRT' -- IS this fixture's job and is graded "
+        "above, on VSTART-LIVES-IN-DIWSTRT-BITS-15-8 (+1 shifts the window "
+        "by exactly 1 line).");
 
     // ---------------- VSTOP-LIVES-IN-DIWSTOP-BITS-15-8 (p.64,79,91) ----------------
     {
