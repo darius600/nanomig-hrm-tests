@@ -558,7 +558,8 @@ int main(int argc, char** argv) {
         checks.expect(
             ((vhposr >> 8) & 0xFF) == 0x37,
             "VHPOSR-BITS-15-8-ARE-V7-V0 (p.216 sol:7-beam.c10, opus:7-bp.c12; "
-            "p.285 sol:7-appA-vhpos.c9, opus:7-appA-beam.c3): VHPOSR bits "
+            "p.285 sol:7-appA-vhpos.c9, opus:7-appA-beam.c3; "
+            "p.238 opus:8-lpen.c25, sol:8-pen.c26): VHPOSR bits "
             "15:8 carry vpos[7:0] "
             "(V7-V0) -- forced 0x37, measured " + hex16(vhposr) + ".");
     }
@@ -574,7 +575,8 @@ int main(int argc, char** argv) {
         checks.expect(
             (vhposr & 0xFF) == 0x5A,
             "VHPOSR-BITS-7-0-ARE-H8-H1 (p.216 sol:7-beam.c11, opus:7-bp.c13; "
-            "p.285 sol:7-appA-vhpos.c10, opus:7-appA-beam.c4): VHPOSR bits "
+            "p.285 sol:7-appA-vhpos.c10, opus:7-appA-beam.c4; "
+            "p.238 opus:8-lpen.c26, sol:8-pen.c27): VHPOSR bits "
             "7:0 carry hpos[8:1] "
             "(H8-H1) -- forced 0x5A, measured " + hex16(vhposr) + ".");
     }
@@ -658,7 +660,7 @@ int main(int argc, char** argv) {
 #endif
         checks.expect(
             msw_ok,
-            "MSW-IS-VPOSR-VPOSW (p.216 sol:7-beam.c17): within each long-word pair, VPOSR ($004) "
+            "MSW-IS-VPOSR-VPOSW (p.216 sol:7-beam.c17; p.238 opus:8-lpen.c27, sol:8-pen.c28): within each long-word pair, VPOSR ($004) "
             "sits below VHPOSR ($006) and VPOSW ($02A) sits below VHPOSW "
             "($02C) -- the lower/most-significant address in each pair is "
             "VPOSR's or VPOSW's, per agnus_beamcounter.v:60-63's own "

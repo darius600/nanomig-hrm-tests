@@ -679,7 +679,7 @@ int main(int argc, char** argv) {
             "hpos-derived low byte of data_out read at $006 unchanged -- the "
             "vpos/long_frame content is decoded AT $004, not aliased "
             "elsewhere -- 'VPOSR        *004   R     A (E)      Read vert "
-            "most signif. bit (and frame flop)' (p.289). B-vposr.addr, sol:7-appB-vposr.c1 .");
+            "most signif. bit (and frame flop)' (p.289). B-vposr.addr, sol:7-appB-vposr.c1. Chapter 8 prints the same address on a second page -- 'VPOSR ($DFF004) Read light pen position (high order bits)' (p.229) -- opus:8-regs.c17, sol:8-reg.c19 .");
     }
 
     // ================= VHPOSR-ADDRESS-006 =================
@@ -702,7 +702,7 @@ int main(int argc, char** argv) {
             "no horizontal component at all) -- the hpos content is decoded "
             "AT $006, not aliased elsewhere -- 'VHPOSR       *006   R     A "
             "          Read vert and horiz. position of beam' (p.289). "
-            "B-vhposr.addr, sol:7-appB-vhposr.c1 .");
+            "B-vhposr.addr, sol:7-appB-vhposr.c1. Chapter 8 prints the same address on a second page -- 'VHPOSR ($DFF006) Read light pen position (low order bits)' (p.229) -- opus:8-regs.c19, sol:8-reg.c21 .");
     }
 
     // ---- VPOSW / VHPOSW: write registers, tested by address-decode

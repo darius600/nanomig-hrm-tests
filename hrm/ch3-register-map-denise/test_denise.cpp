@@ -587,7 +587,7 @@ int main(int argc, char** argv) {
             "'COLOR00 180 w D Color table 00' / 'COLOR01 182 w D Color "
             "table 01' (p.292). A-bplcon.c1, A-bplcon0.addr, B-bplcon0.addr, "
             "B-subject.c110, A-color.c1, A-colorxx.addr, B-color00.addr, "
-            "B-subject.c164, B-color01.addr, B-subject.c168, opus:7-appA-bplcon2.c2.");
+            "B-subject.c164, B-color01.addr, B-subject.c168, opus:7-appA-bplcon2.c2. Chapter 8 prints the same address on a second page -- 'BPLCON0 ($DFF100) Bit 3 enables the light pen latch' (p.229); its ADDRESS half is what this assertion grades, its bit-3 half is not asserted here -- opus:8-regs.c15, sol:8-reg.c17.");
     }
 
     // =========================================================================
