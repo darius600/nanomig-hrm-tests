@@ -122,58 +122,78 @@ quote: "                  100         200     Down (Right)"
 Assertion: 100 incrementing state changes from 100 land the counter at 200.
 Expected: GREEN. Second control case, opposite direction of edges from A7.
 
-### A9 — Table 8-2 row 3 + footnote *: previous 200, current 45
-uids: `opus:8-limits.c18`, `opus:8-limits.c20`, `sol:8-mouse-limit.c15`,
-`sol:8-mouse-limit.c17`
-quote (row, opus c18): "                  200          45       Down *"
+### A9a — Table 8-2 row 3 + footnote *, count half: previous 200, current 45
+uids: `opus:8-limits.c20`, `sol:8-mouse-limit.c17`
 quote (footnote, opus c20): "   *  Because 200-45 = 155, which is more than
 127, the true count must be 255 - ( 200-45) = 100; the direction is down."
-The bare row (200→45, "Down") states no edge count by itself — any byte is
-reachable from any other on a wrapping counter for *some* edge count, which
-would be an unfalsifiable claim on its own. The footnote is what turns this
-into a concrete, falsifiable number: it claims the "true count" — the number
-of state changes needed to realize this transition — is 100. That is the
-proposition graded here, row and footnote together, as the reader's own
-`classify.split` field describes them (measured hardware half + manual's
-reading-rule half of one worked example).
+The footnote is what turns the bare row into a concrete, falsifiable number:
+it claims the "true count" — the number of state changes needed to realize
+this transition — is 100. That is the proposition graded here.
 Assertion: the number of quadrature state changes actually required to move
 the counter from 200 to 45 equals the manual's stated true count, 100.
 Expected: **RED**. On a mod-256 counter, reaching 45 from 200 takes 101 state
 changes (200 + 101 = 301 ≡ 45 mod 256), not 100 — the manual's formula uses
 255 where the hardware's modulus is 256. Whether the printed page is wrong is
 for Amiga specialists, not for this suite; the discrepancy is what is
-gradeable and is reported red, unadjusted. Which phase order the harness
-drives to move the count that way is a step-2 (post-RTL) detail; this
-specification commits only to the arithmetic being tested.
+gradeable and is reported red, unadjusted.
 
-### A10 — Table 8-2 row 4 + footnote **: previous 45, current 200
-uids: `opus:8-limits.c19`, `opus:8-limits.c21`, `sol:8-mouse-limit.c16`,
-`sol:8-mouse-limit.c18`
-quote (row, opus c19, full table as extracted): "                Previous
-Current\n                 Count       Count     Direction\n                --------
--------    ---------\n                  200         100      Up (Left)\n
-100         200     Down (Right)\n                  200          45       Down
-*\n                   45         200        Up **"
+### A9b — Table 8-2 row 3, direction half: previous 200, current 45, "Down"
+uids: `opus:8-limits.c18`, `sol:8-mouse-limit.c15`
+quote (row, opus c18): "                  200          45       Down *"
+The bare row's own content — beyond the numeric footnote graded in A9a — is
+the direction label "Down". Scope, same boundary as A3: this module carries
+no direction port, and which physical mouse motion is "up" vs "down" is
+Table 8-1's pin map / Figure 8-2's waveform, out of scope for this package
+(`ch8-mouse-quadrature-decode`'s job). What is testable at this boundary: A7
+realized row 1 ("Up (Left)") by driving decrementing edges; A8 realized row 2
+("Down (Right)") by driving incrementing edges. Row 3 carries row 2's label
+("Down"), so its true (short, wraparound) path should be realized by the same
+edge sense as row 2: incrementing.
+Assertion: of the two edge senses (incrementing, decrementing) that can walk
+the counter from 200 to 45 on this 8-bit wrapping register, the one that
+does so in the fewer state changes is the incrementing sense — the same sense
+A8 used for row 2's "Down" label.
+Expected: GREEN.
+
+### A10a — Table 8-2 row 4 + footnote **, count half: previous 45, current 200
+uids: `opus:8-limits.c21`, `sol:8-mouse-limit.c18`
 quote (footnote, opus c21): "   ** 45 - 200 = -155.  Because the absolute
 value of -155 exceeds 127, the true count must be  255 + (-155) = 100; the
 direction is up."
 Assertion: the number of quadrature state changes actually required to move
 the counter from 45 to 200 equals the manual's stated true count, 100.
-Expected: **RED**, by the same mod-256 arithmetic as A9: 45 − 101 ≡ 200
+Expected: **RED**, by the same mod-256 arithmetic as A9a: 45 − 101 ≡ 200
 (mod 256) (45 − 101 = −56, and −56 + 256 = 200) — 101 state changes are
-required, not 100. Which phase order realizes that on the harness is a
-step-2 detail; this specification commits only to the arithmetic.
+required, not 100.
+
+### A10b — Table 8-2 row 4, direction half: previous 45, current 200, "Up"
+uids: `opus:8-limits.c19`, `sol:8-mouse-limit.c16`
+quote (row, opus c19, full table as extracted): "                Previous
+Current\n                 Count       Count     Direction\n                --------
+-------    ---------\n                  200         100      Up (Left)\n
+100         200     Down (Right)\n                  200          45       Down
+*\n                   45         200        Up **"
+Same boundary as A9b, mirrored. Row 4 carries row 1's label ("Up"), so its
+true (short) path should be realized by the same edge sense A7 used for row
+1: decrementing.
+Assertion: of the two edge senses that can walk the counter from 45 to 200,
+the one that does so in the fewer state changes is the decrementing sense —
+the same sense A7 used for row 1's "Up" label.
+Expected: GREEN.
 
 ## Mutations
 
-- A1, A2, A3, A4, A7, A8 are expected GREEN under nominal stimulus: each gets
-  a **stimulus mutation** (change the driven edge count or edge direction so
-  the module is asked to do something different; expected value untouched;
-  confirm the assertion goes red; revert).
+- A1, A2, A3, A4, A7, A8, A9b, A10b are expected GREEN under nominal stimulus:
+  each gets a **stimulus mutation** (change the driven edge count, edge
+  direction, or target value so the module is asked to do something
+  different; expected value untouched; confirm the assertion goes red;
+  revert). For A9b/A10b the driven quantity is the target value the counter
+  is walked to, since that is what determines which edge sense comes out
+  shorter.
 - A5 is GREEN and structurally cannot be driven red by any stimulus (8-bit
   register width) — recorded as `impossible`, unfalsifiable at this boundary.
-- A6, A9, A10 are expected RED already. Per the brief, a red assertion is not
-  mutated further with stimulus (it cannot fail harder); instead each is
+- A6, A9a, A10a are expected RED already. Per the brief, a red assertion is
+  not mutated further with stimulus (it cannot fail harder); instead each is
   **substituted**: the same comparator (required-edges == observed-edges) is
   run against a known-live mechanism proven elsewhere in this same package —
   the exact-100, no-wrap transition of A7/A8 — and shown to go GREEN, proving
@@ -181,7 +201,7 @@ step-2 detail; this specification commits only to the arithmetic.
 
 ## HALT
 
-None. All 22 uids resolve to one of the ten assertions above; none required
-port names beyond the JOY0DAT/JOY1DAT identification disclosed at the top of
-this document, which was supplied by the build task and by the already-green
-sibling package, not read from RTL by this package.
+None. All 22 uids resolve to one of the twelve assertions above; none
+required port names beyond the JOY0DAT/JOY1DAT identification disclosed at
+the top of this document, which was supplied by the build task and by the
+already-green sibling package, not read from RTL by this package.

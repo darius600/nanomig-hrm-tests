@@ -151,6 +151,30 @@ static int measure_min_steps(int from_val, int to_val) {
     return (a < b) ? a : b;
 }
 
+// Which edge sense (INC or DEC) empirically realizes the SHORTER of the two
+// wraparound paths from from_val to to_val. This is a real, DUT-measured
+// fact -- not a compile-time property of the two byte values -- because
+// which of the two directions comes out shorter depends on the counter's
+// actual modulus (256, not the manual's 255) and on drive_quadrature really
+// walking the ring that many times. Used to grade the *direction* half of
+// Table 8-2's wrapped rows (see A9b/A10b) without claiming this module's
+// pins carry a known physical up/down mapping -- that mapping is out of
+// scope (A3's scope note; belongs to ch8-mouse-quadrature-decode). What IS
+// in scope and checkable here: rows sharing a printed direction label use
+// the same edge sense on this counter as the row1/row2 control cases (A7
+// drives DEC for "Up (Left)"; A8 drives INC for "Down (Right)") that already
+// established which edge sense the harness associates with each label.
+static Dir winning_direction(int from_val, int to_val, int max_steps = 260) {
+    int a = measure_steps_to_target(from_val, to_val, INC, max_steps);
+    int b = measure_steps_to_target(from_val, to_val, DEC, max_steps);
+    if (a < 0 && b < 0) return INC; // neither reached in budget; the paired
+                                     // count assertion on the same row already
+                                     // reports this case red on its own terms.
+    if (a < 0) return DEC;
+    if (b < 0) return INC;
+    return (a <= b) ? INC : DEC;
+}
+
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     top = new Vuserio;
@@ -192,9 +216,9 @@ int main(int argc, char** argv) {
     // These are graded through expect(), so per the (corrected) brief they
     // get real stimulus mutations too -- a liveness check that cannot fail
     // would report "the data path is live" whether or not it actually is.
-    // MUTATION harness:fixture-liveness-joy0dat-known-word stimulus red drove 6 steps into JOY0DAT's channel instead of 7 (comparator still checks for 7); measured (MUT=L1) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
-    // MUTATION harness:fixture-liveness-joy1dat-known-word stimulus red drove 12 steps into JOY1DAT's channel instead of 13 (comparator still checks for 13); measured (MUT=L2) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
-    // MUTATION harness:fixture-liveness-not-aliased stimulus red forced JOY1DAT's channel to the same driven count as JOY0DAT's (7 instead of 13), so the two independently-wired counters legitimately read equal; this unavoidably also flips harness:fixture-liveness-joy1dat-known-word (its 13 no longer arrives), since both checks are read off the same two measured words and there is no third, independent quantity to perturb -- measured (MUT=L3) 13 passed/3 failed -> 11 passed/5 failed, two lines flipped (documented, not concealed)
+    // MUTATION harness:fixture-liveness-joy0dat-known-word stimulus red drove 6 steps into JOY0DAT's channel instead of 7 (comparator still checks for 7); measured (MUT=L1) 15 passed/3 failed -> 14 passed/4 failed, only this line flipped
+    // MUTATION harness:fixture-liveness-joy1dat-known-word stimulus red drove 12 steps into JOY1DAT's channel instead of 13 (comparator still checks for 13); measured (MUT=L2) 15 passed/3 failed -> 14 passed/4 failed, only this line flipped
+    // MUTATION harness:fixture-liveness-not-aliased stimulus red forced JOY1DAT's channel to the same driven count as JOY0DAT's (7 instead of 13), so the two independently-wired counters legitimately read equal; this unavoidably also flips harness:fixture-liveness-joy1dat-known-word (its 13 no longer arrives), since both checks are read off the same two measured words and there is no third, independent quantity to perturb -- measured (MUT=L3) 15 passed/3 failed -> 13 passed/5 failed, two lines flipped (documented, not concealed)
     {
         reset_counters();
         int steps_j0 = 7;
@@ -329,7 +353,7 @@ int main(int argc, char** argv) {
         expect(r1 == 100 && r2 == 100 && r3 == 100 && r4 == 100, "opus:8-limits.c15");
     }
     // MUTATION opus:8-limits.c15 stimulus green already RED (rows 3-4 measure 101, not 100); substituted row 1's proven-live 100-step transition through the same required-steps-equals-100 comparator to show it is not vacuously always-false
-    // MUTATION opus:8-limits.c15,substitute-check stimulus red broke the substitute's own transition (99 decrementing steps instead of the needed 100), leaving the comparator (v==100) untouched; measured (MUT=A6SUB) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
+    // MUTATION opus:8-limits.c15,substitute-check stimulus red broke the substitute's own transition (99 decrementing steps instead of the needed 100), leaving the comparator (v==100) untouched; measured (MUT=A6SUB) 15 passed/3 failed -> 14 passed/4 failed, only this line flipped
     {
         reset_counters();
         drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 200, INC);
@@ -374,19 +398,25 @@ int main(int argc, char** argv) {
         expect(v == 200, "opus:8-limits.c17,sol:8-mouse-limit.c14");
     }
 
-    // ---- A9: row 3 + footnote * ---------------------------------------------
-    // opus:8-limits.c18, opus:8-limits.c20, sol:8-mouse-limit.c15, sol:8-mouse-limit.c17
+    // ---- A9a: row 3 + footnote * -- the COUNT half ---------------------------
+    // opus:8-limits.c20, sol:8-mouse-limit.c17 (the footnote's numeric claim)
     // "* Because 200-45 = 155, ... the true count must be 255 - (200-45) = 100."
+    // (opus:8-limits.c18 / sol:8-mouse-limit.c15 -- the bare row's "...Down"
+    // label -- are NOT this claim's count half; see A9b below. A validator
+    // found both direction uids printed on this count-only predicate, which
+    // measure_min_steps() never exercises: it tries both edge senses and
+    // keeps only the smaller step count, never which sense won. Repaired by
+    // splitting the row+footnote claim into its count half (here) and its
+    // direction half (A9b), each carrying only the uids it actually tests.)
     {
         int measured = measure_min_steps(200, 45);
         note("row3+footnote*: manual's true count is 100; measured " +
              std::to_string(measured) +
              " state changes actually required (8-bit/mod-256 hardware; the manual's formula divides by 255)");
-        expect(measured == 100,
-               "opus:8-limits.c18,opus:8-limits.c20,sol:8-mouse-limit.c15,sol:8-mouse-limit.c17");
+        expect(measured == 100, "opus:8-limits.c20,sol:8-mouse-limit.c17");
     }
-    // MUTATION opus:8-limits.c18,opus:8-limits.c20,sol:8-mouse-limit.c15,sol:8-mouse-limit.c17 stimulus green already RED (measured 101, not 100); substituted row 1's proven-live 100-step transition through the same required-steps-equals-100 comparator
-    // MUTATION opus:8-limits.c18,opus:8-limits.c20,sol:8-mouse-limit.c15,sol:8-mouse-limit.c17,substitute-check stimulus red broke the substitute's own transition (99 decrementing steps instead of the needed 100), leaving the comparator (v==100) untouched; measured (MUT=A9SUB) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
+    // MUTATION opus:8-limits.c20,sol:8-mouse-limit.c17 stimulus green already RED (measured 101, not 100); substituted row 1's proven-live 100-step transition through the same required-steps-equals-100 comparator
+    // MUTATION opus:8-limits.c20,sol:8-mouse-limit.c17,substitute-check stimulus red broke the substitute's own transition (99 decrementing steps instead of the needed 100), leaving the comparator (v==100) untouched; measured (MUT=A9SUB) 15 passed/3 failed -> 14 passed/4 failed, only this line flipped
     {
         reset_counters();
         drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 200, INC);
@@ -396,22 +426,51 @@ int main(int argc, char** argv) {
 #endif
         drive_quadrature(joy2_raw, idx_joy2x, 0, 2, sub_steps, DEC);
         uint16_t v = read_reg(JOY0DAT_ADDR) & 0xFF;
-        expect(v == 100, "opus:8-limits.c18,opus:8-limits.c20,sol:8-mouse-limit.c15,sol:8-mouse-limit.c17,substitute-check");
+        expect(v == 100, "opus:8-limits.c20,sol:8-mouse-limit.c17,substitute-check");
     }
 
-    // ---- A10: row 4 + footnote ** --------------------------------------------
-    // opus:8-limits.c19, opus:8-limits.c21, sol:8-mouse-limit.c16, sol:8-mouse-limit.c18
+    // ---- A9b: row 3 -- the DIRECTION half -------------------------------------
+    // opus:8-limits.c18, sol:8-mouse-limit.c15 (the bare row's "200 45 Down *")
+    // Scope, same boundary as A3: this module has no direction port, and which
+    // physical mouse motion is "up" vs "down" is Table 8-1/Figure 8-2 territory
+    // (ch8-mouse-quadrature-decode), not this package's. What IS testable here:
+    // A7 realized row 1 ("Up (Left)") by driving DEC edges; A8 realized row 2
+    // ("Down (Right)") by driving INC edges -- the harness's own, already-
+    // exercised association between an edge sense and a printed label. Row 3
+    // carries the SAME label as row 2 ("Down"), so its true (short, ~100-step)
+    // wraparound path should be realized by the SAME edge sense as row 2's:
+    // INC. This is a DUT fact -- it depends on the counter's actual modulus
+    // (256) and genuinely could have come out DEC on buggy hardware -- not a
+    // restatement of the compile-time row values.
+    // MUTATION opus:8-limits.c18,sol:8-mouse-limit.c15 stimulus red retargeted the row-3 measurement from 200->45 to 200->150 (still on the previous=200 baseline this row starts from), which needs only 50 DEC steps against 206 INC steps, so the empirically shorter path flips from INC to DEC; measured (MUT=A9DIR) 15 passed/3 failed -> 14 passed/4 failed, only this line flipped
+    {
+        int to_val = 45;
+#ifdef MUT_A9DIR
+        to_val = 150;
+#endif
+        Dir winner = winning_direction(200, to_val);
+        note("row3 direction: shortest wraparound path from 200 to " + std::to_string(to_val) +
+             " uses " + std::string(winner == INC ? "INC" : "DEC") +
+             " edges (row2's 'Down (Right)' control, A8, also used INC)");
+        expect(winner == INC, "opus:8-limits.c18,sol:8-mouse-limit.c15");
+    }
+
+    // ---- A10a: row 4 + footnote ** -- the COUNT half --------------------------
+    // opus:8-limits.c21, sol:8-mouse-limit.c18 (the footnote's numeric claim)
     // "** 45 - 200 = -155. ... the true count must be 255 + (-155) = 100."
+    // (opus:8-limits.c19 / sol:8-mouse-limit.c16 -- the row/table's "...Up"
+    // label -- are NOT this claim's count half; see A10b below. Same repair
+    // as A9a: the validator found both direction uids on this count-only
+    // predicate, which never checks which edge sense won.)
     {
         int measured = measure_min_steps(45, 200);
         note("row4+footnote**: manual's true count is 100; measured " +
              std::to_string(measured) +
              " state changes actually required (8-bit/mod-256 hardware; the manual's formula divides by 255)");
-        expect(measured == 100,
-               "opus:8-limits.c19,opus:8-limits.c21,sol:8-mouse-limit.c16,sol:8-mouse-limit.c18");
+        expect(measured == 100, "opus:8-limits.c21,sol:8-mouse-limit.c18");
     }
-    // MUTATION opus:8-limits.c19,opus:8-limits.c21,sol:8-mouse-limit.c16,sol:8-mouse-limit.c18 stimulus green already RED (measured 101, not 100); substituted row 2's proven-live 100-step transition through the same required-steps-equals-100 comparator
-    // MUTATION opus:8-limits.c19,opus:8-limits.c21,sol:8-mouse-limit.c16,sol:8-mouse-limit.c18,substitute-check stimulus red broke the substitute's own transition (99 incrementing steps instead of the needed 100), leaving the comparator (v==200) untouched; measured (MUT=A10SUB) 13 passed/3 failed -> 12 passed/4 failed, only this line flipped
+    // MUTATION opus:8-limits.c21,sol:8-mouse-limit.c18 stimulus green already RED (measured 101, not 100); substituted row 2's proven-live 100-step transition through the same required-steps-equals-100 comparator
+    // MUTATION opus:8-limits.c21,sol:8-mouse-limit.c18,substitute-check stimulus red broke the substitute's own transition (99 incrementing steps instead of the needed 100), leaving the comparator (v==200) untouched; measured (MUT=A10SUB) 15 passed/3 failed -> 14 passed/4 failed, only this line flipped
     {
         reset_counters();
         drive_quadrature(joy2_raw, idx_joy2x, 0, 2, 100, INC);
@@ -421,7 +480,25 @@ int main(int argc, char** argv) {
 #endif
         drive_quadrature(joy2_raw, idx_joy2x, 0, 2, sub_steps, INC);
         uint16_t v = read_reg(JOY0DAT_ADDR) & 0xFF;
-        expect(v == 200, "opus:8-limits.c19,opus:8-limits.c21,sol:8-mouse-limit.c16,sol:8-mouse-limit.c18,substitute-check");
+        expect(v == 200, "opus:8-limits.c21,sol:8-mouse-limit.c18,substitute-check");
+    }
+
+    // ---- A10b: row 4 -- the DIRECTION half -------------------------------------
+    // opus:8-limits.c19, sol:8-mouse-limit.c16 (the table's "45 200 Up **" row)
+    // Same reasoning as A9b, mirrored: row 4 carries the SAME label as row 1
+    // ("Up"), so its true (short) wraparound path should be realized by the
+    // same edge sense A7 used for row 1: DEC.
+    // MUTATION opus:8-limits.c19,sol:8-mouse-limit.c16 stimulus red retargeted the row-4 measurement from 45->200 to 45->100 (still on the previous=45 baseline this row starts from), which needs only 55 INC steps against 201 DEC steps, so the empirically shorter path flips from DEC to INC; measured (MUT=A10DIR) 15 passed/3 failed -> 14 passed/4 failed, only this line flipped
+    {
+        int to_val = 200;
+#ifdef MUT_A10DIR
+        to_val = 100;
+#endif
+        Dir winner = winning_direction(45, to_val);
+        note("row4 direction: shortest wraparound path from 45 to " + std::to_string(to_val) +
+             " uses " + std::string(winner == INC ? "INC" : "DEC") +
+             " edges (row1's 'Up (Left)' control, A7, also used DEC)");
+        expect(winner == DEC, "opus:8-limits.c19,sol:8-mouse-limit.c16");
     }
 
     std::cout << g_passed << " passed, " << g_failed << " failed\n";
