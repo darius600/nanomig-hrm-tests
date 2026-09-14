@@ -135,6 +135,15 @@
 //   compare against the literal 0xCD (see the comment at that assertion);
 //   rebuilt -> "10 passed, 4 failed", only BEAM-COUNTER-DELIVERS-KNOWN-VALUE
 //   newly red. Reverted, baseline (11/3) confirmed restored.
+// MUTATION NO-SEPARATE-LIGHT-PEN-REGISTER stimulus red: the swept beam
+//   state is forced to zero (vpos=0, long_frame=0, hpos=0) instead of
+//   0x5AB/1/0xCD, so the four addresses still decode but carry nothing
+//   non-zero and the sweep finds an empty set. The expected set is
+//   untouched -- this changes what the module is ASKED for, not what it is
+//   compared against. RUN: baseline 12 passed 1 failed; mutated
+//   "11 passed, 2 failed", only NO-SEPARATE-LIGHT-PEN-REGISTER newly red
+//   (the sweep measured "none"), the pre-existing red unchanged.
+//   Reverted: make clean && make -> 12 passed, 1 failed, baseline exactly.
 // MUTATION FOUR-ADDRESSES-EXACT stimulus red: the fourth target address
 //   (nominally A_VHPOSW) redirected to A_BEAMCON0, a real but unrelated
 //   register -> "10 passed, 4 failed", only FOUR-ADDRESSES-EXACT newly red
@@ -408,6 +417,71 @@ int main(int argc, char** argv) {
             "(BPLCON0, HTOTAL, HSSTOP, HBSTRT, HBSTOP, VTOTAL, VSSTOP, "
             "VBSTOP, HSSTRT, BEAMCON0, VSSTRT, HCENTER, plus two unassigned "
             "offsets) reads 0.");
+    }
+
+    // ================= NO-SEPARATE-LIGHT-PEN-REGISTER =================
+    // Chapter 8 routes here rather than citing FOUR-ADDRESSES-EXACT above.
+    // That assertion grades a NAMED list of fourteen other addresses reading
+    // 0; "the light pen register is at the same address as the beam counters"
+    // (p.238) is a statement about EVERY address, including ones nobody
+    // named. The difference is the whole content of the claim, so it gets its
+    // own sweep of the module's entire 8-bit register-address space.
+    //
+    // The light-pen CONTENT half is not graded and cannot be: this design has
+    // no lpen input at all, which is why the record() block near the end of
+    // this file already discards chapter 7's own light-pen halves as absent
+    // signals. What is graded is the address half.
+    {
+        Harness h(/*ecs=*/false, /*ntsc=*/false);
+        uint32_t stim_vpos = 0x5AB;
+        bool stim_lof = true;
+        uint8_t stim_hpos = 0xCD;
+#ifdef MUT_NO_SEPARATE_LIGHT_PEN_REGISTER
+        // Stimulus mutation: ask the module for a beam position of zero. The
+        // four addresses still decode, but nothing they carry is non-zero, so
+        // the sweep finds an empty set. The expected set is untouched.
+        stim_vpos = 0;
+        stim_lof = false;
+        stim_hpos = 0;
+#endif
+        force_vpos(h, stim_vpos, stim_lof, stim_hpos);
+
+        int answering[8];
+        int n = 0;
+        for (int a = 0; a < 256; ++a) {
+            if (h.read(a) != 0) {
+                if (n < 8) answering[n] = a;
+                ++n;
+            }
+        }
+        bool exactly_the_beam_counters =
+            n == 4 &&
+            answering[0] == A_VPOSR && answering[1] == A_VHPOSR &&
+            answering[2] == A_VPOSW && answering[3] == A_VHPOSW;
+
+        std::string found;
+        for (int i = 0; i < n && i < 8; ++i) {
+            char buf[16];
+            std::snprintf(buf, sizeof(buf), "$%03X", answering[i] << 1);
+            found += (i ? ", " : "");
+            found += buf;
+        }
+        if (n > 8) found += ", ...";
+        if (n == 0) found = "none";
+
+        checks.expect(
+            exactly_the_beam_counters,
+            "NO-SEPARATE-LIGHT-PEN-REGISTER (p.238 opus:8-lpen.c19, "
+            "sol:8-pen.c21): sweeping all 256 word addresses this module "
+            "decodes, the ONLY ones that answer with content are the four "
+            "beam-counter addresses $004/$006/$02A/$02C -- measured " +
+                found +
+                ". 'The light pen register is at the same address as the beam "
+            "counters' (p.238): there is no separate light-pen register "
+            "anywhere in this module's decode, which is the address half of "
+            "that sentence. Its CONTENT half is not graded here and cannot "
+            "be -- the design has no lpen input at all (see the absent-signal "
+            "record() below).");
     }
 
     // ================= VPOSR-IS-READ-ONLY / VPOSW-IS-WRITE-ONLY =================
