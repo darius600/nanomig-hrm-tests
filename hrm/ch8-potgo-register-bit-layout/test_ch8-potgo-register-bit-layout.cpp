@@ -530,7 +530,8 @@ int main(int argc, char** argv) {
         "(forced 0 when OUTRY=1, releases to 1 when OUTRY=0); the other "
         "three pairs (bits 12,10,8) do not move [p.240 Table 8-4 row "
         "\"15 OUTRY Output enable for bit 14\"; p.282 \"Output enable for "
-        "Paula pin 36\"; Figure 8-6 p.237]"); }
+        "Paula pin 36\"; Figure 8-6 p.237]"
+        " [7 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c12, opus:8-dio.c10, opus:8-dio.c9, sol:8-appa-pot.c40, sol:8-dio.c7, sol:8-dio.c8, sol:8-fig8-6r.c12]"); }
 
     { UserioHarness h; checks.expect(prop2_datry(h),
         "PROP-2: with OUTRY=1, POTGO bit 14 (DATRY) forces POTGOR bit 14 to "
@@ -540,14 +541,16 @@ int main(int argc, char** argv) {
         "(shown by toggling that line while DATRY is held fixed at the "
         "\"wrong\" value); the other three pairs do not move "
         "[p.240 \"14 DATRY data for port 2, pin 9\"; p.282 \"I/O data Paula "
-        "pin 36\"; Figure 8-6 p.237]"); }
+        "pin 36\"; Figure 8-6 p.237]"
+        " [7 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c13, opus:8-dio.c11, opus:8-fig8-6r.c15, sol:8-appa-pot.c41, sol:8-dio.c9, sol:8-fig8-6r.c13, sol:8-fig8-6r.c24]"); }
 
     { UserioHarness h; checks.expect(prop3_outrx(h),
         "PROP-3: POTGO bit 13 (OUTRX) gates whether bit 12's write value "
         "forces POTGOR bit 12, DATRX held at the same value (0) in both "
         "readings; the other three pairs do not move "
         "[p.240 \"13 OUTRX Output enable for bit 12\"; p.282 \"Output "
-        "enable for Paula pin 35\"; Figure 8-6 p.237]"); }
+        "enable for Paula pin 35\"; Figure 8-6 p.237]"
+        " [5 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c14, opus:8-dio.c12, sol:8-appa-pot.c42, sol:8-dio.c10, sol:8-fig8-6r.c14]"); }
 
     { UserioHarness h; checks.expect(prop4_datrx(h),
         "PROP-4: with OUTRX=1, POTGO bit 12 (DATRX) forces POTGOR bit 12 to "
@@ -555,14 +558,16 @@ int main(int argc, char** argv) {
         "-- output-forcing half only, per this fixture's own RTL (see "
         "header note and the RECORDED line below for the sensing half) "
         "[p.240 \"12 DATRX data for port 2, pin 5\"; p.282 \"I/O data Paula "
-        "pin 35\"; Figure 8-6 p.237]"); }
+        "pin 35\"; Figure 8-6 p.237]"
+        " [6 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c15, opus:8-dio.c13, sol:8-appa-pot.c43, sol:8-dio.c11, sol:8-fig8-6r.c15, sol:8-fig8-6r.c25]"); }
 
     { UserioHarness h; checks.expect(prop5_outly(h),
         "PROP-5: POTGO bit 11 (OUTLY) gates whether bit 10's write value "
         "forces POTGOR bit 10, DATLY held at the same value (0) in both "
         "readings; the other three pairs do not move "
         "[p.240 \"11 OUTLY Output enable for bit 10\"; p.282 \"Output "
-        "enable for Paula pin 33\"; Figure 8-6 p.237]"); }
+        "enable for Paula pin 33\"; Figure 8-6 p.237]"
+        " [5 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c16, opus:8-dio.c14, sol:8-appa-pot.c44, sol:8-dio.c12, sol:8-fig8-6r.c16]"); }
 
     { UserioHarness h; checks.expect(prop6_datly(h),
         "PROP-6: with OUTLY=1, POTGO bit 10 (DATLY) forces POTGOR bit 10 to "
@@ -571,14 +576,16 @@ int main(int argc, char** argv) {
         "DATLY; the other three pairs do not move -- mouse-button identity "
         "specifically is PROP-11, not this assertion "
         "[p.240 \"10 DATLY data for port 1, pin 9\"; p.282 \"I/O data Paula "
-        "pin 33\"; Figure 8-6 p.237]"); }
+        "pin 33\"; Figure 8-6 p.237]"
+        " [6 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c17, opus:8-dio.c15, sol:8-appa-pot.c45, sol:8-dio.c13, sol:8-fig8-6r.c17, sol:8-fig8-6r.c26]"); }
 
     { UserioHarness h; checks.expect(prop7_outlx(h),
         "PROP-7 [control]: POTGO bit 9 (OUTLX) gates whether bit 8's write "
         "value forces POTGOR bit 8, DATLX held at the same value (0) in "
         "both readings; the other three pairs do not move "
         "[p.240 \"09 OUTLX Output enable for bit 8\"; p.282 \"Output "
-        "enable for Paula pin 32\"; Figure 8-6 p.237]"); }
+        "enable for Paula pin 32\"; Figure 8-6 p.237]"
+        " [5 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c18, opus:8-dio.c17, sol:8-appa-pot.c46, sol:8-dio.c15, sol:8-fig8-6r.c18]"); }
 
     { UserioHarness h; checks.expect(prop8_datlx(h),
         "PROP-8 [control]: with OUTLX=1, POTGO bit 8 (DATLX) forces POTGOR "
@@ -587,7 +594,8 @@ int main(int argc, char** argv) {
         "pairs do not move -- this pair's deterministic, unambiguous "
         "behaviour is this package's control case, on the same write/read "
         "mechanism as every other PROP [p.240 \"08 DATLX data for port 1, "
-        "pin 5\"; p.282 \"I/O data Paula pin 32\"; Figure 8-6 p.237]"); }
+        "pin 5\"; p.282 \"I/O data Paula pin 32\"; Figure 8-6 p.237]"
+        " [6 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c19, opus:8-dio.c18, sol:8-appa-pot.c47, sol:8-dio.c16, sol:8-fig8-6r.c19, sol:8-fig8-6r.c27]"); }
 
     { UserioHarness h; checks.expect(prop9_bits7_1_zero(h),
         "PROP-9: POTGOR bits 7 down to 1 read 0 regardless of what is "
@@ -596,7 +604,8 @@ int main(int argc, char** argv) {
         "because a constant 0 cannot distinguish that from p.240's \"chip "
         "revision identification number\"; see SPECIFICATION.md PROP-9 for "
         "why [p.240 \"07-01 X chip revision identification number\"; p.282 "
-        "\"07-01 0 Reserved for chip ID code (presently 0)\"]"); }
+        "\"07-01 0 Reserved for chip ID code (presently 0)\"]"
+        " [6 claim(s), p.240/p.282: opus:8-appa-potgo.c20, opus:8-appa-potgo.c21, opus:8-dio.c20, sol:8-appa-pot.c48, sol:8-appa-pot.c49, sol:8-dio.c18]"); }
 
     { UserioHarness h; checks.expect(prop10_start(h),
         "PROP-10: writing POTGO bit 0 (START) zeroes pot0x (read via "
@@ -605,21 +614,24 @@ int main(int argc, char** argv) {
         "that keeps pot0x free to count throughout, so START's own effect "
         "(reset, then re-enable) is isolated [p.240 \"00 START Start pots "
         "(dump capacitors, start counters)\"; p.282, identical wording; "
-        "Figure 8-6 p.237]"); }
+        "Figure 8-6 p.237]"
+        " [6 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c23, opus:8-dio.c22, opus:8-fig8-6r.c11, sol:8-appa-pot.c51, sol:8-dio.c20, sol:8-fig8-6r.c21]"); }
 
     { UserioHarness h; checks.expect(prop11_right_button(h),
         "PROP-11: with OUTLY=0 (bit 10/DATLY left as an input) and the "
         "_joy2[5] precondition held released, POTGOR bit 10 follows the "
         "right mouse button (mouse_btn[1]): released reads 1, pressed reads "
         "0, released again reads 1; the other three pairs do not move "
-        "[p.240 \"10 DATLY data for port 1, pin 9 (right mouse button)\"]"); }
+        "[p.240 \"10 DATLY data for port 1, pin 9 (right mouse button)\"]"
+        " [2 claim(s), p.240: opus:8-dio.c16, sol:8-dio.c14]"); }
 
     { UserioHarness h; checks.expect(prop12_middle_button(h),
         "PROP-12: with OUTLX=0 (bit 8/DATLX left as an input), POTGOR bit 8 "
         "follows the middle mouse button (mouse_btn[2]): released reads 1, "
         "pressed reads 0, released again reads 1; the other three pairs do "
         "not move [p.240 \"08 DATLX data for port 1, pin 5 (middle mouse "
-        "button)\"]"); }
+        "button)\"]"
+        " [2 claim(s), p.240: opus:8-dio.c19, sol:8-dio.c17]"); }
 
     { UserioHarness h; checks.expect(prop13_write_only_bits_read_zero(h),
         "PROP-13: POTGOR bits 15, 13, 11, 9 and 0 (the four output-enable "
@@ -627,7 +639,8 @@ int main(int argc, char** argv) {
         "POTGO (0xFFFF and 0x0000 both tried) -- only bits 14, 12, 10 and 8 "
         "vary; distinct from PROP-9 (bits 7-1) [Figure 8-6 p.237: POTINP's "
         "own row of cells shows \"0\" under every POTGO column except the "
-        "four DAT columns]"); }
+        "four DAT columns]"
+        " [2 claim(s), p.237: opus:8-fig8-6r.c14, sol:8-fig8-6r.c28]"); }
 
     // ------------------------------------------------------------------
     // Claim considered for this package and left unbound, with the reason.
@@ -643,6 +656,24 @@ int main(int argc, char** argv) {
         "had already found (8-dio.c13/c11, 8-appa-potgo.c15/sol.c43 `split` "
         "fields: \"no input reaches bit 12\"), confirmed independently here "
         "by reading the RTL directly in step 2, not assumed from that file.");
+
+    // The sixteen claims this package does not score, each with the
+    // reason its own SPECIFICATION.md gives. They were only in that
+    // document before, and the coverage ledger reads the run.
+    checks.record(
+        "opus:8-appa-potgo.c10, opus:8-appa-potgo.c11, sol:8-appa-pot.c38, sol:8-appa-pot.c39 (p.282) -- NOT ASSERTED: the general \"4-bit bidirectional I/O port\" framing statement, which names no bit position of its own -- its content is realized by PROP-1 through PROP-8 jointly, so it is not a proposition on its own.");
+    checks.record(
+        "opus:8-fig8-6r.c7, sol:8-fig8-6r.c9 (p.237) -- NOT ASSERTED: Figure 8-6's POT1Y line feeding the POT1Y counter through a Schmitt-triggered buffer: how the pot-counter module USES one of these lines once configured as an input, not what a POTGO/POTGOR bit is or means, and the analogue hysteresis a digital fixture does not model at all.");
+    checks.record(
+        "opus:8-fig8-6r.c8, opus:8-fig8-6r.c9, sol:8-fig8-6r.c10, sol:8-fig8-6r.c11 (p.237) -- NOT ASSERTED: a register's own address or width identity, not a bit-field meaning; and this module, tested standalone without the containing chip's address decoder, cannot make an address fact observable.");
+    checks.record(
+        "opus:8-fig8-6r.c13, sol:8-fig8-6r.c23 (p.237) -- NOT ASSERTED: that the figure labels the $DFF016 register POTINP -- no port carries a register name; settled by comparing the manual's own words (p.240 \"POTGOR (formerly POTINP)\"), not by any measurement.");
+    checks.record(
+        "opus:8-fig8-6r.c10 (p.237) -- NOT ASSERTED: one claim recording all eight POTGO bit labels at once; per the build brief's one assertion per bit position, this is exactly what PROP-1 through PROP-8 already cover one bit at a time.");
+    checks.record(
+        "opus:8-fig8-6r.c16 (p.237) -- NOT ASSERTED: Figure 8-6's dotted lines pairing each POTGO DATxx cell with the POTGOR cell at the same bit position -- PROP-2, PROP-4, PROP-6 and PROP-8 each already write a DATxx bit and read it back at that same position; it states no fact beyond what those four require.");
+    checks.record(
+        "opus:8-fig8-6r.c17, sol:8-fig8-6r.c22 (p.237) -- NOT ASSERTED: Figure 8-6's OUTRY and DATRY feeding three unlabelled triangular buffers. The testable half -- bits 15 and 14 jointly control that line -- is PROP-1 and PROP-2 combined. The topology half could not be resolved from the image even by the claim's own prior reading, so no page-only proposition can be written for it at any boundary.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
