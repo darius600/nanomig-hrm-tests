@@ -1,0 +1,463 @@
+// ch8-controller-pin-function-map -- Table 8-1 (p.228), userio.v alone.
+//
+// Pin map used throughout (derived from userio.v's own port list and
+// parameters, read after SPECIFICATION.md was committed -- see the RTL
+// boundary finding section of that file):
+//   bit0=pin4(HQ/right)  bit1=pin3(VQ/left)  bit2=pin2(H/back)
+//   bit3=pin1(V/forward) bit4=pin6(fire)     bit5=pin9(button2/fire2)
+// on both _joy1 and _joy2. joy_swap is tied 0, so _sjoy2/_djoy2 (the "Port
+// 2" / JOY1DAT decoder) track _joy1, and _sjoy1/_djoy1 (the "Port 1" /
+// JOY0DAT decoder) track _joy2. This file drives _joy1 and reads JOY1DAT
+// throughout, since JOY1DAT's read mux (data_out = dmouse1dat, unconditional)
+// is simpler than JOY0DAT's (which multiplexes on the internal joy1enable
+// latch) and both read out the identical decoder logic.
+//
+// MUTATION opus:8-tbl8-1.c1 stimulus red pin1 (bit3) never pressed
+// MUTATION sol:8-pin.c1 stimulus red pin1 (bit3) never pressed
+// MUTATION opus:8-tbl8-1.c2 stimulus red pin1 (bit3) never toggled
+// MUTATION sol:8-pin.c2 stimulus red pin1 (bit3) never toggled
+// MUTATION opus:8-tbl8-1.c4 stimulus red pin2 (bit2) never pressed
+// MUTATION sol:8-pin.c5 stimulus red pin2 (bit2) never pressed
+// MUTATION opus:8-tbl8-1.c5 stimulus red pin2 (bit2) never toggled
+// MUTATION sol:8-pin.c6 stimulus red pin2 (bit2) never toggled
+// MUTATION opus:8-tbl8-1.c6 stimulus red pin3 (bit1) never pressed
+// MUTATION sol:8-pin.c7 stimulus red pin3 (bit1) never pressed
+// MUTATION opus:8-tbl8-1.c7 stimulus red pin3 (bit1) never toggled
+// MUTATION sol:8-pin.c8 stimulus red pin3 (bit1) never toggled
+// MUTATION opus:8-tbl8-1.c10 stimulus red pin4 (bit0) never pressed
+// MUTATION sol:8-pin.c11 stimulus red pin4 (bit0) never pressed
+// MUTATION opus:8-tbl8-1.c11 stimulus red pin4 (bit0) never toggled
+// MUTATION sol:8-pin.c12 stimulus red pin4 (bit0) never toggled
+// MUTATION opus:8-tbl8-1.c32 stimulus red pin9 (_joy1[5]) never pressed before the pot-gate count window
+// MUTATION sol:8-pin.c35 stimulus red pin9 (_joy1[5]) never pressed before the pot-gate count window
+// MUTATION opus:8-tbl8-1.c33 stimulus red pin9 (_joy1[5]) never pressed before the pot-gate count window
+// MUTATION sol:8-pin.c36 stimulus red pin9 (_joy1[5]) never pressed before the pot-gate count window
+// MUTATION opus:8-tbl8-1.c35 stimulus red POTGO OUTLX/DATLX (potreg[9:8]) never written to force pin 5
+// MUTATION sol:8-pin.c39 stimulus red POTGO OUTLX/DATLX (potreg[9:8]) never written to force pin 5
+// MUTATION opus:8-tbl8-1.c37 stimulus red POTGO OUTLY/DATLY (potreg[15:14]) never written to force pin 9
+// MUTATION sol:8-pin.c41 stimulus red POTGO OUTLY/DATLY (potreg[15:14]) never written to force pin 9
+// MUTATION fixture-liveness stimulus red second injected word (pin4/bit0) left idle instead of pressed
+
+#include "Vuserio.h"
+#include "verilated.h"
+#include <iostream>
+#include <string>
+#include <cstdint>
+
+static Vuserio* top;
+static vluint64_t sim_time = 0;
+static int passed = 0, failed = 0;
+
+// ---- the fixed harness (character-identical across the suite) ----
+void expect(bool cond, const std::string& label) {
+    if (cond) { std::cout << "PASS: " << label << "\n"; passed++; }
+    else      { std::cout << "FAIL: " << label << "\n"; failed++; }
+}
+void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
+void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
+
+// hex formatting for register words in MEASURED lines (std::to_string is
+// decimal; register values read far more clearly in hex).
+std::string hex16(uint16_t v) {
+    static const char* digits = "0123456789abcdef";
+    std::string s(4, '0');
+    for (int i = 3; i >= 0; i--) { s[i] = digits[v & 0xF]; v >>= 4; }
+    return s;
+}
+
+// ---- clocking ----
+void tick() {
+    top->clk = 0; top->eval(); sim_time++;
+    top->clk = 1; top->eval(); sim_time++;
+}
+void settle(int n) { for (int i = 0; i < n; i++) tick(); }
+
+// ---- register bus (matches userio.v's own JOY0DAT/JOY1DAT/... parameters) ----
+static const uint16_t JOY0DAT = 0x00a;
+static const uint16_t JOY1DAT = 0x00c;
+static const uint16_t POT0DAT = 0x012;
+static const uint16_t POT1DAT = 0x014;
+static const uint16_t POTINP  = 0x016;
+static const uint16_t POTGO   = 0x034;
+static const uint8_t  ADDR_NONE = 0xFF; // no register in this file's scope decodes to this
+
+static uint8_t addr_of(uint16_t regaddr) { return (uint8_t)((regaddr >> 1) & 0xFF); }
+
+void write_reg(uint16_t regaddr, uint16_t data) {
+    top->reg_address_in = addr_of(regaddr);
+    top->data_in = data;
+    tick(); // one clk7_en cycle with the address held -> latches
+    top->reg_address_in = ADDR_NONE;
+    top->data_in = 0;
+    tick();
+}
+uint16_t read_reg(uint16_t regaddr) {
+    top->reg_address_in = addr_of(regaddr);
+    top->eval();
+    uint16_t v = top->data_out;
+    top->reg_address_in = ADDR_NONE;
+    top->eval();
+    return v;
+}
+
+// ---- _joy1 / _joy2 bit helpers (active-low: 0 = pressed, 1 = idle) ----
+static uint16_t joy1_val = 0xFFFF;
+static uint16_t joy2_val = 0xFFFF;
+void joy1_bit(int bit, bool pressed) {
+    if (pressed) joy1_val &= ~(1u << bit); else joy1_val |= (1u << bit);
+    top->_joy1 = joy1_val;
+}
+void joy2_bit(int bit, bool pressed) {
+    if (pressed) joy2_val &= ~(1u << bit); else joy2_val |= (1u << bit);
+    top->_joy2 = joy2_val;
+}
+
+int main(int argc, char** argv) {
+    Verilated::commandArgs(argc, argv);
+    top = new Vuserio;
+
+    // known, idle defaults for every input this file does not otherwise drive
+    top->clk = 0;
+    top->reset = 1;
+    top->clk7_en = 1; // hold the enable high throughout; nothing here tests its timing ratio
+    top->reg_address_in = ADDR_NONE;
+    top->data_in = 0;
+    top->pot_cnt_en = 0;
+    top->_fire0_dat = 1;
+    top->_fire1_dat = 1;
+    top->_joy1 = joy1_val;
+    top->_joy2 = joy2_val;
+    top->joy_ana1 = 0;
+    top->joy_ana2 = 0;
+    top->mouse_btn = 0;
+    top->kms_level = 0;
+    top->kbd_mouse_type = 0;
+    top->kbd_mouse_data = 0;
+    top->eval();
+
+    settle(5);
+    top->reset = 0;
+    settle(5);
+
+    // =====================================================================
+    // Fixture liveness -- proven before any Table 8-1 claim is graded.
+    // Two distinct words driven into _joy1 must arrive as two distinct
+    // JOY1DAT readings, through the whole synchronise -> decode -> mux path.
+    // =====================================================================
+    joy1_val = 0xFFFF; top->_joy1 = joy1_val; settle(4);
+    uint16_t word_a = read_reg(JOY1DAT);
+#ifndef MUT_fixtureliveness
+    joy1_val = 0xFFFE; top->_joy1 = joy1_val; settle(4); // bit0 (pin4) pressed: distinct word
+#else
+    joy1_val = 0xFFFF; top->_joy1 = joy1_val; settle(4); // mutation: same word again
+#endif
+    uint16_t word_b = read_reg(JOY1DAT);
+    note("fixture-liveness JOY1DAT word A=0x" + hex16(word_a) +
+         " word B=0x" + hex16(word_b));
+    expect(word_a != word_b, "fixture-liveness");
+    joy1_val = 0xFFFF; top->_joy1 = joy1_val; settle(4);
+
+    // =====================================================================
+    // Group A -- pins 1-4, joystick direct-read (page 228, Table 8-1)
+    // Control case: pin4/right (opus:8-tbl8-1.c10, sol:8-pin.c11) -- the
+    // cleanest single-bit read in this file, same measurement basis as
+    // everything else below.
+    // =====================================================================
+
+    // --- pin 1 = Joystick "Forward" (bit3), read via JOY1DAT bit8 ---
+    // bit8 = (pin3 level) XOR (pin1 level); hold pin3 idle so bit8 reads
+    // pin1 alone.
+    joy1_bit(1, false); // pin3 idle
+#ifndef MUT_pin1fwd
+    joy1_bit(3, true);  // press pin1 (forward)
+#endif
+    settle(4);
+    { uint16_t v = read_reg(JOY1DAT);
+      bool bit8 = (v >> 8) & 1;
+      note("pin1 forward: JOY1DAT=0x" + hex16(v) + " bit8=" + std::to_string(bit8));
+      expect(bit8, "opus:8-tbl8-1.c1");
+      expect(bit8, "sol:8-pin.c1"); }
+    joy1_bit(3, false); settle(4);
+
+    // --- pin 1 = Mouse/TB/DC "V-pulse": toggling pin1 alone (bit3) moves
+    // the vertical byte (JOY1DAT[15:8]) and leaves the horizontal byte
+    // (JOY1DAT[7:0]) unchanged. Pin 3 held idle throughout. ---
+    { uint16_t before = read_reg(JOY1DAT);
+      uint8_t horiz_before = before & 0xFF;
+#ifndef MUT_pin1v
+      joy1_bit(3, true); settle(6); // one clean idle->pressed edge: one pulse
+#else
+      settle(6); // mutation: pin1 (bit3) never toggled
+#endif
+      uint16_t after = read_reg(JOY1DAT);
+      uint8_t horiz_after = after & 0xFF;
+      bool moved = (before & 0xFF00) != (after & 0xFF00);
+      bool horiz_steady = horiz_before == horiz_after;
+      note("pin1 V-pulse: JOY1DAT before=0x" + hex16(before) +
+           " after=0x" + hex16(after));
+      expect(moved && horiz_steady, "opus:8-tbl8-1.c2");
+      expect(moved && horiz_steady, "sol:8-pin.c2"); }
+    joy1_bit(3, false); settle(4);
+
+    // --- pin 2 = Joystick "Back" (bit2), read via JOY1DAT bit0 ---
+    // bit0 = (pin4 level) XOR (pin2 level); hold pin4 idle.
+    joy1_bit(0, false); // pin4 idle
+#ifndef MUT_pin2back
+    joy1_bit(2, true); // press pin2 (back)
+#endif
+    settle(4);
+    { uint16_t v = read_reg(JOY1DAT);
+      bool bit0 = v & 1;
+      note("pin2 back: JOY1DAT=0x" + hex16(v) + " bit0=" + std::to_string(bit0));
+      expect(bit0, "opus:8-tbl8-1.c4");
+      expect(bit0, "sol:8-pin.c5"); }
+    joy1_bit(2, false); settle(4);
+
+    // --- pin 2 = Mouse/TB/DC "H-pulse": toggling pin2 alone (bit2) moves
+    // the horizontal byte and leaves the vertical byte unchanged. ---
+    { uint16_t before = read_reg(JOY1DAT);
+      uint8_t vert_before = (before >> 8) & 0xFF;
+#ifndef MUT_pin2h
+      joy1_bit(2, true); settle(6); // one clean idle->pressed edge: one pulse
+#else
+      settle(6);
+#endif
+      uint16_t after = read_reg(JOY1DAT);
+      uint8_t vert_after = (after >> 8) & 0xFF;
+      bool moved = (before & 0x00FF) != (after & 0x00FF);
+      bool vert_steady = vert_before == vert_after;
+      note("pin2 H-pulse: JOY1DAT before=0x" + hex16(before) +
+           " after=0x" + hex16(after));
+      expect(moved && vert_steady, "opus:8-tbl8-1.c5");
+      expect(moved && vert_steady, "sol:8-pin.c6"); }
+    joy1_bit(2, false); settle(4);
+
+    // --- pin 3 = Joystick "Left" (bit1), read via JOY1DAT bit9 (clean:
+    // depends only on pin3) ---
+#ifndef MUT_pin3left
+    joy1_bit(1, true); // press pin3 (left)
+#endif
+    settle(4);
+    { uint16_t v = read_reg(JOY1DAT);
+      bool bit9 = (v >> 9) & 1;
+      note("pin3 left: JOY1DAT=0x" + hex16(v) + " bit9=" + std::to_string(bit9));
+      expect(bit9, "opus:8-tbl8-1.c6");
+      expect(bit9, "sol:8-pin.c7"); }
+    joy1_bit(1, false); settle(4);
+
+    // --- pin 3 = Mouse/TB/DC "VQ-pulse": toggling pin3 alone (bit1) moves
+    // the vertical byte, horizontal byte unchanged. ---
+    { uint16_t before = read_reg(JOY1DAT);
+      uint8_t horiz_before = before & 0xFF;
+#ifndef MUT_pin3vq
+      joy1_bit(1, true); settle(6); // one clean idle->pressed edge: one pulse
+#else
+      settle(6);
+#endif
+      uint16_t after = read_reg(JOY1DAT);
+      uint8_t horiz_after = after & 0xFF;
+      bool moved = (before & 0xFF00) != (after & 0xFF00);
+      bool horiz_steady = horiz_before == horiz_after;
+      note("pin3 VQ-pulse: JOY1DAT before=0x" + hex16(before) +
+           " after=0x" + hex16(after));
+      expect(moved && horiz_steady, "opus:8-tbl8-1.c7");
+      expect(moved && horiz_steady, "sol:8-pin.c8"); }
+    joy1_bit(1, false); settle(4);
+
+    // --- pin 4 = Joystick "Right" (bit0), read via JOY1DAT bit1 (clean:
+    // depends only on pin4) -- CONTROL CASE ---
+#ifndef MUT_pin4right
+    joy1_bit(0, true); // press pin4 (right)
+#endif
+    settle(4);
+    { uint16_t v = read_reg(JOY1DAT);
+      bool bit1 = (v >> 1) & 1;
+      note("pin4 right (control case): JOY1DAT=0x" + hex16(v) + " bit1=" + std::to_string(bit1));
+      expect(bit1, "opus:8-tbl8-1.c10");
+      expect(bit1, "sol:8-pin.c11"); }
+    joy1_bit(0, false); settle(4);
+
+    // --- pin 4 = Mouse/TB/DC "HQ-pulse": toggling pin4 alone (bit0) moves
+    // the horizontal byte, vertical byte unchanged. ---
+    { uint16_t before = read_reg(JOY1DAT);
+      uint8_t vert_before = (before >> 8) & 0xFF;
+#ifndef MUT_pin4hq
+      joy1_bit(0, true); settle(6); // one clean idle->pressed edge: one pulse
+#else
+      settle(6);
+#endif
+      uint16_t after = read_reg(JOY1DAT);
+      uint8_t vert_after = (after >> 8) & 0xFF;
+      bool moved = (before & 0x00FF) != (after & 0x00FF);
+      bool vert_steady = vert_before == vert_after;
+      note("pin4 HQ-pulse: JOY1DAT before=0x" + hex16(before) +
+           " after=0x" + hex16(after));
+      expect(moved && vert_steady, "opus:8-tbl8-1.c11");
+      expect(moved && vert_steady, "sol:8-pin.c12"); }
+    joy1_bit(0, false); settle(4);
+
+    // =====================================================================
+    // Group B -- pin 9, proportional-controller pot gating (POT1DAT, port 2:
+    // clean, no ANDed mouse-button term -- potcap[3] <= _djoy2[5] & ...,
+    // and _djoy2[5] tracks _joy1[5] = pin 9 directly).
+    // =====================================================================
+    write_reg(POTGO, 0x0001); // START: pot1x=pot1y=0, and not forcing pin9 as output
+    settle(4);
+#ifndef MUT_pin9y
+    joy1_bit(5, true); // press pin9 (hold low): X/Y gates free-run while held
+#endif
+    settle(4);         // let the 2-stage synchroniser settle before counting
+    uint16_t pot1_before = read_reg(POT1DAT);
+    static const int PULSES = 20;
+    for (int i = 0; i < PULSES; i++) { top->pot_cnt_en = 1; tick(); top->pot_cnt_en = 0; tick(); }
+    uint16_t pot1_held = read_reg(POT1DAT);
+    joy1_bit(5, false); // release pin9: the Y byte should now freeze
+    settle(4);
+    for (int i = 0; i < PULSES; i++) { top->pot_cnt_en = 1; tick(); top->pot_cnt_en = 0; tick(); }
+    uint16_t pot1_released = read_reg(POT1DAT);
+    {
+        uint8_t y_before = (pot1_before >> 8) & 0xFF, y_held = (pot1_held >> 8) & 0xFF, y_released = (pot1_released >> 8) & 0xFF;
+        uint8_t x_before = pot1_before & 0xFF, x_held = pot1_held & 0xFF, x_released = pot1_released & 0xFF;
+        note("pin9 pot-gate: POT1DAT before=0x" + hex16(pot1_before) +
+             " held=0x" + hex16(pot1_held) + " released=0x" + hex16(pot1_released));
+        bool y_advanced_while_held = y_held != y_before;
+        bool y_frozen_after_release = y_released == y_held;
+        bool x_essentially_static = (x_before == x_held) && (x_held == x_released);
+        bool gate_ok = y_advanced_while_held && y_frozen_after_release && x_essentially_static;
+        expect(gate_ok, "opus:8-tbl8-1.c32");
+        expect(gate_ok, "sol:8-pin.c35");
+        expect(gate_ok, "opus:8-tbl8-1.c33");
+        expect(gate_ok, "sol:8-pin.c36");
+    }
+
+    // =====================================================================
+    // Group E -- pins 5 & 9, output-configurability footnote ("* These pins
+    // may also be configured as outputs"). Tested through POTGO (write) and
+    // POTINP (read) alone, since the observable effect is a forced,
+    // input-independent bit in POTINP once the corresponding OUTxx/DATxx
+    // pair is written -- no DB9-facing port is required for this claim.
+    // =====================================================================
+    write_reg(POTGO, 0x0001); // clear any forcing bits, reset pot state
+    settle(4);
+
+    // --- pin 5 (port 1's copy: potcap[0], POTINP bit 8) ---
+    top->mouse_btn = 0; // mouse middle button not pressed throughout
+    settle(4);
+    uint16_t potinp_baseline5 = read_reg(POTINP);
+#ifndef MUT_pin5out
+    write_reg(POTGO, 0x0200); // OUTLX=1 (bit9), DATLX=0 (bit8): force pin5 low
+#endif
+    settle(4);
+    uint16_t potinp_forced5 = read_reg(POTINP);
+    {
+        bool bit8_baseline = (potinp_baseline5 >> 8) & 1;
+        bool bit8_forced = (potinp_forced5 >> 8) & 1;
+        note("pin5 output-capable: POTINP baseline=0x" + hex16(potinp_baseline5) +
+             " forced=0x" + hex16(potinp_forced5));
+        // same external state (mouse_btn unchanged) throughout; the forced
+        // reading must differ from the baseline for the claim to hold.
+        bool ok = bit8_baseline != bit8_forced;
+        expect(ok, "opus:8-tbl8-1.c35");
+        expect(ok, "sol:8-pin.c39");
+    }
+    write_reg(POTGO, 0x0001); // release the force, reset again
+    settle(4);
+
+    // --- pin 9 (port 2's copy: potcap[3], POTINP bit 14) ---
+    joy1_bit(5, false); // pin9 idle throughout this sub-test
+    settle(4);
+    uint16_t potinp_baseline9 = read_reg(POTINP);
+#ifndef MUT_pin9out
+    write_reg(POTGO, 0x8000); // OUTLY=1 (bit15), DATLY=0 (bit14): force pin9 low
+#endif
+    settle(4);
+    uint16_t potinp_forced9 = read_reg(POTINP);
+    {
+        bool bit14_baseline = (potinp_baseline9 >> 14) & 1;
+        bool bit14_forced = (potinp_forced9 >> 14) & 1;
+        note("pin9 output-capable: POTINP baseline=0x" + hex16(potinp_baseline9) +
+             " forced=0x" + hex16(potinp_forced9));
+        bool ok = bit14_baseline != bit14_forced;
+        expect(ok, "opus:8-tbl8-1.c37");
+        expect(ok, "sol:8-pin.c41");
+    }
+
+    // =====================================================================
+    // Declined claims -- named individually, one record() line per uid.
+    // =====================================================================
+
+    // Group B2 -- pin 5's pot-gating cells: no port behind them (see
+    // SPECIFICATION.md, "RTL boundary finding"). Port 2's X-gate
+    // (joy2_pin5 = ~(potreg[13] & ~potreg[12])) reads no external input at
+    // all; port 1's substitute is mouse_btn[2], a "mouse device button"
+    // abstraction, not a bit of the per-pin _joy1/_joy2 connector vector the
+    // way pin 9 (_joy1[5]/_joy2[5]) is.
+    record("opus:8-tbl8-1.c15 (pin 5 = Right POT) declined: no module port in "
+           "userio.v carries the DB9 connector's pin 5 into the X/Right-POT "
+           "gate on either controller port -- port 2's gate reads no external "
+           "input at all, port 1's substitute (mouse_btn[2]) is a differently-"
+           "scoped mouse-button abstraction, not a connector-vector bit. "
+           "Absent signal at this boundary.");
+    record("sol:8-pin.c17 (pin 5 = Right POT) declined: same reason as "
+           "opus:8-tbl8-1.c15.");
+    record("opus:8-tbl8-1.c16 (pin 5 = POT X) declined: same reason as "
+           "opus:8-tbl8-1.c15 -- POT X and Right POT name the same absent "
+           "byte-gate.");
+    record("sol:8-pin.c18 (pin 5 = POT X) declined: same reason as "
+           "opus:8-tbl8-1.c15.");
+
+    // Group C -- pin 5/9 device-identity claims: the pin is a readable
+    // digital level; which named external device produced that level is
+    // wiring outside userio.v's boundary, not something the module decides.
+    record("opus:8-tbl8-1.c14 (pin 5 = Mouse/TB/DC middle button) declined: "
+           "userio.v senses a level on this path (via mouse_btn[2] -> "
+           "potcap[0] -> POTINP bit8), but has no notion of which physical "
+           "device produced it; 'it was specifically a mouse's middle "
+           "button' is not observable here.");
+    record("sol:8-pin.c15 (pin 5 = Mouse/TB/DC middle button) declined: same "
+           "reason as opus:8-tbl8-1.c14.");
+    record("opus:8-tbl8-1.c17 (pin 5 = Light Pen pen-pressed-to-screen) "
+           "declined: same sensed level as opus:8-tbl8-1.c14 (POTINP bit8), "
+           "same device-identity gap.");
+    record("sol:8-pin.c19 (pin 5 = Light Pen pen-pressed-to-screen) declined: "
+           "same reason as opus:8-tbl8-1.c17.");
+    record("opus:8-tbl8-1.c30 (pin 9 = Joystick Button 2) declined: userio.v "
+           "senses a level on this path (potcap[1]/potcap[3] -> POTINP "
+           "bit10/bit14), but cannot tell a joystick's button 2 from a "
+           "mouse's right button or a light pen's button 2 producing the "
+           "same level.");
+    record("sol:8-pin.c32 (pin 9 = Joystick Button 2) declined: same reason "
+           "as opus:8-tbl8-1.c30.");
+    record("opus:8-tbl8-1.c31 (pin 9 = Mouse/TB/DC right button) declined: "
+           "same sensed level as opus:8-tbl8-1.c30, same device-identity "
+           "gap.");
+    record("sol:8-pin.c34 (pin 9 = Mouse/TB/DC right button) declined: same "
+           "reason as opus:8-tbl8-1.c31.");
+    record("opus:8-tbl8-1.c34 (pin 9 = Light Pen button 2) declined: same "
+           "sensed level as opus:8-tbl8-1.c30, same device-identity gap.");
+    record("sol:8-pin.c37 (pin 9 = Light Pen button 2) declined: same reason "
+           "as opus:8-tbl8-1.c34.");
+
+    // Group D -- pin 6's fire-line claims: wrong fixture. userio.v computes
+    // _fire0/_fire1 as output ports toward the CIA, but does not itself
+    // expose a readable register bit for them (the readable bit lives on
+    // ciaa.v's CIAAPRA). Belongs to ch8-ciaapra-fire-buttons.
+    record("opus:8-tbl8-1.c18 (pin 6 = Joystick Button 1) declined: this is "
+           "the chapter's fire line; the claim belongs to "
+           "ch8-ciaapra-fire-buttons on the ciaa fixture, not to userio.v "
+           "(userio.v only drives _fire0/_fire1 outward to the CIA; it does "
+           "not itself expose a readable fire bit).");
+    record("sol:8-pin.c20 (pin 6 = Joystick Button 1) declined: same reason "
+           "as opus:8-tbl8-1.c18.");
+    record("opus:8-tbl8-1.c19 (pin 6 = Mouse/TB/DC left button) declined: "
+           "same reason as opus:8-tbl8-1.c18 -- belongs to "
+           "ch8-ciaapra-fire-buttons.");
+    record("sol:8-pin.c21 (pin 6 = Mouse/TB/DC left button) declined: same "
+           "reason as opus:8-tbl8-1.c19.");
+
+    std::cout << passed << " passed, " << failed << " failed\n";
+
+    top->final();
+    delete top;
+    return failed == 0 ? 0 : 1;
+}
