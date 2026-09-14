@@ -139,6 +139,14 @@ public:
     int passed = 0, failed = 0;
 };
 
+// Pulled out of an expect() call: an inline lambda there hides the whole
+// assertion from every static reader, the mutation gate included.
+static std::string hex4_of(uint16_t x) {
+    char b[8];
+    std::snprintf(b, sizeof b, "%04X", x);
+    return std::string(b);
+}
+
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     g_mutate = std::getenv("MUTATE");
@@ -405,11 +413,18 @@ int main(int argc, char** argv) {
                     [](uint16_t x){ char b[8]; std::snprintf(b, sizeof b, "%04X", x); return std::string(b); }(after) +
                     " after a 0x00AA transmission has looped back through rxd");
 
+        // The hex formatting was an inline lambda INSIDE this expect() call.
+        // Its semicolons break the span check_gates.py uses to find a call, so
+        // the whole assertion was invisible to the gate -- neither counted as an
+        // assertion nor counted as unreadable -- and that made this package's own
+        // mutation record look like it named something that is not an assertion.
+        // Hoisted out. The label text and the condition are unchanged.
+        const std::string baseline_hex = hex4_of(baseline);
         checks.expect(after != baseline && after != 0x0000,
             "T4-SERDATR-CONTENT-ARRIVES (p.289, opus:8-appB.c35 sol:8-appB.c34, quote 'SERDATR      *018   R           "
             "P    Serial port data and status read'): reading SERDATR's own address ($018) after a real transmission "
             "has looped back through paula_uart's RX state machine returns content that differs from both the reset "
-            "baseline (0x" + [](uint16_t x){ char b[8]; std::snprintf(b, sizeof b, "%04X", x); return std::string(b); }(baseline) +
+            "baseline (0x" + baseline_hex +
             ") and an unaddressed 0x0000 -- the data genuinely arrived at this register's own read address, which "
             "only paula_uart (instantiated inside this fixture, pu1, paula.v:203) can produce");
     }
