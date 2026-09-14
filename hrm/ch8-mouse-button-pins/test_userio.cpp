@@ -97,6 +97,8 @@
 //   Verilator's 0 default is safe for it, and it is still driven
 //   explicitly below for clarity).
 //
+// MUTATION A0-DIGITAL-LIVENESS stimulus red MUT_A0DIGITAL: the second liveness pattern driven identical to the first, so the two reads are indistinguishable. RUN: baseline 12 passed 0 failed -> 11 passed 1 failed, only this label red; reverted 12/0.
+// MUTATION A0-COUNTER-LIVENESS stimulus red MUT_A0COUNTER: zero pot_cnt_en pulses instead of ten, so neither byte can advance. RUN: baseline 12 passed 0 failed -> 11 passed 1 failed, only this label red; reverted 12/0.
 // MUTATION METHODOLOGY. This fixture's Makefile (byte-identical to the
 //   three siblings read for the build pattern) mutates at COMPILE time:
 //   `make MUT=<NAME>` defines MUT_<NAME>=1 via -CFLAGS, guarding an
@@ -243,7 +245,13 @@ int main(int argc, char** argv) {
         checks.note("A0-DIGITAL-WORD1: mouse_btn=3'b011 -> POTINP=0x" +
                     std::to_string(v1) + " (_fire0=" + std::to_string(fire0_1) + ")");
 
+#ifdef MUT_A0DIGITAL
+        // Stimulus mutation: drive the SAME pattern as word1, so the two reads
+        // are not mutually distinguishable and the liveness proof fails.
+        set_mouse_btn(false, true, false);
+#else
         set_mouse_btn(false, false, true);  // bit2 pressed, bit0+bit1 idle (disjoint pattern)
+#endif
         settle();
         uint16_t v2 = read_reg(ADDR_POTINP);
         bool fire0_2 = dut->_fire0;
@@ -271,7 +279,11 @@ int main(int argc, char** argv) {
     {
         set_mouse_btn(false, true, true);
         settle();
+#ifdef MUT_A0COUNTER
+        pulse_counts(0);   // stimulus mutation: no pulses, so nothing can advance
+#else
         pulse_counts(10);
+#endif
         uint16_t pot0dat = read_reg(ADDR_POT0DAT);
         uint8_t pot0x = pot0dat & 0xFF;
         uint8_t pot0y = (pot0dat >> 8) & 0xFF;
