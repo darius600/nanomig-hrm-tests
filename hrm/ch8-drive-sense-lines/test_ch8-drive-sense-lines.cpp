@@ -11,7 +11,18 @@
 //   DSKRDY*, PA4 DSKTRACK0*, PA3 DSKPROT*, PA2 DSKCHANGE*; full quotations
 //   in SPECIFICATION.md).
 // This package's specific subject, named by the build brief:
-//   C4 -- _ready never consults motor state (opus:8-cia.c7). Expected RED.
+//   C4 -- opus:8-cia.c7 (_ready with the motor off). REPAIRED 2026-09-15:
+//         independent validation found the original graded-RED assertion
+//         tested MORE than its cited page states. p.244, three lines below
+//         the sentence this claim cites, reads: "This signal is only valid
+//         when the motor is ON, at other times configuration information
+//         may obscure the meaning of this input." The page itself declines
+//         to say what _ready means with the motor off, so a check requiring
+//         a particular value there tests a case the page expressly refuses
+//         to define. DECLINED via record(), not graded through expect() --
+//         see the opus:8-cia.c7 block below. The RTL fact this claim was
+//         built on (paula_floppy.v:688-694 never consults _motor) is real
+//         and is kept as a note(), not a finding against this page.
 //   C5 -- _track0 latency is 0 ticks, purely combinational; no claim among
 //         this package's 10 cites the "4 ms max" figure, so it is measured
 //         and reported via note(), not graded.
@@ -42,9 +53,12 @@
 //   only `index` and `syncint`, neither read by this package). The file's
 //   own changelog (line 54) documents this as deliberate: "2008-09-24 -
 //   incompatibility found: _READY signal should respond to _SELx even when
-//   the motor is off" -- confirming C4 is an intentional compatibility
-//   choice in the implementation, not an oversight, even though it
-//   contradicts the printed page.
+//   the motor is off" -- a genuine, deliberate compatibility choice in the
+//   implementation, and an interesting measured fact, but NOT a conformance
+//   finding against p.244: that page's own next sentence declines to define
+//   _ready's value with the motor off at all, so this RTL behaviour cannot
+//   contradict a value the page never printed. Recorded as a decline, not
+//   graded.
 //
 //   _track0 (paula_floppy.v:666,683,671-680):
 //     assign _selx = &_sel[3:0];                    // true iff NO drive selected
@@ -106,32 +120,35 @@
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup -- one build serves the real run (MUTATE unset) and every
 //   mutation run (MUTATE=<id>, one id per assertion). Ids are the claim's
-//   own `classify.uid` for the 10 claim-based assertions (this suite's
-//   chapter-8 convention) and a plain uppercase id for FIXTURE-LIVE,
+//   own `classify.uid` for the 9 remaining claim-based assertions (this
+//   suite's chapter-8 convention) and a plain uppercase id for FIXTURE-LIVE,
 //   READY-SEL-CONTROL and SEL-MASKS-TRACK0, which carry no manual citation.
-//   `opus:8-cia.c7` is RED at baseline (C4), so per this suite's rule
-//   against mutating an already-failing check, its MUTATE run does not flip
-//   a stimulus red -- it substitutes a DIFFERENT mechanism (drive selection,
-//   proven live elsewhere in this same run by READY-SEL-CONTROL) through
-//   the IDENTICAL `_ready`-deasserted comparator and the same label, and
-//   that run is GREEN.
+//   `opus:8-cia.c7` (C4) carries NO `expect()` and NO mutation record: it is
+//   DECLINED via `record()` (see that block below), per this suite's rule
+//   that `record()` is the only place a declined uid may appear and a uid on
+//   a graded line counts as ASSERTED regardless of the words around it.
+//   REPAIR NOTE (2026-09-15): the previous revision graded this as RED at
+//   baseline and defended it with a substitute mutation (drive selection, in
+//   place of the motor condition, through the identical `_ready`-deasserted
+//   comparator). Independent validation found that framing wrong: the
+//   assertion required a value p.244 itself declines to define with the
+//   motor off, so it tested more than the page states. That is a decline,
+//   not a red finding, so the graded check and its substitute mutation are
+//   both removed; READY-SEL-CONTROL alone remains as the live proof that
+//   `_ready`'s port is not dead or stuck.
 //
-// MUTATION RUN LOG (measured, WSL/Verilator 5.052, all 14 runs from a single
-//   build -- see the report accompanying this commit for the full
-//   per-assertion table):
-//   Baseline (MUTATE unset): 13 checks.expect() calls, 12 passed, 1 failed
-//   (opus:8-cia.c7 -- the expected C4 finding). Each of MUTATE=FIXTURE-LIVE,
+// MUTATION RUN LOG (measured, WSL/Verilator 5.052 -- see the report
+//   accompanying this commit for the full per-assertion table):
+//   Baseline (MUTATE unset): 12 checks.expect() calls, 12 passed, 0 failed,
+//   plus 1 RECORDED decline (opus:8-cia.c7). Each of MUTATE=FIXTURE-LIVE,
 //   READY-SEL-CONTROL, opus:8-cia.c12, sol:8-cia.c10, SEL-MASKS-TRACK0,
 //   opus:8-cia.c15, sol:8-cia.c15, opus:8-cia.c17, opus:8-cia.c19,
 //   sol:8-cia.c18, opus:8-cia.c20, sol:8-cia.c19 was run and confirmed
-//   11 passed / 2 failed (only the targeted label's line flipped from PASS
-//   to FAIL among the 12 baseline-green checks; the 1 baseline-red check,
-//   opus:8-cia.c7, unaffected in every one of these 12 runs). MUTATE=
-//   opus:8-cia.c7 was run and confirmed 13 passed / 0 failed (only that one
-//   label flipped from FAIL to PASS via the substitute mechanism, nothing
-//   else moved). All 13 runs, individually, moved exactly one line relative
-//   to baseline -- no cross-contamination between assertions, confirming
-//   each comparator is genuinely sensitive to its own targeted stimulus.
+//   11 passed / 1 failed (only the targeted label's line flipped from PASS
+//   to FAIL among the 12 baseline-green checks). All 12 runs, individually,
+//   moved exactly one line relative to baseline -- no cross-contamination
+//   between assertions, confirming each comparator is genuinely sensitive to
+//   its own targeted stimulus.
 
 #include <cstdint>
 #include <cstdlib>
@@ -312,9 +329,10 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // READY-SEL-CONTROL -- this package's mandatory control case, on the
-    // SAME _ready port/comparator as opus:8-cia.c7 below: proof that _ready
-    // is a live signal that responds to something real (selection), so that
-    // assertion's red is about the motor condition specifically.
+    // SAME _ready port/comparator the declined opus:8-cia.c7 citation below
+    // reads: proof that _ready is a live signal that responds to something
+    // real (selection), so that citation's decline is about the page's own
+    // silence on the motor-off case, not about a dead or stuck port.
     // ========================================================================
     {
         Rig r;
@@ -329,48 +347,45 @@ int main(int argc, char** argv) {
                     ", " + std::string(mut ? "still deselected (mutated)" : "selected") +
                     " -> _ready asserted=" + std::to_string(ready_selected));
         checks.expect(!ready_deselected && ready_selected,
-            "READY-SEL-CONTROL (control case, no manual citation, same _ready port/comparator as opus:8-cia.c7): "
-            "deselecting every drive deasserts _ready and selecting a configured drive asserts it -- "
-            "paula_floppy.v:688-694 -- proving _ready is live and responds to selection, so opus:8-cia.c7's red "
-            "is about the motor condition specifically, not a dead or stuck port");
+            "READY-SEL-CONTROL (control case, no manual citation, same _ready port/comparator opus:8-cia.c7 "
+            "below reads): deselecting every drive deasserts _ready and selecting a configured drive asserts it "
+            "-- paula_floppy.v:688-694 -- proving _ready is live and responds to selection, so opus:8-cia.c7's "
+            "decline (below) is about the page's own silence on the motor-off case, not a dead or stuck port");
     }
 
     // ========================================================================
-    // opus:8-cia.c7 (p.244) -- P-READY. This package's headline (finding
-    // candidate C4). Expected RED at baseline.
+    // opus:8-cia.c7 (p.244) -- P-READY, motor OFF. DECLINED 2026-09-15, not
+    // graded. Repair of finding candidate C4: independent validation found
+    // the previous graded-RED assertion tested MORE than its cited page
+    // states. p.244, three lines below the sentence this claim cites, reads:
+    // "This signal is only valid when the motor is ON, at other times
+    // configuration information may obscure the meaning of this input." The
+    // page expressly declines to define _ready's value with the motor off,
+    // so a check requiring a particular value in that state is not a
+    // conformance test of anything the page prints. Per this suite's rule,
+    // `record()` is the only place a declined uid may appear -- this uid is
+    // no longer on any `expect()` line and carries no mutation record.
     // ========================================================================
     {
         Rig r;
-        bool mut = mutating("opus:8-cia.c7");
-        bool ready_state;
-        if (!mut) {
-            r.d->_motor = 1;  // active low: 1 = motor OFF
-            r.select(0);
-            ready_state = r.ready();
-            checks.note("opus:8-cia.c7: drive0 selected, _motor=OFF -> _ready asserted(ready)=" +
-                        std::to_string(ready_state));
-            checks.expect(!ready_state,
-                "opus:8-cia.c7 (p.244, quote 'The drive will pull this line low when the motor is known to be "
-                "rotating at full speed. This signal is only valid when the motor is ON...'): with the motor OFF "
-                "and the drive selected, _ready is expected NOT asserted -- paula_floppy.v:688-694 computes "
-                "_ready from _sel and the configured drive count only (the module's own 2008-09-24 changelog "
-                "entry documents this as a deliberate compatibility choice), so this is expected to fail against "
-                "the RTL (finding candidate C4)");
-        } else {
-            // MUTATION (substitute, per the rule against mutating an
-            // already-red check): the stimulus swaps in drive selection --
-            // proven live elsewhere in this same run by READY-SEL-CONTROL --
-            // through the IDENTICAL _ready-deasserted comparator in place of
-            // the motor condition.
-            r.deselect_all();
-            ready_state = r.ready();
-            checks.note("opus:8-cia.c7 [substitute]: drive0 DESELECTED (mechanism proven live by "
-                        "READY-SEL-CONTROL) -> _ready asserted(ready)=" + std::to_string(ready_state));
-            checks.expect(!ready_state,
-                "opus:8-cia.c7 (substitute mechanism, MUTATE run only): deselecting the drive -- a condition "
-                "_ready DOES consult, per paula_floppy.v:688-694 -- through the identical _ready-deasserted "
-                "comparator, in place of the motor condition the RTL never consults");
-        }
+        r.d->_motor = 1;  // active low: 1 = motor OFF
+        r.select(0);
+        bool ready_state = r.ready();
+        checks.note("opus:8-cia.c7: drive0 selected, _motor=OFF -> _ready asserted(ready)=" +
+                    std::to_string(ready_state) + " -- measured for interest only, not graded");
+        checks.record(
+            "opus:8-cia.c7 (p.244): the cited sentence ('The drive will pull this line low when the motor is "
+            "known to be rotating at full speed.') is followed, three lines later on the same printed page, by "
+            "'This signal is only valid when the motor is ON, at other times configuration information may "
+            "obscure the meaning of this input.' The page itself declines to define _ready's value with the "
+            "motor off, so a check requiring _ready deasserted in that state tests a case the page expressly "
+            "refuses to specify -- more than the page states. Declined, not graded. Measured for interest only: "
+            "paula_floppy.v:688-694 computes _ready from _sel and the configured drive count alone (no _motor "
+            "term anywhere in its cone; drive0 selected, motor off, reads " + std::string(!ready_state ? "NOT " : "") +
+            "asserted here), and the module's own 2008-09-24 changelog entry documents this as a deliberate "
+            "compatibility choice ('_READY signal should respond to _SELx even when the motor is off'), not an "
+            "oversight -- a real, interesting fact about NanoMig, but not a conformance failure against a page "
+            "that names no expected value for this case.");
     }
 
     // ========================================================================
@@ -667,7 +682,7 @@ int main(int argc, char** argv) {
 
 // MUTATION FIXTURE-LIVE stimulus red: word 2 driven identical to word 1 instead of its complement, so the two readings are indistinguishable (MUTATE=FIXTURE-LIVE).
 // MUTATION READY-SEL-CONTROL stimulus red: the drive is never actually selected, so the "asserts once selected" half is never exercised (MUTATE=READY-SEL-CONTROL).
-// MUTATION opus:8-cia.c7 stimulus green: this assertion is RED at baseline (C4), so per the rule against mutating an already-failing check, the stimulus substitutes drive selection -- proven live elsewhere in this run by READY-SEL-CONTROL -- through the identical _ready-deasserted comparator in place of the motor condition (MUTATE=opus:8-cia.c7).
+// opus:8-cia.c7 -- DECLINED via record(), not expect(); no mutation record (not graded through expect()). Repair 2026-09-15: the previous stimulus-green substitute record is removed along with the graded check it defended -- see the header's REPAIR NOTE.
 // MUTATION opus:8-cia.c12 stimulus red: the second step is redirected to move away from zero AGAIN instead of back toward it, so the drive never returns to track 0 and the final read is checked against a state that never occurred (MUTATE=opus:8-cia.c12).
 // MUTATION sol:8-cia.c10 stimulus red: same redirection as opus:8-cia.c12, independent uid (MUTATE=sol:8-cia.c10).
 // MUTATION SEL-MASKS-TRACK0 stimulus red: the drive is never actually deselected, so the masking condition (_selx) is never true and the run cannot distinguish the mask from the genuine track-zero state (MUTATE=SEL-MASKS-TRACK0).

@@ -68,10 +68,21 @@ RTL) as follows:
 - **C4** (grades `opus:8-cia.c7` / P-READY): the build brief states
   `paula_floppy.v:688-694` computes `_ready` from `_sel` and the configured
   drive count only, and the module's own comment marks the motor/disk
-  condition "(not implemented)". **P-READY is expected to grade RED** — with
-  the motor inactive and the drive selected, the RTL is expected to still
-  report ready, contradicting the page's "only valid when the motor is ON"
-  condition. This red is the deliverable, not a defect to route around.
+  condition "(not implemented)".
+  **REPAIRED 2026-09-15.** The original revision of this document (and the
+  package built from it) graded P-READY as expected RED. Independent
+  validation found that wrong: p.244, three lines below the sentence this
+  claim cites, reads "This signal is only valid when the motor is ON, at
+  other times configuration information may obscure the meaning of this
+  input." The page itself declines to say what `_ready` means with the
+  motor off, so a check requiring a particular value there tests a case the
+  page expressly refuses to define — more than the page states. **P-READY
+  is now DECLINED via `record()`, not graded through `expect()`.** The RTL
+  fact this claim was built on (the motor term is genuinely absent from
+  `_ready`'s cone, confirmed by reading `paula_floppy.v:688-694`, and the
+  module's own 2008-09-24 changelog documents this as a deliberate
+  compatibility choice) is kept as a measured `note()`, not a finding
+  against this page.
 - **C5** (no claim in this package's 10 cites the timing figure this
   candidate is about): the build brief states `_track0` is purely
   combinational (`paula_floppy.v:666,683`), so its latency is 0 ticks and
@@ -123,7 +134,9 @@ four sense bits, so the entire testable content of each claim lives inside
 
 All 10 claim-based assertions are page 244.
 
-- **A1** — `opus:8-cia.c7` (P-READY). **Expected RED** (C4).
+- **A1** — `opus:8-cia.c7` (P-READY). **DECLINED via `record()` (repaired
+  2026-09-15, was C4)** — see the repair note above; not graded through
+  `expect()`, no mutation record.
 - **A2** — `opus:8-cia.c12` (P-TRACK0-ZERO). **Expected GREEN.**
 - **A3** — `sol:8-cia.c10` (P-TRACK0-ZERO, twin of A2). **Expected GREEN.**
 - **A4** — `opus:8-cia.c15` (P-TRACK0-REFUSE-OUTWARD). **Expected GREEN.**
@@ -177,14 +190,14 @@ SEL-MASKS-TRACK0.
   assert `floppy_wrprot`, never drop `sdc_image_size`, never send the step
   pulse after reinsertion, never deselect, etc.), leave the expected value
   alone, confirm the targeted assertion alone goes red, then revert.
-- **A1** (expected RED at baseline, per C4): a stimulus mutation cannot
-  demonstrate anything on an already-failing check. The substitute rule
-  applies instead — a different mechanism, proven live elsewhere in the same
-  run (selection, proven live by READY-SEL-CONTROL), is put through the
-  *same* `_ready` comparator in place of the motor condition, and that run is
-  expected to go GREEN. Recorded as `stimulus green`, per this suite's own
-  convention for a substitute (seen in `hrm/ch8-drive-select-motor-led`'s
-  A5/A6 records on its own expected-red finding).
+- **A1** — **repaired 2026-09-15: no longer an `expect()` assertion, so no
+  mutation record.** The original plan treated this as expected-RED and
+  applied the substitute rule (a different live mechanism through the same
+  comparator). That plan is withdrawn along with the graded check itself:
+  P-READY is a decline (the page names no value for the motor-off case), and
+  `record()` lines carry no mutation record per this suite's own rule.
+  READY-SEL-CONTROL (above) remains, unchanged, as the live proof that the
+  `_ready` port itself is not dead or stuck.
 
 Which exact stimulus each mutation changes, and the measured before/after
 pass/fail tally, is recorded in the C++ source once the package is built and
