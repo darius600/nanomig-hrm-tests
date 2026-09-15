@@ -53,6 +53,25 @@
 //   their id cited inside the assertion's own text; 6 are explicitly not
 //   covered here.
 //
+// CH8 SLICE S2 EXTENSION (2026-09-15): 73 of chapter 8 slice s2's own
+//   claims land on this already-accepted chapter-5 package because they
+//   restate, from chapter 8's own pages (241 and 249) and its own
+//   appendix-A/B readings, register facts this package already grades at
+//   the paula.v boundary. 69 are `extend`: each classify.uid was appended
+//   to the label of the one (sometimes two, per the adjudication) existing
+//   assertion already found to grade that claim's proposition -- no new
+//   assertion, no new build logic, no expected value or colour changed.
+//   4 are `route`: ADKCON's CLR direction (page 249, "If bit 15 is a
+//   zero, any ones will clear the corresponding bit") was never actually
+//   demonstrated anywhere in this suite -- ADKCON-SETCLR-PRESERVE only
+//   ever writes 1s into bits that are already 0, which is a no-op under
+//   the CLR rule, not a clear. The new ADKCON-SETCLR-CLR assertion below
+//   supplies that missing half and carries the four route uids. This
+//   package was ACCEPTED before this extension and needs re-acceptance
+//   because of the one new assertion; every pre-existing assertion's
+//   logic, expected value and colour is unchanged (see RESULTS below for
+//   the before/after tally).
+//
 // BOUNDARY: paula.v, reached at $(NANOMIG)/src/minimig-aga/paula.v.
 //   paula.v itself instantiates paula_uart, paula_intcontroller,
 //   paula_floppy and paula_audio directly; paula_audio in turn
@@ -258,6 +277,13 @@
 //   covered by this package; see CLAIM COVERAGE above for the fixture
 //   each would need.
 //
+// RESULTS AFTER THE CH8 S2 EXTENSION (WSL/Verilator 5.052, rebuilt and
+//   rerun 15.09.2026): 19 passed, 2 failed -- the same 18 passes and the
+//   same 2 genuine reds (ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS,
+//   DMACONR-NOT-DECODED-BY-PAULA) as the 12.09.2026 tally above, plus the
+//   one new ADKCON-SETCLR-CLR assertion (PASS). No pre-existing
+//   assertion's colour moved.
+//
 // MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
 //   actually run: rebuild with the named -CFLAGS -DMUT_X=1 -> run -> read
 //   the PASS/FAIL lines -> confirm only the named assertion changed
@@ -374,6 +400,13 @@
 //   SET/CLR clear, so the seed bits are never set and the read-back value the
 //   read-only check compares against is not there. 17/3, only this assertion
 //   newly red. Reverted, 18/2 restored.
+// MUTATION ADKCON-SETCLR-CLR stimulus red: built with -CFLAGS -DMUT_ADKCLR=1,
+//   which leaves bit 15 set on the CLR-mode write (0x8055 instead of 0x0055),
+//   so the write lands in SET mode instead of CLR -- the named bits 0,2,4,6,
+//   already set from the seed write, stay set instead of clearing. 18/2 base
+//   (this assertion is new, added by the CH8 S2 extension) becomes 18 passed,
+//   3 failed, only ADKCON-SETCLR-CLR newly red (measured ADKCONR=0xff instead
+//   of the expected 0xaa). Rebuilt with no flags: 19/2 restored.
 // MUTATION ADKCON-ATTACH-MEASUREMENT-BASIS-CONTROL none impossible: this is the
 //   control case for ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS, whose purpose
 //   is to hold the measurement basis fixed while the attach bits move. Any
@@ -511,6 +544,13 @@ static std::string hex(unsigned v) {
 // channels to three.
 #ifndef MUT_FOUR
 #define MUT_FOUR 0
+#endif
+// MUT_ADKCLR: replay ADKCON-SETCLR-CLR's own mutation record
+// (-DMUT_ADKCLR=1). The CLR-mode write also (wrongly) leaves bit 15 set,
+// so the write lands in SET mode instead of CLR mode and the named bits
+// get set again instead of cleared.
+#ifndef MUT_ADKCLR
+#define MUT_ADKCLR 0
 #endif
 
 namespace {
@@ -1007,7 +1047,7 @@ int main(int argc, char** argv) {
             "written with a 1 get set or cleared. Bits written with a "
             "zero are always unchanged.' (appendix A p.265, "
             "5-appA-p265.c9, 5-appA-p265.c10, A-adkcon.b15). measured "
-            "ADKCONR=0x" + hex(back) + ".");
+            "ADKCONR=0x" + hex(back) + ". CH8 S2 CITES: opus:8-adkcon.c5, opus:8-adkcon.c6, opus:8-adkcon.c8, opus:8-adkcon.c9, sol:8-adkcon.c5, opus:8-appA-adkcon.c9, sol:8-appa-adkbit.c1.");
     }
 
     // ---------------- ADKCON-SETCLR-PRESERVE ----------------
@@ -1026,7 +1066,39 @@ int main(int argc, char** argv) {
             "0) leaves bits 0,2,4,6 set -- 'Bits written with a zero are "
             "always unchanged.' (appendix A p.265, 5-appA-p265.c11, "
             "A-adkcon.b15). measured ADKCONR=0x" +
-            hex(back) + ".");
+            hex(back) + ". CH8 S2 CITES: opus:8-adkcon.c5, opus:8-adkcon.c8, opus:8-appA-adkcon.c9, opus:8-appA-adkcon.c10, sol:8-appa-adkbit.c1, sol:8-appa-adkbit.c2.");
+    }
+
+    // ---------------- ADKCON-SETCLR-CLR ----------------
+    // ch8 s2 route finding: ADKCON-SETCLR-PRESERVE above only ever writes
+    // 1s into bits that are already 0 (a no-op under the CLR rule), so
+    // nothing in this suite, before this assertion, showed a 1 written
+    // with bit 15 = 0 actually CLEARING an already-set ADKCON bit. This
+    // assertion supplies that missing half: SET all eight bits 0-7, then
+    // a CLR-mode write (bit 15 = 0) naming only bits 0,2,4,6 must clear
+    // exactly those, leaving the unnamed bits 1,3,5,7 (also set) alone.
+    {
+        Harness h;
+        h.write_reg(ADKCON_W, 0x80FF);  // SET all eight: bits 0-7.
+#if MUT_ADKCLR
+        h.write_reg(ADKCON_W, 0x8055);  // MUTATION: bit 15 left set, so this lands in SET mode, not CLR -- the named bits stay set instead of clearing.
+#else
+        h.write_reg(ADKCON_W, 0x0055);  // CLR: bit 15 = 0, data bits 0,2,4,6 named as 1 -- must clear.
+#endif
+        uint16_t back = h.read_reg(ADKCONR_W);
+        checks.expect((back & 0x00FF) == 0x00AA,
+            "ADKCON-SETCLR-CLR: with all eight bits 0-7 first set, a "
+            "CLR-mode write (bit 15 = 0) naming bits 0,2,4,6 clears "
+            "exactly those bits to 0 -- the write actually reaching 0, "
+            "not merely staying 0 the way ADKCON-SETCLR-PRESERVE's own "
+            "bits 1,3 do -- while the unnamed bits 1,3,5,7 stay set. "
+            "'If bit 15 is a zero, any ones will clear the corresponding "
+            "bit.' (p.249, opus:8-adkcon.c7, sol:8-adkcon.c6); 'If bit "
+            "15 is a 1, the specified bits are set. If bit 15 is a 0, "
+            "the specified bits are cleared.' (p.249, opus:8-adkcon.c10); "
+            "'Bit 15 of this register allows independent setting or "
+            "clearing of any bit or bits.' (p.249, sol:8-adkcon.c4). "
+            "measured ADKCONR=0x" + hex(back) + ".");
     }
 
     // ---------------- DMAEN-AND-AUDxEN-BOTH-REQUIRED ----------------
@@ -1309,7 +1381,7 @@ int main(int argc, char** argv) {
             "5-appB-p290.c16, 5-appB-p290.c17, B-adkcon.addr, "
             "B-adkcon.acc, B-adkcon.chip). measured before=" +
             std::to_string(before_write) + " after=" +
-            std::to_string(after_write) + ".");
+            std::to_string(after_write) + ". CH8 S2 CITES: opus:8-dsk.c28, opus:8-dsk.c29, sol:8-reglist.c11, opus:8-adkcon.c1, opus:8-adkcon.c2, sol:8-adkcon.c1, opus:8-appA-adkcon.c1, opus:8-appA-adkcon.c2, sol:8-appa-adk.c1, sol:8-appa-adk.c2, opus:8-appB-adkcon.c1, opus:8-appB-adkcon.c3, sol:8-appb-adkcon.c1, sol:8-appb-adkcon.c2.");
     }
 
     // ---------------- ADKCONR-ADDRESS-READONLY-AND-CHIP ----------------
@@ -1342,7 +1414,7 @@ int main(int argc, char** argv) {
             "B-adkconr.addr, B-adkconr.acc, B-adkconr.chip). measured "
             "readback=0x" + hex(readback) +
             " after_attempted_write=0x" +
-            hex(after_attempted_write) + ".");
+            hex(after_attempted_write) + ". CH8 S2 CITES: opus:8-dsk.c30, opus:8-dsk.c31, sol:8-reglist.c13, opus:8-adkcon.c1, opus:8-adkcon.c3, opus:8-adkcon.c30, sol:8-adkcon.c2, sol:8-adkcon.c26, sol:8-adkcon.c27, opus:8-appA-adkcon.c5, opus:8-appA-adkcon.c6, opus:8-appA-adkcon.c28, opus:8-appA-adkcon.c29, opus:8-appA-adkcon.c30, opus:8-appA-adkcon.c31, opus:8-appA-adkcon.c32, opus:8-appA-adkcon.c33, opus:8-appA-adkcon.c34, opus:8-appA-adkcon.c35, opus:8-appA-adkcon.c36, sol:8-appa-adk.c4, sol:8-appa-adkr.c1, sol:8-appa-adkr.c2, sol:8-appa-adkr.c4, sol:8-appa-adkbit.c22, sol:8-appa-adkbit.c23, sol:8-appa-adkbit.c24, sol:8-appa-adkbit.c25, sol:8-appa-adkbit.c26, sol:8-appa-adkbit.c27, sol:8-appa-adkbit.c28, sol:8-appa-adkbit.c29, sol:8-appa-adkbit.c30, sol:8-appa-adkbit.c31, sol:8-appa-adkbit.c32, opus:8-appB-adkconr.c1, opus:8-appB-adkconr.c3, sol:8-appb-adkconr.c1, sol:8-appb-adkconr.c3, sol:8-appb-adkconr.c5, sol:8-appb-adkcon.c4.");
     }
 
     // ---------------- ADKCON-BIT11-UARTBRK-FORCES-TXD-LOW ----------------
@@ -1365,7 +1437,7 @@ int main(int argc, char** argv) {
             "adkcon[11] to paula_uart's uartbrk, paula_uart.v:136 `if "
             "(uartbrk) tx_txd <= #1 1'b0`); clearing bit 11 releases it "
             "back to the idle-mark 1. 'Forces a UART break (clears TXD) "
-            "if true.' (appendix A p.265, 5-appA-p265.c18, A-adkcon.b11).");
+            "if true.' (appendix A p.265, 5-appA-p265.c18, A-adkcon.b11). CH8 S2 CITES: opus:8-adkcon.c4, sol:8-adkcon.c3, opus:8-appA-adkcon.c18, opus:8-appA-adkcon.c19, sol:8-appa-adkbit.c10, sol:8-appb-adkcon.c6.");
     }
 
     // ---------------- ADKCON-BIT10-WORDSYNC [NOT COVERED BY THIS PACKAGE] ----------------
@@ -1507,7 +1579,7 @@ int main(int argc, char** argv) {
             "BASIS-CONTROL mutation below. measured ldata_peak=" +
             std::to_string(ldata_peak) + " rdata_peak=" +
             std::to_string(rdata_peak) + " (expected 0 and 0 if the "
-            "manual held; actually near 8001 and 8001).");
+            "manual held; actually near 8001 and 8001). CH8 S2 CITES: opus:8-adkcon.c30, sol:8-adkcon.c26, sol:8-adkcon.c27, opus:8-appA-adkcon.c28, opus:8-appA-adkcon.c29, opus:8-appA-adkcon.c30, opus:8-appA-adkcon.c31, opus:8-appA-adkcon.c32, opus:8-appA-adkcon.c33, opus:8-appA-adkcon.c34, opus:8-appA-adkcon.c35, opus:8-appA-adkcon.c36, sol:8-appa-adk.c4, sol:8-appa-adkr.c4, sol:8-appa-adkbit.c22, sol:8-appa-adkbit.c23, sol:8-appa-adkbit.c24, sol:8-appa-adkbit.c25, sol:8-appa-adkbit.c26, sol:8-appa-adkbit.c27, sol:8-appa-adkbit.c28, sol:8-appa-adkbit.c29, sol:8-appa-adkbit.c30, sol:8-appa-adkbit.c31, sol:8-appa-adkbit.c32, sol:8-appb-adkconr.c5, sol:8-appb-adkcon.c4.");
     }
 
     // ---------------- DMA-ENABLED-CHANNEL-WITH-SUPPLIED-DATA-PRODUCES-SOUND ----------------
