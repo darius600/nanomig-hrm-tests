@@ -15,12 +15,36 @@
 //
 // MUTATION LIVENESS-VPOS-DISTINCT-READBACK stimulus red forced two of the three target vpos values identical (50,50,261) instead of distinct (50,150,261)
 // MUTATION VRES-NONINTERLACED-1-LINE-PER-VPOS-STEP|opus:8-lpen.c28|sol:8-pen.c29 stimulus red injected a stray VPOSW/VHPOSW write mid-run forcing vpos to 9 right after the 2nd eol pulse, skipping the expected 0,1,2,3,4 sequence
-// MUTATION VRES-INTERLACED-FIELD-LENGTH-ALTERNATES|opus:8-lpen.c29|sol:8-pen.c30 stimulus red forced the BPLCON0 write to 0x0000 (LACE off) instead of 0x0004 (LACE on), so long_frame never auto-toggles and both captured field ends read 311
-// MUTATION FIELD-IDENTITY-ALTERNATES-WITH-FIELD-LENGTH|opus:8-lpen.c30|sol:8-pen.c31 stimulus red forced the BPLCON0 write to 0x0000 (LACE off) instead of 0x0004 (LACE on), so field1 never changes across the two captured field ends
+// MUTATION VRES-INTERLACED-VPOS-AMBIGUOUS-ACROSS-FIELDS|opus:8-lpen.c29|sol:8-pen.c30 stimulus red forced the BPLCON0 write to 0x0000 (LACE off) instead of 0x0004 (LACE on), so field1 sticks at 1 and no probe vpos is ever seen under field1=0
+// MUTATION FIELD-IDENTITY-PREDICTS-FIELD-LENGTH|opus:8-lpen.c30|sol:8-pen.c31 stimulus red forced the BPLCON0 write to 0x0000 (LACE off) instead of 0x0004 (LACE on), so every captured field ends at vpos 311 and no 312-line field is ever observed to check the correlation against
 // MUTATION HRES-2LOWRESPX-PER-VHPOSR-STEP-LOWRES|opus:8-lpen.c31|sol:8-pen.c32 stimulus red forced the cck input constantly high instead of toggling each tick, collapsing the 2:1 hpos:VHPOSR ratio to 1:1
 // MUTATION HRES-2LOWRESPX-PER-VHPOSR-STEP-HIRES|opus:8-lpen.c31|sol:8-pen.c33 stimulus red forced the cck input constantly high instead of toggling each tick, collapsing the 2:1 hpos:VHPOSR ratio to 1:1
-// MUTATION MASKED-LONGWORD-LAYOUT-DISCRIMINATES-POSITION|opus:8-lpen.c45|opus:8-lpen.c51|sol:8-pen.c42 stimulus red forced the V=260 measurement point to V=261 instead, colliding two of the three sampled positions
+// MUTATION MASKED-LONGWORD-VARIES-WITH-VERTICAL-POSITION stimulus red forced the V=260 measurement point to V=261 instead, colliding two of the three sampled positions
 // MUTATION MASKED-LONGWORD-V261-EQUALS-0x10500|opus:8-lpen.c46|opus:8-lpen.c51|sol:8-pen.c43 stimulus red forced the V=261 measurement point to V=262 instead, leaving the $10500 comparison target unchanged
+//
+// Repair 2026-09-15 (independent validation, finding 7): three assertions
+// carried claims they did not test.
+//   - opus:8-lpen.c29/sol:8-pen.c30 and opus:8-lpen.c30/sol:8-pen.c31 were
+//     carried by assertions that only measured field-length parity
+//     (311/312 alternation) and field1 toggling -- neither is the
+//     resolution-loss claim or the recovery-of-position claim itself. Both
+//     are now measured directly below: A2 shows the SAME vpos value
+//     recurring under both field1 states while LACE is on (the resolution
+//     loss the manual names), and A3 shows field1 reliably predicts which
+//     field-length regime -- 311- or 312-line -- is active, i.e. that field
+//     identity is decodable information and not just a toggle.
+//   - opus:8-lpen.c45 and sol:8-pen.c42 quote the manual's read-twice /
+//     mask / compare SOFTWARE procedure, not a register-layout fact.
+//     Declined below (see RECORDED lines): agnus_beamcounter.v has no LPEN
+//     input and no freeze-on-trigger logic -- grepping this whole pinned
+//     RTL tree turns up only a commented-out `lpendis` wire here and a
+//     commented-out `lpen`/bplcon0[3] wire in denise.v. The freeze this
+//     procedure depends on (so that "two reads equal" means anything) is
+//     not implemented anywhere in this submodule, so no module boundary in
+//     this suite can carry it as built. The masked-longword-layout fact
+//     these two uids were previously stretched to cover is still real and
+//     still measured below, but it now carries no uid of its own: the
+//     uids' actual words are the procedure, not the layout.
 
 #include <cstdint>
 #include <cstdio>
@@ -150,55 +174,90 @@ int main(int argc, char** argv) {
         expect(dut->vpos == 4, "VRES-NONINTERLACED-1-LINE-PER-VPOS-STEP|opus:8-lpen.c28|sol:8-pen.c29");
     }
 
-    // --- P2 / A2 and P3 / A3: interlaced field-length alternation and field identity ---
+    // --- P2 / A2 and P3 / A3: vpos ambiguity across interlaced fields, and field
+    // identity as the disambiguating bit page 239's parenthetical names ---
+    //
+    // A2 tests the resolution-loss claim directly: three vpos values spread
+    // across the field range are each shown to recur -- once under
+    // field1==0 and once under field1==1 -- while LACE is on. That is the
+    // literal content of "vertical resolution is 2 scan lines in interlaced
+    // mode": the same digital vpos reading denotes two different field
+    // instances, so vpos alone cannot tell them apart.
+    //
+    // A3 tests the recovery claim: field1 does not merely toggle, it
+    // reliably predicts which field-length regime (the already-validated
+    // 311- vs 312-line alternation) is active, across four consecutive
+    // fields. That is what makes field identity decodable information a
+    // program can use, rather than an arbitrary flag -- the literal content
+    // of "if you know which interlaced frame is under display, you can
+    // determine the correct position." Neither assertion claims to recover
+    // the physical CRT line itself; that interleaving is outside the chip
+    // (see SPECIFICATION.md).
     {
         uint16_t bplcon0_val = 0x0004; // LACE=1
 #if defined(MUTATE_A2) || defined(MUTATE_A3)
         bplcon0_val = 0x0000; // stimulus mutation: LACE forced off
 #endif
         write_reg(dut, BPLCON0_ADDR, bplcon0_val);
-        force_vpos_hpos(dut, 309, 0, false); // shortcut close to vtotal=311, long_frame starts 0
+        force_vpos_hpos(dut, 0, 0, false); // vpos=0, field1=1, start of a field
 
-        // vpos_inc is asserted one tick before the edge that actually applies
-        // it (the RTL's own comment: "vpos changes after hpos equals 3"), so
-        // eol/eof read 1 one tick ahead of the vpos/long_frame update they
-        // describe -- forcing a register write right when eof is first seen
-        // pre-empts that same edge's natural wrap (a write's address match
-        // takes priority over the vpos_inc branch in agnus_beamcounter.v's
-        // own if-elseif chain) instead of following it. So this measurement
-        // does not try to catch eof at all: it just watches vpos itself and
-        // detects the wrap directly, letting both fields run to completion
-        // (the shortcut only saves the run-up to the first field's end; the
-        // second field is left to complete naturally, ~313 lines, still well
-        // under a second of simulated ticks).
+        const uint32_t probes[3] = {50, 150, 300}; // well inside both the 311- and 312-line field lengths
+        std::vector<int> probe_field1[3];
         std::vector<uint32_t> field_end_vpos;
         std::vector<int> field_end_field1;
+
         uint32_t prev_vpos = dut->vpos;
         int prev_field1 = dut->field1;
         int guard = 0;
-        while (field_end_vpos.size() < 2 && guard < 200000) {
+        // Four consecutive field ends: enough to see both field lengths more
+        // than once, and comfortably more than the two field passes needed
+        // to revisit every probe.
+        while (field_end_vpos.size() < 4 && guard < 1200000) {
             tick(dut);
-            if (dut->vpos < prev_vpos) { // wrapped: prev_vpos was this field's last line
-                field_end_vpos.push_back(prev_vpos);
-                field_end_field1.push_back(prev_field1);
+            uint32_t v = dut->vpos;
+            if (v != prev_vpos) {
+                for (int i = 0; i < 3; i++)
+                    if (v == probes[i]) probe_field1[i].push_back(dut->field1);
+                if (v < prev_vpos) { // wrapped: prev_vpos was this field's last line
+                    field_end_vpos.push_back(prev_vpos);
+                    field_end_field1.push_back(prev_field1);
+                }
+                prev_vpos = v;
             }
-            prev_vpos = dut->vpos;
             prev_field1 = dut->field1;
             guard++;
         }
-        note("two successive field ends captured at vpos " +
-             (field_end_vpos.size() > 0 ? std::to_string(field_end_vpos[0]) : std::string("?")) + " and " +
-             (field_end_vpos.size() > 1 ? std::to_string(field_end_vpos[1]) : std::string("?")) +
-             ", field1 was " +
-             (field_end_field1.size() > 0 ? std::to_string(field_end_field1[0]) : std::string("?")) + " and " +
-             (field_end_field1.size() > 1 ? std::to_string(field_end_field1[1]) : std::string("?")) +
-             " just before each");
 
-        bool a2_ok = field_end_vpos.size() == 2 && field_end_vpos[0] == 311 && field_end_vpos[1] == 312;
-        expect(a2_ok, "VRES-INTERLACED-FIELD-LENGTH-ALTERNATES|opus:8-lpen.c29|sol:8-pen.c30");
+        auto fmt_seen = [](const std::vector<int>& v) {
+            std::string s;
+            for (size_t i = 0; i < v.size(); i++) s += (i ? "," : "") + std::to_string(v[i]);
+            return s;
+        };
+        note("probe vpos " + std::to_string(probes[0]) + "/" + std::to_string(probes[1]) + "/" + std::to_string(probes[2]) +
+             " seen with field1=[" + fmt_seen(probe_field1[0]) + "]/[" + fmt_seen(probe_field1[1]) + "]/[" + fmt_seen(probe_field1[2]) + "]");
+        {
+            std::string s;
+            for (size_t i = 0; i < field_end_vpos.size(); i++)
+                s += (i ? ", " : "") + std::to_string(field_end_vpos[i]) + "(field1=" + std::to_string(field_end_field1[i]) + ")";
+            note("four consecutive field ends: " + s);
+        }
 
-        bool a3_ok = field_end_field1.size() == 2 && field_end_field1[0] == 1 && field_end_field1[1] == 0;
-        expect(a3_ok, "FIELD-IDENTITY-ALTERNATES-WITH-FIELD-LENGTH|opus:8-lpen.c30|sol:8-pen.c31");
+        bool a2_ok = true;
+        for (int i = 0; i < 3; i++) {
+            bool saw0 = false, saw1 = false;
+            for (int f : probe_field1[i]) { if (f == 0) saw0 = true; if (f == 1) saw1 = true; }
+            a2_ok = a2_ok && saw0 && saw1;
+        }
+        expect(a2_ok, "VRES-INTERLACED-VPOS-AMBIGUOUS-ACROSS-FIELDS|opus:8-lpen.c29|sol:8-pen.c30");
+
+        bool saw_311 = false, saw_312 = false, consistent = true;
+        for (size_t i = 0; i < field_end_vpos.size(); i++) {
+            if (field_end_vpos[i] == 311) { saw_311 = true; if (field_end_field1[i] != 1) consistent = false; }
+            else if (field_end_vpos[i] == 312) { saw_312 = true; if (field_end_field1[i] != 0) consistent = false; }
+            else consistent = false; // an unexpected field length is itself a failure of the correlation
+        }
+        bool a3_ok = saw_311 && saw_312 && consistent;
+        expect(a3_ok, "FIELD-IDENTITY-PREDICTS-FIELD-LENGTH|opus:8-lpen.c30|sol:8-pen.c31");
     }
 
     // --- P4a / A4a: horizontal resolution, low-resolution display ---
@@ -287,8 +346,29 @@ int main(int argc, char** argv) {
              + ", at V=" + std::to_string(v261) + " is " + to_hex(m261)
              + ", at V=" + std::to_string(v262) + " is " + to_hex(m262));
 
-        bool a5_ok = m260 != m261 && m261 != m262 && m260 < m261 && m261 < m262;
-        expect(a5_ok, "MASKED-LONGWORD-LAYOUT-DISCRIMINATES-POSITION|opus:8-lpen.c45|opus:8-lpen.c51|sol:8-pen.c42");
+        // opus:8-lpen.c45 and sol:8-pen.c42 quote the manual's read-twice /
+        // mask / compare procedure -- a software operation performed by the
+        // CPU on two already-read longwords, not a hardware layout fact.
+        // agnus_beamcounter has no LPEN input and no freeze-on-trigger
+        // logic at all (confirmed by reading the module: the only trace is
+        // a commented-out `lpendis` wire here and a commented-out `lpen`/
+        // bplcon0[3] wire in denise.v), so the "two reads equal" half of
+        // the procedure -- the thing that gives the mask-and-compare step
+        // its meaning -- cannot be exercised at this or, as pinned, any
+        // module boundary in this tree. Declined; a CPU/firmware-level
+        // harness driving the actual detection routine against a system
+        // model that implements the LPEN freeze is what would carry it,
+        // and no such model exists in this submodule.
+        record("opus:8-lpen.c45 declined: quotes the read-twice/mask/compare procedure, a CPU-side operation; agnus_beamcounter has no LPEN input and no freeze-on-trigger logic (grep of this RTL tree finds only commented-out lpendis/lpen wires), so the equal-reads precondition this procedure depends on cannot be exercised here or, as built, anywhere in this submodule. Would need: a CPU/firmware-level test against a system model that implements the LPEN freeze.");
+        record("sol:8-pen.c42 declined: same reason as opus:8-lpen.c45 -- it quotes the same procedural step (\"the trigger test masks off the upper 15 bits\"), not a register-layout fact.");
+
+        // The layout fact those two uids' classify-time "split" had
+        // reinterpreted them as -- that the masked remainder still
+        // discriminates distinct vertical positions -- is real and still
+        // worth checking as a regression, but it is not what either uid's
+        // own words say, so it now carries no uid.
+        bool layout_ok = m260 != m261 && m261 != m262 && m260 < m261 && m261 < m262;
+        expect(layout_ok, "MASKED-LONGWORD-VARIES-WITH-VERTICAL-POSITION");
 
         bool a6_ok = m261 == 0x10500u;
         expect(a6_ok, "MASKED-LONGWORD-V261-EQUALS-0x10500|opus:8-lpen.c46|opus:8-lpen.c51|sol:8-pen.c43");

@@ -47,11 +47,26 @@ line from the other field's set. This is the mechanism that halves the
 resolution obtainable from vpos alone. The interleaving of those lines on a
 physical CRT is outside the chip and is not asserted.
 
-Pass criterion: with LACE on, successive fields' total line counts differ
-by exactly one line (one field N lines, the next N+1, alternating); with
-LACE off, every field has the same line count. (Chapter 7 previously
-measured N=311/312 on this same fixture; this package re-measures its own
-build rather than reusing that number — see build notes.)
+Pass criterion (repaired 2026-09-15, against independent validation, finding
+7 — the original criterion below tested field-length parity, which is the
+*mechanism* behind the resolution loss, not the resolution-loss claim
+itself): with LACE on, at least one vpos value that lies within both
+field lengths is observed at both field-identity states (field1=0 and
+field1=1) across two field passes — i.e. the same digital position reading
+recurs while the field alternates, so vpos alone does not distinguish the
+two occurrences. With LACE off this does not occur (field identity does not
+alternate at all, so nothing recurs across two distinguishable states).
+
+Superseded criterion, kept for the record: "with LACE on, successive
+fields' total line counts differ by exactly one line (one field N lines,
+the next N+1, alternating); with LACE off, every field has the same line
+count." (Chapter 7 previously measured N=311/312 on this same fixture;
+this package re-measured its own build rather than reusing that number.)
+This fact is true and still measured by the built package (as a note, not
+a graded claim): it is the textbook mechanism by which interlacing
+achieves its half-line raster offset, but showing field lengths differ is
+not the same as showing a *reading* is ambiguous, so it cannot carry
+opus:8-lpen.c29/sol:8-pen.c30 on its own.
 
 ### P3 — Frame identity recovers the position (uid opus:8-lpen.c30, sol:8-pen.c31)
 
@@ -65,10 +80,27 @@ field, in step with the field alternation of P2 — i.e. the disambiguating
 information is available at this boundary, not merely asserted to exist
 elsewhere.
 
-Pass criterion: a field-identity bit is readable, and it changes value
-(alternates) once per field boundary when LACE is on, in lock-step with the
-long/short field alternation measured under P2. Under LACE off it does not
-alternate.
+Pass criterion (repaired 2026-09-15, against independent validation, finding
+7 — the original criterion below only showed the bit toggles, which is not
+yet "you can determine the correct position"): across four consecutive
+field boundaries with LACE on, the field-identity bit is not merely
+alternating but is a reliable, checkable predictor of which field-length
+regime (the 311- or 312-line field measured under P2) is active — every
+311-line field carries the same field-identity value and every 312-line
+field carries the other, with both regimes actually observed. That is what
+makes the bit decodable, checkable information a program can use, rather
+than an arbitrary flag: it is the literal content of "if you know which
+interlaced frame is under display, you can determine the correct
+position." This does not reconstruct the physical CRT line itself — see
+"still open" below; it establishes that field identity is genuine,
+verifiable information, which is the assertable half at this boundary.
+
+Superseded criterion, kept for the record: "a field-identity bit is
+readable, and it changes value (alternates) once per field boundary when
+LACE is on, in lock-step with the long/short field alternation measured
+under P2. Under LACE off it does not alternate." Alternation alone does not
+establish that the bit *recovers* anything; it only shows the bit is not
+stuck.
 
 ### P4a — Horizontal resolution, low resolution display (uid opus:8-lpen.c31 [shared with P4b], sol:8-pen.c32)
 
@@ -120,6 +152,28 @@ Pass criterion: for at least three distinct, known vertical positions
 takes three distinct values, ordered the same way the underlying positions
 are ordered.
 
+Disposition (repaired 2026-09-15, against independent validation, finding
+7): opus:8-lpen.c45 and sol:8-pen.c42 are declined, not carried by this
+proposition's assertion. Both uids quote the manual's read-twice / mask /
+compare procedure verbatim — a sequence performed by software on values
+already read from VPOSR/VHPOSR — and the "split" at claim-classification
+time reinterpreted that procedural text as a register-layout claim so it
+would fit this module's boundary. That reinterpretation is exactly the
+defect the validation found: it turns a software operation into a
+register-layout assertion. Declined at build/repair time instead. The
+layout fact itself (the masked remainder still discriminates distinct
+positions) remains real and is still measured, but it now carries no uid:
+what discriminates positions is not what either uid's own words describe.
+Additionally, agnus_beamcounter has no LPEN input and no freeze-on-trigger
+logic anywhere in this pinned RTL tree (confirmed by reading the module and
+grepping the tree: only a commented-out `lpendis` wire here and a
+commented-out `lpen`/BPLCON0[3] wire in denise.v), so the "read twice and
+require them equal" precondition that gives the mask-and-compare step its
+meaning cannot be exercised at this or, as built, any module boundary in
+this suite. What would carry it: a CPU/firmware-level test running the
+actual detection routine against a system model that implements the LPEN
+freeze — no such model exists in this submodule.
+
 ### P6 — $10500 encodes V=261 (uid opus:8-lpen.c46, opus:8-lpen.c51 [shared with P5], sol:8-pen.c43)
 
 > 3. If both values are the same, mask off the upper 15 bits of the
@@ -146,12 +200,22 @@ comparator that accepts anything.
 
 ## Claims not turned into propositions
 
-None. All 14 uids in the claims file (opus:8-lpen.c28, c29, c30, c31, c45,
-c46, c51; sol:8-pen.c29, c30, c31, c32, c33, c42, c43) are covered by P1-P6
-above. This may change at step 2 if the RTL does not carry a signal one of
-these propositions needs at this module's boundary — that would be a HALT
-and a decline naming the missing signal and the module that would carry it,
-not a wider fixture chosen on this package's own authority.
+Updated 2026-09-15 (repair, against independent validation finding 7): 12
+of the 14 uids in the claims file are asserted by P1-P6 (via the repaired
+P2/P3 criteria above). Two are declined, not asserted:
+
+- opus:8-lpen.c45 and sol:8-pen.c42 quote the manual's software read-twice
+  / mask / compare procedure, not a hardware layout fact. `agnus_beamcounter`
+  has no LPEN input and no freeze-on-trigger logic anywhere in this pinned
+  RTL tree, so the "two reads equal" precondition the procedure depends on
+  cannot be exercised at this or any module boundary as built. See P5's
+  disposition note above for the full reasoning. What would carry it: a
+  CPU/firmware-level test running the actual routine against a system model
+  that implements the LPEN freeze — no such model exists in this submodule.
+
+This may change again if a future build carries an LPEN/freeze model — that
+would be a re-open, not something to resolve on this package's own
+authority.
 
 ## Still open — resolved only after the RTL is read (step 2)
 
