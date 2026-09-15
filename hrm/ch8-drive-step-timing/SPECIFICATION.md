@@ -99,9 +99,9 @@ afterward, so its accept/reject outcome still becomes visible as a track-0
 crossing.
 
 **Result**: RED. `paula_floppy` gates every accepted `_step` edge through
-exactly one counter (`step_ena_cnt`, `paula_floppy.v:581-590`), with nothing
+exactly one counter (`step_ena_cnt`, `paula_floppy.v:594-603`), with nothing
 in that counter's reset condition that distinguishes a reversal from a
-same-direction edge (the TRACK update at `paula_floppy.v:658-667` is gated by
+same-direction edge (the TRACK update at `paula_floppy.v:671-680` is gated by
 selection and direction, but the spacing counter is not). Both the reversal
 gap and the same-direction gap measure identically. A ratio of 1:1, not 6:1,
 is what the assertion measures — this package's headline finding (candidate
@@ -129,7 +129,7 @@ Neither number is a measurement of the kind the page's "t: 1 us min." names.
 The "0 ticks" figure shows only that this no-timing Verilator run has no
 setup/hold model at all — an absence of an enforced floor, not a measured
 zero-tick floor. The "1 tick" figure is the coarsest interval any
-discrete-tick edge detector can register (`paula_floppy.v:574-579`'s
+discrete-tick edge detector can register (`paula_floppy.v:587-592`'s
 `_step`/`_step_del` compare needs an actual low-then-high transition), true of
 any edge-triggered input regardless of its real pulse-width requirement, not a
 measured minimum width. The page's "1 us min." is an absolute interval and

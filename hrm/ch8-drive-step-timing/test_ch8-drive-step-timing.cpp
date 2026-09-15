@@ -196,7 +196,7 @@ public:
 //
 // `_track0` is the only external read-back of head position, and it is a
 // single bit that is only meaningful "at track 0 or not"
-// (paula_floppy.v:653: `_track0 = &(_selx | _dsktrack0)`), so any probe has
+// (paula_floppy.v:666: `_track0 = &(_selx | _dsktrack0)`), so any probe has
 // to be arranged so its accept/reject outcome shows up as a track-0
 // crossing. A reversal probe can be read directly this way (it crosses back
 // toward track 0). A same-direction probe cannot -- it moves the head
@@ -229,11 +229,11 @@ bool gap_accepted_reversal(int gap) {
 // Folded back with one more step, direc=true, spaced 600 ticks after the
 // probe (well past the ~253-tick floor measured elsewhere in this file, so
 // it is accepted regardless of the probe's outcome or of which earlier edge
-// last reset step_ena_cnt -- paula_floppy.v:581-590's reset-on-rising-edge
+// last reset step_ena_cnt -- paula_floppy.v:594-603's reset-on-rising-edge
 // is not gated by selection or by whether the earlier edge actually moved
 // the track). This third edge is itself a reversal, decrementing; that is
 // never blocked by the track-0 floor here because the head is at track 1 or
-// 2, never at 0, when it fires (paula_floppy.v:658-667: the decrement guard
+// 2, never at 0, when it fires (paula_floppy.v:671-680: the decrement guard
 // is `_dsktrack0 && direc`, and `_dsktrack0` only deasserts AT track 0).
 //
 //   edge 1 (direc=false, guaranteed accepted):              track 0 -> 1
@@ -497,7 +497,7 @@ int main(int argc, char** argv) {
             "setup requirement whatsoever -- an absence, not a measured "
             "zero-tick floor. Never lowering _step (the width-floor probe) "
             "produces no rising edge for the module to detect at all "
-            "(paula_floppy.v:574-579's _step_del compare needs an actual "
+            "(paula_floppy.v:587-592's _step_del compare needs an actual "
             "low-then-high transition); that proves only that no edge "
             "occurred, not that 1 tick is a measured minimum PULSE WIDTH -- "
             "1 tick is simply the coarsest interval a discrete clk7_en-tick "
@@ -555,10 +555,10 @@ int main(int argc, char** argv) {
             "RATIO-A: the printed 18ms-reversal and 3ms-same-direction "
             "step-to-step minima (p.245:32, p.245:37-39; Figure 8-8) are "
             "in a 6:1 ratio -- measured against paula_floppy's single "
-            "step_ena_cnt spacing counter (paula_floppy.v:581-590), which "
+            "step_ena_cnt spacing counter (paula_floppy.v:594-603), which "
             "resets on every accepted _step rising edge regardless of "
-            "selection (paula_floppy.v:658-667 gates the TRACK update on "
-            "selection and direction, but the counter reset at 581-590 "
+            "selection (paula_floppy.v:671-680 gates the TRACK update on "
+            "selection and direction, but the counter reset at 594-603 "
             "carries no such gate) and so gates a reversal and a "
             "same-direction edge alike "
             "[claims: opus:8-time.c15, opus:8-time.c16, opus:8-time.c17, "
