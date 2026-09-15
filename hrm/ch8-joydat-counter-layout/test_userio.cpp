@@ -5,6 +5,81 @@
 // live module. 4 further claims (the port-1/port-2 label dispute) are
 // declined via record() in main() and never appear on a graded line.
 //
+// REPAIR (2026-09-15): an independent validation (hrm-testpipeline/work/
+// 2026-09-15_ch8_s1_sol_validation_B.md, finding 5) found that 44 of these
+// 52 assertions tested the wrong mechanism. p.230 says live mouse/
+// trackball VERTICAL counts occupy bits 15-8 and HORIZONTAL counts bits
+// 7-0; p.281 says four separate counters exist, each clocked by two
+// controller pins. The prior version of this file seeded arbitrary values
+// into the registers through JOYTEST and derived the low two bits with a
+// formula copied out of the RTL (solve_pins()) -- so the byte-assignment,
+// one-hot-bit-table and four-counter checks were measurements of the
+// JOYTEST load-and-readback path, not of mouse motion. An implementation
+// that swapped which byte vertical/horizontal motion updates would have
+// kept every one of them green.
+//
+// This version drives the controller pins through genuine quadrature
+// transitions and counts them for those 44 assertions (helpers quad_step /
+// zero_baseline / walk_axis below). The other 8 graded assertions --
+// opus:8-joydat.c1 (control case), opus:8-joydat.c4 / sol:8-mouse.c15 /
+// sol:8-mouse.c16 (16-bit width), and opus:8-appa-joy.c9 / .c10 /
+// sol:8-appa-joy.c11 / .c12 (8-bit-counter-pair width) -- are NOT about
+// mouse-motion semantics (they are about register readability and field
+// width, which JOYTEST-seeded values test validly regardless of mechanism)
+// and the validation did not flag them; they, and the 4 p.230/p.233
+// port-number declines, are unchanged from the prior version and still use
+// drive_register()/solve_pins()/set_quad_static() below.
+//
+// TECHNIQUE, read from hrm/ch8-mouse-quadrature-decode/test_userio.cpp
+// (the sibling package that already grades ONE-COUNT-PER-QUADRATURE-STATE-
+// CHANGE and EXACTLY-TWO-LINES-PER-AXIS green by moving pins on this same
+// fixture) and its Makefile:
+//   - axis 0 (horizontal/X) is driven on bits 2 ("H", main) and 0 ("HQ",
+//     quad); axis 1 (vertical/Y) on bits 3 ("V", main) and 1 ("VQ", quad)
+//     of whichever of _joy1/_joy2 feeds the register under test
+//     (userio.v:234-252 port 1, :261-279 port 2 -- same pairing both
+//     ports; p.281's own table, "pins 1,3=Yclock, pins 2,4=Xclock").
+//   - A single accepted transition needs two clk7_en-gated edges: the
+//     transition-detect compares the live synchronized pin level against a
+//     second synchronizer stage one edge further behind (userio.v:213-219).
+//   - Case 1 ring order (main leads quad: 00->10->11->01->00...) is
+//     Figure 8-2's "Count Up"; Case 2 (quad leads main: 00->01->11->10->
+//     00...) is "Count Down". The sibling's own mutation log (VERTICAL-
+//     CASE1-COUNTS-UP / -CASE2-COUNTS-DOWN / HORIZONTAL-RIGHT-INCREMENTS /
+//     -LEFT-DECREMENTS, each run and reverted) proves this ring order and
+//     up/down sense on this exact fixture.
+//   - Neither dmouse0dat nor dmouse1dat has a reset branch of its own
+//     (userio.v:229-282), so an absolute baseline has to be established by
+//     settling pins, not assumed. Holding a counter's own main/quad pins
+//     at the static level (1,1) makes the idle "else" branch compute
+//     {!1,1^1}={0,0}=0 for that byte's own low two bits and keep
+//     recomputing that same 0 every idle cycle (no drift) -- adapted here
+//     from the sibling's METHODOLOGY (3)/(4), which instead uses (0,0) and
+//     compares deltas because none of its own claims need an absolute
+//     all-zero register. This package's per-bit and byte-range claims do
+//     need an absolute value (a specific bit set, nothing else), so
+//     zero_baseline() below drives (1,1) on both axes and then issues a
+//     JOYTEST write with data_in=0 to also clear the upper six bits of
+//     each byte (unconditionally for JOY0DAT, userio.v:232-233/245-246;
+//     for JOY1DAT only bits [7:2]/[15:10] are JOYTEST-writable,
+//     userio.v:259-260/272-273, but the low two are already 0 by then from
+//     the settle and JOYTEST never touches them). Not copied verbatim: this
+//     file keeps clk7_en permanently asserted (see reset_dut()) rather
+//     than toggling it per operation as the sibling's Harness does; the
+//     rest of the ring/timing/zeroing logic is unchanged in substance.
+//   - ensure_joy1enable() (below) is not called by the new motion-based
+//     checks. It exists so JOY0DAT's read mux selects the branch where
+//     dmouse0dat's low two bits pass through unmixed with mouse0dat -- but
+//     mouse0dat (userio.v:358, fed only by the kbd/PS2-mouse-emulation path
+//     at :330-355, gated on kms_level toggling) is provably 0 throughout
+//     every check in this file: reset_dut() sets kms_level=0 and nothing
+//     in this file ever changes it again, so old_level==kms_level always
+//     and that path's edge-detect never fires. With mouse0dat==0 both of
+//     JOY0DAT's read-mux branches (userio.v:290-293) reduce to plain
+//     dmouse0dat, so joy1enable's value cannot affect any read in this
+//     file -- the same fact the sibling package's own METHODOLOGY (5)
+//     records and relies on.
+//
 // Mutation replay: `make MUT=<sanitized-uid>` defines MUT_<sanitized-uid>
 // for the build, which the ACTIVE_MUTATION chain below turns back into
 // the exact uid string so the one check that owns that uid corrupts its
@@ -19,58 +94,61 @@
 // against the unmutated baseline output, no other assertion moved, and the
 // binary's own exit code (checked directly on the invocation that ran it,
 // per the build brief -- never via a later `echo $?`) was 1 in every case.
+// Baseline: 52 passed, 0 failed. Every mutated build below: 51 passed, 1
+// failed, exit code 1 -- reverted to baseline (52/0, exit 0) before the
+// next mutation. See the repair's report for the full per-uid tally.
 // MUTATION opus:8-joydat.c1 stimulus red stimulus never driven: JOY0DAT/JOY1DAT left at their measured idle 0x0202 instead of writing the two distinct markers 0x1357/0x2468
 // MUTATION opus:8-joydat.c4 stimulus red bit0 dropped from the shared 0x8001 stimulus (0x8000 written instead) to both registers
 // MUTATION sol:8-mouse.c15 stimulus red bit0 dropped from the 0x8001 stimulus (0x8000 written instead) to JOY0DAT
 // MUTATION sol:8-mouse.c16 stimulus red bit0 dropped from the 0x8001 stimulus (0x8000 written instead) to JOY1DAT
-// MUTATION opus:8-joydat.c5 stimulus red low byte polluted with 0xCD alongside the intended high-byte-only marker, both registers
-// MUTATION sol:8-mouse.c17 stimulus red low byte polluted with 0xCD alongside the intended high-byte-only marker, both registers
-// MUTATION opus:8-joydat.c6 stimulus red high byte polluted with 0xCD alongside the intended low-byte-only marker, both registers
-// MUTATION sol:8-mouse.c18 stimulus red high byte polluted with 0xCD alongside the intended low-byte-only marker, both registers
+// MUTATION opus:8-joydat.c5 stimulus red vertical claim driven on the HORIZONTAL axis instead (the byte-swap defect the validation named) -- the high byte this claim requires stays at its zero baseline
+// MUTATION sol:8-mouse.c17 stimulus red same axis swap as opus:8-joydat.c5 (the twin claim)
+// MUTATION opus:8-joydat.c6 stimulus red horizontal claim driven on the VERTICAL axis instead -- the low byte this claim requires stays at its zero baseline
+// MUTATION sol:8-mouse.c18 stimulus red same axis swap as opus:8-joydat.c6 (the twin claim)
 // MUTATION opus:8-appa-joy.c9 stimulus red 0xFFFF stimulus narrowed to 0x7F7F (MSB of each byte withheld), both registers
 // MUTATION opus:8-appa-joy.c10 stimulus red 0xFFFF stimulus narrowed to 0x7F7F (MSB of each byte withheld), both registers
 // MUTATION sol:8-appa-joy.c11 stimulus red 0xFFFF stimulus narrowed to 0x7F7F (MSB of each byte withheld), JOY0DAT only
 // MUTATION sol:8-appa-joy.c12 stimulus red 0xFFFF stimulus narrowed to 0x7F7F (MSB of each byte withheld), JOY1DAT only
-// MUTATION opus:8-appa-joy.c13 stimulus red JOY1DAT driven with JOY0DAT's own pattern 0x1122 instead of its distinct 0x3344
-// MUTATION sol:8-appa-joy.c15 stimulus red JOY1DAT driven with JOY0DAT's own pattern 0x1122 instead of its distinct 0x3344
-// MUTATION opus:8-appa-joy.c14 stimulus red second controller pin (_joy1[2]) never toggled after the first (_joy1[0]) was
-// MUTATION sol:8-appa-joy.c16 stimulus red second controller pin (_joy1[2]) never toggled after the first (_joy1[0]) was
-// MUTATION opus:8-appa-joy.c19 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c20 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c21 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c22 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c23 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c24 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c25 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c26 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c27 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c28 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c29 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c30 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c31 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c32 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c33 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c34 stimulus red one-hot stimulus bit moved from its claimed JOY0DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c35 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c36 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c37 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c38 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c39 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c40 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c41 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c42 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c43 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c44 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c45 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c46 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c47 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c48 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c49 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION opus:8-appa-joy.c50 stimulus red one-hot stimulus bit moved from its claimed JOY1DAT position to (position+1)%16 while the check still reads the claimed position
-// MUTATION sol:8-appa-joy.c21 stimulus red marker byte 0x96 XORed with 0x01 in the stimulus before driving JOY0DAT's claimed high byte
-// MUTATION sol:8-appa-joy.c22 stimulus red marker byte 0x96 XORed with 0x01 in the stimulus before driving JOY0DAT's claimed low byte
-// MUTATION sol:8-appa-joy.c23 stimulus red marker byte 0x96 XORed with 0x01 in the stimulus before driving JOY1DAT's claimed high byte
-// MUTATION sol:8-appa-joy.c24 stimulus red marker byte 0x96 XORed with 0x01 in the stimulus before driving JOY1DAT's claimed low byte
+// MUTATION opus:8-appa-joy.c13 stimulus red JOY1DAT's vertical (vertical/Y) counter never driven with its own quadrature steps, left at its zero baseline instead of the requested 61
+// MUTATION sol:8-appa-joy.c15 stimulus red same undriven-counter mutation as opus:8-appa-joy.c13 (the twin claim)
+// MUTATION opus:8-appa-joy.c14 stimulus red second controller pin (quad line) of the mutated counter never toggled after the first (main line) was, on all four counters checked -- one representative counter (JOY1DAT/horizontal) has its pin B withheld
+// MUTATION sol:8-appa-joy.c16 stimulus red same withheld-pin-B mutation as opus:8-appa-joy.c14 (the twin claim)
+// MUTATION opus:8-appa-joy.c19 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c20 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c21 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c22 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c23 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c24 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c25 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c26 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c27 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c28 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c29 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c30 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c31 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c32 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c33 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c34 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c35 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c36 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c37 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c38 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c39 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c40 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c41 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c42 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c43 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c44 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c45 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c46 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c47 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c48 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c49 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION opus:8-appa-joy.c50 stimulus red one-hot quadrature step count moved from 2^bit to 2^((bit+1) mod 8) within the same byte, so the wrong bit is driven while the check still reads the claimed position
+// MUTATION sol:8-appa-joy.c21 stimulus red quadrature step count driven 0x96 XOR 0x01 (151) instead of the required 0x96 (150) against JOY0DAT's high (Y) byte, oracle left at 0x96
+// MUTATION sol:8-appa-joy.c22 stimulus red quadrature step count driven 0x96 XOR 0x01 (151) instead of the required 0x96 (150) against JOY0DAT's low (X) byte, oracle left at 0x96
+// MUTATION sol:8-appa-joy.c23 stimulus red quadrature step count driven 0x96 XOR 0x01 (151) instead of the required 0x96 (150) against JOY1DAT's high (Y) byte, oracle left at 0x96
+// MUTATION sol:8-appa-joy.c24 stimulus red quadrature step count driven 0x96 XOR 0x01 (151) instead of the required 0x96 (150) against JOY1DAT's low (X) byte, oracle left at 0x96
 
 #include "Vuserio.h"
 #include "verilated.h"
@@ -284,6 +362,9 @@ static void reset_dut() {
 // -wired synchronizer at userio.v:213-219: _sjoy1<=joy_swap?joy1:joy2,
 // and joy_swap is tied 0), so driving _joy2[4]=0 and mouse_btn[0]=0 (so
 // _mleft=1, userio.v:361) lets joy1enable settle to 1 (userio.v:221-227).
+// Used only by the retained JOYTEST-seeded checks below (control case,
+// width, 8-bit-pair) -- the new motion-based checks don't need it; see the
+// header comment on why (mouse0dat is provably 0 throughout this file).
 static void ensure_joy1enable() {
     set_bit(top->_joy2, 4, 0);
     top->mouse_btn = top->mouse_btn & ~0x1;
@@ -309,7 +390,8 @@ static void write_joytest(uint16_t value) {
 // controller-pin levels, using the module's own static (no-transition)
 // formula {!pinA, pinA^pinB} (userio.v:239,252,266,279 -- the trailing
 // "else" arm of each per-byte always-block). Solves pinA=!code[1],
-// pinB=pinA^code[0] for the desired 2-bit code.
+// pinB=pinA^code[0] for the desired 2-bit code. Used only by the retained
+// JOYTEST-seeded checks below.
 static void solve_pins(int code, int& pinA, int& pinB) {
     pinA = !((code >> 1) & 1);
     pinB = pinA ^ (code & 1);
@@ -319,7 +401,8 @@ static void solve_pins(int code, int& pinA, int& pinB) {
 // quadrature bytes) -- which MEASURED evidence in this package's claims
 // file, confirmed by reading userio.v:213-219, is module input _joy2 (a
 // cross-wire: _sjoy1<=_joy2), not _joy1. false drives _joy1, which feeds
-// dmouse1dat (JOY1DAT) via the same cross-wire (_sjoy2<=_joy1).
+// dmouse1dat (JOY1DAT) via the same cross-wire (_sjoy2<=_joy1). Shared by
+// both the retained JOYTEST-seeded checks and the new motion-based ones.
 static void set_quad_static(bool reg_is_joy0, int code98, int code10) {
     int pinA98, pinB98, pinA10, pinB10;
     solve_pins(code98, pinA98, pinB98);
@@ -335,7 +418,11 @@ static void set_quad_static(bool reg_is_joy0, int code98, int code10) {
 // ensure_joy1enable() must already have been called) or JOY1DAT: bits
 // [15:10] and [7:2] land via a JOYTEST write of the value itself (those
 // slices of test_data pass straight through, userio.v:260,273,342-343),
-// bits [9:8] and [1:0] land via the two static pin pairs.
+// bits [9:8] and [1:0] land via the two static pin pairs. Used only by
+// the retained JOYTEST-seeded checks (control case, width, 8-bit-pair) --
+// NOT by the new motion-based checks, which is exactly the repair: this
+// helper's low-two-bit formula was copied out of the RTL, so it cannot
+// falsify anything the RTL does about which byte is which axis.
 static void drive_register(bool reg_is_joy0, uint16_t value) {
     write_joytest(value);
     settle(2);
@@ -346,10 +433,74 @@ static void drive_register(bool reg_is_joy0, uint16_t value) {
 static uint16_t addr_of(bool reg_is_joy0) { return reg_is_joy0 ? JOY0DAT_ADDR : JOY1DAT_ADDR; }
 
 // ---------------------------------------------------------------------------
+// Quadrature-motion primitives -- the repair. axis 0 = horizontal/X:
+// main=bit2 ("H"), quad=bit0 ("HQ"); axis 1 = vertical/Y: main=bit3 ("V"),
+// quad=bit1 ("VQ") of whichever of _joy1/_joy2 feeds the register under
+// test (userio.v:234-252 port 1, :261-279 port 2). Technique read from
+// hrm/ch8-mouse-quadrature-decode/test_userio.cpp -- see the header
+// comment above for what was read and how it is adapted here.
+// ---------------------------------------------------------------------------
+
+// One registered quadrature step: two clk7_en-gated edges, because the
+// transition-detect compares the live synchronized pin level against a
+// second synchronizer stage one edge further behind (userio.v:213-219) --
+// a single edge only updates the first stage.
+static void quad_step(bool reg_is_joy0, int axis, int main_lvl, int quad_lvl) {
+    vluint16_t& pins = reg_is_joy0 ? top->_joy2 : top->_joy1;
+    int main_bit = axis ? 3 : 2;
+    int quad_bit = axis ? 1 : 0;
+    set_bit(pins, main_bit, main_lvl);
+    set_bit(pins, quad_bit, quad_lvl);
+    settle(2);
+}
+
+// Establishes a genuine, stable, all-zero baseline (all 16 bits) for one
+// register's underlying quadrature counters. Neither dmouse0dat nor
+// dmouse1dat has a reset branch of its own (userio.v:229-282), so this has
+// to be driven, not assumed. Holding BOTH axes' pin pairs at the static
+// level (main=1,quad=1) makes the RTL's own idle "else" branch compute
+// {!1,1^1}={0,0}=0 for the low two bits of both bytes and keep
+// recomputing that same 0 every idle cycle the pins stay put (no drift).
+// A JOYTEST write with data_in=0 then zeroes the upper six bits of each
+// byte (unconditionally for JOY0DAT, userio.v:232-233/245-246; for
+// JOY1DAT only bits [7:2]/[15:10] are JOYTEST-writable, userio.v:259-260/
+// 272-273 -- but the low two are already 0 by the time JOYTEST fires, and
+// JOYTEST never touches them, so the result is the same either way).
+static void zero_baseline(bool reg_is_joy0) {
+    vluint16_t& pins = reg_is_joy0 ? top->_joy2 : top->_joy1;
+    pins = 0x0F; // both axes' main+quad bits (0,1,2,3) held at 1
+    settle(6);   // >= two-stage synchronizer convergence, with margin
+    write_joytest(0);
+    settle(3);   // re-confirm the idle latch reproduces 0 with pins unchanged
+}
+
+// Walks exactly n valid single-step quadrature transitions on one axis,
+// starting from the (main=1,quad=1) phase zero_baseline() left it at
+// (phase index 2 in both sequences below -- the ring is cyclic, so
+// starting mid-ring does not change which steps count as up or down).
+// Case 1 (main changes first, Figure 8-2's "Count Up") if up==true, Case 2
+// ("Count Down") otherwise -- ring order and sense read from the sibling
+// package's walk_ring(), whose own mutation log (VERTICAL-CASE1-COUNTS-UP
+// / -CASE2-COUNTS-DOWN / HORIZONTAL-RIGHT-INCREMENTS / -LEFT-DECREMENTS)
+// confirms this exact sequence on this fixture.
+static void walk_axis(bool reg_is_joy0, int axis, bool up, int n) {
+    static const int case1[4][2] = {{0,0},{1,0},{1,1},{0,1}};
+    static const int case2[4][2] = {{0,0},{0,1},{1,1},{1,0}};
+    const int (*seq)[2] = up ? case1 : case2;
+    int phase = 2; // (1,1), zero_baseline()'s own resting phase
+    for (int i = 0; i < n; i++) {
+        phase = (phase + 1) & 3;
+        quad_step(reg_is_joy0, axis, seq[phase][0], seq[phase][1]);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Checks -- one function per family of assertions, called once per uid.
 // ---------------------------------------------------------------------------
 
-// opus:8-joydat.c1 -- control case / fixture liveness.
+// opus:8-joydat.c1 -- control case / fixture liveness. Unchanged by the
+// repair: register readability/liveness does not depend on which
+// mechanism loads the registers.
 static void check_control_case(const char* uid) {
     reset_dut();
     ensure_joy1enable();
@@ -367,7 +518,8 @@ static void check_control_case(const char* uid) {
     expect(ok, uid);
 }
 
-// opus:8-joydat.c4 -- both registers 16 bits wide (collective).
+// opus:8-joydat.c4 -- both registers 16 bits wide (collective). Unchanged
+// by the repair: width is not a mouse-motion claim.
 static void check_width_both(const char* uid) {
     reset_dut();
     ensure_joy1enable();
@@ -380,7 +532,7 @@ static void check_width_both(const char* uid) {
     expect(v0 == 0x8001 && v1 == 0x8001, uid);
 }
 
-// sol:8-mouse.c15 / c16 -- one register's 16-bit width.
+// sol:8-mouse.c15 / c16 -- one register's 16-bit width. Unchanged.
 static void check_width_one(bool reg_is_joy0, const char* uid) {
     reset_dut();
     if (reg_is_joy0) ensure_joy1enable();
@@ -392,30 +544,39 @@ static void check_width_one(bool reg_is_joy0, const char* uid) {
 }
 
 // opus:8-joydat.c5/c6, sol:8-mouse.c17/c18 -- vertical/horizontal byte
-// assignment, both registers.
+// assignment, both registers. REPAIRED: previously seeded a nonzero byte
+// through JOYTEST and read it back at the claimed position -- which only
+// tests that a loaded byte lands where it was loaded, not that VERTICAL
+// controller-pin motion is what lands in bits 15-8 and HORIZONTAL motion
+// in bits 7-0. Now drives real quadrature transitions on the claimed
+// axis's own pins (vertical=Y pins, horizontal=X pins) from a zeroed
+// baseline and checks the resulting byte -- and only that byte -- carries
+// the step count.
 static void check_byte_assignment(bool checking_vertical, const char* uid) {
-    reset_dut();
-    ensure_joy1enable();
-    const uint8_t nz = 0xAB;
-    uint16_t stim = checking_vertical ? (uint16_t)(nz << 8) : (uint16_t)nz;
-    if (mutated(uid)) {
-        // pollute the byte that must stay 0
-        stim = checking_vertical ? (uint16_t)(stim | 0x00CD) : (uint16_t)(stim | 0xCD00);
+    const int STEPS = 53;
+    bool ok = true;
+    std::string meas;
+    for (int reg = 0; reg < 2; reg++) {
+        bool reg_is_joy0 = (reg == 0);
+        reset_dut();
+        zero_baseline(reg_is_joy0);
+        int axis = checking_vertical ? 1 : 0; // 1=vertical/Y, 0=horizontal/X
+        if (mutated(uid)) axis = 1 - axis; // drive the OTHER axis -- the swapped-byte defect the validation named
+        walk_axis(reg_is_joy0, axis, /*up=*/true, STEPS);
+        uint16_t v = read_reg(addr_of(reg_is_joy0));
+        uint8_t hi = (uint8_t)(v >> 8), lo = (uint8_t)(v & 0xFF);
+        bool this_ok = checking_vertical ? (hi == STEPS && lo == 0) : (lo == STEPS && hi == 0);
+        ok = ok && this_ok;
+        meas += (reg_is_joy0 ? " JOY0DAT=0x" : " JOY1DAT=0x") + hex4(v);
     }
-    drive_register(true, stim);
-    uint16_t v0 = read_reg(JOY0DAT_ADDR);
-    drive_register(false, stim);
-    uint16_t v1 = read_reg(JOY1DAT_ADDR);
-    bool ok;
-    if (checking_vertical)
-        ok = ((v0 >> 8) == nz) && ((v0 & 0xFF) == 0) && ((v1 >> 8) == nz) && ((v1 & 0xFF) == 0);
-    else
-        ok = ((v0 & 0xFF) == nz) && ((v0 >> 8) == 0) && ((v1 & 0xFF) == nz) && ((v1 >> 8) == 0);
+    note("byte-assignment probe (" + std::string(checking_vertical ? "vertical->high byte" : "horizontal->low byte") +
+         "), " + std::to_string(STEPS) + " quadrature steps driven on the claimed axis from a zero baseline:" + meas);
     expect(ok, uid);
 }
 
 // opus:8-appa-joy.c9/c10, sol:8-appa-joy.c11/c12 -- 8-bit-wide counter
-// pair. scope: 0=both registers, 1=JOY0DAT only, 2=JOY1DAT only.
+// pair. scope: 0=both registers, 1=JOY0DAT only, 2=JOY1DAT only. Unchanged
+// by the repair: field width/overflow is not a mouse-motion claim.
 static void check_8bit_pair(int scope, const char* uid) {
     reset_dut();
     ensure_joy1enable();
@@ -434,40 +595,76 @@ static void check_8bit_pair(int scope, const char* uid) {
 }
 
 // opus:8-appa-joy.c13, sol:8-appa-joy.c15 -- four counters total.
+// REPAIRED: previously loaded four distinct JOYTEST-seeded bytes and
+// checked they read back distinct -- never drove a controller pin. Now
+// zeroes all four counters and drives four distinct, known quadrature
+// step counts, one per axis per register, checking each byte reads back
+// its own count and none has leaked into another.
 static void check_four_counters(const char* uid) {
     reset_dut();
-    ensure_joy1enable();
-    uint16_t j0 = 0x1122, j1 = 0x3344;
-    if (mutated(uid)) j1 = 0x1122; // JOY1DAT driven with JOY0DAT's own pattern
-    drive_register(true, j0);
+    zero_baseline(true);
+    zero_baseline(false);
+    const int N0X = 17, N0Y = 29, N1X = 43, N1Y = 61; // four distinct, known counts
+    bool skip_1y = mutated(uid); // mutation: JOY1DAT's vertical counter never driven
+    walk_axis(true,  0, true, N0X);
+    walk_axis(true,  1, true, N0Y);
+    walk_axis(false, 0, true, N1X);
+    if (!skip_1y) walk_axis(false, 1, true, N1Y);
     uint16_t v0 = read_reg(JOY0DAT_ADDR);
-    drive_register(false, j1);
     uint16_t v1 = read_reg(JOY1DAT_ADDR);
-    bool ok = (v0 == 0x1122) && (v1 == 0x3344) &&
-              ((v0 >> 8) != (v0 & 0xFF)) && ((v1 >> 8) != (v1 & 0xFF)) && (v0 != v1);
+    uint8_t v0x = (uint8_t)(v0 & 0xFF), v0y = (uint8_t)(v0 >> 8);
+    uint8_t v1x = (uint8_t)(v1 & 0xFF), v1y = (uint8_t)(v1 >> 8);
+    note("four-counters probe: JOY0DAT.X=" + std::to_string(v0x) + " (want " + std::to_string(N0X) +
+         ") JOY0DAT.Y=" + std::to_string(v0y) + " (want " + std::to_string(N0Y) +
+         ") JOY1DAT.X=" + std::to_string(v1x) + " (want " + std::to_string(N1X) +
+         ") JOY1DAT.Y=" + std::to_string(v1y) + " (want " + std::to_string(N1Y) + ")");
+    bool ok = (v0x == N0X) && (v0y == N0Y) && (v1x == N1X) && (v1y == N1Y) &&
+              (v0x != v0y) && (v1x != v1y) && (v0 != v1);
     expect(ok, uid);
 }
 
 // opus:8-appa-joy.c14, sol:8-appa-joy.c16 -- each counter clocked by two
-// controller pins. Uses JOY1DAT's low byte (dmouse1dat[1:0], fed by
-// module input _joy1[0] and _joy1[2] via the cross-wired synchronizer,
-// userio.v:266) so this check does not depend on the joystick-mode mux
-// used elsewhere for JOY0DAT.
+// controller pins. REPAIRED: previously toggled real pins but only for
+// ONE of the four counters (JOY1DAT's low byte); the other three counters
+// this claim covers were never touched. Now checks all four: for each of
+// JOY0DAT.X, JOY0DAT.Y, JOY1DAT.X, JOY1DAT.Y, driving only the main pin
+// (holding quad fixed) moves the counter, and then driving only the quad
+// pin (holding main at its new level) moves it again -- two independent
+// input lines each affect every one of the four counters.
 static void check_two_pins_per_counter(const char* uid) {
     reset_dut();
-    set_bit(top->_joy1, 0, 0);
-    set_bit(top->_joy1, 2, 0);
-    settle(4);
-    uint16_t base = read_reg(JOY1DAT_ADDR) & 0x3;
-    set_bit(top->_joy1, 0, 1); // pin A alone
-    settle(4);
-    uint16_t after_a = read_reg(JOY1DAT_ADDR) & 0x3;
-    bool skip_b = mutated(uid); // mutation: pin B is never actually moved
-    if (!skip_b) set_bit(top->_joy1, 2, 1); // pin B alone (A already at its new level)
-    settle(4);
-    uint16_t after_b = read_reg(JOY1DAT_ADDR) & 0x3;
-    note("two-pin probe: base=" + std::to_string(base) + " after A=" + std::to_string(after_a) + " after B=" + std::to_string(after_b));
-    bool ok = (after_a != base) && (after_b != after_a);
+    bool ok = true;
+    std::string meas;
+    for (int reg = 0; reg < 2; reg++) {
+        bool reg_is_joy0 = (reg == 0);
+        uint16_t addr = addr_of(reg_is_joy0);
+        vluint16_t& pins = reg_is_joy0 ? top->_joy2 : top->_joy1;
+        for (int axis = 0; axis < 2; axis++) {
+            int main_bit = axis ? 3 : 2;
+            int quad_bit = axis ? 1 : 0;
+            set_bit(pins, main_bit, 0);
+            set_bit(pins, quad_bit, 0);
+            settle(4);
+            uint16_t base = read_reg(addr);
+            uint8_t base_b = axis ? (uint8_t)(base >> 8) : (uint8_t)(base & 0xFF);
+            set_bit(pins, main_bit, 1); // pin A (main) alone
+            settle(4);
+            uint16_t after_a = read_reg(addr);
+            uint8_t a_b = axis ? (uint8_t)(after_a >> 8) : (uint8_t)(after_a & 0xFF);
+            // mutation: withhold pin B on one representative counter (JOY1DAT/horizontal)
+            bool skip_b = mutated(uid) && (reg == 1) && (axis == 0);
+            if (!skip_b) set_bit(pins, quad_bit, 1); // pin B (quad) alone, A already at its new level
+            settle(4);
+            uint16_t after_b = read_reg(addr);
+            uint8_t b_b = axis ? (uint8_t)(after_b >> 8) : (uint8_t)(after_b & 0xFF);
+            bool this_ok = (a_b != base_b) && (b_b != a_b);
+            ok = ok && this_ok;
+            meas += " reg" + std::to_string(reg) + "axis" + std::to_string(axis) +
+                    ":base=" + std::to_string(base_b) + " afterA=" + std::to_string(a_b) +
+                    " afterB=" + std::to_string(b_b);
+        }
+    }
+    note("two-pins-per-counter probe, all four counters:" + meas);
     expect(ok, uid);
 }
 
@@ -511,34 +708,48 @@ static const BitClaim JOY1_BITS[16] = {
     {  0, 'X', 0, "opus:8-appa-joy.c50" },
 };
 
-// Per-bit p.281 table claims (opus:8-appa-joy.c19..c50): drive exactly one
-// bit of the target register to 1 (all others 0) using drive_register(),
-// then check that bit -- and only that bit -- reads back 1.
+// Per-bit p.281 table claims (opus:8-appa-joy.c19..c50). REPAIRED:
+// previously JOYTEST-loaded a one-hot 16-bit word directly and read it
+// back -- proves only that the load-and-readback path preserves a bit
+// position, not that counter bit k (Y_k or X_k) is what that register bit
+// reflects. Now zeroes the target counter and drives exactly 2^(bit
+// within its own byte) quadrature UP steps from that zero: since the
+// counter is a plain binary up-counter (dmouse0dat[7:0] <= ...+1'd1,
+// userio.v:235 et al.) and its own bit `idx` was 0 in the zero baseline,
+// adding 2^idx sets bit `idx` alone with no carry into or out of it --
+// so the byte reads back exactly 1<<idx, i.e. a 1 at bit `c.bit` of the
+// register and 0 everywhere else, reached by counting the claimed
+// counter's own transitions rather than by loading a word.
 static void check_one_hot_bit(bool reg_is_joy0, const BitClaim& c) {
     reset_dut();
-    if (reg_is_joy0) ensure_joy1enable();
-    int stim_bit = c.bit;
-    if (mutated(c.uid)) stim_bit = (c.bit + 1) % 16; // one-hot moved to the wrong position
-    drive_register(reg_is_joy0, (uint16_t)(1u << stim_bit));
+    zero_baseline(reg_is_joy0);
+    bool is_y = (c.letter == 'Y');
+    int axis = is_y ? 1 : 0;
+    int steps = 1 << c.idx;
+    if (mutated(c.uid)) steps = 1 << ((c.idx + 1) % 8); // one-hot moved to the wrong bit of the same byte
+    walk_axis(reg_is_joy0, axis, /*up=*/true, steps);
     uint16_t v = read_reg(addr_of(reg_is_joy0));
-    bool ok = (v == (uint16_t)(1u << c.bit));
+    uint16_t expected = (uint16_t)(1u << c.bit);
+    bool ok = (v == expected);
     expect(ok, c.uid);
 }
 
 // sol:8-appa-joy.c21..c24 -- byte-range restatements of the same table.
+// REPAIRED: previously JOYTEST-loaded the marker byte directly. Now drives
+// the marker's own value as a quadrature UP step count from a zero
+// baseline on the claimed axis, so the byte is reached by counting real
+// transitions on the axis the claim names, not by a register write.
 static void check_byte_range(bool reg_is_joy0, bool upper, const char* uid) {
     reset_dut();
-    if (reg_is_joy0) ensure_joy1enable();
-    const uint8_t marker = 0x96; // 1001 0110: not a palindrome, catches bit-order errors
-    uint16_t stim = upper ? (uint16_t)(marker << 8) : (uint16_t)marker;
-    if (mutated(uid)) {
-        uint8_t bad = marker ^ 0x01;
-        stim = upper ? (uint16_t)(bad << 8) : (uint16_t)bad;
-    }
-    drive_register(reg_is_joy0, stim);
+    zero_baseline(reg_is_joy0);
+    const uint16_t EXPECTED = 0x96; // 150 decimal, 10010110: not a palindrome, catches bit-order errors
+    int axis = upper ? 1 : 0; // upper byte (15-8) = vertical/Y, lower (7-0) = horizontal/X
+    int steps = EXPECTED;
+    if (mutated(uid)) steps = EXPECTED ^ 0x01; // one transition short/over of the required count
+    walk_axis(reg_is_joy0, axis, /*up=*/true, steps);
     uint16_t v = read_reg(addr_of(reg_is_joy0));
     uint8_t got = upper ? (uint8_t)(v >> 8) : (uint8_t)(v & 0xFF);
-    expect(got == marker, uid);
+    expect(got == EXPECTED, uid);
 }
 
 // ---------------------------------------------------------------------------
@@ -591,4 +802,3 @@ int main(int argc, char** argv) {
     delete top;
     return checks.failed == 0 ? 0 : 1;
 }
-
