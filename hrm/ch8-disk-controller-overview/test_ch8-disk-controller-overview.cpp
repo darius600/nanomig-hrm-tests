@@ -48,17 +48,27 @@
 //     clk7_en tick WHERE `sof` is asserted that tick, wrapping at 9 (PAL,
 //     ntsc=0) -- i.e. one revolution = 10 sof-qualified clk7_en ticks.
 //     `sof` itself is agnus-generated, outside paula_floppy's boundary, so
-//     ITS real-world rate cannot be read off this fixture. P-REVOLUTION-
-//     RATIO therefore does NOT drive `sof`/`index` at all -- instead it
-//     compares the whole-track transfer's OWN measured clk7_en-tick
-//     duration (a quantity entirely internal to this fixture) against an
-//     externally-known, disclosed constant: 300 RPM (this file's own
-//     comment at :562, corroborating the well-known Amiga floppy rotation
-//     speed) = 200 ms/revolution, and clk7_en's well-known PAL rate of
-//     ~7.09379 MHz (2x the ~3.546895 MHz PAL colour clock -- standard,
-//     widely-documented Amiga chipset facts, NOT read from any RTL file in
-//     this repo, disclosed here as an external assumption). 0.2 s *
-//     7.09379 MHz ~= 1,418,758 clk7_en ticks/revolution.
+//     ITS real-world rate cannot be read off this fixture, and this file
+//     does not drive `sof`/`index` for any grading purpose.
+//
+//     CORRECTION, recorded rather than silently fixed: an earlier revision
+//     of this file graded a separate P-REVOLUTION-RATIO assertion by
+//     comparing the whole-track transfer's measured clk7_en-tick duration
+//     against an imported real-time constant (300 RPM = 200 ms/revolution;
+//     clk7_en ~= 7.09379 MHz PAL, 2x the PAL colour clock -- ordinary,
+//     well-known Amiga chipset facts). The coordinator checked both the s2
+//     slice (pp.241-250) and the full 687-page extracted corpus for a
+//     stated rotation speed or clock frequency: absent from both. This
+//     suite's oracle is the manual, not general chipset knowledge, and a
+//     duration compared against a real-time figure the manual never
+//     states is an ABSOLUTE reading with no oracle here (the classify
+//     brief's ratio-or-absolute rule: no port emits Hertz or milliseconds).
+//     A green assertion resting on an imported number reads as the manual
+//     being confirmed when it was not. P-REVOLUTION-RATIO is REMOVED, not
+//     reworded to a smaller number -- see P-WHOLETRACK-DMA below, which now
+//     also carries opus:8-dsk.c7/sol:8-dsk.c7's DIMENSIONLESS reading
+//     (single continuous pass covers a whole track, 1:1, no real-time
+//     calibration needed) in its place.
 //   - dsksync (:701-709) only ever feeds `sync_match` (:914-915,
 //     dsksync==floppy_data && fifo_reading_sector && trackrd) -- it is
 //     compared against WHATEVER the generator is currently emitting, not
@@ -109,20 +119,13 @@
 //   mutation run (MUTATE=<id>, one id per assertion). Ids are the claim's
 //   own `classify.uid` where an assertion grades exactly one claim, and a
 //   plain uppercase/P- id where an assertion grades several claims'
-//   shared content at once (P-WHOLETRACK-DMA, P-REVOLUTION-RATIO) or
-//   grades no claim at all (FIXTURE-LIVE, DSKBYTR-CONTROL).
+//   shared content at once (P-WHOLETRACK-DMA) or grades no claim at all
+//   (FIXTURE-LIVE, DSKBYTR-CONTROL).
 //   opus:8-dsk.c9/sol:8-dsk.c9 are RED at baseline (C6), so per this
 //   suite's rule against mutating an already-failing check, their MUTATE
 //   run substitutes DSKBYTR-CONTROL's mechanism (the WRITE-bit mirror,
 //   proven live elsewhere in this run) through the IDENTICAL
 //   data_out-varies comparator instead of a stimulus mutation.
-//   P-REVOLUTION-RATIO carries NO stimulus mutation at all: DSKLEN's 14-bit
-//   field caps any legal request at 16383 words, and this module generates
-//   roughly one word per clk7_en tick, so even the maximum representable
-//   transfer sits several orders of magnitude below one revolution's
-//   ~1.4-million-tick budget -- no stimulus in this port's input space can
-//   push the measured transfer time past the revolution bound. Recorded
-//   `none impossible`, unfalsifiable-at-this-boundary.
 //
 // MUTATION RUN LOG: recorded in the commit message and build report after
 //   the run, not predicted here.
@@ -449,15 +452,37 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // P-WHOLETRACK-DMA -- opus:8-dsk.c6 (p.241), sol:8-dsk.c7 (p.241,
-    // capacity half of its combined c6+c7 claim), sol:8-dskdma.c6 (p.247,
-    // "read from the disk only once for the entire track", graded on
-    // sol's own operative reading: one DSKLEN double-write / one blckint
-    // covers a whole track). A single arming delivers all 5984 words of a
-    // whole track's real content (11 sectors * 544 MFM words,
-    // paula_floppy.v:499,530-538) and raises blckint exactly once, even
-    // though the SD-side ingest issues eleven separate sdc_rd requests
-    // underneath -- the CPU/DMA-programming side sees ONE operation.
+    // P-WHOLETRACK-DMA -- opus:8-dsk.c6 (p.241, capacity half of its own
+    // split), opus:8-dsk.c7 (p.241, dimensionless single-pass reading --
+    // see note below), sol:8-dsk.c7 (p.241, both halves of its combined
+    // c6+c7 claim), sol:8-dskdma.c6 (p.247, "read from the disk only once
+    // for the entire track", graded on sol's own operative reading: one
+    // DSKLEN double-write / one blckint covers a whole track). A single
+    // arming delivers all 5984 words of a whole track's real content (11
+    // sectors * 544 MFM words, paula_floppy.v:499,530-538) and raises
+    // blckint exactly once, even though the SD-side ingest issues eleven
+    // separate sdc_rd requests underneath -- the CPU/DMA-programming side
+    // sees ONE operation.
+    //
+    // CORRECTED after this package's own build report was checked against
+    // the manual corpus (RPM/clock frequency absent from both the s2 slice
+    // and the whole 687-page corpus): this assertion previously ALSO
+    // graded a separate P-REVOLUTION-RATIO check comparing this same
+    // transfer's measured clk7_en-tick duration against an externally
+    // supplied real-time constant (300 RPM, ~7.09379 MHz PAL clk7_en) --
+    // neither number is stated anywhere in the manual, so that duration
+    // comparison had no oracle in this suite and has been REMOVED, not
+    // reworded. What survives, folded into THIS assertion instead of a
+    // separate one, is the part of "in a single disk revolution" that
+    // needs no real-time calibration at all: a whole track's worth of
+    // data (5984 words, matching the track size 1:1) is delivered in ONE
+    // continuous DMA session -- one arm, one blckint -- never needing a
+    // second pass/re-arm to cover the same ground. That is exactly what
+    // this assertion already measured for the capacity half; opus:8-dsk.c7
+    // and sol:8-dsk.c7's ratio content is cited here under that SAME
+    // single-pass measurement, and it grades the single-pass property
+    // only, not duration -- no clk7_en-tick count is compared against any
+    // real-time figure anywhere in this file.
     // ========================================================================
     {
         const int TRACK_WORDS = 5984;
@@ -475,45 +500,16 @@ int main(int argc, char** argv) {
                     ", blckint_seen=" + std::to_string(res.blckint_seen));
         checks.expect(res.delivered == TRACK_WORDS && res.blckint_seen,
             "P-WHOLETRACK-DMA (opus:8-dsk.c6, p.241, quote 'It can DMA an entire track of raw\\nMFM data into "
-            "memory in a single disk revolution.'; sol:8-dsk.c7, p.241, same quote, capacity half of its "
-            "combined claim; sol:8-dskdma.c6, p.247, quote 'With this process you need to read from the disk "
-            "only once for the\\nentire track.', graded on sol's own operative reading -- one programming, one "
-            "blckint): a single DSKLEN double-write delivers all 5984 words of a whole track's real content "
-            "(11 sectors * 544 MFM words, paula_floppy.v:499,530-538) and raises blckint exactly once, "
-            "confirming a whole track is one continuous DMA operation from the programming side, not several");
-    }
-
-    // ========================================================================
-    // P-REVOLUTION-RATIO -- opus:8-dsk.c7 (p.241, ratio half), sol:8-dsk.c7
-    // (p.241, ratio half of its combined claim). The same whole-track
-    // transfer's OWN clk7_en-tick duration, measured entirely inside this
-    // fixture, compared against an externally-disclosed constant for one
-    // revolution's real duration (300 RPM = 200 ms; clk7_en ~= 7.09379 MHz
-    // PAL -- standard Amiga chipset facts, not read from any RTL file;
-    // `sof`'s real rate is agnus-generated and outside this fixture's
-    // boundary, so paula_floppy's own index/rpm_pulse_cnt counter is
-    // deliberately NOT used here).
-    // ========================================================================
-    {
-        const int TRACK_WORDS = 5984;
-        const long REV_TICKS = 1418758;  // 0.2s * ~7.09379 MHz, external constant, see file header
-        Rig r; r.do_reset();
-        r.select(0); r.d->wordsync = 0;
-        r.arm_dma_read((uint16_t)TRACK_WORDS);
-        long start_q = r.qedges;
-        auto res = run_read_transfer(r, TRACK_WORDS,
-            [](int sector, int i){ return (uint8_t)(sector * 29 + i * 3 + 1); }, 400000);
-        long transfer_ticks = r.qedges - start_q;
-        checks.note("P-REVOLUTION-RATIO: whole-track transfer took " + std::to_string(transfer_ticks) +
-                    " clk7_en ticks (delivered=" + std::to_string(res.delivered) +
-                    ", blckint=" + std::to_string(res.blckint_seen) + "); one revolution ~= " +
-                    std::to_string(REV_TICKS) + " clk7_en ticks (external constant, 300 RPM / ~7.09379 MHz PAL)");
-        checks.expect(res.delivered == TRACK_WORDS && res.blckint_seen && transfer_ticks <= REV_TICKS,
-            "P-REVOLUTION-RATIO (opus:8-dsk.c7, p.241, quote 'It can DMA an entire track of raw\\nMFM data into "
-            "memory in a single disk revolution.'; sol:8-dsk.c7, p.241, same quote, ratio half of its combined "
-            "claim): the whole-track transfer's measured clk7_en-tick duration does not exceed one revolution's "
-            "externally-known real-time budget -- a dimensionless-in-spirit comparison, not a claim about "
-            "milliseconds measured at any port");
+            "memory in a single disk revolution.'; opus:8-dsk.c7, p.241, same quote, graded here ONLY on its "
+            "dimensionless single-pass reading -- data delivered to track size, 1:1, in one uninterrupted DMA "
+            "session -- NOT on any duration/real-time reading, for which the manual supplies no rotation-speed "
+            "or clock-frequency figure anywhere in the corpus; sol:8-dsk.c7, p.241, same quote, both halves of "
+            "its combined claim, same dimensionless reading; sol:8-dskdma.c6, p.247, quote 'With this process "
+            "you need to read from the disk only once for the\\nentire track.', graded on sol's own operative "
+            "reading -- one programming, one blckint): a single DSKLEN double-write delivers all 5984 words of "
+            "a whole track's real content (11 sectors * 544 MFM words, paula_floppy.v:499,530-538) and raises "
+            "blckint exactly once, confirming a whole track is covered in ONE continuous DMA pass from the "
+            "programming side, never a second pass over the same ground");
     }
 
     // ========================================================================
@@ -1110,8 +1106,7 @@ int main(int argc, char** argv) {
 // MUTATION FIXTURE-LIVE stimulus red: word 2 driven identical to word 1 (0x0000) instead of 0x4000, so the two readings are indistinguishable (MUTATE=FIXTURE-LIVE).
 // MUTATION opus:8-dsk.c1 stimulus red: drive 3 is never actually selected in the loop, so its "selected -> ready" half is checked against a state that never occurred (MUTATE=opus:8-dsk.c1).
 // MUTATION sol:8-dsk.c1 stimulus red: same omission as opus:8-dsk.c1, independent uid (MUTATE=sol:8-dsk.c1).
-// MUTATION P-WHOLETRACK-DMA stimulus red: DSKLEN is programmed for one word MORE than a whole track holds (5985 instead of 5984), while the check still expects completion at exactly 5984 (MUTATE=P-WHOLETRACK-DMA).
-// MUTATION P-REVOLUTION-RATIO none impossible: unfalsifiable at this boundary -- DSKLEN's 14-bit field caps any legal request at 16383 words, and this module generates roughly one MFM word per clk7_en tick, so even the maximum representable transfer sits far below one revolution's ~1.4-million-tick real-time budget (300 RPM, ~7.09379 MHz PAL clk7_en, both external constants). No stimulus in paula_floppy's own input space can push the measured transfer time past the revolution bound.
+// MUTATION P-WHOLETRACK-DMA stimulus red: DSKLEN is programmed for one word MORE than a whole track holds (5985 instead of 5984), while the check still expects completion at exactly 5984 -- an ordinary stimulus mutation, now covering opus:8-dsk.c7/sol:8-dsk.c7's dimensionless single-pass reading as well as the capacity content it always graded (MUTATE=P-WHOLETRACK-DMA).
 // MUTATION opus:8-dsk.c8 stimulus red: the matching DSKSYNC value (0x4489) is used on the "should not match" probe too, while the check still expects the mismatch outcome (zero delivered) (MUTATE=opus:8-dsk.c8).
 // MUTATION sol:8-dsk.c8 stimulus red: same substitution as opus:8-dsk.c8, independent uid (MUTATE=sol:8-dsk.c8).
 // MUTATION opus:8-dsk.c9 stimulus green: this assertion is RED at baseline (C6), so per the rule against mutating an already-failing check, the stimulus substitutes DSKBYTR-CONTROL's WRITE-bit mechanism -- proven live elsewhere in this run -- through the identical data_out-varies comparator in place of the DATA field the RTL never varies (MUTATE=opus:8-dsk.c9).
