@@ -48,12 +48,15 @@
 //   drove the back pin low; more than one direction came out asserted.
 // MUTATION opus:8-joy.c3+sol:8-joy.c3 stimulus red dropped the forward pin from the
 //   forward+right diagonal stimulus, driving right alone.
-// MUTATION opus:8-joy.c4+sol:8-joy.c4 none impossible unfalsifiable at this boundary
-//   -- the per-axis encode (bit1=!x0, bit0=x0^x2; bit9=!y1, bit8=y1^y3, userio.v:239,
-//   252) is a bijection from each axis's 2-bit raw stimulus onto its 2-bit decode,
-//   and the two axes never interact; no stimulus choice can make two of the 8
-//   exercised direction patterns collide, so this proposition cannot be driven red by
-//   any change of what the module is asked to do.
+// MUTATION opus:8-joy.c4+sol:8-joy.c4 stimulus red the per-axis encode being a
+//   bijection (bit1=!x0, bit0=x0^x2; bit9=!y1, bit8=y1^y3, userio.v:239, 252) says
+//   no two of the 8 *driven patterns* can decode alike -- it says nothing about the
+//   8 *stimuli* the test itself chooses, which are this assertion's own data and are
+//   exactly as mutable as any other stimulus in this file. Replaced the eighth
+//   stimulus (left+forward diagonal) with a duplicate of the first (right alone):
+//   codes[0] and codes[7] both decode to 8, all_distinct goes false, and 29
+//   passed/0 failed -> 28 passed/1 failed with only this assertion newly red.
+//   Reverted (`make clean && make`): 29 passed/0 failed restored.
 // MUTATION opus:8-joy.c6+sol:8-joy.c6 stimulus red drove the right pin low ("pressed")
 //   while calling it the idle/open baseline; the idle reading was no longer all-zero.
 // MUTATION opus:8-joy.c7+sol:8-joy.c7 stimulus red inverted the "press" stimulus on the
@@ -321,8 +324,7 @@ int main(int argc, char** argv) {
     }
 
     // L04 opus:8-joy.c4+sol:8-joy.c4 -- 8 total directions: the 4 cardinals and 4
-    // adjacent diagonals give 8 pairwise-distinct decode patterns. IMPOSSIBLE to drive
-    // red by stimulus -- see the MUTATION record in the header.
+    // adjacent diagonals give 8 pairwise-distinct decode patterns.
     {
         int codes[8] = {
             code4(decode16(joy0dat_for(stim({BIT_RIGHT})))),
@@ -332,7 +334,11 @@ int main(int argc, char** argv) {
             code4(decode16(joy0dat_for(stim({BIT_FWD, BIT_RIGHT})))),
             code4(decode16(joy0dat_for(stim({BIT_RIGHT, BIT_BACK})))),
             code4(decode16(joy0dat_for(stim({BIT_BACK, BIT_LEFT})))),
+#ifdef MUT_L04
+            code4(decode16(joy0dat_for(stim({BIT_RIGHT})))), // mutated: duplicate of the first stimulus, not the left+forward diagonal
+#else
             code4(decode16(joy0dat_for(stim({BIT_LEFT, BIT_FWD})))),
+#endif
         };
         bool all_distinct = true;
         for (int i = 0; i < 8 && all_distinct; ++i)
