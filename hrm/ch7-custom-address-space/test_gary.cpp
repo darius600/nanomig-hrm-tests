@@ -552,7 +552,9 @@ int main() {
             "as its own assertion rather than folded into that one. '+ "
             "Address register pair. Must be an even address pointing to "
             "chip memory.' (p.287, sol:7-appB-legend.c3, opus:7-appB.c4 -- "
-            "chip-memory half only). measured" + detail + ".");
+            "chip-memory half only, opus:8-dma.c9, sol:8-dskpth.c5, "
+            "sol:8-appb-legend.c6, sol:8-appb-dskpth.c4, "
+            "sol:8-appb-dskptl.c4). measured" + detail + ".");
     }
     checks.record(
         "PTR-PAIR-EVEN-ADDRESS-HALF-NOT-ASSERTED: the '...must be an even "
