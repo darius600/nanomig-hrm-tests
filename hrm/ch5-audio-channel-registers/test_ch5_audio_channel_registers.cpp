@@ -690,7 +690,7 @@ int main(int argc, char** argv) {
             if (h.dut->cck && h.dut->sample != last) { last = h.dut->sample; seq.push_back(last); }
         }
         bool ok = seq.size() == 2 && seq[0] == 0x80 && seq[1] == 0x7F;
-        CHECK("SAMPLE-SIGNED-RANGE-FULL-SCALE (5-noise.c1) (p154) \"try to use the full range of "
+        CHECK("SAMPLE-SIGNED-RANGE-FULL-SCALE (5-noise.c1, opus:8-appA-adkcon.c38) (p154) \"try to use the full range of "
               "-128 to 127 when you represent a waveform\": writing AUDxDAT=0x807F delivers "
               "exactly 0x80 (signed -128, sign bit set, all-zero magnitude) then 0x7F (signed "
               "+127, sign bit clear, all-one magnitude) on `sample` -- both signed two's-"
@@ -710,7 +710,7 @@ int main(int argc, char** argv) {
     // WORD-CONTAINS-TWO-SAMPLES
     // (5-p138.c2, 5-p138.c7, 5-data.c2, 5-data.c7, 5-p150.c5, 5-p150.c9,
     //  5-p150.c13, 5-p150.c17, 5-t54.w1.c1, 5-t54.w2.c1, 5-t54.w3.c1,
-    //  5-t54.w4.c1, A-audxdat.c2, 5-appA-p265.c39)
+    //  5-t54.w4.c1, A-audxdat.c2, 5-appA-p265.c39, opus:8-appA-adkcon.c38)
     // =========================================================================
     {
         Harness h;
@@ -732,7 +732,7 @@ int main(int argc, char** argv) {
         bool ok = seq.size() == 2 && seq[0] != seq[1];
         CHECK("WORD-CONTAINS-TWO-SAMPLES (5-p138.c2, 5-p138.c7, 5-data.c2, 5-data.c7, 5-p150.c5, "
               "5-p150.c9, 5-p150.c13, 5-p150.c17, 5-t54.w1.c1, 5-t54.w2.c1, 5-t54.w3.c1, "
-              "5-t54.w4.c1, A-audxdat.c2, 5-appA-p265.c39): one 16-bit AUDxDAT write (0x1234) is "
+              "5-t54.w4.c1, A-audxdat.c2, 5-appA-p265.c39, opus:8-appA-adkcon.c38): one 16-bit AUDxDAT write (0x1234) is "
               "consumed as two DISTINCT 8-bit samples on `sample` (0x12, then 0x34), matching "
               "every table-5-4/appendix-A reading of one word as two samples", ok);
         MUTATION("WORD-CONTAINS-TWO-SAMPLES", "stimulus", "red",
@@ -792,7 +792,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // AUDXDAT-IS-PERCHANNEL-DATA-BUFFER
-    // (A-audxdat.c1, 5-appA-p265.c38)
+    // (A-audxdat.c1, 5-appA-p265.c38, opus:8-appA-adkcon.c37)
     // =========================================================================
     {
         Harness h;
@@ -813,7 +813,7 @@ int main(int argc, char** argv) {
             if (h.dut->cck && h.dut->sample != last) { last = h.dut->sample; seq.push_back(last); }
         }
         bool ok = seq.size() == 2 && seq[0] == 0x99 && seq[1] == 0xAA;
-        CHECK("AUDXDAT-IS-PERCHANNEL-DATA-BUFFER (A-audxdat.c1, 5-appA-p265.c38): writing "
+        CHECK("AUDXDAT-IS-PERCHANNEL-DATA-BUFFER (A-audxdat.c1, 5-appA-p265.c38, opus:8-appA-adkcon.c37): writing "
               "0x99AA at AUDxLEN's own address leaves `sample` unaffected; the same value "
               "written at AUDxDAT's address (offset 0xA) is what populates the channel's data "
               "buffer and reaches `sample` as 0x99 then 0xAA -- AUDxDAT is this channel's own, "
