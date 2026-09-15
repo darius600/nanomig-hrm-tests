@@ -10,12 +10,14 @@
 //   graded); the MFM/SD-card data path; DMA; interrupts.
 //
 // MUTATION RATIO-A oracle green: expected ratio changed from 6 (the printed
-//   18ms:3ms) to 1 (what the RTL actually produces) -> PASS, confirming the
-//   comparator is sensitive and the baseline red is a genuine measurement.
-//   Reverted.
-// MUTATION RATIO-B oracle green: expected relationship changed from "equal"
-//   to "differ by exactly 1 tick" (0 vs 1, what the RTL actually produces)
-//   -> PASS. Reverted.
+//   18ms-reversal : 3ms-same-direction pair, p.245:32 and p.245:37-39) to 1
+//   (what the RTL actually produces for a genuine reversal-gap measurement
+//   against a genuine same-direction-gap measurement) -> PASS, confirming
+//   the comparator is sensitive and the baseline red is a genuine
+//   measurement, not a broken comparator. Reverted.
+// RATIO-B carries no MUTATION record: it is declined via checks.record(),
+//   not graded through expect(), so there is no assertion label to mutate.
+//   See the record() call in main() for the reason.
 // MUTATION SEL-GATING stimulus red: the second step attempt changed to run
 //   deselected too (drive reselected only afterward, to read _track0
 //   without its deselected-mask -- paula_floppy.v:666 forces _track0
@@ -44,6 +46,7 @@
 //   cannot be shown to deliver a second, distinct value). Reverted.
 
 #include <cstdint>
+#include <functional>
 #include <iostream>
 #include <string>
 
@@ -181,57 +184,93 @@ public:
 };
 
 // ---------------------------------------------------------------------
-// RATIO-A / RATIO-B measurement helpers
+// RATIO-A measurement helpers
+//
+// p.245:37-39 ("When reversing directions, a minimum of 18 milliseconds
+// delay is required from the last step pulse") and p.245:32 ("the next
+// track within 3 milliseconds") name two DIFFERENT cases: a direction
+// REVERSAL and a SAME-DIRECTION continuation. Figure 8-8 prints them as two
+// arrows in the same frame (18ms, 18ms, 3ms), a 6:1 ratio. A sound
+// measurement needs one genuine reversal gap and one genuine same-direction
+// gap, both read through the same observable.
+//
+// `_track0` is the only external read-back of head position, and it is a
+// single bit that is only meaningful "at track 0 or not"
+// (paula_floppy.v:653: `_track0 = &(_selx | _dsktrack0)`), so any probe has
+// to be arranged so its accept/reject outcome shows up as a track-0
+// crossing. A reversal probe can be read directly this way (it crosses back
+// toward track 0). A same-direction probe cannot -- it moves the head
+// FURTHER from track 0 -- so it is folded back onto the boundary with one
+// extra, generously-spaced reversal step after it.
 // ---------------------------------------------------------------------
 
-// Whether a step separated from the previous accepted edge by exactly `gap`
-// idle ticks is itself accepted, measured at burst "position" 1 (the first
-// inter-edge gap after the rig starts) or position 2 (the second inter-edge
-// gap in the same burst, immediately following a first gap that is known-
-// accepted because it is generous). `_track0` is the only external read-back
-// of head position (a single bit: "at track 0 or not"), so every probe here
-// is arranged to cross the track-0 boundary -- that is the only way a 1-bit
-// signal can report accept/reject of a specific edge.
-bool gap_accepted(int position, int gap) {
+// REVERSAL case (p.245:37-39, "18 ms min" in Figure 8-8). Edge 1 (direc=
+// false, guaranteed accepted -- step_ena was just saturated with nothing to
+// reset it) leaves track 0. The probe, `gap` ticks later, is direc=true: a
+// genuine reversal. `_track0` is read directly: asserted (0) means the
+// probed edge decremented the track back to 0, i.e. was accepted.
+bool gap_accepted_reversal(int gap) {
     Trial t;
     t.select_drive0();
     t.saturate_step_ena();
-
-    // Edge 1: direc=0, track 0 -> 1 (leaves track 0). Trivially accepted:
-    // step_ena has just been saturated with nothing to reset it since.
-    t.do_step(/*direc_val=*/false);
-
-    if (position == 1) {
-        // Probe: direc=1 would return 1 -> 0 (back to track 0) iff accepted.
-        t.ticks(gap);
-        t.do_step(/*direc_val=*/true);
-        return t.track0();  // asserted (0) => the probed edge was accepted
-    }
-
-    // position == 2: fix the first gap generously (always accepted), then
-    // probe the SECOND gap the same way, crossing track 0 a second time.
-    t.ticks(600);
-    t.do_step(/*direc_val=*/true);  // track 1 -> 0, fixed-generous gap
-    // Sanity: this fixed gap must itself have been accepted, or the probe
-    // below is meaningless. Not asserted here (return would be wrong either
-    // way); checked by the caller instead.
-    if (!t.track0()) return false;
-
+    t.do_step(/*direc_val=*/false);   // track 0 -> 1, trivially accepted
     t.ticks(gap);
-    t.do_step(/*direc_val=*/false);  // track 0 -> 1 iff the probed edge lands
-    return !t.track0();              // deasserted (1) => probed edge accepted
+    t.do_step(/*direc_val=*/true);    // PROBE: reversal (direc flips)
+    return t.track0();                // asserted (0) => probed edge accepted
 }
 
-// Binary search over [1, hi] for the smallest gap that is accepted. Assumes
-// (and does not itself re-verify per call) that acceptance is monotonic in
-// gap -- the counter this measures is a simple saturating up-counter with a
-// single threshold, so once a gap is long enough every longer gap is too.
-int min_accepted_gap(int position, int hi = 600) {
-    if (!gap_accepted(position, hi)) return -1;  // never accepted at all
+// SAME-DIRECTION case (p.245:32, "3 ms min" -- "the next track within 3
+// milliseconds"). Edge 1 (direc=false, guaranteed accepted) leaves track 0.
+// The probe, `gap` ticks later, is ALSO direc=false: the same direction as
+// edge 1, exactly the case RATIO-A's original form never drove. If accepted
+// it moves track 1 -> 2; if rejected, track stays at 1 -- a difference
+// `_track0` cannot see directly, since both land off track 0.
+//
+// Folded back with one more step, direc=true, spaced 600 ticks after the
+// probe (well past the ~253-tick floor measured elsewhere in this file, so
+// it is accepted regardless of the probe's outcome or of which earlier edge
+// last reset step_ena_cnt -- paula_floppy.v:581-590's reset-on-rising-edge
+// is not gated by selection or by whether the earlier edge actually moved
+// the track). This third edge is itself a reversal, decrementing; that is
+// never blocked by the track-0 floor here because the head is at track 1 or
+// 2, never at 0, when it fires (paula_floppy.v:658-667: the decrement guard
+// is `_dsktrack0 && direc`, and `_dsktrack0` only deasserts AT track 0).
+//
+//   edge 1 (direc=false, guaranteed accepted):              track 0 -> 1
+//   PROBE  (direc=false, SAME direction, `gap` ticks later): 1 -> 2 iff
+//                                                             accepted
+//   edge 3 (direc=true, 600-tick gap, guaranteed accepted):  2 -> 1 (probe
+//                                                             was accepted)
+//                                                          or 1 -> 0 (probe
+//                                                             was rejected)
+bool gap_accepted_same_direction(int gap) {
+    Trial t;
+    t.select_drive0();
+    t.saturate_step_ena();
+    t.do_step(/*direc_val=*/false);   // track 0 -> 1, trivially accepted
+    if (t.track0()) return false;     // edge 1 did not leave track 0: a rig
+                                       // fault, not a measurement of the
+                                       // probe -- reported as "rejected"
+                                       // would be wrong, but this can only
+                                       // be reached if do_step itself is
+                                       // broken, which FIXTURE-LIVE guards.
+    t.ticks(gap);
+    t.do_step(/*direc_val=*/false);   // PROBE: SAME direction as edge 1
+    t.ticks(600);
+    t.do_step(/*direc_val=*/true);    // fold-back reversal, generously spaced
+    return !t.track0();               // deasserted (1) => probed edge accepted
+}
+
+// Binary search over [1, hi] for the smallest gap `fn` accepts. Assumes (and
+// does not itself re-verify per call) that acceptance is monotonic in gap --
+// the counter this measures is a simple saturating up-counter with a single
+// threshold, so once a gap is long enough every longer gap is too.
+int min_accepted_gap(const std::function<bool(int)>& fn, int hi = 600) {
+    if (!fn(hi)) return -1;  // never accepted at all
     int lo = 1;
     while (lo < hi) {
         int mid = lo + (hi - lo) / 2;
-        if (gap_accepted(position, mid)) {
+        if (fn(mid)) {
             hi = mid;
         } else {
             lo = mid + 1;
@@ -394,13 +433,17 @@ int main(int argc, char** argv) {
     }
 
     // -----------------------------------------------------------------
-    // A2 RATIO-B -- p.243 figure legend: "t: 1 us min." is assigned to
-    // every interval marked only `t` (the DIRECTION SELECT row's several
-    // arrows, the DRIVE-SELECT-to-first-STEP arrow, and -- read across into
-    // the paired read-timing frame -- the STEP pulse-width arrow): a single
-    // shared floor. Already measured and true at this fixture: `direc`
-    // setup before an accepted edge = 0 ticks; `_step` minimum low width =
-    // 1 tick. Not equal.
+    // RATIO-B -- DECLINED, not graded. p.243 figure legend: "t: 1 us min."
+    // is assigned to every interval marked only `t` (the DIRECTION SELECT
+    // row's several arrows, the DRIVE-SELECT-to-first-STEP arrow, and --
+    // read across into the paired read-timing frame -- the STEP
+    // pulse-width arrow). The withdrawn form of this assertion compared a
+    // declared "0 tick" DIRECTION setup against a declared "1 tick" STEP
+    // pulse floor and called the inequality a finding. Both numbers below
+    // are still measured and printed, but neither is a measurement of a
+    // physical or RTL-internal interval of the kind the page's "1 us min."
+    // names, for reasons explained in the record() below -- so no expect()
+    // grades them.
     // -----------------------------------------------------------------
     {
         // direc setup = 0 ticks: change direc in the SAME tick as the
@@ -434,41 +477,90 @@ int main(int argc, char** argv) {
         const int direc_setup_ticks = 0;
         const int step_width_floor_ticks = 1;
         checks.note("direc setup = " + std::to_string(direc_setup_ticks) +
-                    " tick(s); _step minimum low width = " +
-                    std::to_string(step_width_floor_ticks) + " tick(s)");
-        checks.expect(
-            zero_setup_direc_took_effect && zero_width_never_accepted &&
-                (direc_setup_ticks == step_width_floor_ticks),
-            "RATIO-B: every `t`-labelled interval in the figure (DIRECTION "
-            "SELECT row, DRIVE-SELECT-to-STEP, and the read-frame STEP "
-            "pulse width) shares one printed floor -- measured: direc "
-            "setup and the STEP pulse-width floor are NOT the same number "
-            "of ticks "
+                    " tick(s) (zero_setup_direc_took_effect=" +
+                    (zero_setup_direc_took_effect ? std::string("true") : std::string("false")) +
+                    "); _step minimum low width = " +
+                    std::to_string(step_width_floor_ticks) +
+                    " tick(s) (zero_width_never_accepted=" +
+                    (zero_width_never_accepted ? std::string("true") : std::string("false")) +
+                    ") -- both figures are testbench/simulation bookkeeping, "
+                    "not measured physical intervals; see the RATIO-B "
+                    "record() below");
+        checks.record(
+            "RATIO-B declined: the two numbers above are not two measured "
+            "floors of the same kind, and their comparison does not become "
+            "a valid dimensionless equality just because both sides are "
+            "integers. This is a no-timing Verilator run: eval() has no "
+            "setup/hold model at all, so changing direc immediately before "
+            "the same rising-edge eval() and having the module read the "
+            "new value shows only that this simulation enforces NO direc "
+            "setup requirement whatsoever -- an absence, not a measured "
+            "zero-tick floor. Never lowering _step (the width-floor probe) "
+            "produces no rising edge for the module to detect at all "
+            "(paula_floppy.v:574-579's _step_del compare needs an actual "
+            "low-then-high transition); that proves only that no edge "
+            "occurred, not that 1 tick is a measured minimum PULSE WIDTH -- "
+            "1 tick is simply the coarsest interval a discrete clk7_en-tick "
+            "edge detector can register, true of any edge-triggered input "
+            "regardless of what physical pulse width it actually requires. "
+            "The page's own value for this family, \"t: 1 us min.\", is an "
+            "ABSOLUTE interval, and paula_floppy.v ties no constant or "
+            "counter to a real-time unit anywhere reachable from this "
+            "fixture (step_ena_cnt's ~253-tick floor, measured under "
+            "RATIO-A, is the only calibrated-looking number here and nothing "
+            "connects it to 1 us either) -- so there is no genuine "
+            "dimensionless relation of the RATIO-A kind hiding in this pair: "
+            "unlike the 18ms:3ms ratio, which strips to a comparison of two "
+            "things the module actually implements (two spacing floors on "
+            "the same counter), 'direc setup' and 'STEP pulse width' are not "
+            "the same kind of quantity in this design at all -- one is the "
+            "absence of a modelled constraint, the other is a detector's "
+            "time-step granularity. Declined rather than graded "
             "[claims: sol:8-fig8-8.c1, opus:8-fig8-8.c8, opus:8-fig8-8.c3, "
             "sol:8-fig8-8.c17, sol:8-fig8-8.c29]");
     }
 
     // -----------------------------------------------------------------
-    // A1 RATIO-A -- the package's headline (finding candidate C3). Figure
-    // 8-8's access-timing diagram prints two different step-to-step minima
-    // in the same frame: 18 ms (twice) and 3 ms (once), a ratio of 6:1.
+    // RATIO-A -- the package's headline (finding candidate C3). Figure 8-8's
+    // access-timing diagram prints two different step-to-step minima in the
+    // same frame: 18 ms (twice, on direction REVERSAL, p.245:37-39) and
+    // 3 ms (once, on a SAME-DIRECTION continuation, p.245:32), a ratio of
+    // 6:1. The withdrawn form of this assertion measured a direction
+    // reversal twice (position 1: direc false-then-true; position 2:
+    // direc false-then-true-then-probe-false -- the probe in BOTH cases
+    // follows a direction change) and called the two identical 253-tick
+    // results "the 18 ms position" and "the 3 ms position" without ever
+    // driving the same-direction case the page names. This form drives
+    // both cases for real: gap_accepted_reversal probes a genuine
+    // direction reversal directly against _track0; gap_accepted_same_
+    // direction probes a genuine same-direction continuation, folded back
+    // onto the track-0 boundary so _track0 can still report it (see the
+    // helper's comment above for why the fold-back is needed and why it
+    // does not itself bias the probed measurement).
     // -----------------------------------------------------------------
     {
-        const int t_wide = min_accepted_gap(1);
-        const int t_close = min_accepted_gap(2);
-        checks.note("minimum accepted step-to-step gap, burst position 1 "
-                    "(\"18 ms\" position) = " + std::to_string(t_wide) +
-                    " tick(s); position 2 (\"3 ms\" position) = " +
-                    std::to_string(t_close) + " tick(s); printed ratio 6:1, "
-                    "measured ratio " + std::to_string(t_wide) + ":" +
-                    std::to_string(t_close));
+        const int t_reversal = min_accepted_gap(gap_accepted_reversal);
+        const int t_same_direction = min_accepted_gap(gap_accepted_same_direction);
+        checks.note("minimum accepted step-to-step gap, direction REVERSAL "
+                    "(p.245:37-39, \"18 ms\" in Figure 8-8) = " +
+                    std::to_string(t_reversal) +
+                    " tick(s); SAME-DIRECTION continuation (p.245:32, "
+                    "\"3 ms\" in Figure 8-8) = " +
+                    std::to_string(t_same_direction) + " tick(s); printed "
+                    "ratio 6:1, measured ratio " + std::to_string(t_reversal) +
+                    ":" + std::to_string(t_same_direction));
         checks.expect(
-            t_wide > 0 && t_close > 0 && t_wide == 6 * t_close,
-            "RATIO-A: the two step-to-step minima printed in the same "
-            "frame (18 ms, 18 ms, 3 ms) are in a 6:1 ratio -- measured "
-            "against paula_floppy's single step_ena_cnt threshold "
-            "(paula_floppy.v:594-603), which gates every accepted edge "
-            "alike regardless of position in a burst "
+            t_reversal > 0 && t_same_direction > 0 &&
+                t_reversal == 6 * t_same_direction,
+            "RATIO-A: the printed 18ms-reversal and 3ms-same-direction "
+            "step-to-step minima (p.245:32, p.245:37-39; Figure 8-8) are "
+            "in a 6:1 ratio -- measured against paula_floppy's single "
+            "step_ena_cnt spacing counter (paula_floppy.v:581-590), which "
+            "resets on every accepted _step rising edge regardless of "
+            "selection (paula_floppy.v:658-667 gates the TRACK update on "
+            "selection and direction, but the counter reset at 581-590 "
+            "carries no such gate) and so gates a reversal and a "
+            "same-direction edge alike "
             "[claims: opus:8-time.c15, opus:8-time.c16, opus:8-time.c17, "
             "opus:8-fig8-8.c4, opus:8-fig8-8.c5, opus:8-fig8-8.c6, "
             "sol:8-fig8-8-text.c1, sol:8-fig8-8-text.c2, sol:8-fig8-8.c2, "

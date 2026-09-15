@@ -65,7 +65,7 @@ grouping; every one of the 30 uids below is named on exactly one assertion.
 
 ## The eight propositions
 
-### A1 — RATIO-A: the printed 6:1 step-spacing ratio (RED, expected)
+### A1 — RATIO-A: the printed 6:1 step-spacing ratio (RED)
 
 Composes `opus:8-time.c15`, `opus:8-time.c16`, `opus:8-time.c17`,
 `opus:8-fig8-8.c4`, `opus:8-fig8-8.c5`, `opus:8-fig8-8.c6`,
@@ -74,21 +74,40 @@ Composes `opus:8-time.c15`, `opus:8-time.c16`, `opus:8-time.c17`,
 `sol:8-fig8-8.c23` — 14 uids, all reductions (full labels, bare numbers, or
 bare "minimum" sense) of the same three arrows in Figure 8-8's access-timing
 diagram: two spacings marked 18 ms and one marked 3 ms, in the same frame, a
-ratio of 6:1 between the widely-spaced and closely-spaced STEP minima.
+ratio of 6:1 between the widely-spaced and closely-spaced STEP minima. p.245
+names the two cases those arrows draw: "When reversing directions, a minimum
+of 18 milliseconds delay is required from the last step pulse" (p.245:37-39)
+against "the next track within 3 milliseconds" (p.245:32) for a same-direction
+step. The 18 ms arrows are a direction REVERSAL; the 3 ms arrow is a
+SAME-DIRECTION continuation.
 
 **Proposition under test**: the module enforces two *different* minimum
-step-to-step intervals, in a 6:1 ratio, depending on where in a step burst the
-edge falls. Dimensionless (strip "ms" and 6:1 survives), so measurable in
-clk7_en ticks without a clock frequency.
+step-to-step intervals, in a 6:1 ratio, depending on whether the probed edge
+reverses direction or continues the direction of the edge before it.
+Dimensionless (strip "ms" and 6:1 survives), so measurable in clk7_en ticks
+without a clock frequency.
 
-**Expected**: RED. The build brief already discloses that `paula_floppy` gates
-every accepted `_step` edge through exactly one counter (`step_ena_cnt`, a
-minimum of 256 clk7_en ticks, `paula_floppy.v:594-603`), with nothing that
-varies the threshold by burst position. A ratio of 1:1, not 6:1, is what the
-assertion will measure — and that is this package's headline finding
-(candidate C3), not a defect in the assertion.
+**Measurement basis**: one genuine reversal gap (probe direction opposite the
+prior accepted edge) and one genuine same-direction gap (probe direction the
+same as the prior accepted edge), both driven for real and both read through
+`_track0` — the module's only external head-position observable, a single bit
+meaningful only "at track 0 or not". A reversal probe reads directly (it
+crosses back toward track 0); a same-direction probe moves the head further
+away and is folded back onto the track-0 boundary with one extra,
+generously-spaced (hence guaranteed-accepted) reversal step immediately
+afterward, so its accept/reject outcome still becomes visible as a track-0
+crossing.
 
-### A2 — RATIO-B: the `t`-interval equality (RED, expected)
+**Result**: RED. `paula_floppy` gates every accepted `_step` edge through
+exactly one counter (`step_ena_cnt`, `paula_floppy.v:581-590`), with nothing
+in that counter's reset condition that distinguishes a reversal from a
+same-direction edge (the TRACK update at `paula_floppy.v:658-667` is gated by
+selection and direction, but the spacing counter is not). Both the reversal
+gap and the same-direction gap measure identically. A ratio of 1:1, not 6:1,
+is what the assertion measures — this package's headline finding (candidate
+C3), not a defect in the assertion.
+
+### A2 — RATIO-B: the `t`-interval equality (DECLINED, not graded)
 
 Composes `sol:8-fig8-8.c1`, `opus:8-fig8-8.c8`, `opus:8-fig8-8.c3`,
 `sol:8-fig8-8.c17`, `sol:8-fig8-8.c29` — 5 uids. The figure's own legend reads
@@ -102,9 +121,27 @@ one common floor. Dimensionless: the claim is an *equality* between two
 things the module actually implements — the `direc` setup required before an
 accepted `_step` edge, and the minimum accepted `_step` low pulse width.
 
-**Expected**: RED. Already disclosed as measured and true at this fixture:
-`direc` setup = 0 ticks, `_step` minimum low width = 1 tick. Not equal, so the
-page's single shared "t" floor does not hold.
+**Result**: DECLINED via `record()`, not graded through `expect()`. Measured
+at this fixture: `direc` setup = 0 ticks (a rising edge with `direc` changed
+in the same tick as the edge is still read at its new value), `_step` minimum
+low width = 1 tick (no rising edge is ever produced with zero low ticks).
+Neither number is a measurement of the kind the page's "t: 1 us min." names.
+The "0 ticks" figure shows only that this no-timing Verilator run has no
+setup/hold model at all — an absence of an enforced floor, not a measured
+zero-tick floor. The "1 tick" figure is the coarsest interval any
+discrete-tick edge detector can register (`paula_floppy.v:574-579`'s
+`_step`/`_step_del` compare needs an actual low-then-high transition), true of
+any edge-triggered input regardless of its real pulse-width requirement, not a
+measured minimum width. The page's "1 us min." is an absolute interval and
+`paula_floppy.v` ties no constant to a real-time unit anywhere reachable from
+this fixture — `step_ena_cnt`'s ~253-tick floor (measured under RATIO-A) is
+the only calibrated-looking number here and nothing connects it to 1 us
+either. Unlike RATIO-A's 18ms:3ms pair, which strips to a comparison of two
+spacing floors on the *same* counter, "`direc` setup" and "STEP pulse width"
+are not the same kind of quantity in this design: one is the absence of a
+modelled constraint, the other is a detector's time-step granularity. No
+stimulus at this fixture turns either into a calibrated interval, so the claim
+is declined rather than graded.
 
 ### A3 — SEL-GATING: DRIVE SELECT gates STEP (GREEN, expected)
 
@@ -213,12 +250,14 @@ Each of A1–A8 gets its own
 line in the test source, `<label>` being the exact leading token of the
 string literal passed to `expect()`.
 
-- **A1, A2** (RED at baseline): an `oracle green` record — the expected ratio
-  (6) / expected equality is changed to what the RTL actually produces (1 /
-  "0 ticks vs 1 tick"), confirming the assertion is sensitive and the red is
-  a genuine measurement rather than a broken comparator, then reverted. A
-  stimulus mutation on an assertion already red cannot demonstrate anything
-  further — it cannot fail harder.
+- **A1** (RED at baseline): an `oracle green` record — the expected ratio (6)
+  is changed to what the RTL actually produces (1), confirming the assertion
+  is sensitive and the red is a genuine measurement rather than a broken
+  comparator, then reverted. A stimulus mutation on an assertion already red
+  cannot demonstrate anything further — it cannot fail harder.
+- **A2** carries no `expect()` and no MUTATION record: it is declined through
+  `record()` (see its entry above), and a decline has no assertion label to
+  mutate.
 - **A3–A8** (GREEN at baseline): a `stimulus red` record each — change what
   the rig asks the module to do (deselect the drive throughout; never toggle
   `_step`; never step away from track 0; never release `_step` high; drive
