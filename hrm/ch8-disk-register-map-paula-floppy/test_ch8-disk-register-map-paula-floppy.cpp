@@ -4,8 +4,29 @@
 //   (paula_floppy.v + paula_floppy_fifo.v only -- paula_floppy_ebr.v
 //   excluded, it declares a second `module paula_floppy`). 79 claims, from
 //   work/ch8-s2-build/ch8-disk-register-map-paula-floppy.jsonl, reduced to
-//   20 assertions. Full derivation in SPECIFICATION.md (committed as
-//   0ae6d09, before any RTL was opened).
+//   20 assertions (19 after the 2026-09-15 repair below removed E4; see
+//   REPAIR NOTE). Full derivation in SPECIFICATION.md (committed as
+//   0ae6d09, before any RTL was opened; updated 2026-09-15 for the repair).
+//
+// REPAIR NOTE (independent validation, 2026-09-15): B4, B5 and E3 were
+//   withdrawn -- soundly. B4/B5's original "nonzero at least once" premise
+//   could never be refuted (zero is a valid disk byte), and E3 tested an
+//   unstated "no real content behind $008" reading the manual's own `ER`
+//   legend (p.287) does not make. B4 and B5 are repaired to bind a KNOWN
+//   incoming byte (0xFF, via the DSKDATR/FIFO marker technique the
+//   already-accepted ch8-mfm-cell-encoding package established) to the
+//   DSKBYTR sampling instant -- THE SAME UNDERLYING FACT as
+//   ch8-dskbytr-status-register/A9 and
+//   ch8-disk-controller-overview/opus:8-dsk.c9+sol:8-dsk.c9, repaired
+//   identically in all three packages that carry it. Still RED (the DATA
+//   field is the literal constant 8'h00, paula_floppy.v:699). E3 is
+//   DECLINED (record(), not expect()): the manual's actual "dummy address"
+//   claim is about WHO triggers the bus cycle (Agnus timing vs. a
+//   destination-address-bus read, per the p.287 `ER` legend), a
+//   distinction this package's `paula_floppy`-alone fixture cannot make.
+//   E4, whose sole purpose was proving E3's comparator wasn't vacuously
+//   red, is removed along with E3's grading (E1 already independently
+//   covers busrd's live/undecoded discrimination).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed pp.241, 246, 249,
 //   265, 278-279, 289-290.
@@ -95,24 +116,28 @@
 //   anything else is trusted, on the exact DSKBYTR-mirror path B3/L3's own
 //   trials also read.
 //
-// DECLINED CLAIMS: none. All 79 uids in this package's jsonl are cited on a
-//   graded (`expect()`) line below; see SPECIFICATION.md's "Declined
-//   claims" section (empty, by design).
+// DECLINED CLAIMS (as of the 2026-09-15 repair): E3's five uids
+//   (opus:8-appA-dskdat.c8, sol:8-appa-dskdatr.c4, sol:8-appa-dskdatr.c5,
+//   opus:8-appB-dskdatr.c6, sol:8-appb-dskdatr.c6) are cited on a
+//   `record()` line, not a graded line -- see E3's own comment below and
+//   SPECIFICATION.md's "Declined claims" section. The remaining 74 uids
+//   are still cited on a graded (`expect()`) line.
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup -- not a compile-time #ifdef -- so one build serves the real run
 //   (MUTATE unset) and every mutation run (MUTATE=<id>, one id per
-//   assertion). B4, B5 and E3 are expected RED at baseline (see their own
-//   comments below and finding_candidates.md C6/C15); an ordinary stimulus
+//   assertion). B4 and B5 are expected RED at baseline (see their own
+//   comments below and finding_candidates.md C6); an ordinary stimulus
 //   mutation cannot fail an assertion that already fails, so each carries a
 //   `none impossible` mutation record instead, and the comparator each uses
-//   is proven live via a dedicated GREEN-at-baseline substitute (B6, E4)
-//   that applies the identical extraction-and-compare form to a mechanism
+//   is proven live via a dedicated GREEN-at-baseline substitute (B6) that
+//   applies the identical extraction-and-compare form to a mechanism
 //   already shown live elsewhere in this same run, and carries its own
-//   ordinary stimulus mutation. Actual run counts and per-mutation results
-//   are recorded in the commit message and build report, not predicted
-//   here.
+//   ordinary stimulus mutation. E3 is DECLINED (record(), not expect()) and
+//   carries no mutation record -- there is no graded line to pair one
+//   against. Actual run counts and per-mutation results are recorded in
+//   the commit message and build report, not predicted here.
 //
 // MUTATION L0-FIXTURE-LIVENESS stimulus red: the second known DSKLEN write is changed to be identical to the first (0x0000 both times) so the two DSKBYTR-mirror readings become indistinguishable (MUTATE=L0).
 // MUTATION L1-DSKLEN-ADDRESS stimulus red: the arming write is redirected from DSKLEN's own address to DSKBYTR's address (a real decode) while the check still expects the DSKLEN-address readback pattern (MUTATE=L1).
@@ -121,7 +146,7 @@
 // MUTATION B1-DSKBYTR-ADDRESS stimulus red: the probe address is redirected from DSKBYTR's own address to DSKLEN's address (no read decode) while the check still expects DSKBYTR's nonzero idle readback (MUTATE=B1).
 // MUTATION B2-DSKBYTR-READ-ONLY stimulus red: a write value distinct from the previous stimulus is driven at DSKBYTR's address between the two DSKLEN-mirror reads, while the check still expects the DSKLEN-arming sequence to behave as if that write never happened (MUTATE=B2).
 // MUTATION B3-DSKBYTR-STATUS-HALF stimulus red: the second DSKLEN write's WRITE bit is left equal to the first's (both clear) instead of set, so the DSKBYTR status mirror cannot move, while the check still expects it to move (MUTATE=B3).
-// MUTATION B4-DSKBYTR-DATA-BYTE-HALF none impossible: already red at baseline -- bits 7:0 of dskbytr are the literal RTL constant 8'h00 (paula_floppy.v:699), not driven by any signal this fixture can stimulate, so no stimulus can make this assertion pass. The comparator that grades it is proven live via the substitute B6-DSKBYTR-BYTE-FIELD-COMPARATOR-LIVE below.
+// MUTATION B4-DSKBYTR-DATA-BYTE-HALF none impossible: already red at baseline -- bits 7:0 of dskbytr are the literal RTL constant 8'h00 (paula_floppy.v:699), not driven by any signal this fixture can stimulate, so no stimulus can make this assertion pass, even with a genuinely bound known byte at the sampling instant. The comparator that grades it is proven live via the substitute B6-DSKBYTR-BYTE-FIELD-COMPARATOR-LIVE below.
 // MUTATION B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS none impossible: already red at baseline for the same reason as B4 (the byte conjunct can never become true); see B6.
 // MUTATION B6-DSKBYTR-BYTE-FIELD-COMPARATOR-LIVE stimulus red: the second DSKLEN write is changed to leave the WRITE bit equal to the first (both clear) instead of set, so the status field the substitute reads cannot move, while the check still expects it to (MUTATE=B6).
 // MUTATION S1-DSKSYNC-ADDRESS stimulus red: the 0xDEAD write is redirected from DSKSYNC's own address ($07E) to DSKLEN's address ($024) while the check still expects the redirected write to have NO effect on sync gating (i.e. still expects normal delivery); with the write correctly redirected, delivery is unaffected and the check (written to expect the mutated case's own outcome) is inverted by hand below -- see the code for the exact form (MUTATE=S1).
@@ -132,8 +157,7 @@
 // MUTATION D3-DSKDAT-FUNCTION-DMA-WRITE stimulus red: the DSKDAT write that is expected to complete the 1-word armed transfer is instead directed at DSKSYNC's address (no fifo/length effect) while the check still expects blckint to fire (MUTATE=D3).
 // MUTATION E1-DSKDATR-ADDRESS stimulus red: the swept address expected to be the sole `busrd`-asserting one is changed from $008 to $01A while the check still expects $008 alone to assert it (MUTATE=E1).
 // MUTATION E2-DSKDATR-EARLY-READ-ACCESS-IS-TRIGGER stimulus red: a second, distinct read of DSKDATR is skipped (only the first access is applied) while the check still expects the second access alone to have advanced the FIFO (MUTATE=E2).
-// MUTATION E3-DSKDATR-NOT-A-DUMMY-ADDRESS none impossible: already red at baseline (from the manual's own framing) -- $008 delivers real, content-dependent, varying FIFO words (paula_floppy.v:756,911,946), so the printed "dummy address" reading fails regardless of stimulus; there is no stimulus that makes a real, live decode retroactively match "no register behind it". The discrimination apparatus that grades it is proven live via the substitute E4-DSKDATR-DUMMY-ADDRESS-COMPARATOR-LIVE below.
-// MUTATION E4-DSKDATR-DUMMY-ADDRESS-COMPARATOR-LIVE stimulus red: the probe address is redirected from DSKLEN's address (a genuinely undecoded `busrd`, expected 0) to DSKDATR's own address (a genuinely live `busrd`, expected 1) while the check still expects the undecoded-address outcome (MUTATE=E4).
+// E3 is DECLINED as of the 2026-09-15 repair (record(), not expect()) -- see E3's own comment below. It carries no MUTATION record: a decline has no graded line to pair one against. E4, whose sole purpose was proving E3's own comparator wasn't vacuously red, is removed along with E3's grading; E1's own MUTATION record above already covers busrd's live/undecoded discrimination over the same swept set.
 
 #include <cstdint>
 #include <cstdio>
@@ -326,6 +350,28 @@ struct Rig {
         return -1;
     }
 };
+
+// Finds the DSKDATR pop index (1-indexed) at which a uniform 0xFF sector's
+// payload word is exactly 0xFFFF -- reusing the already-accepted
+// ch8-mfm-cell-encoding package's own find_ff_marker_pop_index()
+// methodology on this identical fixture (a word of exactly 0xFFFF can
+// only arise from this fixture's own payload encoder fed an all-1s byte,
+// so it is a marker no fixed framing default can be confused with).
+// Returns -1 if not found within 60 pops.
+int find_ff_marker_pop_index() {
+    Rig rig;
+    rig.do_reset();
+    uint16_t stim = 0x8000 | 544;  // read-direction, one whole sector's worth.
+    rig.dsklen_write(stim);
+    rig.dsklen_write(stim);
+    uint8_t sector[512];
+    std::memset(sector, 0xFF, sizeof sector);
+    rig.feed_sector_read(sector);
+    for (int i = 1; i <= 60; i++) {
+        if (rig.dskdatr_pop() == 0xFFFF) return i;
+    }
+    return -1;
+}
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
@@ -531,27 +577,69 @@ int main(int argc, char** argv) {
     // ========================================================================
     // B4 -- sol:8-reglist.c19, sol:8-appa-dskbytr.c4, opus:8-appB-dskbytr.c5,
     //   sol:8-appb-dskbytr.c5 (pp.241,278,289, the data-byte half of the
-    //   FUNCTION cell): reading DSKBYTR provides a disk data byte. RED --
-    //   paula_floppy.v:699 hardwires bits 7:0 to the literal constant
-    //   8'h00; no stimulus can make this differ. Flagged by
-    //   finding_candidates.md C6.
+    //   FUNCTION cell): reading DSKBYTR provides a disk data byte.
+    //
+    //   REPAIRED (independent validation, 2026-09-15): the original form
+    //   sampled only idle and a DSKLEN WRITE-bit state and passed if
+    //   either low byte was nonzero -- zero is a valid disk byte, so
+    //   neither state could ever refute the claim; there was no
+    //   independent ground truth for what the "right" byte should be.
+    //   THIS IS THE SAME UNDERLYING FACT as
+    //   ch8-dskbytr-status-register/A9 and
+    //   ch8-disk-controller-overview/opus:8-dsk.c9+sol:8-dsk.c9 -- one
+    //   fact, repaired identically in all three packages that carry it.
+    //
+    //   Repaired to bind a KNOWN incoming byte (0xFF) to the DSKBYTR
+    //   sampling instant via the DSKDATR/FIFO marker technique already
+    //   established by the sibling ch8-mfm-cell-encoding package: a
+    //   uniform 0xFF sector's payload word can only ever arrive as
+    //   exactly 0xFFFF. find_ff_marker_pop_index() calibrates the pop
+    //   index at which that marker appears (a fresh, throwaway model);
+    //   the real trial then discards pops up to just before that index,
+    //   PEEKS (does not pop) DSKDATR to confirm the known word is present
+    //   RIGHT NOW, then peeks DSKBYTR -- zero clock edges elapse between
+    //   the two peeks, so both are read at the SAME instant. Both bytes
+    //   of 0xFFFF are 0xFF, sidestepping any high/low-byte ordering
+    //   ambiguity in what "the current byte" means.
+    //
+    //   Still RED -- paula_floppy.v:699 hardwires bits 7:0 to the literal
+    //   constant 8'h00; a known, bound, nonzero incoming byte still never
+    //   appears there. Flagged by finding_candidates.md C6.
     // ========================================================================
     {
-        Rig rig;
-        rig.do_reset();
-        uint16_t idle = rig.read_reg(ADDR_DSKBYTR);
-        rig.dsklen_write(0x0000);
-        rig.dsklen_write(0x4000);
-        uint16_t armed = rig.read_reg(ADDR_DSKBYTR);
-        checks.note("B4-MEASURED: DSKBYTR idle byte=0x" + hex4(idle & 0x00FF) +
-                    ", armed byte=0x" + hex4(armed & 0x00FF) + " (status moved: idle=0x" +
-                    hex4(idle) + " armed=0x" + hex4(armed) + ")");
-        checks.expect((idle & 0x00FF) != 0x0000 || (armed & 0x00FF) != 0x0000,
+        int idx = find_ff_marker_pop_index();
+        checks.note("B4-CALIBRATION: 0xFF-sector marker word (0xFFFF) first found at DSKDATR pop #" +
+                    std::to_string(idx));
+
+        bool bound_ok = false;
+        uint16_t known_word = 0, dskbytr_at_instant = 0;
+        if (idx > 0) {
+            Rig rig;
+            rig.do_reset();
+            uint16_t stim = 0x8000 | 544;
+            rig.dsklen_write(stim);
+            rig.dsklen_write(stim);
+            uint8_t sector[512];
+            std::memset(sector, 0xFF, sizeof sector);
+            rig.feed_sector_read(sector);
+            for (int i = 1; i < idx; i++) rig.dskdatr_pop();  // discard up to just before the marker.
+            known_word = rig.read_reg(ADDR_DSKDATR);          // peek, no pop -- the marker itself, at this instant.
+            dskbytr_at_instant = rig.read_reg(ADDR_DSKBYTR);  // SAME instant: zero clock edges elapsed since the peek above.
+            bound_ok = (known_word == 0xFFFF);
+        }
+        uint8_t known_byte = 0xFF;  // both bytes of 0xFFFF are 0xFF -- no high/low ambiguity.
+        uint8_t data_field = (uint8_t)(dskbytr_at_instant & 0x00FF);
+        checks.note("B4-MEASURED: known_word=0x" + hex4(known_word) + " (bound=" +
+                    std::to_string(bound_ok) + "), DSKBYTR at that same instant=0x" +
+                    hex4(dskbytr_at_instant) + ", DATA field=0x" + hex4(data_field));
+        checks.expect(bound_ok && data_field == known_byte,
             "B4-DSKBYTR-DATA-BYTE-HALF (p.241 sol:8-reglist.c19; p.278 sol:8-appa-dskbytr.c4; "
             "p.289 opus:8-appB-dskbytr.c5, sol:8-appb-dskbytr.c5): reading DSKBYTR provides a "
-            "disk data byte -- bits 7:0 of data_out should reflect real disk content at least "
-            "once across these states; measured 0x00 in both, matching the hardwired-constant "
-            "RTL fact above");
+            "disk data byte -- with a KNOWN incoming byte (0xFF) bound to the sampling instant "
+            "via the proven-live DSKDATR/FIFO marker path (the same underlying fact as "
+            "ch8-dskbytr-status-register/A9 and ch8-disk-controller-overview/opus:8-dsk.c9+"
+            "sol:8-dsk.c9), DSKBYTR's own DATA field should read that same byte at that instant; "
+            "it does not");
     }
 
     // ========================================================================
@@ -559,7 +647,15 @@ int main(int argc, char** argv) {
     //   (pp.241,278, the un-split compound printing): "DSKBYTR returns the
     //   disk data byte together with status" / "is the disk-to-
     //   microprocessor data buffer" -- graded as the conjunction B3 (true)
-    //   AND B4 (false). RED, for the same underlying reason as B4.
+    //   AND B4 (false).
+    //
+    //   REPAIRED (independent validation, 2026-09-15): B5's byte half
+    //   inherited B4's original unsupported "nonzero at least once"
+    //   premise and was withdrawn for the same reason. Repaired here by
+    //   reusing B4's own repaired, known-byte-bound measurement for the
+    //   byte half (see B4 above for the full methodology) instead of
+    //   recomputing an unbound premise. Still RED, for the same
+    //   underlying reason as B4.
     // ========================================================================
     {
         Rig rig;
@@ -569,14 +665,32 @@ int main(int argc, char** argv) {
         rig.dsklen_write(0x4000);
         uint16_t armed = rig.read_reg(ADDR_DSKBYTR);
         bool status_half_real = (armed != idle);
-        bool byte_half_real = ((idle & 0x00FF) != 0x0000 || (armed & 0x00FF) != 0x0000);
+
+        int idx = find_ff_marker_pop_index();
+        bool byte_half_real = false;
+        if (idx > 0) {
+            Rig rig2;
+            rig2.do_reset();
+            uint16_t stim = 0x8000 | 544;
+            rig2.dsklen_write(stim);
+            rig2.dsklen_write(stim);
+            uint8_t sector[512];
+            std::memset(sector, 0xFF, sizeof sector);
+            rig2.feed_sector_read(sector);
+            for (int i = 1; i < idx; i++) rig2.dskdatr_pop();
+            uint16_t known_word = rig2.read_reg(ADDR_DSKDATR);
+            uint16_t dskbytr_now = rig2.read_reg(ADDR_DSKBYTR);
+            byte_half_real = (known_word == 0xFFFF) && ((dskbytr_now & 0x00FF) == 0xFF);
+        }
         checks.note("B5-MEASURED: status_half_real=" + std::to_string(status_half_real) +
-                    ", byte_half_real=" + std::to_string(byte_half_real));
+                    ", byte_half_real=" + std::to_string(byte_half_real) +
+                    " (byte half repaired via the same known-byte binding as B4)");
         checks.expect(status_half_real && byte_half_real,
             "B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS (p.241 opus:8-dsk.c38; p.278 "
             "opus:8-appA-dskbytr.c4, sol:8-appa-dskbytr.c6): the printed function cell claims "
             "BOTH a real status portion AND a real disk-data-byte portion -- the conjunction "
-            "fails because the byte portion is a hardwired constant (see B4)");
+            "fails because, per B4's repaired and now-grounded measurement, the byte portion "
+            "does not reflect a known bound incoming byte");
     }
 
     // ========================================================================
@@ -875,69 +989,55 @@ int main(int argc, char** argv) {
     // ========================================================================
     // E3 -- opus:8-appA-dskdat.c8, sol:8-appa-dskdatr.c4, sol:8-appa-dskdatr.c5,
     //   opus:8-appB-dskdatr.c6, sol:8-appb-dskdatr.c6 (pp.279,289, the
-    //   "dummy address" claim): the manual prints $008 as a dummy address
-    //   with no real register behind it. RED -- paula_floppy.v:756,911,946
-    //   put the live FIFO word there; consecutive pops during a live
-    //   transfer differ. Flagged by finding_candidates.md C15.
+    //   "dummy address" claim). DECLINED (independent validation,
+    //   2026-09-15): the original assertion over-read the manual's own
+    //   framing.
+    //
+    //   The decisive text is p.287's `ER` legend: early-read transfers put
+    //   data on the bus early for RAM timing and "are therefore initiated
+    //   by Agnus timing, rather than a read address on the destination
+    //   address bus." "Dummy address" names WHO/WHAT triggers the bus
+    //   cycle (Agnus's own DMA timing, not a CPU-issued read-address
+    //   decode on the destination bus) -- it does not claim there is no
+    //   real register or content behind $008, and does not require
+    //   consecutive reads to be identical. The withdrawn assertion tested
+    //   exactly that unstated "no real content" reading (and, ironically,
+    //   the live content E1/E2 above already establish would have FAILED
+    //   that withdrawn reading correctly for the wrong reason).
+    //
+    //   Restating the assertion to what the page ACTUALLY claims would
+    //   need to distinguish "an Agnus-timed access" from "a CPU
+    //   destination-address-bus access" -- a distinction that exists only
+    //   at the Agnus<->Paula boundary. This package's assigned fixture
+    //   (`paula_floppy` alone) has no such boundary: reg_address_in is
+    //   presented identically regardless of what upstream hardware drove
+    //   it there, and fifo_rd's own gating (busrd & dmaon,
+    //   paula_floppy.v:911) cannot tell CPU-explicit access from
+    //   Agnus-scheduled access apart. Declining rather than either
+    //   re-testing the withdrawn "no real content" reading or overreaching
+    //   to a boundary (Agnus+Paula) this package was not assigned.
+    //
+    //   E4 (DSKDATR_DUMMY_ADDRESS_COMPARATOR_LIVE), whose entire purpose
+    //   was proving E3's own comparator was not vacuously red, is removed
+    //   along with E3's grading -- there is no longer a graded comparator
+    //   for it to defend, and E1 above already independently establishes
+    //   busrd's live/undecoded discrimination over the same swept set.
     // ========================================================================
     {
-        Rig rig;
-        rig.do_reset();
-        const uint16_t LEN = 6;
-        uint16_t stim = 0x8000 | LEN;
-        rig.dsklen_write(stim);
-        rig.dsklen_write(stim);
-        uint8_t sector[512];
-        std::memset(sector, 0x00, sizeof sector);
-        rig.feed_sector_read(sector);
-        rig.wait_until([&]() { return (bool)rig.dut->fdd_led; }, 16);
-        uint16_t words[4];
-        for (int i = 0; i < 4; i++) words[i] = rig.dskdatr_pop();
-        bool all_identical = (words[0] == words[1] && words[1] == words[2] && words[2] == words[3]);
-        checks.note("E3-MEASURED: four consecutive DSKDATR pops during a live transfer: 0x" +
-                    hex4(words[0]) + " 0x" + hex4(words[1]) + " 0x" + hex4(words[2]) + " 0x" +
-                    hex4(words[3]));
-        // Grades the MANUAL's own claim directly: a dummy address, by the
-        // manual's own framing, has no register behind it, so consecutive
-        // accesses during a live transfer should show no distinguishable,
-        // content-dependent value. condition==true would mean the manual's
-        // claim holds (all four pops identical/dummy-like).
-        checks.expect(all_identical,
+        checks.record(
             "E3-DSKDATR-NOT-A-DUMMY-ADDRESS (p.279 opus:8-appA-dskdat.c8, sol:8-appa-dskdatr.c4, "
             "sol:8-appa-dskdatr.c5; p.289 opus:8-appB-dskdatr.c6, sol:8-appb-dskdatr.c6): the "
-            "manual's own \"dummy address\" reading holds only if consecutive reads during a "
-            "live transfer show no real, content-dependent value -- measured, four consecutive "
-            "pops differ, so real FIFO content is live at $008, contradicting \"dummy\"");
-    }
-
-    // ========================================================================
-    // E4 -- DSKDATR_DUMMY_ADDRESS_COMPARATOR_LIVE (substitute, no manual
-    //   citation). E3 is expected red. Applies the same live/dummy
-    //   discrimination (does an address answer, dependent on prior state,
-    //   versus return a fixed value) to a genuinely undecoded offset within
-    //   the same swept set (DSKLEN's), proving the apparatus correctly
-    //   reports "dummy" where a register really is undecoded.
-    // ========================================================================
-    {
-        Rig rig;
-        rig.do_reset();
-        // MUTATE=E4: probe DSKDATR's own (live) address instead of
-        // DSKLEN's (undecoded) address, while still judging by the
-        // undecoded-address (busrd==0) expectation.
-        uint8_t probe = mutating("E4") ? ADDR_DSKDATR : ADDR_DSKLEN;
-        rig.dut->reg_address_in = probe;
-        rig.dut->eval();
-        bool r = (bool)rig.dut->rootp->paula_floppy->busrd;
-        rig.dut->reg_address_in = ADDR_NONE;
-        rig.dut->eval();
-        checks.note(std::string("E4-STIMULUS: reg_address_in=") +
-                    (probe == ADDR_DSKLEN ? "DSKLEN($024)" : "DSKDATR($008, mutated)") +
-                    " busrd=" + std::to_string(r));
-        checks.expect(!r,
-            "E4-DSKDATR-DUMMY-ADDRESS-COMPARATOR-LIVE: the same live/dummy `busrd` "
-            "discrimination E1/E3 use, applied to DSKLEN's genuinely undecoded address, "
-            "correctly reports no live decode -- the apparatus is live, not the reason E3 reads "
-            "red");
+            "manual's own 'dummy address' / 'early read dummy address' framing, read against the "
+            "decisive p.287 `ER` legend, claims that the $008 bus cycle is initiated by Agnus "
+            "timing rather than a destination-address-bus read -- a trigger-source distinction "
+            "that needs the Agnus<->Paula boundary. `paula_floppy` compiled alone (this "
+            "package's assigned fixture) presents reg_address_in identically regardless of what "
+            "upstream hardware drove it, so this fixture cannot test who/what triggered the "
+            "access. The withdrawn assertion instead tested an unstated 'no real content behind "
+            "$008' reading, which E1/E2 above already show is false in an uninteresting way (a "
+            "live, content-dependent FIFO answers there) -- that is not what 'dummy' means on "
+            "this page. Declining rather than re-testing the withdrawn reading or overreaching "
+            "to a boundary (Agnus+Paula) this package was not assigned.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";

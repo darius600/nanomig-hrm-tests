@@ -30,7 +30,9 @@ checked against the other four registers in this file's own set plus the two
 un-claimed offsets, since the classify evidence already swept exactly that
 set (see each ADDRESS table's own uids).
 
-## Why 79 claims reduce to 20 testable propositions
+## Why 79 claims reduce to 19 testable propositions
+
+(20 originally; see the 2026-09-15 repair note under E3 for E4's removal.)
 
 The manual states each of these five rows in four to nine different printings
 (the page-241 register list, the page-246/249/265 cross-references, Appendix
@@ -142,9 +144,27 @@ disk status that moves as the module's disk-DMA state moves.
 | `sol:8-appb-dskbytr.c5` | 289 | "DSKBYTR      *01A   R           P    Disk data byte and status read" |
 
 Proposition (the data-byte half of the function cell): reading DSKBYTR
-provides a disk data byte — a value that reflects data read from the disk.
-Flagged by `finding_candidates.md` C6 as a likely red; graded here regardless
-of that expectation.
+provides a disk data byte — DATA sampled at the instant a KNOWN byte is
+current should read that byte. Flagged by `finding_candidates.md` C6 as a
+likely red; graded here regardless of that expectation.
+
+**Repaired (independent validation, 2026-09-15):** the original form
+sampled only idle and a DSKLEN WRITE-bit state and passed if either low
+byte was nonzero — zero is a valid disk byte, so neither state could ever
+refute the claim; there was no independent ground truth for what the
+"right" byte should be. THIS IS THE SAME UNDERLYING FACT as
+`ch8-dskbytr-status-register`/A9 and
+`ch8-disk-controller-overview`/`opus:8-dsk.c9`+`sol:8-dsk.c9` — one fact,
+repaired identically in all three packages that carry it. Repaired to bind
+a KNOWN incoming byte (0xFF) to the DSKBYTR sampling instant via the
+DSKDATR/FIFO marker technique already established by the sibling
+`ch8-mfm-cell-encoding` package: a uniform 0xFF sector's payload word can
+only ever arrive as exactly 0xFFFF. `find_ff_marker_pop_index()`
+calibrates the pop index at which that marker appears; the real trial
+peeks (does not pop) DSKDATR to confirm the known word is present, then
+peeks DSKBYTR at the same instant (zero clock edges elapse between the two
+peeks). Measured: RED — `known_word=0xFFFF` (bound, confirmed at pop #33),
+DSKBYTR's DATA field reads 0x00.
 
 ### B5 — DSKBYTR_COMPOUND_BYTE_AND_STATUS
 
@@ -159,6 +179,13 @@ Proposition: these three claims restate the printed function cell without
 conjunction, "DSKBYTR returns a disk data byte together with status" /
 "is the disk-to-microprocessor data buffer" (byte content AND status
 content, both real). Graded as the conjunction B3 ∧ B4.
+
+**Repaired (independent validation, 2026-09-15):** B5's byte half
+inherited B4's original unsupported "nonzero at least once" premise and
+was withdrawn for the same reason. Repaired by reusing B4's own repaired,
+known-byte-bound measurement for the byte half (see B4 above) instead of
+recomputing an unbound premise. Measured: RED, for the same underlying
+reason as B4 (`status_half_real=true`, `byte_half_real=false`).
 
 ### B6 — DSKBYTR_BYTE_FIELD_COMPARATOR_LIVE (substitute, no manual citation)
 
@@ -280,7 +307,7 @@ Proposition (the `ER` mark's observable half — per `classify.split`, the
 not graded): the read access at $008 is itself what advances/produces the
 value — there is no separate strobe distinct from the access.
 
-### E3 — DSKDATR_NOT_A_DUMMY_ADDRESS
+### E3 — DSKDATR_NOT_A_DUMMY_ADDRESS — DECLINED
 
 | uid | page | quote |
 |---|---|---|
@@ -290,32 +317,56 @@ value — there is no separate strobe distinct from the access.
 | `opus:8-appB-dskdatr.c6` | 289 | "DSKDATR    & *008   ER          P    Disk data early read (dummy address)" |
 | `sol:8-appb-dskdatr.c6` | 289 | "DSKDATR    & *008   ER          P    Disk data early read (dummy address)" |
 
-Proposition: the manual prints $008 as a "dummy address" — one with no real
-register behind it, existing only so the bus cycle itself triggers an
-effect. Graded here as: does a value distinguishable from a dummy/constant
-answer, and dependent on prior state (FIFO content), appear at $008.
-Flagged by `finding_candidates.md` C15 as a likely red; graded here
-regardless of that expectation.
+Original proposition (withdrawn): the manual prints $008 as a "dummy
+address" — one with no real register behind it, so no value distinguishable
+from a dummy/constant answer, dependent on prior state (FIFO content),
+should ever appear at $008. Flagged by `finding_candidates.md` C15 as a
+likely red; graded here regardless of that expectation.
 
-### E4 — DSKDATR_DUMMY_ADDRESS_COMPARATOR_LIVE (substitute, no manual citation)
+**Disposition: DECLINED (`record()`), per independent validation
+(2026-09-15).** The decisive text is p.287's `ER` legend: early-read
+transfers put data on the bus early for RAM timing and "are therefore
+initiated by Agnus timing, rather than a read address on the destination
+address bus." "Dummy address" names WHO/WHAT triggers the bus cycle
+(Agnus's own DMA timing, not a CPU-issued read-address decode on the
+destination bus) — it does not claim there is no real register or content
+behind $008, and does not require consecutive reads to be identical. The
+withdrawn assertion tested exactly that unstated "no real content" reading.
 
-Not a page claim. E3 is expected red (see E3). This substitute applies the
-same live/dummy discrimination this package uses to grade E3 (does an
-address answer, dependent on FIFO/prior state, versus return a fixed value
-regardless) to a genuinely undecoded offset within the same swept address
-set (D1/L1/S1/B1's own "does not answer elsewhere" set), proving the
-discrimination apparatus correctly reports "dummy" where a register really
-is undecoded, and is therefore not simply always reporting "live".
+Restating the assertion to what the page ACTUALLY claims would need to
+distinguish "an Agnus-timed access" from "a CPU destination-address-bus
+access" — a distinction that exists only at the Agnus↔Paula boundary. This
+package's assigned fixture (`paula_floppy` alone) has no such boundary:
+`reg_address_in` is presented identically regardless of what upstream
+hardware drove it there. Declining rather than either re-testing the
+withdrawn "no real content" reading (which E1/E2 already show is false in
+an uninteresting way) or overreaching to a boundary this package was not
+assigned.
+
+E4 (below) is removed along with E3's grading: its sole purpose was
+proving E3's own comparator wasn't vacuously red, and there is no longer a
+graded comparator for it to defend — E1 already independently establishes
+`busrd`'s live/undecoded discrimination over the same swept set.
 
 ## Declined claims
 
-None. All 79 claims above are cited on a graded (`L0`-`E4`) proposition.
+E3's five uids (`opus:8-appA-dskdat.c8`, `sol:8-appa-dskdatr.c4`,
+`sol:8-appa-dskdatr.c5`, `opus:8-appB-dskdatr.c6`, `sol:8-appb-dskdatr.c6`)
+are declined as of the 2026-09-15 repair — see E3 above. The remaining 74
+of the 79 claims are cited on a graded (`L0`-`E2`, `B6`) proposition.
 
 ## Expected outcome, stated before any RTL was opened
 
 Per `work/2026-09-15_ch8_s2_finding_candidates.md`, two of this package's
-propositions are flagged as likely red from prior classifier measurement:
+propositions were flagged as likely red from prior classifier measurement:
 **B4** (C6 — DSKBYTR's data-byte half) and **E3** (C15 — DSKDATR's "dummy
-address" claim). Every other proposition is expected green. This expectation
-is written down now, before RTL is opened, precisely so it cannot be quietly
-revised after the fact.
+address" claim). Every other proposition was expected green. This
+expectation was written down before RTL was opened, precisely so it could
+not be quietly revised after the fact.
+
+**Outcome as measured after the 2026-09-15 repair:** B4 (and B5, the
+conjunction that depends on it) measure RED, as expected, but now on a
+sound, known-byte-bound basis. E3 was withdrawn by an independent
+validation and is DECLINED rather than graded — see E3 above for why a
+sound repair is not available at this package's assigned boundary. Every
+other proposition remains GREEN.
