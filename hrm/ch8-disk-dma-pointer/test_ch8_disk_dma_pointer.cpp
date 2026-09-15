@@ -1,24 +1,40 @@
 // Test purpose: HRM conformance for ch8-disk-dma-pointer -- DSKPTH ($DFF020)
 // / DSKPTL ($DFF022), the disk DMA pointer, at the `agnus_diskdma` boundary,
-// per SPECIFICATION.md. Headline: P4A/P4B grade finding candidates C7 and
-// C14 -- the pointer's high field is five bits wide and loads
-// unconditionally (no `ecs` port exists on this module at all), so both the
-// printed "high 3 bits" (OCS) reading and the "(E)"/"5 bits if ECS"
-// (conditional-difference) reading fail, for the same single cause.
+// per SPECIFICATION.md. Headline: P11A -- the pointer is printed "32 bits"
+// (p.241, p.246) but stores only 20 word-address bits ([20:1]); that is the
+// printed-width inconsistency this package still asserts, distinct from the
+// OCS-18/ECS-20 conditioning question declined below.
+//
+// REPAIRED 2026-09-15 (independent stage-8 validation,
+// hrm-testpipeline/work/2026-09-15_ch8_s2_stage8_validation.md and
+// _sol_validation_A.md sections 6/9/10): P4A, P4B and P11B were withdrawn as
+// red findings because each restates the SAME underlying fact -- DSKPTH's
+// high field is five bits wide and loads unconditionally -- that is kept
+// once, properly, at the sibling package `ch8-disk-pointer-ecs-and-copper`'s
+// `agnus` boundary, where `ecs` is a real, drivable port. `agnus_diskdma`
+// (this fixture) has no `ecs` port at all (agnus.v:326-340 connects none),
+// so it can only observe the unconditional width; it cannot put the OCS/ECS
+// conditional question the sibling's P4/P5 ask and answer. All three are
+// declined below via record(), each naming the sibling assertion that
+// carries the fact. P11A is unaffected by this repair: it is the
+// p.241/p.246 "32 bits" wording against the stored 20 bits, not the
+// OCS-18/ECS-20 conditioning fact, and stays RED.
+//
 // Test class: HRM_CONFORMANCE
 // Primary oracle: the manual quotations cited inline (see SPECIFICATION.md
-// for full citations and page numbers), not the RTL. Red results at P4A,
-// P4B, P11A and P11B are valid, finished outcomes -- they are not adjusted
-// to pass.
+// for full citations and page numbers), not the RTL. The red result at
+// P11A is a valid, finished outcome -- it is not adjusted to pass.
 // Non-goals (see SPECIFICATION.md "Not turned into assertions"): the
 // CPU-access-size half of "a single long word" (not observable at
 // reg_address_in, which sees two ordinary 16-bit writes regardless of the
 // originating instruction); the "by a processor/Copper" requester-identity
 // half of the reload claims (reg_address_in carries an address and a value,
 // no requester identity); the "pointing to chip memory" half of the `+`
-// mark (a `gary`-level fact, out of this boundary). This package also does
-// not grade the exclusivity ("only") of DSKDATR/DSKDAT to the disk DMA
-// channel -- that pair of claims belongs to the sibling package
+// mark (a `gary`-level fact, out of this boundary); the OCS/ECS conditioning
+// of DSKPTH's high-field width (P4A/P4B/P11B, declined -- graded at the
+// sibling package ch8-disk-pointer-ecs-and-copper's P4/P5). This package
+// also does not grade the exclusivity ("only") of DSKDATR/DSKDAT to the
+// disk DMA channel -- that pair of claims belongs to the sibling package
 // ch8-disk-dma-data-channel, not to this one; P10 here grades only the
 // directional fact its own two claims state.
 //
@@ -53,22 +69,10 @@
 // module's port list (reg_address_in, data_in, address_out, reg_address_out,
 // dmal, dmas, dma, wr, hpos, speed) has no data-output signal at all; no
 // reachable stimulus can manufacture one to read a write back through.
-// MUTATION P4A oracle red->green: the compared relationship was substituted
-// from "predicts equality" (the page's 3-bit model: bits 3/4 of the write
-// have no effect, so writing 0x1F and 0x07 to DSKPTH should read back
-// identically) to "predicts inequality" (the classify-stage 5-bit model).
-// Baseline red (the equality the 3-bit model predicts does not hold: 0x1F
-// and 0x07 read back different fields). Substituted oracle went green (the
-// inequality the 5-bit model predicts does hold), showing the comparator
-// itself discriminates and P4A's red is a genuine page/RTL mismatch, not a
-// broken harness. Reverted, rebuilt, back to red baseline.
-// MUTATION P4B oracle red->green: the compared relationship was substituted
-// from "predicts a difference across dmas/speed/hpos states" (what a real
-// chipset-conditioning input would allow) to "predicts no difference"
-// (the classify-stage unconditional model). Baseline red (no difference is
-// observed, so the conditional-difference prediction fails). Substituted
-// oracle went green (the no-difference prediction holds). Reverted,
-// rebuilt, back to red baseline.
+// MUTATION P4A, P4B: REMOVED 2026-09-15 (repair). Both assertions were
+// declined, not merely mutated -- see the REPAIRED note above. Per
+// BUILD-BRIEF, a mutation record is removed with its assertion; these two
+// no longer grade anything through expect(), so no record remains.
 // MUTATION P5 stimulus red: one bit of the value written to DSKPTL was
 // flipped from the value the expected computation still uses. Baseline
 // green. Went red. Reverted, rebuilt, back to green.
@@ -100,13 +104,14 @@
 // red (32 bits are not reachable; the all-ones value tops out at 20 bits).
 // Substituted oracle went green (20 bits matches). Reverted, rebuilt, back
 // to red baseline.
-// MUTATION P11B oracle red->green: the compared width was substituted from
-// 18 (the appendix's claim) to 20 (5+15, the classify-stage measured
-// width). Baseline red. Substituted oracle went green. Reverted, rebuilt,
-// back to red baseline.
+// MUTATION P11B: REMOVED 2026-09-15 (repair). Declined, not merely mutated
+// -- see the REPAIRED note above; no record remains with its assertion.
 //
-// Run tally, baseline (no -D flags): 10 passed, 4 failed (P4A, P4B, P11A,
-// P11B red by design; all others green).
+// Run tally, baseline (no -D flags), before this repair: 10 passed, 4 failed
+// (P4A, P4B, P11A, P11B red). After this repair: 10 passed, 1 failed (P11A
+// red by design; all others green). P4A, P4B and P11B are no longer graded
+// -- they are declined via record(), pointing at the sibling package
+// ch8-disk-pointer-ecs-and-copper's P4/P5, which carry the same fact.
 
 #include <verilated.h>
 #include "Vagnus_diskdma.h"
@@ -250,29 +255,35 @@ int main(int argc, char** argv) {
         "hpos, speed) has no data-output port -- DSKPTH/DSKPTL cannot be read back through "
         "this boundary, structurally, not as a result of any stimulus applied here");
 
-    // --- P4A/P4B (headline, C7/C14): both readings of the appendix row
-    // fail, for the same cause -- the load is unconditionally five bits. ---
+    // --- P4A/P4B (declined, REPAIRED 2026-09-15): both readings of the
+    // appendix row restate the SAME unconditional-five-bit DSKPTH fact
+    // graded properly, once, at the sibling package
+    // ch8-disk-pointer-ecs-and-copper's `agnus` boundary, where a real,
+    // drivable `ecs` port exists. `agnus_diskdma` has none at all
+    // (agnus.v:326-340 connects none). The measurements below feed the
+    // record() calls that decline these claims; neither is graded through
+    // expect() any more. ---
     {
         write_reg(DSKPTH_ADDR, 0x1F); // all 5 low bits set
         uint32_t field_1F = high_field();
         write_reg(DSKPTH_ADDR, 0x07); // only the low 3 bits set (bits 3,4 clear)
         uint32_t field_07 = high_field();
         checks.note("P4A: DSKPTH<=0x1F -> high field=0x" + hex32(field_1F) +
-                     "; DSKPTH<=0x07 -> high field=0x" + hex32(field_07));
-#ifdef MUT_P4A
-        checks.expect(field_1F != field_07,
-            "P4A oracle-substituted (5-bit model: bits 3/4 of the write DO reach "
-            "address_out) -- field(0x1F)=0x" + hex32(field_1F) + " field(0x07)=0x" + hex32(field_07));
-#else
-        checks.expect(field_1F == field_07,
-            "P4A (opus:8-appA-dskpt.c4/sol:8-appa-dskpth.c4 p.279, OCS 'high 3 bits' "
-            "reading [C7]): if only 3 of 5 written bits reached address_out, bits 3 and 4 "
-            "of the write would have no effect, so writing 0x1F and 0x07 to DSKPTH should "
-            "read back identically -- field(0x1F)=0x" + hex32(field_1F) + " field(0x07)=0x" +
-            hex32(field_07) + " (they differ)");
-#endif
+                     "; DSKPTH<=0x07 -> high field=0x" + hex32(field_07) +
+                     " (bits 3/4 land either way -- this boundary has no ecs input to "
+                     "condition that on)");
+        checks.record(
+            "opus:8-appA-dskpt.c4, sol:8-appa-dskpth.c4 (p.279, OCS 'high 3 bits' reading): "
+            "declined here, not asserted. This is the same unconditional-five-bit DSKPTH "
+            "fact graded at the sibling package ch8-disk-pointer-ecs-and-copper's P5 ('on "
+            "OCS, DSKPTH holds only the high three bits'), which drives the real ecs=0 port "
+            "at the agnus boundary to put the OCS reading to the test. agnus_diskdma has no "
+            "ecs port at all (agnus.v:326-340 connects none), so this boundary can only "
+            "observe the unconditional width measured above (field(0x1F)=0x" + hex32(field_1F) +
+            " field(0x07)=0x" + hex32(field_07) + ") -- it cannot put the OCS condition P5 "
+            "tests to the question. Not re-asserted here.");
 
-        // P4B: no chipset-conditioning input exists; the same write gives the
+        // no chipset-conditioning input exists; the same write gives the
         // same field regardless of every other real input on this boundary.
         top->dmas = 0; top->speed = 0; top->hpos = 0;
         write_reg(DSKPTH_ADDR, 0x1F);
@@ -282,20 +293,18 @@ int main(int argc, char** argv) {
         uint32_t field_stateB = high_field();
         top->dmas = 0; top->speed = 0; top->hpos = 0;
         checks.note("P4B: DSKPTH<=0x1F under dmas=0/speed=0/hpos=0 -> 0x" + hex32(field_stateA) +
-                     "; under dmas=1/speed=1/hpos=0x1FF -> 0x" + hex32(field_stateB));
-#ifdef MUT_P4B
-        checks.expect(field_stateA == field_stateB,
-            "P4B oracle-substituted (unconditional-width model) -- field(A)=0x" +
-            hex32(field_stateA) + " field(B)=0x" + hex32(field_stateB));
-#else
-        checks.expect(field_stateA != field_stateB,
-            "P4B (opus:8-appA-dskpt.c5/sol:8-appa-dskpth.c5 p.279, '(E)'/'if ECS' "
-            "conditional-difference reading [C14]): if the width were chipset-conditioned, "
-            "varying dmas/speed/hpos -- the only other real inputs this module has, since it "
-            "has no ecs port -- should be able to change the loaded field; field(A)=0x" +
-            hex32(field_stateA) + " field(B)=0x" + hex32(field_stateB) + " (identical, no "
-            "conditioning mechanism exists)");
-#endif
+                     "; under dmas=1/speed=1/hpos=0x1FF -> 0x" + hex32(field_stateB) +
+                     " (dmas/speed/hpos are not a stand-in for chipset identity)");
+        checks.record(
+            "opus:8-appA-dskpt.c5, sol:8-appa-dskpth.c5 (p.279, '(E)'/'if ECS' conditional-"
+            "difference reading): declined here, not asserted. This is the same fact graded "
+            "at the sibling package ch8-disk-pointer-ecs-and-copper's P4 ('the (E) mark: ECS "
+            "changes DSKPTH'), which drives the real ecs port at the agnus boundary (ecs=0 "
+            "vs ecs=1, the actual chipset-identity input) and finds no difference -- the "
+            "genuine test of the (E) conditioning. This boundary has no ecs port to drive; "
+            "varying dmas/speed/hpos (measured above: field(A)=0x" + hex32(field_stateA) +
+            " field(B)=0x" + hex32(field_stateB) + ", identical) was never a valid proxy for "
+            "chipset identity and cannot put the question P4 asks. Not re-asserted here.");
     }
 
     // --- P5: DSKPTL's fifteen bits load correctly. Control on the same
@@ -461,15 +470,17 @@ int main(int argc, char** argv) {
             " (expect DSKDAT $026/2=0x" + hex32(DSKDAT_ADDR) + ")");
     }
 
-    // --- P11A/P11B: the total width readings fail -- 20 word-address bits,
-    // not 32 and not 18. ---
+    // --- P11A: the "32 bits" width reading fails -- 20 word-address bits,
+    // not 32. This is the p.241/p.246 wording against the stored width,
+    // NOT the OCS-18/ECS-20 conditioning fact below -- keep them apart.
+    // P11B (declined, REPAIRED 2026-09-15): see record() below. ---
     {
         write_reg(DSKPTH_ADDR, 0xFFFF);
         write_reg(DSKPTL_ADDR, 0xFFFF);
         uint32_t max_value = top->address_out;
         int width = 0;
         while ((1u << width) <= max_value && width < 32) width++;
-        checks.note("P11: all-ones write to DSKPTH+DSKPTL gives address_out=0x" +
+        checks.note("P11A: all-ones write to DSKPTH+DSKPTL gives address_out=0x" +
                      hex32(max_value) + ", representable in " + std::to_string(width) + " bits");
 
 #ifdef MUT_P11A
@@ -482,18 +493,24 @@ int main(int argc, char** argv) {
             "wide address'): the maximum value reachable by writing all-ones to DSKPTH+DSKPTL "
             "is 0x" + hex32(max_value) + ", representable in " + std::to_string(width) +
             " bits, not 32 -- no bus path on this boundary can ever deposit a bit beyond "
-            "position 20 into the pointer");
+            "position 20 into the pointer. This is the p.241/p.246 '32 bits' wording against "
+            "the stored 20 word-address bits, a printed-width inconsistency distinct from "
+            "the OCS-18/ECS-20 conditioning fact declined below and graded at the sibling "
+            "package's P4/P5 -- the two are not merged");
 #endif
 
-#ifdef MUT_P11B
-        checks.expect(width == 20,
-            "P11B oracle-substituted (20-bit model, 5+15) -- width=" + std::to_string(width));
-#else
-        checks.expect(width == 18,
-            "P11B (opus:8-appA-dskpt.c10/sol:8-appa-dskptr.c1 p.279, 'the 18-bit address of "
-            "disk DMA data'): the five bits P4A establishes plus the fifteen bits P5 "
-            "establishes compose to " + std::to_string(width) + " bits at address_out, not 18");
-#endif
+        checks.record(
+            "opus:8-appA-dskpt.c10, sol:8-appa-dskptr.c1 (p.279, 'the 18-bit address of disk "
+            "DMA data', on OCS): declined here, not asserted. The composed total depends on "
+            "the same unconditional-five-bit DSKPTH high field P4A/P4B decline above, plus "
+            "the uncontested fifteen-bit low field already kept as this package's own green "
+            "P5 control. The measured total at this boundary, 0x" + hex32(max_value) + " (" +
+            std::to_string(width) + " bits), is not an OCS result -- read in its table "
+            "context (p.289) 18 is the base/OCS width and the ECS row explicitly extends it, "
+            "and the fact that decides which width applies is graded at the sibling package "
+            "ch8-disk-pointer-ecs-and-copper's P4/P5, where a real, drivable ecs port exists. "
+            "Not to be confused with P11A above, which is the distinct p.241/p.246 '32 bits' "
+            "wording, not the OCS/ECS conditioning question. Not re-asserted here.");
     }
 
     // --- claims recorded, not asserted ---

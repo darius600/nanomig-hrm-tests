@@ -10,8 +10,8 @@ port names, bit ranges and measured values below is drawn from the
 each claim, not from a fresh reading. Every claim is cited by its
 `classify.uid` (`<reader>:<id>`), never by the bare `id`, per BUILD-BRIEF.
 
-Two candidates raised during classification name this package as their
-deliverable and are this specification's headline:
+Two candidates raised during classification named this package as their
+deliverable:
 
 - **C7** -- `$020` loads `data_in[4:0]` into `address_out[20:16]`, five bits,
   not the three the p.279 OCS reading gives.
@@ -19,9 +19,20 @@ deliverable and are this specification's headline:
   `ecs` port, so the appendix's `(E)` mark ("5 bits if ECS", implying a
   chipset-dependent difference) also fails, for the same single cause.
 
-Both are graded below as P4A/P4B. **Do not read this document as hunting for
-a way to make either green; both are expected red, and the red is the
-deliverable.**
+**REPAIRED 2026-09-15**, per independent stage-8 validation
+(`hrm-testpipeline/work/2026-09-15_ch8_s2_stage8_validation.md` and
+`_sol_validation_A.md`, sections 6/9/10): C7 and C14 are one and the same
+underlying fact -- DSKPTH's high field is five bits wide and loads
+unconditionally -- and that fact is kept once, properly, at the sibling
+package `ch8-disk-pointer-ecs-and-copper`'s `agnus` boundary, where `ecs` is
+a real, drivable port (its P4 and P5). `agnus_diskdma` has no `ecs` port at
+all, so this boundary can only observe the unconditional width; it cannot
+put the OCS/ECS conditional question the sibling's boundary can. P4A, P4B
+and P11B (below) are therefore **declined**, each with a `record()` naming
+the sibling assertion that carries the fact -- not graded here. **P11A is a
+separate, distinct finding** (see below) and remains graded RED: it is the
+p.241/p.246 "32 bits" wording against the stored 20 bits, not the OCS/ECS
+conditioning fact, and the two are never to be merged.
 
 ## Reading the DSKDATR/DSKDAT direction claims: what is graded and what is not
 
@@ -88,20 +99,26 @@ Cited by: `opus:8-appA-dskpt.c2` (p.279, DSKPTH), `sol:8-appa-dskpth.c2`
 composed), `sol:8-appb-dskpth.c6` (p.289, twin), `opus:8-appB-dskptl.c4`
 (p.289, composed), `sol:8-appb-dskptl.c6` (p.289, twin).
 
-### P4A -- the OCS reading ("high 3 bits") fails: DSKPTH loads five bits, not three [C7/C14]
+### P4A -- the OCS reading ("high 3 bits") -- DECLINED 2026-09-15 [C7/C14]
 
 > "DSKPTH 020 W A( E ) Disk pointer (high 3 bits, high 5 bits if ECS)" (p.279)
 
-Testable form: a $020 write's low **five** bits of `data_in` all reach
-`address_out[20:16]`; the claim that only the low three reach anywhere is
-falsified if bits 3 and 4 of a written value are also observed to land.
+Originally graded here as: a $020 write's low **five** bits of `data_in`
+all reach `address_out[20:16]`, falsifying the claim that only the low
+three reach anywhere.
 
-Cited by: `opus:8-appA-dskpt.c4` (p.279), `sol:8-appa-dskpth.c4` (p.279,
-twin).
+**Declined, not asserted.** Independent validation found this is the same
+unconditional-five-bit DSKPTH fact carried by the sibling package
+`ch8-disk-pointer-ecs-and-copper`'s **P5** ("on OCS, DSKPTH holds only the
+high three bits"), which drives the real `ecs`=0 port at the `agnus`
+boundary and puts the OCS reading to an actual test. `agnus_diskdma` has no
+`ecs` port at all, so this boundary can only observe the unconditional
+width (measured and printed via `record()`); it cannot ask the OCS
+question. Cited by: `opus:8-appA-dskpt.c4` (p.279), `sol:8-appa-dskpth.c4`
+(p.279, twin) -- both declined via `record()`, naming
+`ch8-disk-pointer-ecs-and-copper`'s P5.
 
-Expected: **RED**.
-
-### P4B -- the "(E)" conditional-difference reading fails: the width does not change with chipset, because there is nothing to change it [C7/C14]
+### P4B -- the "(E)" conditional-difference reading -- DECLINED 2026-09-15 [C7/C14]
 
 > "...high 5 bits if ECS" (p.279); "DSKPTH + *020 ... A (E) ..." (p.289, the
 > `(E)` mark)
@@ -109,18 +126,18 @@ Expected: **RED**.
 The `(E)` mark and the "if ECS" clause both assert that this field's width
 is *conditioned* on a chipset selection. `agnus_diskdma`'s evidence-recorded
 port list carries no `ecs` (or equivalent chipset-select) input at all, and
-the classify record for the sibling ADKCON finding (C8, this slice's
-finding-candidates doc) independently confirms `agnus.v:326-340` wires no
-`ecs` signal into this module. Testable form at this boundary: because no
-input exists whose value could change the loaded width, the five-bit load
-observed in P4A cannot be shown to be conditional on anything -- it is
-produced by every reachable input state, which is the operational meaning
-of "unconditional" at a module boundary with no such input to vary.
+`agnus.v:326-340` wires no `ecs` signal into this module.
 
-Cited by: `opus:8-appA-dskpt.c5` (p.279), `sol:8-appa-dskpth.c5` (p.279,
-twin).
-
-Expected: **RED** (the claimed conditional difference does not exist).
+**Declined, not asserted.** Independent validation found that varying
+`dmas`/`speed`/`hpos` (the only other real inputs this boundary has) is not
+a valid proxy for chipset identity -- the page requires none of those
+signals to stand in for it. This is the same fact carried by the sibling
+package `ch8-disk-pointer-ecs-and-copper`'s **P4** ("the (E) mark: ECS
+changes DSKPTH"), which drives the real `ecs` port (0 vs 1) at the `agnus`
+boundary -- the genuine test of the conditioning -- and finds no
+difference. Cited by: `opus:8-appA-dskpt.c5` (p.279), `sol:8-appa-dskpth.c5`
+(p.279, twin) -- both declined via `record()`, naming
+`ch8-disk-pointer-ecs-and-copper`'s P4.
 
 ### P5 -- DSKPTL loads fifteen bits, `data_in[15:1]`, into `address_out[15:1]`
 
@@ -135,11 +152,12 @@ twin), `opus:8-appB-dskptl.c6` (p.289), `sol:8-appb-dskptl.c8` (p.289,
 twin).
 
 Expected: **GREEN**. This is this package's required control on the same
-measurement basis as P4A/P4B: same mechanism (a register write, then
-`address_out` inspected for which written bits arrived), same fixture, same
-kind of bit-count comparison -- but here the printed bit count and the
-measured bit count agree, which is what shows the comparator discriminates
-rather than always reading red.
+measurement basis as the P4A/P4B measurements (declined above, but measured
+by the identical mechanism: a register write, then `address_out` inspected
+for which written bits arrived), same fixture, same kind of bit-count
+comparison -- but here the printed bit count and the measured bit count
+agree, which is what shows the comparator discriminates rather than always
+reading red.
 
 ### P6 -- the pointer's lowest bit is not representable: a DSKPTL write's bit 0 changes nothing
 
@@ -259,23 +277,40 @@ Testable form: `address_out` is 20 bits wide (`[20:1]`); no combination of
 DSKPTH/DSKPTL writes produces a 32-bit-wide observable anywhere on this
 boundary.
 
+**Attribution, sharpened 2026-09-15 per independent stage-8 validation:**
+this is the p.241/p.246 "32 bits" wording against the stored 20 word-address
+bits, and only that -- it is **not** the OCS-18/ECS-20 conditioning fact
+(P4A/P4B/P11B, declined above/below, carried by the sibling package
+`ch8-disk-pointer-ecs-and-copper`'s P4/P5). These are two different printed
+inconsistencies and must not be merged into one finding.
+
 Cited by: `opus:8-dsk.c34` (p.241), `opus:8-dma.c7` (p.246), `sol:8-dskpth.c1`
 (p.246, twin).
 
-Expected: **RED**.
+Expected: **RED**. (Unchanged by the 2026-09-15 repair -- this proposition's
+measurement and colour are untouched; only its attribution wording above was
+sharpened.)
 
-### P11B -- the "18-bit" width reading fails: 5+15 = 20 word-address bits, not 18
+### P11B -- the "18-bit" width reading -- DECLINED 2026-09-15
 
 > "This pair of registers contains the 18-bit address of disk DMA data."
 > (p.279)
 
-Testable form: the five bits P4A establishes plus the fifteen bits P5
-establishes compose to 20 bits at `address_out`, not 18.
+Originally graded here as: the five bits P4A established plus the fifteen
+bits P5 establishes compose to 20 bits at `address_out`, not 18.
 
-Cited by: `opus:8-appA-dskpt.c10` (p.279), `sol:8-appa-dskptr.c1` (p.279,
-twin, "on OCS").
-
-Expected: **RED**.
+**Declined, not asserted.** The composed total depends on the same
+unconditional-five-bit DSKPTH high field P4A/P4B decline above, plus the
+uncontested fifteen-bit low field already kept as this package's own green
+P5 control. Read in its table context (p.289), 18 is the base/OCS width and
+the ECS row explicitly extends it; the fact that decides which width
+applies is graded at the sibling package `ch8-disk-pointer-ecs-and-copper`'s
+P4/P5, where a real, drivable `ecs` port exists. This boundary's measured
+total (`0xFFFFF`, 20 bits) is not an OCS result and must not be confused
+with P11A above, which is the distinct p.241/p.246 "32 bits" wording, not
+the OCS/ECS conditioning question. Cited by: `opus:8-appA-dskpt.c10`
+(p.279), `sol:8-appa-dskptr.c1` (p.279, twin, "on OCS") -- both declined via
+`record()`, naming `ch8-disk-pointer-ecs-and-copper`'s P4/P5.
 
 ## Fixture liveness
 
@@ -291,7 +326,8 @@ field.
 ## Control case
 
 P5 (DSKPTL's correct fifteen-bit load) is this package's control on the
-same measurement basis as the red findings P4A/P4B (a register write,
+same measurement basis as the P4A/P4B measurements (declined 2026-09-15,
+see above; still measured by the same mechanism -- a register write,
 followed by inspecting which bits of `data_in` reached `address_out`): it
 uses the identical comparator shape and passes, showing the harness is not
 simply wired to always report red.
@@ -335,6 +371,12 @@ P11A (3), P11B (2). The CPU-access-size, requester-identity and
 chip-memory halves noted above belong to claims already fully cited under
 P6/P7/P9 for their other, graded half.
 
+**2026-09-15 repair:** P4A's 2, P4B's 2 and P11B's 2 claims (6 of the 55)
+are now **declined**, not graded -- see their sections above. They remain
+accounted for, via `record()` naming the sibling package
+`ch8-disk-pointer-ecs-and-copper`'s P4/P5, which carries the fact. 49 of 55
+claims remain graded through `expect()`.
+
 ## Mutation plan
 
 Every graded proposition gets one stimulus mutation (for a green baseline:
@@ -356,12 +398,9 @@ stimulus can ever manufacture a read-back path to falsify against.
   Revert.
 - P3: none/impossible -- no data-output port exists in the compiled module
   to read back through, at any stimulus.
-- P4A: oracle -- substitute the compared width from 3 to 5 through the same
-  `address_out[20:16]` bit-count comparator P4A uses; expect green (proves
-  the comparator, not the finding, is what is being exercised).
-- P4B: oracle -- same substitution as P4A, reusing P4A's now-green 5-bit
-  comparison as the "different mechanism, proven live elsewhere" that shows
-  P4B's comparator discriminates.
+- P4A, P4B: **removed 2026-09-15 (repair).** Both are declined via
+  `record()`, not graded through `expect()`; per BUILD-BRIEF a mutation
+  record is removed with its assertion, so neither carries one any more.
 - P5: stimulus -- corrupt one bit of the DSKPTL value fed in; expect red.
   Revert.
 - P6: stimulus -- present a genuinely different DSKPTL value (differing in
@@ -382,8 +421,8 @@ stimulus can ever manufacture a read-back path to falsify against.
   Revert.
 - P11A: oracle -- substitute the compared width from 32 to 20; expect
   green.
-- P11B: oracle -- substitute the compared width from 18 to 20; expect
-  green.
+- P11B: **removed 2026-09-15 (repair).** Declined via `record()`, not
+  graded through `expect()`; no mutation record remains with its assertion.
 
 All mutation results, with the baseline colour beside each, are recorded in
 `test_ch8_disk_dma_pointer.cpp`'s header comment and in the build report,
