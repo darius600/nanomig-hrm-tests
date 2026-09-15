@@ -206,7 +206,7 @@ bus cannot masquerade as every claim below being a genuine finding.
   package does not have. See "Claims not turned into a new assertion"
   below.
 
-## A5 — DSKBYT-BIT15-IS-NOT-SET-ONLY-ON-BYTE-RECEIPT
+## A5 — DSKBYT-BIT15-IS-NOT-SET-ONLY-ON-BYTE-RECEIPT — DECLINED
 
 - Page: 248, 278. Uids: `opus:8-dskbytr.c3`, `opus:8-dskbytr.c6`,
   `sol:8-dskbytr.c3`, `sol:8-dskbytr.c7`, `opus:8-appA-dskbytr.c7`,
@@ -219,14 +219,23 @@ bus cannot masquerade as every claim below being a genuine finding.
   clause is graded under A6); p.278 "bit 15 (DSKBYT) is set true" (on
   each byte load); p.278 "15 DSKBYT Disk byte ready (reset on read)"
   (ready clause only).
-- Proposition: bit 15 (DSKBYT) is set true specifically as each byte
-  arrives, and indicates a valid byte is present — it should therefore
-  read 0 at any time no byte has ever been received (a freshly-reset
-  module, no transfer ever armed), and only become 1 once a byte has
-  actually arrived.
-- Expected: RED (per the build brief's own disclosed background,
-  candidate C6: bit 15 is a constant 1, unconditionally, including with
-  zero bytes ever received).
+- Original proposition (withdrawn): bit 15 (DSKBYT) reads 0 at any time
+  no byte has ever been received (a freshly-reset module, no transfer
+  ever armed), and only becomes 1 once a byte has actually arrived.
+  **Withdrawn by independent validation (2026-09-15):** neither cited page
+  defines DSKBYT's reset value — "receipt sets it" is not "reset clears
+  it". The withdrawn assertion silently required both.
+- **Disposition: DECLINED (`record()`).** A sound receipt test needs a
+  genuinely cleared starting state, reached through the page's own
+  documented clearing action (the read A6 grades), before a delivered
+  known byte and an observed 0→1 transition can mean anything. A6's own
+  repaired methodology (a real, clk7_en-qualified read cycle, not a bare
+  combinational peek) proves that clearing action does not exist anywhere
+  in this RTL: DSKBYT is the literal constant `1'b1` (paula_floppy.v:699).
+  There is therefore no reachable cleared precondition at this boundary
+  from which a 0→1 receipt transition could ever be observed — attempting
+  to restructure this claim would only restate A6's own finding under a
+  different uid, not test receipt. Declined rather than restated.
 
 ## A6 — DSKBYT-BIT15-IS-NOT-CLEARED-ON-READ
 
@@ -238,9 +247,20 @@ bus cannot masquerade as every claim below being a genuine finding.
   (reset on read)" (reset clause).
 - Proposition: reading DSKBYTR clears bit 15 — a second, immediately
   consecutive read must show it cleared relative to the first.
-- Expected: RED (per the build brief's own disclosed background: two
-  successive reads both return the same constant 0x9000, so bit 15 does
-  not clear).
+- **Repaired (independent validation, 2026-09-15):** the original form's
+  `read_reg()` spans no clock edge at all (two `eval()`-only combinational
+  peeks of the read mux), so it could never have exercised a synchronous
+  read-side-effect regardless of what the RTL implements — the withdrawal
+  was sound. Repaired to use `read_reg_clocked()`: holds the address across
+  a genuine, clk7_en-qualified rising edge — the same bus-cycle shape every
+  register WRITE in this module uses — for both reads. A6-CONTROL (no
+  claim uid) proves that exact cycle shape is a faithful read by using it
+  to observe DMAON and DISKWRITE, already known to move (A3/A4), before A6
+  applies it to bit 15.
+- Measured: RED. Two genuine, clk7_en-qualified read cycles both return
+  0x9000 — bit 15 (DSKBYT) is the literal constant `1'b1`
+  (paula_floppy.v:699) and cannot clear regardless of how genuine the read
+  cycle is. This is now a sound measurement of that fact.
 
 ## A7 — WORDEQUAL-BIT12-DOES-NOT-TRACK-A-DSKSYNC-MATCH
 
@@ -257,16 +277,25 @@ bus cannot masquerade as every claim below being a genuine finding.
   matching" half — the absolute-microsecond figure is not graded, per the
   claims' own split); p.278 "12 WORDEQUAL This bit true only while the
   DSKSYNC register equals the data from disk."
-- Proposition: bit 12 (WORDEQUAL) should read differently depending on
-  whether the disk input stream currently matches the programmed DSKSYNC
-  value — 0 when it does not, transiently 1 only while it does. This is
-  the printed "sector-searching facility": software polls this bit (or the
-  interrupt it can raise) to find a sector without buffering a whole
-  track.
-- Expected: RED (per the build brief's own disclosed background,
-  candidate C6: bit 12 is a constant 1, including with no drive selected
-  and no transfer running at all — it cannot be distinguishing a match
-  from a non-match if it never varies).
+- Proposition: bit 12 (WORDEQUAL) should read 1 at a proved DSKSYNC match
+  and 0 through a proved mismatch. This is the printed "sector-searching
+  facility": software polls this bit (or the interrupt it can raise) to
+  find a sector without buffering a whole track.
+- **Repaired (independent validation, 2026-09-15):** the original form
+  compared an IDLE state against an ACTIVE-BUT-MISMATCHING state and
+  required them to differ — but p.248 requires WORDEQUAL false on a
+  non-match; it never requires idle and active-mismatching to differ from
+  each other. Repaired to sample bit 12 at a PROVED match and across a
+  PROVED, sustained mismatch, using `syncint` — a real output port — as
+  the oracle: with an armed transfer, `dmaen` is latched 1 throughout,
+  which zeroes `syncint`'s other disjunct permanently, so `syncint`
+  becomes exactly `sync_match` (paula_floppy.v:915,917) for the whole run.
+- Measured: RED. Both trials PROVED their state (`syncint` pulsed at the
+  match instant; `syncint` never pulsed across the sustained mismatch
+  poll). WORDEQUAL reads 1 at the proved match (page-compliant) but ALSO
+  reads 1 throughout the proved mismatch (should be 0) — bit 12 is the
+  literal constant `1'b1` (paula_floppy.v:699) and cannot be distinguishing
+  the two.
 
 ## A8 — UNUSED-BITS-11-8-CARRY-NO-DEFINED-FUNCTION
 
@@ -293,33 +322,47 @@ bus cannot masquerade as every claim below being a genuine finding.
   "Data from the disk (in read mode) is loaded into this register one byte
   at a time" (loading clause only); p.278 "07-00 DATA Disk byte data".
 - Proposition: bits 7-0 (DATA) carry the actual disk byte, one byte at a
-  time, as it is received — feeding two distinct, known byte streams
-  through the module should produce two distinct DATA readings that
-  correspond to what was fed.
-- Expected: RED (per the build brief's own disclosed background,
-  candidate C6: bits 7-0 are a constant 0x00 idle; the claims' own
-  evidence records this as a real divergence, not an absent one — the
-  byte path exists in NanoMig but was rerouted through a FIFO at a
-  different address rather than left wired to this field).
+  time, as it is received — DATA sampled at the instant a KNOWN byte is
+  current should read that byte.
+- **Repaired (independent validation, 2026-09-15):** the original form
+  compared two arbitrary DSKBYTR snapshots (after uniform 0x11 and 0xEE
+  feeds) for inequality, with no independent ground truth for either
+  sample — both reading 0x00 is compatible with a conforming
+  implementation whose DATA field simply had not yet caught up. This is
+  THE SAME UNDERLYING FACT as `ch8-disk-register-map-paula-floppy`/B4 and
+  `ch8-disk-controller-overview`/`opus:8-dsk.c9`+`sol:8-dsk.c9` — one
+  fact, repaired identically in all three packages that carry it. Repaired
+  to bind a KNOWN incoming byte to the DSKBYTR sampling instant via the
+  DSKDATR/FIFO marker technique already established by the sibling
+  `ch8-mfm-cell-encoding` package: a uniform 0xFF sector's payload word can
+  only ever arrive as exactly 0xFFFF. Calibrate the DSKDATR pop index at
+  which that marker appears, then on the real trial peek (not pop) DSKDATR
+  to confirm the known word is present, and peek DSKBYTR at the same
+  instant (zero clock edges elapse between the two peeks).
+- Measured: RED. `known_word=0xFFFF` (bound=true, confirmed at pop #33),
+  DSKBYTR at that same instant reads 0xD000 — DATA field 0x00. Bits 7:0
+  are the literal constant `8'h00` (paula_floppy.v:699) and cannot ever
+  reflect a known incoming byte.
 
-## A10 — DSKBYTR-DOES-NOT-VARY-WITH-ROTATION-OR-TRANSFER-DIRECTION
+## A10 — DSKBYTR-DOES-NOT-VARY-WITH-ROTATION-OR-TRANSFER-DIRECTION — DECLINED
 
 - Page: 248. Uids: `opus:8-dskbytr.c5`, `sol:8-dskbytr.c5`,
   `sol:8-dskbytr.c6`.
 - Quote: "DSKBYTR may be used to synchronize the processor to the disk
   rotation before issuing a read or write under DMA control."
-- Proposition, per each claim's own `split` note (the advice half —
-  "may be used to synchronize" — is the page's recommendation to
-  programmers; the hardware proposition under it is what is graded):
-  DSKBYTR's own state should track the incoming byte stream and hence the
-  passage of disk rotation, both before a read-direction DMA transfer is
-  armed and before a write-direction one is. Sampling it at different
-  points relative to rotation, and under both a read-armed and a
-  write-armed DSKLEN state, should show it varying.
-- Expected: RED (this reduces to the same underlying fact A5, A7 and A9
-  already establish — a register that is a hardwired constant cannot vary
-  with rotation or with transfer direction either; this assertion measures
-  that reduction directly rather than assuming it).
+- Original proposition (withdrawn): two arbitrary DSKBYTR samples 2000
+  `clk7_en` cycles apart, with no DMA armed, must differ.
+- **Disposition: DECLINED (`record()`), per independent validation
+  (2026-09-15).** The cited sentence is programmer ADVICE about a USE of
+  DSKBYTR — it promises neither that any two arbitrarily-chosen instants
+  differ, nor any minimum separation, nor that idle sampling (no DMA
+  armed) exercises the mechanism it is advising about at all: two points
+  in a periodic byte stream may legitimately repeat. The hardware fact
+  actually underneath this advice — that DSKBYTR tracks a genuinely known
+  incoming byte — is exactly what A9 already drives and grades directly
+  against a bound, known byte. Restating this claim as a two-arbitrary-
+  samples inequality would only produce a second, weaker restatement of
+  A9's own finding. Declined rather than restated.
 
 ## Claims not turned into a new assertion
 
@@ -330,18 +373,20 @@ bus cannot masquerade as every claim below being a genuine finding.
 ## Totals
 
 - 48 claims read, all 48 accounted for above.
-- 10 new graded assertions (A2-A10, plus A1 the mandatory
-  fixture-liveness precondition): A1, A2, A3, A4 and A8 are not pre-judged
-  by the source claims and are expected to measure PASS — A2/A3/A4 in
-  particular share the same register and the same read mechanism as every
-  suspect assertion, so they are this package's control cases. A5, A6, A7,
-  A9 and A10 are expected RED, per the build brief's own disclosed
-  background (candidate C6) — that background is disclosed above, not
-  derived from any RTL reading done for this specification.
+- 9 graded assertions (A1-A4, A6-A9, A8) plus A6-CONTROL (an apparatus
+  control, no claim uid): A1-A4, A6-CONTROL and A8 are GREEN. A6, A7 and
+  A9 are RED — sound measurements of DSKBYTR's hardwired constant bits
+  (paula_floppy.v:699), repaired 2026-09-15 after an independent
+  validation withdrew their original forms for testing more than their
+  cited pages state (see each assertion's own repair note above).
+- 2 claims DECLINED as gradeable claims but not as sound assertions: A5
+  (no page defines DSKBYT's reset value, and A6 proves the only candidate
+  clearing precondition is unreachable) and A10 (the cited sentence is
+  programmer advice, not a falsifiable two-sample inequality).
 - 1 claim group (3 uids, the DMACON clause shared across two printed
   quotes) declined as out of this package's assigned boundary, not as
   absent or as a red.
 
 Nothing in this file required opening the RTL, the port list, or any file
-under `nanomig-hrm-tests/nanomig/` to write. No HALT condition was
-encountered.
+under `nanomig-hrm-tests/nanomig/` to write beyond the original build. No
+HALT condition was encountered, in the original build or in this repair.
