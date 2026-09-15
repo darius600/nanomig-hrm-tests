@@ -350,13 +350,20 @@ int main(int argc, char** argv) {
         uint16_t v1 = rig.read_reg(ADDR_DSKBYTR);
         checks.note("A0-LIVENESS-WORD1: DSKLEN<=0x0000, DSKBYTR readback=0x" + hex4(v1));
 
-        // MUTATE=A0: drive the second value IDENTICAL to the first.
-        uint16_t word2 = mutating("A0") ? 0x0000 : 0x4000;
+        // MUTATE=A0: drive the second value IDENTICAL to the first. Hoisted
+        // into a local bool, read once, so no string literal precedes the
+        // label inside the expect() call below (the gate reads the FIRST
+        // string literal of a call as the assertion's id; a `mutating("A0")`
+        // called again inline there, ahead of the label, would be misread as
+        // the id instead -- this changes what the gate can read, not what is
+        // measured: same condition, same value, same result).
+        const bool mutA0 = mutating("A0");
+        uint16_t word2 = mutA0 ? 0x0000 : 0x4000;
         rig.dsklen_write(word2);
         uint16_t v2 = rig.read_reg(ADDR_DSKBYTR);
         checks.note("A0-LIVENESS-WORD2: DSKLEN<=0x" + hex4(word2) + ", DSKBYTR readback=0x" + hex4(v2));
 
-        checks.expect(v1 == 0x9000 && v2 == (mutating("A0") ? 0x9000 : 0xB000) && v1 != v2,
+        checks.expect(v1 == 0x9000 && v2 == (mutA0 ? 0x9000 : 0xB000) && v1 != v2,
             "A0-LIVENESS-DSKLEN-WRITE-TO-DSKBYTR-READBACK: two distinct, known DSKLEN writes (0x0000 then 0x4000) "
             "arrive, unmodified and mutually distinguishable, at the DSKBYTR mirror bit (data_out bit 13) this "
             "package's every other assertion also reads -- the fixture's write-then-read data path is live, not "
