@@ -461,7 +461,8 @@ int main(int argc, char** argv) {
         "P6-BIT1-DSKBLK-LEVEL1: bit 1 (DSKBLK) alone drives 68000 level 1 "
         "(measured " + std::to_string(single_bit_level[1])
         + "; sol:7-interrupts.c56, sol:7-interrupts.c57, opus:7-int.c55, "
-        "sol:7-fig7-4.c6, opus:7-fig7-4.c4)");
+        "sol:7-fig7-4.c6, opus:7-fig7-4.c4, opus:8-dskint.c5, "
+        "opus:8-dskint.c6, sol:8-int.c5, sol:8-int.c6)");
     // MUTATION P6-BIT1-DSKBLK-LEVEL1 stimulus red: bit 4 (COPER, level 3)
     // set instead of bit 1. Run now, reverted after.
     run_mutation("P6-BIT1-DSKBLK-LEVEL1", 1, 4);   // partner: COPER, level 3
@@ -613,7 +614,8 @@ int main(int argc, char** argv) {
         "68000 level 5 (measured " + std::to_string(single_bit_level[12])
         + "; sol:7-interrupts.c54, sol:7-interrupts.c55, opus:7-int.c51, "
         "opus:7-int.c52, opus:7-int.c53, sol:7-fig7-4.c39, "
-        "opus:7-fig7-4.c37)");
+        "opus:7-fig7-4.c37, opus:8-dskint.c2, opus:8-dskint.c3, "
+        "sol:8-int.c2, sol:8-int.c3)");
     // MUTATION P17-BIT12-DSKSYN-LEVEL5 stimulus red: bit 9 (AUD2, level 4)
     // set instead of bit 12. Run now, reverted after.
     // MUTATION P17-BIT12-DSKSYN-LEVEL5 oracle red: performed by hand during
