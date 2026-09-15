@@ -113,24 +113,32 @@
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup -- not a compile-time #ifdef -- so one build serves the real run
 //   (MUTATE unset) and every mutation run (MUTATE=<id>, one id per
-//   assertion). Baseline with MUTATE unset: 12 passed, 1 failed (A11 has no
-//   expect() at all -- declined via record(), not tallied either way; A12 is
-//   the one failure, expected red, see below). Actual run counts and
-//   per-mutation results are recorded in the commit message and build
-//   report, not predicted here.
+//   assertion). Baseline with MUTATE unset: 11 passed, 0 failed, plus 2
+//   RECORDED declines (A11, A12 -- neither has an `expect()` at all, neither
+//   is tallied either way, neither carries a mutation record). Actual run
+//   counts and per-mutation results are recorded in the commit message and
+//   build report, not predicted here.
 //
-// A12 is expected RED at baseline (this package's own claims file already
-//   measured this fixture delivering the FULL programmed word count, not
-//   one fewer, on a prior trial -- and A9/A10 above independently reconfirm
-//   that exact-count behaviour). Per the build brief, a stimulus mutation on
-//   an already-red assertion proves nothing; the substitute rule applies
-//   instead -- A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE is its own,
-//   separate, GREEN-at-baseline assertion (own trial, own fresh Rig) that
-//   applies the SAME equality-comparator form as A12's own check to the
-//   mechanism already proven live and green at A9/A10, and carries an
-//   ORDINARY stimulus mutation of its own (MUTATE=A12S) -- demonstrating the
-//   comparator is not simply broken or vacuously red. It carries no manual
-//   uid: it grades nothing new, only the apparatus.
+// A12 -- REPAIRED 2026-09-15, DECLINED, not graded. Independent validation
+//   found the previous graded-RED assertion tested MORE than its cited page
+//   states: p.247 says the last word "may not come in", not that one IS
+//   lost -- "may" demands nothing a single deterministic trial can violate.
+//   Declined via `record()`, quoting the page's own wording; the measured
+//   fact this package's fresh trial confirms -- NanoMig delivers the FULL
+//   programmed word count, not one fewer, corroborating A9/A10's own
+//   independent exact-count measurement -- is kept as a `note()`, not a
+//   finding against a page that only ever claimed a possibility.
+//
+//   A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE is REMOVED along with A12's
+//   graded check. Its only job was to prove A12's comparator was not
+//   vacuously red (a stimulus mutation cannot demonstrate anything on an
+//   already-failing check, so the substitute rule put a different mechanism
+//   through the SAME equality-comparator form and showed it green). With A12
+//   declined rather than graded red, there is no longer a graded comparator
+//   to defend against a vacuous-red objection -- the substitute's reason for
+//   existing is gone. It also duplicated A9/A10, which already prove the
+//   identical exact-count mechanism live and green under their own manual
+//   citations. Removed, along with its mutation record.
 //
 // MUTATION A0-LIVENESS-DSKLEN-WRITE-TO-DSKBYTR-READBACK stimulus red: second known value driven identical to the first (0x0000 both times) so the two readings are indistinguishable (MUTATE=A0).
 // MUTATION A1-DSKLEN-WRITE-ONLY stimulus red: the read-back address is redirected from DSKLEN to DSKBYTR (a real decode, idle value 0x9000) while the check still expects 0x0000 (MUTATE=A1).
@@ -144,8 +152,7 @@
 // MUTATION A9-LENGTH-FIELD-COUNTS-WORDS stimulus red: DSKLEN is programmed with 33 words instead of 32 while the check still expects completion at exactly 32 reads (MUTATE=A9).
 // MUTATION A10-LENGTH-DECREMENTS-STOPS-AT-ZERO stimulus red: DSKLEN is programmed with 16 words instead of 8 while the check still expects completion at exactly 8 reads, well before the fed sector's 544 MFM words are exhausted (MUTATE=A10).
 // A11 -- DSKBUG_LAST_THREE_BITS_LOST_ON_WRITE: declined via record(), not expect(); no mutation record (not graded through expect()).
-// MUTATION A12-DSKBUG-ONE-WORD-SHORT-ON-READ none impossible: already red at baseline -- NanoMig's floppy DMA channel delivers the full programmed word count, not one fewer (confirmed independently by A9/A10's own exact-count measurement in this same run), so the documented Amiga bug this assertion grades as printed does not reproduce here. A stimulus mutation cannot fail an assertion that already fails, so none is recorded for this label; the comparator that grades it is instead proven live via the substitute A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE below, which applies the identical equality-comparator form to a mechanism already green at A9/A10 and carries its own ordinary stimulus mutation.
-// MUTATION A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE stimulus red: its own independent trial's DSKLEN is programmed with 13 words instead of 12 while the check still expects completion at exactly 12 reads (MUTATE=A12S). Green at baseline (an ordinary assertion, not itself red), so an ordinary stimulus mutation applies, unlike A12 above.
+// A12 -- DSKBUG_ONE_WORD_SHORT_ON_READ: DECLINED via record(), not expect(); no mutation record (not graded through expect()). Repair 2026-09-15: the previous MUTATION record (none/impossible) and its substitute A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE (stimulus red) are both removed along with the graded check they defended -- see the header's A12 repair note.
 
 #include <cstdint>
 #include <cstdio>
@@ -719,10 +726,16 @@ int main(int argc, char** argv) {
     // ========================================================================
     // A12 -- opus:8-dma.c33 / sol:8-dskbug.c2 (p.247, "Also, the last word "
     // in a disk-read DMA operation may\nnot come in (that is, one less word "
-    // may be read than you asked for)."). Graded LITERALLY against the "
-    // page: is the delivered count one fewer than programmed? A9/A10 above
-    // already show NanoMig delivers the FULL count -- this assertion is
-    // expected RED, and that red is the deliverable.
+    // may be read than you asked for)."). REPAIRED 2026-09-15: DECLINED, not
+    // graded. Independent validation found the previous graded-RED assertion
+    // tested MORE than the page states -- the page says a word MAY be lost,
+    // not that one is; "may" demands nothing a single deterministic trial
+    // can violate, so grading `delivered == programmed - 1` as a hard
+    // requirement was a claim the page never made. A12-SUBSTITUTE-EXACT-
+    // COUNT-COMPARATOR-LIVE, whose only job was defending this graded check
+    // against a vacuous-red objection, is removed with it: with nothing
+    // graded, there is no comparator left to defend, and it duplicated
+    // A9/A10's own already-graded, already-green exact-count measurement.
     // ========================================================================
     {
         Rig rig;
@@ -737,60 +750,19 @@ int main(int argc, char** argv) {
         rig.feed_sector_read(sector);
 
         int delivered = rig.drain_until_blckint(programmed + 4);
-        checks.note("A12-STIMULUS: DSKLEN length programmed=" + std::to_string(programmed) +
-                    "; transfer actually completed after " + std::to_string(delivered) + " delivered word(s)");
-
-        // The page's claim, graded literally: delivered == programmed - 1.
-        checks.expect(delivered == (int)programmed - 1,
+        checks.note("A12: DSKLEN length programmed=" + std::to_string(programmed) +
+                    "; transfer actually completed after " + std::to_string(delivered) +
+                    " delivered word(s) -- measured for interest only, not graded");
+        checks.record(
             "A12-DSKBUG-ONE-WORD-SHORT-ON-READ (p.247, opus:8-dma.c33/sol:8-dskbug.c2, quote 'Also, the last word "
             "in a disk-read DMA operation may\\nnot come in (that is, one less word may be read than you asked "
-            "for).'): graded as printed -- a disk-read DMA programmed for 16 words should, per this documented "
-            "Amiga hardware bug, sometimes deliver only 15. Measured here: NanoMig's floppy DMA channel delivers "
-            "the full programmed count (16, matching A9/A10's own independent measurement), not one fewer -- this "
-            "package's own claims file already measured the same divergence on a prior trial. This is the "
-            "deliverable, not something to explain away by loosening the assertion to match what NanoMig does.");
-    }
-
-    // ========================================================================
-    // A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE -- mutation-demonstration
-    // only, no manual citation, no claim uid. Substitute rule (build brief):
-    // a stimulus mutation on an already-red assertion proves nothing (A12
-    // above cannot fail harder). Put a different mechanism, already proven
-    // live and green at A9/A10, through the SAME equality-comparator form
-    // (delivered word count == expected count) and show it goes green --
-    // demonstrating the comparator apparatus itself is not simply broken or
-    // vacuously red. Its own independent trial (own fresh Rig, own sector,
-    // own programmed length), separate from A12's, so this can carry a
-    // genuine, isolated stimulus mutation without touching A12's own
-    // (unmutated, still red) measurement above.
-    // ========================================================================
-    {
-        Rig rig;
-        rig.do_reset();
-        uint8_t sector[512];
-        for (int i = 0; i < 512; i++) sector[i] = (uint8_t)(i * 5 + 7);
-
-        const uint16_t SUBSTITUTE_LEN = 12;
-        // MUTATE=A12S: program 13 words instead of 12, while the check below
-        // still bounds itself to the fixed SUBSTITUTE_LEN=12 (not to the
-        // mutated stimulus) -- the same fixed-bound pattern A9/A10 use.
-        uint16_t programmed = mutating("A12S") ? 13 : SUBSTITUTE_LEN;
-        uint16_t dsklen_val = 0x8000 | programmed;
-        rig.dsklen_write(dsklen_val);
-        rig.dsklen_write(dsklen_val);
-        rig.feed_sector_read(sector);
-
-        int delivered = rig.drain_until_blckint(programmed + 4);
-        checks.note("A12-SUBSTITUTE-STIMULUS: DSKLEN length programmed=" + std::to_string(programmed) +
-                    "; delivered=" + std::to_string(delivered) + "; checked against a fixed bound of " +
-                    std::to_string(SUBSTITUTE_LEN));
-
-        checks.expect(delivered == (int)SUBSTITUTE_LEN,
-            "A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE (mutation-demonstration only, no manual citation): the "
-            "SAME equality-comparator form as A12's own check (delivered word count == expected count), applied "
-            "here to its own independent trial reusing the exact-count mechanism already proven live and green at "
-            "A9/A10, grades green -- the comparator apparatus is not simply broken or vacuously red; A12's own red "
-            "above is a real, measured divergence, not a stuck check");
+            "for).'): declined, not graded. The page says a word MAY be lost, not that one IS -- 'may' is a "
+            "possibility, and a red requires the page to demand something a deterministic trial can violate; this "
+            "one demands nothing. Measured, kept as fact not finding: this fixture delivers the FULL programmed "
+            "count (" + std::to_string(programmed) + " for " + std::to_string(programmed) + ", delivered=" +
+            std::to_string(delivered) + "), matching A9/A10's own independent exact-count measurement above -- "
+            "NanoMig simply does not exhibit the documented possible bug on this trial, which is not the same as "
+            "contradicting a page that only ever claimed a possibility.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";

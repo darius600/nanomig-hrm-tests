@@ -220,14 +220,28 @@ in the test.
 | `sol:8-dskbug.c2` | 247 | "Also, the last word in a disk-read DMA operation may\nnot come in (that is, one less word may be read than you asked for)." |
 
 Proposition, as printed: a documented Amiga hardware bug can cause a
-disk-read DMA to deliver one word fewer than programmed. Graded literally: is
-the delivered word count, for a programmed length N with sufficient source
-data, sometimes N-1? This package's own claims file already measured this
-fixture delivering the full count (N-for-N) on at least one trial — **if that
-holds under this package's own fresh test, the assertion above (which encodes
-the bug as written) is expected to grade red, and per the build brief that
-divergence is the deliverable, not something to explain away by loosening the
-assertion to match what NanoMig does.**
+disk-read DMA to deliver one word fewer than programmed.
+
+**REPAIRED 2026-09-15, DECLINED — not graded.** The original plan above
+(quoted for the record) graded this literally as `delivered == programmed-1`
+and expected RED as the deliverable. Independent validation found that wrong:
+the page says the last word **may** not come in — "may" is a possibility, not
+a promise, and a red requires the page to demand something a single
+deterministic trial can violate. This one demands nothing, so the graded
+check tested more than the page states. **Declined via `record()`, quoting
+the page's own "may" wording.** The measured fact — this fixture's fresh
+trial delivers the FULL programmed count, matching A9/A10's own independent
+exact-count measurement — is kept as a `note()`: real and interesting, but a
+fact about NanoMig, not a conformance failure against a page that only ever
+claimed a possibility.
+
+**A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE is removed along with A12's
+graded check.** Its only job was proving A12's comparator was not vacuously
+red (needed because a stimulus mutation cannot demonstrate anything on an
+already-failing check). With A12 declined rather than graded, there is no
+graded comparator left to defend, and the substitute duplicated A9/A10's own
+already-graded, already-green exact-count measurement anyway. Removed, along
+with its mutation record.
 
 ## Rig hazards named by the build brief (restated here, not yet acted on)
 
@@ -246,9 +260,10 @@ assertion to match what NanoMig does.**
 A9 (`DSKLEN_LENGTH_FIELD_COUNTS_WORDS`) is this package's control case: an
 unexceptional, uncontested reading of the page, on the same
 measurement basis (program a word count, run a transfer, count delivered
-words) as A10's decrement/stop assertion and as A12's contested short-read
-claim. If A9 is red, the fixture's word-counting mechanism itself cannot be
-trusted for any of the length-based readings in this package.
+words) as A10's decrement/stop assertion and as A12's declined short-read
+claim (see A12 above, repaired 2026-09-15). If A9 is red, the fixture's
+word-counting mechanism itself cannot be trusted for any of the length-based
+readings in this package.
 
 ## Mutation plan
 
@@ -260,15 +275,18 @@ fixture is asked to do (a different write value, a different port state, a
 shorter/longer source feed) while leaving the expected value untouched, and
 confirm the assertion reddens, then revert.
 
-Two assertions (A11, A12) are expected, from this package's own claims file,
-to be red at baseline against the RTL (they encode documented Amiga bugs this
-suite's own prior measurement did not reproduce). Per the build brief, a
-stimulus mutation on an already-red assertion proves nothing (it cannot fail
-harder); for those two, the substitute rule applies instead — a different
-mechanism proven live elsewhere in the same run (A9's or A10's own live
-word-counting mechanism) is put through the same count-comparison form and
-shown to go green, demonstrating the comparator itself is not simply broken
-or vacuously red.
+Two claims (A11, A12) are DECLINED via `record()`, not graded through
+`expect()`, and carry no mutation record — neither is an assertion that can
+fail, so the mutation-record requirement ("if it is graded through expect(),
+it needs a record") does not apply to either. A11 declines because reaching a
+genuine last-written byte is out of proportion to this package's scope (see
+the header comment). **A12 was repaired 2026-09-15**: it was originally
+graded literally-red against the page's "may" wording and defended by a
+substitute assertion (A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE) proving its
+comparator live; independent validation found the grading itself wrong ("may"
+demands nothing a deterministic trial can violate), so both A12's graded
+check and its now-purposeless substitute are removed, and A12 is declined
+instead.
 
 A0 (fixture liveness) gets its own mutation: drive the second known value
 identical to the first, so the two readings become indistinguishable, and
