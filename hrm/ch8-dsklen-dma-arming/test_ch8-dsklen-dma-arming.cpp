@@ -113,22 +113,24 @@
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup -- not a compile-time #ifdef -- so one build serves the real run
 //   (MUTATE unset) and every mutation run (MUTATE=<id>, one id per
-//   assertion). Baseline with MUTATE unset: 12 passed, 2 failed (A11 has no
-//   expect() -- declined via record(); A12 is expected red, see below).
-//   Actual run counts and per-mutation results are recorded in the commit
-//   message and build report, not predicted here.
+//   assertion). Baseline with MUTATE unset: 12 passed, 1 failed (A11 has no
+//   expect() at all -- declined via record(), not tallied either way; A12 is
+//   the one failure, expected red, see below). Actual run counts and
+//   per-mutation results are recorded in the commit message and build
+//   report, not predicted here.
 //
 // A12 is expected RED at baseline (this package's own claims file already
 //   measured this fixture delivering the FULL programmed word count, not
-//   one fewer, on a prior trial -- and A9/A10 below independently reconfirm
+//   one fewer, on a prior trial -- and A9/A10 above independently reconfirm
 //   that exact-count behaviour). Per the build brief, a stimulus mutation on
 //   an already-red assertion proves nothing; the substitute rule applies
-//   instead -- A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE reuses the SAME
-//   delivered-count variable and the SAME equality-comparator form as A12's
-//   own check, substituting the mechanism already proven live and green at
-//   A9/A10 (exact count, not count-minus-one), and confirms IT grades green
-//   -- demonstrating the comparator is not simply broken or vacuously red.
-//   It carries no manual uid: it grades nothing new, only the apparatus.
+//   instead -- A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE is its own,
+//   separate, GREEN-at-baseline assertion (own trial, own fresh Rig) that
+//   applies the SAME equality-comparator form as A12's own check to the
+//   mechanism already proven live and green at A9/A10, and carries an
+//   ORDINARY stimulus mutation of its own (MUTATE=A12S) -- demonstrating the
+//   comparator is not simply broken or vacuously red. It carries no manual
+//   uid: it grades nothing new, only the apparatus.
 //
 // MUTATION A0-LIVENESS-DSKLEN-WRITE-TO-DSKBYTR-READBACK stimulus red: second known value driven identical to the first (0x0000 both times) so the two readings are indistinguishable (MUTATE=A0).
 // MUTATION A1-DSKLEN-WRITE-ONLY stimulus red: the read-back address is redirected from DSKLEN to DSKBYTR (a real decode, idle value 0x9000) while the check still expects 0x0000 (MUTATE=A1).
@@ -142,7 +144,8 @@
 // MUTATION A9-LENGTH-FIELD-COUNTS-WORDS stimulus red: DSKLEN is programmed with 33 words instead of 32 while the check still expects completion at exactly 32 reads (MUTATE=A9).
 // MUTATION A10-LENGTH-DECREMENTS-STOPS-AT-ZERO stimulus red: DSKLEN is programmed with 16 words instead of 8 while the check still expects completion at exactly 8 reads, well before the fed sector's 544 MFM words are exhausted (MUTATE=A10).
 // A11 -- DSKBUG_LAST_THREE_BITS_LOST_ON_WRITE: declined via record(), not expect(); no mutation record (not graded through expect()).
-// A12 -- DSKBUG_ONE_WORD_SHORT_ON_READ: expected red at baseline; substitute rule applies (see MUTATION METHODOLOGY above), no stimulus mutation of A12 itself.
+// MUTATION A12-DSKBUG-ONE-WORD-SHORT-ON-READ none impossible: already red at baseline -- NanoMig's floppy DMA channel delivers the full programmed word count, not one fewer (confirmed independently by A9/A10's own exact-count measurement in this same run), so the documented Amiga bug this assertion grades as printed does not reproduce here. A stimulus mutation cannot fail an assertion that already fails, so none is recorded for this label; the comparator that grades it is instead proven live via the substitute A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE below, which applies the identical equality-comparator form to a mechanism already green at A9/A10 and carries its own ordinary stimulus mutation.
+// MUTATION A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE stimulus red: its own independent trial's DSKLEN is programmed with 13 words instead of 12 while the check still expects completion at exactly 12 reads (MUTATE=A12S). Green at baseline (an ordinary assertion, not itself red), so an ordinary stimulus mutation applies, unlike A12 above.
 
 #include <cstdint>
 #include <cstdio>
@@ -739,19 +742,48 @@ int main(int argc, char** argv) {
             "the full programmed count (16, matching A9/A10's own independent measurement), not one fewer -- this "
             "package's own claims file already measured the same divergence on a prior trial. This is the "
             "deliverable, not something to explain away by loosening the assertion to match what NanoMig does.");
+    }
 
-        // Substitute rule (build brief): a stimulus mutation on an
-        // already-red assertion proves nothing. Put a different mechanism,
-        // already proven live and green at A9/A10, through the SAME
-        // equality-comparator form and show it goes green -- demonstrating
-        // the comparator itself is not simply broken or vacuously red.
-        // Carries no manual uid: grades the apparatus, not a new claim.
-        checks.expect(delivered == (int)programmed,
+    // ========================================================================
+    // A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE -- mutation-demonstration
+    // only, no manual citation, no claim uid. Substitute rule (build brief):
+    // a stimulus mutation on an already-red assertion proves nothing (A12
+    // above cannot fail harder). Put a different mechanism, already proven
+    // live and green at A9/A10, through the SAME equality-comparator form
+    // (delivered word count == expected count) and show it goes green --
+    // demonstrating the comparator apparatus itself is not simply broken or
+    // vacuously red. Its own independent trial (own fresh Rig, own sector,
+    // own programmed length), separate from A12's, so this can carry a
+    // genuine, isolated stimulus mutation without touching A12's own
+    // (unmutated, still red) measurement above.
+    // ========================================================================
+    {
+        Rig rig;
+        rig.do_reset();
+        uint8_t sector[512];
+        for (int i = 0; i < 512; i++) sector[i] = (uint8_t)(i * 5 + 7);
+
+        const uint16_t SUBSTITUTE_LEN = 12;
+        // MUTATE=A12S: program 13 words instead of 12, while the check below
+        // still bounds itself to the fixed SUBSTITUTE_LEN=12 (not to the
+        // mutated stimulus) -- the same fixed-bound pattern A9/A10 use.
+        uint16_t programmed = mutating("A12S") ? 13 : SUBSTITUTE_LEN;
+        uint16_t dsklen_val = 0x8000 | programmed;
+        rig.dsklen_write(dsklen_val);
+        rig.dsklen_write(dsklen_val);
+        rig.feed_sector_read(sector);
+
+        int delivered = rig.drain_until_blckint(programmed + 4);
+        checks.note("A12-SUBSTITUTE-STIMULUS: DSKLEN length programmed=" + std::to_string(programmed) +
+                    "; delivered=" + std::to_string(delivered) + "; checked against a fixed bound of " +
+                    std::to_string(SUBSTITUTE_LEN));
+
+        checks.expect(delivered == (int)SUBSTITUTE_LEN,
             "A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE (mutation-demonstration only, no manual citation): the "
-            "SAME delivered-word-count variable and the SAME equality-comparator form as A12's own check, applied "
-            "to the mechanism already proven live and green at A9/A10 (exact count, not count-minus-one), grades "
-            "green -- the comparator apparatus is not simply broken or vacuously red; A12's own red above is a "
-            "real, measured divergence, not a stuck check");
+            "SAME equality-comparator form as A12's own check (delivered word count == expected count), applied "
+            "here to its own independent trial reusing the exact-count mechanism already proven live and green at "
+            "A9/A10, grades green -- the comparator apparatus is not simply broken or vacuously red; A12's own red "
+            "above is a real, measured divergence, not a stuck check");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
