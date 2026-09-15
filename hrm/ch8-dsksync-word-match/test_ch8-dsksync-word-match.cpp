@@ -102,17 +102,47 @@
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup, exactly as this suite's chapter-8 packages already do. Ids are
-//   the claim's own `classify.uid` for the 22 named assertions and a plain
-//   uppercase id for A0, which carries no manual citation.
-//   `opus:8-dsksync.c4` and `sol:8-dsksync.c5` (P-RESYNC, candidate C10) are
-//   RED AT BASELINE, so per the suite's rule against mutating an
-//   already-failing check, their MUTATE run does not attempt a stimulus
-//   flip -- it substitutes the FIRST match's exclusion (proven live
-//   elsewhere in this run by P-ALIGNSTART's own trial) through the
-//   IDENTICAL "the checked word equals the word AFTER the match, not the
-//   match itself" comparator and the same label, and that run is GREEN.
+//   the claim's own `classify.uid` for the 20 remaining named assertions and
+//   a plain uppercase id for A0, which carries no manual citation.
+//   `opus:8-dsksync.c4` and `sol:8-dsksync.c5` (P-RESYNC, candidate C10)
+//   carry NO `expect()` and NO mutation record: REPAIRED 2026-09-15, see the
+//   P-RESYNC block below and the DECLINE note that follows this paragraph.
 //   RUN LOG: see the report accompanying this commit for the full
 //   baseline/mutated pass-fail table; summarised in the records below.
+//
+// REPAIR NOTE / P-RESYNC (2026-09-15). Independent validation found the
+//   previous graded-RED P-RESYNC assertion tested MORE than p.250 states.
+//   "During disk read DMA, the controller will resync every time the word
+//   match is found" does not say a later, already-word-aligned matching word
+//   is OMITTED from delivery -- a controller can re-align its word boundary
+//   at a later match while still delivering that already-aligned word. A
+//   sound version needs a deliberately BIT-MISALIGNED recurring match and an
+//   observable showing the subsequent word boundary re-aligns.
+//
+//   Checked directly against this fixture's own generator (paula_floppy.v:
+//   479-500) before deciding: `floppy_sector_data`/`floppy_data` is a purely
+//   WORD-INDEXED combinational multiplexer keyed on `fifo_word_counter`/
+//   `fifo_sector_counter`. Every position it can ever present is one of a
+//   small, fixed set of whole 16-bit values (0xaaaa preamble/gap, 0x4489
+//   sync, `mfm_encoder_odd/even`, the two checksum words, `data_odd`/
+//   `data_even` for the payload) selected by a discrete word-counter value
+//   -- there is no shift register, no sub-word or bit-rotated view of the
+//   stream anywhere in this module. `sync_match` (:914-915) compares this
+//   WHOLE-WORD value against `dsksync` once per `fifo_word_counter` tick.
+//   Because `floppy_data` never presents anything but a word-aligned value,
+//   there is no stimulus this fixture's input space (SD-sector bytes fed via
+//   `sdc_byte_in_strobe`) can produce that would make a match occur at a
+//   bit-shifted (non-word-aligned) position for `sync_match` to compare
+//   against -- the concept the repaired assertion would need to test does
+//   not exist at this boundary. This is "unfalsifiable at this boundary" in
+//   the build brief's own sense, not merely difficult: no RTL knob a
+//   Verilated testbench can turn presents a bit-misaligned word to compare.
+//   DECLINED via `record()` for both uids, stating exactly this. The
+//   original engineered "recurring match" (MARKER_PAIR feeding 0x00 at
+//   payload pair-index 10, producing floppy_data 0xAAAA, the SAME value as
+//   the DSKSYNC_LEADING preamble match) was itself already word-aligned by
+//   construction -- consistent with, and explained by, this finding: nothing
+//   built from this generator could have been anything else.
 
 #include <cstdint>
 #include <cstdlib>
@@ -537,69 +567,62 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // P-RESYNC -- p.250, "During disk read DMA, the controller will resync
-    // every time the word match is found." Candidate C10, this package's
-    // headline. Graded as: a SECOND, engineered occurrence of the DSKSYNC
-    // value, placed deep in the payload after delivery has already opened,
-    // is checked with the SAME comparator P-ALIGNSTART already proved live
-    // (the checked word equals the word AFTER the match, not the match
-    // itself). EXPECTED RED: trackrdok latches on the first match and
-    // cannot reopen (paula_floppy.v:920-926), so the second occurrence is
-    // delivered like ordinary data, not excluded.
+    // every time the word match is found." Candidate C10. DECLINED
+    // 2026-09-15 for BOTH uids, not graded. Repair: independent validation
+    // found the previous graded-RED pair tested MORE than the cited
+    // sentence states -- it treated "the later, already-word-aligned match
+    // word is OMITTED from delivery" as the definition of "resync", but the
+    // sentence does not say that; a controller can re-align its word
+    // boundary at a later match while still delivering that already-aligned
+    // word. A sound version needs a deliberately BIT-MISALIGNED recurring
+    // match with an observable showing the subsequent word boundary
+    // re-aligns -- and this fixture cannot present one: `floppy_sector_data`
+    // (paula_floppy.v:479-500) is a purely WORD-INDEXED combinational
+    // multiplexer on `fifo_word_counter`, presenting one of a small fixed
+    // set of whole 16-bit values per counter position, with no shift
+    // register or sub-word/bit-rotated view of the stream anywhere in the
+    // module -- see the header's REPAIR NOTE for the full reasoning. Kept as
+    // a `note()`: the RTL's actual (word-aligned) recurring-match behaviour,
+    // real and measured but not a conformance failure against this
+    // sentence, since it is not the case the sentence rules out.
     // ========================================================================
     {
-        // Non-mutated: check the RECURRING match (MARKER_PAIR) is excluded,
-        // i.e. shows FILLER_WORD (its successor), not MARKER_WORD itself.
-        // MUTATE (substitute, per the rule against mutating an already-red
-        // check): switch to the FIRST match's exclusion instead -- the
-        // identical comparator, proven live by P-ALIGNSTART -- and compare
-        // gated[0] against ungated[1] (its successor) rather than
-        // ungated[0] (the match itself).
-        bool sub = mutating("opus:8-dsksync.c4");
-        // Position of the marker in `gated`: floppy_data(counter=32+MARKER_PAIR),
-        // and gated[N] = floppy_data(N+2) (confirmed empirically), so
-        // gated[30+MARKER_PAIR] is the marker's own delivered slot. A
-        // genuinely-resyncing controller would exclude it (deliver
-        // FILLER_WORD, its successor, there instead); this fixture's
-        // trackrdok cannot reopen, so it is expected to show MARKER_WORD.
+        // Measured for interest only, not graded: the fixture's own
+        // behaviour at a recurring, already-word-aligned match (the only
+        // kind this generator can ever produce -- see above). MARKER_PAIR
+        // feeds 0x00 at payload pair-index 10, which the context-free
+        // encoder turns into floppy_data 0xAAAA, the SAME value as the
+        // DSKSYNC_LEADING preamble match, so it recurs by construction.
+        // gated[30+MARKER_PAIR] is the marker's own delivered slot.
         int markerIdx = 30 + MARKER_PAIR;
-        bool result;
-        if (!sub) {
-            auto gated = trial(true, DSKSYNC_LEADING, MARKER_PAIR);
-            result = (gated[markerIdx] == FILLER_WORD);
-            checks.note("P-RESYNC/opus:8-dsksync.c4: [recurring-match] gated[" + std::to_string(markerIdx) +
-                        "]=" + hex4(gated[markerIdx]) + " (MARKER_WORD=" + hex4(MARKER_WORD) +
-                        ", FILLER_WORD=" + hex4(FILLER_WORD) + ")");
-        } else {
-            auto ungated = trial(false, DSKSYNC_NONE, -1);
-            auto gatedPlain = trial(true, DSKSYNC_LEADING, -1);
-            result = (gatedPlain[0] == ungated[1]);
-            checks.note("P-RESYNC/opus:8-dsksync.c4: [substitute: first-match exclusion] gatedPlain[0]=" +
-                        hex4(gatedPlain[0]) + " ungated[1]=" + hex4(ungated[1]));
-        }
-        checks.expect(result,
-            "opus:8-dsksync.c4 (p.250, 'During disk read DMA, the controller will resync every time the "
-            "word match is found.'): a second, later occurrence of the DSKSYNC value, deep in an "
-            "already-open transfer, is checked with the SAME comparator that proves the first occurrence "
-            "is excluded (equals its own successor, not the match word) -- EXPECTED RED at baseline: "
-            "trackrdok (paula_floppy.v:920-926) latches on the first match and cannot reopen, so the "
-            "second occurrence is delivered as ordinary data instead of being excluded");
+        auto gated = trial(true, DSKSYNC_LEADING, MARKER_PAIR);
+        checks.note("P-RESYNC: [recurring, word-aligned match] gated[" + std::to_string(markerIdx) +
+                    "]=" + hex4(gated[markerIdx]) + " (MARKER_WORD=" + hex4(MARKER_WORD) +
+                    ", FILLER_WORD=" + hex4(FILLER_WORD) + ") -- delivered as MARKER_WORD (ordinary data, "
+                    "not excluded); trackrdok (paula_floppy.v:920-926) latches on the first match and cannot "
+                    "reopen. This is NOT evidence against the cited sentence: the sentence never requires this "
+                    "already-aligned recurring word to be omitted, and this fixture has no way to present the "
+                    "bit-misaligned case that would actually test 'resync'.");
+        checks.record(
+            "opus:8-dsksync.c4 (p.250, 'During disk read DMA, the controller will resync every time the word "
+            "match is found.'): declined, not graded. The sentence does not say a later, already-word-aligned "
+            "matching word is omitted from delivery -- a controller can re-align its word boundary at a later "
+            "match while still delivering that already-aligned word. A sound test needs a deliberately "
+            "BIT-MISALIGNED recurring match with an observable showing the subsequent word boundary re-aligns. "
+            "Checked directly against this fixture's own generator (paula_floppy.v:479-500) before declining: "
+            "`floppy_sector_data` is a purely word-indexed combinational multiplexer on `fifo_word_counter`, "
+            "presenting one of a small fixed set of whole 16-bit values per counter position -- no shift "
+            "register, no sub-word or bit-rotated view of the MFM stream exists anywhere in this module, so no "
+            "stimulus in this fixture's input space (SD-sector bytes fed via sdc_byte_in_strobe) can ever "
+            "present a match at a bit-shifted, non-word-aligned position for sync_match to compare against. The "
+            "case this claim, read as the validation demands, would need to test does not exist at this "
+            "boundary -- unfalsifiable here, not merely undemonstrated.");
     }
     {
-        bool sub = mutating("sol:8-dsksync.c5");
-        int markerIdx = 30 + MARKER_PAIR;
-        bool result;
-        if (!sub) {
-            auto gated = trial(true, DSKSYNC_LEADING, MARKER_PAIR);
-            result = (gated[markerIdx] == FILLER_WORD);
-        } else {
-            auto ungated = trial(false, DSKSYNC_NONE, -1);
-            auto gatedPlain = trial(true, DSKSYNC_LEADING, -1);
-            result = (gatedPlain[0] == ungated[1]);
-        }
-        checks.expect(result,
-            "sol:8-dsksync.c5 (p.250, twin of opus:8-dsksync.c4, candidate C10): same recurring-match "
-            "measurement, graded independently under its own uid -- EXPECTED RED at baseline, same "
-            "substitute-mechanism mutation as its twin");
+        checks.record(
+            "sol:8-dsksync.c5 (p.250, twin of opus:8-dsksync.c4, candidate C10): declined, not graded, for the "
+            "identical reason under its own uid -- same sentence, same word-indexed generator, same absence of "
+            "any bit-misaligned recurring-match stimulus at this fixture's boundary.");
     }
 
     // ========================================================================
@@ -711,8 +734,8 @@ int main(int argc, char** argv) {
 // MUTATION sol:8-dsksync.c3 stimulus red: same redirection as opus:8-dsksync.c2, independent uid (MUTATE=sol:8-dsksync.c3).
 // MUTATION opus:8-dsksync.c3 stimulus red: the reference switched from the match word's successor to the match word itself, so the "starts with the following word" check compares against the wrong word (MUTATE=opus:8-dsksync.c3).
 // MUTATION sol:8-dsksync.c4 stimulus red: same redirection as opus:8-dsksync.c3, independent uid (MUTATE=sol:8-dsksync.c4).
-// MUTATION opus:8-dsksync.c4 stimulus green: this assertion is RED at baseline (candidate C10), so per the rule against mutating an already-failing check, the stimulus substitutes the FIRST match's exclusion -- proven live elsewhere in this run by opus:8-dsksync.c3/sol:8-dsksync.c4 -- through the IDENTICAL "equals the word after the match, not the match itself" comparator and the same label (MUTATE=opus:8-dsksync.c4).
-// MUTATION sol:8-dsksync.c5 stimulus green: same substitute mechanism as opus:8-dsksync.c4, independent uid (MUTATE=sol:8-dsksync.c5).
+// opus:8-dsksync.c4 -- DECLINED via record(), not expect(); no mutation record (not graded through expect()). Repair 2026-09-15: the previous stimulus-green substitute record is removed along with the graded check it defended -- see the header's REPAIR NOTE / P-RESYNC.
+// sol:8-dsksync.c5 -- DECLINED via record(), not expect(); no mutation record, same reason as opus:8-dsksync.c4.
 // MUTATION opus:8-dsksync.c6 stimulus red: DSKSYNC redirected to a value absent from the stream, so syncint never pulses (MUTATE=opus:8-dsksync.c6).
 // MUTATION sol:8-dsksync.c7 stimulus red: same redirection as opus:8-dsksync.c6, independent uid (MUTATE=sol:8-dsksync.c7).
 // MUTATION opus:8-dsksync.c7 stimulus red: the wordsync=1 trial's DSKSYNC redirected to a value absent from the stream, so its pulse count drops to zero while the wordsync=0 reference stays nonzero (MUTATE=opus:8-dsksync.c7).

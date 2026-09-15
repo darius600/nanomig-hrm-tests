@@ -124,26 +124,30 @@ silently dead before anything else is trusted.
 - **T-WRITETARGET**: same stream as T-MATCH, DSKSYNC written to a *different*
   value that the stream also produces at a different position — showing the
   match point moves with whatever was written, not with a fixed constant.
-- **T-RESYNC**: `wordsync=1`, a stream engineered (once the encoder's exact
-  per-byte mapping is confirmed by reading `paula_floppy.v:440-500`, which
-  candidate C9 already discloses as *context-free* — one input byte always
-  produces one fixed 16-bit output word, independent of neighbours) to
-  produce the DSKSYNC value **twice**: once as the genuine leading match that
-  opens `trackrdok`, and once more, later, during ongoing read DMA, via a
-  deliberately chosen payload byte. The comparator is the same one
-  P-ALIGNSTART already establishes and this package will have already proven
-  green for the *first* occurrence: **the matched word itself is excluded
-  from the delivered sequence, which instead continues with the word right
-  after it.** P-RESYNC applies that identical comparator to the *second*
-  occurrence. Per the task's own disclosure of `trackrdok`'s latch
-  (`paula_floppy.v:920-926`, `trackrdok <= ~wordsync | sync_match |
-  trackrdok` — a level latch that, once set, an later `sync_match` pulse
-  cannot un-set or re-arm), the second occurrence is expected to be delivered
-  as ordinary data, unexcluded — the RTL disagreeing with the printed
-  "resync every time" sentence. **This assertion is expected RED, and it is
-  the deliverable.** Exact byte positions are pinned down after the encoder
-  is read; the proposition, the comparator, and the expected-red verdict are
-  fixed now.
+- **T-RESYNC**: **REPAIRED 2026-09-15, DECLINED — see below.** The original
+  plan (quoted for the record, not followed): engineer a stream producing the
+  DSKSYNC value twice and apply P-ALIGNSTART's "excluded, delivery continues
+  with the successor" comparator to the second occurrence, expecting RED as
+  the deliverable. Independent validation found this tests MORE than p.250
+  states: "the controller will resync every time the word match is found"
+  does not say the later, already-word-aligned matching word is OMITTED from
+  delivery — a controller can re-align its word boundary at a later match
+  while still delivering that already-aligned word. A sound version needs a
+  deliberately BIT-MISALIGNED recurring match with an observable showing the
+  subsequent word boundary re-aligns, not merely a repeated whole-word value.
+  Checked directly against `paula_floppy.v:479-500` (`floppy_sector_data`):
+  it is a purely word-indexed combinational multiplexer on
+  `fifo_word_counter`, presenting one of a small fixed set of whole 16-bit
+  values per counter position — no shift register, no sub-word or
+  bit-rotated view of the MFM stream exists anywhere in the module, so no
+  stimulus this fixture's input space (SD-sector bytes) can present a match
+  at a bit-shifted, non-word-aligned position. The case a repaired assertion
+  would need to test does not exist at this boundary. **`opus:8-dsksync.c4`
+  and `sol:8-dsksync.c5` are DECLINED via `record()`, quoting this exact
+  reasoning; neither is graded through `expect()`, and neither carries a
+  mutation record.** The fixture's own (necessarily word-aligned) recurring-
+  match behaviour is kept as a `note()` — real and measured, not a finding
+  against a sentence that never rules it out.
 - **T-SYNCINT**: `wordsync=1` vs `wordsync=0`, same matching stream both
   times — count `syncint` pulses across the full run in both cases.
 
@@ -173,19 +177,14 @@ the rig is asked to do (redirect which value is written to DSKSYNC, flip
 `wordsync`, corrupt a payload byte, or otherwise ask a different question) so
 the assertion goes red, confirm only that label moves, then revert.
 
-**`opus:8-dsksync.c4` and `sol:8-dsksync.c5` (P-RESYNC) are RED at baseline.**
-Per the brief's rule against mutating an already-failing check, their
-`MUTATE=` run does not attempt a stimulus flip — it substitutes a *different*
-mechanism, proven live elsewhere in this same run (the first-match exclusion
-that P-ALIGNSTART's own trial already demonstrates), through the *identical*
-"matched word excluded from the delivered sequence" comparator and the same
-label, and that run is expected **GREEN** — exactly the shape
-`hrm/ch8-drive-select-motor-led` used for its own already-red pair
-(`opus:8-cia.c26`/`sol:8-cia.c24`, candidate C16, substituting disk DMA for
-the motor through the identical `fdd_led==1` comparator). The record will
-read `stimulus green`, with the RED baseline stated beside it in the comment,
-matching the sibling packages the task names as having already done this
-correctly.
+**`opus:8-dsksync.c4` and `sol:8-dsksync.c5` (P-RESYNC) — repaired 2026-09-15:
+DECLINED, not graded, so neither carries a mutation record.** The plan above
+(a substitute mutation through the first-match-exclusion comparator, keyed on
+an expected-RED baseline) is withdrawn along with the graded `expect()` it
+would have defended. See the T-RESYNC entry above for the reasoning: this
+fixture's generator cannot present the bit-misaligned recurring match a sound
+version of this assertion needs, so there is no comparator here left to
+defend against a vacuous-red objection — the citation is declined instead.
 
 ## What happens next
 
