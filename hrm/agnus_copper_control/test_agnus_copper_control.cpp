@@ -282,7 +282,7 @@ int main(int argc, char** argv) {
                       "COP2-location-registers.c14, COP2-location-registers.c17, COP2-location-registers.c18, "
                       "COP2-jump-strobe-address.c1, COP2-jump-strobe-address.c5, COP2-jump-strobe-address.c6, "
                       "COP2-cop-location-pointers.c1, COP2-cop-location-pointers.c2, COP2-cop-location-pointers.c6, "
-                      "COP2-cop-location-pointers.c10, COP2-copjmp-strobes.c3]");
+                      "COP2-cop-location-pointers.c10, COP2-copjmp-strobes.c3, sol:8-appb-legend.c19]");
         const bool sequential = h.fetches.size() >= 2
                              && h.fetches[0] == A
                              && h.fetches[1] == A + 1;
@@ -311,7 +311,7 @@ int main(int argc, char** argv) {
                       "[claims: COP2-location-registers.c1, COP2-location-registers.c14, COP2-jump-strobe-address.c5, "
                       "COP2-jump-strobe-address.c7, COP2-location-registers.c17, COP2-location-registers.c18, COP2-jump-strobe-address.c1, "
                       "COP2-cop-location-pointers.c3, COP2-cop-location-pointers.c9, "
-                      "COP2-cop-location-pointers.c11, COP2-copjmp-strobes.c4]");
+                      "COP2-cop-location-pointers.c11, COP2-copjmp-strobes.c4, sol:8-appb-legend.c19]");
         checks.expect(h.move_count(COLOR00) == 0,
                       "T2 COPJMP2 does not select COP1LC [claims: ch2-appa-copjmp.c8, ch2-appb-table.c41, ch2-jump-address-strobes.c5, ch2-jump-address-strobes.c7, ch2-location-registers.c1]");
         h.strobe(1);
