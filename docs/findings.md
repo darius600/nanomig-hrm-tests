@@ -62,7 +62,8 @@ cites an `FPGA` number, this resolves it:
 | NM-HRM-005 | FPGA-069 | | NM-HRM-013 | FPGA-091-NM-HRM-013 | | NM-HRM-020 | *newly issued* |
 | NM-HRM-006 | FPGA-091-NM-HRM-006 | | NM-HRM-014 | FPGA-091-NM-HRM-014 | | NM-HRM-021 | *newly issued* |
 | NM-HRM-007 | FPGA-091-NM-HRM-007 | | NM-HRM-015 | FPGA-091-NM-HRM-015 | | NM-HRM-022 | *newly issued* |
-| NM-HRM-008 | FPGA-091-NM-HRM-008 | | | | | | |
+| NM-HRM-008 | FPGA-091-NM-HRM-008 | | NM-HRM-037 | *newly issued* | | NM-HRM-039 | *newly issued* |
+| | | | NM-HRM-038 | *newly issued* | | NM-HRM-040 | *newly issued* |
 
 `FPGA-nnn` still appears in test sources in a second, unrelated role, and those
 references are kept: `// Primary oracle: Frozen FPGA-019 specification` marks a
@@ -117,8 +118,20 @@ specialist rules on it.
 | [NM-HRM-034](findings/NM-HRM-034.md) | VPOSR reports the video standard in bit 12 of an OCS configuration | **red · contested** | `hrm/ch7-beam-position-word-layout` | **2-2**: WinUAE and Denise do the same; and no implementation leaves bits 14-1 unused |
 | [NM-HRM-035](findings/NM-HRM-035.md) | any write to CIA-A clears the kickstart overlay, not only a write to the OVL bit | **red** | `hrm/ch7-overlay-source` | **all four** follow the OVL bit's value; three name the only registers that may move it |
 | [NM-HRM-036](findings/NM-HRM-036.md) | chip memory banks 1-3 stay reachable while the overlay is active | **red · manual likely wrong** | `hrm/ch7-reset-overlay` | **3-1**: vAmiga, Denise and Copperline replace only the ROM's 512K, as NanoMig does |
+| [NM-HRM-037](findings/NM-HRM-037.md) | the right controller port's X pot input does not exist | **red** | `hrm/ch8-pot-counter-start-and-charge` and three siblings | **none of the four** reproduces it — all give the right X counter what the other three get |
+| [NM-HRM-038](findings/NM-HRM-038.md) | the pot counters are not held in reset after POTGO | **red** | `hrm/ch8-pot-counter-start-and-charge` | **all four hold, all four put PAL at 8**; they split 2-2 on NTSC, which reads the page's own "seven or eight" as a video-standard split |
+| [NM-HRM-039](findings/NM-HRM-039.md) | Table 8-2's wrapped rows compute against 255 on a 256-state counter | source observation | `hrm/ch8-mouse-counter-wraparound` | **unanimous**: 256 states per axis, and not one uses 255 as a modulus |
+| [NM-HRM-040](findings/NM-HRM-040.md) | CIAADDRA's one-to-one direction mask holds for 2 bit positions of 8 | **red · contested** | `hrm/ch8-ciaa-port-direction` | **three-way split**; Copperline reproduces it bit for bit, and two of four gate the printed behaviour on a CIA part number |
 
-Chapters 1 and 8 have not been extracted, so no finding below comes from them.
+Chapter 1 has not been extracted, so no finding below comes from it.
+Chapter 8's first slice — the Controller Port Interface — contributes
+NM-HRM-037 to NM-HRM-040; its floppy, keyboard and serial slices are not
+extracted yet.
+
+**Two of chapter 8's four are inherited from Minimig-AGA byte for byte**,
+which is unusual in this register: NM-HRM-037's two lines and NM-HRM-040's
+pair are identical upstream but for a trailing comment. Whoever they are
+reported to, it is not only NanoMig.
 The register is a record of what has been looked at, not of what is there.
 
 **Chapter 7 also strengthened two existing findings without adding a number.**
