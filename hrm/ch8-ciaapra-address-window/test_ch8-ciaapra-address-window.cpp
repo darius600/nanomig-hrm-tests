@@ -340,7 +340,7 @@ int main(int argc, char** argv) {
             "for pin 6 (port 1 & 2 fire buttons)'): CPU address $BFE001, presented to the ciaa+gary rig, drives "
             "gary's sel_cia_a into ciaa's aen and address bits [11:8]=0 into ciaa's rs -- the register that "
             "answers is PRA (rs=4'h0, ciaa.v:136), confirmed by the known porta_in word 0b100110 arriving "
-            "unmodified at data_out bits 7:2");
+            "unmodified at data_out bits 7:2 [claims: opus:8-dsk.c20, opus:8-cia.c3]");
     }
 
     do_reset();
@@ -354,7 +354,7 @@ int main(int argc, char** argv) {
         checks.expect((v & 0xFC) == 0b10011000,
             "A2-BFE001-SELECTS-PRA-SOL-REG (p.229, sol:8-reg.c5, quote 'CIAAPRA ($BFE001) Input and output for "
             "pin 6 (port 1 & 2 fire buttons)'): twin of A1 (same printed quote, independent reader) -- same "
-            "measurement, graded independently under its own uid");
+            "measurement, graded independently under its own uid [claims: opus:8-dsk.c20, opus:8-cia.c3]");
     }
 
     do_reset();
@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
             "A3-BFE001-SELECTS-PRA-OPUS-MBTN (p.232, opus:8-mbtn.c4, quote 'The left button on the Amiga mouse is "
             "connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7. A logic'): CPU address "
             "$BFE001 selects PRA at this rig, same measurement as A1, graded independently under its own uid and "
-            "page");
+            "page [claims: opus:8-dsk.c20, opus:8-cia.c3]");
     }
 
     do_reset();
@@ -383,7 +383,8 @@ int main(int argc, char** argv) {
         checks.expect((v & 0xFC) == 0b10011000,
             "A4-BFE001-SELECTS-PRA-SOL-BUTTON (p.232, sol:8-button.c3, quote 'The left button on the Amiga mouse "
             "is connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7.'): CPU address $BFE001 "
-            "selects PRA at this rig, same measurement as A1, graded independently under its own uid and page");
+            "selects PRA at this rig, same measurement as A1, graded independently under its own uid and page "
+            "[claims: opus:8-dsk.c20, opus:8-cia.c3]");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
