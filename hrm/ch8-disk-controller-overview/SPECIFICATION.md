@@ -127,8 +127,19 @@ constraint therefore does not apply to any assertion in this package.
   dedicated sync register gates delivery on a specific programmed data
   pattern actually being matched, not merely on wordsync being enabled.
 - **P-DSKBYTR-BYTE-READ** — `opus:8-dsk.c9`, `sol:8-dsk.c9` (twins). The
-  dedicated byte-read register should present varying byte content as the
-  disk stream varies.
+  dedicated byte-read register should present, at the instant a KNOWN
+  incoming byte is current, that same byte.
+  **Repaired (independent validation, 2026-09-15):** the original form
+  compared two arbitrary DSKBYTR snapshots ("near word 5" vs "near word
+  60" of two differently-patterned runs) with no independent ground truth
+  for either — withdrawn soundly. THIS IS THE SAME UNDERLYING FACT as
+  `ch8-dskbytr-status-register`/A9 and
+  `ch8-disk-register-map-paula-floppy`/B4 — one fact, repaired identically
+  in all three packages that carry it. Repaired to bind a known byte
+  (0xFF) to the DSKBYTR sampling instant via the DSKDATR/FIFO marker
+  technique the accepted `ch8-mfm-cell-encoding` package established.
+  Still RED — measured `known_word=0xFFFF` (bound, at pop #33), DSKBYTR's
+  DATA field reads 0x00.
 - **P-CIAAPRA-FOUR-BITS** — `opus:8-dsk.c21`, `sol:8-reglist.c4` (twins).
   Exactly four independently-controllable sense signals reach the CIAAPRA
   side of the boundary from the floppy side (not fewer, not aliased).

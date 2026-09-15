@@ -89,6 +89,20 @@
 //     matter what flows through DSKDATR/the fifo. This is C6 (finding
 //     candidates doc), and matches my claims file's own MEASURED evidence
 //     (two consecutive $DFF01A reads both returning 0x9000) exactly.
+//
+// REPAIR NOTE (independent validation, 2026-09-15): opus:8-dsk.c9 and
+//   sol:8-dsk.c9 were withdrawn -- soundly. The original form compared two
+//   arbitrary DSKBYTR snapshots ("near word 5" vs "near word 60" of two
+//   differently-patterned runs) with no independent ground truth for
+//   either. Repaired to bind a KNOWN incoming byte (0xFF) to the DSKBYTR
+//   sampling instant via the DSKDATR/FIFO marker technique the accepted
+//   ch8-mfm-cell-encoding package established (find_ff_marker_pop_index()
+//   below, reused verbatim): a uniform 0xFF sector's payload word can only
+//   ever arrive as exactly 0xFFFF. THIS IS THE SAME UNDERLYING FACT as
+//   ch8-dskbytr-status-register/A9 and
+//   ch8-disk-register-map-paula-floppy/B4 -- one fact, repaired identically
+//   in all three packages that carry it. Still RED, for the reason already
+//   given above (the literal constant 8'h00).
 //   - dmal (:950): for a read (dsklen[14]=0), dmal = dmaon & ~fifo_empty --
 //     a real port telling the host exactly when a word is ready to pop.
 //     dmaon (:1011, ACTIVE state) = ~lenzero | ~dsklen[14], which for a
@@ -343,6 +357,27 @@ struct Rig {
     }
 };
 
+// Finds the DSKDATR pop index (1-indexed) at which a uniform 0xFF sector's
+// payload word is exactly 0xFFFF -- reusing the already-accepted
+// ch8-mfm-cell-encoding package's own find_ff_marker_pop_index()
+// methodology on this identical fixture (a word of exactly 0xFFFF can
+// only arise from this fixture's own payload encoder fed an all-1s byte,
+// so it is a marker no fixed framing default can be confused with).
+// Returns -1 if not found within 60 pops.
+int find_ff_marker_pop_index() {
+    Rig r; r.do_reset();
+    r.select(0); r.d->wordsync = 0;
+    r.arm_dma_read(544);
+    r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
+    uint8_t sector[512];
+    std::memset(sector, 0xFF, sizeof sector);
+    r.feed_sector(sector);
+    for (int i = 1; i <= 60; i++) {
+        if (r.dskdatr_pop() == 0xFFFF) return i;
+    }
+    return -1;
+}
+
 struct TransferResult { int delivered = 0; bool blckint_seen = false; };
 
 // Interleaves feeding SD sectors (whenever sdc_rd asserts) with draining
@@ -571,29 +606,68 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // opus:8-dsk.c9 / sol:8-dsk.c9 (p.241, twins) -- P-DSKBYTR-BYTE-READ.
-    // EXPECTED RED (C6): DSKBYTR's DATA field (bits 7:0) is a literal
-    // constant in the RTL (paula_floppy.v:699, "...8'h00"), so it cannot
-    // vary regardless of what streams through the disk data path.
+    //
+    // REPAIRED (independent validation, 2026-09-15): the original form
+    // compared two arbitrary DSKBYTR snapshots ("near word 5" vs "near
+    // word 60" of two differently-patterned runs) for inequality, with no
+    // independent ground truth for either sample -- both reading 0x00 is
+    // compatible with a conforming implementation that simply had not
+    // caught up yet. THIS IS THE SAME UNDERLYING FACT as
+    // ch8-dskbytr-status-register/A9 and
+    // ch8-disk-register-map-paula-floppy/B4 -- one fact, repaired
+    // identically in all three packages that carry it (each package's own
+    // header/SPECIFICATION.md says so).
+    //
+    // Repaired to bind a KNOWN incoming byte (0xFF) to the DSKBYTR
+    // sampling instant via the DSKDATR/FIFO marker technique already
+    // established by the sibling ch8-mfm-cell-encoding package: a uniform
+    // 0xFF sector's payload word can only ever arrive as exactly 0xFFFF.
+    // find_ff_marker_pop_index() (above) calibrates the pop index at which
+    // that marker appears (a fresh, throwaway rig); the real trial then
+    // discards pops up to just before that index, PEEKS (does not pop)
+    // DSKDATR to confirm the known word is present RIGHT NOW, then peeks
+    // DSKBYTR -- zero clock edges elapse between the two peeks, so both
+    // are read at the SAME instant. Both bytes of 0xFFFF are 0xFF,
+    // sidestepping any high/low-byte ordering ambiguity in what "the
+    // current byte" means.
+    //
+    // Still RED -- paula_floppy.v:699 hardwires bits 7:0 (DATA) to the
+    // literal constant 8'h00; a known, bound, nonzero incoming byte still
+    // never appears there. Finding candidate C6.
     // ========================================================================
     {
         bool mut = mutating("opus:8-dsk.c9");
+        int idx = find_ff_marker_pop_index();
+        checks.note("opus:8-dsk.c9-CALIBRATION: 0xFF-sector marker word (0xFFFF) first found at DSKDATR pop #" +
+                    std::to_string(idx));
         if (!mut) {
-            Rig r; r.do_reset();
-            r.select(0); r.d->wordsync = 0;
-            r.arm_dma_read(60);
-            run_read_transfer(r, 5, [](int, int i){ return (uint8_t)i; }, 5000);
-            uint16_t v1 = (uint16_t)(r.read_reg(ADDR_DSKBYTR) & 0x00FF);
-            run_read_transfer(r, 60, [](int, int i){ return (uint8_t)(255 - i); }, 5000);
-            uint16_t v2 = (uint16_t)(r.read_reg(ADDR_DSKBYTR) & 0x00FF);
-            checks.note("opus:8-dsk.c9: DSKBYTR DATA field near word 5 = 0x" + hex4(v1) +
-                        ", near word 60 (very different fed payload) = 0x" + hex4(v2));
-            checks.expect(v1 != v2,
+            bool bound_ok = false;
+            uint16_t known_word = 0, dskbytr_val = 0;
+            if (idx > 0) {
+                Rig r; r.do_reset();
+                r.select(0); r.d->wordsync = 0;
+                r.arm_dma_read(544);
+                r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
+                uint8_t sector[512];
+                std::memset(sector, 0xFF, sizeof sector);
+                r.feed_sector(sector);
+                for (int i = 1; i < idx; i++) r.dskdatr_pop();  // discard up to just before the marker.
+                known_word = r.read_reg(ADDR_DSKDATR);          // peek, no pop -- the marker itself, at this instant.
+                dskbytr_val = r.read_reg(ADDR_DSKBYTR);         // SAME instant: zero clock edges elapsed since the peek above.
+                bound_ok = (known_word == 0xFFFF);
+            }
+            uint8_t data_field = (uint8_t)(dskbytr_val & 0x00FF);
+            checks.note("opus:8-dsk.c9: known_word=0x" + hex4(known_word) + " (bound=" +
+                        std::to_string(bound_ok) + "), DSKBYTR at same instant=0x" + hex4(dskbytr_val) +
+                        ", DATA field=0x" + hex4(data_field));
+            checks.expect(bound_ok && data_field == 0xFF,
                 "opus:8-dsk.c9 (p.241, quote 'Special registers allow\\nthe CPU to synchronize with specific "
-                "data, or read input a byte at a time.'): if DSKBYTR's DATA field genuinely mirrored varying "
-                "disk-stream content, two reads taken at very different points of a run streaming very "
-                "different payload bytes would differ -- paula_floppy.v:699 hardwires bits 7:0 to the literal "
-                "constant 8'h00, so this is expected to fail against the RTL (finding candidate C6; matches "
-                "this package's own claims-file evidence: two consecutive $DFF01A reads both return 0x9000)");
+                "data, or read input a byte at a time.'): with a KNOWN incoming byte (0xFF) bound to the "
+                "DSKBYTR sampling instant via the proven-live DSKDATR/FIFO marker path (same technique and same "
+                "underlying fact as ch8-dskbytr-status-register/A9 and "
+                "ch8-disk-register-map-paula-floppy/B4 -- one fact, repaired identically in all three packages "
+                "that carry it), DSKBYTR's DATA field should read that byte; paula_floppy.v:699 hardwires bits "
+                "7:0 to the literal constant 8'h00, so it does not (finding candidate C6)");
         } else {
             // Substitute (already red at baseline): DSKBYTR-CONTROL's own
             // mechanism (the WRITE-bit mirror, proven live elsewhere in
@@ -611,19 +685,35 @@ int main(int argc, char** argv) {
     }
     {
         bool mut = mutating("sol:8-dsk.c9");
+        int idx = find_ff_marker_pop_index();
+        checks.note("sol:8-dsk.c9-CALIBRATION: twin of opus:8-dsk.c9, same calibration -> marker at pop #" +
+                    std::to_string(idx));
         if (!mut) {
-            Rig r; r.do_reset();
-            r.select(0); r.d->wordsync = 0;
-            r.arm_dma_read(60);
-            run_read_transfer(r, 5, [](int, int i){ return (uint8_t)i; }, 5000);
-            uint16_t v1 = (uint16_t)(r.read_reg(ADDR_DSKBYTR) & 0x00FF);
-            run_read_transfer(r, 60, [](int, int i){ return (uint8_t)(255 - i); }, 5000);
-            uint16_t v2 = (uint16_t)(r.read_reg(ADDR_DSKBYTR) & 0x00FF);
-            checks.note("sol:8-dsk.c9: twin of opus:8-dsk.c9, same measurement -> v1=0x" + hex4(v1) + " v2=0x" + hex4(v2));
-            checks.expect(v1 != v2,
+            bool bound_ok = false;
+            uint16_t known_word = 0, dskbytr_val = 0;
+            if (idx > 0) {
+                Rig r; r.do_reset();
+                r.select(0); r.d->wordsync = 0;
+                r.arm_dma_read(544);
+                r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
+                uint8_t sector[512];
+                std::memset(sector, 0xFF, sizeof sector);
+                r.feed_sector(sector);
+                for (int i = 1; i < idx; i++) r.dskdatr_pop();
+                known_word = r.read_reg(ADDR_DSKDATR);
+                dskbytr_val = r.read_reg(ADDR_DSKBYTR);
+                bound_ok = (known_word == 0xFFFF);
+            }
+            uint8_t data_field = (uint8_t)(dskbytr_val & 0x00FF);
+            checks.note("sol:8-dsk.c9: twin of opus:8-dsk.c9, same measurement -> known_word=0x" +
+                        hex4(known_word) + " (bound=" + std::to_string(bound_ok) + ") DSKBYTR=0x" +
+                        hex4(dskbytr_val) + " DATA field=0x" + hex4(data_field));
+            checks.expect(bound_ok && data_field == 0xFF,
                 "sol:8-dsk.c9 (p.241, quote 'Special registers allow\\nthe CPU to synchronize with specific "
                 "data, or read input a byte at a time.'): twin of opus:8-dsk.c9 (same printed quote, independent "
-                "reader) -- same measurement, graded independently under its own uid, same expected RED (C6)");
+                "reader) -- same measurement, graded independently under its own uid, same underlying fact as "
+                "ch8-dskbytr-status-register/A9 and ch8-disk-register-map-paula-floppy/B4, same RED result "
+                "(finding candidate C6)");
         } else {
             Rig r; r.do_reset();
             uint16_t v1 = r.read_reg(ADDR_DSKBYTR);
