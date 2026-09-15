@@ -4,6 +4,27 @@ Written from the claims file alone
 (`hrm-testpipeline/work/ch8-s1-build/ch8-joytest-counter-write.jsonl`, 42 claims,
 readers `opus` and `sol`, printed page 282). No RTL file has been opened yet.
 
+**Repair note (2026-09-15):** the twelve "no test data" propositions below
+(`opus .c11 .c12 .c19 .c20 .c27 .c28 .c35 .c36`, `sol .c6 .c8 .c10 .c12`) were
+originally graded through `expect()`, asserting that toggling an "xx" write
+bit must leave the counter unchanged. Independent validation (finding 10,
+`2026-09-15_ch8_s1_sol_validation_B.md`) read this correctly: the claims
+themselves only say the table defines no test-data value at those positions
+-- "undefined" is not "must be ignored", and the page states no rule for what
+must happen there. Checked before repairing whether some other printed rule
+defines them: pp.227-241 (chapter body), the Appendix A preamble (pp.263-264),
+pp.281-282 (this table and its neighbour), and pp.287-289 (Appendix B) were
+read. One relevant rule exists, p.264: it tells the *programmer* to keep an
+unused write-only bit clear when writing, and warns that setting such bits
+"may cause serious future software incompatibility if those bits ... are
+implemented in the future" -- i.e. it explicitly leaves present hardware
+behaviour on them open, not fixed at no-op. No rule anywhere found requires an
+implementation to preserve the counter's value at these twelve positions.
+They are recorded as **declined, unspecified** in the built package, not
+graded. The propositions below are left as originally written, for a record
+of what was first claimed and why it does not hold up; the built
+`test_userio.cpp` is the authority on what is actually graded now.
+
 ## Scope
 
 - Register under test: **JOYTEST**, address `$036` (as printed in the quoted
@@ -238,6 +259,10 @@ claims file. Every one is accounted for by exactly one proposition group above;
 none is pre-declined at this stage. `status: "testable"` on all 42 in the
 claims file agrees.
 
+**After the 2026-09-15 repair:** 30 claims are graded (asserted) and 12 are
+declined as unspecified (see the repair note above and the "Declined claims"
+section) -- still 42 accounted for.
+
 ## Measurement basis, controls, and fixture proof
 
 - **Fixture-delivery proof**, required before any data-dependent proposition is
@@ -261,6 +286,14 @@ each maps to a concrete measurement plan above. If step 2 finds one cannot in
 fact be settled by a measurement on this fixture, that will be reported as
 declined with its reason, not silently dropped.
 
+**Repair (2026-09-15):** the twelve "no test data" propositions are now
+declined as unspecified -- see the repair note at the top of this file. The
+claim was testable as a measurement (differential clear-vs-set readback), but
+the manual states no required outcome for that measurement, so grading it
+would assert a requirement the page does not make. 30 of the 42 claims remain
+graded (`G0` x2, the data-bit propositions x24, the composed data-range
+propositions x4); the twelve are `RECORDED` in the built package instead.
+
 ## Mutation policy (concrete lines land in the built file's header)
 
 Every graded proposition gets one stimulus mutation — the write is changed, the
@@ -271,13 +304,13 @@ expected value is not:
 - range propositions: invert or rotate the chosen multi-bit pattern.
 - `G0`: withhold the write to one axis (or omit the write entirely) so the
   single-write-reaches-all-four claim is falsified by construction.
-- per-bit "no test data" propositions: since these are differential
-  (bit-set-vs-bit-clear), the mutation compares against a *third* write value
-  that is expected, from the RTL evidence already in the claims file, to
-  disagree — if none exists once measured, that assertion is a substitution
-  candidate instead (a different, live mechanism through the same comparator),
-  and will be labelled `impossible` with the applicable one of the brief's two
-  reasons, not silently skipped.
+- per-bit "no test data" propositions: **superseded by the 2026-09-15 repair.**
+  These twelve are declined as unspecified, not graded, and take no mutation
+  record — see the repair note at the top of this file. (The mutation
+  originally planned here — rerouting the probe to a neighbouring data bit —
+  was itself part of what the repair corrected: it only shows the comparator
+  can fail somewhere, not that the invented "must stay unchanged" rule is
+  real.)
 
 The exact, executed list (which of these ended up `red`/`green`/`impossible`,
 and why) is recorded as `// MUTATION <uid> ...` lines in the test file's header

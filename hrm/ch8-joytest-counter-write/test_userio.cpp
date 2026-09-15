@@ -10,6 +10,31 @@
 // mapping. JOYTEST's ADDRESS and its read/write direction are graded by
 // ch8-register-map-userio and are not re-graded here.
 //
+// REPAIR (2026-09-15, independent validation report B, finding 10): the
+// twelve claims about the table's "xx" cells (opus .c11 .c12 .c19 .c20 .c27
+// .c28 .c35 .c36; sol .c6 .c8 .c10 .c12) were originally graded through
+// expect(), asserting that toggling such a write bit must leave the counter
+// unchanged. The claims themselves only say the table defines no test-data
+// value there -- "undefined" is not "must be ignored", and nothing on p.282
+// states a required behaviour for those positions. Checked for a printed
+// rule before repairing, not assumed: pp.227-241 (chapter body), the
+// Appendix A preamble (pp.263-264), pp.281-282 themselves, and pp.287-289
+// (Appendix B) were read. One relevant rule exists, p.264: "If a bit is
+// described as unused in a write-only register, be sure to keep that bit
+// clear when writing values to that register. ... Setting unused bits in a
+// write-only register ... may cause serious future software incompatibility
+// if those bits or addresses are implemented in the future by Amiga, Inc."
+// That is advice to the PROGRAMMER about what to write, and a warning that
+// present hardware behaviour on such bits is deliberately left open for
+// future use -- it does not promise the current implementation leaves the
+// counter unchanged. No rule found defines these twelve positions, so they
+// are now declined via record() as unspecified rather than graded, and carry
+// no MUTATION record (declined claims take no mutation record). The
+// twelve's old MUT_UNDEFSHIFT mutations rerouted the probe onto a defined
+// neighbouring bit -- which only shows that comparator CAN fail somewhere,
+// not that the invented "must be unchanged" rule is real. That is preserved
+// here only as history in this comment, not as a record line.
+//
 // Measured mechanism (userio.v, read after SPECIFICATION.md was committed):
 //   - JOYTEST decode is a level, not a strobe: `test_load` is simply
 //     `reg_address_in == JOYTEST` (userio.v:317). This harness therefore reads
@@ -63,9 +88,6 @@
 // MUTATION opus:8-appa-joytest.c9 stimulus red one-hot write bit shifted 11->10 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c10 stimulus red one-hot write bit shifted 10->15 (MUT_BITSHIFT)
 // MUTATION sol:8-appa-joytest.c5 stimulus red 6-bit Y-field pattern inverted (MUT_RANGEINV)
-// MUTATION opus:8-appa-joytest.c11 stimulus red undefined-bit probe rerouted 9->10, a data bit (MUT_UNDEFSHIFT)
-// MUTATION opus:8-appa-joytest.c12 stimulus red undefined-bit probe rerouted 8->10, a data bit (MUT_UNDEFSHIFT)
-// MUTATION sol:8-appa-joytest.c6 stimulus red undefined-bit probe rerouted 9,8->10, a data bit (MUT_UNDEFSHIFT)
 // MUTATION opus:8-appa-joytest.c13 stimulus red one-hot write bit shifted 7->6 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c14 stimulus red one-hot write bit shifted 6->5 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c15 stimulus red one-hot write bit shifted 5->4 (MUT_BITSHIFT)
@@ -73,9 +95,6 @@
 // MUTATION opus:8-appa-joytest.c17 stimulus red one-hot write bit shifted 3->2 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c18 stimulus red one-hot write bit shifted 2->7 (MUT_BITSHIFT)
 // MUTATION sol:8-appa-joytest.c7 stimulus red 6-bit X-field pattern inverted (MUT_RANGEINV)
-// MUTATION opus:8-appa-joytest.c19 stimulus red undefined-bit probe rerouted 1->2, a data bit (MUT_UNDEFSHIFT)
-// MUTATION opus:8-appa-joytest.c20 stimulus red undefined-bit probe rerouted 0->2, a data bit (MUT_UNDEFSHIFT)
-// MUTATION sol:8-appa-joytest.c8 stimulus red undefined-bit probe rerouted 1,0->2, a data bit (MUT_UNDEFSHIFT)
 // MUTATION opus:8-appa-joytest.c21 stimulus red one-hot write bit shifted 15->14 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c22 stimulus red one-hot write bit shifted 14->13 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c23 stimulus red one-hot write bit shifted 13->12 (MUT_BITSHIFT)
@@ -83,9 +102,6 @@
 // MUTATION opus:8-appa-joytest.c25 stimulus red one-hot write bit shifted 11->10 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c26 stimulus red one-hot write bit shifted 10->15 (MUT_BITSHIFT)
 // MUTATION sol:8-appa-joytest.c9 stimulus red 6-bit Y-field pattern inverted (MUT_RANGEINV)
-// MUTATION opus:8-appa-joytest.c27 stimulus red undefined-bit probe rerouted 9->10, a data bit (MUT_UNDEFSHIFT)
-// MUTATION opus:8-appa-joytest.c28 stimulus red undefined-bit probe rerouted 8->10, a data bit (MUT_UNDEFSHIFT)
-// MUTATION sol:8-appa-joytest.c10 stimulus red undefined-bit probe rerouted 9,8->10, a data bit (MUT_UNDEFSHIFT)
 // MUTATION opus:8-appa-joytest.c29 stimulus red one-hot write bit shifted 7->6 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c30 stimulus red one-hot write bit shifted 6->5 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c31 stimulus red one-hot write bit shifted 5->4 (MUT_BITSHIFT)
@@ -93,9 +109,6 @@
 // MUTATION opus:8-appa-joytest.c33 stimulus red one-hot write bit shifted 3->2 (MUT_BITSHIFT)
 // MUTATION opus:8-appa-joytest.c34 stimulus red one-hot write bit shifted 2->7 (MUT_BITSHIFT)
 // MUTATION sol:8-appa-joytest.c11 stimulus red 6-bit X-field pattern inverted (MUT_RANGEINV)
-// MUTATION opus:8-appa-joytest.c35 stimulus red undefined-bit probe rerouted 1->2, a data bit (MUT_UNDEFSHIFT)
-// MUTATION opus:8-appa-joytest.c36 stimulus red undefined-bit probe rerouted 0->2, a data bit (MUT_UNDEFSHIFT)
-// MUTATION sol:8-appa-joytest.c12 stimulus red undefined-bit probe rerouted 1,0->2, a data bit (MUT_UNDEFSHIFT)
 // MUTATION fixture-delivers-distinct-words stimulus red second write repeats the first word instead of a different one (MUT_FIXTURE)
 
 #include <cstdint>
@@ -287,10 +300,6 @@ static int shift_within_group(int wbit) {
     if (wbit >= 10) return (wbit == 10) ? 15 : wbit - 1;
     return (wbit == 2) ? 7 : wbit - 1;
 }
-static int shift_to_data_neighbor(int wbit) {
-    if (wbit == 9 || wbit == 8) return 10;
-    return 2;  // wbit == 1 or 0
-}
 
 // ---------------------------------------------------------------------------
 // assertion families
@@ -329,41 +338,55 @@ static void test_range(Vuserio* top, ReadFn rd, uint16_t pattern6, int lo, const
     expect(got == expected, uid);
 }
 
-// Per-bit "no test data" proposition, narrow reading (see SPECIFICATION.md):
-// this write bit must not be sourced into the counter -- toggling only it,
-// everything else held at 0, must not move the readback.
-static void test_undef_bit(Vuserio* top, ReadFn rd, const BitProp& p) {
+// Per-bit "xx" cell -- DECLINED, not asserted. See the REPAIR note at the top
+// of this file: p.282's write-test-data table defines no test-data value for
+// this write-bit position, and no printed rule (checked: pp.227-241, the
+// Appendix A preamble pp.263-264, pp.281-282, pp.287-289) requires an
+// implementation to leave the corresponding counter bit unchanged when the
+// position is written. "Undefined" is not "must be ignored". Declined
+// claims take no mutation record. The clear/set readback is still measured
+// and folded into the record() message below, since it is cheap and honest
+// to show what this RTL actually does at the position even though nothing
+// here grades it.
+static void decline_undef_bit(Vuserio* top, ReadFn rd, const BitProp& p,
+                               const char* dat_name, const char* half_name) {
     reset_dut(top);
-    uint16_t clearv = 0x0000;
-    uint16_t setv = static_cast<uint16_t>(1u << p.wbit);
-#ifdef MUT_UNDEFSHIFT
-    setv = static_cast<uint16_t>(1u << shift_to_data_neighbor(p.wbit));
-#endif
-    write_joytest(top, clearv);
+    write_joytest(top, 0x0000);
     uint16_t c = rd(top);
-    write_joytest(top, setv);
+    write_joytest(top, static_cast<uint16_t>(1u << p.wbit));
     uint16_t s = rd(top);
-    expect(c == s, p.uid);
+    char buf[640];
+    std::snprintf(buf, sizeof buf,
+        "%s: p.282's JOYTEST write-test-data table prints write bit %d of %s's %s-half as "
+        "\"xx\" -- the page defines no test-data value for this position, and no other printed "
+        "rule found (pp.227-241, appA preamble pp.263-264, pp.281-282, pp.287-289) requires an "
+        "implementation to leave the counter bit unchanged when it is written. Declined as "
+        "unspecified, not asserted. Measured for the record only: write $0000 -> $%04X, "
+        "write bit-%d-set -> $%04X.",
+        p.uid, p.wbit, dat_name, half_name, c, p.wbit, s);
+    record(buf);
 }
 
-// Composed range "no test data" proposition (sol): both bits of the pair
-// must independently show no tracking for the composed claim to hold.
-static void test_undef_range(Vuserio* top, ReadFn rd, const BitProp* pair, const char* uid) {
-    bool ok = true;
-    for (int i = 0; i < 2; i++) {
-        reset_dut(top);
-        uint16_t clearv = 0x0000;
-        uint16_t setv = static_cast<uint16_t>(1u << pair[i].wbit);
-#ifdef MUT_UNDEFSHIFT
-        setv = static_cast<uint16_t>(1u << shift_to_data_neighbor(pair[i].wbit));
-#endif
-        write_joytest(top, clearv);
-        uint16_t c = rd(top);
-        write_joytest(top, setv);
-        uint16_t s = rd(top);
-        if (c != s) ok = false;
-    }
-    expect(ok, uid);
+// Composed "xx" pair (sol) -- same decline as the two opus per-bit claims it
+// composes, stated once for both bits together.
+static void decline_undef_range(Vuserio* top, ReadFn rd, const BitProp* pair,
+                                 const char* uid, const char* dat_name, const char* half_name) {
+    reset_dut(top);
+    write_joytest(top, 0x0000);
+    uint16_t c = rd(top);
+    uint16_t setv = static_cast<uint16_t>((1u << pair[0].wbit) | (1u << pair[1].wbit));
+    write_joytest(top, setv);
+    uint16_t s = rd(top);
+    char buf[640];
+    std::snprintf(buf, sizeof buf,
+        "%s: p.282's JOYTEST write-test-data table prints write bits %d and %d of %s's %s-half "
+        "as \"xx\" -- the page defines no test-data value at either position, and no other "
+        "printed rule found (pp.227-241, appA preamble pp.263-264, pp.281-282, pp.287-289) "
+        "requires an implementation to leave the counter bits unchanged when they are written. "
+        "Same decline as the two opus per-bit claims this composes. Declined as unspecified, not "
+        "asserted. Measured for the record only: write $0000 -> $%04X, both bits set -> $%04X.",
+        uid, pair[0].wbit, pair[1].wbit, dat_name, half_name, c, s);
+    record(buf);
 }
 
 // G0: one write reaches all four counter halves.
@@ -436,17 +459,20 @@ int main(int argc, char** argv) {
     for (int i = 0; i < arrlen(k0DatY); i++) test_data_bit(top, read_joy0dat, k0DatY[i]);
     test_range(top, read_joy0dat, 0b101101, 10, "sol:8-appa-joytest.c5");
 
-    // 0DAT / Y-half: bits 9,8 carry no test data, and the composed range claim.
-    for (int i = 0; i < arrlen(k0DatYUndef); i++) test_undef_bit(top, read_joy0dat, k0DatYUndef[i]);
-    test_undef_range(top, read_joy0dat, k0DatYUndef, "sol:8-appa-joytest.c6");
+    // 0DAT / Y-half: bits 9,8 are "xx" in the table -- declined as unspecified,
+    // not asserted (see REPAIR note, top of file; validation finding 10).
+    for (int i = 0; i < arrlen(k0DatYUndef); i++)
+        decline_undef_bit(top, read_joy0dat, k0DatYUndef[i], "0DAT", "Y");
+    decline_undef_range(top, read_joy0dat, k0DatYUndef, "sol:8-appa-joytest.c6", "0DAT", "Y");
 
     // 0DAT / X-half: bits 7..2 -> X7..X2, and the composed range claim.
     for (int i = 0; i < arrlen(k0DatX); i++) test_data_bit(top, read_joy0dat, k0DatX[i]);
     test_range(top, read_joy0dat, 0b011010, 2, "sol:8-appa-joytest.c7");
 
-    // 0DAT / X-half: bits 1,0 carry no test data, and the composed range claim.
-    for (int i = 0; i < arrlen(k0DatXUndef); i++) test_undef_bit(top, read_joy0dat, k0DatXUndef[i]);
-    test_undef_range(top, read_joy0dat, k0DatXUndef, "sol:8-appa-joytest.c8");
+    // 0DAT / X-half: bits 1,0 are "xx" in the table -- declined as unspecified.
+    for (int i = 0; i < arrlen(k0DatXUndef); i++)
+        decline_undef_bit(top, read_joy0dat, k0DatXUndef[i], "0DAT", "X");
+    decline_undef_range(top, read_joy0dat, k0DatXUndef, "sol:8-appa-joytest.c8", "0DAT", "X");
 
     // 1DAT / Y-half: bits 15..10 -> Y7..Y2, and the composed range claim.
     // Graded independently of 0DAT throughout -- nothing here assumes the
@@ -454,17 +480,19 @@ int main(int argc, char** argv) {
     for (int i = 0; i < arrlen(k1DatY); i++) test_data_bit(top, read_joy1dat, k1DatY[i]);
     test_range(top, read_joy1dat, 0b101101, 10, "sol:8-appa-joytest.c9");
 
-    // 1DAT / Y-half: bits 9,8 carry no test data, and the composed range claim.
-    for (int i = 0; i < arrlen(k1DatYUndef); i++) test_undef_bit(top, read_joy1dat, k1DatYUndef[i]);
-    test_undef_range(top, read_joy1dat, k1DatYUndef, "sol:8-appa-joytest.c10");
+    // 1DAT / Y-half: bits 9,8 are "xx" in the table -- declined as unspecified.
+    for (int i = 0; i < arrlen(k1DatYUndef); i++)
+        decline_undef_bit(top, read_joy1dat, k1DatYUndef[i], "1DAT", "Y");
+    decline_undef_range(top, read_joy1dat, k1DatYUndef, "sol:8-appa-joytest.c10", "1DAT", "Y");
 
     // 1DAT / X-half: bits 7..2 -> X7..X2, and the composed range claim.
     for (int i = 0; i < arrlen(k1DatX); i++) test_data_bit(top, read_joy1dat, k1DatX[i]);
     test_range(top, read_joy1dat, 0b011010, 2, "sol:8-appa-joytest.c11");
 
-    // 1DAT / X-half: bits 1,0 carry no test data, and the composed range claim.
-    for (int i = 0; i < arrlen(k1DatXUndef); i++) test_undef_bit(top, read_joy1dat, k1DatXUndef[i]);
-    test_undef_range(top, read_joy1dat, k1DatXUndef, "sol:8-appa-joytest.c12");
+    // 1DAT / X-half: bits 1,0 are "xx" in the table -- declined as unspecified.
+    for (int i = 0; i < arrlen(k1DatXUndef); i++)
+        decline_undef_bit(top, read_joy1dat, k1DatXUndef[i], "1DAT", "X");
+    decline_undef_range(top, read_joy1dat, k1DatXUndef, "sol:8-appa-joytest.c12", "1DAT", "X");
 
     std::cout << checks.passed << " passed, " << checks.failed << " failed\n";
 
