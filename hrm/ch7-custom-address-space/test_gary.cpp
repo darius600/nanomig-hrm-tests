@@ -310,9 +310,10 @@ int main() {
             "address)+$DFF000 with chip address $000, MUST select sel_reg, "
             "measured the same way (reading sel_reg off cpu_address_in) as "
             "every address that must not. '680x0 address = (chip address) "
-            "+ $DFF000' (p.263, sol:7-appA-legend.c2, opus:7-appA-pre.c5 -- "
-            "the exclusivity claim these two make presupposes this positive "
-            "case). measured sel_reg(" + hexaddr(addr) + ")=" +
+            "+ $DFF000' (p.263 -- this positive case is presupposed by the "
+            "exclusivity claim; see ADDR-BELOW-DF0000-NOT-GRADED below for "
+            "its claim uid and the one address this sweep does not reach). "
+            "measured sel_reg(" + hexaddr(addr) + ")=" +
             std::to_string((int)h.top->sel_reg) + ".");
     }
 
@@ -347,7 +348,16 @@ int main() {
             "source-silent. Graded until stage 8; withdrawn on the "
             "independent validation's finding. The broad-decode behaviour "
             "may still be worth reporting to the RTL's authors -- it is "
-            "the ORACLE that is missing here, not the observation.");
+            "the ORACLE that is missing here, not the observation. These "
+            "two uids' own exclusivity claim IS graded, completely, at "
+            "four other addresses above -- ADDR-EXCLUSIVE-CONTROL-DFF000 "
+            "($DFF000, the positive case), ADDR-EXCLUSIVE-ABOVE-E00000 "
+            "($E00000), ADDR-EXCLUSIVE-CHIPRAM-040000 ($040000) and "
+            "ADDR-EXCLUSIVE-ROM-FC0000 ($FC0000); none of those four "
+            "labels carries either uid any longer, on purpose -- only "
+            "$DF0000 is what this record() declines. See "
+            "ADDR-MIDBLOCK-D00000-NOT-GRADED below for the same claim's "
+            "second declined address, $D00000.");
     }
 
     // ---------------- ADDR-EXCLUSIVE-ABOVE-E00000 ----------------
@@ -364,8 +374,9 @@ int main() {
         checks.expect(ok,
             "ADDR-EXCLUSIVE-ABOVE-E00000: $E00000, immediately past the "
             "bank's own top address $DFFFFE, is not (chip address)+"
-            "$DFF000. 'No other access address is valid.' (p.263, "
-            "sol:7-appA-legend.c2, opus:7-appA-pre.c5). measured sel_reg(" +
+            "$DFF000. 'No other access address is valid.' (p.263 -- see "
+            "ADDR-BELOW-DF0000-NOT-GRADED below for the claim uid). "
+            "measured sel_reg(" +
             hexaddr(addr) + ")=" + std::to_string((int)h.top->sel_reg) +
             ".");
     }
@@ -384,8 +395,8 @@ int main() {
         checks.expect(ok,
             "ADDR-EXCLUSIVE-CHIPRAM-040000: an address in the middle of "
             "Chip RAM is not (chip address)+$DFF000. 'No other access "
-            "address is valid.' (p.263, sol:7-appA-legend.c2, "
-            "opus:7-appA-pre.c5). measured sel_reg(" + hexaddr(addr) +
+            "address is valid.' (p.263 -- see ADDR-BELOW-DF0000-NOT-GRADED "
+            "below for the claim uid). measured sel_reg(" + hexaddr(addr) +
             ")=" + std::to_string((int)h.top->sel_reg) + ".");
     }
 
@@ -403,7 +414,8 @@ int main() {
         checks.expect(ok,
             "ADDR-EXCLUSIVE-ROM-FC0000: an address in kickstart ROM is not "
             "(chip address)+$DFF000. 'No other access address is valid.' "
-            "(p.263, sol:7-appA-legend.c2, opus:7-appA-pre.c5). measured "
+            "(p.263 -- see ADDR-BELOW-DF0000-NOT-GRADED below for the "
+            "claim uid). measured "
             "sel_reg(" + hexaddr(addr) + ")=" +
             std::to_string((int)h.top->sel_reg) + ".");
     }
@@ -428,9 +440,14 @@ int main() {
         checks.record(
             "ADDR-MIDBLOCK-D00000-NOT-GRADED (p.263, sol:7-appA-legend.c2, "
             "opus:7-appA-pre.c5): same position as "
-            "ADDR-BELOW-DF0000-NOT-GRADED above. reason_kind source-silent. "
-            "Graded until stage 8, withdrawn on the independent "
-            "validation's finding.");
+            "ADDR-BELOW-DF0000-NOT-GRADED above -- $D00000 is this "
+            "record()'s own declined address; the same four graded "
+            "assertions named there (ADDR-EXCLUSIVE-CONTROL-DFF000, "
+            "ADDR-EXCLUSIVE-ABOVE-E00000, ADDR-EXCLUSIVE-CHIPRAM-040000, "
+            "ADDR-EXCLUSIVE-ROM-FC0000) are this claim's complete graded "
+            "coverage; neither uid appears on any graded line in this "
+            "file. reason_kind source-silent. Graded until stage 8, "
+            "withdrawn on the independent validation's finding.");
     }
 
     // ================= PROP-C =================
@@ -551,8 +568,9 @@ int main() {
             "cited here from its own separate printed location and kept "
             "as its own assertion rather than folded into that one. '+ "
             "Address register pair. Must be an even address pointing to "
-            "chip memory.' (p.287, sol:7-appB-legend.c3, opus:7-appB.c4 -- "
-            "chip-memory half only, opus:8-dma.c9, sol:8-dskpth.c5, "
+            "chip memory.' (p.287 -- chip-memory half only; see "
+            "PTR-PAIR-EVEN-ADDRESS-HALF-NOT-ASSERTED below for the two "
+            "claim uids' even-address half. opus:8-dma.c9, sol:8-dskpth.c5, "
             "sol:8-appb-legend.c6, sol:8-appb-dskpth.c4, "
             "sol:8-appb-dskptl.c4). measured" + detail + ".");
     }
@@ -564,7 +582,11 @@ int main() {
         "already measured and withdrew it at agnus_audiodma (needs a "
         "register's own stored value, which gary does not hold -- gary "
         "only decodes bus addresses presented to it), crediting no claim "
-        "id of its own for the universal. Not re-asserted here.");
+        "id of its own for the universal. Not re-asserted here. These two "
+        "uids' chip-memory half IS graded, completely, by "
+        "PTR-PAIR-CHIP-MEMORY-HALF above, which no longer carries either "
+        "uid in its own label -- this record() line is now their only "
+        "appearance in this package for the even-address half.");
 
     checks.record(
         "OVERLAY-NOT-IN-SCOPE: this package's own subject line names the "

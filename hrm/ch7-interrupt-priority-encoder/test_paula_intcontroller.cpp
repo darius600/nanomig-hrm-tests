@@ -301,12 +301,18 @@ int main(int argc, char** argv) {
     // so this holds for every reachable combination, not just the ones
     // this sweep drove. No stimulus on this exact module falsifies it.
 
-    // ---- P3 (p.219, opus:7-int.c39): every bit of the interrupt request
-    // ---- register is independently settable through the register bus.
+    // ---- P3 (p.219): every bit of the interrupt request register is
+    // ---- independently settable through the register bus. opus:7-int.c39
+    // ---- also carries a bus-master-identity half (which master performs
+    // ---- the write); that half is declined by the bus-master-identity
+    // ---- record() near the end, so the uid is not repeated on this graded
+    // ---- line -- only on that record(), which names this assertion.
     checks.expect(round_trip_mismatches == 0,
         "P3-INTREQ-FULLY-WRITABLE: across the exhaustive sweep, every one "
         "of the 32768 patterns written to INTREQ reads back identically "
-        "through INTREQR (opus:7-int.c39; mismatches="
+        "through INTREQR (see the bus-master-identity record() near the "
+        "end for the claim uid this measures the writability half of; "
+        "mismatches="
         + std::to_string(round_trip_mismatches) + ")");
     // MUTATION P3-INTREQ-FULLY-WRITABLE stimulus red: write a known pattern
     // to an UNRELATED address (not INTREQ) instead, and recheck the same
@@ -333,9 +339,13 @@ int main(int argc, char** argv) {
         clear_requests();
     }
 
-    // ---- P4 (p.217/p.219, sol:7-interrupts.c6/c29, opus:7-int.c7/c26):
-    // ---- two dedicated external-interrupt pins exist, landing on
-    // ---- distinct request-register bits 3 and 13.
+    // ---- P4 (p.217/p.219): two dedicated external-interrupt pins exist,
+    // ---- landing on distinct request-register bits 3 and 13.
+    // ---- sol:7-interrupts.c6/opus:7-int.c7's board-level-wiring half is
+    // ---- declined by the board-level-wiring record() near the end, which
+    // ---- names P4A/P4B below as where the pin-lands-on-bit half is
+    // ---- measured; sol:7-interrupts.c29/opus:7-int.c26 (the bit-number
+    // ---- framing, not declined) stay on P4A's own graded line.
     {
         clear_requests();
         dut->int2 = 1; settle(8); dut->int2 = 0; settle(8);
@@ -344,8 +354,11 @@ int main(int argc, char** argv) {
         bool bit13 = (rq & (1 << 13)) != 0;
         checks.expect(bit3 && !bit13,
             "P4A-INT2-SETS-BIT3-ONLY: pulsing the INT2 pin sets request bit "
-            "3 (PORTS) and does not set bit 13 (EXTER) (sol:7-interrupts.c6, "
-            "opus:7-int.c7, sol:7-interrupts.c29, opus:7-int.c26; INTREQR="
+            "3 (PORTS) and does not set bit 13 (EXTER) (sol:7-interrupts.c29, "
+            "opus:7-int.c26 -- bit-number framing; this assertion and P4B "
+            "below jointly measure the pin-to-bit half of the declined "
+            "expansion-connector-wiring claim, see the board-level-wiring "
+            "record() near the end for its claim uid; INTREQR="
             + hex16(rq) + ")");
         clear_requests();
     }
@@ -369,8 +382,10 @@ int main(int argc, char** argv) {
         bool bit13 = (rq & (1 << 13)) != 0;
         checks.expect(bit13 && !bit3,
             "P4B-INT6-SETS-BIT13-ONLY: pulsing the INT6 pin sets request "
-            "bit 13 (EXTER) and does not set bit 3 (PORTS) "
-            "(sol:7-interrupts.c6, opus:7-int.c7; INTREQR=" + hex16(rq) + ")");
+            "bit 13 (EXTER) and does not set bit 3 (PORTS) -- see P4A above "
+            "and the board-level-wiring record() near the end for the "
+            "claim uid this jointly measures the pin-to-bit half of "
+            "(INTREQR=" + hex16(rq) + ")");
         clear_requests();
     }
     // MUTATION P4B-INT6-SETS-BIT13-ONLY stimulus red: pulse INT2 instead of
@@ -443,24 +458,30 @@ int main(int argc, char** argv) {
             + " -- checked against that expectation this goes FAIL)");
     };
 
-    // P5 -- bit 0, TBE, level 1. pp.220-221; sol:7-interrupts.c60/c61,
-    // opus:7-int.c59, sol:7-fig7-4.c9, opus:7-fig7-4.c7.
+    // P5 -- bit 0, TBE, level 1. pp.220-221; sol:7-interrupts.c61,
+    // opus:7-int.c59, sol:7-fig7-4.c9, opus:7-fig7-4.c7. sol:7-interrupts.c60
+    // also carries the UART "why" half, declined by the
+    // meaning-of-each-hardware-condition record() near the end, which names
+    // this assertion; its uid is not repeated here.
     checks.expect(single_bit_level[0] == 1,
         "P5-BIT0-TBE-LEVEL1: bit 0 (TBE) alone drives 68000 level 1 "
         "(measured " + std::to_string(single_bit_level[0])
-        + "; sol:7-interrupts.c60, sol:7-interrupts.c61, opus:7-int.c59, "
+        + "; sol:7-interrupts.c61, opus:7-int.c59, "
         "sol:7-fig7-4.c9, opus:7-fig7-4.c7)");
     // MUTATION P5-BIT0-TBE-LEVEL1 stimulus red: bit 3 (PORTS, level 2) set
     // instead of bit 0 -- a different hardware-priority group, so the
     // measured level must differ from 1. Run now, reverted after.
     run_mutation("P5-BIT0-TBE-LEVEL1", 0, 3);   // partner: PORTS, level 2
 
-    // P6 -- bit 1, DSKBLK, level 1. pp.220-221; sol:7-interrupts.c56/c57,
-    // opus:7-int.c55, sol:7-fig7-4.c6, opus:7-fig7-4.c4.
+    // P6 -- bit 1, DSKBLK, level 1. pp.220-221; sol:7-interrupts.c57,
+    // opus:7-int.c55, sol:7-fig7-4.c6, opus:7-fig7-4.c4. sol:7-interrupts.c56
+    // also carries the disk-DMA-completion "why" half, declined by the
+    // meaning-of-each-hardware-condition record() near the end, which names
+    // this assertion; its uid is not repeated here.
     checks.expect(single_bit_level[1] == 1,
         "P6-BIT1-DSKBLK-LEVEL1: bit 1 (DSKBLK) alone drives 68000 level 1 "
         "(measured " + std::to_string(single_bit_level[1])
-        + "; sol:7-interrupts.c56, sol:7-interrupts.c57, opus:7-int.c55, "
+        + "; sol:7-interrupts.c57, opus:7-int.c55, "
         "sol:7-fig7-4.c6, opus:7-fig7-4.c4, opus:8-dskint.c5, "
         "opus:8-dskint.c6, sol:8-int.c5, sol:8-int.c6)");
     // MUTATION P6-BIT1-DSKBLK-LEVEL1 stimulus red: bit 4 (COPER, level 3)
@@ -477,13 +498,16 @@ int main(int argc, char** argv) {
     // set instead of bit 2. Run now, reverted after.
     run_mutation("P7-BIT2-SOFTINT-LEVEL1", 2, 7);   // partner: AUD0, level 4
 
-    // P8 -- bit 3, PORTS, level 2. pp.217,219,221; sol:7-interrupts.c8/
-    // c32/c33, opus:7-int.c8/c29/c30, sol:7-fig7-4.c12, opus:7-fig7-4.c10.
+    // P8 -- bit 3, PORTS, level 2. pp.217,219,221; sol:7-interrupts.c8/c33,
+    // opus:7-int.c8/c30, sol:7-fig7-4.c12, opus:7-fig7-4.c10.
+    // sol:7-interrupts.c32/opus:7-int.c29 also carry the INT2* active-low
+    // polarity half, declined by the polarity record() near the end, which
+    // names this assertion; their uids are not repeated here.
     checks.expect(single_bit_level[3] == 2,
         "P8-BIT3-PORTS-LEVEL2: bit 3 (PORTS) alone drives 68000 level 2 "
         "(measured " + std::to_string(single_bit_level[3])
-        + "; sol:7-interrupts.c8, sol:7-interrupts.c32, sol:7-interrupts.c33, "
-        "opus:7-int.c8, opus:7-int.c29, opus:7-int.c30, sol:7-fig7-4.c12, "
+        + "; sol:7-interrupts.c8, sol:7-interrupts.c33, "
+        "opus:7-int.c8, opus:7-int.c30, sol:7-fig7-4.c12, "
         "opus:7-fig7-4.c10)");
     // MUTATION P8-BIT3-PORTS-LEVEL2 stimulus red: bit 0 (TBE, level 1) set
     // instead of bit 3. Run now, reverted after.
@@ -514,12 +538,15 @@ int main(int argc, char** argv) {
             "level that genuinely has more than one source");
     }
 
-    // P9 -- bit 4, COPER, level 3. pp.219,221; sol:7-interrupts.c40,
-    // opus:7-int.c38/c79, sol:7-fig7-4.c15, opus:7-fig7-4.c13.
+    // P9 -- bit 4, COPER, level 3. pp.219,221; opus:7-int.c79,
+    // sol:7-fig7-4.c15, opus:7-fig7-4.c13. sol:7-interrupts.c40/opus:7-int.c38
+    // also carry the bus-master ("by the Copper") half, declined by the
+    // bus-master-identity record() near the end, which names this
+    // assertion; their uids are not repeated here.
     checks.expect(single_bit_level[4] == 3,
         "P9-BIT4-COPER-LEVEL3: bit 4 (COPER) alone drives 68000 level 3 "
         "(measured " + std::to_string(single_bit_level[4])
-        + "; sol:7-interrupts.c40, opus:7-int.c38, opus:7-int.c79, "
+        + "; opus:7-int.c79, "
         "sol:7-fig7-4.c15, opus:7-fig7-4.c13)");
     // MUTATION P9-BIT4-COPER-LEVEL3 stimulus red: bit 11 (RBF, level 5) set
     // instead of bit 4. Run now, reverted after.
@@ -537,68 +564,86 @@ int main(int argc, char** argv) {
     // set instead of bit 5. Run now, reverted after.
     run_mutation("P10-BIT5-VERTB-LEVEL3", 5, 13);   // partner: EXTER, level 6
 
-    // P11 -- bit 6, BLIT, level 3. pp.220-221; sol:7-interrupts.c50/c53,
-    // opus:7-int.c48/c50, sol:7-fig7-4.c21, opus:7-fig7-4.c19.
+    // P11 -- bit 6, BLIT, level 3. pp.220-221; sol:7-interrupts.c53,
+    // opus:7-int.c50, sol:7-fig7-4.c21, opus:7-fig7-4.c19. sol:7-interrupts.c50/
+    // opus:7-int.c48 also carry the "blitter finished" meaning half,
+    // declined by the meaning-of-each-hardware-condition record() near the
+    // end, which names this assertion; their uids are not repeated here.
     checks.expect(single_bit_level[6] == 3,
         "P11-BIT6-BLIT-LEVEL3: bit 6 (BLIT) alone drives 68000 level 3 "
         "(measured " + std::to_string(single_bit_level[6])
-        + "; sol:7-interrupts.c50, sol:7-interrupts.c53, opus:7-int.c48, "
+        + "; sol:7-interrupts.c53, "
         "opus:7-int.c50, sol:7-fig7-4.c21, opus:7-fig7-4.c19)");
     // MUTATION P11-BIT6-BLIT-LEVEL3 stimulus red: bit 1 (DSKBLK, level 1)
     // set instead of bit 6. Run now, reverted after.
     run_mutation("P11-BIT6-BLIT-LEVEL3", 6, 1);   // partner: DSKBLK, level 1
 
-    // P12 -- bit 7, AUD0, level 4. pp.220-221; sol:7-interrupts.c46/c42/
-    // c47, opus:7-int.c44/c40/c45, sol:7-fig7-4.c27, opus:7-fig7-4.c25/c27.
+    // P12 -- bit 7, AUD0, level 4. pp.220-221; sol:7-interrupts.c46/c42,
+    // opus:7-int.c44/c40, sol:7-fig7-4.c27, opus:7-fig7-4.c25/c27.
+    // sol:7-interrupts.c47/opus:7-int.c45 (shared with P13-P15) also carry
+    // the "audio block done" meaning half, declined by the
+    // meaning-of-each-hardware-condition record() near the end, which names
+    // P12-P15; their uids are not repeated here.
     checks.expect(single_bit_level[7] == 4,
         "P12-BIT7-AUD0-LEVEL4: bit 7 (AUD0) alone drives 68000 level 4 "
         "(measured " + std::to_string(single_bit_level[7])
-        + "; sol:7-interrupts.c46, sol:7-interrupts.c42, sol:7-interrupts.c47, "
-        "opus:7-int.c44, opus:7-int.c40, opus:7-int.c45, opus:7-int.c80, "
+        + "; sol:7-interrupts.c46, sol:7-interrupts.c42, "
+        "opus:7-int.c44, opus:7-int.c40, opus:7-int.c80, "
         "sol:7-fig7-4.c27, opus:7-fig7-4.c25, opus:7-fig7-4.c27)");
     // MUTATION P12-BIT7-AUD0-LEVEL4 stimulus red: bit 2 (SOFTINT, level 1)
     // set instead of bit 7. Run now, reverted after.
     run_mutation("P12-BIT7-AUD0-LEVEL4", 7, 2);   // partner: SOFTINT, level 1
 
-    // P13 -- bit 8, AUD1, level 4. pp.220-221; sol:7-interrupts.c45/c42/
-    // c47, opus:7-int.c43/c40/c45, sol:7-fig7-4.c33, opus:7-fig7-4.c31/c33.
+    // P13 -- bit 8, AUD1, level 4. pp.220-221; sol:7-interrupts.c45/c42,
+    // opus:7-int.c43/c40, sol:7-fig7-4.c33, opus:7-fig7-4.c31/c33.
+    // sol:7-interrupts.c47/opus:7-int.c45 (the shared "level, generic"
+    // citation cited in full at P12 -- see P12's own comment; NOT the
+    // same uid as this row's own sol:7-interrupts.c45) carry the "audio
+    // block done" meaning half, declined at P12's citation above.
     checks.expect(single_bit_level[8] == 4,
         "P13-BIT8-AUD1-LEVEL4: bit 8 (AUD1) alone drives 68000 level 4 "
         "(measured " + std::to_string(single_bit_level[8])
-        + "; sol:7-interrupts.c45/c42/c47, opus:7-int.c43/c40/c45, "
+        + "; sol:7-interrupts.c45/c42, opus:7-int.c43/c40, "
         "sol:7-fig7-4.c33, opus:7-fig7-4.c31/c33)");
     // MUTATION P13-BIT8-AUD1-LEVEL4 stimulus red: bit 5 (VERTB, level 3)
     // set instead of bit 8. Run now, reverted after.
     run_mutation("P13-BIT8-AUD1-LEVEL4", 8, 5);   // partner: VERTB, level 3
 
-    // P14 -- bit 9, AUD2, level 4. pp.220-221; sol:7-interrupts.c44/c42/
-    // c47, opus:7-int.c42/c40/c45, sol:7-fig7-4.c24, opus:7-fig7-4.c22/c24.
+    // P14 -- bit 9, AUD2, level 4. pp.220-221; sol:7-interrupts.c44/c42,
+    // opus:7-int.c42/c40, sol:7-fig7-4.c24, opus:7-fig7-4.c22/c24. The
+    // shared "level, generic" citation and its "audio block done" meaning
+    // half are declined at P12's own citation above (see that comment).
     checks.expect(single_bit_level[9] == 4,
         "P14-BIT9-AUD2-LEVEL4: bit 9 (AUD2) alone drives 68000 level 4 "
         "(measured " + std::to_string(single_bit_level[9])
-        + "; sol:7-interrupts.c44/c42/c47, opus:7-int.c42/c40/c45, "
+        + "; sol:7-interrupts.c44/c42, opus:7-int.c42/c40, "
         "sol:7-fig7-4.c24, opus:7-fig7-4.c22/c24)");
     // MUTATION P14-BIT9-AUD2-LEVEL4 stimulus red: bit 12 (DSKSYN, level 5)
     // set instead of bit 9. Run now, reverted after.
     run_mutation("P14-BIT9-AUD2-LEVEL4", 9, 12);   // partner: DSKSYN, level 5
 
-    // P15 -- bit 10, AUD3, level 4. pp.220-221; sol:7-interrupts.c43/c42/
-    // c47, opus:7-int.c41/c40/c45, sol:7-fig7-4.c30, opus:7-fig7-4.c28/c30.
+    // P15 -- bit 10, AUD3, level 4. pp.220-221; sol:7-interrupts.c43/c42,
+    // opus:7-int.c41/c40, sol:7-fig7-4.c30, opus:7-fig7-4.c28/c30. The
+    // shared "level, generic" citation and its "audio block done" meaning
+    // half are declined at P12's own citation above (see that comment).
     checks.expect(single_bit_level[10] == 4,
         "P15-BIT10-AUD3-LEVEL4: bit 10 (AUD3) alone drives 68000 level 4 "
         "(measured " + std::to_string(single_bit_level[10])
-        + "; sol:7-interrupts.c43/c42/c47, opus:7-int.c41/c40/c45, "
+        + "; sol:7-interrupts.c43/c42, opus:7-int.c41/c40, "
         "sol:7-fig7-4.c30, opus:7-fig7-4.c28/c30)");
     // MUTATION P15-BIT10-AUD3-LEVEL4 stimulus red: bit 13 (EXTER, level 6)
     // set instead of bit 10. Run now, reverted after.
     run_mutation("P15-BIT10-AUD3-LEVEL4", 10, 13);   // partner: EXTER, level 6
 
-    // P16 -- bit 11, RBF, level 5. pp.220-221; sol:7-interrupts.c58/c59,
+    // P16 -- bit 11, RBF, level 5. pp.220-221; sol:7-interrupts.c59,
     // opus:7-int.c57/c81, sol:7-fig7-4.c36, opus:7-fig7-4.c34.
+    // sol:7-interrupts.c58 also carries the UART "why" half, declined by
+    // the meaning-of-each-hardware-condition record() near the end, which
+    // names this assertion; its uid is not repeated here.
     checks.expect(single_bit_level[11] == 5,
         "P16-BIT11-RBF-LEVEL5: bit 11 (RBF) alone drives 68000 level 5 "
         "(measured " + std::to_string(single_bit_level[11])
-        + "; sol:7-interrupts.c58, sol:7-interrupts.c59, opus:7-int.c57, "
+        + "; sol:7-interrupts.c59, opus:7-int.c57, "
         "opus:7-int.c81, sol:7-fig7-4.c36, opus:7-fig7-4.c34)");
     // MUTATION P16-BIT11-RBF-LEVEL5 stimulus red: bit 6 (BLIT, level 3) set
     // instead of bit 11. Run now, reverted after.
@@ -607,14 +652,17 @@ int main(int argc, char** argv) {
     // P17 -- bit 12, DSKSYN (p.220) / DSKSYNC (Figure 7-4), level 5 --
     // mnemonic naming conflict in the manual itself, recorded, not
     // asserted (see the record() call below); the bit/level pairing is
-    // asserted regardless of spelling. sol:7-interrupts.c54/c55,
-    // opus:7-int.c51/c52/c53, sol:7-fig7-4.c39, opus:7-fig7-4.c37.
+    // asserted regardless of spelling. opus:7-int.c51/c53.
+    // sol:7-interrupts.c54/c55, sol:7-fig7-4.c39 and opus:7-fig7-4.c37 also
+    // carry, respectively, the sync-match meaning half and the mnemonic
+    // spelling itself -- both declined below (meaning-of-each-condition and
+    // DSKSYN/DSKSYNC-mnemonic record()s near the end, which name this
+    // assertion); their uids are not repeated here.
     checks.expect(single_bit_level[12] == 5,
         "P17-BIT12-DSKSYN-LEVEL5: bit 12 (DSKSYN/DSKSYNC) alone drives "
         "68000 level 5 (measured " + std::to_string(single_bit_level[12])
-        + "; sol:7-interrupts.c54, sol:7-interrupts.c55, opus:7-int.c51, "
-        "opus:7-int.c52, opus:7-int.c53, sol:7-fig7-4.c39, "
-        "opus:7-fig7-4.c37, opus:8-dskint.c2, opus:8-dskint.c3, "
+        + "; opus:7-int.c51, "
+        "opus:7-int.c53, opus:8-dskint.c2, opus:8-dskint.c3, "
         "sol:8-int.c2, sol:8-int.c3)");
     // MUTATION P17-BIT12-DSKSYN-LEVEL5 stimulus red: bit 9 (AUD2, level 4)
     // set instead of bit 12. Run now, reverted after.
@@ -630,13 +678,16 @@ int main(int argc, char** argv) {
     // the graded requirement is still met by the stimulus record above.
     run_mutation("P17-BIT12-DSKSYN-LEVEL5", 12, 9);   // partner: AUD2, level 4
 
-    // P18 -- bit 13, EXTER, level 6. pp.217,219,221; sol:7-interrupts.c9/
-    // c30/c31, opus:7-int.c8/c27/c28, sol:7-fig7-4.c42, opus:7-fig7-4.c40.
+    // P18 -- bit 13, EXTER, level 6. pp.217,219,221; sol:7-interrupts.c9/c31,
+    // opus:7-int.c8/c28, sol:7-fig7-4.c42, opus:7-fig7-4.c40.
+    // sol:7-interrupts.c30/opus:7-int.c27 also carry the INT6* active-low
+    // polarity half, declined by the polarity record() near the end, which
+    // names this assertion; their uids are not repeated here.
     checks.expect(single_bit_level[13] == 6,
         "P18-BIT13-EXTER-LEVEL6: bit 13 (EXTER) alone drives 68000 level 6 "
         "(measured " + std::to_string(single_bit_level[13])
-        + "; sol:7-interrupts.c9, sol:7-interrupts.c30, sol:7-interrupts.c31, "
-        "opus:7-int.c8, opus:7-int.c27, opus:7-int.c28, sol:7-fig7-4.c42, "
+        + "; sol:7-interrupts.c9, sol:7-interrupts.c31, "
+        "opus:7-int.c8, opus:7-int.c28, sol:7-fig7-4.c42, "
         "opus:7-fig7-4.c40)");
     // MUTATION P18-BIT13-EXTER-LEVEL6 stimulus red: bit 10 (AUD3, level 4)
     // set instead of bit 13. Run now, reverted after.
@@ -711,24 +762,53 @@ int main(int argc, char** argv) {
     // ==================================================================
     checks.record("board-level wiring ('routed to the expansion connector "
         "for use by external hardware', printed p.217) is physical "
-        "connector routing, not RTL behaviour -- not asserted "
+        "connector routing, not RTL behaviour -- not asserted. The "
+        "pin-to-bit half of this same claim IS graded, completely, by "
+        "P4A-INT2-SETS-BIT3-ONLY and P4B-INT6-SETS-BIT13-ONLY above (does "
+        "pulsing each pin set its own distinct request bit and no other); "
+        "neither carries this uid any longer, on purpose -- this record() "
+        "line is their only appearance in this package "
         "(sol:7-interrupts.c6, opus:7-int.c7)");
     checks.record("bus-master identity ('by the Copper', printed p.219, "
-        "COPER bit) is outside this module's boundary -- P3/P9 assert only "
-        "that the bit is writable/gets set, not by whom "
+        "COPER bit) is outside this module's boundary -- not asserted. The "
+        "writable/drives-its-level half of this same claim IS graded, "
+        "completely, by P3-INTREQ-FULLY-WRITABLE above (every bit, "
+        "including bit 4, is independently settable through the register "
+        "bus, regardless of which master performs the write) and by "
+        "P9-BIT4-COPER-LEVEL3 above (bit 4 alone drives level 3); none of "
+        "the three carries its uid any longer, on purpose -- this record() "
+        "line is their only appearance in this package "
         "(sol:7-interrupts.c40, opus:7-int.c38, opus:7-int.c39)");
     checks.record("INT2*/INT6* active-low polarity (printed p.219, "
         "'becomes a 1 when the system line ... becomes a logic 0') is not "
         "decidable from the manual text alone whether this module's int2/"
         "int6 ports already carry the externally-inverted signal or the "
-        "raw pin -- P4 asserts only that a settable bit exists and drives "
-        "its level (sol:7-interrupts.c30/c32, opus:7-int.c27/c29)");
+        "raw pin -- not asserted. The bit-exists/drives-its-level half of "
+        "this same claim IS graded, completely, by P8-BIT3-PORTS-LEVEL2 "
+        "above (INT2*'s half, sol:7-interrupts.c32/opus:7-int.c29) and "
+        "P18-BIT13-EXTER-LEVEL6 above (INT6*'s half, "
+        "sol:7-interrupts.c30/opus:7-int.c27); none of the four carries "
+        "its uid any longer, on purpose -- this record() line is their "
+        "only appearance in this package (sol:7-interrupts.c30, "
+        "sol:7-interrupts.c32, opus:7-int.c27, opus:7-int.c29)");
     checks.record("the 'meaning' of each hardware condition (UART buffer "
         "states, disk block/sync completion, blitter finished, audio block "
         "done) describes why the OWNING module raises its bit, not this "
-        "module's behaviour -- P5,P6,P11,P12-P15,P16,P17 assert only the "
-        "bit/level pairing (sol:7-interrupts.c47/c50/c54/c56/c58/c60, "
-        "opus:7-int.c45/c48/c52)");
+        "module's behaviour -- not asserted. The bit/level pairing half of "
+        "these same claims IS graded, completely, above: "
+        "sol:7-interrupts.c60 at P5-BIT0-TBE-LEVEL1, sol:7-interrupts.c56 "
+        "at P6-BIT1-DSKBLK-LEVEL1, sol:7-interrupts.c50/opus:7-int.c48 at "
+        "P11-BIT6-BLIT-LEVEL3, sol:7-interrupts.c47/opus:7-int.c45 (the "
+        "citation shared across all four) at P12-BIT7-AUD0-LEVEL4 through "
+        "P15-BIT10-AUD3-LEVEL4, sol:7-interrupts.c58 at P16-BIT11-RBF-LEVEL5, "
+        "and sol:7-interrupts.c54/opus:7-int.c52 at P17-BIT12-DSKSYN-LEVEL5; "
+        "none of these nine uids carries its own uid on any graded line any "
+        "longer, on purpose -- this record() line (together with the "
+        "DSKSYN/DSKSYNC-mnemonic record() below, for sol:7-interrupts.c54) "
+        "is their only appearance in this package (sol:7-interrupts.c47, "
+        "sol:7-interrupts.c50, sol:7-interrupts.c54, sol:7-interrupts.c56, "
+        "sol:7-interrupts.c58, sol:7-interrupts.c60, opus:7-int.c45, "
+        "opus:7-int.c48, opus:7-int.c52)");
     checks.record("the Exec software priority column and the figure's "
         "ruled layout/column headings (every Figure-7-4-sourced claim's own "
         "classify.split.excluded field) are exec.library's server chain and "
@@ -739,7 +819,13 @@ int main(int argc, char** argv) {
         "DSKSYNC, both verified on the page images) cannot be asserted "
         "either way -- no port of any module in this tree carries a "
         "mnemonic string; recorded as a manual naming defect, not a "
-        "conformance question (sol:7-interrupts.c54/c55, sol:7-fig7-4.c39, "
+        "conformance question. The bit/level pairing half of these same "
+        "claims IS graded, completely, by P17-BIT12-DSKSYN-LEVEL5 above "
+        "(the DSKSYN/DSKSYNC-labelled row); none of the four carries its "
+        "uid any longer, on purpose -- this record() line (together with "
+        "the meaning-of-each-hardware-condition record() above, for "
+        "sol:7-interrupts.c54) is their only appearance in this package "
+        "(sol:7-interrupts.c54, sol:7-interrupts.c55, sol:7-fig7-4.c39, "
         "opus:7-fig7-4.c37)");
     checks.record("which physical audio channel each AUD bit names "
         "(AUD3=channel 3, etc.) is a fact about paula_audio_channel, not "
