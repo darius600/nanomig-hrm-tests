@@ -392,8 +392,9 @@ int main(int argc, char** argv) {
                     "; after clearing INTREQ b11, SERDATR=" + hex4(sdr_clr) + " INTREQR=" + hex4(irq_clr));
         checks.expect((sdr_set & SDR_BIT14_RBF) != 0 && (irq_set & INTREQ_BIT11_RBF) != 0 &&
                       (sdr_clr & SDR_BIT14_RBF) == 0 && (irq_clr & INTREQ_BIT11_RBF) == 0,
-            "RBF-BIT14-NAME-AND-MIRROR (opus:8-serial.c64 c66 c67 p.256 \"14 RBF READ BUFFER FULL (Mirror -- also "
-            "appears in the interrupt request register.)\"; sol:8-serdatr.c18 c22 c94, opus:8-serdatr.c15 p.283 "
+            "RBF-BIT14-NAME-AND-MIRROR (opus:8-serial.c64, opus:8-serial.c66, opus:8-serial.c67 p.256 \"14 RBF "
+            "READ BUFFER FULL (Mirror -- also appears in the interrupt request register.)\"; sol:8-serdatr.c18, "
+            "sol:8-serdatr.c22, sol:8-serdatr.c94, opus:8-serdatr.c15 p.283 "
             "\"14 RBF Serial port receive buffer full (mirror).\"): SERDATR bit 14 tracks INTREQR bit 11 exactly, "
             "both set (SERDATR=" + hex4(sdr_set) + " INTREQR=" + hex4(irq_set) + ") and cleared (SERDATR=" +
             hex4(sdr_clr) + " INTREQR=" + hex4(irq_clr) + ")");
@@ -456,9 +457,9 @@ int main(int argc, char** argv) {
                     hex4(sdr_after));
         checks.expect((sdr_before & (SDR_BIT14_RBF | SDR_BIT15_OVRUN)) == (SDR_BIT14_RBF | SDR_BIT15_OVRUN) &&
                       (sdr_after & (SDR_BIT14_RBF | SDR_BIT15_OVRUN)) == 0,
-            "RESET-INTF-RBF-CLEARS-RBF-AND-OVRUN (opus:8-serial.c63 c69 p.256 \"After reading the contents of this "
-            "data register, you must reset the INTF_RBF bit in INTREQ to prevent an overrun.\"; sol:8-serdatr.c17 "
-            "c24 same sentence): from an overrun state (SERDATR=" + hex4(sdr_before) + "), resetting INTF_RBF "
+            "RESET-INTF-RBF-CLEARS-RBF-AND-OVRUN (opus:8-serial.c63, opus:8-serial.c69 p.256 \"After reading the "
+            "contents of this data register, you must reset the INTF_RBF bit in INTREQ to prevent an overrun.\"; "
+            "sol:8-serdatr.c17, sol:8-serdatr.c24 same sentence): from an overrun state (SERDATR=" + hex4(sdr_before) + "), resetting INTF_RBF "
             "(INTREQ bit 11) clears both SERDATR bit 14 and bit 15 together -- SERDATR=" + hex4(sdr_after));
     }
 
@@ -581,8 +582,9 @@ int main(int argc, char** argv) {
         checks.note("ADKCON-ROW: read-at-write-address=" + hex4(at_own_addr) + " txd_forced=" +
                     (txd_forced ? "yes" : "no"));
         checks.expect(at_own_addr == 0x0000 && txd_forced,
-            "ADKCON-REGISTER-SUMMARY-ROW (opus:8-adkcon.c2 c3 c4 c6 p.265 \"ADKCON 09E W P Audio, disk, control "
-            "write\"; sol:8-adkcon.c9 c10 c12 c26 same row): address $09E is write-only (no read decode exists "
+            "ADKCON-REGISTER-SUMMARY-ROW (opus:8-adkcon.c2, opus:8-adkcon.c3, opus:8-adkcon.c4, opus:8-adkcon.c6 "
+            "p.265 \"ADKCON 09E W P Audio, disk, control write\"; sol:8-adkcon.c9, sol:8-adkcon.c10, "
+            "sol:8-adkcon.c12, sol:8-adkcon.c26 same row): address $09E is write-only (no read decode exists "
             "there -- reading it returns 0x0000) and its write function reaches real logic (setting UARTBRK forces "
             "txd low)");
     }
@@ -606,8 +608,9 @@ int main(int argc, char** argv) {
         uint16_t after = rig.read_reg(ADDR_ADKCONR);
         checks.note("ADKCONR-ROW: before=" + hex4(before) + " after write-attempt-at-$010=" + hex4(after));
         checks.expect(before == ADK_BIT9_MSBSYNC && after == before,
-            "ADKCONR-REGISTER-SUMMARY-ROW (opus:8-adkcon.c7 c8 c9 c11 p.265 \"ADKCONR 010 R P Audio, disk, control "
-            "read\"; sol:8-adkcon.c13 c14 c16 c27 same row): address $010 reports real, previously-written state "
+            "ADKCONR-REGISTER-SUMMARY-ROW (opus:8-adkcon.c7, opus:8-adkcon.c8, opus:8-adkcon.c9, opus:8-adkcon.c11 "
+            "p.265 \"ADKCONR 010 R P Audio, disk, control read\"; sol:8-adkcon.c13, sol:8-adkcon.c14, "
+            "sol:8-adkcon.c16, sol:8-adkcon.c27 same row): address $010 reports real, previously-written state "
             "(" + hex4(before) + "), and is read-only -- a write attempt AT $010 changes nothing stored (paula.v's "
             "ADKCON write-decode only matches $09E, never $010) -- after=" + hex4(after));
     }
@@ -705,9 +708,11 @@ int main(int argc, char** argv) {
         uint16_t v = rig.read_reg(ADDR_ADKCONR);
         checks.note("SETCLR-SET: ADKCONR=" + hex4(v));
         checks.expect(v == ADK_ALL_15,
-            "ADKCON-SETCLR-SET (opus:8-serial.c96 c97 c98 p.257 \"15 SET/CLR Allows setting or clearing individual "
-            "bits. If bit 15 is a 1 specified bits are set.\"; opus:8-adkcon.c13 c14 c15, sol:8-adkcon.c1 c2 c3 c4 "
-            "c17 c18 c19 c20 p.265 \"15 SET/CLR Set/clear control bit. Determines if bits written with a 1 get set "
+            "ADKCON-SETCLR-SET (opus:8-serial.c96, opus:8-serial.c97, opus:8-serial.c98 p.257 \"15 SET/CLR Allows "
+            "setting or clearing individual bits. If bit 15 is a 1 specified bits are set.\"; opus:8-adkcon.c13, "
+            "opus:8-adkcon.c14, opus:8-adkcon.c15, sol:8-adkcon.c1, sol:8-adkcon.c2, sol:8-adkcon.c3, "
+            "sol:8-adkcon.c4, sol:8-adkcon.c17, sol:8-adkcon.c18, sol:8-adkcon.c19, sol:8-adkcon.c20 p.265 \"15 "
+            "SET/CLR Set/clear control bit. Determines if bits written with a 1 get set "
             "or cleared.\"): writing ADKCON with bit 15 (SET/CLR)=1 and data bits 0-14 all 1 sets all fifteen, "
             "read back whole through ADKCONR = " + hex4(v));
     }
@@ -785,7 +790,8 @@ int main(int argc, char** argv) {
         checks.note(std::string("UARTBRK: idle_high=") + (idle_high?"yes":"no") + " forced_low=" +
                     (forced_low?"yes":"no") + " released_high=" + (released_high?"yes":"no"));
         checks.expect(idle_high && forced_low && released_high,
-            "ADKCON-BIT11-UARTBRK (opus:8-serial.c100 c101 p.257 \"11 UARTBRK Force the transmit pin to zero.\"; "
+            "ADKCON-BIT11-UARTBRK (opus:8-serial.c100, opus:8-serial.c101 p.257 \"11 UARTBRK Force the transmit "
+            "pin to zero.\"; "
             "sol:8-adkcon.c7 p.257 same bit, restored duplicate of opus:8-serial.c100; also p.265 \"11 UARTBRK "
             "Forces a UART break (clears TXD) if true.\"): after reset txd idles high; setting ADKCON bit 11 "
             "forces it low (paula.v:211 wires adkcon[11] to paula_uart's uartbrk, paula_uart.v:136); clearing bit "
@@ -884,9 +890,11 @@ int main(int argc, char** argv) {
         "paula_audio_channel.v's own first line says attached modes are not supported, and paula.v instantiates "
         "paula_audio with no adkcon port at all -- confirmed independently by my own reading of paula.v:289-307). "
         "18 claims, all p.265 USE3PN..USE0V1 bit names/effects and the period/volume alternation NOTE: "
-        "opus:8-adkcon.c35, c36 (USE3PN, bit7), c37, c38 (USE2P3, bit6), c39, c40 (USE1P2, bit5), c41, c42 "
-        "(USE0P1, bit4), c43, c44 (USE3VN, bit3), c45, c46 (USE2V3, bit2), c47, c48 (USE1V2, bit1), c49, c50 "
-        "(USE0V1, bit0), c51, c52 (alternation NOTE) -- via sibling uids opus:8-appA-adkcon.c28 through c36 and "
+        "opus:8-adkcon.c35, opus:8-adkcon.c36 (USE3PN, bit7), opus:8-adkcon.c37, opus:8-adkcon.c38 (USE2P3, bit6), "
+        "opus:8-adkcon.c39, opus:8-adkcon.c40 (USE1P2, bit5), opus:8-adkcon.c41, opus:8-adkcon.c42 (USE0P1, bit4), "
+        "opus:8-adkcon.c43, opus:8-adkcon.c44 (USE3VN, bit3), opus:8-adkcon.c45, opus:8-adkcon.c46 (USE2V3, bit2), "
+        "opus:8-adkcon.c47, opus:8-adkcon.c48 (USE1V2, bit1), opus:8-adkcon.c49, opus:8-adkcon.c50 (USE0V1, bit0), "
+        "opus:8-adkcon.c51, opus:8-adkcon.c52 (alternation NOTE) -- via sibling uids opus:8-appA-adkcon.c28 through c36 and "
         "sol:8-appa-adkbit.c22 through c32, all present in that package's own \"CH8 S2 CITES\" extension. Not "
         "re-graded.");
     checks.record("ALREADY GRADED in hrm/ch5-audio-channel-registers, assertion AUDXDAT-IS-PERCHANNEL-DATA-BUFFER "

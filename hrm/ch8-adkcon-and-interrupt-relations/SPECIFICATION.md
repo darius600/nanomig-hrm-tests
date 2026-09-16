@@ -246,6 +246,56 @@ to "must read back what was written" flips it green on the identical
 measurement, showing the red is the real always-0 readback, not a fixture
 bug.
 
+## Repair addendum: 47 claims were citing correctly but invisibly
+
+The first build (commit `2dfbef2`) grouped several claims under one
+assertion by writing e.g. `opus:8-serial.c64 c66 c67` -- a shared prefix
+followed by bare trailing numbers, to save space in an already-long label.
+Every one of those 47 claims *was* covered by an assertion whose content
+genuinely measures its proposition; only the citation string was wrong.
+`c66` and `c67` are not uids -- `opus:8-serial.c66` and `opus:8-serial.c67`
+are, and the bare form never appears as that literal substring anywhere in
+the file. The coordinator's own ledger reader (and a `grep -oE
+"(opus|sol):8-[a-z]+\.c[0-9]+"` over the source) correctly found only the
+first uid of each compressed group -- 50 of 97 -- and reported the other 47
+as citing nowhere, which is exactly right: a uid that is not a literal
+substring of a graded label is not on that label, regardless of what a
+human reader would infer from the shared prefix two words earlier.
+
+**My own pre-commit check reported 0 missing, and that was the more
+important bug.** It searched for each uid's exact string first and, failing
+that, searched a 500-character window after *any* occurrence of the uid's
+own prefix for a bare trailing number matching its own suffix -- which
+finds a bare `c67` near *some* `opus:8-serial.c` occurrence without
+confirming that occurrence's own citation list is the one that names it.
+Every one of the 47 has a same-prefix uid elsewhere in the file (its own
+twin's full form, or a neighbour in the same compressed list), so the
+window check found a coincidental match for all 47 and reported none
+missing. It was answering "does a uid with this prefix and this trailing
+number appear near each other anywhere in the file", not "is this exact
+uid on a graded line" -- a third, strictly weaker question than either the
+coverage ledger's own rule or the "somewhere in the file" question I
+described it as answering. Replaced for this repair, and used to re-verify,
+with the coordinator's own method: extract every literal
+`(opus|sol):8-[a-z]+\.c[0-9]+` token from the actual captured run's
+`PASS:`/`FAIL:`/`RECORDED:` lines and check each of the 97 claim uids
+against that set directly. All 97 now match; 2 extra tokens on those lines
+are sibling-package uids cited as evidence (`opus:8-appB.c40`,
+`sol:8-appB.c39` for the SERDAT chip-column citation), not claims of this
+package's own.
+
+All 47 were repaired by writing out the full uid on every citation (no
+compressed lists remain anywhere in the file) -- 30 joined existing
+assertions 4, 6, 10, 11, 14 and 17's citation text (their content already
+measured these propositions; nothing about the assertions' logic,
+mutations or colour changed), and 17 joined the `hrm/ch5-audio-dmacon-adkcon`
+already-graded `record()` line (bits 6 down to 0's USE-name and
+"modulate" claims, opus:8-adkcon.c36 through c52) using the same
+verification standard as the original 26 -- these are the same claims
+already traced there, not new tracing. Rebuilt clean after the repair:
+still 17 passed, 2 failed, all 18 mutations still verified to flip only
+their own assertion.
+
 ## What happens next
 
 Only after this file is committed: open `paula.v` (and `paula_uart.v`,
