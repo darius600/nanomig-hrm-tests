@@ -134,6 +134,40 @@
 // MUTATION opus:8-serial.c137 oracle red start_always_zero expects the start cell to follow bit 0's own value instead of always being 0 MUT_48
 // MUTATION opus:8-serial.c139 stimulus red t transmitted with SERDAT=0x0000 (all-zero, E6's case) instead of the positive-case 0x0188 MUT_49
 // MUTATION opus:8-serial.c140 oracle green expect_no_transmission hardcoded false, matching the measured reality that txd does go low; oracle-green flip at this assertion's red baseline MUT_50
+//
+// Stimulus mutations added after the fact (25 assertions that previously
+// carried only an oracle mutation, found by tools/check_gates.py's
+// check_mutations gate): each changes what is driven into the fixture --
+// never the expected-value computation -- and was built and run individually
+// (`make clean && make MUT=MUT_n test`), confirmed to flip only its own
+// assertion, then reverted before the next. 24 of the 25 had a writable
+// stimulus; one (opus:8-serial.c83) does not -- see its `none impossible`
+// record below.
+// MUTATION CELL-LENGTH-FORMULA stimulus red for n=100, the divisor actually driven is 55 instead of 100, while the comparison stays literally against n=100 (2*(100+1)=202 != measured 2*(55+1)=112) MUT_51
+// MUTATION opus:8-serial.c103 stimulus red t1 transmitted with SERDAT=0x0033 (highest bit at 5, a 7-cell shape) instead of 0x0133 (highest bit at 8, the 10-cell shape the oracle still requires) MUT_52
+// MUTATION opus:8-serial.c105 stimulus red one extra write (SERPER=25|0x8000) issued before the sample, switching receive to 9-bit mode so the frame measures 11 cells, not the 10 the oracle still requires MUT_53
+// MUTATION opus:8-serial.c106 stimulus red data_i written as 0x0188 instead of 0x0189 -- bit 0 of the written word is now 0, so the second sampled cell no longer reads 1 MUT_54
+// MUTATION opus:8-serial.c112 stimulus red t transmitted with SERDAT=0x0005 (bit 9 dropped, highest set bit now at 2) instead of 0x0205, a genuinely 4-cell frame against the oracle's still-required 11 MUT_55
+// MUTATION opus:8-serial.c113 stimulus red tb transmitted with SERDAT=0x0021 (highest bit at 5, same shape as ta) instead of 0x0709 (highest bit at 10) -- the two frames no longer differ MUT_56
+// MUTATION opus:8-serial.c119 stimulus red one extra write (SERDAT=0x0155) issued before the idle sample, leaving a transmission in flight so TSRE is no longer set at the checkpoint MUT_57
+// MUTATION opus:8-serial.c133 stimulus red t2 transmitted with SERDAT=0x0066 (highest bit at 6, an 8-cell shape) instead of 0x0166 (highest bit at 8, the 10-cell shape the oracle still requires) MUT_58
+// MUTATION opus:8-serial.c136 stimulus red two_stop transmitted with SERDAT=0x0155 (one-stop shape, same as one_stop) instead of 0x0355 (two-stop shape) -- the two frames no longer differ by one cell MUT_59
+// MUTATION opus:8-serial.c137 stimulus red bit0_zero transmitted with SERDAT=0x0157 (bit 0 = 1) instead of 0x0154 (bit 0 = 0) -- the second sampled cell no longer reads 0 as the oracle still requires MUT_60
+// MUTATION opus:8-serial.c25 stimulus red cb9 measured by driving SERPER=8 instead of 9, while the comparison stays literally against 2*(9+1)=20 MUT_61
+// MUTATION opus:8-serial.c37 stimulus red the genuine frame truncated to 4 data bits (lsb_first_bits(0x5A,4)) instead of 8 -- too short for the DUT to complete, so genuine_rxint never fires MUT_62
+// MUTATION opus:8-serial.c39 stimulus red one extra write (SERPER=10|0x8000) issued before the sample, switching receive to 9-bit mode so f_slot1's frame measures 11 cells, not the 10 the oracle still requires MUT_63
+// MUTATION opus:8-serial.c40 stimulus red rx9 driven with 0x1B5 instead of the known 9-bit value 0x1B4, while the comparison stays literally against 0x1B4 MUT_64
+// MUTATION opus:8-serial.c41 stimulus red cb2 measured by driving SERPER=45 instead of 44, while the comparison stays literally against 90 (2*44+2) MUT_65
+// MUTATION opus:8-serial.c45 stimulus red f driven with byte 0x7D instead of 0x7E, while the comparison stays literally against 0x7E MUT_66
+// MUTATION opus:8-serial.c52 stimulus red f2 driven with byte 0x88 instead of 0x87, while the comparison stays literally against 0x87 MUT_67
+// MUTATION opus:8-serial.c59 stimulus red rbfmirror left clear (0) instead of set (1) before frame 2, so the overrun condition this assertion probes never arms MUT_68
+// MUTATION opus:8-serial.c65 stimulus red rbfmirror left clear (0) instead of set (1) -- RBF (rx_rbf) is a direct mirror of that pin (paula_uart.v:236), not a consequence of the frame completing, so RBF never reads set MUT_69
+// MUTATION opus:8-serial.c70 stimulus red t transmitted with SERDAT=0x8001 (a 17-cell frame) instead of 0x0155, against the unchanged 16-cell capture window, so the frame never completes MUT_70
+// MUTATION opus:8-serial.c76 stimulus red the SERDAT write omitted entirely -- no transmission is triggered, so TSRE cannot be observed to clear mid-shift MUT_71
+// MUTATION opus:8-serial.c79 stimulus red the second write retargeted to SERDATR (no write path at all, paula_uart.v) instead of SERDAT -- no second word ever loads, so TSRE sets within the watch window on word 1 alone instead of staying clear through both MUT_72
+// MUTATION opus:8-serial.c84 stimulus red rx9 driven with 0x1D4 instead of 0x0D4 -- the 9th bit actually presented is now 1, while the comparison stays literally against 0x0D4's own bit 8 (0) MUT_73
+// MUTATION sol:8-serial.c14 stimulus red rbfmirror left clear (0) instead of set (1) before the frame -- RBF (rx_rbf) is a direct mirror of that pin (paula_uart.v:236), not a consequence of the frame completing, so RBF never reads set MUT_74
+// MUTATION opus:8-serial.c83 none impossible: SERDATR bit 10 is `1'b0`, a hardcoded literal in paula_uart.v:258's `data_o` bus mux (`{serdatr, 1'b0, rx_data}`), not a register or wire fed by any port -- no combination of SERPER, SERDAT, rxd or rbfmirror can ever make it read nonzero, so no stimulus mutation can turn this assertion red. Same shape as hrm/ch8-keycode-table's CUTOUT-30.
 
 #include <cstdint>
 #include <cstdio>
@@ -299,6 +333,78 @@
 #endif
 #ifndef MUT_50
 #define MUT_50 0
+#endif
+#ifndef MUT_51
+#define MUT_51 0
+#endif
+#ifndef MUT_52
+#define MUT_52 0
+#endif
+#ifndef MUT_53
+#define MUT_53 0
+#endif
+#ifndef MUT_54
+#define MUT_54 0
+#endif
+#ifndef MUT_55
+#define MUT_55 0
+#endif
+#ifndef MUT_56
+#define MUT_56 0
+#endif
+#ifndef MUT_57
+#define MUT_57 0
+#endif
+#ifndef MUT_58
+#define MUT_58 0
+#endif
+#ifndef MUT_59
+#define MUT_59 0
+#endif
+#ifndef MUT_60
+#define MUT_60 0
+#endif
+#ifndef MUT_61
+#define MUT_61 0
+#endif
+#ifndef MUT_62
+#define MUT_62 0
+#endif
+#ifndef MUT_63
+#define MUT_63 0
+#endif
+#ifndef MUT_64
+#define MUT_64 0
+#endif
+#ifndef MUT_65
+#define MUT_65 0
+#endif
+#ifndef MUT_66
+#define MUT_66 0
+#endif
+#ifndef MUT_67
+#define MUT_67 0
+#endif
+#ifndef MUT_68
+#define MUT_68 0
+#endif
+#ifndef MUT_69
+#define MUT_69 0
+#endif
+#ifndef MUT_70
+#define MUT_70 0
+#endif
+#ifndef MUT_71
+#define MUT_71 0
+#endif
+#ifndef MUT_72
+#define MUT_72 0
+#endif
+#ifndef MUT_73
+#define MUT_73 0
+#endif
+#ifndef MUT_74
+#define MUT_74 0
 #endif
 
 namespace {
@@ -835,7 +941,11 @@ int main(int argc, char** argv) {
       const bool idle_ok = (idle & BIT_TBE) != 0 && (idle & BIT_TSRE) != 0 &&
                             (idle & BIT_RBF) == 0;
       const int cb = measure_cell_beats(h, 10);
+#if MUT_74
+      h.dut->rbfmirror = 0;  // RBF (rx_rbf) is a direct mirror of this pin, paula_uart.v:236 -- left clear, RBF never reads set
+#else
       h.dut->rbfmirror = 1;
+#endif
       std::vector<int> f = {0}; { auto d = lsb_first_bits(0x5A, 8); f.insert(f.end(), d.begin(), d.end()); } f.push_back(1);
       drive_receive(h, f, cb);
       const uint16_t after_rx = h.read_reg(ADDR_SERDATR);
@@ -902,7 +1012,11 @@ int main(int argc, char** argv) {
     // frequency value appears in this assertion or its oracle.
     { Harness h;
       const int cb0 = measure_cell_beats(h, 0);
+#if MUT_61
+      const int cb9 = measure_cell_beats(h, 8);  // wrong divisor driven -- oracle still compares against literal 9
+#else
       const int cb9 = measure_cell_beats(h, 9);
+#endif
 #if MUT_13
       const bool shape_ok = (cb9 == 2 * (9 + 1) + 1);  // off-by-one oracle
 #else
@@ -947,7 +1061,11 @@ int main(int argc, char** argv) {
       bool all_match_formula = true;
       const int test_ns[] = {0, 3, 10, 100, 371};
       for (int n : test_ns) {
+#if MUT_51
+        const int cb = measure_cell_beats(h, static_cast<uint16_t>(n == 100 ? 55 : n));  // wrong divisor driven for n=100, oracle still compares against n itself
+#else
         const int cb = measure_cell_beats(h, static_cast<uint16_t>(n));
+#endif
         if (cb % 2 != 0) all_even = false;
 #if MUT_14
         if (cb != 2 * (n + 1) + (n == 100 ? 2 : 0)) all_match_formula = false;
@@ -994,7 +1112,11 @@ int main(int argc, char** argv) {
         h.tick();
         if (h.dut->clk7_en) { ++c; if (h.dut->rxint) glitch_rxint = true; }
       }
+#if MUT_62
+      std::vector<int> genuine = {0}; { auto d = lsb_first_bits(0x5A, 4); genuine.insert(genuine.end(), d.begin(), d.end()); } genuine.push_back(1);  // truncated to 4 data bits -- too short to complete, no rxint
+#else
       std::vector<int> genuine = {0}; { auto d = lsb_first_bits(0x5A, 8); genuine.insert(genuine.end(), d.begin(), d.end()); } genuine.push_back(1);
+#endif
       const bool genuine_rxint = drive_receive(h, genuine, cb);
 #if MUT_15
       const bool expect_glitch_rxint = true;  // wrong -- a glitch should not register
@@ -1041,6 +1163,9 @@ int main(int argc, char** argv) {
     // error bit exists anywhere in this chapter, unlike overrun).
     { Harness h;
       const int cb = measure_cell_beats(h, 10);
+#if MUT_63
+      h.write_reg(ADDR_SERPER, 10 | 0x8000);  // one extra write before the sample -- switches to 9-bit mode, frame now one cell short
+#endif
       std::vector<int> f_slot1 = {0}; { auto d = lsb_first_bits(0x66, 8); f_slot1.insert(f_slot1.end(), d.begin(), d.end()); } f_slot1.push_back(1);
       const int cells = measure_rx_frame_cells(h, f_slot1, cb);
       std::vector<int> f_slot0 = {0}; { auto d = lsb_first_bits(0x66, 8); f_slot0.insert(f_slot0.end(), d.begin(), d.end()); } f_slot0.push_back(0);
@@ -1078,7 +1203,11 @@ int main(int argc, char** argv) {
       drive_receive(h, rx8, cb);
       const uint16_t got8 = h.read_reg(ADDR_SERDATR);
       h.write_reg(ADDR_SERPER, 10 | 0x8000);
+#if MUT_64
+      std::vector<int> rx9 = {0}; { auto d = lsb_first_bits(0x1B5, 9); rx9.insert(rx9.end(), d.begin(), d.end()); } rx9.push_back(1);  // wrong 9-bit value driven, oracle still compares against literal 0x1B4
+#else
       std::vector<int> rx9 = {0}; { auto d = lsb_first_bits(0x1B4, 9); rx9.insert(rx9.end(), d.begin(), d.end()); } rx9.push_back(1);
+#endif
       drive_receive(h, rx9, cb);
       const uint16_t got9 = h.read_reg(ADDR_SERDATR);
 #if MUT_18
@@ -1101,7 +1230,11 @@ int main(int argc, char** argv) {
     // return the value most recently written there.
     { Harness h;
       const int cb1 = measure_cell_beats(h, 3);
+#if MUT_65
+      const int cb2 = measure_cell_beats(h, 45);  // wrong divisor driven, oracle still compares against literal 90
+#else
       const int cb2 = measure_cell_beats(h, 44);
+#endif
       const bool write_reaches_state = (cb1 == 8) && (cb2 == 90) && (cb1 != cb2);
       // Last thing done with this harness: addressing SERPER "to read" it.
       // This is itself a write of whatever data_i currently holds (hazard
@@ -1126,7 +1259,11 @@ int main(int argc, char** argv) {
     // holds status bits alongside it in the same read word.
     { Harness h;
       const int cb = measure_cell_beats(h, 10);
+#if MUT_66
+      std::vector<int> f = {0}; { auto d = lsb_first_bits(0x7D, 8); f.insert(f.end(), d.begin(), d.end()); } f.push_back(1);  // wrong byte driven, oracle still compares against literal 0x7E
+#else
       std::vector<int> f = {0}; { auto d = lsb_first_bits(0x7E, 8); f.insert(f.end(), d.begin(), d.end()); } f.push_back(1);
+#endif
       h.dut->rbfmirror = 1;
       drive_receive(h, f, cb);
       const uint16_t got = h.read_reg(ADDR_SERDATR);
@@ -1205,7 +1342,11 @@ int main(int argc, char** argv) {
     { Harness h;
       const int cb = measure_cell_beats(h, 10);
       std::vector<int> f1 = {0}; { auto d = lsb_first_bits(0x12, 8); f1.insert(f1.end(), d.begin(), d.end()); } f1.push_back(1);
+#if MUT_67
+      std::vector<int> f2 = {0}; { auto d = lsb_first_bits(0x88, 8); f2.insert(f2.end(), d.begin(), d.end()); } f2.push_back(1);  // wrong byte driven, oracle still compares against literal 0x87
+#else
       std::vector<int> f2 = {0}; { auto d = lsb_first_bits(0x87, 8); f2.insert(f2.end(), d.begin(), d.end()); } f2.push_back(1);
+#endif
       std::vector<int> both = f1; both.insert(both.end(), f2.begin(), f2.end());
       drive_receive(h, both, cb);
       const uint16_t final_word = h.read_reg(ADDR_SERDATR);
@@ -1317,7 +1458,11 @@ int main(int argc, char** argv) {
       drive_receive(h, f1, cb);
       const uint16_t clean = h.read_reg(ADDR_SERDATR);
       h.dut->rga_i = 0;
+#if MUT_68
+      h.dut->rbfmirror = 0;  // previous byte no longer marked unread -- overrun condition never arms
+#else
       h.dut->rbfmirror = 1;
+#endif
       std::vector<int> f2 = {0}; { auto d = lsb_first_bits(0x71, 8); f2.insert(f2.end(), d.begin(), d.end()); } f2.push_back(1);
       drive_receive(h, f2, cb);
       const uint16_t overrun = h.read_reg(ADDR_SERDATR);
@@ -1340,7 +1485,11 @@ int main(int argc, char** argv) {
     { Harness h;
       const uint16_t idle = h.read_reg(ADDR_SERDATR);
       const int cb = measure_cell_beats(h, 10);
+#if MUT_69
+      h.dut->rbfmirror = 0;  // RBF (rx_rbf) is a direct mirror of this pin, paula_uart.v:236 -- left clear, RBF never reads set
+#else
       h.dut->rbfmirror = 1;
+#endif
       std::vector<int> f = {0}; { auto d = lsb_first_bits(0x2A, 8); f.insert(f.end(), d.begin(), d.end()); } f.push_back(1);
       drive_receive(h, f, cb);
       const uint16_t got = h.read_reg(ADDR_SERDATR);
@@ -1368,7 +1517,11 @@ int main(int argc, char** argv) {
     { Harness h;
       const uint16_t at_idle = h.read_reg(ADDR_SERDATR);
       const int cb = measure_cell_beats(h, 10);
+#if MUT_70
+      TxResult t = capture_transmit(h, 10, 0x8001, cb, 16);  // needs 17 cells but the window only watches 16 -- never completes
+#else
       TxResult t = capture_transmit(h, 10, 0x0155, cb, 16);
+#endif
       const uint16_t after_tx = h.read_reg(ADDR_SERDATR);
 #if MUT_29
       const bool idle_tbe = (at_idle & BIT_TBE) == 0;  // wrong expected polarity
@@ -1391,7 +1544,11 @@ int main(int argc, char** argv) {
       const uint16_t at_idle = h.read_reg(ADDR_SERDATR);
       const int cb = measure_cell_beats(h, 10);
       h.write_reg(ADDR_SERPER, 10);
+#if MUT_71
+      // SERDAT write omitted entirely -- no transmission is ever triggered, so TSRE cannot clear mid-shift
+#else
       h.write_reg(ADDR_SERDAT, 0x0155);
+#endif
       h.dut->rga_i = (ADDR_SERDATR >> 1) & 0xFF;
       bool saw_clear_mid_shift = false;
       for (int c = 0; c < cb * 4; ) {
@@ -1427,7 +1584,11 @@ int main(int argc, char** argv) {
       // first is still shifting
       wait_beats(h, cb);
       h.dut->rga_i = 0;
+#if MUT_72
+      h.write_reg(ADDR_SERDATR, 0x0166);  // retargeted to SERDATR, which has no write path at all -- no second word ever loads, but the same number of ticks elapses
+#else
       h.write_reg(ADDR_SERDAT, 0x0166);
+#endif
       h.dut->rga_i = (ADDR_SERDATR >> 1) & 0xFF;
       bool clear_through_both = true;
 #if MUT_31
@@ -1545,7 +1706,11 @@ int main(int argc, char** argv) {
       drive_receive(h, rx8, cb);
       const uint16_t got8 = h.read_reg(ADDR_SERDATR);
       h.write_reg(ADDR_SERPER, 10 | 0x8000);
+#if MUT_73
+      std::vector<int> rx9 = {0}; { auto d = lsb_first_bits(0x1D4, 9); rx9.insert(rx9.end(), d.begin(), d.end()); } rx9.push_back(1);  // wrong 9th-bit value driven, oracle still compares against literal 0x0D4's bit 8
+#else
       std::vector<int> rx9 = {0}; { auto d = lsb_first_bits(0x0D4, 9); rx9.insert(rx9.end(), d.begin(), d.end()); } rx9.push_back(1);
+#endif
       drive_receive(h, rx9, cb);
       const uint16_t got9 = h.read_reg(ADDR_SERDATR);
 #if MUT_34
@@ -1592,7 +1757,11 @@ int main(int argc, char** argv) {
     // D1 -- data is sent by writing SERDAT; SERDAT is write-only.
     { Harness h;
       const int cb1 = measure_cell_beats(h, 3);
+#if MUT_52
+      TxResult t1 = capture_transmit(h, 3, 0x0033, cb1, 16);  // wrong shape driven (highest bit at 5, not 8) -- oracle still expects a 10-cell frame
+#else
       TxResult t1 = capture_transmit(h, 3, 0x0133, cb1, 16);
+#endif
 #if MUT_36
       const bool write_reaches_state = t1.completed && (int)t1.bits.size() == 10 && false;
 #else
@@ -1629,6 +1798,9 @@ int main(int argc, char** argv) {
     // divisor register governs both directions.
     { Harness h;
       const int cb_tx = measure_cell_beats(h, 25);
+#if MUT_53
+      h.write_reg(ADDR_SERPER, 25 | 0x8000);  // one extra write before the sample -- switches to 9-bit mode, frame now one cell longer
+#endif
       std::vector<int> rxf = {0};
       { auto d = lsb_first_bits(0x63, 8); rxf.insert(rxf.end(), d.begin(), d.end()); }
       rxf.push_back(1);
@@ -1656,7 +1828,11 @@ int main(int argc, char** argv) {
       const int cb = measure_cell_beats(h, 10);
       while (!h.dut->clk7_en) h.tick();
       h.dut->rga_i = (ADDR_SERDAT >> 1) & 0xFF;
+#if MUT_54
+      h.dut->data_i = 0x0188;  // bit 0 now 0 -- the LSB the assertion checks no longer reads 1
+#else
       h.dut->data_i = 0x0189;
+#endif
       for (int c = 0; c < 4; ++c) h.tick();
       h.dut->rga_i = 0; h.dut->data_i = 0;
       // Watch the SAME single write's own frame through to completion --
@@ -1809,7 +1985,11 @@ int main(int argc, char** argv) {
       // past bit2 (which a defect stopping at the *first* 1-with-zero-
       // below would reach after only 4 cells) rather than stopping there;
       // correct behaviour shifts the full 11 cells out to bit9.
+#if MUT_55
+      TxResult t = capture_transmit(h, 10, 0x0005, cb, 16);  // bit 9 dropped -- highest set bit now at 2, a genuinely shorter frame
+#else
       TxResult t = capture_transmit(h, 10, 0x0205, cb, 16);
+#endif
 #if MUT_42
       const int expected_cells = 4;   // wrong -- stopping early at bit 2
 #else
@@ -1835,7 +2015,11 @@ int main(int argc, char** argv) {
       const int cb = measure_cell_beats(h, 10);
       TxResult t1 = capture_transmit(h, 10, 0x0155, cb, 16);
       wait_beats(h, cb * 2);  // settle at idle
+#if MUT_58
+      TxResult t2 = capture_transmit(h, 10, 0x0066, cb, 16);  // wrong shape driven (highest bit at 6, not 8) -- oracle still expects 10 cells
+#else
       TxResult t2 = capture_transmit(h, 10, 0x0166, cb, 16);
+#endif
 #if MUT_43
       const int expected_t2_cells = 7;  // wrong -- some other pattern's length
 #else
@@ -1857,7 +2041,11 @@ int main(int argc, char** argv) {
     { Harness h;
       const int cb = measure_cell_beats(h, 10);
       TxResult ta = capture_transmit(h, 10, 0x0031, cb, 16);  // highest set bit at 5 -- 7-cell frame
+#if MUT_56
+      TxResult tb = capture_transmit(h, 10, 0x0021, cb, 16);  // same shape as ta (highest bit at 5) -- the two frames no longer differ
+#else
       TxResult tb = capture_transmit(h, 10, 0x0709, cb, 16);  // highest set bit at 10 -- 12-cell frame
+#endif
 #if MUT_44
       const bool shapes_differ = (ta.bits.size() == tb.bits.size());  // wrong -- should differ
 #else
@@ -1919,6 +2107,9 @@ int main(int argc, char** argv) {
     // all-zero-write case below (same idle-state measurement).
     { Harness h;
       const int cb = measure_cell_beats(h, 10);
+#if MUT_57
+      h.write_reg(ADDR_SERDAT, 0x0155);  // one extra write before the sample -- leaves a transmission in flight, not idle
+#endif
       // still-idle probe on txd/TSRE, before this harness ever writes a
       // nonzero word to SERDAT.
       const bool idle_txd_high = (h.dut->txd == 1);
@@ -1954,7 +2145,11 @@ int main(int argc, char** argv) {
     { Harness h;
       const int cb = measure_cell_beats(h, 10);
       TxResult one_stop = capture_transmit(h, 10, 0x0155, cb, 16);
+#if MUT_59
+      TxResult two_stop = capture_transmit(h, 10, 0x0155, cb, 16);  // same shape as one_stop -- the two frames no longer differ
+#else
       TxResult two_stop = capture_transmit(h, 10, 0x0355, cb, 16);
+#endif
 #if MUT_47
       const int expected_diff = 0;  // wrong -- the fixture-hazard-3 trap: "the level pattern looks the same"
 #else
@@ -1984,7 +2179,11 @@ int main(int argc, char** argv) {
     { Harness h;
       const int cb = measure_cell_beats(h, 10);
       TxResult bit0_one = capture_transmit(h, 10, 0x0155, cb, 16);   // bit0 of written word = 1
+#if MUT_60
+      TxResult bit0_zero = capture_transmit(h, 10, 0x0157, cb, 16);  // bit0 of written word now 1, not 0 -- oracle still expects the second cell to read 0
+#else
       TxResult bit0_zero = capture_transmit(h, 10, 0x0154, cb, 16);  // bit0 of written word = 0
+#endif
 #if MUT_48
       const bool start_always_zero = (bit0_one.bits[0] == 1) && (bit0_zero.bits[0] == 0);  // wrong -- expects start to follow bit0
 #else
