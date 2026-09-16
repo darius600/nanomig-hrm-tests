@@ -75,6 +75,27 @@ ones, gathered in one place:
   positions with mutation-tested exactness — page 3's "trigger many times per
   screen... mid-line... during blanking" sentence (P10 below) is graded
   there.
+- **Page 6's four DMA-pointer sentences (P25–P28) are already covered,
+  engine by engine, by five existing packages**, discovered only after
+  attempting to design a fixture-boundary measurement for them: bitplane
+  pointer range/writability by `hrm/ch3-bitplane-pointers-and-modulo`
+  ("the bitplane pointer pair... pointer writes (BPLxPTH/BPLxPTL)"), sprite
+  pointer range/writability by `hrm/ch4-sprite-pointer-registers` ("SPRxPTH/
+  SPRxPTL... eight independent pairs exist"), audio pointer range/writability
+  by `hrm/ch5-audio-location-pointer` ("the audio DMA location/pointer
+  registers (AUDxLCH/AUDxLCL)", 176 claims), the Copper's own location
+  registers by `hrm/agnus_copper_locreg_width` ("the width of the Copper
+  location registers (COP1LCH/COP1LCL, COP2LCH/COP2LCL)... by walking single
+  bits through the register-bus write path"), and the blitter's own pointer
+  bank by `hrm/agnus_blitter_adrgen` ("four independent BLTxPT pointer
+  registers... written as a byte address... the pointer's value after a
+  simulated blit row"). Every engine page 6 names already has a package
+  whose whole purpose is that engine's pointer register — this chapter's
+  four sentences add no proposition none of them already grades. Bitplane
+  and sprite DMA are also, as a consequence, never triggered anywhere in
+  this fixture (see BOUNDARY below): reaching them would have meant
+  reproducing the display-window/fetch-window and sprite-list machinery
+  those two packages already own, for no new content.
 - No existing package builds at the `agnus` **top-level** boundary while also
   grading an HRM-conformance claim about the Copper crossing into another
   chip's register space, the CPU-side double-trigger effect of a bare read,
@@ -126,13 +147,13 @@ by one between readers from page 3 onward (`sol:...c47` twins
 | P19 | 4 | `sol:...c84`/`opus:...c83` | GRADE | CPU-GETS-EVERY-SLOT-WHEN-DMA-IDLE (control) |
 | P20 | 4 | `sol:...c85`/`opus:...c84` | DECLINE | → P18/P19 (this package) |
 | P21 | 4 | `sol:...c86`/`opus:...c85` | GRADE | DMA-REDUCES-CPU-SLOT-COUNT |
-| P22 | 4 | `sol:...c87`/`opus:...c86` | GRADE | MORE-BITPLANES-REDUCES-CPU-SLOTS-FURTHER |
+| P22 | 4 | `sol:...c87`/`opus:...c86` | DECLINE | → ch3-ddf-fetch-window |
 | P23 | 4 | `sol:...c88`/`opus:...c87` | DECLINE | → P9/P14/P21 (this package) |
 | P24 | 5 | `sol:...c103`/`opus:...c102` | DECLINE | → ch3-beam-counters-and-blanking |
-| P25 | 6 | `sol/opus:1-components.c111` | DECLINE | → P27 (this package) |
-| P26 | 6 | `sol/opus:1-components.c112` | DECLINE | → P27 (this package) |
-| P27 | 6 | `sol/opus:1-components.c113` | GRADE | POINTERS-SPAN-FULL-CHIP-RANGE |
-| P28 | 6 | `sol/opus:1-components.c114` | GRADE | BLITTER-POINTER-SAME-CHIP-RANGE |
+| P25 | 6 | `sol/opus:1-components.c111` | DECLINE | → 5 sibling pointer packages |
+| P26 | 6 | `sol/opus:1-components.c112` | DECLINE | → 5 sibling pointer packages |
+| P27 | 6 | `sol/opus:1-components.c113` | DECLINE | → 5 sibling pointer packages |
+| P28 | 6 | `sol/opus:1-components.c114` | DECLINE | → agnus_blitter_adrgen |
 | P29a | 8 | `sol:1-blockdiag.c12` | GRADE | AGNUS-DMA-ARBITER-PRESENT (figure) |
 | P29b | 8 | `opus:1-blockdiag.c10`/`sol:1-blockdiag.c21` | GRADE | REG-ADR-BUS-CROSSES-BOUNDARY (figure) |
 | P30 | 9 | `sol:1-examples.c24`/`opus:1-examples.c23` | GRADE | COPPER-USES-OFFSET-NOT-LOCATION-REG |
@@ -140,7 +161,7 @@ by one between readers from page 3 onward (`sol:...c47` twins
 | P32 | 13 | `sol/opus:1-guidelines.c61` | GRADE | READ-ALONE-RETRIGGERS-COPJMP |
 | P33 | 14 | `sol/opus:1-guidelines.c86` | GRADE | NO-REGISTER-IS-BOTH-READABLE-AND-WRITABLE |
 
-21 propositions graded with an `expect()`; 13 declined on a `record()` line.
+18 propositions graded with an `expect()`; 16 declined on a `record()` line.
 All 67 claims (34 propositions) are accounted for below — none left on no
 line at all.
 
@@ -173,15 +194,38 @@ interface is the simpler internal one `agnus.v:114` shows directly —
 `clk7_en`-active tick and withdrawn; there is no dtack to wait for at this
 boundary. Register addresses used below (byte addresses, matching each
 submodule's own `parameter`/`localparam` table, read and cited by file:line
-in the assertions themselves): `DMACON`=$096, `DMACONR`=$002 (`agnus.v:103-104`),
-`COP1LCH`=$080/`COP1LCL`=$082/`COPJMP1`=$088 (`agnus_copper.v:78-88`),
-`BPL1PTH`=$0E0/`BPL1PTL`=$0E2 and one pointer pair per plane at +4 bytes
-(`agnus_bitplanedma.v:54`), `SPR0PTH`=$120/`SPR0PTL`=$122 and one pair per
-sprite at +4 bytes (`agnus_spritedma.v:106`), `AUD0LCH`=$0A0/`AUD0LCL`=$0A2
-and one pair per channel at +16 bytes (`agnus_audiodma.v:53-89`),
-`BLTAPTH`=$050/`BLTDPTH`=$054/`BLTDPTL`=$056, `BLTCON0`=$040,
-`BLTCON1`=$042, `BLTSIZE`=$058 (`agnus_blitter.v:106-119`,
+in the assertions themselves): `DMACON`=$096, `DMACONR`=$002
+(`agnus.v:103-104`), `COP1LCH`=$080/`COP1LCL`=$082/`COPJMP1`=$088
+(`agnus_copper.v:78-88`), `AUD0LCH`=$0A0/`AUD0LCL`=$0A2
+(`agnus_audiodma.v:53-89`), `DSKPTH`=$020/`DSKPTL`=$022
+(`agnus_diskdma.v:21-22`), `BLTCON0`=$040, `BLTCON1`=$042, `BLTSIZE`=$058,
+`BLTDPTH`=$054/`BLTDPTL`=$056 (`agnus_blitter.v:106-119`,
 `agnus_blitter_adrgen.v:27-34`).
+
+**Bitplane DMA and sprite DMA are never triggered anywhere in this
+fixture.** Both need real setup this fixture deliberately does not build:
+bitplane DMA needs `agnus_bitplanedma.v`'s `vdiwena` (a two-**line** latch
+of the best `DIWSTRT`/`DIWSTOP` window seen on the *previous* frame,
+`agnus_bitplanedma.v:150-186`) and a valid `DDFSTRT`/`DDFSTOP` fetch window;
+sprite DMA needs a programmed VSTART/VSTOP control pair per sprite. Building
+either is exactly the display-window and sprite-list machinery
+`hrm/ch3-vertical-display-window`, `hrm/ch3-ddf-fetch-window` and
+`hrm/ch4-sprite-dma-sequence` already own — reproducing it here would be
+this chapter's introductory sentences inflated into a mechanism test the
+page never asked for. Every assertion below that needs "a DMA channel"
+uses disk DMA (`disk_dmal`, unconditional on any register once
+asserted — `agnus_diskdma.v:34-44`'s slot table needs only `hpos`, which
+free-runs from reset), audio DMA (`audio_dmal`; `agnus_audiodma.v:108`,
+`assign dma = dmal`, unconditional), or the Copper/blitter (already driven
+by register writes alone once `DMACON` enables them).
+
+**Refresh DMA fires unconditionally, with no enable of any kind**
+(`agnus_refresh.v`: `dma=1` at `hpos` = $09, $0D, $11, $15, every line,
+regardless of any register or input). Measured directly by this fixture
+before it is relied on (see CONTROL-DMA-IDLE-BASELINE below) rather than
+assumed away — a control case that claimed "the CPU gets every slot when
+every channel is idle" without this would have been quietly wrong by four
+slots per line.
 
 ## Propositions graded
 
@@ -190,12 +234,14 @@ and one pair per channel at +16 bytes (`agnus_audiodma.v:53-89`),
 > Custom graphics and audio chips with DMA capability.
 — `sol:1-components.c9`, `opus:1-components.c9`
 
-Graded structurally: enabling one DMA channel (bitplane, via `DMACON` bit 8+9)
-makes `agnus.dbr` rise and `agnus.address_out` present a chip address, while
+Graded structurally: enabling one DMA channel (disk, via `disk_dmal` —
+`agnus_diskdma.v`'s own slot table needs no register configuration beyond a
+pointer write, unlike bitplane/sprite DMA, see BOUNDARY above) makes
+`agnus.dbr` rise and `agnus.address_out` present a chip address, while
 `cpu_custom` is driven low for that cycle (`agnus.v:167-266`'s priority mux).
 This is also this package's control-pass baseline: the fixture must be shown
-able to produce a *known* address (the pointer value written) before any
-later assertion trusts `address_out`'s content.
+able to produce a *known* address (the pointer value written to `DSKPTH`/
+`DSKPTL`) before any later assertion trusts `address_out`'s content.
 
 ### P2 — ADDRESS-OUTPUT-CEILING-2MB (page 1)
 
@@ -204,8 +250,9 @@ later assertion trusts `address_out`'s content.
 — `sol:1-components.c11`, `opus:1-components.c11`
 
 `address_out` is declared `[20:1]` (`agnus.v:67`) — 20 word-address bits, a
-2MB byte ceiling and no more. Graded by walking a bitplane pointer to the top
-of that range and reading it back on `address_out` with `cpu_custom==0`.
+2MB byte ceiling and no more. Graded by writing the disk DMA pointer
+(`DSKPTH`/`DSKPTL`) to the top of that range and reading it back on
+`address_out` with `cpu_custom==0` during a granted disk-DMA cycle.
 
 ### P3 — SPECIAL-PURPOSE-HARDWARE-TAKES-BUS-FROM-PROCESSOR (page 2)
 
@@ -219,7 +266,12 @@ threshold and are not graded (as both claims' own `classify.evidence`
 already say). What is graded, using a *different* channel than P1 so this is
 a distinct measurement rather than a copy: enabling the **Copper** channel
 (`DMACON` bit 7+9) takes the bus from the processor (`cpu_custom` low,
-`dbr` high) exactly as P1 showed for bitplane DMA.
+`dbr` high) exactly as P1 showed for disk DMA. Checked specifically via
+`reg_address_out` reading `COPINS` ($08C, `agnus_copper.v`'s own
+instruction-fetch marker) during that cycle, not a bare `dbr` check --
+refresh DMA (`agnus_refresh.v`) fires unconditionally, with no enable of
+its own, and would otherwise satisfy a bare `dbr` check even with the
+Copper left disabled.
 
 ### P4 — DMA-WRITE-WITHOUT-CPU (page 2)
 
@@ -376,12 +428,16 @@ graded. Graded structurally, and deliberately **not** re-testing the
 blitter's combining logic (chapter 6's question, P15/P16 below): a minimal
 channel-D-only blit (`BLTCON0`=$01FF — `used`=1, `usea`=`useb`=`usec`=0,
 `LF`=$FF, a constant-output minterm code that needs no source data) is
-started via `BLTSIZE`; the fixture confirms `busy` rises, `dbr`+`dbwe`+
-`address_out` show a real DMA write cycle at the destination pointer
-address, and `int3` (blit-finished interrupt) fires and `busy` clears
-afterward — the blitter, as a subsystem of `agnus`, moves data across the
-chip-memory boundary. The written *value* is never asserted (that is
-chapter 6's minterm-correctness question).
+started via `BLTSIZE`; the fixture confirms `dbr`+`dbwe`+`address_out` show
+a real DMA write cycle at the destination pointer address, and `int3`
+(blit-finished interrupt) fires — the blitter, as a subsystem of `agnus`,
+moves data across the chip-memory boundary. (`busy` itself is
+`agnus_blitter`'s own internal port, not brought out at `agnus`'s top level
+except through `DMACONR`'s bit 14 — which this measurement does not rely
+on, since that readback is only meaningful on ticks the CPU register path,
+not a DMA channel, currently holds the shared address bus.) The written
+*value* is never asserted (that is chapter 6's minterm-correctness
+question).
 
 ### P15, P16 — declined (page 4)
 
@@ -413,10 +469,21 @@ sentences' remaining content is exactly the mechanism chapter 6 owns.
 — `sol:1-components.c81`, `opus:1-components.c80`
 
 Graded by enabling each of the three named chore categories in turn —
-graphics (bitplane DMA), audio (`audio_dmal`), I/O (`disk_dmal`) — and
-confirming each independently produces `dbr`+`address_out` activity with
-`cpu_custom` low, i.e. that all three are real, separately-triggerable
-channels, not one channel wearing three names.
+graphics (the blitter, via the same minimal channel-D blit P14 uses — a
+real DMA write, not bitplane fetch, which this fixture never triggers, see
+BOUNDARY above), audio (`audio_dmal` **and** `audio_dmas`), I/O
+(`disk_dmal`) — and confirming each leg's `address_out`, during a granted
+cycle, matches that leg's own distinct, just-written pointer. Two measured
+mechanics shape this, both worth recording rather than leaving implicit:
+`audio_dmas` (restart) must accompany `audio_dmal` on the channel's own
+slot, or `agnus_audiodma.v`'s pointer just increments its own reset-default
+value instead of loading the written `AUD0LCH`/`AUD0LCL` content (`audpt
+<= dmas ? audlcout : audptout+1`); and each leg is checked against its own
+pointer value rather than a bare `dbr`, because refresh DMA
+(`agnus_refresh.v`) fires unconditionally, with no enable of its own, and
+drives `address_out` to exactly 0 during its own grant — a bare `dbr` check
+would let refresh alone satisfy a leg even with that leg's channel left
+disabled.
 
 ### P18 — CHIP-MEMORY-INTERLEAVED-BASIS (page 4)
 
@@ -429,7 +496,12 @@ whenever hpos[0] is high (odd dma slots used by chipset)") describe
 alternation by slot parity. Graded by enabling one DMA channel continuously
 and sampling `cpu_custom` across many consecutive `clk7_en` ticks: it must
 be high on some ticks and low on others in the same run (interleaved),
-never constantly one or the other.
+never constantly one or the other. Because refresh DMA fires
+unconditionally regardless of any channel's own enable (see P17's note
+above), "low on some ticks" alone would stay true even with disk DMA fully
+disabled; a refresh-only baseline is measured in the same run (a second,
+DMA-idle harness) and the disk-active run is required to show meaningfully
+more low ticks than that baseline, not merely a nonzero count.
 
 ### P19 — CPU-GETS-EVERY-SLOT-WHEN-DMA-IDLE (page 4, control case)
 
@@ -438,13 +510,15 @@ never constantly one or the other.
 > the Chip memory bus is free for other activities.
 — `sol:1-components.c84`, `opus:1-components.c83`
 
-This package's other required control case (alongside P1): with every DMA
-channel disabled (`DMACON` DMAEN bit clear, no `audio_dmal`/`disk_dmal`
-asserted), `cpu_custom` must read 1 on **every** sampled tick — the
-processor is never made to wait for a channel that is not using the bus.
-Graded on the same measurement basis (`cpu_custom` sampling) as P18/P21/P22,
-which is what makes those reds (if any) meaningful rather than a
-units-error.
+This package's other required control case (alongside P1): with every
+*software-visible* DMA channel disabled (`DMACON` DMAEN bit clear, no
+`audio_dmal`/`disk_dmal` asserted), `cpu_custom` must read 1 on every
+sampled tick **except** the four fixed refresh slots per line
+(`agnus_refresh.v`, unconditional — see BOUNDARY above; this is measured by
+the fixture itself, not assumed) — the processor is never made to wait for
+a channel that is not using the bus, refresh aside. Graded on the same
+measurement basis (`cpu_custom` sampling) as P18/P21, which is what makes
+those reds (if any) meaningful rather than a units-error.
 
 ### P20 — declined (page 4)
 
@@ -469,19 +543,23 @@ window with DMA idle (P19's baseline) against the same window with one
 channel enabled: the count must be strictly lower with DMA active — "some
 occasions" the chips "steal" a cycle the CPU would otherwise have had.
 
-### P22 — MORE-BITPLANES-REDUCES-CPU-SLOTS-FURTHER (page 4)
+### P22 — declined (page 4)
 
 > In the higher resolution video modes, some or all of the cycles normally
 > used for processor access are needed by the custom chips for video
 > refresh.
 — `sol:1-components.c87`, `opus:1-components.c86`
 
-Graded by comparing `cpu_custom`'s high-tick count with bitplane DMA
-enabled at a low plane count against a higher plane count (more bitplane
-fetch slots claimed per `agnus_bitplanedma.v`'s own fetch-window logic): the
-higher-plane-count run's count must be lower still than the lower-plane-count
-run's (itself already lower than P19's idle baseline) — "higher resolution...
-some or all of the cycles" needed grows monotonically with plane count.
+Declined. Unlike P17/P18/P19/P21 (disk/audio/blitter DMA, none of which need
+any window setup), this sentence is specifically about bitplane-fetch volume
+scaling with resolution/plane count — measuring it means actually running
+bitplane DMA, which needs `agnus_bitplanedma.v`'s two-line `vdiwena` latch
+and a programmed `DDFSTRT`/`DDFSTOP` fetch window (see BOUNDARY above,
+"Bitplane DMA and sprite DMA are never triggered"). That is exactly
+`hrm/ch3-ddf-fetch-window`'s own subject (DDFSTRT/DDFSTOP, word counts) —
+reproducing it here for one comparison would be the mechanism-test trap the
+build brief warns an introductory sentence invites, for a question that
+package already owns.
 
 ### P23 — declined (page 4)
 
@@ -520,36 +598,42 @@ assertion here could add.
 > buffer.
 — `sol:1-components.c112`, `opus:1-components.c112`
 
-Declined, citing P27 in this same package (the next sentence in the same
-paragraph, naming the same pointer registers by role): both are restatements
-— one general, one in negative form — of the fact P27 grades directly
-(every listed pointer is a full-range, independently-writable register, not
-a fixed region). Neither sentence adds a separately falsifiable threshold.
+Declined. Both are restatements — one general, one in negative form — of
+the fact P27 discusses below; see P27 for the citation, which applies to
+all four of P25/P26/P27/P28 alike.
 
-### P27 — POINTERS-SPAN-FULL-CHIP-RANGE (page 6)
+### P27 — declined (page 6)
 
 > Instead, the system allows display bitplanes, sprite processor control
 > lists, coprocessor instruction lists, or audio channel control lists to
 > be located anywhere within Chip memory.
 — `sol:1-components.c113`, `opus:1-components.c113`
 
-Graded by writing a distinct, arbitrary 21-bit address into each of the four
-named pointer types in turn (a bitplane pointer, a sprite pointer, the
-Copper's `COP1LC`, an audio channel's `AUDxLC`) and confirming each engine's
-own granted-cycle `address_out` reflects the address just written, not a
-fixed or shared default — all four spanning the same chip range with no
-base hard-wired anywhere.
+Declined. This sentence names four engines, and — found only while designing
+this proposition's own fixture measurement, not before — every one of the
+four already has a dedicated existing package whose whole purpose is that
+engine's own pointer register's range and writability: bitplane
+(`hrm/ch3-bitplane-pointers-and-modulo`), sprite
+(`hrm/ch4-sprite-pointer-registers`), audio (`hrm/ch5-audio-location-pointer`,
+176 claims), Copper (`hrm/agnus_copper_locreg_width`, which walks single
+bits through the register-bus write path to `COP1LCH`/`COP1LCL`). A fresh
+sweep at the `agnus` boundary would answer the identical question four
+existing packages already answer in more depth, and — for bitplane and
+sprite specifically — would require reproducing the display-window/
+fetch-window and sprite-list machinery those packages own (see BOUNDARY
+above). P25 and P26, the same paragraph's general and negative framings of
+this same fact, are declined for the same reason.
 
-### P28 — BLITTER-POINTER-SAME-CHIP-RANGE (page 6)
+### P28 — declined (page 6)
 
 > This same region of memory can be accessed by the bit blitter.
 — `sol:1-components.c114`, `opus:1-components.c114`
 
-Graded the same way as P27, one more engine: a blitter pointer (`BLTDPTH`/
-`BLTDPTL`) is loaded with an address in the same range P27 exercised and the
-blitter's own granted-cycle `address_out` confirms it — the blitter reaches
-the identical chip-address space the other four engines do, not a separate
-one.
+Declined, same reasoning as P27: `hrm/agnus_blitter_adrgen`'s own stated
+purpose is "four independent BLTxPT pointer registers... written as a byte
+address... the pointer's value after a simulated blit row" — exactly this
+sentence's proposition (the blitter's pointer reaches the same chip-address
+range the other engines do), already graded there.
 
 ### P29a — AGNUS-DMA-ARBITER-PRESENT (page 8, Figure 1-1)
 
@@ -580,7 +664,12 @@ write (`aen`+`hwr`+`lwr`) at an address `agnus` does not itself decode is
 shown to still appear on `reg_address_out`, exactly the wire the figure
 draws leaving AGNUS toward PAULA and DENISE (`agnus.v:136`,
 `assign reg_address_out = reg_address`, unconditional — not gated by
-whether `agnus` itself answers that address).
+whether `agnus` itself answers that address). The assertion compares
+`reg_address_out` against the fixed expected value ($C0, COLOR00's own
+word address) rather than re-deriving the expectation from whatever address
+the stimulus used — comparing against the stimulus's own address would
+stay trivially true under the mutation too, since the mutation changes what
+is written, not what ought to be read back.
 
 ### P30 — COPPER-USES-OFFSET-NOT-LOCATION-REG (page 9)
 
@@ -604,12 +693,19 @@ MOVE word, fetched via two different `COP1LC` values, produces the same
 — `sol:1-guidelines.c28`, `opus:1-guidelines.c28`
 
 "Bobs", "pointers" and "gadgets" are OS-level names for imagery, not for
-engines — what this fixture can reach underneath them is the sprite and
-blitter fetches, disclosed as the honest limit here (matching both readers'
-own evidence text). Graded: bitplane, audio and disk DMA are each driven in
-turn to the **same** target chip address, and the fixture confirms all three
-heterogeneous kinds of data cross the identical `address_out` bus — one
-shared Chip memory, not per-kind separate address spaces.
+engines — what this fixture can reach underneath them is the blitter, audio
+and disk fetches (bitplane and sprite DMA are not triggered anywhere in this
+fixture, see BOUNDARY above), disclosed as the honest limit here (matching
+both readers' own evidence text, which itself names disk/audio/bitplane/
+sprite/blitter as the underlying engines, not the OS-level names). Graded:
+the blitter (trackdisk-buffer-style raw data, standing in for "images" —
+its own minimal write from P14), audio DMA (sound samples, `audio_dmal`
+**and** `audio_dmas` — see P17's note on why the restart bit is required
+for `agnus_audiodma.v` to load the written pointer at all) and disk DMA
+(trackdisk buffers) are each pointed, in turn, at the **same** target chip
+address, and the fixture confirms all three heterogeneous engines cross the
+identical `address_out` bus — one shared Chip memory, not per-kind separate
+address spaces.
 
 ### P32 — READ-ALONE-RETRIGGERS-COPJMP (page 13)
 
