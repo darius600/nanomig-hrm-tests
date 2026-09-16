@@ -47,6 +47,33 @@ a signal crossing a boundary), decided before the fixture was run. Recorded
 here and in the final report rather than glossed over, per the brief's own
 instruction.
 
+**What was written before the RTL was opened, and what was added after,
+stated plainly rather than left to be inferred from the commit log:**
+
+- **Before** (commit `6c293f5`, the first commit of this file, made before
+  `test_agnus.cpp` existed at all): the whole 34-proposition structure below
+  — every quotation, the claim inventory table, which propositions are
+  graded versus declined and why, and the wording of what each graded
+  proposition would measure. This is the content the order-of-work rule is
+  actually about, and it held: no proposition's GRADE/DECLINE disposition or
+  measurement description changed after the fixture existed.
+- **After** (commit `7341b0a`, once the fixture was built, run, and its
+  baseline read): five sections' *mechanism prose* was corrected to match
+  what the built fixture actually does, without changing any proposition's
+  disposition, expected value, or citation — P3 now says the check keys on
+  `COPINS` rather than a bare `dbr` (refresh DMA, which fires unconditionally,
+  was satisfying the original bare check regardless of the Copper's state);
+  P17 and P31 note that `agnus_audiodma.v` needs `audio_dmas` alongside
+  `audio_dmal` to load a written pointer at all; P18 notes the refresh-only
+  baseline comparison its threshold rests on; P29b notes the assertion
+  compares against a fixed expected value, not the (possibly mutated)
+  stimulus address. Every one of these is a description of an RTL mechanic
+  discovered while making the measurement work, not a change to what page 1–14
+  was asked to prove. A later pass (uncommitted at time of writing, gate-
+  compliance only) added `CONTROL-FIXTURE-RESET`'s own mutation record and
+  fixed four `expect()` calls whose labels a tooling regex could not parse —
+  neither touches this file, since neither changes a proposition's content.
+
 ## Grep-for-existing-assertion, disclosed
 
 `hrm/` was grepped for prior assertions on this chapter's propositions before
