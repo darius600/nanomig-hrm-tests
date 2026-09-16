@@ -166,10 +166,22 @@ specialist rules on it.
 | [NM-HRM-048](findings/NM-HRM-048.md) | a documented hardware bug that does not occur here | **red · inverted** | `hrm/ch8-dsklen-dma-arming` | **3–1**: Copperline reproduces the bug with a named constant; WinUAE implements the paragraph's *other* sentence instead and calls it a Paula bug; vAmiga and Denise neither |
 | [NM-HRM-049](findings/NM-HRM-049.md) | the MFM encoder is context-free | **red** | `hrm/ch8-mfm-cell-encoding` | **unanimous against** — all four carry the previous data bit across the word or byte boundary; Denise reprints the manual's table as the comment above its encoder |
 
+| [NM-HRM-050](findings/NM-HRM-050.md) | one of the two international cutout keys reaches no code | **red** | `hrm/ch8-keycode-table` | **unanimous against** — all four carry both `$30` and `$2B` as distinct keys; NanoMig's table emits `$2B` for both and `$30` for none |
+| [NM-HRM-051](findings/NM-HRM-051.md) | Caps Lock is delivered as an ordinary key | **red** | `hrm/ch8-keyboard-events` | **3–1 against** — WinUAE mirrors the host's lock, Denise models the LED, Copperline owns the toggle in its keyboard MCU; vAmiga has no Caps Lock case and behaves as NanoMig does |
+| [NM-HRM-052](findings/NM-HRM-052.md) | p.252 and p.254 disagree about the right Alt key | source observation | `hrm/ch8-keycode-table` | **unanimous for p.252, and it settles nothing**: all four name `$65` for the right Alt, which is evidence about which page implementers read, not about which page is right |
+
 Chapter 1 has not been extracted, so no finding below comes from it.
 Chapter 8's first slice — the Controller Port Interface — contributes
-NM-HRM-037 to NM-HRM-040; its floppy, keyboard and serial slices are not
-extracted yet.
+NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
+keyboard slice NM-HRM-050 to NM-HRM-052. The serial slice is read but not
+yet built.
+
+**NM-HRM-050 and NM-HRM-051 are the first findings graded at `src/misc`**, the
+peripheral-substitute layer admitted for the keyboard because Appendix G
+specifies the keyboard as a device with its own microprocessor. Both carry the
+qualifier the table above states: upstream has no `hid.v` and no `keymap` at
+all, so neither finding transfers to the Minimig family. They are about this
+core.
 
 **Two of chapter 8's four are inherited from Minimig-AGA byte for byte**,
 which is unusual in this register: NM-HRM-037's two lines and NM-HRM-040's
