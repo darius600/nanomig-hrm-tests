@@ -43,7 +43,7 @@ is unconditional.
 
 | | code | |
 |---|---|---|
-| **WinUAE** | — | no chipset narrowing |
+| **WinUAE** | [`memory.cpp:2619-2623`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2619-L2623) | **narrows the BUS, not the register.** `chipmem_full_mask = 0x80000 - 1` when `CSMASK_ECS_AGNUS` is clear — 19 bits on OCS, on the Agnus-side chip-RAM path disk and every other DMA fetch uses. The register itself stays full width. Two caveats in the same function stop it being a clean vote for the manual: `cs_agnussize` overrides it either way (`:2627-2644`), and with JIT on, `if (currprefs.cachesize) chipmem_full_mask = chipmem_bank.allocated_size - 1` (`:2646-2648`) drops the chipset term entirely |
 | **vAmiga** | — | no chipset narrowing |
 | **Denise** | [`emulation/libami/agnus/copper.cpp:345-347`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L345-L347) | <pre>auto Copper::setCOP1LCH(uint16_t value) -&gt; void {<br>&nbsp;&nbsp;&nbsp;&nbsp;cop1lc = (cop1lc & 0xffff) \| (value &lt;&lt; 16);</pre> takes the whole write, no mask |
 | **Copperline** | [`src/chipset/agnus.rs:113-118`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L113-L118) | <pre>Self::Ocs =&gt; 0x0007_FFFF,</pre> **narrows to 19 bits on OCS** — the manual's width |

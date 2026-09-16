@@ -45,6 +45,40 @@ A number is issued once. It is never reused, never reordered, and a withdrawn
 finding keeps both its number and its entry -- the reasoning that withdrew it is
 the result, not a deletion.
 
+## Two layers are under test, and a finding must say which
+
+The *Amiga Hardware Reference Manual* specifies a **system**, not a chip.
+Chapter 8 alone covers the controller ports, the disk drive, the keyboard, the
+serial and parallel connectors and the monitor. So the thing a page specifies is
+not always a custom chip, and NanoMig answers for it in one of two layers.
+
+| layer | what it is | how a finding there travels |
+|---|---|---|
+| `src/minimig-aga` | the custom-chip reimplementation, shared with `MiSTer-devel/Minimig-AGA_MiSTer` — byte-identical in places | **transfers to the Minimig family.** Several findings below are marked `inherited` and belong upstream |
+| `src/misc` | the board's substitutes for Amiga peripherals — `hid.v` and `amiga_keymap.v` stand in for the keyboard and its microprocessor | **does not transfer.** Every Minimig-derived core solves this differently |
+
+That difference is measured, not assumed. In the upstream tree at `da7632e`
+there is no `amiga_keymap.v`, no `keymap` and no `hid.v`: `rtl/minimig.v:207`
+takes `kbd_mouse_data` as a **top-level input** and the HID translation happens
+above the chipset, on the MiSTer framework's ARM side. MiST and other Minimig
+boards solve it differently again.
+
+**A finding graded against the second layer therefore carries two extra
+statements, and is incomplete without them:**
+
+- its **Upstream** row says *NanoMig's own — no counterpart upstream*, naming
+  where upstream does the same work instead;
+- its **Report to** row says *NanoMig only*, because a reader who takes it as a
+  statement about Minimig will be wrong.
+
+Which layer answers for a page is decided by what the page specifies, not by a
+directory. Appendix G specifies the keyboard as a device with its own
+microprocessor, so the keyboard layer answers for it. p.260 specifies a 23-pin
+connector for which NanoMig has no counterpart at all — the board has HDMI,
+which is a replacement rather than a reimplementation and which the manual does
+not specify. Such a claim is not a finding; it is outside the system the manual
+describes.
+
 **Why the keys were renumbered.** Findings previously carried
 `FPGA-nnn` keys borrowed from the private workspace where this work is planned.
 That workspace is not published. No reader outside it can resolve such a
@@ -84,7 +118,7 @@ specialist rules on it.
 |---|---|---|---|---|
 | [NM-HRM-001](findings/NM-HRM-001.md) | PAL field terminates at 313 lines, not 312 | **withdrawn** | `hrm/agnus_beamcounter` | **all four** run a 313-line PAL field; Table 7-5 sanctions 313 |
 | [NM-HRM-002](findings/NM-HRM-002.md) | audio channels on the wrong stereo side | **red** | `hrm/paula_audio_mixer` | **2–2**: WinUAE and vAmiga with chapter 5; Denise and Copperline with the pin list |
-| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | **Copperline narrows to 19 bits on OCS**, matching the manual; the other three do not |
+| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | **Copperline narrows the REGISTER to 19 bits on OCS**, matching the manual; **WinUAE narrows the BUS** on OCS (`memory.cpp:2619-2623`), which has the same effect on a fetched address; Denise and vAmiga neither |
 | [NM-HRM-004](findings/NM-HRM-004.md) | ECS danger bit admits too small a range | **red** | `hrm/agnus_copper_move_range`, `hrm/agnus_copper_move_sweep` | both block below `$80` regardless of chipset |
 | [NM-HRM-005](findings/NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | **red** | `hrm/agnus_copper_cycle_times`, `hrm/agnus_copper_cycles` | vAmiga gives NanoMig's three numbers |
 | [NM-HRM-006](findings/NM-HRM-006.md) | DDFSTRT bit H3 gated by chipset, not by resolution | **red** | `hrm/ch3-ddf-fetch-window` | **all four** gate DDF on the chipset; none on resolution |
@@ -103,9 +137,9 @@ specialist rules on it.
 | [NM-HRM-019](findings/NM-HRM-019.md) | SPRxCTL bit 4 (SHSH1) is not implemented | **red** | `hrm/ch3-sprite-registers` | **C2** for the first two; Denise and Copperline both implement bit 4 |
 | [NM-HRM-020](findings/NM-HRM-020.md) | BLTSIZV is not gated on ECS, while its siblings are | **red** | `hrm/agnus_blitter_ecs` | **A2** — **all four** gate it; NanoMig alone does not |
 | [NM-HRM-021](findings/NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | **red** | `hrm/agnus_blitter_ecs` | **C1**; Denise implements it and ECS-gates it |
-| [NM-HRM-022](findings/NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** — but Copperline narrows every DMA pointer by Agnus revision |
+| [NM-HRM-022](findings/NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | **red** | `hrm/agnus_blitter_ecs` | **B2** — Copperline narrows every DMA pointer by Agnus revision, and WinUAE narrows the Agnus bus on OCS (`memory.cpp:2619-2623`) rather than the register |
 | [NM-HRM-023](findings/NM-HRM-023.md) | the ATTACH bit is honoured in the even sprite, not only the odd | **red** | `hrm/ch4-attached-sprites` | **Denise applies the manual's rule exactly**: `(nr & 1) && (value & 0x80)` |
-| [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | **red** | `hrm/ch5-audio-location-pointer` | **B2**, as NM-HRM-003 and NM-HRM-022 — Copperline alone narrows by revision |
+| [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | **red** | `hrm/ch5-audio-location-pointer` | **B2**, as NM-HRM-003 and NM-HRM-022 — Copperline alone narrows the REGISTER by revision; WinUAE narrows the bus instead (`memory.cpp:2619-2623`) |
 | [NM-HRM-025](findings/NM-HRM-025.md) | volume 64 and volume 63 are the same gain on the multiply path | **red** | `hrm/ch5-audio-volume-scale`, `hrm/ch5-audio-register-map` | **all four** clamp at 64 and keep it distinct; two say why in their own comments |
 | [NM-HRM-026](findings/NM-HRM-026.md) | the audio state codes are not the ones Figure 5-8 prints | source observation | `hrm/ch5-audio-channel-state` | **all four** use the figure's numbering; Copperline names the five constants with it |
 | [NM-HRM-027](findings/NM-HRM-027.md) | in direct mode the interrupt is raised before a word is output | **red** | `hrm/ch5-audio-direct-output` | not read — and the manual states the moment four different ways |
