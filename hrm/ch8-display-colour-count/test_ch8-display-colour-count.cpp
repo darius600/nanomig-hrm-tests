@@ -8,35 +8,43 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 260; committed specification 79e9104 (SPECIFICATION.md, this
 //   package).
-// Requirement IDs: none graded with expect() under their own uid -- see
-//   "Disposition" below. Claims file:
+// Requirement IDs: opus:8-display.c13, sol:8-display.c12 -- both graded by
+//   the single PALETTE-RESOLVES-4096-CODES assertion below. Claims file:
 //   hrm-testpipeline/work/ch8-s4-build/ch8-display-colour-count.jsonl
 //   (2 claims).
 //
-// Disposition, decided in SPECIFICATION.md before this file was written:
-//   hrm/ch3-colour-register-format already carries SWEEP-12BIT-DISTINCT, an
-//   assertion that writes 9 distinct 12-bit codes to one denise_colortable
-//   register and confirms all 9 read back pairwise-distinct through rgb --
-//   citing p.46's "one of 4,096 possible colors" verbatim. That is the same
-//   mechanism (denise_colortable, a 12-bit write, an rgb read) answering the
-//   same number (4,096 = 2^12) this package's two claims restate from a
-//   different page of the same manual. Re-grading it here under a new label
-//   would not measure anything SWEEP-12BIT-DISTINCT does not already
-//   measure, and risks the two packages reaching apparently different
-//   verdicts about one printed fact. Both claims are declined below with
-//   record(), citing that assertion, rather than re-asserted.
+// Disposition -- REPAIRED after coordinator review; recorded here because it
+//   changed what this file asserts (change history belongs in the commit
+//   message, not SPECIFICATION.md, but this paragraph explains the shape of
+//   what follows, which the commit message alone does not):
+//   this file's first version declined both claims with record(), citing
+//   hrm/ch3-colour-register-format's SWEEP-12BIT-DISTINCT (same mechanism,
+//   same number, p.46) rather than measuring them here. The coordinator
+//   pointed out that record-and-cite is the rule for the 53 claims elsewhere
+//   in this slice that carry a classify.note naming an accepted package's
+//   own uid -- these two carry no such note (package list: "already graded
+//   elsewhere: 0" for this package), and a citation is not a uid on a graded
+//   line: the ledger read this package as grading neither claim. There is
+//   also a reason of substance: this package's claims cite p.260, ch3's
+//   assertion cites p.46 -- a claim is graded against the page it cites, and
+//   if those two pages ever disagreed, citing ch3 would quietly substitute
+//   its oracle for this one's. Both uids are graded below, against p.260
+//   directly, by sweeping all 4,096 possible 12-bit codes into one register
+//   and counting distinct readings -- not asserted from data_in's declared
+//   width. ch3's result is carried as corroboration in that assertion's own
+//   note(), not as its oracle.
 //
-//   That citation is not free, though: the colour store here is 24 bits,
-//   written in two 12-bit halves selected by `loct` (denise_colortable.v:
-//   17,33; denise_colortable_ram_mf.v:16-20) -- loct low writes both halves
-//   alike (the 4,096-code OCS/ECS reading page 260 describes); loct high
-//   writes only the low half, reaching colours outside that 4,096-code
-//   space (the AGA path, which page 260's claims are not about).
-//   ch3-colour-register-format's own Harness holds loct at 0 throughout but
-//   never says why, because none of ITS claims turn on the distinction.
-//   This package's own LOCT-SELECTS-4096-READING control, below, is what
-//   establishes -- measured, not assumed -- that the citation is being made
-//   on the correct (loct-low) basis.
+//   Establishing which reading page 260 describes is not free, though: the
+//   colour store here is 24 bits, written in two 12-bit halves selected by
+//   `loct` (denise_colortable.v:17,33; denise_colortable_ram_mf.v:16-20) --
+//   loct low writes both halves alike (the 4,096-code OCS/ECS reading page
+//   260 describes); loct high writes only the low half, reaching colours
+//   outside that 4,096-code space (the AGA path, which page 260's claims are
+//   not about). ch3-colour-register-format's own Harness holds loct at 0
+//   throughout but never says why, because none of ITS claims turn on the
+//   distinction. This package's own LOCT-SELECTS-4096-READING control,
+//   below, is what establishes -- measured, not assumed -- that
+//   PALETTE-RESOLVES-4096-CODES is graded on the correct (loct-low) basis.
 //
 // BOUNDARY: top module `denise_colortable` only (one Verilator build,
 //   sources denise_colortable.v + denise_colortable_ram_mf.v), per the
@@ -47,9 +55,9 @@
 //   convention (COLORBASE 9'h180 -> word address $C0..$DF, i.e.
 //   reg_address_in = 0xC0 + register index) are carried over from
 //   hrm/ch3-colour-register-format's own harness, read in full as the
-//   sibling package this citation depends on -- disclosed here rather than
-//   silently reused, per that package's own precedent for disclosing
-//   borrowed plumbing.
+//   sibling package PALETTE-RESOLVES-4096-CODES corroborates against --
+//   disclosed here rather than silently reused, per that package's own
+//   precedent for disclosing borrowed plumbing.
 //
 // Non-goal: whether "on-screen simultaneously" additionally requires HAM
 //   (denise_hamgenerator, instantiated in denise.v, outside this boundary)
@@ -64,9 +72,11 @@
 //
 // MUTATION FIXTURE-LIVE stimulus red MUT_0: the second write's value changed from a distinct sentinel (0x0F0) to a repeat of the first (0x1F0), so the two reads no longer differ.
 // MUTATION LOCT-SELECTS-4096-READING stimulus red MUT_1: the loct-high write's value changed from Y (0x3E1) to X (0xA5C) -- the value already resident in both halves from the preceding loct-low write -- so the low half no longer diverges from the high half; the second reading collapses back to the doubled/OCS pattern the first reading already produced, instead of the independently-blended value (hi nibble from X, lo nibble from Y, per channel) the assertion expects.
+// MUTATION opus:8-display.c13 stimulus red MUT_2: the swept 12-bit stimulus was masked to 11 bits (v & 0x7FF) before being written, so bit 11 never varies; the sweep still presents 4,096 loop iterations but only 2,048 distinct codes ever reach data_in, and the distinct-reading count comes back 2,048, not 4,096.
 
 #include <cstdio>
 #include <iostream>
+#include <set>
 #include <string>
 #include "Vdenise_colortable.h"
 #include "verilated.h"
@@ -77,15 +87,14 @@
 #ifndef MUT_1
 #define MUT_1 0
 #endif
+#ifndef MUT_2
+#define MUT_2 0
+#endif
 
 namespace {
 
 constexpr uint8_t COLOR_ADDR_BASE = 0xC0;  // reg_address_in word-address of COLOR00 ($180/2); COLORx = 0xC0+x.
 constexpr uint8_t IDLE_ADDR = 0x00;        // outside 0xC0-0xDF: the write decode will not strobe any color register here.
-
-uint8_t R_of(uint32_t rgb) { return static_cast<uint8_t>((rgb >> 16) & 0xFF); }
-uint8_t G_of(uint32_t rgb) { return static_cast<uint8_t>((rgb >> 8) & 0xFF); }
-uint8_t B_of(uint32_t rgb) { return static_cast<uint8_t>(rgb & 0xFF); }
 
 std::string hex6(uint32_t v) {
     char buf[8];
@@ -158,7 +167,6 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
-    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -251,38 +259,61 @@ int main(int argc, char** argv) {
             "reach ($A5C then $3E1 -> $A35EC1, not $AA55CC and not "
             "$335511); a further loct-low write returns both halves to "
             "moving together ($246 -> $224466). Confirms, at this fixture, "
-            "which reading the record()s below are citing and that loct is "
-            "held low deliberately for them, not left floating [no page -- "
-            "measurement-basis control for the record() lines below]");
+            "which reading PALETTE-RESOLVES-4096-CODES below is graded "
+            "against and that loct is held low deliberately for it, not "
+            "left floating [no page -- measurement-basis control for the "
+            "assertion below]");
         checks.note("LOCT-SELECTS-4096-READING: loct-low " + hex6(rgb1) +
                      ", loct-high " + hex6(rgb2) + ", loct-low " + hex6(rgb3));
     }
 
-    // ------------------------------------------------------------------
-    // Declined claims. Both restate p.260's "up to 4,096 different colors
-    // on-screen simultaneously" and are already graded, at this same top
-    // module, by hrm/ch3-colour-register-format's SWEEP-12BIT-DISTINCT (9
-    // distinct 12-bit codes on one register read back pairwise-distinct,
-    // citing p.46's identical "4,096" figure) -- independently re-run for
-    // this package (WSL, 16.09.2026): 55 passed, 0 failed, that assertion
-    // among the passes, on the loct-low basis LOCT-SELECTS-4096-READING
-    // above confirms is the correct one for a page-260 claim. See
-    // SPECIFICATION.md's "Existing coverage" and "What this package
-    // additionally measures" for the full reasoning. Not re-graded here.
-    // ------------------------------------------------------------------
-    checks.record(
-        "opus:8-display.c13 (p.260, \"They can generate up to 4,096 "
-        "different colors on-screen simultaneously\"): already graded at "
-        "this same top module by hrm/ch3-colour-register-format's "
-        "SWEEP-12BIT-DISTINCT (55 passed, 0 failed, re-run 16.09.2026), "
-        "on the loct-low basis LOCT-SELECTS-4096-READING confirms above. "
-        "Not re-graded here.");
-    checks.record(
-        "sol:8-display.c12 (p.260, twin of opus:8-display.c13, same "
-        "sentence): already graded at this same top module by "
-        "hrm/ch3-colour-register-format's SWEEP-12BIT-DISTINCT (55 passed, "
-        "0 failed, re-run 16.09.2026), on the loct-low basis "
-        "LOCT-SELECTS-4096-READING confirms above. Not re-graded here.");
+    // =========================================================================
+    // opus:8-display.c13 sol:8-display.c12 -- PALETTE-RESOLVES-4096-CODES
+    // (p.260): both claims restate "up to 4,096 different colors on-screen
+    // simultaneously". Graded here directly against p.260, on the loct-low
+    // basis LOCT-SELECTS-4096-READING establishes above: sweep every one of
+    // the 4,096 possible 12-bit codes into one colour register and count
+    // how many pairwise-distinct rgb readings result -- measured by
+    // sweeping and counting, not asserted from data_in's declared width.
+    // hrm/ch3-colour-register-format's SWEEP-12BIT-DISTINCT graded the
+    // identical mechanism against p.46's identical figure and passed;
+    // that is corroboration, carried in the note() below, not this
+    // assertion's oracle -- p.260 is.
+    // =========================================================================
+    {
+        Harness h;
+        std::set<uint32_t> distinct;
+        for (uint32_t v = 0; v < 4096; ++v) {
+#if MUT_2
+            const uint32_t stim = v & 0x7FFu;  // bit 11 never varies -- 2,048 codes, not 4,096
+#else
+            const uint32_t stim = v;
+#endif
+            h.write_reg(9, stim, /*loct_high=*/false);
+            distinct.insert(h.read_reg(9));
+        }
+        checks.expect(
+            distinct.size() == 4096,
+            "opus:8-display.c13 sol:8-display.c12 PALETTE-RESOLVES-4096-CODES: "
+            "sweeping all 4,096 possible 12-bit codes ($000-$FFF) into one "
+            "colour register, with loct held low, and counting the "
+            "pairwise-distinct rgb readings yields exactly 4,096 -- the "
+            "full 12-bit field selects among 4,096 distinct, "
+            "distinguishable colours, measured by sweeping and counting "
+            "rather than asserted from data_in's declared width, on the "
+            "loct-low basis LOCT-SELECTS-4096-READING confirms above "
+            "[p.260 \"They can generate up to 4,096 different colors "
+            "on-screen simultaneously\"]");
+        checks.note(
+            "PALETTE-RESOLVES-4096-CODES: " + std::to_string(distinct.size()) +
+            " distinct rgb readings out of 4,096 codes swept. "
+            "Corroboration, not this assertion's oracle: "
+            "hrm/ch3-colour-register-format's SWEEP-12BIT-DISTINCT grades "
+            "the identical mechanism against p.46's identical figure and "
+            "passed (55 passed, 0 failed, re-run 16.09.2026) -- this "
+            "assertion is graded against p.260 directly and independently, "
+            "since a claim is graded against the page it cites.");
+    }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

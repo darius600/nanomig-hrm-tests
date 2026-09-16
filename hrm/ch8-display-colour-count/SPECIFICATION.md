@@ -99,7 +99,7 @@ codes. That is what is graded below, and that is the honest ceiling of what
 this fixture — or, per the paragraph above, any fixture assembled only from
 `denise`/`denise_colortable`-family modules without a HAM rig — can show.
 
-## Existing coverage: `hrm/ch3-colour-register-format`
+## Existing coverage: `hrm/ch3-colour-register-format`, and why this package still grades its own claims
 
 That package already builds `denise_colortable` (plus
 `denise_colortable_ram_mf.v`) and already carries an assertion,
@@ -112,17 +112,23 @@ pairwise-distinct. Independently re-run for this package (WSL, 16.09.2026):
 `make test` in `hrm/ch3-colour-register-format` → **55 passed, 0 failed**,
 `SWEEP-12BIT-DISTINCT` among the passes, verbatim text confirmed.
 
-This is not a different measurement wearing a different page number: it is
-the same mechanism (`denise_colortable`, a 12-bit write, an `rgb` read),
-answering the same number (4,096 = 2^12), for the same underlying hardware
-fact. A second copy of that test under this package's own label would not
-measure anything `SWEEP-12BIT-DISTINCT` does not already measure, and
-carries the real risk the build brief names for the 53 already-graded
-claims elsewhere in this slice: two packages reaching, or appearing to
-reach, different verdicts about the identical printed fact. **Decision: both
-claims are declined here with `record()`, citing
-`hrm/ch3-colour-register-format`'s `SWEEP-12BIT-DISTINCT`, rather than
-re-graded under a new label in this package.**
+That is the same mechanism (`denise_colortable`, a 12-bit write, an `rgb`
+read) answering the same number (4,096 = 2^12), for the same underlying
+hardware fact — but it is graded against a different page. This package's
+two claims cite p.260; `SWEEP-12BIT-DISTINCT` cites p.46. The pipeline's
+discipline is that a claim is graded against the page it cites: neither of
+this package's 2 claims carries a `classify.note` naming an accepted
+package and uid (the mechanism the 53 already-graded claims elsewhere in
+this slice use), and the package list's own count of "already graded
+elsewhere" for this package is 0. Citing `SWEEP-12BIT-DISTINCT` as a
+*substitute* oracle for a p.260 claim would quietly move the oracle from
+p.260 to p.46; if the two pages ever disagreed, nothing here would show it,
+and a citation is in any case not a uid on a graded line — the ledger reads
+graded lines, not prose. **Both claims are therefore graded below, against
+p.260 directly, by `PALETTE-RESOLVES-4096-CODES` (sweep all 4,096 possible
+12-bit codes, count pairwise-distinct `rgb` readings). `ch3`'s result is
+carried as corroboration in that assertion's own `note()`, not as its
+oracle.**
 
 ## What this package additionally measures, and why it is not redundant
 
@@ -152,7 +158,7 @@ be trusting a coincidence of a default reset value, not a measured fact.
 
 So this package adds exactly the missing piece, as its own control
 assertion (no claim uid — it grades nothing in the claims file; it grounds
-the `record()` citation above): drive the same register through a
+`PALETTE-RESOLVES-4096-CODES` below): drive the same register through a
 `loct`-low write, then a `loct`-high write with a different 12-bit value,
 then a `loct`-low write again, and confirm the three readings behave exactly
 as `denise_colortable.v`'s two-RAM structure predicts — both halves moving
@@ -169,18 +175,18 @@ than an unstated default.
   distinctly, before anything else is trusted. No claim uid; infrastructure.
 - **`LOCT-SELECTS-4096-READING`** — the `loct`-low / `loct`-high / `loct`-low
   sequence described above, confirming which reading page 260's 4,096 figure
-  actually describes and that this package's citation of
-  `hrm/ch3-colour-register-format` is made on that basis deliberately, not
-  by accident. No claim uid; measurement-basis control for the `record()`
-  lines below.
-- **`opus:8-display.c13`, `sol:8-display.c12`** — both declined via
-  `record()`, citing `hrm/ch3-colour-register-format`'s
-  `SWEEP-12BIT-DISTINCT` (55 passed, 0 failed, independently re-run) as
-  already grading the numeric proposition these two claims restate, on the
-  `loct`-low basis `LOCT-SELECTS-4096-READING` confirms is the correct one
-  for a page-260 claim.
+  actually describes and that `PALETTE-RESOLVES-4096-CODES` is graded on
+  that basis deliberately, not by accident. No claim uid; measurement-basis
+  control for the assertion below.
+- **`opus:8-display.c13 sol:8-display.c12 PALETTE-RESOLVES-4096-CODES`** —
+  both claim uids graded on one `expect()`: sweep all 4,096 possible 12-bit
+  codes into one register, with `loct` held low, and count the
+  pairwise-distinct `rgb` readings — measured by sweeping and counting, not
+  asserted from `data_in`'s declared width. `hrm/ch3-colour-register-format`'s
+  `SWEEP-12BIT-DISTINCT` result (55 passed, 0 failed, independently re-run)
+  is carried in this assertion's own `note()` as corroboration; it is not
+  this assertion's oracle, which is p.260 directly.
 
-No claim in this package's 2-claim inventory is asserted with `expect()`
-under its own uid; both are `record()`-declined for the reason above. This
-is a deliberate choice made for this package specifically, per the build
-task's own invitation to consider it, not a default or an omission.
+Both claims in this package's 2-claim inventory are graded with `expect()`
+under their own uids, on the single `PALETTE-RESOLVES-4096-CODES` assertion.
+Neither appears on a `record()` line.
