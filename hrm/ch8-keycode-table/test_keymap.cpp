@@ -43,9 +43,25 @@
 //   distinct output values against $30 and found no match) -- graded
 //   red below as CUTOUT-30. The key cut out of Return is claimed at $2B
 //   (p.252 text; p.254's Figure 8-10 only -- Figure 8-9 does not draw
-//   this key) and amiga_keymap.v's EUR-2 entry (:130) does emit $2B --
+//   this key) and amiga_keymap.v's EUR-1 entry (:72) does emit $2B --
 //   graded green below as CUTOUT-2B, the required control on the same
 //   measurement basis (same table, same two-key mechanism).
+//
+//   WHICH STIMULUS DRIVES WHICH PHYSICAL KEY, WITH ITS OWN ORACLE:
+//   amiga_keymap.v calls its two cutout inputs only "EUR-1" (:72, code
+//   7'h32) and "EUR-2" (:130, code 7'h64), naming neither key, and the
+//   manual does not describe HID scancodes at all -- the USB HID Usage
+//   Tables spec is the oracle for that binding, external to the manual,
+//   independently readable at
+//   _oracle/Denise/driver/input/iokit/keyNames.cpp: usage $32 (line 149)
+//   is "Non-US Hash and Tilde", the ISO key beside RETURN; usage $64
+//   (line 199) is "Keyboard Non-US Backslash and Pipe", the ISO key
+//   beside LEFT SHIFT. So CUTOUT-30 (the left-Shift key) drives $64 and
+//   CUTOUT-2B (the Return key) drives $32 -- see each assertion's own
+//   comment below; NM-HRM-050 (coordinator review) caught an earlier
+//   draft that had the two swapped, which made CUTOUT-30 red for the
+//   wrong key and left CUTOUT-2B green while sitting on the actual
+//   defect. Corrected before commit.
 //
 // CANDIDATE S3-C2 (right Alt, p.252 vs p.254): p.252's qualifier table
 //   reads $64 Left Alt / $65 Right Alt. Both p.254 figures print $64 on
@@ -224,7 +240,7 @@ int main(int argc, char** argv) {
         { "KEY-$28", 0x0F, 0x28, "L (keyboard(s): A1000, A500/2000/3000; p.254) carries code $28", "[claims: opus:8-fig.c54, sol:8-layout.c52, opus:8-fig.c143, sol:8-layout.c147]" },
         { "KEY-$29", 0x33, 0x29, "semicolon/colon (keyboard(s): A1000, A500/2000/3000; p.254) carries code $29", "[claims: opus:8-fig.c55, sol:8-layout.c53, opus:8-fig.c144, sol:8-layout.c148]" },
         { "KEY-$2A", 0x34, 0x2A, "apostrophe/quote (keyboard(s): A1000, A500/2000/3000; p.254) carries code $2A", "[claims: opus:8-fig.c56, sol:8-layout.c54, opus:8-fig.c145, sol:8-layout.c149]" },
-        { "KEY-$2B", 0x64, 0x2B, "international Return cutout (S3-C1 control) (keyboard(s): A500/2000/3000; p.252+254) carries code $2B", "[claims: opus:8-fig.c146, sol:8-layout.c150, opus:8-keycode.c15, sol:8-keycode.c14]" },
+        { "KEY-$2B", 0x32, 0x2B, "international Return cutout (S3-C1 control; HID usage $32, Non-US Hash and Tilde, beside Return -- keyNames.cpp:149) (keyboard(s): A500/2000/3000; p.252+254) carries code $2B", "[claims: opus:8-fig.c146, sol:8-layout.c150, opus:8-keycode.c15, sol:8-keycode.c14]" },
         { "KEY-$2D", 0x5C, 0x2D, "numeric-pad 4 (keyboard(s): A1000, A500/2000/3000; p.254) carries code $2D", "[claims: opus:8-fig.c83, sol:8-layout.c81, opus:8-fig.c179, sol:8-layout.c177]" },
         { "KEY-$2E", 0x5D, 0x2E, "numeric-pad 5 (keyboard(s): A1000, A500/2000/3000; p.254) carries code $2E", "[claims: opus:8-fig.c84, sol:8-layout.c82, opus:8-fig.c180, sol:8-layout.c178]" },
         { "KEY-$2F", 0x5E, 0x2F, "numeric-pad 6 (keyboard(s): A1000, A500/2000/3000; p.254) carries code $2F", "[claims: opus:8-fig.c85, sol:8-layout.c83, opus:8-fig.c181, sol:8-layout.c179]" },
@@ -335,7 +351,7 @@ int main(int argc, char** argv) {
 // MUTATION KEY-$28 stimulus red MUT_ZERO: harness drives code=$00 instead of this key's own code ($0F); amiga_keymap.v has no entry for $00 so it falls through to the $7F sentinel (:142), which never equals $28 -- baseline PASS goes red.
 // MUTATION KEY-$29 stimulus red MUT_ZERO: harness drives code=$00 instead of this key's own code ($33); amiga_keymap.v has no entry for $00 so it falls through to the $7F sentinel (:142), which never equals $29 -- baseline PASS goes red.
 // MUTATION KEY-$2A stimulus red MUT_ZERO: harness drives code=$00 instead of this key's own code ($34); amiga_keymap.v has no entry for $00 so it falls through to the $7F sentinel (:142), which never equals $2A -- baseline PASS goes red.
-// MUTATION KEY-$2B stimulus red MUT_ZERO: harness drives code=$00 instead of this key's own code ($64); amiga_keymap.v has no entry for $00 so it falls through to the $7F sentinel (:142), which never equals $2B -- baseline PASS goes red.
+// MUTATION KEY-$2B stimulus red MUT_ZERO: harness drives code=$00 instead of this key's own code ($32); amiga_keymap.v has no entry for $00 so it falls through to the $7F sentinel (:142), which never equals $2B -- baseline PASS goes red.
 // MUTATION KEY-$2D stimulus red MUT_ZERO: harness drives code=$00 instead of this key's own code ($5C); amiga_keymap.v has no entry for $00 so it falls through to the $7F sentinel (:142), which never equals $2D -- baseline PASS goes red.
 // MUTATION KEY-$2E stimulus red MUT_ZERO: harness drives code=$00 instead of this key's own code ($5D); amiga_keymap.v has no entry for $00 so it falls through to the $7F sentinel (:142), which never equals $2E -- baseline PASS goes red.
 // MUTATION KEY-$2F stimulus red MUT_ZERO: harness drives code=$00 instead of this key's own code ($5E); amiga_keymap.v has no entry for $00 so it falls through to the $7F sentinel (:142), which never equals $2F -- baseline PASS goes red.
@@ -392,23 +408,44 @@ int main(int argc, char** argv) {
     // =====================================================================
     // CUTOUT-30 (p.252 + both p.254 figures) -- candidate S3-C1's finding
     // half. The key cut out beside left Shift is claimed at $30 by six
-    // claim records; amiga_keymap.v's EUR-1 entry (:72, input 7'h32)
+    // claim records; amiga_keymap.v's EUR-2 entry (:130, input 7'h64)
     // emits $2B instead. RED at baseline -- this is the finding.
+    //
+    // STIMULUS BINDING, WITH ITS OWN ORACLE (NM-HRM-050, coordinator
+    // review corrected an earlier swap here): amiga_keymap.v names its two
+    // international-cutout inputs only "EUR-1" (:72, code 7'h32) and
+    // "EUR-2" (:130, code 7'h64) -- neither name says which physical key
+    // is which, and the manual does not describe HID scancodes at all. The
+    // oracle for that binding is the USB HID Usage Tables spec, external
+    // to the manual, independently readable at
+    // _oracle/Denise/driver/input/iokit/keyNames.cpp: usage $64, array
+    // index 0x64 (line 199), is commented "Keyboard Non-US Backslash and
+    // Pipe" -- the ISO key beside LEFT SHIFT. Usage $32, array index 0x32
+    // (line 149), is commented "Non-US Hash and Tilde" -- the ISO key
+    // beside RETURN. An earlier version of this file drove $32 here
+    // (expecting the left-Shift key's $30) -- actually the Return key's
+    // own HID code -- which made this assertion red for the wrong key,
+    // while CUTOUT-2B below drove $64 (the real left-Shift key) and read
+    // green while sitting on the actual defect. Corrected before commit;
+    // both stimuli below are now bound the other way round.
     // =====================================================================
     {
-        uint8_t got = h.sample(0x32);
+        uint8_t got = h.sample(0x64); // HID usage $64, "Keyboard Non-US Backslash and Pipe" -- beside left Shift
         checks.expect(got == 0x30,
             "CUTOUT-30: the international key cut out beside left Shift "
+            "[HID usage $64, Keyboard Non-US Backslash and Pipe -- "
+            "keyNames.cpp:199] "
             "(p.252: \"These are $30, cut out from the the left shift\"; "
             "p.254 Figure 8-9 'international cutout beside left Shift'; "
             "Figure 8-10 same) carries code $30 "
             "[claims: opus:8-fig.c59, sol:8-layout.c58, opus:8-fig.c148, "
             "sol:8-layout.c152, opus:8-keycode.c14, sol:8-keycode.c13]");
         checks.note("CUTOUT-30 measured actual value: amiga_keymap.v's "
-            "EUR-1 entry (code $32) returns $2B, not $30 -- the same value "
-            "CUTOUT-2B's EUR-2 entry also returns, so the RTL's two "
-            "distinct international-cutout inputs collapse onto one "
-            "output where the manual names two.");
+            "EUR-2 entry (code $64, HID Non-US Backslash and Pipe, beside "
+            "left Shift) returns $2B, not $30 -- the same value the EUR-1 "
+            "entry (code $32, the Return-side key, see CUTOUT-2B) also "
+            "returns, so the RTL's two distinct international-cutout "
+            "inputs collapse onto one output where the manual names two.");
     }
 // MUTATION CUTOUT-30 none impossible: red at baseline, and per the S3-C1 measurement (see file header and SPECIFICATION.md) no entry anywhere in amiga_keymap.v's 98-entry table emits $30 -- there is no legitimate stimulus this harness could substitute to make this assertion read green, so none is applied.
 
