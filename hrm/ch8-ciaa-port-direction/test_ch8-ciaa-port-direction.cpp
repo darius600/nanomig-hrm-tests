@@ -439,8 +439,8 @@ int main(int argc, char** argv) {
         "CIAADDRA's and CIAAPRA's bus addresses plus the one-to-one "
         "correspondence fact): the address content belongs to "
         "ch8-ciaapra-address-window; the correspondence content is not "
-        "lost -- it is the same fact opus:8-dio.c44 states, already scored "
-        "as PROP-1 above. Not graded here.");
+        "lost -- it is the same fact already scored as PROP-1 above. Not "
+        "graded here.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

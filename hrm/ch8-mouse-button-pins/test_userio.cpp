@@ -395,8 +395,8 @@ int main(int argc, char** argv) {
         "the housing label \"right button.\" No signal in userio.v carries handedness (grep over this fixture's "
         "one source file for \"right\" or \"left\": zero hits in the module body). The quote's remaining, "
         "gradeable content -- button 2 connected to pin 9, pin 9 being one of the proportional pins -- is already "
-        "graded below under opus:8-mbtn.c10 and opus:8-mbtn.c11. Declined, not re-measured with a weakened "
-        "restatement.");
+        "graded below under P2-BIT1-REACHES-PIN9-EXCLUSIVELY and P2-PIN9-DRIVES-Y-COUNTER. Declined, not "
+        "re-measured with a weakened restatement.");
 
     do_reset();
     {
