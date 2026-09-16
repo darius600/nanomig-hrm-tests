@@ -66,63 +66,69 @@
 //     and FLAG-LAST-GENERAL all share; PROP-2 adds one `write_reg(RS_ICR,
 //     ...)` before the same strobe and reads `irq` instead of `data_out`.
 //
-// Every mutation below was actually applied (edit -> rebuild -> run ->
-// revert -> rebuild) and the FAIL/PASS lines quoted are what the run
-// printed, not predictions. Every assertion in this package is green at
-// baseline (the RTL implements p.357's rotation rule and p.358's active-low
-// convention exactly, confirmed by hand in SPECIFICATION.md before this
-// file existed) -- every mutation below is therefore a `stimulus` or
-// `oracle` mutation proving a passing assertion is not vacuous, never a
-// `stimulus green` substitution proof (nothing here is read at a red
-// baseline).
+// Every mutation below is a compile-time variant, replayable with
+// `make clean && make MUT=MUT_n test` (n = 0..13, matching the MUT_n token
+// at the end of each record line below) -- see the `#if MUT_n` guard at
+// each assertion's stimulus/oracle site. `make clean` first is required:
+// the object-directory target has no dependency on MUT, so a stale binary
+// from a previous variant is silently reused otherwise. Every one of the
+// fourteen was actually run this way and the FAIL line quoted is what that
+// run printed, not a prediction; each was then reverted (rebuilt with
+// MUT unset) and the baseline reconfirmed clean before the next variant.
+// Every assertion in this package is green at baseline (the RTL implements
+// p.357's rotation rule and p.358's active-low convention exactly, confirmed
+// by hand in SPECIFICATION.md before this file existed) -- every mutation
+// below is therefore a `stimulus` or `oracle` mutation proving a passing
+// assertion is not vacuous, never a `stimulus green` substitution proof
+// (nothing here is read at a red baseline).
 //
-// MUTATION FIXTURE-LIVE stimulus red: the second DDRA write changed from the
+// MUTATION FIXTURE-LIVE stimulus red MUT_0: the second DDRA write changed from the
 //   distinct sentinel 0x5A to a repeat of the first (0xA5) -> FAIL, second
 //   reading no longer differs from the first (both 0xA5). Reverted.
-// MUTATION CONTROL stimulus red: the stimulus changed from 0x00 to 0x01
+// MUTATION CONTROL stimulus red MUT_1: the stimulus changed from 0x00 to 0x01
 //   while still comparing against the hand-computed 0xFF -> FAIL, actual
 //   readback for 0x01 is 0xFD, not 0xFF. Reverted.
-// MUTATION opus:8-kbd.c1 stimulus red: the second stimulus byte changed from
+// MUTATION opus:8-kbd.c1 stimulus red MUT_2: the second stimulus byte changed from
 //   0x22 to 0x11 (a repeat of the first), while the comparison still expects
 //   the two rotated readbacks to differ -> FAIL, both readbacks equal
 //   (0xDD). Reverted.
-// MUTATION opus:8-kbd.c12 stimulus red: the interrupt-mask write's data
+// MUTATION opus:8-kbd.c12 stimulus red MUT_3: the interrupt-mask write's data
 //   changed from 0x88 (SET, bit 3) to 0x08 (CLEAR, bit 3, a no-op from the
 //   post-reset default) -> FAIL, `irq` reads 0 after the same key strobe
 //   that reads 1 at baseline. Reverted.
-// MUTATION opus:8-kbdtiming.c11 oracle red: the "which position the flag
+// MUTATION opus:8-kbdtiming.c11 oracle red MUT_4: the "which position the flag
 //   alone must drive" comparison changed from position 0 to position 1
 //   -> FAIL, bit 7 alone drives position 0 (measured, per PROP-4/PROP-5's
 //   sweep), not position 1. Reverted.
-// MUTATION opus:8-appG.c26 oracle red: the "does this bit's response
+// MUTATION opus:8-appG.c26 oracle red MUT_5: the "does this bit's response
 //   position differ from its own index" comparator inverted (changed `!=`
 //   to `==`) -> FAIL for every one of the eight bit positions (none is a
 //   fixed point under the real rotation). Reverted.
-// MUTATION opus:8-appG.c27 oracle red: the expected per-bit position array
+// MUTATION opus:8-appG.c27 oracle red MUT_6: the expected per-bit position array
 //   changed from {1,2,3,4,5,6,7,0} (the manual's rotation) to
 //   {0,1,2,3,4,5,6,7} (identity, i.e. no rotation) -> FAIL, all eight
 //   positions reported MISMATCH. Reverted.
-// MUTATION sol:8-appG.c36 stimulus red: the injected bit changed from 7 to 6
+// MUTATION sol:8-appG.c36 stimulus red MUT_7: the injected bit changed from 7 to 6
 //   (a different, wrong "flag" bit) -> FAIL, bit 6's response position is 7
 //   (measured, per PROP-4/PROP-5's sweep), not 0. Reverted.
-// MUTATION opus:8-kbdtiming.c18 stimulus red: the presented byte changed
+// MUTATION opus:8-kbdtiming.c18 stimulus red MUT_8: the presented byte changed
 //   from 0x35 to 0x36, expected value left at 0x95 -> FAIL, actual readback
 //   for 0x36 is 0x93. Reverted.
-// MUTATION opus:8-kbdtiming.c19 oracle red: the comparison mask changed from
+// MUTATION opus:8-kbdtiming.c19 oracle red MUT_9: the comparison mask changed from
 //   0xFE (bits 7:1) to 0xFF (all 8 bits) -> FAIL, the two readbacks differ
 //   at bit 0 by design (that is the up/down flag). Reverted.
-// MUTATION opus:8-kbdtiming.c22 stimulus red: the presented byte changed
+// MUTATION opus:8-kbdtiming.c22 stimulus red MUT_10: the presented byte changed
 //   from 0xB5 to 0xB6, expected value left at 0x94 -> FAIL, actual readback
 //   for 0xB6 is 0x92. Reverted.
-// MUTATION WIDTH-8BIT stimulus red: the sweep range changed from 0-255 to
+// MUTATION WIDTH-8BIT stimulus red MUT_11: the sweep range changed from 0-255 to
 //   0-127 (still checking for 256 distinct values) -> FAIL, only 128 values
 //   were presented, at most 128 distinct readbacks are possible (measured:
 //   "128 distinct values of 256"). Reverted.
-// MUTATION MAPPING-SAME-CLASS oracle red: the expected-value computation for
+// MUTATION MAPPING-SAME-CLASS oracle red MUT_12: the expected-value computation for
 //   all three special codes changed from `manual_rotate_invert(s.code)` to
 //   `manual_rotate_invert(s.code + 1)`, the presented byte left unchanged
 //   -> FAIL, all three comparisons report MISMATCH. Reverted.
-// MUTATION FLAG-LAST-GENERAL stimulus red: the injected bit changed from 7
+// MUTATION FLAG-LAST-GENERAL stimulus red MUT_13: the injected bit changed from 7
 //   to 0 (a different, wrong bit) -> FAIL, bit 0's response position is 1
 //   (measured, per PROP-4/PROP-5's sweep), not 0. Reverted.
 
@@ -134,6 +140,53 @@
 
 #include <verilated.h>
 #include "Vciaa.h"
+
+// Replayable mutations: `make MUT=MUT_n test` rebuilds with mutation n's
+// stimulus/oracle substituted in place of the baseline at that one site;
+// unset/empty MUT builds the unmutated baseline. Fourteen sites, MUT_0
+// through MUT_13, one per assertion below, in the order they appear.
+#ifndef MUT_0
+#define MUT_0 0
+#endif
+#ifndef MUT_1
+#define MUT_1 0
+#endif
+#ifndef MUT_2
+#define MUT_2 0
+#endif
+#ifndef MUT_3
+#define MUT_3 0
+#endif
+#ifndef MUT_4
+#define MUT_4 0
+#endif
+#ifndef MUT_5
+#define MUT_5 0
+#endif
+#ifndef MUT_6
+#define MUT_6 0
+#endif
+#ifndef MUT_7
+#define MUT_7 0
+#endif
+#ifndef MUT_8
+#define MUT_8 0
+#endif
+#ifndef MUT_9
+#define MUT_9 0
+#endif
+#ifndef MUT_10
+#define MUT_10 0
+#endif
+#ifndef MUT_11
+#define MUT_11 0
+#endif
+#ifndef MUT_12
+#define MUT_12 0
+#endif
+#ifndef MUT_13
+#define MUT_13 0
+#endif
 
 namespace {
 
@@ -315,7 +368,12 @@ int main(int argc, char** argv) {
 
     // -------------------------------------------------------------
     { Harness h;
-      checks.expect(fixture_live(h),
+#if MUT_0
+      const bool fixture_ok = fixture_live(h, /*repeat_second_word_bug=*/true);
+#else
+      const bool fixture_ok = fixture_live(h);
+#endif
+      checks.expect(fixture_ok,
           "FIXTURE-LIVE: two distinct, known DDRA bytes (0xA5, 0x5A) both "
           "arrive and read back correctly and distinctly before any "
           "keyboard-path assertion is graded [no page -- infrastructure]");
@@ -323,7 +381,11 @@ int main(int argc, char** argv) {
 
     // -------------------------------------------------------------
     { Harness h;
+#if MUT_1
+      const uint8_t got = present_and_read(h, 0x01);
+#else
       const uint8_t got = present_and_read(h, 0x00);
+#endif
       checks.expect(got == 0xFF,
           "CONTROL: a hand-computable sanity point distinct from the two "
           "worked examples below -- an all-zero presented byte rotates to "
@@ -342,7 +404,11 @@ int main(int argc, char** argv) {
     // -------------------------------------------------------------
     { Harness h;
       const uint8_t got1 = present_and_read(h, 0x11);
+#if MUT_2
+      const uint8_t got2 = present_and_read(h, 0x11);
+#else
       const uint8_t got2 = present_and_read(h, 0x22);
+#endif
       const bool result = got1 == manual_rotate_invert(0x11) &&
                            got2 == manual_rotate_invert(0x22) && got1 != got2;
       checks.expect(result,
@@ -362,7 +428,11 @@ int main(int argc, char** argv) {
     // processor -- arm the SP mask bit, present a byte, observe irq.
     // -------------------------------------------------------------
     { Harness h;
+#if MUT_3
+      h.write_reg(RS_ICR, 0x08);  // CLEAR bit3, a no-op from the post-reset default
+#else
       h.write_reg(RS_ICR, 0x88);  // SET (bit7=1), mask bit 3 (SP/ser source)
+#endif
       const bool result = present_and_check_irq(h, 0x35);
       checks.expect(result,
           "opus:8-kbd.c12 sol:8-kbd.c9 PROP-2: after a data byte has been "
@@ -386,7 +456,12 @@ int main(int argc, char** argv) {
           detail += "bit" + std::to_string(i) + "->pos" + std::to_string(p) + " ";
       }
       const int flag_position = single_bit_response(h, 7);
-      const bool result = code_bits_avoid_position0 && (flag_position == 0);
+#if MUT_4
+      constexpr int expected_flag_position = 1;
+#else
+      constexpr int expected_flag_position = 0;
+#endif
+      const bool result = code_bits_avoid_position0 && (flag_position == expected_flag_position);
       checks.expect(result,
           "opus:8-kbdtiming.c11 sol:8-appG.c50 PROP-3: keycodes are always "
           "7 bits long -- sweeping presented bits 0-6 (the code) never "
@@ -409,7 +484,11 @@ int main(int argc, char** argv) {
       std::string detail;
       for (int i = 0; i < 8; ++i) {
           const int p = single_bit_response(h, i);
+#if MUT_5
+          const bool moved = (p >= 0) && (p == i);
+#else
           const bool moved = (p >= 0) && (p != i);
+#endif
           all_moved = all_moved && moved;
           detail += "bit" + std::to_string(i) + "->pos" + std::to_string(p) + " ";
       }
@@ -429,7 +508,11 @@ int main(int argc, char** argv) {
     // order is exactly 6-5-4-3-2-1-0-7.
     // -------------------------------------------------------------
     { Harness h;
+#if MUT_6
+      static const int expected_position[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+#else
       static const int expected_position[8] = {1, 2, 3, 4, 5, 6, 7, 0};
+#endif
       // expected_position[i] = serial-position-index-0 that presented bit i
       // drives, per p.357/p.358's row (6)(5)(4)(3)(2)(1)(0)(7) -> register
       // bits 7,6,5,4,3,2,1,0 in that same left-to-right order.
@@ -464,7 +547,11 @@ int main(int argc, char** argv) {
     // drives the last register position (position 8 / register bit 0).
     // -------------------------------------------------------------
     { Harness h;
+#if MUT_7
+      const int p = single_bit_response(h, 6);
+#else
       const int p = single_bit_response(h, 7);
+#endif
       checks.expect(p == 0,
           "sol:8-appG.c36 PROP-6: the up/down flag is transmitted last -- "
           "presented bit 7 alone drives register position 0, the last "
@@ -481,7 +568,11 @@ int main(int argc, char** argv) {
     // transmits 01101010, i.e. reads back as $95.
     // -------------------------------------------------------------
     { Harness h;
+#if MUT_8
+      const uint8_t got = present_and_read(h, 0x36);
+#else
       const uint8_t got = present_and_read(h, 0x35);
+#endif
       checks.expect(got == 0x95,
           "opus:8-kbdtiming.c18 sol:8-appG.c57 opus:8-kbdtiming.c28 "
           "opus:8-kbdtiming.c29 opus:8-kbdtiming.c30 opus:8-kbdtiming.c31 "
@@ -506,7 +597,11 @@ int main(int argc, char** argv) {
     { Harness h;
       const uint8_t down = present_and_read(h, 0x35);
       const uint8_t up = present_and_read(h, 0xB5);
+#if MUT_9
+      const bool result = (down & 0xFF) == (up & 0xFF);
+#else
       const bool result = (down & 0xFE) == (up & 0xFE);
+#endif
       checks.expect(result,
           "opus:8-kbdtiming.c19 sol:8-appG.c58 PROP-8: releasing the B key "
           "does not change its 7-bit keycode -- presenting $35 (down) and "
@@ -523,7 +618,11 @@ int main(int argc, char** argv) {
     // transmits 01101011, i.e. reads back as $94.
     // -------------------------------------------------------------
     { Harness h;
+#if MUT_10
+      const uint8_t got = present_and_read(h, 0xB6);
+#else
       const uint8_t got = present_and_read(h, 0xB5);
+#endif
       checks.expect(got == 0x94,
           "opus:8-kbdtiming.c22 sol:8-appG.c62 opus:8-kbdtiming.c37 "
           "opus:8-kbdtiming.c38 opus:8-kbdtiming.c39 opus:8-kbdtiming.c40 "
@@ -549,7 +648,11 @@ int main(int argc, char** argv) {
     // -------------------------------------------------------------
     { Harness h;
       std::set<uint8_t> seen;
+#if MUT_11
+      for (int v = 0; v < 128; ++v) {
+#else
       for (int v = 0; v < 256; ++v) {
+#endif
           seen.insert(present_and_read(h, static_cast<uint8_t>(v)));
       }
       const bool width_8bit_result = (seen.size() == 256);
@@ -579,7 +682,11 @@ int main(int argc, char** argv) {
       std::string detail;
       for (const auto& s : specials) {
           const uint8_t got = present_and_read(h, s.code);
+#if MUT_12
+          const uint8_t want = manual_rotate_invert(static_cast<uint8_t>(s.code + 1));
+#else
           const uint8_t want = manual_rotate_invert(s.code);
+#endif
           const bool ok = (got == want);
           all_match = all_match && ok;
           detail += std::string(s.name) + " " + hex2(s.code) +
@@ -603,7 +710,11 @@ int main(int argc, char** argv) {
     // unlabelled with any uid, per the build brief's partial-grading rule.
     // -------------------------------------------------------------
     { Harness h;
+#if MUT_13
+      const int p = single_bit_response(h, 0);
+#else
       const int p = single_bit_response(h, 7);
+#endif
       checks.expect(p == 0,
           "FLAG-LAST-GENERAL: presented bit 7 alone drives register "
           "position 0, the last serial position, independent of every "
