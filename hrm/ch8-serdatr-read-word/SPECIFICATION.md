@@ -557,7 +557,7 @@ distinctly before any content-specific assertion below is graded.
   bytes must read back bit-for-bit identical at SERDATR[7:0].
 - Expected: PASS, one sweep assertion grading every bit position at once
   (the same bundling `ch8-dskbytr-status-register`'s A9 uses for its own
-  8-bit DATA field), citing all 41 uids above together rather than as
+  8-bit DATA field), citing all 42 uids above together rather than as
   eight separate per-bit assertions each re-testing the same mechanism eight
   times over.
 
