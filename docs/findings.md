@@ -171,12 +171,17 @@ specialist rules on it.
 | [NM-HRM-052](findings/NM-HRM-052.md) | p.252 and p.254 disagree about the right Alt key | source observation | `hrm/ch8-keycode-table` | **unanimous for p.252, and it settles nothing**: all four name `$65` for the right Alt, which is evidence about which page implementers read, not about which page is right |
 | [NM-HRM-053](findings/NM-HRM-053.md) | Appendix B's `*` mark has no ECS qualifier, and nothing honours it under ECS | **red** — against p.289, not against the RTL | `hrm/ch8-appb-copper-access-marks` | **unanimous with NanoMig against the page**: all four lift the block when ECS and CDANG are both set, on the same formula, and Copperline ships a test table asserting it |
 | [NM-HRM-054](findings/NM-HRM-054.md) | the parallel port has a direction register and no data register | **red** | `hrm/ch8-parallel-port-direction` | **unanimous against**: all four store CIA-A's port B data register and read it back through the direction mask; Copperline models the same joystick-adapter wiring and still implements it |
+| [NM-HRM-055](findings/NM-HRM-055.md) | SERDAT written with all zeros still transmits | **red** | `hrm/ch8-serdat-transmit`, `hrm/ch8-serial-interface` | **3-1, with a split inside one of them**: vAmiga and Denise implement p.259's second sentence in a single added token, and WinUAE implements it in its ordinary path (`if (!w) return;`) but not in its cycle-accurate one; Copperline writes an explicit `word == 0` branch to transmit a full frame anyway |
+| [NM-HRM-056](findings/NM-HRM-056.md) | SERDATR's TBE bit cannot be observed clear from outside | **red · contested** | `hrm/ch8-serdatr-read-word` | **2–2**: Denise and Copperline set and clear the buffer flag inside one event as NanoMig does; vAmiga derives TBE from a latch with its own drain time and WinUAE holds the bit clear by an explicit timer |
+| [NM-HRM-057](findings/NM-HRM-057.md) | SERDATR bit 11 is a registered copy of RXD, not a direct read | **red · contested** | `hrm/ch8-serdatr-read-word`, `hrm/ch8-serial-interface` | **3–1 for the page** — vAmiga and Denise read the pin immediately, WinUAE has no pin, and Copperline's two synchroniser stages are still one short of NanoMig's three |
+| [NM-HRM-058](findings/NM-HRM-058.md) | the received-character window is longer than p.256 prints | **red** — against p.256, not against the RTL | `hrm/ch8-serdatr-read-word`, `hrm/ch8-serial-interface` | **three of four land on 10 and 11 bit times, exactly as NanoMig does**; WinUAE has no receiver and its only 10/11 constant is on the transmit side |
+| [NM-HRM-059](findings/NM-HRM-059.md) | ADKCONR's bit 15 always reads 0, and so does everyone's | **red** — against p.265, not against the RTL | `hrm/ch8-adkcon-and-interrupt-relations` | **unanimous with NanoMig**: all four read bit 15 as 0, but only WinUAE masks on the read, so a crafted savestate would expose the bit in the other three |
 
 Chapter 1 has not been extracted, so no finding below comes from it.
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
-keyboard slice NM-HRM-050 to NM-HRM-052, and its serial slice NM-HRM-053
-onwards while that slice is still being built.
+keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to
+NM-HRM-059.
 
 **NM-HRM-050 and NM-HRM-051 are the first findings graded at `src/misc`**, the
 peripheral-substitute layer admitted for the keyboard because Appendix G

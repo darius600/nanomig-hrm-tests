@@ -1,0 +1,49 @@
+# NM-HRM-058 — the received-character window is longer than p.256 prints, and every implementation agrees
+
+| | |
+|---|---|
+| **Status** | open · **red — against p.256, not against the RTL** |
+| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L156-L230) |
+| **Upstream** | **identical** |
+| **Report to** | **the manual.** Three of the four reference implementations land on NanoMig's numbers exactly |
+| **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `B11` |
+| **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Assertions** | 2 red, in two packages |
+| **Verdict of the four** | **three of four land on 10 and 11 bit times, exactly as NanoMig does** |
+
+---
+
+## What the HRM says
+
+**p.256:27** — *"up to one full character-receive time (8 to 10 bit times) to
+accept the data and clear"*.
+
+The entry an earlier draft of the candidates file put on p.257; the builder
+checked it and it is p.256. `grep -n "8 to 10"` over pp.255–257 returns exactly
+one hit.
+
+## What NanoMig does
+
+**10 bit times for an 8-bit frame, 11 for a 9-bit frame** — one past the printed
+ceiling in the short case and three past it in the long one. Two packages
+measured it independently and differ only in where they start counting: 10.0 and
+11.0 from one, 9.68 and 10.68 from the other.
+
+## Why this is filed against the page
+
+| | |
+|---|---|
+| **vAmiga** | **10 / 11.** `if (recCnt >= packetLength() + 2)` — `Core/Components/Paula/UART/UARTEvents.cpp:83`, with `packetLength()` returning 9 or 8 (`UART.h:172`); the +2 is start and stop |
+| **Denise** | **10 / 11.** `unsigned bits = (serPer & 0x8000) ? 11 : 10;` — `emulation/libami/paula/uart.cpp:78`, counted at `:80` |
+| **Copperline** | **10 / 11.** `total_bits: if long { 11 } else { 10 }` — `src/chipset/paula.rs:1557`, set at shift-load rather than counted against a constant |
+| **WinUAE** | **neither confirms nor contradicts.** It has no receiver: bytes arrive whole from the host (`od-win32/serial_win32.cpp:464`, `:600`). Its only 10/11 constant is on the *transmit* side (`:261`), and its loopback receive time is 9 or 10 bit times **plus half a bit** (`:799`), measured to a mid-bit sample rather than as a window bound |
+
+**Three independent implementations arrive at exactly NanoMig's numbers.** A
+frame of one start bit, eight or nine data bits and one stop bit is ten or eleven
+bit times by construction, and the page's "8 to 10" cannot describe it.
+
+So the red is real and it is not about this design. What p.256 means by "8 to
+10" — whether it counts differently, describes a different interval, or is
+simply wrong — is a question for someone who can read it against a real Paula.
+This entry records that no implementation, including the two that model the
+receiver most carefully, produces a number inside the printed range.

@@ -1,0 +1,51 @@
+# NM-HRM-057 — SERDATR bit 11 is a registered copy of RXD, not a direct read
+
+| | |
+|---|---|
+| **Status** | open · red · contested |
+| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L36-L43) |
+| **Upstream** | **identical** |
+| **Report to** | **the Minimig line** |
+| **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `C4` |
+| **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Assertions** | 2 red, in two packages built by different agents |
+| **Verdict of the four** | **3–1 for the page, and the one dissent does not match NanoMig either** |
+
+---
+
+## What the HRM says
+
+**p.257**, the whole of bit 11's entry: *"Direct read of RXD pin on Paula chip."*
+
+## What NanoMig does
+
+Two synchroniser flops and one more register:
+
+    reg [1:0] rxd_sync = 2'b11;             // paula_uart.v:36
+    rxd_sync <= {rxd_sync[0], rxd};         // :40
+    assign rxds = rxd_sync[1];              // :43
+
+Measured: the bit lags a pin change by **three `clk7_en` edges**. The
+`ch8-serial-interface` package measured the same path as two beats from its own
+starting point and its control shows the bus read mux itself costs none — the
+two agree on there being a fixed chain and differ only in where they start
+counting.
+
+## What the four do
+
+| | |
+|---|---|
+| **vAmiga** | **immediate.** `REPLACE_BIT(result, 11, serialPort.getRXD())` — `Core/Components/Paula/UART/UART.cpp:110`, and `getRXD()` is `getPin(3)` (`Core/Ports/SerialPort.h:151`). No intervening state |
+| **Denise** | **immediate.** `if (serial.getRXD()) out \|= 0x800;` — `emulation/libami/paula/uart.cpp:32`, over `getPin(RXD)` (`emulation/libami/system/serial.h:37`). No RX synchroniser exists in the tree |
+| **Copperline** | **delayed by two stages.** `serial_rx_pin_high` → `serial_rx_sync_0_high` → `serial_rx_sync_1_high` (`src/chipset/paula.rs:505-507`, advanced at `:1612-1616`), read at `:1101`. Deliberate and tested: `fn serdatr_rxd_uses_two_stage_synchronized_pin()` at `:3896` |
+| **WinUAE** | **cannot answer.** There is no RXD pin to read. Bit 11 is a break-state flag forced high unless a break is active (`od-win32/serial_win32.cpp:1050-1051`); only the loopback path reconstructs a level, and it does so from the transmit shift register by elapsed bit position (`:1032-1048`) |
+
+**Two of the four read the pin exactly as the page says, one adds two
+synchroniser stages, one has no pin.** So a synchroniser is not unheard of — but
+nobody has three.
+
+That gap is the useful part of this entry. **A test that distinguishes a
+two-cycle lag from a three-cycle one separates NanoMig from every emulator here,
+Copperline included**, and that is the measurement to take before anyone decides
+whether "direct" forbids a synchroniser at all. The adjudication is an Amiga
+hardware question; the lag is not in doubt.

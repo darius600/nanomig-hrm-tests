@@ -509,7 +509,8 @@ int main(int argc, char** argv) {
             "non-zero data word ($FFFF) causes the identical effect a "
             "zero data word causes, because no register bits are ever "
             "read from the write at all "
-            "[claims: COP2-copjmp-strobes.c2, COP2-jump-strobe-address.c3, opus:7-appB.c10]");
+            "[claims: COP2-copjmp-strobes.c2, COP2-jump-strobe-address.c3, opus:7-appB.c10, "
+            "sol:8-appb-legend.c19]");
     }
 
     // ------------------------------------------------------------------
