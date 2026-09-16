@@ -134,11 +134,29 @@
 // rebuilt, back to green.
 // MUTATION P10: REMOVED 2026-09-15 (repair lot D). Declined via record() --
 // see the REPAIRED note above; no mutation record remains.
-// MUTATION P11A oracle red->green: the compared width was substituted from
-// 32 (the page's claim) to 20 (the classify-stage measured width). Baseline
+// MUTATION P11A oracle green: the compared width was substituted from 32
+// (the page's claim) to 20 (the classify-stage measured width). Baseline
 // red (32 bits are not reachable; the all-ones value tops out at 20 bits).
-// Substituted oracle went green (20 bits matches). Reverted, rebuilt, back
-// to red baseline.
+// Substituted oracle went green (20 bits matches), confirming the
+// comparison is sensitive and the red is real -- the correct and only
+// demonstration available for an assertion that is RED at baseline (a
+// stimulus mutation would only make it fail differently). Reverted,
+// rebuilt, back to red baseline. Token corrected 2026-09-16: this record
+// previously read "oracle red->green", which the gate's regex parses as
+// kind=oracle, result=red -- indistinguishable from an ordinary oracle
+// mutation on a green baseline, so it was flagged as carrying no stimulus
+// demonstration. The intended, and accurate, result token is "green" (the
+// mutated build's own result), matching this suite's established
+// oracle-green convention for red-baseline assertions (e.g.
+// ch8-drive-step-timing's RATIO-A).
+// MUTATION P11A none impossible: DSKPTH and DSKPTL are already driven
+// all-ones above (0xFFFF/0xFFFF) -- the maximal possible stimulus. address_out
+// is declared [20:1] in agnus_diskdma.v; no bit beyond position 20 exists in
+// the register to set, so no substitution of the written value could ever
+// make max_value's width reach 32. The assertion is red for every reachable
+// stimulus, not just the one presented -- there is no green result here for
+// a stimulus mutation to break. The oracle-green record above is the
+// complete demonstration of sensitivity this RED baseline admits.
 // MUTATION P11B: REMOVED 2026-09-15 (repair). Declined, not merely mutated
 // -- see the REPAIRED note above; no record remains with its assertion.
 //
