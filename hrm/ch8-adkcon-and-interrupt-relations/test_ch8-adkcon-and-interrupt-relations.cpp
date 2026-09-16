@@ -37,7 +37,7 @@
 //   discipline of every sibling `paula`-top package in this suite.
 //
 // Every mutation is a compile-time variant, replayable with
-// `make clean && make MUT=MUT_n test` (n = 0..17, matching the MUT_n token
+// `make clean && make MUT=MUT_n test` (n = 0..18, matching the MUT_n token
 // at the end of each MUTATION record at the bottom of this file) -- see the
 // `#if MUT_n` guard at each assertion's stimulus/oracle site.
 
@@ -499,7 +499,11 @@ int main(int argc, char** argv) {
         rig.dut->rxd = 1;
         rig.settle_edges(8);
         uint16_t before = rig.read_reg(ADDR_SERDATR);
+#if MUT_18
+        rig.dut->rxd = 1;  // MUTATION: no transition applied -- rxd stays at its already-settled value
+#else
         rig.dut->rxd = 0;  // the transition being tracked
+#endif
         int latency = -1;
         for (int i = 1; i <= 8; i++) {
             rig.settle_edges(1);
@@ -974,3 +978,11 @@ int main(int argc, char** argv) {
 //   bits written changed from 12/9/8 (MFMPREC/MSBSYNC/FAST) to bit 11
 //   (UARTBRK) -- expect FAIL, the readback no longer equals the expected
 //   12/9/8 mask.
+// MUTATION RXD-DELIVERS-CORRECT-VALUE-CONTROL stimulus red MUT_18: the
+//   tracked transition is never applied -- rxd is driven back to 1 (its
+//   already-settled value) instead of 0, so no synchroniser propagation is
+//   ever needed. `latency` stays -1 (the same FAIL verdict
+//   SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT already had at baseline, so
+//   that assertion's verdict does not move) and the once-settled read
+//   still shows bit 11 = 1 -- expect FAIL, the control no longer confirms
+//   the settled value is correct.

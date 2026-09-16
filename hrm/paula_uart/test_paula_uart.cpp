@@ -2,6 +2,20 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 8, printed pp. 255-259.
 // Non-goals: This does not cover nine-bit mode, overrun, break, or every SERPER value.
+//
+// MUTATION: MUT_STOPBIT_LOW (compile-time flag, `make MUT=MUT_STOPBIT_LOW`;
+//   see the Makefile for the -D plumbing). Baseline drives a valid stop bit
+//   (1) as the last of the ten simulated rx_bits periods; the mutation
+//   drives it low (0) instead -- a framing-error stimulus. paula_uart.v's
+//   8-bit-mode receive path (paula_uart.v:216-219, `rx_data[8:0] <=
+//   {rxds, rx_shift[9:2]}`) samples that final bit straight into SERDATR
+//   bit 8 ("8-bit stop"), so this is expected to flip only that one
+//   checked flag: OVRUN/RBF/TBE/TSRE come from tx_tbe/tx_tsre/rbfmirror,
+//   not from rx_data; RXD (bit 11, rx_rxd) is the continuously-resynced
+//   current rxd level and has settled back to idle=1 long before the
+//   SERDATR read; "unused bit 10" is hardcoded 1'b0; and the received
+//   data byte (bits 7:0) is captured from rx_shift[9:2], not from this
+//   final sample.
 
 #include <iostream>
 #include <iomanip>
@@ -9,6 +23,10 @@
 #include "Vpaula_uart.h"
 #include "verilated.h"
 #include "verilated_vcd_c.h"
+
+#ifndef MUT_STOPBIT_LOW
+#define MUT_STOPBIT_LOW 0
+#endif
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
@@ -146,6 +164,9 @@ int main(int argc, char** argv) {
     
     // We will simulate RXD signal sending 0xA3 (Start=0, LSB first=1 1 0 0 0 1 0 1, Stop=1)
     std::vector<int> rx_bits = {0, 1, 1, 0, 0, 0, 1, 0, 1, 1};
+#if MUT_STOPBIT_LOW
+    rx_bits.back() = 0; // MUTATION: stop bit driven low (framing error) instead of the valid high -- see file header
+#endif
     int rx_index = 0;
     int rx_ticks = 0;
     
@@ -206,6 +227,12 @@ int main(int argc, char** argv) {
         expect_set(0x0800, "RXD");
         expect_clear(0x0400, "unused bit 10");
         expect_set(0x0100, "8-bit stop");
+        // MUTATION 8-bit stimulus red MUT_STOPBIT_LOW: the simulated stop
+        // bit (last of the ten rx_bits periods) is driven low instead of
+        // high -- paula_uart.v's 8-bit-mode receive path samples it
+        // straight into SERDATR bit 8, so expect_set(0x0100, "8-bit
+        // stop") goes red while every other checked flag and the
+        // received data byte are unaffected (see file header for why).
 
         if ((serdatr & 0x00FF) != 0x00A3) {
             std::cerr << "FAIL: Received data is 0x" << std::hex

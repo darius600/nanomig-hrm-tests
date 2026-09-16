@@ -96,23 +96,29 @@
 //   path to a claimed output ($5F via End's own code 7'h4d; $67 via
 //   right-meta's own code 7'h6f, the semantically primary path for each).
 //
-// PER-ASSERTION MUTATION RECORD. Two build variants beyond baseline
-//   (`make`, `make MUT=MUT_ZERO`, `make MUT=MUT_ASCII_COLLIDE`), each a
-//   full build+run. Every KEY-$xx row below (94 of them, one per
-//   distinct Amiga output code the ordinary/control rows cover) and
-//   FUNCTION-RANGE share MUT_ZERO: it redirects the harness's stimulus
-//   for every key to code 7'h00, which amiga_keymap.v maps to nothing
-//   (falls through to the 7'h7f sentinel, amiga_keymap.v:142) -- since
-//   no real claim anywhere in this package expects $7F, MUT_ZERO turns
-//   every one of those assertions red simultaneously, independently
-//   proving each one actually depends on its own specific stimulus and
-//   not just on the fixture being alive (that is FIXTURE-SELFCHECK's
-//   job, below). GEN-NOT-ASCII has its own dedicated MUT_ASCII_COLLIDE
-//   (substitutes backspace's own code for the letter-a slot, landing on
-//   $41 -- ASCII 'A' -- which the baseline condition explicitly checks
-//   against). CUTOUT-30 carries `none impossible`: it is red at
-//   baseline and, per the S3-C1 measurement above, no stimulus in the
-//   table produces $30 at all, so no substitution can turn it green.
+// PER-ASSERTION MUTATION RECORD. Three build variants beyond baseline
+//   (`make`, `make MUT=MUT_ZERO`, `make MUT=MUT_ASCII_COLLIDE`,
+//   `make MUT=MUT_FIXTURE_ZERO`), each a full build+run. Every KEY-$xx row
+//   below (94 of them, one per distinct Amiga output code the
+//   ordinary/control rows cover) and FUNCTION-RANGE share MUT_ZERO: it
+//   redirects the harness's stimulus for every key to code 7'h00, which
+//   amiga_keymap.v maps to nothing (falls through to the 7'h7f sentinel,
+//   amiga_keymap.v:142) -- since no real claim anywhere in this package
+//   expects $7F, MUT_ZERO turns every one of those assertions red
+//   simultaneously, independently proving each one actually depends on
+//   its own specific stimulus and not just on the fixture being alive.
+//   FIXTURE-SELFCHECK -- that fixture-liveness precondition itself -- has
+//   its own dedicated MUT_FIXTURE_ZERO (same $00->$7F substitution,
+//   applied only to its own single, standalone sample() call, never to
+//   the ordinary_rows loop MUT_ZERO covers, so the two mutations cannot
+//   be confused for one another): a control's whole job is proving it
+//   CAN go red, and until now nothing did. GEN-NOT-ASCII has its own
+//   dedicated MUT_ASCII_COLLIDE (substitutes backspace's own code for the
+//   letter-a slot, landing on $41 -- ASCII 'A' -- which the baseline
+//   condition explicitly checks against). CUTOUT-30 carries `none
+//   impossible`: it is red at baseline and, per the S3-C1 measurement
+//   above, no stimulus in the table produces $30 at all, so no
+//   substitution can turn it green.
 
 #include <cstdint>
 #include <cstdio>
@@ -127,6 +133,9 @@
 #endif
 #ifndef MUT_ASCII_COLLIDE
 #define MUT_ASCII_COLLIDE 0
+#endif
+#ifndef MUT_FIXTURE_ZERO
+#define MUT_FIXTURE_ZERO 0
 #endif
 
 namespace {
@@ -183,13 +192,18 @@ int main(int argc, char** argv) {
     // the data-driven loop below, before any claim-bearing assertion runs.
     // =====================================================================
     {
+#if MUT_FIXTURE_ZERO
+        uint8_t got = h.sample(0x00);
+#else
         uint8_t got = h.sample(0x04);
+#endif
         checks.expect(got == 0x20,
             "FIXTURE-SELFCHECK: driving code=$04 (the 'a' key's own HID "
             "source code, amiga_keymap.v:21) returns amiga=$20 -- the "
             "fixture can deliver a known, specific value before any claim "
             "below reads one. No manual page (harness precondition).");
     }
+// MUTATION FIXTURE-SELFCHECK stimulus red MUT_FIXTURE_ZERO: the harness drives code=$00 instead of the 'a' key's own code ($04); amiga_keymap.v has no entry for $00 so it falls through to the $7F sentinel (:142), which never equals $20 -- baseline PASS goes red.
 
     // =====================================================================
     // KEY-$xx rows: every ordinary "key X carries code Y" proposition plus

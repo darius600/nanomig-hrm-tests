@@ -1106,10 +1106,11 @@ int main(int argc, char** argv) {
 //   that build -- not a second red, an absence, which is the correct
 //   behaviour for a foundational precondition mutation.
 //
-//   MUT_RESET stimulus red: rst_ext held asserted forever (see the #define
-//     near the top of this file) -- CONTROL-RESET-RELEASES alone goes red
-//     (measured tick=-1, budget exhausted); every other assertion is
-//     un-run, per the HALT-CANDIDATE path.
+//   MUTATION CONTROL-RESET-RELEASES stimulus red MUT_RESET: rst_ext held
+//     asserted forever (see the #define near the top of this file) --
+//     CONTROL-RESET-RELEASES alone goes red (measured tick=-1, budget
+//     exhausted); every other assertion is un-run, per the HALT-CANDIDATE
+//     path.
 //   MUTATION BUS-REGISTER-LIVE stimulus red: the second DSKLEN write driven
 //     identical to the first (0x4000 both times) instead of its
 //     WRITE-bit-clear complement -- the two DSKBYTR readings become
