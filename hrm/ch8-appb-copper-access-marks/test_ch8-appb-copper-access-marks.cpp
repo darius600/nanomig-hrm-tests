@@ -363,7 +363,7 @@ int main(int argc, char** argv) {
         "hrm/ch8-appb-serial-register-rows for this claim; checked directly, that package's SPECIFICATION.md "
         "lines 59-61 explicitly disclaim testing the * mark at all ('nothing here tests it'), so the note's "
         "package name was wrong even though its uid pair was real. Not re-graded here; this package's own "
-        "P-SERDATR (opus:8-regsum.c7) covers SERDATR's fresh ECS ground instead.");
+        "P-SERDATR (see SERDATR-CDANG0/SERDATR-CDANG1 above) covers SERDATR's fresh ECS ground instead.");
     checks.record(
         "opus:8-regsum.c25 (ADKCONR *010, p.289 composed with p.287's * legend) -- already graded: "
         "hrm/agnus_copper_move_sweep, assertion \"SWEEP ecs=0 cdang=0 vs spec Reading B\" (uid pair "
