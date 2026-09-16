@@ -5,11 +5,12 @@ Fixture: `hid` (the module declared in `nanomig/src/misc/hid.v` — module name
 and location as given by this package's task assignment; see the disclaimer
 below for exactly what that does and does not mean for this document).
 Claims file: `hrm-testpipeline/work/ch8-s3-build/ch8-keyboard-events.jsonl`
-(17 claims)
+(17 claims), plus 4 more added in a second round (see "Second round" below):
+opus:8-appG.c54/c55 and sol:8-appG.c66/c67 — 21 claims in total.
 Subject: three families of behaviour at the keyboard-event boundary —
 printed p.251's up/down flag on the keycode stream, p.359's Caps Lock
-press-only behaviour (Appendix G), and p.361's Ctrl-Amiga-Amiga reset
-combination (Appendix G).
+press-only behaviour and its LED-driven up/down bit (Appendix G), and
+p.361's Ctrl-Amiga-Amiga reset combination (Appendix G).
 
 ## Order of work and what this document does and does not know
 
@@ -47,6 +48,64 @@ actually opened for step 3, any of those pre-supplied facts turns out to be
 wrong, that is reported as a finding about the assignment, not quietly
 folded into this document after the fact.
 
+## Second round: four claims corrected in from upstream, order stated plainly
+
+The 17-claim, 8-proposition specification below (through "What this
+specification deliberately does not contain") was written and committed
+first, before `hid.v` was opened, exactly as described above. It was then
+built, graded and committed in its own right (12 passed, 1 failed, all
+mutations confirmed).
+
+**After that, an independent reviewer found that four claims belonging to
+this package had been misclassified `not-asserted` upstream, at the
+classify stage, and asked for them to be added here.** `2026-09-16_ch8_s3_
+classified_all.jsonl` marks `opus:8-appG.c54`, `opus:8-appG.c55`,
+`sol:8-appG.c66` and `sol:8-appG.c67` — p.359's third sentence about Caps
+Lock, printed immediately after the two sentences `PROP-C1`–`PROP-C3`
+already cover — `not-asserted`, with `absent_signal: caps_lock_led` and the
+reason "no LED in this tree is keyboard-driven." **That reasoning answers
+the wrong question.** The observable these four claims name is
+`kbd_mouse_data[7]`, the same real `hid` output `PROP-B2`/`PROP-B3`/`PROP-C3`
+already read; the LED is named only in the sentence's own antecedent,
+identifying WHICH press is under discussion ("the press that turns the LED
+on" / "the press that shuts the LED off"), not as a signal the test needs
+to read. Confirmed independently here, not taken on the reviewer's word
+alone: read directly against the raw page scan at
+`docs/references/amiga-hrm-3rd/appG-keyboard/p359.txt` and `p360.txt`
+(quoted below), and against `hid.v`'s complete port list (read at step 3,
+already open by this point) — no `led` port exists anywhere in the file.
+
+**PROP-C4 and PROP-C5 below are the two new propositions.** Grounding "the
+press that turns the LED on" and "the press that shuts it off" in something
+testable needs one more fact, also on p.360 and also currently
+`not-asserted` at this boundary for the same reason (no LED port exists to
+read the LED itself turning off) but cited here as background: the
+keyboard's own start-up sequence ends "Finally, the Caps Lock LED is shut
+off" (`opus:8-appG.c112`, `sol:8-appG.c133`) — so the LED is in a known-off
+state immediately after start-up, which is what licenses calling the FIRST
+subsequent Caps Lock press "the press that turns it on" and the SECOND "the
+press that shuts it off." `opus:8-appG.c112`, `opus:8-appG.c113` and
+`sol:8-appG.c133` are not themselves reclassified or graded by this
+package — they remain correctly `not-asserted` at this boundary in their
+own right — they are cited here only as the printed fact behind PROP-C4/
+PROP-C5's stimulus design.
+
+**The build brief's spec-before-RTL rule does not apply to this addendum.**
+`hid.v` has been open throughout this round, and both PROP-C4 and PROP-C5
+come from the printed pages, not from anything read off the RTL — the
+order the rule protects (an expected value must not start life as a fact
+about the implementation) is intact even though the letter of "write the
+spec before opening the file" is not, because the file was already open
+for an unrelated, earlier reason. Said plainly rather than papered over,
+per the build brief's own instruction for exactly this situation.
+
+**This round also corrects `PROP-C3`'s own reasoning**, below, which turns
+out to have been wrong in a way this new sentence exposes: it read "the
+up/down bit is still used" as "still means physical key state, the same as
+every other key," when p.359's very next sentence says the bit means the
+LED's target state instead. See `PROP-C3`'s revised text for the correction
+and why the original reading went uncaught until now.
+
 ## Scope: this package's findings are about NanoMig, not about Minimig
 
 **Every proposition below is tested at `hid`, and `hid` does not exist
@@ -65,7 +124,7 @@ does and does not exist in the upstream tree, carried into this document
 because a finding printed without it would read as a claim about Minimig
 and be wrong.
 
-## Claim inventory (all 17, grouped by proposition)
+## Claim inventory (all 21, grouped by proposition)
 
 | # | uid | page | role |
 |---|---|---:|---|
@@ -82,15 +141,26 @@ and be wrong.
 | 11 | `sol:8-appG.c64`   | 359 | PROP-C2-CAPS-NO-RELEASE, twin |
 | 12 | `opus:8-appG.c53`  | 359 | PROP-C3-CAPS-UPDOWN-BIT, primary |
 | 13 | `sol:8-appG.c65`   | 359 | PROP-C3-CAPS-UPDOWN-BIT, twin |
+| 18 | `opus:8-appG.c54`  | 359 | PROP-C4-CAPS-LED-ON-PRESS, primary (2nd round) |
+| 19 | `sol:8-appG.c66`   | 359 | PROP-C4-CAPS-LED-ON-PRESS, twin (2nd round) |
+| 20 | `opus:8-appG.c55`  | 359 | PROP-C5-CAPS-LED-OFF-PRESS, primary (2nd round) |
+| 21 | `sol:8-appG.c67`   | 359 | PROP-C5-CAPS-LED-OFF-PRESS, twin (2nd round) |
 | 14 | `opus:8-appG.c117` | 361 | PROP-A1-RESET-TASK, primary |
 | 15 | `sol:8-appG.c142`  | 361 | PROP-A1-RESET-TASK, twin |
 | 16 | `opus:8-appG.c118` | 361 | PROP-A2-RESET-COMBO, primary |
 | 17 | `sol:8-appG.c143`  | 361 | PROP-A2-RESET-COMBO, twin |
 
-All 17 claims are accounted for; none is left unassigned at this stage.
-Every claim in this file carries `classify.status: testable` already (a
-field read only to confirm nothing here was pre-discarded — its
-`evidence`, which would name RTL detail, is not).
+Row numbers 18–21 (the second-round claims) are numbered out of sequence,
+after 17, because they were added later and this table is not renumbered
+retroactively — reordering an existing claim's row number after the fact
+is exactly the kind of quiet rewrite this suite's own history warns
+against. All 21 claims are accounted for; none is left unassigned at this
+stage. Every claim in this file (17 of 21) carries `classify.status:
+testable` already (a field read only to confirm nothing here was
+pre-discarded — its `evidence`, which would name RTL detail, is not); the
+remaining 4 (claims 18–21) carry `classify.status: not-asserted` in
+`2026-09-16_ch8_s3_classified_all.jsonl` — see "Second round" above for why
+that classification does not hold and this package grades them anyway.
 
 ---
 
@@ -203,11 +273,14 @@ Status: testable.
 
 ---
 
-## Family 2 — p.359 (Appendix G), Caps Lock's press-only behaviour
+## Family 2 — p.359 (Appendix G), Caps Lock's press-only behaviour and its LED-driven bit
 
-Three propositions from two adjacent sentences about the one key Appendix G
-calls out as an exception to the general down/up scheme just specified in
-Family 1.
+Five propositions from three adjacent sentences about the one key Appendix
+G calls out as an exception to the general down/up scheme just specified in
+Family 1. The first two sentences (`PROP-C1`–`PROP-C3`) were in this
+document from the first round; the third (`PROP-C4`, `PROP-C5`) was added
+in the second round described above, and corrects how `PROP-C3` reads the
+second sentence.
 
 ### PROP-C1-CAPS-DOWN — Caps Lock generates a keycode when pressed
 
@@ -280,23 +353,119 @@ Caps Lock keycode."
 — `sol:8-appG.c65` (twin of `opus:8-appG.c53`; restated "Caps Lock still
 uses the up/down flag bit.")
 
-**Proposition to test:** this narrows Family 1's general up/down-bit
-mechanism (`PROP-B2-DOWN-VALUE` / `PROP-B3-UP-VALUE`'s shared bit) to Caps
-Lock specifically. Because `PROP-C2-CAPS-NO-RELEASE` says Caps Lock's
-upstroke produces no event at all, "the bit is still used" cannot mean "an
-upstroke event carries the bit set" the way it would for an ordinary key —
-there is no such event to carry it. Read plainly against the surrounding
-two sentences, "however" signals a qualification of the press-only rule
-just stated, not a suspension of it: **the one event Caps Lock does
-produce (its downstroke) still carries the same bit in the same position
-as every other key's downstroke does**, rather than Caps Lock's single byte
-being shaped differently from the general p.251 format merely because the
-key behaves specially about when it fires. That is the reading this
-specification adopts, on the printed sentence pairing alone; step 3 should
-report explicitly if the fixture makes that reading untestable or
-contested, rather than silently substituting a different one.
+**Proposition to test, CORRECTED in the second round:** this narrows Family
+1's general up/down-bit mechanism (`PROP-B2-DOWN-VALUE` / `PROP-B3-UP-VALUE`'s
+shared bit) to Caps Lock specifically. Because `PROP-C2-CAPS-NO-RELEASE`
+says Caps Lock's upstroke produces no event at all, "the bit is still used"
+cannot mean "an upstroke event carries the bit set" the way it would for an
+ordinary key — there is no such event to carry it.
 
-Status: testable, under the reading above.
+The first-round text stopped there and concluded: "the one event Caps Lock
+does produce (its downstroke) still carries the same bit in the same
+position as every other key's downstroke does" — i.e., that the bit still
+means physical keystate, just like `PROP-B2`/`PROP-B3` establish for an
+ordinary key, and Caps Lock's byte "is not shaped differently" beyond firing
+on one edge only. **That reading is wrong, and the very next sentence on
+p.359 — not read into this claims file until the second round —
+contradicts it directly:** "When pushing the Caps Lock key turns on the
+Caps Lock LED, the up/down bit will be 0; when pushing Caps Lock shuts off
+the LED, the up/down bit will be 1." Caps Lock's byte IS shaped
+differently: this bit carries the LED's target state after the press, not
+"is the key currently down" the way it does for every other key. See
+`PROP-C4-CAPS-LED-ON-PRESS` and `PROP-C5-CAPS-LED-OFF-PRESS` below, which
+grade that rule directly.
+
+Why the error went uncaught by this proposition alone: on the FIRST Caps
+Lock press since a known-off LED state (see `PROP-C4` for where "known-off"
+comes from), the LED-target-state reading and the physical-keystate reading
+happen to agree — both say the bit should be 0 — so a test built only from
+this sentence, checking a single press, cannot tell the two readings apart.
+It takes a SECOND press, which only `PROP-C5` exercises, for them to
+diverge. The corrected proposition to test here: the one event Caps Lock
+does produce (its downstroke) still carries a real, populated bit 7, rather
+than one blanked out or hardwired — read on the first press since a
+known-off LED state, that bit is 0, for the reason `PROP-C4` states, not
+because it mirrors physical keystate.
+
+Status: testable, under the corrected reading above.
+
+### PROP-C4-CAPS-LED-ON-PRESS — the press that turns the LED on sends bit 0 (2nd round)
+
+Page 359, the sentence immediately following `PROP-C3`'s, naming the LED
+explicitly for the first time on this page:
+
+> When pushing the Caps
+> Lock key turns on the Caps Lock LED, the up/down bit will be 0;
+— `opus:8-appG.c54`, restated "When pressing Caps Lock turns the Caps Lock
+LED on, the up/down bit is 0."
+
+> When pushing the Caps
+> Lock key turns on the Caps Lock LED, the up/down bit will be 0; when pushing Caps Lock shuts
+> off the LED, the up/down bit will be 1.
+— `sol:8-appG.c66` (twin of `opus:8-appG.c54`, quoting the full two-clause
+sentence rather than splitting it; restated for its first clause "A Caps
+Lock press that turns the LED on sends up/down bit 0.")
+
+Grounded, for identifying WHICH press this is, by page 360:
+
+> ...Finally, the Caps Lock LED is shut off. This marks the end of the start-up
+> sequence, and normal processing commences.
+— `opus:8-appG.c112` (quoting "Finally, the Caps Lock LED is shut off."),
+`opus:8-appG.c113` (quoting the sentence naming the end of the start-up
+sequence), `sol:8-appG.c133` (same LED-off sentence as `c112`). All three
+remain `not-asserted` at this boundary in their own right — no LED port
+exists anywhere in the pinned tree to read the LED itself turning off —
+and are not reclassified by this package; they are cited here only as the
+printed fact that the LED is off immediately after start-up.
+
+**Proposition to test:** immediately after the keyboard's own start-up
+sequence, the Caps Lock LED is off (p.360). The FIRST Caps Lock press from
+that point on is therefore, by p.359's own rule, "the press that turns the
+LED on," and the up/down bit reported on that press must be 0.
+
+**Why no LED port is needed:** the LED is named only in the sentence's
+antecedent ("when pushing... turns on the... LED"), identifying which press
+the consequent ("the up/down bit will be 0") is about. The graded
+observable is `kbd_mouse_data[7]`, the same real `hid` output every other
+proposition in this document already reads — nothing about grading this
+proposition requires observing the LED itself. This is the point the
+upstream classification missed (see "Second round" above).
+
+Status: testable. Expected to PASS — this is also the control case, on the
+same measurement basis, for the suspect case graded next.
+
+### PROP-C5-CAPS-LED-OFF-PRESS — the press that shuts the LED off sends bit 1 (2nd round)
+
+Page 359, same sentence as `PROP-C4`, its second clause:
+
+> when pushing Caps Lock shuts
+> off the LED, the up/down bit will be 1.
+— `opus:8-appG.c55`, restated "When pressing Caps Lock turns the Caps Lock
+LED off, the up/down bit is 1."
+
+> When pushing the Caps
+> Lock key turns on the Caps Lock LED, the up/down bit will be 0; when pushing Caps Lock shuts
+> off the LED, the up/down bit will be 1.
+— `sol:8-appG.c67` (twin of `opus:8-appG.c55`, same full-sentence quote as
+`sol:8-appG.c66`; restated for its second clause "A Caps Lock press that
+turns the LED off sends up/down bit 1.")
+
+Grounded by the same p.360 citations as `PROP-C4` (`opus:8-appG.c112`,
+`opus:8-appG.c113`, `sol:8-appG.c133`, not reclassified, cited only as
+background — see `PROP-C4`, not repeated on a second graded line here).
+
+**Proposition to test:** starting from the same known-off LED state as
+`PROP-C4`, one press turns the LED on (that is `PROP-C4`'s own proposition,
+not re-tested here) and — Caps Lock being a toggle with a persistent LED —
+the very next press necessarily turns it back off. That SECOND press must,
+by p.359's rule, report the up/down bit as 1.
+
+**Split from `PROP-C4`:** kept as two separate propositions, each with its
+own citation, rather than one, because they are testable independently and
+a fixture could in principle get one right and the other wrong — as indeed
+turns out to be the case once graded (see the finding below).
+
+Status: testable, on the same measurement basis and grounding as `PROP-C4`.
 
 ---
 
@@ -375,24 +544,35 @@ Status: testable.
 
 ## Claims not assigned an assertion
 
-None. All 17 claims are classified `testable` in the claims file and each
-is assigned to exactly one of the eight propositions above (see the
-inventory table for the exact uid-to-proposition mapping). If step 3 finds
-that any claim cannot actually be graded at this boundary without changing
-RTL, adding a port, or inventing a requirement the page does not state,
-that is a HALT to report — per the build brief — not a silent re-scoping of
-this document after the fact.
+None, among the 21 this package now carries. 17 are classified `testable`
+in `ch8-keyboard-events.jsonl` and each is assigned to exactly one of the
+first eight propositions above; the 4 second-round claims are classified
+`not-asserted` in `2026-09-16_ch8_s3_classified_all.jsonl` on a ground
+"Second round" above shows does not hold, and are assigned to `PROP-C4`
+and `PROP-C5` (see the inventory table for the exact uid-to-proposition
+mapping, all 21 rows). If step 3 finds that any claim cannot actually be
+graded at this boundary without changing RTL, adding a port, or inventing
+a requirement the page does not state, that is a HALT to report — per the
+build brief — not a silent re-scoping of this document after the fact.
 
 ## What this specification deliberately does not contain
 
-Port names, signal names, stimulus encodings (including any HID key
-codes), concrete sequencing (how a "press" or "release" is driven at this
-boundary, or how many clock cycles apart), the mutation design, and any
-resolution of how the reset-survives-its-own-cause fact named in this
-package's task assignment affects `PROP-A2-RESET-COMBO`'s test sequence,
-are all absent by design. Per the build brief's order of work, they are
-added only after this file is committed and `hid.v` (and, where needed,
-`amiga_keymap.v` for translating a stimulus source code into the p.252
-value a proposition needs) are read for step 3. The eight PROPs above are
-the propositions that become this package's `expect()` assertions, each
-with its own control case and stimulus mutation, once that step opens.
+For the first 17 claims and eight PROPs (`PROP-B1`–`PROP-A2`): port names,
+signal names, stimulus encodings (including any HID key codes), concrete
+sequencing (how a "press" or "release" is driven at this boundary, or how
+many clock cycles apart), the mutation design, and any resolution of how
+the reset-survives-its-own-cause fact named in this package's task
+assignment affects `PROP-A2-RESET-COMBO`'s test sequence, were all absent
+by design at the time this document was first written and committed. Per
+the build brief's order of work, they were added only after that first
+commit, once `hid.v` and `amiga_keymap.v` were read for step 3.
+
+For the second-round claims and `PROP-C4`/`PROP-C5`: the same categories of
+detail (port names, stimulus encodings, mutation design) are likewise not
+in this document, for the ordinary reason that they belong in the test
+source rather than the specification — not because `hid.v` was unopened
+when these two propositions were written, since (per "Second round" above)
+it was already open by then for the unrelated, earlier reason. The ten
+PROPs above (`PROP-B1`–`PROP-A2`, `PROP-C4`, `PROP-C5`) are the
+propositions that become this package's `expect()` assertions, each with
+its own control case and stimulus mutation.
