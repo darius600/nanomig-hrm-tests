@@ -202,7 +202,7 @@ half of assertion 10 (S4-C6, likewise).
     always unchanged."* `opus:8-adkcon.c16`; `sol:8-adkcon.c21`.
 17. **ADKCON-BIT11-UARTBRK** — p.257 *"11 UARTBRK Force the transmit pin to
     zero."*, p.265 *"11 UARTBRK Forces a UART break (clears TXD) if true."*
-    `opus:8-serial.c100`, `c101`; `sol:8-serial.c7` (this last one's own
+    `opus:8-serial.c100`, `c101`; `sol:8-adkcon.c7` (this last one's own
     classify `note` calls it a "restored duplicate of opus:8-serial.c100" —
     same proposition, cited together). Setting bit 11 forces `txd` low;
     clearing releases it.

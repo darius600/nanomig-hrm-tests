@@ -764,7 +764,7 @@ int main(int argc, char** argv) {
     // ========================================================================
     // 17 -- ADKCON-BIT11-UARTBRK. p.257 "11 UARTBRK Force the transmit pin
     // to zero.", p.265 "11 UARTBRK Forces a UART break (clears TXD) if
-    // true." opus:8-serial.c100, c101; sol:8-serial.c7 (its own classify
+    // true." opus:8-serial.c100, c101; sol:8-adkcon.c7 (its own classify
     // `note` calls it a "restored duplicate of opus:8-serial.c100" -- same
     // proposition, cited together).
     // ========================================================================
@@ -786,7 +786,7 @@ int main(int argc, char** argv) {
                     (forced_low?"yes":"no") + " released_high=" + (released_high?"yes":"no"));
         checks.expect(idle_high && forced_low && released_high,
             "ADKCON-BIT11-UARTBRK (opus:8-serial.c100 c101 p.257 \"11 UARTBRK Force the transmit pin to zero.\"; "
-            "sol:8-serial.c7 p.257 same bit, restored duplicate of opus:8-serial.c100; also p.265 \"11 UARTBRK "
+            "sol:8-adkcon.c7 p.257 same bit, restored duplicate of opus:8-serial.c100; also p.265 \"11 UARTBRK "
             "Forces a UART break (clears TXD) if true.\"): after reset txd idles high; setting ADKCON bit 11 "
             "forces it low (paula.v:211 wires adkcon[11] to paula_uart's uartbrk, paula_uart.v:136); clearing bit "
             "11 releases it back to the idle-mark 1");
