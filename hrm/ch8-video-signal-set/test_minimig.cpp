@@ -20,20 +20,25 @@
 //   a different top). It does not decide whether three sync outputs where
 //   the page names one is a divergence -- the task brief that commissioned
 //   this build records that as NOT a divergence, so this file does not
-//   raise it; see PROP-SYNC below for how that shaped what is and is not
-//   graded.
+//   raise it; SYNC-OUTPUT-TOGGLES below grades only that a Sync-role
+//   output exists and is live, sampling `_csync` (the composite, the one
+//   of the three the page's singular "Sync" means), never the 3-vs-1
+//   count.
 //
 // BOUNDARY: minimig.v ports cpu_address/cpu_r_w/_cpu_as/_cpu_uds/_cpu_lds/
 //   cpudata_in/_cpu_dtack (the external 68000 bus, used to write Denise's
-//   colour table through the custom-chip register window at $DFF000-
-//   $DFF1FE); _cpu_reset_in/rst_ext/_cpu_reset (reset, needed before the
-//   bus will accept any cycle); clk/clk7_en/clk7n_en/c1/c3/cck/eclk (the
-//   clock-enable family minimig.v takes as plain inputs, reproduced here
-//   exactly as ch7-overlay-source's harness does -- amiga_clk.v itself is
-//   excluded from this build); chipset_config (held at 0 throughout: OCS
-//   behaviour, ecs=0 -- see PROP-SYNC for why this is load-bearing, not
-//   incidental); red/green/blue/_hsync/_vsync/_csync (the signals under
-//   test).
+//   colour table and, for SYNC-OUTPUT-TOGGLES's mutation only, Agnus's
+//   BEAMCON0/HSSTRT/HSSTOP registers, through the custom-chip register
+//   window at $DFF000-$DFF1FE); _cpu_reset_in/rst_ext/_cpu_reset (reset,
+//   needed before the bus will accept any cycle); clk/clk7_en/clk7n_en/
+//   c1/c3/cck/eclk (the clock-enable family minimig.v takes as plain
+//   inputs, reproduced here exactly as ch7-overlay-source's harness does
+//   -- amiga_clk.v itself is excluded from this build); chipset_config
+//   (held at 0 -- OCS behaviour, ecs=0 -- for every assertion except
+//   SYNC-OUTPUT-TOGGLES's own mutation, which raises it only after the
+//   colour assertions have already run and been graded, so it cannot
+//   couple back into them); red/green/blue/_hsync/_vsync/_csync (the
+//   signals under test).
 //
 //   Internally, traced by reading the RTL (never modified): minimig.v:
 //   247-249 declares red/green/blue as denise.v's own output ports,
@@ -60,6 +65,27 @@
 //   ecs=0 -- so with chipset_config held at 0, red/green/blue continuously
 //   present whatever is written to COLOR00, with no display-window or
 //   DMA setup required to observe it.
+//
+//   For SYNC-OUTPUT-TOGGLES's mutation: agnus_beamcounter.v:388-395
+//   registers `_hsync` -- cleared to 0 at `hpos==hsstrt`, set to 1 at
+//   `hpos==hsstop`, and held (unchanged) every other clk7_en tick; `vser`
+//   (agnus_beamcounter.v:410-418, the term `_csync` ORs in) is generated
+//   the same way, off `hsstrt`/`hsstop` again. `hsstrt`/`hsstop`
+//   (agnus_beamcounter.v:224-225) read from CPU-writable registers only
+//   when `varhsyen && varbeamen` (BEAMCON0 bits 8 and 7, :134-135) are
+//   both set, and BEAMCON0 itself only accepts a write when `ecs`
+//   (:123,172) is true -- gated by chipset_config[4:3] (minimig.v:483).
+//   So: raise chipset_config to set ecs, write BEAMCON0=$01A0 (bits
+//   8,7,5 -- varhsyen, varbeamen, and pal, the last only to avoid also
+//   flipping agnus_beamcounter.v:167-175's separate `pal` register,
+//   which the same BEAMCON0 write's bit 5 controls independent of
+//   varbeamen), then write HSSTRT and HSSTOP (agnus_beamcounter.v:73,66,
+//   $DFF1DE/$DFF1C2) to $00FF -- `{data_in[7:0],1'b0}` (:207-208) makes
+//   hsstrt_reg=hsstop_reg=510, beyond htotal's ~454-tick default (never
+//   itself written, so it keeps its reset value even with varbeamen=1)
+//   -- and `hpos` (0..~453) can never reach either again. `_hsync` and
+//   `vser` then hold their last value for good, and `_csync` freezes
+//   with them.
 //
 // ORDER OF WORK: SPECIFICATION.md (this package's 5 propositions,
 // PROP-COUNT/PROP-RED/PROP-GREEN/PROP-BLUE/PROP-SYNC) was written and
@@ -90,18 +116,16 @@
 //   opus:8-display.c11 + sol:8-display.c10 (twins; Blue) -- graded as
 //     BLUE-OUTPUT-CARRIES-COLOR00.
 //   opus:8-display.c12 + sol:8-display.c11 (twins; p.260, "One of the
-//     analog RGB outputs is Sync, abbreviated S.") -- NOT graded with
-//     expect(). See the note()/record() pair before RESULTS below: at
-//     chipset_config=0 (ecs=0, held there deliberately so the three
-//     colour assertions above are not coupled to the ecs-gated blanking
-//     term), no stimulus this harness controls can suppress or alter
-//     _hsync/_vsync/_csync -- BEAMCON0, the only register that could move
-//     the sync timing, is gated `&& ecs` (agnus_beamcounter.v:123,172)
-//     and so ignores every write while ecs=0, and the beam counters that
-//     generate the sync signals are free-running, gated by neither
-//     DMACON nor either reset input (verified: no `if(reset)` clause in
-//     agnus_beamcounter.v touches hpos or vpos). Measured instead: the
-//     signals pulse exactly as p.260's "Sync" role predicts.
+//     analog RGB outputs is Sync, abbreviated S.") -- graded as
+//     SYNC-OUTPUT-TOGGLES. First declined with a record() (the vacuity
+//     objection: no stimulus this harness controlled could suppress
+//     _hsync/_csync, so it looked unfalsifiable); coordinator review
+//     (O65 discussion) pointed out that vacuity has its own vocabulary
+//     in this suite -- `none impossible`, per hrm/ch8-keycode-table's
+//     CUTOUT-30 -- and that a record() instead makes the claim invisible
+//     to the ledger. Re-examined: a stimulus mutation DOES exist (see the
+//     BOUNDARY section above), so this is graded `stimulus red`, not
+//     `none impossible`.
 //   opus:8-display.c8 + sol:8-display.c7 (twins; p.260, "Provides four
 //     outputs; Red (R), Green (G), Blue (B), and Sync (S).") -- NOT
 //     graded with a fifth expect(). The count is a structural fact of
@@ -109,7 +133,9 @@
 //     subtract from; grading it as a conjunction of the other four would
 //     mean one label that can fail for four different reasons, which
 //     BUILD-BRIEF.md's rule 2 forbids. Recorded as corroborated by the
-//     three graded assertions plus the SYNC measurement instead.
+//     four graded assertions (RED/GREEN/BLUE-OUTPUT-CARRIES-COLOR00,
+//     SYNC-OUTPUT-TOGGLES) instead -- naming them, not only explaining
+//     why this claim itself carries no expect().
 //
 // CONTROL CASES: CONTROL-RESET-RELEASES (no claim id; the harness's own
 // reset chain must genuinely release within budget, exactly ch7-overlay-
@@ -117,18 +143,21 @@
 // bus). CONTROL-VIDEO-BASELINE (no claim id) is this package's "fixture
 // proves it can deliver a known value before anything reads one": red,
 // green and blue are checked ==0 at cold start, before any COLOR00 write,
-// so the three graded assertions below are readings against a fixture
+// so the three colour assertions below are readings against a fixture
 // already shown to report a specific value correctly, not an unverified
-// one.
+// one. SYNC-OUTPUT-TOGGLES carries its own analogous basis inline: the
+// baseline toggle count it reads (printed by the preceding note()) is
+// itself the demonstration that the fixture can tell a live signal from
+// a stuck one, on the same measurement basis its mutation then flips.
 //
-// RESULTS: baseline (no MUT flag) is 5 passed, 0 failed. No claim in this
+// RESULTS: baseline (no MUT flag) is 6 passed, 0 failed. No claim in this
 // package is expected red on this RTL -- unlike ch7-overlay-source, there
 // is no known S4 finding-candidate against any of these ten claims (the
 // four/five naming defect the finding-candidates file records for p.260,
 // S4-C11, is the DIGITAL-RGB bullet's sentence, not the ANALOG-RGB
 // sentence this package's ten claims all cite).
 //
-// PER-ASSERTION MUTATION RECORD. Five variants, each its own full
+// PER-ASSERTION MUTATION RECORD. Six variants, each its own full
 // build+run (`make MUT=<switch>`), built, run, confirmed and reverted --
 // not re-run for this header update. Format (tools/check_gates.py):
 // // MUTATION <assertion-label> <oracle|stimulus|none> <red|green|
@@ -140,6 +169,7 @@
 // MUTATION RED-OUTPUT-CARRIES-COLOR00 stimulus red MUT_RED writes COLOR00=$000 instead of $F00 (the red nibble is never set); baseline PASS (red==$FF) goes red (red stays $00).
 // MUTATION GREEN-OUTPUT-CARRIES-COLOR00 stimulus red MUT_GREEN writes COLOR00=$000 instead of $0F0; baseline PASS (green==$FF) goes red (green stays $00).
 // MUTATION BLUE-OUTPUT-CARRIES-COLOR00 stimulus red MUT_BLUE writes COLOR00=$000 instead of $00F; baseline PASS (blue==$FF) goes red (blue stays $00).
+// MUTATION SYNC-OUTPUT-TOGGLES stimulus red MUT_SYNC raises chipset_config to set ecs, writes BEAMCON0=$01A0 (varhsyen+varbeamen+pal) then HSSTRT=HSSTOP=$00FF (hsstrt_reg=hsstop_reg=510, beyond htotal's ~454) instead of leaving BEAMCON0/HSSTRT/HSSTOP unwritten; baseline PASS (_csync toggles) goes red (_csync frozen constant for the whole sampled window).
 
 #include <cstdint>
 #include <cstdio>
@@ -162,6 +192,9 @@
 #endif
 #ifndef MUT_BLUE
 #define MUT_BLUE 0
+#endif
+#ifndef MUT_SYNC
+#define MUT_SYNC 0
 #endif
 
 namespace {
@@ -204,6 +237,14 @@ struct ClkGen {
 // denise.v's priority mux selects colour-table index 0 for every sampled
 // pixel (denise.v:487-497), so COLOR00 is what red/green/blue carry.
 constexpr uint32_t COLOR00_ADDR = 0xDFF180;
+
+// Agnus's variable-beam registers, used only by SYNC-OUTPUT-TOGGLES's
+// mutation (see the file header's BOUNDARY section for the full trace).
+// $DFF1DC BEAMCON0 (agnus_beamcounter.v:74), $DFF1DE HSSTRT (:73),
+// $DFF1C2 HSSTOP (:66).
+constexpr uint32_t BEAMCON0_ADDR = 0xDFF1DC;
+constexpr uint32_t HSSTRT_ADDR   = 0xDFF1DE;
+constexpr uint32_t HSSTOP_ADDR   = 0xDFF1C2;
 
 class Harness {
 public:
@@ -432,18 +473,47 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // SYNC role -- opus:8-display.c12, sol:8-display.c11 (p.260, "One of
-    // the analog RGB outputs is Sync, abbreviated S."). MEASURED, not
-    // graded -- see the file header and CLAIM COVERAGE above for why no
-    // stimulus this harness controls (at chipset_config=0) can make this
-    // reading come out otherwise. Sampled over one horizontal line's
-    // worth of ticks (a PAL line is 227 CCKs; clk7_en/cck run at 1/4 and
-    // 1/8 of clk28, so ~2000 clk28 ticks comfortably covers one full
-    // line) starting fresh after the COLOR00 writes above, counting
-    // _hsync low pulses and cross-checking _csync against `_hsync &
-    // _vsync` on every sampled tick.
+    // SYNC-OUTPUT-TOGGLES (p.260) -- opus:8-display.c12, sol:8-display.c11.
+    // "One of the analog RGB outputs is Sync, abbreviated S." Graded: the
+    // composite sync output (_csync -- the one of the three sync ports
+    // the page's singular "Sync" means, per SPECIFICATION.md and the file
+    // header) reads low for part of the sampled window and high for the
+    // rest, i.e. it is live, not a design that tied Sync to a constant.
+    // Sampled over one horizontal line's worth of ticks (a PAL line is
+    // 227 CCKs; clk7_en/cck run at 1/4 and 1/8 of clk28, so ~2000 clk28
+    // ticks comfortably covers one full line), starting fresh after the
+    // COLOR00 writes above.
+    //
+    // First declined here with a record() -- the vacuity objection: no
+    // stimulus this harness controlled could suppress _hsync/_csync at
+    // chipset_config=0, so the check looked unfalsifiable. Coordinator
+    // review (recorded as O65 against BUILD-BRIEF.md, not against this
+    // build) pointed out this suite's actual vocabulary for that case is
+    // a `none impossible` mutation record (hrm/ch8-keycode-table's
+    // CUTOUT-30), not a decline -- and that a genuine stimulus mutation
+    // does exist here if chipset_config is allowed to change for this
+    // block alone, after the colour assertions have already run and been
+    // graded, so it cannot couple back into them (see MUT_SYNC below and
+    // the file header's BOUNDARY section for the exact mechanism).
+    // Re-examined and reversed: graded `stimulus red`, carrying both uids.
     // =========================================================================
     {
+#if MUT_SYNC
+        // MUTATION: push HSSTRT/HSSTOP beyond any reachable beam position
+        // so agnus_beamcounter.v:390-393's `_hsync <= 0` (at hpos==hsstrt)
+        // / `_hsync <= 1` (at hpos==hsstop) never fires again -- _hsync
+        // (and `vser`, hence `_csync`) freezes at whatever it last held
+        // instead of continuing to toggle. This changes what the harness
+        // drives (chipset_config, then two register writes), never what
+        // SYNC-OUTPUT-TOGGLES expects. Runs only in this block, after
+        // RED/GREEN/BLUE-OUTPUT-CARRIES-COLOR00 have already been graded
+        // above, so it cannot couple back into their ecs=0 measurement
+        // basis.
+        h.dut->chipset_config = 0x08; // chipset_config[4:3]!=0 -> ecs=1; aga (bit 4) stays 0
+        h.write_word(BEAMCON0_ADDR, 0x01A0); // varhsyen(8)=1, varbeamen(7)=1, pal(5)=1 (unchanged)
+        h.write_word(HSSTRT_ADDR, 0x00FF);   // hsstrt_reg = {0xFF,1'b0} = 510, beyond htotal's ~454
+        h.write_word(HSSTOP_ADDR, 0x00FF);   // hsstop_reg likewise unreachable
+#endif
         int hsync_low_ticks = 0, csync_low_ticks = 0;
         bool csync_matches_hsync_and_vsync = true;
         const int SAMPLE_TICKS = 2000;
@@ -467,29 +537,20 @@ int main(int argc, char** argv) {
             "_vsync was high, _csync tracked (_hsync & _vsync) on every "
             "sampled tick: %s.",
             SAMPLE_TICKS, hsync_low_ticks, csync_low_ticks,
-            csync_matches_hsync_and_vsync ? "yes" : "NO -- see RECORDED line");
+            csync_matches_hsync_and_vsync ? "yes" : "NO -- see the graded assertion below");
         checks.note(buf);
-        checks.record(
-            "opus:8-display.c12, sol:8-display.c11 (p.260, \"One of the "
-            "analog RGB outputs is Sync, abbreviated S.\"): not graded with "
-            "expect() here. The proposition measures true above (_hsync "
-            "pulses, and _csync tracks _hsync & _vsync exactly whenever "
-            "_vsync is high, confirming the composite realizes the page's "
-            "singular Sync role), but no stimulus this harness's fixed "
-            "configuration (chipset_config=0, so ecs=0) can control to make "
-            "this reading come out otherwise: BEAMCON0, the only register "
-            "that could move the sync timing (agnus_beamcounter.v's "
-            "hsstrt/hsstop), is gated `&& ecs` and so silently ignores "
-            "every write while ecs=0; the beam counters generating "
-            "_hsync/_vsync/_csync are free-running, gated by neither "
-            "DMACON nor either reset input. Setting ecs=1 to unlock "
-            "BEAMCON0 as a mutation path was considered and rejected: it "
-            "would also engage the ecs-gated blanking term in denise.v's "
-            "t_blank, which the three graded colour assertions above rely "
-            "on staying disabled -- coupling this proposition's mutation "
-            "to theirs risks an assertion that fails for a reason other "
-            "than the one it names, which BUILD-BRIEF.md's rule 2 forbids. "
-            "Measured, not graded, for that reason.");
+
+        bool csync_toggles = (csync_low_ticks > 0) && (csync_low_ticks < SAMPLE_TICKS);
+        checks.expect(csync_toggles,
+            "SYNC-OUTPUT-TOGGLES (p.260): minimig's composite sync output "
+            "(_csync) reads low for part of the sampled window and high "
+            "for the rest, rather than a constant -- \"One of the analog "
+            "RGB outputs is Sync, abbreviated S.\" (p.260). "
+            "opus:8-display.c12, sol:8-display.c11. "
+            "MUTATION: with chipset_config's ECS bit set and BEAMCON0's "
+            "varhsyen/varbeamen bits written, HSSTRT/HSSTOP are pushed to "
+            "$1FE (510), beyond any reachable beam position -- _csync must "
+            "then read constant for the whole sampled window instead.");
     }
 
     // =========================================================================
@@ -501,22 +562,28 @@ int main(int argc, char** argv) {
     // declaration, not something any stimulus this harness applies can
     // add to or remove, and grading it as one label spanning four
     // different underlying reasons is exactly what BUILD-BRIEF.md's rule
-    // 2 forbids.
+    // 2 forbids. Unlike SYNC-OUTPUT-TOGGLES above, this is a genuine
+    // conjunction over four independently-meaningful signals with no
+    // single stimulus that isolates "the count" from "each member" --
+    // kept as a decline, per the coordinator's review, strengthened to
+    // name where the content actually lives rather than only explain why
+    // it is not here.
     // =========================================================================
     checks.record(
         "opus:8-display.c8, sol:8-display.c7 (p.260, \"Provides four "
         "outputs; Red (R), Green (G), Blue (B), and Sync (S).\"): not "
         "graded with a fifth expect() here. The four-member count is "
-        "corroborated by the three graded assertions above "
-        "(RED-OUTPUT-CARRIES-COLOR00, GREEN-OUTPUT-CARRIES-COLOR00, "
-        "BLUE-OUTPUT-CARRIES-COLOR00) plus the SYNC-ROLE-OBSERVED "
-        "measurement, not by a combined fourth expect() -- port "
-        "declaration is a structural, compile-time fact no runtime "
-        "stimulus in this harness can change, so a standalone COUNT "
-        "expect() could only ever be a conjunction of the other four "
-        "reasons, which would fail for whichever of those four happened "
-        "to be true that run. See SPECIFICATION.md's PROP-COUNT section "
-        "and this file's header for the full reasoning.");
+        "graded by, and only by, the four assertions above that each carry "
+        "one member's own content: RED-OUTPUT-CARRIES-COLOR00, "
+        "GREEN-OUTPUT-CARRIES-COLOR00, BLUE-OUTPUT-CARRIES-COLOR00 and "
+        "SYNC-OUTPUT-TOGGLES. Port declaration is a structural, "
+        "compile-time fact no runtime stimulus in this harness can "
+        "change, so a standalone COUNT expect() could only ever be a "
+        "conjunction of those same four reasons, which would fail for "
+        "whichever of the four happened to be true that run -- exactly "
+        "what BUILD-BRIEF.md's rule 2 forbids. See SPECIFICATION.md's "
+        "PROP-COUNT section and this file's header for the full "
+        "reasoning.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
