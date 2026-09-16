@@ -61,21 +61,35 @@
 //     this is WRITEONLY's testable half: SERDAT has no defined read value.
 //
 // Every mutation below is a compile-time variant, replayable with
-// `make clean && make MUT=MUT_n test` (n = 0..17, matching the MUT_n token
+// `make clean && make MUT=MUT_n test` (n = 0..25, matching the MUT_n token
 // at the end of each record line below) -- see the `#if MUT_n` guard at
 // each assertion's stimulus/oracle site. `make clean` first is required:
 // the object-directory target has no dependency on MUT, so a stale binary
 // from a previous variant is silently reused otherwise. Every one of the
-// eighteen was actually run this way and the FAIL/PASS line quoted is what
-// that run printed, not a prediction; each was then reverted (rebuilt with
-// MUT unset) and the baseline reconfirmed before the next variant. Every
-// assertion in this package is green at baseline **except MUT_7**
+// twenty-six was actually run this way and the FAIL/PASS line quoted is
+// what that run printed, not a prediction; each was then reverted (rebuilt
+// with MUT unset) and the baseline reconfirmed before the next variant.
+// Every assertion in this package is green at baseline **except MUT_7**
 // (ALLZERO-NO-TX/STOPBIT-REQUIRED), which is red at baseline per finding
 // candidate S4-C1 -- its own mutation is therefore the `stimulus green`
 // form the build brief describes (flipping the stimulus to a value
 // WRITE-STARTS-TX already shows transmits, the only demonstration available
 // at a red baseline); every other mutation is an ordinary "prove the
 // passing assertion is not vacuous" red.
+//
+// MUT_18-25 were added after `tools/check_gates.py` reported nine assertion
+// ids (c1, c18, c2, c28, c3, c34, c36, c6, c9) carrying only an oracle
+// mutation. Each was read individually to decide which of the gate's three
+// outcomes applied -- write the missing stimulus mutation, fix a mislabel,
+// or record `none impossible` -- against the ch8-keycode-table CUTOUT-30
+// precedent (no stimulus can hit it) and the ch8-video-signal-set precedent
+// (a first "impossible" verdict was wrong; freezing a signal through its own
+// control registers found a real one). All nine turned out mutable:
+//   - c3/MUT_3 was already a stimulus change (SERPER, what is written, not
+//     the comparison) mislabelled `oracle` -- the token is corrected below,
+//     nothing about the mutation itself changed.
+//   - The other eight (c1, c2, c6, c9, c18, c28, c34, c36) each gained a new
+//     stimulus mutation (MUT_18-25) alongside their existing oracle one.
 //
 // MUTATION FIXTURE-LIVE stimulus red MUT_0: second stimulus changed from
 //   0x0002 to a repeat of the first (0x0001) -> FAIL, both TSRE windows
@@ -84,19 +98,32 @@
 // MUTATION sol:8-serdat.c1 oracle red MUT_1: inverted the SERPER-alone
 //   requirement (demanded the SERPER-only write had *also* started a
 //   transmission) -> FAIL, real measurement keeps it silent. Reverted.
+// MUTATION sol:8-serdat.c1 stimulus red MUT_18: the "SERPER-alone" write
+//   retargeted from SERPER_ADDR to SERDAT_ADDR -> FAIL, a real transmission
+//   starts and serper_alone_silent goes false. Reverted.
 // MUTATION sol:8-serdat.c2 oracle red MUT_2: the WRITEONLY comparison
 //   changed from data_o==0x0000 to an unconditional false (0x0000==0xBEEF)
 //   -> FAIL. Reverted.
-// MUTATION sol:8-serdat.c3 oracle red MUT_3: SERPER changed from 10 to 11
-//   while the comparison still expects the sibling fixture's SERPER=10
-//   calibration (22 ticks) -> FAIL, measured unit is 24 ticks for SERPER=11.
-//   Reverted.
+// MUTATION sol:8-serdat.c2 stimulus red MUT_19: the read retargeted from
+//   SERDAT_ADDR to SERDATR_ADDR -> FAIL, data_o reads 0x1800 (TSRE and
+//   rx_rxd both live there), not 0x0000. Reverted.
+// MUTATION sol:8-serdat.c3 stimulus red MUT_3: SERPER changed from 10 to 11
+//   -- what is written into SERPER, not the comparison -- while the
+//   comparison still expects the sibling fixture's SERPER=10 calibration
+//   (22 ticks) -> FAIL, measured unit is 24 ticks for SERPER=11. Reverted.
 // MUTATION sol:8-serdat.c6 oracle red MUT_4: the TBE-vs-TSRE comparison
 //   direction inverted (tsre_duration < tbe_duration*5) -> FAIL, tsre's 374
 //   ticks is not less than roughly 5. Reverted.
+// MUTATION sol:8-serdat.c6 stimulus red MUT_20: h2's SERPER shrunk to 0 and
+//   its stimulus changed from 0x8000 (H=15) to 0x0001 (H=0) -> FAIL,
+//   tsre_duration falls to 4 ticks, no longer more than 5x tbe_duration (1
+//   tick). Reverted.
 // MUTATION sol:8-serdat.c9 oracle red MUT_5: the bit-0 check reads the start
 //   cell (cells0[0]) instead of the cell bit 0 actually lands on (cells0[1])
 //   -> FAIL, the start cell is always 0, never 1. Reverted.
+// MUTATION sol:8-serdat.c9 stimulus red MUT_21: the bit-0 stimulus changed
+//   from 0x0001 to 0x0002 (bit 0 no longer set) -> FAIL, cells0[1] reads 0,
+//   not 1. Reverted.
 // MUTATION sol:8-serdat.c11 stimulus red MUT_6: the sweep's b=0 point's own
 //   stimulus changed from 1<<0 to 1<<1 -> FAIL, measured length at that
 //   point is 66 ticks, not the expected (0+2)*22=44. Reverted.
@@ -106,10 +133,18 @@
 //   one) -> PASS (18 passed, 0 failed). Reverted.
 // MUTATION sol:8-serdat.c34 oracle red MUT_8: required low_tick > 5 instead
 //   of <= 3 -> FAIL, measured low_tick is 1. Reverted.
+// MUTATION sol:8-serdat.c34 stimulus red MUT_24: SERDAT is never written at
+//   all -> FAIL, w.started never goes true. Reverted.
 // MUTATION sol:8-serdat.c36 oracle red MUT_9: required duration > 100000
 //   ticks -> FAIL, measured duration is 220 ticks. Reverted.
+// MUTATION sol:8-serdat.c36 stimulus red MUT_25: SERDAT is never written at
+//   all -> FAIL, w.started never goes true. Reverted.
 // MUTATION sol:8-serdat.c28 oracle red MUT_10: required second.duration >
 //   100000 ticks -> FAIL, measured second.duration is 88 ticks. Reverted.
+// MUTATION sol:8-serdat.c28 stimulus red MUT_23: the "restart" write
+//   retargeted from SERDAT_ADDR to SERPER_ADDR -> FAIL, second.started
+//   never goes true (a SERPER-alone write stays silent, per IDENTITY).
+//   Reverted.
 // MUTATION sol:8-serdat.c31 stimulus red MUT_11: the "two stop bits"
 //   stimulus changed to repeat the "one stop bit" stimulus (0x0100) -> FAIL,
 //   the two windows no longer differ by one bit period. Reverted.
@@ -125,6 +160,9 @@
 //   off 10*unit). Reverted.
 // MUTATION sol:8-serdat.c18 oracle red MUT_15: idle_tsre forced to a literal
 //   false regardless of measurement -> FAIL. Reverted.
+// MUTATION sol:8-serdat.c18 stimulus red MUT_22: one more SERDAT write
+//   (0x0001) driven immediately before the idle sample -> FAIL, both
+//   idle_tsre and idle_txd read false (a fresh frame is shifting). Reverted.
 // MUTATION opus:8-serdat.c11 stimulus red MUT_16: the sweep's b=0 point's
 //   own stimulus changed from 1<<0 to 1<<2 -> FAIL, measured length at that
 //   point no longer matches (0+2)*unit. Reverted.
@@ -132,12 +170,15 @@
 //   0x00 instead of the written 0x3C -> FAIL, sampled cells no longer match
 //   0x3C's bit pattern. Reverted.
 //
-// Every one of the eighteen above was built with `make clean && make
+// Every one of the twenty-six above was built with `make clean && make
 // MUT=MUT_n test` and its actual PASS/FAIL line (not a prediction) is what
 // is summarised here; every one was then rebuilt with MUT unset and the
 // 17-passed/1-failed baseline reconfirmed before the next variant, except
 // MUT_7 which reconfirms 18-passed/0-failed while active (it is the
 // baseline red's own flip-to-green) before being reverted the same way.
+// MUT_18 through MUT_25 (the eight new stimulus mutations) each reconfirm
+// 16-passed/2-failed while active -- their own assertion plus the
+// baseline's own ALLZERO-NO-TX red, and nothing else.
 
 #include <cstdint>
 #include <cstdio>
@@ -202,6 +243,30 @@
 #endif
 #ifndef MUT_17
 #define MUT_17 0
+#endif
+#ifndef MUT_18
+#define MUT_18 0
+#endif
+#ifndef MUT_19
+#define MUT_19 0
+#endif
+#ifndef MUT_20
+#define MUT_20 0
+#endif
+#ifndef MUT_21
+#define MUT_21 0
+#endif
+#ifndef MUT_22
+#define MUT_22 0
+#endif
+#ifndef MUT_23
+#define MUT_23 0
+#endif
+#ifndef MUT_24
+#define MUT_24 0
+#endif
+#ifndef MUT_25
+#define MUT_25 0
 #endif
 
 namespace {
@@ -420,7 +485,15 @@ int main(int argc, char** argv) {
     // neighbouring address -- is the transmit vehicle.
     // -------------------------------------------------------------
     { Harness h;
+#if MUT_18
+      // stimulus: the "SERPER-alone" write actually targets SERDAT instead
+      // -- if the assertion were reading the address it names, this must go
+      // red (a real transmission starts); if it were vacuously true, it
+      // would not notice.
+      h.write_reg(SERDAT_ADDR, 10);
+#else
       h.write_reg(SERPER_ADDR, 10);
+#endif
       bool serper_alone_silent = true;
       for (int i = 0; i < 60; ++i) {
         if (h.dut->txd == 0) { serper_alone_silent = false; break; }
@@ -457,6 +530,14 @@ int main(int argc, char** argv) {
 #if MUT_2
       const uint16_t v = 0x0000;  // wrong oracle: pretend any value would do
       const bool ok = (v == 0xBEEF);
+#elif MUT_19
+      // stimulus: read SERDATR's address ($018) instead of SERDAT's own
+      // ($030) -- SERDATR is the one address paula_uart.v:258 says is NOT
+      // forced to 0, so this must surface a nonzero value (rx_rxd alone,
+      // idle high, already guarantees it) if the read really targets the
+      // address the assertion names.
+      const uint16_t v = h.read_reg_comb(SERDATR_ADDR);
+      const bool ok = (v == 0x0000);
 #else
       const uint16_t v = h.read_reg_comb(SERDAT_ADDR);
       const bool ok = (v == 0x0000);
@@ -521,8 +602,18 @@ int main(int argc, char** argv) {
       h.write_reg(SERPER_ADDR, 10);
       const Window tbe_w = measure_tbe_window(h, 0x8000);
       Harness h2;
+#if MUT_20
+      // stimulus: shrink h2's bit period to the minimum (SERPER=0) and use
+      // the shortest possible frame (H=0) instead of the long H=15 one --
+      // the resulting TSRE window (2 bit periods at unit=2) is short enough
+      // to no longer clear tbe's fixed few-tick latency by 5x, so the
+      // oracle's margin must actually be measured, not assumed.
+      h2.write_reg(SERPER_ADDR, 0);
+      const Window tsre_w = measure_tsre_window(h2, 0x0001);
+#else
       h2.write_reg(SERPER_ADDR, 10);
       const Window tsre_w = measure_tsre_window(h2, 0x8000);
+#endif
 #if MUT_4
       // wrong oracle: inverted comparison -- demands the full 17-bit-period
       // frame finish no later than five times the TBE-reassert promptness,
@@ -568,6 +659,11 @@ int main(int argc, char** argv) {
       // bit 0 actually lands on (cells[1])
       const auto cells0 = sample_cells(h, 0x0001, unit, 2);
       const bool bit0_first = (cells0.size() >= 2 && cells0[0] == 1);
+#elif MUT_21
+      // stimulus: write bit 1 instead of bit 0 -- if the check really reads
+      // bit 0's own cell, a value with bit 0 clear must not read 1 there.
+      const auto cells0 = sample_cells(h, 0x0002, unit, 2);
+      const bool bit0_first = (cells0.size() >= 2 && cells0[1] == 1);
 #else
       const auto cells0 = sample_cells(h, 0x0001, unit, 2);
       const bool bit0_first = (cells0.size() >= 2 && cells0[1] == 1);
@@ -672,6 +768,16 @@ int main(int argc, char** argv) {
 #if MUT_8
       const Window w = measure_tsre_window(h, 0x0000);
       const bool ok = w.started && w.low_tick > 5;  // wrong oracle: demands an implausibly late start
+#elif MUT_24
+      // stimulus: never write SERDAT at all -- STARTBIT-AUTO's own claim is
+      // that *some* write, even 0x0000, always produces a start bit; omit
+      // the write entirely and none should ever appear.
+      Window w;
+      for (long t = 0; t < 100 && !w.started; ++t) {
+        if (!h.tsre()) { w.started = true; w.low_tick = t; }
+        h.tick();
+      }
+      const bool ok = w.started && w.low_tick <= 3;
 #else
       const Window w = measure_tsre_window(h, 0x0000);
       const bool ok = w.started && w.low_tick <= 3;
@@ -693,7 +799,18 @@ int main(int argc, char** argv) {
     // -------------------------------------------------------------
     { Harness h;
       h.write_reg(SERPER_ADDR, 10);
+#if MUT_25
+      // stimulus: never write SERDAT at all -- WRITE-STARTS-TX's whole claim
+      // is that writing 0x0055 is what starts the transmission; omit the
+      // write entirely and none should ever start.
+      Window w;
+      for (long t = 0; t < 100 && !w.started; ++t) {
+        if (!h.tsre()) { w.started = true; w.low_tick = t; }
+        h.tick();
+      }
+#else
       const Window w = measure_tsre_window(h, 0x0055);
+#endif
 #if MUT_9
       // wrong oracle: demands an implausibly long duration for an 8-cell
       // frame at SERPER=10 (real measured value is 220 ticks)
@@ -715,7 +832,26 @@ int main(int argc, char** argv) {
     { Harness h;
       h.write_reg(SERPER_ADDR, 10);
       const Window first = measure_tsre_window(h, 0x0003);
+#if MUT_23
+      // stimulus: the "restart" write targets SERPER ($032) instead of
+      // SERDAT ($030) -- IDENTITY already measured that a SERPER-alone
+      // write is silent, so if this really is a restart of SHIFTING (not a
+      // window that would report "started" on any old write), nothing
+      // should ever leave TSRE deasserted here.
+      h.write_reg(SERPER_ADDR, 12);
+      Window second;
+      for (long t = 0; t < 6000; ++t) {
+        const bool b = h.tsre();
+        if (!second.started) {
+          if (!b) { second.started = true; second.low_tick = t; }
+        } else if (!second.finished) {
+          if (b) { second.finished = true; second.duration = t - second.low_tick; break; }
+        }
+        h.tick();
+      }
+#else
       const Window second = measure_tsre_window(h, 0x0007);
+#endif
 #if MUT_10
       // wrong oracle: demands an implausibly long duration for a 3-cell
       // frame at SERPER=10 (real measured value is 88 ticks)
@@ -877,6 +1013,16 @@ int main(int argc, char** argv) {
     { Harness h;
       h.write_reg(SERPER_ADDR, 10);
       const Window w = measure_tsre_window(h, 0x0007);
+#if MUT_22
+      // stimulus: drive one more write into SERDAT right here, before the
+      // idle sample -- if idle_tsre/idle_txd are really reading live DUT
+      // state (not a stale snapshot), a fresh write must knock the fixture
+      // straight back into a shifting frame and both must read false. One
+      // extra tick after the write lets the load actually land (the same
+      // ~1-tick latency STARTBIT-AUTO's own low_tick measures).
+      h.write_reg(SERDAT_ADDR, 0x0001);
+      h.tick();
+#endif
 #if MUT_15
       const bool idle_tsre = false;  // wrong oracle: pretend the idle state never reads TSRE-asserted
 #else
