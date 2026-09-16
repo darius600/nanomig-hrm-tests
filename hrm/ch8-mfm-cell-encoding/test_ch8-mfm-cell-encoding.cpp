@@ -66,9 +66,11 @@
 //     thresholds, never touched by data_odd/data_even (:484-493). The FIFO
 //     (paula_floppy_fifo.v) preserves push order, so the Nth DSKDATR pop
 //     after arming is the word generated when `fifo_word_counter` was N-1 --
-//     this package confirms the payload actually starts where the RTL
-//     comment says by SEARCHING for it (see `find_ff_marker_pop_index()`
-//     below) rather than asserting the RTL's line-32 comment as fact.
+//     so the payload's own first word (fifo_word_counter=32) is always
+//     DSKDATR pop #33. Every locator in this file now takes that index
+//     directly from the RTL's own word-counter threshold (see
+//     `FIRST_PAYLOAD_POP_INDEX` below and the Lot G note further down this
+//     header), not from a runtime content search.
 //   - `dsklen` LENGTH (bits 13-0) counts words the internal generator PUSHES
 //     into the FIFO (:718-719, decrementing on `fifo_wr`, not on the CPU's
 //     own pop), and `blckint` fires once the count reaches zero AND the
@@ -90,38 +92,63 @@
 //     always writes its arming value twice, exactly as
 //     hrm/ch8-dsklen-dma-arming's own A6 established.
 //
-// WHY A "PAYLOAD START" INDEX IS FOUND BY SEARCH, NOT HARD-CODED. A word of
-//   exactly 0xFFFF can ONLY arise from this fixture's own payload encoder
-//   fed an all-1s byte (:467-471, clock=1 data=1 on every cell): it is
-//   distinct from every fixed framing value this file's own reading of the
-//   RTL turns up -- 0x4489 (sync), 0xaaaa (preamble/label/gap default,
-//   :497), and the track/sector-derived header and checksum words (:436-
-//   438, :465, :492-493), none of which this package computes ahead of time
-//   as possibly colliding with 0xFFFF, and none of which plausibly would
-//   for the track/sector values a freshly reset, never-stepped rig
-//   produces. `find_ff_marker_pop_index()` below feeds a uniform 0xFF
-//   512-byte sector on its own fresh, throwaway rig and returns the 1-
-//   indexed DSKDATR pop count of the FIRST exact 0xFFFF match, searching
-//   generously (60 pops, the framing region is 32 words). Every assertion
-//   below that needs a specific payload word calls this once (its own
-//   fresh rig, discarded), then builds a SECOND fresh rig for its own real
-//   measurement and pops exactly that many words. This avoids hard-coding
-//   the RTL's own "32" and trusting this package's own line-number reading
-//   of it -- the index used is measured on this exact build, every run.
+// WHY A "PAYLOAD START" INDEX IS NOW A FIXED CONSTANT, NOT A CONTENT SEARCH
+//   (Lot G repair, 2026-09-16 -- supersedes this section as it stood
+//   through Lot F). The original form of every payload-word locator in
+//   this file -- A0's, A2's, A3's and A4's -- called
+//   the withdrawn search helper, which fed a uniform 0xFF sector on its
+//   own throwaway rig and searched up to 60 DSKDATR pops for the FIRST
+//   exact 0xFFFF match. That word is not page-legal: p.250's "1 -> 01" is
+//   unconditional, so a uniform 0xFF byte page-encodes to 0x5555, never
+//   0xFFFF -- 0xFFFF is only what THIS fixture's own non-conformant,
+//   context-free encoder (candidate C9, graded by A2/A4 below) happens to
+//   produce for a run of one-bits. Against a conforming encoder the search
+//   finds nothing and returns -1, and every caller's own read loop,
+//   `for (int i = 1; i <= idx; i++) w = rig.dskdatr_pop();`, then never
+//   executes (the loop bound is below its start): `w` stays its
+//   initializer 0, and A2/A3/A4 would each grade a cell extracted from a
+//   word that was never actually popped -- a verdict for a reason other
+//   than the one it names.
+//
+//   A1 hit this same failure mode against itself in the Lot F repair above
+//   and switched to trusting the generator's own `fifo_word_counter`
+//   word-counter threshold selection directly (paula_floppy.v:484-497)
+//   instead of searching for content. This Lot G repair applies the
+//   identical fix to the three remaining callers -- the withdrawn search
+//   helper is removed from this file entirely, replaced by the single
+//   constant `FIRST_PAYLOAD_POP_INDEX` defined below, next to the register-
+//   address constants:
+//
+//   Every trial in this file feeds a UNIFORM 512-byte sector (one repeated
+//   byte value), so every payload word encodes that SAME byte -- which
+//   payload word is read carries no information A0/A2/A3/A4 need. The
+//   payload's own FIRST word is therefore always fifo_word_counter=32 (a
+//   data_odd word, :494, "word 32-287 data odd bits"), i.e. DSKDATR pop
+//   #33 (the FIFO preserves push order, confirmed paula_floppy_fifo.v, so
+//   the Nth pop is fifo_word_counter=N-1). This index comes from the same
+//   structurally-distinct word-counter threshold logic A1 already relies
+//   on (:484-497), unrelated to the per-bit encoder logic (:467-477) that
+//   is the actual site of candidate C9 -- fixing that bug would never move
+//   this threshold. It is scheme-neutral: it holds against a conforming
+//   encoder exactly as it does against this one, since it never asks what
+//   any cell encodes to.
 //
 // FIXTURE-LIVENESS. A0 proves two distinct, KNOWN, non-default words (0xFF
 //   sector -> 0xFFFF; 0x88 sector -> 0xEEEE, both hand-derived below and
 //   neither reachable from any fixed framing default) arrive unmodified at
 //   the exact DSKDATR read path every other assertion in this package also
-//   uses.
+//   uses. WITHDRAWN TO note() (Lot F, 2026-09-15): A0 carries no claim uid,
+//   so it was never conformance evidence -- see its own comment below.
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup -- not a compile-time #ifdef -- so one build serves the real
 //   run (MUTATE unset) and every mutation run (MUTATE=<id>, one id per
-//   assertion). Baseline with MUTATE unset: 3 passed, 2 failed -- A0
-//   (liveness) and A1 (doubling) and A3 (0-after-0) green, A2 (1->01) and
-//   A4 (0-after-1) red. A2 and A4's red is the deliverable (finding
+//   assertion). Baseline with MUTATE unset (re-measured 2026-09-15, Lot
+//   F): 2 passed, 2 failed, plus A0 now MEASURED (note(), not graded) --
+//   A1 (doubling, repaired to a page-legal 0x00/0xAAAA marker scoped to
+//   the known payload index range) and A3 (0-after-0) green, A2 (1->01)
+//   and A4 (0-after-1) red. A2 and A4's red is the deliverable (finding
 //   candidate C9): actual run counts and per-mutation results are recorded
 //   in the commit message and build report, not predicted here.
 //
@@ -131,7 +158,7 @@
 //   already red cannot demonstrate anything further (it cannot fail
 //   harder). The substitute rule applies: A3's own live, green
 //   0-after-0 reading uses the IDENTICAL mechanism (feed a uniform payload
-//   byte, locate the payload word by the same 0xFFFF-marker search, extract
+//   byte, locate the payload word by the same fixed payload-start index, extract
 //   the same bits[13:12] cell, compare by the same == comparator) and is
 //   already proven live and green elsewhere in this same run. Per the
 //   suite's ch8-dskbytr-status-register precedent, A2's and A4's own
@@ -140,10 +167,10 @@
 //   uid-less id -- so the record pairs against each assertion's own (red)
 //   baseline correctly.
 //
-// MUTATION A0-DISTINCT-KNOWN-WORDS-ARRIVE stimulus red: the second trial's sector is changed from uniform 0x88 to uniform 0xFF (identical to the first trial), so the two readings collapse to the same 0xFFFF instead of staying distinct (MUTATE=A0).
-// MUTATION A1-MFM-DOUBLES-SIZE stimulus red: the armed LENGTH is reduced from 544 to 300 (a shorter transfer), while the check still expects exactly 512 payload words carrying the 0xFFFF marker (MUTATE=A1).
+// A0-DISTINCT-KNOWN-WORDS-ARRIVE -- no claim uid; withdrawn to note() (Lot F, 2026-09-15). No mutation record (not graded through expect()).
+// MUTATION A1-MFM-DOUBLES-SIZE stimulus red (repaired stimulus, Lot F, 2026-09-15): the armed LENGTH is reduced from 544 to 300 (a shorter transfer), while the check still expects exactly 512 payload words within the payload range carrying the 0xAAAA marker (MUTATE=A1).
 // MUTATION A2-MFM-ONE-ENCODES-01 stimulus green: substitute -- A3-MFM-ZERO-AFTER-ZERO-ENCODES-10's own live, already-graded reading (uniform 0x00 sector, identical payload-word-search and bits[13:12]-extraction mechanism, identical 2-bit equality comparator) is a different mechanism, proven live elsewhere in this same run, put through the same comparator, and it grades green -- showing the comparator apparatus is not vacuously red. A2's own red above is a genuine divergence (finding candidate C9), not a stuck check.
-// MUTATION A3-MFM-ZERO-AFTER-ZERO-ENCODES-10 stimulus red: the real trial's sector is changed from uniform 0x00 to uniform 0xFF (identical to the marker-search calibration sector), so the checked cell (bits[13:12], still compared against 0b10) now reads 0b11 instead (MUTATE=A3).
+// MUTATION A3-MFM-ZERO-AFTER-ZERO-ENCODES-10 stimulus red: the real trial's sector is changed from uniform 0x00 to uniform 0xFF (the same byte value A0/A2 feed), so the checked cell (bits[13:12], still compared against 0b10) now reads 0b11 instead (MUTATE=A3).
 // MUTATION A4-MFM-ZERO-AFTER-ONE-ENCODES-00 stimulus green: substitute -- A3-MFM-ZERO-AFTER-ZERO-ENCODES-10's own live, already-graded reading is the same different-mechanism-through-the-same-comparator demonstration as A2's record above (see that record for the full reasoning; not repeated here to avoid two conflicting explanations of one fact). A4's own red above is a genuine divergence (finding candidate C9), not a stuck check.
 
 #include <cstdint>
@@ -182,6 +209,23 @@ std::string bin2(uint16_t v) {
 const uint8_t ADDR_NONE    = 0x00;
 const uint8_t ADDR_DSKDATR = 0x04;  // $008 >> 1
 const uint8_t ADDR_DSKLEN  = 0x12;  // $024 >> 1
+
+// Payload words are fifo_word_counter 32-543; word-counter 0-31 is
+// sync/preamble/header/label/checksum framing, fixed by the state
+// machine's own thresholds and never touched by data_odd/data_even --
+// confirmed directly from paula_floppy.v:484-497 (RTL FACTS above, the
+// same reading A1 relies on). The FIFO preserves push order
+// (paula_floppy_fifo.v), so the Nth DSKDATR pop after arming is always
+// fifo_word_counter=N-1, and the payload's own first word
+// (fifo_word_counter=32) is therefore always pop #33 -- a locator taken
+// from the generator's own word-counter thresholds, not from what any
+// cell encodes to (Lot G repair, 2026-09-16; see the header note above for
+// why the withdrawn content-search locator could not be trusted against a
+// conforming encoder). Every trial below feeds a
+// UNIFORM sector, so this one fixed index is as good a payload sample as
+// any other for A0/A2/A3/A4.
+constexpr int FRAMING_WORDS = 32;
+constexpr int FIRST_PAYLOAD_POP_INDEX = FRAMING_WORDS + 1;
 }  // namespace
 
 class Checks {
@@ -320,43 +364,26 @@ struct Rig {
     }
 };
 
-// A word of exactly 0xFFFF can only arise from this fixture's own payload
-// encoder fed an all-1s byte (clock=1, data=1 on every cell -- see the file
-// header). Feeds a uniform 0xFF sector on its own fresh, throwaway rig and
-// returns the 1-indexed DSKDATR pop count of the first exact match, or -1
-// if none is found in 60 pops (well past the 32-word framing region).
-int find_ff_marker_pop_index() {
-    Rig rig;
-    rig.do_reset();
-    rig.arm_and_feed_uniform(544, 0xFF);
-    for (int i = 1; i <= 60; i++) {
-        if (rig.dskdatr_pop() == 0xFFFF) return i;
-    }
-    return -1;
-}
-
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     // ========================================================================
-    // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page: the
-    // build brief's own requirement that the fixture prove it can deliver a
-    // known word before any read-based assertion is trusted. Two distinct,
-    // known, non-default sector patterns (uniform 0xFF and uniform 0x88)
-    // must arrive at the same payload-word position, unmodified and
-    // mutually distinguishable. 0xFF -> 0xFFFF and 0x88 -> 0xEEEE are both
-    // hand-derived from the RTL fact above (clock=1 constant; 0x88 =
-    // 1000_1000, so the payload's own odd-weight-bit sequence (bits 7,5,3,1)
-    // for this fixture's data_odd cell order is 1,0,1,0 on each of the two
-    // fed bytes -> cells 11,10,11,10,11,10,11,10 -> 0xEEEE) and neither is
-    // reachable from any fixed framing default (0x4489, 0xaaaa, or a
-    // track/sector-derived header/checksum word).
+    // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page.
+    // WITHDRAWN TO note() (independent validation, 2026-09-15, Lot F): this
+    // assertion carries no claim uid -- it was never conformance evidence,
+    // only a fixture control, so grading it through expect() cost no
+    // coverage to remove. It also used 0xFF -> 0xFFFF as one of its two
+    // known words, which is this RTL's own non-conformant encoder output,
+    // not a page-legal value (p.250's "1 -> 01" is unconditional, so a
+    // uniform 0xFF byte page-encodes to 0x5555, not 0xFFFF) -- printing it
+    // as a measurement rather than a grade removes any conformance weight
+    // that choice carried. Its mutation record is removed with it.
     // ========================================================================
     {
-        int idx = find_ff_marker_pop_index();
-        checks.note("A0-CALIBRATION: 0xFF marker first found at pop #" + std::to_string(idx));
+        int idx = FIRST_PAYLOAD_POP_INDEX;
+        checks.note("A0-CALIBRATION: payload's first word (fifo_word_counter=32, paula_floppy.v:484-497) is DSKDATR pop #" + std::to_string(idx));
 
         Rig rig1;
         rig1.do_reset();
@@ -366,41 +393,52 @@ int main(int argc, char** argv) {
 
         Rig rig2;
         rig2.do_reset();
-        // MUTATE=A0: second trial also feeds uniform 0xFF (identical to the
-        // first) instead of uniform 0x88, while the check still expects the
-        // 0x88 trial's distinct 0xEEEE reading.
-        uint8_t byteval2 = mutating("A0") ? 0xFF : 0x88;
-        rig2.arm_and_feed_uniform(544, byteval2);
+        rig2.arm_and_feed_uniform(544, 0x88);
         uint16_t v2 = 0;
         for (int i = 1; i <= idx; i++) v2 = rig2.dskdatr_pop();
 
-        checks.note("A0-STIMULUS: pop #" + std::to_string(idx) + " reads 0x" + hex4(v1) +
-                    " for a uniform 0xFF sector and 0x" + hex4(v2) +
-                    " for a uniform 0x" + hex4(byteval2).substr(2) + " sector");
-
-        // Expected value for v2 computed as its own statement, not inline in
-        // the expect() call below: an embedded mutating("A0") string literal
-        // inside that call's own argument list is what a leading-id-string
-        // scanner would (wrongly) read as this assertion's id, colliding
-        // with the real label that follows as the second argument.
-        uint16_t expected_v2 = mutating("A0") ? 0xFFFF : 0xEEEE;
-        checks.expect(v1 == 0xFFFF && v2 == expected_v2 && v1 != v2,
-            "A0-DISTINCT-KNOWN-WORDS-ARRIVE: two distinct, known sector patterns (uniform 0xFF, uniform 0x88) "
-            "arrive, unmodified and mutually distinguishable (0xFFFF vs 0xEEEE), at the exact same DSKDATR/"
-            "data_out payload-word read this package's every other assertion also uses -- the fixture's "
-            "SD-sector-in -> stream-out data path is live, not stuck");
+        checks.note("A0-DISTINCT-KNOWN-WORDS-ARRIVE (no claim uid, MEASURED not GRADED): two distinct, known "
+                    "sector patterns (uniform 0xFF, uniform 0x88) arrive, unmodified and mutually distinguishable, "
+                    "at the exact same DSKDATR/data_out payload-word read this package's every other assertion "
+                    "also uses -- the fixture's SD-sector-in -> stream-out data path is live, not stuck. Measured "
+                    "pop #" + std::to_string(idx) + " reads 0x" + hex4(v1) + " for a uniform 0xFF sector and 0x" +
+                    hex4(v2) + " for a uniform 0x88 sector.");
     }
 
     // ========================================================================
     // A1 -- opus:8-mfm.c1 / sol:8-mfm.c1 (p.250, "The raw MFM data that must
     // be presented to the disk controller will be twice as large as the
-    // unencoded data."). A word of exactly 0xFFFF is reachable ONLY from the
-    // payload encoder (see file header); counting its occurrences across one
-    // full sector's drain therefore counts exactly the payload-encoded
-    // words, uncontaminated by the fixed framing words that surround them
-    // (which are never 0xFFFF for a freshly reset, never-stepped rig).
-    // CONTROL CASE: an unexceptional, page-literal reading, expected to
-    // hold.
+    // unencoded data.").
+    //
+    // REPAIRED (independent validation, 2026-09-15, Lot F): the withdrawn
+    // form searched for a content marker of exactly 0xFFFF (a uniform 0xFF
+    // sector's payload word) and counted its occurrences across the whole
+    // drained stream. 0xFFFF is NOT a page-legal MFM encoding of 0xFF --
+    // p.250's "1 -> 01" is unconditional, so 0xFF page-encodes to 0x5555 --
+    // it is only what THIS RTL's own non-conformant, context-free encoder
+    // (candidate C9, graded by A2/A4 below) produces for a run of one-bits.
+    // Against a conforming encoder the search would never find it, and this
+    // assertion would count zero and fail, reporting a doubling defect that
+    // is not there.
+    //
+    // Repaired to a uniform 0x00 sector instead: p.250's own rule makes
+    // 0x00 page-legally encode to 0xAAAA (0 -> 10 "if following a 0", the
+    // steady state for a run of zero bits) -- true of BOTH a conforming
+    // encoder and this RTL's own context-free one (confirmed: A3 below
+    // measures exactly this), so counting 0xAAAA payload words is safe
+    // either way. Counting is scoped to the PAYLOAD index range alone
+    // (fifo_word_counter 32-543, 512 words: DSKDATR pops 33-544),
+    // confirmed by this agent directly reading the generator's own
+    // word-counter THRESHOLD selection (paula_floppy.v:484-497) -- a
+    // structurally distinct piece of logic from, and unrelated to, the
+    // per-bit encoder (:467-477) that is the actual site of the C9
+    // conformance bug; nothing about fixing that bug would move this
+    // threshold. This also sidesteps a risk a whole-stream content search
+    // would have carried: framing words 30/31 (paula_floppy.v:492-493,
+    // the PAYLOAD checksum) are content-derived and, unlike every other
+    // framing word, DO depend on the fed bytes -- a fixed index range
+    // excludes them by construction; a content search across the whole
+    // stream would not have.
     // ========================================================================
     {
         Rig rig;
@@ -409,33 +447,41 @@ int main(int argc, char** argv) {
         // fewer than 512 payload words are ever delivered, while the check
         // still expects exactly 512.
         uint16_t length = mutating("A1") ? 300 : 544;
-        rig.arm_and_feed_uniform(length, 0xFF);
+        rig.arm_and_feed_uniform(length, 0x00);
+
+        // FRAMING_WORDS (fifo_word_counter 0-31, confirmed paula_floppy.v:484-497)
+        // is now defined once, file-scope, above -- shared with A0/A2/A3/A4's
+        // FIRST_PAYLOAD_POP_INDEX (Lot G repair).
+        int to_discard = (length < FRAMING_WORDS) ? length : FRAMING_WORDS;
+        for (int i = 0; i < to_discard; i++) rig.dskdatr_pop();
+        int payload_words = length - to_discard;
 
         int marker_count = 0;
-        for (int i = 1; i <= length; i++) {
-            if (rig.dskdatr_pop() == 0xFFFF) marker_count++;
+        for (int i = 0; i < payload_words; i++) {
+            if (rig.dskdatr_pop() == 0xAAAA) marker_count++;
         }
         int encoded_bytes = marker_count * 2;
         checks.note("A1-STIMULUS: LENGTH armed=" + std::to_string(length) +
-                    "; 0xFFFF payload-marker words counted=" + std::to_string(marker_count) +
+                    "; payload words available=" + std::to_string(payload_words) +
+                    "; 0xAAAA payload words counted=" + std::to_string(marker_count) +
                     " (" + std::to_string(encoded_bytes) + " encoded bytes) against 512 unencoded payload bytes fed");
 
         checks.expect(marker_count == 512,
             "A1-MFM-DOUBLES-SIZE (p.250, opus:8-mfm.c1/sol:8-mfm.c1, quote 'The raw MFM data that must be "
             "presented to the disk controller will be\\ntwice as large as the unencoded data.'): a uniform 512-byte "
-            "SD sector fed on sdc_byte_in_data produces exactly 512 payload words (identifiable by the "
-            "content-derived 0xFFFF marker, unreachable from any fixed framing default) at data_out -- 1024 "
-            "encoded bytes for 512 unencoded payload bytes, exactly twice, matching the page");
+            "SD sector fed on sdc_byte_in_data (uniform 0x00, whose page-legal MFM encoding is 0xAAAA per p.250) "
+            "produces exactly 512 payload words within the known payload index range (fifo_word_counter 32-543) "
+            "at data_out -- 1024 encoded bytes for 512 unencoded payload bytes, exactly twice, matching the page");
     }
 
     // ========================================================================
     // A2 -- opus:8-mfm.c2 / sol:8-mfm.c2 (p.250, "               1 -> 01").
     // Context-free rule, no predecessor needed: read the FIRST cell
-    // (bits[15:14]) of the payload word found by the marker search, fed
-    // from a byte whose bit 7 is 1.
+    // (bits[15:14]) of the payload word at the fixed payload-start index
+    // (FIRST_PAYLOAD_POP_INDEX), fed from a byte whose bit 7 is 1.
     // ========================================================================
     {
-        int idx = find_ff_marker_pop_index();
+        int idx = FIRST_PAYLOAD_POP_INDEX;
 
         Rig rig;
         rig.do_reset();
@@ -470,19 +516,18 @@ int main(int argc, char** argv) {
     // assertion's own live, green result is what A2's and A4's `//
     // MUTATION` records point to as the "different mechanism, proven live
     // elsewhere in the same run" the build brief's substitute rule asks
-    // for, since it exercises the IDENTICAL payload-word-search,
+    // for, since it exercises the IDENTICAL payload-word locator,
     // bits[13:12]-extraction, and 2-bit equality comparator those two
     // assertions use.
     // ========================================================================
     {
-        int idx = find_ff_marker_pop_index();
+        int idx = FIRST_PAYLOAD_POP_INDEX;
 
         Rig rig;
         rig.do_reset();
         // MUTATE=A3: the real trial's sector is changed from uniform 0x00
-        // to uniform 0xFF (identical to the marker-search calibration
-        // sector), while the check still expects the 0-after-0 reading
-        // (0b10).
+        // to uniform 0xFF (the same byte value A0/A2 feed), while the
+        // check still expects the 0-after-0 reading (0b10).
         uint8_t byteval = mutating("A3") ? 0xFF : 0x00;  // bits 7 and 5 both 0 at baseline
         rig.arm_and_feed_uniform(544, byteval);
         uint16_t w = 0;
@@ -510,7 +555,7 @@ int main(int argc, char** argv) {
     // 7 is 1 and bit 5 is 0.
     // ========================================================================
     {
-        int idx = find_ff_marker_pop_index();
+        int idx = FIRST_PAYLOAD_POP_INDEX;
 
         Rig rig;
         rig.do_reset();

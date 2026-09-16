@@ -25,18 +25,18 @@
 //   the read-back has to happen while selected even when the step itself
 //   does not) -> FAIL as expected (dsktrack was never actually incremented).
 //   Reverted.
-// MUTATION PULSE-WIDTH-FLOOR stimulus red: do_step's low phase changed from
-//   1 tick to 0 (the call that lowers _step is skipped, so _step never
-//   transitions) -> FAIL as expected (no rising edge is ever produced, so
-//   the module never accepts the step). Reverted.
+// PULSE-WIDTH-FLOOR -- DECLINED via record(), not expect(), Lot F
+//   (2026-09-15): no mutation record (not graded through expect()). The
+//   page's "1 us min." is an absolute interval this fixture cannot present;
+//   see the record() call in main() for the reason.
 // MUTATION TRACK00-POLARITY stimulus red: the outward step that is supposed
 //   to leave track 0 is skipped -> FAIL as expected (the trial never leaves
 //   track 0, so the "TRACK00 deasserts once off track 0" half of the
 //   assertion is checked against a state that never occurred). Reverted.
-// MUTATION STEP-POLARITY stimulus red: _step is never raised back to 1 after
-//   being lowered (the module is never given a rising edge at all) -> FAIL
-//   as expected (track never advances, on the rising edge or otherwise).
-//   Reverted.
+// STEP-POLARITY -- DECLINED via record(), not expect(), Lot F (2026-09-15):
+//   no mutation record (not graded through expect()). The figure shows the
+//   pulse's polarity, not that motion may occur only on the release edge;
+//   see the record() call in main() for the reason.
 // MUTATION DIREC-PROTOCOL stimulus red: direc left at 0 for both the first
 //   AND the second step (instead of 0 then 1), so the second step increments
 //   again instead of decrementing -> FAIL as expected (track ends up at 2,
@@ -353,9 +353,14 @@ int main(int argc, char** argv) {
     }
 
     // -----------------------------------------------------------------
-    // A6 STEP-POLARITY -- p.243: STEP is depicted as an active-low pulse.
-    // The actionable event is the RISING edge (the pulse's end), not the
-    // low level by itself.
+    // A6 STEP-POLARITY -- DECLINED (independent validation, 2026-09-15,
+    // Lot F). p.243 depicts STEP as an active-low pulse; it never says
+    // motion may occur ONLY on the release (rising) edge -- that is an
+    // internal sampling-edge choice this RTL happens to make, not a
+    // printed requirement. Grading "unchanged while low, changed on the
+    // rising edge" therefore tests an implementation detail the figure is
+    // silent on, not the pulse's printed polarity. The measurement itself
+    // is real and kept via note(); it is declined as conformance evidence.
     // -----------------------------------------------------------------
     {
         Trial t;
@@ -369,30 +374,64 @@ int main(int argc, char** argv) {
         t.tick();
         t.tick();
         const bool changed_on_rising_edge = !t.track0();
-        checks.expect(
-            unchanged_while_low && changed_on_rising_edge,
-            "STEP-POLARITY: holding _step low produces no motion; the "
-            "track only advances on the rising edge that ends the "
-            "active-low pulse [claims: sol:8-fig8-8.c26]");
+        checks.note(
+            "STEP-POLARITY-MEASURED: holding _step low produces no motion "
+            "(unchanged_while_low=" + std::string(unchanged_while_low ? "true" : "false") +
+            "); the track advances on the rising edge that ends the "
+            "active-low pulse (changed_on_rising_edge=" +
+            std::string(changed_on_rising_edge ? "true" : "false") + ")");
+        checks.record(
+            "STEP-POLARITY (p.243, Figure 8-8/8-9, STEP depicted as an "
+            "active-low pulse): declined, not graded. The figure shows the "
+            "pulse's polarity; it does not say motion may occur ONLY on "
+            "the release (rising) edge and never on the low level or the "
+            "falling edge -- that is an unspecified internal sampling "
+            "choice, and grading against it turns an implementation detail "
+            "into a printed requirement the page does not state. The "
+            "measurement above (motion occurs on the rising edge in this "
+            "RTL) is real; it is not, by itself, evidence that the page "
+            "REQUIRES that specific edge [claims: sol:8-fig8-8.c26]");
     }
 
     // -----------------------------------------------------------------
-    // A4 PULSE-WIDTH-FLOOR -- Figure 8-7 (write timing) and the read-timing
-    // diagram both print the STEP pulse width as "1 us min": a chip
-    // requirement with a floor sense. Already measured and true at this
-    // fixture: the module's own minimum accepted low width is 1 tick.
+    // A4 PULSE-WIDTH-FLOOR -- DECLINED (independent validation,
+    // 2026-09-15, Lot F). Figure 8-7 (write timing) and the read-timing
+    // diagram print the STEP pulse-width floor in MICROSECONDS ("1 us
+    // min."), an ABSOLUTE time unit. This fixture ties no constant or
+    // counter to a real-time unit anywhere reachable from it -- exactly
+    // the limitation RATIO-B's own decline (above) already concedes for
+    // this same family of figures. "The module's own minimum accepted low
+    // width is 1 tick" is a genuine measurement of THIS simulation's
+    // coarsest representable interval (one clk7_en tick), not a measured
+    // microsecond floor: 1 tick is the finest interval any discrete
+    // edge-triggered detector could ever report, true regardless of what
+    // physical pulse width the real chip actually requires. Kept as a
+    // note(), declined as conformance evidence for the printed "1 us min."
     // -----------------------------------------------------------------
     {
         Trial t;
         t.select_drive0();
         t.saturate_step_ena();
         t.do_step(/*direc_val=*/false, /*low_ticks=*/1);
-        checks.expect(
-            !t.track0(),
-            "PULSE-WIDTH-FLOOR: a _step pulse held low for exactly 1 tick "
-            "is accepted -- the module's minimum accepted low width is "
-            "satisfiable at 1 tick, matching the printed floor sense "
-            "[claims: sol:8-fig8-7.c3, sol:8-fig8-9-text.c1]");
+        const bool accepted_at_1_tick = !t.track0();
+        checks.note(
+            "PULSE-WIDTH-FLOOR-MEASURED: a _step pulse held low for exactly "
+            "1 tick is accepted=" + std::string(accepted_at_1_tick ? "true" : "false") +
+            " -- the finest interval a discrete clk7_en-tick edge detector "
+            "can register, not a measured microsecond value");
+        checks.record(
+            "PULSE-WIDTH-FLOOR (Figure 8-7/8-9, STEP pulse width printed "
+            "as \"1 us min.\"): declined, not graded. The page's value is "
+            "an ABSOLUTE interval in microseconds; paula_floppy.v ties no "
+            "constant or counter to a real-time unit anywhere reachable "
+            "from this fixture (RATIO-A's step_ena_cnt floor is the only "
+            "calibrated-looking number here and nothing connects it to 1 "
+            "us either), the same absence RATIO-B's own decline already "
+            "established for this figure family. \"1 tick is accepted\" "
+            "measures this simulation's coarsest representable interval, "
+            "not the printed microsecond floor -- declining rather than "
+            "grading a tick count against a unit this boundary cannot "
+            "present [claims: sol:8-fig8-7.c3, sol:8-fig8-9-text.c1]");
     }
 
     // -----------------------------------------------------------------

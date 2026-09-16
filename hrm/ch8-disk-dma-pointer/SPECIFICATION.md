@@ -77,7 +77,15 @@ Testable form: presenting `reg_address_in` = 9'h022[8:1] together with a
 Cited by: `opus:8-appA-dskpt.c6` (p.279), `sol:8-appa-dskptl.c1` (p.279,
 twin), `opus:8-appB-dskptl.c1` (p.289), `sol:8-appb-dskptl.c1` (p.289, twin).
 
-### P3 -- DSKPTH and DSKPTL are write-only: neither is readable back through this boundary
+### P3 -- DSKPTH and DSKPTL are write-only: neither is readable back through this boundary -- DECLINED 2026-09-15 (repair lot D)
+
+**Declined, not asserted.** Independent validation found the previous
+`expect(true, ...)` form was unfalsifiable by construction (the literal
+condition `true`) -- it restated this boundary's lack of a data-output port
+as its own result, proving neither register write-only rather than testing
+it. Converted to `record()`; the structural fact itself (no `rd`/`hwr`/`lwr`
+strobe, no data-output port of any kind) is unchanged and still printed via
+`note()`.
 
 > "DSKPTH 020 W ..." / "DSKPTL 022 W ..." (p.279, the R/W column)
 > "DSKPTH + *020 W ..." / "DSKPTL + *022 W ..." (p.289, composed with the
@@ -159,7 +167,16 @@ comparison -- but here the printed bit count and the measured bit count
 agree, which is what shows the comparator discriminates rather than always
 reading red.
 
-### P6 -- the pointer's lowest bit is not representable: a DSKPTL write's bit 0 changes nothing
+### P6 -- the pointer's lowest bit is not representable: a DSKPTL write's bit 0 changes nothing -- DECLINED 2026-09-15 (repair lot D)
+
+**Declined, not asserted.** Independent validation found the even-address
+rule is a precondition on software (what a programmer must write), not a
+specified hardware masking behaviour for a misaligned write -- neither
+citing page says what happens if bit 0 is set. Grading "does the RTL
+discard bit 0" made the RTL its own oracle. The only fact this boundary can
+measure (no storage exists for bit 0 at all) is already this package's own
+green P5 control, restated under an "evenness" label. Converted to
+`record()`.
 
 > "The lowest bit of the address must be zero, and the buffer must be in
 > Chip memory." (p.246, first clause only -- "Chip memory" is a `gary`-level
@@ -183,7 +200,16 @@ chip-memory half is out of this boundary (see "Not turned into assertions").
 Expected: **GREEN** -- this is a case where NanoMig's structure matches the
 manual's stated requirement, not a divergence.
 
-### P7 -- DSKPTH and DSKPTL are one address-register pair: both halves must be written to establish a full pointer value
+### P7 -- DSKPTH and DSKPTL are one address-register pair: both halves must be written to establish a full pointer value -- DECLINED 2026-09-15 (repair lot D)
+
+**Declined, not asserted.** Independent validation found the testable form
+(a DSKPTH-alone write leaves the low field untouched) shows only that the
+two registers decode and load independently -- already established by this
+package's own green P1/P2 -- not that they are specifically the manual's
+"+  Address register pair". Any two unrelated write-only registers feeding
+independent bit ranges would pass this identical measurement. The "single
+long word" claims' remaining half is the CPU-bus-width fact already
+excluded below as a non-goal. Converted to `record()`.
 
 > "You specify the 32-bit wide address..." / "The value must be written as a
 > single long word to the DSKPTH register ($DFF020)." (p.246, two-register
@@ -230,9 +256,24 @@ by the same measurement -- `address_out` is the port that is both loaded by
 DSKPTH/DSKPTL and consumed/advanced by DMA grants): `opus:8-dsk.c33`
 (p.241), `opus:8-dma.c3` (p.246), `sol:8-dskdma.c2` (p.246, twin).
 
-Expected: **GREEN**.
+Expected: **GREEN**. **NARROWED 2026-09-15 (repair lot D):** the graded
+condition no longer requires exactly 3 grants at this implementation's own
+hpos slots (0x19/0x1D/0x21) -- a correct implementation scheduling
+differently would have failed that. It now requires only that at least one
+grant occurs and that every granted cycle observed satisfies the page's own
+requirement (next-word address, advance by one). Still green.
 
-### P9 -- nothing in this module restores the pointer; it must be reloaded before each new transfer
+### P9 -- nothing in this module restores the pointer; it must be reloaded before each new transfer -- REPAIRED 2026-09-15 (repair lot D)
+
+**Repaired, not declined.** Independent validation found the previous
+testable form graded mere *holding* (address_out unchanged while dmal is
+withdrawn), which the cited claims do not describe -- "must be reloaded
+before use" is a cause-and-effect claim. The repaired testable form: after
+DMA stops, DSKPTH/DSKPTL are written to a fresh, distinct pointer value and
+DMA is re-enabled; the assertion now requires the FIRST subsequent granted
+cycle to use exactly that reloaded value, not the address where the
+previous transfer stopped. This is reachable at this boundary and remains
+green.
 
 > "Must be reloaded by a processor before use..." (p.288, processor-identity
 > half not graded, see "Not turned into assertions")
@@ -250,7 +291,15 @@ Cited by: `sol:8-appb-ptrlegend.c2` (p.288), `sol:8-appa-dskptr.c2` (p.279).
 
 Expected: **GREEN**.
 
-### P10 -- the pointer's direction: which of DSKDATR/DSKDAT the channel addresses tracks `wr`/`dmas`
+### P10 -- the pointer's direction: which of DSKDATR/DSKDAT the channel addresses tracks `wr`/`dmas` -- DECLINED 2026-09-15 (repair lot D)
+
+**Declined, not asserted.** Independent validation found this only observes
+which Paula register address `dmas` selects; agnus_diskdma's port list
+carries no RAM data bus at all (only `reg_address_out`, `wr`,
+`address_out`), so the actual transfer the source/destination claims
+describe -- data moving to/from RAM -- is not observable here. A reversed
+or entirely broken RAM transfer direction would pass this identical
+measurement. Converted to `record()`.
 
 > "You specify the 32-bit wide address from which or to which the data is to
 > be transferred." (p.246)
@@ -343,7 +392,9 @@ simply wired to always report red.
   instruction produced them. Not a runtime behaviour of this module; no
   stimulus/observation pair grades it. Recorded, not asserted. (The
   two-register-split half of the same claims -- that both registers must be
-  written -- *is* graded, as P7.)
+  written -- was graded as P7 until the 2026-09-15 repair lot D; P7 is now
+  also declined -- see its own section above. Both halves of these three
+  claims are declined in this package now.)
 - **The "by a processor" / "by the processor or Copper" requester-identity
   half of `sol:8-appb-ptrlegend.c2` (p.288) and `sol:8-appa-dskptr.c2`
   (p.279)** -- `reg_address_in`/`data_in` carry an address and a value, and
@@ -351,7 +402,8 @@ simply wired to always report red.
   Copper write to the same address; nothing at this boundary discriminates
   "who" wrote it. Recorded, not asserted. (The "must be reloaded before
   use" / "must be initialized before DMA is enabled" half of the same two
-  claims *is* graded, as P9.)
+  claims *is* graded, as P9, via an explicit reload-and-use measurement
+  since the 2026-09-15 repair lot D.)
 - **The "pointing to chip memory" half of the `+` mark**
   (`opus:8-appB-dskpth.c2`, `opus:8-appB-dskptl.c2`, p.289, composed with
   the p.287 legend) -- whether the loaded address actually lands in chip
@@ -377,6 +429,19 @@ accounted for, via `record()` naming the sibling package
 `ch8-disk-pointer-ecs-and-copper`'s P4/P5, which carries the fact. 49 of 55
 claims remain graded through `expect()`.
 
+**2026-09-15 repair lot D (LOS-D.md):** P3's 8, P6's 5-plus-2-partial, P7's
+7 (2 partial) and P10's 2 claims are now also **declined** -- see their
+sections above, each with a `record()` explaining why the claim cannot be
+graded at this boundary. P8 and P9 remain **graded**, narrowed to what the
+pages actually require rather than the implementation's own scheduling
+detail (P8) or mere holding (P9). This repair also cleared this package's
+`tools/check_uid_placement.py` offenses: 7 uids previously sat on both a
+graded line and a `record()` line (P7's and P9's own citations); declining
+P7 and stripping P9's label of its literal uid tokens (kept only on the
+`record()` lines that already name P7/P9 as the assertion carrying the
+graded half) resolved all 7. Remaining graded through `expect()`: LIVENESS,
+P1, P2, P5, P8, P9, P11A.
+
 ## Mutation plan
 
 Every graded proposition gets one stimulus mutation (for a green baseline:
@@ -396,29 +461,34 @@ stimulus can ever manufacture a read-back path to falsify against.
   (bits do not land in `address_out[20:16]`). Revert.
 - P2: stimulus -- present the value at $020 instead of $022; expect red.
   Revert.
-- P3: none/impossible -- no data-output port exists in the compiled module
-  to read back through, at any stimulus.
+- P3: **removed 2026-09-15 (repair lot D).** Declined via `record()`; the
+  original `none`/`impossible` reasoning (no data-output port exists to
+  read back through, at any stimulus) is unchanged, but it no longer backs
+  an `expect()`, so no mutation record remains.
 - P4A, P4B: **removed 2026-09-15 (repair).** Both are declined via
   `record()`, not graded through `expect()`; per BUILD-BRIEF a mutation
   record is removed with its assertion, so neither carries one any more.
 - P5: stimulus -- corrupt one bit of the DSKPTL value fed in; expect red.
   Revert.
-- P6: stimulus -- present a genuinely different DSKPTL value (differing in
-  more than bit 0) instead of the reference one; expect red (address_out
-  no longer matches the expected constant). Revert.
-- P7: stimulus -- skip the DSKPTL write and read `address_out` after
-  DSKPTH alone; expect red (low bits still hold the stale prior value, not
-  the intended new pointer). Revert.
+- P6: **removed 2026-09-15 (repair lot D).** Declined via `record()`; the
+  measurement (DSKPTL<=0x2468 vs 0x2469) is now a `note()` only, no
+  mutation record remains.
+- P7: **removed 2026-09-15 (repair lot D).** Declined via `record()`; the
+  measurement (writing DSKPTH alone) is now a `note()` only, no mutation
+  record remains.
 - P8: stimulus -- withhold `dmal` so no cycle is ever granted; expect red
-  (address_out never advances). Revert.
-- P9: stimulus -- reload DSKPTH/DSKPTL to the same value again mid-test and
-  check for a spurious reset in between; expect red if a no-op reload were
-  mistaken for restoration -- concretely, deassert `dmal` after advancing
-  and additionally clear `data_in`/`reg_address_in` to idle; expect red if
-  the (wrong) expectation were "returns to the loaded value". Revert.
-- P10: stimulus -- swap `wr`/`dmas` polarity from the tested combination;
-  expect red (`reg_address_out` no longer matches the expected constant).
+  (grant_count stays 0, failing `grant_count>=1`). **NARROWED 2026-09-15
+  (repair lot D):** the graded condition changed from `grant_count==3` to
+  `grant_count>=1`, but this same mutation (0 grants) still fails it.
   Revert.
+- P9: **REPAIRED 2026-09-15 (repair lot D)** -- stimulus retargeted to the
+  new reload-and-use mechanism: skip the post-stop DSKPTH/DSKPTL reload
+  writes instead of performing them, so the pointer is never actually
+  reloaded before DMA restarts; expect red (the first subsequent grant's
+  address_out equals `stopped`, not `reloaded_ptr`). Revert.
+- P10: **removed 2026-09-15 (repair lot D).** Declined via `record()`; the
+  measurement (dmas=0/1 vs reg_address_out) is now a `note()` only, no
+  mutation record remains.
 - P11A: oracle -- substitute the compared width from 32 to 20; expect
   green.
 - P11B: **removed 2026-09-15 (repair).** Declined via `record()`, not

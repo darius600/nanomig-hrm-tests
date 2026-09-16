@@ -138,10 +138,11 @@
 //   literal id-reader the wrong text and orphan the real label (named as a
 //   hazard hit by two sibling builders today). One build serves both the
 //   real run (MUTATE unset) and every mutation run (MUTATE=<id>, one id
-//   per assertion). Baseline with MUTATE unset: 6 passed, 1 failed (A2 is
-//   the one expected failure -- the p.278 two-term reading, graded
-//   literally, does not hold; see A2's own header comment and
-//   SPECIFICATION.md). Actual run counts and per-mutation results are
+//   per assertion). Baseline with MUTATE unset (re-measured 2026-09-15, Lot
+//   F, after A0 was withdrawn to note() -- see its own comment below): 5
+//   passed, 1 failed (A2 is the one expected failure -- the p.278 two-term
+//   reading, graded literally, does not hold; see A2's own header comment
+//   and SPECIFICATION.md). Actual run counts and per-mutation results are
 //   recorded in the commit message and build report, not predicted here.
 //
 // A2 is expected RED at baseline (this package's own claims file and the
@@ -159,7 +160,7 @@
 //   its own ordinary stimulus mutation (MUTATE=A2S), since it is green at
 //   baseline, unlike A2.
 //
-// MUTATION A0-LIVENESS-PAULA-DSKLEN-WRITE-TO-DSKBYTR-READBACK stimulus red: second known value driven identical to the first (0x0000 both times, WRITE bit clear both times) so the two readings are indistinguishable (MUTATE=A0).
+// A0-LIVENESS-PAULA-DSKLEN-WRITE-TO-DSKBYTR-READBACK -- no claim uid; withdrawn to note() (Lot F, 2026-09-15). No mutation record (not graded through expect()).
 // MUTATION A1-DMAON_P248_THREE_TERM_COMPOSITION stimulus red: the "all three true" row's own DSKLEN arming is skipped (single write only, not double) even though the row's own predicted value stays true, so the measured/predicted truth table stops matching on that one row (MUTATE=A1).
 // MUTATION A2-DMAON_P278_TWO_TERM_COMPOSITION none impossible: already red at baseline -- NanoMig requires DMACON's DSKEN bit in addition to the two terms p.278 names, so the two-term reading, graded as printed (DSKEN irrelevant), does not hold. A stimulus mutation cannot fail an assertion that already fails, so none is recorded for this label; the comparator that grades it is instead proven live via the substitute A2-SUBSTITUTE-TWO-TERM-COMPARATOR-LIVE below.
 // MUTATION A2-SUBSTITUTE-TWO-TERM-COMPARATOR-LIVE stimulus red: with DSKLEN.DMAEN and the pinned master DMAEN both held true, the DSKEN=false row's own stimulus is overridden to also set DSKEN true, while the check still expects that row's DMAON to read 0 (MUTATE=A2S).
@@ -363,25 +364,28 @@ int main(int argc, char** argv) {
     // known single DSKLEN writes (WRITE bit clear, then WRITE bit set, DMAEN
     // left low both times) must arrive at two distinct, individually-
     // predicted DSKBYTR readings.
+    //
+    // WITHDRAWN TO note() (independent validation, 2026-09-15, Lot F): this
+    // assertion carries no claim uid -- it was never conformance evidence,
+    // only a fixture control, so grading it through expect() cost no
+    // coverage to remove. Its mutation record is removed with it.
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
         rig.dsklen_write_single(0x0000);
         uint16_t v1 = rig.read_dskbytr();
-        checks.note("A0-LIVENESS-WORD1: DSKLEN<=0x0000 (single write), DSKBYTR readback=0x" + hex4(v1));
 
-        const bool mutA0 = mutating("A0");
-        uint16_t word2 = mutA0 ? 0x0000 : 0x4000;
+        uint16_t word2 = 0x4000;
         rig.dsklen_write_single(word2);
         uint16_t v2 = rig.read_dskbytr();
-        checks.note("A0-LIVENESS-WORD2: DSKLEN<=0x" + hex4(word2) + " (single write), DSKBYTR readback=0x" + hex4(v2));
 
-        checks.expect(v1 == 0x9000 && v2 == (mutA0 ? 0x9000 : 0xB000) && v1 != v2,
-            "A0-LIVENESS-PAULA-DSKLEN-WRITE-TO-DSKBYTR-READBACK: two distinct, known DSKLEN writes (0x0000 then "
-            "0x4000), made through paula's own reg_address_in/data_in ports, arrive unmodified and mutually "
-            "distinguishable at the DSKBYTR mirror bit read back through paula's own data_out OR-mux -- this "
-            "fixture's write-then-read data path is live at the `paula` boundary itself, not stuck");
+        checks.note(
+            "A0-LIVENESS-PAULA-DSKLEN-WRITE-TO-DSKBYTR-READBACK (no claim uid, MEASURED not GRADED): two distinct, "
+            "known DSKLEN writes (0x0000 then 0x4000), made through paula's own reg_address_in/data_in ports, "
+            "arrive unmodified and mutually distinguishable at the DSKBYTR mirror bit read back through paula's "
+            "own data_out OR-mux -- this fixture's write-then-read data path is live at the `paula` boundary "
+            "itself, not stuck. Measured DSKBYTR=0x" + hex4(v1) + " then 0x" + hex4(v2) + ".");
     }
 
     // ========================================================================

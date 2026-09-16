@@ -46,6 +46,14 @@ known value. Required as its own graded, mutation-recorded item.
 Proposition: DSKLEN is a write-only register — reading back at its own address
 does not return the bits just written to it.
 
+**DECLINED 2026-09-15 (lot B repair).** Same fault as
+`ch8-disk-register-map-paula-floppy`/L2: p.263-264 forbids reading a
+write-only register outright ("do not attempt to read from it, as this may
+trash the register and crash the system") and gives no value for what such
+a read returns. Grading "reads 0x0000" performs the very operation the
+manual prohibits and checks it against a value the manual never gives.
+Declined via `record()`; the raw measurement is kept as a `note()`.
+
 ### A2 — DSKLEN_TWO_CONTROL_BITS
 
 | uid | page | quote |
@@ -212,6 +220,27 @@ file, which had not yet run the full transfer when it classified this claim
 testable), the assertion is red, and that red is the deliverable, not a defect
 in the test.
 
+**Built and measured 2026-09-15 (lot B repair).** An earlier build had
+declined this claim ("out of proportion to this package's remaining scope"),
+contradicting this section's own plan above — an independent validation
+found that decline reason impermissible (cost is not unobservability) and
+asked for the attempt this section already called for. `drive_write_
+transfer_and_read()` now drives the full sync+header+payload write transfer
+paula_floppy.v:781-901 needs (a DSKSYNC-matching sync word, a checksum- and
+track-verified 24-word header, a payload-checksum preload, and a uniform
+512-byte payload) and reads the corresponding byte back via
+`sdc_byte_out_data`. **Measured RED, as this section anticipated**: a byte
+written as 0xFF at the last offset of the sector (511) reads back as 0xFF —
+both the upper 5 bits and the low 3 bits survive intact. NanoMig's write path
+is fully byte-buffered from the DSKDAT FIFO through to `sdc_byte_out_data`
+(paula_floppy.v:876, :378-384, :221-236 are all whole-byte assignments), with
+no bit-serial shift-register stage anywhere for the documented timing race
+to occur in. A11 carries a `none impossible` mutation record (no stimulus
+this package can choose changes that outcome); its comparator is proven live
+by the new substitute A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE, which applies
+the identical apparatus to a different known payload (0x00) and reads it
+back correctly.
+
 ### A12 — DSKBUG_ONE_WORD_SHORT_ON_READ (documented hardware bug)
 
 | uid | page | quote |
@@ -275,22 +304,28 @@ fixture is asked to do (a different write value, a different port state, a
 shorter/longer source feed) while leaving the expected value untouched, and
 confirm the assertion reddens, then revert.
 
-Two claims (A11, A12) are DECLINED via `record()`, not graded through
-`expect()`, and carry no mutation record — neither is an assertion that can
-fail, so the mutation-record requirement ("if it is graded through expect(),
-it needs a record") does not apply to either. A11 declines because reaching a
-genuine last-written byte is out of proportion to this package's scope (see
-the header comment). **A12 was repaired 2026-09-15**: it was originally
-graded literally-red against the page's "may" wording and defended by a
-substitute assertion (A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE) proving its
-comparator live; independent validation found the grading itself wrong ("may"
-demands nothing a deterministic trial can violate), so both A12's graded
-check and its now-purposeless substitute are removed, and A12 is declined
-instead.
+**A11 was repaired 2026-09-15 (lot B)**: it is no longer declined. The prior
+decline reason ("out of proportion to this package's scope") was found
+impermissible by an independent validation — cost is not unobservability.
+A11 is now graded through `expect()`, measures RED at baseline (the written
+byte survives fully intact; see A11's own section above), carries a `none
+impossible` mutation record, and is defended by a new substitute,
+A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE, which DOES carry an ordinary
+stimulus mutation (its own payload byte swapped) and is proven GREEN at
+baseline.
 
-A0 (fixture liveness) gets its own mutation: drive the second known value
-identical to the first, so the two readings become indistinguishable, and
-confirm the liveness check reddens.
+A1 is DECLINED via `record()`, not graded through `expect()`, and carries no
+mutation record — it is not an assertion that can fail, so the
+mutation-record requirement does not apply. **A12 was repaired 2026-09-15**:
+it was originally graded literally-red against the page's "may" wording and
+defended by a substitute assertion (A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE)
+proving its comparator live; independent validation found the grading itself
+wrong ("may" demands nothing a deterministic trial can violate), so both
+A12's graded check and its now-purposeless substitute are removed, and A12 is
+declined instead.
+
+A0 (fixture liveness, no uid) is a `note()` as of the 2026-09-15 lot-B
+repair and carries no mutation record for the same reason A1 does not.
 
 ## What happens next
 

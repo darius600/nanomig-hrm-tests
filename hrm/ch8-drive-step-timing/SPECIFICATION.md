@@ -273,3 +273,22 @@ line numbers cited above, read the existing `hrm/paula_floppy` and
 this suite uses, and write the Verilator test harness. All of that reading —
 and anything else opened beyond what is named above — will be disclosed in
 the next commit.
+
+## Repair addendum (Lot F, 2026-09-15)
+
+Two assertions declined, not graded:
+
+- **STEP-POLARITY**: the figure shows STEP as an active-low pulse; it does
+  not say motion may occur only on the release (rising) edge. Grading
+  against that specific edge turned an unspecified internal sampling
+  choice into a printed requirement.
+- **PULSE-WIDTH-FLOOR**: the figure states the pulse-width floor in
+  microseconds, an absolute unit this fixture cannot present (no constant
+  or counter here is tied to real time) — the same limitation RATIO-B's
+  own decline already established for this figure family. "1 tick
+  accepted" measures this simulation's coarsest representable interval,
+  not the printed floor.
+
+Both are kept as `note()`. **RATIO-A was not touched** — it is RED, it is
+the finding (candidate C3), and its fold-back construction stays as
+built.

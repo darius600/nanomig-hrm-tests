@@ -85,20 +85,13 @@
 //   13 passed, 1 failed (only the targeted assertion reddens), then
 //   reverted and confirmed back to 14 passed, 0 failed.
 //
-// MUTATION LIVE-CIAA-PORTA-DISTINCT stimulus red: second porta_in word driven identical to the first, so the two readings are indistinguishable (MUTATE=LIVE-CIAA-PORTA-DISTINCT). RUN: baseline 14/0 -> 13 passed 1 failed, only this label red; reverted 14/0.
-// MUTATION LIVE-CIAB-PORTB-DISTINCT stimulus red: second PRB byte driven identical to the first (MUTATE=LIVE-CIAB-PORTB-DISTINCT). RUN: baseline 14/0 -> 13/1, only this label red; reverted 14/0.
 // MUTATION LIVE-CIAB-ICR-FLAG-DISTINCT stimulus red: flag left unpulsed before the second ICR read too, so both readings are the unpulsed value (MUTATE=LIVE-CIAB-ICR-FLAG-DISTINCT). RUN: baseline 14/0 -> 13/1, only this label red; reverted 14/0.
 // MUTATION PRE-SELCIAB-ASSERTED stimulus red: address redirected to non-CIA space while the check still expects sel_cia_b asserted (MUTATE=PRE-SELCIAB-ASSERTED). RUN: baseline 14/0 -> 13/1, only this label red; reverted 14/0.
 // MUTATION PRE-NEG-NONCIA-DESELECTED stimulus red: the CIA address itself presented, so the decode asserts and the isolation control fails (MUTATE=PRE-NEG-NONCIA-DESELECTED). RUN: baseline 14/0 -> 13/1, only this label red; reverted 14/0.
 // MUTATION OVERLAP-BOTH-SELECTS-ACTIVE stimulus red: address's bit 12 reverted to 1 (no overlap) while the check still expects both selects asserted (MUTATE=OVERLAP-BOTH-SELECTS-ACTIVE). RUN: baseline 14/0 -> 13/1, only this label red; reverted 14/0.
-// MUTATION CTRL-DISTINCT-REGISTER-SAME-CHIP stimulus red: the same byte written to both DDRB and PRB, destroying the distinctness the check still expects (MUTATE=CTRL-DISTINCT-REGISTER-SAME-CHIP). RUN: baseline 14/0 -> 13/1, only this label red; reverted 14/0.
-// MUTATION TWOPORTS-CIAA-PORTA-OPUS-DSK-C18 stimulus red: the ciaa-path read redirected from $BFA000 (ciaa's own PRA window) to $BFD100 (ciab's window), so ciaa is not enabled, while the check still expects ciaa's word (MUTATE=TWOPORTS-CIAA-PORTA-OPUS-DSK-C18)
-// MUTATION TWOPORTS-CIAB-PORTB-SOL-REGLIST-C1 stimulus red: the ciab-path read/write redirected from $BFD100 to $BFA000 (ciaa's window), so ciab is not enabled, while the check still expects ciab's word (MUTATE=TWOPORTS-CIAB-PORTB-SOL-REGLIST-C1)
 // MUTATION CIABPRB-LITERAL-OPUS-DSK-C23 stimulus red: write/read address redirected from $BFD100 to a non-CIA address while the check still expects the written byte to come back (MUTATE=CIABPRB-LITERAL-OPUS-DSK-C23)
 // MUTATION CIABPRB-ALIAS-OPUS-CIA-C5 stimulus red: alias address redirected outside the window (bit 13 set, deselecting CIA-B) while the check still expects $BFD100's own byte to come back identically (MUTATE=CIABPRB-ALIAS-OPUS-CIA-C5)
 // MUTATION CIABPRB-CHIPLETTER-SOL-CIA-C4 stimulus red: address's bit 12 driven to 0 (asserting sel_cia_a too) while the check still expects sel_cia_a=0 at this address (MUTATE=CIABPRB-CHIPLETTER-SOL-CIA-C4)
-// MUTATION DSKINDEX-LITERAL-OPUS-CIA-C57 stimulus red: read address redirected from $BFDD00 to a non-CIA address while the check still expects the pulsed FLG bit to read back set (MUTATE=DSKINDEX-LITERAL-OPUS-CIA-C57)
-// MUTATION DSKINDEX-ALIAS-SOL-CIA-C51 stimulus red: alias address redirected outside the window (bit 13 set) while the check still expects $BFDD00's own ICR content to come back identically (MUTATE=DSKINDEX-ALIAS-SOL-CIA-C51)
 
 #include <cstdint>
 #include <cstdio>
@@ -266,6 +259,12 @@ int main(int argc, char** argv) {
     // porta_in -> PRA read path, through this rig's own address decode
     // (gary's sel_cia_a into ciaa's aen/rs), at an address distinct from
     // $BFE001 (see header). No claim id, no manual page.
+    //
+    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // claim uid -- apparatus, never conformance evidence -- so demoting it
+    // costs no coverage. No longer mutated (MUTATE=LIVE-CIAA-PORTA-DISTINCT
+    // removed with it): a note() is not graded, so there is nothing left
+    // for a mutation to flip.
     // ========================================================================
     do_reset();
     {
@@ -273,8 +272,7 @@ int main(int argc, char** argv) {
             return (uint8_t)((w6 & 0x3F) << 2);
         };
         const uint8_t word1 = 0b101100;
-        bool mut_live_ciaa = mutating("LIVE-CIAA-PORTA-DISTINCT");
-        const uint8_t word2 = mut_live_ciaa ? word1 : (uint8_t)0b010011;  // complement
+        const uint8_t word2 = (uint8_t)0b010011;  // complement
 
         dut->ciaa_porta_in = word1 & 0x3F;
         settle();
@@ -282,41 +280,43 @@ int main(int argc, char** argv) {
         dut->ciaa_porta_in = word2 & 0x3F;
         settle();
         uint8_t v2 = cia_a_read(ADDR_BFA000);
-        checks.note("LIVE-CIAA-STIMULUS: porta_in[7:2]=0b101100 then its complement, read through the rig at "
-                    "$BFA000, give CIAAPRA bits7:2=0x" + hex2(v1 & 0xFC) + " then 0x" + hex2(v2 & 0xFC));
 
         bool w1ok = (v1 & 0xFC) == expected_upper6(word1);
         bool w2ok = (v2 & 0xFC) == expected_upper6(word2);
         bool distinct = (v1 & 0xFC) != (v2 & 0xFC);
-        checks.expect(w1ok && w2ok && distinct,
-            "LIVE-CIAA-PORTA-DISTINCT: a known word driven on ciaa_porta_in and its bitwise complement both arrive, "
-            "unmodified and mutually distinguishable, at ciaa's PRA read when reached through this rig's "
-            "address-driven decode at $BFA000 -- ciaa's half of the fixture's data path is live, not stuck");
+        checks.note("LIVE-CIAA-PORTA-DISTINCT [not graded -- apparatus check, no claim uid]: porta_in[7:2]="
+                    "0b101100 then its complement, read through the rig at $BFA000, give CIAAPRA bits7:2=0x" +
+                    hex2(v1 & 0xFC) + " then 0x" + hex2(v2 & 0xFC) + " -- both arrive unmodified and mutually "
+                    "distinguishable (matched=" + std::to_string(w1ok && w2ok && distinct) + "): ciaa's half of "
+                    "the fixture's data path is live, not stuck");
     }
 
     // ========================================================================
     // LIVE-CIAB-PORTB-DISTINCT -- same proof for ciab's PRB write/read-back
     // path (through gary's sel_cia_b), at the literal CIABPRB address.
+    //
+    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // claim uid -- apparatus, never conformance evidence -- so demoting it
+    // costs no coverage. No longer mutated (MUTATE=LIVE-CIAB-PORTB-DISTINCT
+    // removed with it): a note() is not graded, so there is nothing left
+    // for a mutation to flip.
     // ========================================================================
     do_reset();
     {
         setup_ciab_output_ddrb_allout();
-        bool mut_live_ciab = mutating("LIVE-CIAB-PORTB-DISTINCT");
         const uint8_t byte1 = 0xA5;
-        const uint8_t byte2 = mut_live_ciab ? byte1 : (uint8_t)0x5A;
+        const uint8_t byte2 = (uint8_t)0x5A;
 
         cia_b_write(ADDR_BFD100, byte1);
         uint8_t v1 = cia_b_read(ADDR_BFD100);
         cia_b_write(ADDR_BFD100, byte2);
         uint8_t v2 = cia_b_read(ADDR_BFD100);
-        checks.note("LIVE-CIAB-STIMULUS: 0xA5 then 0x5A written to PRB via $BFD100 (DDRB=0xFF first), read back "
-                    "0x" + hex2(v1) + " then 0x" + hex2(v2));
 
         bool distinct = v1 != v2;
-        checks.expect(v1 == byte1 && v2 == byte2 && distinct,
-            "LIVE-CIAB-PORTB-DISTINCT: two distinct, known bytes written to CIABPRB through this rig's address "
-            "decode both arrive, distinctly, on ciab's portb_out/data_out -- ciab's half of the fixture's data "
-            "path is live, not stuck");
+        checks.note("LIVE-CIAB-PORTB-DISTINCT [not graded -- apparatus check, no claim uid]: 0xA5 then 0x5A "
+                    "written to PRB via $BFD100 (DDRB=0xFF first), read back 0x" + hex2(v1) + " then 0x" +
+                    hex2(v2) + " (matched=" + std::to_string(v1 == byte1 && v2 == byte2 && distinct) + "): "
+                    "ciab's half of the fixture's data path is live, not stuck");
     }
 
     // ========================================================================
@@ -408,21 +408,25 @@ int main(int argc, char** argv) {
     // chip-select family ([23:16]=$BF, [13]=0, [12]=1), a different `rs`
     // (DDRB, 4'h3, vs. PRB, 4'h1) reads back a distinct, independently-
     // written byte. Satisfies "at least one control case expected to PASS."
+    //
+    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // claim uid -- control case, no manual citation -- so demoting it costs
+    // no coverage. No longer mutated
+    // (MUTATE=CTRL-DISTINCT-REGISTER-SAME-CHIP removed with it): a note()
+    // is not graded, so there is nothing left for a mutation to flip.
     // ========================================================================
     do_reset();
     {
         setup_ciab_output_ddrb_allout();  // DDRB = 0xFF
-        bool mut_ctrl = mutating("CTRL-DISTINCT-REGISTER-SAME-CHIP");
-        cia_b_write(ADDR_BFD100, mut_ctrl ? (uint8_t)0xFF : (uint8_t)0x66);  // PRB
+        cia_b_write(ADDR_BFD100, (uint8_t)0x66);  // PRB
         uint8_t ddrb_val = cia_b_read(ADDR_BFD300);
         uint8_t prb_val  = cia_b_read(ADDR_BFD100);
-        checks.note("CTRL-STIMULUS: DDRB (rs=3, $BFD300) reads 0x" + hex2(ddrb_val) + "; PRB (rs=1, $BFD100) "
-                    "reads 0x" + hex2(prb_val));
-        checks.expect(ddrb_val == 0xFF && prb_val != ddrb_val,
-            "CTRL-DISTINCT-REGISTER-SAME-CHIP (control case, no manual citation, same rig/measurement basis as "
-            "CIABPRB-*/DSKINDEX-*): within the same $BF../[13]=0/[12]=1 chip-select family, DDRB (rs=4'h3) and PRB "
-            "(rs=4'h1) read back distinct, independently-written bytes -- the address-to-register routing this "
-            "rig measures discriminates registers within a chip, not just chips");
+        checks.note("CTRL-DISTINCT-REGISTER-SAME-CHIP [not graded -- apparatus check, no claim uid]: DDRB "
+                    "(rs=3, $BFD300) reads 0x" + hex2(ddrb_val) + "; PRB (rs=1, $BFD100) reads 0x" + hex2(prb_val) +
+                    " (matched=" + std::to_string(ddrb_val == 0xFF && prb_val != ddrb_val) + "): within the same "
+                    "$BF../[13]=0/[12]=1 chip-select family, DDRB and PRB read back distinct, independently-"
+                    "written bytes -- the address-to-register routing this rig measures discriminates registers "
+                    "within a chip, not just chips");
     }
 
     // ========================================================================
@@ -435,14 +439,26 @@ int main(int argc, char** argv) {
     // MUTUALLY EXCLUSIVE chip-selects. NOT graded: that no other CIA port
     // carries a disk signal anywhere else in the design (see
     // SPECIFICATION.md's PROP-TWO-PORTS boundary note).
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): the
+    // stimulus on both sides (ciaa_porta_in = 0b100110, PRB <= 0xC3) is a
+    // generic hand-picked bit pattern, not a real disk signal -- this
+    // proves gary+ciaa+ciab present two distinct, mutually-exclusively-
+    // addressed CIA ports, but not that the DISK SUBSYSTEM is what uses
+    // them (the claim's own words). hrm/ch8-cia-disk-signal-bindings's
+    // full battery of PA5/PA4/PA3/PA2 and PB7..PB0-BINDING assertions now
+    // carries that fact: each one drives a REAL, named disk signal
+    // (paula_floppy's _ready/_track0/_wprot/_change/_motor/_sel3..0/side/
+    // direc/_step) through the pinned minimig.v join and reads it back at
+    // CIAAPRA or CIABPRB over a real CPU bus access -- proving, more
+    // specifically than this block ever did, that it is the disk
+    // subsystem's own signals occupying exactly these two ports.
     // ========================================================================
     do_reset();
     {
-        bool mut_tp1 = mutating("TWOPORTS-CIAA-PORTA-OPUS-DSK-C18");
         dut->ciaa_porta_in = 0b100110;
         settle();
-        uint32_t ciaa_addr = mut_tp1 ? ADDR_BFD100 : ADDR_BFA000;  // mutated: ask ciab's window, still expect ciaa's word
-        uint8_t ciaa_v = cia_a_read(ciaa_addr);
+        uint8_t ciaa_v = cia_a_read(ADDR_BFA000);
         set_address(ADDR_BFA000);
         bool ciaa_sel_ok = dut->sel_cia_a == 1 && dut->sel_cia_b == 0;
 
@@ -452,18 +468,21 @@ int main(int argc, char** argv) {
         set_address(ADDR_BFD100);
         bool ciab_sel_ok = dut->sel_cia_b == 1 && dut->sel_cia_a == 0;
 
-        checks.note("TWOPORTS-STIMULUS(c18): ciaa read at " + std::string(mut_tp1 ? "$BFD100 (mutated)" :
-                    "$BFA000") + " gives bits7:2=0x" + hex2(ciaa_v & 0xFC) + "; ciab PRB reads 0x" + hex2(ciab_v));
-        checks.expect((ciaa_v & 0xFC) == 0x98 && ciaa_sel_ok && ciab_v == 0xC3 && ciab_sel_ok,
+        checks.note("TWOPORTS-CIAA-PORTA-OPUS-DSK-C18 [not graded -- see WITHDRAWN note above]: ciaa read at "
+                    "$BFA000 gives bits7:2=0x" + hex2(ciaa_v & 0xFC) + "; ciab PRB reads 0x" + hex2(ciab_v) +
+                    " (matched=" + std::to_string((ciaa_v & 0xFC) == 0x98 && ciaa_sel_ok && ciab_v == 0xC3 &&
+                    ciab_sel_ok) + ")");
+        checks.record(
             "TWOPORTS-CIAA-PORTA-OPUS-DSK-C18 (p.241, opus:8-dsk.c18, quote 'The disk subsystem uses two ports on "
-            "the system's 8520 CIA chips'): ciaa's porta_in path (minimig.v:622) and ciab's portb_out path "
-            "(minimig.v:650) are both live and reached via mutually exclusive chip-selects -- two distinct, "
-            "independently-addressed CIA ports, one per chip");
+            "the system's 8520 CIA chips'): CANNOT be graded at this boundary. Driving a generic, hand-picked "
+            "bit pattern proves two CIA cores are addressable, not that the DISK SUBSYSTEM uses those two ports "
+            "-- the stimulus never touches a real disk signal. hrm/ch8-cia-disk-signal-bindings's twelve "
+            "PA/PB-BINDING assertions now carry the fact, each driving a real, named disk signal through the "
+            "pinned join and reading it back at CIAAPRA or CIABPRB over a genuine CPU bus access.");
     }
 
     do_reset();
     {
-        bool mut_tp2 = mutating("TWOPORTS-CIAB-PORTB-SOL-REGLIST-C1");
         dut->ciaa_porta_in = 0b100110;
         settle();
         uint8_t ciaa_v = cia_a_read(ADDR_BFA000);
@@ -471,18 +490,21 @@ int main(int argc, char** argv) {
         bool ciaa_sel_ok = dut->sel_cia_a == 1 && dut->sel_cia_b == 0;
 
         setup_ciab_output_ddrb_allout();
-        uint32_t ciab_addr = mut_tp2 ? ADDR_BFA000 : ADDR_BFD100;  // mutated: ask ciaa's window, still expect ciab's word
-        cia_b_write(mut_tp2 ? ADDR_BFA000 : ADDR_BFD100, 0xC3);
-        uint8_t ciab_v = cia_b_read(ciab_addr);
+        cia_b_write(ADDR_BFD100, 0xC3);
+        uint8_t ciab_v = cia_b_read(ADDR_BFD100);
         set_address(ADDR_BFD100);
         bool ciab_sel_ok = dut->sel_cia_b == 1 && dut->sel_cia_a == 0;
 
-        checks.note("TWOPORTS-STIMULUS(reglist.c1): ciab write/read at " + std::string(mut_tp2 ? "$BFA000 (mutated)" :
-                    "$BFD100") + " gives 0x" + hex2(ciab_v));
-        checks.expect((ciaa_v & 0xFC) == 0x98 && ciaa_sel_ok && ciab_v == 0xC3 && ciab_sel_ok,
-            "TWOPORTS-CIAB-PORTB-SOL-REGLIST-C1 (p.241, sol:8-reglist.c1, quote 'The disk subsystem uses two ports "
-            "on the system's 8520 CIA chips', twin of opus:8-dsk.c18): same measurement, graded independently "
-            "under its own uid");
+        checks.note("TWOPORTS-CIAB-PORTB-SOL-REGLIST-C1 [not graded -- see WITHDRAWN note above]: twin of "
+                    "opus:8-dsk.c18, same measurement -> ciab write/read at $BFD100 gives 0x" + hex2(ciab_v) +
+                    " (matched=" + std::to_string((ciaa_v & 0xFC) == 0x98 && ciaa_sel_ok && ciab_v == 0xC3 &&
+                    ciab_sel_ok) + ")");
+        checks.record(
+            "TWOPORTS-CIAB-PORTB-SOL-REGLIST-C1 (p.241, sol:8-reglist.c1, quote 'The disk subsystem uses two "
+            "ports on the system's 8520 CIA chips', twin of opus:8-dsk.c18): same boundary fault. The same "
+            "underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's twelve "
+            "PA/PB-BINDING assertions (cited there under their own opus:8-cia.*/sol:8-cia.* uids, not this uid "
+            "string -- the fact, not the uid, has the new home).");
     }
 
     // ========================================================================
@@ -559,30 +581,48 @@ int main(int argc, char** argv) {
     // DSKINDEX-LITERAL-OPUS-CIA-C57 (p.245, opus:8-cia.c57): a pulse on
     // `flag`, read back through the literal address $BFDD00, sets bit 4
     // (and bit 7, IR) of the returned byte.
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): this
+    // block pulses ciab's `flag` INPUT PIN directly (dut->ciab_flag = 1) --
+    // it proves the CIA ICR bit and the $BFDD00 address, but not p.245's
+    // binding from the disk `index` signal to that pin (minimig.v:526+:647,
+    // `.flag(index)`); a severed or wrong join there still passes this
+    // block unchanged. hrm/ch8-disk-index-interrupt-path's PROP-FLAG-PIN
+    // assertion (opus:8-cia.c56, opus:8-dskint.c9, sol:8-int.c9) now carries
+    // the FLAG-pin journey: it pulses paula_floppy's real `index` OUTPUT and
+    // carries it across the real join onto ciab's `flag`, catching exactly
+    // the severed-join case this block cannot.
     // ========================================================================
     do_reset();
     {
-        bool mut_idx = mutating("DSKINDEX-LITERAL-OPUS-CIA-C57");
         cia_b_write(ADDR_BFDD00, 0x90);  // icrmask[4] <- 1
         dut->ciab_flag = 1;
         settle();
         dut->ciab_flag = 0;
         settle();
-        uint32_t addr = mut_idx ? ADDR_NONCIA : ADDR_BFDD00;
-        uint8_t v = cia_b_read(addr);
-        checks.note("DSKINDEX-LITERAL-STIMULUS: flag pulsed, ICR read at " + std::string(mut_idx ?
-                    "non-CIA address (mutated)" : "$BFDD00") + " gives 0x" + hex2(v));
-        checks.expect(v == 0x90,
+        uint8_t v = cia_b_read(ADDR_BFDD00);
+        checks.note("DSKINDEX-LITERAL-OPUS-CIA-C57 [not graded -- see WITHDRAWN note above]: flag pulsed "
+                    "directly, ICR read at $BFDD00 gives 0x" + hex2(v) + " (matched=" +
+                    std::to_string(v == 0x90) + ")");
+        checks.record(
             "DSKINDEX-LITERAL-OPUS-CIA-C57 (p.245, opus:8-cia.c57, quote 'FLAG DSKINDEX* Disk index pulse "
-            "($BFDD00, bit 4)'): a pulse on ciab's `flag`, read back through CPU address $BFDD00 (rs=4'hD, the "
-            "ICR), sets bit 4 (FLG, cia_int.v:49) and bit 7 (IR) of the returned byte to 0x90 -- the disk index "
-            "pulse the page names, observable at the address the page names");
+            "($BFDD00, bit 4)'): CANNOT be graded at this boundary. This block pulses ciab's `flag` pin "
+            "directly, proving the ICR bit and the $BFDD00 address, but not the binding from paula_floppy's real "
+            "`index` output to that pin (minimig.v:526+:647) -- a severed join passes unchanged. "
+            "hrm/ch8-disk-index-interrupt-path's PROP-FLAG-PIN assertion (opus:8-cia.c56, opus:8-dskint.c9, "
+            "sol:8-int.c9) now carries the FLAG-pin journey, pulsing the real `index` output and carrying it "
+            "across the real join.");
     }
 
     // ========================================================================
     // DSKINDEX-ALIAS-SOL-CIA-C51 (p.245, sol:8-cia.c51, twin): a different
     // address inside the same window (differing from $BFDD00 in bits
     // 15/14) answers identically -- the window claim for this register.
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): same
+    // fault as DSKINDEX-LITERAL-OPUS-CIA-C57 above -- `flag` is pulsed
+    // directly, never through paula_floppy's real `index` output, so the
+    // page's index-to-FLAG-pin binding is not established here either.
     // ========================================================================
     do_reset();
     {
@@ -591,18 +631,17 @@ int main(int argc, char** argv) {
         settle();
         dut->ciab_flag = 0;
         settle();
-
-        bool mut_idxalias = mutating("DSKINDEX-ALIAS-SOL-CIA-C51");
-        uint32_t addr = mut_idxalias ? ADDR_BF3D00 : ADDR_BF1D00;  // mutated: BF1D00 with [13] set, leaving the window
-        uint8_t v = cia_b_read(addr);
-        checks.note("DSKINDEX-ALIAS-STIMULUS: flag pulsed, ICR read at " + std::string(mut_idxalias ?
-                    "the [13]-set (mutated) address" : "$BF1D00 (same window as $BFDD00, [15:14] differ)") +
-                    " gives 0x" + hex2(v));
-        checks.expect(v == 0x90,
+        uint8_t v = cia_b_read(ADDR_BF1D00);
+        checks.note("DSKINDEX-ALIAS-SOL-CIA-C51 [not graded -- see WITHDRAWN note above]: flag pulsed directly, "
+                    "ICR read at $BF1D00 (same window as $BFDD00) gives 0x" + hex2(v) + " (matched=" +
+                    std::to_string(v == 0x90) + ")");
+        checks.record(
             "DSKINDEX-ALIAS-SOL-CIA-C51 (p.245, sol:8-cia.c51, quote 'FLAG DSKINDEX* Disk index pulse ($BFDD00, "
-            "bit 4)', twin of opus:8-cia.c57): a second address sharing [23:16]=$BF, [13]=0 and rs=4'hD but "
-            "differing from $BFDD00 in bits 15/14 answers identically -- DSKINDEX* is a window, not the single "
-            "literal address the page prints");
+            "bit 4)', twin of opus:8-cia.c57): CANNOT be graded at this boundary, same fault as "
+            "DSKINDEX-LITERAL-OPUS-CIA-C57 above (direct `flag` pulse, not the real `index`-to-FLAG-pin join). "
+            "The same underlying fact this uid names is now carried by hrm/ch8-disk-index-interrupt-path's "
+            "PROP-FLAG-PIN assertion (cited there under opus:8-cia.c56/opus:8-dskint.c9/sol:8-int.c9, not this "
+            "uid string -- the fact, not the uid, has the new home).");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";

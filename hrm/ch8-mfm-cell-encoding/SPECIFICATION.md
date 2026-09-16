@@ -194,3 +194,60 @@ construct A3's and A4's stimulus correctly, per the note above), and the
 `hrm/ch8-dsklen-dma-arming` or `hrm/ch8-dskbytr-status-register`, both against
 the same fixture) for the build pattern. All of that reading will be disclosed
 in the next commit.
+
+## Repair addendum (Lot F, 2026-09-15)
+
+An independent validation found A0 (FIXTURE_LIVENESS, no claim uid) and A1
+(MFM_DOUBLES_SIZE) both bound their measurement to DSKDATR word `0xFFFF`,
+which is this RTL's own non-conformant encoder output for a uniform 0xFF
+byte — p.250 makes 0xFF page-legally encode to `0x5555`, so against a
+conforming encoder both would count/search for a word that never appears.
+
+- **A0** withdrawn to `note()` (it carries no uid; was never conformance
+  evidence).
+- **A1** repaired: switched to a uniform 0x00 sector, whose page-legal
+  encoding (`0xAAAA`, p.250's own "0 -> 10 if following a 0" steady state)
+  this RTL also produces. Counting is scoped to the independently-confirmed
+  payload index range (`fifo_word_counter` 32-543, read directly off the
+  generator's own word-counter threshold logic, paula_floppy.v:484-497 —
+  structurally unrelated to the per-bit encoder logic at :467-477 that is
+  the actual site of candidate C9) rather than a whole-stream content
+  search, which also avoids the payload checksum words (30/31) that DO
+  depend on fed content. Stays GREEN (512/512).
+
+A2 and A4 (both RED, candidate C9 itself) were left untouched — they are
+the finding, not the guard.
+
+## Repair addendum (Lot G, 2026-09-16)
+
+Lot F above repaired A1's own locator but left `find_ff_marker_pop_index()`
+itself in place, and A0, A2, A3 and A4 all still called it: fed a uniform
+0xFF sector on a throwaway rig and searched up to 60 DSKDATR pops for the
+first exact `0xFFFF` match. `0xFFFF` is this RTL's own non-conformant
+encoder output for a uniform 0xFF byte, not a page-legal one (p.250 makes
+0xFF encode to `0x5555`) — against a conforming encoder the search finds
+nothing and returns -1, and each caller's own read loop,
+`for (int i = 1; i <= idx; i++) w = rig.dskdatr_pop();`, never executes
+with `idx = -1`. `w` stays its initializer 0, and A2/A3/A4 would each grade
+a cell extracted from a word that was never actually popped — a verdict
+for a reason other than the one it names.
+
+Repaired by removing `find_ff_marker_pop_index()` entirely and replacing
+every one of its four call sites with a fixed constant,
+`FIRST_PAYLOAD_POP_INDEX` (= `FRAMING_WORDS` + 1 = 33), taken from the same
+independently-confirmed `fifo_word_counter` threshold logic
+(paula_floppy.v:484-497) A1's own Lot F repair already relies on. Every
+trial in this file feeds a UNIFORM 512-byte sector, so every payload word
+encodes the identical byte — which payload word is read carries no
+information A0/A2/A3/A4 need, so the payload's fixed first word
+(fifo_word_counter=32, DSKDATR pop #33) is as good a sample as the one the
+withdrawn search used to find, and this locator holds against a conforming
+encoder exactly as it does against this one.
+
+Measured values are unchanged: against this exact RTL the withdrawn search
+always found the marker at pop #33 anyway, so A2 (payload word `0xFFFF`,
+first cell `11`, RED), A3 (payload word `0xAAAA`, second cell `10`, GREEN)
+and A4 (payload word `0xEAEA`, second cell `10`, RED) grade identically
+before and after this repair — 2 passed, 2 failed, both before and after.
+A2 and A4 remain untouched in what they assert; only the locator that
+finds the word they read was replaced.

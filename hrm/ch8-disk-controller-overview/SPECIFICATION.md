@@ -140,6 +140,20 @@ constraint therefore does not apply to any assertion in this package.
   technique the accepted `ch8-mfm-cell-encoding` package established.
   Still RED — measured `known_word=0xFFFF` (bound, at pop #33), DSKBYTR's
   DATA field reads 0x00.
+  **Repaired again (lot G, 2026-09-16):** the 2026-09-15 form's
+  `find_ff_marker_pop_index()` SEARCHED for the 0xFFFF marker and used
+  `bound_ok` (whether the search found it) as a CONJUNCT of the graded
+  condition — but 0xFFFF is THIS RTL's own non-conformant encoding of 0xFF
+  (p.250 makes 0xFF → 0x5555), so against a conforming encoder the search
+  would return -1 and the assertion would FAIL anyway, reporting a
+  DATA-field defect that would not be there. Repaired to a FIXED locator
+  (`FIRST_PAYLOAD_POP_INDEX` = 33, taken from `paula_floppy.v`'s own
+  word-counter framing thresholds, :484-497, structurally independent of
+  what any cell encodes to) plus a PRECONDITION: the peek at that fixed
+  instant still confirms the sampled word is the known byte's own encoding,
+  but confirmation failure now DECLINES via `record()` rather than folding
+  into a graded FAIL — the shape already accepted in
+  `ch8-dskbytr-status-register`/A9. Measured values unchanged.
 - **P-CIAAPRA-FOUR-BITS** — `opus:8-dsk.c21`, `sol:8-reglist.c4` (twins).
   Exactly four independently-controllable sense signals reach the CIAAPRA
   side of the boundary from the floppy side (not fewer, not aliased).

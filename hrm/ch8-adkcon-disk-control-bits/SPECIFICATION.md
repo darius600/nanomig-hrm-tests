@@ -196,3 +196,9 @@ at this exact fixture (disclosed as existing precedent, not HRM conformance
 evidence itself, and not to be cited as an oracle), then write this
 package's own Makefile and test source. Everything opened beyond what is
 named here will be disclosed in the next commit's file header.
+
+## Repair addendum (Lot F, 2026-09-15)
+
+LIVENESS withdrawn to `note()` — it carries no claim uid, so it was never
+conformance evidence; grading it through `expect()` cost no coverage to
+remove. All six graded assertions (A1-A6) are unchanged and still GREEN.

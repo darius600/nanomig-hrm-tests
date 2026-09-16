@@ -77,27 +77,41 @@
 // revert -> rebuild) and the FAIL/PASS lines quoted are what the run
 // printed, not predictions.
 //
-// MUTATION FIXTURE-LIVE stimulus red: the second PRB write changed from the
-//   distinct sentinel 0x5A to a repeat of the first (0xA5) -> FAIL, second
-//   reading no longer differs from the first (both 0xA5). Reverted.
 // MUTATION opus:8-cia.c4 stimulus red: PROP-POSITION's stimulus, at bit 3,
 //   changed from clearing that bit (PRB<-0xF7) to leaving it set
 //   (PRB<-0xFF, the omit-clear bug) -> FAIL, bit 3 of `portb_out` never
-//   moved off 1, so bit_moved was false for PB3. Reverted.
-// MUTATION opus:8-cia.c22 stimulus red: PROP-RESET-DEASSERT's stimulus
-//   omitted the `reset` pulse after PRB<-0x00 -> FAIL, `portb_out` read
-//   0x00, not the expected 0xFF. Reverted.
-// MUTATION opus:8-cia.c48 stimulus red: PROP-ORDER's third write (meant to
-//   restore STEP high while leaving DIREC alone) changed from 0xFD to 0xFF
-//   -> FAIL, DIREC (bit 1) read back 1 after that write, not the 0 written
-//   by the first, separate write. Reverted.
-// MUTATION opus:8-cia.c50 stimulus red: PROP-STEP-SHAPE's middle write
-//   changed from the dip 0xFE to a repeat of 0xFF (the no-dip bug) -> FAIL,
-//   `portb_out`[0] never went low, so the demanded high/low/high shape did
-//   not occur. Reverted.
-// MUTATION CONTROL-BIT0 stimulus red: the same omit-clear bug PROP-POSITION
-//   uses, applied to bit 0 alone (the control's own bit) -> FAIL, bit 0
-//   never moved off 1. Reverted.
+//   moved off 1, so bit_moved was false for PB3. Reverted. (PROP-POSITION is
+//   the only assertion below still graded via expect(); its mutation record
+//   is therefore the only one kept.)
+//
+// REPAIR NOTE (2026-09-15) -- mutation records removed with their withdrawn
+//   assertion, per this suite's rule that a record()/note() carries no
+//   mutation: the former MUTATION FIXTURE-LIVE, MUTATION opus:8-cia.c22
+//   (PROP-RESET-DEASSERT), MUTATION opus:8-cia.c48 (PROP-ORDER), MUTATION
+//   opus:8-cia.c50 (PROP-STEP-SHAPE) and MUTATION CONTROL-BIT0 entries that
+//   stood here are gone; their historical stimulus-red results are
+//   unaffected (those assertions' logic and comparators are untouched, only
+//   their expect()/record() status changed) and are not repeated here.
+//
+// REPAIR NOTE (2026-09-15): independent validation of this package's five
+//   other checks. FIXTURE-LIVE (no uid) and CONTROL-BIT0 (no uid) are
+//   liveness/control measurements only -- converted expect() -> note(), per
+//   this suite's rule that a no-uid check is never graded. PROP-RESET-
+//   DEASSERT, PROP-ORDER and PROP-STEP-SHAPE each generate the desired
+//   software sequence and then assert the generic CIAB output mirrors it --
+//   no drive, motor or head consumer is present at this boundary to show the
+//   RESET default, the write ORDER or the pulse SHAPE actually matters
+//   beyond echoing the stimulus, so none is independent evidence beyond what
+//   PROP-POSITION already establishes generically. Converted expect() ->
+//   note() (measured, printed) plus record() (declined) for every uid each
+//   used to carry -- see the RECORDED block below. The suite's separate
+//   hrm/ch8-cia-disk-signal-bindings package now grades the 24 named-signal
+//   BINDING claims this package's own pre-existing 16 declines named "one
+//   level above this boundary"; those 16 declines are re-pointed below to
+//   name that package and the specific PBn-BINDING assertion carrying each
+//   signal, instead of the boundary in general. Their mutation records are
+//   removed with them (a record()'d assertion carries no mutation). No RTL,
+//   oracle or kept assertion (PROP-POSITION) was touched.
 
 #include <cstdint>
 #include <iostream>
@@ -334,10 +348,10 @@ int main(int argc, char** argv) {
 
     {
         Harness h;
-        checks.expect(fixture_live(h),
-            "FIXTURE-LIVE: two distinct, known PRB bytes (0xA5, 0x5A), with "
-            "DDRB=0xFF, both arrive and read back correctly and distinctly "
-            "on portb_out before any data-dependent assertion is graded "
+        const bool live = fixture_live(h);
+        checks.note(std::string("FIXTURE-LIVE: two distinct, known PRB bytes (0xA5, 0x5A), with "
+            "DDRB=0xFF, arrive and read back ") + (live ? "correctly and distinctly" : "INCORRECTLY") +
+            " on portb_out -- liveness measurement only, not itself a page claim, not graded "
             "[no page -- infrastructure]");
     }
 
@@ -361,139 +375,238 @@ int main(int argc, char** argv) {
 
     {
         Harness h;
-        checks.expect(prop_reset_deassert(h),
-            "opus:8-cia.c22 opus:8-cia.c33 opus:8-cia.c35 opus:8-cia.c37 "
-            "opus:8-cia.c40 opus:8-cia.c29 sol:8-cia.c27 "
+        const bool result = prop_reset_deassert(h);
+        checks.note(std::string(
             "PROP-RESET-DEASSERT: PB7 (DSKMOTOR*), PB6-PB3 (DSKSEL3*..0*) "
             "and, byte-wide, every PB bit read HIGH -- deasserted -- "
             "immediately after reset, even though PRB was written all-low "
-            "just before the reset pulse. This is the CIA-side precondition "
-            "for 'all drive motors turn off after system reset' and for "
-            "each active-low bit's default being its OFF state. Not graded: "
-            "that LOW is the physically asserted level for a specific drive "
-            "line (paula_floppy.v, out of this boundary), or that each "
-            "drive individually latches and remembers motor state at its "
-            "own select edge (drive-external, unmodelled here) [p.244 "
-            "\"DSKMOTOR* ... active low\", \"All drive motors turn off "
-            "after system reset\"; p.245 \"DSKSEL3*/DSKSEL2*/DSKSEL1*/"
-            "DSKSEL0* ... active low\"]");
+            "just before the reset pulse -- measured ") + (result ? "PASS" : "FAIL") +
+            " -- a generic CIAB reset/pull-up fact only, not graded (no "
+            "drive/motor consumer at this boundary; see the RECORDED "
+            "declines below for opus:8-cia.c22/c33/c35/c37/c40/c29 and "
+            "sol:8-cia.c27)");
     }
 
     {
         Harness h;
-        checks.expect(prop_order(h),
-            "opus:8-cia.c48 sol:8-cia.c42 sol:8-cia.c43 PROP-ORDER: DSKDIREC "
-            "(PB1) and DSKSTEP* (PB0) are bits of the same PRB byte, so no "
-            "single write can present one before the other -- a value "
-            "written to PB1 by one PRB write must survive two further "
-            "writes that touch only PB0. Measured: PRB<-0xFD (DIREC=0, "
-            "STEP=1), then PRB<-0xFC (STEP=0, DIREC untouched), then "
-            "PRB<-0xFD (STEP=1, DIREC untouched) -- DIREC reads 0 at all "
-            "three points [p.245 \"This line must be set up before the "
-            "actual step pulse, with a separate write to the register\"]");
+        const bool result = prop_order(h);
+        checks.note(std::string(
+            "PROP-ORDER: DSKDIREC (PB1) and DSKSTEP* (PB0) are bits of the "
+            "same PRB byte, so no single write can present one before the "
+            "other -- a value written to PB1 by one PRB write survives two "
+            "further writes that touch only PB0. Measured: PRB<-0xFD "
+            "(DIREC=0, STEP=1), then PRB<-0xFC (STEP=0, DIREC untouched), "
+            "then PRB<-0xFD (STEP=1, DIREC untouched) -- DIREC reads 0 at "
+            "all three points -- result ") + (result ? "PASS" : "FAIL") +
+            " -- but with no drive/head consumer at this boundary this only "
+            "shows the register holds what was written, already established "
+            "generically by PROP-POSITION; not graded (see the RECORDED "
+            "declines below for opus:8-cia.c48, sol:8-cia.c42, "
+            "sol:8-cia.c43)");
     }
 
     {
         Harness h;
-        checks.expect(prop_step_shape(h),
-            "opus:8-cia.c50 sol:8-cia.c45 PROP-STEP-SHAPE: DSKSTEP* (PB0) "
-            "shows high, momentarily low, then high across three successive "
-            "PRB writes (0xFF, 0xFE, 0xFF) -- a level merely held low is a "
-            "different, unclaimed shape. Not graded: how short "
-            "'momentarily' is -- a duration with no companion interval on "
-            "this page, left to lot c4's drive-timing package [p.245 "
-            "\"This signal must always be used as a quick pulse (high, "
-            "momentarily low, then high)\"]");
+        const bool result = prop_step_shape(h);
+        checks.note(std::string(
+            "PROP-STEP-SHAPE: DSKSTEP* (PB0) shows high, momentarily low, "
+            "then high across three successive PRB writes (0xFF, 0xFE, "
+            "0xFF) -- measured ") + (result ? "PASS" : "FAIL") +
+            " -- but with no drive/head consumer at this boundary to react "
+            "to the edges, this only confirms portb_out mirrors the three "
+            "writes verbatim -- the stimulus itself, not an independent "
+            "shape claim; not graded (see the RECORDED declines below for "
+            "opus:8-cia.c50, sol:8-cia.c45)");
     }
 
-    { Harness h; checks.expect(
-        bit_transfers_independently(h, /*bit=*/0),
+    { Harness h; const bool ok = bit_transfers_independently(h, /*bit=*/0);
+      checks.note(std::string(
         "CONTROL-BIT0: the same bit_transfers_independently() comparator "
-        "PROP-POSITION sweeps above, instantiated at bit 0 alone -- the "
-        "measurement-basis control every graded assertion in this package "
-        "is implicitly compared against. Not itself a page claim [no page "
+        "PROP-POSITION sweeps above, instantiated at bit 0 alone -- ") +
+        (ok ? "PASS" : "FAIL") + " -- repeats PROP-POSITION's own comparator "
+        "on the same vector, adding no independent oracle; measurement-"
+        "basis control only, not itself a page claim, not graded [no page "
         "-- infrastructure control]"); }
 
     // ------------------------------------------------------------------
     // Declined claims. Each names a proposition this package does not
-    // score, and the single reason -- per SPECIFICATION.md's "Claims not
-    // assigned an assertion". No uid below appears on a graded (expect())
-    // line.
+    // score, and the reason -- per SPECIFICATION.md's "Claims not assigned
+    // an assertion" plus this repair's re-pointing to hrm/ch8-cia-disk-
+    // signal-bindings. No uid below appears on a graded (expect()) line.
+    //
+    // Group 1 (16): the named-signal BINDING claims (position -> name).
+    // REPAIR NOTE (2026-09-15): previously declined generically ("one level
+    // above this boundary, not graded"); hrm/ch8-cia-disk-signal-bindings
+    // now grades all of these at the minimig.v:650 join, over a real CPU
+    // bus write, comparing the whole eight-wire group -- re-pointed to name
+    // that package and the specific PBn-BINDING assertion for each signal.
     // ------------------------------------------------------------------
     checks.record(
         "opus:8-cia.c21 (p.244, \"PB7 DSKMOTOR* ... Disk motor control\"): "
         "names PB7's drive-signal binding. `ciab` alone has no signal "
         "named DSKMOTOR*; the binding of PB7 to that name is minimig.v:650, "
-        "one level above this boundary. PB7's bit-position transfer is "
-        "still exercised as one of PROP-POSITION's eight data points -- "
-        "that is a different claim (byte-wide position independence) and "
-        "does not re-grade this one under a different label. Not graded "
-        "here.");
+        "one level above this boundary -- now graded in hrm/ch8-cia-disk-"
+        "signal-bindings' PB7-BINDING assertion. PB7's bit-position "
+        "transfer is still exercised as one of PROP-POSITION's eight data "
+        "points -- a different claim (byte-wide position independence). "
+        "Not graded here.");
     checks.record(
         "opus:8-cia.c32 (p.245, \"PB6 DSKSEL3* ... Select drive 3\"): same "
-        "reason as opus:8-cia.c21, for PB6/DSKSEL3*. Not graded here.");
+        "reason as opus:8-cia.c21, for PB6/DSKSEL3* -- now graded in "
+        "hrm/ch8-cia-disk-signal-bindings' PB6-BINDING assertion. Not "
+        "graded here.");
     checks.record(
         "opus:8-cia.c34 (p.245, \"PB5 DSKSEL2* ... Select drive 2\"): same "
-        "reason, for PB5/DSKSEL2*. Not graded here.");
+        "reason, for PB5/DSKSEL2* -- now graded in hrm/ch8-cia-disk-signal-"
+        "bindings' PB5-BINDING assertion. Not graded here.");
     checks.record(
         "opus:8-cia.c36 (p.245, \"PB4 DSKSEL1* ... Select drive 1\"): same "
-        "reason, for PB4/DSKSEL1*. Not graded here.");
+        "reason, for PB4/DSKSEL1* -- now graded in hrm/ch8-cia-disk-signal-"
+        "bindings' PB4-BINDING assertion. Not graded here.");
     checks.record(
         "opus:8-cia.c38 (p.245, \"PB3 DSKSEL0* ... Select drive 0\"): same "
-        "reason, for PB3/DSKSEL0*. Not graded here.");
+        "reason, for PB3/DSKSEL0* -- now graded in hrm/ch8-cia-disk-signal-"
+        "bindings' PB3-BINDING assertion. Not graded here.");
     checks.record(
         "opus:8-cia.c41 (p.245, \"PB2 DSKSIDE ... which disk head to "
-        "use\"): same reason, for PB2/DSKSIDE -- and DSKSIDE's MEANING (0 = "
-        "upper head) is additionally a paula_floppy.v:669 fact "
-        "(`track={dsktrack[sel],~side}`), also out of this boundary. Not "
+        "use\"): same reason, for PB2/DSKSIDE -- now graded in hrm/ch8-cia-"
+        "disk-signal-bindings' PB2-BINDING assertion. DSKSIDE's MEANING (0 "
+        "= upper head) remains a paula_floppy.v:669 fact "
+        "(`track={dsktrack[sel],~side}`), out of both boundaries. Not "
         "graded here.");
     checks.record(
         "opus:8-cia.c45 (p.245, \"PB1 DSKDIREC ... direction to seek the "
-        "heads\"): same reason, for PB1/DSKDIREC -- and DSKDIREC's MEANING "
-        "(0 = towards center) is additionally a paula_floppy.v:673-677 "
-        "fact. The register-structure half of this bit (that it is bit 1 "
-        "of the same PRB byte as STEP, and survives a STEP-only write) IS "
-        "graded, as opus:8-cia.c48/sol:8-cia.c42/sol:8-cia.c43's "
-        "PROP-ORDER. Not graded here.");
+        "heads\"): same reason, for PB1/DSKDIREC -- now graded in "
+        "hrm/ch8-cia-disk-signal-bindings' PB1-BINDING assertion. "
+        "DSKDIREC's MEANING (0 = towards center) remains a "
+        "paula_floppy.v:673-677 fact, out of both boundaries. The "
+        "register-structure half of this bit (that it survives a STEP-only "
+        "write) was previously graded here as PROP-ORDER; that assertion "
+        "is withdrawn below (no drive/head consumer at this boundary makes "
+        "the write ORDER itself observable beyond the stimulus). Not "
+        "graded here.");
     checks.record(
         "opus:8-cia.c49 (p.245, \"PB0 DSKSTEP* ... Step the heads\"): same "
-        "reason, for PB0/DSKSTEP*. Not graded here.");
+        "reason, for PB0/DSKSTEP* -- now graded in hrm/ch8-cia-disk-signal-"
+        "bindings' PB0-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c20 (p.244, composed: PB7 position + DSKMOTOR* name + "
-        "active-low polarity): the polarity content is not lost -- it is "
-        "the identical reset/pull-up measurement already graded above "
-        "under its twin opus:8-cia.c22, in PROP-RESET-DEASSERT. Not cited "
-        "there under this uid as well, because a uid cited on a graded "
-        "line is counted asserted for the whole claim it names, including "
-        "the DSKMOTOR* name-binding half this package does not test. Not "
-        "graded here.");
+        "active-low polarity): now graded in hrm/ch8-cia-disk-signal-"
+        "bindings' PB7-BINDING assertion, whose comparator (clearing PB7 "
+        "alone reads the named join wire low, the other seven high) "
+        "carries the position, name AND active-low-at-the-wire content "
+        "together. The reset-time default and the physical 'motor turns "
+        "off' consequence remain outside both boundaries -- measured, not "
+        "graded, above under PROP-RESET-DEASSERT's note(). Not graded "
+        "here.");
     checks.record(
         "sol:8-cia.c30 (p.245, composed: PB6 + DSKSEL3* + active-low): same "
-        "reason as sol:8-cia.c20; polarity half graded under "
-        "opus:8-cia.c33. Not graded here.");
+        "reason as sol:8-cia.c20; now graded in hrm/ch8-cia-disk-signal-"
+        "bindings' PB6-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c31 (p.245, composed: PB5 + DSKSEL2* + active-low): same "
-        "reason; polarity half graded under opus:8-cia.c35. Not graded "
-        "here.");
+        "reason; now graded in hrm/ch8-cia-disk-signal-bindings' "
+        "PB5-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c32 (p.245, composed: PB4 + DSKSEL1* + active-low): same "
-        "reason; polarity half graded under opus:8-cia.c37. Not graded "
-        "here.");
+        "reason; now graded in hrm/ch8-cia-disk-signal-bindings' "
+        "PB4-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c33 (p.245, composed: PB3 + DSKSEL0* + active-low): same "
-        "reason; polarity half graded under opus:8-cia.c40. Not graded "
-        "here.");
+        "reason; now graded in hrm/ch8-cia-disk-signal-bindings' "
+        "PB3-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c35 (p.245, \"PB2 DSKSIDE ... which disk head to use\", "
-        "twin of opus:8-cia.c41): same reason as opus:8-cia.c41. Not "
-        "graded here.");
+        "twin of opus:8-cia.c41): same reason as opus:8-cia.c41; now "
+        "graded in hrm/ch8-cia-disk-signal-bindings' PB2-BINDING "
+        "assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c39 (p.245, \"PB1 DSKDIREC ... direction to seek the "
         "heads\", twin of opus:8-cia.c45): same reason as opus:8-cia.c45; "
-        "register-structure half graded as PROP-ORDER. Not graded here.");
+        "now graded in hrm/ch8-cia-disk-signal-bindings' PB1-BINDING "
+        "assertion. Register-structure half previously graded as "
+        "PROP-ORDER; that assertion is withdrawn below. Not graded here.");
     checks.record(
         "sol:8-cia.c44 (p.245, \"PB0 DSKSTEP* ... Step the heads\", twin of "
-        "opus:8-cia.c49): same reason as opus:8-cia.c49. Not graded here.");
+        "opus:8-cia.c49): same reason as opus:8-cia.c49; now graded in "
+        "hrm/ch8-cia-disk-signal-bindings' PB0-BINDING assertion. Not "
+        "graded here.");
+
+    // ------------------------------------------------------------------
+    // Group 2 (12): claims withdrawn from PROP-RESET-DEASSERT (7),
+    // PROP-ORDER (3) and PROP-STEP-SHAPE (2) by this repair. Each was
+    // previously graded (expect()); independent validation found none is
+    // independent evidence beyond the stimulus/PROP-POSITION at this
+    // no-consumer boundary. See the note() calls above for the measured
+    // (still-printed) values.
+    // ------------------------------------------------------------------
+    checks.record(
+        "opus:8-cia.c22 (p.244, \"PB7 DSKMOTOR* ... active low\"): the "
+        "active-low RESET behaviour of the specifically-named DSKMOTOR* "
+        "signal needs both the name binding (now graded in hrm/ch8-cia-"
+        "disk-signal-bindings' PB7-BINDING) and a demonstration that the "
+        "RESET transition produces the deasserted level on that named "
+        "signal. hrm/ch8-cia-disk-signal-bindings only exercises CPU "
+        "writes, never a reset pulse, so it does not cover the reset half "
+        "either. The generic byte-wide fact -- every PB bit, PB7 included, "
+        "reads HIGH after reset -- is measured above (PROP-RESET-"
+        "DEASSERT's note()), not graded under this uid. Not graded here.");
+    checks.record(
+        "opus:8-cia.c33 (p.245, \"PB6 DSKSEL3* ... active low\"): same "
+        "reason as opus:8-cia.c22, for PB6/DSKSEL3*. Not graded here.");
+    checks.record(
+        "opus:8-cia.c35 (p.245, \"PB5 DSKSEL2* ... active low\"): same "
+        "reason, for PB5/DSKSEL2*. Not graded here.");
+    checks.record(
+        "opus:8-cia.c37 (p.245, \"PB4 DSKSEL1* ... active low\"): same "
+        "reason, for PB4/DSKSEL1*. Not graded here.");
+    checks.record(
+        "opus:8-cia.c40 (p.245, \"PB3 DSKSEL0* ... active low\"): same "
+        "reason, for PB3/DSKSEL0*. Not graded here.");
+    checks.record(
+        "opus:8-cia.c29 (p.244, \"All drive motors turn off after system "
+        "reset\"): the physical consequence -- each drive's motor actually "
+        "stopping -- is drive-external and unmodelled both at this "
+        "boundary and at hrm/ch8-cia-disk-signal-bindings (CPU writes "
+        "only, no reset transition exercised). The CIA-side precondition "
+        "(every PB bit reads HIGH, deasserted, after reset) is measured, "
+        "not graded, above under PROP-RESET-DEASSERT's note(). Not graded "
+        "here.");
+    checks.record(
+        "sol:8-cia.c27 (p.244, \"All drive motors turn off after system "
+        "reset\", twin of opus:8-cia.c29): same reason. Not graded here.");
+    checks.record(
+        "opus:8-cia.c48 (p.245, \"This line must be set up before the "
+        "actual step pulse, with a separate write to the register\"): the "
+        "page's ordering requirement presumes a stepper mechanism that "
+        "reacts differently depending on write order; this fixture has no "
+        "head/drive consumer, so what remains is confirmation that the "
+        "register holds a value written to one bit across intervening "
+        "writes to a different bit -- already established generically, "
+        "pairwise for every PB bit, by PROP-POSITION's independent-bit-"
+        "transfer evidence. Measured above (PROP-ORDER's note()), not "
+        "graded under this uid. Not graded here.");
+    checks.record(
+        "sol:8-cia.c42 (p.245, same sentence, twin of opus:8-cia.c48): same "
+        "reason. Not graded here.");
+    checks.record(
+        "sol:8-cia.c43 (p.245, same sentence, twin of opus:8-cia.c48): same "
+        "reason. Not graded here.");
+    checks.record(
+        "opus:8-cia.c50 (p.245, \"This signal must always be used as a "
+        "quick pulse (high, momentarily low, then high)\"): with no drive/"
+        "head consumer at this boundary to react to the edges, a level "
+        "held low for a different duration is indistinguishable from a "
+        "correct pulse without something downstream sensing it -- what "
+        "remains is confirmation that portb_out mirrors the three PRB "
+        "writes verbatim, i.e. the stimulus itself. How short "
+        "'momentarily' must be is also left unspecified by this page, with "
+        "no companion interval to form a ratio with. Measured above "
+        "(PROP-STEP-SHAPE's note()), not graded under this uid. Not graded "
+        "here.");
+    checks.record(
+        "sol:8-cia.c45 (p.245, same sentence, twin of opus:8-cia.c50): same "
+        "reason. Not graded here.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

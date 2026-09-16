@@ -166,6 +166,21 @@ peeks DSKBYTR at the same instant (zero clock edges elapse between the two
 peeks). Measured: RED — `known_word=0xFFFF` (bound, confirmed at pop #33),
 DSKBYTR's DATA field reads 0x00.
 
+**Repaired again (lot G, 2026-09-16):** the 2026-09-15 form's
+`find_ff_marker_pop_index()` SEARCHED for the 0xFFFF marker and used
+`bound_ok` (whether the search found it) as a CONJUNCT of the graded
+condition (`bound_ok && data_field == known_byte`) — but 0xFFFF is THIS
+RTL's own non-conformant encoding of 0xFF (p.250 makes 0xFF → 0x5555), so
+against a conforming encoder the search would return -1 and the assertion
+would FAIL anyway, reporting a DATA-field defect that would not be there.
+Repaired to a FIXED locator (`FIRST_PAYLOAD_POP_INDEX` = 33, taken from
+`paula_floppy.v`'s own word-counter framing thresholds, :484-497,
+structurally independent of what any cell encodes to) plus a PRECONDITION:
+the peek at that fixed instant still confirms the sampled word is the known
+byte's own encoding, but confirmation failure now DECLINES via `record()`
+rather than folding into a graded FAIL — the shape already accepted in
+`ch8-dskbytr-status-register`/A9. Measured values unchanged.
+
 ### B5 — DSKBYTR_COMPOUND_BYTE_AND_STATUS
 
 | uid | page | quote |
@@ -186,6 +201,14 @@ was withdrawn for the same reason. Repaired by reusing B4's own repaired,
 known-byte-bound measurement for the byte half (see B4 above) instead of
 recomputing an unbound premise. Measured: RED, for the same underlying
 reason as B4 (`status_half_real=true`, `byte_half_real=false`).
+
+**Repaired again (lot G, 2026-09-16):** the byte half's
+`byte_half_real = (known_word == 0xFFFF) && (...)` folded the same
+`bound_ok`-as-conjunct fault B4 carried. Repaired identically to B4: fixed
+locator, and an unconfirmed sample DECLINES the whole compound claim via
+`record()` instead of failing the conjunction for the wrong reason. Measured
+values unchanged (`status_half_real=true`, byte binding confirmed,
+`data_matches=false`).
 
 ### B6 — DSKBYTR_BYTE_FIELD_COMPARATOR_LIVE (substitute, no manual citation)
 
@@ -350,10 +373,27 @@ graded comparator for it to defend — E1 already independently establishes
 
 ## Declined claims
 
-E3's five uids (`opus:8-appA-dskdat.c8`, `sol:8-appa-dskdatr.c4`,
-`sol:8-appa-dskdatr.c5`, `opus:8-appB-dskdatr.c6`, `sol:8-appb-dskdatr.c6`)
-are declined as of the 2026-09-15 repair — see E3 above. The remaining 74
-of the 79 claims are cited on a graded (`L0`-`E2`, `B6`) proposition.
+As of the 2026-09-15 lot-B repair, six propositions are declined
+(`record()`, not `expect()`), 24 uids total:
+
+- E3 (5): `opus:8-appA-dskdat.c8`, `sol:8-appa-dskdatr.c4`,
+  `sol:8-appa-dskdatr.c5`, `opus:8-appB-dskdatr.c6`, `sol:8-appb-dskdatr.c6`
+  — the manual's "dummy address" claim is about WHO triggers the bus cycle,
+  a distinction this package's fixture cannot make (see E3 above).
+- L2 (5), S2 (4), D2 (4) — the three WRITE-ONLY propositions (DSKLEN,
+  DSKSYNC, DSKDAT). p.263-264 forbids reading a write-only register outright
+  and gives no value for what such a read returns; grading "reads 0x0000"
+  checks a forbidden operation against a value the page never gives.
+- D3 (4) — blckint/length-completion does not show the written word became
+  genuine outgoing disk data; reaching that needs paula_floppy's full
+  sync+header+payload write parser, which this claim's own trial does not
+  drive.
+- E2 (2) — same fault as E3: grades the mechanism p.287's `ER` legend
+  explicitly says is NOT what triggers an early-read transfer.
+
+The remaining 55 of the 79 claims are cited on a graded (`expect()`) line.
+L0 carries no uid and is a `note()` (fixture liveness, not conformance
+evidence).
 
 ## Expected outcome, stated before any RTL was opened
 
@@ -370,3 +410,11 @@ sound, known-byte-bound basis. E3 was withdrawn by an independent
 validation and is DECLINED rather than graded — see E3 above for why a
 sound repair is not available at this package's assigned boundary. Every
 other proposition remains GREEN.
+
+**Outcome as measured after the 2026-09-15 lot-B repair:** L1, L3, B1, B2,
+B3, S1, S3, D1, E1 all still measure GREEN on their repaired, narrowed
+oracles (B1/B2/B3 masked to DISKWRITE/before-after equality rather than
+DSKBYTR's hardwired-bit idle word; S1/S3 no longer lean on the RTL's reset
+default as their only positive evidence). L2, S2, D2, D3 and E2 are
+declined rather than graded, for the reasons above. See the build report
+for the captured pass/fail tally.

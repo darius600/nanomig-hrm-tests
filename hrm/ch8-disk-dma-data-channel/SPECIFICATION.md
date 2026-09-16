@@ -4,6 +4,27 @@ Written from the quotations in `ch8-disk-dma-data-channel.jsonl` alone (19
 claims). No RTL, Makefile, or other package's files have been opened yet.
 This file is committed before any of that happens.
 
+**REPAIRED 2026-09-15 (repair lot D, LOS-D.md, following DOKTRIN.md):**
+independent validation found L2 mislabeled (its own text claimed "read back
+through DSKDATR" and printed "then 8 DSKDATR reads", but only
+`paula_floppy_fifo`'s internal write-into-empty-FIFO bypass output was ever
+sampled, not a DSKDATR bus read) and B1/B2/W1/W2/DW1/DW2 undertested by the
+same bypass artifact -- any design with no useful write-side disk path
+would have passed those measurements identically. L2 (no claim uid) was
+converted to `note()` with corrected text. B1/B2/W1/W2/DW1/DW2 were
+repaired rather than declined: the test now drives `paula_floppy`'s own
+write-state-machine (`cpu_wr_state`) through a real sync+header+checksum
+sequence into its payload stage, then holds `sdc_busy` so the internal
+auto-drain halts -- from that point, DSKDAT/DSKDATR bus traffic is the only
+remaining consumer of the FIFO, so a word written and later read back is
+genuinely buffered content. This is `measure_buffered_write_sequence()` in
+the `.cpp`; the table below still describes the *intended* proposition
+correctly, only the measurement mechanism changed. CHDR1/CHDR2/CHDW1/CHDW2
+also had a `tools/check_uid_placement.py` offense (their uids sat on both
+their own graded line and the attack-constraint `RECORD` line below) fixed
+by citing those uids only via the `RECORD` line, which already names
+CHDR1/CHDR2/CHDW1/CHDW2 as the assertion carrying the positive half.
+
 Two facts from the build brief and from
 `work/2026-09-15_ch8_s2_finding_candidates.md` are used below without being
 independently re-derived from RTL, because they were handed to me directly as

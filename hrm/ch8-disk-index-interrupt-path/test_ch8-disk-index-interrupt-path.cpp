@@ -129,6 +129,20 @@
 //   level stayed 0 (Timer A's real underflow never reached int6). No
 //   MUTATE run was left applied afterward; the binary described here is
 //   the reverted, baseline (MUTATE-unset) build.
+//
+// REPAIR / Lot F (independent validation, 2026-09-15): opus:8-dskint.c9's
+//   PROP-NOT-OWN-BIT/CONTROL grew a second, always-run condition -- a real
+//   index pulse must change EXACTLY bit 13 of INTREQR, no other bit -- a
+//   falsifiable check for "index has no additional INTREQ bit of its own"
+//   that the original Timer A half alone could not provide (it showed bit
+//   13 is shared, not that nothing else moves when index itself pulses).
+//   Re-measured baseline (MUTATE unset): still 4 passed, 0 failed;
+//   real-index changed_bits=0x2000 (exactly bit 13). MUTATE=opus:8-dskint.c9
+//   re-run after this change: still exactly 3 passed / 1 failed, only this
+//   label flipped (Timer A's own half still drives the FAIL, since the ICR
+//   mask redirection leaves level=0; the new second condition is unaffected
+//   by this particular mutation and stays true on its own). No other label
+//   moved.
 
 #include <cstdint>
 #include <cstdio>
@@ -474,15 +488,28 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // PROP-NOT-OWN-BIT / CONTROL -- opus:8-dskint.c9 (p.250, negative half:
-    // "...not through an INTREQ bit of its own"). paula_intcontroller has no
-    // port named for the disk index (paula_intcontroller.v:4-24); INTREQ
-    // bit 13 can only ever be reached through the SHARED `int6` line. Graded
-    // by driving a DIFFERENT, non-FLG ciab interrupt source (Timer A) to a
-    // real underflow, through join 2 alone, with `flag`/`index` never
-    // touched -- the SAME bit13/level6 outcome results, proving bit 13
-    // belongs to `int6`, not to `index`. This is also this package's
-    // control case: the identical join-2 measurement basis as PROP-LEVEL6,
-    // proven live and correctly wired independently of paula_floppy/join 1.
+    // "...not through an INTREQ bit of its own").
+    //
+    // REPAIRED (independent validation, 2026-09-15, Lot F): the withdrawn
+    // form drove ONLY Timer A (a DIFFERENT, non-FLG source) to a real
+    // underflow and showed IT ALSO reaches bit13/level6 -- proof that bit
+    // 13 is genuinely SHARED, but not, by itself, proof that INDEX has NO
+    // additional bit of its own: a coexisting index-specific INTREQ bit
+    // could exist alongside the shared one and this check would still
+    // pass, since it never looks at what a real index pulse itself does to
+    // the REST of INTREQR. The port-list argument in the prose ("no port
+    // named for the disk index") was correct but was not, by itself, a
+    // falsifiable condition the code checked.
+    //
+    // Repaired to add a second, direct condition: pulse a REAL index (the
+    // same mechanism PROP-LEVEL6 uses) and read the WHOLE INTREQR word
+    // before and after. If index had an additional, dedicated bit anywhere
+    // in paula_intcontroller's own latch array, that bit would move too,
+    // and `changed_bits == (1 << 13)` would fail -- an actual hypothesis
+    // this check can now break, not just narrate. The original Timer A
+    // half is kept alongside it (still a real, complementary fact: bit 13
+    // is reachable from a source that never touches index at all), and
+    // both conditions must hold.
     // ========================================================================
     {
         Rig r;
@@ -495,22 +522,40 @@ int main(int argc, char** argv) {
         r.cb_write(RS_ICR, mut ? uint8_t{0x90} : uint8_t{0x81});
         r.arm_timer_a_underflow();
         const uint8_t icr_read = r.cb_peek_icr();
-        const uint16_t reqr = r.pic_read(INTREQR);
-        const int level = r.level_now();
-        const bool index_ever_high = (r.pf->_sel == 0xF);  // never selected in this block
+        const uint16_t reqr_timera = r.pic_read(INTREQR);
+        const int level_timera = r.level_now();
+
+        // Second, independent Rig: a real index pulse, full-word before/
+        // after comparison. Not gated by `mut` -- opus:8-dskint.c9's own
+        // mutation targets the Timer A half above; this half is a fixed,
+        // always-run structural check.
+        Rig r2;
+        r2.cb_write(RS_ICR, 0x90);            // unmask FLG
+        r2.pic_write(INTENA, 0xE000);
+        const uint16_t reqr_before = r2.pic_read(INTREQR);
+        r2.select_with_motor(0, true);
+        r2.pulse_index_once();
+        const uint16_t reqr_after = r2.pic_read(INTREQR);
+        const uint16_t changed_bits = reqr_before ^ reqr_after;
+
         checks.note("PROP-NOT-OWN-BIT/CONTROL: Timer A underflow, ICR mask " +
                     std::string(mut ? "targets FLG instead of TA (mutated)" : "targets TA (bit0)") +
-                    " -> ICR=" + hex8(icr_read) + " INTREQR=" + hex16(reqr) + " level=" + std::to_string(level) +
-                    "; drive0 stays deselected throughout (_sel=0xF: " + std::to_string(index_ever_high) + ")");
-        checks.expect(level == 6 && (reqr & (1u << 13)) != 0,
+                    " -> ICR=" + hex8(icr_read) + " INTREQR=" + hex16(reqr_timera) + " level=" + std::to_string(level_timera) +
+                    "; real index pulse -> INTREQR before=" + hex16(reqr_before) + " after=" + hex16(reqr_after) +
+                    " changed_bits=" + hex16(changed_bits));
+        checks.expect(
+            level_timera == 6 && (reqr_timera & (1u << 13)) != 0 &&
+            changed_bits == (1u << 13),
             "opus:8-dskint.c9 PROP-NOT-OWN-BIT/CONTROL: paula_intcontroller declares no port for the disk "
             "index (paula_intcontroller.v:4-24: rxint, txint, vblint, int2, int3, int6, blckint, syncint, "
             "audint -- nothing named for INDEX), so INTREQ bit 13 can only ever be reached through the "
-            "shared `int6` line; a DIFFERENT, non-FLG ciab source (Timer A, forced to underflow), through "
-            "join 2 alone with `flag`/`index` never touched, reaches the IDENTICAL bit13/level6 outcome -- "
-            "proving bit 13 is `int6`'s bit, not a dedicated INDEX bit, and doubling as this package's "
-            "control case (same join-2 measurement basis as PROP-LEVEL6, live independently of "
-            "paula_floppy/join 1) [p.250 \"...not through an INTREQ bit of its own\"]");
+            "shared `int6` line. Graded by TWO falsifiable conditions: (1) a DIFFERENT, non-FLG ciab source "
+            "(Timer A, forced to underflow), through join 2 alone with `flag`/`index` never touched, reaches "
+            "the IDENTICAL bit13/level6 outcome, proving bit 13 is `int6`'s bit, not a dedicated INDEX bit; "
+            "(2) a REAL index pulse changes EXACTLY bit 13 of INTREQR and no other bit -- a hypothesis where "
+            "index also drives some additional, coexisting INTREQ bit of its own would flip this condition "
+            "false, which condition (1) alone could not do. Both hold [p.250 \"...not through an INTREQ bit "
+            "of its own\"]");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

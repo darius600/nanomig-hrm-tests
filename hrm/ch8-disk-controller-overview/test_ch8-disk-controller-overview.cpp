@@ -103,6 +103,36 @@
 //   ch8-disk-register-map-paula-floppy/B4 -- one fact, repaired identically
 //   in all three packages that carry it. Still RED, for the reason already
 //   given above (the literal constant 8'h00).
+//
+// REPAIR NOTE (lot G, 2026-09-16): a defect in the 2026-09-15 repair above.
+//   find_ff_marker_pop_index() SEARCHED the drained DSKDATR stream for a
+//   payload word of exactly 0xFFFF -- but 0xFFFF is what THIS RTL's own
+//   non-conformant, context-free MFM encoder happens to produce for a
+//   uniform 0xFF sector (paula_floppy.v:467-477); p.250 makes 0xFF
+//   page-encode to 0x5555. Against a conforming encoder the search would
+//   return -1, `if (idx > 0)` would never run, `bound_ok` would stay false,
+//   and `checks.expect(bound_ok && data_field == 0xFF, ...)` would FAIL
+//   anyway -- `bound_ok` sat as a CONJUNCT of the graded condition, not a
+//   precondition, so a conforming encoder would make opus:8-dsk.c9/
+//   sol:8-dsk.c9 report a DATA-field defect that would not be there.
+//   Repaired two ways, together: (1) find_ff_marker_pop_index() is REMOVED
+//   -- every trial below feeds a uniform 0xFF sector, so any payload word
+//   is as good a sample as any other (matching ch8-mfm-cell-encoding's own
+//   Lot G repair) -- the locator is now the fixed, RTL-structural
+//   FIRST_PAYLOAD_POP_INDEX (=33) defined below, taken from
+//   paula_floppy.v's own word-counter framing thresholds (:484-497), a
+//   piece of logic structurally distinct from, and unmoved by fixing, the
+//   per-bit encoder (:467-477) that is the actual defect site -- a locator
+//   that cannot break when the RTL is fixed. (2) the peek at that fixed
+//   instant still CONFIRMS the sampled word is the known byte's own
+//   encoding (`bound_ok = (known_word == 0xFFFF)`, unchanged) -- the second
+//   purpose the binding check always served, independent of locating -- but
+//   confirmation failure is now a PRECONDITION that DECLINES via record(),
+//   never a conjunct that grades, matching the already-accepted repair
+//   shape in ch8-dskbytr-status-register/A9. Against the RTL actually under
+//   test here, bound_ok is true and both assertions' finding is unchanged
+//   (still RED, same measured values: known_word=0xFFFF, DSKBYTR=0xD000,
+//   DATA field=0x0000).
 //   - dmal (:950): for a read (dsklen[14]=0), dmal = dmaon & ~fifo_empty --
 //     a real port telling the host exactly when a word is ready to pop.
 //     dmaon (:1011, ACTIVE state) = ~lenzero | ~dsklen[14], which for a
@@ -357,26 +387,23 @@ struct Rig {
     }
 };
 
-// Finds the DSKDATR pop index (1-indexed) at which a uniform 0xFF sector's
-// payload word is exactly 0xFFFF -- reusing the already-accepted
-// ch8-mfm-cell-encoding package's own find_ff_marker_pop_index()
-// methodology on this identical fixture (a word of exactly 0xFFFF can
-// only arise from this fixture's own payload encoder fed an all-1s byte,
-// so it is a marker no fixed framing default can be confused with).
-// Returns -1 if not found within 60 pops.
-int find_ff_marker_pop_index() {
-    Rig r; r.do_reset();
-    r.select(0); r.d->wordsync = 0;
-    r.arm_dma_read(544);
-    r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
-    uint8_t sector[512];
-    std::memset(sector, 0xFF, sizeof sector);
-    r.feed_sector(sector);
-    for (int i = 1; i <= 60; i++) {
-        if (r.dskdatr_pop() == 0xFFFF) return i;
-    }
-    return -1;
-}
+// opus:8-dsk.c9/sol:8-dsk.c9's payload-word locator (Lot G repair,
+// 2026-09-16; see each assertion's own comment below for why). Payload
+// words are fifo_word_counter 32-543; word-counter 0-31 is sync/preamble/
+// header/label/checksum framing, fixed by paula_floppy.v's own
+// state-machine thresholds (:484-497) and structurally independent of what
+// any cell encodes to -- confirmed directly from the RTL, matching the
+// reading the already-accepted ch8-mfm-cell-encoding package established
+// for this identical fixture. The FIFO preserves push order, so the Nth
+// DSKDATR pop is always fifo_word_counter=N-1, and the payload's own first
+// word (fifo_word_counter=32) is therefore always pop #33 -- a locator
+// taken from the generator's own word-counter thresholds, not from what any
+// cell encodes to, so it cannot break when the per-bit encoder
+// (paula_floppy.v:467-477, the actual site of finding candidate C6/C9) is
+// fixed. Every opus:8-dsk.c9/sol:8-dsk.c9 trial feeds a uniform 0xFF
+// sector, so this one fixed index is as good a payload sample as any other.
+constexpr int FRAMING_WORDS = 32;
+constexpr int FIRST_PAYLOAD_POP_INDEX = FRAMING_WORDS + 1;
 
 struct TransferResult { int delivered = 0; bool blckint_seen = false; };
 
@@ -416,23 +443,26 @@ int main(int argc, char** argv) {
     std::cout << "Starting ch8-disk-controller-overview...\n";
 
     // ========================================================================
-    // FIXTURE-LIVE -- no claim id, no manual page: the build brief's own
+    // FIXTURE-LIVE -- no claim uid, no manual page: the build brief's own
     // requirement that the fixture prove it can deliver a known, distinct
     // word before any read-based assertion below is trusted.
+    //
+    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // claim uid -- it is apparatus, never conformance evidence -- so
+    // demoting it from a graded expect() costs no coverage. No longer
+    // mutated (MUTATE=FIXTURE-LIVE removed with it): a note() is not graded,
+    // so there is nothing left for a mutation to flip.
     // ========================================================================
     {
         Rig r; r.do_reset();
         uint16_t v1 = r.read_reg(ADDR_DSKBYTR);
-        bool mut = mutating("FIXTURE-LIVE");
-        uint16_t word2 = mut ? 0x0000 : 0x4000;
-        r.write_reg(ADDR_DSKLEN, word2);
+        r.write_reg(ADDR_DSKLEN, 0x4000);
         uint16_t v2 = r.read_reg(ADDR_DSKBYTR);
-        checks.note("FIXTURE-LIVE: DSKLEN<=0x0000 -> DSKBYTR=0x" + hex4(v1) +
-                    "; DSKLEN<=0x" + hex4(word2) + " -> DSKBYTR=0x" + hex4(v2));
-        checks.expect(v1 == 0x9000 && v2 == (mut ? 0x9000 : 0xB000) && v1 != v2,
-            "FIXTURE-LIVE: two distinct, known DSKLEN writes arrive, unmodified and mutually distinguishable, "
-            "at the DSKBYTR mirror this package's own DSKBYTR-CONTROL and several other assertions also read -- "
-            "the fixture's write-then-read data path is live, not stuck");
+        checks.note("FIXTURE-LIVE [not graded -- apparatus check, no claim uid]: DSKLEN<=0x0000 -> DSKBYTR=0x" +
+                    hex4(v1) + "; DSKLEN<=0x4000 -> DSKBYTR=0x" + hex4(v2) + " -- two distinct, known DSKLEN "
+                    "writes arrive, unmodified and mutually distinguishable, at the DSKBYTR mirror several other "
+                    "assertions in this package also read -- the fixture's write-then-read data path is live, "
+                    "not stuck");
     }
 
     // ========================================================================
@@ -519,32 +549,62 @@ int main(int argc, char** argv) {
     // only, not duration -- no clk7_en-tick count is compared against any
     // real-time figure anywhere in this file.
     // ========================================================================
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): TRACK_WORDS
+    // (5984) is an RTL-DERIVED constant (paula_floppy.v:499,530-538 -- 11
+    // sectors * 544 MFM words each), not a figure the manual states anywhere
+    // in the s2 slice or the full 687-page corpus (the P-REVOLUTION-RATIO
+    // removal note above already checked both and found neither RPM nor
+    // clock frequency stated). Using an RTL-derived number as this
+    // assertion's own delivery target makes the RTL under test the reason
+    // the assertion expects that value -- the defect this whole repair
+    // exists to remove.
+    //
+    // Independently: this session never drives `sof` or observes an
+    // index-to-index interval -- this package's own header says so directly
+    // ("sof itself is agnus-generated, outside paula_floppy's boundary, so
+    // ITS real-world rate cannot be read off this fixture, and this file
+    // does not drive sof/index for any grading purpose"). So a transfer of
+    // the implementation's own chosen word count, delivered at ANY rate, in
+    // ANY number of revolutions, still passes this assertion -- it cannot
+    // distinguish "an entire track ... in a single disk revolution" (p.241)
+    // or "read from the disk only once for the entire track" (p.247,
+    // sol:8-dskdma.c6) from "some implementation-defined-length blob moved
+    // in one uninterrupted DMA session." Both faults are independently
+    // sufficient; either alone would withdraw this assertion.
+    //
+    // What an assertion would need to observe: two consecutive `index`
+    // pulses -- this fixture would have to drive `sof` itself, on a real
+    // timebase -- bracketing the whole-track transfer, so an implementation
+    // that took two revolutions to move the same word count is caught. No
+    // package in this suite currently builds that; nothing grades these four
+    // uids elsewhere (checked: opus:8-dsk.c6, opus:8-dsk.c7, sol:8-dsk.c7,
+    // sol:8-dskdma.c6 appear nowhere else in hrm/).
+    // ========================================================================
     {
         const int TRACK_WORDS = 5984;
         Rig r; r.do_reset();
         r.select(0); r.d->wordsync = 0;
-        bool mut = mutating("P-WHOLETRACK-DMA");
-        // MUTATION: request one word MORE than a whole track holds, while
-        // the check still expects completion at exactly TRACK_WORDS.
-        int programmed = mut ? TRACK_WORDS + 1 : TRACK_WORDS;
-        r.arm_dma_read((uint16_t)programmed);
-        auto res = run_read_transfer(r, programmed,
+        r.arm_dma_read((uint16_t)TRACK_WORDS);
+        auto res = run_read_transfer(r, TRACK_WORDS,
             [](int sector, int i){ return (uint8_t)(sector * 53 + i * 7 + 11); }, 400000);
-        checks.note("P-WHOLETRACK-DMA: programmed=" + std::to_string(programmed) +
-                    " words, delivered=" + std::to_string(res.delivered) +
+        checks.note("P-WHOLETRACK-DMA [not graded -- see WITHDRAWN note above]: programmed=" +
+                    std::to_string(TRACK_WORDS) + " words, delivered=" + std::to_string(res.delivered) +
                     ", blckint_seen=" + std::to_string(res.blckint_seen));
-        checks.expect(res.delivered == TRACK_WORDS && res.blckint_seen,
-            "P-WHOLETRACK-DMA (opus:8-dsk.c6, p.241, quote 'It can DMA an entire track of raw\\nMFM data into "
-            "memory in a single disk revolution.'; opus:8-dsk.c7, p.241, same quote, graded here ONLY on its "
-            "dimensionless single-pass reading -- data delivered to track size, 1:1, in one uninterrupted DMA "
-            "session -- NOT on any duration/real-time reading, for which the manual supplies no rotation-speed "
-            "or clock-frequency figure anywhere in the corpus; sol:8-dsk.c7, p.241, same quote, both halves of "
-            "its combined claim, same dimensionless reading; sol:8-dskdma.c6, p.247, quote 'With this process "
-            "you need to read from the disk only once for the\\nentire track.', graded on sol's own operative "
-            "reading -- one programming, one blckint): a single DSKLEN double-write delivers all 5984 words of "
-            "a whole track's real content (11 sectors * 544 MFM words, paula_floppy.v:499,530-538) and raises "
-            "blckint exactly once, confirming a whole track is covered in ONE continuous DMA pass from the "
-            "programming side, never a second pass over the same ground");
+        checks.record(
+            "opus:8-dsk.c6 opus:8-dsk.c7 sol:8-dsk.c7 sol:8-dskdma.c6 P-WHOLETRACK-DMA (p.241, quote 'It can DMA "
+            "an entire track of raw\\nMFM data into memory in a single disk revolution.'; p.247, sol:8-dskdma.c6, "
+            "quote 'With this process you need to read from the disk only once for the\\nentire track.'): CANNOT "
+            "be graded at this boundary. TRACK_WORDS (5984) is derived from paula_floppy.v's own internal "
+            "sector-counter structure (11*544), not from any figure the manual states -- an RTL-derived oracle "
+            "value, which this suite's rule forbids. Independently, this session never drives `sof`/observes an "
+            "index-to-index interval (paula_floppy.v's own revolution counter is explicitly not driven for "
+            "grading purposes anywhere in this file), so a transfer of any implementation-chosen word count, "
+            "completing in any number of revolutions, still passes -- it cannot establish 'in a single disk "
+            "revolution' or 'only once for the entire track' against a page-given figure. A sound assertion "
+            "would need to drive `sof` on a real timebase, observe two consecutive `index` pulses, and confirm "
+            "the whole-track transfer starts and completes within that one interval -- not merely count words "
+            "against a constant this file itself derived from the RTL under test.");
     }
 
     // ========================================================================
@@ -634,40 +694,65 @@ int main(int argc, char** argv) {
     // Still RED -- paula_floppy.v:699 hardwires bits 7:0 (DATA) to the
     // literal constant 8'h00; a known, bound, nonzero incoming byte still
     // never appears there. Finding candidate C6.
+    //
+    // REPAIRED AGAIN (lot G, 2026-09-16; see the file header's own lot G
+    // note): the 2026-09-15 form above searched for the 0xFFFF marker and
+    // used `bound_ok` (whether the search found it) as a CONJUNCT of the
+    // graded condition (`bound_ok && data_field == 0xFF`). 0xFFFF is THIS
+    // RTL's own non-conformant encoding of 0xFF, not the page-legal one
+    // (p.250 makes 0xFF -> 0x5555) -- against a conforming encoder the
+    // search would return -1, bound_ok would be false, and the assertion
+    // would FAIL anyway, reporting a DATA-field defect that would not be
+    // there. Repaired to a FIXED locator (FIRST_PAYLOAD_POP_INDEX, defined
+    // above -- taken from paula_floppy.v's own word-counter framing
+    // thresholds, :484-497, independent of what any cell encodes to, so it
+    // cannot break when the encoder is fixed) plus a PRECONDITION: the peek
+    // at that fixed instant still confirms the sampled word is the known
+    // byte's own encoding (bound_ok, unchanged check), but a confirmation
+    // failure now DECLINES via record() rather than folding into a graded
+    // FAIL -- the same shape already accepted in
+    // ch8-dskbytr-status-register/A9. Against the RTL actually under test
+    // here, bound_ok is true and the finding is unchanged.
     // ========================================================================
     {
         bool mut = mutating("opus:8-dsk.c9");
-        int idx = find_ff_marker_pop_index();
-        checks.note("opus:8-dsk.c9-CALIBRATION: 0xFF-sector marker word (0xFFFF) first found at DSKDATR pop #" +
-                    std::to_string(idx));
+        int idx = FIRST_PAYLOAD_POP_INDEX;
+        checks.note("opus:8-dsk.c9-CALIBRATION: payload's first word (fifo_word_counter=32, "
+                    "paula_floppy.v:484-497) is DSKDATR pop #" + std::to_string(idx));
         if (!mut) {
-            bool bound_ok = false;
-            uint16_t known_word = 0, dskbytr_val = 0;
-            if (idx > 0) {
-                Rig r; r.do_reset();
-                r.select(0); r.d->wordsync = 0;
-                r.arm_dma_read(544);
-                r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
-                uint8_t sector[512];
-                std::memset(sector, 0xFF, sizeof sector);
-                r.feed_sector(sector);
-                for (int i = 1; i < idx; i++) r.dskdatr_pop();  // discard up to just before the marker.
-                known_word = r.read_reg(ADDR_DSKDATR);          // peek, no pop -- the marker itself, at this instant.
-                dskbytr_val = r.read_reg(ADDR_DSKBYTR);         // SAME instant: zero clock edges elapsed since the peek above.
-                bound_ok = (known_word == 0xFFFF);
-            }
+            Rig r; r.do_reset();
+            r.select(0); r.d->wordsync = 0;
+            r.arm_dma_read(544);
+            r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
+            uint8_t sector[512];
+            std::memset(sector, 0xFF, sizeof sector);
+            r.feed_sector(sector);
+            for (int i = 1; i < idx; i++) r.dskdatr_pop();  // discard up to just before the fixed payload-start index.
+            uint16_t known_word = r.read_reg(ADDR_DSKDATR);  // peek, no pop -- the payload word itself, at this instant.
+            uint16_t dskbytr_val = r.read_reg(ADDR_DSKBYTR); // SAME instant: zero clock edges elapsed since the peek above.
+            bool bound_ok = (known_word == 0xFFFF);  // confirmation, not a locator.
             uint8_t data_field = (uint8_t)(dskbytr_val & 0x00FF);
             checks.note("opus:8-dsk.c9: known_word=0x" + hex4(known_word) + " (bound=" +
                         std::to_string(bound_ok) + "), DSKBYTR at same instant=0x" + hex4(dskbytr_val) +
                         ", DATA field=0x" + hex4(data_field));
-            checks.expect(bound_ok && data_field == 0xFF,
-                "opus:8-dsk.c9 (p.241, quote 'Special registers allow\\nthe CPU to synchronize with specific "
-                "data, or read input a byte at a time.'): with a KNOWN incoming byte (0xFF) bound to the "
-                "DSKBYTR sampling instant via the proven-live DSKDATR/FIFO marker path (same technique and same "
-                "underlying fact as ch8-dskbytr-status-register/A9 and "
-                "ch8-disk-register-map-paula-floppy/B4 -- one fact, repaired identically in all three packages "
-                "that carry it), DSKBYTR's DATA field should read that byte; paula_floppy.v:699 hardwires bits "
-                "7:0 to the literal constant 8'h00, so it does not (finding candidate C6)");
+            if (!bound_ok) {
+                checks.record(
+                    "opus:8-dsk.c9 (p.241, quote 'Special registers allow\\nthe CPU to synchronize with specific "
+                    "data, or read input a byte at a time.'): could not confirm a known byte at the fixed "
+                    "payload-start sampling instant (pop #" + std::to_string(idx) + ", fifo_word_counter=32) -- "
+                    "the word read there was not this fixture's own known encoding of a uniform 0xFF byte "
+                    "(0xFFFF). Declining rather than grading an unconfirmed sample: 0xFFFF is not itself a "
+                    "page-legal MFM encoding of 0xFF (p.250 makes 0xFF -> 0x5555), so a mismatch here is not "
+                    "evidence about the DATA field one way or the other.");
+            } else {
+                checks.expect(data_field == 0xFF,
+                    "opus:8-dsk.c9 (p.241, quote 'Special registers allow\\nthe CPU to synchronize with specific "
+                    "data, or read input a byte at a time.'): with a KNOWN incoming byte (0xFF) bound to the "
+                    "DSKBYTR sampling instant via the fixed payload-start index (paula_floppy.v:484-497), "
+                    "confirmed present by the peek above, DSKBYTR's DATA field should read that byte; "
+                    "paula_floppy.v:699 hardwires bits 7:0 to the literal constant 8'h00, so it does not "
+                    "(finding candidate C6)");
+            }
         } else {
             // Substitute (already red at baseline): DSKBYTR-CONTROL's own
             // mechanism (the WRITE-bit mirror, proven live elsewhere in
@@ -685,35 +770,43 @@ int main(int argc, char** argv) {
     }
     {
         bool mut = mutating("sol:8-dsk.c9");
-        int idx = find_ff_marker_pop_index();
-        checks.note("sol:8-dsk.c9-CALIBRATION: twin of opus:8-dsk.c9, same calibration -> marker at pop #" +
-                    std::to_string(idx));
+        int idx = FIRST_PAYLOAD_POP_INDEX;
+        checks.note("sol:8-dsk.c9-CALIBRATION: twin of opus:8-dsk.c9, same fixed locator -> payload's first "
+                    "word (fifo_word_counter=32, paula_floppy.v:484-497) is DSKDATR pop #" + std::to_string(idx));
         if (!mut) {
-            bool bound_ok = false;
-            uint16_t known_word = 0, dskbytr_val = 0;
-            if (idx > 0) {
-                Rig r; r.do_reset();
-                r.select(0); r.d->wordsync = 0;
-                r.arm_dma_read(544);
-                r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
-                uint8_t sector[512];
-                std::memset(sector, 0xFF, sizeof sector);
-                r.feed_sector(sector);
-                for (int i = 1; i < idx; i++) r.dskdatr_pop();
-                known_word = r.read_reg(ADDR_DSKDATR);
-                dskbytr_val = r.read_reg(ADDR_DSKBYTR);
-                bound_ok = (known_word == 0xFFFF);
-            }
+            Rig r; r.do_reset();
+            r.select(0); r.d->wordsync = 0;
+            r.arm_dma_read(544);
+            r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
+            uint8_t sector[512];
+            std::memset(sector, 0xFF, sizeof sector);
+            r.feed_sector(sector);
+            for (int i = 1; i < idx; i++) r.dskdatr_pop();  // discard up to just before the fixed payload-start index.
+            uint16_t known_word = r.read_reg(ADDR_DSKDATR);  // peek, no pop -- the payload word itself, at this instant.
+            uint16_t dskbytr_val = r.read_reg(ADDR_DSKBYTR); // SAME instant: zero clock edges elapsed since the peek above.
+            bool bound_ok = (known_word == 0xFFFF);  // confirmation, not a locator.
             uint8_t data_field = (uint8_t)(dskbytr_val & 0x00FF);
             checks.note("sol:8-dsk.c9: twin of opus:8-dsk.c9, same measurement -> known_word=0x" +
                         hex4(known_word) + " (bound=" + std::to_string(bound_ok) + ") DSKBYTR=0x" +
                         hex4(dskbytr_val) + " DATA field=0x" + hex4(data_field));
-            checks.expect(bound_ok && data_field == 0xFF,
-                "sol:8-dsk.c9 (p.241, quote 'Special registers allow\\nthe CPU to synchronize with specific "
-                "data, or read input a byte at a time.'): twin of opus:8-dsk.c9 (same printed quote, independent "
-                "reader) -- same measurement, graded independently under its own uid, same underlying fact as "
-                "ch8-dskbytr-status-register/A9 and ch8-disk-register-map-paula-floppy/B4, same RED result "
-                "(finding candidate C6)");
+            if (!bound_ok) {
+                checks.record(
+                    "sol:8-dsk.c9 (p.241, quote 'Special registers allow\\nthe CPU to synchronize with specific "
+                    "data, or read input a byte at a time.'): twin of opus:8-dsk.c9 (same printed quote, "
+                    "independent reader) -- could not confirm a known byte at the fixed payload-start sampling "
+                    "instant (pop #" + std::to_string(idx) + ", fifo_word_counter=32) -- the word read there was "
+                    "not this fixture's own known encoding of a uniform 0xFF byte (0xFFFF). Declining rather "
+                    "than grading an unconfirmed sample: 0xFFFF is not itself a page-legal MFM encoding of 0xFF "
+                    "(p.250 makes 0xFF -> 0x5555), so a mismatch here is not evidence about the DATA field one "
+                    "way or the other.");
+            } else {
+                checks.expect(data_field == 0xFF,
+                    "sol:8-dsk.c9 (p.241, quote 'Special registers allow\\nthe CPU to synchronize with specific "
+                    "data, or read input a byte at a time.'): twin of opus:8-dsk.c9 (same printed quote, independent "
+                    "reader) -- same measurement, graded independently under its own uid, same underlying fact as "
+                    "ch8-dskbytr-status-register/A9 and ch8-disk-register-map-paula-floppy/B4, same RED result "
+                    "(finding candidate C6)");
+            }
         } else {
             Rig r; r.do_reset();
             uint16_t v1 = r.read_reg(ADDR_DSKBYTR);
@@ -732,20 +825,26 @@ int main(int argc, char** argv) {
     // data_out port/read comparator as opus:8-dsk.c9/sol:8-dsk.c9 above:
     // proof the port is live, so their red is a genuine constant-DATA
     // finding, not a dead or stuck read path.
+    //
+    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // claim uid -- it is apparatus, never conformance evidence -- so
+    // demoting it costs no coverage. Its previous graded form also required
+    // the WHOLE DSKBYTR word (0x9000/0xB000), including bits DSKBYTR's own
+    // page (p.278) marks "X Not used" with no stated reset/idle value -- a
+    // second, independent reason it should never have been an equality
+    // check. No longer mutated (MUTATE=DSKBYTR-CONTROL removed with it): a
+    // note() is not graded, so there is nothing left for a mutation to flip.
     // ========================================================================
     {
         Rig r; r.do_reset();
-        bool mut = mutating("DSKBYTR-CONTROL");
         uint16_t v1 = r.read_reg(ADDR_DSKBYTR);
-        uint16_t stim = mut ? 0x0000 : 0x4000;
-        r.write_reg(ADDR_DSKLEN, stim);
+        r.write_reg(ADDR_DSKLEN, 0x4000);
         uint16_t v2 = r.read_reg(ADDR_DSKBYTR);
-        checks.note("DSKBYTR-CONTROL: before=0x" + hex4(v1) + ", DSKLEN<=0x" + hex4(stim) + " -> DSKBYTR=0x" + hex4(v2));
-        checks.expect(v1 == 0x9000 && v2 == (mut ? 0x9000 : 0xB000) && v1 != v2,
-            "DSKBYTR-CONTROL (control case, no manual citation, same $DFF01A data_out port as opus:8-dsk.c9/"
-            "sol:8-dsk.c9): the WRITE-bit mirror (bit 13) DOES vary immediately on a DSKLEN write -- proving the "
-            "DSKBYTR read port and this package's comparator are live, so the DATA-field red above is about that "
-            "field specifically, not a stuck port");
+        checks.note("DSKBYTR-CONTROL [not graded -- apparatus check, no claim uid]: before=0x" + hex4(v1) +
+                    ", DSKLEN<=0x4000 -> DSKBYTR=0x" + hex4(v2) + " -- the WRITE-bit mirror (bit 13) varies "
+                    "immediately on a DSKLEN write, showing the DSKBYTR read port and this package's comparator "
+                    "are live, so the DATA-field red above (opus:8-dsk.c9/sol:8-dsk.c9) is about that field "
+                    "specifically, not a stuck port");
     }
 
     // ========================================================================
@@ -753,9 +852,23 @@ int main(int argc, char** argv) {
     // Four independently-controllable sense signals: _track0, _change,
     // _ready, _wprot -- toggling one condition moves only its own bit.
     // ========================================================================
+    // WITHDRAWN to record() (independent validation, 2026-09-15): this
+    // block only ever reaches paula_floppy's own generic sense ports
+    // (_ready/_track0/_wprot/_change); it never touches CIAAPRA itself --
+    // that join is one level up, at minimig.v:622, outside this package's
+    // assigned fixture boundary (paula_floppy alone). A severed, swapped or
+    // wrong-bit join at minimig.v:622 passes this assertion exactly as
+    // written. hrm/ch8-cia-disk-signal-bindings now carries the fact, at
+    // TOP_MODULE=minimig, over a real CPU bus access to CIAAPRA ($BFE001):
+    // its PA5-BINDING/PA4-BINDING/PA3-BINDING/PA2-BINDING assertions
+    // (opus:8-cia.c6/sol:8-cia.c5, opus:8-cia.c11/sol:8-cia.c9,
+    // opus:8-cia.c16/sol:8-cia.c16, opus:8-cia.c18/sol:8-cia.c17) each
+    // compare the WHOLE (PA5,PA4,PA3,PA2) nibble read through a real CPU
+    // access, catching exactly the swap/sever this block cannot -- and
+    // together establish, at the real port, that four independently-
+    // controllable disk-sensing bits reach CIAAPRA.
     {
         Rig r; r.do_reset();
-        bool mut = mutating("opus:8-dsk.c21");
         r.mount(0, 1000);
         r.select(0);
         r.do_step(false); r.saturate_step_ena(); r.do_step(true); r.saturate_step_ena();
@@ -767,8 +880,7 @@ int main(int argc, char** argv) {
         bool t1_others = (r.ready() == base_ready) && (r.track0() == base_track0) && (r.change() == base_change);
         r.d->floppy_wrprot = 0; r.d->eval();
 
-        // MUTATION: skip the step -- track0 never leaves its base value.
-        if (!mut) r.do_step(false);
+        r.do_step(false);
         bool t2_track0 = !r.track0();
         bool t2_others = (r.ready() == base_ready) && (r.wprot() == base_wprot) && (r.change() == base_change);
         r.saturate_step_ena(); r.do_step(true);
@@ -782,21 +894,26 @@ int main(int argc, char** argv) {
         bool t4_ready = !r.ready();
 
         bool ok = t1_wprot && t1_others && t2_track0 && t2_others && t3_change && t3_others && t4_ready;
-        checks.note("opus:8-dsk.c21: wprot(" + std::to_string(t1_wprot) + "," + std::to_string(t1_others) +
-                    ") track0(" + std::to_string(t2_track0) + "," + std::to_string(t2_others) + ") change(" +
-                    std::to_string(t3_change) + "," + std::to_string(t3_others) + ") ready(" + std::to_string(t4_ready) + ")");
-        checks.expect(ok,
-            "opus:8-dsk.c21 (p.241, quote '   CIAAPRA    (\\$BFE001)    four input bits for disk sensing'): four "
-            "independently-controllable sense signals -- _track0, _change, _ready, _wprot -- reach the CIAAPRA "
-            "side of the boundary from paula_floppy; toggling write-protect, head position, media presence, or "
-            "selection each moves exactly its own bit (deselecting is graded on _ready alone, since _sel also "
-            "masks the other three at this port -- paula_floppy.v:662,664,666 -- so it is not double-counted "
-            "against them). Grades the COUNT/directionality at paula_floppy's own ports, not the exact CIAAPRA "
-            "bit position (that needs ciaa/minimig.v, outside this package's assigned module boundary)");
+        checks.note("opus:8-dsk.c21 [not graded -- see WITHDRAWN note above]: wprot(" + std::to_string(t1_wprot) +
+                    "," + std::to_string(t1_others) + ") track0(" + std::to_string(t2_track0) + "," +
+                    std::to_string(t2_others) + ") change(" + std::to_string(t3_change) + "," +
+                    std::to_string(t3_others) + ") ready(" + std::to_string(t4_ready) + ") -- measured " +
+                    std::to_string(ok) + " at paula_floppy's own ports, the property this package's fixture "
+                    "boundary can reach");
+        checks.record(
+            "opus:8-dsk.c21 sol:8-reglist.c4 P-CIAAPRA-FOUR-BITS (p.241, quote '   CIAAPRA    (\\$BFE001)    "
+            "four input bits for disk sensing'): CANNOT be graded at this boundary. Four independently-"
+            "controllable sense signals reach paula_floppy's own ports, but this package's fixture is "
+            "paula_floppy alone -- it never reaches CIAAPRA, so it cannot confirm those four bits actually land "
+            "there rather than being severed, swapped, or aliased at the minimig.v:622 join. That join is now "
+            "graded by hrm/ch8-cia-disk-signal-bindings's PA5/PA4/PA3/PA2-BINDING assertions, over a real CPU "
+            "bus access at $BFE001 against the pinned system top -- 15 passed / 0 failed, 15 of 15 mutations "
+            "killed.");
     }
+    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
+    // opus:8-dsk.c21 above -- same fault, same redirect.
     {
         Rig r; r.do_reset();
-        bool mut = mutating("sol:8-reglist.c4");
         r.mount(0, 1000);
         r.select(0);
         r.do_step(false); r.saturate_step_ena(); r.do_step(true); r.saturate_step_ena();
@@ -808,7 +925,7 @@ int main(int argc, char** argv) {
         bool t1_others = (r.ready() == base_ready) && (r.track0() == base_track0) && (r.change() == base_change);
         r.d->floppy_wrprot = 0; r.d->eval();
 
-        if (!mut) r.do_step(false);
+        r.do_step(false);
         bool t2_track0 = !r.track0();
         bool t2_others = (r.ready() == base_ready) && (r.wprot() == base_wprot) && (r.change() == base_change);
         r.saturate_step_ena(); r.do_step(true);
@@ -822,11 +939,15 @@ int main(int argc, char** argv) {
         bool t4_ready = !r.ready();
 
         bool ok = t1_wprot && t1_others && t2_track0 && t2_others && t3_change && t3_others && t4_ready;
-        checks.note("sol:8-reglist.c4: twin of opus:8-dsk.c21, same measurement -> ok=" + std::to_string(ok));
-        checks.expect(ok,
-            "sol:8-reglist.c4 (p.241, quote '   CIAAPRA    (\\$BFE001)    four input bits for disk sensing'): "
-            "twin of opus:8-dsk.c21 (same printed quote, independent reader) -- same measurement, graded "
-            "independently under its own uid");
+        checks.note("sol:8-reglist.c4 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c21, same "
+                    "measurement -> ok=" + std::to_string(ok));
+        checks.record(
+            "sol:8-reglist.c4 P-CIAAPRA-FOUR-BITS (p.241, quote '   CIAAPRA    (\\$BFE001)    four input bits "
+            "for disk sensing'): twin of opus:8-dsk.c21 (same printed quote, independent reader) -- same "
+            "boundary fault (this package's fixture is paula_floppy alone; it never reaches CIAAPRA). The same "
+            "underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "PA5/PA4/PA3/PA2-BINDING assertions (cited there under opus:8-cia.c6/sol:8-cia.c5 et al., not this "
+            "uid string -- the fact, not the uid, has the new home).");
     }
 
     // ========================================================================
@@ -834,10 +955,21 @@ int main(int argc, char** argv) {
     // toggles' functional-direction half (each bit fires correctly in
     // response to its OWN real sensing condition), a weaker/different
     // emphasis than c21's cross-independence grading above.
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): same
+    // boundary fault as opus:8-dsk.c21/sol:8-reglist.c4 above -- this block
+    // never reaches CIAAPRA either, only paula_floppy's own ports, so a
+    // severed or wrong-bit minimig.v:622 join passes it too. Each of
+    // hrm/ch8-cia-disk-signal-bindings's PA5/PA4/PA3/PA2-BINDING assertions
+    // already establishes, through a real CIAAPRA CPU read, that its named
+    // bit responds to its own real sensing condition (deselect vs select for
+    // PA5/_ready, step-to-zero for PA4/_track0, floppy_wrprot for
+    // PA3/_wprot, unmount for PA2/_change) and NOT the other three --
+    // functional direction plus cross-isolation together, a strictly
+    // stronger form of what this claim needs.
     // ========================================================================
     {
         Rig r; r.do_reset();
-        bool mut = mutating("opus:8-dsk.c22");
         r.mount(0, 1000);
         r.select(0);
         r.do_step(false); r.saturate_step_ena(); r.do_step(true); r.saturate_step_ena();
@@ -846,9 +978,7 @@ int main(int argc, char** argv) {
         bool wprot_fires = r.wprot();
         r.d->floppy_wrprot = 0; r.d->eval();
 
-        // MUTATION: skip the step -- track0's sensing-response is never
-        // exercised.
-        if (!mut) r.do_step(false);
+        r.do_step(false);
         bool track0_fires = !r.track0();
         r.saturate_step_ena(); r.do_step(true);
 
@@ -860,31 +990,42 @@ int main(int argc, char** argv) {
         bool ready_fires = !r.ready();
 
         bool ok = wprot_fires && track0_fires && change_fires && ready_fires;
-        checks.note("opus:8-dsk.c22: wprot_fires=" + std::to_string(wprot_fires) + " track0_fires=" +
-                    std::to_string(track0_fires) + " change_fires=" + std::to_string(change_fires) +
-                    " ready_fires=" + std::to_string(ready_fires));
-        checks.expect(ok,
-            "opus:8-dsk.c22 (p.241, quote '   CIAAPRA    (\\$BFE001)    four input bits for disk sensing'): "
-            "each of the four floppy-side sense signals responds, in the functionally-correct direction, to a "
-            "genuinely distinct disk-sensing condition -- write-protect, head position, media presence, "
-            "selection -- confirming they are four real sensing signals, not four copies of one condition under "
-            "different names");
+        checks.note("opus:8-dsk.c22 [not graded -- see WITHDRAWN note above]: wprot_fires=" +
+                    std::to_string(wprot_fires) + " track0_fires=" + std::to_string(track0_fires) +
+                    " change_fires=" + std::to_string(change_fires) + " ready_fires=" + std::to_string(ready_fires));
+        checks.record(
+            "opus:8-dsk.c22 P-CIAAPRA-SENSING (p.241, quote '   CIAAPRA    (\\$BFE001)    four input bits for "
+            "disk sensing'): CANNOT be graded at this boundary -- same fault as opus:8-dsk.c21/sol:8-reglist.c4 "
+            "above (paula_floppy-only fixture, never reaches CIAAPRA). hrm/ch8-cia-disk-signal-bindings's "
+            "PA5/PA4/PA3/PA2-BINDING assertions (opus:8-cia.c6/sol:8-cia.c5, opus:8-cia.c11/sol:8-cia.c9, "
+            "opus:8-cia.c16/sol:8-cia.c16, opus:8-cia.c18/sol:8-cia.c17) now carry the fact, each confirming its "
+            "own bit responds to its own real sensing condition through a genuine CPU read of CIAAPRA.");
     }
 
     // ========================================================================
     // opus:8-dsk.c24 / sol:8-reglist.c6 (p.241, twins) -- P-CIABPRB-EIGHT-BITS.
     // Eight independently-drivable control inputs reach paula_floppy from
     // the CIABPRB side: _sel[3:0] (4), _step, direc, side, _motor.
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): same fault
+    // family as the CIAAPRA blocks above -- this block never reaches
+    // CIABPRB, only paula_floppy's own generic ports; the minimig.v:650
+    // join is outside this package's fixture boundary and a severed/
+    // swapped/wrong-bit join there passes this assertion unchanged.
+    // hrm/ch8-cia-disk-signal-bindings's eight PB7..PB0-BINDING assertions
+    // now carry the fact, each writing a real byte through a real CPU bus
+    // access to CIABPRB ($BFD100) and requiring the target join wire low
+    // AND the other seven high -- catching exactly the swap this block
+    // cannot, and together establishing the COUNT at the real port.
     // ========================================================================
     {
-        bool mut = mutating("opus:8-dsk.c24");
         bool sel_ok = true;
         {
             Rig r; r.do_reset();
             for (int n = 0; n < 4; n++) {
                 r.deselect_all(); r.settle_edges(2);
                 bool desel = r.ready();
-                if (!(mut && n == 3)) r.select(n);
+                r.select(n);
                 r.settle_edges(2);
                 bool sel = r.ready();
                 sel_ok = sel_ok && !desel && sel;
@@ -923,28 +1064,29 @@ int main(int argc, char** argv) {
             motor_ok = on_reading && !off_reading;
         }
         bool ok = sel_ok && step_direc_ok && side_ok && motor_ok;
-        checks.note("opus:8-dsk.c24: sel_ok=" + std::to_string(sel_ok) + " step_direc_ok=" +
-                    std::to_string(step_direc_ok) + " side_ok=" + std::to_string(side_ok) + " (sector " +
-                    std::to_string(sec_side0) + " vs " + std::to_string(sec_side1) + ") motor_ok=" +
+        checks.note("opus:8-dsk.c24 [not graded -- see WITHDRAWN note above]: sel_ok=" + std::to_string(sel_ok) +
+                    " step_direc_ok=" + std::to_string(step_direc_ok) + " side_ok=" + std::to_string(side_ok) +
+                    " (sector " + std::to_string(sec_side0) + " vs " + std::to_string(sec_side1) + ") motor_ok=" +
                     std::to_string(motor_ok));
-        checks.expect(ok,
-            "opus:8-dsk.c24 (p.241, quote '   CIABPRB    (\\$BFD100)    eight output bits for disk selection, "
-            "control\\n                             and stepping'): eight independently-drivable control inputs "
-            "reach paula_floppy from the CIABPRB side -- _sel[3:0] (selection, via _ready), _step/direc "
-            "(stepping, via _track0), side (via the requested sdc_sector base, paula_floppy.v:669,283), _motor "
-            "(via the motor_on latch read through index) -- each shown to produce a distinguishable effect. "
-            "Grades the COUNT at paula_floppy's own ports, not the exact CIABPRB bit position (minimig.v, "
-            "outside this package's assigned boundary)");
+        checks.record(
+            "opus:8-dsk.c24 sol:8-reglist.c6 P-CIABPRB-EIGHT-BITS (p.241, quote '   CIABPRB    (\\$BFD100)    "
+            "eight output bits for disk selection, control\\n                             and stepping'): CANNOT "
+            "be graded at this boundary. Eight independently-drivable control inputs reach paula_floppy's own "
+            "ports, but this package's fixture never reaches CIABPRB itself (minimig.v:650, outside paula_floppy "
+            "alone), so it cannot confirm those eight bits actually land there. hrm/ch8-cia-disk-signal-bindings's "
+            "PB7-BINDING through PB0-BINDING assertions now carry the fact, over a real CPU bus write to "
+            "$BFD100 against the pinned system top -- 15 passed / 0 failed, 15 of 15 mutations killed.");
     }
+    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
+    // opus:8-dsk.c24 above -- same fault, same redirect.
     {
-        bool mut = mutating("sol:8-reglist.c6");
         bool sel_ok = true;
         {
             Rig r; r.do_reset();
             for (int n = 0; n < 4; n++) {
                 r.deselect_all(); r.settle_edges(2);
                 bool desel = r.ready();
-                if (!(mut && n == 3)) r.select(n);
+                r.select(n);
                 r.settle_edges(2);
                 bool sel = r.ready();
                 sel_ok = sel_ok && !desel && sel;
@@ -983,75 +1125,98 @@ int main(int argc, char** argv) {
             motor_ok = on_reading && !off_reading;
         }
         bool ok = sel_ok && step_direc_ok && side_ok && motor_ok;
-        checks.note("sol:8-reglist.c6: twin of opus:8-dsk.c24, same measurement -> ok=" + std::to_string(ok));
-        checks.expect(ok,
-            "sol:8-reglist.c6 (p.241, quote '   CIABPRB    (\\$BFD100)    eight output bits'): twin of "
-            "opus:8-dsk.c24 (same printed quote, independent reader) -- same measurement, graded independently "
-            "under its own uid");
+        checks.note("sol:8-reglist.c6 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c24, same "
+                    "measurement -> ok=" + std::to_string(ok));
+        checks.record(
+            "sol:8-reglist.c6 P-CIABPRB-EIGHT-BITS (p.241, quote '   CIABPRB    (\\$BFD100)    eight output "
+            "bits'): twin of opus:8-dsk.c24 (same printed quote, independent reader) -- same boundary fault. The "
+            "same underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "PB7-BINDING through PB0-BINDING assertions (cited there under their own opus:8-cia.*/sol:8-cia.* "
+            "uids, not this uid string -- the fact, not the uid, has the new home).");
     }
 
     // ========================================================================
     // opus:8-dsk.c25 / sol:8-reglist.c7 (p.241, twins) -- P-CIABPRB-SELECTION.
     // _sel[3:0] targets a specific drive for DMA (paula_floppy.v:285,363,
     // sdc_rd<=~_sel).
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): same fault
+    // family -- sdc_rd is paula_floppy's own internal request line, never
+    // CIABPRB, so this cannot confirm the selection bits (PB6../DSKSEL3*..
+    // PB3/DSKSEL0*) actually land at their named CIABPRB positions.
+    // hrm/ch8-cia-disk-signal-bindings's PB6/PB5/PB4/PB3-BINDING assertions
+    // (the four _sel3.._sel0 bindings) now carry the selection half of this
+    // fact, over a real CPU bus write to $BFD100.
     // ========================================================================
     {
-        bool mut = mutating("opus:8-dsk.c25");
         Rig r; r.do_reset(); r.select(0);
         r.arm_dma_read(8);
         r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
         uint8_t rd0 = r.d->sdc_rd;
 
         Rig r2; r2.do_reset();
-        int target = mut ? 0 : 2;   // MUTATION: select drive 0 again, checked against drive 2's bit
+        int target = 2;
         r2.select(target);
         r2.arm_dma_read(8);
         r2.wait_edges([&]{ return r2.d->sdc_rd != 0; }, 60);
         uint8_t rd2 = r2.d->sdc_rd;
 
-        checks.note("opus:8-dsk.c25: drive0 -> sdc_rd=" + hex4(rd0) + "; target drive " + std::to_string(target) +
-                    " -> sdc_rd=" + hex4(rd2));
-        checks.expect(rd0 == 0x1 && rd2 == 0x4,
-            "opus:8-dsk.c25 (p.241, quote '   CIABPRB    (\\$BFD100)    eight output bits for disk selection, "
-            "control\\n                             and stepping'): selecting drive 0 requests sdc_rd bit 0 "
-            "only, and selecting drive 2 requests sdc_rd bit 2 only -- paula_floppy.v:285,363 (sdc_rd<=~_sel) -- "
-            "confirming _sel targets a SPECIFIC drive, not a generic 'some drive' signal");
+        checks.note("opus:8-dsk.c25 [not graded -- see WITHDRAWN note above]: drive0 -> sdc_rd=" + hex4(rd0) +
+                    "; target drive " + std::to_string(target) + " -> sdc_rd=" + hex4(rd2));
+        checks.record(
+            "opus:8-dsk.c25 sol:8-reglist.c7 P-CIABPRB-SELECTION (p.241, quote '   CIABPRB    (\\$BFD100)    "
+            "eight output bits for disk selection, control\\n                             and stepping'): CANNOT "
+            "be graded at this boundary. _sel targets a specific drive at paula_floppy's own sdc_rd request "
+            "line, but this package's fixture never reaches CIABPRB itself, so it cannot confirm the selection "
+            "bits land at their named CIABPRB positions (PB6/DSKSEL3* .. PB3/DSKSEL0*). "
+            "hrm/ch8-cia-disk-signal-bindings's PB6-BINDING/PB5-BINDING/PB4-BINDING/PB3-BINDING assertions now "
+            "carry the fact, over a real CPU bus write to $BFD100 against the pinned system top.");
     }
+    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
+    // opus:8-dsk.c25 above -- same fault, same redirect.
     {
-        bool mut = mutating("sol:8-reglist.c7");
         Rig r; r.do_reset(); r.select(0);
         r.arm_dma_read(8);
         r.wait_edges([&]{ return r.d->sdc_rd != 0; }, 60);
         uint8_t rd0 = r.d->sdc_rd;
 
         Rig r2; r2.do_reset();
-        int target = mut ? 0 : 2;
+        int target = 2;
         r2.select(target);
         r2.arm_dma_read(8);
         r2.wait_edges([&]{ return r2.d->sdc_rd != 0; }, 60);
         uint8_t rd2 = r2.d->sdc_rd;
 
-        checks.note("sol:8-reglist.c7: twin of opus:8-dsk.c25, same measurement -> rd0=" + hex4(rd0) + " rd(target)=" + hex4(rd2));
-        checks.expect(rd0 == 0x1 && rd2 == 0x4,
-            "sol:8-reglist.c7 (p.241, quote '   CIABPRB    (\\$BFD100)    eight output bits'): twin of "
-            "opus:8-dsk.c25 (same printed quote, independent reader) -- same measurement, graded independently "
-            "under its own uid");
+        checks.note("sol:8-reglist.c7 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c25, same "
+                    "measurement -> rd0=" + hex4(rd0) + " rd(target)=" + hex4(rd2));
+        checks.record(
+            "sol:8-reglist.c7 P-CIABPRB-SELECTION (p.241, quote '   CIABPRB    (\\$BFD100)    eight output "
+            "bits'): twin of opus:8-dsk.c25 (same printed quote, independent reader) -- same boundary fault. The "
+            "same underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "PB6/PB5/PB4/PB3-BINDING assertions (cited there under their own opus:8-cia.*/sol:8-cia.* uids, not "
+            "this uid string -- the fact, not the uid, has the new home).");
     }
 
     // ========================================================================
     // opus:8-dsk.c26 / sol:8-reglist.c8 (p.241, twins) -- P-CIABPRB-CONTROL.
     // _motor latches motor_on per drive; side selects the head surface
     // (paula_floppy.v:624-659, :669).
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): same fault
+    // family -- motor_on/index and the requested sdc_sector base are
+    // paula_floppy's own internal signals, never CIABPRB, so this cannot
+    // confirm PB7/DSKMOTOR* and PB2/DSKSIDE land at their named CIABPRB
+    // positions. hrm/ch8-cia-disk-signal-bindings's PB7-BINDING and
+    // PB2-BINDING assertions now carry this fact, over a real CPU bus write
+    // to $BFD100.
     // ========================================================================
     {
-        bool mut = mutating("opus:8-dsk.c26");
         bool motor_ok;
         {
             Rig r; r.do_reset(); r.select_with_motor(0, true);
             bool on_reading = r.peek_index(0);
             Rig r2; r2.do_reset();
-            // MUTATION: latch the SAME level (ON) instead of OFF.
-            r2.select_with_motor(0, mut ? true : false);
+            r2.select_with_motor(0, false);
             bool off_reading = r2.peek_index(0);
             motor_ok = on_reading && !off_reading;
         }
@@ -1069,22 +1234,26 @@ int main(int argc, char** argv) {
             sec1 = r.d->sdc_sector;
         }
         bool side_ok = (sec0 != sec1);
-        checks.note("opus:8-dsk.c26: motor_ok=" + std::to_string(motor_ok) + " side_ok=" + std::to_string(side_ok) +
-                    " (sector " + std::to_string(sec0) + " vs " + std::to_string(sec1) + ")");
-        checks.expect(motor_ok && side_ok,
-            "opus:8-dsk.c26 (p.241, quote '   CIABPRB    (\\$BFD100)    eight output bits for disk selection, "
-            "control\\n                             and stepping'): _motor latches a distinguishable per-drive "
-            "state at its own select edge (read via index), and side selects a distinguishable head surface "
-            "(the requested sdc_sector base) -- both are real, effective disk-CONTROL inputs");
+        checks.note("opus:8-dsk.c26 [not graded -- see WITHDRAWN note above]: motor_ok=" + std::to_string(motor_ok) +
+                    " side_ok=" + std::to_string(side_ok) + " (sector " + std::to_string(sec0) + " vs " +
+                    std::to_string(sec1) + ")");
+        checks.record(
+            "opus:8-dsk.c26 sol:8-reglist.c8 P-CIABPRB-CONTROL (p.241, quote '   CIABPRB    (\\$BFD100)    eight "
+            "output bits for disk selection, control\\n                             and stepping'): CANNOT be "
+            "graded at this boundary. _motor and side are real, effective inputs at paula_floppy's own ports, "
+            "but this package's fixture never reaches CIABPRB itself, so it cannot confirm PB7/DSKMOTOR* and "
+            "PB2/DSKSIDE land there. hrm/ch8-cia-disk-signal-bindings's PB7-BINDING and PB2-BINDING assertions "
+            "now carry the fact, over a real CPU bus write to $BFD100 against the pinned system top.");
     }
+    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
+    // opus:8-dsk.c26 above -- same fault, same redirect.
     {
-        bool mut = mutating("sol:8-reglist.c8");
         bool motor_ok;
         {
             Rig r; r.do_reset(); r.select_with_motor(0, true);
             bool on_reading = r.peek_index(0);
             Rig r2; r2.do_reset();
-            r2.select_with_motor(0, mut ? true : false);
+            r2.select_with_motor(0, false);
             bool off_reading = r2.peek_index(0);
             motor_ok = on_reading && !off_reading;
         }
@@ -1102,51 +1271,66 @@ int main(int argc, char** argv) {
             sec1 = r.d->sdc_sector;
         }
         bool side_ok = (sec0 != sec1);
-        checks.note("sol:8-reglist.c8: twin of opus:8-dsk.c26, same measurement -> motor_ok=" +
-                    std::to_string(motor_ok) + " side_ok=" + std::to_string(side_ok));
-        checks.expect(motor_ok && side_ok,
-            "sol:8-reglist.c8 (p.241, quote '   CIABPRB    (\\$BFD100)    eight output bits'): twin of "
-            "opus:8-dsk.c26 (same printed quote, independent reader) -- same measurement, graded independently "
-            "under its own uid");
+        checks.note("sol:8-reglist.c8 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c26, same "
+                    "measurement -> motor_ok=" + std::to_string(motor_ok) + " side_ok=" + std::to_string(side_ok));
+        checks.record(
+            "sol:8-reglist.c8 P-CIABPRB-CONTROL (p.241, quote '   CIABPRB    (\\$BFD100)    eight output "
+            "bits'): twin of opus:8-dsk.c26 (same printed quote, independent reader) -- same boundary fault. The "
+            "same underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "PB7-BINDING and PB2-BINDING assertions (cited there under their own opus:8-cia.*/sol:8-cia.* uids, "
+            "not this uid string -- the fact, not the uid, has the new home).");
     }
 
     // ========================================================================
     // opus:8-dsk.c27 / sol:8-reglist.c9 (p.241, twins) -- P-CIABPRB-STEPPING.
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): same fault
+    // family -- _step/direc and dsktrack are paula_floppy's own internal
+    // signals, never CIABPRB, so this cannot confirm PB1/DSKDIREC and
+    // PB0/DSKSTEP* land at their named CIABPRB positions.
+    // hrm/ch8-cia-disk-signal-bindings's PB1-BINDING and PB0-BINDING
+    // assertions now carry this fact, over a real CPU bus write to $BFD100.
     // ========================================================================
     {
         Rig r; r.do_reset();
-        bool mut = mutating("opus:8-dsk.c27");
         r.select(0); r.saturate_step_ena();
         bool at_zero = r.track0();
         r.do_step(false);
         bool left_zero = !r.track0();
         r.saturate_step_ena();
-        r.do_step(mut ? false : true);   // MUTATION: step away again instead of back
+        r.do_step(true);
         bool returned = r.track0();
-        checks.note("opus:8-dsk.c27: at_zero=" + std::to_string(at_zero) + " left_zero=" + std::to_string(left_zero) +
-                    " returned=" + std::to_string(returned));
-        checks.expect(at_zero && left_zero && returned,
-            "opus:8-dsk.c27 (p.241, quote '   CIABPRB    (\\$BFD100)    eight output bits for disk selection, "
-            "control\\n                             and stepping'): _step/direc move the selected drive's track "
-            "counter away from and back to track 0 (paula_floppy.v:671-680), confirming a real head-stepping "
-            "function");
+        checks.note("opus:8-dsk.c27 [not graded -- see WITHDRAWN note above]: at_zero=" + std::to_string(at_zero) +
+                    " left_zero=" + std::to_string(left_zero) + " returned=" + std::to_string(returned));
+        checks.record(
+            "opus:8-dsk.c27 sol:8-reglist.c9 P-CIABPRB-STEPPING (p.241, quote '   CIABPRB    (\\$BFD100)    "
+            "eight output bits for disk selection, control\\n                             and stepping'): CANNOT "
+            "be graded at this boundary. _step/direc move the selected drive's track counter, a real function at "
+            "paula_floppy's own ports, but this package's fixture never reaches CIABPRB itself, so it cannot "
+            "confirm PB1/DSKDIREC and PB0/DSKSTEP* land there. hrm/ch8-cia-disk-signal-bindings's PB1-BINDING "
+            "and PB0-BINDING assertions now carry the fact, over a real CPU bus write to $BFD100 against the "
+            "pinned system top.");
     }
+    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
+    // opus:8-dsk.c27 above -- same fault, same redirect.
     {
         Rig r; r.do_reset();
-        bool mut = mutating("sol:8-reglist.c9");
         r.select(0); r.saturate_step_ena();
         bool at_zero = r.track0();
         r.do_step(false);
         bool left_zero = !r.track0();
         r.saturate_step_ena();
-        r.do_step(mut ? false : true);
+        r.do_step(true);
         bool returned = r.track0();
-        checks.note("sol:8-reglist.c9: twin of opus:8-dsk.c27, same measurement -> at_zero=" + std::to_string(at_zero) +
-                    " left_zero=" + std::to_string(left_zero) + " returned=" + std::to_string(returned));
-        checks.expect(at_zero && left_zero && returned,
-            "sol:8-reglist.c9 (p.241, quote '   CIABPRB    (\\$BFD100)    eight output bits'): twin of "
-            "opus:8-dsk.c27 (same printed quote, independent reader) -- same measurement, graded independently "
-            "under its own uid");
+        checks.note("sol:8-reglist.c9 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c27, same "
+                    "measurement -> at_zero=" + std::to_string(at_zero) + " left_zero=" + std::to_string(left_zero) +
+                    " returned=" + std::to_string(returned));
+        checks.record(
+            "sol:8-reglist.c9 P-CIABPRB-STEPPING (p.241, quote '   CIABPRB    (\\$BFD100)    eight output "
+            "bits'): twin of opus:8-dsk.c27 (same printed quote, independent reader) -- same boundary fault. The "
+            "same underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "PB1-BINDING and PB0-BINDING assertions (cited there under their own opus:8-cia.*/sol:8-cia.* uids, "
+            "not this uid string -- the fact, not the uid, has the new home).");
     }
 
     // ========================================================================
@@ -1193,24 +1377,10 @@ int main(int argc, char** argv) {
     return checks.failed == 0 ? 0 : 1;
 }
 
-// MUTATION FIXTURE-LIVE stimulus red: word 2 driven identical to word 1 (0x0000) instead of 0x4000, so the two readings are indistinguishable (MUTATE=FIXTURE-LIVE).
 // MUTATION opus:8-dsk.c1 stimulus red: drive 3 is never actually selected in the loop, so its "selected -> ready" half is checked against a state that never occurred (MUTATE=opus:8-dsk.c1).
 // MUTATION sol:8-dsk.c1 stimulus red: same omission as opus:8-dsk.c1, independent uid (MUTATE=sol:8-dsk.c1).
-// MUTATION P-WHOLETRACK-DMA stimulus red: DSKLEN is programmed for one word MORE than a whole track holds (5985 instead of 5984), while the check still expects completion at exactly 5984 -- an ordinary stimulus mutation, now covering opus:8-dsk.c7/sol:8-dsk.c7's dimensionless single-pass reading as well as the capacity content it always graded (MUTATE=P-WHOLETRACK-DMA).
 // MUTATION opus:8-dsk.c8 stimulus red: the matching DSKSYNC value (0x4489) is used on the "should not match" probe too, while the check still expects the mismatch outcome (zero delivered) (MUTATE=opus:8-dsk.c8).
 // MUTATION sol:8-dsk.c8 stimulus red: same substitution as opus:8-dsk.c8, independent uid (MUTATE=sol:8-dsk.c8).
 // MUTATION opus:8-dsk.c9 stimulus green: this assertion is RED at baseline (C6), so per the rule against mutating an already-failing check, the stimulus substitutes DSKBYTR-CONTROL's WRITE-bit mechanism -- proven live elsewhere in this run -- through the identical data_out-varies comparator in place of the DATA field the RTL never varies (MUTATE=opus:8-dsk.c9).
 // MUTATION sol:8-dsk.c9 stimulus green: same substitute mechanism as opus:8-dsk.c9, independent uid (MUTATE=sol:8-dsk.c9).
-// MUTATION DSKBYTR-CONTROL stimulus red: the stimulus write is changed from 0x4000 (WRITE bit set) to 0x0000 (WRITE bit clear), so the two DSKBYTR readings are indistinguishable (MUTATE=DSKBYTR-CONTROL).
-// MUTATION opus:8-dsk.c21 stimulus red: the step that isolates _track0 is skipped, so that toggle no longer isolates anything and the drive stays at track 0 throughout (MUTATE=opus:8-dsk.c21).
-// MUTATION sol:8-reglist.c4 stimulus red: same omission as opus:8-dsk.c21, independent uid (MUTATE=sol:8-reglist.c4).
-// MUTATION opus:8-dsk.c22 stimulus red: the step that exercises _track0's sensing response is skipped (MUTATE=opus:8-dsk.c22).
-// MUTATION opus:8-dsk.c24 stimulus red: drive 3 is never actually selected in the _sel sub-check, so one of the eight bits' distinguishing effect is never exercised (MUTATE=opus:8-dsk.c24).
-// MUTATION sol:8-reglist.c6 stimulus red: same omission as opus:8-dsk.c24, independent uid (MUTATE=sol:8-reglist.c6).
-// MUTATION opus:8-dsk.c25 stimulus red: the second trial selects drive 0 again instead of drive 2, while the check still expects drive 2's sdc_rd bit pattern (MUTATE=opus:8-dsk.c25).
-// MUTATION sol:8-reglist.c7 stimulus red: same redirection as opus:8-dsk.c25, independent uid (MUTATE=sol:8-reglist.c7).
-// MUTATION opus:8-dsk.c26 stimulus red: the second motor trial latches the SAME level (ON) instead of OFF, so the two motor readings are indistinguishable (MUTATE=opus:8-dsk.c26).
-// MUTATION sol:8-reglist.c8 stimulus red: same redirection as opus:8-dsk.c26, independent uid (MUTATE=sol:8-reglist.c8).
-// MUTATION opus:8-dsk.c27 stimulus red: the second step is redirected to move away from zero AGAIN instead of back toward it, so the drive never returns to track 0 and the final read is checked against a state that never occurred (MUTATE=opus:8-dsk.c27).
-// MUTATION sol:8-reglist.c9 stimulus red: same redirection as opus:8-dsk.c27, independent uid (MUTATE=sol:8-reglist.c9).
 // MUTATION sol:8-dskdma.c7 stimulus red: DMA is never armed at all, so fdd_led stays 0 throughout and the "stays active while stepping" half of this claim is checked against a transfer that was never running (MUTATE=sol:8-dskdma.c7).

@@ -42,6 +42,52 @@
 //   DSKDATR solely as an independently-live ground-truth source, exactly
 //   as the task instructions for this repair direct.
 //
+// REPAIR NOTE / LOT F (independent validation, 2026-09-15, against
+//   DOKTRIN.md/LOS-F.md). Four more items and a defect inside the previous
+//   repair itself:
+//   - A1 (FIXTURE-LIVENESS-KNOWN-DISTINCT-DSKLEN-STATES) and A6-CONTROL
+//     (REAL-READ-CYCLE-IS-LIVE) carry no claim uid -- withdrawn to note(),
+//     per the mechanical rule that a no-uid assertion was never
+//     conformance evidence. A6-CONTROL's own note also now says plainly
+//     what its measurement does and does not establish: it proves
+//     read_reg_clocked() samples correctly, not that a real bus cycle
+//     reaches a synchronous read-side-effect mechanism, since the two
+//     bits it reads (DMAON, DISKWRITE) are combinational and would move
+//     the same way through the old eval()-only helper too.
+//   - A2 (DSKBYTR-IS-A-REAL-READABLE-REGISTER) used idle bit 15 (DSKBYT)
+//     = 1 as its decode marker, but p.278 gives DSKBYTR no reset or idle
+//     word at all. Repaired, not withdrawn: narrowed to bits 13
+//     (DISKWRITE) and 14 (DMAON), both page-defined and both proven to
+//     move by A3/A4.
+//   - A8 (UNUSED-BITS-11-8-CARRY-NO-FUNCTION) required bits 11-8 to read
+//     zero; p.264 says outright not to rely on unused bits' values at
+//     all, and any value is page-compatible. Declined (record()).
+//   - A4's own graded label repeated three uids (opus:8-dskbytr.c8,
+//     sol:8-dskbytr.c9, opus:8-appA-dskbytr.c10) that ALSO sit on this
+//     same block's DMAON-DMACON-HALF record() line -- a uid-placement
+//     defect (the ledger reads uids, not the "DSKLEN clause"/"DMACON
+//     clause" qualifiers beside them). Repaired: the graded label no
+//     longer carries these three uids; they are recorded, once, on the
+//     record() line, which now also names the graded assertion where
+//     their DSKLEN half is empirically measured.
+//   - A9 (DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES) is RED and IS a
+//     genuine finding (bound=1, DSKBYTR=0xd000, DATA=0x00) -- but its own
+//     guard was unsound: it searched DSKDATR for the word 0xFFFF as a
+//     "known 0xFF byte" marker, and 0xFFFF is NOT a page-legal MFM
+//     encoding of 0xFF (p.250 makes 0xFF -> 0x5555; 0xFFFF is only what
+//     this RTL's own non-conformant, context-free encoder -- candidate
+//     C9 -- produces for a run of one-bits). Because the old guard was a
+//     CONJUNCT of the grading expression, a CORRECT encoder would never
+//     produce the marker, bound_ok would be false, and the assertion
+//     would fail anyway -- reporting a DATA-field defect that would not
+//     be there, for the wrong reason. Repaired so the binding is a
+//     PRECONDITION that declines (record()) when the marker cannot be
+//     located, and grades (expect()) the DATA field only when it can --
+//     against the RTL actually under test here, the marker is reliably
+//     found and the red finding is unchanged.
+//   No RTL was touched, no debug port was added, and no oracle was
+//   adjusted by any of this.
+//
 // CLAIM SOURCE:
 //   C:\code4nanomig\code\hrm-testpipeline\work\ch8-s2-build\
 //   ch8-dskbytr-status-register.jsonl -- 48 claim records.
@@ -113,49 +159,49 @@
 //     the build brief's own disclosed measurement (0x9000/fdd_led=0 after
 //     one write, 0xD000/fdd_led=1/sdc_rd=1 after two).
 //
-// CONTROL CASES: A2 (register genuinely address-decoded), A3 (DISKWRITE
-//   genuinely mirrors DSKLEN), A4 (DMAON genuinely responds to DSKLEN's own
-//   double-write arming) and A8 (the unused bits genuinely carry no
-//   function) are this package's PASS-shaped measurements on read_reg(),
-//   proving the harness's combinational read path is live. A6-CONTROL adds
-//   the same proof for read_reg_clocked() specifically (a genuine,
-//   clk7_en-qualified read cycle), since A6 alone among the graded
-//   assertions now depends on that cycle actually being a real one.
+// CONTROL CASES: A2 (register genuinely address-decoded, narrowed to bits
+//   13/14 -- Lot F), A3 (DISKWRITE genuinely mirrors DSKLEN) and A4 (DMAON
+//   genuinely responds to DSKLEN's own double-write arming) are this
+//   package's PASS-shaped, GRADED measurements on read_reg(), proving the
+//   harness's combinational read path is live. A1 (fixture liveness),
+//   A6-CONTROL (read_reg_clocked() liveness) and A8 (the unused bits'
+//   measured, ungraded value) are the same kind of proof but carry no
+//   claim uid or, for A8, grade against a value the page does not require
+//   -- all three are MEASURED via note()/record(), not GRADED, per Lot F.
 //
 // ON RED-BASELINE MUTATION, per the build brief: "a stimulus mutation
 //   proves an assertion CAN fail, and one already failing cannot fail
 //   harder." A6, A7 and A9 are all expected RED (DSKBYTR's own constant
 //   bits per candidate C6). Each one's mutation record instead substitutes
 //   a DIFFERENT, PROVEN-LIVE mechanism from elsewhere in this same file --
-//   DISKWRITE (bit 13, proven live by A3/A6-CONTROL) or DMAON (bit 14,
-//   proven live by A4) -- through the SAME "extract a bit, compare it
-//   against what the state genuinely requires" comparator, and shows THAT
-//   goes GREEN: proof the comparator is not vacuously red regardless of
-//   what it reads, exactly the shape ch5-audio-dmacon-adkcon's own
+//   DISKWRITE (bit 13, proven live by A3) or DMAON (bit 14, proven live by
+//   A4) -- through the SAME "extract a bit, compare it against what the
+//   state genuinely requires" comparator, and shows THAT goes GREEN: proof
+//   the comparator is not vacuously red regardless of what it reads,
+//   exactly the shape ch5-audio-dmacon-adkcon's own
 //   DMACONR-NOT-DECODED-BY-PAULA mutation record already established as
 //   this suite's precedent for a red-baseline assertion. A5 and A10 are
 //   DECLINED (record(), not expect()) and carry no mutation record: per
 //   the build brief, "a uid on a graded line counts as ASSERTED... Declines
 //   go on record() lines and nowhere else" -- there is no graded line to
-//   pair a mutation against.
+//   pair a mutation against. A1, A6-CONTROL and A8 lost their mutation
+//   records for the same reason when Lot F withdrew them from expect() --
+//   converting an expect() to note()/record() orphans its mutation record.
 //
 // MUTATION LOG (every entry actually run by this agent under WSL/
 //   Verilator: `make clean && make MUT=<NAME>` -> run -> confirm the named
 //   assertion, and only that one, newly flips colour against the baseline
 //   -> `make clean && make` -> confirm the baseline exactly restored,
-//   before moving to the next one):
+//   before moving to the next one). Only assertions still graded via
+//   expect() carry one -- A1, A6-CONTROL and A8's entries were removed
+//   with their conversion to note()/record() (Lot F):
 //
-// MUTATION FIXTURE-LIVENESS-KNOWN-DISTINCT-DSKLEN-STATES stimulus red: the
-//   first trial's DSKLEN write changed from 0x4000 to 0x0000 (the same
-//   value the second trial already writes), so both trials now write the
-//   identical value -> the two readings collapse to the same 0x9000
-//   instead of staying distinct -> only this assertion newly red.
-//   Reverted.
-// MUTATION DSKBYTR-IS-A-REAL-READABLE-REGISTER stimulus red: the "read at
-//   the decoded DSKBYTR address" trial's address changed to the unmapped
-//   address used by the OTHER half of this same assertion -> that half's
-//   own decoded-nonzero expectation now reads 0x0000 -> only this
-//   assertion newly red. Reverted.
+// MUTATION DSKBYTR-IS-A-REAL-READABLE-REGISTER stimulus red (repaired
+//   stimulus, Lot F): the "read at the decoded DSKBYTR address" trial's
+//   address changed to the unmapped address used by the OTHER half of
+//   this same assertion -> that half's own DISKWRITE-set expectation
+//   (bit 13) now reads 0 instead of 1 (the unmapped address always
+//   decodes to 0x0000) -> only this assertion newly red. Reverted.
 // MUTATION DISKWRITE-BIT13-TRACKS-DSKLEN-WRITE-BIT stimulus red: the
 //   "should read 1" trial's DSKLEN write changed from 0x4000 to 0x0000 (no
 //   WRITE bit) -> bit 13 stays 0 where 1 was expected -> only this
@@ -165,10 +211,6 @@
 //   -> dmaen never latches, dskstate never leaves DISKDMA_IDLE, DMAON
 //   stays 0 where 1 was expected -> only this assertion newly red.
 //   Reverted.
-// MUTATION A6-CONTROL-REAL-READ-CYCLE-IS-LIVE stimulus red: the arming
-//   DSKLEN double-write for the DMAON half is skipped entirely -> DMAON
-//   never rises (dskstate never leaves DISKDMA_IDLE) -> before14==after14
-//   -> only this assertion newly red. Reverted.
 // MUTATION DSKBYT-NOT-CLEARED-ON-READ stimulus green: a genuine DSKLEN=
 //   0x4000 write was inserted between the two CLOCKED reads, and the
 //   comparator was pointed at bit 13 instead of bit 15 -> the two reads
@@ -180,12 +222,6 @@
 //   for an idle-vs-armed pair -> bit 14 genuinely differs (0 idle, 1 once
 //   DMA is armed, proven live by A4) -> only this assertion newly green.
 //   Reverted.
-// MUTATION UNUSED-BITS-11-8-CARRY-NO-FUNCTION none impossible: bits 11-8
-//   of dskbytr are the literal constant 4'b0000 inside paula_floppy.v:699's
-//   own ternary expression -- no combination of any port this module
-//   exposes can reach that literal and change it, confirmed by reading the
-//   line directly. Unfalsifiable at this boundary; there is no stimulus to
-//   run.
 // MUTATION DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES stimulus green: the
 //   comparator was pointed at bit 13, comparing its value after a DSKLEN=
 //   0x4000 write against its value after a DSKLEN=0x0000 write (two
@@ -193,24 +229,22 @@
 //   known-bound marker instant -> bit 13 reads two genuinely different
 //   values (1 then 0) where the real assertion's known-byte comparison
 //   never moves DATA at all -> only this assertion newly green. Reverted.
+//   (Lot F's guard repair to the unmutated branch does not touch this
+//   branch; re-run and confirmed still isolates correctly after the
+//   repair.)
 //
-// RESULTS (WSL/Verilator 5.052, measured 2026-09-15): 6 passed, 3 failed,
-//   2 declined. A1 (fixture liveness), A2 (DSKBYTR-IS-A-REAL-READABLE-
-//   REGISTER), A3 (DISKWRITE-BIT13-TRACKS-DSKLEN-WRITE-BIT), A4
-//   (DMAON-BIT14-TRACKS-DSKLEN-DMA-ENABLE), A6-CONTROL and A8
-//   (UNUSED-BITS-11-8-CARRY-NO-FUNCTION) are GREEN. A6
-//   (DSKBYT-NOT-CLEARED-ON-READ), A7 (WORDEQUAL-DOES-NOT-TRACK-DSKSYNC-
-//   MATCH) and A9 (DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES) are RED --
-//   now sound measurements (a genuine clocked read cycle for A6; a
-//   syncint-proved match/mismatch pair for A7; a DSKDATR-bound known byte
-//   for A9), not artifacts of a read that was never really a read or a
-//   comparison of two unbound snapshots. A5 and A10 are DECLINED
-//   (RECORDED, not graded). Every mutation listed above was actually run
-//   under WSL/Verilator (`make clean && make MUT=<NAME> paula_floppy`,
-//   confirmed the one named assertion -- and only that one -- flipped
-//   colour against this baseline, then `make clean && make paula_floppy`
-//   restored this exact 6/3 baseline before the next). See out.txt for the
-//   baseline run this header describes.
+// RESULTS (WSL/Verilator, re-measured 2026-09-15, Lot F): 3 passed, 3
+//   failed, 3 declined, 3 measured-not-graded (plus A9's own internal
+//   decline branch, not taken against this RTL). A2
+//   (DSKBYTR-IS-A-REAL-READABLE-REGISTER, repaired oracle), A3
+//   (DISKWRITE-BIT13-TRACKS-DSKLEN-WRITE-BIT) and A4
+//   (DMAON-BIT14-TRACKS-DSKLEN-DMA-ENABLE, uid-placement repaired) are
+//   GREEN. A6 (DSKBYT-NOT-CLEARED-ON-READ), A7
+//   (WORDEQUAL-DOES-NOT-TRACK-DSKSYNC-MATCH) and A9
+//   (DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES, guard repaired) are RED
+//   -- sound measurements, unchanged in substance by Lot F's repairs. A5,
+//   A8 and A10 are DECLINED (RECORDED). A1 and A6-CONTROL are MEASURED
+//   (note(), not graded). See out.txt for the run this header describes.
 
 #include <cstdint>
 #include <cstdio>
@@ -511,61 +545,79 @@ int main(int argc, char** argv) {
     // ================= A1: FIXTURE-LIVENESS =================
     // Mandatory precondition, no claim uid: two distinct, known DSKLEN
     // states must arrive at DSKBYTR distinctly before anything else here
-    // is graded.
+    // is trusted.
+    //
+    // WITHDRAWN TO note() (independent validation, 2026-09-15, Lot F): this
+    // assertion carries no claim uid -- it was never conformance evidence,
+    // only a fixture control, so grading it through expect() cost no
+    // coverage to remove and only ever risked a false conformance reading.
+    // Printed as a measurement, not graded. Its mutation record is removed
+    // with it (a note() has no baseline colour to defend).
     {
         Harness h1;
-#ifdef MUT_FIXTURE_LIVENESS
-        h1.write_reg(A_DSKLEN, 0x0000);  // MUTATION: same value the second trial already writes.
-#else
         h1.write_reg(A_DSKLEN, 0x4000);
-#endif
         uint16_t v1 = h1.read_reg(A_DSKBYTR);
 
         Harness h2;  // fresh model -- dsktrack carries no reset term.
         h2.write_reg(A_DSKLEN, 0x0000);
         uint16_t v2 = h2.read_reg(A_DSKBYTR);
 
-        bool ok = (v1 == 0xB000) && (v2 == 0x9000) && (v1 != v2);
-        checks.expect(ok,
-            "FIXTURE-LIVENESS-KNOWN-DISTINCT-DSKLEN-STATES: a DSKLEN write "
-            "with the WRITE bit set (0x4000) makes DSKBYTR read 0xB000, and "
-            "a distinct, separately-reset trial writing DSKLEN=0x0000 makes "
-            "it read 0x9000 -- two distinct, known register states arrive "
-            "at DSKBYTR distinctly, proving this fixture's read/write bus "
-            "is live before anything else in this file is trusted. "
-            "Measured v1=" + hex16(v1) + " v2=" + hex16(v2) + ".");
+        checks.note(
+            "FIXTURE-LIVENESS-KNOWN-DISTINCT-DSKLEN-STATES (no claim uid, "
+            "MEASURED not GRADED): a DSKLEN write with the WRITE bit set "
+            "(0x4000) makes DSKBYTR read 0xB000, and a distinct, "
+            "separately-reset trial writing DSKLEN=0x0000 makes it read "
+            "0x9000 -- two distinct, known register states arrive at "
+            "DSKBYTR distinctly, showing this fixture's read/write bus is "
+            "live before anything else in this file is trusted. Measured "
+            "v1=" + hex16(v1) + " v2=" + hex16(v2) + ".");
     }
 
     // ================= A2: DSKBYTR-IS-A-REAL-READABLE-REGISTER =================
     // (p.247 opus:8-dma.c31, sol:8-dskdma.c9; p.248 opus:8-dskbytr.c1,
     //  sol:8-dskbytr.c1; p.278 opus:8-appA-dskbytr.c5)
+    //
+    // REPAIRED (independent validation, 2026-09-15, Lot F): the withdrawn
+    // form used idle bit 15 (DSKBYT) = 1 as its decode marker. p.278 gives
+    // DSKBYTR NO reset or idle word at all -- requiring any specific idle
+    // value, on any bit, is requiring something the page never states.
+    // Narrowed to two bits the page DOES define and that MOVE: DISKWRITE
+    // (bit 13, proven live by A3) after a plain DSKLEN write with the
+    // WRITE bit set, and DMAON (bit 14, proven live by A4) once DMA is
+    // armed -- both are page-cited, state-dependent values, not an
+    // unstated reset default.
     {
         Harness h;
+        h.write_reg(A_DSKLEN, 0x4000);  // WRITE bit set, no DMA arm -- DISKWRITE (bit 13) should read 1 (A3).
 #ifdef MUT_DSKBYTR_IS_A_REAL_READABLE_REGISTER
-        uint16_t idle_at_dskbytr = h.read_reg(A_UNMAPPED);  // MUTATION: read the wrong (unmapped) address instead of DSKBYTR.
+        uint16_t after_write = h.read_reg(A_UNMAPPED);  // MUTATION: read the wrong (unmapped) address instead of DSKBYTR.
 #else
-        uint16_t idle_at_dskbytr = h.read_reg(A_DSKBYTR);
+        uint16_t after_write = h.read_reg(A_DSKBYTR);
 #endif
         uint16_t idle_at_unmapped = h.read_reg(A_UNMAPPED);
         h.arm_dma(/*write_dir=*/false, /*length=*/10);
         uint16_t during_active = h.read_reg(A_DSKBYTR);
 
-        bool decoded_idle = bitn(idle_at_dskbytr, 15) == 1;
+        bool decoded_write_state = bitn(after_write, 13) == 1;   // DISKWRITE, page-defined (A3).
         bool not_decoded_elsewhere = idle_at_unmapped == 0x0000;
-        bool decoded_active = bitn(during_active, 15) == 1;
-        checks.expect(decoded_idle && not_decoded_elsewhere && decoded_active,
+        bool decoded_active = bitn(during_active, 14) == 1;      // DMAON, page-defined (A4).
+        checks.expect(decoded_write_state && not_decoded_elsewhere && decoded_active,
             "DSKBYTR-IS-A-REAL-READABLE-REGISTER (p.247 opus:8-dma.c31, "
             "sol:8-dskdma.c9; p.248 opus:8-dskbytr.c1, sol:8-dskbytr.c1; "
             "p.278 opus:8-appA-dskbytr.c5): DSKBYTR is a genuinely decoded "
             "register, not a stuck wire -- reading its own address returns "
-            "a defined value (bit 15 set) both idle and mid-transfer, while "
+            "a DEFINED value that differs correctly by state (DISKWRITE set "
+            "after a WRITE-bit DSKLEN write; DMAON set mid-transfer), while "
             "reading an address this module does not decode returns "
-            "0x0000, proving the mux discriminates by address rather than "
-            "returning the same thing regardless of what is read; this is "
-            "also the 'register that may be polled to examine the disk "
-            "input stream' (p.247) and 'this register is the "
-            "disk-microprocessor data buffer' (p.248/p.278) identity half. "
-            "Measured idle_at_dskbytr=" + hex16(idle_at_dskbytr) +
+            "0x0000, proving the mux discriminates by address AND by state "
+            "rather than returning a fixed pattern regardless of what or "
+            "when it is read; narrowed to bits 13/14 rather than bit 15 "
+            "(DSKBYT), whose own idle value p.278 never defines (DSKBYTR "
+            "has no printed reset or idle word at all). This is also the "
+            "'register that may be polled to examine the disk input "
+            "stream' (p.247) and 'this register is the disk-microprocessor "
+            "data buffer' (p.248/p.278) identity half. Measured "
+            "after_write=" + hex16(after_write) +
             " idle_at_unmapped=" + hex16(idle_at_unmapped) +
             " during_active=" + hex16(during_active) + ".");
     }
@@ -615,39 +667,58 @@ int main(int argc, char** argv) {
 
         bool ok = bitn(v, 14) == 1;
         checks.expect(ok,
-            "DMAON-BIT14-TRACKS-DSKLEN-DMA-ENABLE (p.248 opus:8-dskbytr.c8 "
-            "DSKLEN clause, sol:8-dskbytr.c9 DSKLEN clause; p.278 "
-            "opus:8-appA-dskbytr.c10 DSKLEN clause): 'Indicates when DMA is "
-            "actually enabled ... This means the DMAEN bit in DSKLEN' / "
-            "'Mirror of bit 15 (DMAEN) in DSKLEN' -- graded here only for "
-            "the DSKLEN half both pages state identically; the DMACON half "
-            "is declined below, out of this fixture's boundary. Two "
-            "identical DSKLEN writes with the DMA-enable bit set (the "
-            "double write the build brief's own rig-hazard note already "
-            "named) bring DMAON (bit 14) up; this package's own measured "
-            "DSKLEN<<800A double-write value (0xD000, matching the build "
-            "brief's disclosed background) confirms bit 14 set here too. "
-            "Measured v=" + hex16(v) + ".");
+            "DMAON-BIT14-TRACKS-DSKLEN-DMA-ENABLE (p.248, p.278; see the "
+            "DMAON-DMACON-HALF record() below for this claim's own uids "
+            "and citation): 'Indicates when DMA is actually enabled ... "
+            "This means the DMAEN bit in DSKLEN' / 'Mirror of bit 15 "
+            "(DMAEN) in DSKLEN' -- graded here only for the DSKLEN half "
+            "both pages state identically; the DMACON half is declined "
+            "below, out of this fixture's boundary. Two identical DSKLEN "
+            "writes with the DMA-enable bit set (the double write the "
+            "build brief's own rig-hazard note already named) bring DMAON "
+            "(bit 14) up; this package's own measured DSKLEN<<800A "
+            "double-write value (0xD000, matching the build brief's "
+            "disclosed background) confirms bit 14 set here too. Measured "
+            "v=" + hex16(v) + ".");
 
+        // Repaired (independent validation, 2026-09-15, Lot F --
+        // uid-placement defect): opus:8-dskbytr.c8, sol:8-dskbytr.c9 and
+        // opus:8-appA-dskbytr.c10 previously appeared on BOTH the graded
+        // expect() label above (as its "DSKLEN clause") AND this record()
+        // line (as its "DMACON clause") -- the coverage ledger reads uids,
+        // not the "clause" qualifier beside them, so it counted these
+        // three as fully asserted while this record() simultaneously
+        // declined them. Per the uid-placement rule, an assertion that
+        // grades only part of a claim keeps its expect() label uid-free
+        // and carries the uid on a record() line alone -- moved here.
         checks.record(
-            "DMAON-DMACON-HALF, out of this package's boundary (p.248 "
-            "opus:8-dskbytr.c8 DMACON clause, sol:8-dskbytr.c9 DMACON "
-            "clause; p.278 opus:8-appA-dskbytr.c10 DMACON clause): p.248 "
-            "prints 'the DSKEN & DMAEN bits in DMACON' as an additional "
-            "requirement for DMAON; p.278 prints only 'ANDed with Bit09 "
-            "(DMAEN) in DMACON' -- a page-versus-page difference (p.248 "
-            "names DSKEN as well as DMAEN, p.278 names only DMAEN), not a "
-            "red against this RTL. This package's assigned fixture is "
-            "paula_floppy compiled alone, which has no DMACON port at all "
-            "-- DMACON's bits reach this module only pre-combined into the "
-            "single `enable` input this file holds asserted throughout "
-            "(see the Harness constructor). Grading DMACON's own bit "
-            "combination needs the wider `paula` boundary, already "
-            "measured by finding candidate C11 in "
-            "work/2026-09-15_ch8_s2_finding_candidates.md (DMACON bit 9 "
-            "alone leaves DSKBYTR bit 14 clear; bit 9 AND bit 4 are both "
-            "required) -- not re-measured here, and not asserted on a "
-            "boundary this package does not have.");
+            "opus:8-dskbytr.c8, sol:8-dskbytr.c9, opus:8-appA-dskbytr.c10 "
+            "(p.248, p.278; DMAON's own printed definition is a compound "
+            "condition: 'All the various DMA bits must be true. This means "
+            "the DMAEN bit in DSKLEN, and the DSKEN & DMAEN bits in "
+            "DMACON.' / 'Mirror of bit 15 (DMAEN) in DSKLEN, ANDed with "
+            "Bit09 (DMAEN) in DMACON'): the DSKLEN half of this same "
+            "compound condition is empirically measured, GREEN, by the "
+            "DMAON-BIT14-TRACKS-DSKLEN-DMA-ENABLE assertion immediately "
+            "above (not graded under these three uids, per the "
+            "uid-placement rule -- see that assertion's own label); the "
+            "DMACON half cannot be measured here at all. p.248 prints 'the "
+            "DSKEN & DMAEN bits in DMACON' as an additional requirement; "
+            "p.278 prints only 'ANDed with Bit09 (DMAEN) in DMACON' -- a "
+            "page-versus-page difference, not a red against this RTL. "
+            "This package's assigned fixture is paula_floppy compiled "
+            "alone, which has no DMACON port at all -- DMACON's bits reach "
+            "this module only pre-combined into the single `enable` input "
+            "this file holds asserted throughout (see the Harness "
+            "constructor). Grading DMACON's own bit combination needs the "
+            "wider `paula` boundary, already measured by finding candidate "
+            "C11 in work/2026-09-15_ch8_s2_finding_candidates.md (DMACON "
+            "bit 9 alone leaves DSKBYTR bit 14 clear; bit 9 AND bit 4 are "
+            "both required) -- not re-measured here, and not asserted on a "
+            "boundary this package does not have. Because this claim is "
+            "compound and only half-measurable at this boundary, it is "
+            "recorded as a whole rather than split across a graded line "
+            "and a declined line for the SAME uids.");
     }
 
     // ================= A5: DSKBYT-NOT-SET-ONLY-ON-RECEIPT -- DECLINED =================
@@ -697,23 +768,26 @@ int main(int argc, char** argv) {
     }
 
     // ================= A6-CONTROL: REAL-READ-CYCLE-IS-LIVE =================
-    // No claim uid. Control case for A6's own new methodology: proves
-    // read_reg_clocked() -- holding the address across a genuine
-    // clk7_en-qualified rising edge -- is a faithful read, by using that
-    // EXACT cycle shape to read bit 14 (DMAON) and bit 13 (DISKWRITE)
-    // across the same transitions A3/A4 already proved happen with the
-    // plain combinational read_reg(). This is A6's liveness proof and its
-    // control in one: the same cycle that will observe bit 15 below is
-    // first shown to observe bits that genuinely DO move, correctly.
+    // No claim uid. WITHDRAWN TO note() (independent validation,
+    // 2026-09-15, Lot F): this control reads bit 14 (DMAON) and bit 13
+    // (DISKWRITE) through read_reg_clocked() and watches them move as
+    // DSKLEN is driven -- but both bits are COMBINATIONAL mirrors of
+    // DSKLEN's own state (paula_floppy.v:699): they would move exactly
+    // the same way through the OLD eval()-only read_reg() helper too,
+    // since nothing about their value depends on the read itself being a
+    // genuine, qualifying bus cycle. This measurement therefore shows
+    // read_reg_clocked() samples data_out correctly at the point it
+    // reads -- it does NOT show that holding the address across a real
+    // clk7_en edge reaches any SYNCHRONOUS read-side-effect mechanism
+    // (the thing "cleared when read" would need). Carries no claim uid,
+    // so note() -- printed with that scope stated explicitly, so a later
+    // reader does not take this as proof that A6's own read cycle reaches
+    // a clocked side effect it may not. Its mutation record is removed
+    // with it.
     {
         Harness h1;
         uint16_t before14 = h1.read_reg_clocked(A_DSKBYTR);
-#ifdef MUT_A6_CONTROL_REAL_READ_CYCLE_IS_LIVE
-        // MUTATION: the arming DSKLEN write is skipped entirely, so DMAON
-        // never rises and this half's own known transition never occurs.
-#else
         h1.arm_dma(/*write_dir=*/false, /*length=*/10);
-#endif
         uint16_t after14 = h1.read_reg_clocked(A_DSKBYTR);
 
         Harness h2;
@@ -721,20 +795,22 @@ int main(int argc, char** argv) {
         h2.write_reg(A_DSKLEN, 0x4000);
         uint16_t after13 = h2.read_reg_clocked(A_DSKBYTR);
 
-        bool ok = bitn(before14, 14) == 0 && bitn(after14, 14) == 1 &&
-                  bitn(before13, 13) == 0 && bitn(after13, 13) == 1;
-        checks.expect(ok,
-            "A6-CONTROL-REAL-READ-CYCLE-IS-LIVE (control case, no manual "
-            "citation): read_reg_clocked() -- holding the DSKBYTR address "
-            "across a genuine clk7_en-qualified rising edge, the same "
-            "bus-cycle shape every register WRITE in this module uses -- "
+        checks.note(
+            "A6-CONTROL-REAL-READ-CYCLE-IS-LIVE (no claim uid, MEASURED "
+            "not GRADED): read_reg_clocked() -- holding the DSKBYTR "
+            "address across a genuine clk7_en-qualified rising edge -- "
             "correctly observes DMAON (bit 14) rise once DMA is armed "
-            "(proven live by A4) and DISKWRITE (bit 13) rise once DSKLEN's "
-            "WRITE bit is set (proven live by A3); the cycle A6 uses below "
-            "to test bit 15 is a real, faithful read, not a stuck or "
-            "reordered one. Measured before14=" + hex16(before14) +
-            " after14=" + hex16(after14) + " before13=" + hex16(before13) +
-            " after13=" + hex16(after13) + ".");
+            "(A4) and DISKWRITE (bit 13) rise once DSKLEN's WRITE bit is "
+            "set (A3). Both are COMBINATIONAL mirrors of DSKLEN and would "
+            "move identically through the old eval()-only read_reg() "
+            "helper -- this shows the read function samples correctly, "
+            "NOT that a real bus cycle reaches a synchronous read-side-"
+            "effect mechanism, which nothing read here has. A6 below "
+            "reads bit 15 through the identical cycle; it does not "
+            "inherit stronger proof than this note actually establishes. "
+            "Measured before14=" + hex16(before14) + " after14=" +
+            hex16(after14) + " before13=" + hex16(before13) + " after13=" +
+            hex16(after13) + ".");
     }
 
     // ================= A6: DSKBYT-BIT15-IS-NOT-CLEARED-ON-READ =================
@@ -848,9 +924,22 @@ int main(int argc, char** argv) {
     }
 #endif
 
-    // ================= A8: UNUSED-BITS-11-8-CARRY-NO-FUNCTION =================
-    // (p.248 opus:8-dskbytr.c13, sol:8-dskbytr.c18; p.278
-    //  opus:8-appA-dskbytr.c14, sol:8-appa-dskbytr.c15)
+    // ================= A8: UNUSED-BITS-11-8-CARRY-NO-DEFINED-FUNCTION -- DECLINED =================
+    //
+    // DECLINED (independent validation, 2026-09-15, Lot F): p.278 marks
+    // bits 11-8 "X  Not used", and p.264 says outright: "do not rely on
+    // the values of unused bits when reading from a read only register."
+    // The withdrawn form required these bits to read exactly zero in
+    // three states -- but the page does not require zero, it requires
+    // that a reader not depend on ANY particular value. Any value on
+    // these bits is compatible with the page; requiring zero grades
+    // against something the manual never states. The withdrawn
+    // assertion's own mutation record justified "unfalsifiable, no
+    // stimulus" by pointing at this RTL's own literal 4'b0000
+    // (paula_floppy.v:699) -- implementation-derived reasoning, exactly
+    // what the build brief and DOKTRIN.md both rule out as a basis for an
+    // oracle. Declining rather than grading a value the page leaves
+    // unspecified.
     {
         Harness h;
         uint16_t idle = h.read_reg(A_DSKBYTR);
@@ -860,17 +949,27 @@ int main(int argc, char** argv) {
         uint16_t during_active = h.read_reg(A_DSKBYTR);
 
         auto bits118 = [](uint16_t v) { return (v >> 8) & 0xF; };
-        bool ok = bits118(idle) == 0 && bits118(after_write) == 0 &&
-                  bits118(during_active) == 0;
-        checks.expect(ok,
-            "UNUSED-BITS-11-8-CARRY-NO-FUNCTION (p.248 opus:8-dskbytr.c13, "
-            "sol:8-dskbytr.c18; p.278 opus:8-appA-dskbytr.c14, "
-            "sol:8-appa-dskbytr.c15): 'Currently unused' / 'Not used' -- "
-            "bits 11-8 do not encode any of DSKBYTR's other defined "
-            "semantics: they read identically across idle, a DISKWRITE-set "
-            "state, and an active DMA-armed transfer. Measured idle=" +
-            hex16(idle) + " after_write=" + hex16(after_write) +
-            " during_active=" + hex16(during_active) + ".");
+        checks.note(
+            "A8-MEASURED (not graded): bits 11-8 read " +
+            std::to_string(bits118(idle)) + " idle, " +
+            std::to_string(bits118(after_write)) + " after a DISKWRITE-set "
+            "write, " + std::to_string(bits118(during_active)) +
+            " during an active DMA-armed transfer (idle=" + hex16(idle) +
+            " after_write=" + hex16(after_write) + " during_active=" +
+            hex16(during_active) + ") -- a real measurement, not evidence "
+            "that any other value would be non-conformant.");
+        checks.record(
+            "UNUSED-BITS-11-8-CARRY-NO-DEFINED-FUNCTION (p.248 "
+            "opus:8-dskbytr.c13, sol:8-dskbytr.c18; p.278 "
+            "opus:8-appA-dskbytr.c14, sol:8-appa-dskbytr.c15): 'Currently "
+            "unused' / 'Not used', and p.264, 'do not rely on the values "
+            "of unused bits when reading from a read only register.' Any "
+            "value on bits 11-8 is compatible with the page -- requiring "
+            "zero (the withdrawn form's own oracle) grades against a value "
+            "the manual never states, and the withdrawn form's own "
+            "justification for treating that requirement as unfalsifiable "
+            "cited this RTL's own literal constant, not the page. "
+            "Declining rather than grading an unstated value.");
     }
 
     // ================= A9: DATA-FIELD-DOES-NOT-REFLECT-INCOMING-DISK-BYTES =================
@@ -902,6 +1001,28 @@ int main(int argc, char** argv) {
     // peeks, so both are read at the SAME instant. Both bytes of 0xFFFF
     // are 0xFF, sidestepping any high/low-byte ordering ambiguity in what
     // "the current byte" means.
+    //
+    // DEFECT FOUND IN THIS REPAIR, AND FIXED (independent validation,
+    // 2026-09-15, Lot F): the red below IS a genuine finding -- bound=1,
+    // DSKBYTR=0xd000, DATA=0x00 -- and it must survive. But 0xFFFF is NOT
+    // a page-legal MFM encoding of 0xFF: p.250's own table makes "1 -> 01"
+    // unconditional, so a uniform 0xFF byte page-encodes to 0x5555, not
+    // 0xFFFF. 0xFFFF is only what THIS RTL's own non-conformant,
+    // context-free encoder (candidate C9, graded in
+    // ch8-mfm-cell-encoding's A2/A4) happens to produce for a run of
+    // one-bits. The withdrawn guard used `bound_ok` -- "was the 0xFFFF
+    // marker found" -- as a CONJUNCT of the grading expression
+    // (`ok = bound_ok && (data_field == known_byte)`), so against a
+    // CORRECT encoder the marker would never be found, bound_ok would be
+    // false, and this assertion would FAIL anyway -- reporting a
+    // DATA-field defect that would not be there, for the wrong reason.
+    // Repaired so the binding is a PRECONDITION that DECLINES, not a
+    // conjunct that grades: when the marker cannot be located, record()
+    // states plainly that no known byte could be bound, and nothing about
+    // the DATA field is claimed either way; when it CAN be located (as it
+    // reliably is, against this exact RTL), the DATA-field comparison is
+    // graded via expect() exactly as before. Against the RTL actually
+    // under test here, bound_ok is true and the finding is unchanged.
     {
         int marker_index = -1;
         {
@@ -939,25 +1060,46 @@ int main(int argc, char** argv) {
         }
         uint8_t known_byte = 0xFF;  // both bytes of 0xFFFF are 0xFF -- no high/low ambiguity.
         uint8_t data_field = static_cast<uint8_t>(dskbytr_val & 0x00FF);
-        bool ok = bound_ok && (data_field == known_byte);
         checks.note("A9-MEASURED: known_word=" + hex16(known_word) + " (bound=" +
                     std::to_string(bound_ok) + "), DSKBYTR at that same instant=" +
                     hex16(dskbytr_val) + ", DATA field=" +
                     hex16(data_field) + ".");
-        checks.expect(ok,
-            "DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES (p.248 "
-            "opus:8-dskbytr.c2, opus:8-dskbytr.c14, sol:8-dskbytr.c2, "
-            "sol:8-dskbytr.c20; p.278 opus:8-appA-dskbytr.c6, "
-            "opus:8-appA-dskbytr.c15, sol:8-appa-dskbytr.c7, "
-            "sol:8-appa-dskbytr.c16): 'In read mode, data from the disk is "
-            "placed into this register one byte at a time' / '7-0 DATA "
-            "Disk byte data' -- with a KNOWN incoming byte (0xFF) bound to "
-            "the DSKBYTR sampling instant via the proven-live DSKDATR/FIFO "
-            "marker path, DSKBYTR's own DATA field should read that same "
-            "byte at that instant; paula_floppy.v:699 hardwires bits 7:0 "
-            "to the literal constant 8'h00, so it does not. Measured "
-            "known_word=" + hex16(known_word) + " dskbytr=" + hex16(dskbytr_val) +
-            ".");
+        if (!bound_ok) {
+            // PRECONDITION FAILED -- decline, do not grade. This is the
+            // branch a conforming encoder would always take (p.250 makes
+            // 0xFF -> 0x5555, never 0xFFFF), and it must say nothing about
+            // the DATA field either way.
+            checks.record(
+                "DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES (p.248 "
+                "opus:8-dskbytr.c2, opus:8-dskbytr.c14, sol:8-dskbytr.c2, "
+                "sol:8-dskbytr.c20; p.278 opus:8-appA-dskbytr.c6, "
+                "opus:8-appA-dskbytr.c15, sol:8-appa-dskbytr.c7, "
+                "sol:8-appa-dskbytr.c16): could not bind a known byte to "
+                "the DSKBYTR sampling instant -- the calibration search "
+                "never located the 0xFFFF marker word this technique looks "
+                "for in the DSKDATR stream (marker_index=" +
+                std::to_string(marker_index) + "). Declining rather than "
+                "grading an unbound sample: 0xFFFF is not itself a page-"
+                "legal MFM encoding of 0xFF (p.250 makes 0xFF -> 0x5555), "
+                "so a marker search failing here is not evidence about the "
+                "DATA field one way or the other.");
+        } else {
+            bool ok = (data_field == known_byte);
+            checks.expect(ok,
+                "DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES (p.248 "
+                "opus:8-dskbytr.c2, opus:8-dskbytr.c14, sol:8-dskbytr.c2, "
+                "sol:8-dskbytr.c20; p.278 opus:8-appA-dskbytr.c6, "
+                "opus:8-appA-dskbytr.c15, sol:8-appa-dskbytr.c7, "
+                "sol:8-appa-dskbytr.c16): 'In read mode, data from the disk is "
+                "placed into this register one byte at a time' / '7-0 DATA "
+                "Disk byte data' -- with a KNOWN incoming byte (0xFF) bound to "
+                "the DSKBYTR sampling instant via the proven-live DSKDATR/FIFO "
+                "marker path, DSKBYTR's own DATA field should read that same "
+                "byte at that instant; paula_floppy.v:699 hardwires bits 7:0 "
+                "to the literal constant 8'h00, so it does not. Measured "
+                "known_word=" + hex16(known_word) + " dskbytr=" + hex16(dskbytr_val) +
+                ".");
+        }
 #else
         // MUTATION (already-red baseline; substitute a proven-live
         // mechanism through the same comparator): compare bit 13 after

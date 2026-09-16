@@ -233,3 +233,11 @@ package's Makefile/test source (`hrm/ch8-dsklen-dma-arming`, already
 committed, and `hrm/ch5-audio-dmacon-adkcon`, which already compiles
 `paula.v`) for this suite's established harness/mutation boilerplate. All
 of that reading will be disclosed in the next commit.
+
+## Repair addendum (Lot F, 2026-09-15)
+
+A0 (fixture liveness) withdrawn to `note()` — it carries no claim uid, so
+it was never conformance evidence; grading it through `expect()` cost no
+coverage to remove. A1-A5 and A2-SUBSTITUTE are unchanged; A2 stays the
+package's one genuine red (p.278's incomplete two-term reading, finding
+candidate C11). Post-repair tally: 5 passed, 1 failed.

@@ -287,25 +287,25 @@ int main(int argc, char** argv) {
     // word before any read-based assertion is trusted. Two distinct, known
     // ADKCON writes (set then clear the same recognisable pattern) must
     // arrive, unmodified and mutually distinguishable, at ADKCONR.
+    //
+    // WITHDRAWN TO note() (independent validation, 2026-09-15, Lot F): this
+    // assertion carries no claim uid -- it was never conformance evidence,
+    // only a fixture control, so grading it through expect() cost no
+    // coverage to remove. Its mutation record is removed with it.
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
         rig.write_reg(ADDR_ADKCON, SETCLR | 0x1234);
         uint16_t v1 = rig.read_reg(ADDR_ADKCONR);
-        checks.note("LIVENESS-WORD1: ADKCON<=0x9234 (set 0x1234), ADKCONR readback=0x" + hex4(v1));
 
-        // MUTATE=LIVENESS: drive the second write to SET the same pattern
-        // again instead of clearing it, so the two readings collide.
-        const bool mutLive = mutating("LIVENESS");
-        uint16_t word2 = mutLive ? (SETCLR | 0x1234) : 0x1234;
+        uint16_t word2 = 0x1234;
         rig.write_reg(ADDR_ADKCON, word2);
         uint16_t v2 = rig.read_reg(ADDR_ADKCONR);
-        checks.note("LIVENESS-WORD2: ADKCON<=0x" + hex4(word2) + ", ADKCONR readback=0x" + hex4(v2));
 
-        checks.expect(v1 == 0x1234 && v2 == (mutLive ? 0x1234 : 0x0000) && v1 != v2,
-            "LIVENESS (fixture delivers two distinct known words through ADKCON/ADKCONR before any proposition is "
-            "graded): ADKCONR=0x" + hex4(v1) + " then 0x" + hex4(v2));
+        checks.note("LIVENESS (no claim uid, MEASURED not GRADED): fixture delivers two distinct known words "
+            "through ADKCON/ADKCONR -- ADKCON<=0x9234 (set 0x1234) gives ADKCONR=0x" + hex4(v1) +
+            ", then ADKCON<=0x" + hex4(word2) + " (clear) gives ADKCONR=0x" + hex4(v2) + ".");
     }
 
     // ========================================================================
@@ -498,9 +498,8 @@ int main(int argc, char** argv) {
     return checks.failed == 0 ? 0 : 1;
 }
 
-// MUTATION LIVENESS stimulus red: the second ADKCON write set the same
-// pattern again instead of clearing it, so the two ADKCONR readings
-// collide (0x1234 twice instead of 0x1234 then 0x0000) (MUTATE=LIVENESS).
+// LIVENESS -- no claim uid; withdrawn to note() (Lot F, 2026-09-15). No
+// mutation record (not graded through expect()).
 // MUTATION A2-ADKCONR-DISK-READ stimulus red: bit 11 (UARTBRK) was written
 // instead of bit 10 (WORDSYNC), while the check still reads bit 10 and
 // still expects it set (MUTATE=A2).

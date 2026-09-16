@@ -1,9 +1,13 @@
 // Test purpose: HRM conformance package for the printed-page claim that
-//   CIAAPRA answers at CPU bus address $BFE001 (pp.229, 232), against a rig
-//   over `ciaa` + `gary` (ciaapra_address_rig.v, this package's own
-//   wrapper -- not pinned RTL). 4 claims, from
-//   work/ch8-s1-build/ch8-ciaapra-address-window.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 09a9ba3, before any RTL was opened).
+//   CIAAPRA answers at CPU bus address $BFE001 (pp.229, 232, 241, 244),
+//   against a rig over `ciaa` + `gary` (ciaapra_address_rig.v, this
+//   package's own wrapper -- not pinned RTL). 4 claims from
+//   work/ch8-s1-build/ch8-ciaapra-address-window.jsonl (opus:8-regs.c5,
+//   sol:8-reg.c5, opus:8-mbtn.c4, sol:8-button.c3), plus 2 extend-
+//   disposition claims from work/ch8-s2-build/ch8-ciaapra-address-
+//   window.jsonl (opus:8-dsk.c20, opus:8-cia.c3 -- added to A1-A4's
+//   citation list, no new assertion). Full derivation in SPECIFICATION.md
+//   (committed as 09a9ba3, before any RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.229
 //   ("CIAAPRA ($BFE001) Input and output for pin 6 (port 1 & 2 fire
@@ -93,14 +97,8 @@
 //   the targeted assertion reddens), then reverted and confirmed back to
 //   8 passed, 0 failed.
 //
-// MUTATION A0-LIVENESS-PORTA-TO-CIAAPRA-VIA-RIG stimulus red: second liveness word driven identical to the first, so the two readings are indistinguishable (MUTATE=A0). RUN: baseline 8 passed 0 failed -> 7 passed 1 failed, only this label red; reverted 8/0.
 // MUTATION PRE-AEN-ASSERTED-AT-BFE001 stimulus red: a non-CIA address presented while the check still expects sel_cia_a asserted (MUTATE=PRE). RUN: baseline 8 passed 0 failed -> 7 passed 1 failed, only this label red; reverted 8/0.
 // MUTATION PRE-NEG-AEN-DEASSERTED-OUTSIDE-CIA-WINDOW stimulus red: the CIA address itself presented, so the decode asserts and the isolation control fails (MUTATE=PRE-NEG). RUN: baseline 8 passed 0 failed -> 7 passed 1 failed, only this label red; reverted 8/0.
-// MUTATION CTRL-DDRA-DISTINCT-FROM-PRA stimulus red: 0x00 written to DDRA while the read-back is still compared against 0xA5 (MUTATE=CTRL). RUN: baseline 8 passed 0 failed -> 7 passed 1 failed, only this label red; reverted 8/0.
-// MUTATION A1-BFE001-SELECTS-PRA-OPUS-REGS stimulus red: read address redirected from $BFE001 to $BFE201 (DDRA) while the check still expects PRA's pattern (MUTATE=A1)
-// MUTATION A2-BFE001-SELECTS-PRA-SOL-REG stimulus red: read address redirected from $BFE001 to $BFE201 (DDRA) while the check still expects PRA's pattern (MUTATE=A2)
-// MUTATION A3-BFE001-SELECTS-PRA-OPUS-MBTN stimulus red: read address redirected from $BFE001 to $BFE201 (DDRA) while the check still expects PRA's pattern (MUTATE=A3)
-// MUTATION A4-BFE001-SELECTS-PRA-SOL-BUTTON stimulus red: read address redirected from $BFE001 to $BFE201 (DDRA) while the check still expects PRA's pattern (MUTATE=A4)
 
 #include <cstdint>
 #include <cstdio>
@@ -224,6 +222,11 @@ int main(int argc, char** argv) {
     // known, distinct word before any read-based assertion is trusted --
     // through THIS rig's own address-driven read (gary's decode into
     // ciaa's aen/rs), not a hand-set rs.
+    //
+    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // claim uid -- apparatus, never conformance evidence -- so demoting it
+    // costs no coverage. No longer mutated (MUTATE=A0 removed with it): a
+    // note() is not graded, so there is nothing left for a mutation to flip.
     // ========================================================================
     do_reset();
     {
@@ -231,31 +234,26 @@ int main(int argc, char** argv) {
             return (uint8_t)((w6 & 0x3F) << 2);
         };
         const uint8_t word1 = 0b101010;
-        // MUTATE=A0: drive the second word IDENTICAL to the first, so the
-        // two readings cannot be told apart and `distinct` is false.
-        const uint8_t word2 = mutating("A0") ? word1
-                                             : (uint8_t)0b010101;  // complement
+        const uint8_t word2 = (uint8_t)0b010101;  // complement
 
         set_porta_word(word1);
         settle();
         uint8_t v1 = cia_read(ADDR_BFE001_PRA);
-        checks.note("A0-LIVENESS-WORD1: porta_in[7:2]=0b101010, read through the rig at $BFE001, gives CIAAPRA=0x" +
-                    hex2(v1) + " (bits 7:2=0x" + hex2(v1 & 0xFC) + ")");
 
         set_porta_word(word2);
         settle();
         uint8_t v2 = cia_read(ADDR_BFE001_PRA);
-        checks.note("A0-LIVENESS-WORD2: the complement 0b010101, read the same way, gives CIAAPRA=0x" +
-                    hex2(v2) + " (bits 7:2=0x" + hex2(v2 & 0xFC) + ")");
 
         bool w1ok = (v1 & 0xFC) == expected_upper6(word1);
         bool w2ok = (v2 & 0xFC) == expected_upper6(word2);
         bool distinct = (v1 & 0xFC) != (v2 & 0xFC);
-        checks.expect(w1ok && w2ok && distinct,
-            "A0-LIVENESS-PORTA-TO-CIAAPRA-VIA-RIG: a known word driven on porta_in[7:2] and its bitwise complement "
-            "both arrive, unmodified and mutually distinguishable, at CIAAPRA's bits 7:2 when reached through this "
-            "rig's address-driven read at $BFE001 -- the fixture's full data path (gary's decode plus ciaa's own "
-            "porta pass-through) is live, not stuck");
+        checks.note("A0-LIVENESS-PORTA-TO-CIAAPRA-VIA-RIG [not graded -- apparatus check, no claim uid]: "
+                    "porta_in[7:2]=0b101010 gives CIAAPRA bits7:2=0x" + hex2(v1 & 0xFC) + "; the complement "
+                    "0b010101 gives 0x" + hex2(v2 & 0xFC) + " (matched=" + std::to_string(w1ok && w2ok && distinct) +
+                    "): a known word and its bitwise complement both arrive, unmodified and mutually "
+                    "distinguishable, at CIAAPRA's bits 7:2 when reached through this rig's address-driven read "
+                    "at $BFE001 -- the fixture's full data path (gary's decode plus ciaa's own porta pass-"
+                    "through) is live, not stuck");
     }
 
     // ========================================================================
@@ -300,23 +298,27 @@ int main(int argc, char** argv) {
     // CIA-A window (rs=4'h2, DDRA) delivers a distinct, known word,
     // separate from PRA's. Satisfies "at least one control case expected
     // to PASS on the same measurement basis."
+    //
+    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // claim uid -- control case, no manual citation -- so demoting it costs
+    // no coverage. No longer mutated (MUTATE=CTRL removed with it): a
+    // note() is not graded, so there is nothing left for a mutation to
+    // flip.
     // ========================================================================
     do_reset();
     {
-        // MUTATE=CTRL: write a different byte to DDRA while the check
-        // still compares the read-back against 0xA5.
-        cia_write(ADDR_BFE201_DDRA, mutating("CTRL") ? 0x00 : 0xA5);
+        cia_write(ADDR_BFE201_DDRA, 0xA5);
         uint8_t ddra_val = cia_read(ADDR_BFE201_DDRA);
         set_porta_word(0b110011);
         settle();
         uint8_t pra_val = cia_read(ADDR_BFE001_PRA);
-        checks.note("CTRL-STIMULUS: wrote 0xA5 to $BFE201 (DDRA, rs=4'h2); read back DDRA=0x" + hex2(ddra_val) +
-                    ", read back PRA at $BFE001=0x" + hex2(pra_val));
-        checks.expect(ddra_val == 0xA5 && ddra_val != pra_val,
-            "CTRL-DDRA-DISTINCT-FROM-PRA (control case, no manual citation, same rig/measurement basis as A1-A4): "
-            "writing 0xA5 to $BFE201 (rs=4'h2, DDRA, ciaa.v:138) inside the same $BFE0xx CIA-A window and reading "
-            "it back gets that byte, distinct from PRA's own reading at $BFE001 -- the address-to-register routing "
-            "this rig measures is alive and discriminating, not stuck answering one register for every address");
+        checks.note("CTRL-DDRA-DISTINCT-FROM-PRA [not graded -- apparatus check, no claim uid]: wrote 0xA5 to "
+                    "$BFE201 (DDRA, rs=4'h2); read back DDRA=0x" + hex2(ddra_val) + ", read back PRA at "
+                    "$BFE001=0x" + hex2(pra_val) + " (matched=" +
+                    std::to_string(ddra_val == 0xA5 && ddra_val != pra_val) + "): writing 0xA5 to $BFE201 inside "
+                    "the same $BFE0xx CIA-A window and reading it back gets that byte, distinct from PRA's own "
+                    "reading at $BFE001 -- the address-to-register routing this rig measures is alive and "
+                    "discriminating, not stuck answering one register for every address");
     }
 
     // ========================================================================
@@ -326,65 +328,132 @@ int main(int argc, char** argv) {
     // passages: CPU address $BFE001, presented to this rig, selects
     // ciaa's PRA register. Data-content diversity was already proven by
     // A0; these four reuse one recognizable word and focus on the address.
+    //
+    // WITHDRAWN to record() (independent validation, 2026-09-15): all four
+    // compare against a value the test itself just drove on porta_in, and
+    // -- the deciding fault -- they run on ciaapra_address_rig.v, whose own
+    // header says plainly it is "this package's own fixture wrapper -- NOT
+    // pinned RTL," wiring gary to ciaa by COPYING how minimig.v connects
+    // sel_cia_a, aen and rs, rather than instantiating minimig.v's own join.
+    // A missing or wrong connection in the REAL system top (minimig.v:607-
+    // 630/762-821) therefore still passes this assertion, because the rig
+    // never exercises that real wiring -- only its own hand-written copy of
+    // it. This is independently sufficient to withdraw all four, regardless
+    // of the data-content point.
+    //
+    // PRE-AEN-ASSERTED-AT-BFE001 and PRE-NEG-AEN-DEASSERTED-OUTSIDE-CIA-
+    // WINDOW (kept, below) observe pinned gary's own decode directly and
+    // remain sound partial controls, but they do not reach ciaa's rs/aen
+    // wiring either, so they cannot rescue the copied join.
+    //
+    // What an assertion would need to observe: a CPU bus access at $BFE001
+    // against a fixture that instantiates the PINNED join (ideally
+    // TOP_MODULE=minimig itself, as hrm/ch8-cia-disk-signal-bindings uses
+    // for a related but different claim set) rather than a package-written
+    // stand-in, so a severed or misconnected gary-to-ciaa wire in the real
+    // system top is what the assertion can catch. No package in this suite
+    // currently grades "$BFE001 selects PRA" at that boundary; nothing
+    // grades these four uids elsewhere (checked: opus:8-regs.c5, sol:8-
+    // reg.c5, opus:8-mbtn.c4, sol:8-button.c3 appear nowhere else in hrm/).
+    //
+    // EXTEND-DISPOSITION UIDS (ch8-s2-build/ch8-ciaapra-address-window.jsonl,
+    // target hrm/ch8-ciaapra-address-window, build_action "add this uid to
+    // the citation list of the named assertion; no new assertion, no new
+    // build", already_graded_by "A1 through A4"): opus:8-dsk.c20 (p.241,
+    // quote "CIAAPRA ($BFE001) four input bits for disk sensing") and
+    // opus:8-cia.c3 (p.244, quote "Bits labeled PA are input bits in
+    // CIAAPRA ($BFE001)") name the identical $BFE001-selects-PRA fact from
+    // two further citing passages. Both were on A1-A4's citation list
+    // before this WITHDRAWN rewrite (visible in work/ch8-s2-runs/ch8-
+    // ciaapra-address-window.txt, e.g. "PASS: A1-... [claims: opus:8-
+    // dsk.c20, opus:8-cia.c3]") and were lost when the four PASS lines
+    // became record() calls (independent review, 2026-09-15) -- restored
+    // below on all four record() lines, same withdrawal reasoning, since
+    // the fact and the boundary fault are identical for both. Checked at
+    // that same review: opus:8-dsk.c20 appears nowhere else under hrm/;
+    // opus:8-cia.c3 is graded nowhere else either -- the only other
+    // "cia.c3" hits under hrm/ belong to the unrelated sol:8-cia.c3
+    // (ch8-ciabprb-disk-control-bits, a different reader's different claim
+    // about CIABPRB's PB bits at $BFD100, twin of opus:8-cia.c4), not this
+    // uid; the opus:8-cia.c6/.c11/.c16/.c18/.c21/.c32/.c34/.c36/.c38/.c41/
+    // .c45/.c49 family graded in hrm/ch8-cia-disk-signal-bindings is also a
+    // different uid family, not opus:8-cia.c3.
     // ========================================================================
     do_reset();
     {
         set_porta_word(0b100110);
         settle();
-        uint32_t addr = mutating("A1") ? ADDR_BFE201_DDRA : ADDR_BFE001_PRA;  // MUTATION: ask DDRA, still expect PRA
-        uint8_t v = cia_read(addr);
-        checks.note("A1-STIMULUS: read at " + std::string(mutating("A1") ? "$BFE201 (mutated)" : "$BFE001") +
-                    " gives 0x" + hex2(v));
-        checks.expect((v & 0xFC) == 0b10011000,
+        uint8_t v = cia_read(ADDR_BFE001_PRA);
+        checks.note("A1-BFE001-SELECTS-PRA-OPUS-REGS [not graded -- see WITHDRAWN note above]: read at $BFE001 "
+                    "gives 0x" + hex2(v) + " (matched=" + std::to_string((v & 0xFC) == 0b10011000) + ")");
+        checks.record(
             "A1-BFE001-SELECTS-PRA-OPUS-REGS (p.229, opus:8-regs.c5, quote 'CIAAPRA ($BFE001) Input and output "
-            "for pin 6 (port 1 & 2 fire buttons)'): CPU address $BFE001, presented to the ciaa+gary rig, drives "
-            "gary's sel_cia_a into ciaa's aen and address bits [11:8]=0 into ciaa's rs -- the register that "
-            "answers is PRA (rs=4'h0, ciaa.v:136), confirmed by the known porta_in word 0b100110 arriving "
-            "unmodified at data_out bits 7:2 [claims: opus:8-dsk.c20, opus:8-cia.c3]");
+            "for pin 6 (port 1 & 2 fire buttons)'): CANNOT be graded at this boundary. This package's own fixture "
+            "(ciaapra_address_rig.v) is package-written, not pinned RTL -- it copies minimig.v's gary-to-ciaa "
+            "wiring by hand rather than instantiating minimig.v's own join, so a missing or wrong connection in "
+            "the real system top passes this assertion unchanged. No package in this suite currently grades "
+            "'$BFE001 selects PRA' against the pinned join; a sound assertion would need a fixture built over "
+            "the real system top (e.g. TOP_MODULE=minimig). Also carries opus:8-dsk.c20 (p.241, quote 'CIAAPRA "
+            "($BFE001) four input bits for disk sensing') and opus:8-cia.c3 (p.244, quote 'Bits labeled PA are "
+            "input bits in CIAAPRA ($BFE001)') -- two further citing passages of this identical measured fact, "
+            "extended onto A1-A4's citation list per ch8-s2-build/ch8-ciaapra-address-window.jsonl; CANNOT be "
+            "graded at this boundary for the same reason. Checked: opus:8-dsk.c20 appears nowhere else under "
+            "hrm/; opus:8-cia.c3 is graded nowhere else either (distinct from sol:8-cia.c3, a different reader's "
+            "different claim graded in ch8-ciabprb-disk-control-bits).");
     }
 
     do_reset();
     {
         set_porta_word(0b100110);
         settle();
-        uint32_t addr = mutating("A2") ? ADDR_BFE201_DDRA : ADDR_BFE001_PRA;  // MUTATION: ask DDRA, still expect PRA
-        uint8_t v = cia_read(addr);
-        checks.note("A2-STIMULUS: read at " + std::string(mutating("A2") ? "$BFE201 (mutated)" : "$BFE001") +
-                    " gives 0x" + hex2(v));
-        checks.expect((v & 0xFC) == 0b10011000,
+        uint8_t v = cia_read(ADDR_BFE001_PRA);
+        checks.note("A2-BFE001-SELECTS-PRA-SOL-REG [not graded -- see WITHDRAWN note above]: twin of A1, same "
+                    "measurement -> read at $BFE001 gives 0x" + hex2(v) + " (matched=" +
+                    std::to_string((v & 0xFC) == 0b10011000) + ")");
+        checks.record(
             "A2-BFE001-SELECTS-PRA-SOL-REG (p.229, sol:8-reg.c5, quote 'CIAAPRA ($BFE001) Input and output for "
             "pin 6 (port 1 & 2 fire buttons)'): twin of A1 (same printed quote, independent reader) -- same "
-            "measurement, graded independently under its own uid [claims: opus:8-dsk.c20, opus:8-cia.c3]");
+            "boundary fault (this package's own fixture copies the gary-to-ciaa join by hand instead of "
+            "instantiating the pinned minimig.v wiring), CANNOT be graded at this boundary for the same reason. "
+            "Also carries opus:8-dsk.c20 (p.241, quote 'CIAAPRA ($BFE001) four input bits for disk sensing') and "
+            "opus:8-cia.c3 (p.244, quote 'Bits labeled PA are input bits in CIAAPRA ($BFE001)'), same as A1 above "
+            "-- extended onto A1-A4's citation list per ch8-s2-build/ch8-ciaapra-address-window.jsonl, CANNOT be "
+            "graded here for the same reason.");
     }
 
     do_reset();
     {
         set_porta_word(0b100110);
         settle();
-        uint32_t addr = mutating("A3") ? ADDR_BFE201_DDRA : ADDR_BFE001_PRA;  // MUTATION: ask DDRA, still expect PRA
-        uint8_t v = cia_read(addr);
-        checks.note("A3-STIMULUS: read at " + std::string(mutating("A3") ? "$BFE201 (mutated)" : "$BFE001") +
-                    " gives 0x" + hex2(v));
-        checks.expect((v & 0xFC) == 0b10011000,
+        uint8_t v = cia_read(ADDR_BFE001_PRA);
+        checks.note("A3-BFE001-SELECTS-PRA-OPUS-MBTN [not graded -- see WITHDRAWN note above]: read at $BFE001 "
+                    "gives 0x" + hex2(v) + " (matched=" + std::to_string((v & 0xFC) == 0b10011000) + ")");
+        checks.record(
             "A3-BFE001-SELECTS-PRA-OPUS-MBTN (p.232, opus:8-mbtn.c4, quote 'The left button on the Amiga mouse is "
-            "connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7. A logic'): CPU address "
-            "$BFE001 selects PRA at this rig, same measurement as A1, graded independently under its own uid and "
-            "page [claims: opus:8-dsk.c20, opus:8-cia.c3]");
+            "connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7.'): CANNOT be graded at this "
+            "boundary, same fault as A1 above (package-written gary-to-ciaa join, not the pinned system top's "
+            "own wiring) -- a missing or wrong connection in the real minimig.v join would still pass. Also "
+            "carries opus:8-dsk.c20 (p.241, quote 'CIAAPRA ($BFE001) four input bits for disk sensing') and "
+            "opus:8-cia.c3 (p.244, quote 'Bits labeled PA are input bits in CIAAPRA ($BFE001)'), same as A1 above "
+            "-- extended onto A1-A4's citation list per ch8-s2-build/ch8-ciaapra-address-window.jsonl, CANNOT be "
+            "graded here for the same reason.");
     }
 
     do_reset();
     {
         set_porta_word(0b100110);
         settle();
-        uint32_t addr = mutating("A4") ? ADDR_BFE201_DDRA : ADDR_BFE001_PRA;  // MUTATION: ask DDRA, still expect PRA
-        uint8_t v = cia_read(addr);
-        checks.note("A4-STIMULUS: read at " + std::string(mutating("A4") ? "$BFE201 (mutated)" : "$BFE001") +
-                    " gives 0x" + hex2(v));
-        checks.expect((v & 0xFC) == 0b10011000,
+        uint8_t v = cia_read(ADDR_BFE001_PRA);
+        checks.note("A4-BFE001-SELECTS-PRA-SOL-BUTTON [not graded -- see WITHDRAWN note above]: read at $BFE001 "
+                    "gives 0x" + hex2(v) + " (matched=" + std::to_string((v & 0xFC) == 0b10011000) + ")");
+        checks.record(
             "A4-BFE001-SELECTS-PRA-SOL-BUTTON (p.232, sol:8-button.c3, quote 'The left button on the Amiga mouse "
-            "is connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7.'): CPU address $BFE001 "
-            "selects PRA at this rig, same measurement as A1, graded independently under its own uid and page "
-            "[claims: opus:8-dsk.c20, opus:8-cia.c3]");
+            "is connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7.'): twin of A3 (same "
+            "printed quote, independent reader) -- same boundary fault, CANNOT be graded at this boundary for "
+            "the same reason. Also carries opus:8-dsk.c20 (p.241, quote 'CIAAPRA ($BFE001) four input bits for "
+            "disk sensing') and opus:8-cia.c3 (p.244, quote 'Bits labeled PA are input bits in CIAAPRA "
+            "($BFE001)'), same as A1 above -- extended onto A1-A4's citation list per ch8-s2-build/ch8-ciaapra-"
+            "address-window.jsonl, CANNOT be graded here for the same reason.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";

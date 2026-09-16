@@ -3,8 +3,10 @@
 //   against `paula_floppy` (paula_floppy.v + paula_floppy_fifo.v only --
 //   paula_floppy_ebr.v excluded, it declares a second `module paula_floppy`).
 //   54 claims, from work/ch8-s2-build/ch8-dsklen-dma-arming.jsonl, reduced to
-//   12 assertions + fixture liveness. Full derivation in SPECIFICATION.md
-//   (committed as e97f8f2, before any RTL was opened).
+//   12 assertions + fixture liveness (13 after the 2026-09-15 lot-B repair
+//   added the A13 substitute; see the repair notes below). Full derivation
+//   in SPECIFICATION.md (committed as e97f8f2, before any RTL was opened;
+//   updated 2026-09-15 for the repair).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed pp.246-247, 279.
 //
@@ -98,26 +100,41 @@
 //   A0 instead proves the fixture's write-then-read data path directly, on
 //   the DSKBYTR mirror every other assertion in this package also reads.
 //
-// DECLINED: opus:8-dma.c32 / sol:8-dskbug.c1 (last three bits lost on a
-//   disk write) -- see the record() call near the end of main(). Reaching a
-//   genuine LAST WRITTEN BYTE on `sdc_byte_out_data` requires driving a full,
-//   checksum-gated write transfer through paula_floppy's cpu_wr_state
-//   pipeline (:779-903): a correctly MFM-formatted sync+header+payload
-//   stream fed via DSKDAT writes, matching the module's own (not otherwise
-//   observable) `track` value and passing two checksum gates before the
-//   buffer-write trigger this package's other assertions never need is
-//   reached. Out of proportion to what this package's remaining 53 claims
-//   need; not attempted.
+// A11 -- REPAIRED 2026-09-15 (lot B), no longer declined. opus:8-dma.c32 /
+//   sol:8-dskbug.c1 (last three bits lost on a disk write) is now GRADED
+//   (expect()), not declined: an independent validation found "out of
+//   proportion to this package's remaining scope" is not a permitted
+//   decline reason (cost is not unobservability), and the claims file
+//   classifies this proposition as observable at `sdc_byte_out_data`.
+//   drive_write_transfer_and_read() (defined right after the Rig struct)
+//   drives a full, checksum-gated write transfer through paula_floppy's
+//   cpu_wr_state pipeline (:781-901): a DSKSYNC-matching sync word, a
+//   24-word header whose track field matches this fixture's own (not
+//   otherwise observable) `track` value and whose 2-word checksum is
+//   computed to match, a 4-word payload-checksum preload, and a uniform
+//   512-byte payload -- then reads the corresponding byte back via
+//   `sdc_byte_out_data`. MEASURED RED: the byte's last three bits survive
+//   intact, same as the rest of it -- see A11's own comment for why (no
+//   bit-serial shift-register stage exists anywhere in this write path for
+//   the documented timing race to occur in). A13 is a new substitute,
+//   proving the same apparatus is live and content-dependent (A11 cannot,
+//   being itself expected red -- see MUTATION METHODOLOGY below).
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup -- not a compile-time #ifdef -- so one build serves the real run
 //   (MUTATE unset) and every mutation run (MUTATE=<id>, one id per
-//   assertion). Baseline with MUTATE unset: 11 passed, 0 failed, plus 2
-//   RECORDED declines (A11, A12 -- neither has an `expect()` at all, neither
-//   is tallied either way, neither carries a mutation record). Actual run
-//   counts and per-mutation results are recorded in the commit message and
-//   build report, not predicted here.
+//   assertion). A11 is expected RED at baseline (see its own comment): the
+//   byte survives fully intact, so no ordinary stimulus mutation can make
+//   "the byte does not survive" pass; it carries a `none impossible`
+//   mutation record instead, and its comparator is proven live via the
+//   dedicated GREEN-at-baseline substitute A13, which applies the identical
+//   extraction-and-compare apparatus to a different known payload and
+//   carries its own ordinary stimulus mutation. A1 (record(), declined) and
+//   A0 (note(), no uid) carry no mutation record -- neither is a graded
+//   line for one to pair against. Actual run counts and per-mutation
+//   results are recorded in the commit message and build report, not
+//   predicted here.
 //
 // A12 -- REPAIRED 2026-09-15, DECLINED, not graded. Independent validation
 //   found the previous graded-RED assertion tested MORE than its cited page
@@ -140,18 +157,19 @@
 //   identical exact-count mechanism live and green under their own manual
 //   citations. Removed, along with its mutation record.
 //
-// MUTATION A0-LIVENESS-DSKLEN-WRITE-TO-DSKBYTR-READBACK stimulus red: second known value driven identical to the first (0x0000 both times) so the two readings are indistinguishable (MUTATE=A0).
-// MUTATION A1-DSKLEN-WRITE-ONLY stimulus red: the read-back address is redirected from DSKLEN to DSKBYTR (a real decode, idle value 0x9000) while the check still expects 0x0000 (MUTATE=A1).
-// MUTATION A2-DSKLEN-TWO-CONTROL-BITS stimulus red: the single write is changed from 0x4000 (WRITE bit set) to 0x0000 (WRITE bit clear) while the check still expects the WRITE bit's immediate readback effect (MUTATE=A2).
-// MUTATION A3-ENABLE-GATES-DMA-START stimulus red: `enable` is held at 1 throughout, instead of 0 during the double write and only raised afterward, while the check still expects the pre-enable "not yet started" reading (MUTATE=A3).
-// MUTATION A4-DSKLEN-4000-FORCES-OFF-FROM-IDLE stimulus red: the idle write is changed from 0x4000 to 0x0000 while the check still expects the WRITE-bit-set (0xB000) readback (MUTATE=A4).
-// MUTATION A5-FIRST-WRITE-LOADS-DOES-NOT-START stimulus red: the single arming write is repeated a second time (accidentally arming DMAEN) while the check still expects the not-yet-started reading (MUTATE=A5).
-// MUTATION A6-SECOND-WRITE-ARMS-DMAEN stimulus red: only ONE write is performed, not two, while the check still expects the armed/started reading (MUTATE=A6).
-// MUTATION A7-DSKLEN-4000-FORCES-OFF-DURING-ACTIVE stimulus red: instead of writing 0x4000 to force DMA off mid-transfer, the same armed value is rewritten (re-affirming, not forcing off) while the check still expects the forced-off reading (MUTATE=A7).
-// MUTATION A8-WRITE-DIRECTION-BIT-AND-PREVENTION stimulus red: the double write (0xC00A twice) is reduced to a single write while the check still expects the double-write's positive result (MUTATE=A8).
+// A0-LIVENESS-DSKLEN-WRITE-TO-DSKBYTR-READBACK is a note() (no manual citation, no uid) as of the 2026-09-15 lot-B repair -- see its own comment below. It carries no MUTATION record: a note has no graded line to pair one against.
+// A1-DSKLEN-WRITE-ONLY is DECLINED as of the 2026-09-15 lot-B repair (record(), not expect()) -- same fault as ch8-disk-register-map-paula-floppy/L2; see its own comment below. It carries no MUTATION record.
+// MUTATION A2-DSKLEN-TWO-CONTROL-BITS stimulus red: the single write is changed from 0x4000 (WRITE bit set) to 0x0000 (WRITE bit clear) while the check still expects the WRITE bit's immediate readback effect (MUTATE=A2). REPAIRED 2026-09-15 (lot B): narrowed from the whole readback word (0xB000) to DISKWRITE (bit 13, p.278-defined) alone.
+// MUTATION A3-ENABLE-GATES-DMA-START stimulus red: `enable` is held at 1 throughout, instead of 0 during the double write and only raised afterward, while the check still expects the pre-enable "not yet started" reading (MUTATE=A3). REPAIRED 2026-09-15 (lot B): narrowed from the whole readback word (0x9000/0xD000) to DMAON (bit 14, p.278-defined) alone.
+// MUTATION A4-DSKLEN-4000-FORCES-OFF-FROM-IDLE stimulus red: the forcing-off write is changed from 0x4000 to 0x0000 while the check still expects the forced-off (DMAON clear, DISKWRITE set) reading (MUTATE=A4). REPAIRED 2026-09-15 (lot B): two defects fixed -- the scenario now arms and starts a REAL transfer before forcing it off (the original wrote $4000 from idle, where dmaen was already 0 and nothing observable was forced off), and the oracle is narrowed from the whole readback word (0xB000) to DMAON/DISKWRITE (p.278-defined). See the code's own repair note.
+// MUTATION A5-FIRST-WRITE-LOADS-DOES-NOT-START stimulus red: the single arming write is repeated a second time (accidentally arming DMAEN) while the check still expects the not-yet-started reading (MUTATE=A5). REPAIRED 2026-09-15 (lot B): narrowed from the whole idle word (0x9000) to DMAON (bit 14, p.278-defined) alone.
+// MUTATION A6-SECOND-WRITE-ARMS-DMAEN stimulus red: only ONE write is performed, not two, while the check still expects the armed/started reading (MUTATE=A6). REPAIRED 2026-09-15 (lot B): narrowed from the whole readback word (0xD000) to DMAON (bit 14, p.278-defined) alone.
+// MUTATION A7-DSKLEN-4000-FORCES-OFF-DURING-ACTIVE stimulus red: instead of writing 0x4000 to force DMA off mid-transfer, the same armed value is rewritten (re-affirming, not forcing off) while the check still expects the forced-off reading (MUTATE=A7). REPAIRED 2026-09-15 (lot B): narrowed from the whole readback word (0xB000) to DMAON/DISKWRITE (p.278-defined) alone.
+// MUTATION A8-WRITE-DIRECTION-BIT-AND-PREVENTION stimulus red: the double write (0xC00A twice) is reduced to a single write while the check still expects the double-write's positive result (MUTATE=A8). REPAIRED 2026-09-15 (lot B): narrowed the double-write half from the whole readback word (0xF000) to DMAON/DISKWRITE (p.278-defined) alone.
 // MUTATION A9-LENGTH-FIELD-COUNTS-WORDS stimulus red: DSKLEN is programmed with 33 words instead of 32 while the check still expects completion at exactly 32 reads (MUTATE=A9).
 // MUTATION A10-LENGTH-DECREMENTS-STOPS-AT-ZERO stimulus red: DSKLEN is programmed with 16 words instead of 8 while the check still expects completion at exactly 8 reads, well before the fed sector's 544 MFM words are exhausted (MUTATE=A10).
-// A11 -- DSKBUG_LAST_THREE_BITS_LOST_ON_WRITE: declined via record(), not expect(); no mutation record (not graded through expect()).
+// MUTATION A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE none impossible: REPAIRED 2026-09-15 (lot B), no longer declined -- now graded and already RED at baseline (the written byte's last three bits survive intact; see A11's own comment). No stimulus this package can choose changes that outcome -- the write path has no bit-serial shift-register stage for the documented timing race to occur in, for any payload. The comparator that grades it is proven live via the substitute A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE below.
+// MUTATION A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE stimulus red: the substitute's own payload is changed from 0x00 to 0xAA while the check still expects the 0x00 payload's own readback (0x00) (MUTATE=A13).
 // A12 -- DSKBUG_ONE_WORD_SHORT_ON_READ: DECLINED via record(), not expect(); no mutation record (not graded through expect()). Repair 2026-09-15: the previous MUTATION record (none/impossible) and its substitute A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE (stimulus red) are both removed along with the graded check they defended -- see the header's A12 repair note.
 
 #include <cstdint>
@@ -282,6 +300,19 @@ struct Rig {
         settle_edges(2);
     }
 
+    // One qualifying-edge write at `addr`, then the address is withdrawn
+    // (A11's own DSKDAT feed uses this; mirrors the identical helper
+    // already validated in the sibling ch8-disk-register-map-paula-floppy
+    // package's D3).
+    void reg_write(uint8_t addr, uint16_t value) {
+        dut->reg_address_in = addr;
+        dut->data_in = value;
+        settle_edges(1);
+        dut->reg_address_in = ADDR_NONE;
+        dut->data_in = 0;
+        settle_edges(2);
+    }
+
     uint16_t read_reg(uint8_t addr) {
         dut->reg_address_in = addr;
         dut->eval();
@@ -337,6 +368,93 @@ struct Rig {
     }
 };
 
+// Encodes byte `b` into a 16-bit word whose EVEN bit positions (0,2,4,...,14)
+// carry b's bits 0..7 -- the exact positions paula_floppy.v's own `dbyte`
+// extraction reads (dbyte = {fifo_out[14],fifo_out[12],...,fifo_out[0]},
+// paula_floppy.v:~792 area -- a standard MFM data/clock demux that reads only
+// the data positions and never inspects the odd "clock" positions at all).
+// Odd positions are left 0 -- state1/state2/state3 never look at them.
+static uint16_t encode_dbyte(uint8_t b) {
+    uint16_t w = 0;
+    for (int i = 0; i < 8; i++)
+        if (b & (1 << i)) w |= (uint16_t)(1 << (2 * i));
+    return w;
+}
+
+// A11's own apparatus: drives a full disk-write DMA transfer through
+// paula_floppy's cpu_wr_state parser (paula_floppy.v:781-901) -- a
+// DSKSYNC-matching sync word, a 24-word header whose track field matches
+// this fixture's own (dsktrack has no reset term and starts at Verilator's
+// construction-time zero, side=0 from do_reset -> track={dsktrack,~side}=
+// 0x01) and whose 2-word checksum is computed to match, a 4-word
+// payload-checksum preload, and a UNIFORM 512-byte payload of
+// `payload_byte` -- then reads back the byte paula_floppy reports at SD-card
+// sector offset `sdc_addr` via `sdc_byte_out_data`. A uniform payload
+// sidesteps needing to reverse-engineer the odd/even bitplane interleave
+// sdc_byte_out_data performs (paula_floppy.v:221-236, recombining
+// fd_dma_buf_odd/fd_dma_buf_even): interleaving bits from two IDENTICAL
+// source bytes yields that same byte back, whichever bit of which source
+// each output bit happens to be wired from.
+static uint8_t drive_write_transfer_and_read(uint8_t payload_byte, uint16_t sdc_addr) {
+    Rig rig;
+    rig.do_reset();
+    const uint16_t LEN = 543;  // 1 sync + 24 header + 4 payload-csum-preload + 512 payload + 2 finalize
+    uint16_t stim = 0xC000 | LEN;  // WRITE=1 (write direction), DMAEN=1
+    rig.dsklen_write(stim);
+    rig.dsklen_write(stim);
+    rig.wait_until([&]() { return (bool)rig.dut->fdd_led; }, 16);
+
+    // Sync word: must be the LITERAL 16-bit value dsksync holds (reset
+    // default 0x4489) -- cpu_wr_state 0 compares fifo_out against it
+    // directly, not through the dbyte extraction.
+    rig.reg_write(ADDR_DSKDAT, 0x4489);
+
+    // Header (24 words, cpu_wr_cnt 0..23). Only cnt=2's dbyte matters for
+    // the track check (header_word[23:16] must equal track=0x01):
+    // paula_floppy.v's own field-fill index is
+    // wr_sector_header_word[{~cnt[0],i[2:0],~cnt[1]}] <= fifo_out[2*i] (i.e.
+    // <= dbyte bit i). For cnt=2 that index is 16+2*i (i=0..7), so dbyte bit
+    // 0 of word cnt=2 lands on header bit 16 and bits 1-3 land on 18/20/22;
+    // for cnt=0 the index is 17+2*i, landing bits 0-3 on header bits
+    // 17/19/21/23. header_word[23:16] must equal track=0x01 (bit16=1,
+    // bits17-23=0), so header_bytes[2]=0x01 and header_bytes[0]=0x00 (and
+    // every other header byte is unconstrained padding, left 0x00).
+    uint8_t header_bytes[22];
+    for (int c = 0; c < 22; c++) header_bytes[c] = 0x00;
+    header_bytes[2] = 0x01;
+    uint8_t csum_lo = 0, csum_hi = 0;
+    for (int c = 0; c <= 21; c++) {
+        if (c & 1) csum_hi ^= header_bytes[c];
+        else       csum_lo ^= header_bytes[c];
+    }
+    for (int c = 0; c < 22; c++) rig.reg_write(ADDR_DSKDAT, encode_dbyte(header_bytes[c]));
+    rig.reg_write(ADDR_DSKDAT, encode_dbyte(csum_lo));  // cnt=22: verified against the running checksum.
+    rig.reg_write(ADDR_DSKDAT, encode_dbyte(csum_hi));  // cnt=23: verified, then the track check, then -> state 2.
+
+    // Payload-checksum preload (state 2, cnt 0..3): the first two words are
+    // unused by the RTL; the next two seed wr_sector_csum. A zero preload
+    // against a uniform payload XORs to zero over an even byte count (each
+    // value cancels itself out pairwise), so the later "data checksum
+    // failed" gate at fd_dma_buf_wr_state==6 -- which this measurement does
+    // not depend on either way, see the comment at the call site -- also
+    // passes cleanly.
+    for (int i = 0; i < 4; i++) rig.reg_write(ADDR_DSKDAT, encode_dbyte(0x00));
+
+    // Payload (state 3, 512 words): uniform `payload_byte`.
+    uint16_t payload_word = encode_dbyte(payload_byte);
+    for (int i = 0; i < 512; i++) rig.reg_write(ADDR_DSKDAT, payload_word);
+
+    // Finalize (state 4, 2 words): unused by the RTL beyond advancing cnt.
+    for (int i = 0; i < 2; i++) rig.reg_write(ADDR_DSKDAT, encode_dbyte(0x00));
+
+    rig.settle_edges(4);  // let fd_dma_buf_wr_state's own byte-copy loop catch up.
+
+    rig.dut->sdc_byte_addr = sdc_addr;
+    rig.tick();
+    rig.tick();
+    return (uint8_t)rig.dut->sdc_byte_out_data;
+}
+
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     g_mutate = std::getenv("MUTATE");
@@ -349,6 +467,11 @@ int main(int argc, char** argv) {
     // distinct, known DSKLEN writes (0x0000, then 0x4000) must arrive,
     // unmodified and mutually distinguishable, at the DSKBYTR readback bit
     // this package's every other assertion also reads.
+    //
+    // CONVERTED TO note() 2026-09-15 (lot B repair, doctrine shape 1): no
+    // uid, so this is a fixture-liveness check, not conformance evidence.
+    // Its own MUTATE=A0 mutation record is removed with it: a note() has no
+    // graded line to pair one against.
     // ========================================================================
     {
         Rig rig;
@@ -357,24 +480,15 @@ int main(int argc, char** argv) {
         uint16_t v1 = rig.read_reg(ADDR_DSKBYTR);
         checks.note("A0-LIVENESS-WORD1: DSKLEN<=0x0000, DSKBYTR readback=0x" + hex4(v1));
 
-        // MUTATE=A0: drive the second value IDENTICAL to the first. Hoisted
-        // into a local bool, read once, so no string literal precedes the
-        // label inside the expect() call below (the gate reads the FIRST
-        // string literal of a call as the assertion's id; a `mutating("A0")`
-        // called again inline there, ahead of the label, would be misread as
-        // the id instead -- this changes what the gate can read, not what is
-        // measured: same condition, same value, same result).
-        const bool mutA0 = mutating("A0");
-        uint16_t word2 = mutA0 ? 0x0000 : 0x4000;
-        rig.dsklen_write(word2);
+        rig.dsklen_write(0x4000);
         uint16_t v2 = rig.read_reg(ADDR_DSKBYTR);
-        checks.note("A0-LIVENESS-WORD2: DSKLEN<=0x" + hex4(word2) + ", DSKBYTR readback=0x" + hex4(v2));
+        checks.note("A0-LIVENESS-WORD2: DSKLEN<=0x4000, DSKBYTR readback=0x" + hex4(v2));
 
-        checks.expect(v1 == 0x9000 && v2 == (mutA0 ? 0x9000 : 0xB000) && v1 != v2,
-            "A0-LIVENESS-DSKLEN-WRITE-TO-DSKBYTR-READBACK: two distinct, known DSKLEN writes (0x0000 then 0x4000) "
-            "arrive, unmodified and mutually distinguishable, at the DSKBYTR mirror bit (data_out bit 13) this "
-            "package's every other assertion also reads -- the fixture's write-then-read data path is live, not "
-            "stuck");
+        checks.note("A0-LIVENESS-DSKLEN-WRITE-TO-DSKBYTR-READBACK: two distinct, known DSKLEN writes (0x0000 then "
+            "0x4000) arrive, unmodified and mutually distinguishable, at the DSKBYTR mirror bit (data_out bit 13) "
+            "this package's every other assertion also reads -- the fixture's write-then-read data path is live, "
+            "not stuck (v1==0x9000 && v2==0xB000 && v1!=v2: " +
+            std::to_string(v1 == 0x9000 && v2 == 0xB000 && v1 != v2) + ")");
     }
 
     // ========================================================================
@@ -382,22 +496,34 @@ int main(int argc, char** argv) {
     // topic are contained in a write-only register, called DSKLEN"). DSKLEN
     // has no read decode: a written value does not come back on a read at
     // its own address.
+    //
+    // DECLINED 2026-09-15 (lot B repair, doctrine shape 3): same fault as
+    //   ch8-disk-register-map-paula-floppy/L2 -- p.263-264 does not leave a
+    //   read of a write-only register undefined, it forbids the operation
+    //   outright ("If a register is marked as a write-only register, do not
+    //   attempt to read from it, as this may trash the register and crash
+    //   the system") and gives no value for what such a read returns.
+    //   Grading "reads 0x0000" performs the very operation the manual
+    //   prohibits and checks it against a value the manual never gives. The
+    //   measurement is kept as a note(); the claim itself is declined, not
+    //   graded. Nothing in this suite grades this claim -- L2 in the sibling
+    //   package carries the identical fault and is declined identically.
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
         rig.dsklen_write(0x1234);
-        // MUTATE=A1: read at DSKBYTR (a real, nonzero-idle decode) instead
-        // of DSKLEN, while still expecting 0x0000.
-        uint8_t addr = mutating("A1") ? ADDR_DSKBYTR : ADDR_DSKLEN;
-        uint16_t v = rig.read_reg(addr);
-        checks.note(std::string("A1-STIMULUS: after DSKLEN<=0x1234, read at ") +
-                    (mutating("A1") ? "DSKBYTR (mutated)" : "DSKLEN's own address") +
-                    " gives 0x" + hex4(v));
-        checks.expect(v == 0x0000,
+        uint16_t v = rig.read_reg(ADDR_DSKLEN);
+        checks.note("A1-STIMULUS: after DSKLEN<=0x1234, read at DSKLEN's own address gives 0x" + hex4(v) +
+                    " (measured for interest only -- see the decline below)");
+        checks.record(
             "A1-DSKLEN-WRITE-ONLY (p.246, opus:8-dma.c12, quote 'All of the control bits relating to this topic "
-            "are contained in a write-only register, called DSKLEN:'): after writing 0x1234 to DSKLEN, a read at "
-            "DSKLEN's own address returns 0x0000 -- no read decode exists for it, matching a write-only register");
+            "are contained in a write-only register, called DSKLEN:'): declined, not graded. p.263-264 forbids "
+            "reading a write-only register outright ('do not attempt to read from it, as this may trash the "
+            "register and crash the system') and gives no value for what such a read returns -- grading 'reads "
+            "0x0000' checks a forbidden operation against a value the page never gives. No boundary in this suite "
+            "grades this claim (ch8-disk-register-map-paula-floppy/L2 carries the same fault and is declined "
+            "identically).");
     }
 
     // ========================================================================
@@ -406,23 +532,32 @@ int main(int argc, char** argv) {
     // (direction) bit is reflected on a SINGLE write, immediately -- a
     // behaviourally distinct control from DMAEN, which (per A5/A6) needs
     // two.
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form required the whole
+    //   readback word (0xB000) -- p.278 gives DSKBYTR no reset/idle word, and
+    //   bits 15/12 of that word are hardwired constants (paula_floppy.v:699),
+    //   not values p.278 documents. Narrowed to DISKWRITE (bit 13,
+    //   p.278-defined mirror of DSKLEN's WRITE bit) alone.
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
         // MUTATE=A2: write 0x0000 (WRITE bit clear) instead of 0x4000 (WRITE
         // bit set), single write, while still expecting the WRITE-set
-        // readback (0xB000).
+        // readback (DISKWRITE=1).
         uint16_t stim = mutating("A2") ? 0x0000 : 0x4000;
         rig.dsklen_write(stim);
         uint16_t v = rig.read_reg(ADDR_DSKBYTR);
-        checks.note("A2-STIMULUS: single DSKLEN<=0x" + hex4(stim) + ", DSKBYTR readback=0x" + hex4(v));
-        checks.expect(v == 0xB000,
+        bool diskwrite_set = (v & 0x2000) != 0;
+        checks.note("A2-STIMULUS: single DSKLEN<=0x" + hex4(stim) + ", DSKBYTR readback=0x" + hex4(v) +
+                    " (bit13/DISKWRITE=" + std::to_string(diskwrite_set) + ")");
+        checks.expect(diskwrite_set,
             "A2-DSKLEN-TWO-CONTROL-BITS (p.279, sol:8-appa-dsklen.c6, quote 'It also contains two control\\n "
             "                bits, a DMA enable bit, and a DMA direction\\n                 (read/write) bit.'): "
-            "a SINGLE write with the WRITE (direction) bit set takes effect immediately (DSKBYTR readback 0xB000) "
-            "-- unlike DMAEN (A5/A6), which needs two -- confirming WRITE and DMAEN are two separately-behaving "
-            "control bits, not one shared mechanism");
+            "a SINGLE write with the WRITE (direction) bit set takes effect immediately -- DISKWRITE (DSKBYTR bit "
+            "13, p.278-defined) reads 1 -- unlike DMAEN (A5/A6), which needs two -- confirming WRITE and DMAEN are "
+            "two separately-behaving control bits, not one shared mechanism; narrowed from the whole readback word "
+            "(0xB000) to bit 13 alone, since p.278 gives DSKBYTR no required reset/idle value");
     }
 
     // ========================================================================
@@ -432,6 +567,14 @@ int main(int argc, char** argv) {
     // DMACON-derived enable is the `enable` port: a fully double-written,
     // armed DSKLEN does not start a transfer while enable=0; raising enable
     // alone (no further DSKLEN write) then starts it.
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form required the whole
+    //   readback word before (0x9000) and after (0xD000) -- p.278 gives
+    //   DSKBYTR no reset/idle word, and bits 15/12 are hardwired constants
+    //   (paula_floppy.v:699), not documented ones. Narrowed to DMAON (bit
+    //   14, p.278-defined mirror of dsklen's DMAEN, ANDed with `enable`).
+    //   fdd_led is left as-is -- a genuine RTL output port, not a masked
+    //   DSKBYTR bit.
     // ========================================================================
     {
         Rig rig;
@@ -441,8 +584,9 @@ int main(int argc, char** argv) {
         rig.dsklen_write(0x800A);  // second write: dmaen arms, but dma_active still gated by enable=0
         uint16_t v_before = rig.read_reg(ADDR_DSKBYTR);
         bool led_before = rig.dut->fdd_led;
+        bool dmaon_before = (v_before & 0x4000) != 0;
         checks.note("A3-STIMULUS: DSKLEN armed (0x800A x2) with enable=0: DSKBYTR=0x" + hex4(v_before) +
-                    ", fdd_led=" + std::to_string(led_before));
+                    " (bit14/DMAON=" + std::to_string(dmaon_before) + "), fdd_led=" + std::to_string(led_before));
 
         // MUTATE=A3: hold enable=1 throughout (instead of 0 then 1), so the
         // "not yet started" reading above would already be wrong.
@@ -452,37 +596,75 @@ int main(int argc, char** argv) {
         rig.settle_edges(4);
         uint16_t v_after = rig.read_reg(ADDR_DSKBYTR);
         bool led_after = rig.dut->fdd_led;
+        bool dmaon_after = (v_after & 0x4000) != 0;
         checks.note("A3-STIMULUS: enable raised to 1 (no further DSKLEN write): DSKBYTR=0x" + hex4(v_after) +
-                    ", fdd_led=" + std::to_string(led_after));
+                    " (bit14/DMAON=" + std::to_string(dmaon_after) + "), fdd_led=" + std::to_string(led_after));
 
-        checks.expect(v_before == 0x9000 && !led_before && v_after == 0xD000 && led_after,
+        checks.expect(!dmaon_before && !led_before && dmaon_after && led_after,
             "A3-ENABLE-GATES-DMA-START (p.246, opus:8-dma.c2, quote 'The disk DMA is controlled by four items:'; "
             "p.247, opus:8-dma.c20/sol:8-dsklen.c9, quote step 1 'Enable disk DMA in the  DMACON  register'): a "
             "fully double-written, armed DSKLEN does not start a transfer while this fixture's DMACON-derived "
-            "`enable` port is 0 (DSKBYTR stays 0x9000, fdd_led stays 0); raising enable alone, with no further "
-            "DSKLEN write, then starts it (DSKBYTR becomes 0xD000, fdd_led becomes 1) -- the enable item is a real, "
-            "independent precondition, not a formality");
+            "`enable` port is 0 (DMAON, bit 14, stays 0; fdd_led stays 0); raising enable alone, with no further "
+            "DSKLEN write, then starts it (DMAON sets, fdd_led becomes 1) -- the enable item is a real, "
+            "independent precondition, not a formality; narrowed from the whole readback word (0x9000/0xD000) to "
+            "DMAON (bit 14, p.278-defined) alone, since p.278 gives DSKBYTR no required reset/idle value");
     }
 
     // ========================================================================
     // A4 -- opus:8-dma.c21 / sol:8-dsklen.c10 (p.247, step 2, "Set DSKLEN to
     // $4000, thereby forcing the DMA for the disk to be turned off.").
+    //
+    // REPAIRED 2026-09-15 (lot B), two defects fixed together:
+    //   (1) ORACLE: the original form required the whole readback word
+    //       (0xB000) -- p.278 gives DSKBYTR no reset/idle word, and bits
+    //       15/12 are hardwired constants (paula_floppy.v:699), not
+    //       documented ones. Narrowed to DMAON (bit 14) and DISKWRITE (bit
+    //       13, the bit $4000's own payload sets), both p.278-defined.
+    //   (2) SCENARIO: the original trial wrote $4000 from an already-IDLE
+    //       state, where `dmaen` was already 0. Writing $4000 sets
+    //       dsklen[15]<=data_in[15]=0 and dmaen<=data_in[15]&dsklen[15]_old
+    //       = 0&0 = 0 -- a value dmaen already held (paula_floppy.v:735-744).
+    //       The write never observably forced anything OFF; the trial only
+    //       ever graded a WRITE-bit readback (DISKWRITE), which A2 already
+    //       grades under its own citation. Repaired to arm and start a real
+    //       transfer first (as A6/A7 do), confirm it is genuinely active,
+    //       THEN write $4000 and confirm DMA actually turns off -- reaching
+    //       the page's own "forcing... off" mechanism, not a same-state
+    //       no-op. (A7 grades the same active-to-off transition under its
+    //       own, different citation -- p.247 step 5, not step 2; both are
+    //       real, independent printings of the same underlying fact.)
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
+        rig.dsklen_write(0x800A);
+        rig.dsklen_write(0x800A);  // second write arms and starts DMA
+        rig.settle_edges(4);
+        bool led_active = rig.dut->fdd_led;
+        uint16_t v_active = rig.read_reg(ADDR_DSKBYTR);
+        bool dmaon_active = (v_active & 0x4000) != 0;
+
         // MUTATE=A4: write 0x0000 instead of 0x4000, while still expecting
-        // the WRITE-bit-set readback (0xB000).
+        // the forced-off reading.
         uint16_t stim = mutating("A4") ? 0x0000 : 0x4000;
         rig.dsklen_write(stim);
+        rig.settle_edges(4);
         uint16_t v = rig.read_reg(ADDR_DSKBYTR);
         bool led = rig.dut->fdd_led;
-        checks.note("A4-STIMULUS: from idle, DSKLEN<=0x" + hex4(stim) + ": DSKBYTR=0x" + hex4(v) +
-                    ", fdd_led=" + std::to_string(led));
-        checks.expect(v == 0xB000 && !led,
+        bool dmaon = (v & 0x4000) != 0;
+        bool diskwrite = (v & 0x2000) != 0;
+        checks.note("A4-STIMULUS: armed and active (fdd_led=" + std::to_string(led_active) + ", DMAON=" +
+                    std::to_string(dmaon_active) + "), then DSKLEN<=0x" + hex4(stim) + ": DMAON=" +
+                    std::to_string(dmaon) + " DISKWRITE=" + std::to_string(diskwrite) + " fdd_led=" +
+                    std::to_string(led));
+        checks.expect(led_active && dmaon_active && diskwrite && !dmaon && !led,
             "A4-DSKLEN-4000-FORCES-OFF-FROM-IDLE (p.247, opus:8-dma.c21/sol:8-dsklen.c10, quote step 2 'Set DSKLEN "
-            "to $4000, thereby forcing the DMA for the disk to be\\n      turned off.'): writing $4000 to DSKLEN "
-            "from idle leaves DMA off (DSKBYTR=0xB000, fdd_led=0)");
+            "to $4000, thereby forcing the DMA for the disk to be\\n      turned off.'): starting from a genuinely "
+            "ACTIVE transfer (fdd_led and DMAON both set beforehand), writing $4000 forces it off -- DMAON (bit "
+            "14) drops, fdd_led drops, DISKWRITE (bit 13, the bit $4000 itself sets) reads 1 -- narrowed to DMAON "
+            "and DISKWRITE, both p.278-defined, rather than the whole readback word; and repaired to start from an "
+            "ACTIVE transfer rather than idle, since from idle `dmaen` is already 0 and the write forces nothing "
+            "observable off");
     }
 
     // ========================================================================
@@ -490,6 +672,12 @@ int main(int argc, char** argv) {
     // special sequence..."), opus:8-dma.c22/sol:8-dsklen.c11 (p.247, step 3,
     // "Put the value you want into the DSKLEN register."). A single write
     // loads LENGTH/WRITE but does not start DMA.
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form required the whole
+    //   idle readback word (0x9000) -- p.278 gives DSKBYTR no reset/idle
+    //   word, and bits 15/12 are hardwired constants (paula_floppy.v:699).
+    //   Narrowed to DMAON (bit 14, p.278-defined): a single write of 0x800A
+    //   (WRITE=0, DMAEN's bit set but not yet armed) must leave DMAON clear.
     // ========================================================================
     {
         Rig rig;
@@ -500,20 +688,29 @@ int main(int argc, char** argv) {
         if (mutating("A5")) rig.dsklen_write(0x800A);
         uint16_t v = rig.read_reg(ADDR_DSKBYTR);
         bool led = rig.dut->fdd_led;
+        bool dmaon = (v & 0x4000) != 0;
         checks.note("A5-STIMULUS: DSKLEN<=0x800A written " + std::to_string(mutating("A5") ? 2 : 1) +
-                    " time(s): DSKBYTR=0x" + hex4(v) + ", fdd_led=" + std::to_string(led));
-        checks.expect(v == 0x9000 && !led,
+                    " time(s): DSKBYTR=0x" + hex4(v) + " (bit14/DMAON=" + std::to_string(dmaon) + "), fdd_led=" +
+                    std::to_string(led));
+        checks.expect(!dmaon && !led,
             "A5-FIRST-WRITE-LOADS-DOES-NOT-START (p.247, opus:8-dma.c17/sol:8-dsklen.c6, quote 'The hardware "
             "requires a special sequence in order to start DMA to the\\ndisk.'; opus:8-dma.c22/sol:8-dsklen.c11, "
-            "quote step 3 'Put the value you want into the DSKLEN register.'): a single write of 0x800A loads the "
-            "value (DSKBYTR mirrors it) but does not start DMA (DSKBYTR=0x9000, fdd_led=0) -- a single write is not "
-            "the special sequence the page requires");
+            "quote step 3 'Put the value you want into the DSKLEN register.'): a single write of 0x800A does not "
+            "start DMA (DMAON, bit 14, stays clear; fdd_led=0) -- a single write is not the special sequence the "
+            "page requires; narrowed from the whole idle word (0x9000) to DMAON alone, since p.278 gives DSKBYTR "
+            "no required reset/idle value");
     }
 
     // ========================================================================
     // A6 -- twelve uids (see SPECIFICATION.md A6): DSKLEN bit 15 (DMAEN) is
     // a SECONDARY enable, arming DMA only on the second of two consecutive
     // writes with the bit set.
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form required the whole
+    //   readback word (0xD000) -- p.278 gives DSKBYTR no reset/idle word, and
+    //   bits 15/12 are hardwired constants (paula_floppy.v:699). Narrowed to
+    //   DMAON (bit 14, p.278-defined mirror of DMAEN). fdd_led and sdc_rd
+    //   are left as-is -- genuine RTL output ports, not masked DSKBYTR bits.
     // ========================================================================
     {
         Rig rig;
@@ -526,17 +723,19 @@ int main(int argc, char** argv) {
         uint16_t v = rig.read_reg(ADDR_DSKBYTR);
         bool led = rig.dut->fdd_led;
         bool sdc_rd0 = (rig.dut->sdc_rd & 0x1) != 0;
+        bool dmaon = (v & 0x4000) != 0;
         checks.note("A6-STIMULUS: DSKLEN<=0x800A written " + std::to_string(mutating("A6") ? 1 : 2) +
-                    " time(s): DSKBYTR=0x" + hex4(v) + ", fdd_led=" + std::to_string(led) +
-                    ", sdc_rd[0]=" + std::to_string(sdc_rd0));
-        checks.expect(v == 0xD000 && led && sdc_rd0,
+                    " time(s): DSKBYTR=0x" + hex4(v) + " (bit14/DMAON=" + std::to_string(dmaon) + "), fdd_led=" +
+                    std::to_string(led) + ", sdc_rd[0]=" + std::to_string(sdc_rd0));
+        checks.expect(dmaon && led && sdc_rd0,
             "A6-SECOND-WRITE-ARMS-DMAEN (p.246, opus:8-dma.c6/sol:8-dskdma.c5 'DMA enable'; opus:8-dma.c14/"
             "sol:8-dsklen.c3/opus:8-appA-dsklen.c8/sol:8-appa-dsklen.c9 'DMAEN Secondary disk DMA enable'; "
             "opus:8-appA-dsklen.c6/sol:8-appa-dsklen.c7 Appendix A DSKLEN paragraph; p.247, opus:8-dma.c19/"
             "sol:8-dsklen.c8 'must be turned on twice'; opus:8-dma.c23/sol:8-dsklen.c12 step 4 'Write this value "
             "again into the DSKLEN register. This actually\\n      starts the DMA.'): a second write repeating "
-            "0x800A arms DMAEN and starts disk read DMA (DSKBYTR=0xD000, fdd_led=1, sdc_rd requested for the "
-            "selected drive)");
+            "0x800A arms DMAEN and starts disk read DMA (DMAON, bit 14, sets; fdd_led=1, sdc_rd requested for the "
+            "selected drive) -- narrowed from the whole readback word (0xD000) to DMAON alone, since p.278 gives "
+            "DSKBYTR no required reset/idle value");
     }
 
     // ========================================================================
@@ -544,6 +743,12 @@ int main(int argc, char** argv) {
     // is complete, set the DSKLEN register back to $4000, to prevent "
     // accidental writes to the disk."). $4000 forces DMA off from an ACTIVE
     // transfer too, not only from idle (A4).
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form required the whole
+    //   readback word after (0xB000) -- p.278 gives DSKBYTR no reset/idle
+    //   word, and bits 15/12 are hardwired constants (paula_floppy.v:699).
+    //   Narrowed to DMAON (bit 14) clearing and DISKWRITE (bit 13, the bit
+    //   $4000 itself sets), both p.278-defined.
     // ========================================================================
     {
         Rig rig;
@@ -552,6 +757,7 @@ int main(int argc, char** argv) {
         rig.dsklen_write(0x800A);
         rig.settle_edges(4);
         bool led_active = rig.dut->fdd_led;  // sanity: transfer is running before we force it off
+        bool dmaon_active = (rig.read_reg(ADDR_DSKBYTR) & 0x4000) != 0;
         // MUTATE=A7: instead of forcing off with 0x4000, re-affirm the armed
         // value (stays active) while still expecting the forced-off reading.
         if (mutating("A7")) rig.dsklen_write(0x800A);
@@ -559,14 +765,19 @@ int main(int argc, char** argv) {
         rig.settle_edges(4);
         uint16_t v = rig.read_reg(ADDR_DSKBYTR);
         bool led = rig.dut->fdd_led;
-        checks.note("A7-STIMULUS: was active (fdd_led=" + std::to_string(led_active) + "), then DSKLEN<=0x" +
-                    hex4(mutating("A7") ? 0x800A : 0x4000) + ": DSKBYTR=0x" + hex4(v) +
-                    ", fdd_led=" + std::to_string(led));
-        checks.expect(led_active && v == 0xB000 && !led,
+        bool dmaon = (v & 0x4000) != 0;
+        bool diskwrite = (v & 0x2000) != 0;
+        checks.note("A7-STIMULUS: was active (fdd_led=" + std::to_string(led_active) + ", DMAON=" +
+                    std::to_string(dmaon_active) + "), then DSKLEN<=0x" + hex4(mutating("A7") ? 0x800A : 0x4000) +
+                    ": DMAON=" + std::to_string(dmaon) + " DISKWRITE=" + std::to_string(diskwrite) + " fdd_led=" +
+                    std::to_string(led));
+        checks.expect(led_active && dmaon_active && !dmaon && diskwrite && !led,
             "A7-DSKLEN-4000-FORCES-OFF-DURING-ACTIVE (p.247, opus:8-dma.c24/sol:8-dsklen.c13, quote step 5 'After "
             "the DMA is complete, set the DSKLEN register back to\\n      $4000, to prevent accidental writes to "
-            "the disk.'): writing $4000 while a transfer is ACTIVE also forces it off (DSKBYTR returns to 0xB000, "
-            "fdd_led drops to 0), the same as it does from idle (A4)");
+            "the disk.'): writing $4000 while a transfer is ACTIVE also forces it off (DMAON, bit 14, drops; "
+            "DISKWRITE, bit 13, reads 1; fdd_led drops to 0), the same as it does from idle (A4) -- narrowed from "
+            "the whole readback word (0xB000) to DMAON/DISKWRITE, since p.278 gives DSKBYTR no required reset/idle "
+            "value");
     }
 
     // ========================================================================
@@ -574,6 +785,13 @@ int main(int argc, char** argv) {
     // selects RAM-to-disk direction, and the double-write sequence is what
     // prevents a single stray write (even with WRITE and DMAEN both set)
     // from starting an accidental disk write.
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form required the whole
+    //   readback word (0xF000) for the double-write half -- p.278 gives
+    //   DSKBYTR no reset/idle word, and bits 15/12 are hardwired constants
+    //   (paula_floppy.v:699). Narrowed to DMAON (bit 14) and DISKWRITE (bit
+    //   13), both p.278-defined. dmal/dmas/sdc_wr/fdd_led are left as-is --
+    //   genuine RTL output ports, not masked DSKBYTR bits.
     // ========================================================================
     {
         Rig rig;
@@ -586,9 +804,12 @@ int main(int argc, char** argv) {
         uint16_t v_double = rig.read_reg(ADDR_DSKBYTR);
         bool dmal_double = rig.dut->dmal;
         bool dmas_double = rig.dut->dmas;
+        bool dmaon_double = (v_double & 0x4000) != 0;
+        bool diskwrite_double = (v_double & 0x2000) != 0;
         checks.note("A8-STIMULUS (double write, " + std::to_string(mutating("A8") ? 1 : 2) + " write(s) applied): "
-                    "0xC00A: DSKBYTR=0x" + hex4(v_double) + ", dmal=" + std::to_string(dmal_double) +
-                    ", dmas=" + std::to_string(dmas_double));
+                    "0xC00A: DSKBYTR=0x" + hex4(v_double) + " (bit14/DMAON=" + std::to_string(dmaon_double) +
+                    ", bit13/DISKWRITE=" + std::to_string(diskwrite_double) + "), dmal=" +
+                    std::to_string(dmal_double) + ", dmas=" + std::to_string(dmas_double));
 
         Rig rig2;
         rig2.do_reset();
@@ -600,7 +821,7 @@ int main(int argc, char** argv) {
         checks.note("A8-STIMULUS (single write): 0xC00A once: dmas=" + std::to_string(dmas_single) +
                     ", sdc_wr=" + std::to_string(sdc_wr_single) + ", fdd_led=" + std::to_string(led_single));
 
-        checks.expect(v_double == 0xF000 && dmal_double && dmas_double &&
+        checks.expect(dmaon_double && diskwrite_double && dmal_double && dmas_double &&
                       !dmas_single && !sdc_wr_single && !led_single,
             "A8-WRITE-DIRECTION-BIT-AND-PREVENTION (p.246, opus:8-dma.c5/sol:8-dskdma.c4 'Direction of data "
             "transfer (read/write)'; opus:8-dma.c15/sol:8-dsklen.c4 'WRITE   Disk write (RAM -> disk if 1)'; "
@@ -608,9 +829,10 @@ int main(int argc, char** argv) {
             "opus:8-appA-dsklen.c7/sol:8-appa-dsklen.c8 Appendix A DSKLEN paragraph; opus:8-appA-dsklen.c9/"
             "sol:8-appa-dsklen.c10 'WRITE Disk write (RAM to disk) if 1'; p.247, opus:8-dma.c18/sol:8-dsklen.c7 "
             "'This sequence prevents accidental writes to the disk.'): double-writing 0xC00A (WRITE+DMAEN) arms a "
-            "RAM-to-disk transfer (DSKBYTR=0xF000, dmal=1, dmas=1); a SINGLE write of the same value starts "
-            "nothing (dmas=0, sdc_wr=0, fdd_led=0) -- the two-write sequence is what prevents that one stray write "
-            "from becoming an accidental disk write");
+            "RAM-to-disk transfer (DMAON and DISKWRITE both set; dmal=1, dmas=1); a SINGLE write of the same value "
+            "starts nothing (dmas=0, sdc_wr=0, fdd_led=0) -- the two-write sequence is what prevents that one "
+            "stray write from becoming an accidental disk write; narrowed from the whole readback word (0xF000) "
+            "to DMAON/DISKWRITE, since p.278 gives DSKBYTR no required reset/idle value");
     }
 
     // ========================================================================
@@ -701,27 +923,82 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // A11 -- opus:8-dma.c32 / sol:8-dskbug.c1 (p.247, "There is a hardware "
-    // bug that causes the last three bits of data sent to the disk to be "
-    // lost."). DECLINED: see the header comment's DECLINED section. Reaching
-    // a genuine last-written byte on sdc_byte_out_data needs a full,
-    // checksum-gated write transfer through paula_floppy's cpu_wr_state
-    // pipeline (:779-903) that no other assertion in this package requires
-    // and this package's time budget does not cover.
+    // A11 -- opus:8-dma.c32 / sol:8-dskbug.c1 (p.247, "There is a hardware
+    // bug that causes the last three bits of data sent to the disk to be
+    // lost.").
+    //
+    // REPAIRED 2026-09-15 (lot B): an independent validation found the prior
+    //   decline's reason ("out of proportion to this package's remaining
+    //   scope") is not a permitted decline shape -- cost is not
+    //   unobservability, and the claims file classifies this proposition as
+    //   observable at `sdc_byte_out_data`. Attempted here instead:
+    //   drive_write_transfer_and_read() (defined above, right after the Rig
+    //   struct) constructs the full sync+header+payload stream the write
+    //   path needs (paula_floppy.v:781-901) and reads back the byte
+    //   paula_floppy reports at the LAST offset of the 512-byte SD sector
+    //   (address 511) via `sdc_byte_out_data`. A uniform 0xFF payload is
+    //   used throughout so that offset's intended value is known and
+    //   unambiguous without needing to reverse-engineer the odd/even
+    //   bitplane interleave `sdc_byte_out_data` performs (see the helper's
+    //   own comment).
+    //
+    //   MEASURED RED: the RTL's write path copies every payload byte
+    //   through whole -- `fd_dma_buffer_data_wr <= dbyte` (paula_floppy.v:
+    //   876, state 3) is a full 8-bit assignment, and both the copy into
+    //   fd_dma_buf_even/odd (:378-384) and the recombination into
+    //   sdc_byte_out_data (:221-236) are likewise bit-for-bit, with no
+    //   conditional truncation of any bit range anywhere in either stage.
+    //   Real Paula's documented bug is a timing race at the tail of a
+    //   bit-serial disk-write shift sequence; this reimplementation has no
+    //   bit-serial shift-register stage in its write path at all -- it is
+    //   fully byte-buffered from the FIFO onward -- so there is no mechanism
+    //   present for a byte's low bits to be dropped in transit, and the
+    //   measurement below confirms it: the low three bits survive
+    //   unchanged, same as the rest of the byte.
     // ========================================================================
-    checks.record(
-        "A11-DECLINED (p.247, opus:8-dma.c32/sol:8-dskbug.c1, quote 'There is a hardware bug that causes the last "
-        "three bits of data sent to\\nthe disk to be lost.'): not turned into an assertion. Reaching the LAST byte "
-        "of a genuine disk-write transfer on `sdc_byte_out_data` requires driving paula_floppy's cpu_wr_state "
-        "pipeline (paula_floppy.v:779-903) through a correctly MFM-formatted sync+header+payload stream fed via "
-        "DSKDAT writes, matching the module's own (not otherwise observable) `track` value and passing two "
-        "checksum gates (header checksum at cpu_wr_cnt==22/23, payload checksum at cpu_wr_state==4) before the "
-        "buffer-write trigger this package's other eleven assertions never need is reached. Out of proportion to "
-        "this package's remaining scope; not attempted. NanoMig's write path is architecturally byte-oriented "
-        "(sdc_byte_out_data, an SD-card sector buffer, not a flux-level medium), which is the same underlying "
-        "fact the finding candidates document (C1/C2) already names as governing every media-format claim in "
-        "this chapter -- consistent with, though not itself proof of, the expectation that this claim would grade "
-        "red like A12 if it were built.");
+    {
+        uint8_t observed_ff = drive_write_transfer_and_read(0xFF, 511);
+        bool upper5_intact = (observed_ff & 0xF8) == 0xF8;
+        bool low3_lost = (observed_ff & 0x07) != 0x07;
+        checks.note("A11-MEASURED: full write transfer, uniform payload 0xFF, sdc_byte_out_data at offset 511 "
+                    "(the last byte of the sector) = 0x" + hex4(observed_ff) + " (upper 5 bits intact=" +
+                    std::to_string(upper5_intact) + ", low 3 bits lost=" + std::to_string(low3_lost) + ")");
+        checks.expect(low3_lost,
+            "A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE (p.247, opus:8-dma.c32/sol:8-dskbug.c1, quote 'There is a "
+            "hardware bug that causes the last three bits of data sent to\\nthe disk to be lost.'): a byte written "
+            "as the LAST word of a disk-write DMA transfer should have its last three bits lost by the time it "
+            "reaches the disk -- writing 0xFF and reading back the corresponding SD-sector byte "
+            "(sdc_byte_out_data, offset 511) should NOT show 0xFF; it does (upper 5 bits and low 3 bits both "
+            "survive intact) -- NanoMig's write path is fully byte-buffered from the CPU's DSKDAT write through "
+            "to sdc_byte_out_data, with no bit-serial shift-register stage anywhere for the documented timing "
+            "race to occur in, so this claim does not hold here");
+    }
+
+    // ========================================================================
+    // A13 -- DSKDAT-WRITE-BYTE-COMPARATOR-LIVE (substitute, no manual
+    // citation, added with A11's 2026-09-15 repair). A11 is expected RED
+    // (see above) -- the byte survives fully intact, so no ordinary
+    // stimulus mutation can make "the byte does not survive" pass; A11
+    // carries a `none impossible` mutation record instead (see the top of
+    // file). This substitute applies the SAME apparatus
+    // (drive_write_transfer_and_read + sdc_byte_out_data readback) to a
+    // DIFFERENT known payload (0x00 instead of 0xFF) and confirms the
+    // reading tracks it -- proving the apparatus reports real,
+    // content-dependent data, not a stuck or vacuous constant, and is not
+    // the reason A11 reads red.
+    // ========================================================================
+    {
+        // MUTATE=A13: feed a different, nonzero payload while the check
+        // still expects the 0x00 payload's own readback (0x00).
+        uint8_t payload = mutating("A13") ? 0xAA : 0x00;
+        uint8_t observed = drive_write_transfer_and_read(payload, 511);
+        checks.note("A13-STIMULUS: full write transfer, uniform payload 0x" + hex4(payload) +
+                    ", sdc_byte_out_data at offset 511 = 0x" + hex4(observed));
+        checks.expect(observed == 0x00,
+            "A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE: the same write-transfer-and-readback apparatus A11 uses, fed "
+            "a DIFFERENT known payload (0x00 instead of 0xFF), correctly reports that different content at "
+            "sdc_byte_out_data -- the apparatus is live and content-dependent, not the reason A11 reads red");
+    }
 
     // ========================================================================
     // A12 -- opus:8-dma.c33 / sol:8-dskbug.c2 (p.247, "Also, the last word "

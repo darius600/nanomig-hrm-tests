@@ -237,3 +237,20 @@ port names, and whether its internal rotation counter needs to be forced
 rather than counted down in real simulated time — is explicitly left as
 step-2 material throughout this document, to be resolved only after this
 file is committed.
+
+## Repair addendum (Lot F, 2026-09-15)
+
+PROP-NOT-OWN-BIT/CONTROL (`opus:8-dskint.c9`, the negative half — "not
+through an INTREQ bit of its own") was underdetermined: driving Timer A
+(a different, non-FLG source) to the same bit13/level6 outcome shows bit
+13 is shared, but does not rule out an ADDITIONAL, coexisting
+index-specific INTREQ bit — both could exist and the check would still
+pass, since it never looked at what a real index pulse does to the rest
+of INTREQR. Repaired by adding a second, always-run, falsifiable
+condition alongside the Timer A one: a real index pulse must change
+EXACTLY bit 13 of INTREQR (full-word before/after comparison) and no
+other bit — a hypothesis where index also drives some other bit would
+break this condition, which the Timer A half alone could not do. Both
+conditions must hold. Re-measured: still 4 passed, 0 failed;
+`MUTATE=opus:8-dskint.c9` re-run and confirmed still exactly 3 passed / 1
+failed, only this label affected.

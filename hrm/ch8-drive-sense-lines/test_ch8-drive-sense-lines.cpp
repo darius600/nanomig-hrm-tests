@@ -347,10 +347,11 @@ int main(int argc, char** argv) {
                     ", " + std::string(mut ? "still deselected (mutated)" : "selected") +
                     " -> _ready asserted=" + std::to_string(ready_selected));
         checks.expect(!ready_deselected && ready_selected,
-            "READY-SEL-CONTROL (control case, no manual citation, same _ready port/comparator opus:8-cia.c7 "
-            "below reads): deselecting every drive deasserts _ready and selecting a configured drive asserts it "
-            "-- paula_floppy.v:688-694 -- proving _ready is live and responds to selection, so opus:8-cia.c7's "
-            "decline (below) is about the page's own silence on the motor-off case, not a dead or stuck port");
+            "READY-SEL-CONTROL (control case, no manual citation, same _ready port/comparator the declined "
+            "motor-off claim below reads): deselecting every drive deasserts _ready and selecting a configured "
+            "drive asserts it -- paula_floppy.v:688-694 -- proving _ready is live and responds to selection, so "
+            "that claim's decline (below) is about the page's own silence on the motor-off case, not a dead or "
+            "stuck port");
     }
 
     // ========================================================================

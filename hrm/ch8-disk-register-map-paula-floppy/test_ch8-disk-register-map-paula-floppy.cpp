@@ -27,6 +27,56 @@
 //   E4, whose sole purpose was proving E3's comparator wasn't vacuously
 //   red, is removed along with E3's grading (E1 already independently
 //   covers busrd's live/undecoded discrimination).
+//
+// REPAIR NOTE (lot B, 2026-09-15): a second, independent repair pass over
+//   this package's own remaining greens. L0 (no uid) is CONVERTED to
+//   note(): a fixture-liveness check, not conformance evidence. L2, S2, D2
+//   (the three WRITE-ONLY propositions) and D3 are DECLINED (record(), not
+//   expect()) -- see each one's own comment for why: L2/S2/D2 grade a read
+//   the manual (p.263-264) forbids outright and never gives a value for; D3
+//   grades blckint/length-completion, which a controller that discarded
+//   every written word would pass identically. E2 is likewise DECLINED,
+//   for the SAME reason E3 already was: it grades the mechanism p.287's
+//   `ER` legend explicitly says is NOT what triggers an early-read
+//   transfer. B1, B2 and B3 are REPAIRED, not declined: each kept its
+//   observation but narrowed its oracle off DSKBYTR's hardwired bits
+//   (15, 12) onto DISKWRITE (bit 13, p.278-defined) or a before/after
+//   equality, since p.278 gives DSKBYTR no reset/idle word. S1 and S3 are
+//   REPAIRED to stop leaning on the RTL's reset default (0x4489) coinciding
+//   with the manual's own "usual" sync word as their only positive
+//   evidence -- S1 gained a genuine positive-write trial, S3's matching
+//   trial now explicitly writes 0x4489 instead of relying on reset.
+//
+// REPAIR NOTE (lot G, 2026-09-16): a defect in the 2026-09-15 repair itself.
+//   That repair's find_ff_marker_pop_index() SEARCHED the drained DSKDATR
+//   stream for a payload word of exactly 0xFFFF -- but 0xFFFF is what THIS
+//   RTL's own non-conformant, context-free MFM encoder happens to produce
+//   for a uniform 0xFF sector (paula_floppy.v:467-477); p.250 makes 0xFF
+//   page-encode to 0x5555. Against a conforming encoder the search would
+//   return -1, `if (idx > 0)` would never run, `bound_ok` would stay false,
+//   and `checks.expect(bound_ok && data_field == known_byte, ...)` would
+//   FAIL anyway -- `bound_ok` sat as a CONJUNCT of the graded condition, not
+//   a precondition, so a conforming encoder would make this assertion
+//   report a DATA-field defect that would not be there. Repaired two ways,
+//   together:
+//   (1) the search is REMOVED. Every B4/B5 trial feeds a uniform 0xFF
+//   sector, so any payload word is as good a sample as any other (matching
+//   ch8-mfm-cell-encoding's own Lot G repair) -- the locator is now the
+//   fixed, RTL-structural FIRST_PAYLOAD_POP_INDEX (=33) defined above,
+//   taken from paula_floppy.v's own word-counter framing thresholds
+//   (:484-497), a piece of logic structurally distinct from, and unmoved
+//   by fixing, the per-bit encoder (:467-477) that is the actual defect
+//   site -- a locator that cannot break when the RTL is fixed.
+//   (2) the peek at that fixed instant still CONFIRMS the sampled word is
+//   the known byte's own encoding (`bound_ok = (known_word == 0xFFFF)`,
+//   unchanged) -- the second purpose the binding check always served,
+//   independent of locating -- but confirmation failure is now a
+//   PRECONDITION that DECLINES via record(), never a conjunct that grades,
+//   matching the already-accepted repair shape in
+//   ch8-dskbytr-status-register/A9 (identical underlying fact, repaired
+//   there on 2026-09-15). Against the RTL actually under test here,
+//   bound_ok is true and B4/B5's finding is unchanged (still RED, same
+//   measured values: known_word=0xFFFF, DSKBYTR=0xD000, DATA field=0x0000).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed pp.241, 246, 249,
 //   265, 278-279, 289-290.
@@ -112,16 +162,26 @@
 //   `classify.note` field at all); this paragraph is here only to record
 //   that the check was made, not to disclaim anything graded below.
 //
-// FIXTURE-LIVENESS. L0 proves the write-then-read data path is live before
-//   anything else is trusted, on the exact DSKBYTR-mirror path B3/L3's own
-//   trials also read.
+// FIXTURE-LIVENESS. L0 (note(), no uid) proves the write-then-read data
+//   path is live before anything else is trusted, on the exact
+//   DSKBYTR-mirror path B3/L3's own trials also read.
 //
-// DECLINED CLAIMS (as of the 2026-09-15 repair): E3's five uids
-//   (opus:8-appA-dskdat.c8, sol:8-appa-dskdatr.c4, sol:8-appa-dskdatr.c5,
-//   opus:8-appB-dskdatr.c6, sol:8-appb-dskdatr.c6) are cited on a
-//   `record()` line, not a graded line -- see E3's own comment below and
-//   SPECIFICATION.md's "Declined claims" section. The remaining 74 uids
-//   are still cited on a graded (`expect()`) line.
+// DECLINED CLAIMS (as of the 2026-09-15 repairs, both passes): 24 uids sit
+//   on `record()` lines, not graded lines --
+//     E3 (5): opus:8-appA-dskdat.c8, sol:8-appa-dskdatr.c4,
+//       sol:8-appa-dskdatr.c5, opus:8-appB-dskdatr.c6, sol:8-appb-dskdatr.c6
+//     L2 (5): sol:8-dsklen.c1, opus:8-appA-dsklen.c2, sol:8-appa-dsklen.c2,
+//       opus:8-appB-dsklen.c3, sol:8-appb-dsklen.c3
+//     S2 (4): opus:8-appA-dsksync.c2, sol:8-appa-dsksync.c2,
+//       opus:8-appB-dsksync.c3, sol:8-appb-dsksync.c3
+//     D2 (4): opus:8-appA-dskdat.c2, sol:8-appa-dskdat.c2,
+//       opus:8-appB-dskdat.c4, sol:8-appb-dskdat.c4
+//     D3 (4): opus:8-appA-dskdat.c4, sol:8-appa-dskdat.c4,
+//       opus:8-appB-dskdat.c6, sol:8-appb-dskdat.c6
+//     E2 (2): opus:8-appA-dskdat.c6, sol:8-appa-dskdatr.c2
+//   -- see each one's own comment below and SPECIFICATION.md's "Declined
+//   claims" section. The remaining 55 uids are still cited on a graded
+//   (`expect()`) line.
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
@@ -134,29 +194,30 @@
 //   is proven live via a dedicated GREEN-at-baseline substitute (B6) that
 //   applies the identical extraction-and-compare form to a mechanism
 //   already shown live elsewhere in this same run, and carries its own
-//   ordinary stimulus mutation. E3 is DECLINED (record(), not expect()) and
-//   carries no mutation record -- there is no graded line to pair one
-//   against. Actual run counts and per-mutation results are recorded in
-//   the commit message and build report, not predicted here.
+//   ordinary stimulus mutation. L0 (note()) and the six declined claims (L2,
+//   S2, D2, D3, E2, E3; all record()) carry no mutation record -- neither a
+//   note() nor a record() is a graded line for a mutation to pair against.
+//   Actual run counts and per-mutation results are recorded in the commit
+//   message and build report, not predicted here.
 //
-// MUTATION L0-FIXTURE-LIVENESS stimulus red: the second known DSKLEN write is changed to be identical to the first (0x0000 both times) so the two DSKBYTR-mirror readings become indistinguishable (MUTATE=L0).
 // MUTATION L1-DSKLEN-ADDRESS stimulus red: the arming write is redirected from DSKLEN's own address to DSKBYTR's address (a real decode) while the check still expects the DSKLEN-address readback pattern (MUTATE=L1).
-// MUTATION L2-DSKLEN-WRITE-ONLY stimulus red: the read-back address is redirected from DSKLEN to DSKBYTR (a real, nonzero-idle decode) while the check still expects 0x0000 (MUTATE=L2).
+// L0-FIXTURE-LIVENESS is a note() (no manual citation, no uid) as of the 2026-09-15 lot-B repair -- see its own comment below. It carries no MUTATION record: a note has no graded line to pair one against.
+// L2-DSKLEN-WRITE-ONLY is DECLINED as of the 2026-09-15 lot-B repair (record(), not expect()) -- see its own comment below. p.263-264 forbids reading a write-only register outright and gives no value for what such a read returns; there is no graded line to pair a mutation record against.
 // MUTATION L3-DSKLEN-FUNCTION-LENGTH stimulus red: DSKLEN is programmed with 9 words instead of 8 while the check still expects completion at exactly 8 reads (MUTATE=L3).
-// MUTATION B1-DSKBYTR-ADDRESS stimulus red: the probe address is redirected from DSKBYTR's own address to DSKLEN's address (no read decode) while the check still expects DSKBYTR's nonzero idle readback (MUTATE=B1).
-// MUTATION B2-DSKBYTR-READ-ONLY stimulus red: a write value distinct from the previous stimulus is driven at DSKBYTR's address between the two DSKLEN-mirror reads, while the check still expects the DSKLEN-arming sequence to behave as if that write never happened (MUTATE=B2).
-// MUTATION B3-DSKBYTR-STATUS-HALF stimulus red: the second DSKLEN write's WRITE bit is left equal to the first's (both clear) instead of set, so the DSKBYTR status mirror cannot move, while the check still expects it to move (MUTATE=B3).
+// MUTATION B1-DSKBYTR-ADDRESS stimulus red: the probe address is redirected from DSKBYTR's own address to DSKLEN's address (no read decode) while the check still expects DSKBYTR's DISKWRITE-bit (bit 13) readback (MUTATE=B1). REPAIRED 2026-09-15 (lot B): narrowed from the whole idle word (0x9000, which p.278 does not define) to bit 13 (DISKWRITE, p.278-defined) alone -- see the code for why.
+// MUTATION B2-DSKBYTR-READ-ONLY stimulus red: the same 0x4000 write is redirected from DSKBYTR's own address to DSKLEN's (a real decode) while the check still expects DSKBYTR's own readback to be unchanged (before==after) (MUTATE=B2). REPAIRED 2026-09-15 (lot B): narrowed from a fixed idle value (0x9000 before and after) to a before/after equality, since p.278 gives DSKBYTR no required reset/idle word.
+// MUTATION B3-DSKBYTR-STATUS-HALF stimulus red: the second DSKLEN write's WRITE bit is left equal to the first's (both clear) instead of set, so DISKWRITE (bit 13) cannot move, while the check still expects it to move (MUTATE=B3). REPAIRED 2026-09-15 (lot B): narrowed from the whole idle word (idle==0x9000, and any change) to bit 13 (DISKWRITE, p.278-defined) alone.
 // MUTATION B4-DSKBYTR-DATA-BYTE-HALF none impossible: already red at baseline -- bits 7:0 of dskbytr are the literal RTL constant 8'h00 (paula_floppy.v:699), not driven by any signal this fixture can stimulate, so no stimulus can make this assertion pass, even with a genuinely bound known byte at the sampling instant. The comparator that grades it is proven live via the substitute B6-DSKBYTR-BYTE-FIELD-COMPARATOR-LIVE below.
 // MUTATION B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS none impossible: already red at baseline for the same reason as B4 (the byte conjunct can never become true); see B6.
 // MUTATION B6-DSKBYTR-BYTE-FIELD-COMPARATOR-LIVE stimulus red: the second DSKLEN write is changed to leave the WRITE bit equal to the first (both clear) instead of set, so the status field the substitute reads cannot move, while the check still expects it to (MUTATE=B6).
-// MUTATION S1-DSKSYNC-ADDRESS stimulus red: the 0xDEAD write is redirected from DSKSYNC's own address ($07E) to DSKLEN's address ($024) while the check still expects the redirected write to have NO effect on sync gating (i.e. still expects normal delivery); with the write correctly redirected, delivery is unaffected and the check (written to expect the mutated case's own outcome) is inverted by hand below -- see the code for the exact form (MUTATE=S1).
-// MUTATION S2-DSKSYNC-WRITE-ONLY stimulus red: the read-back address is redirected from DSKSYNC to DSKBYTR (a real, nonzero decode) while the check still expects 0x0000 (MUTATE=S2).
-// MUTATION S3-DSKSYNC-FUNCTION-MATCH-WORD stimulus red: DSKSYNC is written with 0x4489 (the matching value) instead of 0xDEAD in the trial the check expects to see suppressed (zero words delivered), while the check still expects suppression (MUTATE=S3).
+// MUTATION S1-DSKSYNC-ADDRESS stimulus red: the wrong-address (negative) half's 0xDEAD write is redirected from DSKLEN's address to DSKSYNC's own address instead, which (correctly) suppresses delivery, while the check still expects the wrong-address trial's normal-delivery outcome (MUTATE=S1). REPAIRED 2026-09-15 (lot B): added a POSITIVE half -- a fresh trial that writes 0xDEAD AT DSKSYNC's own address and confirms suppression -- so the assertion no longer leans on the RTL's reset default (0x4489) coinciding with the generator's own emitted sync word as its only evidence that $07E is real; see the code for why.
+// MUTATION S2-DSKSYNC-WRITE-ONLY is DECLINED as of the 2026-09-15 lot-B repair (record(), not expect()) -- same fault as L2 above; see its own comment below. It carries no MUTATION record.
+// MUTATION S3-DSKSYNC-FUNCTION-MATCH-WORD stimulus red: DSKSYNC is written with 0x4489 (the matching value) instead of 0xDEAD in the trial the check expects to see suppressed (zero words delivered), while the check still expects suppression (MUTATE=S3). REPAIRED 2026-09-15 (lot B): the matching trial (Trial B) now explicitly WRITES 0x4489 to DSKSYNC instead of relying on the RTL's reset default -- the mutation is unaffected, it only ever touched Trial A.
 // MUTATION D1-DSKDAT-ADDRESS stimulus red: the swept address that is expected to be the sole `buswr`-asserting one is changed from $026 to $024 while the check still expects $026 alone to assert it (MUTATE=D1).
-// MUTATION D2-DSKDAT-WRITE-ONLY stimulus red: the read-back address is redirected from DSKDAT to DSKBYTR (a real, nonzero decode) while the check still expects 0x0000 (MUTATE=D2).
-// MUTATION D3-DSKDAT-FUNCTION-DMA-WRITE stimulus red: the DSKDAT write that is expected to complete the 1-word armed transfer is instead directed at DSKSYNC's address (no fifo/length effect) while the check still expects blckint to fire (MUTATE=D3).
+// D2-DSKDAT-WRITE-ONLY is DECLINED as of the 2026-09-15 lot-B repair (record(), not expect()) -- same fault as L2 above; see its own comment below. It carries no MUTATION record.
+// D3-DSKDAT-FUNCTION-DMA-WRITE is DECLINED as of the 2026-09-15 lot-B repair (record(), not expect()) -- see its own comment below: blckint and the length counter reaching zero do not show the written word became genuine outgoing disk data. It carries no MUTATION record.
 // MUTATION E1-DSKDATR-ADDRESS stimulus red: the swept address expected to be the sole `busrd`-asserting one is changed from $008 to $01A while the check still expects $008 alone to assert it (MUTATE=E1).
-// MUTATION E2-DSKDATR-EARLY-READ-ACCESS-IS-TRIGGER stimulus red: a second, distinct read of DSKDATR is skipped (only the first access is applied) while the check still expects the second access alone to have advanced the FIFO (MUTATE=E2).
+// E2-DSKDATR-EARLY-READ-ACCESS-IS-TRIGGER is DECLINED as of the 2026-09-15 lot-B repair (record(), not expect()) -- same fault as E3 below, over the same p.287 `ER` legend; see its own comment below. It carries no MUTATION record.
 // E3 is DECLINED as of the 2026-09-15 repair (record(), not expect()) -- see E3's own comment below. It carries no MUTATION record: a decline has no graded line to pair one against. E4, whose sole purpose was proving E3's own comparator wasn't vacuously red, is removed along with E3's grading; E1's own MUTATION record above already covers busrd's live/undecoded discrimination over the same swept set.
 
 #include <cstdint>
@@ -351,27 +412,23 @@ struct Rig {
     }
 };
 
-// Finds the DSKDATR pop index (1-indexed) at which a uniform 0xFF sector's
-// payload word is exactly 0xFFFF -- reusing the already-accepted
-// ch8-mfm-cell-encoding package's own find_ff_marker_pop_index()
-// methodology on this identical fixture (a word of exactly 0xFFFF can
-// only arise from this fixture's own payload encoder fed an all-1s byte,
-// so it is a marker no fixed framing default can be confused with).
-// Returns -1 if not found within 60 pops.
-int find_ff_marker_pop_index() {
-    Rig rig;
-    rig.do_reset();
-    uint16_t stim = 0x8000 | 544;  // read-direction, one whole sector's worth.
-    rig.dsklen_write(stim);
-    rig.dsklen_write(stim);
-    uint8_t sector[512];
-    std::memset(sector, 0xFF, sizeof sector);
-    rig.feed_sector_read(sector);
-    for (int i = 1; i <= 60; i++) {
-        if (rig.dskdatr_pop() == 0xFFFF) return i;
-    }
-    return -1;
-}
+// B4/B5's payload-word locator (Lot G repair, 2026-09-16; see each
+// assertion's own comment below for why). Payload words are
+// fifo_word_counter 32-543; word-counter 0-31 is sync/preamble/header/
+// label/checksum framing, fixed by paula_floppy.v's own state-machine
+// thresholds (:484-497) and structurally independent of what any cell
+// encodes to -- confirmed directly from the RTL, matching the reading the
+// already-accepted ch8-mfm-cell-encoding package established for this
+// identical fixture. The FIFO preserves push order, so the Nth DSKDATR pop
+// is always fifo_word_counter=N-1, and the payload's own first word
+// (fifo_word_counter=32) is therefore always pop #33 -- a locator taken
+// from the generator's own word-counter thresholds, not from what any cell
+// encodes to, so it cannot break when the per-bit encoder (paula_floppy.v
+// :467-477, the actual site of finding candidate C6/C9) is fixed. Every B4/
+// B5 trial feeds a uniform 0xFF sector, so this one fixed index is as good
+// a payload sample as any other.
+constexpr int FRAMING_WORDS = 32;
+constexpr int FIRST_PAYLOAD_POP_INDEX = FRAMING_WORDS + 1;
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
@@ -379,26 +436,32 @@ int main(int argc, char** argv) {
     Checks checks;
 
     // ========================================================================
-    // L0 -- FIXTURE_LIVENESS (no manual citation). Drive two distinct, known
-    // DSKLEN writes and confirm they arrive, unmodified and mutually
-    // distinguishable, at the DSKBYTR mirror bit (data_out bit 13) that L1-
-    // L3, B1-B6 all also read.
+    // L0 -- FIXTURE_LIVENESS (no manual citation, no claim uid). Drive two
+    // distinct, known DSKLEN writes and confirm they arrive, unmodified and
+    // mutually distinguishable, at the DSKBYTR mirror bit (data_out bit 13)
+    // that L1-L3, B1-B6 all also read.
+    //
+    // CONVERTED TO note() 2026-09-15 (lot B repair, doctrine shape 1): no
+    // uid, so this is a fixture-liveness check, not conformance evidence --
+    // graded correctly all along, but per the repair doctrine a check with
+    // no claim uid must not be counted by the coverage ledger. Its own
+    // MUTATE=L0 mutation record is removed with it: a note() has no graded
+    // line to pair one against.
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
         rig.dsklen_write(0x0000);
         uint16_t v1 = rig.read_reg(ADDR_DSKBYTR);
-        uint16_t word2 = mutating("L0") ? 0x0000 : 0x4000;
-        rig.dsklen_write(word2);
+        rig.dsklen_write(0x4000);
         uint16_t v2 = rig.read_reg(ADDR_DSKBYTR);
-        uint16_t expected_v2 = mutating("L0") ? 0x9000 : 0xB000;
-        checks.note("L0-LIVENESS: DSKLEN<=0x0000 -> DSKBYTR=0x" + hex4(v1) +
-                    "; DSKLEN<=0x" + hex4(word2) + " -> DSKBYTR=0x" + hex4(v2));
-        checks.expect(v1 == 0x9000 && v2 == expected_v2 && v1 != v2,
-            "L0-FIXTURE-LIVENESS: two distinct, known DSKLEN writes arrive, unmodified and "
-            "mutually distinguishable, at the DSKBYTR mirror this package's every other "
-            "assertion also reads -- the fixture's write-then-read data path is live");
+        checks.note("L0-FIXTURE-LIVENESS: DSKLEN<=0x0000 -> DSKBYTR=0x" + hex4(v1) +
+                    "; DSKLEN<=0x4000 -> DSKBYTR=0x" + hex4(v2) + " -- two distinct, known "
+                    "DSKLEN writes arrive, unmodified and mutually distinguishable, at the "
+                    "DSKBYTR mirror this package's every other assertion also reads (v1==0x9000 "
+                    "&& v2==0xB000 && v1!=v2: " +
+                    std::to_string(v1 == 0x9000 && v2 == 0xB000 && v1 != v2) +
+                    ") -- the fixture's write-then-read data path is live");
     }
 
     // ========================================================================
@@ -443,23 +506,40 @@ int main(int argc, char** argv) {
     //   composed with the appendix legend's "write-only"): a value
     //   presented at $024 reaches state, but reading $024 returns nothing
     //   written there.
+    //
+    // DECLINED 2026-09-15 (lot B repair, doctrine shape 3): p.263-264 does
+    //   not leave a read of a write-only register undefined, it forbids the
+    //   operation outright -- "If a register is marked as a write-only
+    //   register, do not attempt to read from it, as this may trash the
+    //   register and crash the system" -- and gives no value for what such a
+    //   read returns. Grading "reads 0x0000" performs the very operation the
+    //   manual prohibits and checks it against a value the manual never
+    //   gives: a conforming open-bus or nonzero response would fail this
+    //   check, and a readable register that happens to return zero would
+    //   pass it, for reasons the page states neither way. The measurement is
+    //   kept as a note() (matching the precedent in
+    //   ch7-beam-position-word-layout's VPOSW-READBACK); the claim itself is
+    //   declined, not graded. Nothing in this package, or in
+    //   ch8-dsklen-dma-arming/A1 (the same fault, declined there too), grades
+    //   this claim -- there is no boundary at which the page supplies an
+    //   oracle for it.
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
         rig.dsklen_write(0x1234);
-        // MUTATE=L2: read at DSKBYTR (a real, nonzero decode) instead of
-        // DSKLEN's own (undecoded) address.
-        uint8_t addr = mutating("L2") ? ADDR_DSKBYTR : ADDR_DSKLEN;
-        uint16_t v = rig.read_reg(addr);
-        checks.note(std::string("L2-STIMULUS: after DSKLEN<=0x1234, read at ") +
-                    (mutating("L2") ? "DSKBYTR (mutated)" : "DSKLEN's own address") +
-                    " gives 0x" + hex4(v));
-        checks.expect(v == 0x0000,
+        uint16_t v = rig.read_reg(ADDR_DSKLEN);
+        checks.note("L2-STIMULUS: after DSKLEN<=0x1234, read at DSKLEN's own address gives 0x" +
+                    hex4(v) + " (measured for interest only -- see the decline below)");
+        checks.record(
             "L2-DSKLEN-WRITE-ONLY (p.246 sol:8-dsklen.c1; p.279 opus:8-appA-dsklen.c2, "
-            "sol:8-appa-dsklen.c2; p.289 opus:8-appB-dsklen.c3, sol:8-appb-dsklen.c3): after "
-            "writing 0x1234 to DSKLEN, a read at DSKLEN's own address returns 0x0000 -- no read "
-            "decode exists for it");
+            "sol:8-appa-dsklen.c2; p.289 opus:8-appB-dsklen.c3, sol:8-appb-dsklen.c3): declined, "
+            "not graded. p.263-264 forbids reading a write-only register outright ('do not "
+            "attempt to read from it, as this may trash the register and crash the system') and "
+            "gives no value for what such a read returns -- grading 'reads 0x0000' checks a "
+            "forbidden operation against a value the page never gives. No boundary in this suite "
+            "grades this claim (ch8-dsklen-dma-arming/A1 carries the same fault and is declined "
+            "identically).");
     }
 
     // ========================================================================
@@ -497,11 +577,27 @@ int main(int argc, char** argv) {
     // B1 -- opus:8-dsk.c37, opus:8-appA-dskbytr.c1, sol:8-appa-dskbytr.c1,
     //   opus:8-appB-dskbytr.c1, sol:8-appb-dskbytr.c1 (pp.241,278,289,
     //   DSKBYTR's ADD cell): DSKBYTR answers at $01A, and at $01A only.
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form used "data_out !=
+    //   0x0000" as its decode marker. At idle that nonzero-ness comes from
+    //   bit 15 and bit 12 of {1'b1,(trackrd|trackwr),dsklen[14],5'b1_0000,
+    //   8'h00} (paula_floppy.v:699) -- both HARDWIRED 1'b1 constants in this
+    //   concatenation, not values p.278 documents as DSKBYTR's reset or idle
+    //   state (p.278 gives DSKBYTR no reset/idle word at all, and marks bits
+    //   11-08 unused). "Nonzero at idle" was therefore the implementation's
+    //   own idle encoding doing the decode work, not $01A's address decode
+    //   itself. Narrowed to DISKWRITE (bit 13, dsklen[14] -- a bit p.278
+    //   DOES define, mirroring DSKLEN's own WRITE bit) after independently
+    //   setting it via a DSKLEN write: address decode is graded on a bit the
+    //   page actually specifies, set by a stimulus independent of this
+    //   package's own read.
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
-        checks.note("B1-STIMULUS: sweeping data_out across all 7 register addresses (idle)");
+        rig.dsklen_write(0x4000);  // sets DISKWRITE (DSKBYTR bit 13) via DSKLEN's own WRITE bit.
+        checks.note("B1-STIMULUS: after DSKLEN<=0x4000 (DISKWRITE set), sweeping DSKBYTR bit 13 "
+                    "across all 7 register addresses");
         bool answers_only_at_dskbytr = true;
         for (int i = 0; i < 7; i++) {
             uint8_t addr = SWEEP[i];
@@ -509,16 +605,20 @@ int main(int argc, char** argv) {
             // DSKBYTR slot, while still judging by DSKBYTR's own address.
             uint8_t probe = (mutating("B1") && addr == ADDR_DSKBYTR) ? ADDR_DSKLEN : addr;
             uint16_t v = rig.read_reg(probe);
-            checks.note(std::string("B1-STIMULUS: read at ") + SWEEP_NAME[i] + " gives 0x" + hex4(v));
+            bool diskwrite_set = (v & 0x2000) != 0;
+            checks.note(std::string("B1-STIMULUS: read at ") + SWEEP_NAME[i] + " gives 0x" +
+                        hex4(v) + " (bit13/DISKWRITE=" + std::to_string(diskwrite_set) + ")");
             bool should_answer = (addr == ADDR_DSKBYTR);
-            bool answers = (v != 0x0000);
-            if (answers != should_answer) answers_only_at_dskbytr = false;
+            if (diskwrite_set != should_answer) answers_only_at_dskbytr = false;
         }
         checks.expect(answers_only_at_dskbytr,
             "B1-DSKBYTR-ADDRESS (p.241 opus:8-dsk.c37; p.278 opus:8-appA-dskbytr.c1, "
-            "sol:8-appa-dskbytr.c1; p.289 opus:8-appB-dskbytr.c1, sol:8-appb-dskbytr.c1): "
-            "data_out is nonzero (0x9000 idle) only when read at $01A -- 0x0000 at $008, $020, "
-            "$022, $024, $026 and $07E");
+            "sol:8-appa-dskbytr.c1; p.289 opus:8-appB-dskbytr.c1, sol:8-appb-dskbytr.c1): with "
+            "DISKWRITE (bit 13, p.278-defined mirror of DSKLEN's WRITE bit) set via an "
+            "independent DSKLEN write, that bit reads 1 only when read at $01A -- 0 at $008, "
+            "$020, $022, $024, $026 and $07E -- narrowed from the whole idle word (0x9000) since "
+            "p.278 gives DSKBYTR no reset/idle value and bits 15/12 are hardwired constants, not "
+            "documented ones");
     }
 
     // ========================================================================
@@ -526,6 +626,16 @@ int main(int argc, char** argv) {
     //   opus:8-appB-dskbytr.c3, sol:8-appb-dskbytr.c3 (pp.278,289, composed
     //   with the legend's "read-only"): $01A answers on read, and nothing
     //   presented at $01A on a write reaches any state.
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form hardcoded both the
+    //   before AND after reading to the specific idle word 0x9000 -- a value
+    //   p.278 never documents as DSKBYTR's reset/idle state (see B1's own
+    //   repair note above). Narrowed to a before/after EQUALITY: whatever
+    //   DSKBYTR happens to read before the write, it must read identically
+    //   after -- this still catches the regression that mattered (the same
+    //   0x4000 payload moving DISKWRITE, bit 13, if it leaked through to
+    //   DSKLEN's decode) without requiring a specific numeric idle value the
+    //   page does not state.
     // ========================================================================
     {
         Rig rig;
@@ -543,11 +653,13 @@ int main(int argc, char** argv) {
                     ", after writing 0x4000 at " +
                     (write_addr == ADDR_DSKBYTR ? "$01A (own address)" : "$024 (mutated)") +
                     ", DSKBYTR=0x" + hex4(after));
-        checks.expect(before == 0x9000 && after == 0x9000,
+        checks.expect(before == after,
             "B2-DSKBYTR-READ-ONLY (p.278 opus:8-appA-dskbytr.c2, sol:8-appa-dskbytr.c2; p.289 "
             "opus:8-appB-dskbytr.c3, sol:8-appb-dskbytr.c3): writing 0x4000 at $01A changes "
-            "nothing observable -- DSKBYTR still reads 0x9000, unlike the same write aimed at "
-            "$024 (see L1/L3), proving $01A has no write decode");
+            "nothing observable in DSKBYTR's own readback (before==after) -- unlike the "
+            "identical payload aimed at $024 (see L1/L3), which does move DISKWRITE (bit 13) -- "
+            "proving $01A has no write decode; narrowed to a before/after equality rather than a "
+            "fixed idle word (0x9000), since p.278 gives DSKBYTR no required reset/idle value");
     }
 
     // ========================================================================
@@ -556,6 +668,16 @@ int main(int argc, char** argv) {
     //   DSKBYTR provides disk status that moves with module state. This is
     //   also this package's CONTROL CASE for B4/B5 (same $01A/data_out
     //   measurement basis, expected GREEN).
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form required idle==0x9000
+    //   (the whole word) in addition to "after != idle". p.278 gives DSKBYTR
+    //   no reset/idle word (see B1's repair note above), so requiring the
+    //   idle reading to equal a specific hardwired-bit-dependent constant
+    //   over-specified the claim. Narrowed to DISKWRITE (bit 13,
+    //   p.278-defined) alone: the stimulus here only ever sets DSKLEN's
+    //   WRITE bit (not DMAEN, which needs the double-write this trial does
+    //   not perform), so DISKWRITE is the one status bit this exact stimulus
+    //   can move.
     // ========================================================================
     {
         Rig rig;
@@ -566,12 +688,15 @@ int main(int argc, char** argv) {
         rig.dsklen_write(0x0000);
         rig.dsklen_write(mutating("B3") ? 0x0000 : 0x4000);
         uint16_t after = rig.read_reg(ADDR_DSKBYTR);
+        bool diskwrite_moved = ((after ^ idle) & 0x2000) != 0;
         checks.note("B3-STIMULUS: DSKBYTR idle=0x" + hex4(idle) + ", after arming write(s)=0x" +
-                    hex4(after));
-        checks.expect(idle == 0x9000 && after != idle,
+                    hex4(after) + " (bit13/DISKWRITE moved=" + std::to_string(diskwrite_moved) + ")");
+        checks.expect(diskwrite_moved,
             "B3-DSKBYTR-STATUS-HALF (p.241 sol:8-reglist.c20; p.278 sol:8-appa-dskbytr.c5; "
-            "p.289 sol:8-appb-dskbytr.c6): DSKBYTR's status bits (bits 15:12) move with module "
-            "state -- this package's control case, on the same data_out@$01A basis as B4/B5");
+            "p.289 sol:8-appb-dskbytr.c6): DSKBYTR's DISKWRITE status bit (bit 13, "
+            "p.278-defined) moves with module state -- this package's control case, on the same "
+            "data_out@$01A basis as B4/B5, narrowed to bit 13 alone since p.278 gives DSKBYTR no "
+            "reset/idle word for its other bits");
     }
 
     // ========================================================================
@@ -605,41 +730,71 @@ int main(int argc, char** argv) {
     //   Still RED -- paula_floppy.v:699 hardwires bits 7:0 to the literal
     //   constant 8'h00; a known, bound, nonzero incoming byte still never
     //   appears there. Flagged by finding_candidates.md C6.
+    //
+    //   REPAIRED AGAIN (lot G, 2026-09-16; see the file header's own lot G
+    //   note): the 2026-09-15 form above searched for the 0xFFFF marker and
+    //   used `bound_ok` (whether the search found it) as a CONJUNCT of the
+    //   graded condition (`bound_ok && data_field == known_byte`). 0xFFFF is
+    //   THIS RTL's own non-conformant encoding of 0xFF, not the page-legal
+    //   one (p.250 makes 0xFF -> 0x5555) -- against a conforming encoder the
+    //   search would return -1, bound_ok would be false, and the assertion
+    //   would FAIL anyway, reporting a DATA-field defect that would not be
+    //   there. Repaired to a FIXED locator (FIRST_PAYLOAD_POP_INDEX, defined
+    //   above -- taken from paula_floppy.v's own word-counter framing
+    //   thresholds, :484-497, independent of what any cell encodes to, so it
+    //   cannot break when the encoder is fixed) plus a PRECONDITION: the peek
+    //   at that fixed instant still confirms the sampled word is the known
+    //   byte's own encoding (bound_ok, unchanged check), but a confirmation
+    //   failure now DECLINES via record() rather than folding into a graded
+    //   FAIL -- the same shape already accepted in
+    //   ch8-dskbytr-status-register/A9. Against the RTL actually under test
+    //   here, bound_ok is true and the finding is unchanged.
     // ========================================================================
     {
-        int idx = find_ff_marker_pop_index();
-        checks.note("B4-CALIBRATION: 0xFF-sector marker word (0xFFFF) first found at DSKDATR pop #" +
-                    std::to_string(idx));
+        int idx = FIRST_PAYLOAD_POP_INDEX;
+        checks.note("B4-CALIBRATION: payload's first word (fifo_word_counter=32, "
+                    "paula_floppy.v:484-497) is DSKDATR pop #" + std::to_string(idx));
 
-        bool bound_ok = false;
-        uint16_t known_word = 0, dskbytr_at_instant = 0;
-        if (idx > 0) {
-            Rig rig;
-            rig.do_reset();
-            uint16_t stim = 0x8000 | 544;
-            rig.dsklen_write(stim);
-            rig.dsklen_write(stim);
-            uint8_t sector[512];
-            std::memset(sector, 0xFF, sizeof sector);
-            rig.feed_sector_read(sector);
-            for (int i = 1; i < idx; i++) rig.dskdatr_pop();  // discard up to just before the marker.
-            known_word = rig.read_reg(ADDR_DSKDATR);          // peek, no pop -- the marker itself, at this instant.
-            dskbytr_at_instant = rig.read_reg(ADDR_DSKBYTR);  // SAME instant: zero clock edges elapsed since the peek above.
-            bound_ok = (known_word == 0xFFFF);
-        }
+        Rig rig;
+        rig.do_reset();
+        uint16_t stim = 0x8000 | 544;
+        rig.dsklen_write(stim);
+        rig.dsklen_write(stim);
+        uint8_t sector[512];
+        std::memset(sector, 0xFF, sizeof sector);
+        rig.feed_sector_read(sector);
+        for (int i = 1; i < idx; i++) rig.dskdatr_pop();  // discard up to just before the fixed payload-start index.
+        uint16_t known_word = rig.read_reg(ADDR_DSKDATR);          // peek, no pop -- the payload word itself, at this instant.
+        uint16_t dskbytr_at_instant = rig.read_reg(ADDR_DSKBYTR);  // SAME instant: zero clock edges elapsed since the peek above.
+        bool bound_ok = (known_word == 0xFFFF);  // confirmation, not a locator: does the sampled word match this fixture's own known-byte encoding.
         uint8_t known_byte = 0xFF;  // both bytes of 0xFFFF are 0xFF -- no high/low ambiguity.
         uint8_t data_field = (uint8_t)(dskbytr_at_instant & 0x00FF);
         checks.note("B4-MEASURED: known_word=0x" + hex4(known_word) + " (bound=" +
                     std::to_string(bound_ok) + "), DSKBYTR at that same instant=0x" +
                     hex4(dskbytr_at_instant) + ", DATA field=0x" + hex4(data_field));
-        checks.expect(bound_ok && data_field == known_byte,
-            "B4-DSKBYTR-DATA-BYTE-HALF (p.241 sol:8-reglist.c19; p.278 sol:8-appa-dskbytr.c4; "
-            "p.289 opus:8-appB-dskbytr.c5, sol:8-appb-dskbytr.c5): reading DSKBYTR provides a "
-            "disk data byte -- with a KNOWN incoming byte (0xFF) bound to the sampling instant "
-            "via the proven-live DSKDATR/FIFO marker path (the same underlying fact as "
-            "ch8-dskbytr-status-register/A9 and ch8-disk-controller-overview/opus:8-dsk.c9+"
-            "sol:8-dsk.c9), DSKBYTR's own DATA field should read that same byte at that instant; "
-            "it does not");
+        if (!bound_ok) {
+            // PRECONDITION FAILED -- decline, do not grade. This is the
+            // branch a conforming encoder would always take (p.250 makes
+            // 0xFF -> 0x5555, never 0xFFFF), and it must say nothing about
+            // the DATA field either way.
+            checks.record(
+                "B4-DSKBYTR-DATA-BYTE-HALF (p.241 sol:8-reglist.c19; p.278 sol:8-appa-dskbytr.c4; "
+                "p.289 opus:8-appB-dskbytr.c5, sol:8-appb-dskbytr.c5): could not confirm a known "
+                "byte at the fixed payload-start sampling instant (pop #" + std::to_string(idx) +
+                ", fifo_word_counter=32) -- the word read there was not this fixture's own known "
+                "encoding of a uniform 0xFF byte (0xFFFF). Declining rather than grading an "
+                "unconfirmed sample: 0xFFFF is not itself a page-legal MFM encoding of 0xFF (p.250 "
+                "makes 0xFF -> 0x5555), so a mismatch here is not evidence about the DATA field one "
+                "way or the other.");
+        } else {
+            checks.expect(data_field == known_byte,
+                "B4-DSKBYTR-DATA-BYTE-HALF (p.241 sol:8-reglist.c19; p.278 sol:8-appa-dskbytr.c4; "
+                "p.289 opus:8-appB-dskbytr.c5, sol:8-appb-dskbytr.c5): reading DSKBYTR provides a "
+                "disk data byte -- with a KNOWN incoming byte (0xFF) bound to the sampling instant "
+                "via the fixed payload-start index (paula_floppy.v:484-497), confirmed present by "
+                "the peek above, DSKBYTR's own DATA field should read that same byte at that "
+                "instant; it does not");
+        }
     }
 
     // ========================================================================
@@ -656,6 +811,21 @@ int main(int argc, char** argv) {
     //   byte half (see B4 above for the full methodology) instead of
     //   recomputing an unbound premise. Still RED, for the same
     //   underlying reason as B4.
+    //
+    //   REPAIRED AGAIN (lot G, 2026-09-16): the 2026-09-15 form's
+    //   `byte_half_real = (known_word == 0xFFFF) && (dskbytr_now & 0xFF)
+    //   == 0xFF` folded the SAME `bound_ok`-as-conjunct fault B4 carried
+    //   into this compound's byte half -- against a conforming encoder
+    //   `byte_half_real` would be false regardless of DSKBYTR's actual
+    //   DATA field, making the whole compound assertion FAIL for the wrong
+    //   reason. Repaired identically to B4: the byte half now locates via
+    //   the fixed FIRST_PAYLOAD_POP_INDEX and treats the marker match as a
+    //   confirmation precondition, not a graded conjunct -- an unconfirmed
+    //   sample DECLINES the whole compound claim via record() (the status
+    //   half is separately measured and reported, but is not itself the
+    //   claim); a confirmed sample grades the ordinary conjunction exactly
+    //   as before. Against the RTL actually under test here, the byte
+    //   binding is confirmed and the finding is unchanged.
     // ========================================================================
     {
         Rig rig;
@@ -666,31 +836,41 @@ int main(int argc, char** argv) {
         uint16_t armed = rig.read_reg(ADDR_DSKBYTR);
         bool status_half_real = (armed != idle);
 
-        int idx = find_ff_marker_pop_index();
-        bool byte_half_real = false;
-        if (idx > 0) {
-            Rig rig2;
-            rig2.do_reset();
-            uint16_t stim = 0x8000 | 544;
-            rig2.dsklen_write(stim);
-            rig2.dsklen_write(stim);
-            uint8_t sector[512];
-            std::memset(sector, 0xFF, sizeof sector);
-            rig2.feed_sector_read(sector);
-            for (int i = 1; i < idx; i++) rig2.dskdatr_pop();
-            uint16_t known_word = rig2.read_reg(ADDR_DSKDATR);
-            uint16_t dskbytr_now = rig2.read_reg(ADDR_DSKBYTR);
-            byte_half_real = (known_word == 0xFFFF) && ((dskbytr_now & 0x00FF) == 0xFF);
-        }
+        int idx = FIRST_PAYLOAD_POP_INDEX;
+        Rig rig2;
+        rig2.do_reset();
+        uint16_t stim = 0x8000 | 544;
+        rig2.dsklen_write(stim);
+        rig2.dsklen_write(stim);
+        uint8_t sector[512];
+        std::memset(sector, 0xFF, sizeof sector);
+        rig2.feed_sector_read(sector);
+        for (int i = 1; i < idx; i++) rig2.dskdatr_pop();  // discard up to just before the fixed payload-start index.
+        uint16_t known_word = rig2.read_reg(ADDR_DSKDATR);          // peek, no pop -- the payload word itself, at this instant.
+        uint16_t dskbytr_now = rig2.read_reg(ADDR_DSKBYTR);         // SAME instant: zero clock edges elapsed since the peek above.
+        bool bound_ok = (known_word == 0xFFFF);  // confirmation, not a locator.
+        bool data_matches = ((dskbytr_now & 0x00FF) == 0xFF);
+
         checks.note("B5-MEASURED: status_half_real=" + std::to_string(status_half_real) +
-                    ", byte_half_real=" + std::to_string(byte_half_real) +
-                    " (byte half repaired via the same known-byte binding as B4)");
-        checks.expect(status_half_real && byte_half_real,
-            "B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS (p.241 opus:8-dsk.c38; p.278 "
-            "opus:8-appA-dskbytr.c4, sol:8-appa-dskbytr.c6): the printed function cell claims "
-            "BOTH a real status portion AND a real disk-data-byte portion -- the conjunction "
-            "fails because, per B4's repaired and now-grounded measurement, the byte portion "
-            "does not reflect a known bound incoming byte");
+                    ", bound=" + std::to_string(bound_ok) + ", data_matches=" +
+                    std::to_string(data_matches) + " (byte half repaired via the same known-byte "
+                    "binding as B4)");
+        if (!bound_ok) {
+            checks.record(
+                "B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS (p.241 opus:8-dsk.c38; p.278 "
+                "opus:8-appA-dskbytr.c4, sol:8-appa-dskbytr.c6): could not confirm a known byte at "
+                "the fixed payload-start sampling instant used for the byte half (see B4) -- "
+                "declining the compound claim rather than grading an unconfirmed byte half. The "
+                "status half alone measured " + std::to_string(status_half_real) + "; a partial "
+                "measurement is not the printed compound claim, which requires both halves.");
+        } else {
+            checks.expect(status_half_real && data_matches,
+                "B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS (p.241 opus:8-dsk.c38; p.278 "
+                "opus:8-appA-dskbytr.c4, sol:8-appa-dskbytr.c6): the printed function cell claims "
+                "BOTH a real status portion AND a real disk-data-byte portion -- the conjunction "
+                "fails because, per B4's repaired and now-grounded measurement, the byte portion "
+                "does not reflect a known bound incoming byte");
+        }
     }
 
     // ========================================================================
@@ -724,43 +904,70 @@ int main(int argc, char** argv) {
     //   sol:8-appa-adkbit.c12, opus:8-appB-dsksync.c1, sol:8-appb-dsksync.c1
     //   (pp.241,249,265,279,290, DSKSYNC's ADD cell / the (3F)*2 arithmetic):
     //   DSKSYNC answers (i.e. a write reaches its comparator) at $07E, and
-    //   at $07E only. DSKSYNC has no read decode, so this is graded through
-    //   the same sync-gating apparatus as S3: writing a mismatching value
-    //   (0xDEAD) to a WRONG address ($024) should have NO effect -- DSKSYNC
-    //   stays at its reset default (0x4489, matching), so delivery proceeds
-    //   normally, exactly as if DSKSYNC had never been written at all.
+    //   at $07E only.
+    //
+    // REPAIRED 2026-09-15 (lot B): the original form only ever wrote the
+    //   WRONG address ($024) and inferred "no effect" was proof of decode.
+    //   That inference is equally true of a DSKSYNC with NO write decode at
+    //   all: the RTL's own reset default (0x4489) happens to match the
+    //   generator's own emitted sync word regardless of whether any write
+    //   ever reaches the register, so the original trial could not tell "the
+    //   write never reaches DSKSYNC" apart from "the write correctly reaches
+    //   $07E, which happened to already hold a matching value." Repaired to
+    //   add the POSITIVE half: a fresh trial writes the SAME mismatching
+    //   value (0xDEAD) AT DSKSYNC's own address and confirms it suppresses
+    //   delivery -- proving the write genuinely reaches the comparator at
+    //   $07E, not merely that $07E started out matching. The existing
+    //   wrong-address trial is kept as the negative half.
     // ========================================================================
     {
-        Rig rig;
-        rig.do_reset();
         uint8_t sector[512];
         std::memset(sector, 0x00, sizeof sector);
-        rig.dut->wordsync = 1;
-        // MUTATE=S1: write the mismatching value to DSKSYNC's OWN address
-        // instead of the wrong one, which (correctly) suppresses delivery
-        // -- while the check below still expects the "wrong address, no
-        // effect" outcome (normal delivery).
-        uint8_t write_addr = mutating("S1") ? ADDR_DSKSYNC : ADDR_DSKLEN;
-        rig.reg_write(write_addr, 0xDEAD);
         const uint16_t LEN = 8;
         uint16_t stim = 0x8000 | LEN;
-        rig.dsklen_write(stim);
-        rig.dsklen_write(stim);
-        checks.note(std::string("S1-STIMULUS: wrote 0xDEAD at ") +
-                    (write_addr == ADDR_DSKSYNC ? "DSKSYNC's own address" : "DSKLEN's address (wrong)"));
-        rig.feed_sector_read(sector);
-        int completed = rig.drain_until_blckint(64);
-        checks.note("S1-MEASURED: transfer completed after " +
-                    (completed < 0 ? std::string("never (>64 reads)") : std::to_string(completed)) +
+
+        // Positive half: write the mismatching value AT DSKSYNC's own address.
+        Rig rigOwn;
+        rigOwn.do_reset();
+        rigOwn.dut->wordsync = 1;
+        rigOwn.reg_write(ADDR_DSKSYNC, 0xDEAD);
+        rigOwn.dsklen_write(stim);
+        rigOwn.dsklen_write(stim);
+        rigOwn.feed_sector_read(sector);
+        int completed_own = rigOwn.drain_until_blckint(64);
+        checks.note("S1-STIMULUS (positive half): wrote 0xDEAD at DSKSYNC's own address ($07E); "
+                    "transfer completed after " +
+                    (completed_own < 0 ? std::string("never (>64 reads, suppressed)") : std::to_string(completed_own)) +
                     " reads");
-        checks.expect(completed > 0,
+
+        // Negative half: the SAME write redirected to a wrong address ($024).
+        Rig rigWrong;
+        rigWrong.do_reset();
+        rigWrong.dut->wordsync = 1;
+        // MUTATE=S1: redirect the wrong-address write to DSKSYNC's own
+        // address instead, which (correctly) suppresses delivery, while the
+        // check below still expects the wrong-address trial's own
+        // normal-delivery outcome.
+        uint8_t write_addr = mutating("S1") ? ADDR_DSKSYNC : ADDR_DSKLEN;
+        rigWrong.reg_write(write_addr, 0xDEAD);
+        rigWrong.dsklen_write(stim);
+        rigWrong.dsklen_write(stim);
+        checks.note(std::string("S1-STIMULUS (negative half): wrote 0xDEAD at ") +
+                    (write_addr == ADDR_DSKSYNC ? "DSKSYNC's own address (mutated)" : "DSKLEN's address (wrong)"));
+        rigWrong.feed_sector_read(sector);
+        int completed_wrong = rigWrong.drain_until_blckint(64);
+        checks.note("S1-MEASURED (negative half): transfer completed after " +
+                    (completed_wrong < 0 ? std::string("never (>64 reads)") : std::to_string(completed_wrong)) +
+                    " reads");
+        checks.expect(completed_own < 0 && completed_wrong > 0,
             "S1-DSKSYNC-ADDRESS (p.241 opus:8-dsk.c39; p.249 opus:8-adkcon.c22, "
             "sol:8-adkcon.c18; p.265 opus:8-appA-adkcon.c21, sol:8-appa-adkbit.c12; p.279 "
             "opus:8-appA-dsksync.c1, sol:8-appa-dsksync.c1; p.290 opus:8-appB-dsksync.c1, "
-            "sol:8-appb-dsksync.c1): a mismatching value written to a DIFFERENT address ($024) "
-            "has no effect on DSKSYNC's comparator -- delivery proceeds exactly as if DSKSYNC "
-            "were left at its reset default, proving $07E (not $024) is where the write is "
-            "decoded");
+            "sol:8-appb-dsksync.c1): a mismatching value written AT DSKSYNC's own address ($07E) "
+            "suppresses delivery entirely -- the write genuinely reaches the comparator, not "
+            "merely coincides with an already-matching reset default -- while the identical "
+            "write redirected to a DIFFERENT address ($024) has no effect and delivery proceeds "
+            "normally, together showing $07E (not $024) is where the write is decoded");
     }
 
     // ========================================================================
@@ -768,20 +975,27 @@ int main(int argc, char** argv) {
     //   opus:8-appB-dsksync.c3, sol:8-appb-dsksync.c3 (pp.279,290, composed
     //   with the legend's "write-only"): a value presented at $07E reaches
     //   state, but reading $07E returns nothing written there.
+    //
+    // DECLINED 2026-09-15 (lot B repair, doctrine shape 3): same fault as L2
+    //   above -- p.263-264 forbids reading a write-only register outright and
+    //   gives no value for what such a read returns. See L2's own comment
+    //   for the full reasoning.
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
         rig.reg_write(ADDR_DSKSYNC, 0x1234);
-        uint8_t addr = mutating("S2") ? ADDR_DSKBYTR : ADDR_DSKSYNC;
-        uint16_t v = rig.read_reg(addr);
-        checks.note(std::string("S2-STIMULUS: after DSKSYNC<=0x1234, read at ") +
-                    (mutating("S2") ? "DSKBYTR (mutated)" : "DSKSYNC's own address") +
-                    " gives 0x" + hex4(v));
-        checks.expect(v == 0x0000,
+        uint16_t v = rig.read_reg(ADDR_DSKSYNC);
+        checks.note("S2-STIMULUS: after DSKSYNC<=0x1234, read at DSKSYNC's own address gives 0x" +
+                    hex4(v) + " (measured for interest only -- see the decline below)");
+        checks.record(
             "S2-DSKSYNC-WRITE-ONLY (p.279 opus:8-appA-dsksync.c2, sol:8-appa-dsksync.c2; p.290 "
-            "opus:8-appB-dsksync.c3, sol:8-appb-dsksync.c3): after writing 0x1234 to DSKSYNC, a "
-            "read at its own address returns 0x0000 -- no read decode exists for it");
+            "opus:8-appB-dsksync.c3, sol:8-appb-dsksync.c3): declined, not graded -- same fault "
+            "as L2 above. p.263-264 forbids reading a write-only register outright ('do not "
+            "attempt to read from it, as this may trash the register and crash the system') and "
+            "gives no value for what such a read returns; grading 'reads 0x0000' checks a "
+            "forbidden operation against a value the page never gives. No boundary in this suite "
+            "grades this claim.");
     }
 
     // ========================================================================
@@ -791,9 +1005,17 @@ int main(int argc, char** argv) {
     //   DSKSYNC holds a word compared against the incoming disk data
     //   stream, gating delivery. With wordsync=1: DSKSYNC=0xDEAD (never
     //   produced by this fixture's own internal MFM generator) delivers
-    //   ZERO words; DSKSYNC left at its reset default 0x4489 (the literal
+    //   ZERO words; DSKSYNC explicitly written with 0x4489 (the literal
     //   sync mark the generator itself emits) delivers the programmed
     //   count.
+    //
+    // REPAIRED 2026-09-15 (lot B): Trial B previously left DSKSYNC AT its
+    //   reset default (0x4489) rather than writing it -- leaning on the RTL's
+    //   reset value coinciding with the manual's own stated "usual" sync word
+    //   (p.250) as the matching-case evidence, rather than a genuine positive
+    //   write. Repaired: Trial B now explicitly WRITES 0x4489 to DSKSYNC's
+    //   own address. Trial A (the mismatching half) is unchanged, and so is
+    //   its MUTATE=S3 mutation.
     // ========================================================================
     {
         uint8_t sector[512];
@@ -815,15 +1037,16 @@ int main(int argc, char** argv) {
         checks.note("S3-MEASURED (mismatching DSKSYNC): completed=" +
                     (completedA < 0 ? std::string("never (>64 reads, suppressed)") : std::to_string(completedA)));
 
-        // Trial B: matching DSKSYNC (reset default, 0x4489 -- not written).
+        // Trial B: matching DSKSYNC, explicitly WRITTEN (not left at reset default).
         Rig rigB;
         rigB.do_reset();
         rigB.dut->wordsync = 1;
+        rigB.reg_write(ADDR_DSKSYNC, 0x4489);
         rigB.dsklen_write(stim);
         rigB.dsklen_write(stim);
         rigB.feed_sector_read(sector);
         int completedB = rigB.drain_until_blckint(64);
-        checks.note("S3-MEASURED (matching DSKSYNC, reset default 0x4489): completed=" +
+        checks.note("S3-MEASURED (matching DSKSYNC, explicitly written 0x4489): completed=" +
                     std::to_string(completedB));
 
         checks.expect(completedA < 0 && completedB > 0,
@@ -831,7 +1054,8 @@ int main(int argc, char** argv) {
             "sol:8-reglist.c22, sol:8-reglist.c23; p.279 opus:8-appA-dsksync.c4; p.290 "
             "opus:8-appB-dsksync.c4, sol:8-appb-dsksync.c4): with wordsync enabled, a "
             "mismatching DSKSYNC value suppresses delivery entirely, while a matching value "
-            "delivers the programmed count -- DSKSYNC's content gates the read");
+            "explicitly written to DSKSYNC's own address delivers the programmed count -- "
+            "DSKSYNC's content, not merely its reset default, gates the read");
     }
 
     // ========================================================================
@@ -871,29 +1095,60 @@ int main(int argc, char** argv) {
     //   "write-only"): a value presented at $026 reaches state (verified
     //   via D3's FIFO effect), but reading $026 returns nothing written
     //   there.
+    //
+    // DECLINED 2026-09-15 (lot B repair, doctrine shape 3): same fault as L2
+    //   above -- p.263-264 forbids reading a write-only register outright and
+    //   gives no value for what such a read returns. See L2's own comment
+    //   for the full reasoning.
     // ========================================================================
     {
         Rig rig;
         rig.do_reset();
         rig.reg_write(ADDR_DSKDAT, 0x5678);
-        uint8_t addr = mutating("D2") ? ADDR_DSKBYTR : ADDR_DSKDAT;
-        uint16_t v = rig.read_reg(addr);
-        checks.note(std::string("D2-STIMULUS: after DSKDAT<=0x5678, read at ") +
-                    (mutating("D2") ? "DSKBYTR (mutated)" : "DSKDAT's own address") +
-                    " gives 0x" + hex4(v));
-        checks.expect(v == 0x0000,
+        uint16_t v = rig.read_reg(ADDR_DSKDAT);
+        checks.note("D2-STIMULUS: after DSKDAT<=0x5678, read at DSKDAT's own address gives 0x" +
+                    hex4(v) + " (measured for interest only -- see the decline below)");
+        checks.record(
             "D2-DSKDAT-WRITE-ONLY (p.279 opus:8-appA-dskdat.c2, sol:8-appa-dskdat.c2; p.289 "
-            "opus:8-appB-dskdat.c4, sol:8-appb-dskdat.c4): after writing 0x5678 to DSKDAT, a "
-            "read at its own address returns 0x0000 -- no read decode exists for it");
+            "opus:8-appB-dskdat.c4, sol:8-appb-dskdat.c4): declined, not graded -- same fault as "
+            "L2 above. p.263-264 forbids reading a write-only register outright ('do not attempt "
+            "to read from it, as this may trash the register and crash the system') and gives no "
+            "value for what such a read returns; grading 'reads 0x0000' checks a forbidden "
+            "operation against a value the page never gives. No boundary in this suite grades "
+            "this claim.");
     }
 
     // ========================================================================
     // D3 -- opus:8-appA-dskdat.c4, sol:8-appa-dskdat.c4, opus:8-appB-dskdat.c6,
     //   sol:8-appb-dskdat.c6 (pp.279,289, DSKDAT's FUNCTION cell): a write
-    //   at $026 is disk DMA outgoing data. Arm a 1-word WRITE-direction
-    //   transfer, write one word to DSKDAT, and confirm it completes the
-    //   transfer (blckint) -- proving the written word entered the DMA
-    //   length-counted data path, not a void.
+    //   at $026 is disk DMA outgoing data -- the written value enters the
+    //   disk-write data path.
+    //
+    // DECLINED 2026-09-15 (lot B repair, doctrine shape 3): the original form
+    //   armed a 1-word WRITE transfer, wrote one arbitrary word to DSKDAT,
+    //   and graded blckint firing as proof the word was "genuinely disk-DMA
+    //   outgoing data." blckint firing and the length counter reaching zero
+    //   only show the written word entered the FIFO and was popped by the
+    //   length-decrement path (paula_floppy.v:718-719, fifo_wr's buswr&dmaon
+    //   term at :771) -- a controller that discarded every written word
+    //   while still decrementing length would pass this exact check
+    //   identically. The manual's actual claim is that the written value
+    //   becomes genuine OUTGOING DATA; reaching that on `sdc_byte_out_data`
+    //   requires the word to survive paula_floppy's separate cpu_wr_state
+    //   parser (:781-901), which only forwards bytes once it has found a
+    //   DSKSYNC-matching sync marker (state 0, :793-800), decoded and
+    //   checksum-verified a 24-word header against the module's own `track`
+    //   value (state 1, :802-847), and stepped through a payload-checksum
+    //   preload (state 2, :848-863) -- fd_dma_buffer_data_wr, the only path
+    //   into the buffer that `sdc_byte_out_data` reads back from, is driven
+    //   solely from state 3 (:865-882, specifically :876). This trial's
+    //   single arbitrary word (0xABCD) never matches dsksync and so never
+    //   leaves state 0 of that parser; the blckint this check grades is
+    //   driven entirely by the length-counter path, independent of it.
+    //   Reaching a genuine outgoing byte needs the full sync+header+payload
+    //   stream this package's other claims do not otherwise require -- see
+    //   ch8-dsklen-dma-arming/A11, which attempts exactly that construction
+    //   under its own citation.
     // ========================================================================
     {
         Rig rig;
@@ -904,21 +1159,25 @@ int main(int argc, char** argv) {
         rig.dsklen_write(stim);
         // Let the state machine reach DISKDMA_ACTIVE.
         rig.wait_until([&]() { return (bool)rig.dut->fdd_led; }, 16);
-        // MUTATE=D3: write the payload word at DSKSYNC's address instead of
-        // DSKDAT's -- no fifo/length effect there.
-        uint8_t write_addr = mutating("D3") ? ADDR_DSKSYNC : ADDR_DSKDAT;
-        rig.reg_write(write_addr, 0xABCD);
+        rig.reg_write(ADDR_DSKDAT, 0xABCD);
         bool completed = rig.wait_until([&]() { return (bool)rig.dut->blckint; }, 32);
-        checks.note(std::string("D3-STIMULUS: wrote 0xABCD at ") +
-                    (write_addr == ADDR_DSKDAT ? "DSKDAT" : "DSKSYNC (mutated)") +
-                    " during an armed 1-word WRITE transfer; blckint observed=" +
-                    std::to_string(completed));
-        checks.expect(completed,
+        checks.note(std::string("D3-STIMULUS: wrote 0xABCD at DSKDAT during an armed 1-word ") +
+                    "WRITE transfer; blckint observed=" + std::to_string(completed) +
+                    " (measured for interest only -- see the decline below)");
+        checks.record(
             "D3-DSKDAT-FUNCTION-DMA-WRITE (p.279 opus:8-appA-dskdat.c4, sol:8-appa-dskdat.c4; "
-            "p.289 opus:8-appB-dskdat.c6, sol:8-appb-dskdat.c6): a single DSKDAT write, during "
-            "an armed 1-word WRITE-direction transfer, both enters the FIFO and completes the "
-            "DMA length count -- the written word is genuinely disk-DMA outgoing data, not "
-            "discarded");
+            "p.289 opus:8-appB-dskdat.c6, sol:8-appb-dskdat.c6): declined, not graded. blckint "
+            "firing and the length counter reaching zero do not show the written word became "
+            "genuine outgoing disk data -- a controller that discarded every written word while "
+            "still decrementing length would pass this exact check identically. Reaching a "
+            "genuine outgoing byte on `sdc_byte_out_data` requires the word to survive "
+            "paula_floppy's separate cpu_wr_state parser (paula_floppy.v:781-901), which forwards "
+            "bytes only from state 3 (:865-882) after a DSKSYNC-matching sync marker and a "
+            "checksum- and track-verified header (states 0-2, :793-863); this trial's single "
+            "arbitrary word never matches dsksync and never leaves state 0, so the blckint graded "
+            "here is driven entirely by the independent length-counter path. See "
+            "ch8-dsklen-dma-arming/A11, which builds exactly that full construction under its own citation and "
+            "measures RED (the written byte survives fully intact -- no bits are lost in NanoMig's write path).");
     }
 
     // ========================================================================
@@ -956,8 +1215,27 @@ int main(int argc, char** argv) {
     // E2 -- opus:8-appA-dskdat.c6, sol:8-appa-dskdatr.c2 (p.279, the `ER`
     //   mark's observable half): the read access at $008 is itself what
     //   advances the FIFO -- there is no separate strobe distinct from the
-    //   access. Prove it by reading twice and confirming the second read's
-    //   own act of accessing is what changes what the third read sees.
+    //   access.
+    //
+    // DECLINED 2026-09-15 (lot B repair, doctrine shape 3): same fault as E3
+    //   below, over the SAME p.287 `ER` legend. The legend states early-read
+    //   transfers "are therefore initiated by Agnus timing, rather than a
+    //   read address on the destination address bus" -- i.e. the manual
+    //   explicitly says the CPU's own read ACCESS is NOT what triggers the
+    //   transfer. The withdrawn form of this assertion graded the opposite:
+    //   that presenting/accessing $008 IS itself what advances the FIFO.
+    //   That reads true on this fixture only because paula_floppy's own
+    //   `fifo_rd` gating (busrd & dmaon, paula_floppy.v:911) is a plain
+    //   address-decoded access strobe with no separate Agnus-timing signal
+    //   behind it at all -- grading it as a pass would make the RTL's own
+    //   implementation choice the oracle, which this suite's doctrine
+    //   forbids. Distinguishing an Agnus-timed early transfer from a CPU
+    //   destination-address-bus read needs the Agnus<->Paula boundary;
+    //   `paula_floppy` compiled alone (this package's assigned fixture)
+    //   presents reg_address_in identically regardless of what upstream
+    //   hardware drove it, so it cannot make that distinction. Declining
+    //   rather than grading the mechanism the page names as NOT what
+    //   happens; the raw measurement is kept as a note().
     // ========================================================================
     {
         Rig rig;
@@ -971,19 +1249,21 @@ int main(int argc, char** argv) {
         rig.feed_sector_read(sector);
         rig.wait_until([&]() { return (bool)rig.dut->fdd_led; }, 16);
         uint16_t r1 = rig.dskdatr_pop();
-        // MUTATE=E2: skip the second access entirely -- read the SAME
-        // pre-second-access value again instead of performing a fresh
-        // access, so the "access is the trigger" claim cannot be
-        // demonstrated.
-        uint16_t r2 = mutating("E2") ? r1 : rig.dskdatr_pop();
+        uint16_t r2 = rig.dskdatr_pop();
         uint16_t r3 = rig.dskdatr_pop();
         checks.note("E2-STIMULUS: three DSKDATR accesses returned 0x" + hex4(r1) + ", 0x" +
-                    hex4(r2) + ", 0x" + hex4(r3));
-        checks.expect(r2 != r3,
+                    hex4(r2) + ", 0x" + hex4(r3) + " (measured for interest only -- see the "
+                    "decline below)");
+        checks.record(
             "E2-DSKDATR-EARLY-READ-ACCESS-IS-TRIGGER (p.279 opus:8-appA-dskdat.c6, "
-            "sol:8-appa-dskdatr.c2): the second access's own occurrence is what advances the "
-            "FIFO to a new word for the third access -- the read access at $008 is itself the "
-            "trigger, no separate strobe exists");
+            "sol:8-appa-dskdatr.c2): declined, not graded -- same fault as E3 below, over the "
+            "same p.287 `ER` legend. The legend says early-read transfers are triggered by Agnus "
+            "timing, 'rather than a read address on the destination address bus' -- the opposite "
+            "of what this claim would grade. Distinguishing an Agnus-timed access from a CPU "
+            "destination-address-bus access needs the Agnus<->Paula boundary; `paula_floppy` "
+            "compiled alone (this package's assigned fixture) presents reg_address_in "
+            "identically regardless of what upstream hardware drove it, so it cannot make that "
+            "distinction. See E3's own comment below for the full reasoning.");
     }
 
     // ========================================================================

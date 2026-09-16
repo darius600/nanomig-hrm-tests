@@ -23,6 +23,31 @@
 //   module's input space could ever falsify exclusivity -- it is
 //   unfalsifiable at this boundary, not merely unchecked.
 //
+// REPAIRED 2026-09-15 (repair lot D, LOS-D.md, following DOKTRIN.md):
+//   L2's shape-1 conversion (no claim uid) to note() -- its own text was
+//   also corrected, not merely its shape: it claimed "read back through
+//   DSKDATR" and printed "then 8 DSKDATR reads", but DSKDATR was never
+//   read -- only paula_floppy_fifo's internal write-into-empty bypass
+//   output was sampled. B1/B2/W1/W2/DW1/DW2 were tried for repair rather
+//   than declined outright, and it worked: measure_buffered_write_sequence()
+//   (below) drives paula_floppy's own write-state-machine through a real
+//   sync+header+checksum sequence into its payload stage, then holds
+//   `sdc_busy` so the internal FIFO auto-drain halts -- from that point,
+//   DSKDAT/DSKDATR bus traffic is the ONLY remaining consumer of the FIFO,
+//   so a word written and later read back is genuinely buffered content,
+//   not a same-cycle bypass artifact any design with no useful write-side
+//   disk path would also produce. B1/B2/W1/W2 now use this measurement
+//   directly; DW1/DW2 additionally require it alongside their original
+//   entry-point check (buswr fires, fifo_in==data_in), since a word
+//   reaching the FIFO's input port is not by itself evidence it was sent
+//   toward the disk rather than discarded. CHDR1/CHDR2/CHDW1/CHDW2's
+//   labels no longer carry opus:8-appB-dskdatr.c2/sol:8-appb-dskdatr.c2/
+//   opus:8-appB-dskdat.c2/sol:8-appb-dskdat.c2 literally -- those four uids
+//   are cited only via the RECORD lines below (which already name
+//   CHDR1/CHDR2/CHDW1/CHDW2 as the assertion carrying the positive half),
+//   clearing this package's uid-placement offenses
+//   (tools/check_uid_placement.py flagged all four).
+//
 // RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (3e0f075):
 //   1. $(NANOMIG)/src/minimig-aga/agnus_diskdma.v -- full file (80 lines).
 //   2. $(NANOMIG)/src/minimig-aga/paula_floppy_fifo.v -- full file (60
@@ -100,19 +125,20 @@
 //   package's claims), so every mutation is the standard stimulus/red
 //   form: change what the rig is asked to do, leave the expected value
 //   alone, confirm the targeted assertion alone goes red, then revert.
-//   Baseline (MUTATE unset): 24 passed, 0 failed. Every one of the 24
-//   labels below was run individually as MUTATE=<label> and confirmed 23
-//   passed / 1 failed with ONLY that label's line reading FAIL, then
-//   reverted and reconfirmed 24/0.
+//   Baseline (MUTATE unset), before repair lot D: 24 passed, 0 failed.
+//   After repair lot D (L2 converted to note(), no longer a mutable
+//   assertion): see the build report below for the new tally. Every
+//   remaining graded label was run individually as MUTATE=<label> and
+//   confirmed ONLY that label's line reading FAIL, then reverted.
 //
 // MUTATION L1-READ-LIVENESS-DISTINCT-SD-WORDS stimulus red: pattern B's SD sector bytes driven identical to pattern A's, so the two DSKDATR readings are indistinguishable (MUTATE=L1-READ-LIVENESS-DISTINCT-SD-WORDS).
-// MUTATION L2-WRITE-LIVENESS-DISTINCT-WORDS stimulus red: all four DSKDAT writes driven as 0x0000 instead of four distinct words, so the DSKDATR read-back sequence stays constant (MUTATE=L2-WRITE-LIVENESS-DISTINCT-WORDS).
+// MUTATION L2-WRITE-LIVENESS-DISTINCT-WORDS: REMOVED 2026-09-15 (repair lot D). Converted to note() (shape 1: no claim uid) -- no mutation record remains with its assertion.
 // MUTATION CTRL1-DSKBYTR-DISTINCT-FROM-DSKDATR stimulus red: the read redirected from DSKBYTR ($01A) to DSKDATR ($008) while the check still expects DSKBYTR's own idle pattern 0x9000 (MUTATE=CTRL1-DSKBYTR-DISTINCT-FROM-DSKDATR).
-// MUTATION B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9 stimulus red: all four DSKDAT writes driven as 0x0000 instead of four distinct words, so DSKDATR never answers with real, varying FIFO content (MUTATE=B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9).
+// MUTATION B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9 stimulus red (REPAIRED 2026-09-15, repair lot D -- retargeted to measure_buffered_write_sequence()): all four DSKDAT writes driven as 0x0000 instead of four distinct words, so the genuinely buffered DSKDATR read-back never answers with real, varying content (MUTATE=B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9).
 // MUTATION B2-DSKDAT-IS-THE-DMA-DATA-BUFFER-SOL-C1 stimulus red: same corruption, independent run for this citation (MUTATE=B2-DSKDAT-IS-THE-DMA-DATA-BUFFER-SOL-C1).
-// MUTATION W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10 stimulus red: all four DSKDAT writes driven as 0x0000, so no read-back ever carries a nonzero high AND low byte together (MUTATE=W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10).
+// MUTATION W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10 stimulus red (REPAIRED 2026-09-15, repair lot D -- retargeted to measure_buffered_write_sequence()): all four DSKDAT writes driven as 0x0000, so no genuinely buffered read-back ever carries a nonzero high AND low byte together (MUTATE=W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10).
 // MUTATION W2-BUFFER-HOLDS-TWO-BYTES-SOL-C2 stimulus red: same corruption, independent run for this citation (MUTATE=W2-BUFFER-HOLDS-TWO-BYTES-SOL-C2).
-// MUTATION DW1-WRITE-SENDS-TOWARD-DISK-SOL-C3 stimulus red: the word presented at DSKBYTR ($01A) instead of DSKDAT ($026), so buswr never fires and the word never reaches fifo_in (MUTATE=DW1-WRITE-SENDS-TOWARD-DISK-SOL-C3).
+// MUTATION DW1-WRITE-SENDS-TOWARD-DISK-SOL-C3 stimulus red (REPAIRED 2026-09-15, repair lot D -- now also requires measure_buffered_write_sequence() evidence): the same mutation flag corrupts both halves of the conjunctive check -- the entry-point trial's word is redirected to DSKBYTR ($01A) instead of DSKDAT ($026), so buswr never fires and fifo_in never receives it; independently, the buffered trial's payload words are driven as 0x0000 (measure_buffered_write_sequence()'s own corrupt path), so the buffered read-back never varies either (MUTATE=DW1-WRITE-SENDS-TOWARD-DISK-SOL-C3).
 // MUTATION DW2-WRITE-SENDS-TOWARD-DISK-OPUS-C11 stimulus red: same address redirection, independent run for this citation (MUTATE=DW2-WRITE-SENDS-TOWARD-DISK-OPUS-C11).
 // MUTATION DR1-READ-RECEIVES-FROM-DISK-SOL-C4 stimulus red: pattern B's SD bytes driven identical to pattern A's, so the two DSKDATR readings cannot be told apart (MUTATE=DR1-READ-RECEIVES-FROM-DISK-SOL-C4).
 // MUTATION DR2-READ-RECEIVES-FROM-DISK-OPUS-C11 stimulus red: same corruption, independent run for this citation (MUTATE=DR2-READ-RECEIVES-FROM-DISK-OPUS-C11).
@@ -279,25 +305,20 @@ bool measure_no_grant(uint32_t hpos_val) {
 }
 
 // ---------------------------------------------------------------------
-// paula_floppy write-direction sequence: arm DSKLEN for a disk WRITE
-// (dsklen[14]=1), then push several distinct (or, under a mutation,
-// identical) words through DSKDAT.
-//
-// DSKDATR read-back does NOT work as an observation point for this
-// direction: paula_floppy's own internal write-parser (`cpu_wr_state`,
-// driven by `stbdat = trackwr & !fifo_empty & buffer_write_allowed`, which
-// is independent of any bus read) auto-drains the FIFO every cycle once it
-// is non-empty, looking for a sync marker -- discovered empirically (the
-// first build of this package tried the DSKDATR-loopback approach and every
-// read came back constant; the RTL's own `stbdat` term, read afterward,
-// explains why). paula_floppy_fifo's OUTPUT (`fifo_out`, `/* verilator
-// public */` at paula_floppy.v:146, reachable at this rig as
-// `PAULA1->fifo_out` per the CELLS section of Vdisk_dma_data_channel_rig.h)
-// is sampled directly instead, right after each write -- an observation
-// point that exists specifically because the RTL author marked it public
-// for exactly this kind of external check.
+// paula_floppy write-direction BYPASS sequence (L2 LIVENESS ONLY --
+// REPAIRED 2026-09-15, repair lot D: this no longer backs any graded claim,
+// see measure_buffered_write_sequence() below for that). Arms DSKLEN for a
+// disk WRITE (dsklen[14]=1), then pushes several distinct (or, under a
+// mutation, identical) words through DSKDAT and samples
+// paula_floppy_fifo's OUTPUT (`fifo_out`, `/* verilator public */` at
+// paula_floppy.v:146, reachable at this rig as `PAULA1->fifo_out`) directly
+// -- the write-into-empty-FIFO BYPASS, not a DSKDATR bus read. A design
+// with no useful write-side disk path would pass this identically; it only
+// shows the FIFO's data input is wired to something that changes. Kept as
+// a cheap liveness signal (no claim uid), not as evidence for B1/B2/W1/W2/
+// DW1/DW2, which now use the genuinely buffered mechanism below.
 // ---------------------------------------------------------------------
-std::vector<uint16_t> measure_write_sequence(bool corrupt) {
+std::vector<uint16_t> measure_bypass_write_sequence(bool corrupt) {
     Harness h;
     h.write_reg(DSKLEN, 0xC00A);  // bit15=1,bit14=1 (write dir),len=10 -- first write
     h.write_reg(DSKLEN, 0xC00A);  // second write: dmaen latches, dskstate -> ACTIVE
@@ -325,6 +346,154 @@ std::vector<uint16_t> measure_write_sequence(bool corrupt) {
         h.dut->eval();
         h.tick(); h.tick(); h.tick();
     }
+    return samples;
+}
+
+// ---------------------------------------------------------------------
+// paula_floppy write-direction, GENUINELY BUFFERED sequence (REPAIRED
+// 2026-09-15, repair lot D; replaces the bypass-based measurement above as
+// the evidence for B1/B2/W1/W2/DW1/DW2). The bypass approach sampled
+// paula_floppy_fifo's write-into-empty bypass output on the storing edge --
+// a design with no useful write-side disk path would pass identically.
+// This helper instead drives paula_floppy's own write-state-machine
+// (`cpu_wr_state`, paula_floppy.v:779-903) through a real sync + header +
+// checksum sequence into `cpu_wr_state==3` (the payload stage), then holds
+// `sdc_busy=1` so `buffer_write_allowed` (paula_floppy.v:767,
+// `(cpu_wr_state!=3) || (fd_dma_buf_wr_state==6 && !sdc_busy)`) is FALSE --
+// the internal auto-drain (`stbdat`, paula_floppy.v:768) stops entirely.
+// From that point, `fifo_rd = (busrd & dmaon) | stbdat` (paula_floppy.v:911)
+// reduces to `busrd & dmaon`: DSKDAT writes and DSKDATR reads are the ONLY
+// remaining consumer of the FIFO, so a word presented at DSKDAT and later
+// read back via DSKDATR is genuinely buffered content, not a same-cycle
+// bypass artifact.
+//
+// The header's checksum (paula_floppy.v:814-825) and track field
+// (paula_floppy.v:833-836, compared against the live `track` wire) are real
+// gates on this path -- get them wrong and the state machine resets to
+// idle instead of reaching state 3, and this helper's own diagnostic
+// (checked empirically at build time: no "header checksum failure" /
+// "track mismatch" message on stdout, and a non-idle, distinct read-back
+// sequence) would show it. `track` (paula_floppy.v:669,
+// `{dsktrack[sel],~side}`) is 0x01 here: `dsktrack[sel]` resets to 0 (no
+// step pulses are ever issued in this rig) and `side` is held 0 by the
+// Harness -- confirmed empirically, no "track mismatch" observed at this
+// value. The parser only inspects each fifo word's EVEN bit positions as
+// the data byte (paula_floppy.v:776-777, `dbyte`); the odd (clock)
+// positions are never read, so a literal p.250 MFM encoding of the clock
+// bits is not needed to satisfy this parser -- only the data bits it
+// actually decodes need to carry the intended byte. The payload checksum
+// seed (state 2) and the header's filler bytes (cnt 4..21, unchecked
+// beyond contributing to the header checksum this helper also computes)
+// are not otherwise validated as a gate to state 3.
+// ---------------------------------------------------------------------
+static const uint8_t WBUF_TRACK = 0x01;  // measured, see comment above
+
+// Mirrors the write-state-machine's header bit-index formula exactly
+// (paula_floppy.v:811): wr_sector_header_word[{~cnt[0], i[2:0], ~cnt[1]}]
+// <= fifo_out[2*i], for header cycle cnt (0..3) and data-bit position i
+// (0..7).
+static inline int wbuf_header_bit_index(int cnt, int i) {
+    int not_cnt0 = (~cnt) & 1;
+    int not_cnt1 = (~(cnt >> 1)) & 1;
+    return (not_cnt0 << 4) | (i << 1) | not_cnt1;
+}
+// Spreads byte `b`'s bits into a raw fifo word's EVEN bit positions (0,2,
+// ...,14), matching what the parser's `dbyte` extraction (paula_floppy.v:
+// 776-777) reads back; the odd (clock) positions are left 0 -- the parser
+// never inspects them.
+static inline uint16_t wbuf_encode_byte(uint8_t b) {
+    uint16_t w = 0;
+    for (int i = 0; i < 8; i++) if ((b >> i) & 1) w |= (uint16_t)(1u << (2 * i));
+    return w;
+}
+// Inverse of wbuf_header_bit_index: which byte, sent as the fifo word at
+// header cycle `cnt`, makes the parser assemble target 32-bit header value
+// H into wr_sector_header_word.
+static uint8_t wbuf_header_byte_for_cnt(uint32_t H, int cnt) {
+    uint8_t b = 0;
+    for (int i = 0; i < 8; i++) if ((H >> wbuf_header_bit_index(cnt, i)) & 1) b |= (uint8_t)(1u << i);
+    return b;
+}
+
+std::vector<uint16_t> measure_buffered_write_sequence(bool corrupt) {
+    Harness h;
+    h.dut->sdc_busy = 1;  // held throughout: keeps buffer_write_allowed false once cpu_wr_state==3
+    // len=100 (0x64), not the 10 used elsewhere in this file for the short bypass trial: this
+    // sequence needs 1 (sync) + 22 (header) + 2 (header checksum) + 4 (payload-checksum seed) + 4
+    // (real payload words) = 33 words before lenzero -- 10 was too short and forced `trackwr` to 0
+    // (and cpu_wr_state to reset) partway through the header, discovered empirically (RTL's own
+    // "data checkum failed" message printed on every trial, which requires cpu_wr_state to have
+    // reached 0 again -- impossible if the intended halt at state 3 had actually held).
+    h.write_reg(DSKLEN, 0xC064);  // bit15=1,bit14=1 (write dir),len=100 -- first write
+    h.write_reg(DSKLEN, 0xC064);  // second write: dmaen latches, dskstate -> ACTIVE
+    for (int i = 0; i < 16; i++) h.tick();
+
+    auto send_word = [&](uint16_t w) {
+        while (!h.dut->clk7_en) h.tick();
+        h.dut->reg_address_in = DSKDAT >> 1;
+        h.dut->data_in = w;
+        h.dut->eval();
+        h.tick();
+        h.dut->reg_address_in = 0;  // stop the write itself; data_in intentionally left at `w`
+                                     // for settle_cycle() below, not cleared here
+        h.dut->eval();
+        h.tick(); h.tick(); h.tick();
+    };
+    // One idle clk7_en period (no write pending -- reg_address_in already cleared by send_word())
+    // after each write, giving the internal consumer one full cycle to consume it before the next
+    // write commits. Diagnosed empirically in two steps: (1) writing one word per clk7_en cycle
+    // back-to-back puts `stbdat`'s read and the next word's write on the SAME cycle, both touching
+    // `mem[in_ptr]` (paula_floppy_fifo.v's `out_ptr+1 == in_ptr` in this lockstep case) -- the
+    // read's nonblocking-assignment RHS evaluates the PRE-write (stale, zero) value, so the parser
+    // read 0x0000 forever from the second header word on. (2) Simply idling with data_in also
+    // cleared broke the FIRST word instead: paula_floppy_fifo's write-into-empty bypass sets
+    // `empty_write<=1` for exactly one cycle, and `if(empty_write) out<=in` reads `in` (=data_in)
+    // LIVE on whichever cycle the read actually fires -- not the stored cell -- so data_in must
+    // still show the just-written word on this settle cycle, not 0.
+    auto settle_cycle = [&]() {
+        while (!h.dut->clk7_en) h.tick();
+        h.dut->eval();
+        h.tick(); h.tick(); h.tick(); h.tick();
+        h.dut->data_in = 0;  // now safe to clear, ready for the next send_word()
+    };
+
+    send_word(0x4489);  // sync marker (dsksync's reset value, paula_floppy.v:705)
+
+    // 32-bit header: byte1 (bits 23:16) is the only field the parser checks
+    // (against `track`, paula_floppy.v:834); the rest is unchecked filler
+    // that still feeds the header checksum accumulated below, exactly as
+    // the RTL accumulates it (paula_floppy.v:814-818).
+    uint32_t header = (0xFFu << 24) | ((uint32_t)WBUF_TRACK << 16) | (0x01u << 8) | 0x0Au;
+    uint8_t csum_lo = 0, csum_hi = 0;
+    settle_cycle();
+    for (int cnt = 0; cnt <= 21; cnt++) {
+        uint8_t byte = (cnt < 4) ? wbuf_header_byte_for_cnt(header, cnt) : 0x00;
+        if (cnt & 1) csum_hi ^= byte; else csum_lo ^= byte;
+        send_word(wbuf_encode_byte(byte));
+        settle_cycle();
+    }
+    send_word(wbuf_encode_byte(csum_lo));  // cnt==22, compared against wr_sector_csum[7:0]
+    settle_cycle();
+    send_word(wbuf_encode_byte(csum_hi));  // cnt==23, compared against wr_sector_csum[15:8];
+                                            // track-checked next -- then -> state 2
+    settle_cycle();
+
+    // Payload-checksum seed (state 2, cnt 0..3): not validated as a gate to
+    // state 3 (paula_floppy.v:858-862 transitions unconditionally).
+    send_word(wbuf_encode_byte(0x00)); settle_cycle();
+    send_word(wbuf_encode_byte(0x00)); settle_cycle();
+    send_word(wbuf_encode_byte(0x00)); settle_cycle();
+    send_word(wbuf_encode_byte(0x00)); settle_cycle();  // -> state 3; drain now halted (sdc_busy=1 held)
+
+    // From here, DSKDAT/DSKDATR are the only remaining consumer of the FIFO.
+    static const uint16_t words[4] = {0x3C7A, 0xA5F1, 0x0102, 0xFEDC};
+    for (int i = 0; i < 4; i++) send_word(corrupt ? 0x0000 : words[i]);
+
+    std::vector<uint16_t> samples;
+    for (int i = 0; i < 8; i++) samples.push_back(h.read_reg(DSKDATR));  // generous margin, same
+                                                                          // "robust to fifo position"
+                                                                          // philosophy as this
+                                                                          // package's read-side trials
     return samples;
 }
 
@@ -442,13 +611,24 @@ int main(int argc, char** argv) {
     {
         std::string label = "L2-WRITE-LIVENESS-DISTINCT-WORDS";
         bool m = mutating(label);
-        std::vector<uint16_t> r = measure_write_sequence(m);
+        std::vector<uint16_t> r = measure_bypass_write_sequence(m);
         checks.note("L2-STIMULUS: four DSKDAT writes (" + std::string(m ? "all 0x0000 [mutated]" : "0x3C7A,0xA5F1,0x0102,0xFEDC") +
-                    "), then 8 DSKDATR reads: distinct values seen = " + std::to_string(count_distinct(r)));
-        checks.expect(any_nonzero(r) && count_distinct(r) >= 2,
-            label + " (fixture liveness, no manual citation): four distinct known words written at DSKDAT, read "
-            "back through DSKDATR, produce a non-idle, non-constant sequence -- the write-side data path is live, "
-            "not stuck");
+                    "): paula_floppy_fifo's fifo_out (PAULA1->fifo_out, an internal, verilator-public "
+                    "write-into-empty-FIFO bypass signal) sampled on the same edge each word is stored -- "
+                    "distinct values seen = " + std::to_string(count_distinct(r)));
+        // CONVERTED TO note(), REPAIRED 2026-09-15, repair lot D (shape 1: no claim uid, a
+        // fixture-liveness check). The text is corrected too, not merely the shape: the previous
+        // label claimed "read back through DSKDATR" and its own MEASURED line printed "then 8
+        // DSKDATR reads" -- DSKDATR is never read here. What is sampled is the write-into-empty-FIFO
+        // bypass (paula_floppy_fifo.v:47-49), not a bus read; a design with no useful write-side disk
+        // path would pass this identically. See B1/B2/W1/W2/DW1/DW2 below for the genuinely
+        // DSKDATR-buffered measurement the graded claims now use (measure_buffered_write_sequence()).
+        checks.note(
+            label + " (fixture liveness, no manual citation, no claim uid): four distinct known words "
+            "written at DSKDAT produce a non-idle, non-constant sequence at paula_floppy_fifo's bypass "
+            "output -- the write-side FIFO input path is live, not stuck. This does NOT exercise DSKDATR "
+            "or any real buffering; any_nonzero=" + std::string(any_nonzero(r) ? "true" : "false") +
+            " count_distinct=" + std::to_string(count_distinct(r)));
     }
 
     // ====================================================================
@@ -474,13 +654,21 @@ int main(int argc, char** argv) {
 
     // ====================================================================
     // B1/B2 -- opus:8-appA-dskdat.c9 / sol:8-appa-dskdata.c1 (p.279):
-    // "This register is the disk DMA data buffer."
+    // "This register is the disk DMA data buffer." REPAIRED 2026-09-15
+    // (repair lot D): now uses measure_buffered_write_sequence() -- a
+    // genuine DSKDATR read-back of what was written at DSKDAT, through
+    // paula_floppy's real write-state-machine and buffer engine, with its
+    // internal FIFO auto-drain halted (see that function's header comment)
+    // -- rather than the write-into-empty-FIFO bypass the previous
+    // measurement sampled, which any design with no useful write-side disk
+    // path would have passed identically.
     // ====================================================================
     {
         std::string label = "B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9";
         bool m = mutating(label);
-        std::vector<uint16_t> r = measure_write_sequence(m);
-        checks.note("B1-STIMULUS: distinct values seen at DSKDATR after four DSKDAT writes = " + std::to_string(count_distinct(r)));
+        std::vector<uint16_t> r = measure_buffered_write_sequence(m);
+        checks.note("B1-STIMULUS: distinct values genuinely read back via DSKDATR after four DSKDAT "
+                    "writes (internal auto-drain halted) = " + std::to_string(count_distinct(r)));
         checks.expect(any_nonzero(r) && count_distinct(r) >= 2,
             label + " (p.279, opus:8-appA-dskdat.c9, quote 'This register is the disk DMA data buffer.'): DSKDAT/"
             "DSKDATR answers with real, varying FIFO content driven by what was written, not a fixed/dummy value "
@@ -489,7 +677,7 @@ int main(int argc, char** argv) {
     {
         std::string label = "B2-DSKDAT-IS-THE-DMA-DATA-BUFFER-SOL-C1";
         bool m = mutating(label);
-        std::vector<uint16_t> r = measure_write_sequence(m);
+        std::vector<uint16_t> r = measure_buffered_write_sequence(m);
         checks.expect(any_nonzero(r) && count_distinct(r) >= 2,
             label + " (p.279, sol:8-appa-dskdata.c1, quote 'This register is the disk DMA data buffer.'): twin "
             "of B1 (same printed sentence, independent reader) -- same measurement, graded independently under "
@@ -498,21 +686,22 @@ int main(int argc, char** argv) {
 
     // ====================================================================
     // W1/W2 -- opus:8-appA-dskdat.c10 / sol:8-appa-dskdata.c2 (p.279):
-    // "It contains two bytes of data..."
+    // "It contains two bytes of data..." REPAIRED 2026-09-15 (repair lot
+    // D): see B1/B2 above -- same genuinely buffered mechanism.
     // ====================================================================
     {
         std::string label = "W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10";
         bool m = mutating(label);
-        std::vector<uint16_t> r = measure_write_sequence(m);
+        std::vector<uint16_t> r = measure_buffered_write_sequence(m);
         checks.expect(any_full_word(r) && count_distinct(r) >= 2,
             label + " (p.279, opus:8-appA-dskdat.c10, quote 'It contains two bytes of data...'): at least one "
-            "DSKDATR read-back carries a nonzero high AND a nonzero low byte together -- a full 16-bit, two-byte "
-            "word moves through the buffer, not a single byte");
+            "genuinely buffered DSKDATR read-back carries a nonzero high AND a nonzero low byte together -- a "
+            "full 16-bit, two-byte word moves through the buffer, not a single byte");
     }
     {
         std::string label = "W2-BUFFER-HOLDS-TWO-BYTES-SOL-C2";
         bool m = mutating(label);
-        std::vector<uint16_t> r = measure_write_sequence(m);
+        std::vector<uint16_t> r = measure_buffered_write_sequence(m);
         checks.expect(any_full_word(r) && count_distinct(r) >= 2,
             label + " (p.279, sol:8-appa-dskdata.c2, quote 'It contains two bytes of data...'): twin of W1 -- "
             "same measurement, graded independently under its own uid");
@@ -521,25 +710,38 @@ int main(int argc, char** argv) {
     // ====================================================================
     // DW1/DW2 -- sol:8-appa-dskdata.c3 (p.279, write half) and
     // opus:8-appA-dskdat.c11 (p.279, write half of its both-directions
-    // sentence).
+    // sentence). REPAIRED 2026-09-15 (repair lot D): the original
+    // measurement (buswr fires, fifo_in==data_in at entry) proved only
+    // address decode and immediate combinational wiring -- a design that
+    // decodes the address and discards every word would have passed. Now
+    // ALSO requires the SAME word to be genuinely retrievable afterward via
+    // measure_buffered_write_sequence()'s buffered DSKDATR read-back,
+    // proving the word actually entered and was retained by the outbound,
+    // disk-facing buffer, not merely wired straight through.
     // ====================================================================
     {
         std::string label = "DW1-WRITE-SENDS-TOWARD-DISK-SOL-C3";
         bool m = mutating(label);
-        WriteEntryResult r = measure_write_entry(m);
+        WriteEntryResult entry = measure_write_entry(m);
+        std::vector<uint16_t> buffered = measure_buffered_write_sequence(m);
         checks.note("DW1-STIMULUS: word 0x3C7A presented at " + std::string(m ? "DSKBYTR [mutated, not DSKDAT]" : "DSKDAT") +
-                    " -> buswr=" + std::to_string(r.buswr) + " fifo_in=0x" + hex4(r.fifo_in));
-        checks.expect(r.buswr && r.fifo_in == 0x3C7A,
+                    " -> buswr=" + std::to_string(entry.buswr) + " fifo_in=0x" + hex4(entry.fifo_in) +
+                    "; independent buffered-write trial, distinct values genuinely read back via DSKDATR = " +
+                    std::to_string(count_distinct(buffered)));
+        checks.expect(entry.buswr && entry.fifo_in == 0x3C7A && any_nonzero(buffered) && count_distinct(buffered) >= 2,
             label + " (p.279, sol:8-appa-dskdata.c3, quote 'It contains two bytes of data that are either sent "
             "(written) to ... the disk.'): a word presented at DSKDAT ($026) fires paula_floppy's own busrd/buswr "
             "decode (buswr, paula_floppy.v:759) and reaches the FIFO's input (fifo_in, paula_floppy.v:762) "
-            "unmodified -- writing at DSKDAT sends the data into the outbound, disk-facing pipeline");
+            "unmodified, AND written words are genuinely retrievable afterward through the buffer via DSKDATR "
+            "(internal auto-drain halted, not a same-cycle bypass) -- writing at DSKDAT sends the data into the "
+            "outbound, disk-facing buffer, not merely through combinational wiring");
     }
     {
         std::string label = "DW2-WRITE-SENDS-TOWARD-DISK-OPUS-C11";
         bool m = mutating(label);
-        WriteEntryResult r = measure_write_entry(m);
-        checks.expect(r.buswr && r.fifo_in == 0x3C7A,
+        WriteEntryResult entry = measure_write_entry(m);
+        std::vector<uint16_t> buffered = measure_buffered_write_sequence(m);
+        checks.expect(entry.buswr && entry.fifo_in == 0x3C7A && any_nonzero(buffered) && count_distinct(buffered) >= 2,
             label + " (p.279, opus:8-appA-dskdat.c11, quote 'two bytes of data that are either sent (written) to "
             "or received (read) from the disk' -- write half): same fact as DW1, second citing passage, graded "
             "independently under its own uid");
@@ -687,7 +889,11 @@ int main(int argc, char** argv) {
     // CHDR1/CHDR2 -- opus:8-appB-dskdatr.c2 / sol:8-appb-dskdatr.c2
     // (p.289): DSKDATR is used by the disk DMA channel -- POSITIVE HALF
     // ONLY. The word "only" (exclusivity) is not graded: see the RECORD
-    // line below and SPECIFICATION.md.
+    // line below and SPECIFICATION.md. REPAIRED 2026-09-15 (repair lot D):
+    // these two uids are cited only via the record() below, not in this
+    // graded label -- tools/check_uid_placement.py flagged them as sitting
+    // on both a graded and a record() line (the record already names
+    // CHDR1/CHDR2 as the assertion carrying the positive half).
     // ====================================================================
     {
         std::string label = "CHDR1-DSKDATR-USED-BY-CHANNEL-OPUS-C2";
@@ -695,10 +901,10 @@ int main(int argc, char** argv) {
         bool dmas_used = m;  // baseline: read direction (dmas=0) -> DSKDATR
         GrantResult r = measure_grant(dmas_used, 0x19, false);
         checks.expect(r.dma && r.reg_addr_field == DSKDATR_FIELD,
-            label + " (p.289, opus:8-appB-dskdatr.c2, quote 'DSKDATR & *008 ER P Disk data early read (dummy "
-            "address)' -- graded half only: 'DSKDATR is used by the disk DMA channel'): at a granted slot, "
-            "agnus_diskdma presents DSKDATR for the disk-to-RAM direction -- the word 'only' (exclusivity) is "
-            "NOT asserted here (see RECORDED line)");
+            label + " (p.289, quote 'DSKDATR & *008 ER P Disk data early read (dummy address)' -- graded half "
+            "only, uid cited via record() below per uid-placement: 'DSKDATR is used by the disk DMA channel'): "
+            "at a granted slot, agnus_diskdma presents DSKDATR for the disk-to-RAM direction -- the word 'only' "
+            "(exclusivity) is NOT asserted here (see RECORDED line)");
     }
     {
         std::string label = "CHDR2-DSKDATR-USED-BY-CHANNEL-SOL-C2";
@@ -706,14 +912,15 @@ int main(int argc, char** argv) {
         bool dmas_used = m;
         GrantResult r = measure_grant(dmas_used, 0x19, false);
         checks.expect(r.dma && r.reg_addr_field == DSKDATR_FIELD,
-            label + " (p.289, sol:8-appb-dskdatr.c2, twin of CHDR1 -- graded half only, same exclusion): same "
-            "measurement, graded independently under its own uid");
+            label + " (p.289, twin of CHDR1 -- graded half only, same exclusion, uid cited via record() below "
+            "per uid-placement): same measurement, graded independently under its own uid");
     }
 
     // ====================================================================
     // CHDW1/CHDW2 -- opus:8-appB-dskdat.c2 / sol:8-appb-dskdat.c2
     // (p.289): DSKDAT is used by the disk DMA channel -- POSITIVE HALF
-    // ONLY.
+    // ONLY. REPAIRED 2026-09-15 (repair lot D): same uid-placement fix as
+    // CHDR1/CHDR2 above.
     // ====================================================================
     {
         std::string label = "CHDW1-DSKDAT-USED-BY-CHANNEL-OPUS-C2";
@@ -721,10 +928,10 @@ int main(int argc, char** argv) {
         bool dmas_used = !m;  // baseline: write direction (dmas=1) -> DSKDAT
         GrantResult r = measure_grant(dmas_used, 0x19, false);
         checks.expect(r.dma && r.reg_addr_field == DSKDAT_FIELD,
-            label + " (p.289, opus:8-appB-dskdat.c2, quote 'DSKDAT & *026 W P Disk DMA data write' -- graded "
-            "half only: 'DSKDAT is used by the disk DMA channel'): at a granted slot, agnus_diskdma presents "
-            "DSKDAT for the RAM-to-disk direction -- the word 'only' (exclusivity) is NOT asserted here (see "
-            "RECORDED line)");
+            label + " (p.289, quote 'DSKDAT & *026 W P Disk DMA data write' -- graded half only, uid cited via "
+            "record() below per uid-placement: 'DSKDAT is used by the disk DMA channel'): at a granted slot, "
+            "agnus_diskdma presents DSKDAT for the RAM-to-disk direction -- the word 'only' (exclusivity) is NOT "
+            "asserted here (see RECORDED line)");
     }
     {
         std::string label = "CHDW2-DSKDAT-USED-BY-CHANNEL-SOL-C2";
@@ -732,8 +939,8 @@ int main(int argc, char** argv) {
         bool dmas_used = !m;
         GrantResult r = measure_grant(dmas_used, 0x19, false);
         checks.expect(r.dma && r.reg_addr_field == DSKDAT_FIELD,
-            label + " (p.289, sol:8-appb-dskdat.c2, twin of CHDW1 -- graded half only, same exclusion): same "
-            "measurement, graded independently under its own uid");
+            label + " (p.289, twin of CHDW1 -- graded half only, same exclusion, uid cited via record() below "
+            "per uid-placement): same measurement, graded independently under its own uid");
     }
 
     // A DECLINE THAT IS NEVER PRINTED IS INDISTINGUISHABLE FROM A CLAIM

@@ -390,3 +390,37 @@ bus cannot masquerade as every claim below being a genuine finding.
 Nothing in this file required opening the RTL, the port list, or any file
 under `nanomig-hrm-tests/nanomig/` to write beyond the original build. No
 HALT condition was encountered, in the original build or in this repair.
+
+## Repair addendum (Lot F, 2026-09-15)
+
+A second independent validation found five further defects in the prior
+repair, all fixed against the printed pages (no RTL touched, no oracle
+adjusted):
+
+- **A1** (FIXTURE-LIVENESS, no uid) and **A6-CONTROL** (no uid) withdrawn
+  to `note()` — neither ever carried conformance evidence.
+- **A2** (DSKBYTR-IS-A-REAL-READABLE-REGISTER) repaired: its decode marker
+  was idle bit 15 (DSKBYT) = 1, a value p.278 never defines (DSKBYTR has
+  no printed reset/idle word). Narrowed to bits 13 (DISKWRITE) and 14
+  (DMAON), both page-defined and both proven to move by A3/A4. Stays
+  GREEN.
+- **A8** (UNUSED-BITS-11-8) declined to `record()` — p.264 says not to
+  rely on unused bits' values at all; requiring zero graded a value the
+  page never states.
+- **A4**'s graded label repeated three uids (`opus:8-dskbytr.c8`,
+  `sol:8-dskbytr.c9`, `opus:8-appA-dskbytr.c10`) that also sat on this
+  same block's DMACON-half `record()` line — a uid-placement defect. The
+  three uids now sit on the `record()` line alone.
+- **A9** (DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES, still RED and still
+  the finding) had an unsound guard: it bound its known byte via a search
+  for DSKDATR word `0xFFFF`, which is this RTL's own non-conformant
+  encoder output for a uniform 0xFF byte, not a page-legal value (p.250
+  makes 0xFF → 0x5555). Because the guard was a conjunct of the grading
+  expression, a conforming encoder would never produce the marker and the
+  assertion would fail anyway, for the wrong reason. Repaired so the
+  binding is a precondition that declines when the marker cannot be
+  located, and grades the DATA field only when it can.
+
+Post-repair tally: 3 passed, 3 failed (A2/A3/A4 green; A6/A7/A9 red — the
+package's three genuine findings, unchanged in substance), 3 declined
+(A5, A8, A10), 2 measured-not-graded (A1, A6-CONTROL).

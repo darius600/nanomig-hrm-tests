@@ -102,10 +102,6 @@
 // revert -> rebuild) and the FAIL/PASS lines quoted are what the run
 // printed, not predictions.
 //
-// MUTATION FIXTURE-LIVE stimulus red: the second porta_in pattern changed
-//   from the distinct sentinel (PA5,PA4,PA3,PA2)=(1,0,1,0) to a repeat of
-//   the first, (0,1,0,1) -> FAIL, second reading no longer differs from the
-//   first (both 0x14 on the PA5-PA2 nibble). Reverted.
 // MUTATION opus:8-cia.c2 stimulus red: PROP-INPUT's sweep (this assertion's
 //   label also carries the leading token's twin, sol:8-cia.c1, which the
 //   suite's mutation-label gate reads only the FIRST token of; the record
@@ -113,11 +109,23 @@
 //   changed which physical porta_in line is driven low from PA3 itself to
 //   the neutral other-position line (PA7) -- expected value (PA3 reads LOW)
 //   left unchanged -> FAIL, PA3 read back HIGH (only PA7 was actually driven
-//   low). Reverted.
-// MUTATION CONTROL-PA5 stimulus red: the same wrong-bit stimulus bug
-//   PROP-INPUT's sweep uses, applied to the control's own bit (PA5) alone,
-//   redirecting the driven-low line to PA6 -- expected value (PA5 reads LOW)
-//   left unchanged -> FAIL, PA5 read back HIGH. Reverted.
+//   low). Reverted. (PROP-INPUT is the only assertion below still graded
+//   via expect(); its mutation record is therefore the only one kept.)
+//
+// REPAIR NOTE (2026-09-15): independent validation of this package's two
+//   other checks. FIXTURE-LIVE (no uid) is a liveness measurement only --
+//   converted expect() -> note(), per this suite's rule that a no-uid check
+//   is never graded; its former MUTATION FIXTURE-LIVE record is removed
+//   with it. CONTROL-PA5 (no uid) repeats a subset of PROP-INPUT's own
+//   comparator on the same direct vector -- duplicate rather than
+//   independent evidence -- also converted expect() -> note(), its former
+//   MUTATION CONTROL-PA5 record removed with it. The suite's separate
+//   hrm/ch8-cia-disk-signal-bindings package now grades the 8 named-signal
+//   BINDING claims this package's own pre-existing declines named "one
+//   level above this boundary"; those declines are re-pointed below to name
+//   that package and the specific PAn-BINDING assertion carrying each
+//   signal, instead of the boundary in general. No RTL, oracle or kept
+//   assertion (PROP-INPUT) was touched.
 
 #include <cstdint>
 #include <iostream>
@@ -313,11 +321,11 @@ int main(int argc, char** argv) {
 
     {
         Harness h;
-        checks.expect(fixture_live(h),
-            "FIXTURE-LIVE: two distinct, known 4-bit words across PA5-PA2 "
-            "(0b0101, 0b1010) both arrive and read back correctly and "
-            "distinctly at a CIAAPRA read before any data-dependent "
-            "assertion is graded [no page -- infrastructure]");
+        const bool live = fixture_live(h);
+        checks.note(std::string("FIXTURE-LIVE: two distinct, known 4-bit words across PA5-PA2 "
+            "(0b0101, 0b1010) arrive and read back ") + (live ? "correctly and distinctly" : "INCORRECTLY") +
+            " at a CIAAPRA read -- liveness measurement only, not itself a page claim, not graded "
+            "[no page -- infrastructure]");
     }
 
     {
@@ -338,12 +346,13 @@ int main(int argc, char** argv) {
         checks.note("PROP-INPUT per-bit result: " + detail);
     }
 
-    { Harness h; checks.expect(
-        bit_is_pure_input(h, /*bit=*/5, /*other_bit=*/6),
+    { Harness h; const bool ok = bit_is_pure_input(h, /*bit=*/5, /*other_bit=*/6);
+      checks.note(std::string(
         "CONTROL-PA5: the same bit_is_pure_input() comparator PROP-INPUT "
-        "sweeps above, instantiated at PA5 alone -- the measurement-basis "
-        "control every graded assertion in this package is implicitly "
-        "compared against. Not itself a page claim [no page -- "
+        "sweeps above, instantiated at PA5 alone -- ") + (ok ? "PASS" : "FAIL") +
+        " -- repeats a subset of PROP-INPUT on the same direct vector, "
+        "duplicate rather than independent evidence; measurement-basis "
+        "control only, not itself a page claim, not graded [no page -- "
         "infrastructure control]"); }
 
     // ------------------------------------------------------------------
@@ -355,57 +364,63 @@ int main(int argc, char** argv) {
         "opus:8-cia.c6 (p.244, \"PA5 DSKRDY* ... Disk ready (active low). "
         "The drive will pull this line low when the motor is known to be "
         "rotating at full speed. This signal is only valid when the motor "
-        "is ON...\"): names PA5's drive-signal binding (minimig.v:622, out "
-        "of this boundary), the active-low polarity meaning (paula_floppy, "
-        "out of this boundary), and a motor-validity clause already the "
-        "subject of a built sibling package (hrm/ch8-drive-sense-lines, "
-        "opus:8-cia.c7). PA5's bit-position/input-ness is still exercised "
-        "as one of PROP-INPUT's four data points -- a different claim, "
-        "which does not re-grade this one under a different label. Not "
-        "graded here.");
+        "is ON...\"): names PA5's drive-signal binding, now graded in "
+        "hrm/ch8-cia-disk-signal-bindings' PA5-BINDING assertion; the "
+        "motor-validity clause is a separate, already-built sibling claim "
+        "(hrm/ch8-drive-sense-lines, opus:8-cia.c7). PA5's bit-position/"
+        "input-ness is still exercised as one of PROP-INPUT's four data "
+        "points -- a different claim. Not graded here.");
     checks.record(
         "sol:8-cia.c5 (p.244, composed: PA5 position + DSKRDY* name + "
-        "active-low polarity, twin of opus:8-cia.c6): same reasons. Not "
-        "graded here.");
+        "active-low polarity, twin of opus:8-cia.c6): same reason; now "
+        "graded in hrm/ch8-cia-disk-signal-bindings' PA5-BINDING assertion. "
+        "Not graded here.");
     checks.record(
         "opus:8-cia.c11 (p.244, \"PA4 DSKTRACK0* ... Track zero detect. The "
         "drive will pull this line low when the disk heads are positioned "
         "over track zero. Software must not attempt to step outwards...\"): "
-        "names PA4's drive-signal binding and a software/drive-behaviour "
-        "clause, both out of this boundary. PA4's bit-position/input-ness "
-        "is still exercised as one of PROP-INPUT's four data points. Not "
-        "graded here.");
-    checks.record(
-        "sol:8-cia.c9 (p.244, \"PA4 DSKTRACK0* ... Track zero detect.\", "
-        "twin of opus:8-cia.c11): same reasons. Not graded here.");
-    checks.record(
-        "opus:8-cia.c16 (p.244, \"PA3 DSKPROT* Disk is write protected "
-        "(active low).\"): names PA3's drive-signal binding and the "
-        "active-low polarity meaning, both out of this boundary. PA3's "
+        "names PA4's drive-signal binding, now graded in hrm/ch8-cia-disk-"
+        "signal-bindings' PA4-BINDING assertion; the software/step-refusal "
+        "clause is a separate, already-graded claim at paula_floppy "
+        "(hrm/ch8-drive-sense-lines' own step-refusal assertion). PA4's "
         "bit-position/input-ness is still exercised as one of PROP-INPUT's "
         "four data points. Not graded here.");
     checks.record(
+        "sol:8-cia.c9 (p.244, \"PA4 DSKTRACK0* ... Track zero detect.\", "
+        "twin of opus:8-cia.c11): same reason; now graded in hrm/ch8-cia-"
+        "disk-signal-bindings' PA4-BINDING assertion. Not graded here.");
+    checks.record(
+        "opus:8-cia.c16 (p.244, \"PA3 DSKPROT* Disk is write protected "
+        "(active low).\"): names PA3's drive-signal binding and the "
+        "active-low polarity meaning, now graded in hrm/ch8-cia-disk-"
+        "signal-bindings' PA3-BINDING assertion. PA3's bit-position/"
+        "input-ness is still exercised as one of PROP-INPUT's four data "
+        "points. Not graded here.");
+    checks.record(
         "sol:8-cia.c16 (p.244, composed: PA3 position + DSKPROT* name + "
-        "active-low polarity, twin of opus:8-cia.c16): same reasons. Not "
-        "graded here.");
+        "active-low polarity, twin of opus:8-cia.c16): same reason; now "
+        "graded in hrm/ch8-cia-disk-signal-bindings' PA3-BINDING assertion. "
+        "Not graded here.");
     checks.record(
         "opus:8-cia.c18 (p.244, \"PA2 DSKCHANGE* Disk has been removed from "
         "the drive. The signal goes low whenever a disk is removed. It "
         "remains low until a disk is inserted AND a step pulse is "
-        "received.\"): names PA2's drive-signal binding, out of this "
-        "boundary; and its own quotation carries DSKCHANGE*'s retention "
-        "sentence, which needs a latch -- `ciaa` is measured to hold none "
-        "for this bit (transparent buffer, confirmed above by direct "
-        "measurement: PA2 tracks porta_in unconditionally of any DDRA/PRA "
-        "write), and where such a latch exists the build task names "
-        "paula_floppy, a different package's boundary. PA2's "
-        "bit-position/input-ness is still exercised as one of PROP-INPUT's "
-        "four data points. Not graded here.");
+        "received.\"): names PA2's drive-signal binding, now graded in "
+        "hrm/ch8-cia-disk-signal-bindings' PA2-BINDING assertion; its own "
+        "quotation also carries DSKCHANGE*'s retention sentence, which "
+        "needs a latch -- `ciaa` is measured to hold none for this bit "
+        "(transparent buffer, confirmed above by direct measurement: PA2 "
+        "tracks porta_in unconditionally of any DDRA/PRA write), and the "
+        "latch that exists is at paula_floppy, already graded there by "
+        "hrm/ch8-drive-sense-lines' own removal and retention assertions. "
+        "PA2's bit-position/input-ness is still exercised as one of "
+        "PROP-INPUT's four data points. Not graded here.");
     checks.record(
         "sol:8-cia.c17 (p.244, \"PA2 DSKCHANGE* Disk has been removed from "
         "the drive.\", twin of opus:8-cia.c18, no retention sentence in "
-        "this shorter quotation): declined for the name-binding reason "
-        "only. Not graded here.");
+        "this shorter quotation): now graded in hrm/ch8-cia-disk-signal-"
+        "bindings' PA2-BINDING assertion, for the name-binding content. Not "
+        "graded here.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
