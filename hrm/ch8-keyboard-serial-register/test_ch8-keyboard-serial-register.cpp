@@ -67,7 +67,7 @@
 //     ...)` before the same strobe and reads `irq` instead of `data_out`.
 //
 // Every mutation below is a compile-time variant, replayable with
-// `make clean && make MUT=MUT_n test` (n = 0..13, matching the MUT_n token
+// `make clean && make MUT=MUT_n test` (n = 0..18, matching the MUT_n token
 // at the end of each record line below) -- see the `#if MUT_n` guard at
 // each assertion's stimulus/oracle site. `make clean` first is required:
 // the object-directory target has no dependency on MUT, so a stale binary
@@ -100,14 +100,26 @@
 //   alone must drive" comparison changed from position 0 to position 1
 //   -> FAIL, bit 7 alone drives position 0 (measured, per PROP-4/PROP-5's
 //   sweep), not position 1. Reverted.
+// MUTATION opus:8-kbdtiming.c11 stimulus red MUT_14: the bit presented as "the
+//   flag" changed from 7 to 6 (a real code bit), oracle left at position 0
+//   -> FAIL, bit 6 alone drives position 7 (measured, per PROP-4/PROP-5's
+//   sweep), not position 0. Reverted.
 // MUTATION opus:8-appG.c26 oracle red MUT_5: the "does this bit's response
 //   position differ from its own index" comparator inverted (changed `!=`
 //   to `==`) -> FAIL for every one of the eight bit positions (none is a
 //   fixed point under the real rotation). Reverted.
+// MUTATION opus:8-appG.c26 stimulus red MUT_15: at loop index i=0, the
+//   presented bit changed from 0 to 7, oracle comparison (`p != i`) left
+//   unchanged -> FAIL, bit 7 alone drives position 0 (measured, per
+//   PROP-3/PROP-5), so p==i at that index. Reverted.
 // MUTATION opus:8-appG.c27 oracle red MUT_6: the expected per-bit position array
 //   changed from {1,2,3,4,5,6,7,0} (the manual's rotation) to
 //   {0,1,2,3,4,5,6,7} (identity, i.e. no rotation) -> FAIL, all eight
 //   positions reported MISMATCH. Reverted.
+// MUTATION opus:8-appG.c27 stimulus red MUT_16: at loop index i=0, the
+//   presented bit changed from 0 to 1, expected_position[0]=1 left
+//   unchanged -> FAIL, bit 1 alone drives position 2 (measured, per
+//   PROP-4/PROP-5's sweep), not position 1. Reverted.
 // MUTATION sol:8-appG.c36 stimulus red MUT_7: the injected bit changed from 7 to 6
 //   (a different, wrong "flag" bit) -> FAIL, bit 6's response position is 7
 //   (measured, per PROP-4/PROP-5's sweep), not 0. Reverted.
@@ -117,6 +129,10 @@
 // MUTATION opus:8-kbdtiming.c19 oracle red MUT_9: the comparison mask changed from
 //   0xFE (bits 7:1) to 0xFF (all 8 bits) -> FAIL, the two readbacks differ
 //   at bit 0 by design (that is the up/down flag). Reverted.
+// MUTATION opus:8-kbdtiming.c19 stimulus red MUT_17: the "up" stimulus byte
+//   changed from 0xB5 to 0xB4 (a different 7-bit code, not merely the flag
+//   bit set), mask left at 0xFE -> FAIL, the two readbacks differ on bits
+//   7:1 (0xB4's code is 0x34, not 0x35). Reverted.
 // MUTATION opus:8-kbdtiming.c22 stimulus red MUT_10: the presented byte changed
 //   from 0xB5 to 0xB6, expected value left at 0x94 -> FAIL, actual readback
 //   for 0xB6 is 0x92. Reverted.
@@ -128,6 +144,12 @@
 //   all three special codes changed from `manual_rotate_invert(s.code)` to
 //   `manual_rotate_invert(s.code + 1)`, the presented byte left unchanged
 //   -> FAIL, all three comparisons report MISMATCH. Reverted.
+// MUTATION MAPPING-SAME-CLASS stimulus red MUT_18: the presented byte for
+//   all three special codes changed from `s.code` to `s.code + 1`, the
+//   expected-value computation left at `manual_rotate_invert(s.code)`
+//   -> FAIL, all three comparisons report MISMATCH (the rotation+invert map
+//   is bijective, so presenting a different code always reads back
+//   differently). Reverted.
 // MUTATION FLAG-LAST-GENERAL stimulus red MUT_13: the injected bit changed from 7
 //   to 0 (a different, wrong bit) -> FAIL, bit 0's response position is 1
 //   (measured, per PROP-4/PROP-5's sweep), not 0. Reverted.
@@ -186,6 +208,21 @@
 #endif
 #ifndef MUT_13
 #define MUT_13 0
+#endif
+#ifndef MUT_14
+#define MUT_14 0
+#endif
+#ifndef MUT_15
+#define MUT_15 0
+#endif
+#ifndef MUT_16
+#define MUT_16 0
+#endif
+#ifndef MUT_17
+#define MUT_17 0
+#endif
+#ifndef MUT_18
+#define MUT_18 0
 #endif
 
 namespace {
@@ -455,7 +492,11 @@ int main(int argc, char** argv) {
           code_bits_avoid_position0 = code_bits_avoid_position0 && (p != 0);
           detail += "bit" + std::to_string(i) + "->pos" + std::to_string(p) + " ";
       }
+#if MUT_14
+      const int flag_position = single_bit_response(h, 7, /*wrong_bit_bug=*/6);
+#else
       const int flag_position = single_bit_response(h, 7);
+#endif
 #if MUT_4
       constexpr int expected_flag_position = 1;
 #else
@@ -483,7 +524,11 @@ int main(int argc, char** argv) {
       bool all_moved = true;
       std::string detail;
       for (int i = 0; i < 8; ++i) {
+#if MUT_15
+          const int p = single_bit_response(h, i, /*wrong_bit_bug=*/(i == 0) ? 7 : -1);
+#else
           const int p = single_bit_response(h, i);
+#endif
 #if MUT_5
           const bool moved = (p >= 0) && (p == i);
 #else
@@ -519,7 +564,11 @@ int main(int argc, char** argv) {
       bool all_match = true;
       std::string detail;
       for (int i = 0; i < 8; ++i) {
+#if MUT_16
+          const int p = single_bit_response(h, i, /*wrong_bit_bug=*/(i == 0) ? 1 : -1);
+#else
           const int p = single_bit_response(h, i);
+#endif
           const bool ok = (p == expected_position[i]);
           all_match = all_match && ok;
           detail += "bit" + std::to_string(i) + "->pos" + std::to_string(p) +
@@ -596,7 +645,11 @@ int main(int argc, char** argv) {
     // -------------------------------------------------------------
     { Harness h;
       const uint8_t down = present_and_read(h, 0x35);
+#if MUT_17
+      const uint8_t up = present_and_read(h, 0xB4);
+#else
       const uint8_t up = present_and_read(h, 0xB5);
+#endif
 #if MUT_9
       const bool result = (down & 0xFF) == (up & 0xFF);
 #else
@@ -681,7 +734,11 @@ int main(int argc, char** argv) {
       bool all_match = true;
       std::string detail;
       for (const auto& s : specials) {
+#if MUT_18
+          const uint8_t got = present_and_read(h, static_cast<uint8_t>(s.code + 1));
+#else
           const uint8_t got = present_and_read(h, s.code);
+#endif
 #if MUT_12
           const uint8_t want = manual_rotate_invert(static_cast<uint8_t>(s.code + 1));
 #else
