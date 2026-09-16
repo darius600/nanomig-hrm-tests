@@ -73,6 +73,67 @@
 // the assertion mechanism is sound and the red is not a broken test. Every
 // other assertion is green at baseline and its mutation is a `stimulus red`
 // or `oracle red` flip.
+//
+// Machine-readable mutation records, one per MUT_n above, in the form
+// `MUTATION <assertion-id> <oracle|stimulus> <red|green> <what changed> <MUT_n>`.
+// <assertion-id> is the leading token of the expect() label the mutation's
+// assertion carries, not the letter-scheme name used in this file's own prose
+// comments above and at each site -- the two differ for every lettered claim
+// (e.g. B11's id is opus:8-serial.c54, C4's is opus:8-serial.c81, E6's is
+// opus:8-serial.c140); only the four unlettered fixture/measurement-basis
+// assertions (FIXTURE-LIVE, CONTROL, DIVIDER-SPAN, CELL-LENGTH-FORMULA) use
+// their own name as the id.
+// MUTATION FIXTURE-LIVE stimulus red probe_n changed from 10 to 5, the wrong SERPER divisor, so the fixture no longer measures the expected 22-beat cell MUT_0
+// MUTATION CONTROL stimulus red cb3b reuses cb3's own SERPER=3 measurement instead of measuring the second, distinct divisor 371 MUT_1
+// MUTATION DIVIDER-SPAN stimulus red cb_min measured at SERPER=1 instead of the true minimum SERPER=0 MUT_2
+// MUTATION opus:8-serial.c10 stimulus red send8_val changed to 0x0055 (no bit 8 set), not a valid 8-length stop pattern MUT_3
+// MUTATION opus:8-serial.c34 stimulus red rx8 driven with 0x5C instead of the known byte 0xA3 MUT_4
+// MUTATION opus:8-serial.c35 stimulus red rx9 driven with 0x0D5 instead of the known 9-bit value 0x1A3 MUT_5
+// MUTATION sol:8-serial.c10 stimulus red t8 transmitted with SERDAT=0x0055 (no bit 8 set) instead of 0x0155 MUT_6
+// MUTATION sol:8-serial.c11 stimulus red t9 transmitted with SERDAT=0x0155 (8-length) instead of 0x0255 (9-length) MUT_7
+// MUTATION opus:8-serial.c12 stimulus red f2 cleared empty, only one frame driven instead of a second to trigger overrun MUT_8
+// MUTATION opus:8-serial.c13 stimulus red rbfmirror left clear (0) instead of set (1) before the second frame MUT_9
+// MUTATION sol:8-serial.c14 oracle red rbf_ok compares (after_rx & BIT_RBF) == 0 instead of != 0, the wrong expected polarity MUT_10
+// MUTATION opus:8-serial.c18 stimulus red cbB re-measured at the same divisor (3) as cbA instead of a second, distinct one (17) MUT_11
+// MUTATION opus:8-serial.c19 stimulus red cb_hi measured at SERPER=6, a different low-14 value, instead of 5|0x8000 MUT_12
+// MUTATION opus:8-serial.c25 oracle red shape_ok checks cb9 == 2*(9+1)+1, an off-by-one oracle, instead of 2*(9+1) MUT_13
+// MUTATION CELL-LENGTH-FORMULA oracle red the per-N comparison adds +2 to the expected cell length only when n==100, a wrong formula for that divisor MUT_14
+// MUTATION opus:8-serial.c37 oracle red expect_glitch_rxint hardcoded true instead of false, claiming a glitch should register MUT_15
+// MUTATION opus:8-serial.c38 stimulus red rx9 built with only 8 data bits (lsb_first_bits(0x0BC, 8)) instead of 9, in 9-bit mode MUT_16
+// MUTATION opus:8-serial.c39 oracle red expected_cells hardcoded to 9 instead of 10, omitting the stop-bit slot MUT_17
+// MUTATION opus:8-serial.c40 oracle red polarity_ok compares got9 against the 8-bit mask/value (0x00FF/0x2D) instead of 0x01FF/0x1B4 MUT_18
+// MUTATION opus:8-serial.c41 oracle red readback hardcoded to 44 instead of the actually probed value, as if SERPER's last write came back on read MUT_19
+// MUTATION opus:8-serial.c45 oracle red status_distinct compares (got & 0xFF00) == 0 instead of != 0, asserting the status half is empty MUT_20
+// MUTATION opus:8-serial.c48 stimulus red the low-rxd hold extended from cb*3 (well short of a frame) to cb*12 (a full frame's worth) MUT_21
+// MUTATION opus:8-serial.c49 stimulus red saw_rxint hardcoded false and drive_receive(h, f, cb) is never called, so no receive frame is driven at all MUT_22
+// MUTATION opus:8-serial.c52 oracle red expected_low_byte hardcoded to 0x12 (frame 1's byte) instead of 0x87 (frame 2's) MUT_23
+// MUTATION opus:8-serial.c53 stimulus red the rbfmirror-clear servicing step before frame 2 is removed entirely, so rbfmirror is never cleared MUT_24
+// MUTATION opus:8-serial.c54 oracle green ceiling widened from the printed 10 to 11, matching the measured 9-bit-mode reality; oracle-green flip at this assertion's red baseline MUT_25
+// MUTATION opus:8-serial.c55 stimulus red f2 left empty, no second frame driven, so overrun cannot be observed to set MUT_26
+// MUTATION opus:8-serial.c59 oracle red probe_bit set to BIT_TSRE instead of BIT_OVRUN, the wrong bit position MUT_27
+// MUTATION opus:8-serial.c65 oracle red probe_bit set to BIT_TBE instead of BIT_RBF, the wrong bit position MUT_28
+// MUTATION opus:8-serial.c70 oracle red idle_tbe compares (at_idle & BIT_TBE) == 0 instead of != 0, the wrong expected polarity MUT_29
+// MUTATION opus:8-serial.c76 oracle red clear_check_ok negated to !saw_clear_mid_shift, expecting TSRE never clears mid-shift MUT_30
+// MUTATION opus:8-serial.c79 oracle red watch_cells shortened from 9 to 3, far too short a window, stopping before word 1 alone would finish MUT_31
+// MUTATION opus:8-serial.c81 oracle green direct_ok hardcoded true, reading the manual's "direct" loosely with latency ignored; oracle-green flip at this assertion's red baseline MUT_32
+// MUTATION opus:8-serial.c83 oracle red mask set to BIT_9 instead of BIT_10, checking the wrong bit MUT_33
+// MUTATION opus:8-serial.c84 oracle red bit8_9bit_ok compares got9's bit 9 against its own bit 8 instead of against the written 9th data bit MUT_34
+// MUTATION opus:8-serial.c91 stimulus red f driven with the bitwise-inverted byte (~0x96 & 0xFF) instead of 0x96 MUT_35
+// MUTATION opus:8-serial.c103 oracle red write_reaches_state ANDed with a literal false, forcing the result regardless of t1's actual measurement MUT_36
+// MUTATION opus:8-serial.c104 stimulus red the actual h.read_reg(ADDR_SERDAT) bus read is skipped entirely; readback hardcoded to 0x0177 (the written value) instead MUT_37
+// MUTATION opus:8-serial.c105 oracle red same_rate compares cb_rx == 9 instead of == 10, the wrong expected frame length MUT_38
+// MUTATION opus:8-serial.c106 oracle red begins_promptly hardcoded false, ignoring the measured beats_to_start value MUT_39
+// MUTATION opus:8-serial.c108 stimulus red a wait_beats(h, cb*6) delay is inserted before the second SERDAT write, issuing it well past TBE's own signal MUT_40
+// MUTATION opus:8-serial.c110 stimulus red t transmitted with SERDAT=0x00AA (MSB-heavy) instead of 0x0155, checked against the unchanged LSB-first oracle MUT_41
+// MUTATION opus:8-serial.c112 oracle red expected_cells hardcoded to 4 instead of 11, expecting the shift to stop early at the first 1-bit MUT_42
+// MUTATION opus:8-serial.c133 oracle red expected_t2_cells hardcoded to 7 instead of 10 MUT_43
+// MUTATION opus:8-serial.c113 oracle red shapes_differ compares ta.bits.size() == tb.bits.size() instead of !=, expecting the two differently-shaped frames to match MUT_44
+// MUTATION opus:8-serial.c114 stimulus red t transmitted with SERDAT=0x0001 instead of 0x8001, bit 15 never exercised MUT_45
+// MUTATION opus:8-serial.c119 oracle red idle_ok compares (idle_status & BIT_TSRE) == 0 instead of != 0, the wrong expected TSRE polarity MUT_46
+// MUTATION opus:8-serial.c136 oracle red expected_diff hardcoded to 0 instead of 1, the fixture-hazard-3 trap of expecting the level pattern to look the same MUT_47
+// MUTATION opus:8-serial.c137 oracle red start_always_zero expects the start cell to follow bit 0's own value instead of always being 0 MUT_48
+// MUTATION opus:8-serial.c139 stimulus red t transmitted with SERDAT=0x0000 (all-zero, E6's case) instead of the positive-case 0x0188 MUT_49
+// MUTATION opus:8-serial.c140 oracle green expect_no_transmission hardcoded false, matching the measured reality that txd does go low; oracle-green flip at this assertion's red baseline MUT_50
 
 #include <cstdint>
 #include <cstdio>
