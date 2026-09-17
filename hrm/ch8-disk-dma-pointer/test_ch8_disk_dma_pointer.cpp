@@ -655,7 +655,8 @@ int main(int argc, char** argv) {
 
     // --- claims recorded, not asserted ---
     checks.record(
-        "opus:8-dma.c10, sol:8-dskpth.c6 (p.246), opus:8-reglist.c15 (p.241): the CPU-"
+        "opus:8-dma.c10, sol:8-dskpth.c6 (p.246), opus:8-reglist.c15 (p.241), "
+        "sol:8-reglist.c15 (p.241): the CPU-"
         "access-size half of 'a single long word' -- that the 68000/Copper issues one "
         "32-bit-wide bus cycle rather than two 16-bit ones. Not observable at "
         "reg_address_in/data_in, where a longword write arrives as two ordinary 16-bit "
