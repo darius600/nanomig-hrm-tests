@@ -45,7 +45,7 @@ artefacts rather than by remembering.
 | assertions | **2336** — 2241 pass, **95 fail** |
 | packages | 146 green, 64 carrying at least one red, **0 build errors** |
 | registered findings | **63** — 52 open, 6 withdrawn, 5 source observations |
-| units through the full pipeline and accepted | **11** — chapters 1 to 8, appendices D, E and F |
+| accepted units under `acceptance/` | **10** — chapters 1 to 8, appendix F, and appendices D and E as one record |
 
 The assertion figures cover the **167 packages that print an assertion summary**.
 The other 43 are older module-level tests that report only pass or fail for the
@@ -217,8 +217,9 @@ Four rules carry the whole thing:
 > *Amiga Hardware Reference Manual*, Third Edition. Commodore-Amiga, Inc.
 > Addison-Wesley Publishing Company, 1991.
 
-**Eleven units have been through the pipeline and are accepted**, each with a
-frozen record under `acceptance/`. The ranges below are the pages **extracted
+**Ten frozen records under `acceptance/` cover eleven printed units**: chapters
+1 to 8, appendix F, and appendices D and E together, which were read, classified
+and built as one lot and share one record. The ranges below are the pages **extracted
 into the corpus**, counted from the corpus itself rather than from the book's
 table of contents:
 
