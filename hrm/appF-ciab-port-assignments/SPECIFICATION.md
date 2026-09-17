@@ -43,6 +43,36 @@ declined below anyway, but for a different, independently-argued reason (see
 "Claims not assigned an assertion, group 2"), not because the brief's citation
 applies to them — it doesn't, and this file does not pretend it does.
 
+This "37, not 47" correction was independently caught by three other builders
+too and is recorded as O78: the brief counted claims that merely *have* a
+note, not claims whose note *names an accepted package*.
+
+## Second correction — the decline rule misapplied to `sol:F-handshake.c7` / `opus:F-handshake.c6`
+
+This package's first build declined these two under the general "an accepted
+package already grades this" umbrella, citing `ch8-disk-index-interrupt-path`'s
+PROP-FLAG-PIN. The coordinator caught that the citation does not actually
+cover the proposition: PROP-FLAG-PIN grades a **pulse** (a rise then a fall)
+setting ICR bit 4 — a stimulus shape consistent with *either* an edge reading
+or a level reading of the hardware, so grading it settles no verdict about
+which one this RTL implements. Page 341's own wording is strictly narrower
+("Any **negative transition** ... will set the FLAG interrupt bit") and is the
+only page in the corpus that states the polarity at all. The decline rule
+exists to stop this appendix reaching a *different verdict* from an accepted
+package about the *same* proposition — and there was no verdict to contradict,
+because no accepted package grades this narrower proposition at all. Declining
+it left the requirement untested and the distinction unrecorded, which is
+exactly the outcome the rule exists to prevent, not produce.
+
+Both uids are now graded, together, as **PROP-FLAG-EDGE-POLARITY** (see
+below) — moved out of "Claims not assigned an assertion" and out of the
+`record()` block in the test source. `sol:F-handshake.c5`, `opus:F-handshake.c5`
+and `sol:F-handshake.c6` remain declined: they are the existence claim and the
+general-purpose-input/"another 8520's PC output" claim respectively, genuinely
+covered by PROP-FLAG-PIN (existence) or genuinely unreachable (no PC-output
+pin exists anywhere in this design, on either CIA) — the original reasoning
+for those three holds.
+
 ## What this fixture can and cannot carry — the boundary this specification is built around
 
 `ciab` compiled alone exposes: an 8-bit bus (`rs`-selected read/write), a
@@ -110,8 +140,8 @@ Legend: **G** = graded (`expect()`), **R** = declined (`record()`).
 | `sol:F-handshake.c5` | 341 | FLAG negative-edge-sensitive | R — cited: `ch8-disk-index-interrupt-path` |
 | `opus:F-handshake.c5` | 341 | FLAG edge + PC/general-purpose halves | R — cited: `ch8-disk-index-interrupt-path` |
 | `sol:F-handshake.c6` | 341 | FLAG can take PC or be general-purpose | R — cited: `ch8-disk-index-interrupt-path` |
-| `sol:F-handshake.c7` | 341 | negative transition sets FLAG bit | R — cited: `ch8-disk-index-interrupt-path` |
-| `opus:F-handshake.c6` | 341 | twin of `sol:F-handshake.c7` | R — cited: `ch8-disk-index-interrupt-path` |
+| `sol:F-handshake.c7` | 341 | negative transition sets FLAG bit | **G — PROP-FLAG-EDGE-POLARITY** (expect RED; coordinator correction) |
+| `opus:F-handshake.c6` | 341 | twin of `sol:F-handshake.c7` | **G — PROP-FLAG-EDGE-POLARITY** (expect RED; coordinator correction) |
 | `sol:F-cra.c4` | 348 | CRA bit1 PBON | **G — PROP-CRA-PBON** (expect RED) |
 | `opus:F-cra.c4` | 348 | twin | **G — PROP-CRA-PBON** (expect RED) |
 | `sol:F-cra.c5` | 348 | CRA bit2 OUTMODE | **G — PROP-CRA-OUTMODE** (expect RED) |
@@ -147,9 +177,11 @@ Legend: **G** = graded (`expect()`), **R** = declined (`record()`).
 | `sol:F-signals.c55` | 351 | FLAG = /INDEX | R — cited: `ch8-disk-index-interrupt-path` |
 | `opus:F-portsig.c48` | 351 | twin | R — cited: `ch8-disk-index-interrupt-path` |
 
-**Totals: 20 uids graded across 9 propositions; 47 uids declined via
-`record()` (37 citing an accepted package, 10 declined here for a
-boundary reason this file argues itself).**
+**Totals: 22 uids graded across 10 propositions; 45 uids declined via
+`record()` (35 citing an accepted package, 10 declined here for a
+boundary reason this file argues itself).** (Was 20/9/47/37 in this
+package's first build; `sol:F-handshake.c7`/`opus:F-handshake.c6` moved from
+declined to graded per the coordinator correction above.)
 
 ## PROP-FLAG-EXISTS — `ciab`'s `flag` pin is a live, externally driven input
 
@@ -169,6 +201,43 @@ tied-off constant — the fixture cannot itself build `ciaa` to compare, but
 page's "each chip" is not simply true of this board's `ciaa`).
 
 Status: testable, at `ciab`'s own boundary.
+
+## PROP-FLAG-EDGE-POLARITY — a negative transition is required; a held-high level is not enough
+
+Page 341 (`sol:F-handshake.c7`, `opus:F-handshake.c6`): "Any negative
+transition on FLAG will set the FLAG interrupt bit." Added by coordinator
+correction after this package's first build — see the correction note above.
+Not the same proposition `ch8-disk-index-interrupt-path`'s PROP-FLAG-PIN
+grades (a pulse, consistent with either an edge or a level reading); this is
+the page's own, narrower and more specific wording, graded nowhere else in
+the suite.
+
+**Testable, and measured to fail:** `flag` is driven through a single rising
+edge and then held high for several clock cycles, with **zero** negative
+transitions anywhere in the stimulus. `cia_int.v:57` is `icr[4] <= icr[4] |
+flag` — a level-sensitive OR with no edge detector and no previous-state
+register anywhere in the module (`cia_int.v:1-69`) — so ICR bit 4 sets on the
+first cycle `flag` reads high and stays set, independent of whether a
+negative transition ever occurs. Measured RED, reproducing independently what
+`appF-cia-interrupt-control`'s builder found at its own fixture (flag held
+high for 5 ticks, zero negative transitions, ICR read 0x10). Four
+third-party emulators surveyed independently by the coordinator — WinUAE
+(`cia_diskindex()`, an event per index pulse, `disk.cpp:3973`), vAmiga
+(`emulateFallingEdgeOnFlagPin()` sets the bit, `CIA.cpp:250-266`), Denise
+(`cia.setFlag()` called once per head wrap, `diskDrive.cpp:79`) and
+Copperline (`falling_edge = flag_pin_high && !high`, `cia.rs:373-380`) —
+unanimously implement a real falling-edge detector for this bit; none has a
+level-only path. Paired with a control on the identical ICR arm/read channel:
+a stimulus that *does* contain a real negative transition (0->1->0, the
+ordinary disk-index-pulse shape) sets the bit — PASS — so the RED above
+cannot be read as a dead measurement channel. Whether the gap is a defect is
+for Amiga/RTL specialists to adjudicate; this package measures and reports,
+per the build brief, exactly as it did the first time for PROP-CRA-PBON and
+PROP-CRA-OUTMODE.
+
+Status: testable; baseline result is a genuine fail, not a broken fixture
+(oracle-flip mutation proof in the test source, same technique as
+PROP-CRA-PBON/PROP-CRA-OUTMODE below).
 
 ## PROP-DDRA-POSITION — DDRA controls whether PA7/PA6 are driven outputs or pulled-high inputs
 
@@ -283,9 +352,9 @@ Status: testable; baseline result is a genuine fail, not a broken fixture
 (see the mutation notes in the test source for the oracle-flip proof that the
 comparator itself is not simply tautological).
 
-## Claims not assigned an assertion (47 of 67)
+## Claims not assigned an assertion (45 of 67)
 
-### Group 1 (37) — an accepted package already grades this proposition
+### Group 1 (35) — an accepted package already grades this proposition
 
 Each `record()` line below names the accepted package, its assertion, and the
 specific uid(s) it carries, exactly as `classify.note` states (independently
@@ -299,10 +368,11 @@ verdict from an accepted package about the same register bit." See the
 inventory table above for the full uid-by-uid list; the packages cited are
 `ch8-cia-disk-port-windows` (ddrb/CIA-B window, 2 uids), `ch1-cia-timers`
 (talo/tahi/tblo/tbhi generic timer existence, 8 uids), `ch8-disk-index-
-interrupt-path` (icr row, all five FLAG/handshake p.341 claims, the INT6
-association, and the FLAG=/INDEX binding — 12 uids), and `ch8-cia-disk-
-signal-bindings` (all eight PB-name bindings, 16 uids, plus `ch8-drive-step-
-timing` for PB0's timing half).
+interrupt-path` (icr row, the three remaining FLAG/handshake p.341 claims —
+existence and general-purpose-input, NOT the edge-polarity pair, which moved
+to PROP-FLAG-EDGE-POLARITY above — the INT6 association, and the FLAG=/INDEX
+binding — 10 uids), and `ch8-cia-disk-signal-bindings` (all eight PB-name
+bindings, 16 uids, plus `ch8-drive-step-timing` for PB0's timing half).
 
 ### Group 2 (10) — declined here, for a boundary reason, not because anything already grades them
 
@@ -347,22 +417,26 @@ build every time.
   DDRA=0xFF) does the same for `porta_out`, and a `porta_in` sweep does the
   same for the read side, on the same measurement basis PROP-DDRA-POSITION
   and the ten declined PA-name claims share.
-- **Controls expected to PASS.** Seven of the nine graded propositions
+- **Controls expected to PASS.** Seven of the ten graded propositions
   (PROP-FLAG-EXISTS, PROP-DDRA-POSITION, PROP-TOD-BYTES, PROP-UNUSED-SLOT,
   PROP-SDR-LATCH, PROP-CRA-DECODE, PROP-CRB-DECODE) are expected, and
-  measured, to PASS at baseline — the control basis the two expected-RED
-  propositions (PBON, OUTMODE) are read against.
+  measured, to PASS at baseline — the control basis the three expected-RED
+  propositions (PROP-FLAG-EDGE-POLARITY, PBON, OUTMODE) are read against.
+  PROP-FLAG-EDGE-POLARITY additionally carries its own dedicated control
+  (same ICR arm/read channel, a stimulus that *does* contain a negative
+  transition, PASSES) rather than relying solely on the package-wide set.
 - **Mutation, seven PASS-at-baseline propositions.** Each carries an ordinary
   stimulus mutation: change what the harness feeds `ciab`, leave the
   comparator alone, confirm RED, revert.
-- **Mutation, PROP-CRA-PBON / PROP-CRA-OUTMODE (RED at baseline).** Per the
-  build brief, "stimulus green at a passing assertion proves nothing" — the
-  symmetric risk for an assertion that is *already* RED at baseline is that
-  its comparator is trivially, tautologically RED (e.g. comparing two
-  constants) and would stay RED no matter what the RTL did. Each carries an
-  **oracle**-type mutation: temporarily invert the expected outcome to match
-  what the RTL actually does (portb_out[6] does *not* move), confirm that
-  inverted comparison goes GREEN, then revert — proving the comparator is
+- **Mutation, PROP-FLAG-EDGE-POLARITY / PROP-CRA-PBON / PROP-CRA-OUTMODE (RED
+  at baseline).** Per the build brief, "stimulus green at a passing assertion
+  proves nothing" — the symmetric risk for an assertion that is *already* RED
+  at baseline is that its comparator is trivially, tautologically RED (e.g.
+  comparing two constants) and would stay RED no matter what the RTL did.
+  Each of the three carries an **oracle**-type mutation: temporarily invert
+  the expected outcome to match what the RTL actually does (ICR bit 4 DOES
+  set on a held-high level; portb_out[6] does *not* move), confirm that
+  inverted comparison goes GREEN, then revert — proving each comparator is
   live and RTL-sensitive, not a hard-coded fail.
 
 ## Disclosure — what was already known before this file was drafted, and what was read after
@@ -371,9 +445,11 @@ Every expected value in the propositions above is already present, with
 `file:line` citations, in the 67 claims' own `classify.evidence` — written
 during classification, before this build task began, and read here rather
 than re-derived. This file's own contribution is the *organization* of 67
-claims into 9 gradeable propositions and 47 declines, the correction to the
-build brief's "47" description above, and the specific register values
-(0x6F, 0xEF, etc.) worked out from the evidence's cited line numbers.
+claims into 10 gradeable propositions and 45 declines, the correction to the
+build brief's "47" description above, the coordinator's separate correction
+moving `sol:F-handshake.c7`/`opus:F-handshake.c6` from declined to graded, and
+the specific register values (0x6F, 0xEF, etc.) worked out from the
+evidence's cited line numbers.
 
 Per the build brief's own order of work ("Write SPECIFICATION.md from the
 quotations alone. Commit it. Only then open the RTL... Say so rather than
