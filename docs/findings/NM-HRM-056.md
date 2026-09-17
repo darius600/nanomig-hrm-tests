@@ -45,7 +45,7 @@ The mutation that flips the assertion green replaces the standard bus read with
 an unsynchronised peek, which does catch the 0. That is the control: the bit
 changes, and no reachable read sees it change.
 
-## What the four do
+## What the others say
 
 | | |
 |---|---|
@@ -53,11 +53,14 @@ changes, and no reachable read sees it change.
 | **Copperline** | **as NanoMig.** `write_serdat` stores `Some(val)` and immediately calls `load_serial_shift_if_idle`, whose `.take()` empties it in the same call (`src/chipset/paula.rs:1080`, `:1524`). Its own test asserts the consequence: `assert_ne!(paula.read_serdatr() & (1 << 13), 0)` right after a write (`:3681`) |
 | **vAmiga** | **observable.** TBE is derived live from `transmitBuffer == 0` (`Core/Components/Paula/UART/UART.cpp:108`), and the buffer is only drained by `copyToTransmitShiftRegister` (`:178`). While the shifter is busy the guard at `:137` fails, nothing is scheduled, and TBE reads 0 for the rest of the frame |
 | **WinUAE** | **observable, deliberately.** `od-win32/serial_win32.cpp:780` sets `data_in_serdat_delay = get_cycles() + CYCLE_UNIT` **after** `:741` has already cleared the buffer flag, and the read at `:1020` keeps bit 13 clear until that cycle passes. A modelled TBE-low window, not a side effect |
+| **MiSTer** | descendant — same statement, same line: `rtl/paula_uart.v:139` is byte-identical to NanoMig's, the same one-cycle TBE-clear window |
+| **TC64** | descendant — same statement, same line: `rtl/minimig/paula_uart.v:139` is byte-identical too, already noted above |
 
-**Two of the four reach NanoMig's behaviour and two model a drain time of their
-own.** So the four do not settle whether a real Paula shows TBE low; they settle
-that it is a modelling choice each project made independently, and that two
-projects thought the window worth building on purpose.
+**Two of the four independent implementations reach NanoMig's behaviour and two
+model a drain time of their own.** So the four independent implementations do
+not settle whether a real Paula shows TBE low; they settle that it is a
+modelling choice each project made independently, and that two projects thought
+the window worth building on purpose.
 
 One qualification the survey stated rather than smoothed: vAmiga's *idle* case
 depends on same-cycle slot ordering between `SLOT_REG` and `SLOT_TXD` and is not

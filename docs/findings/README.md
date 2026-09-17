@@ -6,8 +6,12 @@ in the same order, so a page can be read by jumping to the part you need:
 1. **What the HRM says** — printed page and verbatim quotation.
 2. **What NanoMig does** — the code, quoted, with a permalink to the exact line
    at the pinned revision.
-3. **What the others say** — WinUAE, vAmiga, Denise, Copperline, each with the
-   line quoted rather than merely cited.
+3. **What the others say** — six implementations, each with the line quoted
+   rather than merely cited: WinUAE, vAmiga, Denise and Copperline, then the two
+   maintained Minimig lines, **MiSTer** and **TC64**. The last two are marked in
+   the table as descendants rather than witnesses, for the reason set out below;
+   they are in the same table because a reader comparing implementations wants
+   them side by side, not in a separate row further up the page.
 4. **Suggested change** — where one can be stated. It is a suggestion; what to
    do about the RTL is for Amiga specialists.
 5. **What holds the finding up** — the control case, the mutation, the reason a
@@ -35,6 +39,26 @@ every quotation was verified in a local checkout at that revision.
 
 All six are checked out locally under `_emulators/` in the workspace, outside
 either repository, so a citation can be re-checked rather than trusted.
+
+### The two Minimig lines are ancestors, not witnesses — and nothing merges them down
+
+**NanoMig was forked from MiSTer's Minimig-AGA, and there is at present no
+automatic merge of fixes from MiSTer into NanoMig.** A correction made upstream
+does not arrive by itself; somebody ports it deliberately. That single fact is
+why these two rows earn their place in the table and why they are marked
+differently from the other four:
+
+- **As evidence about the manual they are worth nothing.** All three trees
+  descend from the same code. When MiSTer and NanoMig agree, that is one
+  implementation counted twice, and the four independent ones are the only
+  reading of the HRM the table contains.
+- **As evidence about where a fix belongs they are worth more than the other
+  four**, precisely because nothing flows downhill on its own. A finding whose
+  code TC64 has already corrected is a finding with a patch to point at; a
+  finding all three share is one nobody has fixed anywhere.
+
+So the table's last two rows answer a different question from its first four,
+and each row says which question it is answering.
 
 ### Minimig-AGA is the ancestor, not a fifth witness — and it has two lines
 

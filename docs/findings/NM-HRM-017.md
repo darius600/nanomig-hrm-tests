@@ -78,6 +78,8 @@ The stimulus was changed to `0x0C39` and the finding **restored as test-backed**
 | **vAmiga** | — | reinterprets, ECS Denise only |
 | **Denise** | [`emulation/libami/video/denise.cpp:200`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L200) | <pre>colors[pos] = value;</pre> one table, no mode |
 | **Copperline** | [`src/video/bitplane/tests.rs:7563`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L7563) | *"each 35 ns half resolves palette[1], never a pair-encoded entry"* |
+| **MiSTer** | [`rtl/denise_colortable.v:32-35`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v#L32-L35) | descendant — same as `NM-HRM-016`: no `shres` port; `rtl/denise.v:339` has the identical `l_bpu > 2` depth-force line, with an added `window_ena &&` term NanoMig's line lacks |
+| **TC64** | [`rtl/minimig/denise_colortable.v:32-35`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_colortable.v#L32-L35) | descendant — the identical 11 lines; `rtl/minimig/denise.v:354` has the identical depth-force line, `window_ena` term included |
 
 ---
 

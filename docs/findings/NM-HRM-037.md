@@ -68,9 +68,15 @@ same measurement basis moves on the live channel and not on the dead one.
 | **vAmiga** | [`Agnus.cpp:877-880`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L877-L880) | four symmetric increments; POT1X's term is `controlPort2.mouse.MMB()` |
 | **Denise** | [`libami/paula/pot.cpp:132-139`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/pot.cpp#L132-L139) | four structurally identical blocks; POT1X's is identical to its siblings |
 | **Copperline** | [`chipset/paula.rs:1305`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1305) | `for i in 0..self.pot_counters.len()` with no index singled out; index 2 is filled from `p2.pot_x_released()` |
+| **MiSTer** | [`rtl/userio.v:188`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L188) | descendant — byte-identical to NanoMig: `potcap[2] <= joy2_pin5;`, no external term |
+| **TC64** | [`rtl/minimig/userio.v:224`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L224) | descendant — `potcap[2] <= _mthird1 & joy2_pin5;` looks different but isn't: this tree's default build (`` `MINIMIG_PS2_MOUSE ``, set in `rtl/soc/minimig_defines.vh:13`) hardwires `_mthird1` to `1'b1` (`userio.v:517`), so the AND term is a no-op and the built behaviour is NanoMig's missing gate exactly. Only the non-default build path gives it a live term, and that term is a second host mouse's button (`userio.v:574`), not a joystick pin |
 
-**The asymmetry is NanoMig's and Minimig-AGA's alone.** It was not inherited
-from a shared reading of the manual, because nobody else reads it that way.
+**The asymmetry is NanoMig's and Minimig-AGA's alone, textually.** It was not
+inherited from a shared reading of the manual, because nobody else reads it
+that way. TC64's line looks like the fix — it does AND `potcap[2]` with
+something — but as built, that something is a constant `1`, so its shipped
+behaviour is the same missing gate as NanoMig's and MiSTer's. No maintained
+line has a live external term on this pin.
 
 Two unrelated defects were found while reading and belong to those projects
 rather than to this finding: vAmiga accumulates all four pot charge deltas into

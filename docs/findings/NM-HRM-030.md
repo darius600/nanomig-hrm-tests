@@ -45,15 +45,29 @@ The value never changes. Paula is not driving that address.
 
 ## What the others say
 
-| WinUAE | vAmiga | Denise | Copperline |
-|---|---|---|---|
-| — | — | — | — |
+| | code | |
+|---|---|---|
+| **WinUAE** | — | not read; no per-chip decode exists in this emulator to look for |
+| **vAmiga** | — | not read; no per-chip decode exists in this emulator to look for |
+| **Denise** | — | not read; no per-chip decode exists in this emulator to look for |
+| **Copperline** | — | not read; no per-chip decode exists in this emulator to look for |
+| **MiSTer** | [`rtl/paula.v:147`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L147) | descendant — byte-identical to NanoMig: `assign data_out = uartdata_out \| intdata_out \| diskdata_out \| adkconr;`, no `DMACONR` term, and the comment at `:153`: `//NOTE: this register is also present in the Agnus module, //there DMACONR (read) is implemented` |
+| **TC64** | [`rtl/minimig/paula.v:166`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L166), [`:172`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L172) | descendant — the identical assignment and the identical comment |
 
-**Nobody has read any implementation here, and for once that is structural rather
-than an omission.** All four emulators decode the custom register space in one
-place; none of them models *which physical chip* answers a read. The question
-this finding asks — does Paula drive `$002`? — is one only a per-chip RTL can be
-asked. The manual's chip column is the only oracle available.
+**Nobody has read any of the four independent implementations here, and for once
+that is structural rather than an omission.** All four decode the custom register
+space in one place; none of them models *which physical chip* answers a read. The
+question this finding asks — does Paula drive `$002`? — is one only a per-chip
+RTL can be asked. The manual's chip column is the only oracle available.
+
+**MiSTer and TC64 can be asked, and they answer the same way NanoMig does.**
+Both are per-chip RTL, and Paula's `data_out` carries no `DMACONR` term in either
+tree — Agnus decodes it in all three. As evidence about the manual that is worth
+nothing, for the reason set out in `docs/findings/README.md`: all three trees
+share the same partitioning decision, so agreement among them is one reading
+counted three times. What it does say is that nobody has ported a different
+partitioning to either maintained line either — there is no patch anywhere to
+point at.
 
 ---
 

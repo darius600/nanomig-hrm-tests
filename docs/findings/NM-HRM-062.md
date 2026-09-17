@@ -62,7 +62,7 @@ The text layer agrees with the render character for character on both patterns.
 `corpus-defects.md` lists p.353 as undamaged, and it is: the defect is the
 manual's.
 
-## What the four do
+## What the others say
 
 | | | |
 |---|---|---|
@@ -70,6 +70,8 @@ manual's.
 | **vAmiga** | follows the prose | `Memory.cpp:2236-2252`: `sel = (addr >> 12) & 0b11` selects on A13:A12, and `0b01` (A13=0, A12=1) with `a0` false reaches `ciab` |
 | **Denise** | follows the prose | `libami/agnus/memory.cpp:61-66`: `switch(adr & 0x3000)`, `0x2000` (A13=1, A12=0) with an odd address reaches `cia1`, `0x1000` (A13=0, A12=1) with an even one reaches `cia2` |
 | **Copperline** | follows the prose | its CIA windows are the standard `$BFE001` / `$BFD000` pair; no implementation anywhere decodes the printed patterns |
+| **MiSTer** | descendant — no module; this finding is against the printed page, not an implementation | — |
+| **TC64** | descendant — no module; this finding is against the printed page, not an implementation | — |
 
 **Not one implementation decodes the printed patterns**, and NanoMig does not
 either: `gary.v:191` is `sel_cia_a = sel_cia & ~cpu_address_in[12]` — CIAA on A12

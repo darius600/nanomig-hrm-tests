@@ -62,11 +62,15 @@ and line 105 adds *"long lines are not supported yet"*.
 | **vAmiga** | — | |
 | **Denise** | [`emulation/libami/agnus/agnus.cpp:1030`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L1030) | <pre>fps = (double)frequency() / (227.5 * 263.0); // start with lol toggling</pre> NTSC `227.5 × 263`, PAL `227.0 × 313`, with long/short lines toggling |
 | **Copperline** | — | an integer `COLORCLOCKS_PER_LINE` with a separate `NTSC_LONG_COLORCLOCKS_PER_LINE` |
+| **MiSTer** | [`rtl/agnus_beamcounter.v:86`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86) | descendant — identical to NanoMig: `HTOTAL_VAL = 8'd227 - 8'd1;` with the same "NTSC line length of 227.5 CCKs is not supported" comment |
+| **TC64** | [`rtl/minimig/agnus_beamcounter.v:102`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L102) | descendant — the same simplification and the same comment, the constant only wider |
 
-**Both model the half clock as alternating whole lines**, not as a fractional
-one — which is what this observation says the manual's 227.5 must mean in
-practice. Denise's comment even names the mechanism: *lol toggling*, long-line
-toggling.
+**Both Denise and Copperline model the half clock as alternating whole lines**,
+not as a fractional one — which is what this observation says the manual's 227.5
+must mean in practice. Denise's comment even names the mechanism: *lol toggling*,
+long-line toggling. MiSTer and TC64 decline the half clock exactly as NanoMig
+does — as descendants that is not a third reading, only the same simplification
+inherited unchanged.
 
 ---
 

@@ -109,7 +109,7 @@ game work and some trainer store data"*. That register is the one commented out
 at `ciaa.v:267`. Anyone grepping the tree's comments for the parallel port will
 be told it works.
 
-## What the four do
+## What the others say
 
 | | |
 |---|---|
@@ -117,6 +117,8 @@ be told it works.
 | **vAmiga** | stores `prb` and reads it back through the direction mask: `result = (result & ~ddrb) \| (prb & ddrb)` (`Core/Components/CIA/CIA.cpp:931`, `:1114`) — the exact behaviour p.259's "bi-directional" names |
 | **Denise** | keeps `prb` beside `ddrb` in its CIA line state (`emulation/cia/new/cia.h:20-31`) and serialises both (`cia.cpp:455`, `:463`) |
 | **Copperline** | keeps both in its register file and documents the same board wiring NanoMig has — *"the parallel-port joystick adapter's switches on CIA-A PB0-7"* (`src/chipset/cia.rs:460-465`) — while still storing the data register |
+| **MiSTer** | descendant — no counterpart; `regportb` does not exist here at all, not even commented out. `rtl/ciaa.v:312` names the section *"Port B - Parallel port (simplified, mostly unused in Amiga)"*, and `:141` calls the unused wire out directly, *"Port B output (unused)"* |
+| **TC64** | descendant — live, not commented out: `regportb` is written and drives `portb_out` (`rtl/minimig/ciaa.v:243,247-253,276`), but CIA-A's own instantiation never connects `.portb_out` (`rtl/minimig/minimig.v:906-927`) and the read mux still returns `portb_in` unconditionally on a PRB read (`ciaa.v:268`). The register exists and reaches nothing |
 
 Copperline is the interesting one: it models **the same joystick-adapter use of
 the connector** that NanoMig wires, and still implements the register, because

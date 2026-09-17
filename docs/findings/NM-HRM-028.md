@@ -71,9 +71,15 @@ the pinned revision and the quotation verified there.
 | **vAmiga** | [`Core/Components/Paula/Audio/StateMachine.cpp:118-131`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L118-L131) | <pre>if (!AUDxAV()) { buffer = auddat; return; }<br>if constexpr (nr == 0) paula.channel1.pokeAUDxVOL(auddat);<br>…<br>if constexpr (nr == 0) paula.channel1.pokeAUDxPER(auddat);</pre> the modulator's word is written into the **next** channel's volume or period |
 | **Denise** | [`emulation/libami/paula/audio.cpp:79-81`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L79-L81) | <pre>cha.audav = adkcon & (0x01 &lt;&lt; nr);<br>cha.audap = adkcon & (0x10 &lt;&lt; nr);<br>cha.napnav = !cha.audap \|\| cha.audav;</pre> |
 | **Copperline** | [`src/chipset/paula.rs:1190-1192`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1190-L1192) | <pre>fn channel_attached_as_modulator(&self, ch_idx: usize) -&gt; bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;let volume_attach = 1u16 &lt;&lt; ch_idx;<br>&nbsp;&nbsp;&nbsp;&nbsp;let period_attach = 1u16 &lt;&lt; (ch_idx + 4);</pre> |
+| **MiSTer** | [`rtl/paula_audio_channel.v:1`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L1) | descendant — carries the identical first-line comment: *"attached modes are not supported"*. No ADKCON port on the audio-channel module here either |
+| **TC64** | [`rtl/minimig/paula_audio_channel.v:1`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L1) | descendant — the same comment, word for word, even though the rest of the file has drifted by about 29 lines. No ADKCON port here either |
 
-**Four out of four implement attach and modulation. NanoMig alone does not**, and
-its own source says so. This is the best-corroborated finding chapter 5 produced.
+**Four out of the four independent implementations implement attach and
+modulation. NanoMig alone does not**, and its own source says so. This is the
+best-corroborated finding chapter 5 produced. MiSTer and TC64 do not implement it
+either — the missing interface is a property of `paula.v` and
+`paula_audio_channel.v` in all three trees, so the two descendant rows repeat
+NanoMig's absence rather than adding a fifth and sixth vote against the manual.
 
 ---
 

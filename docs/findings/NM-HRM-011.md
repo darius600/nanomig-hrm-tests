@@ -91,6 +91,8 @@ rather than an arithmetic slip.
 | **vAmiga** | — |
 | **Denise** | PAL−NTSC gap is **five lines, like NanoMig's** |
 | **Copperline** | models a programmable blank — a different quantity from Table 3-13's fixed figure, and not comparable without running it |
+| **MiSTer** | descendant — [`rtl/agnus_beamcounter.v:89-90`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L89-L90): identical to NanoMig, `VBSTOP_PAL_VAL = 9'd25`, `VBSTOP_NTSC_VAL = 9'd20` — the same five-line gap |
+| **TC64** | descendant — [`rtl/minimig/agnus_beamcounter.v:105-106`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L105-L106): the same two values (as `11'd25`, `11'd20`; the constant is wider, not the number) |
 
 The manual's gap is **eight** lines, 29 − 21. NanoMig's and Denise's are five.
 That the gap agrees between two independent implementations, and disagrees with

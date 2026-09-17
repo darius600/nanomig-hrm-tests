@@ -110,14 +110,18 @@ the like-for-like comparison, and it is the one cited below. No emulator's
 | **WinUAE** | [`disk.cpp:2061-2072`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L2061-L2072) | the same rule as bit arithmetic, carried across the word boundary by `lastword`: `uae_u32 lv = (lastword << 16) \| v; uae_u32 nlv = 0x55555555 & ~lv; uae_u32 mfmbits = (nlv << 1) & (nlv >> 1);` — a clock bit is set only where the data bit *and* the data bit before it are both zero. The header encoder repeats the boundary case by hand at [`:2092-2100`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L2092-L2100) |
 | **vAmiga** | [`MFM.cpp:89-105`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/rvlib/Images/Encoders/MFM.cpp#L89-L105) | `u8 addClockBits(u8 value, u8 previous)` — the previous byte is a parameter, so the context cannot be dropped by accident. `rShifted = (value >> 1 \| previous << 7);` supplies the bit before the first one in the byte |
 | **Copperline** | [`mod.rs:4535-4543`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L4535-L4543) | the same rule per 32-bit long, with the cross-long carry written out: `encoded \|= ((inv >> 1) \| 0x8000_0000) & (inv << 1);` then `if dest.last().copied().unwrap_or(0) & 1 != 0 { encoded &= 0x7FFF_FFFF; }` — the top clock bit of a long is cleared when the previous long ended on a data 1 |
+| **MiSTer** | [`rtl/paula_floppy_fifo.v:23`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy_fifo.v#L23) | descendant — no counterpart; **neither the pinned MiSTer nor the pinned TC64 tree contains an MFM encoder.** The only mention of MFM in this tree is the FIFO-size comment at this line: `reg [15:0] mem [2047:0]; // 2048 words by 16 bit wide fifo memory (for 2 MFM-encoded sectors)`. This line leaves MFM encoding to the CPU or blitter, as real Paula does |
+| **TC64** | [`rtl/minimig/paula_floppy_fifo.v:23`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy_fifo.v#L23) | descendant — no counterpart; the identical comment at the identical line. NanoMig is the only one of the three trees that synthesises a cell stream in RTL, and so the only one that has to get the context-sensitivity right — this defect belongs to NanoMig alone, with no ancestor line to file it against |
 
-**Four implementations, four different idioms, one rule.** A state machine with a
-boolean, 32-bit mask arithmetic, a function whose signature takes the previous
-byte, and per-long arithmetic with an explicit carry. Not one of them encodes a
-cell without consulting the bit before it, and two of them reprint the manual's
-table in their own comments while doing it. There is no disagreement to report
-here — which is itself worth saying, because on most findings in this register
-there is.
+**Four independent implementations, four different idioms, one rule.** A state
+machine with a boolean, 32-bit mask arithmetic, a function whose signature
+takes the previous byte, and per-long arithmetic with an explicit carry. Not
+one of them encodes a cell without consulting the bit before it, and two of
+them reprint the manual's table in their own comments while doing it. There is
+no disagreement to report here among the four — which is itself worth saying,
+because on most findings in this register there is. Both maintained Minimig
+lines sidestep the question entirely: with no encoder in either, there is
+nothing for them to get right or wrong, and no disagreement to have.
 
 ## The package used to require the defect it reports
 

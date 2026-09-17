@@ -72,11 +72,16 @@ would have been visible.
 | **vAmiga** | — | reinterprets, ECS Denise only |
 | **Denise** | [`emulation/libami/video/denise.cpp:200`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L200) | <pre>colors[pos] = value;</pre> one table, no mode |
 | **Copperline** | [`src/video/bitplane/tests.rs:7563`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L7563) | *"each 35 ns half resolves palette[1], never a pair-encoded entry"* |
+| **MiSTer** | [`rtl/denise_colortable.v:32-35`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v#L32-L35) | descendant — no `shres`/`spres` port, same as NanoMig; `rtl/denise_sprites.v:110-115` has the identical `case (spres)` block, still only driving `shift` |
+| **TC64** | [`rtl/minimig/denise_colortable.v:32-35`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_colortable.v#L32-L35) | descendant — the identical 11 lines; `rtl/minimig/denise_sprites.v:110-115` has the same three-line case |
 
-**Two against two**, and it is the second finding after `NM-HRM-002` where the
-four split evenly. Denise stores one colour per register in every mode;
-Copperline states the absence of pair encoding **deliberately, in a test's own
-words** — which makes it a decision rather than an omission.
+**Two against two among the four independent implementations**, and it is the
+second finding after `NM-HRM-002` where the four split evenly. Denise stores one
+colour per register in every mode; Copperline states the absence of pair
+encoding **deliberately, in a test's own words** — which makes it a decision
+rather than an omission. MiSTer and TC64 are mode-blind in the identical way
+NanoMig is, which is not a third reading — a descendant with no `shres` port
+inherited that absence, it did not arrive at it independently.
 
 ---
 

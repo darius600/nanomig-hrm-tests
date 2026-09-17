@@ -44,9 +44,13 @@ Nothing with it. Bit 4 is not read in the sprite path.
 | **vAmiga** | — | does not implement it |
 | **Denise** | [`emulation/libami/video/denise.cpp:299`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L299) | <pre>spr.shsh10 = (value & 0x10) &gt;&gt; 3;</pre> compared only when `_shres` |
 | **Copperline** | [`src/video/bitplane/sprite.rs:1857-1859`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/sprite.rs#L1857-L1859) | <pre>pub(super) fn sprite_hsub_70ns(ctl: u16) -&gt; bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;ctl & 0x0010 != 0<br>}</pre> |
+| **MiSTer** | — | descendant — the same absence: no `sprctl[4]`, `SHSH1` or `shsh1` anywhere in `rtl/denise_sprites.v` |
+| **TC64** | — | descendant — likewise absent from `rtl/minimig/denise_sprites.v` |
 
-**Three of four implement it**, and Denise scopes it exactly as p. 303's Warning
-states — read always, compared only in SuperHires.
+**Three of the four independent implementations implement it**, and Denise
+scopes it exactly as p. 303's Warning states — read always, compared only in
+SuperHires. MiSTer and TC64 have never read the bit either, which is the same
+absence NanoMig has, not a fourth vote against it.
 
 WinUAE's mask is the clearest statement of the ECS-versus-AGA split: `0x10` is
 present from ECS Denise onwards, `0x08` only on AGA. That is the split the

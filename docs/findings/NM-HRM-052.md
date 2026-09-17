@@ -49,7 +49,7 @@ conflict` by the classification, two recorded against p.252 without the flag —
 are declined together on one `record()` line naming the conflict, and none of
 them appears on a graded line.
 
-## What the four do
+## What the others say
 
 | | |
 |---|---|
@@ -57,6 +57,8 @@ them appears on a graded line.
 | **vAmiga** | `leftAlt = 0x64`, `rightAlt = 0x65` (`GUI/Input/AmigaKey.swift:136-137`) |
 | **Denise** | `0x64, 0x65` adjacent in the modifier group of its key table (`emulation/libami/input/keyboard/keyboard.cpp:18`) |
 | **Copperline** | `AltLeft => 0x64`, `AltRight => 0x65` (`src/video/window/host_input.rs:185-186`) |
+| **MiSTer** | descendant — no counterpart; the module does not exist in this line |
+| **TC64** | descendant — no counterpart; the module does not exist in this line |
 
 Four independent implementations all took the table and none took the figures.
 That is worth recording — but it is evidence about what implementers read, not

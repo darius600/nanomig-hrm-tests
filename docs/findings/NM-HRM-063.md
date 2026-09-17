@@ -57,7 +57,7 @@ the assertion green, so the comparator is not tautologically false.
 reached the same result at the `cia_int` boundary while building a different
 package, without having seen this one's number.
 
-## What the four do
+## What the others say
 
 | | | |
 |---|---|---|
@@ -65,11 +65,14 @@ package, without having seen this one's number.
 | **vAmiga** | explicit, in two separate methods | `CIA.cpp:250-266`: `emulateRisingEdgeOnFlagPin()` only calls `wakeUp()`; `emulateFallingEdgeOnFlagPin()` calls `wakeUp()` and then `icr \|= 0x10` |
 | **Denise** | an event; no level input exists | `emulation/cia/new/cia.cpp:302-304`'s `setFlag()` sets `intIncomming \|= 0x10`, called from `libami/drive/diskDrive.cpp:79` exactly when the head wraps past the end of a track — once per revolution |
 | **Copperline** | an explicit edge detector over retained pin state | `src/chipset/cia.rs:373-380`: `set_flag_pin` computes `let falling_edge = self.flag_pin_high && !high;` and latches `ICR_FLG` only when that is true |
+| **MiSTer** | descendant — same statement, in an otherwise-rewritten file | `rtl/cia_int.v:81`: `icr[4] <= icr[4] \| flag;` — the same level-sensitive OR, though 113 of the file's other lines differ from NanoMig, nearly all added commentary |
+| **TC64** | descendant — byte-identical to NanoMig | `rtl/minimig/cia_int.v:57`: `icr[4] <= icr[4] \| flag;  // external flag input` — the file is otherwise untouched from NanoMig's, comment and the "intterupts" typo on the ICR-clear branch included |
 
-**Not one of the four sets the bit from a level.** Two of them cannot even
-represent a held level; the one that does model the pin as a level detects the
-edge explicitly. Copperline is the closest structural comparison to the RTL, and
-it is the one that keeps the previous-state bit `cia_int.v` does not have.
+**Not one of the four independent implementations sets the bit from a level.**
+Two of them cannot even represent a held level; the one that does model the pin
+as a level detects the edge explicitly. Copperline is the closest structural
+comparison to the RTL, and it is the one that keeps the previous-state bit
+`cia_int.v` does not have.
 
 ## Why this was not found until appendix F was read
 

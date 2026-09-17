@@ -56,9 +56,13 @@ opens the combined-colour path on its own. The manual requires SPR1CTL.
 | **vAmiga** | [`Core/Components/Denise/Denise.cpp:1130`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L1130) | <pre>bool attached = GET_BIT(sprctl[sprite2], 7);</pre> with `sprite2 = 2*pair + 1` — the odd one |
 | **Denise** | [`emulation/libami/video/denise.cpp:300`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L300) | <pre>spr.attached = (nr & 1) && (value & 0x80);</pre> **the manual's rule exactly** |
 | **Copperline** | — | reads the bit without the odd-sprite condition *(source reading, not run)* |
+| **MiSTer** | [`rtl/denise_sprites.v:283`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v#L283) | descendant — byte-identical: `if (attach1 \|\| (!aga && attach0))`, the same even-sprite term and the same `!aga` gate |
+| **TC64** | [`rtl/minimig/denise_sprites.v:273`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_sprites.v#L273) | descendant — the identical line |
 
-**Three of four take the attach bit from the odd sprite only.** Denise's line is
-the manual's sentence written as code.
+**Three of the four independent implementations take the attach bit from the odd
+sprite only.** Denise's line is the manual's sentence written as code. MiSTer and
+TC64 have NanoMig's even-sprite term too, `!aga` gate included — that gate is
+theirs, not something NanoMig added on its own.
 
 ---
 

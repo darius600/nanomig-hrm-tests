@@ -124,11 +124,17 @@ samples of a periodic stream differ.
 | **vAmiga** | [`DiskControllerRegs.cpp:106-142`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/DiskController/DiskControllerRegs.cpp#L106-L142) | all three, and p.248's parenthetical literally: `if (agnus.clock - syncCycle <= USEC(2)) SET_BIT(result, 12);`. The clearing sits in `peekDSKBYTR()` — `incoming &= 0x7FFF;`, under the comment *"Clear the DSKBYT bit, so it won't show up in the next read"* — and DATA is the low half of that same `incoming` |
 | **Denise** | [`fdc.cpp:211-226`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/fdc.cpp#L211-L226) | all three, in two forms. `getDskBytR()`, the CPU read, does `dskBytr &= ~0x8000;`; WORDEQUAL is a timed window in byte mode and the live comparator `dskShifter == dskSync` otherwise. The byte loads at [`fdc.cpp:315-316`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/fdc.cpp#L315-L316): `if ((dskShifterPos & 7) == 7) dskBytr = (dskShifter & 0xff) \| 0x8000;`. A separate `peekDskBytR()` exists so that debugger inspection does not clear bit 15 — the side effect is modelled precisely enough to need an exemption |
 | **Copperline** | [`mod.rs:1428-1455`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L1428-L1455) | all three, fed by a real bit shifter at [`mod.rs:4360-4382`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L4360-L4382). Its own comment states the rule this finding measures: *"WORDEQUAL is the comparator's live level: true for the one cell in which the shift register equals DSKSYNC and gone once the next cell shifts in ... Only DSKBYT is reset by the read."* |
+| **MiSTer** | [`rtl/paula_floppy.v:397`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) | descendant — byte-identical to NanoMig's `:699`: `assign dskbytr = reg_address_in[8:1]==DSKBYTR[8:1] ? {1'b1,(trackrd\|trackwr),dsklen[14],5'b1_0000,8'h00} : 16'h00_00;` |
+| **TC64** | [`rtl/minimig/paula_floppy.v:633`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L633) | descendant — the identical line, even though the surrounding file diverges by 809 (MiSTer) and 1243 (TC64) lines elsewhere |
 
-**Not one of the four treats any of these three fields as a constant**, and this
-is the unusual case where they do not split at all. Two of them go past the table
-and implement the parenthetical *"as little as two microseconds"* as a timed
-window rather than a level.
+**Not one of the four independent implementations treats any of these three
+fields as a constant**, and this is the unusual case where they do not split
+at all. Two of them go past the table and implement the parenthetical *"as
+little as two microseconds"* as a timed window rather than a level. All three
+constants graded here are inherited unchanged by both maintained Minimig
+lines, so — as descendants — they add nothing to what the four independent
+implementations already say about the manual, and confirm only that no fix
+has travelled to either ancestor yet.
 
 One corroboration worth passing on, because it names a concrete consequence
 rather than appealing to the page again. Copperline records, in the comment above

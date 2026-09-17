@@ -62,7 +62,7 @@ read the instruction address again                          -> $CCCC
 
 Page 13 predicts `$AAAA` — the stale instruction that makes a flush necessary.
 
-## What the four do
+## What the others say
 
 | | | |
 |---|---|---|
@@ -70,6 +70,8 @@ Page 13 predicts `$AAAA` — the stale instruction that makes a flush necessary.
 | **vAmiga** | does not monitor writes | Moira's `flushInstructionCache` / `invalidateCacheEntry` are called from reset (`Moira.cpp:105`, `:230`) and from the CACR write handler alone — `:573` for bit 2, `:576` for bit 3 |
 | **Copperline** | does not monitor writes, and says so | `src/cache.rs:25-28`: *"Like the real silicon, the instruction cache does NOT snoop writes — it is invalidated only by explicit cache control (CACR on the 020/030 …), and DMA (blitter/copper/disk) never invalidates it. The data cache is write-through; a write that hits invalidates the entry"* |
 | **Denise** | cannot disagree | its CPU is `libami/cpu/m68000`, a 68000. Zero occurrences of `CACR` or an instruction cache anywhere in it. The 68000 has no instruction cache, so the sentence has no counterpart to implement |
+| **MiSTer** | descendant — identical statement | `rtl/cpu_cache_new.v:306-307` carries the same `cpu_sm_iram0_we <= itag0_match && itag0_valid /*&& !cc_fr*/;` (and its `iram1` twin), commented-out guard included |
+| **TC64** | descendant — identical statement, different location | `rtl/sdram/cpu_cache_new.v:467-468` carries the same two lines verbatim, guard included, though the file differs by 1105 lines overall and sits outside `rtl/minimig/` |
 
 Copperline is the sharpest witness, because it draws the distinction NanoMig does
 not: **instruction cache no snoop, data cache invalidate on write hit.**

@@ -62,13 +62,15 @@ in the same chapter, nothing here depends on reading inside the module.
 
 ## What the others say
 
-| WinUAE | vAmiga | Denise | Copperline |
-|---|---|---|---|
-| — | — | — | — |
+| WinUAE | vAmiga | Denise | Copperline | MiSTer | TC64 |
+|---|---|---|---|---|---|
+| — | — | — | — | descendant — [`rtl/paula_audio_channel.v:283-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L283-L285) and [`:133`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L133): byte-identical to NanoMig, same line numbers | descendant — [`rtl/minimig/paula_audio_channel.v:260-262`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L260-L262) and [`:127`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L127): the same idle-exit branch, `audio_next = AUDIO_STATE_3; AUDxDR = 1'b0; AUDxIR = 1'b1;`, and the same `assign intreq = AUDxIR;` |
 
-Nobody has read any implementation for this finding. It is the one chapter-5
-entry with no third-party reading at all, and it is the one where a reading would
-be most useful — see below.
+Nobody has read any of the four independent implementations for this finding. It
+is the one chapter-5 entry with no third-party reading among the four at all, and
+it is the one where such a reading would be most useful — see below. MiSTer and
+TC64 are not that reading: both inherit NanoMig's interrupt-before-output timing
+unchanged, so they confirm the ancestry rather than add a witness.
 
 ---
 

@@ -74,9 +74,13 @@ for this finding.
 | **vAmiga** | — | no chipset narrowing |
 | **Denise** | — | no mask on the high word at all |
 | **Copperline** | [`src/chipset/agnus.rs:113-118`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L113-L118)<br>[`src/bus.rs:4991-4996`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L4991-L4996) | <pre>pub fn dma_addr_capability_mask(self) -> u32 {<br>&nbsp;&nbsp;&nbsp;&nbsp;match self {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Self::Ocs =&gt; 0x0007_FFFF,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Self::Ecs8372Rev4 =&gt; 0x000F_FFFF,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Self::Ecs8375 \| Self::AgaAlice =&gt; 0x001F_FFFF,</pre> applied in `configure_chip_dma_masks` to Agnus, Denise, the blitter, Paula and the floppy alike |
+| **MiSTer** | [`rtl/agnus_audiodma.v:80-82`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_audiodma.v#L80-L82) | descendant — byte-identical to NanoMig; the file has no differences from it at all |
+| **TC64** | [`rtl/minimig/agnus_audiodma.v:80-82`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_audiodma.v#L80-L82) | descendant — likewise byte-identical; the file has no differences from NanoMig either |
 
 **Only Copperline models it**, and it models it centrally rather than per engine
-— one mask derived from the Agnus revision, applied to every DMA pointer.
+— one mask derived from the Agnus revision, applied to every DMA pointer. Neither
+MiSTer's nor TC64's `agnus_audiodma` has an `ecs` port, same as NanoMig — the
+absence is inherited, not a second and third omission.
 
 ---
 

@@ -50,11 +50,15 @@ are the only ones that move.
 | **vAmiga** | [`ControlPort.cpp:109-121`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Ports/ControlPort.cpp#L109-L121) | composes `& 0xFC` with `& 0x03` — eight bits, nothing wider |
 | **Denise** | [`input/controlPort/mouse.cpp:67`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/input/controlPort/mouse.cpp#L67) | `(posY & 0xff) << 8 \| (posX & 0xff)` |
 | **Copperline** | [`bus.rs:3342`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L3342) | `counter_x: u8` advanced with `wrapping_add` — mod 256 by construction |
+| **MiSTer** | [`rtl/userio.v:256`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L256) | descendant — identical: `dmouse0dat[7:0] <= dmouse0dat[7:0] + 1'd1;`, a plain 8-bit field, mod 256 |
+| **TC64** | [`rtl/minimig/userio.v:401`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L401) | descendant — the same statement, same width: `dmouse0dat[7:0] <= #1 dmouse0dat[7:0] + 1'd1;` |
 
-**Not one of the four uses 255 as a modulus or a wrap target in the mouse-counter
-path.** Denise's many `255` constants are in `paula/pot.cpp` and are the pot
-capacitor's saturation sentinel — a different counter. Copperline's one
-computation against 255 is the analogue paddle scale, a calibration choice.
+**Not one of the four independent implementations uses 255 as a modulus or a
+wrap target in the mouse-counter path.** Denise's many `255` constants are in
+`paula/pot.cpp` and are the pot capacitor's saturation sentinel — a different
+counter. Copperline's one computation against 255 is the analogue paddle
+scale, a calibration choice. Both maintained Minimig lines give the counter
+256 states as well; neither wraps at 255.
 
 **The honest limit.** None of the four models the quadrature *pulse* the way
 this finding frames it: all four add a host delta straight to the counter, one

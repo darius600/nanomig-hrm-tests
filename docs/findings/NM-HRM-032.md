@@ -90,11 +90,20 @@ at the pinned revision named in the link.
 | **Denise** | [`emulation/libami/agnus/agnus.cpp:1051-1053`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L1051-L1053) | <pre>inline auto Agnus::csyncPolTrue(bool state) -> bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;return (beamCon & CSYTRUE) ? !state : state;<br>}</pre> **CSYTRUE only** — no VSYTRUE or HSYTRUE exists anywhere in the tree |
 | **vAmiga** | [`Core/Components/Agnus/AgnusRegs.cpp:550-570`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L550-L570) | `pokeBEAMCON0` names all three in its bit-map comment and acts on **PAL and LOLDIS only** |
 | **Copperline** | [`src/chipset/agnus.rs:27-42`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L27-L42) | defines `BEAMCON0_` constants for bits 3 and 5-14 — **no constant exists for bits 0, 1 or 2** |
+| **MiSTer** | [`rtl/agnus_beamcounter.v:146-148`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148) | descendant — identical to NanoMig: `csynctrue`/`vsynctrue`/`hsynctrue` are commented-out declarations, nothing reads `beamcon0_reg[2:0]` |
+| **TC64** | [`rtl/minimig/agnus_beamcounter.v:171-173`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L171-L173) | descendant, **and not alike across its own three bits**. `HSYTRUE` and `VSYTRUE` are live here — `wire hsynctrue = displaydual ? beamcon0_sh[0] : beamcon0_reg[0];` and likewise for `vsynctrue` — feeding two new module outputs, `hsyncpol`/`vsyncpol` (`:175-176`), that `agnus.v` exposes upward. `CSYTRUE` stays declared the same uncommented way but unused: `_csync` is still `(_hsync & _vsync) \| vser` at `:458`, no `csynctrue` term anywhere. A fix to CSYTRUE diverges from all three; a fix decoding HSYTRUE/VSYTRUE would diverge from MiSTer but meet TC64, which has already built that plumbing |
 
-**One of four implements all three bits; a second implements one of the three;
-two do not model them at all.** This finding stands on the printed page, not on
-a consensus among implementations — and it should not be reported as though
-everyone else did this and NanoMig did not.
+**Among the four independent implementations: one implements all three bits;
+a second implements one of the three; two do not model them at all.** This
+finding stands on the printed page, not on a consensus among implementations
+— and it should not be reported as though everyone else did this and NanoMig
+did not.
+
+TC64 adds a fourth pattern found nowhere among the four independent readings:
+two of the three bits live (HSYTRUE, VSYTRUE) and the third (CSYTRUE) dead,
+same as NanoMig and MiSTer. MiSTer itself matches NanoMig exactly — none of
+the three implemented — which is expected of a descendant and is not a fifth
+vote either way on what the manual requires.
 
 That WinUAE implements all three is the strongest evidence that the bits do
 something on real hardware: WinUAE's chipset work is the longest-running

@@ -48,9 +48,13 @@ Identical. An OCS Agnus should drop the top two bits.
 | **vAmiga** | — | no chipset narrowing |
 | **Denise** | — | no mask on the high word |
 | **Copperline** | [`src/chipset/agnus.rs:113-118`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L113-L118) | <pre>pub fn dma_addr_capability_mask(self) -&gt; u32 {<br>&nbsp;&nbsp;&nbsp;&nbsp;match self {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Self::Ocs =&gt; 0x0007_FFFF,</pre> applied centrally to every DMA pointer, blitter included |
+| **MiSTer** | [`rtl/agnus_blitter_adrgen.v:62`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter_adrgen.v#L62) | descendant — identical to NanoMig: `assign bltptr_in[20:1] = enaptr ? newptr[20:1] : {data_in[4:0], data_in[15:1]};`; the instantiation at `agnus_blitter.v:596` connects no `.ecs()` |
+| **TC64** | [`rtl/minimig/agnus_blitter_adrgen.v:62`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_blitter_adrgen.v#L62) | descendant — the same line, byte for byte; the instantiation at `agnus_blitter.v:576` likewise connects no `.ecs()` |
 
-**Three of four side with NanoMig.** Copperline alone narrows, and it does so in
-one place for all engines rather than per engine.
+**Three of the four independent implementations side with NanoMig.** Copperline
+alone narrows, and it does so in one place for all engines rather than per
+engine. MiSTer and TC64 carry the same unconditional five-bit latch, inherited
+rather than independently arrived at.
 
 ---
 

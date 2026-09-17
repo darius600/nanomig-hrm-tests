@@ -60,10 +60,15 @@ at the pinned revision named in the link.
 | **Denise** | [`emulation/libami/agnus/agnus.cpp:747`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L747) | the explicit OCS return: <pre>return ((v >> 8) & 1) \| (_lof << 15) \| (ntsc << 12);</pre> |
 | **vAmiga** | [`Core/Components/Agnus/Agnus.cpp:266-276`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L266-L276) | `idBits()` returns `0x0000` for both OCS revisions, so bit 12 stays clear |
 | **Copperline** | [`src/chipset/agnus.rs:89`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L89) | <pre>(Self::Ocs, _) => 0x00,</pre> the chipset id is zero for OCS whatever the video standard |
+| **MiSTer** | [`rtl/agnus_beamcounter.v:115`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L115) | descendant — differs from NanoMig only in the readback signal's name (`vpos_rb` for `vpos`); the expression and bit positions are identical: `data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos_rb[10:8]};` |
+| **TC64** | [`rtl/minimig/agnus_beamcounter.v:132`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L132) | descendant — **byte-identical to NanoMig**, closer than MiSTer, which differs only by the renamed `vpos_rb` signal: `data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};`. `ntsc` is ungated by `ecs` in both lines |
 
-**Two of the four do exactly what NanoMig does.** WinUAE's is the sharpest
-statement: it gates the ECS identification bit on `ecs_agnus` and the NTSC bit on
-nothing, in adjacent lines — which is a choice, not an oversight.
+**Two of the four independent implementations do exactly what NanoMig does.**
+WinUAE's is the sharpest statement: it gates the ECS identification bit on
+`ecs_agnus` and the NTSC bit on nothing, in adjacent lines — which is a
+choice, not an oversight. Both maintained Minimig lines do the same, which is
+expected of descendants and adds nothing to that count — TC64 byte-identical,
+MiSTer differing only by a renamed signal.
 
 ### And nobody treats bits 14-1 as unused
 

@@ -92,9 +92,14 @@ the pinned revision and the quotation verified there.
 | **vAmiga** | [`Core/Components/Paula/Audio/StateMachineRegs.cpp:36-38`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachineRegs.cpp#L36-L38) | <pre>// 2. All values greater than 64 are treated as 64 (max volume)<br>audvolLatch = (u16)std::min(value & 0x7F, 64);</pre> |
 | **Denise** | [`emulation/libami/paula/audio.cpp:153-154`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L153-L154) | <pre>value &= 127;<br>if (value & 0x40) value = 0x40;</pre> |
 | **Copperline** | [`src/chipset/paula.rs:227-229`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L227-L229) | <pre>fn paula_volume_from_word(word: u16) -> u8 {<br>&nbsp;&nbsp;&nbsp;&nbsp;((word & 0x007F) as u8).min(64)<br>}</pre> |
+| **MiSTer** | [`rtl/paula_audio_mixer.v:23-33`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33) | descendant — byte-identical to NanoMig, the same OR-into-six-bits construction: inherits the 64-collapses-to-63 defect. MiSTer also carries NanoMig's second, correct path unchanged — the PWM `volgate` block in `paula_audio_channel.v:149` |
+| **TC64** | [`rtl/minimig/paula_audio_mixer.v:23-33`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_mixer.v#L23-L33) | descendant — the same construction, unchanged: inherits the same defect. Unlike MiSTer, TC64 has **no counterpart** for the second path: the PWM `volgate` block that NanoMig's `paula_audio_channel.v:136-150` implements does not exist in `rtl/minimig/paula_audio_channel.v` at all — only a vestigial, unused `volcntrld` signal remains. TC64 carries only the defective multiply path |
 
-**All four clamp at 64 and keep it distinct from 63.** Two say why in their own
-comments.
+**All four independent implementations clamp at 64 and keep it distinct from
+63.** Two say why in their own comments. MiSTer and TC64 do not belong in that
+count: `paula_audio_mixer.v` is byte-identical in both, so both collapse 64 into
+63 exactly as NanoMig does — as descendants they inherit the defect, not a
+correction of it.
 
 Denise's line is the one to put beside NanoMig's, because both implement
 appendix A's "bit 6 forces maximum" and they arrive at different answers: Denise

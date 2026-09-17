@@ -66,11 +66,15 @@ the pinned revision and the quotation verified there.
 | **vAmiga** | — | gates all three |
 | **Denise** | [`emulation/libami/agnus/register.cpp:222-224`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/register.cpp#L222-L224) | <pre>case 0x5c:<br>&nbsp;&nbsp;&nbsp;&nbsp;if (ecsAndHigher())<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;blitter.setBltSizeV(value);</pre> |
 | **Copperline** | [`src/bus/custom_regs.rs:787-792`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/custom_regs.rs#L787-L792) | <pre>0x05C =&gt; {<br>&nbsp;&nbsp;&nbsp;&nbsp;if !self.blitter_ecs_registers_enabled() {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return false;<br>&nbsp;&nbsp;&nbsp;&nbsp;}</pre> |
+| **MiSTer** | [`rtl/agnus_blitter.v:566-569`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v#L566-L569) | descendant — identical to NanoMig: `else if (reg_address_in[8:1]==BLTSIZV[8:1]) // ECS BLTSIZV register` with no `&& ecs`, the same comment/code contradiction |
+| **TC64** | [`rtl/minimig/agnus_blitter.v:546-549`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_blitter.v#L546-L549) | descendant — the same four lines, byte for byte |
 
-**All four gate `BLTSIZV` on ECS. NanoMig alone does not.** This is one of only
-two findings in chapters 3 and 6 where the manual, vAmiga and WinUAE all stand
-on the same side with NanoMig the outlier, which makes it the strongest of the
-three blitter entries.
+**All four independent implementations gate `BLTSIZV` on ECS. NanoMig alone does
+not.** This is one of only two findings in chapters 3 and 6 where the manual,
+vAmiga and WinUAE all stand on the same side with NanoMig the outlier, which
+makes it the strongest of the three blitter entries. MiSTer and TC64 do not gate
+it either — they carry NanoMig's exact contradiction, comment and all, so as
+descendants they stand with NanoMig, not with the four.
 
 ---
 

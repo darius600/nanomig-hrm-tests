@@ -87,11 +87,17 @@ With `dblpf = 0` — single playfield — `oddmatch` additionally requires
 | **vAmiga** | — | PF1 gated by PF2 |
 | **Denise** | [`emulation/libami/video/denise.cpp:478-480`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L478-L480) | <pre>if (!clxNoCol)&nbsp;clxDat \|= (v1 &lt;&lt; 5) \| (v1 &lt;&lt; 1) \| 1;<br>else if ((clxNoCol & 2) == 0)&nbsp;clxDat \|= (v1 &lt;&lt; 5);<br>else if (((clxNoCol & 1) == 0) && _doublePlayfield)&nbsp;clxDat \|= (v1 &lt;&lt; 1);</pre> the PF1 group only when `_doublePlayfield` |
 | **Copperline** | [`src/video/bitplane.rs:6797`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane.rs#L6797) | <pre>let odd_match = odd_match_raw && (dual_playfield \|\| even_match);</pre> |
+| **MiSTer** | [`rtl/denise_collision.v:62-63`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_collision.v#L62-L63) | descendant — byte-identical: `assign oddmatch = bm[6] & bm[4] & bm[2] & bm[0] & (dblpf \| evenmatch);`, gates PF1 on PF2 exactly as NanoMig does |
+| **TC64** | [`rtl/minimig/denise_collision.v:62-63`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_collision.v#L62-L63) | descendant — the same two lines, unchanged |
 
-**All four gate playfield 1 on playfield 2 in single-playfield mode** — and
-Copperline's line is NanoMig's expression term for term, with a test named after
-the behaviour: `collision_pixel_single_playfield_odd_match_requires_even_match`
+**All four independent implementations gate playfield 1 on playfield 2 in
+single-playfield mode** — and Copperline's line is NanoMig's expression term for
+term, with a test named after the behaviour:
+`collision_pixel_single_playfield_odd_match_requires_even_match`
 ([`src/video/bitplane/tests.rs:6626`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L6626)).
+MiSTer and TC64 do too, byte-identical to NanoMig — as descendants that says
+nothing about the manual, only that the behaviour has never diverged anywhere in
+the ancestry.
 
 ---
 

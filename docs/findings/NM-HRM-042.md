@@ -77,8 +77,9 @@ fixture.
 
 ## What the others say
 
-None of the four reaches 32 bits of usable pointer. They divide on *where* the
-ceiling is imposed — at the register, or on the road to memory.
+None of the four independent implementations reaches 32 bits of usable
+pointer. They divide on *where* the ceiling is imposed — at the register, or
+on the road to memory.
 
 | | code | |
 |---|---|---|
@@ -86,6 +87,8 @@ ceiling is imposed — at the register, or on the road to memory.
 | **vAmiga** | [`AgnusRegs.cpp:704-718`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L704-L718) | <pre>dskpt = REPLACE_HI_WORD(dskpt, value);<br>if (dskpt & ~agnus.ptrMask) {<br>&nbsp;&nbsp;xfiles("DSKPT %08x out of range\n", dskpt);<br>}</pre> also **stores all 32 bits**. It knows the value can be too wide — `ptrMask` is 19, 20 or 21 bits by Agnus revision ([`Agnus.cpp:190-194`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L190-L194)) — and logs it rather than truncating |
 | **Denise** | [`emulation/libami/agnus/dma.cpp:96-105`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/dma.cpp#L96-L105) | <pre>auto Agnus::setDskPtH(uint16_t value) -&gt; void {<br>&nbsp;&nbsp;dskpt &= 0xffff;<br>&nbsp;&nbsp;dskpt \|= value &lt;&lt; 16;<br>&nbsp;&nbsp;dskpt &= dmaChipMemMask;<br>}</pre> **masks the stored value at the write.** `dmaChipMemMask` is the installed chip-RAM mask ([`memory.cpp:693-698`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/memory.cpp#L693-L698)), at most 21 bits. `setDskPtL` does not mask, because the low word cannot carry a bit that high |
 | **Copperline** | [`src/floppy/mod.rs:1250-1257`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L1250-L1257) | <pre>pub fn set_dskpt_high(&mut self, val: u16) {<br>&nbsp;&nbsp;self.dskpt =<br>&nbsp;&nbsp;&nbsp;&nbsp;((self.dskpt & 0x0000_FFFE) \| (((val as u32) & 0x001F) &lt;&lt; 16)) & self.dma_ptr_mask();<br>}</pre> **takes five high bits, exactly as NanoMig does**, then narrows again by Agnus revision. Ceiling `0x001F_FFFE` — the same 21-bit byte address NanoMig's `[20:1]` reaches |
+| **MiSTer** | [`rtl/agnus_diskdma.v:56`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) | descendant — byte-identical to NanoMig: `assign address_outnew[20:1] = dma ? address_out[20:1]+1'b1 : {data_in[4:0],data_in[15:1]};`; the file has no differences from it at all |
+| **TC64** | [`rtl/minimig/agnus_diskdma.v:57`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_diskdma.v#L57) | descendant — the same statement, byte for byte (the line moves by one because TC64 adds an unrelated `turbo` input port above it). Both ports remain `[20:1]`; twenty bits is what either tree can ever hold |
 
 **NanoMig and Copperline agree on the ceiling**, and arrive at it the same way: a
 five-bit high field concatenated with a fifteen-bit low one. WinUAE and vAmiga

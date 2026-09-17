@@ -142,7 +142,8 @@ under ECS with the danger bit set.
 
 ## What the others say
 
-All four were read. All four do exactly what NanoMig does.
+All four independent implementations were read. All four do exactly what
+NanoMig does.
 
 | | code | |
 |---|---|---|
@@ -150,6 +151,8 @@ All four were read. All four do exactly what NanoMig does.
 | **vAmiga** | [`Copper.cpp:394-402`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.cpp#L394-L402) | <pre>if (cdang) {<br>&nbsp;&nbsp;return agnus.isOCS() ? addr &lt; 0x40 : false;<br>} else {<br>&nbsp;&nbsp;return addr &lt; 0x80;<br>}</pre> the identical three cases. [`CopperEvents.cpp:144-145`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/CopperEvents.cpp#L144-L145) cancels the Copper slot on an illegal address |
 | **Denise** | [`emulation/libami/agnus/copper.cpp:341-343`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L341-L343) | <pre>cdang = (value & 2) ? (agnus.ecsAndHigher() ? 0 : 0x40) : 0x80;</pre> stores the floor rather than the bit, then at [`:203-207`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L203-L207) `if (reg < cdang) { state = Off; ... }` — same three cases, same halt |
 | **Copperline** | [`src/bus/dma_slots.rs:697-708`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L697-L708) | <pre>if off &lt;= 0x03E {<br>&nbsp;&nbsp;&nbsp;&nbsp;return !matches!(self.agnus.revision(), AgnusRevision::Ocs)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&& self.agnus.copper_danger_enabled();<br>}</pre> the only one of the four that writes the two address blocks out as p.289 marks them — `<= 0x03E` needing both ECS and CDANG, `0x040..=0x07E` needing CDANG |
+| **MiSTer** | [`rtl/agnus_copper.v:220-228`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L220-L228) | descendant — byte-identical to NanoMig, same line numbers, comments included: `if (ir2[8:7]==2'b00 && !cdang \|\| ir2[8:6]==3'b000 && !ecs) illegalreg = 1'b1;`. $020 is blocked exactly as it is in NanoMig; this line is what NanoMig's own "What NanoMig does" section already cites as identical to Minimig-AGA |
+| **TC64** | [`rtl/minimig/agnus_copper.v:220-228`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L220-L228) | descendant — byte-identical as well, same line numbers, same comments, confirmed by a direct diff against both NanoMig's and MiSTer's lines. No citation for this row existed before this page; it was opened for this table rather than reused from an `Upstream` row, since this entry is a source observation and carries none |
 
 ### How to read that unanimity, and how not to
 

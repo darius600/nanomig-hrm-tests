@@ -28,8 +28,10 @@ that was read.
 | **vAmiga** | — | follows the long-frame bit |
 | **Denise** | [`emulation/libami/agnus/agnus.cpp:178`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L178) | <pre>lines = ntsc ? 261 : 311;</pre> frame restarts at `vPos == lines + lof` |
 | **Copperline** | [`src/chipset/agnus.rs:7`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L7) | <pre>pub const PAL_LINES: u32 = 313;</pre> non-interlaced fields are all long frames |
+| **MiSTer** | [`rtl/agnus_beamcounter.v:87`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L87), [`:330`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L330) | descendant — the same `VTOTAL_PAL_VAL = 11'd312 - 11'd1` and the same `long_frame <= 1'b1` reset default NanoMig has; runs a 313-line PAL field for the same reason |
+| **TC64** | [`rtl/minimig/agnus_beamcounter.v:103`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L103), [`:386`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L386) | descendant — the same `VTOTAL_PAL_VAL` and the same `long_frame_r <= 1'b1` reset default; runs a 313-line PAL field for the same reason |
 
-**All four run a 313-line PAL field.** Nobody agrees with the assertion.
+**All four independent implementations run a 313-line PAL field.** Nobody agrees with the assertion. (`agnus_beamcounter.v` has no `Upstream` row on this withdrawn finding, so these two citations were derived directly from the `Module` row rather than reused.)
 
 ---
 

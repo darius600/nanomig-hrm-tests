@@ -56,6 +56,8 @@ Nobody produces 49. NanoMig lands one below, the two emulators one above.
 | **vAmiga** | — | 50 words at the limits |
 | **Denise** | — | not read for this finding |
 | **Copperline** | [`src/bus/ddf_sequencer.rs:662`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/ddf_sequencer.rs#L662) | <pre>assert_eq!(plane0 % 2, 0);</pre> two words per plane per 8-cck hires unit |
+| **MiSTer** | [`rtl/agnus_bitplanedma.v:339,349`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339) | descendant — identical to NanoMig: both DDF comparisons end in the trailing `1'b0` that forces start and stop onto even `hpos[8:1]` positions |
+| **TC64** | [`rtl/minimig/agnus_bitplanedma.v:313,323`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L313) | descendant — the same two expressions, byte for byte |
 
 **Copperline states the even word count as an invariant in its own test** — which
 is NanoMig's structural argument, arrived at independently and written down as an

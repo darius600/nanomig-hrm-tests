@@ -85,7 +85,7 @@ green stays green, because both RTL entries emit `$2B` whichever is driven —
 but the red is now against the key p.252 names, and the green is a control on
 the key that is right, instead of a pass standing on the defect.
 
-## What the four do
+## What the others say
 
 | | |
 |---|---|
@@ -93,6 +93,8 @@ the key that is right, instead of a pass standing on the defect.
 | **vAmiga** | Both, named and distinct: `laceBrace = 0x30` and `hashtag = 0x2B` (`GUI/Input/AmigaKey.swift:97-98`) |
 | **Denise** | Both, adjacent in its key table: `0x2b, 0x30` (`emulation/libami/input/keyboard/keyboard.cpp:19`) |
 | **Copperline** | `0x30` sits in the A500 key matrix taken from the keyboard's own wiring (`src/chipset/keyboard.rs:133`) |
+| **MiSTer** | descendant — no counterpart; the module does not exist in this line |
+| **TC64** | descendant — no counterpart; the module does not exist in this line |
 
-None of the four reaches `$30` by accident and none of them omits it. The page's
-two cutout keys are two keys everywhere else.
+None of the four independent implementations reaches `$30` by accident and none
+of them omits it. The page's two cutout keys are two keys everywhere else.

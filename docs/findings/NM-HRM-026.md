@@ -79,11 +79,16 @@ does not print, is live. "In the 011 state the lower byte is output" measures
 | **vAmiga** | `StateMachine.cpp` | `0b000`, `0b001`, `0b010`, `0b101` |
 | **Denise** | `emulation/libami/paula/audio.cpp` | states 0, 1, 2, 3 and **5** |
 | **Copperline** | [`src/chipset/paula.rs:107-111`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L107-L111) | <pre>const AUD_IDLE: u8 = 0b000;<br>const AUD_DMA_FIRST: u8 = 0b001;<br>const AUD_DMA_SECOND: u8 = 0b101;<br>const AUD_OUT_HI: u8 = 0b010;<br>const AUD_OUT_LO: u8 = 0b011;</pre> |
+| **MiSTer** | [`rtl/paula_audio_channel.v:242-246`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L242-L246) | descendant — byte-identical to NanoMig; the whole file matches. The same encoding mismatch against Figure 5-8 |
+| **TC64** | [`rtl/minimig/paula_audio_channel.v:219-223`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L219-L223) | descendant — the same five `parameter AUDIO_STATE_*` lines verbatim (the line numbers shift because TC64 lacks the PWM volume-gating block that sits between them in NanoMig, see `NM-HRM-025`); the same mismatch |
 
-**All four use the figure's numbering, including `101`.** Copperline writes the
-five constants out with the manual's bit patterns *and* the manual's meanings.
-That is what lifts this above an internal-encoding quibble: four independent
-implementations treat the printed patterns as the specification.
+**All four independent implementations use the figure's numbering, including
+`101`.** Copperline writes the five constants out with the manual's bit patterns
+*and* the manual's meanings. That is what lifts this above an internal-encoding
+quibble: four independent implementations treat the printed patterns as the
+specification. MiSTer and TC64 do not — they carry NanoMig's own mismatched
+encoding unchanged, which is the source observation propagating, not a second
+reading of the figure.
 
 ---
 

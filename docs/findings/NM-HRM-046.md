@@ -168,8 +168,8 @@ port contradicts is the most testable kind there is.
 ## What the others say
 
 **An emulator has no LED** — so the question is not whether it has one but what
-it drives its UI indicator from. All four maintain one, and all four take it
-from the motor.
+it drives its UI indicator from. All four independent implementations maintain
+one, and all four take it from the motor.
 
 | | code | |
 |---|---|---|
@@ -177,9 +177,11 @@ from the motor.
 | **vAmiga** | [`FloppyDrive.cpp:743-759`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Drive/FloppyDrive.cpp#L743-L759) | **`Msg::DRIVE_LED` is emitted from exactly one place in the whole codebase** — `FloppyDrive::setMotor(bool value)`, with `value` itself as the payload: <pre>msgQueue.put(Msg::DRIVE_LED, DriveMsg { i16(objid), value, 0, 0 });</pre> and `setMotor` is reached only from the select-edge latch at [`FloppyDrive.cpp:1427-1438`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Drive/FloppyDrive.cpp#L1427-L1438). p.244's two sentences, wired together |
 | **WinUAE** | [`disk.cpp:917`, `:930`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L917-L930) | <pre>gid-&gt;drive_motor = drv-&gt;state;<br>...<br>gui_led (num + LED_DF0, (gid-&gt;drive_motor ? 1 : 0) \| (gid-&gt;drive_writing ? 2 : 0), -1);</pre> bit 0 — lit or not — is the motor. Bit 1 is `dskdmaen == DSKDMA_WRITE && drv->state && !selected` ([`:904`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L904)), a write indicator that colours the lamp and cannot light it |
 | **Copperline** | [`src/floppy/mod.rs:558-561`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L558-L561) | <pre>pub fn activity_led_on(&self) -&gt; bool {<br>&nbsp;&nbsp;self.selected_drive()<br>&nbsp;&nbsp;&nbsp;&nbsp;.is_some_and(\|idx\| self.drives[idx].motor_on)<br>}</pre> motor of the selected drive, and nothing else. Consumed as `fdd_led_on` at [`src/bus.rs:5318`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L5318) and lit unconditionally by the status bar at [`src/video/window/statusbar.rs:475-482`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/window/statusbar.rs#L475-L482). **No DMA term anywhere on the path** |
+| **MiSTer** | [`rtl/paula_floppy.v:544`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L544) | descendant — byte-identical to NanoMig's `fdd_led` line, `assign fdd_led = (dskstate!=DISKDMA_IDLE);`, with the motor-driven alternative commented out immediately below at [`:545`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L545), `//assign disk_led = \|motor_on;` |
+| **TC64** | [`rtl/minimig/paula_floppy.v:796`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L796) | descendant — **TC64 does not share this defect.** Its port is named `disk_led` and carries the identical stale doc comment ("disk activity LED, active when DMA is on"), but the *live* statement here is `assign disk_led = \|motor_on;` — the motor-following line — while the DMA-based alternative is the one commented out, at [`:795`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L795), `//assign disk_led = dskstate!=DISKDMA_IDLE ? 1'b1 : 1'b0;`. TC64 has flipped which of the two lines is live. **This does not resolve the finding**: TC64's lamp is still the single-scalar aggregate for the whole controller, not one per drive, so the "one lamp, not four" half of this finding stands unaddressed even here |
 
-**Where the four differ is only in the select term**, which p.244 does not
-mention:
+**Where the four independent implementations differ is only in the select
+term**, which p.244 does not mention:
 
 - **WinUAE adds it for external drives only**, with a comment saying why
   ([`disk.cpp:3659-3661`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L3659-L3661)):
@@ -197,6 +199,11 @@ them decides this finding, and none of them needed to: the split is about a
 refinement the page is silent on, while all four agree on the term the page does
 name, and NanoMig implements none of it.
 
+Of the two maintained Minimig lines, MiSTer is in the same position as
+NanoMig — the motor term is commented out, not merely unselected — while TC64
+has the motor term live and no select term at all, which puts it on the
+"vAmiga and Denise" side of this same split rather than on NanoMig's.
+
 ## Suggested change
 
 **One line, and it is already written in the upstream file.** Minimig-AGA's own
@@ -210,6 +217,22 @@ name, and NanoMig implements none of it.
 Commented out, and NanoMig did not carry it forward. `|motor_on` is the page's
 reading for a single aggregate lamp; `|(~_sel & motor_on)` would add
 Copperline's select term.
+
+**And the second Minimig line ships it live.** TC64 carries the same two lines in
+the same file with the comment on the other one:
+`rtl/minimig/paula_floppy.v:796` is `assign disk_led = |motor_on;` and `:795` is
+the commented-out DMA version. So this is not only a suggestion sitting in a
+comment — **one maintained descendant of the same code has been running the
+motor-following lamp**, which answers the question a commented-out line cannot:
+it builds, and somebody chose it.
+
+It does not answer the whole finding. TC64's lamp is still the single aggregate,
+not one per drive, so the *"one light, not four"* half stands in all three trees.
+
+**Nothing brings it down by itself.** There is at present no automatic merge of
+fixes from either maintained line into NanoMig; a correction arrives only if
+somebody ports it deliberately. That is why this section names a file and a line
+in each line rather than saying "fixed upstream".
 
 **But this is a board decision, not only an RTL one.** `fdd_led` leaves the core
 and lights a physical LED on the FPGA board, where its job may be to tell the

@@ -75,7 +75,7 @@ The first press is correct under the page's own rule and is graded green as
 a measurement rather than an assumption: the same path, the same key, one press
 apart.
 
-## What the four do
+## What the others say
 
 | | |
 |---|---|
@@ -83,9 +83,11 @@ apart.
 | **vAmiga** | **Not conformant — the same shape as NanoMig.** `Core/Peripherals/Keyboard/Keyboard.cpp` has no `0x62` case: `press()` queues the code and `release()` queues `keycode \| 0x80` for every key alike. Its one lock mechanism (`lock()` / `isLocked()`) exists for the Cmd/Amiga key combination, not for Caps Lock |
 | **Denise** | **Conformant, both halves, explicitly.** The release returns before emitting anything — `if (stroke == 0x62) // Caps Lock release  return;` (`emulation/libami/input/keyboard/keyboard.cpp:203-204`) — and the press toggles the modelled LED and sets bit 7 when that press turns it off (`:230-234`) |
 | **Copperline** | **Conformant, and documented as the keyboard's own behaviour.** The `caps_lock_on` field's comment reads *"owned by the keyboard: the key toggles it, sending a press code on toggle-on and a release code on toggle-off; the physical key release sends nothing"* (`src/chipset/keyboard.rs:272-275`) |
+| **MiSTer** | descendant — no counterpart; the module does not exist in this line |
+| **TC64** | descendant — no counterpart; the module does not exist in this line |
 
-Three of the four arrive at the page's byte sequence by three different routes —
-mirroring the host's lock, modelling the LED in the keyboard, or owning the
-toggle in a keyboard MCU. vAmiga does not implement the rule, which is worth
-saying plainly: this is not a case where everyone else agrees and NanoMig alone
-is out.
+Three of the four independent implementations arrive at the page's byte
+sequence by three different routes — mirroring the host's lock, modelling the
+LED in the keyboard, or owning the toggle in a keyboard MCU. vAmiga does not
+implement the rule, which is worth saying plainly: this is not a case where
+everyone else agrees and NanoMig alone is out.

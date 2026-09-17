@@ -125,9 +125,9 @@ not a dark check.
 
 ## What the others say
 
-Not one of the four implements the two-term formula. All four require a DSKEN
-term, and all four require the DSKLEN arming as well — p.248's reading, in four
-independent codebases.
+Not one of the four independent implementations implements the two-term
+formula. All four require a DSKEN term, and all four require the DSKLEN
+arming as well — p.248's reading, in four independent codebases.
 
 | | code | |
 |---|---|---|
@@ -135,10 +135,15 @@ independent codebases.
 | **vAmiga** | [`DiskControllerRegs.cpp:133`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/DiskController/DiskControllerRegs.cpp#L133) | <pre>if (agnus.dskdma() && state != DriveDmaState::OFF) SET_BIT(result, 14);</pre> with [`Agnus.h:554`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.h#L554): `static bool dskdma(u16 v) { return (v & DMAEN) && (v & DSKEN); }`. The state leaves `OFF` at [`DiskControllerRegs.cpp:60`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/DiskController/DiskControllerRegs.cpp#L60), under `if (oldValue & newValue & 0x8000)` |
 | **Denise** | [`emulation/libami/paula/fdc.cpp:214`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/fdc.cpp#L214) | <pre>if (dmaDisk && (diskState != DiskState::OFF)) out \|= 0x4000;</pre> and `dmaDisk` comes from one masked compare, [`paula/paula.cpp:120`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/paula.cpp#L120): `dmaDisk = (value & 0x210) == 0x210;`. `0x210` is DSKEN **and** the master bit together, so a DMACON write clearing either one clears `dmaDisk` |
 | **Copperline** | [`src/floppy/mod.rs:2733-2738`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L2733-L2738) | <pre>fn dma_enabled(&self, dmacon: u16) -&gt; bool {<br>&nbsp;&nbsp;self.dma.is_some()<br>&nbsp;&nbsp;&nbsp;&nbsp;&& self.dsklen & DSKLEN_DMAEN != 0<br>&nbsp;&nbsp;&nbsp;&nbsp;&& dmacon & DMACON_DMAEN != 0<br>&nbsp;&nbsp;&nbsp;&nbsp;&& dmacon & DMACON_DISK != 0<br>}</pre> **the most literal of the four** — an armed transfer, the live DSKLEN bit, the master bit and DSKEN, each named separately. Called for bit 14 at [`mod.rs:1430-1432`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L1430-L1432) |
+| **MiSTer** | [`rtl/paula_floppy.v:397`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) and [`rtl/paula.v:169`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L169)/[`:246`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L246) | descendant — the DSKBYTR line this entry shares with `NM-HRM-041` is byte-identical, and so is the `dsken` wiring: `assign dsken = dmacon[4] & dmaen;` and `.enable(dsken)` |
+| **TC64** | [`rtl/minimig/paula_floppy.v:633`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L633) and [`rtl/minimig/paula.v:188`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L188)/[`:264`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L264) | descendant — the same DSKBYTR composition and the same `dsken` wiring, unchanged |
 
-**The agreement is total, and it is on p.248's side.** Four implementations
-written independently, in three languages, from the same manual, each arrived at
-the three-term composition. NanoMig makes five.
+**The agreement is total among the four independent implementations, and it is
+on p.248's side.** Four implementations written independently, in three
+languages, from the same manual, each arrived at the three-term composition.
+NanoMig makes five — and both maintained Minimig lines carry the identical
+signals, so as descendants they add a sixth and seventh instance of the same
+inherited two-term line, not a second reading of the page.
 
 **None of them decides this finding.** They are reported because a unanimous
 verdict is itself a result: p.278's line is not a reading anybody has taken.

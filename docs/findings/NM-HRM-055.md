@@ -39,7 +39,7 @@ The same fixture writing a non-zero word transmits correctly, and
 So the red is not "this fixture cannot see a transmission" — it is "this
 transmission should not have happened".
 
-## What the four do
+## What the others say
 
 | | |
 |---|---|
@@ -47,10 +47,12 @@ transmission should not have happened".
 | **Denise** | **implements it.** `if (value && !serShifter)` — `emulation/libami/paula/uart.cpp:42`. The same guard, one token |
 | **WinUAE** | **implements it in one of its two paths.** `od-win32/serial_win32.cpp:999-1004` returns early on `if (!w)`, with a log line that calls the case out by name: *"zero serial word written?!"*. In `ser_accurate` mode (`:983-992`) there is no such guard and the word is loaded unconditionally |
 | **Copperline** | **deliberately does not.** `write_serdat` loads any word (`src/chipset/paula.rs:1079-1082`), and `serial_tx_total_bits` carries an explicit branch for it: `if word == 0 { return if long { 11 } else { 10 }; }` (`:1575-1578`) — a full frame, written on purpose |
+| **MiSTer** | descendant — same gap, same file: `rtl/paula_uart.v:77-140` is byte-identical to NanoMig's, no test of the written value anywhere in the transmit path |
+| **TC64** | descendant — same gap, same file: `rtl/minimig/paula_uart.v:77-140` is byte-identical too, line numbers included |
 
-**Three of the four implement the sentence somewhere**, two of them with a single
-added token. That is what makes the omission worth reporting rather than
-excusing.
+**Three of the four independent implementations implement the sentence
+somewhere**, two of them with a single added token. That is what makes the
+omission worth reporting rather than excusing.
 
 The two dissents are the interesting part and neither is an oversight.
 Copperline wrote a branch to transmit a zero word. WinUAE implements the rule in

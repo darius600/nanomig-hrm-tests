@@ -52,6 +52,8 @@ the printed value usually has a units error, and this one does not.
 | **vAmiga** | **4 / 8 / 8** — NanoMig's three numbers |
 | **Denise** | — |
 | **Copperline** | — |
+| **MiSTer** | descendant — [`rtl/agnus_copper.v:473-522`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L473-L522): the identical `WAITSKIP1`/`WAITSKIP2` states and cycle counts |
+| **TC64** | descendant — [`rtl/minimig/agnus_copper.v:473-522`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L473-L522): the same states, byte for byte |
 
 **vAmiga measures what NanoMig measures.** That is the single most useful fact on
 this page, and it points away from the RTL.

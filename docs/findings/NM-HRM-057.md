@@ -31,7 +31,7 @@ starting point and its control shows the bus read mux itself costs none — the
 two agree on there being a fixed chain and differ only in where they start
 counting.
 
-## What the four do
+## What the others say
 
 | | |
 |---|---|
@@ -39,10 +39,12 @@ counting.
 | **Denise** | **immediate.** `if (serial.getRXD()) out \|= 0x800;` — `emulation/libami/paula/uart.cpp:32`, over `getPin(RXD)` (`emulation/libami/system/serial.h:37`). No RX synchroniser exists in the tree |
 | **Copperline** | **delayed by two stages.** `serial_rx_pin_high` → `serial_rx_sync_0_high` → `serial_rx_sync_1_high` (`src/chipset/paula.rs:505-507`, advanced at `:1612-1616`), read at `:1101`. Deliberate and tested: `fn serdatr_rxd_uses_two_stage_synchronized_pin()` at `:3896` |
 | **WinUAE** | **cannot answer.** There is no RXD pin to read. Bit 11 is a break-state flag forced high unless a break is active (`od-win32/serial_win32.cpp:1050-1051`); only the loopback path reconstructs a level, and it does so from the transmit shift register by elapsed bit position (`:1032-1048`) |
+| **MiSTer** | descendant — same synchroniser, same lines: `rtl/paula_uart.v:36-43` is byte-identical to NanoMig's, the same three-`clk7_en`-edge lag |
+| **TC64** | descendant — same synchroniser, same lines: `rtl/minimig/paula_uart.v:36-43` is byte-identical too, already noted above |
 
-**Two of the four read the pin exactly as the page says, one adds two
-synchroniser stages, one has no pin.** So a synchroniser is not unheard of — but
-nobody has three.
+**Two of the four independent implementations read the pin exactly as the page
+says, one adds two synchroniser stages, one has no pin.** So a synchroniser is
+not unheard of — but nobody has three.
 
 That gap is the useful part of this entry. **A test that distinguishes a
 two-cycle lag from a three-cycle one separates NanoMig from every emulator here,

@@ -83,9 +83,14 @@ at the pinned revision named in the link.
 | **vAmiga** | [`Core/Components/Agnus/AgnusRegs.cpp:566-567`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L566-L567) | <pre>bool loldis = GET_BIT(value, 11);<br>if (pos.type == TV::NTSC) pos.lolToggle = !loldis;</pre> |
 | **Denise** | [`emulation/libami/agnus/register.cpp:565`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/register.cpp#L565) | <pre>lolToggle = !(value & LOLDIS) && !(value & BEAM_PAL);</pre> |
 | **Copperline** | [`src/chipset/agnus.rs:855-863`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L855-L863) | <pre>matches!(self.video_standard, VideoStandard::Ntsc)<br>&nbsp;&nbsp;&nbsp;&nbsp;&& self.programmable_line_cck().is_none()<br>&nbsp;&nbsp;&nbsp;&nbsp;&& !self.loldis_active()</pre> |
+| **MiSTer** | [`rtl/agnus_beamcounter.v:282-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L282-L285) | descendant — identical to NanoMig: the freeze condition is `pal \|\| (loldis && varbeamen)`, the same AND |
+| **TC64** | [`rtl/minimig/agnus_beamcounter.v:343-346`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L343-L346) | descendant — the same AND, byte for byte apart from the renamed `pal` signal (`displaypal` there, matching TC64's own naming convention, not a behavioural change): `if (displaypal \|\| (loldis && varbeamen))` |
 
-**All four AND LOLDIS with the video standard and nothing else.** NanoMig is the
-only implementation read that requires VARBEAMEN as well.
+**All four independent implementations AND LOLDIS with the video standard and
+nothing else.** NanoMig is the only *independent* implementation read that
+requires VARBEAMEN as well — both maintained Minimig lines inherit the same
+extra term unchanged, which is expected of descendants and says nothing about
+the manual.
 
 Copperline is worth reading closely, because it inverts NanoMig's relationship:
 VARBEAMEN **also** stops the toggle there — a programmable line length has no
