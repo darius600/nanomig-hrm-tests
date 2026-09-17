@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · **the manual is the likely defect** |
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/userio.v#L219-L280) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v) |
-| **Upstream** | inherited — the counters are plain 8-bit registers in both trees |
+| **Upstream** | **MiSTer** `rtl/userio.v:256` — identical: `dmouse0dat[7:0] <= dmouse0dat[7:0] + 1'd1;`, a plain 8-bit field, mod 256. **TC64** `rtl/minimig/userio.v:401` — the same statement, same width: `dmouse0dat[7:0] <= #1 dmouse0dat[7:0] + 1'd1;`. Both lines give the counter 256 states; neither wraps at 255 |
 | **Report to** | **probably nobody.** See *Suggested change* |
 | **Test** | [`hrm/ch8-mouse-counter-wraparound`](../../hrm/ch8-mouse-counter-wraparound) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_blitter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_blitter.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v) |
-| **Upstream** | inherited from Minimig-AGA, unchanged there |
+| **Upstream** | The five-bit latch lives in `agnus_blitter_adrgen.v`, which `agnus_blitter.v` instantiates without an `ecs` port at all — in NanoMig, MiSTer and TC64 alike. **MiSTer** `rtl/agnus_blitter_adrgen.v:62` — identical to NanoMig: `assign bltptr_in[20:1] = enaptr ? newptr[20:1] : {data_in[4:0], data_in[15:1]};`. **TC64** `rtl/minimig/agnus_blitter_adrgen.v:62` — the same line, byte for byte; the file is unchanged in both forks. The instantiation at `agnus_blitter.v:596` (MiSTer) / `agnus_blitter.v:576` (TC64, same line as NanoMig) connects no `.ecs()` in either tree. A fix here diverges from neither line |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
 | **Test** | [`hrm/agnus_blitter_ecs`](../../hrm/agnus_blitter_ecs) |
 | **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed. |

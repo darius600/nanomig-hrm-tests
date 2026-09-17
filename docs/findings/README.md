@@ -27,6 +27,7 @@ every quotation was verified in a local checkout at that revision.
 |---|---|---|
 | **NanoMig** — the design under test | [harbaum/NanoMig](https://github.com/harbaum/NanoMig) | [`d6f7df9`](https://github.com/harbaum/NanoMig/tree/d6f7df957fad655bc07f6a381e5094a9edff0be0) · v0.14-beta-33 |
 | **Minimig-AGA** — what NanoMig descends from | [MiSTer-devel/Minimig-AGA_MiSTer](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer) | [`da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/tree/da7632e44498840850e78966947f8770166e6e77) |
+| **Minimig-AGA on MiST/TC64** — the second maintained line | [minimig-dev/MinimigAGA-MiST-TC64](https://github.com/minimig-dev/MinimigAGA-MiST-TC64) | [`9e8e308`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/tree/9e8e30844fe134dca54cea65f1bd38539dfc15ad) · 2025-05-03 |
 | WinUAE | [tonioni/WinUAE](https://github.com/tonioni/WinUAE) | [`ccc407e`](https://github.com/tonioni/WinUAE/tree/ccc407e9c636668b99b5f19d6e9aa03ea04b3052) |
 | vAmiga | [dirkwhoffmann/vAmiga](https://github.com/dirkwhoffmann/vAmiga) | [`35de004`](https://github.com/dirkwhoffmann/vAmiga/tree/35de004a2f1502c2811b9a8ebcde4d0979a98937) |
 | Denise | [piciji/denise](https://github.com/piciji/denise) | [`1cb7d45`](https://github.com/piciji/denise/tree/1cb7d45117893c76025d32260edb6008001344f9) |
@@ -35,14 +36,49 @@ every quotation was verified in a local checkout at that revision.
 All six are checked out locally under `_emulators/` in the workspace, outside
 either repository, so a citation can be re-checked rather than trusted.
 
-### Minimig-AGA is the ancestor, not a fifth witness
+### Minimig-AGA is the ancestor, not a fifth witness — and it has two lines
 
 NanoMig is a port of Minimig-AGA and almost everything comes from there, which is
 neither news nor a problem. So the `Upstream` row is one line and nothing more —
-unless upstream has **changed** the code a finding is about and NanoMig has not
-picked it up. That is the only case with something to act on, and it gets a
-section. The full comparison is in
+unless a maintained line has **changed** the code a finding is about and NanoMig
+has not picked it up. That is the only case with something to act on, and it gets
+a section. The full comparison is in
 [`../upstream-minimig-aga.md`](../upstream-minimig-aga.md).
+
+**Two groups maintain that ancestry independently**, and the `Upstream` row names
+both: MiSTer-devel's `Minimig-AGA_MiSTer` and minimig-dev's
+`MinimigAGA-MiST-TC64`. Neither is a witness to what the manual requires — both
+are descendants of the same code NanoMig descends from, so agreement between them
+says nothing about the HRM. What it does say is **where a fix belongs**, and the
+two lines have drifted apart far enough for that to matter.
+
+Measured across the 28 modules the findings cite, against NanoMig at `d6f7df9`:
+
+- **six are identical in all three** — `agnus_audiodma.v`,
+  `agnus_blitter_adrgen.v`, `denise_collision.v`, `paula_audio_mixer.v`,
+  `paula_intcontroller.v`, `paula_uart.v`. Line numbers match as well as content,
+  so a citation carries across unchanged.
+- **`cia_int.v` is identical in TC64 and 113 lines different in MiSTer.** For
+  NM-HRM-063 the closer sibling is the one this project had not been looking at.
+- **three are NanoMig's own** — `src/misc/amiga_keymap.v`, `hid.v`, `sysctrl.v` —
+  and exist in neither line.
+- **A module is only absent when the whole repository has no copy.** The two
+  lines lay their sources out differently — TC64 spreads Verilog across
+  `rtl/minimig`, `rtl/sdram`, `rtl/mist`, `rtl/audio` and more — so a comparison
+  scoped to one directory reports absences that are not there. This one was
+  scoped to `rtl/minimig` first and called `cpu_cache_new.v` missing.
+- **`cpu_cache_new.v` sits in a different place in each line.** MiSTer keeps it
+  at `rtl/cpu_cache_new.v`, 150 lines from NanoMig's; TC64 at
+  `rtl/sdram/cpu_cache_new.v`, 1105 lines from it — and yet the statement
+  NM-HRM-060 is about is identical in all three, commented-out guard included.
+  A file-level line count is not an answer to a finding.
+- Where they diverge they diverge in both directions: TC64 is closer on
+  `agnus_blitter.v` (14 lines against 61) and `ciab.v` (6 against 218), and much
+  further on `agnus.v` (741 against 115), `minimig.v` (1563 against 811) and
+  `userio.v` (736 against 165).
+
+Comparison is against line endings normalised: NanoMig's files are **LF** and both maintained lines are **CRLF**, so a naive
+byte comparison reports every line of every file as changed and says nothing.
 
 **Checking it is not optional, though.** Every page carries the answer, because
 "has this already been fixed upstream?" is the question that decides whether

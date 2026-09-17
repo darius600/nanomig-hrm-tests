@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v) |
-| **Upstream** | inherited from Minimig-AGA, unchanged there |
+| **Upstream** | **MiSTer** `rtl/agnus_copper.v:225` — identical to NanoMig: `if (ir2[8:7]==2'b00 && !cdang || ir2[8:6]==3'b000 && !ecs) // illegal access`, the same CDANG-clear range. **TC64** `rtl/minimig/agnus_copper.v:225` — the same line, byte for byte. Neither fork's only edit to this file (the blocking-assignment change at lines 234-274) reaches the CDANG decode. If the manual's reading is upheld, a fix diverges from neither line |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted — see *Suggested change* |
 | **Test** | [`hrm/agnus_copper_move_range`](../../hrm/agnus_copper_move_range), [`hrm/agnus_copper_move_sweep`](../../hrm/agnus_copper_move_sweep) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed. |

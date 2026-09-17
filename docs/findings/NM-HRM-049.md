@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L467-L477) · no counterpart upstream |
-| **Upstream** | **NanoMig's own.** The pinned Minimig-AGA tree contains no MFM encoder at all — the only mention of MFM in it is a comment on the FIFO's size ([`paula_floppy_fifo.v:23`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy_fifo.v#L23)). NanoMig's own comment attributes the rule to "minimig firmware", which is not in that repository and cannot be checked at this pin |
+| **Upstream** | **NanoMig's own, in both lines.** Neither the pinned MiSTer nor the pinned TC64 tree contains an MFM encoder. **MiSTer** — the only mention of MFM is the FIFO-size comment already cited on this page, `rtl/paula_floppy_fifo.v:23`. **TC64** — the identical comment at the identical line, `rtl/minimig/paula_floppy_fifo.v:23`: `reg [15:0] mem [2047:0]; // 2048 words by 16 bit wide fifo memory (for 2 MFM-encoded sectors)`. Both lines leave MFM encoding to the CPU or blitter, as real Paula does; NanoMig is the only one of the three that synthesises a cell stream in RTL, and the only one that has to get the context-sensitivity right |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against |
 | **Test** | [`hrm/ch8-mfm-cell-encoding`](../../hrm/ch8-mfm-cell-encoding) — `A2-MFM-ONE-ENCODES-01`, `A4-MFM-ZERO-AFTER-ONE-ENCODES-00` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

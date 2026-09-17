@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `minimig.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/minimig.v#L861-L862) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L933-L934) |
-| **Upstream** | inherited — the two lines are byte-identical to upstream |
+| **Upstream** | **MiSTer** `rtl/minimig.v:933-934` — byte-identical: `if(~_cpu_reset \| ~_cpu_reset_in) ovl <= 1; else if(sel_cia_a & (cpu_lwr\|cpu_hwr)) ovl <= 0;`, the same any-write clear. **TC64** `rtl/minimig/minimig.v` has no such lines at all — `ovl` is a plain `wire` (`:343`), tied directly to CIA-A's own port-A output bit: `.porta_out({_fire1_dat,_fire0_dat,_led,ovl})` at `:922`. That output is computed in `ciaa.v` from `regporta` gated by `ddrporta` — the effective-pin formula the four independent implementations use, not an any-write rule. A fix in `minimig.v` meets MiSTer where NanoMig already is; TC64 has already moved this decision out of `minimig.v` entirely, to a place where it tracks the OVL bit's value by construction |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch7-overlay-source`](../../hrm/ch7-overlay-source) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |

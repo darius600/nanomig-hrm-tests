@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L142-L144) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L142-L144) |
-| **Upstream** | inherited — `agnus_copper.v` differs only in blocking versus non-blocking assignments, not here |
+| **Upstream** | **MiSTer** `rtl/agnus_copper.v:142-144` — identical to NanoMig: `cop1lch[20:16] <= data_in[4:0];`, five bits latched unconditionally. **TC64** `rtl/minimig/agnus_copper.v:142-144` — the same three lines, byte for byte. Both forks' only change to this file is elsewhere, lines 234-274, where `copjmp1`/`copjmp2`/`strobe1`/`strobe2`/`strobe` move from non-blocking to blocking assignment — the *same* eighteen lines, the same edit, in each — and neither touches COP1LCH. A fix here diverges from neither line |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
 | **Test** | [`hrm/agnus_copper_control`](../../hrm/agnus_copper_control), [`hrm/agnus_copper_locreg_width`](../../hrm/agnus_copper_locreg_width) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed. |

@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · against the RTL |
 | **Module** | `src/minimig-aga/cia_int.v:57` |
-| **Upstream** | **the same line is in `MiSTer-devel/Minimig-AGA_MiSTer`**, `rtl/cia_int.v:81`. A finding here transfers to the Minimig line |
+| **Upstream** | **MiSTer** `rtl/cia_int.v:81` — the same statement, `icr[4] <= icr[4] \| flag;`; 113 of the file's lines differ from NanoMig, nearly all of them added commentary, and this one is unchanged by it. **TC64** `rtl/minimig/cia_int.v:57` — byte-identical to NanoMig line for line, down to the "intterupts" typo in the comment on the ICR-clear branch. TC64 is the closer sibling: its whole file is untouched from NanoMig's, so a fix here is one clean edit against an otherwise-identical file. MiSTer's copy has been rewritten around the same statement — the fix lands in a file that has drifted everywhere else. Either way the statement is identical in both, and a fix belongs to both lines equally |
 | **Report to** | Minimig/MiSTer maintainers, once Amiga specialists confirm it matters in practice |
 | **Test** | `hrm/appF-ciab-port-assignments` · `PROP-FLAG-EDGE-POLARITY` — **red** |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters · printed p.341 |

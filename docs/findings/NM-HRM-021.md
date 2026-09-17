@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_blitter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_blitter.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v) |
-| **Upstream** | inherited from Minimig-AGA, unchanged there |
+| **Upstream** | **MiSTer** `rtl/agnus_blitter.v:283` — identical to NanoMig: `bltcon1[11:0] <= data_in[11:0];` captures bits 11-0 only; bit 7 is absent from the module in MiSTer too. **TC64** `rtl/minimig/agnus_blitter.v:282` — the same line, byte for byte (TC64's fourteen changed lines here are whitespace only, far from the `BLTCON1` decode). DOFF is unbuilt in all three; adding it diverges from neither |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/agnus_blitter_ecs`](../../hrm/agnus_blitter_ecs) |
 | **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed. |

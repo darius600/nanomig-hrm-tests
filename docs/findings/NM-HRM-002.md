@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_mixer.v#L76-L77) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L76-L77) |
-| **Upstream** | inherited — `paula_audio_mixer.v` is content-identical to upstream |
+| **Upstream** | **MiSTer** `rtl/paula_audio_mixer.v:76-77` — byte-identical: `ldatasum <= #1 {msample0[13], msample0} + {msample3[13], msample3};` and the matching `rdatasum` line; confirmed by a full-file comparison, not only this range — `paula_audio_mixer.v` is byte-identical across all three trees. **TC64** `rtl/minimig/paula_audio_mixer.v:76-77` — the same two lines, unchanged. Both lines pick the pin-list side; neither resolves the chapter-5-vs-appendix contradiction differently, so there is nowhere for a fix to diverge to |
 | **Report to** | **nowhere.** The manual contradicts itself and the implementations split evenly — see *Suggested change* |
 | **Test** | [`hrm/paula_audio_mixer`](../../hrm/paula_audio_mixer), [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |

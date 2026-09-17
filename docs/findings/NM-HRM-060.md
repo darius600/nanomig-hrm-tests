@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `cpu_cache_new.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_cache_new.v#L296-L309) |
-| **Upstream** | **identical.** `MiSTer-devel/Minimig-AGA_MiSTer`'s `rtl/cpu_cache_new.v:306` carries the same line, down to the same commented-out `/*&& !cc_fr*/` guard |
+| **Upstream** | **identical.** `MiSTer-devel/Minimig-AGA_MiSTer`'s `rtl/cpu_cache_new.v:306` carries the same line, down to the same commented-out `/*&& !cc_fr*/` guard. **`minimig-dev/MinimigAGA-MiST-TC64` is not absent, only relocated:** it has no `cpu_cache_new.v` under `rtl/minimig/`, but `rtl/sdram/cpu_cache_new.v` is the same module under the same 2015 `rok.krajnc@gmail.com` authorship, instantiated with `cache_en` hardwired to `1'b1` in `rtl/sdram/sdram_ctrl.v:274`, itself part of the real board target `rtl/soc/minimig_mist_top.v`. Its `CPU_SM_WRITE` state, `cpu_cache_new.v:467-468`, carries the identical statement and the identical commented-out guard. A fix here diverges from neither line |
 | **Report to** | **the Minimig line**, not NanoMig alone |
 | **Test** | [`hrm/ch1-cpu-and-instruction-cache`](../../hrm/ch1-cpu-and-instruction-cache) `CACHE-WRITE-VISIBILITY` |
 | **Chapter** | 1 — Introduction · *Amiga Hardware Reference Manual*, 3rd ed. |

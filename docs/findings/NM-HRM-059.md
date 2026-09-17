@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · **red — against p.265, not against the RTL** |
 | **Module** | `paula.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula.v#L132) |
-| **Upstream** | **identical** |
+| **Upstream** | **MiSTer** `rtl/paula.v:127` (register) and `:193` (`adkconr` assign) — carry the identical lines. **TC64** `rtl/minimig/paula.v:146` and `:212` — carry them too: `reg [14:0] adkcon;` and `assign adkconr[15:0] = (reg_address_in[8:1]==ADKCONR[8:1]) ? {1'b0,adkcon[14:0]} : 16'h0000;`, word for word, even though `paula.v` as a whole diverges by 52 (MiSTer) and 193 (TC64) lines elsewhere. The fifteen-bit register and the forced-zero bit 15 on read are inherited unchanged by both lines; the red is against p.265, not against any of the three RTL trees |
 | **Report to** | **the manual.** All four reference implementations produce the same observable result |
 | **Test** | [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations) `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK` |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |

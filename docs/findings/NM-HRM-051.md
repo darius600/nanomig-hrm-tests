@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `hid.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/hid.v#L100-L104) · no counterpart upstream |
-| **Upstream** | **NanoMig's own.** The pinned Minimig-AGA tree contains no `hid.v` and no `keymap`: [`rtl/minimig.v:207`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L207) takes `kbd_mouse_data` as a top-level input and the keyboard's own behaviour is decided in software above the chipset |
+| **Upstream** | **NanoMig's own.** The pinned Minimig-AGA tree contains no `hid.v` and no `keymap`: [`rtl/minimig.v:207`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L207) takes `kbd_mouse_data` as a top-level input and the keyboard's own behaviour is decided in software above the chipset. **Neither does `minimig-dev/MinimigAGA-MiST-TC64`**: no `hid.v` in its `rtl/minimig/` either |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against, and the finding does not generalise to the Minimig family |
 | **Test** | [`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events) — `CAPS-LOCK-RELEASE-NOT-ACCEPTED` and `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE`, both red |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

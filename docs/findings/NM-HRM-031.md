@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula_intcontroller.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_intcontroller.v#L132-L134) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_intcontroller.v#L132-L134) |
-| **Upstream** | inherited from Minimig-AGA, unchanged there |
+| **Upstream** | **MiSTer** `rtl/paula_intcontroller.v:132-134` — byte-identical to NanoMig, same line numbers, comments included. **TC64** `rtl/minimig/paula_intcontroller.v:132-134` — the same, byte-identical; `paula_intcontroller.v` is identical across all three trees throughout, confirmed by a full-file comparison. The settable bit-14 request is inherited unchanged by both lines |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch5-audio-interrupt`](../../hrm/ch5-audio-interrupt) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |

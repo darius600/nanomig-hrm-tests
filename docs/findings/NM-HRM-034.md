@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red — **contested**, see *What the others say* |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L108-L110) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L114-L116) |
-| **Upstream** | inherited — the read mux differs from upstream only in a signal name (`vpos` vs `vpos_rb`); the bit assignment is identical |
+| **Upstream** | **MiSTer** `rtl/agnus_beamcounter.v:115` — differs from NanoMig only in the readback signal's name (`vpos_rb` for `vpos`); the expression and bit positions are identical: `data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos_rb[10:8]};`. **TC64** `rtl/minimig/agnus_beamcounter.v:132` — byte-identical to NanoMig, `vpos` and all: `data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};`. `ntsc` is ungated by `ecs` in both. If the printed page is followed, a fix diverges from all three equally |
 | **Report to** | **nobody yet** — two of the four implementations do the same thing; see *For the specialists* |
 | **Test** | [`hrm/ch7-beam-position-word-layout`](../../hrm/ch7-beam-position-word-layout) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |

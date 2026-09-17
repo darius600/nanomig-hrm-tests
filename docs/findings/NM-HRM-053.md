@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · **red — against p.289, not against the RTL** |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L225) |
-| **Upstream** | **identical.** `MiSTer-devel/Minimig-AGA_MiSTer` carries the same decode at [`rtl/agnus_copper.v`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v) |
+| **Upstream** | **MiSTer** `rtl/agnus_copper.v:225` — byte-identical: `if (ir2[8:7]==2'b00 && !cdang \|\| ir2[8:6]==3'b000 && !ecs) // illegal access`, the same decode that lifts the block at `ecs & cdang`. **TC64** `rtl/minimig/agnus_copper.v:225` — the identical line. The file differs from NanoMig by 18 lines on both lines, but they are the same 18: both upstream lines convert nine `<=` assignments to `=` (`copjmp1`, `copjmp2`, `strobe1`, `strobe2`, `strobe`, at `:237-271`) — a blocking-vs-non-blocking edit unrelated to this decode, and one both lines made identically. A fix here diverges from both lines equally; the manual is what disagrees, not either ancestor |
 | **Report to** | **the manual, not the implementation.** All four reference implementations do exactly what NanoMig does |
 | **Test** | [`hrm/ch8-appb-copper-access-marks`](../../hrm/ch8-appb-copper-access-marks) — `SERDAT-CDANG1`, `SERPER-CDANG1`, `SERDATR-CDANG1` red; their `-CDANG0` twins and `CTRL-BLTCON0` green |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

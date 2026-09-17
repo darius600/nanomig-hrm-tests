@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red · contested |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L139) |
-| **Upstream** | **identical** |
+| **Upstream** | **MiSTer** — carries the same line, already noted on this page. **TC64** `rtl/minimig/paula_uart.v:139` — the identical `tx_tbe <= (rga_i == REG_SERDAT[8:1]) ? 1'b0 : ((tx_state == TX_IDLE) ? 1'b1 : tx_tbe);`, same file, same line number, byte-identical. The one-cycle TBE-clear window this entry measures is inherited unchanged by both lines |
 | **Report to** | **the Minimig line** |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |

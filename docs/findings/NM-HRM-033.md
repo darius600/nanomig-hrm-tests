@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L295-L297) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L282-L284) |
-| **Upstream** | inherited — the two lines are byte-identical to upstream |
+| **Upstream** | **MiSTer** `rtl/agnus_beamcounter.v:282-285` — identical to NanoMig: the freeze condition is `pal || (loldis && varbeamen)`, the same AND. **TC64** `rtl/minimig/agnus_beamcounter.v:343-346` — the same AND, byte for byte apart from the renamed `pal` signal (`displaypal` there, matching TC64's own naming convention, not a behavioural change): `if (displaypal || (loldis && varbeamen))`. All three require both bits; a fix that drops `varbeamen` diverges from both lines equally |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |

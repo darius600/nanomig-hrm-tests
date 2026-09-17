@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) |
-| **Upstream** | **inherited** — `agnus_diskdma.v` is upstream's file unchanged, line endings apart, and `agnus.v` instantiates it with the same twelve ports |
+| **Upstream** | **MiSTer** `rtl/agnus_diskdma.v:56` — byte-identical to NanoMig: `assign address_outnew[20:1] = dma ? address_out[20:1]+1'b1 : {data_in[4:0],data_in[15:1]};`; the file has no differences from it at all. **TC64** `rtl/minimig/agnus_diskdma.v:57` — the same statement, byte for byte (the line moves by one because TC64 adds an unrelated `turbo` input port above it). Both ports remain `[20:1]`; twenty bits is what either tree can ever hold. A fix here, if the page's "32-bit" reading were ever acted on, diverges from neither line |
 | **Report to** | **nobody yet** — read *For the specialists* first. A pointer register pair narrower than the address space its caption names is not by itself a defect |
 | **Test** | [`hrm/ch8-disk-dma-pointer`](../../hrm/ch8-disk-dma-pointer) — assertion `P11A` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/userio.v#L136-L150) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L157-L171) |
-| **Upstream** | **inherited** — there is no reset-hold construct in either tree |
+| **Upstream** | **MiSTer** `rtl/userio.v:151-172` — byte-identical: `potcnt` is set to `4'b1111` on a POTGO write, but that flag only gates the analog-joystick match logic; the digital branch increments on the very next `pot_cnt_en` tick, same as NanoMig. **TC64** `rtl/minimig/userio.v:189-201` — the same shape under renamed signals (`anajoy` for `joy_ana_en`): `potcnt <= 4'b1111;` on POTGO write (`:191`), and the non-analog branch (`:194-195`, `:200-201`) increments unconditionally on the next `pot_cnt_en`. No reset-hold construct in either line |
 | **Report to** | **Minimig-AGA and NanoMig.** All four implementations model a hold; this one models none |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

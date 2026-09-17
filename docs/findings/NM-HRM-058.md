@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · **red — against p.256, not against the RTL** |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L156-L230) |
-| **Upstream** | **identical** |
+| **Upstream** | **MiSTer** — carries the same lines, already noted on this page. **TC64** `rtl/minimig/paula_uart.v:156-230` — the identical receiver, same file, same line numbers, byte-identical, confirmed by a full-file comparison. The 10-/11-bit-time window this entry measures against p.256 is inherited unchanged by both lines; the red is against the manual in both cases, not against either RTL |
 | **Report to** | **the manual.** Three of the four reference implementations land on NanoMig's numbers exactly |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `B11` |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |

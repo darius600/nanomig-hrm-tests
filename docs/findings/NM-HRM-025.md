@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Status** | open · red |
-| **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L25-L33) |
-| **Upstream** | inherited from Minimig-AGA, unchanged there |
+| **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33) |
+| **Upstream** | **MiSTer** `rtl/paula_audio_mixer.v:23-33` — byte-identical to NanoMig, the same OR-into-six-bits construction; `paula_audio_mixer.v` is byte-identical across all three trees, confirmed by a full-file comparison, so the 64-collapses-to-63 defect is inherited by both. **TC64** `rtl/minimig/paula_audio_mixer.v:23-33` — the same construction, unchanged. The second, correct implementation cited above for contrast is not inherited symmetrically: `paula_audio_channel.v`'s `audvol` write (NanoMig `:101-103`) is byte-identical in MiSTer (same lines) and in TC64 `rtl/minimig/paula_audio_channel.v:95-97`, but the PWM `volgate` block that makes that second path correct (NanoMig `:136-150`, including the `:149` line quoted above) **does not exist in TC64 at all** — TC64's audio channel goes straight from the `intreq` assign to the period counter, with only a vestigial, unused `volcntrld` signal left behind. TC64 has only the defective multiply path; MiSTer carries both, exactly as NanoMig does |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale), [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |

@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/amiga_keymap.v#L70-L130) · no counterpart upstream |
-| **Upstream** | **NanoMig's own.** The pinned Minimig-AGA tree contains no `amiga_keymap.v`, no `keymap` and no `hid.v`: [`rtl/minimig.v:207`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L207) takes the already-decoded `kbd_mouse_data` as a top-level input and the translation happens in software above the chipset. Other Minimig boards solve it differently again |
+| **Upstream** | **NanoMig's own.** The pinned Minimig-AGA tree contains no `amiga_keymap.v`, no `keymap` and no `hid.v`: [`rtl/minimig.v:207`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L207) takes the already-decoded `kbd_mouse_data` as a top-level input and the translation happens in software above the chipset. **Neither does `minimig-dev/MinimigAGA-MiST-TC64`**: its `rtl/minimig/` has no `amiga_keymap.v` either. Other Minimig boards solve it differently again |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against, and the finding does not generalise to the Minimig family |
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) — `CUTOUT-30` red at HID `$64`, `KEY-$2B` green at HID `$32`, same measurement basis |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

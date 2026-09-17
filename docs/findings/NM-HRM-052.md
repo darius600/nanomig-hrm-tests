@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · source observation |
 | **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/amiga_keymap.v#L135-L139) |
-| **Upstream** | not applicable — this is a statement about the manual, not about an implementation |
+| **Upstream** | not applicable — this is a statement about the manual, not about an implementation. Moot either way: `amiga_keymap.v` is absent from both `MiSTer-devel/Minimig-AGA_MiSTer`'s `rtl/` and `minimig-dev/MinimigAGA-MiST-TC64`'s `rtl/minimig/`, so neither line has a keymap to consult |
 | **Report to** | **nobody, yet.** Two printed pages contradict each other; which is right is an Amiga-history question, not a conformance question |
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) — `RIGHTALT-CONFLICT`, six claims declined on a `record()` line, **graded on neither side** |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

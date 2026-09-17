@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red · **inverted** — the manual documents a defect and NanoMig does not reproduce it |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L865-L882) · no counterpart upstream |
-| **Upstream** | **NanoMig's own.** Upstream has no SD write path at all; its disk write hands whole FIFO words to host firmware over `IO_DOUT` ([`paula_floppy.v:234`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L234)), so there is no upstream line to file this against |
+| **Upstream** | **NanoMig's own, in both lines.** Neither MiSTer nor TC64 has an in-core bit-serial disk-write stage for the documented race to occur in. **MiSTer** — disk write hands whole FIFO words to host firmware over `IO_DOUT` (`rtl/paula_floppy.v:234`, already cited on this page). **TC64** — the same, over its own host link: `sdo`/`sdi`/`sck` SPI pins to an external flash/SD controller, with whole words handed out through `rtl/minimig/paula_floppy.v:468`, `spi_tx_data_3 = fifo_out;`. Neither line trims a tail of bits on the way out; there is no upstream line in either tree to file this against |
 | **Report to** | **nobody, as a defect.** An implementation without the bug is arguably the better hardware; what needs a ruling is whether software that was written around the bug still works |
 | **Test** | [`hrm/ch8-dsklen-dma-arming`](../../hrm/ch8-dsklen-dma-arming) — `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

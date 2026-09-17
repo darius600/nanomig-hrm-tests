@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_bitplanedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_bitplanedma.v#L339) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339) |
-| **Upstream** | inherited — `agnus_bitplanedma.v` is content-identical to upstream |
+| **Upstream** | **MiSTer** `rtl/agnus_bitplanedma.v:339,349` — identical to NanoMig: both DDF comparisons end in the trailing `1'b0` that forces start and stop onto even `hpos[8:1]` positions. **TC64** `rtl/minimig/agnus_bitplanedma.v:313,323` — the same two expressions, byte for byte, despite 88 lines of unrelated `hde`-generation rewrite elsewhere in the file. Both forks share NanoMig's structurally-even fetch window; a fix diverges from neither |
 | **Report to** | **nowhere yet** — the two emulators disagree with NanoMig by exactly one word. See *Suggested change* |
 | **Test** | [`hrm/ch3-ddf-fetch-window`](../../hrm/ch3-ddf-fetch-window), [`hrm/ch3-bitplane-memory-layout`](../../hrm/ch3-bitplane-memory-layout) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |

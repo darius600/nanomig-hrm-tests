@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula.v`, `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L1) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L1) |
-| **Upstream** | inherited from Minimig-AGA, unchanged there |
+| **Upstream** | **MiSTer** `rtl/paula_audio_channel.v:1` — carries the identical first-line comment. **TC64** `rtl/minimig/paula_audio_channel.v:1` — carries it too: `//This module handles a single amiga audio channel. attached modes are not supported`, word for word, even though the rest of the file has drifted by about 29 lines (see `NM-HRM-025`/`NM-HRM-026`). Neither MiSTer's nor TC64's audio-channel module has an ADKCON port either, and neither `paula.v` wires one in — the missing attach/modulation logic is a property of the interface in all three lines |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |

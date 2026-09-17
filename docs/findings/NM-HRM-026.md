@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | **source observation**, not a conformance failure |
 | **Module** | `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L242-L246) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L242-L246) |
-| **Upstream** | inherited from Minimig-AGA, unchanged there |
+| **Upstream** | **MiSTer** `rtl/paula_audio_channel.v:242-246` — byte-identical to NanoMig; the whole file matches, confirmed by a full-file comparison. **TC64** `rtl/minimig/paula_audio_channel.v:219-223` — the same five `parameter AUDIO_STATE_*` lines verbatim, though the file around them differs: TC64 lacks the ~29-line PWM volume-gating block (see `NM-HRM-025`) that sits between the audio-state-machine's neighbours in NanoMig, which is why the line numbers shift from NanoMig's 242-246 to TC64's 219-223. The encoding mismatch against Figure 5-8 is inherited by both lines equally |
 | **Report to** | **nowhere, as it stands** — see *Suggested change* |
 | **Test** | [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |

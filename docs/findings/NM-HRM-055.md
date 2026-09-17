@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L77-L140) |
-| **Upstream** | **identical.** `MiSTer-devel/Minimig-AGA_MiSTer` carries the same `paula_uart.v` |
+| **Upstream** | **MiSTer** — carries the same `paula_uart.v`, already noted on this page. **TC64** `rtl/minimig/paula_uart.v:77-140` — byte-identical too; the whole 262-line file matches NanoMig line for line in both lines, confirmed by a full-file comparison, not only the cited range. The all-zero-still-transmits gap is inherited unchanged by both |
 | **Report to** | **the Minimig line**, not NanoMig alone |
 | **Test** | [`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) `ALLZERO-NO-TX`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `E6` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

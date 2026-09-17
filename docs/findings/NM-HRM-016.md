@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red — 16 evidential reds, the largest single red result in chapter 3 |
 | **Module** | `denise_colortable.v`, `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise_colortable.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v) |
-| **Upstream** | inherited from Minimig-AGA |
+| **Upstream** | `denise_colortable.v`: **MiSTer** `rtl/denise_colortable.v:32-35` — no `shres`/`spres` port, same as NanoMig; the 11-line diff there is a RAM primitive's word width growing from 12/24 bits to 32 with byte-enables, not a colour-mode change. **TC64** `rtl/minimig/denise_colortable.v:32-35` — the identical 11 lines; MiSTer's and TC64's diffs from NanoMig are themselves byte-identical to each other, same primitive, same edit. `denise_sprites.v`: **MiSTer** `rtl/denise_sprites.v:110-115` — the same `case (spres)` block, still only driving `shift`. **TC64** `rtl/minimig/denise_sprites.v:110-115` — the same three-line case. Neither line gives `denise_colortable` a mode input or makes `denise_sprites` pick a colour slot from `spres`; a fix is new work on both lines, in both places |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch3-shres-sprite-colour-encoding`](../../hrm/ch3-shres-sprite-colour-encoding) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |

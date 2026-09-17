@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · **filed against the page**, not against any implementation |
 | **Module** | none. `gary.v:191-192` follows the page's PROSE and is not at fault here |
-| **Upstream** | not applicable |
+| **Upstream** | not applicable — this is a statement about the manual, not about an implementation. There is no module for this finding (see the **Module** row), so neither **MiSTer** nor **TC64** has anything to answer for either |
 | **Report to** | whoever maintains errata for the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Test** | none yet. Raised at classification by the appendix-F lot-E classifier and verified here against the render |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters · printed p.353 |

@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L699) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) |
-| **Upstream** | **inherited** — the two lines are byte-identical, whitespace included |
+| **Upstream** | **MiSTer** `rtl/paula_floppy.v:397` — byte-identical to NanoMig's `:699`: `assign dskbytr = reg_address_in[8:1]==DSKBYTR[8:1] ? {1'b1,(trackrd\|trackwr),dsklen[14],5'b1_0000,8'h00} : 16'h00_00;`. **TC64** `rtl/minimig/paula_floppy.v:633` — the identical line, even though the surrounding file diverges by 809 (MiSTer) and 1243 (TC64) lines elsewhere. All three constants graded here — DSKBYT, WORDEQUAL, DATA — are inherited unchanged; a fix belongs to all three lines equally, matching the "Report to: Minimig-AGA and NanoMig" already on this page |
 | **Report to** | **Minimig-AGA and NanoMig.** All four other implementations implement all three fields |
 | **Test** | [`hrm/ch8-dskbytr-status-register`](../../hrm/ch8-dskbytr-status-register), [`hrm/ch8-disk-controller-overview`](../../hrm/ch8-disk-controller-overview), [`hrm/ch8-disk-register-map-paula-floppy`](../../hrm/ch8-disk-register-map-paula-floppy) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

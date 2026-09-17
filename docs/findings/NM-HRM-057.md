@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red · contested |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L36-L43) |
-| **Upstream** | **identical** |
+| **Upstream** | **MiSTer** — carries the same lines, already noted on this page. **TC64** `rtl/minimig/paula_uart.v:36-43` — the identical two-flop synchroniser and `assign rxds = rxd_sync[1];`, same file, same line numbers, byte-identical. The three-`clk7_en`-edge lag this entry measures is inherited unchanged by both lines |
 | **Report to** | **the Minimig line** |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `C4` |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |

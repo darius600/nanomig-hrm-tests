@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L283-L285) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L283-L285) |
-| **Upstream** | inherited from Minimig-AGA, unchanged there |
+| **Upstream** | **MiSTer** `rtl/paula_audio_channel.v:283-285` and `:133` — byte-identical to NanoMig, same line numbers. **TC64** `rtl/minimig/paula_audio_channel.v:260-262` — the same idle-exit branch, `audio_next = AUDIO_STATE_3; AUDxDR = 1'b0; AUDxIR = 1'b1;`, and `:127` carries the same `assign intreq = AUDxIR;`. The interrupt-before-output timing this entry measures is inherited by both lines; a fix belongs upstream of all three |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch5-audio-direct-output`](../../hrm/ch5-audio-direct-output) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |

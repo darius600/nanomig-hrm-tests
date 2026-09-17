@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/userio.v#L153-L176) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L174-L195) |
-| **Upstream** | **inherited** — both lines are byte-identical to upstream |
+| **Upstream** | **MiSTer** `rtl/userio.v:188` — byte-identical to NanoMig: `potcap[2] <= joy2_pin5;`, no external term. **TC64** `rtl/minimig/userio.v:224` — `potcap[2] <= _mthird1 & joy2_pin5;` looks different but isn't: this tree's default build (`` `MINIMIG_PS2_MOUSE` ``, set in `rtl/soc/minimig_defines.vh:13`) hardwires `_mthird1` to `1'b1` (`userio.v:517`), so the AND term is a no-op and the built behaviour is NanoMig's missing gate exactly. Only the non-default build path gives it a live term, and that term is a second host mouse's button (`userio.v:574`), not a joystick pin. A fix diverges from both lines' shipped behaviour; neither already has it |
 | **Report to** | **Minimig-AGA and NanoMig.** No other implementation does this |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge), [`hrm/ch8-pot-pins-as-digital-io`](../../hrm/ch8-pot-pins-as-digital-io), [`hrm/ch8-controller-pin-function-map`](../../hrm/ch8-controller-pin-function-map), [`hrm/ch8-potgo-register-bit-layout`](../../hrm/ch8-potgo-register-bit-layout) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_blitter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_blitter.v#L546-L549) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v#L566-L569) |
-| **Upstream** | inherited — the line is identical in both trees, and unchanged upstream |
+| **Upstream** | **MiSTer** `rtl/agnus_blitter.v:566-569` — identical to NanoMig: `else if (reg_address_in[8:1]==BLTSIZV[8:1]) // ECS BLTSIZV register` with no `&& ecs`, the same comment/code contradiction. **TC64** `rtl/minimig/agnus_blitter.v:546-549` — the same four lines, byte for byte, at the same line numbers as NanoMig (TC64's fourteen changed lines in this file are whitespace only, all in the line-mode blitter states hundreds of lines below). A fix here diverges from neither line |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/agnus_blitter_ecs`](../../hrm/agnus_blitter_ecs) |
 | **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed. |
