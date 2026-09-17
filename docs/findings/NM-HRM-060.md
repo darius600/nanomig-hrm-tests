@@ -1,0 +1,108 @@
+# NM-HRM-060 — the instruction cache monitors writes, and the manual says it does not
+
+| | |
+|---|---|
+| **Status** | open · red |
+| **Module** | `cpu_cache_new.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_cache_new.v#L296-L309) |
+| **Upstream** | **identical.** `MiSTer-devel/Minimig-AGA_MiSTer`'s `rtl/cpu_cache_new.v:306` carries the same line, down to the same commented-out `/*&& !cc_fr*/` guard |
+| **Report to** | **the Minimig line**, not NanoMig alone |
+| **Test** | [`hrm/ch1-cpu-and-instruction-cache`](../../hrm/ch1-cpu-and-instruction-cache) `CACHE-WRITE-VISIBILITY` |
+| **Chapter** | 1 — Introduction · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Assertions** | 1 red. Its sibling `CACHE-HIT-RETAINS-INSTRUCTION` and `CACR-CLEAR-INVALIDATES-CACHE` are both green, so the cache caches and the documented $0008 flush works |
+| **Verdict of the four** | **3–0 against, one silent.** WinUAE, vAmiga and Copperline all implement the sentence exactly; Denise models a 68000 and has no cache to disagree with |
+
+---
+
+## What the HRM says
+
+Printed page 13, under GENERAL AMIGA DEVELOPMENT GUIDELINES:
+
+> The 68020, 68030, and 68040 processors all have instruction caches. These
+> caches store recently used instructions, but do not monitor writes. After
+> modifying or directly loading instructions, the cache must be flushed.
+
+The page then gives the constant a program uses to do it:
+
+> `CACRF_ClearI  EQU     $0008 ;Bit for clear instruction cache`
+
+The sentence is not advice. It is a statement of fact about the processor, and
+the advice — flush after modifying instructions — follows *from* it. If the
+cache did monitor writes there would be nothing to flush.
+
+## What NanoMig does
+
+`cpu_cache_new.v:298-309` is the CPU write state. On a write whose address hits
+a valid **instruction** tag, it enables a write into the instruction RAM:
+
+```verilog
+CPU_SM_WRITE : begin
+  // on hit update cache, on miss no update neccessary; tags don't get updated on writes
+  cpu_sm_bs         <= cpu_bs;
+  cpu_sm_mem_dat_w  <= cpu_dat_w;
+  cpu_sm_iram0_we   <= itag0_match && itag0_valid /*&& !cc_fr*/;
+  cpu_sm_iram1_we   <= itag1_match && itag1_valid /*&& !cc_fr*/;
+```
+
+The design's own comment says it: *on hit update cache*. It is not a
+snoop-invalidate, which would merely discard the line — `cpu_sm_mem_dat_w`
+carries the newly written word into it, so the cached instruction **becomes**
+what was just written.
+
+There is a second path. `cpu_cache_new.v:511` does the same from the SDRAM side,
+`sdr_sm_iram0_we <= sdr_itag0_match && sdr_itag0_valid`, so a write arriving over
+the chip bus updates the instruction cache too.
+
+Measured by the test, at the module's own boundary:
+
+```
+fill an instruction address with $AAAA, read it back        -> $AAAA   (hit, PASS)
+write $CCCC to that address as a CPU data write
+read the instruction address again                          -> $CCCC
+```
+
+Page 13 predicts `$AAAA` — the stale instruction that makes a flush necessary.
+
+## What the four do
+
+| | | |
+|---|---|---|
+| **WinUAE** | does not monitor writes | `caches020` is invalidated in exactly two places, both inside `flush_cpu_caches` (`newcpu.cpp:1573-1582`): the whole cache when CACR bit 3 is set, one line when bit 2 is. No write path touches it |
+| **vAmiga** | does not monitor writes | Moira's `flushInstructionCache` / `invalidateCacheEntry` are called from reset (`Moira.cpp:105`, `:230`) and from the CACR write handler alone — `:573` for bit 2, `:576` for bit 3 |
+| **Copperline** | does not monitor writes, and says so | `src/cache.rs:25-28`: *"Like the real silicon, the instruction cache does NOT snoop writes — it is invalidated only by explicit cache control (CACR on the 020/030 …), and DMA (blitter/copper/disk) never invalidates it. The data cache is write-through; a write that hits invalidates the entry"* |
+| **Denise** | cannot disagree | its CPU is `libami/cpu/m68000`, a 68000. Zero occurrences of `CACR` or an instruction cache anywhere in it. The 68000 has no instruction cache, so the sentence has no counterpart to implement |
+
+Copperline is the sharpest witness, because it draws the distinction NanoMig does
+not: **instruction cache no snoop, data cache invalidate on write hit.**
+NanoMig's write state enables `iram` and `dram` writes from the same condition,
+so it treats both alike.
+
+## What holds this finding up
+
+**The control cases are green.** `CACHE-HIT-RETAINS-INSTRUCTION` shows the cache
+really caches — an address filled once and read again returns the cached word
+after the memory model beneath it changed. `CACR-CLEAR-INVALIDATES-CACHE` shows
+the manual's own $0008 bit works exactly as printed. So this is not a fixture
+that cannot tell a cache from a wire, and it is not a cache that is simply
+absent.
+
+**The path is live, not dead code.** `cpu_wrapper.v:96/257` exports CACR from the
+TG68K core and `nanomig.v:312/422` carries it into `cpu_cache_new` as
+`cpu_cache_ctrl`; `src/tang/nano20k/top_020.sv:12` and `src/mistle/gw3a_20/top.sv:9`
+define `ENABLE_TG68K`.
+
+**The implementation is SAFER than the manual, not more permissive.** Software
+written to page 13 flushes the cache and works on both. What differs is a
+program that relies on the documented staleness, and any test of the documented
+behaviour itself. That is why this is filed and not adjudicated: a deliberate
+coherency feature and a conformance gap look identical from here, and
+`nanomig.v`'s own comment near the instantiation calls chip-bus writes
+"snooped to keep cached … data coherent".
+
+## What is left for specialists
+
+Whether the Minimig line intends `cpu_cache_new` to model the 68020's on-chip
+instruction cache — in which case the snoop is a divergence from the processor
+it stands in for — or to be an accelerator cache of the board's own, for which
+coherency is a feature and page 13 simply does not describe it. The suite cannot
+settle that: it measures what the boundary does against what the page says, and
+those two differ. The question of intent belongs to the people who wrote it.

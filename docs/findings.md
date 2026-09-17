@@ -176,8 +176,11 @@ specialist rules on it.
 | [NM-HRM-057](findings/NM-HRM-057.md) | SERDATR bit 11 is a registered copy of RXD, not a direct read | **red · contested** | `hrm/ch8-serdatr-read-word`, `hrm/ch8-serial-interface` | **3–1 for the page** — vAmiga and Denise read the pin immediately, WinUAE has no pin, and Copperline's two synchroniser stages are still one short of NanoMig's three |
 | [NM-HRM-058](findings/NM-HRM-058.md) | the received-character window is longer than p.256 prints | **red** — against p.256, not against the RTL | `hrm/ch8-serdatr-read-word`, `hrm/ch8-serial-interface` | **three of four land on 10 and 11 bit times, exactly as NanoMig does**; WinUAE has no receiver and its only 10/11 constant is on the transmit side |
 | [NM-HRM-059](findings/NM-HRM-059.md) | ADKCONR's bit 15 always reads 0, and so does everyone's | **red** — against p.265, not against the RTL | `hrm/ch8-adkcon-and-interrupt-relations` | **unanimous with NanoMig**: all four read bit 15 as 0, but only WinUAE masks on the read, so a crafted savestate would expose the bit in the other three |
+| [NM-HRM-060](findings/NM-HRM-060.md) | the instruction cache monitors writes, and p.13 says it does not | **red** — against the RTL, and the Minimig line carries the same line | `hrm/ch1-cpu-and-instruction-cache` | **3–0 against, one silent**: WinUAE, vAmiga and Copperline all leave the instruction cache untouched by writes; Denise models a 68000 and has no cache to disagree with |
+| [NM-HRM-061](findings/NM-HRM-061.md) | two reds that are not defects: a whole-machine sentence graded at a board's config register | **red** — against the CLASSIFICATION, not the page and not the RTL | `hrm/ch1-cpu-options` | **not applicable, and that is the evidence**: no emulator has a `system_cpu` field, because none of them is a board that must be told which CPU to instantiate |
 
-Chapter 1 has not been extracted, so no finding below comes from it.
+Chapter 1 was read and accepted on 17.09.2026 and contributes NM-HRM-060
+and NM-HRM-061.
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
 keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to
