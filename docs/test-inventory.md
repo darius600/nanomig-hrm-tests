@@ -4,6 +4,13 @@ The suite grew in two phases, and a green result means different things in each.
 This file says which test belongs to which, so nobody reads more into a pass than
 it carries.
 
+> **Scope.** The per-test tables below were last re-measured when the suite held
+> **50** packages. It now holds **210**, and the chapters and appendices added
+> since are not enumerated here. What this file is still the authority on is the
+> **distinction between the layers** and the reasoning behind each backlog item.
+> For current counts, read `README.md`; for what a given unit was measured at
+> when it was accepted, read its record under `acceptance/`.
+
 ## Three layers
 
 Re-measured 10.09.2026, after chapter 6 closed and the five superseded tests were deleted.

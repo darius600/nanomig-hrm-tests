@@ -36,12 +36,23 @@ PowerShell then fails every package at once while the tree is perfectly healthy.
 
 ## Where the suite stands
 
+Measured by one clean `./run_all.sh` over a quiet tree, and by counting the
+artefacts rather than by remembering.
+
 | | |
 |---|---:|
-| test packages | **98** |
-| failing assertions | **87**, in 52 families |
-| registered findings | **31** — 22 open, 6 withdrawn, 3 source observations |
-| chapters through the full pipeline | **5** — 2 Copper, 3 Playfield, 4 Sprites, 5 Audio, 6 Blitter |
+| test packages | **210** |
+| assertions | **2336** — 2241 pass, **95 fail** |
+| packages | 146 green, 64 carrying at least one red, **0 build errors** |
+| registered findings | **63** — 52 open, 6 withdrawn, 5 source observations |
+| units through the full pipeline and accepted | **11** — chapters 1 to 8, appendices D, E and F |
+
+The assertion figures cover the **167 packages that print an assertion summary**.
+The other 43 are older module-level tests that report only pass or fail for the
+package as a whole; they are counted in the package row and not in the assertion
+row. That difference is stated rather than smoothed over, because a single
+"assertions" number that quietly spans two reporting conventions is how the last
+one drifted.
 
 **A red test is a result, not a bug in the test.** Each one marks a place where
 the RTL does something the manual does not describe. Adjusting an assertion to
@@ -51,41 +62,27 @@ exists to prevent.
 Every assertion names the manual page it comes from. Where a check and the RTL
 disagree, the manual decides.
 
-## The twenty-two open findings
+## The findings
 
-Each is keyed `NM-HRM-nnn` — `NM` for the implementation under test, `HRM` for
-the manual that judges it. The key names the **pair that disagrees**, deliberately:
-on several of these, independent emulators do what NanoMig does and the printed
-sentence is the outlier — see the fourth-witness document below.
+**[`docs/findings.md`](docs/findings.md) is the register** — one table row per
+finding with its key, subject, status, package and third witness. It is what
+`tools/list_reds.py` reads, and it is the list to go to. **One page per finding
+lives in [`docs/findings/`](docs/findings/)**, each written to be readable by
+someone who has never seen this project: what the HRM says, what NanoMig does,
+what the other four implementations say, a suggested change, what holds the
+finding up, and what is left for specialists.
 
-| Finding | What the RTL does that the manual does not describe | Chapter |
-|---|---|---|
-| [NM-HRM-002](docs/findings.md#nm-hrm-002--audio-channels-on-the-wrong-stereo-side) | the four audio channels sit on the wrong stereo side | 5 |
-| [NM-HRM-003](docs/findings.md#nm-hrm-003--ocs-copper-address-uses-five-high-bits-instead-of-three) | OCS Copper pointer uses five high address bits; the manual documents three | 2 |
-| [NM-HRM-004](docs/findings.md#nm-hrm-004--ecs-danger-bit-admits-too-small-a-range) | ECS with CDANG clear rejects 32 addresses the appendix allows | 2 |
-| [NM-HRM-005](docs/findings.md#nm-hrm-005--wait-and-skip-take-longer-than-the-manual-states) | SKIP spans 8 memory cycle times instead of 4, a satisfied WAIT 8 instead of 6 | 2 |
-| [NM-HRM-006](docs/findings.md#nm-hrm-006--ddfstrtddfstop-bit-h3-is-gated-by-the-chipset-not-by-resolution) | DDFSTRT bit H3 is gated by the chipset, not by resolution | 3 |
-| [NM-HRM-007](docs/findings.md#nm-hrm-007--the-hires-fetch-width-cannot-reach-the-manuals-maximum-of-49-words) | the hires fetch width cannot reach the manual's maximum of 49 words | 3 |
-| [NM-HRM-008](docs/findings.md#nm-hrm-008--playfield-1-collision-depends-on-playfield-2-by-design-undocumented) | playfield-1 collision depends on playfield 2 — deliberate, and undocumented | 3 |
-| [NM-HRM-011](docs/findings.md#nm-hrm-011--pal-vertical-blanking-is-26-lines-the-manual-says-29) | PAL vertical blanking is 26 lines; the manual says 29 | 3 |
-| [NM-HRM-015](docs/findings.md#nm-hrm-015--brdntran-is-declared-and-never-connected) | BRDNTRAN is declared and never connected | 3 |
-| [NM-HRM-016](docs/findings.md#nm-hrm-016--superhires-sprite-colour-encoding-is-not-implemented) | SuperHires sprite colour encoding is not implemented | 3 |
-| [NM-HRM-017](docs/findings.md#nm-hrm-017--superhires-bitplane-colour-encoding-is-not-implemented) | SuperHires bitplane colour encoding is not implemented | 3 |
-| [NM-HRM-019](docs/findings.md#nm-hrm-019--sprxctl-bit-4-shsh1-is-not-implemented) | SPRxCTL bit 4 (SHSH1) is not implemented | 3 |
-| [NM-HRM-020](docs/findings.md#nm-hrm-020--bltsizv-is-not-gated-on-ecs-while-its-two-siblings-are) | BLTSIZV is not gated on ECS, though appendix C marks it ECS-new like its two siblings | 6 |
-| [NM-HRM-021](docs/findings.md#nm-hrm-021--doff-bltcon1-bit-7-has-no-observable-effect) | DOFF (BLTCON1 bit 7) has no observable effect; no expression reads that bit | 6 |
-| [NM-HRM-022](docs/findings.md#nm-hrm-022--bltxpth-carries-five-high-bits-in-both-chipsets) | BLTxPTH takes five high pointer bits in **both** chipsets | 6 |
-| [NM-HRM-023](docs/findings.md#nm-hrm-023--the-attach-bit-is-honoured-in-the-even-sprite-not-only-the-odd) | the sprite ATTACH bit is honoured in the even sprite, not only the odd | 4 |
-| [NM-HRM-024](docs/findings.md#nm-hrm-024--the-audio-dma-pointer-takes-five-high-bits-in-both-chipsets) | the audio DMA pointer takes five high bits in both chipsets | 5 |
-| [NM-HRM-025](docs/findings.md#nm-hrm-025--volume-64-and-volume-63-are-the-same-gain-on-the-multiply-path) | volume 64 and volume 63 are the same gain on the multiply path | 5 |
-| [NM-HRM-027](docs/findings.md#nm-hrm-027--in-direct-mode-the-interrupt-is-raised-before-a-word-is-output) | in direct mode the interrupt is raised before a word is output | 5 |
-| [NM-HRM-028](docs/findings.md#nm-hrm-028--adkcons-audio-attach-bits-are-stored-and-reach-nothing) | ADKCON's audio attach bits are stored and reach nothing | 5 |
-| [NM-HRM-030](docs/findings.md#nm-hrm-030--paula-does-not-decode-dmaconr-though-the-appendix-gives-it-part-ownership) | Paula does not decode DMACONR, though the appendix gives it part ownership | 5 |
-| [NM-HRM-031](docs/findings.md#nm-hrm-031--intreq-bit-14-is-a-settable-request-bit-where-the-appendix-says-enable-only) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | 5 |
+This README deliberately does not reproduce that table. It used to, and it is
+the part that went stale first.
 
-Three of these are one finding in three places. **NM-HRM-003, NM-HRM-022 and
-NM-HRM-024 are the same deviation in three different engines** — Copper, blitter
-and audio build their pointers identically, `data_in[4:0]` as five high bits and
+Each finding is keyed `NM-HRM-nnn` — `NM` for the implementation under test,
+`HRM` for the manual that judges it. The key names the **pair that disagrees**,
+deliberately: on several of these, independent emulators do what NanoMig does and
+the printed sentence is the outlier — see the fourth-witness document below.
+
+**Three are one finding in three places.** NM-HRM-003, NM-HRM-022 and NM-HRM-024
+are the same deviation in three different engines — Copper, blitter and audio
+build their pointers identically, `data_in[4:0]` as five high bits and
 `data_in[15:1]` as fifteen low, unconditionally, and the manual documents three
 high bits for OCS in every case. Separately they read as three omissions.
 Together they are one decision not to model the OCS pointer narrowing anywhere in
@@ -106,8 +103,8 @@ same error as the other four in the direction nobody was watching for.
 
 | If you want to | Read |
 |---|---|
+| know what the findings are | [`docs/findings.md`](docs/findings.md) — the register table, then [`docs/findings/`](docs/findings/) for the page on any one of them |
 | decide what to do about a finding | [`docs/rtl-decisions.md`](docs/rtl-decisions.md) — each open finding as the manual's words, what NanoMig measurably does, the assertion that measures it, and what WinUAE and vAmiga do about the same question, with verified file-and-line citations into both emulators |
-| know what a specific finding is | [`docs/findings.md`](docs/findings.md) — the register, then one entry per finding with its measurement and its manual page |
 | know whether an emulator was allowed to decide | [`docs/third-witness.md`](docs/third-witness.md) and [`docs/third-witness-ch3-ch6.md`](docs/third-witness-ch3-ch6.md) |
 | see what four independent implementations do about the same question | [`docs/fourth-witness-denise-copperline.md`](docs/fourth-witness-denise-copperline.md) — Denise and Copperline read against the findings, file and line each |
 | know what a green result means here | the coverage section below, and [`docs/test-inventory.md`](docs/test-inventory.md) |
@@ -117,35 +114,49 @@ go red, that is the shortest way in.
 
 ## What is covered, and by which method
 
-The suite spans more of the manual than the five chapters that have been through
-the full pipeline. That difference matters when reading a **green** result, so it
-is stated here rather than left to be inferred: **74 of the 98 packages came
-through the pipeline, 24 did not.**
+A **green** result means different things in the two layers, so the split is
+stated here rather than left to be inferred: **187 of the 210 packages came
+through the pipeline, 23 did not.**
 
-| Chapter | Packages | How they were built |
+| Unit | Packages | How they were built |
 |---|---:|---|
+| 1 — Introduction | 11 | **pipeline** |
 | 2 — Coprocessor (Copper) | 13 | 12 through the **pipeline**; `agnus_copper_move` is a regression test against a frozen spec, not against the manual |
-| 3 — Playfield | 22 | all through the **pipeline** |
-| 4 — Sprites | 14 | all through the **pipeline** |
-| 5 — Audio | 11 | all through the **pipeline**; the five hand-written audio tests that preceded them still stand beside them |
-| 6 — Blitter | 14 | all through the **pipeline**; the hand-written blitter tests that preceded them were superseded |
-| 7 / 8 and module-level tests | 24 | by hand |
+| 3 — Playfield | 22 | **pipeline** |
+| 4 — Sprites | 14 | **pipeline** |
+| 5 — Audio | 11 | **pipeline**; the hand-written audio tests that preceded them still stand beside them |
+| 6 — Blitter | 14 | **pipeline**; the hand-written blitter tests that preceded them were superseded |
+| 7 — System Control | 19 | **pipeline** |
+| 8 — Interface Hardware | 54 | **pipeline**, read in four slices |
+| D and E — memory maps, connector pinouts, port signals | 17 | **pipeline** |
+| F — 8520 Complex Interface Adapters | 12 | **pipeline** |
+| module-level, by hand | 23 | Agnus DMA and slot allocation, Denise's shifters and colour path, Paula's audio, floppy, UART and interrupt controller |
 
-**Chapter 5's coverage figure is 923 of its 970 testable claims**, and it comes
-from a per-claim ledger that is committed rather than from a number that is
-remembered: 923 cited by an assertion that ran and graded PASS or FAIL, 5
-recorded by a measurement that was deliberately not graded, and 42 not covered —
-each of the 42 listed with the fixture it would need. Twenty-four ids were taken
-off assertions on purpose, on one rule: **an id whose claim bundles a clause this
-package does not test is withdrawn whole, not kept with a caveat in the prose.**
-Naming an id inside a passing assertion in order to disclaim it still puts the id
-on a graded line, and an independent validator caught six that were being counted
-as covered by the very sentence calling them uncovered.
+Chapters 2 and 6 are the two whose packages carry no `chN-` prefix: they are the
+`agnus_copper_*` and `agnus_blitter_*` directories.
 
-The reasoning, the ledger and the four earlier measurements that were wrong are
-in the pipeline repository's `work/2026-09-12_ch5_coverage.md`. A coverage number
-that counts ids named anywhere in a source — including in comments — is the thing
-that file exists to stop being quoted.
+**Coverage is measured per claim, from a committed ledger, not from a number that
+is remembered.** Chapter 5's figure is 923 of its 970 testable claims: 923 cited
+by an assertion that ran and graded PASS or FAIL, 5 recorded by a measurement
+deliberately not graded, and 42 not covered — each of the 42 listed with the
+fixture it would need. Twenty-four ids were taken off assertions on purpose, on
+one rule: **an id whose claim bundles a clause this package does not test is
+withdrawn whole, not kept with a caveat in the prose.** Naming an id inside a
+passing assertion in order to disclaim it still puts the id on a graded line, and
+an independent validator caught six that were being counted as covered by the
+very sentence calling them uncovered.
+
+Appendices D and E are the most recent and the most lopsided: 1731 claims,
+346 testable, **109 asserted, 237 recorded-only, 0 not covered**. Two thirds sit
+on `record()` lines because most of what those pages state is already graded
+elsewhere or names a connector this design does not model. A high recorded-only
+share is not weak coverage; it is what an appendix of pinouts looks like when
+every claim is dispositioned individually.
+
+The reasoning, the ledgers and the four earlier measurements that were wrong are
+in the pipeline repository's `work/` directory. A coverage number that counts ids
+named anywhere in a source — including in comments — is the thing those files
+exist to stop being quoted.
 
 **The pipeline** means two blind readings of the same pages by two different
 models, every quotation anchored mechanically in the source text, an attack on
@@ -169,9 +180,11 @@ and is now asserted as `B2s` in `hrm/agnus_copper_waitskip_range`.
 ## Layout
 
 ```
-hrm/            97 packages, each against a single module boundary
+hrm/            210 packages, each against a single module boundary
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
+acceptance/     one frozen record per accepted unit: what was measured, and what
+                is disclosed about it
 docs/           what a red result means, and who decides — see docs/README.md
 run_all.sh      everything; hrm/run_all.sh runs only the HRM suite
 ```
@@ -204,16 +217,28 @@ Four rules carry the whole thing:
 > *Amiga Hardware Reference Manual*, Third Edition. Commodore-Amiga, Inc.
 > Addison-Wesley Publishing Company, 1991.
 
-Five chapters have been through the pipeline and are accepted: chapter 2
-(Copper, printed pages 19–36), chapter 3 (Playfield, 39–95), chapter 4 (Sprites,
-97–131), chapter 5 (Audio, 133–167) and chapter 6 (Blitter, 169–205), each with
-its appendix A, B and C entries.
+**Eleven units have been through the pipeline and are accepted**, each with a
+frozen record under `acceptance/`. The ranges below are the pages **extracted
+into the corpus**, counted from the corpus itself rather than from the book's
+table of contents:
 
-Chapter 7 (System Control, 207–226) has been extracted, built and independently
-validated, and is **not yet accepted** — its 18 packages are in `hrm/ch7-*` and
-its findings are registered, but `acceptance/ch7.json` carries no frozen
-measurement until the second half of its validation is in. The counts in the
-table above are those of the five accepted chapters.
+| Unit | Extracted pages |
+|---|---|
+| 1 — Introduction | 1–18 |
+| 2 — The Copper | 19–36 |
+| 3 — Playfield hardware | 39–95 |
+| 4 — Sprite hardware | 97–131 |
+| 5 — Audio hardware | 133–166 |
+| 6 — Blitter hardware | 169–205 |
+| 7 — System Control hardware | 207–223 |
+| 8 — Interface Hardware | 227–260 |
+| D and E — System Memory Maps; Connector Pinouts and Port Signal Assignments | 313–337 |
+| F — 8520 Complex Interface Adapters | 339–356, of which 355 and 356 are blank in print |
 
-Chapters 1 and 8 have not been extracted; the packages listed against them above
-are hand-written coverage of individual modules.
+Chapters 2 to 6 also carry their appendix A, B and C entries.
+
+Each `acceptance/*.json` records what was measured and what is disclosed about
+it, including the parts that went wrong. They are worth reading before trusting
+a number in this file: appendix D and E's record, for instance, discloses twelve
+coordinator errors in its own briefs, every one of which was caught by a reader
+looking the thing up and none by a gate.
