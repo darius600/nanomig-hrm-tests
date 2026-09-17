@@ -41,13 +41,13 @@ artefacts rather than by remembering.
 
 | | |
 |---|---:|
-| test packages | **210** |
-| assertions | **2336** — 2241 pass, **95 fail** |
-| packages | 146 green, 64 carrying at least one red, **0 build errors** |
+| test packages | **215** |
+| assertions | **2379** — 2281 pass, **98 fail** |
+| packages | 149 green, 66 carrying at least one red, **0 build errors** |
 | registered findings | **63** — 52 open, 6 withdrawn, 5 source observations |
-| accepted units under `acceptance/` | **10** — chapters 1 to 8, appendix F, and appendices D and E as one record |
+| accepted units under `acceptance/` | **11** — chapters 1 to 8, appendix F, appendices D and E as one record, and appendices H and J as one |
 
-The assertion figures cover the **167 packages that print an assertion summary**.
+The assertion figures cover the **172 packages that print an assertion summary**.
 The other 43 are older module-level tests that report only pass or fail for the
 package as a whole; they are counted in the package row and not in the assertion
 row. That difference is stated rather than smoothed over, because a single
@@ -115,7 +115,7 @@ go red, that is the shortest way in.
 ## What is covered, and by which method
 
 A **green** result means different things in the two layers, so the split is
-stated here rather than left to be inferred: **187 of the 210 packages came
+stated here rather than left to be inferred: **192 of the 215 packages came
 through the pipeline, 23 did not.**
 
 | Unit | Packages | How they were built |
@@ -130,6 +130,7 @@ through the pipeline, 23 did not.**
 | 8 — Interface Hardware | 54 | **pipeline**, read in four slices |
 | D and E — memory maps, connector pinouts, port signals | 17 | **pipeline** |
 | F — 8520 Complex Interface Adapters | 12 | **pipeline** |
+| H and J — external disk connector, custom chip pin allocation | 5 | **pipeline** |
 | module-level, by hand | 23 | Agnus DMA and slot allocation, Denise's shifters and colour path, Paula's audio, floppy, UART and interrupt controller |
 
 Chapters 2 and 6 are the two whose packages carry no `chN-` prefix: they are the
@@ -180,7 +181,7 @@ and is now asserted as `B2s` in `hrm/agnus_copper_waitskip_range`.
 ## Layout
 
 ```
-hrm/            210 packages, each against a single module boundary
+hrm/            215 packages, each against a single module boundary
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
 acceptance/     one frozen record per accepted unit: what was measured, and what
@@ -217,9 +218,10 @@ Four rules carry the whole thing:
 > *Amiga Hardware Reference Manual*, Third Edition. Commodore-Amiga, Inc.
 > Addison-Wesley Publishing Company, 1991.
 
-**Ten frozen records under `acceptance/` cover eleven printed units**: chapters
-1 to 8, appendix F, and appendices D and E together, which were read, classified
-and built as one lot and share one record. The ranges below are the pages **extracted
+**Eleven frozen records under `acceptance/` cover thirteen printed units**:
+chapters 1 to 8, appendix F, appendices D and E together, and appendices H and J
+together. The two paired records are lots that were read, classified and built
+as one and share one record. The ranges below are the pages **extracted
 into the corpus**, counted from the corpus itself rather than from the book's
 table of contents:
 
@@ -235,6 +237,7 @@ table of contents:
 | 8 — Interface Hardware | 227–260 |
 | D and E — System Memory Maps; Connector Pinouts and Port Signal Assignments | 313–337 |
 | F — 8520 Complex Interface Adapters | 339–356, of which 355 and 356 are blank in print |
+| H and J — External Disk Connector Interface; Custom Chip Pin Allocation List | 367–371 and 379–381, with 372 and 382 blank in print |
 
 Chapters 2 to 6 also carry their appendix A, B and C entries.
 
