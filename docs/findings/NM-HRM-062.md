@@ -1,0 +1,92 @@
+# NM-HRM-062 — Appendix F prints the two CIA address patterns interchanged
+
+| | |
+|---|---|
+| **Status** | open · **filed against the page**, not against any implementation |
+| **Module** | none. `gary.v:191-192` follows the page's PROSE and is not at fault here |
+| **Upstream** | not applicable |
+| **Report to** | whoever maintains errata for the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Test** | none yet. Raised at classification by the appendix-F lot-E classifier and verified here against the render |
+| **Chapter** | Appendix F — 8520 Complex Interface Adapters · printed p.353 |
+| **Assertions** | 0. This is a defect in the source, found before a test was built against it |
+| **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline's lineage all decode the way the page's PROSE says |
+
+---
+
+## What the HRM says, twice, and the two do not agree
+
+Printed page 353, *Hardware Connection Details*, first in prose:
+
+> The system hardware selects the CIAs when the upper three address bits are 101.
+> Furthermore, CIAA is selected when A12 is low, A13 high; CIAB is selected when
+> A12 is high, A13 low.
+
+Then as binary patterns, two paragraphs later:
+
+> So, CIAA is selected by the following binary address:
+> `101x xxxx xx01 rrrr xxxx xxx0`. CIAB address:
+> `101x xxxx xx10 rrrr xxxx xxx1`
+
+Reading the CIAA pattern off, MSB first — `101x` is A23–A20, `xxxx` A19–A16,
+`xx01` A15–A12:
+
+| | A13 | A12 | A0 |
+|---|---|---|---|
+| prose, CIAA | **high** | **low** | — |
+| printed CIAA pattern | 0 | 1 | 0 |
+| prose, CIAB | low | high | — |
+| printed CIAB pattern | 1 | 0 | 1 |
+
+**Each printed pattern carries the other chip's bits.**
+
+## The page contradicts itself a third time, in its own chosen addresses
+
+The next paragraph:
+
+> With future expansion in mind, we have decided on the following addresses:
+> CIAA = BFEr01; CIAB = BFDr00.
+
+`$BFE001`: `E` is `1110`, so A15=1, A14=1, **A13=1, A12=0**, and the address ends
+in 1, so **A0=1**. That is the prose's CIAA and the printed pattern's CIAB.
+
+`$BFD000`: `D` is `1101`, so **A13=0, A12=1**, ending in 0, so **A0=0**. The
+prose's CIAB.
+
+So the prose and the chosen addresses agree with each other and both disagree
+with the two printed binary patterns, including on A0.
+
+## This is the PRINT, not the scan
+
+Read off `figures/p353.png` rendered at 200 dpi from PDF page 368 and cropped.
+The text layer agrees with the render character for character on both patterns.
+`corpus-defects.md` lists p.353 as undamaged, and it is: the defect is the
+manual's.
+
+## What the four do
+
+| | | |
+|---|---|---|
+| **WinUAE** | follows the prose, and enforces A0 | `cia.cpp:2586-2592`: `mask = addr & 0xf000` is valid only for `0xe000` or `0xd000`; `0xe000` additionally requires `(addr & 1) != 0` and `0xd000` requires `(addr & 1) == 0`. `$E` is `1110` — A13 high, A12 low — for CIAA, with A0=1 |
+| **vAmiga** | follows the prose | `Memory.cpp:2236-2252`: `sel = (addr >> 12) & 0b11` selects on A13:A12, and `0b01` (A13=0, A12=1) with `a0` false reaches `ciab` |
+| **Denise** | follows the prose | `libami/agnus/memory.cpp:61-66`: `switch(adr & 0x3000)`, `0x2000` (A13=1, A12=0) with an odd address reaches `cia1`, `0x1000` (A13=0, A12=1) with an even one reaches `cia2` |
+| **Copperline** | follows the prose | its CIA windows are the standard `$BFE001` / `$BFD000` pair; no implementation anywhere decodes the printed patterns |
+
+**Not one implementation decodes the printed patterns**, and NanoMig does not
+either: `gary.v:191` is `sel_cia_a = sel_cia & ~cpu_address_in[12]` — CIAA on A12
+low, the prose's rule.
+
+## What holds this finding up
+
+The page disagrees with itself three ways — prose against pattern, chosen address
+against pattern, and A0 polarity against pattern — and every one of those three
+resolves the same way. A single transposition of the two patterns makes the whole
+page consistent. Nothing else has to be assumed.
+
+## What is left for specialists
+
+Nothing about NanoMig. This is an erratum in a printed manual, and the reason it
+is filed at all is that this suite treats the page as the oracle: **a test built
+from the printed patterns rather than from the prose would grade a correct
+decoder red.** Four claims in the appendix-F classification carry
+`source_defines: "conflict"` for exactly that reason and are deliberately not
+adjudicated at classification.

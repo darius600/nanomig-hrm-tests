@@ -178,9 +178,10 @@ specialist rules on it.
 | [NM-HRM-059](findings/NM-HRM-059.md) | ADKCONR's bit 15 always reads 0, and so does everyone's | **red** — against p.265, not against the RTL | `hrm/ch8-adkcon-and-interrupt-relations` | **unanimous with NanoMig**: all four read bit 15 as 0, but only WinUAE masks on the read, so a crafted savestate would expose the bit in the other three |
 | [NM-HRM-060](findings/NM-HRM-060.md) | the instruction cache monitors writes, and p.13 says it does not | **red** — against the RTL, and the Minimig line carries the same line | `hrm/ch1-cpu-and-instruction-cache` | **3–0 against, one silent**: WinUAE, vAmiga and Copperline all leave the instruction cache untouched by writes; Denise models a 68000 and has no cache to disagree with |
 | [NM-HRM-061](findings/NM-HRM-061.md) | two reds that are not defects: a whole-machine sentence graded at a board's config register | **red** — against the CLASSIFICATION, not the page and not the RTL | `hrm/ch1-cpu-options` | **not applicable, and that is the evidence**: no emulator has a `system_cpu` field, because none of them is a board that must be told which CPU to instantiate |
+| [NM-HRM-062](findings/NM-HRM-062.md) | Appendix F prints the two CIA address patterns interchanged | **against the PAGE** — no implementation is at fault and no test exists yet | none yet · raised at classification | **unanimous against the print**: WinUAE, vAmiga, Denise and Copperline all decode the way the page's own prose says, as does NanoMig |
 
 Chapter 1 was read and accepted on 17.09.2026 and contributes NM-HRM-060
-and NM-HRM-061.
+and NM-HRM-061. Appendix F, read the same day, contributes NM-HRM-062.
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
 keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to
