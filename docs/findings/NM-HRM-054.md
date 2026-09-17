@@ -20,6 +20,32 @@ connector on the back panel of the computer"* — and bi-directional is the word
 the claim rests on. A port is bi-directional when a bit configured as an output
 carries the value written to it.
 
+**Appendix F, p.341, states it outright, and this finding no longer rests on one
+word.** The appendix was extracted on 17.09.2026, after this finding was written,
+and it specifies the part:
+
+> Ports A and B each consist of an 8-bit peripheral data register (PR) and an
+> 8-bit data direction register (DDR). If a bit in the DDR is set to a 1, the
+> corresponding bit position in the PR becomes an output. If a DDR bit is set to
+> a 0, the corresponding PR bit is defined as an input.
+
+So the manual says each port **consists of** a peripheral data register and a
+direction register. NanoMig's CIA-A port B has the DDR and no PR — `regportb` is
+commented out in full. The finding's own title is now the manual's wording rather
+than an inference from p.259.
+
+The same page's read rule looks at first like it licenses the implementation and
+does not:
+
+> When you READ a PR register, you read the actual current state of the I/O pins
+> (PA0-PA7, PB0-PB7), regardless of whether you have set them to be inputs or
+> outputs.
+
+A read does return the pin. But with a PR present and its DDR bit set, the PR
+**drives** that pin, so the pin carries what was written and the read returns it.
+Removing the PR does not satisfy the read rule; it removes the thing that would
+have made the pin carry anything.
+
 ## What NanoMig does
 
 The direction register is real and governs nothing.
