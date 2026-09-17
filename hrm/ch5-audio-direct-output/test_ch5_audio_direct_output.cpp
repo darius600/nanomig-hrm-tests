@@ -191,16 +191,30 @@
 //   GROUP C's mutation (a different written word, 0x0000 instead of
 //   0xA5C3) reproduces the SAME red, confirming the deviation is a
 //   control-path fact and not an artifact of one specific data value.
-//   GROUP D's and GROUP J's mutations are the same rerun (intpen never
-//   raised): GROUP D correctly goes red (output does NOT cease when the
-//   claim's own precondition is absent) and GROUP J correctly goes green
-//   (the machine correctly never falls back when the "otherwise" trigger
-//   never arises) -- one rerun, two different claims, two different
-//   correct readings of the same outcome. GROUP E's mutation (a write
-//   sneaked into the "held" window) correctly shows the held value DOES
-//   change, proving the constancy check is not vacuous. GROUP I's mutation
-//   (intpen raised right after word1 instead of after word3) correctly
-//   shows the loop is left early.
+//   GROUP D's mutation (intpen never raised) correctly goes red (output
+//   does NOT cease when the claim's own precondition is absent). GROUP I's
+//   mutation (intpen raised right after word1 instead of after word3)
+//   correctly shows the loop is left early.
+//
+// D3 REPAIR (2026-09-17): GROUP E and GROUP J were found SURVIVED by
+//   check_mutation_baseline.py's 15.09.2026 sweep -- recorded green against
+//   PASS baselines, demonstrating nothing. Both repaired:
+//   GROUP E's mutation (a write sneaked into the "held" window) was, as
+//   built, writing while intpen was STILL raised -- the very guard this
+//   package's own idle-exit branch depends on (`AUDxDAT && !AUDxON &&
+//   !AUDxIP`, paula_audio_channel.v:281) then refuses the write outright,
+//   so `sample` never changed and the mutation could not have discriminated
+//   this check regardless of the RTL's correctness. Fixed by lowering
+//   intpen before the intruding write (the same clear-then-retry pattern
+//   GROUP B's own block_entry_then_retry scenario already uses) -- now a
+//   genuine new write, and it genuinely changes the held value.
+//   GROUP J reused GROUP D's own rerun (intpen never raised) but recorded
+//   green whenever the RTL correctly did NOT fall back -- conflating "the
+//   RTL behaved correctly under this stimulus" with "the SAME check
+//   predicate stayed true". Re-applying the real predicate (fellBack,
+//   base.fallback_tick > 0) to the mutated run gives a genuine red: without
+//   ever raising intpen, the machine never enters idle, so the literal
+//   condition this claim checks now reads false.
 
 #include <cstdint>
 #include <cstddef>
@@ -505,6 +519,21 @@ static TimelineResult run_timeline(const TimelineParams& p) {
 
     if (p.write_during_hold) {
         for (int i = 0; i < 400; i++) h.tick();
+        // D3 REPAIR: the write used to land here with intpen STILL 1 (raised at
+        // starve_start_tick, four lines above, and never lowered again on this path).
+        // Measured (DEBUG_GROUP_E, since removed): by t=6704 the machine has ALREADY
+        // fallen back to idle (base.fallback_tick=6328) and `sample` had already frozen at
+        // 0x68 (word3's own low byte) -- but the write at 0x9911 changed NOTHING: state
+        // stayed 0, sample stayed 0x68. The reason is the SAME guard GROUP G/H/the idle-exit
+        // branch itself depends on, `AUDxDAT && !AUDxON && !AUDxIP` (paula_audio_channel.v:
+        // 281): with AUDxIP (intpen) still high, a fresh write cannot re-enter the output
+        // path at all -- the mutation was accidentally testing "a write that the guard
+        // itself forbids", not "a genuine new write", and could never discriminate this
+        // check. Lowering intpen first (simulating the processor actually servicing the
+        // pending interrupt, the same clear-then-retry pattern GROUP B's own
+        // block_entry_then_retry scenario already uses above) makes this a real write.
+        h.dut->intpen = 0;
+        for (int i = 0; i < 32; i++) h.tick(); // let the guard's own !AUDxIP term settle
         h.write_reg(REG_AUDDAT, 0x9911); // sneaks a write into what should be a "held" window
         r.during_hold_write_tick = h.main_time;
         for (long i = 0; i < p.starve_wait_ticks; i++) h.tick();
@@ -762,6 +791,22 @@ int main(int argc, char** argv) {
         size_t writeIdx = idxAtTick(mr.h, mr.during_hold_write_tick);
         uint8_t sampleRightAfterWrite = (writeIdx != (size_t)-1) ? mr.h.history[writeIdx].sample : 0xFF;
         uint8_t sampleAtEnd = mr.h.dut->sample;
+#ifdef DEBUG_GROUP_E
+        std::cerr << "DEBUG base.fallback_tick=" << base.fallback_tick
+                  << " starve_start_tick(base)=" << base.starve_start_tick << "\n";
+        std::cerr << "DEBUG mr.during_hold_write_tick=" << mr.during_hold_write_tick
+                  << " writeIdx=" << writeIdx
+                  << " state@write=" << (writeIdx!=(size_t)-1?mr.h.history[writeIdx].state:-999)
+                  << " sample@write=0x" << std::hex << (int)sampleRightAfterWrite << std::dec << "\n";
+        for (size_t i = (writeIdx>5?writeIdx-5:0); i < mr.h.history.size() && i < writeIdx+40; i++) {
+            std::cerr << "  hist[" << i << "] t=" << mr.h.history[i].t
+                      << " state=" << mr.h.history[i].state
+                      << " sample=0x" << std::hex << (int)mr.h.history[i].sample << std::dec
+                      << " audxdat=" << mr.h.history[i].audxdat << "\n";
+        }
+        std::cerr << "DEBUG final mr.h.dut->sample=0x" << std::hex << (int)sampleAtEnd << std::dec
+                  << " mr.h.history.back().t=" << mr.h.history.back().t << "\n";
+#endif
         bool changedByIntrudingWrite = (sampleRightAfterWrite != sampleAtEnd) ||
                                         (sampleAtEnd == 0x99 || sampleAtEnd == 0x11);
         MUTATION("5-p157.c15", "stimulus", changedByIntrudingWrite ? "red" : "green",
@@ -938,7 +983,17 @@ int main(int argc, char** argv) {
         TimelineParams mp = baseP; mp.never_raise_intpen = true;
         TimelineResult mr = run_timeline(mp);
         bool neverFellBack = mr.fallback_tick < 0;
-        MUTATION("5-p164.c13", "stimulus", neverFellBack ? "green" : "red",
+        // D3 REPAIR: the real predicate this assertion uses is `fellBack` (base.fallback_tick
+        // > 0), re-applied to the mutated run as `mr.fallback_tick > 0`. The withdrawn record
+        // recorded green whenever the machine correctly did NOT fall back (neverFellBack=true)
+        // -- but "the RTL behaved correctly under this stimulus" is not the same thing as "the
+        // SAME check predicate stayed true". Re-applying fellBack's own condition to the
+        // mutated data: mr.fallback_tick is NOT >0 here (the machine never enters idle without
+        // the 'otherwise' precondition), so the literal predicate reads FALSE -- a genuine red,
+        // correctly demonstrating the check is sensitive to whether intpen was ever raised at
+        // all, not vacuously true regardless of it. check_mutation_baseline.py's 15.09.2026
+        // sweep caught the withdrawn green as SURVIVED against this PASS baseline.
+        MUTATION("5-p164.c13", "stimulus", (mr.fallback_tick > 0) ? "green" : "red",
                   "same rerun as GROUP D's mutation: intpen never raised (the 'otherwise' "
                   "precondition never arises); machine never entered idle = " +
                   std::string(neverFellBack?"yes":"no") + " -- correctly tracks the real "
