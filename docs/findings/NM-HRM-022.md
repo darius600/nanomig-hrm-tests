@@ -8,7 +8,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
 | **Test** | [`hrm/agnus_blitter_ecs`](../../hrm/agnus_blitter_ecs) |
 | **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed. |
-| **Verdict of the four** | three do the same; Copperline alone narrows by Agnus revision |
+| **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — by Agnus revision |
 | **See also** | `NM-HRM-003` (Copper) and `NM-HRM-024` (audio) — the same decision in two other engines |
 
 ---
@@ -52,7 +52,7 @@ Identical. An OCS Agnus should drop the top two bits.
 | **TC64** | [`rtl/minimig/agnus_blitter_adrgen.v:62`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_blitter_adrgen.v#L62) | descendant — the same line, byte for byte; the instantiation at `agnus_blitter.v:576` likewise connects no `.ecs()` |
 
 **Three of the four independent implementations side with NanoMig.** Copperline
-alone narrows, and it does so in one place for all engines rather than per
+narrows in the register, and it does so in one place for all engines rather than per
 engine. MiSTer and TC64 carry the same unconditional five-bit latch, inherited
 rather than independently arrived at.
 

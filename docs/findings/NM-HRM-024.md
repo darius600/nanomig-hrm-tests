@@ -8,7 +8,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch5-audio-location-pointer`](../../hrm/ch5-audio-location-pointer) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
-| **Verdict of the four** | three do the same; Copperline alone narrows by Agnus revision |
+| **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — by Agnus revision |
 | **See also** | `NM-HRM-003` (Copper) and `NM-HRM-022` (blitter) — the same decision in two other engines |
 
 ---

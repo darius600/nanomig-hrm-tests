@@ -9,7 +9,7 @@
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertions `P4` and `P5` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Assertions** | 2 red. Two greens on the same page's other half (`P2`, `P3`) pass in the same run |
-| **Verdict of the four** | **unchanged from the first three sightings: Copperline alone narrows by Agnus revision**, and here it has a test naming DSKPT explicitly. One refinement about WinUAE is recorded below |
+| **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`), by Agnus revision. vAmiga and Denise do not. Here Copperline's has a test naming DSKPT explicitly. **The first three sightings said Copperline alone; all four are corrected — O59** |
 | **See also** | `NM-HRM-003` (Copper), `NM-HRM-022` (blitter), `NM-HRM-024` (audio) — **this is the fourth sighting of the same cause.** And `NM-HRM-014`, on the manual's own inconsistency about this extension |
 
 ---
