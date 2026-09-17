@@ -259,24 +259,36 @@ controls included.
   mechanism. FIXTURE-LIVE therefore necessarily shares its pulse mechanism
   with PROP-INTERRUPT-SOURCES; this is disclosed rather than hidden, and
   is a property of this module's small port list.
-- **Mutations.** Ten assertions, ten `-D` variants (`MUT_FIXLIVE`,
-  `MUT_SOURCES_NOPULSE`, `MUT_SPLIT_ASSUME_ECHO`, `MUT_GATES_SKIPMASK`,
-  `MUT_READCLEAR_NOTICK`, `MUT_PROTOCOL_SKIP_STEP2`,
-  `MUT_EXAMPLE_SKIP_SET`, `MUT_CLEARALL_SKIP`, `MUT_RESERVED_NOOP`,
-  `MUT_DONTCARE_ASSUME_LIVE`), each built and run separately
-  (`make MUT=<NAME> test`, full `rm -rf obj_dir` rebuild). Eight are
-  `stimulus` mutations (withhold or corrupt a write/pulse the assertion
-  depends on); two are `oracle` mutations (`MUT_SPLIT_ASSUME_ECHO`,
-  `MUT_DONTCARE_ASSUME_LIVE` — the stimulus a real single-address
-  read/write register, or a live D6/D5 bit, would need does not exist to
-  withhold, so the mutation instead substitutes the WRONG expected value
-  that belief would predict, and shows the real RTL disagrees).
-  `MUT_RESERVED_NOOP` is the one `impossible` case: `cia_int.v:22`'s
-  `2'b00` is a literal in the expression, reachable by no stimulus at all
-  — built and run anyway, at the same maximal-entropy stimulus used for
-  its own baseline, producing an identical result, which is the honest
-  outcome for that case. Per-assertion detail and the actually-measured
-  PASS/FAIL numbers for each variant are in the test file's own comments,
-  immediately above each `expect()` call — filled in after building, not
-  before, per this suite's rule against writing a record before taking the
-  measurement.
+- **Mutations.** Ten assertions, eleven `-D` variants (`MUT_FIXLIVE`,
+  `MUT_SOURCES_NOPULSE`, `MUT_SPLIT_ASSUME_ECHO`,
+  `MUT_SPLIT_WITHHOLD_WRITE`, `MUT_GATES_SKIPMASK`, `MUT_READCLEAR_NOTICK`,
+  `MUT_PROTOCOL_SKIP_STEP2`, `MUT_EXAMPLE_SKIP_SET`, `MUT_CLEARALL_SKIP`,
+  `MUT_RESERVED_NOOP`, `MUT_DONTCARE_ASSUME_LIVE`), each built and run
+  separately (`make MUT=<NAME> test`, full `rm -rf obj_dir` rebuild), plus
+  one flagless `none impossible` record (PROP-WRITEMAP-DONTCARE's second
+  record — see below). Nine are `stimulus` mutations (withhold or corrupt
+  a write/pulse the assertion depends on); two are `oracle` mutations
+  (`MUT_SPLIT_ASSUME_ECHO`, `MUT_DONTCARE_ASSUME_LIVE` — a wrong belief's
+  predicted value substituted for the real one, showing the RTL disagrees
+  with that belief, not that the stimulus can be withheld).
+  `MUT_RESERVED_NOOP` is one `impossible` case: `cia_int.v:22`'s `2'b00`
+  is a literal in the expression, reachable by no stimulus at all — built
+  and run anyway, at the same maximal-entropy stimulus used for its own
+  baseline, producing an identical result. PROP-WRITEMAP-DONTCARE carries
+  a second, distinct `impossible` record, of kind `none` rather than
+  `stimulus`: `cia_int.v:29-34` never reads `data_in[6]`/`data_in[5]`
+  anywhere, so no `-D` variant was built for it at all (the one stimulus
+  that WOULD move the assertion — withholding the baseline 0x9F write —
+  breaks its precondition rather than exercising D6/D5, so it is not
+  substituted in as if it were the same demonstration); this is the same
+  "stored, consulted nowhere" shape `hrm/appF-cia-timer-modes` already
+  recorded `none impossible` for `tmcr[5]` (CRA-INMODE, CRB-INMODE-ARITY).
+  Two assertions — PROP-MASK-DATA-SPLIT and PROP-WRITEMAP-DONTCARE — each
+  therefore carry two records, one confirming the comparator is not
+  tautologically true (`oracle red`) and one confirming (by stimulus, or
+  by an argued `none impossible`) that a real stimulus dependency, or its
+  absence, was actually checked rather than assumed. Per-assertion detail
+  and the actually-measured PASS/FAIL numbers for each variant are in the
+  test file's own comments, immediately above each `expect()` call —
+  filled in after building, not before, per this suite's rule against
+  writing a record before taking the measurement.
