@@ -151,12 +151,28 @@
 //   "Except for this case [000->001], dmasen is true only when LENFIN=1" is
 //   the one-way implication dmasen -> lenfin, not an existence/biconditional
 //   search. 5-p166.c7/F58.note.dmasen tests exactly that implication for
-//   every sample outside the exception: dmasen is driven high only in the
-//   idle-state DMA-start branch (paula_audio_channel.v:276) and never
-//   recurs there in this run, so the implication holds VACUOUSLY -- a
-//   correct pass, stated as such in the assertion's own text (an earlier
+//   every sample outside the exception, and it holds VACUOUSLY -- a correct
+//   pass, stated as such in the assertion's own text (an earlier
 //   existence-search form of this same assertion was a false red under a
-//   now-withdrawn finding key; that key is not cited here as live). The
+//   now-withdrawn finding key; that key is not cited here as live).
+//
+//   WHY IT IS VACUOUS IS A PROPERTY OF THE SAMPLING POINT, NOT OF THE RUN,
+//   and this paragraph said otherwise until 18.09.2026 (OPEN-ISSUES O97). It
+//   is true that dmasen is driven high only in the idle-state DMA-start
+//   branch (paula_audio_channel.v:276), but that is not the reason: the
+//   periodic Sample.dmasen field (:470, filled at :528) can never read 1 for
+//   ANY stimulus, because dmasen holds only while audio_state==000 and by the
+//   time a cck-qualified sample is recorded that same edge has already
+//   advanced the state away from 000. No longer or different run will make
+//   this implication bite.
+//
+//   THE SAME SIGNAL IS OBSERVED CORRECTLY ELSEWHERE IN THIS FILE, which is
+//   what makes that provable rather than suspected: 5-p165.c9 and 5-p165.c7
+//   grade dmasen through DmaResult's pre_dmasen -- a direct, non-periodic
+//   capture taken at the instant dmaena is raised (:755) -- and it reads high
+//   there. One signal, two channels, one of them blind; the vacuous pass
+//   rides the blind one. Said here so that nobody spends an afternoon looking
+//   for a stimulus that cannot exist. The
 //   note's separate AND equation, AUDxDSR=AUDxDR.dmasen (5-p166.c8,
 //   F58.note.dsr), compares the public `dmas` port against two
 //   --public-flat-rw INTERNAL signals (AUDxDR, dmasen); under a
@@ -1347,9 +1363,13 @@ int main(int argc, char** argv) {
         }
         bool dmasen_implies_lenfin = (dmasenImplicationViolations == 0);
         std::string dmasenNoteDet = (dmasenSamplesOutsideException == 0)
-            ? ("dmasen never recurs outside the 000->001 exception in this run (0 samples) -- the "
-               "implication dmasen -> lenfin holds VACUOUSLY, which is a correct pass for a "
-               "one-way 'only when' reading, not evidence dmasen fired again")
+            ? ("0 samples outside the 000->001 exception carry dmasen, and none ever can: the "
+               "periodic Sample.dmasen field cannot represent it, since dmasen holds only while "
+               "audio_state==000 and the cck-qualified sample is recorded after the same edge "
+               "that leaves 000 (the direct pre_dmasen capture, graded green in 5-p165.c9, is "
+               "where this signal IS observed). So the implication dmasen -> lenfin holds "
+               "VACUOUSLY -- a correct pass for a one-way 'only when' reading, vacuous by the "
+               "sampling point rather than by this run, and not evidence dmasen fired again")
             : ("dmasen recurred " + std::to_string(dmasenSamplesOutsideException) +
                " time(s) outside the exception, of which " +
                std::to_string(dmasenImplicationViolations) + " did NOT have lenfin=1");
