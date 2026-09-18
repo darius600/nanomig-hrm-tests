@@ -16,8 +16,7 @@ MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)
 test:
 	rm -rf $(OBJ_DIR) out.txt
 	verilator --no-timing --cc --exe --build -j 0 --Mdir $(OBJ_DIR) --top-module $(TOP_MODULE) -Wall -Wno-fatal -Wno-pinmissing -Wno-lint $(MUTFLAGS) $(SRC) test_ch8-serdatr-read-word.cpp
-	./$(OBJ_DIR)/V$(TOP_MODULE) > out.txt
-	cat out.txt
+	./$(OBJ_DIR)/V$(TOP_MODULE) > out.txt; rc=$$?; cat out.txt; exit $$rc
 
 clean:
 	rm -rf $(OBJ_DIR) out.txt

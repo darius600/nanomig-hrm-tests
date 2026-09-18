@@ -27,8 +27,7 @@ all: test
 test: $(TEST_SRC) $(SRC)
 	rm -rf obj_dir
 	$(VERILATOR) $(FLAGS) $(MUTFLAGS) $(SRC) $(TEST_SRC)
-	./obj_dir/V$(TOP_MODULE) > out.txt
-	cat out.txt
+	./obj_dir/V$(TOP_MODULE) > out.txt; rc=$$?; cat out.txt; exit $$rc
 
 clean:
 	rm -rf obj_dir out.txt
