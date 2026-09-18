@@ -9,7 +9,9 @@ it carries.
 > since are not enumerated here. What this file is still the authority on is the
 > **distinction between the layers** and the reasoning behind each backlog item.
 > For current counts, read `README.md`; for what a given unit was measured at
-> when it was accepted, read its record under `acceptance/`.
+> when it was accepted, read its record in
+> [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance)
+> - the records live in the sibling repository, not in this one.
 
 ## Three layers
 

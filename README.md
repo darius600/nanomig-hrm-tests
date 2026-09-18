@@ -45,7 +45,7 @@ artefacts rather than by remembering.
 | assertions | **2933** — 2754 pass, **179 fail** |
 | packages | 136 green, 64 carrying at least one red, **0 build errors** |
 | registered findings | **65** — 54 open, 6 withdrawn, 5 source observations |
-| accepted units under `acceptance/` | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
+| accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
 The assertion figures cover the **200 packages that print an assertion summary**.
 The other 28 are older module-level tests that report only pass or fail for the
@@ -194,8 +194,6 @@ and is now asserted as `B2s` in `hrm/agnus_copper_waitskip_range`.
 hrm/            228 packages, each against a single module boundary
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
-acceptance/     one frozen record per accepted unit: what was measured, and what
-                is disclosed about it
 docs/           what a red result means, and who decides — see docs/README.md
 run_all.sh      everything; hrm/run_all.sh runs only the HRM suite
 ```
@@ -228,12 +226,16 @@ Four rules carry the whole thing:
 > *Amiga Hardware Reference Manual*, Third Edition. Commodore-Amiga, Inc.
 > Addison-Wesley Publishing Company, 1991.
 
-**Eleven frozen records under `acceptance/` cover thirteen printed units**:
-chapters 1 to 8, appendix F, appendices D and E together, and appendices H and J
+**Twelve frozen records cover fourteen printed units**: chapters 1 to 8,
+appendix F, appendix K, appendices D and E together, and appendices H and J
 together. The two paired records are lots that were read, classified and built
-as one and share one record. The ranges below are the pages **extracted
-into the corpus**, counted from the corpus itself rather than from the book's
-table of contents:
+as one and share one record.
+
+**The records live in the sibling repository**, not in this one — they belong to
+the method that produced them:
+[`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance).
+The ranges below are the pages **extracted into the corpus**, counted from the
+corpus itself rather than from the book's table of contents:
 
 | Unit | Extracted pages |
 |---|---|
@@ -248,10 +250,13 @@ table of contents:
 | D and E — System Memory Maps; Connector Pinouts and Port Signal Assignments | 313–337 |
 | F — 8520 Complex Interface Adapters | 339–356, of which 355 and 356 are blank in print |
 | H and J — External Disk Connector Interface; Custom Chip Pin Allocation List | 367–371 and 379–381, with 372 and 382 blank in print |
+| K — Zorro Expansion Bus | 383–439, with 440 blank in print |
 
 Chapters 2 to 6 also carry their appendix A, B and C entries.
 
-Each `acceptance/*.json` records what was measured and what is disclosed about
+Each record in
+[`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance)
+says what was measured and what is disclosed about
 it, including the parts that went wrong. They are worth reading before trusting
 a number in this file: appendix D and E's record, for instance, discloses twelve
 coordinator errors in its own briefs, every one of which was caught by a reader
