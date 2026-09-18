@@ -584,6 +584,9 @@ int main() {
         "their own classify.note. Not re-graded. sol:F-signals.c66, sol:F-signals.c67, "
         "opus:F-conn.c9.");
 
-    std::cerr << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
+    // stdout, not stderr: `> out.txt` captures only stdout, so a summary on
+    // cerr reaches the runner (which reads make's output) and is MISSING from
+    // this package's own out.txt and from its stored capture.
+    std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }
