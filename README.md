@@ -42,7 +42,7 @@ artefacts rather than by remembering.
 | | |
 |---|---:|
 | test packages | **228** |
-| assertions | **2933** — 2754 pass, **179 fail** |
+| assertions | **2932** — 2753 pass, **179 fail** |
 | packages | 136 green, 64 carrying at least one red, **0 build errors** |
 | registered findings | **65** — 54 open, 6 withdrawn, 5 source observations |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
