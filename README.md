@@ -41,11 +41,11 @@ artefacts rather than by remembering.
 
 | | |
 |---|---:|
-| test packages | **215** |
+| test packages | **228** |
 | assertions | **2379** — 2281 pass, **98 fail** |
 | packages | 149 green, 66 carrying at least one red, **0 build errors** |
 | registered findings | **63** — 52 open, 6 withdrawn, 5 source observations |
-| accepted units under `acceptance/` | **11** — chapters 1 to 8, appendix F, appendices D and E as one record, and appendices H and J as one |
+| accepted units under `acceptance/` | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
 The assertion figures cover the **172 packages that print an assertion summary**.
 The other 43 are older module-level tests that report only pass or fail for the
@@ -115,7 +115,7 @@ go red, that is the shortest way in.
 ## What is covered, and by which method
 
 A **green** result means different things in the two layers, so the split is
-stated here rather than left to be inferred: **192 of the 215 packages came
+stated here rather than left to be inferred: **192 of the 228 packages came
 through the pipeline, 23 did not.**
 
 | Unit | Packages | How they were built |
@@ -181,7 +181,7 @@ and is now asserted as `B2s` in `hrm/agnus_copper_waitskip_range`.
 ## Layout
 
 ```
-hrm/            215 packages, each against a single module boundary
+hrm/            228 packages, each against a single module boundary
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
 acceptance/     one frozen record per accepted unit: what was measured, and what
