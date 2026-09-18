@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v) |
-| **Upstream** | **MiSTer** `rtl/paula.v:147` — carries `assign data_out = uartdata_out \| intdata_out \| diskdata_out \| adkconr;`, no `DMACONR` term, and the comment at `:153`: `//NOTE: this register is also present in the Agnus module, //there DMACONR (read) is implemented`. **TC64** `rtl/minimig/paula.v:166` and `:172` — the identical assignment and the identical comment. `DMACONR` is decoded in Agnus in all three trees; Paula answers it in none of them |
 | **Report to** | **probably nowhere** — see *Suggested change* |
 | **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -51,8 +50,8 @@ The value never changes. Paula is not driving that address.
 | **vAmiga** | — | not read; no per-chip decode exists in this emulator to look for |
 | **Denise** | — | not read; no per-chip decode exists in this emulator to look for |
 | **Copperline** | — | not read; no per-chip decode exists in this emulator to look for |
-| **MiSTer** | [`rtl/paula.v:147`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L147) | descendant — byte-identical to NanoMig: `assign data_out = uartdata_out \| intdata_out \| diskdata_out \| adkconr;`, no `DMACONR` term, and the comment at `:153`: `//NOTE: this register is also present in the Agnus module, //there DMACONR (read) is implemented` |
-| **TC64** | [`rtl/minimig/paula.v:166`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L166), [`:172`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L172) | descendant — the identical assignment and the identical comment |
+| **MiSTer** | [`rtl/paula.v:147`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L147) | descendant — carries `assign data_out = uartdata_out \| intdata_out \| diskdata_out \| adkconr;`, no `DMACONR` term, and the comment at `:153`: `//NOTE: this register is also present in the Agnus module, //there DMACONR (read) is implemented` |
+| **TC64** | [`rtl/minimig/paula.v:166`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L166), [`:172`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L172) | descendant — the identical assignment and the identical comment. `DMACONR` is decoded in Agnus in all three trees; Paula answers it in none of them |
 
 **Nobody has read any of the four independent implementations here, and for once
 that is structural rather than an omission.** All four decode the custom register

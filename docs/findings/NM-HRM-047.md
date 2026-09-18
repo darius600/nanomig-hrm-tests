@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red — **a ratio finding.** What is measured is that the two printed cases are gated identically, not that either absolute value is wrong |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L594-L603) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L292-L301) |
-| **Upstream** | **MiSTer** `rtl/paula_floppy.v:292-301` — byte-identical to NanoMig's `:594-603`. **TC64** `rtl/minimig/paula_floppy.v:528-537` — the same counter and the same `assign step_ena = step_ena_cnt[8];`, with one literal written more explicitly: `step_ena_cnt <= 9'd0;` where NanoMig and MiSTer both write `step_ena_cnt <= 0;` — same value, same reset condition. No line in any of the three trees reads `direc` or `_sel` in this block; the single, direction-independent floor is inherited by both lines |
 | **Report to** | **Amiga specialists first.** The page gives two numbers; whether an implementation is *required* to distinguish them is a reading question, not a measurement — see *For the specialists* |
 | **Test** | [`hrm/ch8-drive-step-timing`](../../hrm/ch8-drive-step-timing) — assertion `RATIO-A` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |

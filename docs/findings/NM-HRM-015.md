@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `denise.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v) |
-| **Upstream** | **MiSTer** `rtl/denise.v:197-198,216-217` — same as NanoMig: `brdntran` is declared and assigned but both lines stay commented out; 91 lines differ elsewhere in the file, `BRDNTRAN` in none of them. **TC64** `rtl/minimig/denise.v:205,224` — diverges here: both lines are live — `wire brdntran;` and `assign brdntran = bplcon3[4] & ecsena;` — computing the signal NanoMig and MiSTer leave commented out. TC64 goes no further, though: `brdntran` appears nowhere else in the file, so the computed value still reaches no consumer. A fix meets MiSTer where NanoMig already is; against TC64 it inherits a live signal but still has to write the border-composition wiring that no line has |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch3-horizontal-display-window`](../../hrm/ch3-horizontal-display-window) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -47,8 +46,8 @@ like work left for later, not a decision to omit the feature.
 | **vAmiga** | no border effect |
 | **Denise** | the name is not present anywhere in its Amiga core |
 | **Copperline** | **implements it**, with its own test |
-| **MiSTer** | descendant — [`rtl/denise.v:197-198,216-217`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L197-L198): same as NanoMig — `brdntran` declared and assigned, both lines commented out; no border effect |
-| **TC64** | descendant — [`rtl/minimig/denise.v:205,224`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L205): diverges — both lines are **live**, `wire brdntran;` and `assign brdntran = bplcon3[4] & ecsena;`, computing the signal NanoMig and MiSTer leave commented out. But `brdntran` appears nowhere else in the file, so the computed value still reaches no consumer — a dangling net, not a connected one. The observable behaviour is unchanged from NanoMig's; only the shape underneath it differs |
+| **MiSTer** | descendant — `rtl/denise.v:197-198,216-217` — same as NanoMig: `brdntran` is declared and assigned but both lines stay commented out; 91 lines differ elsewhere in the file, `BRDNTRAN` in none of them. No border effect |
+| **TC64** | descendant — `rtl/minimig/denise.v:205,224` — diverges here: both lines are live — `wire brdntran;` and `assign brdntran = bplcon3[4] & ecsena;` — computing the signal NanoMig and MiSTer leave commented out. TC64 goes no further, though: `brdntran` appears nowhere else in the file, so the computed value still reaches no consumer. A fix meets MiSTer where NanoMig already is; against TC64 it inherits a live signal but still has to write the border-composition wiring that no line has. The observable behaviour is unchanged from NanoMig's; only the shape underneath it differs |
 
 One of the four independent implementations treats `BRDNTRAN` as real border
 behaviour. Three of the four do not — which is worth weighing before calling

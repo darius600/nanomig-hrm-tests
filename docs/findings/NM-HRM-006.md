@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_bitplanedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_bitplanedma.v#L339) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339) |
-| **Upstream** | **MiSTer** `rtl/agnus_bitplanedma.v:339` — identical to NanoMig: `if (hpos[8:1]=={ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0})`, H3 gated on the chipset strap, not resolution. **TC64** `rtl/minimig/agnus_bitplanedma.v:313` — the same statement, byte for byte (the line number moves because an earlier, unrelated rewrite of the `hde`/`hdiwstrt` display-enable logic removes 26 lines above it). A fix here diverges from neither line |
 | **Report to** | **nowhere, probably** — see *Suggested change* |
 | **Test** | [`hrm/ch3-ddf-fetch-window`](../../hrm/ch3-ddf-fetch-window) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -48,8 +47,8 @@ machine in **hires** — the opposite of the printed sentence in both directions
 | **vAmiga** | — | respects H3 in lores too |
 | **Denise** | [`emulation/libami/agnus/register.cpp:293`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/register.cpp#L293) | <pre>ddfStart = value & (ecsAndHigher() ? 0xfe : 0xfc);</pre> |
 | **Copperline** | [`src/chipset/agnus.rs:490-496`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L490-L496), [`:498-499`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L498-L499) | <pre>pub(crate) fn ddf_register_mask(revision: AgnusRevision) -&gt; u16 {<br>&nbsp;&nbsp;&nbsp;&nbsp;if matches!(revision, AgnusRevision::Ocs) { 0x00FC } else { 0x00FE }</pre> and then <pre>pub fn effective_bitplane_ddf_start_hpos(revision: AgnusRevision, bplcon0: u16, raw: u16) -&gt; u16 {<br>&nbsp;&nbsp;&nbsp;&nbsp;let _ = bplcon0;</pre> |
-| **MiSTer** | [`rtl/agnus_bitplanedma.v:339`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339) | descendant — identical to NanoMig: `if (hpos[8:1]=={ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0})`, H3 gated on the chipset strap |
-| **TC64** | [`rtl/minimig/agnus_bitplanedma.v:313`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L313) | descendant — the same statement, byte for byte (the line number moves only because an unrelated rewrite removes lines above it) |
+| **MiSTer** | [`rtl/agnus_bitplanedma.v:339`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339) | descendant — identical to NanoMig: `if (hpos[8:1]=={ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0})`, H3 gated on the chipset strap, not resolution |
+| **TC64** | [`rtl/minimig/agnus_bitplanedma.v:313`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L313) | descendant — the same statement, byte for byte (the line number moves because an earlier, unrelated rewrite of the `hde`/`hdiwstrt` display-enable logic removes 26 lines above it). A fix here diverges from neither line |
 
 **All four independent implementations gate the DDF granularity on the chipset.
 None of the four gates it on resolution.** Copperline is the sharpest statement

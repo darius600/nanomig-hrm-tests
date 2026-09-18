@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v) |
-| **Upstream** | **MiSTer** `rtl/agnus_copper.v:225` — identical to NanoMig: `if (ir2[8:7]==2'b00 && !cdang || ir2[8:6]==3'b000 && !ecs) // illegal access`, the same CDANG-clear range. **TC64** `rtl/minimig/agnus_copper.v:225` — the same line, byte for byte. Neither fork's only edit to this file (the blocking-assignment change at lines 234-274) reaches the CDANG decode. If the manual's reading is upheld, a fix diverges from neither line |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted — see *Suggested change* |
 | **Test** | [`hrm/agnus_copper_move_range`](../../hrm/agnus_copper_move_range), [`hrm/agnus_copper_move_sweep`](../../hrm/agnus_copper_move_sweep) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -50,8 +49,8 @@ so, which made it impossible to reconcile with the test it cited.*
 | **vAmiga** | — | blocks below `$80` |
 | **Denise** | [`emulation/libami/agnus/copper.cpp:342`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L342) | <pre>cdang = (value & 2) ? (agnus.ecsAndHigher() ? 0 : 0x40) : 0x80;</pre> floor `$80` when the danger bit is clear |
 | **Copperline** | [`src/bus/dma_slots.rs:697-701`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L697-L701) | <pre>pub(super) fn copper_can_write_custom(&self, off: u16) -&gt; bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;let off = off & 0x01FE;<br>&nbsp;&nbsp;&nbsp;&nbsp;if off &lt;= 0x03E {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return !matches!(self.agnus.revision(), AgnusRevision::Ocs)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&& self.agnus.copper_danger_enabled();</pre> needs the bit **set** for `$040`–`$07E` |
-| **MiSTer** | [`rtl/agnus_copper.v:225`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L225) | descendant — identical to NanoMig: `if (ir2[8:7]==2'b00 && !cdang \|\| ir2[8:6]==3'b000 && !ecs)`, the same CDANG-clear range |
-| **TC64** | [`rtl/minimig/agnus_copper.v:225`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L225) | descendant — the same line, byte for byte |
+| **MiSTer** | [`rtl/agnus_copper.v:225`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L225) | descendant — identical to NanoMig: `if (ir2[8:7]==2'b00 && !cdang || ir2[8:6]==3'b000 && !ecs) // illegal access`, the same CDANG-clear range |
+| **TC64** | [`rtl/minimig/agnus_copper.v:225`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L225) | descendant — the same line, byte for byte. Neither fork's only edit to this file (the blocking-assignment change at lines 234-274) reaches the CDANG decode. If the manual's reading is upheld, a fix diverges from neither line |
 
 **All four independent implementations read appendix C p. 310 the other way
 round** — that `CDANG` must be set, not clear, to reach the low range on ECS.

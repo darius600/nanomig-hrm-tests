@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · **the manual is the likely defect** |
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/userio.v#L219-L280) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v) |
-| **Upstream** | **MiSTer** `rtl/userio.v:256` — identical: `dmouse0dat[7:0] <= dmouse0dat[7:0] + 1'd1;`, a plain 8-bit field, mod 256. **TC64** `rtl/minimig/userio.v:401` — the same statement, same width: `dmouse0dat[7:0] <= #1 dmouse0dat[7:0] + 1'd1;`. Both lines give the counter 256 states; neither wraps at 255 |
 | **Report to** | **probably nobody.** See *Suggested change* |
 | **Test** | [`hrm/ch8-mouse-counter-wraparound`](../../hrm/ch8-mouse-counter-wraparound) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -51,7 +50,7 @@ are the only ones that move.
 | **Denise** | [`input/controlPort/mouse.cpp:67`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/input/controlPort/mouse.cpp#L67) | `(posY & 0xff) << 8 \| (posX & 0xff)` |
 | **Copperline** | [`bus.rs:3342`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L3342) | `counter_x: u8` advanced with `wrapping_add` — mod 256 by construction |
 | **MiSTer** | [`rtl/userio.v:256`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L256) | descendant — identical: `dmouse0dat[7:0] <= dmouse0dat[7:0] + 1'd1;`, a plain 8-bit field, mod 256 |
-| **TC64** | [`rtl/minimig/userio.v:401`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L401) | descendant — the same statement, same width: `dmouse0dat[7:0] <= #1 dmouse0dat[7:0] + 1'd1;` |
+| **TC64** | [`rtl/minimig/userio.v:401`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L401) | descendant — the same statement, same width: `dmouse0dat[7:0] <= #1 dmouse0dat[7:0] + 1'd1;`. Both lines give the counter 256 states; neither wraps at 255 |
 
 **Not one of the four independent implementations uses 255 as a modulus or a
 wrap target in the mouse-counter path.** Denise's many `255` constants are in

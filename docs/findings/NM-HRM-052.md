@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · source observation |
 | **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/amiga_keymap.v#L135-L139) |
-| **Upstream** | not applicable — this is a statement about the manual, not about an implementation. Moot either way: `amiga_keymap.v` is absent from both `MiSTer-devel/Minimig-AGA_MiSTer`'s `rtl/` and `minimig-dev/MinimigAGA-MiST-TC64`'s `rtl/minimig/`, so neither line has a keymap to consult |
 | **Report to** | **nobody, yet.** Two printed pages contradict each other; which is right is an Amiga-history question, not a conformance question |
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) — `RIGHTALT-CONFLICT`, six claims declined on a `record()` line, **graded on neither side** |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -57,8 +56,8 @@ them appears on a graded line.
 | **vAmiga** | `leftAlt = 0x64`, `rightAlt = 0x65` (`GUI/Input/AmigaKey.swift:136-137`) |
 | **Denise** | `0x64, 0x65` adjacent in the modifier group of its key table (`emulation/libami/input/keyboard/keyboard.cpp:18`) |
 | **Copperline** | `AltLeft => 0x64`, `AltRight => 0x65` (`src/video/window/host_input.rs:185-186`) |
-| **MiSTer** | descendant — no counterpart; the module does not exist in this line |
-| **TC64** | descendant — no counterpart; the module does not exist in this line |
+| **MiSTer** | descendant — **moot, and not applicable**: this finding is about the manual, not about an implementation. `amiga_keymap.v` is absent from the pinned `rtl/` in any case, so there is no keymap here to consult |
+| **TC64** | descendant — **the same**: no `amiga_keymap.v` in its `rtl/minimig/` either |
 
 Four independent implementations all took the table and none took the figures.
 That is worth recording — but it is evidence about what implementers read, not

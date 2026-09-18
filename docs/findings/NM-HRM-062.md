@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · **filed against the page**, not against any implementation |
 | **Module** | none. `gary.v:191-192` follows the page's PROSE and is not at fault here |
-| **Upstream** | not applicable — this is a statement about the manual, not about an implementation. There is no module for this finding (see the **Module** row), so neither **MiSTer** nor **TC64** has anything to answer for either |
 | **Report to** | whoever maintains errata for the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Test** | none yet. Raised at classification by the appendix-F lot-E classifier and verified here against the render |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters · printed p.353 |
@@ -70,8 +69,8 @@ manual's.
 | **vAmiga** | follows the prose | `Memory.cpp:2236-2252`: `sel = (addr >> 12) & 0b11` selects on A13:A12, and `0b01` (A13=0, A12=1) with `a0` false reaches `ciab` |
 | **Denise** | follows the prose | `libami/agnus/memory.cpp:61-66`: `switch(adr & 0x3000)`, `0x2000` (A13=1, A12=0) with an odd address reaches `cia1`, `0x1000` (A13=0, A12=1) with an even one reaches `cia2` |
 | **Copperline** | follows the prose | its CIA windows are the standard `$BFE001` / `$BFD000` pair; no implementation anywhere decodes the printed patterns |
-| **MiSTer** | descendant — no module; this finding is against the printed page, not an implementation | — |
-| **TC64** | descendant — no module; this finding is against the printed page, not an implementation | — |
+| **MiSTer** | descendant — no module; this finding is against the printed page, not an implementation | descendant — nor |
+| **TC64** | descendant — no module; this finding is against the printed page, not an implementation | descendant — has anything to answer for either |
 
 **Not one implementation decodes the printed patterns**, and NanoMig does not
 either: `gary.v:191` is `sel_cia_a = sel_cia & ~cpu_address_in[12]` — CIAA on A12

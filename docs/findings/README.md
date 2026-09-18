@@ -63,14 +63,20 @@ and each row says which question it is answering.
 ### Minimig-AGA is the ancestor, not a fifth witness — and it has two lines
 
 NanoMig is a port of Minimig-AGA and almost everything comes from there, which is
-neither news nor a problem. So the `Upstream` row is one line and nothing more —
-unless a maintained line has **changed** the code a finding is about and NanoMig
-has not picked it up. That is the only case with something to act on, and it gets
-a section. The full comparison is in
+neither news nor a problem. So a Minimig row is usually one sentence and nothing
+more — unless a maintained line has **changed** the code a finding is about and
+NanoMig has not picked it up. That is the only case with something to act on, and
+it gets a section. The full comparison is in
 [`../upstream-minimig-aga.md`](../upstream-minimig-aga.md).
 
-**Two groups maintain that ancestry independently**, and the `Upstream` row names
-both: MiSTer-devel's `Minimig-AGA_MiSTer` and minimig-dev's
+**Both lines are stated once, in the comparison table, and nowhere else.** Until
+18.09.2026 every finding also carried a separate `Upstream` header row, so the
+same two implementations were described twice on one page, in two wordings that
+had to be kept in step by hand. The row is gone; whatever it said that the table
+did not is now in the table.
+
+**Two groups maintain that ancestry independently**, and the table names both:
+MiSTer-devel's `Minimig-AGA_MiSTer` and minimig-dev's
 `MinimigAGA-MiST-TC64`. Neither is a witness to what the manual requires — both
 are descendants of the same code NanoMig descends from, so agreement between them
 says nothing about the HRM. What it does say is **where a fix belongs**, and the

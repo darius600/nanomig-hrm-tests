@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `cpu_cache_new.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_cache_new.v#L296-L309) |
-| **Upstream** | **identical.** `MiSTer-devel/Minimig-AGA_MiSTer`'s `rtl/cpu_cache_new.v:306` carries the same line, down to the same commented-out `/*&& !cc_fr*/` guard. **`minimig-dev/MinimigAGA-MiST-TC64` is not absent, only relocated:** it has no `cpu_cache_new.v` under `rtl/minimig/`, but `rtl/sdram/cpu_cache_new.v` is the same module under the same 2015 `rok.krajnc@gmail.com` authorship, instantiated with `cache_en` hardwired to `1'b1` in `rtl/sdram/sdram_ctrl.v:274`, itself part of the real board target `rtl/soc/minimig_mist_top.v`. Its `CPU_SM_WRITE` state, `cpu_cache_new.v:467-468`, carries the identical statement and the identical commented-out guard. A fix here diverges from neither line |
 | **Report to** | **the Minimig line**, not NanoMig alone |
 | **Test** | [`hrm/ch1-cpu-and-instruction-cache`](../../hrm/ch1-cpu-and-instruction-cache) `CACHE-WRITE-VISIBILITY` |
 | **Chapter** | 1 — Introduction · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -70,8 +69,8 @@ Page 13 predicts `$AAAA` — the stale instruction that makes a flush necessary.
 | **vAmiga** | does not monitor writes | Moira's `flushInstructionCache` / `invalidateCacheEntry` are called from reset (`Moira.cpp:105`, `:230`) and from the CACR write handler alone — `:573` for bit 2, `:576` for bit 3 |
 | **Copperline** | does not monitor writes, and says so | `src/cache.rs:25-28`: *"Like the real silicon, the instruction cache does NOT snoop writes — it is invalidated only by explicit cache control (CACR on the 020/030 …), and DMA (blitter/copper/disk) never invalidates it. The data cache is write-through; a write that hits invalidates the entry"* |
 | **Denise** | cannot disagree | its CPU is `libami/cpu/m68000`, a 68000. Zero occurrences of `CACR` or an instruction cache anywhere in it. The 68000 has no instruction cache, so the sentence has no counterpart to implement |
-| **MiSTer** | descendant — identical statement | `rtl/cpu_cache_new.v:306-307` carries the same `cpu_sm_iram0_we <= itag0_match && itag0_valid /*&& !cc_fr*/;` (and its `iram1` twin), commented-out guard included |
-| **TC64** | descendant — identical statement, different location | `rtl/sdram/cpu_cache_new.v:467-468` carries the same two lines verbatim, guard included, though the file differs by 1105 lines overall and sits outside `rtl/minimig/` |
+| **MiSTer** | descendant — identical statement | `rtl/cpu_cache_new.v:306-307` carries the same `cpu_sm_iram0_we <= itag0_match && itag0_valid /*&& !cc_fr*/;` (and its `iram1` twin), commented-out guard included. It carries the same commented-out `/*&& !cc_fr*/` guard. |
+| **TC64** | descendant — identical statement, different location | **Not absent, only relocated.** There is no `cpu_cache_new.v` under `rtl/minimig/`, but `rtl/sdram/cpu_cache_new.v` carries the same two lines verbatim, guard included — the same module under the same 2015 `rok.krajnc@gmail.com` authorship, instantiated with `cache_en` hardwired to `1'b1` in `rtl/sdram/sdram_ctrl.v:274`, itself part of the real board target `rtl/soc/minimig_mist_top.v`. Its `CPU_SM_WRITE` state carries the identical statement and the identical commented-out guard. A fix here diverges from neither line. |
 
 Copperline is the sharpest witness, because it draws the distinction NanoMig does
 not: **instruction cache no snoop, data cache invalidate on write hit.**

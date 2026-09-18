@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L77-L140) |
-| **Upstream** | **MiSTer** — carries the same `paula_uart.v`, already noted on this page. **TC64** `rtl/minimig/paula_uart.v:77-140` — byte-identical too; the whole 262-line file matches NanoMig line for line in both lines, confirmed by a full-file comparison, not only the cited range. The all-zero-still-transmits gap is inherited unchanged by both |
 | **Report to** | **the Minimig line**, not NanoMig alone |
 | **Test** | [`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) `ALLZERO-NO-TX`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `E6` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -47,8 +46,8 @@ transmission should not have happened".
 | **Denise** | **implements it.** `if (value && !serShifter)` — `emulation/libami/paula/uart.cpp:42`. The same guard, one token |
 | **WinUAE** | **implements it in one of its two paths.** `od-win32/serial_win32.cpp:999-1004` returns early on `if (!w)`, with a log line that calls the case out by name: *"zero serial word written?!"*. In `ser_accurate` mode (`:983-992`) there is no such guard and the word is loaded unconditionally |
 | **Copperline** | **deliberately does not.** `write_serdat` loads any word (`src/chipset/paula.rs:1079-1082`), and `serial_tx_total_bits` carries an explicit branch for it: `if word == 0 { return if long { 11 } else { 10 }; }` (`:1575-1578`) — a full frame, written on purpose |
-| **MiSTer** | descendant — same gap, same file: `rtl/paula_uart.v:77-140` is byte-identical to NanoMig's, no test of the written value anywhere in the transmit path |
-| **TC64** | descendant — same gap, same file: `rtl/minimig/paula_uart.v:77-140` is byte-identical too, line numbers included |
+| **MiSTer** | descendant — the same gap in the same file: `rtl/paula_uart.v:77-140` is byte-identical to NanoMig's, with no test of the written value anywhere in the transmit path |
+| **TC64** | descendant — byte-identical too, line numbers included; the whole 262-line file matches NanoMig line for line, confirmed by a full-file comparison and not only the cited range. The all-zero-still-transmits gap is inherited unchanged by both lines |
 
 **Three of the four independent implementations implement the sentence
 somewhere**, two of them with a single added token. That is what makes the

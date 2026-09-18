@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red — **the manual is the likely defect**, see the first section |
 | **Module** | `gary.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/gary.v#L159-L162) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L172-L175) |
-| **Upstream** | **MiSTer** `rtl/gary.v:172-175` — byte-identical: banks 1-3 decoded unconditionally, only bank 0 gated by `(!ovl \| cpu_hlt)`. **TC64** `rtl/minimig/gary.v:150-153` — the same shape, banks 1-3 unconditional, but bank 0's gate is narrower: `!ovl` alone, without the `cpu_hlt` term NanoMig and MiSTer both carry. All three still leave banks 1-3 unconditional, which is what this finding is about; gating them on `ovl` would diverge from both lines equally |
 | **Report to** | **nobody.** Three of the four implementations do the same thing |
 | **Test** | [`hrm/ch7-reset-overlay`](../../hrm/ch7-reset-overlay) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -75,7 +74,7 @@ at the pinned revision named in the link.
 | **Copperline** | [`src/cpu.rs:4733-4738`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/cpu.rs#L4733-L4738) | <pre>if !self.bus.mem.overlay { return None; }<br>region_offset(self.bus.mem.rom.len(), CHIP_RAM_BASE, addr, size)</pre> exactly the ROM's own length from `$0` |
 | **WinUAE** | [`memory.cpp:2923-2936`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2923-L2936) | <pre>if (size &lt; 32 && bogomem_aliasing == 0)<br>&nbsp;&nbsp;&nbsp;&nbsp;size = 32;<br>...<br>map_banks(rb, 0, size, 0x80000);</pre> the ROM mirrored across **at least 2 MB** |
 | **MiSTer** | [`rtl/gary.v:172-175`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L172-L175) | descendant — byte-identical: banks 1-3 decoded unconditionally, only bank 0 gated by `(!ovl \| cpu_hlt)` |
-| **TC64** | [`rtl/minimig/gary.v:150-153`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/gary.v#L150-L153) | descendant — the same shape, banks 1-3 unconditional, but bank 0's gate is narrower: `!ovl` alone, without the `cpu_hlt` term NanoMig and MiSTer both carry |
+| **TC64** | [`rtl/minimig/gary.v:150-153`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/gary.v#L150-L153) | descendant — the same shape, banks 1-3 unconditional, but bank 0's gate is narrower: `!ovl` alone, without the `cpu_hlt` term NanoMig and MiSTer both carry. All three still leave banks 1-3 unconditional, which is what this finding is about; gating them on `ovl` would diverge from both lines equally |
 
 **Three of the four independent implementations replace only the ROM's own
 512K**, exactly as NanoMig does. Only WinUAE mirrors the ROM over the whole

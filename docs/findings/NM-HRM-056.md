@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red · contested |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L139) |
-| **Upstream** | **MiSTer** — carries the same line, already noted on this page. **TC64** `rtl/minimig/paula_uart.v:139` — the identical `tx_tbe <= (rga_i == REG_SERDAT[8:1]) ? 1'b0 : ((tx_state == TX_IDLE) ? 1'b1 : tx_tbe);`, same file, same line number, byte-identical. The one-cycle TBE-clear window this entry measures is inherited unchanged by both lines |
 | **Report to** | **the Minimig line** |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -53,8 +52,8 @@ changes, and no reachable read sees it change.
 | **Copperline** | **as NanoMig.** `write_serdat` stores `Some(val)` and immediately calls `load_serial_shift_if_idle`, whose `.take()` empties it in the same call (`src/chipset/paula.rs:1080`, `:1524`). Its own test asserts the consequence: `assert_ne!(paula.read_serdatr() & (1 << 13), 0)` right after a write (`:3681`) |
 | **vAmiga** | **observable.** TBE is derived live from `transmitBuffer == 0` (`Core/Components/Paula/UART/UART.cpp:108`), and the buffer is only drained by `copyToTransmitShiftRegister` (`:178`). While the shifter is busy the guard at `:137` fails, nothing is scheduled, and TBE reads 0 for the rest of the frame |
 | **WinUAE** | **observable, deliberately.** `od-win32/serial_win32.cpp:780` sets `data_in_serdat_delay = get_cycles() + CYCLE_UNIT` **after** `:741` has already cleared the buffer flag, and the read at `:1020` keeps bit 13 clear until that cycle passes. A modelled TBE-low window, not a side effect |
-| **MiSTer** | descendant — same statement, same line: `rtl/paula_uart.v:139` is byte-identical to NanoMig's, the same one-cycle TBE-clear window |
-| **TC64** | descendant — same statement, same line: `rtl/minimig/paula_uart.v:139` is byte-identical too, already noted above |
+| **MiSTer** | descendant — the same statement on the same line: `rtl/paula_uart.v:139` is byte-identical to NanoMig's, the same one-cycle TBE-clear window |
+| **TC64** | descendant — `rtl/minimig/paula_uart.v:139` — the identical `tx_tbe <= (rga_i == REG_SERDAT[8:1]) ? 1'b0 : ((tx_state == TX_IDLE) ? 1'b1 : tx_tbe);`, same file, same line number, byte-identical. The one-cycle TBE-clear window this entry measures is inherited unchanged by both lines. |
 
 **Two of the four independent implementations reach NanoMig's behaviour and two
 model a drain time of their own.** So the four independent implementations do

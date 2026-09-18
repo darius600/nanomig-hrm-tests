@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `hid.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/hid.v#L100-L104) · no counterpart upstream |
-| **Upstream** | **NanoMig's own.** The pinned Minimig-AGA tree contains no `hid.v` and no `keymap`: [`rtl/minimig.v:207`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L207) takes `kbd_mouse_data` as a top-level input and the keyboard's own behaviour is decided in software above the chipset. **Neither does `minimig-dev/MinimigAGA-MiST-TC64`**: no `hid.v` in its `rtl/minimig/` either |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against, and the finding does not generalise to the Minimig family |
 | **Test** | [`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events) — `CAPS-LOCK-RELEASE-NOT-ACCEPTED` and `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE`, both red |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -83,8 +82,8 @@ apart.
 | **vAmiga** | **Not conformant — the same shape as NanoMig.** `Core/Peripherals/Keyboard/Keyboard.cpp` has no `0x62` case: `press()` queues the code and `release()` queues `keycode \| 0x80` for every key alike. Its one lock mechanism (`lock()` / `isLocked()`) exists for the Cmd/Amiga key combination, not for Caps Lock |
 | **Denise** | **Conformant, both halves, explicitly.** The release returns before emitting anything — `if (stroke == 0x62) // Caps Lock release  return;` (`emulation/libami/input/keyboard/keyboard.cpp:203-204`) — and the press toggles the modelled LED and sets bit 7 when that press turns it off (`:230-234`) |
 | **Copperline** | **Conformant, and documented as the keyboard's own behaviour.** The `caps_lock_on` field's comment reads *"owned by the keyboard: the key toggles it, sending a press code on toggle-on and a release code on toggle-off; the physical key release sends nothing"* (`src/chipset/keyboard.rs:272-275`) |
-| **MiSTer** | descendant — no counterpart; the module does not exist in this line |
-| **TC64** | descendant — no counterpart; the module does not exist in this line |
+| **MiSTer** | descendant — **no counterpart.** No `hid.v` and no `keymap` in the pinned tree: `rtl/minimig.v:207` takes `kbd_mouse_data` as a top-level input and the keyboard's own behaviour is decided in software above the chipset |
+| **TC64** | descendant — **no counterpart either**: no `hid.v` in its `rtl/minimig/` |
 
 Three of the four independent implementations arrive at the page's byte
 sequence by three different routes — mirroring the host's lock, modelling the

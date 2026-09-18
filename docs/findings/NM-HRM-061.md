@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red · **filed against the classification, not against the RTL and not against the page** |
 | **Module** | `sysctrl.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/sysctrl.v#L228-L246) |
-| **Upstream** | none. `src/misc` is NanoMig's own substitute layer, not the Minimig chipset lineage (O62), and neither Minimig line has a `sysctrl.v` to compare it to: absent from `MiSTer-devel/Minimig-AGA_MiSTer`'s `rtl/` and from `minimig-dev/MinimigAGA-MiST-TC64`'s `rtl/minimig/` alike |
 | **Report to** | nobody. **This is a finding about this suite**, and the decision it asks for is O72's |
 | **Test** | [`hrm/ch1-cpu-options`](../../hrm/ch1-cpu-options) `CPU-OPTIONS-FOUR-DISTINCT-STATES` and `RAM-BASE-FLOOR-BELOW-256K-ABSENT` |
 | **Chapter** | 1 — Introduction · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -65,6 +64,12 @@ same question. Here there is no same question: none of the four has a
 `system_cpu` field, because none of them is a board that must be told which CPU
 to instantiate. The absence of a comparison is itself the evidence that this is
 not a conformance question.
+
+**Nor do the two Minimig lines have anything to set beside it.** Neither has a
+`sysctrl.v` at all — absent from `MiSTer-devel/Minimig-AGA_MiSTer`'s `rtl/` and
+from `minimig-dev/MinimigAGA-MiST-TC64`'s `rtl/minimig/` alike. `src/misc` is
+NanoMig's own substitute layer, not the shared chipset lineage, so there is no
+ancestor to inherit this from and nowhere for a fix to travel.
 
 **A red here reads as a defect and is not one.** That is the cost, and it is why
 this is filed rather than quietly left: `tools/list_reds.py` reports two reds in

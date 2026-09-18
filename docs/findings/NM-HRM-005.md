@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v) |
-| **Upstream** | **MiSTer** `rtl/agnus_copper.v:473-522` — identical to NanoMig's `WAITSKIP1`/`WAITSKIP2` states and their cycle counts. **TC64** `rtl/minimig/agnus_copper.v:473-522` — the same states, byte for byte. Neither fork's own edit to this file (the blocking-assignment change at lines 234-274) touches the WAIT/SKIP timing; the three numbers this finding measures come from code both lines share unchanged with NanoMig |
 | **Report to** | **nowhere yet** — this one needs hardware, not a patch. See *Suggested change* |
 | **Test** | [`hrm/agnus_copper_cycle_times`](../../hrm/agnus_copper_cycle_times), [`hrm/agnus_copper_cycles`](../../hrm/agnus_copper_cycles) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -52,8 +51,8 @@ the printed value usually has a units error, and this one does not.
 | **vAmiga** | **4 / 8 / 8** — NanoMig's three numbers |
 | **Denise** | — |
 | **Copperline** | — |
-| **MiSTer** | descendant — [`rtl/agnus_copper.v:473-522`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L473-L522): the identical `WAITSKIP1`/`WAITSKIP2` states and cycle counts |
-| **TC64** | descendant — [`rtl/minimig/agnus_copper.v:473-522`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L473-L522): the same states, byte for byte |
+| **MiSTer** | descendant — `rtl/agnus_copper.v:473-522` — identical to NanoMig's `WAITSKIP1`/`WAITSKIP2` states and their cycle counts |
+| **TC64** | descendant — `rtl/minimig/agnus_copper.v:473-522` — the same states, byte for byte. Neither fork's own edit to this file (the blocking-assignment change at lines 234-274) touches the WAIT/SKIP timing; the three numbers this finding measures come from code both lines share unchanged with NanoMig |
 
 **vAmiga measures what NanoMig measures.** That is the single most useful fact on
 this page, and it points away from the RTL.

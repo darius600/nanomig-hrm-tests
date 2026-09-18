@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red · contested |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L36-L43) |
-| **Upstream** | **MiSTer** — carries the same lines, already noted on this page. **TC64** `rtl/minimig/paula_uart.v:36-43` — the identical two-flop synchroniser and `assign rxds = rxd_sync[1];`, same file, same line numbers, byte-identical. The three-`clk7_en`-edge lag this entry measures is inherited unchanged by both lines |
 | **Report to** | **the Minimig line** |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `C4` |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -39,8 +38,8 @@ counting.
 | **Denise** | **immediate.** `if (serial.getRXD()) out \|= 0x800;` — `emulation/libami/paula/uart.cpp:32`, over `getPin(RXD)` (`emulation/libami/system/serial.h:37`). No RX synchroniser exists in the tree |
 | **Copperline** | **delayed by two stages.** `serial_rx_pin_high` → `serial_rx_sync_0_high` → `serial_rx_sync_1_high` (`src/chipset/paula.rs:505-507`, advanced at `:1612-1616`), read at `:1101`. Deliberate and tested: `fn serdatr_rxd_uses_two_stage_synchronized_pin()` at `:3896` |
 | **WinUAE** | **cannot answer.** There is no RXD pin to read. Bit 11 is a break-state flag forced high unless a break is active (`od-win32/serial_win32.cpp:1050-1051`); only the loopback path reconstructs a level, and it does so from the transmit shift register by elapsed bit position (`:1032-1048`) |
-| **MiSTer** | descendant — same synchroniser, same lines: `rtl/paula_uart.v:36-43` is byte-identical to NanoMig's, the same three-`clk7_en`-edge lag |
-| **TC64** | descendant — same synchroniser, same lines: `rtl/minimig/paula_uart.v:36-43` is byte-identical too, already noted above |
+| **MiSTer** | descendant — the same synchroniser on the same lines: `rtl/paula_uart.v:36-43` is byte-identical to NanoMig's, the same three-`clk7_en`-edge lag |
+| **TC64** | descendant — `rtl/minimig/paula_uart.v:36-43` — the identical two-flop synchroniser and `assign rxds = rxd_sync[1];`, same file, same line numbers, byte-identical. The three-`clk7_en`-edge lag this entry measures is inherited unchanged by both lines |
 
 **Two of the four independent implementations read the pin exactly as the page
 says, one adds two synchroniser stages, one has no pin.** So a synchroniser is

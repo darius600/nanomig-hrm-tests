@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · **red — against p.256, not against the RTL** |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L156-L230) |
-| **Upstream** | **MiSTer** — carries the same lines, already noted on this page. **TC64** `rtl/minimig/paula_uart.v:156-230` — the identical receiver, same file, same line numbers, byte-identical, confirmed by a full-file comparison. The 10-/11-bit-time window this entry measures against p.256 is inherited unchanged by both lines; the red is against the manual in both cases, not against either RTL |
 | **Report to** | **the manual.** Three of the four reference implementations land on NanoMig's numbers exactly |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `B11` |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -37,6 +36,8 @@ measured it independently and differ only in where they start counting: 10.0 and
 | **Denise** | **10 / 11.** `unsigned bits = (serPer & 0x8000) ? 11 : 10;` — `emulation/libami/paula/uart.cpp:78`, counted at `:80` |
 | **Copperline** | **10 / 11.** `total_bits: if long { 11 } else { 10 }` — `src/chipset/paula.rs:1557`, set at shift-load rather than counted against a constant |
 | **WinUAE** | **neither confirms nor contradicts.** It has no receiver: bytes arrive whole from the host (`od-win32/serial_win32.cpp:464`, `:600`). Its only 10/11 constant is on the *transmit* side (`:261`), and its loopback receive time is 9 or 10 bit times **plus half a bit** (`:799`), measured to a mid-bit sample rather than as a window bound |
+| **MiSTer** | descendant — carries the same receiver lines, already noted on this page |
+| **TC64** | `rtl/minimig/paula_uart.v:156-230` — descendant, the identical receiver, same file, same line numbers, byte-identical, confirmed by a full-file comparison. The 10-/11-bit-time window this entry measures against p.256 is inherited unchanged by both lines; the red is against the manual in both cases, not against either RTL |
 
 **Three independent implementations arrive at exactly NanoMig's numbers.** A
 frame of one start bit, eight or nine data bits and one stop bit is ten or eleven

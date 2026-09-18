@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · **red — against p.289, not against the RTL** |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L225) |
-| **Upstream** | **MiSTer** `rtl/agnus_copper.v:225` — byte-identical: `if (ir2[8:7]==2'b00 && !cdang \|\| ir2[8:6]==3'b000 && !ecs) // illegal access`, the same decode that lifts the block at `ecs & cdang`. **TC64** `rtl/minimig/agnus_copper.v:225` — the identical line. The file differs from NanoMig by 18 lines on both lines, but they are the same 18: both upstream lines convert nine `<=` assignments to `=` (`copjmp1`, `copjmp2`, `strobe1`, `strobe2`, `strobe`, at `:237-271`) — a blocking-vs-non-blocking edit unrelated to this decode, and one both lines made identically. A fix here diverges from both lines equally; the manual is what disagrees, not either ancestor |
 | **Report to** | **the manual, not the implementation.** All four reference implementations do exactly what NanoMig does |
 | **Test** | [`hrm/ch8-appb-copper-access-marks`](../../hrm/ch8-appb-copper-access-marks) — `SERDAT-CDANG1`, `SERPER-CDANG1`, `SERDATR-CDANG1` red; their `-CDANG0` twins and `CTRL-BLTCON0` green |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -57,6 +56,8 @@ in almost the same characters:
 | **vAmiga** | `if (cdang) { return agnus.isOCS() ? addr < 0x40 : false; } else { return addr < 0x80; }` — `Copper.cpp:396-402`. With CDANG set and not OCS, no address is illegal |
 | **Denise** | `cdang = (value & 2) ? (agnus.ecsAndHigher() ? 0 : 0x40) : 0x80;` — `copper.cpp:342`, tested at `:203` as `if (reg < cdang)`. ECS with CDANG gives a threshold of 0 |
 | **Copperline** | ships a test table for it. `copper_forbidden_move_ranges_match_copcon_cdang_on_ocs_and_ecs` (`src/bus/tests.rs:4165`) asserts `$000` and `$03E` **blocked** with CDANG on OCS and **allowed** with CDANG on ECS |
+| **MiSTer** | `rtl/agnus_copper.v:225` — descendant, byte-identical: `if (ir2[8:7]==2'b00 && !cdang \|\| ir2[8:6]==3'b000 && !ecs) // illegal access`, the same decode that lifts the block at `ecs & cdang` |
+| **TC64** | `rtl/minimig/agnus_copper.v:225` — descendant, the identical line. The file differs from NanoMig by 18 lines on both Minimig lines, but they are the same 18: nine `<=` assignments converted to `=` (`copjmp1`, `copjmp2`, `strobe1`, `strobe2`, `strobe`, at `:237-271`), a blocking-vs-non-blocking edit unrelated to this decode and made identically by both. A fix here diverges from both lines equally; the manual is what disagrees, not either ancestor |
 
 Four independent implementations, one formula, and one of them treats it as a
 property worth a regression test. **The page's `*` describes OCS.** Appendix B

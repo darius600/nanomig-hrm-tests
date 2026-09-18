@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `agnus_blitter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_blitter.v#L546-L549) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v#L566-L569) |
-| **Upstream** | **MiSTer** `rtl/agnus_blitter.v:566-569` — identical to NanoMig: `else if (reg_address_in[8:1]==BLTSIZV[8:1]) // ECS BLTSIZV register` with no `&& ecs`, the same comment/code contradiction. **TC64** `rtl/minimig/agnus_blitter.v:546-549` — the same four lines, byte for byte, at the same line numbers as NanoMig (TC64's fourteen changed lines in this file are whitespace only, all in the line-mode blitter states hundreds of lines below). A fix here diverges from neither line |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/agnus_blitter_ecs`](../../hrm/agnus_blitter_ecs) |
 | **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -67,7 +66,7 @@ the pinned revision and the quotation verified there.
 | **Denise** | [`emulation/libami/agnus/register.cpp:222-224`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/register.cpp#L222-L224) | <pre>case 0x5c:<br>&nbsp;&nbsp;&nbsp;&nbsp;if (ecsAndHigher())<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;blitter.setBltSizeV(value);</pre> |
 | **Copperline** | [`src/bus/custom_regs.rs:787-792`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/custom_regs.rs#L787-L792) | <pre>0x05C =&gt; {<br>&nbsp;&nbsp;&nbsp;&nbsp;if !self.blitter_ecs_registers_enabled() {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return false;<br>&nbsp;&nbsp;&nbsp;&nbsp;}</pre> |
 | **MiSTer** | [`rtl/agnus_blitter.v:566-569`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v#L566-L569) | descendant — identical to NanoMig: `else if (reg_address_in[8:1]==BLTSIZV[8:1]) // ECS BLTSIZV register` with no `&& ecs`, the same comment/code contradiction |
-| **TC64** | [`rtl/minimig/agnus_blitter.v:546-549`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_blitter.v#L546-L549) | descendant — the same four lines, byte for byte |
+| **TC64** | [`rtl/minimig/agnus_blitter.v:546-549`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_blitter.v#L546-L549) | descendant — the same four lines, byte for byte, at the same line numbers as NanoMig (TC64's fourteen changed lines in this file are whitespace only, all in the line-mode blitter states hundreds of lines below). A fix here diverges from neither line |
 
 **All four independent implementations gate `BLTSIZV` on ECS. NanoMig alone does
 not.** This is one of only two findings in chapters 3 and 6 where the manual,

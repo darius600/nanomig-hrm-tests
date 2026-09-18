@@ -4,7 +4,6 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula_intcontroller.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_intcontroller.v#L132-L134) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_intcontroller.v#L132-L134) |
-| **Upstream** | **MiSTer** `rtl/paula_intcontroller.v:132-134` — byte-identical to NanoMig, same line numbers, comments included. **TC64** `rtl/minimig/paula_intcontroller.v:132-134` — the same, byte-identical; `paula_intcontroller.v` is identical across all three trees throughout, confirmed by a full-file comparison. The settable bit-14 request is inherited unchanged by both lines |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
 | **Test** | [`hrm/ch5-audio-interrupt`](../../hrm/ch5-audio-interrupt) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -62,8 +61,8 @@ the pinned revision and the quotation verified there.
 | **vAmiga** | [`Core/Components/Paula/PaulaRegs.cpp:92-93`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaRegs.cpp#L92-L93) | <pre>if (setclr) {<br>&nbsp;&nbsp;&nbsp;&nbsp;intreq \|= value;</pre> no mask at all — bit 14 is settable |
 | **Denise** | [`emulation/libami/paula/irq.cpp:17-18`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/irq.cpp#L17-L18) | <pre>if (value & 0x8000)<br>&nbsp;&nbsp;&nbsp;&nbsp;intreq \|= value & 0x7fff;</pre> masks **only** bit 15 |
 | **Copperline** | — | not read for this finding |
-| **MiSTer** | [`rtl/paula_intcontroller.v:132-134`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_intcontroller.v#L132-L134) | descendant — byte-identical to NanoMig, same line numbers, comments included: `intreq[14] <= tmp[14];` with no mask |
-| **TC64** | [`rtl/minimig/paula_intcontroller.v:132-134`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_intcontroller.v#L132-L134) | descendant — the same, byte-identical; `paula_intcontroller.v` is identical across all three trees throughout, confirmed by a full-file comparison |
+| **MiSTer** | [`rtl/paula_intcontroller.v:132-134`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_intcontroller.v#L132-L134) | descendant — byte-identical to NanoMig, same line numbers, comments included |
+| **TC64** | [`rtl/minimig/paula_intcontroller.v:132-134`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_intcontroller.v#L132-L134) | descendant — the same, byte-identical; `paula_intcontroller.v` is identical across all three trees throughout, confirmed by a full-file comparison. The settable bit-14 request is inherited unchanged by both lines |
 
 **Two of the four let bit 14 be set as a request, and Denise's mask is the
 precise statement**: `0x7fff` strips the SET/CLR bit and nothing else, so bit 14
