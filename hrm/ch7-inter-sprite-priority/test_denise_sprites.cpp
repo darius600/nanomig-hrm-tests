@@ -1258,13 +1258,13 @@ int main(int argc, char** argv) {
     // A drawing's ink is not a hardware signal (build brief: "where the
     // manual is silent, measure and report -- do not assert").
     checks.record(
-        "opus:7-fig7-1.c1 [declined, drawing-inventory half]: 'the drawing...is a "
+        "(half graded: opus:7-fig7-1.c1) [declined, drawing-inventory half]: 'the drawing...is a "
         "cascade of exactly eight identical rectangles...no ninth box and no other "
         "digit appears in the frame' counts and describes the printed drawing on "
         "p.208; it names no signal. (Its hardware half -- 'there are eight sprites "
         "and they are numbered 0 to 7' -- is asserted above as SPR-0..SPR-7.)");
     checks.record(
-        "opus:7-fig7-1.c2 through opus:7-fig7-1.c8 [declined, ink-description "
+        "(half graded: opus:7-fig7-1.c2 through opus:7-fig7-1.c8) [declined, ink-description "
         "halves, 7 ids, p.208]: each describes which corners and edges of the rear "
         "box in Figure 7-1 are inked ('box N's lower-left corner and part of its "
         "left and bottom edges are not drawn, so only a strip at its right...remains "

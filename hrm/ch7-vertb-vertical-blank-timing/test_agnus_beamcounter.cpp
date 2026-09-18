@@ -446,24 +446,25 @@ int main(int argc, char **argv) {
           "ends at line 20' (which, read inclusively, is 21 lines) for NTSC. The "
           "page does not say which reading governs whether line 20 itself is "
           "still blanking, so this specific line is reported, not asserted "
-          "(sol:7-interrupts.c37, opus:7-int.c34).");
+          "(half graded: sol:7-interrupts.c37, opus:7-int.c34).");
 
     checks.record("PAL line 25: measured vbl=" + std::to_string(pal.vbl_by_line.count(25) ? pal.vbl_by_line[25] : -1)
         + ". Same tension as NTSC line 20, one line up: 'is 25 horizontal scan "
           "lines' versus 'ends at line 25' read inclusively (26 lines). Reported, "
-          "not asserted (sol:7-interrupts.c38, opus:7-int.c35).");
+          "not asserted (half graded: sol:7-interrupts.c38, opus:7-int.c35).");
 
     // ---- Claims recorded because they need a wider module boundary than the
     // ---- one assigned to this package (agnus_beamcounter only).
 
-    checks.record("the request-bit-5 wiring half of sol:7-interrupts.c34 / "
-        "opus:7-int.c31 ('the vblint input lands on request bit 5') needs "
+    checks.record("the request-bit-5 wiring half of "
+        "(half graded: sol:7-interrupts.c34, opus:7-int.c31) "
+        "('the vblint input lands on request bit 5') needs "
         "paula_intcontroller, where vblint is a free input with no beam-position "
         "port of its own -- the line-0 timing cannot be read there. Out of this "
         "fixture's boundary; not asserted here.");
 
     checks.record("the Exec-software-priority-6 / hardware-priority-3 half of "
-        "opus:7-fig7-4.c18's Figure 7-4 row is a claim about the CPU "
+        "(half graded: opus:7-fig7-4.c18) Figure 7-4 row is a claim about the CPU "
         "interrupt-priority encoder in paula_intcontroller, the same boundary "
         "problem as above. Out of this fixture's boundary; not asserted here.");
 

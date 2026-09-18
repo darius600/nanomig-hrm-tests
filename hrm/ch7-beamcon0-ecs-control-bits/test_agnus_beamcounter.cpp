@@ -450,8 +450,8 @@ int main(int argc, char** argv) {
         "that other package's own assertion.");
     checks.record(
         "P3c, the manual's own SHRES/UHRES inconsistency (opus:7-appA-"
-        "beam.c13; SHRES half of sol:7-appA-beamcon0.c5 and sol:7-appC-"
-        "map-beamcon0.c5; UHRES half of sol:7-appC-map-beamcon0.c5): "
+        "beam.c13; SHRES half of (half graded: sol:7-appA-beamcon0.c5, sol:7-appC-"
+        "map-beamcon0.c5); UHRES half of (half graded: sol:7-appC-map-beamcon0.c5): "
         "agnus_beamcounter.v:128-142 decodes no SHRES or UHRES bit, and "
         "the module's complete port list (l.27-57) has no resolution or "
         "pixel-clock output for either to drive -- absent_signal, not "
@@ -478,7 +478,7 @@ int main(int argc, char** argv) {
             "opus:7-appC-beamcon0.c20.");
     }
     checks.record(
-        "'Do not write to this register.' (opus:7-appC-beamcon0.c20's "
+        "'Do not write to this register.' ((axis: opus:7-appC-beamcon0.c20) "
         "trailing sentence, p.305): a caution to the programmer, not a "
         "chip-behaviour proposition -- not asserted, per SPECIFICATION.md "
         "P4.");
@@ -809,11 +809,11 @@ int main(int argc, char** argv) {
                 "half), sol:7-appC-map-beamcon0.c5 (PAL half).");
     }
     checks.record(
-        "'new for V2.0' (sol:7-appC-beamcon0.c18's own note, p.305): an "
+        "'new for V2.0' ((axis: sol:7-appC-beamcon0.c18) own note, p.305): an "
         "edition/software-release fact, not a chip behaviour -- not part "
         "of what P10 asserts. 'They rely on hardware sync and blank in "
         "the Agnus/Denise chip set to guarantee necessary signals for a "
-        "correctly displayed picture.' (opus:7-appC-beamcon0.c19's fuller "
+        "correctly displayed picture.' ((axis: opus:7-appC-beamcon0.c19) fuller "
         "quote of the same sentence): 'a correctly displayed picture' has "
         "no observable at any boundary in this design -- not asserted.");
 

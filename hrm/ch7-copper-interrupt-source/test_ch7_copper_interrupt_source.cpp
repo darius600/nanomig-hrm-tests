@@ -225,11 +225,11 @@ int main(int argc, char** argv) {
 
     // --- claims recorded, not asserted ---
     checks.record(
-        "sol:7-interrupts.c41 (p.219), convention half: a set COPER bit *meaning* "
+        "(half graded: sol:7-interrupts.c41) (p.219), convention half: a set COPER bit *meaning* "
         "\"the Copper did it\" to a programmer is not a runtime behaviour; no "
         "stimulus/observation pair grades it");
     checks.record(
-        "sol:7-interrupts.c41 (p.219), whole-system-exclusivity half: this fixture "
+        "(half graded: sol:7-interrupts.c41) (p.219), whole-system-exclusivity half: this fixture "
         "is exactly agnus_copper + paula_intcontroller; showing no other source "
         "anywhere in the full chip can ever set bit 4 needs every other candidate "
         "source's RTL, a wider boundary than assigned -- matches "
@@ -238,7 +238,7 @@ int main(int argc, char** argv) {
         "nothing in this fixture distinguishes a Copper write from a CPU write "
         "to the same address)");
     checks.record(
-        "opus:7-fig7-4.c15 (p.221), Exec-software-priority half only: Figure 7-4's "
+        "(half graded: opus:7-fig7-4.c15) (p.221), Exec-software-priority half only: Figure 7-4's "
         "row also carries Exec software priority 5 for COPER, exec.library's "
         "server-chain numbering -- a distinct proposition from both naming (P1) "
         "and the hardware-priority-3 value that reaches the CPU (P2, now "

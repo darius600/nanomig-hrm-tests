@@ -265,7 +265,7 @@ int main() {
     checks.record(
         "BUS-ARBITRATION-ABSENT: the negative half of 'rather than "
         "utilizing traditional bus arbitration mechanisms' (p.223, "
-        "sol:7-reset.c1, opus:7-dma.c23) is not asserted. gary.v's full "
+        "half graded: sol:7-reset.c1, opus:7-dma.c23) is not asserted. gary.v's full "
         "port list (read directly for this package, gary.v:49-108) has no "
         "bus-request/grant/acknowledge port of any kind -- dbr ('Agnus "
         "takes the bus', gary.v:70) is a plain level input, not one half of "
@@ -463,7 +463,7 @@ int main() {
     }
     checks.record(
         "AUTOCONFIG-HALF-NOT-ASSERTED: the AUTOCONFIG half of 'All memory "
-        "and AUTOCONFIG(TM) cards disappear' (p.223, sol:7-reset.c13) is not "
+        "and AUTOCONFIG(TM) cards disappear' (p.223, half graded: sol:7-reset.c13) is not "
         "asserted. gary.v's full port list (read directly for this package, "
         "gary.v:49-108) has no AUTOCONFIG configuration or shut-up port of "
         "any kind. Reason: absent.");

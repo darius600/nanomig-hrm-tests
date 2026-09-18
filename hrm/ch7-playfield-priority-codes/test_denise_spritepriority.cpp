@@ -539,7 +539,12 @@ int main(int argc, char** argv) {
     checks.record("the sprite-group-to-sprite-group half of every Table "
         "7-2 row (e.g. SP01 vs SP23 with neither playfield contending) is "
         "observable at denise_sprites, not at denise_spritepriority -- "
-        "sol:7-video.c23..c27 / opus:7-vp.c24..c28's own split field");
+        // Written out rather than as `c23..c27`: uid_expand reads the first id
+        // of a `..` range and silently drops the rest, so a marked form using
+        // one would claim nine fewer uids than it names.
+        "(half graded: sol:7-video.c23, sol:7-video.c24, sol:7-video.c25, "
+        "sol:7-video.c26, sol:7-video.c27, opus:7-vp.c24, opus:7-vp.c25, "
+        "opus:7-vp.c26, opus:7-vp.c27, opus:7-vp.c28) own split field");
     checks.record("visibility of the PF1/PF2 boundary on screen is out of "
         "scope: this fixture's only output is the 1-bit sprsel, no colour "
         "or RGB -- sol:7-video.c37, sol:7-fig7-3.c3, opus:7-fig7-3.c4 "

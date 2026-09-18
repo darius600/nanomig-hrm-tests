@@ -799,7 +799,7 @@ int main(int argc, char** argv) {
         "sol:7-appA-vhpos.c7, sol:7-appC-map-vposr.c1, "
         "sol:7-appC-map-vposr.c4. The 'exactly four, and no more' residual "
         "on top of that per-address coverage is FOUR-ADDRESSES-EXACT above: "
-        "sol:7-beam.c4, opus:7-bp.c4.");
+        "(graded: sol:7-beam.c4, opus:7-bp.c4).");
     checks.record(
         "Legend/pointer notation, not itself a hardware behaviour distinct "
         "from the concrete ECS content it points to (already covered above): "
@@ -814,8 +814,9 @@ int main(int argc, char** argv) {
         "opus:7-appC298.c3 (subsumed by sol:7-appC-map-vposr.c1-c5).");
     checks.record(
         "Discarded as absent -- no port or signal exists for the "
-        "proposition to be about: the light-pen half of sol:7-beam.c9, "
-        "opus:7-bp.c10, sol:7-appA-vhpos.c4, sol:7-appA-vhpos.c8 (no lpen "
+        "proposition to be about: the light-pen half of "
+        "(half graded: sol:7-beam.c9, "
+        "opus:7-bp.c10), sol:7-appA-vhpos.c4, sol:7-appA-vhpos.c8 (no lpen "
         "input in this design); the 'chip test patterns' half of "
         "sol:7-beam.c15, opus:7-bp.c17 (factory usage, names no port); "
         "sol:7-beam.c16 and the long-word-access half of opus:7-bp.c18 (CPU "

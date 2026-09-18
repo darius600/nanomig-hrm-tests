@@ -528,7 +528,7 @@ int main() {
            "to be the only chip_addr[23:16] comparison in the file); nothing in "
            "this design answers, or can be made by any stimulus at this "
            "boundary to answer, in $E90000-$EFFFFF. The shared start point "
-           "($00E80000) IS graded, under sol:K-0041 above. reason_kind: "
+           "($00E80000) IS graded, under (graded: sol:K-0041) above. reason_kind: "
            "unreachable-behaviour.");
 
     record("sol:K-0221 NOT GRADED (p398): 'FC0-FC2 encode cycle type or "
@@ -551,7 +551,7 @@ int main() {
            "(compounded by `TG68K_A24, cpu_wrapper.v:34, unconditional, "
            "limiting the CPU core itself to 24-bit addressing). The $00E80000 "
            "half is the same fact this design implements identically to "
-           "sol:K-0172/opus:K-0179 above (cfg_z3 only selects which "
+           "(graded: sol:K-0172/opus:K-0179) above (cfg_z3 only selects which "
            "autocfg_data case-branch applies, never the window address); but "
            "grading this claim green on only that half, or red against an "
            "address this fixture cannot even present, would both "

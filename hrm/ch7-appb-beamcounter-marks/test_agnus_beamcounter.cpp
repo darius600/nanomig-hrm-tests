@@ -568,8 +568,10 @@ int main(int argc, char** argv) {
             "). agnus_beamcounter.v:109-112 decodes $004 and $02A into the "
             "identical data_out mux arm.");
         checks.record(
-            "VPOSW-READBACK-NOT-GRADED (sol:7-appB-vposw.c2, confirmed by "
-            "opus:7-appB.c25; the p.263 general rule is opus:7-appA-pre.c10): "
+            "VPOSW-READBACK-NOT-GRADED (half graded: sol:7-appB-vposw.c2, "
+            "confirmed by "
+            "half graded: opus:7-appB.c25); the p.263 general rule is "
+            "(graded: opus:7-appA-pre.c10): "
             "'VPOSW        *02A   W     A          Write vert most signif. "
             "bit (and frame flop)' (p.289) fixes the access DIRECTION, and "
             "p.263-264's warning -- 'if a register is marked as a write-only "
@@ -652,8 +654,10 @@ int main(int argc, char** argv) {
             hex16(undecoded) + "). agnus_beamcounter.v:111-112 decodes $006 "
             "and $02C into the identical data_out mux arm.");
         checks.record(
-            "VHPOSW-READBACK-NOT-GRADED (sol:7-appB-vhposw.c2, confirmed by "
-            "opus:7-appB.c27; the p.263 general rule is opus:7-appA-pre.c10): "
+            "VHPOSW-READBACK-NOT-GRADED (half graded: sol:7-appB-vhposw.c2, "
+            "confirmed by "
+            "half graded: opus:7-appB.c27); the p.263 general rule is "
+            "(graded: opus:7-appA-pre.c10): "
             "same position as VPOSW-READBACK-NOT-GRADED above. 'VHPOSW      "
             " *02C   W     A          Write vert and horiz position of beam' "
             "(p.289) fixes the direction; p.263-264 leaves the result of "

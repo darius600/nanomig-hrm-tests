@@ -551,8 +551,8 @@ int main(int argc, char** argv) {
         //
         // The numbers are unchanged and printed in full below.
         checks.record(
-            "P3-VSTART-INSIDE-MINIMUM-BLANKING (sol:7-interrupts.c39, "
-            "opus:7-int.c36; p.219): NOT ASSERTED. With DIWSTRT's VSTART=" +
+            "P3-VSTART-INSIDE-MINIMUM-BLANKING (half graded: sol:7-interrupts.c39, "
+            "opus:7-int.c36); p.219: NOT ASSERTED. With DIWSTRT's VSTART=" +
                 std::to_string(vstart_inside) +
                 " set strictly inside the measured hardware blanking range "
                 "(blanking released at line " + std::to_string(fr.blank_end) +

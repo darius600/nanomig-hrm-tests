@@ -547,7 +547,7 @@ int main(int argc, char** argv) {
     // ---- expect() immediately above); the blanking half is out of this
     // ---- fixture's boundary and recorded, not asserted --
     checks.record(
-        "sol:7-interrupts.c39, opus:7-int.c36 (p.219): the 'extend the "
+        "(half graded: sol:7-interrupts.c39, opus:7-int.c36) (p.219): the 'extend the "
         "effective vertical blanking time' half is NOT graded on this "
         "fixture. agnus_bitplanedma has exactly one output port, dma, "
         "gated through vdiwena/ddfrun on the display window (VSTART/VSTOP) "

@@ -418,7 +418,7 @@ int main(int argc, char** argv) {
         std::snprintf(wo_buf, sizeof wo_buf, "0x%04X", wo);
         checks.note(std::string("P6-INTREQ-WRITE-ONLY-MEASURED: reading INTREQ's own write address returns ") + wo_buf);
         checks.record(std::string(
-            "P6-INTREQ-WRITE-ONLY (p.218, sol:7-interrupts.c14, opus:7-int.c12; also carries appendix B's reoffered "
+            "P6-INTREQ-WRITE-ONLY (p.218, half graded: sol:7-interrupts.c14, opus:7-int.c12); also carries appendix B's reoffered "
             "sol:7-appB-intreq.c2, the same write-only access-direction claim): not asserted -- 'write only' (p.218) fixes the "
             "access direction, not a read value, and printed pp.263-264 warns that reading a write-only address is undefined "
             "('may trash the register and crash the system'), not that it returns ") + wo_buf + " or any other particular constant. "

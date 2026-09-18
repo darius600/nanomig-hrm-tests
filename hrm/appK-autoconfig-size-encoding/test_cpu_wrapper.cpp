@@ -250,7 +250,7 @@ int main() {
     expect(is_8mb, "opus:K-0796 register00 size code 000 means 8 megabytes when unextended");
     record("sol:K-0772 NOT GRADED (p433): 'Size code 000 denotes 8 MiB "
            "unextended or 16 MiB extended.' The unextended half is graded "
-           "above (opus:K-0796). The extended (16MB) half is never emitted "
+           "above (graded: opus:K-0796). The extended (16MB) half is never emitted "
            "by this design: cpu_wrapper.v:586's Zorro III index-1 arm only "
            "ever assigns 4'b0011 or 4'b0100 (codes 011/100) -- code 000 is "
            "never reached by any Zorro III configuration this fixture -- or "
@@ -260,7 +260,7 @@ int main() {
     expect(is_2mb, "opus:K-0808 register00 size code 110 means 2 megabytes when unextended");
     record("sol:K-0778 NOT GRADED (p433): 'Size code 110 denotes 2 MiB "
            "unextended or 1 GiB extended.' The unextended half is graded "
-           "above (opus:K-0808). The extended (1GB) half is never emitted: "
+           "above (graded: opus:K-0808). The extended (1GB) half is never emitted: "
            "cpu_wrapper.v:586 only ever assigns codes 011/100 in Zorro III "
            "mode, never 110. reason_kind: partial-untested-half.");
 
@@ -285,7 +285,7 @@ int main() {
     expect(code_256mb == 0b100, "opus:K-0805 register00 size code 100 means 256 megabytes when extended");
     record("sol:K-0776 NOT GRADED (p433): 'Size code 100 denotes 512 KiB "
            "unextended or 256 MiB extended.' The extended half is graded "
-           "above (opus:K-0805). The unextended (512KB) half is never "
+           "above (graded: opus:K-0805). The unextended (512KB) half is never "
            "emitted: cpu_wrapper.v:566-572's Zorro II fastramcfg_d cases "
            "only ever assign codes 110/111/000, never 100. "
            "reason_kind: partial-untested-half.");
@@ -293,7 +293,7 @@ int main() {
     expect(code_128mb == 0b011, "opus:K-0803 register00 size code 011 means 128 megabytes when extended");
     record("sol:K-0775 NOT GRADED (p433): 'Size code 011 denotes 256 KiB "
            "unextended or 128 MiB extended.' The extended half is graded "
-           "above (opus:K-0803). The unextended (256KB) half is never "
+           "above (graded: opus:K-0803). The unextended (256KB) half is never "
            "emitted: cpu_wrapper.v:566-572's Zorro II fastramcfg_d cases "
            "only ever assign codes 110/111/000, never 011. "
            "reason_kind: partial-untested-half.");

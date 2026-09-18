@@ -642,7 +642,7 @@ int main(int argc, char** argv) {
     // DECLINED: the non-hardware half of opus:7-int.c78
     // ---------------------------------------------------------------
     checks.record(
-        "EXEC-SOFTWARE-PRIORITY-NOT-HARDWARE: opus:7-int.c78 (p.221) also states "
+        "EXEC-SOFTWARE-PRIORITY-NOT-HARDWARE: (axis: opus:7-int.c78) (p.221) also states "
         "the row's Exec-software-priority cell reads \"--\" (no Exec software "
         "priority for NMI). Declined, not asserted: per the claim's own "
         "classify.split_note (\"exec ordering and not-hardware\"), Exec's "
