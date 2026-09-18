@@ -1,0 +1,11 @@
+# Shell scripts must keep LF endings in the working tree.
+#
+# Git for Windows sets core.autocrlf=true by default, so without this rule a
+# Windows clone checks run_all.sh out with CRLF. WSL then cannot run it: the
+# shebang line ends in a carriage return, bash reports
+#
+#     ./run_all.sh: cannot execute: required file not found
+#
+# and `bash run_all.sh` fails later with a syntax error on the first loop. The
+# files are stored with LF, so this concerns the checkout only.
+*.sh text eol=lf
