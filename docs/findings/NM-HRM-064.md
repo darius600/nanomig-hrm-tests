@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · against the RTL |
 | **Module** | `src/minimig-aga/cpu_wrapper.v:619-646` — the AUTOCONFIG write path |
-| **Report to** | **NanoMig.** The AUTOCONFIG responder is NanoMig's own: neither Minimig line has one. See *Upstream* in the table below |
+| **Report to** | **NanoMig**, and the fix is one line MiSTer already has. The AUTOCONFIG responder is **inherited**, not NanoMig's own — see *Why this is NanoMig's* below, which was wrong in this page's first version |
 | **Test** | `hrm/appK-autoconfig-base-address` · six graded assertions — **all red** |
 | **Chapter** | Appendix K — Zorro Expansion Bus · printed pp. 433 and 436 |
 | **Assertions** | 6 red, with an inverse control that turns green when register 48 is written in place of 4C |
@@ -75,8 +75,8 @@ observe after 4C.
 | **vAmiga** | `Core/Components/Zorro/ZorroBoard.cpp:130-149` — `pokeACF8` switches on `0x48` and `0x4A` and has **no `0x4C` case**. `ZorroBoard::shutup()` exists at `:166-170` and nothing in `Core/` calls it | **no** |
 | **Denise** | `emulation/libami/expansionPort/expansionPort.cpp:27-30` — `case 0x4c: if (canBeShutUp()) boardState = BoardState::ShutUp;`, gated on the very capability bit the page defines (`expansionPort.h:51`) | **yes** |
 | **Copperline** | `src/cdtv.rs:406-407` — `0x4C => { self.shut_up = true; }`, and `:348` makes an un-configured, un-shut-up board the only one that answers | **yes** |
-| **MiSTer** | descendant — **no AUTOCONFIG responder at all.** `rtl/` has no `sel_autoconfig`, no `autocfg_data` and no `$E8` decode; the responder is NanoMig's own addition | **n/a** |
-| **TC64** | descendant — **the same**: no AUTOCONFIG responder in `rtl/minimig/` | **n/a** |
+| **MiSTer** | descendant — **has the same responder in the same file.** `rtl/cpu_wrapper.v:518-520` decodes 4C (`6'b100110`) and ends the card, **but only in its CDTV arm**; the memory-card arm at `:522-527` has 0x48 and nothing else, exactly like NanoMig | **for CDTV, not for RAM** |
+| **TC64** | descendant — `rtl/minimig/minimig_autoconfig.v:154` decodes `9'h04c`, commented *"Zorro II / III shut up register"*, for the Toccata sound card and the control board. **Not for a RAM board**, and `rtl/minimig/minimig.v:1249` leaves `.board_shutup()` unconnected | **for two cards, not for RAM** |
 
 **Three of the four independent implementations handle the register, and vAmiga
 does not.** Denise is the closest comparison and the most pointed one: it
@@ -88,22 +88,48 @@ set — `DiagBoard`, `HdController`, `RamExpansion` — that the emulator itself
 plugs and unplugs, and a board it controls has no need to be silenced by guest
 software. NanoMig's responder answers a real guest.
 
-## Why this is NanoMig's and not upstream's
+## Why this is NanoMig's — corrected
 
-Neither Minimig line has an AUTOCONFIG responder to diverge from. The
-`sel_autoconfig` decode, the `autocfg_data` register file and the write path are
-absent from both `MiSTer-devel/Minimig-AGA_MiSTer`'s `rtl/` and
-`minimig-dev/MinimigAGA-MiST-TC64`'s `rtl/minimig/`. This is NanoMig's own code
-and a fix has nowhere upstream to go.
+**This page's first version said neither Minimig line has an AUTOCONFIG
+responder to diverge from. That is false, and the correction makes the finding
+sharper rather than weaker.** `MiSTer-devel/Minimig-AGA_MiSTer` carries the same
+responder in the same file, `rtl/cpu_wrapper.v`, which is where NanoMig's comes
+from; `minimig-dev/MinimigAGA-MiST-TC64` has its own in
+`rtl/minimig/minimig_autoconfig.v`, driven by a `sel_autoconfig` decode at
+`rtl/minimig/gary.v:174`.
+
+**What no design in the family does is implement shut-up for a RAM board.**
+MiSTer honours 4C for its CDTV card and not for memory; TC64 honours it for the
+Toccata card and the control board and not for memory, and does not even wire
+the result out. NanoMig does not honour it at all. On that, NanoMig is in
+company.
+
+**Where NanoMig stands alone is in advertising it.** Register 08 is index
+`6'b000010`, and the two Zorro II case lists differ by exactly that entry:
+
+| | Zorro II register 08 | reads at the host as | bit 6 |
+|---|---|---|---|
+| **MiSTer** `cpu_wrapper.v:418` | `6'b000010: autocfg_data = 4'b1010;` | `0101` | **set — "cannot be shut up"** |
+| **NanoMig** `cpu_wrapper.v:562-580` | **the index is absent**, so the `:541` default `4'b1111` stands | `0000` | **clear — "can be shut up"** |
+
+The inversion is not an assumption: MiSTer's own comment at `:460` states it —
+*"nibbles are inverted, so `4'b1111` reads as 0"*.
+
+So upstream makes the same omission and does not make the same promise. **A fix
+has somewhere to go after all, and it is one line NanoMig's case list is
+missing.**
 
 ## What would settle it
 
-Either a handler for `6'b100110` that clears `autocfg_card` and stops the board
-answering, or setting bit 6 in the Zorro II arm so the board stops promising a
-capability it does not have. **The second is one constant and makes the design
-honest; the first makes it complete.** Which is right is a question for Amiga
-specialists and for whoever knows whether any Kickstart actually writes 4C to a
-RAM board.
+**Add `6'b000010: autocfg_data = 4'b1010;` to the Zorro II arm** — MiSTer's own
+line, at MiSTer's own value. That stops the board announcing a capability the
+whole Minimig family lacks, and it costs one case entry.
+
+The other direction — a handler for `6'b100110` that clears `autocfg_card` and
+stops the board answering — makes the design complete instead of merely honest,
+and would be the first RAM-board shut-up in the family. Whether that is wanted
+is a question for Amiga specialists, and so is whether any Kickstart writes 4C
+to a RAM board at all.
 
 ## What this finding does not claim
 

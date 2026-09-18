@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · **against the PAGE**, not against the RTL |
 | **Module** | `src/minimig-aga/cpu_wrapper.v:629-644` — the AUTOCONFIG write path |
-| **Report to** | **nobody yet.** No RTL change is proposed. The question is whether printed page 436 describes what Commodore's own system software did |
+| **Report to** | **the Minimig family** if it is reported at all — the behaviour is **inherited**, identical in MiSTer and reached independently by TC64. No RTL change is proposed; the question is whether printed page 436 describes what Commodore's own system software did |
 | **Test** | `hrm/appK-autoconfig-base-address` · two graded assertions — **both red** |
 | **Chapter** | Appendix K — Zorro Expansion Bus · printed pp. 435 and 436 |
 | **Assertions** | 2 red, with an inverse control that turns green for a Zorro II board on the identical write |
@@ -91,8 +91,8 @@ under Zorro III there is nothing to observe after a write to 48.
 | **Copperline** | `src/zorro.rs:1020-1047` — at `AUTOCONFIG_BASE`, `EC_Z3_BASEADDRESS_PHYS` (`0x44`) configures when `board.spec.version == ZorroVersion::III`, and `EC_BASEADDRESS_PHYS` (`0x48`) configures only when the version is `ZorroVersion::II`. Its own comment: "Zorro III boards take a 16-bit write of the base address high word here, which both assigns and configures" | **configures on 44 — same as NanoMig** |
 | **vAmiga** | `Core/Components/Zorro/ZorroBoard.cpp:132` — `case 0x48:` sets `state = BoardState::ACTIVE` unconditionally. There is **no `0x44` case and no Zorro III board type** in `Core/Components/Zorro/` | **cannot speak** |
 | **Denise** | `emulation/libami/expansionPort/expansionPort.cpp:17` — `case 0x48:` sets `boardState = BoardState::Configured` unconditionally. **No `0x44` case**, no Zorro III board type | **cannot speak** |
-| **MiSTer** | descendant — **no AUTOCONFIG responder at all**; the responder is NanoMig's own addition | **n/a** |
-| **TC64** | descendant — **the same** | **n/a** |
+| **MiSTer** | descendant — **structurally identical.** `rtl/cpu_wrapper.v:522-527` gives its Zorro II memory card `6'b100100` (0x48) and nothing else; `:540-552` gives the Zorro III card `6'b100010` (0x44). A Zorro III memory card there does not configure on a write to 48 either | **inherited** |
+| **TC64** | descendant — its own module reaches the same place and **writes the doubt into a comment**. `rtl/minimig/minimig_autoconfig.v:92` is `9'h048: // Zorro II configures at 48`; `:117` is `9'h044: // Zorro III configures at 44 if in ZIII space, should be 48 in ZII space but seems to configure twice?` | **inherited, with a question mark** |
 
 **Not one of the four implements the printed sentence for a Zorro III board in
 the Zorro II block.** The two that have a Zorro III board type both configure
@@ -109,6 +109,22 @@ writes. Both configure a Zorro III board on register 44 **inside the Zorro II
 block**, which is the behaviour page 436 assigns only to the Zorro III block.
 That is two independent implementations reading the hardware the same way and
 the printed sentence standing alone.
+
+**And a fifth reading, from inside the Minimig family, wrote the doubt down.**
+`MinimigAGA-MiST-TC64`'s autoconfig module is not derived from the same file as
+NanoMig's, and it arrives at the same place with a comment nobody wrote for this
+project:
+
+```verilog
+minimig_autoconfig.v:117
+9'h044 : begin // Zorro III configures at 44 if in ZIII space,
+               // should be 48 in ZII space but seems to configure twice?
+```
+
+An implementer who had the page in front of them, read the same sentence, built
+the other behaviour, and left a question mark. That is not proof the page is
+wrong. It is evidence that the sentence is hard to satisfy against real
+software, which is exactly what this finding claims.
 
 This is the pattern the finding key exists for: the key names the pair that
 disagrees, and does not prejudge which side is wrong.
