@@ -125,8 +125,8 @@ go red, that is the shortest way in.
 ## What is covered, and by which method
 
 A **green** result means different things in the two layers, so the split is
-stated here rather than left to be inferred: **192 of the 228 packages came
-through the pipeline, 23 did not.**
+stated here rather than left to be inferred: **204 of the 228 packages came
+through the pipeline, 24 did not.**
 
 | Unit | Packages | How they were built |
 |---|---:|---|
@@ -137,10 +137,11 @@ through the pipeline, 23 did not.**
 | 5 — Audio | 11 | **pipeline**; the hand-written audio tests that preceded them still stand beside them |
 | 6 — Blitter | 14 | **pipeline**; the hand-written blitter tests that preceded them were superseded |
 | 7 — System Control | 19 | **pipeline** |
-| 8 — Interface Hardware | 54 | **pipeline**, read in four slices |
+| 8 — Interface Hardware | 55 | **pipeline**, read in four slices |
 | D and E — memory maps, connector pinouts, port signals | 17 | **pipeline** |
 | F — 8520 Complex Interface Adapters | 12 | **pipeline** |
 | H and J — external disk connector, custom chip pin allocation | 5 | **pipeline** |
+| K — Zorro Expansion Bus | 12 | **pipeline** |
 | module-level, by hand | 23 | Agnus DMA and slot allocation, Denise's shifters and colour path, Paula's audio, floppy, UART and interrupt controller |
 
 Chapters 2 and 6 are the two whose packages carry no `chN-` prefix: they are the
