@@ -42,17 +42,27 @@ artefacts rather than by remembering.
 | | |
 |---|---:|
 | test packages | **228** |
-| assertions | **2379** — 2281 pass, **98 fail** |
-| packages | 149 green, 66 carrying at least one red, **0 build errors** |
+| assertions | **2933** — 2754 pass, **179 fail** |
+| packages | 136 green, 64 carrying at least one red, **0 build errors** |
 | registered findings | **65** — 54 open, 6 withdrawn, 5 source observations |
 | accepted units under `acceptance/` | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
-The assertion figures cover the **172 packages that print an assertion summary**.
-The other 43 are older module-level tests that report only pass or fail for the
+The assertion figures cover the **200 packages that print an assertion summary**.
+The other 28 are older module-level tests that report only pass or fail for the
 package as a whole; they are counted in the package row and not in the assertion
 row. That difference is stated rather than smoothed over, because a single
 "assertions" number that quietly spans two reporting conventions is how the last
 one drifted.
+
+**These five figures come from a run and nothing could check them, so they
+drifted.** The row above previously read 149 green and 66 red — 215, under a
+line saying 228 — and the failing count was 98 against a true 179. Most of that
+gap was one defect in the runner, not in the tests: 59 packages wrote their
+summary to `out.txt` and printed it on the next `make` line, so a package that
+failed stopped before the print and **vanished from the count exactly when it
+went red**. Both are fixed, and `check_published_counts.py --runlog` now
+measures this half of the table against a `run_all.sh` log instead of trusting
+it. See `hrm-testpipeline/OPEN-ISSUES.md` O104.
 
 **A red test is a result, not a bug in the test.** Each one marks a place where
 the RTL does something the manual does not describe. Adjusting an assertion to
