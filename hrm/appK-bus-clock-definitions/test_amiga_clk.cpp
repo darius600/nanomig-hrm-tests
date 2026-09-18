@@ -34,22 +34,51 @@
 // clk_28 edge (90 degrees) -- CDAC's printed definition on p.410, exactly,
 // even though c3 fails /C3's own frequency claim on the same two pages.
 //
-// MUTATION PLAN. This module's only inputs are clk_28 (the reference the
-// harness measures IN, not a stimulus) and reset_n. Two families:
-//   - baseline-PASS uids: "stimulus red" via MUT_RESETHOLD (make test
-//     MUT=RESETHOLD) -- reset_n is never released, so clk7_en/clk7n_en
-//     freeze high (:26-27, forced, never computed from clk7_cnt again) and
-//     c1/c3/cck freeze at reset-forced constants a cycle or two later, and
-//     every period/pulse measurement below finds no transitions.
-//   - baseline-RED uids: "oracle green substitute" -- the same comparator
-//     applied to cck (frequency: cck's period IS 8 edges, the 3.5x MHz-class
-//     ratio the claim asks of c1/c3) or to cck-vs-clk7_en/clk7n_en
-//     (exclusivity: cck DOES follow clk7_en only, never clk7n_en -- a real
-//     exclusively-one-marker relationship in this design, just not on c1 or
-//     c3). Declined uids carry no MUTATION line.
+// CORRECTED 18.09.2026: FIFTEEN UIDS WERE GRADED HERE AND THIRTEEN OF THEM
+// WERE RED. They are declined below instead. Not one measurement changed --
+// every number the first version printed is still measured and still
+// printed, by the same code, in the note() lines above the grading block.
+// What was wrong was what those numbers were bound to.
 //
-// MUTATION sol:K-0122 stimulus red MUT_RESETHOLD (c1 freezes, no period)
-// MUTATION sol:K-0125 stimulus red MUT_RESETHOLD (c3 freezes, no period)
+//   /C1 and /C3 are pins on the Zorro expansion connector. NanoMig has no
+//   such connector, so it has no /C1 and no /C3. The ports named c1 and c3
+//   on this module are not those pins under another spelling, and three
+//   places in the design say so, none of them written for this test:
+//   amiga_clk.v:47-54 draws c1 tracking clk_7 edge for edge with c3 90
+//   degrees behind it; denise_bitplanes.v:275 says "c1 is the 7MHz clock,
+//   c3 the same clock shifted 90deg"; minimig_sram_bridge.v:46 labels its
+//   c1 waveform "(7.09 MHz)". By the design's own account c1 and c3 are 7M
+//   and CDAC -- which is exactly what this fixture measured them to be.
+//   The binding that produced the reds was made on the name alone, and the
+//   name is Minimig's, not the manual's.
+//
+//   So the question the discipline asks -- not "does this pass?" but "does
+//   the printed page require what this asserts?" -- answers no. p.393 does
+//   not require that a Verilog net called c1 run at 3.58 MHz. It requires
+//   that a bus pin called /C1 do so, and there is no such pin here.
+//
+// The reds are NOT re-bound to cck to make them pass. cck does have the
+// printed 3.55 MHz rate and the port comment "colour clock output (3.54
+// MHz)" -- but no claim on either page names it, the page describes a
+// QUADRATURE PAIR while this design carries one colour-clock phase and no
+// second one, and choosing that binding after seeing the result is the move
+// this project exists to refuse. cck is measured and noted; never graded.
+//
+// 7M and CDAC stay graded, and the line between them and /C1, /C3 is a
+// measured one rather than a preference: the design names those two.
+// clk7_en's port comment is "7MHz output clock enable"; c3's is "delayed by
+// 90 degrees", which is CDAC's printed definition word for word. Nothing in
+// the design names anything /C1 or /C3.
+//
+// MUTATION PLAN. This module's only inputs are clk_28 (the reference the
+// harness measures IN, not a stimulus) and reset_n. One family remains
+// after the correction: every graded uid is baseline-PASS and is turned red
+// by stimulus via MUT_RESETHOLD (make test MUT=RESETHOLD) -- reset_n is
+// never released, so clk7_en/clk7n_en freeze high (:26-27, forced, never
+// computed from clk7_cnt again) and c1/c3/cck freeze at reset-forced
+// constants a cycle or two later, and every period/pulse measurement below
+// finds no transitions. Declined uids carry no MUTATION line.
+//
 // MUTATION sol:K-0135 stimulus red MUT_RESETHOLD (clk7_en frozen high, no pulses)
 // MUTATION opus:K-0142 stimulus red (same MUT_RESETHOLD as sol:K-0135)
 // MUTATION sol:K-0411 stimulus red (same MUT_RESETHOLD as sol:K-0135)
@@ -57,33 +86,14 @@
 // MUTATION sol:K-0407 stimulus red (same MUT_RESETHOLD as sol:K-0135 -- c3 freezes)
 // MUTATION sol:K-0408 stimulus red (same MUT_RESETHOLD -- both c1 and c3 freeze, no offset)
 // MUTATION opus:K-0418 stimulus red (same MUT_RESETHOLD as sol:K-0407/K-0408)
-// MUTATION sol:K-0123 oracle green substitute: the period comparator used
-//   here (edges between same-direction transitions) is applied to cck
-//   instead of c1 and returns 8, the 3.5x MHz-class ratio this claim asks
-//   of c1 -- not vacuously always 4.
-// MUTATION sol:K-0126 oracle green substitute (same cck control as sol:K-0123, applied for c3)
-// MUTATION sol:K-0402 oracle green substitute (same cck control as sol:K-0123)
-// MUTATION sol:K-0405 oracle green substitute (same cck control as sol:K-0123)
-// MUTATION opus:K-0136 oracle green substitute (same cck control, frequency half; sync half below)
-// MUTATION opus:K-0137 oracle green substitute (same cck control, frequency half; sync half below)
-// MUTATION opus:K-0416 oracle green substitute (same cck control as opus:K-0136)
-// MUTATION opus:K-0417 oracle green substitute (same cck control as opus:K-0137)
-// MUTATION sol:K-0404 oracle green substitute: the same ratio comparator
-//   applied to cck-vs-c1 (instead of c3-vs-c1) returns 2:1 -- cck really is
-//   half c1's rate in this design, so the comparator is not vacuously 1:1.
-// MUTATION sol:K-0124 oracle green substitute: the exclusivity comparator
-//   (does the target follow every pulse of marker A and no pulse of marker
-//   B) is applied to cck against clk7_en/clk7n_en and returns true (cck
-//   follows clk7_en on 100% of pulses, clk7n_en on 0%) -- not vacuously
-//   false for every signal in this design, just for c1 against the falling
-//   marker.
-// MUTATION sol:K-0127 oracle green substitute (same cck-vs-markers control as sol:K-0124, applied for c3/rising)
-// MUTATION sol:K-0403 oracle green substitute (same cck-vs-markers control as sol:K-0124)
-// MUTATION sol:K-0406 oracle green substitute (same cck-vs-markers control as sol:K-0124)
-// MUTATION opus:K-0136 oracle green substitute (sync half: same cck-vs-markers control as sol:K-0124)
-// MUTATION opus:K-0137 oracle green substitute (sync half: same cck-vs-markers control as sol:K-0124)
-// MUTATION opus:K-0416 oracle green substitute (sync half: same cck-vs-markers control as sol:K-0124)
-// MUTATION opus:K-0417 oracle green substitute (sync half: same cck-vs-markers control as sol:K-0124)
+//
+// The fifteen declined uids had MUTATION lines of their own -- "oracle green
+// substitute", the same comparator pointed at cck, which does return 8 edges
+// and does follow clk7_en exclusively. Those lines are gone with the
+// assertions they belonged to. They are worth naming once, because they are
+// the same false step in miniature: a comparator that only discriminates
+// when aimed at a signal no claim on the page mentions was already evidence
+// that the claim was aimed at the wrong signal.
 
 #include "Vamiga_clk.h"
 #include "verilated.h"
@@ -283,82 +293,10 @@ int main(int argc, char** argv) {
     }
 
     // =====================================================================
-    // GRADED -- 22 uids (9 PASS, 13 RED).
+    // GRADED -- 7 uids, all PASS. The fifteen /C1 and /C3 uids that were
+    // graded here are declined below; see the CORRECTED note at the head of
+    // this file. Their measurements are unchanged and still printed above.
     // =====================================================================
-
-    // --- /C1, /C3 headings alone: existence/liveness, no frequency claim ---
-    expect(c1_period > 0 && !c1_tr.empty(),
-           "sol:K-0122 /C1 is a bus clock (heading only): c1 shows a well-defined "
-           "period of " + std::to_string(c1_period) + " clk_28 edges, not stuck");
-    expect(c3_period > 0 && !c3_tr.empty(),
-           "sol:K-0125 /C3 is a bus clock (heading only): c3 shows a well-defined "
-           "period of " + std::to_string(c3_period) + " clk_28 edges, not stuck");
-
-    // --- /C1, /C3 frequency: expect half of 7M's period (3.58/3.55 MHz-class) ---
-    expect(c1_period == 2 * sevenm_period,
-           "sol:K-0123 /C1 = 3.58/3.55 MHz (half of 7M's " + std::to_string(sevenm_period) +
-           "-edge period, i.e. " + std::to_string(2 * sevenm_period) +
-           " clk_28 edges expected): measured c1 period = " + std::to_string(c1_period) +
-           " edges (1:1 with 7M, not 1:2)");
-    expect(c3_period == 2 * sevenm_period,
-           "sol:K-0126 /C3 = 3.58/3.55 MHz (half of 7M's " + std::to_string(sevenm_period) +
-           "-edge period expected " + std::to_string(2 * sevenm_period) +
-           "): measured c3 period = " + std::to_string(c3_period) + " edges");
-    expect(c1_period == 2 * sevenm_period,
-           "sol:K-0402 /C1 = 3.58/3.55 MHz (p.410, same measurement as sol:K-0123): "
-           "measured c1 period = " + std::to_string(c1_period) + " edges, expected " +
-           std::to_string(2 * sevenm_period));
-    expect(c3_period == 2 * sevenm_period,
-           "sol:K-0405 /C3 = 3.58/3.55 MHz (p.410, same measurement as sol:K-0126): "
-           "measured c3 period = " + std::to_string(c3_period) + " edges, expected " +
-           std::to_string(2 * sevenm_period));
-
-    // --- /C1, /C3 edge synchronisation: exclusively one marker ---
-    bool c1_sync_falling_only = (c1_follows_fall == 1.0) && (c1_follows_rise == 0.0);
-    bool c3_sync_rising_only  = (c3_follows_rise == 1.0) && (c3_follows_fall == 0.0);
-    expect(c1_sync_falling_only,
-           "sol:K-0124 /C1 synced to 7M falling edge (clk7n_en) only: measured c1 "
-           "follows clk7n_en on " + std::to_string(c1_follows_fall * 100) +
-           "% of pulses and clk7_en (rising) on " + std::to_string(c1_follows_rise * 100) + "% of pulses");
-    expect(c3_sync_rising_only,
-           "sol:K-0127 /C3 synced to 7M rising edge (clk7_en) only: measured c3 "
-           "follows clk7_en on " + std::to_string(c3_follows_rise * 100) +
-           "% of pulses and clk7n_en (falling) on " + std::to_string(c3_follows_fall * 100) + "% of pulses");
-    expect(c1_sync_falling_only,
-           "sol:K-0403 /C1 synced to 7M falling edge (p.410, same measurement as sol:K-0124): "
-           "follows clk7n_en " + std::to_string(c1_follows_fall * 100) + "%, clk7_en " +
-           std::to_string(c1_follows_rise * 100) + "%");
-    expect(c3_sync_rising_only,
-           "sol:K-0406 /C3 synced to 7M rising edge (p.410, same measurement as sol:K-0127): "
-           "follows clk7_en " + std::to_string(c3_follows_rise * 100) + "%, clk7n_en " +
-           std::to_string(c3_follows_fall * 100) + "%");
-
-    // --- opus combined freq+sync rows ---
-    bool c1_combined_ok = (c1_period == 2 * sevenm_period) && c1_sync_falling_only;
-    bool c3_combined_ok = (c3_period == 2 * sevenm_period) && c3_sync_rising_only;
-    expect(c1_combined_ok,
-           "opus:K-0136 /C1 = 3.58/3.55MHz AND synced to 7M falling edge (combined): "
-           "period " + std::to_string(c1_period) + "/" + std::to_string(2 * sevenm_period) +
-           " expected, falling-only " + std::to_string(c1_follows_fall) + "/1.0 rising-only-violation " +
-           std::to_string(c1_follows_rise));
-    expect(c3_combined_ok,
-           "opus:K-0137 /C3 = 3.58/3.55MHz AND synced to 7M rising edge (combined): "
-           "period " + std::to_string(c3_period) + "/" + std::to_string(2 * sevenm_period) +
-           " expected, rising-only " + std::to_string(c3_follows_rise) + "/1.0 falling-only-violation " +
-           std::to_string(c3_follows_fall));
-    expect(c1_combined_ok,
-           "opus:K-0416 /C1 = 3.58/3.55MHz AND synced falling (p.410, same measurement as opus:K-0136)");
-    expect(c3_combined_ok,
-           "opus:K-0417 /C3 = 3.58/3.55MHz AND synced rising (p.410, same measurement as opus:K-0137)");
-
-    // --- /C3 "complementary half-rate" (sol:K-0404) ---
-    bool half_rate = (c3_period == 2 * c1_period);
-    bool complementary_180 = phase_constant && (phase_offset == c1_period / 2);
-    expect(half_rate && complementary_180,
-           "sol:K-0404 /C3 is the complementary half-rate bus clock: c3:c1 period ratio " +
-           std::to_string(c3_period) + ":" + std::to_string(c1_period) + " (2:1 expected), "
-           "c1-to-c3 phase offset " + std::to_string(phase_offset) + " edges (" +
-           std::to_string(c1_period / 2) + " expected for 180 degrees)");
 
     // --- 7M frequency (four uids, same measurement) ---
     expect(sevenm_period == 4,
@@ -372,9 +310,16 @@ int main(int argc, char** argv) {
            "opus:K-0421 7M = 7.16/7.09 MHz (p.410, same measurement as sol:K-0135)");
 
     // --- CDAC frequency and phase (p.410 only) ---
-    expect(c3_period == sevenm_period,
+    // The `sevenm_period > 0` term is not decoration. Both period_of() and the
+    // 7M reference return -1 when the trace holds too few transitions to
+    // measure, and `c3_period == sevenm_period` alone is satisfied by -1 == -1
+    // -- so under MUT_RESETHOLD, where nothing transitions at all, this
+    // assertion passed vacuously. It did so in the first version of this file
+    // too; running the gate is what found it.
+    expect(sevenm_period > 0 && c3_period == sevenm_period,
            "sol:K-0407 CDAC = 7.16/7.09 MHz: c3 period = " + std::to_string(c3_period) +
-           " clk_28 edges, 7M reference period = " + std::to_string(sevenm_period) + " (equal expected)");
+           " clk_28 edges, 7M reference period = " + std::to_string(sevenm_period) +
+           " (equal, and both actually measured, expected)");
     expect(phase_constant && phase_offset == 1,
            "sol:K-0408 CDAC trails 7M by 90 degrees (~35ns): c1-to-c3 offset = " +
            std::to_string(phase_offset) + " clk_28 edge(s) (1 expected = 35.2ns at 28.375160MHz = 90 "
@@ -384,8 +329,54 @@ int main(int argc, char** argv) {
            "measurements as sol:K-0407/sol:K-0408)");
 
     // =====================================================================
-    // DECLINED -- 9 uids, grouped by reason. No expect() for these.
+    // DECLINED -- 24 uids, grouped by reason. No expect() for these.
     // =====================================================================
+
+    // --- /C1 and /C3: the printed subject is not in this design (15 uids) ---
+    record("sol:K-0122, sol:K-0125 -- declined: /C1 and /C3 are pins on the Zorro expansion "
+           "connector, and NanoMig has no such connector, so the existence these two headings "
+           "assert has no subject here. The ports named c1 and c3 on this module are not those "
+           "pins under another spelling: amiga_clk.v:47-54 draws c1 tracking clk_7 edge for edge "
+           "with c3 90 degrees behind it, denise_bitplanes.v:275 calls c1 'the 7MHz clock, c3 the "
+           "same clock shifted 90deg', and minimig_sram_bridge.v:46 labels its c1 waveform "
+           "'(7.09 MHz)'. Measured here and printed above: c1 period = " + std::to_string(c1_period) +
+           " clk_28 edges, c3 period = " + std::to_string(c3_period) + ", both equal to 7M's own " +
+           std::to_string(sevenm_period) + ". These fifteen uids were graded in the first version of "
+           "this file and thirteen of them were red; the measurements did not change, the binding "
+           "did. See the CORRECTED note at the head of this file.");
+    record("sol:K-0123, sol:K-0126, sol:K-0402, sol:K-0405 -- declined, same reason as "
+           "sol:K-0122/sol:K-0125: no /C1 or /C3 exists in this design to carry the printed 3.58/3.55 "
+           "MHz. Measured for the record: c1 and c3 both run at clk_28/" + std::to_string(sevenm_period) +
+           ", the 7M ratio, not clk_28/" + std::to_string(2 * sevenm_period) + ". The signal in this "
+           "design with the printed 3.5x MHz-class period is cck (measured above: period = " +
+           std::to_string(cck_period) + " edges; port comment 'colour clock output (3.54 MHz)'), and "
+           "cck is NOT graded under either printed name -- no claim on either page names it, the page "
+           "describes a quadrature PAIR while this design carries one colour-clock phase, and binding "
+           "a claim to a signal chosen after seeing the result is not a reading.");
+    record("sol:K-0124, sol:K-0127, sol:K-0403, sol:K-0406 -- declined, same reason as "
+           "sol:K-0122/sol:K-0125: the edge-synchronisation claims are about /C1 and /C3, which this "
+           "design does not have. Measured for the record: c1 follows the falling marker on " +
+           std::to_string(c1_follows_fall * 100) + "% of pulses and the rising marker on " +
+           std::to_string(c1_follows_rise * 100) + "%, c3 follows rising on " +
+           std::to_string(c3_follows_rise * 100) + "% and falling on " +
+           std::to_string(c3_follows_fall * 100) + "% -- both follow both markers, which is what a "
+           "quadrature pair at 7M's own rate does and not what a half-rate clock synched to one edge "
+           "does.");
+    record("opus:K-0136, opus:K-0137, opus:K-0416, opus:K-0417 -- declined, same reason as "
+           "sol:K-0122/sol:K-0125: this reader bundles the frequency and the edge-synchronisation "
+           "halves of the same two printed entries into one uid, and both halves are about /C1 and "
+           "/C3. Measurements as for sol:K-0123 and sol:K-0124 above.");
+    record("sol:K-0404 -- declined, same reason as sol:K-0122/sol:K-0125: 'the complementary "
+           "half-rate bus clock' is a claim about /C3, and there is no /C3 here. Measured for the "
+           "record: c3:c1 period ratio " + std::to_string(c3_period) + ":" + std::to_string(c1_period) +
+           " (1:1, not the 2:1 a half-rate clock would give) and a constant c1-to-c3 offset of " +
+           std::to_string(phase_offset) + " clk_28 edge(s), a quarter period and not a half. That "
+           "offset is 90 degrees, which is CDAC's printed definition -- and it is why c3 PASSES the "
+           "three CDAC assertions above on the very same measurement. (Their uids are deliberately "
+           "not repeated here: a uid named on a record line counts as declined, and those three are "
+           "graded.)");
+
+    // --- E clock: outside this module's boundary, or not a level (9 uids) ---
     record("sol:K-0130, sol:K-0131, opus:K-0139 -- declined: both assert something outside "
            "amiga_clk's own boundary -- K-0130/opus:K-0139 name the E clock's SOURCE ('the "
            "68000 generated E clock'), and amiga_clk has no CPU-originated input at all (its "
