@@ -85,6 +85,37 @@ before any graded read is trusted.
 - K-0056: `sel_kick` not asserted at $F00000 -- would mean `gary`'s own
   ROM decode does not begin where the figure says it does.
 
+## CORRECTED — K-0056 was graded, it was red, and it is declined now
+
+**The measurement is unchanged and still printed.** `sel_kick` is 0 at
+$F00000, 0 at $F7FFFE and 1 at $F80000: `gary`'s ROM decode is the top half
+of the printed band. What was wrong was the predicate.
+
+**Figure K-1 allocates address space; it does not state occupancy.** Its job
+is to tell an expansion designer which ranges are not theirs to use, and
+labelling $00F00000–$01000000 "Motherboard ROM" reserves a megabyte for
+motherboard ROM. It does not require that every address in that megabyte
+decode. This assertion required `sel_kick` at $F00000, which is occupancy.
+
+**The test that settles it: a real A2000 does not decode ROM at $F00000
+either.** That is the machine this manual documents. Its Kickstart is 512K at
+$F80000–$FFFFFF, exactly where `gary` puts it; $F00000–$F7FFFF is the
+extended-ROM window that appears on an A500+, an A600 or a CDTV. All four
+independent implementations agree and treat it as optional and
+machine-specific — WinUAE's `extendedkickmem_bank` (and `ar.cpp:1578`, which
+maps an Action Replay there instead), vAmiga's configurable `extStart` of
+`0xE0` or `0xF0` (`Memory.cpp:910,923`), Denise's separate `EXT_ROM` region
+(`agnus.h:44`), and Copperline's extended ROM at $F00000 for a CDTV and
+$E00000 for a CD32 (`config/mod.rs:2271,2275`). **An assertion the documented
+hardware itself fails is an assertion that misstates the source.**
+
+What the figure *does* constrain is containment: motherboard ROM must not
+reach below $F00000 into Zorro space. `gary` satisfies that. It is left as a
+measurement and deliberately not re-graded into a green — changing the
+predicate after seeing the result is not a reading.
+
+Package result: **3 graded, 3 pass, 1 decline.**
+
 ## Evidence not used until step 3
 
 `classify.evidence` for all three claims cites `gary.v:159-162` (chip

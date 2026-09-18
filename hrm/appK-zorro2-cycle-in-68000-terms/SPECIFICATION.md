@@ -178,16 +178,46 @@ strobe asserted produces only the matching write-enable.
 data strobe is used for the lower byte...the upper strobe for the upper
 byte..."). Testable directly via `hwr`/`lwr`'s own gating.
 
-### Group G10 -- byte-select claimed for BOTH reads and writes (GRADE, mixed result expected)
+### Group G10 -- byte-select claimed for BOTH reads and writes (CORRECTED: was GRADE and red, now DECLINE)
 `sol:K-0207` ("The data strobes select transferred bytes for reads and
 writes"), `opus:K-0216` ("The data strobes fall on data valid during
-writes and indicate byte select for both reads and writes"). The
-"writes" half is Group G9's own already-measured fact (true). The "reads"
-half is independently testable: does `rd` (the read-enable this module
-presents) change with `_uds`/`_lds` at all? Measured before writing (see
-below): no -- `rd=1` identically for UDS-only, LDS-only, both, and
-*neither* strobe asserted. Graded, not declined (both halves are fully
-reachable at this boundary), and reported exactly as measured.
+writes and indicate byte select for both reads and writes").
+
+**Both were graded and both were red. They are declined now, and the
+measurement did not change:** `rd` does not vary with `_uds`/`_lds` at all
+(`rd=1` identically for UDS-only, LDS-only, both, and *neither* strobe
+asserted), still measured and still printed. What was wrong is that **half
+the paragraph had been thrown away before the claim reached this package.**
+
+p.397 does not stop at that sentence. Its next two say:
+
+> There is one slight difference between these lines and the 68000 data
+> strobes. **On reads of Zorro II memory space, both /DS3 and /DS2 will be
+> asserted, no matter what the actual size of the requested transfer is.**
+> This is required to support caching of the Zorro II memory space. For
+> Zorro II I/O space, these strobes indicate the actual, requested byte
+> enables, just as would a 68000 bus master.
+
+Both readers extracted those sentences — `sol:K-0210`, `sol:K-0212`,
+`opus:K-0218` — and the classification put all three at
+`not-asserted` / `absent`, while the sentence they qualify came through as
+`testable`. **A rule was graded and its own exception, three lines below it
+on the same page, was discarded.**
+
+Read whole, the claim is: byte select on writes always; on reads only in
+Zorro II **I/O** space, and **not** in Zorro II **memory** space, where both
+strobes assert regardless of transfer size. That is a claim with a
+memory-space qualifier — and this package already has the rule for those.
+**Group D1 below declines `sol:K-0098` and `opus:K-0117` for exactly it**:
+no signal in `minimig_m68k_bridge.v` decodes an address range or a memory
+space, that being `gary.v`'s decode. The same boundary answers these two.
+
+And plainly: `rd = enable & lr_w` with no strobe term is what "on reads both
+strobes are asserted, no matter the size" looks like from the slave's side.
+The measurement was never evidence of a divergence. It is left as a
+measurement and deliberately **not** re-graded into a green — this module
+cannot tell memory space from I/O space, so it cannot establish the half of
+the claim that would pass.
 
 ### Group G11 -- VPA/VMA peripheral-support mechanism (GRADE)
 `opus:K-0068` ("/VPA and /VMA comprise the 6800/6502 peripheral support

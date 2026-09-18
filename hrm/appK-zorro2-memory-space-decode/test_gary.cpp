@@ -8,11 +8,18 @@
 // 00000/00001/00010/00011).
 //
 // opus:K-0056 is a second, independent band: motherboard ROM, $F00000 up
-// to (not including) $1000000. Graded against gary.v:166 (`sel_kick`,
+// to (not including) $1000000. Measured against gary.v:166 (`sel_kick`,
 // cpu_address_in[23:19]==11111 -- which is $F80000-$FFFFFF, NOT
 // $F00000-$FFFFFF: the printed lower boundary and the RTL's own lower
-// boundary disagree by half the band. This is measured below, not
-// asserted from reading the RTL comment alone.)
+// boundary differ by half the band).
+//
+// CORRECTED 18.09.2026: THAT DIFFERENCE WAS GRADED AND IT WAS RED. It is
+// declined now, and the reason is at the record() call below. In short:
+// Figure K-1 allocates address space and this assertion required occupancy,
+// which is more than the figure says -- and a real A2000, the machine the
+// manual documents, does not decode ROM at $F00000 either. Its Kickstart is
+// 512K at $F80000-$FFFFFF, exactly where gary puts it. The measurement is
+// unchanged and still printed.
 //
 // BOUNDARY. The Zorro II expansion-RAM band the same figure prints
 // ($200000-$9FFFFF) is decoded by cpu_wrapper.v's `sel_z2ram`, a different
@@ -141,11 +148,11 @@ int main(int argc, char** argv) {
     // $1000000. gary.v:166.
     // =====================================================================
 #ifdef MUT_romrange
-    // MUTATION: test an address safely inside gary's OWN $F80000-$FFFFFF
-    // window instead of the page's own stated lower boundary $F00000 --
-    // proves the red below is a genuine partial-range mismatch, not a
-    // fixture that reads sel_kick wrong or a signal that is simply always
-    // 0. Build with `make MUT=romrange` to replay it.
+    // NOT A MUTATION any more -- opus:K-0056 is declined and carries nothing
+    // to falsify. `make MUT=romrange` is kept as a measurement variant: it
+    // reads sel_kick at $FC0000, inside gary's own $F80000-$FFFFFF window,
+    // which returns 1 and shows the fixture reads the signal correctly and
+    // that sel_kick is not simply always 0.
     set_addr(0xFC0000);
 #else
     set_addr(0xF00000); // the claim's own stated lower boundary
@@ -170,11 +177,26 @@ int main(int argc, char** argv) {
     note("gary's own window, first address ($F80000): sel_kick=" +
          std::to_string((int)top->sel_kick));
 
-    // MUTATION opus:K-0056 stimulus green: `make MUT=romrange` moves the
-    // tested address from the page's own $F00000 to $FC0000, safely
-    // inside gary's actual $F80000-$FFFFFF window -- sel_kick reads 1 and
-    // this assertion flips from red to green.
-    expect(rom_at_claimed_base, "opus:K-0056");
+    // CORRECTED 18.09.2026: this was `expect(rom_at_claimed_base,
+    // "opus:K-0056")` and it was red. It is declined now. The measurement is
+    // unchanged and still printed above; the predicate was wrong.
+    record("opus:K-0056 -- declined: Figure K-1 ALLOCATES address space, it does not "
+           "state occupancy. The figure's job is to tell an expansion designer which "
+           "ranges are not theirs to use, and labelling $00F00000-$01000000 'Motherboard "
+           "ROM' reserves a megabyte for motherboard ROM; it does not require that every "
+           "address in it decode. This assertion required sel_kick at $F00000, which is "
+           "occupancy, and that is more than the figure says. The test that settles it: a "
+           "real A2000 -- the machine this manual documents -- does not decode ROM at "
+           "$F00000 either. Its Kickstart is 512K at $F80000-$FFFFFF, exactly where gary "
+           "puts it; $F00000-$F7FFFF is the extended-ROM window that appears on an A500+, "
+           "an A600 or a CDTV and on nothing in this manual's range. An assertion the "
+           "documented hardware itself fails is an assertion that misstates the source. "
+           "Measured above and not graded: gary's decode begins at $F80000 (sel_kick=1) "
+           "and is absent at $F7FFFE (sel_kick=0) -- inside the printed band, nowhere "
+           "outside it. That containment is what the figure does constrain, and it is "
+           "deliberately left as a measurement rather than re-graded into a green: "
+           "changing the predicate after seeing the result is not a reading.");
+    (void)rom_at_claimed_base;
 
     std::cout << passed << " passed, " << failed << " failed\n";
 

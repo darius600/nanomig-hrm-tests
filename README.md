@@ -44,7 +44,7 @@ artefacts rather than by remembering.
 | test packages | **228** |
 | assertions | **2379** — 2281 pass, **98 fail** |
 | packages | 149 green, 66 carrying at least one red, **0 build errors** |
-| registered findings | **64** — 53 open, 6 withdrawn, 5 source observations |
+| registered findings | **65** — 54 open, 6 withdrawn, 5 source observations |
 | accepted units under `acceptance/` | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
 The assertion figures cover the **172 packages that print an assertion summary**.

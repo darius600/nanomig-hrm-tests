@@ -180,10 +180,13 @@ specialist rules on it.
 | [NM-HRM-061](findings/NM-HRM-061.md) | two reds that are not defects: a whole-machine sentence graded at a board's config register | **red** — against the CLASSIFICATION, not the page and not the RTL | `hrm/ch1-cpu-options` | **not applicable, and that is the evidence**: no emulator has a `system_cpu` field, because none of them is a board that must be told which CPU to instantiate |
 | [NM-HRM-062](findings/NM-HRM-062.md) | Appendix F prints the two CIA address patterns interchanged | **against the PAGE** — no implementation is at fault and no test exists yet | none yet · raised at classification | **unanimous against the print**: WinUAE, vAmiga, Denise and Copperline all decode the way the page's own prose says, as does NanoMig |
 | [NM-HRM-063](findings/NM-HRM-063.md) | FLAG is negative edge-sensitive; the RTL ORs a level | **red** — against the RTL, and the Minimig line carries the same line | `hrm/appF-ciab-port-assignments` | **unanimous, and all four implement the page**: WinUAE, vAmiga and Denise raise the bit from a transition and have no level input at all; Copperline keeps the pin state and latches only on `flag_pin_high && !high` |
+| [NM-HRM-064](findings/NM-HRM-064.md) | the board advertises that it can be shut up, and register 4C has no handler | **red** — against the RTL, and NanoMig's own: neither Minimig line has an AUTOCONFIG responder | `hrm/appK-autoconfig-base-address` | **3–1**: WinUAE, Denise and Copperline all handle a write to 4C — Denise gates it on the very capability bit p.433 defines — while vAmiga has no `0x4C` case, its boards being a fixed internal set it plugs and unplugs itself |
+| [NM-HRM-065](findings/NM-HRM-065.md) | register 48 does not configure a Zorro III board, and the implementations side with NanoMig | **red** — against the PAGE, not against the RTL | `hrm/appK-autoconfig-base-address` | **two of four do exactly this**: WinUAE and Copperline both configure a Zorro III board on register 44 inside the Zorro II block; vAmiga and Denise have no Zorro III board type and configure on 48 because every board they own is a Zorro II one |
 
 Chapter 1 was read and accepted on 17.09.2026 and contributes NM-HRM-060
 and NM-HRM-061. Appendix F, read the same day, contributes NM-HRM-062
-and NM-HRM-063.
+and NM-HRM-063. Appendix K contributes NM-HRM-064 and NM-HRM-065, both from
+the AUTOCONFIG responder — the one part of the Zorro bus NanoMig implements.
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
 keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to

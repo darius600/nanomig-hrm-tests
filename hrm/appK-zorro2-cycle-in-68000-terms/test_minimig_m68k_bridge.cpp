@@ -763,22 +763,70 @@ int main(int argc, char** argv) {
                     std::to_string(reads_vary) + " (measured baseline: rd="
                     + std::to_string((int)rd_lds_only) + " for both probes "
                     "regardless of which strobe is asserted).");
-        checks.expect(writes_vary && reads_vary,
-            "sol:K-0207 (p.397): \"The data strobes select transferred "
-            "bytes for reads and writes.\" -- writes do (Group G9); reads "
-            "do not (rd carries no dependency on _uds/_lds anywhere in "
-            "this module -- minimig_m68k_bridge.v:139, `rd = enable & "
-            "lr_w`, has no l_uds/l_lds term at all, unlike hwr/lwr at "
-            ":140-141). Measured, not assumed, before this line was "
-            "written -- reported red as measured.");
-        checks.expect(writes_vary && reads_vary,
-            "opus:K-0216 (p.397): \"The data strobes fall on data valid "
-            "during writes and indicate byte select for both reads and "
-            "writes.\" -- same measurement; the writes/data-valid half "
-            "holds (Group G8), the reads-byte-select half does not.");
+        // CORRECTED 18.09.2026: both of these were expect() and both were
+        // RED. They are declined now. The measurement is unchanged and still
+        // printed in the note() above; what was wrong was that HALF THE
+        // PARAGRAPH had been thrown away before the claim reached this file.
+        //
+        // p.397 does not stop at "indicate byte select for both reads and
+        // writes". Its next two sentences are the exception to it:
+        //
+        //   "There is one slight difference between these lines and the 68000
+        //    data strobes. On reads of Zorro II memory space, both /DS3 and
+        //    /DS2 will be asserted, no matter what the actual size of the
+        //    requested transfer is. This is required to support caching of
+        //    the Zorro II memory space. For Zorro II I/O space, these strobes
+        //    indicate the actual, requested byte enables, just as would a
+        //    68000 bus master."
+        //
+        // Both readers extracted those sentences and the classification put
+        // them at not-asserted/absent (sol:K-0210, sol:K-0212, opus:K-0218),
+        // while the sentence they qualify came through as testable. So a rule
+        // was graded and its own exception, three lines below it on the same
+        // page, was discarded.
+        //
+        // Read whole, the claim is: byte select on writes always; on reads
+        // only in Zorro II I/O space, and NOT in Zorro II memory space, where
+        // both strobes assert regardless of transfer size. That is a claim
+        // WITH A MEMORY-SPACE QUALIFIER, and this package already has the
+        // rule for those: Group D1 declines sol:K-0098 and opus:K-0117 for
+        // exactly it, because no signal in minimig_m68k_bridge.v decodes an
+        // address range or a memory space at all -- that is gary.v's decode,
+        // graded in hrm/appK-zorro2-memory-space-decode. The same boundary
+        // answers these two.
+        //
+        // Worth saying plainly: `rd = enable & lr_w` with no strobe term is
+        // what "on reads both strobes are asserted no matter the size" looks
+        // like from the slave's side. The measurement was never evidence of a
+        // divergence; it is close to the page's own qualification. It is left
+        // as a measurement and deliberately NOT re-graded into a green --
+        // this module cannot tell memory space from I/O space, so it cannot
+        // establish the half of the claim that would pass.
+        checks.record(
+            "sol:K-0207, opus:K-0216 (p.397) -- declined: read with the rest "
+            "of its own paragraph, this claim bundles a memory-space "
+            "qualifier. p.397 says the strobes indicate byte select for reads "
+            "and writes, and then says that on reads of Zorro II MEMORY space "
+            "both strobes assert no matter what size the transfer is, while "
+            "for Zorro II I/O space they indicate the actual byte enables. "
+            "Those qualifying sentences are sol:K-0210, sol:K-0212 and "
+            "opus:K-0218, all classified not-asserted/absent, so the rule "
+            "arrived here without its exception. No signal in "
+            "minimig_m68k_bridge.v decodes an address range or a memory space "
+            "-- that is gary.v's decode, the boundary Group D1 already names "
+            "for sol:K-0098 and opus:K-0117 -- so the surviving claim is not "
+            "gradable here either. Measured above and not graded: rd carries "
+            "no _uds/_lds term at all (minimig_m68k_bridge.v:139, `rd = "
+            "enable & lr_w`, against hwr/lwr at :140-141), which is what the "
+            "page's own exception describes from the slave's side. These were "
+            "graded red before this correction.");
+        (void)reads_vary;
     }
-    // MUTATION sol:K-0207 stimulus green MUT_COLLAPSE_READS_VIA_RW_FLIP: baseline is RED (a real measurement) -- the second read probe additionally flips r_w to 0 (write) instead of only changing which strobe is asserted, so rd then reads 0 for a completely different reason (direction, not byte-select), making rd_lds_only != rd_uds_only trivially true and the whole assertion green -- proving the baseline RED is a genuine reading of the strobe-only difference and not a stuck/miswired comparison.
-    // MUTATION opus:K-0216 stimulus green MUT_COLLAPSE_READS_VIA_RW_FLIP: same stimulus change as sol:K-0207 above -- same shared booleans, same green.
+    // sol:K-0207 and opus:K-0216 are declined and carry no MUTATION line.
+    // MUT_COLLAPSE_READS_VIA_RW_FLIP is kept as a measurement variant: it
+    // flips r_w on the second read probe so rd differs for a reason unrelated
+    // to byte select, which still shows the probe reads rd correctly and that
+    // rd is not stuck.
 
     // =========================================================================
     // GROUP G11 -- VPA/VMA PERIPHERAL-SUPPORT MECHANISM (opus:K-0068)
