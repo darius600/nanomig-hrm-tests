@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **WITHDRAWN, split into [NM-HRM-019](NM-HRM-019.md)** |
+| **Lifecycle** | withdrawn |
+| **Filed against** | — |
+| **Evidence** | none |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. It was split; the surviving half is [NM-HRM-019](NM-HRM-019.md). |
 | **Module** | `denise_sprites.v` |
 | **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |

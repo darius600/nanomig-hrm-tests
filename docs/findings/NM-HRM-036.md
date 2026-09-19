@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red — **the manual is the likely defect**, see the first section |
+| **Lifecycle** | open |
+| **Filed against** | the printed page |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. See the first section. |
 | **Module** | `gary.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/gary.v#L159-L162) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L172-L175) |
 | **Report to** | **nobody.** Three of the four implementations do the same thing |
 | **Test** | [`hrm/ch7-reset-overlay`](../../hrm/ch7-reset-overlay) |

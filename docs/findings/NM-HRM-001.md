@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **WITHDRAWN** — the manual sanctions the measured value |
+| **Lifecycle** | withdrawn |
+| **Filed against** | — |
+| **Evidence** | none |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The manual sanctions the measured value. |
 | **Module** | `agnus_beamcounter.v` |
 | **Test** | [`hrm/ch3-field-geometry`](../../hrm/ch3-field-geometry) grades the manual's 312; [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) carries the 313-line control |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |

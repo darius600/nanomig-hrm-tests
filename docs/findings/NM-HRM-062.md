@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · **filed against the page**, not against any implementation |
+| **Lifecycle** | open |
+| **Filed against** | the printed page |
+| **Evidence** | none |
+| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. No implementation is at fault; the defect is in the source, found before a test was built against it. |
 | **Module** | none. `gary.v:191-192` follows the page's PROSE and is not at fault here |
 | **Report to** | whoever maintains errata for the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Test** | none yet. Raised at classification by the appendix-F lot-E classifier and verified here against the render |

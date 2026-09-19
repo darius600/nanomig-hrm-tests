@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **source observation**, not test-backed |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a source observation, not test-backed |
+| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. |
 | **Module** | — |
 | **Test** | [`hrm/ch3-register-map-agnus`](../../hrm/ch3-register-map-agnus) — recorded as a `note()`, not an assertion |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |

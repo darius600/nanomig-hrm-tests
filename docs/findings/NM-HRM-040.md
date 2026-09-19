@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red · **contested** |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red, contested — the implementations split |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/ciaa.v#L252-L262) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L298-L309) |
 | **Report to** | **read the third-witness section first.** Two of four implementations gate this behaviour on a CIA part number |
 | **Test** | [`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction) |

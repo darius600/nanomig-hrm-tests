@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red — **the red is against p.278, not against NanoMig.** The chapter's own p.248 prints the composition NanoMig implements |
+| **Lifecycle** | open |
+| **Filed against** | the printed page |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The red is against p.278; the chapter's own p.248 prints the composition NanoMig implements. |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L699) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) |
 | **Report to** | **nobody in the RTL.** This is a defect in one printed page, measured against another printed page of the same manual |
 | **Test** | [`hrm/ch8-dmaon-enable-composition`](../../hrm/ch8-dmaon-enable-composition) — assertion `A2-DMAON_P278_TWO_TERM_COMPOSITION` |

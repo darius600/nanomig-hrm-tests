@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `hid.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/hid.v#L100-L104) · no counterpart upstream |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against, and the finding does not generalise to the Minimig family |
 | **Test** | [`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events) — `CAPS-LOCK-RELEASE-NOT-ACCEPTED` and `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE`, both red |

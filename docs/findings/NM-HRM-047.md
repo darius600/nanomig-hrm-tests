@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red — **a ratio finding.** What is measured is that the two printed cases are gated identically, not that either absolute value is wrong |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. It is a ratio finding: what is measured is that the two printed cases are gated identically, not that either absolute value is wrong. |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L594-L603) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L292-L301) |
 | **Report to** | **Amiga specialists first.** The page gives two numbers; whether an implementation is *required* to distinguish them is a reading question, not a measurement — see *For the specialists* |
 | **Test** | [`hrm/ch8-drive-step-timing`](../../hrm/ch8-drive-step-timing) — assertion `RATIO-A` |

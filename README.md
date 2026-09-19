@@ -68,7 +68,7 @@ artefacts rather than by remembering.
 | test packages | **208** |
 | assertions | **2930** — 2751 pass, **179 fail** |
 | packages | 141 green, 67 carrying at least one red, **0 build errors** |
-| registered findings | **65** — 54 open, 6 withdrawn, 5 source observations |
+| registered findings | **65** — 59 open, 6 withdrawn; of the open ones 53 rest on a graded red and 6 are source observations |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
 **The package row and the assertion row count different things, and 141 + 67 is

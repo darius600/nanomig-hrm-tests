@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **WITHDRAWN** — the assertion imported a restriction the manual does not state |
+| **Lifecycle** | withdrawn |
+| **Filed against** | — |
+| **Evidence** | none |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The assertion imported a restriction the manual does not state. |
 | **Module** | `denise_sprites.v` |
 | **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) — now green |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |

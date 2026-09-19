@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **source observation**, not a conformance failure — although one assertion carries it as red, see *Why the status is not red* |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a source observation, not test-backed |
+| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. One assertion does carry it as red; *Why the status is not red* says why that is not a conformance failure. |
 | **Module** | — · the RTL is described below because it is evidence, not because it is the subject |
 | **Report to** | **nobody.** There is no repository that can fix a disagreement between two printed pages |
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertion `P1`, graded red against p.279 |

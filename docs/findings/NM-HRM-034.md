@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red — **contested**, see *What the others say* |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red, contested — the implementations split |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. See *What the others say*. |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L108-L110) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L114-L116) |
 | **Report to** | **nobody yet** — two of the four implementations do the same thing; see *For the specialists* |
 | **Test** | [`hrm/ch7-beam-position-word-layout`](../../hrm/ch7-beam-position-word-layout) |

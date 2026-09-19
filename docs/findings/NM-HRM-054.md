@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/ciaa.v#L267-L279) |
 | **Report to** | **the Minimig line, not NanoMig alone.** NanoMig's copy is the upstream behaviour with the register's corpse left in place |
 | **Test** | [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction) — `PROP-1` red, `CONTROL-PA0-OUTPUT` green on the same comparator |

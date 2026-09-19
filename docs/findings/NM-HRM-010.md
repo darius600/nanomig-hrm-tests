@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **source observation**, not test-backed |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a source observation, not test-backed |
+| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86) |
 | **Report to** | **nowhere** — a known, deliberate simplification, stated in the RTL |
 | **Test** | none. The claim is a **recorded decline**, not an assertion |

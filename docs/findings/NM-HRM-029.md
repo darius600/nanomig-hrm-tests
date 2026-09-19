@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **WITHDRAWN** — the assertion was logically false |
+| **Lifecycle** | withdrawn |
+| **Filed against** | — |
+| **Evidence** | none |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The assertion was logically false. |
 | **Module** | `paula_audio_channel.v` |
 | **Test** | [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state) — the assertion is gone |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |

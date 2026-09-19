@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **WITHDRAWN** — the expected value was invented by the assertion |
+| **Lifecycle** | withdrawn |
+| **Filed against** | — |
+| **Evidence** | none |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The expected value was invented by the assertion. |
 | **Module** | `denise_collision.v` |
 | **Test** | [`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers) — now green |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |

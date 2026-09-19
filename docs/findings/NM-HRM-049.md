@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L467-L477) · no counterpart upstream |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against |
 | **Test** | [`hrm/ch8-mfm-cell-encoding`](../../hrm/ch8-mfm-cell-encoding) — `A2-MFM-ONE-ENCODES-01`, `A4-MFM-ZERO-AFTER-ONE-ENCODES-00` |

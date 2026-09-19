@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L77-L140) |
 | **Report to** | **the Minimig line**, not NanoMig alone |
 | **Test** | [`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) `ALLZERO-NO-TX`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `E6` |

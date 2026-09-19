@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · source observation |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a source observation, not test-backed |
+| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. |
 | **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/amiga_keymap.v#L135-L139) |
 | **Report to** | **nobody, yet.** Two printed pages contradict each other; which is right is an Amiga-history question, not a conformance question |
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) — `RIGHTALT-CONFLICT`, six claims declined on a `record()` line, **graded on neither side** |

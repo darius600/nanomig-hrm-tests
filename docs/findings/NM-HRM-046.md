@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · red — **a visible, physical divergence**, not a register-level one |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. The divergence is visible and physical, not register-level. |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L971-L972) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L543-L545) |
 | **Report to** | **the NanoMig board maintainers**, not the RTL alone — `fdd_led` leaves the core and lights a real LED on the FPGA board |
 | **Test** | [`hrm/ch8-drive-select-motor-led`](../../hrm/ch8-drive-select-motor-led) — assertions `opus:8-cia.c26` and its twin `sol:8-cia.c24` |

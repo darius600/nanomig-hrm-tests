@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **source observation**, not a conformance failure |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a source observation, not test-backed |
+| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. |
 | **Module** | `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L242-L246) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L242-L246) |
 | **Report to** | **nowhere, as it stands** — see *Suggested change* |
 | **Test** | [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state) |

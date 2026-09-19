@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · against the RTL |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `src/minimig-aga/cia_int.v:57` |
 | **Report to** | Minimig/MiSTer maintainers, once Amiga specialists confirm it matters in practice |
 | **Test** | `hrm/appF-ciab-port-assignments` · `PROP-FLAG-EDGE-POLARITY` — **red** |

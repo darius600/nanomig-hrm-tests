@@ -2,7 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | open · against the RTL |
+| **Lifecycle** | open |
+| **Filed against** | the RTL |
+| **Evidence** | a graded red |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `src/minimig-aga/cpu_wrapper.v:619-646`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_wrapper.v#L619-L646) at the pinned revision |
 | **Report to** | **NanoMig**, and the fix is one line MiSTer already has. The AUTOCONFIG responder is **inherited**, not NanoMig's own — see *Why this is NanoMig's* below, which was wrong in this page's first version |
 | **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · six graded assertions — **all red** |
