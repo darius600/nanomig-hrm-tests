@@ -30,7 +30,7 @@
 //   to assert.
 //
 // CLAIM SOURCE: this package's own assigned claims file is
-//   C:\code4nanomig\code\hrm-testpipeline\work\ch4_packages\
+//   hrm-testpipeline/work/ch4_packages/
 //   ch4-sprite-collision.jsonl (5 records, all page 113): CH4-coll.c1,
 //   CH4-coll.c2, CH4-coll.c3, CH4-p113.c5, CH4-p113.c6.
 //

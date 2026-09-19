@@ -18,7 +18,7 @@
 //   67 records).
 //
 // CLAIM SOURCE / WHAT THIS FILE ACTUALLY COVERS -- READ THIS FIRST:
-//   this package's own assigned claims file is C:\code4nanomig\code\
+//   this package's own assigned claims file is 
 //   hrm-testpipeline\work\ch4_packages\ch4-sprite-colour-selection.
 //   jsonl (67 records, all on printed pp. 130-131: Table 4-6,
 //   unattached sprites' 2-bit code, and Table 4-7, attached sprites'

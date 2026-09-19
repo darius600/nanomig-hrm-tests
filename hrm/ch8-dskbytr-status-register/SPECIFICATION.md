@@ -5,7 +5,7 @@ Fixture: `paula_floppy` (per the build brief: compile `paula_floppy.v` +
 `paula_floppy_fifo.v`; `paula_floppy_ebr.v` declares a second `module
 paula_floppy` and must not be compiled alongside it)
 Claims file:
-`C:\code4nanomig\code\hrm-testpipeline\work\ch8-s2-build\ch8-dskbytr-status-register.jsonl`
+`hrm-testpipeline/work/ch8-s2-build/ch8-dskbytr-status-register.jsonl`
 (48 claims)
 Subject: DSKBYTR's identity, its bit layout, and the behaviour the manual
 attributes to each bit — DSKBYT set per byte and cleared on read, DMAON,

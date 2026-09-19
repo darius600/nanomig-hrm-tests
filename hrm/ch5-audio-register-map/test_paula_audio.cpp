@@ -21,7 +21,7 @@
 //   register map and its prose row for AUDxPER).
 //
 // CLAIM SOURCE: this package's own claims file is
-//   C:\code4nanomig\code\hrm-testpipeline\work\ch5_packages\
+//   hrm-testpipeline/work/ch5_packages/
 //   ch5-audio-register-map.jsonl -- 116 records, all cited below by id.
 //
 // RTL-READ DISCLOSURE (per this chapter's own BOUNDARIES.md/CANDIDATES.md

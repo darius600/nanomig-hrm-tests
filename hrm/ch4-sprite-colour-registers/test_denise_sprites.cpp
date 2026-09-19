@@ -16,7 +16,7 @@
 //   121, 122, 124, 128.
 //
 // CLAIM SOURCE: this package's assigned claims file is
-//   C:\code4nanomig\code\hrm-testpipeline\work\ch4_packages\
+//   hrm-testpipeline/work/ch4_packages/
 //   ch4-sprite-colour-encoding.jsonl (303 records, the largest in this
 //   chapter). Five ids were named by the build task as already covered by
 //   hrm/ch4-attached-sprites/ (built the same night): CH4-attach.c25,
