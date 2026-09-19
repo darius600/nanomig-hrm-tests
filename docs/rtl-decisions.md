@@ -251,7 +251,7 @@ re-read p.310 against the printed scan and ask whether the sentence means what t
 inventory took it to mean. `third-witness.md` rule 1 admits an emulator for
 exactly that question.
 
-## NM-HRM-005 — WAIT and SKIP take longer than the manual states - **not yet compared**
+## NM-HRM-005 — WAIT and SKIP take longer than the manual states - **compared; needs hardware**
 
 | | |
 |---|---|
@@ -287,12 +287,16 @@ is the obvious next piece if this is the finding you want to act on first.
 | NM-HRM-022 | `BLTxPTH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register | wide register, narrowed on access by chipset |
 | NM-HRM-003 | `COP1LCH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register | wide register, narrowed on access by chipset |
 | NM-HRM-004 | CDANG=0 lowest address | `$20` on ECS | `$40` | `$80` | `$80` |
-| NM-HRM-005 | WAIT/SKIP cycle times | 4 / 6 | 8 / 8 | not compared | not compared |
+| NM-HRM-005 | WAIT/SKIP cycle times | 4 / 6 | 8 / 8 | not compared | **4 / 8 / 8 — NanoMig's own numbers** |
 
 **NM-HRM-022 and NM-HRM-003 are one decision.** NM-HRM-020 and NM-HRM-021 are
 independent, and NM-HRM-020 is the cheapest to act on. NM-HRM-004 should start
-with a re-reading of the manual rather than with RTL. NM-HRM-005 needs the
-comparison above before it is worth deciding.
+with a re-reading of the manual rather than with RTL. NM-HRM-005 has since been
+compared and does not need more comparison: vAmiga measures exactly NanoMig's
+three numbers, so no emulator separates the two readings. What it needs is real
+hardware. The maintained statement of that is
+[`findings/NM-HRM-005.md`](findings/NM-HRM-005.md), which this section now
+defers to.
 
 Every red assertion named here re-runs with `make -C hrm/<package> test` from
 `nanomig-hrm-tests`. Each carries its page citation in its own text and a recorded
