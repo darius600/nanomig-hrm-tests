@@ -948,6 +948,18 @@ int main(int argc, char** argv) {
         "over nanomig/src/minimig-aga finds none; the only strobe is "
         "agnus.v's own combinational strhor, outside this module. The "
         "discard is about STRLONG, not a second discard of LOLDIS.");
+    // READ THIS BESIDE NM-HRM-033. The note below says the VARBEAMEN
+    // dependency is "not asserted as a deviation" -- correct about THIS
+    // note(), which offers a measurement and grades nothing. It is not the
+    // whole story for a reader deciding what the package found: the graded
+    // assertion P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE above is
+    // RED, and docs/findings/NM-HRM-033.md is the finding built on it --
+    // where all four independent implementations gate long-line on LOLDIS
+    // alone and NanoMig is the only one also requiring VARBEAMEN.
+    //
+    // The note's wording is left exactly as the build wrote it, so the
+    // package's output is unchanged; this comment only says where the
+    // verdict lives.
     checks.note(
         "P6's own measurement bears on this claim too, offered as "
         "measurement, not verdict, same as the step-3 evidence's own "
