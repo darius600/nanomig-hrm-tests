@@ -378,7 +378,8 @@ Two existing, accepted packages already test this module:
   pp.217-222, pre-`expect()`-harness, no claim citations, "FPGA-038/039/040"
   numbering — found by name inside `ch5-audio-interrupt`'s own header while
   reading it per this package's task instructions, not part of the 41
-  claims): a single monolithic pass/fail test covering one INTENA/INTREQ
+  claims; **that package has since been removed** — see
+  `docs/legacy-names.md`): a single monolithic pass/fail test covering one INTENA/INTREQ
   write+readback+one-clear round trip (038), a VBLANK hardware pulse
   latching into INTREQ (039), and four `_ipl` priority-level scenarios
   (040: none enabled=7, VBLANK alone=level 3, VBLANK+COPER=still level 3,

@@ -89,7 +89,7 @@
 //   adjusted by any of this.
 //
 // CLAIM SOURCE:
-//   C:\code4nanomig\code\hrm-testpipeline\work\ch8-s2-build\
+//   hrm-testpipeline/work/ch8-s2-build/
 //   ch8-dskbytr-status-register.jsonl -- 48 claim records.
 //
 // BOUNDARY: nanomig/src/minimig-aga/paula_floppy.v module header (read

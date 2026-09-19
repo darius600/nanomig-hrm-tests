@@ -13,7 +13,7 @@
 //   and read directly from ch7/figures/p208.png and p209.png.
 //
 // CLAIM SOURCE: this package's own claims file is
-//   C:\code4nanomig\code\hrm-testpipeline\work\ch7-build\
+//   hrm-testpipeline/work/ch7-build/
 //   ch7-inter-sprite-priority.jsonl (23 records). All 23 are cited below,
 //   in full, inside an expect() or record() label. None are borrowed from,
 //   or lent to, any other package. The sibling package

@@ -3,7 +3,7 @@
 Package: `hrm/ch8-serdatr-read-word`
 Fixture: `paula_uart` (per the package list; module `paula_uart.v` alone)
 Claims file:
-`C:\code4nanomig\code\hrm-testpipeline\work\ch8-s4-build\ch8-serdatr-read-word.jsonl`
+`hrm-testpipeline/work/ch8-s4-build/ch8-serdatr-read-word.jsonl`
 (123 claims)
 Subject: SERDATR ($018) — its identity as a real, read-only register, the
 receive-shift-register-to-SERDATR transfer mechanism, and every bit the

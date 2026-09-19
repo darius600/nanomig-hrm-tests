@@ -7,7 +7,7 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 7, 8 and 13.
 //
-// CLAIM SOURCE: C:\code4nanomig\code\hrm-testpipeline\work\
+// CLAIM SOURCE: hrm-testpipeline/work\
 //   2026-09-16_ch1_packages.jsonl, filtered on classify.package ==
 //   "ch1-cpu-and-instruction-cache" -- 15 claim records.
 //

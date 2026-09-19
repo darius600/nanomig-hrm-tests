@@ -26,7 +26,7 @@
 //   DMACON chip-ownership conflict is RECORDED from a plain grep already
 //   run by the classifiers, not independently re-measured here).
 //
-// CLAIM SOURCE: C:\code4nanomig\code\hrm-testpipeline\work\ch5_packages\
+// CLAIM SOURCE: hrm-testpipeline/work/ch5_packages/
 //   ch5-audio-dmacon-adkcon.jsonl -- 155 claim records, all classified
 //   "testable" at paula.v.
 //

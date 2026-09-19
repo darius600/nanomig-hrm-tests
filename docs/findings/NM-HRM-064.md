@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Status** | open · against the RTL |
-| **Module** | `src/minimig-aga/cpu_wrapper.v:619-646` — the AUTOCONFIG write path |
+| **Module** | `src/minimig-aga/cpu_wrapper.v:619-646`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_wrapper.v#L619-L646) at the pinned revision |
 | **Report to** | **NanoMig**, and the fix is one line MiSTer already has. The AUTOCONFIG responder is **inherited**, not NanoMig's own — see *Why this is NanoMig's* below, which was wrong in this page's first version |
-| **Test** | `hrm/appK-autoconfig-base-address` · six graded assertions — **all red** |
+| **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · six graded assertions — **all red** |
 | **Chapter** | Appendix K — Zorro Expansion Bus · printed pp. 433 and 436 |
 | **Assertions** | 6 red, with an inverse control that turns green when register 48 is written in place of 4C |
 | **Verdict of the four** | **three of four implement it; vAmiga does not** |
@@ -55,7 +55,7 @@ $ grep -c "100110" cpu_wrapper.v      # 6'b100110 == register 0x4C
 The write path at `:619-646` decodes `6'b100100` (register 48) and `6'b100010`
 (register 44) and no third address. Writing 4C leaves the board responding.
 
-## The measurement
+## What holds the finding up
 
 `hrm/appK-autoconfig-base-address`, six assertions, all red. The fixture drives a
 real 68000 program through `cpu_wrapper`'s own bus — no internal signal is
@@ -67,7 +67,7 @@ An inverse control in the same package writes register **48** instead, and the
 board does go silent. So the fixture can observe silencing; there is nothing to
 observe after 4C.
 
-## What the others do
+## What the others say
 
 | | 0x4C handled | |
 |---|---|---|
@@ -125,7 +125,7 @@ So upstream makes the same omission and does not make the same promise. **A fix
 has somewhere to go after all, and it is one line NanoMig's case list is
 missing.**
 
-## What would settle it
+## Suggested change
 
 **Add `6'b000010: autocfg_data = 4'b1010;` to the Zorro II arm** — MiSTer's own
 line, at MiSTer's own value. That stops the board announcing a capability the
@@ -137,7 +137,7 @@ and would be the first RAM-board shut-up in the family. Whether that is wanted
 is a question for Amiga specialists, and so is whether any Kickstart writes 4C
 to a RAM board at all.
 
-## What this finding does not claim
+## For the specialists
 
 That anything breaks. AmigaOS shuts a board up when it has a reason to — a
 driver refusing its own card, a memory board it declines to add — and nothing

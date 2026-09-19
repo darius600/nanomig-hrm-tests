@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
+| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale), [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | all four clamp at 64 and keep it distinct from 63 |
@@ -127,6 +127,31 @@ the multiply path agree with the PWM path already in the same file.
 
 **This is a suggestion, not a decision.** Whether it matters depends on which
 path reaches the DAC in a real build — see the closing note.
+
+### Confirming a fix, and what stays red afterwards
+
+Rerun the two packages named at the top of this page:
+
+```sh
+make -C hrm/ch5-audio-register-map test
+make -C hrm/ch5-audio-volume-scale test
+```
+
+**Before any change, measured 19.09.2026 against the pinned submodule:**
+
+| Package | Result | Which reds |
+|---|---|---|
+| `ch5-audio-register-map` | `8 passed, 1 failed` | `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` — this finding |
+| `ch5-audio-volume-scale` | `69 passed, 5 failed` | three for this finding — `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, `TABLE-5-9-VOLUME-TO-DECIBEL vol0=64`, `TABLE-5-9-HAS-65-VOLUME-LEVELS`. **Two are not**: `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT` belong to **NM-HRM-002**, the stereo routing |
+
+**After a correct fix**, expect `ch5-audio-register-map` fully green and
+`ch5-audio-volume-scale` down to its two routing reds — `9 passed, 0 failed`
+and `72 passed, 2 failed`.
+
+**So `ch5-audio-volume-scale` staying red is not a failed fix.** Its two
+remaining reds are a different finding about which channel lands on which side,
+and nothing suggested here touches them. Read the assertion label before
+concluding anything: each one names the finding it belongs to.
 
 ---
 

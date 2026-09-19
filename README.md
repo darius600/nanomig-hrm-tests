@@ -27,6 +27,30 @@ cd nanomig-hrm-tests
 Already cloned without `--recursive`? `git submodule update --init`. Have NanoMig
 checked out elsewhere? `make -C hrm/<test> NANOMIG=/path/to/NanoMig`.
 
+**Against a different Minimig core** — MiSTer's `Minimig-AGA_MiSTer`, say —
+`NANOMIG=` is not enough: it only replaces the root of NanoMig's own layout,
+and the package then looks for
+
+```make
+SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v
+```
+
+MiSTer keeps the same files under `rtl/`, so that ends in `No rule to make
+target '…/src/minimig-aga/agnus_audiodma.v'`. Name the file instead — a
+variable set on the `make` command line overrides the Makefile's own, so
+nothing has to be edited:
+
+```sh
+make -C hrm/ch5-audio-location-pointer \
+     SRC=/path/to/Minimig-AGA_MiSTer/rtl/agnus_audiodma.v test
+```
+
+Check the package's `Makefile` for the variable's name first: 136 packages call
+it `SRC`, 59 use `SRC_DIR` for a directory, 20 use `RTL`, and a few multi-file
+packages split it further. **A red against another core is not a finding here** —
+these expectations are pinned to the submodule revision this suite was verified
+against.
+
 Requires Verilator and `make`; last verified with Verilator **5.052**.
 
 If `run_all.sh` reports *every* package as a build error, the toolchain is
@@ -45,7 +69,7 @@ artefacts rather than by remembering.
 | assertions | **2930** — 2751 pass, **179 fail** |
 | packages | 135 green, 64 carrying at least one red, **0 build errors** |
 | registered findings | **65** — 54 open, 6 withdrawn, 5 source observations |
-| accepted units under `acceptance/` | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
+| accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
 The assertion figures cover the **199 packages that print an assertion summary**.
 The other **9** report only pass or fail for the
@@ -119,6 +143,7 @@ same error as the other four in the direction nobody was watching for.
 | know whether an emulator was allowed to decide | [`docs/third-witness.md`](docs/third-witness.md) and [`docs/third-witness-ch3-ch6.md`](docs/third-witness-ch3-ch6.md) |
 | see what four independent implementations do about the same question | [`docs/fourth-witness-denise-copperline.md`](docs/fourth-witness-denise-copperline.md) — Denise and Copperline read against the findings, file and line each |
 | know what a green result means here | the coverage section below |
+| add or change a test | [`docs/adding-a-test.md`](docs/adding-a-test.md) — the rules a reviewer checks, with a package to copy from |
 
 [`docs/README.md`](docs/README.md) is the map. If you have just watched the suite
 go red, that is the shortest way in.
@@ -141,7 +166,7 @@ the manual whose pages it answers to.
 | D and E — memory maps, connector pinouts, port signals | 17 | one pass |
 | F — 8520 Complex Interface Adapters | 12 | one pass |
 | H and J — external disk connector, custom chip pin allocation | 5 | one pass |
-| K — AutoConfig | 12 | one pass |
+| K — Zorro Expansion Bus | 12 | one pass |
 
 Four packages carry no `chN-` prefix but belong to a chapter all the same:
 `agnus_slots` (6), `agnus_top_dmacon` (7), `paula_audio_mixer` (5) and
@@ -202,8 +227,6 @@ rather than an obstacle to their going.
 hrm/            208 packages, each against a single module boundary
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
-acceptance/     one frozen record per accepted unit: what was measured, and what
-                is disclosed about it
 docs/           what a red result means, and who decides — see docs/README.md
 run_all.sh      everything; hrm/run_all.sh runs only the HRM suite
 ```
@@ -236,12 +259,16 @@ Four rules carry the whole thing:
 > *Amiga Hardware Reference Manual*, Third Edition. Commodore-Amiga, Inc.
 > Addison-Wesley Publishing Company, 1991.
 
-**Eleven frozen records under `acceptance/` cover thirteen printed units**:
-chapters 1 to 8, appendix F, appendices D and E together, and appendices H and J
+**Twelve frozen records cover fourteen printed units**: chapters 1 to 8,
+appendix F, appendix K, appendices D and E together, and appendices H and J
 together. The two paired records are lots that were read, classified and built
-as one and share one record. The ranges below are the pages **extracted
-into the corpus**, counted from the corpus itself rather than from the book's
-table of contents:
+as one and share one record.
+
+**The records live in the sibling repository**, not in this one — they belong to
+the method that produced them:
+[`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance).
+The ranges below are the pages **extracted into the corpus**, counted from the
+corpus itself rather than from the book's table of contents:
 
 | Unit | Extracted pages |
 |---|---|
@@ -256,10 +283,13 @@ table of contents:
 | D and E — System Memory Maps; Connector Pinouts and Port Signal Assignments | 313–337 |
 | F — 8520 Complex Interface Adapters | 339–356, of which 355 and 356 are blank in print |
 | H and J — External Disk Connector Interface; Custom Chip Pin Allocation List | 367–371 and 379–381, with 372 and 382 blank in print |
+| K — Zorro Expansion Bus | 383–439, with 440 blank in print |
 
 Chapters 2 to 6 also carry their appendix A, B and C entries.
 
-Each `acceptance/*.json` records what was measured and what is disclosed about
+Each record in
+[`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance)
+says what was measured and what is disclosed about
 it, including the parts that went wrong. They are worth reading before trusting
 a number in this file: appendix D and E's record, for instance, discloses twelve
 coordinator errors in its own briefs, every one of which was caught by a reader

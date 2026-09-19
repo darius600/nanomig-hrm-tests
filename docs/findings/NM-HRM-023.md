@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | open · red |
 | **Module** | `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise_sprites.v#L484) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's, and a fix there reaches NanoMig |
+| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch4-attached-sprites`](../../hrm/ch4-attached-sprites) |
 | **Chapter** | 4 — Sprites · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | **three of four take the bit from the odd sprite only**, as the manual states |

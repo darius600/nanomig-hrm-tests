@@ -18,7 +18,7 @@
 //   them OUT of the custom-register-bank measurement; none of their own
 //   address ranges is asserted on its own account.
 //
-// CLAIM SOURCE: C:\code4nanomig\code\hrm-testpipeline\work\ch7-build\
+// CLAIM SOURCE: hrm-testpipeline/work/ch7-build/
 //   ch7-custom-address-space.jsonl -- 8 claim records, all classified
 //   "testable" at gary.
 //

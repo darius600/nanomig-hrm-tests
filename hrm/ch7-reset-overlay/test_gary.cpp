@@ -17,7 +17,7 @@
 //   sel_kick terms (read at gary.v:159,166 below) is not named by any of
 //   this package's 9 claims and is not asserted (see CPU-HLT-NOT-IN-SCOPE).
 //
-// CLAIM SOURCE: C:\code4nanomig\code\hrm-testpipeline\work\ch7-build\
+// CLAIM SOURCE: hrm-testpipeline/work/ch7-build/
 //   ch7-reset-overlay.jsonl -- 9 claim records, all classified "testable" at
 //   gary (the pre-RTL spec stage used ch7-reset-overlay-spec-stage.jsonl,
 //   the same 9 records with ports/signals/evidence withheld).

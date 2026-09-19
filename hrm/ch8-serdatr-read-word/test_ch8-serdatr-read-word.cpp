@@ -15,7 +15,7 @@
 //   neither of which is asserted by any of this package's 123 claims.
 //
 // CLAIM SOURCE:
-//   C:\code4nanomig\code\hrm-testpipeline\work\ch8-s4-build\
+//   hrm-testpipeline/work/ch8-s4-build/
 //   ch8-serdatr-read-word.jsonl -- 123 claim records.
 //
 // See SPECIFICATION.md for the full claim inventory (all 123 uids, one

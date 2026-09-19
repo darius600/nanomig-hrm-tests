@@ -14,7 +14,7 @@
 //   printed pp. 122, 128.
 //
 // CLAIM SOURCE -- READ THIS FIRST: this package's own assigned claims
-//   file is C:\code4nanomig\code\hrm-testpipeline\work\ch4_packages\
+//   file is hrm-testpipeline/work/ch4_packages/
 //   ch4-regression-attached-row-0000.jsonl (4 records: CH4-p122.c1,
 //   CH4-tab45.c0, CH4-tab45.c1, CH4-tab45.c17 -- all Table 4-5 row 0).
 //   By direct instruction from the build task (not discovered by this
