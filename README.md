@@ -27,6 +27,30 @@ cd nanomig-hrm-tests
 Already cloned without `--recursive`? `git submodule update --init`. Have NanoMig
 checked out elsewhere? `make -C hrm/<test> NANOMIG=/path/to/NanoMig`.
 
+**Against a different Minimig core** — MiSTer's `Minimig-AGA_MiSTer`, say —
+`NANOMIG=` is not enough: it only replaces the root of NanoMig's own layout,
+and the package then looks for
+
+```make
+SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v
+```
+
+MiSTer keeps the same files under `rtl/`, so that ends in `No rule to make
+target '…/src/minimig-aga/agnus_audiodma.v'`. Name the file instead — a
+variable set on the `make` command line overrides the Makefile's own, so
+nothing has to be edited:
+
+```sh
+make -C hrm/ch5-audio-location-pointer \
+     SRC=/path/to/Minimig-AGA_MiSTer/rtl/agnus_audiodma.v test
+```
+
+Check the package's `Makefile` for the variable's name first: 136 packages call
+it `SRC`, 59 use `SRC_DIR` for a directory, 20 use `RTL`, and a few multi-file
+packages split it further. **A red against another core is not a finding here** —
+these expectations are pinned to the submodule revision this suite was verified
+against.
+
 Requires Verilator and `make`; last verified with Verilator **5.052**.
 
 If `run_all.sh` reports *every* package as a build error, the toolchain is
