@@ -63,10 +63,26 @@ sources are in the history.
 | `paula_floppy` | `ch8-disk-interrupt-requests`, `ch8-disk-interrupt-path`, `ch8-dsksync-word-match`, `ch8-mfm-cell-encoding` |
 | `paula_intcontroller` | `ch7-interrupt-register-semantics`, `ch7-interrupt-priority-encoder`, `ch5-audio-interrupt` |
 
-Three kept their names and are pipeline packages despite the missing `chN-`
-prefix: `agnus_top_dmacon` (chapter 7 / appendix A, 100 claim citations),
-`paula_uart` (chapter 8, 4 citations) and `paula_audio_mixer` (chapter 5,
-carries NM-HRM-002).
+## Four packages that were renamed, not removed
+
+Three of the twenty-three kept their directory names when they were rewritten as
+pipeline packages, and `agnus_slots` was built later without a prefix. All four
+have been renamed to their unit, because a reader who has seen two `chN-`
+packages expects the third to be one:
+
+| was | is | unit |
+|---|---|---|
+| `agnus_top_dmacon` | `ch7-dmacon-register-bits` | chapter 7 / appendix A, 100 claim citations |
+| `paula_uart` | `ch8-uart-frame-and-status` | chapter 8, 4 claim citations |
+| `paula_audio_mixer` | `ch5-audio-stereo-routing` | chapter 5, carries NM-HRM-002 |
+| `agnus_slots` | `ch6-refresh-dma-slots` | chapter 6, printed p.194 |
+
+The Verilog modules keep their own names — `paula_uart.v`, `paula_audio_mixer.v`
+and the rest are unchanged, and a `//` comment naming a *module* is not a stale
+package reference.
+
+Records in `hrm-testpipeline/work/` cite the old directory names 89 times. Those
+are records and are not edited; this table resolves them.
 
 One removal moved ledger content rather than dropping it. `paula_floppy` was the
 only one of the twenty that printed claim ids: a `record()` declining three

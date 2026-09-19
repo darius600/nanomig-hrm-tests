@@ -133,7 +133,7 @@ that with the reason rather than grading a weaker proposition.
 activity -- `agnus_bitplanedma`'s own `dma` output reaches only an internal wire,
 and `hde` turns out to be purely horizontal. The marker used is `dbr && !refresh`
 with every DMA channel but bitplane disabled in DMACON and the disk and audio
-request pins held idle, which is the isolation `hrm/agnus_top_dmacon`'s own
+request pins held idle, which is the isolation `hrm/ch7-dmacon-register-bits`'s own
 committed BPLEN-GATES-BITPLANE-DMA assertion already established. Ports and
 ordinary stimulus only; no internal signal is read through `rootp`.
 

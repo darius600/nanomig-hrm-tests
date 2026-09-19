@@ -58,7 +58,7 @@ inventing a second bare id that does not exist.
   grades `txd` as Paula's own output. Confirmed: no CIA module (`ciaa.v`,
   `ciab.v`) declares a `txd`/`rxd` port at all.
 - **`F-example.c10`/`c13`** (p.352, the printed example's DMACON line) —
-  `hrm/agnus_top_dmacon` already grades DMACON's SET/CLR direction across
+  `hrm/ch7-dmacon-register-bits` already grades DMACON's SET/CLR direction across
   all thirteen bits and the `$096` address decode, at `agnus`'s own
   boundary.
 

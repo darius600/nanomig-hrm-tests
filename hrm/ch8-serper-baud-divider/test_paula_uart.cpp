@@ -8,7 +8,7 @@
 // SPECIFICATION.md's Q1-Q12), not the RTL. Every numeric prediction is
 // `(N+1) x U` or `2^k x U`, U=2 enables/colour-clock, derived from the
 // manual's own N+1 sentence (p.255/283) plus exactly one externally
-// disclosed calibration fact (hrm/paula_uart/test_paula_uart.cpp:87-88's
+// disclosed calibration fact (hrm/ch8-uart-frame-and-status/test_paula_uart.cpp:87-88's
 // already-accepted 22-enables-for-SERPER=10 case) -- never a constant read
 // out of paula_uart.v's own counter arithmetic. See SPECIFICATION.md,
 // "Calibration".
@@ -128,7 +128,7 @@ struct Rig {
     Rig() { dut = new Vpaula_uart; }
     ~Rig() { delete dut; }
 
-    // Same divide-by-4 clk7_en cadence as hrm/paula_uart/test_paula_uart.cpp
+    // Same divide-by-4 clk7_en cadence as hrm/ch8-uart-frame-and-status/test_paula_uart.cpp
     // (the calibration source this package's numbers are checked against):
     // one clk7_en-qualifying rising edge every 4 clk edges.
     void tick() {
@@ -327,7 +327,7 @@ int main(int argc, char** argv) {
         int calib = measure_tx_cell(rig, 10);
         checks.note("LIVENESS/CALIBRATION: SERPER=10 (0x000A) transmitting 0x5555 gives a txd bit cell of " +
             std::to_string(calib) + " clk7_en enables -- must equal 22 to match the already-accepted known case "
-            "at hrm/paula_uart/test_paula_uart.cpp:87-88. U (enables per colour clock) = 22/(10+1) = 2, the sole "
+            "at hrm/ch8-uart-frame-and-status/test_paula_uart.cpp:87-88. U (enables per colour clock) = 22/(10+1) = 2, the sole "
             "derived constant behind every numeric prediction below (SPECIFICATION.md, Calibration). No claim "
             "uid: this is a fixture check, not conformance evidence.");
     }

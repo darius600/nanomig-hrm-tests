@@ -33,7 +33,7 @@ Two things happened before this file existed:
 values being read off the RTL instead of the manual. I have not done that:
 every numeric prediction in this document is derived from the manual's own
 N+1 sentence (p.255) plus exactly one externally-disclosed calibration fact
-(`hrm/paula_uart/test_paula_uart.cpp:87-88`'s stated 22-enable count for
+(`hrm/ch8-uart-frame-and-status/test_paula_uart.cpp:87-88`'s stated 22-enable count for
 SERPER=10 — an *already-accepted* package's own committed number, not
 something I read off `paula_uart.v`'s counter arithmetic myself), never from
 a constant I pulled out of `paula_uart.v`. But the *procedural* order —
@@ -169,7 +169,7 @@ input besides `clk` itself, per Q3/assertion E below). U itself is not
 stated by the manual in units this fixture can construct (that is exactly
 the not-constructible boundary above) — so U is fixed by **the one
 disclosed calibration fact this slice's build brief supplies**:
-`hrm/paula_uart/test_paula_uart.cpp:87-88` (an already-accepted, already-
+`hrm/ch8-uart-frame-and-status/test_paula_uart.cpp:87-88` (an already-accepted, already-
 committed package, cited as calibration per the build brief's own
 instruction, not as an oracle for what SERPER *means*) states 22 enables
 for SERPER=10. Solving (10+1) x U = 22 gives **U = 2 enables**. Every
@@ -210,7 +210,7 @@ divider with no s4-slice finding candidate attached to it.
 
 - **LIVENESS / CALIBRATION** (no uid). SERPER=10, SERDAT triggers a
   transmission; the measured `txd` bit cell must be 22 `clk7_en` enables,
-  matching `hrm/paula_uart/test_paula_uart.cpp:87-88`. `note()` only — no
+  matching `hrm/ch8-uart-frame-and-status/test_paula_uart.cpp:87-88`. `note()` only — no
   claim names this proposition, it only establishes the rig is trustworthy
   before anything below reads it.
 

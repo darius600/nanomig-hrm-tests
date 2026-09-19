@@ -442,7 +442,7 @@ public:
 
 // ---------------------------------------------------------------------
 // Bus-timing protocol for paula_uart.v, following the pattern already
-// verified for this exact fixture by hrm/paula_uart (this slice's own
+// verified for this exact fixture by hrm/ch8-uart-frame-and-status (this slice's own
 // calibration reference, per the package list): posedge-clk registers
 // gated by clk7_en, so rga_i/data_i must be held stable across one full
 // clk7_en-active cycle for a write to land; data_o is the combinational
@@ -588,7 +588,7 @@ TxResult capture_transmit(Harness& h, uint16_t serper_n, uint16_t serdat_val,
 }
 
 // Drives a receive frame bit-by-bit at the measured cell cadence -- the
-// same recipe hrm/paula_uart (this slice's calibration reference) uses
+// same recipe hrm/ch8-uart-frame-and-status (this slice's calibration reference) uses
 // successfully for SERPER=10 -- then returns whether rxint pulsed.
 bool drive_receive(Harness& h, const std::vector<int>& bits, int cell_beats) {
     bool saw_rxint = false;

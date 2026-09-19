@@ -46,7 +46,7 @@
 //   tests it, not only here). Ids restating the identical proposition
 //   under a different manual wording, page, or reader are grouped and
 //   cited together on the single assertion that tests that proposition --
-//   the same convention hrm/agnus_top_dmacon/ documents and uses. Ids
+//   the same convention hrm/ch7-dmacon-register-bits/ documents and uses. Ids
 //   naming genuinely different propositions (32 different registers, 14
 //   different named colour samples) get their own assertion each, inside
 //   a shared loop (one call site, like that package's WALKING-BIT loop).
@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
     // REG-00 .. REG-31 -- each of the 32 registers (p.42/43/44/46/292/293)
     // answers its own write and changes again on a second, different write,
     // independent of the other 31. One call site, 32 dynamic labels (mirrors
-    // hrm/agnus_top_dmacon/'s WALKING-BIT loop).
+    // hrm/ch7-dmacon-register-bits/'s WALKING-BIT loop).
     // =========================================================================
     {
         Harness h;

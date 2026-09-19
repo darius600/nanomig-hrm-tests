@@ -37,7 +37,7 @@
 // Decline scope checked against every existing package this claim set could
 // collide with, by opening each one's own test source and reading its
 // expect()/record() labels (not just its classify.note):
-//   hrm/paula_uart                  -- baseline transmit/receive behaviour
+//   hrm/ch8-uart-frame-and-status                  -- baseline transmit/receive behaviour
 //     via SERDAT/SERPER, never the connector's NAME/DIR/NOTES table.
 //   hrm/ch8-serial-interface         -- 106 claims from HRM chapter 8's own
 //     prose (pp.255-259), all register-level (SERPER/SERDAT/SERDATR
@@ -134,7 +134,7 @@ public:
 };
 
 // Bus-timing protocol for paula_uart.v, the same one verified for this exact
-// fixture by hrm/paula_uart (this slice's own calibration reference) and
+// fixture by hrm/ch8-uart-frame-and-status (this slice's own calibration reference) and
 // reused unchanged by hrm/ch8-serial-interface: posedge-clk registers gated
 // by clk7_en, so rga_i/data_i must be held stable across one full
 // clk7_en-active cycle for a write to land; data_o is a combinational read

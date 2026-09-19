@@ -3,7 +3,7 @@
 // Test purpose: chapter 5's volume-and-decibel claims, printed pp. 135-163,
 //   chiefly Table 5-9 (volume register value against decibel value, p.163),
 //   measured at paula_audio_mixer -- the only fixture this package builds.
-//   This EXTENDS hrm/paula_audio_mixer (already HRM_CONFORMANCE on the same
+//   This EXTENDS hrm/ch5-audio-stereo-routing (already HRM_CONFORMANCE on the same
 //   fixture, carrying NM-HRM-002's four red stereo assertions) rather than
 //   replacing it: that package is untouched by this one.
 // Test class: HRM_CONFORMANCE
@@ -23,7 +23,7 @@
 //   describing finding candidate 2 and this chapter's module boundaries.
 //   That is permitted, pre-spec reading. This agent ALSO opened
 //   paula_audio_mixer.v directly with a file-read tool, and opened the
-//   sibling hrm/paula_audio_mixer/ package's own Makefile and .cpp, while
+//   sibling hrm/ch5-audio-stereo-routing/ package's own Makefile and .cpp, while
 //   gathering context for how to build against this fixture -- before
 //   writing or committing this file. That direct read was not necessary (the
 //   Makefile could have been copied without it) and does not satisfy the
@@ -36,7 +36,7 @@
 //   cleanly satisfied and this note says so rather than hiding it.
 //
 // BOUNDARY: paula_audio_mixer.v only, plus the paula_audio_volume.v helper
-//   it instantiates four times (same two files hrm/paula_audio_mixer/'s own
+//   it instantiates four times (same two files hrm/ch5-audio-stereo-routing/'s own
 //   Makefile builds; no other module reached). Ports: clk, clk7_en,
 //   sample0..3[7:0] (signed, two's complement), vol0..3[6:0], ldatasum[14:0]
 //   and rdatasum[14:0] (registered, signed two's complement outputs).
@@ -615,7 +615,7 @@ int main(int argc, char** argv) {
 
     // =====================================================================
     // CH1-CH2-ROUTE-LEFT [mirrors NM-HRM-002, already registered against
-    // hrm/paula_audio_mixer/, not a new key] -- 5-p137.c7, 5-chan.c2.
+    // hrm/ch5-audio-stereo-routing/, not a new key] -- 5-p137.c7, 5-chan.c2.
     // "Channels 1 and 2 are connected to the left-side stereo output jack"
     // (p.137): channels 1+2's sum is expected on ldatasum ("left DAC
     // data" per the module's own port comment).
@@ -634,7 +634,7 @@ int main(int argc, char** argv) {
             "connected to the left-side stereo output jack' (p.137). "
             "Measured on ldatasum (multiply-then-sum path). A red result "
             "here reproduces NM-HRM-002 (already registered against the "
-            "sibling package hrm/paula_audio_mixer/, not a new finding): "
+            "sibling package hrm/ch5-audio-stereo-routing/, not a new finding): "
             "paula_audio_mixer.v:77 sums channels 1 and 2 into rdatasum, "
             "not ldatasum. 5-p137.c7, 5-chan.c2.");
     }
@@ -658,7 +658,7 @@ int main(int argc, char** argv) {
             "and 3 are connected to the right-side output jack' (p.137). "
             "Measured on rdatasum (multiply-then-sum path). A red result "
             "here reproduces NM-HRM-002 (already registered against the "
-            "sibling package hrm/paula_audio_mixer/, not a new finding): "
+            "sibling package hrm/ch5-audio-stereo-routing/, not a new finding): "
             "paula_audio_mixer.v:76 sums channels 0 and 3 into ldatasum, "
             "not rdatasum. 5-p137.c8, 5-chan.c3.");
     }

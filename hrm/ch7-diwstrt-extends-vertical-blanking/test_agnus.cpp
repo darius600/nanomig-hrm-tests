@@ -94,7 +94,7 @@
 namespace {
 
 // ---- register addresses (9-bit custom-chip offsets), matching
-// hrm/agnus_top_dmacon/test_agnus_top_dmacon.cpp's own constants. ----
+// hrm/ch7-dmacon-register-bits/test_agnus_top_dmacon.cpp's own constants. ----
 constexpr uint16_t DMACON_ADDR  = 0x096;
 constexpr uint16_t DIWSTRT_ADDR = 0x08E;
 constexpr uint16_t DIWSTOP_ADDR = 0x090;
@@ -108,7 +108,7 @@ constexpr uint16_t BPLEN   = 1u << 8;
 constexpr uint16_t DMAEN   = 1u << 9;
 
 // Known-good "lowres, 1 bitplane" fetch stimulus -- the SAME register values
-// hrm/agnus_top_dmacon's start_bitplane() uses, which that package's own
+// hrm/ch7-dmacon-register-bits's start_bitplane() uses, which that package's own
 // IMPLEMENTATION NOTES say are re-used from hrm/agnus_bitplanedma's own
 // RTL_REGRESSION package and re-verified there against real dbr/dma
 // activity, not assumed to still work unseen. DDFSTRT/DDFSTOP set the
@@ -164,7 +164,7 @@ public:
     Harness& operator=(const Harness&) = delete;
 
     // Same pre-edge-dbr write/tick discipline as
-    // hrm/agnus_top_dmacon/test_agnus_top_dmacon.cpp's Harness (see that
+    // hrm/ch7-dmacon-register-bits/test_agnus_top_dmacon.cpp's Harness (see that
     // file's write_reg comment for why the write decision must be gated on
     // the PRE-edge dbr sample, not the post-edge one).
     void write_reg(uint16_t reg9, uint16_t data, int max_ticks = 8) {

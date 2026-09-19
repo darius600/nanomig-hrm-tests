@@ -64,7 +64,7 @@
 //   tx_tbe is therefore genuinely 0 for exactly the interval between
 //   edges N and N+1, and 1 from edge N+1 onward. This suite's OWN
 //   established bus-cycle convention -- write_reg() then read_reg(), both
-//   waiting for a clk7_en edge, exactly what hrm/paula_uart's own
+//   waiting for a clk7_en edge, exactly what hrm/ch8-uart-frame-and-status's own
 //   calibration fixture and ch8-dskbytr-status-register's
 //   read_reg_clocked() use -- always lands its read exactly on edge N+1,
 //   because write_reg()'s own trailing ticks already consume edge N and
@@ -187,7 +187,7 @@ public:
     void ticks(int n) { for (int i = 0; i < n; i++) tick(); }
 
     // A genuine, address-held, clk7_en-qualified bus cycle -- the same
-    // convention hrm/paula_uart's own calibration fixture
+    // convention hrm/ch8-uart-frame-and-status's own calibration fixture
     // (test_paula_uart.cpp:53-74) and ch8-dskbytr-status-register's
     // read_reg_clocked() both use.
     void write_reg(int addr_word, uint16_t data) {
@@ -227,7 +227,7 @@ public:
 
     // Drives one RX frame (start + nbits data, LSB first, + stop) on
     // `rxd`, one clk7_en enable at a time -- the exact loop shape
-    // hrm/paula_uart/test_paula_uart.cpp:154-172 already validated for
+    // hrm/ch8-uart-frame-and-status/test_paula_uart.cpp:154-172 already validated for
     // this module (its own Test 2 receives 0xA3 correctly this way).
     // `stop_level` defaults to 1 (a well-formed frame); A15's mutation
     // drives it 0 to show bit 9 simply follows whatever the line carries
@@ -238,7 +238,7 @@ public:
     // (paula_uart.v:172-173), which offsets the RTL's internal sampling
     // grid from this loop's per-bit FULL-period grid. A caller that waits
     // for rxint only AFTER send_rx_byte() returns can miss the pulse
-    // entirely -- exactly the shape hrm/paula_uart's own calibration
+    // entirely -- exactly the shape hrm/ch8-uart-frame-and-status's own calibration
     // fixture avoids by checking rxint INSIDE its bit-driving loop
     // (test_paula_uart.cpp:154-172). Replicated here via these two
     // fields, checked by wait_rxint() below.
@@ -337,7 +337,7 @@ int main(int argc, char** argv) {
         // passthrough of the external `rbfmirror` INPUT (`rx_rbf <=
         // rbfmirror;`, every edge, regardless of receive state) -- it is
         // not computed from a local "byte ready" condition at all, which
-        // hrm/paula_uart's own calibration fixture already discovered
+        // hrm/ch8-uart-frame-and-status's own calibration fixture already discovered
         // (its comment: "rbfmirror is Paula's external receive-buffer-full
         // state. Keep it asserted through the SERDATR read so bit 14 is
         // actually observable."). A7 below drives rbfmirror explicitly, as
@@ -476,7 +476,7 @@ int main(int argc, char** argv) {
         // paula_uart.v:236 makes rx_rbf a pure, unconditional passthrough
         // of the external `rbfmirror` INPUT (every clk7_en edge,
         // regardless of receive state) -- not something this module
-        // computes from a local "byte ready" condition. hrm/paula_uart's
+        // computes from a local "byte ready" condition. hrm/ch8-uart-frame-and-status's
         // own calibration fixture already established the convention this
         // requires: drive rbfmirror explicitly once a byte has genuinely
         // arrived (simulating what the wider `paula` boundary would

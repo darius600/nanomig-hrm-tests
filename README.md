@@ -180,10 +180,13 @@ the manual whose pages it answers to.
 | H and J — external disk connector, custom chip pin allocation | 5 | one pass |
 | K — Zorro Expansion Bus | 12 | one pass |
 
-Four packages carry no `chN-` prefix but belong to a chapter all the same:
-`agnus_slots` (6), `agnus_top_dmacon` (7), `paula_audio_mixer` (5) and
-`paula_uart` (8). So do chapters 2 and 6 in full — they are the `agnus_copper_*`
-and `agnus_blitter_*` directories.
+**Two naming schemes, and no third.** Chapters 1, 3, 4, 5, 7 and 8 and every
+appendix use `chN-subject` and `appX-subject`. Chapters 2 and 6 use
+`agnus_copper_*` and `agnus_blitter_*` instead: they were built before the
+prefix existed, their directory names are cited by name in records that are not
+edited, and renaming them is a separate piece of work rather than a thing this
+table hides. Those are the only two exceptions — every other package can be found
+from its unit.
 
 A first suite of 23 module-level packages preceded the pipeline. Their oracle was
 a *frozen specification*: a note describing what the module already does, written

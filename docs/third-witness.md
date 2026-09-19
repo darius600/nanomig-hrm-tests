@@ -105,7 +105,7 @@ ldatasum <= msample0 + msample3;
 rdatasum <= msample1 + msample2;
 ```
 
-The finding stands and the four assertions in `hrm/paula_audio_mixer` were
+The finding stands and the four assertions in `hrm/ch5-audio-stereo-routing` were
 restored. **The NanoMig stereo channels are swapped.**
 
 This corrects a withdrawal made earlier the same day. The withdrawal was reasoned

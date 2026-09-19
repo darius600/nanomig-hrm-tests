@@ -555,7 +555,7 @@ int main(int argc, char** argv) {
     // -------------------------------------------------------------
     // RATE-AND-TIMING: RATE-SHARED + RATE-SELECTED + IMMEDIATE-START.
     // Bit period for SERPER=10 is calibrated (H=0/H=1 diff) and compared
-    // against the sibling hrm/paula_uart fixture's own published RX-side
+    // against the sibling hrm/ch8-uart-frame-and-status fixture's own published RX-side
     // calibration for the same SERPER value (test_paula_uart.cpp:87-88, 22
     // clk7_en enables per bit) -- a second, independent measurement of the
     // same SERPER value on this package's own TX side. A second SERPER
@@ -576,7 +576,7 @@ int main(int argc, char** argv) {
       checks.expect(ok,
           "sol:8-serdat.c3 sol:8-serdat.c5 sol:8-serdat.c4 RATE-AND-TIMING: "
           "for SERPER=10 the measured TX bit period is 22 ticks, matching "
-          "the sibling hrm/paula_uart fixture's own published RX-side "
+          "the sibling hrm/ch8-uart-frame-and-status fixture's own published RX-side "
           "calibration for the identical SERPER value (its own comment, "
           "test_paula_uart.cpp:87-88) -- one baud-rate register serves both "
           "directions; a larger SERPER (40) gives a proportionally larger "

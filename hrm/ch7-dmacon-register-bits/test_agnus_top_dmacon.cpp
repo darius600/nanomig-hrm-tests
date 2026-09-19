@@ -347,7 +347,7 @@
 //   fixture always does) and every OTHER enable bit left clear, the only
 //   things that can ever produce `dbr==1` in a given run are (a) the one
 //   engine under test and (b) agnus_refresh's unconditional 4-slot/line
-//   pulse (agnus.v:319-322, dma_ref; see hrm/agnus_slots's header for its
+//   pulse (agnus.v:319-322, dma_ref; see hrm/ch6-refresh-dma-slots's header for its
 //   full derivation), independently reported on the `refresh` port. So
 //   `dbr && !refresh`, counted over a run with disk/audio idle and every
 //   other enable bit clear, is a clean, port-list-only proxy for "did the
@@ -376,11 +376,11 @@
 //   against the real consumption signals (`dbr`/`dbwe`), not assumed to
 //   still work unseen. `agnus.v` does not expose `hpos`/`vpos` as
 //   top-level ports, so this fixture never reads them; elapsed-line
-//   counting uses `sol` exactly as hrm/agnus_slots's Harness does.
+//   counting uses `sol` exactly as hrm/ch6-refresh-dma-slots's Harness does.
 //   The blitter yields the bus every other tick regardless of DMA
 //   activity: agnus_blitter's `enable = enadma & clkena` and agnus.v:442
 //   wires `clkena` to `cck`, which this fixture's `tick()` toggles every
-//   tick (the same true-divide-by-2 convention hrm/agnus_slots documents)
+//   tick (the same true-divide-by-2 convention hrm/ch6-refresh-dma-slots documents)
 //   - so a register access retried across 2 ticks during an active blit is
 //   guaranteed a `dbr==0` cycle on the `cck==0` half. That is what makes
 //   BZERO/BBUSY's assertions safe to read DMACONR while a blit may still

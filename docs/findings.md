@@ -112,7 +112,7 @@ never disagree. Eight values occur:
 
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
-| [NM-HRM-002](findings/NM-HRM-002.md) | audio channels on the wrong stereo side | open · RTL · **red** | `hrm/paula_audio_mixer` | **2–2**: WinUAE and vAmiga with chapter 5; Denise and Copperline with the pin list |
+| [NM-HRM-002](findings/NM-HRM-002.md) | audio channels on the wrong stereo side | open · RTL · **red** | `hrm/ch5-audio-stereo-routing` | **2–2**: WinUAE and vAmiga with chapter 5; Denise and Copperline with the pin list |
 | [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | open · RTL · **red** | `hrm/agnus_copper_control`, `hrm/agnus_copper_locreg_width` | **Copperline narrows the REGISTER to 19 bits on OCS**, matching the manual; **WinUAE narrows the BUS** on OCS (`memory.cpp:2619-2623`), which has the same effect on a fetched address; Denise and vAmiga neither |
 | [NM-HRM-004](findings/NM-HRM-004.md) | ECS danger bit admits too small a range | open · RTL · **red** | `hrm/agnus_copper_move_range`, `hrm/agnus_copper_move_sweep` | both block below `$80` regardless of chipset |
 | [NM-HRM-005](findings/NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | open · RTL · **red** | `hrm/agnus_copper_cycle_times`, `hrm/agnus_copper_cycles` | vAmiga gives NanoMig's three numbers |

@@ -52,7 +52,7 @@
 //   fact about what reaches the CPU-visible data bus, and agnus_spritedma
 //   alone has no such bus to observe - only the top-level module carries
 //   the mux that (per this evidence) never includes a sprite-pointer term.
-//   This matches the build brief's own instruction: hrm/agnus_top_dmacon
+//   This matches the build brief's own instruction: hrm/ch7-dmacon-register-bits
 //   and hrm/ch4-sprite-dma-control (committed tonight, read in full before
 //   writing this file) both already build exactly this fixture in this
 //   same rtl/ tree.
@@ -78,7 +78,7 @@
 //   what the proposition claims.
 //
 // PORTS (from every claim's own classify.evidence field, and from
-//   hrm/ch4-sprite-dma-control's and hrm/agnus_top_dmacon's already-
+//   hrm/ch4-sprite-dma-control's and hrm/ch7-dmacon-register-bits's already-
 //   committed Harness for this identical fixture - NOT discovered by this
 //   package opening agnus.v, which has not happened yet):
 //   in  - clk, clk7_en, cck, reset, aen, rd, hwr, lwr, address_in, data_in,
@@ -183,7 +183,7 @@
 // (listed above) and the register-bus mechanics (word-addressed CPU bus,
 // arbitrated by `dbr`, an unselected address reading back 0 through an
 // OR-mux) come from this package's own claims' classify.evidence fields
-// and from hrm/ch4-sprite-dma-control's and hrm/agnus_top_dmacon's
+// and from hrm/ch4-sprite-dma-control's and hrm/ch7-dmacon-register-bits's
 // already-committed files (both handed to or available to the building
 // agent as inventory, not discovered by this agent opening agnus.v). The
 // sixteen register addresses come directly from each claim's own quoted
@@ -221,7 +221,7 @@
 //
 // The write_reg/read_reg retry-on-pre-edge-dbr shape (copied unchanged
 // from hrm/ch4-sprite-dma-control's Harness, which itself copied it from
-// hrm/agnus_top_dmacon) is still the correct way to drive this fixture,
+// hrm/ch7-dmacon-register-bits) is still the correct way to drive this fixture,
 // for the identical reason those packages' own notes give: the register
 // write/read at :280/:289 is gated by the SAME `reg_address` wire the
 // arbiter (:169-267) overwrites on every cycle some DMA engine holds the

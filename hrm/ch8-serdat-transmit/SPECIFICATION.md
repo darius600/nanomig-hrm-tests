@@ -173,7 +173,7 @@ actually checked bit by bit).
 **Testable:** the bit-cell width the transmit path uses is governed by the
 same SERPER value the receive path uses — i.e. one baud-rate register, not
 two. Measured by comparing the transmit bit-cell width (in `clk7_en` ticks)
-against the sibling `hrm/paula_uart` fixture's own already-published
+against the sibling `hrm/ch8-uart-frame-and-status` fixture's own already-published
 receive-side calibration for the same SERPER value (its
 `test_paula_uart.cpp:87-88`, 22 `clk7_en` enables per bit for SERPER=10) — a
 second, independent measurement of the same SERPER value on this package's

@@ -7,11 +7,11 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 278 (Appendix A custom register table). Every claim below cites
 //   page 278; none of this package's claims cite any other page.
-// Non-goal: reproducing hrm/agnus_top_dmacon. That package already builds
+// Non-goal: reproducing hrm/ch7-dmacon-register-bits. That package already builds
 //   this exact fixture (`agnus`, the full chipset top level) and already
 //   measures most of the per-bit and register-mechanics propositions this
 //   package's claim set also names - see COVERAGE ALREADY MEASURED BY
-//   hrm/agnus_top_dmacon below. This package's own assertions are only the
+//   hrm/ch7-dmacon-register-bits below. This package's own assertions are only the
 //   propositions that package does not measure.
 //
 // BOUNDARY: `agnus` (top-level chipset module) - the only fixture this
@@ -36,7 +36,7 @@
 //   reg_address_out via the arbiter, agnus.v:171-262) is this package's
 //   NON-goal per the coverage note above - every claim whose proposition is
 //   a function (not a register-mechanics fact) is already measured in
-//   hrm/agnus_top_dmacon.
+//   hrm/ch7-dmacon-register-bits.
 //
 // ============================================================================
 // CLAIMS (verbatim quote + restatement, from
@@ -111,7 +111,7 @@
 //     which is exactly set/clear with zero bits unchanged, and it is
 //     visible through DMACONR at $002 (:281)." No "Existing assertion" tag
 //     in these four - but this agent's own reading of
-//     hrm/agnus_top_dmacon's WALKING-BIT-* loop (SET from zero, then CLR
+//     hrm/ch7-dmacon-register-bits's WALKING-BIT-* loop (SET from zero, then CLR
 //     from an all-13-bits-set baseline, for every bit 0-12) and its
 //     SETCLR-MULTIBIT-DIRECTION assertion (an explicit SET-then-partial-CLR
 //     of a 3-bit pattern) shows this exact mechanism is already exercised
@@ -160,7 +160,7 @@
 // this package's inventory. Per this task's own instruction, that silence is
 // classified `insufficient`, not asserted. dmacon IS 13 bits wide
 // (agnus.v:271, per the evidence above), so bits 11/12 exist and take a
-// write/read-back like any other position - hrm/agnus_top_dmacon's
+// write/read-back like any other position - hrm/ch7-dmacon-register-bits's
 // WALKING-BIT-11 and WALKING-BIT-12 already measure exactly that (SET from
 // zero, CLR from all-ones, same as every other bit), labelled "bit11(X)" /
 // "bit12(X)" - no function claimed, matching page 278's silence. This
@@ -170,7 +170,7 @@
 // report, not invented here.
 //
 // ============================================================================
-// COVERAGE ALREADY MEASURED BY hrm/agnus_top_dmacon (read in full before
+// COVERAGE ALREADY MEASURED BY hrm/ch7-dmacon-register-bits (read in full before
 // writing anything below - its Makefile is copied above with only TESTBENCH
 // changed, and its Harness/write_reg/read_reg pattern, forced on this
 // fixture by the SAME arbitrated-register-bus fact its own IMPLEMENTATION
@@ -213,17 +213,17 @@
 // 24 of this package's 45 claim ids are covered this way. The remaining 21
 // are this package's own job - see PLANNED ASSERTIONS. None of the 24 above
 // get a duplicate assertion in this file; this file's own report will list
-// them as "not asserted here - already measured by hrm/agnus_top_dmacon:
+// them as "not asserted here - already measured by hrm/ch7-dmacon-register-bits:
 // <assertion name>", per this task's instruction to say so rather than
 // re-test them.
 //
 // ============================================================================
 // PLANNED ASSERTIONS (names, cited-id groups and intent only - no RTL line
 // numbers beyond what the claims' own classify.evidence already handed over;
-// no fixture code below this comment block, matching hrm/agnus_top_dmacon's
+// no fixture code below this comment block, matching hrm/ch7-dmacon-register-bits's
 // own spec-before-RTL gate. Added in the next commit, after agnus.v is
 // opened to confirm the write_reg/read_reg pattern copied from
-// hrm/agnus_top_dmacon still applies unchanged - that package's own
+// hrm/ch7-dmacon-register-bits still applies unchanged - that package's own
 // IMPLEMENTATION NOTES already document why the retry-on-pre-edge-dbr shape
 // is required, not merely convenient, for this arbitrated register bus):
 //
@@ -243,7 +243,7 @@
 //      SET-then-partial-CLR step is a direct, freshly-measured
 //      demonstration of "bits written 0 stay unchanged" under this
 //      package's own ids, alongside (not instead of) the coverage already
-//      noted above under hrm/agnus_top_dmacon's WALKING-BIT-*/
+//      noted above under hrm/ch7-dmacon-register-bits's WALKING-BIT-*/
 //      SETCLR-MULTIBIT-DIRECTION.
 //
 //   2. DMACON-IS-WRITE-ONLY-AT-096: after a write through $096, a READ
@@ -264,7 +264,7 @@
 //      CH4-appA-dmacon.c6, CH4-appA-dmacon.c7.
 //
 // Three planned assertions. Together with the 24 ids covered by
-// hrm/agnus_top_dmacon (noted above) and these three assertions' own
+// hrm/ch7-dmacon-register-bits (noted above) and these three assertions' own
 // citations, every one of the 45 ids in ch4-dmacon-bits.jsonl is either
 // covered elsewhere (named above) or cited on one of these three - none are
 // being left silently uncovered.
@@ -275,7 +275,7 @@
 // DMACON=$096 write-only, DMACONR=$002 read-only, bits 14/13 are a live mux
 // of blit_busy/blit_zero and not stored bits of dmacon at all) come from
 // this package's own claims' classify.evidence fields and from
-// hrm/agnus_top_dmacon's already-committed file (both handed to or
+// hrm/ch7-dmacon-register-bits's already-committed file (both handed to or
 // available to the building agent as inventory, not discovered by this
 // agent opening agnus.v). Exact confirmation of the write_reg/read_reg retry
 // shape against this fixture, and the mutation log, are answered in the next
@@ -319,10 +319,10 @@
 //     of data_in or the SET/CLR bit.
 //
 // The write_reg/read_reg retry-on-pre-edge-dbr shape (copied unchanged
-// below from hrm/agnus_top_dmacon's Harness) is still the correct way to
+// below from hrm/ch7-dmacon-register-bits's Harness) is still the correct way to
 // drive this fixture: the write at :289 is gated by the SAME `reg_address`
 // wire the arbiter overwrites on every cycle some DMA engine holds the bus
-// (agnus.v's priority mux, documented in hrm/agnus_top_dmacon's own
+// (agnus.v's priority mux, documented in hrm/ch7-dmacon-register-bits's own
 // IMPLEMENTATION NOTES), and this package never sets any DMA engine's own
 // enable bit as its own subject, but agnus_refresh's unconditional periodic
 // pulse still contends for the bus regardless of any DMACON bit - the retry
@@ -354,14 +354,14 @@ constexpr uint16_t SPREN   = 1u << 5;
 constexpr uint16_t BPLEN   = 1u << 8;
 constexpr uint16_t DMAEN   = 1u << 9;
 
-// Harness: copied from hrm/agnus_top_dmacon's own Harness class unchanged
+// Harness: copied from hrm/ch7-dmacon-register-bits's own Harness class unchanged
 // (same fixture, same arbitrated register bus, same reason for the
 // pre-edge-dbr retry - see IMPLEMENTATION NOTES above). Only the members
 // this package's own assertions actually call are kept: write_reg, read_reg
 // and the tick machinery they depend on. The DMA-consumption helpers
 // (count_nonrefresh_dbr_over_lines, count_dbwe_over_ticks,
 // sync_to_line_boundary, start_blit/copper/sprite/bitplane, set_bls) are
-// hrm/agnus_top_dmacon's own job, not copied here - this package does not
+// hrm/ch7-dmacon-register-bits's own job, not copied here - this package does not
 // duplicate what that package already measures.
 class Harness {
 public:

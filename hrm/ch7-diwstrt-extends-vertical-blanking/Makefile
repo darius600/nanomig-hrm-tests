@@ -2,7 +2,7 @@
 NANOMIG ?= ../../nanomig
 
 TOP_MODULE = agnus
-# SRC/VFLAGS copied verbatim from hrm/agnus_top_dmacon/Makefile: same fixture
+# SRC/VFLAGS copied verbatim from hrm/ch7-dmacon-register-bits/Makefile: same fixture
 # (agnus.v, top-level chipset module, with its submodules), same build flags.
 SRC = $(NANOMIG)/src/minimig-aga/agnus.v $(NANOMIG)/src/minimig-aga/agnus_copper.v $(NANOMIG)/src/minimig-aga/agnus_blitter.v $(NANOMIG)/src/minimig-aga/agnus_audiodma.v $(NANOMIG)/src/minimig-aga/agnus_beamcounter.v $(NANOMIG)/src/minimig-aga/agnus_bitplanedma.v $(NANOMIG)/src/minimig-aga/agnus_blitter_barrelshifter.v $(NANOMIG)/src/minimig-aga/agnus_blitter_fill.v $(NANOMIG)/src/minimig-aga/agnus_blitter_minterm.v $(NANOMIG)/src/minimig-aga/agnus_diskdma.v $(NANOMIG)/src/minimig-aga/agnus_refresh.v $(NANOMIG)/src/minimig-aga/agnus_spritedma.v $(NANOMIG)/src/minimig-aga/agnus_blitter_adrgen.v
 TESTBENCH = test_agnus.cpp
