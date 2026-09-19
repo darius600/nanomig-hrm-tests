@@ -229,3 +229,30 @@ tested against, or the hardware it emulates — is a decision, not a measurement
 NM-HRM-004 is the sharpest case. Appendix C read literally says that *clearing* the
 danger bit grants the range that *setting* it grants, which would leave the bit
 with nothing to do.
+
+## NM-HRM-018: a red hidden by its own exit code
+
+`ch3-bplcon0-display-modes`'s `main()` returned `0` unconditionally while
+printing `=== ch3-bplcon0-display-modes: 225/227 PASS, 2 FAIL ===`.
+`run_all.sh` reads the exit status, so the suite listed the package as
+**passing** for as long as that finding existed, with both reds visible only
+inside its own directory. It was fixed to `return g_fail ? 1 : 0;` — a harness
+correction, no oracle touched.
+
+**What the package reports now: `225 passed, 0 failed`, and NM-HRM-018 is
+withdrawn.** The two SPRHWRM reds are gone, not hidden: the finding was
+withdrawn as a conformance failure and kept as a source observation, which is
+what its page says. This entry survives because the *shape* of the defect is
+worth keeping, not because the reds are still there.
+
+That shape appeared three times in one day: **a green report from something
+that was not measuring.** The other two were the mutation gate reading one
+assertion of nineteen, and six control assertions never mutated because a
+`[control] ` prefix hid them. It appeared a fourth time on 19.09.2026, in nine
+packages that printed their counts in a wording no tool read — see the suite's
+own README on why every package now prints the same summary line.
+
+*For the specialists:* NanoMig implements the AGA meaning of SPRHWRM and not the
+ECS one. Whether the bit is worth having, or whether the AGA reading should win
+outright, is a scope decision for the project — the finding records only that
+the printed ECS behaviour is absent.

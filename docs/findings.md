@@ -81,10 +81,15 @@ describes.
 
 Older commit messages and artefacts cite `FPGA-nnn` as a finding key, and a few
 `//` comments still name a package that no longer exists;
-[`legacy-names.md`](legacy-names.md) resolves both. No test source declares a
-frozen `FPGA-nnn` specification as its oracle any more — the packages that did
-were removed, because such a specification describes what the module does and
-therefore cannot decide whether it is right.
+[`legacy-names.md`](legacy-names.md) resolves both.
+
+**No test source takes a frozen specification as its oracle any more.** The
+packages that did were removed, because a specification that describes what the
+module does cannot decide whether it is right. Twelve chapter-2 packages do
+still name one in their `Primary oracle` line, and they name it *second*: the
+manual and its printed pages first, then the lab document the package was
+planned from. That document is a planning artefact, not an oracle, and it is not
+published — the claim ids beside it are the public record of the same work.
 
 ## The register
 
@@ -240,25 +245,3 @@ A red test is closed by a decision about the RTL, never by relaxing the
 assertion. If a deviation turns out to be intentional, the assertion stays and
 the reason is written down beside it — a test whose expectation was quietly moved
 to match the implementation stops being evidence about anything.
-
-
-### The finding was hidden by the test's own exit code
-
-`main()` returned `0` unconditionally while printing
-`=== ch3-bplcon0-display-modes: 225/227 PASS, 2 FAIL ===`. `run_all.sh` reads the
-exit status, so the suite listed this package as **passing** for as long as it
-existed, with both reds visible only inside its own directory. Fixed to
-`return g_fail ? 1 : 0;` — a harness correction, no oracle touched. The package
-now reports red to the suite, as it always should have.
-
-This is the third instance in one day of the same shape: **a green report from
-something that was not measuring.** The other two were the mutation gate reading
-one assertion of nineteen, and six control assertions never mutated because a
-`[control] ` prefix hid them.
-
-*For the specialists:* NanoMig implements the AGA meaning of this bit and not the
-ECS one. Whether SPRHWRM is worth having, or whether the AGA reading should win
-outright, is a scope decision for the project — we only record that the printed
-ECS behaviour is absent.
-
-
