@@ -1,5 +1,5 @@
-// Test purpose: Subject: what the Amiga Hardware Reference Manual, page 231,
-//   says about the
+// Test purpose: ch8-mouse-counter-wraparound Subject: HRM page 231 -- the
+//   mouse/trackball counters at their limits.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 231 -- the mouse counter description and Table 8-2's wrapped

@@ -58,7 +58,9 @@
 //   BPL1MOD 0/40/80 -> line-to-line address step 40/80/120 bytes.
 //
 // CLAIMS (verbatim quote + restatement from
-// C:\Users\x\AppData\Local\Temp\claude\d--code\674b5d99-c2c3-47f0-95e4-93eefcde2be3\scratchpad\build\ch3-ddf-fetch-window\claims.jsonl,
+// the classify records for `ch3-ddf-fetch-window` -- a build-time
+// scratch file, never published and no longer on disk; the claim ids
+// cited below are the surviving public record,
 // all 239 records classify.status == "testable"). Grouped by the proposition
 // each supports, not by page order; ids restating the same proposition
 // (different reader, different wording, different printed occurrence of the

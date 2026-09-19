@@ -2,7 +2,7 @@
 
 Thirteen documents besides this map. A red test is not self-explanatory: someone
 reading `FAIL` needs to know what the manual says, what the RTL does, whether
-anyone else agrees, and who decides. Eight of these answer that; four are
+anyone else agrees, and who decides. Nine of these answer that; three are
 records, and one binds anyone adding a test.
 
 Each entry below says what the document *is*, so an instruction is not mistaken

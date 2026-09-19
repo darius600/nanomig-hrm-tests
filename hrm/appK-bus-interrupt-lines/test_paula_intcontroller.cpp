@@ -1,5 +1,5 @@
-// Test purpose: Amiga Hardware Reference Manual, 3rd edition, Appendix K,
-//   pp.391, 394, 411
+// Test purpose: pp.391/394/411 bus interrupt lines, `paula_intcontroller`
+//   alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 391, 394, 411

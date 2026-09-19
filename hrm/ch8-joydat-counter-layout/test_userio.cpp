@@ -1,5 +1,5 @@
-// Test purpose: This package tests the **layout** of the JOY0DAT/JOY1DAT
-//   mouse/trackball
+// Test purpose: test_userio.cpp -- ch8-joydat-counter-layout Fixture:
+//   userio.v, compiled alone (Verilator, --top-module userio).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 230, 233, 281

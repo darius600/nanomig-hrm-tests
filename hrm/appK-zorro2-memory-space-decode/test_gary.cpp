@@ -1,5 +1,4 @@
-// Test purpose: Amiga Hardware Reference Manual, 3rd edition, Appendix K,
-//   p.386, Figure K-1
+// Test purpose: p.386 Figure K-1 "Expansion Memory Map", `gary` alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 386

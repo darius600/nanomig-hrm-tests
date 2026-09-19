@@ -17,7 +17,9 @@
 // Test purpose: appDE-lightpen-beam Grades 4 claims (2 propositions, each
 //   claimed independently by readers sol and opus) against
 //   `agnus_beamcounter` (compiled alone), from Appendix E p.333's LIGHT PEN
-//   figure -- the two boxes: VPOSR rea
+//   figure -- the two boxes: uid -> proposition: BOUNDARY:
+//   nanomig/src/minimig-aga/agnus_beamcounter.v:29-56 -- the DISPOSITION --
+//   all [...]
 // Non-goals: anything outside the `agnus_beamcounter` fixture this package
 //   builds, and any claim outside the 4 it cites. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the

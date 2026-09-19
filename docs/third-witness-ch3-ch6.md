@@ -91,7 +91,7 @@ contain the string `shres` at all. The colour lookup is resolution-blind.
 |---|---|
 | Manual | Appendix C pp.309/310 marks BLTSIZV new for ECS, the same status as BLTSIZH and BLTCON0L |
 | NanoMig | BLTSIZH and BLTCON0L are gated; BLTSIZV takes effect with `ecs = 0` |
-| Test | `agnus_blitter_ecs` / `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` |
+| Test | `ch6-blitter-ecs` / `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` |
 
 Both emulators gate all three identically. vAmiga `BlitterRegs.cpp` lines 35,
 324, 347 — `if (agnus.isOCS()) return;` before the value can reach the register.
@@ -157,7 +157,7 @@ behind `config.clxSprPlf`, which defaults to **false**
 |---|---|
 | Manual | Appendix A p.270: "Blitter pointer to x (high 3 bits, 5 bits if ECS)" |
 | NanoMig | five in both |
-| Test | `agnus_blitter_ecs` / `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` |
+| Test | `ch6-blitter-ecs` / `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` |
 
 Neither emulator narrows the **register**. vAmiga stores the full 16-bit value
 and only logs a diagnostic (`BlitterRegs.cpp:148-162`); its chipset-dependent
@@ -208,7 +208,7 @@ reading of the manual.*
 | | |
 |---|---|
 | NanoMig | BLTCON1's DOFF bit has no observable effect |
-| Test | `agnus_blitter_ecs` / `DOFF-NO-OBSERVABLE-EFFECT` |
+| Test | `ch6-blitter-ecs` / `DOFF-NO-OBSERVABLE-EFFECT` |
 
 **vAmiga: inert.** `BlitterTypes.h:33` defines `BLTCON1_DOFF = 0x0080` and
 nothing in the tree ever reads it. The D-channel write

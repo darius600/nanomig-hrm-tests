@@ -121,8 +121,9 @@ a *module* is not a stale package reference.
 
 **Four names in this family resolve to nothing at all**, because the
 packages were deleted before this rename: `agnus_blitter_modulo`,
-`agnus_blitter_ptr`, `agnus_blitter_mask` and `agnus_blitter_zero`. They
-were the pre-chapter-6 blitter tests, superseded by the packages above,
+`agnus_blitter_ptr`, `agnus_blitter_mask`, `agnus_blitter_zero` and
+`agnus_blitter_line_octant`. They were the pre-chapter-6 blitter tests,
+superseded by the packages above,
 and [`blitter-prior-art.md`](blitter-prior-art.md) records what each one
 did and why it went. Comments that mention them cite that document.
 
@@ -130,8 +131,11 @@ The Verilog modules keep their own names — `paula_uart.v`, `paula_audio_mixer.
 and the rest are unchanged, and a `//` comment naming a *module* is not a stale
 package reference.
 
-Records in `hrm-testpipeline/work/` cite the old directory names 89 times. Those
-are records and are not edited; this table resolves them.
+Records in `hrm-testpipeline/work/` cite these old directory names as
+`hrm/<name>` **859 times**, and the twenty-six below a further **4812**. Those
+are records and are not edited; these tables resolve them. An earlier revision
+of this sentence said 89, a figure measured for a different pattern and never
+re-measured when the twenty-six were renamed.
 
 One removal moved ledger content rather than dropping it. `paula_floppy` was the
 only one of the twenty that printed claim ids: a `record()` declining three

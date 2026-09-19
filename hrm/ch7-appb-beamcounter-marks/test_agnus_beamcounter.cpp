@@ -4,7 +4,7 @@
 //   BEAMCON0 $1DC. Package ch7-appb-beamcounter-marks, fixture
 //   agnus_beamcounter (one Verilator build, this module only, independent of
 //   every sibling package's own obj_dir). ADDRESS is explicitly NOT this
-//   package's job: hrm/ch3-register-map- agnus-beamcounter already asserts
+//   package's job: hrm/ch3-register-map-agnus-beamcounter already asserts
 //   the address of all five registers from these same printed rows (see its
 //   own out.txt, 26/0) and this package cites that rather than duplicating
 //   it, per its own SPECIFICATION.md and the claims file's `covered_by`

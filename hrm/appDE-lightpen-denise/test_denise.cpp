@@ -15,7 +15,8 @@
 // Test purpose: appDE-lightpen-denise Grades 2 claims (1 proposition,
 //   claimed independently by readers sol and opus) against `denise` and
 //   every module it itself instantiates (compiled together -- Makefile
-//   modelled on hrm/ch8-appb-chip-c
+//   modelled on hrm/ch8-appb-chip-column-denise, a package with the same
+//   fixture boundary and the same zero-expect()-claims shape), [...]
 // Non-goals: anything outside the `denise` fixture this package builds, and
 //   any claim outside the 4 it cites. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is

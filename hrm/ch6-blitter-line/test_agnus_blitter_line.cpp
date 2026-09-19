@@ -42,7 +42,8 @@
 //   advice, not a hardware gate (same treatment PKG-BLT-STATUS gives "write
 //   BLTSIZE last").
 //
-// SUPERSESSION. Supersedes hrm/ch6-blitter-line_octant, per the build
+// SUPERSESSION. Supersedes hrm/agnus_blitter_line_octant (deleted 10.09.2026; see
+// docs/blitter-prior-art.md), per the build
 // register. That package has TWO defects (docs/blitter-prior-art.md):
 //
 //   DEFECT 1: it compiles a LOCAL COPY of agnus_blitter.v:609-612 pasted into

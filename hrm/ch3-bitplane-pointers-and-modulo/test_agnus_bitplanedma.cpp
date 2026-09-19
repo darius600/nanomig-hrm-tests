@@ -48,7 +48,9 @@
 // addresses chip memory - is exactly what IS asserted.
 //
 // CLAIMS (verbatim quote + restatement from
-// C:\Users\x\AppData\Local\Temp\claude\d--code\674b5d99-c2c3-47f0-95e4-93eefcde2be3\scratchpad\build\ch3-bitplane-pointers-and-modulo\claims.jsonl,
+// the classify records for `ch3-bitplane-pointers-and-modulo` -- a build-time
+// scratch file, never published and no longer on disk; the claim ids
+// cited below are the surviving public record,
 // all 173 records). Grouped by the proposition each supports, not by page
 // order; ids restating the same proposition are grouped and cited together
 // on whichever assertion(s) test that proposition.

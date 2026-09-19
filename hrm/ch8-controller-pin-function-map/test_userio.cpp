@@ -1,9 +1,4 @@
-// Test purpose: which function each controller-port pin carries, at the
-//   `userio` boundary, against chapter 8's DB9 pinout table. The pin map
-//   used throughout is derived from userio.v's own port
-//   list and parameters, read after SPECIFICATION.md was committed -- see
-//   the RTL boundary finding section of that file): bit0=pin4(HQ/right)
-//   bit1=pin3(VQ/left) bit2=pin2(H/b
+// Test purpose: Table 8-1 (p.228), userio.v alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 228, 233, 240, 282

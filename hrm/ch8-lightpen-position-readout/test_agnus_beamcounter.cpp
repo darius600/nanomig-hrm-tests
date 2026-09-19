@@ -1,5 +1,6 @@
-// Test purpose: register resolution table, and the light-pen-trigger
-//   detection procedures
+// Test purpose: ch8-lightpen-position-readout Oracle: Amiga Hardware
+//   Reference Manual, page 239 (light pen position register resolution table
+//   and light-pen-trigger detection procedures).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 227, 239, 241

@@ -53,7 +53,9 @@
 //   RTL-OPENED marker further down).
 //
 // CLAIMS (verbatim quote + restatement from
-// C:\Users\x\AppData\Local\Temp\claude\d--code\674b5d99-c2c3-47f0-95e4-93eefcde2be3\scratchpad\residue2\ch3-bitplane-memory-layout\claims.jsonl,
+// the classify records for `ch3-bitplane-memory-layout` -- a build-time
+// scratch file, never published and no longer on disk; the claim ids
+// cited below are the surviving public record,
 // all 64 records). Grouped by the proposition each supports, not by page
 // order; ids restating the same proposition are grouped and cited together
 // on whichever assertion(s) test that proposition. Each group states this

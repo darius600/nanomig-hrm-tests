@@ -43,7 +43,7 @@ The package that originally held the withdrawn assertion, `agnus_beamcounter`,
 also asserted that the horizontal counter spans 0..453. That number has no page
 behind it — the manual gives colour clocks, and the pipeline declined to convert
 them — so it went with the package. Nothing depends on it:
-`agnus_copper_waitskip_range` drives a 454-count line in its own harness and says
+`ch2-copper-waitskip-range` drives a 454-count line in its own harness and says
 so ("a 454-tick fixture line (2x a real 227-tick line)"), which is a fixture
 choice, not a borrowed measurement.
 
@@ -190,7 +190,7 @@ always ECS/AGA has a defensible reason to widen a pointer unconditionally. What
 it is: the same appendix, the same five lines, handled four different ways, with
 no comment anywhere saying why the two ungated ones are ungated.
 
-### `agnus_top_dmacon` asserted nothing — closed
+### `ch7-dmacon-register-bits` asserted nothing — closed
 
 Found in the same pass: the file built the whole of `agnus`, set up a DMACON
 write, never pulsed the register strobe, never read an output, and printed PASS

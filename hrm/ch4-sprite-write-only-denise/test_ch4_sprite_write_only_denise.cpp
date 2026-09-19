@@ -4,7 +4,7 @@
 //   written there. This package is the Denise half of that single
 //   proposition, stated once generically on page 284 (Appendix A) and once
 //   per sprite on pages 291/292 (Appendix B). A sibling package,
-//   hrm/ch4-sprite-registers-write-only-agnus/, is the Agnus half of the
+//   hrm/ch4-sprite-write-only-agnus/, is the Agnus half of the
 //   same row (SPRxPTH/SPRxPTL, the sprite pointer registers) -- see the
 //   claims' own "split" field, quoted below.
 // Test class: HRM_CONFORMANCE
