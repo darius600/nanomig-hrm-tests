@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Status** | open · **against the PAGE**, not against the RTL |
-| **Module** | `src/minimig-aga/cpu_wrapper.v:629-644` — the AUTOCONFIG write path |
+| **Module** | `src/minimig-aga/cpu_wrapper.v:629-644`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_wrapper.v#L629-L644) at the pinned revision |
 | **Report to** | **the Minimig family** if it is reported at all — the behaviour is **inherited**, identical in MiSTer and reached independently by TC64. No RTL change is proposed; the question is whether printed page 436 describes what Commodore's own system software did |
-| **Test** | `hrm/appK-autoconfig-base-address` · two graded assertions — **both red** |
+| **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · two graded assertions — **both red** |
 | **Chapter** | Appendix K — Zorro Expansion Bus · printed pp. 435 and 436 |
 | **Assertions** | 2 red, with an inverse control that turns green for a Zorro II board on the identical write |
 | **Verdict of the four** | **two of four do exactly what NanoMig does; the other two have no Zorro III board to disagree with** |
@@ -70,7 +70,7 @@ cpu_wrapper.v:634  end else if (chip_addr[6:1] == 6'b100010) begin  // Register 
 With `cfg_z3` set, a write to register 48 matches neither arm and nothing
 happens.
 
-## The measurement
+## What holds the finding up
 
 `hrm/appK-autoconfig-base-address`, two assertions, both red. The fixture
 drives a real 68000 program through `cpu_wrapper`'s own bus — no internal
@@ -83,7 +83,7 @@ An inverse control in the same package writes register 48 with `cfg_z3` clear,
 and configuration **does** complete. So the fixture can observe configuration;
 under Zorro III there is nothing to observe after a write to 48.
 
-## What the others do
+## What the others say
 
 | | register 48 in the `$E8` block, Zorro III board | |
 |---|---|---|
@@ -129,7 +129,7 @@ software, which is exactly what this finding claims.
 This is the pattern the finding key exists for: the key names the pair that
 disagrees, and does not prejudge which side is wrong.
 
-## What would settle it
+## Suggested change
 
 Not an RTL change. Somebody who can read `expansion.library`'s Zorro III path,
 or who has put a real Zorro III card in a Zorro II machine, saying which write
@@ -137,7 +137,7 @@ the system actually configures on. If the page is right, NanoMig and two
 emulators are wrong together; if the page is wrong, it is wrong in the one
 sentence that tells a board designer when to stop answering.
 
-## What this finding does not claim
+## For the specialists
 
 That NanoMig is at fault, and that anything breaks. NanoMig's Zorro III fast
 RAM is configured in practice, which is itself evidence about what the system
