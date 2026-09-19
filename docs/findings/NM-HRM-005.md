@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | open · red |
-| **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v) |
+| **Module** | `agnus_copper.v` **lines 384-548**, the `copper_state` machine that spends the cycles — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L384-L548) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v) |
 | **Report to** | **nowhere yet** — this one needs hardware, not a patch. See *Suggested change* |
 | **Test** | [`hrm/agnus_copper_cycle_times`](../../hrm/agnus_copper_cycle_times), [`hrm/agnus_copper_cycles`](../../hrm/agnus_copper_cycles) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed. |
@@ -34,6 +34,14 @@
 | `WAIT` − `MOVE` | 2 | **4** |
 
 Every figure is exactly double, which was the first thing to rule out.
+
+**Where the cycles are spent.** The counting happens in one combinational state
+machine: `agnus_copper.v:384-548` decodes `copper_state` and decides, per DMA
+slot, whether the copper fetches, waits, skips or halts. `:373-375` is the
+register that advances it. The test does not read that machine directly — it
+drives the module's own DMA handshake and counts the allocated slots between two
+instructions, which is what the manual's "memory cycle times" counts — so the
+line range is where to look for a cause, not where the measurement is taken.
 
 **The unit question is settled.** Appendix A p. 275 defines the bus cycle against
 the memory cycle time and gives the factor two, so the two readings are
