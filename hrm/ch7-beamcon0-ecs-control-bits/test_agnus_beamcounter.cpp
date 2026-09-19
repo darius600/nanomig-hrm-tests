@@ -14,7 +14,7 @@
 //   nanomig/src/minimig-aga finds no strlong|strequ|strvbl address; the only
 //   strobe is agnus.v's own combinational strhor, outside this fixture's
 //   boundary).
-// Claim ids: 44 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

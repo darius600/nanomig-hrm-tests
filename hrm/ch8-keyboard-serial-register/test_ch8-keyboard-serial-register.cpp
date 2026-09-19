@@ -22,10 +22,10 @@
 //   Claims file: hrm-testpipeline/work/ch8-s3-build/ch8-keyboard-serial-register.jsonl
 //   (69 claims; 62 uids fully graded, 7 uids partially graded).
 // Non-goals: anything outside the `ciaa` fixture this package builds, and
-//   any claim outside the 69 it cites. A green here means those assertions
+//   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
 //   correct, and not that the chapter is covered.
-// Claim ids: 69 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/ch8-s3-build/ch8-keyboard-serial-register.jsonl` in the sibling

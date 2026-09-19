@@ -13,7 +13,7 @@
 //   request bit 5, and the Exec/hardware interrupt-priority columns of
 //   Figure 7-4 -- both need paula_intcontroller, outside this fixture's
 //   boundary; recorded below, not asserted.
-// Claim ids: 11 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

@@ -4,10 +4,10 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 391, 394, 411
 // Non-goals: anything outside the `paula_intcontroller` fixture this package
-//   builds, and any claim outside the 7 it cites. A green here means those
+//   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 7 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in
 //   `work/appK-build/appK-bus-interrupt-lines.jsonl` in the sibling

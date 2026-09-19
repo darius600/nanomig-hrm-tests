@@ -34,7 +34,7 @@
 //   Also not tested: the printed "(high 3 bits)" / "(low 15 bits)" bit-WIDTH
 //   descriptors that ride along in the same quoted Appendix A/B rows as the
 //   twelve pointer-register ADDRESS claims -- see CONFLICT NOTE below.
-// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).

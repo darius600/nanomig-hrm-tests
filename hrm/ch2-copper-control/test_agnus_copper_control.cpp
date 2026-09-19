@@ -6,7 +6,7 @@
 // Requirement IDs: COP-05, COP-07
 // Non-goals: DMACON bit gating is tested separately at the real Agnus top
 //   level; this test does not inspect private Copper state.
-// Claim ids: the one id below carries a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the id below carries a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and it names
 //   one reader's reading of one printed sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).

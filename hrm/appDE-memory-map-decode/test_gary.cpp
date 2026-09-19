@@ -10,10 +10,10 @@
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   314, 315, 316, 330, 337.
 // Non-goals: anything outside the `gary` fixture this package builds, and
-//   any claim outside the 69 it cites. A green here means those assertions
+//   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
 //   correct, and not that the chapter is covered.
-// Claim ids: 69 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository

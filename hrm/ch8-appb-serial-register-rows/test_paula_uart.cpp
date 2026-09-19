@@ -9,7 +9,7 @@
 //   nine-bit receive mode, overrun/break handling, CHIP=Paula ownership (no
 //   claim in this 18-record file restates it -- see SPECIFICATION.md) and
 //   the leading "*" mark on each row (same reason).
-// Claim ids: 23 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

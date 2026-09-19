@@ -18,7 +18,7 @@
 //   feeds JOY0DAT in real hardware -- held inactive throughout (see
 //   BOUNDARY) so every measurement below isolates the DE-9 quadrature decode
 //   path Figure 8-2 documents.
-// Claim ids: 63 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

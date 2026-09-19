@@ -33,10 +33,10 @@
 //   that need it are declined below by module boundary, not regraded with a
 //   weaker guess, per the build brief.
 // Non-goals: anything outside the `ciaa` fixture this package builds, and
-//   any claim outside the 16 it cites. A green here means those assertions
+//   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
 //   correct, and not that the chapter is covered.
-// Claim ids: 16 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository

@@ -15,7 +15,7 @@
 //   what P3 needs; and the vertical-blank *timing* that sets bit 5 (that is
 //   ch7-vertb-vertical-blank-timing, against agnus_beamcounter). All
 //   recorded, not asserted -- see the record() calls near the end.
-// Claim ids: 102 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

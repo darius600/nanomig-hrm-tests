@@ -20,7 +20,7 @@
 //   PROP-2/3/7/8 already assert VPOSR/VHPOSR/VPOSW/VHPOSW's "*" mark from
 //   the same printed rows this file quotes) -- nothing is asserted about it
 //   here.
-// Claim ids: 25 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

@@ -11,20 +11,17 @@
 //   sol:E-lightpen.c15, opus:E-lightpen.c18  "VPOSR is read-only at DFF004"
 //   sol:E-lightpen.c16, opus:E-lightpen.c19  "VHPOSR is read-only at DFF006"
 //
+// Test purpose: appendix E p.333's LIGHT PEN figure, the two read-only boxes
+//   VPOSR ($DFF004) and VHPOSR ($DFF006), at the `agnus_beamcounter`
+//   boundary.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 333 (Appendix E, LIGHT PEN figure).
-// Test purpose: appDE-lightpen-beam Grades 4 claims (2 propositions, each
-//   claimed independently by readers sol and opus) against
-//   `agnus_beamcounter` (compiled alone), from Appendix E p.333's LIGHT PEN
-//   figure -- the two boxes: uid -> proposition: BOUNDARY:
-//   nanomig/src/minimig-aga/agnus_beamcounter.v:29-56 -- the DISPOSITION --
-//   all [...]
 // Non-goals: anything outside the `agnus_beamcounter` fixture this package
-//   builds, and any claim outside the 4 it cites. A green here means those
+//   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).

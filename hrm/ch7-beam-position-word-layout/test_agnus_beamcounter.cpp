@@ -17,7 +17,7 @@
 //   VPOSR-BIT15-IS-LOF-LONG-FRAME, LACE-BIT-CONTROLS-INTERLACE-FIELD-
 //   ALTERNATION); whether a PAL frame is 312 or 313 lines (NM-HRM-001,
 //   already settled and not reopened here).
-// Claim ids: 105 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

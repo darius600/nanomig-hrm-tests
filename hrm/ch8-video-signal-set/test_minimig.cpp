@@ -23,7 +23,7 @@
 //   SYNC-OUTPUT-TOGGLES below grades only that a Sync-role output exists and
 //   is live, sampling `_csync` (the composite, the one of the three the
 //   page's singular "Sync" means), never the 3-vs-1 count.
-// Claim ids: 10 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

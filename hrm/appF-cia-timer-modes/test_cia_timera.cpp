@@ -21,10 +21,10 @@
 //   Claims file: hrm-testpipeline/work/2026-09-17_appF_packages.jsonl,
 //   filtered to classify.package == "appF-cia-timer-modes".
 // Non-goals: anything outside the `cia_timera` fixture this package builds,
-//   and any claim outside the 41 it cites. A green here means those
+//   and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 41 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/2026-09-17_appF_packages.jsonl` in the sibling repository

@@ -22,7 +22,7 @@
 //   32-way bitplane-to-select assembly (already exhaustively proven by the
 //   sibling package hrm/ch3-colour-register-format/ at the narrower
 //   denise_colortable boundary), scroll/DDF timing, collision bit meaning.
-// Claim ids: 28 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

@@ -9,19 +9,17 @@
 // uid -> proposition:
 //   sol:E-lightpen.c17, opus:E-lightpen.c20  "BPLCON0 write only  DFF104"
 //
+// Test purpose: appendix E p.333's LIGHT PEN figure, the write-only BPLCON0
+//   box ($DFF104), at the `denise` boundary with every module it
+//   instantiates.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 333 (Appendix E, LIGHT PEN figure).
-// Test purpose: appDE-lightpen-denise Grades 2 claims (1 proposition,
-//   claimed independently by readers sol and opus) against `denise` and
-//   every module it itself instantiates (compiled together -- Makefile
-//   modelled on hrm/ch8-appb-chip-column-denise, a package with the same
-//   fixture boundary and the same zero-expect()-claims shape), [...]
 // Non-goals: anything outside the `denise` fixture this package builds, and
-//   any claim outside the 4 it cites. A green here means those assertions
+//   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
 //   correct, and not that the chapter is covered.
-// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).

@@ -12,6 +12,11 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 353 (R/W); pp.345/352 for the two declined citations below.
+// Non-goals: anything outside the `minimig_m68k_bridge` fixture this file builds -- this
+//   package Verilates two independent tops from two sources, and this is
+//   one of them -- and any claim it does not cite. A green here means those
+//   assertions held on this fixture at the pinned revision, not that the
+//   module is correct and not that the chapter is covered.
 //
 // CLAIM COVERAGE: RW-SOURCE-CONTROLS-DIRECTION (sol:F-signals.c77,
 //   opus:F-signals.c9), RW-HIGH-IS-READ (sol:F-signals.c78,

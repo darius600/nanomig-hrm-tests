@@ -22,10 +22,10 @@
 //   p369.txt, p370.txt), matching corpus-defects.md's own "read the render
 //   only where told to" rule.
 // Non-goals: anything outside the `paula_floppy` fixture this package
-//   builds, and any claim outside the 17 it cites. A green here means those
+//   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 17 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/2026-09-17_appHJ_packages.jsonl` in the sibling repository

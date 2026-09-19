@@ -13,7 +13,7 @@
 //   half of OVRUN's own definition ("Reset by resetting bit 11 of INTREQ")
 //   and RBF's ("you must reset the INTF_RBF bit in INTREQ"), neither of
 //   which is asserted by any of this package's 123 claims.
-// Claim ids: 131 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

@@ -15,10 +15,10 @@
 //   that include the very decode this package measures) and p.245 ("FLAG
 //   DSKINDEX* Disk index pulse ($BFDD00, bit 4)").
 // Non-goals: anything outside the `cia_disk_port_windows_rig` fixture this
-//   package builds, and any claim outside the 12 it cites. A green here
+//   package builds, and any claim it does not cite. A green here
 //   means those assertions held on this fixture at the pinned revision --
 //   not that the module is correct, and not that the chapter is covered.
-// Claim ids: 12 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/ch8-s2-build/ch8-cia-disk-port-windows.jsonl` in the sibling

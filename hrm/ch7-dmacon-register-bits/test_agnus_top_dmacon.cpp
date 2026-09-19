@@ -14,7 +14,7 @@
 //   package's job: anything about audio or disk DMA *behaviour* beyond their
 //   DMACON bit name/position (bits 0-4), which IS in scope as part of
 //   "read-back of bits 0-12".
-// Claim ids: 100 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/2026-09-08_fpga-090_classified.jsonl` in the sibling repository

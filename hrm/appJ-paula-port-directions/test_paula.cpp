@@ -15,10 +15,10 @@
 //   builds this exact boundary; its write_reg/read_reg/do_reset register-bus
 //   harness is reused close to verbatim below (disclosed inline).
 // Non-goals: anything outside the `paula` fixture this package builds, and
-//   any claim outside the 30 it cites. A green here means those assertions
+//   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
 //   correct, and not that the chapter is covered.
-// Claim ids: 30 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/2026-09-17_appHJ_packages.jsonl` in the sibling repository

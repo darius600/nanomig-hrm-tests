@@ -13,10 +13,10 @@
 // Primary oracle: Amiga Hardware Reference Manual, printed p.241 (and p.247
 //   for the two dskdma claims); full quotations in SPECIFICATION.md.
 // Non-goals: anything outside the `paula_floppy` fixture this package
-//   builds, and any claim outside the 34 it cites. A green here means those
+//   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 34 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/ch8-s2-build/ch8-disk-controller-overview.jsonl` in the sibling

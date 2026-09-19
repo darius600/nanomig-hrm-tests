@@ -18,7 +18,7 @@
 // BLTSIZE, the $096 boundary of DMACON, BPL1PTH and COLOR00 are already
 // measured by hrm/ch2-copper-move-range; none of those addresses recurs
 // in this package's own assertions.
-// Claim ids: 21 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

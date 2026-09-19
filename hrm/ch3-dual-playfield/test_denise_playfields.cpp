@@ -32,7 +32,7 @@
 //   about a plane-6/HAM DMA restriction (3-bplcon0.c20) is declined as a
 //   system-level DMA policy question, not something this pure per-pixel
 //   composition module enforces.
-// Claim ids: 22 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

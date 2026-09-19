@@ -20,7 +20,7 @@
 //   bitplane/sprite/audio/Copper/blitter engines (five sibling packages, see
 //   SPECIFICATION.md); bitplane and sprite DMA are never triggered anywhere
 //   in this file (see SPECIFICATION.md's BOUNDARY section for why).
-// Claim ids: 67 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

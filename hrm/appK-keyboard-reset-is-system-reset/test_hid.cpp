@@ -7,7 +7,7 @@
 //   claim outside the 2 it cites. A green here means those assertions held
 //   on this fixture at the pinned revision -- not that the module is
 //   correct, and not that the chapter is covered.
-// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in
 //   `work/appK-build/appK-keyboard-reset-is-system-reset.jsonl` in the

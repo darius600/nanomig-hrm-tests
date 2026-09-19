@@ -22,7 +22,7 @@
 //   and write-only direction (owned by hrm/ch3-register-map-denise, which
 //   holds ecs=1 throughout and explicitly leaves killehb untested -- the gap
 //   this package fills, per STEP3-NOTES).
-// Claim ids: 18 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

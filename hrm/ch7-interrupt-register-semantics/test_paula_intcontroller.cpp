@@ -15,10 +15,10 @@
 // Fixture boundary: paula_intcontroller.v ONLY. No other module is
 //   instantiated anywhere in this file.
 // Non-goals: anything outside the `paula_intcontroller` fixture this package
-//   builds, and any claim outside the 63 it cites. A green here means those
+//   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 63 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/ch7-build/ch7-interrupt-register-semantics.jsonl` in the sibling

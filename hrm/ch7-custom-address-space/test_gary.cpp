@@ -17,7 +17,7 @@
 //   slow-memory decode are read only far enough to keep them OUT of the
 //   custom-register-bank measurement; none of their own address ranges is
 //   asserted on its own account.
-// Claim ids: 13 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

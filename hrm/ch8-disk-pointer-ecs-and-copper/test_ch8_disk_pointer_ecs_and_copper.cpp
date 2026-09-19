@@ -15,7 +15,7 @@
 //   again here would silently fold it into a new number, which the build
 //   assignment forbids. It does not cite `agnus_copper_move_range`'s T4/T6:
 //   those exercise $07E under the printed name BLTSIZE, not a disk register.
-// Claim ids: 6 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).

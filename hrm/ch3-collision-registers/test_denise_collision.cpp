@@ -14,7 +14,7 @@
 // Non-goals: CLXCON2 (AGA, 9h10e) is not in this package's 98-record
 //   inventory and is not asserted. `aga`/`dblpf` are held at their power-up
 //   default (0) throughout -- no claim in this package names them.
-// Claim ids: 165 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

@@ -18,10 +18,10 @@
 //   "...is independent of the WORDSYNC enable.") and page 279 (Appendix A,
 //   the DSKDATR/DSKDAT register description).
 // Non-goals: anything outside the `minimig` fixture this package builds, and
-//   any claim outside the 12 it cites. A green here means those assertions
+//   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
 //   correct, and not that the chapter is covered.
-// Claim ids: 12 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

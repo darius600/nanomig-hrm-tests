@@ -11,10 +11,10 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 402.
 // Non-goals: anything outside the `cpu_cache_new` fixture this package
-//   builds, and any claim outside the 1 it cites. A green here means those
+//   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: the one id below carries a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the id below carries a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and it names
 //   one reader's reading of one printed sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).

@@ -8,10 +8,10 @@
 // (the OCS corners are already graded, PASS, in hrm/ch2-copper-move-sweep),
 // and the two claims routed to record() instead of graded here.
 // Non-goals: anything outside the `agnus_copper` fixture this package
-//   builds, and any claim outside the 11 it cites. A green here means those
+//   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 11 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

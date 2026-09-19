@@ -6,10 +6,10 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 435, 436
 // Non-goals: anything outside the `cpu_wrapper` fixture this package builds,
-//   and any claim outside the 34 it cites. A green here means those
+//   and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 34 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in
 //   `work/appK-build/appK-autoconfig-reserved-registers.jsonl` in the

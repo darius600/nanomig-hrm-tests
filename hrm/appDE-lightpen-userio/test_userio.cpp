@@ -12,18 +12,18 @@
 //   sol:E-lightpen.c20, opus:E-lightpen.c23  "PEN PRESS = POT0X", dashed
 //     route from PORT 0 pin 5 to the POTINP box (figure)
 //
-// Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   page 333 (Appendix E, CONNECTOR PIN USAGE table and LIGHT PEN figure).
 // Test purpose: appDE-lightpen-userio Grades 6 claims (3 propositions, each
 //   claimed independently by readers sol and opus) against `userio`
 //   (compiled alone), from Appendix E p.333's CONNECTOR PIN USAGE table and
 //   LIGHT PEN figure.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   page 333 (Appendix E, CONNECTOR PIN USAGE table and LIGHT PEN figure).
 // Non-goals: anything outside the `userio` fixture this package builds, and
-//   any claim outside the 8 it cites. A green here means those assertions
+//   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
 //   correct, and not that the chapter is covered.
-// Claim ids: 8 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).

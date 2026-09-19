@@ -43,7 +43,7 @@
 // known Appendix-C-sourced ECS extension already exercised by the frozen
 // test's T10. The sweep below measures this empirically rather than taking
 // the comment's word for it, and reports any further deviation as a finding.
-// Claim ids: 36 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

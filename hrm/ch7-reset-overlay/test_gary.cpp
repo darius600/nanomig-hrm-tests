@@ -17,7 +17,7 @@
 //   near the end). The `cpu_hlt` exception folded into gary.v's sel_chip[0]/
 //   sel_kick terms (read at gary.v:159,166 below) is not named by any of
 //   this package's 9 claims and is not asserted (see CPU-HLT-NOT-IN-SCOPE).
-// Claim ids: 10 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

@@ -19,7 +19,7 @@
 //   row (also outside this package's 48); DMACON's own DSKEN/DMAEN half of
 //   the DMAON condition (this fixture has no DMACON port -- declined below,
 //   needs the wider `paula` boundary).
-// Claim ids: 50 ids below carry a reader prefix -- `sol:` and `opus:` are
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).

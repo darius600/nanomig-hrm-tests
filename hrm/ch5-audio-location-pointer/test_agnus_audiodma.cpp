@@ -61,7 +61,7 @@
 //   Agnus-attribution claims (assertion 5) - both need a module outside this
 //   package's assigned fixture and are named, not measured, where they
 //   occur.
-// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in
 //   `work/ch5_packages/ch5-audio-location-pointer.jsonl` in the sibling

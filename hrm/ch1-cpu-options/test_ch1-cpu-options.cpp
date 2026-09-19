@@ -23,10 +23,10 @@
 //   RAM-EXPANSION-CEILING-8MB and RAM-BASE-FLOOR-BELOW-256K-ABSENT
 //   (PROP-2, partial), per SPECIFICATION.md's claim inventory.
 // Non-goals: anything outside the `sysctrl` fixture this package builds, and
-//   any claim outside the 4 it cites. A green here means those assertions
+//   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
 //   correct, and not that the chapter is covered.
-// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).

@@ -32,7 +32,7 @@
 //   200-line fields combine into one 400-line picture" claim (p.50,
 //   3-resolution.c16) -- see NOT ASSERTED below, this module has no
 //   lace/field input port to make that observable at this boundary.
-// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).

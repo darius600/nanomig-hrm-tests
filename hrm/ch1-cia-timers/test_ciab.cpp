@@ -19,6 +19,11 @@
 //   once per physical chip -- 2 declined, on test_ciaa.cpp's RECORDED
 //   line, not repeated here to avoid citing the same uids on two graded
 //   files' RECORDED lines with different supporting text).
+// Non-goals: anything outside the `ciab` fixture this file builds -- this
+//   package Verilates two independent tops from two sources, and this is
+//   one of them -- and any claim it does not cite. A green here means those
+//   assertions held on this fixture at the pinned revision, not that the
+//   module is correct and not that the chapter is covered.
 //
 // Order-of-work disclosure: identical situation to test_ciaa.cpp, see that
 //   file's header and SPECIFICATION.md's own disclosure section. Nothing

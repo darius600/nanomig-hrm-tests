@@ -182,6 +182,18 @@ the manual whose pages it answers to.
 | H and J — external disk connector, custom chip pin allocation | 5 | one pass |
 | K — Zorro Expansion Bus | 12 | one pass |
 
+**Three packages declare themselves something other than an HRM-conformance
+test, and say why.** `ch2-copper-locreg-width` writes *"Primary oracle: none.
+Print page 25 contradicts itself"*; `ch2-copper-rejected-move` says the manual
+*"states only that the write does not occur; it does not define what the Copper
+does next"*; `ch2-copper-bus-behaviour` is mixed, manual-backed for two of its
+five propositions and an interface-contract regression for the other three,
+because *"print page 30 never states where the Copper resumes"*. That is the
+disposition the pipeline asks for where the page is silent or self-contradicting
+— it is not the same thing as the removed packages, whose oracle was a
+description of the implementation. Every other package declares
+`HRM_CONFORMANCE`.
+
 **One naming scheme, no exceptions.** Every package is `chN-subject` or
 `appX-subject`, so a directory name says which unit of the manual judges it.
 Chapters 2 and 6 were the last holdouts — they were built as `agnus_copper_*`

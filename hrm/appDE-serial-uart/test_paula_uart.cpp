@@ -34,10 +34,10 @@
 //   via record() (sol:E-rs232.c171, opus:E-serial-timing.c6 -- see
 //   MODEM-CONTROL-PORTS and the HALT reasoning below). 0 uids unaddressed.
 // Non-goals: anything outside the `paula_uart` fixture this package builds,
-//   and any claim outside the 6 it cites. A green here means those
+//   and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 6 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in
 //   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository

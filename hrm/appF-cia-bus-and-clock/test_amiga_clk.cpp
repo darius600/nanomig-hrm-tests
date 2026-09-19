@@ -9,11 +9,13 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 353.
-// Non-goals: anything outside the `minimig_m68k_bridge` fixture this package
-//   builds, and any claim outside the 2 it cites. A green here means those
+// Non-goals: anything outside the `amiga_clk` fixture this file builds -- this
+//   package Verilates two independent tops from two sources, and this
+//   is one of them
+//   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
-// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
 //   one reader's reading of one sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).
