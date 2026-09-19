@@ -299,5 +299,7 @@ hardware. The maintained statement of that is
 defers to.
 
 Every red assertion named here re-runs with `make -C hrm/<package> test` from
-`nanomig-hrm-tests`. Each carries its page citation in its own text and a recorded
-stimulus mutation showing it discriminates.
+`nanomig-hrm-tests`. That builds the **pinned** submodule; to test a tree you
+have changed, add `NANOMIG=/path/to/your/NanoMig` — without it the reds below
+reproduce unchanged however good the fix. Each carries its page citation in its
+own text and a recorded stimulus mutation showing it discriminates.

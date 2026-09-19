@@ -130,12 +130,18 @@ path reaches the DAC in a real build — see the closing note.
 
 ### Confirming a fix, and what stays red afterwards
 
-Rerun the two packages named at the top of this page:
+Rerun the two packages named at the top of this page **against the tree you
+changed**. Both Makefiles default to `NANOMIG ?= ../../nanomig`, the pinned
+submodule, so a bare `make` here rebuilds the unmodified RTL and reproduces the
+reds below no matter what you fixed:
 
 ```sh
-make -C hrm/ch5-audio-register-map test
-make -C hrm/ch5-audio-volume-scale test
+make -C hrm/ch5-audio-register-map test NANOMIG=/path/to/your/NanoMig
+make -C hrm/ch5-audio-volume-scale  test NANOMIG=/path/to/your/NanoMig
 ```
+
+Leave `NANOMIG` off only when you deliberately want the pinned revision — for
+instance to reproduce the before-state in the table below.
 
 **Before any change, measured 19.09.2026 against the pinned submodule:**
 

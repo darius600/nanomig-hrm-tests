@@ -105,9 +105,21 @@ change any other package's result.
 
 ## Where the claims come from
 
-Packages built through the pipeline cite a claim file in the sibling repository,
+All 208 packages in the suite came through the pipeline, and each cites a claim
+file in the sibling repository,
 [`hrm-testpipeline/work/`](https://github.com/darius600/hrm-testpipeline/tree/main/work).
-You do not need one to add a test: a package that cites its printed page and
-fixes the expectation before opening the RTL is welcome, and
-[`README.md`](../README.md#what-is-covered-and-by-which-method) says which of the
-228 packages were built each way and what that difference means for a green.
+
+**You do not need one to add a test.** A package that cites its printed page and
+fixes the expectation before opening the RTL is welcome; what the pipeline adds
+on top is a second independent reading of the same pages and a per-claim ledger,
+and a package without those is not thereby worth less — it just does not carry a
+completeness claim about its chapter. What a green means either way is defined in
+[`README.md`](../README.md#what-is-covered-and-by-which-method).
+
+An earlier suite of 23 packages had no claim file because it had no manual
+citation either: its oracle was a frozen module specification, written by reading
+the Verilog. Twenty of those are gone and
+[`legacy-names.md`](legacy-names.md) maps their names. That is the one shape of
+package that is not welcome — not because it was hand-written, but because a
+description of the implementation cannot decide whether the implementation is
+right.

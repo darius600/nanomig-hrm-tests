@@ -153,6 +153,15 @@ go red, that is the shortest way in.
 
 ## What is covered, and by which method
 
+**What one green means, in a sentence.** *The graded assertions in that package
+held, on its fixture, against the RTL at the pinned submodule revision, for the
+printed claims they cite.* It does not mean the module is correct, that the
+manual's other statements about it are covered, that anything on a `MEASURED` or
+`RECORDED` line was checked, or that AGA behaviour was judged at all — the third
+edition documents OCS and ECS, so AGA is outside what this suite can adjudicate.
+Coverage is a separate statement, made per claim from a committed ledger, and is
+never implied by a green.
+
 **All 208 packages came through the pipeline.** Each is assigned to the unit of
 the manual whose pages it answers to.
 
