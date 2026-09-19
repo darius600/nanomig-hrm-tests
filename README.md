@@ -142,6 +142,7 @@ same error as the other four in the direction nobody was watching for.
 | know whether an emulator was allowed to decide | [`docs/third-witness.md`](docs/third-witness.md) and [`docs/third-witness-ch3-ch6.md`](docs/third-witness-ch3-ch6.md) |
 | see what four independent implementations do about the same question | [`docs/fourth-witness-denise-copperline.md`](docs/fourth-witness-denise-copperline.md) — Denise and Copperline read against the findings, file and line each |
 | know what a green result means here | the coverage section below, and [`docs/test-inventory.md`](docs/test-inventory.md) |
+| add or change a test | [`docs/adding-a-test.md`](docs/adding-a-test.md) — the rules a reviewer checks, with a package to copy from |
 
 [`docs/README.md`](docs/README.md) is the map. If you have just watched the suite
 go red, that is the shortest way in.
