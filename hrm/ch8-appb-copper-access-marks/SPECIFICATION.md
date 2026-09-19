@@ -93,9 +93,9 @@ mark means, so nothing here tests it either."* — it does not grade this
 claim. The uid pair the note actually describes (`opus:8-appB.c37` /
 `sol:8-appB.c36`, "the \* mark" on SERDATR) is real and traced, in the s1
 classified corpus (`2026-09-14_ch8_s1_classified_c5-appB.jsonl`), to
-`"package": "hrm/agnus_copper_move_sweep"` — and that uid pair is cited,
+`"package": "hrm/ch2-copper-move-sweep"` — and that uid pair is cited,
 verified directly in the built test source, on
-`hrm/agnus_copper_move_sweep`'s two ecs=0 sweep assertions:
+`hrm/ch2-copper-move-sweep`'s two ecs=0 sweep assertions:
 
     SWEEP ecs=0 cdang=0 vs spec Reading B (HRM_CONFORMANCE, primary oracle)
     SWEEP ecs=0 cdang=1 vs spec Reading B (HRM_CONFORMANCE, primary oracle)
@@ -109,7 +109,7 @@ assertions instead of the claims file's own citation.
 only "subject of slice s2" and names the uid pair
 `opus:8-appB-adkconr.c2`/`sol:8-appb-adkconr.c2` without a package. That pair
 was independently traced the same way: `sol:8-appb-adkconr.c2` is cited on
-`hrm/agnus_copper_move_sweep`'s `SWEEP ecs=0 cdang=0` assertion (same label
+`hrm/ch2-copper-move-sweep`'s `SWEEP ecs=0 cdang=0` assertion (same label
 as above). `opus:8-regsum.c25` is put on a `record()` line citing that
 assertion.
 
@@ -273,7 +273,7 @@ is disclosed rather than hidden**: locating the *correct* package/assertion
 for the two `record()`-routed claims (`sol:8-serdatr.c145`,
 `opus:8-regsum.c25`) required opening `agnus_copper.v` (to check the decode
 line numbers the classify evidence already cited) and reading
-`hrm/agnus_copper_move_sweep`'s and `hrm/agnus_copper_move_range`'s test
+`hrm/ch2-copper-move-sweep`'s and `hrm/ch2-copper-move-range`'s test
 sources and the s1/s2 classified corpora, before this file was committed —
 because the claims file's own note for `c145` named a package that, checked
 directly, does not test the claim at all (see *Already graded elsewhere*

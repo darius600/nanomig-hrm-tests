@@ -41,7 +41,7 @@
 //
 // A FIXTURE DEFECT FOUND AND FIXED DURING THIS BUILD, RECORDED HERE SO
 // NOBODY RE-DERIVES IT: the first version of this file held `clkena`
-// constantly high (copied from hrm/agnus_blitter_status, where it is
+// constantly high (copied from hrm/ch6-blitter-status, where it is
 // harmless because that package measures no durations). Every one of the
 // eight tick-count speed assertions below then measured EXACTLY HALF of
 // what p.193 states - minimum 2 not 4, maximum 4 not 8, A+D=2 not 4,
@@ -88,7 +88,7 @@
 // written out in full inside its assertion's message, never a shared-
 // prefix shorthand.
 //
-// FIXTURE. Started from the working harness in hrm/agnus_blitter_status/
+// FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
 // correctly) - TEST-DATA-DELIVERY below reproduces its TEST-DATA-DELIVERY
 // assertion first, before anything data-dependent, per the build brief.
@@ -97,7 +97,7 @@
 // afterwards, and sampling int3 before the tick's own clock edge) is the
 // same mechanism as agnus_blitter_status, agnus_blitter_size and every
 // other agnus_blitter package - all read before writing this file.
-// hrm/agnus_blitter_size/ (the most recently finished sibling, read in
+// hrm/ch6-blitter-size/ (the most recently finished sibling, read in
 // full) is the closer technique match: it counts DESTINATION WRITES rather
 // than reading registers back, which is what every cycle-counting
 // assertion below does too, and it is the source of the marginal-width
@@ -483,7 +483,7 @@ private:
         // int3 (=done, agnus_blitter.v:507) is purely combinational off the
         // CURRENT (pre-edge) FSM state; sampling it here - before this
         // tick's own edge - lines it up with `busy` (a registered output)
-        // at the SAME tick index. See hrm/agnus_blitter_status's header for
+        // at the SAME tick index. See hrm/ch6-blitter-status's header for
         // the full reasoning; reused verbatim here.
         last_int3 = dut->int3;
         last_we = false;
@@ -561,7 +561,7 @@ void start_blit(Harness& h, uint16_t use_bits, uint16_t lf, uint16_t width, uint
 }
 
 // Marginal-width steady-state tick measurement (technique from
-// hrm/agnus_blitter_size, which counts destination writes rather than
+// hrm/ch6-blitter-size, which counts destination writes rather than
 // reading registers back - here applied to CYCLE COUNT rather than word
 // count). Runs the same USE code at two widths and divides the difference
 // in total elapsed ticks by the difference in width, which cancels the
@@ -605,7 +605,7 @@ int main(int argc, char** argv) {
             "fixture arrive at data_out, in order, at the we cycles they were fetched on "
             "- proves the DMA grant handshake actually delivers data, which every "
             "data-dependent assertion below depends on. Reproduced from "
-            "hrm/agnus_blitter_status's TEST-DATA-DELIVERY before anything data-"
+            "hrm/ch6-blitter-status's TEST-DATA-DELIVERY before anything data-"
             "dependent, per the build brief.");
     }
 
@@ -951,7 +951,7 @@ int main(int argc, char** argv) {
         checks.expect(ticks_noshift == ticks_shifted,
             "SHIFTING-ADDS-NO-CYCLES: the steady-state per-word tick count (measured "
             "marginally between width=10 and width=20 blits, the same technique "
-            "hrm/agnus_blitter_size uses for word counts) is identical for ash=0 "
+            "hrm/ch6-blitter-size uses for word counts) is identical for ash=0 "
             "(no shift) and ash=7 (a genuine 7-position shift) - both measured at " +
             std::to_string(ticks_noshift) + " ticks/word - 'This shifting operation is "
             "completely free; it requires no more time to execute a blit with shifts "

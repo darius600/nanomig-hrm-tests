@@ -88,9 +88,9 @@
 // toggle-flop-plus-carry construction, so a `cck` that alternates 0/1/0/1...
 // on every clk7_en tick makes `hpos` advance by exactly 1 per tick (this
 // harness's `tick()`), matching the "true divide-by-2 of clk7_en" cck
-// convention already established and validated by hrm/agnus_blitter_cycles
+// convention already established and validated by hrm/ch6-blitter-cycles
 // and reused by every later agnus_blitter package in this chapter (see e.g.
-// hrm/agnus_blitter_bltcon's header). Neither `hpos` nor `cck`'s
+// hrm/ch6-blitter-bltcon's header). Neither `hpos` nor `cck`'s
 // relationship to it is asserted on here - only `refresh` and `sol`, both
 // real output ports - `cck`'s toggle rate is fixture plumbing, checked by
 // SOL-MARKS-A-STABLE-LINE-LENGTH below rather than assumed.

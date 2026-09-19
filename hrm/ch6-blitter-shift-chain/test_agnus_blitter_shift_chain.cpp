@@ -1,6 +1,6 @@
 // Test purpose: Verify the barrel shifter AS WIRED INTO agnus_blitter - what
 //   the leaf module agnus_blitter_barrelshifter cannot show because it has
-//   no clock and no register (hrm/agnus_blitter_barrelshifter,
+//   no clock and no register (hrm/ch6-blitter-barrelshifter,
 //   PKG-BLT-SHIFT, confirmed and unchanged). Specifically: channel A's mask
 //   is applied to the source word BEFORE that word enters the shift chain;
 //   the first word of the first row of a fresh blit shifts in zeros and no
@@ -16,7 +16,7 @@
 //   pp. 169-171, 179-182, 200.
 // Non-goals: the leaf barrel shifter's own combinational correctness across
 //   shift/value space - exhaustively swept already by PKG-BLT-SHIFT
-//   (hrm/agnus_blitter_barrelshifter, 4,197,376 cases), reused here only as
+//   (hrm/ch6-blitter-barrelshifter, 4,197,376 cases), reused here only as
 //   the already-validated hrm_oracle() formula, not re-swept.
 //   BLTCON0/BLTCON1 field decode in isolation (which nibble is ash/bsh) -
 //   PKG-BLT-BLTCON-FIELDS. Full BLTAFWM/BLTALWM masking semantics beyond the
@@ -48,11 +48,11 @@
 // actually lives, because it needs agnus_blitter's registers (bltaold,
 // bltbhold, bltbdat_wrtn) and clock, which the leaf module does not have.
 //
-// FIXTURE. Started from the working harness in hrm/agnus_blitter_status/ (the
+// FIXTURE. Started from the working harness in hrm/ch6-blitter-status/ (the
 // only agnus_blitter fixture in the tree proven to deliver data correctly),
 // not from scratch and not from the salvaged diagnostic. Harness::cycle,
 // Harness::tick_bookkeeping and the TEST-DATA-DELIVERY assertion immediately
-// below are copied from hrm/agnus_blitter_status/test_agnus_blitter_status.cpp
+// below are copied from hrm/ch6-blitter-status/test_agnus_blitter_status.cpp
 // essentially verbatim (added: LF_A_PASSTHROUGH and LF_B_PASSTHROUGH constants,
 // needed here because this file routes data through A and B, not only C). All
 // five timing traps documented in that file's header apply here too and are
@@ -212,7 +212,7 @@ constexpr uint16_t LF_A_PASSTHROUGH = 0xF0;  // D = A, for every B/C value
 constexpr uint16_t LF_B_PASSTHROUGH = 0xCC;  // D = B, for every A/C value
 
 // The ascending-mode shift formula, independently validated in
-// hrm/agnus_blitter_barrelshifter/test_agnus_blitter_barrelshifter.cpp
+// hrm/ch6-blitter-barrelshifter/test_agnus_blitter_barrelshifter.cpp
 // (hrm_oracle(), 4.2M-case sweep against the leaf module, PKG-BLT-SHIFT,
 // confirmed and unchanged). Reused here as a fixed reference, not re-derived
 // and not re-swept - this file only checks that agnus_blitter WIRES this
@@ -236,7 +236,7 @@ struct Sample {
     bool reqdma;
 };
 
-// Copied from hrm/agnus_blitter_status/test_agnus_blitter_status.cpp,
+// Copied from hrm/ch6-blitter-status/test_agnus_blitter_status.cpp,
 // unchanged in mechanism - see that file's header for why every step here
 // is where it is (the second eval() on a DMA grant, capturing we/data_out
 // at the grant rather than polling, int3 sampled before the tick's own edge).
@@ -327,7 +327,7 @@ private:
             dut->data_in = v;
             // Settle ackdma/reg_address_in/data_in against the combinational
             // network BEFORE the clock edge - the step the salvaged harness
-            // skipped (see hrm/agnus_blitter_status's header).
+            // skipped (see hrm/ch6-blitter-status's header).
             dut->eval();
             if (dut->we) {
                 last_we = true;
@@ -390,7 +390,7 @@ int main(int argc, char** argv) {
         checks.expect(h.data_writes == expected,
             "[fixture check] TEST-DATA-DELIVERY: four distinct C words fed into the "
             "fixture arrive at data_out, in order - proves the DMA grant handshake "
-            "actually delivers data (copied from hrm/agnus_blitter_status), which "
+            "actually delivers data (copied from hrm/ch6-blitter-status), which "
             "every data-dependent assertion below depends on");
     }
 

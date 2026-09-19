@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_copper.v` **lines 384-548**, the `copper_state` machine that spends the cycles — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L384-L548) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v) |
 | **Report to** | **nowhere yet** — this one needs hardware, not a patch. See *Suggested change* |
-| **Test** | [`hrm/agnus_copper_cycle_times`](../../hrm/agnus_copper_cycle_times), [`hrm/agnus_copper_cycles`](../../hrm/agnus_copper_cycles) |
+| **Test** | [`hrm/ch2-copper-cycle-times`](../../hrm/ch2-copper-cycle-times), [`hrm/ch2-copper-cycles`](../../hrm/ch2-copper-cycles) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | vAmiga measures exactly NanoMig's three numbers |
 

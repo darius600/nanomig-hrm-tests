@@ -41,13 +41,13 @@
 // named as the harness/pattern to copy -- never from this agent's own
 // reading. RTL reading began only after that commit. Full per-claim
 // quotations and restatements remain in that commit's history
-// (`git log -p -- hrm/agnus_blitter_regdecode` shows the spec commit in
+// (`git log -p -- hrm/ch6-blitter-regdecode` shows the spec commit in
 // full); this header keeps the coverage-relevant summary and the findings
 // the RTL reading actually produced, matching the pattern already
-// established by hrm/agnus_blitter_bltcon/test_agnus_blitter_bltcon.cpp
+// established by hrm/ch6-blitter-bltcon/test_agnus_blitter_bltcon.cpp
 // for a package this size.
 //
-// FIXTURE. Harness copied from hrm/agnus_blitter_cycles/ (the corrected-
+// FIXTURE. Harness copied from hrm/ch6-blitter-cycles/ (the corrected-
 // clkena harness, per the build brief -- NOT agnus_blitter_status's
 // constant-clkena one). Carries the same traps documented in that file's
 // header and in hrm-testpipeline/work/2026-09-08_fpga-090_build_register.md,

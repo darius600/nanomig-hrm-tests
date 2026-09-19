@@ -90,14 +90,14 @@ ones, gathered in one place:
   `CH4-reuse.c7` etc.) already grades sprite-channel reuse with a minimum
   line separation and beam-position gating — this chapter's page-4 sprite-reuse
   sentences (P12, P13 below).
-- **`hrm/agnus_blitter_minterm`** (182 testable claims) already grades the
+- **`hrm/ch6-blitter-minterm`** (182 testable claims) already grades the
   blitter's 256-combination minterm function exhaustively (all 2048/256/768
   cases swept) — the "combine the data in one of 256 different possible ways"
   clause (P15 below) is its question, not this package's.
-- **`hrm/agnus_blitter_line`** and **`hrm/agnus_blitter_fill`** already grade
+- **`hrm/ch6-blitter-line`** and **`hrm/ch6-blitter-fill`** already grade
   the special line-draw mode and the area-fill logic as mechanisms — the
   page-4 sentence naming them (P16 below) is graded there, not here.
-- **`hrm/agnus_copper_waitskip_range`** (`COP-04`, `COP-08`) already grades
+- **`hrm/ch2-copper-waitskip-range`** (`COP-04`, `COP-08`) already grades
   WAIT/SKIP triggering many times per list, mid-line and at specific beam
   positions with mutation-tested exactness — page 3's "trigger many times per
   screen... mid-line... during blanking" sentence (P10 below) is graded
@@ -111,10 +111,10 @@ ones, gathered in one place:
   SPRxPTL... eight independent pairs exist"), audio pointer range/writability
   by `hrm/ch5-audio-location-pointer` ("the audio DMA location/pointer
   registers (AUDxLCH/AUDxLCL)", 176 claims), the Copper's own location
-  registers by `hrm/agnus_copper_locreg_width` ("the width of the Copper
+  registers by `hrm/ch2-copper-locreg-width` ("the width of the Copper
   location registers (COP1LCH/COP1LCL, COP2LCH/COP2LCL)... by walking single
   bits through the register-bus write path"), and the blitter's own pointer
-  bank by `hrm/agnus_blitter_adrgen` ("four independent BLTxPT pointer
+  bank by `hrm/ch6-blitter-adrgen` ("four independent BLTxPT pointer
   registers... written as a byte address... the pointer's value after a
   simulated blit row"). Every engine page 6 names already has a package
   whose whole purpose is that engine's pointer register — this chapter's
@@ -404,7 +404,7 @@ possible.
 
 Declined. This is WAIT/SKIP triggering at arbitrary line/mid-line/blanking
 beam positions, repeated across one list — exactly what
-`hrm/agnus_copper_waitskip_range` (`COP-04`, `COP-08`) already grades with
+`hrm/ch2-copper-waitskip-range` (`COP-04`, `COP-08`) already grades with
 mutation-tested exactness (its own header: "WAIT/SKIP comparison
 semantics... BFD and counter rollover"). A weaker restatement here adds no
 falsifiable content P8 does not already cover at this boundary (that the
@@ -480,10 +480,10 @@ question).
 
 Declined, per the build brief's own instruction for this package: "the
 blitter's minterm logic is chapter 6's question and is already graded
-there." `hrm/agnus_blitter_minterm` (182 claims) exhaustively sweeps all
+there." `hrm/ch6-blitter-minterm` (182 claims) exhaustively sweeps all
 256 LF codes (2048/256/768 cases across three coverage groups) — the
 "combine... in one of 256 different possible ways" clause. `hrm/
-agnus_blitter_line` and `hrm/agnus_blitter_fill` grade the line-draw and
+agnus_blitter_line` and `hrm/ch6-blitter-fill` grade the line-draw and
 area-fill mechanisms by name. P14 above already grades this sentence's
 structural half (the blitter moves data across the boundary); these two
 sentences' remaining content is exactly the mechanism chapter 6 owns.
@@ -642,7 +642,7 @@ four already has a dedicated existing package whose whole purpose is that
 engine's own pointer register's range and writability: bitplane
 (`hrm/ch3-bitplane-pointers-and-modulo`), sprite
 (`hrm/ch4-sprite-pointer-registers`), audio (`hrm/ch5-audio-location-pointer`,
-176 claims), Copper (`hrm/agnus_copper_locreg_width`, which walks single
+176 claims), Copper (`hrm/ch2-copper-locreg-width`, which walks single
 bits through the register-bus write path to `COP1LCH`/`COP1LCL`). A fresh
 sweep at the `agnus` boundary would answer the identical question four
 existing packages already answer in more depth, and — for bitplane and
@@ -656,7 +656,7 @@ this same fact, are declined for the same reason.
 > This same region of memory can be accessed by the bit blitter.
 — `sol:1-components.c114`, `opus:1-components.c114`
 
-Declined, same reasoning as P27: `hrm/agnus_blitter_adrgen`'s own stated
+Declined, same reasoning as P27: `hrm/ch6-blitter-adrgen`'s own stated
 purpose is "four independent BLTxPT pointer registers... written as a byte
 address... the pointer's value after a simulated blit row" — exactly this
 sentence's proposition (the blitter's pointer reaches the same chip-address

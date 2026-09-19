@@ -97,7 +97,7 @@ exactly which of the four it depends on (e.g. `opus:8-appB.c9`'s
 assertion, because the brief requires the composed fact to be graded and
 names both contributing claims — not because they are being added to this
 package's own 117-claim inventory. This mirrors an existing accepted
-pattern in this suite (`hrm/agnus_blitter_regdecode` cites `ch6-appb-legend.wr`,
+pattern in this suite (`hrm/ch6-blitter-regdecode` cites `ch6-appb-legend.wr`,
 a legend claim that lives in a different chapter-6 file than its own).
 
 Similarly, `POT0DAT` and `POT1DAT` carry the appendix-B chip mark `P (E)`

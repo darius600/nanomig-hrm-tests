@@ -81,9 +81,9 @@
 //   satisfy the gate" and this cannot be repaired retroactively by
 //   whichever agent finishes the file -- recorded here, not hidden.
 //
-// FIXTURE. Started from the working harness in hrm/agnus_blitter_cycles/
+// FIXTURE. Started from the working harness in hrm/ch6-blitter-cycles/
 // (per the build brief: the corrected-clkena harness, not
-// hrm/agnus_blitter_status's constant-clkena one). TEST-DATA-DELIVERY below
+// hrm/ch6-blitter-status's constant-clkena one). TEST-DATA-DELIVERY below
 // reproduces agnus_blitter_status's/agnus_blitter_cycles's own
 // TEST-DATA-DELIVERY assertion first, before anything data-dependent, per
 // the build brief. Harness::cycle's DMA-grant handshake (the settling
@@ -610,7 +610,7 @@ int main(int argc, char** argv) {
             "fixture arrive at data_out, in order, at the we cycles they were fetched on "
             "- proves the DMA grant handshake actually delivers data, which every "
             "data-dependent assertion below depends on. Reproduced from "
-            "hrm/agnus_blitter_cycles's TEST-DATA-DELIVERY before anything data-"
+            "hrm/ch6-blitter-cycles's TEST-DATA-DELIVERY before anything data-"
             "dependent, per the build brief.");
     }
 

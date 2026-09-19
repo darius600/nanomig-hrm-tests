@@ -43,7 +43,7 @@
 //   here that could confirm or contradict a claim about channel C bypassing
 //   this module entirely.
 //
-// EXTENDS PRIOR ART (hrm/agnus_blitter_barrelshifter, unchanged in shape
+// EXTENDS PRIOR ART (hrm/ch6-blitter-barrelshifter, unchanged in shape
 // since its original commit; see docs/blitter-prior-art.md). What was
 // already here and is kept, verbatim in mechanism: the `hrm_oracle()`
 // function computing the expected output from the manual's shift

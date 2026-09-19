@@ -172,7 +172,7 @@
 // proposition it stated (five ids that state BOTH the ECS reading and the
 // OCS/18-bit reading in the same sentence are cited under both assertion 8
 // and assertion 9, per the same "cited under both assertions it actually
-// supports" convention hrm/agnus_blitter_ecs's header documents), verified by
+// supports" convention hrm/ch6-blitter-ecs's header documents), verified by
 // script against the full 176-line claim file. The COVERAGE REPAIR above
 // withdrew twelve of those ids from assertion 1 as not actually established
 // by its own measurement; they are listed, with the fixture they need, in
@@ -365,7 +365,7 @@
 //    absolute expectation, using the IDENTICAL walking-one/all-ones
 //    methodology assertion 8 uses (which PASSES) as its control - so a red
 //    result here reflects the OCS claim failing to hold, not a broken
-//    fixture, exactly the shape hrm/agnus_blitter_ecs's header documents for
+//    fixture, exactly the shape hrm/ch6-blitter-ecs's header documents for
 //    its own three required-reds. Its correct, expected outcome is FAIL.
 //    Claims: 5-p139.c1, 5-sum.c1, 5-loc.c1, 5-appA-p266.c5, 5-appA-p266.c11,
 //    5-appB-p290.c57, 5-appB-p290.c92, 5-appB-p290.c127, 5-appB-p290.c148,
@@ -427,7 +427,7 @@
 //        above. address_out and reg_address_out are therefore continuously
 //        live, combinational reads of audpt[channel] / a constant table - no
 //        clock edge is needed to observe them once hpos is set, the same
-//        "genuinely continuous assignment" property hrm/agnus_blitter_ecs's
+//        "genuinely continuous assignment" property hrm/ch6-blitter-ecs's
 //        header documents for its own address_out().
 //   :132  address_out = audptout[20:1] = audpt[channel] - the WORKING
 //        POINTER, NOT the location bank directly. There is no read-back path
@@ -1227,7 +1227,7 @@ int main(int argc, char** argv) {
 //   because `survivors` measures 3, not 5, on every channel; 8 passed,
 //   2 failed.
 // MUTATION LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD stimulus red, diagnosed rather than simply reported as "stayed
-//   red" per the same rule hrm/agnus_blitter_ecs's header documents for its
+//   red" per the same rule hrm/ch6-blitter-ecs's header documents for its
 //   own required-reds (assertion 9 is already required-red at baseline, so a
 //   mutation that leaves it red proves nothing by itself): the probed bit
 //   positions changed from 3 and 4 (the genuinely ECS-only bits, i.e.

@@ -55,7 +55,7 @@ nobody has done, and an assertion guessing at it would be worse than none.
 
 Appendix C lists five ECS changes to the blitter. `agnus_blitter` takes an `ecs`
 input and uses it for two of them. Three are findings and they all live in
-`hrm/agnus_blitter_ecs`, each required to fail:
+`hrm/ch6-blitter-ecs`, each required to fail:
 
 | Assertion | Measured |
 |---|---|
@@ -91,7 +91,7 @@ gating cannot happen *there*; it leaves open whether the parent, which does take
 `ecs`, gates it before handing the write down. It does not, and that is now
 measured rather than inferred.
 
-`hrm/agnus_blitter_ecs`'s `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` writes `BLTAPTH` with
+`hrm/ch6-blitter-ecs`'s `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` writes `BLTAPTH` with
 `$001F` — all five low bits — twice on the same fixture, once with `ecs` low and
 once with `ecs` high, and reads `agnus_blitter`'s own `address_out`:
 

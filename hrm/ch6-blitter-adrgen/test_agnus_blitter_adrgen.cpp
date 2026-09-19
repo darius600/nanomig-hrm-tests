@@ -21,7 +21,7 @@
 //   cannot be separately driven here; ECS-FIVE-BIT-PTH below measures the
 //   behaviour this design actually implements (unconditionally 5 bits) and,
 //   by that same measurement, shows the 3-bit alternative is not what is
-//   present - the same reporting pattern hrm/agnus_blitter_status used for
+//   present - the same reporting pattern hrm/ch6-blitter-status used for
 //   the pre-Fat-Agnus busy timing. Register "write-only" wording
 //   (ch6-appa-bltxmod.c2, 6-appa-registers.c105, .c108) - this module
 //   exposes no host-read datapath for any register at all (no
@@ -72,7 +72,7 @@
 //     is exactly what the pointer bank holds and address_out reports.
 //
 // FIXTURE NOTE, learned from the agnus_blitter package built immediately
-// before this one (hrm/agnus_blitter_status): this module is sequential (the
+// before this one (hrm/ch6-blitter-status): this module is sequential (the
 // pointer and modulo banks are `reg`, updated `@(posedge clk)`), so a value
 // this fixture sets and a value it samples are never in the same instant
 // unless the read is a genuinely combinational probe. address_out IS such a

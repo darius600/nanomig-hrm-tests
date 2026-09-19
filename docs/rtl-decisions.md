@@ -57,7 +57,7 @@ definition is not an implementation.
 | Manual | Appendix C's ECS register map, printed p.298, marks `BLTSIZV $05C` **new**; printed p.308 names it among "Two new registers ... which make larger blits possible", "h = Height (15 bit height = 32768 lines max)" |
 | NanoMig | `agnus_blitter.v:548` loads `height[14:0]` with **no `&& ecs`** - and the comment on that same line calls it ECS |
 | Measured | height loads identically at `ecs=0` and `ecs=1` |
-| Test | `hrm/agnus_blitter_ecs`, `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` (red) |
+| Test | `hrm/ch6-blitter-ecs`, `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` (red) |
 
 **WinUAE** drops the write entirely on OCS - `custom.cpp:3915`:
 
@@ -97,7 +97,7 @@ matter.
 | Manual | Appendix C p.309: `DOFF`, BLTCON1 bit 7 - disables the D output in line mode |
 | NanoMig | `bltcon1[7]` appears nowhere in `agnus_blitter.v`. The bits it reads are 15-12, 4, 3, 2, 1, 0 |
 | Measured | setting bit 7 changes no cycle, no `we` pulse and no written word |
-| Test | `hrm/agnus_blitter_ecs`, `DOFF-NO-OBSERVABLE-EFFECT` (red) |
+| Test | `hrm/ch6-blitter-ecs`, `DOFF-NO-OBSERVABLE-EFFECT` (red) |
 
 **WinUAE implements it**, ECS-gated - `blitter.cpp:1541`:
 
@@ -130,7 +130,7 @@ to pay.
 | Manual | Appendix A p.270 "high 3 bits, 5 bits if ECS"; Appendix C p.309 "high 5 bits, was 3 bits" |
 | NanoMig | `agnus_blitter_adrgen.v:62` takes `data_in[4:0]` unconditionally. That module has **no `ecs` port at all**, and `agnus_blitter.v:588-592` passes it none |
 | Measured | `ecs=0` and `ecs=1` both give `address_out = 0xF8000` from `BLTAPTH=$001F` |
-| Test | `hrm/agnus_blitter_ecs`, `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` (red) |
+| Test | `hrm/ch6-blitter-ecs`, `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` (red) |
 
 **This is finding 4 in a second engine.** The Copper does the same thing from the
 same bits with no chipset condition. Two findings, one design decision.
@@ -181,7 +181,7 @@ and that is exactly the question this suite cannot answer.
 | Manual | Appendix A p.273 "(high 3 bits, high 5 bits if ECS)"; p.276 "These are 18-bit pointer registers"; Appendix C p.309 "COP1LCH ... (high 5 bits, was 3 bits)" |
 | NanoMig | `agnus_copper.v:144` `cop1lch[20:16] <= data_in[4:0];` then `:197` `address_out[20:1] <= {cop1lch[20:16], cop1lcl[15:1]}` - unconditional |
 | Measured | five high bits in both chipsets; a 20-bit pointer |
-| Tests | `hrm/agnus_copper_control` `T4`; `hrm/agnus_copper_locreg_width` `LW1`, `LW3`, `LW4` (all red) |
+| Tests | `hrm/ch2-copper-control` `T4`; `hrm/ch2-copper-locreg-width` `LW1`, `LW3`, `LW4` (all red) |
 
 `LW3` is the assertion that matters: the appendix gives *two different* widths for
 the two chipsets, so a module reporting the same width in both contradicts the
@@ -211,7 +211,7 @@ NanoMig, in the other direction.**
 |---|---|
 | Manual | Appendix C p.310: with ECS and CDANG=0 the writable range equals the OCS CDANG=1 range, `$20`-`$FF` |
 | NanoMig | `$40`-`$FF`; 32 addresses `$20`-`$3F` rejected, none falsely accepted |
-| Tests | `hrm/agnus_copper_move_range` `T9`; `hrm/agnus_copper_move_sweep` (red) |
+| Tests | `hrm/ch2-copper-move-range` `T9`; `hrm/ch2-copper-move-sweep` (red) |
 
 **WinUAE** - `custom.cpp:2806`:
 
@@ -257,7 +257,7 @@ exactly that question.
 |---|---|
 | Manual | p.20 and Appendix A p.275: a SKIP spans four memory cycle times, a satisfied WAIT six; all instructions except WAIT take two bus cycles and two instruction words |
 | NanoMig | SKIP spans 8 memory cycle times, a satisfied WAIT 8 instead of 6 |
-| Tests | `hrm/agnus_copper_cycle_times` `P3`-`P6`, `AC5`, `AC6`; `hrm/agnus_copper_cycles` `C5`, `C6` (red) |
+| Tests | `hrm/ch2-copper-cycle-times` `P3`-`P6`, `AC5`, `AC6`; `hrm/ch2-copper-cycles` `C5`, `C6` (red) |
 
 `AC6` is the sharpest: for a SKIP, memory cycle times should be exactly twice the
 granted bus cycles, and the appendix states that conversion rather than only the
@@ -273,7 +273,7 @@ absent.
 
 **What it would take:** trace one satisfied WAIT and one SKIP through each state
 machine, counting the DMA slots consumed, and compare against the same two
-instructions in `hrm/agnus_copper_cycle_times`. That is a session's work, and it
+instructions in `hrm/ch2-copper-cycle-times`. That is a session's work, and it
 is the obvious next piece if this is the finding you want to act on first.
 
 ---

@@ -57,7 +57,7 @@
 //   The starting harness salvaged into scratchpad/salvaged-harness/diag.cpp had
 //   correct busy/int3/we timing but never actually delivered data: every
 //   data_out at every we came back 0. The cause, found by diffing against the
-//   known-good hrm/agnus_copper_waitskip_range harness: on a DMA grant, that
+//   known-good hrm/ch2-copper-waitskip-range harness: on a DMA grant, that
 //   harness sets ackdma/reg_address_in/data_in and then calls dut->eval() AGAIN
 //   before toggling the clock. The salvaged diag.cpp skipped that second eval()
 //   - it set the grant signals and went straight to `clk=1; eval();`. The fix

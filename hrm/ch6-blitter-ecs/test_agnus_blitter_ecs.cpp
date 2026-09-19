@@ -85,7 +85,7 @@
 // ch6-appa-bltxpt.c2 and ch6-appa-bltxpt.c6 - Appendix A p.270's "BLTxPTH ...
 // high 3 bits, 5 bits if ECS", corroborated by Appendix C p.309 - were
 // originally routed by classify.package to PKG-BLT-ADRGEN and built into
-// hrm/agnus_blitter_adrgen's ECS-FIVE-BIT-PTH. That was a routing error:
+// hrm/ch6-blitter-adrgen's ECS-FIVE-BIT-PTH. That was a routing error:
 // agnus_blitter_adrgen has no `ecs` port at all (its own port list,
 // agnus_blitter_adrgen.v:4-20), so the OCS alternative the claim describes
 // cannot be selected there, and ECS-FIVE-BIT-PTH says so plainly in its own
@@ -139,7 +139,7 @@
 // citations for exactly that shortcut. Assertion name -> covered ids:
 //
 //   TEST-DATA-DELIVERY-ECS: fixture check, no claim id - reproduces
-//     hrm/agnus_blitter_status's TEST-DATA-DELIVERY through this file's own
+//     hrm/ch6-blitter-status's TEST-DATA-DELIVERY through this file's own
 //     Harness before anything data-dependent is asserted, per the build
 //     brief.
 //
@@ -234,7 +234,7 @@
 //     bits"), ch6-appa-bltxpt.c5 (p270, same claim, opus) - BLTxPTL's own
 //     width, a DIFFERENT claim from the BLTxPTH high-word OCS-3-bit/ECS-5-bit
 //     claim that BLTXPTH-WIDTH-REGARDLESS-OF-ECS below now covers (see
-//     "ROUTING CORRECTION" below for that one). hrm/agnus_blitter_adrgen/
+//     "ROUTING CORRECTION" below for that one). hrm/ch6-blitter-adrgen/
 //     test_agnus_blitter_adrgen.cpp's PTR-TWO-WORD-COMPOSITION assertion
 //     already measures this low-word claim (a BLTAPTL write alone leaves the
 //     high word - the pointer's upper bits - unchanged), even though it does
@@ -284,7 +284,7 @@
 //     map's own notation legend, the same treatment packages.md gives
 //     "the book's own notation conventions (p175)").
 //
-// FIXTURE. Started from the working harness in hrm/agnus_blitter_status/
+// FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
 // correctly) - TEST-DATA-DELIVERY-ECS below reproduces its
 // TEST-DATA-DELIVERY assertion first, before anything data-dependent, per
@@ -315,7 +315,7 @@
 // address_out is a genuinely continuous assignment
 // (agnus_blitter_adrgen.v:72,80,82,84, wired straight to agnus_blitter's own
 // address_out port), not something that goes stale after the next tick -
-// this is the same property hrm/agnus_blitter_adrgen's own header documents
+// this is the same property hrm/ch6-blitter-adrgen's own header documents
 // for its identical read_ptr() technique. Harness::write_reg leaves
 // reg_address_in/data_in parked at the just-written register (nothing in
 // cycle() resets them before returning), and the blitter's own `enaptr`
@@ -507,7 +507,7 @@ constexpr uint16_t bltsize_word(uint16_t width, uint16_t height) {
     return static_cast<uint16_t>((height << 6) | width);
 }
 
-// Copied in mechanism from hrm/agnus_blitter_status (the DMA-grant
+// Copied in mechanism from hrm/ch6-blitter-status (the DMA-grant
 // second-eval() fix), read in full before writing this file. `ecs` is a
 // per-instance constructor parameter, changeable mid-run via set_ecs() -
 // needed by BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS, which must write
@@ -627,7 +627,7 @@ private:
             dut->data_in = v;
             // Settle ackdma/reg_address_in/data_in against the combinational
             // network BEFORE the clock edge - the step the salvaged
-            // diag.cpp harness skipped (see hrm/agnus_blitter_status's
+            // diag.cpp harness skipped (see hrm/ch6-blitter-status's
             // header). we/data_out are transient and only valid here.
             dut->eval();
             if (dut->we) {
@@ -677,7 +677,7 @@ int main(int argc, char** argv) {
             "fixture arrive at data_out, in order, at the we cycles they were fetched on - "
             "proves the DMA grant handshake actually delivers data, which every "
             "data-dependent assertion below depends on. Reproduced from "
-            "hrm/agnus_blitter_status's TEST-DATA-DELIVERY first, per the build brief, "
+            "hrm/ch6-blitter-status's TEST-DATA-DELIVERY first, per the build brief, "
             "before anything data-dependent.");
     }
 
@@ -749,7 +749,7 @@ int main(int argc, char** argv) {
     // *** NEW FINDING (see below) - do not adjust this assertion to pass. ***
     // Routing correction (Prompt 8 independent validation): 6-appa-registers.c110,
     // ch6-appa-bltxpt.c2 and ch6-appa-bltxpt.c6 were originally routed to
-    // PKG-BLT-ADRGEN and built at hrm/agnus_blitter_adrgen - that module has NO
+    // PKG-BLT-ADRGEN and built at hrm/ch6-blitter-adrgen - that module has NO
     // `ecs` port at all (its own port list, agnus_blitter_adrgen.v:4-20), so the
     // OCS 3-bit alternative cannot be selected there; its ECS-FIVE-BIT-PTH
     // assertion measures only the ECS-widened form and says in its own text that
@@ -762,7 +762,7 @@ int main(int argc, char** argv) {
     // bits with it - is measurable here, at the boundary where `ecs` exists.
     {
         // Identical BLTAPTH stimulus ($001F, all five low bits of the high word
-        // set - the same write hrm/agnus_blitter_adrgen's ECS-FIVE-BIT-PTH uses),
+        // set - the same write hrm/ch6-blitter-adrgen's ECS-FIVE-BIT-PTH uses),
         // issued once on a harness constructed with ecs=0 and once with ecs=1.
         // BLTAPTL is written first (to a known 0) exactly as ECS-FIVE-BIT-PTH
         // does, so a non-zero result can only come from the BLTAPTH write.
@@ -803,7 +803,7 @@ int main(int argc, char** argv) {
             "the pointer's high bits unconditionally - the submodule has no `ecs` "
             "port to gate it with in the first place (agnus_blitter_adrgen.v:4-20). "
             "So the OCS 3-bit form is not implemented at THIS boundary either, for "
-            "the identical reason hrm/agnus_blitter_adrgen's own ECS-FIVE-BIT-PTH "
+            "the identical reason hrm/ch6-blitter-adrgen's own ECS-FIVE-BIT-PTH "
             "already found and reported at ITS boundary - the difference is that "
             "agnus_blitter, unlike agnus_blitter_adrgen, genuinely has an `ecs` "
             "port (agnus_blitter.v:84) that the manual's claim could have been "

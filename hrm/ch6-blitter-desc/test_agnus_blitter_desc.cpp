@@ -15,7 +15,7 @@
 //   control that moves the needle) is
 //   AREA-DESC-BIT1-SELECTS-DESCENDING-MODE's and
 //   AREA-MODE-BLTCON1-BITS-11-10-9-8-6-5-ARE-UNUSED's job in
-//   PKG-BLT-BLTCON-FIELDS (hrm/agnus_blitter_bltcon), on the p.267
+//   PKG-BLT-BLTCON-FIELDS (hrm/ch6-blitter-bltcon), on the p.267
 //   appendix-A TABLE basis - it cites 6-appa-control.c30,
 //   6-appa-control.c43, ch6-appa-bltcon0.area.b01.con1 and
 //   ch6-appa-bltcon0.legend.DESC, none of which this file cites or repeats.
@@ -36,7 +36,7 @@
 //   changed; only its citation text did. - The leaf barrel shifter's own
 //   exhaustive shift-value sweep (all 16 shift values, both directions,
 //   structural claims about the 32-bit window) - PKG-BLT-SHIFT's territory
-//   (hrm/agnus_blitter_barrelshifter). This package DOES assert the same
+//   (hrm/ch6-blitter-barrelshifter). This package DOES assert the same
 //   descending-mode shift-direction fact PKG-BLT-SHIFT already measured at
 //   the leaf (RIGHT-ASCENDING/LEFT-DESCENDING) - deliberately, per the build
 //   brief: "packages.md calls the two packages meeting on the same fact from
@@ -62,8 +62,8 @@
 // assignment near lines 490-600), agnus_blitter_adrgen.v (the pointer/modulo
 // ALU) and agnus_blitter_barrelshifter.v (the shift direction mux) were all
 // read - together with three prior packages' harnesses
-// (hrm/agnus_blitter_status, hrm/agnus_blitter_cycles,
-// hrm/agnus_blitter_bltcon) and the build register's fixture-trap list - in
+// (hrm/ch6-blitter-status, hrm/ch6-blitter-cycles,
+// hrm/ch6-blitter-bltcon) and the build register's fixture-trap list - in
 // order to work out whether and how each of the 16 claims filed under
 // classify.package=="PKG-BLT-DESC" could be measured at all at this
 // boundary. The specification below is real, matches the inventory's
@@ -74,10 +74,10 @@
 // chapter's own precedent (PKG-BLT-BLTCON-FIELDS, ae6255b/914f38a) recorded
 // the identical defect rather than paper over it; this file does the same.
 //
-// FIXTURE. Started from hrm/agnus_blitter_bltcon's Harness (itself started
-// from hrm/agnus_blitter_cycles's corrected-clkena harness), per the build
+// FIXTURE. Started from hrm/ch6-blitter-bltcon's Harness (itself started
+// from hrm/ch6-blitter-cycles's corrected-clkena harness), per the build
 // brief's instruction to take the clkena fix from
-// hrm/agnus_blitter_cycles/, not from hrm/agnus_blitter_status/'s
+// hrm/ch6-blitter-cycles/, not from hrm/ch6-blitter-status/'s
 // constant-clkena one (agnus.v:437 wires the blitter's clkena to `cck`, a
 // true divide-by-two of clk7_en - amiga_clk.v:19-38,35 - and holding it
 // constantly high made every tick count in PKG-BLT-CYCLES read exactly
@@ -88,7 +88,7 @@
 // per the build brief and because the DMA grant-handshake fix it also
 // carries (the second dut->eval() after setting
 // ackdma/reg_address_in/data_in, before the clock edge - without it no data
-// arrives at all, see hrm/agnus_blitter_status's header for the original
+// arrives at all, see hrm/ch6-blitter-status's header for the original
 // diagnosis) is unrelated to clkena and load-bearing regardless.
 // TEST-DATA-DELIVERY below reproduces that check before anything
 // data-dependent, per the build brief.
@@ -98,9 +98,9 @@
 // combinational off the register bank/FSM state - all sampled at the grant,
 // right after the settling eval() and before the clock edge, matching how a
 // real synchronous memory would sample write-enable/data/address (the same
-// mechanism as hrm/agnus_blitter_bltcon, copied verbatim). `int3` is sampled
+// mechanism as hrm/ch6-blitter-bltcon, copied verbatim). `int3` is sampled
 // before the tick's own clock edge for the same reason documented in
-// hrm/agnus_blitter_status's header (it is combinational off the FSM's
+// hrm/ch6-blitter-status's header (it is combinational off the FSM's
 // CURRENT, pre-edge state) - unused by any assertion below but kept for
 // parity with the shared Harness shape.
 //
@@ -126,7 +126,7 @@
 // `used`, so run_until_done() still terminates. The two SHIFT assertions, by
 // contrast, need a genuine D-channel WRITE to observe the shifted value on
 // data_out, so they set USED and watch data_writes, following
-// hrm/agnus_blitter_shift_chain's PREV-WORD-BITS/ZEROS-FIRST-WORD-ONLY
+// hrm/ch6-blitter-shift-chain's PREV-WORD-BITS/ZEROS-FIRST-WORD-ONLY
 // pattern (single-word row, fresh Harness so bltaold==0, masks=0xFFFF).
 //
 // CLAIM COVERAGE. All 16 records of classify.package=="PKG-BLT-DESC"
@@ -240,8 +240,8 @@ constexpr uint16_t USED = 1u << 8;
 
 // Minterm LF settings (agnus_blitter_minterm.v): bit k of LF selects the
 // (A,B,C) combination whose binary value is k, MSB-first as (A,B,C). Values
-// reused verbatim from hrm/agnus_blitter_shift_chain and
-// hrm/agnus_blitter_bltcon.
+// reused verbatim from hrm/ch6-blitter-shift-chain and
+// hrm/ch6-blitter-bltcon.
 constexpr uint16_t LF_C_PASSTHROUGH = 0xAA;  // D = C, for every A/B value
 constexpr uint16_t LF_A_PASSTHROUGH = 0xF0;  // D = A, for every B/C value
 
@@ -334,7 +334,7 @@ private:
     // agnus.v:437 wires the blitter's `clkena` to `cck`, a true divide-by-2
     // of clk7_en (amiga_clk.v:19-38). Toggled once per cycle() call to match
     // cck's own toggle-once-per-tick behaviour, starting high (amiga_clk.v:
-    // 28's `cck <= 1` reset value). See hrm/agnus_blitter_cycles's header
+    // 28's `cck <= 1` reset value). See hrm/ch6-blitter-cycles's header
     // for the full diagnosis; reused verbatim here per the build brief.
     bool clkena_phase = true;
 
@@ -379,7 +379,7 @@ private:
             dut->data_in = v;
             // Settle ackdma/reg_address_in/data_in against the combinational
             // network BEFORE the clock edge - the step the original salvaged
-            // harness skipped (see hrm/agnus_blitter_status's header);
+            // harness skipped (see hrm/ch6-blitter-status's header);
             // without it no data ever arrives.
             dut->eval();
             last_granted = true;
@@ -443,7 +443,7 @@ int main(int argc, char** argv) {
             "fixture arrive at data_out, in order, at the grant they were fetched on - "
             "proves the DMA grant handshake actually delivers data, which every "
             "data-dependent assertion below depends on. Reproduced from "
-            "hrm/agnus_blitter_bltcon's/hrm/agnus_blitter_cycles's own TEST-DATA-DELIVERY "
+            "hrm/ch6-blitter-bltcon's/hrm/ch6-blitter-cycles's own TEST-DATA-DELIVERY "
             "before anything data-dependent, per the build brief.");
     }
 
@@ -549,7 +549,7 @@ int main(int argc, char** argv) {
 
     // ---------------- SHIFT DIRECTION: ascending vs descending (p.200) ----------------
     // Single-word row through channel A (fresh Harness => bltaold==0, the
-    // ZEROS-FIRST-WORD-ONLY precondition from hrm/agnus_blitter_shift_chain)
+    // ZEROS-FIRST-WORD-ONLY precondition from hrm/ch6-blitter-shift-chain)
     // with a single marked bit (bit 11, 0x0800) and shift=4. Both masks
     // written to 0xFFFF first (the BLTAFWM/BLTALWM-default-0 trap).
     {

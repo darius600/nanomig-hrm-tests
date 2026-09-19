@@ -72,7 +72,7 @@
 //   package and is not constructible in this project at all.)
 //
 // FIXTURE. New harness for this package, following the write_reg/tick
-// pattern already established in hrm/agnus_audiodma and hrm/agnus_blitter_*
+// pattern already established in hrm/agnus_audiodma and the blitter packages (both since renamed or removed -- see docs/legacy-names.md)
 // (both read before this file was written): reset, then one clk7_en tick to
 // latch a register write (ciaa.v's regporta/ddrporta are posedge-clk,
 // clk7_en-gated - ciaa.v:227-239), while reads (pa_out, ciaa.v:251-259, and

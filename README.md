@@ -182,13 +182,12 @@ the manual whose pages it answers to.
 | H and J — external disk connector, custom chip pin allocation | 5 | one pass |
 | K — Zorro Expansion Bus | 12 | one pass |
 
-**Two naming schemes, and no third.** Chapters 1, 3, 4, 5, 7 and 8 and every
-appendix use `chN-subject` and `appX-subject`. Chapters 2 and 6 use
-`agnus_copper_*` and `agnus_blitter_*` instead: they were built before the
-prefix existed, their directory names are cited by name in records that are not
-edited, and renaming them is a separate piece of work rather than a thing this
-table hides. Those are the only two exceptions — every other package can be found
-from its unit.
+**One naming scheme, no exceptions.** Every package is `chN-subject` or
+`appX-subject`, so a directory name says which unit of the manual judges it.
+Chapters 2 and 6 were the last holdouts — they were built as `agnus_copper_*`
+and `agnus_blitter_*` before the prefix existed — and were renamed on
+19.09.2026. Records in the pipeline repository cite the old names 4821 times and
+are not edited; [`docs/legacy-names.md`](docs/legacy-names.md) maps every one.
 
 A first suite of 23 module-level packages preceded the pipeline. Their oracle was
 a *frozen specification*: a note describing what the module already does, written
@@ -233,7 +232,7 @@ the pipeline repository's own README, weaknesses included.
 replaces it, proposition by proposition** — not after a count, and not because a
 directory looks superseded. The check is not a formality in either direction: one
 Copper case turned out not to be covered at all and is now asserted as `B2s` in
-`hrm/agnus_copper_waitskip_range`, and of the twenty pre-pipeline packages
+`hrm/ch2-copper-waitskip-range`, and of the twenty pre-pipeline packages
 removed, two carried a number with no page behind it — a horizontal span of
 0..453 and four refresh slots at 9/13/17/21 — which is the reason they went
 rather than an obstacle to their going.
@@ -267,7 +266,7 @@ Four rules carry the whole thing:
 - **Do not bundle** — a sentence mixing prescription with behaviour gets split.
 - **The reason belongs in the assertion** — a green that hangs on a precondition
   which never occurs asserts nothing. See `W4a`/`W4b` in
-  `hrm/agnus_copper_waitskip_range/`.
+  `hrm/ch2-copper-waitskip-range/`.
 - **Oracle mutation is not stimulus mutation** — flipping an expected value only
   shows that a boolean can go false.
 

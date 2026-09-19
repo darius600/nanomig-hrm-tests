@@ -18,7 +18,7 @@
 //   word's `fci` (agnus_blitter.v:464, agnus_blitter.v:470) is not
 //   constructible at this leaf module's boundary - see CLAIM COVERAGE below.
 //
-// EXTENDS PRIOR ART (hrm/agnus_blitter_fill, unchanged in shape since its
+// EXTENDS PRIOR ART (hrm/ch6-blitter-fill, unchanged in shape since its
 // original commit; see docs/blitter-prior-art.md "Defect 3" and the README).
 // What was already here and is kept: the `hrm_oracle()` function computing
 // expected fill behaviour from the manual's description rather than the RTL,

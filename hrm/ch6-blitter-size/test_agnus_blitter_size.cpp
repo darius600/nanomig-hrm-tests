@@ -8,7 +8,7 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 169-173, 186, 192, 200, 269, 308.
 // Non-goals: ECS BLTSIZH/BLTSIZV, their own field widths (11-bit/15-bit) and
-//   their `ecs` gating - PKG-BLT-ECS's territory (hrm/agnus_blitter_ecs),
+//   their `ecs` gating - PKG-BLT-ECS's territory (hrm/ch6-blitter-ecs),
 //   which explicitly redirects its own OCS-BLTSIZE-zero-means-1024 numeric
 //   claim back here (see that file's "NOT ASSERTED - REDIRECTED",
 //   6-appc-big-blits.c22) while keeping the ECS field-width claims for
@@ -19,7 +19,7 @@
 //   counts destination WRITES to show width/height's operational meaning,
 //   never address arithmetic); BUSY-NO-DMA-NEEDED and the pre-Fat-Agnus busy
 //   timing alternative, zero/BZERO, int3 pulse timing - already
-//   PKG-BLT-STATUS's job (hrm/agnus_blitter_status); minterm/data
+//   PKG-BLT-STATUS's job (hrm/ch6-blitter-status); minterm/data
 //   correctness - PKG-BLT-MINTERM's job, used here strictly as plumbing
 //   (C-passthrough) to get a countable word through the pipeline; register
 //   read-back / write-only completeness for BLTSIZE - PKG-BLT-REGDECODE's
@@ -75,7 +75,7 @@
 // Assertion name -> covered ids:
 //
 //   TEST-DATA-DELIVERY: fixture check, no claim id - reproduces
-//     hrm/agnus_blitter_status's TEST-DATA-DELIVERY through this file's own
+//     hrm/ch6-blitter-status's TEST-DATA-DELIVERY through this file's own
 //     Harness before anything data-dependent is asserted, per the build
 //     brief.
 //
@@ -147,7 +147,7 @@
 //   its own pixel-count claims):
 //   ch6-dma.c45 (p.171, "A width of 1 to 64 words is 16 to 1024 bits").
 //
-// FIXTURE. Started from the working harness in hrm/agnus_blitter_status/
+// FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
 // correctly) - TEST-DATA-DELIVERY below reproduces its TEST-DATA-DELIVERY
 // assertion first, before anything data-dependent, per the build brief.
@@ -252,7 +252,7 @@ constexpr uint16_t bltsize_word(uint16_t width, uint16_t height) {
     return static_cast<uint16_t>((height << 6) | width);
 }
 
-// Copied in mechanism from hrm/agnus_blitter_status (the DMA-grant
+// Copied in mechanism from hrm/ch6-blitter-status (the DMA-grant
 // second-eval() fix and the at-the-grant we/data_out capture point), read
 // in full before writing this file.
 class Harness {
@@ -353,7 +353,7 @@ private:
             // Settle ackdma/reg_address_in/data_in against the
             // combinational network BEFORE the clock edge - the step the
             // salvaged diag.cpp harness skipped (see
-            // hrm/agnus_blitter_status's header). we/data_out are
+            // hrm/ch6-blitter-status's header). we/data_out are
             // transient and only valid here.
             dut->eval();
             if (dut->we) {
@@ -408,13 +408,13 @@ int main(int argc, char** argv) {
             "fixture arrive at data_out, in order, at the we cycles they were fetched "
             "on - proves the DMA grant handshake actually delivers data and that the "
             "trailing-flush settle margin is sufficient to see the true last word. "
-            "Reproduced from hrm/agnus_blitter_status's TEST-DATA-DELIVERY first, per "
+            "Reproduced from hrm/ch6-blitter-status's TEST-DATA-DELIVERY first, per "
             "the build brief, before anything data-dependent.");
     }
 
     // ---------------- BLTSIZE-WRITE-SETS-BUSY [reused fact, control] ----------------
     {
-        // The same fact hrm/agnus_blitter_status already established as
+        // The same fact hrm/ch6-blitter-status already established as
         // BUSY-SET (agnus_blitter.v:500-501: busy is set purely off
         // reg_address_in matching BLTSIZE). Re-verified here only as the
         // precondition every write-counting assertion below depends on - if

@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L142-L144) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L142-L144) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
-| **Test** | [`hrm/agnus_copper_control`](../../hrm/agnus_copper_control), [`hrm/agnus_copper_locreg_width`](../../hrm/agnus_copper_locreg_width) |
+| **Test** | [`hrm/ch2-copper-control`](../../hrm/ch2-copper-control), [`hrm/ch2-copper-locreg-width`](../../hrm/ch2-copper-locreg-width) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — to 19 bits on OCS. The two do it in different places and the effect on a fetched address is the same |
 | **See also** | `NM-HRM-022` (blitter) and `NM-HRM-024` (audio) — the same decision in two other engines |

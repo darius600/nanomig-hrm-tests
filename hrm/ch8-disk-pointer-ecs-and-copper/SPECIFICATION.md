@@ -43,7 +43,7 @@ $008-$026 (which contains $020/DSKPTH and $022/DSKPTL) at OCS/cdang=0,
 OCS/cdang=1 **and** ECS/cdang=0, and lets a Copper write reach only at
 ECS/cdang=1. The assignment's hard instruction is to **grade the printed
 `*` mark with `ecs`=0** here, and to treat the ECS/cdang=1 reach case as
-**already NM-HRM-004's territory** (`hrm/agnus_copper_move_range`'s red
+**already NM-HRM-004's territory** (`hrm/ch2-copper-move-range`'s red
 finding that the ECS danger bit admits too small a range) rather than
 grading it as a new number. This package therefore only ever drives `ecs`=0
 when a Copper MOVE is aimed at the protected pointer registers; it does not
@@ -163,7 +163,7 @@ proposition above is trusted:
   under P1, not separately graded.
 - **The ECS/cdang=1 reach case for the Copper write-protect mark** -- per
   C13's hard instruction, this is NM-HRM-004's territory
-  (`hrm/agnus_copper_move_range`) and is not re-graded here as a new
+  (`hrm/ch2-copper-move-range`) and is not re-graded here as a new
   finding. If the build encounters it, it is recorded pointing at
   NM-HRM-004, not asserted as new.
 

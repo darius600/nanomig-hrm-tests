@@ -5,7 +5,7 @@
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., Appendix B,
 // p.287 (the "*"/"~" legend) composed with p.289 (the four rows). See
 // SPECIFICATION.md for the full reading, why this package is scoped to ECS
-// (the OCS corners are already graded, PASS, in hrm/agnus_copper_move_sweep),
+// (the OCS corners are already graded, PASS, in hrm/ch2-copper-move-sweep),
 // and the two claims routed to record() instead of graded here.
 // Non-goals: anything outside the `agnus_copper` fixture this package
 //   builds, and any claim outside the 11 it cites. A green here means those
@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
     // --- P-SERDAT: SERDAT ($030), *-marked (p.289:33), composed with the
     // unconditional legend (p.287:22). Expected blocked in BOTH CDANG
     // states at ECS=1 -- the OCS corners are already graded PASS in
-    // hrm/agnus_copper_move_sweep (SWEEP ecs=0 cdang=0/cdang=1 vs spec
+    // hrm/ch2-copper-move-sweep (SWEEP ecs=0 cdang=0/cdang=1 vs spec
     // Reading B; see SPECIFICATION.md).
     bool sd0_cdang = false;
 #if MUT_SD0
@@ -366,7 +366,7 @@ int main(int argc, char** argv) {
     // ------------------------------------------------------------------
     checks.record(
         "sol:8-serdatr.c145 (SERDATR *018, p.289 composed with p.287's * legend) -- already graded: "
-        "hrm/agnus_copper_move_sweep, assertions \"SWEEP ecs=0 cdang=0 vs spec Reading B\" and "
+        "hrm/ch2-copper-move-sweep, assertions \"SWEEP ecs=0 cdang=0 vs spec Reading B\" and "
         "\"SWEEP ecs=0 cdang=1 vs spec Reading B\" (uid pair opus:8-appB.c37/sol:8-appB.c36), both PASS at "
         "ecs=0 (OCS) in that package's own accepted run. The claims file's own classify.note cited "
         "hrm/ch8-appb-serial-register-rows for this claim; checked directly, that package's SPECIFICATION.md "
@@ -375,7 +375,7 @@ int main(int argc, char** argv) {
         "P-SERDATR (see SERDATR-CDANG0/SERDATR-CDANG1 above) covers SERDATR's fresh ECS ground instead.");
     checks.record(
         "opus:8-regsum.c25 (ADKCONR *010, p.289 composed with p.287's * legend) -- already graded: "
-        "hrm/agnus_copper_move_sweep, assertion \"SWEEP ecs=0 cdang=0 vs spec Reading B\" (uid pair "
+        "hrm/ch2-copper-move-sweep, assertion \"SWEEP ecs=0 cdang=0 vs spec Reading B\" (uid pair "
         "opus:8-appB-adkconr.c2/sol:8-appb-adkconr.c2), PASS at ecs=0 (OCS) in that package's own accepted "
         "run. Not re-graded here; this package does not independently test ADKCONR at ECS, since no claim in "
         "this lot's uid set asks for it once c25 is accounted for this way.");

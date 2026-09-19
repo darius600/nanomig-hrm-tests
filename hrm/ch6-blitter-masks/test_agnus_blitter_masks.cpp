@@ -15,7 +15,7 @@
 //   fuller shift-chain claims (zero-fill on the first word only, previous
 //   word/row bits chaining in, shift-on-load of BLTBDAT) beyond the single
 //   "mask happens before the shift" ordering fact independently asserted
-//   here (PKG-BLT-SHIFT-CHAIN, hrm/agnus_blitter_shift_chain); minterm/LF
+//   here (PKG-BLT-SHIFT-CHAIN, hrm/ch6-blitter-shift-chain); minterm/LF
 //   decode correctness beyond using two already-simple LF settings as
 //   plumbing (PKG-BLT-MINTERM); full register-decode completeness for every
 //   blitter register, including BLTBDAT/BLTCDAT/BLTDDAT (PKG-BLT-REGDECODE);
@@ -72,9 +72,9 @@
 // below (MASK-MUX-THREE-REGIMES for .c1, MASK-16-BITS-INDEPENDENT for .c2)
 // directly against those RTL lines, not against the picture.
 //
-// FIXTURE. Started from the working harness in hrm/agnus_blitter_status/
+// FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
-// correctly) and from hrm/agnus_blitter_shift_chain/, which was built after
+// correctly) and from hrm/ch6-blitter-shift-chain/, which was built after
 // this package's original brief and already exercises masking before the
 // shift - both read in full before writing this file. Harness::cycle and
 // the TEST-DATA-DELIVERY assertion immediately below are the same mechanism
@@ -305,8 +305,8 @@ constexpr uint16_t LF_C_PASSTHROUGH = 0xAA;  // D = C, for every A/B value
 constexpr uint16_t LF_A_OR_B = 0xFC;         // D = A | B, independent of C
 
 // The ascending-mode shift formula, independently validated in
-// hrm/agnus_blitter_barrelshifter (PKG-BLT-SHIFT, 4.2M-case sweep) and
-// reused verbatim by hrm/agnus_blitter_shift_chain. Used here only where a
+// hrm/ch6-blitter-barrelshifter (PKG-BLT-SHIFT, 4.2M-case sweep) and
+// reused verbatim by hrm/ch6-blitter-shift-chain. Used here only where a
 // shift is actually part of what is being measured (MASK-BEFORE-SHIFT,
 // ALT-SHIFT-SAME-BOUNDARY); every other block below runs with shift=0.
 constexpr uint16_t ascending_shift(uint16_t shift, uint16_t previous, uint16_t current) {
@@ -316,8 +316,8 @@ constexpr uint16_t ascending_shift(uint16_t shift, uint16_t previous, uint16_t c
                                  (static_cast<uint32_t>(current) >> shift));
 }
 
-// Copied in mechanism from hrm/agnus_blitter_status and
-// hrm/agnus_blitter_shift_chain (both read in full before writing this
+// Copied in mechanism from hrm/ch6-blitter-status and
+// hrm/ch6-blitter-shift-chain (both read in full before writing this
 // file) - see this file's header for why every step is where it is.
 class Harness {
 public:
@@ -403,7 +403,7 @@ private:
             dut->data_in = v;
             // Settle ackdma/reg_address_in/data_in against the
             // combinational network BEFORE the clock edge - the step the
-            // salvaged diag.cpp skipped (see hrm/agnus_blitter_status's
+            // salvaged diag.cpp skipped (see hrm/ch6-blitter-status's
             // header). address_out is combinational off the currently
             // stored pointer register (agnus_blitter_adrgen.v:82-84), so it
             // is valid at this same settled moment.
@@ -467,8 +467,8 @@ int main(int argc, char** argv) {
         checks.expect(h.data_writes == expected,
             "[fixture check] TEST-DATA-DELIVERY: four distinct C words fed into the "
             "fixture arrive at data_out, in order - proves the DMA grant handshake "
-            "actually delivers data (mechanism copied from hrm/agnus_blitter_status "
-            "and hrm/agnus_blitter_shift_chain), which every data-dependent assertion "
+            "actually delivers data (mechanism copied from hrm/ch6-blitter-status "
+            "and hrm/ch6-blitter-shift-chain), which every data-dependent assertion "
             "below depends on");
     }
 

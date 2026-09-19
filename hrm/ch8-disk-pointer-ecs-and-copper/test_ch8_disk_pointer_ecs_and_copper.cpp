@@ -11,7 +11,7 @@
 //   readings already graded RED at `agnus_diskdma` by `ch8-disk-dma-pointer`
 //   (candidates C7/C14). It does not build a Copper-write assertion at
 //   ECS/cdang=1 for the protected register range -- that case is
-//   `hrm/agnus_copper_move_range`'s existing red NM-HRM-004, and grading it
+//   `hrm/ch2-copper-move-range`'s existing red NM-HRM-004, and grading it
 //   again here would silently fold it into a new number, which the build
 //   assignment forbids. It does not cite `agnus_copper_move_range`'s T4/T6:
 //   those exercise $07E under the printed name BLTSIZE, not a disk register.
@@ -58,7 +58,7 @@ constexpr uint16_t COPJMP1 = to_reg(0x088);
 // Fixture, built from the given classify evidence (agnus_diskdma's port
 // list -- reg_address_in, data_in, address_out, dmal, dmas, dma, wr, hpos,
 // speed; agnus's disk_dmal/disk_dmas/ecs/floppy_speed top-level ports) and
-// from reading hrm/agnus_copper_control/test_agnus_top_copper_dma.cpp for
+// from reading hrm/ch2-copper-control/test_agnus_top_copper_dma.cpp for
 // how to bring the Agnus top level up (its DUT init list and CPU
 // write/fetch-serving pattern are reused here almost verbatim; nothing is
 // cited from it as an oracle).

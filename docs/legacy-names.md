@@ -77,6 +77,55 @@ packages expects the third to be one:
 | `paula_audio_mixer` | `ch5-audio-stereo-routing` | chapter 5, carries NM-HRM-002 |
 | `agnus_slots` | `ch6-refresh-dma-slots` | chapter 6, printed p.194 |
 
+### Chapters 2 and 6, renamed 19.09.2026
+
+The Copper and blitter packages were built before the `chN-` prefix
+existed and kept their module-shaped names for three weeks after every
+other package had one. A reader who has seen two `chN-` packages expects
+the third to be one, and these twenty-six were the last that were not.
+
+| was | is |
+|---|---|
+| `agnus_copper_bus_behaviour` | `ch2-copper-bus-behaviour` |
+| `agnus_copper_control` | `ch2-copper-control` |
+| `agnus_copper_cycle_times` | `ch2-copper-cycle-times` |
+| `agnus_copper_cycles` | `ch2-copper-cycles` |
+| `agnus_copper_list` | `ch2-copper-list` |
+| `agnus_copper_locreg_width` | `ch2-copper-locreg-width` |
+| `agnus_copper_move_range` | `ch2-copper-move-range` |
+| `agnus_copper_move_src` | `ch2-copper-move-src` |
+| `agnus_copper_move_sweep` | `ch2-copper-move-sweep` |
+| `agnus_copper_rejected_move` | `ch2-copper-rejected-move` |
+| `agnus_copper_selfmod` | `ch2-copper-selfmod` |
+| `agnus_copper_waitskip_range` | `ch2-copper-waitskip-range` |
+| `agnus_blitter_adrgen` | `ch6-blitter-adrgen` |
+| `agnus_blitter_barrelshifter` | `ch6-blitter-barrelshifter` |
+| `agnus_blitter_bltcon` | `ch6-blitter-bltcon` |
+| `agnus_blitter_cycles` | `ch6-blitter-cycles` |
+| `agnus_blitter_desc` | `ch6-blitter-desc` |
+| `agnus_blitter_ecs` | `ch6-blitter-ecs` |
+| `agnus_blitter_fill` | `ch6-blitter-fill` |
+| `agnus_blitter_line` | `ch6-blitter-line` |
+| `agnus_blitter_masks` | `ch6-blitter-masks` |
+| `agnus_blitter_minterm` | `ch6-blitter-minterm` |
+| `agnus_blitter_regdecode` | `ch6-blitter-regdecode` |
+| `agnus_blitter_shift_chain` | `ch6-blitter-shift-chain` |
+| `agnus_blitter_size` | `ch6-blitter-size` |
+| `agnus_blitter_status` | `ch6-blitter-status` |
+
+**Four of these names are also Verilog modules** —
+`agnus_blitter_adrgen`, `agnus_blitter_barrelshifter`,
+`agnus_blitter_fill` and `agnus_blitter_minterm`. Those modules have not
+moved. Only the `hrm/<name>` path form was rewritten, so a comment naming
+a *module* is not a stale package reference.
+
+**Four names in this family resolve to nothing at all**, because the
+packages were deleted before this rename: `agnus_blitter_modulo`,
+`agnus_blitter_ptr`, `agnus_blitter_mask` and `agnus_blitter_zero`. They
+were the pre-chapter-6 blitter tests, superseded by the packages above,
+and [`blitter-prior-art.md`](blitter-prior-art.md) records what each one
+did and why it went. Comments that mention them cite that document.
+
 The Verilog modules keep their own names — `paula_uart.v`, `paula_audio_mixer.v`
 and the rest are unchanged, and a `//` comment naming a *module* is not a stale
 package reference.

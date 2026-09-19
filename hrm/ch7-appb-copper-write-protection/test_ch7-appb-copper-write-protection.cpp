@@ -11,12 +11,12 @@
 // Non-goals: the "~" (danger-bit-required) mark is out of scope for this
 // package -- its legend claims (sol:7-appB-legend.c5, opus:7-appB.c6) are
 // routed to chapter 2's Copper packages, which already assert CDANG
-// behaviour (see hrm/agnus_copper_move_range T5-T7, T9-T10). Whether
+// behaviour (see hrm/ch2-copper-move-range T5-T7, T9-T10). Whether
 // VPOSW/VHPOSW are readable despite their "W" column is a different
 // package's subject in this chapter and is not probed here, even though
 // this package's stimulus writes to their addresses. COPCON, BLTCON0,
 // BLTSIZE, the $096 boundary of DMACON, BPL1PTH and COLOR00 are already
-// measured by hrm/agnus_copper_move_range; none of those addresses recurs
+// measured by hrm/ch2-copper-move-range; none of those addresses recurs
 // in this package's own assertions.
 // Claim ids: 21 ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
@@ -451,7 +451,7 @@ int main(int argc, char** argv) {
     checks.record("The \"~\" (danger-bit-required) mark is not asserted by this package. Its "
         "legend claims (sol:7-appB-legend.c5, opus:7-appB.c6) exist in this chapter's corpus "
         "but are routed to \"covered by an existing package\": chapter 2's Copper packages "
-        "(hrm/agnus_copper_move_range T3-T7, T9-T10, and others) already assert CDANG/danger-bit "
+        "(hrm/ch2-copper-move-range T3-T7, T9-T10, and others) already assert CDANG/danger-bit "
         "behaviour on this same RTL expression. Confirmed by the lead after this package's "
         "specification was committed; nothing for this package to build.");
     checks.record("Whether VPOSW ($02A) or VHPOSW ($02C) are readable despite Appendix B's \"W\" "

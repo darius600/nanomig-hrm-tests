@@ -16,7 +16,7 @@
 //   (ch6-fig613.f13 below) - none of that is inside this leaf module's port
 //   list (lf, ain, bin, cin, out - agnus_blitter_minterm.v:7-14).
 //
-// EXTENDS PRIOR ART (hrm/agnus_blitter_minterm, unchanged in shape since its
+// EXTENDS PRIOR ART (hrm/ch6-blitter-minterm, unchanged in shape since its
 // original commit; see docs/blitter-prior-art.md). What was already here and
 // is kept, verbatim in mechanism: the `hrm_oracle()` function computing the
 // expected output from the manual's bit-selection description rather than

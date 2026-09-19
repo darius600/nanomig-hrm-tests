@@ -24,7 +24,7 @@
 // Non-goals: MOVE cycle timing/count (agnus_copper_cycles,
 // agnus_copper_cycle_times); IR1 bit-0 MOVE/WAIT/SKIP type decoding
 // (PKG-DECODE); IR2 data passthrough; boundary-only coverage -- that is
-// sim/hrm/agnus_copper_move_range (COP-03, frozen, not modified here). This
+// sim/hrm/ch2-copper-move-range (COP-03, frozen, not modified here). This
 // test is the exhaustive complement the frozen test explicitly declines to
 // be.
 // Disclosure: RTL (src/minimig-aga/agnus_copper.v) was read only after the

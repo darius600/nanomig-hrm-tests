@@ -27,7 +27,7 @@
 //   package's per-pixel loop uses that field as a pixel counter at small
 //   heights for runtime, EXCEPT for LINE-HEIGHT-FIELD-TEN-BITS-OCS below,
 //   which is not a non-goal: PKG-BLT-SIZE never sets LINE=1
-//   (`hrm/agnus_blitter_size` writes BLTCON1=0x0000 in every assertion), so
+//   (`hrm/ch6-blitter-size` writes BLTCON1=0x0000 in every assertion), so
 //   it cannot reach 6-appa-registers.c67 ("the h field is ten bits wide in
 //   original-chip-set line mode", p.269), the one claim this chapter's build
 //   register (`work/2026-09-08_fpga-090_build_register.md`) names as
@@ -42,7 +42,7 @@
 //   advice, not a hardware gate (same treatment PKG-BLT-STATUS gives "write
 //   BLTSIZE last").
 //
-// SUPERSESSION. Supersedes hrm/agnus_blitter_line_octant, per the build
+// SUPERSESSION. Supersedes hrm/ch6-blitter-line_octant, per the build
 // register. That package has TWO defects (docs/blitter-prior-art.md):
 //
 //   DEFECT 1: it compiles a LOCAL COPY of agnus_blitter.v:609-612 pasted into
@@ -52,7 +52,7 @@
 //   partition. A change to the real agnus_blitter.v cannot make that test go
 //   red. This package compiles agnus_blitter.v itself (via
 //   $(NANOMIG)/src/minimig-aga/, the same SRC list as
-//   hrm/agnus_blitter_status/Makefile) and, because lineinc/linedec/lineadd/
+//   hrm/ch6-blitter-status/Makefile) and, because lineinc/linedec/lineadd/
 //   linesub are internal wires with NO port on agnus_blitter (and this task
 //   forbids adding debug ports), observes their effect the only legitimate
 //   way available at this boundary: through address_out's pointer-bank
@@ -121,7 +121,7 @@
 //   evaluation of lineinc/linedec -- which is what makes it usable as
 //   defect 2's probe.
 //
-// FIXTURE. Started from the working harness in hrm/agnus_blitter_status/
+// FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
 // correctly) and adapted for line mode: TEST-DATA-DELIVERY-LINE below
 // reproduces that package's data-delivery proof through BLT_L1-L4 instead of
@@ -430,8 +430,8 @@ constexpr uint16_t LF_B_PASSTHROUGH = 0xCC;  // D = B
 constexpr uint16_t LF_LINE_4A = 0x4A;        // one of packages.md's three cited line-mode functions
 
 // The ascending-mode shift formula, independently validated in
-// hrm/agnus_blitter_barrelshifter (PKG-BLT-SHIFT, 4.2M-case sweep) and
-// reused verbatim by hrm/agnus_blitter_masks and hrm/agnus_blitter_shift_chain.
+// hrm/ch6-blitter-barrelshifter (PKG-BLT-SHIFT, 4.2M-case sweep) and
+// reused verbatim by hrm/ch6-blitter-masks and hrm/ch6-blitter-shift-chain.
 constexpr uint16_t ascending_shift(uint16_t shift, uint16_t previous, uint16_t current) {
     return shift == 0
         ? current
@@ -475,8 +475,8 @@ constexpr Octant OCTANTS[8] = {
     {7, 1, 0, 0, true, true, true},     // X major INC(right); Y minor ADD(down)
 };
 
-// Copied in mechanism from hrm/agnus_blitter_status (the DMA-grant
-// second-eval() fix) and hrm/agnus_blitter_masks (address_out capture),
+// Copied in mechanism from hrm/ch6-blitter-status (the DMA-grant
+// second-eval() fix) and hrm/ch6-blitter-masks (address_out capture),
 // both read in full before writing this file.
 class Harness {
 public:
@@ -581,7 +581,7 @@ private:
             dut->data_in = v;
             // Settle ackdma/reg_address_in/data_in against the combinational
             // network BEFORE the clock edge -- the step the salvaged
-            // diag.cpp harness skipped (see hrm/agnus_blitter_status's
+            // diag.cpp harness skipped (see hrm/ch6-blitter-status's
             // header). we/data_out are transient and only valid here.
             dut->eval();
             if (dut->we) {
@@ -726,7 +726,7 @@ int main(int argc, char** argv) {
             "[fixture check] TEST-DATA-DELIVERY-LINE: four distinct C words fed through "
             "a LINE-MODE blit (BLT_L1-L4, not BLT_A-D) arrive at data_out, in order, one "
             "per pixel -- proves the DMA grant handshake (the same second-eval() fix "
-            "documented in hrm/agnus_blitter_status) delivers data correctly through the "
+            "documented in hrm/ch6-blitter-status) delivers data correctly through the "
             "line-mode state machine specifically, which every data-dependent assertion "
             "below depends on. Reproduced first, per the build brief, before anything "
             "data-dependent.");
@@ -839,7 +839,7 @@ int main(int argc, char** argv) {
     // matching the claim's own "original-chip-set" scope. A second harness
     // repeats the IDENTICAL height=600 stimulus at ecs=1 and is included in
     // the same AND, not as a second claim, but because BLTXPTH-WIDTH-
-    // REGARDLESS-OF-ECS (hrm/agnus_blitter_ecs) already found one p.269/270
+    // REGARDLESS-OF-ECS (hrm/ch6-blitter-ecs) already found one p.269/270
     // field this chapter that silently ignores `ecs`, and the build register
     // explicitly raised the same possibility here. MEASURED (see the numbers
     // printed below): ecs=1 gives the identical count. This is NOT a second
@@ -847,10 +847,10 @@ int main(int argc, char** argv) {
     // in Appendix A (p.269) -- ECS-only, appendix C calls BLTSIZV "new" --
     // so the manual itself requires their behaviour to depend on `ecs`, and
     // agnus_blitter.v has no `&& ecs` on either decode, which is the genuine
-    // defect BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS (hrm/agnus_blitter_ecs)
+    // defect BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS (hrm/ch6-blitter-ecs)
     // reports red. BLTSIZE ($058, this claim's own register) carries NO
     // "(E)" mark on the SAME page -- it is the plain, chipset-invariant
-    // legacy register, and hrm/agnus_blitter_ecs's own
+    // legacy register, and hrm/ch6-blitter-ecs's own
     // BACKWARD-COMPAT-BLTSIZE-WORKS-WITH-ECS already measures and reports,
     // GREEN, that it starts and sizes a blit identically at ecs=1
     // (agnus_blitter.v:500,521-522,555-556 have no `&& ecs` anywhere on the
@@ -916,7 +916,7 @@ int main(int argc, char** argv) {
             " -- ecs=1 matches ecs=0 exactly, which corroborates rather than contradicts "
             "the claim: agnus_blitter.v:521-522,555-556 put no `&& ecs` on BLTSIZE's own "
             "decode (contrast BLTSIZH/BLTSIZV two-three lines below, which DO carry "
-            "`&& ecs` and are correctly gated), and hrm/agnus_blitter_ecs's "
+            "`&& ecs` and are correctly gated), and hrm/ch6-blitter-ecs's "
             "BACKWARD-COMPAT-BLTSIZE-WORKS-WITH-ECS already reports this same "
             "chipset-invariance, green, as this register's documented legacy behaviour "
             "(p.269 marks BLTSIZE plain 'A', not 'A( E )' the way BLTSIZH/BLTSIZV/BLTxPTH "
@@ -980,7 +980,7 @@ int main(int argc, char** argv) {
 
     // ---------------- LINE-MASKS-MUST-BE-FFFF (p.191, p.192, p.266) ----------------
     {
-        // Deferred by PKG-BLT-MASKS's own header (hrm/agnus_blitter_masks,
+        // Deferred by PKG-BLT-MASKS's own header (hrm/ch6-blitter-masks,
         // and docs/blitter-prior-art.md) to whoever builds the dedicated
         // line-mode fixture: 6-appa-registers.c13, ch6-line.c24,
         // ch6-linesum.c2/c3. These classify as classify.package==

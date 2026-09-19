@@ -364,7 +364,7 @@
 //   other engine - so with disk_dmal held at 0, `dbwe==1` can only mean
 //   "the blitter wrote a channel-D word this cycle".
 //   Blitter setup mirrors the already-committed, working
-//   hrm/agnus_blitter_status pattern (BLTCON0 = USEC|USED|LF_C_PASSTHROUGH,
+//   hrm/ch6-blitter-status pattern (BLTCON0 = USEC|USED|LF_C_PASSTHROUGH,
 //   agnus_blitter.v:252/595-601, then a BLTSIZE write, agnus_blitter.v:
 //   521-525/555-556 for the OCS width/height packing) - re-applied here at
 //   the `agnus` top-level register bus instead of at the `agnus_blitter`
@@ -464,7 +464,7 @@ constexpr uint16_t BBUSY_B = 1u << 14;  // DMACONR only, read-only
 
 // ---- BLTCON0 use-channel bits (agnus_blitter.v:252) and a minterm that
 // passes channel C straight through to D (agnus_blitter_minterm.v; D = C
-// for every A/B value) - same constants hrm/agnus_blitter_status uses. ----
+// for every A/B value) - same constants hrm/ch6-blitter-status uses. ----
 constexpr uint16_t BC_USEA = 1u << 11;
 constexpr uint16_t BC_USEB = 1u << 10;
 constexpr uint16_t BC_USEC = 1u << 9;

@@ -559,7 +559,7 @@ int main(int argc, char** argv) {
         "sol:1-components.c58, opus:1-components.c57 (p.3, \"The coprocessor "
         "can trigger many times per screen, in the middle of lines, and at "
         "the beginning or during the blanking interval.\"): not graded here. "
-        "hrm/agnus_copper_waitskip_range (COP-04, COP-08) already grades "
+        "hrm/ch2-copper-waitskip-range (COP-04, COP-08) already grades "
         "WAIT/SKIP triggering at arbitrary line/mid-line/blanking positions "
         "with mutation-tested exactness. COPPER-GATED-BY-BEAM-POSITION below "
         "already shows the gate genuinely depends on beam position at this "
@@ -594,9 +594,9 @@ int main(int argc, char** argv) {
         "sol:1-components.c73, opus:1-components.c72 (p.4, special-mode "
         "line draw at ~1M dots/sec and area fill): not graded here, per the "
         "build brief's own instruction for this package -- the blitter's "
-        "minterm logic is chapter 6's question. hrm/agnus_blitter_minterm "
+        "minterm logic is chapter 6's question. hrm/ch6-blitter-minterm "
         "(182 claims) exhaustively sweeps all 256 LF codes; "
-        "hrm/agnus_blitter_line and hrm/agnus_blitter_fill grade the "
+        "hrm/ch6-blitter-line and hrm/ch6-blitter-fill grade the "
         "line-draw and area-fill mechanisms by name. "
         "BLITTER-MOVES-DATA-ACROSS-BOUNDARY below already grades this "
         "sentence pair's structural half (the blitter moves data across "
@@ -959,7 +959,7 @@ int main(int argc, char** argv) {
         "writability: bitplane (hrm/ch3-bitplane-pointers-and-modulo), "
         "sprite (hrm/ch4-sprite-pointer-registers), audio "
         "(hrm/ch5-audio-location-pointer, 176 claims), Copper "
-        "(hrm/agnus_copper_locreg_width). Reaching bitplane/sprite here "
+        "(hrm/ch2-copper-locreg-width). Reaching bitplane/sprite here "
         "would also require the display-window/sprite-list machinery this "
         "fixture deliberately does not build (see BOUNDARY, "
         "SPECIFICATION.md). See SPECIFICATION.md P25/P26/P27.");
@@ -967,7 +967,7 @@ int main(int argc, char** argv) {
     checks.record(
         "sol:1-components.c114, opus:1-components.c114 (p.6, \"This same "
         "region of memory can be accessed by the bit blitter.\"): not "
-        "graded here. hrm/agnus_blitter_adrgen's own stated purpose is "
+        "graded here. hrm/ch6-blitter-adrgen's own stated purpose is "
         "\"four independent BLTxPT pointer registers... the pointer's value "
         "after a simulated blit row\" -- exactly this sentence's proposition, "
         "already graded there. See SPECIFICATION.md P28.");
