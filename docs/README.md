@@ -1,9 +1,9 @@
 # What is in here, and what each document is for
 
-Eight documents. A red test is not self-explanatory: someone reading `FAIL` needs
-to know what the manual says, what the RTL does, whether anyone else agrees, and
-who decides. Six of these answer that. One is a record of tests that no longer
-exist.
+Thirteen documents besides this map. A red test is not self-explanatory: someone
+reading `FAIL` needs to know what the manual says, what the RTL does, whether
+anyone else agrees, and who decides. Eight of these answer that; four are
+records, and one binds anyone adding a test.
 
 Each entry below says what the document *is*, so an instruction is not mistaken
 for a record:
@@ -11,6 +11,7 @@ for a record:
 - **reference** — look things up in it. It describes what is true now.
 - **decision support** — written for someone who has to choose what to do.
 - **method** — the rule for when something is allowed.
+- **binding** — follow it. A reviewer will check your work against it.
 - **record** — what was true on the date in its title. Not an instruction, and
   not to be updated to match today; that is how a repository loses the ability to
   say when something changed.
@@ -28,6 +29,8 @@ Read them in this order.
 | [`fourth-witness-denise-copperline.md`](fourth-witness-denise-copperline.md) | decision support | Two further independent implementations — **Denise** (C++) and **Copperline** (Rust) — read against the findings, with a file and line for each. Neither is an oracle. It corrected NM-HRM-002 from *two emulators settle it* to a two-against-two split and did the same to NM-HRM-016 and NM-HRM-017; found the first implementation that narrows a DMA pointer by chipset exactly as the manual describes; and made NM-HRM-020 the best-corroborated finding in the register. Three findings now stand against **all four** implementations — BLTSIZV's ECS gating, the DDF mask being chipset- and not resolution-gated, and playfield 1's collision depending on playfield 2. |
 | [`finding-analyses.md`](finding-analyses.md) | reference | Work that produced or tested a **group** of findings and belongs to none of them alone: where the five oldest came from and whether they hold, appendix C's five ECS blitter changes implemented five different ways, and what the emulators say about the three Copper findings. Split out of `findings.md`, which a reader could not use as a register while `NM-HRM-005` appeared in it five times. |
 | [`legacy-names.md`](legacy-names.md) | record | Resolves two kinds of stale name: the `FPGA-nnn` finding keys that older commit messages cite, and the twenty pre-pipeline package directories that `//` comments in live tests still point at. Needed only for that. |
+| [`fifth-witness-ch8-controller.md`](fifth-witness-ch8-controller.md) | decision support | The same four-implementation comparison for chapter 8's findings — WinUAE, vAmiga, Denise and Copperline read against the controller and interface-hardware reds, file and line each. None of them is an oracle; `third-witness.md`'s rules apply here unchanged. |
+| [`upstream-minimig-aga.md`](upstream-minimig-aga.md) | decision support | What NanoMig inherited from MiSTer's Minimig-AGA and what the two maintained lines have changed since. It answers the one question the four emulators structurally cannot: whether a finding is NanoMig's own or came down from upstream — which decides where a fix should be reported. |
 | [`adding-a-test.md`](adding-a-test.md) | binding, for contributors | What a finished package has and what a reviewer checks: the manual before the RTL, one assertion per proposition with its page, the claim id on the graded line, a control on the same measurement basis, a stimulus mutation per assertion, a truthful non-zero exit, a clean rebuild — and the four things not to do. `hrm/ch3-beam-counters-and-blanking` is the worked example. |
 
 ## Record

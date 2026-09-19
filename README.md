@@ -67,17 +67,20 @@ artefacts rather than by remembering.
 |---|---:|
 | test packages | **208** |
 | assertions | **2930** — 2751 pass, **179 fail** |
-| packages | 135 green, 64 carrying at least one red, **0 build errors** |
+| packages | 141 green, 67 carrying at least one red, **0 build errors** |
 | registered findings | **65** — 54 open, 6 withdrawn, 5 source observations |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
-The assertion figures cover the **199 packages that print an assertion summary**.
-The other **9** report only pass or fail for the
-package as a whole; they are counted in the package row and not in the assertion
-row. That difference is stated rather than smoothed over, because a single
+**The package row and the assertion row count different things, and 141 + 67 is
+the package row.** Every one of the 208 packages has a verdict, and those are the
+141 and the 67 — the same numbers `./run_all.sh` prints as
+`tests: 141 passed, 67 failed, 0 build errors`. The assertion figures come from
+the **199 packages that print an assertion summary**; the other **9** report only
+pass or fail for the package as a whole, so they have a verdict but contribute no
+assertions. That difference is stated rather than smoothed over, because a single
 "assertions" number that quietly spans two reporting conventions is how the last
-one drifted. It used to be 28 of 228: twenty-one of those were pre-pipeline
-packages, now removed.
+one drifted — and because publishing green and red counted only over the 199 gave
+135 and 64 under a row saying 208, which no reader could reconcile.
 
 **These five figures come from a run and nothing could check them, so they
 drifted.** The row above previously read 149 green and 66 red — 215, under a
