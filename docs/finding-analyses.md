@@ -35,16 +35,21 @@ opposite ways: one survived, one did not.
 The assertion was removed rather than left red. A red test is a claim that the
 RTL is wrong, and this one could not support that claim.
 
-The *file* was not deleted: `agnus_beamcounter` still asserts that a PAL field
-terminates with EOF and that the horizontal counter spans 0..453. The second one
-matters beyond this file — `agnus_copper_waitskip_range`'s W4b rests on the line
-being 454 units long.
+The field-length claim itself is graded elsewhere and stays graded:
+`ch3-field-geometry` asserts the manual's `PAL-FIELD-312-NTSC-FIELD-262-LINES`
+and `ch3-beam-counters-and-blanking` carries the 313-line control beside it.
+
+The package that originally held the withdrawn assertion, `agnus_beamcounter`,
+also asserted that the horizontal counter spans 0..453. That number has no page
+behind it — the manual gives colour clocks, and the pipeline declined to convert
+them — so it went with the package. Nothing depends on it:
+`agnus_copper_waitskip_range` drives a 454-count line in its own harness and says
+so ("a 454-tick fixture line (2x a real 227-tick line)"), which is a fixture
+choice, not a borrowed measurement.
 
 It was not replaced with a corrected assertion either. Doing that properly means
 driving the long-frame bit deliberately and checking both cases, which is work
 nobody has done, and an assertion guessing at it would be worse than none.
-
-The reasoning:
 
 ## Chapter 6 — the ECS blitter registers
 
@@ -185,11 +190,19 @@ always ECS/AGA has a defensible reason to widen a pointer unconditionally. What
 it is: the same appendix, the same five lines, handled four different ways, with
 no comment anywhere saying why the two ungated ones are ungated.
 
-### `agnus_top_dmacon` asserts nothing
+### `agnus_top_dmacon` asserted nothing — closed
 
-Found in the same pass and recorded where it belongs, in
-[`test-inventory.md`](test-inventory.md), backlog item 5. It is the only test in
-the suite that cannot fail.
+Found in the same pass: the file built the whole of `agnus`, set up a DMACON
+write, never pulsed the register strobe, never read an output, and printed PASS
+unconditionally. It was the only test in the suite that could not fail, and it
+had been counted in every suite result since it was written.
+
+It has since been rewritten as a chapter-7 package against appendix A's register
+table: 15 `expect()` calls, 100 claim citations, and
+`return checks.failed == 0 ? 0 : 1`. The lesson it left is the one worth keeping:
+nothing in this repository checks that a test *can* fail. That is what the
+pipeline's per-assertion stimulus mutations are for, and a package without them
+carries no such evidence however green it looks.
 
 ## What the emulators say about the three Copper findings
 

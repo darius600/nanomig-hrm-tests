@@ -41,18 +41,19 @@ artefacts rather than by remembering.
 
 | | |
 |---|---:|
-| test packages | **228** |
-| assertions | **2933** — 2754 pass, **179 fail** |
-| packages | 136 green, 64 carrying at least one red, **0 build errors** |
+| test packages | **208** |
+| assertions | **2930** — 2751 pass, **179 fail** |
+| packages | 135 green, 64 carrying at least one red, **0 build errors** |
 | registered findings | **65** — 54 open, 6 withdrawn, 5 source observations |
 | accepted units under `acceptance/` | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
-The assertion figures cover the **200 packages that print an assertion summary**.
-The other 28 are older module-level tests that report only pass or fail for the
+The assertion figures cover the **199 packages that print an assertion summary**.
+The other **9** report only pass or fail for the
 package as a whole; they are counted in the package row and not in the assertion
 row. That difference is stated rather than smoothed over, because a single
 "assertions" number that quietly spans two reporting conventions is how the last
-one drifted.
+one drifted. It used to be 28 of 228: twenty-one of those were pre-pipeline
+packages, now removed.
 
 **These five figures come from a run and nothing could check them, so they
 drifted.** The row above previously read 149 green and 66 red — 215, under a
@@ -117,34 +118,44 @@ same error as the other four in the direction nobody was watching for.
 | decide what to do about a finding | [`docs/rtl-decisions.md`](docs/rtl-decisions.md) — each open finding as the manual's words, what NanoMig measurably does, the assertion that measures it, and what WinUAE and vAmiga do about the same question, with verified file-and-line citations into both emulators |
 | know whether an emulator was allowed to decide | [`docs/third-witness.md`](docs/third-witness.md) and [`docs/third-witness-ch3-ch6.md`](docs/third-witness-ch3-ch6.md) |
 | see what four independent implementations do about the same question | [`docs/fourth-witness-denise-copperline.md`](docs/fourth-witness-denise-copperline.md) — Denise and Copperline read against the findings, file and line each |
-| know what a green result means here | the coverage section below, and [`docs/test-inventory.md`](docs/test-inventory.md) |
+| know what a green result means here | the coverage section below |
 
 [`docs/README.md`](docs/README.md) is the map. If you have just watched the suite
 go red, that is the shortest way in.
 
 ## What is covered, and by which method
 
-A **green** result means different things in the two layers, so the split is
-stated here rather than left to be inferred: **192 of the 228 packages came
-through the pipeline, 23 did not.**
+**All 208 packages came through the pipeline.** Each is assigned to the unit of
+the manual whose pages it answers to.
 
-| Unit | Packages | How they were built |
+| Unit | Packages | Read in |
 |---|---:|---|
-| 1 — Introduction | 11 | **pipeline** |
-| 2 — Coprocessor (Copper) | 13 | 12 through the **pipeline**; `agnus_copper_move` is a regression test against a frozen spec, not against the manual |
-| 3 — Playfield | 22 | **pipeline** |
-| 4 — Sprites | 14 | **pipeline** |
-| 5 — Audio | 11 | **pipeline**; the hand-written audio tests that preceded them still stand beside them |
-| 6 — Blitter | 14 | **pipeline**; the hand-written blitter tests that preceded them were superseded |
-| 7 — System Control | 19 | **pipeline** |
-| 8 — Interface Hardware | 54 | **pipeline**, read in four slices |
-| D and E — memory maps, connector pinouts, port signals | 17 | **pipeline** |
-| F — 8520 Complex Interface Adapters | 12 | **pipeline** |
-| H and J — external disk connector, custom chip pin allocation | 5 | **pipeline** |
-| module-level, by hand | 23 | Agnus DMA and slot allocation, Denise's shifters and colour path, Paula's audio, floppy, UART and interrupt controller |
+| 1 — Introduction | 11 | one pass |
+| 2 — Coprocessor (Copper) | 12 | one pass |
+| 3 — Playfield | 22 | one pass |
+| 4 — Sprites | 14 | one pass |
+| 5 — Audio | 12 | one pass |
+| 6 — Blitter | 15 | one pass |
+| 7 — System Control | 20 | one pass |
+| 8 — Interface Hardware | 56 | four slices |
+| D and E — memory maps, connector pinouts, port signals | 17 | one pass |
+| F — 8520 Complex Interface Adapters | 12 | one pass |
+| H and J — external disk connector, custom chip pin allocation | 5 | one pass |
+| K — AutoConfig | 12 | one pass |
 
-Chapters 2 and 6 are the two whose packages carry no `chN-` prefix: they are the
-`agnus_copper_*` and `agnus_blitter_*` directories.
+Four packages carry no `chN-` prefix but belong to a chapter all the same:
+`agnus_slots` (6), `agnus_top_dmacon` (7), `paula_audio_mixer` (5) and
+`paula_uart` (8). So do chapters 2 and 6 in full — they are the `agnus_copper_*`
+and `agnus_blitter_*` directories.
+
+A first suite of 23 module-level packages preceded the pipeline. Their oracle was
+a *frozen specification*: a note describing what the module already does, written
+by reading the Verilog. Three were later rewritten as pipeline packages and kept
+their directory name; the other twenty are gone, because a description of the
+implementation cannot decide whether the implementation is right.
+[`docs/legacy-names.md`](docs/legacy-names.md) maps each removed name to the
+package that covers its subject now, for the older `//` comments that still cite
+one.
 
 **Coverage is measured per claim, from a committed ledger, not from a number that
 is remembered.** Chapter 5's figure is 923 of its 970 testable claims: 923 cited
@@ -176,22 +187,19 @@ it would go red if the behaviour changed, and an independent validation by a
 model that built none of it. What that does and does not guarantee is set out in
 the pipeline repository's own README, weaknesses included.
 
-**The hand-written tests are not sloppy.** They cite their manual pages, fix the
-expected behaviour before looking at the RTL, and some check exhaustively — the
-area-fill test walks all 262 144 input combinations. What they do **not** carry
-is the pipeline's completeness claim. A green there means *"this assertion
-holds"*, not *"the manual's statements about this module are covered"*.
-
-Where a hand-written test has been replaced by a pipeline package, the old one is
-deleted only after its replacement is green from a clean build, and only after
-every case it covered was checked against the replacement case by case. That
-check is not a formality: one Copper case turned out not to be covered at all,
-and is now asserted as `B2s` in `hrm/agnus_copper_waitskip_range`.
+**A package is removed only after its subject is read against the package that
+replaces it, proposition by proposition** — not after a count, and not because a
+directory looks superseded. The check is not a formality in either direction: one
+Copper case turned out not to be covered at all and is now asserted as `B2s` in
+`hrm/agnus_copper_waitskip_range`, and of the twenty pre-pipeline packages
+removed, two carried a number with no page behind it — a horizontal span of
+0..453 and four refresh slots at 9/13/17/21 — which is the reason they went
+rather than an obstacle to their going.
 
 ## Layout
 
 ```
-hrm/            228 packages, each against a single module boundary
+hrm/            208 packages, each against a single module boundary
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
 acceptance/     one frozen record per accepted unit: what was measured, and what

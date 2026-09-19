@@ -79,12 +79,12 @@ which is a replacement rather than a reimplementation and which the manual does
 not specify. Such a claim is not a finding; it is outside the system the manual
 describes.
 
-**`FPGA-nnn` in a test source means something else, and those stay.**
-`// Primary oracle: Frozen FPGA-019 specification` marks a package whose
-oracle is a frozen module specification rather than the manual, and therefore
-**not** an HRM-conformance test. Older commit messages and artefacts cite
-`FPGA-nnn` as a finding key;
-[`legacy-finding-keys.md`](legacy-finding-keys.md) resolves those.
+Older commit messages and artefacts cite `FPGA-nnn` as a finding key, and a few
+`//` comments still name a package that no longer exists;
+[`legacy-names.md`](legacy-names.md) resolves both. No test source declares a
+frozen `FPGA-nnn` specification as its oracle any more — the packages that did
+were removed, because such a specification describes what the module does and
+therefore cannot decide whether it is right.
 
 ## The register
 
@@ -172,7 +172,7 @@ again.
 
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
-| [NM-HRM-001](findings/NM-HRM-001.md) | PAL field terminates at 313 lines, not 312 | **withdrawn** | `hrm/agnus_beamcounter` | **all four** run a 313-line PAL field; Table 7-5 sanctions 313 |
+| [NM-HRM-001](findings/NM-HRM-001.md) | PAL field terminates at 313 lines, not 312 | **withdrawn** | `hrm/ch3-field-geometry` | **all four** run a 313-line PAL field; Table 7-5 sanctions 313 |
 | [NM-HRM-009](findings/NM-HRM-009.md) | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** | `hrm/ch3-collision-registers` | **all four** set bit 15 on every CLXDAT read |
 | [NM-HRM-012](findings/NM-HRM-012.md) | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** | `hrm/ch3-sprite-registers` | three of four take SH0 at every resolution, as NanoMig does |
 | [NM-HRM-013](findings/NM-HRM-013.md) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn**, split into NM-HRM-019 | `hrm/ch3-sprite-registers` | bit 4 is real from ECS on, bit 3 only on AGA -- the split this was withdrawn into |

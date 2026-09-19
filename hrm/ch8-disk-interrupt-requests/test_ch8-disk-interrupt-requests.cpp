@@ -687,6 +687,21 @@ int main(int argc, char** argv) {
             "measurement as opus:8-dskint.c7, now carried to INTREQ and _cpu_ipl. That is where these two uids "
             "are ASSERTED; this package's own local blckint measurement (noted above, unchanged) is real but "
             "does not, by itself, establish the claim's CPU-visible half.");
+        checks.record(
+            "opus:7-int.c54 (p.220, quote 'Bit 1, DSKBLK, indicates \"disk block finished.\"'), "
+            "opus:7-fig7-4.c6 and opus:7-fig7-4.c39 (p.221, Figure 7-4): declined here, not graded. These "
+            "three chapter-7 uids were routed to the pre-pipeline hrm/paula_floppy package, which declined "
+            "them because its oracle was a frozen module specification rather than the manual; that package "
+            "has been removed and its decline is carried here, on the conformance package that measures the "
+            "same pins. The decline itself is unchanged in substance: 'indicates disk block finished' is a "
+            "CPU-visible statement about INTREQ bit 1, and this package reaches only paula_floppy's local "
+            "blckint and syncint pins -- P-DSKBLK-COMPLETE and P-DSKSYNC-MATCH above are both marked 'local "
+            "half only' for exactly that reason. hrm/ch8-disk-interrupt-path is the package that carries a "
+            "full join to INTREQ and _cpu_ipl, and it is where a grading of these three would belong; as of "
+            "this build none of the three is cited there or anywhere else in the suite, so all three remain "
+            "UNGRADED. That is a coverage gap in chapter 7, recorded rather than closed here, because "
+            "closing it means deciding what Figure 7-4's two uids actually claim -- which is a reading of "
+            "the figure, not a measurement this package can make.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";

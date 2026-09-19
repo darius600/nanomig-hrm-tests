@@ -26,9 +26,11 @@ whether presenting two objects *at different pixels* (never co-resident)
 fails to collide, as opposed to measuring which bit lights up when they are
 co-resident.
 
-## Relationship to `hrm/denise_collision` (pre-pipeline, proposed for replacement)
+## Relationship to the pre-pipeline `denise_collision` harness (removed)
 
-That harness runs two checks, both against this same fixture:
+That harness has since been removed from the suite; the reading below is kept
+because it is the reason this package chooses the stimulus it does. It ran two
+checks, both against this same fixture:
 
 1. Sprite 0 + Sprite 2 presented together → CLXDAT bit 9. This is the same
    proposition as this package's A1 (sprite-group-to-sprite-group collision).
@@ -96,7 +98,8 @@ either of the playfields"
 a playfield.
 
 **Form of the assertion:** measured in dual-playfield mode (`dblpf=1`, see
-"Relationship to `hrm/denise_collision`" above for why), with a stimulus that
+"Relationship to the pre-pipeline `denise_collision` harness" above for why),
+with a stimulus that
 isolates one playfield's presence (its own bitplanes matching, the other
 playfield's bitplanes genuinely not matching — not merely CLXCON-disabled)
 together with a sprite group at one pixel → the corresponding CLXDAT bit
