@@ -23,22 +23,22 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, chapter 5,
 //   printed p.157.
-// Non-goals: THERE IS NO FILTER ANYWHERE IN NANOMIG'S AUDIO PATH, AND THAT IS
-//   WHY THIS PACKAGE STOPS AT THE REGISTER BIT. A grep over all five audio
-//   modules (paula_audio.v, paula_audio_channel.v, paula_audio_volume.v,
-//   paula_audio_mixer.v, paula_intcontroller.v) and paula.v itself returns
-//   only sigma-delta modulator comments, no low-pass filter, no cutoff
-//   constant, nothing this bit could plausibly gate. So the only thing
-//   testable at either end of this claim is the CIA-A side: that the bit
-//   the manual names ($BFE001 bit 1, /LED) is a real, independently
-//   addressed, writable and readable register bit on ciaa. Whether writing
-//   it changes anything about the audio signal is NOT asserted here,
-//   because there is nothing downstream in this design to observe - a
-//   claim about "the filter engages/bypasses" would have no fixture that
-//   could ever go anything but vacuously green or vacuously red. Per
-//   BOUNDARIES.md's framing for this chapter, this package is measured
-//   entirely at ciaa and does not reach into minimig.v's _led/pwr_led wiring
-//   or any audio module.
+// Non-goals: THERE IS NO FILTER ANYWHERE IN NANOMIG'S AUDIO PATH, AND THAT
+//   IS WHY THIS PACKAGE STOPS AT THE REGISTER BIT. A grep over all five
+//   audio modules (paula_audio.v, paula_audio_channel.v,
+//   paula_audio_volume.v, paula_audio_mixer.v, paula_intcontroller.v) and
+//   paula.v itself returns only sigma-delta modulator comments, no low-pass
+//   filter, no cutoff constant, nothing this bit could plausibly gate. So
+//   the only thing testable at either end of this claim is the CIA-A side:
+//   that the bit the manual names ($BFE001 bit 1, /LED) is a real,
+//   independently addressed, writable and readable register bit on ciaa.
+//   Whether writing it changes anything about the audio signal is NOT
+//   asserted here, because there is nothing downstream in this design to
+//   observe - a claim about "the filter engages/bypasses" would have no
+//   fixture that could ever go anything but vacuously green or vacuously
+//   red. Per BOUNDARIES.md's framing for this chapter, this package is
+//   measured entirely at ciaa and does not reach into minimig.v's
+//   _led/pwr_led wiring or any audio module.
 //
 //   CONFLICT 6, recorded and NOT resolved (out of scope for a register-bit
 //   fixture; specialists' question, not this package's): the manual gives
@@ -292,6 +292,11 @@ int main(int argc, char** argv) {
     std::cout << "Checked " << (checks.passed + checks.failed)
               << " assertions; passed=" << checks.passed
               << " failed=" << checks.failed << ".\n";
+    // The line the coverage ledger and hrm/run_all.sh read. The line above
+    // says the same thing for a human; this one is the spelling the tools
+    // grep for, and without it this package reports no assertions at all.
+    std::cout << checks.passed << " passed, " << checks.failed
+              << " failed.\n";
 
     return checks.failed == 0 ? 0 : 1;
 }

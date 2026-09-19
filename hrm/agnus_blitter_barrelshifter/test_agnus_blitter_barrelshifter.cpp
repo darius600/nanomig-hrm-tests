@@ -1,48 +1,47 @@
-// Test purpose: Verify the blitter barrel shifter (agnus_blitter_barrelshifter)
-//   produces the HRM-derived result for every one of the 16 possible shift
-//   values (0 through 15) in both ascending and descending mode, that
-//   ascending mode shifts right and descending mode shifts left, and that
-//   the module's structure - a 16-bit output taken from a position within a
-//   32-bit combination of its two 16-bit inputs, the position chosen by the
-//   `shift` input alone - matches the HRM's block diagram and prose.
+// Test purpose: Verify the blitter barrel shifter
+//   (agnus_blitter_barrelshifter) produces the HRM-derived result for every
+//   one of the 16 possible shift values (0 through 15) in both ascending and
+//   descending mode, that ascending mode shifts right and descending mode
+//   shifts left, and that the module's structure - a 16-bit output taken
+//   from a position within a 32-bit combination of its two 16-bit inputs,
+//   the position chosen by the `shift` input alone - matches the HRM's block
+//   diagram and prose.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 169, 179, 182, 198, 199 and 200.
-// Non-goals:
-//   - Shift-on-load of an immediate data register (p.182: "Be sure to load
-//     the blitter immediate data registers only after setting the shift
-//     count ... The act of loading one of the data registers 'draws' the
-//     data through the machine and shifts it."). This module has no clock
-//     port and no register at all - it is purely combinational (desc,
-//     shift, new_val, old_val -> out, agnus_blitter_barrelshifter.v:6-13) -
-//     so there is no "load" event to observe here. The register that is
-//     loaded (bltbhold) and the moment its load samples the then-current
-//     shift value live in agnus_blitter.v, outside this module's boundary.
-//     That is PKG-BLT-SHIFT-CHAIN's territory and is already classified
-//     there: 6-blitter-key-points.c19, ch6-keypoints.c23, 6-shifts-and-
-//     masks.c43, 6-shifts-and-masks.c46, ch6-shifts.c40, ch6-shifts.c42.
-//   - Chaining behaviour across words and rows of one blit - zeros shifted
-//     in for the first word of a blit, the previous row's bits carried at a
-//     row boundary. This module has no notion of "first word" or "row" at
-//     all: every call is an independent, stateless function of whatever
-//     old_val/new_val/shift/desc it is given. That sequencing lives in
-//     agnus_blitter's bltahold/bltbhold registers and is PKG-BLT-SHIFT-
-//     CHAIN's territory, a separate fixture that compiles agnus_blitter.
-//   - Where the `shift` and `desc` port values originate (BLTCON0/BLTCON1
-//     field decode) - PKG-BLT-REGDECODE's / PKG-BLT-BLTCON-FIELDS'
-//     territory; this module receives them as plain input ports.
-//   - The AND-gate/mask mechanics that form "A old" before it reaches this
-//     module (ch6-fig613.f06's three AND gates and their OR) - PKG-BLT-
-//     MASKS' territory; this module has no mask-related port at all. Only
-//     the half of f06 that says the SHIFTER performs no further masking is
-//     asserted here (MASK-UPSTREAM below).
-//   - The C channel's path around both mask and shifter (ch6-fig613.f12) -
-//     not constructible at this boundary: the module has no C-channel-
-//     related port whatsoever (absent_signal: a C/bypass-select input;
-//     the port list is exactly desc, shift, new_val, old_val, out,
-//     agnus_blitter_barrelshifter.v:6-13), so there is nothing here that
-//     could confirm or contradict a claim about channel C bypassing this
-//     module entirely.
+// Non-goals: - Shift-on-load of an immediate data register (p.182: "Be sure
+//   to load the blitter immediate data registers only after setting the
+//   shift count ... The act of loading one of the data registers 'draws' the
+//   data through the machine and shifts it."). This module has no clock port
+//   and no register at all - it is purely combinational (desc, shift,
+//   new_val, old_val -> out, agnus_blitter_barrelshifter.v:6-13) - so there
+//   is no "load" event to observe here. The register that is loaded
+//   (bltbhold) and the moment its load samples the then-current shift value
+//   live in agnus_blitter.v, outside this module's boundary. That is
+//   PKG-BLT-SHIFT-CHAIN's territory and is already classified there:
+//   6-blitter-key-points.c19, ch6-keypoints.c23, 6-shifts-and- masks.c43,
+//   6-shifts-and-masks.c46, ch6-shifts.c40, ch6-shifts.c42. - Chaining
+//   behaviour across words and rows of one blit - zeros shifted in for the
+//   first word of a blit, the previous row's bits carried at a row boundary.
+//   This module has no notion of "first word" or "row" at all: every call is
+//   an independent, stateless function of whatever
+//   old_val/new_val/shift/desc it is given. That sequencing lives in
+//   agnus_blitter's bltahold/bltbhold registers and is PKG-BLT-SHIFT-
+//   CHAIN's territory, a separate fixture that compiles agnus_blitter. -
+//   Where the `shift` and `desc` port values originate (BLTCON0/BLTCON1
+//   field decode) - PKG-BLT-REGDECODE's / PKG-BLT-BLTCON-FIELDS' territory;
+//   this module receives them as plain input ports. - The AND-gate/mask
+//   mechanics that form "A old" before it reaches this module
+//   (ch6-fig613.f06's three AND gates and their OR) - PKG-BLT- MASKS'
+//   territory; this module has no mask-related port at all. Only the half of
+//   f06 that says the SHIFTER performs no further masking is asserted here
+//   (MASK-UPSTREAM below). - The C channel's path around both mask and
+//   shifter (ch6-fig613.f12) - not constructible at this boundary: the
+//   module has no C-channel- related port whatsoever (absent_signal: a
+//   C/bypass-select input; the port list is exactly desc, shift, new_val,
+//   old_val, out, agnus_blitter_barrelshifter.v:6-13), so there is nothing
+//   here that could confirm or contradict a claim about channel C bypassing
+//   this module entirely.
 //
 // EXTENDS PRIOR ART (hrm/agnus_blitter_barrelshifter, unchanged in shape
 // since its original commit; see docs/blitter-prior-art.md). What was

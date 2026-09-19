@@ -20,6 +20,15 @@
 //   package's 56 uids; the other 18 (CRB-*) are graded in test_cia_timerb.cpp.
 //   Claims file: hrm-testpipeline/work/2026-09-17_appF_packages.jsonl,
 //   filtered to classify.package == "appF-cia-timer-modes".
+// Non-goals: anything outside the `cia_timera` fixture this package builds,
+//   and any claim outside the 41 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 41 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appF_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // Order-of-work disclosure (carried forward from SPECIFICATION.md): the
 //   task instructions that assigned this package pre-exposed RTL detail

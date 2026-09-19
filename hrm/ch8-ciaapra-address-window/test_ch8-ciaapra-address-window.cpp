@@ -5,14 +5,24 @@
 //   work/ch8-s1-build/ch8-ciaapra-address-window.jsonl (opus:8-regs.c5,
 //   sol:8-reg.c5, opus:8-mbtn.c4, sol:8-button.c3), plus 2 extend-
 //   disposition claims from work/ch8-s2-build/ch8-ciaapra-address-
-//   window.jsonl (opus:8-dsk.c20, opus:8-cia.c3 -- added to A1-A4's
-//   citation list, no new assertion). Full derivation in SPECIFICATION.md
-//   (committed as 09a9ba3, before any RTL was opened).
+//   window.jsonl (opus:8-dsk.c20, opus:8-cia.c3 -- added to A1-A4's citation
+//   list, no new assertion). Full derivation in SPECIFICATION.md (committed
+//   as 09a9ba3, before any RTL was opened).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, printed p.229
-//   ("CIAAPRA ($BFE001) Input and output for pin 6 (port 1 & 2 fire
-//   buttons)") and p.232 ("The left button on the Amiga mouse is connected
-//   to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7.").
+// Primary oracle: Amiga Hardware Reference Manual, printed p.229 ("CIAAPRA
+//   ($BFE001) Input and output for pin 6 (port 1 & 2 fire buttons)") and
+//   p.232 ("The left button on the Amiga mouse is connected to CIAAPRA
+//   ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7.").
+// Non-goals: anything outside the `ciaapra_address_rig` fixture this package
+//   builds, and any claim outside the 14 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 14 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s1-build/ch8-ciaapra-address-window.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // Fixture boundary and why it is wider than `ciaa` alone: see
 //   SPECIFICATION.md, written and committed before ciaa.v, gary.v or

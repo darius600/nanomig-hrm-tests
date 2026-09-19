@@ -3,16 +3,25 @@
 //   `cia_int`, the CIA interrupt controller, compiled ALONE (it is a leaf
 //   module -- no sub-instantiation, confirmed by reading all 70 lines of
 //   cia_int.v). 70 claims filtered from
-//   hrm-testpipeline/work/2026-09-17_appF_packages.jsonl,
-//   classify.package == "appF-cia-interrupt-control": 56 graded below
-//   (PASS in every case -- no known defect in THIS package's own claim set),
-//   14 declined on RECORDED lines, none dropped.
+//   hrm-testpipeline/work/2026-09-17_appF_packages.jsonl, classify.package
+//   == "appF-cia-interrupt-control": 56 graded below (PASS in every case --
+//   no known defect in THIS package's own claim set), 14 declined on
+//   RECORDED lines, none dropped.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 346, 347, 352; committed specification (SPECIFICATION.md, this
 //   package).
 // Claims file: hrm-testpipeline/work/2026-09-17_appF_packages.jsonl,
 //   filtered to classify.package == "appF-cia-interrupt-control" (70 claims).
+// Non-goals: anything outside the `cia_int` fixture this package builds, and
+//   any claim outside the 73 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 73 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appF_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // ===========================================================================
 // Order-of-work disclosure

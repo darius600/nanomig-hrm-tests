@@ -1,11 +1,11 @@
-// Test purpose: assert printed p.12's claim that "the 8520 I/O chips
-//   provide timers for developers who are bypassing the operating system"
-//   -- at this fixture's boundary, that means `ciaa` (one of the two 8520s
-//   on this board) must own a timer a developer can load with a count,
-//   start, and see reach a detectable completion after real clock ticks --
-//   at the `ciaa` module boundary, compiled alone with its CIA submodules.
-//   This file also carries the package's one declined claim (p.6, the
-//   six-duty CIA enumeration): see the RECORDED block at the end of main().
+// Test purpose: assert printed p.12's claim that "the 8520 I/O chips provide
+//   timers for developers who are bypassing the operating system" -- at this
+//   fixture's boundary, that means `ciaa` (one of the two 8520s on this
+//   board) must own a timer a developer can load with a count, start, and
+//   see reach a detectable completion after real clock ticks -- at the
+//   `ciaa` module boundary, compiled alone with its CIA submodules. This
+//   file also carries the package's one declined claim (p.6, the six-duty
+//   CIA enumeration): see the RECORDED block at the end of main().
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 12; committed specification 069192a (SPECIFICATION.md, this
@@ -15,6 +15,15 @@
 //   filtered to classify.package == "ch1-cia-timers" (4 claims; 2 carried
 //   on PROP-TIMER here and in test_ciab.cpp -- same proposition, graded
 //   once per physical chip -- 2 declined, on the RECORDED line below).
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 6 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 6 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/2026-09-16_ch1_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // Order-of-work disclosure (carried forward from SPECIFICATION.md, restated
 //   here because it bears on how this file's assertion was designed): the

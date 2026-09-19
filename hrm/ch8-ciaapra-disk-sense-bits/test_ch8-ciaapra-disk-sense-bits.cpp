@@ -46,6 +46,16 @@
 //     below purely as an inert, neutral "different position" stimulus for
 //     PROP-INPUT's crosstalk check -- that does not grade anything about
 //     them.
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 11 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 11 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-ciaapra-disk-sense-bits.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // RTL read for step 2, after SPECIFICATION.md was committed (93ce31d): read
 //   ciaa.v (388 lines) in full, plus its four instantiated submodules

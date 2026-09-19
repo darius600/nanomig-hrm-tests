@@ -1,7 +1,10 @@
 ﻿// Test purpose: Check the HRM stereo routing and retain a separate NanoMig mixer-arithmetic regression.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 5, printed p. 137, corroborated by WinUAE and vAmiga against the contradicting appendix pin list - see docs/third-witness.md.
-// Non-goals: This does not claim numeric DAC scaling for HRM volume-register value 64.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 5,
+//   printed p. 137, corroborated by WinUAE and vAmiga against the
+//   contradicting appendix pin list - see docs/third-witness.md.
+// Non-goals: This does not claim numeric DAC scaling for HRM volume-register
+//   value 64.
 
 #include <cstdint>
 #include <iostream>
@@ -13,6 +16,11 @@ struct Stereo {
     int left;
     int right;
 };
+
+// Counters for the summary line the runner and the coverage ledger read.
+// They do not gate anything: the exit code below still comes from the two
+// booleans, so NM-HRM-002's four routing reds keep this package red.
+static int g_total = 0, g_fail = 0;
 
 static int sign_extend_15(int value) {
     return (value & 0x4000) ? (value | ~0x7FFF) : value;
@@ -74,11 +82,13 @@ int main(int argc, char **argv) {
                          int s0, int s1, int s2, int s3,
                          int expected_left, int expected_right) {
         const Stereo got = mix(s0, s1, s2, s3, 1, 1, 1, 1);
+        ++g_total;
         if (got.left != expected_left || got.right != expected_right) {
             std::cerr << "HRM FAIL " << name
                       << ": expected L=" << expected_left << " R=" << expected_right
                       << ", got L=" << got.left << " R=" << got.right << "\n";
             hrm_pass = false;
+            ++g_fail;
         } else {
             std::cout << "HRM PASS " << name << "\n";
         }
@@ -100,16 +110,24 @@ int main(int argc, char **argv) {
     // independently of whether its left/right labels satisfy the HRM.
     bool arithmetic_pass = true;
     const Stereo arithmetic = mix(100, 50, 10, -50, 63, 32, 63, 32);
+    ++g_total;
     if (arithmetic.left != 4700 || arithmetic.right != 2230) {
         std::cerr << "RTL REGRESSION FAIL: expected current mixer sums L=4700 R=2230, got L="
                   << arithmetic.left << " R=" << arithmetic.right << "\n";
         arithmetic_pass = false;
+        ++g_fail;
     } else {
         std::cout << "RTL REGRESSION PASS: signed scaling and summation vector.\n";
     }
 
     std::cout << "HRM routing=" << (hrm_pass ? "PASS" : "FAIL")
               << ", arithmetic regression=" << (arithmetic_pass ? "PASS" : "FAIL") << "\n";
+    // The line hrm/run_all.sh and the coverage ledger read. The four routing
+    // failures are NM-HRM-002 and are meant to be red; counting them here
+    // publishes them instead of leaving this package with no assertions at
+    // all in every total.
+    std::cout << (g_total - g_fail) << " passed, " << g_fail
+              << " failed.\n";
 
     delete dut;
     return hrm_pass && arithmetic_pass ? 0 : 1;

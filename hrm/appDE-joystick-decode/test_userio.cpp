@@ -1,3 +1,17 @@
+// Test purpose: fixture: userio.v, compiled alone.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 228, 232, 233, 281, 328, 329
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 54 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 54 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
+//
 // appDE-joystick-decode -- fixture: userio.v, compiled alone.
 //
 // Claims graded here: work/2026-09-17_appDE_packages.jsonl, classify.package ==

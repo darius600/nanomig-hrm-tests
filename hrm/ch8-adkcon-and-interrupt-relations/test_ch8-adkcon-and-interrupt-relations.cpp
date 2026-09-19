@@ -32,6 +32,15 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed
 //   pages 255, 256, 257, 265, 283, 289; SPECIFICATION.md (this package).
+// Non-goals: anything outside the `paula` fixture this package builds, and
+//   any claim outside the 109 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 109 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // Fixture: a fresh Rig (Vpaula wrapper) per assertion block, matching the
 //   discipline of every sibling `paula`-top package in this suite.

@@ -4,9 +4,10 @@
 //   denise_collision's collision result (CLXDAT) is unaffected by the
 //   single-/dual-playfield mode select (dblpf), and whether the playfield-1/
 //   playfield-2 parity mapping (odd bitplanes / even bitplanes) holds when
-//   both playfields are genuinely, distinguishably populated at once. Package
-//   ch7-collision-playfield-mode, fixture denise_collision (one Verilator
-//   build, this module only, per AUFTRAG-ch7-collision-playfield-mode.md).
+//   both playfields are genuinely, distinguishably populated at once.
+//   Package ch7-collision-playfield-mode, fixture denise_collision (one
+//   Verilator build, this module only, per
+//   AUFTRAG-ch7-collision-playfield-mode.md).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.214 (chapter 7 body) and p.273 (Appendix A, CLXDAT NOTE). Claims file
@@ -20,6 +21,11 @@
 //   its own stated non-goal). This package's only subject is the mode
 //   dimension ch3 and ch4 between them never compared, plus the parity
 //   mapping re-measured under a non-vacuous, both-playfields-live condition.
+// Claim ids: 8 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/denise_collision.v, ports clk, clk7_en,
 //   reset, aga, reg_address_in, data_in, data_out, dblpf, bpldata, nsprite

@@ -6,6 +6,15 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 7, 8 and 13.
+// Non-goals: anything outside the `cpu_cache_new` fixture this package
+//   builds, and any claim outside the 15 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 15 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM SOURCE: hrm-testpipeline/work\
 //   2026-09-16_ch1_packages.jsonl, filtered on classify.package ==

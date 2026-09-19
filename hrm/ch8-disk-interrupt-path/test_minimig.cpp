@@ -1,12 +1,12 @@
 // ch8-disk-interrupt-path -- minimig conformance test
 //
-// Test purpose: p.250's DSKSYNC and DSKBLK interrupt lines, carried the WHOLE
-//   way to the CPU in one run -- stimulus (a real DSKSYNC stream match, or a
-//   real disk-DMA completion), the resulting INTREQ bit (12 for DSKSYNC, 1
-//   for DSKBLK), AND the 68000 interrupt level minimig.v's own top-level
-//   `_cpu_ipl` port presents to the CPU, all observed together. Package
-//   ch8-disk-interrupt-path, fixture `minimig` (the whole chipset module,
-//   per the task sheet -- same boundary as ch7-nmi-level-seven and
+// Test purpose: p.250's DSKSYNC and DSKBLK interrupt lines, carried the
+//   WHOLE way to the CPU in one run -- stimulus (a real DSKSYNC stream
+//   match, or a real disk-DMA completion), the resulting INTREQ bit (12 for
+//   DSKSYNC, 1 for DSKBLK), AND the 68000 interrupt level minimig.v's own
+//   top-level `_cpu_ipl` port presents to the CPU, all observed together.
+//   Package ch8-disk-interrupt-path, fixture `minimig` (the whole chipset
+//   module, per the task sheet -- same boundary as ch7-nmi-level-seven and
 //   ch7-overlay-source, the two precedents this file's harness is built
 //   from). INDEX (level 6, the 8520 Flag pin) is deliberately NOT covered
 //   here: hrm/ch8-disk-index-interrupt-path already carries it (read-only,
@@ -17,6 +17,15 @@
 //   bullets; also "In addition, the DSKSYNC bit in INTREQ is set..." and
 //   "...is independent of the WORDSYNC enable.") and page 279 (Appendix A,
 //   the DSKDATR/DSKDAT register description).
+// Non-goals: anything outside the `minimig` fixture this package builds, and
+//   any claim outside the 12 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 12 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // WHY THIS PACKAGE EXISTS: hrm/ch8-disk-interrupt-requests grades DSKSYNC/
 //   DSKBLK at the paula_floppy boundary alone, where it can see the local

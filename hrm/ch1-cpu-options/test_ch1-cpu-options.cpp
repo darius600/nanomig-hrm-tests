@@ -16,12 +16,21 @@
 // uids live on the record() line alone, which tells the whole c12 story.
 //
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed
-//   page 1; committed specification (SPECIFICATION.md, this package,
-//   commit c481d19).
+// Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed page
+//   1; committed specification (SPECIFICATION.md, this package, commit
+//   c481d19).
 // Requirement IDs: CPU-OPTIONS-FOUR-DISTINCT-STATES (PROP-1),
 //   RAM-EXPANSION-CEILING-8MB and RAM-BASE-FLOOR-BELOW-256K-ABSENT
 //   (PROP-2, partial), per SPECIFICATION.md's claim inventory.
+// Non-goals: anything outside the `sysctrl` fixture this package builds, and
+//   any claim outside the 4 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // Deviation from SPECIFICATION.md, disclosed rather than papered over:
 //   the spec scoped PROP-2's gradable half as "a base-RAM ceiling of 2 MB

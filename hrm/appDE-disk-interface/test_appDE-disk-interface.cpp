@@ -7,13 +7,22 @@
 //   "appDE-disk-interface").
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed
-//   pp.334-335. p.334's NOTES column is severely displaced in the text
-//   layer (docs/references/amiga-hrm-3rd/appE/corpus-defects.md, "p.334 --
+//   pp.334-335. p.334's NOTES column is severely displaced in the text layer
+//   (docs/references/amiga-hrm-3rd/appE/corpus-defects.md, "p.334 --
 //   EXTERNAL DISK CONNECTOR PIN ASSIGNMENT J7"), so every pin/note pairing
 //   used below was read from figures/p334.png directly (reproduced here,
 //   confirmed against the render before this file was written) rather than
 //   from p334.txt. p.335 carries no substantive binding displacement
 //   (corpus-defects.md's per-page table) and is quoted from p335.txt.
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 31 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 31 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // THIS PACKAGE'S OWNED CONDITION (build brief, "YOU OWN A DECLINE WHOSE
 //   PREMISE HAS EXPIRED"): hrm/ch8-drive-sense-lines declined its P-READY

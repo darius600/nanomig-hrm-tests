@@ -1,3 +1,18 @@
+// Test purpose: Appendix E p.323 "JOY STICKS ...DB9 male" table, userio.v
+//   alone.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 228, 232, 234, 323
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 45 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 45 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
+//
 // appDE-joystick-pinout -- Appendix E p.323 "JOY STICKS ...DB9 male" table,
 // userio.v alone. 21 claims, filtered from
 // hrm-testpipeline/work/2026-09-17_appDE_packages.jsonl on

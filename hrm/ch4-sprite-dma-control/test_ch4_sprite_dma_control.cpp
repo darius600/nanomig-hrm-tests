@@ -1,8 +1,8 @@
-// Test purpose: DMACON ($096) and DMACONR ($002) as chapter 4's sprite-facing
-//   view of DMA control - SPREN (sprite DMA enable, bit 5), the master DMAEN
-//   (bit 9), the DMACONR read-back register, and which bits a write can and
-//   cannot reach (DMACON's write-only address; DMACONR's read-only address;
-//   BBUSY/BZERO's read-only bits within it).
+// Test purpose: DMACON ($096) and DMACONR ($002) as chapter 4's
+//   sprite-facing view of DMA control - SPREN (sprite DMA enable, bit 5),
+//   the master DMAEN (bit 9), the DMACONR read-back register, and which bits
+//   a write can and cannot reach (DMACON's write-only address; DMACONR's
+//   read-only address; BBUSY/BZERO's read-only bits within it).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 278 (Appendix A custom register table). Every claim below cites
@@ -13,6 +13,10 @@
 //   package's claim set also names - see COVERAGE ALREADY MEASURED BY
 //   hrm/ch7-dmacon-register-bits below. This package's own assertions are only the
 //   propositions that package does not measure.
+// Non-goals: anything outside the `agnus` fixture this package builds, and
+//   any claim it does not name. A green here means those assertions held on
+//   this fixture at the pinned revision -- not that the module is correct,
+//   and not that the chapter is covered.
 //
 // BOUNDARY: `agnus` (top-level chipset module) - the only fixture this
 //   package's claims classify as constructible. Per every claim's own

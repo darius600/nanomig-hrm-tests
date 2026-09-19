@@ -8,12 +8,17 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 266, 298, 305, 309.
-// Non-goals: everything the manual's BEAMCON0 rows name that this module
-//   has no port for -- SHRES/UHRES (no resolution-select bit or output
-//   anywhere in this module) and the STRLONG register at $03E (grep over
-//   nanomig/src/minimig-aga finds no strlong|strequ|strvbl address; the
-//   only strobe is agnus.v's own combinational strhor, outside this
-//   fixture's boundary).
+// Non-goals: everything the manual's BEAMCON0 rows name that this module has
+//   no port for -- SHRES/UHRES (no resolution-select bit or output anywhere
+//   in this module) and the STRLONG register at $03E (grep over
+//   nanomig/src/minimig-aga finds no strlong|strequ|strvbl address; the only
+//   strobe is agnus.v's own combinational strhor, outside this fixture's
+//   boundary).
+// Claim ids: 44 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_beamcounter.v:27-57 module header
 //   -- ports clk, clk7_en, reset, cck, ntsc, aga, ecs, a1k, data_in[15:0],

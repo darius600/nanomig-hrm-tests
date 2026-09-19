@@ -1,17 +1,16 @@
 // ch4-attached-sprites -- denise_sprites conformance test
 //
 // Test purpose: attached-sprite behaviour at the denise_sprites module
-//   boundary -- the ATTACH bit (bit 7 of sprite control word 2) that
-//   pairs an odd-numbered sprite with its even-numbered partner, and
-//   Table 4-5's row 0 (four-bit combined code 0000), the disputed row
-//   of the combined-code-to-colour-register mapping. Package
-//   ch4-attached-sprites, fixture denise_sprites (one Verilator build,
-//   denise_sprites.v + denise_sprites_shifter.v, top module
-//   denise_sprites -- the same fixture hrm/denise_sprites/ and
-//   hrm/ch3-sprite-registers/ already build).
+//   boundary -- the ATTACH bit (bit 7 of sprite control word 2) that pairs
+//   an odd-numbered sprite with its even-numbered partner, and Table 4-5's
+//   row 0 (four-bit combined code 0000), the disputed row of the
+//   combined-code-to-colour-register mapping. Package ch4-attached-sprites,
+//   fixture denise_sprites (one Verilator build, denise_sprites.v +
+//   denise_sprites_shifter.v, top module denise_sprites -- the same fixture
+//   hrm/denise_sprites/ and hrm/ch3-sprite-registers/ already build).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition,
-//   printed pp. 122, 128.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pp. 122, 128.
 //
 // CLAIM SOURCE -- READ THIS FIRST: this package's own assigned claims
 //   file is hrm-testpipeline/work/ch4_packages/
@@ -30,15 +29,14 @@
 //   those packages' own turn. Whoever later builds ch4-sprite-colour-
 //   encoding or ch4-sprite-shifter-and-arming should treat these 5 ids
 //   as already covered here, not uncovered in their own package.
-// Non-goals: this package does not test the fifteen non-zero rows of
-//   Table 4-5 (codes 0001-1111, claim ids CH4-tab45.c2..c16 and
-//   CH4-p122.c2..c16) -- per this package's own classify block, those
-//   stay with whichever package carries the rest of Table 4-5; only
-//   row 0 (the disputed row) was assigned here, as a regression class.
-//   It does not test collision, priority against the playfield, or
-//   vertical positioning -- this boundary carries no vertical-position
-//   input (only hpos), matching hrm/ch3-sprite-registers/'s own
-//   Non-goals note for the same module.
+// Non-goals: this package does not test the fifteen non-zero rows of Table
+//   4-5 (codes 0001-1111, claim ids CH4-tab45.c2..c16 and CH4-p122.c2..c16)
+//   -- per this package's own classify block, those stay with whichever
+//   package carries the rest of Table 4-5; only row 0 (the disputed row) was
+//   assigned here, as a regression class. It does not test collision,
+//   priority against the playfield, or vertical positioning -- this boundary
+//   carries no vertical-position input (only hpos), matching
+//   hrm/ch3-sprite-registers/'s own Non-goals note for the same module.
 //
 // BOUNDARY: denise_sprites.v / denise_sprites_shifter.v, reached at
 //   $(NANOMIG)/src/minimig-aga/. Port list, register word-address map,

@@ -21,6 +21,10 @@
 //   arming / ch4-sprite-pointer-registers). This package answers one
 //   question per register: does a read aimed at its own address come back
 //   as what was just written there.
+// Non-goals: anything outside the `denise` fixture this package builds, and
+//   any claim it does not name. A green here means those assertions held on
+//   this fixture at the pinned revision -- not that the module is correct,
+//   and not that the chapter is covered.
 //
 // BOUNDARY: `denise` (top-level chipset module), the only fixture every one
 //   of this package's 72 claims classifies as constructible. Per every

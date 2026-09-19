@@ -1,3 +1,18 @@
+// Test purpose: conformance test for JOYTEST's write effect.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 227, 241, 263, 264, 281, 282, and more
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 44 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 44 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s1-build/ch8-joytest-counter-write.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
+//
 // ch8-joytest-counter-write -- conformance test for JOYTEST's write effect.
 //
 // Fixture: userio.v alone (Verilator 5.052, --top-module userio).

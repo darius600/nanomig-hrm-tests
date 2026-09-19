@@ -2,18 +2,27 @@
 //
 // Test purpose: exhaustively check `keymap`'s combinational lookup table
 //   (amiga_keymap.v:10-13) against every "key X carries code Y" claim in
-//   ch8-keycode-table.jsonl (446 claims, page 252's two text tables and
-//   page 254's two keyboard diagrams -- Figure 8-9 the Amiga 1000, Figure
-//   8-10 the Amiga 500/2000/3000). SPECIFICATION.md (committed before this
-//   file, or amiga_keymap.v/hid.v, were opened -- see its own "Order of
-//   work" section) groups the 446 raw claims into 229 propositions; this
-//   file grades or declines every one of them. A red result below means
+//   ch8-keycode-table.jsonl (446 claims, page 252's two text tables and page
+//   254's two keyboard diagrams -- Figure 8-9 the Amiga 1000, Figure 8-10
+//   the Amiga 500/2000/3000). SPECIFICATION.md (committed before this file,
+//   or amiga_keymap.v/hid.v, were opened -- see its own "Order of work"
+//   section) groups the 446 raw claims into 229 propositions; this file
+//   grades or declines every one of them. A red result below means
 //   amiga_keymap.v disagrees with the manual, not that the assertion is
 //   wrong -- no assertion here was, or should be, adjusted to make the RTL
 //   pass.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.251, 252, 254.
+// Non-goals: anything outside the `keymap` fixture this package builds, and
+//   any claim outside the 446 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 446 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // SCOPE / TRANSFERABILITY (required by 2026-09-16_ch8_s3_build_brief.md):
 //   every red this package can produce is a statement about NanoMig, not

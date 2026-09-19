@@ -8,8 +8,8 @@
 //   Appendix A quotations by page and claim id. hrm/paula_audio_volume is
 //   not modified, weakened or deleted by this file.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A,
-//   printed pp. 265-266.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix
+//   A, printed pp. 265-266.
 // Non-goals: VOLUME 64 IS OUT OF SCOPE AT THIS BOUNDARY, AND THAT IS
 //   LOAD-BEARING, NOT AN OVERSIGHT. paula_audio_volume takes volume[5:0] -
 //   six bits, 0-63. Appendix A printed p.266 describes 65 linear levels
@@ -226,6 +226,11 @@ int main(int argc, char** argv) {
     std::cout << "Checked " << (checks.passed + checks.failed)
               << " assertions; passed=" << checks.passed
               << " failed=" << checks.failed << ".\n";
+    // The line the coverage ledger and hrm/run_all.sh read. The line above
+    // says the same thing for a human; this one is the spelling the tools
+    // grep for, and without it this package reports no assertions at all.
+    std::cout << checks.passed << " passed, " << checks.failed
+              << " failed.\n";
 
     delete dut;
     return checks.failed == 0 ? 0 : 1;

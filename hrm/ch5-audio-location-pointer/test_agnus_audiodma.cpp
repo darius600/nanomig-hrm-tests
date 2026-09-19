@@ -4,8 +4,9 @@
 //   137-309, from work/ch5_packages/ch5-audio-location-pointer.jsonl.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 137-309 (chapter 5 body; appendix A pp.263-266; appendix B pp.287-290;
-//   appendix C pp.298-309), as quoted verbatim in the 176 claims named above.
+//   pp. 137-309 (chapter 5 body; appendix A pp.263-266; appendix B
+//   pp.287-290; appendix C pp.298-309), as quoted verbatim in the 176 claims
+//   named above.
 // Fixture boundary: agnus_audiodma.v ONLY (BOUNDARIES.md) - 157 lines, "the
 //   audio DMA pointer registers and the slot allocation." No other module
 //   (paula_audio_channel.v, paula.v, gary.v, ...) is instantiated anywhere in
@@ -52,13 +53,20 @@
 //
 // Non-goals: anything about paula_audio_channel's own state machine, volume
 //   path, or interrupt timing (separate packages' territory, and a different
-//   fixture boundary); the OCS chipset's own DMA-cycle allocation beyond what
-//   pp.137/141 already state (no wider-boundary NTSC/PAL claim is in this
-//   claim set); AUDxLEN/AUDxPER/AUDxVOL/AUDxDAT, which live in Paula, not
-//   Agnus (BOUNDARIES.md); the "points to CHIP memory" half of the even-
+//   fixture boundary); the OCS chipset's own DMA-cycle allocation beyond
+//   what pp.137/141 already state (no wider-boundary NTSC/PAL claim is in
+//   this claim set); AUDxLEN/AUDxPER/AUDxVOL/AUDxDAT, which live in Paula,
+//   not Agnus (BOUNDARIES.md); the "points to CHIP memory" half of the even-
 //   address claims (assertion 6) and the "NOT decoded by Paula" half of the
 //   Agnus-attribution claims (assertion 5) - both need a module outside this
-//   package's assigned fixture and are named, not measured, where they occur.
+//   package's assigned fixture and are named, not measured, where they
+//   occur.
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/ch5_packages/ch5-audio-location-pointer.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // COVERAGE REPAIR (2026-09-12, independent validation finding V-09):
 //   assertion 1, SLOT-PER-CHANNEL-PER-LINE, formerly cited 18 ids. Its own

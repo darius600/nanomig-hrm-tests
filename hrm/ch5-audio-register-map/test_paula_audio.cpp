@@ -9,8 +9,8 @@
 //   dmal/dmas once-per-horizontal-line latch, and the two-volume-path
 //   65-level claim (paula_audio exposes BOTH the multiply path (ldata/
 //   rdata) and the PWM path (ldata_okk/rdata_okk), so this package can
-//   measure the already-flagged divergence between them directly rather
-//   than assume one).
+//   measure the already-flagged divergence between them directly rather than
+//   assume one).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition. Chapter 5
 //   printed p.164 (one state machine per channel; DMA/restart requests
@@ -19,6 +19,10 @@
 //   generic x form); printed pp.290-291 (Appendix B per-channel register
 //   list, AUD0..AUD3 instances); printed p.298 and p.310 (Appendix C's ECS
 //   register map and its prose row for AUDxPER).
+// Non-goals: anything outside the `paula_audio` fixture this package builds,
+//   and any claim it does not name. A green here means those assertions held
+//   on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
 //
 // CLAIM SOURCE: this package's own claims file is
 //   hrm-testpipeline/work/ch5_packages/

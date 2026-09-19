@@ -1,3 +1,19 @@
+// Test purpose: Subject: what the Amiga Hardware Reference Manual, page 231,
+//   says about the
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   page 231 -- the mouse counter description and Table 8-2's wrapped
+//   examples.
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 22 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 22 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
+//
 // ch8-mouse-counter-wraparound
 //
 // Subject: HRM page 231 -- the mouse/trackball counters at their limits.

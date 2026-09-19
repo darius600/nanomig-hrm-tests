@@ -1,34 +1,36 @@
 // Test purpose: Verify the barrel shifter AS WIRED INTO agnus_blitter - what
-//   the leaf module agnus_blitter_barrelshifter cannot show because it has no
-//   clock and no register (hrm/agnus_blitter_barrelshifter, PKG-BLT-SHIFT,
-//   confirmed and unchanged). Specifically: channel A's mask is applied to
-//   the source word BEFORE that word enters the shift chain; the first word
-//   of the first row of a fresh blit shifts in zeros and no other word does;
-//   each later word shifts in the bits shifted OUT of the previous word,
-//   including across a row boundary; the B channel's immediate data register
-//   (BLTBDAT) is shifted at the moment it is loaded, using whatever shift
-//   count is in effect then, and is not reshifted if the shift count changes
-//   afterward; and the "shifting is free" claim is measured here strictly as
-//   a word/DMA-cycle count, never as a time duration.
+//   the leaf module agnus_blitter_barrelshifter cannot show because it has
+//   no clock and no register (hrm/agnus_blitter_barrelshifter,
+//   PKG-BLT-SHIFT, confirmed and unchanged). Specifically: channel A's mask
+//   is applied to the source word BEFORE that word enters the shift chain;
+//   the first word of the first row of a fresh blit shifts in zeros and no
+//   other word does; each later word shifts in the bits shifted OUT of the
+//   previous word, including across a row boundary; the B channel's
+//   immediate data register (BLTBDAT) is shifted at the moment it is loaded,
+//   using whatever shift count is in effect then, and is not reshifted if
+//   the shift count changes afterward; and the "shifting is free" claim is
+//   measured here strictly as a word/DMA-cycle count, never as a time
+//   duration.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 169-171, 179-182, 200.
 // Non-goals: the leaf barrel shifter's own combinational correctness across
 //   shift/value space - exhaustively swept already by PKG-BLT-SHIFT
 //   (hrm/agnus_blitter_barrelshifter, 4,197,376 cases), reused here only as
-//   the already-validated hrm_oracle() formula, not re-swept. BLTCON0/BLTCON1
-//   field decode in isolation (which nibble is ash/bsh) - PKG-BLT-BLTCON-FIELDS.
-//   Full BLTAFWM/BLTALWM masking semantics beyond the one "mask precedes the
-//   chain" ordering fact - PKG-BLT-MASKS (pp.180-182, 198-199, 266). Minterm/LF
-//   decode correctness - PKG-BLT-MINTERM. Descending mode's left-shift
-//   direction (BLTCON1 bit 1, p.182 "Descending Mode") - not exercised; every
-//   claim covered here is stated for ascending mode. Line-mode texturing (the
-//   `line`-gated branch of bltbhold that replicates a single bit) - PKG-BLT-LINE.
-//   ECS BLTCON0L/BLTSIZH/BLTSIZV - PKG-BLT-ECS. No microsecond or wall-clock
-//   timing value is measured or asserted anywhere in this file: agnus_blitter
-//   carries no clock-frequency port, so any such number would be invented, not
-//   observed - p.179's "completely free... no more time" claim and p.171's
-//   "extra word" claim are both treated here purely as word/DMA-cycle counts.
+//   the already-validated hrm_oracle() formula, not re-swept.
+//   BLTCON0/BLTCON1 field decode in isolation (which nibble is ash/bsh) -
+//   PKG-BLT-BLTCON-FIELDS. Full BLTAFWM/BLTALWM masking semantics beyond the
+//   one "mask precedes the chain" ordering fact - PKG-BLT-MASKS (pp.180-182,
+//   198-199, 266). Minterm/LF decode correctness - PKG-BLT-MINTERM.
+//   Descending mode's left-shift direction (BLTCON1 bit 1, p.182 "Descending
+//   Mode") - not exercised; every claim covered here is stated for ascending
+//   mode. Line-mode texturing (the `line`-gated branch of bltbhold that
+//   replicates a single bit) - PKG-BLT-LINE. ECS BLTCON0L/BLTSIZH/BLTSIZV -
+//   PKG-BLT-ECS. No microsecond or wall-clock timing value is measured or
+//   asserted anywhere in this file: agnus_blitter carries no clock-frequency
+//   port, so any such number would be invented, not observed - p.179's
+//   "completely free... no more time" claim and p.171's "extra word" claim
+//   are both treated here purely as word/DMA-cycle counts.
 //
 // PRIOR ART / RECONCILIATION (docs/blitter-prior-art.md and
 // work/2026-09-08_fpga-090_build_register.md, both read before writing this

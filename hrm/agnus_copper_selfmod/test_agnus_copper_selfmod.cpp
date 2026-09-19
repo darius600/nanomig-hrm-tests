@@ -19,25 +19,26 @@
 // in the *other* location register cannot test a strobe; it has to remove the
 // address or redirect the strobe. Both of those do turn SM2 red, above.
 //
-// Test purpose: Prove PKG-SELFMOD - that the Copper can modify its own program
-//   counter by writing to its own control registers (COP1LC/COP2LC/COPJMP1/
-//   COPJMP2), as opposed to the already-refuted claim that it can rewrite its
-//   own instruction words in RAM.
+// Test purpose: Prove PKG-SELFMOD - that the Copper can modify its own
+//   program counter by writing to its own control registers
+//   (COP1LC/COP2LC/COPJMP1/ COPJMP2), as opposed to the already-refuted
+//   claim that it can rewrite its own instruction words in RAM.
 // Test class: HRM_CONFORMANCE (SM0 included as a control: it re-measures an
 //   already-uncontested fact - a subsequent externally-issued strobe reading
 //   back a self-written location register - on the same apparatus as the
 //   others. Two limits on how far that carries, both established in
-//   independent validation on 05.09.2026:
-//     - SM0 exercises the loopback for *location register* writes only. A rig
-//       fault specific to the *strobe* path leaves it green.
-//     - A red SM0 does NOT mean "the harness is broken rather than NanoMig".
-//       It also goes red if a self-issued MOVE to COP2LCL never reaches the
-//       register - a module fault. SM0 narrows where to look; it does not
-//       decide between rig and module, and an earlier revision of this header
-//       claimed that it did.)
+//   independent validation on 05.09.2026: - SM0 exercises the loopback for
+//   *location register* writes only. A rig fault specific to the *strobe*
+//   path leaves it green. - A red SM0 does NOT mean "the harness is broken
+//   rather than NanoMig". It also goes red if a self-issued MOVE to COP2LCL
+//   never reaches the register - a module fault. SM0 narrows where to look;
+//   it does not decide between rig and module, and an earlier revision of
+//   this header claimed that it did.)
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2,
 //   print pages 26, 32 and 33. Frozen specification:
 //   fpga-lab/work/2026-09-05_fpga-077_copper-selfmod_testspecification.md
+//   (private lab workspace, not published; the claim ids below are the
+//   public record)
 // Requirement IDs: none of the frozen COP-01..COP-09 IDs owns this claim
 //   group; see the specification's "Disputed prior finding" section, which
 //   challenges docs/2026-08-21_hrm-coverage-matrix.md row COP-06.
@@ -52,10 +53,10 @@
 // Non-goals: exact register-bus return latency (unspecified by module and
 //   chapter alike); the p.32 requirement that COP1LC be repointed before the
 //   next vertical blanking (COP2-loops.c3 - a constraint on the programmer,
-//   not on this module); self-modification of instruction
-//   words in RAM (confirmed not constructible - no data output port);
-//   WAIT/SKIP/INTREQ semantics of the page-33 worked example; CDANG/illegal-
-//   register interaction; the sof-triggered automatic COP1LC restart
+//   not on this module); self-modification of instruction words in RAM
+//   (confirmed not constructible - no data output port); WAIT/SKIP/INTREQ
+//   semantics of the page-33 worked example; CDANG/illegal- register
+//   interaction; the sof-triggered automatic COP1LC restart
 //   (PKG-SOF-RESTART, separate package).
 // Disclosure: agnus_copper.v was read beyond the port list (register-write
 //   and strobe/jump logic, roughly lines 58-249 and 366-403) to determine
@@ -68,6 +69,11 @@
 //   agnus_copper, agnus_copper_move, agnus_copper_skip, agnus_copper_wait
 //   and agnus_copper_bus_behaviour, all of which depend on it for ordinary
 //   instruction fetch (COPINS).
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 
 #include <cstdint>
 #include <iostream>

@@ -5,8 +5,8 @@
 //   -- every uid's own `classify.note` names an accepted package and uid
 //   that already grades the identical printed proposition at this same
 //   `ciaa` boundary. Per the build brief, that shape is declined in full on
-//   `record()` lines citing the accepted package/uid, not re-graded. This
-//   is a correct outcome, not a failure -- `hrm/ch1-userio-ports` and
+//   `record()` lines citing the accepted package/uid, not re-graded. This is
+//   a correct outcome, not a failure -- `hrm/ch1-userio-ports` and
 //   `hrm/ch1-keyboard-translation` are this batch's own precedent for it.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -15,6 +15,15 @@
 //   `hrm/ch8-ciaa-port-direction` (PROP-1 and PROP-2, both FAIL), verified
 //   directly against those packages' own test sources -- see
 //   SPECIFICATION.md's "Duplicate-grading check".
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 49 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 49 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM COVERAGE: all 44 uids assigned to this package are declined below,
 //   on the three record() lines that follow the fixture-liveness control --

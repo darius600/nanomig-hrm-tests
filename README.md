@@ -66,21 +66,23 @@ artefacts rather than by remembering.
 | | |
 |---|---:|
 | test packages | **208** |
-| assertions | **2930** — 2751 pass, **179 fail** |
+| assertions | **3263** — 3077 pass, **186 fail** |
 | packages | 141 green, 67 carrying at least one red, **0 build errors** |
 | registered findings | **65** — 59 open, 6 withdrawn; of the open ones 53 rest on a graded red and 6 are source observations |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
-**The package row and the assertion row count different things, and 141 + 67 is
-the package row.** Every one of the 208 packages has a verdict, and those are the
-141 and the 67 — the same numbers `./run_all.sh` prints as
-`tests: 141 passed, 67 failed, 0 build errors`. The assertion figures come from
-the **199 packages that print an assertion summary**; the other **9** report only
-pass or fail for the package as a whole, so they have a verdict but contribute no
-assertions. That difference is stated rather than smoothed over, because a single
-"assertions" number that quietly spans two reporting conventions is how the last
-one drifted — and because publishing green and red counted only over the 199 gave
-135 and 64 under a row saying 208, which no reader could reconcile.
+**All 208 packages now report both a verdict and an assertion count**, so the two
+rows above describe the same population and `./run_all.sh`'s own line reads
+`tests: 141 passed, 67 failed, 0 build errors`.
+
+That was not true until 19.09.2026. Nine packages printed only a package-level
+pass or fail, in wordings no tool read — `Checked 22 assertions; passed=22
+failed=0`, `225/225 PASS, 0 FAIL` — so **333 assertions were missing from every
+published total, seven of them failing**. Four of those seven are NM-HRM-002's
+stereo-routing reds, which had been counted as a red package and zero red
+assertions at the same time. The nine now print the canonical line beside their
+own, nothing else about them changed, and the figures above are the first that
+cover the whole suite.
 
 **These five figures come from a run and nothing could check them, so they
 drifted.** The row above previously read 149 green and 66 red — 215, under a

@@ -3,20 +3,23 @@
 // Test purpose: chapter 4's general statements about video priority among
 //   sprites and between sprites and playfields -- that each sprite has a
 //   fixed priority with respect to all the other sprites, that an object
-//   (sprite or playfield) with low priority is composited behind an
-//   object with higher priority, that a transparent sprite lets a
-//   lower-priority sprite or playfield show through, and that sprite data
-//   is fed to a priority circuit that decides sprite-versus-playfield
-//   compositing -- all at the denise_spritepriority module boundary.
-//   Package ch4-sprite-priority, fixture denise_spritepriority (one
-//   Verilator build, this module only, per this package's own
-//   claims.jsonl -- ch4_packages/ch4-sprite-playfield-priority.jsonl, 8
-//   records).
+//   (sprite or playfield) with low priority is composited behind an object
+//   with higher priority, that a transparent sprite lets a lower-priority
+//   sprite or playfield show through, and that sprite data is fed to a
+//   priority circuit that decides sprite-versus-playfield compositing -- all
+//   at the denise_spritepriority module boundary. Package
+//   ch4-sprite-priority, fixture denise_spritepriority (one Verilator build,
+//   this module only, per this package's own claims.jsonl --
+//   ch4_packages/ch4-sprite-playfield-priority.jsonl, 8 records).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 103, 124, 125. A red result below means denise_spritepriority.v
 //   disagrees with the manual, not that the assertion is wrong -- no
 //   assertion here was, or should be, adjusted to make the RTL pass.
+// Non-goals: anything outside the `denise_spritepriority` fixture this
+//   package builds, and any claim it does not name. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
 //
 // ORDER OF WORK: this file (assertions, expected values, claim-id
 // coverage) was written and committed from claims.jsonl's own quotations

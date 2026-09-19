@@ -1,3 +1,19 @@
+// Test purpose: p.411 "asserted on a powerup reset or a keyboard reset",
+//   `hid` alone.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 411
+// Non-goals: anything outside the `hid` fixture this package builds, and any
+//   claim outside the 2 it cites. A green here means those assertions held
+//   on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/appK-build/appK-keyboard-reset-is-system-reset.jsonl` in the
+//   sibling repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
+//
 // appK-keyboard-reset-is-system-reset -- p.411 "asserted on a powerup
 // reset or a keyboard reset", `hid` alone. 2 claims, filtered from
 // hrm-testpipeline/work/appK-build/appK-keyboard-reset-is-system-reset.jsonl.

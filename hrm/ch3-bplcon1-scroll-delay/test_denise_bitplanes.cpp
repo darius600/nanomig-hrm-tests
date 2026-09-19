@@ -11,14 +11,14 @@
 //   80-81), Copper-driven pointer resets during blanking (p.80), and the
 //   -2/-4 pointer and modulo adjustment for the non-scrolled playfield (p.
 //   72) are Agnus DMA-address concepts with no pointer, modulo or Copper
-//   port anywhere in this module's boundary -- declined below, not
-//   resolved. The display-window edge behaviour of rightward scrolling (p.
-//   82) needs DIWSTRT/DIWSTOP, also outside this boundary -- declined.
-//   Figures 3-25 and 3-27 (pp. 84) describe DMA memory-picture addressing,
-//   not a Denise-observable quantity -- declined. AGA's 6-bit-per-field
-//   BPLCON1 extension and fmode wide-fetch modes are out of scope: every
-//   stimulus below holds aga=0, matching the OCS/ECS 4-bit PF1H/PF2H text
-//   every claim in this package's inventory actually quotes.
+//   port anywhere in this module's boundary -- declined below, not resolved.
+//   The display-window edge behaviour of rightward scrolling (p. 82) needs
+//   DIWSTRT/DIWSTOP, also outside this boundary -- declined. Figures 3-25
+//   and 3-27 (pp. 84) describe DMA memory-picture addressing, not a
+//   Denise-observable quantity -- declined. AGA's 6-bit-per-field BPLCON1
+//   extension and fmode wide-fetch modes are out of scope: every stimulus
+//   below holds aga=0, matching the OCS/ECS 4-bit PF1H/PF2H text every claim
+//   in this package's inventory actually quotes.
 //
 // BOUNDARY (from the classifier's own evidence, not from opening the RTL --
 // see ORDER OF WORK below): denise_bitplanes.v:34-51 and 96-102 module

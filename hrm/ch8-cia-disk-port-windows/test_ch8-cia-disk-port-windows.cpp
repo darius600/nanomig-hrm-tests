@@ -8,12 +8,22 @@
 //   SPECIFICATION.md (committed as ed5890a, before any RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.241 ("The disk
-//   subsystem uses two ports on the system's 8520 CIA chips..." and
-//   "CIABPRB ($BFD100) eight output bits for disk selection, control and
-//   stepping"), p.244 ("PB are output bits located in CIAAPRB ($BFD100)" --
-//   corpus defect, register is CIABPRB, resolved during classification on
-//   grounds that include the very decode this package measures) and p.245
-//   ("FLAG DSKINDEX* Disk index pulse ($BFDD00, bit 4)").
+//   subsystem uses two ports on the system's 8520 CIA chips..." and "CIABPRB
+//   ($BFD100) eight output bits for disk selection, control and stepping"),
+//   p.244 ("PB are output bits located in CIAAPRB ($BFD100)" -- corpus
+//   defect, register is CIABPRB, resolved during classification on grounds
+//   that include the very decode this package measures) and p.245 ("FLAG
+//   DSKINDEX* Disk index pulse ($BFDD00, bit 4)").
+// Non-goals: anything outside the `cia_disk_port_windows_rig` fixture this
+//   package builds, and any claim outside the 12 it cites. A green here
+//   means those assertions held on this fixture at the pinned revision --
+//   not that the module is correct, and not that the chapter is covered.
+// Claim ids: 12 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-cia-disk-port-windows.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // WHAT THIS PACKAGE MEASURES, disclosed by the build task and by
 //   finding-candidate C12 before any RTL was opened, and confirmed below by

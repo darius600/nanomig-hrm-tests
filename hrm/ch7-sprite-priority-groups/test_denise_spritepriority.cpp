@@ -7,11 +7,20 @@
 //   Verilator build, this module only), per this package's own claims file
 //   ch7-sprite-priority-groups.jsonl (18 records).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, printed pp. 208-209
-//   (body text p.208, Figure 7-2 p.209). A red result below means
+// Primary oracle: Amiga Hardware Reference Manual, printed pp. 208-209 (body
+//   text p.208, Figure 7-2 p.209). A red result below means
 //   denise_spritepriority.v disagrees with the manual, not that the
 //   assertion is wrong -- no assertion here was, or should be, adjusted to
 //   make the RTL pass.
+// Non-goals: anything outside the `denise_spritepriority` fixture this
+//   package builds, and any claim outside the 18 it cites. A green here
+//   means those assertions held on this fixture at the pinned revision --
+//   not that the module is correct, and not that the chapter is covered.
+// Claim ids: 18 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER OF WORK: SPECIFICATION.md in this directory (assertions, uids,
 // scope) was written and committed (5cf4dd5) from the claims file's own

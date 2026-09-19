@@ -1,11 +1,11 @@
 // Test purpose: whether paula_audio_channel's PERIOD counter (AUDxPER) and
-//   LENGTH counter (AUDxLEN) time and count the way Chapter 5 says they do --
-//   the cck-tick gap between samples, the word count consumed between `dmas`
-//   restarts, and Figure 5-4's in-frame "always requires an even number of
-//   samples" label -- plus the small set of directly-supporting glossary
-//   entries (percntrld, percount, perfin, volcntrld, pbufld1, penhi, AUDxDAT)
-//   that these two counters and the sample path are built from. Package
-//   ch5-audio-period-and-length, fixture `paula_audio_channel`
+//   LENGTH counter (AUDxLEN) time and count the way Chapter 5 says they do
+//   -- the cck-tick gap between samples, the word count consumed between
+//   `dmas` restarts, and Figure 5-4's in-frame "always requires an even
+//   number of samples" label -- plus the small set of directly-supporting
+//   glossary entries (percntrld, percount, perfin, volcntrld, pbufld1,
+//   penhi, AUDxDAT) that these two counters and the sample path are built
+//   from. Package ch5-audio-period-and-length, fixture `paula_audio_channel`
 //   (paula_audio_channel.v alone -- three sibling packages on the same
 //   fixture take the other subjects: channel state/state-codes
 //   (ch5-audio-channel-state), the register map/DMACON/ADKCON decode
@@ -20,12 +20,16 @@
 //   same page-164/165 material describes).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 153, 158-161, 164, 165 (Figure 5-4 on p153; Table 5-7 on p158;
-//   Table 5-8 on pp160-161). claims.jsonl for ch5-audio-period-and-length,
-//   53 records, all classified "observable: yes, at paula_audio_channel" /
+//   pp. 153, 158-161, 164, 165 (Figure 5-4 on p153; Table 5-7 on p158; Table
+//   5-8 on pp160-161). claims.jsonl for ch5-audio-period-and-length, 53
+//   records, all classified "observable: yes, at paula_audio_channel" /
 //   "status: testable". A red result below means paula_audio_channel.v
 //   disagrees with the manual, not that the assertion is wrong -- no
 //   assertion here was, or should be, adjusted to make the RTL pass.
+// Non-goals: anything outside the `paula_audio_channel` fixture this package
+//   builds, and any claim it does not name. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
 //
 // ORDER OF WORK: this file's assertions, expected values, and claim-id
 //   coverage were written and committed from claims.jsonl's quotations
@@ -1324,5 +1328,8 @@ int main(int argc, char** argv) {
     // -------------------------------------------------------------------
     std::cout << "\n==== ch5-audio-period-and-length: " << g_pass << " PASS, " << g_fail
               << " FAIL ====\n";
+    // The same two numbers in the spelling hrm/run_all.sh and the coverage
+    // ledger grep for.
+    std::cout << g_pass << " passed, " << g_fail << " failed.\n";
     return (g_fail == 0) ? 0 : 1;
 }

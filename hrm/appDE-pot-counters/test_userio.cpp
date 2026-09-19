@@ -1,3 +1,20 @@
+// Test purpose: the proportional-controller pot counters at the `userio`
+//   boundary -- appendix E pp.331-332, "GAME PORT INTERFACE TO PROPORTIONAL
+//   CONTROLLERS" and the CONNECTOR PIN USAGE / POT
+//   COUNTERS figures.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 228, 230, 232, 235, 240, 331, and more
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 44 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 44 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
+//
 // appDE-pot-counters
 //
 // Grades 42 claims (readers opus, sol) against userio.v, compiled alone, on

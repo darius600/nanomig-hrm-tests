@@ -4,17 +4,17 @@
 //   independent playfields sharing one bitplane bus, split by plane parity,
 //   each with its own colour-register range and its own transparent code,
 //   and the PF2PRI bit that decides which one is drawn in front. Package
-//   ch3-dual-playfield, fixture denise_playfields (one Verilator build,
-//   this module only, per PACKAGE.md). A sibling package,
-//   ch3-playfield-colour-select, covers single-playfield colour selection
-//   on the same fixture; this package is dual-playfield only.
+//   ch3-dual-playfield, fixture denise_playfields (one Verilator build, this
+//   module only, per PACKAGE.md). A sibling package,
+//   ch3-playfield-colour-select, covers single-playfield colour selection on
+//   the same fixture; this package is dual-playfield only.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 44, 48, 67, 68, 69, 70, 71, 72, 90, 271 (claims.jsonl for
 //   ch3-dual-playfield, 98 records). A red result below means
-//   denise_playfields.v disagrees with the manual, not that the assertion
-//   is wrong -- no assertion here was, or should be, adjusted to make the
-//   RTL pass.
+//   denise_playfields.v disagrees with the manual, not that the assertion is
+//   wrong -- no assertion here was, or should be, adjusted to make the RTL
+//   pass.
 // Non-goals: `aga` and `pf2of` are held at their non-goal default (0)
 //   throughout -- no claim in this package's 98-record inventory names
 //   either one (AGA extensions and the undocumented OCS priority-offset
@@ -26,12 +26,17 @@
 //   naming independent bitplane scrolling (3-dual-mode.c2, 3-dual.c46) and
 //   the high-resolution two-bitplane-per-playfield cap (3-dual-planes.c4/
 //   c5/c6, 3-dual.c18/c19/c20) are declined -- see DECLINED CLAIMS below;
-//   this module has no scroll/position or resolution port. One claim
-//   naming sprite visibility through a transparent playfield
-//   (3-dual-color.c24) is declined for the same kind of reason -- no
-//   sprite port here. One claim about a plane-6/HAM DMA restriction
-//   (3-bplcon0.c20) is declined as a system-level DMA policy question, not
-//   something this pure per-pixel composition module enforces.
+//   this module has no scroll/position or resolution port. One claim naming
+//   sprite visibility through a transparent playfield (3-dual-color.c24) is
+//   declined for the same kind of reason -- no sprite port here. One claim
+//   about a plane-6/HAM DMA restriction (3-bplcon0.c20) is declined as a
+//   system-level DMA policy question, not something this pure per-pixel
+//   composition module enforces.
+// Claim ids: 22 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY (from PACKAGE.md's own evidence field, carried into every claim
 // record): nanomig/src/minimig-aga/denise_playfields.v:8-17 module header

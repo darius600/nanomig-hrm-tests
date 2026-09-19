@@ -1,8 +1,8 @@
 // Test purpose: assert printed p.259's claim that the general-purpose
-//   parallel interface is bi-directional -- at this fixture's boundary,
-//   that means a data register this interface exposes must have a write
-//   side a read side can observe, under a direction setting that says it
-//   should (output) -- at the `ciaa` module boundary, compiled alone.
+//   parallel interface is bi-directional -- at this fixture's boundary, that
+//   means a data register this interface exposes must have a write side a
+//   read side can observe, under a direction setting that says it should
+//   (output) -- at the `ciaa` module boundary, compiled alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 259; committed specification 5eb4afb (SPECIFICATION.md, this
@@ -11,6 +11,16 @@
 //   Claims file: hrm-testpipeline/work/ch8-s4-build/ch8-parallel-port-direction.jsonl
 //   (2 claims; both carried on PROP-1's single graded line -- same clause of
 //   the same sentence, see SPECIFICATION.md's claim inventory).
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 2 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/ch8-s4-build/ch8-parallel-port-direction.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // Order-of-work disclosure (carried forward from SPECIFICATION.md, restated
 //   here because it bears on how this file's assertions were designed): the

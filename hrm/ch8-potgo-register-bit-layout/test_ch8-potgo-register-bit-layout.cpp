@@ -18,6 +18,16 @@
 // START's own effect; POT1DAT/POTGO/POTGOR's own register addresses and
 // widths; POTGOR's former name POTINP; the Figure 8-6 output-driver
 // topology (three unlabelled buffer triangles).
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 83 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 83 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s1-build/ch8-potgo-register-bit-layout.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // Fixture liveness: userio.v has never been measured in this suite before.
 // FIXTURE-LIVE runs first, before any other assertion, and proves the

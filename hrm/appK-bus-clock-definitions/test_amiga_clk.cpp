@@ -1,3 +1,19 @@
+// Test purpose: p.393 "CLOCK SIGNALS" (Zorro II) and p.410 "CLOCK SIGNALS"
+//   (Zorro III), amiga_clk.v alone.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 393, 410
+// Non-goals: anything outside the `amiga_clk` fixture this package builds,
+//   and any claim outside the 31 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 31 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/appK-build/appK-bus-clock-definitions.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
+//
 // appK-bus-clock-definitions -- p.393 "CLOCK SIGNALS" (Zorro II) and p.410
 // "CLOCK SIGNALS" (Zorro III), amiga_clk.v alone. 31 claims, from
 // hrm-testpipeline/work/appK-build/appK-bus-clock-definitions.jsonl. See

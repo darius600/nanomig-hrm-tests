@@ -1,3 +1,20 @@
+// Test purpose: how the joystick direction switches decode into JOYxDAT, at
+//   the `userio` boundary. Claims graded here:
+//   ch8-s1-build/ch8-joystick-switch-decode.jsonl (52 claims, pages 232,
+//   233, 281), grouped into 27 propositions per SPECIFICATION.md.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 232, 233
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 52 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 52 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
+//
 // ch8-joystick-switch-decode -- fixture: userio.v, compiled alone.
 //
 // Claims graded here: ch8-s1-build/ch8-joystick-switch-decode.jsonl (52 claims,

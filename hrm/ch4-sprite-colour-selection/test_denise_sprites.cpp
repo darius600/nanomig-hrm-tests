@@ -1,21 +1,18 @@
 // ch4-sprite-colour-selection -- denise_sprites conformance test
 //
-// Test purpose: the sprite colour SELECTION MECHANISM at the
-//   denise_sprites module boundary -- how a sprite's two data words
-//   (DATA, DATB) combine into the 2-bit per-pixel value that picks a
-//   sprite colour, what code 00 (unattached) / 0000 (attached) means
-//   structurally (transparency, not a colour-register selection), and
-//   that both data words genuinely contribute to the selected value
-//   rather than one of them being ignored. Package
-//   ch4-sprite-colour-selection, fixture denise_sprites (one Verilator
-//   build, denise_sprites.v + denise_sprites_shifter.v, top module
+// Test purpose: the sprite colour SELECTION MECHANISM at the denise_sprites
+//   module boundary -- how a sprite's two data words (DATA, DATB) combine
+//   into the 2-bit per-pixel value that picks a sprite colour, what code 00
+//   (unattached) / 0000 (attached) means structurally (transparency, not a
+//   colour-register selection), and that both data words genuinely
+//   contribute to the selected value rather than one of them being ignored.
+//   Package ch4-sprite-colour-selection, fixture denise_sprites (one
+//   Verilator build, denise_sprites.v + denise_sprites_shifter.v, top module
 //   denise_sprites -- the same fixture hrm/denise_sprites/,
-//   hrm/ch3-sprite-registers/ and hrm/ch4-attached-sprites/ already
-//   build).
+//   hrm/ch3-sprite-registers/ and hrm/ch4-attached-sprites/ already build).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition,
-//   printed pp. 130, 131 (this package's own assigned claims file,
-//   67 records).
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pp. 130, 131 (this package's own assigned claims file, 67 records).
 //
 // CLAIM SOURCE / WHAT THIS FILE ACTUALLY COVERS -- READ THIS FIRST:
 //   this package's own assigned claims file is 
@@ -57,18 +54,18 @@
 //   id, not merely by page) -- nothing to decline or skip for them
 //   here; noted for the record only.
 //
-// Non-goals: the fifty-four register-number-mapping claim ids listed
-//   under OUT-OF-SCOPE-REGISTER-MAPPING; collision and playfield-
-//   priority behaviour (a different module boundary); vertical
-//   positioning (this boundary carries no vertical-position input,
-//   only hpos, matching hrm/ch3-sprite-registers/'s and
-//   hrm/ch4-attached-sprites/'s own Non-goals note for the same
-//   module); the ATTACH-bit odd/even-sprite-parity question (that is
-//   hrm/ch4-attached-sprites/'s own finding, reused here only as
-//   already-proven plumbing to reach the "attached" configuration
-//   Table 4-7 needs -- not re-asserted); which physical word (DATA or
-//   DATB) is the more significant colour bit (see CLAIM SOURCE above
-//   and the NOTE below SPRITE-DATA-WORDS-COMBINE-TO-SELECT-COLOUR).
+// Non-goals: the fifty-four register-number-mapping claim ids listed under
+//   OUT-OF-SCOPE-REGISTER-MAPPING; collision and playfield- priority
+//   behaviour (a different module boundary); vertical positioning (this
+//   boundary carries no vertical-position input, only hpos, matching
+//   hrm/ch3-sprite-registers/'s and hrm/ch4-attached-sprites/'s own
+//   Non-goals note for the same module); the ATTACH-bit
+//   odd/even-sprite-parity question (that is hrm/ch4-attached-sprites/'s own
+//   finding, reused here only as already-proven plumbing to reach the
+//   "attached" configuration Table 4-7 needs -- not re-asserted); which
+//   physical word (DATA or DATB) is the more significant colour bit (see
+//   CLAIM SOURCE above and the NOTE below
+//   SPRITE-DATA-WORDS-COMBINE-TO-SELECT-COLOUR).
 //
 // BOUNDARY: denise_sprites.v / denise_sprites_shifter.v, reached at
 //   $(NANOMIG)/src/minimig-aga/. Port list, register word-address map,

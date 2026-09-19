@@ -14,6 +14,19 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 333 (Appendix E, LIGHT PEN figure).
+// Test purpose: appDE-lightpen-beam Grades 4 claims (2 propositions, each
+//   claimed independently by readers sol and opus) against
+//   `agnus_beamcounter` (compiled alone), from Appendix E p.333's LIGHT PEN
+//   figure -- the two boxes: VPOSR rea
+// Non-goals: anything outside the `agnus_beamcounter` fixture this package
+//   builds, and any claim outside the 4 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_beamcounter.v:29-56 -- the
 //   module's whole port list. Confirmed by direct read: no LPEN, trigger or

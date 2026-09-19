@@ -2,11 +2,11 @@
 //   REQUEST LINES -- the p.250 "three kinds of interrupts" intro, the
 //   DSKSYNC and DSKBLK bullet lines, and p.279's DMA-length-zero clause --
 //   against `paula_floppy` (paula_floppy.v + paula_floppy_fifo.v only;
-//   paula_floppy_ebr.v excluded, it declares a second `module paula_floppy`).
-//   8 claims, from
+//   paula_floppy_ebr.v excluded, it declares a second `module
+//   paula_floppy`). 8 claims, from
 //   hrm-testpipeline/work/ch8-s2-build/ch8-disk-interrupt-requests.jsonl,
-//   reduced to 4 propositions. Full derivation in SPECIFICATION.md (committed
-//   as ee1ba33, before this file or paula_floppy.v was opened).
+//   reduced to 4 propositions. Full derivation in SPECIFICATION.md
+//   (committed as ee1ba33, before this file or paula_floppy.v was opened).
 //
 // REPAIR (2026-09-15, repair lot C, against DOKTRIN.md/LOS-C.md). Independent
 //   validation of chapter 8 slice s2 found every claim in this package graded
@@ -58,6 +58,16 @@
 // Primary oracle: Amiga Hardware Reference Manual, printed p.250 (disk
 //   interrupt list) and p.279 (Appendix A, DSKDATR/DSKDAT register
 //   description).
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 11 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 11 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-disk-interrupt-requests.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // THE BOUNDARY, confirmed by reading paula_floppy.v myself (SPECIFICATION.md
 //   had only the build task's disclosed, not-yet-verified citations):

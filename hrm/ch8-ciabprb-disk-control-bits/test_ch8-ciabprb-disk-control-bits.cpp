@@ -1,8 +1,8 @@
-// Test purpose: assert what printed pp.244-245 claim about CIABPRB
-//   ($BFD100, ciab's PRB register, rs=4'h1) at the `ciab` module boundary,
-//   compiled alone with its CIA submodules -- the eight PB disk-control
-//   bits' independent bit-position transfer, their reset/pull-up deasserted
-//   (HIGH) default, the DSKDIREC/DSKSTEP* separate-write ordering rule, and
+// Test purpose: assert what printed pp.244-245 claim about CIABPRB ($BFD100,
+//   ciab's PRB register, rs=4'h1) at the `ciab` module boundary, compiled
+//   alone with its CIA submodules -- the eight PB disk-control bits'
+//   independent bit-position transfer, their reset/pull-up deasserted (HIGH)
+//   default, the DSKDIREC/DSKSTEP* separate-write ordering rule, and
 //   DSKSTEP*'s high-momentarily-low-high pulse shape. Per SPECIFICATION.md
 //   (committed 8125735, before this file was opened for the RTL): `ciab`
 //   alone carries no signal named DSKMOTOR*, DSKSEL3*-DSKSEL0*, DSKSIDE,
@@ -33,6 +33,16 @@
 //   - how short "momentarily" (DSKSTEP*'s low phase) must be: a duration
 //     with no companion interval on this page to form a ratio with, left to
 //     lot c4's drive-timing package.
+// Non-goals: anything outside the `ciab` fixture this package builds, and
+//   any claim outside the 30 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 30 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-ciabprb-disk-control-bits.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // RTL read for step 2, after SPECIFICATION.md was committed (8125735): read
 //   ciab.v (224 lines) in full, plus its four instantiated submodules

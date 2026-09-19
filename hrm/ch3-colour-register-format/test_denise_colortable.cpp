@@ -2,11 +2,10 @@
 //
 // Test purpose: the colour registers themselves as chapter 3 of the Amiga
 //   Hardware Reference Manual (3rd ed.) describes them: 32 registers, each
-//   holding a 12-bit code split into 4-bit Red/Green/Blue nibbles (the top
-//   4 bits of the 16-bit word unused), write-only, individually addressed
-//   by the 5-bit code assembled from bitplanes 5..1 (Figures 3-3/3-4), and
-//   the extra-half-brite shift that bitplane 6 applies to that code's
-//   output.
+//   holding a 12-bit code split into 4-bit Red/Green/Blue nibbles (the top 4
+//   bits of the 16-bit word unused), write-only, individually addressed by
+//   the 5-bit code assembled from bitplanes 5..1 (Figures 3-3/3-4), and the
+//   extra-half-brite shift that bitplane 6 applies to that code's output.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   42, 43, 44, 46, 47, 48, 55, 56, 67, 83, 86, 90, 92, 95, 271, 273, 292,
@@ -14,11 +13,11 @@
 //   result below means denise_colortable.v disagrees with the manual, not
 //   that the assertion is wrong -- no assertion here was, or should be,
 //   adjusted to make the RTL pass.
-// Non-goals: anything that needs a port this module does not have. See
-//   "OUT OF SCOPE" below for the 27 claims that name a wider mechanism
-//   (BPLCON0, the bitplane-to-select assembly, the display-window border,
-//   or a 16-bit bus this 12-bit port cannot receive) than this fixture's
-//   boundary reaches.
+// Non-goals: anything that needs a port this module does not have. See "OUT
+//   OF SCOPE" below for the 27 claims that name a wider mechanism (BPLCON0,
+//   the bitplane-to-select assembly, the display-window border, or a 16-bit
+//   bus this 12-bit port cannot receive) than this fixture's boundary
+//   reaches.
 //
 // BOUNDARY: top module `denise_colortable` only (one Verilator build,
 //   sources denise_colortable.v + denise_colortable_ram_mf.v), per

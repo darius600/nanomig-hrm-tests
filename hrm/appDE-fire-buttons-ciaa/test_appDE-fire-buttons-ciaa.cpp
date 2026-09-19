@@ -1,14 +1,14 @@
-// Test purpose: HRM conformance package `appDE-fire-buttons-ciaa`, appendix E
-//   printed pages 329-330 (GAME PORT INTERFACE TO FIRE BUTTONS / CONNECTOR
+// Test purpose: HRM conformance package `appDE-fire-buttons-ciaa`, appendix
+//   E printed pages 329-330 (GAME PORT INTERFACE TO FIRE BUTTONS / CONNECTOR
 //   PIN USAGE FOR FIRE BUTTON INPUTS / READING FIRE BUTTONS), against the
 //   `ciaa` module compiled alone. 16 claims, filtered by
 //   classify.package=="appDE-fire-buttons-ciaa" from
 //   work/2026-09-17_appDE_packages.jsonl. Built per
 //   work/2026-09-17_appDE_build_brief.md.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, printed pages 329-330 ONLY
-//   (docs/references/amiga-hrm-3rd/appE/p329.txt, p330.txt, both read and
-//   quote-checked against their renders before this file was written).
+// Primary oracle: Amiga Hardware Reference Manual, printed pages 329-330
+//   ONLY (docs/references/amiga-hrm-3rd/appE/p329.txt, p330.txt, both read
+//   and quote-checked against their renders before this file was written).
 //   appE/corpus-defects.md names TWO defects on p.330, both accounted for
 //   below: (a) the DDRA figure's own printed self-contradiction at bits 5:2
 //   (value 0, label OUT) -- DDRA-FIGURE-CONTRADICTION, further down; (b)
@@ -18,7 +18,8 @@
 //   figures/p330.png directly, not from p330.txt, per the corpus-wide rule
 //   "read every table from the render." p327 ("J11 is the right controller
 //   port connector... J12 is the left controller port connector...") is read
-//   for context ONLY (candidate 1, below); no claim in this package quotes it.
+//   for context ONLY (candidate 1, below); no claim in this package quotes
+//   it.
 // Fixture boundary: `ciaa` (ciaa.v) plus the four sibling files Verilator
 //   needs to elaborate it -- cia_int.v, cia_timera.v, cia_timerb.v,
 //   cia_timerd.v -- confirmed by this file's own Makefile SRC list (the only
@@ -31,6 +32,15 @@
 //   crossbar) and is joined to `ciaa` at `minimig` (minimig.v:622). Claims
 //   that need it are declined below by module boundary, not regraded with a
 //   weaker guess, per the build brief.
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 16 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 16 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // RTL FACTS USED THROUGHOUT (ciaa.v, read directly -- not taken from any
 //   report -- against the pinned submodule d6f7df957fad655bc07f6a381e5094a9edff0be0):

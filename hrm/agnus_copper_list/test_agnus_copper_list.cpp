@@ -1,8 +1,15 @@
-// Test purpose: Verify the three Copper instruction forms, their bit-0 discrimination, sequential two-word list execution, relocation and both list pointers.
+// Test purpose: Verify the three Copper instruction forms, their bit-0
+//   discrimination, sequential two-word list execution, relocation and both
+//   list pointers.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed pp. 20, 21, 22, 26-27, 30, 31, 32 and 36; frozen specification d9cad33.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pp. 20, 21, 22, 26-27, 30, 31, 32 and 36; frozen specification d9cad33.
 // Requirement IDs: COP-02, COP-06
-// Non-goals: Reserved encodings are marked "X = don't care" on p.36, so no conformance claim about them is possible. Instruction cycle counts (p.20) are arbitration-level and need the Agnus top level. Beam-order list authoring advice is guidance, not hardware behaviour. The vertical-blank COP1LC reload belongs to COP-07.
+// Non-goals: Reserved encodings are marked "X = don't care" on p.36, so no
+//   conformance claim about them is possible. Instruction cycle counts
+//   (p.20) are arbitration-level and need the Agnus top level. Beam-order
+//   list authoring advice is guidance, not hardware behaviour. The
+//   vertical-blank COP1LC reload belongs to COP-07.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. All eight
 // assertions were mutated at the STIMULUS on 05.09.2026 - the scenario changed,

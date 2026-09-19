@@ -1,15 +1,16 @@
-// Test purpose: Verify line mode at the agnus_blitter boundary: BLTCON1 bit 0
-//   (LINE) selecting a completely different state machine (BLT_L1-L4, not
-//   BLT_A-D); the octant encoding of Table 6-3 (p.190) and Appendix A (p.268),
-//   measured together as one table stated twice; the single A bit ($8000)
-//   walking the word automatically via ash; the B-channel texture selected by
-//   BSH and decremented one bit per pixel; ONEDOT (BLTCON1 bit 1) suppressing
-//   repeat writes within a horizontal row; the SIGNFLAG bit (BLTCON1 bit 6)
-//   setting the first pixel's error sign; the sign flag driving the modulo
-//   bank choice (BLTAMOD vs BLTBMOD); BLTCPT/BLTDPT as separate registers in
-//   the same role; the required BLTSIZE width of 2; and, added for FPGA-090's
-//   final gap, the h field's own tenth bit (bit 9, value 512) as a real
-//   pixel-counter bit in original-chip-set (ecs=0) line mode.
+// Test purpose: Verify line mode at the agnus_blitter boundary: BLTCON1 bit
+//   0 (LINE) selecting a completely different state machine (BLT_L1-L4, not
+//   BLT_A-D); the octant encoding of Table 6-3 (p.190) and Appendix A
+//   (p.268), measured together as one table stated twice; the single A bit
+//   ($8000) walking the word automatically via ash; the B-channel texture
+//   selected by BSH and decremented one bit per pixel; ONEDOT (BLTCON1 bit
+//   1) suppressing repeat writes within a horizontal row; the SIGNFLAG bit
+//   (BLTCON1 bit 6) setting the first pixel's error sign; the sign flag
+//   driving the modulo bank choice (BLTAMOD vs BLTBMOD); BLTCPT/BLTDPT as
+//   separate registers in the same role; the required BLTSIZE width of 2;
+//   and, added for FPGA-090's final gap, the h field's own tenth bit (bit 9,
+//   value 512) as a real pixel-counter bit in original-chip-set (ecs=0) line
+//   mode.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 169, 184, 189-192, 268-270.
@@ -21,8 +22,8 @@
 //   already-validated ascending_shift() formula (PKG-BLT-SHIFT, 4.2M-case
 //   sweep); BLTAFWM/BLTALWM's general masking semantics outside line mode
 //   (PKG-BLT-MASKS); the literal 1024-pixel OCS length maximum and BLTSIZE's
-//   full 0-1023 exhaustive sweep over EVERY value the field can hold, which is
-//   the SAME field PKG-BLT-SIZE already tests that exhaustively -- this
+//   full 0-1023 exhaustive sweep over EVERY value the field can hold, which
+//   is the SAME field PKG-BLT-SIZE already tests that exhaustively -- this
 //   package's per-pixel loop uses that field as a pixel counter at small
 //   heights for runtime, EXCEPT for LINE-HEIGHT-FIELD-TEN-BITS-OCS below,
 //   which is not a non-goal: PKG-BLT-SIZE never sets LINE=1
@@ -30,16 +31,16 @@
 //   it cannot reach 6-appa-registers.c67 ("the h field is ten bits wide in
 //   original-chip-set line mode", p.269), the one claim this chapter's build
 //   register (`work/2026-09-08_fpga-090_build_register.md`) names as
-//   demonstrated nowhere in the suite -- see that assertion for why height=600
-//   (not the full 1024) is the smallest round value that still needs bit 9;
-//   the modulo VALUE
-//   formulas (4*(dy-dx), 4*dy, "twice screen width") and the "normalize into
-//   octant 0" calculation, all of which are the programmer's arithmetic on
-//   dy/dx before writing a register -- no dy/dx port exists on this module,
-//   only the register BANK SELECTION these formulas feed into is RTL
-//   behavior, and that is what is asserted; "BLTSIZE should not be written
-//   until the very end" -- programming-order advice, not a hardware gate
-//   (same treatment PKG-BLT-STATUS gives "write BLTSIZE last").
+//   demonstrated nowhere in the suite -- see that assertion for why
+//   height=600 (not the full 1024) is the smallest round value that still
+//   needs bit 9; the modulo VALUE formulas (4*(dy-dx), 4*dy, "twice screen
+//   width") and the "normalize into octant 0" calculation, all of which are
+//   the programmer's arithmetic on dy/dx before writing a register -- no
+//   dy/dx port exists on this module, only the register BANK SELECTION these
+//   formulas feed into is RTL behavior, and that is what is asserted;
+//   "BLTSIZE should not be written until the very end" -- programming-order
+//   advice, not a hardware gate (same treatment PKG-BLT-STATUS gives "write
+//   BLTSIZE last").
 //
 // SUPERSESSION. Supersedes hrm/agnus_blitter_line_octant, per the build
 // register. That package has TWO defects (docs/blitter-prior-art.md):

@@ -2,12 +2,23 @@
 //   p.250 (1 -> 01; 0 -> 10 if following a 0; 0 -> 00 if following a 1) and
 //   the "raw MFM data ... twice as large" sentence, same page, against
 //   `paula_floppy` (paula_floppy.v + paula_floppy_fifo.v only --
-//   paula_floppy_ebr.v excluded, it declares a second `module paula_floppy`).
-//   8 claims, from work/ch8-s2-build/ch8-mfm-cell-encoding.jsonl, reduce to
-//   4 assertions + fixture liveness. Full derivation in SPECIFICATION.md
-//   (committed as 7adfeb4, before any RTL was opened).
+//   paula_floppy_ebr.v excluded, it declares a second `module
+//   paula_floppy`). 8 claims, from
+//   work/ch8-s2-build/ch8-mfm-cell-encoding.jsonl, reduce to 4 assertions +
+//   fixture liveness. Full derivation in SPECIFICATION.md (committed as
+//   7adfeb4, before any RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.250.
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 8 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 8 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-mfm-cell-encoding.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (7adfeb4):
 //   1. hrm/ch8-dsklen-dma-arming/Makefile, test_ch8-dsklen-dma-arming.cpp,

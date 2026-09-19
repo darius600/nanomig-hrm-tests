@@ -1,3 +1,18 @@
+// Test purpose: register resolution table, and the light-pen-trigger
+//   detection procedures
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 227, 239, 241
+// Non-goals: anything outside the `agnus_beamcounter` fixture this package
+//   builds, and any claim outside the 14 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 14 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
+//
 // ch8-lightpen-position-readout
 // Oracle: Amiga Hardware Reference Manual, page 239 (light pen position
 // register resolution table and light-pen-trigger detection procedures).

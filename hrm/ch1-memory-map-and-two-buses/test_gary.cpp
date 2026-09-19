@@ -1,14 +1,23 @@
 // hrm/ch1-memory-map-and-two-buses -- gary conformance test
 //
 // Test purpose: chapter 1's memory map as `gary` implements it -- the
-//   Kickstart ROM window and its 256K mirror, the CPU's total address
-//   reach, the Chip-memory/slow-memory regions and why each is named what
-//   it is, the CIA/Paula address split, and every block Figure 1-1 (p.8)
-//   draws inside or immediately around gary's own boundary, per
-//   SPECIFICATION.md (committed 3c7a722, before this file was opened).
+//   Kickstart ROM window and its 256K mirror, the CPU's total address reach,
+//   the Chip-memory/slow-memory regions and why each is named what it is,
+//   the CIA/Paula address split, and every block Figure 1-1 (p.8) draws
+//   inside or immediately around gary's own boundary, per SPECIFICATION.md
+//   (committed 3c7a722, before this file was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   1-6, 8 (Figure 1-1 + its footnote), 12.
+// Non-goals: anything outside the `gary` fixture this package builds, and
+//   any claim outside the 52 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 52 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER OF WORK: SPECIFICATION.md was written from the 49 claims'
 //   quote/restatement fields (plus what their own classify.evidence field

@@ -1,7 +1,7 @@
 // Test purpose: HRM conformance package for Appendix B's printed p.289
 //   register-map rows POT0DAT, POT1DAT, POTGOR, SERDATR, SERDAT, SERPER and
-//   POTGO, composed with p.287's chip-letter legend ("P=Paula chip"), against
-//   the `paula` module compiled alone. 14 claims, from
+//   POTGO, composed with p.287's chip-letter legend ("P=Paula chip"),
+//   against the `paula` module compiled alone. 14 claims, from
 //   work/ch8-s1-build/ch8-appb-chip-column-paula.jsonl. Full derivation in
 //   SPECIFICATION.md (committed as a387dd3 before this file was written).
 // Test class: HRM_CONFORMANCE
@@ -15,6 +15,16 @@
 //   paula_audio_mixer.v, paula_audio_volume.v). No other module is compiled
 //   into this package -- confirmed by this file's own Makefile SRC list, the
 //   only place a module could be added.
+// Non-goals: anything outside the `paula` fixture this package builds, and
+//   any claim outside the 15 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 15 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s1-build/ch8-appb-chip-column-paula.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // THE (E) MARK -- out of scope on this page. POT0DAT and POT1DAT print
 //   "P (E)" in the CHIP column, not bare "P". Printed p.287 (the legend these

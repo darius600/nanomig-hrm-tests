@@ -21,14 +21,17 @@
 //   pp. 157, 164. claims.jsonl for ch5-audio-direct-output, 19 records,
 //   merged by identical quotation into the 10 assertion groups below (sol's
 //   "5-p157.*"/"5-p164.*" lot and opus's "5-direct.*"/"5-sm.*" lot
-//   independently read the same two pages). No claim in this package's 19
-//   is declined; classify already marked all 19 "testable". A red result
-//   below means paula_audio_channel.v disagrees with the manual, not that
-//   the assertion is wrong -- no expected value here was, or should be,
-//   adjusted to make the RTL pass. ONE red is EXPECTED and was disclosed,
-//   with its evidence, before this file was built -- see GROUP C / CANDIDATE
-//   5 below. It is not assigned an NM-HRM-nnn key here; the lead issues
-//   those.
+//   independently read the same two pages). No claim in this package's 19 is
+//   declined; classify already marked all 19 "testable". A red result below
+//   means paula_audio_channel.v disagrees with the manual, not that the
+//   assertion is wrong -- no expected value here was, or should be, adjusted
+//   to make the RTL pass. ONE red is EXPECTED and was disclosed, with its
+//   evidence, before this file was built -- see GROUP C / CANDIDATE 5 below.
+//   It is not assigned an NM-HRM-nnn key here; the lead issues those.
+// Non-goals: anything outside the `paula_audio_channel` fixture this package
+//   builds, and any claim it does not name. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
 //
 // ORDER OF WORK: this file's assertions, expected values, and claim-id
 //   coverage were written and committed from claims.jsonl's quotations

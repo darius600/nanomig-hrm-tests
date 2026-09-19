@@ -10,20 +10,24 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.260. Claims file ch8-video-signal-set.jsonl, 10 records (5
-//   propositions after twins are grouped, per SPECIFICATION.md, committed
-//   at 8d29f9b before this file was written).
+//   propositions after twins are grouped, per SPECIFICATION.md, committed at
+//   8d29f9b before this file was written).
 // Non-goals: this package does not test the 23-pin connector's existence
 //   (NanoMig has none; that is why 129 of p.260's other claims are
 //   not-asserted elsewhere in this slice) or the "4,096 different colors"
 //   clause in the same sentence (no claim in this claims file restates it).
-//   It does not test colour depth/count (that is ch8-display-colour-count,
-//   a different top). It does not decide whether three sync outputs where
-//   the page names one is a divergence -- the task brief that commissioned
-//   this build records that as NOT a divergence, so this file does not
-//   raise it; SYNC-OUTPUT-TOGGLES below grades only that a Sync-role
-//   output exists and is live, sampling `_csync` (the composite, the one
-//   of the three the page's singular "Sync" means), never the 3-vs-1
-//   count.
+//   It does not test colour depth/count (that is ch8-display-colour-count, a
+//   different top). It does not decide whether three sync outputs where the
+//   page names one is a divergence -- the task brief that commissioned this
+//   build records that as NOT a divergence, so this file does not raise it;
+//   SYNC-OUTPUT-TOGGLES below grades only that a Sync-role output exists and
+//   is live, sampling `_csync` (the composite, the one of the three the
+//   page's singular "Sync" means), never the 3-vs-1 count.
+// Claim ids: 10 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: minimig.v ports cpu_address/cpu_r_w/_cpu_as/_cpu_uds/_cpu_lds/
 //   cpudata_in/_cpu_dtack (the external 68000 bus, used to write Denise's

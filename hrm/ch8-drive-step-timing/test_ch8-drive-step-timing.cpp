@@ -8,6 +8,11 @@
 //   "with a Chinon drive" and warn the figures change with other vendors'
 //   drives -- only the dimensionless content each claim reduces to is
 //   graded); the MFM/SD-card data path; DMA; interrupts.
+// Claim ids: 30 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // MUTATION RATIO-A oracle green: expected ratio changed from 6 (the printed
 //   18ms-reversal : 3ms-same-direction pair, p.245:32 and p.245:37-39) to 1

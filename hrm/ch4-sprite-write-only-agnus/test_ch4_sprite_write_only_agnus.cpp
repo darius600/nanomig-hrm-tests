@@ -2,16 +2,19 @@
 //   SPR0PTH/SPR0PTL through SPR7PTH/SPR7PTL - are write-only: a read aimed
 //   at one of their own addresses does not return what was written there.
 //   Package ch4-sprite-registers-write-only-agnus, 34 claim records, all
-//   citing this one proposition repeated per register (plus, for SPR0PTH
-//   and SPR0PTL only, the generic "SPRxPTH"/"SPRxPTL" family entry on
-//   p.285, which names the same two addresses).
+//   citing this one proposition repeated per register (plus, for SPR0PTH and
+//   SPR0PTL only, the generic "SPRxPTH"/"SPRxPTL" family entry on p.285,
+//   which names the same two addresses).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition. p.285
-//   (Appendix A, the generic SPRxPTH/SPRxPTL family row) and p.291
-//   (Appendix B, the sixteen per-sprite rows SPR0PTH..SPR7PTL). A red
-//   result below means agnus.v disagrees with the manual, not that the
-//   assertion is wrong - no assertion here is, or will be, adjusted to
-//   make the RTL pass.
+//   (Appendix A, the generic SPRxPTH/SPRxPTL family row) and p.291 (Appendix
+//   B, the sixteen per-sprite rows SPR0PTH..SPR7PTL). A red result below
+//   means agnus.v disagrees with the manual, not that the assertion is wrong
+//   - no assertion here is, or will be, adjusted to make the RTL pass.
+// Non-goals: anything outside the `agnus` fixture this package builds, and
+//   any claim it does not name. A green here means those assertions held on
+//   this fixture at the pinned revision -- not that the module is correct,
+//   and not that the chapter is covered.
 //
 // THE OCR DAMAGE ON p.291 (read, not solved, here): all sixteen p.291 rows
 //   this package cites carry a lower-case `w` in the access column where

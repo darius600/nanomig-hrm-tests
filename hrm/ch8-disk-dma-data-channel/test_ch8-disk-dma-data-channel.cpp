@@ -1,15 +1,24 @@
 // Test purpose: HRM conformance package for the disk-DMA data channel --
 //   DSKDAT/DSKDATR as the DMA data buffer (p.279), the ER ("early read")
 //   legend and the DSKDATR/DSKDAT appendix-B rows (pp.287,289) -- against a
-//   rig over `paula_floppy` + `agnus_diskdma`
-//   (disk_dma_data_channel_rig.v, this package's own wrapper, NOT pinned
-//   RTL). 19 claims, from
+//   rig over `paula_floppy` + `agnus_diskdma` (disk_dma_data_channel_rig.v,
+//   this package's own wrapper, NOT pinned RTL). 19 claims, from
 //   work/ch8-s2-build/ch8-disk-dma-data-channel.jsonl. Full derivation in
 //   SPECIFICATION.md (committed as 3e0f075, before any RTL was opened).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, printed p.279 (Appendix A,
-//   DSKDAT/DSKDATR) and pp.287,289 (Appendix B, the ER legend and the
+// Primary oracle: Amiga Hardware Reference Manual, printed p.279 (Appendix
+//   A, DSKDAT/DSKDATR) and pp.287,289 (Appendix B, the ER legend and the
 //   DSKDATR/DSKDAT rows).
+// Non-goals: anything outside the `disk_dma_data_channel_rig` fixture this
+//   package builds, and any claim outside the 19 it cites. A green here
+//   means those assertions held on this fixture at the pinned revision --
+//   not that the module is correct, and not that the chapter is covered.
+// Claim ids: 19 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-disk-dma-data-channel.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // FOUR CLAIMS CARRY AN ATTACK-STAGE CONSTRAINT (opus:8-appB-dskdatr.c2,
 //   sol:8-appb-dskdatr.c2, opus:8-appB-dskdat.c2, sol:8-appb-dskdat.c2): each

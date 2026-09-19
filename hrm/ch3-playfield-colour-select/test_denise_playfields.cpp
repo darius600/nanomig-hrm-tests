@@ -23,16 +23,16 @@
 //   that the assertion is wrong -- no assertion here was, or should be,
 //   adjusted to make the RTL pass.
 // Non-goals: `aga` and `pf2of` are held at their reset default (0)
-//   throughout -- no claim in this package's inventory names AGA
-//   extensions or the OCS priority-offset behaviour, and the RTL's own
-//   AGA-only code paths (denise_playfields.v:73-74/87-88, and bpldata bits
-//   7/8) are never exercised by any stimulus below (bits 7/8 of bpldata
-//   are never set). `nplayfield` is never read: every proposition tested
-//   is independently observable through `plfdata` alone (the same
-//   convention hrm/ch3-dual-playfield uses for the identical module).
-//   `dblpf` and `bplcon2`, unlike the sibling's non-goal list, ARE varied
-//   here -- they are this package's own subject matter for every
-//   dual-playfield-flavoured assertion below, not an irrelevant default.
+//   throughout -- no claim in this package's inventory names AGA extensions
+//   or the OCS priority-offset behaviour, and the RTL's own AGA-only code
+//   paths (denise_playfields.v:73-74/87-88, and bpldata bits 7/8) are never
+//   exercised by any stimulus below (bits 7/8 of bpldata are never set).
+//   `nplayfield` is never read: every proposition tested is independently
+//   observable through `plfdata` alone (the same convention
+//   hrm/ch3-dual-playfield uses for the identical module). `dblpf` and
+//   `bplcon2`, unlike the sibling's non-goal list, ARE varied here -- they
+//   are this package's own subject matter for every dual-playfield-flavoured
+//   assertion below, not an irrelevant default.
 //
 // COVERAGE CORRECTION (recorded for traceability): an earlier version of
 // this file declined 134 dual-playfield-flavoured claim ids as "already

@@ -15,6 +15,11 @@
 //   what P3 needs; and the vertical-blank *timing* that sets bit 5 (that is
 //   ch7-vertb-vertical-blank-timing, against agnus_beamcounter). All
 //   recorded, not asserted -- see the record() calls near the end.
+// Claim ids: 102 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // DECODING NOTE: this module's `_ipl` output is NOT the 68000 level
 // directly. Reading the RTL's priority-encoder casez (paula_intcontroller.v
@@ -845,6 +850,11 @@ int main(int argc, char** argv) {
     std::cout << "Checked " << (checks.passed + checks.failed)
               << " assertions; passed=" << checks.passed
               << " failed=" << checks.failed << ".\n";
+    // The line the coverage ledger and hrm/run_all.sh read. The line above
+    // says the same thing for a human; this one is the spelling the tools
+    // grep for, and without it this package reports no assertions at all.
+    std::cout << checks.passed << " passed, " << checks.failed
+              << " failed.\n";
 
     dut->final();
     delete dut;

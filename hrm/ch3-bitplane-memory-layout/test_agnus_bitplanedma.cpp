@@ -4,11 +4,12 @@
 //   blocks; the specific word sequences the manual's own Figures 3-7, 3-10,
 //   3-11, 3-17 and 3-18 print; the extra fetch a horizontal hires scroll
 //   costs; the display window's selection of a subset of a larger memory
-//   picture and its one-scan-line vertical resolution; the ECS display-window
-//   range extension; the bus addresses of DIWSTRT/DIWSTOP/DIWHIGH; and the
-//   hardware-limited maximum fetched word counts of Table 3-14. This is the
-//   last uncovered claim group in chapter 3 for this fixture - reached no
-//   package before now, for no recorded reason.
+//   picture and its one-scan-line vertical resolution; the ECS
+//   display-window range extension; the bus addresses of
+//   DIWSTRT/DIWSTOP/DIWHIGH; and the hardware-limited maximum fetched word
+//   counts of Table 3-14. This is the last uncovered claim group in chapter
+//   3 for this fixture - reached no package before now, for no recorded
+//   reason.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 42, 52, 53, 54, 55, 57, 59, 61, 72, 75, 76, 80, 81, 277, 290, 293.

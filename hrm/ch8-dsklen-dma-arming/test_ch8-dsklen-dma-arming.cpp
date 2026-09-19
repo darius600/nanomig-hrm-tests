@@ -1,14 +1,25 @@
 // Test purpose: HRM conformance package for DSKLEN's bit layout and the
 //   double-write disk-DMA arming sequence (pp.246-247, Appendix A p.279),
 //   against `paula_floppy` (paula_floppy.v + paula_floppy_fifo.v only --
-//   paula_floppy_ebr.v excluded, it declares a second `module paula_floppy`).
-//   54 claims, from work/ch8-s2-build/ch8-dsklen-dma-arming.jsonl, reduced to
-//   12 assertions + fixture liveness (13 after the 2026-09-15 lot-B repair
-//   added the A13 substitute; see the repair notes below). Full derivation
-//   in SPECIFICATION.md (committed as e97f8f2, before any RTL was opened;
+//   paula_floppy_ebr.v excluded, it declares a second `module
+//   paula_floppy`). 54 claims, from
+//   work/ch8-s2-build/ch8-dsklen-dma-arming.jsonl, reduced to 12 assertions
+//   + fixture liveness (13 after the 2026-09-15 lot-B repair added the A13
+//   substitute; see the repair notes below). Full derivation in
+//   SPECIFICATION.md (committed as e97f8f2, before any RTL was opened;
 //   updated 2026-09-15 for the repair).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed pp.246-247, 279.
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 54 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 54 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-dsklen-dma-arming.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (e97f8f2):
 //   1. hrm/ch8-ciaapra-address-window/Makefile, test_ch8-ciaapra-address-

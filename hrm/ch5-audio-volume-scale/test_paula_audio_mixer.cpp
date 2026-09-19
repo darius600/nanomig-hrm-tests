@@ -3,14 +3,18 @@
 // Test purpose: chapter 5's volume-and-decibel claims, printed pp. 135-163,
 //   chiefly Table 5-9 (volume register value against decibel value, p.163),
 //   measured at paula_audio_mixer -- the only fixture this package builds.
-//   This EXTENDS hrm/ch5-audio-stereo-routing (already HRM_CONFORMANCE on the same
-//   fixture, carrying NM-HRM-002's four red stereo assertions) rather than
-//   replacing it: that package is untouched by this one.
+//   This EXTENDS hrm/ch5-audio-stereo-routing (already HRM_CONFORMANCE on
+//   the same fixture, carrying NM-HRM-002's four red stereo assertions)
+//   rather than replacing it: that package is untouched by this one.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, chapter 5,
 //   printed pp. 135-163 (claims.jsonl: ch5-audio-volume-scale.jsonl, 153
 //   records, quoted from printed pages 135-142 and the full 65-row Table 5-9
 //   on printed 163).
+// Non-goals: anything outside the `paula_audio_mixer` fixture this package
+//   builds, and any claim it does not name. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
 //
 // ORDER OF WORK -- DISCLOSED DEVIATION, NOT PAPERED OVER: the build brief
 //   requires the specification to be written from claims.jsonl's quotations

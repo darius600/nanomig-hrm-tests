@@ -1,9 +1,9 @@
-// Test purpose: Verify the OCS BLTSIZE register at the agnus_blitter boundary
-//   (packages.md item 8): the six-bit width field and the ten-bit height
-//   field, zero in either field meaning the field's maximum (64 words / 1024
-//   lines), width counted in words versus height counted in lines/rows, one
-//   BLTSIZE write configuring both dimensions at once, and busy rising on the
-//   BLTSIZE write.
+// Test purpose: Verify the OCS BLTSIZE register at the agnus_blitter
+//   boundary (packages.md item 8): the six-bit width field and the ten-bit
+//   height field, zero in either field meaning the field's maximum (64 words
+//   / 1024 lines), width counted in words versus height counted in
+//   lines/rows, one BLTSIZE write configuring both dimensions at once, and
+//   busy rising on the BLTSIZE write.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 169-173, 186, 192, 200, 269, 308.
@@ -13,13 +13,13 @@
 //   claim back here (see that file's "NOT ASSERTED - REDIRECTED",
 //   6-appc-big-blits.c22) while keeping the ECS field-width claims for
 //   itself; line mode's specific use of BLTSIZE (width forced to 2, height
-//   reused as line length) beyond citing the same "writes BLTSIZE last"
-//   busy fact - PKG-BLT-LINE's territory; modulo application and address
-//   pointer stepping at a row boundary - PKG-BLT-ADRGEN's territory (this
-//   file counts destination WRITES to show width/height's operational
-//   meaning, never address arithmetic); BUSY-NO-DMA-NEEDED and the
-//   pre-Fat-Agnus busy timing alternative, zero/BZERO, int3 pulse timing -
-//   already PKG-BLT-STATUS's job (hrm/agnus_blitter_status); minterm/data
+//   reused as line length) beyond citing the same "writes BLTSIZE last" busy
+//   fact - PKG-BLT-LINE's territory; modulo application and address pointer
+//   stepping at a row boundary - PKG-BLT-ADRGEN's territory (this file
+//   counts destination WRITES to show width/height's operational meaning,
+//   never address arithmetic); BUSY-NO-DMA-NEEDED and the pre-Fat-Agnus busy
+//   timing alternative, zero/BZERO, int3 pulse timing - already
+//   PKG-BLT-STATUS's job (hrm/agnus_blitter_status); minterm/data
 //   correctness - PKG-BLT-MINTERM's job, used here strictly as plumbing
 //   (C-passthrough) to get a countable word through the pipeline; register
 //   read-back / write-only completeness for BLTSIZE - PKG-BLT-REGDECODE's

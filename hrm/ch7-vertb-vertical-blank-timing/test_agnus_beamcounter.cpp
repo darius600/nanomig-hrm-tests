@@ -2,17 +2,22 @@
 //   vertical-blanking duration/range for NTSC (20 lines) and PAL (25 lines),
 //   per SPECIFICATION.md propositions P1-P5.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, 3rd edition, p.219
-//   ("Bit 5, VERTB, causes an interrupt at line 0 ..."; "The minimum time of
+// Primary oracle: Amiga Hardware Reference Manual, 3rd edition, p.219 ("Bit
+//   5, VERTB, causes an interrupt at line 0 ..."; "The minimum time of
 //   vertical blanking is 20 horizontal scan lines for an NTSC system and 25
 //   horizontal scan lines for a PAL system. The range starts at line 0 and
 //   ends at line 20 for NTSC or line 25 for PAL."), and Figure 7-4, p.221
 //   (VERTB / "vertical blank interval", denotation only).
-// Non-goals: ECS-programmable vertical blanking (BEAMCON0 HARDDIS/VARVBEN) --
-//   see ch7-beamcon0-ecs-control-bits. The wiring of VERTB onto interrupt
+// Non-goals: ECS-programmable vertical blanking (BEAMCON0 HARDDIS/VARVBEN)
+//   -- see ch7-beamcon0-ecs-control-bits. The wiring of VERTB onto interrupt
 //   request bit 5, and the Exec/hardware interrupt-priority columns of
 //   Figure 7-4 -- both need paula_intcontroller, outside this fixture's
 //   boundary; recorded below, not asserted.
+// Claim ids: 11 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // OCS SCOPE: every scenario below drives ecs=0 explicitly (never left at a
 // reset default) and PRECOND-HARDDIS-LOW-ECS0 checks that harddis_out reads
@@ -471,6 +476,11 @@ int main(int argc, char **argv) {
     std::cout << "Checked " << (checks.passed + checks.failed)
               << " assertions; passed=" << checks.passed
               << " failed=" << checks.failed << ".\n";
+    // The line the coverage ledger and hrm/run_all.sh read. The line above
+    // says the same thing for a human; this one is the spelling the tools
+    // grep for, and without it this package reports no assertions at all.
+    std::cout << checks.passed << " passed, " << checks.failed
+              << " failed.\n";
 
     return checks.failed == 0 ? 0 : 1;
 }

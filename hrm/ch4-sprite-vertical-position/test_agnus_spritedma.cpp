@@ -1,23 +1,27 @@
 // ch4-sprite-vertical-position -- agnus_spritedma conformance test
 //
-// Test purpose: the vertical half of Amiga sprite positioning as printed
-//   in appendix A (p284) and appendix B (pp287,291,292) -- SPRxPOS's
-//   9-bit start-vertical value (SV7-SV0 plus the SV8 high bit), SPRxCTL's
-//   9-bit stop-vertical value (EV7-EV0 plus the EV8 high bit), the word
-//   address each of the 8 sprites' POS/CTL/DATA/DATB registers occupies,
-//   which chip(s) the printed "chip" column claims for each register, the
-//   "%" (DMA-usually/processor-sometimes) mark every register in this
-//   range carries, and the general statement that SPRxPOS and SPRxCTL
-//   work together as position/size/feature control registers -- all at
-//   the agnus_spritedma module boundary. Package ch4-sprite-vertical-
-//   position, fixture agnus_spritedma (one Verilator build, this module
-//   only, per this package's own claims.jsonl).
+// Test purpose: the vertical half of Amiga sprite positioning as printed in
+//   appendix A (p284) and appendix B (pp287,291,292) -- SPRxPOS's 9-bit
+//   start-vertical value (SV7-SV0 plus the SV8 high bit), SPRxCTL's 9-bit
+//   stop-vertical value (EV7-EV0 plus the EV8 high bit), the word address
+//   each of the 8 sprites' POS/CTL/DATA/DATB registers occupies, which
+//   chip(s) the printed "chip" column claims for each register, the "%"
+//   (DMA-usually/processor-sometimes) mark every register in this range
+//   carries, and the general statement that SPRxPOS and SPRxCTL work
+//   together as position/size/feature control registers -- all at the
+//   agnus_spritedma module boundary. Package ch4-sprite-vertical- position,
+//   fixture agnus_spritedma (one Verilator build, this module only, per this
+//   package's own claims.jsonl).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 284, 287, 291, 292 (claims.jsonl for ch4-sprite-vertical-position,
-//   178 records). A red result below means agnus_spritedma.v disagrees
-//   with the manual, not that the assertion is wrong -- no assertion here
-//   was, or should be, adjusted to make the RTL pass.
+//   178 records). A red result below means agnus_spritedma.v disagrees with
+//   the manual, not that the assertion is wrong -- no assertion here was, or
+//   should be, adjusted to make the RTL pass.
+// Non-goals: anything outside the `agnus_spritedma` fixture this package
+//   builds, and any claim it does not name. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
 //
 // FIXTURE BOUNDARY: agnus_spritedma's SPRxCTL write keeps only the
 //   vertical fields -- measured during this package's own classification
@@ -61,7 +65,8 @@
 //   undisputed bits in that same row (SV8 at bit 2, EV8 at bit 1) are
 //   already separately asserted elsewhere.
 //
-// Non-goals: The "D" (Denise) half of every "A D"/"A D(E)" chip-column
+// Scope, in detail: The "D" (Denise) half of every "A D"/"A D(E)"
+//   chip-column
 //   claim, and the "(E)" ECS qualifier specifically, are not tested here
 //   -- this fixture has no Denise instance, so only the "A" (Agnus) half
 //   of any joint chip-mark claim can be shown. The "feature" component of

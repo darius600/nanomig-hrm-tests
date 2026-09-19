@@ -1,30 +1,32 @@
-// Test purpose: Verify agnus_blitter_adrgen's pointer/modulo register banks and
-//   the arithmetic unit that services them - four independent BLTxPT pointer
-//   registers and four independent BLTxMOD modulo registers, each written as a
-//   byte address/offset with its least-significant bit ignored; incptr/decptr
-//   moving a pointer by one word-address unit (two bytes); addmod/submod adding
-//   or subtracting a sign-extended modulo; the register offsets BLTxPTH/BLTxPTL/
-//   BLTxMOD are written at; and the pointer's value after a simulated blit row.
+// Test purpose: Verify agnus_blitter_adrgen's pointer/modulo register banks
+//   and the arithmetic unit that services them - four independent BLTxPT
+//   pointer registers and four independent BLTxMOD modulo registers, each
+//   written as a byte address/offset with its least-significant bit ignored;
+//   incptr/decptr moving a pointer by one word-address unit (two bytes);
+//   addmod/submod adding or subtracting a sign-extended modulo; the register
+//   offsets BLTxPTH/BLTxPTL/ BLTxMOD are written at; and the pointer's value
+//   after a simulated blit row.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 170, 172, 173, 184, 200, 270, 287, 289 and 309.
-// Non-goals: line-mode use of sign_out (Bresenham accumulator sign) - no claim
-//   in this package's inventory exercises it; PKG-BLT-LINE's territory. The
-//   "pointing to chip memory" half of Appendix B's "+" mark (p.287, p.289) -
-//   address_out carries no memory-region attribute, so only the "pair, even
-//   address" half is asserted (each covering claim's bundled_observable_half
-//   field says the same). The original chip set's 3-bit/18-bit BLTxPTH form
-//   (p.270 "high 3 bits", 6-appa-registers.c110, ch6-appa-bltxpt.c2, .c6) - this
-//   module has no `ecs` input at all (see its port list,
-//   agnus_blitter_adrgen.v:4-20), so the OCS alternative cannot be separately
-//   driven here; ECS-FIVE-BIT-PTH below measures the behaviour this design
-//   actually implements (unconditionally 5 bits) and, by that same measurement,
-//   shows the 3-bit alternative is not what is present - the same reporting
-//   pattern hrm/agnus_blitter_status used for the pre-Fat-Agnus busy timing.
-//   Register "write-only" wording (ch6-appa-bltxmod.c2, 6-appa-registers.c105,
-//   .c108) - this module exposes no host-read datapath for any register at
-//   all (no reg_address_out, no data-out-to-bus port), so nothing here could
-//   show a register behaving otherwise; not a distinguishing behaviour at this
+// Non-goals: line-mode use of sign_out (Bresenham accumulator sign) - no
+//   claim in this package's inventory exercises it; PKG-BLT-LINE's
+//   territory. The "pointing to chip memory" half of Appendix B's "+" mark
+//   (p.287, p.289) - address_out carries no memory-region attribute, so only
+//   the "pair, even address" half is asserted (each covering claim's
+//   bundled_observable_half field says the same). The original chip set's
+//   3-bit/18-bit BLTxPTH form (p.270 "high 3 bits", 6-appa-registers.c110,
+//   ch6-appa-bltxpt.c2, .c6) - this module has no `ecs` input at all (see
+//   its port list, agnus_blitter_adrgen.v:4-20), so the OCS alternative
+//   cannot be separately driven here; ECS-FIVE-BIT-PTH below measures the
+//   behaviour this design actually implements (unconditionally 5 bits) and,
+//   by that same measurement, shows the 3-bit alternative is not what is
+//   present - the same reporting pattern hrm/agnus_blitter_status used for
+//   the pre-Fat-Agnus busy timing. Register "write-only" wording
+//   (ch6-appa-bltxmod.c2, 6-appa-registers.c105, .c108) - this module
+//   exposes no host-read datapath for any register at all (no
+//   reg_address_out, no data-out-to-bus port), so nothing here could show a
+//   register behaving otherwise; not a distinguishing behaviour at this
 //   boundary.
 //
 // Supersedes hrm/agnus_blitter_modulo and hrm/agnus_blitter_ptr, per the build

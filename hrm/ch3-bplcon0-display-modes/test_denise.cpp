@@ -1,3 +1,16 @@
+// Test purpose: HRM conformance harness for BPLCON0's mode-bit field (HIRES,
+//   BPU, HOMOD, DBLPF, COLOR_ON, LACE, ERSY, LPEN, and the bits chapter 3
+//   calls unused) at the `denise` fixture boundary.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 41-95 (chapter 3's playfield text) and 271-307 (appendices A and B
+//   on BPLCON0). The per-claim pages are in claims_gen.inc, one per
+//   assertion, and the package prints each of them beside its result.
+// Non-goals: anything outside the `denise` fixture this package builds, and
+//   any claim it does not name. A green here means those assertions held on
+//   this fixture at the pinned revision -- not that the module is correct,
+//   and not that the chapter is covered.
+//
 // ch3-bplcon0-display-modes -- HRM conformance harness for BPLCON0's mode-bit
 // field (HIRES, BPU, HOMOD, DBLPF, COLOR_ON, LACE, ERSY, LPEN, and the bits
 // chapter 3 calls unused) at the `denise` fixture boundary.
@@ -672,6 +685,10 @@ int main(int argc, char** argv) {
 
   std::printf("=== ch3-bplcon0-display-modes: %d/%d PASS, %d FAIL ===\n",
               g_pass, g_total, g_fail);
+  // The same two numbers in the spelling hrm/run_all.sh and the coverage
+  // ledger grep for. Without it this package contributes no assertions to
+  // any published total, the way its exit code was once invisible.
+  std::printf("%d passed, %d failed.\n", g_pass, g_fail);
 
   delete dut;
   // A red assertion must reach the suite runner. Until 11.09.2026 this returned

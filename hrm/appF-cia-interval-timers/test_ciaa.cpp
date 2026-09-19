@@ -6,23 +6,31 @@
 //   register (start/stop, one-shot/continuous, force load), the latch-load
 //   conditions (underflow, force load, a hi-byte write while stopped -- and
 //   the running-timer exception), the one-shot hi-byte-write auto-start
-//   rule, clock-source selection and timer linking, and the BIT NAMES
-//   tables for registers 4-7 (TALO/TAHI/TBLO/TBHI), read view and write
-//   view. 106 claims total; 12 already graded by hrm/ch1-cia-timers are
-//   declined on a record() line; 4 that bundle the CNT pin (absent from
-//   this whole design) are declined on a second record() line; the
-//   remaining 90 are graded across 16 composed assertions plus one
-//   fixture-liveness check.
+//   rule, clock-source selection and timer linking, and the BIT NAMES tables
+//   for registers 4-7 (TALO/TAHI/TBLO/TBHI), read view and write view. 106
+//   claims total; 12 already graded by hrm/ch1-cia-timers are declined on a
+//   record() line; 4 that bundle the CNT pin (absent from this whole design)
+//   are declined on a second record() line; the remaining 90 are graded
+//   across 16 composed assertions plus one fixture-liveness check.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 341-343; committed specification (SPECIFICATION.md, this
-//   package). A red result below means ciaa.v disagrees with the manual,
-//   not that the assertion is wrong -- no assertion here was, or should be,
-//   adjusted to make the RTL pass, and nanomig/ was never modified.
+//   pages 341-343; committed specification (SPECIFICATION.md, this package).
+//   A red result below means ciaa.v disagrees with the manual, not that the
+//   assertion is wrong -- no assertion here was, or should be, adjusted to
+//   make the RTL pass, and nanomig/ was never modified.
 // Claims file: hrm-testpipeline/work/2026-09-17_appF_packages.jsonl,
 //   filtered to classify.package == "appF-cia-interval-timers" (106
 //   claims). Every uid is cited in exactly one expect()/record() line
 //   below or in SPECIFICATION.md's accounting table.
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 52 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 52 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appF_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: top module `ciaa` only, compiled with cia_int.v, cia_timera.v,
 //   cia_timerb.v (all read in full) and cia_timerd.v (present only so

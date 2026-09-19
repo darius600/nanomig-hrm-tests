@@ -6,12 +6,22 @@
 //   floppy side -- against `paula_floppy` (paula_floppy.v +
 //   paula_floppy_fifo.v only; paula_floppy_ebr.v excluded, it declares a
 //   second `module paula_floppy`). 22 claims, from
-//   work/ch8-s2-build/ch8-disk-controller-overview.jsonl. Full derivation
-//   in SPECIFICATION.md (committed as d8666c6, before this file or any RTL
-//   was opened).
+//   work/ch8-s2-build/ch8-disk-controller-overview.jsonl. Full derivation in
+//   SPECIFICATION.md (committed as d8666c6, before this file or any RTL was
+//   opened).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, printed p.241 (and
-//   p.247 for the two dskdma claims); full quotations in SPECIFICATION.md.
+// Primary oracle: Amiga Hardware Reference Manual, printed p.241 (and p.247
+//   for the two dskdma claims); full quotations in SPECIFICATION.md.
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 34 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 34 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-disk-controller-overview.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (d8666c6):
 //   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines),

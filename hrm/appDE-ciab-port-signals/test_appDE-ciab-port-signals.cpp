@@ -16,6 +16,15 @@
 //   classify.package == "appDE-ciab-port-signals" (16 claims; 14 uids
 //   graded across the three propositions above, 2 declined -- see the
 //   RECORDED line in main() and SPECIFICATION.md's claim inventory).
+// Non-goals: anything outside the `ciab` fixture this package builds, and
+//   any claim outside the 21 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 21 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // THE BOUNDARY THIS PACKAGE IS BUILT AROUND (per the build brief's own
 //   "STALE DECLINE" note): `ciab` compiled alone carries no signal named

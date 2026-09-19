@@ -7,8 +7,8 @@
 //   than asserts).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 40, 41, 42, 45, 49, 51, 53, 54, 57, 59, 60, 61, 62, 63, 72, 73, 74,
-//   75, 76, 80, 81, 82, 83, 84, 85, 91, 272, 277, 290.
+//   pages 40, 41, 42, 45, 49, 51, 53, 54, 57, 59, 60, 61, 62, 63, 72, 73,
+//   74, 75, 76, 80, 81, 82, 83, 84, 85, 91, 272, 277, 290.
 // Non-goals: pixel *colour* (p.42, p.49 "16 colors") - Denise's palette, not
 //   observable at this DMA-count boundary; the blitter's maximum draw area
 //   (p.76) - agnus_blitter's boundary, not this one; sprite-disable side
@@ -17,11 +17,17 @@
 //   agnus_copper's boundary and a software-usage note, not a DMA-count fact.
 //   DIWSTRT/DIWSTOP *horizontal* placement/centering (p.57, p.59) and the
 //   interlaced-field line-3 stride example (p.62) are held PENDING below:
-//   this package's given boundary evidence names only DDFSTRT_REG/DDFSTOP_REG,
-//   not DIWSTRT/DIWSTOP, and the one DIWSTOP fact already measured on this
-//   fixture (V $F2..$F6 -> 198..202 lines) is DIWSTOP's VERTICAL half, not its
-//   horizontal one - whether horizontal DIW or interlace reach this module's
-//   ports at all is an RTL question, answered below the RTL-open line.
+//   this package's given boundary evidence names only
+//   DDFSTRT_REG/DDFSTOP_REG, not DIWSTRT/DIWSTOP, and the one DIWSTOP fact
+//   already measured on this fixture (V $F2..$F6 -> 198..202 lines) is
+//   DIWSTOP's VERTICAL half, not its horizontal one - whether horizontal DIW
+//   or interlace reach this module's ports at all is an RTL question,
+//   answered below the RTL-open line.
+// Claim ids: the one id below carries a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and it names
+//   one reader's reading of one printed sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY (from the build brief, not yet from opening the file):
 //   nanomig/src/minimig-aga/agnus_bitplanedma.v:55-56 (DDFSTRT_REG 9h092,

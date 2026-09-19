@@ -1,27 +1,36 @@
 // ch5-audio-channel-registers -- paula_audio_channel register-write conformance test
 //
-// Test purpose: chapter 5's claims about the per-channel REGISTER WRITES into
-//   AUDxLEN, AUDxPER, AUDxVOL and AUDxDAT -- their widths, their read-back and
-//   their effect -- measured at paula_audio_channel, the same fixture
-//   hrm/paula_audio_channel/ already builds and runs as an RTL_REGRESSION
-//   against a frozen spec. This package stands BESIDE that one, reads the
-//   same file, and does not delete, weaken or touch it. Three sibling
-//   packages take this module's other subjects: ch5-audio-channel-state (the
-//   state machine, Figure 5-8), ch5-audio-period-and-length (period/length
-//   TIMING measurements) and ch5-audio-direct-output (non-DMA output). This
-//   package's own 94 claims, all independently routed to it by the classify
-//   stage (each claim's own "package" field already says
-//   "ch5-audio-channel-registers"), are covered here regardless of topical
-//   overlap with those siblings' human-readable descriptions -- the claims
-//   file's own routing is authoritative.
+// Test purpose: chapter 5's claims about the per-channel REGISTER WRITES
+//   into AUDxLEN, AUDxPER, AUDxVOL and AUDxDAT -- their widths, their
+//   read-back and their effect -- measured at paula_audio_channel, the same
+//   fixture hrm/paula_audio_channel/ already builds and runs as an
+//   RTL_REGRESSION against a frozen spec. This package stands BESIDE that
+//   one, reads the same file, and does not delete, weaken or touch it. Three
+//   sibling packages take this module's other subjects:
+//   ch5-audio-channel-state (the state machine, Figure 5-8),
+//   ch5-audio-period-and-length (period/length TIMING measurements) and
+//   ch5-audio-direct-output (non-DMA output). This package's own 94 claims,
+//   all independently routed to it by the classify stage (each claim's own
+//   "package" field already says "ch5-audio-channel-registers"), are covered
+//   here regardless of topical overlap with those siblings' human-readable
+//   descriptions -- the claims file's own routing is authoritative.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 137-150 (chapter 5 body), 265-266 (appendix A), 290-291 (appendix B),
-//   298 (appendix C). claims.jsonl for ch5-audio-channel-registers, 94
+//   pp. 137-150 (chapter 5 body), 265-266 (appendix A), 290-291 (appendix
+//   B), 298 (appendix C). claims.jsonl for ch5-audio-channel-registers, 94
 //   records, all classified "testable". A red result below means
 //   paula_audio_channel.v disagrees with the manual, not that the assertion
-//   is wrong -- no assertion here was, or should be, adjusted to make the RTL
-//   pass.
+//   is wrong -- no assertion here was, or should be, adjusted to make the
+//   RTL pass.
+// Non-goals: anything outside the `paula_audio_channel` fixture this package
+//   builds, and any claim outside the 2 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER OF WORK: this file's assertions, expected values and claim-id
 //   coverage were written and COMMITTED from claims.jsonl's quotations alone,

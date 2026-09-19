@@ -1,3 +1,19 @@
+// Test purpose: Amiga Hardware Reference Manual, 3rd edition, Appendix K,
+//   p.386, Figure K-1
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 386
+// Non-goals: anything outside the `gary` fixture this package builds, and
+//   any claim outside the 3 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 3 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/appK-build/appK-zorro2-memory-space-decode.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
+//
 // appK-zorro2-memory-space-decode -- p.386 Figure K-1 "Expansion Memory
 // Map", `gary` alone. 3 claims, filtered from
 // hrm-testpipeline/work/appK-build/appK-zorro2-memory-space-decode.jsonl.

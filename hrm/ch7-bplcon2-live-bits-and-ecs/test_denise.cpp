@@ -1,11 +1,11 @@
 // ch7-bplcon2-live-bits-and-ecs -- BPLCON2's high byte (bits 15-7) measured
 // one bit at a time, the Appendix-A/B (E) mark, KILLEHB and ENBPLCN3.
 //
-// Test purpose: SPECIFICATION.md's P1-P9 plus P10/P11 (added by this
-//   repair -- see the REPAIR note below), written from the manual
-//   quotations alone before the RTL was opened. A red result below means
-//   denise.v disagrees with the manual, not that the assertion is wrong --
-//   no assertion here was, or should be, adjusted to make the RTL pass.
+// Test purpose: SPECIFICATION.md's P1-P9 plus P10/P11 (added by this repair
+//   -- see the REPAIR note below), written from the manual quotations alone
+//   before the RTL was opened. A red result below means denise.v disagrees
+//   with the manual, not that the assertion is wrong -- no assertion here
+//   was, or should be, adjusted to make the RTL pass.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   210 (Table 7-1), 264 (Appendix A preamble), 271 (Appendix A bit matrix
@@ -14,15 +14,19 @@
 // Non-goals: BPLCON2's low seven bits beyond PF2PRI (the PF1P/PF2P
 //   priority-placement codes, already owned by ch7-sprite-priority-groups
 //   and ch7-inter-sprite-priority) -- PF2PRI (bit 6) itself is minimally
-//   exercised below by VIDEO-PRIORITY-PF2PRI-LIVE, the one concrete
-//   instance opus:7-vp.c16's "you control video priorities via BPLCON2"
-//   claim asks for, not a comprehensive priority-ordering test; BPLCON3's
-//   own fields beyond BRDRBLNK (bank, pf2of, loct, spres, brdsprt -- no
-//   other BPLCON3 field is quoted in this package's claims); BPLCON2's
-//   register address and write-only direction (owned by
-//   hrm/ch3-register-map-denise, which holds ecs=1 throughout and
-//   explicitly leaves killehb untested -- the gap this package fills, per
-//   STEP3-NOTES).
+//   exercised below by VIDEO-PRIORITY-PF2PRI-LIVE, the one concrete instance
+//   opus:7-vp.c16's "you control video priorities via BPLCON2" claim asks
+//   for, not a comprehensive priority-ordering test; BPLCON3's own fields
+//   beyond BRDRBLNK (bank, pf2of, loct, spres, brdsprt -- no other BPLCON3
+//   field is quoted in this package's claims); BPLCON2's register address
+//   and write-only direction (owned by hrm/ch3-register-map-denise, which
+//   holds ecs=1 throughout and explicitly leaves killehb untested -- the gap
+//   this package fills, per STEP3-NOTES).
+// Claim ids: 18 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: top module `denise` (one Verilator build, sources denise.v +
 //   denise_bitplanes.v + denise_bitplane_shifter.v + denise_playfields.v +

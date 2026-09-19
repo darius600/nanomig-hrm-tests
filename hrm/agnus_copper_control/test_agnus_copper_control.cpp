@@ -1,8 +1,16 @@
-// Test purpose: Verify Copper list-register strobes, address formation, terminal waiting, and automatic COP1 restart through public ports.
+// Test purpose: Verify Copper list-register strobes, address formation,
+//   terminal waiting, and automatic COP1 restart through public ports.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed pp. 25-26, 30, 32-35, 273, 290, and 298; frozen specification a26e813.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pp. 25-26, 30, 32-35, 273, 290, and 298; frozen specification a26e813.
 // Requirement IDs: COP-05, COP-07
-// Non-goals: DMACON bit gating is tested separately at the real Agnus top level; this test does not inspect private Copper state.
+// Non-goals: DMACON bit gating is tested separately at the real Agnus top
+//   level; this test does not inspect private Copper state.
+// Claim ids: the one id below carries a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and it names
+//   one reader's reading of one printed sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. Each
 // assertion was mutated at the STIMULUS on 05.09.2026 - the scenario changed,
@@ -232,6 +240,7 @@ public:
     void expect(bool condition, const std::string& label) {
         if (condition) {
             std::cout << "PASS: " << label << "\n";
+            ++passes;
         } else {
             std::cerr << "FAIL: " << label << "\n";
             ++failures;
@@ -246,9 +255,11 @@ public:
 
     int result() const { return failures == 0 ? 0 : 1; }
     int count() const { return failures; }
+    int passed() const { return passes; }
 
 private:
     int failures = 0;
+    int passes = 0;
 };
 
 uint32_t observe_first_fetch(bool ecs, uint16_t high, uint16_t low) {
@@ -442,6 +453,12 @@ int main(int argc, char** argv) {
         "modify PC for initialization\" - only COP1LC auto-reloads at start-of-frame "
         "here (T6-T8, via pulse_sof()); COP2LC's own reload for 'initialization' as "
         "opposed to an explicit jump is never exercised) [claims: ch2-appa-copins.c141]");
+
+    // The line the coverage ledger and hrm/run_all.sh read. Without it this
+    // package reports "(no assertion summary)" and every assertion in it is
+    // missing from the published totals, whether it passed or failed.
+    std::cout << checks.passed() << " passed, " << checks.count()
+              << " failed.\n";
 
     if (checks.count() == 0) {
         std::cout << "FPGA-055 Copper register/control module checks passed.\n";

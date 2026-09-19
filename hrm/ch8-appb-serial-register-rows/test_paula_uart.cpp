@@ -6,9 +6,14 @@
 // Primary oracle: Amiga Hardware Reference Manual, printed pages 287, 289
 //   (Appendix B legend and register rows).
 // Non-goals: bit-field layouts of SERDATR/SERPER beyond what P3/P9 need,
-//   nine-bit receive mode, overrun/break handling, CHIP=Paula ownership
-//   (no claim in this 18-record file restates it -- see SPECIFICATION.md)
-//   and the leading "*" mark on each row (same reason).
+//   nine-bit receive mode, overrun/break handling, CHIP=Paula ownership (no
+//   claim in this 18-record file restates it -- see SPECIFICATION.md) and
+//   the leading "*" mark on each row (same reason).
+// Claim ids: 23 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/paula_uart.v:4-17 module header -- ports
 //   clk, clk7_en, reset, rga_i[7:0], data_i[15:0], data_o[15:0], uartbrk,

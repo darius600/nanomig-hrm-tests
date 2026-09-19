@@ -1,22 +1,27 @@
 // ch7-custom-address-space -- gary conformance test
 //
 // Test purpose: which addresses select the custom-chip register bank
-//   (sel_reg), and the structural guarantee that Agnus DMA (dbr=1) can
-//   only ever reach Chip memory -- never kickstart -- because its own
-//   address input is too narrow to encode anything else.
+//   (sel_reg), and the structural guarantee that Agnus DMA (dbr=1) can only
+//   ever reach Chip memory -- never kickstart -- because its own address
+//   input is too narrow to encode anything else.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition,
-//   Appendix A preamble printed p.263, Appendix B legend printed p.287.
-// Non-goals: overlay behaviour (ovl, sel_kick/sel_chip over
-//   $000000-$07FFFE) is named in this package's own subject line and
-//   was read at gary.v:70,159,166 while finding the port list below, but
-//   none of this package's 8 claims quotes anything about the overlay --
-//   that territory belongs to the sibling packages ch7-overlay-source
-//   (fixture minimig) and ch7-reset-overlay (fixture gary). Not asserted
-//   here; see the OVERLAY-NOT-IN-SCOPE record() near the end. CIA, RTG,
-//   IDE/GAYLE and slow-memory decode are read only far enough to keep
-//   them OUT of the custom-register-bank measurement; none of their own
-//   address ranges is asserted on its own account.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A
+//   preamble printed p.263, Appendix B legend printed p.287.
+// Non-goals: overlay behaviour (ovl, sel_kick/sel_chip over $000000-$07FFFE)
+//   is named in this package's own subject line and was read at
+//   gary.v:70,159,166 while finding the port list below, but none of this
+//   package's 8 claims quotes anything about the overlay -- that territory
+//   belongs to the sibling packages ch7-overlay-source (fixture minimig) and
+//   ch7-reset-overlay (fixture gary). Not asserted here; see the
+//   OVERLAY-NOT-IN-SCOPE record() near the end. CIA, RTG, IDE/GAYLE and
+//   slow-memory decode are read only far enough to keep them OUT of the
+//   custom-register-bank measurement; none of their own address ranges is
+//   asserted on its own account.
+// Claim ids: 13 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM SOURCE: hrm-testpipeline/work/ch7-build/
 //   ch7-custom-address-space.jsonl -- 8 claim records, all classified

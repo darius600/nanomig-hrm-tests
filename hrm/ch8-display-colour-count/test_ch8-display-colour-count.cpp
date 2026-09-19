@@ -12,6 +12,16 @@
 //   the single PALETTE-RESOLVES-4096-CODES assertion below. Claims file:
 //   hrm-testpipeline/work/ch8-s4-build/ch8-display-colour-count.jsonl
 //   (2 claims).
+// Non-goals: anything outside the `denise_colortable` fixture this package
+//   builds, and any claim outside the 2 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/ch8-s4-build/ch8-display-colour-count.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // Disposition -- REPAIRED after coordinator review; recorded here because it
 //   changed what this file asserts (change history belongs in the commit

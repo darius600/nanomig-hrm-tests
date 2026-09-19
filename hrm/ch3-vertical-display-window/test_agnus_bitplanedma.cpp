@@ -5,33 +5,38 @@
 //   agnus_bitplanedma (one Verilator build, this module only). The
 //   HORIZONTAL half of the same two registers (HSTART/HSTOP, hde, the
 //   4-pixel-vs-1-pixel DDF/DIW resolution contrast) is
-//   hrm/ch3-ddf-fetch-window/'s job, already built; the register
-//   ADDRESSES and bus-access mechanics (which 9-bit address reaches which
-//   register, write-only vs read/write, chip ownership) are a sibling
-//   register-map package's job. Neither is repeated here. Every assertion
-//   below tests one of: (a) that DIWSTRT's high byte is VSTART and
-//   DIWSTOP's high byte is VSTOP, each occupying bits 15-8 of its register
-//   and nothing else; (b) VSTOP's implied 9th bit, V8 = NOT V7 (the
-//   "complement of the next MSB" rule), which restricts VSTOP to 128-383
-//   and is exactly how the RTL passes the ALREADY-MEASURED DIWSTOP
-//   $F2..$F6 -> 198..202-line sweep (not repeated here -- see below); (c)
-//   VSTART's plain 0-255 range (V8 forced 0 on every ordinary DIWSTRT
-//   write, no complement); (d) the ECS-only DIWHIGH extension of VSTOP by
-//   3 more bits (V10:V8, binary weights 1024/512/256); (e) that vertical
-//   bitplane DMA timing is nothing more than "is the current line inside
-//   [VSTART, VSTOP)" -- no separate vertical DMA window exists.
+//   hrm/ch3-ddf-fetch-window/'s job, already built; the register ADDRESSES
+//   and bus-access mechanics (which 9-bit address reaches which register,
+//   write-only vs read/write, chip ownership) are a sibling register-map
+//   package's job. Neither is repeated here. Every assertion below tests one
+//   of: (a) that DIWSTRT's high byte is VSTART and DIWSTOP's high byte is
+//   VSTOP, each occupying bits 15-8 of its register and nothing else; (b)
+//   VSTOP's implied 9th bit, V8 = NOT V7 (the "complement of the next MSB"
+//   rule), which restricts VSTOP to 128-383 and is exactly how the RTL
+//   passes the ALREADY-MEASURED DIWSTOP $F2..$F6 -> 198..202-line sweep (not
+//   repeated here -- see below); (c) VSTART's plain 0-255 range (V8 forced 0
+//   on every ordinary DIWSTRT write, no complement); (d) the ECS-only
+//   DIWHIGH extension of VSTOP by 3 more bits (V10:V8, binary weights
+//   1024/512/256); (e) that vertical bitplane DMA timing is nothing more
+//   than "is the current line inside [VSTART, VSTOP)" -- no separate
+//   vertical DMA window exists.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 50, 57, 58, 59, 64, 77, 78, 79, 91, 277, 290, 306.
 // Non-goals: HSTART/HSTOP and hde (hrm/ch3-ddf-fetch-window/'s boundary);
 //   DIWSTRT_REG/DIWSTOP_REG/DIWHIGH_REG's own bus addresses and read/write
-//   direction (the register-map sibling's boundary); DDFSTRT/DDFSTOP and
-//   the data-fetch window itself (used here only as fixed, standard
-//   plumbing so bitplane DMA runs at all -- its own correctness is
-//   hrm/ch3-ddf-fetch-window/'s job, not re-tested); the interlaced
-//   "two 200-line fields combine into one 400-line picture" claim (p.50,
+//   direction (the register-map sibling's boundary); DDFSTRT/DDFSTOP and the
+//   data-fetch window itself (used here only as fixed, standard plumbing so
+//   bitplane DMA runs at all -- its own correctness is
+//   hrm/ch3-ddf-fetch-window/'s job, not re-tested); the interlaced "two
+//   200-line fields combine into one 400-line picture" claim (p.50,
 //   3-resolution.c16) -- see NOT ASSERTED below, this module has no
 //   lace/field input port to make that observable at this boundary.
+// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY (from the build brief's claims.jsonl evidence field, repeated
 //   verbatim in every one of this package's 63 records before this file

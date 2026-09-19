@@ -2,8 +2,8 @@
 //   (E) write-protect mark, and p.279's Copper-initialisation claim, through
 //   the real Agnus top-level bus -- the boundary where `ecs` is an actual,
 //   drivable port and a Copper-issued write can be told apart from a
-//   CPU-issued one. Neither is true at the narrower `agnus_diskdma`
-//   boundary the sibling package `ch8-disk-dma-pointer` used.
+//   CPU-issued one. Neither is true at the narrower `agnus_diskdma` boundary
+//   the sibling package `ch8-disk-dma-pointer` used.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 279, 288-289.
@@ -15,6 +15,11 @@
 //   again here would silently fold it into a new number, which the build
 //   assignment forbids. It does not cite `agnus_copper_move_range`'s T4/T6:
 //   those exercise $07E under the printed name BLTSIZE, not a disk register.
+// Claim ids: 6 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. Every
 // mutation below was run by temporarily editing this file, rebuilding,

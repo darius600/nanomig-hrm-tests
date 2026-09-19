@@ -12,8 +12,8 @@
 //   refresh channel is the one exception, because `refresh` is a dedicated
 //   output port. Also not this package's job: which register or address a
 //   refresh cycle touches, or memory-controller-level refresh correctness -
-//   the manual's claim is a per-line count, and that is all that is
-//   asserted here.
+//   the manual's claim is a per-line count, and that is all that is asserted
+//   here.
 //
 // BOUNDARY: `agnus` (top-level chipset module), NOT `agnus_blitter`. This is
 // the first package in the chapter to assert at this boundary; the ten-package

@@ -14,27 +14,31 @@
 //   Agnus-owned"). Where the only way to observe a write-only register's
 //   address is through the module's write-only-effect ports (address_out,
 //   reg_address_out, dma) -- this module has no data_out at all, so nothing
-//   can be "read back" through the register bus the way some sibling
-//   modules allow -- those ports are used purely as ADDRESS-DECODE PROBES:
-//   did the write reach a register that measurably affects the fetched
-//   address stream AT ALL, and does it do so ONLY at the address the manual
-//   names, not at a neighbour -- never as a check that the fetched VALUE,
-//   WORD COUNT or TIMING matches any manual-stated figure.
+//   can be "read back" through the register bus the way some sibling modules
+//   allow -- those ports are used purely as ADDRESS-DECODE PROBES: did the
+//   write reach a register that measurably affects the fetched address
+//   stream AT ALL, and does it do so ONLY at the address the manual names,
+//   not at a neighbour -- never as a check that the fetched VALUE, WORD
+//   COUNT or TIMING matches any manual-stated figure.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 270, 272, 277 (Appendix A register listing) and 290, 291
-//   (Appendix B register listing).
+//   pages 270, 272, 277 (Appendix A register listing) and 290, 291 (Appendix
+//   B register listing).
 // Non-goals: the display-data-fetch WINDOW itself -- word counts, the
 //   $18/$D8 hardware limits, DDFSTRT/DDFSTOP bit-field granularity,
 //   horizontal-scroll extra-word behaviour, modulo VALUES, dual-playfield
-//   sharing -- all belong to hrm/ch3-ddf-fetch-window/ and are not
-//   re-tested here, even though several assertions below reuse the SAME
-//   Harness mechanics and even the SAME underlying signals (dma,
-//   address_out, reg_address_out) that package already reads for a
-//   different purpose. Also not tested: the printed "(high 3 bits)" /
-//   "(low 15 bits)" bit-WIDTH descriptors that ride along in the same
-//   quoted Appendix A/B rows as the twelve pointer-register ADDRESS claims
-//   -- see CONFLICT NOTE below.
+//   sharing -- all belong to hrm/ch3-ddf-fetch-window/ and are not re-tested
+//   here, even though several assertions below reuse the SAME Harness
+//   mechanics and even the SAME underlying signals (dma, address_out,
+//   reg_address_out) that package already reads for a different purpose.
+//   Also not tested: the printed "(high 3 bits)" / "(low 15 bits)" bit-WIDTH
+//   descriptors that ride along in the same quoted Appendix A/B rows as the
+//   twelve pointer-register ADDRESS claims -- see CONFLICT NOTE below.
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY (from the build brief, not yet from opening the file):
 //   nanomig/src/minimig-aga/agnus_bitplanedma.v:57-58 (BPL1MOD_REG 9h108,

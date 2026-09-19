@@ -2,9 +2,9 @@
 //   p.344) -- the 24-bit TOD counter, the programmable write-only alarm
 //   sharing TOD's own addresses under a CRB7 gate, the write-stops/
 //   write-starts sequencing rule, the MSB/LSB read-latch rule, and the
-//   bit-name table for registers $8/$9/$A -- plus the definitive CRB7
-//   ALARM bit specification on p.349 (prose) and p.350 (bitmap table) --
-//   at the `ciaa` module boundary, compiled alone with its CIA submodules.
+//   bit-name table for registers $8/$9/$A -- plus the definitive CRB7 ALARM
+//   bit specification on p.349 (prose) and p.350 (bitmap table) -- at the
+//   `ciaa` module boundary, compiled alone with its CIA submodules.
 //   SPECIFICATION.md's claim inventory maps all 61 claims onto the 43
 //   assertions below; none is declined.
 // Test class: HRM_CONFORMANCE
@@ -17,6 +17,15 @@
 //   Claims file: hrm-testpipeline/work/2026-09-17_appF_packages.jsonl,
 //   filtered to classify.package == "appF-cia-tod-clock-and-alarm" (61
 //   claims).
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 40 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 40 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appF_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // Order-of-work disclosure (carried forward from SPECIFICATION.md): all 61
 //   claims' classify.evidence fields arrived with file:line RTL citations

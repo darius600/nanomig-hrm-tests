@@ -1,30 +1,34 @@
 // ch5-audio-dmacon-adkcon -- paula conformance test
 //
-// Test purpose: DMACON's AUDxEN bits (the only boundary where a DMACON
-//   write reaches an audio enable -- paula_audio_channel takes dmaena
-//   already decoded) and ADKCON's audio attach/modulation bits (bits 0-7,
-//   ATPER0-3/ATVOL0-3), which paula_audio (instantiated as `paula_audio
-//   ad1` at paula.v:289-307) never receives -- paula.v has no ADKCON port
-//   on that instantiation at all. Also carries the register-map claims
-//   (address, read/write direction, chip ownership, SET/CLR semantics)
-//   for DMACON, DMACONR, ADKCON, ADKCONR and the sixteen AUDxLEN/PER/
-//   VOL/DAT registers, all of which this package's assigned claims file
-//   places at the paula.v boundary.
+// Test purpose: DMACON's AUDxEN bits (the only boundary where a DMACON write
+//   reaches an audio enable -- paula_audio_channel takes dmaena already
+//   decoded) and ADKCON's audio attach/modulation bits (bits 0-7,
+//   ATPER0-3/ATVOL0-3), which paula_audio (instantiated as `paula_audio ad1`
+//   at paula.v:289-307) never receives -- paula.v has no ADKCON port on that
+//   instantiation at all. Also carries the register-map claims (address,
+//   read/write direction, chip ownership, SET/CLR semantics) for DMACON,
+//   DMACONR, ADKCON, ADKCONR and the sixteen AUDxLEN/PER/ VOL/DAT registers,
+//   all of which this package's assigned claims file places at the paula.v
+//   boundary.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition,
-//   Chapter 5 printed pp. 136-151, Appendix A printed pp. 263-266 and
-//   278, Appendix B printed pp. 289-291, Appendix C printed pp. 298 and
-//   310.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 5
+//   printed pp. 136-151, Appendix A printed pp. 263-266 and 278, Appendix B
+//   printed pp. 289-291, Appendix C printed pp. 298 and 310.
 // Non-goals: does not test disk DMA behaviour (DSKEN, ADKCON.WORDSYNC)
-//   beyond the one wire each occupies inside paula.v, does not test the
-//   UART beyond ADKCON.UARTBRK's one forced-low bit, does not test
-//   interrupt delivery to _ipl (paula_intcontroller's INTENA masking is
-//   chapter 7's own assigned territory per BOUNDARIES.md), and does not
-//   test Agnus's or Denise's own DMACON/DMACONR decode (this fixture
-//   compiles paula.v alone plus its own seven submodule files -- Agnus
-//   and Denise are outside this boundary; the Denise-side half of the
-//   DMACON chip-ownership conflict is RECORDED from a plain grep already
-//   run by the classifiers, not independently re-measured here).
+//   beyond the one wire each occupies inside paula.v, does not test the UART
+//   beyond ADKCON.UARTBRK's one forced-low bit, does not test interrupt
+//   delivery to _ipl (paula_intcontroller's INTENA masking is chapter 7's
+//   own assigned territory per BOUNDARIES.md), and does not test Agnus's or
+//   Denise's own DMACON/DMACONR decode (this fixture compiles paula.v alone
+//   plus its own seven submodule files -- Agnus and Denise are outside this
+//   boundary; the Denise-side half of the DMACON chip-ownership conflict is
+//   RECORDED from a plain grep already run by the classifiers, not
+//   independently re-measured here).
+// Claim ids: 73 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM SOURCE: hrm-testpipeline/work/ch5_packages/
 //   ch5-audio-dmacon-adkcon.jsonl -- 155 claim records, all classified

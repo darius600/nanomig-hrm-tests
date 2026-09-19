@@ -1,13 +1,12 @@
 // ch3-shres-bitplane-colour-encoding -- denise conformance test
 //
-// Test purpose: the ECS SuperHires bitplane colour encoding printed on
-//   p.301 -- the table that maps each of the sixteen lower colour
-//   registers' bits onto symbols a-x, and the legend "Bitplane (Color 0) :
-//   ab-- cd-- ef--" (and its siblings for colours 1-3) that names which
-//   symbol is which colour component. Package ch3-shres-bitplane-colour-
-//   encoding, fixture denise (one Verilator build, top module denise, per
-//   PACKAGE.md). A sibling package covers the sprite half of the same
-//   scheme on page 302.
+// Test purpose: the ECS SuperHires bitplane colour encoding printed on p.301
+//   -- the table that maps each of the sixteen lower colour registers' bits
+//   onto symbols a-x, and the legend "Bitplane (Color 0) : ab-- cd-- ef--"
+//   (and its siblings for colours 1-3) that names which symbol is which
+//   colour component. Package ch3-shres-bitplane-colour- encoding, fixture
+//   denise (one Verilator build, top module denise, per PACKAGE.md). A
+//   sibling package covers the sprite half of the same scheme on page 302.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 297, 301, 302 (claims.jsonl for ch3-shres-bitplane-colour-encoding,
@@ -18,9 +17,9 @@
 //   -- every claim in this package's inventory quotes the ECS text (p.297,
 //   301, 302), and aga is held at 0 throughout. ham and dpf are non-goal
 //   defaults (0): no claim in this inventory combines SuperHires with
-//   hold-and-modify or dual-playfield. bpu is held at 1 for the OCS/
-//   control measurements and 4 for every register-addressing SuperHires
-//   stimulus -- see RTL OPENED below for why 4, not 2: this RTL has no
+//   hold-and-modify or dual-playfield. bpu is held at 1 for the OCS/ control
+//   measurements and 4 for every register-addressing SuperHires stimulus --
+//   see RTL OPENED below for why 4, not 2: this RTL has no
 //   bitplane-pair-to-sixteen-registers multiplexing circuit for a plain
 //   2-bitplane index to reach through.
 //

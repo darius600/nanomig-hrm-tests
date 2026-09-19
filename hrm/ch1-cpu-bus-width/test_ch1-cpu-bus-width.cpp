@@ -1,25 +1,23 @@
 // Test purpose: HRM conformance for ch1-cpu-bus-width -- the CPU side of the
 //   shared bus, at the `minimig_m68k_bridge` boundary, per SPECIFICATION.md.
 //   Three propositions from printed pages 5 and 15 of the Amiga Hardware
-//   Reference Manual, 3rd edition:
-//     PROP-A (p.5): cycle stealing blocks the CPU's access to internal,
-//       shared memory.
-//     PROP-B (p.5): the custom chips cannot steal cycles when the CPU is
-//       using ROM or external (Fast) memory -- the control half of the same
-//       pair, graded on the identical measurement basis as PROP-A.
-//     PROP-C (p.15): system DMA can conflict with TAS's indivisible
-//       read-modify-write cycle. The TAS opcode is not observable at this
-//       boundary (no port here carries an instruction word) and is not
-//       needed -- the claim is about what DMA can do to a bus cycle shaped
-//       like TAS's (address strobe held across a read and the write that
-//       follows it), which this fixture drives directly.
+//   Reference Manual, 3rd edition: PROP-A (p.5): cycle stealing blocks the
+//   CPU's access to internal, shared memory. PROP-B (p.5): the custom chips
+//   cannot steal cycles when the CPU is using ROM or external (Fast) memory
+//   -- the control half of the same pair, graded on the identical
+//   measurement basis as PROP-A. PROP-C (p.15): system DMA can conflict with
+//   TAS's indivisible read-modify-write cycle. The TAS opcode is not
+//   observable at this boundary (no port here carries an instruction word)
+//   and is not needed -- the claim is about what DMA can do to a bus cycle
+//   shaped like TAS's (address strobe held across a read and the write that
+//   follows it), which this fixture drives directly.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 5 and 15; committed specification (SPECIFICATION.md, this
-//   package, commit bf2da7b). All six claims are graded green at baseline --
-//   the RTL's arbitration logic matches every one of these sentences on its
-//   own measurement basis; no assertion here was, or could be, adjusted to
-//   make that happen, since a red result would have been reported as one.
+//   pages 5 and 15; committed specification (SPECIFICATION.md, this package,
+//   commit bf2da7b). All six claims are graded green at baseline -- the
+//   RTL's arbitration logic matches every one of these sentences on its own
+//   measurement basis; no assertion here was, or could be, adjusted to make
+//   that happen, since a red result would have been reported as one.
 // Requirement IDs: PROP-A (sol:1-components.c90, opus:1-components.c89),
 //   PROP-B (sol:1-components.c91, opus:1-components.c90), PROP-C
 //   (sol:1-guidelines.c99, opus:1-guidelines.c99). All 6 of this package's
@@ -27,18 +25,23 @@
 //   of ../nanomig-hrm-tests/hrm/ for existing dbr/dbs/cycle-stealing/TAS/
 //   indivisible/read-modify-write assertions found none on either
 //   proposition before this file was written).
-// Non-goals: this module does not decode `address` into `dbs` -- that
-//   decode is Gary's (gary.v:201, external to this UUT and this package's
-//   top) and is out of scope here; `dbs`/`dbr` are driven directly as the
+// Non-goals: this module does not decode `address` into `dbs` -- that decode
+//   is Gary's (gary.v:201, external to this UUT and this package's top) and
+//   is out of scope here; `dbs`/`dbr` are driven directly as the
 //   already-decoded signals this boundary actually consumes. `address` is
 //   set to a plausible value per case for narrative clarity only and is not
-//   itself load-bearing at this boundary (see SPECIFICATION.md "Scope").
-//   The TAS opcode, the 68000's instruction decoder, and any notion of
-//   "locked"/"RMW" as a distinct bus-cycle *type* are outside every UUT
-//   root in this suite -- PROP-C grades the bus-cycle *shape* (held address
+//   itself load-bearing at this boundary (see SPECIFICATION.md "Scope"). The
+//   TAS opcode, the 68000's instruction decoder, and any notion of
+//   "locked"/"RMW" as a distinct bus-cycle *type* are outside every UUT root
+//   in this suite -- PROP-C grades the bus-cycle *shape* (held address
 //   strobe across two phases) the manual's sentence is actually about DMA
 //   conflicting with, not the opcode that produces that shape on real
 //   silicon.
+// Claim ids: 6 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // Fixture: minimig_m68k_bridge.v, compiled standalone (no reset port exists
 //   on this module -- confirmed by its port list, minimig_m68k_bridge.v:30-

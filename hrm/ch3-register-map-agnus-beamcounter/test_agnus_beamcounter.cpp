@@ -4,34 +4,39 @@
 //   HSSTOP, HSSTRT, HCENTER, HBSTRT, HBSTOP, VTOTAL, VSSTOP, VSSTRT, VBSTOP.
 //   Package ch3-register-map-agnus-beamcounter, fixture agnus_beamcounter
 //   (one Verilator build, this module only). This is deliberately NOT about
-//   whether the counting/blanking/sync VALUES this module produces match
-//   the manual's timing numbers -- that is hrm/ch3-beam-counters-and-
-//   blanking/'s job, already built and green at 27/3, and none of its
-//   claim ids or PROPOSITIONS are repeated here. Every assertion below
-//   tests exactly one of two propositions: "this register lives at this
-//   address" (Appendix B, printed pages 289/293) or "this register is
-//   write-only and Agnus-owned" (Appendix C summary table, printed page
-//   304). Where the only way to observe a write-only register's address is
-//   through a counting/blanking/sync signal (hblank, vbl, _hsync, _vsync,
-//   htotal_out, harddis_out, varbeamen_out), the signal is used purely as
-//   an ADDRESS-DECODE PROBE -- did the write reach a register that
-//   influences this signal AT ALL, and does it do so ONLY at the address
-//   the manual names, not at a neighbour -- never as a check that the
-//   VALUE produced matches any manual-stated duration, count or formula.
+//   whether the counting/blanking/sync VALUES this module produces match the
+//   manual's timing numbers -- that is hrm/ch3-beam-counters-and-
+//   blanking/'s job, already built and green at 27/3, and none of its claim
+//   ids or PROPOSITIONS are repeated here. Every assertion below tests
+//   exactly one of two propositions: "this register lives at this address"
+//   (Appendix B, printed pages 289/293) or "this register is write-only and
+//   Agnus-owned" (Appendix C summary table, printed page 304). Where the
+//   only way to observe a write-only register's address is through a
+//   counting/blanking/sync signal (hblank, vbl, _hsync, _vsync, htotal_out,
+//   harddis_out, varbeamen_out), the signal is used purely as an
+//   ADDRESS-DECODE PROBE -- did the write reach a register that influences
+//   this signal AT ALL, and does it do so ONLY at the address the manual
+//   names, not at a neighbour -- never as a check that the VALUE produced
+//   matches any manual-stated duration, count or formula.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 289, 293, 304 (Appendix B register listing, Appendix C register
 //   summary by function).
 // Non-goals: bit-field layouts within any of these registers (HTOTAL's
 //   h1..h8 mapping, BEAMCON0's individual control bits' own documented
-//   EFFECT, VPOSR's identification field, VTOTAL's +1/+2 interlace
-//   formula, VBLANK's manual-stated duration) -- all bit-field and
-//   counting-behaviour propositions belong to
-//   hrm/ch3-beam-counters-and-blanking/ and are not re-tested here, even
-//   though several assertions below reuse the SAME signals that package
-//   already reads. This package also does not cover VBSTRT: it is not one
-//   of the 33 claims in this package's claims.jsonl (VBLANK apparently
-//   needs no separate start register -- see METHODOLOGY below).
+//   EFFECT, VPOSR's identification field, VTOTAL's +1/+2 interlace formula,
+//   VBLANK's manual-stated duration) -- all bit-field and counting-behaviour
+//   propositions belong to hrm/ch3-beam-counters-and-blanking/ and are not
+//   re-tested here, even though several assertions below reuse the SAME
+//   signals that package already reads. This package also does not cover
+//   VBSTRT: it is not one of the 33 claims in this package's claims.jsonl
+//   (VBLANK apparently needs no separate start register -- see METHODOLOGY
+//   below).
+// Claim ids: 14 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_beamcounter.v:27-57 module
 //   header -- ports clk, clk7_en, reset, cck, ntsc, aga, ecs, a1k,

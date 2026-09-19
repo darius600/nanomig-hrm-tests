@@ -2,24 +2,29 @@
 //   direction (R/W), chip column (Agnus) and the "(E)" enhanced-chip-set
 //   mark -- for VPOSR $004, VHPOSR $006, VPOSW $02A, VHPOSW $02C and
 //   BEAMCON0 $1DC. Package ch7-appb-beamcounter-marks, fixture
-//   agnus_beamcounter (one Verilator build, this module only, independent
-//   of every sibling package's own obj_dir).
-//   ADDRESS is explicitly NOT this package's job: hrm/ch3-register-map-
-//   agnus-beamcounter already asserts the address of all five registers
-//   from these same printed rows (see its own out.txt, 26/0) and this
-//   package cites that rather than duplicating it, per its own
-//   SPECIFICATION.md and the claims file's `covered_by` fields.
+//   agnus_beamcounter (one Verilator build, this module only, independent of
+//   every sibling package's own obj_dir). ADDRESS is explicitly NOT this
+//   package's job: hrm/ch3-register-map- agnus-beamcounter already asserts
+//   the address of all five registers from these same printed rows (see its
+//   own out.txt, 26/0) and this package cites that rather than duplicating
+//   it, per its own SPECIFICATION.md and the claims file's `covered_by`
+//   fields.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed pages 263, 264,
 //   288, 289, 293 (Appendix A preamble/legend, Appendix B legend and
 //   register rows).
-// Non-goals: address (see above), bit-field layouts, counting/blanking/
-//   sync VALUES, and the Copper "*"/"~" write-protection mark. The last of
-//   these was flagged as a possible gap in SPECIFICATION.md and confirmed
-//   by the lead: it is hrm/ch7-appb-copper-write-protection's subject (its
-//   own PROP-2/3/7/8 already assert VPOSR/VHPOSR/VPOSW/VHPOSW's "*" mark
-//   from the same printed rows this file quotes) -- nothing is asserted
-//   about it here.
+// Non-goals: address (see above), bit-field layouts, counting/blanking/ sync
+//   VALUES, and the Copper "*"/"~" write-protection mark. The last of these
+//   was flagged as a possible gap in SPECIFICATION.md and confirmed by the
+//   lead: it is hrm/ch7-appb-copper-write-protection's subject (its own
+//   PROP-2/3/7/8 already assert VPOSR/VHPOSR/VPOSW/VHPOSW's "*" mark from
+//   the same printed rows this file quotes) -- nothing is asserted about it
+//   here.
+// Claim ids: 25 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_beamcounter.v:27-57 module
 //   header -- ports clk, clk7_en, reset, cck, ntsc, aga, ecs, a1k,

@@ -3,6 +3,8 @@
 // set on reg_address_out, per chipset mode (ecs) and CDANG state.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: work/2026-09-05_fpga-079_copper-move-sweep_testspecification.md
+//   (private lab workspace, not published; the claim ids below are the
+//   public record)
 // (fpga-lab, committed before this file), itself built from the Amiga
 // Hardware Reference Manual, 3rd ed., Chapter 2, printed pp. 19-21, 25, 26,
 // 29, 35, 36. OCS (ecs=0) accepted sets are asserted against the
@@ -41,6 +43,11 @@
 // known Appendix-C-sourced ECS extension already exercised by the frozen
 // test's T10. The sweep below measures this empirically rather than taking
 // the comment's word for it, and reports any further deviation as a finding.
+// Claim ids: 36 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // Discrimination proof (mutation, reverted before commit): each assertion
 // category was independently mutated, rebuilt and rerun, confirmed red, then

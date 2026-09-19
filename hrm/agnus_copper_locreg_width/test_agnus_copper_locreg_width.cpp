@@ -3,14 +3,16 @@
 //   walking single bits through the register-bus write path and reading
 //   which ones survive to address_out after a jump strobe.
 // Test class: RTL_REGRESSION
-// Primary oracle: none. Print page 25 contradicts itself: the register
-//   table (p25:19-22) says "Low 16 bits"; the prose (p25:28-30) says "low
-//   15 bits" of the same register and, in the same sentence, states the
-//   total address is "18-bit" - only arithmetically consistent with a
-//   3-bit high half plus a 15-bit low half (3+15=18; 3+16=19 contradicts
-//   the sentence's own stated total). No conformance oracle exists for
-//   either width. Frozen specification:
+// Primary oracle: none. Print page 25 contradicts itself: the register table
+//   (p25:19-22) says "Low 16 bits"; the prose (p25:28-30) says "low 15 bits"
+//   of the same register and, in the same sentence, states the total address
+//   is "18-bit" - only arithmetically consistent with a 3-bit high half plus
+//   a 15-bit low half (3+15=18; 3+16=19 contradicts the sentence's own
+//   stated total). No conformance oracle exists for either width. Frozen
+//   specification:
 //   fpga-lab/work/2026-09-05_fpga-078_locreg-width_testspecification.md
+//   (private lab workspace, not published; the claim ids below are the
+//   public record)
 // Requirement IDs: COP-05 (Using the Copper Registers, p.25). Additive;
 //   does not touch the existing red finding on that row (NM-HRM-003).
 // Non-goals: declaring 15, 16, or any other number "correct" for the real

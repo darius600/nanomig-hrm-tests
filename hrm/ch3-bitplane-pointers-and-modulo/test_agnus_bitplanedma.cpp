@@ -10,8 +10,8 @@
 //   holds, how it moves, and what changes it between lines.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 42, 52, 53, 54, 60, 61, 62, 63, 64, 72, 73, 74, 75, 76, 80, 81, 82,
-//   84, 85, 91, 270, 272, 277, 287, 288, 291.
+//   pages 42, 52, 53, 54, 60, 61, 62, 63, 64, 72, 73, 74, 75, 76, 80, 81,
+//   82, 84, 85, 91, 270, 272, 277, 287, 288, 291.
 // Non-goals: which 9-bit bus address selects which register (that is
 //   ch3-register-map-agnus's own address-decode-selectivity boundary, not
 //   repeated here); DDFSTRT/DDFSTOP fetch-window word counts and the

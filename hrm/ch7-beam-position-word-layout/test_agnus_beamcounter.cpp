@@ -1,15 +1,15 @@
 // Test purpose: Table 7-5 (printed p.216) and Appendix A p.285 -- the WORD
 //   LAYOUT and read/write DIRECTION of VPOSR ($004), VPOSW ($02A), VHPOSR
-//   ($006) and VHPOSW ($02C) -- plus the Appendix B/C material (p.285, p.298,
-//   p.299) documenting the same four registers. Package
+//   ($006) and VHPOSW ($02C) -- plus the Appendix B/C material (p.285,
+//   p.298, p.299) documenting the same four registers. Package
 //   ch7-beam-position-word-layout, fixture agnus_beamcounter (one Verilator
 //   build, this module only).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 216, 285, 298, 299.
 // Non-goals: which of $004/$006/$02A/$02C decodes to which register (that is
-//   hrm/ch3-register-map-agnus-beamcounter's job, already built and accepted,
-//   asserting ADDRESSES only for these four -- VPOSR-ADDRESS-004,
+//   hrm/ch3-register-map-agnus-beamcounter's job, already built and
+//   accepted, asserting ADDRESSES only for these four -- VPOSR-ADDRESS-004,
 //   VHPOSR-ADDRESS-006, VPOSW-ADDRESS-02A, VHPOSW-ADDRESS-02C); the ECS
 //   identification-field content of VPOSR bits 14-8/7/2-0, and LOF at bit 15
 //   (hrm/ch3-beam-counters-and-blanking's job -- VPOSR-IDENTIFICATION-FIELD-
@@ -17,6 +17,11 @@
 //   VPOSR-BIT15-IS-LOF-LONG-FRAME, LACE-BIT-CONTROLS-INTERLACE-FIELD-
 //   ALTERNATION); whether a PAL frame is 312 or 313 lines (NM-HRM-001,
 //   already settled and not reopened here).
+// Claim ids: 105 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_beamcounter.v:27-57 module header
 //   -- ports clk, clk7_en, reset, cck, ntsc, aga, ecs, a1k, data_in[15:0],

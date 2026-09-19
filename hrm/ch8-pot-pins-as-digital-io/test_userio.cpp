@@ -2,20 +2,29 @@
 //
 // Test purpose: chapter 8's description of the four POTGO/POTGOR OUT/DAT bit
 //   pairs used as a general-purpose four-bit bidirectional digital I/O port
-//   on the pot pins (pages 240-241), as SPECIFICATION.md fixes it from the 36
-//   claims in ch8-pot-pins-as-digital-io.jsonl. This package does NOT test
-//   which physical POTGO bit is named OUTRY/DATRY/OUTRX/DATRX etc (that is
-//   hrm/ch8-potgo-register-bit-layout, already built and green) -- it uses
-//   that already-established bit-to-name mapping only as implementation
+//   on the pot pins (pages 240-241), as SPECIFICATION.md fixes it from the
+//   36 claims in ch8-pot-pins-as-digital-io.jsonl. This package does NOT
+//   test which physical POTGO bit is named OUTRY/DATRY/OUTRX/DATRX etc (that
+//   is hrm/ch8-potgo-register-bit-layout, already built and green) -- it
+//   uses that already-established bit-to-name mapping only as implementation
 //   plumbing, never asserting it itself. It also does not test POTGOR's
 //   register address (hrm/ch8-register-map-userio) or CIAAPRA (owned by
 //   hrm/ch8-ciaa-port-direction / hrm/ch8-ciaapra-address-window).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
-//   240, 241 (claims.jsonl for ch8-pot-pins-as-digital-io, 36 records). A red
-//   result below means userio.v disagrees with the manual, not that the
+//   240, 241 (claims.jsonl for ch8-pot-pins-as-digital-io, 36 records). A
+//   red result below means userio.v disagrees with the manual, not that the
 //   assertion is wrong -- no assertion here was, or should be, adjusted to
 //   make the RTL pass.
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 36 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 36 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: top module `userio` only (one Verilator build, userio.v alone).
 //   Ports used (userio.v:28-50): clk, reset, clk7_en, reg_address_in[8:1],

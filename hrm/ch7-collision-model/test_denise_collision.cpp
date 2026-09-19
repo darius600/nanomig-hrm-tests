@@ -4,10 +4,10 @@
 //   classes (sprite-group to sprite-group, sprite-group to either playfield,
 //   playfield to playfield), that they combine, and the defining condition
 //   for ANY of them: two or more objects, at the SAME pixel position, which
-//   then sets a bit in CLXDAT. The same-pixel requirement is the load-bearing
-//   part and is what distinguishes this package from the existing coverage
-//   (per its own task sheet). Package ch7-collision-model, fixture
-//   denise_collision (one Verilator build, this module only).
+//   then sets a bit in CLXDAT. The same-pixel requirement is the
+//   load-bearing part and is what distinguishes this package from the
+//   existing coverage (per its own task sheet). Package ch7-collision-model,
+//   fixture denise_collision (one Verilator build, this module only).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.213 (claims.jsonl for ch7-collision-model, 9 records). A red result
@@ -21,6 +21,11 @@
 //   and the odd/even-bitplane-to-playfield equations at p.214/appendix A
 //   (`ch7-collision-playfield-mode`, confirmed a separate, already-specified
 //   package -- see ORDER OF WORK below).
+// Claim ids: 9 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/denise_collision.v (read in full for
 //   this build). Instantiated at denise.v:474-486 with bpldata and nsprite.

@@ -1,13 +1,22 @@
 // ch1-keyboard-translation -- keymap conformance test
 //
-// Test purpose: grade page 2's "A professional keyboard with numeric
-//   keypad, 10 function keys, and cursor keys." against `keymap`
-//   (amiga_keymap.v:10-13). SPECIFICATION.md (committed before this file,
-//   or amiga_keymap.v, were opened -- commit 76bacde) records the
-//   reasoning; this file carries it out.
+// Test purpose: grade page 2's "A professional keyboard with numeric keypad,
+//   10 function keys, and cursor keys." against `keymap`
+//   (amiga_keymap.v:10-13). SPECIFICATION.md (committed before this file, or
+//   amiga_keymap.v, were opened -- commit 76bacde) records the reasoning;
+//   this file carries it out.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 2.
+// Non-goals: anything outside the `keymap` fixture this package builds, and
+//   any claim outside the 3 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 3 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // SCOPE / TRANSFERABILITY (required by 2026-09-16_ch1_build_brief.md, and
 //   repeated per SPECIFICATION.md): every red this package could produce

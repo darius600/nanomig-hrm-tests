@@ -2,31 +2,31 @@
 //   the agnus_blitter boundary (packages.md item 13): BLTCON0L ($05A, writes
 //   BLTCON0's lower 8 minterm bits, gated on ecs), BLTSIZH ($05E, an 11-bit
 //   width field that starts the blit, gated on ecs) and BLTSIZV ($05C, a
-//   15-bit height field), DOFF (BLTCON1 bit 7, documented to disable
-//   channel D output), and - added by Prompt 8 independent validation, see
-//   "ROUTING CORRECTION" below - the OCS-vs-ECS width of BLTxPTH/BLTxPTL,
-//   because this is the only boundary in the chapter where `ecs` actually
-//   exists alongside the pointer registers.
+//   15-bit height field), DOFF (BLTCON1 bit 7, documented to disable channel
+//   D output), and - added by Prompt 8 independent validation, see "ROUTING
+//   CORRECTION" below - the OCS-vs-ECS width of BLTxPTH/BLTxPTL, because
+//   this is the only boundary in the chapter where `ecs` actually exists
+//   alongside the pointer registers.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 172, 189, 198-199, 267, 269-270, 308-310.
-// Non-goals: the OCS BLTSIZE zero-means-64/1024
-//   encoding's own numeric values (6-appc-big-blits.c22's "1024-line
-//   maximum") - that IS "zero meaning 64 and 1024", the exact phrase
-//   packages.md item 8 assigns to PKG-BLT-SIZE, and is orthogonal to `ecs`
-//   (the encoding is the same whichever chipset is selected); pixel-count
-//   figures that require the manual's own word-to-pixel (x16) or the
-//   width/height-to-area scaling ("32768 pixels", "32K by 32K pixels") -
-//   this RTL exposes only a word-count field (width) and a line-count field
-//   (height), never a pixel count, so converting either to "pixels" is the
-//   programmer's own arithmetic, not something observable at this boundary
-//   (see NOT ASSERTED below; the same treatment PKG-BLT-LINE gives the
-//   dy/dx modulo-value formulas and PKG-BLT-SIZE's own "width in words
-//   versus height in lines" framing already establishes the convention);
-//   register read-back / write-only completeness for BLTCON0L, BLTSIZH,
-//   BLTSIZV (PKG-BLT-REGDECODE's job - this module has no host-read
-//   datapath for any register at all, so nothing here could show a register
-//   behaving otherwise); minterm/LF decode correctness beyond using two
+// Non-goals: the OCS BLTSIZE zero-means-64/1024 encoding's own numeric
+//   values (6-appc-big-blits.c22's "1024-line maximum") - that IS "zero
+//   meaning 64 and 1024", the exact phrase packages.md item 8 assigns to
+//   PKG-BLT-SIZE, and is orthogonal to `ecs` (the encoding is the same
+//   whichever chipset is selected); pixel-count figures that require the
+//   manual's own word-to-pixel (x16) or the width/height-to-area scaling
+//   ("32768 pixels", "32K by 32K pixels") - this RTL exposes only a
+//   word-count field (width) and a line-count field (height), never a pixel
+//   count, so converting either to "pixels" is the programmer's own
+//   arithmetic, not something observable at this boundary (see NOT ASSERTED
+//   below; the same treatment PKG-BLT-LINE gives the dy/dx modulo-value
+//   formulas and PKG-BLT-SIZE's own "width in words versus height in lines"
+//   framing already establishes the convention); register read-back /
+//   write-only completeness for BLTCON0L, BLTSIZH, BLTSIZV
+//   (PKG-BLT-REGDECODE's job - this module has no host-read datapath for any
+//   register at all, so nothing here could show a register behaving
+//   otherwise); minterm/LF decode correctness beyond using two
 //   already-simple LF settings as plumbing to observe which one is active
 //   (PKG-BLT-MINTERM); the barrel shifter's own arithmetic beyond reusing
 //   its documented ascending-shift formula as a one-bit witness that ash

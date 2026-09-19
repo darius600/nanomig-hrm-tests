@@ -9,7 +9,8 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2,
 //   print pages 19 (p19:41-43), 20 (p20:26-27), 21 (p21:8-11, p21:26-27).
 //   Frozen specification:
-//   fpga-lab/work/2026-09-05_fpga-078_move-src_testspecification.md
+//   fpga-lab/work/2026-09-05_fpga-078_move-src_testspecification.md (private
+//   lab workspace, not published; the claim ids below are the public record)
 // Requirement IDs: COP-01 (About the Copper, p.19), COP-02 (What is a
 //   Copper Instruction?, p.20), COP-03 (The MOVE Instruction, p.21). None of
 //   the three rows' existing evidence covers this claim - their cited tests

@@ -1,3 +1,18 @@
+// Test purpose: p.327 "Game Controller Connector Interface Specification",
+//   userio.v alone.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 227, 327, 329, 330, 332, 333
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 17 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 17 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
+//
 // appDE-gameport-common -- p.327 "Game Controller Connector Interface
 // Specification", userio.v alone. 12 claims, filtered from
 // hrm-testpipeline/work/2026-09-17_appDE_packages.jsonl on

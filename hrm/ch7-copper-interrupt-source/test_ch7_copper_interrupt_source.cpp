@@ -13,6 +13,11 @@
 // half of "reserved for identifying" (not a runtime behaviour), and the Exec
 // software-priority-5 half of opus:7-fig7-4.c15 -- all out of this
 // package's two claims; see SPECIFICATION.md "Not turned into assertions."
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // The residual (see paula_intcontroller.v:114, 'intreq[4] <= tmp[4];' -- the
 // generic SET/CLR mask and nothing else): the hardware cannot distinguish a

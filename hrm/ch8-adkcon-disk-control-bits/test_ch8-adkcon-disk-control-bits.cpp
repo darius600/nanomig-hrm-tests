@@ -30,6 +30,16 @@
 // through expect() -- inventing one would be exactly the overreach this
 // suite's process exists to prevent. The two note()s below report that red
 // half as MEASURED, graded by nothing.
+// Test class: HRM_CONFORMANCE
+// Non-goals: anything outside the `paula` fixture this package builds, and
+//   any claim outside the 15 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 15 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // WORDSYNC mechanism, read from paula_floppy.v (trackrdok/sync_match,
 // :508-509, :914-926) after SPECIFICATION.md was committed: `dsksync`
@@ -66,8 +76,6 @@
 // Fixture: a fresh Vpaula per trial (paula_floppy's dsktrack has no reset
 // term -- disclosed rig hazard, not touched by any assertion here, but the
 // same fresh-model discipline is followed throughout regardless).
-//
-// Test class: HRM_CONFORMANCE
 //
 // Not turned into assertions: none. All thirteen claims map onto A1-A6
 // (see SPECIFICATION.md "Every claim accounted for").

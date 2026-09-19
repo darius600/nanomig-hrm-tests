@@ -1,11 +1,12 @@
-// Test purpose: Verify the blitter fill logic's inclusive/exclusive area-fill
-//   semantics (agnus_blitter_fill) - the toggle-on-every-source-1 carry chain
-//   that begins at the rightmost (bit 0) source bit and runs to the left edge
-//   (bit 15), the inclusive OR that leaves boundary lines intact versus the
-//   exclusive pass-through that trims one edge and produces a shape one pixel
-//   narrower, the FCI-selects-inside-or-outside behaviour shown in figures
-//   6-5/6-6, the fill-enable bypass path shown in figure 6-13, and the
-//   manual's own worked words on printed pages 184 and 185.
+// Test purpose: Verify the blitter fill logic's inclusive/exclusive
+//   area-fill semantics (agnus_blitter_fill) - the toggle-on-every-source-1
+//   carry chain that begins at the rightmost (bit 0) source bit and runs to
+//   the left edge (bit 15), the inclusive OR that leaves boundary lines
+//   intact versus the exclusive pass-through that trims one edge and
+//   produces a shape one pixel narrower, the FCI-selects-inside-or-outside
+//   behaviour shown in figures 6-5/6-6, the fill-enable bypass path shown in
+//   figure 6-13, and the manual's own worked words on printed pages 184 and
+//   185.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 169, 184, 185, 186, 198 and 199.

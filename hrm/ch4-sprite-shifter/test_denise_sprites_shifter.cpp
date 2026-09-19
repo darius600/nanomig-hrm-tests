@@ -1,17 +1,21 @@
 // ch4-sprite-shifter -- denise_sprites_shifter conformance test
 //
 // Test purpose: the per-sprite shift register -- how the two data words
-//   SPRxDATA/SPRxDATB become a serial stream of 2-bit pixel values, when
-//   the shifter is armed and disarmed, and what a write to SPRxCTL does
-//   to a sprite that is already armed -- at the denise_sprites_shifter
-//   module boundary. Package ch4-sprite-shifter, fixture
-//   denise_sprites_shifter (one module, standalone -- see BOUNDARY).
+//   SPRxDATA/SPRxDATB become a serial stream of 2-bit pixel values, when the
+//   shifter is armed and disarmed, and what a write to SPRxCTL does to a
+//   sprite that is already armed -- at the denise_sprites_shifter module
+//   boundary. Package ch4-sprite-shifter, fixture denise_sprites_shifter
+//   (one module, standalone -- see BOUNDARY).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition,
-//   printed pp. 97-128 (claims.jsonl for ch4-sprite-shifter-and-arming,
-//   122 records).  A red result below means denise_sprites_shifter.v
-//   disagrees with the manual, not that the assertion is wrong -- no
-//   assertion here was, or should be, adjusted to make the RTL pass.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pp. 97-128 (claims.jsonl for ch4-sprite-shifter-and-arming, 122
+//   records). A red result below means denise_sprites_shifter.v disagrees
+//   with the manual, not that the assertion is wrong -- no assertion here
+//   was, or should be, adjusted to make the RTL pass.
+// Non-goals: anything outside the `denise_sprites_shifter` fixture this
+//   package builds, and any claim it does not name. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
 //
 // CLAIM SOURCE: hrm-testpipeline/work/ch4_packages/
 //   ch4-sprite-shifter-and-arming.jsonl, 122 records, all classified

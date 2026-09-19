@@ -1,5 +1,5 @@
-// Test purpose: The chapter-3 residue -- 55 claims that reached no package in
-//   the chapter's first build round and no recorded out-of-scope reason,
+// Test purpose: The chapter-3 residue -- 55 claims that reached no package
+//   in the chapter's first build round and no recorded out-of-scope reason,
 //   found 11.09.2026 by reconciling the chapter total rather than each
 //   package's own coverage (see PACKAGE.md). Package ch3-field-geometry,
 //   fixture agnus_beamcounter (one Verilator build, this module only).
@@ -27,6 +27,11 @@
 //   width/modulo, sprite DMA, HAM, colour encoding -- none of these are
 //   ports or registers of agnus_beamcounter. Every claim below whose
 //   proposition needs one of them is reported OUT OF BOUNDARY, not forced.
+// Claim ids: the one id below carries a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and it names
+//   one reader's reading of one printed sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER-OF-WORK, DISCLOSED: the build brief requires writing this file's
 //   assertions and expected values from claims.jsonl's quotations alone,
@@ -616,5 +621,9 @@ int main(int argc, char** argv) {
         "category (e).");
 
     std::cout << c.passed << "/" << (c.passed + c.failed) << " PASS, " << c.failed << " FAIL\n";
+    // The same two numbers in the spelling hrm/run_all.sh and the coverage
+    // ledger grep for. Without it this package contributes no assertions to
+    // any published total.
+    std::cout << c.passed << " passed, " << c.failed << " failed.\n";
     return (c.failed == 0) ? 0 : 1;
 }

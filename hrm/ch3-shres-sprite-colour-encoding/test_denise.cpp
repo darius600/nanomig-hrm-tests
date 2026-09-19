@@ -6,24 +6,28 @@
 //   denise_colortable, denise_colortable_ram_mf, denise_spritepriority,
 //   bitplane_ram -- PACKAGE.md's own fixture line).
 //
-// Test purpose: printed page 302's table mapping the sixteen *upper*
-//   colour registers (COLOR$10-COLOR$1F, i.e. COLOR16-COLOR31) onto the
-//   symbols A-X, plus the legend "Sprite (Color 16) : AB-- CD-- EF--" (and
-//   its three sibling legend lines for Color 17/18/19) that says each
-//   named SuperHires sprite colour contributes only the TOP two bits of
-//   each of R, G, B. A sibling package (page 301) covers the bitplane half
-//   of the identical scheme; this package is the sprite half only.
+// Test purpose: printed page 302's table mapping the sixteen *upper* colour
+//   registers (COLOR$10-COLOR$1F, i.e. COLOR16-COLOR31) onto the symbols
+//   A-X, plus the legend "Sprite (Color 16) : AB-- CD-- EF--" (and its three
+//   sibling legend lines for Color 17/18/19) that says each named SuperHires
+//   sprite colour contributes only the TOP two bits of each of R, G, B. A
+//   sibling package (page 301) covers the bitplane half of the identical
+//   scheme; this package is the sprite half only.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 301-302 (claims.jsonl for ch3-shres-sprite-colour-encoding, 275
 //   records). A red result below means denise.v (and the sub-modules
-//   PACKAGE.md's own fixture line names) disagrees with the manual, not
-//   that the assertion is wrong -- no assertion here was, or should be,
-//   adjusted to make the RTL pass. Per the build brief: "already verified
+//   PACKAGE.md's own fixture line names) disagrees with the manual, not that
+//   the assertion is wrong -- no assertion here was, or should be, adjusted
+//   to make the RTL pass. Per the build brief: "already verified
 //   independently: all 512 bit claims across pages 301 and 302 were
-//   re-derived from the table cells plus the legend and matched 512 of
-//   512" -- this package tests the RTL against that already-checked
-//   mapping, it does not re-audit the mapping itself.
+//   re-derived from the table cells plus the legend and matched 512 of 512"
+//   -- this package tests the RTL against that already-checked mapping, it
+//   does not re-audit the mapping itself.
+// Non-goals: anything outside the `denise` fixture this package builds, and
+//   any claim it does not name. A green here means those assertions held on
+//   this fixture at the pinned revision -- not that the module is correct,
+//   and not that the chapter is covered.
 //
 // THE ORACLE, DERIVED PURELY FROM THE QUOTES (before RTL was opened -- see
 //   ORDER OF WORK below): claims.jsonl's 16 row quotes (C-shrs.r10..r1F,

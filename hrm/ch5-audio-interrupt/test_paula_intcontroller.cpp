@@ -11,6 +11,15 @@
 // Fixture boundary: paula_intcontroller.v ONLY (BOUNDARIES.md row 6 - 176
 //   lines, "AUDxIP / AUDxIR", ports audpen[3:0]/_ipl[2:0]/data_out[15:0] from
 //   audint[3:0]). No other module is instantiated anywhere in this file.
+// Non-goals: anything outside the `paula_intcontroller` fixture this package
+//   builds, and any claim outside the 76 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 76 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch5_packages/ch5-audio-interrupt.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // THIS PACKAGE EXTENDS hrm/paula_intcontroller, IT DOES NOT REPLACE IT.
 //   hrm/paula_intcontroller/test_paula_intcontroller.cpp is HRM_CONFORMANCE
@@ -91,7 +100,8 @@
 //   chapter 7 declined the same proposition from the same pages. The
 //   deviation is not withdrawn -- it is NM-HRM-031.
 //
-// Non-goals: anything about paula_audio_channel's own state machine or the
+// Scope, in detail: anything about paula_audio_channel's own state machine
+//   or the
 //   moment it decides to raise AUDxIR (separate packages' territory, and the
 //   conflict discussed above); DSKSYNC/serial/disk pin behaviour beyond what
 //   is needed to exercise this module's own priority encoder (those pins'

@@ -1,9 +1,9 @@
 // ch1-agnus-what-it-contains -- agnus conformance test
 //
-// Test purpose: whether the things page 1-6/8/9/12-14 say are inside
-//   Agnus's boundary (the Copper, the blitter, the DMA control logic, the
-//   beam counters, which memory Agnus can address) really are inside it,
-//   and whether the signals those sentences describe genuinely cross that
+// Test purpose: whether the things page 1-6/8/9/12-14 say are inside Agnus's
+//   boundary (the Copper, the blitter, the DMA control logic, the beam
+//   counters, which memory Agnus can address) really are inside it, and
+//   whether the signals those sentences describe genuinely cross that
 //   boundary -- structural questions, not mechanism-correctness questions.
 //   Package ch1-agnus-what-it-contains, fixture `agnus` (top module, plus
 //   every submodule it instantiates -- see SPECIFICATION.md's BOUNDARY
@@ -17,9 +17,14 @@
 //   sequencing (chapter 4); NTSC/PAL visible-line pixel counts or 32-colour
 //   depth (chapter 3; Denise is outside this fixture); DIWSTRT/DIWSTOP
 //   display-window sizing (chapter 3); DMA-pointer range/writability for
-//   bitplane/sprite/audio/Copper/blitter engines (five sibling packages,
-//   see SPECIFICATION.md); bitplane and sprite DMA are never triggered
-//   anywhere in this file (see SPECIFICATION.md's BOUNDARY section for why).
+//   bitplane/sprite/audio/Copper/blitter engines (five sibling packages, see
+//   SPECIFICATION.md); bitplane and sprite DMA are never triggered anywhere
+//   in this file (see SPECIFICATION.md's BOUNDARY section for why).
+// Claim ids: 67 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER OF WORK: SPECIFICATION.md was written from the 67 claims' own
 // quote/restatement fields and committed (commit 6c293f5) before this file

@@ -33,6 +33,15 @@
 //   same proposition from the same render, one per reader). 2 uids declined
 //   via record() (sol:E-rs232.c171, opus:E-serial-timing.c6 -- see
 //   MODEM-CONTROL-PORTS and the HALT reasoning below). 0 uids unaddressed.
+// Non-goals: anything outside the `paula_uart` fixture this package builds,
+//   and any claim outside the 6 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 6 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // Decline scope checked against every existing package this claim set could
 // collide with, by opening each one's own test source and reading its

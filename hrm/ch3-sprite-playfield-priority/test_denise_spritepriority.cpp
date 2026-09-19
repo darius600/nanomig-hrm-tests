@@ -1,29 +1,34 @@
 // Test purpose: BPLCON2's PF1P (bits 2-0) and PF2P (bits 5-3) fields name
-//   which playfield's sprite-priority code lives in which bits of the
-//   6-bit BPLCON2[5:0] priority field, and each field's effect is confined
-//   to its own playfield's front/behind decision against sprites,
-//   independent of the other field (Appendix A's combined bit table and
-//   its PF1P/PF2P legend entries). Package ch3-sprite-playfield-priority,
-//   fixture denise_spritepriority (one Verilator build, this module only).
+//   which playfield's sprite-priority code lives in which bits of the 6-bit
+//   BPLCON2[5:0] priority field, and each field's effect is confined to its
+//   own playfield's front/behind decision against sprites, independent of
+//   the other field (Appendix A's combined bit table and its PF1P/PF2P
+//   legend entries). Package ch3-sprite-playfield-priority, fixture
+//   denise_spritepriority (one Verilator build, this module only).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 90, 271 (the BPLCON2 register's "Bits 0-5  Playfield sprite
-//   priority" summary line, Appendix A's combined bit table naming PF1P0-2
-//   and PF2P0-2 to specific BPLCON2 bit positions, and Appendix A's
-//   PF1P/PF2P legend entries).
+//   pp. 90, 271 (the BPLCON2 register's "Bits 0-5 Playfield sprite priority"
+//   summary line, Appendix A's combined bit table naming PF1P0-2 and PF2P0-2
+//   to specific BPLCON2 bit positions, and Appendix A's PF1P/PF2P legend
+//   entries).
 // Non-goals: this package's claims.jsonl (18 records) never quotes the
 //   manual's priority-CODE-to-front/behind-outcome table (which of the 0-7
-//   numeric code values puts which sprite pairs in front of the
-//   playfield) -- no such quotation exists among the 18 claims, so no
-//   assertion below depends on knowing that table or asserts a specific
-//   front/behind outcome for a specific numeric code. What IS asserted:
-//   which bit of BPLCON2 is which named field, that each field is a live,
-//   individually-significant element of the priority code, and that each
-//   field's effect is confined to its own playfield -- all directly
-//   quoted. Also NOT asserted, deliberately, after review (see
-//   "COORDINATOR REVIEW" below): that a bit's significance holds in EVERY
-//   context. The claims name a bit and its field; they do not claim the
-//   bit is observable under every setting of its group's other two bits.
+//   numeric code values puts which sprite pairs in front of the playfield)
+//   -- no such quotation exists among the 18 claims, so no assertion below
+//   depends on knowing that table or asserts a specific front/behind outcome
+//   for a specific numeric code. What IS asserted: which bit of BPLCON2 is
+//   which named field, that each field is a live, individually-significant
+//   element of the priority code, and that each field's effect is confined
+//   to its own playfield -- all directly quoted. Also NOT asserted,
+//   deliberately, after review (see "COORDINATOR REVIEW" below): that a
+//   bit's significance holds in EVERY context. The claims name a bit and its
+//   field; they do not claim the bit is observable under every setting of
+//   its group's other two bits.
+// Claim ids: 16 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY (from the classifier's own evidence field, carried into every
 // claim record -- see "ORDER OF WORK" below): denise_spritepriority.v:5-11

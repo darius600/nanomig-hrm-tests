@@ -3,8 +3,8 @@
 //   four register addresses, the SET/CLR write convention, bit 15's "no
 //   meaning" on the read-only addresses, the INTEN master gate, and
 //   write-to-clear stickiness. 41 claims, from
-//   work/ch7-build/ch7-interrupt-register-semantics.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 9ed37e0 before this file was written).
+//   work/ch7-build/ch7-interrupt-register-semantics.jsonl. Full derivation
+//   in SPECIFICATION.md (committed as 9ed37e0 before this file was written).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.217-218 (chapter 7 body), corroborated by appendix A p.280 and Figure
@@ -14,6 +14,16 @@
 //   repair, see the MUTATION METHODOLOGY note below.
 // Fixture boundary: paula_intcontroller.v ONLY. No other module is
 //   instantiated anywhere in this file.
+// Non-goals: anything outside the `paula_intcontroller` fixture this package
+//   builds, and any claim outside the 63 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 63 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch7-build/ch7-interrupt-register-semantics.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // PACKAGE BOUNDARY - what this package does and does not duplicate.
 //   hrm/ch5-audio-interrupt (chapter 5, appendix A/B-sourced, 106 claims) is

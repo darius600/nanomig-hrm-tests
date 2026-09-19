@@ -3,15 +3,15 @@
 // Test purpose: SPRxPTH/SPRxPTL, the sprite-x DMA pointer pair, at the
 //   agnus_spritedma module boundary -- that eight independent pairs exist
 //   (one per sprite, x=0..7), each at its own documented address, each
-//   implemented in Agnus, marked as an even-address register pair whose
-//   low bit is not part of the fetched address, and (the undisputed half
-//   of a four-way width conflict) that SPRxPTH supplies the more
-//   significant part of the composed pointer and SPRxPTL the less
-//   significant part. Package ch4-sprite-pointer-registers, fixture
-//   agnus_spritedma (one Verilator build, this module only).
+//   implemented in Agnus, marked as an even-address register pair whose low
+//   bit is not part of the fetched address, and (the undisputed half of a
+//   four-way width conflict) that SPRxPTH supplies the more significant part
+//   of the composed pointer and SPRxPTL the less significant part. Package
+//   ch4-sprite-pointer-registers, fixture agnus_spritedma (one Verilator
+//   build, this module only).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix
-//   A p.285, Appendix B pp.287/291 (claims.jsonl for
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A
+//   p.285, Appendix B pp.287/291 (claims.jsonl for
 //   ch4-sprite-pointer-registers, 145 records; the printed chapter-4 pages
 //   110/126/127 this inventory's own conflict_resolution fields quote
 //   against are NOT independently read here -- their wording reaches this
@@ -25,13 +25,13 @@
 //   four-way manual self-contradiction and is measured and reported below
 //   (MEASURED-WIDTH), never asserted pass/fail against any one of the four
 //   readings -- a width assertion would fire identically on all four and
-//   would test the manual's disagreement with itself, not the RTL. The
-//   "must point to chip memory" half of the appendix-B "+" mark is outside
-//   every sprite-pointer-registers boundary (needs the chip memory map)
-//   and is not asserted; only the "even address" half is. Whether Denise
-//   also decodes these addresses is outside this single-module boundary
-//   and is RECORDED, not measured, from the inventory's own classification
-//   evidence (see ORDER OF WORK).
+//   would test the manual's disagreement with itself, not the RTL. The "must
+//   point to chip memory" half of the appendix-B "+" mark is outside every
+//   sprite-pointer-registers boundary (needs the chip memory map) and is not
+//   asserted; only the "even address" half is. Whether Denise also decodes
+//   these addresses is outside this single-module boundary and is RECORDED,
+//   not measured, from the inventory's own classification evidence (see
+//   ORDER OF WORK).
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_spritedma.v, one Verilator
 //   build, this module only.

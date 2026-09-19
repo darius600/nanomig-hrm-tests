@@ -13,10 +13,19 @@
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   229, 240, 281, 282, 287, 288, 289 (claims.jsonl for
 //   ch8-register-map-userio, 117 records, plus four external p.287 legend
-//   uids named in SPECIFICATION.md and cited but not counted among the
-//   117). A red result below means userio.v disagrees with the manual, not
-//   that the assertion is wrong -- no assertion here was, or should be,
-//   adjusted to make the RTL pass.
+//   uids named in SPECIFICATION.md and cited but not counted among the 117).
+//   A red result below means userio.v disagrees with the manual, not that
+//   the assertion is wrong -- no assertion here was, or should be, adjusted
+//   to make the RTL pass.
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 139 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 139 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: top module `userio` only (one Verilator build, userio.v alone),
 //   per PACKAGE.md/the build brief. Ports used, exactly as userio.v's own

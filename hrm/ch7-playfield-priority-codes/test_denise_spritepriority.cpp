@@ -5,8 +5,8 @@
 //   precondition those 40 cells depend on, plus two aggregate assertions
 //   (ids 47/48, added in the ch7 slice B1 finding-8 repair) over the
 //   relationship BETWEEN those 40 cells: that each playfield's outcome is
-//   changeable and reaches both front and behind, and that its five
-//   defined codes produce five distinct placements.
+//   changeable and reaches both front and behind, and that its five defined
+//   codes produce five distinct placements.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 207-212 (Table 7-2, its p.209 descriptive-prose twin, the p.211
@@ -22,6 +22,15 @@
 //   only output is a 1-bit selection, no colour/RGB); the colour-0
 //   clipping mechanism (asserted at ch3-dual-playfield's
 //   CODE-ZERO-TRANSPARENT, not here).
+// Non-goals: anything outside the `denise_spritepriority` fixture this
+//   package builds, and any claim outside the 49 it cites. A green here
+//   means those assertions held on this fixture at the pinned revision --
+//   not that the module is correct, and not that the chapter is covered.
+// Claim ids: 49 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY (opened only after SPECIFICATION.md's commit, per the two-step
 // gate): denise_spritepriority.v:5-11 -- input [5:0] bplcon2 (bits 2:0 =

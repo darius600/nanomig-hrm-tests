@@ -7,12 +7,22 @@
 //   work/ch8-s2-build/ch8-dmaon-enable-composition.jsonl, reduced to 5
 //   graded propositions (A1-A5) + fixture liveness (A0) + one
 //   mutation-demonstration substitute (A2-SUBSTITUTE, no claim uid). Full
-//   derivation in SPECIFICATION.md (committed as c1b7870, before any RTL
-//   was opened).
+//   derivation in SPECIFICATION.md (committed as c1b7870, before any RTL was
+//   opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   p.248 (chapter 8's own DMAON row) and Appendix A printed p.278
-//   (DSKBYTR bit-14 row).
+//   p.248 (chapter 8's own DMAON row) and Appendix A printed p.278 (DSKBYTR
+//   bit-14 row).
+// Non-goals: anything outside the `paula` fixture this package builds, and
+//   any claim outside the 8 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 8 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-dmaon-enable-composition.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // BOUNDARY: paula.v ($(NANOMIG)/src/minimig-aga/paula.v), reached exactly
 //   as hrm/ch5-audio-dmacon-adkcon already reaches it -- paula.v

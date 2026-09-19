@@ -1,25 +1,34 @@
-// Test purpose: HRM conformance package for appendix H's Device I.D. protocol
-//   -- pp.368,370-371, the nine-step-plus-31-repeats procedure that samples
-//   RDY (pin 1, _ready) 32 times to assemble a device identifier -- graded
-//   against paula_floppy (this suite's only model of a physical Amiga floppy
-//   drive, and the same module hrm/appDE-disk-interface grades one page
-//   earlier). 14 claims, from
-//   work/2026-09-17_appHJ_packages.jsonl (classify.package ==
-//   "appH-device-id-protocol").
+// Test purpose: HRM conformance package for appendix H's Device I.D.
+//   protocol -- pp.368,370-371, the nine-step-plus-31-repeats procedure that
+//   samples RDY (pin 1, _ready) 32 times to assemble a device identifier --
+//   graded against paula_floppy (this suite's only model of a physical Amiga
+//   floppy drive, and the same module hrm/appDE-disk-interface grades one
+//   page earlier). 14 claims, from work/2026-09-17_appHJ_packages.jsonl
+//   (classify.package == "appH-device-id-protocol").
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed
 //   pp.368, 370-371. p.368's Summary Table is NOT displaced (this package's
 //   own corpus-defects.md, "p.368 -- the table is clean"), so the RDY- entry
-//   is quoted from p368.txt directly. p.370's nine numbered steps and p.371's
-//   four prose paragraphs both survive the text layer (corpus-defects.md,
-//   "p.370", "p.371 -- the I.D. table is unusable; the prose ... is not");
-//   only p.371's two-column bit-pattern table is unusable and irrelevant here
-//   (this package's 14 claims name none of its rows). Every quotation below
-//   was independently confirmed against figures/p370.png and figures/p371.png
-//   before this file was written (both reproduced in full: the nine steps on
-//   p370, and the "Repeat steps 7-9" / "Steps 1-4 ... initializes" / "Steps 7,
-//   8 and 9 form a loop" / "This loop is performed 32 times" paragraphs on
-//   p371), not trusted from the claims file's own restatements.
+//   is quoted from p368.txt directly. p.370's nine numbered steps and
+//   p.371's four prose paragraphs both survive the text layer
+//   (corpus-defects.md, "p.370", "p.371 -- the I.D. table is unusable; the
+//   prose ... is not"); only p.371's two-column bit-pattern table is
+//   unusable and irrelevant here (this package's 14 claims name none of its
+//   rows). Every quotation below was independently confirmed against
+//   figures/p370.png and figures/p371.png before this file was written (both
+//   reproduced in full: the nine steps on p370, and the "Repeat steps 7-9" /
+//   "Steps 1-4 ... initializes" / "Steps 7, 8 and 9 form a loop" / "This
+//   loop is performed 32 times" paragraphs on p371), not trusted from the
+//   claims file's own restatements.
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 15 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 15 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appHJ_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // THIS IS THE PACKAGE APPENDICES H AND J WERE READ FOR. Appendix E's lot
 //   declined 21 paula_floppy claims (sol:E-disk-id.c1..c21) at CLASSIFICATION

@@ -1,10 +1,10 @@
 // Test purpose: page 328's "GAME CONTROLLER INTERFACE TO MOUSE/TRACKBALL
 //   QUADRATURE INPUTS" section of Appendix E -- specifically the four claims
-//   the classify stage identified as testable here rather than declined:
-//   (a) the CONNECTOR PIN USAGE table's HARDWARE REGISTER column, composed
-//   end to end (pin number -> mnemonic -> JOY[0/1]DAT byte half) for pins
-//   1-4, which no accepted assertion's own label states as one proposition
-//   even though its parts are separately graded elsewhere; (b) the ">127"
+//   the classify stage identified as testable here rather than declined: (a)
+//   the CONNECTOR PIN USAGE table's HARDWARE REGISTER column, composed end
+//   to end (pin number -> mnemonic -> JOY[0/1]DAT byte half) for pins 1-4,
+//   which no accepted assertion's own label states as one proposition even
+//   though its parts are separately graded elsewhere; (b) the ">127"
 //   distance/direction ambiguity sentence; and (c) the mouse-counter
 //   readability guarantee ("always valid and may be read at any time").
 //   Package appDE-mouse-quadrature, fixture userio.v (same fixture as
@@ -13,8 +13,8 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 328 (Appendix E). Table read from figures/p328.png, not from
 //   p328.txt -- the text layer is OCR-damaged in the register column (see
-//   NOTE ON THE PRINTED DEFECT below) even though the corpus-defects.md
-//   rule for this appendix says the bindings are otherwise visually aligned.
+//   NOTE ON THE PRINTED DEFECT below) even though the corpus-defects.md rule
+//   for this appendix says the bindings are otherwise visually aligned.
 // Non-goals (all graded elsewhere, in an accepted package, on the SAME
 //   proposition this page restates -- declined below with the precedent
 //   named in each record()): the generic "planar motion becomes pulse
@@ -27,6 +27,15 @@
 //   appDE-portsig-cia-bindings, not any claim in this file); the wraparound
 //   mechanism itself (hrm/ch8-mouse-counter-wraparound); Table 8-1's own
 //   pin-to-mnemonic binding (hrm/ch8-controller-pin-function-map, p.228).
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 32 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 32 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/userio.v module header -- ports clk,
 //   reset, clk7_en, reg_address_in[8:1], data_in[15:0], data_out[15:0],

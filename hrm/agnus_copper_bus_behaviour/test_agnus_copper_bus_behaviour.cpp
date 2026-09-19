@@ -1,8 +1,17 @@
-// Test purpose: Assert that a blocked WAIT releases the bus and that withholding the Copper's DMA slot neither loses its place nor skips or duplicates an instruction.
+// Test purpose: Assert that a blocked WAIT releases the bus and that
+//   withholding the Copper's DMA slot neither loses its place nor skips or
+//   duplicates an instruction.
 // Test class: mixed - W1/W2 HRM_CONFORMANCE, W3/W4/W5 RTL_REGRESSION
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, print pages 19 and 22 for W1/W2; NanoMig interface contract for W3-W5, because print page 30 never states where the Copper resumes after DMA returns. Frozen specification 3225eab.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, print
+//   pages 19 and 22 for W1/W2; NanoMig interface contract for W3-W5, because
+//   print page 30 never states where the Copper resumes after DMA returns.
+//   Frozen specification 3225eab.
 // Requirement IDs: COP-04, COP-07, COP-08
-// Non-goals: Which channel wins a contested slot (decided outside this module). COPEN and real DMACON gating (FPGA-055). The exact blanking edge - sof is an input. Cycle-time figures (FPGA-067). Any claim that the observed resume position is HRM-correct; the manual does not describe it.
+// Non-goals: Which channel wins a contested slot (decided outside this
+//   module). COPEN and real DMACON gating (FPGA-055). The exact blanking
+//   edge - sof is an input. Cycle-time figures (FPGA-067). Any claim that
+//   the observed resume position is HRM-correct; the manual does not
+//   describe it.
 //
 // Boundary limit, stated so no reader over-reads the result: at this module,
 // "Copper DMA disabled via COPEN" and "the slot was taken by a higher-priority

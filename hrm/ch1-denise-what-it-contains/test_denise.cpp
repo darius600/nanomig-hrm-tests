@@ -10,9 +10,18 @@
 //   SPECIFICATION.md (committed e58468c before this file was written).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp.1-4, 8 (Figure 1-1). A red result below means denise.v disagrees
-//   with the manual, not that the assertion is wrong -- no assertion here
-//   was, or should be, adjusted to make the RTL pass.
+//   pp.1-4, 8 (Figure 1-1). A red result below means denise.v disagrees with
+//   the manual, not that the assertion is wrong -- no assertion here was, or
+//   should be, adjusted to make the RTL pass.
+// Non-goals: anything outside the `denise` fixture this package builds, and
+//   any claim outside the 37 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 37 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-16_ch1_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // CHAPTER-1 DISCIPLINE: this chapter is an introduction. Its claims are
 //   structural (is a thing inside Denise's boundary; does a port carry a

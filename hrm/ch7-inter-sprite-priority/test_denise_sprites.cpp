@@ -4,13 +4,22 @@
 //   boxes numbered 0 to 7, box 0 in front) and Figure 7-2's sprite-GROUP
 //   ordering (SP01 > SP23 > SP45 > SP67), both as observable at the
 //   denise_sprites module boundary. Package ch7-inter-sprite-priority,
-//   fixture denise_sprites (denise_sprites.v + denise_sprites_shifter.v,
-//   the same two-file build hrm/denise_sprites/ and hrm/ch4-attached-sprites/
+//   fixture denise_sprites (denise_sprites.v + denise_sprites_shifter.v, the
+//   same two-file build hrm/denise_sprites/ and hrm/ch4-attached-sprites/
 //   already use).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 207-209 (text) and Figures 7-1 (p.208) and 7-2 (p.209), both opened
 //   and read directly from ch7/figures/p208.png and p209.png.
+// Non-goals: anything outside the `denise_sprites` fixture this package
+//   builds, and any claim outside the 23 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 23 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM SOURCE: this package's own claims file is
 //   hrm-testpipeline/work/ch7-build/

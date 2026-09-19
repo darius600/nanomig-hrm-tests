@@ -6,8 +6,8 @@
 //   itself declares for the identified signal. Package
 //   appJ-agnus-port-directions, fixture `agnus` (top module, plus every
 //   submodule it instantiates -- see the Makefile's SRC list, model
-//   hrm/ch1-agnus-what-it-contains, the only other package in hrm/ that
-//   tops the full `agnus` with MUT= pass-through). 36 claims, filtered from
+//   hrm/ch1-agnus-what-it-contains, the only other package in hrm/ that tops
+//   the full `agnus` with MUT= pass-through). 36 claims, filtered from
 //   hrm-testpipeline/work/2026-09-17_appHJ_packages.jsonl on
 //   classify.package == "appJ-agnus-port-directions".
 // Test class: HRM_CONFORMANCE
@@ -18,9 +18,18 @@
 //   -- `porta_out` is declared `output [7:6]` (ciab.v:20)... a Verilog
 //   port-direction fact, not a runtime-configurable one"); this package's
 //   own appJ-pinlist/corpus-defects.md names that package as the precedent
-//   for constructing the DEFINITION column here. The package-pin-NUMBER
-//   half of every printed row was classified `not-hardware` at stage 3/4
-//   and is not in this package's 36 -- NanoMig has no package.
+//   for constructing the DEFINITION column here. The package-pin-NUMBER half
+//   of every printed row was classified `not-hardware` at stage 3/4 and is
+//   not in this package's 36 -- NanoMig has no package.
+// Non-goals: anything outside the `agnus` fixture this package builds, and
+//   any claim outside the 38 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 38 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appHJ_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // THE STAGE-5 MERGE, executed here: p.379 and p.381 describe two chip
 //   generations of the SAME module (`agnus` -- NanoMig implements one RTL

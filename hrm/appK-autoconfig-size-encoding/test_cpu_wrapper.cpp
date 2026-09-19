@@ -1,3 +1,20 @@
+// Test purpose: pp.433-434 Appendix K "REGISTER BIT ASSIGNMENTS": register
+//   00 bits 2:0 (board size code), register 08 bit 5 (the size-extension
+//   selector), and register 08 bits 3:0 (sub-size).
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 433, 434
+// Non-goals: anything outside the `cpu_wrapper` fixture this package builds,
+//   and any claim outside the 21 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 21 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/appK-build/appK-autoconfig-size-encoding.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
+//
 // appK-autoconfig-size-encoding -- pp.433-434 Appendix K "REGISTER BIT
 // ASSIGNMENTS": register 00 bits 2:0 (board size code), register 08 bit 5
 // (the size-extension selector), and register 08 bits 3:0 (sub-size). 21

@@ -1,24 +1,29 @@
-// Test purpose: DSKBYTR ($DFF01A) -- the disk data-and-status read
-//   register: its identity as a real, addressable register (p.247, p.248),
-//   the DSKBYT bit set-on-receipt/cleared-on-read behaviour (p.248, p.278),
-//   DMAON (p.248, p.278), DISKWRITE (p.248, p.278), WORDEQUAL and the
+// Test purpose: DSKBYTR ($DFF01A) -- the disk data-and-status read register:
+//   its identity as a real, addressable register (p.247, p.248), the DSKBYT
+//   bit set-on-receipt/cleared-on-read behaviour (p.248, p.278), DMAON
+//   (p.248, p.278), DISKWRITE (p.248, p.278), WORDEQUAL and the
 //   "sector-searching facilities" it is printed to expose (p.247, p.248,
-//   p.278), the currently-unused bits (p.248, p.278), the DATA byte
-//   (p.248, p.278), and the "synchronize to rotation" framing (p.248).
-//   Package ch8-dskbytr-status-register, fixture paula_floppy.v +
+//   p.278), the currently-unused bits (p.248, p.278), the DATA byte (p.248,
+//   p.278), and the "synchronize to rotation" framing (p.248). Package
+//   ch8-dskbytr-status-register, fixture paula_floppy.v +
 //   paula_floppy_fifo.v (paula_floppy_ebr.v deliberately excluded -- it
-//   declares a second `module paula_floppy`, a rig hazard given by the
-//   build brief).
+//   declares a second `module paula_floppy`, a rig hazard given by the build
+//   brief).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 247, 248, 278.
-// Non-goals: DSKSYNC's own interrupt-timing precision (the "as little as
-//   two microseconds" clause -- no port here carries real time units, per
-//   the claims file's own split, recorded outside this package's 48
-//   claims); the "don't depend on read value" programmer-advice clause of
-//   the unused-bits row (also outside this package's 48); DMACON's own
-//   DSKEN/DMAEN half of the DMAON condition (this fixture has no DMACON
-//   port -- declined below, needs the wider `paula` boundary).
+// Non-goals: DSKSYNC's own interrupt-timing precision (the "as little as two
+//   microseconds" clause -- no port here carries real time units, per the
+//   claims file's own split, recorded outside this package's 48 claims); the
+//   "don't depend on read value" programmer-advice clause of the unused-bits
+//   row (also outside this package's 48); DMACON's own DSKEN/DMAEN half of
+//   the DMAON condition (this fixture has no DMACON port -- declined below,
+//   needs the wider `paula` boundary).
+// Claim ids: 50 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // REPAIR NOTE (independent validation, 2026-09-15): a Stage-8 independent
 //   read withdrew all five of this package's original A5/A6/A7/A9/A10 --

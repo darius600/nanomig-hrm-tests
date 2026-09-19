@@ -2,15 +2,24 @@
 //   hrm-testpipeline/work/ch8-s4-build/ch8-serial-interface.jsonl at the
 //   `paula_uart` module boundary, compiled alone. Subject: the chapter's own
 //   prose on pp.255-259 -- programmable rate and length, overrun, the three
-//   status-bit families, the receive path down to SERDATR, the transmit
-//   path down to SERDAT, and the two shift-register figures -- rather than
-//   one register's bit table in isolation.
+//   status-bit families, the receive path down to SERDATR, the transmit path
+//   down to SERDAT, and the two shift-register figures -- rather than one
+//   register's bit table in isolation.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 255-259; committed specification (SPECIFICATION.md, this package).
 // Claims file: hrm-testpipeline/work/ch8-s4-build/ch8-serial-interface.jsonl
 //   (106 claims; 97 uids graded via expect(), 9 uids declined via record()
 //   -- see SPECIFICATION.md's "Claim inventory" for the full accounting).
+// Non-goals: anything outside the `paula_uart` fixture this package builds,
+//   and any claim outside the 106 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 106 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s4-build/ch8-serial-interface.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // Order-of-work disclosure (see SPECIFICATION.md for the full statement):
 // this package's own claims file embeds paula_uart.v port names and line

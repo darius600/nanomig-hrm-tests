@@ -1,10 +1,10 @@
 // Test purpose: Verify the blitter's minterm function generator
 //   (agnus_blitter_minterm) computes, for every one of the 256 possible LF
 //   control-byte values and for both isolated selectors and mixed 16-bit
-//   source words, exactly the Boolean function of A, B and C that the manual's
-//   truth table, minterm numbering, Venn diagram and worked examples describe
-//   -- including the two named line-mode functions and the "cookie-cut"
-//   function used elsewhere in the chapter.
+//   source words, exactly the Boolean function of A, B and C that the
+//   manual's truth table, minterm numbering, Venn diagram and worked
+//   examples describe -- including the two named line-mode functions and the
+//   "cookie-cut" function used elsewhere in the chapter.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 169, 174, 175, 176, 177, 178, 179, 181, 191, 192, 198, 199 and 268.

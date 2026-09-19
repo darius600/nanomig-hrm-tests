@@ -1,13 +1,13 @@
-// Test purpose: Appendix B's address-order register-summary rows for
-//   SERDATR $018, SERDAT $030 and SERPER $032 -- address, access direction
-//   and function, each graded as the fact composed from a row cell and its
+// Test purpose: Appendix B's address-order register-summary rows for SERDATR
+//   $018, SERDAT $030 and SERPER $032 -- address, access direction and
+//   function, each graded as the fact composed from a row cell and its
 //   column-heading or R/W-legend partner (SPECIFICATION.md's R1-R9) -- plus
 //   ADKCON bit 11 (UARTBRK), named independently by printed p.257 and
 //   printed p.265 (SPECIFICATION.md's U1-U4, U2 split into U2a/U2b). Four
 //   further claims (ADKCONR's row/ADD/R-W/FUNCTION, printed p.289) are
-//   declined with record(), citing the accepted package and uid that
-//   already grades each -- see SPECIFICATION.md's "Four claims are already
-//   graded elsewhere".
+//   declined with record(), citing the accepted package and uid that already
+//   grades each -- see SPECIFICATION.md's "Four claims are already graded
+//   elsewhere".
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 257, 265, 287, 289; committed specification (SPECIFICATION.md,
@@ -16,6 +16,15 @@
 //   instantiates -- paula_uart.v, paula_intcontroller.v, paula_floppy.v
 //   (and its own paula_floppy_fifo.v), paula_audio.v (and its own
 //   paula_audio_channel.v, paula_audio_mixer.v, paula_audio_volume.v).
+// Non-goals: anything outside the `paula` fixture this package builds, and
+//   any claim outside the 27 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 27 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // RTL read for step 2/3, after SPECIFICATION.md was committed (2f706f3):
 //   paula.v in full, paula_uart.v in full.

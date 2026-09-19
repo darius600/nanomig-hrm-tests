@@ -8,9 +8,9 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 170, 174, 179, 184, 191-192, 267-269 (appendix A's BLTCON0/BLTCON1
 //   register tables and legends, and the chapter prose that names the same
-//   fields). Appendix A pp.267-268 verified against the actual PDF page
-//   scan via tools/show_page.py, not only against the OCR text corpus --
-//   see "CORPUS DEFECT FOUND" below.
+//   fields). Appendix A pp.267-268 verified against the actual PDF page scan
+//   via tools/show_page.py, not only against the OCR text corpus -- see
+//   "CORPUS DEFECT FOUND" below.
 // Non-goals: exact minterm/truth-table correctness for a given LF byte
 //   (PKG-BLT-MINTERM's job -- this file uses the minterm generator only as
 //   plumbing to prove which BITS reach it, sampling the two end bits LF7/

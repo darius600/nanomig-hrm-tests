@@ -1,9 +1,9 @@
 // Test purpose: p.324's `PARALLEL PORT (J8)` table (Appendix E, read from
 //   `figures/p324.png` per this lot's build brief -- the NOTES column is
 //   displaced against NAME in the text layer on this page) and its
-//   surrounding prose, restricted to the D0-D7 data-bus rows and the
-//   "may also be used for input"/"eight-bit bidirectional bus" clauses --
-//   at the `ciaa` module boundary, compiled alone.
+//   surrounding prose, restricted to the D0-D7 data-bus rows and the "may
+//   also be used for input"/"eight-bit bidirectional bus" clauses -- at the
+//   `ciaa` module boundary, compiled alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 324 (figure and body text); p.319's Centronics pinout table read
@@ -17,6 +17,15 @@
 //   2 duplicate-bidirectionality-prose claims, sol:E-parallel.c66 and
 //   opus:E-parallel-iface.c5; 1 opus restatement of the whole D0-D7 bus
 //   clause, opus:E-parallel-iface.c10).
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 15 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 15 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // RTL read for step 2: ciaa.v (388 lines) in full; cia_int.v, cia_timera.v,
 //   cia_timerb.v, cia_timerd.v (needed only for Verilator to elaborate the

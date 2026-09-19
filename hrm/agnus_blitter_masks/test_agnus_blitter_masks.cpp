@@ -5,9 +5,9 @@
 //   enters the barrel shifter and before it enters the minterm generator's
 //   logic function, the mask multiplexer and the AND-into-shifter that
 //   Figure 6-13 draws, the two registers' own identity/address/writability
-//   and their bit-for-bit independence, the two worked mask values in
-//   Figure 6-4 and its accompanying prose, and the first/last-word roles
-//   swapping (by row position, not by RTL wire) in descending mode.
+//   and their bit-for-bit independence, the two worked mask values in Figure
+//   6-4 and its accompanying prose, and the first/last-word roles swapping
+//   (by row position, not by RTL wire) in descending mode.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 170, 180-182, 191-192, 198-199, 266.

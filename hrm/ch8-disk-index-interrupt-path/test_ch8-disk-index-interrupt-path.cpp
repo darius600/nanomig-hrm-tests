@@ -1,21 +1,29 @@
-// Test purpose: the disk INDEX pulse's whole downstream journey to the
-//   68000 -- paula_floppy's `index` output, across ciab's 8520 FLAG pin,
-//   through the shared `int6` line, to a level-6 interrupt request -- per
-//   printed pp.245 and 250. RIG over three independently-instantiated
-//   Verilated tops (no shared Verilog parent): paula_floppy (+
-//   paula_floppy_fifo), ciab (+ cia_int, cia_timera, cia_timerb,
-//   cia_timerd), and paula_intcontroller. Full derivation in
-//   SPECIFICATION.md (committed aeca195, before this file or any RTL
-//   assigned to this fixture was opened).
+// Test purpose: the disk INDEX pulse's whole downstream journey to the 68000
+//   -- paula_floppy's `index` output, across ciab's 8520 FLAG pin, through
+//   the shared `int6` line, to a level-6 interrupt request -- per printed
+//   pp.245 and 250. RIG over three independently-instantiated Verilated tops
+//   (no shared Verilog parent): paula_floppy (+ paula_floppy_fifo), ciab (+
+//   cia_int, cia_timera, cia_timerb, cia_timerd), and paula_intcontroller.
+//   Full derivation in SPECIFICATION.md (committed aeca195, before this file
+//   or any RTL assigned to this fixture was opened).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, printed page 250
-//   ("INDEX (level 6, 8520 Flag pin) -- index sensor triggered.") and
-//   printed page 245 ("FLAG DSKINDEX* Disk index pulse ($BFDD00, bit 4).
-//   Can be used to create a level 6 interrupt. See Appendix F for
-//   details."); committed specification aeca195 (SPECIFICATION.md, this
-//   package). Claims file: hrm-testpipeline/work/ch8-s2-build/
-//   ch8-disk-index-interrupt-path.jsonl (7 claims, all `classify.status:
-//   testable`, all 7 cited on a graded line below -- none declined).
+// Primary oracle: Amiga Hardware Reference Manual, printed page 250 ("INDEX
+//   (level 6, 8520 Flag pin) -- index sensor triggered.") and printed page
+//   245 ("FLAG DSKINDEX* Disk index pulse ($BFDD00, bit 4). Can be used to
+//   create a level 6 interrupt. See Appendix F for details."); committed
+//   specification aeca195 (SPECIFICATION.md, this package). Claims file:
+//   hrm-testpipeline/work/ch8-s2-build/ ch8-disk-index-interrupt-path.jsonl
+//   (7 claims, all `classify.status: testable`, all 7 cited on a graded line
+//   below -- none declined).
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 7 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 7 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // THE RIG'S JOINS (SPECIFICATION.md's own section, reproduced here against
 //   the now-open RTL):

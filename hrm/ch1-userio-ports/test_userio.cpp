@@ -2,18 +2,27 @@
 //
 // Test purpose: grade page 2's "Two button opto-mechanical mouse and two
 //   reconfigurable controller ports (for mice, joysticks, light pens,
-//   paddles, or custom controllers)." and page 6's "The Amiga also
-//   includes a two-button, opto-mechanical mouse plus a keyboard with
-//   numeric keypad, cursor controls, and 10 function keys in the base
-//   system." / "Other types of controllers can be attached through the two
-//   controller ports on the base unit including joysticks, keypads,
-//   trackballs, light pens, and graphics tablets." against `userio`
-//   (userio.v). SPECIFICATION.md (committed before this file or userio.v
-//   were opened -- commit f19d07c) records the reasoning in full; this
-//   file carries it out and states the final, RTL-confirmed disposition.
+//   paddles, or custom controllers)." and page 6's "The Amiga also includes
+//   a two-button, opto-mechanical mouse plus a keyboard with numeric keypad,
+//   cursor controls, and 10 function keys in the base system." / "Other
+//   types of controllers can be attached through the two controller ports on
+//   the base unit including joysticks, keypads, trackballs, light pens, and
+//   graphics tablets." against `userio` (userio.v). SPECIFICATION.md
+//   (committed before this file or userio.v were opened -- commit f19d07c)
+//   records the reasoning in full; this file carries it out and states the
+//   final, RTL-confirmed disposition.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 2 and 6.
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 17 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 17 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM COVERAGE: all six uids assigned to this package (sol/opus x
 //   1-components.c18, c128, c131) are declined below, on record() lines --

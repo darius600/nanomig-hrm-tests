@@ -4,6 +4,18 @@
 // (p.241, p.246) but stores only 20 word-address bits ([20:1]); that is the
 // printed-width inconsistency this package still asserts, distinct from the
 // OCS-18/ECS-20 conditioning question declined below.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 241, 246, 279, 287, 289
+// Non-goals: anything outside the `agnus_diskdma` fixture this package
+//   builds, and any claim outside the 58 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 58 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // REPAIRED 2026-09-15 (independent stage-8 validation,
 // hrm-testpipeline/work/2026-09-15_ch8_s2_stage8_validation.md and
@@ -58,8 +70,7 @@
 // lines, which already name P7/P9 as the assertion carrying the graded
 // half) resolves all 7.
 //
-// Test class: HRM_CONFORMANCE
-// Primary oracle: the manual quotations cited inline (see SPECIFICATION.md
+// Oracle, in detail: the manual quotations cited inline (see SPECIFICATION.md
 // for full citations and page numbers), not the RTL. The red result at
 // P11A is a valid, finished outcome -- it is not adjusted to pass.
 // Non-goals (see SPECIFICATION.md "Not turned into assertions"): the

@@ -6,11 +6,20 @@
 //   data bits 7-0, CIAB communicates on data bits 15-8" -- all three
 //   propositions name a fact only visible at `minimig` (the join where the
 //   two physical 8520 chips, generic at their own `ciaa`/`ciab` boundary,
-//   get bound to named system-level signals), the task sheet's own `top`
-//   for this package.
+//   get bound to named system-level signals), the task sheet's own `top` for
+//   this package.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 339, 340 and 353.
+// Non-goals: anything outside the `minimig` fixture this package builds, and
+//   any claim outside the 55 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 55 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM COVERAGE: 27 of 38 uids are declined on record() lines (duplicate
 //   citations, see SPECIFICATION.md). The remaining 11 uids (across 8

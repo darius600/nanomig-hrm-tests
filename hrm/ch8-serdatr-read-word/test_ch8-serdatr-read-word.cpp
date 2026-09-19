@@ -1,18 +1,23 @@
 // Test purpose: SERDATR ($018) -- its identity as a real, read-only
-//   register, the receive-shift-register-to-SERDATR transfer mechanism,
-//   and every bit the manual assigns it: OVRUN (15), RBF (14), TBE (13),
-//   TSRE (12), RXD (11), the unused bit (10), STP/DB8 (9, 8) and the low
-//   eight data bits (7-0). Package ch8-serdatr-read-word, fixture
-//   paula_uart.v alone.
+//   register, the receive-shift-register-to-SERDATR transfer mechanism, and
+//   every bit the manual assigns it: OVRUN (15), RBF (14), TBE (13), TSRE
+//   (12), RXD (11), the unused bit (10), STP/DB8 (9, 8) and the low eight
+//   data bits (7-0). Package ch8-serdatr-read-word, fixture paula_uart.v
+//   alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 256, 257, 283 (this package's 3 p.289 claims are declined --
 //   already graded by hrm/ch8-appb-serial-register-rows).
 // Non-goals: the p.283 side of the bit-13 mirror conflict (needs INTREQ,
 //   outside `paula_uart`'s own ports -- see A10 below); the INTREQ-clear
-//   half of OVRUN's own definition ("Reset by resetting bit 11 of
-//   INTREQ") and RBF's ("you must reset the INTF_RBF bit in INTREQ"),
-//   neither of which is asserted by any of this package's 123 claims.
+//   half of OVRUN's own definition ("Reset by resetting bit 11 of INTREQ")
+//   and RBF's ("you must reset the INTF_RBF bit in INTREQ"), neither of
+//   which is asserted by any of this package's 123 claims.
+// Claim ids: 131 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM SOURCE:
 //   hrm-testpipeline/work/ch8-s4-build/

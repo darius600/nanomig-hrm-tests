@@ -7,8 +7,8 @@
 //   register number" ordering within a group -- the subject of Figure 4-6
 //   and Tables 4-2, 4-3, 4-5 and 4-6. Package ch4-sprite-colour-registers,
 //   fixture denise_sprites (one Verilator build, denise_sprites.v +
-//   denise_sprites_shifter.v, top module denise_sprites -- the same
-//   fixture hrm/denise_sprites/, hrm/ch3-sprite-registers/ and
+//   denise_sprites_shifter.v, top module denise_sprites -- the same fixture
+//   hrm/denise_sprites/, hrm/ch3-sprite-registers/ and
 //   hrm/ch4-attached-sprites/ already build).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -48,22 +48,22 @@
 //   two are in tension the manual quotations were followed. Reported
 //   rather than concealed.
 //
-// Non-goals: sprite-to-sprite and sprite-to-playfield VIDEO PRIORITY
-//   (which sprite is drawn in front when several overlap) is not tested --
+// Non-goals: sprite-to-sprite and sprite-to-playfield VIDEO PRIORITY (which
+//   sprite is drawn in front when several overlap) is not tested --
 //   denise_sprites' disclosed port list (reused from the sibling packages
-//   below, not read from the RTL by this agent for this package) carries
-//   no priority-resolution or collision output, only sprdata; testing
-//   priority would need a wider module boundary (denise_spritepriority /
+//   below, not read from the RTL by this agent for this package) carries no
+//   priority-resolution or collision output, only sprdata; testing priority
+//   would need a wider module boundary (denise_spritepriority /
 //   denise_collision) than the one assigned here. Sprite SIZE, PIXEL
-//   RESOLUTION and POSITION independence from playfield mode, and the
-//   pure WIDTH-only effect of overlapping/placing sprites side by side,
-//   are likewise not colour-register propositions and are declined below,
-//   not silently dropped. Table 4-4's own 64 worked-example pixel values
-//   (the "spaceship sprite" example, p.121) are a worked example, not a
+//   RESOLUTION and POSITION independence from playfield mode, and the pure
+//   WIDTH-only effect of overlapping/placing sprites side by side, are
+//   likewise not colour-register propositions and are declined below, not
+//   silently dropped. Table 4-4's own 64 worked-example pixel values (the
+//   "spaceship sprite" example, p.121) are a worked example, not a
 //   requirement, and per this package's own classify pass none of them
-//   reached this package's claims file to begin with -- confirmed by
-//   direct grep of the 303-record file, not assumed; there is nothing to
-//   decline for that reason among this package's own ids.
+//   reached this package's claims file to begin with -- confirmed by direct
+//   grep of the 303-record file, not assumed; there is nothing to decline
+//   for that reason among this package's own ids.
 //
 // BOUNDARY: denise_sprites.v / denise_sprites_shifter.v, reached at
 //   $(NANOMIG)/src/minimig-aga/. Port list, the word-address register map

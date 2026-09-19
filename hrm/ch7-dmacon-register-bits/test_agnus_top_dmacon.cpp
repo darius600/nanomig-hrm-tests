@@ -9,11 +9,16 @@
 //   register descriptions).
 // Non-goals: the five agnus_audiodma / agnus_diskdma claims that packages.md
 //   discards with `covered_by` pointing at this package's bit-position
-//   assertions (Paula, not `dmacon`, gates those requests per agnus.v:326-357
-//   per the build brief - not reopened here). Also not this package's job:
-//   anything about audio or disk DMA *behaviour* beyond their DMACON bit
-//   name/position (bits 0-4), which IS in scope as part of "read-back of
-//   bits 0-12".
+//   assertions (Paula, not `dmacon`, gates those requests per
+//   agnus.v:326-357 per the build brief - not reopened here). Also not this
+//   package's job: anything about audio or disk DMA *behaviour* beyond their
+//   DMACON bit name/position (bits 0-4), which IS in scope as part of
+//   "read-back of bits 0-12".
+// Claim ids: 100 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-08_fpga-090_classified.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: `agnus` (top-level chipset module), NOT `agnus_blitter`.
 //

@@ -1,16 +1,16 @@
-// Test purpose: HRM conformance package for printed page 232's mouse
-//   second- and third-button paths (controller-port pins 9 and 5) and the
-//   module's support for as many as three mouse buttons, against the
-//   `userio` module compiled alone. 11 claims, from
+// Test purpose: HRM conformance package for printed page 232's mouse second-
+//   and third-button paths (controller-port pins 9 and 5) and the module's
+//   support for as many as three mouse buttons, against the `userio` module
+//   compiled alone. 11 claims, from
 //   work/ch8-s1-build/ch8-mouse-button-pins.jsonl. Full derivation in
 //   SPECIFICATION.md (committed as 610dfc4 before this file was written).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, printed p.232 ("There
-//   are two buttons on the standard Amiga mouse. However, the control
-//   circuitry and software support up to three buttons." / "Button 2
-//   (right button on Amiga mouse) is connected to pin 9 of the controller
-//   ports, one of the proportional pins." / "Button 3, when used, is
-//   connected to pin 5, the other proportional controller input.").
+// Primary oracle: Amiga Hardware Reference Manual, printed p.232 ("There are
+//   two buttons on the standard Amiga mouse. However, the control circuitry
+//   and software support up to three buttons." / "Button 2 (right button on
+//   Amiga mouse) is connected to pin 9 of the controller ports, one of the
+//   proportional pins." / "Button 3, when used, is connected to pin 5, the
+//   other proportional controller input.").
 // Fixture boundary: `userio` (userio.v) alone -- a single-file module, no
 //   sibling files needed to elaborate it (confirmed by this file's own
 //   Makefile SRC list, the only place a module could be added; that
@@ -18,6 +18,16 @@
 //   hrm/ch8-joystick-switch-decode and hrm/ch8-mouse-quadrature-decode --
 //   the three sibling Makefiles read per the build brief for the build
 //   pattern, and nothing else in those three directories was opened).
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 13 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 13 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s1-build/ch8-mouse-button-pins.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // DISCLOSURE (beyond the three sibling Makefiles named by the brief): to
 //   settle the boundary question the brief posed, this build also read, in

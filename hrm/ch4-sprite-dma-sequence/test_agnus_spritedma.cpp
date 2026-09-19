@@ -27,13 +27,13 @@
 //   the name" are architecture facts about a replicated instantiation this
 //   package's single-instance fixture cannot observe -- declined, see Dc.
 //   Sprite-data memory being word-addressed/contiguous/16-bit-wide is a RAM
-//   organisation fact, not a behaviour of this module that could be right
-//   or wrong -- declined, see Dm. SPRxPTL bit 0 being ignored and the
-//   pointer advancing by one word per granted cycle would need a raw
-//   memory-fetch address output; the only output ports this package uses
-//   (reqdma, reg_address_out) are the ones the already-built sibling
-//   harness hrm/agnus_spritedma/test_agnus_spritedma.cpp already exercises,
-//   and neither is that address -- declined, see Dp. Pixels being produced
+//   organisation fact, not a behaviour of this module that could be right or
+//   wrong -- declined, see Dm. SPRxPTL bit 0 being ignored and the pointer
+//   advancing by one word per granted cycle would need a raw memory-fetch
+//   address output; the only output ports this package uses (reqdma,
+//   reg_address_out) are the ones the already-built sibling harness
+//   hrm/agnus_spritedma/test_agnus_spritedma.cpp already exercises, and
+//   neither is that address -- declined, see Dp. Pixels being produced
 //   "automatically under DMA control" is Denise's rendering, not this
 //   channel's fetch sequencing -- declined, see Dx. Colour content, the
 //   ATTACH bit, collision and playfield priority are ch3-sprite-registers'

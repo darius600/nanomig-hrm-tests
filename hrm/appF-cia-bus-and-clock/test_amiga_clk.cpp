@@ -2,13 +2,22 @@
 //
 // Test purpose: grade p.353's "The E clock runs at 1/10 of the CPU clock"
 //   against `amiga_clk` (amiga_clk.v). SPECIFICATION.md records the claim
-//   inventory and the duplicate-grading check for this package's other
-//   three (already-graded) uids, printed from the sibling
+//   inventory and the duplicate-grading check for this package's other three
+//   (already-graded) uids, printed from the sibling
 //   test_minimig_m68k_bridge.cpp binary. This file carries the one
 //   proposition assigned to the `amiga_clk` fixture.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 353.
+// Non-goals: anything outside the `minimig_m68k_bridge` fixture this package
+//   builds, and any claim outside the 2 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM COVERAGE: sol:F-signals.c71, opus:F-signals.c3 (E-CLOCK-IS-TENTH).
 //

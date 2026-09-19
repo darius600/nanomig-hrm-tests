@@ -1,13 +1,13 @@
-// Test purpose: The beam counters and what chapter 3 of the manual says about
-//   them -- lines per field, the raster order, interlace field alternation,
-//   blanking -- plus the register-level formats of VPOSR, HTOTAL and BEAMCON0
-//   from appendix C, and the BPLCON0 LACE/ERSY bits from appendix A. Package
-//   ch3-beam-counters-and-blanking, fixture agnus_beamcounter (one Verilator
-//   build, this module only).
+// Test purpose: The beam counters and what chapter 3 of the manual says
+//   about them -- lines per field, the raster order, interlace field
+//   alternation, blanking -- plus the register-level formats of VPOSR,
+//   HTOTAL and BEAMCON0 from appendix C, and the BPLCON0 LACE/ERSY bits from
+//   appendix A. Package ch3-beam-counters-and-blanking, fixture
+//   agnus_beamcounter (one Verilator build, this module only).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 40, 41, 42, 45, 49, 50, 51, 54, 57, 62, 64, 75, 77, 79, 80, 81, 89,
-//   271, 299, 303, 304, 305, 307.
+//   pages 40, 41, 42, 45, 49, 50, 51, 54, 57, 62, 64, 75, 77, 79, 80, 81,
+//   89, 271, 299, 303, 304, 305, 307.
 // Non-goals: display-window (DIWSTRT/DIWSTOP) sizing, bitplane modulo and
 //   pointer addressing, sprite DMA, horizontal-resolution (hires/shres)
 //   modes, HAM, and BPLCON3/genlock -- none of these are ports of
@@ -16,6 +16,11 @@
 //   BEAMCON0 and friends are write-only here) are tested only through their
 //   observable *effects* on htotal_out / varbeamen_out / harddis_out /
 //   _hsync / _vsync / VPOSR, never through a readback that does not exist.
+// Claim ids: 23 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_beamcounter.v:27-57 module header
 //   -- ports clk, clk7_en, reset, cck, ntsc, aga, ecs, a1k, data_in[15:0],

@@ -1,23 +1,27 @@
 // ch4-sprite-horizontal-position -- denise_sprites conformance test
 //
-// Test purpose: the horizontal half of sprite positioning and the arming
-//   of a sprite for display -- SPRxPOS's SH8-SH1 field and SPRxCTL's SH0
-//   (the missing low bit of the same 9-bit horizontal-start value),
-//   SPRxCTL's ATT (attach) bit, what a write to SPRxDATA/SPRxDATB/SPRxCTL
-//   does to a sprite's armed state, the comparator that matches the beam
-//   counter against that start value and dumps the A/B data buffers into
-//   the shift registers, the shift registers' MSB-first serial output, and
-//   the eight sprite channels' register naming/address map (page 129 and
-//   Appendix A/B) -- all at the denise_sprites module boundary. Package
+// Test purpose: the horizontal half of sprite positioning and the arming of
+//   a sprite for display -- SPRxPOS's SH8-SH1 field and SPRxCTL's SH0 (the
+//   missing low bit of the same 9-bit horizontal-start value), SPRxCTL's ATT
+//   (attach) bit, what a write to SPRxDATA/SPRxDATB/SPRxCTL does to a
+//   sprite's armed state, the comparator that matches the beam counter
+//   against that start value and dumps the A/B data buffers into the shift
+//   registers, the shift registers' MSB-first serial output, and the eight
+//   sprite channels' register naming/address map (page 129 and Appendix A/B)
+//   -- all at the denise_sprites module boundary. Package
 //   ch4-sprite-horizontal-position, fixture denise_sprites (one Verilator
 //   build, this module + denise_sprites_shifter.v only).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 129, 284, 291, 292 (claims file
-//   ch4_packages/ch4-sprite-horizontal-and-arming.jsonl, 152 records). A
-//   red result below means denise_sprites.v disagrees with the manual, not
-//   that the assertion is wrong -- no assertion here was, or should be,
-//   adjusted to make the RTL pass.
+//   ch4_packages/ch4-sprite-horizontal-and-arming.jsonl, 152 records). A red
+//   result below means denise_sprites.v disagrees with the manual, not that
+//   the assertion is wrong -- no assertion here was, or should be, adjusted
+//   to make the RTL pass.
+// Non-goals: anything outside the `denise_sprites` fixture this package
+//   builds, and any claim it does not name. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
 //
 // ORDER OF WORK: this file (assertions, expected values, claim-id
 // coverage, register addresses, bit positions) was written and committed

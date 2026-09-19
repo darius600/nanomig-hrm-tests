@@ -13,6 +13,10 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 39, 42, 57, 58, 59, 60, 64, 67, 73, 74, 76, 77, 78, 79, 80, 82, 91,
 //   270, 277, 293, 296, 297, 305, 306, 307.
+// Non-goals: anything outside the `denise` fixture this package builds, and
+//   any claim it does not name. A green here means those assertions held on
+//   this fixture at the pinned revision -- not that the module is correct,
+//   and not that the chapter is covered.
 //
 // NON-GOALS (declined below, not resolved -- see the NOTE calls in main()
 // for the full reasoning against each specific claim id):

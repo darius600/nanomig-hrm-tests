@@ -15,8 +15,13 @@
 //   all. minimig.v:860-863's `ovl` mux does not read `rs` (register select)
 //   or `data_out` -- only `sel_cia_a` (an address-range decode) and
 //   `cpu_lwr|cpu_hwr` (a write strobe) -- so the specific bit pattern
-//   written, and which CIA-A register is addressed, are provably
-//   irrelevant to this signal and are not exercised beyond proving that.
+//   written, and which CIA-A register is addressed, are provably irrelevant
+//   to this signal and are not exercised beyond proving that.
+// Claim ids: 5 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: minimig.v ports cpu_address/cpu_r_w/_cpu_as/_cpu_uds/_cpu_lds/
 //   cpudata_in/_cpu_dtack (the external 68000 bus), _cpu_reset_in/rst_ext/

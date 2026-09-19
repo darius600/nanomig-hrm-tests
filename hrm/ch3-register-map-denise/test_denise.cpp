@@ -13,15 +13,20 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   47, 92, 271, 273, 277, 290, 291, 292, 293, 300, 307 (claims.jsonl for
-//   ch3-register-map-denise, 134 records). A red result below means
-//   denise.v (or a sub-module it instantiates) disagrees with the manual,
-//   not that the assertion is wrong -- no assertion here was, or should be,
-//   adjusted to make the RTL pass.
+//   ch3-register-map-denise, 134 records). A red result below means denise.v
+//   (or a sub-module it instantiates) disagrees with the manual, not that
+//   the assertion is wrong -- no assertion here was, or should be, adjusted
+//   to make the RTL pass.
 // Non-goals: BPLCON0/2/3's individual bit *semantics* (hires, ham, dpf,
 //   killehb, bank, spres, ...), colour-table value round-tripping and the
 //   32-way bitplane-to-select assembly (already exhaustively proven by the
 //   sibling package hrm/ch3-colour-register-format/ at the narrower
 //   denise_colortable boundary), scroll/DDF timing, collision bit meaning.
+// Claim ids: 28 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: top module `denise` only (one Verilator build, sources
 //   denise.v + denise_bitplanes.v + denise_bitplane_shifter.v +

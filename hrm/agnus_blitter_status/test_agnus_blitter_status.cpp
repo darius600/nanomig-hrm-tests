@@ -1,26 +1,31 @@
-// Test purpose: Verify the blitter's three status signals at the agnus_blitter
-//   boundary - busy (set on the BLTSIZE write, cleared when the blit finishes),
-//   zero/BZERO (set at init, cleared by the first destination word with any bit
-//   set, never restored, computed even with the D channel disabled, and valid
-//   only after the blit has completed) and int3 (pulses once when the blit
-//   finishes).
+// Test purpose: Verify the blitter's three status signals at the
+//   agnus_blitter boundary - busy (set on the BLTSIZE write, cleared when
+//   the blit finishes), zero/BZERO (set at init, cleared by the first
+//   destination word with any bit set, never restored, computed even with
+//   the D channel disabled, and valid only after the blit has completed) and
+//   int3 (pulses once when the blit finishes).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 171, 186, 187 and 198.
-// Non-goals: pre-Fat-Agnus busy timing ("gets its first DMA cycle") - the chip
-//   generation is not a module input, so only the Fat-Agnus behaviour is
-//   constructible here; whichever behaviour is measured this design implements,
-//   the other is by construction not present (reported, not asserted). DMACONR
-//   bit positions (DMAF_BLTDONE bit 14, DMAF_BLTNZERO bit 13) - that mapping
-//   needs the agnus top level / register bus, outside this module's boundary;
-//   PKG-AGNUS-DMACON's territory. Minterm/fill correctness, line mode, masking,
-//   address generation, ECS BLTSIZH/BLTSIZV sizing - covered by their own
-//   packages (PKG-BLT-MINTERM, PKG-BLT-FILL, PKG-BLT-LINE, PKG-BLT-MASKS,
-//   PKG-BLT-ADRGEN, PKG-BLT-ECS); this package uses only OCS-style BLTSIZE
-//   sizing and the simplest minterm settings (C-passthrough, plain AND) as
-//   plumbing to get words through the pipeline, not as claims of their own.
-//   Exact fetch/store pipeline latency is measured tooling, not itself an
-//   asserted claim.
+// Non-goals: pre-Fat-Agnus busy timing ("gets its first DMA cycle") - the
+//   chip generation is not a module input, so only the Fat-Agnus behaviour
+//   is constructible here; whichever behaviour is measured this design
+//   implements, the other is by construction not present (reported, not
+//   asserted). DMACONR bit positions (DMAF_BLTDONE bit 14, DMAF_BLTNZERO bit
+//   13) - that mapping needs the agnus top level / register bus, outside
+//   this module's boundary; PKG-AGNUS-DMACON's territory. Minterm/fill
+//   correctness, line mode, masking, address generation, ECS BLTSIZH/BLTSIZV
+//   sizing - covered by their own packages (PKG-BLT-MINTERM, PKG-BLT-FILL,
+//   PKG-BLT-LINE, PKG-BLT-MASKS, PKG-BLT-ADRGEN, PKG-BLT-ECS); this package
+//   uses only OCS-style BLTSIZE sizing and the simplest minterm settings
+//   (C-passthrough, plain AND) as plumbing to get words through the
+//   pipeline, not as claims of their own. Exact fetch/store pipeline latency
+//   is measured tooling, not itself an asserted claim.
+// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // Supersedes hrm/agnus_blitter_zero, per the build register. That package
 // compiles a local copy of agnus_blitter.v:481-487 pasted into its own .v file

@@ -1,7 +1,15 @@
-// Test purpose: Validate selected Paula UART baud, frame, receive-data, interrupt, and SERDATR status behavior.
+// Test purpose: Validate selected Paula UART baud, frame, receive-data,
+//   interrupt, and SERDATR status behavior.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 8, printed pp. 255-259.
-// Non-goals: This does not cover nine-bit mode, overrun, break, or every SERPER value.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 8,
+//   printed pp. 255-259.
+// Non-goals: This does not cover nine-bit mode, overrun, break, or every
+//   SERPER value.
+// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // MUTATION: MUT_STOPBIT_LOW (compile-time flag, `make MUT=MUT_STOPBIT_LOW`;
 //   see the Makefile for the -D plumbing). Baseline drives a valid stop bit

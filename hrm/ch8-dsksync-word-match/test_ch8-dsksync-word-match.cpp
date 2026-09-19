@@ -1,13 +1,22 @@
-// Test purpose: HRM conformance package for DSKSYNC's match word, the
-//   ADKCON WORDSYNC gate, the "resync every time" claim, word alignment, and
-//   the paula_floppy-side half of the INTREQ DSKSYNC signal (pp.247, 249,
-//   250, 279). 22 claims, from
-//   work/ch8-s2-build/ch8-dsksync-word-match.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 86b4935, before paula_floppy.v was
-//   opened).
+// Test purpose: HRM conformance package for DSKSYNC's match word, the ADKCON
+//   WORDSYNC gate, the "resync every time" claim, word alignment, and the
+//   paula_floppy-side half of the INTREQ DSKSYNC signal (pp.247, 249, 250,
+//   279). 22 claims, from work/ch8-s2-build/ch8-dsksync-word-match.jsonl.
+//   Full derivation in SPECIFICATION.md (committed as 86b4935, before
+//   paula_floppy.v was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual pp.247, 249, 250, 279 --
 //   see SPECIFICATION.md for the full quotation table.
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 22 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 22 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-dsksync-word-match.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (86b4935):
 //   1. hrm/ch8-ciaapra-address-window and hrm/ch8-drive-select-motor-led's

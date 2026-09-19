@@ -1,19 +1,19 @@
 // Test purpose: Verify table 6-2 in full (sixteen USE codes, the active-
 //   channel set and the bus-cycle order for a three-word blit) at the
 //   agnus_blitter boundary, plus the pipeline claims on p.188 (two source
-//   sets fetched before the first destination), the DMA-channel structure
-//   of pp.169-172, the D-path order of operations of p.200 (and its
-//   restatement on p.184 for area fill specifically), and the cycle-count
-//   half of p.193's speed table.
+//   sets fetched before the first destination), the DMA-channel structure of
+//   pp.169-172, the D-path order of operations of p.200 (and its restatement
+//   on p.184 for area fill specifically), and the cycle-count half of
+//   p.193's speed table.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 169-172, 174, 176, 179, 181, 184, 188-189, 193-194, 198-200.
 // Non-goals: minterm/fill truth-table correctness (PKG-BLT-MINTERM,
-//   PKG-BLT-FILL's job - the function generator and fill block are used
-//   here strictly as plumbing, with their own simple, independently
-//   verifiable formulas, to demonstrate ORDER and CYCLE COUNT, never to
-//   re-litigate their logic tables); BLTSIZE field widths/wrap/zero-means-
-//   max (PKG-BLT-SIZE); descending-mode arithmetic (PKG-BLT-DESC); masking
+//   PKG-BLT-FILL's job - the function generator and fill block are used here
+//   strictly as plumbing, with their own simple, independently verifiable
+//   formulas, to demonstrate ORDER and CYCLE COUNT, never to re-litigate
+//   their logic tables); BLTSIZE field widths/wrap/zero-means- max
+//   (PKG-BLT-SIZE); descending-mode arithmetic (PKG-BLT-DESC); masking
 //   register semantics beyond what is needed to bypass them cleanly
 //   (PKG-BLT-MASKS); line-mode octant/texture/ONEDOT correctness beyond a
 //   single cycle-count measurement for p.193's line-mode ticks-per-pixel
@@ -21,8 +21,8 @@
 //   two channels' modulos are independent (PKG-BLT-ADRGEN); microsecond/
 //   megahertz durations and the NTSC/PAL clock-frequency formula (p.193) -
 //   no clock-frequency port exists at this boundary, so only the
-//   dimensionless "n" (clocks per cycle) half of that page is testable
-//   here, exactly as the classification stage's evidence field says.
+//   dimensionless "n" (clocks per cycle) half of that page is testable here,
+//   exactly as the classification stage's evidence field says.
 //
 // NO PRIOR ART IS SUPERSEDED. docs/blitter-prior-art.md was read in full
 // before writing this file, per the build brief's explicit instruction to

@@ -4,6 +4,15 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, page 221
 //   (Figure 7-4's NMI row; the whole claims file is this one figure).
+// Non-goals: anything outside the `minimig` fixture this package builds, and
+//   any claim outside the 5 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 5 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // *** THIS PACKAGE COMPILES RTL THE SHIPPED CONFIGURATION DOES NOT. ***
 //   The NMI path this package measures exists only inside minimig.v's own

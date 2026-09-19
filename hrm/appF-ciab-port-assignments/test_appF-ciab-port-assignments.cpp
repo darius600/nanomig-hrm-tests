@@ -12,8 +12,8 @@
 //   are minimig.v:648-650, one level above this fixture.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 339, 340, 341, 348, 351; committed specification (SPECIFICATION.md,
-//   this package).
+//   pages 339, 340, 341, 348, 351; committed specification
+//   (SPECIFICATION.md, this package).
 // Requirement IDs: PROP-FLAG-EXISTS, PROP-FLAG-EDGE-POLARITY,
 //   PROP-DDRA-POSITION, PROP-TOD-BYTES, PROP-UNUSED-SLOT, PROP-SDR-LATCH,
 //   PROP-CRA-DECODE, PROP-CRB-DECODE, PROP-CRA-PBON, PROP-CRA-OUTMODE, per
@@ -46,6 +46,15 @@
 //   - TOD's read-latch/freeze mechanism and the write-stops-counting
 //     behaviour (p.344, a different package's pages) -- not asserted; only
 //     which byte each of the three TOD addresses returns is graded here.
+// Non-goals: anything outside the `ciab` fixture this package builds, and
+//   any claim outside the 94 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 94 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appF_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // RTL read for step 2, after SPECIFICATION.md was committed: read ciab.v
 //   (251 lines), cia_int.v (70), cia_timera.v (112), cia_timerb.v (107) and

@@ -16,6 +16,10 @@
 //   red result below means denise.v disagrees with the manual, not that the
 //   assertion is wrong -- no assertion here was, or should be, adjusted to
 //   make the RTL pass.
+// Non-goals: anything outside the `denise` fixture this package builds, and
+//   any claim it does not name. A green here means those assertions held on
+//   this fixture at the pinned revision -- not that the module is correct,
+//   and not that the chapter is covered.
 //
 // BOUNDARY: every one of this package's 9 claim records carries the same
 //   evidence field (classify step, PACKAGE.md's own claims.jsonl): denise.v

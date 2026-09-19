@@ -1,3 +1,22 @@
+// Test purpose: which function each controller-port pin carries, at the
+//   `userio` boundary, against chapter 8's DB9 pinout table. The pin map
+//   used throughout is derived from userio.v's own port
+//   list and parameters, read after SPECIFICATION.md was committed -- see
+//   the RTL boundary finding section of that file): bit0=pin4(HQ/right)
+//   bit1=pin3(VQ/left) bit2=pin2(H/b
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 228, 233, 240, 282
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 42 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 42 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
+//
 // ch8-controller-pin-function-map -- Table 8-1 (p.228), userio.v alone.
 //
 // Pin map used throughout (derived from userio.v's own port list and

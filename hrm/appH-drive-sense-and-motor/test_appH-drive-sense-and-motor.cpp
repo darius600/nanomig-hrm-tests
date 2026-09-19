@@ -4,23 +4,32 @@
 //   DKWDB*/DKWEB* write-data selection gate, the CHNG* disk-change latch's
 //   select+step clearing condition (and its no-diskette refusal), and
 //   MTRXD*'s four independent per-drive motor latches -- against
-//   paula_floppy (this suite's only model of a physical Amiga floppy
-//   drive). 14 claims, from work/2026-09-17_appHJ_packages.jsonl
-//   (classify.package == "appH-drive-sense-and-motor").
+//   paula_floppy (this suite's only model of a physical Amiga floppy drive).
+//   14 claims, from work/2026-09-17_appHJ_packages.jsonl (classify.package
+//   == "appH-drive-sense-and-motor").
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed
-//   pp.368-370. p.368's DAMAGE header (corpus-defects.md) says the
-//   Summary Table BINDS CORRECTLY (character damage only, on pins this
-//   package does not cite) and the "Signals When Driving a Disk" prose at
-//   the bottom of the page is clean; p.369 is prose with one broken
-//   signal name (E)KWEB- for DKWEB-, inside the DKWDB- entry, not inside
-//   DKWEB-'s own -- this package cites the DKWDB-/DKWEB- pairing as a
-//   whole and does not depend on that one damaged token); p.370 is prose
-//   and a numbered procedure, with three damaged bullet glyphs above the
-//   (intact) numbered steps -- none of it inside the MTRXD- sentence this
-//   package cites. All three pages quoted below are quoted from the text
-//   layer directly (p368.txt, p369.txt, p370.txt), matching
-//   corpus-defects.md's own "read the render only where told to" rule.
+//   pp.368-370. p.368's DAMAGE header (corpus-defects.md) says the Summary
+//   Table BINDS CORRECTLY (character damage only, on pins this package does
+//   not cite) and the "Signals When Driving a Disk" prose at the bottom of
+//   the page is clean; p.369 is prose with one broken signal name (E)KWEB-
+//   for DKWEB-, inside the DKWDB- entry, not inside DKWEB-'s own -- this
+//   package cites the DKWDB-/DKWEB- pairing as a whole and does not depend
+//   on that one damaged token); p.370 is prose and a numbered procedure,
+//   with three damaged bullet glyphs above the (intact) numbered steps --
+//   none of it inside the MTRXD- sentence this package cites. All three
+//   pages quoted below are quoted from the text layer directly (p368.txt,
+//   p369.txt, p370.txt), matching corpus-defects.md's own "read the render
+//   only where told to" rule.
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 17 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 17 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appHJ_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // RTL READ, IN ORDER, BEFORE ANY EXPECT/RECORD BELOW WAS WRITTEN:
 //   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines).

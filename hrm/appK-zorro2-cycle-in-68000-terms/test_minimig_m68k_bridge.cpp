@@ -3,13 +3,22 @@
 // Test purpose: grade 27 of this package's 51 claims (Amiga Hardware
 //   Reference Manual, 3rd edition, Appendix K, pp.387-398, "Zorro II Bus
 //   Architecture" / "Addressing and Control Signals" / "Data Transfer
-//   Acknowledge") against `minimig_m68k_bridge` (minimig_m68k_bridge.v).
-//   The other 24 are declined with record() below -- see SPECIFICATION.md
-//   for the full per-claim disposition table (groups G1-G12 graded,
-//   D1-D7 declined).
+//   Acknowledge") against `minimig_m68k_bridge` (minimig_m68k_bridge.v). The
+//   other 24 are declined with record() below -- see SPECIFICATION.md for
+//   the full per-claim disposition table (groups G1-G12 graded, D1-D7
+//   declined).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.387, 391, 393, 397, 398.
+// Non-goals: anything outside the `minimig_m68k_bridge` fixture this package
+//   builds, and any claim outside the 54 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 54 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // Clocking: the 4-phase scheme and Harness::acquire_enable() sequence are
 //   reused verbatim from hrm/appF-cia-bus-and-clock/test_minimig_m68k_

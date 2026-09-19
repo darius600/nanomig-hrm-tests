@@ -1,8 +1,13 @@
-// Test purpose: Verify Copper WAIT/SKIP comparison semantics - greater-or-equal, compare-enable masks, the unmaskable top bit, BFD and counter rollover.
+// Test purpose: Verify Copper WAIT/SKIP comparison semantics -
+//   greater-or-equal, compare-enable masks, the unmaskable top bit, BFD and
+//   counter rollover.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed pp. 22-23, 27, 30, 31, 32 and 33; frozen specification 2e6a42a.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pp. 22-23, 27, 30, 31, 32 and 33; frozen specification 2e6a42a.
 // Requirement IDs: COP-04, COP-08
-// Non-goals: Bus contention (needs the Agnus top level), exact release cycle counts, NTSC long/short line alternation, and interrupt generation are out of scope. No independent ECS WAIT/SKIP claim is made.
+// Non-goals: Bus contention (needs the Agnus top level), exact release cycle
+//   counts, NTSC long/short line alternation, and interrupt generation are
+//   out of scope. No independent ECS WAIT/SKIP claim is made.
 //
 // MUTATION W1 stimulus red: WAIT target retargeted from line $96 to $10 (already passed) -> the "does not run
 //   before line $96" check goes FAIL as expected. A second run retargeted it to $FF (unreachable in the run

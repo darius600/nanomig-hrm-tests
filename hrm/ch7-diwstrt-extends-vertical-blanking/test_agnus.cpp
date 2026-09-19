@@ -17,6 +17,15 @@
 //   and the CONTROL, and for what this package explicitly does NOT claim
 //   (the minimum range's own length -- ch7-vertb-vertical-blank-timing's
 //   subject -- horizontal blanking/DIWSTOP, and displayed content).
+// Non-goals: anything outside the `agnus` fixture this package builds, and
+//   any claim outside the 2 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 2 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // ============================================================================
 // OBSERVABLE, chosen after opening agnus.v and agnus_bitplanedma.v (this

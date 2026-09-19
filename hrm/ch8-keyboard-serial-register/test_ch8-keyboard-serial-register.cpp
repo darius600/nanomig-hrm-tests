@@ -12,8 +12,8 @@
 //   `keystrobe` latch, never bit by bit.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 251, 357, 358, 359, 364; committed specification (SPECIFICATION.md,
-//   this package, commit 2357132).
+//   pages 251, 357, 358, 359, 364; committed specification
+//   (SPECIFICATION.md, this package, commit 2357132).
 // Requirement IDs: PROP-1 .. PROP-9, plus three untagged assertions
 //   (WIDTH-8BIT, MAPPING-SAME-CLASS, FLAG-LAST-GENERAL) that back seven
 //   partially-gradeable uids via `record()` rather than carrying those uids
@@ -21,6 +21,16 @@
 //   "Partially-gradeable claims" sections for the uid-by-uid accounting.
 //   Claims file: hrm-testpipeline/work/ch8-s3-build/ch8-keyboard-serial-register.jsonl
 //   (69 claims; 62 uids fully graded, 7 uids partially graded).
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 69 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 69 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s3-build/ch8-keyboard-serial-register.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // RTL read for step 2, after SPECIFICATION.md was committed (2357132): read
 //   ciaa.v (388 lines) in full, plus cia_int.v (needed for PROP-2's interrupt

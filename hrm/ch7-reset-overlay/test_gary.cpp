@@ -1,10 +1,11 @@
 // ch7-reset-overlay -- gary conformance test
 //
 // Test purpose: what the reset overlay does to gary's address decode -- does
-//   Chip memory reach the CPU via DMA-style direct substitution rather than a
-//   bus-arbitration handshake; what answers at $00000000 with the overlay
+//   Chip memory reach the CPU via DMA-style direct substitution rather than
+//   a bus-arbitration handshake; what answers at $00000000 with the overlay
 //   active versus released; and whether "all memory ... disappear[s]" while
-//   the overlay is active, taken literally, across all four 512KB chip banks.
+//   the overlay is active, taken literally, across all four 512KB chip
+//   banks.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 7,
 //   printed p.223.
@@ -16,6 +17,11 @@
 //   near the end). The `cpu_hlt` exception folded into gary.v's sel_chip[0]/
 //   sel_kick terms (read at gary.v:159,166 below) is not named by any of
 //   this package's 9 claims and is not asserted (see CPU-HLT-NOT-IN-SCOPE).
+// Claim ids: 10 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM SOURCE: hrm-testpipeline/work/ch7-build/
 //   ch7-reset-overlay.jsonl -- 9 claim records, all classified "testable" at

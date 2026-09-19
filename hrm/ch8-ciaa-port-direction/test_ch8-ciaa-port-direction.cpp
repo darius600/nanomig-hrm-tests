@@ -1,12 +1,12 @@
-// Test purpose: assert the general CIAADDRA/CIAAPRA data-direction
-//   mechanism described on printed p.241 -- that CIAADDRA is a one-to-one,
+// Test purpose: assert the general CIAADDRA/CIAAPRA data-direction mechanism
+//   described on printed p.241 -- that CIAADDRA is a one-to-one,
 //   per-bit-position direction mask over CIAAPRA, and that setting a
 //   direction bit to 1 makes the corresponding data bit an output whose
 //   read-back follows what was written -- at the `ciaa` module boundary,
 //   compiled alone. PROP-1 and PROP-2 are graded across all eight bit
 //   positions (PA0-PA7): the printed claim is byte-wide ("a mask that
-//   corresponds one-to-one ... makes the corresponding bit an output"),
-//   not a claim about one bit, so the assertion carrying these uids must
+//   corresponds one-to-one ... makes the corresponding bit an output"), not
+//   a claim about one bit, so the assertion carrying these uids must
 //   exercise all eight positions, not one.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -36,6 +36,16 @@
 //     points -- omitting it would leave the eight-position claim untested
 //     at that position, and this does not re-grade ch5-audio-filter-bypass's
 //     own claim under a different label.
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 10 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 10 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s1-build/ch8-ciaa-port-direction.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // RTL read for step 2, after SPECIFICATION.md was committed (7345496): read
 //   ciaa.v (388 lines) in full, plus its four instantiated submodules

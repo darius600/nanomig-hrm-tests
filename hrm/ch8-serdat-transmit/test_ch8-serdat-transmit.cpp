@@ -13,6 +13,15 @@
 //   (src/minimig-aga, shared-lineage layer) -- a red here is a statement
 //   about the Minimig line, not only about this board. See SPECIFICATION.md
 //   "Scope".
+// Non-goals: anything outside the `paula_uart` fixture this package builds,
+//   and any claim outside the 145 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 145 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s4-build/ch8-serdat-transmit.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
 // RTL read for step 2, after SPECIFICATION.md was committed (d226ef0): read
 //   paula_uart.v (261 lines) in full -- the only file this package's

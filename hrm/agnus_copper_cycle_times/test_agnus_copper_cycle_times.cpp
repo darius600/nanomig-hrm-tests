@@ -1,8 +1,14 @@
-// Test purpose: Assert how many memory cycle *times* each Copper instruction form occupies, and that the Copper takes only every other memory cycle.
+// Test purpose: Assert how many memory cycle *times* each Copper instruction
+//   form occupies, and that the Copper takes only every other memory cycle.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, print pages 19, 20, 23 and 194; frozen specification 7177fce.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, print
+//   pages 19, 20, 23 and 194; frozen specification 7177fce.
 // Requirement IDs: COP-01, COP-02
-// Non-goals: Granted accesses per instruction (FPGA-063 covers those). Contended timing when a higher-priority channel takes the slot (FPGA-066). Absolute slot parity, whose numbering origin the HRM does not fix at this module boundary. NTSC long/short lines. A blocked WAIT, whose span is set by the beam rather than by the instruction.
+// Non-goals: Granted accesses per instruction (FPGA-063 covers those).
+//   Contended timing when a higher-priority channel takes the slot
+//   (FPGA-066). Absolute slot parity, whose numbering origin the HRM does
+//   not fix at this module boundary. NTSC long/short lines. A blocked WAIT,
+//   whose span is set by the beam rather than by the instruction.
 //
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was already
 // inspected during FPGA-063 and FPGA-065 before this specification was written.

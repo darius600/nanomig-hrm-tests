@@ -9,17 +9,16 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 182 and 200.
-// Non-goals:
-//   - THAT BLTCON1 bit 1, TO THE EXCLUSION OF EVERY OTHER BIT, is the one
-//     selecting descending mode - the exhaustive "no other bit does this"
-//     isolation sweep (bits 11,10,9,8,6,5 held unused, bit 1 the one control
-//     that moves the needle) is AREA-DESC-BIT1-SELECTS-DESCENDING-MODE's and
-//     AREA-MODE-BLTCON1-BITS-11-10-9-8-6-5-ARE-UNUSED's job in
-//     PKG-BLT-BLTCON-FIELDS (hrm/agnus_blitter_bltcon), on the p.267
-//     appendix-A TABLE basis - it cites 6-appa-control.c30,
-//     6-appa-control.c43, ch6-appa-bltcon0.area.b01.con1 and
-//     ch6-appa-bltcon0.legend.DESC, none of which this file cites or
-//     repeats.
+// Non-goals: - THAT BLTCON1 bit 1, TO THE EXCLUSION OF EVERY OTHER BIT, is
+//   the one selecting descending mode - the exhaustive "no other bit does
+//   this" isolation sweep (bits 11,10,9,8,6,5 held unused, bit 1 the one
+//   control that moves the needle) is
+//   AREA-DESC-BIT1-SELECTS-DESCENDING-MODE's and
+//   AREA-MODE-BLTCON1-BITS-11-10-9-8-6-5-ARE-UNUSED's job in
+//   PKG-BLT-BLTCON-FIELDS (hrm/agnus_blitter_bltcon), on the p.267
+//   appendix-A TABLE basis - it cites 6-appa-control.c30,
+//   6-appa-control.c43, ch6-appa-bltcon0.area.b01.con1 and
+//   ch6-appa-bltcon0.legend.DESC, none of which this file cites or repeats.
 //   CORRECTION, 09.09.2026 (caught by the validating pipeline lead, not by
 //   this agent): an earlier version of this file deferred
 //   6-descending-mode.c1 and ch6-desc.c2 (both p.182 PROSE: "Descending mode
@@ -34,30 +33,27 @@
 //   and, paired against the ASCENDING-INCREMENTS-POINTER control on the
 //   identical measurement, shows the pointer step reverse exactly as that
 //   sentence claims setting the bit will cause. No assertion's check
-//   changed; only its citation text did.
-//   - The leaf barrel shifter's own exhaustive shift-value sweep (all 16
-//     shift values, both directions, structural claims about the 32-bit
-//     window) - PKG-BLT-SHIFT's territory
-//     (hrm/agnus_blitter_barrelshifter). This package DOES assert the same
-//     descending-mode shift-direction fact PKG-BLT-SHIFT already measured at
-//     the leaf (RIGHT-ASCENDING/LEFT-DESCENDING) - deliberately, per the
-//     build brief: "packages.md calls the two packages meeting on the same
-//     fact from opposite sides 'a feature rather than a duplication'". What
-//     is not repeated here is the leaf's full 0-15 shift-value sweep; one
-//     representative shift value (4) is enough to show the same directional
-//     fact holds through the full agnus_blitter pipeline (register write ->
-//     DMA fetch -> mask -> shifter -> hold register -> minterm -> D-channel
-//     store), which the leaf module cannot itself demonstrate (it has no
-//     clock, no registers, no DMA path - PKG-BLT-SHIFT's own Non-goals says
-//     so).
-//   - Modulo/pointer register field decode (which bits of BLTAMOD/BLTAPTH
-//     etc. are used) - PKG-BLT-REGDECODE's/PKG-BLT-ADRGEN's territory; this
-//     file writes whole 16-bit register values and reads address_out as a
-//     black box.
-//   - Line mode's own address stepping (`desc` is forced to 0 whenever
-//     `line`=1, agnus_blitter.v:286 `assign desc = ~line & bltcon1[1]`) -
-//     PKG-BLT-LINE's territory; every fixture below holds BLTCON1 bit 0
-//     (LINE) clear throughout.
+//   changed; only its citation text did. - The leaf barrel shifter's own
+//   exhaustive shift-value sweep (all 16 shift values, both directions,
+//   structural claims about the 32-bit window) - PKG-BLT-SHIFT's territory
+//   (hrm/agnus_blitter_barrelshifter). This package DOES assert the same
+//   descending-mode shift-direction fact PKG-BLT-SHIFT already measured at
+//   the leaf (RIGHT-ASCENDING/LEFT-DESCENDING) - deliberately, per the build
+//   brief: "packages.md calls the two packages meeting on the same fact from
+//   opposite sides 'a feature rather than a duplication'". What is not
+//   repeated here is the leaf's full 0-15 shift-value sweep; one
+//   representative shift value (4) is enough to show the same directional
+//   fact holds through the full agnus_blitter pipeline (register write ->
+//   DMA fetch -> mask -> shifter -> hold register -> minterm -> D-channel
+//   store), which the leaf module cannot itself demonstrate (it has no
+//   clock, no registers, no DMA path - PKG-BLT-SHIFT's own Non-goals says
+//   so). - Modulo/pointer register field decode (which bits of
+//   BLTAMOD/BLTAPTH etc. are used) - PKG-BLT-REGDECODE's/PKG-BLT-ADRGEN's
+//   territory; this file writes whole 16-bit register values and reads
+//   address_out as a black box. - Line mode's own address stepping (`desc`
+//   is forced to 0 whenever `line`=1, agnus_blitter.v:286 `assign desc =
+//   ~line & bltcon1[1]`) - PKG-BLT-LINE's territory; every fixture below
+//   holds BLTCON1 bit 0 (LINE) clear throughout.
 //
 // THE SPEC-BEFORE-RTL GATE WAS BREACHED, RECORDED RATHER THAN HIDDEN. Before
 // this header/claim-plan was drafted, agnus_blitter.v (the desc/line

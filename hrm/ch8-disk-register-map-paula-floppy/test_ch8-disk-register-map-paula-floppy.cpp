@@ -5,8 +5,21 @@
 //   excluded, it declares a second `module paula_floppy`). 79 claims, from
 //   work/ch8-s2-build/ch8-disk-register-map-paula-floppy.jsonl, reduced to
 //   20 assertions (19 after the 2026-09-15 repair below removed E4; see
-//   REPAIR NOTE). Full derivation in SPECIFICATION.md (committed as
-//   0ae6d09, before any RTL was opened; updated 2026-09-15 for the repair).
+//   REPAIR NOTE). Full derivation in SPECIFICATION.md (committed as 0ae6d09,
+//   before any RTL was opened; updated 2026-09-15 for the repair).
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 241, 246, 250, 263, 264, 278, and more
+// Non-goals: anything outside the `paula_floppy` fixture this package
+//   builds, and any claim outside the 81 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 81 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/ch8-s2-build/ch8-disk-register-map-paula-floppy.jsonl` in the
+//   sibling repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
 //
 // REPAIR NOTE (independent validation, 2026-09-15): B4, B5 and E3 were
 //   withdrawn -- soundly. B4/B5's original "nonzero at least once" premise
@@ -77,9 +90,9 @@
 //   there on 2026-09-15). Against the RTL actually under test here,
 //   bound_ok is true and B4/B5's finding is unchanged (still RED, same
 //   measured values: known_word=0xFFFF, DSKBYTR=0xD000, DATA field=0x0000).
-// Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, printed pp.241, 246, 249,
-//   265, 278-279, 289-290.
+// Oracle, in detail: Amiga Hardware Reference Manual, printed pp.241, 246,
+//   249, 265, 278-279, 289-290 -- the per-proposition pages behind the range
+//   given at the top of this file.
 //
 // RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (0ae6d09):
 //   1. hrm/ch8-dsklen-dma-arming/{Makefile,test_ch8-dsklen-dma-arming.cpp,

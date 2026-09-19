@@ -8,8 +8,8 @@
 //   fixture hrm/denise_collision/ and hrm/ch3-collision-registers/ already
 //   build).
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   p. 113.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed p.
+//   113.
 // Page note: the build task that assigned this package also named page
 //   129. This package's own assigned claims file (ch4-sprite-collision.
 //   jsonl, 5 records, read in full) cites only page 113 in every record;
@@ -18,16 +18,15 @@
 // Non-goals: this file does not retest Appendix A's CLXCON/CLXDAT register
 //   identity, address, write-only/read-clear semantics, the per-bitplane
 //   MVBP/ENBP mechanism, the six-bitplane-disabled NOTE, the ENSP odd/even
-//   sprite OR, the full 15-entry CLXDAT bit/pair table, or bit 15 -- all
-//   98 of those Appendix A propositions are hrm/ch3-collision-registers/'s
-//   own inventory and are already asserted there, on their own page
-//   citations (pp. 272, 273, 289, 290), not chapter 4's. It does not
-//   assert "you can use the hardware to detect these collisions and
-//   modify the display in some way" beyond the bare detection capability
-//   chapter 4's own page 113 states -- the elaboration of how, and what
-//   "modify the display" means, is cross-referenced to Chapter 7 by the
-//   manual itself (see DECLINED CLAIMS below) and is not this package's
-//   to assert.
+//   sprite OR, the full 15-entry CLXDAT bit/pair table, or bit 15 -- all 98
+//   of those Appendix A propositions are hrm/ch3-collision-registers/'s own
+//   inventory and are already asserted there, on their own page citations
+//   (pp. 272, 273, 289, 290), not chapter 4's. It does not assert "you can
+//   use the hardware to detect these collisions and modify the display in
+//   some way" beyond the bare detection capability chapter 4's own page 113
+//   states -- the elaboration of how, and what "modify the display" means,
+//   is cross-referenced to Chapter 7 by the manual itself (see DECLINED
+//   CLAIMS below) and is not this package's to assert.
 //
 // CLAIM SOURCE: this package's own assigned claims file is
 //   hrm-testpipeline/work/ch4_packages/

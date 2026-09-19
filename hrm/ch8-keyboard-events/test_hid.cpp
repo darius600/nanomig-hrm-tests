@@ -5,8 +5,8 @@
 //   p.359's Caps Lock press-only behaviour (Appendix G), and p.361's
 //   Ctrl-Amiga-Amiga reset combination (Appendix G). Package
 //   ch8-keyboard-events, fixture `hid` alone (plus its own `keymap`
-//   instance, amiga_keymap.v). THIS IS THE FIRST PACKAGE IN THIS SUITE
-//   BUILT AGAINST `hid` -- no Makefile existed for this layer before this
+//   instance, amiga_keymap.v). THIS IS THE FIRST PACKAGE IN THIS SUITE BUILT
+//   AGAINST `hid` -- no Makefile existed for this layer before this
 //   package's own, written at step 3.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -15,11 +15,10 @@
 //   second round (see SECOND ROUND below): opus:8-appG.c54/c55,
 //   sol:8-appG.c66/c67, none of which are in ch8-keyboard-events.jsonl --
 //   they were misclassified `not-asserted` upstream and corrected into this
-//   package by an independent reviewer after the first 17 were already
-//   built and confirmed. 21 claims, 10 propositions, total. A red result
-//   below means hid.v disagrees with the manual, not that the assertion is
-//   wrong -- no assertion here was, or should be, adjusted to make the RTL
-//   pass.
+//   package by an independent reviewer after the first 17 were already built
+//   and confirmed. 21 claims, 10 propositions, total. A red result below
+//   means hid.v disagrees with the manual, not that the assertion is wrong
+//   -- no assertion here was, or should be, adjusted to make the RTL pass.
 // Non-goals: p.252's per-key keycode VALUES (which key maps to which code)
 //   are `ch8-keycode-table`'s question, exhaustively covered there by a
 //   128-value sweep of `keymap` alone -- this package only tests the
@@ -30,6 +29,11 @@
 //   is not tested here; nor is the key MATRIX Appendix G describes, which
 //   hid.v:98-99 states in its own comment this Amiga variant does not
 //   maintain.
+// Claim ids: 23 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: hid.v ports clk/reset (module-local, not `kbd_reset`; see the
 //   SCOPE note in SPECIFICATION.md -- a board top ties this `reset` to

@@ -1,8 +1,13 @@
-// Test purpose: Assert the COPINS dummy address the Copper presents while fetching instructions, and the number of memory cycles each instruction form consumes.
+// Test purpose: Assert the COPINS dummy address the Copper presents while
+//   fetching instructions, and the number of memory cycles each instruction
+//   form consumes.
 // Test class: HRM_CONFORMANCE
-// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A (COPINS $08C) and printed p. 20; frozen specification 326802b.
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A
+//   (COPINS $08C) and printed p. 20; frozen specification 326802b.
 // Requirement IDs: COP-02
-// Non-goals: The "four" and "six memory cycle times" figures and the odd-slot parity on p.20 are arbitration properties of the surrounding Agnus, not of this module. A blocked WAIT has no defined cycle count.
+// Non-goals: The "four" and "six memory cycle times" figures and the
+//   odd-slot parity on p.20 are arbitration properties of the surrounding
+//   Agnus, not of this module. A blocked WAIT has no defined cycle count.
 //
 // Why this test exists: FPGA-056 to FPGA-058 all filtered COPINS out in order
 // to find MOVE writes, i.e. they relied on R1 without ever establishing it.

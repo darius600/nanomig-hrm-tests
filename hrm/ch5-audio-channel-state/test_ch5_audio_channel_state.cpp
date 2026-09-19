@@ -3,33 +3,43 @@
 //   page 164 and Figure 5-8 on printed page 166 (state encodings, the two
 //   idle-exit paths, the DMA discard/restart/length/interrupt mechanics, and
 //   the figure's own boxed NOTE about dmasen/AUDxDSR). Package
-//   ch5-audio-channel-state, fixture `paula_audio_channel` (paula_audio_channel.v
-//   alone -- the same fixture hrm/paula_audio_channel/ already builds and runs
-//   as an RTL_REGRESSION against a frozen spec; this package stands beside it,
-//   reads the same file, and does not touch it).
+//   ch5-audio-channel-state, fixture `paula_audio_channel`
+//   (paula_audio_channel.v alone -- the same fixture
+//   hrm/paula_audio_channel/ already builds and runs as an RTL_REGRESSION
+//   against a frozen spec; this package stands beside it, reads the same
+//   file, and does not touch it).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 153, 164, 165, 166 (Figure 5-8), claims.jsonl for
 //   ch5-audio-channel-state, 79 records. A red result below means
 //   paula_audio_channel.v disagrees with the manual, not that the assertion
-//   is wrong -- no assertion here was, or should be, adjusted to make the RTL
-//   pass. Several reds are EXPECTED and were flagged as such before this file
-//   was built: the RTL's own state parameters (paula_audio_channel.v:242-246,
-//   disclosed in this task's own brief/CANDIDATES.md before this agent opened
-//   the file) do not use the manual's bit patterns (the RTL's discard state
-//   is measured at 3'b011, where the manual names it 101; the RTL's steady
-//   low-byte state is measured at 3'b110, where the manual names it 011) --
-//   an 80000-tick sweep reaching only 000,001,010,011,110 was already
-//   reported before this package existed. This package treats that as a
-//   finding candidate to confirm on its own measurement, not a surprise.
-//   Because audio_state is read through Verilator --public-flat-rw and is
-//   not a module port, this specific state-code disagreement is registered
-//   as a source observation (NM-HRM-026), not a conformance failure -- the
-//   affected assertions may still be red (they genuinely measure the
-//   encoding), but each says so in its own text. A separate, since-withdrawn
-//   finding key for this package's dmasen NOTE assertion is NOT current; do
-//   not cite it as live -- see the dmasen assertion's own text below for the
-//   settled reading.
+//   is wrong -- no assertion here was, or should be, adjusted to make the
+//   RTL pass. Several reds are EXPECTED and were flagged as such before this
+//   file was built: the RTL's own state parameters
+//   (paula_audio_channel.v:242-246, disclosed in this task's own
+//   brief/CANDIDATES.md before this agent opened the file) do not use the
+//   manual's bit patterns (the RTL's discard state is measured at 3'b011,
+//   where the manual names it 101; the RTL's steady low-byte state is
+//   measured at 3'b110, where the manual names it 011) -- an 80000-tick
+//   sweep reaching only 000,001,010,011,110 was already reported before this
+//   package existed. This package treats that as a finding candidate to
+//   confirm on its own measurement, not a surprise. Because audio_state is
+//   read through Verilator --public-flat-rw and is not a module port, this
+//   specific state-code disagreement is registered as a source observation
+//   (NM-HRM-026), not a conformance failure -- the affected assertions may
+//   still be red (they genuinely measure the encoding), but each says so in
+//   its own text. A separate, since-withdrawn finding key for this package's
+//   dmasen NOTE assertion is NOT current; do not cite it as live -- see the
+//   dmasen assertion's own text below for the settled reading.
+// Non-goals: anything outside the `paula_audio_channel` fixture this package
+//   builds, and any claim outside the 4 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 4 ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER OF WORK: this file's assertions, expected values, and claim-id
 //   coverage were written and committed from claims.jsonl's quotations

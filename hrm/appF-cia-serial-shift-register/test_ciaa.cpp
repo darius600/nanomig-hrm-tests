@@ -4,16 +4,25 @@
 //   paragraphs against `ciaa` (ciaa.v's sdr_latch/ser_tx_run/ser_tx_cnt
 //   logic + its CIA submodules). SPECIFICATION.md records the claim
 //   inventory (27 uids: 15 already graded elsewhere, declined on record()
-//   lines; 12 fresh, across 6 propositions, graded below) and the
-//   structural finding this page's own SDR mechanism rests on: `ciaa` has
-//   no SP/CNT pin and no bit-serial shifter at all -- `sdr_latch` is a
-//   flat 8-bit parallel register, and "shifting" is entirely a byte-timing
-//   abstraction built from `ser_tx_cnt` counting Timer A underflow pulses
-//   (`tmra_ovf`). Every assertion below is designed around that measured
-//   structure, not around a literal SP/CNT signal that does not exist.
+//   lines; 12 fresh, across 6 propositions, graded below) and the structural
+//   finding this page's own SDR mechanism rests on: `ciaa` has no SP/CNT pin
+//   and no bit-serial shifter at all -- `sdr_latch` is a flat 8-bit parallel
+//   register, and "shifting" is entirely a byte-timing abstraction built
+//   from `ser_tx_cnt` counting Timer A underflow pulses (`tmra_ovf`). Every
+//   assertion below is designed around that measured structure, not around a
+//   literal SP/CNT signal that does not exist.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 345.
+// Non-goals: anything outside the `ciaa` fixture this package builds, and
+//   any claim outside the 35 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 35 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // CLAIM COVERAGE: 15 of 27 uids are declined on record() lines (duplicate
 //   citations, see SPECIFICATION.md). The remaining 12 uids (6 propositions

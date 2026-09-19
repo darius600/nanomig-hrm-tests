@@ -1,3 +1,18 @@
+// Test purpose: the fire line that carries two switches WHY THIS PACKAGE
+//   EXISTS.
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 228, 229, 232, 233, 241
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 14 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 14 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
+//
 // ch8-pin6-button-convergence -- the fire line that carries two switches
 //
 // WHY THIS PACKAGE EXISTS. OPEN-ISSUES O86. `ch8-controller-pin-function-map`

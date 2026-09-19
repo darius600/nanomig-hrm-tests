@@ -1,21 +1,21 @@
 // ch3-sprite-registers -- denise_sprites conformance test
 //
 // Test purpose: the appendix C sprite-register fields Denise's ECS
-//   SuperHires mode adds -- the extra low-order horizontal-start bit
-//   (SH0) that SPRxCTL carries as an unconditional 140ns increment of
-//   the same 9-bit start value whose upper bits (SH8-SH1) SPRxPOS
-//   carries, the further 70ns/35ns SuperHires increment bits (SHSH1,
-//   SHSH0) the same register adds on ECS, the joint role of SPRxPOS/
-//   SPRxCTL as position-and-feature registers, and that these registers
-//   accept a direct (non-DMA) write -- all at the denise_sprites module
-//   boundary. Package ch3-sprite-registers, fixture denise_sprites (one
-//   Verilator build, this module only, per PACKAGE.md).
+//   SuperHires mode adds -- the extra low-order horizontal-start bit (SH0)
+//   that SPRxCTL carries as an unconditional 140ns increment of the same
+//   9-bit start value whose upper bits (SH8-SH1) SPRxPOS carries, the
+//   further 70ns/35ns SuperHires increment bits (SHSH1, SHSH0) the same
+//   register adds on ECS, the joint role of SPRxPOS/ SPRxCTL as
+//   position-and-feature registers, and that these registers accept a direct
+//   (non-DMA) write -- all at the denise_sprites module boundary. Package
+//   ch3-sprite-registers, fixture denise_sprites (one Verilator build, this
+//   module only, per PACKAGE.md).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 297, 303 (claims.jsonl for ch3-sprite-registers, 20 records). A
-//   red result below means denise_sprites.v disagrees with the manual,
-//   not that the assertion is wrong -- no assertion here was, or should
-//   be, adjusted to make the RTL pass.
+//   pp. 297, 303 (claims.jsonl for ch3-sprite-registers, 20 records). A red
+//   result below means denise_sprites.v disagrees with the manual, not that
+//   the assertion is wrong -- no assertion here was, or should be, adjusted
+//   to make the RTL pass.
 // CORRECTION (this pass, working from p303.txt -- print page 303 -- read
 //   in full against the RTL findings already on record below): two
 //   assertions in an earlier version of this file misstated the manual
@@ -35,21 +35,21 @@
 //   CLAIM COVERAGE below for where each landed); see RESULTS for what
 //   each one measured.
 // Non-goals: "size" (vertical extent, VSTART/VSTOP) is part of what
-//   C-shres-sprite.c4/c5/C-spr.c03 say SPRxPOS/SPRxCTL jointly control,
-//   but this module's own port list (below) carries no vertical-position
-//   input at all -- only `hpos`. SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING
-//   therefore asserts only the two components this boundary can observe,
-//   position and feature (attach) control, and says so in its own label
-//   rather than silently dropping the "size" half of the claim.
-//   SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE tests only that bit 4 is
-//   live (changes something observable), not the OCS/ECS chip-scoping
-//   the manual's NOTE separately states ('Note: bits 3 and  4 are in the
-//   ECS chips only.', p.303), because this module exposes a single `aga`
-//   input, not a finer OCS-vs-ECS select -- documented in that
-//   assertion's own label, not silently assumed. Bit 3 (SHSH0) is
-//   declined rather than asserted, by SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED --
-//   the manual's own row already gives its verdict on that bit, so there
-//   is nothing left for this boundary to require of it.
+//   C-shres-sprite.c4/c5/C-spr.c03 say SPRxPOS/SPRxCTL jointly control, but
+//   this module's own port list (below) carries no vertical-position input
+//   at all -- only `hpos`. SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING therefore
+//   asserts only the two components this boundary can observe, position and
+//   feature (attach) control, and says so in its own label rather than
+//   silently dropping the "size" half of the claim.
+//   SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE tests only that bit 4 is live
+//   (changes something observable), not the OCS/ECS chip-scoping the
+//   manual's NOTE separately states ('Note: bits 3 and 4 are in the ECS
+//   chips only.', p.303), because this module exposes a single `aga` input,
+//   not a finer OCS-vs-ECS select -- documented in that assertion's own
+//   label, not silently assumed. Bit 3 (SHSH0) is declined rather than
+//   asserted, by SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED -- the manual's own row
+//   already gives its verdict on that bit, so there is nothing left for this
+//   boundary to require of it.
 //
 // BOUNDARY: nanomig/src/minimig-aga/denise_sprites.v:55,67 (SPRPOSCTLBASE
 //   9'h140), per PACKAGE.md, whose own evidence field additionally cites

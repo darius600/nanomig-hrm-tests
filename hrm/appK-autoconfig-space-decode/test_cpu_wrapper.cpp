@@ -1,3 +1,20 @@
+// Test purpose: pp.386-412 Appendix K, on the AUTOCONFIG SPACE and its
+//   decode (not the register contents -- that is the sibling package
+//   hrm/appK-autoconfig-register-map's job).
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 386, 412
+// Non-goals: anything outside the `cpu_wrapper` fixture this package builds,
+//   and any claim outside the 23 it cites. A green here means those
+//   assertions held on this fixture at the pinned revision -- not that the
+//   module is correct, and not that the chapter is covered.
+// Claim ids: 23 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/appK-build/appK-autoconfig-space-decode.jsonl` in the sibling
+//   repository (hrm-testpipeline). docs/legacy-names.md explains the
+//   vocabulary.
+//
 // appK-autoconfig-space-decode -- pp.386-412 Appendix K, on the AUTOCONFIG
 // SPACE and its decode (not the register contents -- that is the sibling
 // package hrm/appK-autoconfig-register-map's job). 23 claims, filtered from

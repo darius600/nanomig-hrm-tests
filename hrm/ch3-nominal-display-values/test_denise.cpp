@@ -5,21 +5,25 @@
 //   tools/check_chapter_coverage.py, reconciling the chapter total rather
 //   than any one package's own coverage -- see PACKAGE.md). They are largely
 //   the *nominal* display-window values (DIWSTRT $2C81 / DIWSTOP $F4C1 for
-//   NTSC, DIWSTOP $2CC1 for PAL, Table 3-9's HSTART $81 / HSTOP $C1
-//   columns, whether NTSC and PAL share the same nominal HSTART/HSTOP) and
-//   Appendix A/B/C register-access properties (BPLCON1/BPLxDAT write-only,
-//   DIWSTRT/DIWSTOP/DIWHIGH write-only, DENISEID's identity, colour
-//   register bits 15-12 unused), plus a handful of Chapter 3 prose claims
-//   (Figure 3-4's bit-to-COLOR6 mapping, HAM's "modified pixel written to
-//   the screen", EHB half-intensity) that never found a home either.
+//   NTSC, DIWSTOP $2CC1 for PAL, Table 3-9's HSTART $81 / HSTOP $C1 columns,
+//   whether NTSC and PAL share the same nominal HSTART/HSTOP) and Appendix
+//   A/B/C register-access properties (BPLCON1/BPLxDAT write-only,
+//   DIWSTRT/DIWSTOP/DIWHIGH write-only, DENISEID's identity, colour register
+//   bits 15-12 unused), plus a handful of Chapter 3 prose claims (Figure
+//   3-4's bit-to-COLOR6 mapping, HAM's "modified pixel written to the
+//   screen", EHB half-intensity) that never found a home either.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   42, 44, 57, 59, 60, 80, 81, 82, 86, 92, 95, 271, 272, 277, 290, 291,
 //   293, 296, 299, 303, 306, 307 (claims.jsonl for ch3-nominal-display-
-//   values, 61 records). A red result below means denise.v (or a
-//   sub-module it instantiates) disagrees with the manual, not that the
-//   assertion is wrong -- no assertion here was, or should be, adjusted to
-//   make the RTL pass.
+//   values, 61 records). A red result below means denise.v (or a sub-module
+//   it instantiates) disagrees with the manual, not that the assertion is
+//   wrong -- no assertion here was, or should be, adjusted to make the RTL
+//   pass.
+// Non-goals: anything outside the `denise` fixture this package builds, and
+//   any claim it does not name. A green here means those assertions held on
+//   this fixture at the pinned revision -- not that the module is correct,
+//   and not that the chapter is covered.
 //
 // BOUNDARY: fixture `denise`, top module only (one Verilator build,
 //   sources denise.v + denise_bitplanes.v + denise_bitplane_shifter.v +

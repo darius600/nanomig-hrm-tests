@@ -1,8 +1,8 @@
 // Test purpose: page 229's mouse/trackball quadrature-input text, Figure 8-2
-//   (printed p.230, "Mouse Quadrature" -- the Case 1/Case 2 waveforms and the
-//   V/VQ:D1/D0 truth table), the axis-routing half of Figure 8-3 (printed
-//   p.233, "Joystick to Counter Connections"), and the Appendix A p.281
-//   sentence on sampling and clocking the mouse counters. Package
+//   (printed p.230, "Mouse Quadrature" -- the Case 1/Case 2 waveforms and
+//   the V/VQ:D1/D0 truth table), the axis-routing half of Figure 8-3
+//   (printed p.233, "Joystick to Counter Connections"), and the Appendix A
+//   p.281 sentence on sampling and clocking the mouse counters. Package
 //   ch8-mouse-quadrature-decode, fixture userio.v (one Verilator build, this
 //   module only -- userio.v has never had a test package before this one).
 // Test class: HRM_CONFORMANCE
@@ -10,14 +10,19 @@
 //   pages 229, 230, 233, 281.
 // Non-goals: JOY0DAT/JOY1DAT's own address and 16-bit word layout (a
 //   differently-scoped claims file, ch8-joydat-counter-layout.jsonl, covers
-//   that); the DE-9 connector pin numbers and joystick function names
-//   Figure 8-3 also draws (not a signal of this module, and composing them
-//   with a joystick function additionally needs Table 8-3, not in this
-//   claims file); CIAAPRA fire buttons; the pot counters; the keyboard/PS2
+//   that); the DE-9 connector pin numbers and joystick function names Figure
+//   8-3 also draws (not a signal of this module, and composing them with a
+//   joystick function additionally needs Table 8-3, not in this claims
+//   file); CIAAPRA fire buttons; the pot counters; the keyboard/PS2
 //   mouse-emulation path (kbd_mouse_type/kbd_mouse_data/kms_level) that also
-//   feeds JOY0DAT in real hardware -- held inactive throughout (see BOUNDARY)
-//   so every measurement below isolates the DE-9 quadrature decode path
-//   Figure 8-2 documents.
+//   feeds JOY0DAT in real hardware -- held inactive throughout (see
+//   BOUNDARY) so every measurement below isolates the DE-9 quadrature decode
+//   path Figure 8-2 documents.
+// Claim ids: 63 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/userio.v:28-50 module header -- ports
 //   clk, reset, clk7_en, reg_address_in[8:1], data_in[15:0],

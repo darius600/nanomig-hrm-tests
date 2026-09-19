@@ -1,3 +1,18 @@
+// Test purpose: This package tests the **layout** of the JOY0DAT/JOY1DAT
+//   mouse/trackball
+// Test class: HRM_CONFORMANCE
+// Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
+//   pages 230, 233, 281
+// Non-goals: anything outside the `userio` fixture this package builds, and
+//   any claim outside the 58 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 58 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
+//
 // test_userio.cpp -- ch8-joydat-counter-layout
 //
 // Fixture: userio.v, compiled alone (Verilator, --top-module userio).

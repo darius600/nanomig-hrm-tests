@@ -1,19 +1,24 @@
 // ch3-collision-registers -- denise_collision conformance test
 //
-// Test purpose: CLXCON and CLXDAT as chapter 3 reaches them through
-//   appendix A: the enable and match fields that decide which bitplanes and
-//   sprites count toward a collision, and the read that clears. Package
+// Test purpose: CLXCON and CLXDAT as chapter 3 reaches them through appendix
+//   A: the enable and match fields that decide which bitplanes and sprites
+//   count toward a collision, and the read that clears. Package
 //   ch3-collision-registers, fixture denise_collision (one Verilator build,
 //   this module only, per PACKAGE.md).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 272, 273, 289, 290 (claims.jsonl for ch3-collision-registers, 98
-//   records). A red result below means denise_collision.v disagrees with
-//   the manual, not that the assertion is wrong -- no assertion here was,
-//   or should be, adjusted to make the RTL pass.
+//   records). A red result below means denise_collision.v disagrees with the
+//   manual, not that the assertion is wrong -- no assertion here was, or
+//   should be, adjusted to make the RTL pass.
 // Non-goals: CLXCON2 (AGA, 9h10e) is not in this package's 98-record
 //   inventory and is not asserted. `aga`/`dblpf` are held at their power-up
 //   default (0) throughout -- no claim in this package names them.
+// Claim ids: 165 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/denise_collision.v:19 (CLXCON 9h098),
 //   per PACKAGE.md, whose own evidence field additionally cites

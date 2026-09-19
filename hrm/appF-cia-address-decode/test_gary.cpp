@@ -4,11 +4,20 @@
 //   two 8520 CIA chips, as `gary`'s combinational chip-select logic
 //   (sel_cia, sel_cia_a, sel_cia_b, gary.v:190-192) actually decodes it --
 //   the CIAA/CIAB address-map figures (p.339, p.340) and the "Hardware
-//   Connection Details" decode rule (p.353), per SPECIFICATION.md
-//   (committed 52d8fd1, before this file was opened).
+//   Connection Details" decode rule (p.353), per SPECIFICATION.md (committed
+//   52d8fd1, before this file was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   339, 340, 353.
+// Non-goals: anything outside the `gary` fixture this package builds, and
+//   any claim outside the 125 it cites. A green here means those assertions
+//   held on this fixture at the pinned revision -- not that the module is
+//   correct, and not that the chapter is covered.
+// Claim ids: 125 ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in the
+//   chapter's claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER OF WORK: SPECIFICATION.md was written from the 117 claims' own
 //   quote/restatement fields (plus what several claims' own
