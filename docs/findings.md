@@ -1,5 +1,7 @@
 # Findings
 
+**40 of the 65 findings ask you to decide something. The table is below the explanation — jump to [The register](#the-register).**
+
 > **One page per finding now lives in [`findings/`](findings/).** Each has the
 > same six parts — what the HRM says, what NanoMig does, what the other four say,
 > a suggested change, what holds the finding up, and what is left for

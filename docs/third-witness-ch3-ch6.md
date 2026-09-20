@@ -15,7 +15,15 @@ test**, and no expectation in the suite comes from an emulator.
 
 ## Why this exists
 
-`tools/list_reds.py` counts 67 failing assertions in 32 families. Chapters 2 and
+`tools/list_reds.py` counts 67 failing assertions in 32 families.
+**That figure is stale and is left as written.** It predates the runner
+defect described in the README, where 59 packages wrote their summary to
+`out.txt` and printed it on the next `make` line — so a package that failed
+stopped before the print and vanished from the count exactly when it went
+red. The suite-wide figure since that fix is **186 failing assertions**.
+The count for these two chapters was never recomputed; take the numbers
+below as the shape of the problem, not as its size, and read the current
+count from the register table in [`findings.md`](findings.md). Chapters 2 and
 5 have every family registered in [`findings.md`](findings.md) — NM-HRM-003,
 NM-HRM-004, NM-HRM-005, NM-HRM-002 — and three of those already carry an emulator
 comparison in [`third-witness.md`](third-witness.md).
