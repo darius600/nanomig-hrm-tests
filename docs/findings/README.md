@@ -16,6 +16,22 @@ before any prose is read:
 | **Test** | the package that measures it, or `none yet` |
 | **Chapter** | which part of the manual judges it |
 
+**Eight further fields appear on some pages and not others**, and which ones a
+page carries says something about it:
+
+| field | on | what its absence means |
+|---|---|---|
+| **Verdict of the four** | 60 of 65 | the other implementations were not consulted, or the finding is not about behaviour they share |
+| **Report to** | 58 of 65 | nothing is being asked of anyone upstream — usually a withdrawn finding |
+| **Assertions** | 33 of 65 | the finding has no graded assertions of its own; the `Test` row still names the package |
+| **See also** | 9 | no sibling finding bears on it |
+| **Error class** | 5 | it is not one of the recurring shapes |
+| **Boundary** | 2 | no edge case was isolated |
+| **Provenance**, **Origin** | 1 each | one-offs, kept because the page needed them |
+
+A header table that is shorter than the one on the page before it is therefore
+not an incomplete page. Counted 20.09.2026 across all 65.
+
 **What follows the header varies, and deliberately.** Most pages run *What the
 HRM says* → *What NanoMig does* → *What the others say* → *Suggested change* →
 *What holds the finding up*, some adding *For the specialists*. A withdrawn

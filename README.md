@@ -92,7 +92,9 @@ summary to `out.txt` and printed it on the next `make` line, so a package that
 failed stopped before the print and **vanished from the count exactly when it
 went red**. Both are fixed, and `check_published_counts.py --runlog` now
 measures this half of the table against a `run_all.sh` log instead of trusting
-it. See `hrm-testpipeline/OPEN-ISSUES.md` O104.
+it. That script lives in the **separate `hrm-testpipeline` repository**, at
+`hrm-testpipeline/tools/check_published_counts.py` — it is not in this one, and
+running it from here fails. See `hrm-testpipeline/OPEN-ISSUES.md` O104.
 
 **A red test is a result, not a bug in the test.** Each one marks a place where
 the RTL does something the manual does not describe. Adjusting an assertion to
@@ -106,7 +108,9 @@ disagree, the manual decides.
 
 **[`docs/findings.md`](docs/findings.md) is the register** — one table row per
 finding with its key, subject, status, package and third witness. It is what
-`tools/list_reds.py` reads, and it is the list to go to. **One page per finding
+`hrm-testpipeline/tools/list_reds.py` reads — that script is in the **separate
+`hrm-testpipeline` repository**, not this one — and the table is the list to go
+to; you do not need the script to read it. **One page per finding
 lives in [`docs/findings/`](docs/findings/)**, each written to be readable by
 someone who has never seen this project: what the HRM says, what NanoMig does,
 what the other four implementations say, a suggested change, what holds the

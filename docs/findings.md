@@ -8,7 +8,9 @@
 > who has never seen this project.
 >
 > This file stays as the **register**: the table below is what
-> `tools/list_reds.py` reads, and the sections under it are the original text.
+> `hrm-testpipeline/tools/list_reds.py` reads — that script lives in the
+> separate `hrm-testpipeline` repository, not this one — and the sections under
+> it are the original text. The table is readable without it.
 
 > **Deciding what to do about these:** see [`rtl-decisions.md`](rtl-decisions.md),
 > which sets each open finding beside WinUAE's and vAmiga's implementation of the
@@ -114,6 +116,24 @@ never disagree. Eight values occur:
 | `open · page · none` | the same, with no test built against it yet |
 | `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested |
 | `**withdrawn**` | nothing; kept so the claim is not raised a second time |
+
+**If you have one evening: 40 of these 65 ask you to decide something.** The
+rest are withdrawn, answered, or observations kept for context. The table below
+is sorted by key, not by how much it wants from you — so the first row is not
+the place to start. Start at one of these, whichever is nearest your own
+interest:
+
+| start here | because |
+|---|---|
+| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and two of the four implementations already do what the manual says |
+| [NM-HRM-004](findings/NM-HRM-004.md) | all four implementations read the appendix the other way round from the manual — the clearest four-way signal in the register |
+| [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and the fix is one line MiSTer already has |
+
+**[NM-HRM-002](findings/NM-HRM-002.md) sorts first and is the worst starting
+point**: the manual contradicts itself there and the four implementations split
+evenly, so it is the one finding in the register that reports to nowhere. Read
+it for what an unresolvable case looks like, not for something to do.
+
 
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
