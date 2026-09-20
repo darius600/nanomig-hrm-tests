@@ -19,12 +19,26 @@ A red result is a **result** here, not a broken test. Adjusting an assertion so
 that it passes deletes a finding, and that is the one failure mode this suite
 exists to prevent.
 
-## A worked example to copy from
+## Two examples, and read them in this order
 
-[`hrm/ch3-beam-counters-and-blanking`](../hrm/ch3-beam-counters-and-blanking) is
-the package to read first — it is the one that grades `BPLCON0`'s `ERSY` bit,
-and it shows every rule below in place: the header block, per-assertion page
-citations, a control on the same measurement basis, and the mutation lines.
+**The shape, in one screen:** [`docs/example-package/`](example-package/) is a
+real package — it builds, it grades one bit of CIAA's `DDRA` against printed
+page 292, and `make mutate` turns it red. Eighty lines including the header, of
+which about thirty are the test. Start here if you have not written one before;
+it shows the header fields, the three verbs and the mutation guard and nothing
+else.
+
+It lives in `docs/` rather than `hrm/` on purpose: `run_all.sh` and
+`check_published_counts.py` both count the directories under `hrm/`, and an
+example is not a package.
+
+**The whole thing:**
+[`hrm/ch3-beam-counters-and-blanking`](../hrm/ch3-beam-counters-and-blanking)
+grades `BPLCON0`'s `ERSY` bit and shows every rule below in place: the header
+block, per-assertion page citations, a control on the same measurement basis,
+and the mutation lines. It is 1,749 lines, which is what a package looks like
+when it carries a chapter's worth of claims — go to it once the shape is
+familiar, and read it for the rules rather than end to end.
 
 ## What a finished package has
 

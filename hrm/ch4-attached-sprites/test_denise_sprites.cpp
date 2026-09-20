@@ -12,23 +12,6 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 122, 128.
 //
-// CLAIM SOURCE -- READ THIS FIRST: this package's own assigned claims
-//   file is hrm-testpipeline/work/ch4_packages/
-//   ch4-regression-attached-row-0000.jsonl (4 records: CH4-p122.c1,
-//   CH4-tab45.c0, CH4-tab45.c1, CH4-tab45.c17 -- all Table 4-5 row 0).
-//   By direct instruction from the build task (not discovered by this
-//   agent), this file ALSO asserts 5 further claim records that belong
-//   to two OTHER, not-yet-built packages' own inventories:
-//   CH4-attach.c25, CH4-attach.c26, CH4-attach.c27 (ch4-sprite-colour-
-//   encoding.jsonl, p122) and CH4-p128.c8, CH4-sctl.c4 (ch4-sprite-
-//   shifter-and-arming.jsonl, p128). The build task's stated reason:
-//   two independent classifiers working different lots measured the
-//   ATTACH-bit-parity question the same way, and a lead verified it
-//   against the source and both printed pages, which is why this
-//   candidate finding is being tested now rather than waiting for
-//   those packages' own turn. Whoever later builds ch4-sprite-colour-
-//   encoding or ch4-sprite-shifter-and-arming should treat these 5 ids
-//   as already covered here, not uncovered in their own package.
 // Non-goals: this package does not test the fifteen non-zero rows of Table
 //   4-5 (codes 0001-1111, claim ids CH4-tab45.c2..c16 and CH4-p122.c2..c16)
 //   -- per this package's own classify block, those stay with whichever
@@ -57,7 +40,7 @@
 //   claim ids it cites, and the stimulus each measurement uses -- was
 //   written and committed from claims.jsonl's quotations (this
 //   package's own 4, plus the 5 the build task named directly, see
-//   CLAIM SOURCE above) and the two already-committed sibling
+//   CLAIM SOURCE, at the foot of this header) and the two already-committed sibling
 //   harnesses' disclosed interface ONLY. denise_sprites.v and
 //   denise_sprites_shifter.v themselves were not opened by this agent
 //   until after that commit, per the build brief's explicit gate. The
@@ -137,7 +120,7 @@
 //   permit assuming in advance.
 //
 // CLAIM COVERAGE -- 9 records cited (4 from this package's own claims
-//   file, 5 borrowed per CLAIM SOURCE above), all cited in full inside
+//   file, 5 borrowed per CLAIM SOURCE, at the foot of this header), all cited in full inside
 //   an expect()/record() label:
 //
 //   ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT (3 ids, control/PASS)
@@ -204,6 +187,28 @@
 // MUTATION ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE stimulus green: built with -DMUT_EVEN=1, which re-measures case (iii) and a fresh case-(i)-shaped baseline both at aga=1 instead of aga=0 (denise_sprites.v:484's own `!aga` term, read while diagnosing the baseline red result above) -> PASS (4 passed, 0 failed), only ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE newly green -- confirming the finding is scoped to aga=0 (OCS/ECS): at aga=1 (AGA) this RTL matches the manual. Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged. CORRECTION, recorded rather than dropped: this mutation's first design instead changed case (iii)'s own SPR0DATA image (0x4000 instead of 0x8000, aga left at 0) -- built and run, it produced NO colour change at all (3 passed, 1 failed, identical to baseline), because the finding holds for any non-zero image once attach0 opens the path at aga=0. Replaced by the aga-based mutation above, which does move the assertion; the assertion's own expected value and comparison (trace equality) were never touched in either attempt.
 // MUTATION CODE-0000-YIELDS-TRANSPARENT-PIXEL stimulus red: built with -DMUT_ZERO=1, which changes SPR0DATA from 0x0000 to 0x8000 (combined code no longer 0000) -> FAIL (2 passed, 2 failed), only CODE-0000-YIELDS-TRANSPARENT-PIXEL newly red (sprdata went non-zero at the expected shifted-out position); ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE, already red at baseline, stayed red for its own reason. Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged.
 // MUTATION TABLE45-ROW0-REGISTER-NUMBER-CONFLICT: no record -- this claim is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
+//
+// Where these claims came from -- read after the four fields above, not
+// before them. Moved here 20.09.2026: a persona review found the reader's
+// own questions answered on either side of seventeen lines about which
+// agent measured what.
+// CLAIM SOURCE: this package's own assigned claims
+//   file is hrm-testpipeline/work/ch4_packages/
+//   ch4-regression-attached-row-0000.jsonl (4 records: CH4-p122.c1,
+//   CH4-tab45.c0, CH4-tab45.c1, CH4-tab45.c17 -- all Table 4-5 row 0).
+//   By direct instruction from the build task (not discovered by this
+//   agent), this file ALSO asserts 5 further claim records that belong
+//   to two OTHER, not-yet-built packages' own inventories:
+//   CH4-attach.c25, CH4-attach.c26, CH4-attach.c27 (ch4-sprite-colour-
+//   encoding.jsonl, p122) and CH4-p128.c8, CH4-sctl.c4 (ch4-sprite-
+//   shifter-and-arming.jsonl, p128). The build task's stated reason:
+//   two independent classifiers working different lots measured the
+//   ATTACH-bit-parity question the same way, and a lead verified it
+//   against the source and both printed pages, which is why this
+//   candidate finding is being tested now rather than waiting for
+//   those packages' own turn. Whoever later builds ch4-sprite-colour-
+//   encoding or ch4-sprite-shifter-and-arming should treat these 5 ids
+//   as already covered here, not uncovered in their own package.
 
 #include <cstdint>
 #include <iostream>
@@ -497,7 +502,7 @@ int main(int argc, char** argv) {
 
     // ---------------- ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE ----------------
     // Candidate finding: build-task instruction, not this package's own
-    // claims.jsonl (see CLAIM SOURCE above). Same measurement basis as the
+    // claims.jsonl (see CLAIM SOURCE, at the foot of this header). Same measurement basis as the
     // control immediately above -- ATTACH-BIT-ODD-SPRITE-ENABLES-
     // ATTACHMENT passing on that basis is this assertion's control.
     {
