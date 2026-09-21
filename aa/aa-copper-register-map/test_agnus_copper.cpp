@@ -196,6 +196,7 @@ int main(int argc, char** argv) {
     const uint16_t m_copins  = mutate ? A_COPCON  : A_COPINS;    // 4: ir2 never written
     const uint16_t m_copcon  = mutate ? A_COPINS  : A_COPCON;    // 5: cdang never written
     const uint16_t m_live    = mutate ? A_COP2LCH : A_COP1LCH;   // liveness, same shape
+    const uint16_t m_sprhdat_con = mutate ? A_COPINS : A_COPCON; // 6: cdang never set
 
     c.record("oracle: AA specification, PDF pp. 6-7, the address-ordered "
              "register list. COPCON $02E, COP1LCH $080, COP1LCL $082, "
@@ -318,6 +319,47 @@ int main(int argc, char** argv) {
                  "COPCON-AT-02E: writing bit 1 at $02E decides whether a MOVE "
                  "to a register below $080 reaches reg_address_out, so COPCON "
                  "is decoded at $02E [claims: opus:AA-copcon.c1]");
+    }
+
+    // --- 6. The one address in the restricted range the list does not mark
+    {
+        // The list marks a register `~` to say the Coprocessor cannot write it
+        // unless CDANG is set. agnus_copper implements that as a RANGE --
+        // ir2[8:7]==00, every address below $080 (agnus_copper.v:225) -- and
+        // over 231 address-list rows the two agree on 57 of 58. SPRHDAT at
+        // $078 is the single exception: it sits between BLTADAT `& ~074` and
+        // LISAID `h ~07C`, both marked, and carries `&h` with no tilde at all.
+        //
+        // This grades what the RTL does there. The document's omission is
+        // NM-AA-002 and is not decided here.
+        const uint8_t want = (0x078 >> 1) & 0xFF;
+
+        Harness dark(true);
+        dark.write(A_COPCON, 0x0000);            // cdang = 0
+        dark.write(A_COPINS, 0x0078);
+        dark.write(A_COPINS, 0x0078);
+        const bool blocked = emits(dark, want);
+
+        Harness lit(true);
+        lit.write(m_sprhdat_con, 0x0002);        // cdang = 1
+        lit.write(A_COPINS, 0x0078);
+        lit.write(A_COPINS, 0x0078);
+        const bool allowed = emits(lit, want);
+
+        c.note(std::string("a MOVE to $078 reaches reg_address_out with "
+                           "cdang=0: ") + (blocked ? "yes" : "no")
+               + ", with cdang=1: " + (allowed ? "yes" : "no"));
+        // MUTATION SPRHDAT-078-IS-RESTRICTED stimulus red MUTATE=1 writes the
+        // danger bit at $08C instead of $02E in the SECOND run, so cdang is
+        // never SET and both halves come back blocked. Mutating the first run
+        // instead achieves nothing: cdang is already zero out of reset, so
+        // removing the write that clears it changes no behaviour at all.
+        c.expect(!blocked && allowed,
+                 "SPRHDAT-078-IS-RESTRICTED: $078 is blocked from Coprocessor "
+                 "access with CDANG clear and allowed with it set, exactly like "
+                 "every neighbouring address the list marks `~` -- and $078 is "
+                 "the one address in $000-$07E the list leaves unmarked "
+                 "[claims: opus:AA-sprhdat-tilde.c1]");
     }
 
     // --- 6. The document says S for COPJMP1/2 and W for the rest. Measured,
