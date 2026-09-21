@@ -118,13 +118,35 @@ int main(int argc, char** argv) {
     const bool mutate = getenv("MUTATE") != nullptr;
 
     // MUTATION. Every expect() below is guarded so that MUTATE=1 forces it
-    // red, and the guard never touches the comparison itself -- it changes
-    // the address written, which is exactly the proposition under test.
+    // red, and no guard touches the comparison itself -- each swaps the ADDRESS
+    // WRITTEN, which is the proposition under test in all three cases.
+    //
+    // Measured 21.09.2026: the first version of this file guarded only the
+    // first assertion, and `make mutate` came back "2 passed, 1 failed". A
+    // mutation run that leaves assertions green is not a weaker gate, it is a
+    // gate that has already failed -- those two were not shown capable of going
+    // red at all. One guard per assertion, and `make mutate` must report
+    // 0 passed.
     const uint16_t addr_under_test = mutate ? A_BPLCON4 : A_CLXCON2;
+    // Section 2 is the inverse control: it writes the address the document's
+    // other half gives and expects nothing to happen. Swapping it for the
+    // address that DOES decode makes something happen, and the control fails.
+    const uint16_t control_addr    = mutate ? A_CLXCON2 : A_BPLCON4;
+    // Section 3 clears CLXCON2 with a CLXCON write. Writing CLXDAT instead
+    // clears nothing, so the register stays armed and the assertion fails.
+    // CLXDAT is a read-and-clear data register, not a control one, so this is
+    // a write the module accepts and ignores rather than an invalid address.
+    const uint16_t clearing_addr   = mutate ? A_CLXDAT : A_CLXCON;
 
+    // No claim id on this line. A uid on a RECORDED line means the claim was
+    // declined at this boundary, and the coverage ledger reads it that way --
+    // it reported opus:AA-clxcon2.c1 as asserted AND declined at once, because
+    // this record carried the same id the assertion below grades. The oracle
+    // statement belongs here; the claim it supports is cited where it is
+    // graded, and nowhere else.
     c.record("oracle: AA specification, PDF p. 8 states CLXCON2 at $10E; "
              "PDF p. 18 states the same register at $10C, which p. 8 and "
-             "p. 16 both give to BPLCON4 [AA-clxcon2.c1]");
+             "p. 16 both give to BPLCON4");
 
     // --- 1. Is CLXCON2 decoded where the address list says it is?
     {
@@ -137,21 +159,28 @@ int main(int argc, char** argv) {
         c.note(std::string("after writing $00C3 to $") +
                (mutate ? "10C" : "10E") + ", bpldata=0x7F collides: "
                + (after ? "yes" : "no"));
+        // MUTATION CLXCON2-AT-10E stimulus red MUTATE=1 writes $10C instead
+        // of $10E, so the bitplane match does not change and the assertion
+        // that CLXCON2 decodes at $10E goes red.
         c.expect(before && !after,
-                 "a write to $10E changes the bitplane match, so CLXCON2 is "
-                 "decoded at $10E as the address list states [AA-clxcon2.c1]");
+                 "CLXCON2-AT-10E: a write to $10E changes the bitplane match, "
+                 "so CLXCON2 is decoded at $10E as the address list states "
+                 "[claims: opus:AA-clxcon2.c1]");
     }
 
     // --- 2. The other address the document gives, as an inverse control.
     {
         Harness h(true);
         const bool before = h.collides(0x7F);
-        h.write(A_BPLCON4, 0x00C3);
+        h.write(control_addr, 0x00C3);
         const bool after = h.collides(0x7F);
+        // MUTATION CLXCON2-NOT-AT-10C stimulus red MUTATE=1 writes $10E
+        // instead of $10C, so the inverse control does see a change and goes
+        // red -- the control is only a control while $10C is inert.
         c.expect(before && after,
-                 "a write to $10C does NOT change the bitplane match, so the "
-                 "alphabetical entry's address is not where CLXCON2 lives "
-                 "[AA-clxcon2.c2]");
+                 "CLXCON2-NOT-AT-10C: a write to $10C does NOT change the "
+                 "bitplane match, so the alphabetical entry's address is not "
+                 "where CLXCON2 lives [claims: opus:AA-clxcon2.c2]");
     }
 
     // --- 3. "CLXCON2 is reset by a write to CLXCON" -- PDF p. 4, verbatim.
@@ -166,15 +195,18 @@ int main(int argc, char** argv) {
         (void)h.collides(0x7F);
         h.write(A_CLXCON2, 0x00C3);
         const bool armed = h.collides(0x7F);
-        h.write(A_CLXCON, 0x0FFF);
+        h.write(clearing_addr, 0x0FFF);
         const bool after_clxcon = h.collides(0x7F);
         c.note(std::string("with CLXCON2 armed, bpldata=0x7F collides: ")
                + (armed ? "yes" : "no"));
         c.note(std::string("after a CLXCON write, bpldata=0x7F collides: ")
                + (after_clxcon ? "yes" : "no"));
+        // MUTATION CLXCON2-CLEARED-BY-CLXCON stimulus red MUTATE=1 writes
+        // CLXDAT instead of CLXCON. CLXDAT clears nothing in CLXCON2, so the
+        // register stays armed and the clearing assertion goes red.
         c.expect(!armed && after_clxcon,
-                 "a write to CLXCON clears CLXCON2, as p. 4 states "
-                 "[AA-clxcon2.c3]");
+                 "CLXCON2-CLEARED-BY-CLXCON: a write to CLXCON clears CLXCON2, "
+                 "as p. 4 states [claims: opus:AA-clxcon2.c3]");
     }
 
     // --- 4. The RTL gates CLXCON2 on AGA. The document does not say this.

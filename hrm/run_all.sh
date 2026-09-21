@@ -1,15 +1,32 @@
 #!/bin/bash
-# Rebuild and run every HRM test under hrm/, one summary line per test.
+# Rebuild and run every test in a package tree, one summary line per test.
 #
-#   ./run_all.sh            rebuild from scratch (make -B) and run
-#   ./run_all.sh --fast     use existing binaries where possible
+#   ./run_all.sh             rebuild from scratch (make -B) and run hrm/
+#   ./run_all.sh --fast      use existing binaries where possible
+#   ./run_all.sh --in ../aa  run a different tree, such as the AA packages
 #
 # Exit code 0 if every test passed, 1 otherwise. A build failure is reported as
 # its own outcome (BUILD) and never counted as a passing or failing test.
+#
+# --in exists because aa/ was invisible to this runner. It iterates `*/` relative
+# to its own directory, so the AA packages were never built, never counted, and
+# a red in one of them would never have surfaced: the suite would have gone on
+# reporting a clean hrm/ with a second tree sitting beside it unexamined. Found
+# 21.09.2026. Without --in nothing about this script's behaviour changes, so the
+# published hrm/ figures are the same figures.
 cd "$(dirname "$0")" || exit 2
 
 MAKE_ARGS="-B"
-[ "$1" = "--fast" ] && MAKE_ARGS=""
+TREE="."
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --fast) MAKE_ARGS=""; shift ;;
+        --in)   TREE="$2"; shift 2 ;;
+        *)      echo "unknown argument: $1" >&2; exit 2 ;;
+    esac
+done
+[ -d "$TREE" ] || { echo "no such tree: $TREE" >&2; exit 2; }
+cd "$TREE" || exit 2
 
 pass=0; fail=0; build=0
 declare -a failed_list
