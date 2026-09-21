@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Nothing in the RTL. NanoMig already follows the address the shipping header confirms. What is asked is whether this document is fit to be cited as an oracle for CLXCON2 at all, and if so which of its two statements a claim may rest on. |
 | **Module** | `src/minimig-aga/denise_collision.v:20` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise_collision.v#L20) at the pinned revision |
 | **Report to** | **nowhere in code.** The defect is in a 1991 Commodore document, and the company is gone. It is filed so that no AA claim cites the wrong half of it |
-| **Test** | [`aa/aa-clxcon2-address`](../../aa/aa-clxcon2-address) · three graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
+| **Test** | [`aa/aa-clxcon2-address`](../../aa/aa-clxcon2-address) · five graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF pp. 4, 8, 16, 18 |
-| **Assertions** | 3 green, each with its own mutation; `make mutate` reports 0 passed, 3 failed |
+| **Assertions** | 5 green, each with its own mutation; `make mutate` reports 0 passed, 5 failed |
 | **Verdict of the four** | not consulted — this is a defect in a document, not a behaviour the implementations could disagree about |
 
 ## What the AA specification says
@@ -105,7 +105,13 @@ one, over more rows than before.
 
 ## What holds this up
 
-The three assertions and their mutations — one each, so that `make mutate`
+The package grew two assertions on 21.09.2026 that are not about CLXCON2 at
+all: CLXDAT is decoded at $00E and silent at $010, and CLXCON is decoded at
+$098 and not at $09A. They are here rather than in a package of their own
+because this fixture already drove both addresses without grading either, and a
+second fixture at the same boundary would measure the same thing twice.
+
+The assertions and their mutations — one each, so that `make mutate`
 turns every one of them red rather than only the first; the earlier version
 guarded the address assertion alone and reported "2 passed, 1 failed", which
 means two of the three had never been shown capable of failing — the two printed pages quoted verbatim

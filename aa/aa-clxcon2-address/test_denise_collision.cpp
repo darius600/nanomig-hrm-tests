@@ -56,6 +56,9 @@ public:
 
 // Word addresses as the module sees them: reg_address_in is [8:1].
 constexpr uint16_t A_CLXDAT  = 0x00E;
+// $010 is ADKCONR's address on the same list -- a real neighbour, not an
+// invented one, so the inverse control asks about a word the document defines.
+constexpr uint16_t A_NEIGHBOUR = 0x010;
 constexpr uint16_t A_CLXCON  = 0x098;
 constexpr uint16_t A_CLXCON2 = 0x10E;   // the address list, p. 8
 constexpr uint16_t A_BPLCON4 = 0x10C;   // the alphabetical entry's address, p. 18
@@ -137,6 +140,9 @@ int main(int argc, char** argv) {
     // CLXDAT is a read-and-clear data register, not a control one, so this is
     // a write the module accepts and ignores rather than an invalid address.
     const uint16_t clearing_addr   = mutate ? A_CLXDAT : A_CLXCON;
+    // Section 5 reads one register away; section 6 writes one register away.
+    const uint16_t A_CLXDAT_UT     = mutate ? A_NEIGHBOUR : A_CLXDAT;
+    const uint16_t A_CLXCON_UT     = mutate ? 0x09A       : A_CLXCON;
 
     // No claim id on this line. A uid on a RECORDED line means the claim was
     // declined at this boundary, and the coverage ledger reads it that way --
@@ -207,6 +213,55 @@ int main(int argc, char** argv) {
         c.expect(!armed && after_clxcon,
                  "CLXCON2-CLEARED-BY-CLXCON: a write to CLXCON clears CLXCON2, "
                  "as p. 4 states [claims: opus:AA-clxcon2.c3]");
+    }
+
+    // --- 5. CLXDAT at $00E, the one address this module answers a READ at.
+    {
+        Harness h(true);
+        (void)h.collides(0x7F);                 // prime, as section 3 explains
+        h.dut->bpldata = 0x7F;
+        h.step();
+        // data_out = reg_address_in==CLXDAT ? {1'b1, clxdat[14:0]} : 16'd0
+        // (denise_collision.v:117), so bit 15 is set on a real read and the
+        // whole word is zero anywhere else. That makes the address falsifiable
+        // without needing to know what collided.
+        h.dut->reg_address_in = (A_CLXDAT_UT >> 1) & 0xFF;
+        h.dut->eval();
+        const uint16_t at_clxdat = h.dut->data_out;
+        h.dut->reg_address_in = (A_NEIGHBOUR >> 1) & 0xFF;
+        h.dut->eval();
+        const uint16_t at_neighbour = h.dut->data_out;
+        h.dut->reg_address_in = 0;
+        h.step(); h.step();
+        c.note("data_out reading at $00E: 0x" + std::to_string(at_clxdat)
+               + " (bit 15 " + (((at_clxdat >> 15) & 1) ? "set" : "clear")
+               + "), at $010: 0x" + std::to_string(at_neighbour));
+        // MUTATION CLXDAT-AT-00E stimulus red MUTATE=1 reads at $010 instead of
+        // $00E, so the read that should answer returns the neighbour's silence.
+        c.expect(((at_clxdat >> 15) & 1) == 1 && at_neighbour == 0,
+                 "CLXDAT-AT-00E: this module answers a read at $00E and is "
+                 "silent at $010, so CLXDAT is decoded where the address list "
+                 "puts it and the list's `R` is the access it has "
+                 "[claims: opus:AA-clxdat.c1]");
+    }
+
+    // --- 6. CLXCON at $098, reached through what a write there does.
+    {
+        Harness h(true);
+        (void)h.collides(0x7F);
+        h.write(A_CLXCON2, 0x00C3);             // arm planes 7 and 8
+        const bool armed = h.collides(0x7F);
+        h.write(A_CLXCON_UT, 0x0FFF);
+        const bool after = h.collides(0x7F);
+        c.note(std::string("with CLXCON2 armed: collides ")
+               + (armed ? "yes" : "no") + "; after a write at $098: "
+               + (after ? "yes" : "no"));
+        // MUTATION CLXCON-AT-098 stimulus red MUTATE=1 writes at $09A instead
+        // of $098, so nothing clears and the armed state survives.
+        c.expect(!armed && after,
+                 "CLXCON-AT-098: a write at $098 clears CLXCON2 and a write at "
+                 "$09A does not, so CLXCON is decoded where the address list "
+                 "puts it [claims: opus:AA-clxcon.c1]");
     }
 
     // --- 4. The RTL gates CLXCON2 on AGA. The document does not say this.
