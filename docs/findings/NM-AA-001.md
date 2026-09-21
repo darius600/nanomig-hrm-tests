@@ -90,9 +90,18 @@ outside source settles it.
 
 For the pipeline: `tools/aa/cross_page_addresses.py` now reads every register
 row in the corpus, groups by name, and reports any register stated at more than
-one address, saying which one the shipped header agrees with. Over 342 register
-rows and 255 names, 87 of them stated on more than one page, **CLXCON2 is the
+one address, saying which one the shipped header agrees with. Over 349 register
+rows and 257 names, 92 of them stated on more than one page, **CLXCON2 is the
 only one.**
+
+It read 342 rows until 21.09.2026. Five register rows carry TWO marks --
+`SPRHDAT   &h 078`, and the same for SPRHPTH, SPRHPTL, BPLHPTH and BPLHPTL, one
+mark from the usage legend and one from the revision legend. The pattern allowed
+exactly one, so those lines matched nothing at all and the rows were never read.
+All five turn out to disagree with their own alphabetical entries (`+h` or `&h`
+against a bare `H`), which a reader had reported from the page while the tool
+could not see it. The address conflict is unaffected: CLXCON2 is still the only
+one, over more rows than before.
 
 ## What holds this up
 
