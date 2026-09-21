@@ -68,6 +68,7 @@ artefacts rather than by remembering.
 | test packages | **208** |
 | assertions | **3263** — 3077 pass, **186 fail** |
 | packages | 141 green, 67 carrying at least one red, **0 build errors** |
+| AA findings | **1** — the second oracle, the 1991 AA chip-set specification, has one registered finding and one package. It is at the start of its first pass, not at this one's state |
 | registered findings | **65**, of which **40 ask you to decide whether the RTL should change** — 59 open, 6 withdrawn; of the open ones 53 rest on a graded red, 5 are source observations, and one is filed against the printed page with no test yet |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **12** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, and appendix K |
 
