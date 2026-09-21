@@ -1,5 +1,6 @@
 #!/bin/bash
-# Every test in this repository: the HRM suite and the integration tests.
+# Every test in this repository: the HRM suite, the AA suite and the
+# integration tests.
 #
 #   ./run_all.sh            rebuild everything (make -B) and run
 #   ./run_all.sh --fast     reuse existing binaries where possible
@@ -23,6 +24,18 @@ rc=0
 
 echo "===== HRM suite ====="
 ./hrm/run_all.sh "$@" || rc=1
+
+# The AA packages live in their own tree and this script -- the one whose first
+# line says "every test in this repository" -- did not run them. hrm/run_all.sh
+# grew --in on 21.09.2026 for exactly that reason and the repair stopped one
+# level short, so three packages and 15 assertions stayed invisible to the
+# repository's own entry point on the day they were written. That is the same
+# failure the header above describes from 07.09.2026, one tree over.
+if [ -d aa ]; then
+    echo
+    echo "===== AA suite ====="
+    ./hrm/run_all.sh --in ../aa "$@" || rc=1
+fi
 
 echo
 echo "===== Integration ====="
