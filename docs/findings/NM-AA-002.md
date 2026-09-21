@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | a graded green with an inverse control |
-| **What is asked of a reader** | Nothing in the RTL. NanoMig restricts $078 exactly as it restricts every neighbouring address. What is asked is whether the missing `~` on SPRHDAT's row is a printing omission — which the other 57 rows in the range suggest — or a deliberate statement that this one register is reachable by the Coprocessor without CDANG. |
+| **What is asked of a reader** | Nothing in the RTL. NanoMig restricts $078 exactly as it restricts every neighbouring address. What is asked is whether the missing `~` on SPRHDAT's row is a printing omission — which the other 58 rows in the range suggest — or a deliberate statement that this one register is reachable by the Coprocessor without CDANG. |
 | **Module** | `src/minimig-aga/agnus_copper.v:225` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L225) at the pinned revision |
 | **Report to** | **nowhere in code.** The defect is in a 1991 Commodore document, and the company is gone. It is filed so that no AA claim rests on SPRHDAT's row being complete |
 | **Test** | [`aa/aa-copper-register-map`](../../aa/aa-copper-register-map) · seven graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
@@ -49,12 +49,12 @@ address below $080 — and $078 is inside it.
 
 ## The measurement
 
-`tools/aa/tilde_vs_copper_range.py` in the pipeline repository reads all 231
+`tools/aa/tilde_vs_copper_range.py` in the pipeline repository reads all 237
 address-list rows and compares the two:
 
 ```
-marked `~` by the document      : 57
-below $080, the RTL's ECS rule  : 58
+marked `~` by the document      : 58
+below $080, the RTL's ECS rule  : 59
 
 marked `~` but at or above $080 (RTL would allow the Coprocessor): 0
 below $080 but NOT marked `~` (RTL blocks, document is silent)   : 1
@@ -63,6 +63,16 @@ below $080 but NOT marked `~` (RTL blocks, document is silent)   : 1
 
 **Zero over-marks and one under-mark.** The document never claims a restriction
 the RTL does not enforce; it omits one the RTL does.
+
+These counts read 231 rows, 57 and 58 until 21.09.2026, and the conclusion is
+the one thing that did not move. The row pattern held the mark column as the
+character range `a-h`, which excludes `p` — a mark both legends define — and
+could not read a name the document prints in brackets. Six rows were dropped in
+silence: BPLCON4 and CLXCON2 (`p`), BPL7DAT and BPL8DAT (`&p`), FMODE (`P`), and
+`(BPLHDAT)`. BPLHDAT is marked `~` and sits at $07A, so it joins both columns
+and cancels out; SPRHDAT is still the single register the RTL blocks and the
+document does not mark. Found by two blind readers of different slices
+reporting the same shape, and confirmed by counting the rows both ways.
 
 ## What holds this up
 
