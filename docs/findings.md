@@ -279,7 +279,7 @@ blank.
 | [NM-AA-002](findings/NM-AA-002.md) | SPRHDAT is the one register in the Coprocessor-restricted range left unmarked | open · page · green with an inverse control | `aa/aa-copper-register-map` | not consulted — a defect in a document, not a behaviour |
 | [NM-AA-003](findings/NM-AA-003.md) | the bit table spells BLTCON0 bit 12 ASA0 in one column and ASH0 in the other | open · page · green with an inverse control | `aa/aa-blitter-function-and-shift` | not consulted — a defect in a document, not a behaviour |
 
-**Nineteen AA packages carry 117 graded assertions, and one of them is red.** Fourteen
+**Twenty AA packages carry 121 graded assertions, and one of them is red.** Fourteen
 cover the fourteen RTL modules that decode an address the AA register list
 prints; four are from slice 2, the alphabetical entries with their bit tables,
 which is now classified to the last record.
