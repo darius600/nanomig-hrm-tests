@@ -281,17 +281,18 @@ blank.
 | [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23 where the AA list gives an Alice $22 | open · RTL · **red** | `aa/aa-beam-position-words` | **not consulted** — what each returns in VPOSR bits 14-8 is exactly the evidence that would settle it |
 | [NM-AA-005](findings/NM-AA-005.md) | the long-line toggle runs, but no line is a colour clock longer | open · RTL · **red** | `aa/aa-programmable-sync-windows` | **not consulted** — whether any of them lengthens the alternate line under a programmed HTOTAL is exactly the evidence that would settle it |
 
-**Twenty-seven AA packages carry 155 graded assertions, and three of them
-are red.** Fourteen cover the fourteen RTL modules that decode an address the
-AA register list prints; four are from slice 2, five from slice 4, one from
-slice 3, one from slice 5 and two from slice 1, and four of those slices are
+**Thirty AA packages carry 173 graded assertions, and four of them are red.**
+Fourteen cover the fourteen RTL modules that decode an address the AA register
+list prints; four are from slice 2, five from slice 4, one from slice 3, one
+from slice 5 and five from slice 1, and all five of those slices are
 classified to their last record.
 
-One red is `aa/aa-beamcon0-control-bits`, and it is not a finding of its own:
-it reaches NM-HRM-032 from the second document, and the corroboration is
-recorded on that finding's page. The other two are findings and reds at once:
-NM-AA-004, VPOSR's chip identifier, and NM-AA-005, the long line that is no
-longer than a short one.
+Two of the four reds are findings of their own: NM-AA-004, VPOSR's chip
+identifier, and NM-AA-005, the long line that is no longer than a short one.
+The other two are corroborations, recorded on the pages of findings already
+raised against the Hardware Reference Manual -- `aa-beamcon0-control-bits`
+reaches NM-HRM-032 and `aa-disk-status-bits` reaches NM-HRM-041. A second
+document saying the same thing is not a second key.
 
 These five keys are what the AA suite has turned up so far. A package that
 finds nothing has still done its work: it says the document and the silicon
