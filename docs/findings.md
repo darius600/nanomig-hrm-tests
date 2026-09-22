@@ -280,17 +280,20 @@ blank.
 | [NM-AA-003](findings/NM-AA-003.md) | the bit table spells BLTCON0 bit 12 ASA0 in one column and ASH0 in the other | open · page · green with an inverse control | `aa/aa-blitter-function-and-shift` | not consulted — a defect in a document, not a behaviour |
 | [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23 where the AA list gives an Alice $22 | open · RTL · **red** | `aa/aa-beam-position-words` | **not consulted** — what each returns in VPOSR bits 14-8 is exactly the evidence that would settle it |
 
-**Twenty-four AA packages carry 136 graded assertions, and two of them are red.** Fourteen
-cover the fourteen RTL modules that decode an address the AA register list
-prints; four are from slice 2, five from slice 4 and one from slice 3; those three
-slices are all classified to the last record. The second red is NM-AA-004,
-which IS a finding of its own: VPOSR's chip identifier.
-The red is `aa/aa-beamcon0-control-bits`, and it is not a fourth AA finding: it
-reaches NM-HRM-032 from the second document, and corroboration is recorded on
-that finding's page. These three keys are what the AA suite has turned up so
-far. A package that finds
-nothing has still done its work: it says the document and the silicon agree on
-those rows.
+**Twenty-five AA packages carry 140 graded assertions, and two of them are
+red.** Fourteen cover the fourteen RTL modules that decode an address the AA
+register list prints; four are from slice 2, five from slice 4, one from slice
+3 and one from slice 5, and those four slices are classified to their last
+record.
+
+One red is `aa/aa-beamcon0-control-bits`, and it is not a finding of its own:
+it reaches NM-HRM-032 from the second document, and the corroboration is
+recorded on that finding's page. The other is NM-AA-004, VPOSR's chip
+identifier, which is a finding and a red at once.
+
+These four keys are what the AA suite has turned up so far. A package that
+finds nothing has still done its work: it says the document and the silicon
+agree on those rows.
 
 ## The analyses that produced groups of findings
 
