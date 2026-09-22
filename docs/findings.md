@@ -278,11 +278,13 @@ blank.
 | [NM-AA-001](findings/NM-AA-001.md) | the AA list gives CLXCON2 two addresses, and $10C belongs to BPLCON4 | open · page · green with an inverse control | `aa/aa-clxcon2-address` | not consulted — a defect in a document, not a behaviour |
 | [NM-AA-002](findings/NM-AA-002.md) | SPRHDAT is the one register in the Coprocessor-restricted range left unmarked | open · page · green with an inverse control | `aa/aa-copper-register-map` | not consulted — a defect in a document, not a behaviour |
 | [NM-AA-003](findings/NM-AA-003.md) | the bit table spells BLTCON0 bit 12 ASA0 in one column and ASH0 in the other | open · page · green with an inverse control | `aa/aa-blitter-function-and-shift` | not consulted — a defect in a document, not a behaviour |
+| [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23 where the AA list gives an Alice $22 | open · RTL · **red** | `aa/aa-beam-position-words` | **not consulted** — what each returns in VPOSR bits 14-8 is exactly the evidence that would settle it |
 
-**Twenty-three AA packages carry 132 graded assertions, and one of them is red.** Fourteen
+**Twenty-four AA packages carry 136 graded assertions, and two of them are red.** Fourteen
 cover the fourteen RTL modules that decode an address the AA register list
-prints; four are from slice 2 and five from slice 4; both of those slices are now
-classified to the last record.
+prints; four are from slice 2, five from slice 4 and one from slice 3; those three
+slices are all classified to the last record. The second red is NM-AA-004,
+which IS a finding of its own: VPOSR's chip identifier.
 The red is `aa/aa-beamcon0-control-bits`, and it is not a fourth AA finding: it
 reaches NM-HRM-032 from the second document, and corroboration is recorded on
 that finding's page. These three keys are what the AA suite has turned up so
