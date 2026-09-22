@@ -272,7 +272,7 @@ int main(int argc, char** argv) {
         const bool after = h.collides(0x7F);
         c.record("the AA document states no chipset gate on CLXCON2 writes; "
                  "this is measured from the RTL, not graded against the page "
-                 "[AA-clxcon2.n1]");
+                 "[lot:AA-clxcon2.n1 -- written by the lot, not by a reader]");
         c.note(std::string("with aga=0, a write to $10E changes the match: ")
                + ((before != after) ? "yes" : "no"));
     }
