@@ -13,10 +13,15 @@
 //   its fill logic, its line mode, or what the modulo is FOR. It grades where
 //   twelve registers are decoded.
 //
-// WHY THESE TWELVE. Of 235 registers the AA list gives an address for, 92 are
-//   also declared as an address in the RTL and 49 of those appear on no graded
-//   line anywhere in the suite. agnus_blitter_adrgen holds twelve of the 49 --
-//   the largest group left after the Copper package took eight.
+// WHY THESE TWELVE. Of 236 registers the AA list gives an address for, 93 are
+//   also declared as an address in the RTL. agnus_blitter_adrgen holds twelve
+//   of them -- the largest group left after the Copper package took eight.
+//   The figures read 235, 92 and 49 until 22.09.2026. They were one
+//   reading's, not the pipeline's -- address_yield's summary indexed the
+//   first inventory on its command line whatever else was passed -- and
+//   the row pattern held the mark column as the range `a-h`, which
+//   excludes `p` and dropped six rows including CLXCON2 and FMODE. Over
+//   the union of all 38 readings: 236 with an address, 93 in the RTL.
 //
 // HOW THE ADDRESSES ARE OBSERVED. `address_out[20:1]` is the pointer currently
 //   selected by `ptrsel`, so each pointer can be written by address and then
