@@ -268,9 +268,7 @@ int main(int argc, char** argv) {
                       "comes back at $010 and nowhere else, which is the pair "
                       "of addresses and the W/R access letters the AA list "
                       "prints for the two halves of this register [p.6,7,10] "
-                      "[claims: sol:AA-adkcon.c1/c2/c4 opus:AA-adkcon.c1/c2/c4 "
-                      "sol:AA-adkcon.c5 sol:AA-adkconr.c1/c2/c6/c7 "
-                      "opus:AA-adkconr.c1/c2]");
+                      "[claims: opus:AA-adkcon.c1/c2/c4 opus:AA-adkconr.c1/c2 sol:AA-adkcon.c1/c2/c4/c5 sol:AA-adkconr.c1/c2/c6/c7]");
     }
 
     // --- 3. Bit 15 decides whether a written 1 sets or clears ---------------
@@ -372,7 +370,7 @@ int main(int argc, char** argv) {
                       "stays idle until a word written at $096 enables it, "
                       "which is the address and the W access letter the AA list "
                       "prints for DMACON [p.7] "
-                      "[claims: sol:AA-dmacon.c1/c2 opus:AA-dmacon.c1/c2]");
+                      "[claims: opus:AA-dmacon.c1/c2 sol:AA-dmacon.c1/c2]");
     }
 
     // --- 8. And the same address clears what it set -------------------------
@@ -395,32 +393,93 @@ int main(int argc, char** argv) {
                       "DMACON-CLEARS-WHAT-IT-SET: the same address turns the "
                       "transfer off again when bit 15 is low, which is what the "
                       "AA list's description column means by write(clear or "
-                      "set) [p.7] [claims: sol:AA-dmacon.c4 opus:AA-dmacon.c4]");
+                      "set) [p.7] [claims: opus:AA-dmacon.c4 sol:AA-dmacon.c4]");
     }
 
     // --- What this boundary cannot grade ------------------------------------
-    checks.record("DECLINED at this boundary: the list's chip column gives "
-                  "these to Paula, and ADKCONR carries the `~` Coprocessor "
-                  "mark. No port of paula carries a chip identity, and the "
-                  "mark is enforced in agnus_copper's cdang path "
-                  "[claims: sol:AA-adkcon.c3 opus:AA-adkcon.c3 "
-                  "sol:AA-adkcon.c6 sol:AA-adkconr.c3/c4 "
-                  "opus:AA-adkconr.c3/c4 sol:AA-adkconr.c8 "
-                  "sol:AA-dmacon.c3 opus:AA-dmacon.c3]");
-    checks.record("DECLINED at this boundary: the two pages describe ADKCONR "
-                  "differently, which is a fact about the document rather than "
-                  "about any signal [claims: sol:AA-adkconr.c5]");
-    checks.record("DECLINED at this boundary: PRECOMP 1-0, MFMPREC and MSBSYNC "
-                  "name bits 14-12 and 9. MEASURED by grep over every .v file "
-                  "under src/minimig-aga: `adkcon` appears in paula.v alone, "
-                  "and its only two consumers are adkcon[11] and adkcon[10]. "
-                  "The bits are stored and read back; nothing acts on them "
-                  "[claims: sol:AA-adkcon.c10/c11/c12/c13/c14/c15/c16/c17 "
-                  "sol:AA-adkcon.c22/c23]");
-    checks.record("DECLINED at this boundary: WORDSYNC reaches paula_floppy's "
-                  "`wordsync` input, but seeing it act needs a disk read "
-                  "carrying a word equal to DSKSYNC, which is this package's "
-                  "first non-goal [claims: sol:AA-adkcon.c20/c21]");
+    checks.record(
+             "DECLINED at this boundary (absent): MEASURED by grep over every .v "
+             "file under src/minimig-aga: `adkcon` appears in paula.v alone, and "
+             "its only two consumers are `.uartbrk(adkcon[11])` at paula.v:211 "
+             "and `.wordsync(adkcon[10])` at paula.v:269. The bit this claim "
+             "describes is stored and read back, and nothing acts on it. "
+             "[claims: sol:AA-adkcon.c11/c12/c13/c14/c16/c17/c23]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): ADKCONR hands back the "
+             "stored bit, and a stored bit carries no name. Nothing at this "
+             "boundary distinguishes bit 12 called MFMPREC from bit 12 called "
+             "anything else. [claims: sol:AA-adkcon.c10/c15/c22]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-aud0len.c2 "
+             "opus:AA-aud0per.c2 opus:AA-aud0vol.c2 opus:AA-aud1len.c2 "
+             "opus:AA-aud1per.c2 opus:AA-aud1vol.c2 opus:AA-aud2len.c2 "
+             "opus:AA-aud2per.c2 opus:AA-aud2vol.c2 opus:AA-aud3len.c2 "
+             "opus:AA-aud3per.c2 opus:AA-aud3vol.c2 opus:AA-dmaconr.c2 "
+             "sol:AA-aud0len.c2 sol:AA-aud0per.c2 sol:AA-aud0vol.c2 "
+             "sol:AA-aud1len.c2 sol:AA-aud1per.c2 sol:AA-aud1vol.c2 "
+             "sol:AA-aud2len.c2 sol:AA-aud2per.c2 sol:AA-aud2vol.c2 "
+             "sol:AA-aud3len.c2 sol:AA-aud3per.c2 sol:AA-aud3vol.c2 "
+             "sol:AA-dmaconr.c2]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-aud0len.c3 opus:AA-aud0per.c3 opus:AA-aud0vol.c3 "
+             "opus:AA-aud1len.c3 opus:AA-aud1per.c3 opus:AA-aud1vol.c3 "
+             "opus:AA-aud2len.c3 opus:AA-aud2per.c3 opus:AA-aud2vol.c3 "
+             "opus:AA-aud3len.c3 opus:AA-aud3per.c3 opus:AA-aud3vol.c3 "
+             "opus:AA-dmaconr.c3 sol:AA-aud0len.c3 sol:AA-aud0per.c3 "
+             "sol:AA-aud0vol.c3 sol:AA-aud1len.c3 sol:AA-aud1per.c3 "
+             "sol:AA-aud1vol.c3 sol:AA-aud2len.c3 sol:AA-aud2per.c3 "
+             "sol:AA-aud2vol.c3 sol:AA-aud3len.c3 sol:AA-aud3per.c3 "
+             "sol:AA-aud3vol.c3 sol:AA-dmaconr.c3]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The claim names the chip "
+             "that implements the register. Which silicon a block is fabricated "
+             "in is a fact about the source tree and no port of paula carries "
+             "it. [claims: opus:AA-adkcon.c3 opus:AA-adkconr.c3 "
+             "opus:AA-dmacon.c3 sol:AA-adkcon.c3/c6 sol:AA-adkconr.c3/c8 "
+             "sol:AA-dmacon.c3]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: opus:AA-aud0len.c1 "
+             "opus:AA-aud0per.c1 opus:AA-aud0vol.c1 opus:AA-aud1len.c1 "
+             "opus:AA-aud1per.c1 opus:AA-aud1vol.c1 opus:AA-aud2len.c1 "
+             "opus:AA-aud2per.c1 opus:AA-aud2vol.c1 opus:AA-aud3len.c1 "
+             "opus:AA-aud3per.c1 opus:AA-aud3vol.c1 opus:AA-dmaconr.c1/c5 "
+             "sol:AA-aud0len.c1 sol:AA-aud0per.c1 sol:AA-aud0vol.c1 "
+             "sol:AA-aud1len.c1 sol:AA-aud1per.c1 sol:AA-aud1vol.c1 "
+             "sol:AA-aud2len.c1 sol:AA-aud2per.c1 sol:AA-aud2vol.c1 "
+             "sol:AA-aud3len.c1 sol:AA-aud3per.c1 sol:AA-aud3vol.c1 "
+             "sol:AA-dmaconr.c1/c5]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): WORDSYNC reaches "
+             "paula_floppy's `wordsync` input, so the signal exists. Seeing it "
+             "act needs a disk read carrying a word equal to DSKSYNC, which is "
+             "this package's first non-goal. [claims: sol:AA-adkcon.c20/c21]");
+    checks.record(
+             "DECLINED at this boundary (not-hardware): The claim is a legend "
+             "statement, a gap between two printed rows, or a reserved line -- "
+             "the document describing its own notation and layout. The one "
+             "legend mark that IS a hardware restriction, the `~` Coprocessor "
+             "limit, is graded by this package's own assertion. [claims: "
+             "opus:AA-dmaconr.c4 sol:AA-dmaconr.c4]");
+    checks.record(
+             "DECLINED at this boundary (not-hardware): The two pages describe "
+             "the same register in different words. Which description the "
+             "document should print is a fact about the document, not about a "
+             "signal. [claims: sol:AA-adkconr.c5]");
+    checks.record(
+             "DECLINED at this boundary (outside-uut): The `~` mark is a "
+             "Coprocessor write restriction enforced in agnus_copper's cdang "
+             "path and graded by aa-copper-register-map. [claims: "
+             "opus:AA-adkconr.c4 sol:AA-adkconr.c4]");
 
     std::cout << "\nAssertions: " << checks.passed << " passed, "
               << checks.failed << " failed\n";

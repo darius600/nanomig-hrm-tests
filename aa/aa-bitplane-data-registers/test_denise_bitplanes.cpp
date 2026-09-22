@@ -233,13 +233,7 @@ int main(int argc, char** argv) {
                       "of the seven addresses lights that plane's output bit "
                       "and no other, which is the address and the W access "
                       "letter the AA list prints for BPL2DAT through BPL8DAT "
-                      "[p.8] [claims: sol:AA-bpl2dat.c1/c2 opus:AA-bpl2dat.c1/c2 "
-                      "sol:AA-bpl3dat.c1/c2 opus:AA-bpl3dat.c1/c2 "
-                      "sol:AA-bpl4dat.c1/c2 opus:AA-bpl4dat.c1/c2 "
-                      "sol:AA-bpl5dat.c1/c2 opus:AA-bpl5dat.c1/c2 "
-                      "sol:AA-bpl6dat.c1/c2 opus:AA-bpl6dat.c1/c2 "
-                      "sol:AA-bpl7dat.c1/c2 opus:AA-bpl7dat.c1/c2 "
-                      "sol:AA-bpl8dat.c1/c2 opus:AA-bpl8dat.c1/c2]");
+                      "[p.8] [claims: opus:AA-bpl2dat.c1/c2 opus:AA-bpl3dat.c1/c2 opus:AA-bpl4dat.c1/c2 opus:AA-bpl5dat.c1/c2 opus:AA-bpl6dat.c1/c2 opus:AA-bpl7dat.c1/c2 opus:AA-bpl8dat.c1/c2 sol:AA-bpl2dat.c1/c2 sol:AA-bpl3dat.c1/c2 sol:AA-bpl4dat.c1/c2 sol:AA-bpl5dat.c1/c2 sol:AA-bpl6dat.c1/c2 sol:AA-bpl7dat.c1/c2 sol:AA-bpl8dat.c1/c2]");
     }
 
     // --- 3. And the feed is parallel in, serial out -------------------------
@@ -286,13 +280,7 @@ int main(int argc, char** argv) {
                       "on that plane's output, most significant first, which is "
                       "the parallel-to-serial conversion the AA list's "
                       "description column names for each of the seven planes "
-                      "[p.8] [claims: sol:AA-bpl2dat.c5 opus:AA-bpl2dat.c5 "
-                      "sol:AA-bpl3dat.c5 opus:AA-bpl3dat.c5 "
-                      "sol:AA-bpl4dat.c5 opus:AA-bpl4dat.c5 "
-                      "sol:AA-bpl5dat.c5 opus:AA-bpl5dat.c5 "
-                      "sol:AA-bpl6dat.c5 opus:AA-bpl6dat.c5 "
-                      "sol:AA-bpl7dat.c6 opus:AA-bpl7dat.c6 "
-                      "sol:AA-bpl8dat.c6 opus:AA-bpl8dat.c6]");
+                      "[p.8] [claims: opus:AA-bpl2dat.c5 opus:AA-bpl3dat.c5 opus:AA-bpl4dat.c5 opus:AA-bpl5dat.c5 opus:AA-bpl6dat.c5 opus:AA-bpl7dat.c6 opus:AA-bpl8dat.c6 sol:AA-bpl2dat.c5 sol:AA-bpl3dat.c5 sol:AA-bpl4dat.c5 sol:AA-bpl5dat.c5 sol:AA-bpl6dat.c5 sol:AA-bpl7dat.c6 sol:AA-bpl8dat.c6]");
     }
 
     // --- 4. BPLCON1 carries two scroll values, not one ----------------------
@@ -322,35 +310,70 @@ int main(int argc, char** argv) {
                       "ones, so the register carries a scroll value for each "
                       "playfield rather than one for all planes, which is what "
                       "the AA list prints for BPLCON1 [p.8] "
-                      "[claims: sol:AA-bplcon1.c1/c2/c4 "
-                      "opus:AA-bplcon1.c1/c2/c4]");
+                      "[claims: opus:AA-bplcon1.c1/c2/c4 sol:AA-bplcon1.c1/c2/c4]");
     }
 
     // --- What this boundary cannot grade ------------------------------------
-    checks.record("DECLINED at this boundary: the list's chip column gives all "
-                  "eight registers to Denise/Lisa. No port of denise_bitplanes "
-                  "carries a chip identity [claims: sol:AA-bpl2dat.c3 "
-                  "opus:AA-bpl2dat.c3 sol:AA-bpl3dat.c3 opus:AA-bpl3dat.c3 "
-                  "sol:AA-bpl4dat.c3 opus:AA-bpl4dat.c3 sol:AA-bpl5dat.c3 "
-                  "opus:AA-bpl5dat.c3 sol:AA-bpl6dat.c3 opus:AA-bpl6dat.c3 "
-                  "sol:AA-bpl7dat.c3 opus:AA-bpl7dat.c3 sol:AA-bpl8dat.c3 "
-                  "opus:AA-bpl8dat.c3 sol:AA-bplcon1.c3 opus:AA-bplcon1.c3]");
-    checks.record("DECLINED at this boundary: every BPLxDAT row carries `&`, "
-                  "which p.6 defines as use by a DMA channel only. Who is "
-                  "allowed to write an address is decided by the bitplane DMA "
-                  "in Agnus, and this module answers the same way whatever "
-                  "drove the bus [claims: sol:AA-bpl2dat.c4 opus:AA-bpl2dat.c4 "
-                  "sol:AA-bpl3dat.c4 opus:AA-bpl3dat.c4 sol:AA-bpl4dat.c4 "
-                  "opus:AA-bpl4dat.c4 sol:AA-bpl5dat.c4 opus:AA-bpl5dat.c4 "
-                  "sol:AA-bpl6dat.c4 opus:AA-bpl6dat.c4 sol:AA-bpl7dat.c4 "
-                  "opus:AA-bpl7dat.c4 sol:AA-bpl8dat.c4 opus:AA-bpl8dat.c4]");
-    checks.record("DECLINED at this boundary: BPL7DAT and BPL8DAT carry a "
-                  "lowercase `p`, and the document's two legends disagree on "
-                  "what it means -- p.6 calls it new for the chip set, p.10 "
-                  "calls lowercase p added or changed in hires chips and "
-                  "capital P new. Which legend governs is a fact about the "
-                  "document [claims: sol:AA-bpl7dat.c5 opus:AA-bpl7dat.c5 "
-                  "sol:AA-bpl8dat.c5 opus:AA-bpl8dat.c5]");
+    checks.record(
+             "DECLINED at this boundary (absent): The register is not decoded "
+             "anywhere in this design. The four strobes are generated from the "
+             "beam counter's own hpos rather than written at an address; the AGA "
+             "high registers and REFPTR are in no module of this core. [claims: "
+             "opus:AA-bplhdat-list.c1/c2 sol:AA-bplhdat.c1/c2]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-bpl1dat.c2 "
+             "sol:AA-bpl1dat.c2]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-bpl1dat.c3 opus:AA-bplhdat-list.c3 "
+             "sol:AA-bpl1dat.c3]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The claim names the chip "
+             "that implements the register. Which silicon a block is fabricated "
+             "in is a fact about the source tree and no port of denise_bitplanes "
+             "carries it. [claims: opus:AA-bpl2dat.c3 opus:AA-bpl3dat.c3 "
+             "opus:AA-bpl4dat.c3 opus:AA-bpl5dat.c3 opus:AA-bpl6dat.c3 "
+             "opus:AA-bpl7dat.c3 opus:AA-bpl8dat.c3 opus:AA-bplcon1.c3 "
+             "sol:AA-bpl2dat.c3 sol:AA-bpl3dat.c3 sol:AA-bpl4dat.c3 "
+             "sol:AA-bpl5dat.c3 sol:AA-bpl6dat.c3 sol:AA-bpl7dat.c3 "
+             "sol:AA-bpl8dat.c3 sol:AA-bplcon1.c3]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: "
+             "opus:AA-bpl1dat.c1/c5 sol:AA-bpl1dat.c1/c5]");
+    checks.record(
+             "DECLINED at this boundary (not-hardware): The claim is a legend "
+             "statement, a gap between two printed rows, or a reserved line -- "
+             "the document describing its own notation and layout. The one "
+             "legend mark that IS a hardware restriction, the `~` Coprocessor "
+             "limit, is graded by this package's own assertion. [claims: "
+             "opus:AA-bpl1dat.c4 sol:AA-bpl1dat.c4]");
+    checks.record(
+             "DECLINED at this boundary (not-hardware): The row's lowercase `p` "
+             "is read differently by the document's two legends: p.6 calls it "
+             "new for the chip set, p.10 calls lowercase p added or changed in "
+             "hires chips and capital P new. Which legend governs is a fact "
+             "about the document, not about a signal. [claims: "
+             "opus:AA-bpl7dat.c5 opus:AA-bpl8dat.c5 sol:AA-bpl7dat.c5 "
+             "sol:AA-bpl8dat.c5]");
+    checks.record(
+             "DECLINED at this boundary (outside-uut): The `&` mark says the "
+             "address is for use by a DMA channel only. Who is allowed to drive "
+             "the bus is decided by the bitplane DMA in Agnus; this module "
+             "answers the same way whatever drove it. [claims: "
+             "opus:AA-bpl2dat.c4 opus:AA-bpl3dat.c4 opus:AA-bpl4dat.c4 "
+             "opus:AA-bpl5dat.c4 opus:AA-bpl6dat.c4 opus:AA-bpl7dat.c4 "
+             "opus:AA-bpl8dat.c4 sol:AA-bpl2dat.c4 sol:AA-bpl3dat.c4 "
+             "sol:AA-bpl4dat.c4 sol:AA-bpl5dat.c4 sol:AA-bpl6dat.c4 "
+             "sol:AA-bpl7dat.c4 sol:AA-bpl8dat.c4]");
 
     std::cout << "\nAssertions: " << checks.passed << " passed, "
               << checks.failed << " failed\n";

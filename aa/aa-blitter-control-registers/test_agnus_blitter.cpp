@@ -206,8 +206,7 @@ int main(int argc, char** argv) {
         c.expect(!before && after,
                  "BLTSIZE-AT-058-STARTS: a write at $058 sets the blitter busy, "
                  "which is the address and the starting function the AA list "
-                 "prints for BLTSIZE [p.6] [claims: sol:AA-bltsize.c1/c2 "
-                 "opus:AA-bltsize.c1/c2]");
+                 "prints for BLTSIZE [p.6] [claims: opus:AA-bltsize.c1/c2 sol:AA-bltsize.c1/c2]");
     }
 
     // --- 3. BLTSIZH starts a blit, but only with ECS ------------------------
@@ -226,8 +225,7 @@ int main(int argc, char** argv) {
                  "BLTSIZH-AT-05E-NEEDS-ECS: a write at $05E starts a blit only "
                  "when the ECS extensions are enabled, which is the address the "
                  "AA list prints for BLTSIZH and the chip-set condition its row "
-                 "carries [p.6] [claims: sol:AA-bltsizh.c1/c2 "
-                 "opus:AA-bltsizh.c1/c2]");
+                 "carries [p.6] [claims: opus:AA-bltsizh.c1/c2 sol:AA-bltsizh.c1/c2]");
     }
 
     // --- 4. BLTSIZV holds the height and does NOT start ---------------------
@@ -242,7 +240,7 @@ int main(int argc, char** argv) {
                  "BLTSIZV-AT-05C-DOES-NOT-START: a write at $05C leaves the "
                  "blitter idle, so the two addresses the AA list gives a "
                  "starting function are the only two that have one [p.6] "
-                 "[claims: sol:AA-bltsizv.c1/c2 opus:AA-bltsizv.c1/c2]");
+                 "[claims: opus:AA-bltsizv.c1/c2 sol:AA-bltsizv.c1/c2]");
     }
 
     // --- 5. BLTADAT is the A source when no channel fetches it --------------
@@ -261,8 +259,7 @@ int main(int argc, char** argv) {
         c.expect(got == 0x1234,
                  "BLTADAT-AT-074: the word written at $074 is what channel A "
                  "contributes when no DMA channel fetches it, which is the "
-                 "address the AA list prints for BLTADAT [p.7] [claims: "
-                 "sol:AA-bltadat.c1/c2 opus:AA-bltadat.c1/c2]");
+                 "address the AA list prints for BLTADAT [p.7] [claims: opus:AA-bltadat.c1/c2 sol:AA-bltadat.c1/c2]");
     }
 
     // --- 6. BLTCON0 carries the minterm -------------------------------------
@@ -293,8 +290,7 @@ int main(int argc, char** argv) {
                  "blitter computes -- the same source produces zero under one "
                  "minterm and passes through under another -- which is the "
                  "address and the control function the AA list prints for "
-                 "BLTCON0 [p.6] [claims: sol:AA-bltcon0.c1/c2 "
-                 "opus:AA-bltcon0.c1/c2]");
+                 "BLTCON0 [p.6] [claims: opus:AA-bltcon0.c1/c2 sol:AA-bltcon0.c1/c2]");
     }
 
     // --- 7. BLTAFWM masks the first word of channel A -----------------------
@@ -314,8 +310,83 @@ int main(int argc, char** argv) {
                  "BLTAFWM-AT-044: the word written at $044 masks the first word "
                  "channel A contributes, which is the address and the "
                  "first-word-mask function the AA list prints for BLTAFWM "
-                 "[p.6] [claims: sol:AA-bltafwm.c1/c2 opus:AA-bltafwm.c1/c2]");
+                 "[p.6] [claims: opus:AA-bltafwm.c1/c2 sol:AA-bltafwm.c1/c2]");
     }
+
+    // --- What this boundary cannot grade ------------------------------------
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-bltamod.c2 "
+             "opus:AA-bltbmod.c2 opus:AA-bltcmod.c2 opus:AA-bltdmod.c2 "
+             "sol:AA-bltamod.c2 sol:AA-bltbmod.c2 sol:AA-bltcmod.c2 "
+             "sol:AA-bltdmod.c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-bltamod.c3 opus:AA-bltbmod.c3 opus:AA-bltcmod.c3 "
+             "opus:AA-bltdmod.c3 sol:AA-bltamod.c3 sol:AA-bltbmod.c3 "
+             "sol:AA-bltcmod.c3 sol:AA-bltdmod.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim names the chip "
+             "that implements the register. Which silicon a block is fabricated "
+             "in is a fact about the source tree and no port of agnus_blitter "
+             "carries it. [claims: opus:AA-bltadat.c3 opus:AA-bltafwm.c3 "
+             "opus:AA-bltalwm.c3 opus:AA-bltbdat.c3 opus:AA-bltcdat.c3 "
+             "opus:AA-bltcon0.c3 opus:AA-bltcon0l.c3 opus:AA-bltcon1.c3 "
+             "opus:AA-bltddat.c3 opus:AA-bltsize.c3 opus:AA-bltsizh.c3 "
+             "opus:AA-bltsizv.c3 sol:AA-bltadat.c3 sol:AA-bltafwm.c3 "
+             "sol:AA-bltalwm.c3 sol:AA-bltbdat.c3 sol:AA-bltcdat.c3 "
+             "sol:AA-bltcon0.c3 sol:AA-bltcon0l.c3 sol:AA-bltcon1.c3 "
+             "sol:AA-bltddat.c3 sol:AA-bltsize.c3 sol:AA-bltsizh.c3 "
+             "sol:AA-bltsizv.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: opus:AA-bltcon0l.c6 "
+             "opus:AA-bltddat.c6 opus:AA-bltsizh.c6 opus:AA-bltsizv.c6 "
+             "sol:AA-bltamod.c1 sol:AA-bltbmod.c1 sol:AA-bltcmod.c1 "
+             "sol:AA-bltcon0l.c6 sol:AA-bltddat.c6 sol:AA-bltdmod.c1 "
+             "sol:AA-bltsizh.c6 sol:AA-bltsizv.c6]");
+    c.record(
+             "DECLINED at this boundary (insufficient): This package drives no "
+             "assertion at this register. It is observable in principle -- every "
+             "one of these is decoded in agnus_blitter and reaches the minterm "
+             "or the mask path -- and the six the package does drive are the "
+             "ones whose effect is visible in a single four-word blit. Restating "
+             "that as a measurement would be wrong, so it is recorded as the "
+             "boundary being insufficient FOR THIS FIXTURE and named here. "
+             "[claims: opus:AA-bltalwm.c1/c2 opus:AA-bltbdat.c1/c2 "
+             "opus:AA-bltcdat.c1/c2 opus:AA-bltcon0l.c1/c2 opus:AA-bltcon1.c1/c2 "
+             "opus:AA-bltddat.c1/c2 sol:AA-bltalwm.c1/c2 sol:AA-bltbdat.c1/c2 "
+             "sol:AA-bltcdat.c1/c2 sol:AA-bltcon0l.c1/c2 sol:AA-bltcon1.c1/c2 "
+             "sol:AA-bltddat.c1/c2]");
+    c.record(
+             "DECLINED at this boundary (not-hardware): The claim is a legend "
+             "statement, a gap between two printed rows, or a reserved line -- "
+             "the document describing its own notation and layout. The one "
+             "legend mark that IS a hardware restriction, the `~` Coprocessor "
+             "limit, is graded by this package's own assertion. [claims: "
+             "opus:AA-bltamod.c4 opus:AA-bltbmod.c4 opus:AA-bltcmod.c4 "
+             "opus:AA-bltdmod.c4 sol:AA-bltamod.c4 sol:AA-bltbmod.c4 "
+             "sol:AA-bltcmod.c4 sol:AA-bltdmod.c4]");
+    c.record(
+             "DECLINED at this boundary (outside-uut): The `~`, `&` and `%` "
+             "marks say who may reach the address -- the Coprocessor, a DMA "
+             "channel, or both. All three are decided outside this module, by "
+             "agnus_copper's cdang and by the bus. [claims: "
+             "opus:AA-bltadat.c4/c5 opus:AA-bltafwm.c4 opus:AA-bltalwm.c4 "
+             "opus:AA-bltbdat.c4/c5 opus:AA-bltcdat.c4/c5 opus:AA-bltcon0.c4 "
+             "opus:AA-bltcon0l.c4/c5 opus:AA-bltcon1.c4 opus:AA-bltddat.c4/c5 "
+             "opus:AA-bltsize.c4/c5 opus:AA-bltsizh.c4/c5 opus:AA-bltsizv.c4/c5 "
+             "sol:AA-bltadat.c4/c5 sol:AA-bltafwm.c4 sol:AA-bltalwm.c4 "
+             "sol:AA-bltbdat.c4/c5 sol:AA-bltcdat.c4/c5 sol:AA-bltcon0.c4 "
+             "sol:AA-bltcon0l.c4/c5 sol:AA-bltcon1.c4 sol:AA-bltddat.c4/c5 "
+             "sol:AA-bltsize.c4/c5 sol:AA-bltsizh.c4/c5 sol:AA-bltsizv.c4/c5]");
 
     std::cout << "\nAssertions: " << c.passed << " passed, "
               << c.failed << " failed\n";

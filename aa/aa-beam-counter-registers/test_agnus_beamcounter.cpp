@@ -210,8 +210,7 @@ int main(int argc, char** argv) {
                  "eight bits of the vertical counter and the horizontal "
                  "counter, and $006 reads the same two fields back in the same "
                  "order, which is the pair of addresses the AA list prints for "
-                 "VHPOSW and VHPOSR [p.6] [claims: sol:AA-vhposw.c1/c2/c5 "
-                 "opus:AA-vhposw.c1/c2 sol:AA-vhposr.c1/c2/c5 opus:AA-vhposr.c1/c2]");
+                 "VHPOSW and VHPOSR [p.6] [claims: opus:AA-vhposr.c1/c2 opus:AA-vhposw.c1/c2 sol:AA-vhposr.c1/c2/c5 sol:AA-vhposw.c1/c2/c5]");
     }
 
     // --- 3. VPOSW writes the vertical high bits, VPOSR reads them -----------
@@ -227,8 +226,7 @@ int main(int argc, char** argv) {
                  "VPOS-HIGH-BITS-AT-02A-AND-004: the top three bits of the "
                  "vertical counter are written at $02A and read at $004, which "
                  "is the pair of addresses the AA list prints for VPOSW and "
-                 "VPOSR [p.6] [claims: sol:AA-vposw.c1/c2 opus:AA-vposw.c1/c2 "
-                 "sol:AA-vposr.c1/c2 opus:AA-vposr.c1/c2]");
+                 "VPOSR [p.6] [claims: opus:AA-vposr.c1/c2 opus:AA-vposw.c1/c2 sol:AA-vposr.c1/c2 sol:AA-vposw.c1/c2]");
     }
 
     // --- 4. VPOSW bit 15 is the long-frame flag, and VPOSR bit 15 shows it --
@@ -246,8 +244,7 @@ int main(int argc, char** argv) {
         c.expect(set == 1 && cleared == 0,
                  "VPOSW-BIT15-IS-LONG-FRAME: the top bit written at $02A is "
                  "held and read back at $004, so VPOSR carries more than the "
-                 "counter and VPOSW writes more than it [p.6] [claims: "
-                 "sol:AA-vposr.c5 opus:AA-vposr.c5 sol:AA-vposw.c5 opus:AA-vposw.c5]");
+                 "counter and VPOSW writes more than it [p.6] [claims: opus:AA-vposr.c5 opus:AA-vposw.c5 sol:AA-vposr.c5 sol:AA-vposw.c5]");
     }
 
     // --- 5. BEAMCON0 decides whether the limit registers are consulted ------
@@ -276,8 +273,7 @@ int main(int argc, char** argv) {
                  "BEAMCON0-AT-1DC: bit 7 of the word written at $1DC decides "
                  "whether the limit registers are consulted at all, which is "
                  "what the AA list's function column means by (VARBEAMEN=1) "
-                 "against those rows [p.10] [claims: sol:AA-beamcon0.c1/c2 "
-                 "opus:AA-beamcon0.c1/c2]");
+                 "against those rows [p.10] [claims: opus:AA-beamcon0.c1/c2 sol:AA-beamcon0.c1/c2]");
     }
 
     // --- 6. HTOTAL sets where the horizontal counter wraps ------------------
@@ -297,7 +293,7 @@ int main(int argc, char** argv) {
                  "compares the doubled halves, so the written byte IS the wrap "
                  "point of the counter VHPOSR reports, "
                  "which is the address the AA list prints for HTOTAL [p.10] "
-                 "[claims: sol:AA-htotal.c1/c2/c5 opus:AA-htotal.c1/c2/c5]");
+                 "[claims: opus:AA-htotal.c1/c2/c5 sol:AA-htotal.c1/c2/c5]");
     }
 
     // --- 7. VTOTAL sets where the vertical counter wraps -------------------
@@ -325,9 +321,89 @@ int main(int argc, char** argv) {
                  "VTOTAL-AT-1C8: the word written at $1C8 sets the line the "
                  "vertical counter wraps at, which is the address the AA list "
                  "prints for VTOTAL and one of the rows whose function column "
-                 "carries (VARBEAMEN=1) [p.10] [claims: sol:AA-vtotal.c1/c2/c5 "
-                 "opus:AA-vtotal.c1/c2/c5]");
+                 "carries (VARBEAMEN=1) [p.10] [claims: opus:AA-vtotal.c1/c2/c5 sol:AA-vtotal.c1/c2/c5]");
     }
+
+    // --- What this boundary cannot grade ------------------------------------
+    c.record(
+             "DECLINED at this boundary (absent): The register is not decoded "
+             "anywhere in this design. The four strobes are generated from the "
+             "beam counter's own hpos rather than written at an address; the AGA "
+             "high registers and REFPTR are in no module of this core. [claims: "
+             "opus:AA-hhposr.c1/c2/c5 opus:AA-hhposw.c1/c2/c5 "
+             "opus:AA-refptr.c1/c2/c4/c5 opus:AA-strequ.c1/c2/c4/c5/c6 "
+             "opus:AA-strhor.c1/c2/c4/c5/c6 opus:AA-strlong.c1/c2/c4/c5/c6 "
+             "opus:AA-strvbl.c1/c2/c4/c5/c6 sol:AA-hhposr.c1/c2/c5 "
+             "sol:AA-hhposw.c1/c2/c5 sol:AA-refptr.c1/c2/c4/c5 "
+             "sol:AA-strequ.c1/c2/c4/c5/c6 sol:AA-strhor.c1/c2/c4/c5/c6 "
+             "sol:AA-strlong.c1/c2/c4/c5/c6 sol:AA-strvbl.c1/c2/c4/c5/c6]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-hbstop.c2 "
+             "opus:AA-hbstrt.c2 opus:AA-hcenter.c2 opus:AA-hsstop.c2 "
+             "opus:AA-hsstrt.c2 opus:AA-vbstop.c2 opus:AA-vbstrt.c2 "
+             "opus:AA-vsstop.c2 opus:AA-vsstrt.c2 sol:AA-hbstop.c2 "
+             "sol:AA-hbstrt.c2 sol:AA-hcenter.c2 sol:AA-hsstop.c2 "
+             "sol:AA-hsstrt.c2 sol:AA-vbstop.c2 sol:AA-vbstrt.c2 "
+             "sol:AA-vsstop.c2 sol:AA-vsstrt.c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-hbstop.c3/c4 opus:AA-hbstrt.c3/c4 "
+             "opus:AA-hcenter.c3/c4 opus:AA-hhposr.c3/c4 opus:AA-hhposw.c3/c4 "
+             "opus:AA-hsstop.c3/c4 opus:AA-hsstrt.c3/c4 opus:AA-refptr.c3 "
+             "opus:AA-strequ.c3 opus:AA-strhor.c3 opus:AA-strlong.c3 "
+             "opus:AA-strvbl.c3 opus:AA-vbstop.c3/c4 opus:AA-vbstrt.c3/c4 "
+             "opus:AA-vsstop.c3/c4 opus:AA-vsstrt.c3/c4 sol:AA-hbstop.c3/c4 "
+             "sol:AA-hbstrt.c3/c4 sol:AA-hcenter.c3/c4 sol:AA-hhposr.c3/c4 "
+             "sol:AA-hhposw.c3/c4 sol:AA-hsstop.c3/c4 sol:AA-hsstrt.c3/c4 "
+             "sol:AA-refptr.c3 sol:AA-strequ.c3 sol:AA-strhor.c3 "
+             "sol:AA-strlong.c3 sol:AA-strvbl.c3 sol:AA-vbstop.c3/c4 "
+             "sol:AA-vbstrt.c3/c4 sol:AA-vsstop.c3/c4 sol:AA-vsstrt.c3/c4]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim names the chip "
+             "that implements the register. Which silicon a block is fabricated "
+             "in is a fact about the source tree and no port of "
+             "agnus_beamcounter carries it. [claims: opus:AA-beamcon0.c3 "
+             "opus:AA-htotal.c3 opus:AA-vhposr.c3 opus:AA-vhposw.c3 "
+             "opus:AA-vposr.c3 opus:AA-vposw.c3 opus:AA-vtotal.c3 "
+             "sol:AA-beamcon0.c3 sol:AA-htotal.c3 sol:AA-vhposr.c3 "
+             "sol:AA-vhposw.c3 sol:AA-vposr.c3 sol:AA-vposw.c3 sol:AA-vtotal.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The function column "
+             "describes BEAMCON0 as controlling the beam counter for SHRES, "
+             "UHRES and PAL. This package grades one bit of it, VARBEAMEN, and "
+             "the sync and blanking windows those modes change are not run here. "
+             "[claims: opus:AA-beamcon0.c5 sol:AA-beamcon0.c5]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: opus:AA-hbstop.c1/c5 "
+             "opus:AA-hbstrt.c1/c5 opus:AA-hcenter.c1/c5 opus:AA-hsstop.c1/c5 "
+             "opus:AA-hsstrt.c1/c5 opus:AA-vbstop.c1/c5 opus:AA-vbstrt.c1/c5 "
+             "opus:AA-vsstop.c1/c5 opus:AA-vsstrt.c1/c5 sol:AA-hbstop.c1 "
+             "sol:AA-hbstrt.c1 sol:AA-hcenter.c1/c5 sol:AA-hsstop.c1 "
+             "sol:AA-hsstrt.c1/c5 sol:AA-vbstop.c1 sol:AA-vbstrt.c1 "
+             "sol:AA-vsstop.c1 sol:AA-vsstrt.c1/c5]");
+    c.record(
+             "DECLINED at this boundary (not-hardware): Lower-case `h` in the "
+             "revision column says which chip set introduced the register. That "
+             "is a statement about the document's history of the silicon, not "
+             "about behaviour, and no stimulus at any boundary shows it. "
+             "[claims: opus:AA-beamcon0.c4 opus:AA-htotal.c4 opus:AA-vtotal.c4 "
+             "sol:AA-beamcon0.c4 sol:AA-htotal.c4 sol:AA-vtotal.c4]");
+    c.record(
+             "DECLINED at this boundary (outside-uut): The `~` mark is a "
+             "Coprocessor write restriction enforced in agnus_copper's cdang "
+             "path and graded by aa-copper-register-map. [claims: "
+             "opus:AA-vhposr.c4 opus:AA-vhposw.c4 opus:AA-vposr.c4 "
+             "opus:AA-vposw.c4 sol:AA-vhposr.c4 sol:AA-vhposw.c4 sol:AA-vposr.c4 "
+             "sol:AA-vposw.c4]");
 
     std::cout << "\nAssertions: " << c.passed << " passed, "
               << c.failed << " failed\n";

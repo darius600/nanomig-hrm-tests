@@ -277,6 +277,41 @@ int main(int argc, char** argv) {
                + ((before != after) ? "yes" : "no"));
     }
 
+    // --- What this boundary cannot grade ------------------------------------
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-clxcon.c2 "
+             "opus:AA-clxdat.c2 sol:AA-clxcon.c2 sol:AA-clxcon2.c2 "
+             "sol:AA-clxdat.c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-clxcon.c3 opus:AA-clxcon2.c4 opus:AA-clxdat.c3 "
+             "sol:AA-clxcon.c3 sol:AA-clxcon2.c3/c4 sol:AA-clxdat.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: opus:AA-clxcon.c1 "
+             "opus:AA-clxdat.c1/c5 sol:AA-clxcon.c1 sol:AA-clxcon2.c1 "
+             "sol:AA-clxdat.c1/c5]");
+    c.record(
+             "DECLINED at this boundary (not-hardware): The claim is a legend "
+             "statement, a gap between two printed rows, or a reserved line -- "
+             "the document describing its own notation and layout. The one "
+             "legend mark that IS a hardware restriction, the `~` Coprocessor "
+             "limit, is graded by this package's own assertion. [claims: "
+             "opus:AA-clxdat.c4 sol:AA-clxdat.c4]");
+    c.record(
+             "DECLINED at this boundary (source-silent): The page states nothing "
+             "about a chipset gate on CLXCON2 writes, so there is no printed "
+             "proposition to grade. The behaviour is measured and printed with "
+             "note(), not expect(). [claims: lot:AA-clxcon2.n1]");
+
     std::cout << "\naa-clxcon2-address: " << c.passed << " passed, "
               << c.failed << " failed\n";
     return c.failed ? 1 : 0;

@@ -193,8 +193,7 @@ int main(int argc, char** argv) {
         c.expect(got == 0x00F8 && elsewhere == 0x0000,
                  "LISAID-AT-07C: the chip revision register answers at $07C and "
                  "an undecoded address answers zero, which is the address and "
-                 "the read access the AA list prints for LISAID [p.6] [claims: "
-                 "sol:AA-lisaid.c1/c2 opus:AA-lisaid.c1/c2]");
+                 "the read access the AA list prints for LISAID [p.6] [claims: opus:AA-lisaid.c1/c2 sol:AA-lisaid.c1/c2]");
     }
 
     // --- 3. LISAID says WHICH chip set ---------------------------------------
@@ -216,7 +215,7 @@ int main(int argc, char** argv) {
                  "word on each chip set, which is what makes it the chip "
                  "revision level the AA list's function column calls it, and "
                  "the register this document's revision list records adding "
-                 "[p.6] [claims: sol:AA-lisaid.c6 opus:AA-lisaid.c6]");
+                 "[p.6] [claims: opus:AA-lisaid.c6 sol:AA-lisaid.c6]");
     }
 
     // --- 4. the colour table is addressed from $180 --------------------------
@@ -234,8 +233,7 @@ int main(int argc, char** argv) {
                  "COLOUR-TABLE-AT-180: a colour written at $180 plus twice its "
                  "number comes back at the same address and not at its "
                  "neighbour, which is the run of addresses the AA list prints "
-                 "for the colour table [p.9] [claims: sol:AA-color00.c1/c2 "
-                 "opus:AA-color00.c1/c2]");
+                 "for the colour table [p.9] [claims: opus:AA-color00.c1/c2 sol:AA-color00.c1/c2]");
     }
 
     // --- 5. BPLCON2 bit 8 is what opens the readback path -------------------
@@ -255,8 +253,7 @@ int main(int argc, char** argv) {
                  "BPLCON2-AT-104-OPENS-READBACK: bit 8 of the word written at "
                  "$104 decides whether the colour table answers a read at all, "
                  "which is the address the AA list prints for BPLCON2 and one "
-                 "of the mechanisms its AGA rows rest on [p.8] [claims: "
-                 "sol:AA-bplcon2.c1/c2 opus:AA-bplcon2.c1/c2]");
+                 "of the mechanisms its AGA rows rest on [p.8] [claims: opus:AA-bplcon2.c1/c2 sol:AA-bplcon2.c1/c2]");
     }
 
     // --- 6. BPLCON3 selects which bank the same address reaches -------------
@@ -278,8 +275,114 @@ int main(int argc, char** argv) {
                  "word written at $106 decide which bank of the colour table "
                  "one address reaches, which is how the AA list's thirty-two "
                  "colour addresses cover more than thirty-two colours [p.8] "
-                 "[claims: sol:AA-bplcon3.c1/c2 opus:AA-bplcon3.c1/c2]");
+                 "[claims: opus:AA-bplcon3.c1/c2 sol:AA-bplcon3.c1/c2]");
     }
+
+    // --- What this boundary cannot grade ------------------------------------
+    c.record(
+             "DECLINED at this boundary (insufficient): BPLCON4's write is gated "
+             "on `aga` like BPLCON2's readback bit and BPLCON3's bank, but what "
+             "it sets -- bplxor, the colour-select XOR, and the sprite colour "
+             "offsets -- reaches the PIXEL path and not the readback path, so no "
+             "read at any address shows it. [claims: "
+             "opus:AA-bplcon4.c1/c2/c3/c4/c5 sol:AA-bplcon4.c1/c2/c3/c4/c5]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-bplcon0.c2 "
+             "opus:AA-color01.c2 opus:AA-color02.c2 opus:AA-color03.c2 "
+             "opus:AA-color04.c2 opus:AA-color05.c2 opus:AA-color06.c2 "
+             "opus:AA-color07.c2 opus:AA-color08.c2 opus:AA-color09.c2 "
+             "opus:AA-color10.c2 opus:AA-color11.c2 opus:AA-color12.c2 "
+             "opus:AA-color13.c2 opus:AA-color14.c2 opus:AA-color15.c2 "
+             "opus:AA-color16.c2 opus:AA-color17.c2 opus:AA-color18.c2 "
+             "opus:AA-color19.c2 opus:AA-color20.c2 opus:AA-color21.c2 "
+             "opus:AA-color22.c2 opus:AA-color23.c2 opus:AA-color24.c2 "
+             "opus:AA-color25.c2 opus:AA-color26.c2 opus:AA-color27.c2 "
+             "opus:AA-color28.c2 opus:AA-color29.c2 opus:AA-color30.c2 "
+             "opus:AA-color31.c2 sol:AA-bplcon0.c2 sol:AA-color01.c2 "
+             "sol:AA-color02.c2 sol:AA-color03.c2 sol:AA-color04.c2 "
+             "sol:AA-color05.c2 sol:AA-color06.c2 sol:AA-color07.c2 "
+             "sol:AA-color08.c2 sol:AA-color09.c2 sol:AA-color10.c2 "
+             "sol:AA-color11.c2 sol:AA-color12.c2 sol:AA-color13.c2 "
+             "sol:AA-color14.c2 sol:AA-color15.c2 sol:AA-color16.c2 "
+             "sol:AA-color17.c2 sol:AA-color18.c2 sol:AA-color19.c2 "
+             "sol:AA-color20.c2 sol:AA-color21.c2 sol:AA-color22.c2 "
+             "sol:AA-color23.c2 sol:AA-color24.c2 sol:AA-color25.c2 "
+             "sol:AA-color26.c2 sol:AA-color27.c2 sol:AA-color28.c2 "
+             "sol:AA-color29.c2 sol:AA-color30.c2 sol:AA-color31.c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-bplcon0.c3 opus:AA-color01.c3 opus:AA-color02.c3 "
+             "opus:AA-color03.c3 opus:AA-color04.c3 opus:AA-color05.c3 "
+             "opus:AA-color06.c3 opus:AA-color07.c3 opus:AA-color08.c3 "
+             "opus:AA-color09.c3 opus:AA-color10.c3 opus:AA-color11.c3 "
+             "opus:AA-color12.c3 opus:AA-color13.c3 opus:AA-color14.c3 "
+             "opus:AA-color15.c3 opus:AA-color16.c3 opus:AA-color17.c3 "
+             "opus:AA-color18.c3 opus:AA-color19.c3 opus:AA-color20.c3 "
+             "opus:AA-color21.c3 opus:AA-color22.c3 opus:AA-color23.c3 "
+             "opus:AA-color24.c3 opus:AA-color25.c3 opus:AA-color26.c3 "
+             "opus:AA-color27.c3 opus:AA-color28.c3 opus:AA-color29.c3 "
+             "opus:AA-color30.c3 opus:AA-color31.c3 sol:AA-bplcon0.c3 "
+             "sol:AA-color01.c3 sol:AA-color02.c3 sol:AA-color03.c3 "
+             "sol:AA-color04.c3 sol:AA-color05.c3 sol:AA-color06.c3 "
+             "sol:AA-color07.c3 sol:AA-color08.c3 sol:AA-color09.c3 "
+             "sol:AA-color10.c3 sol:AA-color11.c3 sol:AA-color12.c3 "
+             "sol:AA-color13.c3 sol:AA-color14.c3 sol:AA-color15.c3 "
+             "sol:AA-color16.c3 sol:AA-color17.c3 sol:AA-color18.c3 "
+             "sol:AA-color19.c3 sol:AA-color20.c3 sol:AA-color21.c3 "
+             "sol:AA-color22.c3 sol:AA-color23.c3 sol:AA-color24.c3 "
+             "sol:AA-color25.c3 sol:AA-color26.c3 sol:AA-color27.c3 "
+             "sol:AA-color28.c3 sol:AA-color29.c3 sol:AA-color30.c3 "
+             "sol:AA-color31.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim names the chip "
+             "that implements the register. Which silicon a block is fabricated "
+             "in is a fact about the source tree and no port of denise carries "
+             "it. [claims: opus:AA-bplcon2.c3/c4 opus:AA-bplcon3.c3 "
+             "opus:AA-color00.c3 opus:AA-lisaid.c3 sol:AA-bplcon2.c3 "
+             "sol:AA-bplcon3.c3 sol:AA-color00.c3 sol:AA-lisaid.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: opus:AA-bplcon0.c1 "
+             "opus:AA-color01.c1 opus:AA-color02.c1 opus:AA-color03.c1 "
+             "opus:AA-color04.c1 opus:AA-color05.c1 opus:AA-color06.c1 "
+             "opus:AA-color07.c1 opus:AA-color08.c1 opus:AA-color09.c1 "
+             "opus:AA-color10.c1 opus:AA-color11.c1 opus:AA-color12.c1 "
+             "opus:AA-color13.c1 opus:AA-color14.c1 opus:AA-color15.c1 "
+             "opus:AA-color16.c1 opus:AA-color17.c1 opus:AA-color18.c1 "
+             "opus:AA-color19.c1 opus:AA-color20.c1 opus:AA-color21.c1 "
+             "opus:AA-color22.c1 opus:AA-color23.c1 opus:AA-color24.c1 "
+             "opus:AA-color25.c1 opus:AA-color26.c1 opus:AA-color27.c1 "
+             "opus:AA-color28.c1 opus:AA-color29.c1 opus:AA-color30.c1 "
+             "opus:AA-color31.c1 sol:AA-bplcon0.c1 sol:AA-color01.c1 "
+             "sol:AA-color02.c1 sol:AA-color03.c1 sol:AA-color04.c1 "
+             "sol:AA-color05.c1 sol:AA-color06.c1 sol:AA-color07.c1 "
+             "sol:AA-color08.c1 sol:AA-color09.c1 sol:AA-color10.c1 "
+             "sol:AA-color11.c1 sol:AA-color12.c1 sol:AA-color13.c1 "
+             "sol:AA-color14.c1 sol:AA-color15.c1 sol:AA-color16.c1 "
+             "sol:AA-color17.c1 sol:AA-color18.c1 sol:AA-color19.c1 "
+             "sol:AA-color20.c1 sol:AA-color21.c1 sol:AA-color22.c1 "
+             "sol:AA-color23.c1 sol:AA-color24.c1 sol:AA-color25.c1 "
+             "sol:AA-color26.c1 sol:AA-color27.c1 sol:AA-color28.c1 "
+             "sol:AA-color29.c1 sol:AA-color30.c1 sol:AA-color31.c1]");
+    c.record(
+             "DECLINED at this boundary (not-hardware): A lower-case `h` or `p` "
+             "in the revision column says which chip set introduced the "
+             "register. That is a statement about the document's history of the "
+             "silicon, not about behaviour. [claims: opus:AA-lisaid.c4 "
+             "sol:AA-lisaid.c4]");
+    c.record(
+             "DECLINED at this boundary (outside-uut): The `~` mark is a "
+             "Coprocessor write restriction enforced in agnus_copper's cdang "
+             "path and graded by aa-copper-register-map. [claims: "
+             "opus:AA-lisaid.c5 sol:AA-lisaid.c5]");
 
     std::cout << "\nAssertions: " << c.passed << " passed, "
               << c.failed << " failed\n";

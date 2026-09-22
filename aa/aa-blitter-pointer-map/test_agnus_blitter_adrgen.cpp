@@ -211,10 +211,7 @@ int main(int argc, char** argv) {
         c.expect(gc == P_C && gb == P_B && ga == P_A && gd == P_D,
                  "BLT-POINTERS-AT-048-056: all four pointer pairs are decoded "
                  "where the address list puts them, each reaching its own slot "
-                 "and no other [claims: opus:AA-bltcpth.c1, "
-                 "opus:AA-bltcptl.c1, opus:AA-bltbpth.c1, opus:AA-bltbptl.c1, "
-                 "opus:AA-bltapth.c1, opus:AA-bltaptl.c1, opus:AA-bltdpth.c1, "
-                 "opus:AA-bltdptl.c1]");
+                 "and no other [claims: opus:AA-bltapth.c1 opus:AA-bltaptl.c1 opus:AA-bltbpth.c1 opus:AA-bltbptl.c1 opus:AA-bltcpth.c1 opus:AA-bltcptl.c1 opus:AA-bltdpth.c1 opus:AA-bltdptl.c1]");
     }
 
     // --- 2. The four modulos, reached through what adding one does ---------
@@ -250,8 +247,7 @@ int main(int argc, char** argv) {
         c.expect(gc == wc && gb == wb && ga == wa && gd == wd,
                  "BLT-MODULOS-AT-060-066: all four modulo registers are decoded "
                  "where the address list puts them, each moving its own pointer "
-                 "by its own value [claims: opus:AA-bltcmod.c1, "
-                 "opus:AA-bltbmod.c1, opus:AA-bltamod.c1, opus:AA-bltdmod.c1]");
+                 "by its own value [claims: opus:AA-bltamod.c1 opus:AA-bltbmod.c1 opus:AA-bltcmod.c1 opus:AA-bltdmod.c1]");
     }
 
     // --- 3. What the list says about access, measured but not graded -------
@@ -266,6 +262,51 @@ int main(int argc, char** argv) {
                  "aa/aa-copper-register-map grades the range "
                  "[AA-blitter-map.n1]");
     }
+
+    // --- What this boundary cannot grade ------------------------------------
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-bltapth.c2 "
+             "opus:AA-bltaptl.c2 opus:AA-bltbpth.c2 opus:AA-bltbptl.c2 "
+             "opus:AA-bltcpth.c2 opus:AA-bltcptl.c2 opus:AA-bltdpth.c2 "
+             "opus:AA-bltdptl.c2 sol:AA-bltapth.c2 sol:AA-bltaptl.c2 "
+             "sol:AA-bltbpth.c2 sol:AA-bltbptl.c2 sol:AA-bltcpth.c2 "
+             "sol:AA-bltcptl.c2 sol:AA-bltdpth.c2 sol:AA-bltdptl.c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-bltapth.c3 opus:AA-bltaptl.c3 opus:AA-bltbpth.c3 "
+             "opus:AA-bltbptl.c3 opus:AA-bltcpth.c3 opus:AA-bltcptl.c3 "
+             "opus:AA-bltdpth.c3 opus:AA-bltdptl.c3 sol:AA-bltapth.c3 "
+             "sol:AA-bltaptl.c3 sol:AA-bltbpth.c3 sol:AA-bltbptl.c3 "
+             "sol:AA-bltcpth.c3 sol:AA-bltcptl.c3 sol:AA-bltdpth.c3 "
+             "sol:AA-bltdptl.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: opus:AA-bltapth.c6 "
+             "opus:AA-bltaptl.c6 opus:AA-bltbpth.c6 opus:AA-bltbptl.c6 "
+             "opus:AA-bltcpth.c6 opus:AA-bltcptl.c6 opus:AA-bltdpth.c6 "
+             "opus:AA-bltdptl.c6 sol:AA-bltapth.c1/c6 sol:AA-bltaptl.c1/c6 "
+             "sol:AA-bltbpth.c1/c6 sol:AA-bltbptl.c1/c6 sol:AA-bltcpth.c1/c6 "
+             "sol:AA-bltcptl.c1/c6 sol:AA-bltdpth.c1/c6 sol:AA-bltdptl.c1/c6]");
+    c.record(
+             "DECLINED at this boundary (not-hardware): The claim is a legend "
+             "statement, a gap between two printed rows, or a reserved line -- "
+             "the document describing its own notation and layout. The one "
+             "legend mark that IS a hardware restriction, the `~` Coprocessor "
+             "limit, is graded by this package's own assertion. [claims: "
+             "opus:AA-bltapth.c4/c5 opus:AA-bltaptl.c4/c5 opus:AA-bltbpth.c4/c5 "
+             "opus:AA-bltbptl.c4/c5 opus:AA-bltcpth.c4/c5 opus:AA-bltcptl.c4/c5 "
+             "opus:AA-bltdpth.c4/c5 opus:AA-bltdptl.c4/c5 sol:AA-bltapth.c4/c5 "
+             "sol:AA-bltaptl.c4/c5 sol:AA-bltbpth.c4/c5 sol:AA-bltbptl.c4/c5 "
+             "sol:AA-bltcpth.c4/c5 sol:AA-bltcptl.c4/c5 sol:AA-bltdpth.c4/c5 "
+             "sol:AA-bltdptl.c4/c5]");
 
     std::cout << "\naa-blitter-pointer-map: " << c.passed << " passed, "
               << c.failed << " failed\n";

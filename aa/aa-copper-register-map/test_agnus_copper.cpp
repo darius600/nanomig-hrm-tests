@@ -239,8 +239,7 @@ int main(int argc, char** argv) {
                  "COP1LC-AT-080-082: a 20-bit pattern written at $080 and $082 "
                  "and strobed at $088 arrives at address_out, so COP1LCH, "
                  "COP1LCL and COPJMP1 are decoded where the address list puts "
-                 "them [claims: opus:AA-cop1lch.c1, opus:AA-cop1lcl.c1, "
-                 "opus:AA-copjmp1.c1]");
+                 "them [claims: opus:AA-cop1lch.c1 opus:AA-cop1lcl.c1 opus:AA-copjmp1.c1]");
     }
 
     // --- 2. COP2LCH / COP2LCL / COPJMP2 -----------------------------------
@@ -255,8 +254,7 @@ int main(int argc, char** argv) {
                  "COP2LC-AT-084-086: a 20-bit pattern written at $084 and $086 "
                  "and strobed at $08A arrives at address_out, so COP2LCH, "
                  "COP2LCL and COPJMP2 are decoded where the address list puts "
-                 "them [claims: opus:AA-cop2lch.c1, opus:AA-cop2lcl.c1, "
-                 "opus:AA-copjmp2.c1]");
+                 "them [claims: opus:AA-cop2lch.c1 opus:AA-cop2lcl.c1 opus:AA-copjmp2.c1]");
     }
 
     // --- 3. The two pointers are separate, which is what makes 1 and 2 an
@@ -383,6 +381,68 @@ int main(int argc, char** argv) {
                  "does not grade the bit-lane statement itself "
                  "[AA-copper-map.n2]");
     }
+
+    // --- What this boundary cannot grade ------------------------------------
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-cop1lch.c2 "
+             "opus:AA-cop1lcl.c2 opus:AA-cop2lch.c2 opus:AA-cop2lcl.c2 "
+             "opus:AA-copcon.c2 opus:AA-copins.c2 opus:AA-copjmp1.c2 "
+             "opus:AA-copjmp2.c2 sol:AA-cop1lch.c2 sol:AA-cop1lcl.c2 "
+             "sol:AA-cop2lch.c2 sol:AA-cop2lcl.c2 sol:AA-copcon.c2 "
+             "sol:AA-copins.c2 sol:AA-copjmp1.c2 sol:AA-copjmp2.c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-cop1lch.c3 opus:AA-cop1lcl.c3 opus:AA-cop2lch.c3 "
+             "opus:AA-cop2lcl.c3 opus:AA-copcon.c3 opus:AA-copins.c3 "
+             "opus:AA-copjmp1.c3 opus:AA-copjmp2.c3 sol:AA-cop1lch.c3 "
+             "sol:AA-cop1lcl.c3 sol:AA-cop2lch.c3 sol:AA-cop2lcl.c3 "
+             "sol:AA-copcon.c3 sol:AA-copins.c3 sol:AA-copjmp1.c3 "
+             "sol:AA-copjmp2.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: opus:AA-cop1lch.c5 "
+             "opus:AA-cop1lcl.c5 opus:AA-cop2lch.c5 opus:AA-cop2lcl.c5 "
+             "opus:AA-copcon.c5 opus:AA-copins.c4 opus:AA-copjmp1.c4 "
+             "opus:AA-copjmp2.c4 sol:AA-cop1lch.c1/c5 sol:AA-cop1lcl.c1/c5 "
+             "sol:AA-cop2lch.c1/c5 sol:AA-cop2lcl.c1/c5 sol:AA-copcon.c1 "
+             "sol:AA-copins.c1/c4 sol:AA-copjmp1.c1/c4 sol:AA-copjmp2.c1/c4]");
+    c.record(
+             "DECLINED at this boundary (not-hardware): The claim is a legend "
+             "statement, a gap between two printed rows, or a reserved line -- "
+             "the document describing its own notation and layout. The one "
+             "legend mark that IS a hardware restriction, the `~` Coprocessor "
+             "limit, is graded by this package's own assertion. [claims: "
+             "opus:AA-alpha-header.c1 opus:AA-alpha-order.c1 "
+             "opus:AA-audfamily-spelling.c1 opus:AA-cop1lch.c4 "
+             "opus:AA-cop1lcl.c4 opus:AA-cop2lch.c4 opus:AA-cop2lcl.c4 "
+             "opus:AA-copcon.c4 opus:AA-gap068.c1/c2 opus:AA-gap06A.c1/c2 "
+             "opus:AA-gap06C.c1/c2 opus:AA-gap06E.c1/c2 opus:AA-gap076.c1/c2 "
+             "opus:AA-gap0AC.c1 opus:AA-gap0AE.c1 opus:AA-gap0BC.c1 "
+             "opus:AA-gap0BE.c1 opus:AA-gap0CC.c1 opus:AA-gap0CE.c1 "
+             "opus:AA-gap0DC.c1 opus:AA-gap0DE.c1 opus:AA-legend10-H.c1/c2 "
+             "opus:AA-legend10-P.c1/c2 opus:AA-legend10-chip.c1 "
+             "opus:AA-legend10-er.c1/c2/c3 opus:AA-legend10-h.c1 "
+             "opus:AA-legend10-missing.c1 opus:AA-legend10-p.c1 "
+             "opus:AA-legend10-ph.c1 opus:AA-legend10-wr.c1 "
+             "opus:AA-legend6-amp.c1 opus:AA-legend6-chip.c1/c2/c3 "
+             "opus:AA-legend6-er.c1/c2/c3 opus:AA-legend6-lc.c1/c2/c3/c4/c5 "
+             "opus:AA-legend6-mod.c1/c2/c3/c4 opus:AA-legend6-pct.c1 "
+             "opus:AA-legend6-plus.c1 opus:AA-legend6-pt.c1/c2/c3/c4/c5 "
+             "opus:AA-legend6-s.c1 opus:AA-legend6-tilde.c1 "
+             "opus:AA-legend6-wr.c1/c2 opus:AA-list-header.c1 "
+             "opus:AA-list-order.c1 opus:AA-noop.c1/c2/c3 opus:AA-reserved.c1 "
+             "sol:AA-cop1lch.c4 sol:AA-cop1lcl.c4 sol:AA-cop2lch.c4 "
+             "sol:AA-cop2lcl.c4 sol:AA-copcon.c4 "
+             "sol:AA-legends.c1/c2/c3/c6/c7/c8/c9/c10/c11/c12/c13/c14/c15/c16/c17/c18/c19/c20/c21/c22/c23/c24/c25/c26/c27/c28/c29/c30/c31/c32/c33/c34/c35/c36/c37/c38 "
+             "sol:AA-no-op-null.c1/c2 sol:AA-reserved.c1]");
 
     std::cout << "\naa-copper-register-map: " << c.passed << " passed, "
               << c.failed << " failed\n";

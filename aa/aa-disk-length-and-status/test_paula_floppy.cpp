@@ -214,7 +214,7 @@ int main(int argc, char** argv) {
                       "DSKBYTR-AT-01A: the status word answers at $01A and no "
                       "other address in this module returns it, which is the "
                       "address the AA list prints for DSKBYTR [p.6] "
-                      "[claims: sol:AA-dskbytr.c1 opus:AA-dskbytr.c1]");
+                      "[claims: opus:AA-dskbytr.c1 sol:AA-dskbytr.c1]");
     }
 
     // --- 3. DSKLEN's direction bit is visible in DSKBYTR ---------------------
@@ -233,7 +233,7 @@ int main(int argc, char** argv) {
                       "DSKLEN-AT-024-SHOWS-ITS-DIRECTION: a word written at "
                       "$024 turns a bit of the status register on and off, "
                       "which is the address the AA list prints for DSKLEN "
-                      "[p.6] [claims: sol:AA-dsklen.c1 opus:AA-dsklen.c1]");
+                      "[p.6] [claims: opus:AA-dsklen.c1 sol:AA-dsklen.c1]");
     }
 
     // --- 4. And the write only arms the transfer on the second one -----------
@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
                       "twice starts a transfer that one write does not, so the "
                       "address takes writes and returns nothing, which is the W "
                       "access letter the AA list prints for DSKLEN [p.6] "
-                      "[claims: sol:AA-dsklen.c2 opus:AA-dsklen.c2]");
+                      "[claims: opus:AA-dsklen.c2 sol:AA-dsklen.c2]");
     }
 
     // --- 5. DSKBYTR takes no writes -----------------------------------------
@@ -269,30 +269,57 @@ int main(int argc, char** argv) {
                       "DSKBYTR-TAKES-NO-WRITES: a word written at $01A does not "
                       "come back from it, so the address is the read the AA "
                       "list's R access letter names and not a store [p.6] "
-                      "[claims: sol:AA-dskbytr.c2 opus:AA-dskbytr.c2]");
+                      "[claims: opus:AA-dskbytr.c2 sol:AA-dskbytr.c2]");
     }
 
     // --- What this boundary cannot grade ------------------------------------
-    checks.record("DECLINED at this boundary: the list's chip column gives all "
-                  "three registers to Paula and marks all three `~` for the "
-                  "Coprocessor. No port of paula_floppy carries a chip "
-                  "identity, and the mark is enforced in agnus_copper's cdang "
-                  "path [claims: sol:AA-dskbytr.c3/c4 opus:AA-dskbytr.c3/c4 "
-                  "sol:AA-dsklen.c3/c4 opus:AA-dsklen.c3/c4 "
-                  "sol:AA-dsksync.c3/c4 opus:AA-dsksync.c3/c4]");
-    checks.record("DECLINED at this boundary: DSKBYTR's description column "
-                  "calls it a Disk Data byte AND status register. The status "
-                  "half is graded above; the data byte is not here. MEASURED: "
-                  "paula_floppy.v:699 drives DSKBYTR[7:0] from the constant "
-                  "8'h00, and disk data reaches the bus through DSKDATR. Half "
-                  "a claim is not a green assertion "
-                  "[claims: sol:AA-dskbytr.c5 opus:AA-dskbytr.c5]");
-    checks.record("DECLINED at this boundary: DSKSYNC takes a write at $07E and "
-                  "offers no read, and the only thing that acts on it is "
-                  "sync_match, which needs a disk read streaming a word equal "
-                  "to the pattern. That fixture is this package's first "
-                  "non-goal [claims: sol:AA-dsksync.c1/c2/c5 "
-                  "opus:AA-dsksync.c1/c2/c5]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): DSKSYNC takes a write at "
+             "$07E and offers no read, so nothing about it is visible without "
+             "acting on it. Its only consumer is `sync_match` at "
+             "paula_floppy.v:915, which compares the pattern against a word "
+             "arriving from a disk read. [claims: opus:AA-dsksync.c1/c2/c5 "
+             "sol:AA-dsksync.c1/c2/c5]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-adkcon-entry.c3 opus:AA-adkconr-entry.c3]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The claim names the chip "
+             "that implements the register. Which silicon a block is fabricated "
+             "in is a fact about the source tree and no port of paula_floppy "
+             "carries it. [claims: opus:AA-dskbytr.c3 opus:AA-dsklen.c3 "
+             "opus:AA-dsksync.c3 sol:AA-dskbytr.c3 sol:AA-dsklen.c3 "
+             "sol:AA-dsksync.c3]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The description column "
+             "names two things and this RTL answers one. The status half is "
+             "graded by DSKBYTR-AT-01A and the two DSKLEN assertions. MEASURED: "
+             "paula_floppy.v:699 drives DSKBYTR[7:0] from the constant 8'h00, "
+             "and disk data reaches the bus through DSKDATR. A claim whose "
+             "second half meets a constant is not a green assertion. [claims: "
+             "opus:AA-dskbytr.c5 sol:AA-dskbytr.c5]");
+    checks.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: "
+             "opus:AA-adkcon-bits.c1/c2/c3/c4/c5/c6/c7/c8/c9/c10/c11/c12/c13/c14/c15/c16/c17/c18 "
+             "opus:AA-adkcon-entry.c1/c2/c4 opus:AA-adkconr-entry.c1/c2/c5]");
+    checks.record(
+             "DECLINED at this boundary (not-hardware): The claim is a legend "
+             "statement, a gap between two printed rows, or a reserved line -- "
+             "the document describing its own notation and layout. The one "
+             "legend mark that IS a hardware restriction, the `~` Coprocessor "
+             "limit, is graded by this package's own assertion. [claims: "
+             "opus:AA-adkconr-entry.c4]");
+    checks.record(
+             "DECLINED at this boundary (outside-uut): The `~` mark is a "
+             "Coprocessor write restriction enforced in agnus_copper's cdang "
+             "path and graded by aa-copper-register-map. [claims: "
+             "opus:AA-dskbytr.c4 opus:AA-dsklen.c4 opus:AA-dsksync.c4 "
+             "sol:AA-dskbytr.c4 sol:AA-dsklen.c4 sol:AA-dsksync.c4]");
 
     std::cout << "\nAssertions: " << checks.passed << " passed, "
               << checks.failed << " failed\n";

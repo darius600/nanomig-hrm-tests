@@ -225,9 +225,7 @@ int main(int argc, char** argv) {
                  "AUDDAT-ADDRESS-PER-CHANNEL: the address this module drives "
                  "out for a channel's sample fetch is that channel's AUDxDAT, "
                  "$0AA $0BA $0CA $0DA in order, which is what the AA list "
-                 "prints [p.7] [claims: sol:AA-aud0dat.c1 opus:AA-aud0dat.c1 "
-                 "sol:AA-aud1dat.c1 opus:AA-aud1dat.c1 sol:AA-aud2dat.c1 "
-                 "opus:AA-aud2dat.c1 sol:AA-aud3dat.c1 opus:AA-aud3dat.c1]");
+                 "prints [p.7] [claims: opus:AA-aud0dat.c1 opus:AA-aud1dat.c1 opus:AA-aud2dat.c1 opus:AA-aud3dat.c1 sol:AA-aud0dat.c1 sol:AA-aud1dat.c1 sol:AA-aud2dat.c1 sol:AA-aud3dat.c1]");
     }
 
     // --- 3. the HIGH half of an audio location pair uses DB0-DB4 ------------
@@ -245,8 +243,7 @@ int main(int argc, char** argv) {
                  "AUDLC-HIGH-TAKES-DB0-DB4: the high half of an audio location "
                  "pair takes data bits 0 to 4 and no bit above them, which is "
                  "what the p.6 legend states for the high word of a `+` address "
-                 "register pair [p.6] [claims: sol:AA-legends.c5 "
-                 "opus:AA-legend6-plus.c3 sol:AA-aud1lch.c4 opus:AA-aud1lch.c4]");
+                 "register pair [p.6] [claims: opus:AA-aud1lch.c4 opus:AA-legend6-plus.c3 sol:AA-aud1lch.c4 sol:AA-legends.c5]");
     }
 
     // --- 4. the LOW half uses DB1-DB15, so DB0 is ignored -------------------
@@ -264,8 +261,7 @@ int main(int argc, char** argv) {
                  "AUDLC-LOW-TAKES-DB1-DB15: the low half of an audio location "
                  "pair takes data bits 1 to 15 and ignores bit 0, which is what "
                  "the p.6 legend states for the low word of a `+` address "
-                 "register pair [p.6] [claims: sol:AA-legends.c4 "
-                 "opus:AA-legend6-plus.c2 sol:AA-aud1lcl.c4 opus:AA-aud1lcl.c4]");
+                 "register pair [p.6] [claims: opus:AA-aud1lcl.c4 opus:AA-legend6-plus.c2 sol:AA-aud1lcl.c4 sol:AA-legends.c4]");
     }
 
     // --- 5. the four location pairs are four registers, not one -------------
@@ -290,14 +286,76 @@ int main(int argc, char** argv) {
                  "access the list gives them, and the expected value encodes "
                  "the `+` split for channel 0 -- $0001 into the high half "
                  "arrives as 1, $0002 into the low half arrives as 1 [p.7] "
-                 "[claims: sol:AA-aud0lch.c1 opus:AA-aud0lch.c1 "
-                 "sol:AA-aud0lcl.c1 opus:AA-aud0lcl.c1 sol:AA-aud1lch.c1 "
-                 "opus:AA-aud1lch.c1 sol:AA-aud1lcl.c1 opus:AA-aud1lcl.c1 "
-                 "sol:AA-aud0lch.c2 opus:AA-aud0lch.c2 sol:AA-aud0lcl.c2 "
-                 "opus:AA-aud0lcl.c2 sol:AA-aud1lch.c2 opus:AA-aud1lch.c2 "
-                 "sol:AA-aud1lcl.c2 opus:AA-aud1lcl.c2 sol:AA-aud0lch.c4 "
-                 "opus:AA-aud0lch.c4 sol:AA-aud0lcl.c4 opus:AA-aud0lcl.c4]");
+                 "[claims: opus:AA-aud0lch.c1/c2/c4 opus:AA-aud0lcl.c1/c2/c4 opus:AA-aud1lch.c1/c2 opus:AA-aud1lcl.c1/c2 sol:AA-aud0lch.c1/c2/c4 sol:AA-aud0lcl.c1/c2/c4 sol:AA-aud1lch.c1/c2 sol:AA-aud1lcl.c1/c2]");
     }
+
+    // --- What this boundary cannot grade ------------------------------------
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-aud2lch.c2 "
+             "opus:AA-aud2lcl.c2 opus:AA-aud3lch.c2 opus:AA-aud3lcl.c2 "
+             "sol:AA-aud2lch.c2 sol:AA-aud2lcl.c2 sol:AA-aud3lch.c2 "
+             "sol:AA-aud3lcl.c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-aud2lch.c3 opus:AA-aud2lcl.c3 opus:AA-aud3lch.c3 "
+             "opus:AA-aud3lcl.c3 sol:AA-aud2lch.c3 sol:AA-aud2lcl.c3 "
+             "sol:AA-aud3lch.c3 sol:AA-aud3lcl.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim names the chip "
+             "that implements the register. This module is agnus_audiodma -- "
+             "Agnus fetches the samples Paula plays -- and which silicon a block "
+             "sits in is a fact about the source tree that no port carries. "
+             "[claims: opus:AA-aud0dat.c3 opus:AA-aud0lch.c3 opus:AA-aud0lcl.c3 "
+             "opus:AA-aud1dat.c3 opus:AA-aud1lch.c3 opus:AA-aud1lcl.c3 "
+             "opus:AA-aud2dat.c3 opus:AA-aud3dat.c3 sol:AA-aud0dat.c3 "
+             "sol:AA-aud0lch.c3 sol:AA-aud0lcl.c3 sol:AA-aud1dat.c3 "
+             "sol:AA-aud1lch.c3 sol:AA-aud1lcl.c3 sol:AA-aud2dat.c3 "
+             "sol:AA-aud3dat.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: "
+             "opus:AA-aud2lch.c1/c5 opus:AA-aud2lcl.c1/c5 opus:AA-aud3lch.c1/c5 "
+             "opus:AA-aud3lcl.c1/c5 sol:AA-aud2lch.c1/c5 sol:AA-aud2lcl.c1/c5 "
+             "sol:AA-aud3lch.c1/c5 sol:AA-aud3lcl.c1/c5]");
+    c.record(
+             "DECLINED at this boundary (not-hardware): The claim is a legend "
+             "statement, a gap between two printed rows, or a reserved line -- "
+             "the document describing its own notation and layout. The one "
+             "legend mark that IS a hardware restriction, the `~` Coprocessor "
+             "limit, is graded by this package's own assertion. [claims: "
+             "opus:AA-aud2lch.c4 opus:AA-aud2lcl.c4 opus:AA-aud3lch.c4 "
+             "opus:AA-aud3lcl.c4 sol:AA-aud2lch.c4 sol:AA-aud2lcl.c4 "
+             "sol:AA-aud3lch.c4 sol:AA-aud3lcl.c4]");
+    c.record(
+             "DECLINED at this boundary (outside-uut): The `&` mark says the "
+             "register is used by a DMA channel only. Whether a processor access "
+             "to it is refused is decided by the bus, not at this boundary. "
+             "[claims: opus:AA-aud0dat.c4 opus:AA-aud1dat.c4 opus:AA-aud2dat.c4 "
+             "opus:AA-aud3dat.c4 sol:AA-aud0dat.c4 sol:AA-aud1dat.c4 "
+             "sol:AA-aud2dat.c4 sol:AA-aud3dat.c4]");
+    c.record(
+             "DECLINED at this boundary (outside-uut): The `~` mark is a "
+             "Coprocessor write restriction enforced in agnus_copper's cdang "
+             "path and graded by aa-copper-register-map. [claims: "
+             "opus:AA-aud0lch.c5 opus:AA-aud0lcl.c5 opus:AA-aud1lch.c5 "
+             "opus:AA-aud1lcl.c5 sol:AA-aud0lch.c5 sol:AA-aud0lcl.c5 "
+             "sol:AA-aud1lch.c5 sol:AA-aud1lcl.c5]");
+    c.record(
+             "DECLINED at this boundary (outside-uut): `W` says a write at this "
+             "address changes the register. agnus_audiodma never writes AUD0DAT: "
+             "it drives that address out so the fetched word lands there, in "
+             "Paula. The address is gradeable here and the write is not. "
+             "[claims: opus:AA-aud0dat.c2 opus:AA-aud1dat.c2 opus:AA-aud2dat.c2 "
+             "opus:AA-aud3dat.c2 sol:AA-aud0dat.c2 sol:AA-aud1dat.c2 "
+             "sol:AA-aud2dat.c2 sol:AA-aud3dat.c2]");
 
     std::cout << "\nAssertions: " << c.passed << " passed, "
               << c.failed << " failed\n";

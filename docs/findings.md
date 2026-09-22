@@ -281,10 +281,10 @@ blank.
 | [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23 where the AA list gives an Alice $22 | open · RTL · **red** | `aa/aa-beam-position-words` | **not consulted** — what each returns in VPOSR bits 14-8 is exactly the evidence that would settle it |
 | [NM-AA-005](findings/NM-AA-005.md) | the long-line toggle runs, but no line is a colour clock longer | open · RTL · **red** | `aa/aa-programmable-sync-windows` | **not consulted** — whether any of them lengthens the alternate line under a programmed HTOTAL is exactly the evidence that would settle it |
 
-**Thirty AA packages carry 173 graded assertions, and four of them are red.**
-Fourteen cover the fourteen RTL modules that decode an address the AA register
-list prints; four are from slice 2, five from slice 4, one from slice 3, one
-from slice 5 and five from slice 1, and all five of those slices are
+**32 AA packages carry 181 graded assertions, and 4 of them are red.**
+Sixteen cover the RTL modules that decode an address the AA register
+list prints; four are from slice 2, five from slice 4, one from slice 3,
+one from slice 5 and five from slice 1. Six of the seven slices are
 classified to their last record.
 
 Two of the four reds are findings of their own: NM-AA-004, VPOSR's chip

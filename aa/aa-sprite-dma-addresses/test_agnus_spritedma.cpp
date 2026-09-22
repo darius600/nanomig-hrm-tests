@@ -226,15 +226,7 @@ int main(int argc, char** argv) {
                  "written at its own address, $120 and $122 for sprite 0 and "
                  "four apart thereafter, which is what the AA list prints for "
                  "SPR0PTH through SPR7PTL [p.8] "
-                 "[claims: sol:AA-spr0pth.c1/c4 sol:AA-spr0ptl.c1/c4 sol:AA-spr1pth.c1/c4 "
-                 "sol:AA-spr1ptl.c1/c4 sol:AA-spr2pth.c1/c4 sol:AA-spr2ptl.c1/c4 sol:AA-spr3pth.c1 "
-                 "sol:AA-spr3ptl.c1 sol:AA-spr4pth.c1/c4 sol:AA-spr4ptl.c1/c4 sol:AA-spr5pth.c1/c4 "
-                 "sol:AA-spr5ptl.c1/c4 sol:AA-spr6pth.c1/c4 sol:AA-spr6ptl.c1/c4 sol:AA-spr7pth.c1/c4 "
-                 "sol:AA-spr7ptl.c1/c4 opus:AA-spr0pth.c1/c4 opus:AA-spr0ptl.c1/c4 opus:AA-spr1pth.c1/c4 "
-                 "opus:AA-spr1ptl.c1/c4 opus:AA-spr2pth.c1/c4 opus:AA-spr2ptl.c1/c4 opus:AA-spr3pth.c1 "
-                 "opus:AA-spr3ptl.c1 opus:AA-spr4pth.c1/c4 opus:AA-spr4ptl.c1/c4 opus:AA-spr5pth.c1/c4 "
-                 "opus:AA-spr5ptl.c1/c4 opus:AA-spr6pth.c1/c4 opus:AA-spr6ptl.c1/c4 opus:AA-spr7pth.c1/c4 "
-                 "opus:AA-spr7ptl.c1/c4]");
+                 "[claims: opus:AA-spr0pth.c1/c4 opus:AA-spr0ptl.c1/c4 opus:AA-spr1pth.c1/c4 opus:AA-spr1ptl.c1/c4 opus:AA-spr2pth.c1/c4 opus:AA-spr2ptl.c1/c4 opus:AA-spr3pth.c1 opus:AA-spr3ptl.c1 opus:AA-spr4pth.c1/c4 opus:AA-spr4ptl.c1/c4 opus:AA-spr5pth.c1/c4 opus:AA-spr5ptl.c1/c4 opus:AA-spr6pth.c1/c4 opus:AA-spr6ptl.c1/c4 opus:AA-spr7pth.c1/c4 opus:AA-spr7ptl.c1/c4 sol:AA-spr0pth.c1/c4 sol:AA-spr0ptl.c1/c4 sol:AA-spr1pth.c1/c4 sol:AA-spr1ptl.c1/c4 sol:AA-spr2pth.c1/c4 sol:AA-spr2ptl.c1/c4 sol:AA-spr3pth.c1 sol:AA-spr3ptl.c1 sol:AA-spr4pth.c1/c4 sol:AA-spr4ptl.c1/c4 sol:AA-spr5pth.c1/c4 sol:AA-spr5ptl.c1/c4 sol:AA-spr6pth.c1/c4 sol:AA-spr6ptl.c1/c4 sol:AA-spr7pth.c1/c4 sol:AA-spr7ptl.c1/c4]");
     }
 
     // --- 3. the HIGH half of a sprite pointer takes DB0-DB4 -----------------
@@ -252,8 +244,7 @@ int main(int argc, char** argv) {
                  "SPRPT-HIGH-TAKES-DB0-DB4: the high half of a sprite pointer "
                  "takes data bits 0 to 4 and no bit above them, which is what "
                  "the p.6 legend states for the high word of a `+` address "
-                 "register pair [p.6] [claims: sol:AA-legends.c5 "
-                 "opus:AA-legend6-plus.c3 sol:AA-spr3pth.c4 opus:AA-spr3pth.c4]");
+                 "register pair [p.6] [claims: opus:AA-legend6-plus.c3 opus:AA-spr3pth.c4 sol:AA-legends.c5 sol:AA-spr3pth.c4]");
     }
 
     // --- 4. the LOW half takes DB1-DB15, so DB0 is ignored ------------------
@@ -271,8 +262,7 @@ int main(int argc, char** argv) {
                  "SPRPT-LOW-TAKES-DB1-DB15: the low half of a sprite pointer "
                  "takes data bits 1 to 15 and ignores bit 0, which is what the "
                  "p.6 legend states for the low word of a `+` address register "
-                 "pair [p.6] [claims: sol:AA-legends.c4 opus:AA-legend6-plus.c2 "
-                 "sol:AA-spr3ptl.c4 opus:AA-spr3ptl.c4]");
+                 "pair [p.6] [claims: opus:AA-legend6-plus.c2 opus:AA-spr3ptl.c4 sol:AA-legends.c4 sol:AA-spr3ptl.c4]");
     }
 
     // --- 5. writing one sprite leaves the others alone ----------------------
@@ -293,14 +283,7 @@ int main(int argc, char** argv) {
                  "SPRPT-IS-PER-SPRITE: each sprite's pointer pair holds its own "
                  "value, so the sixteen addresses the AA list prints name "
                  "sixteen registers and not one bank read eight ways [p.8] "
-                 "[claims: sol:AA-spr0pth.c2 sol:AA-spr0ptl.c2 sol:AA-spr1pth.c2 sol:AA-spr1ptl.c2 "
-                 "sol:AA-spr2pth.c2 sol:AA-spr2ptl.c2 sol:AA-spr3pth.c2 sol:AA-spr3ptl.c2 "
-                 "sol:AA-spr4pth.c2 sol:AA-spr4ptl.c2 sol:AA-spr5pth.c2 sol:AA-spr5ptl.c2 "
-                 "sol:AA-spr6pth.c2 sol:AA-spr6ptl.c2 sol:AA-spr7pth.c2 sol:AA-spr7ptl.c2 "
-                 "opus:AA-spr0pth.c2 opus:AA-spr0ptl.c2 opus:AA-spr1pth.c2 opus:AA-spr1ptl.c2 "
-                 "opus:AA-spr2pth.c2 opus:AA-spr2ptl.c2 opus:AA-spr3pth.c2 opus:AA-spr3ptl.c2 "
-                 "opus:AA-spr4pth.c2 opus:AA-spr4ptl.c2 opus:AA-spr5pth.c2 opus:AA-spr5ptl.c2 "
-                 "opus:AA-spr6pth.c2 opus:AA-spr6ptl.c2 opus:AA-spr7pth.c2 opus:AA-spr7ptl.c2]");
+                 "[claims: opus:AA-spr0pth.c2 opus:AA-spr0ptl.c2 opus:AA-spr1pth.c2 opus:AA-spr1ptl.c2 opus:AA-spr2pth.c2 opus:AA-spr2ptl.c2 opus:AA-spr3pth.c2 opus:AA-spr3ptl.c2 opus:AA-spr4pth.c2 opus:AA-spr4ptl.c2 opus:AA-spr5pth.c2 opus:AA-spr5ptl.c2 opus:AA-spr6pth.c2 opus:AA-spr6ptl.c2 opus:AA-spr7pth.c2 opus:AA-spr7ptl.c2 sol:AA-spr0pth.c2 sol:AA-spr0ptl.c2 sol:AA-spr1pth.c2 sol:AA-spr1ptl.c2 sol:AA-spr2pth.c2 sol:AA-spr2ptl.c2 sol:AA-spr3pth.c2 sol:AA-spr3ptl.c2 sol:AA-spr4pth.c2 sol:AA-spr4ptl.c2 sol:AA-spr5pth.c2 sol:AA-spr5ptl.c2 sol:AA-spr6pth.c2 sol:AA-spr6ptl.c2 sol:AA-spr7pth.c2 sol:AA-spr7ptl.c2]");
     }
 
     // --- 6. FMODE decides how far a sprite pointer advances -----------------
@@ -325,9 +308,168 @@ int main(int argc, char** argv) {
                  "FMODE-AT-1FC: a write at $1FC reaches the fetch-mode "
                  "register, whose low bits set how far a sprite pointer "
                  "advances per fetch, which is the address the AA list prints "
-                 "for FMODE [p.9] [claims: sol:AA-fmode.c1 opus:AA-fmode.c1 "
-                 "sol:AA-fmode.c2 opus:AA-fmode.c2]");
+                 "for FMODE [p.9] [claims: opus:AA-fmode.c1/c2 sol:AA-fmode.c1/c2]");
     }
+
+    // --- What this boundary cannot grade ------------------------------------
+    c.record(
+             "DECLINED at this boundary (absent): The register is not decoded "
+             "anywhere in this design. The four strobes are generated from the "
+             "beam counter's own hpos rather than written at an address; the AGA "
+             "high registers and REFPTR are in no module of this core. [claims: "
+             "opus:AA-sprhdat.c1/c2/c4/c6 opus:AA-sprhpth.c1/c2/c4/c6 "
+             "opus:AA-sprhptl.c1/c2/c4/c6 opus:AA-sprhstop.c1/c2/c5 "
+             "opus:AA-sprhstrt.c1/c2/c5 sol:AA-sprhdat.c1/c2/c4/c6 "
+             "sol:AA-sprhpth.c1/c2/c4/c6 sol:AA-sprhptl.c1/c2/c4/c6 "
+             "sol:AA-sprhstop.c1/c2 sol:AA-sprhstrt.c1/c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "access column -- W, R or S. A module answers reads at the "
+             "addresses it decodes and zero everywhere else, so a write-only row "
+             "reads as the same silence an undecoded address reads as, and a "
+             "strobe has no read at all. [claims: opus:AA-spr0ctl.c2 "
+             "opus:AA-spr0data.c2 opus:AA-spr0datb.c2 opus:AA-spr0pos.c2 "
+             "opus:AA-spr1ctl.c2 opus:AA-spr1data.c2 opus:AA-spr1datb.c2 "
+             "opus:AA-spr1pos.c2 opus:AA-spr2ctl.c2 opus:AA-spr2data.c2 "
+             "opus:AA-spr2datb.c2 opus:AA-spr2pos.c2 opus:AA-spr3ctl.c2 "
+             "opus:AA-spr3data.c2 opus:AA-spr3datb.c2 opus:AA-spr3pos.c2 "
+             "opus:AA-spr4ctl.c2 opus:AA-spr4data.c2 opus:AA-spr4datb.c2 "
+             "opus:AA-spr4pos.c2 opus:AA-spr5ctl.c2 opus:AA-spr5data.c2 "
+             "opus:AA-spr5datb.c2 opus:AA-spr5pos.c2 opus:AA-spr6ctl.c2 "
+             "opus:AA-spr6data.c2 opus:AA-spr6datb.c2 opus:AA-spr6pos.c2 "
+             "opus:AA-spr7ctl.c2 opus:AA-spr7data.c2 opus:AA-spr7datb.c2 "
+             "opus:AA-spr7pos.c2 sol:AA-spr0ctl.c2 sol:AA-spr0data.c2 "
+             "sol:AA-spr0datb.c2 sol:AA-spr0pos.c2 sol:AA-spr1ctl.c2 "
+             "sol:AA-spr1data.c2 sol:AA-spr1datb.c2 sol:AA-spr1pos.c2 "
+             "sol:AA-spr2ctl.c2 sol:AA-spr2data.c2 sol:AA-spr2datb.c2 "
+             "sol:AA-spr2pos.c2 sol:AA-spr3ctl.c2 sol:AA-spr3data.c2 "
+             "sol:AA-spr3datb.c2 sol:AA-spr3pos.c2 sol:AA-spr4ctl.c2 "
+             "sol:AA-spr4data.c2 sol:AA-spr4datb.c2 sol:AA-spr4pos.c2 "
+             "sol:AA-spr5ctl.c2 sol:AA-spr5data.c2 sol:AA-spr5datb.c2 "
+             "sol:AA-spr5pos.c2 sol:AA-spr6ctl.c2 sol:AA-spr6data.c2 "
+             "sol:AA-spr6datb.c2 sol:AA-spr6pos.c2 sol:AA-spr7ctl.c2 "
+             "sol:AA-spr7data.c2 sol:AA-spr7datb.c2 sol:AA-spr7pos.c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim is the list's "
+             "chip column, which says which 1985 silicon a register lives in. No "
+             "port of any module in this design carries a chip identity. "
+             "[claims: opus:AA-spr0ctl.c3 opus:AA-spr0data.c3 "
+             "opus:AA-spr0datb.c3 opus:AA-spr0pos.c3 opus:AA-spr1ctl.c3 "
+             "opus:AA-spr1data.c3 opus:AA-spr1datb.c3 opus:AA-spr1pos.c3 "
+             "opus:AA-spr2ctl.c3 opus:AA-spr2data.c3 opus:AA-spr2datb.c3 "
+             "opus:AA-spr2pos.c3 opus:AA-spr3ctl.c3 opus:AA-spr3data.c3 "
+             "opus:AA-spr3datb.c3 opus:AA-spr3pos.c3 opus:AA-spr4ctl.c3 "
+             "opus:AA-spr4data.c3 opus:AA-spr4datb.c3 opus:AA-spr4pos.c3 "
+             "opus:AA-spr5ctl.c3 opus:AA-spr5data.c3 opus:AA-spr5datb.c3 "
+             "opus:AA-spr5pos.c3 opus:AA-spr6ctl.c3 opus:AA-spr6data.c3 "
+             "opus:AA-spr6datb.c3 opus:AA-spr6pos.c3 opus:AA-spr7ctl.c3 "
+             "opus:AA-spr7data.c3 opus:AA-spr7datb.c3 opus:AA-spr7pos.c3 "
+             "opus:AA-sprhdat.c3/c5 opus:AA-sprhpth.c3/c5 opus:AA-sprhptl.c3/c5 "
+             "opus:AA-sprhstop.c3/c4 opus:AA-sprhstrt.c3/c4 sol:AA-spr0ctl.c3 "
+             "sol:AA-spr0data.c3 sol:AA-spr0datb.c3 sol:AA-spr0pos.c3 "
+             "sol:AA-spr1ctl.c3 sol:AA-spr1data.c3 sol:AA-spr1datb.c3 "
+             "sol:AA-spr1pos.c3 sol:AA-spr2ctl.c3 sol:AA-spr2data.c3 "
+             "sol:AA-spr2datb.c3 sol:AA-spr2pos.c3 sol:AA-spr3ctl.c3 "
+             "sol:AA-spr3data.c3 sol:AA-spr3datb.c3 sol:AA-spr3pos.c3 "
+             "sol:AA-spr4ctl.c3 sol:AA-spr4data.c3 sol:AA-spr4datb.c3 "
+             "sol:AA-spr4pos.c3 sol:AA-spr5ctl.c3 sol:AA-spr5data.c3 "
+             "sol:AA-spr5datb.c3 sol:AA-spr5pos.c3 sol:AA-spr6ctl.c3 "
+             "sol:AA-spr6data.c3 sol:AA-spr6datb.c3 sol:AA-spr6pos.c3 "
+             "sol:AA-spr7ctl.c3 sol:AA-spr7data.c3 sol:AA-spr7datb.c3 "
+             "sol:AA-spr7pos.c3 sol:AA-sprhdat.c3/c5 sol:AA-sprhpth.c3/c5 "
+             "sol:AA-sprhptl.c3/c5 sol:AA-sprhstop.c3/c4 sol:AA-sprhstrt.c3/c4]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The claim names the chip "
+             "that implements the register. Which silicon a block is fabricated "
+             "in is a fact about the source tree, and no port of agnus_spritedma "
+             "carries a signal that distinguishes it. [claims: opus:AA-fmode.c3 "
+             "opus:AA-spr0pth.c3 opus:AA-spr0ptl.c3 opus:AA-spr1pth.c3 "
+             "opus:AA-spr1ptl.c3 opus:AA-spr2pth.c3 opus:AA-spr2ptl.c3 "
+             "opus:AA-spr3pth.c3 opus:AA-spr3ptl.c3 opus:AA-spr4pth.c3 "
+             "opus:AA-spr4ptl.c3 opus:AA-spr5pth.c3 opus:AA-spr5ptl.c3 "
+             "opus:AA-spr6pth.c3 opus:AA-spr6ptl.c3 opus:AA-spr7pth.c3 "
+             "opus:AA-spr7ptl.c3 sol:AA-fmode.c3 sol:AA-spr0pth.c3 "
+             "sol:AA-spr0ptl.c3 sol:AA-spr1pth.c3 sol:AA-spr1ptl.c3 "
+             "sol:AA-spr2pth.c3 sol:AA-spr2ptl.c3 sol:AA-spr3pth.c3 "
+             "sol:AA-spr3ptl.c3 sol:AA-spr4pth.c3 sol:AA-spr4ptl.c3 "
+             "sol:AA-spr5pth.c3 sol:AA-spr5ptl.c3 sol:AA-spr6pth.c3 "
+             "sol:AA-spr6ptl.c3 sol:AA-spr7pth.c3 sol:AA-spr7ptl.c3]");
+    c.record(
+             "DECLINED at this boundary (insufficient): The register is decoded "
+             "at this boundary, but no assertion in this package writes or reads "
+             "it. The package grades the rows its own subject names; this row is "
+             "another register of the same module. [claims: "
+             "opus:AA-spr0ctl.c1/c5 opus:AA-spr0data.c1 opus:AA-spr0datb.c1 "
+             "opus:AA-spr0pos.c1/c5 opus:AA-spr1ctl.c1/c5 opus:AA-spr1data.c1 "
+             "opus:AA-spr1datb.c1 opus:AA-spr1pos.c1/c5 opus:AA-spr2ctl.c1/c5 "
+             "opus:AA-spr2data.c1 opus:AA-spr2datb.c1 opus:AA-spr2pos.c1/c5 "
+             "opus:AA-spr3ctl.c1/c5 opus:AA-spr3data.c1 opus:AA-spr3datb.c1 "
+             "opus:AA-spr3pos.c1/c5 opus:AA-spr4ctl.c1/c5 opus:AA-spr4data.c1 "
+             "opus:AA-spr4datb.c1 opus:AA-spr4pos.c1/c5 opus:AA-spr5ctl.c1/c5 "
+             "opus:AA-spr5data.c1 opus:AA-spr5datb.c1 opus:AA-spr5pos.c1/c5 "
+             "opus:AA-spr6ctl.c1/c5 opus:AA-spr6data.c1 opus:AA-spr6datb.c1 "
+             "opus:AA-spr6pos.c1/c5 opus:AA-spr7ctl.c1/c5 opus:AA-spr7data.c1 "
+             "opus:AA-spr7datb.c1 opus:AA-spr7pos.c1/c5 sol:AA-spr0ctl.c1 "
+             "sol:AA-spr0data.c1 sol:AA-spr0datb.c1 sol:AA-spr0pos.c1 "
+             "sol:AA-spr1ctl.c1 sol:AA-spr1data.c1 sol:AA-spr1datb.c1 "
+             "sol:AA-spr1pos.c1 sol:AA-spr2ctl.c1 sol:AA-spr2data.c1 "
+             "sol:AA-spr2datb.c1 sol:AA-spr2pos.c1 sol:AA-spr3ctl.c1 "
+             "sol:AA-spr3data.c1 sol:AA-spr3datb.c1 sol:AA-spr3pos.c1 "
+             "sol:AA-spr4ctl.c1 sol:AA-spr4data.c1 sol:AA-spr4datb.c1 "
+             "sol:AA-spr4pos.c1 sol:AA-spr5ctl.c1 sol:AA-spr5data.c1 "
+             "sol:AA-spr5datb.c1 sol:AA-spr5pos.c1 sol:AA-spr6ctl.c1 "
+             "sol:AA-spr6data.c1 sol:AA-spr6datb.c1 sol:AA-spr6pos.c1 "
+             "sol:AA-spr7ctl.c1 sol:AA-spr7data.c1 sol:AA-spr7datb.c1 "
+             "sol:AA-spr7pos.c1]");
+    c.record(
+             "DECLINED at this boundary (not-hardware): Capital `P` in the "
+             "revision column says which chip set introduced the register. That "
+             "is a statement about the document's own history of the silicon, "
+             "not about behaviour, and no stimulus at any boundary shows it. "
+             "[claims: opus:AA-fmode.c4 sol:AA-fmode.c4]");
+    c.record(
+             "DECLINED at this boundary (not-hardware): The claim is a legend "
+             "statement, a gap between two printed rows, or a reserved line -- "
+             "the document describing its own notation and layout. The one "
+             "legend mark that IS a hardware restriction, the `~` Coprocessor "
+             "limit, is graded by this package's own assertion. [claims: "
+             "opus:AA-spr0ctl.c4 opus:AA-spr0data.c4 opus:AA-spr0datb.c4 "
+             "opus:AA-spr0pos.c4 opus:AA-spr1ctl.c4 opus:AA-spr1data.c4 "
+             "opus:AA-spr1datb.c4 opus:AA-spr1pos.c4 opus:AA-spr2ctl.c4 "
+             "opus:AA-spr2data.c4 opus:AA-spr2datb.c4 opus:AA-spr2pos.c4 "
+             "opus:AA-spr3ctl.c4 opus:AA-spr3data.c4 opus:AA-spr3datb.c4 "
+             "opus:AA-spr3pos.c4 opus:AA-spr4ctl.c4 opus:AA-spr4data.c4 "
+             "opus:AA-spr4datb.c4 opus:AA-spr4pos.c4 opus:AA-spr5ctl.c4 "
+             "opus:AA-spr5data.c4 opus:AA-spr5datb.c4 opus:AA-spr5pos.c4 "
+             "opus:AA-spr6ctl.c4 opus:AA-spr6data.c4 opus:AA-spr6datb.c4 "
+             "opus:AA-spr6pos.c4 opus:AA-spr7ctl.c4 opus:AA-spr7data.c4 "
+             "opus:AA-spr7datb.c4 opus:AA-spr7pos.c4 sol:AA-spr0ctl.c4 "
+             "sol:AA-spr0data.c4 sol:AA-spr0datb.c4 sol:AA-spr0pos.c4 "
+             "sol:AA-spr1ctl.c4 sol:AA-spr1data.c4 sol:AA-spr1datb.c4 "
+             "sol:AA-spr1pos.c4 sol:AA-spr2ctl.c4 sol:AA-spr2data.c4 "
+             "sol:AA-spr2datb.c4 sol:AA-spr2pos.c4 sol:AA-spr3ctl.c4 "
+             "sol:AA-spr3data.c4 sol:AA-spr3datb.c4 sol:AA-spr3pos.c4 "
+             "sol:AA-spr4ctl.c4 sol:AA-spr4data.c4 sol:AA-spr4datb.c4 "
+             "sol:AA-spr4pos.c4 sol:AA-spr5ctl.c4 sol:AA-spr5data.c4 "
+             "sol:AA-spr5datb.c4 sol:AA-spr5pos.c4 sol:AA-spr6ctl.c4 "
+             "sol:AA-spr6data.c4 sol:AA-spr6datb.c4 sol:AA-spr6pos.c4 "
+             "sol:AA-spr7ctl.c4 sol:AA-spr7data.c4 sol:AA-spr7datb.c4 "
+             "sol:AA-spr7pos.c4]");
+    c.record(
+             "DECLINED at this boundary (outside-uut): The `~` mark is a "
+             "Coprocessor write restriction enforced in agnus_copper's cdang "
+             "path and graded by aa-copper-register-map. [claims: "
+             "opus:AA-spr0pth.c5 opus:AA-spr0ptl.c5 opus:AA-spr1pth.c5 "
+             "opus:AA-spr1ptl.c5 opus:AA-spr2pth.c5 opus:AA-spr2ptl.c5 "
+             "opus:AA-spr3pth.c5 opus:AA-spr3ptl.c5 opus:AA-spr4pth.c5 "
+             "opus:AA-spr4ptl.c5 opus:AA-spr5pth.c5 opus:AA-spr5ptl.c5 "
+             "opus:AA-spr6pth.c5 opus:AA-spr6ptl.c5 opus:AA-spr7pth.c5 "
+             "opus:AA-spr7ptl.c5 sol:AA-spr0pth.c5 sol:AA-spr0ptl.c5 "
+             "sol:AA-spr1pth.c5 sol:AA-spr1ptl.c5 sol:AA-spr2pth.c5 "
+             "sol:AA-spr2ptl.c5 sol:AA-spr3pth.c5 sol:AA-spr3ptl.c5 "
+             "sol:AA-spr4pth.c5 sol:AA-spr4ptl.c5 sol:AA-spr5pth.c5 "
+             "sol:AA-spr5ptl.c5 sol:AA-spr6pth.c5 sol:AA-spr6ptl.c5 "
+             "sol:AA-spr7pth.c5 sol:AA-spr7ptl.c5]");
 
     std::cout << "\nAssertions: " << c.passed << " passed, "
               << c.failed << " failed\n";
