@@ -2,15 +2,21 @@
 
 A reference for developers, not a narrative.
 
+**Sixty-five of these pages are filed against the Hardware Reference
+Manual and two against the AA specification.** The AA pair (NM-AA-001 and
+NM-AA-002) is counted separately in [`../findings.md`](../findings.md), and
+the tests that hold them up live in `aa/` rather than `hrm/`. The header
+table is the same on all sixty-seven.
+
 **What every page has, in the same place: the header table.** These seven fields
-are on all 65 pages, and the first four answer *what am I being asked to do*
+are on all 67 pages, and the first four answer *what am I being asked to do*
 before any prose is read:
 
 | field | values |
 |---|---|
 | **Lifecycle** | `open` or `withdrawn` |
 | **Filed against** | `the RTL`, `the printed page`, `the classification`, or `—` when withdrawn |
-| **Evidence** | a graded red (plain, contested or inverted), a source observation, or none |
+| **Evidence** | a graded red (plain, contested or inverted), a graded green with an inverse control, a source observation, or none |
 | **What is asked of a reader** | one sentence. If it begins *No RTL change* or *Nothing*, the rest of the page is context |
 | **Module** | the RTL under discussion, permalinked at the pinned revision |
 | **Test** | the package that measures it, or `none yet` |
@@ -21,9 +27,9 @@ page carries says something about it:
 
 | field | on | what its absence means |
 |---|---|---|
-| **Verdict of the four** | 60 of 65 | the other implementations were not consulted, or the finding is not about behaviour they share |
-| **Report to** | 58 of 65 | nothing is being asked of anyone upstream — usually a withdrawn finding |
-| **Assertions** | 33 of 65 | the finding has no graded assertions of its own; the `Test` row still names the package |
+| **Verdict of the four** | 62 of 67 | the other implementations were not consulted, or the finding is not about behaviour they share |
+| **Report to** | 60 of 67 | nothing is being asked of anyone upstream — usually a withdrawn finding |
+| **Assertions** | 35 of 67 | the finding has no graded assertions of its own; the `Test` row still names the package |
 | **See also** | 9 | no sibling finding bears on it |
 | **Error class** | 5 | it is not one of the recurring shapes |
 | **Boundary** | 2 | no edge case was isolated |

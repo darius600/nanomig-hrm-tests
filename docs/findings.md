@@ -1,6 +1,6 @@
 # Findings
 
-**40 of the 65 findings ask you to decide something. The table is below the explanation — jump to [The register](#the-register).**
+**40 of the 65 HRM findings ask you to decide something. The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each has the
 > same six parts — what the HRM says, what NanoMig does, what the other four say,
@@ -252,6 +252,36 @@ NM-HRM-008 gains two printed sources it did not have, and NM-HRM-011 gains
 chapter 7's own page and a contradiction inside it. Each says so on its own page.
 A chapter that corroborates an existing finding from a different page has done
 more for it than a new number would.
+
+## The AA register
+
+**These are findings against a different document and they are counted
+separately.** The oracle is Commodore's *Functional Specification for the
+Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY, not the Hardware
+Reference Manual, and the tests that hold them up live in `aa/` rather than
+`hrm/`. Mixing the two counts would make both harder to read.
+
+**Both are filed against the printed page, and both are held up by GREEN
+assertions.** That is the shape a document defect takes here: the RTL does
+something sensible, the test says so, and what is in question is whether the
+document can be cited for that register at all. There is no red to point at,
+so each finding names its own inverse control instead — the assertion that
+would have gone red had the RTL followed the other half of the document.
+
+**The four implementations are not consulted for either.** They could not
+settle a question about what a 1991 document prints; there is no behaviour
+here they could disagree about. The column says so rather than being left
+blank.
+
+| Key | Subject | Status | Package | Verdict of the four |
+|---|---|---|---|---|
+| [NM-AA-001](findings/NM-AA-001.md) | the AA list gives CLXCON2 two addresses, and $10C belongs to BPLCON4 | open · page · green with an inverse control | `aa/aa-clxcon2-address` | not consulted — a defect in a document, not a behaviour |
+| [NM-AA-002](findings/NM-AA-002.md) | SPRHDAT is the one register in the Coprocessor-restricted range left unmarked | open · page · green with an inverse control | `aa/aa-copper-register-map` | not consulted — a defect in a document, not a behaviour |
+
+**Fourteen AA packages carry 87 graded assertions** across the fourteen RTL
+modules that decode an address the AA register list prints, and these two are
+what they have turned up so far. A package that finds nothing has still done
+its work: it says the document and the silicon agree on those rows.
 
 ## The analyses that produced groups of findings
 
