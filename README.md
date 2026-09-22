@@ -68,16 +68,16 @@ artefacts rather than by remembering.
 | test packages, `hrm/` | **208** |
 | assertions, `hrm/` | **3263** — 3077 pass, **186 fail** |
 | packages, `hrm/` | 141 green, 67 carrying at least one red, **0 build errors** |
-| test packages, `aa/` | **21** — fourteen cover one RTL module each from slice 7's register list, four the bit tables of slice 2, three the Copper's instruction format, DMACON's Paula half and the collision register from slice 4 |
-| assertions, `aa/` | **125** — 124 pass, **1 fail**, 0 build errors. The red is BEAMCON0's sync-polarity bits, which corroborates NM-HRM-032 from the AA specification |
-| AA findings | **2** — the second oracle, the 1991 AA chip-set specification, has three registered findings so far, and one red that corroborates an HRM finding rather than adding a key. Its suite is no longer small: **21 packages, 125 graded assertions**, and two of the seven slices are fully classified, one package per RTL module that decodes an address the AA register list prints. Two findings out of that is a result, not a shortfall — the rest of the rows and the silicon agree |
+| test packages, `aa/` | **22** — fourteen cover one RTL module each from slice 7's register list, four the bit tables of slice 2, four the Copper's instruction format, DMACON's Paula half, the collision register and AGA's two colour register sets from slice 4 |
+| assertions, `aa/` | **128** — 127 pass, **1 fail**, 0 build errors. The red is BEAMCON0's sync-polarity bits, which corroborates NM-HRM-032 from the AA specification |
+| AA findings | **2** — the second oracle, the 1991 AA chip-set specification, has three registered findings so far, and one red that corroborates an HRM finding rather than adding a key. Its suite is no longer small: **22 packages, 128 graded assertions**, and two of the seven slices are fully classified, one package per RTL module that decodes an address the AA register list prints. Two findings out of that is a result, not a shortfall — the rest of the rows and the silicon agree |
 | registered findings | **68** — 65 against the Hardware Reference Manual and 3 against the AA specification, counted in registers of their own. **40 ask you to decide whether the RTL should change** — 62 open, 6 withdrawn; of the open ones 53 rest on a graded red, 5 are source observations, 3 on a graded green with an inverse control, and one is filed against the printed page with no test yet |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **13** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, appendix K, and `aa-s7`: the AA specification's address-ordered register list, the first unit accepted against the second oracle |
 
 **All 208 packages now report both a verdict and an assertion count**, so the
 `hrm/` rows above describe the same population. `./run_all.sh` walks both trees
 and prints a line for each: `tests: 141 passed, 67 failed, 0 build errors` for
-`hrm/`, `tests: 20 passed, 1 failed, 0 build errors` for `aa/`.
+`hrm/`, `tests: 21 passed, 1 failed, 0 build errors` for `aa/`.
 
 That was not true until 19.09.2026. Nine packages printed only a package-level
 pass or fail, in wordings no tool read — `Checked 22 assertions; passed=22
