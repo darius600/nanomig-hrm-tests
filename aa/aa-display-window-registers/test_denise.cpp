@@ -297,13 +297,16 @@ int main(int argc, char** argv) {
     // --- What this boundary cannot grade ------------------------------------
     c.record(
              "DECLINED at this boundary (insufficient): The claim names the chip "
-             "that implements the r [claims: opus:AA-diwhigh.c3/c15 "
-             "opus:AA-diwstop.c3 opus:AA-diwstrt.c3 opus:AA-dmaconr.c3]");
+             "that implements the register. No port of denise carries a chip "
+             "identity. [claims: opus:AA-diwhigh.c3/c15 opus:AA-diwstop.c3 "
+             "opus:AA-diwstrt.c3 opus:AA-dmaconr.c3]");
     c.record(
              "DECLINED at this boundary (insufficient): The register is decoded "
-             "somewhere in this desi [claims: opus:AA-clxcon-cont.c1/c2/c3 "
-             "opus:AA-copjmp.c5/c6 opus:AA-coplc.c1 opus:AA-dmaconr.c1/c2/c4 "
-             "sol:AA-collision-control.c1/c2/c3 "
+             "somewhere in this design but not at a boundary this package "
+             "drives, and no other slice 4 lot claims it. It is recorded here so "
+             "the slice closes with nothing unclassified. [claims: "
+             "opus:AA-clxcon-cont.c1/c2/c3 opus:AA-copjmp.c5/c6 opus:AA-coplc.c1 "
+             "opus:AA-dmaconr.c1/c2/c4 sol:AA-collision-control.c1/c2/c3 "
              "sol:AA-copins-encoding.c1/c2/c3/c4/c5/c6/c7/c8/c9/c10/c11/c12/c13/c14/c15/c16/c17/c18/c19/c20/c21/c22/c23/c24/c25/c26/c27/c28/c29/c30/c31/c32/c33/c34/c35/c36/c37/c38/c39/c40/c41/c42/c43/c44/c45/c46/c47/c48/c49/c50/c51/c52/c53/c54/c55/c56/c57/c58/c59/c60/c61/c62/c63/c64/c65/c66/c67/c68/c69/c70/c71/c72/c73/c74/c75/c76/c77/c78/c79/c80/c81/c82/c83/c84/c85/c86/c87/c88/c89/c90/c91/c92/c93/c94/c95/c96/c97/c98/c99/c100/c101/c102/c103/c104/c105/c106/c107/c108/c109/c110 "
              "sol:AA-copjmp.c1/c2 sol:AA-coploc.c1 "
              "sol:AA-ddf-bits.c1/c2/c3/c4/c5/c6/c7/c8/c9/c10/c11/c12/c13/c14/c15/c16/c17 "
@@ -313,15 +316,18 @@ int main(int argc, char** argv) {
              "sol:AA-dmaconr.c6]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is about the "
-             "document -- a mark, a l [claims: opus:AA-diwhigh.c4/c6 "
-             "opus:AA-dmaconr.c5 "
+             "document -- a mark, a legend, or a disagreement between its two "
+             "statements of a register. No signal carries any of those. [claims: "
+             "opus:AA-diwhigh.c4/c6 opus:AA-dmaconr.c5 "
              "opus:AA-legend.c1/c2/c3/c4/c5/c6/c7/c8/c9/c10/c11 "
              "sol:AA-diwhigh.c1/c2/c3/c4/c5/c6/c7/c8/c9/c10 "
              "sol:AA-diwhigh-bits.c1/c2/c3/c4/c5/c6/c7/c8/c9/c10/c11/c12/c13/c14/c15/c16/c17/c18/c19/c20 "
              "sol:AA-dmaconr.c1/c2/c3/c4/c5]");
     c.record(
              "DECLINED at this boundary (outside-uut): DDFSTRT and DDFSTOP are "
-             "decoded in agnus_bitpl [claims: opus:AA-ddf.c5/c6/c7/c8/c10 "
+             "decoded in agnus_bitplanedma, a module of its own, and decide when "
+             "the bitplane fetch starts rather than what denise displays. "
+             "[claims: opus:AA-ddf.c5/c6/c7/c8/c10 "
              "opus:AA-ddfstop.c1/c2/c3/c4/c9 opus:AA-ddfstrt.c1/c2/c3/c4/c9 "
              "sol:AA-ddf.c1/c2/c3/c4/c5/c6 sol:AA-ddfstop.c1/c2/c3/c4/c5/c6/c7 "
              "sol:AA-ddfstrt.c1/c2/c3/c4/c5/c6/c7/c8 opus:AA-ddf.use-b00 "
@@ -335,7 +341,9 @@ int main(int argc, char** argv) {
              "opus:AA-ddfstrt.t4]");
     c.record(
              "DECLINED at this boundary (outside-uut): The claim is about the "
-             "window's VERTICAL limit [claims: opus:AA-diwstop.c4/c5 "
+             "window's VERTICAL limits. denise compares only the horizontal ones "
+             "against its own hpos; the vertical window is decided in agnus and "
+             "reaches denise as the blank input. [claims: opus:AA-diwstop.c4/c5 "
              "opus:AA-diwstrt.c4/c5 sol:AA-diwstop.c4/c5 sol:AA-diwstrt.c4/c5 "
              "opus:AA-diw.use-b08 opus:AA-diw.use-b09 opus:AA-diw.use-b10 "
              "opus:AA-diw.use-b11 opus:AA-diw.use-b12 opus:AA-diw.use-b13 "

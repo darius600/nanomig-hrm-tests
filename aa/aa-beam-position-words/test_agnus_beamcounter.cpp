@@ -212,27 +212,30 @@ int main(int argc, char** argv) {
     // --- What this boundary cannot grade ------------------------------------
     c.record(
              "DECLINED at this boundary (insufficient): The claim names the chip "
-             "that implements the r [claims: opus:AA-bplhdat.c2 "
-             "opus:AA-bplhpth.c3 opus:AA-bplhptl.c3 opus:AA-bplhstop.c3 "
-             "opus:AA-bplhstrt.c3 opus:AA-bplxpth.c3 opus:AA-bplxptl.c3 "
-             "opus:AA-clxcon.c3 opus:AA-clxcon2.c3 opus:AA-sprhstop.c3 "
-             "opus:AA-sprhstrt.c3 opus:AA-sprxctl.c3 opus:AA-sprxdata.c3 "
-             "opus:AA-sprxdatb.c3 opus:AA-sprxpos.c3 opus:AA-sprxpth.c3 "
-             "opus:AA-sprxptl.c3 opus:AA-strequ.c3 opus:AA-strhor.c3 "
-             "opus:AA-strlong.c3 opus:AA-strvbl.c3 opus:AA-vbstrt.c3 "
-             "opus:AA-vsstop.c3 opus:AA-vsstrt.c3 opus:AA-vtotal.c3 "
-             "sol:AA-bplhmod.c4 sol:AA-bplhpth.c5 sol:AA-bplhptl.c5 "
-             "sol:AA-bplhstop.c4 sol:AA-bplhstrt.c4 sol:AA-bplxdat.c10 "
-             "sol:AA-bplxpth.c10 sol:AA-bplxptl.c10 sol:AA-clxcon.c3 "
-             "sol:AA-clxcon2.c4 sol:AA-sprhstop.c4/c23 sol:AA-sprhstrt.c4 "
-             "sol:AA-sprxctl.c3 sol:AA-sprxdata.c3 sol:AA-sprxdatb.c3 "
-             "sol:AA-sprxpos.c3 sol:AA-sprxpth.c3 sol:AA-sprxptl.c3 "
-             "sol:AA-strequ.c5 sol:AA-strlong.c5 sol:AA-strobes.c3 "
-             "sol:AA-strvbl.c5 sol:AA-vbstop.c4 sol:AA-vbstrt.c4 "
-             "sol:AA-vsstop.c4 sol:AA-vsstrt.c4 sol:AA-vtotal.c4]");
+             "that implements the register. No port of agnus_beamcounter carries "
+             "a chip identity. [claims: opus:AA-bplhdat.c2 opus:AA-bplhpth.c3 "
+             "opus:AA-bplhptl.c3 opus:AA-bplhstop.c3 opus:AA-bplhstrt.c3 "
+             "opus:AA-bplxpth.c3 opus:AA-bplxptl.c3 opus:AA-clxcon.c3 "
+             "opus:AA-clxcon2.c3 opus:AA-sprhstop.c3 opus:AA-sprhstrt.c3 "
+             "opus:AA-sprxctl.c3 opus:AA-sprxdata.c3 opus:AA-sprxdatb.c3 "
+             "opus:AA-sprxpos.c3 opus:AA-sprxpth.c3 opus:AA-sprxptl.c3 "
+             "opus:AA-strequ.c3 opus:AA-strhor.c3 opus:AA-strlong.c3 "
+             "opus:AA-strvbl.c3 opus:AA-vbstrt.c3 opus:AA-vsstop.c3 "
+             "opus:AA-vsstrt.c3 opus:AA-vtotal.c3 sol:AA-bplhmod.c4 "
+             "sol:AA-bplhpth.c5 sol:AA-bplhptl.c5 sol:AA-bplhstop.c4 "
+             "sol:AA-bplhstrt.c4 sol:AA-bplxdat.c10 sol:AA-bplxpth.c10 "
+             "sol:AA-bplxptl.c10 sol:AA-clxcon.c3 sol:AA-clxcon2.c4 "
+             "sol:AA-sprhstop.c4/c23 sol:AA-sprhstrt.c4 sol:AA-sprxctl.c3 "
+             "sol:AA-sprxdata.c3 sol:AA-sprxdatb.c3 sol:AA-sprxpos.c3 "
+             "sol:AA-sprxpth.c3 sol:AA-sprxptl.c3 sol:AA-strequ.c5 "
+             "sol:AA-strlong.c5 sol:AA-strobes.c3 sol:AA-strvbl.c5 "
+             "sol:AA-vbstop.c4 sol:AA-vbstrt.c4 sol:AA-vsstop.c4 "
+             "sol:AA-vsstrt.c4 sol:AA-vtotal.c4]");
     c.record(
              "DECLINED at this boundary (insufficient): The register is decoded "
-             "somewhere in this desi [claims: opus:AA-bplamx.c1/c2 "
+             "somewhere in this design but not at the boundary this package "
+             "drives, and no other slice 3 lot claims it. Recorded so the slice "
+             "closes with nothing unclassified. [claims: opus:AA-bplamx.c1/c2 "
              "opus:AA-bplhdat.c1/c5 opus:AA-bplhmod.c1/c2/c5/c6 "
              "opus:AA-bplhpth.c1/c2/c6 opus:AA-bplhptl.c1/c2/c6/c7/c8/c9/c10/c11 "
              "opus:AA-bplhstop.c1/c2/c5/c6/c7/c8/c9/c10 "
@@ -259,11 +262,13 @@ int main(int argc, char** argv) {
              "sol:AA-vtotal.c2/c3/c5/c6/c7/c8]");
     c.record(
              "DECLINED at this boundary (insufficient): VHPOSR doubles as the "
-             "light pen latch. Showing [claims: opus:AA-vhposr.c5 "
-             "opus:AA-vhposw.c5]");
+             "light pen latch. Showing that needs a light pen input and a "
+             "capture, which this package does not drive. [claims: "
+             "opus:AA-vhposr.c5 opus:AA-vhposw.c5]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is about the "
-             "document -- a mark, a l [claims: opus:AA-bplhdat.c3/c4 "
+             "document -- a mark, a legend, or a disagreement between its two "
+             "statements of a register. [claims: opus:AA-bplhdat.c3/c4 "
              "opus:AA-bplhmod.c3/c4 opus:AA-bplhpth.c4/c5 opus:AA-bplhptl.c4/c5 "
              "opus:AA-bplhstop.c4 opus:AA-bplhstrt.c4 "
              "opus:AA-bplxdat.c3/c5/c12/c13 opus:AA-bplxpth.c5/c7/c8 "
@@ -295,30 +300,37 @@ int main(int argc, char** argv) {
              "sol:AA-vsstop.c1 sol:AA-vsstrt.c1 sol:AA-vtotal.c1]");
     c.record(
              "DECLINED at this boundary (not-hardware): The line names the "
-             "identifier some OTHER Agnus [claims: "
-             "opus:AA-vpos.c21/c22/c23/c24/c28 sol:AA-vpos.c20/c21/c22/c23]");
+             "identifier some OTHER Agnus reports -- an 8361, an 8367, an 8372. "
+             "This RTL is an Alice; what a different part returns is a fact "
+             "about that part. [claims: opus:AA-vpos.c21/c22/c23/c24/c28 "
+             "sol:AA-vpos.c20/c21/c22/c23]");
     c.record(
              "DECLINED at this boundary (outside-uut): CLXCON and CLXCON2 are "
-             "decoded in denise_colli [claims: "
+             "decoded in denise_collision, where aa-clxcon2-address and "
+             "aa-collision-data-register grade them. [claims: "
              "opus:AA-clxcon.c1/c2/c4/c5/c6/c7/c8/c9/c10/c11/c12/c13/c14/c15/c16/c17/c18/c19/c20/c21/c22 "
              "opus:AA-clxcon2.c2/c5/c6/c7/c8/c9/c10/c11/c12/c13 "
              "sol:AA-clxcon.c1/c2/c4/c5/c6/c7/c8/c9/c10/c11/c12/c13/c14/c15/c16/c17/c18/c19/c20/c21/c22 "
              "sol:AA-clxcon2.c3/c5/c6/c7/c8/c9/c10/c11/c12/c13/c14/c15/c16/c17/c18]");
     c.record(
              "DECLINED at this boundary (outside-uut): The bitplane data "
-             "registers are decoded in den [claims: "
+             "registers are decoded in denise_bitplanes and graded by "
+             "aa-bitplane-data-registers at that boundary. [claims: "
              "opus:AA-bplxdat.c1/c2/c4/c6/c7/c8/c9/c10/c11/c14 "
              "sol:AA-bplxdat.c1/c2/c3/c4/c5/c6/c7/c8/c9/c21/c22/c23/c24/c25/c26/c27]");
     c.record(
              "DECLINED at this boundary (outside-uut): The bitplane pointers and "
-             "modulos are decoded [claims: opus:AA-bplxpth.c1/c2/c4/c6/c9 "
+             "modulos are decoded in agnus_bitplanedma, a module of its own. "
+             "[claims: opus:AA-bplxpth.c1/c2/c4/c6/c9 "
              "opus:AA-bplxptl.c1/c2/c4/c6/c7/c10 "
              "sol:AA-bplxpth.c1/c2/c3/c4/c5/c6/c7/c8/c9/c11/c22 "
              "sol:AA-bplxptl.c1/c2/c3/c4/c5/c6/c7/c8/c9/c11/c12/c23]");
     c.record(
              "DECLINED at this boundary (outside-uut): The sprite registers are "
-             "decoded in agnus_spri [claims: "
-             "opus:AA-sprhstop.c1/c2/c5/c6/c7/c8/c9 opus:AA-sprhstrt.c1/c2/c5/c6 "
+             "decoded in agnus_spritedma and denise_sprites. agnus_beamcounter "
+             "produces the beam position they are compared against and nothing "
+             "else. [claims: opus:AA-sprhstop.c1/c2/c5/c6/c7/c8/c9 "
+             "opus:AA-sprhstrt.c1/c2/c5/c6 "
              "opus:AA-sprxctl.c1/c2/c6/c7/c8/c9/c10/c11/c12/c13/c14/c15/c16/c17/c18/c19/c20 "
              "opus:AA-sprxdata.c1/c2 "
              "opus:AA-sprxdatb.c1/c2/c5/c6/c7/c8/c9/c10/c11/c12 "

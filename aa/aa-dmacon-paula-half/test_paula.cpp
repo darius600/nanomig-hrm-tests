@@ -229,28 +229,38 @@ int main(int argc, char** argv) {
     // --- What this boundary cannot grade ------------------------------------
     c.record(
              "DECLINED at this boundary (insufficient): The bit reaches the "
-             "audio channels as `dmaen [claims: opus:AA-dmacon.b00 "
-             "opus:AA-dmacon.b01 opus:AA-dmacon.b02 opus:AA-dmacon.b03]");
+             "audio channels as `dmaena`, so the signal is at this boundary -- "
+             "but showing one needs a channel armed with a period and a length, "
+             "which is this package's first non-goal. [claims: "
+             "opus:AA-dmacon.b00 opus:AA-dmacon.b01 opus:AA-dmacon.b02 "
+             "opus:AA-dmacon.b03]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is about the "
-             "page's typography -- [claims: opus:AA-dmacon.b13]");
+             "page's typography -- a double space inside a printed name. Nothing "
+             "about a signal turns on it. [claims: opus:AA-dmacon.b13]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is that the "
-             "document's two stateme [claims: opus:AA-dmacon.c3 "
+             "document's two statements of DMACON disagree -- the alphabetical "
+             "entry gives it three chips, the address list two. Which is right "
+             "is a fact about the document. [claims: opus:AA-dmacon.c3 "
              "sol:AA-dmacon.c3]");
     c.record(
              "DECLINED at this boundary (outside-uut): BBUSY and BZERO are the "
-             "blitter's own status [claims: opus:AA-dmacon.c6 "
-             "opus:AA-dmacon.b13b opus:AA-dmacon.b14 opus:AA-dmacon.b14b]");
+             "blitter's own status bits, marked read only in the same cell, and "
+             "agnus_blitter produces them. Paula neither writes nor reads them. "
+             "[claims: opus:AA-dmacon.c6 opus:AA-dmacon.b13b opus:AA-dmacon.b14 "
+             "opus:AA-dmacon.b14b]");
     c.record(
              "DECLINED at this boundary (outside-uut): The bit enables a DMA "
-             "channel Agnus owns. pa [claims: opus:AA-dmacon.b05 "
-             "opus:AA-dmacon.b06 opus:AA-dmacon.b07 opus:AA-dmacon.b08 "
-             "opus:AA-dmacon.b09b opus:AA-dmacon.b10 opus:AA-dmacon.b10b "
-             "opus:AA-dmacon.b10c]");
+             "channel Agnus owns. paula.v decodes dmacon[4:0] and the master "
+             "enable only; BPLEN, COPEN, BLTEN, SPREN and BLTPRI are decoded in "
+             "agnus. [claims: opus:AA-dmacon.b05 opus:AA-dmacon.b06 "
+             "opus:AA-dmacon.b07 opus:AA-dmacon.b08 opus:AA-dmacon.b09b "
+             "opus:AA-dmacon.b10 opus:AA-dmacon.b10b opus:AA-dmacon.b10c]");
     c.record(
              "DECLINED at this boundary (source-silent): The table prints X for "
-             "the bit and names no [claims: opus:AA-dmacon.b11 "
+             "the bit and names no function for it. A cell with no name makes no "
+             "requirement on a signal. [claims: opus:AA-dmacon.b11 "
              "opus:AA-dmacon.b12]");
 
     std::cout << "\nAssertions: " << c.passed << " passed, "

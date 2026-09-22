@@ -222,14 +222,19 @@ int main(int argc, char** argv) {
     // --- What this boundary cannot grade ------------------------------------
     c.record(
              "DECLINED at this boundary (insufficient): The T bit drives the ZD "
-             "pin for genlocks. de [claims: opus:AA-colorxx.c11/c12/c13 "
+             "pin for genlocks. denise has red, green and blue outputs and no ZD "
+             "port, so the transparency bit reaches nothing this boundary can "
+             "see. [claims: opus:AA-colorxx.c11/c12/c13 "
              "sol:AA-colorxx.c13/c46/c51 opus:AA-colorxx.loct0-15]");
     c.record(
              "DECLINED at this boundary (insufficient): The claim names the chip "
-             "that implements the [claims: opus:AA-colorxx.c3]");
+             "that implements the registers. No port of denise carries a chip "
+             "identity. [claims: opus:AA-colorxx.c3]");
     c.record(
              "DECLINED at this boundary (insufficient): The row names one bit of "
-             "one colour componen [claims: "
+             "one colour component. This package writes and reads whole "
+             "twelve-bit words, so a single bit's name is not separable from its "
+             "neighbours here. [claims: "
              "sol:AA-colorxx.c15/c16/c17/c18/c19/c20/c21/c22/c23/c24/c25/c26/c27/c28/c29/c30/c31/c32/c33/c34/c35/c36/c37/c38/c39/c40/c41/c42/c43/c44/c45 "
              "opus:AA-colorxx.loct0-00 opus:AA-colorxx.loct0-01 "
              "opus:AA-colorxx.loct0-02 opus:AA-colorxx.loct0-03 "
@@ -249,7 +254,9 @@ int main(int argc, char** argv) {
              "opus:AA-colorxx.loct1-15]");
     c.record(
              "DECLINED at this boundary (not-hardware): The line explains the "
-             "document's own column [claims: sol:AA-colorxx.c47/c48/c49/c50]");
+             "document's own column letters -- T for transparency, R, G and B "
+             "for the components, X for unused. No signal carries a legend. "
+             "[claims: sol:AA-colorxx.c47/c48/c49/c50]");
 
     std::cout << "\nAssertions: " << c.passed << " passed, "
               << c.failed << " failed\n";

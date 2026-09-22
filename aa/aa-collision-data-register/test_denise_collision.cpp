@@ -219,10 +219,14 @@ int main(int argc, char** argv) {
     // --- What this boundary cannot grade ------------------------------------
     c.record(
              "DECLINED at this boundary (insufficient): The claim names the chip "
-             "that implements the [claims: opus:AA-clxdat.c3/c4]");
+             "that implements the register. No port of denise_collision carries "
+             "a chip identity. [claims: opus:AA-clxdat.c3/c4]");
     c.record(
              "DECLINED at this boundary (insufficient): The row names a pair "
-             "this package does not d [claims: opus:AA-clxdat.c8 "
+             "this package does not drive: the Playfield 2 rows need the even "
+             "plane match held beside a sprite, and the sprite-to-sprite rows "
+             "need two pairs present at once. The fixture drives one pair at a "
+             "time. [claims: opus:AA-clxdat.c8 "
              "sol:AA-clxdat.c9/c11/c12/c13/c14/c15/c16/c17/c18/c19/c20/c25 "
              "opus:AA-clxdat.b00 opus:AA-clxdat.b05 opus:AA-clxdat.b06 "
              "opus:AA-clxdat.b07 opus:AA-clxdat.b08 opus:AA-clxdat.b09 "
@@ -230,10 +234,14 @@ int main(int argc, char** argv) {
              "opus:AA-clxdat.b13 opus:AA-clxdat.b14]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is that the "
-             "document's two stateme [claims: sol:AA-clxdat.c5]");
+             "document's two statements of this register differ. Which is right "
+             "is a fact about the document. [claims: sol:AA-clxdat.c5]");
     c.record(
              "DECLINED at this boundary (source-silent): The table's row 15 says "
-             "`not used`. The modu [claims: sol:AA-clxdat.c10 "
+             "`not used`. The module drives that position from a constant one, "
+             "and `not used` is not `reads zero`, so the row requires nothing of "
+             "a signal. NM-HRM-009 raised the same bit against the Hardware "
+             "Reference Manual and was withdrawn. [claims: sol:AA-clxdat.c10 "
              "opus:AA-clxdat.b15]");
 
     std::cout << "\nAssertions: " << c.passed << " passed, "
