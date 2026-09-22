@@ -147,6 +147,41 @@ the read unless the first two bytes are the MFM of the sector's first data
 byte."* Against this RTL such a loop sees `0x00` for every byte and a WORDEQUAL
 that is never false.
 
+## A second document says the same thing
+
+**The 1991 AA functional specification reaches two of these three fields
+independently**, and the AA suite's own package for DSKBYTR goes red on both.
+The AA entry prints the same bit table five years later, for a different chip
+set, and says of bit 15 that a loaded disk byte sets it and that reading the
+register resets it, and of bit 12 that it is true only while the incoming disk
+data equals DSKSYNC.
+
+`aa/aa-disk-status-bits` arms DSKLEN, then holds $01A across a qualifying
+`clk7_en` edge -- a bus cycle a synchronous clear could react to, not a
+combinational peek:
+
+```
+MEASURED: two consecutive bus reads of DSKBYTR return 0xD000 and 0xD000;
+          bit 15 is still set after the first read
+MEASURED: with DSKSYNC = 0x4489 and no disk data arriving at all,
+          WORDEQUAL reads 1
+```
+
+No drive is selected, no motor is running, and nothing is arriving that could
+equal the sync word. Both bits are the literal one in the module's single
+continuous assignment.
+
+Four assertions in the same package are green, which is what makes these two a
+reading of those fields rather than of a dead fixture: bit 13 follows DSKLEN's
+WRITE bit, bit 14 rises with DSKLEN's DMA enable, the four cells the table
+leaves unused read as the printed zero, and the word at $01A changes when
+DSKLEN changes. Both red baselines invert under `MUTATE=1` and go green, so
+the comparison can see a difference when there is one.
+
+**This is corroboration, not a second finding.** The AA suite files its own
+keys as NM-AA-nnn; this one is not among them, because the requirement is
+already registered here.
+
 ## Suggested change
 
 Three changes of very different size, which should not be treated as one job.
