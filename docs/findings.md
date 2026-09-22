@@ -277,11 +277,14 @@ blank.
 |---|---|---|---|---|
 | [NM-AA-001](findings/NM-AA-001.md) | the AA list gives CLXCON2 two addresses, and $10C belongs to BPLCON4 | open · page · green with an inverse control | `aa/aa-clxcon2-address` | not consulted — a defect in a document, not a behaviour |
 | [NM-AA-002](findings/NM-AA-002.md) | SPRHDAT is the one register in the Coprocessor-restricted range left unmarked | open · page · green with an inverse control | `aa/aa-copper-register-map` | not consulted — a defect in a document, not a behaviour |
+| [NM-AA-003](findings/NM-AA-003.md) | the bit table spells BLTCON0 bit 12 ASA0 in one column and ASH0 in the other | open · page · green with an inverse control | `aa/aa-blitter-function-and-shift` | not consulted — a defect in a document, not a behaviour |
 
-**Fourteen AA packages carry 87 graded assertions** across the fourteen RTL
-modules that decode an address the AA register list prints, and these two are
-what they have turned up so far. A package that finds nothing has still done
-its work: it says the document and the silicon agree on those rows.
+**Fifteen AA packages carry 92 graded assertions.** Fourteen cover the fourteen
+RTL modules that decode an address the AA register list prints; the fifteenth is
+the first from slice 2, the alphabetical entries with their bit tables. These
+three findings are what they have turned up so far. A package that finds
+nothing has still done its work: it says the document and the silicon agree on
+those rows.
 
 ## The analyses that produced groups of findings
 

@@ -3,13 +3,13 @@
 A reference for developers, not a narrative.
 
 **Sixty-five of these pages are filed against the Hardware Reference
-Manual and two against the AA specification.** The AA pair (NM-AA-001 and
-NM-AA-002) is counted separately in [`../findings.md`](../findings.md), and
+Manual and three against the AA specification.** The AA trio (NM-AA-001,
+NM-AA-002 and NM-AA-003) is counted separately in [`../findings.md`](../findings.md), and
 the tests that hold them up live in `aa/` rather than `hrm/`. The header
-table is the same on all sixty-seven.
+table is the same on all sixty-eight.
 
 **What every page has, in the same place: the header table.** These seven fields
-are on all 67 pages, and the first four answer *what am I being asked to do*
+are on all 68 pages, and the first four answer *what am I being asked to do*
 before any prose is read:
 
 | field | values |
@@ -27,9 +27,9 @@ page carries says something about it:
 
 | field | on | what its absence means |
 |---|---|---|
-| **Verdict of the four** | 62 of 67 | the other implementations were not consulted, or the finding is not about behaviour they share |
-| **Report to** | 60 of 67 | nothing is being asked of anyone upstream — usually a withdrawn finding |
-| **Assertions** | 35 of 67 | the finding has no graded assertions of its own; the `Test` row still names the package |
+| **Verdict of the four** | 63 of 68 | the other implementations were not consulted, or the finding is not about behaviour they share |
+| **Report to** | 61 of 68 | nothing is being asked of anyone upstream — usually a withdrawn finding |
+| **Assertions** | 36 of 68 | the finding has no graded assertions of its own; the `Test` row still names the package |
 | **See also** | 9 | no sibling finding bears on it |
 | **Error class** | 5 | it is not one of the recurring shapes |
 | **Boundary** | 2 | no edge case was isolated |

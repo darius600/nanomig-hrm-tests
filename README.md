@@ -68,10 +68,10 @@ artefacts rather than by remembering.
 | test packages, `hrm/` | **208** |
 | assertions, `hrm/` | **3263** — 3077 pass, **186 fail** |
 | packages, `hrm/` | 141 green, 67 carrying at least one red, **0 build errors** |
-| test packages, `aa/` | **14** — one per RTL module that decodes an address the AA register list prints |
-| assertions, `aa/` | **87** — 87 pass, 0 fail, **0 build errors** |
-| AA findings | **2** — the second oracle, the 1991 AA chip-set specification, has two registered findings so far. Its suite is no longer small: **14 packages, 87 graded assertions**, one package per RTL module that decodes an address the AA register list prints. Two findings out of that is a result, not a shortfall — the rest of the rows and the silicon agree |
-| registered findings | **67** — 65 against the Hardware Reference Manual and 2 against the AA specification, counted in registers of their own. **40 ask you to decide whether the RTL should change** — 61 open, 6 withdrawn; of the open ones 53 rest on a graded red, 5 are source observations, 2 on a graded green with an inverse control, and one is filed against the printed page with no test yet |
+| test packages, `aa/` | **15** — fourteen cover one RTL module each, the fifteenth the blitter's bit table |
+| assertions, `aa/` | **92** — 92 pass, 0 fail, **0 build errors** |
+| AA findings | **2** — the second oracle, the 1991 AA chip-set specification, has three registered findings so far. Its suite is no longer small: **15 packages, 92 graded assertions**, one package per RTL module that decodes an address the AA register list prints. Two findings out of that is a result, not a shortfall — the rest of the rows and the silicon agree |
+| registered findings | **68** — 65 against the Hardware Reference Manual and 3 against the AA specification, counted in registers of their own. **40 ask you to decide whether the RTL should change** — 62 open, 6 withdrawn; of the open ones 53 rest on a graded red, 5 are source observations, 3 on a graded green with an inverse control, and one is filed against the printed page with no test yet |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **13** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, appendix K, and `aa-s7`: the AA specification's address-ordered register list, the first unit accepted against the second oracle |
 
 **All 208 packages now report both a verdict and an assertion count**, so the
