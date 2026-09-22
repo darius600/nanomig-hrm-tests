@@ -35,7 +35,7 @@ $(TEST_BIN): $(SRC) $(TEST_SRC) Makefile
 test: $(SRC) $(TEST_SRC) Makefile
 	rm -rf $(OBJ_DIR)
 	$(VERILATOR) $(FLAGS) --Mdir $(OBJ_DIR) --top-module $(TOP) $(SRC) $(TEST_SRC)
-	./$(TEST_BIN) | tee out.txt
+	./$(TEST_BIN) > out.txt; rc=$$?; cat out.txt; exit $$rc
 
 clean:
 	rm -rf $(OBJ_DIR) out.txt
