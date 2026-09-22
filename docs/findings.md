@@ -261,25 +261,36 @@ Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY, not the Hardware
 Reference Manual, and the tests that hold them up live in `aa/` rather than
 `hrm/`. Mixing the two counts would make both harder to read.
 
-**Both are filed against the printed page, and both are held up by GREEN
-assertions.** That is the shape a document defect takes here: the RTL does
-something sensible, the test says so, and what is in question is whether the
-document can be cited for that register at all. There is no red to point at,
-so each finding names its own inverse control instead — the assertion that
-would have gone red had the RTL followed the other half of the document.
+**Three of the five are filed against the printed page, and all three are held
+up by GREEN assertions.** That is the shape a document defect takes here: the
+RTL does something sensible, the test says so, and what is in question is
+whether the document can be cited for that register at all. There is no red to
+point at, so each of those findings names its own inverse control instead — the
+assertion that would have gone red had the RTL followed the other half of the
+document.
 
-**The four implementations are not consulted for either.** They could not
-settle a question about what a 1991 document prints; there is no behaviour
-here they could disagree about. The column says so rather than being left
-blank.
+**The four implementations are not consulted for those three.** They could not
+settle a question about what a 1991 document prints; there is no behaviour there
+they could disagree about. The column says so rather than being left blank.
+
+**The other two are filed against the RTL, and for those the four were read.**
+Both readings came out sharper than the column has room for. On NM-AA-004 every
+implementation that models the identifier at all gives the RTL's `$23` and none
+gives the document's `$22`, and two of them separately doubt the neighbouring
+row of the same list. On NM-AA-005 the four disagree with each other about the
+long line and agree on one thing NanoMig does not do: wherever the toggle runs
+the line grows, and where the line cannot grow the toggle is stopped. **Neither
+reading moves a verdict.** The oracle is the printed page in both cases, and an
+implementation — however many of them agree — is evidence for the reader who
+decides about the RTL, never a second oracle.
 
 | Key | Subject | Status | Package | Verdict of the four |
 |---|---|---|---|---|
 | [NM-AA-001](findings/NM-AA-001.md) | the AA list gives CLXCON2 two addresses, and $10C belongs to BPLCON4 | open · page · green with an inverse control | `aa/aa-clxcon2-address` | not consulted — a defect in a document, not a behaviour |
 | [NM-AA-002](findings/NM-AA-002.md) | SPRHDAT is the one register in the Coprocessor-restricted range left unmarked | open · page · green with an inverse control | `aa/aa-copper-register-map` | not consulted — a defect in a document, not a behaviour |
 | [NM-AA-003](findings/NM-AA-003.md) | the bit table spells BLTCON0 bit 12 ASA0 in one column and ASH0 in the other | open · page · green with an inverse control | `aa/aa-blitter-function-and-shift` | not consulted — a defect in a document, not a behaviour |
-| [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23 where the AA list gives an Alice $22 | open · RTL · **red** | `aa/aa-beam-position-words` | **not consulted** — what each returns in VPOSR bits 14-8 is exactly the evidence that would settle it |
-| [NM-AA-005](findings/NM-AA-005.md) | the long-line toggle runs, but no line is a colour clock longer | open · RTL · **red** | `aa/aa-programmable-sync-windows` | **not consulted** — whether any of them lengthens the alternate line under a programmed HTOTAL is exactly the evidence that would settle it |
+| [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23 where the AA list gives an Alice $22 | open · RTL · **red** | `aa/aa-beam-position-words` | **3-0 against the document**: WinUAE (`custom.cpp:2399`), vAmiga (`Agnus.cpp:272`) and Copperline (`agnus.rs:98`) all return **$23** for AGA, this RTL's value; Denise casts no vote, its AGA term lands in bits 1:0 |
+| [NM-AA-005](findings/NM-AA-005.md) | the long-line toggle runs, but no line is a colour clock longer | open · RTL · **red** | `aa/aa-programmable-sync-windows` | **none of the four does what this core does**: WinUAE and Denise lengthen the alternate line under a programmed HTOTAL, vAmiga lengthens it but does not implement HTOTAL, Copperline stops the toggle in that mode — nowhere does the bit alternate over equal-length lines |
 
 **32 AA packages carry 181 graded assertions, and 4 of them are red.**
 Sixteen cover the RTL modules that decode an address the AA register

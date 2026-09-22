@@ -11,7 +11,7 @@
 | **Test** | [`aa/aa-programmable-sync-windows`](../../aa/aa-programmable-sync-windows) · ten graded assertions, nine green and this one red. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 24, the HTOTAL entry |
 | **Assertions** | 10 graded; `make mutate` turns the nine green ones red and this one green, which is the established shape for a red baseline |
-| **Verdict of the four** | **not consulted.** WinUAE, vAmiga, Denise and Copperline were not read for this claim. What each does with a programmed HTOTAL while the long-line toggle runs — whether any of them lengthens the alternate line — is exactly the evidence that would settle it |
+| **Verdict of the four** | **two do it, one cannot, one refuses — and none of them does what this RTL does.** WinUAE and Denise lengthen the alternate line under a programmed HTOTAL; vAmiga lengthens it but does not implement HTOTAL; Copperline stops the toggle when HTOTAL is programmed. A toggle that runs and reports while every line stays the same length is produced by none of the four. See [What the others say](#what-the-others-say) |
 | **See also** | the same package's nine green assertions, which establish that this module does read HTOTAL, HSSTRT, HSSTOP, HBSTRT and HBSTOP where the document puts them |
 
 ## What the AA specification says
@@ -86,6 +86,35 @@ wraps where HTOTAL says, it lasts HTOTAL+1 clocks, the eight bits above the
 value are ignored exactly as the table's `x` cells mark them, sync starts and
 stops where HSSTRT and HSSTOP say, blanking starts and stops where HBSTRT and
 HBSTOP say, and none of it happens until VARBEAMEN is set.
+
+## What the others say
+
+The question put to each: with VARBEAMEN set and HTOTAL written, does the
+alternate line last one colour clock longer?
+
+| | where | what it does |
+|---|---|---|
+| **WinUAE** | [`custom.cpp:1899`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L1899), [`:2330`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2330), [`:10969-10975`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L10969-L10975) | **both halves.** With VARBEAMEN, `maxhpos = htotal + 1`; the line length in use is then `maxhpos = maxhpos_short + lol`, so every other line is one colour clock longer than the programmed value. The condition is the document's sentence: `if (!(new_beamcon0 & BEAMCON0_PAL) && !(new_beamcon0 & BEAMCON0_LOLDIS)) { lol = !lol; linetoggle = true; } else { lol = false; linetoggle = false; }` |
+| **vAmiga** | [`Beam.h:80`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Beam.h#L80), [`AgnusRegs.cpp:567`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L567), [`:570`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L570) | **lengthens the line, and cannot answer for a programmed HTOTAL.** `hCnt() const { return lol ? 228 : 227; }` is the whole model of the long line, and the toggle is keyed on NTSC and LOLDIS. HTOTAL is stored under a comment saying these registers *"are recognized and stored, but have no effect yet"* |
+| **Denise** | [`events.cpp:479-480`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/events.cpp#L479-L480), [`register.cpp:565`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/register.cpp#L565) | **both halves.** The next line is scheduled as `updateEvent<EVENT_HTOTAL>((beamCon & VARBEAMEN) ? (hTotal + lol) : (0xe2 + lol))` — the programmed total plus the toggle — and the condition is `lolToggle = !(value & LOLDIS) && !(value & BEAM_PAL)`, the document's two terms |
+| **Copperline** | [`agnus.rs:855-858`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L855-L858), [`:899-904`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L899-L904) | **deliberately neither.** `long_line_toggles()` requires `programmable_line_cck().is_none()`, under a comment that says *"only when the beam is not programmable (VARBEAMEN fixes the line length)"*. With HTOTAL programmed nothing toggles, nothing reports, and every line is HTOTAL+1 |
+| **MiSTer** | [`rtl/agnus_beamcounter.v:257`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L257), [`:283-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L283-L285) | descendant — the identical toggle and the identical `hpos[8:0]=={htotal[8:1],1'b0}` comparison with no `long_line` term |
+| **TC64** | [`rtl/minimig/agnus_beamcounter.v:319`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L319), [`:344-346`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L344-L346) | descendant — the same two places, the same absence |
+
+**What the four agree on is that the two halves travel together.** Where the
+toggle runs the line grows (WinUAE, Denise, and vAmiga on its fixed NTSC line);
+where the line cannot grow the toggle is stopped (Copperline, explicitly, for
+exactly this mode). No implementation reports an alternating long-line bit over
+lines that are all the same length, which is what this core does and what the
+red assertion measures.
+
+**That makes Copperline the interesting one for a maintainer**, because it is
+the cheap half of the fix: suppressing the toggle under VARBEAMEN is a condition,
+while lengthening the line touches the comparison every other timing in the
+module hangs off. It is also the half the document does *not* license — the
+entry makes the toggle conditional on the PAL bit and LOLDIS, not on VARBEAMEN.
+Copperline is answering a question about real silicon that this document does
+not ask.
 
 ## Suggested change
 
