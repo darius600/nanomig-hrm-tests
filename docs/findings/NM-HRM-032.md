@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L140-L142) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
-| **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits) |
+| **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits) · corroborated by [`aa/aa-beamcon0-control-bits`](../../aa/aa-beamcon0-control-bits), which reaches the same red from the AA specification |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Assertions** | `P11-BEAMCON0-CSYTRUE-BIT2-POLARITY-CONTROL-FOR-C-SYNC-PIN`, `P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN`, `P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN` — all three red |
 | **Verdict of the four** | **split**: only WinUAE implements all three; Denise implements one; two do not model them at all |
@@ -113,6 +113,38 @@ reverse-engineering effort of the four and its source carries hardware
 measurements.
 
 ---
+
+## A second document says the same thing
+
+**The 1991 AA functional specification reaches this finding independently**, and
+the AA suite's own package for BEAMCON0 goes red on it. The AA bit table names
+the three bits in its own column, and the paragraph below reads:
+
+```
+HSYTRUE,VSYTRUE,CSYTRUE= These change the polarity of the sync
+```
+
+`aa/aa-beamcon0-control-bits` runs a whole video line twice at the
+`agnus_beamcounter` boundary -- once with the three bits clear, once with them
+set -- sampling `_hsync`, `_vsync` and `_csync` once per colour clock, and
+compares the traces:
+
+```
+MEASURED: over a line the three sync pins differ in 0 of 260 samples between
+          bits clear and bits set; _hsync takes 2 level(s) either way
+```
+
+**Zero of 260.** The pins pulse -- the trace has two levels, so the fixture is
+driving a beam -- and the bits change nothing about them.
+
+That assertion's baseline is red, so its mutation runs the other way and must
+make it GREEN: under `MUTATE=1` the second trace starts three colour clocks
+later, which does move the pins, showing the comparison can see a difference
+when there is one.
+
+**This is corroboration, not a second finding.** Two independent documents, read
+by four different readers across two rounds, state the same requirement, and one
+RTL answers neither. No new key was issued for it.
 
 ## Suggested change
 

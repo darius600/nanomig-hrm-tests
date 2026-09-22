@@ -164,7 +164,7 @@ it for what an unresolvable case looks like, not for something to do.
 | [NM-HRM-028](findings/NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | open · RTL · **red** | `hrm/ch5-audio-dmacon-adkcon` | **all four** implement attach and modulation; NanoMig's own first line says it does not |
 | [NM-HRM-030](findings/NM-HRM-030.md) | Paula does not decode DMACONR, though the appendix gives it part ownership | open · RTL · **red** | `hrm/ch5-audio-dmacon-adkcon` | not read — the emulators are monolithic and model no per-chip decode |
 | [NM-HRM-031](findings/NM-HRM-031.md) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | open · RTL · **red** | `hrm/ch5-audio-interrupt` | **vAmiga and Denise also allow it**; NanoMig's own comment calls it undocumented |
-| [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | open · RTL · **red** | `hrm/ch7-beamcon0-ecs-control-bits` | **split**: only WinUAE implements all three, Denise implements CSYTRUE alone, two model none |
+| [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | open · RTL · **red** | `hrm/ch7-beamcon0-ecs-control-bits`, `aa/aa-beamcon0-control-bits` | **split**: only WinUAE implements all three, Denise implements CSYTRUE alone, two model none |
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | open · RTL · **red** | `hrm/ch7-beamcon0-ecs-control-bits` | **all four** use LOLDIS alone; NanoMig also requires VARBEAMEN |
 | [NM-HRM-034](findings/NM-HRM-034.md) | VPOSR reports the video standard in bit 12 of an OCS configuration | open · RTL · **red**, contested | `hrm/ch7-beam-position-word-layout` | **2-2**: WinUAE and Denise do the same; and no implementation leaves bits 14-1 unused |
 | [NM-HRM-035](findings/NM-HRM-035.md) | any write to CIA-A clears the kickstart overlay, not only a write to the OVL bit | open · RTL · **red** | `hrm/ch7-overlay-source` | **all four** follow the OVL bit's value; three name the only registers that may move it |
@@ -279,10 +279,13 @@ blank.
 | [NM-AA-002](findings/NM-AA-002.md) | SPRHDAT is the one register in the Coprocessor-restricted range left unmarked | open · page · green with an inverse control | `aa/aa-copper-register-map` | not consulted — a defect in a document, not a behaviour |
 | [NM-AA-003](findings/NM-AA-003.md) | the bit table spells BLTCON0 bit 12 ASA0 in one column and ASH0 in the other | open · page · green with an inverse control | `aa/aa-blitter-function-and-shift` | not consulted — a defect in a document, not a behaviour |
 
-**Fifteen AA packages carry 92 graded assertions.** Fourteen cover the fourteen
-RTL modules that decode an address the AA register list prints; the fifteenth is
-the first from slice 2, the alphabetical entries with their bit tables. These
-three findings are what they have turned up so far. A package that finds
+**Sixteen AA packages carry 97 graded assertions, and one of them is red.** Fourteen
+cover the fourteen RTL modules that decode an address the AA register list
+prints; two are from slice 2, the alphabetical entries with their bit tables.
+The red is `aa/aa-beamcon0-control-bits`, and it is not a fourth AA finding: it
+reaches NM-HRM-032 from the second document, and corroboration is recorded on
+that finding's page. These three keys are what the AA suite has turned up so
+far. A package that finds
 nothing has still done its work: it says the document and the silicon agree on
 those rows.
 
