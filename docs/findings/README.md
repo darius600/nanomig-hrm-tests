@@ -3,13 +3,13 @@
 A reference for developers, not a narrative.
 
 **Sixty-five of these pages are filed against the Hardware Reference
-Manual and four against the AA specification.** The AA group (NM-AA-001 to
-NM-AA-004) is counted separately in [`../findings.md`](../findings.md), and
+Manual and five against the AA specification.** The AA group (NM-AA-001 to
+NM-AA-005) is counted separately in [`../findings.md`](../findings.md), and
 the tests that hold them up live in `aa/` rather than `hrm/`. The header
-table is the same on all sixty-nine.
+table is the same on all seventy.
 
 **What every page has, in the same place: the header table.** These seven fields
-are on all 69 pages, and the first four answer *what am I being asked to do*
+are on all 70 pages, and the first four answer *what am I being asked to do*
 before any prose is read:
 
 | field | values |
