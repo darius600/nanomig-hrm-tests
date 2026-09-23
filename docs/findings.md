@@ -1,6 +1,6 @@
 # Findings
 
-**40 of the 65 HRM findings ask you to decide something. The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**45 of the 65 HRM findings ask you to decide whether the RTL should change. The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each has the
 > same six parts — what the HRM says, what NanoMig does, what the other four say,
