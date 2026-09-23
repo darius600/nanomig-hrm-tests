@@ -337,11 +337,13 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
-    // A note is not a check: it prints and does not touch passed/failed.
+    // A record is not a check: it prints and does not touch passed/failed.
     // Used only to record, in an actual C++ string (not a `//` comment), the
     // claims declined below -- so their ids are found by a coverage search
-    // of the file's strings, not only by reading its comments.
-    void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
+    // of the file's strings, not only by reading its comments. It printed
+    // "NOTE:" and was called note() until 23.09.2026; every call was a
+    // decline, which is record()'s job in the suite's three verbs (O79).
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -1511,7 +1513,7 @@ int main(int argc, char** argv) {
 
     // ================= NOT ASSERTED, GROUPED BY REASON =================
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (visible/combined-field resolution numbers -- 20 "
         "claims): 3-video.c25, 3-video.c26, 3-res.c05, 3-res.c06, "
         "3-res.c15, 3-resolution.c8, 3-resolution.c9, 3-resolution.c12, "
@@ -1530,7 +1532,7 @@ int main(int argc, char** argv) {
         "two vertically-offset fields together. Settling these needs the "
         "bitplane/display-window boundary, not this fixture.");
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (horizontal-resolution modes and the blitter -- 4 "
         "claims): 3-video.c27, 3-res.c19, 3-resolution.c19, "
         "3-resolution.c24. c27 is about combining horizontal-resolution "
@@ -1542,7 +1544,7 @@ int main(int argc, char** argv) {
         "concern, not a beam-counter one. None of these are observable at "
         "this boundary.");
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (display window, bitplane modulo/pointer addressing "
         "and memory layout -- 19 claims): 3-diw.c05, 3-diw.c12, 3-mem.c01, "
         "3-memory.c21, 3-memory.c22, 3-memory.c23, 3-mod.c10, 3-mod.c11, "
@@ -1565,7 +1567,7 @@ int main(int argc, char** argv) {
         "needs the bitplane-DMA-channel or copper boundary, not this "
         "fixture.");
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (BEAMCON0 bits with the corresponding wire commented "
         "out in agnus_beamcounter.v, or with no port to show the wired "
         "effect -- 10 claims): C-beamcon0.c10 (DUAL, bit6), C-beamcon0.c14 "
@@ -1584,7 +1586,7 @@ int main(int argc, char** argv) {
         "at all to show 'ignore the latched pen value' against. Writing "
         "any of these five bits changes nothing this fixture can observe.");
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (HTOTAL bits 15:8, 'must be zero' -- 8 claims): "
         "C-htotal-bits.c1, C-htotal-bits.c2, C-htotal-bits.c3, "
         "C-htotal-bits.c4, C-htotal-bits.c5, C-htotal-bits.c6, "
@@ -1599,7 +1601,7 @@ int main(int argc, char** argv) {
         "HTOTAL-H8-H1-BIT-MAPPING above asserts the half of "
         "the same quoted row (h8..h1) that IS observable this way.");
 
-    checks.note(
+    checks.record(
         "DECLINED (translating manual colour-clock/280ns quantities into "
         "htotal_out's raw tick count needs an RTL-supplied conversion "
         "factor -- 6 claims): C-htotal.c02, C-htotal.c03, C-scan.c8, "
@@ -1641,7 +1643,7 @@ int main(int argc, char** argv) {
         "HTOTAL-H8-H1-BIT-MAPPING and VBLANK-DURATION-PAL-DISAGREES-WITH-"
         "MANUAL above.");
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (ports this module does not have -- 3 claims): "
         "C-genlock-ext.c15 (BPLCON3 bit 5, BRDRBLNK -- no BPLCON3/genlock "
         "port), C-spr.c04 (SPRxPOS/SPRxCTL loaded by the sprite DMA "
@@ -1654,7 +1656,7 @@ int main(int argc, char** argv) {
         "VBSTOP, HSSTRT, VSSTRT, HCENTER -- eleven, not four) without "
         "guessing which subset the manual meant).");
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (prescriptive, not a hardware behaviour -- 1 claim): "
         "C-beamcon0-guidance.c2: 'Do not write to this register [directly] "
         ".. Incorrectly writing directly to BEAMCON0 has the (remote) "
@@ -1665,7 +1667,7 @@ int main(int argc, char** argv) {
         "fail to observe; the harness writes BEAMCON0 directly and "
         "repeatedly, by design, throughout this file.");
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (physical pad direction -- 2 claims): A-leg.ersy2 "
         "('ERSY=External resync (HSYNC, VSYNC pads become inputs)'), "
         "A-bplcon.c77 (the same sentence, sol's reading). "
@@ -1678,7 +1680,7 @@ int main(int argc, char** argv) {
         "holding at hpos=0 with ERSY=1, as if waiting for an external "
         "pulse this module has no pin to receive.");
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (no fixed VGA default in this RTL -- 3 claims): "
         "C-scan.c05, C-scan.c06, opus:7-appC-beam.c4 ('VGA (525 lines, "
         "114.0 colorclocks per scan line)'). BEAMCON0 has no 'select VGA' bit -- htotal/vtotal "
@@ -1690,7 +1692,7 @@ int main(int argc, char** argv) {
         "would be demonstrating HTOTAL-H8-H1-BIT-MAPPING's "
         "already-asserted write path again, not a VGA-specific default.");
 
-    checks.note(
+    checks.record(
         "NOT ASSERTED (word-based DMA-fetch bound, not a raw CRT-timing "
         "duration -- 3 claims): 3-max.c08, 3-max.c09, 3-max-window.c15 "
         "('horizontal blanking actually limits the displayable video to "
@@ -1724,7 +1726,7 @@ int main(int argc, char** argv) {
     // carries no value under OCS" -- green at ntsc=0, RED at ntsc=1, which is
     // NM-HRM-034. p.238 says that band IS the chip identification code, which
     // weighs FOR the implementation and against the manual's own p.216/p.285.
-    checks.note(
+    checks.record(
         "NOT ASSERTED -- this band is contested between three printed pages (2 claims): opus:8-lpen.c22, "
         "sol:8-pen.c24. Printed p.238 says 'Bits 14-1  Chip ID code.  Do not "
         "depend on value!'. That band is graded under OCS by "
