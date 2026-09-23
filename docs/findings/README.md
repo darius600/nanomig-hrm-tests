@@ -59,7 +59,9 @@ this directory holds what it links to.
 ## Pinned revisions
 
 Every link in these pages is a permalink at the revision that was read, and
-every quotation was verified in a local checkout at that revision.
+every quotation was verified in a local checkout at that revision. A page that
+names another finding links to it, as [NM-HRM-019](NM-HRM-019.md) does here, so
+a reader can follow the thread without going back to the register.
 
 | what | repository | revision |
 |---|---|---|

@@ -83,7 +83,7 @@ write instead of at the compositor, which may be the tidier place for it.
 wrote a chipset condition around the even-sprite term on purpose. Before removing
 it, find out what it was for: the likeliest answer is a title that sets the wrong
 control word and relies on OCS/ECS Denise accepting it, which would make this
-another `NM-HRM-008`-shaped case where the RTL knows something the manual does
+another [NM-HRM-008](NM-HRM-008.md)-shaped case where the RTL knows something the manual does
 not.
 
 ---

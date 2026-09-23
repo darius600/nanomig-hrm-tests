@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch2-copper-control`](../../hrm/ch2-copper-control), [`hrm/ch2-copper-locreg-width`](../../hrm/ch2-copper-locreg-width) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — to 19 bits on OCS. The two do it in different places and the effect on a fetched address is the same |
-| **See also** | `NM-HRM-022` (blitter) and `NM-HRM-024` (audio) — the same decision in two other engines |
+| **See also** | [NM-HRM-022](NM-HRM-022.md) (blitter) and [NM-HRM-024](NM-HRM-024.md) (audio) — the same decision in two other engines |
 
 ---
 
@@ -69,7 +69,7 @@ states plainly.
 
 ## Suggested change
 
-**Read with `NM-HRM-022` and `NM-HRM-024`, not alone.** The Copper, the blitter
+**Read with [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md), not alone.** The Copper, the blitter
 and the audio DMA all build their pointers the same way with no chipset
 condition. Two coherent actions:
 

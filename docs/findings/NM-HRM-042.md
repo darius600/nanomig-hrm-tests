@@ -12,7 +12,7 @@
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Assertions** | 1 red of 7 graded. Six greens in the same run use the identical write-and-observe basis |
 | **Verdict of the four** | **nobody reaches 32 bits either.** Two keep a 32-bit variable they can never fill; two mask the stored value to 21 bits or fewer |
-| **See also** | `NM-HRM-043` — the *chipset-conditioned* width of the same register. A different claim on a different page, and the two are not to be merged |
+| **See also** | [NM-HRM-043](NM-HRM-043.md) — the *chipset-conditioned* width of the same register. A different claim on a different page, and the two are not to be merged |
 
 ---
 
@@ -37,7 +37,7 @@ Both sentences are about the same register pair and both name 32.
 the pair, printed p.279, calls it *"the 18-bit address of disk DMA data"*, and
 appendix B, printed p.289, splits it as *"high 3 bits, 5 bits if ECS"* plus
 *"low 15 bits"*. This finding is against the p.241/p.246 wording and only that.
-The 18-bit reading and the OCS/ECS conditioning are `NM-HRM-043`'s subject.
+The 18-bit reading and the OCS/ECS conditioning are [NM-HRM-043](NM-HRM-043.md)'s subject.
 
 ## What NanoMig does
 
@@ -103,7 +103,7 @@ floating data bus.
 
 ### Does any of them narrow by chipset?
 
-Asked here only of the *total* width; the conditioning itself is `NM-HRM-043`.
+Asked here only of the *total* width; the conditioning itself is [NM-HRM-043](NM-HRM-043.md).
 
 | | narrows the disk pointer by chipset? |
 |---|---|
@@ -155,5 +155,5 @@ wrong, and NanoMig implements them correctly.
 
 **Neither page states that reading.** That is why the assertion is graded as
 printed. Confirming it would close this finding as documentation rather than as a
-defect, and would leave `NM-HRM-043` untouched, because that one turns on a width
+defect, and would leave [NM-HRM-043](NM-HRM-043.md) untouched, because that one turns on a width
 the manual states twice and conditions on the chipset.

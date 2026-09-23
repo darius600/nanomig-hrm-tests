@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch3-shres-sprite-colour-encoding`](../../hrm/ch3-shres-sprite-colour-encoding) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | **two against two** — the second finding where the four split evenly |
-| **See also** | `NM-HRM-017`, the bitplane half of the same mechanism |
+| **See also** | [NM-HRM-017](NM-HRM-017.md), the bitplane half of the same mechanism |
 
 ---
 
@@ -78,7 +78,7 @@ would have been visible.
 | **TC64** | [`rtl/minimig/denise_colortable.v:32-35`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_colortable.v#L32-L35) | descendant — the identical 11 lines; MiSTer's and TC64's diffs from NanoMig are themselves byte-identical to each other, same primitive, same edit. `denise_sprites.v` likewise: `rtl/minimig/denise_sprites.v:110-115` — the same three-line case. Neither line gives `denise_colortable` a mode input or makes `denise_sprites` pick a colour slot from `spres`; a fix is new work on both lines, in both places |
 
 **Two against two among the four independent implementations**, and it is the
-second finding after `NM-HRM-002` where the four split evenly. Denise stores one
+second finding after [NM-HRM-002](NM-HRM-002.md) where the four split evenly. Denise stores one
 colour per register in every mode; Copperline states the absence of pair
 encoding **deliberately, in a test's own words** — which makes it a decision
 rather than an omission. MiSTer and TC64 are mode-blind in the identical way

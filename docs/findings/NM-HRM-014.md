@@ -42,7 +42,7 @@ Because the alternative is worse. A manual conflict that is noticed and not
 recorded gets re-discovered by the next reader, who has no way to tell whether
 anyone looked.
 
-And it is the reason `NM-HRM-003`, `NM-HRM-022` and `NM-HRM-024` have to be read
+And it is the reason [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) have to be read
 together: if the manual applies its own extension inconsistently, then three
 findings that each quote one of its sentences are three views of one unsettled
 question.

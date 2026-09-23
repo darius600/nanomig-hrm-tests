@@ -7,18 +7,18 @@
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, and **only together with `NM-HRM-003`, `NM-HRM-022` and `NM-HRM-024`** — see *Suggested change* |
+| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, and **only together with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md)** — see *Suggested change* |
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertions `P4` and `P5` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Assertions** | 2 red. Two greens on the same page's other half (`P2`, `P3`) pass in the same run |
 | **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`), by Agnus revision. vAmiga and Denise do not. Here Copperline's has a test naming DSKPT explicitly. **The first three sightings said Copperline alone; all four are corrected — O59** |
-| **See also** | `NM-HRM-003` (Copper), `NM-HRM-022` (blitter), `NM-HRM-024` (audio) — **this is the fourth sighting of the same cause.** And `NM-HRM-014`, on the manual's own inconsistency about this extension |
+| **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter), [NM-HRM-024](NM-HRM-024.md) (audio) — **this is the fourth sighting of the same cause.** And [NM-HRM-014](NM-HRM-014.md), on the manual's own inconsistency about this extension |
 
 ---
 
 ## This is one cause in four engines, not four findings
 
-`NM-HRM-003`, `NM-HRM-022` and `NM-HRM-024` establish that the Copper, blitter
+[NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) establish that the Copper, blitter
 and audio pointers each latch five high bits with no chipset condition. **Their
 reasoning is not repeated here.** What this entry adds is that the disk DMA
 pointer is the fourth instance of the identical construction, and that the count
@@ -48,7 +48,7 @@ danger range, for `BLTCON0L`/`BLTSIZH`. **None of them uses it for a pointer.**
 [`agnus.v:326-340`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus.v#L326-L340)
 instantiates the disk engine with twelve connections and no `ecs` among them.
 
-So the honest statement is the one `NM-HRM-024` already reaches and this finding
+So the honest statement is the one [NM-HRM-024](NM-HRM-024.md) already reaches and this finding
 confirms from a fourth direction: **this is one decision not to model OCS pointer
 narrowing anywhere in Agnus**, not four independent omissions. It is not a
 mistake repeated; it is a feature not implemented.
@@ -131,8 +131,8 @@ there.
 
 ### One refinement to the sibling entries' WinUAE row
 
-`NM-HRM-003`, `NM-HRM-022` and `NM-HRM-024` each record WinUAE as *"no chipset
-narrowing"*, with a dash — which in `NM-HRM-024`'s own convention means the
+[NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) each record WinUAE as *"no chipset
+narrowing"*, with a dash — which in [NM-HRM-024](NM-HRM-024.md)'s own convention means the
 source had not been read for that finding. **Read for this one, WinUAE does
 narrow by chipset, just not where those entries looked.** The register keeps
 every bit; the Agnus-side access mask does the work, and an OCS configuration
@@ -150,12 +150,12 @@ model of the register.
 **This does not change the verdict of the four for any of the four findings** —
 Copperline is still the only one that narrows the pointer itself — but it does
 change what "nobody else models this" is worth as an argument. Whoever revisits
-`NM-HRM-003`, `NM-HRM-022` or `NM-HRM-024` should carry this across rather than
+[NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) or [NM-HRM-024](NM-HRM-024.md) should carry this across rather than
 re-derive it.
 
 ## Suggested change
 
-**The same one, and it is one change, not four.** `NM-HRM-003` and `NM-HRM-022`
+**The same one, and it is one change, not four.** [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-022](NM-HRM-022.md)
 already set out the two coherent actions; this finding adds only that the count
 is six pointer sites in six modules, two of which have no chipset input at all:
 
@@ -177,7 +177,7 @@ finding is the argument against it rather than for it.
   on the widths differing, which p.289 prints plainly and p.288's `(E)` mark
   confirms for the high half alone.
 - **Measured at the boundary that has the port.** `agnus`, not `agnus_diskdma` —
-  the same rule that moved `NM-HRM-022`'s measurement to `agnus_blitter`. A test
+  the same rule that moved [NM-HRM-022](NM-HRM-022.md)'s measurement to `agnus_blitter`. A test
   cannot show that a chipset input is ignored from inside a module the input
   never reaches.
 - **Two greens on the same row, the same write path and the same observation
@@ -187,11 +187,11 @@ finding is the argument against it rather than for it.
 
 ## What weakens it
 
-Everything that weakens `NM-HRM-003`, `NM-HRM-022` and `NM-HRM-024` weakens this
+Everything that weakens [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) weakens this
 one identically, and for the same reason: it is the same question.
 
 - **Three of four implementations do what NanoMig does** at the register.
-- **`NM-HRM-014` records that the manual applies its own ECS pointer extension
+- **[NM-HRM-014](NM-HRM-014.md) records that the manual applies its own ECS pointer extension
   inconsistently.** If the manual is not self-consistent about how widely the
   extension reaches, then four findings each quoting one of its sentences are
   four views of one unsettled question.

@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | **three of four implement it**, and Denise scopes it exactly as the page's Warning states |
-| **Origin** | the surviving half of the withdrawn `NM-HRM-013` |
+| **Origin** | the surviving half of the withdrawn [NM-HRM-013](NM-HRM-013.md) |
 
 ---
 
@@ -56,7 +56,7 @@ absence NanoMig has, not a fourth vote against it.
 
 WinUAE's mask is the clearest statement of the ECS-versus-AGA split: `0x10` is
 present from ECS Denise onwards, `0x08` only on AGA. That is the split the
-withdrawn `NM-HRM-013` was broken into.
+withdrawn [NM-HRM-013](NM-HRM-013.md) was broken into.
 
 ---
 
@@ -77,7 +77,7 @@ SuperHires.
 
 ## Why this entry exists, and what it replaced
 
-`NM-HRM-013` asserted that `SPRxCTL` bits 3 **and** 4 are live fields, resting on
+[NM-HRM-013](NM-HRM-013.md) asserted that `SPRxCTL` bits 3 **and** 4 are live fields, resting on
 the note *"bits 3 and 4 are in the ECS chips only"* — a statement about **which
 chips have them**, not about what they do. That is not a requirement, and the
 finding was withdrawn.

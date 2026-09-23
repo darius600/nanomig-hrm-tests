@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertion `P1`, graded red against p.279 |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | **unanimous — and it decides nothing.** All four block a Copper write to $020 at OCS and allow it under ECS with CDANG set. That is which reading practitioners took, not which page is right |
-| **See also** | `NM-HRM-014`, the precedent for a finding about the manual rather than about the implementation. **Not `NM-HRM-004`**, which is the ECS danger-bit *range* — a different claim, register and page |
+| **See also** | [NM-HRM-014](NM-HRM-014.md), the precedent for a finding about the manual rather than about the implementation. **Not [NM-HRM-004](NM-HRM-004.md)**, which is the ECS danger-bit *range* — a different claim, register and page |
 
 ---
 
@@ -77,12 +77,12 @@ sentences describes the hardware", and both were printed by the same publisher
 about the same chip. An assertion has to pick one page as the oracle and measure
 against it, which answers a different question.
 
-That is the shape `NM-HRM-014` set: a manual conflict is recorded, not graded.
+That is the shape [NM-HRM-014](NM-HRM-014.md) set: a manual conflict is recorded, not graded.
 
 ## Why the status is not red, although an assertion is
 
-**This entry differs from `NM-HRM-014` in one way and the difference should not
-be hidden.** `NM-HRM-014` has no assertion behind it at all; it is a `note()` in
+**This entry differs from [NM-HRM-014](NM-HRM-014.md) in one way and the difference should not
+be hidden.** [NM-HRM-014](NM-HRM-014.md) has no assertion behind it at all; it is a `note()` in
 its package. This one does have a graded assertion, and it failed:
 
 > **FAIL: P1** the Copper may initialise DSKPTH before disk DMA is enabled
@@ -110,7 +110,7 @@ the Copper write anything at all.
 
 `P1` was graded with `ecs` = 0. That is deliberate: it is the condition under
 which appendix B's `*` and appendix C's ECS relaxation of the low address range
-do not interact, and the ECS-plus-CDANG case is `NM-HRM-004`'s territory rather
+do not interact, and the ECS-plus-CDANG case is [NM-HRM-004](NM-HRM-004.md)'s territory rather
 than a fresh number. The package's own run records the boundary it did not cross:
 
 > **MEASURED:** this package never drives a Copper MOVE at `ecs`=1/`cdang`=1
@@ -172,7 +172,7 @@ about the pages:
   write, so this is modelled as a hard access rule, not as a filter.
 - **All four condition the $000-$03E block on the chipset**, which appendix B's
   legend does not. That conditioning comes from appendix C, and whether it is
-  read correctly is `NM-HRM-004`'s question, not this one.
+  read correctly is [NM-HRM-004](NM-HRM-004.md)'s question, not this one.
 - **Under ECS with CDANG set, all four let the Copper write DSKPTH** — so on the
   configuration NanoMig and the four agree is the modern one, p.279's sentence
   holds. p.279 simply does not say it is conditional.
@@ -192,10 +192,10 @@ about the pages:
 
 - **p.279's sentence may be about initialisation in general rather than about
   Copper access to this specific address**, in which case the appendices are
-  loose rather than contradictory — the same weakness `NM-HRM-042` carries about
+  loose rather than contradictory — the same weakness [NM-HRM-042](NM-HRM-042.md) carries about
   the width. Nothing on the page supports or refutes that reading.
 - **This is one of at least two places where appendix B's Copper marks and the
-  rest of the manual do not line up**; `NM-HRM-004` is the other, and all four
+  rest of the manual do not line up**; [NM-HRM-004](NM-HRM-004.md) is the other, and all four
   implementations read appendix C the opposite way from the way this suite reads
   it. Whoever settles either one should look at both.
 
@@ -203,7 +203,7 @@ about the pages:
 
 Because the alternative is worse. A manual conflict that is noticed and not
 recorded gets re-discovered by the next reader, who has no way to tell whether
-anyone looked — the reason `NM-HRM-014` is kept, applied again.
+anyone looked — the reason [NM-HRM-014](NM-HRM-014.md) is kept, applied again.
 
 And because the red assertion behind it will be met again. Someone reading only
 the failing test will file it as a conformance defect against `agnus_copper.v`

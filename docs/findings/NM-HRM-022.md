@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs) |
 | **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — by Agnus revision |
-| **See also** | `NM-HRM-003` (Copper) and `NM-HRM-024` (audio) — the same decision in two other engines |
+| **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper) and [NM-HRM-024](NM-HRM-024.md) (audio) — the same decision in two other engines |
 
 ---
 
@@ -62,7 +62,7 @@ rather than independently arrived at.
 
 ## Suggested change
 
-**Take this together with `NM-HRM-003` and `NM-HRM-024`, not on its own.** The
+**Take this together with [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-024](NM-HRM-024.md), not on its own.** The
 Copper, the blitter and the audio DMA all build their pointers identically with
 no chipset condition. Read separately they are three omissions; read together
 they are one decision not to model OCS pointer narrowing anywhere in Agnus.
@@ -91,16 +91,16 @@ Every statement on this page was checked by reading the RTL directly rather than
 taken from the classifier's report.
 
 The measurement, its control and its mutation are recorded in the package. The
-finding is kept separate from `NM-HRM-003` because the two rest on separate
+finding is kept separate from [NM-HRM-003](NM-HRM-003.md) because the two rest on separate
 measurements at separate module boundaries — the same rule that keeps
-`NM-HRM-016` and `NM-HRM-017` apart — even though they very likely have one
+[NM-HRM-016](NM-HRM-016.md) and [NM-HRM-017](NM-HRM-017.md) apart — even though they very likely have one
 answer.
 
 ---
 
 ## For the specialists
 
-Three of four implementations do what NanoMig does. Read with `NM-HRM-003`, where
+Three of four implementations do what NanoMig does. Read with [NM-HRM-003](NM-HRM-003.md), where
 the same is true, that points at the manual rather than at the RTL.
 
 It does not close either one. The manual is this project's oracle and an

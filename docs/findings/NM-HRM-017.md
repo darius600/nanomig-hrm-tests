@@ -10,8 +10,8 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-shres-bitplane-colour-encoding`](../../hrm/ch3-shres-bitplane-colour-encoding) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
-| **Verdict of the four** | **two against two**, the same split as `NM-HRM-016` |
-| **See also** | `NM-HRM-016`, the sprite half of the same mechanism |
+| **Verdict of the four** | **two against two**, the same split as [NM-HRM-016](NM-HRM-016.md) |
+| **See also** | [NM-HRM-016](NM-HRM-016.md), the sprite half of the same mechanism |
 
 ---
 
@@ -25,7 +25,7 @@ that colour can be carried at the doubled pixel rate.
 
 ## What NanoMig does
 
-Same root cause as `NM-HRM-016`, reached down a different path:
+Same root cause as [NM-HRM-016](NM-HRM-016.md), reached down a different path:
 `denise_colortable.v` has **no `shres` port**, so no colour lookup anywhere in
 the design can depend on the mode.
 
@@ -80,14 +80,14 @@ The stimulus was changed to `0x0C39` and the finding **restored as test-backed**
 | **vAmiga** | — | reinterprets, ECS Denise only |
 | **Denise** | [`emulation/libami/video/denise.cpp:200`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L200) | <pre>colors[pos] = value;</pre> one table, no mode |
 | **Copperline** | [`src/video/bitplane/tests.rs:7563`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L7563) | *"each 35 ns half resolves palette[1], never a pair-encoded entry"* |
-| **MiSTer** | [`rtl/denise_colortable.v:32-35`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v#L32-L35) | descendant — same as `NM-HRM-016`: no `shres` port on `rtl/denise_colortable.v:32-35`; `rtl/denise.v:339` has the identical `l_bpu > 2` depth-force line, with an added `window_ena &&` term NanoMig's line lacks |
+| **MiSTer** | [`rtl/denise_colortable.v:32-35`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v#L32-L35) | descendant — same as [NM-HRM-016](NM-HRM-016.md): no `shres` port on `rtl/denise_colortable.v:32-35`; `rtl/denise.v:339` has the identical `l_bpu > 2` depth-force line, with an added `window_ena &&` term NanoMig's line lacks |
 | **TC64** | [`rtl/minimig/denise_colortable.v:32-35`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_colortable.v#L32-L35) | descendant — (`rtl/minimig/denise_colortable.v:32-35`) both keep the interface mode-blind, and their 11-line diffs from NanoMig (a RAM primitive's word width) are identical to each other and unrelated to colour mode. `denise.v`: **MiSTer** `rtl/denise.v:339` — `assign bpldata[3] = window_ena && (l_bpu > 2) ? bpldata_out[3] : 1'b0;`, the same `l_bpu > 2` depth force as NanoMig's `:369`, with an added `window_ena &&` term NanoMig's line lacks. **TC64** `rtl/minimig/denise.v:354` — the identical line, `window_ena` term included. The depth truncation this finding rests on is unchanged in both lines; the `window_ena` difference is a separate, narrower divergence this finding does not measure |
 
 ---
 
 ## Suggested change
 
-As with `NM-HRM-016`: `denise_colortable` needs a mode input it does not have.
+As with [NM-HRM-016](NM-HRM-016.md): `denise_colortable` needs a mode input it does not have.
 The two findings are one mechanism and should be closed together or not at all —
 they are kept as separate entries because they rest on separate measurements at
 separate boundaries, not because they are separate problems.

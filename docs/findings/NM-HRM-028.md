@@ -74,7 +74,7 @@ the pinned revision and the quotation verified there.
 | **Denise** | [`emulation/libami/paula/audio.cpp:79-81`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L79-L81) | <pre>cha.audav = adkcon & (0x01 &lt;&lt; nr);<br>cha.audap = adkcon & (0x10 &lt;&lt; nr);<br>cha.napnav = !cha.audap \|\| cha.audav;</pre> |
 | **Copperline** | [`src/chipset/paula.rs:1190-1192`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1190-L1192) | <pre>fn channel_attached_as_modulator(&self, ch_idx: usize) -&gt; bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;let volume_attach = 1u16 &lt;&lt; ch_idx;<br>&nbsp;&nbsp;&nbsp;&nbsp;let period_attach = 1u16 &lt;&lt; (ch_idx + 4);</pre> |
 | **MiSTer** | [`rtl/paula_audio_channel.v:1`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L1) | descendant — carries the identical first-line comment, *"attached modes are not supported"*. No ADKCON port on the audio-channel module here either |
-| **TC64** | [`rtl/minimig/paula_audio_channel.v:1`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L1) | descendant — carries it too: `//This module handles a single amiga audio channel. attached modes are not supported`, word for word, even though the rest of the file has drifted by about 29 lines (see `NM-HRM-025`/`NM-HRM-026`). Neither MiSTer's nor TC64's audio-channel module has an ADKCON port either, and neither `paula.v` wires one in — the missing attach/modulation logic is a property of the interface in all three lines |
+| **TC64** | [`rtl/minimig/paula_audio_channel.v:1`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L1) | descendant — carries it too: `//This module handles a single amiga audio channel. attached modes are not supported`, word for word, even though the rest of the file has drifted by about 29 lines (see [NM-HRM-025](NM-HRM-025.md)/[NM-HRM-026](NM-HRM-026.md)). Neither MiSTer's nor TC64's audio-channel module has an ADKCON port either, and neither `paula.v` wires one in — the missing attach/modulation logic is a property of the interface in all three lines |
 
 **Four out of the four independent implementations implement attach and
 modulation. NanoMig alone does not**, and its own source says so. This is the
@@ -127,7 +127,7 @@ The other half — a modulator's word reaching another channel's period or volum
 register — is not testable at any boundary in this design, because no audio
 module has an attach port to observe it on. It is recorded rather than asserted.
 
-**This is an absent feature, of the same character as `NM-HRM-015` and
-`NM-HRM-021`:** declared in a register, accepted by the decode, reaching nothing.
+**This is an absent feature, of the same character as [NM-HRM-015](NM-HRM-015.md) and
+[NM-HRM-021](NM-HRM-021.md):** declared in a register, accepted by the decode, reaching nothing.
 The three together are the register's clearest group — each is a bit the manual
 specifies, the RTL stores, and no logic consumes.

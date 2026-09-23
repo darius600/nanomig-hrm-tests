@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch5-audio-location-pointer`](../../hrm/ch5-audio-location-pointer) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — by Agnus revision |
-| **See also** | `NM-HRM-003` (Copper) and `NM-HRM-022` (blitter) — the same decision in two other engines |
+| **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper) and [NM-HRM-022](NM-HRM-022.md) (blitter) — the same decision in two other engines |
 
 ---
 
@@ -137,6 +137,6 @@ per engine.
 ## For the specialists
 
 If the intent is an ECS-only core, the manual's OCS sentences are simply out of
-scope and `NM-HRM-003`, `NM-HRM-022` and this one are a single scope decision. If
+scope and [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and this one are a single scope decision. If
 not, three engines need the same narrowing, and Copperline has already shown it
 is cheaper to do once.

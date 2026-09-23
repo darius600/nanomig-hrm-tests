@@ -57,7 +57,7 @@ The interrupt is 12 ticks ahead of the first byte and 56 ahead of the second.
 The manual asks for it after the word.
 
 **This finding is observable entirely at the module's pins.** `intreq` and
-`sample` are both top-level ports of `paula_audio_channel`; unlike `NM-HRM-026`
+`sample` are both top-level ports of `paula_audio_channel`; unlike [NM-HRM-026](NM-HRM-026.md)
 in the same chapter, nothing here depends on reading inside the module.
 
 ---
