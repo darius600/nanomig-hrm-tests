@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
                  "COP1LC-AT-080-082: a 20-bit pattern written at $080 and $082 "
                  "and strobed at $088 arrives at address_out, so COP1LCH, "
                  "COP1LCL and COPJMP1 are decoded where the address list puts "
-                 "them [claims: opus:AA-cop1lch.c1 opus:AA-cop1lcl.c1 opus:AA-copjmp1.c1]");
+                 "them [claims: opus:AA-cop1lch.c1 opus:AA-cop1lcl.c1 opus:AA-copjmp1.c1 sol:AA-cop1lch.c1 sol:AA-cop1lcl.c1 sol:AA-copjmp1.c1]");
     }
 
     // --- 2. COP2LCH / COP2LCL / COPJMP2 -----------------------------------
@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
                  "COP2LC-AT-084-086: a 20-bit pattern written at $084 and $086 "
                  "and strobed at $08A arrives at address_out, so COP2LCH, "
                  "COP2LCL and COPJMP2 are decoded where the address list puts "
-                 "them [claims: opus:AA-cop2lch.c1 opus:AA-cop2lcl.c1 opus:AA-copjmp2.c1]");
+                 "them [claims: opus:AA-cop2lch.c1 opus:AA-cop2lcl.c1 opus:AA-copjmp2.c1 sol:AA-cop2lch.c1 sol:AA-cop2lcl.c1 sol:AA-copjmp2.c1]");
     }
 
     // --- 3. The two pointers are separate, which is what makes 1 and 2 an
@@ -269,7 +269,15 @@ int main(int argc, char** argv) {
         c.expect(second == (0x15554 >> 1),
                  "COP1-AND-COP2-ARE-DISTINCT: loading pointer 2 after pointer 1 "
                  "yields pointer 2's value, so $084/$086 are not aliases of "
-                 "$080/$082 [claims: opus:AA-cop2lch.c2]");
+                 "$080/$082 -- a CONTROL for the two address assertions above, "
+                 "grading no claim of its own");
+        // NO CLAIMS BRACKET ON THIS LINE, ON PURPOSE. It cited
+        // opus:AA-cop2lch.c2, which in slice 7's union is "the address-ordered
+        // list gives COP2LCH the access letters W" -- the access column, which
+        // this assertion does not read and which the residue lot declines. What
+        // this assertion establishes is that assertions 1 and 2 measure two
+        // registers rather than one register answering twice; the address
+        // claims it supports are cited on those two lines.
     }
 
     // --- 4. COPINS at $08C, seen through ir2 on reg_address_out -----------
@@ -290,7 +298,7 @@ int main(int argc, char** argv) {
         c.expect(seen,
                  "COPINS-AT-08C: a word written at $08C becomes the register "
                  "address the Copper puts out for a MOVE, so COPINS is decoded "
-                 "at $08C [claims: opus:AA-copins.c1]");
+                 "at $08C [claims: opus:AA-copins.c1 sol:AA-copins.c1]");
     }
 
     // --- 5. COPCON at $02E, seen through cdang's effect on a low MOVE -----
@@ -321,7 +329,7 @@ int main(int argc, char** argv) {
         c.expect(!blocked && allowed,
                  "COPCON-AT-02E: writing bit 1 at $02E decides whether a MOVE "
                  "to a register below $080 reaches reg_address_out, so COPCON "
-                 "is decoded at $02E [claims: opus:AA-copcon.c1]");
+                 "is decoded at $02E [claims: opus:AA-copcon.c1 sol:AA-copcon.c1]");
     }
 
     // --- 6. The one address in the restricted range the list does not mark
@@ -405,15 +413,17 @@ int main(int argc, char** argv) {
              "sol:AA-copcon.c3 sol:AA-copins.c3 sol:AA-copjmp1.c3 "
              "sol:AA-copjmp2.c3]");
     c.record(
-             "DECLINED at this boundary (insufficient): The register is decoded "
-             "at this boundary, but no assertion in this package writes or reads "
-             "it. The package grades the rows its own subject names; this row is "
-             "another register of the same module. [claims: opus:AA-cop1lch.c5 "
-             "opus:AA-cop1lcl.c5 opus:AA-cop2lch.c5 opus:AA-cop2lcl.c5 "
-             "opus:AA-copcon.c5 opus:AA-copins.c4 opus:AA-copjmp1.c4 "
-             "opus:AA-copjmp2.c4 sol:AA-cop1lch.c1/c5 sol:AA-cop1lcl.c1/c5 "
-             "sol:AA-cop2lch.c1/c5 sol:AA-cop2lcl.c1/c5 sol:AA-copcon.c1 "
-             "sol:AA-copins.c1/c4 sol:AA-copjmp1.c1/c4 sol:AA-copjmp2.c1/c4]");
+             "DECLINED at this boundary (insufficient): This package writes and "
+             "reads the register -- that is how its address row is graded here "
+             "-- but no assertion distinguishes what this row says about it: the "
+             "function column's width or role, the read-and-clear, the restart. "
+             "A stimulus that passes whether or not the row is true does not "
+             "grade it. [claims: opus:AA-cop1lch.c5 opus:AA-cop1lcl.c5 "
+             "opus:AA-cop2lch.c5 opus:AA-cop2lcl.c5 opus:AA-copcon.c5 "
+             "opus:AA-copins.c4 opus:AA-copjmp1.c4 opus:AA-copjmp2.c4 "
+             "sol:AA-cop1lch.c5 sol:AA-cop1lcl.c5 sol:AA-cop2lch.c5 "
+             "sol:AA-cop2lcl.c5 sol:AA-copins.c4 sol:AA-copjmp1.c4 "
+             "sol:AA-copjmp2.c4]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is a legend "
              "statement, a gap between two printed rows, or a reserved line -- "

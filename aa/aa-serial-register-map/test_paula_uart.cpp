@@ -247,12 +247,13 @@ int main(int argc, char** argv) {
              "[claims: opus:AA-serdat.c3 opus:AA-serdatr.c3 opus:AA-serper.c3 "
              "sol:AA-serdat.c3 sol:AA-serdatr.c3 sol:AA-serper.c3]");
     c.record(
-             "DECLINED at this boundary (insufficient): The register is decoded "
-             "at this boundary, but no assertion in this package writes or reads "
-             "it. The package grades the rows its own subject names; this row is "
-             "another register of the same module. [claims: opus:AA-serdat.c5 "
-             "opus:AA-serdatr.c5 opus:AA-serper.c5 sol:AA-serdat.c5 "
-             "sol:AA-serdatr.c5]");
+             "DECLINED at this boundary (insufficient): This package writes and "
+             "reads the register -- that is how its address row is graded here "
+             "-- but no assertion distinguishes what this row says about it: the "
+             "function column's width or role, the read-and-clear, the restart. "
+             "A stimulus that passes whether or not the row is true does not "
+             "grade it. [claims: opus:AA-serdat.c5 opus:AA-serdatr.c5 "
+             "opus:AA-serper.c5 sol:AA-serdat.c5 sol:AA-serdatr.c5]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is a legend "
              "statement, a gap between two printed rows, or a reserved line -- "

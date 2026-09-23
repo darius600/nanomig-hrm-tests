@@ -269,22 +269,29 @@ int main(int argc, char** argv) {
              "at this boundary, but no assertion in this package writes or reads "
              "it. The package grades the rows its own subject names; this row is "
              "another register of the same module. [claims: "
-             "opus:AA-bpl1mod.c1/c4 opus:AA-bpl1pth.c5 opus:AA-bpl1ptl.c5 "
-             "opus:AA-bpl2mod.c1/c4 opus:AA-bpl2pth.c5 opus:AA-bpl2ptl.c5 "
-             "opus:AA-bpl3pth.c5 opus:AA-bpl3ptl.c5 opus:AA-bpl4pth.c5 "
-             "opus:AA-bpl4ptl.c5 opus:AA-bpl5pth.c5 opus:AA-bpl5ptl.c5 "
-             "opus:AA-bpl6pth.c5 opus:AA-bpl6ptl.c5 opus:AA-bpl7pth.c5 "
-             "opus:AA-bpl7ptl.c5 opus:AA-bpl8pth.c5 opus:AA-bpl8ptl.c5 "
+             "opus:AA-bpl1mod.c1/c4 opus:AA-bpl2mod.c1/c4 "
              "opus:AA-bplmod-symmetry.c1 opus:AA-ddfstop.c1/c4 "
              "opus:AA-ddfstrt.c1/c4 opus:AA-diwhigh.c1/c5 opus:AA-diwstop.c1/c4 "
-             "opus:AA-diwstrt.c1/c4 sol:AA-bpl1mod.c1/c4 sol:AA-bpl1pth.c5 "
-             "sol:AA-bpl1ptl.c5 sol:AA-bpl2mod.c1/c4 sol:AA-bpl2pth.c5 "
-             "sol:AA-bpl2ptl.c5 sol:AA-bpl3pth.c5 sol:AA-bpl3ptl.c5 "
-             "sol:AA-bpl4pth.c5 sol:AA-bpl4ptl.c5 sol:AA-bpl5pth.c5 "
-             "sol:AA-bpl5ptl.c5 sol:AA-bpl6pth.c5 sol:AA-bpl6ptl.c5 "
-             "sol:AA-bpl7pth.c5 sol:AA-bpl7ptl.c5 sol:AA-bpl8pth.c5 "
-             "sol:AA-bpl8ptl.c5 sol:AA-ddfstop.c1/c4 sol:AA-ddfstrt.c1/c4 "
-             "sol:AA-diwhigh.c1/c5 sol:AA-diwstop.c1/c4 sol:AA-diwstrt.c1/c4]");
+             "opus:AA-diwstrt.c1/c4 sol:AA-bpl1mod.c1/c4 sol:AA-bpl2mod.c1/c4 "
+             "sol:AA-ddfstop.c1/c4 sol:AA-ddfstrt.c1/c4 sol:AA-diwhigh.c1/c5 "
+             "sol:AA-diwstop.c1/c4 sol:AA-diwstrt.c1/c4]");
+    c.record(
+             "DECLINED at this boundary (insufficient): This package writes and "
+             "reads the register -- that is how its address row is graded here "
+             "-- but no assertion distinguishes what this row says about it: the "
+             "function column's width or role, the read-and-clear, the restart. "
+             "A stimulus that passes whether or not the row is true does not "
+             "grade it. [claims: opus:AA-bpl1pth.c5 opus:AA-bpl1ptl.c5 "
+             "opus:AA-bpl2pth.c5 opus:AA-bpl2ptl.c5 opus:AA-bpl3pth.c5 "
+             "opus:AA-bpl3ptl.c5 opus:AA-bpl4pth.c5 opus:AA-bpl4ptl.c5 "
+             "opus:AA-bpl5pth.c5 opus:AA-bpl5ptl.c5 opus:AA-bpl6pth.c5 "
+             "opus:AA-bpl6ptl.c5 opus:AA-bpl7pth.c5 opus:AA-bpl7ptl.c5 "
+             "opus:AA-bpl8pth.c5 opus:AA-bpl8ptl.c5 sol:AA-bpl1pth.c5 "
+             "sol:AA-bpl1ptl.c5 sol:AA-bpl2pth.c5 sol:AA-bpl2ptl.c5 "
+             "sol:AA-bpl3pth.c5 sol:AA-bpl3ptl.c5 sol:AA-bpl4pth.c5 "
+             "sol:AA-bpl4ptl.c5 sol:AA-bpl5pth.c5 sol:AA-bpl5ptl.c5 "
+             "sol:AA-bpl6pth.c5 sol:AA-bpl6ptl.c5 sol:AA-bpl7pth.c5 "
+             "sol:AA-bpl7ptl.c5 sol:AA-bpl8pth.c5 sol:AA-bpl8ptl.c5]");
 
     std::cout << "\nAssertions: " << c.passed << " passed, " << c.failed
               << " failed\n";

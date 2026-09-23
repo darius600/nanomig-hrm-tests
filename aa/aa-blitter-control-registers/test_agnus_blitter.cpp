@@ -348,10 +348,9 @@ int main(int argc, char** argv) {
              "at this boundary, but no assertion in this package writes or reads "
              "it. The package grades the rows its own subject names; this row is "
              "another register of the same module. [claims: opus:AA-bltcon0l.c6 "
-             "opus:AA-bltddat.c6 opus:AA-bltsizh.c6 opus:AA-bltsizv.c6 "
-             "sol:AA-bltamod.c1 sol:AA-bltbmod.c1 sol:AA-bltcmod.c1 "
-             "sol:AA-bltcon0l.c6 sol:AA-bltddat.c6 sol:AA-bltdmod.c1 "
-             "sol:AA-bltsizh.c6 sol:AA-bltsizv.c6]");
+             "opus:AA-bltddat.c6 sol:AA-bltamod.c1 sol:AA-bltbmod.c1 "
+             "sol:AA-bltcmod.c1 sol:AA-bltcon0l.c6 sol:AA-bltddat.c6 "
+             "sol:AA-bltdmod.c1]");
     c.record(
              "DECLINED at this boundary (insufficient): This package drives no "
              "assertion at this register. It is observable in principle -- every "
@@ -365,6 +364,14 @@ int main(int argc, char** argv) {
              "opus:AA-bltddat.c1/c2 sol:AA-bltalwm.c1/c2 sol:AA-bltbdat.c1/c2 "
              "sol:AA-bltcdat.c1/c2 sol:AA-bltcon0l.c1/c2 sol:AA-bltcon1.c1/c2 "
              "sol:AA-bltddat.c1/c2]");
+    c.record(
+             "DECLINED at this boundary (insufficient): This package writes and "
+             "reads the register -- that is how its address row is graded here "
+             "-- but no assertion distinguishes what this row says about it: the "
+             "function column's width or role, the read-and-clear, the restart. "
+             "A stimulus that passes whether or not the row is true does not "
+             "grade it. [claims: opus:AA-bltsizh.c6 opus:AA-bltsizv.c6 "
+             "sol:AA-bltsizh.c6 sol:AA-bltsizv.c6]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is a legend "
              "statement, a gap between two printed rows, or a reserved line -- "

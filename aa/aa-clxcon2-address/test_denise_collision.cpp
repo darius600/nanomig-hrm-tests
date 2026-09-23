@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
         c.expect(before && !after,
                  "CLXCON2-AT-10E: a write to $10E changes the bitplane match, "
                  "so CLXCON2 is decoded at $10E as the address list states "
-                 "[claims: opus:AA-clxcon2.c1]");
+                 "[claims: opus:AA-clxcon2.c1 sol:AA-clxcon2.c1]");
     }
 
     // --- 2. The other address the document gives, as an inverse control.
@@ -242,7 +242,7 @@ int main(int argc, char** argv) {
                  "CLXDAT-AT-00E: this module answers a read at $00E and is "
                  "silent at $010, so CLXDAT is decoded where the address list "
                  "puts it and the list's `R` is the access it has "
-                 "[claims: opus:AA-clxdat.c1]");
+                 "[claims: opus:AA-clxdat.c1 sol:AA-clxdat.c1]");
     }
 
     // --- 6. CLXCON at $098, reached through what a write there does.
@@ -261,7 +261,7 @@ int main(int argc, char** argv) {
         c.expect(!armed && after,
                  "CLXCON-AT-098: a write at $098 clears CLXCON2 and a write at "
                  "$09A does not, so CLXCON is decoded where the address list "
-                 "puts it [claims: opus:AA-clxcon.c1]");
+                 "puts it [claims: opus:AA-clxcon.c1 sol:AA-clxcon.c1]");
     }
 
     // --- 4. The RTL gates CLXCON2 on AGA. The document does not say this.
@@ -293,12 +293,12 @@ int main(int argc, char** argv) {
              "[claims: opus:AA-clxcon.c3 opus:AA-clxcon2.c4 opus:AA-clxdat.c3 "
              "sol:AA-clxcon.c3 sol:AA-clxcon2.c3/c4 sol:AA-clxdat.c3]");
     c.record(
-             "DECLINED at this boundary (insufficient): The register is decoded "
-             "at this boundary, but no assertion in this package writes or reads "
-             "it. The package grades the rows its own subject names; this row is "
-             "another register of the same module. [claims: opus:AA-clxcon.c1 "
-             "opus:AA-clxdat.c1/c5 sol:AA-clxcon.c1 sol:AA-clxcon2.c1 "
-             "sol:AA-clxdat.c1/c5]");
+             "DECLINED at this boundary (insufficient): This package writes and "
+             "reads the register -- that is how its address row is graded here "
+             "-- but no assertion distinguishes what this row says about it: the "
+             "function column's width or role, the read-and-clear, the restart. "
+             "A stimulus that passes whether or not the row is true does not "
+             "grade it. [claims: opus:AA-clxdat.c5 sol:AA-clxdat.c5]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is a legend "
              "statement, a gap between two printed rows, or a reserved line -- "

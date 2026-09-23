@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
         c.expect(gc == P_C && gb == P_B && ga == P_A && gd == P_D,
                  "BLT-POINTERS-AT-048-056: all four pointer pairs are decoded "
                  "where the address list puts them, each reaching its own slot "
-                 "and no other [claims: opus:AA-bltapth.c1 opus:AA-bltaptl.c1 opus:AA-bltbpth.c1 opus:AA-bltbptl.c1 opus:AA-bltcpth.c1 opus:AA-bltcptl.c1 opus:AA-bltdpth.c1 opus:AA-bltdptl.c1]");
+                 "and no other [claims: opus:AA-bltapth.c1 opus:AA-bltaptl.c1 opus:AA-bltbpth.c1 opus:AA-bltbptl.c1 opus:AA-bltcpth.c1 opus:AA-bltcptl.c1 opus:AA-bltdpth.c1 opus:AA-bltdptl.c1 sol:AA-bltapth.c1 sol:AA-bltaptl.c1 sol:AA-bltbpth.c1 sol:AA-bltbptl.c1 sol:AA-bltcpth.c1 sol:AA-bltcptl.c1 sol:AA-bltdpth.c1 sol:AA-bltdptl.c1]");
     }
 
     // --- 2. The four modulos, reached through what adding one does ---------
@@ -286,15 +286,17 @@ int main(int argc, char** argv) {
              "sol:AA-bltcpth.c3 sol:AA-bltcptl.c3 sol:AA-bltdpth.c3 "
              "sol:AA-bltdptl.c3]");
     c.record(
-             "DECLINED at this boundary (insufficient): The register is decoded "
-             "at this boundary, but no assertion in this package writes or reads "
-             "it. The package grades the rows its own subject names; this row is "
-             "another register of the same module. [claims: opus:AA-bltapth.c6 "
-             "opus:AA-bltaptl.c6 opus:AA-bltbpth.c6 opus:AA-bltbptl.c6 "
-             "opus:AA-bltcpth.c6 opus:AA-bltcptl.c6 opus:AA-bltdpth.c6 "
-             "opus:AA-bltdptl.c6 sol:AA-bltapth.c1/c6 sol:AA-bltaptl.c1/c6 "
-             "sol:AA-bltbpth.c1/c6 sol:AA-bltbptl.c1/c6 sol:AA-bltcpth.c1/c6 "
-             "sol:AA-bltcptl.c1/c6 sol:AA-bltdpth.c1/c6 sol:AA-bltdptl.c1/c6]");
+             "DECLINED at this boundary (insufficient): This package writes and "
+             "reads the register -- that is how its address row is graded here "
+             "-- but no assertion distinguishes what this row says about it: the "
+             "function column's width or role, the read-and-clear, the restart. "
+             "A stimulus that passes whether or not the row is true does not "
+             "grade it. [claims: opus:AA-bltapth.c6 opus:AA-bltaptl.c6 "
+             "opus:AA-bltbpth.c6 opus:AA-bltbptl.c6 opus:AA-bltcpth.c6 "
+             "opus:AA-bltcptl.c6 opus:AA-bltdpth.c6 opus:AA-bltdptl.c6 "
+             "sol:AA-bltapth.c6 sol:AA-bltaptl.c6 sol:AA-bltbpth.c6 "
+             "sol:AA-bltbptl.c6 sol:AA-bltcpth.c6 sol:AA-bltcptl.c6 "
+             "sol:AA-bltdpth.c6 sol:AA-bltdptl.c6]");
     c.record(
              "DECLINED at this boundary (not-hardware): The claim is a legend "
              "statement, a gap between two printed rows, or a reserved line -- "
