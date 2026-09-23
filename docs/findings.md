@@ -269,9 +269,16 @@ point at, so each of those findings names its own inverse control instead — th
 assertion that would have gone red had the RTL followed the other half of the
 document.
 
-**The four implementations are not consulted for those three.** They could not
-settle a question about what a 1991 document prints; there is no behaviour there
-they could disagree about. The column says so rather than being left blank.
+**The four were read for those three as well, and they are unanimous in all
+three.** A document's self-contradiction is not something an implementation can
+settle, but an address, a Coprocessor restriction and a shift field are each
+something every implementation embodies an answer to. Three of the four decode
+CLXCON2 and all three put it at `$10E`, with BPLCON4 at the `$10C` the
+alphabetical entry claims; all four refuse a Coprocessor MOVE to `$078` with
+CDANG clear, and all four decide it by comparing the address against `$080`
+rather than by consulting a table of marks; and all four take `bltcon0[15:12]`
+as one field, two of them naming it ASH. **What that settles is narrow and
+worth stating: nothing downstream was misled by any of the three defects.**
 
 **The other two are filed against the RTL, and for those the four were read.**
 Both readings came out sharper than the column has room for. On NM-AA-004 every
