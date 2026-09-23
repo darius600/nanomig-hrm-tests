@@ -22,10 +22,19 @@ build:
 test: build
 	./$(TEST_BIN)
 
-# Prove every assertion can go red. A green here means an expect() is not
-# measuring what it claims to.
+# Prove every assertion can go red ALONE (or, for SYNC-POLARITY-BITS-CHANGE-
+# THE-PINS, whose baseline is already red -- see NM-HRM-032 -- green). MUTATE
+# names one assertion's own label at a time (mutating(id) in the source); a
+# run that does not move that assertion's own verdict, or that moves another
+# assertion's verdict too, means the mutation is not isolated to the one it
+# names.
+MUTATE_IDS := FIXTURE-DELIVERS-KNOWN-VALUE HARDDIS-AT-BIT-14 VARBEAMEN-AT-BIT-7 BEAMCON0-WRITE-IS-CHIPSET-GATED SYNC-POLARITY-BITS-CHANGE-THE-PINS
 mutate: build
-	MUTATE=1 ./$(TEST_BIN) || true
+	@for id in $(MUTATE_IDS); do \
+		echo "=== MUTATE=$$id ==="; \
+		MUTATE=$$id ./$(TEST_BIN) || true; \
+		echo; \
+	done
 
 clean:
 	rm -rf $(OBJ_DIR)

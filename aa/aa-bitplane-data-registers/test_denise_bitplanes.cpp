@@ -62,10 +62,23 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. A single on/off flag reddened every assertion at once, which
+// cannot show that the mutation recorded for one assertion leaves the others
+// green.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -173,27 +186,31 @@ static uint8_t or_all(const std::vector<uint8_t>& t) {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
     Checks checks;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard changes ONE thing in the stimulus.
-    const uint16_t m_quiet  = mutate ? 0x8000u : 0x0000u;  // 1: lights a plane
-    const bool     m_onehot = mutate;                      // 2: always writes $112
-    const bool     m_same   = mutate;                      // 3: one word for all
-    const uint16_t m_scroll = mutate ? 0x0000u : 0x0001u;  // 4: scrolls nothing
+    // Each guard below is keyed to its OWN assertion's id: MUTATE=<id> changes
+    // ONE thing in that assertion's stimulus, and every other assertion runs
+    // its real stimulus.
+    const uint16_t m_quiet  = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? 0x8000u : 0x0000u;
+    const bool     m_onehot = mutating("BPLXDAT-ADDRESSES-MAP-TO-PLANES");
+    const bool     m_same   = mutating("BPLXDAT-CONVERTS-PARALLEL-TO-SERIAL");
+    const uint16_t m_scroll = mutating("BPLCON1-AT-102-HOLDS-TWO-SCROLL-VALUES") ? 0x0000u : 0x0001u;
 
     const int WINDOW = 40;   // pixels; sixteen carry data, the rest are the tail
 
     std::cout << "aa-bitplane-data-registers -- AA_CONFORMANCE at denise_bitplanes\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, the "
+                      "others must keep their baseline verdict\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1
-        // writes 0x8000 to every plane instead of zero, so the window that
-        // must stay dark is lit.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red selecting this
+        // assertion's own id writes 0x8000 to every plane instead of zero, so
+        // the window that must stay dark is lit.
         h.write(A_BPLCON1, 0x0000);
         for (int k = 2; k <= 8; ++k) h.write(A_BPLXDAT[k], m_quiet);
         h.write(A_BPL1DAT, 0x0000);          // the load trigger, itself empty
@@ -214,9 +231,10 @@ int main(int argc, char** argv) {
         for (int k = 2; k <= 8; ++k) {
             Harness h;
             h.write(A_BPLCON1, 0x0000);
-            // MUTATION BPLXDAT-ADDRESSES-MAP-TO-PLANES stimulus red MUTATE=1
-            // sends every plane's word to $112, so plane 2 lights for all seven
-            // trials and six of them see the wrong plane.
+            // MUTATION BPLXDAT-ADDRESSES-MAP-TO-PLANES stimulus red selecting
+            // this assertion's own id sends every plane's word to $112, so
+            // plane 2 lights for all seven trials and six of them see the
+            // wrong plane.
             const int target = m_onehot ? A_BPLXDAT[2] : A_BPLXDAT[k];
             for (int j = 2; j <= 8; ++j) h.write(A_BPLXDAT[j], 0x0000);
             h.write(target, 0x8000);
@@ -245,7 +263,7 @@ int main(int argc, char** argv) {
             // Top bit set in every plane so the first lit pixel is a common
             // origin; the remaining fifteen bits differ per plane.
             // MUTATION BPLXDAT-CONVERTS-PARALLEL-TO-SERIAL stimulus red
-            // MUTATE=1 gives every plane plane 2's word, so six of the seven
+            // selecting this assertion's own id gives every plane plane 2's word, so six of the seven
             // recovered words are not the word that address was given.
             wrote[k] = (uint16_t)(0x8000u | ((m_same ? 2 : k) << 9) |
                                   (0x0A5u ^ (uint16_t)(m_same ? 2 : k)));
@@ -287,7 +305,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         // MUTATION BPLCON1-AT-102-HOLDS-TWO-SCROLL-VALUES stimulus red
-        // MUTATE=1 writes a scroll of zero, so both playfields start on the
+        // selecting this assertion's own id writes a scroll of zero, so both playfields start on the
         // same pixel and the two values cannot be told apart.
         h.write(A_BPLCON1, m_scroll);        // PF1 nibble 1, PF2 nibble 0
         for (int k = 2; k <= 8; ++k) h.write(A_BPLXDAT[k], 0x8000);

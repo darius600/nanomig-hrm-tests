@@ -58,10 +58,23 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. A single on/off flag reddened every assertion at once, which
+// cannot show that the mutation recorded for one assertion leaves the others
+// green.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -150,21 +163,22 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: which address is written, which data pattern, or
-    // which channel is parked. None touches a comparison.
+    // Each guard below is keyed to its OWN assertion's id: MUTATE=<id> moves
+    // ONE thing in that assertion's stimulus -- which address is written,
+    // which data pattern, or which channel is parked -- and every other
+    // assertion runs its real stimulus. None touches a comparison.
     //
     // NO GUARD SWAPS ALL FOUR CHANNELS. Rotating every channel by one writes
     // every register and reads every register, and a bank indexed consistently
     // wrong still returns what was put in it -- the shape that left four of the
     // Copper package's six assertions green. Each guard breaks ONE channel.
-    const int      m_park   = mutate ? 1 : 0;           // 2: reads the wrong channel's address
-    const uint16_t m_hi_pat = mutate ? 0x001F : 0xFFE0; // 3: the ignored bits stop being ignored
-    const uint16_t m_lo_pat = mutate ? 0xFFFF : 0x0001; // 4: likewise for DB0
-    const uint16_t m_lch2   = mutate ? A_AUDLCH[0] : A_AUDLCH[2]; // 5: channel 2 never written
-    const uint16_t m_live   = mutate ? A_AUDLCH[1] : A_AUDLCH[0]; // liveness
+    const int      m_park   = mutating("AUDDAT-ADDRESS-PER-CHANNEL") ? 1 : 0;
+    const uint16_t m_hi_pat = mutating("AUDLC-HIGH-TAKES-DB0-DB4") ? 0x001F : 0xFFE0;
+    const uint16_t m_lo_pat = mutating("AUDLC-LOW-TAKES-DB1-DB15") ? 0xFFFF : 0x0001;
+    const uint16_t m_lch2   = mutating("AUDLC-IS-PER-CHANNEL") ? A_AUDLCH[0] : A_AUDLCH[2];
+    const uint16_t m_live   = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? A_AUDLCH[1] : A_AUDLCH[0];
 
     c.record("oracle: AA specification, PDF p.7, the address-ordered register "
              "list. AUD0DAT $0AA, AUD1DAT $0BA, AUD2DAT $0CA, AUD3DAT $0DA, and "
@@ -188,7 +202,7 @@ int main(int argc, char** argv) {
     // --- FIXTURE LIVENESS ---------------------------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 writes
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red selecting this assertion's own id writes
         // channel 0's high word into channel 1, so the restart reads zero.
         h.write(m_live, 0x0013);
         h.write(A_AUDLCL[0], 0x579A);
@@ -211,7 +225,7 @@ int main(int argc, char** argv) {
         bool all = true;
         std::string seen;
         for (int ch = 0; ch < 4; ++ch) {
-            // MUTATION AUDDAT-ADDRESS-PER-CHANNEL stimulus red MUTATE=1 parks
+            // MUTATION AUDDAT-ADDRESS-PER-CHANNEL stimulus red selecting this assertion's own id parks
             // channel 0's read one slot along, so it answers with AUD1DAT.
             const int look = (ch == 0) ? m_park : ch;
             const uint8_t got = h.addr_out_for(look);
@@ -231,7 +245,7 @@ int main(int argc, char** argv) {
     // --- 3. the HIGH half of an audio location pair uses DB0-DB4 ------------
     {
         Harness h;
-        // MUTATION AUDLC-HIGH-TAKES-DB0-DB4 oracle red MUTATE=1 writes a word
+        // MUTATION AUDLC-HIGH-TAKES-DB0-DB4 oracle red selecting this assertion's own id writes a word
         // whose low five bits are set where the assertion needs them clear.
         h.write(A_AUDLCH[1], m_hi_pat);
         const uint32_t ignored = Harness::high5(h.restart(1));
@@ -249,7 +263,7 @@ int main(int argc, char** argv) {
     // --- 4. the LOW half uses DB1-DB15, so DB0 is ignored -------------------
     {
         Harness h;
-        // MUTATION AUDLC-LOW-TAKES-DB1-DB15 oracle red MUTATE=1 writes $FFFF
+        // MUTATION AUDLC-LOW-TAKES-DB1-DB15 oracle red selecting this assertion's own id writes $FFFF
         // where the assertion needs a word with only DB0 set.
         h.write(A_AUDLCL[1], m_lo_pat);
         const uint32_t ignored = Harness::low15(h.restart(1));
@@ -268,7 +282,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write(A_AUDLCH[0], 0x0001);  h.write(A_AUDLCL[0], 0x0002);
-        // MUTATION AUDLC-IS-PER-CHANNEL stimulus red MUTATE=1 writes channel
+        // MUTATION AUDLC-IS-PER-CHANNEL stimulus red selecting this assertion's own id writes channel
         // 2's pattern into channel 0, so channel 2 reads channel 0's value and
         // channel 0 reads the wrong one.
         h.write(m_lch2, 0x0018);       h.write(A_AUDLCL[2], 0x7FFE);

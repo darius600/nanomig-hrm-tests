@@ -74,10 +74,23 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. A single on/off flag reddened every assertion at once, which
+// cannot show that the mutation recorded for one assertion leaves the others
+// green.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -174,30 +187,37 @@ static int levels(const std::vector<uint8_t>& t, uint8_t mask) {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
     Checks c;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard changes ONE thing in the stimulus.
-    const uint16_t m_hard = mutate ? LPENDIS : HARDDIS;      // 2: a dead bit
-    const uint16_t m_beam = mutate ? HARDDIS : VARBEAMEN;    // 3: wrong bit
-    const bool     m_ecs  = mutate ? true : false;           // 4: never gated
-    const uint16_t m_pol  = HSYTRUE | VSYTRUE | CSYTRUE;     // 5: always set
+    // Each guard below is keyed to its OWN assertion's id: MUTATE=<id> changes
+    // ONE thing in that assertion's stimulus, and every other assertion runs
+    // its real stimulus.
+    const uint16_t m_hard = mutating("HARDDIS-AT-BIT-14") ? LPENDIS : HARDDIS;
+    const uint16_t m_beam = mutating("VARBEAMEN-AT-BIT-7") ? HARDDIS : VARBEAMEN;
+    const bool     m_ecs  = mutating("BEAMCON0-WRITE-IS-CHIPSET-GATED") ? true : false;
+    const uint16_t m_pol  = HSYTRUE | VSYTRUE | CSYTRUE;
 
     std::cout << "aa-beamcon0-control-bits -- AA_CONFORMANCE at agnus_beamcounter\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red (or, "
+                      "for SYNC-POLARITY-BITS-CHANGE-THE-PINS, whose baseline "
+                      "is already red, green), the others must keep their "
+                      "baseline verdict\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
         Harness h;
         const bool hard0 = h.harddis(), beam0 = h.varbeamen();
         const std::vector<uint8_t> t = h.sync_trace();
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 samples
-        // a single colour clock instead of a line, so no pin can be seen to
-        // move and the trace has one level rather than two.
-        const std::vector<uint8_t> t2 = mutate ? std::vector<uint8_t>(t.begin(),
-                                                                      t.begin() + 1)
-                                               : t;
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red selecting this
+        // assertion's own id samples a single colour clock instead of a line,
+        // so no pin can be seen to move and the trace has one level rather
+        // than two.
+        const std::vector<uint8_t> t2 = mutating("FIXTURE-DELIVERS-KNOWN-VALUE")
+                                             ? std::vector<uint8_t>(t.begin(), t.begin() + 1)
+                                             : t;
         c.note(std::string("out of reset harddis_out is ") + (hard0 ? "1" : "0") +
                ", varbeamen_out is " + (beam0 ? "1" : "0") +
                "; over a line _hsync takes " + std::to_string(levels(t2, 1)) +
@@ -212,7 +232,7 @@ int main(int argc, char** argv) {
     // --- 2. HARDDIS at bit 14 reaches the hard-stop pin ---------------------
     {
         Harness h;
-        // MUTATION HARDDIS-AT-BIT-14 stimulus red MUTATE=1 writes bit 13
+        // MUTATION HARDDIS-AT-BIT-14 stimulus red selecting this assertion's own id writes bit 13
         // instead. That is LPENDIS, whose wire this RTL comments out, so the
         // pin does not move.
         const bool before = h.harddis();
@@ -237,7 +257,7 @@ int main(int argc, char** argv) {
     // --- 3. VARBEAMEN at bit 7 reaches its own pin --------------------------
     {
         Harness h;
-        // MUTATION VARBEAMEN-AT-BIT-7 stimulus red MUTATE=1 writes bit 14
+        // MUTATION VARBEAMEN-AT-BIT-7 stimulus red selecting this assertion's own id writes bit 14
         // instead, which is HARDDIS and does not reach this pin.
         const bool before = h.varbeamen();
         h.write(A_BEAMCON0, m_beam);
@@ -260,7 +280,7 @@ int main(int argc, char** argv) {
     // --- 4. And the register only takes the write on the newer chip set -----
     {
         Harness h(m_ecs ? true : false);
-        // MUTATION BEAMCON0-WRITE-IS-CHIPSET-GATED stimulus red MUTATE=1 builds
+        // MUTATION BEAMCON0-WRITE-IS-CHIPSET-GATED stimulus red selecting this assertion's own id builds
         // the fixture with ecs high, so the write lands and the pin moves.
         h.write(A_BEAMCON0, HARDDIS);
         const bool after = h.harddis();
@@ -287,12 +307,14 @@ int main(int argc, char** argv) {
         // assertion's baseline is RED: the three wires that would read the
         // bits are commented out, so the pins cannot move and no stimulus
         // mutation can make it redder. The mutation goes the other way and
-        // must make it GREEN -- MUTATE=1 starts the second trace three colour
-        // clocks later, which does move the pins relative to the first, so
-        // the comparison is shown able to see a difference when there is one.
-        // (Writing HTOTAL was tried first and changed nothing, because the
-        // line length is only consulted once VARBEAMEN is set.)
-        if (mutate) for (int i = 0; i < 3; ++i) b.cck_tick();
+        // must make it GREEN -- selecting this assertion's own id starts the
+        // second trace three colour clocks later, which does move the pins
+        // relative to the first, so the comparison is shown able to see a
+        // difference when there is one. (Writing HTOTAL was tried first and
+        // changed nothing, because the line length is only consulted once
+        // VARBEAMEN is set.)
+        if (mutating("SYNC-POLARITY-BITS-CHANGE-THE-PINS"))
+            for (int i = 0; i < 3; ++i) b.cck_tick();
         b.write(A_BEAMCON0, m_pol);
         const std::vector<uint8_t> flipped = b.sync_trace();
 

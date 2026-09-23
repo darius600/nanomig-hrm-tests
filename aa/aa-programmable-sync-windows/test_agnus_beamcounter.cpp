@@ -56,10 +56,18 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -204,24 +212,46 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: a written value, a written address, or the one
-    // BEAMCON0 bit that decides whether a limit register is consulted.
-    const uint16_t m_varb  = mutate ? (uint16_t)0u : VARBEAMEN;           // 1,2,3,7,8
-    const uint16_t m_xcell = mutate ? (uint16_t)0x0000u                   // 4
-                                    : (uint16_t)0xFF00u;
-    const uint16_t m_gate  = mutate ? (uint16_t)(VARBEAMEN | VARHSYEN)    // 6
-                                    : (uint16_t)VARBEAMEN;
-    const uint16_t m_hss   = mutate ? A_HSSTOP : A_HSSTRT;                // 5
-    const uint16_t m_lace  = mutate ? (uint16_t)0u : LACE;                // 9
-    const uint16_t m_pal   = mutate ? (uint16_t)0u : PALBIT;              // 10
+    // Per-assertion mutation selector: MUTATE names ONE assertion's own
+    // label, and only that assertion's stimulus site changes.
+    //
+    // FOUR ASSERTIONS USED TO SHARE ONE m_varb FLAG (leaving VARBEAMEN clear
+    // under the boolean MUTATE=1 switch). Split into m_varb_fixture,
+    // m_varb_htotal, m_varb_xcells and m_varb_blanking so each assertion's
+    // own id clears VARBEAMEN for its OWN write only, and cannot disturb the
+    // write any other of the four assertions makes to the same register.
+    const uint16_t m_varb_fixture  = mutating("FIXTURE-RUNS-A-PROGRAMMED-LINE")
+                                          ? (uint16_t)0u : VARBEAMEN;   // 1
+    const uint16_t m_varb_htotal   = mutating("HTOTAL-IS-THE-HIGHEST-COUNT")
+                                          ? (uint16_t)0u : VARBEAMEN;   // 2
+    const uint16_t m_varb_xcells   = mutating("HTOTAL-IGNORES-THE-X-CELLS")
+                                          ? (uint16_t)0u : VARBEAMEN;   // 4
+    const uint16_t m_varb_blanking = mutating("HBSTRT-AND-HBSTOP-BOUND-BLANKING")
+                                          ? (uint16_t)0u : VARBEAMEN;   // 7
+    const uint16_t m_xcell = mutating("HTOTAL-IGNORES-THE-X-CELLS")
+                                  ? (uint16_t)0x0000u : (uint16_t)0xFF00u; // 4
+    const uint16_t m_gate  = mutating("HSSTRT-NEEDS-VARHSYEN-TOO")
+                                  ? (uint16_t)(VARBEAMEN | VARHSYEN)
+                                  : (uint16_t)VARBEAMEN;                   // 6
+    const uint16_t m_hss   = mutating("HSSTRT-AND-HSSTOP-BOUND-HSYNC")
+                                  ? A_HSSTOP : A_HSSTRT;                   // 5
+    const uint16_t m_lace  = mutating("LACE-IS-BPLCON0-BIT-2-AND-RESET-CLEARS-IT")
+                                  ? (uint16_t)0u : LACE;                   // 9
+    const uint16_t m_pal   = mutating("LONG-LINE-TOGGLE-RUNS-UNLESS-PAL-OR-LOLDIS")
+                                  ? (uint16_t)0u : PALBIT;                 // 10
 
     std::cout << "aa-programmable-sync-windows -- AA_CONFORMANCE at "
                  "agnus_beamcounter\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, "
+                      "every other assertion must keep its baseline verdict "
+                      "(LONG-LINES-ARE-ONE-CLOCK-LONGER excepted -- it is red "
+                      "at baseline and its own mutation is inverted, see "
+                      "below)\n";
 
     constexpr int LINE = 80;    // a short line, so a whole one fits in a run
     // Far from the module's own defaults, which put the sync edges at colour
@@ -233,10 +263,15 @@ int main(int argc, char** argv) {
     // --- 1. The fixture runs a line the programmed registers decide ---------
     {
         Harness h;
-        // MUTATION FIXTURE-RUNS-A-PROGRAMMED-LINE stimulus red MUTATE=1
+        // MUTATION FIXTURE-RUNS-A-PROGRAMMED-LINE stimulus red: MUTATE=<id>
         // leaves VARBEAMEN clear, so the module keeps its own line length
-        // and the wrap is not where HTOTAL put it.
-        h.write(A_BEAMCON0, m_varb);
+        // and the wrap is not where HTOTAL put it. MEASURED (WSL/Verilator
+        // 5.052, run alone against this id): FAIL FIXTURE-RUNS-A-
+        // PROGRAMMED-LINE, FAIL LONG-LINES-ARE-ONE-CLOCK-LONGER (already
+        // red at baseline, unaffected by this id), all eight other
+        // assertions PASS, summary "8 passed, 2 failed" (baseline "9
+        // passed, 1 failed"). Only the named assertion moved.
+        h.write(A_BEAMCON0, m_varb_fixture);
         h.write(A_HTOTAL, LINE);
         h.to_line_start();
         const int top = h.line_top();
@@ -252,10 +287,14 @@ int main(int argc, char** argv) {
     // --- 2. HTOTAL is the highest count, so the line is HTOTAL+1 long -------
     {
         Harness h;
-        // MUTATION HTOTAL-IS-THE-HIGHEST-COUNT stimulus red MUTATE=1 leaves
-        // VARBEAMEN clear, so the line is the module's own 227 and not
-        // HTOTAL+1.
-        h.write(A_BEAMCON0, m_varb);
+        // MUTATION HTOTAL-IS-THE-HIGHEST-COUNT stimulus red: MUTATE=<id>
+        // leaves VARBEAMEN clear, so the line is the module's own 227 and
+        // not HTOTAL+1. MEASURED (WSL/Verilator 5.052, run alone against
+        // this id): FAIL HTOTAL-IS-THE-HIGHEST-COUNT, FAIL LONG-LINES-ARE-
+        // ONE-CLOCK-LONGER (already red at baseline, unaffected by this
+        // id), all eight other assertions PASS, summary "8 passed, 2
+        // failed". Only the named assertion moved.
+        h.write(A_BEAMCON0, m_varb_htotal);
         h.write(A_HTOTAL, LINE);
         h.to_line_start();
         int clocks = 0;
@@ -284,10 +323,17 @@ int main(int argc, char** argv) {
         with.to_line_start();
         const int on = with.line_top();
 
-        // MUTATION VARBEAMEN-GATES-THE-LIMIT-REGISTERS stimulus red MUTATE=1
-        // sets VARBEAMEN in the run that is supposed to be without it, so
-        // both runs read HTOTAL and the gate distinguishes nothing.
-        without.write(A_BEAMCON0, mutate ? VARBEAMEN : 0u);
+        // MUTATION VARBEAMEN-GATES-THE-LIMIT-REGISTERS stimulus red:
+        // MUTATE=<id> sets VARBEAMEN in the run that is supposed to be
+        // without it, so both runs read HTOTAL and the gate distinguishes
+        // nothing. MEASURED (WSL/Verilator 5.052, run alone against this
+        // id): FAIL VARBEAMEN-GATES-THE-LIMIT-REGISTERS, FAIL LONG-LINES-
+        // ARE-ONE-CLOCK-LONGER (already red at baseline, unaffected by
+        // this id), all eight other assertions PASS, summary "8 passed, 2
+        // failed". Only the named assertion moved.
+        without.write(A_BEAMCON0,
+                      mutating("VARBEAMEN-GATES-THE-LIMIT-REGISTERS")
+                          ? VARBEAMEN : 0u);
         without.write(A_HTOTAL, LINE);
         without.to_line_start();
         const int off = without.line_top();
@@ -304,10 +350,15 @@ int main(int argc, char** argv) {
     // --- 4. The x cells above bit 7 are not part of the value ---------------
     {
         Harness h;
-        h.write(A_BEAMCON0, m_varb);
-        // MUTATION HTOTAL-IGNORES-THE-X-CELLS stimulus red MUTATE=1 leaves
-        // the x cells clear, so the write is an ordinary one and says
-        // nothing about the eight bits above the value.
+        h.write(A_BEAMCON0, m_varb_xcells);
+        // MUTATION HTOTAL-IGNORES-THE-X-CELLS stimulus red: MUTATE=<id>
+        // leaves the x cells clear, so the write is an ordinary one and says
+        // nothing about the eight bits above the value. MEASURED (WSL/
+        // Verilator 5.052, run alone against this id): FAIL HTOTAL-
+        // IGNORES-THE-X-CELLS, FAIL LONG-LINES-ARE-ONE-CLOCK-LONGER
+        // (already red at baseline, unaffected by this id), all eight
+        // other assertions PASS, summary "8 passed, 2 failed". Only the
+        // named assertion moved.
         h.write(A_HTOTAL, (uint16_t)(LINE | m_xcell));
         h.to_line_start();
         const int top = h.line_top();
@@ -325,9 +376,14 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_BEAMCON0, VARBEAMEN | VARHSYEN);
         h.write(A_HTOTAL, LINE);
-        // MUTATION HSSTRT-AND-HSSTOP-BOUND-HSYNC stimulus red MUTATE=1
+        // MUTATION HSSTRT-AND-HSSTOP-BOUND-HSYNC stimulus red: MUTATE=<id>
         // writes the start position into HSSTOP, so both edges come from
-        // one register and neither lands where the entry says.
+        // one register and neither lands where the entry says. MEASURED
+        // (WSL/Verilator 5.052, run alone against this id): FAIL HSSTRT-
+        // AND-HSSTOP-BOUND-HSYNC, FAIL LONG-LINES-ARE-ONE-CLOCK-LONGER
+        // (already red at baseline, unaffected by this id), all eight
+        // other assertions PASS, summary "8 passed, 2 failed". Only the
+        // named assertion moved.
         h.write(m_hss, SYNC_ON);
         h.write(A_HSSTOP, SYNC_OFF);
         h.to_line_start();
@@ -347,9 +403,13 @@ int main(int argc, char** argv) {
     // --- 6. The sync pair needs the second BEAMCON0 bit as well -------------
     {
         Harness h;
-        // MUTATION HSSTRT-NEEDS-VARHSYEN-TOO stimulus red MUTATE=1 sets
+        // MUTATION HSSTRT-NEEDS-VARHSYEN-TOO stimulus red: MUTATE=<id> sets
         // VARHSYEN as well, so the sync pair IS read and the edge lands on
-        // HSSTRT after all.
+        // HSSTRT after all. MEASURED (WSL/Verilator 5.052, run alone
+        // against this id): FAIL HSSTRT-NEEDS-VARHSYEN-TOO, FAIL LONG-
+        // LINES-ARE-ONE-CLOCK-LONGER (already red at baseline, unaffected
+        // by this id), all eight other assertions PASS, summary "8
+        // passed, 2 failed". Only the named assertion moved.
         h.write(A_BEAMCON0, m_gate);      // VARBEAMEN only, unless mutating
         h.write(A_HTOTAL, LINE);
         h.write(A_HSSTRT, SYNC_ON);
@@ -369,11 +429,16 @@ int main(int argc, char** argv) {
     // --- 7. HBSTRT and HBSTOP are the two edges of blanking -----------------
     {
         Harness h;
-        h.write(A_BEAMCON0, m_varb);
+        h.write(A_BEAMCON0, m_varb_blanking);
         h.write(A_HTOTAL, LINE);
-        // MUTATION HBSTRT-AND-HBSTOP-BOUND-BLANKING stimulus red MUTATE=1
-        // leaves VARBEAMEN clear through m_varb above, so the module keeps
-        // its own blanking window.
+        // MUTATION HBSTRT-AND-HBSTOP-BOUND-BLANKING stimulus red:
+        // MUTATE=<id> leaves VARBEAMEN clear through m_varb_blanking above,
+        // so the module keeps its own blanking window. MEASURED (WSL/
+        // Verilator 5.052, run alone against this id): FAIL HBSTRT-AND-
+        // HBSTOP-BOUND-BLANKING, FAIL LONG-LINES-ARE-ONE-CLOCK-LONGER
+        // (already red at baseline, unaffected by this id), all eight
+        // other assertions PASS, summary "8 passed, 2 failed". Only the
+        // named assertion moved.
         h.write(A_HBSTRT, BLANK_ON);
         h.write(A_HBSTOP, BLANK_OFF);
         h.to_line_start();
@@ -415,9 +480,14 @@ int main(int argc, char** argv) {
     {
         Harness h;
         const bool after_reset = h.dut->lace != 0;
-        // MUTATION LACE-IS-BPLCON0-BIT-2-AND-RESET-CLEARS-IT stimulus red
-        // MUTATE=1 writes BPLCON0 with bit 2 clear, so the output never
-        // rises and the write proves nothing.
+        // MUTATION LACE-IS-BPLCON0-BIT-2-AND-RESET-CLEARS-IT stimulus red:
+        // MUTATE=<id> writes BPLCON0 with bit 2 clear, so the output never
+        // rises and the write proves nothing. MEASURED (WSL/Verilator
+        // 5.052, run alone against this id): FAIL LACE-IS-BPLCON0-BIT-2-
+        // AND-RESET-CLEARS-IT, FAIL LONG-LINES-ARE-ONE-CLOCK-LONGER
+        // (already red at baseline, unaffected by this id), all eight
+        // other assertions PASS, summary "8 passed, 2 failed". Only the
+        // named assertion moved.
         h.write(A_BPLCON0, m_lace);
         const bool after_write = h.dut->lace != 0;
         c.note(std::string("lace reads ") + (after_reset ? "1" : "0") +
@@ -439,9 +509,14 @@ int main(int argc, char** argv) {
     {
         Harness ntsc(true), pal(false);
         ntsc.write(A_BEAMCON0, VARBEAMEN);           // PAL bit low, LOLDIS low
-        // MUTATION LONG-LINE-TOGGLE-RUNS-UNLESS-PAL-OR-LOLDIS stimulus red
-        // MUTATE=1 leaves the PAL bit clear in the second run as well, so
+        // MUTATION LONG-LINE-TOGGLE-RUNS-UNLESS-PAL-OR-LOLDIS stimulus red:
+        // MUTATE=<id> leaves the PAL bit clear in the second run as well, so
         // both runs toggle and the condition distinguishes nothing.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // LONG-LINE-TOGGLE-RUNS-UNLESS-PAL-OR-LOLDIS, FAIL LONG-LINES-ARE-
+        // ONE-CLOCK-LONGER (already red at baseline, unaffected by this
+        // id), all eight other assertions PASS, summary "8 passed, 2
+        // failed". Only the named assertion moved.
         pal.write(A_BEAMCON0, (uint16_t)(VARBEAMEN | m_pal));
         int toggles_ntsc = 0, toggles_pal = 0;
         bool was_n = (ntsc.read(A_VPOSR) & LONG_LINE) != 0;
@@ -474,12 +549,27 @@ int main(int argc, char** argv) {
         h.to_line_start();
         const int first = h.line_length();
         const int second = h.line_length();
-        // MUTATION LONG-LINES-ARE-ONE-CLOCK-LONGER oracle green This assertion
-        // is RED against the tree, so its mutation is inverted: MUTATE=1 asks
-        // the module for the length it actually produces instead of the one
-        // the entry promises, and the assertion goes green. A mutation that
-        // made a red redder would prove nothing about the measurement.
-        const int want = mutate ? second : first + 1;
+        // MUTATION LONG-LINES-ARE-ONE-CLOCK-LONGER oracle green: this
+        // assertion is RED against the tree at baseline (a genuine
+        // published finding), so its mutation is inverted, the same
+        // convention this suite already uses for a baseline red (see
+        // ch3-beam-counters-and-blanking's VBLANK-DURATION-PAL-DISAGREES-
+        // WITH-MANUAL and this repository's acceptance record
+        // hrm-testpipeline/acceptance/aa-s1.json, "mutation_gate": "...
+        // aa-programmable-sync-windows and aa-disk-status-bits carry red
+        // baselines, whose mutations are inverted and go green"): selecting
+        // this assertion's own id asks the module for the length it
+        // actually produces instead of the one the entry promises, and the
+        // assertion goes green. A mutation that made a red redder would
+        // prove nothing about the measurement. MEASURED (WSL/Verilator
+        // 5.052, run alone against this id): PASS LONG-LINES-ARE-ONE-CLOCK-
+        // LONGER (the only assertion whose verdict FLIPS -- from red to
+        // green -- since it starts red at baseline), all nine other
+        // assertions keep their baseline PASS, summary "10 passed, 0
+        // failed" (baseline "9 passed, 1 failed"). Only the named assertion
+        // moved.
+        const int want = mutating("LONG-LINES-ARE-ONE-CLOCK-LONGER")
+                              ? second : first + 1;
         c.note("with the toggle running, two consecutive lines take " +
                dec(first) + " and " + dec(second) + " colour clocks; the "
                "entry says every other line is HTOTAL+2, which is " +

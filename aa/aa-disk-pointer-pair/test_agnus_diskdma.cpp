@@ -57,10 +57,22 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. Every OTHER assertion stays on its real stimulus and is a
+// live control on each run.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -131,25 +143,26 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: the address written, the data pattern, or the
-    // input that selects which data address is driven out.
+    // MUTATION. Each guard below tests its own assertion's label and moves
+    // ONE thing: the address written, the data pattern, or the input that
+    // selects which data address is driven out. MUTATE=<label> selects
+    // exactly one.
     //
     // NO GUARD SWAPS THE PAIR SYMMETRICALLY. Exchanging DSKPTH with DSKPTL in
     // both directions writes both halves and the pointer ends up holding the
     // same twenty bits by the mirrored route, which is how the Copper package
     // once kept four of six assertions green under mutation.
-    const uint16_t m_pth   = mutate ? A_DSKPTL : A_DSKPTH;   // 2: high half never written
-    const uint16_t m_ptl   = mutate ? A_DSKPTH : A_DSKPTL;   // 3: low half never written
+    const uint16_t m_pth   = mutating("DSKPTH-AT-020") ? A_DSKPTL : A_DSKPTH;   // 2: high half never written
+    const uint16_t m_ptl   = mutating("DSKPTL-AT-022") ? A_DSKPTH : A_DSKPTL;   // 3: low half never written
     // 4 and 5 mutate the DATA, not the address: the proposition under test is
     // which bits of the word each half takes, so the mutation has to move bits.
-    const uint16_t m_hi_pat = mutate ? 0x001F : 0xFFE0;      // 4: the ignored bits stop being ignored
-    const uint16_t m_lo_pat = mutate ? 0xFFFF : 0x0001;      // 5: likewise for DB0
-    const bool     m_dmas   = mutate ? true : false;         // 6: wr inverted
-    const bool     m_dmas2  = mutate ? false : true;         // 7: wr inverted
-    const uint16_t m_live   = mutate ? A_DSKPTL : A_DSKPTH;  // liveness, same shape
+    const uint16_t m_hi_pat = mutating("DSKPT-HIGH-TAKES-DB0-DB4") ? 0x001F : 0xFFE0;      // 4: the ignored bits stop being ignored
+    const uint16_t m_lo_pat = mutating("DSKPT-LOW-TAKES-DB1-DB15") ? 0xFFFF : 0x0001;      // 5: likewise for DB0
+    const bool     m_dmas   = mutating("DSKDATR-AT-008") ? true : false;         // 6: wr inverted
+    const bool     m_dmas2  = mutating("DSKDAT-AT-026") ? false : true;         // 7: wr inverted
+    const uint16_t m_live   = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? A_DSKPTL : A_DSKPTH;  // liveness, same shape
 
     c.record("oracle: AA specification, PDF p.6, the address-ordered register "
              "list and its legend. DSKDATR $008 ER P, DSKPTH $020 W A, DSKPTL "
@@ -177,8 +190,9 @@ int main(int argc, char** argv) {
     // --- FIXTURE LIVENESS ---------------------------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 writes
-        // the high half at $022, so the top five bits stay zero.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // assertion's own id writes the high half at $022, so the top five
+        // bits stay zero.
         h.write(m_live, 0x0015);
         h.write(A_DSKPTL, 0xACE4);
         c.note("high half written $0015 at $020 and low half $ACE4 at $022; "
@@ -196,8 +210,9 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_DSKPTL, 0x2222);
         const uint32_t low_before = h.low15();
-        // MUTATION DSKPTH-AT-020 stimulus red MUTATE=1 writes at $022, so the
-        // high half keeps its zero and the low half is overwritten.
+        // MUTATION DSKPTH-AT-020 stimulus red: selecting this assertion's
+        // own id writes at $022, so the high half keeps its zero and the
+        // low half is overwritten.
         h.write(m_pth, 0x001B);
         c.note("after $001B at $020, high5 = " + hex(h.high5())
                + ", low15 = " + hex(h.low15()) + " (was " + hex(low_before) + ")");
@@ -214,8 +229,8 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_DSKPTH, 0x000D);
         const uint32_t high_before = h.high5();
-        // MUTATION DSKPTL-AT-022 stimulus red MUTATE=1 writes at $020, so the
-        // low half keeps its zero.
+        // MUTATION DSKPTL-AT-022 stimulus red: selecting this assertion's
+        // own id writes at $020, so the low half keeps its zero.
         h.write(m_ptl, 0x5556);
         c.note("after $5556 at $022, low15 = " + hex(h.low15())
                + ", high5 = " + hex(h.high5()) + " (was " + hex(high_before) + ")");
@@ -230,9 +245,10 @@ int main(int argc, char** argv) {
     // --- 4. the HIGH word of a `+` pair uses DB0-DB4 and nothing above ------
     {
         Harness h;
-        // MUTATION DSKPT-HIGH-TAKES-DB0-DB4 oracle red MUTATE=1 writes $001F
-        // where the assertion needs a word whose low five bits are clear, so
-        // the "bits above DB4 are ignored" reading becomes 0x1F.
+        // MUTATION DSKPT-HIGH-TAKES-DB0-DB4 oracle red: selecting this
+        // assertion's own id writes $001F where the assertion needs a word
+        // whose low five bits are clear, so the "bits above DB4 are
+        // ignored" reading becomes 0x1F.
         h.write(A_DSKPTH, m_hi_pat);
         const uint32_t ignored = h.high5();
         h.write(A_DSKPTH, 0x001F);
@@ -250,8 +266,9 @@ int main(int argc, char** argv) {
     // --- 5. the LOW word of a `+` pair uses DB1-DB15, so DB0 is ignored -----
     {
         Harness h;
-        // MUTATION DSKPT-LOW-TAKES-DB1-DB15 oracle red MUTATE=1 writes $FFFF
-        // where the assertion needs a word with only DB0 set.
+        // MUTATION DSKPT-LOW-TAKES-DB1-DB15 oracle red: selecting this
+        // assertion's own id writes $FFFF where the assertion needs a word
+        // with only DB0 set.
         h.write(A_DSKPTL, m_lo_pat);
         const uint32_t ignored = h.low15();
         h.write(A_DSKPTL, 0xFFFF);
@@ -269,8 +286,8 @@ int main(int argc, char** argv) {
     // --- 6. DSKDATR is the address driven out for a read --------------------
     {
         Harness h;
-        // MUTATION DSKDATR-AT-008 stimulus red MUTATE=1 raises dmas, which
-        // clears wr and drives DSKDAT instead.
+        // MUTATION DSKDATR-AT-008 stimulus red: selecting this assertion's
+        // own id raises dmas, which clears wr and drives DSKDAT instead.
         const uint8_t got = h.reg_addr_out(m_dmas);
         c.note("with dmas low, reg_address_out = " + hex(got) + ", expected "
                + hex(A_DSKDATR >> 1));
@@ -285,8 +302,8 @@ int main(int argc, char** argv) {
     // --- 7. DSKDAT is the address driven out for a write --------------------
     {
         Harness h;
-        // MUTATION DSKDAT-AT-026 stimulus red MUTATE=1 lowers dmas, which
-        // raises wr and drives DSKDATR instead.
+        // MUTATION DSKDAT-AT-026 stimulus red: selecting this assertion's
+        // own id lowers dmas, which raises wr and drives DSKDATR instead.
         const uint8_t got = h.reg_addr_out(m_dmas2);
         c.note("with dmas high, reg_address_out = " + hex(got) + ", expected "
                + hex(A_DSKDAT >> 1));

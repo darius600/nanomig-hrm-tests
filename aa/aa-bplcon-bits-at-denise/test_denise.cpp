@@ -39,10 +39,23 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. A single on/off flag reddened every assertion at once, which
+// cannot show that the mutation recorded for one assertion leaves the others
+// green.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -133,29 +146,40 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: an address written, a bit written, or the bank a
-    // colour is read from.
-    const uint16_t m_con0 = mutate ? A_BPLCON1 : A_BPLCON0;   // 2, 3
-    const uint16_t m_rd   = mutate ? RDRAM     : 0u;          // 4
-    const int      m_bank = mutate ? 2         : 5;           // 5
-    const uint16_t m_live = mutate ? (uint16_t)0u : RDRAM;    // 1
+    // Each guard below is keyed to its OWN assertion's id: MUTATE=<id> moves
+    // ONE thing in that assertion's stimulus -- an address written, a bit
+    // written, or the bank a colour is read from -- and every other assertion
+    // runs its real stimulus.
+    //
+    // m_con0_hires and m_con0_shres used to be the SAME variable (m_con0)
+    // feeding both assertion 2 and assertion 3's stimulus, so selecting one
+    // assertion's mutation also disturbed the other's. Split so each has its
+    // own id and its own default.
+    const uint16_t m_con0_hires = mutating("HIRES-IS-BPLCON0-BIT-15") ? A_BPLCON1 : A_BPLCON0;
+    const uint16_t m_con0_shres = mutating("SHRES-IS-BPLCON0-BIT-6") ? A_BPLCON1 : A_BPLCON0;
+    const uint16_t m_rd   = mutating("RDRAM-IS-BPLCON2-BIT-8") ? RDRAM : 0u;
+    const int      m_bank = mutating("BANK-IS-BPLCON3-BITS-15-TO-13") ? 2 : 5;
+    const uint16_t m_live = mutating("FIXTURE-REACHES-THE-COLOUR-TABLE") ? (uint16_t)0u : RDRAM;
 
     constexpr uint16_t COL_A = 0x0F3C;
     constexpr uint16_t COL_B = 0x0A55;
 
     std::cout << "aa-bplcon-bits-at-denise -- AA_CONFORMANCE at denise\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, the "
+                      "others must keep their baseline verdict\n";
 
     // --- 1. The fixture puts a colour in and gets it back -------------------
     {
         Harness h;
         h.put(0, 3, COL_A);
-        // MUTATION FIXTURE-REACHES-THE-COLOUR-TABLE stimulus red MUTATE=1
-        // reads with RDRAM low, which is the state the table takes writes in
-        // and answers no reads in, so nothing comes back.
+        // MUTATION FIXTURE-REACHES-THE-COLOUR-TABLE stimulus red selecting
+        // this assertion's own id reads with RDRAM low, which is the state
+        // the table takes writes in and answers no reads in, so nothing
+        // comes back.
         const uint16_t got = h.get(0, 3, m_live);
         c.note("colour entry 3 of bank 0 was written " + hex(COL_A) +
                " and reads back " + hex(got));
@@ -169,10 +193,10 @@ int main(int argc, char** argv) {
     {
         Harness h;
         const bool before = h.dut->hires != 0;
-        // MUTATION HIRES-IS-BPLCON0-BIT-15 stimulus red MUTATE=1 writes
-        // BPLCON1's address instead, so the bit never reaches BPLCON0 and the
-        // output stays where reset left it.
-        h.write(m_con0, HIRES);
+        // MUTATION HIRES-IS-BPLCON0-BIT-15 stimulus red selecting this
+        // assertion's own id writes BPLCON1's address instead, so the bit
+        // never reaches BPLCON0 and the output stays where reset left it.
+        h.write(m_con0_hires, HIRES);
         const bool after = h.dut->hires != 0;
         c.note(std::string("hires reads ") + (before ? "1" : "0") +
                " after reset and " + (after ? "1" : "0") +
@@ -188,10 +212,10 @@ int main(int argc, char** argv) {
     {
         Harness h;
         const bool before = h.dut->shres != 0;
-        // MUTATION SHRES-IS-BPLCON0-BIT-6 stimulus red MUTATE=1 writes
-        // BPLCON1's address, so the bit never reaches BPLCON0 and the
-        // output never rises.
-        h.write(m_con0, SHRES);
+        // MUTATION SHRES-IS-BPLCON0-BIT-6 stimulus red selecting this
+        // assertion's own id writes BPLCON1's address, so the bit never
+        // reaches BPLCON0 and the output never rises.
+        h.write(m_con0_shres, SHRES);
         const bool after = h.dut->shres != 0;
         h.write(A_BPLCON0, 0);
         const bool cleared = h.dut->shres != 0;
@@ -211,9 +235,9 @@ int main(int argc, char** argv) {
         Harness h;
         h.put(0, 7, COL_B);
         const uint16_t open = h.get(0, 7, RDRAM);
-        // MUTATION RDRAM-IS-BPLCON2-BIT-8 stimulus red MUTATE=1 leaves RDRAM
-        // set for the closed trial as well, so both reads answer and the bit
-        // distinguishes nothing.
+        // MUTATION RDRAM-IS-BPLCON2-BIT-8 stimulus red selecting this
+        // assertion's own id leaves RDRAM set for the closed trial as well,
+        // so both reads answer and the bit distinguishes nothing.
         const uint16_t shut = h.get(0, 7, m_rd);
         c.note("with BPLCON2 bit 8 set the colour address reads " + hex(open) +
                "; with it clear it reads " + hex(shut));
@@ -228,9 +252,9 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.put(2, 5, COL_A);
-        // MUTATION BANK-IS-BPLCON3-BITS-15-TO-13 stimulus red MUTATE=1
-        // sends the second colour to the FIRST bank, so one bank holds
-        // both writes and the other holds neither.
+        // MUTATION BANK-IS-BPLCON3-BITS-15-TO-13 stimulus red selecting this
+        // assertion's own id sends the second colour to the FIRST bank, so
+        // one bank holds both writes and the other holds neither.
         h.put(m_bank, 5, COL_B);
         const uint16_t two = h.get(2, 5);
         const uint16_t other = h.get(5, 5);

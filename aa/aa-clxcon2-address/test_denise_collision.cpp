@@ -40,8 +40,18 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector: MUTATE names ONE assertion's own label,
+// and only that assertion's stimulus site changes.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 class Checks {
 public:
@@ -118,31 +128,21 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() below is guarded so that MUTATE=1 forces it
-    // red, and no guard touches the comparison itself -- each swaps the ADDRESS
-    // WRITTEN, which is the proposition under test in all three cases.
+    // MUTATION. Every expect() below is guarded so that its own id forces it
+    // red, and no guard touches the comparison itself -- each swaps the
+    // ADDRESS WRITTEN, which is the proposition under test in all cases.
     //
     // Measured 21.09.2026: the first version of this file guarded only the
     // first assertion, and `make mutate` came back "2 passed, 1 failed". A
     // mutation run that leaves assertions green is not a weaker gate, it is a
-    // gate that has already failed -- those two were not shown capable of going
-    // red at all. One guard per assertion, and `make mutate` must report
-    // 0 passed.
-    const uint16_t addr_under_test = mutate ? A_BPLCON4 : A_CLXCON2;
-    // Section 2 is the inverse control: it writes the address the document's
-    // other half gives and expects nothing to happen. Swapping it for the
-    // address that DOES decode makes something happen, and the control fails.
-    const uint16_t control_addr    = mutate ? A_CLXCON2 : A_BPLCON4;
-    // Section 3 clears CLXCON2 with a CLXCON write. Writing CLXDAT instead
-    // clears nothing, so the register stays armed and the assertion fails.
-    // CLXDAT is a read-and-clear data register, not a control one, so this is
-    // a write the module accepts and ignores rather than an invalid address.
-    const uint16_t clearing_addr   = mutate ? A_CLXDAT : A_CLXCON;
-    // Section 5 reads one register away; section 6 writes one register away.
-    const uint16_t A_CLXDAT_UT     = mutate ? A_NEIGHBOUR : A_CLXDAT;
-    const uint16_t A_CLXCON_UT     = mutate ? 0x09A       : A_CLXCON;
+    // gate that has already failed -- those two were not shown capable of
+    // going red at all. One guard per assertion, and each id in `make mutate`
+    // must report exactly its own assertion red.
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red\n";
 
     // No claim id on this line. A uid on a RECORDED line means the claim was
     // declined at this boundary, and the coverage ledger reads it that way --
@@ -157,17 +157,19 @@ int main(int argc, char** argv) {
     // --- 1. Is CLXCON2 decoded where the address list says it is?
     {
         Harness h(true);
+        // MUTATION CLXCON2-AT-10E stimulus red: selecting this id writes
+        // $10C instead of $10E, so the bitplane match does not change and
+        // the assertion that CLXCON2 decodes at $10E goes red.
+        const uint16_t addr_under_test = mutating("CLXCON2-AT-10E")
+                                              ? A_BPLCON4 : A_CLXCON2;
         const bool before = h.collides(0x7F);   // bit 7 low
         h.write(addr_under_test, 0x00C3);       // enable and match planes 7,8
         const bool after = h.collides(0x7F);
         c.note(std::string("with clxcon2 unwritten, bpldata=0x7F collides: ")
                + (before ? "yes" : "no"));
         c.note(std::string("after writing $00C3 to $") +
-               (mutate ? "10C" : "10E") + ", bpldata=0x7F collides: "
-               + (after ? "yes" : "no"));
-        // MUTATION CLXCON2-AT-10E stimulus red MUTATE=1 writes $10C instead
-        // of $10E, so the bitplane match does not change and the assertion
-        // that CLXCON2 decodes at $10E goes red.
+               (mutating("CLXCON2-AT-10E") ? "10C" : "10E") +
+               ", bpldata=0x7F collides: " + (after ? "yes" : "no"));
         c.expect(before && !after,
                  "CLXCON2-AT-10E: a write to $10E changes the bitplane match, "
                  "so CLXCON2 is decoded at $10E as the address list states "
@@ -177,12 +179,18 @@ int main(int argc, char** argv) {
     // --- 2. The other address the document gives, as an inverse control.
     {
         Harness h(true);
+        // Section 2 is the inverse control: it writes the address the
+        // document's other half gives and expects nothing to happen.
+        // Swapping it for the address that DOES decode makes something
+        // happen, and the control fails.
+        // MUTATION CLXCON2-NOT-AT-10C stimulus red: selecting this id writes
+        // $10E instead of $10C, so the inverse control does see a change and
+        // goes red -- the control is only a control while $10C is inert.
+        const uint16_t control_addr = mutating("CLXCON2-NOT-AT-10C")
+                                           ? A_CLXCON2 : A_BPLCON4;
         const bool before = h.collides(0x7F);
         h.write(control_addr, 0x00C3);
         const bool after = h.collides(0x7F);
-        // MUTATION CLXCON2-NOT-AT-10C stimulus red MUTATE=1 writes $10E
-        // instead of $10C, so the inverse control does see a change and goes
-        // red -- the control is only a control while $10C is inert.
         c.expect(before && after,
                  "CLXCON2-NOT-AT-10C: a write to $10C does NOT change the "
                  "bitplane match, so the alphabetical entry's address is not "
@@ -201,15 +209,20 @@ int main(int argc, char** argv) {
         (void)h.collides(0x7F);
         h.write(A_CLXCON2, 0x00C3);
         const bool armed = h.collides(0x7F);
+        // Writing CLXDAT instead of CLXCON clears nothing, so the register
+        // stays armed and the assertion fails. CLXDAT is a read-and-clear
+        // data register, not a control one, so this is a write the module
+        // accepts and ignores rather than an invalid address.
+        // MUTATION CLXCON2-CLEARED-BY-CLXCON stimulus red: selecting this id
+        // writes CLXDAT instead of CLXCON.
+        const uint16_t clearing_addr = mutating("CLXCON2-CLEARED-BY-CLXCON")
+                                            ? A_CLXDAT : A_CLXCON;
         h.write(clearing_addr, 0x0FFF);
         const bool after_clxcon = h.collides(0x7F);
         c.note(std::string("with CLXCON2 armed, bpldata=0x7F collides: ")
                + (armed ? "yes" : "no"));
         c.note(std::string("after a CLXCON write, bpldata=0x7F collides: ")
                + (after_clxcon ? "yes" : "no"));
-        // MUTATION CLXCON2-CLEARED-BY-CLXCON stimulus red MUTATE=1 writes
-        // CLXDAT instead of CLXCON. CLXDAT clears nothing in CLXCON2, so the
-        // register stays armed and the clearing assertion goes red.
         c.expect(!armed && after_clxcon,
                  "CLXCON2-CLEARED-BY-CLXCON: a write to CLXCON clears CLXCON2, "
                  "as p. 4 states [claims: opus:AA-clxcon2.c3]");
@@ -225,6 +238,11 @@ int main(int argc, char** argv) {
         // (denise_collision.v:117), so bit 15 is set on a real read and the
         // whole word is zero anywhere else. That makes the address falsifiable
         // without needing to know what collided.
+        // MUTATION CLXDAT-AT-00E stimulus red: selecting this id reads at
+        // $010 instead of $00E, so the read that should answer returns the
+        // neighbour's silence.
+        const uint16_t A_CLXDAT_UT = mutating("CLXDAT-AT-00E")
+                                          ? A_NEIGHBOUR : A_CLXDAT;
         h.dut->reg_address_in = (A_CLXDAT_UT >> 1) & 0xFF;
         h.dut->eval();
         const uint16_t at_clxdat = h.dut->data_out;
@@ -236,8 +254,6 @@ int main(int argc, char** argv) {
         c.note("data_out reading at $00E: 0x" + std::to_string(at_clxdat)
                + " (bit 15 " + (((at_clxdat >> 15) & 1) ? "set" : "clear")
                + "), at $010: 0x" + std::to_string(at_neighbour));
-        // MUTATION CLXDAT-AT-00E stimulus red MUTATE=1 reads at $010 instead of
-        // $00E, so the read that should answer returns the neighbour's silence.
         c.expect(((at_clxdat >> 15) & 1) == 1 && at_neighbour == 0,
                  "CLXDAT-AT-00E: this module answers a read at $00E and is "
                  "silent at $010, so CLXDAT is decoded where the address list "
@@ -251,13 +267,16 @@ int main(int argc, char** argv) {
         (void)h.collides(0x7F);
         h.write(A_CLXCON2, 0x00C3);             // arm planes 7 and 8
         const bool armed = h.collides(0x7F);
+        // MUTATION CLXCON-AT-098 stimulus red: selecting this id writes at
+        // $09A instead of $098, so nothing clears and the armed state
+        // survives.
+        const uint16_t A_CLXCON_UT = mutating("CLXCON-AT-098")
+                                          ? 0x09A : A_CLXCON;
         h.write(A_CLXCON_UT, 0x0FFF);
         const bool after = h.collides(0x7F);
         c.note(std::string("with CLXCON2 armed: collides ")
                + (armed ? "yes" : "no") + "; after a write at $098: "
                + (after ? "yes" : "no"));
-        // MUTATION CLXCON-AT-098 stimulus red MUTATE=1 writes at $09A instead
-        // of $098, so nothing clears and the armed state survives.
         c.expect(!armed && after,
                  "CLXCON-AT-098: a write at $098 clears CLXCON2 and a write at "
                  "$09A does not, so CLXCON is decoded where the address list "

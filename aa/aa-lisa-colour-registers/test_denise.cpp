@@ -52,10 +52,18 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -138,18 +146,20 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: the address read, the control bit that opens the
-    // readback path, or the bank the table is addressed in.
-    const uint16_t m_lisaid = mutate ? A_BPLCON2 : A_LISAID;   // 2: reads a write-only address
-    const bool     m_aga    = mutate ? true : false;           // 3: the non-AGA half
-    const uint16_t m_col    = mutate ? color_addr(3) : color_addr(7); // 4: reads another entry
-    const uint16_t m_rdram  = mutate ? RDRAM : 0u;             // 5: never closes the path
-    const uint16_t m_bank   = mutate ? 0u : (1u << BANK_SH);   // 6: never leaves bank 0
-    const uint16_t m_live   = mutate ? A_BPLCON2 : A_LISAID;   // liveness
+    // Per-assertion mutation selector: MUTATE names ONE assertion's own
+    // label, and only that assertion's stimulus site changes.
+    const uint16_t m_lisaid = mutating("LISAID-AT-07C") ? A_BPLCON2 : A_LISAID;  // 2
+    const bool     m_aga    = mutating("LISAID-IDENTIFIES-THE-CHIP-SET") ? true : false; // 3
+    const uint16_t m_col    = mutating("COLOUR-TABLE-AT-180")
+                                   ? color_addr(3) : color_addr(7);              // 4
+    const uint16_t m_rdram  = mutating("BPLCON2-AT-104-OPENS-READBACK") ? RDRAM : 0u; // 5
+    const uint16_t m_bank   = mutating("BPLCON3-AT-106-SELECTS-THE-BANK")
+                                   ? 0u : (1u << BANK_SH);                       // 6
+    const uint16_t m_live   = mutating("FIXTURE-DELIVERS-KNOWN-VALUE")
+                                   ? A_BPLCON2 : A_LISAID;                       // liveness
 
     c.record("oracle: AA specification, PDF pp. 6, 8 and 9, the address-ordered "
              "register list. LISAID $07C, BPLCON2 $104, BPLCON3 $106, BPLCON4 "
@@ -170,8 +180,12 @@ int main(int argc, char** argv) {
     // --- FIXTURE LIVENESS ---------------------------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 reads
-        // $104, which is write-only and answers zero.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: MUTATE=<id>
+        // reads $104, which is write-only and answers zero. MEASURED (WSL/
+        // Verilator 5.052, run alone against this id): FAIL FIXTURE-
+        // DELIVERS-KNOWN-VALUE, all five other assertions PASS, summary "5
+        // passed, 1 failed" (baseline "6 passed, 0 failed"). Only the named
+        // assertion moved.
         const uint16_t got = h.read(m_live);
         c.note("reading $07C on an AGA part returns " + hex(got));
         c.expect(got != 0,
@@ -184,8 +198,11 @@ int main(int argc, char** argv) {
     // --- 2. LISAID answers at $07C and nowhere else -------------------------
     {
         Harness h;
-        // MUTATION LISAID-AT-07C stimulus red MUTATE=1 reads $104, which is
-        // write-only at this boundary and answers zero.
+        // MUTATION LISAID-AT-07C stimulus red: MUTATE=<id> reads $104, which
+        // is write-only at this boundary and answers zero. MEASURED (WSL/
+        // Verilator 5.052, run alone against this id): FAIL LISAID-AT-07C,
+        // all five other assertions PASS, summary "5 passed, 1 failed".
+        // Only the named assertion moved.
         const uint16_t got = h.read(m_lisaid);
         const uint16_t elsewhere = h.read(0x0A0);
         c.note("$07C reads " + hex(got) + ", an address this module does not "
@@ -202,8 +219,12 @@ int main(int argc, char** argv) {
         Harness ecs(false, true);
         Harness ocs(false, false);
         const uint16_t a = aga.read(A_LISAID);
-        // MUTATION LISAID-IDENTIFIES-THE-CHIP-SET stimulus red MUTATE=1 builds
-        // the second fixture as AGA too, so two of the three answers match.
+        // MUTATION LISAID-IDENTIFIES-THE-CHIP-SET stimulus red: MUTATE=<id>
+        // builds the second fixture as AGA too, so two of the three answers
+        // match. MEASURED (WSL/Verilator 5.052, run alone against this id):
+        // FAIL LISAID-IDENTIFIES-THE-CHIP-SET, all five other assertions
+        // PASS, summary "5 passed, 1 failed". Only the named assertion
+        // moved.
         Harness other(m_aga, true);
         const uint16_t e = other.read(A_LISAID);
         const uint16_t o = ocs.read(A_LISAID);
@@ -222,8 +243,11 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.colour_roundtrip(7, 0x0ABC);
-        // MUTATION COLOUR-TABLE-AT-180 stimulus red MUTATE=1 reads entry 3,
-        // which was never written.
+        // MUTATION COLOUR-TABLE-AT-180 stimulus red: MUTATE=<id> reads
+        // entry 3, which was never written. MEASURED (WSL/Verilator 5.052,
+        // run alone against this id): FAIL COLOUR-TABLE-AT-180, all five
+        // other assertions PASS, summary "5 passed, 1 failed". Only the
+        // named assertion moved.
         h.write(A_BPLCON2, RDRAM);
         const uint16_t got = h.read(m_col) & 0x0FFF;
         const uint16_t neighbour = h.read(color_addr(8)) & 0x0FFF;
@@ -241,8 +265,11 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_BPLCON2, 0);
         h.write(color_addr(5), 0x0DEF);
-        // MUTATION BPLCON2-AT-104-OPENS-READBACK stimulus red MUTATE=1 leaves
-        // the readback bit set for the read that should see nothing.
+        // MUTATION BPLCON2-AT-104-OPENS-READBACK stimulus red: MUTATE=<id>
+        // leaves the readback bit set for the read that should see nothing.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // BPLCON2-AT-104-OPENS-READBACK, all five other assertions PASS,
+        // summary "5 passed, 1 failed". Only the named assertion moved.
         h.write(A_BPLCON2, RDRAM);
         const uint16_t open = h.read(color_addr(5)) & 0x0FFF;
         h.write(A_BPLCON2, m_rdram);
@@ -260,8 +287,11 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.colour_roundtrip(2, 0x0111, 0);
-        // MUTATION BPLCON3-AT-106-SELECTS-THE-BANK stimulus red MUTATE=1
+        // MUTATION BPLCON3-AT-106-SELECTS-THE-BANK stimulus red: MUTATE=<id>
         // writes the second colour into bank 0 as well, so both reads agree.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // BPLCON3-AT-106-SELECTS-THE-BANK, all five other assertions PASS,
+        // summary "5 passed, 1 failed". Only the named assertion moved.
         h.colour_roundtrip(2, 0x0222, m_bank);
         h.write(A_BPLCON2, RDRAM);
         h.write(A_BPLCON3, 0);

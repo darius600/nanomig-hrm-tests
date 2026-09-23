@@ -44,10 +44,20 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector: MUTATE names ONE assertion's own label,
+// and only that assertion's stimulus site changes.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -142,26 +152,24 @@ static void load_pointer(Harness& h, uint16_t hi_addr, uint16_t lo_addr,
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
     // MUTATION. Each assertion moves ONE address it writes to the neighbouring
     // register of the same kind, so the register that should have received the
     // value keeps what it had. A symmetric swap would be no mutation at all --
     // the Copper package learned that the hard way, staying green on four of
     // six until each guard broke its own pairing on one side only.
-    const uint16_t m_live_h = mutate ? A_BLTDPTH : A_BLTAPTH;
-    const uint16_t m_cpth = mutate ? A_BLTBPTH : A_BLTCPTH;
-    const uint16_t m_bpth = mutate ? A_BLTAPTH : A_BLTBPTH;
-    const uint16_t m_apth = mutate ? A_BLTDPTH : A_BLTAPTH;
-    const uint16_t m_dpth = mutate ? A_BLTCPTH : A_BLTDPTH;
-    const uint16_t m_cptl = mutate ? A_BLTBPTL : A_BLTCPTL;
-    const uint16_t m_bptl = mutate ? A_BLTAPTL : A_BLTBPTL;
-    const uint16_t m_aptl = mutate ? A_BLTDPTL : A_BLTAPTL;
-    const uint16_t m_dptl = mutate ? A_BLTCPTL : A_BLTDPTL;
-    const uint16_t m_cmod = mutate ? A_BLTBMOD : A_BLTCMOD;
-    const uint16_t m_bmod = mutate ? A_BLTAMOD : A_BLTBMOD;
-    const uint16_t m_amod = mutate ? A_BLTDMOD : A_BLTAMOD;
-    const uint16_t m_dmod = mutate ? A_BLTCMOD : A_BLTDMOD;
+    //
+    // Each block below gates its own set of address swaps behind its OWN
+    // assertion's id. The pointer assertion moves all eight addresses (four
+    // pairs) at once and the modulo assertion moves all four -- that is not
+    // several assertions sharing one switch, it is one compound assertion
+    // (all four pointer pairs / all four modulos, checked together) selected
+    // by its own single id; no swap here is reachable by any OTHER
+    // assertion's id.
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red\n";
 
     c.record("oracle: AA specification, PDF p. 7, the address-ordered register "
              "list. BLTCPTH $048, BLTCPTL $04A, BLTBPTH $04C, BLTBPTL $04E, "
@@ -177,15 +185,18 @@ int main(int argc, char** argv) {
     // --- FIXTURE LIVENESS, before any address assertion leans on it --------
     {
         Harness h;
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // id writes the high word at $054 instead of $050, so slot A keeps a
+        // zero high word. It is mutated like every other assertion: an
+        // unmutated liveness check would leave `make mutate` reporting a
+        // pass, and a mutation run with any green in it is a gate that has
+        // already failed.
+        const uint16_t m_live_h = mutating("FIXTURE-DELIVERS-KNOWN-VALUE")
+                                       ? A_BLTDPTH : A_BLTAPTH;
         load_pointer(h, m_live_h, A_BLTAPTL, P_A);
         const uint32_t got = h.pointer(SEL_A);
         c.note("pattern " + hex(P_A) + " written through $050/$052 reads back "
                "at ptrsel=" + std::to_string(SEL_A) + " as " + hex(got));
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 writes
-        // the high word at $054 instead of $050, so slot A keeps a zero high
-        // word. It is mutated like every other assertion: an unmutated
-        // liveness check would leave `make mutate` reporting a pass, and a
-        // mutation run with any green in it is a gate that has already failed.
         c.expect(got == P_A,
                  "FIXTURE-DELIVERS-KNOWN-VALUE: a 20-bit pattern written by "
                  "address and read back by selection arrives intact, so a "
@@ -196,6 +207,21 @@ int main(int argc, char** argv) {
     // --- 1. The four pointers, each written by address, each read by slot ---
     {
         Harness h;
+        // Selecting BLT-POINTERS-AT-048-056 sends each of the four
+        // pointer-pair writes to the next pointer's address, so every slot
+        // ends up holding a neighbour's pattern (record and rationale are
+        // below, next to the expect() this stimulus feeds). All eight
+        // addresses here are gated on this ONE id; none of them moves under
+        // any other assertion's id.
+        const bool m_pointers = mutating("BLT-POINTERS-AT-048-056");
+        const uint16_t m_cpth = m_pointers ? A_BLTBPTH : A_BLTCPTH;
+        const uint16_t m_bpth = m_pointers ? A_BLTAPTH : A_BLTBPTH;
+        const uint16_t m_apth = m_pointers ? A_BLTDPTH : A_BLTAPTH;
+        const uint16_t m_dpth = m_pointers ? A_BLTCPTH : A_BLTDPTH;
+        const uint16_t m_cptl = m_pointers ? A_BLTBPTL : A_BLTCPTL;
+        const uint16_t m_bptl = m_pointers ? A_BLTAPTL : A_BLTBPTL;
+        const uint16_t m_aptl = m_pointers ? A_BLTDPTL : A_BLTAPTL;
+        const uint16_t m_dptl = m_pointers ? A_BLTCPTL : A_BLTDPTL;
         load_pointer(h, m_cpth, m_cptl, P_C);
         load_pointer(h, m_bpth, m_bptl, P_B);
         load_pointer(h, m_apth, m_aptl, P_A);
@@ -205,9 +231,9 @@ int main(int argc, char** argv) {
         c.note("C " + hex(gc) + " B " + hex(gb) + " A " + hex(ga) + " D "
                + hex(gd) + "; expected " + hex(P_C) + " " + hex(P_B) + " "
                + hex(P_A) + " " + hex(P_D));
-        // MUTATION BLT-POINTERS-AT-048-056 stimulus red MUTATE=1 sends each
-        // write to the next pointer's address, so every slot ends up holding a
-        // neighbour's pattern.
+        // MUTATION BLT-POINTERS-AT-048-056 stimulus red: selecting this id
+        // sends each write to the next pointer's address, so every slot ends
+        // up holding a neighbour's pattern.
         c.expect(gc == P_C && gb == P_B && ga == P_A && gd == P_D,
                  "BLT-POINTERS-AT-048-056: all four pointer pairs are decoded "
                  "where the address list puts them, each reaching its own slot "
@@ -222,6 +248,15 @@ int main(int argc, char** argv) {
         // amount. The RTL adds bltmod[15:1] sign-extended, so the value that
         // reaches the pointer is the written word shifted right once.
         constexpr uint16_t M_C = 0x0002, M_B = 0x0008, M_A = 0x0020, M_D = 0x0080;
+        // Selecting BLT-MODULOS-AT-060-066 sends each modulo write to the
+        // next modulo's address, so every pointer moves by a neighbour's
+        // amount (record and rationale are below, next to the expect() this
+        // stimulus feeds). All four addresses here are gated on this ONE id.
+        const bool m_modulos = mutating("BLT-MODULOS-AT-060-066");
+        const uint16_t m_cmod = m_modulos ? A_BLTBMOD : A_BLTCMOD;
+        const uint16_t m_bmod = m_modulos ? A_BLTAMOD : A_BLTBMOD;
+        const uint16_t m_amod = m_modulos ? A_BLTDMOD : A_BLTAMOD;
+        const uint16_t m_dmod = m_modulos ? A_BLTCMOD : A_BLTDMOD;
         h.write(m_cmod, M_C);
         h.write(m_bmod, M_B);
         h.write(m_amod, M_A);
@@ -241,9 +276,9 @@ int main(int argc, char** argv) {
         c.note("after addmod: C " + hex(gc) + "/" + hex(wc) + " B " + hex(gb)
                + "/" + hex(wb) + " A " + hex(ga) + "/" + hex(wa) + " D "
                + hex(gd) + "/" + hex(wd) + "  (read/expected)");
-        // MUTATION BLT-MODULOS-AT-060-066 stimulus red MUTATE=1 sends each
-        // modulo write to the next modulo's address, so every pointer moves by
-        // a neighbour's amount.
+        // MUTATION BLT-MODULOS-AT-060-066 stimulus red: selecting this id
+        // sends each modulo write to the next modulo's address, so every
+        // pointer moves by a neighbour's amount.
         c.expect(gc == wc && gb == wb && ga == wa && gd == wd,
                  "BLT-MODULOS-AT-060-066: all four modulo registers are decoded "
                  "where the address list puts them, each moving its own pointer "

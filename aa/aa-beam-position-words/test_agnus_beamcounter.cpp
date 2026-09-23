@@ -44,9 +44,22 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. A single on/off flag reddened every assertion at once, which
+// cannot show that the mutation recorded for one assertion leaves the others
+// green.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -112,28 +125,41 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
     Checks c;
+    g_mutate = std::getenv("MUTATE");
 
     // The document's own list, for an Alice.
     constexpr uint16_t ID_ALICE_PAL  = 0x22;
     constexpr uint16_t ID_ALICE_NTSC = 0x32;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red.
-    const uint16_t m_vpos = mutate ? 0x0055u : 0x00AAu;   // 1,2: a different line
-    const uint16_t m_high = mutate ? 0x0000u : 0x0005u;   // 3: no high bits
-    const bool     m_id   = mutate;                       // 4: see below
+    // Each guard below is keyed to its OWN assertion's id: MUTATE=<id> moves
+    // ONE thing in that assertion's stimulus, and every other assertion runs
+    // its real stimulus. m_vpos1 and m_vpos2 used to be the SAME variable --
+    // one line number fed both assertion 1 and assertion 2's stimulus -- which
+    // meant selecting one assertion's mutation also disturbed the other's.
+    // Split so each has its own id and its own default.
+    const uint16_t m_vpos1 = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? 0x0055u : 0x00AAu;
+    const uint16_t m_vpos2 = mutating("VHPOSR-PACKS-VERTICAL-AND-HORIZONTAL") ? 0x0055u : 0x00AAu;
+    const uint16_t m_high = mutating("VPOSR-CARRIES-THE-HIGH-BITS") ? 0x0000u : 0x0005u;
+    // 4: see below -- this assertion's baseline may itself be red, so its
+    // mutation direction is the opposite of every other assertion's.
+    const bool     m_id   = mutating("VPOSR-REPORTS-THE-CHIP-IDENTIFIER");
 
     std::cout << "aa-beam-position-words -- AA_CONFORMANCE at agnus_beamcounter\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red (or, "
+                      "for VPOSR-REPORTS-THE-CHIP-IDENTIFIER, green), the "
+                      "others must keep their baseline verdict\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 writes a
-        // different line number than the one compared against.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red selecting this
+        // assertion's own id writes a different line number than the one
+        // compared against.
         h.write(A_VPOSW, 0x0000);
-        h.write(A_VHPOSW, (uint16_t)(m_vpos << 8));
+        h.write(A_VHPOSW, (uint16_t)(m_vpos1 << 8));
         const uint16_t got = h.read(A_VHPOSR);
         c.note("after writing line 0xAA the packed word reads " + hex(got));
         c.expect(((got >> 8) & 0xFF) == 0xAA,
@@ -146,14 +172,15 @@ int main(int argc, char** argv) {
     {
         Harness h;
         // MUTATION VHPOSR-PACKS-VERTICAL-AND-HORIZONTAL stimulus red
-        // MUTATE=1 writes a different line number than the one the
-        // assertion compares against, so the high byte does not match.
+        // selecting this assertion's own id writes a different line number
+        // than the one the assertion compares against, so the high byte does
+        // not match.
         h.write(A_VPOSW, 0x0000);
         // hpos is put MID-LINE, not at zero: a horizontal counter of zero is
         // the end-of-line condition, and the first version of this assertion
         // wrote it there and watched the line number step from 0xAA to 0xAB
         // while it measured.
-        h.write(A_VHPOSW, (uint16_t)((m_vpos << 8) | 0x20));
+        h.write(A_VHPOSW, (uint16_t)((m_vpos2 << 8) | 0x20));
         const uint16_t before = h.read(A_VHPOSR);
         for (int i = 0; i < 6; ++i) h.cck_tick();
         const uint16_t after = h.read(A_VHPOSR);
@@ -171,7 +198,7 @@ int main(int argc, char** argv) {
     // --- 3. VPOSR carries the vertical counter's highest bits ---------------
     {
         Harness h;
-        // MUTATION VPOSR-CARRIES-THE-HIGH-BITS stimulus red MUTATE=1 writes no
+        // MUTATION VPOSR-CARRIES-THE-HIGH-BITS stimulus red selecting this assertion's own id writes no
         // high bits at all, so the three bits stay zero.
         h.write(A_VPOSW, m_high);
         const uint16_t got = h.read(A_VPOSR);
@@ -193,7 +220,7 @@ int main(int argc, char** argv) {
         const uint16_t id_ntsc = (uint16_t)((ntsc.read(A_VPOSR) >> 8) & 0x7F);
         // MUTATION VPOSR-REPORTS-THE-CHIP-IDENTIFIER oracle green This
         // assertion's baseline may be red, and if it is, no stimulus mutation
-        // can make it redder. MUTATE=1 compares against the value measured
+        // can make it redder. selecting this assertion's own id compares against the value measured
         // instead of the value the document lists, which must make it GREEN --
         // proving the comparison is reading the register and not a constant.
         const uint16_t want_pal  = m_id ? id_pal  : ID_ALICE_PAL;

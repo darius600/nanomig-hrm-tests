@@ -60,10 +60,22 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. Every OTHER assertion stays on its real stimulus and is a
+// live control on each run.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 class Checks {
 public:
@@ -171,7 +183,7 @@ static int count_lit(const std::vector<bool>& v) {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks c;
 
     constexpr uint16_t COLOUR = 0x0F0F;
@@ -180,22 +192,26 @@ int main(int argc, char** argv) {
     constexpr uint16_t STOP_A  = 0x00C0;
     constexpr uint16_t STOP_B  = 0x00D0;   // $1D0 = 464, inside the line
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red.
-    const uint16_t m_blnk  = mutate ? 0u : BRDRBLNK;       // 1: never blanks
-    const uint16_t m_start = mutate ? START_A : START_B;   // 2: same start twice
-    const uint16_t m_stop  = mutate ? STOP_A : STOP_B;     // 3: same stop twice
-    const uint16_t m_high  = mutate ? 0u
-                                   : (uint16_t)((1u << 5) | (1u << 13));
+    // MUTATION. Each guard below tests its own assertion's label and moves
+    // ONE thing. MUTATE=<label> selects exactly one.
+    const uint16_t m_blnk  = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? 0u : BRDRBLNK;
+    const uint16_t m_start = mutating("DIWSTRT-SETS-THE-LEFT-EDGE") ? START_A : START_B;
+    const uint16_t m_stop  = mutating("DIWSTOP-SETS-THE-RIGHT-EDGE") ? STOP_A : STOP_B;
+    const uint16_t m_high  = mutating("DIWHIGH-IS-THE-NINTH-BIT")
+                                  ? 0u : (uint16_t)((1u << 5) | (1u << 13));
 
     std::cout << "aa-display-window-registers -- AA_CONFORMANCE at denise\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, the "
+                      "others must stay on their baseline verdict\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 leaves
-        // the border-blank bit clear, so the whole line carries the colour and
-        // no edge can be seen at all.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // assertion's own id leaves the border-blank bit clear, so the whole
+        // line carries the colour and no edge can be seen at all.
         h.write(A_BPLCON2, 0);
         h.write(A_BPLCON3, m_blnk);
         h.write(A_BPLCON0, ECSENA);
@@ -224,9 +240,9 @@ int main(int argc, char** argv) {
         const int edge_a = first_lit(h.line());
         Harness g;
         g.arm(COLOUR);
-        // MUTATION DIWSTRT-SETS-THE-LEFT-EDGE stimulus red MUTATE=1 writes the
-        // same start twice, so the edge cannot move and the difference the
-        // assertion is about disappears.
+        // MUTATION DIWSTRT-SETS-THE-LEFT-EDGE stimulus red: selecting this
+        // assertion's own id writes the same start twice, so the edge
+        // cannot move and the difference the assertion is about disappears.
         g.write(A_DIWSTRT, m_start);
         g.write(A_DIWSTOP, STOP_A);
         const int edge_b = first_lit(g.line());
@@ -252,8 +268,9 @@ int main(int argc, char** argv) {
         Harness g;
         g.arm(COLOUR);
         g.write(A_DIWSTRT, START_A);
-        // MUTATION DIWSTOP-SETS-THE-RIGHT-EDGE stimulus red MUTATE=1 writes the
-        // same stop twice, so the right edge cannot move.
+        // MUTATION DIWSTOP-SETS-THE-RIGHT-EDGE stimulus red: selecting this
+        // assertion's own id writes the same stop twice, so the right edge
+        // cannot move.
         g.write(A_DIWSTOP, m_stop);
         const int edge_b = last_lit(g.line());
         c.note("stop $" + std::to_string(STOP_A & 0xFF) + " goes dark after " +
@@ -279,9 +296,10 @@ int main(int argc, char** argv) {
         g.arm(COLOUR);
         g.write(A_DIWSTRT, START_A);
         g.write(A_DIWSTOP, STOP_A);
-        // MUTATION DIWHIGH-IS-THE-NINTH-BIT stimulus red MUTATE=1 writes zero
-        // into DIWHIGH instead, which leaves both ninth bits where the two
-        // earlier writes put them and moves no edge.
+        // MUTATION DIWHIGH-IS-THE-NINTH-BIT stimulus red: selecting this
+        // assertion's own id writes zero into DIWHIGH instead, which leaves
+        // both ninth bits where the two earlier writes put them and moves
+        // no edge.
         g.write(A_DIWHIGH, m_high);
         const int with_high = first_lit(g.line());
         c.note("without a DIWHIGH write the line lights from " +

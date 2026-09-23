@@ -38,10 +38,18 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -153,23 +161,30 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: the address a word is written to, or which bits
-    // of the written word carry the sprite pair.
-    const uint16_t m_fmode = mutate ? A_BPLCON0 : A_FMODE;   // 2
-    const int      m_shift = mutate ? 0 : 2;                 // 3: the pair's place
-    const uint16_t m_high  = mutate ? (uint16_t)0x000Cu      // 4: unused bits
-                                    : (uint16_t)0x3FF0u;
-    const uint16_t m_low   = mutate ? (uint16_t)0x000Cu      // 5: the other pair
-                                    : (uint16_t)0x0003u;
-    const uint16_t m_idle  = mutate ? (uint16_t)0x000Cu      // 1: liveness
-                                    : (uint16_t)0x0000u;
+    // Per-assertion mutation selector: MUTATE names ONE assertion's own
+    // label, and only that assertion's stimulus site changes.
+    const uint16_t m_fmode = mutating("FMODE-IS-DECODED-AT-1FC")
+                                  ? A_BPLCON0 : A_FMODE;                // 2
+    const int      m_shift = mutating("SPRITE-FETCH-ADVANCES-AS-THE-TABLE-SAYS")
+                                  ? 0 : 2;                               // 3: the pair's place
+    const uint16_t m_high  = mutating("FMODE-BITS-13-TO-4-DO-NOTHING")
+                                  ? (uint16_t)0x000Cu                    // 4: unused bits
+                                  : (uint16_t)0x3FF0u;
+    const uint16_t m_low   = mutating("SPRITE-FETCH-IGNORES-THE-BITPLANE-PAIR")
+                                  ? (uint16_t)0x000Cu                    // 5: the other pair
+                                  : (uint16_t)0x0003u;
+    const uint16_t m_idle  = mutating("FIXTURE-ADVANCES-A-POINTER")
+                                  ? (uint16_t)0x000Cu                    // 1: liveness
+                                  : (uint16_t)0x0000u;
 
     std::cout << "aa-fmode-sprite-fetch -- AA_CONFORMANCE at agnus_spritedma\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, "
+                      "every other assertion must keep its baseline verdict\n";
 
     // The document's four sprite rows, in bytes, SPAGEM:SPR32 = 00, 01, 10, 11.
     const int WANT[4] = {2, 4, 4, 8};
@@ -177,9 +192,15 @@ int main(int argc, char** argv) {
     // --- 1. The fixture moves a pointer at all ------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-ADVANCES-A-POINTER stimulus red MUTATE=1 sets
+        // MUTATION FIXTURE-ADVANCES-A-POINTER stimulus red: MUTATE=<id> sets
         // the sprite pair before the fetch, so the pointer moves by the
         // table's widest step and not by the cleared register's word.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // FIXTURE-ADVANCES-A-POINTER, PASS FMODE-IS-DECODED-AT-1FC, PASS
+        // SPRITE-FETCH-ADVANCES-AS-THE-TABLE-SAYS, PASS FMODE-BITS-13-TO-4-
+        // DO-NOTHING, PASS SPRITE-FETCH-IGNORES-THE-BITPLANE-PAIR, summary
+        // "4 passed, 1 failed" (baseline "5 passed, 0 failed"). Only the
+        // named assertion moved.
         const int got = h.advance_bytes(3, m_idle);
         c.note("with FMODE cleared, one granted DMA cycle moves sprite 3's "
                "pointer by " + dec(got) + " bytes");
@@ -193,15 +214,20 @@ int main(int argc, char** argv) {
     // --- 2. FMODE is the register at $1FC ----------------------------------
     {
         Harness h;
-        // MUTATION FMODE-IS-DECODED-AT-1FC stimulus red MUTATE=1 writes the
-        // same word to BPLCON0's address instead, which this module ignores,
-        // so the fetch keeps the cleared register's 2 bytes.
+        // MUTATION FMODE-IS-DECODED-AT-1FC stimulus red: MUTATE=<id> writes
+        // the same word to BPLCON0's address instead, which this module
+        // ignores, so the fetch keeps the cleared register's 2 bytes.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): PASS
+        // FIXTURE-ADVANCES-A-POINTER, FAIL FMODE-IS-DECODED-AT-1FC, PASS
+        // SPRITE-FETCH-ADVANCES-AS-THE-TABLE-SAYS, PASS FMODE-BITS-13-TO-4-
+        // DO-NOTHING, PASS SPRITE-FETCH-IGNORES-THE-BITPLANE-PAIR, summary
+        // "4 passed, 1 failed". Only the named assertion moved.
         h.write(m_fmode, 0x000C);           // SPAGEM and SPR32 both set
         h.set_pointer(2, 0x01000);
         const uint32_t before = h.pointer(2);
         h.fetch(2);
         const int got = (int)(h.pointer(2) - before) * 2;
-        c.note("after writing $000C at " + hex(mutate ? A_BPLCON0 : A_FMODE) +
+        c.note("after writing $000C at " + hex(m_fmode) +
                ", a sprite fetch advances by " + dec(got) + " bytes");
         c.expect(got == 8,
                  "FMODE-IS-DECODED-AT-1FC: the word that changes the sprite "
@@ -215,9 +241,15 @@ int main(int argc, char** argv) {
         int got[4] = {0, 0, 0, 0};
         bool all = true;
         for (int row = 0; row < 4; ++row) {
-            // MUTATION SPRITE-FETCH-ADVANCES-AS-THE-TABLE-SAYS stimulus red
-            // MUTATE=1 puts the pair in bits 1 and 0, where the bitplane pair
-            // lives, so every row reads the cleared register's 2 bytes.
+            // MUTATION SPRITE-FETCH-ADVANCES-AS-THE-TABLE-SAYS stimulus red:
+            // MUTATE=<id> puts the pair in bits 1 and 0, where the bitplane
+            // pair lives, so every row reads the cleared register's 2 bytes.
+            // MEASURED (WSL/Verilator 5.052, run alone against this id):
+            // PASS FIXTURE-ADVANCES-A-POINTER, PASS FMODE-IS-DECODED-AT-1FC,
+            // FAIL SPRITE-FETCH-ADVANCES-AS-THE-TABLE-SAYS, PASS FMODE-BITS-
+            // 13-TO-4-DO-NOTHING, PASS SPRITE-FETCH-IGNORES-THE-BITPLANE-
+            // PAIR, summary "4 passed, 1 failed". Only the named assertion
+            // moved.
             got[row] = h.advance_bytes(1, (uint16_t)(row << m_shift));
             if (got[row] != WANT[row]) all = false;
         }
@@ -235,9 +267,14 @@ int main(int argc, char** argv) {
     // --- 4. And the ten bits between the two pairs do nothing here ----------
     {
         Harness h;
-        // MUTATION FMODE-BITS-13-TO-4-DO-NOTHING stimulus red MUTATE=1 writes
-        // the sprite pair instead of the unused bits, so the step changes and
-        // the assertion reads a register that was not left alone.
+        // MUTATION FMODE-BITS-13-TO-4-DO-NOTHING stimulus red: MUTATE=<id>
+        // writes the sprite pair instead of the unused bits, so the step
+        // changes and the assertion reads a register that was not left
+        // alone. MEASURED (WSL/Verilator 5.052, run alone against this id):
+        // PASS FIXTURE-ADVANCES-A-POINTER, PASS FMODE-IS-DECODED-AT-1FC,
+        // PASS SPRITE-FETCH-ADVANCES-AS-THE-TABLE-SAYS, FAIL FMODE-BITS-13-
+        // TO-4-DO-NOTHING, PASS SPRITE-FETCH-IGNORES-THE-BITPLANE-PAIR,
+        // summary "4 passed, 1 failed". Only the named assertion moved.
         const int got = h.advance_bytes(5, m_high);
         c.note("with FMODE = " + hex(m_high) + " the sprite fetch advances by " +
                dec(got) + " bytes, where a cleared FMODE advances by 2");
@@ -250,9 +287,14 @@ int main(int argc, char** argv) {
     // --- 5. The low pair is the bitplanes', not the sprites' ----------------
     {
         Harness h;
-        // MUTATION SPRITE-FETCH-IGNORES-THE-BITPLANE-PAIR stimulus red
-        // MUTATE=1 writes the sprite pair instead, so the step moves and the
-        // two pairs are no longer told apart.
+        // MUTATION SPRITE-FETCH-IGNORES-THE-BITPLANE-PAIR stimulus red:
+        // MUTATE=<id> writes the sprite pair instead, so the step moves and
+        // the two pairs are no longer told apart. MEASURED (WSL/Verilator
+        // 5.052, run alone against this id): PASS FIXTURE-ADVANCES-A-
+        // POINTER, PASS FMODE-IS-DECODED-AT-1FC, PASS SPRITE-FETCH-
+        // ADVANCES-AS-THE-TABLE-SAYS, PASS FMODE-BITS-13-TO-4-DO-NOTHING,
+        // FAIL SPRITE-FETCH-IGNORES-THE-BITPLANE-PAIR, summary "4 passed, 1
+        // failed". Only the named assertion moved.
         const int got = h.advance_bytes(6, m_low);
         c.note("with BPAGEM and BPL32 both set and the sprite pair clear, a "
                "sprite fetch advances by " + dec(got) + " bytes");

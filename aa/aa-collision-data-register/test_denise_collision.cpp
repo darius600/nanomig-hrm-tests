@@ -43,9 +43,19 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector: MUTATE names ONE assertion's own label,
+// and only that assertion's stimulus site changes.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -129,22 +139,24 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks c;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red.
-    const int      m_addr = mutate ? A_IDLE : A_CLXDAT;   // 1,2: nothing answers
-    const bool     m_read = mutate;                       // 3: never reads first
-    const uint8_t  m_spr  = mutate ? 0x00 : 0x03;         // 4: no sprite present
-
     std::cout << "aa-collision-data-register -- AA_CONFORMANCE at denise_collision\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 reads an
-        // address this module decodes for nothing, which answers zero.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // id reads an address this module decodes for nothing, which answers
+        // zero. Split from assertion 2's own address swap below -- the two
+        // used to share one variable, which meant this id and CLXDAT-AT-00E's
+        // id would have moved the same read together.
+        const int m_addr = mutating("FIXTURE-DELIVERS-KNOWN-VALUE")
+                                ? A_IDLE : A_CLXDAT;
         const uint16_t got = h.read(m_addr);
         c.note("out of reset the collision register reads " + hex(got));
         c.expect(got == 0x8000,
@@ -156,9 +168,12 @@ int main(int argc, char** argv) {
     // --- 2. CLXDAT answers at $00E and nowhere else -------------------------
     {
         Harness h;
-        // MUTATION CLXDAT-AT-00E stimulus red MUTATE=1 reads an address
-        // this module decodes for nothing, so no collision comes back and
-        // the positive half cannot hold.
+        // MUTATION CLXDAT-AT-00E stimulus red: selecting this id reads an
+        // address this module decodes for nothing, so no collision comes
+        // back and the positive half cannot hold. This is its own variable,
+        // not the one assertion 1 uses, so the two ids cannot disturb each
+        // other's stimulus.
+        const int m_addr = mutating("CLXDAT-AT-00E") ? A_IDLE : A_CLXDAT;
         h.collide(0x3F, 0x00);                 // odd and even planes together
         const uint16_t at_00e = h.read(m_addr);
         Harness g;
@@ -176,9 +191,10 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.collide(0x3F, 0x00);
-        // MUTATION CLXDAT-IS-READ-AND-CLEAR stimulus red MUTATE=1 skips the
-        // first read, so the second one still finds the collision and the
-        // clear cannot be told from a register that was never set.
+        // MUTATION CLXDAT-IS-READ-AND-CLEAR stimulus red: selecting this id
+        // skips the first read, so the second one still finds the collision
+        // and the clear cannot be told from a register that was never set.
+        const bool m_read = mutating("CLXDAT-IS-READ-AND-CLEAR");
         const uint16_t first = m_read ? 0x8001 : h.read(A_CLXDAT);
         const uint16_t second = h.read(A_CLXDAT);
         c.note("first read " + hex(first) + ", second read " + hex(second));
@@ -193,8 +209,9 @@ int main(int argc, char** argv) {
     {
         bool ok = true;
         std::ostringstream o;
-        // MUTATION PLAYFIELD-TO-SPRITE-BITS stimulus red MUTATE=1 puts no
-        // sprite on the port, so no playfield-to-sprite bit can set.
+        // MUTATION PLAYFIELD-TO-SPRITE-BITS stimulus red: selecting this id
+        // puts no sprite on the port, so no playfield-to-sprite bit can set.
+        const uint8_t m_spr = mutating("PLAYFIELD-TO-SPRITE-BITS") ? 0x00 : 0x03;
         for (int pair = 0; pair < 4; ++pair) {
             Harness h;
             const uint8_t sprites = (uint8_t)(m_spr << (2 * pair));

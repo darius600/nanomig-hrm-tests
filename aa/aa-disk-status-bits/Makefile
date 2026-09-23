@@ -26,10 +26,20 @@ build:
 test: build
 	./$(TEST_BIN)
 
-# Prove every assertion can go red. A green here means an expect() is not
-# measuring what it claims to.
+# Prove every assertion can go red ALONE -- or, for the two already red at
+# baseline (they corroborate NM-HRM-041), prove the mutation can move them
+# to green, which a red that could not be made to fail harder still shows.
+# MUTATE names one assertion's own label at a time (mutating(id) in the
+# source); a run that moves an assertion OTHER than the named one off its
+# baseline verdict means the mutation is not isolated to the assertion it
+# names.
+MUTATE_IDS := FIXTURE-READS-A-LIVE-REGISTER DISKWRITE-MIRRORS-DSKLEN-WRITE DMAON-FOLLOWS-THE-DSKLEN-ENABLE DSKBYTR-BITS-11-TO-8-READ-ZERO DSKBYT-IS-CLEARED-BY-THE-READ WORDEQUAL-IS-TRUE-ONLY-WHILE-DSKSYNC-MATCHES
 mutate: build
-	MUTATE=1 ./$(TEST_BIN) || true
+	@for id in $(MUTATE_IDS); do \
+		echo "=== MUTATE=$$id ==="; \
+		MUTATE=$$id ./$(TEST_BIN) || true; \
+		echo; \
+	done
 
 clean:
 	rm -rf $(OBJ_DIR)

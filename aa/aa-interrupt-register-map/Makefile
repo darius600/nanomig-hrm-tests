@@ -22,10 +22,18 @@ build:
 test: build
 	./$(TEST_BIN)
 
-# Prove every assertion can go red. A green here means an expect() is not
-# measuring what it claims to.
+# Prove every assertion can go red ALONE. MUTATE names one assertion's own
+# label at a time (mutating(id) in the source); a green run for an id below
+# means that assertion's expect() is not measuring what it claims to, and a
+# red run that also takes down another id would mean the mutation is not
+# isolated to the assertion it names.
+MUTATE_IDS := FIXTURE-DELIVERS-KNOWN-VALUE INTENA-AT-09A INTENA-NOT-AT-09C INTENAR-AT-01C INTREQ-AT-09C INTREQR-AT-01E INTENA-CLEARS-OR-SETS INTREQ-CLEARS-OR-SETS INTENAR-IS-READ-ONLY INTREQR-IS-READ-ONLY
 mutate: build
-	MUTATE=1 ./$(TEST_BIN) || true
+	@for id in $(MUTATE_IDS); do \
+		echo "=== MUTATE=$$id ==="; \
+		MUTATE=$$id ./$(TEST_BIN) || true; \
+		echo; \
+	done
 
 clean:
 	rm -rf $(OBJ_DIR)

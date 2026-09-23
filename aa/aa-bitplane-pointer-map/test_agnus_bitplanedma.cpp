@@ -38,10 +38,23 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. A single on/off flag reddened every assertion at once, which
+// cannot show that the mutation recorded for one assertion leaves the others
+// green.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -116,30 +129,43 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: which plane's address a word is written to, or
-    // which bits of the written word are looked at.
-    const int      m_plane = mutate ? 6 : 7;                  // 2, 3
-    const uint16_t m_high  = mutate ? (uint16_t)0x0000u       // 4
-                                    : (uint16_t)0xFFFFu;
-    const uint16_t m_live  = mutate ? (uint16_t)0x0000u       // 1
-                                    : (uint16_t)0x001Fu;
+    // Each guard below is keyed to its OWN assertion's id: MUTATE=<id> moves
+    // ONE thing in that assertion's stimulus -- which plane's address a word
+    // is written to, or which bits of the written word are looked at -- and
+    // every other assertion runs its real stimulus.
+    //
+    // m_plane2 and m_plane3 used to be the SAME variable (m_plane, mutate ? 6
+    // : 7) feeding both assertion 2 and assertion 3's stimulus, so selecting
+    // one assertion's mutation also disturbed the other's. Split so each has
+    // its own id, its own default, and its own wrong value -- assertion 2
+    // needs a DIFFERENT plane written (6 instead of 7), assertion 3 needs the
+    // SAME plane (7) written a second time instead of a different one (0).
+    const int      m_plane2 = mutating("BPLPT-BANK-IS-ADDRESS-SELECTED") ? 6 : 7;
+    const int      m_plane3 = mutating("BPL8PT-IS-AT-0F4-AND-0F6") ? 7 : 0;
+    const uint16_t m_high   = mutating("BPLPT-HALVES-TAKE-DB0-DB4-AND-DB1-DB15")
+                                   ? (uint16_t)0x0000u : (uint16_t)0xFFFFu;
+    const bool     m_live1  = mutating("FIXTURE-REACHES-THE-POINTER-BANK");
+    const uint16_t m_live   = m_live1 ? (uint16_t)0x0000u : (uint16_t)0x001Fu;
 
     std::cout << "aa-bitplane-pointer-map -- AA_CONFORMANCE at "
                  "agnus_bitplanedma\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, the "
+                      "others must keep their baseline verdict\n";
 
     // --- 1. The fixture reaches the pointer the boundary shows --------------
     {
         Harness h;
         const uint32_t before = h.pointer();
-        // MUTATION FIXTURE-REACHES-THE-POINTER-BANK stimulus red MUTATE=1
-        // writes zero into BOTH halves, which is what reset left there, so
-        // the pointer cannot be seen to move. Writing zero to one half only
-        // left the other one moving and the assertion green.
-        h.set_pointer(7, m_live, (uint16_t)(mutate ? 0x0000 : 0x2468));
+        // MUTATION FIXTURE-REACHES-THE-POINTER-BANK stimulus red selecting
+        // this assertion's own id writes zero into BOTH halves, which is
+        // what reset left there, so the pointer cannot be seen to move.
+        // Writing zero to one half only left the other one moving and the
+        // assertion green.
+        h.set_pointer(7, m_live, (uint16_t)(m_live1 ? 0x0000 : 0x2468));
         const uint32_t after = h.pointer();
         c.note("address_out reads " + hex(before) + " after reset and " +
                hex(after) + " once plane 7's pointer pair is written");
@@ -156,14 +182,15 @@ int main(int argc, char** argv) {
         for (int p = 0; p < 8; ++p)
             h.set_pointer(p, (uint16_t)(0x10 | p), (uint16_t)((p + 1) << 8));
         const uint32_t got = h.pointer();
-        // MUTATION BPLPT-BANK-IS-ADDRESS-SELECTED stimulus red MUTATE=1
-        // overwrites plane 6's pair with plane 7's value, so the two planes
-        // hold the same word and the bank cannot be shown to be per plane.
-        h.set_pointer(m_plane, 0x0015, 0x8800);
+        // MUTATION BPLPT-BANK-IS-ADDRESS-SELECTED stimulus red selecting
+        // this assertion's own id overwrites plane 6's pair with plane 7's
+        // value, so the two planes hold the same word and the bank cannot be
+        // shown to be per plane.
+        h.set_pointer(m_plane2, 0x0015, 0x8800);
         const uint32_t moved = h.pointer();
         c.note("with all eight pairs written, address_out reads " + hex(got) +
                "; after a further write to plane " +
-               std::to_string(m_plane) + " it reads " + hex(moved));
+               std::to_string(m_plane2) + " it reads " + hex(moved));
         c.expect(Harness::high5(got) == 0x17 && got != moved,
                  "BPLPT-BANK-IS-ADDRESS-SELECTED: each of the eight pointer "
                  "pairs is a bank entry of its own, chosen by the address the "
@@ -175,12 +202,13 @@ int main(int argc, char** argv) {
     // --- 3. And the eighth pair is at $0F4 and $0F6 -------------------------
     {
         Harness h;
-        // MUTATION BPL8PT-IS-AT-0F4-AND-0F6 stimulus red MUTATE=1 aims
-        // the second write at plane 7 as well, so the pointer the
-        // boundary shows moves and the pair is not shown to be its own.
+        // MUTATION BPL8PT-IS-AT-0F4-AND-0F6 stimulus red selecting this
+        // assertion's own id aims the second write at plane 7 as well, so
+        // the pointer the boundary shows moves and the pair is not shown to
+        // be its own.
         h.set_pointer(7, 0x0009, 0x1234);
         const uint32_t eighth = h.pointer();
-        h.set_pointer(m_plane == 7 ? 0 : 7, 0x001E, 0x7654);
+        h.set_pointer(m_plane3, 0x001E, 0x7654);
         const uint32_t other = h.pointer();
         c.note("plane 7 reads " + hex(eighth) + " and is left at " +
                hex(other) + " by a write to another plane's address");
@@ -195,8 +223,9 @@ int main(int argc, char** argv) {
     {
         Harness h;
         // MUTATION BPLPT-HALVES-TAKE-DB0-DB4-AND-DB1-DB15 stimulus red
-        // MUTATE=1 writes zero into the high half, so the five bits it
-        // is supposed to keep are not there to be counted.
+        // selecting this assertion's own id writes zero into the high half,
+        // so the five bits it is supposed to keep are not there to be
+        // counted.
         h.set_pointer(7, m_high, 0xFFFF);
         const uint32_t got = h.pointer();
         c.note("with $FFFF written to both halves, the pointer reads " +

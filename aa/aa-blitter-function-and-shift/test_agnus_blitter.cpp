@@ -76,9 +76,19 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector: MUTATE names ONE assertion's own label,
+// and only that assertion's stimulus site changes.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -195,25 +205,21 @@ static int blit(uint16_t lf, uint16_t con0_high, uint16_t con1 = 0,
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks c;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard changes ONE thing in the stimulus.
-    const uint16_t m_none  = mutate ? 0x0001u : 0x0000u;  // 1: one line selected
-    const uint16_t m_bit   = mutate ? 0x0003u : 0x0001u;  // 2: two lines at once
-    const int      m_ashk  = mutate ? 0 : 1;              // 3: field never set
-    const int      m_bshk  = mutate ? 0 : 2;              // 4: field never set
-    const uint16_t m_used  = mutate ? USED : 0u;          // 5: D stays enabled
-
     std::cout << "aa-blitter-function-and-shift -- AA_CONFORMANCE at agnus_blitter\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red\n";
 
     // --- 1. No line selected is zero, every line selected is all ones -------
     {
-        // MUTATION LF-NONE-IS-ZERO-ALL-IS-ONES stimulus red MUTATE=1 selects
-        // one line in the run that must select none, so the word is no longer
-        // zero.
+        // MUTATION LF-NONE-IS-ZERO-ALL-IS-ONES stimulus red: selecting this
+        // id selects one line in the run that must select none, so the word
+        // is no longer zero.
+        const uint16_t m_none = mutating("LF-NONE-IS-ZERO-ALL-IS-ONES")
+                                     ? 0x0001u : 0x0000u;
         const int none = blit(m_none, USED);
         const int all  = blit(0x00FF, USED);
         c.note("with no minterm line selected D reads " + hex(none) +
@@ -229,9 +235,11 @@ int main(int argc, char** argv) {
 
     // --- 2. The eight lines are disjoint and cover every bit ----------------
     {
-        // MUTATION LF-LINES-ARE-DISJOINT-AND-COMPLETE stimulus red MUTATE=1
-        // gives the first run two lines instead of one, so two results overlap
-        // and the union is no longer a partition.
+        // MUTATION LF-LINES-ARE-DISJOINT-AND-COMPLETE stimulus red: selecting
+        // this id gives the first run two lines instead of one, so two
+        // results overlap and the union is no longer a partition.
+        const uint16_t m_bit = mutating("LF-LINES-ARE-DISJOINT-AND-COMPLETE")
+                                    ? 0x0003u : 0x0001u;
         int part[8];
         uint16_t seen = 0, overlap = 0;
         bool read_all = true;
@@ -255,9 +263,10 @@ int main(int argc, char** argv) {
 
     // --- 3. ASH3-0 is the shift value of the A source ----------------------
     {
-        // MUTATION ASH-BITS-ARE-THE-SHIFT-VALUE-OF-A stimulus red MUTATE=1
-        // leaves the field at zero for every k, so the shifted run equals the
-        // unshifted one while the pre-shift it is compared against does not.
+        // MUTATION ASH-BITS-ARE-THE-SHIFT-VALUE-OF-A stimulus red: selecting
+        // this id leaves the field at zero for every k, so the shifted run
+        // equals the unshifted one while the pre-shift it is compared
+        // against does not.
         //
         // EVERY LINE IS TRIED RATHER THAN A CHOSEN ONE. The first version of
         // this assertion picked LF = $5A "arbitrarily" and it graded B as
@@ -274,7 +283,7 @@ int main(int argc, char** argv) {
             const uint16_t LF = (uint16_t)(1u << bit);
             const int plain = blit(LF, USED);
             for (int k : {1, 2, 4, 8}) {
-                const int kk = mutate ? 0 : k;
+                const int kk = mutating("ASH-BITS-ARE-THE-SHIFT-VALUE-OF-A") ? 0 : k;
                 const int by_fld = blit(LF, (uint16_t)(kk << ASH_SHIFT) | USED);
                 const int pre_r = blit(LF, USED, 0, (uint16_t)(SRC_A >> k));
                 const int pre_l = blit(LF, USED, 0, (uint16_t)(SRC_A << k));
@@ -307,8 +316,8 @@ int main(int argc, char** argv) {
 
     // --- 4. BSH3-0 is the shift value of the B source ------------------------
     {
-        // MUTATION BSH-BITS-ARE-THE-SHIFT-VALUE-OF-B stimulus red MUTATE=1
-        // leaves BLTCON1's field at zero, so nothing moves.
+        // MUTATION BSH-BITS-ARE-THE-SHIFT-VALUE-OF-B stimulus red: selecting
+        // this id leaves BLTCON1's field at zero, so nothing moves.
         int tried = 0, vacuous = 0;
         bool ok = true;
         std::ostringstream o;
@@ -316,7 +325,7 @@ int main(int argc, char** argv) {
             const uint16_t LF = (uint16_t)(1u << bit);
             const int plain = blit(LF, USED, 0);
             for (int k : {1, 2, 4, 8}) {
-                const int kk = mutate ? 0 : k;
+                const int kk = mutating("BSH-BITS-ARE-THE-SHIFT-VALUE-OF-B") ? 0 : k;
                 const int by_fld = blit(LF, USED, (uint16_t)(kk << BSH_SHIFT));
                 const int pre_r = blit(LF, USED, 0, SRC_A, (uint16_t)(SRC_B >> k));
                 const int pre_l = blit(LF, USED, 0, SRC_A, (uint16_t)(SRC_B << k));
@@ -347,8 +356,11 @@ int main(int argc, char** argv) {
 
     // --- 5. USED decides whether a destination word is written at all -------
     {
-        // MUTATION USED-DECIDES-WHETHER-D-IS-WRITTEN stimulus red MUTATE=1
-        // leaves USED set in the run that must not write, so a word comes out.
+        // MUTATION USED-DECIDES-WHETHER-D-IS-WRITTEN stimulus red: selecting
+        // this id leaves USED set in the run that must not write, so a word
+        // comes out.
+        const uint16_t m_used = mutating("USED-DECIDES-WHETHER-D-IS-WRITTEN")
+                                     ? USED : 0u;
         const int with_d = blit(0x00FF, USED);
         const int no_d   = blit(0x00FF, m_used);
         c.note(std::string("with USED set the blit writes ") + hex(with_d) +

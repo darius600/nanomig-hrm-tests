@@ -58,10 +58,23 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. A single on/off flag reddened every assertion at once, which
+// cannot show that the mutation recorded for one assertion leaves the others
+// green.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -153,18 +166,19 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: the address written, the address read, or the one
-    // bit that decides whether a limit register is consulted.
-    const uint16_t m_vhposw = mutate ? A_VPOSW  : A_VHPOSW;   // 2: hpos never set
-    const uint16_t m_vposr  = mutate ? A_VHPOSR : A_VPOSR;    // 3: reads the other register
-    const uint16_t m_lf     = mutate ? 0x8000u  : 0x0000u;    // 4: long_frame stays set
-    const uint16_t m_varb   = mutate ? 0u       : VARBEAMEN;  // 5,6: limits never consulted
-    const uint16_t m_htotal = mutate ? A_VTOTAL : A_HTOTAL;   // 6: htotal_reg never written
-    const uint16_t m_vtotal = mutate ? A_HTOTAL : A_VTOTAL;   // 7: vtotal_reg never written
-    const uint16_t m_live   = mutate ? A_VPOSW  : A_VHPOSW;   // liveness
+    // Each guard below is keyed to its OWN assertion's id: MUTATE=<id> moves
+    // ONE thing in that assertion's stimulus -- the address written, the
+    // address read, or the one bit that decides whether a limit register is
+    // consulted -- and every other assertion runs its real stimulus.
+    const uint16_t m_vhposw = mutating("VHPOS-PACKS-VPOS-AND-HPOS") ? A_VPOSW  : A_VHPOSW;
+    const uint16_t m_vposr  = mutating("VPOS-HIGH-BITS-AT-02A-AND-004") ? A_VHPOSR : A_VPOSR;
+    const uint16_t m_lf     = mutating("VPOSW-BIT15-IS-LONG-FRAME") ? 0x8000u  : 0x0000u;
+    const uint16_t m_varb   = mutating("BEAMCON0-AT-1DC") ? 0u : VARBEAMEN;
+    const uint16_t m_htotal = mutating("HTOTAL-AT-1C0") ? A_VTOTAL : A_HTOTAL;
+    const uint16_t m_vtotal = mutating("VTOTAL-AT-1C8") ? A_HTOTAL : A_VTOTAL;
+    const uint16_t m_live   = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? A_VPOSW  : A_VHPOSW;
 
     c.record("oracle: AA specification, PDF pp. 6, 9 and 10, the "
              "address-ordered register list. VPOSR $004, VHPOSR $006, VPOSW "
@@ -183,7 +197,7 @@ int main(int argc, char** argv) {
     // --- FIXTURE LIVENESS ---------------------------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 writes
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red selecting this assertion's own id writes
         // the word at $02A, which sets neither hpos nor vpos[7:0].
         h.write(m_live, 0x5A3C);
         const uint16_t got = h.read(A_VHPOSR);
@@ -198,7 +212,7 @@ int main(int argc, char** argv) {
     // --- 2. VHPOSW writes both fields, VHPOSR reads them back ---------------
     {
         Harness h;
-        // MUTATION VHPOS-PACKS-VPOS-AND-HPOS stimulus red MUTATE=1 writes at
+        // MUTATION VHPOS-PACKS-VPOS-AND-HPOS stimulus red selecting this assertion's own id writes at
         // $02A, which takes only three bits and leaves hpos untouched.
         h.write(m_vhposw, 0x8F44);
         const uint16_t got = h.read(A_VHPOSR);
@@ -217,7 +231,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write(A_VPOSW, 0x0005);
-        // MUTATION VPOS-HIGH-BITS-AT-02A-AND-004 stimulus red MUTATE=1 reads
+        // MUTATION VPOS-HIGH-BITS-AT-02A-AND-004 stimulus red selecting this assertion's own id reads
         // $006, whose low byte is the horizontal counter and not vpos[10:8].
         const uint16_t got = h.read(m_vposr);
         c.note("wrote $0005 at $02A; VPOSR reads " + hex(got)
@@ -234,7 +248,7 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_VPOSW, 0x8000);
         const uint16_t set = h.read(A_VPOSR) >> 15;
-        // MUTATION VPOSW-BIT15-IS-LONG-FRAME oracle red MUTATE=1 writes $8000
+        // MUTATION VPOSW-BIT15-IS-LONG-FRAME oracle red selecting this assertion's own id writes $8000
         // again where the assertion needs the bit cleared.
         h.write(A_VPOSW, m_lf);
         const uint16_t cleared = h.read(A_VPOSR) >> 15;
@@ -254,7 +268,7 @@ int main(int argc, char** argv) {
         // is reached at all. With varbeamen clear the line is the fixed 227
         // CCKs and the small limit is ignored.
         h.write(A_HTOTAL, 0x10);          // the counter wraps when hpos[8:1] == $10
-        // MUTATION BEAMCON0-AT-1DC stimulus red MUTATE=1 writes zero to $1DC,
+        // MUTATION BEAMCON0-AT-1DC stimulus red selecting this assertion's own id writes zero to $1DC,
         // so varbeamen stays clear and the short line never happens.
         h.write(A_BEAMCON0, m_varb);
         h.write(A_VHPOSW, 0x0008);        // hpos[8:1] = $08, below the limit
@@ -280,7 +294,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write(A_BEAMCON0, VARBEAMEN);
-        // MUTATION HTOTAL-AT-1C0 stimulus red MUTATE=1 writes the limit to
+        // MUTATION HTOTAL-AT-1C0 stimulus red selecting this assertion's own id writes the limit to
         // $1C8, so htotal_reg keeps its reset value and the wrap moves.
         h.write(m_htotal, 0x14);          // the counter wraps when hpos[8:1] == $14
         h.write(A_VHPOSW, 0x0008);
@@ -304,7 +318,7 @@ int main(int argc, char** argv) {
         // long_frame resets to 1 and puts the wrap one line late; clearing it
         // is what assertion 4 grades, and this is the assertion that needs it.
         h.write(A_VPOSW, 0x0000);
-        // MUTATION VTOTAL-AT-1C8 stimulus red MUTATE=1 writes the limit to
+        // MUTATION VTOTAL-AT-1C8 stimulus red selecting this assertion's own id writes the limit to
         // $1C0, so vtotal_reg keeps its reset value and the frame never ends.
         h.write(m_vtotal, 0x0006);
         h.write(A_VHPOSW, 0x0000);

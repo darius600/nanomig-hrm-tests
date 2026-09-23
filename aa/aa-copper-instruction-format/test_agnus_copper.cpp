@@ -63,9 +63,21 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. Every OTHER assertion stays on its real stimulus and is a
+// live control on each run.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 // Printing a value with std::to_string under an "0x" label prints decimal
 // digits behind a hexadecimal sign. aa-copper-register-map lost an hour to
@@ -166,7 +178,7 @@ static bool move_reaches(Harness& h, uint16_t word_addr, uint16_t data,
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks c;
 
     // A destination well above $080, so CDANG never decides it.
@@ -174,19 +186,24 @@ int main(int argc, char** argv) {
     constexpr uint16_t A_OTHER = 0x182;      // its neighbour
     constexpr uint16_t A_LOW   = 0x040;      // BLTCON0, below the danger line
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red.
-    const uint16_t m_dest  = mutate ? A_OTHER : A_HIGH;   // 1,2: wrong address
-    const uint16_t m_bit0  = mutate ? 0u : 1u;            // 3: a MOVE again
-    const uint16_t m_cdang = mutate ? 0u : 0x0002u;       // 4: never opens
+    // MUTATION. Each guard below tests its own assertion's label and moves
+    // ONE thing. MUTATE=<label> selects exactly one.
+    const uint16_t m_dest  = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? A_OTHER : A_HIGH;
+    const uint16_t m_bit0  = mutating("MOVE-IS-BIT-0-CLEAR") ? 0u : 1u;
+    const uint16_t m_cdang = mutating("CDANG-OPENS-THE-LOW-REGISTERS") ? 0u : 0x0002u;
 
     std::cout << "aa-copper-instruction-format -- AA_CONFORMANCE at agnus_copper\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, the "
+                      "others must stay on their baseline verdict\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 looks
-        // for the neighbouring register's address instead of the one fed.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // assertion's own id looks for the neighbouring register's address
+        // instead of the one fed.
         h.feed(A_HIGH & 0x1FE, 0x1234);
         const bool seen = h.emits((uint8_t)((m_dest >> 1) & 0xFF));
         c.note(std::string("a MOVE to ") + hex(A_HIGH) + " put " +
@@ -201,14 +218,15 @@ int main(int argc, char** argv) {
 
     // --- 2. The destination address is the first word's bits 8 to 1 ---------
     {
-        // MUTATION MOVE-DESTINATION-IS-DA8-TO-DA1 stimulus red MUTATE=1
-        // looks for the neighbouring register's address, two apart from
-        // the one the instruction names.
+        // MUTATION MOVE-DESTINATION-IS-DA8-TO-DA1 stimulus red: selecting
+        // this assertion's own id looks for the neighbouring register's
+        // address, two apart from the one the instruction names.
         bool ok = true;
         std::ostringstream o;
         for (uint16_t a : {(uint16_t)0x100, (uint16_t)0x180, (uint16_t)0x1FE}) {
             Harness h;
-            const uint16_t want = mutate ? (uint16_t)(a ^ 0x0002) : a;
+            const uint16_t want = mutating("MOVE-DESTINATION-IS-DA8-TO-DA1")
+                                       ? (uint16_t)(a ^ 0x0002) : a;
             h.feed(a & 0x1FE, 0x5555);
             const bool seen = h.emits((uint8_t)((want >> 1) & 0xFF));
             if (!seen) {
@@ -228,8 +246,9 @@ int main(int argc, char** argv) {
     // --- 3. Bit 0 of the first word separates a MOVE from a WAIT ------------
     {
         Harness h;
-        // MUTATION MOVE-IS-BIT-0-CLEAR stimulus red MUTATE=1 feeds bit 0 clear
-        // in the half that must not move, so a MOVE happens after all.
+        // MUTATION MOVE-IS-BIT-0-CLEAR stimulus red: selecting this
+        // assertion's own id feeds bit 0 clear in the half that must not
+        // move, so a MOVE happens after all.
         const bool as_move = move_reaches(h, A_HIGH, 0x1234, 0);
         Harness g;
         const bool as_wait = move_reaches(g, A_HIGH, 0x0000, m_bit0);
@@ -247,9 +266,9 @@ int main(int argc, char** argv) {
     // --- 4. CDANG opens the registers below the danger line -----------------
     {
         Harness h;
-        // MUTATION CDANG-OPENS-THE-LOW-REGISTERS stimulus red MUTATE=1
-        // leaves the danger bit clear in the half that must open, so the
-        // low register is blocked in both runs.
+        // MUTATION CDANG-OPENS-THE-LOW-REGISTERS stimulus red: selecting
+        // this assertion's own id leaves the danger bit clear in the half
+        // that must open, so the low register is blocked in both runs.
         h.write(A_COPCON, m_cdang);
         const bool with_cdang = move_reaches(h, A_LOW, 0x1234, 0);
         Harness g;

@@ -63,10 +63,22 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. Every OTHER assertion stays on its real stimulus and is a
+// live control on each run.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -162,18 +174,23 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: the address written, the address read, or the
-    // POTGO word that decides whether a counter runs at all.
-    const uint16_t m_joytest = mutate ? A_POTGO   : A_JOYTEST;  // 2: never loaded
-    const uint16_t m_clear   = mutate ? (uint16_t)(POTGO_RUN_PORT1 & ~1u)
-                                     : POTGO_RUN_PORT1;             // 4: never clears
-    const uint16_t m_potgo   = mutate ? 1u        : POTGO_RUN_PORT1; // 5: never runs
-    const uint16_t m_pot0    = mutate ? A_POT1DAT : A_POT0DAT;  // 5: reads the other pair
-    const uint16_t m_potinp  = mutate ? A_POT0DAT : A_POTINP;   // 7: reads a counter
-    const uint16_t m_live    = mutate ? A_POTGO   : A_JOYTEST;  // liveness
+    // MUTATION. Each guard below tests its own assertion's label and moves
+    // ONE thing: the address written, the address read, or the POTGO word
+    // that decides whether a counter runs at all. MUTATE=<label> selects
+    // exactly one.
+    const uint16_t m_clear   = mutating("POTGO-AT-034-CLEARS")
+                                    ? (uint16_t)(POTGO_RUN_PORT1 & ~1u)
+                                    : POTGO_RUN_PORT1;             // 4: never clears
+    const uint16_t m_potgo   = mutating("POT0DAT-AT-012-COUNTS")
+                                    ? 1u : POTGO_RUN_PORT1; // 5: never runs
+    const uint16_t m_pot0    = mutating("POT1DAT-AT-014-IS-THE-OTHER-PAIR")
+                                    ? A_POT1DAT : A_POT0DAT;  // 6: reads the other pair
+    const uint16_t m_potinp  = mutating("POTINP-AT-016-IS-ITS-OWN-WORD")
+                                    ? A_POT0DAT : A_POTINP;   // 7: reads a counter
+    const uint16_t m_live    = mutating("FIXTURE-DELIVERS-KNOWN-VALUE")
+                                    ? A_POTGO : A_JOYTEST;  // liveness
 
     c.record("oracle: AA specification, PDF pp. 6-7, the address-ordered "
              "register list. JOY0DAT $00A, JOY1DAT $00C, POT0DAT $012, POT1DAT "
@@ -191,8 +208,9 @@ int main(int argc, char** argv) {
     // --- FIXTURE LIVENESS ---------------------------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 writes
-        // the pattern at $034, which loads no counter.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // assertion's own id writes the pattern at $034, which loads no
+        // counter.
         h.write(m_live, 0xAB48);
         const uint16_t got = h.read(A_JOY0DAT);
         c.note("wrote $AB48 at $036, JOY0DAT reads " + hex(got)
@@ -207,9 +225,12 @@ int main(int argc, char** argv) {
     // --- 2. JOYTEST loads the port 1 counter, JOY0DAT reads it --------------
     {
         Harness h;
-        // MUTATION JOYTEST-AT-036-AND-JOY0DAT-AT-00A stimulus red MUTATE=1
-        // writes at $034, which is the pot control word and loads no counter.
-        h.write(m_joytest, 0x5C34);
+        // MUTATION JOYTEST-AT-036-AND-JOY0DAT-AT-00A stimulus red: selecting
+        // this assertion's own id writes at $034, which is the pot control
+        // word and loads no counter.
+        const uint16_t joytest2 = mutating("JOYTEST-AT-036-AND-JOY0DAT-AT-00A")
+                                       ? A_POTGO : A_JOYTEST;
+        h.write(joytest2, 0x5C34);
         const uint16_t got = h.read(A_JOY0DAT);
         c.note("wrote $5C34 at $036, JOY0DAT reads " + hex(got & COUNTER_MASK)
                + ", expected " + hex(0x5C34 & COUNTER_MASK));
@@ -224,9 +245,12 @@ int main(int argc, char** argv) {
     // --- 3. JOYTEST writes ALL FOUR counters, which is what the list says ---
     {
         Harness h;
-        // MUTATION JOYTEST-WRITES-ALL-FOUR stimulus red MUTATE=1 writes at
-        // $034, so neither port is loaded and the two read alike at zero.
-        h.write(m_joytest, 0x5C34);
+        // MUTATION JOYTEST-WRITES-ALL-FOUR stimulus red: selecting this
+        // assertion's own id writes at $034, so neither port is loaded and
+        // the two read alike at zero.
+        const uint16_t joytest3 = mutating("JOYTEST-WRITES-ALL-FOUR")
+                                       ? A_POTGO : A_JOYTEST;
+        h.write(joytest3, 0x5C34);
         const uint16_t port1 = h.read(A_JOY0DAT);
         const uint16_t port2 = h.read(A_JOY1DAT);
         c.note("one write at $036 left $00A reading " + hex(port1)
@@ -245,8 +269,9 @@ int main(int argc, char** argv) {
         h.write(A_POTGO, POTGO_RUN_PORT1);
         h.pot_ticks(12);
         const uint16_t ran = h.read(A_POT0DAT);
-        // MUTATION POTGO-AT-034-CLEARS stimulus red MUTATE=1 writes the same
-        // word without its START bit, so the counters keep what they had.
+        // MUTATION POTGO-AT-034-CLEARS stimulus red: selecting this
+        // assertion's own id writes the same word without its START bit, so
+        // the counters keep what they had.
         h.write(A_POTGO, m_clear);           // START again: clears
         const uint16_t cleared = h.read(A_POT0DAT);
         c.note("the port 1 pot pair read " + hex(ran)
@@ -261,8 +286,9 @@ int main(int argc, char** argv) {
     // --- 5. POT0DAT counts only while POTGO lets it -------------------------
     {
         Harness h;
-        // MUTATION POT0DAT-AT-012-COUNTS stimulus red MUTATE=1 writes only the
-        // START bit, leaving both capture bits high so nothing counts.
+        // MUTATION POT0DAT-AT-012-COUNTS stimulus red: selecting this
+        // assertion's own id writes only the START bit, leaving both capture
+        // bits high so nothing counts.
         h.write(A_POTGO, m_potgo);
         h.pot_ticks(12);
         const uint16_t got = h.read(A_POT0DAT);
@@ -282,8 +308,9 @@ int main(int argc, char** argv) {
         h.write(A_POTGO, POTGO_RUN_PORT1);   // port 1 enables only
         h.pot_ticks(12);
         const uint16_t port1 = h.read(A_POT0DAT);
-        // MUTATION POT1DAT-AT-014-IS-THE-OTHER-PAIR stimulus red MUTATE=1
-        // reads $012, which is the pair that did count.
+        // MUTATION POT1DAT-AT-014-IS-THE-OTHER-PAIR stimulus red: selecting
+        // this assertion's own id reads $012, which is the pair that did
+        // count.
         const uint16_t port2 = h.read(m_pot0 == A_POT0DAT ? A_POT1DAT : A_POT0DAT);
         c.note("with only the port 1 enables set, $012 reads " + hex(port1)
                + " and $014 reads " + hex(port2));
@@ -299,8 +326,9 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_POTGO, POTGO_RUN_PORT1);
         h.pot_ticks(12);
-        // MUTATION POTINP-AT-016-IS-ITS-OWN-WORD stimulus red MUTATE=1 reads
-        // $012, which carries the counters rather than the capture bits.
+        // MUTATION POTINP-AT-016-IS-ITS-OWN-WORD stimulus red: selecting this
+        // assertion's own id reads $012, which carries the counters rather
+        // than the capture bits.
         const uint16_t inp = h.read(m_potinp);
         const uint16_t counters = h.read(A_POT0DAT);
         const uint16_t elsewhere = h.read(0x0A0);

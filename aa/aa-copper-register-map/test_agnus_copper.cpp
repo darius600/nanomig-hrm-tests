@@ -53,10 +53,22 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. Every OTHER assertion stays on its real stimulus and is a
+// live control on each run.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 // Printing a value with std::to_string and an "0x" in front of it prints the
 // DECIMAL digits under a hexadecimal label. The first run of this package
@@ -177,11 +189,11 @@ static bool emits(Harness& h, uint8_t want, int ccks = 60) {
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and no
-    // guard touches a comparison -- each moves ONE address written, which is
-    // the proposition under test.
+    // MUTATION. Each guard below tests its own assertion's label and moves
+    // ONE address written -- no guard touches a comparison. MUTATE=<label>
+    // selects exactly one.
     //
     // THE FIRST VERSION OF THIS SWAPPED BOTH SIDES AND FOUR OF SIX ASSERTIONS
     // STAYED GREEN. Exchanging COP1LCH with COP2LCH *and* COP1LCL with COP2LCL
@@ -195,13 +207,13 @@ int main(int argc, char** argv) {
     // (0x0AAAA >> 16) == 0, so assertion 1 stayed green under mutation until
     // the pattern became 0x1AAAA. A mutation the test data cannot express is
     // not a mutation.
-    const uint16_t m_cop1lch = mutate ? A_COP2LCH : A_COP1LCH;   // 1: high word lost
-    const uint16_t m_cop2lch = mutate ? A_COP1LCH : A_COP2LCH;   // 2: high word lost
-    const uint16_t m_cop2lcl = mutate ? A_COP1LCL : A_COP2LCL;   // 3: pointer 2 never written
-    const uint16_t m_copins  = mutate ? A_COPCON  : A_COPINS;    // 4: ir2 never written
-    const uint16_t m_copcon  = mutate ? A_COPINS  : A_COPCON;    // 5: cdang never written
-    const uint16_t m_live    = mutate ? A_COP2LCH : A_COP1LCH;   // liveness, same shape
-    const uint16_t m_sprhdat_con = mutate ? A_COPINS : A_COPCON; // 6: cdang never set
+    const uint16_t m_cop1lch = mutating("COP1LC-AT-080-082") ? A_COP2LCH : A_COP1LCH;   // 1: high word lost
+    const uint16_t m_cop2lch = mutating("COP2LC-AT-084-086") ? A_COP1LCH : A_COP2LCH;   // 2: high word lost
+    const uint16_t m_cop2lcl = mutating("COP1-AND-COP2-ARE-DISTINCT") ? A_COP1LCL : A_COP2LCL;   // 3: pointer 2 never written
+    const uint16_t m_copins  = mutating("COPINS-AT-08C") ? A_COPCON  : A_COPINS;    // 4: ir2 never written
+    const uint16_t m_copcon  = mutating("COPCON-AT-02E") ? A_COPINS  : A_COPCON;    // 5: cdang never written
+    const uint16_t m_live    = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? A_COP2LCH : A_COP1LCH;   // liveness, same shape
+    const uint16_t m_sprhdat_con = mutating("SPRHDAT-078-IS-RESTRICTED") ? A_COPINS : A_COPCON; // 6: cdang never set
 
     c.record("oracle: AA specification, PDF pp. 6-7, the address-ordered "
              "register list. COPCON $02E, COP1LCH $080, COP1LCL $082, "
@@ -211,8 +223,9 @@ int main(int argc, char** argv) {
     // --- FIXTURE LIVENESS, before any address assertion leans on it --------
     {
         Harness h(true);
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 sends the
-        // high word to $084, so the pattern arrives without its top five bits.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // assertion's own id sends the high word to $084, so the pattern
+        // arrives without its top five bits.
         const uint32_t got = load_via(h, m_live, A_COP1LCL, A_COPJMP1, 0x1ACE4);
         // address_out is declared [20:1]: it carries bits 20 down to 1 of a
         // byte address, so a byte-address pattern arrives shifted right once.
@@ -230,8 +243,9 @@ int main(int argc, char** argv) {
     // --- 1. COP1LCH / COP1LCL / COPJMP1 -----------------------------------
     {
         Harness h(true);
-        // MUTATION COP1LC-AT-080-082 stimulus red MUTATE=1 writes the high word
-        // at $084 instead of $080, so cop1lch keeps its reset value of zero.
+        // MUTATION COP1LC-AT-080-082 stimulus red: selecting this assertion's
+        // own id writes the high word at $084 instead of $080, so cop1lch
+        // keeps its reset value of zero.
         const uint32_t got = load_via(h, m_cop1lch, A_COP1LCL, A_COPJMP1, 0x1AAAA);
         c.note("through $080/$082 strobed at $088, address_out = " + hex(got)
                + ", expected " + hex(0x1AAAA >> 1));
@@ -245,8 +259,9 @@ int main(int argc, char** argv) {
     // --- 2. COP2LCH / COP2LCL / COPJMP2 -----------------------------------
     {
         Harness h(true);
-        // MUTATION COP2LC-AT-084-086 stimulus red MUTATE=1 writes the high word
-        // at $080 instead of $084, so cop2lch keeps its reset value of zero.
+        // MUTATION COP2LC-AT-084-086 stimulus red: selecting this assertion's
+        // own id writes the high word at $080 instead of $084, so cop2lch
+        // keeps its reset value of zero.
         const uint32_t got = load_via(h, m_cop2lch, A_COP2LCL, A_COPJMP2, 0x15554);
         c.note("through $084/$086 strobed at $08A, address_out = " + hex(got)
                + ", expected " + hex(0x15554 >> 1));
@@ -262,8 +277,9 @@ int main(int argc, char** argv) {
     {
         Harness h(true);
         load_via(h, A_COP1LCH, A_COP1LCL, A_COPJMP1, 0x1AAAA);
-        // MUTATION COP1-AND-COP2-ARE-DISTINCT stimulus red MUTATE=1 writes the
-        // low word at $082, so pointer 2's low half is never written at all.
+        // MUTATION COP1-AND-COP2-ARE-DISTINCT stimulus red: selecting this
+        // assertion's own id writes the low word at $082, so pointer 2's low
+        // half is never written at all.
         const uint32_t second = load_via(h, A_COP2LCH, m_cop2lcl, A_COPJMP2,
                                          0x15554);
         c.expect(second == (0x15554 >> 1),
@@ -286,8 +302,9 @@ int main(int argc, char** argv) {
         // A MOVE whose destination is a high register is always legal, so what
         // reg_address_out carries on the execute cycle is ir2[8:1] and nothing
         // else decides it. Two writes: ir1 <= ir2, ir2 <= data.
-        // MUTATION COPINS-AT-08C stimulus red MUTATE=1 writes the instruction
-        // word at $02E instead of $08C, so ir2 is never loaded.
+        // MUTATION COPINS-AT-08C stimulus red: selecting this assertion's
+        // own id writes the instruction word at $02E instead of $08C, so
+        // ir2 is never loaded.
         h.write(m_copins, 0x0180);
         h.write(m_copins, 0x0180);
         const uint8_t want = (0x180 >> 1) & 0xFF;
@@ -309,8 +326,9 @@ int main(int argc, char** argv) {
         // moves between the two runs, so the difference is the measurement.
         const uint8_t want = (0x040 >> 1) & 0xFF;
 
-        // MUTATION COPCON-AT-02E stimulus red MUTATE=1 writes the danger bit at
-        // $08C instead of $02E, so cdang never changes and both runs agree.
+        // MUTATION COPCON-AT-02E stimulus red: selecting this assertion's
+        // own id writes the danger bit at $08C instead of $02E, so cdang
+        // never changes and both runs agree.
         Harness dark(true);
         dark.write(m_copcon, 0x0000);            // cdang = 0
         dark.write(A_COPINS, 0x0040);
@@ -360,9 +378,10 @@ int main(int argc, char** argv) {
         c.note(std::string("a MOVE to $078 reaches reg_address_out with "
                            "cdang=0: ") + (blocked ? "yes" : "no")
                + ", with cdang=1: " + (allowed ? "yes" : "no"));
-        // MUTATION SPRHDAT-078-IS-RESTRICTED stimulus red MUTATE=1 writes the
-        // danger bit at $08C instead of $02E in the SECOND run, so cdang is
-        // never SET and both halves come back blocked. Mutating the first run
+        // MUTATION SPRHDAT-078-IS-RESTRICTED stimulus red: selecting this
+        // assertion's own id writes the danger bit at $08C instead of $02E
+        // in the SECOND run, so cdang is never SET and both halves come
+        // back blocked. Mutating the first run
         // instead achieves nothing: cdang is already zero out of reset, so
         // removing the write that clears it changes no behaviour at all.
         c.expect(!blocked && allowed,

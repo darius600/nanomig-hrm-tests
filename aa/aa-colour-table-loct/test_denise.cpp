@@ -56,9 +56,19 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector: MUTATE names ONE assertion's own label,
+// and only that assertion's stimulus site changes.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -143,27 +153,25 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks c;
 
     constexpr int ENTRY = 5;
     constexpr uint16_t HIGH_WRITE = 0x0A73;   // what a 12-bit program writes
     constexpr uint16_t LOW_WRITE  = 0x0159;   // a different low-order word
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red.
-    const bool     m_both  = mutate;                      // 1: writes low only
-    const bool     m_low   = mutate;                      // 2: writes both
-    const uint16_t m_other = mutate ? HIGH_WRITE : LOW_WRITE;  // 3: same word
-
     std::cout << "aa-colour-table-loct -- AA_CONFORMANCE at denise\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red\n";
 
     // --- 1. A write with LOCT clear reaches both sets -----------------------
     {
         Harness h;
-        // MUTATION LOCT-CLEAR-WRITES-BOTH-SETS stimulus red MUTATE=1 makes the
-        // write a LOCT=1 one, so only the low set takes it and the high half
-        // keeps whatever was there.
+        // MUTATION LOCT-CLEAR-WRITES-BOTH-SETS stimulus red: selecting this
+        // id makes the write a LOCT=1 one, so only the low set takes it and
+        // the high half keeps whatever was there.
+        const bool m_both = mutating("LOCT-CLEAR-WRITES-BOTH-SETS");
         h.put(ENTRY, HIGH_WRITE, m_both);
         const uint16_t high = h.get(ENTRY, false);
         const uint16_t low  = h.get(ENTRY, true);
@@ -182,9 +190,10 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.put(ENTRY, HIGH_WRITE, false);           // both halves now agree
-        // MUTATION LOCT-SET-WRITES-ONE-SET stimulus red MUTATE=1 makes the
-        // second write a LOCT=0 one, so it lands in both and the high half
-        // moves too.
+        // MUTATION LOCT-SET-WRITES-ONE-SET stimulus red: selecting this id
+        // makes the second write a LOCT=0 one, so it lands in both and the
+        // high half moves too.
+        const bool m_low = mutating("LOCT-SET-WRITES-ONE-SET");
         h.put(ENTRY, LOW_WRITE, !m_low);
         const uint16_t high = h.get(ENTRY, false);
         const uint16_t low  = h.get(ENTRY, true);
@@ -202,9 +211,11 @@ int main(int argc, char** argv) {
     // --- 3. The two halves are read back separately --------------------------
     {
         Harness h;
-        // MUTATION THE-TWO-HALVES-READ-BACK-SEPARATELY stimulus red
-        // MUTATE=1 writes the same word into both halves, so the two
-        // reads agree and the entry cannot be shown to be two registers.
+        // MUTATION THE-TWO-HALVES-READ-BACK-SEPARATELY stimulus red:
+        // selecting this id writes the same word into both halves, so the
+        // two reads agree and the entry cannot be shown to be two registers.
+        const uint16_t m_other = mutating("THE-TWO-HALVES-READ-BACK-SEPARATELY")
+                                      ? HIGH_WRITE : LOW_WRITE;
         h.put(ENTRY, HIGH_WRITE, false);
         h.put(ENTRY, m_other, true);
         const uint16_t high = h.get(ENTRY, false);

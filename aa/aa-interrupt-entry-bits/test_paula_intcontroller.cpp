@@ -40,10 +40,18 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -116,34 +124,40 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: an address written, an address read, or the top
-    // bit that decides which way a write lands.
-    const uint16_t m_ena  = mutate ? A_INTREQ  : A_INTENA;    // 2
-    const uint16_t m_req  = mutate ? A_INTENA  : A_INTREQ;    // 3
-    const uint16_t m_reqr = mutate ? A_INTENAR : A_INTREQR;   // 4
-    const uint16_t m_set  = mutate ? CLEAR     : SET;         // 5
-    const uint16_t m_two  = mutate ? SET       : CLEAR;       // 6
-    const uint16_t m_wr   = mutate ? A_INTREQ  : A_INTREQR;   // 7
-    const uint16_t m_live = mutate ? (uint16_t)0x0000u        // 1
-                                  : (uint16_t)0x8000u;
+    // Per-assertion mutation selector: MUTATE names ONE assertion's own
+    // label, and only that assertion's stimulus site changes.
+    const uint16_t m_ena  = mutating("INTENA-ENTRY-IS-AT-09A") ? A_INTREQ  : A_INTENA;    // 2
+    const uint16_t m_req  = mutating("INTREQ-ENTRY-IS-AT-09C") ? A_INTENA  : A_INTREQ;    // 3
+    const uint16_t m_reqr = mutating("INTREQR-ENTRY-IS-AT-01E") ? A_INTENAR : A_INTREQR;  // 4
+    const uint16_t m_set  = mutating("SET-CLR-DECIDES-WHICH-WAY-A-WRITE-LANDS") ? CLEAR : SET; // 5
+    const uint16_t m_two  = mutating("LOADING-A-WORD-TAKES-A-SET-AND-A-CLEAR") ? SET : CLEAR;  // 6
+    const uint16_t m_wr   = mutating("INTREQR-ENTRY-TAKES-NO-WRITES") ? A_INTREQ : A_INTREQR;  // 7
+    const uint16_t m_live = mutating("FIXTURE-REACHES-THE-ENABLE-REGISTER")
+                                 ? (uint16_t)0x0000u : (uint16_t)0x8000u;  // 1
 
     constexpr uint16_t MASK_A = 0x0140;   // two bits, well apart
     constexpr uint16_t MASK_B = 0x2002;   // two others, one of them high
 
     std::cout << "aa-interrupt-entry-bits -- AA_CONFORMANCE at "
                  "paula_intcontroller\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, "
+                      "every other assertion must keep its baseline verdict\n";
 
     // --- 1. The fixture reaches the enable register -------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-REACHES-THE-ENABLE-REGISTER stimulus red
-        // MUTATE=1 drops bit 15, so the same mask clears bits that were
-        // already clear and the write leaves no trace to find.
+        // MUTATION FIXTURE-REACHES-THE-ENABLE-REGISTER stimulus red:
+        // MUTATE=<id> drops bit 15, so the same mask clears bits that were
+        // already clear and the write leaves no trace to find. MEASURED
+        // (WSL/Verilator 5.052, run alone against this id): FAIL FIXTURE-
+        // REACHES-THE-ENABLE-REGISTER, all six other assertions PASS,
+        // summary "6 passed, 1 failed" (baseline "7 passed, 0 failed").
+        // Only the named assertion moved.
         h.write(A_INTENA, (uint16_t)(m_live | MASK_A));
         const uint16_t got = h.read(A_INTENAR);
         c.note("after one INTENA write of " + hex(m_live | MASK_A) +
@@ -157,9 +171,12 @@ int main(int argc, char** argv) {
     // --- 2. INTENA is the register at $09A ----------------------------------
     {
         Harness h;
-        // MUTATION INTENA-ENTRY-IS-AT-09A stimulus red MUTATE=1 writes the
-        // request register's address instead, which leaves the enable
-        // register clear.
+        // MUTATION INTENA-ENTRY-IS-AT-09A stimulus red: MUTATE=<id> writes
+        // the request register's address instead, which leaves the enable
+        // register clear. MEASURED (WSL/Verilator 5.052, run alone against
+        // this id): FAIL INTENA-ENTRY-IS-AT-09A, all six other assertions
+        // PASS, summary "6 passed, 1 failed". Only the named assertion
+        // moved.
         h.write(m_ena, (uint16_t)(SET | MASK_B));
         const uint16_t got = h.read(A_INTENAR);
         c.note("INTENAR reads " + hex(got) + " after the write");
@@ -172,9 +189,12 @@ int main(int argc, char** argv) {
     // --- 3. INTREQ is the register at $09C ----------------------------------
     {
         Harness h;
-        // MUTATION INTREQ-ENTRY-IS-AT-09C stimulus red MUTATE=1 writes the
-        // enable register's address instead, so the request register keeps
-        // its reset value.
+        // MUTATION INTREQ-ENTRY-IS-AT-09C stimulus red: MUTATE=<id> writes
+        // the enable register's address instead, so the request register
+        // keeps its reset value. MEASURED (WSL/Verilator 5.052, run alone
+        // against this id): FAIL INTREQ-ENTRY-IS-AT-09C, all six other
+        // assertions PASS, summary "6 passed, 1 failed". Only the named
+        // assertion moved.
         h.write(m_req, (uint16_t)(SET | MASK_A));
         const uint16_t got = h.read(A_INTREQR);
         c.note("INTREQR reads " + hex(got) + " after the write");
@@ -188,8 +208,11 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write(A_INTREQ, (uint16_t)(SET | MASK_B));
-        // MUTATION INTREQR-ENTRY-IS-AT-01E stimulus red MUTATE=1 reads the
-        // enable register's reader instead, which was never written.
+        // MUTATION INTREQR-ENTRY-IS-AT-01E stimulus red: MUTATE=<id> reads
+        // the enable register's reader instead, which was never written.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // INTREQR-ENTRY-IS-AT-01E, all six other assertions PASS, summary
+        // "6 passed, 1 failed". Only the named assertion moved.
         const uint16_t got = h.read(m_reqr);
         c.note("the address the entry gives INTREQR reads " + hex(got));
         c.expect((got & MASK_B) == MASK_B,
@@ -202,9 +225,13 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write(A_INTENA, (uint16_t)(SET | MASK_A));
-        // MUTATION SET-CLR-DECIDES-WHICH-WAY-A-WRITE-LANDS stimulus red
-        // MUTATE=1 clears bit 15 in the second write, so the second mask
+        // MUTATION SET-CLR-DECIDES-WHICH-WAY-A-WRITE-LANDS stimulus red:
+        // MUTATE=<id> clears bit 15 in the second write, so the second mask
         // clears instead of setting and the two bits never stand together.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // SET-CLR-DECIDES-WHICH-WAY-A-WRITE-LANDS, all six other assertions
+        // PASS, summary "6 passed, 1 failed". Only the named assertion
+        // moved.
         h.write(A_INTENA, (uint16_t)(m_set | MASK_B));
         const uint16_t both = h.read(A_INTENAR);
         h.write(A_INTENA, (uint16_t)(CLEAR | MASK_A));
@@ -225,9 +252,13 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_INTREQ, (uint16_t)(SET | 0x7FFF));      // everything on
         const uint16_t one = h.read(A_INTREQR);
-        // MUTATION LOADING-A-WORD-TAKES-A-SET-AND-A-CLEAR stimulus red
-        // MUTATE=1 makes the second write another SET, so the bits that
+        // MUTATION LOADING-A-WORD-TAKES-A-SET-AND-A-CLEAR stimulus red:
+        // MUTATE=<id> makes the second write another SET, so the bits that
         // should have been cleared stay standing and one write looks enough.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // LOADING-A-WORD-TAKES-A-SET-AND-A-CLEAR, all six other assertions
+        // PASS, summary "6 passed, 1 failed". Only the named assertion
+        // moved.
         h.write(A_INTREQ, (uint16_t)(m_two | (uint16_t)(~MASK_A & 0x7FFF)));
         const uint16_t two = h.read(A_INTREQR);
         c.note("after one set-everything write INTREQR reads " + hex(one) +
@@ -245,9 +276,12 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_INTREQ, (uint16_t)(SET | MASK_A));
         const uint16_t before = h.read(A_INTREQR);
-        // MUTATION INTREQR-ENTRY-TAKES-NO-WRITES stimulus red MUTATE=1 aims
-        // the clearing write at INTREQ itself, which does change the
+        // MUTATION INTREQR-ENTRY-TAKES-NO-WRITES stimulus red: MUTATE=<id>
+        // aims the clearing write at INTREQ itself, which does change the
         // register, so a writable reader would look the same as this.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // INTREQR-ENTRY-TAKES-NO-WRITES, all six other assertions PASS,
+        // summary "6 passed, 1 failed". Only the named assertion moved.
         h.write(m_wr, (uint16_t)(CLEAR | MASK_A));
         const uint16_t after = h.read(A_INTREQR);
         c.note("INTREQR reads " + hex(before) + " before a write to its own "

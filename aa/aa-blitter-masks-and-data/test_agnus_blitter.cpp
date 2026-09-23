@@ -46,10 +46,20 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+namespace {
+// Per-assertion mutation selector: MUTATE names ONE assertion's own label,
+// and only that assertion's stimulus site changes.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -165,25 +175,22 @@ static std::string show(const std::vector<uint16_t>& r) {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks c;
 
     const uint16_t MASK = 0x0FF0;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red.
-    const uint16_t m_fix   = mutate ? 0x0000u : 0xFFFFu;   // 1: masks the row
-    const bool     m_first = mutate;                       // 2: masks the last
-    const bool     m_last  = mutate;                       // 3: masks the first
-    const uint16_t m_zero  = mutate ? 0xFFFFu : 0x0000u;   // 4: masks nothing
-    const uint16_t m_pre   = mutate ? SRC_A : (uint16_t)0x0F0Fu; // 6: same word
-
     std::cout << "aa-blitter-masks-and-data -- AA_CONFORMANCE at agnus_blitter\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 closes
-        // the first-word mask, so word 0 differs from the rest.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // id closes the first-word mask, so word 0 differs from the rest.
+        const uint16_t m_fix = mutating("FIXTURE-DELIVERS-KNOWN-VALUE")
+                                    ? 0x0000u : 0xFFFFu;
         const std::vector<uint16_t> r = blit(0x0F, m_fix, 0xFFFF);
         const bool flat = r.size() == 4 && r[0] == r[1] && r[1] == r[2] &&
                           r[2] == r[3];
@@ -196,9 +203,10 @@ int main(int argc, char** argv) {
 
     // --- 2. BLTAFWM reaches the first word and no other ---------------------
     {
-        // MUTATION BLTAFWM-ANDS-THE-FIRST-WORD-ONLY stimulus red MUTATE=1
-        // puts the pattern in the LAST word mask instead, so word 0 keeps
-        // the whole source and word 3 is the one that moves.
+        // MUTATION BLTAFWM-ANDS-THE-FIRST-WORD-ONLY stimulus red: selecting
+        // this id puts the pattern in the LAST word mask instead, so word 0
+        // keeps the whole source and word 3 is the one that moves.
+        const bool m_first = mutating("BLTAFWM-ANDS-THE-FIRST-WORD-ONLY");
         int tried = 0, vacuous = 0;
         bool ok = true;
         std::ostringstream o;
@@ -238,9 +246,10 @@ int main(int argc, char** argv) {
 
     // --- 3. And BLTALWM reaches the last -------------------------------------
     {
-        // MUTATION BLTALWM-ANDS-THE-LAST-WORD-ONLY stimulus red MUTATE=1
-        // puts the pattern in the FIRST word mask instead, so the word this
-        // assertion checks is untouched and another one moves.
+        // MUTATION BLTALWM-ANDS-THE-LAST-WORD-ONLY stimulus red: selecting
+        // this id puts the pattern in the FIRST word mask instead, so the
+        // word this assertion checks is untouched and another one moves.
+        const bool m_last = mutating("BLTALWM-ANDS-THE-LAST-WORD-ONLY");
         int tried = 0, vacuous = 0;
         bool ok = true;
         std::ostringstream o;
@@ -280,8 +289,11 @@ int main(int argc, char** argv) {
 
     // --- 4. A zero in any bit overrides source A -----------------------------
     {
-        // MUTATION A-ZERO-OVERRIDES-SOURCE-A stimulus red MUTATE=1 opens the
-        // mask instead of closing it, so the first word keeps source A.
+        // MUTATION A-ZERO-OVERRIDES-SOURCE-A stimulus red: selecting this id
+        // opens the mask instead of closing it, so the first word keeps
+        // source A.
+        const uint16_t m_zero = mutating("A-ZERO-OVERRIDES-SOURCE-A")
+                                     ? 0xFFFFu : 0x0000u;
         int tried = 0;
         bool ok = true;
         for (int bit = 0; bit < 8; ++bit) {
@@ -307,10 +319,11 @@ int main(int argc, char** argv) {
 
     // --- 5. BLTDDAT carries the result out, automatically -------------------
     {
-        // MUTATION BLTDDAT-CARRIES-THE-RESULT stimulus red MUTATE=1 clears
-        // USED, so the blit runs and nothing leaves at all.
+        // MUTATION BLTDDAT-CARRIES-THE-RESULT stimulus red: selecting this id
+        // clears USED, so the blit runs and nothing leaves at all.
+        const bool m_no_used = mutating("BLTDDAT-CARRIES-THE-RESULT");
         Harness h;
-        h.write(A_BLTCON0, (mutate ? 0u : USED) | 0x0Fu);
+        h.write(A_BLTCON0, (m_no_used ? 0u : USED) | 0x0Fu);
         h.write(A_BLTCON1, 0);
         h.write(A_BLTAFWM, 0xFFFF);
         h.write(A_BLTALWM, 0xFFFF);
@@ -332,8 +345,10 @@ int main(int argc, char** argv) {
 
     // --- 6. The source data registers can be preloaded by the processor ------
     {
-        // MUTATION BLTXDAT-CAN-BE-PRELOADED stimulus red MUTATE=1 preloads the
-        // same word twice, so no difference can show.
+        // MUTATION BLTXDAT-CAN-BE-PRELOADED stimulus red: selecting this id
+        // preloads the same word twice, so no difference can show.
+        const uint16_t m_pre = mutating("BLTXDAT-CAN-BE-PRELOADED")
+                                    ? SRC_A : (uint16_t)0x0F0Fu;
         int moved = 0;
         for (int bit = 0; bit < 8; ++bit) {
             const uint16_t LF = (uint16_t)(1u << bit);

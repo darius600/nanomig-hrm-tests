@@ -41,9 +41,21 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. Every OTHER assertion stays on its real stimulus and is a
+// live control on each run.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -113,28 +125,33 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks c;
 
     constexpr uint16_t WORD = 0x5C3C;      // distinct halves, and a word
                                        // that survives the mask below
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red.
-    const uint16_t m_word = mutate ? (uint16_t)0x3C5Cu : WORD;  // 1,2: halves swapped
-    const uint16_t m_port = mutate ? A_POTINP : A_JOY1DAT;      // 3: wrong register
-    const uint16_t m_all  = mutate ? (uint16_t)0x0000u
-                                   : (uint16_t)0xFFFFu;         // 4: nothing set
+    // MUTATION. Each guard below tests its own assertion's label and moves
+    // ONE thing; MUTATE=<label> selects exactly one.
+    const uint16_t m_port = mutating("JOYTEST-FILLS-BOTH-PORTS") ? A_POTINP : A_JOY1DAT;      // 3: wrong register
+    const uint16_t m_all  = mutating("JOYDAT-MASKS-THE-TWO-LOWEST-BITS-OF-EACH-AXIS")
+                                 ? (uint16_t)0x0000u : (uint16_t)0xFFFFu;         // 4: nothing set
 
     std::cout << "aa-controller-port-bit-tables -- AA_CONFORMANCE at userio\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, the "
+                      "others must stay on their baseline verdict\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 writes
-        // the two halves the other way round, so the word read back is not
-        // the one compared against.
-        h.write(A_JOYTEST, m_word);
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // assertion's own id writes the two halves the other way round, so
+        // the word read back is not the one compared against.
+        const uint16_t word1 = mutating("FIXTURE-DELIVERS-KNOWN-VALUE")
+                                    ? (uint16_t)0x3C5Cu : WORD;
+        h.write(A_JOYTEST, word1);
         const uint16_t got = h.read(A_JOY0DAT);
         c.note("after one JOYTEST write of " + hex(WORD) +
                ", JOY0DAT reads " + hex(got));
@@ -147,10 +164,13 @@ int main(int argc, char** argv) {
     // --- 2. The table is Y above X ------------------------------------------
     {
         Harness h;
-        // MUTATION JOYDAT-IS-Y-ABOVE-X stimulus red MUTATE=1 writes the two
-        // halves the other way round, so the high byte carries what the low
-        // byte is compared against and neither half matches.
-        h.write(A_JOYTEST, m_word);
+        // MUTATION JOYDAT-IS-Y-ABOVE-X stimulus red: selecting this
+        // assertion's own id writes the two halves the other way round, so
+        // the high byte carries what the low byte is compared against and
+        // neither half matches.
+        const uint16_t word2 = mutating("JOYDAT-IS-Y-ABOVE-X")
+                                    ? (uint16_t)0x3C5Cu : WORD;
+        h.write(A_JOYTEST, word2);
         const uint16_t got = h.read(A_JOY0DAT);
         c.note("the high byte reads " + hex((got >> 8) & 0xFF) +
                " and the low byte " + hex(got & 0xFF));
@@ -166,9 +186,9 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_JOYTEST, WORD);
         const uint16_t port0 = h.read(A_JOY0DAT);
-        // MUTATION JOYTEST-FILLS-BOTH-PORTS stimulus red MUTATE=1 reads the
-        // pot pin register instead of the second port, which answers with
-        // something else entirely.
+        // MUTATION JOYTEST-FILLS-BOTH-PORTS stimulus red: selecting this
+        // assertion's own id reads the pot pin register instead of the
+        // second port, which answers with something else entirely.
         const uint16_t port1 = h.read(m_port);
         c.note("after one write, port 0 reads " + hex(port0) +
                " and port 1 reads " + hex(port1));
@@ -182,9 +202,10 @@ int main(int argc, char** argv) {
     // --- 4. What the second table's masked bits actually do -----------------
     {
         Harness h;
-        // MUTATION JOYDAT-MASKS-THE-TWO-LOWEST-BITS-OF-EACH-AXIS stimulus red
-        // MUTATE=1 writes zero, so no bit is set that the mask could
-        // clear and the read-back cannot show which four it clears.
+        // MUTATION JOYDAT-MASKS-THE-TWO-LOWEST-BITS-OF-EACH-AXIS stimulus red:
+        // selecting this assertion's own id writes zero, so no bit is set
+        // that the mask could clear and the read-back cannot show which
+        // four it clears.
         h.write(A_JOYTEST, m_all);
         const uint16_t got = h.read(A_JOY0DAT);
         c.note("after writing all ones, JOY0DAT reads " + hex(got) +

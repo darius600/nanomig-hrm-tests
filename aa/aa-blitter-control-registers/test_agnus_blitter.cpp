@@ -42,10 +42,20 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector: MUTATE names ONE assertion's own label,
+// and only that assertion's stimulus site changes.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -147,19 +157,8 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
-
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: the address written, the data pattern, or the ecs
-    // input that decides whether an address is decoded at all.
-    const uint16_t m_size  = mutate ? A_BLTSIZV : A_BLTSIZE;   // 2: never starts
-    const bool     m_ecs   = mutate ? true : false;            // 3: the ecs-less half
-    const uint16_t m_sizv  = mutate ? A_BLTSIZE : A_BLTSIZV;   // 4: starts after all
-    const uint16_t m_adat  = mutate ? A_BLTBDAT : A_BLTADAT;   // 5: A never loaded
-    const uint16_t m_con0  = mutate ? A_BLTCON1 : A_BLTCON0;   // 6: minterm never set
-    const uint16_t m_afwm  = mutate ? A_BLTALWM : A_BLTAFWM;   // 7: the mask never set
-    const uint16_t m_live  = mutate ? A_BLTSIZV : A_BLTSIZE;   // liveness
 
     c.record("oracle: AA specification, PDF pp. 6-7, the address-ordered "
              "register list. BLTDDAT $000, BLTCON0 $040, BLTCON1 $042, BLTAFWM "
@@ -177,8 +176,11 @@ int main(int argc, char** argv) {
     // --- FIXTURE LIVENESS ---------------------------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 writes
-        // the size at $05C, which sets the height and starts nothing.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // id writes the size at $05C instead of $058, which sets the height
+        // and starts nothing.
+        const uint16_t m_live = mutating("FIXTURE-DELIVERS-KNOWN-VALUE")
+                                     ? A_BLTSIZV : A_BLTSIZE;
         h.write(A_BLTCON0, CON0_D_TAKES_A);
         h.write(A_BLTADAT, 0xBEEF);
         h.write(A_BLTAFWM, 0xFFFF);
@@ -197,8 +199,10 @@ int main(int argc, char** argv) {
     {
         Harness h;
         const bool before = h.busy();
-        // MUTATION BLTSIZE-AT-058-STARTS stimulus red MUTATE=1 writes at $05C,
-        // which is the height register and starts nothing.
+        // MUTATION BLTSIZE-AT-058-STARTS stimulus red: selecting this id
+        // writes at $05C, which is the height register and starts nothing.
+        const uint16_t m_size = mutating("BLTSIZE-AT-058-STARTS")
+                                     ? A_BLTSIZV : A_BLTSIZE;
         h.write(m_size, SIZE_FOUR_WORDS);
         const bool after = h.busy();
         c.note("busy was " + std::to_string(before) + " before the write at "
@@ -214,8 +218,9 @@ int main(int argc, char** argv) {
         Harness h(true);
         h.write(A_BLTSIZH, 1);
         const bool with_ecs = h.busy();
-        // MUTATION BLTSIZH-AT-05E-NEEDS-ECS stimulus red MUTATE=1 raises ecs
-        // for the half that is supposed to do nothing.
+        // MUTATION BLTSIZH-AT-05E-NEEDS-ECS stimulus red: selecting this id
+        // raises ecs for the half that is supposed to do nothing.
+        const bool m_ecs = mutating("BLTSIZH-AT-05E-NEEDS-ECS") ? true : false;
         Harness g(m_ecs);
         g.write(A_BLTSIZH, 1);
         const bool without_ecs = g.busy();
@@ -231,8 +236,10 @@ int main(int argc, char** argv) {
     // --- 4. BLTSIZV holds the height and does NOT start ---------------------
     {
         Harness h;
-        // MUTATION BLTSIZV-AT-05C-DOES-NOT-START stimulus red MUTATE=1 writes
-        // at $058 instead, which does start one.
+        // MUTATION BLTSIZV-AT-05C-DOES-NOT-START stimulus red: selecting this
+        // id writes at $058 instead, which does start one.
+        const uint16_t m_sizv = mutating("BLTSIZV-AT-05C-DOES-NOT-START")
+                                     ? A_BLTSIZE : A_BLTSIZV;
         h.write(m_sizv, 4);
         const bool started = h.busy();
         c.note("after a write at $05C, busy reads " + std::to_string(started));
@@ -247,8 +254,10 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write(A_BLTCON0, CON0_D_TAKES_A);
-        // MUTATION BLTADAT-AT-074 stimulus red MUTATE=1 writes the pattern at
-        // $072, so channel A keeps its reset value of zero.
+        // MUTATION BLTADAT-AT-074 stimulus red: selecting this id writes the
+        // pattern at $072, so channel A keeps its reset value of zero.
+        const uint16_t m_adat = mutating("BLTADAT-AT-074")
+                                     ? A_BLTBDAT : A_BLTADAT;
         h.write(m_adat, 0x1234);
         h.write(A_BLTAFWM, 0xFFFF);
         h.write(A_BLTALWM, 0xFFFF);
@@ -265,8 +274,11 @@ int main(int argc, char** argv) {
     // --- 6. BLTCON0 carries the minterm -------------------------------------
     {
         Harness h;
-        // MUTATION BLTCON0-AT-040 stimulus red MUTATE=1 writes the control
-        // word at $042, so the minterm and the D enable are never set.
+        // MUTATION BLTCON0-AT-040 stimulus red: selecting this id writes the
+        // control word at $042, so the minterm and the D enable are never
+        // set.
+        const uint16_t m_con0 = mutating("BLTCON0-AT-040")
+                                     ? A_BLTCON1 : A_BLTCON0;
         h.write(m_con0, 0x0100 | 0x0000);   // USED, minterm $00 -> D is zero
         h.write(A_BLTADAT, 0x5555);
         h.write(A_BLTAFWM, 0xFFFF);
@@ -298,8 +310,10 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_BLTCON0, CON0_D_TAKES_A);
         h.write(A_BLTADAT, 0xFFFF);
-        // MUTATION BLTAFWM-AT-044 stimulus red MUTATE=1 writes the mask at
-        // $046, so the first-word mask keeps its reset value.
+        // MUTATION BLTAFWM-AT-044 stimulus red: selecting this id writes the
+        // mask at $046, so the first-word mask keeps its reset value.
+        const uint16_t m_afwm = mutating("BLTAFWM-AT-044")
+                                     ? A_BLTALWM : A_BLTAFWM;
         h.write(m_afwm, 0x0F0F);
         h.write(A_BLTALWM, 0xFFFF);
         h.write(A_BLTSIZE, SIZE_FOUR_WORDS);

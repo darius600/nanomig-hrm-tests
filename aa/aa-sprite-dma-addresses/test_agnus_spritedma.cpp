@@ -56,10 +56,18 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -148,22 +156,21 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: which address is written, which data pattern, or
-    // which sprite is selected.
+    // Per-assertion mutation selector: MUTATE names ONE assertion's own
+    // label, and only that assertion's stimulus site changes.
     //
     // NO GUARD ROTATES ALL EIGHT SPRITES. A bank indexed consistently wrong
     // returns what was put in it, which is how a symmetric mutation leaves a
     // symmetric decoder green. Each guard breaks one sprite.
-    const int      m_sel    = mutate ? 1 : 0;              // 2: reads sprite 1's pointer
-    const uint16_t m_hi_pat = mutate ? 0x001F : 0xFFE0;    // 3: ignored bits stop being ignored
-    const uint16_t m_lo_pat = mutate ? 0xFFFF : 0x0001;    // 4: likewise for DB0
-    const int      m_spr5   = mutate ? 2 : 5;              // 5: sprite 5 never written
-    const uint16_t m_fmode  = mutate ? 0x0000 : 0x000C;    // 6: increment stays 1
-    const int      m_live   = mutate ? 1 : 0;              // liveness
+    const int      m_sel    = mutating("SPRPT-ADDRESSES") ? 1 : 0;                // 2
+    const uint16_t m_hi_pat = mutating("SPRPT-HIGH-TAKES-DB0-DB4") ? 0x001F : 0xFFE0; // 3
+    const uint16_t m_lo_pat = mutating("SPRPT-LOW-TAKES-DB1-DB15") ? 0xFFFF : 0x0001; // 4
+    const int      m_spr5   = mutating("SPRPT-IS-PER-SPRITE") ? 2 : 5;            // 5
+    const uint16_t m_fmode  = mutating("FMODE-AT-1FC") ? 0x0000 : 0x000C;         // 6
+    const int      m_live   = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? 1 : 0;   // liveness
 
     c.record("oracle: AA specification, PDF pp. 8-9, the address-ordered "
              "register list. SPR0PTH $120 through SPR7PTL $13E, every half "
@@ -183,8 +190,12 @@ int main(int argc, char** argv) {
     // --- FIXTURE LIVENESS ---------------------------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 reads
-        // sprite 1's pointer, which was never written.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: MUTATE=<id>
+        // reads sprite 1's pointer, which was never written. MEASURED (WSL/
+        // Verilator 5.052, run alone against this id): FAIL FIXTURE-
+        // DELIVERS-KNOWN-VALUE, all five other assertions PASS, summary "5
+        // passed, 1 failed" (baseline "6 passed, 0 failed"). Only the named
+        // assertion moved.
         h.write(sprpth_addr(0), 0x0011);
         h.write(sprptl_addr(0), 0x2468);
         const uint32_t got = h.pointer(m_live);
@@ -211,8 +222,11 @@ int main(int argc, char** argv) {
         bool all = true;
         std::string seen;
         for (int s = 0; s < 8; ++s) {
-            // MUTATION SPRPT-ADDRESSES stimulus red MUTATE=1 reads sprite 0
-            // through sprite 1's beam position.
+            // MUTATION SPRPT-ADDRESSES stimulus red: MUTATE=<id> reads
+            // sprite 0 through sprite 1's beam position. MEASURED (WSL/
+            // Verilator 5.052, run alone against this id): FAIL SPRPT-
+            // ADDRESSES, all five other assertions PASS, summary "5
+            // passed, 1 failed". Only the named assertion moved.
             const int look = (s == 0) ? m_sel : s;
             const uint32_t p = h.pointer(look);
             seen += (s ? " " : "") + hex(Harness::high5(p));
@@ -232,8 +246,11 @@ int main(int argc, char** argv) {
     // --- 3. the HIGH half of a sprite pointer takes DB0-DB4 -----------------
     {
         Harness h;
-        // MUTATION SPRPT-HIGH-TAKES-DB0-DB4 oracle red MUTATE=1 writes a word
-        // whose low five bits are set where the assertion needs them clear.
+        // MUTATION SPRPT-HIGH-TAKES-DB0-DB4 stimulus red: MUTATE=<id> writes
+        // a word whose low five bits are set where the assertion needs them
+        // clear. MEASURED (WSL/Verilator 5.052, run alone against this id):
+        // FAIL SPRPT-HIGH-TAKES-DB0-DB4, all five other assertions PASS,
+        // summary "5 passed, 1 failed". Only the named assertion moved.
         h.write(sprpth_addr(3), m_hi_pat);
         const uint32_t ignored = Harness::high5(h.pointer(3));
         h.write(sprpth_addr(3), 0x001F);
@@ -250,8 +267,11 @@ int main(int argc, char** argv) {
     // --- 4. the LOW half takes DB1-DB15, so DB0 is ignored ------------------
     {
         Harness h;
-        // MUTATION SPRPT-LOW-TAKES-DB1-DB15 oracle red MUTATE=1 writes $FFFF
-        // where the assertion needs a word with only DB0 set.
+        // MUTATION SPRPT-LOW-TAKES-DB1-DB15 stimulus red: MUTATE=<id> writes
+        // $FFFF where the assertion needs a word with only DB0 set.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // SPRPT-LOW-TAKES-DB1-DB15, all five other assertions PASS, summary
+        // "5 passed, 1 failed". Only the named assertion moved.
         h.write(sprptl_addr(3), m_lo_pat);
         const uint32_t ignored = Harness::low15(h.pointer(3));
         h.write(sprptl_addr(3), 0xFFFF);
@@ -269,9 +289,12 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write(sprpth_addr(2), 0x0003);  h.write(sprptl_addr(2), 0x0006);
-        // MUTATION SPRPT-IS-PER-SPRITE stimulus red MUTATE=1 writes sprite 5's
-        // pattern into sprite 2, so sprite 2 holds the wrong one and sprite 5
-        // holds nothing.
+        // MUTATION SPRPT-IS-PER-SPRITE stimulus red: MUTATE=<id> writes
+        // sprite 5's pattern into sprite 2, so sprite 2 holds the wrong one
+        // and sprite 5 holds nothing. MEASURED (WSL/Verilator 5.052, run
+        // alone against this id): FAIL SPRPT-IS-PER-SPRITE, all five other
+        // assertions PASS, summary "5 passed, 1 failed". Only the named
+        // assertion moved.
         h.write(sprpth_addr(m_spr5), 0x001C); h.write(sprptl_addr(5), 0x7FFE);
         const uint32_t p2 = h.pointer(2);
         const uint32_t p5 = h.pointer(5);
@@ -291,8 +314,11 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(sprpth_addr(0), 0x0000);
         h.write(sprptl_addr(0), 0x0100);
-        // MUTATION FMODE-AT-1FC stimulus red MUTATE=1 writes zero to $1FC, so
-        // fmode[3:2] stays 00 and the pointer advances by one, not four.
+        // MUTATION FMODE-AT-1FC stimulus red: MUTATE=<id> writes zero to
+        // $1FC, so fmode[3:2] stays 00 and the pointer advances by one, not
+        // four. MEASURED (WSL/Verilator 5.052, run alone against this id):
+        // FAIL FMODE-AT-1FC, all five other assertions PASS, summary "5
+        // passed, 1 failed". Only the named assertion moved.
         h.write(A_FMODE, m_fmode);           // fmode[3:2] = 11 -> add 4
         h.select(0);
         const uint32_t before = h.dut->address_out & 0xFFFFF;

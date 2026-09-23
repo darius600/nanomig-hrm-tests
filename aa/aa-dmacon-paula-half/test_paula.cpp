@@ -35,9 +35,17 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 class Checks {
 public:
@@ -127,24 +135,37 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks c;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red.
-    const uint16_t m_both = mutate ? DSKEN : (uint16_t)(DMAEN | DSKEN); // 1
-    const uint16_t m_dsk  = mutate ? (uint16_t)(DMAEN | DSKEN) : DMAEN; // 2
-    const uint16_t m_othr = mutate ? (uint16_t)(DMAEN | DSKEN)
-                                   : (uint16_t)(DMAEN | BPLEN);         // 3
-    const uint16_t m_clr  = mutate ? SETCLR : 0u;                       // 4
+    // Per-assertion mutation selector: MUTATE names ONE assertion's own
+    // label, and only that assertion's stimulus site changes.
+    const uint16_t m_both = mutating("DMAEN-AND-DSKEN-TOGETHER")
+                                 ? DSKEN : (uint16_t)(DMAEN | DSKEN);   // 1
+    const uint16_t m_dsk  = mutating("DSKEN-IS-THE-CHANNELS-OWN-BIT")
+                                 ? (uint16_t)(DMAEN | DSKEN) : DMAEN;   // 2
+    const uint16_t m_othr = mutating("A-BIT-THIS-CHIP-DOES-NOT-OWN")
+                                 ? (uint16_t)(DMAEN | DSKEN)
+                                 : (uint16_t)(DMAEN | BPLEN);           // 3
+    const uint16_t m_clr  = mutating("SET-CLEAR-REACHES-THE-ENABLES")
+                                 ? SETCLR : 0u;                         // 4
 
     std::cout << "aa-dmacon-paula-half -- AA_CONFORMANCE at paula\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, "
+                      "every other assertion must keep its baseline verdict\n";
 
     // --- 1. DMAEN and DSKEN together let the disk transfer run --------------
     {
         Harness h;
-        // MUTATION DMAEN-AND-DSKEN-TOGETHER stimulus red MUTATE=1 leaves bit 9
-        // out, so the channel enable alone has to do it and cannot.
+        // MUTATION DMAEN-AND-DSKEN-TOGETHER stimulus red: MUTATE=<id> leaves
+        // bit 9 out, so the channel enable alone has to do it and cannot.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id):
+        // FAIL DMAEN-AND-DSKEN-TOGETHER, PASS DSKEN-IS-THE-CHANNELS-OWN-BIT,
+        // PASS A-BIT-THIS-CHIP-DOES-NOT-OWN, PASS SET-CLEAR-REACHES-THE-
+        // ENABLES, summary "3 passed, 1 failed" (baseline "4 passed, 0
+        // failed"). Only the named assertion moved.
         h.arm();
         const bool before = h.active();
         h.write(A_DMACON, SETCLR | m_both);
@@ -163,8 +184,13 @@ int main(int argc, char** argv) {
     // --- 2. The master enable alone is not enough ---------------------------
     {
         Harness h;
-        // MUTATION DSKEN-IS-THE-CHANNELS-OWN-BIT stimulus red MUTATE=1 sets
-        // the disk bit as well, so the transfer runs and the negative is gone.
+        // MUTATION DSKEN-IS-THE-CHANNELS-OWN-BIT stimulus red: MUTATE=<id>
+        // sets the disk bit as well, so the transfer runs and the negative
+        // is gone. MEASURED (WSL/Verilator 5.052, run alone against this
+        // id): PASS DMAEN-AND-DSKEN-TOGETHER, FAIL DSKEN-IS-THE-CHANNELS-
+        // OWN-BIT, PASS A-BIT-THIS-CHIP-DOES-NOT-OWN, PASS SET-CLEAR-
+        // REACHES-THE-ENABLES, summary "3 passed, 1 failed". Only the
+        // named assertion moved.
         h.arm();
         h.write(A_DMACON, SETCLR | m_dsk);
         h.settle(4);
@@ -187,9 +213,13 @@ int main(int argc, char** argv) {
     // --- 3. A bit this chip does not own changes nothing here ---------------
     {
         Harness h;
-        // MUTATION A-BIT-THIS-CHIP-DOES-NOT-OWN stimulus red MUTATE=1 writes
-        // the disk bit in place of the bitplane bit, so the transfer runs and
-        // the negative disappears.
+        // MUTATION A-BIT-THIS-CHIP-DOES-NOT-OWN stimulus red: MUTATE=<id>
+        // writes the disk bit in place of the bitplane bit, so the transfer
+        // runs and the negative disappears. MEASURED (WSL/Verilator 5.052,
+        // run alone against this id): PASS DMAEN-AND-DSKEN-TOGETHER, PASS
+        // DSKEN-IS-THE-CHANNELS-OWN-BIT, FAIL A-BIT-THIS-CHIP-DOES-NOT-OWN,
+        // PASS SET-CLEAR-REACHES-THE-ENABLES, summary "3 passed, 1 failed".
+        // Only the named assertion moved.
         h.arm();
         h.write(A_DMACON, SETCLR | m_othr);
         h.settle(4);
@@ -207,8 +237,13 @@ int main(int argc, char** argv) {
     // --- 4. And bit 15 clears what it set -----------------------------------
     {
         Harness h;
-        // MUTATION SET-CLEAR-REACHES-THE-ENABLES stimulus red MUTATE=1 does
-        // the second write as a set, so the enable is ORed in again.
+        // MUTATION SET-CLEAR-REACHES-THE-ENABLES stimulus red: MUTATE=<id>
+        // does the second write as a set, so the enable is ORed in again.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): PASS
+        // DMAEN-AND-DSKEN-TOGETHER, PASS DSKEN-IS-THE-CHANNELS-OWN-BIT,
+        // PASS A-BIT-THIS-CHIP-DOES-NOT-OWN, FAIL SET-CLEAR-REACHES-THE-
+        // ENABLES, summary "3 passed, 1 failed". Only the named assertion
+        // moved.
         h.arm();
         h.write(A_DMACON, SETCLR | DMAEN | DSKEN);
         h.settle(4);

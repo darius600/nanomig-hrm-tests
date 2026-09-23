@@ -45,9 +45,19 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector: MUTATE names ONE assertion's own label,
+// and only that assertion's stimulus site changes.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 class Checks {
 public:
@@ -154,25 +164,19 @@ static int by_pair(int h, int w) {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks c;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard changes ONE number in the stimulus.
-    const int m_fix_w = mutate ? 5 : 4;      // 1: a different word count
-    const int m_h     = mutate ? 1 : 3;      // 2: height never leaves one
-    const int m_pair  = mutate ? 1 : 3;      // 3: the pair disagrees with it
-    const bool m_same  = mutate;             // 4: both routes the same
-    const int m_reuse = mutate ? 0 : 2;      // 5: a second blit of nothing
-    const bool m_only = mutate;              // 6: writes the starting register
-
     std::cout << "aa-blitter-size-registers -- AA_CONFORMANCE at agnus_blitter\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 asks for
-        // five words and compares against four.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // id asks for five words and compares against four.
+        const int m_fix_w = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? 5 : 4;
         const int got = by_bltsize(1, m_fix_w);
         c.note("one row of four words writes " + std::to_string(got) +
                " destination word(s)");
@@ -184,9 +188,10 @@ int main(int argc, char** argv) {
 
     // --- 2. BLTSIZE carries height above width ------------------------------
     {
-        // MUTATION BLTSIZE-CARRIES-HEIGHT-AND-WIDTH stimulus red MUTATE=1 asks
-        // for one row instead of three, so the count is a third of what the
-        // packed word says.
+        // MUTATION BLTSIZE-CARRIES-HEIGHT-AND-WIDTH stimulus red: selecting
+        // this id asks for one row instead of three, so the count is a third
+        // of what the packed word says.
+        const int m_h = mutating("BLTSIZE-CARRIES-HEIGHT-AND-WIDTH") ? 1 : 3;
         const int three_by_four = by_bltsize(m_h, 4);
         const int one_by_four   = by_bltsize(1, 4);
         c.note("BLTSIZE h=3 w=4 writes " + std::to_string(three_by_four) +
@@ -201,8 +206,9 @@ int main(int argc, char** argv) {
 
     // --- 3. The newer pair expresses the same size --------------------------
     {
-        // MUTATION BLTSIZV-AND-BLTSIZH-SPLIT-THE-SIZE stimulus red MUTATE=1
-        // gives the pair a height of one while BLTSIZE keeps three.
+        // MUTATION BLTSIZV-AND-BLTSIZH-SPLIT-THE-SIZE stimulus red: selecting
+        // this id gives the pair a height of one while BLTSIZE keeps three.
+        const int m_pair = mutating("BLTSIZV-AND-BLTSIZH-SPLIT-THE-SIZE") ? 1 : 3;
         const int packed = by_bltsize(3, 4);
         const int split  = by_pair(m_pair, 4);
         c.note("the same blit is " + std::to_string(packed) +
@@ -221,11 +227,12 @@ int main(int argc, char** argv) {
         // MUTATION BLTSIZH-IS-WIDER-THAN-SIX-BITS stimulus red see below
         const int wide = 70;
         const int via_pair = by_pair(1, wide);
-        // MUTATE=1 sizes the second blit through BLTSIZH as well, so the two
-        // routes agree and the difference this assertion is about disappears.
-        // An earlier mutation asked for a width of six instead; that survived,
-        // because a packed word whose height field is zero means 1024 rows and
-        // 6144 is still not 6.
+        // Selecting this id sizes the second blit through BLTSIZH as well, so
+        // the two routes agree and the difference this assertion is about
+        // disappears. An earlier mutation asked for a width of six instead;
+        // that survived, because a packed word whose height field is zero
+        // means 1024 rows and 6144 is still not 6.
+        const bool m_same = mutating("BLTSIZH-IS-WIDER-THAN-SIX-BITS");
         const int via_packed = m_same ? by_pair(1, wide)
                                       : by_bltsize(wide >> 6, wide);
         c.note("a width of " + std::to_string(wide) + " gives " +
@@ -241,9 +248,10 @@ int main(int argc, char** argv) {
 
     // --- 5. BLTSIZV need not be rewritten -----------------------------------
     {
-        // MUTATION BLTSIZV-NEED-NOT-BE-REWRITTEN stimulus red MUTATE=1 makes
-        // the second blit two words wide by zero, so no count survives to
-        // show the height was kept.
+        // MUTATION BLTSIZV-NEED-NOT-BE-REWRITTEN stimulus red: selecting this
+        // id makes the second blit two words wide by zero, so no count
+        // survives to show the height was kept.
+        const int m_reuse = mutating("BLTSIZV-NEED-NOT-BE-REWRITTEN") ? 0 : 2;
         Harness x;
         x.write(A_BLTSIZV, 3);
         x.write(A_BLTSIZH, 4);
@@ -263,8 +271,10 @@ int main(int argc, char** argv) {
     {
         Harness x;
         x.write(A_BLTSIZV, 3);
-        // MUTATION BLTSIZH-STARTS-AND-BLTSIZV-DOES-NOT stimulus red MUTATE=1
-        // writes the starting register in the half that must stay idle.
+        // MUTATION BLTSIZH-STARTS-AND-BLTSIZV-DOES-NOT stimulus red:
+        // selecting this id writes the starting register in the half that
+        // must stay idle.
+        const bool m_only = mutating("BLTSIZH-STARTS-AND-BLTSIZV-DOES-NOT");
         if (m_only) x.write(A_BLTSIZH, 4);
         const bool after_v = x.busy();
         Harness y;
@@ -284,13 +294,13 @@ int main(int argc, char** argv) {
 
     // --- 7. Each bit of BLTSIZH's width field carries its own power of two --
     {
-        // MUTATION BLTSIZH-BITS-ARE-A-BINARY-WIDTH stimulus red MUTATE=1 sets
-        // bit 0 as well as the bit under test, so every count is one word too
-        // many and only the lowest bit still matches.
+        // MUTATION BLTSIZH-BITS-ARE-A-BINARY-WIDTH stimulus red: selecting
+        // this id sets bit 0 as well as the bit under test, so every count is
+        // one word too many and only the lowest bit still matches.
         bool ok = true;
         std::ostringstream o;
         for (int bit = 1; bit <= 10; ++bit) {          // bit 0 alone is 1 word
-            const int w = (1 << bit) | (mutate ? 1 : 0);
+            const int w = (1 << bit) | (mutating("BLTSIZH-BITS-ARE-A-BINARY-WIDTH") ? 1 : 0);
             const int got = by_pair(1, w);
             if (got != (1 << bit)) {
                 ok = false;
@@ -309,12 +319,13 @@ int main(int argc, char** argv) {
 
     // --- 8. And each bit of BLTSIZV's height field does the same ------------
     {
-        // MUTATION BLTSIZV-BITS-ARE-A-BINARY-HEIGHT stimulus red MUTATE=1 adds
-        // one row to every height, so no count matches its power of two.
+        // MUTATION BLTSIZV-BITS-ARE-A-BINARY-HEIGHT stimulus red: selecting
+        // this id adds one row to every height, so no count matches its
+        // power of two.
         bool ok = true;
         std::ostringstream o;
         for (int bit = 0; bit <= 10; ++bit) {
-            const int h = (1 << bit) + (mutate ? 1 : 0);
+            const int h = (1 << bit) + (mutating("BLTSIZV-BITS-ARE-A-BINARY-HEIGHT") ? 1 : 0);
             const int got = by_pair(h, 2);             // two words per row
             if (got != (1 << bit) * 2) {
                 ok = false;
@@ -334,13 +345,13 @@ int main(int argc, char** argv) {
 
     // --- 9. BLTSIZE's low six bits are its width ----------------------------
     {
-        // MUTATION BLTSIZE-WIDTH-BITS-ARE-THE-LOW-SIX stimulus red MUTATE=1
-        // sets bit 0 alongside the bit under test, so each count is one word
-        // too many.
+        // MUTATION BLTSIZE-WIDTH-BITS-ARE-THE-LOW-SIX stimulus red: selecting
+        // this id sets bit 0 alongside the bit under test, so each count is
+        // one word too many.
         bool ok = true;
         std::ostringstream o;
         for (int bit = 1; bit <= 5; ++bit) {
-            const int w = (1 << bit) | (mutate ? 1 : 0);
+            const int w = (1 << bit) | (mutating("BLTSIZE-WIDTH-BITS-ARE-THE-LOW-SIX") ? 1 : 0);
             const int got = by_bltsize(1, w);
             if (got != (1 << bit)) {
                 ok = false;
@@ -358,12 +369,13 @@ int main(int argc, char** argv) {
 
     // --- 10. And its high ten bits are the height ---------------------------
     {
-        // MUTATION BLTSIZE-HEIGHT-BITS-ARE-THE-HIGH-TEN stimulus red MUTATE=1
-        // adds a row to every height, so no count matches its power of two.
+        // MUTATION BLTSIZE-HEIGHT-BITS-ARE-THE-HIGH-TEN stimulus red:
+        // selecting this id adds a row to every height, so no count matches
+        // its power of two.
         bool ok = true;
         std::ostringstream o;
         for (int bit = 0; bit <= 9; ++bit) {
-            const int h = (1 << bit) + (mutate ? 1 : 0);
+            const int h = (1 << bit) + (mutating("BLTSIZE-HEIGHT-BITS-ARE-THE-HIGH-TEN") ? 1 : 0);
             const int got = by_bltsize(h, 2);
             if (got != (1 << bit) * 2) {
                 ok = false;

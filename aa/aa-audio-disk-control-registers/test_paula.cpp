@@ -73,10 +73,23 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. A single on/off flag reddened all eight assertions at once,
+// which cannot show that the mutation recorded for one assertion leaves the
+// other seven green.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -107,8 +120,6 @@ constexpr uint16_t UARTBRK  = 1u << 11; // ADKCON bit 11
 constexpr uint16_t WORDSYNC = 1u << 10; // ADKCON bit 10
 constexpr uint16_t DMAEN    = 1u << 9;  // DMACON master enable
 constexpr uint16_t DSKEN    = 1u << 4;  // DMACON disk enable
-
-static bool g_mutate = false;
 
 // One fresh Verilated model per trial. paula_floppy's dsktrack has no reset
 // term, so state cannot be assumed cleared by a reset pulse alone; the rule is
@@ -215,29 +226,31 @@ private:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    g_mutate = std::getenv("MUTATE") != nullptr;
-    const bool mutate = g_mutate;
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard changes ONE thing: a stimulus that no longer reaches the mechanism,
-    // or an expected word the document does not print.
-    const int      m_fix     = mutate ? A_ADKCON : A_ADKCONR;  // 1: write-only address
-    const int      m_adk_w   = mutate ? A_DMACON : A_ADKCON;   // 2: writes the wrong register
-    const uint16_t m_clr     = mutate ? SETCLR : 0u;           // 3: "clear" done as a set
-    const uint16_t m_keep    = mutate ? 0x0F0Fu : 0x00F0u;     // 4: clears exactly what was set
-    const uint16_t m_top     = mutate ? 0xFFFFu : 0x7FFFu;     // 5: expects a stored bit 15
-    const uint16_t m_brk     = mutate ? WORDSYNC : UARTBRK;    // 6: moves a bit with no pin
-    const int      m_dma_w   = mutate ? A_ADKCON : A_DMACON;   // 7: enables nothing
-    const uint16_t m_dma_clr = mutate ? SETCLR : 0u;           // 8: "clear" done as a set
+    // Each guard below is keyed to its OWN assertion's id: MUTATE=<id> changes
+    // ONE thing in that assertion's stimulus, or an expected word the document
+    // does not print, and every other assertion runs its real stimulus.
+    const int      m_fix     = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? A_ADKCON : A_ADKCONR;
+    const int      m_adk_w   = mutating("ADKCON-AT-09E-ADKCONR-AT-010") ? A_DMACON : A_ADKCON;
+    const uint16_t m_clr     = mutating("ADKCON-BIT-15-SETS-OR-CLEARS") ? SETCLR : 0u;
+    const uint16_t m_keep    = mutating("ADKCON-ZERO-BITS-UNCHANGED") ? 0x0F0Fu : 0x00F0u;
+    const uint16_t m_top     = mutating("ADKCONR-BIT-15-IS-NOT-STORED") ? 0xFFFFu : 0x7FFFu;
+    const uint16_t m_brk     = mutating("ADKCON-BIT-11-CLEARS-TXD") ? WORDSYNC : UARTBRK;
+    const int      m_dma_w   = mutating("DMACON-AT-096-GATES-THE-DISK") ? A_ADKCON : A_DMACON;
+    const uint16_t m_dma_clr = mutating("DMACON-CLEARS-WHAT-IT-SET") ? SETCLR : 0u;
 
     std::cout << "aa-audio-disk-control-registers -- AA_CONFORMANCE at paula\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, the "
+                      "others must keep their baseline verdict\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 reads
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red selecting this assertion's own id reads
         // $09E, which the list marks W and the module gives no read path, so
         // the payload cannot come back.
         const uint16_t empty = h.read(A_ADKCONR);
@@ -254,7 +267,7 @@ int main(int argc, char** argv) {
     // --- 2. ADKCON is at $09E, ADKCONR at $010, and only one of them reads ---
     {
         Harness h;
-        // MUTATION ADKCON-AT-09E-ADKCONR-AT-010 stimulus red MUTATE=1 writes
+        // MUTATION ADKCON-AT-09E-ADKCONR-AT-010 stimulus red selecting this assertion's own id writes
         // the payload to $096, which is DMACON and holds five bits, so nothing
         // reaches adkcon and ADKCONR answers zero.
         h.write(m_adk_w, SETCLR | 0x2A41);
@@ -274,7 +287,7 @@ int main(int argc, char** argv) {
     // --- 3. Bit 15 decides whether a written 1 sets or clears ---------------
     {
         Harness h;
-        // MUTATION ADKCON-BIT-15-SETS-OR-CLEARS stimulus red MUTATE=1 performs
+        // MUTATION ADKCON-BIT-15-SETS-OR-CLEARS stimulus red selecting this assertion's own id performs
         // the second write with bit 15 set, so it ORs the same bits in again
         // and nothing is ever cleared.
         h.write(A_ADKCON, SETCLR | 0x7FFF);
@@ -294,7 +307,7 @@ int main(int argc, char** argv) {
     // --- 4. A bit written as zero is left alone -----------------------------
     {
         Harness h;
-        // MUTATION ADKCON-ZERO-BITS-UNCHANGED stimulus red MUTATE=1 clears
+        // MUTATION ADKCON-ZERO-BITS-UNCHANGED stimulus red selecting this assertion's own id clears
         // exactly the bits the first write set, so the register ends empty and
         // "unchanged" cannot be told from "cleared".
         h.write(A_ADKCON, SETCLR | 0x0F0F);
@@ -314,7 +327,7 @@ int main(int argc, char** argv) {
     // --- 5. Bit 15 is the control, not data ---------------------------------
     {
         Harness h;
-        // MUTATION ADKCONR-BIT-15-IS-NOT-STORED oracle red MUTATE=1 expects
+        // MUTATION ADKCONR-BIT-15-IS-NOT-STORED oracle red selecting this assertion's own id expects
         // $FFFF, i.e. a bit 15 that the register stored -- which is the reading
         // this assertion exists to rule out.
         h.write(A_ADKCON, 0xFFFF);
@@ -330,7 +343,7 @@ int main(int argc, char** argv) {
     // --- 6. UARTBRK clears TXD ----------------------------------------------
     {
         Harness h;
-        // MUTATION ADKCON-BIT-11-CLEARS-TXD stimulus red MUTATE=1 sets bit 10
+        // MUTATION ADKCON-BIT-11-CLEARS-TXD stimulus red selecting this assertion's own id sets bit 10
         // instead, which is WORDSYNC and reaches the floppy rather than the
         // UART, so the transmit pin never moves.
         const bool idle = h.txd();
@@ -353,7 +366,7 @@ int main(int argc, char** argv) {
     // --- 7. DMACON at $096 gates the disk DMA -------------------------------
     {
         Harness h;
-        // MUTATION DMACON-AT-096-GATES-THE-DISK stimulus red MUTATE=1 sends the
+        // MUTATION DMACON-AT-096-GATES-THE-DISK stimulus red selecting this assertion's own id sends the
         // enable word to $09E, which is ADKCON: dmacon[4] stays low, dsken with
         // it, and the disk state machine never leaves idle.
         h.arm_dsklen(0x8001);                      // armed, length 1, read
@@ -376,7 +389,7 @@ int main(int argc, char** argv) {
     // --- 8. And the same address clears what it set -------------------------
     {
         Harness h;
-        // MUTATION DMACON-CLEARS-WHAT-IT-SET stimulus red MUTATE=1 performs the
+        // MUTATION DMACON-CLEARS-WHAT-IT-SET stimulus red selecting this assertion's own id performs the
         // second write as a set, so DSKEN is ORed in again and the transfer
         // stays enabled.
         h.arm_dsklen(0x8001);

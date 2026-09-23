@@ -51,9 +51,21 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. Every OTHER assertion stays on its real stimulus and is a
+// live control on each run.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -171,26 +183,30 @@ private:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    const bool mutate = std::getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard changes ONE thing: a stimulus that misses the mechanism, or an
-    // expected word the document does not print.
-    const int      m_fix   = mutate ? A_IDLE : A_DSKBYTR;    // 1: no read path
-    const int      m_bytr  = mutate ? A_DSKSYNC : A_DSKBYTR; // 2: a write-only address
-    const int      m_len_w = mutate ? A_DSKSYNC : A_DSKLEN;  // 3: loads the wrong register
-    const int      m_arm   = mutate ? 1 : 2;                 // 4: never arms
-    const uint16_t m_ro    = mutate ? 0x1234u : IDLE_STATUS; // 5: expects a stored write
+    // MUTATION. Each guard below tests its own assertion's label and changes
+    // ONE thing: a stimulus that misses the mechanism, or an expected word
+    // the document does not print. MUTATE=<label> selects exactly one.
+    const int      m_fix   = mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? A_IDLE : A_DSKBYTR;
+    const int      m_bytr  = mutating("DSKBYTR-AT-01A") ? A_DSKSYNC : A_DSKBYTR;
+    const int      m_len_w = mutating("DSKLEN-AT-024-SHOWS-ITS-DIRECTION") ? A_DSKSYNC : A_DSKLEN;
+    const int      m_arm   = mutating("DSKLEN-ARMS-ON-THE-SECOND-WRITE") ? 1 : 2;
+    const uint16_t m_ro    = mutating("DSKBYTR-TAKES-NO-WRITES") ? 0x1234u : IDLE_STATUS;
 
     std::cout << "aa-disk-length-and-status -- AA_CONFORMANCE at paula_floppy\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, the "
+                      "others must stay on their baseline verdict\n";
 
     // --- 1. The fixture delivers a known value ------------------------------
     {
         Harness h;
-        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red MUTATE=1 reads an
-        // address this module decodes for nothing, which answers zero.
+        // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: selecting this
+        // assertion's own id reads an address this module decodes for
+        // nothing, which answers zero.
         const uint16_t got = h.read(m_fix);
         checks.note("DSKBYTR out of reset reads " + hex(got));
         checks.expect(got == IDLE_STATUS,
@@ -203,8 +219,9 @@ int main(int argc, char** argv) {
     // --- 2. DSKBYTR answers at $01A and nowhere else -------------------------
     {
         Harness h;
-        // MUTATION DSKBYTR-AT-01A stimulus red MUTATE=1 reads $07E, which the
-        // list marks W and this module gives no read path.
+        // MUTATION DSKBYTR-AT-01A stimulus red: selecting this assertion's
+        // own id reads $07E, which the list marks W and this module gives
+        // no read path.
         const uint16_t at_01a = h.read(m_bytr);
         const uint16_t at_idle = h.read(A_IDLE);
         const uint16_t at_07e = h.read(A_DSKSYNC);
@@ -220,9 +237,9 @@ int main(int argc, char** argv) {
     // --- 3. DSKLEN's direction bit is visible in DSKBYTR ---------------------
     {
         Harness h;
-        // MUTATION DSKLEN-AT-024-SHOWS-ITS-DIRECTION stimulus red MUTATE=1
-        // writes the word to $07E, so dsklen never changes and the status bit
-        // stays clear.
+        // MUTATION DSKLEN-AT-024-SHOWS-ITS-DIRECTION stimulus red: selecting
+        // this assertion's own id writes the word to $07E, so dsklen never
+        // changes and the status bit stays clear.
         h.write(m_len_w, 0x4001);                 // write direction, length 1
         const uint16_t writing = h.read(A_DSKBYTR);
         h.write(A_DSKLEN, 0x0001);                // read direction, length 1
@@ -239,9 +256,10 @@ int main(int argc, char** argv) {
     // --- 4. And the write only arms the transfer on the second one -----------
     {
         Harness h;
-        // MUTATION DSKLEN-ARMS-ON-THE-SECOND-WRITE stimulus red MUTATE=1 writes
-        // once: paula_floppy.v:742 needs bit 15 in the latched value AND in the
-        // arriving one, so one write arms nothing and DMAON never rises.
+        // MUTATION DSKLEN-ARMS-ON-THE-SECOND-WRITE stimulus red: selecting
+        // this assertion's own id writes once: paula_floppy.v:742 needs bit
+        // 15 in the latched value AND in the arriving one, so one write
+        // arms nothing and DMAON never rises.
         h.write_n(A_DSKLEN, 0x8001, 1);
         const uint16_t once = h.read(A_DSKBYTR);
         h.reset();
@@ -260,8 +278,9 @@ int main(int argc, char** argv) {
     // --- 5. DSKBYTR takes no writes -----------------------------------------
     {
         Harness h;
-        // MUTATION DSKBYTR-TAKES-NO-WRITES oracle red MUTATE=1 expects the
-        // written word back, which is the reading this assertion rules out.
+        // MUTATION DSKBYTR-TAKES-NO-WRITES oracle red: selecting this
+        // assertion's own id expects the written word back, which is the
+        // reading this assertion rules out.
         h.write(A_DSKBYTR, 0x1234);
         const uint16_t got = h.read(A_DSKBYTR);
         checks.note("after writing 0x1234 at $01A it still reads " + hex(got));

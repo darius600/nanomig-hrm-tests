@@ -34,10 +34,18 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -128,36 +136,44 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
 
-    // MUTATION. Every expect() is guarded so MUTATE=1 forces it red, and each
-    // guard moves ONE thing: the address a word is written to or read from.
-    const uint16_t m_datr = mutate ? A_INTREQR : A_SERDATR;   // 2
-    const uint16_t m_dat  = mutate ? A_SERPER  : A_SERDAT;    // 3
+    // Per-assertion mutation selector: MUTATE names ONE assertion's own
+    // label, and only that assertion's stimulus site changes.
+    const uint16_t m_datr = mutating("SERDATR-IS-AT-018") ? A_INTREQR : A_SERDATR; // 2
+    const uint16_t m_dat  = mutating("SERDAT-IS-AT-030") ? A_SERPER : A_SERDAT;    // 3
     // 4: the VALUE, not the address. Writing the period to SERDATR's
     // address instead left the second run with the reset period of zero,
     // which is FASTER than the slow one -- so the mutated run passed the
     // assertion more convincingly than the real one.
-    const uint16_t m_per  = mutate ? (uint16_t)0x0060u        // 4
-                                   : (uint16_t)0x0010u;
-    const uint16_t m_live = mutate ? A_INTREQR : A_SERDAT;    // 1
+    const uint16_t m_per  = mutating("SERPER-IS-AT-032")
+                                 ? (uint16_t)0x0060u : (uint16_t)0x0010u;          // 4
+    const uint16_t m_live = mutating("FIXTURE-STARTS-A-TRANSMISSION")
+                                 ? A_INTREQR : A_SERDAT;                            // 1
 
     constexpr uint16_t WORD = 0x0155;      // a byte with a stop bit above it
     constexpr uint16_t SLOW = 0x0060;   // the shorter period is m_per,
                                         // which the mutation moves
 
     std::cout << "aa-serial-register-map -- AA_CONFORMANCE at paula_uart\n";
-    std::cout << (mutate ? "MUTATE=1: every assertion below must go red\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must go red, "
+                      "every other assertion must keep its baseline verdict\n";
 
     // --- 1. The fixture starts a transmission -------------------------------
     {
         Harness h;
         const uint16_t idle = h.read(A_SERDATR);
         h.write(A_SERPER, SLOW);
-        // MUTATION FIXTURE-STARTS-A-TRANSMISSION stimulus red MUTATE=1 writes
-        // the word to a neighbouring address this module does not decode, so
-        // the transmitter never starts and TSRE never falls.
+        // MUTATION FIXTURE-STARTS-A-TRANSMISSION stimulus red: MUTATE=<id>
+        // writes the word to a neighbouring address this module does not
+        // decode, so the transmitter never starts and TSRE never falls.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // FIXTURE-STARTS-A-TRANSMISSION, all three other assertions PASS,
+        // summary "3 passed, 1 failed" (baseline "4 passed, 0 failed").
+        // Only the named assertion moved.
         h.write(m_live, WORD);
         h.step();
         const uint16_t busy = h.read(A_SERDATR);
@@ -173,9 +189,12 @@ int main(int argc, char** argv) {
     // --- 2. SERDATR is the address that answers a read ----------------------
     {
         Harness h;
-        // MUTATION SERDATR-IS-AT-018 stimulus red MUTATE=1 reads a
+        // MUTATION SERDATR-IS-AT-018 stimulus red: MUTATE=<id> reads a
         // neighbouring address instead, which this module answers with zero
-        // exactly as it answers every address that is not its own.
+        // exactly as it answers every address that is not its own. MEASURED
+        // (WSL/Verilator 5.052, run alone against this id): FAIL SERDATR-
+        // IS-AT-018, all three other assertions PASS, summary "3 passed, 1
+        // failed". Only the named assertion moved.
         const uint16_t got = h.read(m_datr);
         const uint16_t neighbour = h.read(A_INTREQR);
         c.note("the address the list gives SERDATR reads " + hex(got) +
@@ -191,14 +210,17 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write(A_SERPER, SLOW);
-        // MUTATION SERDAT-IS-AT-030 stimulus red MUTATE=1 writes the word
-        // to SERPER's address instead, which sets a period and starts no
-        // transmission, so the shift register stays empty.
+        // MUTATION SERDAT-IS-AT-030 stimulus red: MUTATE=<id> writes the
+        // word to SERPER's address instead, which sets a period and starts
+        // no transmission, so the shift register stays empty. MEASURED
+        // (WSL/Verilator 5.052, run alone against this id): FAIL SERDAT-IS-
+        // AT-030, all three other assertions PASS, summary "3 passed, 1
+        // failed". Only the named assertion moved.
         h.write(m_dat, WORD);
         h.step();
         const bool started = !(h.read(A_SERDATR) & TSRE);
         c.note(std::string("after writing the word at ") +
-               hex(mutate ? A_SERPER : A_SERDAT) + ", the shift register is " +
+               hex(m_dat) + ", the shift register is " +
                (started ? "holding a word" : "still empty"));
         c.expect(started,
                  "SERDAT-IS-AT-030: the address the AA list gives SERDAT is "
@@ -214,9 +236,12 @@ int main(int argc, char** argv) {
         slow.write(A_SERDAT, WORD);
         const int t_slow = slow.clocks_until_sent();
 
-        // MUTATION SERPER-IS-AT-032 stimulus red MUTATE=1 writes the SAME
-        // period into the second run, so the two transmissions take the
-        // same time and the register is not shown to decide anything.
+        // MUTATION SERPER-IS-AT-032 stimulus red: MUTATE=<id> writes the
+        // SAME period into the second run, so the two transmissions take
+        // the same time and the register is not shown to decide anything.
+        // MEASURED (WSL/Verilator 5.052, run alone against this id): FAIL
+        // SERPER-IS-AT-032, all three other assertions PASS, summary "3
+        // passed, 1 failed". Only the named assertion moved.
         fast.write(A_SERPER, m_per);
         fast.write(A_SERDAT, WORD);
         const int t_fast = fast.clocks_until_sent();

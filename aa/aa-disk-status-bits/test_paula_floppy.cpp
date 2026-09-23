@@ -47,10 +47,22 @@
 #include "verilated.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+namespace {
+// Per-assertion mutation selector, the same form the rest of the suite uses:
+// MUTATE names ONE assertion's own label, and only that assertion's stimulus
+// site changes. Every OTHER assertion stays on its real stimulus and is a
+// live control on each run.
+const char* g_mutate = nullptr;
+inline bool mutating(const char* id) {
+    return g_mutate != nullptr && std::strcmp(g_mutate, id) == 0;
+}
+}  // namespace
 
 static std::string hex(uint32_t v) {
     std::ostringstream o;
@@ -149,30 +161,37 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks c;
-    const bool mutate = getenv("MUTATE") != nullptr;
+    g_mutate = std::getenv("MUTATE");
 
-    // MUTATION. The four green assertions are guarded so MUTATE=1 forces them
-    // red; the two red ones are guarded the other way, so MUTATE=1 asks the
-    // module for what it does instead of what the page says and they go
-    // green. A mutation that made a red redder would prove nothing.
-    const uint16_t m_write = mutate ? (uint16_t)0u : WRITE;         // 2
-    const uint16_t m_arm   = mutate ? (uint16_t)0u : DMAEN;         // 3
-    const uint16_t m_mask  = mutate ? (uint16_t)0xF000u             // 4
-                                    : (uint16_t)0x0F00u;
+    // MUTATION. Each guard below tests its own assertion's label. The four
+    // green assertions are guarded so selecting their own id forces them
+    // red; the two red ones (already red at baseline -- they corroborate
+    // NM-HRM-041) are guarded the other way, so selecting their own id asks
+    // the module for what it does instead of what the page says and they go
+    // green -- a mutation that made a red redder would prove nothing.
+    // MUTATE=<label> selects exactly one.
+    const uint16_t m_write = mutating("DISKWRITE-MIRRORS-DSKLEN-WRITE") ? (uint16_t)0u : WRITE;
+    const uint16_t m_arm   = mutating("DMAON-FOLLOWS-THE-DSKLEN-ENABLE") ? (uint16_t)0u : DMAEN;
+    const uint16_t m_mask  = mutating("DSKBYTR-BITS-11-TO-8-READ-ZERO")
+                                  ? (uint16_t)0xF000u : (uint16_t)0x0F00u;
 
     std::cout << "aa-disk-status-bits -- AA_CONFORMANCE at paula_floppy\n";
-    std::cout << (mutate ? "MUTATE=1: the four green assertions must go red "
-                           "and the two red ones green\n" : "");
+    if (g_mutate)
+        std::cout << "MUTATE=" << g_mutate
+                   << ": exactly the named assertion below must move off its "
+                      "baseline verdict, the others must stay on theirs\n";
 
     // --- 1. The register answers, and its answer moves ----------------------
     {
         Harness h;
         const uint16_t idle = h.read_clocked(A_DSKBYTR);
-        // MUTATION FIXTURE-READS-A-LIVE-REGISTER stimulus red MUTATE=1 arms
-        // DSKLEN with a zero word, so nothing between the two reads changes
-        // and a dead read path would look the same as a live one.
-        h.arm_dsklen(mutate ? (uint16_t)0u
-                            : (uint16_t)(DMAEN | WRITE | 0x0010));
+        // MUTATION FIXTURE-READS-A-LIVE-REGISTER stimulus red: selecting
+        // this assertion's own id arms DSKLEN with a zero word, so nothing
+        // between the two reads changes and a dead read path would look the
+        // same as a live one.
+        h.arm_dsklen(mutating("FIXTURE-READS-A-LIVE-REGISTER")
+                          ? (uint16_t)0u
+                          : (uint16_t)(DMAEN | WRITE | 0x0010));
         const uint16_t armed = h.read_clocked(A_DSKBYTR);
         c.note("DSKBYTR reads " + hex(idle) + " idle and " + hex(armed) +
                " after DSKLEN is armed for a write");
@@ -187,9 +206,10 @@ int main(int argc, char** argv) {
         Harness h;
         h.arm_dsklen((uint16_t)(DMAEN | 0x0010));            // read direction
         const uint16_t reading = h.read_clocked(A_DSKBYTR);
-        // MUTATION DISKWRITE-MIRRORS-DSKLEN-WRITE stimulus red MUTATE=1 arms
-        // DSKLEN for a read in both trials, so bit 13 stays low in both and
-        // the two directions are no longer told apart.
+        // MUTATION DISKWRITE-MIRRORS-DSKLEN-WRITE stimulus red: selecting
+        // this assertion's own id arms DSKLEN for a read in both trials, so
+        // bit 13 stays low in both and the two directions are no longer
+        // told apart.
         h.arm_dsklen((uint16_t)(DMAEN | m_write | 0x0010));  // write direction
         const uint16_t writing = h.read_clocked(A_DSKBYTR);
         c.note("DSKBYTR bit 13 reads " + std::string((reading >> 13) & 1 ? "1" : "0") +
@@ -205,9 +225,10 @@ int main(int argc, char** argv) {
     {
         Harness h;
         const uint16_t idle = h.read_clocked(A_DSKBYTR);
-        // MUTATION DMAON-FOLLOWS-THE-DSKLEN-ENABLE stimulus red MUTATE=1 arms
-        // DSKLEN with the enable bit clear, so the engine never leaves idle
-        // and bit 14 reads the same in both trials.
+        // MUTATION DMAON-FOLLOWS-THE-DSKLEN-ENABLE stimulus red: selecting
+        // this assertion's own id arms DSKLEN with the enable bit clear, so
+        // the engine never leaves idle and bit 14 reads the same in both
+        // trials.
         h.arm_dsklen((uint16_t)(m_arm | 0x0010));
         const uint16_t armed = h.read_clocked(A_DSKBYTR);
         c.note("DSKBYTR bit 14 reads " + std::string((idle >> 14) & 1 ? "1" : "0") +
@@ -225,11 +246,14 @@ int main(int argc, char** argv) {
         Harness h;
         h.arm_dsklen((uint16_t)(DMAEN | WRITE | 0x0010));
         const uint16_t got = h.read_clocked(A_DSKBYTR);
-        // MUTATION DSKBYTR-BITS-11-TO-8-READ-ZERO stimulus red MUTATE=1 looks
-        // at bits 15 to 12 instead, which are the two constant ones and the
-        // two live ones, so the mask can never be clear.
+        // MUTATION DSKBYTR-BITS-11-TO-8-READ-ZERO stimulus red: selecting
+        // this assertion's own id looks at bits 15 to 12 instead, which are
+        // the two constant ones and the two live ones, so the mask can
+        // never be clear.
         c.note("DSKBYTR read " + hex(got) + "; the four cells the AA table "
-               "leaves unused hold " + hex((got & m_mask) >> (mutate ? 12 : 8)));
+               "leaves unused hold " +
+               hex((got & m_mask) >>
+                   (mutating("DSKBYTR-BITS-11-TO-8-READ-ZERO") ? 12 : 8)));
         c.expect((got & m_mask) == 0,
                  "DSKBYTR-BITS-11-TO-8-READ-ZERO: the four cells the AA bit "
                  "table prints as unused read as the zero it prints for them "
@@ -242,11 +266,16 @@ int main(int argc, char** argv) {
         h.arm_dsklen((uint16_t)(DMAEN | 0x0010));
         const uint16_t first = h.read_clocked(A_DSKBYTR);
         const uint16_t second = h.read_clocked(A_DSKBYTR);
-        // MUTATION DSKBYT-IS-CLEARED-BY-THE-READ oracle green This assertion
-        // is RED against the tree, so its mutation is inverted: MUTATE=1
-        // compares bit 15 against what the module returns rather than against
-        // the cleared bit the entry promises, and the assertion goes green.
-        const int want = mutate ? ((second >> 15) & 1) : 0;
+        // MUTATION DSKBYT-IS-CLEARED-BY-THE-READ oracle green: this
+        // assertion is RED against the tree (it corroborates NM-HRM-041), so
+        // its mutation is inverted -- a failing assertion cannot be made to
+        // fail harder. Selecting this assertion's own id compares bit 15
+        // against what the module returns rather than against the cleared
+        // bit the entry promises, and the assertion goes green, which is
+        // this fixture's demonstration that the comparison is live and not
+        // vacuous. Baseline (unmutated) stays red, as it must.
+        const int want = mutating("DSKBYT-IS-CLEARED-BY-THE-READ")
+                              ? ((second >> 15) & 1) : 0;
         c.note("two consecutive bus reads of DSKBYTR return " + hex(first) +
                " and " + hex(second) + "; bit 15 is " +
                std::string((second >> 15) & 1 ? "still set" : "clear") +
@@ -265,11 +294,15 @@ int main(int argc, char** argv) {
         h.write_reg(A_DSKSYNC, SYNC_WORD);
         h.arm_dsklen((uint16_t)(DMAEN | 0x0010));
         const uint16_t got = h.read_clocked(A_DSKBYTR);
-        // MUTATION WORDEQUAL-IS-TRUE-ONLY-WHILE-DSKSYNC-MATCHES oracle green
-        // MUTATE=1 asks for the bit the module returns instead of the clear
-        // one the entry requires while nothing is arriving, so the assertion
-        // goes green.
-        const int want = mutate ? ((got >> 12) & 1) : 0;
+        // MUTATION WORDEQUAL-IS-TRUE-ONLY-WHILE-DSKSYNC-MATCHES oracle green:
+        // this assertion is RED against the tree (it corroborates
+        // NM-HRM-041), so its mutation is inverted the same way as
+        // DSKBYT-IS-CLEARED-BY-THE-READ above. Selecting this assertion's
+        // own id asks for the bit the module returns instead of the clear
+        // one the entry requires while nothing is arriving, so the
+        // assertion goes green. Baseline (unmutated) stays red, as it must.
+        const int want = mutating("WORDEQUAL-IS-TRUE-ONLY-WHILE-DSKSYNC-MATCHES")
+                              ? ((got >> 12) & 1) : 0;
         c.note("with DSKSYNC = " + hex(SYNC_WORD) + " and no disk data "
                "arriving at all, WORDEQUAL reads " +
                std::string((got >> 12) & 1 ? "1" : "0"));
