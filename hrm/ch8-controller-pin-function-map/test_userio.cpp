@@ -534,20 +534,22 @@ int main(int argc, char** argv) {
     record("sol:8-pin.c37 (pin 9 = Light Pen button 2) declined: same reason "
            "as opus:8-tbl8-1.c34.");
 
-    // Group D -- pin 6's fire-line claims: wrong fixture. userio.v computes
-    // _fire0/_fire1 as output ports toward the CIA, but does not itself
-    // expose a readable register bit for them (the readable bit lives on
-    // ciaa.v's CIAAPRA). Belongs to ch8-ciaapra-fire-buttons.
-    record("opus:8-tbl8-1.c18 (pin 6 = Joystick Button 1) declined: this is "
-           "the chapter's fire line; the claim belongs to "
-           "ch8-ciaapra-fire-buttons on the ciaa fixture, not to userio.v "
-           "(userio.v only drives _fire0/_fire1 outward to the CIA; it does "
-           "not itself expose a readable fire bit).");
+    // Group D -- pin 6's fire-line claims: not built in this package. The
+    // binding IS observable at this fixture: userio.v:313 drives the output
+    // port _fire0 from _sjoy1[4] (pin 6) and _mleft (mouse button 1, :361),
+    // so no readable register bit is needed. It was declined here on the
+    // opposite reading, and hrm/appDE-joystick-pinout grades the proposition
+    // at this boundary (O86). The uids stay declined in this package.
+    record("opus:8-tbl8-1.c18 (pin 6 = Joystick Button 1) declined: not "
+           "built in this package. The binding is observable at the userio "
+           "boundary -- userio.v:313 drives the output port _fire0 from "
+           "_sjoy1[4], no readable fire bit needed -- and "
+           "hrm/appDE-joystick-pinout grades it there.");
     record("sol:8-pin.c20 (pin 6 = Joystick Button 1) declined: same reason "
            "as opus:8-tbl8-1.c18.");
     record("opus:8-tbl8-1.c19 (pin 6 = Mouse/TB/DC left button) declined: "
-           "same reason as opus:8-tbl8-1.c18 -- belongs to "
-           "ch8-ciaapra-fire-buttons.");
+           "same reason as opus:8-tbl8-1.c18 -- _fire0 carries _mleft "
+           "(userio.v:313, :361).");
     record("sol:8-pin.c21 (pin 6 = Mouse/TB/DC left button) declined: same "
            "reason as opus:8-tbl8-1.c19.");
 
