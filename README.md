@@ -121,6 +121,15 @@ someone who has never seen this project: what the HRM says, what NanoMig does,
 what the other four implementations say, a suggested change, what holds the
 finding up, and what is left for specialists.
 
+**Six other implementations are read, and four are counted.** WinUAE, vAmiga,
+Denise and Copperline each implemented the manual independently, so they are
+the only witnesses to what it means. The two Minimig lines — MiSTer's
+Minimig-AGA and MiST/TC64 — are NanoMig's ancestors and share its code, so
+their agreement with NanoMig is one implementation counted twice. They answer a
+different question: whether a finding is inherited, and where a fix belongs.
+Each finding page lists all six and marks the two as `descendant`; the
+reasoning is in [`docs/findings/README.md`](docs/findings/README.md#the-two-minimig-lines-are-ancestors-not-witnesses--and-nothing-merges-them-down).
+
 This README deliberately does not reproduce that table. It used to, and it is
 the part that went stale first.
 

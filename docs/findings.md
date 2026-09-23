@@ -9,6 +9,13 @@
 > Those pages are the maintained form and are written to be readable by someone
 > who has never seen this project.
 >
+> "The other four" are the independent emulators WinUAE, vAmiga, Denise and
+> Copperline. Each page also reads the two Minimig lines NanoMig descends from,
+> six in all, but marks them `descendant` and does not count them: sharing
+> NanoMig's code, they cannot witness what the manual means, only whether a
+> finding is inherited
+> ([why](findings/README.md#the-two-minimig-lines-are-ancestors-not-witnesses--and-nothing-merges-them-down)).
+>
 > This file stays as the **register**: the table below is what
 > `hrm-testpipeline/tools/list_reds.py` reads — that script lives in the
 > separate `hrm-testpipeline` repository, not this one — and the sections under
@@ -305,8 +312,8 @@ not the same number. `aa-disk-status-bits` goes red on two of its own
 assertions, which is why the assertion count is one above the package count.
 Sixteen packages cover the RTL modules that decode an address the AA register
 list prints; four are from slice 2, five from slice 4, one from slice 3,
-one from slice 5 and five from slice 1. Six of the seven slices are
-classified to their last record.
+one from slice 5, five from slice 1 and one, the scroll range, from slice 6.
+All seven slices are classified to their last record.
 
 Two of the four keys are findings of their own: NM-AA-004, VPOSR's chip
 identifier, and NM-AA-005, the long line that is no longer than a short one.
