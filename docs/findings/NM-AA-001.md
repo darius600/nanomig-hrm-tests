@@ -11,7 +11,7 @@
 | **Test** | [`aa/aa-clxcon2-address`](../../aa/aa-clxcon2-address) · five graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF pp. 4, 8, 16, 18 |
 | **Assertions** | 5 green, each with its own mutation; `make mutate` reports 0 passed, 5 failed |
-| **Verdict of the four** | not consulted — this is a defect in a document, not a behaviour the implementations could disagree about |
+| **Verdict of the four** | **unanimous for $10E, and it leaves the document's other half with nobody behind it.** Three of the four decode CLXCON2, and all three decode it at `$10E` with BPLCON4 at `$10C`. The fourth implements neither register and still names both at those addresses in its own register table. Not one of them puts CLXCON2 at `$10C`. See [What the others say](#what-the-others-say) |
 
 ## What the AA specification says
 
@@ -78,6 +78,31 @@ effect that makes it observable: `clxcon2[7:6]` enable bitplanes 7 and 8 in the
 collision match and `clxcon2[1:0]` carry their match values. With the register
 zero, bit 7 of `bpldata` cannot affect a collision; with `$00C3` written, it
 can. That difference is the measurement.
+
+## What the others say
+
+The address is not a matter of opinion for an implementation: each of these
+decodes a write to `$10E` or it does not, and each has to put BPLCON4
+somewhere.
+
+| | where | what it does |
+|---|---|---|
+| **WinUAE** | [`custom.cpp:7412`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L7412) | `case 0x10e: CLXCON2(value); break;` — with `case 0x10c: BPLCON4(value); break;` at [`:7364`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L7364). Its state-file register table carries the same pair in address order, `/* 10C BPLCON4 */` then `/* 10E CLXCON2* */` ([`:7778`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L7778-L7779)) |
+| **vAmiga** | [`Memory.cpp:2894`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L2894) | `case 0x10E >> 1: // CLXCON2 (AGA)`, in the slot immediately after `case 0x10C >> 1: // BPLCON4 (AGA)` — two adjacent arms of one address-decoded switch, so the pair cannot collide |
+| **Denise** | [`debuggerSnapshot.h:456`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/system/debuggerSnapshot.h#L456-L457) | **implements neither register** — its write decode steps straight from `case 0x10a` to `case 0x110` ([`register.cpp:479`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/register.cpp#L479-L483)) — and its own register-name table still reads `{0x210c, "BPLCON4"}, {0x210e, "CLXCON2"}`, the chip base `$200` plus the two addresses |
+| **Copperline** | [`custom_regs.rs:248`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/custom_regs.rs#L247-L248) | `0x10E if self.denise_is_lisa() => Some(self.denise.clxcon2)` for the read, `0x10C` for BPLCON4 in the line above it, and `0x10E => self.clxcon2 = value & 0x0FFF` for the write ([`bus.rs:11710`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L11710)). Its register-mask table gives `$10E` the writable bits `0x00C3` ([`regcheck.rs:331`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/regcheck.rs#L331)) — the two enables and the two match values, which is the field this finding's test drives |
+| **MiSTer** | [`rtl/denise_collision.v:20`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_collision.v#L20) | descendant — `parameter CLXCON2 = 9'h10e;`, the identical line |
+| **TC64** | [`rtl/minimig/denise_collision.v:20`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_collision.v#L20) | descendant — the identical line |
+
+**This does not repair the document and it does narrow what a reader may cite.**
+The p. 8 address list and Commodore's own `custom.h` already agreed on `$10E`;
+four independent implementations now agree with both, and the alphabetical
+entry's `$10C` is held by no implementation at all — every one of them has
+BPLCON4 there instead, which is the collision the page creates.
+
+**Denise's abstention is the informative one.** A register it does not implement
+still appears in its debugger table at `$10E`, which means the address reached
+it from somewhere other than this document's alphabetical section.
 
 ## Suggested change
 

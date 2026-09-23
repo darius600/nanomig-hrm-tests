@@ -11,7 +11,7 @@
 | **Test** | [`aa/aa-copper-register-map`](../../aa/aa-copper-register-map) · seven graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF pp. 6 and 7, the address-ordered register list |
 | **Assertions** | 7 green, each with its own mutation; `make mutate` reports 0 passed, 7 failed |
-| **Verdict of the four** | not consulted — this is a defect in a document, not a behaviour the implementations could disagree about |
+| **Verdict of the four** | **unanimous, and all four implement a RANGE where the document prints a per-register mark.** Every one of them blocks a Coprocessor MOVE to `$078` with CDANG clear by comparing the address against `$080`, none consults a table of marks, and so the mark SPRHDAT's row is missing is one no implementation would read. See [What the others say](#what-the-others-say) |
 
 ## What the AA specification says
 
@@ -87,6 +87,28 @@ $000-$07E span printed without it, and each declining to claim it as a
 Coprocessor-access fact because the page states nothing there. The brief tells a
 reader to put such an absence in its report rather than in a claim, and both
 did.
+
+## What the others say
+
+The document marks registers one at a time; every implementation read here
+decides by address range instead. That makes the four unanimous about `$078`
+without any of them having an opinion about SPRHDAT specifically.
+
+| | where | what it does |
+|---|---|---|
+| **WinUAE** | [`custom.cpp:2809`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2809) | `if (addr < ((copcon & 2) ? (ecs_agnus ? 0 : 0x40) : 0x80)) {` — one comparison for every address there is. `$078` is below `$080`, so a Coprocessor MOVE to it is refused with CDANG clear and allowed with CDANG set |
+| **vAmiga** | [`Copper.cpp:394`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.cpp#L394-L402) | `isIllegalAddress`: `if (cdang) { return agnus.isOCS() ? addr < 0x40 : false; } else { return addr < 0x80; }` — the same boundary, with the OCS and ECS floors written out separately |
+| **Denise** | [`copper.cpp:203`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L203) | `if (reg < cdang)`, where `cdang` is not a flag but the floor itself: `cdang = (value & 2) ? (agnus.ecsAndHigher() ? 0 : 0x40) : 0x80` ([`:342`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L341-L342)). One comparison again |
+| **Copperline** | [`dma_slots.rs:697`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L697-L708) | `copper_can_write_custom` splits the range in two — `off <= 0x03E` needs ECS *and* CDANG, and `if (0x040..=0x07E).contains(&off) { return self.agnus.copper_danger_enabled(); }`. The upper range's top is `$07E`, so `$078` is inside it |
+| **MiSTer** | [`rtl/agnus_copper.v:225`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L225) | descendant — the identical `ir2[8:7]==2'b00 && !cdang` line |
+| **TC64** | [`rtl/minimig/agnus_copper.v:225`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L225) | descendant — the identical line |
+
+**All four agree with this RTL about `$078` and none of them can testify about
+the mark.** The finding is that the printed list is silent where its own rule
+would speak; four implementations blocking the address tells a reader that the
+silence describes nothing anyone built, which is the useful half. Whether the
+1991 silicon exempted SPRHDAT is a question none of these four is evidence
+about, because not one of them models the document's marks at all.
 
 ## Suggested change
 

@@ -11,7 +11,7 @@
 | **Test** | [`aa/aa-blitter-function-and-shift`](../../aa/aa-blitter-function-and-shift) · five graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 14, the BLTCON0/BLTCON1 bit table |
 | **Assertions** | 5 green, each with its own mutation; `make mutate` reports 0 passed, 5 failed |
-| **Verdict of the four** | not consulted — this is a defect in a document, not a behaviour the implementations could disagree about |
+| **Verdict of the four** | **unanimous, and not one of them reads bit 12 apart from bits 15-13.** Every implementation takes `bltcon0[15:12]` in a single expression as the A shift value, and two of them name that field ASH. The spelling `ASA0` appears in the source of none of the six. See [What the others say](#what-the-others-say) |
 | **See also** | [NM-AA-001](NM-AA-001.md), the other place where two statements of the same register disagree inside this document |
 
 ## What the AA specification says
@@ -90,6 +90,32 @@ A shift: 24 line/shift pairs where the source moves the output,
 The inverse control is the mutation: with the field left at zero, the shifted
 run equals the unshifted one while the pre-shift it is compared against does
 not, and the assertion goes red.
+
+## What the others say
+
+A name is not a behaviour, so the four cannot be asked which spelling the page
+should have carried. What they can be asked is whether bit 12 is the low bit of
+the shift field — which is what the legend's `ASH3-0` requires and what a
+separate `ASA0` would put in doubt.
+
+| | where | what it does |
+|---|---|---|
+| **WinUAE** | [`blitfunc.cpp:12`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/blitfunc.cpp#L12) | `uae_u16 ashift = blt_info.bltcon0 >> 12;` — the whole field in one shift, repeated in every generated blit function, with `16 - (blt_info.bltcon0 >> 12)` for the descending direction ([`:32`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/blitfunc.cpp#L32)). Bit 12 is never separated from the other three |
+| **vAmiga** | [`Blitter.h:404`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Blitter/Blitter.h#L404) | `u16 bltconASH() const { return bltcon0 >> 12; }` — the accessor is **named ASH**, and the debugger prints the field under that name ([`BlitterInfo.cpp:29`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Blitter/BlitterInfo.cpp#L29)) |
+| **Denise** | [`blitterCycle.cpp:10`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/blitterCycle.cpp#L10) | `#define SHIFTA (bltcon0 >> 12)` — one macro for all four bits |
+| **Copperline** | [`blitter.rs:1014`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/blitter.rs#L1014) | `let ash = ((con0 >> 12) & 0x0F) as u32;` — masked to four bits and then carried through line mode as one value, `ash_now` ([`:1211`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/blitter.rs#L1211)) |
+| **MiSTer** | [`rtl/agnus_blitter.v:233`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v#L233) | descendant — `assign ash[3:0] = bltcon0[15:12];` |
+| **TC64** | [`rtl/minimig/agnus_blitter.v:232`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_blitter.v#L232) | descendant — the identical line |
+
+**Six implementations, one field, and the page's own legend agrees with all of
+them.** The area-mode cell is the only place in any of these sources or in the
+legend where bit 12 gets a name of its own, and `ASA0` occurs in the source of
+none of the six.
+
+**It stays a finding about the printed page.** What the four settle is that
+nothing downstream was misled — no implementation gave bit 12 a separate
+meaning — which is worth stating precisely because a reader who trusted the
+cell over the legend would have had no way to tell.
 
 ## What this does not claim
 
