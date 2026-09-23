@@ -299,7 +299,7 @@ decides about the RTL, never a second oracle.
 | [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23 where the AA list gives an Alice $22 | open · RTL · **red** | `aa/aa-beam-position-words` | **3-0 against the document**: WinUAE (`custom.cpp:2399`), vAmiga (`Agnus.cpp:272`) and Copperline (`agnus.rs:98`) all return **$23** for AGA, this RTL's value; Denise casts no vote, its AGA term lands in bits 1:0 |
 | [NM-AA-005](findings/NM-AA-005.md) | the long-line toggle runs, but no line is a colour clock longer | open · RTL · **red** | `aa/aa-programmable-sync-windows` | **none of the four does what this core does**: WinUAE and Denise lengthen the alternate line under a programmed HTOTAL, vAmiga lengthens it but does not implement HTOTAL, Copperline stops the toggle in that mode — nowhere does the bit alternate over equal-length lines |
 
-**32 AA packages carry 181 graded assertions. 5 are red, in 4 packages,
+**33 AA packages carry 184 graded assertions. 5 are red, in 4 packages,
 answering 4 keys** -- three counts that are easy to collapse into one and are
 not the same number. `aa-disk-status-bits` goes red on two of its own
 assertions, which is why the assertion count is one above the package count.
