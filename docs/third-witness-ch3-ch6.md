@@ -20,7 +20,7 @@ test**, and no expectation in the suite comes from an emulator.
 defect described in the README, where 59 packages wrote their summary to
 `out.txt` and printed it on the next `make` line — so a package that failed
 stopped before the print and vanished from the count exactly when it went
-red. The suite-wide figure since that fix is **186 failing assertions**.
+red. The suite-wide figure since that fix is **187 failing assertions**.
 The count for these two chapters was never recomputed; take the numbers
 below as the shape of the problem, not as its size, and read the current
 count from the register table in [`findings.md`](findings.md). Chapters 2 and

@@ -66,7 +66,7 @@ artefacts rather than by remembering.
 | | |
 |---|---:|
 | test packages, `hrm/` | **208** |
-| assertions, `hrm/` | **3263** — 3077 pass, **186 fail** |
+| assertions, `hrm/` | **3285** — 3098 pass, **187 fail** |
 | packages, `hrm/` | 141 green, 67 carrying at least one red, **0 build errors** |
 | test packages, `aa/` | **32** — sixteen cover one RTL module each from slice 7's register list, four the bit tables of slice 2, five from slice 4, one from slice 3, one from slice 5 and five from slice 1 |
 | assertions, `aa/` | **181** — 176 pass, **5 fail**, 0 build errors |
