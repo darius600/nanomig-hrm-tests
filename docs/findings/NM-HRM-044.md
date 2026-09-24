@@ -143,6 +143,16 @@ $020 is `ir2[8:1] = 8'h10`, so `ir2[8:6] == 3'b000`: blocked whenever `ecs` is
 low, whatever `cdang` holds. NanoMig follows p.289 at OCS, and follows p.279 only
 under ECS with the danger bit set.
 
+### Measured
+
+[`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper)
+grades `P1`, "the Copper may initialise DSKPTH before disk DMA is enabled,"
+red against p.279, one of the package's `4 passed, 3 failed`, with `COPLIVE`
+green as its control that the harness can make the Copper write at all. See
+*Why the status is not red, although an assertion is* above for what the red
+does and does not mean, and *What was measured, and at which chipset* for the
+boundary it was measured at.
+
 ## What the others say
 
 All four independent implementations were read. All four do exactly what

@@ -39,6 +39,16 @@ Writing bit 4 changes nothing observable at this boundary.
 **This reads as unimplemented rather than wrong.** The commented-out lines look
 like work left for later, not a decision to omit the feature.
 
+### Measured
+
+[`hrm/ch3-horizontal-display-window`](../../hrm/ch3-horizontal-display-window)
+sets BPLCON3 bit 4 alone (ECSENA set, BRDRBLNK clear) and compares the
+border's rendered colour against leaving it clear: identical —
+`D-BRDNTRAN-HAS-NO-EFFECT`, red, one of the package's `11 passed, 1 failed`.
+The same fixture's `G11-BRDRBLNK-WORKS`, green, shows bit 5 of the same
+register does change the rendering — the control described in *What holds
+the finding up* below.
+
 ---
 
 ## What the others say

@@ -34,6 +34,15 @@ would produce a red or green that says nothing about the inconsistency itself.
 No assertion, red result or control stands behind this entry, and the entry says
 so. It is listed for completeness of the audit.
 
+### Measured
+
+This claim measures nothing: it is recorded in
+[`hrm/ch3-register-map-agnus`](../../hrm/ch3-register-map-agnus) as the
+`RTL-VS-MANUAL-BPLXPTH-FIELD-WIDTH` `note()`, whose own text reads "Not
+folded into any PASS/FAIL above" — the neighbouring twelve pointer-address
+claims it sits beside are graded, and that is what this package's address
+assertions carry instead.
+
 ---
 
 ## What other Commodore documents say

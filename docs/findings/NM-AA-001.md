@@ -79,6 +79,16 @@ collision match and `clxcon2[1:0]` carry their match values. With the register
 zero, bit 7 of `bpldata` cannot affect a collision; with `$00C3` written, it
 can. That difference is the measurement.
 
+### Measured
+
+[`aa/aa-clxcon2-address`](../../aa/aa-clxcon2-address) drives `bpldata=0x7F` at
+the `denise_collision` boundary and reads whether it collides. Unwritten, it
+collides; after `$00C3` is written to `$10E`, it does not — `CLXCON2-AT-10E`,
+green. A write to `$10C` does not change the match — `CLXCON2-NOT-AT-10C`,
+green. Armed, it does not collide; after a `CLXCON` write it collides again —
+`CLXCON2-CLEARED-BY-CLXCON`, green. All five of the package's assertions are
+green: `aa-clxcon2-address: 5 passed, 0 failed`.
+
 ## What the others say
 
 The address is not a matter of opinion for an implementation: each of these

@@ -31,6 +31,17 @@ ceiling in the short case and three past it in the long one. Two packages
 measured it independently and differ only in where they start counting: 10.0 and
 11.0 from one, 9.68 and 10.68 from the other.
 
+### Measured
+
+[`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) measures the
+back-to-back receive window at 9.681818 bit times for an 8-bit frame and
+10.681818 for a 9-bit frame —
+`RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`, red, one of the package's `11
+passed, 3 failed`. [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface)
+measures the same window from its own starting point at 10 bit-cells for an
+8-bit frame and 11 for a 9-bit frame — `B11`, red, one of the package's `48
+passed, 3 failed`.
+
 ## Why this is filed against the page
 
 | | |

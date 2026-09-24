@@ -58,6 +58,14 @@ $ grep -c "100110" cpu_wrapper.v      # 6'b100110 == register 0x4C
 The write path at `:619-646` decodes `6'b100100` (register 48) and `6'b100010`
 (register 44) and no third address. Writing 4C leaves the board responding.
 
+### Measured
+
+[`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address)
+writes register `4C` and reads register 00 back: raw stays `0xE`, where a
+bit-6-clear board should go silent (`0x0`) — six assertions red, of the
+package's `5 passed, 8 failed`. See *What holds the finding up* below for the
+six assertions and the inverse control in full.
+
 ## What holds the finding up
 
 `hrm/appK-autoconfig-base-address`, six assertions, all red. The fixture drives a

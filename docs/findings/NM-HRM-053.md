@@ -41,6 +41,15 @@ so the block is lifted when **both** ECS and CDANG are set, and a Copper MOVE
 reaches all three registers. Measured at the fixture: blocked at `cdang=0`,
 admitted at `cdang=1`, with ECS held high in both cases.
 
+### Measured
+
+[`hrm/ch8-appb-copper-access-marks`](../../hrm/ch8-appb-copper-access-marks)
+drives a Copper MOVE at `ecs=1` against the three `*`-marked registers:
+blocked at `cdang=0`, admitted at `cdang=1` — `SERDAT-CDANG1`,
+`SERPER-CDANG1` and `SERDATR-CDANG1` are all red, three of the package's `5
+passed, 3 failed`; their `-CDANG0` twins stay green. See *Why the reds are
+not a broken fixture* below for the `~`-marked control on the same rig.
+
 ## Why the reds are not a broken fixture
 
 The package grades a **`~`-marked register on the same rig**: BLTCON0 (`$040`)

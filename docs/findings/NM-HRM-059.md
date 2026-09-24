@@ -33,6 +33,13 @@ back never arises in this design.
 The assertion is graded with an **oracle** mutation rather than a stimulus one,
 because no stimulus can change the answer: the zero is in the RTL's own value.
 
+### Measured
+
+[`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations)
+writes ADKCON bit 15 and reads ADKCONR back: `0x7FFF`, bit 15 clear
+regardless of what was written — `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`,
+red, one of the package's `17 passed, 2 failed`.
+
 ## Why this is filed against the page
 
 | | | |

@@ -62,6 +62,14 @@ reg long_line;  // long line signal for NTSC compatibility (actually long lines 
 and again at `:86`: `line length of 227 CCKs in PAL mode (NTSC line length of
 227.5 CCKs is not supported)`.
 
+### Measured
+
+[`aa/aa-programmable-sync-windows`](../../aa/aa-programmable-sync-windows)
+measures two consecutive lines at 81 and 81 colour clocks with the toggle
+running, where the entry's HTOTAL+2 would be 82 —
+`LONG-LINES-ARE-ONE-CLOCK-LONGER`, red, one of the package's `9 passed, 1
+failed`. See *The measurement* below for the assertion in full.
+
 ## The measurement
 
 With the PAL bit low, LOLDIS low, VARBEAMEN set and HTOTAL written to 80:

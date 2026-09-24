@@ -47,6 +47,14 @@ So the key cut out of the left shift is not merely mapped to the wrong value —
 it is unreachable. Nothing a user can press makes the Amiga side see `$30`, and
 the two keys the page distinguishes are collapsed onto one code.
 
+### Measured
+
+[`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) sweeps `code` and
+reads `amiga`: HID `$64`, the left-Shift cutout, returns `$2B` instead of
+`$30` — `CUTOUT-30`, red, one of the package's `97 passed, 1 failed` — the
+same value HID `$32`, the Return cutout, returns — `KEY-$2B`, green, on the
+same measurement basis.
+
 ## Which entry is wrong, and what it should say
 
 The two entries are not equally wrong. `keymap`'s input side is the FPGA

@@ -43,6 +43,16 @@ The clearing branch, eight lines up, is `icr[4] <= flag;` — so reading ICR whi
 sufficient to set the bit, it also survives the read that is supposed to clear
 it.
 
+### Measured
+
+[`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments)
+holds `flag` high from a single rising edge with zero negative transitions
+anywhere in the stimulus: ICR bit 4 sets anyway —
+`PROP-FLAG-EDGE-POLARITY`, red, one of the package's `7 passed, 3 failed`,
+paired with a control that drives a real `flag` 0→1→0 transition and passes
+on the same ICR arm/read channel. See *What the test measures* below for the
+assertion in full.
+
 ## What the test measures
 
 `PROP-FLAG-EDGE-POLARITY` drives `flag` through a single rising edge, holds it

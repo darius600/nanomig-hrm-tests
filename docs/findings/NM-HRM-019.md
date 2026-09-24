@@ -36,6 +36,14 @@ That contrast is the whole reason this half survived and the other did not.
 
 Nothing with it. Bit 4 is not read in the sprite path.
 
+### Measured
+
+[`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) sets SPR0CTL bit
+4 alone, all other bits including SH0 held at 0, and checks whether the full
+`sprdata` trace across `hpos` 0..511 changes, which is what the row promises
+— `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`, red, one of the package's `6
+passed, 1 failed`.
+
 ---
 
 ## What the others say

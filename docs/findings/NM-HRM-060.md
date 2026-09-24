@@ -64,6 +64,16 @@ read the instruction address again                          -> $CCCC
 
 Page 13 predicts `$AAAA` — the stale instruction that makes a flush necessary.
 
+### Measured
+
+[`hrm/ch1-cpu-and-instruction-cache`](../../hrm/ch1-cpu-and-instruction-cache)
+fills an instruction address with `$AAAA`, writes `$CCCC` to it as a CPU data
+write, and reads the instruction address again: `$CCCC`, where p.13's "do not
+monitor writes" predicts the stale `$AAAA` — `CACHE-WRITE-VISIBILITY`, red,
+one of the package's `3 passed, 1 failed`. `CACHE-HIT-RETAINS-INSTRUCTION`
+and `CACR-CLEAR-INVALIDATES-CACHE` stay green as controls on the same
+fixture.
+
 ## What the others say
 
 | | | |

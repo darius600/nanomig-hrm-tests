@@ -31,6 +31,15 @@ its cleared state tells software nothing.
 and the state is still `TX_IDLE` on the cycle the write lands. So the 0 exists
 for one `clk7_en` pulse and is gone before any bus read can sample it.
 
+### Measured
+
+[`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) reads SERDATR
+idle (`0x3800`) and immediately after a SERDAT write (`0x2800`) —
+`TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY`, red, one of the package's `11
+passed, 3 failed`; a mutation that peeks the register unsynchronised instead
+of through the ordinary bus read turns the same assertion green, showing the
+bit does change and only the reachable read misses it.
+
 ## Why this is a statement about the design, not the fixture
 
 The builder argued it and checked it rather than asserting it. `clk7_en` is not

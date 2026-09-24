@@ -83,6 +83,18 @@ parameter VBSTOP_NTSC_VAL = 9'd20;
 The RTL's own comment states 26 as the intent, so this is a deliberate value
 rather than an arithmetic slip.
 
+### Measured
+
+[`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking)
+drives `vbl` and counts consecutive blanked lines from `vpos=0`: 21 under
+NTSC, matching Table 3-13 — `VBLANK-DURATION-NTSC-MATCHES-MANUAL`, green —
+and 26 under PAL, three short of the table's 29 —
+`VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL`, red.
+[`hrm/ch7-vertb-vertical-blank-timing`](../../hrm/ch7-vertb-vertical-blank-timing)
+measures the same counts against p. 219's plain reading: 21 lines where the
+page's count sentence gives 20 — `NTSC-VBLANK-DURATION-20-LINES`, red — and 26
+where it gives 25 — `PAL-VBLANK-DURATION-25-LINES`, red.
+
 ---
 
 ## What the others say

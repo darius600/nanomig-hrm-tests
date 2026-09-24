@@ -64,6 +64,13 @@ The text layer agrees with the render character for character on both patterns.
 `corpus-defects.md` lists p.353 as undamaged, and it is: the defect is the
 manual's.
 
+### Measured
+
+Nothing is measured here: Evidence is `none` and Test is `none yet` — this
+defect was raised at classification by the appendix-F lot-E classifier, from
+reading p.353 against itself, and verified in this entry against the render
+rather than by any package.
+
 ## What the others say
 
 | | | |

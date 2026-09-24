@@ -74,6 +74,14 @@ CIAADDRB between all-input and all-output gives an identical read both times.
 `ddrportb` itself is correctly written and read back at its own address
 (`:268`, `:282-288`, `:296`). It is a direction register with nothing to direct.
 
+### Measured
+
+[`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction)
+holds `portb_in` at `0x3C` and reads CIAAPRB with `CIAADDRB=0x00` and
+`CIAADDRB=0xFF`: `0x3C` both times — `PROP-1`, red, one of the package's `2
+passed, 1 failed`. The identical comparator pointed at CIA-A port A instead —
+`CONTROL-PA0-OUTPUT` — is green on the same fixture.
+
 ## What the port is actually used for here
 
 `minimig.v:624` wires `.portb_in({_joy4[0..3],_joy3[0..3]})` — **CIA-A port B is

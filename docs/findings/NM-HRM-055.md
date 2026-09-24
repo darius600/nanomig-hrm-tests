@@ -34,6 +34,16 @@ fixture: writing `0x0000` still drives one low cell on `txd` — a start bit.
 The red was reproduced by a second package, `ch8-serial-interface`, built by a
 different agent against different claim uids and its own fixture.
 
+### Measured
+
+[`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) writes SERDAT
+`0x0000` and watches `txd`: transmission started — `ALLZERO-NO-TX`, red, one
+of the package's `17 passed, 1 failed`.
+[`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) reproduces it
+independently: after `SERDAT=0x0000`, `txd` was observed to go low at least
+once over 4 bit-cells' worth of `clk7_en` beats — `E6`, red, one of the
+package's `48 passed, 3 failed`.
+
 ## The control that makes it a finding
 
 The same fixture writing a non-zero word transmits correctly, and

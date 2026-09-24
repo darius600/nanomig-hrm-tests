@@ -38,6 +38,13 @@ It follows the table:
   (code == 7'h6e)?7'h65:   // right alt       amiga_keymap.v:139
 ```
 
+### Measured
+
+Nothing here is graded: [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table)'s
+`RIGHTALT-CONFLICT` records that `amiga_keymap.v`'s right-Alt input returns
+`$65`, matching p.252 and contradicting both p.254 figures, but declines to
+grade it either way because the two printed pages disagree.
+
 ## Why this is not graded
 
 A conformance test needs an oracle, and here the manual speaks with two voices

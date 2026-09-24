@@ -73,6 +73,15 @@ cpu_wrapper.v:634  end else if (chip_addr[6:1] == 6'b100010) begin  // Register 
 With `cfg_z3` set, a write to register 48 matches neither arm and nothing
 happens.
 
+### Measured
+
+[`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address)
+writes register `48` with `cfg_z3` set and reads register 00 back: raw stays
+`0xA`, not the `0x0` a configured board would read — `sol:K-0844` and
+`opus:K-0881`, both red, two of the package's `5 passed, 8 failed`. See *What
+holds the finding up* below for the assertions and the inverse control in
+full.
+
 ## What holds the finding up
 
 `hrm/appK-autoconfig-base-address`, two assertions, both red. The fixture

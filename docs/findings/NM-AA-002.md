@@ -47,6 +47,15 @@ if (ir2[8:7]==2'b00 && !cdang || ir2[8:6]==3'b000 && !ecs) // illegal access
 `ir2[8:1]` is the word address shifted right once, so `ir2[8:7]==00` is every
 address below $080 — and $078 is inside it.
 
+### Measured
+
+[`aa/aa-copper-register-map`](../../aa/aa-copper-register-map) drives a
+Coprocessor MOVE to `$078` and reads whether it reaches `reg_address_out`:
+blocked with CDANG clear, allowed with CDANG set — the same behaviour as
+every address the list marks `~` — `SPRHDAT-078-IS-RESTRICTED`, green, one of
+the package's `7 passed, 0 failed`. See *What holds this up* for the
+assertion in full.
+
 ## The measurement
 
 `tools/aa/tilde_vs_copper_range.py` in the pipeline repository reads all 237

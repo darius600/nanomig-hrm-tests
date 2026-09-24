@@ -62,6 +62,16 @@ MEASURED over `hid.v` + `amiga_keymap.v`, two press/release cycles of HID `$39`:
 Four events where the page specifies two, and the one bit that was supposed to
 distinguish the two presses never changes.
 
+### Measured
+
+[`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events) presses and
+releases HID `$39` (Caps Lock) twice: every release reports an event —
+`CAPS-LOCK-RELEASE-NOT-ACCEPTED`, red — where p.359 says none should fire, and
+the second press still carries bit 7 clear — `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE`,
+red — where p.359's LED rule needs it set. Two of the package's `13 passed, 2
+failed`; `CAPS-LOCK-DOWN-ACCEPTED` and `CAPS-LOCK-LED-ON-PRESS-BIT-ZERO` stay
+green as controls on the same stimulus path.
+
 ## Two divergences, not one
 
 They fail differently and are graded separately:

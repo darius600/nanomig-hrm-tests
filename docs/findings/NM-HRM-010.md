@@ -54,6 +54,14 @@ parameter HTOTAL_VAL = 8'd227 - 8'd1;   // line length of 227 CCKs in PAL mode
 
 and line 105 adds *"long lines are not supported yet"*.
 
+### Measured
+
+Nothing is measured for this claim — the assertion was withdrawn as circular
+(see *Why this is a source observation and not a test result* above) — but its
+neighbour in the same package, `HTOTAL-H8-H1-BIT-MAPPING` in
+[`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking),
+grades the same row's bit-weight ordering instead, and is green.
+
 ---
 
 ## What the others say

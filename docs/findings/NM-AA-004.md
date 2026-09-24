@@ -48,6 +48,14 @@ The document's Alice is `0100010`, **$22**. The two differ in one bit: I0,
 which is VPOSR bit 8. The RTL takes it from `aga`, the same input it already
 uses for I1; the document's Alice leaves it clear.
 
+### Measured
+
+[`aa/aa-beam-position-words`](../../aa/aa-beam-position-words) reads VPOSR
+bits 14-8: `0x23` with PAL, `0x33` with NTSC, where the AA list gives Alice
+`0x22` and `0x32` — `VPOSR-REPORTS-THE-CHIP-IDENTIFIER`, red, one of the
+package's `3 passed, 1 failed`. See *The measurement* below for the assertion
+in full.
+
 ## The measurement
 
 ```

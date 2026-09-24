@@ -52,6 +52,16 @@ The lowest reachable configuration is 512k. There is no 256K state.
 Both measurements are right, both assertions are honest, and both went red
 because page 1 names a 68030 and a 256K floor that this board does not offer.
 
+### Measured
+
+[`hrm/ch1-cpu-options`](../../hrm/ch1-cpu-options) sweeps the four raw config
+values `id='T'` accepts: `system_cpu` reaches only 3 pairwise-distinct
+states, not the four processor types p.1 names —
+`CPU-OPTIONS-FOUR-DISTINCT-STATES`, red. It also sweeps `system_chipmem`: the
+field's numeric floor, raw value 0, reads back documented `"512k"`, not the
+256K p.1 states — `RAM-BASE-FLOOR-BELOW-256K-ABSENT`, red. Two of the
+package's `3 passed, 2 failed`.
+
 ## Why this is not a defect
 
 **The claim was graded at a boundary that cannot answer it.** `sysctrl` is a

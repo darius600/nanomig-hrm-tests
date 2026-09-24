@@ -67,6 +67,15 @@ assign ash[3:0] = bltcon0[15:12];
 So the RTL implements the legend rather than the cell, and no signal anywhere
 carries a name.
 
+### Measured
+
+[`aa/aa-blitter-function-and-shift`](../../aa/aa-blitter-function-and-shift)
+sweeps all eight minterm lines and shift values 1, 2, 4 and 8, finding 24
+line/shift pairs where the A source moves the output and 8 where it does not;
+every one of the 24 matches a pre-shift, so bit 12 behaves as the low bit of
+ASH3-0 — `ASH-BITS-ARE-THE-SHIFT-VALUE-OF-A`, green, one of the package's
+`5 passed, 0 failed`. See *The measurement* below for the assertion in full.
+
 ## The measurement
 
 `aa/aa-blitter-function-and-shift` asserts the shift field as an equivalence —

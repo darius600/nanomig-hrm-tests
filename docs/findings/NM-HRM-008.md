@@ -79,6 +79,17 @@ With `dblpf = 0` — single playfield — `oddmatch` additionally requires
 > instantly helicopter crash at takeoff and Archon-1 'sticky effect' of player
 > sprite at the battlefield.
 
+### Measured
+
+[`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers) presents
+PF1 with each sprite pair alone, PF2 absent: appendix A's table says each pair
+sets its own `CLXDAT` bit, and none of the four does —
+`BITMAP-PAIR PF1-SPR01`, `PF1-SPR23`, `PF1-SPR45` and `PF1-SPR67` are all red,
+four of the package's `32 passed, 4 failed`; `BITMAP-PAIR PF1-PF2`, where PF2
+is present too, stays green. [`hrm/ch7-collision-playfield-mode`](../../hrm/ch7-collision-playfield-mode)
+corroborates this from two more pages — see *Chapter 7 found the same thing
+from two more pages* above.
+
 ---
 
 ## What the others say
