@@ -1,5 +1,5 @@
 // Test purpose: appendix K's AUTOCONFIG mechanism at the `cpu_wrapper`
-//   boundary -- printed pp.431, 432, 435 and 438, the "THE AUTOCONFIG
+//   boundary -- printed pp.431, 432, 434, 435 and 438, the "THE AUTOCONFIG
 //   MECHANISM" prose, the "Configuration Register Mapping" figure and the
 //   pin table -- measured in the build without ENABLE_RAM32 (every board
 //   target but the four 32 MiB ones, the Tang Nano 20K among them): the
@@ -24,7 +24,7 @@
 //   (hrm-testpipeline), the same 30-claim file hrm/appK-autoconfig-space
 //   cites. docs/legacy-names.md explains the vocabulary.
 //
-// appK-autoconfig-card-chain -- pp.431,432,435,438 Appendix K "THE
+// appK-autoconfig-card-chain -- pp.431,432,434,435,438 Appendix K "THE
 // AUTOCONFIG MECHANISM" prose, the "Configuration Register Mapping"
 // figure and the pin table, measured on the build without ENABLE_RAM32.
 // 30 claims, filtered from
