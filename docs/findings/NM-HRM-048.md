@@ -192,13 +192,7 @@ and none decides this finding. What they are and how they were read is in
 
   The paper accepts the documented loss and places a silicon cause: 10i closes write gate while bits are still in the 10v/10e delay chain. It calls this a hypothesis, and says the three-bit length is still open (p043). Its section 6.3 explains the paragraph's other sentence ('may not come in') as a drain race, but the finding does not grade that sentence.
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 212 — agrees with the manual:
-
-  > "There is a hardware bug that causes the last 3 bits of data sent to the disk to be lost."
-  <!-- corpus: hw-manual-1985/p212.txt -->
-
-  This is the same paragraph as the 3rd edition's p.247, including 'the last word in a disk read DMA operation may not come in'.
-
-Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+

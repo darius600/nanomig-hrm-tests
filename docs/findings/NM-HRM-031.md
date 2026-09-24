@@ -89,14 +89,7 @@ and none decides this finding. What they are and how they were read is in
 
   The 8364R7's interrupt flag register has a bit 14: 'Note, that for Bit 2, Bit 4, and Bit 14 of the interrupt flag register the "interrupt set inputs" are tied to GND.' No hardware source, like SOFT and COPER, but the write path sets any of D0..D14, so bit 14 is a request bit a write can set, as in NanoMig. Readback through INTREQR is not stated in the note.
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 232 — agrees with the manual:
-
-  > "Master interrupt (enable only , no request)"
-  <!-- corpus: hw-manual-1985/p232.txt -->
-
-  The 1985 appendix A carries the 3rd edition's parenthesis, and chapter 7 (p192) states it outright: 'NOTE: This bit is used for enable/disable only. It creates no interrupt request.'
-
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

@@ -43,7 +43,7 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga.
+Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

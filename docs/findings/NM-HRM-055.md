@@ -88,13 +88,8 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 225 — agrees with the manual:
-
-  > "Writing this register starts the data transmission. If this register is written with all zeros,  NO data transmission is initiated."
-  <!-- corpus: hw-manual-1985/p225.txt -->
-
-  The 1985 edition prints the 3rd edition's two p.259 sentences almost word for word, and the same page adds "When new non-zero contents are transferred into this register, shifting begins again." It is an earlier edition of the same manual, so it shows the rule has been there unchanged since 1985; it is not independent evidence about the silicon.
-
-Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+None of them speaks to this point.
+Silent on this point: US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+

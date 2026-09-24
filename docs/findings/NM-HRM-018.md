@@ -64,7 +64,7 @@ and none decides this finding. What they are and how they were read is in
 
   In the ECS Denise specification BPLCON0 bit 4 is 'y', and 'y= register bits contained in AGNUS, not defined here.': no SPRHWRM name and no Denise function. That is compatible with the withdrawal (no printed behaviour) and with denise.v giving the bit no ECS meaning; what it adds is that the bit belongs to Agnus, where a Denise-only bitplane fixture could not observe it.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,874,164, Commodore-Amiga.
+Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; US patent 4,874,164, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

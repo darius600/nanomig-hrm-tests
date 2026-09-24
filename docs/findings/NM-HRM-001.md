@@ -45,14 +45,8 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 189 — **agrees with NanoMig**:
-
-  > "This ninth bit allows PAL line counts (313) to appear"
-  <!-- corpus: hw-manual-1985/p189.txt -->
-
-  In its VPOSR description the 1985 manual gives the PAL line count as 313. That is what NanoMig runs, and also what Table 7-5 of the 3rd edition sanctions (the reason the finding was withdrawn). It is not the 312 the withdrawn test graded. The page does not say whether a non-interlaced PAL field is always a long frame. The only other frame count in the manual is NTSC (p205: 'There are 262 or 263 possible horizontal scan lines on a single NTSC video screen').
-
-Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,874,164, Commodore-Amiga.
+None of them speaks to this point.
+Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); US patent 4,874,164, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

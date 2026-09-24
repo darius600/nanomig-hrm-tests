@@ -98,13 +98,8 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 200 — agrees with the manual:
-
-  > "200-45 = 155. Because this is more than 127, the true count must be 255 - ( 200-45) = 100."
-  <!-- corpus: hw-manual-1985/p200.txt -->
-
-  The August 1985 original already prints the worked example with the same arithmetic: 'A coun t of 100 pulses is measured in each case', the counts treated as 'unsigned values, ranging from 0 to 255', and both wrapping footnotes subtract from 255. The second footnote ('255 + (-155) = 100') continues onto p.201. The four count pairs are the same as Table 8-2's (200/100, 100/200, 200/45, 45/200).
-
-Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga.
+None of them speaks to this point.
+Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+

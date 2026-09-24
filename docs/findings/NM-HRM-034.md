@@ -96,14 +96,8 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 189 — agrees with the manual:
-
-  > "Bits 14-1 - Unused."
-  <!-- corpus: hw-manual-1985/p189.txt -->
-
-  This is the OCS-era VPOSR description: LOF at bit 15, V8 at bit 0, bits 14-1 unused, which is the manual's statement. The same page says the register also serves the PAL versions of the computer (its V8 note), and it has no video-standard bit, so it gives no support to NanoMig's NTSC flag at bit 12. Appendix A (p234) draws the same layout, with dashes for bits 14-1 between LOF and V8.
-
-Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,874,164, Commodore-Amiga.
+None of them speaks to this point.
+Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); US patent 4,874,164, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

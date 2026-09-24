@@ -123,14 +123,8 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 227 — agrees with the manual:
-
-  > "Forces volume to max (64 ones, no zeros) Sets one of 64 levels (OOOOOO=no output (111111=63 Ones, one zero)"
-  <!-- corpus: hw-manual-1985/p227.txt -->
-
-  The 1985 appendix A describes bit 6 as 64 ones and no zeros and 111111 as 63 ones and one zero, two different duty cycles, under 'Bits 6,5,4,3,2,l,0 specify 65 linear volume levels'; Table 5-7 (p161) gives 64 as 0.0 dB and 63 as -0.1 dB. The same edition's p138 contradicts its own appendix, calling AUDxVOL 'a 6-bit volume register' and saying to write 64 to 0 'into bits 5-0'.
-
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+None of them speaks to this point.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

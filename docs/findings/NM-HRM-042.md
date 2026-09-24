@@ -166,13 +166,6 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 211 — says something else:
-
-  > "You specify the 19-bit-wide byte-address from which or to which the data is to be transferred."
-  <!-- corpus: hw-manual-1985/p211.txt -->
-
-  Where the 3rd edition's p.246 says 32, the 1985 text says 19 bits of byte address (3 in DSKPTH, 16 in DSKPTL), narrower than NanoMig's 21. It adds that the register layout 'allows you to initialize both by a single write of a long word to the address of DSKPTH', which is the long-word-write reading the finding's specialists section proposes. Appendix A (p232) says 'the 18 bit address of Disk DMA data'.
-
 - **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — says something else:
 
   > "Each of the pointer registers contains an 18-bit address, which points to the location in memory of data to be fetched next for the particular DMA channel."
@@ -180,6 +173,7 @@ and none decides this finding. What they are and how they were read is in
 
   All 25 DMA pointer registers, the disk channel among them ('the disk and refresh DMA control logic 61 (2 channels)'), hold 18 bits, which address 256K words. p023 says of the same registers 'The pointers in the registers 138 are 19 bits wide'. The patent gives neither the page's 32 nor NanoMig's 20.
 
-Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+

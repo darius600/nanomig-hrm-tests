@@ -72,9 +72,9 @@ and none decides this finding. What they are and how they were read is in
   > "07 ATT Sprite attach control bit (odd Sprites) 06-04 X Not used."
   <!-- corpus: denise-spec-252126/p010.txt -->
 
-  In Commodore's ECS Denise specification (it defines SHRES and names the 8373 revisions) the SPRxCTL table gives bits 06-04 as 'Not used' and has no row for bit 3; SHSH1 and 70 ns sprite positioning appear nowhere in its 14 pages. That sides with NanoMig not reading bit 4. Caveat: the table matches the 1985 manual's appendix A SPRxCTL table (hw-manual-1985/p234) row for row except that the EV8 row is dropped, so it may be carried over rather than a considered ECS statement.
+  In Commodore's ECS Denise specification (it defines SHRES and names the 8373 revisions) the SPRxCTL table gives bits 06-04 as 'Not used' and has no row for bit 3; SHSH1 and 70 ns sprite positioning appear nowhere in its 14 pages. That sides with NanoMig not reading bit 4. Caveat: the table has the shape of an OCS-era SPRxCTL table, without even the EV8 row, so it may have been carried over rather than written for ECS.
 
-Silent on this point: Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga; US patent 5,103,499, Commodore-Amiga.
+Silent on this point: US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga; US patent 5,103,499, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

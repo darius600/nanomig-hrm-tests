@@ -174,7 +174,6 @@ documents say*.
 
 | kind | documents | counted as |
 |---|---|---|
-| the oracle's own earlier edition | *Amiga Hardware Manual*, 1985, and its October 1985 errata | one voice: the text the 3rd edition grew from, not an independent witness |
 | Commodore specifications | A500/A2000 Gary specification; Denise specification 252126-01 (ECS) | one each |
 | Commodore-Amiga patents | US 4,777,621; US 4,874,164 and 5,103,499; US 4,829,473; US 4,780,844 | one each, except 4,874,164 and 5,103,499, which carry one specification and count once |
 | Commodore articles | *AmigaMail* vol. 1 | one each |

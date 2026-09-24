@@ -92,26 +92,12 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 91 — says something else:
-
-  > "Bits 7-3 - pixel position H8-H4 Bits 2-0 - not used"
-  <!-- corpus: hw-manual-1985/p091.txt -->
-
-  The 1985 DDFSTRT entry gives five position bits, H8-H4 in bits 7-3. It calls bit 2, where the 3rd edition puts H3, unused, with no resolution or chipset condition. So H3 would be respected in neither mode. That is neither the 3rd edition's 'only respected in Hires Mode' nor gating by chipset. The same manual contradicts this for hires: p055 gives the normal high-resolution DDFSTART as ($003C) and DDFSTOP as $00D4 (both with bit 2 set), and recommends 4-clock steps in hires.
-
-- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 35 — says something else:
-
-  > "Data fetch start Cal mly be specified at even rrult1p1es Of 8 Clocks."
-  <!-- corpus: hw-manual-errata-1985/p035.txt -->
-
-  This is an annotation on the October 1985 DMA time-slot chart. The text layer is too damaged to quote; the page image says data fetch start can only be specified at even multiples of 8 clocks. The chart covers both resolutions (lores cycles above, hires below). An 8-clock granularity leaves no room for H3, a 4-clock step, in either mode. That is the same position as the 1985 manual's p091, and neither hires-only nor chipset gating. The errata's own hires example (p015) nevertheless writes $003C to DDFSTRT, with the comment 'SET DATA FETCH START FOR HI RES'.
-
 - **US patent 4,874,164, Commodore-Amiga**, PDF page 24 — says something else:
 
   > "the data fetch regis ters have a 4 pixel resolution because only five bits are used in either register"
   <!-- corpus: patent-us4874164-agnus-denise/p024.txt -->
 
-  The shared specification says the fetch registers use five bits, with no resolution or chipset qualifier. That is the same count as the 1985 manual's H8-H4. It does not name the bits, but five position bits leave no sixth bit for H3 in hires. So it matches neither the 3rd edition's hires-only H3 nor NanoMig. patent-us5103499-copper p024 has the same sentence ('have only a 4 pixel resolution because only five bits').
+  The shared specification says the fetch registers use five bits, with no resolution or chipset qualifier. It does not name the bits, but five position bits leave no sixth bit for H3 in hires. So it matches neither the 3rd edition's hires-only H3 nor NanoMig. patent-us5103499-copper p024 has the same sentence ('have only a 4 pixel resolution because only five bits').
 
 Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS).
 
@@ -123,8 +109,6 @@ Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agn
 
 **None.** NanoMig and all four independent implementations respect H3 at every
 resolution; the printed sentence is the only source that conditions it on hires.
-The 1985 edition has no H3 at all -- "Bits 7-3 - pixel position H8-H4 Bits 2-0 -
-not used" -- so the hires-only clause entered with a later edition.
 
 Settling it needs someone who knows what real Agnus does with H3 in lores, and
 whether ECS Agnus uses register bit 1 as the implementations do -- not a patch.

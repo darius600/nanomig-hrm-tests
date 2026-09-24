@@ -112,20 +112,8 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 247 — agrees with the manual:
-
-  > "FLAG is a negative edge sensitive input which can be used for receiving the PC output from another 8520, or as a general purpose interrupt input. Any negative transition on FLAG will set the FLAG interrupt bit."
-  <!-- corpus: hw-manual-1985/p247.txt -->
-
-  The August 1985 Appendix F states both the polarity and the transition requirement, in the same words as the 3rd edition p.341, so p.341 is not the only Commodore page that states it. Chapter 8 (p.210) wires DSKINDEX* to CIA-B FLAG ('Disk index pulse (BFDDOO, Bit 4). Can be used to create level 6 in terru pt.') without restating the edge.
-
-- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 46 — agrees with the manual:
-
-  > "FLAG is a negative edge sensi ti ve input which can be used for receiving the PC output from another 8520, or as a general purpose interrupt input. Any negative transition on FLAG will set the FLAG interrupt bit."
-  <!-- corpus: hw-manual-errata-1985/p046.txt -->
-
-  The October 1985 replacement Appendix F keeps the sentence unchanged. Its CIA maps list F = ack* on CIA-A (Centronics) and F = INDEX* on CIA-B (p.54-55).
-
+None of them speaks to this point.
 Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+

@@ -44,13 +44,6 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 234 — agrees with the manual:
-
-  > "Start horiz. value Low bit"
-  <!-- corpus: hw-manual-1985/p234.txt -->
-
-  Appendix A gives SPRxCTL bit 00 (SHO in the text layer) as the plain HSTART low bit with no mode condition, and ch.4 says 'Sprit.e position is ::llways df'finpd as' though the display mode were low-resolution (p098.txt). This predates SuperHires, so SH0 is honoured at lores and hires - the reading the withdrawal restored; manual and NanoMig do not differ here.
-
 - **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 10 — agrees with the manual:
 
   > "00 SH0 Start horiz. value low bit."
@@ -58,7 +51,7 @@ and none decides this finding. What they are and how they were read is in
 
   The ECS Denise specification, which also defines SHRES, gives SH0 as the ordinary start-horizontal low bit with no SuperHires condition (SPRxPOS: 'Low bit (SH0) is in SPRxCTL reg below.'). Manual and NanoMig already agree here; this is one more voice for the same reading.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,874,164, Commodore-Amiga.
+Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; US patent 4,874,164, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

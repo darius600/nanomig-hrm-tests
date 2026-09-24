@@ -246,13 +246,7 @@ and none decides this finding. What they are and how they were read is in
 
   Silicon: DATA reads the live receive shift register, and 10_10 attaches 'a 16 Bit comparator, which scans for the sync word' to it. The note does not tie that comparator to bit 12 or describe DSKBYT's clear, and the author warns 'it could be that there are errors in this part of my schematic.'
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 213 — agrees with the manual:
-
-  > "Data from the disk, when in read mode, is loaded into this register one byte at a time. As each byte is received into this register, the BYTEREADY bit is set true. BYTEREADY is cleared each time the DSKBYTR register is read."
-  <!-- corpus: hw-manual-1985/p213.txt -->
-
-  The same page's table gives WORDEQUAL as 'true only while the input stream matches the sync register (as little as two microseconds)' and bits 7-0 as 'Disk byte data'; Appendix A (p232) repeats 'DSKBYT Disk byte ready (reset on read)'. All three fields appear as the 3rd edition prints them.
-
-Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+

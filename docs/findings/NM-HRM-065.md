@@ -156,6 +156,7 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+

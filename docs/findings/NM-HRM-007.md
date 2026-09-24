@@ -90,14 +90,8 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 78 — agrees with the manual:
-
-  > "In high resolution, the maximum here is 49 words because the rightmost limit remains ($D8) and only one word is fetched at this limit."
-  <!-- corpus: hw-manual-1985/p078.txt -->
-
-  Same figure and same reason as the 3rd edition, which prints the same sentence with 'mode' and a comma added. The 49 comes from the $D8 stop limit cutting the last hires fetch to one word. Two pages earlier (p056), the hires relation 'DDFSTART = DDFSTOP - (4*(word count - 2)' gives 50 at $18/$D8, the emulators' figure. The page's own formula and its stated maximum therefore differ by one word. The 3rd edition prints the same formula.
-
-Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,874,164, Commodore-Amiga.
+None of them speaks to this point.
+Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); US patent 4,874,164, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

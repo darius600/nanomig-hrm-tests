@@ -219,13 +219,6 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 232 — agrees with the manual:
-
-  > "This pair of registers contains the 18 bit address of Disk DMA data. These address registers must be initialized by the processor or Copper before disk DMA is enabled."
-  <!-- corpus: hw-manual-1985/p232.txt -->
-
-  The 1985 Appendix A already carries p.279's sentence. Its Appendix B (p235) has the same legend ('*=Address not writable by the Coprocessor.'; 'PTL,PTH=l8 bit Pointer ... Must be reloaded by a processor before use'), but the mark before 020 on the DSKPTH row survives only as '·'. Chapter 2 (p022, p026) draws the Copper ranges a third way ('Any register whose address is hex 20 or above'; CDANG 'protects all registers numbered between $10 and $IF inclusive'), in units it does not keep straight, and either way it lets the Copper write $020 at least with CDANG set, on the only chip set the 1985 manual covers.
-
 - **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — agrees with the manual:
 
   > "The pointer regis ters 138 are loaded with data (an address) from data bus 404 by the processor 402 or coprocessor 47 under pro gram control."
@@ -233,6 +226,7 @@ and none decides this finding. What they are and how they were read is in
 
   A general statement for all 25 DMA pointer registers, disk included: the Copper may load them, which is p.279's side. The patent mentions no protected register range.
 
-Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+

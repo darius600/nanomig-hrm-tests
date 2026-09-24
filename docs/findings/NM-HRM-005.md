@@ -82,16 +82,9 @@ and none decides this finding. What they are and how they were read is in
   > "only the odd memory cycles are requested by the Copper 47, so four memory cycles are required for execution of MOVE and SKIP instructions and six memory cycles are re quired for the WAIT instruction."
   <!-- corpus: patent-us5103499-copper/p018.txt -->
 
-  SKIP 4, WAIT 6, and so WAIT minus MOVE 2 — all three of the manual's figures, in the manual's unit (memory cycles, the Copper using every other one), against NanoMig's 8 / 8 / 4. The sentence just before gives the underlying 2 and 3 cycles. It closely paraphrases the 1985 manual's p021, so it is not an independent measurement.
+  SKIP 4, WAIT 6, and so WAIT minus MOVE 2 — all three of the manual's figures, in the manual's unit (memory cycles, the Copper using every other one), against NanoMig's 8 / 8 / 4. The sentence just before gives the underlying 2 and 3 cycles. It closely paraphrases the manual's own Copper-timing text, so it is not an independent measurement.
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 21 — agrees with the manual:
-
-  > "The MOVE and SKIP instruc- tions require 2 memory cycles and 2 instruction words. Since only the odd memory cycles are requested by the Copper, 4 memory cycle times are required per instruction. The WAIT instruction requires 3 memory cycles and 6 memory cycle times; it takes one extra memory cycle to wake up."
-  <!-- corpus: hw-manual-1985/p021.txt -->
-
-  The same three figures as the 3rd edition: MOVE and SKIP 4 memory cycle times, WAIT 6, the difference being one extra cycle to wake up. Appendix A p231 repeats 4 memory cycle times for every instruction except WAIT. The oracle's predecessor, so agreement is expected rather than independent.
-
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

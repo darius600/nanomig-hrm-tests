@@ -75,7 +75,7 @@ and none decides this finding. What they are and how they were read is in
 
   Defines BPLCON3 bit 4 as a live control next to BRDRBLNK at bit 5, and the same page says 'ENBPLCN3= When set enables all the new features in BPLCON3;'. Sides with the manual that the bit does something. The effect it names is on the ZD (background indicator) pin, i.e. genlock keying, not on the RGB colour of the border.
 
-Silent on this point: Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga; US patent 5,103,499, Commodore-Amiga.
+Silent on this point: US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga; US patent 5,103,499, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

@@ -82,13 +82,6 @@ and none decides this finding. What they are and how they were read is in
 
   The ECS Denise specification scopes the attach bit to odd sprites, as the manual does. It is a table annotation rather than an explicit statement that the even sprite's bit 7 is ignored, the same strength as the manual's own register table.
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 120 — agrees with the manual:
-
-  > "Attachment is in effect only when the ATTACH bit, bit 7 in Sprite Control Word 2, is set to 1 in the data structure for the odd-numbered sprite."
-  <!-- corpus: hw-manual-1985/p120.txt -->
-
-  The 1985 edition prints the sentence the finding quotes from the 3rd edition's p. 122; p126 adds 'This bit is only valid for odd-numbered sprites.' and appendix A (p234) 'Sprite attach control bit (odd sprites)'. No exception for the even sprite anywhere.
-
 - **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 28 — agrees with the manual:
 
   > "For each of the odd numbered sprites, the associated control register 37 contains a bit that can be set in order to attach an odd and an even numbered sprite to pair the data for both sprites in color interpretation."
@@ -96,7 +89,7 @@ and none decides this finding. What they are and how they were read is in
 
   Places the attach bit in the odd sprites' control registers only, as the manual does; like the manual it gives the even sprite's bit 7 no role.
 
-Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga.
+Silent on this point: US patent 4,777,621, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

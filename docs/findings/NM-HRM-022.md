@@ -74,13 +74,6 @@ and none decides this finding. What they are and how they were read is in
 
   The four Blitter channels' pointers are among the 25 pointer registers of 18 bits — 15 low plus 3 high word-address bits, the manual's OCS width. NanoMig takes five high bits from BLTxPTH (address_out 0xF8000, a 20-bit word address). Pre-ECS; says nothing of the five-bit ECS width.
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 227 — agrees with the manual:
-
-  > "Blitter Pointer to x (High 3 bits) 052 W A Blitter Pointer to x (LoW l5 bits) This pair of registers contains the 18 bit address of Blitter source (x=A,B,C) or dest. (x=D) DMA data."
-  <!-- corpus: hw-manual-1985/p227.txt -->
-
-  The Appendix A entry the 3rd edition's p. 270 descends from, without the later ', 5 bits if ECS' clause: BLTxPTH holds three high bits. Appendix B (p235) states the rule for every pointer pair: 'High word DBO-DB2' (OCR for DB0-DB2). Predecessor of the oracle, pre-ECS.
-
 - **US patent 4,777,621, Commodore-Amiga**, PDF page 8 — agrees with the manual:
 
   > "The first custom chip 61 generates a 18 bit dynamic RAM address multiplexed onto a nine bit bus 75"
@@ -88,7 +81,7 @@ and none decides this finding. What they are and how they were read is in
 
   The bit map image manipulation circuitry 47 (the blitter) and the DMA address registers sit on chip 61 (p008), whose DRAM address is 18 bits — the manual's OCS reach. The finding measures address_out, the address the blitter DMA drives, so this bus-level statement bears on the same observable; it does not name BLTxPTH. Filed 1985, before ECS.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 

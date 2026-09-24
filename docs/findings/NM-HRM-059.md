@@ -65,13 +65,8 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 227 — agrees with the manual:
-
-  > "Audio, disk, Control read BIT# USE 15 SET/CLR Set/Clear control bit. Determines if bits written with a 1 get set or cleared."
-  <!-- corpus: hw-manual-1985/p227.txt -->
-
-  The 1985 Appendix A heads ADKCON (09E W) and ADKCONR (010 R) with one bit table whose row 15 is SET/CLR. That is the same shared-table form as p.265, and like p.265 it never says what bit 15 reads. Nearby: for the interrupt registers, p191 says 'Bit 15 has no meaning in the read-only add resses'. Chapter 8 (p214) defines ADKCON's bit 15 as 'Same use as in the DlviA enable register', and DMACON's p195 row points back to that interrupt text. That is a chain of cross-references, not a statement about ADKCONR.
-
-Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+None of them speaks to this point.
+Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+

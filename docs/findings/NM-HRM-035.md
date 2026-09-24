@@ -107,21 +107,7 @@ and none decides this finding. What they are and how they were read is in
   > "OVL (OVerLay) input causes ROM to be accessed at memory location 0. This signal is typically driven by a port line so that ROM is mapped to the memory 0 at RESET time."
   <!-- corpus: gary-spec/p001.txt -->
 
-  Gary takes the overlay as a level input pin (pin table: 'OVL IN HI Overlay (ROM to address 0)') driven by a port line. None of Gary's inputs carries a CIA register select or a CIA write strobe, and the spec describes no latch, so the overlay follows the level of that port line. That sides with the manual's 'the OVL bit', not with a clear on any CIA-A write. It does not name CIA-A PA0 itself (the 1985 manual's Appendix F does), and it says 'typically'. The A500/A2000 technical reference, whose schematic would show which port line drives Gary pin 30, has no text layer and is not in the corpus.
-
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 251 — agrees with the manual:
-
-  > "PAO .. OVL memory overlay bit"
-  <!-- corpus: hw-manual-1985/p251.txt -->
-
-  Appendix F's port signal assignments for the 8520 at BFExxx (A12*, int2, i.e. CIA-A) put the memory overlay on one pin, PA0 (the same table is repeated in Appendix E, p245). The appendix introduces the table as relating 'port addresses to the outside-world items (or internal control signals)', so the overlay is the signal on that port bit, which is what the 3rd edition's 'The OVL bit ... (See Appendix F for the bit location)' says. It does not discuss writes to other CIA-A registers; its own 8520 description (p247) sends a timer write to the timer latch ('Data written to the timer is latched into the Timer Latch'), with no path to a port pin. p246 adds that RES sets the port pins as inputs that read high through pull-ups, so the overlay is up after reset.
-
-- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 43 — agrees with the manual:
-
-  > "/FIR1 /FIRO /RDY fIXO jWPRO /CHNG /LED OVL"
-  <!-- corpus: hw-manual-errata-1985/p043.txt -->
-
-  The replacement Appendix F adds a CIAA address map with bit layouts: the BFE001 (PRA) row has OVL in bit 0, below /LED. The same appendix's port assignment table (p054) keeps 'PAO .. OVL' with the description 'memory overlay bit'. The overlay is again tied to one bit of one register, as in the manual. It says nothing about writes to other CIA-A registers. The DDRA row on p043, 'ddr for port A (BEE001); 1 = output (Set to Ox03)', makes OVL and LED outputs, which bears on the finding's note that DDRA changes what the OVL pin drives.
+  Gary takes the overlay as a level input pin (pin table: 'OVL IN HI Overlay (ROM to address 0)') driven by a port line. None of Gary's inputs carries a CIA register select or a CIA write strobe, and the spec describes no latch, so the overlay follows the level of that port line. That sides with the manual's 'the OVL bit', not with a clear on any CIA-A write. It does not name CIA-A PA0 itself, and it says 'typically'. The A500/A2000 technical reference, whose schematic would show which port line drives Gary pin 30, has no text layer and is not in the corpus.
 
 Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,777,621, Commodore-Amiga.
 

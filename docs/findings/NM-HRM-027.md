@@ -86,20 +86,7 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 158 — agrees with the manual:
-
-  > "In direct audio output, the interrupt occurs after one data word has been output."
-  <!-- corpus: hw-manual-1985/p158.txt -->
-
-  Section 5.5 (printed 5-28) carries the 3rd edition's p. 157 sentence. For the finding's four-way table: the 1985 interrupt chapter (p193) phrases the moment a fifth way, 'In manual mode, it occurs when the audio data register is ready to accept another word of data.', and the same sentence is in the 3rd-edition corpus (amiga-hrm-3rd/text/p220.txt).
-
-- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 26 — agrees with the manual:
-
-  > "In interrupt-driven operation, transfer to the main loop (010,011 states) is immediate upon data written by the processor. In the 010 state the upper byte is output, and in the 011 state the lower byte is output. Transitions 010-011-010 ... occur whenever the period counter coun ts down to one. The period counter is reloaded at these transitions. As long as the in terrupt is cleared by the processor in time, the machine remains in the main loop. Otherwise, it enters the idle state. Inter- rupts are generated on every word (011-010) transition."
-  <!-- corpus: hw-manual-errata-1985/p026.txt -->
-
-  The October 1985 state-machine addendum (the paragraph the 3rd edition carries on p. 164) puts the interrupts of interrupt-driven operation on the 011-010 word transitions, after the upper (010) and lower (011) byte have been output, and mentions no request on leaving idle, where NanoMig raises it. The state diagram that would show the idle-exit actions (p029) has no usable text layer, so it cannot be checked here.
-
+None of them speaks to this point.
 Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

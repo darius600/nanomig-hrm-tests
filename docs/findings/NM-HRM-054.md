@@ -134,20 +134,8 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 247 — agrees with the manual:
-
-  > "Ports A and B each consist of an 8-bit Peripheral Data Register (PR) and an 8-bit data direction register (DDR)."
-  <!-- corpus: hw-manual-1985/p247.txt -->
-
-  The August 1985 original uses the same wording as the 3rd edition's Appendix F p.341. Its port assignments (p.245, p.251) give CIA-A PB7-PB0 as P7-P0 'Centronics parallel interface data', with PC = drdy* and F = ack* as 'centronics control': a data port that drives a printer, with handshake. The 1985 chapter 8 text (p.221) calls the connector 'generally used for a parallel printer' and does not use the word bi-directional.
-
-- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 43 — agrees with the manual:
-
-  > "Parallel port ddr for port A (BEE001); 1 = output (Set to Ox03) ddr for port B (BEE101); 1 = output (Can be in or out)"
-  <!-- corpus: hw-manual-errata-1985/p043.txt -->
-
-  The October 1985 CIA-A address map names the port-B data register (BFE101) 'Parallel port' and annotates its DDR 'Can be in or out'. That is a data register with a programmable direction, i.e. a bi-directional port. The replacement Appendix F also repeats 'Ports A and B each consist of an 8-bit Peripheral Data Register (PR)' (p.46), and its port assignments (p.54) keep PB7-PB0 as Centronics data with PC drdy* and F ack*.
-
+None of them speaks to this point.
 Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
 
 Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
