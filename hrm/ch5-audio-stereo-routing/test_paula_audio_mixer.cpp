@@ -5,8 +5,16 @@
 //   contradicting appendix pin list - see docs/third-witness.md.
 // Non-goals: This does not claim numeric DAC scaling for HRM volume-register
 //   value 64.
+//
+// MUTATION ROUTE-TO-PARTNER stimulus green: the four routing checks are red at
+//   baseline, so the proof runs the other way. MUTATE=ROUTE-TO-PARTNER drives
+//   each sample on its partner channel (0<->1, 2<->3) with the expected side
+//   unchanged, and all four go PASS -- 4 passed, 0 failed, against 0 passed,
+//   4 failed without it. The checks measure which side a channel reaches.
 
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <verilated.h>
@@ -79,11 +87,24 @@ int main(int argc, char **argv) {
     // The appendix pin list is the outlier. paula_audio_mixer.v follows it and is
     // therefore wrong: the NanoMig stereo channels are swapped. See
     // docs/third-witness.md for how this was established.
+    // MUTATION GUARD for four reds. An assertion red at baseline cannot be
+    // made to fail harder; the proof that it measures the side a channel
+    // reaches is a mechanism that turns it GREEN through the same comparator.
+    // Under MUTATE=ROUTE-TO-PARTNER each sample is driven on its partner
+    // channel (0<->1, 2<->3) -- the one this RTL puts on the side the manual
+    // names -- and the expected side is left alone.
+    const char *mut_env = std::getenv("MUTATE");
+    auto mutating = [&](const char *id) {
+        return mut_env != nullptr && std::strcmp(mut_env, id) == 0;
+    };
+    const bool to_partner = mutating("ROUTE-TO-PARTNER");
+
     bool hrm_pass = true;
     auto check_hrm = [&](const std::string &name,
                          int s0, int s1, int s2, int s3,
                          int expected_left, int expected_right) {
-        const Stereo got = mix(s0, s1, s2, s3, 1, 1, 1, 1);
+        const Stereo got = to_partner ? mix(s1, s0, s3, s2, 1, 1, 1, 1)
+                                      : mix(s0, s1, s2, s3, 1, 1, 1, 1);
         ++g_total;
         if (got.left != expected_left || got.right != expected_right) {
             std::cerr << "HRM FAIL " << name

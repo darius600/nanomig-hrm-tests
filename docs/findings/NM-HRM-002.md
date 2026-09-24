@@ -42,6 +42,19 @@ It follows the pin list:
 
 Channels 0 and 3 to the left sum, 1 and 2 to the right.
 
+### Measured
+
+[`hrm/ch5-audio-stereo-routing`](../../hrm/ch5-audio-stereo-routing) drives one
+sample on one channel at a time and reads both sums. Every channel lands on the
+side chapter 5 does not name: channel 0's 17 arrives as L=17 R=0, channel 1's 23
+as L=0 R=23, channel 2's 31 as L=0 R=31, channel 3's 47 as L=47 R=0 -- 0 passed,
+4 failed.
+
+The four checks are red, so the proof that they can pass runs the other way:
+driven on its partner channel instead (`MUTATE=ROUTE-TO-PARTNER`, 0<->1 and
+2<->3), each sample reaches the side chapter 5 names and all four go green. The
+checks read which side a channel reaches; they do not fail whatever the RTL does.
+
 ---
 
 ## What the others say
