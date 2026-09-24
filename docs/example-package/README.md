@@ -27,11 +27,11 @@ What to look at, in order:
    fail measures nothing, and the mutation gate exists to catch one.
 4. **Driving every input.** A Verilated model starts undefined, not at zero.
 
-It is not in `hrm/`, so it is not in the suite and not in the 208.
+It is not in `hrm/`, so it is not in the suite and not in the 209.
 
-## The 210-versus-208 question, answered here because it comes up
+## The 211-versus-209 question, answered here because it comes up
 
-`run_all.sh` prints 210 PASS/FAIL lines and the README says 208 packages. Both
-are right: 208 directories under `hrm/`, plus two integration targets
+`run_all.sh` prints 211 PASS/FAIL lines and the README says 209 packages. Both
+are right: 209 directories under `hrm/`, plus two integration targets
 (`test_minimig_system`, `test_copper`) that the run script builds from its own
 second section. This example is a third thing again — it is not in either count.

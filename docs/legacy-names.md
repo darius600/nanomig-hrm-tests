@@ -161,7 +161,6 @@ All of them are here.
 | `BOUNDARIES.md`, `CANDIDATES.md` | working files of a single build, in that build's directory under `work/`. |
 | "the builder", "the lead", "the validator" | roles in the pipeline, not people: the model that wrote a package, the model that assigned the work, and the independent model that checked it. `hrm-testpipeline/docs/model-collaboration-guide.md` defines them. |
 
-**Every package that prints claim ids says so in its own header**, in a
+**Every package says in its own header which claim ids it grades**, in a
 `Claim ids:` field beside `Test purpose`, `Test class`, `Primary oracle` and
-`Non-goals` — 153 of the 208 packages. The other 55 grade propositions that
-carry no id.
+`Non-goals` — all 209.

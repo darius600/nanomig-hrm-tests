@@ -65,9 +65,9 @@ artefacts rather than by remembering.
 
 | | |
 |---|---:|
-| test packages, `hrm/` | **208** |
-| assertions, `hrm/` | **3281** — 3096 pass, **185 fail** |
-| packages, `hrm/` | 142 green, 66 carrying at least one red, **0 build errors** |
+| test packages, `hrm/` | **209** |
+| assertions, `hrm/` | **3308** — 3123 pass, **185 fail** |
+| packages, `hrm/` | 143 green, 66 carrying at least one red, **0 build errors** |
 | test packages, `aa/` | **33** — sixteen cover one RTL module each from slice 7's register list, four the bit tables of slice 2, five from slice 4, one from slice 3, one from slice 5, five from slice 1 and one the scroll range of slice 6 |
 | assertions, `aa/` | **184** — 179 pass, **5 fail**, 0 build errors |
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors**. Two of the four carry findings of their own -- NM-AA-004 and NM-AA-005 -- and two corroborate findings already raised against the Hardware Reference Manual: BEAMCON0's sync-polarity bits reach NM-HRM-032 and DSKBYTR's constant fields reach NM-HRM-041 |
@@ -75,31 +75,18 @@ artefacts rather than by remembering.
 | registered findings | **70** — 65 against the Hardware Reference Manual and 5 against the AA specification, counted in registers of their own. **46 ask you to decide whether the RTL should change** — 63 open, 7 withdrawn; of the open ones 54 rest on a graded red, 5 are source observations, 3 on a graded green with an inverse control, and one is filed against the printed page with no test yet |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **20** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, appendix K, and eight against the second oracle: `aa-s7` and `aa-s7-rest`, the two halves of the AA specification's address-ordered register list, and `aa-s1` to `aa-s6`, its alphabetical stretches and its display modes — the first, then BEAMCON0 and the blitter's control words, the beam-position words, collision/colour/copper/display-window/DMACON, the controller-port bit tables, and the title page with the new Lisa display modes |
 
-**All 241 packages now report both a verdict and an assertion count**, so the
+**All 242 packages report both a verdict and an assertion count**, so the
 `hrm/` rows above describe the same population. `./run_all.sh` walks both trees
-and prints a line for each: `tests: 142 passed, 66 failed, 0 build errors` for
+and prints a line for each: `tests: 143 passed, 66 failed, 0 build errors` for
 `hrm/`, `tests: 29 passed, 4 failed, 0 build errors` for `aa/`.
 
-That was not true until 19.09.2026. Nine packages printed only a package-level
-pass or fail, in wordings no tool read — `Checked 22 assertions; passed=22
-failed=0`, `225/225 PASS, 0 FAIL` — so **333 assertions were missing from every
-published total, seven of them failing**. Four of those seven are NM-HRM-002's
-stereo-routing reds, which had been counted as a red package and zero red
-assertions at the same time. The nine now print the canonical line beside their
-own, nothing else about them changed, and the figures above are the first that
-cover the whole suite.
-
-**These five figures come from a run and nothing could check them, so they
-drifted.** The row above previously read 149 green and 66 red — 215, under a
-line saying 228 — and the failing count was 98 against a true 179. Most of that
-gap was one defect in the runner, not in the tests: 59 packages wrote their
-summary to `out.txt` and printed it on the next `make` line, so a package that
-failed stopped before the print and **vanished from the count exactly when it
-went red**. Both are fixed, and `check_published_counts.py --runlog` now
-measures this half of the table against a `run_all.sh` log instead of trusting
-it. That script lives in the **separate `hrm-testpipeline` repository**, at
-`hrm-testpipeline/tools/check_published_counts.py` — it is not in this one, and
-running it from here fails. See `hrm-testpipeline/OPEN-ISSUES.md` O104.
+Every package prints the canonical summary line beside any wording of its
+own, and a package that fails still prints it, so no red drops out of the
+count. **These figures come from a run, and `check_published_counts.py
+--runlog` checks them against a `run_all.sh` log.** That script lives in the
+**separate `hrm-testpipeline` repository**, at
+`hrm-testpipeline/tools/check_published_counts.py` — it is not in this one,
+and running it from here fails.
 
 **A red test is a result, not a bug in the test.** Each one marks a place where
 the RTL does something the manual does not describe. Adjusting an assertion to
@@ -185,7 +172,7 @@ edition documents OCS and ECS, so AGA is outside what this suite can adjudicate.
 Coverage is a separate statement, made per claim from a committed ledger, and is
 never implied by a green.
 
-**All 208 packages came through the pipeline.** Each is assigned to the unit of
+**All 209 packages came through the pipeline.** Each is assigned to the unit of
 the manual whose pages it answers to.
 
 | Unit | Packages | Read in |
@@ -273,7 +260,7 @@ rather than an obstacle to their going.
 ## Layout
 
 ```
-hrm/            208 packages, each against a single module boundary
+hrm/            209 packages, each against a single module boundary
 integration/    tests across module boundaries, against minimig.v
 nanomig/        submodule, the RTL under test
 docs/           what a red result means, and who decides — see docs/README.md

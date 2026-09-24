@@ -119,7 +119,7 @@ change any other package's result.
 
 ## Where the claims come from
 
-All 208 packages in the suite came through the pipeline, and each cites a claim
+All 209 packages in the suite came through the pipeline, and each cites a claim
 file in the sibling repository,
 [`hrm-testpipeline/work/`](https://github.com/darius600/hrm-testpipeline/tree/main/work).
 
