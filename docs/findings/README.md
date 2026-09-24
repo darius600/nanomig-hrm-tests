@@ -184,7 +184,7 @@ Quotations are taken from each PDF's text layer or, for the three scans that
 have none -- the TRM and the 8371 and 6526 specifications -- from Tesseract
 OCR, errors and line-end hyphens included, and every one is checked against the
 page it names by `hrm-testpipeline/tools/verify_second_documents.py --pages`.
-A schematic cannot be quoted: where a drawing speaks, the page says what it
+A schematic or a patent figure cannot be quoted: where a drawing speaks, the page says what it
 shows, marked *read from the drawing, not quoted*, with its PDF page, and the
 check requires the net labels it names on that page. The documents themselves
 are in neither repository.

@@ -92,7 +92,14 @@ and none decides this finding. What they are and how they were read is in
 
   On the 8364R7 die channels 0 and 3 drive the pad the author labels AUDL (audio left) and 1 and 2 drive AUDR: NanoMig's ldatasum/rdatasum split and the appendix pin list, not 3rd-ed. p. 137. The note speaks of chip pads; which jack each pad reaches is board wiring it does not cover.
 
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga.
+- **US patent 4,829,473, Commodore-Amiga**, PDF page 2 — says something else:
+
+  *Read from the drawing, not quoted:* FIG. 1 draws the D/A converter for channels 0 and 1 (37) feeding LEFT AUDIO (41), and the converter for channels 2 and 3 (39) feeding RIGHT AUDIO (43).
+  <!-- drawing: patent-us4829473-paula/p002.txt -->
+
+  The block diagram pairs the channels by converter: 0 and 1 to the left output, 2 and 3 to the right. That is neither chapter 5's assignment (1 and 2 left) nor the appendix pin list's, which NanoMig follows (0 and 3 left). It is a diagram of the patented circuit, not a pin list of the shipped chip; the specification's text calls each side's two channels A and B and does not number them (PDF page 9).
+
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989.
 
 ---
 
