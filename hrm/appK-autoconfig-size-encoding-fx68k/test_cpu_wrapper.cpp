@@ -378,7 +378,7 @@ int main() {
     return failed == 0 ? 0 : 1;
 }
 
-// RESULTS (WSL, Verilator 5.052, built and run 2026-09-18): baseline
+// RESULTS (WSL, Verilator 5.052, built and run 2026-09-18, TG68K build): baseline
 //   `make test` -> 16 passed, 0 failed (15 graded assertions + the
 //   fixture-liveness apparatus check). 6 claims declined (record()).
 //

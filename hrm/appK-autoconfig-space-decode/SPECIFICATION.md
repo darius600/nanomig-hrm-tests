@@ -25,11 +25,15 @@ taken on faith from those documents (documents drift; the RTL does not):
   reading, not inference: `chip_addr` cannot represent any address at or above
   $1000000 (max representable byte address is $FFFFFE). This matters below.
 - `cpu_wrapper.v:403-470` — the `TG68KdotC_Kernel` instantiation this package
-  reuses (via `-DENABLE_TG68K=1`, same as the sibling) — the `` `ifdef
-  VERILATOR`` port list (lines 420-440) has no function-code (`FC`) port at
-  all. `nanomig/sim/TG68KdotC_Kernel.v` (grepped in full for this package,
-  7,600+ lines) contains no `FC0`/`FC1`/`FC2` signal or port under any name.
-  `fc_o` (declared `cpu_wrapper.v:244`) is read only inside the
+  reuses (via `-DENABLE_TG68K=1`, same as the sibling) — reaches no
+  function-code (`FC`) port on either build path: the `` `ifdef
+  VERILATOR`` port list (lines 420-441) makes no `fc` connection, and the
+  non-`VERILATOR` (synthesis) instantiation leaves `.FC()` open (line 462).
+  This is not because the kernel lacks an FC port: `nanomig/sim/
+  TG68KdotC_Kernel.v` (35,330 lines) declares `output [2:0] fc,` (line 7453)
+  and drives it (`assign fc = n9523_o;`, line 13746) — cpu_wrapper.v simply
+  never wires it to either TG68K instance. `fc_o` (declared
+  `cpu_wrapper.v:244`, a separate net) is read only inside the
   `` `ifdef ENABLE_FX68K`` block (lines 299, 497) and driven only inside the
   same block (lines 493-495) — with `ENABLE_FX68K` undefined in this build
   (only `ENABLE_TG68K` is), `fc_o` is neither driven nor read anywhere in the
@@ -201,17 +205,24 @@ Sum = 1+2+2+1+3+2+1+3+4+2+2 = **23**. 16 graded, 7 declined.
   `` `ifdef ENABLE_FX68K`` block (`:493-495`) and read only inside the same
   block (`:299`, `:497`). This package builds `TG68KdotC_Kernel`; with
   `ENABLE_FX68K` undefined, `fc_o` is a fully undriven, unread wire in the
-  compiled design, and `nanomig/sim/TG68KdotC_Kernel.v` (grepped in full for
-  this package) carries no function-code port under any name. In an fx68k
-  build (it builds with `-Wno-BLKANDNBLK` and runs with `--no-assert`)
-  `fc_o` is driven but still reaches no port of `cpu_wrapper`: it leaves
-  only as the two-bit cycle type on the `cpustate` output (`:299-303`:
-  fetch, data read, write), which carries neither FC2 nor CPU space, and as
-  the autovector request (`:497`). No stimulus at this boundary reaches
-  FC0-FC2 themselves in either build. Declined: `unreachable-port`, named at
-  `cpu_wrapper.v:420-440` (the `` `ifdef VERILATOR`` TG68K port list, no FC
-  signal) vs. `:493-495` (fx68k-only). The boundary that would answer this is
-  the CPU core's own FC outputs.
+  compiled design. `nanomig/sim/TG68KdotC_Kernel.v` (35,330 lines) does
+  declare its own function-code port — `output [2:0] fc,` (line 7453),
+  driven by `assign fc = n9523_o;` (line 13746) — but cpu_wrapper.v never
+  connects it: the `` `ifdef VERILATOR`` TG68K instantiation (`:420-441`)
+  makes no `fc` connection, and the non-`VERILATOR` (synthesis)
+  instantiation leaves `.FC()` open (`:462`). So FC reaches no port of
+  `cpu_wrapper` in a TG68K build either, not because the kernel has no FC
+  port. In an fx68k build (it builds with `-Wno-BLKANDNBLK` and runs with
+  `--no-assert`) `fc_o` is driven but still reaches no port of
+  `cpu_wrapper`: it leaves only as the two-bit cycle type on the `cpustate`
+  output (`:299-303`: fetch, data read, write), which carries neither FC2
+  nor CPU space, and as the autovector request (`:497`). No stimulus at
+  this boundary reaches FC0-FC2 themselves in either build. Declined:
+  `unreachable-port`, named at `cpu_wrapper.v:420-441` (the
+  `` `ifdef VERILATOR`` TG68K instantiation, no `fc` connection) and `:462`
+  (the synthesis TG68K instantiation, `.FC()` left open) vs. `:493-495`
+  (fx68k-only). The boundary that would answer this is the CPU core's own
+  FC outputs.
 - **`sol:K-0456`, `opus:K-0458`** (p412) — an unconfigured Zorro III PIC
   responds at $00E80000 **or** $FF000000. In this build `cfg_z3` is wired
   to `0` (`cpu_wrapper.v:535-540`, no `ENABLE_RAM32`): no Zorro III case is

@@ -605,7 +605,7 @@ int main() {
     return failed == 0 ? 0 : 1;
 }
 
-// RESULTS (WSL, Verilator 5.052, built and run 2026-09-18): baseline
+// RESULTS (WSL, Verilator 5.052, built and run 2026-09-18, TG68K build): baseline
 //   `make test` -> 43 passed, 0 failed (42 graded assertions + the
 //   fixture-liveness apparatus check). Every graded claim's observed raw
 //   nibble matched the value hand-derived from the RTL's own case-statement
@@ -633,9 +633,11 @@ int main() {
 // measurement rather than by reasoning about the 35,000-line generated
 // TG68KdotC_Kernel.v in the abstract: `reset` on this module is
 // active-LOW (`always @(posedge clk, negedge reset)`, `if (~reset |
-// ~reset_out)` throughout, `.nreset(reset)` direct wiring) despite its
-// plain name -- the first two attempts drove it the conventional
-// active-high way, which holds the design permanently in reset once
+// ~reset_out)` throughout) despite its plain name -- wired `.nreset(reset)`
+// direct to the TG68K instance (:424), and `.extReset(~reset)` /
+// `.pwrUp(~reset)` to the fx68k instance (:482-483) -- the first two
+// attempts drove it the conventional active-high way, which holds the
+// design permanently in reset once
 // "released". Fixed in this file's Harness constructor (`top->reset = 0`
 // during the hold, `= 1` to release) and confirmed working by the
 // end-to-end round trip these 42 assertions depend on.

@@ -422,7 +422,7 @@ int main() {
     return failed == 0 ? 0 : 1;
 }
 
-// RESULTS (WSL, Verilator 5.052, built and run 2026-09-18): baseline
+// RESULTS (WSL, Verilator 5.052, built and run 2026-09-18, TG68K build): baseline
 //   `make test` -> 5 passed, 8 failed. Reproduced twice (once before, once
 //   after the mutation runs below), byte-for-byte identical both times.
 //   13 graded assertions (8 red, 4 green, 1 liveness) + 11 declined.

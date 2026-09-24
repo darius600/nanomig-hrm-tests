@@ -37,10 +37,11 @@
 //
 // Mutation mechanism, plain summary (the individual, parseable
 // `// MUTATION <label> <kind> <result>` records live next to each
-// assertion below, one label per line). Twelve `-DMUT_<NAME>=1` build
-// flags exist: LIFECYCLE, NORESET, NOHANDOFF, WRITETOWRITEREG,
-// REG48NOEFFECT, INSIDEPROBE, NOOVERRIDE, NYBBLE, SWAPNYBBLE, NOCOMPLEMENT,
-// SWEEPWRONGREG, REG00SILENT. Some assertions carry a second record of
+// assertion below, one label per line). Thirteen `-DMUT_<NAME>=1` build
+// flags exist: LIFECYCLE, NORESET, NOHANDOFF, NOBOARD2WRITE,
+// WRITETOWRITEREG, REG48NOEFFECT, INSIDEPROBE, NOOVERRIDE, NYBBLE,
+// SWAPNYBBLE, NOCOMPLEMENT, SWEEPWRONGREG, REG00SILENT. Some assertions
+// carry a second record of
 // kind `none impossible`: a part of their claim is a structural fact (a
 // fixed port width, a fixed address decode, an unassigned case entry, or
 // a specific undriven address indistinguishable by value from any other
@@ -500,9 +501,23 @@ int main() {
                                    READ(autocfg_addr(IDX_REG00)), READ(autocfg_addr(IDX_REG00LO)),
                                    WRITE_IMM(autocfg_addr(IDX_REG44), 0x2000),
                                    READ(autocfg_addr(IDX_REG00))});
+#ifdef MUT_NOBOARD2WRITE
+    // MUTATION sol:K-0733 stimulus red: MUT=NOBOARD2WRITE omits board 2's
+    //   own configuring write (the second REG44 write, base 0x0000) from
+    //   handoff_ramreq_w2, leaving board 1's base-0x1000 write (which
+    //   advances the chain but does not itself match cpu_addr[31:28]) as
+    //   the only write -- z3ram_ena0 never latches (cpu_wrapper.v:660-661,
+    //   the branch a SECOND register-44 write reaches once autocfg_card is
+    //   no longer 2'b01), so `ramreq` never asserts for board 2's range,
+    //   isolating the "board 2's own completion" conjunct of the same
+    //   expect() from board 1's.
+    Harness handoff_ramreq_w2(2, 5, {WRITE_IMM(autocfg_addr(IDX_REG44), 0x1000),
+                                      READ(autocfg_addr(IDX_REG00))}, {}, 3000);
+#else
     Harness handoff_ramreq_w2(2, 5, {WRITE_IMM(autocfg_addr(IDX_REG44), 0x1000),
                                       WRITE_IMM(autocfg_addr(IDX_REG44), 0x0000),
                                       READ(autocfg_addr(IDX_REG00))}, {}, 3000);
+#endif
 
     uint8_t hf_hi0 = handoff_silent.nibble(0), hf_lo0 = handoff_silent.nibble(1);
     uint8_t hf_hi1 = handoff_silent.nibble(2), hf_lo1 = handoff_silent.nibble(3);

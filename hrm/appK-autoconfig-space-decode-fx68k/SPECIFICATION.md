@@ -11,26 +11,31 @@ claim inventory, the boundary investigation, and the expected values, see
 
 ## Build difference
 
-The only build-time difference from `hrm/appK-autoconfig-space-decode` is
-the CPU core `cpu_wrapper` instantiates. That sibling package selects
-TG68K explicitly (`-DENABLE_TG68K=1`); this package selects nothing, so
+The CPU core `cpu_wrapper` instantiates differs from
+`hrm/appK-autoconfig-space-decode`, and so does everything that follows
+from that choice. That sibling package selects TG68K explicitly
+(`-DENABLE_TG68K=1`); this package defines no `ENABLE_TG68K`, so
 `cpu_wrapper.v`'s own `` `ifndef ENABLE_TG68K`` guard (`:27-32`) defines
-`ENABLE_FX68K` instead, and the module instantiates fx68k
-(`nanomig/src/fx68k/fx68k.sv`, `fx68kAlu.sv`, `uaddrPla.sv`) rather than
-TG68KdotC_Kernel. Neither package defines `ENABLE_RAM32`.
-
-fx68k fails this project's pinned Verilator (5.052) under its default
-checks (measured: `%Error-BLKANDNBLK`, `fx68k.sv:293`); the Makefile adds
-`-Wno-BLKANDNBLK` to build it, as NanoMig's own `sim/Makefile` does. Without
-`--no-assert`, fx68k's `unique case` checks stop the run at time 0
-(`fx68kAlu.sv:313`); the Makefile adds that too.
+`ENABLE_FX68K` instead, and the module instantiates fx68k from its own
+sources (`nanomig/src/fx68k/fx68k.sv`, `fx68kAlu.sv`, `uaddrPla.sv`) rather
+than linking `TG68KdotC_Kernel.v`. Building fx68k needs `-Wno-BLKANDNBLK`
+(it fails this project's pinned Verilator, 5.052, under its default checks
+-- measured: `%Error-BLKANDNBLK`, `fx68k.sv:293` -- the same flag NanoMig's
+own `sim/Makefile` uses) and `--no-assert` (without it, fx68k's
+`unique case` checks stop the run at time 0, `fx68kAlu.sv:313`); the
+`test` target also copies fx68k's microcode ROMs (`microrom.mem`,
+`nanorom.mem`) into `obj_dir/` and runs the built binary from there, since
+fx68k loads them relative to its own working directory. Neither package
+defines `ENABLE_RAM32` -- this no-RAM32/fx68k pairing matches the fx68k
+boards' own shipped configuration: the six fx68k tops define no
+`ENABLE_RAM32`.
 
 The Makefile also passes `-CFLAGS -DCORE_FX68K=1`. This test source is the
 only one of the seven where that matters: two `record()` calls (declining
 `sol:K-0221`/`opus:K-0229` and `sol:K-0456`/`opus:K-0458`) state, as part
-of their NOT-GRADED reasoning, a fact that is true of only one core
-(which macro TG68K's own address narrowing, or which file carries no FC
-port). `CORE_FX68K` selects the text that is true of this build; the
+of their NOT-GRADED reasoning, a fact that is true of only one core (how
+FC reaches `cpu_wrapper`, or what narrows the CPU's own address to 24
+bits). `CORE_FX68K` selects the text that is true of this build; the
 sibling TG68K package's text is unchanged.
 
 ## Measured result
@@ -41,24 +46,29 @@ Built and run with `make -B test`:
   `hrm/appK-autoconfig-space-decode/out.txt`. Every PASS/FAIL/MEASURED line
   diffs empty against it. Exactly two RECORDED lines differ, both by
   design (`CORE_FX68K`-selected text, not a grading change):
-  - `sol:K-0221`/`opus:K-0229` (FC0-FC2): the sibling's text says "this
-    build defines only ENABLE_TG68K, ... In an fx68k build ... fc_o is
-    driven but leaves cpu_wrapper only as the cycle type on cpustate";
-    this build's text says "this build defines ENABLE_FX68K (no
-    -DENABLE_TG68K, Makefile), so fc_o is driven (:493-495) but leaves
-    cpu_wrapper only as the cycle type on cpustate ..., ... nanomig/sim/
-    TG68KdotC_Kernel.v, which the sibling TG68K build links instead,
-    carries no FC0/FC1/FC2 port under any name". Same verdict
-    (`NOT GRADED`, `reason_kind: unreachable-port`), same claim ids, text
-    now stated from this build's own side instead of hypothetically.
+  - `sol:K-0221`/`opus:K-0229` (FC0-FC2): both builds' text agrees that
+    `nanomig/sim/TG68KdotC_Kernel.v` (35,330 lines) declares its own `fc`
+    output port (`:7453`, driven `:13746`), and that `cpu_wrapper.v`'s
+    TG68K instance connects it nowhere (the Verilator instantiation
+    `:420-441` lists no `fc` port; the synthesis instantiation leaves
+    `.FC()` open, `:462`) — so FC reaches no port of `cpu_wrapper` in a
+    TG68K build either. The sibling's text states that side directly and
+    describes the fx68k side as "In an fx68k build ... fc_o is driven but
+    leaves cpu_wrapper only as the cycle type on cpustate"; this build's
+    text states its own side directly (`fc_o` driven `:493-495`, leaving
+    only the cycle type on `cpustate`, `:299-303`) and describes the TG68K
+    side the same way. Same verdict (`NOT GRADED`,
+    `reason_kind: unreachable-port`), same claim ids; each text states
+    this build's own facts first.
   - `sol:K-0456`/`opus:K-0458` (Zorro III `$FF000000`): the sibling's text
     cites `` `TG68K_A24, cpu_wrapper.v:34`` as what limits the CPU core to
-    24-bit addressing; this build's text cites `cpu_addr_o`'s own [23:1]
-    declaration (`cpu_wrapper.v:243`) and `cpu_wrapper.v:298`'s
-    `cpu_addr = {8'b0, cpu_addr_o, 1'b0}` instead — the mechanism that
-    actually limits fx68k's address here (`` `TG68K_A24`` has no effect
-    outside the `` `ifdef ENABLE_TG68K`` branch this build does not
-    compile). Same verdict (`NOT GRADED`, `reason_kind:
+    24-bit addressing; this build's text cites fx68k's own address output,
+    `eab[23:1]` (`fx68k.sv:162`), carried unwidened into `cpu_addr_o`
+    (`cpu_wrapper.v:243`) and then `cpu_wrapper.v:298`'s
+    `cpu_addr = {8'b0, cpu_addr_o, 1'b0}` — the 24-bit limit originates in
+    the core itself, not in `cpu_addr_o`'s own declaration (`` `TG68K_A24``
+    has no effect outside the `` `ifdef ENABLE_TG68K`` branch this build
+    does not compile). Same verdict (`NOT GRADED`, `reason_kind:
     unreachable-address`), same claim ids.
 - **Mutation replay**, each via `make clean && make MUT=<NAME> test`:
   - `MUT=NOFASTRAMCFG`: turns red exactly the six SWEEP-group assertions

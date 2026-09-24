@@ -28,6 +28,15 @@
 //   any claim it does not name. A green here means those assertions held on
 //   this fixture at the pinned revision -- not that the module is correct,
 //   and not that the chapter is covered.
+// Claim ids: ids such as `C-shrs.r10` and `C-shres-sprite-bits.c1` name one
+//   sentence of the manual in this chapter's reading -- the sixteen row ids
+//   `C-shrs.r10`-`C-shrs.r1F`, the per-bit ids `C-shres-sprite-bits.c1`-
+//   `c256`, the symbol ids `C-shres-sprite-symbols.c1`-`c12`, and the
+//   row-source ids `C-shrc.srcs16`-`srcs19`, all cited in full at
+//   `kRegIds[]` below; plus `C-shrc.c03`, `C-shres-color.c8` and
+//   `C-shrs.c01`, cited by SHRES-MODE-CHANGES-OUTPUT. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
 //
 // THE ORACLE, DERIVED PURELY FROM THE QUOTES (before RTL was opened -- see
 //   ORDER OF WORK below): claims.jsonl's 16 row quotes (C-shrs.r10..r1F,

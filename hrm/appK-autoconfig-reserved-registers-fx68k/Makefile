@@ -21,13 +21,16 @@ FX68K_DIR = $(NANOMIG)/src/fx68k
 # This package deliberately does NOT define ENABLE_RAM32, matching the
 # sibling TG68K package -- see
 # hrm/appK-autoconfig-reserved-registers/Makefile and SPECIFICATION.md.
+# This no-RAM32/fx68k pairing matches the fx68k boards' own shipped
+# configuration: the six fx68k tops define no ENABLE_RAM32.
 SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v $(FX68K_DIR)/fx68k.sv $(FX68K_DIR)/fx68kAlu.sv $(FX68K_DIR)/uaddrPla.sv
 
-# MUT=<NAME> replays one guarded mutation (see the "// MUTATION <NAME> ..."
-# line in test_cpu_wrapper.cpp) by defining MUT_<NAME>=1 for the build, so the
-# exact stimulus change that assertion's log entry describes can be
-# reproduced later. Run `make clean` first when switching MUT values --
-# obj_dir is reused otherwise and Verilator will not relink.
+# MUT=<NAME> would replay one guarded mutation by defining MUT_<NAME>=1 for
+# the build; this hook is kept for uniformity with the other packages'
+# Makefiles, but this package's test source has nothing for it to guard --
+# every one of its "// MUTATION <label> none impossible" records names a
+# claim with no stimulus that can perturb it (see SPECIFICATION.md), so no
+# `#ifdef MUT_` exists here and no `MUT=` value changes this build's output.
 MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)
 
 test: $(TOP_MODULE)

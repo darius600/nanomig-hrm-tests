@@ -10,8 +10,8 @@ SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v
 # put FIRST on Verilator's -y search path (and, when the mutation touches
 # $(TOP_MODULE).v itself, used directly as the top-level source), so the
 # mutant resolves and every untouched sibling module still resolves from the
-# real nanomig/src/minimig-aga/ directory. Leaving MUTANT unset builds
-# exactly as before, byte-identical: no mutant dir is created or searched.
+# real nanomig/src/minimig-aga/ directory. Leaving MUTANT unset builds the
+# plain sources unchanged: no mutant dir is created or searched.
 MUTANT ?=
 MUTANT_FILES_M1 = denise.v
 MUTANT_FILES_M2 = denise.v

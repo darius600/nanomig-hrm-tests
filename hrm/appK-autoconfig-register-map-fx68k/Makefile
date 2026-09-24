@@ -21,6 +21,12 @@ FX68K_DIR = $(NANOMIG)/src/fx68k
 # configuration of NanoMig's 32 MiB boards and the only one in which
 # cpu_wrapper.v compiles a Zorro III path; see
 # hrm/appK-autoconfig-register-map/Makefile and SPECIFICATION.md.
+# Disclosure: no NanoMig board top builds both ENABLE_RAM32 and fx68k --
+# all four RAM32 tops (lattice/icepi-zero, lattice/icesugar-pro,
+# mistle/gw3a_20, mistle/gw5a_25) also define ENABLE_TG68K, and the six
+# fx68k tops define no ENABLE_RAM32. This package therefore measures the
+# sibling's ENABLE_RAM32 configuration on the other core -- a pairing no
+# shipped bitstream contains.
 SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v $(FX68K_DIR)/fx68k.sv $(FX68K_DIR)/fx68kAlu.sv $(FX68K_DIR)/uaddrPla.sv
 
 # MUT=<NAME> replays one guarded mutation (see the "// MUTATION <NAME> ..."

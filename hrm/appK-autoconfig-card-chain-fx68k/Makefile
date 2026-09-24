@@ -19,7 +19,9 @@ FX68K_DIR = $(NANOMIG)/src/fx68k
 #
 # This package deliberately does NOT define ENABLE_RAM32, matching the
 # sibling TG68K package -- see hrm/appK-autoconfig-card-chain/Makefile and
-# SPECIFICATION.md for what that selects.
+# SPECIFICATION.md for what that selects. This no-RAM32/fx68k pairing
+# matches the fx68k boards' own shipped configuration: the six fx68k tops
+# define no ENABLE_RAM32.
 SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v $(FX68K_DIR)/fx68k.sv $(FX68K_DIR)/fx68kAlu.sv $(FX68K_DIR)/uaddrPla.sv
 
 # MUT=<NAME> replays one guarded mutation (see the "// MUTATION <NAME> ..."

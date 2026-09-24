@@ -45,9 +45,16 @@ make -C hrm/ch5-audio-location-pointer \
      SRC=/path/to/Minimig-AGA_MiSTer/rtl/agnus_audiodma.v test
 ```
 
-Check the package's `Makefile` for the variable's name first: 136 packages call
-it `SRC`, 59 use `SRC_DIR` for a directory, 20 use `RTL`, and a few multi-file
-packages split it further. **A red against another core is not a finding here** —
+Check the package's `Makefile` for the variable's name first: of 216 `hrm/`
+Makefiles (counted directly — a script greps each for a line defining
+`SRC`, `SRC_DIR`, or `RTL`), 145 call it `SRC`, 51 use `SRC_DIR` for a
+directory, and 19 use `RTL`; 7 of those define more than one (multi-target
+packages building two or more binaries). The remaining 8 use none of the
+three: 5 split their source across differently-named variables per target
+(for example `SRC_A`/`SRC_B`, `PF_SRC`/`CB_SRC`/`PIC_SRC`, `COPPER_RTL`/
+`AGNUS_RTL`), and 3 write the RTL path directly into the `verilator`
+command line with no override variable at all. **A red against another core
+is not a finding here** —
 these expectations are pinned to the submodule revision this suite was verified
 against.
 
@@ -77,7 +84,7 @@ artefacts rather than by remembering.
 
 **All 249 packages report both a verdict and an assertion count**, so the
 `hrm/` rows above describe the same population. `./run_all.sh` walks both trees
-and prints a line for each: `tests: 143 passed, 66 failed, 0 build errors` for
+and prints a line for each: `tests: 149 passed, 67 failed, 0 build errors` for
 `hrm/`, `tests: 29 passed, 4 failed, 0 build errors` for `aa/`.
 
 Every package prints the canonical summary line beside any wording of its
@@ -188,7 +195,7 @@ the manual whose pages it answers to.
 | D and E — memory maps, connector pinouts, port signals | 17 | one pass |
 | F — 8520 Complex Interface Adapters | 12 | one pass |
 | H and J — external disk connector, custom chip pin allocation | 5 | one pass |
-| K — Zorro Expansion Bus | 20, seven of them built once per CPU core | one pass |
+| K — Zorro Expansion Bus | 20 packages, thirteen test sources, seven of them built once per CPU core | one pass |
 
 **Three packages declare themselves something other than an HRM-conformance
 test, and say why.** `ch2-copper-locreg-width` writes *"Primary oracle: none.

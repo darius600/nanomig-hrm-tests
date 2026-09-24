@@ -10,25 +10,36 @@ the expected values, see `hrm/appK-autoconfig-register-map/SPECIFICATION.md`.
 
 ## Build difference
 
-The only build-time difference from `hrm/appK-autoconfig-register-map` is
-the CPU core `cpu_wrapper` instantiates. That sibling package selects
-TG68K explicitly (`-DENABLE_TG68K=1`); this package selects nothing, so
+The CPU core `cpu_wrapper` instantiates differs from
+`hrm/appK-autoconfig-register-map`, and so does everything that follows from
+that choice. That sibling package selects TG68K explicitly
+(`-DENABLE_TG68K=1`); this package defines no `ENABLE_TG68K`, so
 `cpu_wrapper.v`'s own `` `ifndef ENABLE_TG68K`` guard (`:27-32`) defines
-`ENABLE_FX68K` instead, and the module instantiates fx68k
-(`nanomig/src/fx68k/fx68k.sv`, `fx68kAlu.sv`, `uaddrPla.sv`) rather than
-TG68KdotC_Kernel. `ENABLE_RAM32=1` is kept, matching the sibling package.
+`ENABLE_FX68K` instead, and the module instantiates fx68k from its own
+sources (`nanomig/src/fx68k/fx68k.sv`, `fx68kAlu.sv`, `uaddrPla.sv`) rather
+than linking `TG68KdotC_Kernel.v`. Building fx68k needs `-Wno-BLKANDNBLK`
+(it fails this project's pinned Verilator, 5.052, under its default checks
+-- measured: `%Error-BLKANDNBLK`, `fx68k.sv:293` -- the same flag NanoMig's
+own `sim/Makefile` uses) and `--no-assert` (without it, fx68k's
+`unique case` checks stop the run at time 0, `fx68kAlu.sv:313`); the build
+also passes `-DCORE_FX68K=1` (unused by this test source's `#ifdef`s, but
+part of the real build-time difference), and its `test` target copies
+fx68k's microcode ROMs (`microrom.mem`, `nanorom.mem`) into `obj_dir/` and
+runs the built binary from there, since fx68k loads them relative to its
+own working directory. `ENABLE_RAM32=1` is kept, matching the sibling
+package -- see the disclosure below.
 
-fx68k fails this project's pinned Verilator (5.052) under its default
-checks (measured: `%Error-BLKANDNBLK`, `fx68k.sv:293`); the Makefile adds
-`-Wno-BLKANDNBLK` to build it, as NanoMig's own `sim/Makefile` does. Without
-`--no-assert`, fx68k's `unique case` checks stop the run at time 0
-(`fx68kAlu.sv:313`); the Makefile adds that too.
+Disclosure on `ENABLE_RAM32`: no NanoMig board top builds both
+`ENABLE_RAM32` and fx68k -- all four RAM32 tops (`lattice/icepi-zero`,
+`lattice/icesugar-pro`, `mistle/gw3a_20`, `mistle/gw5a_25`) also define
+`ENABLE_TG68K`, and the six fx68k tops define no `ENABLE_RAM32`. This
+package therefore measures the sibling's `ENABLE_RAM32` configuration on
+the other core -- a pairing no shipped bitstream contains.
 
 ## Measured result
 
-Built and run with `make -B test`, unmodified from the edits carried over
-from the sibling package (no local edits to this package's own files
-beyond the Makefile and this SPECIFICATION.md):
+Built and run with `make -B test` (no local edits to this package's own
+files beyond the Makefile and this SPECIFICATION.md):
 
 - **Baseline**: 43 passed, 0 failed — identical line count (63 lines) to
   `hrm/appK-autoconfig-register-map/out.txt`, and every PASS/FAIL/MEASURED
