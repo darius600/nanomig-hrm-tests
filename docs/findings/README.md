@@ -174,26 +174,31 @@ documents say*.
 
 | kind | documents | counted as |
 |---|---|---|
-| Commodore specifications | A500/A2000 Gary specification; Denise specification 252126-01 (ECS) | one each |
+| Commodore specifications | A500/A2000 Gary specification; Denise specification 252126-01 (ECS); 8371 Agnus specification 318071-01; 6526 CIA specification | one each |
+| Commodore technical manuals | *A500/A2000 Technical Reference Manual*, 1987 | one |
 | Commodore-Amiga patents | US 4,777,621; US 4,874,164 and 5,103,499; US 4,829,473; US 4,780,844 | one each, except 4,874,164 and 5,103,499, which carry one specification and count once |
 | Commodore articles | *AmigaMail* vol. 1 | one each |
 | silicon | 6502.org's dissection of Paula 8364R7; techtravels' analysis of Paula's floppy controller | witnesses, like the emulators: third-party reverse engineering of one chip revision, not a statement of Commodore's intent |
 
-Quotations are taken from each PDF's text layer, OCR errors and line-end hyphens
-included, and every one is checked against the page it names by
-`hrm-testpipeline/tools/verify_second_documents.py --pages`. The documents
-themselves are in neither repository.
+Quotations are taken from each PDF's text layer or, for the three scans that
+have none -- the TRM and the 8371 and 6526 specifications -- from Tesseract
+OCR, errors and line-end hyphens included, and every one is checked against the
+page it names by `hrm-testpipeline/tools/verify_second_documents.py --pages`.
+A schematic cannot be quoted: where a drawing speaks, the page says what it
+shows, marked *read from the drawing, not quoted*, with its PDF page, and the
+check requires the net labels it names on that page. The documents themselves
+are in neither repository.
 
 ## Withdrawn findings are kept, and here is why
 
-Six entries are withdrawn. They are **not** relevant to the question "what should
+Seven entries are withdrawn. They are **not** relevant to the question "what should
 be changed in NanoMig", and they are listed separately for that reason. They are
 relevant to two other questions:
 
 - **Would someone re-file this?** `NM-HRM-001` stood as a documented finding for
   weeks before Table 7-5 turned out to sanction the measured value. Without the
   entry, the next reader of that page files it again.
-- **What kind of mistake was it?** Four of the six are one error wearing four
+- **What kind of mistake was it?** Four of the seven are one error wearing four
   hats: a permission or a silence in the manual read as a requirement. That is
   the most common way this suite produces a false finding, and the four entries
   together are the clearest statement of it in the project.

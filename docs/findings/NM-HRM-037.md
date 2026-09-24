@@ -130,5 +130,12 @@ and none decides this finding. What they are and how they were read is in
 
   8364R7 silicon: the note names four channels, 'POT0X, POT0Y, POT1X, POT1Y', and describes POT0X as representative. A Schmitt trigger senses the pad, and the counter value is loaded into the channel register while the pad is low. POT1X is therefore a sensed input like the other three; the note does not single it out. The 'pretty much' is the author's own hedge.
 
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, *A500/A2000 Gary Specification*.
+- **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 298 — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 4 of the A500 main board carries four pot lines side by side, POT0X, POT0Y, POT1X and POT1Y, each with a .047uF capacitor, to sheet 5, where (PDF page 300) the right joystick port's pin 5 is POT1X and pin 9 POT1Y, wired as the left port's pin 5 and pin 9 are to POT0X and POT0Y.
+  <!-- drawing: a500-a2000-trm-1987/p298.txt -->
+
+  The right port's X potentiometer line exists on the board and is wired as the other three are.
+
+Silent on this point: Commodore, *A500/A2000 Gary Specification*.
 

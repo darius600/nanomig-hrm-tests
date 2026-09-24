@@ -109,7 +109,14 @@ and none decides this finding. What they are and how they were read is in
 
   Gary takes the overlay as a level input pin (pin table: 'OVL IN HI Overlay (ROM to address 0)') driven by a port line. None of Gary's inputs carries a CIA register select or a CIA write strobe, and the spec describes no latch, so the overlay follows the level of that port line. That sides with the manual's 'the OVL bit', not with a clear on any CIA-A write. It does not name CIA-A PA0 itself, and it says 'typically'.
 
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, 6526 CIA specification; US patent 4,777,621, Commodore-Amiga.
+- **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 301 — agrees with the manual:
+
+  *Read from the drawing, not quoted:* the A500 main board's CIA-A (U7, an 8520) drives the net OVL from pin 2, PA0; beside it PA1 drives _LED and PA2-PA7 carry _CHNG, _WPROT, _TRK0, _RDY, _FIRE0 and _FIRE1.
+  <!-- drawing: a500-a2000-trm-1987/p301.txt -->
+
+  The overlay line is port A's bit 0 as an output, so it follows that bit's output level; the drawing gives it no other source. The TRM's own text does not say what drives or clears the line.
+
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, 6526 CIA specification; US patent 4,777,621, Commodore-Amiga.
 
 ---
 
