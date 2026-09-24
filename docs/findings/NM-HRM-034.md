@@ -96,7 +96,13 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-None of them speaks to this point.
+- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 30 — agrees with the manual:
+
+  > "USE LOF--~-------------------------------------- V8"
+  <!-- corpus: agnus-8371-spec/p030.txt -->
+
+  VPOSR's bit row on the 8371 has LOF at bit 15, V8 at bit 0 and nothing between: the manual's OCS layout with bits 14-1 unused. But the 8371 is the PAL part, where NanoMig's ntsc=0 leg also reads a zero band. The red is the ntsc=1 leg, which this document does not describe, so it states the manual's layout without separating the two sides on the red.
+
 Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); US patent 4,874,164, Commodore-Amiga.
 
 ---

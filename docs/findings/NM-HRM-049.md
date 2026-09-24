@@ -228,5 +228,5 @@ and none decides this finding. What they are and how they were read is in
 
   This is a glossary statement of general MFM, not a silicon finding; the paper says Paula does not encode ('Software builds or interprets the recorded format, including encoding', p018). The table continues on p050 with '0 00 when it follows a 1'. p028's '$A1 data → normal MFM $44A9' is an encoding that only the context rule produces.
 
-Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
 

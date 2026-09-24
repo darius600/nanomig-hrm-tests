@@ -156,6 +156,12 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-None of them speaks to this point.
+- **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 31 — agrees with the manual:
+
+  > "(4C/4E) X X X X X X X X Optional “shut up’ address, a write to this ad- dress will cause the board to pass its config out and then never again respond to any address."
+  <!-- corpus: a500-a2000-trm-1987/p031.txt -->
+
+  The expansion chapter's register table makes 4C a shut-up address: a write there makes the board pass config out and stop answering until RESET. Register 08/0A carries the matching flag, 'O means this board can be shut up' (p030). The example test-RAM PAL (p046) latches SHUTUP on a write decoded at 4C and gates its outputs with it. That is the manual's contract; NanoMig advertises the flag and has no 4C handler. The table calls the address 'Optional', and the 08/0A flag is how a board declares whether it has one.
+
 Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
 

@@ -79,7 +79,7 @@ and none decides this finding. What they are and how they were read is in
 
   On the 8364R7 die channels 0 and 3 drive the pad the author labels AUDL (audio left) and 1 and 2 drive AUDR: NanoMig's ldatasum/rdatasum split and the appendix pin list, not 3rd-ed. p. 137. The note speaks of chip pads; which jack each pad reaches is board wiring it does not cover.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga.
 
 ---
 

@@ -107,6 +107,13 @@ and none decides this finding. What they are and how they were read is in
 
   The DMA channels' address registers sit on chip 61 (p008), and DMA transfer to the audio generator from memory is one of the bus's listed transfers (p007); the DRAM address chip 61 drives is 18 bits, the manual's OCS reach. Bus-level: it does not name AUDxLCH. The finding's measurement is address_out, the same observable. Filed 1985, before ECS.
 
+- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 21 — agrees with the manual:
+
+  > "AUD x LCH Audio channel x location (high 3 bits) AUD x LCL Audio channel x location (low 15 bits) This pair of registers contains. the 18 bit starting address (location) of Audio channel x (x=0,1,2,3) DMA data."
+  <!-- corpus: agnus-8371-spec/p021.txt -->
+
+  On the 8371, AUDxLCH has three high bits and the pair holds an 18 bit starting address, and Table 2 (p032) gives 'Audio channel 1 location (High 3 bits' and the same for channels 2 and 3. That is the manual's OCS width, against NanoMig's audio address_out using bits 16-20. OCS only: the five-bit ECS width is outside this document.
+
 Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 ---

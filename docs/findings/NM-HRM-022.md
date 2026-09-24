@@ -81,6 +81,13 @@ and none decides this finding. What they are and how they were read is in
 
   The bit map image manipulation circuitry 47 (the blitter) and the DMA address registers sit on chip 61 (p008), whose DRAM address is 18 bits — the manual's OCS reach. The finding measures address_out, the address the blitter DMA drives, so this bus-level statement bears on the same observable; it does not name BLTxPTH. Filed 1985, before ECS.
 
+- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 21 — agrees with the manual:
+
+  > "BLT x PTH Blitter pointer to x (high 3 bits) BLT x PTL a Blitter pointer to x (low 15 bits) This pair of registers contains the 18 bit address of Blitter source"
+  <!-- corpus: agnus-8371-spec/p021.txt -->
+
+  On the 8371 the blitter pointers have three high bits and an 18 bit address, and Table 2 (p031) repeats 'Blitter pointer to source C' with '(High 3 bits)'. That is the manual's OCS width, against NanoMig's unconditional five (address_out 0xF8000 at ecs=0). An OCS document, it says nothing about the five-bit ECS width.
+
 Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 ---

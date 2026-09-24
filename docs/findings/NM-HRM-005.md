@@ -84,6 +84,13 @@ and none decides this finding. What they are and how they were read is in
 
   SKIP 4, WAIT 6, and so WAIT minus MOVE 2 — all three of the manual's figures, in the manual's unit (memory cycles, the Copper using every other one), against NanoMig's 8 / 8 / 4. The sentence just before gives the underlying 2 and 3 cycles. It closely paraphrases the manual's own Copper-timing text, so it is not an independent measurement.
 
+- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 35 — agrees with the manual:
+
+  > "NOTE: Copper Data Move instructions require four (4) slots. Copper Wait instructions require six (6) slots."
+  <!-- corpus: agnus-8371-spec/p035.txt -->
+
+  MOVE takes 4 slots and WAIT 6, so WAIT minus MOVE is 2. p027 gives SKIP the non-WAIT figure: 'All instructions (except for WAIT) require 2' bus cycles, so '4 memory cycle times are required per instruction. (memory cycles are 280 ns)'. Those are the manual's 4/6/2 in memory cycles, against NanoMig's 8/8/4.
+
 Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 ---

@@ -221,5 +221,12 @@ and none decides this finding. What they are and how they were read is in
 
   An 18-bit word pointer is the manual's OCS split, 3 high bits plus 15 low, and the disk channel is one of the 25. The patent predates ECS, so it has no chipset condition; p023 says '19 bits wide' for the same registers.
 
+- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 29 — agrees with the manual:
+
+  > "DSKPTH Disk pointer (high 3 bits) DSKPTL Disk pointer (low 15 bits) This pair of registers contains the 18 bit address of Disk DMA data."
+  <!-- corpus: agnus-8371-spec/p029.txt -->
+
+  On the OCS 8371, DSKPTH holds three high bits (Table 2, p031: 'Disk pointer (High (3) bits)'). That is the manual's OCS half and exactly assertion P5, against NanoMig's five at ecs=0. The pin table (p004) limits device DMA to the lower 512K bytes. The five-bit ECS half is outside this document.
+
 Silent on this point: US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 

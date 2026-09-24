@@ -84,5 +84,5 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
 

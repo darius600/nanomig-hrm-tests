@@ -116,6 +116,12 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-None of them speaks to this point.
+- **Commodore, 6526 CIA specification**, PDF page 1 — agrees with the manual:
+
+  > "16 Individually programmable I/O lines"
+  <!-- corpus: cia-6526-spec/p001.txt -->
+
+  All sixteen port lines are individually programmable, and the functional description (p005) makes each port an 8-bit PR with an 8-bit DDR, a DDR bit setting 'the corresponding bit' of the PR to an output: the manual's one-to-one mask with no position exempted, against NanoMig's two of eight. Limits: this is the 6526, not the 8520 or its Amiga variants, which the finding already records as possibly differing on read-back; and its read rule returns 'actual port pins' for output bits too, so it promises the written value back only where nothing outside drives the pin.
+
 Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
 

@@ -226,5 +226,12 @@ and none decides this finding. What they are and how they were read is in
 
   A general statement for all 25 DMA pointer registers, disk included: the Copper may load them, which is p.279's side. The patent mentions no protected register range.
 
+- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 29 — agrees with the manual:
+
+  > "These address registers must be initialized by the processor or Copper before disk DMA is enabled."
+  <!-- corpus: agnus-8371-spec/p029.txt -->
+
+  This is p.279's side, nearly word for word, for an OCS part. The same document also has p.289's side: Table 2 marks DSKPTH '+*020' (p031), and its legend reads '* Address not writeable by co-processor.' (p034). It therefore repeats the manual's contradiction and does not settle it.
+
 Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 

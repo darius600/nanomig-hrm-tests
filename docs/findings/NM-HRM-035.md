@@ -109,7 +109,7 @@ and none decides this finding. What they are and how they were read is in
 
   Gary takes the overlay as a level input pin (pin table: 'OVL IN HI Overlay (ROM to address 0)') driven by a port line. None of Gary's inputs carries a CIA register select or a CIA write strobe, and the spec describes no latch, so the overlay follows the level of that port line. That sides with the manual's 'the OVL bit', not with a clear on any CIA-A write. It does not name CIA-A PA0 itself, and it says 'typically'.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,777,621, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, 6526 CIA specification; US patent 4,777,621, Commodore-Amiga.
 
 ---
 

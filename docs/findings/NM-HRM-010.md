@@ -92,10 +92,12 @@ and none decides this finding. What they are and how they were read is in
 
 - **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 11 — agrees with the manual:
 
-  > "strobe shown above is used during the second refresh time slot of every other line,  to identify lines with long counts (228)."
+  > "strobe shown above is used during the second refresh time slot of every other line, to identify lines with long counts (228)."
   <!-- corpus: denise-spec-252126/p011.txt -->
 
   The ECS Denise specification says every other line is a long line of 228 counts. This is the alternation NanoMig does not generate.
+
+Silent on this point: Commodore, 8371 Agnus specification, part 318071-01.
 
 ---
 

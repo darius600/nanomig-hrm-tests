@@ -173,5 +173,12 @@ and none decides this finding. What they are and how they were read is in
 
   All 25 DMA pointer registers, the disk channel among them ('the disk and refresh DMA control logic 61 (2 channels)'), hold 18 bits, which address 256K words. p023 says of the same registers 'The pointers in the registers 138 are 19 bits wide'. The patent gives neither the page's 32 nor NanoMig's 20.
 
+- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 29 — says something else:
+
+  > "This pair of registers contains the 18 bit address of Disk DMA data."
+  <!-- corpus: agnus-8371-spec/p029.txt -->
+
+  The disk pointer is 18 bits: a DSKPTH with high 3 bits plus a DSKPTL with low 15 bits, on p029 and in Table 2 (p031). That is neither the 32 of p.241/p.246 nor NanoMig's 20. It matches the manual's own p.279 wording, and p019 has the disk controller reading or writing blocks of up to 128K anywhere in 512K of memory.
+
 Silent on this point: US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 

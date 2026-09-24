@@ -130,5 +130,5 @@ and none decides this finding. What they are and how they were read is in
 
   8364R7 silicon: the note names four channels, 'POT0X, POT0Y, POT1X, POT1Y', and describes POT0X as representative. A Schmitt trigger senses the pad, and the counter value is loaded into the channel register while the pad is low. POT1X is therefore a sensed input like the other three; the note does not single it out. The 'pretty much' is the author's own hedge.
 
-Silent on this point: Commodore, *A500/A2000 Gary Specification*.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, *A500/A2000 Gary Specification*.
 

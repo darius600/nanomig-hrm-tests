@@ -67,5 +67,5 @@ and none decides this finding. What they are and how they were read is in
 
   The RX register holds the data plus the stop bit, and one more bit holds the start bit: "When the Start Bit comes out of the shift register (there is another "hidden shift register Bit" for that), the UART sees the received frame as completed." A received character on 8364R7 is therefore start + 8 or 9 data + stop = 10 or 11 bit cells: NanoMig's numbers, and outside "8 to 10". The note states how the frame is built, not how long software has to read it; the 10/11 is my derivation from that.
 
-Silent on this point: US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,829,473, Commodore-Amiga.
 

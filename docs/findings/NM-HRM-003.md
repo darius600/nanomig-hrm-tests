@@ -78,6 +78,13 @@ and none decides this finding. What they are and how they were read is in
 
   Chip 61 houses the co-processor 45 and the address registers for the DMA channels (p008), and the DRAM address it generates is 18 bits — a 512K-byte reach, the manual's OCS width. This is a bus-level statement about the address the chip drives, not about COP1LCH's latch; it is the kind of narrowing the finding credits to WinUAE. Weakest of the agreeing rows; filed 1985, before ECS.
 
+- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 26 — agrees with the manual:
+
+  > "COPILCH Copper first location register (high 3 bits)"
+  <!-- corpus: agnus-8371-spec/p026.txt -->
+
+  The 8371 (OCS, PAL) specification gives COP1LCH three high bits (OCR 'COPILCH'), p027 calls COP1LC/COP2LC '18 bit pointer registers', and Table 2 (p032) repeats 'Co-processor first location register' with High 3 bits: the manual's OCS width, against NanoMig's unconditional five. It is an OCS document and speaks only to the OCS half of the manual's two-width statement; pp. 015 and 017 give every one of the 25 DMA channels an 18 bit pointer reaching 256K words (512K bytes).
+
 Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
 ---

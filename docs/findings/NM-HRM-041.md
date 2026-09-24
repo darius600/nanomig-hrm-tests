@@ -246,5 +246,5 @@ and none decides this finding. What they are and how they were read is in
 
   Silicon: DATA reads the live receive shift register, and 10_10 attaches 'a 16 Bit comparator, which scans for the sync word' to it. The note does not tie that comparator to bit 12 or describe DSKBYT's clear, and the author warns 'it could be that there are errors in this part of my schematic.'
 
-Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga.
 

@@ -104,6 +104,13 @@ and none decides this finding. What they are and how they were read is in
 
   The address-decode table gives BANK0 as 000000-1FFFFF and, in this row, decodes the ROM select over that whole 2 MB range: all four 512K chip-memory banks, not just the first. On that reading chip RAM at $080000-$1FFFFF answers as ROM while the overlay is up. That is WinUAE's shape, and it makes p.223's 'All memory and AUTOCONFIG(TM) cards disappear' literally true for memory on an A500/A2000. Two caveats. (1) The row says 'OVR', and elsewhere in this spec that is the override pin (NOVR); the ROME conditions require '3. OVR is de-asserted', so read as override the row would contradict itself. It only makes sense as the overlay input OVL ('Overlay (ROM to address 0)'), which is an inference from the text, not something it states. (2) ROME is qualified by a read (PRW=1), and the spec does not say whether NRAME is suppressed there, so it is silent on what a write to $080000 does while the overlay is up.
 
+- **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 228 — agrees with the manual:
+
+  > "RE = DBR*/AS*DTACK*/A23*/A22* /AZ1*OVR*/OVL* ; SOOQ0000-1FFFFF IF /C1*C3 3; OVL=L, OVR=H !"
+  <!-- corpus: a500-a2000-trm-1987/p228.txt -->
+
+  In the A2000 memory decoder PAL (U26, headed preliminary), the RAM enable covers all of $000000-1FFFFF and needs OVL low. /BLS carries the same /OVL term. While OVL is high, the ROM select (p229) covers only $000000-07FFFF and $180000-1FFFFF. So on this board no chip RAM answers anywhere in the low 2 MB while the overlay is up. That matches the p.223 sentence that all memory disappears, not NanoMig's banks 1-3 staying mapped. The finding is withdrawn because p.223 also allows models where RAM still responds; this source describes one model, the A2000, where none does.
+
 Silent on this point: US patent 4,777,621, Commodore-Amiga.
 
 ---

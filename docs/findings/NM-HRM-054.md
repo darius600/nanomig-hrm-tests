@@ -134,6 +134,19 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-None of them speaks to this point.
+- **Commodore, 6526 CIA specification**, PDF page 5 — agrees with the manual:
+
+  > "Ports A and B each consist of an 8-bit Peripheral Data Register (PR) and an 8-bit Data Direction Register"
+  <!-- corpus: cia-6526-spec/p005.txt -->
+
+  Port B, like port A, has an 8-bit Peripheral Data Register beside its DDR, the register NanoMig's CIA-A port B lacks; the p006 register table and the p002 block diagram list PRB as a register of its own, and p006 adds a PC handshake output that pulses low after a read or write of PORT B. The same page carries the manual's read rule (a read returns the pins for input and output bits) alongside the PR, not in place of it; this is the 6526, while the finding concerns CIA-A port B on the Amiga's 8520.
+
+- **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 217 — agrees with the manual:
+
+  > "Ports A and B each consist of an 8-bit Peripheral Data Register (PR) and an 8-bit Data Direction Register (DDR)."
+  <!-- corpus: a500-a2000-trm-1987/p217.txt -->
+
+  The 8520 chapter gives each port, B included, a data register as well as a direction register, and a set DDR bit makes the matching PR bit an output. NanoMig's CIA-A port B has the DDR and no PR. The source also calls the printer port an '8 bit bidirectional parallel port' (p106) and says its handshake goes through the 8520 it is connected to, but it never names CIA-A port B as that port.
+
 Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
 

@@ -109,6 +109,12 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-None of them speaks to this point.
+- **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 5 — agrees with the manual:
+
+  > "Note: On the U.S. keyboard, the keys with codes 44 and 60 are extended to include the European keys with codes 2B and 30, respectively."
+  <!-- corpus: a500-a2000-trm-1987/p005.txt -->
+
+  Two European keys with two distinct codes: $2B cut from key 44 and $30 from key 60. Table 1-1 (p014) gives 44 as RETURN and lists 2B and 30 as separate reserved entries. That is the manual's pair of codes, with $2B from Return. It contradicts NanoMig, which maps both international keys to $2B and never produces $30. The table stops at 5F, so this source does not itself name key 60 as the left shift.
+
 Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
 

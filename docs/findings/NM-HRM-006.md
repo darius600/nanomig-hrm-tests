@@ -99,7 +99,7 @@ and none decides this finding. What they are and how they were read is in
 
   The shared specification says the fetch registers use five bits, with no resolution or chipset qualifier. It does not name the bits, but five position bits leave no sixth bit for H3 in hires. So it matches neither the 3rd edition's hires-only H3 nor NanoMig. patent-us5103499-copper p024 has the same sentence ('have only a 4 pixel resolution because only five bits').
 
-Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS).
+Silent on this point: Commodore, 8371 Agnus specification, part 318071-01; Commodore, *Denise* specification, part 252126-01 (ECS).
 
 ---
 

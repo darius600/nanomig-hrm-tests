@@ -192,5 +192,5 @@ and none decides this finding. What they are and how they were read is in
 
   The paper accepts the documented loss and places a silicon cause: 10i closes write gate while bits are still in the 10v/10e delay chain. It calls this a hypothesis, and says the three-bit length is still open (p043). Its section 6.3 explains the paragraph's other sentence ('may not come in') as a drain race, but the finding does not grade that sentence.
 
-Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
 

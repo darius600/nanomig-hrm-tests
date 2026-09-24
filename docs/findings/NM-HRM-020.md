@@ -88,7 +88,7 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); US patent 4,874,164, Commodore-Amiga.
+Silent on this point: Commodore, 8371 Agnus specification, part 318071-01; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); US patent 4,874,164, Commodore-Amiga.
 
 ---
 

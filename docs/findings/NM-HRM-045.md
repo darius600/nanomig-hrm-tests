@@ -201,5 +201,5 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, 8371 Agnus specification, part 318071-01; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
 
