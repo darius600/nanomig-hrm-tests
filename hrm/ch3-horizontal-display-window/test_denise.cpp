@@ -245,44 +245,52 @@
 // MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: the BPL1DAT trigger write
 //   changed from 0xACE1 to 0x0000 -> FAIL ("10 passed, 2 failed"), only
 //   FIXTURE-DATA-PATH-LIVE newly red (alongside the already-red
-//   D-BRDNTRAN-HAS-NO-EFFECT). Reverted: 11/1.
+//   D-BRDNTRAN-HAS-NO-EFFECT). Replayable as MUTATE=FIXTURE-DATA-PATH-LIVE.
+//   Reverted: 11/1.
 // MUTATION G2-WINDOW-DEFINES-VISIBLE-AREA stimulus red: the wide window's
 //   DIWSTOP changed from $50 to $40 (collapsing it to the narrow window's
 //   own width) -> FAIL ("10 passed, 2 failed"), only G2-WINDOW-DEFINES-
-//   VISIBLE-AREA newly red. Reverted: 11/1.
+//   VISIBLE-AREA newly red. Replayable as MUTATE=G2-WINDOW-DEFINES-VISIBLE-
+//   AREA. Reverted: 11/1.
 // MUTATION G3-DEF-CORNERS stimulus red: the DIWSTRT-moved comparison's
 //   second measurement changed from $30 to $40 -> FAIL ("10 passed, 2
-//   failed"), only G3-DEF-CORNERS newly red. Reverted: 11/1.
+//   failed"), only G3-DEF-CORNERS newly red. Replayable as MUTATE=G3-DEF-
+//   CORNERS. Reverted: 11/1.
 // MUTATION G3-BITS-H7-H0 stimulus red: kStartSweepValues[3] (the bit-2
 //   isolation point) changed from $06 to $07 -> FAIL ("10 passed, 2
-//   failed"), only G3-BITS-H7-H0 newly red. Reverted: 11/1.
+//   failed"), only G3-BITS-H7-H0 newly red. Replayable as MUTATE=G3-BITS-
+//   H7-H0. Reverted: 11/1.
 // MUTATION G4-H8-FORCED-RANGE stimulus red: the offset probe's DIWSTOP
 //   changed from $20 to $21 (breaking the identical-raw-byte comparison)
 //   -> FAIL ("10 passed, 2 failed"), only G4-H8-FORCED-RANGE newly red.
-//   Reverted: 11/1.
+//   Replayable as MUTATE=G4-H8-FORCED-RANGE. Reverted: 11/1.
 // MUTATION G5-DEFAULT-81-C1-320PX stimulus red: DIWSTOP changed from $C1
 //   to $C2 -> FAIL ("10 passed, 2 failed"), only G5-DEFAULT-81-C1-320PX
-//   newly red. Reverted: 11/1.
+//   newly red. Replayable as MUTATE=G5-DEFAULT-81-C1-320PX. Reverted: 11/1.
 // MUTATION G6-MODE-AND-RESOLUTION-INVARIANCE stimulus red: the HIRES
 //   measurement's DIWSTRT changed from $50 to $51 -> FAIL ("10 passed, 2
-//   failed"), only G6-MODE-AND-RESOLUTION-INVARIANCE newly red. Reverted:
+//   failed"), only G6-MODE-AND-RESOLUTION-INVARIANCE newly red. Replayable
+//   as MUTATE=G6-MODE-AND-RESOLUTION-INVARIANCE. Reverted:
 //   11/1.
 // MUTATION G7-ECS-DIWHIGH-EXPANDS-RANGE stimulus red: the DIWHIGH
 //   override write changed from (1<<startH8) to 0x0000 -> FAIL ("10
 //   passed, 2 failed"), only G7-ECS-DIWHIGH-EXPANDS-RANGE newly red.
-//   Reverted: 11/1.
+//   Replayable as MUTATE=G7-ECS-DIWHIGH-EXPANDS-RANGE. Reverted: 11/1.
 // MUTATION G8-DIWHIGH-H8-BITS-OVERRIDE stimulus red: the start-only
 //   isolation write dropped its stop-H8 neutralising bit (from
 //   (1<<startH8)|(1<<stopH8) to (1<<startH8) alone) -> FAIL ("10 passed, 2
-//   failed"), only G8-DIWHIGH-H8-BITS-OVERRIDE newly red. Reverted: 11/1.
+//   failed"), only G8-DIWHIGH-H8-BITS-OVERRIDE newly red. Replayable as
+//   MUTATE=G8-DIWHIGH-H8-BITS-OVERRIDE. Reverted: 11/1.
 // MUTATION G9-DIWHIGH-RESERVED-BITS-NO-EFFECT stimulus red: each
 //   reserved-bit iteration's write dropped the shared base_diwhigh H8
 //   bits, leaving only the reserved bit under test -> FAIL ("10 passed, 2
 //   failed"), only G9-DIWHIGH-RESERVED-BITS-NO-EFFECT newly red.
-//   Reverted: 11/1.
+//   Replayable as MUTATE=G9-DIWHIGH-RESERVED-BITS-NO-EFFECT. Reverted:
+//   11/1.
 // MUTATION G11-BRDRBLNK-WORKS stimulus red: the BRDRBLNK write changed
 //   from 0x0020 to 0x0000 -> FAIL ("10 passed, 2 failed"), only
-//   G11-BRDRBLNK-WORKS newly red. Reverted: 11/1.
+//   G11-BRDRBLNK-WORKS newly red. Replayable as MUTATE=G11-BRDRBLNK-WORKS.
+//   Reverted: 11/1.
 // MUTATION D-BRDNTRAN-HAS-NO-EFFECT none impossible: this assertion is
 //   already red at baseline (the RTL does not implement BRDNTRAN at all,
 //   see the finding above) -- there is no stimulus change left to make
@@ -295,6 +303,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -303,6 +312,12 @@
 #include "Vdenise.h"
 
 namespace {
+
+// Runtime mutation switch: one build serves both the real run (MUTATE
+// unset) and every mutation run (MUTATE=<assertion label>), read once at
+// startup. mutating(id) is true only while replaying that one id.
+const char* g_mutate = nullptr;
+bool mutating(const std::string& id) { return g_mutate != nullptr && id == g_mutate; }
 
 class Checks {
 public:
@@ -639,6 +654,7 @@ Edges measure_window(uint16_t diwstrt_h, uint16_t diwstop_h, uint16_t bplcon0_ex
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     // ==================== FIXTURE-DATA-PATH-LIVE (control) ====================
@@ -655,7 +671,10 @@ int main(int argc, char** argv) {
         // saturated all-ones trick every other measurement below uses) --
         // proving the raw data path genuinely loads and displays a written
         // BPLxDAT value, not merely that a stuck-at-1 pattern survives.
-        h.write_reg(kBpl1DatAddr, 0xACE1);
+        // MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: MUTATE=FIXTURE-DATA-
+        //   PATH-LIVE drives the trigger word to 0x0000 instead, so no bit
+        //   ever loads.
+        h.write_reg(kBpl1DatAddr, mutating("FIXTURE-DATA-PATH-LIVE") ? 0x0000 : 0xACE1);
         bool saw_color01 = false;
         uint32_t border_guess = 0;
         for (int i = 0; i < 300; ++i) {
@@ -681,7 +700,10 @@ int main(int argc, char** argv) {
     // ==================== G2: WINDOW-DEFINES-VISIBLE-AREA ====================
     {
         auto narrow = measure_window(0x30, 0x40);  // 16-lores-pixel-wide window
-        auto wide = measure_window(0x30, 0x50);     // 32-lores-pixel-wide window
+        // MUTATION G2-WINDOW-DEFINES-VISIBLE-AREA stimulus red: MUTATE=G2-
+        //   WINDOW-DEFINES-VISIBLE-AREA collapses the wide window's DIWSTOP
+        //   from $50 to $40, the same as the narrow window's own width.
+        auto wide = measure_window(0x30, mutating("G2-WINDOW-DEFINES-VISIBLE-AREA") ? 0x40 : 0x50);     // 32-lores-pixel-wide window
         bool same_open = narrow.open_idx == wide.open_idx && narrow.open_idx >= 0;
         bool width_tracks_diwstop =
             (wide.close_idx - wide.open_idx) - (narrow.close_idx - narrow.open_idx) == 0x10;
@@ -713,7 +735,10 @@ int main(int argc, char** argv) {
     // ==================== G3-DEF: DIWSTRT/DIWSTOP-DEFINE-CORNERS ====================
     {
         auto a = measure_window(0x20, 0x90);
-        auto b = measure_window(0x30, 0x90);  // DIWSTRT moved, DIWSTOP held
+        // MUTATION G3-DEF-CORNERS stimulus red: MUTATE=G3-DEF-CORNERS moves
+        //   the DIWSTRT-moved comparison's second measurement from $30 to
+        //   $40, breaking the expected +$10 open-edge delta.
+        auto b = measure_window(mutating("G3-DEF-CORNERS") ? 0x40 : 0x30, 0x90);  // DIWSTRT moved, DIWSTOP held
         auto c = measure_window(0x20, 0x70);
         auto d = measure_window(0x20, 0x90);  // DIWSTOP moved, DIWSTRT held
         bool start_moves_open_only =
@@ -765,8 +790,14 @@ int main(int argc, char** argv) {
                                                              0x10, 0x20, 0x40, 0x80, 0xFF};
     std::array<long, 10> sweep_start{};
     std::array<long, 10> sweep_stop{};
-    for (size_t i = 0; i < kStartSweepValues.size(); ++i)
-        sweep_start[i] = measure_window(kStartSweepValues[i], 0xFF, 0, 300).open_idx;
+    for (size_t i = 0; i < kStartSweepValues.size(); ++i) {
+        uint16_t v = kStartSweepValues[i];
+        // MUTATION G3-BITS-H7-H0 stimulus red: MUTATE=G3-BITS-H7-H0 changes
+        //   kStartSweepValues[3] (the bit-2 isolation point) from $06 to
+        //   $07 at the point it is used.
+        if (i == 3 && mutating("G3-BITS-H7-H0")) v = 0x07;
+        sweep_start[i] = measure_window(v, 0xFF, 0, 300).open_idx;
+    }
     // n=512 is deliberate: hpos is a 9-bit counter starting at 2 on
     // strhor (denise.v:139), so sample index k holds hpos=k+2 until it
     // would exceed 511 and wrap. n=512 (indices 0..511) reaches exactly
@@ -839,7 +870,10 @@ int main(int argc, char** argv) {
         // position for that SAME raw byte -- measured directly (not divided
         // out of any RTL constant), against the manual's own quoted "256".
         Edges pos20_start = measure_window(0x20, 0xFF, 0, 300);
-        Edges pos20_stop = measure_window(0x02, 0x20, 0, 300);
+        // MUTATION G4-H8-FORCED-RANGE stimulus red: MUTATE=G4-H8-FORCED-
+        //   RANGE changes the offset probe's DIWSTOP from $20 to $21,
+        //   breaking the identical-raw-byte comparison.
+        Edges pos20_stop = measure_window(0x02, mutating("G4-H8-FORCED-RANGE") ? 0x21 : 0x20, 0, 300);
         long offset_256 = pos20_stop.close_idx - pos20_start.open_idx;
         bool offset_ok = offset_256 == 256;
         checks.expect(
@@ -869,7 +903,9 @@ int main(int argc, char** argv) {
 
     // ==================== G5: DEFAULT-81-C1-320PX ====================
     {
-        auto def = measure_window(0x81, 0xC1);
+        // MUTATION G5-DEFAULT-81-C1-320PX stimulus red: MUTATE=G5-DEFAULT-
+        //   81-C1-320PX changes DIWSTOP from $C1 to $C2.
+        auto def = measure_window(0x81, mutating("G5-DEFAULT-81-C1-320PX") ? 0xC2 : 0xC1);
         bool width_320 = (def.close_idx - def.open_idx) == 320;
         bool open_at_81 = def.open_idx == 0x81;
         bool close_at_1c1 = def.close_idx == 0x1C1;  // $C1 + $100, per G4's offset rule
@@ -896,7 +932,10 @@ int main(int argc, char** argv) {
     // ==================== G6: MODE-AND-RESOLUTION-INVARIANCE ====================
     {
         auto lores = measure_window(0x50, 0x90, 0x0000);
-        auto hires = measure_window(0x50, 0x90, 0x8000);  // BPLCON0 HIRES
+        // MUTATION G6-MODE-AND-RESOLUTION-INVARIANCE stimulus red: MUTATE=
+        //   G6-MODE-AND-RESOLUTION-INVARIANCE changes the HIRES
+        //   measurement's DIWSTRT from $50 to $51.
+        auto hires = measure_window(mutating("G6-MODE-AND-RESOLUTION-INVARIANCE") ? 0x51 : 0x50, 0x90, 0x8000);  // BPLCON0 HIRES
         auto lace = measure_window(0x50, 0x90, 0x0004);   // BPLCON0 LACE
         bool hires_same = (hires.open_idx == lores.open_idx) && (hires.close_idx == lores.close_idx);
         bool lace_same = (lace.open_idx == lores.open_idx) && (lace.close_idx == lores.close_idx);
@@ -940,7 +979,10 @@ int main(int argc, char** argv) {
         h.write_reg(kBplcon1Addr, 0x0000);
         h.write_reg(kDiwstrtAddr, 0x30);
         h.write_reg(kDiwstopAddr, 0xFF);
-        h.write_reg(kDiwhighAddr, (1u << kDiwhighStartH8Bit));  // written LAST
+        // MUTATION G7-ECS-DIWHIGH-EXPANDS-RANGE stimulus red: MUTATE=G7-ECS-
+        //   DIWHIGH-EXPANDS-RANGE writes 0x0000 instead of the start-H8
+        //   override bit.
+        h.write_reg(kDiwhighAddr, mutating("G7-ECS-DIWHIGH-EXPANDS-RANGE") ? 0x0000 : (1u << kDiwhighStartH8Bit));  // written LAST
         auto ov = h.scan_window(500, /*saturate=*/true);
         Harness cal;
         cal.write_reg(kColorbaseAddr, kColor00Value);
@@ -1014,8 +1056,13 @@ int main(int argc, char** argv) {
         hs.write_reg(kBplcon0Addr, 0x1000);
         hs.write_reg(kDiwstrtAddr, 0x30);
         hs.write_reg(kDiwstopAddr, 0x90);
+        // MUTATION G8-DIWHIGH-H8-BITS-OVERRIDE stimulus red: MUTATE=G8-
+        //   DIWHIGH-H8-BITS-OVERRIDE drops the stop-H8 neutralising bit,
+        //   writing only the start-H8 bit alone.
         hs.write_reg(kDiwhighAddr,
-                      static_cast<uint16_t>((1u << kDiwhighStartH8Bit) | (1u << kDiwhighStopH8Bit)));
+                      mutating("G8-DIWHIGH-H8-BITS-OVERRIDE")
+                          ? static_cast<uint16_t>(1u << kDiwhighStartH8Bit)
+                          : static_cast<uint16_t>((1u << kDiwhighStartH8Bit) | (1u << kDiwhighStopH8Bit)));
         auto s_samp = hs.scan_window(500, true);
         auto s_edges = find_edges(s_samp, cal1_s[4]);
         bool start_overridden = s_edges.open_idx == (0x30 + 256);
@@ -1084,7 +1131,14 @@ int main(int argc, char** argv) {
             hr.write_reg(kBplcon0Addr, 0x1000);
             hr.write_reg(kDiwstrtAddr, 0x30);
             hr.write_reg(kDiwstopAddr, 0x50);
-            hr.write_reg(kDiwhighAddr, static_cast<uint16_t>(base_diwhigh | (1u << rb)));
+            // MUTATION G9-DIWHIGH-RESERVED-BITS-NO-EFFECT stimulus red:
+            //   MUTATE=G9-DIWHIGH-RESERVED-BITS-NO-EFFECT drops the shared
+            //   base_diwhigh H8 bits from each iteration's write, leaving
+            //   only the reserved bit under test.
+            hr.write_reg(kDiwhighAddr,
+                          mutating("G9-DIWHIGH-RESERVED-BITS-NO-EFFECT")
+                              ? static_cast<uint16_t>(1u << rb)
+                              : static_cast<uint16_t>(base_diwhigh | (1u << rb)));
             auto s = hr.scan_window(500, true);
             Edges e = find_edges(s, cal2_s[4]);
             if (e.open_idx != base_edges.open_idx || e.close_idx != base_edges.close_idx)
@@ -1140,7 +1194,9 @@ int main(int argc, char** argv) {
         h1.write_reg(kColorbaseAddr, kColor00Value);
         h1.write_reg(kColor01Addr, kColor01Value);
         h1.write_reg(kBplcon0Addr, kBplcon0Ecsena);
-        h1.write_reg(kBplcon3Addr, 0x0020);
+        // MUTATION G11-BRDRBLNK-WORKS stimulus red: MUTATE=G11-BRDRBLNK-
+        //   WORKS writes 0x0000 instead of the BRDRBLNK bit.
+        h1.write_reg(kBplcon3Addr, mutating("G11-BRDRBLNK-WORKS") ? 0x0000 : 0x0020);
         h1.write_reg(kDiwstrtAddr, 0x30);
         h1.write_reg(kDiwstopAddr, 0x50);
         auto s1 = h1.scan_window(80, true);

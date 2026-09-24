@@ -247,24 +247,26 @@
 // MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: the BPL1DAT trigger write
 //   changed from 0xACE1 to 0x0000 -> FAIL ("14 passed, 1 failed"), only
 //   FIXTURE-DATA-PATH-LIVE red (no bit ever set, first[1] never found).
-//   Reverted: 15/0.
+//   Replayable as MUTATE=FIXTURE-DATA-PATH-LIVE. Reverted: 15/0.
 // MUTATION BPLCON1-ADDRESS-DECODE stimulus red: the positive case's PF1H
 //   write changed from 9 to 10 (comparison left against baseline[9]) ->
 //   FAIL ("14 passed, 1 failed"), only BPLCON1-ADDRESS-DECODE red.
-//   Reverted: 15/0.
+//   Replayable as MUTATE=BPLCON1-ADDRESS-DECODE. Reverted: 15/0.
 // MUTATION BPLXDAT-ADDRESS-MAP-SIX-PLANES stimulus red: the per-plane
 //   preload marker in the address-map loop changed from 0x8000 to 0x0000
 //   for every n != 1 -> FAIL ("14 passed, 1 failed"), only BPLXDAT-
 //   ADDRESS-MAP-SIX-PLANES red (planes 2-6 never show their own bit).
-//   Reverted: 15/0.
+//   Replayable as MUTATE=BPLXDAT-ADDRESS-MAP-SIX-PLANES. Reverted: 15/0.
 // MUTATION BPL1DAT-WRITE-TRIGGERS-ALL-PLANES stimulus red: plane 4's
 //   preload changed from 0x8000 to 0x0000 -> FAIL ("14 passed, 1
 //   failed"), only BPL1DAT-WRITE-TRIGGERS-ALL-PLANES red (plane 4 never
-//   appears, all_six_appear false). Reverted: 15/0.
+//   appears, all_six_appear false). Replayable as MUTATE=BPL1DAT-WRITE-
+//   TRIGGERS-ALL-PLANES. Reverted: 15/0.
 // MUTATION BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD stimulus red: the trigger
 //   write changed from 0x8001 to 0x8000 (LSB marker dropped) -> FAIL
 //   ("14 passed, 1 failed"), only BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD
-//   red (lsb_last false). Reverted: 15/0.
+//   red (lsb_last false). Replayable as MUTATE=BPLXDAT-MSB-FIRST-16-
+//   PIXELS-PER-WORD. Reverted: 15/0.
 // MUTATION PF1H-CONTROLS-PLAYFIELD1-DELAY stimulus red: sweep_pf1h's own
 //   written PF1H value changed from plain `n` to `n>8?8:n` (clamped above
 //   8) -> FAIL ("11 passed, 4 failed"): PF1H-CONTROLS-PLAYFIELD1-DELAY red
@@ -273,12 +275,14 @@
 //   separate internal sweep_pf1h() call is the identical function),
 //   BPLCON1-BITS-3-0-ARE-PF1H (the n=15 superposition check) and BPLCON1-
 //   DELAY-RANGE-0-TO-15 (the 0..15 span check) also red -- recorded here
-//   rather than hidden. Reverted: 15/0.
+//   rather than hidden. Replayable as MUTATE=PF1H-CONTROLS-PLAYFIELD1-
+//   DELAY. Reverted: 15/0.
 // MUTATION BPLCON1-BITS-3-0-ARE-PF1H stimulus red: the same sweep_pf1h
 //   clamp mutation as above (the n=15 superposition term is the specific
 //   sub-check this id names) -> same run, same "11 passed, 4 failed",
 //   BPLCON1-BITS-3-0-ARE-PF1H red along with the three other assertions
-//   named above. Reverted: 15/0.
+//   named above. Replayable as MUTATE=BPLCON1-BITS-3-0-ARE-PF1H (same
+//   sweep_pf1h clamp code as PF1H-CONTROLS-PLAYFIELD1-DELAY). Reverted: 15/0.
 // MUTATION PF2H-CONTROLS-PLAYFIELD2-DELAY stimulus red: sweep_pf2h's own
 //   written PF2H value changed from plain `n` to `n>8?8:n` (clamped above
 //   8) -> FAIL ("11 passed, 4 failed"): PF2H-CONTROLS-PLAYFIELD2-DELAY red
@@ -286,44 +290,54 @@
 //   collateral, BPLCON1-BITS-7-4-ARE-PF2H (n=15 superposition), PF1H-PF2H-
 //   SCROLL-INDEPENDENTLY (reads sweep2[11], clamped to sweep2[8]'s value)
 //   and BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN (reads
-//   sweep2[9], likewise clamped) also red. Reverted: 15/0.
+//   sweep2[9], likewise clamped) also red. Replayable as MUTATE=PF2H-
+//   CONTROLS-PLAYFIELD2-DELAY. Reverted: 15/0.
 // MUTATION BPLCON1-BITS-7-4-ARE-PF2H stimulus red: the same sweep_pf2h
 //   clamp mutation as above (the n=15 superposition term is the specific
 //   sub-check this id names) -> same run, same "11 passed, 4 failed",
 //   BPLCON1-BITS-7-4-ARE-PF2H red along with the three other assertions
-//   named above. Reverted: 15/0.
+//   named above. Replayable as MUTATE=BPLCON1-BITS-7-4-ARE-PF2H (same
+//   sweep_pf2h clamp code as PF2H-CONTROLS-PLAYFIELD2-DELAY). Reverted: 15/0.
 // MUTATION PF1H-PF2H-SCROLL-INDEPENDENTLY stimulus red: its own written
 //   PF2H value changed from 11 to 12 (comparison left against sweep2[11])
 //   -> FAIL ("14 passed, 1 failed"), only PF1H-PF2H-SCROLL-INDEPENDENTLY
 //   red. (The sweep_pf2h clamp mutation above also turns this id red as
 //   collateral, via a different stimulus change -- both are genuine.)
-//   Reverted: 15/0.
+//   Replayable as MUTATE=PF1H-PF2H-SCROLL-INDEPENDENTLY (its own call-site
+//   switch, separate from the sweep_pf2h clamp). Reverted: 15/0.
 // MUTATION BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN stimulus red: plane 5's preload changed from 0x8000 to 0x0000 -> FAIL ("14
 //   passed, 1 failed"), only this assertion red (odd_ok false, plane 5
-//   never appears). Reverted: 15/0.
+//   never appears). Replayable as MUTATE=BPLCON1-PF1H-GOVERNS-ODD-PLANES-
+//   PF2H-GOVERNS-EVEN. Reverted: 15/0.
 // MUTATION BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD stimulus red:
 //   the written PF2H nibble changed from 7 to 8 (PF1H left at 7) -> FAIL
 //   ("14 passed, 1 failed"), only this assertion red (plane 2 now tracks
-//   sweep2[8], no longer equal to plane 1's sweep1[7]). Reverted: 15/0.
+//   sweep2[8], no longer equal to plane 1's sweep1[7]). Replayable as
+//   MUTATE=BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD. Reverted: 15/0.
 // MUTATION BPLCON1-DELAY-RANGE-0-TO-15 stimulus red: the same sweep_pf1h
 //   clamp mutation used for PF1H-CONTROLS-PLAYFIELD1-DELAY above (the
 //   sweep1[15]-sweep1[0] span is the specific sub-check this id names) ->
 //   same run, same "11 passed, 4 failed", BPLCON1-DELAY-RANGE-0-TO-15 red
-//   along with the three other assertions named there. Reverted: 15/0.
+//   along with the three other assertions named there. Replayable as
+//   MUTATE=BPLCON1-DELAY-RANGE-0-TO-15 (same sweep_pf1h clamp code as
+//   PF1H-CONTROLS-PLAYFIELD1-DELAY). Reverted: 15/0.
 // MUTATION BPLCON1-BITS-15-8-UNUSED-ON-OCS stimulus red: the garbage-upper-
 //   byte write changed from 0xFF07 to 0xFF08 (PF1H's own nibble corrupted
 //   from 7 to 8) -> FAIL ("14 passed, 1 failed"), only this assertion red
-//   (measured delay now matches sweep1[8], not sweep1[7]). Reverted: 15/0.
+//   (measured delay now matches sweep1[8], not sweep1[7]). Replayable as
+//   MUTATE=BPLCON1-BITS-15-8-UNUSED-ON-OCS. Reverted: 15/0.
 // MUTATION HIRES-SCROLL-GRANULARITY-2-PIXELS stimulus red: the hires PF1H=1
 //   comparison write changed to PF1H=2 -> FAIL ("14 passed, 1 failed"),
 //   only this assertion red (delta_hires now spans two PF1H units' worth,
 //   not one, so delta_hires != delta_lores). Run against the restated
 //   (delta_hires==delta_lores) form of the assertion, after review; the
 //   assertion's own oracle text and expected relationship changed per that
-//   review, the mutation-testing procedure did not. Reverted: 15/0.
+//   review, the mutation-testing procedure did not. Replayable as
+//   MUTATE=HIRES-SCROLL-GRANULARITY-2-PIXELS. Reverted: 15/0.
 
 #include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -332,6 +346,12 @@
 #include "Vdenise_bitplanes.h"
 
 namespace {
+
+// Runtime mutation switch: one build serves both the real run (MUTATE
+// unset) and every mutation run (MUTATE=<assertion label>), read once at
+// startup. mutating(id) is true only while replaying that one id.
+const char* g_mutate = nullptr;
+bool mutating(const std::string& id) { return g_mutate != nullptr && id == g_mutate; }
 
 class Checks {
 public:
@@ -495,7 +515,17 @@ std::array<long, 16> sweep_pf1h() {
     std::array<long, 16> t{};
     for (int n = 0; n <= 15; ++n) {
         Harness h;
-        h.write_reg(kBplcon1Addr, static_cast<uint16_t>(n));  // PF2H=0, PF1H=n
+        // MUTATION PF1H-CONTROLS-PLAYFIELD1-DELAY / BPLCON1-BITS-3-0-ARE-PF1H /
+        //   BPLCON1-DELAY-RANGE-0-TO-15 stimulus red: MUTATE=PF1H-CONTROLS-
+        //   PLAYFIELD1-DELAY, MUTATE=BPLCON1-BITS-3-0-ARE-PF1H or MUTATE=
+        //   BPLCON1-DELAY-RANGE-0-TO-15 clamps the written PF1H value at 8
+        //   (n>8?8:n) instead of writing n plainly, so this shared sweep loses
+        //   its top range.
+        uint16_t pf1h_n = static_cast<uint16_t>(n);
+        if (mutating("PF1H-CONTROLS-PLAYFIELD1-DELAY") || mutating("BPLCON1-BITS-3-0-ARE-PF1H") ||
+            mutating("BPLCON1-DELAY-RANGE-0-TO-15"))
+            pf1h_n = static_cast<uint16_t>(n > 8 ? 8 : n);
+        h.write_reg(kBplcon1Addr, pf1h_n);  // PF2H=0, PF1H=n
         h.settle_bplcon1();
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
@@ -514,7 +544,14 @@ std::array<long, 16> sweep_pf2h() {
     std::array<long, 16> t{};
     for (int n = 0; n <= 15; ++n) {
         Harness h;
-        h.write_reg(kBplcon1Addr, static_cast<uint16_t>(n << 4));  // PF1H=0, PF2H=n
+        // MUTATION PF2H-CONTROLS-PLAYFIELD2-DELAY / BPLCON1-BITS-7-4-ARE-PF2H
+        //   stimulus red: MUTATE=PF2H-CONTROLS-PLAYFIELD2-DELAY or
+        //   MUTATE=BPLCON1-BITS-7-4-ARE-PF2H clamps the written PF2H value at
+        //   8 (n>8?8:n) instead of writing n plainly.
+        uint16_t pf2h_n = static_cast<uint16_t>(n);
+        if (mutating("PF2H-CONTROLS-PLAYFIELD2-DELAY") || mutating("BPLCON1-BITS-7-4-ARE-PF2H"))
+            pf2h_n = static_cast<uint16_t>(n > 8 ? 8 : n);
+        h.write_reg(kBplcon1Addr, static_cast<uint16_t>(pf2h_n << 4));  // PF1H=0, PF2H=n
         h.settle_bplcon1();
         h.write_reg(kBpl2DatAddr, 0x8000);
         h.begin_write_reg(kBpl1DatAddr, 0x0000);
@@ -529,12 +566,16 @@ std::array<long, 16> sweep_pf2h() {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     // ---------------- FIXTURE-DATA-PATH-LIVE (control case) ----------------
     {
         Harness h;
-        h.begin_write_reg(kBpl1DatAddr, 0xACE1);  // MSB (bit15) set: a distinct, recognisable nonzero pattern.
+        // MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: MUTATE=FIXTURE-DATA-
+        //   PATH-LIVE drives the trigger word to 0x0000 instead, so no bit
+        //   ever loads.
+        h.begin_write_reg(kBpl1DatAddr, mutating("FIXTURE-DATA-PATH-LIVE") ? 0x0000 : 0xACE1);  // MSB (bit15) set: a distinct, recognisable nonzero pattern.
         h.clear_reg();
         auto first = h.measure_first_high_all(400);
         checks.expect(
@@ -553,7 +594,10 @@ int main(int argc, char** argv) {
     // ---------------- BPLCON1-ADDRESS-DECODE ----------------
     {
         Harness h;
-        h.write_reg(kBplcon1Addr, 9);  // PF1H=9
+        // MUTATION BPLCON1-ADDRESS-DECODE stimulus red: MUTATE=BPLCON1-
+        //   ADDRESS-DECODE writes PF1H=10 instead of 9, so the positive case
+        //   no longer matches baseline[9].
+        h.write_reg(kBplcon1Addr, mutating("BPLCON1-ADDRESS-DECODE") ? 10 : 9);  // PF1H=9
         h.settle_bplcon1();
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
@@ -586,7 +630,11 @@ int main(int argc, char** argv) {
         bool all_ok = true;
         for (int n = 1; n <= 6; ++n) {
             Harness h;
-            if (n != 1) h.write_reg(kBplxDatAddr[n], 0x8000);
+            // MUTATION BPLXDAT-ADDRESS-MAP-SIX-PLANES stimulus red: MUTATE=
+            //   BPLXDAT-ADDRESS-MAP-SIX-PLANES preloads every plane other
+            //   than 1 with 0x0000 instead of 0x8000, so no plane but 1 ever
+            //   shows a bit.
+            if (n != 1) h.write_reg(kBplxDatAddr[n], mutating("BPLXDAT-ADDRESS-MAP-SIX-PLANES") ? 0x0000 : 0x8000);
             h.begin_write_reg(kBpl1DatAddr, (n == 1) ? 0x8000 : 0x0000);
             h.clear_reg();
             auto first = h.measure_first_high_all(400);
@@ -618,7 +666,11 @@ int main(int argc, char** argv) {
         Harness h;
         h.write_reg(kBpl2DatAddr, 0x8000);
         h.write_reg(kBpl3DatAddr, 0x8000);
-        h.write_reg(kBpl4DatAddr, 0x8000);
+        // MUTATION BPL1DAT-WRITE-TRIGGERS-ALL-PLANES stimulus red: MUTATE=
+        //   BPL1DAT-WRITE-TRIGGERS-ALL-PLANES preloads plane 4 with 0x0000
+        //   instead of 0x8000, so it never appears when BPL1DAT triggers the
+        //   others.
+        h.write_reg(kBpl4DatAddr, mutating("BPL1DAT-WRITE-TRIGGERS-ALL-PLANES") ? 0x0000 : 0x8000);
         h.write_reg(kBpl5DatAddr, 0x8000);
         h.write_reg(kBpl6DatAddr, 0x8000);
         bool quiescent = true;
@@ -654,7 +706,10 @@ int main(int argc, char** argv) {
     // ---------------- BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD ----------------
     {
         Harness h;
-        h.begin_write_reg(kBpl1DatAddr, 0x8001);  // bit15 (MSB) and bit0 (LSB) set, all 14 bits between clear.
+        // MUTATION BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD stimulus red:
+        //   MUTATE=BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD drops the LSB
+        //   marker, writing 0x8000 instead of 0x8001.
+        h.begin_write_reg(kBpl1DatAddr, mutating("BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD") ? 0x8000 : 0x8001);  // bit15 (MSB) and bit0 (LSB) set, all 14 bits between clear.
         h.clear_reg();
         long first = -1;
         for (long i = 0; i < 400 && first < 0; ++i) {
@@ -772,7 +827,10 @@ int main(int argc, char** argv) {
     // ---------------- PF1H-PF2H-SCROLL-INDEPENDENTLY ----------------
     {
         Harness h;
-        h.write_reg(kBplcon1Addr, static_cast<uint16_t>((11 << 4) | 5));  // PF1H=5, PF2H=11
+        // MUTATION PF1H-PF2H-SCROLL-INDEPENDENTLY stimulus red: MUTATE=
+        //   PF1H-PF2H-SCROLL-INDEPENDENTLY writes PF2H=12 instead of 11, so
+        //   the comparison against sweep2[11] no longer matches.
+        h.write_reg(kBplcon1Addr, static_cast<uint16_t>(((mutating("PF1H-PF2H-SCROLL-INDEPENDENTLY") ? 12 : 11) << 4) | 5));  // PF1H=5, PF2H=11
         h.settle_bplcon1();
         h.write_reg(kBpl2DatAddr, 0x8000);
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
@@ -798,7 +856,11 @@ int main(int argc, char** argv) {
         h.write_reg(kBpl2DatAddr, 0x8000);
         h.write_reg(kBpl3DatAddr, 0x8000);
         h.write_reg(kBpl4DatAddr, 0x8000);
-        h.write_reg(kBpl5DatAddr, 0x8000);
+        // MUTATION BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN
+        //   stimulus red: MUTATE=BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-
+        //   GOVERNS-EVEN preloads plane 5 with 0x0000 instead of 0x8000, so
+        //   it never appears.
+        h.write_reg(kBpl5DatAddr, mutating("BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN") ? 0x0000 : 0x8000);
         h.write_reg(kBpl6DatAddr, 0x8000);
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
@@ -819,7 +881,10 @@ int main(int argc, char** argv) {
     // ---------------- BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD ----------------
     {
         Harness h;
-        h.write_reg(kBplcon1Addr, static_cast<uint16_t>((7 << 4) | 7));  // PF1H=PF2H=7
+        // MUTATION BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD stimulus
+        //   red: MUTATE=BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD
+        //   writes PF2H=8 instead of 7 (PF1H left at 7).
+        h.write_reg(kBplcon1Addr, static_cast<uint16_t>(((mutating("BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD") ? 8 : 7) << 4) | 7));  // PF1H=PF2H=7
         h.settle_bplcon1();
         h.write_reg(kBpl2DatAddr, 0x8000);
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
@@ -849,7 +914,10 @@ int main(int argc, char** argv) {
     // ---------------- BPLCON1-BITS-15-8-UNUSED-ON-OCS ----------------
     {
         Harness h;
-        h.write_reg(kBplcon1Addr, 0xFF07);  // upper byte all-ones garbage, PF1H=7, PF2H=0
+        // MUTATION BPLCON1-BITS-15-8-UNUSED-ON-OCS stimulus red: MUTATE=
+        //   BPLCON1-BITS-15-8-UNUSED-ON-OCS corrupts PF1H's own nibble from
+        //   7 to 8 (0xFF08 instead of 0xFF07).
+        h.write_reg(kBplcon1Addr, mutating("BPLCON1-BITS-15-8-UNUSED-ON-OCS") ? 0xFF08 : 0xFF07);  // upper byte all-ones garbage, PF1H=7, PF2H=0
         h.settle_bplcon1();
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
@@ -886,7 +954,10 @@ int main(int argc, char** argv) {
 
         Harness h1;
         h1.dut->hires = 1;
-        h1.write_reg(kBplcon1Addr, 1);
+        // MUTATION HIRES-SCROLL-GRANULARITY-2-PIXELS stimulus red: MUTATE=
+        //   HIRES-SCROLL-GRANULARITY-2-PIXELS writes PF1H=2 instead of 1, so
+        //   delta_hires spans two PF1H units instead of one.
+        h1.write_reg(kBplcon1Addr, mutating("HIRES-SCROLL-GRANULARITY-2-PIXELS") ? 2 : 1);
         h1.settle_bplcon1();
         h1.begin_write_reg(kBpl1DatAddr, 0x8000);
         h1.clear_reg();

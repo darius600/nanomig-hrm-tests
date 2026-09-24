@@ -180,17 +180,18 @@
 //   value, quotation, or comparison threshold was ever edited, only
 //   stimulus (a pos_byte or an image word).
 //
-// MUTATION FIXTURE-KNOWN-WORD-IN-ORDER stimulus red: inside_pattern's SPR0DATA changed from 0xACE1 to 0x5312 -> FAIL ("7 passed, 1 failed"), only FIXTURE-KNOWN-WORD-IN-ORDER newly red (the sampled bits no longer matched the hardcoded 0xACE1 pattern); CH4-hpos.c2, which now reads an independent solid-pattern measurement of its own, stayed green, confirming the isolation fix held. Reverted to 0xACE1: 8/0.
-// MUTATION CH4-hpos.c2 stimulus red: its own inside_solid measurement's SPR0DATA changed from 0xFFFF to 0x0000 -> FAIL ("7 passed, 1 failed"), only CH4-hpos.c2 newly red (count(RED) became 0, not the asserted 16). Reverted to 0xFFFF: 8/0.
-// MUTATION CH4-hpos.c6 stimulus red: pos_byte changed from 0x14 (hstart=40, wholly outside) to 0x80 (hstart=256, fully inside) -> FAIL ("7 passed, 1 failed"), only CH4-hpos.c6 newly red (count(RED) became 16, not the asserted 0). Reverted to 0x14: 8/0.
-// MUTATION CH4-p99.c2 stimulus red: pos_byte changed from 0xDC (hstart=440, wholly outside) to 0x80 (fully inside) -> FAIL ("7 passed, 1 failed"), only CH4-p99.c2 newly red. Reverted to 0xDC: 8/0.
-// MUTATION CH4-hpos.c5 stimulus red: pos_byte changed from 0x24 (hstart=72, straddling) to 0x14 (hstart=40, wholly outside) -> FAIL ("7 passed, 1 failed"), only CH4-hpos.c5 newly red (count(RED) became 0, failing the >0 half). Reverted to 0x24: 8/0.
-// MUTATION CH4-p99.c5 stimulus red: pos_byte changed from 0xD4 (hstart=424, straddling) to 0xDC (hstart=440, wholly outside) -> FAIL ("7 passed, 1 failed"), only CH4-p99.c5 newly red. Reverted to 0xD4: 8/0.
-// MUTATION CH4-clip.c1 stimulus red: pos_byte changed from 0xF0 (hstart=480, wholly outside window 2) to 0x64 (hstart=200, fully inside window 2) -> FAIL ("7 passed, 1 failed"), only CH4-clip.c1 newly red (count(RED) became 16, not the asserted 0). Reverted to 0xF0: 8/0.
-// MUTATION CH4-p100.c8 stimulus red: pos_byte changed from 0xC4 (hstart=392, straddling window 2's stop) to 0xF0 (hstart=480, wholly outside) -> FAIL ("7 passed, 1 failed"), only CH4-p100.c8 newly red (count(RED) became 0, failing the >0 half). Reverted to 0xC4: 8/0.
+// MUTATION FIXTURE-KNOWN-WORD-IN-ORDER stimulus red: inside_pattern's SPR0DATA changed from 0xACE1 to 0x5312 -> FAIL ("7 passed, 1 failed"), only FIXTURE-KNOWN-WORD-IN-ORDER newly red (the sampled bits no longer matched the hardcoded 0xACE1 pattern); CH4-hpos.c2, which now reads an independent solid-pattern measurement of its own, stayed green, confirming the isolation fix held. Replayable as MUTATE=FIXTURE-KNOWN-WORD-IN-ORDER. Reverted to 0xACE1: 8/0.
+// MUTATION CH4-hpos.c2 stimulus red: its own inside_solid measurement's SPR0DATA changed from 0xFFFF to 0x0000 -> FAIL ("7 passed, 1 failed"), only CH4-hpos.c2 newly red (count(RED) became 0, not the asserted 16). Replayable as MUTATE=CH4-hpos.c2. Reverted to 0xFFFF: 8/0.
+// MUTATION CH4-hpos.c6 stimulus red: pos_byte changed from 0x14 (hstart=40, wholly outside) to 0x80 (hstart=256, fully inside) -> FAIL ("7 passed, 1 failed"), only CH4-hpos.c6 newly red (count(RED) became 16, not the asserted 0). Replayable as MUTATE=CH4-hpos.c6. Reverted to 0x14: 8/0.
+// MUTATION CH4-p99.c2 stimulus red: pos_byte changed from 0xDC (hstart=440, wholly outside) to 0x80 (fully inside) -> FAIL ("7 passed, 1 failed"), only CH4-p99.c2 newly red. Replayable as MUTATE=CH4-p99.c2. Reverted to 0xDC: 8/0.
+// MUTATION CH4-hpos.c5 stimulus red: pos_byte changed from 0x24 (hstart=72, straddling) to 0x14 (hstart=40, wholly outside) -> FAIL ("7 passed, 1 failed"), only CH4-hpos.c5 newly red (count(RED) became 0, failing the >0 half). Replayable as MUTATE=CH4-hpos.c5. Reverted to 0x24: 8/0.
+// MUTATION CH4-p99.c5 stimulus red: pos_byte changed from 0xD4 (hstart=424, straddling) to 0xDC (hstart=440, wholly outside) -> FAIL ("7 passed, 1 failed"), only CH4-p99.c5 newly red. Replayable as MUTATE=CH4-p99.c5. Reverted to 0xD4: 8/0.
+// MUTATION CH4-clip.c1 stimulus red: pos_byte changed from 0xF0 (hstart=480, wholly outside window 2) to 0x64 (hstart=200, fully inside window 2) -> FAIL ("7 passed, 1 failed"), only CH4-clip.c1 newly red (count(RED) became 16, not the asserted 0). Replayable as MUTATE=CH4-clip.c1. Reverted to 0xF0: 8/0.
+// MUTATION CH4-p100.c8 stimulus red: pos_byte changed from 0xC4 (hstart=392, straddling window 2's stop) to 0xF0 (hstart=480, wholly outside) -> FAIL ("7 passed, 1 failed"), only CH4-p100.c8 newly red (count(RED) became 0, failing the >0 half). Replayable as MUTATE=CH4-p100.c8. Reverted to 0xC4: 8/0.
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -199,6 +200,12 @@
 #include "Vdenise.h"
 
 namespace {
+
+// Runtime mutation switch: one build serves both the real run (MUTATE
+// unset) and every mutation run (MUTATE=<assertion label>), read once at
+// startup. mutating(id) is true only while replaying that one id.
+const char* g_mutate = nullptr;
+bool mutating(const std::string& id) { return g_mutate != nullptr && id == g_mutate; }
 
 class Checks {
 public:
@@ -364,6 +371,7 @@ Meas measure(uint8_t diwstrt_byte, uint8_t diwstop_byte, uint8_t pos_byte,
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     // Window 1: raw hpos [80, 432). DIWSTRT byte 0x50 -> 80 (H8 forced 0).
@@ -385,8 +393,13 @@ int main(int argc, char** argv) {
     // depends on that latency's own value, only on what appears relative
     // to it, the same discipline hrm/ch3-sprite-registers/ already
     // documents for this same sprite hardware).
+    // MUTATION FIXTURE-KNOWN-WORD-IN-ORDER stimulus red: MUTATE=FIXTURE-
+    //   KNOWN-WORD-IN-ORDER changes inside_pattern's SPR0DATA from 0xACE1
+    //   to 0x5312, so the sampled bits no longer match the hardcoded
+    //   pattern.
     Meas inside_pattern = measure(W1_STRT, W1_STOP, /*pos=*/0x80,
-                                   /*data=*/0xACE1, /*datb=*/0x0000);
+                                   /*data=*/mutating("FIXTURE-KNOWN-WORD-IN-ORDER") ? 0x5312 : 0xACE1,
+                                   /*datb=*/0x0000);
     bool inside_pattern_ordered = false;
     {
         static const int bit[16] = {1,0,1,0,1,1,0,0,1,1,1,0,0,0,0,1};
@@ -426,8 +439,11 @@ int main(int argc, char** argv) {
         // straddle/outside findings would have no green result on their
         // OWN counting method to be read against -- only the differently-
         // measured pattern-order check above.
+        // MUTATION CH4-hpos.c2 stimulus red: MUTATE=CH4-hpos.c2 changes
+        //   inside_solid's own SPR0DATA from 0xFFFF to 0x0000.
         Meas inside_solid = measure(W1_STRT, W1_STOP, /*pos=*/0x80,
-                                     /*data=*/0xFFFF, /*datb=*/0x0000);
+                                     /*data=*/mutating("CH4-hpos.c2") ? 0x0000 : 0xFFFF,
+                                     /*datb=*/0x0000);
         int red16 = inside_solid.count(RED);
         // Independent of inside_pattern/inside_pattern_ordered above (its
         // own fresh Harness, its own measurement) so a mutation aimed at
@@ -449,7 +465,10 @@ int main(int argc, char** argv) {
 
     // ---------------- CH4-hpos.c6 ----------------
     {
-        Meas m = measure(W1_STRT, W1_STOP, /*pos=*/0x14,  // hstart=40 -> 40..55, wholly < 80
+        // MUTATION CH4-hpos.c6 stimulus red: MUTATE=CH4-hpos.c6 changes
+        //   pos_byte from 0x14 (hstart=40, wholly outside) to 0x80
+        //   (hstart=256, fully inside).
+        Meas m = measure(W1_STRT, W1_STOP, /*pos=*/mutating("CH4-hpos.c6") ? 0x80 : 0x14,  // hstart=40 -> 40..55, wholly < 80
                           /*data=*/0xFFFF, /*datb=*/0x0000);
         int red = m.count(RED);
         checks.expect(red == 0,
@@ -463,7 +482,10 @@ int main(int argc, char** argv) {
 
     // ---------------- CH4-p99.c2 ----------------
     {
-        Meas m = measure(W1_STRT, W1_STOP, /*pos=*/0xDC,  // hstart=440 -> 440..455, wholly >= 432
+        // MUTATION CH4-p99.c2 stimulus red: MUTATE=CH4-p99.c2 changes
+        //   pos_byte from 0xDC (hstart=440, wholly outside) to 0x80 (fully
+        //   inside).
+        Meas m = measure(W1_STRT, W1_STOP, /*pos=*/mutating("CH4-p99.c2") ? 0x80 : 0xDC,  // hstart=440 -> 440..455, wholly >= 432
                           /*data=*/0xFFFF, /*datb=*/0x0000);
         int red = m.count(RED);
         checks.expect(red == 0,
@@ -476,7 +498,10 @@ int main(int argc, char** argv) {
 
     // ---------------- CH4-hpos.c5 ----------------
     {
-        Meas m = measure(W1_STRT, W1_STOP, /*pos=*/0x24,  // hstart=72 -> 72..87, straddles 80
+        // MUTATION CH4-hpos.c5 stimulus red: MUTATE=CH4-hpos.c5 changes
+        //   pos_byte from 0x24 (hstart=72, straddling) to 0x14 (hstart=40,
+        //   wholly outside).
+        Meas m = measure(W1_STRT, W1_STOP, /*pos=*/mutating("CH4-hpos.c5") ? 0x14 : 0x24,  // hstart=72 -> 72..87, straddles 80
                           /*data=*/0xFFFF, /*datb=*/0x0000);
         int red = m.count(RED);
         checks.expect(red > 0 && red < 16,
@@ -493,7 +518,10 @@ int main(int argc, char** argv) {
 
     // ---------------- CH4-p99.c5 ----------------
     {
-        Meas m = measure(W1_STRT, W1_STOP, /*pos=*/0xD4,  // hstart=424 -> 424..439, straddles 432
+        // MUTATION CH4-p99.c5 stimulus red: MUTATE=CH4-p99.c5 changes
+        //   pos_byte from 0xD4 (hstart=424, straddling) to 0xDC (hstart=440,
+        //   wholly outside).
+        Meas m = measure(W1_STRT, W1_STOP, /*pos=*/mutating("CH4-p99.c5") ? 0xDC : 0xD4,  // hstart=424 -> 424..439, straddles 432
                           /*data=*/0xFFFF, /*datb=*/0x0000);
         int red = m.count(RED);
         checks.expect(red > 0 && red < 16,
@@ -509,7 +537,10 @@ int main(int argc, char** argv) {
 
     // ---------------- CH4-clip.c1 ----------------
     {
-        Meas m = measure(W2_STRT, W2_STOP, /*pos=*/0xF0,  // hstart=480 -> 480..495, wholly >= 400
+        // MUTATION CH4-clip.c1 stimulus red: MUTATE=CH4-clip.c1 changes
+        //   pos_byte from 0xF0 (hstart=480, wholly outside window 2) to
+        //   0x64 (hstart=200, fully inside window 2).
+        Meas m = measure(W2_STRT, W2_STOP, /*pos=*/mutating("CH4-clip.c1") ? 0x64 : 0xF0,  // hstart=480 -> 480..495, wholly >= 400
                           /*data=*/0xFFFF, /*datb=*/0x0000);
         int red = m.count(RED);
         checks.expect(red == 0,
@@ -526,7 +557,10 @@ int main(int argc, char** argv) {
 
     // ---------------- CH4-p100.c8 ----------------
     {
-        Meas m = measure(W2_STRT, W2_STOP, /*pos=*/0xC4,  // hstart=392 -> 392..407, straddles 400
+        // MUTATION CH4-p100.c8 stimulus red: MUTATE=CH4-p100.c8 changes
+        //   pos_byte from 0xC4 (hstart=392, straddling window 2's stop) to
+        //   0xF0 (hstart=480, wholly outside).
+        Meas m = measure(W2_STRT, W2_STOP, /*pos=*/mutating("CH4-p100.c8") ? 0xF0 : 0xC4,  // hstart=392 -> 392..407, straddles 400
                           /*data=*/0xFFFF, /*datb=*/0x0000);
         int red = m.count(RED);
         checks.expect(red > 0 && red < 16,
