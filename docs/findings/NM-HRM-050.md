@@ -112,5 +112,3 @@ and none decides this finding. What they are and how they were read is in
 None of them speaks to this point.
 Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
 
-Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
-

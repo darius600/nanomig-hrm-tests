@@ -182,9 +182,7 @@ documents say*.
 Quotations are taken from each PDF's text layer, OCR errors and line-end hyphens
 included, and every one is checked against the page it names by
 `hrm-testpipeline/tools/verify_second_documents.py --pages`. The documents
-themselves are in neither repository. Three were not read, having no text layer
-— the A500/A2000 technical reference, the 8371 Agnus specification and the 6526
-CIA specification — which is a gap, not a silence.
+themselves are in neither repository.
 
 ## Withdrawn findings are kept, and here is why
 

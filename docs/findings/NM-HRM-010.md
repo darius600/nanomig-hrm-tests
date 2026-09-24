@@ -97,8 +97,6 @@ and none decides this finding. What they are and how they were read is in
 
   The ECS Denise specification says every other line is a long line of 228 counts. This is the alternation NanoMig does not generate.
 
-Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
-
 ---
 
 ## Suggested change

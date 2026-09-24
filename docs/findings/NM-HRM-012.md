@@ -53,8 +53,6 @@ and none decides this finding. What they are and how they were read is in
 
 Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; US patent 4,874,164, Commodore-Amiga.
 
-Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
-
 ---
 
 ## Why this entry is kept

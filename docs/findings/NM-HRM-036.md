@@ -102,11 +102,9 @@ and none decides this finding. What they are and how they were read is in
   > "000000-1FFFFF NROM if OVR asserted"
   <!-- corpus: gary-spec/p001.txt -->
 
-  The address-decode table gives BANK0 as 000000-1FFFFF and, in this row, decodes the ROM select over that whole 2 MB range: all four 512K chip-memory banks, not just the first. On that reading chip RAM at $080000-$1FFFFF answers as ROM while the overlay is up. That is WinUAE's shape, and it makes p.223's 'All memory and AUTOCONFIG(TM) cards disappear' literally true for memory on an A500/A2000. Two caveats. (1) The row says 'OVR', and elsewhere in this spec that is the override pin (NOVR); the ROME conditions require '3. OVR is de-asserted', so read as override the row would contradict itself. It only makes sense as the overlay input OVL ('Overlay (ROM to address 0)'), which is an inference from the text, not something it states. The A500/A2000 technical reference, which holds the decoder equations and would settle this, has no text layer and is not in the corpus. (2) ROME is qualified by a read (PRW=1), and the spec does not say whether NRAME is suppressed there, so it is silent on what a write to $080000 does while the overlay is up.
+  The address-decode table gives BANK0 as 000000-1FFFFF and, in this row, decodes the ROM select over that whole 2 MB range: all four 512K chip-memory banks, not just the first. On that reading chip RAM at $080000-$1FFFFF answers as ROM while the overlay is up. That is WinUAE's shape, and it makes p.223's 'All memory and AUTOCONFIG(TM) cards disappear' literally true for memory on an A500/A2000. Two caveats. (1) The row says 'OVR', and elsewhere in this spec that is the override pin (NOVR); the ROME conditions require '3. OVR is de-asserted', so read as override the row would contradict itself. It only makes sense as the overlay input OVL ('Overlay (ROM to address 0)'), which is an inference from the text, not something it states. (2) ROME is qualified by a read (PRW=1), and the spec does not say whether NRAME is suppressed there, so it is silent on what a write to $080000 does while the overlay is up.
 
 Silent on this point: US patent 4,777,621, Commodore-Amiga.
-
-Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 
 ---
 

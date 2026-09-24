@@ -126,8 +126,6 @@ and none decides this finding. What they are and how they were read is in
 None of them speaks to this point.
 Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
 
-Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
-
 ---
 
 ## Suggested change

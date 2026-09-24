@@ -107,11 +107,9 @@ and none decides this finding. What they are and how they were read is in
   > "OVL (OVerLay) input causes ROM to be accessed at memory location 0. This signal is typically driven by a port line so that ROM is mapped to the memory 0 at RESET time."
   <!-- corpus: gary-spec/p001.txt -->
 
-  Gary takes the overlay as a level input pin (pin table: 'OVL IN HI Overlay (ROM to address 0)') driven by a port line. None of Gary's inputs carries a CIA register select or a CIA write strobe, and the spec describes no latch, so the overlay follows the level of that port line. That sides with the manual's 'the OVL bit', not with a clear on any CIA-A write. It does not name CIA-A PA0 itself, and it says 'typically'. The A500/A2000 technical reference, whose schematic would show which port line drives Gary pin 30, has no text layer and is not in the corpus.
+  Gary takes the overlay as a level input pin (pin table: 'OVL IN HI Overlay (ROM to address 0)') driven by a port line. None of Gary's inputs carries a CIA register select or a CIA write strobe, and the spec describes no latch, so the overlay follows the level of that port line. That sides with the manual's 'the OVL bit', not with a clear on any CIA-A write. It does not name CIA-A PA0 itself, and it says 'typically'.
 
 Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,777,621, Commodore-Amiga.
-
-Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 
 ---
 
