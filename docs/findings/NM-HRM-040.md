@@ -1,4 +1,4 @@
-# NM-HRM-040 — CIAADDRA's direction mask corresponds one-to-one for two bit positions of eight
+# NM-HRM-040 — CIAADDRA's direction mask corresponds one-to-one for two bit positions of eight [RTL review]
 
 | | |
 |---|---|

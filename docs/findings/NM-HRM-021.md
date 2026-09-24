@@ -1,4 +1,4 @@
-# NM-HRM-021 — DOFF (BLTCON1 bit 7) has no observable effect
+# NM-HRM-021 — DOFF (BLTCON1 bit 7) has no observable effect [RTL review]
 
 | | |
 |---|---|

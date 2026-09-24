@@ -1,4 +1,4 @@
-# NM-HRM-008 — playfield-1 collision depends on playfield 2, by design, undocumented
+# NM-HRM-008 — playfield-1 collision depends on playfield 2, by design, undocumented [RTL review]
 
 | | |
 |---|---|

@@ -1,4 +1,4 @@
-# NM-HRM-027 — in direct mode the interrupt is raised before a word is output
+# NM-HRM-027 — in direct mode the interrupt is raised before a word is output [RTL review]
 
 | | |
 |---|---|

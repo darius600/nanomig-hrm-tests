@@ -38,6 +38,13 @@ page carries says something about it:
 A header table that is shorter than the one on the page before it is therefore
 not an incomplete page. Counted across all 70.
 
+**A title that ends in [RTL review]** marks a page whose header says three
+things: `open`, filed against `the RTL`, and a graded red. That page asks an
+Amiga specialist to decide whether the RTL should change;
+[`../rtl-review.md`](../rtl-review.md) lists every such page by the module it
+is about. The mark is derived from the header, never set by hand, so it cannot
+say something the header does not.
+
 **What follows the header varies, and deliberately.** Most pages run *What the
 HRM says* → *What NanoMig does* → *What the others say* → *Suggested change* →
 *What holds the finding up*, some adding *For the specialists*. A withdrawn

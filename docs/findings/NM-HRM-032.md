@@ -1,4 +1,4 @@
-# NM-HRM-032 — BEAMCON0's three sync-polarity bits are decoded nowhere
+# NM-HRM-032 — BEAMCON0's three sync-polarity bits are decoded nowhere [RTL review]
 
 | | |
 |---|---|

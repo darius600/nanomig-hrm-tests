@@ -1,4 +1,4 @@
-# NM-HRM-020 — BLTSIZV is not gated on ECS, while its two siblings are
+# NM-HRM-020 — BLTSIZV is not gated on ECS, while its two siblings are [RTL review]
 
 | | |
 |---|---|

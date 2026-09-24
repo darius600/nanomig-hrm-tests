@@ -1,4 +1,4 @@
-# NM-HRM-041 — DSKBYTR is a constant word in three of its five fields
+# NM-HRM-041 — DSKBYTR is a constant word in three of its five fields [RTL review]
 
 | | |
 |---|---|

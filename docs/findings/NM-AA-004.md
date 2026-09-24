@@ -1,4 +1,4 @@
-# NM-AA-004 — VPOSR reports chip identifier $23, where the AA list gives an Alice $22
+# NM-AA-004 — VPOSR reports chip identifier $23, where the AA list gives an Alice $22 [RTL review]
 
 | | |
 |---|---|

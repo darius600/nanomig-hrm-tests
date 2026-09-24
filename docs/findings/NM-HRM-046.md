@@ -1,4 +1,4 @@
-# NM-HRM-046 — the drive activity light follows DMA, not the motor
+# NM-HRM-046 — the drive activity light follows DMA, not the motor [RTL review]
 
 | | |
 |---|---|

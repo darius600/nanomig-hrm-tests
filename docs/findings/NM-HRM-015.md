@@ -1,4 +1,4 @@
-# NM-HRM-015 — BRDNTRAN is declared and never connected
+# NM-HRM-015 — BRDNTRAN is declared and never connected [RTL review]
 
 | | |
 |---|---|

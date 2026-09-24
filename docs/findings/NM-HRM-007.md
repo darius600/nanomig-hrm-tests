@@ -1,4 +1,4 @@
-# NM-HRM-007 — the hires fetch width cannot reach the manual's maximum of 49 words
+# NM-HRM-007 — the hires fetch width cannot reach the manual's maximum of 49 words [RTL review]
 
 | | |
 |---|---|

@@ -1,4 +1,4 @@
-# NM-HRM-031 — INTREQ bit 14 is a settable request bit where the appendix says enable-only
+# NM-HRM-031 — INTREQ bit 14 is a settable request bit where the appendix says enable-only [RTL review]
 
 | | |
 |---|---|

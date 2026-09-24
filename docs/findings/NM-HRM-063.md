@@ -1,4 +1,4 @@
-# NM-HRM-063 — FLAG is negative edge-sensitive; the RTL ORs a level
+# NM-HRM-063 — FLAG is negative edge-sensitive; the RTL ORs a level [RTL review]
 
 | | |
 |---|---|

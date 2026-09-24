@@ -1,4 +1,4 @@
-# NM-HRM-055 — SERDAT written with all zeros still transmits
+# NM-HRM-055 — SERDAT written with all zeros still transmits [RTL review]
 
 | | |
 |---|---|

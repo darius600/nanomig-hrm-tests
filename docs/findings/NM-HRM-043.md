@@ -1,4 +1,4 @@
-# NM-HRM-043 — DSKPTH carries five high bits in both chipsets
+# NM-HRM-043 — DSKPTH carries five high bits in both chipsets [RTL review]
 
 | | |
 |---|---|

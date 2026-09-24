@@ -1,4 +1,4 @@
-# NM-HRM-057 — SERDATR bit 11 is a registered copy of RXD, not a direct read
+# NM-HRM-057 — SERDATR bit 11 is a registered copy of RXD, not a direct read [RTL review]
 
 | | |
 |---|---|

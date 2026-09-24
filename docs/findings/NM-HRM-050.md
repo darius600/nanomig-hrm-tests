@@ -1,4 +1,4 @@
-# NM-HRM-050 — one of the two international cutout keys reaches no code
+# NM-HRM-050 — one of the two international cutout keys reaches no code [RTL review]
 
 | | |
 |---|---|

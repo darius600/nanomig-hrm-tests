@@ -1,4 +1,4 @@
-# NM-HRM-042 — the disk DMA pointer stores 20 word-address bits where two pages print 32
+# NM-HRM-042 — the disk DMA pointer stores 20 word-address bits where two pages print 32 [RTL review]
 
 | | |
 |---|---|

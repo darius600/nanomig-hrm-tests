@@ -1,4 +1,4 @@
-# NM-HRM-005 — WAIT and SKIP take longer than the manual states
+# NM-HRM-005 — WAIT and SKIP take longer than the manual states [RTL review]
 
 | | |
 |---|---|

@@ -1,4 +1,4 @@
-# NM-HRM-002 — audio channels on the wrong stereo side
+# NM-HRM-002 — audio channels on the wrong stereo side [RTL review]
 
 | | |
 |---|---|

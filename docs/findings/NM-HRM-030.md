@@ -1,4 +1,4 @@
-# NM-HRM-030 — Paula does not decode DMACONR, though the appendix gives it part ownership
+# NM-HRM-030 — Paula does not decode DMACONR, though the appendix gives it part ownership [RTL review]
 
 | | |
 |---|---|

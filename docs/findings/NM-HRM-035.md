@@ -1,4 +1,4 @@
-# NM-HRM-035 — any write to CIA-A clears the kickstart overlay, not only a write to the OVL bit
+# NM-HRM-035 — any write to CIA-A clears the kickstart overlay, not only a write to the OVL bit [RTL review]
 
 | | |
 |---|---|

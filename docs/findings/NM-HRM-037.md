@@ -1,4 +1,4 @@
-# NM-HRM-037 — the right controller port's X potentiometer input does not exist
+# NM-HRM-037 — the right controller port's X potentiometer input does not exist [RTL review]
 
 | | |
 |---|---|

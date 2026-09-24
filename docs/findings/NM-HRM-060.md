@@ -1,4 +1,4 @@
-# NM-HRM-060 — the instruction cache monitors writes, and the manual says it does not
+# NM-HRM-060 — the instruction cache monitors writes, and the manual says it does not [RTL review]
 
 | | |
 |---|---|

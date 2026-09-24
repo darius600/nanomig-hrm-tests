@@ -1,4 +1,4 @@
-# NM-HRM-011 — PAL vertical blanking is 26 lines, the manual says 29
+# NM-HRM-011 — PAL vertical blanking is 26 lines, the manual says 29 [RTL review]
 
 | | |
 |---|---|

@@ -1,4 +1,4 @@
-# NM-HRM-054 — the parallel port has a direction register and no data register
+# NM-HRM-054 — the parallel port has a direction register and no data register [RTL review]
 
 | | |
 |---|---|

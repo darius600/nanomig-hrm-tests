@@ -1,4 +1,4 @@
-# NM-HRM-022 — BLTxPTH carries five high bits in both chipsets
+# NM-HRM-022 — BLTxPTH carries five high bits in both chipsets [RTL review]
 
 | | |
 |---|---|

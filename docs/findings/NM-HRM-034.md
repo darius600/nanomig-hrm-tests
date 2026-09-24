@@ -1,4 +1,4 @@
-# NM-HRM-034 — VPOSR reports the video standard in bit 12 of an OCS configuration
+# NM-HRM-034 — VPOSR reports the video standard in bit 12 of an OCS configuration [RTL review]
 
 | | |
 |---|---|

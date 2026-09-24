@@ -1,4 +1,4 @@
-# NM-HRM-025 — volume 64 and volume 63 are the same gain on the multiply path
+# NM-HRM-025 — volume 64 and volume 63 are the same gain on the multiply path [RTL review]
 
 | | |
 |---|---|

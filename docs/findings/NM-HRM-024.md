@@ -1,4 +1,4 @@
-# NM-HRM-024 — the audio DMA pointer takes five high bits in both chipsets
+# NM-HRM-024 — the audio DMA pointer takes five high bits in both chipsets [RTL review]
 
 | | |
 |---|---|

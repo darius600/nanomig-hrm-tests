@@ -165,7 +165,7 @@ same error as the other five in the direction nobody was watching for.
 | If you want to | Read |
 |---|---|
 | know what the findings are | [`docs/findings.md`](docs/findings.md) — the register table, then [`docs/findings/`](docs/findings/) for the page on any one of them |
-| decide what to do about a finding | [`docs/rtl-decisions.md`](docs/rtl-decisions.md) — each open finding as the manual's words, what NanoMig measurably does, the assertion that measures it, and what WinUAE and vAmiga do about the same question, with verified file-and-line citations into both emulators |
+| decide what to do about a finding | [`docs/rtl-review.md`](docs/rtl-review.md) — every finding that asks for an RTL review, listed by the module it is about; each such page's title ends in **[RTL review]**. For six of them, chapter 2's Copper and chapter 6's blitter findings, [`docs/rtl-decisions.md`](docs/rtl-decisions.md) sets the manual's words and NanoMig's measured behaviour beside what WinUAE and vAmiga do, with verified file-and-line citations into both emulators |
 | know whether an emulator was allowed to decide | [`docs/third-witness.md`](docs/third-witness.md) and [`docs/third-witness-ch3-ch6.md`](docs/third-witness-ch3-ch6.md) |
 | see what four independent implementations do about the same question | [`docs/fourth-witness-denise-copperline.md`](docs/fourth-witness-denise-copperline.md) — Denise and Copperline read against the findings, file and line each |
 | know what a green result means here | the coverage section below |

@@ -1,4 +1,4 @@
-# NM-AA-005 — the long-line toggle runs, but no line is a colour clock longer
+# NM-AA-005 — the long-line toggle runs, but no line is a colour clock longer [RTL review]
 
 | | |
 |---|---|

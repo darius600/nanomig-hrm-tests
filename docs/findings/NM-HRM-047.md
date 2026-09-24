@@ -1,4 +1,4 @@
-# NM-HRM-047 — one step-spacing threshold where the page prints two
+# NM-HRM-047 — one step-spacing threshold where the page prints two [RTL review]
 
 | | |
 |---|---|

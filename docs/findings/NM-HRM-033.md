@@ -1,4 +1,4 @@
-# NM-HRM-033 — LOLDIS does not disable the long-line toggle on its own
+# NM-HRM-033 — LOLDIS does not disable the long-line toggle on its own [RTL review]
 
 | | |
 |---|---|

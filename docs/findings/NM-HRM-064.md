@@ -1,4 +1,4 @@
-# NM-HRM-064 — the board advertises that it can be shut up, and register 4C has no handler
+# NM-HRM-064 — the board advertises that it can be shut up, and register 4C has no handler [RTL review]
 
 | | |
 |---|---|

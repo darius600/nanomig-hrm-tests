@@ -1,4 +1,4 @@
-# NM-HRM-038 — the pot counters are not held in reset after a POTGO write
+# NM-HRM-038 — the pot counters are not held in reset after a POTGO write [RTL review]
 
 | | |
 |---|---|

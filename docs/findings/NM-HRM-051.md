@@ -1,4 +1,4 @@
-# NM-HRM-051 — Caps Lock is delivered as an ordinary key
+# NM-HRM-051 — Caps Lock is delivered as an ordinary key [RTL review]
 
 | | |
 |---|---|

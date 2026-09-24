@@ -1,4 +1,4 @@
-# NM-HRM-049 — the MFM encoder is context-free
+# NM-HRM-049 — the MFM encoder is context-free [RTL review]
 
 | | |
 |---|---|

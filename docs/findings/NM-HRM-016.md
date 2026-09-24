@@ -1,4 +1,4 @@
-# NM-HRM-016 — SuperHires sprite colour encoding is not implemented
+# NM-HRM-016 — SuperHires sprite colour encoding is not implemented [RTL review]
 
 | | |
 |---|---|

@@ -1,4 +1,4 @@
-# NM-HRM-028 — ADKCON's audio attach bits are stored and reach nothing
+# NM-HRM-028 — ADKCON's audio attach bits are stored and reach nothing [RTL review]
 
 | | |
 |---|---|

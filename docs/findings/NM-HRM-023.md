@@ -1,4 +1,4 @@
-# NM-HRM-023 — the ATTACH bit is honoured in the even sprite, not only the odd
+# NM-HRM-023 — the ATTACH bit is honoured in the even sprite, not only the odd [RTL review]
 
 | | |
 |---|---|

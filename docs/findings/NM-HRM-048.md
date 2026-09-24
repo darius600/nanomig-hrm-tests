@@ -1,4 +1,4 @@
-# NM-HRM-048 — a documented hardware bug that does not occur here
+# NM-HRM-048 — a documented hardware bug that does not occur here [RTL review]
 
 | | |
 |---|---|

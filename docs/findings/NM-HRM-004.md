@@ -1,4 +1,4 @@
-# NM-HRM-004 — ECS danger bit admits too small a range
+# NM-HRM-004 — ECS danger bit admits too small a range [RTL review]
 
 | | |
 |---|---|

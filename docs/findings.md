@@ -1,6 +1,6 @@
 # Findings
 
-**44 of the 65 HRM findings ask you to decide whether the RTL should change. The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**44 of the 65 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each has the
 > same six parts — what the HRM says, what NanoMig does, what the other four say,
@@ -21,10 +21,11 @@
 > separate `hrm-testpipeline` repository, not this one — and the sections under
 > it are the original text. The table is readable without it.
 
-> **Deciding what to do about these:** see [`rtl-decisions.md`](rtl-decisions.md),
-> which sets each open finding beside WinUAE's and vAmiga's implementation of the
-> same question, with line citations verified against the commits
-> `third-witness.md` records.
+> **Deciding what to do about these:** start at [`rtl-review.md`](rtl-review.md),
+> the findings that ask for an RTL review by module. For six of them, chapter 2's
+> Copper and chapter 6's blitter findings, [`rtl-decisions.md`](rtl-decisions.md)
+> sets the question beside WinUAE's and vAmiga's implementation, with line
+> citations verified against the commits `third-witness.md` records.
 
 Every red test in this suite points at a place where the RTL does something the
 *Amiga Hardware Reference Manual* does not describe. This file says which, so

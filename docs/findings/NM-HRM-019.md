@@ -1,4 +1,4 @@
-# NM-HRM-019 — SPRxCTL bit 4 (SHSH1) is not implemented
+# NM-HRM-019 — SPRxCTL bit 4 (SHSH1) is not implemented [RTL review]
 
 | | |
 |---|---|

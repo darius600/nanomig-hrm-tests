@@ -1,4 +1,4 @@
-# NM-HRM-003 — OCS Copper address uses five high bits instead of three
+# NM-HRM-003 — OCS Copper address uses five high bits instead of three [RTL review]
 
 | | |
 |---|---|

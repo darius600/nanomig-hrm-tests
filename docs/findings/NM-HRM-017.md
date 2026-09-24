@@ -1,4 +1,4 @@
-# NM-HRM-017 — SuperHires bitplane colour encoding is not implemented
+# NM-HRM-017 — SuperHires bitplane colour encoding is not implemented [RTL review]
 
 | | |
 |---|---|

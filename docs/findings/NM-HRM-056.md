@@ -1,4 +1,4 @@
-# NM-HRM-056 — SERDATR's TBE bit cannot be observed clear from outside
+# NM-HRM-056 — SERDATR's TBE bit cannot be observed clear from outside [RTL review]
 
 | | |
 |---|---|
