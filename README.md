@@ -66,19 +66,19 @@ artefacts rather than by remembering.
 | | |
 |---|---:|
 | test packages, `hrm/` | **208** |
-| assertions, `hrm/` | **3285** — 3098 pass, **187 fail** |
-| packages, `hrm/` | 141 green, 67 carrying at least one red, **0 build errors** |
+| assertions, `hrm/` | **3284** — 3098 pass, **186 fail** |
+| packages, `hrm/` | 142 green, 66 carrying at least one red, **0 build errors** |
 | test packages, `aa/` | **33** — sixteen cover one RTL module each from slice 7's register list, four the bit tables of slice 2, five from slice 4, one from slice 3, one from slice 5, five from slice 1 and one the scroll range of slice 6 |
 | assertions, `aa/` | **184** — 179 pass, **5 fail**, 0 build errors |
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors**. Two of the four carry findings of their own -- NM-AA-004 and NM-AA-005 -- and two corroborate findings already raised against the Hardware Reference Manual: BEAMCON0's sync-polarity bits reach NM-HRM-032 and DSKBYTR's constant fields reach NM-HRM-041 |
 | AA findings | **5** — the second oracle is the 1991 AA chip-set specification. Two of its five findings are reds of this RTL and the other three are filed against the printed page. Two further red packages corroborate findings already raised against the Hardware Reference Manual rather than adding keys of their own. Its suite is no longer small: **33 packages, 184 graded assertions**. **All seven slices are read and classified**, 6744 records in all: 6492 across slices 1 to 5 and 7, and 252 in slice 6, whose pair converged on the fourth attempt at 14.6% divergence against a 25% halt. **All seven now carry an acceptance record**, slice 6's written on 23.09.2026 once its pair converged |
-| registered findings | **70** — 65 against the Hardware Reference Manual and 5 against the AA specification, counted in registers of their own. **47 ask you to decide whether the RTL should change** — 64 open, 6 withdrawn; of the open ones 55 rest on a graded red, 5 are source observations, 3 on a graded green with an inverse control, and one is filed against the printed page with no test yet |
+| registered findings | **70** — 65 against the Hardware Reference Manual and 5 against the AA specification, counted in registers of their own. **47 ask you to decide whether the RTL should change** — 63 open, 7 withdrawn; of the open ones 54 rest on a graded red, 5 are source observations, 3 on a graded green with an inverse control, and one is filed against the printed page with no test yet |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **20** — chapters 1 to 8, appendix F, appendices D and E as one record, appendices H and J as one, appendix K, and seven against the second oracle: `aa-s7` and `aa-s7-rest`, the two halves of the AA specification's address-ordered register list, and `aa-s1` to `aa-s6`, its alphabetical stretches and its display modes — the first, then BEAMCON0 and the blitter's control words, the beam-position words, collision/colour/copper/display-window/DMACON, the controller-port bit tables, and the title page with the new Lisa display modes |
 
 **All 241 packages now report both a verdict and an assertion count**, so the
 `hrm/` rows above describe the same population. `./run_all.sh` walks both trees
-and prints a line for each: `tests: 141 passed, 67 failed, 0 build errors` for
-`hrm/`, `tests: 22 passed, 2 failed, 0 build errors` for `aa/`.
+and prints a line for each: `tests: 142 passed, 66 failed, 0 build errors` for
+`hrm/`, `tests: 29 passed, 4 failed, 0 build errors` for `aa/`.
 
 That was not true until 19.09.2026. Nine packages printed only a package-level
 pass or fail, in wordings no tool read — `Checked 22 assertions; passed=22
@@ -148,14 +148,17 @@ Agnus — and `agnus_audiodma.v` is the case that settles it, because the module
 has no chipset input at all, so there is nothing there to gate on even in
 principle. No chapter could have raised that question alone.
 
-**Six findings were withdrawn** and their entries kept, because the reasoning
-that withdrew them is the result. Four withdrew for one reason: the assertion had
-read a permission or a silence in the manual as a requirement. The sixth,
-NM-HRM-029, is a different shape and worth the minute it takes to read — its
+**Seven findings were withdrawn** and their entries kept, because the reasoning
+that withdrew them is the result. Five withdrew for one reason: the assertion had
+read a permission or a silence in the manual as a requirement — the latest,
+[NM-HRM-036](docs/findings/NM-HRM-036.md), graded one sentence of p.223 while the
+same page, seven lines up, allows part of the RAM to respond. NM-HRM-012 read its
+page backwards. The seventh, NM-HRM-029, is a different shape and worth the
+minute it takes to read — its
 assertion tested *"dmasen is true only when LENFIN=1"* by searching for a case
 where both were true and failing when none existed. Absence satisfies "only
 when". A one-way implication had been tested as a biconditional, which is the
-same error as the other four in the direction nobody was watching for.
+same error as the other five in the direction nobody was watching for.
 
 ## Where to go next
 

@@ -28,10 +28,10 @@ page carries says something about it:
 | field | on | what its absence means |
 |---|---|---|
 | **Verdict of the four** | 65 of 70 | the other implementations were not consulted, or the finding is not about behaviour they share |
-| **Report to** | 63 of 70 | nothing is being asked of anyone upstream — usually a withdrawn finding |
-| **Assertions** | 38 of 70 | the finding has no graded assertions of its own; the `Test` row still names the package |
+| **Report to** | 62 of 70 | nothing is being asked of anyone upstream — usually a withdrawn finding |
+| **Assertions** | 37 of 70 | the finding has no graded assertions of its own; the `Test` row still names the package |
 | **See also** | 12 | no sibling finding bears on it |
-| **Error class** | 5 | it is not one of the recurring shapes |
+| **Error class** | 6 | it is not one of the recurring shapes |
 | **Boundary** | 2 | no edge case was isolated |
 | **Provenance**, **Origin** | 1 each | one-offs, kept because the page needed them |
 
@@ -164,6 +164,28 @@ the repository the fix belongs in. A page should be usable as the body of an
 issue with no editing beyond deleting this paragraph's worth of context.
 
 Nothing is filed anywhere without the maintainer of this repository saying so.
+
+## Second documents
+
+The manual is the oracle. Commodore's other documents are not, but they can say
+whether the manual's sentence is Commodore's settled statement or an outlier. A
+finding page that one of them speaks to has a section *What other Commodore
+documents say*.
+
+| kind | documents | counted as |
+|---|---|---|
+| the oracle's own earlier edition | *Amiga Hardware Manual*, 1985, and its October 1985 errata | one voice: the text the 3rd edition grew from, not an independent witness |
+| Commodore specifications | A500/A2000 Gary specification; Denise specification 252126-01 (ECS) | one each |
+| Commodore-Amiga patents | US 4,777,621; US 4,874,164 and 5,103,499; US 4,829,473; US 4,780,844 | one each, except 4,874,164 and 5,103,499, which carry one specification and count once |
+| Commodore articles | *AmigaMail* vol. 1 | one each |
+| silicon | 6502.org's dissection of Paula 8364R7; techtravels' analysis of Paula's floppy controller | witnesses, like the emulators: third-party reverse engineering of one chip revision, not a statement of Commodore's intent |
+
+Quotations are taken from each PDF's text layer, OCR errors and line-end hyphens
+included, and every one is checked against the page it names by
+`hrm-testpipeline/tools/verify_second_documents.py --pages`. The documents
+themselves are in neither repository. Three were not read, having no text layer
+— the A500/A2000 technical reference, the 8371 Agnus specification and the 6526
+CIA specification — which is a gap, not a silence.
 
 ## Withdrawn findings are kept, and here is why
 

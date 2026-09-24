@@ -73,6 +73,33 @@ survives on purpose rather than by omission. NanoMig is not alone, and the
 printed "no request" is the outlier among the implementations that have been
 read.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+
+  > "When writing the interrupt flag register, if a register Bit selected with D0..D14 is high, the register Bit is set or cleared according to D15."
+  <!-- corpus: paula-8364r7-dissection/4_4_txt.txt -->
+
+  The 8364R7's interrupt flag register has a bit 14: 'Note, that for Bit 2, Bit 4, and Bit 14 of the interrupt flag register the "interrupt set inputs" are tied to GND.' No hardware source, like SOFT and COPER, but the write path sets any of D0..D14, so bit 14 is a request bit a write can set, as in NanoMig. Readback through INTREQR is not stated in the note.
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 232 — agrees with the manual:
+
+  > "Master interrupt (enable only , no request)"
+  <!-- corpus: hw-manual-1985/p232.txt -->
+
+  The 1985 appendix A carries the 3rd edition's parenthesis, and chapter 7 (p192) states it outright: 'NOTE: This bit is used for enable/disable only. It creates no interrupt request.'
+
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; techtravels, *Inside Paula's Floppy Controller*, part I.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change

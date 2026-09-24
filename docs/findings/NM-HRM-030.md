@@ -71,6 +71,33 @@ counted three times. What it does say is that nobody has ported a different
 partitioning to either maintained line either — there is no patch anywhere to
 point at.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+
+  > "Note, that the CPU can't read the DMACON register."
+  <!-- corpus: paula-8364r7-dissection/6_6_txt.txt -->
+
+  Section 6ab is Paula's own DMACON copy (bits 0-4 and 9, gating its DMA requests); on the 8364R7 it has no read path, so this Paula does not answer a read of $002: NanoMig's partitioning, against the P in the appendix's chip column. ADKCON, by contrast: 'The CPU can read the ADKCON register.'
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 235 — agrees with the manual:
+
+  > "DMACONR *002 R A P DMA control (and blitter status) read"
+  <!-- corpus: hw-manual-1985/p235.txt -->
+
+  Appendix B of 1985 gives DMACONR the chip column A P, and appendix A (p231) has '002 RAP': Paula answers the read, as the 3rd edition says. Denise, which the 3rd edition adds (A D P), is not listed here.
+
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; techtravels, *Inside Paula's Floppy Controller*, part I.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change

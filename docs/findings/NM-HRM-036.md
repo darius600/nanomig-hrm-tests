@@ -2,40 +2,43 @@
 
 | | |
 |---|---|
-| **Lifecycle** | open |
-| **Filed against** | the printed page |
-| **Evidence** | a graded red |
-| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. See the first section. |
-| **Module** | `gary.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/gary.v#L159-L162) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L172-L175) |
-| **Report to** | **nobody.** Three of the four implementations do the same thing |
-| **Test** | [`hrm/ch7-reset-overlay`](../../hrm/ch7-reset-overlay) |
+| **Lifecycle** | withdrawn |
+| **Filed against** | — |
+| **Evidence** | none |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The page that was quoted allows what NanoMig does. |
+| **Module** | `gary.v` |
+| **Test** | [`hrm/ch7-reset-overlay`](../../hrm/ch7-reset-overlay) measures the bank sweep and declines to grade it |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
-| **Assertions** | `RESET-ALL-MEMORY-DISAPPEARS-SWEEP` — red. `OVERLAY-ROM-AT-000000` is green in the same package: the overlay works, the question is how far it reaches |
+| **Error class** | **a sentence graded without the paragraph that qualifies it** |
 | **Verdict of the four** | **3–1**: vAmiga, Denise and Copperline each replace only the ROM's own 512K; only WinUAE makes "all memory" literally true |
 
 ---
 
-## This is a manual defect, not an RTL defect
+## Why it was withdrawn
 
-The test is red because the manual is this project's oracle, and that is the
-correct outcome of the process. But **the finding to carry forward is that
-p.223's "all memory" is loose**, not that NanoMig is wrong.
-
-A 512K Kickstart overlaid at address zero covers 512K. What happens to chip RAM
-above that is not a consequence the sentence can decide, and three of the four
-independent implementations read it the way NanoMig does.
-
-Everything below is evidence for that reading.
-
----
-
-## What the HRM says
-
-**Printed p. 223**, on the state after a 68000 `RESET` instruction:
+The assertion graded one sentence of printed p. 223, on the 68000 `RESET`
+instruction:
 
 > "All memory and AUTOCONFIG(TM) cards disappear"
 
-Read as a universal, no chip-memory address may respond while the overlay is up.
+and required every chip-memory bank to vanish while the overlay is active.
+NanoMig keeps banks 1-3 mapped, so it was red, and this page called the sentence
+a manual defect.
+
+**The same page qualifies it, seven lines earlier**, for power-on and external
+reset:
+
+> "On some Amiga models, portions of the RAM still respond. On other models, no
+> RAM responds. Software must assume that memory is not available."
+
+and the `RESET` paragraph itself says the instruction "works much like external
+reset or power on" and ends "Since RAM may not be available, special care is
+needed". The page does not require all memory to vanish; it requires software
+not to rely on it. Banks 1-3 responding is one of the two behaviours it names.
+The manual was not loose -- the sentence was read without its paragraph.
+
+The measurement stands and is still printed by the package, as a `MEASURED:`
+line; the claim is declined on a `record()` line quoting the qualification.
 
 ---
 
@@ -85,52 +88,32 @@ low 2 MB and so makes the printed sentence literally true. MiSTer and TC64
 have no ROM-mirroring question to answer here at all — what they carry is the
 same unconditional decode of banks 1-3 that is this finding's actual subject.
 
----
-
-## Suggested change
-
-**None is recommended.** Gating banks 1-3 on `ovl` to satisfy p.223 would put
-NanoMig alone against three of four implementations, and would make chip RAM
-above 512K unreachable during boot on a machine that has it.
-
-If a reader wants to see what the change would be:
-
-```verilog
-		sel_chip[1] = cpu_address_in[23:19]==5'b0000_1 && (!ovl || cpu_hlt);
-```
-
-and the same for banks 2 and 3. It is written here so that the option is legible,
-not because it should be taken.
 
 ---
 
-## What holds the finding up
+## What other Commodore documents say
 
-- **The control passes on the same measurement basis**: bank 0 *does* read
-  `sel_chip == 0` under the overlay, through the same probe, so the harness can
-  observe a bank disappearing.
-- **The sweep is one address per bank**, not a single sample, so the result is
-  not an artefact of one address.
-- **A second assertion in the same package**, `OVERLAY-ROM-AT-000000`, is green:
-  the ROM does answer at `$000000` while the overlay is up. The overlay is
-  working; the question is only how far it reaches.
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
 
-### One limit, stated
+- **Commodore, *A500/A2000 Gary Specification***, PDF page 1 — agrees with the manual:
 
-The test forces `ovl=1` rather than executing a 68000 `RESET` instruction. So it
-measures the post-reset **mapping** and not reset propagation; a composed test
-that does both is not written. The independent validation raised this, and it
-does not change the measured result.
+  > "000000-1FFFFF NROM if OVR asserted"
+  <!-- corpus: gary-spec/p001.txt -->
+
+  The address-decode table gives BANK0 as 000000-1FFFFF and, in this row, decodes the ROM select over that whole 2 MB range: all four 512K chip-memory banks, not just the first. On that reading chip RAM at $080000-$1FFFFF answers as ROM while the overlay is up. That is WinUAE's shape, and it makes p.223's 'All memory and AUTOCONFIG(TM) cards disappear' literally true for memory on an A500/A2000. Two caveats. (1) The row says 'OVR', and elsewhere in this spec that is the override pin (NOVR); the ROME conditions require '3. OVR is de-asserted', so read as override the row would contradict itself. It only makes sense as the overlay input OVL ('Overlay (ROM to address 0)'), which is an inference from the text, not something it states. The A500/A2000 technical reference, which holds the decoder equations and would settle this, has no text layer and is not in the corpus. (2) ROME is qualified by a read (PRW=1), and the spec does not say whether NRAME is suppressed there, so it is silent on what a write to $080000 does while the overlay is up.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
 
 ---
 
-## For the specialists
+## Why this entry is kept
 
-The reading this evidence supports: "all memory disappears" is describing the
-programmer's experience on a 512K machine — the only configuration that existed
-when the sentence was written — and it does not survive being read as a universal
-on a 2 MB machine.
-
-If that is right, the entry to carry forward is a note against p.223 rather than
-a change to anyone's RTL. Settling it needs someone who can say what a real Gary
-does at `$080000` with `/OVL` asserted.
+It was a documented red for ten days, first against the RTL and then against the
+printed page, and three of four implementations agreeing with NanoMig made the
+"manual defect" reading look settled. A reader of p. 223 who stops at the RESET
+paragraph will find the same red again; this page is where they find the
+paragraph above it.

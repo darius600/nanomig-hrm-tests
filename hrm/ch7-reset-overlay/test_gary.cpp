@@ -80,15 +80,17 @@
 //     fixture minimig, out of scope, not in this package's claims file).
 //   PROP-C / OVERLAY-RAM-UNAVAILABLE-WRITE-000000 (2): sol:7-reset.c5,
 //     opus:7-reset.c2 (twin).
-//   PROP-D / RESET-ALL-MEMORY-DISAPPEARS-SWEEP (1): sol:7-reset.c13.
-//     AUTOCONFIG half recorded, not asserted -- AUTOCONFIG-HALF-NOT-ASSERTED.
+//   PROP-D / RESET-ALL-MEMORY-DISAPPEARS-SWEEP (1): sol:7-reset.c13 --
+//     DECLINED, both halves, on record() lines: the memory half because
+//     p.223 itself allows portions of RAM to respond (NM-HRM-036, withdrawn),
+//     the AUTOCONFIG half as AUTOCONFIG-HALF-NOT-ASSERTED. The bank sweep is
+//     still measured and printed.
 //   PROP-E / RESET-ROM-REAPPEARS-000000 (2): sol:7-reset.c14,
 //     opus:7-reset.c10 (twin, ROM-half only -- its memory-disappear half is
-//     credited to PROP-D via sol:7-reset.c13 instead, per this record's own
-//     `split` field and SPECIFICATION.md's own note).
+//     the sentence PROP-D declines).
 //
-//   2+2+2+1+2 = 9. All 9 ids named above; every one is cited inside a
-//   checks.expect() string.
+//   2+2+2+1+2 = 9. All 9 ids named above; eight are cited inside a
+//   checks.expect() string and sol:7-reset.c13 on record() lines.
 //
 // CONTROL / PRECONDITION: OVL-CONTROL-BASELINE-000000 carries no claim id.
 //   It measures the same address ($000000) the same way (sel_chip[0],
@@ -99,15 +101,11 @@
 //   transition presupposes (memory present, ROM absent, prior to the
 //   overlay) -- see BUILD-BRIEF.md's precondition rule.
 //
-// RESULTS (WSL/Verilator 5.052 build, default flags, 2026-09-13): 6 passed,
-//   1 failed. The one FAIL is RESET-ALL-MEMORY-DISAPPEARS-SWEEP (PROP-D) --
-//   sel_chip($080000)=2, sel_chip($100000)=4, sel_chip($180000)=8 with
-//   ovl=1, reproducing STEP3-NOTES-ch7-reset-overlay.md's flagged
-//   measurement independently on this build: banks 1-3 stay mapped, so "All
-//   memory ... disappear" does not hold in this RTL. All other 6 assertions
-//   PASS. `make`'s own exit status is nonzero because the test binary
-//   returns checks.failed!=0 -- a valid, finished outcome per
-//   BUILD-BRIEF.md's oracle rule, not a build failure.
+// RESULTS: 6 passed, 0 failed. The bank sweep prints sel_chip($080000)=2,
+//   sel_chip($100000)=4, sel_chip($180000)=8 with ovl=1: banks 1-3 stay
+//   mapped. It was graded as a red until p.223's own qualification --
+//   "On some Amiga models, portions of the RAM still respond" -- was read
+//   next to the sentence it had graded; see PROP-D.
 //
 // MUTATION LOG. Each rebuilt with `verilator ... -CFLAGS -D<FLAG>=1 ...
 //   gary.v test_gary.cpp`, run, then reverted -- see RESULTS above for the
@@ -134,19 +132,6 @@
 //   MUT_D2 forces ovl=0 -> RESET-ALL-MEMORY-DISAPPEARS-CONTROL-BANK0-ONLY
 //   FAIL (all four bank-0 points read sel_chip=1 instead of 0); every other
 //   assertion unchanged.
-// MUTATION RESET-ALL-MEMORY-DISAPPEARS-SWEEP stimulus green: this
-//   assertion's baseline is already RED (a genuine finding -- banks 1-3
-//   stay mapped under ovl=1, see RESULTS above and its own MEASURED note),
-//   so the shape that proves it is live runs the other way from every
-//   other record in this file: MUT_D1 confines all four sample points to
-//   bank 0 (the one bank the manual's claim actually holds for in this
-//   RTL) instead of one per bank -> RESET-ALL-MEMORY-DISAPPEARS-SWEEP PASS
-//   (sel_chip=0 at all four); every other assertion unchanged. FAIL->PASS
-//   here is correct, not backwards: it proves the baseline red comes from
-//   banks 1-3's own address decode (gary.v:160-162 carry no `ovl` term),
-//   not from a stuck harness -- the always-green RESET-ALL-MEMORY-
-//   DISAPPEARS-CONTROL-BANK0-ONLY above makes the same point by
-//   construction, on the same measurement basis.
 // MUTATION RESET-ROM-REAPPEARS-000000 stimulus red: MUT_E1 forces ovl=0 ->
 //   RESET-ROM-REAPPEARS-000000 FAIL (sel_kick=0, sel_chip=1); every other
 //   assertion unchanged.
@@ -404,73 +389,52 @@ int main() {
         }
         checks.expect(all_ok,
             "RESET-ALL-MEMORY-DISAPPEARS-CONTROL-BANK0-ONLY: [control, no "
-            "claim id] four points sampled only inside bank 0 (the one bank "
-            "the manual's claim actually holds for in this RTL), overlay "
-            "active, measured the same way (sel_chip) as the sweep below --"
-            " all four read gone. Same measurement basis as the suspect "
-            "sweep, expected to pass: rules out a harness that could never "
-            "show sel_chip disappearing at all. measured" + detail + ".");
+            "claim id] four points sampled only inside bank 0, the bank the "
+            "ROM image replaces, overlay active, measured the same way "
+            "(sel_chip) as the bank sweep below -- all four read gone. "
+            "Rules out a harness that could never show sel_chip "
+            "disappearing at all. measured" + detail + ".");
     }
 
     // ---------------- RESET-ALL-MEMORY-DISAPPEARS-SWEEP ----------------
+    // Measured, not asserted. This was an assertion that every chip bank
+    // disappears under the overlay, and it was red; it asked more than the
+    // page does. p.223 qualifies its own sentence seven lines earlier: "On
+    // some Amiga models, portions of the RAM still respond. On other models,
+    // no RAM responds. Software must assume that memory is not available."
+    // -- and the RESET paragraph says it "works much like external reset".
+    // Withdrawn as NM-HRM-036.
     {
         Harness h;
         h.top->cpu_rd = 1;
         h.top->ovl = 1;  // the state gary presents once RESET has set the overlay -- gary itself holds no reset/overlay state (see OVERLAY-SOURCE-NOT-IN-SCOPE), so ovl=1 is that state's entire footprint at this fixture.
-        bool all_ok = true;
         std::string detail;
-#if MUT_D1
-        // MUTATION: all four sample points moved inside bank 0 (the one
-        // bank the manual's claim actually holds for), instead of one
-        // address per 512KB chip-memory bank. The same comparison then
-        // reads green, showing the FAIL below (without this mutation) is a
-        // property of banks 1-3's own address decode, not of this check.
-        const uint32_t addrs[4] = {0x000000, 0x010000, 0x020000, 0x030000};
-#else
         const uint32_t addrs[4] = {0x000000, 0x080000, 0x100000, 0x180000};
-#endif
-        uint32_t measured_bits[4];
         for (int i = 0; i < 4; ++i) {
             h.top->cpu_address_in = waddr(addrs[i]);
             h.top->eval();
-            measured_bits[i] = h.top->sel_chip;
-            bool gone = h.top->sel_chip == 0;
-            all_ok = all_ok && gone;
             detail += " " + hexaddr(addrs[i]) + ":sel_chip=" +
                 hexbits(h.top->sel_chip);
         }
-        checks.expect(all_ok,
-            "RESET-ALL-MEMORY-DISAPPEARS-SWEEP: one address per 512KB "
-            "chip-memory bank (banks 0-3), overlay active (ovl=1), must show "
-            "sel_chip==0 at every bank for 'All memory ... disappear' to "
-            "hold, measured the same way (sel_chip) as the control above. "
-            "'All memory and AUTOCONFIG(TM) cards disappear' (p.223, "
-            "sol:7-reset.c13; AUTOCONFIG half excluded, see record below). "
-            "measured" + detail + ".");
-#if !MUT_D1
         checks.note(
-            "RESET-ALL-MEMORY-DISAPPEARS-SWEEP breakdown, measured directly "
-            "on this build (reproducing STEP3-NOTES-ch7-reset-overlay.md's "
-            "own flagged measurement independently, not adopting it): "
-            "sel_chip($080000)=" + hexbits(measured_bits[1]) +
-            ", sel_chip($100000)=" + hexbits(measured_bits[2]) +
-            ", sel_chip($180000)=" + hexbits(measured_bits[3]) +
-            " with ovl=1 -- banks 1-3 remain mapped because gary.v:160-162's "
-            "sel_chip[1]/[2]/[3] terms carry no `ovl` at all; only "
-            "gary.v:159's sel_chip[0] is gated by !ovl. Only bank 0 "
-            "($000000-$07FFFF) actually disappears under the overlay in "
-            "this RTL. The sweep above is graded on the manual's literal "
-            "word 'all' and reads red for exactly this reason -- a finding "
-            "about gary.v, not an error in the check (BUILD-BRIEF.md's "
-            "oracle rule; see this assertion's own MUTATION, which reads "
-            "green when confined to bank 0 alone, and the control above, "
-            "which does the same by construction).");
-#endif
+            "RESET-ALL-MEMORY-DISAPPEARS-SWEEP: one address per 512KB "
+            "chip-memory bank, overlay active (ovl=1), measured the same way "
+            "(sel_chip) as the control above:" + detail + ".");
     }
     checks.record(
+        "RESET-ALL-MEMORY-DISAPPEARS-SWEEP: 'All memory and AUTOCONFIG(TM) "
+        "cards disappear' (p.223, sol:7-reset.c13) is not asserted. The same "
+        "page qualifies it: 'On some Amiga models, portions of the RAM still "
+        "respond. On other models, no RAM responds. Software must assume that "
+        "memory is not available.' -- and the RESET instruction 'works much "
+        "like external reset'. Requiring every bank to vanish asks more than "
+        "the page does; the page requires only that software not rely on "
+        "RAM, which banks 1-3 responding does not contradict. Reason: the "
+        "oracle permits both.");
+    checks.record(
         "AUTOCONFIG-HALF-NOT-ASSERTED: the AUTOCONFIG half of 'All memory "
-        "and AUTOCONFIG(TM) cards disappear' (p.223, half graded: sol:7-reset.c13) is not "
-        "asserted. gary.v's full port list (read directly for this package, "
+        "and AUTOCONFIG(TM) cards disappear' (p.223, sol:7-reset.c13) is not "
+        "asserted either. gary.v's full port list (read directly for this package, "
         "gary.v:49-108) has no AUTOCONFIG configuration or shut-up port of "
         "any kind. Reason: absent.");
 
@@ -497,9 +461,8 @@ int main() {
             "'the RESET instruction' -- both are simply ovl=1 at this "
             "fixture): '...the ROM image appears at location $00000000.' "
             "(p.223, sol:7-reset.c14, opus:7-reset.c10 -- ROM-half only; "
-            "the memory-disappear half of opus:7-reset.c10's bundled quote "
-            "is credited to RESET-ALL-MEMORY-DISAPPEARS-SWEEP (PROP-D) "
-            "instead, per that record's own split field). Its 'before' "
+            "the memory-disappear half of the bundled quote is the sentence "
+            "PROP-D declines, because p.223 qualifies it). Its 'before' "
             "precondition -- ROM does NOT answer here without the overlay "
             "-- is asserted separately at OVL-CONTROL-BASELINE-000000. "
             "measured sel_kick=" + std::to_string((int)h.top->sel_kick) +

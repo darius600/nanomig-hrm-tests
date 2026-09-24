@@ -84,6 +84,40 @@ for this finding.
 MiSTer's nor TC64's `agnus_audiodma` has an `ecs` port, same as NanoMig — the
 absence is inherited, not a second and third omission.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — agrees with the manual:
+
+  > "the audio DMA control logic 53 (four channels), the bitplane DMA control logic 57 (six channels), the disk and refresh DMA control logic 61 (2 channels), and the Blitter DMA control logic 65 (four channels). For each of the 25 DMA channels, an 18 bit RAM address pointer is stored in a designated pointer register 138"
+  <!-- corpus: patent-us5103499-copper/p016.txt -->
+
+  The four audio channels' pointers are 18-bit registers, and p017 says the audio backup (location) value is reloaded into them through the '18 bit adder 137' — a 512K reach, the manual's OCS AUDxLCH width. NanoMig's audio address_out reaches word address 0xFFFFF (20 bits). Pre-ECS; the location registers' own width is not stated.
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 137 — agrees with the manual:
+
+  > "The location registers AUDxLCH and AUDxLCL contain the high 3 bits and low 15 bits respectively of the starting address of the audio data."
+  <!-- corpus: hw-manual-1985/p137.txt -->
+
+  Chapter 5 gives AUDxLCH three high bits, as the 3rd edition's pp. 139/145 do; Appendix A p227 calls the pair 'the 18 bit starting address' and p136 requires the data to lie in 'the low 512 Kbytes'. Pre-ECS predecessor of the oracle.
+
+- **US patent 4,777,621, Commodore-Amiga**, PDF page 8 — agrees with the manual:
+
+  > "The first custom chip 61 generates a 18 bit dynamic RAM address multiplexed onto a nine bit bus 75"
+  <!-- corpus: patent-us4777621-system/p008.txt -->
+
+  The DMA channels' address registers sit on chip 61 (p008), and DMA transfer to the audio generator from memory is one of the bus's listed transfers (p007); the DRAM address chip 61 drives is 18 bits, the manual's OCS reach. Bus-level: it does not name AUDxLCH. The finding's measurement is address_out, the same observable. Filed 1985, before ECS.
+
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## This is the third engine, and that is the point

@@ -73,14 +73,13 @@
 //   at 0". Neither premise survives a direct check of the suite as it
 //   stands today. hrm/ch7-reset-overlay/test_gary.cpp -- an ACCEPTED
 //   package, also top=gary, RESULTS dated 2026-09-13 (before this brief) --
-//   drives ovl=1 directly into this exact fixture and grades it with five
-//   checks.expect() assertions: OVL-CONTROL-BASELINE-000000,
-//   OVERLAY-ROM-AT-000000, OVERLAY-RAM-UNAVAILABLE-WRITE-000000,
-//   RESET-ALL-MEMORY-DISAPPEARS-SWEEP and RESET-ROM-REAPPEARS-000000. Four
-//   are GREEN; RESET-ALL-MEMORY-DISAPPEARS-SWEEP is RED, already reported as
-//   its own finding (sel_chip[1..3] carry no `ovl` term at all -- gary.v:
-//   160-162 -- so Chip banks 1-3 stay mapped while the overlay is active,
-//   even though p.223's prose says "All memory ... disappear"). None of this
+//   drives ovl=1 directly into this exact fixture and grades it with four
+//   checks.expect() assertions, all GREEN: OVL-CONTROL-BASELINE-000000,
+//   OVERLAY-ROM-AT-000000, OVERLAY-RAM-UNAVAILABLE-WRITE-000000 and
+//   RESET-ROM-REAPPEARS-000000. It measures Chip banks 1-3 staying mapped
+//   under the overlay (sel_chip[1..3] carry no `ovl` term -- gary.v:
+//   160-162) and declines to grade that, because p.223 itself says
+//   "portions of the RAM still respond" on some models. None of this
 //   package's own 60 claims quotes p.337's PA0/OVL row (grep-checked against
 //   this file's own claims dump), so there is nothing of MY OWN to grade
 //   here -- see the OVL-CANDIDATE record() block for the measurement and the
@@ -1047,15 +1046,14 @@ int main() {
             "false as the suite stands. hrm/ch7-reset-overlay/test_gary.cpp "
             "-- an ACCEPTED package, ALSO top=gary, RESULTS dated "
             "2026-09-13, before this brief -- drives ovl=1 directly into "
-            "this exact fixture and grades it with five checks.expect() "
+            "this exact fixture and grades it with four checks.expect() "
             "assertions: OVL-CONTROL-BASELINE-000000, "
-            "OVERLAY-ROM-AT-000000, OVERLAY-RAM-UNAVAILABLE-WRITE-000000, "
-            "RESET-ALL-MEMORY-DISAPPEARS-SWEEP and RESET-ROM-REAPPEARS-"
-            "000000. Four are GREEN; RESET-ALL-MEMORY-DISAPPEARS-SWEEP is "
-            "RED, already reported as its own finding there (sel_chip[1..3] "
-            "carry no `ovl` term at all, gary.v:160-162, so Chip banks 1-3 "
-            "stay mapped while the overlay is active, even though p.223's "
-            "prose says 'All memory ... disappear'). So the candidate this "
+            "OVERLAY-ROM-AT-000000, OVERLAY-RAM-UNAVAILABLE-WRITE-000000 "
+            "and RESET-ROM-REAPPEARS-000000, all GREEN. It also measures "
+            "banks 1-3 staying mapped while the overlay is active "
+            "(sel_chip[1..3] carry no `ovl` term, gary.v:160-162) and "
+            "declines to grade it: p.223 itself says 'portions of the RAM "
+            "still respond' on some models. So the candidate this "
             "brief flagged for this package is NOT an open gap: it was "
             "already closed, at this exact fixture, before this brief was "
             "written. Measured independently above (chip=" + hexbits(chip_ovl0) +

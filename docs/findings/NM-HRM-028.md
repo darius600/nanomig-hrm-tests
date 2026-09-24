@@ -83,6 +83,40 @@ either — the missing interface is a property of `paula.v` and
 `paula_audio_channel.v` in all three trees, so the two descendant rows repeat
 NanoMig's absence rather than adding a fifth and sixth vote against the manual.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
+
+  > "nevertheless when a channel (including channel 3) is enabled as a modulation source, the DAC of the channel which is the source is disabled/muted."
+  <!-- corpus: paula-8364r7-dissection/7_7_txt.txt -->
+
+  On the 8364R7 die a channel enabled as a modulation source has its DAC muted, channel 3 included although its modulation outputs are open traces: the manual's attached channel that stops producing sound. 6_6 adds 'ADKCON controls the rest of the Paula functionality: audio channel modulation,'. NanoMig stores the bits and silences nothing.
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 149 — agrees with the manual:
+
+  > "If you set either the volume or period attach bits for a channel, that channel's audio output will be disabled"
+  <!-- corpus: hw-manual-1985/p149.txt -->
+
+  The 1985 edition has the 3rd edition's pp. 149-151 text: an attach bit disables the channel's own output and its data modulates the next higher channel (p148), with Table 5-5 (p150) and appendix A (p227) giving ADKCON bits 7-0 as the period and volume attach bits.
+
+- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 27 — agrees with the manual:
+
+  > "Attach volume. Send data to volume latch of next channel instead of to D-A converter."
+  <!-- corpus: hw-manual-errata-1985/p027.txt -->
+
+  The state-machine signal list defines AUDxAV (p027) and AUDxAP (p028) as sending the channel's data to the next channel's volume or period latch instead of to the D-A converter: the modulator is silenced and its words go to the neighbour, the behaviour the finding tests for.
+
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change

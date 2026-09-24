@@ -119,7 +119,7 @@ does not describe it. See the scope note in the top-level README.
 | `NM-HRM-033` LOLDIS needs VARBEAMEN too | `agnus_beamcounter.v` | **yes** — `(loldis && varbeamen)` is byte-identical (`:295-297` here, `:282-284` there) | **no** |
 | `NM-HRM-034` VPOSR bit 12 carries `ntsc` in OCS | `agnus_beamcounter.v` | **yes** — the read mux differs only in a signal name (`vpos` here, `vpos_rb` there); the bit assignment is identical | **no** |
 | `NM-HRM-035` any CIA-A write clears the overlay | `minimig.v` | **yes** — the two lines are byte-identical (`:861-862` here, `:933-934` there), in a file that otherwise differs in 789 lines | **no** |
-| `NM-HRM-036` chip banks 1-3 stay mapped under the overlay | `gary.v` | **yes** — the four `sel_chip` lines are byte-identical (`:159-162` here, `:172-175` there), in a file that otherwise differs in 71 lines | **no** |
+| `NM-HRM-036` chip banks 1-3 stay mapped under the overlay (withdrawn: p.223 allows it) | `gary.v` | **yes** — the four `sel_chip` lines are byte-identical (`:159-162` here, `:172-175` there), in a file that otherwise differs in 71 lines | **no** |
 
 Chapter 7's five were each checked line by line rather than file by file,
 because `minimig.v` and `gary.v` differ substantially between the two trees

@@ -49,7 +49,7 @@ printed page require what this asserts?".
 Findings are numbered **`NM-HRM-nnn`** -- `NM` for the implementation under test,
 `HRM` for the *Amiga Hardware Reference Manual* that judges it. The key names the
 **pair that disagrees**, and it does so deliberately, because it must not
-prejudge which side is wrong: on six of the findings below, two independent
+prejudge which side is wrong: on several of the findings below, independent
 emulators do what NanoMig does and the printed sentence is the outlier.
 
 A number is issued once. It is never reused, never reordered, and a withdrawn
@@ -175,7 +175,6 @@ it for what an unresolvable case looks like, not for something to do.
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | open · RTL · **red** | `hrm/ch7-beamcon0-ecs-control-bits` | **all four** use LOLDIS alone; NanoMig also requires VARBEAMEN |
 | [NM-HRM-034](findings/NM-HRM-034.md) | VPOSR reports the video standard in bit 12 of an OCS configuration | open · RTL · **red**, contested | `hrm/ch7-beam-position-word-layout` | **2-2**: WinUAE and Denise do the same; and no implementation leaves bits 14-1 unused |
 | [NM-HRM-035](findings/NM-HRM-035.md) | any write to CIA-A clears the kickstart overlay, not only a write to the OVL bit | open · RTL · **red** | `hrm/ch7-overlay-source` | **all four** follow the OVL bit's value; three name the only registers that may move it |
-| [NM-HRM-036](findings/NM-HRM-036.md) | chip memory banks 1-3 stay reachable while the overlay is active | open · page · **red** | `hrm/ch7-reset-overlay` | **3-1**: vAmiga, Denise and Copperline replace only the ROM's 512K, as NanoMig does |
 | [NM-HRM-037](findings/NM-HRM-037.md) | the right controller port's X pot input does not exist | open · RTL · **red** | `hrm/ch8-pot-counter-start-and-charge` and three siblings | **none of the four** reproduces it — all give the right X counter what the other three get |
 | [NM-HRM-038](findings/NM-HRM-038.md) | the pot counters are not held in reset after POTGO | open · RTL · **red** | `hrm/ch8-pot-counter-start-and-charge` | **all four hold, all four put PAL at 8**; they split 2-2 on NTSC, which reads the page's own "seven or eight" as a video-standard split |
 | [NM-HRM-039](findings/NM-HRM-039.md) | Table 8-2's wrapped rows compute against 255 on a 256-state counter | open · page · **red** | `hrm/ch8-mouse-counter-wraparound` | **unanimous**: 256 states per axis, and not one uses 255 as a modulus |
@@ -227,6 +226,7 @@ again.
 | [NM-HRM-013](findings/NM-HRM-013.md) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn** | `hrm/ch3-sprite-registers` | bit 4 is real from ECS on, bit 3 only on AGA -- the split this was withdrawn into |
 | [NM-HRM-018](findings/NM-HRM-018.md) | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** | `hrm/ch3-bplcon0-display-modes` | neither Denise nor Copperline gives bit 4 an effect on ECS |
 | [NM-HRM-029](findings/NM-HRM-029.md) | Figure 5-8's `dmasen` note does not hold outside its own exception | **withdrawn** | `hrm/ch5-audio-channel-state` | not comparable — `dmasen` appears at no pin |
+| [NM-HRM-036](findings/NM-HRM-036.md) | chip memory banks 1-3 stay reachable while the overlay is active | **withdrawn** | `hrm/ch7-reset-overlay` | **3-1**: vAmiga, Denise and Copperline replace only the ROM's 512K, as NanoMig does; p.223 itself allows part of the RAM to respond |
 
 
 Chapter 1 was read and accepted on 17.09.2026 and contributes NM-HRM-060

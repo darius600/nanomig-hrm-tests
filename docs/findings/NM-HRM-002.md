@@ -10,7 +10,7 @@
 | **Report to** | **nowhere.** The manual contradicts itself and the implementations split evenly — see *Suggested change* |
 | **Test** | [`hrm/ch5-audio-stereo-routing`](../../hrm/ch5-audio-stereo-routing), [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
-| **Verdict of the four** | **two against two** — nothing outside the manual settles it |
+| **Verdict of the four** | **two against two**; outside the emulators, the manual's own 1985 edition and the 8364R7 silicon both side with the pin list — see *What other Commodore documents say* |
 
 ---
 
@@ -63,6 +63,33 @@ deliberately. MiSTer and TC64 land on the pin-list side too, but only because
 count for nothing in the 2–2 split, which is unbroken among the four independent
 readings.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+
+  > "Channel 0 and 3 feed the AUDL output pad, //analog "audio left" output signal channel 1 and 2 feed the AUDR output pad, //analog "audio right" output signal"
+  <!-- corpus: paula-8364r7-dissection/7_7_txt.txt -->
+
+  On the 8364R7 die channels 0 and 3 drive the pad the author labels AUDL (audio left) and 1 and 2 drive AUDR: NanoMig's ldatasum/rdatasum split and the appendix pin list, not 3rd-ed. p. 137. The note speaks of chip pads; which jack each pad reaches is board wiring it does not cover.
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 136 — **agrees with NanoMig**:
+
+  > "Channels 0 and 3 are connected to the left side stereo out- put jack. Channels 1 and 2 are connected to the right side output jack."
+  <!-- corpus: hw-manual-1985/p136.txt -->
+
+  Section 5.2.1 of the 1985 edition, the sentence that is p. 137 in the 3rd edition, has the sides the other way round from the 3rd edition: channels 0 and 3 left, 1 and 2 right, which is what NanoMig does. Its Paula pin list (p240) names the pins AUDA LEFT AUDIO and AUDB RIGHT AUDIO without channel numbers, so this edition does not contradict itself; the chapter-5 sentence changed sides between 1985 and the 3rd edition.
+
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change
@@ -86,4 +113,7 @@ An earlier version of this entry said two emulators settle it against the RTL.
 
 The red stands — the manual contradicts itself and an implementation has to pick
 a side, so a conformance test against either sentence must fail against the other
-— but nothing outside the manual settles which side is right.
+— and the four emulators do not settle which side is right. Two sources outside
+them do take a side, the pin list's: the manual's own 1985 edition, whose chapter
+5 puts channels 0 and 3 on the left, and the 8364R7 silicon, which feeds them to
+the AUDL pad. Both are under *What other Commodore documents say*.

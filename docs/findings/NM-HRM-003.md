@@ -55,6 +55,47 @@ is unconditional.
 **One of the four independent implementations implements what the manual
 describes.**
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — agrees with the manual:
+
+  > "Copper 47 (one channel), the audio DMA control logic 53 (four channels), the bitplane DMA control logic 57 (six channels), the disk and refresh DMA control logic 61 (2 channels), and the Blitter DMA control logic 65 (four channels). For each of the 25 DMA channels, an 18 bit RAM address pointer is stored in a designated pointer register 138"
+  <!-- corpus: patent-us5103499-copper/p016.txt -->
+
+  The Copper's pointer (its program counter) is one of 25 pointer registers of 18 bits: 15 low plus 3 high word-address bits, 512K bytes (same page: the RAM address bus addresses 'one of 256K words (512K bytes)'). That is the manual's OCS width; NanoMig's pointer is 20 bits (15+5). The patent states the pointer register's width, not COP1LCH's directly; p017 says the location (backup) values are substituted into these pointers through the '18 bit adder 137'. It predates ECS, so it speaks only to the OCS half of the manual's two-width statement. The '19 bits wide' on p023 is about bitplane pointers and reads as the byte-address width of the same 512K range, not a contradiction.
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 25 — agrees with the manual:
+
+  > "COPILCH High 3 bits of first Copper list address"
+  <!-- corpus: hw-manual-1985/p025.txt -->
+
+  The 1985 manual gives COP1LCH/COP2LCH three high bits ('COPILCH' is OCR for COP1LCH); Appendix A p231 calls COP1LC/COP2LC '18 bit pointer registers', and p019 says the Copper 'can only retrieve its instructions from the lowest 512K'. This is the manual's OCS statement, before any ECS clause existed; it is the oracle's own predecessor, not an independent witness.
+
+- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 14 — agrees with the manual:
+
+  > "COP1LCH EQU $080 ;COPPER LOCATION REGISTER 1 (HIGH 3 BITS)"
+  <!-- corpus: hw-manual-errata-1985/p014.txt -->
+
+  An equate comment in the errata's example program gives COP1LCH three high bits — the OCS width the manual states. It is a comment in example code, not a register definition, and the errata changes nothing about pointer widths and says nothing of ECS.
+
+- **US patent 4,777,621, Commodore-Amiga**, PDF page 8 — agrees with the manual:
+
+  > "The first custom chip 61 generates a 18 bit dynamic RAM address multiplexed onto a nine bit bus 75"
+  <!-- corpus: patent-us4777621-system/p008.txt -->
+
+  Chip 61 houses the co-processor 45 and the address registers for the DMA channels (p008), and the DRAM address it generates is 18 bits — a 512K-byte reach, the manual's OCS width. This is a bus-level statement about the address the chip drives, not about COP1LCH's latch; it is the kind of narrowing the finding credits to WinUAE. Weakest of the agreeing rows; filed 1985, before ECS.
+
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Which assertion carries the finding

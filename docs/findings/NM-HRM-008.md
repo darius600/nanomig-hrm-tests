@@ -101,6 +101,40 @@ MiSTer and TC64 do too, byte-identical to NanoMig — as descendants that says
 nothing about the manual, only that the behaviour has never diverged anywhere in
 the ancestry.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 7 — agrees with the manual:
+
+  > "NOTE: Playfield 1 is all odd numbered enabled bit planes."
+  <!-- corpus: denise-spec-252126/p007.txt -->
+
+  Commodore's 1988 ECS Denise specification repeats the note the manual prints in appendix A, and its CLXDAT table lists bits 01-04 as 'Playfield 1 to Sprite 0 (or 1)' and so on with no mode condition; nothing in the 14 pages makes the PF1 bit depend on PF2 or on DPF. Table-level only, like appendix A: the chapter-7 sentence about single vs dual playfield is not in this document.
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 187 — agrees with the manual:
+
+  > "Notice that in this table, collision detection does not change when you select either single or dual playfield mode. Collision detection depends only on the actual bits present in the odd- numbered or even-numbered bit-planes."
+  <!-- corpus: hw-manual-1985/p187.txt -->
+
+  The 1985 first edition already prints, in chapter 7, the proposition the finding quotes from the 3rd edition's p. 214; its CLXDAT table on the same page names the bits 'Odd bit-planes to Sprite 0 (or 1)' etc., and its appendix A (p230) carries 'NOTE: Playfield 1 is all odd numbered enabled bit planes.' The independence claim goes back to 1985 in both places.
+
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 29 — agrees with the manual:
+
+  > "Fifteen bits in the collision storage register are utilized to indicate whether any of several types of overlaps has occurred: e.g., one sprite to another sprite, even bitplanes to odd bitplanes, even bitplanes to a certain sprite, or odd bitplanes to a certain sprite."
+  <!-- corpus: patent-us4874164-agnus-denise/p029.txt -->
+
+  Describes the odd-bitplanes-to-sprite bit as registering an overlap of the odd bitplanes with a sprite, with no playfield-mode condition; p021 likewise defines objects as 'any non-zero bits used to display any of eight sprites or two playfields'. Weak: this is the table-level statement again and says nothing about single vs dual playfield; the FIG. 12 gate diagram (p011) is illegible in the text layer.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change

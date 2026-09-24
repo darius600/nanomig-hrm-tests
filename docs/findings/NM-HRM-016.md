@@ -85,6 +85,20 @@ rather than an omission. MiSTer and TC64 are mode-blind in the identical way
 NanoMig is, which is not a third reading — a descendant with no `shres` port
 inherited that absence, it did not arrive at it independently.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+None of them speaks to this point.
+Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga; US patent 5,103,499, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change

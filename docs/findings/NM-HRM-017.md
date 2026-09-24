@@ -83,6 +83,20 @@ The stimulus was changed to `0x0C39` and the finding **restored as test-backed**
 | **MiSTer** | [`rtl/denise_colortable.v:32-35`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v#L32-L35) | descendant — same as [NM-HRM-016](NM-HRM-016.md): no `shres` port on `rtl/denise_colortable.v:32-35`; `rtl/denise.v:339` has the identical `l_bpu > 2` depth-force line, with an added `window_ena &&` term NanoMig's line lacks |
 | **TC64** | [`rtl/minimig/denise_colortable.v:32-35`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_colortable.v#L32-L35) | descendant — (`rtl/minimig/denise_colortable.v:32-35`) both keep the interface mode-blind, and their 11-line diffs from NanoMig (a RAM primitive's word width) are identical to each other and unrelated to colour mode. `denise.v`: **MiSTer** `rtl/denise.v:339` — `assign bpldata[3] = window_ena && (l_bpu > 2) ? bpldata_out[3] : 1'b0;`, the same `l_bpu > 2` depth force as NanoMig's `:369`, with an added `window_ena &&` term NanoMig's line lacks. **TC64** `rtl/minimig/denise.v:354` — the identical line, `window_ena` term included. The depth truncation this finding rests on is unchanged in both lines; the `window_ena` difference is a separate, narrower divergence this finding does not measure |
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+None of them speaks to this point.
+Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga; US patent 5,103,499, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change

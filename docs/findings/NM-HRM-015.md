@@ -59,6 +59,26 @@ signal, unlike NanoMig and MiSTer, but wires it nowhere, so at the pins it still
 behaves like the three that do nothing at all — live is not the same as
 connected.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 5 — agrees with the manual:
+
+  > "BRDNTRAN= "border area" is non-transparent(ZD pin is low when border is displayed."
+  <!-- corpus: denise-spec-252126/p005.txt -->
+
+  Defines BPLCON3 bit 4 as a live control next to BRDRBLNK at bit 5, and the same page says 'ENBPLCN3= When set enables all the new features in BPLCON3;'. Sides with the manual that the bit does something. The effect it names is on the ZD (background indicator) pin, i.e. genlock keying, not on the RGB colour of the border.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga; US patent 5,103,499, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change
