@@ -97,9 +97,9 @@
 // Every mutation below was actually applied (edit -> rebuild -> run ->
 // revert -> rebuild-clean) under WSL/Verilator and the PASS/FAIL lines
 // quoted are what the run printed, not predictions. Clean baseline:
-// "6 passed, 0 failed (named, cited assertions)" plus the unchanged
-// "PASS: 4197376 HRM-derived blitter barrel shifter cases" line from the
-// kept exhaustive sweep.
+// "6 passed, 0 failed (named, cited assertions)" plus the kept exhaustive
+// sweep's count, "MEASURED: 4197376 HRM-derived blitter barrel shifter
+// cases".
 //
 // Every named assertion's PASS/FAIL line is a fixed label (Checks::expect
 // prints only the condition and the static message, not a computed actual
@@ -114,11 +114,11 @@
 //   shift=15 from that section's 8x8x16x2 cross product (128 fewer cases)
 //   while `expected_checks` (4197376) was left untouched -> the RANGE line
 //   printed FAIL instead of PASS, and the run additionally printed
-//   "FAIL: exhaustive sweep completed 4197248 cases, expected 4197376"
+//   "MEASURED: exhaustive sweep completed 4197248 cases, expected 4197376"
 //   (a real, dynamically computed diagnostic - this one line is printed
 //   verbatim from the run). Every other named assertion still PASS.
 //   Totalled "5 passed, 1 failed". Reverted; rebuild-clean reproduced
-//   "PASS: 4197376 ..." and "6 passed, 0 failed" again.
+//   "MEASURED: 4197376 ..." and "6 passed, 0 failed" again.
 // MUTATION RIGHT-ASCENDING stimulus red: both `dut.desc = 0` lines in the
 //   RIGHT-ASCENDING block were changed to `dut.desc = 1` (asking for a
 //   left/descending shift instead) while the expected constants 0x0800 and
@@ -167,7 +167,7 @@
 //   Totalled "5 passed, 1 failed". Reverted.
 //
 // After every mutation above the file was reverted and rebuilt clean; the
-// final clean run reproduces "PASS: 4197376 HRM-derived blitter barrel
+// final clean run reproduces "MEASURED: 4197376 HRM-derived blitter barrel
 // shifter cases" and "6 passed, 0 failed (named, cited assertions)".
 
 #include <Vagnus_blitter_barrelshifter.h>
@@ -584,14 +584,15 @@ int main(int argc, char** argv) {
 
     dut.final();
 
-    // Gated on the real count (not printed unconditionally) so a shrunk
-    // sweep - the exact thing RANGE's own mutation drives - cannot leave a
-    // stale "PASS: 4197376 ..." line on screen next to a FAIL.
+    // The sweep's count, reported as a measurement: RANGE above is its graded
+    // form, and a second PASS:/FAIL: line for the same condition would count
+    // it twice. Gated on the real count so a shrunk sweep - the exact thing
+    // RANGE's own mutation drives - cannot leave the full figure on screen.
     if (checks == expected_checks) {
         std::puts(HRM_STRINGIFY(
-            PASS: 4197376 HRM-derived blitter barrel shifter cases));
+            MEASURED: 4197376 HRM-derived blitter barrel shifter cases));
     } else {
-        std::printf("FAIL: exhaustive sweep completed %zu cases, expected %zu\n",
+        std::printf("MEASURED: exhaustive sweep completed %zu cases, expected %zu\n",
                     checks, expected_checks);
     }
     std::printf("%d passed, %d failed (named, cited assertions)\n",

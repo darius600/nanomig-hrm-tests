@@ -202,6 +202,7 @@ public:
     void expect(bool condition, const std::string& label) {
         if (condition) {
             std::cout << "PASS: " << label << "\n";
+            ++passes;
         } else {
             std::cerr << "FAIL: " << label << "\n";
             ++failures;
@@ -210,9 +211,11 @@ public:
 
     int result() const { return failures == 0 ? 0 : 1; }
     int count() const { return failures; }
+    int passed() const { return passes; }
 
 private:
     int failures = 0;
+    int passes = 0;
 };
 
 } // namespace
@@ -271,5 +274,12 @@ int main(int argc, char** argv) {
         std::cerr << "FPGA-055 Agnus top-level DMACON checks failed: "
                   << checks.count() << " assertion(s).\n";
     }
+
+    // This package builds two fixtures (this one and agnus_copper_control),
+    // and the coverage ledger sums every program's own terminal summary, so
+    // each binary declares its own -- see test_agnus_copper_control.cpp's
+    // matching line.
+    std::cout << checks.passed() << " passed, " << checks.count()
+              << " failed.\n";
     return checks.result();
 }

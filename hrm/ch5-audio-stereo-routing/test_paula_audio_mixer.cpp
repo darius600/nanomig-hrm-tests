@@ -18,6 +18,8 @@ struct Stereo {
 };
 
 // Counters for the summary line the runner and the coverage ledger read.
+// They count only the four graded HRM routing checks below ("HRM PASS" /
+// "HRM FAIL"); the arithmetic regression further down is not one of them.
 // They do not gate anything: the exit code below still comes from the two
 // booleans, so NM-HRM-002's four routing reds keep this package red.
 static int g_total = 0, g_fail = 0;
@@ -107,17 +109,19 @@ int main(int argc, char **argv) {
     check_hrm("channel 3 routes right [NM-HRM-002, expected red]", 0, 0, 0, 47, 0, 47);
 
     // Secondary RTL regression: preserve the implementation's signed arithmetic
-    // independently of whether its left/right labels satisfy the HRM.
+    // independently of whether its left/right labels satisfy the HRM. This is
+    // not an HRM assertion -- the file header calls it "a separate NanoMig
+    // mixer-arithmetic regression" -- so it prints as MEASURED:, which no
+    // reader grades, and stays out of g_total/g_fail: a summary counts only
+    // the graded lines the package printed.
     bool arithmetic_pass = true;
     const Stereo arithmetic = mix(100, 50, 10, -50, 63, 32, 63, 32);
-    ++g_total;
     if (arithmetic.left != 4700 || arithmetic.right != 2230) {
-        std::cerr << "RTL REGRESSION FAIL: expected current mixer sums L=4700 R=2230, got L="
-                  << arithmetic.left << " R=" << arithmetic.right << "\n";
+        std::cerr << "MEASURED: RTL regression FAIL: expected current mixer sums L=4700 R=2230, "
+                     "got L=" << arithmetic.left << " R=" << arithmetic.right << "\n";
         arithmetic_pass = false;
-        ++g_fail;
     } else {
-        std::cout << "RTL REGRESSION PASS: signed scaling and summation vector.\n";
+        std::cout << "MEASURED: RTL regression PASS: signed scaling and summation vector.\n";
     }
 
     std::cout << "HRM routing=" << (hrm_pass ? "PASS" : "FAIL")

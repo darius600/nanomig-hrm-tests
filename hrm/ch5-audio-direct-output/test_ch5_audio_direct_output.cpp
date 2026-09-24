@@ -627,12 +627,16 @@ int main(int argc, char** argv) {
         bool everDmareq = false, everDmas = false;
         for (auto& s : H.history) { if (s.dmareq) everDmareq = true; if (s.dmas) everDmas = true; }
         bool g_a = sawBothBytes && !everDmareq && !everDmas;
+        std::ostringstream ga_word1Hex, ga_hiHex, ga_loHex;
+        ga_word1Hex << std::hex << baseP.word1;
+        ga_hiHex << std::hex << (int)w1hi;
+        ga_loHex << std::hex << (int)w1lo;
         CHECK("5-p157.c10 5-direct.c1 (p157) \"It is possible to create sound by writing "
               "audio data one word at a time to the audio output addresses, instead of "
               "setting up a list of audio data in memory\": single write of 0x" +
-              [&]{std::ostringstream o; o<<std::hex<<baseP.word1; return o.str();}() +
-              " produced both bytes (0x" + [&]{std::ostringstream o;o<<std::hex<<(int)w1hi;return o.str();}() +
-              " then 0x" + [&]{std::ostringstream o;o<<std::hex<<(int)w1lo;return o.str();}() +
+              ga_word1Hex.str() +
+              " produced both bytes (0x" + ga_hiHex.str() +
+              " then 0x" + ga_loHex.str() +
               ") on sample=" + std::string(sawBothBytes?"yes":"no") +
               ", with dmareq ever asserted=" + std::string(everDmareq?"yes":"no") +
               " and dmas ever asserted=" + std::string(everDmas?"yes":"no") +
@@ -780,13 +784,16 @@ int main(int argc, char** argv) {
         uint8_t sampleAtFallback = (fbIdx != (size_t)-1) ? H.history[fbIdx].sample : 0xFF;
         uint8_t sampleLongAfter = H.dut->sample;
         bool held = (fbIdx != (size_t)-1) && (sampleAtFallback == sampleLongAfter);
+        std::ostringstream ge_fallbackHex, ge_longAfterHex;
+        ge_fallbackHex << std::hex << (int)sampleAtFallback;
+        ge_longAfterHex << std::hex << (int)sampleLongAfter;
         CHECK("5-p157.c15 5-direct.c6 (p157) \"The last value remains as an output of the "
               "digital-to-analog converter\": sample at idle-fallback (tick " +
               std::to_string(base.fallback_tick) + ") = 0x" +
-              [&]{std::ostringstream o;o<<std::hex<<(int)sampleAtFallback;return o.str();}() +
+              ge_fallbackHex.str() +
               "; sample " + std::to_string(baseP.post_fallback_hold_ticks) +
               " further ticks later = 0x" +
-              [&]{std::ostringstream o;o<<std::hex<<(int)sampleLongAfter;return o.str();}() +
+              ge_longAfterHex.str() +
               " (held constant)", held);
 
         TimelineParams mp = baseP; mp.write_during_hold = true;

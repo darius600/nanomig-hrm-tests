@@ -1129,8 +1129,9 @@ int main(int argc, char** argv) {
         CHECK("5-p164.c8 5-sm.c10 (p164) \"In the 010 state the upper byte is output\": sample==0x33 "
               "observed while state==010 (word1's hi byte) = " + std::string(sawHiIn010?"yes":"no"), sawHiIn010);
         bool g5 = (sampleIn011 == 0x44); // manual: 011 outputs the LOWER byte (0x44 for word1)
+        std::ostringstream g5_sampleHex; g5_sampleHex << std::hex << (int)sampleIn011;
         CHECK("5-p164.c9 5-sm.c11 (p164) \"in the 011 state the lower byte is output\": sample "
-              "observed in state 011 = 0x" + [&]{std::ostringstream o; o<<std::hex<<(int)sampleIn011; return o.str();}() +
+              "observed in state 011 = 0x" + g5_sampleHex.str() +
               " (manual wants 0x44, the lower byte; audio_state read via --public-flat-rw -- an "
               "internal encoding, not a port -- code 011/3 is this RTL's one-shot discard state, "
               "not its steady low-byte state, so this is a source observation, NM-HRM-026, not a "

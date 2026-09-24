@@ -287,7 +287,8 @@ int main(int argc, char** argv) {
         h.program_location(1, A);
         h.strobe(1);
         h.dma_allowed = true;
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
+        const bool t1_color00_once = h.run_until([&]() { return h.move_count(COLOR00) == 1; });
+        checks.expect(t1_color00_once,
                       "T1 COPJMP1 executes the COP1LC signature list "
                       "[claims: COP2-using-the-copper-registers.c1, COP2-using-the-copper-registers.c2, COP2-location-registers.c1, "
                       "COP2-location-registers.c14, COP2-location-registers.c17, COP2-location-registers.c18, "
@@ -317,7 +318,8 @@ int main(int argc, char** argv) {
         h.program_location(2, B);
         h.strobe(2);
         h.dma_allowed = true;
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR01) == 1; }),
+        const bool t2_color01_once = h.run_until([&]() { return h.move_count(COLOR01) == 1; });
+        checks.expect(t2_color01_once,
                       "T2 COPJMP2 executes the COP2LC signature list "
                       "[claims: COP2-location-registers.c1, COP2-location-registers.c14, COP2-jump-strobe-address.c5, "
                       "COP2-jump-strobe-address.c7, COP2-location-registers.c17, COP2-location-registers.c18, COP2-jump-strobe-address.c1, "
@@ -326,7 +328,8 @@ int main(int argc, char** argv) {
         checks.expect(h.move_count(COLOR00) == 0,
                       "T2 COPJMP2 does not select COP1LC [claims: ch2-appa-copjmp.c8, ch2-appb-table.c41, ch2-jump-address-strobes.c5, ch2-jump-address-strobes.c7, ch2-location-registers.c1]");
         h.strobe(1);
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
+        const bool t2_color00_once = h.run_until([&]() { return h.move_count(COLOR00) == 1; });
+        checks.expect(t2_color00_once,
                       "T2 COPJMP1 subsequently selects COP1LC");
     }
 
@@ -337,11 +340,13 @@ int main(int argc, char** argv) {
         h.program_location(1, A);
         h.strobe(1);
         h.dma_allowed = true;
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
+        const bool t3_color00_once = h.run_until([&]() { return h.move_count(COLOR00) == 1; });
+        checks.expect(t3_color00_once,
                       "T3 list A begins before COP1LC is updated "
                       "[claims: COP2-copper-loops-and-branches-and-comparison-enable.c1]");
         h.program_location(1, C);
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR01) == 1; }),
+        const bool t3_color01_once = h.run_until([&]() { return h.move_count(COLOR01) == 1; });
+        checks.expect(t3_color01_once,
                       "T3 current list remains sequential after a location-only update "
                       "[claims: COP2-location-registers.c20]");
         checks.expect(h.move_count(COLOR02) == 0,
@@ -388,13 +393,15 @@ int main(int argc, char** argv) {
         h.program_location(1, A);
         h.strobe(1);
         h.dma_allowed = true;
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
+        const bool t6_color00_once = h.run_until([&]() { return h.move_count(COLOR00) == 1; });
+        checks.expect(t6_color00_once,
                       "T6 signature before the terminal WAIT executes");
         h.run_cycles(5000);
         checks.expect(h.move_count(COLOR01) == 0,
                       "T6 instruction after $FFFF,$FFFE is not executed in the same field [claims: ch2-appb-legend.c8, ch2-copper-loops-and-branches.c3, ch2-location-registers.c19, ch2-location-registers.c20, ch2-putting-together-a-copper-instruction-list.c2, ch2-starting-the-copper-after-reset.c5, ch2-starting-the-copper-after-reset.c6, ch2-starting-the-copper-after-reset.c7, ch2-stopping-the-copper.c5, ch2-the-wait-instruction.c18]");
         h.pulse_sof();
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 2; }),
+        const bool t6_color00_twice = h.run_until([&]() { return h.move_count(COLOR00) == 2; });
+        checks.expect(t6_color00_twice,
                       "T6 automatic field restart executes COP1LC again "
                       "[claims: COP2-starting-the-copper-after-reset.c3, COP2-stopping-the-copper.c5, COP2-location-registers.c24, "
                       "COP2-cop-location-pointers.c5, COP2-cop-location-pointers.c12, appB-note.c10]");
@@ -408,10 +415,12 @@ int main(int argc, char** argv) {
         h.program_location(2, B);
         h.strobe(2);
         h.dma_allowed = true;
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR01) == 1; }),
+        const bool t7_color01_once = h.run_until([&]() { return h.move_count(COLOR01) == 1; });
+        checks.expect(t7_color01_once,
                       "T7 COPJMP2 starts list B before vertical blank");
         h.pulse_sof();
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
+        const bool t7_color00_once = h.run_until([&]() { return h.move_count(COLOR00) == 1; });
+        checks.expect(t7_color00_once,
                       "T7 automatic field restart selects COP1LC list A "
                       "[claims: COP2-location-registers.c24, "
                       "COP2-cop-location-pointers.c5, COP2-cop-location-pointers.c12]");
@@ -426,14 +435,16 @@ int main(int argc, char** argv) {
         h.program_location(1, A);
         h.strobe(1);
         h.dma_allowed = true;
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR00) == 1; }),
+        const bool t8_color00_once = h.run_until([&]() { return h.move_count(COLOR00) == 1; });
+        checks.expect(t8_color00_once,
                       "T8 original COP1LC list executes before the update");
         h.program_location(1, C);
         h.run_cycles(1200);
         checks.expect(h.move_count(COLOR02) == 0,
                       "T8 updated COP1LC does not redirect the current field without a strobe [claims: ch2-copper-loops-and-branches.c2, ch2-using-the-copper-in-interlaced-mode.c23]");
         h.pulse_sof();
-        checks.expect(h.run_until([&]() { return h.move_count(COLOR02) == 1; }),
+        const bool t8_color02_once = h.run_until([&]() { return h.move_count(COLOR02) == 1; });
+        checks.expect(t8_color02_once,
                       "T8 next automatic field restart uses the updated COP1LC "
                       "[claims: COP2-location-registers.c24]");
     }
@@ -454,17 +465,18 @@ int main(int argc, char** argv) {
         "here (T6-T8, via pulse_sof()); COP2LC's own reload for 'initialization' as "
         "opposed to an explicit jump is never exercised) [claims: ch2-appa-copins.c141]");
 
-    // The line the coverage ledger and hrm/run_all.sh read. Without it this
-    // package reports "(no assertion summary)" and every assertion in it is
-    // missing from the published totals, whether it passed or failed.
-    std::cout << checks.passed() << " passed, " << checks.count()
-              << " failed.\n";
-
     if (checks.count() == 0) {
         std::cout << "FPGA-055 Copper register/control module checks passed.\n";
     } else {
         std::cerr << "FPGA-055 Copper register/control module checks failed: "
                   << checks.count() << " assertion(s).\n";
     }
+
+    // The line the coverage ledger and hrm/run_all.sh read, printed last: the
+    // ledger requires each program's final line to be its own summary. This
+    // package runs two programs and each declares its own; run_all.sh sums
+    // them. Without it this package reports "(no assertion summary)".
+    std::cout << checks.passed() << " passed, " << checks.count()
+              << " failed.\n";
     return checks.result();
 }
