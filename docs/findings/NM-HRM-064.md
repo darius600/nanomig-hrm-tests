@@ -78,6 +78,11 @@ An inverse control in the same package writes register **48** instead, and the
 board does go silent. So the fixture can observe silencing; there is nothing to
 observe after 4C.
 
+The package builds `cpu_wrapper` with TG68K. The same test source built with
+fx68k, [`hrm/appK-autoconfig-base-address-fx68k`](../../hrm/appK-autoconfig-base-address-fx68k),
+gives the same six reds and the same control, so the finding does not rest on
+the CPU core or on the Verilator-only TG68K instance.
+
 ## What the others say
 
 | | 0x4C handled | |

@@ -105,6 +105,11 @@ An inverse control in the same package writes register 48 with `cfg_z3` clear,
 and configuration **does** complete. So the fixture can observe configuration;
 under Zorro III there is nothing to observe after a write to 48.
 
+The package builds `cpu_wrapper` with TG68K. The same test source built with
+fx68k, [`hrm/appK-autoconfig-base-address-fx68k`](../../hrm/appK-autoconfig-base-address-fx68k),
+gives the same two reds and the same control, so the finding does not rest on
+the CPU core or on the Verilator-only TG68K instance.
+
 ## What the others say
 
 | | register 48 in the `$E8` block, Zorro III board | |
