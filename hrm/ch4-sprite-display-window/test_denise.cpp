@@ -20,6 +20,10 @@
 //   any claim it does not name. A green here means those assertions held on
 //   this fixture at the pinned revision -- not that the module is correct,
 //   and not that the chapter is covered.
+// Claim ids: ids such as `CH4-vpos.c6` and `CH4-hpos.c2` name one sentence of
+//   the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch4.json
+//   lists under `inventories`.
 //
 // BOUNDARY: every one of this package's 9 claim records carries the same
 //   evidence field (classify step, PACKAGE.md's own claims.jsonl): denise.v

@@ -12,6 +12,11 @@
 // Non-goals: this package does not test the Blitter's operation, its minterms,
 //   its fill logic, its line mode, or what the modulo is FOR. It grades where
 //   twelve registers are decoded.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-bltapth.c1` and `opus:AA-bltaptl.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7-rest.json lists under `inventories`.
 //
 // WHY THESE TWELVE. Of 236 registers the AA list gives an address for, 93 are
 //   also declared as an address in the RTL. agnus_blitter_adrgen holds twelve

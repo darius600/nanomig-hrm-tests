@@ -66,6 +66,13 @@
 //   physical word (DATA or DATB) is the more significant colour bit (see
 //   CLAIM SOURCE above and the NOTE below
 //   SPRITE-DATA-WORDS-COMBINE-TO-SELECT-COLOUR).
+// Claim ids: ids such as `CH4-p130.c1` and `CH4-tab46s.c1` name one sentence
+//   of the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch4.json
+//   lists under `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
 //
 // BOUNDARY: denise_sprites.v / denise_sprites_shifter.v, reached at
 //   $(NANOMIG)/src/minimig-aga/. Port list, register word-address map,

@@ -15,6 +15,11 @@
 //   the data-fetch sequence, the modulo added at end of line, the plane count --
 //   needs a beam running inside a display window, and this package presents bus
 //   cycles only.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-bpl1pth.c1` and `opus:AA-bpl1ptl.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7-rest.json lists under `inventories`.
 //
 // WHICH POINTER THE BOUNDARY SHOWS, AND WHY IT IS THE LAST ONE. The module
 //   writes the bank through the address on the bus and reads it through the

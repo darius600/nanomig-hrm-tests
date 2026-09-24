@@ -20,6 +20,10 @@
 //   module); the DMACON register's own bit decode (agnus_top's boundary -
 //   this module only consumes the resulting `dmaena` level, which IS in
 //   scope for claim 3-dma.c01 below).
+// Claim ids: ids such as `B-pointer.c1` and `A-bplptr.c8` name one sentence of
+//   the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch3.json
+//   lists under `inventories`.
 //
 // BOUNDARY (from the build brief, not yet from opening the file):
 //   nanomig/src/minimig-aga/agnus_bitplanedma.v:54 (BPLPTBASE_REG 9h0E0),

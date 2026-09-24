@@ -31,6 +31,10 @@
 //   port, so any such number would be invented, not observed - p.179's
 //   "completely free... no more time" claim and p.171's "extra word" claim
 //   are both treated here purely as word/DMA-cycle counts.
+// Claim ids: ids such as `ch6-shifts.c5` and `6-dma-channels.c10` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // PRIOR ART / RECONCILIATION (docs/blitter-prior-art.md and
 // work/2026-09-08_fpga-090_build_register.md, both read before writing this

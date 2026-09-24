@@ -14,6 +14,11 @@
 //   WAIT/SKIP comparison, its DMA priority, or the CDANG access ranges beyond
 //   the one bit that makes COPCON observable. It grades where eight registers
 //   are decoded and nothing else.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-cop1lch.c1` and `opus:AA-cop1lcl.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7-rest.json lists under `inventories`.
 //
 // WHY THESE EIGHT AND NOT THE OTHER EIGHTY-FIVE. Of the 236 registers the AA
 //   address list gives an address for, 93 are also declared as an address in

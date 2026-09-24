@@ -14,6 +14,11 @@
 // Non-goals: the interrupt lines themselves -- that an enabled request raises
 //   _int2 to _int6 is about ports this package does not sample -- and any
 //   comparison between the two registers' bit maps.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-intena.c1` and `sol:AA-intena.c1` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s1.json lists under `inventories`.
 //
 // WHY THIS IS A SECOND PACKAGE ON A MODULE THAT ALREADY HAS ONE.
 //   `aa/aa-interrupt-register-map` grades the same module from slice 7's

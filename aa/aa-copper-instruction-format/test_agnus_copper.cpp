@@ -13,6 +13,11 @@
 // Non-goals: this package does not test the Copper's DMA priority against the
 //   other channels, its cycle counts, the display it drives, or the data half
 //   of a MOVE.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-copins.c1` and `sol:AA-copins.c1` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s4.json lists under `inventories`.
 //
 // AND IT DOES NOT ASSERT THE CHIP-SET SPLIT IN THE DANGER RANGE. agnus_copper
 //   blocks a wider range on the older chip set -- `ir2[8:6]==3'b000 && !ecs`

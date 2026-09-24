@@ -15,6 +15,11 @@
 //   windows, interlace field alternation, light-pen capture, or the NTSC long
 //   line. It grades where seventeen registers are decoded and what two of them
 //   pack.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-hhposr.c1` and `opus:AA-hhposw.c1` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7-rest.json lists under `inventories`.
 //
 // SEVEN OF SEVENTEEN, AND THE OTHER TEN ARE NOT IN THIS PACKAGE'S LOT AT ALL.
 //   Graded here: VPOSR, VPOSW, VHPOSR, VHPOSW, BEAMCON0, HTOTAL, VTOTAL.

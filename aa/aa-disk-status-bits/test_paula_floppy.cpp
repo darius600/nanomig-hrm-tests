@@ -14,6 +14,11 @@
 //   means driving this module's SD-card side, which `hrm/ch8-dskbytr-status-
 //   register` already does -- the DMACON half of DMAON, which is not a port
 //   here, and everything about DSKDAT, DSKDATR and the FIFO.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-dskbytr.c9` and `opus:AA-dsklen.c6` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s1.json lists under `inventories`.
 //
 // THIS PACKAGE CORROBORATES NM-HRM-041 FROM A SECOND DOCUMENT. That finding
 //   was raised against the Hardware Reference Manual: DSKBYTR is a constant

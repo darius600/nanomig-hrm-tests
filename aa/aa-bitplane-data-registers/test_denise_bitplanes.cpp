@@ -13,6 +13,11 @@
 //   priority, the display window, sprites, fetch modes, or what appears on a
 //   screen. It grades which address feeds which plane, that the feed is
 //   serial, and that one register carries two scroll values.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-bpl2dat.c1` and `opus:AA-bpl3dat.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7.json lists under `inventories`.
 //
 // THIS BOUNDARY HAS NO READ PATH AT ALL. denise_bitplanes has no data_out
 //   port: everything it is told is observed on `bpldata[8:1]`, one bit per

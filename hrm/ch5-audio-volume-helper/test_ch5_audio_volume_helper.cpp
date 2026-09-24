@@ -24,6 +24,10 @@
 //   sample_okk, the PWM-gated second volume path on paula_audio_channel
 //   (BOUNDARIES.md item 0) - a different port of a different module,
 //   entirely outside paula_audio_volume's boundary.
+// Claim ids: ids such as `5-appA-p265.c40` and `A-audxdat.c3` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch5.json lists under `inventories`.
 // RTL read before this spec was written: paula_audio_volume.v (24 lines,
 //   read in full) and this chapter's BOUNDARIES.md/CANDIDATES.md, both of
 //   which already quote this module's lines verbatim - per BRIEF.md's own

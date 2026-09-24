@@ -15,6 +15,11 @@
 //   auto-increment, the restart-from-location behaviour beyond using it as the
 //   only route to read a location register back, or anything paula_audio does
 //   with the data.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `sol:AA-aud0dat.c3` and `sol:AA-aud1dat.c3` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7.json lists under `inventories`.
 //
 // WHY THIS BOUNDARY IS DIFFERENT FROM THE DISK ONE. agnus_diskdma declares
 //   DSKPTH and DSKPTL as named parameters. agnus_audiodma declares only the

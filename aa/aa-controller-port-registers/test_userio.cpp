@@ -13,6 +13,11 @@
 // Non-goals: this package does not test the quadrature decoding, the CD32 pad
 //   protocol, the scroll wheel, the analogue joystick comparison, or which pin
 //   carries which button. It grades where seven registers are decoded.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `sol:AA-joy0dat.c3` and `sol:AA-joy1dat.c3` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s5.json lists under `inventories`.
 //
 // EVERY ASSERTION HERE IS A PAIR OF ADDRESSES, because userio has no register
 //   it both writes and reads at one address. The two writable ones reach the

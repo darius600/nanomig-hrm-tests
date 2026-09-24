@@ -12,6 +12,11 @@
 // Non-goals: the receiver, the interrupts, the break bit, and SERDATR's own bit
 //   table, which is read in another slice and belongs to a package of its own.
 //   This grades three addresses and what a write to two of them does.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-serdatr.c1` and `sol:AA-serdatr.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s5.json lists under `inventories`.
 //
 // THE FIRST PACKAGE AT THIS MODULE. paula_uart is one of the modules
 //   lot_candidates.py names for the AA register list and had no package until

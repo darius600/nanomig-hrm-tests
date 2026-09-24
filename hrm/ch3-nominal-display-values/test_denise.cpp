@@ -24,6 +24,10 @@
 //   any claim it does not name. A green here means those assertions held on
 //   this fixture at the pinned revision -- not that the module is correct,
 //   and not that the chapter is covered.
+// Claim ids: ids such as `3-diw.c36` and `3-diw.c38` name one sentence of the
+//   manual in this chapter's reading. They carry no reader prefix, and they
+//   resolve in the claim files that hrm-testpipeline/acceptance/ch3.json lists
+//   under `inventories`.
 //
 // BOUNDARY: fixture `denise`, top module only (one Verilator build,
 //   sources denise.v + denise_bitplanes.v + denise_bitplane_shifter.v +

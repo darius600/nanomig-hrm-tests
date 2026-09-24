@@ -13,6 +13,11 @@
 // Non-goals: this package does not test the minterm truth table, the fill
 //   modes, line mode, the barrel shifters' shift amounts, descending blits, or
 //   the DMA slot handshake beyond granting it so a blit can finish.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `sol:AA-bltcon0.c3` and `sol:AA-bltadat.c3` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7.json lists under `inventories`.
 //
 // WHICH ADDRESS STARTS A BLIT IS ITSELF A CLAIM, AND THE MODULE MAKES IT
 //   TESTABLE IN ONE LINE:

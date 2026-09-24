@@ -12,6 +12,17 @@
 //   correct for real Agnus silicon - this protects observed behaviour, it
 //   does not endorse it. Any claim that the single-word fetch violates the
 //   HRM.
+// Claim ids: ids such as `COP2-control-register.c3` and
+//   `COP2-location-registers.c24` name one sentence of the manual in this
+//   chapter's reading. They carry no reader prefix, and they resolve in the
+//   claim files that hrm-testpipeline/acceptance/ch2.json lists under
+//   `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
+//   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
+//   the frozen specification the suite's first version was written against
+//   (docs/legacy-names.md); no claim file carries them.
 //
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was
 // inspected during FPGA-063 and FPGA-065 before this specification was written.

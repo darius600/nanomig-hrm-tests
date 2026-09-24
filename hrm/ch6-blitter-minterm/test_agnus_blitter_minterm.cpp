@@ -15,6 +15,10 @@
 //   places values on ain/bin/cin before this module sees them
 //   (ch6-fig613.f13 below) - none of that is inside this leaf module's port
 //   list (lf, ain, bin, cin, out - agnus_blitter_minterm.v:7-14).
+// Claim ids: ids such as `6-function-generator.c2` and `ch6-funcgen.c1` name
+//   one sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // EXTENDS PRIOR ART (hrm/ch6-blitter-minterm, unchanged in shape since its
 // original commit; see docs/blitter-prior-art.md). What was already here and

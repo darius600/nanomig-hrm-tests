@@ -11,6 +11,11 @@
 //   prints no page numbers of its own; the corpus numbering is the PDF's.
 // Non-goals: this package does not test the sprite pipeline, the bitplane
 //   shifters, dual-playfield priority, or what the collisions mean on screen.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-clxdat.c1` and `sol:AA-clxdat.c1` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s4.json lists under `inventories`.
 //
 // READ AND CLEAR IS THE ENTRY'S OWN PHRASE AND IT IS TWO CLAIMS. The address
 //   answers with the accumulated collisions, and the register goes to zero

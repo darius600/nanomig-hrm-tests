@@ -64,6 +64,10 @@
 //   reached this package's claims file to begin with -- confirmed by direct
 //   grep of the 303-record file, not assumed; there is nothing to decline
 //   for that reason among this package's own ids.
+// Claim ids: ids such as `CH4-p103.c1` and `CH4-p103.c2` name one sentence of
+//   the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch4.json
+//   lists under `inventories`.
 //
 // BOUNDARY: denise_sprites.v / denise_sprites_shifter.v, reached at
 //   $(NANOMIG)/src/minimig-aga/. Port list, the word-address register map

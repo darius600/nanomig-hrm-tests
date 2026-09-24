@@ -23,6 +23,13 @@
 //   (PKG-BLT-LINE); the fill logic's own carry-chain arithmetic
 //   (PKG-BLT-FILL) - FILL-MASK-STAYS-ACTIVE below only shows the A mask is
 //   consulted during fill mode, not that fill's carry math is right.
+// Claim ids: ids such as `6-dma-channels.c11` and `6-shifts-and-masks.c23`
+//   name one sentence of the manual in this chapter's reading. They carry no
+//   reader prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
 //
 // LINE-MODE MASK CLAIMS ARE NOT ASSERTED HERE (reported, not silently
 // dropped): 6-appa-registers.c13, ch6-line.c24, ch6-linesum.c2,

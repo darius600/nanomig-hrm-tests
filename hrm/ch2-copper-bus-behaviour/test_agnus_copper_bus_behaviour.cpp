@@ -12,6 +12,17 @@
 //   edge - sof is an input. Cycle-time figures (FPGA-067). Any claim that
 //   the observed resume position is HRM-correct; the manual does not
 //   describe it.
+// Claim ids: ids such as `COP2-about-the-copper.c13` and
+//   `COP2-about-the-copper.c14` name one sentence of the manual in this
+//   chapter's reading. They carry no reader prefix, and they resolve in the
+//   claim files that hrm-testpipeline/acceptance/ch2.json lists under
+//   `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
+//   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
+//   the frozen specification the suite's first version was written against
+//   (docs/legacy-names.md); no claim file carries them.
 //
 // Boundary limit, stated so no reader over-reads the result: at this module,
 // "Copper DMA disabled via COPEN" and "the slot was taken by a higher-priority

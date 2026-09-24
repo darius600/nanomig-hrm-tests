@@ -31,6 +31,10 @@
 //   ch3-ddf-fetch-window, ch3-bitplane-pointers-and-modulo) - not repeated
 //   here except where THIS package's own claim ids happen to land on the
 //   same ground from a different printed citation.
+// Claim ids: ids such as `3-mem.c02` and `3-memory.c1` name one sentence of
+//   the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch3.json
+//   lists under `inventories`.
 //
 // SIBLING OVERLAP CHECK (done before writing a single assertion): grepped
 //   both hrm/ch3-ddf-fetch-window/test_agnus_bitplanedma.cpp and

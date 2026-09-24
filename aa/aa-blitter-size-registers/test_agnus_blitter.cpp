@@ -12,6 +12,11 @@
 // Non-goals: this package does not test line mode, the fill modes, the
 //   minterm, the barrel shifters, descending blits, or memory. It counts
 //   destination writes and reads one status pin.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-bltsize.c1` and `opus:AA-bltsizh.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s2.json lists under `inventories`.
 //
 // A SIZE IS GRADED BY COUNTING WHAT COMES OUT. The document says BLTSIZE
 //   `contains the width and height of the blitter operation`, with

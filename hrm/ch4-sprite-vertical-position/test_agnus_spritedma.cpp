@@ -22,6 +22,10 @@
 //   builds, and any claim it does not name. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
+// Claim ids: ids such as `CH4-appA-sprite.c5` and `CH4-appA-sprite.c1` name
+//   one sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch4.json lists under `inventories`.
 //
 // FIXTURE BOUNDARY: agnus_spritedma's SPRxCTL write keeps only the
 //   vertical fields -- measured during this package's own classification

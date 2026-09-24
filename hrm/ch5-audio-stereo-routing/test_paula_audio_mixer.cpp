@@ -5,6 +5,9 @@
 //   contradicting appendix pin list - see docs/third-witness.md.
 // Non-goals: This does not claim numeric DAC scaling for HRM volume-register
 //   value 64.
+// Claim ids: none. The four checks are named by the channel they route and by
+//   NM-HRM-002, the finding they carry; the manual's two sentences are quoted
+//   in the comment below.
 //
 // MUTATION ROUTE-TO-PARTNER stimulus green: the four routing checks are red at
 //   baseline, so the proof runs the other way. MUTATE=ROUTE-TO-PARTNER drives

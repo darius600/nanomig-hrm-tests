@@ -32,6 +32,10 @@
 //   these addresses is outside this single-module boundary and is RECORDED,
 //   not measured, from the inventory's own classification evidence (see
 //   ORDER OF WORK).
+// Claim ids: ids such as `APPA-sprptr.c4` and `CH4-appA-sprite.c41` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch4.json lists under `inventories`.
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_spritedma.v, one Verilator
 //   build, this module only.

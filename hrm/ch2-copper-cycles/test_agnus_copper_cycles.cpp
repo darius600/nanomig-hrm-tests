@@ -8,6 +8,20 @@
 // Non-goals: The "four" and "six memory cycle times" figures and the
 //   odd-slot parity on p.20 are arbitration properties of the surrounding
 //   Agnus, not of this module. A blocked WAIT has no defined cycle count.
+// Claim ids: ids such as `COP2-about-the-copper.c2` and
+//   `COP2-location-registers.c15` name one sentence of the manual in this
+//   chapter's reading. They carry no reader prefix, and they resolve in the
+//   claim files that hrm-testpipeline/acceptance/ch2.json lists under
+//   `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
+//   A `frozen specification` named above was the suite's first oracle, a note
+//   written from the Verilog before the pipeline existed; docs/legacy-names.md
+//   describes it.
+//   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
+//   the frozen specification the suite's first version was written against
+//   (docs/legacy-names.md); no claim file carries them.
 //
 // Why this test exists: FPGA-056 to FPGA-058 all filtered COPINS out in order
 // to find MOVE writes, i.e. they relied on R1 without ever establishing it.

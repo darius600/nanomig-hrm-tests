@@ -10,6 +10,11 @@
 //   prints no page numbers of its own; the corpus numbering is the PDF's.
 // Non-goals: this package does not test line mode, the fill modes, the
 //   minterm truth table, the barrel shifters, descending blits, or memory.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-bltafwm.c1` and `sol:AA-bltafwm.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s2.json lists under `inventories`.
 //
 // THE MASKS ARE GRADED AS EQUIVALENCES, FOR THE SAME REASON THE SHIFTERS WERE.
 //   The document says of BLTAFWM and BLTALWM:

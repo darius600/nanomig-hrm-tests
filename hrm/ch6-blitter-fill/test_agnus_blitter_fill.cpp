@@ -17,6 +17,10 @@
 //   AND/OR word-position gating that turns this module's `fco` into the NEXT
 //   word's `fci` (agnus_blitter.v:464, agnus_blitter.v:470) is not
 //   constructible at this leaf module's boundary - see CLAIM COVERAGE below.
+// Claim ids: ids such as `ch6-blockdiag.c9` and `6-area-fill.c10` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // EXTENDS PRIOR ART (hrm/ch6-blitter-fill, unchanged in shape since its
 // original commit; see docs/blitter-prior-art.md "Defect 3" and the README).

@@ -41,6 +41,13 @@
 //   "BLTSIZE should not be written until the very end" -- programming-order
 //   advice, not a hardware gate (same treatment PKG-BLT-STATUS gives "write
 //   BLTSIZE last").
+// Claim ids: ids such as `6-line-mode.c2` and `ch6-line.c2` name one sentence
+//   of the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch6.json
+//   lists under `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
 //
 // SUPERSESSION. Supersedes hrm/agnus_blitter_line_octant (deleted 10.09.2026; see
 // docs/blitter-prior-art.md), per the build

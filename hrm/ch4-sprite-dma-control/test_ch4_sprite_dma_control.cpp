@@ -17,6 +17,10 @@
 //   any claim it does not name. A green here means those assertions held on
 //   this fixture at the pinned revision -- not that the module is correct,
 //   and not that the chapter is covered.
+// Claim ids: ids such as `APPA-dmacon.c1` and `APPA-dmacon.c3` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch4.json lists under `inventories`.
 //
 // BOUNDARY: `agnus` (top-level chipset module) - the only fixture this
 //   package's claims classify as constructible. Per every claim's own

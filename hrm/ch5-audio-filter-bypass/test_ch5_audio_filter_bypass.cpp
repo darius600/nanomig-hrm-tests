@@ -39,6 +39,10 @@
 //   red. Per BOUNDARIES.md's framing for this chapter, this package is
 //   measured entirely at ciaa and does not reach into minimig.v's
 //   _led/pwr_led wiring or any audio module.
+// Claim ids: ids such as `5-p157.c8` and `5-filt.c9` name one sentence of the
+//   manual in this chapter's reading. They carry no reader prefix, and they
+//   resolve in the claim files that hrm-testpipeline/acceptance/ch5.json lists
+//   under `inventories`.
 //
 //   CONFLICT 6, recorded and NOT resolved (out of scope for a register-bit
 //   fixture; specialists' question, not this package's): the manual gives

@@ -14,6 +14,11 @@
 // Non-goals: this package does not test line mode, the fill modes (EFE, IFE,
 //   FCI), descending blits, BLTCON0L, the DMA slot handshake beyond granting
 //   it, or memory. Nothing here reads or writes chip RAM.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `sol:AA-bltcon0.c42` and `opus:AA-bltfield.c8` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s2.json lists under `inventories`.
 //
 // THE DOCUMENT NAMES THE MINTERM LINES AND NEVER PRINTS THE TRUTH TABLE.
 //   The legend reads `LF7-0   Logic function minterm select lines`, and the bit

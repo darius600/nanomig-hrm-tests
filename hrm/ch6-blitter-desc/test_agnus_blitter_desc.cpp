@@ -54,6 +54,10 @@
 //   is forced to 0 whenever `line`=1, agnus_blitter.v:286 `assign desc =
 //   ~line & bltcon1[1]`) - PKG-BLT-LINE's territory; every fixture below
 //   holds BLTCON1 bit 0 (LINE) clear throughout.
+// Claim ids: ids such as `6-blitter-key-points.c12` and `ch6-keypoints.c14`
+//   name one sentence of the manual in this chapter's reading. They carry no
+//   reader prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // THE SPEC-BEFORE-RTL GATE WAS BREACHED, RECORDED RATHER THAN HIDDEN. Before
 // this header/claim-plan was drafted, agnus_blitter.v (the desc/line

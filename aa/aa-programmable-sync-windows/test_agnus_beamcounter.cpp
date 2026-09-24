@@ -17,6 +17,11 @@
 //   position on the long field, the secondary beam counter HHPOS, and the
 //   35 ns fine-position bits. The first three need whole frames; the last two
 //   are below or outside this boundary and are recorded as such.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-htotal.c1` and `sol:AA-htotal.c1` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s1.json lists under `inventories`.
 //
 // WHY THIS PACKAGE EXISTS SEPARATELY FROM aa-beam-counter-registers. That
 //   package grades where seventeen beam registers are decoded, and says in its

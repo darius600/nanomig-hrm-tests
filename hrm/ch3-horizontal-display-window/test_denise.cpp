@@ -17,6 +17,10 @@
 //   any claim it does not name. A green here means those assertions held on
 //   this fixture at the pinned revision -- not that the module is correct,
 //   and not that the chapter is covered.
+// Claim ids: ids such as `3-diw.c01` and `3-window.c1` name one sentence of
+//   the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch3.json
+//   lists under `inventories`.
 //
 // NON-GOALS (declined below, not resolved -- see the NOTE calls in main()
 // for the full reasoning against each specific claim id):

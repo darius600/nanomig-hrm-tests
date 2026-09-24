@@ -12,6 +12,11 @@
 // Non-goals: this package does not test the disk data path, sector decoding,
 //   MFM, the sd-card back end, head stepping, or the drive sense lines. It
 //   grades register decoding and two status bits.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-dskbytr.c1` and `sol:AA-dskbytr.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s1.json lists under `inventories`.
 //
 // DSKBYTR IS THE ONLY READ PATH THIS MODULE OFFERS FOR ITS OWN STATE, and it
 //   is a pure combinational word (paula_floppy.v:699):

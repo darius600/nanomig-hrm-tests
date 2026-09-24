@@ -8,6 +8,20 @@
 // Non-goals: Bus contention (needs the Agnus top level), exact release cycle
 //   counts, NTSC long/short line alternation, and interrupt generation are
 //   out of scope. No independent ECS WAIT/SKIP claim is made.
+// Claim ids: ids such as `COP2-about-the-copper.c11` and
+//   `COP2-what-is-a-copper-instruction.c3` name one sentence of the manual in
+//   this chapter's reading. They carry no reader prefix, and they resolve in
+//   the claim files that hrm-testpipeline/acceptance/ch2.json lists under
+//   `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
+//   A `frozen specification` named above was the suite's first oracle, a note
+//   written from the Verilog before the pipeline existed; docs/legacy-names.md
+//   describes it.
+//   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
+//   the frozen specification the suite's first version was written against
+//   (docs/legacy-names.md); no claim file carries them.
 //
 // MUTATION W1 stimulus red: WAIT target retargeted from line $96 to $10 (already passed) -> the "does not run
 //   before line $96" check goes FAIL as expected. A second run retargeted it to $FF (unreachable in the run

@@ -18,6 +18,10 @@
 //   the bitplane-to-select assembly, the display-window border, or a 16-bit
 //   bus this 12-bit port cannot receive) than this fixture's boundary
 //   reaches.
+// Claim ids: ids such as `B-subject.c167` and `B-subject.c171` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
 //
 // BOUNDARY: top module `denise_colortable` only (one Verilator build,
 //   sources denise_colortable.v + denise_colortable_ram_mf.v), per

@@ -13,6 +13,11 @@
 // Non-goals: this package does not test the display window, interlace field
 //   alternation, light-pen capture, genlock, the UHRES pointer chain, or what
 //   a monitor makes of any of it. It grades what BEAMCON0's bits reach.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `sol:AA-beamcon0.c7` and `opus:AA-beamcon0.c6` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s2.json lists under `inventories`.
 //
 // SIX OF SIXTEEN BITS ARE WIRED AND THE RTL SAYS SO IN ITS OWN COMMENTS.
 //   agnus_beamcounter.v:128-142 declares the whole field and comments out nine

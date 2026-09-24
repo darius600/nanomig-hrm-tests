@@ -42,6 +42,10 @@
 //   old_val, out, agnus_blitter_barrelshifter.v:6-13), so there is nothing
 //   here that could confirm or contradict a claim about channel C bypassing
 //   this module entirely.
+// Claim ids: ids such as `6-intro.c11` and `ch6-intro.c10` name one sentence
+//   of the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch6.json
+//   lists under `inventories`.
 //
 // EXTENDS PRIOR ART (hrm/ch6-blitter-barrelshifter, unchanged in shape
 // since its original commit; see docs/blitter-prior-art.md). What was

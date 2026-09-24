@@ -12,6 +12,11 @@
 //   prints no page numbers of its own; the corpus numbering is the PDF's.
 // Non-goals: this package does not test the light pen, interlace field
 //   alternation, the sync pulses, or the vertical blanking window.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-vhpos.c22` and `opus:AA-vhposr.c1` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s3.json lists under `inventories`.
 //
 // ONE LINE OF RTL ANSWERS BOTH REGISTERS. agnus_beamcounter.v:107-114:
 //

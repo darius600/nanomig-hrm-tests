@@ -22,6 +22,10 @@
 //   see RTL OPENED below for why 4, not 2: this RTL has no
 //   bitplane-pair-to-sixteen-registers multiplexing circuit for a plain
 //   2-bitplane index to reach through.
+// Claim ids: ids such as `C-shres-bpl-bits.c1` and `C-shres-bpl-bits.c2` name
+//   one sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
 //
 // BOUNDARY (from PACKAGE.md's own evidence field, not from opening the
 // RTL -- see ORDER OF WORK below): denise.v:31-52 module header

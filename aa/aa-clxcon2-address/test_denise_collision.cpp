@@ -17,6 +17,11 @@
 //   read-and-clear behaviour, nor CLXCON. It reaches CLXCON2 only through
 //   the one effect that makes it observable at this boundary: bitplanes 7
 //   and 8 joining the bitplane match.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-clxcon2.c1` and `sol:AA-clxcon2.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7-rest.json lists under `inventories`.
 //
 // HOW CLXCON2 IS OBSERVED. The module exposes no read path for it. It reaches
 //   the outside only through the bitplane match:

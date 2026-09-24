@@ -38,6 +38,10 @@
 //   channel's fetch sequencing -- declined, see Dx. Colour content, the
 //   ATTACH bit, collision and playfield priority are ch3-sprite-registers'
 //   and denise_sprites' territory, not this package's.
+// Claim ids: ids such as `CH4-build.c3` and `CH4-build.c6` name one sentence
+//   of the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch4.json
+//   lists under `inventories`.
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_spritedma.v, per the task's own
 //   package assignment. The port names and register word-address map used

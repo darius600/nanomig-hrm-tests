@@ -50,6 +50,10 @@
 //   asserted, by SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED -- the manual's own row
 //   already gives its verdict on that bit, so there is nothing left for this
 //   boundary to require of it.
+// Claim ids: ids such as `C-shres-sprite.c7` and `C-shres-sprite.c8` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
 //
 // BOUNDARY: nanomig/src/minimig-aga/denise_sprites.v:55,67 (SPRPOSCTLBASE
 //   9'h140), per PACKAGE.md, whose own evidence field additionally cites

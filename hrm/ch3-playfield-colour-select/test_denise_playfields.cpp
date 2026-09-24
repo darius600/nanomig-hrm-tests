@@ -33,6 +33,10 @@
 //   `bplcon2`, unlike the sibling's non-goal list, ARE varied here -- they
 //   are this package's own subject matter for every dual-playfield-flavoured
 //   assertion below, not an irrelevant default.
+// Claim ids: ids such as `3-table3-17.c1` and `3-table3-18.c1` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
 //
 // COVERAGE CORRECTION (recorded for traceability): an earlier version of
 // this file declined 134 dual-playfield-flavoured claim ids as "already

@@ -10,6 +10,17 @@
 //   (p.20) are arbitration-level and need the Agnus top level. Beam-order
 //   list authoring advice is guidance, not hardware behaviour. The
 //   vertical-blank COP1LC reload belongs to COP-07.
+// Claim ids: ids such as `COP2-stopping-the-copper.c1` and
+//   `COP2-what-is-a-copper-instruction.c2` name one sentence of the manual in
+//   this chapter's reading. They carry no reader prefix, and they resolve in
+//   the claim files that hrm-testpipeline/acceptance/ch2.json lists under
+//   `inventories`.
+//   A `frozen specification` named above was the suite's first oracle, a note
+//   written from the Verilog before the pipeline existed; docs/legacy-names.md
+//   describes it.
+//   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
+//   the frozen specification the suite's first version was written against
+//   (docs/legacy-names.md); no claim file carries them.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. All eight
 // assertions were mutated at the STIMULUS on 05.09.2026 - the scenario changed,

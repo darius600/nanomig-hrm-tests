@@ -9,6 +9,19 @@
 //   (FPGA-066). Absolute slot parity, whose numbering origin the HRM does
 //   not fix at this module boundary. NTSC long/short lines. A blocked WAIT,
 //   whose span is set by the beam rather than by the instruction.
+// Claim ids: ids such as `COP2-about-the-copper.c20` and
+//   `COP2-copins-timing.c1` name one sentence of the manual in this chapter's
+//   reading. They carry no reader prefix, and they resolve in the claim files
+//   that hrm-testpipeline/acceptance/ch2.json lists under `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
+//   A `frozen specification` named above was the suite's first oracle, a note
+//   written from the Verilog before the pipeline existed; docs/legacy-names.md
+//   describes it.
+//   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
+//   the frozen specification the suite's first version was written against
+//   (docs/legacy-names.md); no claim file carries them.
 //
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was already
 // inspected during FPGA-063 and FPGA-065 before this specification was written.

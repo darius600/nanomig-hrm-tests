@@ -14,6 +14,11 @@
 //   and bus widths the table's other two columns name, and sprite scan
 //   doubling, which needs the DMA state machine driven across a display
 //   window.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-fmode.c3` and `sol:AA-fmode.c4` each name one reader's reading of
+//   one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s1.json lists under `inventories`.
 //
 // WHAT THE TABLE SAYS AND WHERE THE MODULE SAYS IT. The document's sprite rows
 //   are in bytes; the module adds words to a word address:

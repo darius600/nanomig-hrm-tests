@@ -14,6 +14,11 @@
 // Non-goals: this package does not test the audio channels, the UART's framing
 //   or baud rate, the disk data path, sector decoding, or the sd-card back
 //   end. It grades register decoding, one write convention and one bit.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-aud0len.c2` and `opus:AA-aud0per.c2` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7-rest.json lists under `inventories`.
 //
 // THE SET/CLEAR CONVENTION IS THE POINT OF THESE ROWS. DMACON's description
 //   column reads `DMA control write(clear or set)` and ADKCON's bit table

@@ -19,6 +19,10 @@
 //   extension and fmode wide-fetch modes are out of scope: every stimulus
 //   below holds aga=0, matching the OCS/ECS 4-bit PF1H/PF2H text every claim
 //   in this package's inventory actually quotes.
+// Claim ids: ids such as `3-fetch.c7` and `A-bplcon.c4` name one sentence of
+//   the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch3.json
+//   lists under `inventories`.
 //
 // BOUNDARY (from the classifier's own evidence, not from opening the RTL --
 // see ORDER OF WORK below): denise_bitplanes.v:34-51 and 96-102 module

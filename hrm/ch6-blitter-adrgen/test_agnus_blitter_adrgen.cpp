@@ -28,6 +28,10 @@
 //   reg_address_out, no data-out-to-bus port), so nothing here could show a
 //   register behaving otherwise; not a distinguishing behaviour at this
 //   boundary.
+// Claim ids: ids such as `6-dma-channels.c14` and `6-dma-channels.c15` name
+//   one sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // Supersedes hrm/agnus_blitter_modulo and hrm/agnus_blitter_ptr, per the build
 // register (work/2026-09-08_fpga-090_build_register.md). Both compile the same

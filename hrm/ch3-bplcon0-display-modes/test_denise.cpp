@@ -10,6 +10,10 @@
 //   any claim it does not name. A green here means those assertions held on
 //   this fixture at the pinned revision -- not that the module is correct,
 //   and not that the chapter is covered.
+// Claim ids: ids such as `3-res.f02` and `3-bpl.c04` name one sentence of the
+//   manual in this chapter's reading. They carry no reader prefix, and they
+//   resolve in the claim files that hrm-testpipeline/acceptance/ch3.json lists
+//   under `inventories`.
 //
 // ch3-bplcon0-display-modes -- HRM conformance harness for BPLCON0's mode-bit
 // field (HIRES, BPU, HOMOD, DBLPF, COLOR_ON, LACE, ERSY, LPEN, and the bits

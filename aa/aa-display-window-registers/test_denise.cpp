@@ -11,6 +11,11 @@
 // Non-goals: this package does not test the vertical limits, the bitplane
 //   fetch, sprites, HAM, or the display data fetch registers -- DDFSTRT and
 //   DDFSTOP are decoded in agnus_bitplanedma, a different module.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-diw.c7` and `opus:AA-diwstrt.c1` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s4.json lists under `inventories`.
 //
 // THE WINDOW IS MADE VISIBLE BY BLANKING THE BORDER, NOT BY DRAWING ANYTHING.
 //   With no bitplane data the colour inside the window and the border colour

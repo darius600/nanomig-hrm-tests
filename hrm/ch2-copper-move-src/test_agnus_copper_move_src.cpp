@@ -23,6 +23,17 @@
 //   covered and already carrying an unrelated valid red finding); rejected/
 //   illegal-destination MOVE behaviour (closed elsewhere, FPGA-068);
 //   WAIT/SKIP instructions mixed into the same list.
+// Claim ids: ids such as `COP2-copins-fields-p275.c1` and
+//   `COP2-copins-fields-p275.c2` name one sentence of the manual in this
+//   chapter's reading. They carry no reader prefix, and they resolve in the
+//   claim files that hrm-testpipeline/acceptance/ch2.json lists under
+//   `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
+//   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
+//   the frozen specification the suite's first version was written against
+//   (docs/legacy-names.md); no claim file carries them.
 // Disclosure: agnus_copper.v was read beyond the port list (the copper
 //   state machine and reg_address_out/address_out select logic, roughly
 //   lines 192-220 and 384-467) to confirm that the granted MOVE cycle

@@ -12,6 +12,11 @@
 //   prints no page numbers of its own; the corpus numbering is the PDF's.
 // Non-goals: this package does not test HAM, the sprites, the genlock ZD pin,
 //   dual playfield priority, or what any colour looks like on a screen.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-colorxx.c8` and `sol:AA-colorxx.c9` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s4.json lists under `inventories`.
 //
 // WHAT THE ENTRY SAYS, IN ITS OWN TWO ROWS:
 //

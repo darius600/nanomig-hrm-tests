@@ -31,6 +31,10 @@
 //   (PKG-BLT-MINTERM); the barrel shifter's own arithmetic beyond reusing
 //   its documented ascending-shift formula as a one-bit witness that ash
 //   survived a BLTCON0L write (PKG-BLT-SHIFT, 4.2M-case sweep).
+// Claim ids: ids such as `6-appa-registers.c25` and `6-appa-registers.c26`
+//   name one sentence of the manual in this chapter's reading. They carry no
+//   reader prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // NO PRIOR ART IS SUPERSEDED. docs/blitter-prior-art.md was read in full
 // before writing this file, per the build brief's explicit instruction to

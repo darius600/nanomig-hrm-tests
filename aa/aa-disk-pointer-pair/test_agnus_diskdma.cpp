@@ -15,6 +15,11 @@
 // Non-goals: this package does not test the disk DMA slot allocation, the
 //   `speed` input, the pointer's auto-increment during DMA, or anything Paula
 //   does with the data. It grades four addresses and one legend.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `sol:AA-dskpth.c3` and `sol:AA-dskptl.c3` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7.json lists under `inventories`.
 //
 // WHY THE `+` LEGEND MATTERS MORE THAN FOUR ADDRESSES. Thirty register pairs
 //   in this document carry the mark -- the blitter's four, the Copper's two,

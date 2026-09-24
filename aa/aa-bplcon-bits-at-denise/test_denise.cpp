@@ -15,6 +15,11 @@
 //   HAM, DPF, the playfield offsets, the sprite resolution, the border bits --
 //   which needs bitplane data clocked through a display window, and the
 //   BPLCON1 scroll, which lives in denise_bitplanes.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-hires.c1` and `opus:AA-spres.c7` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s1.json lists under `inventories`.
 //
 // WHY THESE FOUR AND NOT THE OTHERS. `hires` and `shres` are ports of this
 //   module (denise.v:180, :187), so two of BPLCON0's bit rows can be read

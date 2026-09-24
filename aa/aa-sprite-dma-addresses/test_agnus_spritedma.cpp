@@ -13,6 +13,11 @@
 // Non-goals: this package does not test the vertical start/stop comparison,
 //   the sprite scan-double bit, the ECS extended position bits, or the DMA
 //   priority handshake beyond using it to select a sprite.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-sprhdat.c1` and `opus:AA-sprhpth.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7-rest.json lists under `inventories`.
 //
 // FORTY-NINE ADDRESSES, THREE NAMES. The module declares:
 //

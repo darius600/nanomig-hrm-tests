@@ -23,6 +23,10 @@
 //   no clock-frequency port exists at this boundary, so only the
 //   dimensionless "n" (clocks per cycle) half of that page is testable here,
 //   exactly as the classification stage's evidence field says.
+// Claim ids: ids such as `6-dma-channels.c1` and `6-dma-channels.c2` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // NO PRIOR ART IS SUPERSEDED. docs/blitter-prior-art.md was read in full
 // before writing this file, per the build brief's explicit instruction to

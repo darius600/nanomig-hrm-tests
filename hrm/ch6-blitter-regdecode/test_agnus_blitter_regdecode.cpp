@@ -24,6 +24,10 @@
 //   BLTxMOD's numeric role beyond "a written modulo visibly changes address
 //   stepping, distinctly from a plain increment" (PKG-BLT-ADRGEN); DMACON's
 //   own address decode (PKG-AGNUS-DMACON -- see DEFERRED).
+// Claim ids: ids such as `ch6-appa-bltcon0.c1` and `ch6-appa-bltcon0.c2` name
+//   one sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // BOUNDARY: `agnus_blitter`, per hrm-testpipeline/work/2026-09-08_fpga-090_
 // packages.md row 5 and .../2026-09-08_fpga-090_build_register.md.

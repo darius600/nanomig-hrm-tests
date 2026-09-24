@@ -22,6 +22,10 @@
 //   builds, and any claim it does not name. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
+// Claim ids: ids such as `CH4-data.c3` and `CH4-p129.c2` name one sentence of
+//   the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch4.json
+//   lists under `inventories`.
 //
 // ORDER OF WORK: this file (assertions, expected values, claim-id
 // coverage, register addresses, bit positions) was written and committed

@@ -14,6 +14,13 @@
 //   refresh cycle touches, or memory-controller-level refresh correctness -
 //   the manual's claim is a per-line count, and that is all that is asserted
 //   here.
+// Claim ids: ids such as `6-system-dma.c18` and `ch6-sysdma.c17` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
 //
 // BOUNDARY: `agnus` (top-level chipset module), NOT `agnus_blitter`. This is
 // the first package in the chapter to assert at this boundary; the ten-package

@@ -15,6 +15,11 @@
 //   _ipl output, the master-enable gating of intreqena, or any of the eleven
 //   hardware interrupt inputs. It grades where four registers are decoded,
 //   which direction each one moves data, and what bit 15 selects.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `sol:AA-intenar.c3` and `sol:AA-intreqr.c3` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7.json lists under `inventories`.
 //
 // WHY THESE FOUR. They are one module, one register family, one boundary, and
 //   all four are declared as a full address in the RTL:

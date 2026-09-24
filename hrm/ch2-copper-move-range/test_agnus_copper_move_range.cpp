@@ -8,6 +8,14 @@
 // Non-goals: What the Copper does after a rejected MOVE is not asserted -
 //   the HRM does not define it. IR1 bits 15-9 non-zero, an exhaustive
 //   address sweep, AGA extensions and MOVE timing are out of scope.
+// Claim ids: ids such as `COP2-control-register.c1` and
+//   `ch2-control-register.c1` name one sentence of the manual in this
+//   chapter's reading. They carry no reader prefix, and they resolve in the
+//   claim files that hrm-testpipeline/acceptance/ch2.json lists under
+//   `inventories`.
+//   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
+//   the frozen specification the suite's first version was written against
+//   (docs/legacy-names.md); no claim file carries them.
 //
 // Source conflict, resolved in the specification and repeated here so the code
 // is readable on its own: print page 21 states the writable ranges as

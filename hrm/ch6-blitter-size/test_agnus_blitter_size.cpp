@@ -28,6 +28,10 @@
 //   (height), never a bit or pixel count, so converting either is the
 //   programmer's own arithmetic, not observable at this boundary (see NOT
 //   ASSERTED below).
+// Claim ids: ids such as `6-intro.c19` and `ch6-intro.c19` name one sentence
+//   of the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch6.json
+//   lists under `inventories`.
 //
 // NO PRIOR ART IS SUPERSEDED. docs/blitter-prior-art.md was read in full
 // before writing this file, per the build brief's explicit instruction to

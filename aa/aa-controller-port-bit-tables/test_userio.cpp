@@ -14,6 +14,11 @@
 // Non-goals: this package does not test the quadrature decoding, the pot
 //   capacitor timing, the keyboard, or the four-bit bidirectional port POTGO
 //   shares with the pot pins.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `sol:AA-joy0dat.c1` and `sol:AA-joy0dat-bits.c1` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s5.json lists under `inventories`.
 //
 // THE TABLE IS Y ABOVE X AND JOYTEST IS HOW IT IS FILLED. The entry prints
 //

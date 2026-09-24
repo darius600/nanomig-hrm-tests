@@ -27,6 +27,13 @@
 //   states -- the elaboration of how, and what "modify the display" means,
 //   is cross-referenced to Chapter 7 by the manual itself (see DECLINED
 //   CLAIMS below) and is not this package's to assert.
+// Claim ids: ids such as `CH4-coll.c1` and `CH4-coll.c2` name one sentence of
+//   the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch4.json
+//   lists under `inventories`.
+//   `FPGA-nnn` is a task number in the private workspace where this work was
+//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
+//   finding keys that replaced the ones that were findings.
 //
 // CLAIM SOURCE: this package's own assigned claims file is
 //   hrm-testpipeline/work/ch4_packages/

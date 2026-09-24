@@ -11,6 +11,11 @@
 // Non-goals: this package does not test the audio channels' sample output,
 //   the disk data path, the blitter, the Copper, the bitplane fetch, or the
 //   bus arbitration any of those enables feed.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-dmacon.c1` and `sol:AA-dmacon.c1` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s4.json lists under `inventories`.
 //
 // THE ENTRY'S OWN CHIP COLUMN SAYS WHY MOST OF IT IS DECLINED HERE. The
 //   address-ordered row reads `DMACON 096 W A D P`, three chips -- and the

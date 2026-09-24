@@ -16,6 +16,10 @@
 //   package builds, and any claim it does not name. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
+// Claim ids: ids such as `CH4-size.c1` and `CH4-forming.c1` name one sentence
+//   of the manual in this chapter's reading. They carry no reader prefix, and
+//   they resolve in the claim files that hrm-testpipeline/acceptance/ch4.json
+//   lists under `inventories`.
 //
 // CLAIM SOURCE: hrm-testpipeline/work/ch4_packages/
 //   ch4-sprite-shifter-and-arming.jsonl, 122 records, all classified

@@ -15,6 +15,11 @@
 //   the playfield priority, the display window, or what any colour looks like
 //   on a screen. It grades where registers are decoded and what two control
 //   bits switch.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `opus:AA-bplcon0.c2` and `opus:AA-color01.c2` each name one reader's
+//   reading of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s7-rest.json lists under `inventories`.
 //
 // LISAID IS THE REGISTER THIS DOCUMENT EXISTS FOR. Its row reads
 //   `LISAID  h ~07C  R  D  Chip Revision level for Denise/Lisa`, its revision

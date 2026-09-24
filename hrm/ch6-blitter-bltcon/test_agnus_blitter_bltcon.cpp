@@ -28,6 +28,10 @@
 //   BLTCON0L-aliases-LF fact this package's own claim list names (the ECS
 //   width/height claims are PKG-BLT-ECS's job); register offsets and access
 //   types (PKG-BLT-REGDECODE's job).
+// Claim ids: ids such as `6-appa-control.c1` and `6-appa-control.c3` name one
+//   sentence of the manual in this chapter's reading. They carry no reader
+//   prefix, and they resolve in the claim files that
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // NO PRIOR ART IS SUPERSEDED. docs/blitter-prior-art.md was read in full
 // before writing this file, per the build brief's explicit instruction to

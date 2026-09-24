@@ -30,6 +30,10 @@
 //   builds, and any claim it does not name. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
 //   module is correct, and not that the chapter is covered.
+// Claim ids: ids such as `5-p165.c6` and `5-p165.c17` name one sentence of the
+//   manual in this chapter's reading. They carry no reader prefix, and they
+//   resolve in the claim files that hrm-testpipeline/acceptance/ch5.json lists
+//   under `inventories`.
 //
 // ORDER OF WORK: this file's assertions, expected values, and claim-id
 //   coverage were written and committed from claims.jsonl's quotations

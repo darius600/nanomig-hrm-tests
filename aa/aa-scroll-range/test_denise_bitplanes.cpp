@@ -20,6 +20,11 @@
 //   data reaches denise's colour table, or anything about the document's
 //   own title page or revision list. See the DECLINED records at the bottom
 //   for the full accounting of the lot's other 244 records.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the AA specification independently, and ids such as
+//   `sol:AA-scroll.c1` and `opus:AA-scroll.c1` each name one reader's reading
+//   of one sentence. They resolve in the claim files that
+//   hrm-testpipeline/acceptance/aa-s6.json lists under `inventories`.
 //
 // WHY LORES AND NOT SHRES OR HIRES, EVEN FOR THE GENERAL 35NS CLAIM. The
 //   classified lot declines 33 claims -- the HIRES and SHRES table rows --
