@@ -1,0 +1,13 @@
+--- denise.v
++++ denise.v
+@@ -179,8 +179,8 @@
+ 
+ assign hires    = bplcon0[15];
+ assign bpu      = {bplcon0[4] & aga, bplcon0[14:12]};
+-assign ham      = bplcon0[11];
+-assign dpf      = bplcon0[10];
++assign ham      = bplcon0[10];
++assign dpf      = bplcon0[11];
+ //assign color    = bplcon0[9];
+ //assign gaud     = bplcon0[8];
+ //assign uhres    = bplcon0[7];

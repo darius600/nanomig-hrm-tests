@@ -42,6 +42,17 @@ taken on faith from those documents (documents drift; the RTL does not):
   bits 31:24 set. This matters below (why the Zorro-III relocatable RAM base
   is out of scope for this package).
 
+## Core
+
+This package builds `cpu_wrapper` with TG68K (`-DENABLE_TG68K=1`), through
+the instance `cpu_wrapper.v` compiles under Verilator (`:420-441`,
+`nanomig/sim/TG68KdotC_Kernel.v`). That instance leaves the core's
+`skipFetch` output unconnected, which the synthesis instance connects
+(`:464`), so `skip_fetch` is 0 here and `cpu_req` (`:101`) requests bus
+cycles the synthesized TG68K skips. `hrm/appK-autoconfig-space-decode-fx68k`
+builds the same test source with fx68k, which has one instance for
+simulation and synthesis alike.
+
 ## Boundary re-confirmed for this package
 
 `cpu_wrapper`'s bus ports are outputs driven by whichever CPU core it

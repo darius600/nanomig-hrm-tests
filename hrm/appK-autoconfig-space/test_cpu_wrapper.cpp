@@ -461,9 +461,11 @@ int main() {
     // Group 2 -- handoff (sol:K-0733). Zorro III: two successive
     // register-44 writes, each completing one board. `ramreq`
     // (cpu_wrapper.v:81/168, an existing port) IS reachable here:
-    // sel_z3ram1 compares cpu_addr[31:28] -- always 0 on this fixture's
-    // 24-bit core (`TG68K_A24`, cpu_wrapper.v:34, cpu_wrapper.v:279's
-    // `cpu_addr = {8'h00, cpu_addr_p[23:0]}`) -- against z3ram_base1,
+    // sel_z3ram1 compares cpu_addr[31:28] -- always 0 on this fixture,
+    // whichever core the Makefile builds: TG68K's address is cut to 24 bits
+    // (`TG68K_A24`, cpu_wrapper.v:34; :279 `cpu_addr = {8'h00,
+    // cpu_addr_p[23:0]}`), fx68k's is 24 bits wide to begin with (:298
+    // `cpu_addr = {8'b0, cpu_addr_o, 1'b0}`) -- against z3ram_base1,
     // which is set from the configuring write's OWN data
     // (cpu_dout[15:12], cpu_wrapper.v:655). Writing base 0x0000 makes
     // z3ram_base1 also 0000, which matches cpu_addr[31:28]; a base of

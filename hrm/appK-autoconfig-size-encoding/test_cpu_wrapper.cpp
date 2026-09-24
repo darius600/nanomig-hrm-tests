@@ -23,7 +23,7 @@
 //
 // See SPECIFICATION.md for the full boundary investigation. In short: this
 // package reuses hrm/appK-autoconfig-register-map's fixture (Harness
-// mechanism, TG68KdotC_Kernel core, active-low reset, direct/complement
+// mechanism, core selection, active-low reset, direct/complement
 // arithmetic) and extends it with ONE new capability that fixture didn't
 // need: writing an AUTOCONFIG register (MOVE.W #imm,(abs).L, opcode
 // 0x33FC), because the 128MB Zorro III size code is never emitted until

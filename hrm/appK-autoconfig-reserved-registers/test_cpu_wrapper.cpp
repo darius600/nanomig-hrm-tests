@@ -25,7 +25,7 @@
 //
 // See SPECIFICATION.md for the full boundary investigation. In short: this
 // package reuses hrm/appK-autoconfig-register-map's fixture wholesale (same
-// Harness shape, same TG68KdotC_Kernel core selection, same active-low
+// Harness shape, same core selection, same active-low
 // reset, same direct/complement register-arithmetic rule). Every one of the
 // 34 chip_addr[6:1] indices this package reads (24,25,...,63 -- see the
 // table in SPECIFICATION.md) falls outside BOTH case lists in

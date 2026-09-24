@@ -1,0 +1,11 @@
+--- denise_bitplane_shifter.v
++++ denise_bitplane_shifter.v
+@@ -209,7 +209,7 @@
+     select[5:0] = scroll[5:0] & fmode_mask;
+   end else if (hires) begin
+     // hires mode
+-    shift = ~c1 ^ c3; // shifter enabled every other clock cycle
++    shift = ~c1 & ~c3; // shifter enabled every other clock cycle
+     select[5:0] = scroll[6:1] & fmode_mask;
+   end else begin
+     // lowres mode

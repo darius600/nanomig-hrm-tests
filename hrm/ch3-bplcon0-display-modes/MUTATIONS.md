@@ -36,6 +36,16 @@ each mutates the design under test. A stimulus mutation instead changes what the
 implementation and the expected value alone; none of the six below do that, so all six and
 every per-assertion log line below are labelled `implementation` accordingly.
 
+**Replaying a mutation:** `mutations/M1.patch` .. `mutations/M6.patch` are unified diffs
+of the six edits above, taken against `denise.v` or `denise_bitplane_shifter.v` as they read
+at the RTL pin this package builds. `make MUTANT=M<n> test` replays mutation `<n>`: it reads
+(never writes) the real file(s) that patch touches out of `nanomig/`, copies them into
+`obj_dir/mutant_M<n>/`, applies the patch there with `patch`, and rebuilds with that directory
+searched by Verilator before the real `nanomig/src/minimig-aga/` directory -- the mutant file
+resolves, every other module still resolves from the real, untouched submodule. A red assertion
+makes `make` exit non-zero, same as any other broken build. Leaving `MUTANT` unset builds exactly
+as before; no mutant directory is created or searched.
+
 ## Mutations executed
 
 **Mutation 1** (implementation): denise.v: bpldata[3..6] plane-gating thresholds each raised by one (l_bpu>2,3,4,5 became l_bpu>3,4,5,6), so BPU codes 3-6 each report one fewer gated plane than they should.

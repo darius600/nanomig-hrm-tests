@@ -1,0 +1,31 @@
+--- denise.v
++++ denise.v
+@@ -180,7 +180,7 @@
+ assign hires    = bplcon0[15];
+ assign bpu      = {bplcon0[4] & aga, bplcon0[14:12]};
+ assign ham      = bplcon0[11];
+-assign dpf      = bplcon0[10];
++assign dpf      = bplcon0[10] | bplcon0[7] | bplcon0[6] | bplcon0[5] | bplcon0[4] | bplcon0[0];
+ //assign color    = bplcon0[9];
+ //assign gaud     = bplcon0[8];
+ //assign uhres    = bplcon0[7];
+@@ -373,6 +373,10 @@
+ assign bpldata[7] = l_bpu > 6 ? bpldata_out[7] : 1'b0;
+ assign bpldata[8] = l_bpu > 7 ? bpldata_out[8] : 1'b0;
+ 
++// mutation 5: OR BPLCON2 bits 7-15 ("not used") into the pf2pri bit (bit 6
++// of the 7-bit bus below) passed to denise_playfields
++wire [6:0] bplcon2_to_pf = {bplcon2[6] | (|bplcon2[15:7]), bplcon2[5:0]};
++
+ // instantiate playfield module
+ denise_playfields plfm0
+ (
+@@ -380,7 +384,7 @@
+   .bpldata(bpldata),
+   .dblpf(dpf),
+   .pf2of(pf2of),
+-  .bplcon2(bplcon2[6:0]),
++  .bplcon2(bplcon2_to_pf),
+   .nplayfield(nplayfield),
+   .plfdata(plfdata)
+ );

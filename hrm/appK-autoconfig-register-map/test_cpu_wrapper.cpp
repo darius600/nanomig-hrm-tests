@@ -34,8 +34,8 @@
 //     (the Verilator-compatible translation cpu_wrapper.v's own `ifdef
 //     VERILATOR branch already names) -- elaborates, and six of NanoMig's
 //     twelve board tops select it, among them all four that define
-//     ENABLE_RAM32, the configuration this build uses. This build
-//     uses it (-DENABLE_TG68K=1, Makefile), and drives cpu_wrapper with a
+//     ENABLE_RAM32. The core is chosen by the Makefile; see
+//     SPECIFICATION.md. This fixture drives cpu_wrapper with a
 //     real, hand-assembled 68000 program executed through the module's own
 //     ports only -- no internal signal is read or forced anywhere below.
 //   - Every AUTOCONFIG register nibble lives at chip_addr[6:1] indices 0 and
@@ -201,8 +201,9 @@ std::string hex4(uint16_t v) {
 
 static uint32_t autocfg_addr(int idx) { return 0xE80000u + 2u * (uint32_t)idx; }
 
-// One configuration's fixture: builds cpu_wrapper (+ its own embedded
-// TG68KdotC_Kernel core), assembles a tiny 68000 program that reads each
+// One configuration's fixture: builds cpu_wrapper (+ its own embedded CPU
+// core -- which one is chosen by the Makefile; see SPECIFICATION.md),
+// assembles a tiny 68000 program that reads each
 // requested AUTOCONFIG index in turn and writes the raw word straight back
 // out to a scratch address, runs it to completion, and captures the raw
 // nibble (bits 15:12 of the write) for each requested index -- entirely

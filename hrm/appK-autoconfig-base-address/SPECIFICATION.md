@@ -15,6 +15,17 @@ Reused wholesale from `hrm/appK-autoconfig-register-map`,
 (abs).L`), core selection, active-low reset, direct/complement arithmetic.
 Same write-order disclosure applies.
 
+## Core
+
+This package builds `cpu_wrapper` with TG68K (`-DENABLE_TG68K=1`), through
+the instance `cpu_wrapper.v` compiles under Verilator (`:420-441`,
+`nanomig/sim/TG68KdotC_Kernel.v`). That instance leaves the core's
+`skipFetch` output unconnected, which the synthesis instance connects
+(`:464`), so `skip_fetch` is 0 here and `cpu_req` (`:101`) requests bus
+cycles the synthesized TG68K skips. `hrm/appK-autoconfig-base-address-fx68k`
+builds the same test source with fx68k, which has one instance for
+simulation and synthesis alike.
+
 ## The candidate finding — read this before the rest
 
 Printed page 436 separates two configuration blocks. In the **Zorro II**

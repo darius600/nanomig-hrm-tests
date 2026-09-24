@@ -25,6 +25,17 @@ completes). That write path was investigated directly against the RTL text
 same reason the register-map package's boundary investigation had to
 precede its own spec.
 
+## Core
+
+This package builds `cpu_wrapper` with TG68K (`-DENABLE_TG68K=1`), through
+the instance `cpu_wrapper.v` compiles under Verilator (`:420-441`,
+`nanomig/sim/TG68KdotC_Kernel.v`). That instance leaves the core's
+`skipFetch` output unconnected, which the synthesis instance connects
+(`:464`), so `skip_fetch` is 0 here and `cpu_req` (`:101`) requests bus
+cycles the synthesized TG68K skips. `hrm/appK-autoconfig-size-encoding-fx68k`
+builds the same test source with fx68k, which has one instance for
+simulation and synthesis alike.
+
 ## The register-map arithmetic this package relies on
 
 Inherited unchanged from `hrm/appK-autoconfig-register-map`: one 4-bit

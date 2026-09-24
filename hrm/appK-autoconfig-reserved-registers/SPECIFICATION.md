@@ -32,6 +32,17 @@ started), so the "write the spec blind, then open the RTL" order is broken
 for the same reason disclosed there — disclosed here rather than presented
 as if it held.
 
+## Core
+
+This package builds `cpu_wrapper` with TG68K (`-DENABLE_TG68K=1`), through
+the instance `cpu_wrapper.v` compiles under Verilator (`:420-441`,
+`nanomig/sim/TG68KdotC_Kernel.v`). That instance leaves the core's
+`skipFetch` output unconnected, which the synthesis instance connects
+(`:464`), so `skip_fetch` is 0 here and `cpu_req` (`:101`) requests bus
+cycles the synthesized TG68K skips.
+`hrm/appK-autoconfig-reserved-registers-fx68k` builds the same test source
+with fx68k, which has one instance for simulation and synthesis alike.
+
 ## What these 34 claims assert
 
 Every claim in this package has the same shape: "Logical register `XX` bits

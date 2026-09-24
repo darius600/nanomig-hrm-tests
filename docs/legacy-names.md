@@ -163,4 +163,4 @@ All of them are here.
 
 **Every package says in its own header which claim ids it grades**, in a
 `Claim ids:` field beside `Test purpose`, `Test class`, `Primary oracle` and
-`Non-goals` — all 209.
+`Non-goals` — all 216.

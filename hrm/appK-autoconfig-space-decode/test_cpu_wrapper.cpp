@@ -29,9 +29,8 @@
 //     core it instantiates. fx68k fails this project's pinned Verilator
 //     under its default checks (%Error-BLKANDNBLK, fx68k.sv:293); it builds
 //     with -Wno-BLKANDNBLK and runs with --no-assert, and so built gives
-//     this file's every result line as TG68K does. This build uses
-//     TG68KdotC_Kernel (-DENABLE_TG68K=1, Makefile), built from
-//     nanomig/sim/, same as the sibling package.
+//     this file's every result line as TG68K does. The core is chosen by
+//     the Makefile; see SPECIFICATION.md.
 //   - sel_autoconfig (cpu_wrapper.v:611) decodes a fixed, non-relocatable
 //     64K window at chip_addr[23:16]==$E8 -- the ONLY chip_addr[23:16]
 //     comparison anywhere in this file (grepped in full). 3 claims assert
@@ -40,16 +39,17 @@
 //     sub-window of it.
 //   - FC0-FC2 (sol:K-0221/opus:K-0229) reach no port of cpu_wrapper in
 //     either core's build: fc_o (cpu_wrapper.v:244) is driven and read only
-//     inside `ifdef ENABLE_FX68K (:299,:493-495,:497), which this build does
-//     not define, nanomig/sim/TG68KdotC_Kernel.v carries no FC port under
+//     inside `ifdef ENABLE_FX68K (:299,:493-495,:497), which the TG68K build
+//     does not define, nanomig/sim/TG68KdotC_Kernel.v carries no FC port under
 //     any name (grepped in full), and in an fx68k build fc_o leaves only as
 //     the cycle type on cpustate (:299-303), without FC2 or CPU space --
 //     declined.
 //   - The Zorro III "$00E80000 or $FF000000" claims (sol:K-0456/
 //     opus:K-0458): chip_addr is declared [23:1] (cpu_wrapper.v:60, checked
 //     directly), max representable byte address $FFFFFE -- $FF000000 has no
-//     carrier on this port (compounded by `TG68K_A24, cpu_wrapper.v:34,
-//     unconditional, limiting the CPU itself to 24-bit addressing). Grading
+//     carrier on this port (compounded by the CPU core's own address width,
+//     which is fixed at 24 bits regardless of which core cpu_wrapper.v
+//     selects -- see SPECIFICATION.md). Grading
 //     this claim green on the implemented half or red on an address the
 //     fixture cannot present would both misrepresent what was tested --
 //     declined whole.
@@ -558,12 +558,23 @@ int main() {
     record("sol:K-0221 NOT GRADED (p398): 'FC0-FC2 encode cycle type or "
            "memory space bits.' opus:K-0229 NOT GRADED (same claim, p398). "
            "fc_o (cpu_wrapper.v:244) is driven and read only inside `ifdef "
-           "ENABLE_FX68K (:299,:493-495,:497); this build defines only "
+           "ENABLE_FX68K (:299,:493-495,:497); "
+#ifdef CORE_FX68K
+           "this build defines ENABLE_FX68K (no -DENABLE_TG68K, Makefile), so "
+           "fc_o is driven (:493-495) but leaves cpu_wrapper only as the cycle "
+           "type on cpustate (:299-303: fetch, data read, write), which "
+           "carries neither FC2 nor CPU space; nanomig/sim/TG68KdotC_Kernel.v, "
+           "which the sibling TG68K build links instead, carries no "
+           "FC0/FC1/FC2 port under any name (grepped in full). "
+#else
+           "this build defines only "
            "ENABLE_TG68K, and nanomig/sim/TG68KdotC_Kernel.v (grepped in full) "
            "carries no FC0/FC1/FC2 port under any name. In an fx68k build "
            "(-Wno-BLKANDNBLK, --no-assert) fc_o is driven but leaves "
            "cpu_wrapper only as the cycle type on cpustate (:299-303: fetch, "
-           "data read, write), which carries neither FC2 nor CPU space. No "
+           "data read, write), which carries neither FC2 nor CPU space. "
+#endif
+           "No "
            "stimulus at this boundary reaches FC0-FC2 themselves in either "
            "build. reason_kind: unreachable-port.");
 
@@ -573,8 +584,16 @@ int main() {
            "Checked directly for this package: chip_addr is declared [23:1] "
            "(cpu_wrapper.v:60), maximum representable byte address $FFFFFE -- "
            "$FF000000 needs bit 24 and above, which this port does not have "
+#ifdef CORE_FX68K
+           "(compounded by cpu_addr_o's own [23:1] declaration, "
+           "cpu_wrapper.v:243, and cpu_wrapper.v:298's `cpu_addr = {8'b0, "
+           "cpu_addr_o, 1'b0}`, together limiting the CPU core itself to "
+           "24-bit addressing), "
+#else
            "(compounded by `TG68K_A24, cpu_wrapper.v:34, unconditional, "
-           "limiting the CPU core itself to 24-bit addressing), and in this "
+           "limiting the CPU core itself to 24-bit addressing), "
+#endif
+           "and in this "
            "build cfg_z3 is wired to 0 (cpu_wrapper.v:535-540), so no Zorro III "
            "PIC exists here at all. The $00E80000 "
            "half is the same fact this design implements identically to "
