@@ -1,5 +1,5 @@
-# The same Makefile every package in hrm/ uses, with the paths pointing one
-# level further out because this example lives in docs/ rather than hrm/.
+# The same Makefile every package in hrm/ uses. docs/example-package sits as
+# deep as hrm/<package>, so the path to the submodule is the same.
 #
 # It lives outside hrm/ deliberately: run_all.sh and check_published_counts.py
 # both count the directories under hrm/, and an example is not a package.

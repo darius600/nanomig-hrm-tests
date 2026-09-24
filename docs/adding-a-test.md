@@ -23,10 +23,10 @@ exists to prevent.
 
 **The shape, in one screen:** [`docs/example-package/`](example-package/) is a
 real package — it builds, it grades one bit of CIAA's `DDRA` against printed
-page 292, and `make mutate` turns it red. Eighty lines including the header, of
-which about thirty are the test. Start here if you have not written one before;
-it shows the header fields, the three verbs and the mutation guard and nothing
-else.
+page 292, and `make mutate` turns it red. About a hundred lines including the
+header, of which about thirty are the test. Start here if you have not written
+one before; it shows the header fields, the three verbs, the mutation guard and
+its `// MUTATION` record, and nothing else.
 
 It lives in `docs/` rather than `hrm/` on purpose: `run_all.sh` and
 `check_published_counts.py` both count the directories under `hrm/`, and an

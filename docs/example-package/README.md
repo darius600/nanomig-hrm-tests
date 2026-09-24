@@ -3,15 +3,14 @@
 It builds, it grades one assertion, and `make mutate` turns it red.
 
 ```
-wsl
-cd /mnt/c/code4nanomig/code/nanomig-hrm-tests/docs/example-package
+cd docs/example-package   # from the repository root; on Windows, inside WSL
 make test      # PASS: DDRA is 0x00 after reset, so port A is all inputs
 make mutate    # FAIL: the same line -- proving the assertion can go red
 ```
 
 Why it exists: [`adding-a-test.md`](../adding-a-test.md) used to send a first-time
 reader to a 1,749-line worked example. That file is still the reference for
-every rule; this one is the shape, and eighty lines of it.
+every rule; this one is the shape, in about a hundred lines.
 
 What to look at, in order:
 
@@ -21,9 +20,11 @@ What to look at, in order:
    an assertion; `note()` prints `MEASURED:` and records what the RTL did
    without judging it; `record()` prints `RECORDED:` and states something the
    test knows but does not measure.
-3. **The mutation guard.** Every `expect()` in a real package is written so
-   that `MUTATE=1` can force it red. An assertion that cannot fail measures
-   nothing, and the mutation gate exists to catch one.
+3. **The mutation guard and its record.** Every `expect()` in a real package
+   is written so that `MUTATE=1` can force it red, by changing what the module
+   is asked to do and never the expected value, and the header records what
+   that did as `// MUTATION <id> stimulus red: ...`. An assertion that cannot
+   fail measures nothing, and the mutation gate exists to catch one.
 4. **Driving every input.** A Verilated model starts undefined, not at zero.
 
 It is not in `hrm/`, so it is not in the suite and not in the 208.

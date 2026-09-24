@@ -132,11 +132,11 @@ is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
 interest:
 
-| start here | because |
-|---|---|
-| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and two of the four implementations already do what the manual says |
-| [NM-HRM-004](findings/NM-HRM-004.md) | all four implementations read the appendix the other way round from the manual — the clearest four-way signal in the register |
-| [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and the fix is one line MiSTer already has |
+| start here | because | what it takes |
+|---|---|---|
+| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and two of the four implementations already do what the manual says | a scope decision, read together with NM-HRM-022 and NM-HRM-024; one central mask would close all three |
+| [NM-HRM-004](findings/NM-HRM-004.md) | all four implementations read the appendix the other way round from the manual — the clearest four-way signal in the register | re-reading one page, appendix C p. 310; most likely no change |
+| [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and the fix is one line MiSTer already has | one `case` entry, then one package run |
 
 **[NM-HRM-002](findings/NM-HRM-002.md) sorts first and is the worst starting
 point**: the manual contradicts itself there and the four implementations split

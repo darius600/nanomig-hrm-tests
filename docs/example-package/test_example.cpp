@@ -26,10 +26,17 @@
 //             not measure -- a page number, a decision, a limit of the fixture.
 // Only expect() lines count as assertions. A uid on a graded line makes the
 // claim it cites ASSERTED; on a note() line it does not.
+//
+// MUTATION DDRA stimulus red: under MUTATE=1 the test writes 0xFF to DDRA after
+//   reset and before the read; DDRA reads back 0xFF and this assertion goes
+//   FAIL (example: 0 passed, 1 failed). Without MUTATE: 1 passed, 0 failed.
+//   Every assertion carries one record like this; `DDRA` is the id the gate
+//   reads from the first word of the expect() label.
 
 #include "Vciaa.h"
 #include "verilated.h"
 #include <cstdint>
+#include <cstdio>
 #include <iostream>
 #include <string>
 
@@ -66,23 +73,32 @@ int main(int argc, char** argv) {
     dut.reset = 0;
     for (int i = 0; i < 8; ++i)  { dut.clk = !dut.clk; dut.eval(); }
 
+    // MUTATION GUARD. Every expect() in a real package is guarded like this,
+    // so that `MUTATE=1 make test` can prove the assertion is capable of going
+    // red. It changes what the module is ASKED TO DO -- here, a write of 0xFF
+    // to DDRA before the read -- and never the expected value: flipping an
+    // expected value proves only that a boolean can be false. An assertion
+    // that cannot fail measures nothing, and the mutation gate is what
+    // catches one that cannot.
+    if (getenv("MUTATE") != nullptr) {
+        dut.aen = 1; dut.wr = 1; dut.rs = RS_DDRA; dut.data_in = 0xFF;
+        for (int i = 0; i < 4; ++i) { dut.clk = !dut.clk; dut.eval(); }
+        dut.aen = 0; dut.wr = 0; dut.data_in = 0;
+        for (int i = 0; i < 4; ++i) { dut.clk = !dut.clk; dut.eval(); }
+    }
+
     // Read DDRA. The read mux is combinational, so eval() is enough.
     dut.aen = 1; dut.rd = 1; dut.rs = RS_DDRA;
     dut.eval();
     const uint8_t ddra = dut.data_out;
 
-    c.note("DDRA after reset reads 0x" + std::to_string(ddra));
+    char hex[3];
+    std::snprintf(hex, sizeof hex, "%02X", ddra);
+    c.note(std::string("DDRA after reset reads 0x") + hex);
     c.record("oracle: HRM 3rd ed., printed p. 292 -- CIA data-direction "
              "registers are cleared by reset, making every line an input");
 
-    // MUTATION GUARD. Every expect() in a real package is guarded like this,
-    // so that `MUTATE=1 make test` can prove the assertion is capable of going
-    // red. An assertion that cannot fail measures nothing, and the mutation
-    // gate is what catches one that cannot.
-    const bool mutate = getenv("MUTATE") != nullptr;
-    const uint8_t observed = mutate ? static_cast<uint8_t>(ddra ^ 0xFF) : ddra;
-
-    c.expect(observed == 0x00,
+    c.expect(ddra == 0x00,
              "DDRA is 0x00 after reset, so port A is all inputs "
              "[appDE-p292.c1]");
 
