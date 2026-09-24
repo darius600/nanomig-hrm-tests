@@ -40,12 +40,13 @@ for dir in */; do
     # Every summary the package printed, summed: a package may build several
     # programs and each declares its own, so keeping only the last one showed
     # a red package as "5 passed, 0 failed". A summary is a line that IS one --
-    # at most a label and a colon before the count -- so a record quoting
-    # another package's figures in mid-sentence is not added in.
+    # at most a label and a colon before the count, at most a qualifier after
+    # it -- so a record quoting another package's figures in mid-sentence is
+    # not added in. The same rule as the pipeline's graded_lines.SUMMARY_RES.
     counts=$(echo "$out" \
-        | grep -E '^[[:space:]]*(=+[[:space:]]*)?([A-Za-z][A-Za-z0-9_-]*:[[:space:]]*)?[0-9]+ passed, [0-9]+ failed' \
-        | grep -oE '[0-9]+ passed, [0-9]+ failed' \
-        | awk '{ p += $1; f += $3; n++ } END { if (n) printf "%d passed, %d failed", p, f }')
+        | grep -iE '^[[:space:]]*=*[[:space:]]*([=[:space:]]*[[:alnum:]_.-]+[[:space:]]*:[[:space:]]*)?[0-9]+[[:space:]]+passed,[[:space:]]*[0-9]+[[:space:]]+failed(,[[:space:]]*[0-9]+[[:space:]]+[a-z]+)*([[:space:]]*\([^()]{0,120}\))?\.?[[:space:]]*=*[[:space:]]*$' \
+        | grep -oiE '[0-9]+[[:space:]]+passed,[[:space:]]*[0-9]+[[:space:]]+failed' \
+        | awk '{ gsub(/[^0-9]+/, " "); p += $1; f += $2; n++ } END { if (n) printf "%d passed, %d failed", p, f }')
     # A build error means the binary never ran. Detect that by the absence of
     # any evidence of execution - not by the absence of a "N passed" summary,
     # since the tests do not share one output format. (An earlier revision used
