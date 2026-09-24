@@ -1175,15 +1175,17 @@ int main(int argc, char** argv) {
         int hires_max = words_with(true, DDFSTRT_HIRES_STD, DDFSTOP_HIRES_STD);  // standard window, not the hw limit
 #endif
         checks.expect(
-            hires_max == 49,
+            hires_max <= 49,
             "MAX-WORDS-49-HIRES: driven from beyond both hardware limits "
             "($00/$FE, past $18/$D8), a hires line fetches " +
-                std::to_string(hires_max) + " words at most - Table "
-                "3-14's own 'max words fetched' row states 49 for high "
-                "resolution (p.80); MAX-WORDS-25-LORES above is this "
-                "assertion's control, same measurement basis, same "
-                "hardware-limit setup, expected and found to PASS. "
-                "3-max-window.c28.");
+                std::to_string(hires_max) + " words - Table 3-14's own "
+                "'max words fetched' row states 49 for high resolution as "
+                "A MAXIMUM (p.80); the sentence gives a ceiling, not an "
+                "exact count at this beyond-both-limits stimulus, so this "
+                "asserts count<=49, not count==49. MAX-WORDS-25-LORES "
+                "above is this assertion's control, same measurement "
+                "basis, same hardware-limit setup, expected and found to "
+                "PASS. 3-max-window.c28.");
     }
     // ---------------- DECLINED (30 of the 64 claims) ----------------
     checks.note(
@@ -1261,12 +1263,22 @@ int main(int argc, char** argv) {
 // Applying any ONE mutation flag moved the count to 16 passed, 2 failed -
 // exactly the targeted assertion, and no other - confirmed by reading each
 // run's own full PASS/FAIL line set, not the one familiar label alone.
-// MAX-WORDS-49-HIRES is the sole exception: it is ALREADY red at baseline
-// (measured 50 words, not the manual's 49 - a genuine finding, left
-// unadjusted per the build brief). Its own mutation does not flip a
-// passed count (it was already counted failed), but it does change WHICH
-// wrong number comes out (50 -> 40), proving the assertion tracks its own
-// stimulus rather than returning a fixed value regardless of input.
+// MAX-WORDS-49-HIRES is the sole exception, and per the rule against
+// mutating an already-failing check its mutation goes the OTHER way:
+// applying it moves the package from 17 passed, 1 failed to 18 passed, 0
+// failed - RED to GREEN, not GREEN to RED. At true baseline (the
+// beyond-both-hardware-limits stimulus, $00/$FE past $18/$D8) this
+// assertion is a genuine finding: the RTL fetches 50 words, one more than
+// Table 3-14's stated 49-word maximum (p.80), against the count<=49
+// oracle NM-HRM-007 corrected it to on 24.09.2026 (previously count==49,
+// a stricter reading than the sentence states - it fixes 49 as a MAXIMUM,
+// not an exact count at every stimulus). The mutation substitutes a
+// genuine, independently-live stimulus - the standard hires window
+// ($003C/$00D4, 40 words) for the hardware-limit probe - through the
+// IDENTICAL <=49 comparator: 40<=49 holds, so the assertion passes. That
+// is the closest a standing finding can come to the other seventeen
+// mutations' own proof: the check is live and stimulus-sensitive, not a
+// fixed always-red output regardless of input.
 //
 // MUTATION FIXTURE-DELIVERS-KNOWN-WORD stimulus red: the written pointer changed from kBase to kBase+2 while the check still compares against kBase; the first fetched address no longer matched 0x00004000.
 // MUTATION BITPLANE-CONTIGUOUS-WORD-SEQUENCE stimulus red: BPL1MOD changed from 0 to 0x0028 (40); a 40-byte gap appeared at the line boundary, breaking the strict +2-byte step across all 40 fetches.
@@ -1285,7 +1297,7 @@ int main(int argc, char** argv) {
 // MUTATION DIWSTOP-ADDRESS stimulus red: the "wrong address" probe was changed to the real DIWSTOP address; the window narrowed in both measurements, so the required untouched-baseline case no longer held.
 // MUTATION DIWHIGH-ADDRESS stimulus red: the "wrong address" probe was changed to the real DIWHIGH address; the window extended in both measurements, so the required unextended-baseline case no longer held.
 // MUTATION MAX-WORDS-25-LORES stimulus red: DDFSTRT/DDFSTOP changed from the hardware-limit probe (0x00/0x00FE) to the standard lores window (0x0038/0x00D0); the measured maximum dropped to 20 words, not 25.
-// MUTATION MAX-WORDS-49-HIRES stimulus red: DDFSTRT/DDFSTOP changed from the hardware-limit probe (0x00/0x00FE) to the standard hires window (0x003C/0x00D4); the wrong count changed from 50 to 40 - already red at baseline (a genuine finding, manual states 49), but the mutation shows the assertion tracks its own stimulus, not a fixed output.
+// MUTATION MAX-WORDS-49-HIRES stimulus green: DDFSTRT/DDFSTOP changed from the hardware-limit probe (0x00/0x00FE) to the standard hires window (0x003C/0x00D4); the count changed from 50 (red at true baseline, violates the count<=49 ceiling - a genuine finding, manual states 49 as the maximum, p.80) to 40 (green, satisfies count<=49) - per the rule against mutating an already-failing check, this substitutes a genuine, independently-live stimulus through the identical <=49 comparator, proving the assertion is a live, stimulus-sensitive maximum check, not a fixed always-red output.
 // ============================================================================
 
 

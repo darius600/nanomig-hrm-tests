@@ -1,6 +1,6 @@
 # Findings
 
-**45 of the 65 HRM findings ask you to decide whether the RTL should change. The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**44 of the 65 HRM findings ask you to decide whether the RTL should change. The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each has the
 > same six parts — what the HRM says, what NanoMig does, what the other four say,
@@ -150,7 +150,7 @@ it for what an unresolvable case looks like, not for something to do.
 | [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | open · RTL · **red** | `hrm/ch2-copper-control`, `hrm/ch2-copper-locreg-width` | **Copperline narrows the REGISTER to 19 bits on OCS**, matching the manual; **WinUAE narrows the BUS** on OCS (`memory.cpp:2619-2623`), which has the same effect on a fetched address; Denise and vAmiga neither |
 | [NM-HRM-004](findings/NM-HRM-004.md) | ECS danger bit admits too small a range | open · RTL · **red** | `hrm/ch2-copper-move-range`, `hrm/ch2-copper-move-sweep` | both block below `$80` regardless of chipset |
 | [NM-HRM-005](findings/NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | open · RTL · **red** | `hrm/ch2-copper-cycle-times`, `hrm/ch2-copper-cycles` | vAmiga gives NanoMig's three numbers |
-| [NM-HRM-006](findings/NM-HRM-006.md) | DDFSTRT bit H3 gated by chipset, not by resolution | open · RTL · **red** | `hrm/ch3-ddf-fetch-window` | **all four** gate DDF on the chipset; none on resolution |
+| [NM-HRM-006](findings/NM-HRM-006.md) | DDFSTRT bit H3 is respected in lores, where p.91 says hires only | open · page · **red** | `hrm/ch3-ddf-fetch-window` | **unanimous with NanoMig**: all four respect H3 at every resolution; what they gate on the chipset is register bit 1 |
 | [NM-HRM-007](findings/NM-HRM-007.md) | hires fetch cannot reach the manual's 49 words | open · RTL · **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** for the first two; Copperline asserts an even hires word count in its own test |
 | [NM-HRM-008](findings/NM-HRM-008.md) | playfield-1 collision depends on playfield 2 | open · RTL · **red** | `hrm/ch3-collision-registers` | **all four** gate playfield 1 on playfield 2 in single-playfield mode |
 | [NM-HRM-010](findings/NM-HRM-010.md) | the scan line is a whole number of colour clocks | open · RTL · source observation | `hrm/ch3-beam-counters-and-blanking` | Denise and Copperline both alternate whole line lengths |

@@ -824,15 +824,24 @@
 // in raw register LSB significance, not merely restated from the pixel-unit
 // framing).
 //
-// ecs GATES ddfstrt[2] (bit H3), NOT hires. Read literally, not assumed: the
-// compare term is `ddfstrt[2] & ecs` - the module input `ecs` ("ddfstrt/
-// ddfstop ECS bits enable", a chipset-configuration strap set once, not a
-// per-line mode bit), never the `hires` wire (bplcon0_delayed[4], toggled
-// per display via BPLCON0). The manual's Appendix A/p.91 claims "(bit H3
-// only respected in Hires Mode.)" - a MODE claim. Assertion 6 tests this
-// directly, both axes independently (ecs on/off, hires on/off) rather than
-// assuming the two happen to coincide in this fixture's runs, and reports
-// whatever the RTL actually does.
+// ecs GATES ddfstrt[2], NOT H3 and NOT hires - corrected here after
+// NM-HRM-006 (24.09.2026) found this package had misread which stored bit
+// is H3. Read literally, not assumed: the position compare is
+// `{ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0}`. H3 is register bit 2 of the raw
+// DDFSTRT/DDFSTOP word (Appendix A p.277, "bit 2 = H3"); the write decode
+// ddfstrt[8:2]<=data_in[7:1] means register bit 2 (data_in[2]) is STORED as
+// ddfstrt[3] - part of the UNCONDITIONALLY-compared `ddfstrt[8:3]` group,
+// gated by neither `ecs` nor the `hires` wire (bplcon0_delayed[4], toggled
+// per display via BPLCON0). The term the compare actually DOES gate by
+// `ecs` - `ddfstrt[2] & ecs` - is STORED bit ddfstrt[2], which holds
+// register bit 1 (data_in[1]): outside the manual's H8-H3 bit map entirely
+// ("Bits 1-0 - not used", p.91/277), and not H3. The manual's Appendix
+// A/p.91 claims "(bit H3 only respected in Hires Mode.)" - a MODE claim
+// about H3 specifically. DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE tests
+// H3 itself directly, both axes independently (ecs on/off, hires on/off)
+// rather than assuming the two happen to coincide in this fixture's runs,
+// and reports whatever the RTL actually does; a companion MEASURED note
+// there records register bit 1's own (ecs-gated, not H3's) effect.
 //
 // DIWSTRT/DIWSTOP HORIZONTAL FIELDS REACH THIS MODULE (l.103-104,150-205),
 // via hdiwstrt/hdiwstop, captured from data_in[7:0] (DIWSTRT: l.186,
@@ -1094,10 +1103,11 @@ int hde_rising_edge(uint16_t diwstrt_raw, int hpos_max = 456) {
 }
 
 // Returns the hpos value at which the FIRST dma pulse of the target line
-// occurs, or -1 if none. Word COUNT alone cannot show the DDFSTRT bit-2
-// (H3) effect - it is absorbed by the ddfseq 8-CCK quantization before it
-// ever changes a total (measured, not assumed: DDF-16-PIXEL-EFFECTIVE-
-// GRANULARITY above). Only the exact TIMING of the first fetch can.
+// occurs, or -1 if none. Word COUNT alone cannot show DDFSTRT bit H3's
+// effect (ddfstrt[3], register bit 2 per Appendix A p.277) - it is absorbed
+// by the ddfseq 8-CCK quantization before it ever changes a total
+// (measured, not assumed: DDF-16-PIXEL-EFFECTIVE-GRANULARITY above). Only
+// the exact TIMING of the first fetch can.
 int first_fetch_hpos(Harness& h, int target_vpos, int hpos_max = 456) {
     for (int v = 0; v <= target_vpos; ++v) {
         h.dut->vpos = v;
@@ -1131,6 +1141,19 @@ public:
     void expect(bool condition, const std::string& label) {
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
+    }
+    // A measurement record, not a claim: prints what was observed with no
+    // pass/fail verdict and does not touch passed/failed. Used for RTL
+    // behaviour this package has no manual claim to grade against.
+    void note(const std::string& label) {
+        std::cout << "MEASURED: " << label << "\n";
+    }
+    // Declines one or more claim uids: the standard suite-wide convention
+    // (check_uid_placement.py's RECORDED line). Prints with no pass/fail
+    // verdict and does not touch passed/failed. A uid printed here must not
+    // also sit on a graded (PASS/FAIL) line in this same package.
+    void record(const std::string& msg) {
+        std::cout << "RECORDED: " << msg << "\n";
     }
     int passed = 0;
     int failed = 0;
@@ -1428,18 +1451,31 @@ int main(int argc, char** argv) {
                 "3-diw.c24, 3-ddf.c13, 3-fetch.c11.");
     }
 
-    // ---------------- DDFSTRT-H3-BIT-GATED-BY-ECS-NOT-HIRES (p.91,277) ----------------
+    // ---------------- DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE (p.91,277) ----------------
     // Read literally from the RTL (not assumed): the DDFSTRT/DDFSTOP
     // position compare (l.339,349) is `{ddfstrt[8:3], ddfstrt[2] & ecs,
-    // 1'b0}` - bit H3 (ddfstrt[2]) is gated by the module's `ecs` input (a
-    // chipset-configuration strap, "ddfstrt/ddfstop ECS bits enable"), never
-    // by the `hires` wire (bplcon0_delayed[4], a per-line mode bit,
-    // completely separate from `ecs`). The manual states a MODE condition
-    // ("bit H3 only respected in Hires Mode", p.91/277), not a chip-strap
-    // condition. This tests both axes independently, in lores, where any
-    // H3 effect is cleanest to see (DDF-16-PIXEL-EFFECTIVE-GRANULARITY
-    // already showed total WORD COUNT cannot show it - only the first
-    // fetch's exact hpos timing can).
+    // 1'b0}`. H3 is register bit 2 of the raw DDFSTRT/DDFSTOP word
+    // (Appendix A p.277, "bit 2 = H3"); the write decode
+    // ddfstrt[8:2]<=data_in[7:1] (already in this package's boundary
+    // evidence) means register bit 2 (data_in[2]) is STORED as ddfstrt[3] -
+    // part of the UNCONDITIONALLY-compared `ddfstrt[8:3]` group, gated by
+    // neither `ecs` nor the `hires` wire (bplcon0_delayed[4]). The term the
+    // compare DOES gate by `ecs` - `ddfstrt[2] & ecs` - is STORED bit
+    // ddfstrt[2], which holds register bit 1 (data_in[1]): outside the
+    // manual's H8-H3 bit map entirely ("Bits 1-0 - not used", p.91/277),
+    // and NOT H3 - corrected here (NM-HRM-006, 24.09.2026) after this
+    // package's own earlier draft called ddfstrt[2] "H3" and stimulated
+    // register bit 1 ($38/$3A, $3C/$3E) instead. This tests H3 itself -
+    // toggling ONLY register bit 2 ($0038 -> $003C, which differ in raw
+    // value by exactly 0x0004 and nothing else), the SAME pair in both
+    // lores and hires so any lores/hires difference in the result is H3's
+    // own mode-gating and not a difference in which bit is toggled - both
+    // axes independently (ecs on/off, hires on/off), via first-fetch hpos
+    // timing (DDF-16-PIXEL-EFFECTIVE-GRANULARITY already showed total WORD
+    // COUNT cannot show a single-step change - only the first fetch's exact
+    // hpos timing can). A companion MEASURED note below records register
+    // bit 1's own (ecs-gated, not H3's) effect with the SAME $0038/$003A
+    // pair this assertion no longer uses for H3.
     {
         auto first_hpos = [&](bool ecs_on, bool hires_on, uint16_t ddfstrt) {
             Harness h;
@@ -1449,17 +1485,19 @@ int main(int argc, char** argv) {
             h.write_reg(DDFSTRT_ADDR, ddfstrt);
             return first_fetch_hpos(h, 0x50);
         };
-        // $38/$3A (lores base) and $3C/$3E (hires base) each pair differs
-        // ONLY in the H3 field bit (ddfstrt[2]) - verified the same way as
-        // DDF-16-PIXEL-EFFECTIVE-GRANULARITY's $38/$3A pair.
-        int lo_ecs1_a = first_hpos(true, false, 0x0038), lo_ecs1_b = first_hpos(true, false, 0x003A);
-        int lo_ecs0_a = first_hpos(false, false, 0x0038), lo_ecs0_b = first_hpos(false, false, 0x003A);
-        int hi_ecs1_a = first_hpos(true, true, 0x003C), hi_ecs1_b = first_hpos(true, true, 0x003E);
-        int hi_ecs0_a = first_hpos(false, true, 0x003C), hi_ecs0_b = first_hpos(false, true, 0x003E);
+        // $0038 -> $003C: the two raw values differ in exactly one bit,
+        // 0x0004 = register bit 2 = H3 (Appendix A p.277) - the SAME pair
+        // in lores and in hires.
+        int lo_ecs1_a = first_hpos(true, false, 0x0038), lo_ecs1_b = first_hpos(true, false, 0x003C);
+        int lo_ecs0_a = first_hpos(false, false, 0x0038), lo_ecs0_b = first_hpos(false, false, 0x003C);
+        int hi_ecs1_a = first_hpos(true, true, 0x0038), hi_ecs1_b = first_hpos(true, true, 0x003C);
+        int hi_ecs0_a = first_hpos(false, true, 0x0038), hi_ecs0_b = first_hpos(false, true, 0x003C);
 
         // The ORACLE is the manual's own claim: H3 changes timing ONLY in
         // hires mode, REGARDLESS of ecs - i.e. shifts in both hires cases,
-        // shifts in NEITHER lores case.
+        // shifts in NEITHER lores case. Unchanged from this assertion's
+        // earlier draft - only the stimulus above (which bit is toggled)
+        // was wrong.
         bool matches_manual =
             (hi_ecs1_a != hi_ecs1_b) && (hi_ecs0_a != hi_ecs0_b) &&
             (lo_ecs1_a == lo_ecs1_b) && (lo_ecs0_a == lo_ecs0_b);
@@ -1467,28 +1505,45 @@ int main(int argc, char** argv) {
         checks.expect(
             matches_manual,
             "DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE: the manual's own "
-            "claim is that DDFSTRT bit H3 changes fetch timing ONLY in "
-            "hires mode, regardless of chip configuration - '(bit H3 only "
-            "respected in Hires Mode.)' (p.91/277). MEASURED instead (four "
-            "cases, $x8/$xA-style pairs differing only in the H3 field "
-            "bit): lores/ecs=1 " +
+            "claim is that DDFSTRT bit H3 (register bit 2, raw $0004) "
+            "changes fetch timing ONLY in hires mode, regardless of chip "
+            "configuration - '(bit H3 only respected in Hires Mode.)' "
+            "(p.91/277). MEASURED instead (four cases, the SAME $0038-> "
+            "$003C pair - differing only in register bit 2/H3 - in every "
+            "case): lores/ecs=1 " +
                 std::to_string(lo_ecs1_a) + "->" + std::to_string(lo_ecs1_b) +
                 ", lores/ecs=0 " + std::to_string(lo_ecs0_a) + "->" + std::to_string(lo_ecs0_b) +
                 ", hires/ecs=1 " + std::to_string(hi_ecs1_a) + "->" + std::to_string(hi_ecs1_b) +
                 ", hires/ecs=0 " + std::to_string(hi_ecs0_a) + "->" + std::to_string(hi_ecs0_b) +
                 " - this RTL's DDFSTRT/DDFSTOP position compare (l.339,349) "
-                "reads `{ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0}`: H3 is "
-                "gated by the `ecs` chipset-configuration strap ('ddfstrt/"
-                "ddfstop ECS bits enable'), never by the `hires` wire "
-                "(bplcon0_delayed[4]) - the two are read independently "
-                "throughout the file, never combined. So H3 actually "
-                "shifts timing whenever ecs=1 REGARDLESS of resolution "
-                "(including the lores/ecs=1 case, which the manual's mode "
-                "rule says should NOT shift), not only in hires mode. RED "
-                "against the manual's own wording - per this package's "
-                "instructions, the RTL is what is wrong here, not the "
-                "assertion. 3-rddf.c02, 3-rddf.c03, 3-regsum-ddfstrt.c4, "
-                "3-regsum-ddfstop.c4, A-ddf-bits.c14.");
+                "reads `{ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0}`: H3 "
+                "(ddfstrt[3], register bit 2) is part of the "
+                "UNCONDITIONALLY-compared `ddfstrt[8:3]` group - gated "
+                "neither by `ecs` nor by the `hires` wire "
+                "(bplcon0_delayed[4]). So H3 actually shifts timing in "
+                "EVERY case measured here, lores included (which the "
+                "manual's mode rule says should NOT shift), not only in "
+                "hires mode. RED against the manual's own wording - per "
+                "this package's instructions, the RTL is what is wrong "
+                "here, not the assertion. 3-rddf.c02, 3-rddf.c03, "
+                "3-regsum-ddfstrt.c4, 3-regsum-ddfstop.c4, A-ddf-bits.c14.");
+
+        // Register bit 1 (ddfstrt[2], data_in[1]) has no manual claim of
+        // its own - Appendix A/p.91 mark register bits 1-0 "not used" - so
+        // its measured effect is recorded as a MEASUREMENT, not graded
+        // against any claim uid.
+        int b1_lo_ecs1_b = first_hpos(true, false, 0x003A);
+        int b1_lo_ecs0_b = first_hpos(false, false, 0x003A);
+        int b1_hi_ecs1_b = first_hpos(true, true, 0x003A);
+        int b1_hi_ecs0_b = first_hpos(false, true, 0x003A);
+        checks.note(
+            "DDFSTRT register bit 1 (ddfstrt[2], data_in[1], raw $0002) - "
+            "outside the manual's H8-H3 bit map, p.91/277 mark bits 1-0 "
+            "'not used'. $0038->$003A first-fetch hpos: lores/ecs=1 " +
+                std::to_string(lo_ecs1_a) + "->" + std::to_string(b1_lo_ecs1_b) +
+                ", lores/ecs=0 " + std::to_string(lo_ecs0_a) + "->" + std::to_string(b1_lo_ecs0_b) +
+                ", hires/ecs=1 " + std::to_string(hi_ecs1_a) + "->" + std::to_string(b1_hi_ecs1_b) +
+                ", hires/ecs=0 " + std::to_string(hi_ecs0_a) + "->" + std::to_string(b1_hi_ecs0_b));
     }
 
     // ---------------- DDF-REGISTER-BIT-STRUCTURE-AND-NAMED-PRESETS (p.91,277,290) ----------------
@@ -1749,19 +1804,26 @@ int main(int argc, char** argv) {
                 "3-max.c07, 3-t14.c10.");
     }
 
-    // ---------------- MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT (p.80) ----------------
-    // Isolates 3-max-window.c14 specifically, split out of the assertion
-    // above: an independent validator found that a flat "total is 49"
-    // check does not isolate "one word at the rightmost limit" - a total
-    // of 49 could in principle be reached many ways, and the assertion
-    // above never shows the LAST word is what makes it odd. This measures
-    // the claim directly: at the SAME DDFSTOP=$00D8 rightmost limit, the
-    // p.60 formula's own DDFSTRT for the ODD target n=49 is compared
-    // against its neighbours n=48 and n=50 - if the manual's "only one
-    // word is fetched at this limit" mechanism existed in this RTL, n=49
-    // would be its own, individually reachable count (one word more than
-    // 48, one word less than 50), not indistinguishable from either
-    // neighbour.
+    // ---------------- MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT: MEASUREMENT, NOT ASSERTION (p.80) ----------------
+    // NM-HRM-007 (24.09.2026): DECLINED here after an independent review
+    // found this assertion's own pass condition self-contradictory. It
+    // read `at_49==49 && at_49!=at_48 && at_49!=at_50`, where at_50 (the
+    // p.60 formula's own DDFSTRT for target n=50, DDFSTOP_HW_LIMIT-4*48 =
+    // $0018) is EXACTLY DDFSTRT_HW_LIMIT - the SAME stimulus
+    // MAX-WORDS-49-HIRES-AT-HW-LIMITS above already grades as
+    // `hires_max==49`. On any RTL where that assertion passes
+    // (hires_max==49), at_50 here would also measure 49, so this
+    // assertion's own `at_49 != at_50` conjunct would require 49 != 49 -
+    // false. No RTL could ever make both assertions green at once. Its
+    // premise - that n=49 is individually reachable at some OTHER
+    // DDFSTRT, distinguishable from both n=48 and n=50 - is not a claim
+    // the printed sentence makes: 'In high resolution mode the maximum
+    // here is 49 words, because the rightmost limit remains ($D8) and
+    // only one word is fetched at this limit' (p.80) fixes 49 as the
+    // maximum AT EXACTLY DDFSTRT=$0018/DDFSTOP=$00D8 (MAX-WORDS-49-HIRES-
+    // AT-HW-LIMITS' own claim, still red: this RTL measures 50 there) and
+    // says nothing about the count at any OTHER start position with
+    // DDFSTOP=$00D8 held fixed. Measured and declined below instead.
     {
         auto count_for_n = [&](int n) {
             uint16_t ddfstrt = static_cast<uint16_t>(DDFSTOP_HW_LIMIT - 4 * (n - 2));
@@ -1776,31 +1838,31 @@ int main(int argc, char** argv) {
         int at_49 = count_for_n(49);
         int at_50 = count_for_n(50);
 
-        checks.expect(
-            at_49 == 49 && at_49 != at_48 && at_49 != at_50,
-            "MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT: at the SAME DDFSTOP="
-            "$00D8 rightmost limit, targeting n=49 via the p.60 formula "
-            "measures " +
-                std::to_string(at_49) + " words (targeting n=48 measures " +
-                std::to_string(at_48) + ", n=50 measures " + std::to_string(at_50) +
-                ") - the manual's claim is that the rightmost limit ITSELF "
-                "contributes a single, odd word (49), individually "
-                "reachable one word more than 48 and one word less than "
-                "50, not indistinguishable from either neighbour. 'In "
-                "high resolution mode the maximum here is 49 words, "
-                "because the rightmost limit remains ($D8) and only one "
-                "word is fetched at this limit' (p.80, cited here for the "
-                "'only one word...at this limit' half specifically - the "
-                "flat 49-word maximum itself is MAX-WORDS-49-HIRES-AT-HW-"
-                "LIMITS' own claim, isolated there). Measured: n=49 is "
-                "UNREACHABLE and indistinguishable from n=50 - this RTL's "
-                "hires fetched word count is structurally always EVEN (the "
-                "same fact MAX-WORDS-49-HIRES-AT-HW-LIMITS' own comment "
-                "records from sweeping n=26..34), so no DDFSTRT position "
-                "produces a lone extra word at the boundary; the odd "
-                "target rounds up to the next even count instead. RED "
-                "against the manual - the RTL is what is wrong here, not "
-                "the assertion. 3-max-window.c14.");
+        checks.note(
+            "at the SAME DDFSTOP=$00D8 rightmost limit, the p.60 formula's "
+            "own DDFSTRT for n=48/49/50 measures " +
+                std::to_string(at_48) + "/" + std::to_string(at_49) + "/" +
+                std::to_string(at_50) +
+                " words (n=50's own computed DDFSTRT is $0018 = "
+                "DDFSTRT_HW_LIMIT - the SAME stimulus MAX-WORDS-49-HIRES-"
+                "AT-HW-LIMITS grades above).");
+        checks.record(
+            "MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT is DECLINED, not graded. "
+            "'In high resolution mode the maximum here is 49 words, "
+            "because the rightmost limit remains ($D8) and only one word "
+            "is fetched at this limit' (p.80) fixes 49 as the maximum AT "
+            "EXACTLY DDFSTRT=$0018/DDFSTOP=$00D8 - MAX-WORDS-49-HIRES-AT-"
+            "HW-LIMITS' own claim, graded above. It says nothing about the "
+            "count at any OTHER DDFSTRT with DDFSTOP=$00D8 held fixed. "
+            "This assertion's former premise needed n=49 individually "
+            "reachable at such an OTHER position, distinguishable from "
+            "both n=48 and n=50 - not a claim the sentence makes, and "
+            "self-contradictory besides: its own n=50 sample IS the "
+            "$18/$D8 hardware-limit stimulus MAX-WORDS-49-HIRES-AT-HW-"
+            "LIMITS already grades, so on any RTL where that assertion "
+            "measures 49 (its own pass condition), this one's required "
+            "at_49!=at_50 would demand 49!=49 - the two could never both "
+            "be green. 3-max-window.c14.");
     }
 
     // ---------------- HSCROLL-EXTRA-WORD-21-FOR-20 (p.80,82,83,84,85) ----------------
@@ -2104,14 +2166,16 @@ int main(int argc, char** argv) {
 //    equals addrs_m0 (uniformly offset by 40 bytes), failing the equality
 //    check. Reverted; rebuilt clean.
 //
-// 18-20. MAX-WORDS-49-HIRES-AT-HW-LIMITS, MAX-WORDS-49-HIRES-ONE-WORD-AT-
-//    LIMIT and DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE are RECORDED AS
-//    "none impossible", not stimulus-mutated, for the reason the rule
-//    itself allows: all three are ALREADY RED at this package's true
-//    baseline, so there is no green result for a stimulus mutation to
-//    break. All three were also checked for the OTHER direction - could
-//    any legitimate stimulus this assertion explores turn them green - and
-//    confirmed structurally impossible, not merely untried:
+// 18-19. MAX-WORDS-49-HIRES-AT-HW-LIMITS and DDFSTRT-H3-BIT-RESPECTED-
+//    ONLY-IN-HIRES-MODE are RECORDED AS "none impossible", not
+//    stimulus-mutated, for the reason the rule itself allows: both are
+//    ALREADY RED at this package's true baseline, so there is no green
+//    result for a stimulus mutation to break. Both were also checked for
+//    the OTHER direction - could any legitimate stimulus this assertion
+//    explores turn them green - and confirmed structurally impossible,
+//    not merely untried. (MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT is
+//    DECLINED above, not graded, and carries no MUTATION record - see its
+//    own comment for why.)
 //      - MAX-WORDS-49-HIRES-AT-HW-LIMITS: sweeping the hires word-count
 //        formula for every target n from 26 to 34 (see DDF-16-PIXEL-
 //        EFFECTIVE-GRANULARITY's and this assertion's own comments) showed
@@ -2119,21 +2183,19 @@ int main(int argc, char** argv) {
 //        count. 49 is odd. No DDFSTRT/DDFSTOP pair in this RTL produces it,
 //        so no stimulus mutation of THIS assertion (which only varies
 //        DDFSTRT/DDFSTOP/hires) can turn it green.
-//      - MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT (added to isolate
-//        3-max-window.c14, see this package's own defect-correction note):
-//        the SAME structural fact as the assertion above - hires word
-//        counts are always even in this RTL - means n=49 is unreachable by
-//        ANY DDFSTRT this assertion could instead choose, at DDFSTOP=$D8
-//        or anywhere else; there is no stimulus this assertion explores
-//        that can make n=49 distinguishable from its even neighbours.
-//      - DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE: the RTL's own H3
-//        compare term is `ddfstrt[2] & ecs` (l.339,349) - ecs and hires are
-//        read independently everywhere in the file, with no expression
-//        anywhere combining them. Every one of this assertion's four
-//        measured cells is a direct sample of that fixed formula; no
-//        combination of ecs/hires/DDFSTRT this assertion can drive changes
-//        the formula itself, so the manual's mode-based condition cannot be
-//        satisfied by any stimulus this assertion explores.
+//      - DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE: H3 is ddfstrt[3]
+//        (register bit 2, Appendix A p.277), part of the UNCONDITIONALLY-
+//        compared `ddfstrt[8:3]` group in the position compare (l.339,349)
+//        - gated by neither `ecs` nor `hires`. (The compare's ACTUAL
+//        `ecs`-gated term, `ddfstrt[2] & ecs`, is register bit 1 - outside
+//        the manual's H8-H3 bit map, not H3; this package's own earlier
+//        draft mislabeled it H3, corrected after NM-HRM-006 measured
+//        $38->$3C against $38->$3A directly on this fixture.) Because H3 is
+//        unconditional, any H3-only-differing DDFSTRT pair shifts the
+//        first-fetch hpos in EVERY ecs/hires combination this assertion can
+//        drive, including lores - which the manual's mode rule requires to
+//        NOT shift. No stimulus this assertion explores can satisfy the
+//        manual's mode-based condition.
 //
 // Machine-readable records, one per line, read by tools/check_gates.py's
 // mutation gate (MUTATION_RE):
@@ -2155,6 +2217,5 @@ int main(int argc, char** argv) {
 // MUTATION END-OF-LINE-MODULO-AFTER-LAST-WORD stimulus red: the "40" modulo case changed from $0028 to $0014 (20 decimal); gap_m40 became 60, not 80.
 // MUTATION WIDER-PLAYFIELD-FIRST-LINE-UNCHANGED stimulus red: shared pointer helper made to add the modulo to the base address; addrs_m40 no longer equalled addrs_m0.
 // MUTATION MAX-WORDS-49-HIRES-AT-HW-LIMITS none impossible: already red at this package's true baseline; 49 is structurally unreachable (hires word count is always even in this RTL, confirmed by sweeping n=26..34), so no stimulus this assertion explores can turn it green.
-// MUTATION MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT none impossible: already red at baseline (the same structural fact as MAX-WORDS-49-HIRES-AT-HW-LIMITS - hires word counts are always even, so n=49 is unreachable by any DDFSTRT this assertion could choose); there is nothing green here to break.
-// MUTATION DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE none impossible: already red at baseline; the RTL's H3 gate (`ddfstrt[2] & ecs`) never reads `hires`, so no ecs/hires/DDFSTRT combination this assertion drives can satisfy the manual's mode-based condition.
+// MUTATION DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE none impossible: already red at baseline; H3 (ddfstrt[3], register bit 2) is part of the position compare's unconditional `ddfstrt[8:3]` group, gated by neither `ecs` nor `hires`, so an H3-only-differing DDFSTRT pair always shifts the first fetch in lores too - no ecs/hires/DDFSTRT combination this assertion drives can satisfy the manual's mode-based condition.
 // ============================================================================

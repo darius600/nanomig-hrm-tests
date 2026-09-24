@@ -273,13 +273,13 @@ conditional on more than that, in its own way.
 
 ---
 
-### B4 — Hires fetches 50 words at both hardware limits, not 49 (3 assertions)
+### B4 — Hires fetches 50 words at both hardware limits, not 49 (2 assertions)
 
 | | |
 |---|---|
 | Manual | p.80: "In high resolution mode the maximum here is 49 words, because the rightmost limit remains ($D8) and only one word is fetched at this limit" |
 | NanoMig | 50, with DDFSTRT=$0018 and DDFSTOP=$00D8 |
-| Tests | `ch3-ddf-fetch-window` (2), `ch3-bitplane-memory-layout` (1) |
+| Tests | `ch3-ddf-fetch-window` (1), `ch3-bitplane-memory-layout` (1); a third, which required the count one start earlier to differ from 49, is declined -- p.80 fixes 49 only at $18/$D8 |
 
 Neither emulator has a formula the answer can be read off — vAmiga has none at
 all, and WinUAE's is a secondary buffer-sizing calculation. So the reading
