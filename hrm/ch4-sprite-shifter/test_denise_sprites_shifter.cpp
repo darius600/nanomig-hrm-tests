@@ -50,18 +50,19 @@
 //   standalone port list (`ifndef DENISE_EBR` branch -- confirmed no
 //   Makefile in this repo defines DENISE_EBR, so this is the branch
 //   every other sibling package already builds): clk, clk7_en,
-//   clk7n_en, reset, aen, address[1:0] (POS=00/CTL=01/DATA=10/DATB=11),
+//   reset, aen, address[1:0] (POS=00/CTL=01/DATA=10/DATB=11),
 //   hpos[8:0], fmode[15:0], shift, chip48[47:0], data_in[15:0],
 //   sprdata[1:0] (output), attach (output, unused by this package -- see
 //   NON-GOALS). Confirmed by reading denise_sprites.v's own instantiation
-//   of this module (sps0..sps7, lines ~317-460): clk7n_en = c1 & c3 (the
-//   same c1/c3 four-phase pair every sibling harness on this fixture
-//   already uses), and `shift` is generated externally from spres/c1/c3
+//   of this module (sps0..sps7, lines 319-453): clk7_en is its only
+//   clock enable -- SPRxDATA and SPRxDATB are latched on it while aen
+//   selects them (denise_sprites_shifter.v:257-269) -- and `shift` is
+//   generated externally from spres/c1/c3
 //   (`shift = ~c1 & ~c3` for spres==2'b00/01, the OCS/ECS default this
 //   package's own claims describe -- SuperHires's spres!=0 timing is out
 //   of scope, tested by hrm/ch3-sprite-registers/ instead). `fmode` is
 //   driven at 16'h0000 throughout this file: fmode[3:2]==2'b00 selects
-//   `spr_fmode_dat = {data16, 48'h000000000000}` (the 64-bit shift
+//   `spr_fmode_dat = {data_in, 48'h000000000000}` (the 64-bit shift
 //   register's own top 16 bits carry the just-written SPRxDATA/SPRxDATB
 //   value MSB-aligned, its bottom 48 bits are always zero regardless of
 //   what is written -- exactly reproducing the manual's documented
@@ -250,8 +251,7 @@ constexpr int HPOS_MAX = 512;  // hstart is a 9-bit value: 0..511 covers it.
 // Four-phase clocking (c1/c3), reused from every sibling harness already
 // built against this same fixture (hrm/denise_sprites/, hrm/ch3-sprite-
 // registers/, hrm/ch4-attached-sprites/): phase 0 (c1=0,c3=0) carries
-// clk7_en; phase 2 (c1=1,c3=1) carries clk7n_en (= c1 & c3, read from
-// denise_sprites.v's own instantiation of this module). `shift` is
+// clk7_en, the module's only clock enable. `shift` is
 // this module's own port (not a sibling's), computed here exactly as
 // denise_sprites.v computes it for spres==2'b00 (OCS/ECS default, this
 // package's own scope): shift = ~c1 & ~c3 -- one shift pulse per
@@ -262,7 +262,6 @@ public:
     Harness() : dut(new Vdenise_sprites_shifter) {
         dut->clk = 0;
         dut->clk7_en = 0;
-        dut->clk7n_en = 0;
         dut->reset = 1;
         dut->aen = 0;
         dut->address = ADDR_POS;
@@ -290,10 +289,10 @@ public:
     void tick_phase() {
         phase = (phase + 1) % 4;
         switch (phase) {
-            case 0: c1 = 0; c3 = 0; dut->clk7_en = 1; dut->clk7n_en = 0; break;
-            case 1: c1 = 1; c3 = 0; dut->clk7_en = 0; dut->clk7n_en = 0; break;
-            case 2: c1 = 1; c3 = 1; dut->clk7_en = 0; dut->clk7n_en = 1; break;
-            case 3: c1 = 0; c3 = 1; dut->clk7_en = 0; dut->clk7n_en = 0; break;
+            case 0: c1 = 0; c3 = 0; dut->clk7_en = 1; break;
+            case 1: c1 = 1; c3 = 0; dut->clk7_en = 0; break;
+            case 2: c1 = 1; c3 = 1; dut->clk7_en = 0; break;
+            case 3: c1 = 0; c3 = 1; dut->clk7_en = 0; break;
         }
         dut->shift = (c1 == 0 && c3 == 0) ? 1 : 0;
         tick();

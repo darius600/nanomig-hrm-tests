@@ -6,9 +6,9 @@ TOP_MODULE = cpu_wrapper
 # SPECIFICATION.md. This build additionally defines ENABLE_RAM32, a real
 # per-board `define (icepi-zero, icesugar-pro, two mistle targets) that
 # selects the "8MB" Zorro-II size-code arm (chip_addr index 1's `default`
-# case, cpu_wrapper.v:566-572) instead of the non-RAM32 build's "4MB"
-# default -- without it, size code 000 (8MB) is never emitted by this
-# design in Zorro II mode and K-0796/K-0772's reachable half could not be
+# case, cpu_wrapper.v:575); without it fastramcfg=3 takes the "4MB" arm
+# (:577) and the default is "0.5MB" (:580), so size code 000 (8MB) is never
+# emitted in Zorro II mode and K-0796/K-0772's reachable half could not be
 # graded. No file under nanomig/ is modified.
 SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v $(NANOMIG)/sim/TG68KdotC_Kernel.v
 
