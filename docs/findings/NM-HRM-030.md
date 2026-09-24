@@ -9,7 +9,7 @@
 | **Module** | `paula.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v) |
 | **Report to** | **probably nowhere** — see *Suggested change* |
 | **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon) |
-| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | unanswerable by an emulator — see below |
 
 ---
@@ -80,14 +80,14 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
 
   > "Note, that the CPU can't read the DMACON register."
   <!-- corpus: paula-8364r7-dissection/6_6_txt.txt -->
 
   Section 6ab is Paula's own DMACON copy (bits 0-4 and 9, gating its DMA requests); on the 8364R7 it has no read path, so this Paula does not answer a read of $002: NanoMig's partitioning, against the P in the appendix's chip column. ADKCON, by contrast: 'The CPU can read the ADKCON register.'
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 
 ---
 

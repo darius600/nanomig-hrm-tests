@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The page that was quoted allows what NanoMig does. |
 | **Module** | `gary.v` |
 | **Test** | [`hrm/ch7-reset-overlay`](../../hrm/ch7-reset-overlay) measures the bank sweep and declines to grade it |
-| **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a sentence graded without the paragraph that qualifies it** |
 | **Verdict of the four** | **3–1**: vAmiga, Denise and Copperline each replace only the ROM's own 512K; only WinUAE makes "all memory" literally true |
 
@@ -97,7 +97,7 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore, *A500/A2000 Gary Specification***, PDF page 1 — agrees with the manual:
+- **Commodore, *A500/A2000 Gary Specification*, undated**, PDF page 1 — agrees with the manual:
 
   > "000000-1FFFFF NROM if OVR asserted"
   <!-- corpus: gary-spec/p001.txt -->
@@ -111,7 +111,7 @@ and none decides this finding. What they are and how they were read is in
 
   In the A2000 memory decoder PAL (U26, headed preliminary), the RAM enable covers all of $000000-1FFFFF and needs OVL low. /BLS carries the same /OVL term. While OVL is high, the ROM select (p229) covers only $000000-07FFFF and $180000-1FFFFF. So on this board no chip RAM answers anywhere in the low 2 MB while the overlay is up. That matches the p.223 sentence that all memory disappears, not NanoMig's banks 1-3 staying mapped. The finding is withdrawn because p.223 also allows models where RAM still responds; this source describes one model, the A2000, where none does.
 
-Silent on this point: US patent 4,777,621, Commodore-Amiga.
+Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988.
 
 ---
 

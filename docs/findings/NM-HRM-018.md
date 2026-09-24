@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. Withdrawn as a conformance finding; the source observation remains. |
 | **Module** | `denise.v` |
 | **Test** | [`hrm/ch3-bplcon0-display-modes`](../../hrm/ch3-bplcon0-display-modes) — 225/2 became 225/0 |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a name read as a requirement** |
 
 ---
@@ -57,14 +57,14 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 5 — says something else:
+- **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 5 — says something else:
 
   > "04 y PF2H0 PF2P1 BRDNTRAN"
   <!-- corpus: denise-spec-252126/p005.txt -->
 
   In the ECS Denise specification BPLCON0 bit 4 is 'y', and 'y= register bits contained in AGNUS, not defined here.': no SPRHWRM name and no Denise function. That is compatible with the withdrawal (no printed behaviour) and with denise.v giving the bit no ECS meaning; what it adds is that the bit belongs to Agnus, where a Denise-only bitplane fixture could not observe it.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; US patent 4,874,164, Commodore-Amiga.
+Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989.
 
 ---
 

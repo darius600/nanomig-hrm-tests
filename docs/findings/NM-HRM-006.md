@@ -9,7 +9,7 @@
 | **Module** | `agnus_bitplanedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_bitplanedma.v#L339) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339) |
 | **Report to** | **nobody.** NanoMig and all four independent implementations respect H3 at every resolution |
 | **Test** | [`hrm/ch3-ddf-fetch-window`](../../hrm/ch3-ddf-fetch-window) |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **unanimous with NanoMig**: all four respect H3 in lores and hires, on OCS and ECS. What they gate on the chipset is register bit 1, which p.277 lists as unused |
 
 ---
@@ -92,21 +92,21 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **US patent 4,874,164, Commodore-Amiga**, PDF page 24 — says something else:
+- **US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989**, PDF page 24 — says something else:
 
   > "the data fetch regis ters have a 4 pixel resolution because only five bits are used in either register"
   <!-- corpus: patent-us4874164-agnus-denise/p024.txt -->
 
   The shared specification says the fetch registers use five bits, with no resolution or chipset qualifier. It does not name the bits, but five position bits leave no sixth bit for H3 in hires. So it matches neither the 3rd edition's hires-only H3 nor NanoMig. patent-us5103499-copper p024 has the same sentence ('have only a 4 pixel resolution because only five bits').
 
-- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 37 — says something else:
+- **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 37 — says something else:
 
   > "at even multiples of 8 clocks"
   <!-- corpus: agnus-8371-spec/p037.txt -->
 
   A note beside the bit-plane fetch timing diagram says data fetch start can only be specified at even multiples of 8 clocks, and that this is the position to specify for the normal width display, with a 20-word fetch for 320 pixels and a 40-word fetch for 640, as a render of the page shows. The note points at position 38 of the diagram; read in the register's units, a step of 8 leaves no place for H3 in either resolution. That matches neither p.91's hires-only H3 nor NanoMig, and it agrees with the shared patent specification's five bits. The same specification's register bit assignment on p.28 still gives bits 7-2 to H8-H3, as p.91 does, and marks bits 1-0 unused, so the document does not settle the point by itself.
 
-Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS).
+Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS), 1988.
 
 ---
 

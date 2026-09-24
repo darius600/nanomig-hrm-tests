@@ -9,7 +9,7 @@
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L865-L882) · no counterpart upstream |
 | **Report to** | **nobody, as a defect.** An implementation without the bug is arguably the better hardware; what needs a ruling is whether software that was written around the bug still works |
 | **Test** | [`hrm/ch8-dsklen-dma-arming`](../../hrm/ch8-dsklen-dma-arming) — `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red. A control assertion drives the identical apparatus with a different payload and reports it correctly in the same run |
 | **Verdict of the four** | **3–1, and the one is the interesting one.** Copperline reproduces the bug on purpose, with a named constant for it. WinUAE, vAmiga and Denise all write whole bytes or words and lose nothing — but WinUAE alone emulates the *other* sentence of the same printed paragraph, and calls it a Paula bug in its own comment |
 
@@ -185,12 +185,12 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **techtravels, *Inside Paula's Floppy Controller*, part I — third-party, silicon**, PDF page 39 — agrees with the manual:
+- **techtravels, *Inside Paula's Floppy Controller*, part I, 2026 — third-party, silicon**, PDF page 39 — agrees with the manual:
 
   > "The candidate sequence is specific: the serializer finishes, 10i closes write gate, and delayed transition decisions still in 10v and 10e reach a drive that can no longer record them. This explains a lost tail. The current work has not established why the documented length is exactly three bits."
   <!-- corpus: techtravels-paula-floppy/p039.txt -->
 
   The paper accepts the documented loss and places a silicon cause: 10i closes write gate while bits are still in the 10v/10e delay chain. It calls this a hypothesis, and says the three-bit length is still open (p043). Its section 6.3 explains the paragraph's other sentence ('may not come in') as a drain race, but the finding does not grade that sentence.
 
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.
 

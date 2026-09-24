@@ -229,13 +229,11 @@ again.
 | [NM-HRM-036](findings/NM-HRM-036.md) | chip memory banks 1-3 stay reachable while the overlay is active | **withdrawn** | `hrm/ch7-reset-overlay` | **3-1**: vAmiga, Denise and Copperline replace only the ROM's 512K, as NanoMig does; p.223 itself allows part of the RAM to respond |
 
 
-Chapter 1 was read and accepted on 17.09.2026 and contributes NM-HRM-060
-and NM-HRM-061. Appendix F, read the same day, contributes NM-HRM-062
+Chapter 1 contributes NM-HRM-060 and NM-HRM-061, and Appendix F NM-HRM-062
 and NM-HRM-063. Appendix K contributes NM-HRM-064 and NM-HRM-065, both from
 the AUTOCONFIG responder — the one part of the Zorro bus the Minimig family
-implements. Both pages were corrected after their first version: the responder
-is inherited from MiSTer, not NanoMig’s own, and NM-HRM-065’s behaviour is
-inherited with it.
+implements. The responder is inherited from MiSTer, not NanoMig’s own, and
+NM-HRM-065’s behaviour is inherited with it.
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
 keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to

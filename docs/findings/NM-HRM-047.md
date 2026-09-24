@@ -9,7 +9,7 @@
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L594-L603) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L292-L301) |
 | **Report to** | **Amiga specialists first.** The page gives two numbers; whether an implementation is *required* to distinguish them is a reading question, not a measurement — see *For the specialists* |
 | **Test** | [`hrm/ch8-drive-step-timing`](../../hrm/ch8-drive-step-timing) — assertion `RATIO-A` |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red of 5 graded, plus two explicit `record()` declines (`STEP-POLARITY`, `PULSE-WIDTH-FLOOR`) and `RATIO-B` declined for measuring two quantities that are not of the same kind |
 | **Verdict of the four** | **unanimous with NanoMig on the gate**, and none of the four uses the printed numbers for it. All four accept step pulses on a single direction-independent floor in the tens of microseconds; three of them carry 3 ms and 18 ms elsewhere, as a *settle* effect NanoMig does not model at all |
 
@@ -301,5 +301,5 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 

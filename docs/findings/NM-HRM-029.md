@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The assertion was logically false. |
 | **Module** | `paula_audio_channel.v` |
 | **Test** | [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state) — the assertion is gone |
-| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a one-way implication tested as a biconditional** |
 
 ---
@@ -89,7 +89,7 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 
 ---
 

@@ -9,7 +9,7 @@
 | **Module** | `paula_intcontroller.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_intcontroller.v#L132-L134) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_intcontroller.v#L132-L134) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch5-audio-interrupt`](../../hrm/ch5-audio-interrupt) |
-| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | two of four behave the same way; one masks bit 15 and nothing else, deliberately |
 
 ---
@@ -82,14 +82,14 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
 
   > "When writing the interrupt flag register, if a register Bit selected with D0..D14 is high, the register Bit is set or cleared according to D15."
   <!-- corpus: paula-8364r7-dissection/4_4_txt.txt -->
 
   The 8364R7's interrupt flag register has a bit 14: 'Note, that for Bit 2, Bit 4, and Bit 14 of the interrupt flag register the "interrupt set inputs" are tied to GND.' No hardware source, like SOFT and COPER, but the write path sets any of D0..D14, so bit 14 is a request bit a write can set, as in NanoMig. Readback through INTREQR is not stated in the note.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 
 ---
 

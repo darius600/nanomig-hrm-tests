@@ -9,7 +9,7 @@
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L467-L477) · no counterpart upstream |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against |
 | **Test** | [`hrm/ch8-mfm-cell-encoding`](../../hrm/ch8-mfm-cell-encoding) — `A2-MFM-ONE-ENCODES-01`, `A4-MFM-ZERO-AFTER-ONE-ENCODES-00` |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red of four. One of the two greens is green by coincidence and says so in its own message |
 | **Verdict of the four** | **unanimous against.** All four implement the page's three rules exactly, and all four carry the previous data bit across the word or byte boundary to do it. Denise prints the manual's table verbatim as the comment above its encoder |
 
@@ -221,12 +221,12 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **techtravels, *Inside Paula's Floppy Controller*, part I — third-party, silicon**, PDF page 49 — agrees with the manual:
+- **techtravels, *Inside Paula's Floppy Controller*, part I, 2026 — third-party, silicon**, PDF page 49 — agrees with the manual:
 
   > "Each data bit becomes a clock/data pair of channel bits, so the encoded stream contains twice as many bits as the unencoded data: Data bit Recorded pair Condition 1 01 always 0 10 when it follows a 0"
   <!-- corpus: techtravels-paula-floppy/p049.txt -->
 
   This is a glossary statement of general MFM, not a silicon finding; the paper says Paula does not encode ('Software builds or interprets the recorded format, including encoding', p018). The table continues on p050 with '0 00 when it follows a 1'. p028's '$A1 data → normal MFM $44A9' is an encoding that only the context rule produces.
 
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.
 

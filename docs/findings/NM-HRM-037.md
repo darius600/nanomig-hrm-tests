@@ -9,7 +9,7 @@
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/userio.v#L153-L176) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L174-L195) |
 | **Report to** | **Minimig-AGA and NanoMig.** No other implementation does this |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge), [`hrm/ch8-pot-pins-as-digital-io`](../../hrm/ch8-pot-pins-as-digital-io), [`hrm/ch8-controller-pin-function-map`](../../hrm/ch8-controller-pin-function-map), [`hrm/ch8-potgo-register-bit-layout`](../../hrm/ch8-potgo-register-bit-layout) |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 14 red across four packages. Controls pass on the same measurement basis in each |
 | **Verdict of the four** | **none reproduces it** — all four give the right-hand X counter the same external treatment as the other three |
 
@@ -116,14 +116,14 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **US patent 4,829,473, Commodore-Amiga**, PDF page 10 — agrees with the manual:
+- **US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989**, PDF page 10 — agrees with the manual:
 
   > "Individual control switches 158a, 158, 158c, and 158a monitor respective ones of the lines 85a, 87a, 89a, and 91a. When a preset level is sensed, each control switch outputs a control signal 150a, 150b, 150c, and 150d to latch registers 153a, b, c, d."
   <!-- corpus: patent-us4829473-paula/p010.txt -->
 
   The patent's pot circuit (FIG. 5) has four identical port circuits, 83a-d. Each pot line has its own sensing switch, and that switch latches the free-running counter into the port's register. POTGO-style bit pairs 15/14, 13/12, 11/10 and 9/8 drive the four tri-state drivers alike (p.9). No port is drive-only. All four inputs are sensed, as the manual's four-input reading requires.
 
-- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
 
   > "All of the channels are built pretty much in the same way, so we now focus on POT0X."
   <!-- corpus: paula-8364r7-dissection/8_8_txt.txt -->
@@ -137,5 +137,5 @@ and none decides this finding. What they are and how they were read is in
 
   The right port's X potentiometer line exists on the board and is wired as the other three are.
 
-Silent on this point: Commodore, *A500/A2000 Gary Specification*.
+Silent on this point: Commodore, *A500/A2000 Gary Specification*, undated.
 

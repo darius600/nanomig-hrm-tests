@@ -9,7 +9,7 @@
 | **Module** | `src/minimig-aga/cia_int.v:57` |
 | **Report to** | Minimig/MiSTer maintainers, once Amiga specialists confirm it matters in practice |
 | **Test** | `hrm/appF-ciab-port-assignments` · `PROP-FLAG-EDGE-POLARITY` — **red** |
-| **Chapter** | Appendix F — 8520 Complex Interface Adapters · printed p.341 |
+| **Chapter** | Appendix F — 8520 Complex Interface Adapters · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed p.341 |
 | **Assertions** | 1 red, with a paired control that passes on the same measurement channel |
 | **Verdict of the four** | **unanimous, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all set the bit on a transition and none of them from a held level |
 
@@ -122,12 +122,12 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore, 6526 CIA specification**, PDF page 6 — agrees with the manual:
+- **Commodore, 6526 CIA specification, 1981**, PDF page 6 — agrees with the manual:
 
   > "Any negative transition on FLAG will set the FLAG interrupt bit."
   <!-- corpus: cia-6526-spec/p006.txt -->
 
   The datasheet states the manual's p.341 rule almost word for word, 6526 where the manual has 8520: FLAG is 'a negative edge sensitive' input and a transition, not a level, sets the FLAG bit. It also has a read of the ICR data register clear it (p007), and on its edge rule a held level would not set the bit again; it is a 6526 document and does not itself speak for the 8520.
 
-Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 

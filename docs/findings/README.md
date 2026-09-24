@@ -3,7 +3,7 @@
 A reference for developers, not a narrative.
 
 **Sixty-five of these pages are filed against the Hardware Reference
-Manual and five against the AA specification.** The AA group (NM-AA-001 to
+Manual, 3rd edition (1991), and five against the AA specification (1991).** The AA group (NM-AA-001 to
 NM-AA-005) is counted separately in [`../findings.md`](../findings.md), and
 the tests that hold them up live in `aa/` rather than `hrm/`. The header
 table is the same on all seventy.
@@ -63,15 +63,15 @@ every quotation was verified in a local checkout at that revision. A page that
 names another finding links to it, as [NM-HRM-019](NM-HRM-019.md) does here, so
 a reader can follow the thread without going back to the register.
 
-| what | repository | revision |
+| what | repository | revision · commit date |
 |---|---|---|
-| **NanoMig** — the design under test | [harbaum/NanoMig](https://github.com/harbaum/NanoMig) | [`d6f7df9`](https://github.com/harbaum/NanoMig/tree/d6f7df957fad655bc07f6a381e5094a9edff0be0) · v0.14-beta-33 |
-| **Minimig-AGA** — what NanoMig descends from | [MiSTer-devel/Minimig-AGA_MiSTer](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer) | [`da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/tree/da7632e44498840850e78966947f8770166e6e77) |
+| **NanoMig** — the design under test | [harbaum/NanoMig](https://github.com/harbaum/NanoMig) | [`d6f7df9`](https://github.com/harbaum/NanoMig/tree/d6f7df957fad655bc07f6a381e5094a9edff0be0) · v0.14-beta-33 · 2026-09-04 |
+| **Minimig-AGA** — what NanoMig descends from | [MiSTer-devel/Minimig-AGA_MiSTer](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer) | [`da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/tree/da7632e44498840850e78966947f8770166e6e77) · 2026-09-11 |
 | **Minimig-AGA on MiST/TC64** — the second maintained line | [minimig-dev/MinimigAGA-MiST-TC64](https://github.com/minimig-dev/MinimigAGA-MiST-TC64) | [`9e8e308`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/tree/9e8e30844fe134dca54cea65f1bd38539dfc15ad) · 2025-05-03 |
-| WinUAE | [tonioni/WinUAE](https://github.com/tonioni/WinUAE) | [`ccc407e`](https://github.com/tonioni/WinUAE/tree/ccc407e9c636668b99b5f19d6e9aa03ea04b3052) |
-| vAmiga | [dirkwhoffmann/vAmiga](https://github.com/dirkwhoffmann/vAmiga) | [`35de004`](https://github.com/dirkwhoffmann/vAmiga/tree/35de004a2f1502c2811b9a8ebcde4d0979a98937) |
-| Denise | [piciji/denise](https://github.com/piciji/denise) | [`1cb7d45`](https://github.com/piciji/denise/tree/1cb7d45117893c76025d32260edb6008001344f9) |
-| Copperline | [CopperlineHQ/Copperline](https://github.com/CopperlineHQ/Copperline) | [`726bed0`](https://github.com/CopperlineHQ/Copperline/tree/726bed00c407727c1f5bd32c7193587986638941) |
+| WinUAE | [tonioni/WinUAE](https://github.com/tonioni/WinUAE) | [`ccc407e`](https://github.com/tonioni/WinUAE/tree/ccc407e9c636668b99b5f19d6e9aa03ea04b3052) · 2026-09-06 |
+| vAmiga | [dirkwhoffmann/vAmiga](https://github.com/dirkwhoffmann/vAmiga) | [`35de004`](https://github.com/dirkwhoffmann/vAmiga/tree/35de004a2f1502c2811b9a8ebcde4d0979a98937) · 2026-09-06 |
+| Denise | [piciji/denise](https://github.com/piciji/denise) | [`1cb7d45`](https://github.com/piciji/denise/tree/1cb7d45117893c76025d32260edb6008001344f9) · 2026-09-11 |
+| Copperline | [CopperlineHQ/Copperline](https://github.com/CopperlineHQ/Copperline) | [`726bed0`](https://github.com/CopperlineHQ/Copperline/tree/726bed00c407727c1f5bd32c7193587986638941) · 2026-09-11 |
 
 All six are checked out locally under `_emulators/` in the workspace, outside
 either repository, so a citation can be re-checked rather than trusted.
@@ -105,11 +105,9 @@ NanoMig has not picked it up. That is the only case with something to act on, an
 it gets a section. The full comparison is in
 [`../upstream-minimig-aga.md`](../upstream-minimig-aga.md).
 
-**Both lines are stated once, in the comparison table, and nowhere else.** Until
-18.09.2026 every finding also carried a separate `Upstream` header row, so the
-same two implementations were described twice on one page, in two wordings that
-had to be kept in step by hand. The row is gone; whatever it said that the table
-did not is now in the table.
+**Both lines are stated once, in the comparison table, and nowhere else.** A
+separate header row would describe the same two implementations twice on one
+page, in two wordings that would have to be kept in step by hand.
 
 **Two groups maintain that ancestry independently**, and the table names both:
 MiSTer-devel's `Minimig-AGA_MiSTer` and minimig-dev's
@@ -174,11 +172,16 @@ documents say*.
 
 | kind | documents | counted as |
 |---|---|---|
-| Commodore specifications | A500/A2000 Gary specification; Denise specification 252126-01 (ECS); 8371 Agnus specification 318071-01; 6526 CIA specification | one each |
+| Commodore specifications | A500/A2000 Gary specification, undated; Denise specification 252126-01 (ECS), 1988; 8371 Agnus specification 318071-01, 1987, revised 1988; 6526 CIA specification, 1981 | one each |
 | Commodore technical manuals | *A500/A2000 Technical Reference Manual*, 1987 | one |
-| Commodore-Amiga patents | US 4,777,621; US 4,874,164 and 5,103,499; US 4,829,473; US 4,780,844 | one each, except 4,874,164 and 5,103,499, which carry one specification and count once |
-| Commodore articles | *AmigaMail* vol. 1 | one each |
-| silicon | 6502.org's dissection of Paula 8364R7; techtravels' analysis of Paula's floppy controller | witnesses, like the emulators: third-party reverse engineering of one chip revision, not a statement of Commodore's intent |
+| Commodore-Amiga patents | US 4,777,621, filed 1985, granted 1988; US 4,874,164 and 5,103,499, filed 1986, granted 1989 and 1992; US 4,829,473, filed 1986, granted 1989; US 4,780,844, filed 1986, granted 1988 | one each, except 4,874,164 and 5,103,499, which carry one specification and count once |
+| Commodore articles | *AmigaMail* vol. 1, 1989 | one each |
+| silicon | 6502.org's dissection of Paula 8364R7, 2023; techtravels' analysis of Paula's floppy controller, 2026 | witnesses, like the emulators: third-party reverse engineering of one chip revision, not a statement of Commodore's intent |
+
+Each year is the document's own -- a copyright line, a revision block, a
+patent's filing and grant dates -- and where none is printed the document is
+called undated. 5,103,499 was filed in 1989 as a division of the 1986
+application behind 4,874,164, which is why the two share a specification.
 
 Quotations are taken from each PDF's text layer or, for the three scans that
 have none -- the TRM and the 8371 and 6526 specifications -- from Tesseract

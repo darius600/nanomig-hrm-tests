@@ -9,7 +9,7 @@
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86) |
 | **Report to** | **nowhere** — a known, deliberate simplification, stated in the RTL |
 | **Test** | none. The claim is a **recorded decline**, not an assertion |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | both that were read model the half clock as alternating whole lines |
 
 ---
@@ -91,21 +91,21 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **US patent 4,874,164, Commodore-Amiga**, PDF page 25 — agrees with the manual:
+- **US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989**, PDF page 25 — agrees with the manual:
 
   > "During scan of a horizon tal line, there are typically 227.5 memory access cycles, each of which is approximately 280 nanoseconds in duration."
   <!-- corpus: patent-us4874164-agnus-denise/p025.txt -->
 
   Same figure as the manual, per horizontal line. It says 'typically' and names no video standard. The same sentence is on patent-us5103499-copper p025.
 
-- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 11 — agrees with the manual:
+- **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 11 — agrees with the manual:
 
   > "strobe shown above is used during the second refresh time slot of every other line, to identify lines with long counts (228)."
   <!-- corpus: denise-spec-252126/p011.txt -->
 
   The ECS Denise specification says every other line is a long line of 228 counts. This is the alternation NanoMig does not generate.
 
-Silent on this point: Commodore, 8371 Agnus specification, part 318071-01.
+Silent on this point: Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988.
 
 ---
 

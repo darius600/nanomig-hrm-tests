@@ -9,7 +9,7 @@
 | **Module** | `minimig.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/minimig.v#L861-L862) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L933-L934) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch7-overlay-source`](../../hrm/ch7-overlay-source) |
-| **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | `OTHER-CIA-A-REGISTER-ALSO-CLEARS` — red. Its precondition line shares the label stem and is green; `CIAB-WRITE-DOES-NOT-CLEAR` is the control |
 | **Verdict of the four** | **all four tie the overlay to the value of the OVL bit**; three say in code that only port-A registers can move it |
 
@@ -102,7 +102,7 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore, *A500/A2000 Gary Specification***, PDF page 1 — agrees with the manual:
+- **Commodore, *A500/A2000 Gary Specification*, undated**, PDF page 1 — agrees with the manual:
 
   > "OVL (OVerLay) input causes ROM to be accessed at memory location 0. This signal is typically driven by a port line so that ROM is mapped to the memory 0 at RESET time."
   <!-- corpus: gary-spec/p001.txt -->
@@ -116,7 +116,7 @@ and none decides this finding. What they are and how they were read is in
 
   The overlay line is port A's bit 0 as an output, so it follows that bit's output level; the drawing gives it no other source. The TRM's own text does not say what drives or clears the line.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, 6526 CIA specification; US patent 4,777,621, Commodore-Amiga.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, 6526 CIA specification, 1981; US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988.
 
 ---
 

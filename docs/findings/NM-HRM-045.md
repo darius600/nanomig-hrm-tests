@@ -9,7 +9,7 @@
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L699) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) |
 | **Report to** | **nobody in the RTL.** This is a defect in one printed page, measured against another printed page of the same manual |
 | **Test** | [`hrm/ch8-dmaon-enable-composition`](../../hrm/ch8-dmaon-enable-composition) — assertion `A2-DMAON_P278_TWO_TERM_COMPOSITION` |
-| **Chapter** | 8 — Interface Hardware, and Appendix A · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware, and Appendix A · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red of 6 graded. `A1` sweeps all eight term combinations against p.248's reading and is **green on the identical measurement basis** |
 | **Verdict of the four** | **unanimous against p.278.** All four require the DSKEN term; not one implements the two-term formula as Appendix A prints it |
 | **See also** | [NM-HRM-041](NM-HRM-041.md), which is about the same register's *constant* fields. This finding is only about bit 14 |
@@ -201,5 +201,5 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: Commodore, 8371 Agnus specification, part 318071-01; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 

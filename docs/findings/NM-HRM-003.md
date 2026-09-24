@@ -9,7 +9,7 @@
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L142-L144) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L142-L144) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
 | **Test** | [`hrm/ch2-copper-control`](../../hrm/ch2-copper-control), [`hrm/ch2-copper-locreg-width`](../../hrm/ch2-copper-locreg-width) |
-| **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — to 19 bits on OCS. The two do it in different places and the effect on a fetched address is the same |
 | **See also** | [NM-HRM-022](NM-HRM-022.md) (blitter) and [NM-HRM-024](NM-HRM-024.md) (audio) — the same decision in two other engines |
 
@@ -64,28 +64,28 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — agrees with the manual:
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 16 — agrees with the manual:
 
   > "Copper 47 (one channel), the audio DMA control logic 53 (four channels), the bitplane DMA control logic 57 (six channels), the disk and refresh DMA control logic 61 (2 channels), and the Blitter DMA control logic 65 (four channels). For each of the 25 DMA channels, an 18 bit RAM address pointer is stored in a designated pointer register 138"
   <!-- corpus: patent-us5103499-copper/p016.txt -->
 
   The Copper's pointer (its program counter) is one of 25 pointer registers of 18 bits: 15 low plus 3 high word-address bits, 512K bytes (same page: the RAM address bus addresses 'one of 256K words (512K bytes)'). That is the manual's OCS width; NanoMig's pointer is 20 bits (15+5). The patent states the pointer register's width, not COP1LCH's directly; p017 says the location (backup) values are substituted into these pointers through the '18 bit adder 137'. It predates ECS, so it speaks only to the OCS half of the manual's two-width statement. The '19 bits wide' on p023 is about bitplane pointers and reads as the byte-address width of the same 512K range, not a contradiction.
 
-- **US patent 4,777,621, Commodore-Amiga**, PDF page 8 — agrees with the manual:
+- **US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988**, PDF page 8 — agrees with the manual:
 
   > "The first custom chip 61 generates a 18 bit dynamic RAM address multiplexed onto a nine bit bus 75"
   <!-- corpus: patent-us4777621-system/p008.txt -->
 
   Chip 61 houses the co-processor 45 and the address registers for the DMA channels (p008), and the DRAM address it generates is 18 bits — a 512K-byte reach, the manual's OCS width. This is a bus-level statement about the address the chip drives, not about COP1LCH's latch; it is the kind of narrowing the finding credits to WinUAE. Weakest of the agreeing rows; filed 1985, before ECS.
 
-- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 26 — agrees with the manual:
+- **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 26 — agrees with the manual:
 
   > "COPILCH Copper first location register (high 3 bits)"
   <!-- corpus: agnus-8371-spec/p026.txt -->
 
   The 8371 (OCS, PAL) specification gives COP1LCH three high bits (OCR 'COPILCH'), p027 calls COP1LC/COP2LC '18 bit pointer registers', and Table 2 (p032) repeats 'Co-processor first location register' with High 3 bits: the manual's OCS width, against NanoMig's unconditional five. It is an OCS document and speaks only to the OCS half of the manual's two-width statement; pp. 015 and 017 give every one of the 25 DMA channels an 18 bit pointer reaching 256K words (512K bytes).
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS), 1988; Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 
 ---
 

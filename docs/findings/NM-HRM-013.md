@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. It was split; the surviving half is [NM-HRM-019](NM-HRM-019.md). |
 | **Module** | `denise_sprites.v` |
 | **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a scope note read as a requirement** |
 
 ---
@@ -51,12 +51,12 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 10 — **agrees with NanoMig**:
+- **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 10 — **agrees with NanoMig**:
 
   > "06-04 X Not used."
   <!-- corpus: denise-spec-252126/p010.txt -->
 
   This ECS Denise specification (it reports 8373 revisions via DENISEID) prints SPRxCTL bits 06-04 as not used and has no row for bit 03: on bit 4 it sides with NanoMig reading neither bit, against the 3rd edition's SHSH1 70ns increment; bit 3 the manual itself calls unimplemented. The table has the shape of an OCS-era table and lacks even the EV8 row, so it may be an un-updated carry-over. It bears equally on NM-HRM-019, the surviving half.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; US patent 4,874,164, Commodore-Amiga.
+Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989.
 

@@ -9,7 +9,7 @@
 | **Module** | `src/minimig-aga/cpu_wrapper.v:619-646`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_wrapper.v#L619-L646) at the pinned revision |
 | **Report to** | **NanoMig**, and the fix is one line MiSTer already has. The AUTOCONFIG responder is **inherited**, not NanoMig's own — see *Why this is NanoMig's* below, which was wrong in this page's first version |
 | **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · six graded assertions — **all red** |
-| **Chapter** | Appendix K — Zorro Expansion Bus · printed pp. 433 and 436 |
+| **Chapter** | Appendix K — Zorro Expansion Bus · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed pp. 433 and 436 |
 | **Assertions** | 6 red, with an inverse control that turns green when register 48 is written in place of 4C |
 | **Verdict of the four** | **three of four implement it; vAmiga does not** |
 
@@ -171,5 +171,5 @@ and none decides this finding. What they are and how they were read is in
 
   The expansion chapter's register table makes 4C a shut-up address: a write there makes the board pass config out and stop answering until RESET. Register 08/0A carries the matching flag, 'O means this board can be shut up' (p030). The example test-RAM PAL (p046) latches SHUTUP on a write decoded at 4C and gates its outputs with it. That is the manual's contract; NanoMig advertises the flag and has no 4C handler. The table calls the address 'Optional', and the 08/0A flag is how a board declares whether it has one.
 
-Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+Silent on this point: Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.
 

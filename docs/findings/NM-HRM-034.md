@@ -9,7 +9,7 @@
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L108-L110) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L114-L116) |
 | **Report to** | **nobody yet** — two of the four implementations do the same thing; see *For the specialists* |
 | **Test** | [`hrm/ch7-beam-position-word-layout`](../../hrm/ch7-beam-position-word-layout) |
-| **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | `VPOSR-OCS-BITS-14-1-UNUSED (ntsc=1)` — red. `VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0)` is the green control, same label stem |
 | **Verdict of the four** | **2–2**: WinUAE and Denise expose the video standard in an OCS read exactly as NanoMig does; vAmiga and Copperline do not |
 
@@ -96,14 +96,14 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 30 — agrees with the manual:
+- **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 30 — agrees with the manual:
 
   > "USE LOF--~-------------------------------------- V8"
   <!-- corpus: agnus-8371-spec/p030.txt -->
 
   VPOSR's bit row on the 8371 has LOF at bit 15, V8 at bit 0 and nothing between: the manual's OCS layout with bits 14-1 unused. But the 8371 is the PAL part, where NanoMig's ntsc=0 leg also reads a zero band. The red is the ntsc=1 leg, which this document does not describe, so it states the manual's layout without separating the two sides on the red.
 
-Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS); US patent 4,874,164, Commodore-Amiga.
+Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS), 1988; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989.
 
 ---
 

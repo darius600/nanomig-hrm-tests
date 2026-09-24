@@ -9,7 +9,7 @@
 | **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/amiga_keymap.v#L70-L130) · no counterpart upstream |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against, and the finding does not generalise to the Minimig family |
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) — `CUTOUT-30` red at HID `$64`, `KEY-$2B` green at HID `$32`, same measurement basis |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red of 98. The other 97 include a 94-row exhaustive sweep of the table, all green |
 | **Verdict of the four** | **unanimous against.** All four carry both cutout keys as distinct codes, `$30` and `$2B`, in their own key tables |
 
@@ -124,5 +124,5 @@ and none decides this finding. What they are and how they were read is in
 
   Two European keys with two distinct codes: $2B cut from key 44 and $30 from key 60. Table 1-1 (p014) gives 44 as RETURN and lists 2B and 30 as separate reserved entries. That is the manual's pair of codes, with $2B from Return. It contradicts NanoMig, which maps both international keys to $2B and never produces $30. The table stops at 5F, so this source does not itself name key 60 as the left shift.
 
-Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
 

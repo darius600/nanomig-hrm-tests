@@ -9,7 +9,7 @@
 | **Module** | `agnus_blitter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_blitter.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
 | **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs) |
-| **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — by Agnus revision |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper) and [NM-HRM-024](NM-HRM-024.md) (audio) — the same decision in two other engines |
 
@@ -67,28 +67,28 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — agrees with the manual:
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 16 — agrees with the manual:
 
   > "and the Blitter DMA control logic 65 (four channels). For each of the 25 DMA channels, an 18 bit RAM address pointer is stored in a designated pointer register 138"
   <!-- corpus: patent-us5103499-copper/p016.txt -->
 
   The four Blitter channels' pointers are among the 25 pointer registers of 18 bits — 15 low plus 3 high word-address bits, the manual's OCS width. NanoMig takes five high bits from BLTxPTH (address_out 0xF8000, a 20-bit word address). Pre-ECS; says nothing of the five-bit ECS width.
 
-- **US patent 4,777,621, Commodore-Amiga**, PDF page 8 — agrees with the manual:
+- **US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988**, PDF page 8 — agrees with the manual:
 
   > "The first custom chip 61 generates a 18 bit dynamic RAM address multiplexed onto a nine bit bus 75"
   <!-- corpus: patent-us4777621-system/p008.txt -->
 
   The bit map image manipulation circuitry 47 (the blitter) and the DMA address registers sit on chip 61 (p008), whose DRAM address is 18 bits — the manual's OCS reach. The finding measures address_out, the address the blitter DMA drives, so this bus-level statement bears on the same observable; it does not name BLTxPTH. Filed 1985, before ECS.
 
-- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 21 — agrees with the manual:
+- **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 21 — agrees with the manual:
 
   > "BLT x PTH Blitter pointer to x (high 3 bits) BLT x PTL a Blitter pointer to x (low 15 bits) This pair of registers contains the 18 bit address of Blitter source"
   <!-- corpus: agnus-8371-spec/p021.txt -->
 
   On the 8371 the blitter pointers have three high bits and an 18 bit address, and Table 2 (p031) repeats 'Blitter pointer to source C' with '(High 3 bits)'. That is the manual's OCS width, against NanoMig's unconditional five (address_out 0xF8000 at ecs=0). An OCS document, it says nothing about the five-bit ECS width.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore, *A500/A2000 Gary Specification*; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS), 1988; Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 
 ---
 

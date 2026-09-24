@@ -9,7 +9,7 @@
 | **Module** | none. `gary.v:191-192` follows the page's PROSE and is not at fault here |
 | **Report to** | whoever maintains errata for the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Test** | none yet. Raised at classification by the appendix-F lot-E classifier and verified here against the render |
-| **Chapter** | Appendix F — 8520 Complex Interface Adapters · printed p.353 |
+| **Chapter** | Appendix F — 8520 Complex Interface Adapters · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed p.353 |
 | **Assertions** | 0. This is a defect in the source, found before a test was built against it |
 | **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline's lineage all decode the way the page's PROSE says |
 
@@ -111,5 +111,5 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, 6526 CIA specification; Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, 6526 CIA specification, 1981; Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
 

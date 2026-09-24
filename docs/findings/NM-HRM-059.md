@@ -9,7 +9,7 @@
 | **Module** | `paula.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula.v#L132) |
 | **Report to** | **the manual.** All four reference implementations produce the same observable result |
 | **Test** | [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations) `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK` |
-| **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red, with an **oracle** mutation — the defect is in the value, not the stimulus |
 | **Verdict of the four** | **unanimous with NanoMig.** All four read bit 15 as 0; only WinUAE guarantees it the same way |
 
@@ -73,5 +73,5 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 

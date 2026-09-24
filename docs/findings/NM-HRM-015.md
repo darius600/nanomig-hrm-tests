@@ -9,7 +9,7 @@
 | **Module** | `denise.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-horizontal-display-window`](../../hrm/ch3-horizontal-display-window) |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | one of four treats `BRDNTRAN` as real border behaviour |
 
 ---
@@ -78,14 +78,14 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 5 — agrees with the manual:
+- **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 5 — agrees with the manual:
 
   > "BRDNTRAN= "border area" is non-transparent(ZD pin is low when border is displayed."
   <!-- corpus: denise-spec-252126/p005.txt -->
 
   Defines BPLCON3 bit 4 as a live control next to BRDRBLNK at bit 5, and the same page says 'ENBPLCN3= When set enables all the new features in BPLCON3;'. Sides with the manual that the bit does something. The effect it names is on the ZD (background indicator) pin, i.e. genlock keying, not on the RGB colour of the border.
 
-Silent on this point: US patent 4,777,621, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga; US patent 5,103,499, Commodore-Amiga.
+Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989; US patent 5,103,499, Commodore-Amiga, filed 1989 as a division of the 1986 application, granted 1992.
 
 ---
 

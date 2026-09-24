@@ -9,7 +9,7 @@
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L156-L230) |
 | **Report to** | **the manual.** Three of the four reference implementations land on NanoMig's numbers exactly |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `B11` |
-| **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red, in two packages |
 | **Verdict of the four** | **three of four land on 10 and 11 bit times, exactly as NanoMig does** |
 
@@ -71,12 +71,12 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
 
   > "the length of said shift register can be switched to 9 or to 10 Bits."
   <!-- corpus: paula-8364r7-dissection/9_9_txt.txt -->
 
   The RX register holds the data plus the stop bit, and one more bit holds the start bit: "When the Start Bit comes out of the shift register (there is another "hidden shift register Bit" for that), the UART sees the received frame as completed." A received character on 8364R7 is therefore start + 8 or 9 data + stop = 10 or 11 bit cells: NanoMig's numbers, and outside "8 to 10". The note states how the frame is built, not how long software has to read it; the 10/11 is my derivation from that.
 
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
 

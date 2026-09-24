@@ -9,7 +9,7 @@
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L699) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) |
 | **Report to** | **Minimig-AGA and NanoMig.** All four other implementations implement all three fields |
 | **Test** | [`hrm/ch8-dskbytr-status-register`](../../hrm/ch8-dskbytr-status-register), [`hrm/ch8-disk-controller-overview`](../../hrm/ch8-disk-controller-overview), [`hrm/ch8-disk-register-map-paula-floppy`](../../hrm/ch8-disk-register-map-paula-floppy) |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 7 red across three packages, from four printed pages. DISKWRITE and DMAON pass through the identical read cycle in the same run |
 | **Verdict of the four** | **unanimous against.** All four clear DSKBYT on the read, drive WORDEQUAL from a live comparator and put a real disk byte in DATA; two of them implement the page's own "as little as two microseconds" window |
 
@@ -232,19 +232,19 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **techtravels, *Inside Paula's Floppy Controller*, part I — third-party, silicon**, PDF page 29 — agrees with the manual:
+- **techtravels, *Inside Paula's Floppy Controller*, part I, 2026 — third-party, silicon**, PDF page 29 — agrees with the manual:
 
   > "DSKBYTR gives software the most recently received byte and selected status bits. The dissection also confirms that its DSKBYT flag, which is generated in module 10q rather than with the byte latches, is set when a byte is received and cleared when the register is read."
   <!-- corpus: techtravels-paula-floppy/p029.txt -->
 
   8364R7 silicon: DSKBYT is set per byte and cleared by the read, and DATA is the received byte (B.3, p048: FDC0-FDC15, 'the low eight are the DSKBYTR byte'). p028 adds that the continuously running comparator's 'match output is also visible as the WORDEQUAL status in DSKBYTR', so all three fields are live and none is a constant.
 
-- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
 
   > "The 8 lower outputs of said shift register I had labeled FDC0..FDC7, and that's what you get when reading the DSKBYT register."
   <!-- corpus: paula-8364r7-dissection/10_10_txt.txt -->
 
   Silicon: DATA reads the live receive shift register, and 10_10 attaches 'a 16 Bit comparator, which scans for the sync word' to it. The note does not tie that comparator to bit 12 or describe DSKBYT's clear, and the author warns 'it could be that there are errors in this part of my schematic.'
 
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
 

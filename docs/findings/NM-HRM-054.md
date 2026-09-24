@@ -9,7 +9,7 @@
 | **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/ciaa.v#L267-L279) |
 | **Report to** | **the Minimig line, not NanoMig alone.** NanoMig's copy is the upstream behaviour with the register's corpse left in place |
 | **Test** | [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction) — `PROP-1` red, `CONTROL-PA0-OUTPUT` green on the same comparator |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red of 3 |
 | **Verdict of the four** | **unanimous against.** All four store CIA-A's port B data register and read it back through the direction mask |
 
@@ -142,7 +142,7 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore, 6526 CIA specification**, PDF page 5 — agrees with the manual:
+- **Commodore, 6526 CIA specification, 1981**, PDF page 5 — agrees with the manual:
 
   > "Ports A and B each consist of an 8-bit Peripheral Data Register (PR) and an 8-bit Data Direction Register"
   <!-- corpus: cia-6526-spec/p005.txt -->
@@ -156,5 +156,5 @@ and none decides this finding. What they are and how they were read is in
 
   The 8520 chapter gives each port, B included, a data register as well as a direction register, and a set DDR bit makes the matching PR bit an output. NanoMig's CIA-A port B has the DDR and no PR. The source also calls the printer port an '8 bit bidirectional parallel port' (p106) and says its handshake goes through the 8520 it is connected to, but it never names CIA-A port B as that port.
 
-Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
 

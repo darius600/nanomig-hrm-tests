@@ -9,7 +9,7 @@
 | **Module** | `paula.v`, `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L1) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L1) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon) |
-| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **all four implement attach and modulation** — the best-corroborated finding in chapter 5 |
 
 ---
@@ -92,14 +92,14 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
 
   > "nevertheless when a channel (including channel 3) is enabled as a modulation source, the DAC of the channel which is the source is disabled/muted."
   <!-- corpus: paula-8364r7-dissection/7_7_txt.txt -->
 
   On the 8364R7 die a channel enabled as a modulation source has its DAC muted, channel 3 included although its modulation outputs are open traces: the manual's attached channel that stops producing sound. 6_6 adds 'ADKCON controls the rest of the Paula functionality: audio channel modulation,'. NanoMig stores the bits and silences nothing.
 
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga.
+Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
 
 ---
 

@@ -9,7 +9,7 @@
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L225) |
 | **Report to** | **the manual, not the implementation.** All four reference implementations do exactly what NanoMig does |
 | **Test** | [`hrm/ch8-appb-copper-access-marks`](../../hrm/ch8-appb-copper-access-marks) — `SERDAT-CDANG1`, `SERPER-CDANG1`, `SERDATR-CDANG1` red; their `-CDANG0` twins and `CTRL-BLTCON0` green |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 3 red of 8, with a control that separates the two printed marks |
 | **Verdict of the four** | **unanimous with NanoMig against the page.** All four gate on the same formula, and one of them ships a test table asserting it |
 
@@ -99,5 +99,5 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: Commodore, 8371 Agnus specification, part 318071-01; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); US patent 4,829,473, Commodore-Amiga; US patent 4,874,164, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+Silent on this point: Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS), 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.
 

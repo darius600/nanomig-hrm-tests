@@ -9,7 +9,7 @@
 | **Module** | `sysctrl.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/sysctrl.v#L228-L246) |
 | **Report to** | nobody. **This is a finding about this suite**, and the decision it asks for is O72's |
 | **Test** | [`hrm/ch1-cpu-options`](../../hrm/ch1-cpu-options) `CPU-OPTIONS-FOUR-DISTINCT-STATES` and `RAM-BASE-FLOOR-BELOW-256K-ABSENT` |
-| **Chapter** | 1 — Introduction · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 1 — Introduction · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red. Both measure correctly. Neither red means the implementation is wrong |
 | **Verdict of the four** | **not applicable, and that is the point.** No emulator has a `system_cpu` field; the sentences are about which machines Commodore sold |
 
@@ -124,5 +124,5 @@ and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
 None of them speaks to this point.
-Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,777,621, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+Silent on this point: Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.
 

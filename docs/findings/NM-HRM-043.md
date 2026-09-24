@@ -9,7 +9,7 @@
 | **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, and **only together with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md)** — see *Suggested change* |
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertions `P4` and `P5` |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red. Two greens on the same page's other half (`P2`, `P3`) pass in the same run |
 | **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`), by Agnus revision. vAmiga and Denise do not. Here Copperline's has a test naming DSKPT explicitly. **The first three sightings said Copperline alone; all four are corrected — O59** |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter), [NM-HRM-024](NM-HRM-024.md) (audio) — **this is the fourth sighting of the same cause.** And [NM-HRM-014](NM-HRM-014.md), on the manual's own inconsistency about this extension |
@@ -214,19 +214,19 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — agrees with the manual:
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 16 — agrees with the manual:
 
   > "the disk and refresh DMA control logic 61 (2 channels), and the Blitter DMA control logic 67 (four channels). For each of the 25 DMA channels, an 18 bit RAM address pointer is stored in a designated pointer register 138"
   <!-- corpus: patent-us4874164-agnus-denise/p016.txt -->
 
   An 18-bit word pointer is the manual's OCS split, 3 high bits plus 15 low, and the disk channel is one of the 25. The patent predates ECS, so it has no chipset condition; p023 says '19 bits wide' for the same registers.
 
-- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 29 — agrees with the manual:
+- **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 29 — agrees with the manual:
 
   > "DSKPTH Disk pointer (high 3 bits) DSKPTL Disk pointer (low 15 bits) This pair of registers contains the 18 bit address of Disk DMA data."
   <!-- corpus: agnus-8371-spec/p029.txt -->
 
   On the OCS 8371, DSKPTH holds three high bits (Table 2, p031: 'Disk pointer (High (3) bits)'). That is the manual's OCS half and exactly assertion P5, against NanoMig's five at ecs=0. The pin table (p004) limits device DMA to the lower 512K bytes. The five-bit ECS half is outside this document.
 
-Silent on this point: US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 

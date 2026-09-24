@@ -9,7 +9,7 @@
 | **Module** | `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/denise_sprites.v#L484) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch4-attached-sprites`](../../hrm/ch4-attached-sprites) |
-| **Chapter** | 4 — Sprites · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 4 — Sprites · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **three of four take the bit from the odd sprite only**, as the manual states |
 
 ---
@@ -75,21 +75,21 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 10 — agrees with the manual:
+- **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 10 — agrees with the manual:
 
   > "07 ATT Sprite attach control bit (odd Sprites)"
   <!-- corpus: denise-spec-252126/p010.txt -->
 
   The ECS Denise specification scopes the attach bit to odd sprites, as the manual does. It is a table annotation rather than an explicit statement that the even sprite's bit 7 is ignored, the same strength as the manual's own register table.
 
-- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 28 — agrees with the manual:
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 28 — agrees with the manual:
 
   > "For each of the odd numbered sprites, the associated control register 37 contains a bit that can be set in order to attach an odd and an even numbered sprite to pair the data for both sprites in color interpretation."
   <!-- corpus: patent-us4874164-agnus-denise/p028.txt -->
 
   Places the attach bit in the odd sprites' control registers only, as the manual does; like the manual it gives the even sprite's bit 7 no role.
 
-Silent on this point: US patent 4,777,621, Commodore-Amiga.
+Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988.
 
 ---
 

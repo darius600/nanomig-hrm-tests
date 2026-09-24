@@ -9,7 +9,7 @@
 | **Module** | — · the RTL is described below because it is evidence, not because it is the subject |
 | **Report to** | **nobody.** There is no repository that can fix a disagreement between two printed pages |
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertion `P1`, graded red against p.279 |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **unanimous — and it decides nothing.** All four block a Copper write to $020 at OCS and allow it under ECS with CDANG set. That is which reading practitioners took, not which page is right |
 | **See also** | [NM-HRM-014](NM-HRM-014.md), the precedent for a finding about the manual rather than about the implementation. **Not [NM-HRM-004](NM-HRM-004.md)**, which is the ECS danger-bit *range* — a different claim, register and page |
 
@@ -229,19 +229,19 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — agrees with the manual:
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 16 — agrees with the manual:
 
   > "The pointer regis ters 138 are loaded with data (an address) from data bus 404 by the processor 402 or coprocessor 47 under pro gram control."
   <!-- corpus: patent-us4874164-agnus-denise/p016.txt -->
 
   A general statement for all 25 DMA pointer registers, disk included: the Copper may load them, which is p.279's side. The patent mentions no protected register range.
 
-- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 29 — agrees with the manual:
+- **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 29 — agrees with the manual:
 
   > "These address registers must be initialized by the processor or Copper before disk DMA is enabled."
   <!-- corpus: agnus-8371-spec/p029.txt -->
 
   This is p.279's side, nearly word for word, for an OCS part. The same document also has p.289's side: Table 2 marks DSKPTH '+*020' (p031), and its legend reads '* Address not writeable by co-processor.' (p034). It therefore repeats the manual's contradiction and does not settle it.
 
-Silent on this point: US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 

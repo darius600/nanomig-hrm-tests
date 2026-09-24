@@ -9,7 +9,7 @@
 | **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) |
 | **Report to** | **nobody yet** — read *For the specialists* first. A pointer register pair narrower than the address space its caption names is not by itself a defect |
 | **Test** | [`hrm/ch8-disk-dma-pointer`](../../hrm/ch8-disk-dma-pointer) — assertion `P11A` |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red of 7 graded. Six greens in the same run use the identical write-and-observe basis |
 | **Verdict of the four** | **nobody reaches 32 bits either.** Two keep a 32-bit variable they can never fill; two mask the stored value to 21 bits or fewer |
 | **See also** | [NM-HRM-043](NM-HRM-043.md) — the *chipset-conditioned* width of the same register. A different claim on a different page, and the two are not to be merged |
@@ -166,19 +166,19 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — says something else:
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 16 — says something else:
 
   > "Each of the pointer registers contains an 18-bit address, which points to the location in memory of data to be fetched next for the particular DMA channel."
   <!-- corpus: patent-us4874164-agnus-denise/p016.txt -->
 
   All 25 DMA pointer registers, the disk channel among them ('the disk and refresh DMA control logic 61 (2 channels)'), hold 18 bits, which address 256K words. p023 says of the same registers 'The pointers in the registers 138 are 19 bits wide'. The patent gives neither the page's 32 nor NanoMig's 20.
 
-- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 29 — says something else:
+- **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 29 — says something else:
 
   > "This pair of registers contains the 18 bit address of Disk DMA data."
   <!-- corpus: agnus-8371-spec/p029.txt -->
 
   The disk pointer is 18 bits: a DSKPTH with high 3 bits plus a DSKPTL with low 15 bits, on p029 and in Table 2 (p031). That is neither the 32 of p.241/p.246 nor NanoMig's 20. It matches the manual's own p.279 wording, and p019 has the disk controller reading or writing blocks of up to 128K anywhere in 512K of memory.
 
-Silent on this point: US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 

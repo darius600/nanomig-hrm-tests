@@ -9,7 +9,7 @@
 | **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_mixer.v#L76-L77) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L76-L77) |
 | **Report to** | **nowhere.** The manual contradicts itself and the implementations split evenly — see *Suggested change* |
 | **Test** | [`hrm/ch5-audio-stereo-routing`](../../hrm/ch5-audio-stereo-routing), [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale) |
-| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **two against two**; outside the emulators, the 8364R7 silicon sides with the pin list — see *What other Commodore documents say* |
 
 ---
@@ -24,8 +24,8 @@
 
 > "AUDO — Audio output from left (channels 0, 3) port"
 
-**The manual says both, in both editions.** It cannot decide this on its own, and
-an implementation has to pick a side.
+**The manual says both.** It cannot decide this on its own, and an
+implementation has to pick a side.
 
 ---
 
@@ -85,14 +85,14 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
 
   > "Channel 0 and 3 feed the AUDL output pad, //analog "audio left" output signal channel 1 and 2 feed the AUDR output pad, //analog "audio right" output signal"
   <!-- corpus: paula-8364r7-dissection/7_7_txt.txt -->
 
   On the 8364R7 die channels 0 and 3 drive the pad the author labels AUDL (audio left) and 1 and 2 drive AUDR: NanoMig's ldatasum/rdatasum split and the appendix pin list, not 3rd-ed. p. 137. The note speaks of chip pads; which jack each pad reaches is board wiring it does not cover.
 
-- **US patent 4,829,473, Commodore-Amiga**, PDF page 2 — says something else:
+- **US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989**, PDF page 2 — says something else:
 
   *Read from the drawing, not quoted:* FIG. 1 draws the D/A converter for channels 0 and 1 (37) feeding LEFT AUDIO (41), and the converter for channels 2 and 3 (39) feeding RIGHT AUDIO (43).
   <!-- drawing: patent-us4829473-paula/p002.txt -->
