@@ -51,11 +51,11 @@ SPECIFICATION.md ("The register-map arithmetic this package relies on"),
 re-cited here rather than re-derived:
 
 - Every AUTOCONFIG read delivers one 4-bit nibble (`autocfg_data`,
-  `cpu_wrapper.v:229`) in bits 15:12 of the word read at
+  `cpu_wrapper.v:230`) in bits 15:12 of the word read at
   `$E80000 + 2*chip_addr[6:1]`.
 - `chip_addr[6:1]` indices 0 and 1 carry the *direct* (uninverted) logical
   value; every other index carries the *one's complement*.
-- The unconditional default is `cpu_wrapper.v:541 autocfg_data = 4'b1111;`,
+- The unconditional default is `cpu_wrapper.v:547 autocfg_data = 4'b1111;`,
   which under the complement rule reads as logical `0000` — exactly
   "reserved, must be 0".
 
@@ -65,7 +65,7 @@ Each logical register `XX` (a hex byte value, e.g. `30`) is served as two
 consecutive 16-bit words: the high nibble at `$E8XX` (`chip_addr[6:1] =
 XX/2`) and the low nibble at `$E8(XX+2)` (`chip_addr[6:1] = XX/2 + 1`) —
 established by `hrm/appK-autoconfig-register-map`'s own reading of register
-00 (`cpu_wrapper.v:563`/`:564`, indices 0 and 1) and reused here without
+00 (`cpu_wrapper.v:569`/`:570`, indices 0 and 1) and reused here without
 re-deriving it. Computed for all 17 registers:
 
 | register | idx (hi) | idx (lo) |
@@ -91,10 +91,10 @@ re-deriving it. Computed for all 17 registers:
 All 34 indices are within the legal 6-bit range of `chip_addr[6:1]`
 (0-63, i.e. byte offsets $00-$7E, `hrm/appK-autoconfig-register-map`'s own
 "max byte offset 0x7E" finding). None of them appears in either case list
-(`cpu_wrapper.v:562-580` Zorro II: indices 0,1,8,9,10,11,19 only;
-`cpu_wrapper.v:584-596` Zorro III: indices 0,1,2,4,5,8,9,10,11,19 only) —
+(`cpu_wrapper.v:568-590` Zorro II: indices 0,1,8,9,10,11,19 only;
+`cpu_wrapper.v:594-606` Zorro III: indices 0,1,2,4,5,8,9,10,11,19 only) —
 every one of the 34 indices this package reads therefore falls to the
-unconditional `cpu_wrapper.v:541` default, regardless of `cpucfg`/
+unconditional `cpu_wrapper.v:547` default, regardless of `cpucfg`/
 `fastramcfg`. This is config-independent by construction, so a single
 Zorro-II-configured harness (`cpucfg=0`, `fastramcfg=1`) is sufficient
 evidence for all 34 claims — there is no Zorro-III-only or Zorro-II-only
@@ -111,7 +111,7 @@ graded as `0x00`.
 
 ## Expected outcome
 
-Every one of the 34 claims is expected to grade PASS: `cpu_wrapper.v:541`'s
+Every one of the 34 claims is expected to grade PASS: `cpu_wrapper.v:547`'s
 default is unconditional and hard-coded, and no case arm in either branch
 ever touches any of these 34 indices (verified above by reading the full
 case-statement text, not assumed). This package therefore does not carry a

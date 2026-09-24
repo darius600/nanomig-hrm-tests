@@ -90,18 +90,11 @@
 // 58-61 makes c3 the registered 7MHz clock and c1 = ~c3 delayed one further
 // 28MHz cycle, so across one 7MHz cycle's four 28MHz phases, c1 and c3 are
 // BOTH high in one phase and BOTH low in another -- they are not two
-// disjoint two-phase signals. denise_bitplanes.v:381 (a sub-module of THIS
-// fixture) gates its BPLxDAT write strobe on c1&c3. Driving them as if
-// disjoint -- the exact pattern this repository's own, already-committed
-// hrm/denise/test_denise.cpp uses (c1 true only at cycle 1, c3 true only at
-// cycle 3, so c1&c3 is NEVER true) -- means no BPLxDAT write ever reaches a
-// shifter and every pixel reads colour 0 silently, with that file's own
-// border/window checks still nominally running (it happens to pass anyway
-// because BPLCON4's XOR of an all-zero plane is still zero) -- exactly the
-// silent false-negative shape the build brief warns about. This Harness
-// uses the measured-working four-phase pattern instead: clk7_en=(phase==0),
-// c1=(phase==0||phase==1), c3=(phase==1||phase==2) -- phase 1 has both
-// high (the write strobe), phase 3 has both low. FIXTURE-DATA-PATH-LIVE
+// disjoint two-phase signals. denise_bitplane_shifter.v:224 (a sub-module
+// of THIS fixture) gates its parallel shift-register load on !c1&&!c3.
+// This Harness uses the measured-working four-phase pattern:
+// clk7_en=(phase==0), c1=(phase==0||phase==1), c3=(phase==1||phase==2) --
+// phase 1 has both high, phase 3 has both low. FIXTURE-DATA-PATH-LIVE
 // below exists specifically to prove this Harness's own pattern actually
 // delivers a loaded, non-zero BPLxDAT value through to the RGB output
 // BEFORE any window-position claim is asserted from it -- not a formality.
@@ -402,8 +395,9 @@ public:
     // One 28MHz clock edge, then advance the four-phase c1/c3/clk7_en/cck
     // relationship for the NEXT edge -- see THE C1/C3 TRAP above. Phase 0
     // is the clk7_en register-capture phase (one sample = one lores-pixel-
-    // resolution step); phase 1 has c1 AND c3 both high (the BPLxDAT write
-    // strobe phase, denise_bitplanes.v:381).
+    // resolution step; also when a BPLxDAT write latches its buffer
+    // register, denise_bitplanes.v:382-435); phase 1 has c1 AND c3 both
+    // high.
     void tick() {
         dut->eval();
         dut->clk = 1;
@@ -677,11 +671,8 @@ int main(int argc, char** argv) {
             "BPL1DAT inside a wide-open display window arrives at the RGB output as "
             "a colour visibly different from the border/COLOR00 sample taken at the "
             "very start of the line -- proving this Harness's own four-phase c1/c3 "
-            "pattern (phase 1: both high, the BPLxDAT write strobe) actually "
-            "delivers a loaded value through denise_bitplanes' shifter to Denise's "
-            "own RGB output, unlike the disjoint c1/c3 pattern in this repository's "
-            "own hrm/denise/test_denise.cpp, under which no BPLxDAT write ever "
-            "reaches a shifter and every pixel reads colour 0 silently. Every "
+            "pattern actually delivers a loaded value through denise_bitplanes' "
+            "shifter to Denise's own RGB output. Every "
             "window-position measurement below builds on this same proven-live data "
             "path. (Infrastructure control -- not itself one of this package's 174 "
             "claim ids.)");

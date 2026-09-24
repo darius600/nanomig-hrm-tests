@@ -75,89 +75,91 @@
 // MUTATION opus:K-0788 stimulus red: MUT=WRONGCONFIG
 // MUTATION sol:K-0762 stimulus red: MUT=WRONGCONFIG
 // MUTATION opus:K-0785 stimulus red: MUT=WRONGCONFIG
-// MUTATION sol:K-0763 none impossible: cpu_wrapper.v:563 (4'b1110) and :585
+// MUTATION sol:K-0763 none impossible: cpu_wrapper.v:569 (4'b1110) and :595
 //   (4'b1010) are the only two literal assignments to chip_addr index 0 in
 //   this design, in either reachable configuration; no third value (00) is
 //   ever written by any code path, so no stimulus can produce it.
 // MUTATION opus:K-0786 none impossible: same as sol:K-0763.
 // MUTATION sol:K-0764 none impossible: same reasoning as sol:K-0763, for
-//   code 01 -- cpu_wrapper.v:563/:585 are the only two constants.
+//   code 01 -- cpu_wrapper.v:569/:595 are the only two constants.
 // MUTATION opus:K-0787 none impossible: same as sol:K-0764.
-// MUTATION sol:K-0767 none impossible: bit5=1 in both cpu_wrapper.v:563
-//   (4'b1110) and :585 (4'b1010) -- hardcoded in both reachable branches.
+// MUTATION sol:K-0767 none impossible: bit5=1 in both cpu_wrapper.v:569
+//   (4'b1110) and :595 (4'b1010) -- hardcoded in both reachable branches.
 // MUTATION opus:K-0790(p432) none impossible: same as sol:K-0767.
-// MUTATION opus:K-0790 none impossible: bit5=1 in both cpu_wrapper.v:563
-//   (4'b1110) and :585 (4'b1010), the only two literal assignments to
+// MUTATION opus:K-0790 none impossible: bit5=1 in both cpu_wrapper.v:569
+//   (4'b1110) and :595 (4'b1010), the only two literal assignments to
 //   chip_addr index 0.
-// MUTATION sol:K-0769 none impossible: bit4=0 in both cpu_wrapper.v:563 and
-//   :585 -- hardcoded in both reachable branches.
+// MUTATION sol:K-0769 none impossible: bit4=0 in both cpu_wrapper.v:569 and
+//   :595 -- hardcoded in both reachable branches.
 // MUTATION opus:K-0792 none impossible: same as sol:K-0769.
 // MUTATION sol:K-0770 none impossible: bit3=0 in every case arm that can
-//   reach chip_addr index 1 -- cpu_wrapper.v:566,567,569,571 (Zorro II, all
-//   three fastramcfg_d arms) and :586 (Zorro III, both autocfg_card[1] arms)
+//   reach chip_addr index 1 -- cpu_wrapper.v:572,573,575 (Zorro II, all
+//   three fastramcfg_d arms) and :596 (Zorro III, both autocfg_card[1] arms)
 //   -- five hardcoded constants, none sets bit3.
 // MUTATION opus:K-0793 none impossible: same as sol:K-0770.
-// MUTATION sol:K-0780 none impossible: cpu_wrapper.v:587, 4'b1110, is the
+// MUTATION sol:K-0780 none impossible: cpu_wrapper.v:597, 4'b1110, is the
 //   only assignment to chip_addr index 2 in this design.
 // MUTATION opus:K-0813 none impossible: same as sol:K-0780.
-// MUTATION sol:K-0782 none impossible: cpu_wrapper.v:588, 4'b0000, is the
+// MUTATION sol:K-0782 none impossible: cpu_wrapper.v:598, 4'b0000, is the
 //   only Zorro-III assignment to chip_addr index 4; bit7 is hardcoded 1
 //   after complement.
 // MUTATION sol:K-0783 none impossible: chip_addr index 4 has no Zorro-II
-//   case arm at all (cpu_wrapper.v:562-579's case list has no 6'b000100
-//   entry), so it falls to the unconditional default at :541 (4'b1111) in
+//   case arm at all (cpu_wrapper.v:568-590's case list has no 6'b000100
+//   entry), so it falls to the unconditional default at :547 (4'b1111) in
 //   every Zorro-II run; bit7 is hardcoded 0 after complement.
 // MUTATION opus:K-0817 none impossible: same two constants as sol:K-0782/
-//   sol:K-0783 (cpu_wrapper.v:588 and the :541 default).
+//   sol:K-0783 (cpu_wrapper.v:598 and the :547 default).
 // MUTATION sol:K-0784(p433) none impossible: same as sol:K-0782 (bit6 of
-//   the same cpu_wrapper.v:588 constant).
-// MUTATION sol:K-0784 none impossible: bit6 of cpu_wrapper.v:588 (4'b0000,
+//   the same cpu_wrapper.v:598 constant).
+// MUTATION sol:K-0784 none impossible: bit6 of cpu_wrapper.v:598 (4'b0000,
 //   the only Zorro-III assignment to chip_addr index 4) is hardcoded.
 // MUTATION sol:K-0785(p433) none impossible: same as sol:K-0783 (bit6 of
-//   the :541 default).
+//   the :547 default).
 // MUTATION sol:K-0785 none impossible: chip_addr index 4 has no Zorro-II
-//   case arm (cpu_wrapper.v:562-579, no 6'b000100 entry) so it falls to
-//   the unconditional :541 default (4'b1111), hardcoded.
+//   case arm (cpu_wrapper.v:568-590, no 6'b000100 entry) so it falls to
+//   the unconditional :547 default (4'b1111), hardcoded.
 // MUTATION opus:K-0818(p433) none impossible: same two constants.
 // MUTATION opus:K-0818 none impossible: same two constants as sol:K-0784/
-//   sol:K-0785 above: cpu_wrapper.v:588 (4'b0000) and the :541 default
+//   sol:K-0785 above: cpu_wrapper.v:598 (4'b0000) and the :547 default
 //   (4'b1111), both hardcoded.
-// MUTATION sol:K-0790(p433) none impossible: bit4 of cpu_wrapper.v:588,
+// MUTATION sol:K-0790(p433) none impossible: bit4 of cpu_wrapper.v:598,
 //   hardcoded 1 after complement; no Zorro-II case arm at index 4 exists to
 //   compare against (the claim is scoped to Zorro III on the page itself).
-// MUTATION sol:K-0790 none impossible: bit4 of cpu_wrapper.v:588 (4'b0000)
+// MUTATION sol:K-0790 none impossible: bit4 of cpu_wrapper.v:598 (4'b0000)
 //   is hardcoded.
 // MUTATION opus:K-0821(p433) none impossible: same as sol:K-0790(p433).
 // MUTATION opus:K-0821 none impossible: same constant as sol:K-0790 above:
-//   bit4 of cpu_wrapper.v:588 (4'b0000), hardcoded.
-// MUTATION sol:K-0791(p433) none impossible: bits3:0 of cpu_wrapper.v:588
-//   (Zorro III, hardcoded 1111 after complement) and the :541 default
+//   bit4 of cpu_wrapper.v:598 (4'b0000), hardcoded.
+// MUTATION sol:K-0791(p433) none impossible: bits3:0 of cpu_wrapper.v:598
+//   (Zorro III, hardcoded 1111 after complement) and the :547 default
 //   (Zorro II, hardcoded 0000 after complement).
-// MUTATION sol:K-0791 none impossible: bits3:0 of cpu_wrapper.v:588
-//   (Zorro III) and the :541 default (Zorro II) are both hardcoded
+// MUTATION sol:K-0791 none impossible: bits3:0 of cpu_wrapper.v:598
+//   (Zorro III) and the :547 default (Zorro II) are both hardcoded
 //   literals.
 // MUTATION opus:K-0822 none impossible: same as sol:K-0791(p433).
 // MUTATION sol:K-0814 none impossible: chip_addr index 6 (and 7) never
-//   appears in any case list in this file (cpu_wrapper.v:562-596 checked in
-//   full) -- it falls to the unconditional :541 default in every
+//   appears in any case list in this file (cpu_wrapper.v:568-606 checked in
+//   full) -- it falls to the unconditional :547 default in every
 //   configuration this design offers.
 // MUTATION opus:K-0848 none impossible: same as sol:K-0814.
-// MUTATION sol:K-0815 none impossible: cpu_wrapper.v:574-575, 4'b1110/
-//   4'b1100, are the design's only assignments to chip_addr indices 8/9.
+// MUTATION sol:K-0815 none impossible: cpu_wrapper.v:584-585 (Zorro II)
+//   and :600-601 (Zorro III) both assign 4'b1110/4'b1100 to chip_addr
+//   indices 8/9 -- no other case arm ever does.
 // MUTATION opus:K-0849 none impossible: same as sol:K-0815.
-// MUTATION sol:K-0816 none impossible: cpu_wrapper.v:576-577, 4'b0110/
-//   4'b0011, are the design's only assignments to chip_addr indices 10/11.
+// MUTATION sol:K-0816 none impossible: cpu_wrapper.v:586-587 (Zorro II)
+//   and :602-603 (Zorro III) both assign 4'b0110/4'b0011 to chip_addr
+//   indices 10/11 -- no other case arm ever does.
 // MUTATION opus:K-0850 none impossible: same as sol:K-0816.
 // MUTATION sol:K-0818 none impossible: chip_addr index 12 never appears in
-//   any case list -- unconditional :541 default in every configuration.
+//   any case list -- unconditional :547 default in every configuration.
 // MUTATION sol:K-0819 none impossible: chip_addr index 14 never appears in
-//   any case list -- unconditional :541 default.
+//   any case list -- unconditional :547 default.
 // MUTATION sol:K-0820 none impossible: chip_addr index 16 never appears in
-//   any case list -- unconditional :541 default.
-// MUTATION sol:K-0821 none impossible: cpu_wrapper.v:578 (Zorro II,
-//   4'b1110) is a hardcoded literal; cpu_wrapper.v:594's Zorro-III formula
+//   any case list -- unconditional :547 default.
+// MUTATION sol:K-0821 none impossible: cpu_wrapper.v:588 (Zorro II,
+//   4'b1110) is a hardcoded literal; cpu_wrapper.v:604's Zorro-III formula
 //   ({2'b11,~autocfg_card}) depends only on autocfg_card, itself a hardcoded
-//   reset constant (cpu_wrapper.v:608, `autocfg_card <= 1`) this fixture
+//   reset constant (cpu_wrapper.v:618, `autocfg_card <= 2'b01`) this fixture
 //   never writes -- no exposed input reaches either path.
 // MUTATION opus:K-0852 none impossible: same as sol:K-0818.
 // MUTATION opus:K-0853 none impossible: same as sol:K-0819.
@@ -330,7 +332,7 @@ int main() {
     Harness zii(0, 1, zii_idx);
 
     // Zorro III: cpucfg[1]=1 and fastramcfg[2]=1 both required for
-    // cfg_z3 = fastramcfg_d[2] & cpucfg[1] (cpu_wrapper.v:535) to assert.
+    // cfg_z3 = fastramcfg_d[2] & cpucfg[1] (cpu_wrapper.v:536) to assert.
     std::vector<int> ziii_idx = {0, 1, 2, 3, 4, 19};
     Harness ziii(2, 4, ziii_idx);
 
@@ -381,7 +383,7 @@ int main() {
     expect(type_is_10, "opus:K-0788 register00 type=10 reads as Zorro III");
 
     // Reserved codes 00/01: this design only ever writes 4'b1110 (ZII) or
-    // 4'b1010 (ZIII) to this field (cpu_wrapper.v:563,585) -- exhaustive
+    // 4'b1010 (ZIII) to this field (cpu_wrapper.v:569,595) -- exhaustive
     // over both of this design's reachable configurations, not a sample.
     bool never_00 = (a_zii_type != 0b00) && (a_ziii_type != 0b00);
     expect(never_00, "sol:K-0763 register00 type=00 (Reserved) never emitted, either config");
@@ -401,7 +403,7 @@ int main() {
            "(graded: sol:K-0762/opus:K-0785) above, which state the same "
            "triple but also state the bit7:6 content, graded there). The quoted "
            "Zorro-III address ($E80100) is never reached by this design's "
-           "own sel_autoconfig decode (cpu_wrapper.v:601 only ever matches "
+           "own sel_autoconfig decode (cpu_wrapper.v:611 only ever matches "
            "chip_addr[23:16]==8'b11101000, and chip_addr[6:1] is 6 bits wide "
            "-- max byte offset 0x7E, never 0x100) at any input this fixture "
            "-- or any fixture built on cpu_wrapper's own ports -- can drive. "
@@ -424,11 +426,11 @@ int main() {
            "modify the size of the linked memory.' This is a causal/"
            "reactive claim (varying register 08's content changes a "
            "computed logical size). This RTL implements register 08 "
-           "(chip_addr index 4, cpu_wrapper.v:588) and the 'logical size' "
-           "register (index 5, cpu_wrapper.v:589) as independent static "
+           "(chip_addr index 4, cpu_wrapper.v:598) and the 'logical size' "
+           "register (index 5, cpu_wrapper.v:599) as independent static "
            "case-statement constants -- neither is a function of the other "
            "-- and register 08 has no write handler at all "
-           "(cpu_wrapper.v:619-646 only handles writes to indices 0x24/0x22, "
+           "(cpu_wrapper.v:629-665 only handles writes to indices 0x24/0x22, "
            "the RAM-activation registers, never index 4): there is no live "
            "'modify' mechanism in this design to observe. "
            "reason_kind: unreachable-behaviour.");
@@ -485,7 +487,7 @@ int main() {
 
     // =========================================================================
     // GROUP F -- register 08 flags. chip_addr index 4: Zorro III
-    // (cpu_wrapper.v:588, implemented) vs Zorro II (unmapped -> the :541
+    // (cpu_wrapper.v:598, implemented) vs Zorro II (unmapped -> the :547
     // default, complemented in both cases).
     // =========================================================================
     uint8_t reg08_ziii = logical(4, ziii.at(4));
@@ -528,7 +530,7 @@ int main() {
 
     // =========================================================================
     // GROUP G -- register 0C, reserved, must read 0. chip_addr index 6,
-    // unmapped in both configs -> the :541 default, complemented.
+    // unmapped in both configs -> the :547 default, complemented.
     // =========================================================================
     uint8_t reg0c_zii = logical(6, zii.at(6));
     note("register0C (chip_addr index 6, unmapped in both configs): logical nibble=0x" +
@@ -577,7 +579,7 @@ int main() {
          " reg1C(byte1)=0x" + hex1(ser1c) + " reg20(byte2)=0x" + hex1(ser20) +
          " reg24-hi=0x" + hex1(ser24_hi) + " reg24-lo(byte3/lsb)=0x" + hex1(ser24_lo) +
          " -- only byte3's low nibble is implemented in this design "
-         "(cpu_wrapper.v:578 'serial=1'); everything else falls to the "
+         "(cpu_wrapper.v:588 'serial=1'); everything else falls to the "
          "unmapped default.");
 
     bool ser18_unimpl = (ser18 == 0x0);

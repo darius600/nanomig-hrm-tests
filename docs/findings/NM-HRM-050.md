@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/amiga_keymap.v#L70-L130) · no counterpart upstream |
+| **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/amiga_keymap.v#L70-L130) · no counterpart upstream |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against, and the finding does not generalise to the Minimig family |
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) — `CUTOUT-30` red at HID `$64`, `KEY-$2B` green at HID `$32`, same measurement basis |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |

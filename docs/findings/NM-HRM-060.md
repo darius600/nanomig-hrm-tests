@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `cpu_cache_new.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_cache_new.v#L296-L309) |
+| **Module** | `cpu_cache_new.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_cache_new.v#L296-L309) |
 | **Report to** | **the Minimig line**, not NanoMig alone |
 | **Test** | [`hrm/ch1-cpu-and-instruction-cache`](../../hrm/ch1-cpu-and-instruction-cache) `CACHE-WRITE-VISIBILITY` |
 | **Chapter** | 1 — Introduction · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -99,7 +99,7 @@ the manual's own $0008 bit works exactly as printed. So this is not a fixture
 that cannot tell a cache from a wire, and it is not a cache that is simply
 absent.
 
-**The path is live, not dead code.** `cpu_wrapper.v:96/257` exports CACR from the
+**The path is live, not dead code.** `cpu_wrapper.v:96/258` exports CACR from the
 TG68K core and `nanomig.v:312/422` carries it into `cpu_cache_new` as
 `cpu_cache_ctrl`; `src/tang/nano20k/top_020.sv:12` and `src/mistle/gw3a_20/top.sv:9`
 define `ENABLE_TG68K`.

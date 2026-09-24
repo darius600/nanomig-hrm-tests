@@ -11,12 +11,11 @@ diverging from Minimig-AGA.
 
 | | revision |
 |---|---|
-| NanoMig (the submodule this suite builds) | [`d6f7df9`](https://github.com/harbaum/NanoMig/tree/d6f7df957fad655bc07f6a381e5094a9edff0be0) · v0.14-beta-33 |
+| NanoMig (the submodule this suite builds) | [`4495f86`](https://github.com/harbaum/NanoMig/tree/4495f86fbb0611e53649165faa36f1125e062f18) · v0.14-beta-55 |
 | Minimig-AGA on MiSTer | [`da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/tree/da7632e44498840850e78966947f8770166e6e77) · 2026-09-11 |
 | Minimig-AGA on MiST/TC64 | [`9e8e308`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/tree/9e8e30844fe134dca54cea65f1bd38539dfc15ad) · 2025-05-03 |
 
-**Two groups maintain this ancestry independently**, and until 17.09.2026 this
-document knew only one of them. Neither is a witness to what the manual requires
+**Two groups maintain this ancestry independently.** Neither is a witness to what the manual requires
 — all three trees descend from the same code, so agreement between them says
 nothing about the HRM. What a second line adds is a second answer to *where a
 fix belongs*, and on two findings it turns out to hold the fix already.
@@ -24,13 +23,11 @@ fix belongs*, and on two findings it turns out to hold the fix already.
 Compared with `diff --strip-trailing-cr -b`: NanoMig's files are **LF** and both maintained lines are **CRLF**, so a naive
 byte comparison reports every line of every file as changed and says nothing.
 
-**That direction was stated backwards here until 17.09.2026.** Measured byte
-by byte: `src/minimig-aga/cia_int.v` carries **zero** CR bytes and 70 LF;
+Measured byte by byte: `src/minimig-aga/cia_int.v` carries **zero** CR bytes and 70 LF;
 MiSTer's copy carries 94 CRLF and no bare LF; TC64's carries 70 CRLF and no
 bare LF. Across the trees, 56 of NanoMig's 58 files are LF and 2 mixed, 63 of
-MiSTer's are CRLF and 2 mixed, and all 66 of TC64's are CRLF. No number in
-this document moves -- the comparison normalises both sides either way -- but
-the sentence was wrong and had been copied into two other documents.
+MiSTer's are CRLF and 2 mixed, and all 66 of TC64's are CRLF. The comparison
+normalises both sides, so no number here depends on it.
 
 ## The shape of it
 
@@ -118,8 +115,8 @@ does not describe it. See the scope note in the top-level README.
 | `NM-HRM-032` BEAMCON0 sync-polarity bits decoded nowhere | `agnus_beamcounter.v` | **yes** — the three commented-out `//wire` declarations are byte-identical (`:140-142` here, `:146-148` there) | **no** |
 | `NM-HRM-033` LOLDIS needs VARBEAMEN too | `agnus_beamcounter.v` | **yes** — `(loldis && varbeamen)` is byte-identical (`:295-297` here, `:282-284` there) | **no** |
 | `NM-HRM-034` VPOSR bit 12 carries `ntsc` in OCS | `agnus_beamcounter.v` | **yes** — the read mux differs only in a signal name (`vpos` here, `vpos_rb` there); the bit assignment is identical | **no** |
-| `NM-HRM-035` any CIA-A write clears the overlay | `minimig.v` | **yes** — the two lines are byte-identical (`:861-862` here, `:933-934` there), in a file that otherwise differs in 789 lines | **no** |
-| `NM-HRM-036` chip banks 1-3 stay mapped under the overlay (withdrawn: p.223 allows it) | `gary.v` | **yes** — the four `sel_chip` lines are byte-identical (`:159-162` here, `:172-175` there), in a file that otherwise differs in 71 lines | **no** |
+| `NM-HRM-035` any CIA-A write clears the overlay | `minimig.v` | **yes** — the two lines are byte-identical (`:861-862` here, `:933-934` there), in a file that otherwise differs in 601 lines | **no** |
+| `NM-HRM-036` chip banks 1-3 stay mapped under the overlay (withdrawn: p.223 allows it) | `gary.v` | **yes** — the four `sel_chip` lines are byte-identical (`:159-162` here, `:172-175` there), in a file that otherwise differs in 63 lines | **no** |
 
 Chapter 7's five were each checked line by line rather than file by file,
 because `minimig.v` and `gary.v` differ substantially between the two trees
@@ -140,16 +137,17 @@ Same method, over the 28 modules the findings cite.
 `hid.v`, `sysctrl.v`.
 
 **The two lines have drifted apart, in both directions.** TC64 is closer to
-NanoMig on `cia_int.v` (identical, against MiSTer's 113 differing lines),
-`ciab.v` (6 against 218) and `agnus_blitter.v` (14 against 61, and all fourteen
-are whitespace). It is much further on `agnus.v` (741 against 115), `minimig.v`
-(1563 against 811) and `userio.v` (736 against 165).
+NanoMig on `cia_int.v` (identical, against MiSTer's 115 differing lines),
+`ciab.v` (6 against 196), `agnus_blitter.v` (whitespace only, against 51) and
+the Denise sprite and bitplane data paths (`denise_bitplanes.v` 200 against
+310, `denise_sprites.v` 201 against 209, `denise_sprites_shifter.v` 167
+against 193). It is much further on `agnus.v` (235 against 113), `minimig.v`
+(1225 against 601) and `userio.v` (584 against 165).
 
 **A module is absent only when the whole repository has no copy.** TC64 spreads
 Verilog across `rtl/minimig`, `rtl/sdram`, `rtl/mist`, `rtl/audio`, `rtl/io`,
-`rtl/clock` and `rtl/jtag`. A first pass scoped to `rtl/minimig` reported
-`cpu_cache_new.v` as missing; it is at `rtl/sdram/cpu_cache_new.v`, live in the
-board target, and the statement NM-HRM-060 is about is identical in all three.
+`rtl/clock` and `rtl/jtag`. `cpu_cache_new.v` is not in `rtl/minimig` but at
+`rtl/sdram/cpu_cache_new.v`, live in the board target, and the statement NM-HRM-060 is about is identical in all three.
 
 ### Where both lines agree and NanoMig differs, the divergence is NanoMig's own
 

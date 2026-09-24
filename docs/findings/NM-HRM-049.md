@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L467-L477) · no counterpart upstream |
+| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L467-L477) · no counterpart upstream |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against |
 | **Test** | [`hrm/ch8-mfm-cell-encoding`](../../hrm/ch8-mfm-cell-encoding) — `A2-MFM-ONE-ENCODES-01`, `A4-MFM-ZERO-AFTER-ONE-ENCODES-00` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -45,9 +45,9 @@ wire [15:0] data_odd = {
    1'b1, fd_dma_buf_out[ 3], 1'b1, fd_dma_buf_out[ 1] };   // :467-471
 ```
 
-`data_even` at [`:473-477`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L473-L477) is the same construction on the even bits. The sector
+`data_even` at [`:473-477`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L473-L477) is the same construction on the even bits. The sector
 header path immediately above emits a clock bit of `0` instead
-([`mfm_encoder_odd` / `mfm_encoder_even`, :453-462](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L453-L462)).
+([`mfm_encoder_odd` / `mfm_encoder_even`, :453-462](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L453-L462)).
 
 **Neither reads the previous bit.** The file says so itself, twice:
 

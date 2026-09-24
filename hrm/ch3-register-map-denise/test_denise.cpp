@@ -57,20 +57,15 @@
 // THE C1/C3 TRAP (PACKAGE.md's own warning, load-bearing): amiga_clk.v:58-61
 //   makes c3 the registered 7MHz clock and c1 = ~c3 delayed one more 28MHz
 //   cycle, so c1 and c3 overlap for two of the four 28MHz phases (both high
-//   in one, both low in another). denise_bitplanes.v:381 forms
-//   `wire clk7n_en = c1 & c3;` and gates every BPLxDAT parallel load on it
-//   (`if (st & clk7n_en) ... bpl1dat <= ...`, denise_bitplanes.v:387-394 and
-//   the seven repeats for planes 2-8). Five older FPGA-029 tests in this
-//   repo (hrm/denise/, hrm/denise_bitplane_shifter/, etc.) drive c1 and c3
-//   as disjoint, non-overlapping phases (e.g. hrm/denise/test_denise.cpp:
-//   `c1 = (cycle==1); c3 = (cycle==3);`) and assert nothing about bitplane
-//   content, which is why nobody noticed that clk7n_en is permanently 0
-//   under that drive pattern and no BPLxDAT write ever reaches a shifter.
-//   Harness::tick() below instead drives, every 28MHz cycle, the measured
+//   in one, both low in another). Each BPLxDAT buffer register latches
+//   `{data_in, chip48_fmode}` directly on clk7_en when reg_address_in[8:1]
+//   matches its own address (denise_bitplanes.v:382-435, one block per
+//   plane); the plane shifter's own parallel load is gated on `!c1&&!c3`
+//   (denise_bitplane_shifter.v:224's `if (load && !c1 && !c3)`).
+//   Harness::tick() below drives, every 28MHz cycle, the measured
 //   working pattern: clk7_en=(phase==0), c1=(phase==0||phase==1),
-//   c3=(phase==1||phase==2) -- so phase 1 has both c1 and c3 high (the
-//   parallel-load window `!c1&&!c3` sits at phase 3, matching
-//   denise_bitplane_shifter.v:224's `if (load && !c1 && !c3)`).
+//   c3=(phase==1||phase==2) -- so phase 1 has both c1 and c3 high, phase 3
+//   has both low, matching the parallel-load window above.
 //
 // HOW THE COLOUR-INDEX STIMULUS WAS BUILT (mechanical fact, read out of the
 //   RTL after this file's oracle -- the addresses and R/W directions below
@@ -108,9 +103,9 @@
 //   Order matters and is enforced by write_bitplane_pattern()/
 //   refresh_bitplanes(): BPLCON0 (sets bpu combinationally, written once)
 //   and BPL2..5DAT (load their own buffer registers, denise_bitplanes.v:
-//   396-434) are written before BPL1DAT in every round, because BPL1DAT's
+//   388-414) are written before BPL1DAT in every round, because BPL1DAT's
 //   write is what both latches l_bpu (denise.v:195-203) and pulses `load`
-//   a cycle later (denise_bitplanes.v:467), which parallel-loads *all* the
+//   a cycle later (denise_bitplanes.v:437-441), which parallel-loads *all* the
 //   plane shifters synchronously from whatever their buffers hold at that
 //   instant (denise_bitplane_shifter.v:223-226).
 //

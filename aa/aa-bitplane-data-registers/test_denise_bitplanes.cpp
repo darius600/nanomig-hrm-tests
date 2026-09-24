@@ -38,16 +38,15 @@
 //     phase   0     1     2     3
 //     c1      0     0     1     1
 //     c3      1     0     0     1
-//     enable        clk7_en           clk7n_en
+//     enable        clk7_en
 //
-//   so `shift` (~c1 & ~c3) and `clk7_en` are the same phase, and the module's
-//   own `clk7n_en` (c1 & c3) is phase 3. A bus write lands on phase 1, its
-//   buffer register takes it on phase 3 of the same 7MHz cycle, and a write to
-//   BPL1DAT raises `load` for exactly one cycle -- so the shifters take their
-//   data on phase 1 of the NEXT cycle, one 7MHz cycle after the write. Every
-//   assertion below writes planes 2 to 8 first and BPL1DAT last, because
-//   BPL1DAT is the load trigger (denise_bitplanes.v:466) and not merely
-//   another plane.
+//   so `shift` (~c1 & ~c3) and `clk7_en` are the same phase. A bus write
+//   lands on phase 1 and its buffer register takes it on that same phase,
+//   and a write to BPL1DAT raises `load` for exactly one cycle -- so the
+//   shifters take their data on phase 1 of the NEXT cycle, one 7MHz cycle
+//   after the write. Every assertion below writes planes 2 to 8 first and
+//   BPL1DAT last, because BPL1DAT is the load trigger
+//   (denise_bitplanes.v:437-441) and not merely another plane.
 //
 // WHY A PIXEL IS SAMPLED ONCE PER 7MHz CYCLE. In lores the scroller advances
 //   on one phase in four while `sh_scroller` shifts on every 28MHz clock, so
@@ -156,7 +155,7 @@ public:
         tick();
         dut->reg_address_in = A_IDLE;
         dut->data_in = 0;
-        while (phase != 1) tick();      // let the phase-3 buffer latch happen
+        while (phase != 1) tick();      // return aligned to the next phase-1 edge
     }
 
     // One sample per pixel: bpldata holds each value for four 28MHz clocks,

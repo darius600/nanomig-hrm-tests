@@ -30,15 +30,15 @@
 //     pinned Verilator (measured, inherited finding: %Error-BLKANDNBLK,
 //     fx68k.sv:293). This build uses TG68KdotC_Kernel (-DENABLE_TG68K=1,
 //     Makefile), built from nanomig/sim/, same as the sibling package.
-//   - sel_autoconfig (cpu_wrapper.v:601) decodes a fixed, non-relocatable
+//   - sel_autoconfig (cpu_wrapper.v:611) decodes a fixed, non-relocatable
 //     64K window at chip_addr[23:16]==$E8 -- the ONLY chip_addr[23:16]
 //     comparison anywhere in this file (grepped in full). 3 claims assert
 //     the much wider (512K) "Zorro II I/O" band the printed figure/text
 //     labels -- declined, this design implements only the 64K AUTOCONFIG
 //     sub-window of it.
 //   - FC0-FC2 (sol:K-0221/opus:K-0229) has no carrier in a TG68K-only build:
-//     fc_o (cpu_wrapper.v:243) is driven and read only inside `ifdef
-//     ENABLE_FX68K (:298,:493-495,:497), which this build does not define,
+//     fc_o (cpu_wrapper.v:244) is driven and read only inside `ifdef
+//     ENABLE_FX68K (:299,:493-495,:497), which this build does not define,
 //     and nanomig/sim/TG68KdotC_Kernel.v carries no FC port under any name
 //     (grepped in full) -- declined.
 //   - The Zorro III "$00E80000 or $FF000000" claims (sol:K-0456/
@@ -50,13 +50,14 @@
 //     fixture cannot present would both misrepresent what was tested --
 //     declined whole.
 //   - The Zorro III relocatable RAM base (register $E80044) is not exercised
-//     by this fixture: `TG68K_A24 hardwires cpu_addr[31:24]=0 for this CPU
-//     core, so no non-zero written base can ever be reached by any stimulus
-//     this fixture can drive (see SPECIFICATION.md). The "software assigns a
-//     base" claims (sol:K-0108/opus:K-0123/opus:K-0269) are graded instead
-//     against the Zorro II mechanism (register $E80048, a fixed 8MB window
-//     gated by a plain enable bit) -- opus:K-0269's own quoted text invites
-//     this ("...just as on the Zorro II bus").
+//     by this fixture: cfg_z3 is wired to 0 in this build (cpu_wrapper.v:
+//     535-540, no ENABLE_RAM32), so the register-44 handler is never
+//     reached by any stimulus -- a write to $E80044 has no effect at all
+//     here (see SPECIFICATION.md). The "software assigns a base" claims
+//     (sol:K-0108/opus:K-0123/opus:K-0269) are graded instead against the
+//     Zorro II mechanism (register $E80048, a fixed 8MB window gated by a
+//     plain enable bit) -- opus:K-0269's own quoted text invites this
+//     ("...just as on the Zorro II bus").
 //   - 16 claims graded, 7 declined.
 //
 // MUTATION METHODOLOGY. Every graded assertion here is stimulus-sensitive
@@ -123,7 +124,8 @@ static const uint8_t SENTINEL = 0x5;   // top nibble of the 0x5000 sentinel word
                                         // this fixture preloads at every probe
                                         // address -- confirmed absent from
                                         // every autocfg_data literal reachable
-                                        // in Zorro II mode (SPECIFICATION.md).
+                                        // with this package's harness
+                                        // (fastramcfg=1; SPECIFICATION.md).
 
 // =============================================================================
 // HARNESS 1 -- SWEEP: is the AUTOCONFIG decode a 64K window that begins
@@ -168,7 +170,7 @@ struct SweepHarness {
         top->cpucfg = 0;
 #ifdef MUT_NOFASTRAMCFG
         top->fastramcfg = 0;  // MUTATION stimulus red: sel_autoconfig requires
-                               // fastramcfg_d nonzero (cpu_wrapper.v:601) --
+                               // fastramcfg_d nonzero (cpu_wrapper.v:611) --
                                // it can never assert anywhere with this set.
 #else
         top->fastramcfg = 1;
@@ -539,9 +541,10 @@ int main() {
     record("opus:K-0055 NOT GRADED (p386): 'Zorro II I/O' band runs $00E80000 "
            "up to $00F00000 (512K). sol:K-0058 NOT GRADED (p388, same reason): "
            "'I/O address space is $00E80000-$00EFFFFF'. opus:K-0075 NOT GRADED "
-           "(p388, same reason): same range restated. This design implements "
-           "exactly one simulated AUTOCONFIG card with a fixed, non-relocatable "
-           "64K decode (sel_autoconfig, cpu_wrapper.v:601 -- confirmed by grep "
+           "(p388, same reason): same range restated. This design answers in "
+           "one fixed, non-relocatable 64K window; in this build up to three "
+           "Zorro II cards configure there one after another (cpu_wrapper.v:"
+           "643-651), never side by side (sel_autoconfig, cpu_wrapper.v:611 -- confirmed by grep "
            "to be the only chip_addr[23:16] comparison in the file); nothing in "
            "this design answers, or can be made by any stimulus at this "
            "boundary to answer, in $E90000-$EFFFFF. The shared start point "
@@ -550,8 +553,8 @@ int main() {
 
     record("sol:K-0221 NOT GRADED (p398): 'FC0-FC2 encode cycle type or "
            "memory space bits.' opus:K-0229 NOT GRADED (same claim, p398). "
-           "fc_o (cpu_wrapper.v:243) is driven and read only inside `ifdef "
-           "ENABLE_FX68K (:298,:493-495,:497); this build defines only "
+           "fc_o (cpu_wrapper.v:244) is driven and read only inside `ifdef "
+           "ENABLE_FX68K (:299,:493-495,:497); this build defines only "
            "ENABLE_TG68K (fx68k does not elaborate under this project's "
            "Verilator -- inherited, re-confirmed finding: %Error-BLKANDNBLK, "
            "fx68k.sv:293). nanomig/sim/TG68KdotC_Kernel.v (grepped in full) "
@@ -566,7 +569,9 @@ int main() {
            "(cpu_wrapper.v:60), maximum representable byte address $FFFFFE -- "
            "$FF000000 needs bit 24 and above, which this port does not have "
            "(compounded by `TG68K_A24, cpu_wrapper.v:34, unconditional, "
-           "limiting the CPU core itself to 24-bit addressing). The $00E80000 "
+           "limiting the CPU core itself to 24-bit addressing), and in this "
+           "build cfg_z3 is wired to 0 (cpu_wrapper.v:535-540), so no Zorro III "
+           "PIC exists here at all. The $00E80000 "
            "half is the same fact this design implements identically to "
            "(graded: sol:K-0172/opus:K-0179) above (cfg_z3 only selects which "
            "autocfg_data case-branch applies, never the window address); but "

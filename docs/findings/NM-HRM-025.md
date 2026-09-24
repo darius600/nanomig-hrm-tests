@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33) |
+| **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale), [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -39,7 +39,7 @@ So the manual asks for 65 distinct levels, and for 63 and 64 to differ.
 `paula_audio_mixer` wires bit 6 of the seven-bit volume register *down into* the
 six-bit input of the volume helper, by OR-ing it into every bit:
 
-[`src/minimig-aga/paula_audio_mixer.v#L23-L33`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_mixer.v#L23-L33)
+[`src/minimig-aga/paula_audio_mixer.v#L23-L33`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L23-L33)
 
 ```verilog
 // when volume MSB is set, volume is always maximum
@@ -62,7 +62,7 @@ to the helper is forced high — the helper sees `111111`, which is **63**.
 The PWM path keeps the register at its full seven bits and compares across
 widths, so 64 stays above 63:
 
-[`src/minimig-aga/paula_audio_channel.v#L101-L103`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L101-L103)
+[`src/minimig-aga/paula_audio_channel.v#L101-L103`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L101-L103)
 
 ```verilog
       audvol[6:0] <= 7'b000_0000;
@@ -70,7 +70,7 @@ widths, so 64 stays above 63:
       audvol[6:0] <= data[6:0];
 ```
 
-[`src/minimig-aga/paula_audio_channel.v#L149`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L149)
+[`src/minimig-aga/paula_audio_channel.v#L149`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L149)
 
 ```verilog
 assign volgate = (volcnt < audvol);

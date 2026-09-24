@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. The AA specification lists the identifier every Agnus reports, and this core answers one bit more than the value it gives for the part it describes. Whether real Alice silicon answers `$22` or `$23` is an Amiga question, not one this repository can settle. |
-| **Module** | `src/minimig-aga/agnus_beamcounter.v:110` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L110) at the pinned revision |
+| **Module** | `src/minimig-aga/agnus_beamcounter.v:110` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L110) at the pinned revision |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** if the line is upstream's; the identifier word is one expression and a change to it is one edit |
 | **Test** | [`aa/aa-beam-position-words`](../../aa/aa-beam-position-words) · four graded assertions, three green and this one red. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 29, the VPOSR entry |

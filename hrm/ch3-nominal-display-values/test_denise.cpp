@@ -468,7 +468,7 @@ public:
     // siblings' own published Harnesses -- see amiga_clk.v's c1/c3 overlap,
     // documented at length in both files' headers): phase 0 is the
     // clk7_en register-capture phase (one lores-pixel-resolution step),
-    // phase 1 has c1 AND c3 both high (the BPLxDAT write strobe phase).
+    // phase 1 has c1 AND c3 both high.
     void tick() {
         drive_phase();
         dut->eval();

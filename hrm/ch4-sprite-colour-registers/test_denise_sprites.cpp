@@ -307,7 +307,7 @@ public:
         dut->eval();
     }
 
-    // c1=0,c3=0 -> shift/load; c1=1,c3=0; c1=1,c3=1 (clk7n_en); c1=0,c3=1.
+    // c1=0,c3=0 -> shift/load; c1=1,c3=0; c1=1,c3=1; c1=0,c3=1.
     void tick_phase() {
         phase = (phase + 1) % 4;
         switch (phase) {
@@ -850,7 +850,7 @@ int main(int argc, char** argv) {
         "bit is valid only for odd-numbered sprites\" is the SAME "
         "proposition hrm/ch4-attached-sprites/ already tested as "
         "ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE (using CH4-p128.c8, "
-        "CH4-sctl.c4, CH4-attach.c27) and found RED (denise_sprites.v:484, "
+        "CH4-sctl.c4, CH4-attach.c27) and found RED (denise_sprites.v:474, "
         "`attach1 || (!aga && attach0)`, lets the EVEN sprite's own bit "
         "open the combined-colour path at aga=0) -- see that package's "
         "own RESULTS/FINDING. Not re-tested here to avoid re-measuring an "

@@ -37,8 +37,9 @@
 // {bplcon1[11:10],bplcon1[3:0],bplcon1[9:8]} (OCS: only the [3:0] half is
 // populated). denise_bitplanes.v:217-221 -- pf2h from bplcon1[7:4].
 // denise_bitplanes.v:107-114 -- BPL1DAT..BPL8DAT at 9'h110..9'h11e.
-// denise_bitplanes.v:387-464 -- the six buffer registers. denise_bitplanes
-// .v:467 -- a BPL1DAT write's load strobe reaches every shifter.
+// denise_bitplanes.v:382-435 -- the eight buffer registers. denise_bitplanes
+// .v:437-441 generates `load` from a BPL1DAT write, and every shifter
+// takes it at .load(load), l.452-565.
 // denise_bitplane_shifter.v:166-180 module header -- clk (l.168), c1/c3
 // (l.170-171), load (l.172), hires (l.173), shres (l.174), fmode (l.175),
 // data_in[63:0] (l.177), scroll[7:0] (l.178), out (l.179); rate select at
@@ -70,17 +71,11 @@
 // registered 7MHz clock and c1 = ~c3 delayed one further 28MHz cycle, so
 // across one 7MHz cycle's four 28MHz phases, c1 and c3 are BOTH high in one
 // phase and BOTH low in another -- they are not two disjoint two-phase
-// signals. denise_bitplanes.v:381 gates its BPLxDAT write strobe on c1&c3;
-// denise_bitplane_shifter.v:224 gates its shift-register load on
-// !c1&&!c3. Driving them as if disjoint (a pattern this repository's own
-// hrm/denise/test_denise.cpp uses: c1 true only at cycle 1, c3 true only at
-// cycle 3, so c1&c3 is NEVER true and no BPLxDAT write ever reaches a
-// shifter) would make every plane read colour 0 silently, with every
-// assertion below still "passing" as a false negative. This Harness uses
-// the measured-working four-phase pattern instead (clk7_en=(phase==0),
-// c1=(phase==0||phase==1), c3=(phase==1||phase==2) -- phase 1 has both
-// high, phase 3 has both low), the same relationship (rotated) already
-// proven live in this repository's own hrm/denise_sprites and
+// signals. denise_bitplane_shifter.v:224 gates its shift-register load on
+// !c1&&!c3. This Harness uses the measured-working four-phase pattern
+// (clk7_en=(phase==0), c1=(phase==0||phase==1), c3=(phase==1||phase==2) --
+// phase 1 has both high, phase 3 has both low), the same relationship
+// (rotated) already proven live in this repository's own hrm/denise_sprites and
 // hrm/denise_bitplane_shifter harnesses. FIXTURE-DATA-PATH-LIVE below
 // exists specifically to prove this Harness's own c1/c3 pattern actually
 // delivers a loaded, non-zero BPLxDAT value to bpldata BEFORE any scroll
@@ -184,7 +179,7 @@
 // ONE HARNESS BUG FOUND AND FIXED HERE (a stimulus/methodology fix, not an
 // oracle change): denise_bitplanes.v:205-226 latches pf1h/pf2h from
 // bplcon1 only `if (load)` -- load pulses for one clk7_en cycle following
-// a BPL1DAT write (l.467) -- and pf1h_del/pf2h_del (what actually reaches
+// a BPL1DAT write (l.437-441) -- and pf1h_del/pf2h_del (what actually reaches
 // each shifter's `scroll` port) lag pf1h/pf2h by one further clk7_en
 // cycle. A bare BPLCON1 write immediately followed by the timed BPL1DAT
 // trigger write (the spec-only commit's original sequence) measured a
@@ -413,10 +408,10 @@ public:
 
     // One 28MHz clock edge, then advance the four-phase c1/c3/clk7_en
     // relationship for the NEXT edge -- see THE C1/C3 TRAP above. Phase 0
-    // is the clk7_en register-capture phase; phase 1 has c1 AND c3 both
-    // high (the BPLxDAT write-strobe phase, denise_bitplanes.v:381); phase
-    // 3 has both low (the shifter load phase, denise_bitplane_shifter.v:
-    // 224).
+    // is the clk7_en register-capture phase (also when a BPLxDAT write
+    // latches its buffer register, denise_bitplanes.v:382-435); phase 1
+    // has c1 AND c3 both high; phase 3 has both low (the shifter load
+    // phase, denise_bitplane_shifter.v:224).
     void tick() {
         dut->eval();
         dut->clk = 1;
@@ -431,7 +426,7 @@ public:
 
     // Advances to the clk7_en phase, presents (addr>>1, data), captures it
     // on exactly the following clk7_en edge, and returns immediately --
-    // phase is left at 1 (the write-strobe phase) so a caller measuring
+    // phase is left at 1, the phase after the clk7_en capture edge, so a caller measuring
     // timing from a trigger write has a known, minimal-latency starting
     // point. The bus is left driven; call clear_reg() when done with it.
     void begin_write_reg(uint16_t custom_addr, uint16_t data) {
@@ -453,7 +448,7 @@ public:
     }
 
     // denise_bitplanes.v:205-209/217-221: pf1h/pf2h only latch BPLCON1's
-    // current value on a `load` pulse (a BPL1DAT write, l.467), and
+    // current value on a `load` pulse (a BPL1DAT write, l.437-441), and
     // pf1h_del/pf2h_del (l.211-214/223-226 -- what actually reaches each
     // shifter's `scroll` port) lag pf1h/pf2h by one further clk7_en cycle.
     // A bare BPLCON1 write alone does not move any measured delay; call
@@ -547,12 +542,9 @@ int main(int argc, char** argv) {
             "FIXTURE-DATA-PATH-LIVE: a distinct nonzero value (0xACE1) written to "
             "BPL1DAT arrives at bpldata's plane-1 bit as a non-zero pixel, and not "
             "in the same instant as the write itself -- proving this Harness's own "
-            "four-phase c1/c3 pattern (phase 1: both high, the BPLxDAT write "
-            "strobe; phase 3: both low, the shifter load) actually delivers a "
-            "loaded value through to a shifter, unlike the disjoint c1/c3 pattern "
-            "in this repository's own hrm/denise/test_denise.cpp, under which no "
-            "BPLxDAT write ever reaches a shifter and every pixel reads colour 0 "
-            "silently. Also the basis for 'The hardware requires some time after "
+            "four-phase c1/c3 pattern (phase 3: both low, the shifter load) "
+            "actually delivers a loaded value through to a shifter. Also the "
+            "basis for 'The hardware requires some time after "
             "the first data fetch before it can actually display the data' (p.60) "
             "-- the measured latency here is that same nonzero delay, at this "
             "module's own boundary. 3-fetch.c7 .");

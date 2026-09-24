@@ -23,19 +23,32 @@ Zorro II and Zorro III boards in the Zorro II configuration block"*
 (`K-0844`, `K-0881`). Only in the separately-described **Zorro III** block
 does register **44** complete configuration.
 
-`cpu_wrapper.v:619-646` implements exactly one write-completion path,
-gated on `cfg_z3` (`cpu_wrapper.v:535`, `fastramcfg_d[2] & cpucfg[1]`):
+`cpu_wrapper.v:629-665` implements exactly one write-completion path,
+gated on `cfg_z3` (`cpu_wrapper.v:536`, `fastramcfg_d[2] & cpucfg[1]`;
+this package builds with `ENABLE_RAM32`, the one configuration in which
+`cpu_wrapper` compiles a Zorro III path):
 
 ```
 if (~cfg_z3) begin
     if (chip_addr[6:1] == 6'b100100) begin // Register 0x48 - config, ZII RAM
         z2ram_ena <= 1;
-        autocfg_card <= 0;
+        autocfg_card <= 2'b00;
+`ifndef ENABLE_RAM32
+        if (fastramcfg_d[1:0] == 2'b11) begin
+            case (autocfg_card)
+                2'b01: autocfg_card <= 2'b10;  // Extra 1MiB of RAM stolen from SlowRAM
+                2'b10: autocfg_card <= 2'b11;  // Extra 0.5MiB of RAM stolen from SlowRAM
+                default: ;
+            endcase
+        end
+`endif
     end
 end else if (chip_addr[6:1] == 6'b100010) begin // Register 0x44, assign base address to ZIII RAM.
     ...
 end
 ```
+
+The `` `ifndef ENABLE_RAM32 `` block is not compiled in this build.
 
 When `cfg_z3=1` (this design's Zorro III mode — the only mode in which the
 page's claim about register 48 would matter, since the page is explicit
@@ -55,22 +68,23 @@ established that NanoMig's Zorro III board configures in the *same*
 distinct `$E80100+` decode) — so "the Zorro II configuration block" is, in
 this design, the *only* block a Zorro III card is ever configured through.
 The page's own claim that register 48 works there for both board types is
-therefore not an edge case this design's real deployment sidesteps; it is
-squarely the path NanoMig actually uses.
+therefore not testing an edge case this design routes around a different
+way; it is the only path by which `cpu_wrapper` configures a Zorro III
+board, though no board top enables that board.
 
 ## Two further divergences, and one more they lead to
 
 - **Register 44 latches only `cpu_dout[15:12]`/`cpu_dout[15:11]`** — 4 or
   5 bits — **not the full A31-A24 (8 bits) the page describes**
-  (`cpu_wrapper.v:636,641`).
-- **Register 48 latches no address at all** (`cpu_wrapper.v:630-632` only
-  sets `z2ram_ena <= 1`; no `cpu_dout` bits are captured anywhere in that
-  branch).
+  (`cpu_wrapper.v:655,660`).
+- **Register 48 latches no address at all** (`cpu_wrapper.v:640-642` sets
+  `z2ram_ena <= 1` and clears `autocfg_card`; no `cpu_dout` bits are
+  captured anywhere in that branch).
 
 Both of these are claims about the *specific bit content* of a
 write-only register with no read-back path anywhere in this design (no
 case arm in either `autocfg_data` branch reads back `$E80044`/`$E80048`;
-confirmed by reading `cpu_wrapper.v:559-598` in full). Observing what was
+confirmed by reading `cpu_wrapper.v:565-608` in full). Observing what was
 actually latched would require either an internal probe of
 `z3ram_base0`/`z3ram_base1`/`z2ram_ena` (forbidden — no debug ports) or a
 live RAM-model fixture driving `ramsel`/`ramready` so a matching CPU
@@ -89,16 +103,16 @@ completion event is directly observable via `sel_autoconfig`, independent
 of what specific bits were captured.
 
 - **Register 4C (shut-up) has no handler at all.** Confirmed by reading
-  `cpu_wrapper.v:619-646` in full: the write-detect process recognizes
+  `cpu_wrapper.v:629-665` in full: the write-detect process recognizes
   only `6'b100100` (register 48) and `6'b100010` (register 44) — `6'b100110`
   (register 4C, `$E8004C`) never appears anywhere in it. The Zorro II
   card (the configuration this design's own default `fastramcfg`/`cpucfg`
   reach) reads register 08 bit 6 as `0` (register-map package's own
-  Group F-bit6: unmapped index 4 falls to the `4'b1111` default,
-  complement gives logical `1111`... wait — bit6 is nibble bit 2 of the
-  *complemented* default, which is `1`, not `0`; the *Zorro III* card
-  (index 4 *is* mapped, `cpu_wrapper.v:588`) complements to bit6=`1`
-  ("not silenceable"). Re-derived directly here rather than assumed:
+  Group F-bit6: unmapped index 4 falls to the `4'b1111` default at
+  `cpu_wrapper.v:547`, which complements to logical `0000`, so bit 6
+  — nibble bit 2 — is `0`; the *Zorro III* card (index 4 *is* mapped,
+  `cpu_wrapper.v:598`) complements to bit6=`1` ("not silenceable").
+  Re-derived directly here rather than assumed:
   `hrm/appK-autoconfig-register-map`'s own Group F-bit6 measured this
   exactly — `sol:K-0785(p433)`: "register08 bit6 clear -> can be shut up
   by software (Zorro II default)" graded PASS there. So the Zorro II

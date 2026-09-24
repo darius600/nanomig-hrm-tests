@@ -27,11 +27,10 @@
 // Clock phases (trap 1 -- see SPEC.md and PACKAGE.md): c1 and c3 OVERLAP.
 // phase0: clk7_en=1,c1=1,c3=0   phase1: c1=1,c3=1   phase2: c1=0,c3=1
 // phase3: c1=0,c3=0
-// denise_bitplanes.v:381 gates its BPLxDAT write strobe on c1&c3 (phase1);
-// the shifter parallel-load fires on !c1&&!c3 (phase3). Driving c1/c3 as
-// disjoint single-cycle pulses (as at least one older harness in this repo
-// does) means that strobe never fires and every pixel silently reads colour
-// 0. This harness was verified against PACKAGE.md's own MEASURED example
+// The BPLxDAT buffer registers latch on clk7_en (phase0,
+// denise_bitplanes.v:382-435); the shifter parallel-load fires on
+// !c1&&!c3 (phase3, denise_bitplane_shifter.v:224). This harness was
+// verified against PACKAGE.md's own MEASURED example
 // (category 0 / A-bpc.intro) before any other claim was asserted.
 
 #include <array>
@@ -252,7 +251,7 @@ static void alignForCleanLoad(int writesUntilBpl1dat) {
 
 // write BPL1..6DAT (2..6 optional via the vector; unspecified = 0). BPL1DAT
 // is written LAST so the shared `load` strobe (denise_bitplanes.v) captures
-// every plane's already-buffered word together (denise_bitplanes.v:467 and
+// every plane's already-buffered word together (denise_bitplanes.v:437-441 and
 // the per-plane bpl*dat buffer registers, confirmed by reading that file).
 static void loadPlanes(uint16_t p1, uint16_t p2 = 0, uint16_t p3 = 0,
                         uint16_t p4 = 0, uint16_t p5 = 0, uint16_t p6 = 0) {

@@ -21,7 +21,7 @@ and reserved-registers fixtures did not: **writing** an AUTOCONFIG register
 board" state, the only way to observe the 128 MB size code at all, since it
 is never emitted until after the first board's base-address write
 completes). That write path was investigated directly against the RTL text
-(`cpu_wrapper.v:603-647`) before this SPECIFICATION was finished, for the
+(`cpu_wrapper.v:613-666`) before this SPECIFICATION was finished, for the
 same reason the register-map package's boundary investigation had to
 precede its own spec.
 
@@ -43,35 +43,46 @@ the nibble after the complement rule — the same index the register-map
 package's Group F already reads for bits 7:6:4; this package reads bit 5
 (nibble bit 1) of the same value.
 
-**Register 08 bits 3:0 (sub-size) live at index 5**, `cpu_wrapper.v:589`
+**Register 08 bits 3:0 (sub-size) live at index 5**, `cpu_wrapper.v:599`
 (`6'b000101: autocfg_data = 4'b1111; // 0000 - logical size matches
 physical size`) — **not** index 4. `classify.evidence` for `sol:K-0793`
 names `chip_addr[6:1]==6'b000101` explicitly; index 4 (the flags nibble,
 bits 7:4) is a different logical nybble entirely and is not reused here.
 
-**Reading the case statement in full** (`cpu_wrapper.v:562-596`):
+**Reading the case statement in full** (`cpu_wrapper.v:568-606`):
 
-- Zorro II (`~cfg_z3`), index 1: only three `fastramcfg_d` values are
-  wired: `1` → `4'b0110` (code `110`, comment `// 2MB`), `2` → `4'b0111`
-  (code `111`, comment `// 4MB`), and `default` → `4'b0000` under
-  `` `ifdef ENABLE_RAM32`` (code `000`, comment `// 8MB`) or `4'b0111`
-  (code `111` again) without it. **Code `011` (256 KiB) is never emitted
-  in Zorro II mode by this design in either build** — there is no
-  `fastramcfg_d` value that produces it.
+- Zorro II (`~cfg_z3`), index 1: keyed on `{autocfg_card, fastramcfg_d}`
+  (`cpu_wrapper.v:571`); with `autocfg_card` at its reset value `2'b01`
+  (true for every Zorro II harness this package runs, since none of them
+  write register 48), this `ENABLE_RAM32` build wires three values:
+  `5'b01001` → `4'b0110` (code `110`, comment `// 2MB`, `:572`), `5'b01010`
+  → `4'b0111` (code `111`, comment `// 4MB`, `:573`), and `default` →
+  `4'b0000` (code `000`, comment `// 8MB`, `:575`). **Code `011` (256 KiB)
+  is never emitted in Zorro II mode by this build** — no
+  `{autocfg_card, fastramcfg_d}` combination this package can drive
+  produces it. (Without `ENABLE_RAM32` the same key also wires `5'b01011`
+  → `4'b0111` (`:577`, 4MB again), `5'b10011` → `4'b0101` (`:579`, 1MB
+  extra stolen from SlowRAM), and a different `default` → `4'b0100`
+  (`:580`, 0.5MB extra stolen from SlowRAM); this package's Makefile
+  defines `ENABLE_RAM32`, so that branch is not compiled here.)
 - Zorro III (`cfg_z3`), index 1: `autocfg_card[1] ? 4'b0011 : 4'b0100` —
   only codes `011` (128 MB, comment `// 128MB or 256MB, extended`, the
   `autocfg_card[1]=1` arm) and `100` (256 MB, the `autocfg_card[1]=0` arm,
   which is `autocfg_card`'s reset value `2'b01`) are ever emitted. **Codes
   `000`, `110` and `111` are never emitted in Zorro III mode** — there is
   no `autocfg_card` value that reaches them.
-- `autocfg_card[1]` only becomes `1` after the *first* Zorro III
-  base-address write completes (`cpu_wrapper.v:634-644`, register 44):
-  `autocfg_card <= {fastramcfg_d[0], 1'b0}`. With `fastramcfg_d[0]=1` this
-  is `2'b10` (`[1]=1`, still nonzero so `sel_autoconfig` keeps responding
-  for a still-unconfigured "second" region); with `fastramcfg_d[0]=0` it is
+- In this `ENABLE_RAM32` build, `autocfg_card[1]` only becomes `1` after
+  the *first* Zorro III base-address write completes
+  (`cpu_wrapper.v:653-663`, register 44): `autocfg_card <=
+  {fastramcfg_d[0], 1'b0}`. With `fastramcfg_d[0]=1` this is `2'b10`
+  (`[1]=1`, still nonzero so `sel_autoconfig` keeps responding for a
+  still-unconfigured "second" region); with `fastramcfg_d[0]=0` it is
   `2'b00` (done, silenced). So the 128 MB code is reachable only by
   **actually writing register 44 once**, with `fastramcfg[0]=1` supplied
-  at elaboration.
+  at elaboration. (Without `ENABLE_RAM32`, `autocfg_card[1]` can also
+  become `1` from a register-48 write, via the Zorro II chain-advance at
+  `cpu_wrapper.v:646` — an unrelated mechanism this build does not
+  compile.)
 - **`ENABLE_RAM32`** is a real per-board `` `define`` (`icepi-zero`,
   `icesugar-pro`, and two `mistle` targets set it, per
   `hrm/appK-autoconfig-register-map`'s own board-top survey), not an
@@ -84,9 +95,9 @@ bits 7:4) is a different logical nybble entirely and is not reused here.
 **Consequence for grading**: several printed rows name a code's meaning in
 *both* the unextended and extended columns (e.g. "110 → 2 megabytes /
 1 gigabyte"). For codes `000`, `011`, `100`, `110`, **exactly one of the two
-columns is ever reachable in this design** (the other value is never
-produced by any case arm, in any input this fixture — or any fixture built
-on `cpu_wrapper`'s own ports — can drive). Per the build brief's own rule
+columns is ever reachable in this `ENABLE_RAM32` build** (the other value
+is never produced by any case arm this build compiles, at any input this
+fixture — or any fixture built on `cpu_wrapper`'s own ports — can drive). Per the build brief's own rule
 ("where a claim states more than your package tests, the uid goes on the
 `record()` line and NOT on the graded one"), the `sol`-reader claims that
 state *both* columns in one restatement (`K-0772`, `K-0775`, `K-0776`,
@@ -109,8 +120,10 @@ both halves of `K-0779` are graded (not declined).
   produces `011`); the extended half is graded under `opus:K-0803`.
   `reason_kind: partial-untested-half`.
 - **`sol:K-0776`** (code `100`, "512 KiB unextended or 256 MiB extended")
-  — the unextended half is never emitted; the extended half is graded
-  under `opus:K-0805`. `reason_kind: partial-untested-half`.
+  — the unextended half is never emitted in this `ENABLE_RAM32` build (it
+  is reachable only via the Zorro II chain-advance default at
+  `cpu_wrapper.v:580`, which is not compiled here); the extended half is
+  graded under `opus:K-0805`. `reason_kind: partial-untested-half`.
 - **`sol:K-0778`** (code `110`, "2 MiB unextended or 1 GiB extended") —
   the extended half is never emitted (Zorro III index 1 only ever produces
   `011`/`100`); the unextended half is graded under `opus:K-0808`.

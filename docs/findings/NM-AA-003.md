@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a graded green with an inverse control |
 | **What is asked of a reader** | Nothing in the RTL. NanoMig takes all four bits as one shift field, which is what the page's own legend asks for. What is asked is whether `ASA0` is a typographic slip for `ASH0` — which the same row's second column, the legend two lines below it, and the three cells above it all say — or a name this document means. |
-| **Module** | `src/minimig-aga/agnus_blitter.v:232` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_blitter.v#L232) at the pinned revision |
+| **Module** | `src/minimig-aga/agnus_blitter.v:232` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L232) at the pinned revision |
 | **Report to** | **nowhere in code.** The defect is in a 1991 Commodore document, and the company is gone. It is filed so that no AA claim rests on BLTCON0 bit 12 carrying a field name of its own |
 | **Test** | [`aa/aa-blitter-function-and-shift`](../../aa/aa-blitter-function-and-shift) · five graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 14, the BLTCON0/BLTCON1 bit table |

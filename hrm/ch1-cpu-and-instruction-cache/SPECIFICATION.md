@@ -14,9 +14,10 @@ package's own purposes. Concrete port names, stimulus values, and the
 
 **Disclosure on how clean that order actually is:** the classify stage's own
 `classify.evidence` field on every one of these 15 claims already carries
-`file:line` RTL citations (`cpu_wrapper.v:601-642`, `cpu_cache_new.v:31-32`,
-`:46-48`, `:222`, `:227`, `:292`, `:497`, and the CACR-export path
-`cpu_wrapper.v:96/257` / `nanomig.v:312/422`) — this build's task sheet
+`file:line` RTL citations (`cpu_wrapper.v:601`, `:608`, `:619`, `:634-642`,
+`:540-599`, `cpu_cache_new.v:31-32`, `:46-48`, `:222`, `:227`, `:292`,
+`:497`, and the CACR-export path `cpu_wrapper.v:96/257` /
+`nanomig.v:312/422`) — this build's task sheet
 repeats several of them directly. That information reached this agent before
 this file was written; the "write the spec blind, then open the RTL" order is
 therefore not literally intact, and this is reported rather than presented as

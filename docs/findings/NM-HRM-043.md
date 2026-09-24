@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) |
+| **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, and **only together with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md)** — see *Suggested change* |
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertions `P4` and `P5` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -29,12 +29,12 @@ unconditionally. Six sites, no `ecs` term among them:
 
 | engine | line |
 |---|---|
-| audio | [`agnus_audiodma.v:82`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_audiodma.v#L82) — `audlch[audlcsel] <= #1 data_in[4:0];` |
-| bitplane | [`agnus_bitplanedma.v:220`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_bitplanedma.v#L220) — `assign bplpth_in = dma ? newpt[20:16] : data_in[4:0];` |
-| blitter | [`agnus_blitter_adrgen.v:62`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_blitter_adrgen.v#L62) — `assign bltptr_in[20:1] = enaptr ? newptr[20:1] : {data_in[4:0], data_in[15:1]};` |
-| Copper | [`agnus_copper.v:144`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L144) and [`:161`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L161) — `cop1lch[20:16] <= data_in[4:0];` |
-| **disk** | [`agnus_diskdma.v:56`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_diskdma.v#L56) — `assign address_outnew[20:1] = dma ? address_out[20:1]+1'b1 : {data_in[4:0],data_in[15:1]};` |
-| sprite | [`agnus_spritedma.v:179`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_spritedma.v#L179) — `assign sprpth_in = ackdma ? newptr[20:16] : data_in[4:0];` |
+| audio | [`agnus_audiodma.v:82`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v#L82) — `audlch[audlcsel] <= #1 data_in[4:0];` |
+| bitplane | [`agnus_bitplanedma.v:220`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L220) — `assign bplpth_in = dma ? newpt[20:16] : data_in[4:0];` |
+| blitter | [`agnus_blitter_adrgen.v:62`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter_adrgen.v#L62) — `assign bltptr_in[20:1] = enaptr ? newptr[20:1] : {data_in[4:0], data_in[15:1]};` |
+| Copper | [`agnus_copper.v:144`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L144) and [`:161`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L161) — `cop1lch[20:16] <= data_in[4:0];` |
+| **disk** | [`agnus_diskdma.v:56`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56) — `assign address_outnew[20:1] = dma ? address_out[20:1]+1'b1 : {data_in[4:0],data_in[15:1]};` |
+| sprite | [`agnus_spritedma.v:179`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_spritedma.v#L179) — `assign sprpth_in = ackdma ? newptr[20:16] : data_in[4:0];` |
 
 The disk line and the blitter line are the same expression, a space apart.
 
@@ -45,7 +45,7 @@ and the DDF H3 bit, for the sprite VSTART/VSTOP ninth bit, for the Copper's own
 danger range, for `BLTCON0L`/`BLTSIZH`. **None of them uses it for a pointer.**
 
 `agnus_diskdma` and `agnus_audiodma` do not even have the port.
-[`agnus.v:326-340`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus.v#L326-L340)
+[`agnus.v:326-340`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L326-L340)
 instantiates the disk engine with twelve connections and no `ecs` among them.
 
 So the honest statement is the one [NM-HRM-024](NM-HRM-024.md) already reaches and this finding

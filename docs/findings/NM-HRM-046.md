@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. The divergence is visible and physical, not register-level. |
-| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L971-L972) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L543-L545) |
+| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L971-L972) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L543-L545) |
 | **Report to** | **the NanoMig board maintainers**, not the RTL alone — `fdd_led` leaves the core and lights a real LED on the FPGA board |
 | **Test** | [`hrm/ch8-drive-select-motor-led`](../../hrm/ch8-drive-select-motor-led) — assertions `opus:8-cia.c26` and its twin `sol:8-cia.c24` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -43,7 +43,7 @@ last sentence.
 
 One line, with no motor term in it:
 
-[`src/minimig-aga/paula_floppy.v#L971-L972`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L971-L972):
+[`src/minimig-aga/paula_floppy.v#L971-L972`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L971-L972):
 
 ```verilog
 //disk activity LED
@@ -51,10 +51,10 @@ assign fdd_led = (dskstate!=DISKDMA_IDLE);
 ```
 
 `dskstate` is the disk DMA state machine
-([`#L974-L992`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L974-L992)),
+([`#L974-L992`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L974-L992)),
 which leaves `DISKDMA_IDLE` only when a transfer is armed and running. The
 port's own declaration says as much
-([`#L100`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L100)):
+([`#L100`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L100)):
 
 ```verilog
 	output		  fdd_led, //disk activity LED, active when DMA is on
@@ -63,7 +63,7 @@ port's own declaration says as much
 **The motor state exists in this module and the light never reads it.**
 `motor_on[3:0]` is latched per drive on that drive's own select edge, exactly as
 p.244 requires
-([`#L624-L659`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L624-L659)):
+([`#L624-L659`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L624-L659)):
 
 ```verilog
     else if (!_sel[0] && _sel_del[0])
@@ -71,9 +71,9 @@ p.244 requires
 ```
 
 `motor_on` is read by `index`
-([`#L576`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L576))
+([`#L576`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L576))
 and by `syncint`
-([`#L917`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L917)),
+([`#L917`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L917)),
 and by nothing else. The signal the page names as the light's cause is present,
 correct, and unused by the light.
 

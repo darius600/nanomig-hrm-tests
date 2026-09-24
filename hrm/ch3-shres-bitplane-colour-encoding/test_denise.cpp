@@ -46,7 +46,7 @@
 // /test_denise_bitplanes.cpp (BPLCON0 9'h100 -> 0x80, BPL1DAT 9'h110 ->
 // 0x88, BPL2DAT 9'h112 -> 0x89, and the proven "pre-load BPL2DAT, then
 // BPL1DAT's own write triggers every plane's shifter load" write
-// sequencing, denise_bitplanes.v:467) -- reused as infrastructure, not
+// sequencing, denise_bitplanes.v:437-441) -- reused as infrastructure, not
 // read as a claim of this package's own inventory, on the same basis the
 // bplcon1-scroll-delay package's own ORDER OF WORK section already
 // documents for reusing THOSE same two harnesses.
@@ -54,13 +54,11 @@
 // THE C1/C3 TRAP (build-brief warning, not itself a claim): c3 is the
 // registered 7MHz clock and c1 = ~c3 delayed one further 28MHz cycle, so
 // across one 7MHz cycle's four 28MHz phases, c1 and c3 are BOTH high in one
-// phase and BOTH low in another. denise_bitplanes.v:381 gates its BPLxDAT
-// write strobe on c1&c3. Driving c1/c3 as disjoint two-phase signals (the
-// pattern hrm/denise/test_denise.cpp itself uses) makes c1&c3 NEVER true,
-// so no BPLxDAT write ever reaches a shifter and every plane reads colour 0
-// silently -- catastrophic for an encoding test specifically, since it
-// would report every colour as 0 and look like a real RTL finding. This
-// Harness uses the measured-working four-phase pattern instead:
+// phase and BOTH low in another; the plane shifter loads on !c1&&!c3
+// (denise_bitplane_shifter.v:224). A dead data path would report every
+// colour as 0 and look like a real RTL finding -- catastrophic for an
+// encoding test specifically. This Harness uses the measured-working
+// four-phase pattern:
 // clk7_en=(phase==0), c1=(phase==0||phase==1), c3=(phase==1||phase==2).
 // FIXTURE-DATA-PATH-LIVE below exists specifically to prove this pattern
 // actually delivers a loaded, non-zero bitplane value before any colour
@@ -82,9 +80,10 @@
 // (dpf=0) is `plfdata = bpldata[8:1]` DIRECTLY (denise_playfields.v:100)
 // -- plane N's own live serial bit is colour-table address bit (N-1), one
 // bit per plane, no combining of adjacent bitplane-clock samples anywhere
-// in the call graph. denise_bitplanes.v's only use of `shres`
-// (l.298-303) is the per-plane shift-RATE mux (shres -> shift every
-// 28MHz tick instead of every 2nd/4th) -- it does not touch which
+// in the call graph. denise_bitplanes.v only passes `shres` to each
+// plane shifter (.shres(shres), l.454-567), where it selects the shift
+// RATE (shift every 28MHz tick instead of every 2nd/4th) and the scroll
+// index (denise_bitplane_shifter.v:205-219) -- it does not touch which
 // colour-table address gets formed or read. So: the sixteen lower
 // registers are not reached through any bitplane-driven multiplexing at
 // all in this RTL; registers 4-15 are reachable only by driving MORE than
@@ -627,8 +626,10 @@ public:
     // `plfdata = bpldata[8:1]` DIRECTLY (denise_playfields.v:100, dpf=0
     // path) -- i.e. plane N's own live bit is colour-table address bit
     // (N-1), with NO combining of adjacent bitplane-clock samples anywhere
-    // in this call graph. denise_bitplanes.v's only use of `shres` is the
-    // per-plane shift-rate mux (l.298-303: shres -> shift every tick); it
+    // in this call graph. denise_bitplanes.v only passes `shres` to each
+    // plane shifter (l.454-567), which uses it for the shift rate and
+    // scroll index (denise_bitplane_shifter.v:205-219: shres -> shift
+    // every tick); it
     // does not touch which colour-table address is formed or how many
     // register bits are read. The ADDRESSING MECHANISM prediction above
     // (index = 4*colorODD + colorEVEN via a shared two-tick colour-table
@@ -656,7 +657,7 @@ public:
     // load -- a sixteen-tick budget), not just settled once and left
     // alone -- see select_register()'s own comment for the full pipeline.
     // Re-triggering a BPL1DAT write reloads ALL FOUR shifters from their
-    // OWN, already-buffered content (denise_bitplanes.v:467) at ~5 ticks
+    // OWN, already-buffered content (denise_bitplanes.v:437-441) at ~5 ticks
     // per write_reg() call, comfortably inside that sixteen-tick budget,
     // so repeating ONLY the plane-1 trigger (no need to re-write planes
     // 2-4's own buffers, which do not change) keeps every plane's shifter
@@ -679,7 +680,7 @@ public:
     // (l.260-261) and is itself read at a THIRD scroll-derived index
     // (`sh_select`, l.248-256). Because BPL1DAT..BPL4DAT's own 64-bit
     // shift-register load is only ever 16 real bits wide (the write's own
-    // data16) concatenated with 48 FORCED-ZERO bits (chip48_fmode's
+    // data_in) concatenated with 48 FORCED-ZERO bits (chip48_fmode's
     // "default" case at fmode=0, denise_bitplanes.v:374) -- not a genuine
     // 64-bit-wide steady pattern -- a single load only guarantees a
     // steady, addressing-position-independent reading for the sixteen
@@ -694,7 +695,7 @@ public:
     // sixteen-bit window by the time the caller samples. Every OTHER
     // plane is pre-loaded (silently) before each BPL1DAT write, since a
     // BPL1DAT write's load strobe reaches every plane's shifter at once
-    // (denise_bitplanes.v:467, confirmed unchanged after reading it).
+    // (denise_bitplanes.v:437-441).
     void select_register(int reg) {
         uint16_t p1 = (reg & 1) ? 0xFFFF : 0x0000;
         uint16_t p2 = (reg & 2) ? 0xFFFF : 0x0000;
@@ -808,10 +809,9 @@ int main(int argc, char** argv) {
             "all-ones plane reaches the bitplane shifter and is displayed "
             "as COLOR01 (" + hex6(driven) + ") within 24 ticks of the "
             "four-phase clk7_en=(phase==0), c1=(phase==0||phase==1), "
-            "c3=(phase==1||phase==2) pattern -- the write-strobe and "
-            "shifter-load gating this module uses (c1&c3, !c1&&!c3) is "
-            "never permanently starved the way a disjoint two-phase "
-            "pattern would starve it. No manual page: harness self-check.");
+            "c3=(phase==1||phase==2) pattern -- the shifter-load gating "
+            "this module uses (!c1&&!c3) is not starved. No manual page: "
+            "harness self-check.");
     }
 
     // =====================================================================
@@ -979,8 +979,9 @@ int main(int argc, char** argv) {
     // bpldata[8:1]` directly (denise_playfields.v:100) -- plane N's own
     // live serial bit is address bit (N-1), with no combining of adjacent
     // bitplane-clock samples anywhere in the call graph
-    // (denise_bitplanes.v's only use of shres, l.298-303, is the per-plane
-    // shift RATE). The ADDRESSING MECHANISM prediction in the spec-only
+    // (denise_bitplanes.v only passes shres to the plane shifters,
+    // l.454-567, which use it for the shift rate and scroll index,
+    // denise_bitplane_shifter.v:205-219). The ADDRESSING MECHANISM prediction in the spec-only
     // commit (a shared two-tick fetch, index=4*colorODD+colorEVEN) has no
     // RTL counterpart -- there is no such circuit. Registers 4-15 are
     // reached the only way this RTL supports: a plain four-bitplane index

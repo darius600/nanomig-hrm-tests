@@ -330,7 +330,7 @@ public:
         dut->eval();
     }
 
-    // c1=0,c3=0 -> shift/load; c1=1,c3=0; c1=1,c3=1 (clk7n_en); c1=0,c3=1.
+    // c1=0,c3=0 -> shift/load; c1=1,c3=0; c1=1,c3=1; c1=0,c3=1.
     void tick_phase() {
         phase = (phase + 1) % 4;
         switch (phase) {

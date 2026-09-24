@@ -268,14 +268,13 @@
 //     finds no match in either file, confirming every claim's own
 //     classify.evidence ("the module's only outputs are nsprite and
 //     sprdata; there is no data_out") independently.
-//   - denise_sprites.v:120-121,147-148 (and the generic write blocks used
-//     by BPLCON0/COLORxx in hrm/ch3-register-map-denise) -- sprite register
+//   - denise_sprites_shifter.v:127-138 and :257-269 -- sprite register
 //     writes are gated by a plain `always @(posedge clk) if (clk7_en)`,
 //     the SAME generic pattern hrm/ch3-register-map-denise's write_reg
 //     already drives successfully for other Denise registers on this same
-//     fixture -- no additional c1/c3 dependency (that trap is specific to
-//     the bitplane shifters' `clk7n_en = c1 & c3`, per that package's own
-//     header note, and does not apply to the sprite register write path).
+//     fixture. c1/c3 reach only the shift enables and the bitplane
+//     parallel load (denise_bitplane_shifter.v:212, 216, 224;
+//     denise_sprites.v:163-164), none of which gates a register write.
 //
 // Nothing here was a surprise against the inventory; opening the files
 // confirmed the spec above rather than revising it. Harness (tick/phase,

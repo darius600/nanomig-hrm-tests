@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. The AA specification's HTOTAL entry says the long-line/short-line toggle makes every other line one colour clock longer; this core toggles the bit that reports which line it is on and ends every line at the same count. Whether NanoMig wants the half-clock NTSC line at all is a project question, not one this repository can settle. |
-| **Module** | `src/minimig-aga/agnus_beamcounter.v:105`, `:250` and `:293-298` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L105) at the pinned revision |
+| **Module** | `src/minimig-aga/agnus_beamcounter.v:105`, `:250` and `:293-298` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L105) at the pinned revision |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** if the lines are upstream's; the module's own comment says the feature is unimplemented rather than broken |
 | **Test** | [`aa/aa-programmable-sync-windows`](../../aa/aa-programmable-sync-windows) · ten graded assertions, nine green and this one red. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 24, the HTOTAL entry |

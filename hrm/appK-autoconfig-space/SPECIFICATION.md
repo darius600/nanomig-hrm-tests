@@ -27,16 +27,16 @@ full id list; only the mechanism is summarised here):
 
 1. **Lifecycle** (8 claims: `sol:K-0727,K-0734,K-0739,K-0842,K-0843`;
    `opus:K-0755(p431),K-0879,K-0880`) — a card responds in $E8xxxx while
-   unconfigured (`autocfg_card` reset value `1`,
-   `cpu_wrapper.v:607-608`), and stops responding once the final
-   base-address write completes (`cpu_wrapper.v:630-632` register 48 for
+   unconfigured (`autocfg_card` reset value `2'b01`,
+   `cpu_wrapper.v:617-618`), and stops responding once the final
+   base-address write completes (`cpu_wrapper.v:640-642` register 48 for
    Zorro II — the configuration used here). Tested by reading register 00
    before any write (expect the real type nibble) and again after writing
    register 48 (expect silence: `chip_data`'s passthrough, since `mem` has
    no entry at `$E80000` other than what the fixture's own memory model
    supplies, which defaults to 0).
 2. **Handoff** (1 claim: `sol:K-0733`) — `autocfg_card`'s three reachable
-   values (`1` → `{fastramcfg_d[0],0}` → `0`, `cpu_wrapper.v:634-644`)
+   values (`2'b01` → `{fastramcfg_d[0],1'b0}` → `2'b00`, `cpu_wrapper.v:653-663`)
    model a single unconfigured responder handed off in sequence: after the
    first Zorro III board's base-address write, the space keeps responding
    (for a still-unconfigured second region) until the second write
@@ -53,7 +53,7 @@ full id list; only the mechanism is summarised here):
    established.
 5. **Address window** (4 claims: `sol:K-0742,K-0743,K-0744`;
    `opus:K-0767`) — the 64 KiB block at `$00E8xxxx`
-   (`cpu_wrapper.v:601`'s `chip_addr[23:16]==8'b11101000` check, which
+   (`cpu_wrapper.v:611`'s `chip_addr[23:16]==8'b11101000` check, which
    only examines the top byte) is the whole decoded window: an address one
    byte outside it (`$E90000`) never gets the AUTOCONFIG override, and an
    address *inside* it but past the 6-bit `chip_addr[6:1]` case range
@@ -61,7 +61,7 @@ full id list; only the mechanism is summarised here):
    confirming the decode covers the full 64 KiB, not just the first
    0x7E bytes some registers are mapped at.
 6. **One nybble only** (2 claims: `sol:K-0750`, `opus:K-0771`) —
-   `cpu_wrapper.v:235`'s `{sel_autoconfig ? autocfg_data :
+   `cpu_wrapper.v:236`'s `{sel_autoconfig ? autocfg_data :
    chip_data[15:12], chip_data[11:0]}` substitutes exactly 4 bits; the
    other 12 pass through the chip bus untouched. Tested by presetting a
    recognisable low-12-bit pattern on the responding `chip_dout` and
@@ -80,7 +80,7 @@ full id list; only the mechanism is summarised here):
    arithmetic, reused here rather than recomputed).
 8. **Complement rule** (5 claims: `sol:K-0755(p432),K-0756,K-0759`;
    `opus:K-0776,K-0777`) — every register except 00 is physically
-   complemented (`cpu_wrapper.v:541` default `4'b1111` reads as logical
+   complemented (`cpu_wrapper.v:547` default `4'b1111` reads as logical
    `0`; register 00 at index 0 *and* index 1 both read direct, per
    `hrm/appK-autoconfig-register-map`'s own established rule — "the 00
    register" names the whole two-address logical register, not just

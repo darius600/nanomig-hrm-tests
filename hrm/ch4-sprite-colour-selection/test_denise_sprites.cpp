@@ -266,7 +266,7 @@
 //   own bit is written one position ABOVE shifta's own bit on every
 //   injection and that relative order survives the shift, so at the
 //   2-bit output DATB supplies the MORE significant bit and DATA the
-//   LESS significant one (matching denise_sprites.v:279-284's own
+//   LESS significant one (matching denise_sprites.v:475's own
 //   {..,sprdat1,sprdat0} concatenation for the attached case one level
 //   up, e.g. the pair value 11 at runC(both) above rather than a
 //   simple OR). This is an RTL fact about THIS repository's copy of
@@ -395,7 +395,7 @@ public:
         dut->eval();
     }
 
-    // c1=0,c3=0 -> shift/load; c1=1,c3=0; c1=1,c3=1 (clk7n_en); c1=0,c3=1.
+    // c1=0,c3=0 -> shift/load; c1=1,c3=0; c1=1,c3=1; c1=0,c3=1.
     void tick_phase() {
         phase = (phase + 1) % 4;
         switch (phase) {

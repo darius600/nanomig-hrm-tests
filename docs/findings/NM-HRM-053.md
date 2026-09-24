@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The red is against p.289, not against the RTL. |
-| **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L225) |
+| **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L225) |
 | **Report to** | **the manual, not the implementation.** All four reference implementations do exactly what NanoMig does |
 | **Test** | [`hrm/ch8-appb-copper-access-marks`](../../hrm/ch8-appb-copper-access-marks) — `SERDAT-CDANG1`, `SERPER-CDANG1`, `SERDATR-CDANG1` red; their `-CDANG0` twins and `CTRL-BLTCON0` green |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |

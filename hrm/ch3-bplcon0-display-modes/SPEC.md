@@ -10,10 +10,10 @@ Written from the quoted manual text and PACKAGE.md's boundary description alone,
   denise_colortable_ram_mf.v, denise_spritepriority.v, bitplane_ram.v).
 - Clock phases (trap 1, given): a 4-phase counter per 28 MHz tick with
   `clk7_en = (phase==0)`, `c1 = (phase==0 || phase==1)`, `c3 = (phase==1 || phase==2)` --
-  never driven as disjoint halves. denise_bitplanes.v:381 gates its BPLxDAT write strobe on
-  `c1 & c3`; disjoint phases mean that strobe never fires and every pixel silently reads
-  colour 0, which is exactly the failure mode the five older FPGA-029 tests fell into by
-  asserting nothing.
+  never driven as disjoint halves. The plane shifter's parallel load fires on
+  `!c1 && !c3` (denise_bitplane_shifter.v:224), so the display path depends on that
+  phase relationship, and a harness that asserts nothing cannot tell a live path from
+  a dead one.
 - Horizontal scroll alignment (trap 2, given): denise_bitplanes.v:146-152 decodes
   `hpos[3:2]` into 0/4/8/12 lores pixels of extra scroll; plane writes in this suite are
   aligned to `hpos[3:2]==0` unless a test is deliberately exercising that offset.
@@ -39,9 +39,8 @@ Measurement: this is the fixture's own smoke test, and doubles as the suite's ma
 control case. Reproduce PACKAGE.md's own MEASURED walk-through verbatim: DIWSTRT H=$30,
 DIWSTOP H=$50, BPLCON0 BPU=1 (planes 2-6 left at zero), BPL1DAT=$FF00, all other bitplane
 data registers zero. Drive c1/c3/clk7_en per the four-phase pattern given in the task
-(clk7_en=(phase==0), c1=(phase==0||1), c3=(phase==1||2)) -- NOT as disjoint halves, or per
-denise_bitplanes.v:381's `c1 & c3` write-strobe trap no BPLxDAT write will ever land and every
-pixel will silently read colour 0. Run enough clocks for one BPL1DAT load and one scan across
+(clk7_en=(phase==0), c1=(phase==0||1), c3=(phase==1||2)) -- NOT as disjoint halves; the
+plane shifter loads on `!c1 && !c3` (denise_bitplane_shifter.v:224). Run enough clocks for one BPL1DAT load and one scan across
 the window. Expect the rgb output to carry a distinguishable COLOR01-derived value inside the
 window and COLOR00-derived value outside it. This is asserted FIRST, before any other claim in
 this package, and is the basis every other category's "known value" measurement depends on.

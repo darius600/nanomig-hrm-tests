@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a graded green with an inverse control |
 | **What is asked of a reader** | Nothing in the RTL. NanoMig restricts $078 exactly as it restricts every neighbouring address. What is asked is whether the missing `~` on SPRHDAT's row is a printing omission — which the other 58 rows in the range suggest — or a deliberate statement that this one register is reachable by the Coprocessor without CDANG. |
-| **Module** | `src/minimig-aga/agnus_copper.v:225` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L225) at the pinned revision |
+| **Module** | `src/minimig-aga/agnus_copper.v:225` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L225) at the pinned revision |
 | **Report to** | **nowhere in code.** The defect is in a 1991 Commodore document, and the company is gone. It is filed so that no AA claim rests on SPRHDAT's row being complete |
 | **Test** | [`aa/aa-copper-register-map`](../../aa/aa-copper-register-map) · seven graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF pp. 6 and 7, the address-ordered register list |

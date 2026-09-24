@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red, inverted — see below |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. The manual documents a defect and NanoMig does not reproduce it, so the decision is whether the quirk matters, not whether to fix a fault. |
-| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L865-L882) · no counterpart upstream |
+| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L865-L882) · no counterpart upstream |
 | **Report to** | **nobody, as a defect.** An implementation without the bug is arguably the better hardware; what needs a ruling is whether software that was written around the bug still works |
 | **Test** | [`hrm/ch8-dsklen-dma-arming`](../../hrm/ch8-dsklen-dma-arming) — `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -57,7 +57,7 @@ wire [7:0] dbyte = { fifo_out[14], fifo_out[12], fifo_out[10], fifo_out[8],
 ```
 
 and the sector buffer is recombined into whole bytes for the card at
-[`paula_floppy.v:228-236`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L228-L236).
+[`paula_floppy.v:228-236`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L228-L236).
 
 **There is no bit-serial shift stage anywhere on the write side** — no place for
 the documented timing race to happen in. The design never emits a bit stream

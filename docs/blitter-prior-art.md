@@ -36,7 +36,7 @@ big blitter file.
 `line_octant`, `mask` and `zero` compile the local `.v` file, not the design. A
 change to `agnus_blitter.v` cannot make them go red.
 
-The three copies were compared against the current submodule
+The three copies were compared against the submodule
 (`nanomig` at `d6f7df9`) on 07.09.2026 and all three are still verbatim:
 
 | Copy | Original | Status |

@@ -30,8 +30,8 @@
 // 34 chip_addr[6:1] indices this package reads (24,25,...,63 -- see the
 // table in SPECIFICATION.md) falls outside BOTH case lists in
 // cpu_wrapper.v's autocfg_data process (Zorro II: 0,1,8,9,10,11,19; Zorro
-// III: 0,1,2,4,5,8,9,10,11,19 -- read in full, cpu_wrapper.v:562-596), so
-// every one of them takes the unconditional cpu_wrapper.v:541 default
+// III: 0,1,2,4,5,8,9,10,11,19 -- read in full, cpu_wrapper.v:568-606), so
+// every one of them takes the unconditional cpu_wrapper.v:547 default
 // (4'b1111), which the complement rule (idx>1) turns into logical 0000 --
 // exactly "reserved, must be 0". This holds regardless of cpucfg/
 // fastramcfg, so one Zorro-II-configured harness suffices for all 34
@@ -39,14 +39,14 @@
 //
 // MUTATION METHODOLOGY. Every assertion below grades a design constant with
 // no input port that can perturb it: the default is unconditional
-// (cpu_wrapper.v:541, evaluated before either case statement and never
+// (cpu_wrapper.v:547, evaluated before either case statement and never
 // overridden for these indices in either branch). For every assertion the
 // mutation is `none impossible`, naming the exact index and the fact that
-// cpu_wrapper.v:562-596 (both case lists, read in full) never mentions it.
+// cpu_wrapper.v:568-606 (both case lists, read in full) never mentions it.
 
 // MUTATION sol:K-0829 none impossible: chip_addr indices 24/25 (register 30)
-//   never appear in either case list (cpu_wrapper.v:562-580 Zorro II,
-//   cpu_wrapper.v:584-596 Zorro III) -- unconditional cpu_wrapper.v:541
+//   never appear in either case list (cpu_wrapper.v:568-590 Zorro II,
+//   cpu_wrapper.v:594-606 Zorro III) -- unconditional cpu_wrapper.v:547
 //   default in every configuration this design offers.
 // MUTATION opus:K-0861 none impossible: same as sol:K-0829 (register 30,
 //   page 435).

@@ -153,7 +153,7 @@ difference:
 spr.attached = (nr & 1) && (value & 0x80);
 ```
 
-Against NanoMig's `denise_sprites.v:484`, `attach1 || (!aga && attach0)`.
+Against NanoMig's `denise_sprites.v:474`, `attach1 || (!aga && attach0)`.
 
 Copperline reads the bit without the odd-sprite condition —
 `video/bitplane/sprite.rs:322`, `attached: ctl & 0x0080 != 0`, and

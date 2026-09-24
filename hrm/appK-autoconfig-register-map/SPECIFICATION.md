@@ -78,17 +78,17 @@ and their own comments), not copied from `classify.evidence`'s prose.
    inputs — `ramsel` is held permanently false by tying `turbocfg=0`, so
    every access, vector fetch, instruction fetch, AUTOCONFIG read and scratch
    write alike, is served through the `chip_as`/`chip_uds`/`chip_lds`/
-   `chip_rw`/`chip_dtack` protocol at `cpu_wrapper.v:658-704`, never through
+   `chip_rw`/`chip_dtack` protocol at `cpu_wrapper.v:677-729`, never through
    the internal RAM path). Result, captured purely by watching `chip_addr`/
    `chip_rw`/`chip_din` (genuine output ports) for a write to `$002000`:
    `data=E000` — the exact upper nibble (`E`=`1110`) the RTL's own case
    arm for register 00 in Zorro-II mode computes
-   (`cpu_wrapper.v:563 6'b000000: autocfg_data = 4'b1110;`), delivered by a
+   (`cpu_wrapper.v:569 6'b000000: autocfg_data = 4'b1110;`), delivered by a
    real reset → vector-fetch → instruction-fetch → decode → execute → bus
    read → bus write sequence, no internal signal touched. Repeated with
    `cpucfg[1]=1`+`fastramcfg[2]=1` (selects the Zorro-III case branch,
-   `cfg_z3` at `cpu_wrapper.v:535`): same scratch write, `data=A000`, matching
-   `cpu_wrapper.v:585 6'b000000: autocfg_data = 4'b1010;`. **This is a
+   `cfg_z3` at `cpu_wrapper.v:536`): same scratch write, `data=A000`, matching
+   `cpu_wrapper.v:595 6'b000000: autocfg_data = 4'b1010;`. **This is a
    working boundary: no debug port, no internal force, only `cpu_wrapper`'s
    own ports (`chip_dout`/`chip_dtack`/`chip_ipl`/`cpucfg`/`fastramcfg`/
    `chipramcfg`/`slowramcfg`/`turbocfg`/`bootrom`/`reset`/`clk`/`ph1`/`ph2` as
@@ -109,17 +109,17 @@ and their own comments), not copied from `classify.evidence`'s prose.
    without instantiating `amiga_clk`. `chip_dtack` is tied constant asserted
    (active low, `0`) throughout — every chip-bus cycle in this fixture
    completes in the RTL's own minimum number of stages
-   (`cpu_wrapper.v:658-704`'s `stage` 0→1→2→3); no wait-state timing is
+   (`cpu_wrapper.v:677-729`'s `stage` 0→1→2→3); no wait-state timing is
    modeled or needed for register-content claims.
 
 ## The register-map arithmetic this package relies on
 
 Every AUTOCONFIG read in this RTL delivers one 4-bit nibble
-(`autocfg_data`, `cpu_wrapper.v:229`) in bits 15:12 of the word read at
+(`autocfg_data`, `cpu_wrapper.v:230`) in bits 15:12 of the word read at
 `$E80000 + 2*chip_addr[6:1]`; bits 11:0 pass the fixture's own `chip_dout`
 straight through and carry no RTL-driven register content. Confirmed by
-reading `cpu_wrapper.v:559-598` (the `autocfg_card`-guarded case block; the
-`` `ifdef ENABLE_TOCCATA`` block at `:543-556` is not compiled into this
+reading `cpu_wrapper.v:565-608` (the `autocfg_card`-guarded case block; the
+`` `ifdef ENABLE_TOCCATA`` block at `:549-562` is not compiled into this
 build and is not used) against its own comments:
 
 - **`chip_addr[6:1]` 0 and 1 carry the *direct*, uninverted logical value.**
@@ -128,27 +128,29 @@ build and is not used) against its own comments:
   `11`/`10` — the exact Zorro-II/Zorro-III type codes the page states,
   matching the RTL's own comments (`// Zorro-II card, add mem, no ROM` /
   `// Zorro-III card, add mem, no ROM`) with no inversion; (b) index 1's
-  Zorro-II value (`cpu_wrapper.v:566-572`, selected by `fastramcfg_d`:
-  `4'b0110`/`4'b0111`/`4'b0000`) reads directly as bits 3:2:1:0 =
+  Zorro-II value (`cpu_wrapper.v:572-575`, selected by
+  `{autocfg_card, fastramcfg_d}` at `:571`: `4'b0110`/`4'b0111`/`4'b0000`)
+  reads directly as bits 3:2:1:0 =
   `[related=0, size=110/111/000]` — `110`,`111`,`000` are exactly the real
   Zorro-II board-size codes for 2 MB / 4 MB / 8 MB, matching the RTL's own
   `// 2MB`/`// 4MB`/`// 8MB` comments only if read direct, not complemented.
 - **Every other `chip_addr[6:1]` index (2, 4, 8, 9, 10, 11, 19/`0x13`, and
-  every unmapped index that falls to the `default: autocfg_data = 4'b1111`
-  at `:541`) carries the *one's complement* of the logical value.** Confirmed
+  every unmapped index that falls to the unconditional `autocfg_data =
+  4'b1111;` at `:547`, set before either case statement runs) carries the
+  *one's complement* of the logical value.** Confirmed
   the same way, against the RTL's own comments: manufacturer number, indices
   8/9/10/11 (`4'b1110`,`4'b1100`,`4'b0110`,`4'b0011`) complement to
   `0001`,`0011`,`1001`,`1100` → byte pair `0x13`,`0x9C` → **`0x139C`**,
   exactly the RTL's own comment (`// Manufacturer ID: 0x139c`,
-  `cpu_wrapper.v:574`). Product ID, index 2, Zorro-III only (`4'b1110`)
+  `cpu_wrapper.v:584`). Product ID, index 2, Zorro-III only (`4'b1110`)
   complements to `0001`, matching `// ProductID=0x10 (only setting upper
-  nibble)` (`:587`) — nibble `0001` is exactly the high nibble of `0x10`.
+  nibble)` (`:597`) — nibble `0001` is exactly the high nibble of `0x10`.
   Register 08 flags, index 4, Zorro-III only (`4'b0000`) complements to
   `1111`, matching `// Memory card, not silenceable, Extended size,
-  reserved.` (`:588`) bit-for-bit (bit7=1 memory, bit6=1 not-silenceable,
+  reserved.` (`:598`) bit-for-bit (bit7=1 memory, bit6=1 not-silenceable,
   bit5=1 extended, bit4=1 reserved-must-be-1). Serial number, index 19/`0x13`
   (`4'b1110` Zorro-II / `{2'b11,~autocfg_card}` Zorro-III) complements to
-  `0001`, matching `// serial=1` / `// serial=1/2` (`:578`,`:594`). Register
+  `0001`, matching `// serial=1` / `// serial=1/2` (`:588`,`:604`). Register
   0C, indices 6/7 (unmapped, default `4'b1111`) complements to `0000`,
   matching the page's own "Reserved, must be 0". Every one of these five
   independent cross-checks against the RTL's *own* comments agrees only
@@ -157,9 +159,9 @@ build and is not used) against its own comments:
   itself.
 - **This RTL reuses the same `$E80000`-`$E8007E` window for its "Zorro III"
   case branch** (selected by `cfg_z3 = fastramcfg_d[2] & cpucfg[1]`,
-  `cpu_wrapper.v:535`), not a distinct `$E80100`+ decode. `chip_addr[6:1]`
+  `cpu_wrapper.v:536`), not a distinct `$E80100`+ decode. `chip_addr[6:1]`
   is 6 bits wide (max byte offset `0x7E`); `sel_autoconfig`
-  (`cpu_wrapper.v:601`) only ever matches `chip_addr[23:16]==8'b11101000`
+  (`cpu_wrapper.v:611`) only ever matches `chip_addr[23:16]==8'b11101000`
   (`$E8xxxx`). The literal Zorro-III addresses several claims quote
   (`100`,`104`,`108`,`110`,`114`,`118`,`11C`,`120`,`124`) are therefore never
   reached by this design's own decode at any input this fixture can drive —
@@ -205,10 +207,10 @@ graded, 5 declined.
   implements register 08 (index 4) and the "logical size" register (index 5)
   as independent, static case-statement constants — neither is a function of
   the other, and register 08 has no write handler at all
-  (`cpu_wrapper.v:619-646` only handles writes to indices `0x24`/`0x22`, the
+  (`cpu_wrapper.v:629-665` only handles writes to indices `0x24`/`0x22`, the
   RAM-activation registers, never index 4) — there is no live "modify"
   mechanism in this design to observe. Declined: `unreachable-behaviour`,
-  named at `cpu_wrapper.v:588-589` (both constants, no producer/consumer
+  named at `cpu_wrapper.v:598-599` (both constants, no producer/consumer
   relationship between them).
 - **`opus:K-0784`(page 432), `opus:K-0812`, `opus:K-0815`(page 433)** — each
   of these three claims' *entire* content is a literal `logical=ZII=ZIII`
@@ -218,7 +220,7 @@ graded, 5 declined.
   arithmetic" above, the quoted Zorro-III address (`100`/`104`/`108`) is
   never reached by this design's own `sel_autoconfig` decode at any
   `chip_addr` this fixture — or any fixture built on this module's own ports
-  — can drive. Declined: `unreachable-address`, named at `cpu_wrapper.v:601`
+  — can drive. Declined: `unreachable-address`, named at `cpu_wrapper.v:611`
   (`sel_autoconfig` only ever matches `$E8xxxx`, and `chip_addr[6:1]` cannot
   represent an offset at or beyond `0x100`).
 

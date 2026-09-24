@@ -124,7 +124,7 @@ reached once the first was blocked. The run records this rather than asserting i
 
 ## What NanoMig does — as evidence, not as the subject
 
-[`src/minimig-aga/agnus_copper.v#L220-L228`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_copper.v#L220-L228),
+[`src/minimig-aga/agnus_copper.v#L220-L228`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L220-L228),
 identical to
 [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L220-L228)
 at the same line numbers:

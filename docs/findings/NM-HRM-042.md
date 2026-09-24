@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) |
+| **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) |
 | **Report to** | **nobody yet** — read *For the specialists* first. A pointer register pair narrower than the address space its caption names is not by itself a defect |
 | **Test** | [`hrm/ch8-disk-dma-pointer`](../../hrm/ch8-disk-dma-pointer) — assertion `P11A` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -44,9 +44,9 @@ The 18-bit reading and the OCS/ECS conditioning are [NM-HRM-043](NM-HRM-043.md)'
 The pointer is assembled from two register writes into a 20-bit field, and no
 path exists for anything wider.
 
-[`src/minimig-aga/agnus_diskdma.v#L18`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_diskdma.v#L18)
+[`src/minimig-aga/agnus_diskdma.v#L18`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L18)
 and
-[`#L56`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_diskdma.v#L56):
+[`#L56`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56):
 
 ```verilog
 	output	reg [20:1] address_out	//chip address out current disk dma pointer

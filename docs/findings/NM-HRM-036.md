@@ -46,7 +46,7 @@ line; the claim is declined on a `record()` line quoting the qualification.
 
 Only bank 0 is gated on `ovl`. Banks 1, 2 and 3 are decoded unconditionally:
 
-[`src/minimig-aga/gary.v#L159-L162`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/gary.v#L159-L162)
+[`src/minimig-aga/gary.v#L159-L162`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L159-L162)
 
 ```verilog
 		sel_chip[0] = cpu_address_in[23:19]==5'b0000_0 && (!ovl || cpu_hlt);

@@ -25,14 +25,14 @@
 //
 //   - THE FINDING: page 436 says writing register 48, in the Zorro II
 //     configuration block, "actually configures the board for both
-//     Zorro II and Zorro III boards." cpu_wrapper.v:619-646's write-
+//     Zorro II and Zorro III boards." cpu_wrapper.v:629-665's write-
 //     completion logic is `if (~cfg_z3) { if (addr==0x48) ... } else if
 //     (addr==0x44) ...` -- when cfg_z3=1 (Zorro III), a write to register
 //     48 matches NEITHER branch. Register 48 does nothing at all while
 //     configured for Zorro III in this design. Graded as the page states
 //     it (sol:K-0844, opus:K-0881) -- RED, and it stays red.
 //   - Register 4C (shut-up) has no write handler anywhere in this design
-//     (cpu_wrapper.v:619-646, read in full, recognizes only 6'b100100 and
+//     (cpu_wrapper.v:629-665, read in full, recognizes only 6'b100100 and
 //     6'b100010). The Zorro II card this design's own default
 //     configuration presents advertises register08 bit6=0 ("can be shut
 //     up", hrm/appK-autoconfig-register-map's own sol:K-0785(p433),
@@ -62,7 +62,7 @@
 // MUTATION sol:K-0844/opus:K-0881 baseline RED (the finding). GREENCHECK_REG48
 //   stimulus GREEN (see GREENCHECK_REG48 block): the identical check,
 //   built against Zorro II instead of Zorro III, reads green -- register
-//   48 DOES complete configuration there (cpu_wrapper.v:630-632), proving
+//   48 DOES complete configuration there (cpu_wrapper.v:640-642), proving
 //   this is a real per-cfg_z3 divergence, not a stuck assertion.
 // MUTATION sol:K-0844 stimulus green: built against Zorro II instead of
 //   Zorro III (`make -B MUT=GREENCHECK_REG48 test`: "FAIL: sol:K-0844" at
@@ -307,7 +307,7 @@ int main() {
          "means it is still responding (NOT shut up).");
     bool shutup_silences_board = shutup.all_captured && bit6_clear_can_be_shut_up && (shutup_after == 0x0);
     bool reg4c_is_write_only = true; // established generically: 0x4C never appears in
-                                      // either read case list (cpu_wrapper.v:559-598,
+                                      // either read case list (cpu_wrapper.v:565-608,
                                       // read in full), same as every other unmapped index.
 
     expect(shutup_silences_board, "sol:K-0740 any write to the shut-up register (4C) shuts up a supported (bit6=0) board");
@@ -382,7 +382,7 @@ int main() {
     // =========================================================================
     const std::string bitrange_reason =
         "reason_kind: unreachable-observable. Registers 44/48 are write-only "
-        "with no read-back path anywhere in this design (cpu_wrapper.v:559-598, "
+        "with no read-back path anywhere in this design (cpu_wrapper.v:565-608, "
         "the autocfg_data read case lists, read in full -- neither $E80044 nor "
         "$E80048 ever appears there). Observing what was actually latched "
         "(cpu_dout[15:12] into z3ram_base1, cpu_dout[15:11] into z3ram_base0, "
@@ -406,7 +406,7 @@ int main() {
     record("opus:K-0878 NOT GRADED (p435, byte-wide half of sol:K-0841): " + bitrange_reason);
     record("opus:K-0870 NOT GRADED (p435): 'For Zorro III boards configured in the Zorro II "
            "space the configuration address is written both nybble and byte wide.' The "
-           "write-detect trigger (cpu_wrapper.v:619, keyed only on ~chip_uds) does not itself "
+           "write-detect trigger (cpu_wrapper.v:629, keyed only on ~chip_uds) does not itself "
            "distinguish a byte-wide from a word-wide write, but confirming that a byte-wide "
            "CPU write instruction latches address content identically requires observing the "
            "SAME latched-content boundary as the other bit-range claims. " + bitrange_reason);
@@ -450,7 +450,7 @@ int main() {
 // sol:K-0848, opus:K-0888) are graded exactly as the printed page states
 // them, and NanoMig's cpu_wrapper.v disagrees with the page on both
 // counts this package tests: register 48 does not complete configuration
-// for a Zorro III board (only register 44 does, cpu_wrapper.v:619-646),
+// for a Zorro III board (only register 44 does, cpu_wrapper.v:629-665),
 // and register 4C (shut-up) has no write handler at all, so a Zorro II
 // board that itself advertises shut-up support (register08 bit6=0) can
 // never actually be shut up by software in this design.

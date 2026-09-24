@@ -11,11 +11,12 @@
 //   (the chip-letter legend).
 // Fixture boundary: `denise` (denise.v) and every module it itself
 //   instantiates -- denise_bitplanes (bplm0, denise.v:345, which itself
-//   instantiates denise_bitplane_shifter, denise_bitplanes.v:346/472-585,
-//   which itself instantiates bitplane_ram), denise_playfields (plfm0,
+//   instantiates denise_bitplane_shifter, denise_bitplanes.v:446-573,
+//   whose bitplane_ram sits on the unbuilt DENISE_EBR branch),
+//   denise_playfields (plfm0,
 //   denise.v:377), denise_sprites (sprm0, denise.v:393, which itself
-//   instantiates denise_sprites_shifter, denise_sprites.v:170-321, which
-//   itself instantiates sprite_ram), denise_spritepriority (spm0,
+//   instantiates denise_sprites_shifter, denise_sprites.v:319-453, whose
+//   sprite_ram sits on the unbuilt DENISE_EBR branch), denise_spritepriority (spm0,
 //   denise.v:419), denise_colortable (clut0, denise.v:440, which itself
 //   instantiates denise_colortable_ram_mf, denise_colortable.v:39), and
 //   denise_hamgenerator (ham0, denise.v:459, which also instantiates

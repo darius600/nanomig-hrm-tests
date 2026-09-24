@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The implementations side with NanoMig. |
-| **Module** | `src/minimig-aga/cpu_wrapper.v:629-644`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_wrapper.v#L629-L644) at the pinned revision |
+| **Module** | `src/minimig-aga/cpu_wrapper.v:639-664`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L639-L664) at the pinned revision |
 | **Report to** | **the Minimig family** if it is reported at all — the behaviour is **inherited**, identical in MiSTer and reached independently by TC64. No RTL change is proposed; the question is whether printed page 436 describes what Commodore's own system software did |
 | **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · two graded assertions — **both red** |
 | **Chapter** | Appendix K — Zorro Expansion Bus · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed pp. 435 and 436 |
@@ -53,7 +53,7 @@ configuration block at `$FF000000`.
 **NanoMig has only the Zorro II configuration block.**
 
 ```verilog
-cpu_wrapper.v:601  assign sel_autoconfig = fastramcfg_d && chip_addr[23:16] == 8'b11101000 && autocfg_card; //$E80000 - $E8FFFF
+cpu_wrapper.v:611  assign sel_autoconfig = |fastramcfg_d && chip_addr[23:16] == 8'b11101000 && |autocfg_card; //$E80000 - $E8FFFF
 ```
 
 The Zorro III block cannot be reached at all: `cpu_wrapper.v:34` defines
@@ -65,13 +65,23 @@ in the block page 436 assigns to register 48.
 gated by `sel_autoconfig`, and then:
 
 ```verilog
-cpu_wrapper.v:629  if (~cfg_z3) begin
-cpu_wrapper.v:630      if (chip_addr[6:1] == 6'b100100) begin   // Register 0x48 - config, ZII RAM
-cpu_wrapper.v:634  end else if (chip_addr[6:1] == 6'b100010) begin  // Register 0x44, assign base address to ZIII RAM.
+cpu_wrapper.v:639  if (~cfg_z3) begin
+cpu_wrapper.v:640      if (chip_addr[6:1] == 6'b100100) begin   // Register 0x48 - config, ZII RAM
+cpu_wrapper.v:653  end else if (chip_addr[6:1] == 6'b100010) begin  // Register 0x44, assign base address to ZIII RAM.
 ```
 
 With `cfg_z3` set, a write to register 48 matches neither arm and nothing
 happens.
+
+**No shipped build presents a Zorro III board.** `cfg_z3` can follow the
+configuration only where `ENABLE_RAM32` is defined -- the icepi-zero,
+icesugar-pro and both MiSTle targets; elsewhere it is wired to 0
+(`:535-540`). Even there it needs `fastramcfg[2]`, and every board top ties
+that bit low: `wire [2:0] fastram_config = { 1'b0, osd_fastmem };`
+([`src/mistle/gw5a_25/top.sv:494`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/mistle/gw5a_25/top.sv#L494)
+and the same line in every other top). The finding is about `cpu_wrapper`'s
+Zorro III path, which its package reaches at the module's own ports: built
+with `ENABLE_RAM32`, driving `cpucfg` and `fastramcfg` directly.
 
 ### Measured
 
@@ -151,9 +161,9 @@ sentence that tells a board designer when to stop answering.
 
 ## For the specialists
 
-That NanoMig is at fault, and that anything breaks. NanoMig's Zorro III fast
-RAM is configured in practice, which is itself evidence about what the system
-writes. What is measured is that the design does not do what one printed
+That NanoMig is at fault, and that anything breaks. No NanoMig build presents
+a Zorro III board (see *What NanoMig does*), so nothing here says what a
+system writes to one. What is measured is that the design does not do what one printed
 sentence says, and that the implementations that can speak do not either.
 
 ---

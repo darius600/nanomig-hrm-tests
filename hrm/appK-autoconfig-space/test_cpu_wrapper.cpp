@@ -283,7 +283,7 @@ int main() {
     // MUTATION sol:K-0727/K-0734/K-0739/K-0842/K-0843
     //   opus:K-0755(p431)/K-0879/K-0880 LIFECYCLE stimulus red:
     //   fastramcfg=0 disables sel_autoconfig entirely (it requires
-    //   fastramcfg_d nonzero, cpu_wrapper.v:601), so the "before" read
+    //   fastramcfg_d nonzero, cpu_wrapper.v:611), so the "before" read
     //   never sees a real type nibble either.
     Harness lc_before(0, 0, {READ(autocfg_addr(IDX_REG00))});
 #else
@@ -326,7 +326,7 @@ int main() {
     // =========================================================================
 #ifdef MUT_NOHANDOFF
     // MUTATION sol:K-0733 stimulus red: MUT=NOHANDOFF fastramcfg[0]=0 (instead
-    // of 1) makes cpu_wrapper.v:638's autocfg_card <= {fastramcfg_d[0],0}
+    // of 1) makes cpu_wrapper.v:657's autocfg_card <= {fastramcfg_d[0], 1'b0}
     // become {0,0}=0 after the FIRST write, silencing immediately instead
     // of handing off.
     Harness handoff(2, 4, {READ(autocfg_addr(IDX_REG00)),

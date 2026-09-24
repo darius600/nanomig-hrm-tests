@@ -63,8 +63,8 @@ stated exception. The note's own AND equation holds at the first restart and at
 neither later, `lenfin`-driven one.
 
 **RTL:** `dmasen` is raised only in the idle-state DMA branch
-([`paula_audio_channel.v:276`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L276)); the block-end restart comes from
-[`:220`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_audio_channel.v#L220), `dmas <= dmasen | lenfin`. The implemented relation is therefore
+([`paula_audio_channel.v:276`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L276)); the block-end restart comes from
+[`:220`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L220), `dmas <= dmasen | lenfin`. The implemented relation is therefore
 
     AUDxDSR = AUDxDR ∧ (dmasen ∨ lenfin)
 

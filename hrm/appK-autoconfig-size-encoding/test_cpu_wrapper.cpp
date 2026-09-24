@@ -33,9 +33,10 @@
 // the "8MB" Zorro-II size code at all in this design.
 //
 // 6 claims declined -- 4 because the printed row names two size
-// interpretations (unextended/extended) and this design only ever emits
-// ONE of the two for that particular code (the other column is never
-// produced by any case arm), 2 because the "aligned on natural boundaries"
+// interpretations (unextended/extended) and this ENABLE_RAM32 build only
+// ever emits ONE of the two for that particular code (the other column is
+// never produced by any case arm this build compiles), 2 because the
+// "aligned on natural boundaries"
 // claim needs a read-back or a live RAM-model fixture this boundary can't
 // safely provide (write-only registers, no internal probe permitted). See
 // SPECIFICATION.md, "Declined claims". 15 claims graded.
@@ -44,7 +45,7 @@
 // MUTATION opus:K-0808 stimulus red: MUT=WRONGSIZE
 // MUTATION sol:K-0779 stimulus red: MUT=WRONGSIZE (the "4MB" half; the
 //   "reserved in extended mode" half is `none impossible`: cpu_wrapper.v's
-//   Zorro III index-1 arm (:586) only ever assigns 4'b0011/4'b0100 -- code
+//   Zorro III index-1 arm (:596) only ever assigns 4'b0011/4'b0100 -- code
 //   111 is never assigned by any case arm, checked in full.)
 // MUTATION opus:K-0810 stimulus red: MUT=WRONGSIZE
 // MUTATION opus:K-0803 stimulus red: MUT=WRONGSTAGE (see WRONGSTAGE block below)
@@ -56,8 +57,8 @@
 // MUTATION opus:K-0819 stimulus red: MUT=WRONGCONFIG
 // MUTATION sol:K-0771 stimulus red: MUT=WRONGCONFIG
 // MUTATION opus:K-0794 stimulus red: MUT=WRONGCONFIG
-// MUTATION sol:K-0793 none impossible: cpu_wrapper.v:589 (Zorro III,
-//   hardcoded 4'b1111) and the cpu_wrapper.v:541 default (Zorro II) are the
+// MUTATION sol:K-0793 none impossible: cpu_wrapper.v:599 (Zorro III,
+//   hardcoded 4'b1111) and the cpu_wrapper.v:547 default (Zorro II) are the
 //   only two paths reaching chip_addr index 5 in this design, and both give
 //   the same constant -- no input changes it.
 // MUTATION opus:K-0827 none impossible: same as sol:K-0793.
@@ -193,13 +194,13 @@ static uint8_t logical(int idx, uint8_t rawnib) {
 static bool bit(uint8_t nibble, int n) { return ((nibble >> n) & 1) != 0; }
 
 int main() {
-    // H1: Zorro II, fastramcfg_d=1 -- "2MB" arm (cpu_wrapper.v:566).
+    // H1: Zorro II, fastramcfg_d=1 -- "2MB" arm (cpu_wrapper.v:572).
     // reads: [0]=reg00(idx0,type,sanity) [1]=reg01(idx1,size) [2]=reg08hi(idx4,bit5) [3]=reg08lo(idx5,subsize)
     Harness h1(0, 1, {READ(0), READ(1), READ(4), READ(5)});
-    // H2: Zorro II, fastramcfg_d=2 -- "4MB" arm (cpu_wrapper.v:567).
+    // H2: Zorro II, fastramcfg_d=2 -- "4MB" arm (cpu_wrapper.v:573).
     Harness h2(0, 2, {READ(1)});
     // H3: Zorro II, fastramcfg_d=3 -- falls to `default`; ENABLE_RAM32 (this
-    // package's Makefile) makes this "8MB" (cpu_wrapper.v:569).
+    // package's Makefile) makes this "8MB" (cpu_wrapper.v:575).
     Harness h3(0, 3, {READ(1)});
     // H4: Zorro III, cpucfg=2 (cpucfg[1]=1), fastramcfg=5 (bit2=1 for
     // cfg_z3, bit0=1 so the post-write autocfg_card state stays nonzero
@@ -268,7 +269,7 @@ int main() {
     record("sol:K-0772 NOT GRADED (p433): 'Size code 000 denotes 8 MiB "
            "unextended or 16 MiB extended.' The unextended half is graded "
            "above (graded: opus:K-0796). The extended (16MB) half is never emitted "
-           "by this design: cpu_wrapper.v:586's Zorro III index-1 arm only "
+           "by this design: cpu_wrapper.v:596's Zorro III index-1 arm only "
            "ever assigns 4'b0011 or 4'b0100 (codes 011/100) -- code 000 is "
            "never reached by any Zorro III configuration this fixture -- or "
            "any fixture built on cpu_wrapper's own ports -- can drive. "
@@ -278,7 +279,7 @@ int main() {
     record("sol:K-0778 NOT GRADED (p433): 'Size code 110 denotes 2 MiB "
            "unextended or 1 GiB extended.' The unextended half is graded "
            "above (graded: opus:K-0808). The extended (1GB) half is never emitted: "
-           "cpu_wrapper.v:586 only ever assigns codes 011/100 in Zorro III "
+           "cpu_wrapper.v:596 only ever assigns codes 011/100 in Zorro III "
            "mode, never 110. reason_kind: partial-untested-half.");
 
     bool reserved_never_emitted_111_ziii =
@@ -303,7 +304,8 @@ int main() {
     record("sol:K-0776 NOT GRADED (p433): 'Size code 100 denotes 512 KiB "
            "unextended or 256 MiB extended.' The extended half is graded "
            "above (graded: opus:K-0805). The unextended (512KB) half is never "
-           "emitted: cpu_wrapper.v:566-572's Zorro II fastramcfg_d cases "
+           "emitted: cpu_wrapper.v:572-575, the Zorro II fastramcfg_d cases this "
+           "ENABLE_RAM32 build compiles, "
            "only ever assign codes 110/111/000, never 100. "
            "reason_kind: partial-untested-half.");
 
@@ -311,7 +313,8 @@ int main() {
     record("sol:K-0775 NOT GRADED (p433): 'Size code 011 denotes 256 KiB "
            "unextended or 128 MiB extended.' The extended half is graded "
            "above (graded: opus:K-0803). The unextended (256KB) half is never "
-           "emitted: cpu_wrapper.v:566-572's Zorro II fastramcfg_d cases "
+           "emitted: cpu_wrapper.v:572-575, the Zorro II fastramcfg_d cases this "
+           "ENABLE_RAM32 build compiles, "
            "only ever assign codes 110/111/000, never 011. "
            "reason_kind: partial-untested-half.");
 
@@ -319,7 +322,7 @@ int main() {
     // Register 08 bit 5 -- size-extension selector. chip_addr index 4
     // (bit 5 of the byte = bit 1 of the nibble after complement).
     // Zorro II: unmapped -> default -> logical 0000 -> bit5=0.
-    // Zorro III: cpu_wrapper.v:588 -> logical 1111 -> bit5=1.
+    // Zorro III: cpu_wrapper.v:598 -> logical 1111 -> bit5=1.
     // =========================================================================
     uint8_t zii_reg08 = logical(4, ZII_CTX.nibble(2));
     uint8_t ziii_reg08 = logical(4, ZIII_CTX.nibble(2));
@@ -344,7 +347,7 @@ int main() {
 
     // =========================================================================
     // Register 08 bits 3:0 -- sub-size, chip_addr index 5. Hardcoded 4'b1111
-    // in both configs (cpu_wrapper.v:589 Zorro III, :541 default Zorro II).
+    // in both configs (cpu_wrapper.v:599 Zorro III, :547 default Zorro II).
     // =========================================================================
     uint8_t subsize = logical(5, h1.nibble(3));
     note("register08 bits3:0 (sub-size), chip_addr index 5: logical nibble=0x" + hex1(subsize));

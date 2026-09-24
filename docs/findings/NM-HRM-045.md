@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The red is against p.278; the chapter's own p.248 prints the composition NanoMig implements. |
-| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L699) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) |
+| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L699) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) |
 | **Report to** | **nobody in the RTL.** This is a defect in one printed page, measured against another printed page of the same manual |
 | **Test** | [`hrm/ch8-dmaon-enable-composition`](../../hrm/ch8-dmaon-enable-composition) — assertion `A2-DMAON_P278_TWO_TERM_COMPOSITION` |
 | **Chapter** | 8 — Interface Hardware, and Appendix A · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -54,27 +54,27 @@ the red assertion drives.
 The DSKBYTR read is one combinational line, and bit 14 of it is
 `trackrd|trackwr`:
 
-[`src/minimig-aga/paula_floppy.v#L699`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L699):
+[`src/minimig-aga/paula_floppy.v#L699`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L699):
 
 ```verilog
 assign dskbytr = reg_address_in[8:1]==DSKBYTR[8:1] ? {1'b1,(trackrd|trackwr),dsklen[14],5'b1_0000,8'h00} : 16'h00_00;
 ```
 
 `trackrd` and `trackwr` are driven non-zero only in `DISKDMA_ACTIVE`
-([`#L1007-L1011`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L1007-L1011)),
+([`#L1007-L1011`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L1007-L1011)),
 and the state machine leaves `DISKDMA_IDLE` only on `dma_active`
-([`#L248`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L248),
-[`#L1002-L1003`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L1002-L1003)):
+([`#L248`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L248),
+[`#L1002-L1003`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L1002-L1003)):
 
 ```verilog
 wire dma_active = dmaen && !lenzero && enable;
 ```
 
 `dmaen` is the DSKLEN bit-15 double-write latch
-([`#L742-L743`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L742-L743)),
+([`#L742-L743`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L742-L743)),
 and `enable` is the port that `paula` wires to `dsken`
-([`paula.v#L174`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula.v#L174),
-[`paula.v#L251`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula.v#L251)):
+([`paula.v#L174`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L174),
+[`paula.v#L251`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L251)):
 
 ```verilog
 assign	dsken = dmacon[4] & dmaen;
@@ -91,7 +91,7 @@ where `dmacon[4]` is DMACON's DSKEN and the local `dmaen` there is DMACON bit
 — p.248's three terms, and a nonzero-length term that neither page names.
 
 **A note on naming.** The module has an internal register also called `dmaon`
-([`#L137`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_floppy.v#L137)),
+([`#L137`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L137)),
 which gates the FIFO and `dmal`. It is *not* what DSKBYTR bit 14 reports. Both
 are asserted only inside `DISKDMA_ACTIVE`, so the distinction does not change
 this measurement, but a reader tracing the RTL by name meets the wrong signal

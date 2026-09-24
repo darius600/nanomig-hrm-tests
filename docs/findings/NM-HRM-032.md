@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L140-L142) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148) |
+| **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L140-L142) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits) · corroborated by [`aa/aa-beamcon0-control-bits`](../../aa/aa-beamcon0-control-bits), which reaches the same red from the AA specification |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -34,7 +34,7 @@ Three bits, each naming a pin whose polarity it controls.
 The three bits are declared and **commented out**, and nothing reads
 `beamcon0_reg[2:0]`:
 
-[`src/minimig-aga/agnus_beamcounter.v#L138-L142`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L138-L142)
+[`src/minimig-aga/agnus_beamcounter.v#L138-L142`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L138-L142)
 
 ```verilog
 //wire varcsyen     = beamcon0_reg[ 4];
@@ -46,7 +46,7 @@ The three bits are declared and **commented out**, and nothing reads
 
 The composite sync output is formed without them:
 
-[`src/minimig-aga/agnus_beamcounter.v#L421`](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/agnus_beamcounter.v#L421)
+[`src/minimig-aga/agnus_beamcounter.v#L421`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L421)
 
 ```verilog
 assign _csync = _hsync & _vsync | vser; //composite sync with serration pulses

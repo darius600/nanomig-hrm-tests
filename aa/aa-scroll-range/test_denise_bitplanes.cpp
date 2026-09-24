@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
                       "other two must stay green\n";
 
     constexpr uint16_t BPL1DAT_PULSE = 0x8000;  // MSB only: a single 1 among
-                                                 // 64 shifted bits (data16 is
+                                                 // 64 shifted bits (data_in is
                                                  // the top 16, chip48_fmode
                                                  // is fixed 0 -- see header)
 

@@ -6,7 +6,7 @@
 | **Filed against** | the classification |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | No RTL change. What is contested is how the claim was classified. It is filed against neither the RTL nor the page. |
-| **Module** | `sysctrl.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/misc/sysctrl.v#L228-L246) |
+| **Module** | `sysctrl.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/sysctrl.v#L228-L246) |
 | **Report to** | nobody. **This is a finding about this suite**, and the decision it asks for is O72's |
 | **Test** | [`hrm/ch1-cpu-options`](../../hrm/ch1-cpu-options) `CPU-OPTIONS-FOUR-DISTINCT-STATES` and `RAM-BASE-FLOOR-BELOW-256K-ABSENT` |
 | **Chapter** | 1 — Introduction · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |

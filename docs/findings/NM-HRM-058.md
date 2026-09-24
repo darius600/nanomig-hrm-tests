@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The red is against p.256, not against the RTL. |
-| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/paula_uart.v#L156-L230) |
+| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L156-L230) |
 | **Report to** | **the manual.** Three of the four reference implementations land on NanoMig's numbers exactly |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `B11` |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |

@@ -69,17 +69,15 @@
 //   to the BPL1DAT register in a scanline") -- a precondition this file's
 //   claims don't test but sprite visibility depends on regardless, so one
 //   BPL1DAT write was added per measurement (see its own comment above);
-//   (2) hrm/denise/test_denise.cpp's own c1/c3 pattern never pulses both
-//   at once, but denise_sprites_shifter.v's DATA/DATB register latch
-//   (`if (st & clk7n_en)`, `clk7n_en = c1 & c3` inside denise_sprites.v)
-//   needs exactly that overlap to ever fire -- without it every sprite
-//   stayed permanently un-armed and every measurement read all-border,
-//   which is exactly the "silently dead data path" failure mode this
-//   package's own FIXTURE-KNOWN-WORD-IN-ORDER check exists to catch (it
-//   caught it: see RESULTS below). The Harness's tick() was switched to
-//   the c1/c3 phase pattern hrm/ch3-sprite-registers/test_denise_sprites.cpp
-//   already uses for this same sprite hardware. No expected value, page
-//   quotation, or pass/fail threshold was changed by either fix.
+//   (2) the Harness's tick() drives the c1/c3 phase pattern
+//   hrm/ch3-sprite-registers/test_denise_sprites.cpp uses for this same
+//   sprite hardware, matching real c1/c3 timing: the sprite shift enable
+//   is `~c1 & ~c3` (denise_sprites.v:164), true on one phase in four
+//   under this pattern and on two under a pattern whose c1 and c3 are
+//   never high together, which would shift at twice the lores rate.
+//   FIXTURE-KNOWN-WORD-IN-ORDER exists to catch a silently dead data
+//   path regardless (see RESULTS below). No expected value, page
+//   quotation, or pass/fail threshold depends on either.
 //
 // DECLINED (2 of the 9 records, needs a wider boundary than this package's
 //   own): CH4-p100.c6 ("If you specify a vertical position (Y value) of
@@ -277,10 +275,9 @@ public:
     Harness& operator=(const Harness&) = delete;
 
     // Phase pattern reused from hrm/ch3-sprite-registers/test_denise_sprites.cpp
-    // (an already-committed sibling, same register bus/sprite hardware),
-    // NOT from hrm/denise/test_denise.cpp's own (subtly different, c1/c3
-    // never simultaneous) pattern -- see MUTATION LOG / debugging note
-    // below for why that distinction turned out to matter.
+    // (same register bus/sprite hardware): c1 and c3 overlap, so the
+    // sprite shift enable `~c1 & ~c3` (denise_sprites.v:164) fires once
+    // per 7MHz cycle, the lores rate.
     void tick() {
         dut->eval();
         dut->clk = 1;

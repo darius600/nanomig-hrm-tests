@@ -47,7 +47,7 @@
 //   then [7:6], each testing the lower sprite of its own pair first) and
 //   the sprdata packing ({esprm or osprm, 2-bit group id, 2-bit raw pixel})
 //   were read and independently reproduced from denise_sprites.v:32-64 and
-//   :480-522 for THIS build, confirming (not assuming) the claims file's own
+//   :470-512 for THIS build, confirming (not assuming) the claims file's own
 //   classify.evidence field, per the coordinator's instruction after the
 //   specification commit.
 //
@@ -437,7 +437,7 @@ public:
         dut->eval();
     }
 
-    // c1=0,c3=0 -> shift/load; c1=1,c3=0; c1=1,c3=1 (clk7n_en); c1=0,c3=1.
+    // c1=0,c3=0 -> shift/load; c1=1,c3=0; c1=1,c3=1; c1=0,c3=1.
     void tick_phase() {
         phase = (phase + 1) % 4;
         switch (phase) {

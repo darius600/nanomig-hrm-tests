@@ -72,7 +72,7 @@ a reader can follow the thread without going back to the register.
 
 | what | repository | revision · commit date |
 |---|---|---|
-| **NanoMig** — the design under test | [harbaum/NanoMig](https://github.com/harbaum/NanoMig) | [`d6f7df9`](https://github.com/harbaum/NanoMig/tree/d6f7df957fad655bc07f6a381e5094a9edff0be0) · v0.14-beta-33 · 2026-09-04 |
+| **NanoMig** — the design under test | [harbaum/NanoMig](https://github.com/harbaum/NanoMig) | [`4495f86`](https://github.com/harbaum/NanoMig/tree/4495f86fbb0611e53649165faa36f1125e062f18) · v0.14-beta-55 · 2026-09-23 |
 | **Minimig-AGA** — what NanoMig descends from | [MiSTer-devel/Minimig-AGA_MiSTer](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer) | [`da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/tree/da7632e44498840850e78966947f8770166e6e77) · 2026-09-11 |
 | **Minimig-AGA on MiST/TC64** — the second maintained line | [minimig-dev/MinimigAGA-MiST-TC64](https://github.com/minimig-dev/MinimigAGA-MiST-TC64) | [`9e8e308`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/tree/9e8e30844fe134dca54cea65f1bd38539dfc15ad) · 2025-05-03 |
 | WinUAE | [tonioni/WinUAE](https://github.com/tonioni/WinUAE) | [`ccc407e`](https://github.com/tonioni/WinUAE/tree/ccc407e9c636668b99b5f19d6e9aa03ea04b3052) · 2026-09-06 |
@@ -123,30 +123,34 @@ are descendants of the same code NanoMig descends from, so agreement between the
 says nothing about the HRM. What it does say is **where a fix belongs**, and the
 two lines have drifted apart far enough for that to matter.
 
-Measured across the 28 modules the findings cite, against NanoMig at `d6f7df9`:
+Measured across the 28 modules the findings cite, against NanoMig at `4495f86`,
+with `diff --strip-trailing-cr -b` and counting the lines either side has that
+the other lacks:
 
 - **six are identical in all three** — `agnus_audiodma.v`,
   `agnus_blitter_adrgen.v`, `denise_collision.v`, `paula_audio_mixer.v`,
   `paula_intcontroller.v`, `paula_uart.v`. Line numbers match as well as content,
   so a citation carries across unchanged.
-- **`cia_int.v` is identical in TC64 and 113 lines different in MiSTer.** For
-  NM-HRM-063 the closer sibling is the one this project had not been looking at.
+- **`cia_int.v` is identical in TC64 and 115 lines different in MiSTer.** For
+  NM-HRM-063 the closer sibling is TC64.
 - **three are NanoMig's own** — `src/misc/amiga_keymap.v`, `hid.v`, `sysctrl.v` —
   and exist in neither line.
 - **A module is only absent when the whole repository has no copy.** The two
   lines lay their sources out differently — TC64 spreads Verilog across
   `rtl/minimig`, `rtl/sdram`, `rtl/mist`, `rtl/audio` and more — so a comparison
-  scoped to one directory reports absences that are not there. This one was
-  scoped to `rtl/minimig` first and called `cpu_cache_new.v` missing.
+  scoped to `rtl/minimig` alone would call `cpu_cache_new.v` missing.
 - **`cpu_cache_new.v` sits in a different place in each line.** MiSTer keeps it
-  at `rtl/cpu_cache_new.v`, 150 lines from NanoMig's; TC64 at
-  `rtl/sdram/cpu_cache_new.v`, 1105 lines from it — and yet the statement
+  at `rtl/cpu_cache_new.v`, 142 lines from NanoMig's; TC64 at
+  `rtl/sdram/cpu_cache_new.v`, 979 lines from it — and yet the statement
   NM-HRM-060 is about is identical in all three, commented-out guard included.
   A file-level line count is not an answer to a finding.
 - Where they diverge they diverge in both directions: TC64 is closer on
-  `agnus_blitter.v` (14 lines against 61) and `ciab.v` (6 against 218), and much
-  further on `agnus.v` (741 against 115), `minimig.v` (1563 against 811) and
-  `userio.v` (736 against 165).
+  `agnus_blitter.v` (whitespace only, against MiSTer's 51 lines), `ciab.v`
+  (6 against 196) and the three Denise files that hold sprite and bitplane
+  data (`denise_bitplanes.v` 200 against 310, `denise_sprites.v` 201 against
+  209, `denise_sprites_shifter.v` 167 against 193), and much further on
+  `agnus.v` (235 against 113), `minimig.v` (1225 against 601) and `userio.v`
+  (584 against 165).
 
 Comparison is against line endings normalised: NanoMig's files are **LF** and both maintained lines are **CRLF**, so a naive
 byte comparison reports every line of every file as changed and says nothing.

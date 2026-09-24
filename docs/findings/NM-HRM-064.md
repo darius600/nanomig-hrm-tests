@@ -6,8 +6,8 @@
 | **Filed against** | the RTL |
 | **Evidence** | a graded red |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `src/minimig-aga/cpu_wrapper.v:619-646`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/d6f7df957fad655bc07f6a381e5094a9edff0be0/src/minimig-aga/cpu_wrapper.v#L619-L646) at the pinned revision |
-| **Report to** | **NanoMig**, and the fix is one line MiSTer already has. The AUTOCONFIG responder is **inherited**, not NanoMig's own — see *Why this is NanoMig's* below, which was wrong in this page's first version |
+| **Module** | `src/minimig-aga/cpu_wrapper.v:629-665`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L629-L665) at the pinned revision |
+| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** and NanoMig — the responder is **inherited**, and MiSTer's Zorro II memory card makes the same promise; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge. See *Where the responder comes from* below |
 | **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · six graded assertions — **all red** |
 | **Chapter** | Appendix K — Zorro Expansion Bus · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed pp. 433 and 436 |
 | **Assertions** | 6 red, with an inverse control that turns green when register 48 is written in place of 4C |
@@ -42,9 +42,9 @@ register08 (chip_addr index 4): Zorro-III logical nibble=0xF (raw=0x0, complemen
 PASS: sol:K-0785 register08 bit6 clear -> can be shut up by software (Zorro II default)
 ```
 
-Bit 6 clear is "can be shut up". The Zorro III arm at `cpu_wrapper.v:588` sets it
+Bit 6 clear is "can be shut up". The Zorro III arm at `cpu_wrapper.v:598` sets it
 — the RTL's own comment there reads *"Memory card, not silenceable"* — but the
-Zorro II path falls through to the `:541` default of `4'b1111`, and the
+Zorro II path falls through to the `:547` default of `4'b1111`, and the
 complement rule clears the bit.
 
 **And register 4C is decoded nowhere.** A grep for its address across the whole
@@ -55,7 +55,7 @@ $ grep -c "100110" cpu_wrapper.v      # 6'b100110 == register 0x4C
 0
 ```
 
-The write path at `:619-646` decodes `6'b100100` (register 48) and `6'b100010`
+The write path at `:629-665` decodes `6'b100100` (register 48) and `6'b100010`
 (register 44) and no third address. Writing 4C leaves the board responding.
 
 ### Measured
@@ -86,7 +86,7 @@ observe after 4C.
 | **vAmiga** | `Core/Components/Zorro/ZorroBoard.cpp:130-149` — `pokeACF8` switches on `0x48` and `0x4A` and has **no `0x4C` case**. `ZorroBoard::shutup()` exists at `:166-170` and nothing in `Core/` calls it | **no** |
 | **Denise** | **keeps both halves of the contract.** `expansionPort/fastMem.cpp:43` answers register 08 with `encNibble(0)` under its own comment *"any space ok and can be shut up"* — bit 6 clear, the promise — and `expansionPort/expansionPort.cpp:27-30` honours it: `case 0x4c: if (canBeShutUp()) boardState = BoardState::ShutUp;`. (`canBeShutUp()` at `expansionPort.h:51` is a virtual returning `true` with no override anywhere in `emulation/`, so it is the shape of the gate rather than a per-board capability. Copperline has the real per-board form: `zorro.rs` `if board.spec.no_shutup { return; }`) | **yes** |
 | **Copperline** | `src/cdtv.rs:406-407` — `0x4C => { self.shut_up = true; }`, and `:348` makes an un-configured, un-shut-up board the only one that answers | **yes** |
-| **MiSTer** | descendant — **has the same responder in the same file.** `rtl/cpu_wrapper.v:518-520` decodes 4C (`6'b100110`) and ends the card, **but only in its CDTV arm**; the memory-card arm at `:522-527` has 0x48 and nothing else, exactly like NanoMig | **for CDTV, not for RAM** |
+| **MiSTer** | descendant — **has the same responder in the same file.** `rtl/cpu_wrapper.v:518-520` decodes 4C (`6'b100110`) and ends the card, **but only in its CDTV arm**; the memory-card arm at `:522-527` has 0x48 and nothing else, exactly like NanoMig, and its register 08 reads bit 6 clear as NanoMig's does | **for CDTV, not for RAM** |
 | **TC64** | descendant — `rtl/minimig/minimig_autoconfig.v:154` decodes `9'h04c`, commented *"Zorro II / III shut up register"*, for the Toccata sound card and the control board. **Not for a RAM board**, and `rtl/minimig/minimig.v:1249` leaves `.board_shutup()` unconnected | **for two cards, not for RAM** |
 
 **Three of the four independent implementations handle the register, and vAmiga
@@ -97,21 +97,18 @@ exact promise.** Its fast-RAM board answers register 08 with bit 6 clear — the
 comment beside it reads *"any space ok and can be shut up"* — and it then
 honours a write to 4C. **Same advertisement, opposite outcome.** That is the
 pair the finding turns on: not that NanoMig lacks a 4C handler, which the whole
-Minimig family lacks, but that it is the only one of the five that says it has
-one.
+Minimig family lacks, but that it promises one -- as the MiSTer memory card it
+descends from does too.
 
 **vAmiga's omission is not the same omission.** Its boards are a fixed internal
 set — `DiagBoard`, `HdController`, `RamExpansion` — that the emulator itself
 plugs and unplugs, and a board it controls has no need to be silenced by guest
 software. NanoMig's responder answers a real guest.
 
-## Why this is NanoMig's — corrected
+## Where the responder comes from
 
-**This page's first version said neither Minimig line has an AUTOCONFIG
-responder to diverge from. That is false, and the correction makes the finding
-sharper rather than weaker.** `MiSTer-devel/Minimig-AGA_MiSTer` carries the same
-responder in the same file, `rtl/cpu_wrapper.v`, which is where NanoMig's comes
-from; `minimig-dev/MinimigAGA-MiST-TC64` has its own in
+`MiSTer-devel/Minimig-AGA_MiSTer` carries the same responder in the same file,
+`rtl/cpu_wrapper.v`, which is where NanoMig's comes from; `minimig-dev/MinimigAGA-MiST-TC64` has its own in
 `rtl/minimig/minimig_autoconfig.v`, driven by a `sel_autoconfig` decode at
 `rtl/minimig/gary.v:174`.
 
@@ -121,26 +118,29 @@ Toccata card and the control board and not for memory, and does not even wire
 the result out. NanoMig does not honour it at all. On that, NanoMig is in
 company.
 
-**Where NanoMig stands alone is in advertising it.** Register 08 is index
-`6'b000010`, and the two Zorro II case lists differ by exactly that entry:
+**And the promise is inherited with it.** `chip_addr[6:1]` counts 16-bit words,
+so register 08 is index `6'b000100` (register 04, the product number, is
+`6'b000010`). Neither Zorro II case list maps it:
 
-| | Zorro II register 08 | reads at the host as | bit 6 |
-|---|---|---|---|
-| **MiSTer** `cpu_wrapper.v:418` | `6'b000010: autocfg_data = 4'b1010;` | `0101` | **set — "cannot be shut up"** |
-| **NanoMig** `cpu_wrapper.v:562-580` | **the index is absent**, so the `:541` default `4'b1111` stands | `0000` | **clear — "can be shut up"** |
+| | Zorro II case list, indices mapped | register 08 (`6'b000100`) | reads at the host as | bit 6 |
+|---|---|---|---|---|
+| **MiSTer** `cpu_wrapper.v:410-426` | 0, 1, 2, 3, 8, 9, 10, 11, 19 | absent, so the `:395` default `4'b1111` stands | `0000` | **clear — "can be shut up"** |
+| **NanoMig** `cpu_wrapper.v:568-590` | 0, 1, 8, 9, 10, 11, 19 | absent, so the `:547` default `4'b1111` stands | `0000` | **clear — "can be shut up"** |
 
-The inversion is not an assumption: MiSTer's own comment at `:460` states it —
-*"nibbles are inverted, so `4'b1111` reads as 0"*.
+The inversion is not an assumption: MiSTer's own comment at `:459` states it —
+*"nibbles are inverted, so `4'b1111` reads as 0"*. MiSTer's extra entries at
+`:418-419` are register 04, which NanoMig leaves unset.
 
-So upstream makes the same omission and does not make the same promise. **A fix
-has somewhere to go after all, and it is one line NanoMig's case list is
-missing.**
+So upstream makes the same omission and the same promise. **The finding is the
+family's, and the fix is one line either case list is missing.**
 
 ## Suggested change
 
-**Add `6'b000010: autocfg_data = 4'b1010;` to the Zorro II arm** — MiSTer's own
-line, at MiSTer's own value. That stops the board announcing a capability the
-whole Minimig family lacks, and it costs one case entry.
+**Add `6'b000100: autocfg_data = 4'b1011;` to the Zorro II arm** — register
+08's upper nybble, complemented as every register but 00 is: logical `0100`,
+bit 6 set, the other bits as they read now. That stops the board announcing a
+capability the whole Minimig family lacks, and it costs one case entry;
+MiSTer's memory card needs the same line.
 
 The other direction — a handler for `6'b100110` that clears `autocfg_card` and
 stops the board answering — makes the design complete instead of merely honest,

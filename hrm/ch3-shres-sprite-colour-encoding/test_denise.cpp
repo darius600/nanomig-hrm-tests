@@ -110,13 +110,10 @@
 //   58-61 makes c3 the registered 7MHz clock and c1 = ~c3 delayed one
 //   further 28MHz cycle, so across one 7MHz cycle's four 28MHz phases, c1
 //   and c3 are BOTH high in one phase and BOTH low in another -- not two
-//   disjoint two-phase signals. denise_bitplanes.v:381 gates its BPLxDAT
-//   write strobe on c1&c3; this fixture's sprite registers are written
-//   through the SAME reg_address_in/data_in bus, so a broken phase pattern
-//   would silently drop those writes too. This Harness uses the build
-//   brief's own measured-working four-phase pattern: clk7_en=(phase==0),
+//   disjoint two-phase signals. This Harness uses the build brief's own
+//   measured-working four-phase pattern: clk7_en=(phase==0),
 //   c1=(phase==0||phase==1), c3=(phase==1||phase==2) -- phase 1 has both
-//   high (the write strobe), phase 3 has both low -- the same pattern the
+//   high, phase 3 has both low -- the same pattern the
 //   ch3-horizontal-display-window sibling Harness already proved live on
 //   this identical fixture.
 //
@@ -178,15 +175,16 @@
 //   packing (l.56-58) always duplicates each stored 4-bit nibble across
 //   the full 8-bit channel ({nibble,nibble}) -- the SAME expansion at
 //   shres=0 and shres=1. denise_sprites.v's sprite-colour-index
-//   construction (l.480-522, the `sprdata[7:0] = {esprm/osprm, ...}`
+//   construction (l.470-512, the `sprdata[7:0] = {esprm/osprm, ...}`
 //   case statement) never reads `spres`/`shres` either. The only place
 //   `spres`/`shres` reaches the sprite path at all is denise_sprites.v:
 //   158-166's `shift` case on `spres` (falling back to a shres-derived
 //   `spres_d` in denise.v:390-391 when BPLCON3.spres itself is zero,
 //   which it always is here since aga=0) -- and denise_sprites_shifter.v:
-//   119/209 confirms this `shift` signal controls ONLY how fast an
-//   already-loaded 16-bit shift register drains (twice as fast at
-//   SuperHires resolution), never what value gets loaded or displayed.
+//   274-284 confirms this `shift` signal controls ONLY how fast an
+//   already-loaded shift register drains (64 bits, l.77-78, only the
+//   top 16 non-zero at fmode=0, l.91; twice as fast at SuperHires
+//   resolution), never what value gets loaded or displayed.
 //   The claims below are therefore tested, correctly, against an RTL that
 //   has no SuperHires-specific colour path to find: every register-level
 //   and the one general assertion compare the SET of distinct colours a
