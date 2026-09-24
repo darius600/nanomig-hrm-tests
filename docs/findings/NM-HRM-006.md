@@ -99,12 +99,12 @@ and none decides this finding. What they are and how they were read is in
 
   The shared specification says the fetch registers use five bits, with no resolution or chipset qualifier. It does not name the bits, but five position bits leave no sixth bit for H3 in hires. So it matches neither the 3rd edition's hires-only H3 nor NanoMig. patent-us5103499-copper p024 has the same sentence ('have only a 4 pixel resolution because only five bits').
 
-- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 28 — agrees with the manual:
+- **Commodore, 8371 Agnus specification, part 318071-01**, PDF page 37 — says something else:
 
-  > "USE X X X X X X X X HB H7 H6 HS H4 H3 X X"
-  <!-- corpus: agnus-8371-spec/p028.txt -->
+  > "at even multiples of 8 clocks"
+  <!-- corpus: agnus-8371-spec/p037.txt -->
 
-  The register bit assignment for DDFSTRT and DDFSTOP gives bits 7-2 to H8-H3, as p.91 does, and marks bits 1-0 X, to be written as 0 for upward compatibility; a render of the page shows H8 and H5 where the OCR reads HB and HS. It carries no condition on resolution, so it neither repeats nor contradicts p.91's sentence that H3 is respected only in hires. Its start and stop tables head their columns 'H8,H7,H6,H5,H4' and give example settings only. It names six position bits where the shared patent specification says five.
+  A note beside the bit-plane fetch timing diagram says data fetch start can only be specified at even multiples of 8 clocks, and that this is the position to specify for the normal width display, with a 20-word fetch for 320 pixels and a 40-word fetch for 640, as a render of the page shows. The note points at position 38 of the diagram; read in the register's units, a step of 8 leaves no place for H3 in either resolution. That matches neither p.91's hires-only H3 nor NanoMig, and it agrees with the shared patent specification's five bits. The same specification's register bit assignment on p.28 still gives bits 7-2 to H8-H3, as p.91 does, and marks bits 1-0 unused, so the document does not settle the point by itself.
 
 Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS).
 
