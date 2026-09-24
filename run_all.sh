@@ -51,5 +51,16 @@ for target in test_minimig_system test_copper; do
         rc=1
     fi
 done
+# The apparatus for tests at nanomig.v's own ports: both CPU cores must pass
+# every apparatus check, and each core's control must fail its colour check.
+# Its Makefile exits non-zero if either does not hold.
+out=$(make $MAKE_ARGS -C integration/apparatus-cpu-to-video test 2>&1)
+if [ $? -eq 0 ]; then
+    echo "PASS  apparatus-cpu-to-video"
+else
+    echo "FAIL  apparatus-cpu-to-video"
+    echo "$out" | grep -E '^%Error|^FAIL|CONTROL|normal run had' | head -5
+    rc=1
+fi
 
 exit $rc
