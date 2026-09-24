@@ -261,7 +261,10 @@ rather than an obstacle to their going.
 
 ```
 hrm/            216 packages, each against a single module boundary
-integration/    tests across module boundaries, against minimig.v
+aa/             33 packages against the AA chip-set specification
+integration/    tests across module boundaries: minimig_system/ against
+                minimig.v, and harness/ with its apparatus at nanomig.v's
+                own ports, built once per CPU core
 nanomig/        submodule, the RTL under test
 docs/           what a red result means, and who decides — see docs/README.md
 run_all.sh      everything; hrm/run_all.sh runs only the HRM suite
