@@ -68,3 +68,16 @@ One qualification the survey stated rather than smoothed: vAmiga's *idle* case
 depends on same-cycle slot ordering between `SLOT_REG` and `SLOT_TXD` and is not
 decided by reading the source. Its busy-shifter case needs no such tiebreak and
 is what the row above rests on.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+None of them speaks to this point.
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

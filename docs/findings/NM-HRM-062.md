@@ -94,3 +94,29 @@ from the printed patterns rather than from the prose would grade a correct
 decoder red.** Four claims in the appendix-F classification carry
 `source_defines: "conflict"` for exactly that reason and are deliberately not
 adjudicated at classification.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 241 — **agrees with NanoMig**:
+
+  > "BFDOOO-BFDFOO 8520-B (access only at EVEN byte addresses) BFEOO1-BFEF01 8520-A (access only at ODD byte addresses)"
+  <!-- corpus: hw-manual-1985/p241.txt -->
+
+  The August 1985 original has no binary patterns; the errata describes the 'Brief address map for 8520's' section as new. Its memory map puts 8520-A at $BFExx1 (A13=1, A12=0, A0=1) and 8520-B at $BFDxx0 (A13=0, A12=1, A0=0). The port-assignment pages (p.245, p.251) mark CIA-A '(Al2*)' on data bits 7-0 and CIA-B '(A13*)' / '(Al3')' on data bits 15-8. That is the page's prose and chosen addresses, and the decode NanoMig's gary.v implements, not the printed patterns. The verdict is agrees-with-rtl because the finding is filed against the patterns.
+
+- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 42 — agrees with the manual:
+
+  > "So, CIM is selected by the following binary address: 101x xxxx xx01 rrrr xxxx xxxO. eIAB address: 101x xxxx xx10 rrrr xxxx xxxl"
+  <!-- corpus: hw-manual-errata-1985/p042.txt -->
+
+  The section first appears in the October 1985 errata, and it already carries the defect: the same two patterns (CIAA with A13:A12 = 01, CIAB with 10), next to the same prose ('CIM is selected when Al2 is low, Al3 high') and the same chosen addresses ('CIM = BFErOl; CIAB = BFDrOO.'). It also has a sentence the 3rd edition dropped: 'For byte access (seems to be the usual case), AO must be 0 for CIM, 1 for CIAB.' That sentence agrees with the patterns' A0 and contradicts the chosen addresses (BFErOl is odd). In 1985, then, the A0 half of the conflict was prose-plus-pattern against addresses, and the finding's 'A single transposition of the two patterns makes the whole page consistent' does not hold for this printing.
+
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

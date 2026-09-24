@@ -51,3 +51,29 @@ So the red is real and it is not about this design. What p.256 means by "8 to
 simply wrong — is a question for someone who can read it against a real Paula.
 This entry records that no implementation, including the two that model the
 receiver most carefully, produces a number inside the printed range.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 222 — agrees with the manual:
+
+  > "one full character-receive time (8 to 10 bit times)"
+  <!-- corpus: hw-manual-1985/p222.txt -->
+
+  Same figure as the 3rd edition's p.256, so "8 to 10" has been in the text since 1985. The same section (pp.221-222) says the receiver expects one start bit, "8 or 9 data bits" and at least one stop bit, which is 10 or 11 bit cells, so the 1985 text already contains the mismatch the finding measures.
+
+- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+
+  > "the length of said shift register can be switched to 9 or to 10 Bits."
+  <!-- corpus: paula-8364r7-dissection/9_9_txt.txt -->
+
+  The RX register holds the data plus the stop bit, and one more bit holds the start bit: "When the Start Bit comes out of the shift register (there is another "hidden shift register Bit" for that), the UART sees the received frame as completed." A received character on 8364R7 is therefore start + 8 or 9 data + stop = 10 or 11 bit cells: NanoMig's numbers, and outside "8 to 10". The note states how the frame is built, not how long software has to read it; the 10/11 is my derivation from that.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

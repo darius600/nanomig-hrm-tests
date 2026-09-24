@@ -107,3 +107,36 @@ who knows the wiring.
 - No implementation of four agrees with the RTL.
 - The gap is visible in the source without running anything: `potcap[2]`'s
   right-hand side contains no signal that leaves the module.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 233 — agrees with the manual:
+
+  > "The counters are stopped by signals from 2 control1er connectors(left-right) with 2 pins each."
+  <!-- corpus: hw-manual-1985/p233.txt -->
+
+  The August 1985 Appendix A says each of the four pot counters is stopped by a signal from its own connector pin, and its connector table lists 'RIGHT X RX 5 35 (POTlX)' beside the other three, as the 3rd edition p.282 does. p.204 (pin 5 = 'Right POT' / 'POT X') and p.208 (POTGO bits 13/12 = OUTRX/DATRX, right port pin 5) give the same map. Nothing marks POT1X as a pin that is not sensed.
+
+- **US patent 4,829,473, Commodore-Amiga**, PDF page 10 — agrees with the manual:
+
+  > "Individual control switches 158a, 158, 158c, and 158a monitor respective ones of the lines 85a, 87a, 89a, and 91a. When a preset level is sensed, each control switch outputs a control signal 150a, 150b, 150c, and 150d to latch registers 153a, b, c, d."
+  <!-- corpus: patent-us4829473-paula/p010.txt -->
+
+  The patent's pot circuit (FIG. 5) has four identical port circuits, 83a-d. Each pot line has its own sensing switch, and that switch latches the free-running counter into the port's register. POTGO-style bit pairs 15/14, 13/12, 11/10 and 9/8 drive the four tri-state drivers alike (p.9). No port is drive-only. All four inputs are sensed, as the manual's four-input reading requires.
+
+- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
+
+  > "All of the channels are built pretty much in the same way, so we now focus on POT0X."
+  <!-- corpus: paula-8364r7-dissection/8_8_txt.txt -->
+
+  8364R7 silicon: the note names four channels, 'POT0X, POT0Y, POT1X, POT1Y', and describes POT0X as representative. A Schmitt trigger senses the pad, and the counter value is loaded into the channel register while the pad is low. POT1X is therefore a sensed input like the other three; the note does not single it out. The 'pretty much' is the author's own hedge.
+
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

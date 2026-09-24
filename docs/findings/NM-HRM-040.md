@@ -107,3 +107,29 @@ a different question with a different owner.
 - Only one implementation of four does what the page says by default.
 - Two of the four treat it as part-dependent, which is a reading the page does
   not offer and the manual may simply predate.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 247 — agrees with the manual:
+
+  > "If a bit in the DDR is set to a 1, the corresponding bit position in the PR becomes an output."
+  <!-- corpus: hw-manual-1985/p247.txt -->
+
+  The August 1985 Appendix F states the 8520 port rule for every bit position (its register table lists DPA7..DPA0) and makes no exception for CIA-A port A. The same appendix's port assignments (p.245, p.251) put the fire buttons on PA7/PA6 and disk status on PA5-PA2. That is wiring, not a limit on the mask. The appendix names only the 8520, so it cannot speak to the part-number split WinUAE and vAmiga draw; the 6526 CIA specification, which could, has no text layer (gap).
+
+- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 46 — agrees with the manual:
+
+  > "I f a bit in the ODR is set to a 1, the corresponding bit position in the PR becomes an output."
+  <!-- corpus: hw-manual-errata-1985/p046.txt -->
+
+  The October 1985 replacement Appendix F repeats the one-to-one rule. Its new CIA-A address map (p.43) annotates the port-A DDR as 'ddr for port A (BEE001); 1 = output (Set to Ox03)'. That is the value software is told to write, with only PA1/PA0 as outputs: the pair NanoMig honours, and the value vAmiga's 'unusual value' log expects. It says nothing about what the chip does if other bits are set, so it does not contradict the rule.
+
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; US patent 4,829,473, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

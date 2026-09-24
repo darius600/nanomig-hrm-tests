@@ -16,9 +16,14 @@
 
 ## What the HRM says
 
-**Appendix C, printed p. 309** lists `DOFF` among the five ECS blitter changes:
+**Appendix C, printed p. 309**, among the ECS register changes:
 
-> disable D output in line mode
+> Bit 7 (DOFF) of the BLTCON1 register, when set, disables the output of the
+> Blitter hardware on channel D.
+
+The page states no line-mode condition. An earlier version of this entry quoted
+it as "disable D output in line mode": those words are the source comment of
+Denise's implementation below, not the manual's.
 
 ---
 
@@ -59,6 +64,20 @@ path. There are two files of that name in the source set; the line is Denise's
 `agnus/blitter.cpp:297`, and WinUAE's `blitter.cpp:297` is an unrelated closing
 brace.*
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+None of them speaks to this point.
+Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS); Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,874,164, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change
@@ -70,7 +89,8 @@ Denise's line is the whole of it, and it fits this RTL almost verbatim:
 wire doff = ecs & bltcon1[7];
 ```
 
-then suppress the D write in line mode when `doff` is set. `BLTCON1` bit 7 has to
+then suppress the D write when `doff` is set. Denise's comment adds "in line
+mode"; p.309 does not. `BLTCON1` bit 7 has to
 be captured first — the register decode currently drops it.
 
 Being an unbuilt feature, this is an addition rather than a correction, and it is

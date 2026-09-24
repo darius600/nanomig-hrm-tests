@@ -110,3 +110,16 @@ it stands in for — or to be an accelerator cache of the board's own, for which
 coherency is a feature and page 13 simply does not describe it. The suite cannot
 settle that: it measures what the boundary does against what the page says, and
 those two differ. The question of intent belongs to the people who wrote it.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+None of them speaks to this point.
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

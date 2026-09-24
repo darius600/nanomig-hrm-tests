@@ -74,6 +74,45 @@ long-line toggling. MiSTer and TC64 decline the half clock exactly as NanoMig
 does — as descendants that is not a third reading, only the same simplification
 inherited unchanged.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 234 — agrees with the manual:
+
+  > "used during the second refresh time slot of every other line, to identify lines with long counts (228)."
+  <!-- corpus: hw-manual-1985/p234.txt -->
+
+  Every other line is a long line of 228 counts. Line length therefore alternates, and the half clock is carried by the long lines. That is the manual's 227.5 as the finding's Denise/Copperline comparison reads it. NanoMig never produces a 228-count line. The 1985 manual does not print 227.5 itself. Its Copper chapter gives the horizontal beam position as '$0 to $E2' (p023), which is 227 positions.
+
+- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 31 — agrees with the manual:
+
+  > "This interval of 227.5 color clocks includes both display time and non-display time on a horizontal line."
+  <!-- corpus: hw-manual-errata-1985/p031.txt -->
+
+  States the manual's figure outright for one horizontal line. The same errata later rounds it in an illustration: '160 slots out of 227 for each horizontal line' (p037).
+
+- **US patent 4,874,164, Commodore-Amiga**, PDF page 25 — agrees with the manual:
+
+  > "During scan of a horizon tal line, there are typically 227.5 memory access cycles, each of which is approximately 280 nanoseconds in duration."
+  <!-- corpus: patent-us4874164-agnus-denise/p025.txt -->
+
+  Same figure as the manual, per horizontal line. It says 'typically' and names no video standard. The same sentence is on patent-us5103499-copper p025.
+
+- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 11 — agrees with the manual:
+
+  > "strobe shown above is used during the second refresh time slot of every other line,  to identify lines with long counts (228)."
+  <!-- corpus: denise-spec-252126/p011.txt -->
+
+  The ECS Denise specification repeats the 1985 STRLONG text: every other line is a long line of 228 counts. This is the alternation NanoMig does not generate.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change

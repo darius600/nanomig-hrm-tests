@@ -53,3 +53,22 @@ two-cycle lag from a three-cycle one separates NanoMig from every emulator here,
 Copperline included**, and that is the measurement to take before anyone decides
 whether "direct" forbids a synchroniser at all. The adjudication is an Amiga
 hardware question; the lag is not in doubt.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 223 — agrees with the manual:
+
+  > "Direct read of RXD pin on Paula chip."
+  <!-- corpus: hw-manual-1985/p223.txt -->
+
+  Same wording as the 3rd edition's p.257 entry. Appendix A (p234) has "RXD pin receives UART serial data for direct bit test by the micro". It is an earlier edition of the same manual, not an independent witness, and neither text mentions a synchroniser.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

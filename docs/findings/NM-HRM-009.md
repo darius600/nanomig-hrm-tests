@@ -37,6 +37,39 @@ The implementation was right all along.
 
 ---
 
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 187 — agrees with the manual:
+
+  > "COLLISIONS REGISTERED 15 not used"
+  <!-- corpus: hw-manual-1985/p187.txt -->
+
+  Same table and heading as the 3rd edition (also in Appendix A, p230.txt): bit 15 is 'not used' among the collisions registered, with no read value. p186.txt also carries the sentence the 3rd edition keeps at ch.7 p.214, 'its contents are automatically cleared' / 'to 0 after it is read', which the withdrawal page does not cite.
+
+- **US patent 4,874,164, Commodore-Amiga**, PDF page 29 — agrees with the manual:
+
+  > "Fifteen bits in the collision storage register are utilized to indicate whether any of several types of overlaps has occurred"
+  <!-- corpus: patent-us4874164-agnus-denise/p029.txt -->
+
+  Fifteen of sixteen bits carry collisions, the manual's 'not used' for the remaining bit in other words; like the manual it gives that bit no value (p020.txt calls the input 'A 16-bit output from the collision detection logic'). Same passage in patent-us5103499-copper/p029.txt.
+
+- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 7 — agrees with the manual:
+
+  > "15 Not Used"
+  <!-- corpus: denise-spec-252126/p007.txt -->
+
+  The ECS Denise specification repeats the manual's row under the same heading 'COLLISIONS REGISTERED' and also gives no read value for bit 15.
+
+Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
+---
+
 ## Why this entry is kept
 
 It is one of four withdrawals that are the same mistake in different clothes: a

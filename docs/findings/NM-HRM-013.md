@@ -42,3 +42,22 @@ The two bits part company, and the split is what the withdrawal produced:
 
 **The original finding was right that something is missing, and wrong about
 what.** That is the most useful shape a withdrawal can have.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore, *Denise* specification, part 252126-01 (ECS)**, PDF page 10 — **agrees with NanoMig**:
+
+  > "06-04 X Not used."
+  <!-- corpus: denise-spec-252126/p010.txt -->
+
+  This ECS Denise specification (it reports 8373 revisions via DENISEID) prints SPRxCTL bits 06-04 as not used and has no row for bit 03: on bit 4 it sides with NanoMig reading neither bit, against the 3rd edition's SHSH1 70ns increment; bit 3 the manual itself calls unimplemented. The table matches the 1985 OCS table (hw-manual-1985/p234.txt, same '06-04' 'Not used' and no bit 03 row) and lacks even the EV8 row, so it may be an un-updated carry-over. It bears equally on NM-HRM-019, the surviving half.
+
+Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,874,164, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

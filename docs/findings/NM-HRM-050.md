@@ -100,3 +100,22 @@ the key that is right, instead of a pass standing on the defect.
 
 None of the four independent implementations reaches `$30` by accident and none
 of them omits it. The page's two cutout keys are two keys everywhere else.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 260 — agrees with the manual:
+
+  > "I (spare) I (LEFT I CAPS I TAB I ,ESC I (p0.6) I I SHIFT) I LOCK I , , I I (50) I (30) I (62)"
+  <!-- corpus: hw-manual-1985/p260.txt -->
+
+  This is the keyboard-matrix table in Appendix H (August 1985); the text layer is fragmented, so I read it against the page image. Column 14 (PD.6), row 4 is '(LEFT SHIFT)' with keycode (30), beside CAPS LOCK (62); the OCR's '(50)' is '(5D)' on the image. In the same table, column 2 (PC.2), row 3 is '(RET)' with keycode (2B). These are the two parenthesised matrix positions under the left Shift and the Return key: two distinct codes, $30 and $2B, as p.252 says. Figure 8-3 (p.220 image) draws key 30 between SHIFT 60 and Z 31, and a key 2B under the RETURN label.
+
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

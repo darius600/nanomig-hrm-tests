@@ -80,3 +80,22 @@ decide it deliberately rather than inheriting whichever number is convenient.
 - All four implementations model a hold, and all four agree on PAL.
 - The deviation is not an off-by-one against an unclear boundary: it is zero
   against seven or eight.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 204 — agrees with the manual:
+
+  > "The read-circuitry stays in a reset state for the first 7 or 8 horizontal video scan lines."
+  <!-- corpus: hw-manual-1985/p204.txt -->
+
+  It gives the same 'seven or eight' as the 3rd edition p.235 and presents it as what the circuit does. p.205 adds a reason that the 3rd edition dropped: 'There are 262 or 263 possible horizontal scan lines on a single NTSC video screen. But each of the POT counters is 8 bits wide. This allows a maximum of 255 in any counter. This is why the control circuitry is delayed 7 or 8 horizontal scan lines-to limit the maximum POT count value to 255.' That ties 7/8 to NTSC's 262/263-line frames (262-7 = 263-8 = 255); PAL is not mentioned. The 1985 page has no charging-curve figure under 'Effects of Different Resistance on Charging Rate' (checked against the page image), so it has no counterpart to Figure 8-5's 'eight lines'.
+
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

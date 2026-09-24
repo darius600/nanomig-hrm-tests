@@ -24,7 +24,7 @@
 > PB7   DSKMOTOR*    Disk motor control (active low).  This signal is
 >                    nonstandard on the Amiga system.  Each drive will latch
 >                    the motor signal at the time its select signal turns
->                    on.  The disk motor will stay in this state until
+>                    on.  The disk drive motor will stay in this state until
 >                    the next time select turns on.  DSKMOTOR* also controls
 >                    the activity light on the front of the disk drive.
 > ```
@@ -275,3 +275,16 @@ is touched.
 - **The select term the page omits** is implemented by two of the four, which
   suggests the printed sentence is not a complete description of the real
   lamp's behaviour either.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+None of them speaks to this point.
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

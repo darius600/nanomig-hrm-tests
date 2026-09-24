@@ -205,3 +205,29 @@ signal in their port lists, so the decision to be taken is about the design, not
 about the disk.
 
 Take it once, for all four.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 211 — agrees with the manual:
+
+  > "DSKPTH gets the high 3 bits of the pointer, DSKPTL gets the low 16 bits of the pointer."
+  <!-- corpus: hw-manual-1985/p211.txt -->
+
+  The 1985 manual describes only the original chip set and gives DSKPTH three bits, as do its Appendix A (p232) and B (p235): 'Disk pointer (High 3 bits)'. That is the manual's OCS branch, against NanoMig's unconditional five. It predates ECS, so it says nothing about the (E) conditioning itself.
+
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga — one shared specification, counted once**, PDF page 16 — agrees with the manual:
+
+  > "the disk and refresh DMA control logic 61 (2 channels), and the Blitter DMA control logic 67 (four channels). For each of the 25 DMA channels, an 18 bit RAM address pointer is stored in a designated pointer register 138"
+  <!-- corpus: patent-us4874164-agnus-denise/p016.txt -->
+
+  An 18-bit word pointer is the manual's OCS split, 3 high bits plus 15 low, and the disk channel is one of the 25. The patent predates ECS, so it has no chipset condition; p023 says '19 bits wide' for the same registers.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

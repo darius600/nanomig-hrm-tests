@@ -191,3 +191,22 @@ than a hardware one.
   vAmiga, Denise and Copperline all require a non-empty transfer, and neither
   p.248 nor p.278 names that condition. It falls outside this finding's claim,
   but it means neither page is a complete specification of the bit.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 232 — agrees with the manual:
+
+  > "Mirror of bit 15 (DMAEN) in DSKLEN, and-ed with Bit09 (DMAEN) in DMACON"
+  <!-- corpus: hw-manual-1985/p232.txt -->
+
+  This is the bit-14 DMAON row of the 1985 Appendix A, which already prints p.278's two-term formula. The same manual's chapter 8 (p213) says 'The DMA bit (in DSKLEN) is enabled and the DMACON bits are on, too. All DMA bits must be on for this to be true.', which is p.248's reading and NanoMig's. The chapter-versus-appendix disagreement is already there in 1985, so p.278 inherited its line rather than introducing it.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

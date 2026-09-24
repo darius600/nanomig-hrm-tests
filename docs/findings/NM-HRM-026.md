@@ -92,6 +92,26 @@ specification. MiSTer and TC64 do not — they carry NanoMig's own mismatched
 encoding unchanged, which is the source observation propagating, not a second
 reading of the figure.
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 26 — agrees with the manual:
+
+  > "Because of pipelining in Agnus, the first data word must be thrown away. State 101 is entered as soon as this word arrives."
+  <!-- corpus: hw-manual-errata-1985/p026.txt -->
+
+  The 1985 addendum's prose names the second DMA state 101 (NanoMig: 011), and p026 also says 'in the 011 state the lower byte is output' (NanoMig: 110). p028 carries the legend 'sq2,1,O ... The name of the state flip-flops, MSB to LSB.', so here too the codes are flip-flop values. The diagram on p029 is not legible in the text layer.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual*, 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
 ---
 
 ## Suggested change

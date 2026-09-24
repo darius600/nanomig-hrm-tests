@@ -19,8 +19,10 @@
 **Table 5-9, printed p. 163** gives each volume setting a decibel value. The two
 at the top are distinct:
 
-> volume 63 → −0.1 dB  
-> volume 64 → 0.0 dB
+| volume | decibel value |
+|---|---|
+| 64 | 0.0 |
+| 63 | -0.1 |
 
 **Appendix A, printed p. 266**, on `AUDxVOL`:
 

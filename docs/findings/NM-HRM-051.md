@@ -93,3 +93,22 @@ sequence by three different routes — mirroring the host's lock, modelling the
 LED in the keyboard, or owning the toggle in a keyboard MCU. vAmiga does not
 implement the rule, which is worth saying plainly: this is not a case where
 everyone else agrees and NanoMig alone is out.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 257 — agrees with the manual:
+
+  > "This key is different from all the others in that it only generates a key-code when it is pushed down, never when it is released. However, the up/down bit is still used. When pushing the CAPS LOCK key turns on the CAPS LOCK LED, the up/down bit will be 0; when pushing CAPS LOCK shuts off the LED, the up/down bit will be 1."
+  <!-- corpus: hw-manual-1985/p257.txt -->
+
+  Appendix H (August 1985) states both halves of the rule that the 3rd edition prints on p.359. The generic key-up sentence on the same page points to it: '(the CAPS LOCK key is different — see below)'. p.258 supplies the same initial condition at the end of the start-up sequence: 'Finally, the CAPS LOCK LED is shut off.' Chapter 8 (p.216) gives only the generic 'upstroke ... this value + $80' rule, without the exception.
+
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

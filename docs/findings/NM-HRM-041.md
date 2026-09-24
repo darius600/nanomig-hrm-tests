@@ -223,3 +223,36 @@ the other two and should be costed separately.
   bit 15 is falsifiable only through the page's own clearing action. The package
   grades that action and declines the receipt-transition claim rather than
   inventing a precondition the manual does not state.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **techtravels, *Inside Paula's Floppy Controller*, part I — third-party, silicon**, PDF page 29 — agrees with the manual:
+
+  > "DSKBYTR gives software the most recently received byte and selected status bits. The dissection also confirms that its DSKBYT flag, which is generated in module 10q rather than with the byte latches, is set when a byte is received and cleared when the register is read."
+  <!-- corpus: techtravels-paula-floppy/p029.txt -->
+
+  8364R7 silicon: DSKBYT is set per byte and cleared by the read, and DATA is the received byte (B.3, p048: FDC0-FDC15, 'the low eight are the DSKBYTR byte'). p028 adds that the continuously running comparator's 'match output is also visible as the WORDEQUAL status in DSKBYTR', so all three fields are live and none is a constant.
+
+- **6502.org dissection of Paula 8364R7 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
+
+  > "The 8 lower outputs of said shift register I had labeled FDC0..FDC7, and that's what you get when reading the DSKBYT register."
+  <!-- corpus: paula-8364r7-dissection/10_10_txt.txt -->
+
+  Silicon: DATA reads the live receive shift register, and 10_10 attaches 'a 16 Bit comparator, which scans for the sync word' to it. The note does not tie that comparator to bit 12 or describe DSKBYT's clear, and the author warns 'it could be that there are errors in this part of my schematic.'
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 213 — agrees with the manual:
+
+  > "Data from the disk, when in read mode, is loaded into this register one byte at a time. As each byte is received into this register, the BYTEREADY bit is set true. BYTEREADY is cleared each time the DSKBYTR register is read."
+  <!-- corpus: hw-manual-1985/p213.txt -->
+
+  The same page's table gives WORDEQUAL as 'true only while the input stream matches the sync register (as little as two microseconds)' and bits 7-0 as 'Disk byte data'; Appendix A (p232) repeats 'DSKBYT Disk byte ready (reset on read)'. All three fields appear as the 3rd edition prints them.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

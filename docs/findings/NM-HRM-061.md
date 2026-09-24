@@ -104,3 +104,22 @@ saying what it is.
 ## What is left for specialists
 
 Nothing about the Amiga. This one is entirely ours.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 13 — agrees with the manual:
+
+  > "256K bytes of internal RAM, expandable to 5121("
+  <!-- corpus: hw-manual-1985/p013.txt -->
+
+  This describes the whole 1985 machine: 256K of base RAM (Appendix D, p241, maps "256k bytes of RAM"), so a 256K configuration existed in the family, as page 1 says. Like page 1, it describes a machine, not a board's configuration register. On the processor sentence it is silent: it names only the 68000 ("Motorola Me 68000 16/32-bit main processor") and no processor option.
+
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,777,621, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

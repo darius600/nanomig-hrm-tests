@@ -212,3 +212,22 @@ something that could not come off a disk.
 - The package's payload-word calibration still depends on the defect, as recorded
   above. That does not weaken the finding — no graded assertion relies on it any
   more — but it does mean the measurement and the repair have to move together.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **techtravels, *Inside Paula's Floppy Controller*, part I — third-party, silicon**, PDF page 49 — agrees with the manual:
+
+  > "Each data bit becomes a clock/data pair of channel bits, so the encoded stream contains twice as many bits as the unencoded data: Data bit Recorded pair Condition 1 01 always 0 10 when it follows a 0"
+  <!-- corpus: techtravels-paula-floppy/p049.txt -->
+
+  This is a glossary statement of general MFM, not a silicon finding; the paper says Paula does not encode ('Software builds or interprets the recorded format, including encoding', p018). The table continues on p050 with '0 00 when it follows a 1'. p028's '$A1 data → normal MFM $44A9' is an encoding that only the context rule produces.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual*, 1985; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.

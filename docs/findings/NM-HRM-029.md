@@ -82,6 +82,25 @@ wherever it likes if the output is the same, and here it is.
 Whether the printed arrangement is normative is a question about the figure, not
 about the design.
 
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985**, PDF page 29 — agrees with the manual:
+
+  > "except for this case, drnasen} is true only when LENFIN=l. also, AUDxDSR=AUDxDR-drnasen"
+  <!-- corpus: hw-manual-errata-1985/p029.txt -->
+
+  The errata diagram carries the same NOTE as Figure 5-8, OCR-damaged ('drnasen', 'LENFIN=l'), including the AND form the withdrawn assertion read. Its prose (p026: '\Vhen it finishes, a DMA restart request goes to Agnus along with the regular DMA request.') describes the output NanoMig also produces, so nothing here revives the withdrawn claim.
+
+Silent on this point: Commodore-Amiga, *Amiga Hardware Manual*, 1985; US patent 4,780,844, Commodore-Amiga; US patent 4,829,473, Commodore-Amiga; 6502.org dissection of Paula 8364R7; techtravels, *Inside Paula's Floppy Controller*, part I.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
+
+---
+
 ## Why this entry is kept
 
 Four other withdrawals in this register read a **permission or a silence** as a

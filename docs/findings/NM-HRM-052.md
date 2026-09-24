@@ -74,3 +74,22 @@ The same two drawings are the primary evidence for
 shade them in different places — Figure 8-9 shades `30` alone, beside the left
 shift; Figure 8-10 shades `30` there and `2B` beside Return. On that point the
 figures and p.252 agree with each other, and NanoMig disagrees with both.
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **Commodore-Amiga, *Amiga Hardware Manual*, 1985 — the oracle's first edition**, PDF page 218 — agrees with the manual:
+
+  > "64 Left Alt 65 Right Alt"
+  <!-- corpus: hw-manual-1985/p218.txt -->
+
+  This sides with the 3rd edition's p.252 table (Right Alt = $65), which NanoMig also follows, and against Figures 8-9/8-10 (64 on both ALT keys). Two more 1985 places agree. The Appendix H keyboard hardware table (p.260) gives RIGHT ALT its own 6500/1 port-B input with code (65), next to LEFT ALT (64). Figure 8-3 (p.220), the A1000 keyboard, prints 65 on the right ALT key and 64 on the left. I read that from the page image; the p.220 text layer does not carry the 65, so it is not quoted. The 1985 figure therefore does not have the 3rd edition figures' 64/64.
+
+Silent on this point: Commodore, *A500/A2000 Gary Specification*; Commodore-Amiga, *Amiga Hardware Manual* errata, October 1985; US patent 4,829,473, Commodore-Amiga.
+
+Not read, having no text layer: the A500/A2000 technical reference, the 8371 Agnus specification and the 6526 CIA specification.
