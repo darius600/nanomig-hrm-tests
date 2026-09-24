@@ -126,7 +126,7 @@ never disagree. Eight values occur:
 | `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested |
 | `**withdrawn**` | nothing; kept so the claim is not raised a second time |
 
-**If you have one evening: 40 of these 65 ask you to decide something.** The
+**If you have one evening: 44 of these 65 ask you to decide something.** The
 rest are withdrawn, answered, or observations kept for context. The table below
 is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
