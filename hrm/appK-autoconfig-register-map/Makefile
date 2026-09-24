@@ -5,15 +5,18 @@ TOP_MODULE = cpu_wrapper
 # cpu_wrapper's own bus ports (chip_addr/chip_din/chip_rw/chip_uds/chip_lds/
 # chip_as) are all outputs, generated internally by whichever CPU core the
 # module instantiates -- see SPECIFICATION.md, "Boundary investigation".
-# The default core (fx68k) does not elaborate under this project's pinned
-# Verilator (measured: %Error-BLKANDNBLK on fx68k.sv:293). The other core
-# cpu_wrapper.v can select, TG68KdotC_Kernel, does elaborate when built from
-# the sim/ tree cpu_wrapper.v's own `ifdef VERILATOR branch already names
-# (all-lowercase ports matching nanomig/sim/TG68KdotC_Kernel.v, not the
-# parametrized synthesis source under src/tg68k/) -- and it is the CPU core
-# real NanoMig hardware runs on 5 of its 6 board targets, including both
-# AGA-capable ones ("required for AGA as that expects a 020 cpu"). This
-# build selects it with -DENABLE_TG68K=1; no file under nanomig/ is modified.
+# The default core (fx68k) fails this project's pinned Verilator under its
+# default checks (measured: %Error-BLKANDNBLK on fx68k.sv:293); it builds
+# with -Wno-BLKANDNBLK, as NanoMig's own sim/Makefile does, and runs with
+# --no-assert (without it, its unique-case checks stop it at time 0) -- see
+# SPECIFICATION.md, item 1. The other core cpu_wrapper.v can select,
+# TG68KdotC_Kernel, elaborates when built from the sim/ tree cpu_wrapper.v's
+# own `ifdef VERILATOR branch already names (all-lowercase ports matching
+# nanomig/sim/TG68KdotC_Kernel.v, not the parametrized synthesis source
+# under src/tg68k/). Six of NanoMig's twelve board tops select it, among them
+# all four that define ENABLE_RAM32, the configuration this package builds.
+# This build selects it with -DENABLE_TG68K=1; no file under nanomig/ is
+# modified.
 SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v $(NANOMIG)/sim/TG68KdotC_Kernel.v
 
 # MUT=<NAME> replays one guarded mutation (see the "// MUTATION <NAME> ..."

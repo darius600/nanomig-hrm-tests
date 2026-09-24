@@ -46,11 +46,13 @@ taken on faith from those documents (documents drift; the RTL does not):
 
 `cpu_wrapper`'s bus ports are outputs driven by whichever CPU core it
 instantiates; the sibling package's boundary investigation (re-read in full
-before this file was written) established that only `TG68KdotC_Kernel`,
-built from `nanomig/sim/TG68KdotC_Kernel.v` via `-DENABLE_TG68K=1`, elaborates
-under this project's pinned Verilator (`fx68k` fails with
-`%Error-BLKANDNBLK` at `fx68k.sv:293`). This package uses the identical
-build selection, inherited rather than re-derived. `reset` is active-low
+before this file was written) builds `TG68KdotC_Kernel` from
+`nanomig/sim/TG68KdotC_Kernel.v` via `-DENABLE_TG68K=1`. The default core,
+`fx68k`, fails this project's pinned Verilator under its default checks
+(`%Error-BLKANDNBLK` at `fx68k.sv:293`); it builds with `-Wno-BLKANDNBLK`, as
+NanoMig's own `sim/Makefile` does, and runs with `--no-assert`, and so built
+it gives this package's every result line as TG68K does. This package uses
+the sibling's build selection, inherited rather than re-derived. `reset` is active-low
 (`cpu_wrapper.v: always @(posedge clk, negedge reset)`, `.nreset(reset)`) —
 also inherited, and load-bearing below since this package, unlike the sibling,
 deliberately re-asserts `reset` *mid-run* to test that it restores the
@@ -186,17 +188,19 @@ Sum = 1+2+2+1+3+2+1+3+4+2+2 = **23**. 16 graded, 7 declined.
 - **`sol:K-0221`, `opus:K-0229`** (p398) — FC0-FC2 as cycle-type/memory-space
   bits. `fc_o` (`cpu_wrapper.v:244`) is driven only inside the
   `` `ifdef ENABLE_FX68K`` block (`:493-495`) and read only inside the same
-  block (`:299`, `:497`). This package's required core is `TG68KdotC_Kernel`
-  (`fx68k` does not elaborate under this project's Verilator — the same
-  finding the sibling package re-confirmed, `%Error-BLKANDNBLK` at
-  `fx68k.sv:293`); with `ENABLE_FX68K` undefined, `fc_o` is a fully
-  undriven, unread wire in the compiled design, and `nanomig/sim/
-  TG68KdotC_Kernel.v` (grepped in full for this package) carries no
-  function-code port under any name. No stimulus at this boundary reaches
-  anything FC0-FC2 could mean. Declined: `unreachable-port`, named at
+  block (`:299`, `:497`). This package builds `TG68KdotC_Kernel`; with
+  `ENABLE_FX68K` undefined, `fc_o` is a fully undriven, unread wire in the
+  compiled design, and `nanomig/sim/TG68KdotC_Kernel.v` (grepped in full for
+  this package) carries no function-code port under any name. In an fx68k
+  build (it builds with `-Wno-BLKANDNBLK` and runs with `--no-assert`)
+  `fc_o` is driven but still reaches no port of `cpu_wrapper`: it leaves
+  only as the two-bit cycle type on the `cpustate` output (`:299-303`:
+  fetch, data read, write), which carries neither FC2 nor CPU space, and as
+  the autovector request (`:497`). No stimulus at this boundary reaches
+  FC0-FC2 themselves in either build. Declined: `unreachable-port`, named at
   `cpu_wrapper.v:420-440` (the `` `ifdef VERILATOR`` TG68K port list, no FC
-  signal) vs. `:493-495` (fx68k-only). The boundary that would answer this
-  is a Verilator-elaborable build of `fx68k` itself.
+  signal) vs. `:493-495` (fx68k-only). The boundary that would answer this is
+  the CPU core's own FC outputs.
 - **`sol:K-0456`, `opus:K-0458`** (p412) — an unconfigured Zorro III PIC
   responds at $00E80000 **or** $FF000000. In this build `cfg_z3` is wired
   to `0` (`cpu_wrapper.v:535-540`, no `ENABLE_RAM32`): no Zorro III case is

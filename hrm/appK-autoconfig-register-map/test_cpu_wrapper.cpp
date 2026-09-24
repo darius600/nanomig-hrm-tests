@@ -26,13 +26,15 @@
 //
 //   - cpu_wrapper's bus ports (chip_addr/chip_din/chip_rw/chip_uds/chip_lds/
 //     chip_as) are all outputs, generated internally by whichever CPU core
-//     the module instantiates. The default core (fx68k) does not elaborate
-//     under this project's pinned Verilator (measured: %Error-BLKANDNBLK,
-//     fx68k.sv:293). The other core cpu_wrapper.v can select --
-//     TG68KdotC_Kernel, built from nanomig/sim/ (the Verilator-compatible
-//     translation cpu_wrapper.v's own `ifdef VERILATOR branch already names)
-//     -- DOES elaborate, and is the CPU core 5 of 6 real NanoMig board
-//     targets actually run on (including both AGA-capable ones). This build
+//     the module instantiates. The default core (fx68k) fails this
+//     project's pinned Verilator under its default checks (measured:
+//     %Error-BLKANDNBLK, fx68k.sv:293); it builds with -Wno-BLKANDNBLK and
+//     runs with --no-assert (SPECIFICATION.md, item 1). The other core
+//     cpu_wrapper.v can select -- TG68KdotC_Kernel, built from nanomig/sim/
+//     (the Verilator-compatible translation cpu_wrapper.v's own `ifdef
+//     VERILATOR branch already names) -- elaborates, and six of NanoMig's
+//     twelve board tops select it, among them all four that define
+//     ENABLE_RAM32, the configuration this build uses. This build
 //     uses it (-DENABLE_TG68K=1, Makefile), and drives cpu_wrapper with a
 //     real, hand-assembled 68000 program executed through the module's own
 //     ports only -- no internal signal is read or forced anywhere below.

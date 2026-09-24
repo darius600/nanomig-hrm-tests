@@ -16,13 +16,15 @@ NANOMIG ?= ../../nanomig
 #      calls a HALT ("No port of cpu_wrapper carries an opcode. If a claim
 #      needs one, that is a HALT, not something to solve by reaching
 #      outside.").
-#   2. Independently of (1): the real fx68k core cpu_wrapper.v:473
-#      instantiates ($(NANOMIG)/src/fx68k/fx68k.sv, fx68kAlu.sv,
-#      uaddrPla.sv) does not elaborate under this project's own Verilator
-#      5.052 -- `%Error-BLKANDNBLK: fx68k.sv:293: Unsupported: Blocking
-#      and non-blocking assignments to same non-packed variable:
-#      'cpu_wrapper.cpu_inst_o.Nanod'` on a plain --lint-only run, measured
-#      directly, not assumed. A Verilator-adapted fork of fx68k exists at
+#   2. A build option, not a second reason: the real fx68k core
+#      cpu_wrapper.v:473 instantiates ($(NANOMIG)/src/fx68k/fx68k.sv,
+#      fx68kAlu.sv, uaddrPla.sv) fails this project's own Verilator 5.052
+#      under its default checks -- `%Error-BLKANDNBLK: fx68k.sv:293:
+#      Unsupported: Blocking and non-blocking assignments to same non-packed
+#      variable: 'cpu_wrapper.cpu_inst_o.Nanod'` on a plain --lint-only run,
+#      measured directly, not assumed. NanoMig's own sim/Makefile waives it
+#      with -Wno-BLKANDNBLK, and so built fx68k runs with --no-assert (see
+#      the test source). A Verilator-adapted fork of fx68k exists at
 #      $(NANOMIG)/sim/fx68x_verilator/ (fx68k_flat.sv etc.), but it is a
 #      materially different rewrite of the core (whole-file diff against
 #      src/fx68k/fx68k.sv, not a drop-in patch) -- substituting it would

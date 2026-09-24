@@ -7,12 +7,14 @@ TOP_MODULE = cpu_wrapper
 # module instantiates -- see SPECIFICATION.md and the sibling package
 # hrm/appK-autoconfig-register-map/SPECIFICATION.md ("Boundary
 # investigation"), whose fixture this package reuses wholesale. The default
-# core (fx68k) does not elaborate under this project's pinned Verilator
-# (measured there: %Error-BLKANDNBLK on fx68k.sv:293). The other core
-# cpu_wrapper.v can select, TG68KdotC_Kernel, does elaborate when built from
-# the sim/ tree cpu_wrapper.v's own `ifdef VERILATOR branch already names.
-# This build selects it with -DENABLE_TG68K=1; no file under nanomig/ is
-# modified.
+# core (fx68k) fails this project's pinned Verilator under its default checks
+# (measured there: %Error-BLKANDNBLK on fx68k.sv:293); it builds with
+# -Wno-BLKANDNBLK, as NanoMig's own sim/Makefile does, and runs with
+# --no-assert, and so built it gives this package's every result line as
+# TG68K does. The other core cpu_wrapper.v can select, TG68KdotC_Kernel,
+# elaborates when built from the sim/ tree cpu_wrapper.v's own `ifdef
+# VERILATOR branch already names. This build selects it with
+# -DENABLE_TG68K=1; no file under nanomig/ is modified.
 SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v $(NANOMIG)/sim/TG68KdotC_Kernel.v
 
 # MUT=<NAME> replays one guarded mutation (see the "// MUTATION <NAME> ..."

@@ -7,9 +7,12 @@ TOP_MODULE = cpu_wrapper
 # CPU core the module instantiates -- see SPECIFICATION.md, "Boundary
 # re-confirmed for this package" (inherited from hrm/appK-autoconfig-register-
 # map's own boundary investigation, not rediscovered here). The default core
-# (fx68k) does not elaborate under this project's pinned Verilator (measured
-# there: %Error-BLKANDNBLK on fx68k.sv:293). The other core cpu_wrapper.v can
-# select, TG68KdotC_Kernel, does elaborate when built from the sim/ tree
+# (fx68k) fails this project's pinned Verilator under its default checks
+# (measured there: %Error-BLKANDNBLK on fx68k.sv:293); it builds with
+# -Wno-BLKANDNBLK, as NanoMig's own sim/Makefile does, and runs with
+# --no-assert, and so built it gives this package's every result line as
+# TG68K does. The other core cpu_wrapper.v can
+# select, TG68KdotC_Kernel, elaborates when built from the sim/ tree
 # cpu_wrapper.v's own `ifdef VERILATOR branch already names (all-lowercase
 # ports matching nanomig/sim/TG68KdotC_Kernel.v, not the parametrized
 # synthesis source under src/tg68k/). This build selects it with

@@ -62,10 +62,10 @@
 //   not a port cpu_wrapper offers, it is a CPU test harness we would be
 //   inventing on top of it.
 //
-//   This is confirmed independently a second way: the real fx68k core
-//   cpu_wrapper.v:473 instantiates does not elaborate under this project's
-//   own Verilator (5.052). Measured directly (not assumed), from this
-//   package's own directory tree:
+//   A second obstacle is only a build option: the real fx68k core
+//   cpu_wrapper.v:473 instantiates fails this project's own Verilator
+//   (5.052) under its default checks. Measured directly (not assumed), from
+//   this package's own directory tree:
 //     $ verilator --lint-only --top-module cpu_wrapper \
 //         $(NANOMIG)/src/minimig-aga/cpu_wrapper.v \
 //         $(NANOMIG)/src/fx68k/fx68k.sv $(NANOMIG)/src/fx68k/fx68kAlu.sv \
@@ -73,6 +73,11 @@
 //     %Error-BLKANDNBLK: fx68k.sv:293:10: Unsupported: Blocking and
 //       non-blocking assignments to same non-packed variable:
 //       'cpu_wrapper.cpu_inst_o.Nanod'
+//   NanoMig's own sim/Makefile waives that error with -Wno-BLKANDNBLK; so
+//   built, fx68k runs with --no-assert (its unique-case checks stop it at
+//   time 0 otherwise), and hrm/appK-autoconfig-register-map's hand-assembled
+//   program gives the same result lines on it as on TG68K. The HALT rule
+//   above is the reason that stands.
 //   A Verilator-adapted fork exists at $(NANOMIG)/sim/fx68x_verilator/
 //   (fx68k_flat.sv etc.), but a diff against src/fx68k/fx68k.sv shows a
 //   near-total rewrite (1,838 vs. 1,841 lines, essentially no shared
@@ -282,8 +287,8 @@ int main() {
     // ========================================================================
     // HALT -- PROP-1 through PROP-6 (12 claims), not graded at this
     // package's assigned top (cpu_wrapper). See the file header for the
-    // full argument (port directions, the independent Verilator
-    // elaboration failure, and PROP-4's second, separate reason).
+    // full argument (port directions, fx68k's Verilator build options, and
+    // PROP-4's second, separate reason).
     // ========================================================================
     checks.record(
         "PROP-1-AUTOCONFIG-EXISTS-NOT-GRADED (p.7, sol:1-components.c133, "
