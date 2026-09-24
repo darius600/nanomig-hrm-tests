@@ -194,6 +194,12 @@ int main(int argc, char** argv) {
     const int      m_len_w = mutating("DSKLEN-AT-024-SHOWS-ITS-DIRECTION") ? A_DSKSYNC : A_DSKLEN;
     const int      m_arm   = mutating("DSKLEN-ARMS-ON-THE-SECOND-WRITE") ? 1 : 2;
     const uint16_t m_ro    = mutating("DSKBYTR-TAKES-NO-WRITES") ? 0x1234u : IDLE_STATUS;
+    // Redirects the write from DSKBYTR to DSKLEN with bit 14 set (the same
+    // 0x4001 payload DSKLEN-AT-024-SHOWS-ITS-DIRECTION uses below), which
+    // paula_floppy.v:699 mirrors onto DSKBYTR bit 13 (DSKWRITE). Expected
+    // word left at IDLE_STATUS.
+    const int      m_ro_wtgt = mutating("DSKBYTR-TAKES-NO-WRITES-STIMULUS") ? A_DSKLEN : A_DSKBYTR;
+    const uint16_t m_ro_wval = mutating("DSKBYTR-TAKES-NO-WRITES-STIMULUS") ? 0x4001u  : 0x1234u;
 
     std::cout << "aa-disk-length-and-status -- AA_CONFORMANCE at paula_floppy\n";
     if (g_mutate)
@@ -281,9 +287,15 @@ int main(int argc, char** argv) {
         // MUTATION DSKBYTR-TAKES-NO-WRITES oracle red: selecting this
         // assertion's own id expects the written word back, which is the
         // reading this assertion rules out.
-        h.write(A_DSKBYTR, 0x1234);
+        // MUTATION DSKBYTR-TAKES-NO-WRITES stimulus red: redirects the write
+        // from $01A to $024 (DSKLEN) with bit 14 set instead, which mirrors
+        // onto DSKBYTR bit 13 (DSKWRITE)
+        // (MUTATE=DSKBYTR-TAKES-NO-WRITES-STIMULUS: this line alone goes FAIL, 4 passed, 1 failed).
+        h.write(m_ro_wtgt, m_ro_wval);
         const uint16_t got = h.read(A_DSKBYTR);
-        checks.note("after writing 0x1234 at $01A it still reads " + hex(got));
+        checks.note("after writing " + hex(m_ro_wval) + " at " +
+                    (m_ro_wtgt == A_DSKBYTR ? "$01A" : "$024") +
+                    " DSKBYTR reads " + hex(got));
         checks.expect(got == m_ro,
                       "DSKBYTR-TAKES-NO-WRITES: a word written at $01A does not "
                       "come back from it, so the address is the read the AA "

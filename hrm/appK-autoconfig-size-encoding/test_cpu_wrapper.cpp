@@ -40,22 +40,22 @@
 // safely provide (write-only registers, no internal probe permitted). See
 // SPECIFICATION.md, "Declined claims". 15 claims graded.
 
-// MUTATION opus:K-0796 WRONGSIZE stimulus red (see WRONGSIZE block below)
-// MUTATION opus:K-0808 WRONGSIZE stimulus red
-// MUTATION sol:K-0779 WRONGSIZE stimulus red (the "4MB" half; the
+// MUTATION opus:K-0796 stimulus red: MUT=WRONGSIZE (see WRONGSIZE block below)
+// MUTATION opus:K-0808 stimulus red: MUT=WRONGSIZE
+// MUTATION sol:K-0779 stimulus red: MUT=WRONGSIZE (the "4MB" half; the
 //   "reserved in extended mode" half is `none impossible`: cpu_wrapper.v's
 //   Zorro III index-1 arm (:586) only ever assigns 4'b0011/4'b0100 -- code
 //   111 is never assigned by any case arm, checked in full.)
-// MUTATION opus:K-0810 WRONGSIZE stimulus red
-// MUTATION opus:K-0803 WRONGSTAGE stimulus red (see WRONGSTAGE block below)
-// MUTATION opus:K-0805 WRONGSTAGE stimulus red
-// MUTATION sol:K-0786 WRONGCONFIG stimulus red (see WRONGCONFIG block below)
-// MUTATION sol:K-0787 WRONGCONFIG stimulus red
-// MUTATION sol:K-0788 WRONGCONFIG stimulus red
-// MUTATION opus:K-0795 WRONGCONFIG stimulus red
-// MUTATION opus:K-0819 WRONGCONFIG stimulus red
-// MUTATION sol:K-0771 WRONGCONFIG stimulus red
-// MUTATION opus:K-0794 WRONGCONFIG stimulus red
+// MUTATION opus:K-0810 stimulus red: MUT=WRONGSIZE
+// MUTATION opus:K-0803 stimulus red: MUT=WRONGSTAGE (see WRONGSTAGE block below)
+// MUTATION opus:K-0805 stimulus red: MUT=WRONGSTAGE
+// MUTATION sol:K-0786 stimulus red: MUT=WRONGCONFIG (see WRONGCONFIG block below)
+// MUTATION sol:K-0787 stimulus red: MUT=WRONGCONFIG
+// MUTATION sol:K-0788 stimulus red: MUT=WRONGCONFIG
+// MUTATION opus:K-0795 stimulus red: MUT=WRONGCONFIG
+// MUTATION opus:K-0819 stimulus red: MUT=WRONGCONFIG
+// MUTATION sol:K-0771 stimulus red: MUT=WRONGCONFIG
+// MUTATION opus:K-0794 stimulus red: MUT=WRONGCONFIG
 // MUTATION sol:K-0793 none impossible: cpu_wrapper.v:589 (Zorro III,
 //   hardcoded 4'b1111) and the cpu_wrapper.v:541 default (Zorro II) are the
 //   only two paths reaching chip_addr index 5 in this design, and both give
@@ -293,7 +293,7 @@ int main() {
     // direct, Zorro III arm only.
     // =========================================================================
 #ifdef MUT_WRONGSTAGE
-    // MUTATION opus:K-0803/K-0805 WRONGSTAGE stimulus red: swap which read
+    // MUTATION opus:K-0803/K-0805 stimulus red: MUT=WRONGSTAGE swap which read
     // (before/after the register-44 write) feeds which assertion.
     uint8_t code_256mb = h4_size_after, code_128mb = h4_size_before;
 #else

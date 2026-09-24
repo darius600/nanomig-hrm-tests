@@ -64,21 +64,57 @@
 //   built against Zorro II instead of Zorro III, reads green -- register
 //   48 DOES complete configuration there (cpu_wrapper.v:630-632), proving
 //   this is a real per-cfg_z3 divergence, not a stuck assertion.
+// MUTATION sol:K-0844 stimulus green: built against Zorro II instead of
+//   Zorro III (`make -B MUT=GREENCHECK_REG48 test`: "FAIL: sol:K-0844" at
+//   baseline becomes "PASS: sol:K-0844", 7 passed, 6 failed).
+// MUTATION opus:K-0881 stimulus green: same switch as sol:K-0844
+//   (`make -B MUT=GREENCHECK_REG48 test`: "FAIL: opus:K-0881" at baseline
+//   becomes "PASS: opus:K-0881", 7 passed, 6 failed).
 // MUTATION sol:K-0740/K-0849/K-0850/opus:K-0889 baseline RED. GREENCHECK_4C
 //   stimulus GREEN (see GREENCHECK_4C block): the identical "does writing
 //   X silence the board" check, targeting register 48 instead of register
 //   4C, reads green -- proving the check mechanism itself is sound.
+// MUTATION sol:K-0740 stimulus green: targets register 48 instead of 4C
+//   (`make -B MUT=GREENCHECK_4C test`: "FAIL: sol:K-0740" at baseline
+//   becomes "PASS: sol:K-0740", 11 passed, 2 failed).
+// MUTATION sol:K-0849 stimulus green: same switch as sol:K-0740
+//   (`make -B MUT=GREENCHECK_4C test`: "FAIL: sol:K-0849" at baseline
+//   becomes "PASS: sol:K-0849", 11 passed, 2 failed).
+// MUTATION sol:K-0850 stimulus green: same switch as sol:K-0740
+//   (`make -B MUT=GREENCHECK_4C test`: "FAIL: sol:K-0850" at baseline
+//   becomes "PASS: sol:K-0850", 11 passed, 2 failed).
+// MUTATION opus:K-0889 stimulus green: same switch as sol:K-0740
+//   (`make -B MUT=GREENCHECK_4C test`: "FAIL: opus:K-0889" at baseline
+//   becomes "PASS: opus:K-0889", 11 passed, 2 failed).
 // MUTATION sol:K-0848/opus:K-0888 baseline RED. GREENCHECK_4C stimulus
 //   GREEN: same swap as above (register 4C has literally no code path;
 //   register 48 does).
-// MUTATION sol:K-0834/opus:K-0866 WRONGREG stimulus red (see WRONGREG
+// MUTATION sol:K-0848 stimulus green: same switch as sol:K-0740
+//   (`make -B MUT=GREENCHECK_4C test`: "FAIL: sol:K-0848" at baseline
+//   becomes "PASS: sol:K-0848", 11 passed, 2 failed).
+// MUTATION opus:K-0888 stimulus green: same switch as sol:K-0740
+//   (`make -B MUT=GREENCHECK_4C test`: "FAIL: opus:K-0888" at baseline
+//   becomes "PASS: opus:K-0888", 11 passed, 2 failed).
+// MUTATION sol:K-0834/opus:K-0866 stimulus red: MUT=WRONGREG (see WRONGREG
 //   block below): tested against Zorro II instead of Zorro III, writing
 //   register 44 does nothing (only register 48 is recognized when
 //   cfg_z3=0) -- the "completes configuration in its own context"
 //   assertion goes red.
-// MUTATION sol:K-0835/opus:K-0867 WRONGREG stimulus red: tested against
+// MUTATION sol:K-0834 stimulus red: tested against Zorro II instead of
+//   Zorro III (`make -B MUT=WRONGREG test`: "PASS: sol:K-0834" at baseline
+//   becomes "FAIL: sol:K-0834", 1 passed, 12 failed).
+// MUTATION opus:K-0866 stimulus red: same switch as sol:K-0834
+//   (`make -B MUT=WRONGREG test`: "PASS: opus:K-0866" at baseline becomes
+//   "FAIL: opus:K-0866", 1 passed, 12 failed).
+// MUTATION sol:K-0835/opus:K-0867 stimulus red: MUT=WRONGREG tested against
 //   Zorro III instead of Zorro II, writing register 48 does nothing (this
 //   IS the finding's own mechanism) -- goes red.
+// MUTATION sol:K-0835 stimulus red: tested against Zorro III instead of
+//   Zorro II (`make -B MUT=WRONGREG test`: "PASS: sol:K-0835" at baseline
+//   becomes "FAIL: sol:K-0835", 1 passed, 12 failed).
+// MUTATION opus:K-0867 stimulus red: same switch as sol:K-0835
+//   (`make -B MUT=WRONGREG test`: "PASS: opus:K-0867" at baseline becomes
+//   "FAIL: opus:K-0867", 1 passed, 12 failed).
 
 #include "Vcpu_wrapper.h"
 #include "verilated.h"
@@ -290,13 +326,13 @@ int main() {
     // latched (declined separately below -- no read-back boundary exists).
     // =========================================================================
 #ifdef MUT_WRONGREG
-    // MUTATION sol:K-0834/opus:K-0866 WRONGREG stimulus red: register 44
+    // MUTATION sol:K-0834/opus:K-0866 stimulus red: MUT=WRONGREG register 44
     // tested against Zorro II (wrong context) -- does nothing there.
     Harness id44(0, 1, {READ(autocfg_addr(IDX_REG44)),
                          READ(autocfg_addr(IDX_REG00)),
                          WRITE_IMM(autocfg_addr(IDX_REG44), 0x1000),
                          READ(autocfg_addr(IDX_REG00))});
-    // MUTATION sol:K-0835/opus:K-0867 WRONGREG stimulus red: register 48
+    // MUTATION sol:K-0835/opus:K-0867 stimulus red: MUT=WRONGREG register 48
     // tested against Zorro III (wrong context) -- does nothing there (this
     // IS the finding's own mechanism).
     Harness id48(2, 4, {READ(autocfg_addr(IDX_REG48)),

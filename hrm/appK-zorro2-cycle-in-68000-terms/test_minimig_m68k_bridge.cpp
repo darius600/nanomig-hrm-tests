@@ -184,12 +184,24 @@ int main(int argc, char** argv) {
     // assertion below depends on. Same check appF already built for this
     // module; reused rather than reinvented.
     // =========================================================================
+    // MUTATION FIXTURE-LIVENESS stimulus red: the second driven address is
+    // redriven as the same value as the first (0x001000 instead of
+    // 0x002000), so r1==r2 and the "two distinct values" conjunct goes red,
+    // same stimulus-repeat pattern this package's own MUT_REPEAT_ADDRESS
+    // (sol:K-0197, far below) uses for a different assertion
+    // (`make -B MUT=LIVENESS_REPEAT_ADDRESS test`: "PASS: FIXTURE-LIVENESS
+    // [not graded...]" becomes "FAIL: FIXTURE-LIVENESS [not graded...]",
+    // 26 passed, 1 failed).
     {
         Harness h;
         h.dut->address = 0x001000 >> 1;
         h.tick();
         const uint32_t r1 = h.dut->address_out;
+#ifdef MUT_LIVENESS_REPEAT_ADDRESS
+        h.dut->address = 0x001000 >> 1;
+#else
         h.dut->address = 0x002000 >> 1;
+#endif
         h.tick();
         const uint32_t r2 = h.dut->address_out;
         checks.note("FIXTURE-LIVENESS: address_out follows address: r1=0x" +

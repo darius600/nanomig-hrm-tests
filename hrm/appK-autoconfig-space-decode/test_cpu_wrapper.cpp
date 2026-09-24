@@ -76,22 +76,22 @@
 // See the RESULTS section at the end of this file for the actual run output
 // of baseline and all three mutations.
 //
-// MUTATION sol:K-0041 NOFASTRAMCFG stimulus red
-// MUTATION sol:K-0172 NOFASTRAMCFG stimulus red
-// MUTATION opus:K-0179 NOFASTRAMCFG stimulus red
-// MUTATION sol:K-0106 NOFASTRAMCFG stimulus red
-// MUTATION opus:K-0122 NOFASTRAMCFG stimulus red
-// MUTATION sol:K-0107 NOFASTRAMCFG stimulus red
-// MUTATION sol:K-0108 NOCONFIGWRITE stimulus red
-// MUTATION opus:K-0123 NOCONFIGWRITE stimulus red
-// MUTATION opus:K-0269 NOCONFIGWRITE stimulus red
-// MUTATION opus:K-0052 NOCONFIGWRITE stimulus red
-// MUTATION sol:K-0057 NOCONFIGWRITE stimulus red
-// MUTATION opus:K-0074 NOCONFIGWRITE stimulus red
-// MUTATION sol:K-0153 NORESET stimulus red
-// MUTATION opus:K-0162 NORESET stimulus red
-// MUTATION sol:K-0432 NORESET stimulus red
-// MUTATION opus:K-0438 NORESET stimulus red
+// MUTATION sol:K-0041 stimulus red: MUT=NOFASTRAMCFG
+// MUTATION sol:K-0172 stimulus red: MUT=NOFASTRAMCFG
+// MUTATION opus:K-0179 stimulus red: MUT=NOFASTRAMCFG
+// MUTATION sol:K-0106 stimulus red: MUT=NOFASTRAMCFG
+// MUTATION opus:K-0122 stimulus red: MUT=NOFASTRAMCFG
+// MUTATION sol:K-0107 stimulus red: MUT=NOFASTRAMCFG
+// MUTATION sol:K-0108 stimulus red: MUT=NOCONFIGWRITE
+// MUTATION opus:K-0123 stimulus red: MUT=NOCONFIGWRITE
+// MUTATION opus:K-0269 stimulus red: MUT=NOCONFIGWRITE
+// MUTATION opus:K-0052 stimulus red: MUT=NOCONFIGWRITE
+// MUTATION sol:K-0057 stimulus red: MUT=NOCONFIGWRITE
+// MUTATION opus:K-0074 stimulus red: MUT=NOCONFIGWRITE
+// MUTATION sol:K-0153 stimulus red: MUT=NORESET
+// MUTATION opus:K-0162 stimulus red: MUT=NORESET
+// MUTATION sol:K-0432 stimulus red: MUT=NORESET
+// MUTATION opus:K-0438 stimulus red: MUT=NORESET
 
 #include "Vcpu_wrapper.h"
 #include "verilated.h"

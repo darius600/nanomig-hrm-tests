@@ -69,12 +69,12 @@
 // and vice versa, which does turn those assertions red (see MUTATION lines
 // below and the RESULTS section at the end of this file).
 //
-// MUTATION sol:K-0766 WRONGCONFIG stimulus red (see WRONGCONFIG block below)
-// MUTATION opus:K-0789 WRONGCONFIG stimulus red
-// MUTATION sol:K-0765 WRONGCONFIG stimulus red
-// MUTATION opus:K-0788 WRONGCONFIG stimulus red
-// MUTATION sol:K-0762 WRONGCONFIG stimulus red
-// MUTATION opus:K-0785 WRONGCONFIG stimulus red
+// MUTATION sol:K-0766 stimulus red: MUT=WRONGCONFIG (see WRONGCONFIG block below)
+// MUTATION opus:K-0789 stimulus red: MUT=WRONGCONFIG
+// MUTATION sol:K-0765 stimulus red: MUT=WRONGCONFIG
+// MUTATION opus:K-0788 stimulus red: MUT=WRONGCONFIG
+// MUTATION sol:K-0762 stimulus red: MUT=WRONGCONFIG
+// MUTATION opus:K-0785 stimulus red: MUT=WRONGCONFIG
 // MUTATION sol:K-0763 none impossible: cpu_wrapper.v:563 (4'b1110) and :585
 //   (4'b1010) are the only two literal assignments to chip_addr index 0 in
 //   this design, in either reachable configuration; no third value (00) is
@@ -86,6 +86,9 @@
 // MUTATION sol:K-0767 none impossible: bit5=1 in both cpu_wrapper.v:563
 //   (4'b1110) and :585 (4'b1010) -- hardcoded in both reachable branches.
 // MUTATION opus:K-0790(p432) none impossible: same as sol:K-0767.
+// MUTATION opus:K-0790 none impossible: bit5=1 in both cpu_wrapper.v:563
+//   (4'b1110) and :585 (4'b1010), the only two literal assignments to
+//   chip_addr index 0.
 // MUTATION sol:K-0769 none impossible: bit4=0 in both cpu_wrapper.v:563 and
 //   :585 -- hardcoded in both reachable branches.
 // MUTATION opus:K-0792 none impossible: same as sol:K-0769.
@@ -108,16 +111,31 @@
 //   sol:K-0783 (cpu_wrapper.v:588 and the :541 default).
 // MUTATION sol:K-0784(p433) none impossible: same as sol:K-0782 (bit6 of
 //   the same cpu_wrapper.v:588 constant).
+// MUTATION sol:K-0784 none impossible: bit6 of cpu_wrapper.v:588 (4'b0000,
+//   the only Zorro-III assignment to chip_addr index 4) is hardcoded.
 // MUTATION sol:K-0785(p433) none impossible: same as sol:K-0783 (bit6 of
 //   the :541 default).
+// MUTATION sol:K-0785 none impossible: chip_addr index 4 has no Zorro-II
+//   case arm (cpu_wrapper.v:562-579, no 6'b000100 entry) so it falls to
+//   the unconditional :541 default (4'b1111), hardcoded.
 // MUTATION opus:K-0818(p433) none impossible: same two constants.
+// MUTATION opus:K-0818 none impossible: same two constants as sol:K-0784/
+//   sol:K-0785 above: cpu_wrapper.v:588 (4'b0000) and the :541 default
+//   (4'b1111), both hardcoded.
 // MUTATION sol:K-0790(p433) none impossible: bit4 of cpu_wrapper.v:588,
 //   hardcoded 1 after complement; no Zorro-II case arm at index 4 exists to
 //   compare against (the claim is scoped to Zorro III on the page itself).
+// MUTATION sol:K-0790 none impossible: bit4 of cpu_wrapper.v:588 (4'b0000)
+//   is hardcoded.
 // MUTATION opus:K-0821(p433) none impossible: same as sol:K-0790(p433).
+// MUTATION opus:K-0821 none impossible: same constant as sol:K-0790 above:
+//   bit4 of cpu_wrapper.v:588 (4'b0000), hardcoded.
 // MUTATION sol:K-0791(p433) none impossible: bits3:0 of cpu_wrapper.v:588
 //   (Zorro III, hardcoded 1111 after complement) and the :541 default
 //   (Zorro II, hardcoded 0000 after complement).
+// MUTATION sol:K-0791 none impossible: bits3:0 of cpu_wrapper.v:588
+//   (Zorro III) and the :541 default (Zorro II) are both hardcoded
+//   literals.
 // MUTATION opus:K-0822 none impossible: same as sol:K-0791(p433).
 // MUTATION sol:K-0814 none impossible: chip_addr index 6 (and 7) never
 //   appears in any case list in this file (cpu_wrapper.v:562-596 checked in

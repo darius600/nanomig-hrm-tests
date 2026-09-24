@@ -29,7 +29,7 @@ test: build
 # means that assertion's expect() is not measuring what it claims to, and a
 # red run that also takes down another assertion would mean the mutation is
 # not isolated to the assertion it names.
-MUTATE_IDS := FIXTURE-DELIVERS-KNOWN-VALUE DSKBYTR-AT-01A DSKLEN-AT-024-SHOWS-ITS-DIRECTION DSKLEN-ARMS-ON-THE-SECOND-WRITE DSKBYTR-TAKES-NO-WRITES
+MUTATE_IDS := FIXTURE-DELIVERS-KNOWN-VALUE DSKBYTR-AT-01A DSKLEN-AT-024-SHOWS-ITS-DIRECTION DSKLEN-ARMS-ON-THE-SECOND-WRITE DSKBYTR-TAKES-NO-WRITES DSKBYTR-TAKES-NO-WRITES-STIMULUS
 mutate: build
 	@for id in $(MUTATE_IDS); do \
 		echo "=== MUTATE=$$id ==="; \

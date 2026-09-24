@@ -112,7 +112,11 @@ public:
     // being decided by cache_inhibit). Only after the whole scheduled
     // burst is delivered, plus a settle margin, does this drop cpu_cs and
     // let CPU_SM_FILLW's own `if (!cpu_ack) state <= CPU_SM_IDLE` fire.
-    AccessResult read(uint32_t byte_addr, bool inhibit, int max_ticks = 80) {
+    // `drive_cs`: when false, cpu_cs is never asserted, so the DUT never
+    // raises sdr_read_req at all -- the request side never engages, so this
+    // cannot wedge the fill state machine (see the "must not stop early"
+    // warning above, which is about the SERVICE side, not the request side).
+    AccessResult read(uint32_t byte_addr, bool inhibit, int max_ticks = 80, bool drive_cs = true) {
         static const uint16_t PATTERN[4] = {0x1111, 0x2222, 0x3333, 0x4444};
         dut->cache_inhibit = inhibit ? 1 : 0;
         dut->cpu_adr = byte_addr >> 1;
@@ -120,7 +124,7 @@ public:
         dut->cpu_we = 0;
         dut->cpu_ir = 0;
         dut->cpu_dr = 1;
-        dut->cpu_cs = 1;
+        dut->cpu_cs = drive_cs ? 1 : 0;
 
         AccessResult r;
         bool burst_issued = false;
@@ -195,7 +199,20 @@ int main(int argc, char** argv) {
     // inhibit=true instead of false -- named for what it does to the fill
     // that sub-check 1 (below) depends on staying UNinhibited.
     const bool a_fill_inhibit = MUT_NEVER_INHIBIT_FIRST_FILL ? true : false;
+#ifdef MUT_NO_COLD_REQUEST
+    // MUTATION FIXTURE-LIVENESS stimulus red: cpu_cs is never asserted for
+    // address A's cold fill, so the DUT never raises sdr_read_req --
+    // coldA.saw_req and coldA.acked both stay false
+    // (`make -B MUT=NO_COLD_REQUEST test`: "PASS: FIXTURE-LIVENESS [not
+    // graded...]" becomes "FAIL: FIXTURE-LIVENESS [not graded...]", 1
+    // passed, 2 failed). Also reddens sol:K-0295 sub-check 1/2: with A
+    // never actually filled, the later "hot" re-read of A is itself a
+    // genuine cold miss ("FAIL: sol:K-0295 (p.402, sub-check 1/2)");
+    // sub-check 2/2 stays "PASS" (address B's own fill is untouched).
+    auto coldA = h.read(0x100000, /*inhibit=*/a_fill_inhibit, /*max_ticks=*/80, /*drive_cs=*/false);
+#else
     auto coldA = h.read(0x100000, /*inhibit=*/a_fill_inhibit);
+#endif
     // MUT_INHIBIT_SECOND_FILL_TOO flips address B's own cold fill to
     // inhibit=false instead of true -- named for what it does to the fill
     // that sub-check 2 (below) depends on staying inhibited.

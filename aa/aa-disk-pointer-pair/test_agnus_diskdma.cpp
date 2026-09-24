@@ -245,10 +245,11 @@ int main(int argc, char** argv) {
     // --- 4. the HIGH word of a `+` pair uses DB0-DB4 and nothing above ------
     {
         Harness h;
-        // MUTATION DSKPT-HIGH-TAKES-DB0-DB4 oracle red: selecting this
+        // MUTATION DSKPT-HIGH-TAKES-DB0-DB4 stimulus red: selecting this
         // assertion's own id writes $001F where the assertion needs a word
         // whose low five bits are clear, so the "bits above DB4 are
-        // ignored" reading becomes 0x1F.
+        // ignored" reading becomes 0x1F
+        // (MUTATE=DSKPT-HIGH-TAKES-DB0-DB4: this line alone goes FAIL, 6 passed, 1 failed).
         h.write(A_DSKPTH, m_hi_pat);
         const uint32_t ignored = h.high5();
         h.write(A_DSKPTH, 0x001F);
@@ -266,9 +267,10 @@ int main(int argc, char** argv) {
     // --- 5. the LOW word of a `+` pair uses DB1-DB15, so DB0 is ignored -----
     {
         Harness h;
-        // MUTATION DSKPT-LOW-TAKES-DB1-DB15 oracle red: selecting this
+        // MUTATION DSKPT-LOW-TAKES-DB1-DB15 stimulus red: selecting this
         // assertion's own id writes $FFFF where the assertion needs a word
-        // with only DB0 set.
+        // with only DB0 set
+        // (MUTATE=DSKPT-LOW-TAKES-DB1-DB15: this line alone goes FAIL, 6 passed, 1 failed).
         h.write(A_DSKPTL, m_lo_pat);
         const uint32_t ignored = h.low15();
         h.write(A_DSKPTL, 0xFFFF);

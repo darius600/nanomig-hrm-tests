@@ -237,6 +237,9 @@ int main(int argc, char** argv) {
     const uint16_t m_clr     = mutating("ADKCON-BIT-15-SETS-OR-CLEARS") ? SETCLR : 0u;
     const uint16_t m_keep    = mutating("ADKCON-ZERO-BITS-UNCHANGED") ? 0x0F0Fu : 0x00F0u;
     const uint16_t m_top     = mutating("ADKCONR-BIT-15-IS-NOT-STORED") ? 0xFFFFu : 0x7FFFu;
+    // Changes what is written (0x0000 instead of 0xFFFF), expected word left alone.
+    const uint16_t m_top_stim_write =
+        mutating("ADKCONR-BIT-15-IS-NOT-STORED-STIMULUS") ? 0x0000u : 0xFFFFu;
     const uint16_t m_brk     = mutating("ADKCON-BIT-11-CLEARS-TXD") ? WORDSYNC : UARTBRK;
     const int      m_dma_w   = mutating("DMACON-AT-096-GATES-THE-DISK") ? A_ADKCON : A_DMACON;
     const uint16_t m_dma_clr = mutating("DMACON-CLEARS-WHAT-IT-SET") ? SETCLR : 0u;
@@ -330,9 +333,12 @@ int main(int argc, char** argv) {
         // MUTATION ADKCONR-BIT-15-IS-NOT-STORED oracle red selecting this assertion's own id expects
         // $FFFF, i.e. a bit 15 that the register stored -- which is the reading
         // this assertion exists to rule out.
-        h.write(A_ADKCON, 0xFFFF);
+        // MUTATION ADKCONR-BIT-15-IS-NOT-STORED stimulus red: writes 0x0000 to ADKCON
+        // in place of 0xFFFF, expected word left at its real 0x7FFF
+        // (MUTATE=ADKCONR-BIT-15-IS-NOT-STORED-STIMULUS: this line alone goes FAIL, 7 passed, 1 failed).
+        h.write(A_ADKCON, m_top_stim_write);
         const uint16_t got = h.read(A_ADKCONR);
-        checks.note("after writing 0xFFFF at ADKCON, ADKCONR reads " + hex(got));
+        checks.note("after writing " + hex(m_top_stim_write) + " at ADKCON, ADKCONR reads " + hex(got));
         checks.expect(got == m_top,
                       "ADKCONR-BIT-15-IS-NOT-STORED: writing every bit leaves "
                       "the top one clear on read back, so bit 15 is the "

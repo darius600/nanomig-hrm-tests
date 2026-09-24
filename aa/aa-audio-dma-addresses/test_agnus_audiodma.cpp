@@ -245,8 +245,9 @@ int main(int argc, char** argv) {
     // --- 3. the HIGH half of an audio location pair uses DB0-DB4 ------------
     {
         Harness h;
-        // MUTATION AUDLC-HIGH-TAKES-DB0-DB4 oracle red selecting this assertion's own id writes a word
-        // whose low five bits are set where the assertion needs them clear.
+        // MUTATION AUDLC-HIGH-TAKES-DB0-DB4 stimulus red selecting this assertion's own id writes a word
+        // whose low five bits are set where the assertion needs them clear
+        // (MUTATE=AUDLC-HIGH-TAKES-DB0-DB4: this line alone goes FAIL, 4 passed, 1 failed).
         h.write(A_AUDLCH[1], m_hi_pat);
         const uint32_t ignored = Harness::high5(h.restart(1));
         h.write(A_AUDLCH[1], 0x001F);
@@ -263,8 +264,9 @@ int main(int argc, char** argv) {
     // --- 4. the LOW half uses DB1-DB15, so DB0 is ignored -------------------
     {
         Harness h;
-        // MUTATION AUDLC-LOW-TAKES-DB1-DB15 oracle red selecting this assertion's own id writes $FFFF
-        // where the assertion needs a word with only DB0 set.
+        // MUTATION AUDLC-LOW-TAKES-DB1-DB15 stimulus red selecting this assertion's own id writes $FFFF
+        // where the assertion needs a word with only DB0 set
+        // (MUTATE=AUDLC-LOW-TAKES-DB1-DB15: this line alone goes FAIL, 4 passed, 1 failed).
         h.write(A_AUDLCL[1], m_lo_pat);
         const uint32_t ignored = Harness::low15(h.restart(1));
         h.write(A_AUDLCL[1], 0xFFFF);

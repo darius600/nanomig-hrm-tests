@@ -248,8 +248,9 @@ int main(int argc, char** argv) {
         Harness h;
         h.write(A_VPOSW, 0x8000);
         const uint16_t set = h.read(A_VPOSR) >> 15;
-        // MUTATION VPOSW-BIT15-IS-LONG-FRAME oracle red selecting this assertion's own id writes $8000
-        // again where the assertion needs the bit cleared.
+        // MUTATION VPOSW-BIT15-IS-LONG-FRAME stimulus red selecting this assertion's own id writes $8000
+        // again where the assertion needs the bit cleared
+        // (MUTATE=VPOSW-BIT15-IS-LONG-FRAME: this line alone goes FAIL, 6 passed, 1 failed).
         h.write(A_VPOSW, m_lf);
         const uint16_t cleared = h.read(A_VPOSR) >> 15;
         c.note("VPOSR bit 15 reads " + std::to_string(set)

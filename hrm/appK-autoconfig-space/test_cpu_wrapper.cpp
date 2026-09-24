@@ -37,6 +37,23 @@
 //   block below: fastramcfg=0 on the "before" harness silences
 //   sel_autoconfig entirely; skipping the register-48 write on the "after"
 //   harness leaves it responding instead of silenced).
+// MUTATION sol:K-0727 stimulus red: fastramcfg=0 on the "before" harness
+//   silences sel_autoconfig entirely (`make -B MUT=LIFECYCLE test`: "PASS:
+//   sol:K-0727" at baseline becomes "FAIL: sol:K-0727", 22 passed, 9 failed).
+// MUTATION sol:K-0734 stimulus red: same switch as sol:K-0727
+//   (`make -B MUT=LIFECYCLE test`: "PASS: sol:K-0734" becomes "FAIL: sol:K-0734").
+// MUTATION sol:K-0739 stimulus red: same switch as sol:K-0727
+//   (`make -B MUT=LIFECYCLE test`: "PASS: sol:K-0739" becomes "FAIL: sol:K-0739").
+// MUTATION sol:K-0842 stimulus red: same switch as sol:K-0727
+//   (`make -B MUT=LIFECYCLE test`: "PASS: sol:K-0842" becomes "FAIL: sol:K-0842").
+// MUTATION sol:K-0843 stimulus red: same switch as sol:K-0727
+//   (`make -B MUT=LIFECYCLE test`: "PASS: sol:K-0843" becomes "FAIL: sol:K-0843").
+// MUTATION opus:K-0755 stimulus red: same switch as sol:K-0727
+//   (`make -B MUT=LIFECYCLE test`: "PASS: opus:K-0755" becomes "FAIL: opus:K-0755").
+// MUTATION opus:K-0879 stimulus red: same switch as sol:K-0727
+//   (`make -B MUT=LIFECYCLE test`: "PASS: opus:K-0879" becomes "FAIL: opus:K-0879").
+// MUTATION opus:K-0880 stimulus red: same switch as sol:K-0727
+//   (`make -B MUT=LIFECYCLE test`: "PASS: opus:K-0880" becomes "FAIL: opus:K-0880").
 // MUTATION [Group Handoff] sol:K-0733 NOHANDOFF stimulus red (see
 //   NOHANDOFF block: fastramcfg[0]=0 instead of 1 makes the FIRST
 //   register-44 write silence the space immediately instead of handing
@@ -46,27 +63,76 @@
 //   write register -- instead of register 00 -- a read register --
 //   DOES complete configuration, so the "write to a read register has no
 //   effect" assertion goes red when the write target is swapped).
+// MUTATION sol:K-0735 stimulus red: writing register 48 instead of
+//   register 00 completes configuration (`make -B MUT=WRITETOWRITEREG
+//   test`: "PASS: sol:K-0735" becomes "FAIL: sol:K-0735", 29 passed, 2 failed).
+// MUTATION opus:K-0762 stimulus red: same switch as sol:K-0735
+//   (`make -B MUT=WRITETOWRITEREG test`: "PASS: opus:K-0762" becomes "FAIL: opus:K-0762").
 // MUTATION [Group RW-content] sol:K-0737/opus:K-0764 WRONGCONFIG stimulus
 //   red (swap which harness's type nibble feeds the Zorro-II-context vs
 //   Zorro-III-context assertion).
+// MUTATION sol:K-0737 stimulus red: swaps which harness's type nibble
+//   feeds the Zorro-II-context vs Zorro-III-context assertion
+//   (`make -B MUT=WRONGCONFIG test`: "PASS: sol:K-0737" becomes "FAIL: sol:K-0737", 29 passed, 2 failed).
+// MUTATION opus:K-0764 stimulus red: same switch as sol:K-0737
+//   (`make -B MUT=WRONGCONFIG test`: "PASS: opus:K-0764" becomes "FAIL: opus:K-0764").
 // MUTATION [Group AddressWindow] sol:K-0742/K-0743/K-0744/opus:K-0767
 //   INSIDEPROBE stimulus red (see INSIDEPROBE block: the "outside the
 //   window" probe address is swapped from $E90000 to an address still
 //   inside $E8xxxx, so the "does NOT get the autoconfig override"
 //   assertion goes red).
+// MUTATION sol:K-0742 stimulus red: the "outside the window" probe address
+//   is swapped from $E90000 to an address still inside $E8xxxx
+//   (`make -B MUT=INSIDEPROBE test`: "PASS: sol:K-0742" becomes "FAIL: sol:K-0742", 27 passed, 4 failed).
+// MUTATION sol:K-0743 stimulus red: same switch as sol:K-0742
+//   (`make -B MUT=INSIDEPROBE test`: "PASS: sol:K-0743" becomes "FAIL: sol:K-0743").
+// MUTATION sol:K-0744 stimulus red: same switch as sol:K-0742
+//   (`make -B MUT=INSIDEPROBE test`: "PASS: sol:K-0744" becomes "FAIL: sol:K-0744").
+// MUTATION opus:K-0767 stimulus red: same switch as sol:K-0742
+//   (`make -B MUT=INSIDEPROBE test`: "PASS: opus:K-0767" becomes "FAIL: opus:K-0767").
 // MUTATION [Group NybbleOnly] sol:K-0750/opus:K-0771 NYBBLE stimulus red
 //   (see NYBBLE block: the preset low-12-bit pattern changes from 0xABC to
 //   0x123, but the graded expectation still checks for 0xABC).
+// MUTATION sol:K-0750 stimulus red: the preset low-12-bit pattern changes
+//   from 0xABC to 0x123, but the graded expectation still checks for 0xABC
+//   (`make -B MUT=NYBBLE test`: "PASS: sol:K-0750" becomes "FAIL: sol:K-0750", 29 passed, 2 failed).
+// MUTATION opus:K-0771 stimulus red: same switch as sol:K-0750
+//   (`make -B MUT=NYBBLE test`: "PASS: opus:K-0771" becomes "FAIL: opus:K-0771").
 // MUTATION [Group RegWidth] sol:K-0752/K-0753/K-0757/K-0760/opus:K-0773/
 //   K-0779 SWAPNYBBLE stimulus red (see SWAPNYBBLE block: the hi/lo
 //   nybble reads are swapped, so the assembled byte no longer matches the
 //   expected value, which only holds when the two paired addresses are
 //   read in the RTL's own order).
+// MUTATION sol:K-0752 stimulus red: the hi/lo nybble reads are swapped, so
+//   the assembled byte no longer matches the expected value
+//   (`make -B MUT=SWAPNYBBLE test`: "PASS: sol:K-0752" becomes "FAIL: sol:K-0752", 26 passed, 5 failed).
+// MUTATION sol:K-0753 stimulus red: same switch as sol:K-0752
+//   (`make -B MUT=SWAPNYBBLE test`: "PASS: sol:K-0753" becomes "FAIL: sol:K-0753").
+// MUTATION sol:K-0760 stimulus red: same switch as sol:K-0752
+//   (`make -B MUT=SWAPNYBBLE test`: "PASS: sol:K-0760" becomes "FAIL: sol:K-0760").
+// MUTATION opus:K-0773 stimulus red: same switch as sol:K-0752
+//   (`make -B MUT=SWAPNYBBLE test`: "PASS: opus:K-0773" becomes "FAIL: opus:K-0773").
+// MUTATION opus:K-0779 stimulus red: same switch as sol:K-0752
+//   (`make -B MUT=SWAPNYBBLE test`: "PASS: opus:K-0779" becomes "FAIL: opus:K-0779").
+// sol:K-0757, also named in this group header, does not move under
+// MUT=SWAPNYBBLE ("PASS: sol:K-0757" both before and after); see its own
+// MUT=WRONGREG3C record below.
 // MUTATION [Group Complement] sol:K-0755(p432)/K-0756/K-0759/opus:K-0776/
 //   K-0777 NOCOMPLEMENT stimulus red (see NOCOMPLEMENT block: the
 //   complement step is skipped for chip_addr indices >1, so the graded
 //   "logical value is 0" checks -- which depend on the complement rule --
 //   go red).
+// MUTATION sol:K-0755 stimulus red: the complement step is skipped for
+//   chip_addr indices >1
+//   (`make -B MUT=NOCOMPLEMENT test`: "PASS: sol:K-0755" becomes "FAIL: sol:K-0755", 26 passed, 5 failed).
+// MUTATION sol:K-0756 stimulus red: same switch as sol:K-0755
+//   (`make -B MUT=NOCOMPLEMENT test`: "PASS: sol:K-0756" becomes "FAIL: sol:K-0756").
+// MUTATION sol:K-0759 stimulus red: same switch as sol:K-0755
+//   (`make -B MUT=NOCOMPLEMENT test`: "PASS: sol:K-0759" becomes "FAIL: sol:K-0759").
+// MUTATION opus:K-0776 stimulus red: same switch as sol:K-0755
+//   (`make -B MUT=NOCOMPLEMENT test`: "PASS: opus:K-0776" becomes "FAIL: opus:K-0776").
+// MUTATION opus:K-0777 stimulus red: same switch as sol:K-0755
+//   (`make -B MUT=NOCOMPLEMENT test`: "PASS: opus:K-0777" becomes "FAIL: opus:K-0777").
 
 #include "Vcpu_wrapper.h"
 #include "verilated.h"
@@ -259,7 +325,7 @@ int main() {
     // falls silent only after the second.
     // =========================================================================
 #ifdef MUT_NOHANDOFF
-    // MUTATION sol:K-0733 NOHANDOFF stimulus red: fastramcfg[0]=0 (instead
+    // MUTATION sol:K-0733 stimulus red: MUT=NOHANDOFF fastramcfg[0]=0 (instead
     // of 1) makes cpu_wrapper.v:638's autocfg_card <= {fastramcfg_d[0],0}
     // become {0,0}=0 after the FIRST write, silencing immediately instead
     // of handing off.
@@ -290,7 +356,7 @@ int main() {
     // has no configuring effect.
     // =========================================================================
 #ifdef MUT_WRITETOWRITEREG
-    // MUTATION sol:K-0735/opus:K-0762 WRITETOWRITEREG stimulus red:
+    // MUTATION sol:K-0735/opus:K-0762 stimulus red: MUT=WRITETOWRITEREG
     // writing register 48 (a write register) instead of register 00 (a
     // read register) DOES complete configuration -- the "no effect"
     // assertion, still checking for an unaffected register00, goes red.
@@ -323,7 +389,7 @@ int main() {
     // Group A), demonstrating read registers carry real board attributes.
     // =========================================================================
 #ifdef MUT_WRONGCONFIG
-    // MUTATION sol:K-0737/opus:K-0764 WRONGCONFIG stimulus red: swap
+    // MUTATION sol:K-0737/opus:K-0764 stimulus red: MUT=WRONGCONFIG swap
     // which harness's type nibble feeds which context.
     Harness content_zii(2, 4, {READ(autocfg_addr(IDX_REG00))});
     Harness content_ziii(0, 1, {READ(autocfg_addr(IDX_REG00))});
@@ -383,7 +449,7 @@ int main() {
     // unmodified alongside the overridden top nybble.
     // =========================================================================
 #ifdef MUT_NYBBLE
-    // MUTATION sol:K-0750/opus:K-0771 NYBBLE stimulus red: preset pattern
+    // MUTATION sol:K-0750/opus:K-0771 stimulus red: MUT=NYBBLE preset pattern
     // changes to 0x123, but the graded check below still expects 0xABC.
     std::map<uint32_t, uint16_t> nb_presets = { {0xE80000, 0x0123} };
 #else
@@ -428,7 +494,18 @@ int main() {
     expect(paired_addressing_confirmed, "opus:K-0773 every AUTOCONFIG register is logically 8 bits wide, the 8 bits actually being nybbles from two paired addresses");
     expect(paired_addressing_confirmed, "sol:K-0760 in Zorro II-style mapping, the two nybbles of register 00 are read at $00E80000 and $00E80002");
     expect(paired_addressing_confirmed, "opus:K-0779 Figure K-14 shows the Zorro II style mapping taking the paired nybbles at $00E80000/$00E80002 to form register (00|02)'s 8 bits");
+#ifdef MUT_WRONGREG3C
+    // MUTATION sol:K-0757 stimulus red: probes register 00's own addresses
+    // ($00E80000/$00E80002, raw 0xE/0x6) with a separate harness instead of
+    // register 3C's ($00E8003C/$00E8003E, raw 0xF/0xF), isolated from `rw`
+    // so Group 7's other checks and Group 8's complement checks (which
+    // reuse rw.nibble(2)/(3)) are untouched
+    // (`make -B MUT=WRONGREG3C test`: "PASS: sol:K-0757" becomes "FAIL: sol:K-0757", 30 passed, 1 failed).
+    Harness reg3c_probe(0, 1, {READ(autocfg_addr(IDX_REG00)), READ(autocfg_addr(IDX_REG00LO))});
+    bool reg3c_addresses_confirmed = (reg3c_probe.nibble(0) == 0xF) && (reg3c_probe.nibble(1) == 0xF);
+#else
     bool reg3c_addresses_confirmed = (rw.nibble(2) == 0xF) && (rw.nibble(3) == 0xF); // raw, both default
+#endif
     expect(reg3c_addresses_confirmed, "sol:K-0757 in Zorro II mapping, logical register 3C occupies the upper nybbles at $00E8003C and $00E8003E");
 
     // =========================================================================
@@ -494,4 +571,11 @@ int main() {
 //                      opus:K-0773/K-0779).
 //   NOCOMPLEMENT   -> 26 passed, 5 failed (sol:K-0755/K-0756/K-0759,
 //                      opus:K-0776/K-0777).
+// Rebuilt with no MUT afterward: 31/0 baseline restored exactly.
+//
+// SWAPNYBBLE moves only 5 of the 6 ids its own group header names above --
+// sol:K-0757 is not among them. A ninth switch, WRONGREG3C, isolated to a
+// dedicated `reg3c_probe` Harness so it cannot touch Group 7's other checks
+// or Group 8's complement checks (which reuse `rw.nibble(2)/(3)`):
+//   WRONGREG3C     -> 30 passed, 1 failed (sol:K-0757 only).
 // Rebuilt with no MUT afterward: 31/0 baseline restored exactly.
