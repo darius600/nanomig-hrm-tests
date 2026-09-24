@@ -78,6 +78,7 @@
 
 #include "Vuserio.h"
 #include "verilated.h"
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <cstdint>
@@ -85,6 +86,11 @@
 static Vuserio* top;
 static vluint64_t sim_time = 0;
 static int passed = 0, failed = 0;
+
+static const char* g_mutate = nullptr;
+static bool mutating(const std::string& id) {
+    return g_mutate != nullptr && id == g_mutate;
+}
 
 // ---- the fixed harness (character-identical across the suite) ----
 void expect(bool cond, const std::string& label) {
@@ -132,6 +138,7 @@ void idle_all() {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     top = new Vuserio;
 
     top->clk = 0; top->clk7_en = 1; top->reset = 1;
@@ -168,6 +175,7 @@ int main(int argc, char** argv) {
     // ========================================================================
     idle_all();
     joy2_fire(true); settle(4);
+    if (mutating("opus:8-tbl8-1.c18")) { joy2_fire(false); settle(4); }
     bool joy_drives_fire0 = (top->_fire0 == 0);
     idle_all();
     expect(joy_drives_fire0,
@@ -182,6 +190,7 @@ int main(int argc, char** argv) {
     // ========================================================================
     idle_all();
     mouse_left(true); settle(4);
+    if (mutating("opus:8-tbl8-1.c19")) { mouse_left(false); settle(4); }
     bool mouse_drives_fire0 = (top->_fire0 == 0);
     idle_all();
     expect(mouse_drives_fire0,
@@ -216,7 +225,7 @@ int main(int argc, char** argv) {
     // ========================================================================
     idle_all();
     int open_level = top->_fire0;
-    joy2_fire(true); settle(4);
+    joy2_fire(true); settle(mutating("opus:8-joy2.c3") ? 0 : 4);
     int closed_level = top->_fire0;
     idle_all();
     bool active_low = (open_level == 1 && closed_level == 0);
@@ -298,25 +307,36 @@ int main(int argc, char** argv) {
     record("opus:8-dio.c45 (p.241) \"CIAAPRA ($BFE001) is the data read register of that pair\" "
            "declined for the same reason as the address claims: no CIAAPRA here.");
 
-    // ---- mutation records ---------------------------------------------------
-    // MUTATION opus:8-tbl8-1.c18 stimulus red
-    //   Hold the mouse left button through G1's window as well as the joystick,
-    //   then release the joystick only: with `_mleft` low the line stays low
-    //   and the joystick term can no longer be shown to matter. Re-running G1
-    //   with `mouse_left(true)` never released turns its measurement into one
-    //   that cannot distinguish the two sources, and the assertion goes red.
-    // MUTATION opus:8-tbl8-1.c19 stimulus red
-    //   The mirror: hold the joystick input through G2 so `_sjoy1[4]` is low
-    //   throughout and pressing the mouse button changes nothing observable.
-    // MUTATION opus:8-joy2.c3 stimulus red
-    //   Read the line one delta-cycle after the stimulus instead of after
-    //   `settle(4)`: the synchroniser at :215-218 has not yet carried the
-    //   input through, so open and closed read the same level and the polarity
-    //   assertion cannot separate them.
-    // MUTATION PROP-FIRE1-HAS-NO-MOUSE-TERM stimulus red
-    //   Drive `_fire1_dat` and enable the CD32 arm so `_fire1` follows the pad
-    //   shift register instead of `_sjoy2[4]`; the joystick half then fails and
-    //   the assertion goes red without touching the mouse half.
+    // ---- mutation records -----------------------------------------------
+    // All four below are runtime switches, guarded by mutating("<ID>") and
+    // read once from the MUTATE environment variable at startup, so one
+    // build serves the real run (MUTATE unset) and every mutation run
+    // (MUTATE=<ID>).
+    //
+    // MUTATION opus:8-tbl8-1.c18 stimulus red: releases the joystick fire
+    //   input again before G1 reads the line, with no other switch held,
+    //   so nothing drives pin 6 low (MUTATE=opus:8-tbl8-1.c18: this line
+    //   alone goes FAIL, 4 passed, 1 failed).
+    // MUTATION opus:8-tbl8-1.c19 stimulus red: releases the mouse left
+    //   button again before G2 reads the line, with no other switch held
+    //   (MUTATE=opus:8-tbl8-1.c19: this line alone goes FAIL, 4 passed,
+    //   1 failed).
+    // MUTATION opus:8-joy2.c3 stimulus red: reads the line with zero
+    //   settle ticks after the stimulus change (no `tick()` call at all,
+    //   so no clk edge lets the synchroniser at :215-218 carry the new
+    //   `_joy2` value into `_sjoy1`) instead of `settle(4)`: open and
+    //   closed read the same level and the polarity assertion cannot
+    //   separate them (MUTATE=opus:8-joy2.c3: opus:8-joy2.c3 FAIL -- line
+    //   reads 1 with the switch open and 1 with it closed; 4 passed,
+    //   1 failed).
+    // MUTATION PROP-FIRE1-HAS-NO-MOUSE-TERM none impossible: `cd32pad` is
+    //   an RTL-hardwired constant (`wire cd32pad = 1'b0;`, userio.v:91),
+    //   not a register or port -- no stimulus this fixture can drive ever
+    //   moves it, so the ternary at userio.v:314 always takes the
+    //   `_sjoy2[4]` arm and `_fire1_dat`/`fire2_d` can never reach `_fire1`.
+    //   Unfalsifiable at this boundary, the same RTL fact
+    //   hrm/ch8-potgo-register-bit-layout's own header independently
+    //   confirms for this same wire.
 
     std::cout << "=== TOTAL: " << passed << " passed, " << failed << " failed ===\n";
     delete top;

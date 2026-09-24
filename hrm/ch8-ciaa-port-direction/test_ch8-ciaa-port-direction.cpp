@@ -98,38 +98,46 @@
 //     when graded against the register the manual names, "the data read
 //     register, CIAAPRA".
 //
-// Every mutation below was actually applied (edit -> rebuild -> run ->
-// revert -> rebuild) and the FAIL/PASS lines quoted are what the run
-// printed, not predictions.
+// MUTATION FIXTURE-LIVE, CONTROL-PA0-POSITIONAL and CONTROL-PA0-OUTPUT below
+// are runtime switches, guarded by mutating("<ID>") and read once from the
+// MUTATE environment variable at startup, so one build serves the real run
+// (MUTATE unset) and every mutation run (MUTATE=<ID>).
 //
 // MUTATION FIXTURE-LIVE stimulus red: the second DDRA write changed from
-//   the distinct sentinel 0x5A to a repeat of the first (0xA5) -> FAIL,
-//   second reading no longer differs from the first (both 0xA5). Reverted.
+//   the distinct sentinel 0x5A to a repeat of the first (0xA5), so the
+//   second reading no longer differs from the first (both 0xA5)
+//   (MUTATE=FIXTURE-LIVE: FIXTURE-LIVE FAIL, 2 passed, 3 failed).
 // MUTATION opus:8-dio.c44 stimulus green: PROP-1 is graded at baseline
 //   across all eight bit positions and is red there (own-position-governs
 //   fails for PA2-PA7). Already-red assertions cannot be mutated redder, so
 //   this is a substitution proof: the identical bit_position_correspondence()
 //   comparator PROP-1 sweeps above, instantiated at bit 0 alone instead of
 //   swept across all eight (CONTROL-PA0-POSITIONAL below, PA0 proven live by
-//   FIXTURE-LIVE) -> PASS, in the same run. The comparator is therefore not
-//   vacuously false: it returns true for the one position where the
+//   FIXTURE-LIVE) reads PASS, in the same run (no switch: this control
+//   assertion is unconditional baseline code). The comparator is therefore
+//   not vacuously false: it returns true for the one position where the
 //   mechanism actually works.
 // MUTATION opus:8-dio.c46 stimulus green: PROP-2 is graded at baseline
 //   across all eight bit positions and is red there
 //   (bit_output_follows_direction() fails for PA2-PA7). Substitution proof:
 //   the identical comparator instantiated at bit 0 alone (CONTROL-PA0-OUTPUT
-//   below) -> PASS, in the same run.
+//   below) reads PASS, in the same run (no switch: this control assertion is
+//   unconditional baseline code).
 // MUTATION CONTROL-PA0-POSITIONAL stimulus red: the "different position"
 //   stimulus changed from DDRA=0x04 (bit 2 only) to DDRA=0x05 (bit 2 AND
-//   bit 0), leaving the expected value unchanged -> FAIL, PRA bit 0 now
-//   reads 0, because bit 0 itself was also switched to output by the
-//   mutated stimulus. Reverted.
+//   bit 0), leaving the expected value unchanged, so PRA bit 0 now reads 0
+//   because bit 0 itself was also switched to output by the mutated
+//   stimulus (MUTATE=CONTROL-PA0-POSITIONAL: CONTROL-PA0-POSITIONAL FAIL,
+//   2 passed, 3 failed).
 // MUTATION CONTROL-PA0-OUTPUT stimulus red: the DDRA write that sets bit 0
 //   to output (0x01) was omitted, leaving ddrporta at its reset default
-//   (0/input), while the same PRA bit-0 write/read sequence ran unchanged
-//   -> FAIL, PRA bit 0 reads 1 (pulled), not the expected 0. Reverted.
+//   (0/input), while the same PRA bit-0 write/read sequence ran unchanged,
+//   so PRA bit 0 reads 1 (pulled), not the expected 0
+//   (MUTATE=CONTROL-PA0-OUTPUT: CONTROL-PA0-OUTPUT FAIL, 2 passed,
+//   3 failed).
 
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -137,6 +145,11 @@
 #include "Vciaa.h"
 
 namespace {
+
+const char* g_mutate = nullptr;
+inline bool mutating(const std::string& id) {
+    return g_mutate != nullptr && id == g_mutate;
+}
 
 constexpr uint8_t RS_PRA = 0x0;
 constexpr uint8_t RS_DDRA = 0x2;
@@ -341,11 +354,12 @@ bool prop2_universal_direction_makes_output(Harness& h, std::string& detail) {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     {
         Harness h;
-        checks.expect(fixture_live(h),
+        checks.expect(fixture_live(h, mutating("FIXTURE-LIVE")),
             "FIXTURE-LIVE: two distinct, known DDRA bytes (0xA5, 0x5A) both "
             "arrive and read back correctly and distinctly before any "
             "data-dependent assertion is graded [no page -- infrastructure]");
@@ -393,7 +407,8 @@ int main(int argc, char** argv) {
     }
 
     { Harness h; checks.expect(
-        bit_position_correspondence(h, /*bit=*/0, /*other_bit=*/2),
+        bit_position_correspondence(h, /*bit=*/0, /*other_bit=*/2,
+                                     mutating("CONTROL-PA0-POSITIONAL")),
         "CONTROL-PA0-POSITIONAL: the same bit_position_correspondence() "
         "comparator PROP-1 sweeps above, instantiated at bit 0 alone (PA2 "
         "as the neutral different-position stimulus) -- the one position "
@@ -403,7 +418,7 @@ int main(int argc, char** argv) {
         "false [no page -- infrastructure control]"); }
 
     { Harness h; checks.expect(
-        bit_output_follows_direction(h, /*bit=*/0),
+        bit_output_follows_direction(h, /*bit=*/0, mutating("CONTROL-PA0-OUTPUT")),
         "CONTROL-PA0-OUTPUT: the same bit_output_follows_direction() "
         "comparator PROP-2 sweeps above, instantiated at bit 0 alone -- the "
         "one position PROP-2 shows this mechanism actually working for. "

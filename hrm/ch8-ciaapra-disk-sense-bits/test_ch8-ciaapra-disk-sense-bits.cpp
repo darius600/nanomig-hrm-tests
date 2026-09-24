@@ -108,19 +108,18 @@
 //     "input bits" in the fullest sense the page's sentence can mean at
 //     this boundary.
 //
-// Every mutation below was actually applied (edit -> rebuild -> run ->
-// revert -> rebuild) and the FAIL/PASS lines quoted are what the run
-// printed, not predictions.
-//
 // MUTATION opus:8-cia.c2 stimulus red: PROP-INPUT's sweep (this assertion's
 //   label also carries the leading token's twin, sol:8-cia.c1, which the
-//   suite's mutation-label gate reads only the FIRST token of; the record
+//   suite's mutation-label gate reads only the FIRST token of; the switch
 //   below covers both, since they are the same graded assertion), at PA3,
-//   changed which physical porta_in line is driven low from PA3 itself to
-//   the neutral other-position line (PA7) -- expected value (PA3 reads LOW)
-//   left unchanged -> FAIL, PA3 read back HIGH (only PA7 was actually driven
-//   low). Reverted. (PROP-INPUT is the only assertion below still graded
-//   via expect(); its mutation record is therefore the only one kept.)
+//   redirects which physical porta_in line is driven low from PA3 itself to
+//   the neutral other-position line (PA7), expected value (PA3 reads LOW)
+//   left unchanged, guarded by mutating("opus:8-cia.c2") and read once from
+//   the MUTATE environment variable at startup (MUTATE=opus:8-cia.c2:
+//   opus:8-cia.c2 sol:8-cia.c1 PROP-INPUT FAIL -- PA3 read back HIGH, only
+//   PA7 was actually driven low; 0 passed, 1 failed). (PROP-INPUT is the
+//   only assertion below still graded via expect(); its mutation record is
+//   therefore the only one kept.)
 //
 // REPAIR NOTE (2026-09-15): independent validation of this package's two
 //   other checks. FIXTURE-LIVE (no uid) is a liveness measurement only --
@@ -138,6 +137,7 @@
 //   assertion (PROP-INPUT) was touched.
 
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -145,6 +145,11 @@
 #include "Vciaa.h"
 
 namespace {
+
+const char* g_mutate = nullptr;
+inline bool mutating(const std::string& id) {
+    return g_mutate != nullptr && id == g_mutate;
+}
 
 constexpr uint8_t RS_PRA = 0x0;
 constexpr uint8_t RS_DDRA = 0x2;
@@ -327,6 +332,7 @@ bool prop_input_sweep(Harness& h, std::string& detail, int wrong_bit_bug_at = -1
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     {
@@ -341,7 +347,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         std::string detail;
-        const bool result = prop_input_sweep(h, detail);
+        const bool result = prop_input_sweep(h, detail, mutating("opus:8-cia.c2") ? 3 : -1);
         checks.expect(result,
             "opus:8-cia.c2 sol:8-cia.c1 PROP-INPUT: PA5, PA4, PA3 and PA2 of "
             "CIAAPRA are genuine input bits -- graded across all four "

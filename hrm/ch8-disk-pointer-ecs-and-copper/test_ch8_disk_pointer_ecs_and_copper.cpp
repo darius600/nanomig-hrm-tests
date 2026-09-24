@@ -22,18 +22,18 @@
 //   docs/legacy-names.md explains the vocabulary.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. Every
-// mutation below was run by temporarily editing this file, rebuilding,
-// observing the printed result, and reverting before this commit; the
-// baseline colour is named beside each result.
-// MUTATION LIVENESS stimulus red baseline green: fed 0x0000 to DSKPTH instead of the 0x0015 the hardcoded expected constant was built from -> FAIL as expected. Reverted.
-// MUTATION COPLIVE stimulus red baseline green: retargeted the MOVE from DMACON ($096) to DSKPTH ($020) under ecs=0/cdang=0 -> FAIL as expected (write no longer reaches, DMACONR bit 5 never sets). Reverted.
-// MUTATION P1 stimulus green baseline red: substituted a CPU write of the same operand for the Copper MOVE, through the same disk-slot readback comparator -> PASS as expected (proves the comparator and the readback path work). Reverted.
-// MUTATION P2 stimulus red baseline green: changed the written low-three-bit pattern from 0x5 to 0x2 while the hardcoded expected constant (0x5) stayed put -> FAIL as expected. Reverted.
-// MUTATION P3 stimulus red baseline green: changed the written five-bit pattern from 0x15 to 0x0A while the hardcoded expected constant (0x15) stayed put -> FAIL as expected. Reverted.
-// MUTATION P4 stimulus green baseline red: kept ecs fixed at 0 for both reads and varied the written data (0x0018 then 0x0007) instead -> PASS as expected (the same inequality comparator detects a real difference). Reverted.
-// MUTATION P5 stimulus green baseline red: applied the same "does this input bit fail to reach this output position" comparator to DSKPTL bit 0 against address_out[0] (no such storage exists, address_out is [20:1]) instead of DSKPTH bits 4:3 -> PASS as expected. Reverted.
+// mutation below is a runtime switch, guarded by mutating("<ID>") and read
+// once from the MUTATE environment variable at startup.
+// MUTATION LIVENESS stimulus red: fed 0x0000 to DSKPTH instead of the 0x0015 the hardcoded expected constant was built from (MUTATE=LIVENESS: LIVENESS FAIL, 3 passed, 4 failed).
+// MUTATION COPLIVE stimulus red: retargeted the MOVE from DMACON ($096) to DSKPTH ($020) under ecs=0/cdang=0, so the write no longer reaches and DMACONR bit 5 never sets (MUTATE=COPLIVE: COPLIVE FAIL, 3 passed, 4 failed).
+// MUTATION P1 stimulus green: substituted a CPU write of the same operand for the Copper MOVE, through the same disk-slot readback comparator (MUTATE=P1: P1 PASS instead of its baseline FAIL, 5 passed, 2 failed).
+// MUTATION P2 stimulus red: changed the written low-three-bit pattern from 0x5 to 0x2 while the hardcoded expected constant (0x5) stayed put (MUTATE=P2: P2 FAIL, 3 passed, 4 failed).
+// MUTATION P3 stimulus red: changed the written five-bit pattern from 0x15 to 0x0A while the hardcoded expected constant (0x15) stayed put (MUTATE=P3: P3 FAIL, 3 passed, 4 failed).
+// MUTATION P4 stimulus green: kept ecs fixed at 0 for both reads and varied the written data (0x0018 then 0x0007) instead (MUTATE=P4: P4 PASS instead of its baseline FAIL, 5 passed, 2 failed).
+// MUTATION P5 stimulus green: applied the same "does this input bit fail to reach this output position" comparator to DSKPTL bit 0 against address_out[0] (no such storage exists, address_out is [20:1]) instead of DSKPTH bits 4:3 (MUTATE=P5: P5 PASS instead of its baseline FAIL, 5 passed, 2 failed).
 
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -42,6 +42,11 @@
 #include "Vagnus.h"
 
 namespace {
+
+const char* g_mutate = nullptr;
+inline bool mutating(const std::string& id) {
+    return g_mutate != nullptr && id == g_mutate;
+}
 
 constexpr uint16_t to_reg(uint16_t byte_addr) { return byte_addr >> 1; }
 
@@ -266,6 +271,7 @@ private:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     // LIVENESS -- the fixture must be shown to deliver two distinct known
@@ -278,7 +284,7 @@ int main(int argc, char** argv) {
         h.set_ecs(false);
         constexpr uint16_t kHighStim = 0x0015; // DSKPTH data_in written
         constexpr uint16_t kLowStim  = 0x2A2A; // DSKPTL data_in written
-        h.write_reg(DSKPTH, kHighStim);
+        h.write_reg(DSKPTH, mutating("LIVENESS") ? 0x0000 : kHighStim);
         h.write_reg(DSKPTL, kLowStim);
         const uint32_t got = h.read_pointer_via_diskslot();
         // Hand-derived from the two stimulus patterns above, kept as an
@@ -299,7 +305,7 @@ int main(int argc, char** argv) {
         h.write_reg(COPCON, 0x0000); // cdang = 0
         constexpr uint32_t A = 0x03000;
         constexpr uint16_t kMoveData = 0x8020; // SET bit + SPREN (bit 5)
-        h.install_move(A, DMACON, kMoveData);
+        h.install_move(A, mutating("COPLIVE") ? DSKPTH : DMACON, kMoveData);
         h.program_cop1(A);
         h.set_dmacon(0x8280); // SET + DMAEN + COPEN: let the Copper actually run
         h.run_cycles(4000);
@@ -331,10 +337,14 @@ int main(int argc, char** argv) {
 
         constexpr uint32_t A = 0x04000;
         constexpr uint16_t kMoveOperand = 0x0015; // distinct from the sentinel above
-        h.install_move(A, DSKPTH, kMoveOperand);
-        h.program_cop1(A);
-        h.set_dmacon(0x8280);
-        h.run_cycles(4000);
+        if (mutating("P1")) {
+            h.write_reg(DSKPTH, kMoveOperand);
+        } else {
+            h.install_move(A, DSKPTH, kMoveOperand);
+            h.program_cop1(A);
+            h.set_dmacon(0x8280);
+            h.run_cycles(4000);
+        }
 
         const uint32_t after = h.read_pointer_via_diskslot();
         const uint32_t moved_target =
@@ -349,7 +359,8 @@ int main(int argc, char** argv) {
         AgnusHarness h;
         h.set_ecs(false);
         constexpr uint16_t kStimLow3 = 0x0005; // bits[2:0] = 101, bits[4:3] = 00
-        h.write_reg(DSKPTH, kStimLow3);
+        constexpr uint16_t kMutatedLow3 = 0x0002; // bits[2:0] = 010, differs from kStimLow3
+        h.write_reg(DSKPTH, mutating("P2") ? kMutatedLow3 : kStimLow3);
         h.write_reg(DSKPTL, 0x0000);
         const uint32_t after = h.read_pointer_via_diskslot();
         constexpr uint32_t kExpectedLow3 = 0x5u; // independent of kStimLow3 above
@@ -366,7 +377,8 @@ int main(int argc, char** argv) {
         AgnusHarness h;
         h.set_ecs(true);
         constexpr uint16_t kStim5 = 0x0015; // bits[4:0] = 10101
-        h.write_reg(DSKPTH, kStim5);
+        constexpr uint16_t kMutatedStim5 = 0x000A; // bits[4:0] = 01010, differs from kStim5
+        h.write_reg(DSKPTH, mutating("P3") ? kMutatedStim5 : kStim5);
         h.write_reg(DSKPTL, 0x0000);
         const uint32_t after = h.read_pointer_via_diskslot();
         constexpr uint32_t kExpected5 = 0x15u; // independent of kStim5 above
@@ -383,14 +395,15 @@ int main(int argc, char** argv) {
     {
         AgnusHarness h;
         constexpr uint16_t kStim = 0x0018; // bits[4:3] = 11, the "ECS-only" bits
+        constexpr uint16_t kStimAlt = 0x0007; // distinct data, same ecs=0
 
         h.set_ecs(false);
         h.write_reg(DSKPTH, kStim);
         h.write_reg(DSKPTL, 0x0000);
         const uint32_t r_ocs = h.read_pointer_via_diskslot();
 
-        h.set_ecs(true);
-        h.write_reg(DSKPTH, kStim);
+        h.set_ecs(mutating("P4") ? false : true);
+        h.write_reg(DSKPTH, mutating("P4") ? kStimAlt : kStim);
         h.write_reg(DSKPTL, 0x0000);
         const uint32_t r_ecs = h.read_pointer_via_diskslot();
 
@@ -405,12 +418,20 @@ int main(int argc, char** argv) {
         AgnusHarness h;
         h.set_ecs(false);
         constexpr uint16_t kStim = 0x001F; // all five bits set
-        h.write_reg(DSKPTH, kStim);
-        h.write_reg(DSKPTL, 0x0000);
+        if (mutating("P5")) {
+            h.write_reg(DSKPTH, 0x0000);
+            h.write_reg(DSKPTL, 0x0001); // DSKPTL bit 0, substituted target
+        } else {
+            h.write_reg(DSKPTH, kStim);
+            h.write_reg(DSKPTL, 0x0000);
+        }
         const uint32_t after = h.read_pointer_via_diskslot();
         // Verilog bits [20:19] (the two "ECS-only" bits) sit at C++ bits
         // [19:18], same [20:1]-packing note as P2/P3.
-        checks.expect(((after >> 18) & 0x3) == 0,
+        const bool p5_result = mutating("P5")
+            ? ((after & 0x1) == 0)          // DSKPTL bit 0 vs address_out[0]: no such storage (address_out is [20:1])
+            : (((after >> 18) & 0x3) == 0); // DSKPTH bits 4:3, the real check
+        checks.expect(p5_result,
                       "P5 on OCS, DSKPTH holds only the high three bits [sol:8-appb-dskpth.c9, p.289]");
     }
 

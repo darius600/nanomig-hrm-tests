@@ -14,43 +14,53 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
+// MUTATION RATIO-A, SEL-GATING, TRACK00-POLARITY, DIREC-PROTOCOL and
+//   FIXTURE-LIVE below are runtime switches, guarded by mutating("<ID>")
+//   and read once from the MUTATE environment variable at startup, so one
+//   build serves the real run (MUTATE unset, 4 passed, 1 failed -- RATIO-A
+//   red) and every mutation run (MUTATE=<ID>).
+//
 // MUTATION RATIO-A oracle green: expected ratio changed from 6 (the printed
 //   18ms-reversal : 3ms-same-direction pair, p.245:32 and p.245:37-39) to 1
 //   (what the RTL actually produces for a genuine reversal-gap measurement
-//   against a genuine same-direction-gap measurement) -> PASS, confirming
-//   the comparator is sensitive and the baseline red is a genuine
-//   measurement, not a broken comparator. Reverted.
+//   against a genuine same-direction-gap measurement), confirming the
+//   comparator is sensitive and the baseline red is a genuine measurement,
+//   not a broken comparator (MUTATE=RATIO-A: RATIO-A PASS, 5 passed,
+//   0 failed).
 // RATIO-B carries no MUTATION record: it is declined via checks.record(),
 //   not graded through expect(), so there is no assertion label to mutate.
 //   See the record() call in main() for the reason.
-// MUTATION SEL-GATING stimulus red: the second step attempt changed to run
-//   deselected too (drive reselected only afterward, to read _track0
-//   without its deselected-mask -- paula_floppy.v:666 forces _track0
-//   deasserted whenever no drive is selected, independent of dsktrack, so
-//   the read-back has to happen while selected even when the step itself
-//   does not) -> FAIL as expected (dsktrack was never actually incremented).
-//   Reverted.
+// MUTATION SEL-GATING stimulus red: the second step attempt runs deselected
+//   too (drive reselected only afterward, to read _track0 without its
+//   deselected-mask -- paula_floppy.v:666 forces _track0 deasserted
+//   whenever no drive is selected, independent of dsktrack, so the
+//   read-back has to happen while selected even when the step itself does
+//   not) (MUTATE=SEL-GATING: SEL-GATING FAIL -- dsktrack was never actually
+//   incremented; 3 passed, 2 failed).
 // PULSE-WIDTH-FLOOR -- DECLINED via record(), not expect(), Lot F
 //   (2026-09-15): no mutation record (not graded through expect()). The
 //   page's "1 us min." is an absolute interval this fixture cannot present;
 //   see the record() call in main() for the reason.
 // MUTATION TRACK00-POLARITY stimulus red: the outward step that is supposed
-//   to leave track 0 is skipped -> FAIL as expected (the trial never leaves
-//   track 0, so the "TRACK00 deasserts once off track 0" half of the
-//   assertion is checked against a state that never occurred). Reverted.
+//   to leave track 0 is skipped (MUTATE=TRACK00-POLARITY: TRACK00-POLARITY
+//   FAIL -- the trial never leaves track 0, so the "TRACK00 deasserts once
+//   off track 0" half of the assertion is checked against a state that
+//   never occurred; 3 passed, 2 failed).
 // STEP-POLARITY -- DECLINED via record(), not expect(), Lot F (2026-09-15):
 //   no mutation record (not graded through expect()). The figure shows the
 //   pulse's polarity, not that motion may occur only on the release edge;
 //   see the record() call in main() for the reason.
 // MUTATION DIREC-PROTOCOL stimulus red: direc left at 0 for both the first
 //   AND the second step (instead of 0 then 1), so the second step increments
-//   again instead of decrementing -> FAIL as expected (track ends up at 2,
-//   not back at 0). Reverted.
+//   again instead of decrementing (MUTATE=DIREC-PROTOCOL: DIREC-PROTOCOL
+//   FAIL -- track ends up at 2, not back at 0; 3 passed, 2 failed).
 // MUTATION FIXTURE-LIVE stimulus red: the outward step is skipped entirely
-//   -> FAIL as expected (_track0 never leaves its reset value, so the rig
-//   cannot be shown to deliver a second, distinct value). Reverted.
+//   (MUTATE=FIXTURE-LIVE: FIXTURE-LIVE FAIL -- _track0 never leaves its
+//   reset value, so the rig cannot be shown to deliver a second, distinct
+//   value; 3 passed, 2 failed).
 
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -59,6 +69,11 @@
 #include "Vpaula_floppy.h"
 
 namespace {
+
+const char* g_mutate = nullptr;
+inline bool mutating(const std::string& id) {
+    return g_mutate != nullptr && id == g_mutate;
+}
 
 // -----------------------------------------------------------------------
 // Rig. paula_floppy's `dsktrack` array carries no reset term
@@ -288,6 +303,7 @@ int min_accepted_gap(const std::function<bool(int)>& fn, int hi = 600) {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     std::cout << "Starting ch8-drive-step-timing...\n";
@@ -303,7 +319,9 @@ int main(int argc, char** argv) {
         t.select_drive0();
         t.saturate_step_ena();
         const bool value_a = t.track0();  // expect asserted: fresh dsktrack==0
-        t.do_step(/*direc_val=*/false);   // outward step
+        if (!mutating("FIXTURE-LIVE")) {
+            t.do_step(/*direc_val=*/false);   // outward step
+        }
         const bool value_b = t.track0();  // expect deasserted: left track 0
         checks.expect(value_a == true && value_b == false && value_a != value_b,
                       "FIXTURE-LIVE: the rig delivers two distinct, correct "
@@ -330,7 +348,7 @@ int main(int argc, char** argv) {
         // accepted, so the spacing floor must be earned again before the
         // second edge can be judged on `direc` alone.
         t.saturate_step_ena();
-        t.do_step(/*direc_val=*/true);  // direc=1: expect track 1 -> 0
+        t.do_step(mutating("DIREC-PROTOCOL") ? false : true);  // direc=1: expect track 1 -> 0
         const bool returned_on_direc1 = t.track0();
         checks.expect(
             at_track0_initially && left_track0_on_direc0 && returned_on_direc1,
@@ -348,7 +366,9 @@ int main(int argc, char** argv) {
         t.select_drive0();
         t.saturate_step_ena();
         const bool asserted_at_track0 = t.track0();
-        t.do_step(/*direc_val=*/false);  // leave track 0
+        if (!mutating("TRACK00-POLARITY")) {
+            t.do_step(/*direc_val=*/false);  // leave track 0
+        }
         const bool deasserted_off_track0 = !t.track0();
         checks.expect(
             asserted_at_track0 && deasserted_off_track0,
@@ -462,10 +482,19 @@ int main(int argc, char** argv) {
         // position -- a deselected drive does not drive its status line.
         // Read the observable only after selecting, so it reflects dsktrack
         // rather than the deselected mask.
-        t.select_drive0();
-        const bool rejected_while_deselected = t.track0();  // still at 0
-        t.do_step(/*direc_val=*/false);  // now selected
-        const bool accepted_once_selected = !t.track0();
+        bool rejected_while_deselected;
+        bool accepted_once_selected;
+        if (mutating("SEL-GATING")) {
+            t.do_step(/*direc_val=*/false);  // BUG: attempted while still deselected
+            t.select_drive0();
+            rejected_while_deselected = true;  // never independently observed under the bug
+            accepted_once_selected = !t.track0();
+        } else {
+            t.select_drive0();
+            rejected_while_deselected = t.track0();  // still at 0
+            t.do_step(/*direc_val=*/false);  // now selected
+            accepted_once_selected = !t.track0();
+        }
 
         checks.expect(
             rejected_while_deselected && accepted_once_selected,
@@ -593,9 +622,10 @@ int main(int argc, char** argv) {
                     std::to_string(t_same_direction) + " tick(s); printed "
                     "ratio 6:1, measured ratio " + std::to_string(t_reversal) +
                     ":" + std::to_string(t_same_direction));
+        const int expected_ratio = mutating("RATIO-A") ? 1 : 6;
         checks.expect(
             t_reversal > 0 && t_same_direction > 0 &&
-                t_reversal == 6 * t_same_direction,
+                t_reversal == expected_ratio * t_same_direction,
             "RATIO-A: the printed 18ms-reversal and 3ms-same-direction "
             "step-to-step minima (p.245:32, p.245:37-39; Figure 8-8) are "
             "in a 6:1 ratio -- measured against paula_floppy's single "

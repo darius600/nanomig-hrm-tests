@@ -83,16 +83,15 @@
 //     leaves portb_out = 0xFF -- every PB bit deasserted-high, unconditionally
 //     of what was written before the reset pulse.
 //
-// Every mutation below was actually applied (edit -> rebuild -> run ->
-// revert -> rebuild) and the FAIL/PASS lines quoted are what the run
-// printed, not predictions.
-//
 // MUTATION opus:8-cia.c4 stimulus red: PROP-POSITION's stimulus, at bit 3,
-//   changed from clearing that bit (PRB<-0xF7) to leaving it set
-//   (PRB<-0xFF, the omit-clear bug) -> FAIL, bit 3 of `portb_out` never
-//   moved off 1, so bit_moved was false for PB3. Reverted. (PROP-POSITION is
-//   the only assertion below still graded via expect(); its mutation record
-//   is therefore the only one kept.)
+//   changes from clearing that bit (PRB<-0xF7) to leaving it set
+//   (PRB<-0xFF, the omit-clear bug), guarded by mutating("opus:8-cia.c4")
+//   and read once from the MUTATE environment variable at startup
+//   (MUTATE=opus:8-cia.c4: opus:8-cia.c4 sol:8-cia.c3 PROP-POSITION FAIL --
+//   bit 3 of `portb_out` never moved off 1, so bit_moved was false for PB3;
+//   0 passed, 1 failed). (PROP-POSITION is the only assertion below still
+//   graded via expect(); its mutation record is therefore the only one
+//   kept.)
 //
 // REPAIR NOTE (2026-09-15) -- mutation records removed with their withdrawn
 //   assertion, per this suite's rule that a record()/note() carries no
@@ -124,6 +123,7 @@
 //   oracle or kept assertion (PROP-POSITION) was touched.
 
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -131,6 +131,11 @@
 #include "Vciab.h"
 
 namespace {
+
+const char* g_mutate = nullptr;
+inline bool mutating(const std::string& id) {
+    return g_mutate != nullptr && id == g_mutate;
+}
 
 constexpr uint8_t RS_PRB = 0x1;
 constexpr uint8_t RS_DDRB = 0x3;
@@ -354,6 +359,7 @@ bool prop_step_shape(Harness& h, bool no_dip_bug = false) {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     {
@@ -368,7 +374,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         std::string detail;
-        const bool result = prop_position(h, detail);
+        const bool result = prop_position(h, detail, mutating("opus:8-cia.c4") ? 3 : -1);
         checks.expect(result,
             "opus:8-cia.c4 sol:8-cia.c3 PROP-POSITION: CIABPRB's eight PB "
             "bits are independently writable AND readable output bits -- "

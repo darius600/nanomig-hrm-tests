@@ -99,57 +99,52 @@
 //   built obj_dir before anything else relies on it (two distinct SERDAT
 //   payloads arrive as two distinct, correctly-ordered bit sequences).
 //
-// PER-ASSERTION MUTATION RECORDS. Every entry below was actually run by
-//   this agent under WSL/Verilator: edit -> rebuild -> run -> confirm ONLY
-//   the named assertion flips red (checked against the full 10-line PASS/
-//   FAIL listing, not just the tally) -> revert -> rebuild -> confirm back
-//   to baseline -- before moving to the next one. No oracle text or
-//   expected-value literal was ever touched; nanomig/ was never touched.
-//   Baseline throughout: 10 passed, 0 failed, exit code 0.
+// PER-ASSERTION MUTATION RECORDS. Every mutation below is a runtime switch,
+//   guarded by mutating("<ID>") and read once from the MUTATE environment
+//   variable at startup, so one build serves the real run (MUTATE unset,
+//   10 passed, 0 failed) and every mutation run (MUTATE=<ID>). No oracle
+//   text or expected-value literal is touched by any switch; nanomig/ is
+//   never touched.
 //
 // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: h55's SERDAT payload
-//   changed 0x0155 -> 0x0100 (data 0x55 -> 0x00, bit 8 unchanged) -> 9
-//   passed, 1 failed; only FIXTURE-DELIVERS-KNOWN-VALUE newly red (bits55
-//   no longer matches the 0x55 LSB-first pattern). Reverted: 10/0.
+//   changed 0x0155 -> 0x0100 (data 0x55 -> 0x00, bit 8 unchanged), so bits55
+//   no longer matches the 0x55 LSB-first pattern (MUTATE=FIXTURE-DELIVERS-
+//   KNOWN-VALUE: FIXTURE-DELIVERS-KNOWN-VALUE FAIL, 9 passed, 1 failed).
 // MUTATION P1-SERDATR-ADD stimulus red: serdatr_val's read address changed
-//   A_SERDATR -> A_SERDAT -> 9/1; only P1-SERDATR-ADD newly red (now reads
-//   0x0000, not 0x3800). Reverted: 10/0.
+//   A_SERDATR -> A_SERDAT, so it now reads 0x0000, not 0x3800
+//   (MUTATE=P1-SERDATR-ADD: P1-SERDATR-ADD FAIL, 9 passed, 1 failed).
 // MUTATION P2-SERDATR-READ-ONLY stimulus red: after1's presented address
-//   changed A_SERDATR -> A_SERDAT -> 9/1; only P2-SERDATR-READ-ONLY newly
-//   red (after1 no longer equals before). Reverted: 10/0.
+//   changed A_SERDATR -> A_SERDAT, so after1 no longer equals before
+//   (MUTATE=P2-SERDATR-READ-ONLY: P2-SERDATR-READ-ONLY FAIL, 9 passed,
+//   1 failed).
 // MUTATION P3-SERDATR-FUNCTION stimulus red: the received byte changed
-//   0xA3 -> 0x5C, the hardcoded expected value (0xA3) left untouched ->
-//   9/1; only P3-SERDATR-FUNCTION newly red (the received byte no longer
-//   matches). Reverted: 10/0.
+//   0xA3 -> 0x5C, the hardcoded expected value (0xA3) left untouched, so
+//   the received byte no longer matches (MUTATE=P3-SERDATR-FUNCTION:
+//   P3-SERDATR-FUNCTION FAIL, 9 passed, 1 failed).
 // MUTATION P4-SERDAT-ADD stimulus red: the claimed-address write's target
-//   changed A_SERDAT -> A_SERPER -> 9/1; only P4-SERDAT-ADD newly red
-//   (TSRE stays set -- no transmission starts at the wrong address).
-//   Reverted: 10/0.
+//   changed A_SERDAT -> A_SERPER, so TSRE stays set -- no transmission
+//   starts at the wrong address (MUTATE=P4-SERDAT-ADD: P4-SERDAT-ADD FAIL,
+//   9 passed, 1 failed).
 // MUTATION P5-SERDAT-WRITE-ONLY stimulus red: the readback's target
-//   address changed A_SERDAT -> A_SERDATR -> 9/1; only P5-SERDAT-WRITE-ONLY
-//   newly red (readback now returns live SERDATR content, not 0x0000).
-//   Reverted: 10/0.
+//   address changed A_SERDAT -> A_SERDATR, so readback now returns live
+//   SERDATR content, not 0x0000 (MUTATE=P5-SERDAT-WRITE-ONLY:
+//   P5-SERDAT-WRITE-ONLY FAIL, 9 passed, 1 failed).
 // MUTATION P6-SERDAT-FUNCTION stimulus red: hs's SERDAT payload changed
-//   0x0155 -> 0x0055 (collapsing it onto hn's own value) -> 9/1; only
-//   P6-SERDAT-FUNCTION newly red (bits_stop no longer matches expect_stop).
-//   Reverted: 10/0.
+//   0x0155 -> 0x0055 (collapsing it onto hn's own value), so bits_stop no
+//   longer matches expect_stop (MUTATE=P6-SERDAT-FUNCTION:
+//   P6-SERDAT-FUNCTION FAIL, 9 passed, 1 failed).
 // MUTATION P7-SERPER-ADD stimulus red: h_right's write target changed
-//   A_SERPER -> A_SERDATR -> 9/1; only P7-SERPER-ADD newly red
-//   (ticks_right collapses to the wrong-address baseline, 18 vs. 18, no
-//   longer categorically different). Reverted: 10/0.
+//   A_SERPER -> A_SERDATR, so ticks_right collapses to the wrong-address
+//   baseline, no longer categorically different (MUTATE=P7-SERPER-ADD:
+//   P7-SERPER-ADD FAIL, 9 passed, 1 failed).
 // MUTATION P8-SERPER-WRITE-ONLY stimulus red: hro's readback target
-//   changed A_SERPER -> A_SERDATR -> 9/1; only P8-SERPER-WRITE-ONLY newly
-//   red (readback now returns live SERDATR content, not 0x0000).
-//   Reverted: 10/0.
+//   changed A_SERPER -> A_SERDATR, so readback now returns live SERDATR
+//   content, not 0x0000 (MUTATE=P8-SERPER-WRITE-ONLY: P8-SERPER-WRITE-ONLY
+//   FAIL, 9 passed, 1 failed).
 // MUTATION P9-SERPER-FUNCTION stimulus red: h5v's write target changed
-//   A_SERPER -> A_SERDATR -> 9/1; only P9-SERPER-FUNCTION newly red (t5
-//   collapses to the wrong-address baseline, no longer greater than t2).
-//   Reverted: 10/0.
-//
-// Final rebuild after the last revert: 10 passed, 0 failed, exit code 0,
-//   confirmed again immediately before this comment was written; every
-//   code line outside this header comment is unchanged from the
-//   pre-mutation version.
+//   A_SERPER -> A_SERDATR, so t5 collapses to the wrong-address baseline,
+//   no longer greater than t2 (MUTATE=P9-SERPER-FUNCTION:
+//   P9-SERPER-FUNCTION FAIL, 9 passed, 1 failed).
 
 #include <cstdint>
 #include <cstdio>
@@ -162,6 +157,11 @@
 #include "Vpaula_uart.h"
 
 namespace {
+
+const char* g_mutate = nullptr;
+inline bool mutating(const std::string& id) {
+    return g_mutate != nullptr && id == g_mutate;
+}
 
 // The fixed assertion form, verbatim from BUILD-BRIEF.md.
 class Checks {
@@ -329,6 +329,7 @@ public:
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     // ================= FIXTURE-DELIVERS-KNOWN-VALUE (no page) =================
@@ -338,7 +339,7 @@ int main(int argc, char** argv) {
         int width = h.measure_period_ticks() / 9;  // calibrate from the module itself
         Harness h55;
         h55.present(A_SERPER, 10);
-        h55.present(A_SERDAT, 0x0155);  // data 0x55, bit8=1 (stop)
+        h55.present(A_SERDAT, mutating("FIXTURE-DELIVERS-KNOWN-VALUE") ? 0x0100 : 0x0155);  // data 0x55, bit8=1 (stop)
         auto bits55 = h55.capture_tx(width, 10, 4000);
         Harness haa;
         haa.present(A_SERPER, 10);
@@ -367,7 +368,7 @@ int main(int argc, char** argv) {
     // ============================================================
     {
         Harness h;
-        uint16_t serdatr_val = h.present(A_SERDATR, 0xFFFF);
+        uint16_t serdatr_val = h.present(mutating("P1-SERDATR-ADD") ? A_SERDAT : A_SERDATR, 0xFFFF);
         uint16_t serdat_probe = h.present(A_SERDAT, 0x0000);
         uint16_t serper_probe = h.present(A_SERPER, 0x0000);
         checks.note("Out of reset: SERDATR($018) reads " + hex16(serdatr_val) +
@@ -388,7 +389,7 @@ int main(int argc, char** argv) {
     {
         Harness h;
         uint16_t before = h.present(A_SERDATR, 0x0000);
-        uint16_t after1 = h.present(A_SERDATR, 0xFFFF);
+        uint16_t after1 = h.present(mutating("P2-SERDATR-READ-ONLY") ? A_SERDAT : A_SERDATR, 0xFFFF);
         uint16_t after2 = h.present(A_SERDATR, 0xAAAA);
         uint16_t after3 = h.present(A_SERDATR, 0x1234);
         checks.note("SERDATR($018) reads " + hex16(before) + ", " +
@@ -413,7 +414,7 @@ int main(int argc, char** argv) {
         h.present(A_SERPER, 5);
         h.present(A_SERDAT, 0x0155);  // triggers a transmission
         uint16_t after_write = h.present(A_SERDATR, 0x0000);
-        bool rx_ok = h.receive_byte(0xA3, 2 * 5 + 2, 3000);
+        bool rx_ok = h.receive_byte(mutating("P3-SERDATR-FUNCTION") ? 0x5C : 0xA3, 2 * 5 + 2, 3000);
         uint16_t after_rx = h.present(A_SERDATR, 0x0000);
         checks.note("SERDATR before any activity: " + hex16(reset_val) +
                     "; right after a SERDAT write: " + hex16(after_write) +
@@ -453,7 +454,7 @@ int main(int argc, char** argv) {
         uint16_t tsre_before = h.present(A_SERDATR, 0x0000) & 0x1000;
         h.present(A_SERDATR, 0x0155);  // wrong address for a SERDAT write
         uint16_t tsre_wrong = h.present(A_SERDATR, 0x0000) & 0x1000;
-        h.present(A_SERDAT, 0x0155);  // the claimed address
+        h.present(mutating("P4-SERDAT-ADD") ? A_SERPER : A_SERDAT, 0x0155);  // the claimed address
         uint16_t tsre_right = h.present(A_SERDATR, 0x0000) & 0x1000;
         checks.note("TSRE (mask 0x1000) before any write: " + hex16(tsre_before) +
                     "; after presenting 0x0155 at $018 (wrong address): " +
@@ -477,7 +478,7 @@ int main(int argc, char** argv) {
         h2.present(A_SERPER, 10);
         h2.present(A_SERDAT, 0x0155);
         auto bits = h2.capture_tx(width, 10, 4000);
-        uint16_t readback = h2.present(A_SERDAT, 0x0000);
+        uint16_t readback = h2.present(mutating("P5-SERDAT-WRITE-ONLY") ? A_SERDATR : A_SERDAT, 0x0000);
         std::vector<int> expected = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
         checks.note("SERDAT=0x0155 transmitted " + std::to_string(bits.size()) +
                     " sampled bit(s); reading $030 back afterward answers " +
@@ -500,7 +501,7 @@ int main(int argc, char** argv) {
         int width = h.measure_period_ticks() / 9;
         Harness hs;
         hs.present(A_SERPER, 10);
-        hs.present(A_SERDAT, 0x0155);  // bit8=1: 8 data bits + explicit stop
+        hs.present(A_SERDAT, mutating("P6-SERDAT-FUNCTION") ? 0x0055 : 0x0155);  // bit8=1: 8 data bits + explicit stop
         auto bits_stop = hs.capture_tx(width, 12, 4000);
         Harness hn;
         hn.present(A_SERPER, 10);
@@ -550,7 +551,7 @@ int main(int argc, char** argv) {
         h_wrong.present(A_SERDATR, 20);  // wrong address for SERPER
         int ticks_wrong = h_wrong.measure_period_ticks();
         Harness h_right;
-        h_right.present(A_SERPER, 20);  // claimed address
+        h_right.present(mutating("P7-SERPER-ADD") ? A_SERDATR : A_SERPER, 20);  // claimed address
         int ticks_right = h_right.measure_period_ticks();
         checks.note("Presenting SERPER=20 at $018 (wrong address) then "
                     "transmitting measures " + std::to_string(ticks_wrong) +
@@ -580,7 +581,7 @@ int main(int argc, char** argv) {
         int ticks20 = h20.measure_period_ticks();
         Harness hro;
         hro.present(A_SERPER, 0x1234);
-        uint16_t readback = hro.present(A_SERPER, 0x0000);
+        uint16_t readback = hro.present(mutating("P8-SERPER-WRITE-ONLY") ? A_SERDATR : A_SERPER, 0x0000);
         checks.note("SERPER=5 measures " + std::to_string(ticks5) +
                     " ticks over 9 bit periods; SERPER=20 measures " +
                     std::to_string(ticks20) + " ticks; reading $032 back "
@@ -602,7 +603,7 @@ int main(int argc, char** argv) {
         h2v.present(A_SERPER, 2);
         int t2 = h2v.measure_period_ticks();
         Harness h5v;
-        h5v.present(A_SERPER, 5);
+        h5v.present(mutating("P9-SERPER-FUNCTION") ? A_SERDATR : A_SERPER, 5);
         int t5 = h5v.measure_period_ticks();
         double width2 = t2 / 9.0, width5 = t5 / 9.0;
         checks.note("SERPER=2 gives a bit width of " + std::to_string(width2) +

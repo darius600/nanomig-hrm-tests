@@ -72,18 +72,19 @@
 //     145-147) is what PROP-10 exercises.
 //
 // MUTATION FIXTURE-LIVE stimulus red: repeated the first POTGO word (0xAA00)
-// instead of writing the second, distinct word (0xFF00) -> the second
-// reading no longer differs from the first (both 0x0000) -> FAIL as
-// expected (16 passed, 1 failed at the point this was run in isolation).
-// Reverted.
+// instead of writing the second, distinct word (0xFF00), so the second
+// reading no longer differs from the first (both 0x0000) (MUTATE=FIXTURE-LIVE:
+// FIXTURE-LIVE FAIL, 12 passed, 2 failed).
 // MUTATION PROP-1 stimulus red: redirected the write from bit 15 (OUTRY) to
-// bit 13 (OUTRX) while still reading bit 14 -> bit 14 no longer moves ->
-// FAIL as expected. Reverted.
+// bit 13 (OUTRX) while still reading bit 14 (MUTATE=PROP-1: PROP-1 FAIL,
+// 12 passed, 2 failed).
 // MUTATION PROP-2 stimulus red: redirected the write from bit 14 (DATRY) to
 // bit 12 (DATRX) while OUTRY stayed the bit driven for the enable half and
-// bit 14 stayed the bit read -> FAIL as expected. Reverted.
+// bit 14 stayed the bit read (MUTATE=PROP-2: PROP-2 FAIL, 12 passed,
+// 2 failed).
 // MUTATION PROP-3 stimulus red: redirected the write from bit 13 (OUTRX) to
-// bit 11 (OUTLY) while still reading bit 12 -> FAIL as expected. Reverted.
+// bit 11 (OUTLY) while still reading bit 12 (MUTATE=PROP-3: PROP-3 FAIL,
+// 12 passed, 2 failed).
 // MUTATION PROP-4 stimulus green (substitution proof): PROP-4 grades both
 // halves, exactly as PROP-2/6/8 do -- the "OUT=1 forces" half (verified
 // same as before) and the "OUT=0 senses external state" half, which is
@@ -97,26 +98,30 @@
 // printed immediately after showing "green". Not reverted -- this is now
 // the committed assertion, not a temporary mutation build.
 // MUTATION PROP-5 stimulus red: redirected the write from bit 11 (OUTLY) to
-// bit 9 (OUTLX) while still reading bit 10 -> FAIL as expected. Reverted.
+// bit 9 (OUTLX) while still reading bit 10 (MUTATE=PROP-5: PROP-5 FAIL,
+// 12 passed, 2 failed).
 // MUTATION PROP-6 stimulus red: redirected the write from bit 10 (DATLY) to
-// bit 8 (DATLX) while still reading bit 10 -> FAIL as expected. Reverted.
+// bit 8 (DATLX) while still reading bit 10 (MUTATE=PROP-6: PROP-6 FAIL,
+// 12 passed, 2 failed).
 // MUTATION PROP-7 stimulus red: redirected the write from bit 9 (OUTLX) to
-// bit 15 (OUTRY) while still reading bit 8 -> FAIL as expected. Reverted.
+// bit 15 (OUTRY) while still reading bit 8 (MUTATE=PROP-7: PROP-7 FAIL,
+// 12 passed, 2 failed).
 // MUTATION PROP-8 stimulus red: redirected the write from bit 8 (DATLX) to
-// bit 14 (DATRY) while still reading bit 8 -> FAIL as expected. Reverted.
+// bit 14 (DATRY) while still reading bit 8 (MUTATE=PROP-8: PROP-8 FAIL,
+// 12 passed, 2 failed).
 // MUTATION PROP-9 none impossible: bits 7-1 of POTGOR are the literal
 // Verilog constant `8'h00` in the read mux's concatenation (userio.v:305),
 // not a function of any signal -- no value written to POTGO, and no
 // external input port, can move them. Unfalsifiable at this boundary.
 // MUTATION PROP-10 stimulus red: wrote the same OUTLX=1/DATLX=0 pattern but
-// with bit 0 (START) left 0 instead of set -> pot0x did not reset to 0
-// (stayed at 3) -> FAIL as expected. Reverted.
+// with bit 0 (START) left 0 instead of set, so pot0x does not reset to 0
+// (stays at 3) (MUTATE=PROP-10: PROP-10 FAIL, 12 passed, 2 failed).
 // MUTATION PROP-11 stimulus red: drove mouse_btn[2] (middle button) instead
-// of mouse_btn[1] (right button) while still reading bit 10 -> bit 10 no
-// longer responded -> FAIL as expected. Reverted.
+// of mouse_btn[1] (right button) while still reading bit 10 (MUTATE=PROP-11:
+// PROP-11 FAIL, 12 passed, 2 failed).
 // MUTATION PROP-12 stimulus red: drove mouse_btn[1] (right button) instead
-// of mouse_btn[2] (middle button) while still reading bit 8 -> bit 8 no
-// longer responded -> FAIL as expected. Reverted.
+// of mouse_btn[2] (middle button) while still reading bit 8 (MUTATE=PROP-12:
+// PROP-12 FAIL, 12 passed, 2 failed).
 // MUTATION PROP-13 none impossible: bits 15, 13, 11, 9 of POTGOR are the
 // literal Verilog constant `1'b0` at four separate positions in the read
 // mux's concatenation (userio.v:301,302,303,304), and bit 0 falls inside
@@ -129,6 +134,7 @@
 // package's build report.
 
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -136,6 +142,11 @@
 #include "Vuserio.h"
 
 namespace {
+
+const char* g_mutate = nullptr;
+inline bool mutating(const std::string& id) {
+    return g_mutate != nullptr && id == g_mutate;
+}
 
 constexpr uint16_t to_reg(uint16_t byte_offset) { return static_cast<uint16_t>(byte_offset >> 1); }
 
@@ -302,12 +313,35 @@ bool prop1_outry(UserioHarness& h, int drive_out_bit = 15) {
     return a && b;
 }
 
-bool prop2_datry(UserioHarness& h) {
+// ---------------------------------------------------------------------
+// PROP-3 / PROP-4 -- OUTRX (bit 13) / DATRX (bit 12). No external term
+// reaches this pair at all (userio.v: potcap[2] <= joy2_pin5, a pure
+// function of potreg[13:12]) -- confirmed independently here. Both halves
+// of PROP-4 are graded, exactly as for every other DAT bit (PROP-2/6/8):
+// the "OUT=1 forces" half passes; the "OUT=0 senses external state" half
+// genuinely fails, because no signal this fixture can drive moves bit 12
+// -- see the substitution-proof note printed after PROP-4's expect() call
+// in main(), which shows the same comparator is not vacuous on a live bit.
+// ---------------------------------------------------------------------
+bool prop3_outrx(UserioHarness& h, int drive_out_bit = 13) {
+    h.write_potgo(potgo_word(drive_out_bit == 15, false, drive_out_bit == 13, false,
+                              drive_out_bit == 11, false, false, false));
+    uint16_t r1 = h.read_potgor();
+    bool a = !rd(r1, 12) && rd(r1, 14) && rd(r1, 10) && rd(r1, 8);
+    h.write_potgo(potgo_word(false, false, false, false, false, false, false, false));
+    uint16_t r2 = h.read_potgor();
+    bool b = rd(r2, 12) && rd(r2, 14) && rd(r2, 10) && rd(r2, 8);
+    return a && b;
+}
+
+bool prop2_datry(UserioHarness& h, bool redirect_datry_to_datrx = false) {
     h.set_joy1_bit5(true);
     h.write_potgo(potgo_word(true, false, false, false, false, false, false, false));
     uint16_t r1 = h.read_potgor();
     bool a = !rd(r1, 14);
-    h.write_potgo(potgo_word(true, true, false, false, false, false, false, false));
+    h.write_potgo(redirect_datry_to_datrx
+                  ? potgo_word(true, false, false, true, false, false, false, false)
+                  : potgo_word(true, true, false, false, false, false, false, false));
     uint16_t r2 = h.read_potgor();
     bool b = rd(r2, 14);
     h.write_potgo(potgo_word(false, true, false, false, false, false, false, false));
@@ -322,27 +356,6 @@ bool prop2_datry(UserioHarness& h) {
                  && rd(r3, 12) && rd(r3, 10) && rd(r3, 8)
                  && rd(r4, 12) && rd(r4, 10) && rd(r4, 8);
     return a && b && c && d && nocross;
-}
-
-// ---------------------------------------------------------------------
-// PROP-3 / PROP-4 -- OUTRX (bit 13) / DATRX (bit 12). No external term
-// reaches this pair at all (userio.v: potcap[2] <= joy2_pin5, a pure
-// function of potreg[13:12]) -- confirmed independently here. Both halves
-// of PROP-4 are graded, exactly as for every other DAT bit (PROP-2/6/8):
-// the "OUT=1 forces" half passes; the "OUT=0 senses external state" half
-// genuinely fails, because no signal this fixture can drive moves bit 12
-// -- see the substitution-proof note printed after PROP-4's expect() call
-// in main(), which shows the same comparator is not vacuous on a live bit.
-// ---------------------------------------------------------------------
-bool prop3_outrx(UserioHarness& h, int drive_out_bit = 13) {
-    h.write_potgo(potgo_word(drive_out_bit == 15, false, drive_out_bit == 13, false,
-                              false, false, false, false));
-    uint16_t r1 = h.read_potgor();
-    bool a = !rd(r1, 12) && rd(r1, 14) && rd(r1, 10) && rd(r1, 8);
-    h.write_potgo(potgo_word(false, false, false, false, false, false, false, false));
-    uint16_t r2 = h.read_potgor();
-    bool b = rd(r2, 12) && rd(r2, 14) && rd(r2, 10) && rd(r2, 8);
-    return a && b;
 }
 
 bool prop4_datrx(UserioHarness& h) {
@@ -387,8 +400,9 @@ bool prop4_datrx(UserioHarness& h) {
 bool prop5_outly(UserioHarness& h, int drive_out_bit = 11) {
     h.set_joy2_bit5(true);
     h.set_mouse_btn(0x00);
-    h.write_potgo(potgo_word(drive_out_bit == 9, false, false, false,
-                              drive_out_bit == 11, false, false, false));
+    h.write_potgo(potgo_word(false, false, false, false,
+                              drive_out_bit == 11, false,
+                              drive_out_bit == 9, false));
     uint16_t r1 = h.read_potgor();
     bool a = !rd(r1, 10) && rd(r1, 14) && rd(r1, 12) && rd(r1, 8);
     h.write_potgo(potgo_word(false, false, false, false, false, false, false, false));
@@ -397,13 +411,15 @@ bool prop5_outly(UserioHarness& h, int drive_out_bit = 11) {
     return a && b;
 }
 
-bool prop6_datly(UserioHarness& h) {
+bool prop6_datly(UserioHarness& h, bool redirect_datly_to_datlx = false) {
     h.set_joy2_bit5(true);
     h.set_mouse_btn(0x00);
     h.write_potgo(potgo_word(false, false, false, false, true, false, false, false));
     uint16_t r1 = h.read_potgor();
     bool a = !rd(r1, 10);
-    h.write_potgo(potgo_word(false, false, false, false, true, true, false, false));
+    h.write_potgo(redirect_datly_to_datlx
+                  ? potgo_word(false, false, false, false, true, false, false, true)
+                  : potgo_word(false, false, false, false, true, true, false, false));
     uint16_t r2 = h.read_potgor();
     bool b = rd(r2, 10);
     h.write_potgo(potgo_word(false, false, false, false, false, true, false, false));
@@ -438,12 +454,14 @@ bool prop7_outlx(UserioHarness& h, int drive_out_bit = 9) {
     return a && b;
 }
 
-bool prop8_datlx(UserioHarness& h) {
+bool prop8_datlx(UserioHarness& h, bool redirect_datlx_to_datry = false) {
     h.set_mouse_btn(0x00);
     h.write_potgo(potgo_word(false, false, false, false, false, false, true, false));
     uint16_t r1 = h.read_potgor();
     bool a = !rd(r1, 8);
-    h.write_potgo(potgo_word(false, false, false, false, false, false, true, true));
+    h.write_potgo(redirect_datlx_to_datry
+                  ? potgo_word(false, true, false, false, false, false, true, false)
+                  : potgo_word(false, false, false, false, false, false, true, true));
     uint16_t r2 = h.read_potgor();
     bool b = rd(r2, 8);
     h.write_potgo(potgo_word(false, false, false, false, false, false, false, true));
@@ -555,6 +573,7 @@ bool prop13_write_only_bits_read_zero(UserioHarness& h) {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
+    g_mutate = std::getenv("MUTATE");
     Checks checks;
 
     // FIXTURE-LIVE must run first: userio.v has never been measured before,
@@ -562,14 +581,14 @@ int main(int argc, char** argv) {
     // working.
     {
         UserioHarness h;
-        checks.expect(fixture_live(h),
+        checks.expect(fixture_live(h, mutating("FIXTURE-LIVE")),
                       "FIXTURE-LIVE: two distinct, known POTGO words (0xAA00, "
                       "0xFF00) both arrive and produce distinct, correctly "
                       "differing POTGOR readings (0x0000, 0x5500) before any "
                       "data-dependent assertion is graded");
     }
 
-    { UserioHarness h; checks.expect(prop1_outry(h),
+    { UserioHarness h; checks.expect(prop1_outry(h, mutating("PROP-1") ? 13 : 15),
         "PROP-1: POTGO bit 15 (OUTRY) gates whether bit 14's write value "
         "forces POTGOR bit 14 -- with DATRY held at the SAME value (0) in "
         "both readings, only OUTRY changes and the reading changes with it "
@@ -579,7 +598,7 @@ int main(int argc, char** argv) {
         "Paula pin 36\"; Figure 8-6 p.237]"
         " [7 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c12, opus:8-dio.c10, opus:8-dio.c9, sol:8-appa-pot.c40, sol:8-dio.c7, sol:8-dio.c8, sol:8-fig8-6r.c12]"); }
 
-    { UserioHarness h; checks.expect(prop2_datry(h),
+    { UserioHarness h; checks.expect(prop2_datry(h, mutating("PROP-2")),
         "PROP-2: with OUTRY=1, POTGO bit 14 (DATRY) forces POTGOR bit 14 to "
         "its own written value (0 or 1, tested against a released external "
         "line so DATRY's own effect is isolated); with OUTRY=0, DATRY's "
@@ -590,7 +609,7 @@ int main(int argc, char** argv) {
         "pin 36\"; Figure 8-6 p.237]"
         " [7 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c13, opus:8-dio.c11, opus:8-fig8-6r.c15, sol:8-appa-pot.c41, sol:8-dio.c9, sol:8-fig8-6r.c13, sol:8-fig8-6r.c24]"); }
 
-    { UserioHarness h; checks.expect(prop3_outrx(h),
+    { UserioHarness h; checks.expect(prop3_outrx(h, mutating("PROP-3") ? 11 : 13),
         "PROP-3: POTGO bit 13 (OUTRX) gates whether bit 12's write value "
         "forces POTGOR bit 12, DATRX held at the same value (0) in both "
         "readings; the other three pairs do not move "
@@ -643,7 +662,7 @@ int main(int argc, char** argv) {
             "identical stimulus pair -- the comparator is not vacuous.");
     }
 
-    { UserioHarness h; checks.expect(prop5_outly(h),
+    { UserioHarness h; checks.expect(prop5_outly(h, mutating("PROP-5") ? 9 : 11),
         "PROP-5: POTGO bit 11 (OUTLY) gates whether bit 10's write value "
         "forces POTGOR bit 10, DATLY held at the same value (0) in both "
         "readings; the other three pairs do not move "
@@ -651,7 +670,7 @@ int main(int argc, char** argv) {
         "enable for Paula pin 33\"; Figure 8-6 p.237]"
         " [5 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c16, opus:8-dio.c14, sol:8-appa-pot.c44, sol:8-dio.c12, sol:8-fig8-6r.c16]"); }
 
-    { UserioHarness h; checks.expect(prop6_datly(h),
+    { UserioHarness h; checks.expect(prop6_datly(h, mutating("PROP-6")),
         "PROP-6: with OUTLY=1, POTGO bit 10 (DATLY) forces POTGOR bit 10 to "
         "its own written value (against a released external line); with "
         "OUTLY=0, bit 10 instead tracks the external line regardless of "
@@ -661,7 +680,7 @@ int main(int argc, char** argv) {
         "pin 33\"; Figure 8-6 p.237]"
         " [6 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c17, opus:8-dio.c15, sol:8-appa-pot.c45, sol:8-dio.c13, sol:8-fig8-6r.c17, sol:8-fig8-6r.c26]"); }
 
-    { UserioHarness h; checks.expect(prop7_outlx(h),
+    { UserioHarness h; checks.expect(prop7_outlx(h, mutating("PROP-7") ? 15 : 9),
         "PROP-7 [control]: POTGO bit 9 (OUTLX) gates whether bit 8's write "
         "value forces POTGOR bit 8, DATLX held at the same value (0) in "
         "both readings; the other three pairs do not move "
@@ -669,7 +688,7 @@ int main(int argc, char** argv) {
         "enable for Paula pin 32\"; Figure 8-6 p.237]"
         " [5 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c18, opus:8-dio.c17, sol:8-appa-pot.c46, sol:8-dio.c15, sol:8-fig8-6r.c18]"); }
 
-    { UserioHarness h; checks.expect(prop8_datlx(h),
+    { UserioHarness h; checks.expect(prop8_datlx(h, mutating("PROP-8")),
         "PROP-8 [control]: with OUTLX=1, POTGO bit 8 (DATLX) forces POTGOR "
         "bit 8 to its own written value; with OUTLX=0, bit 8 instead tracks "
         "the middle-mouse-button line regardless of DATLX; the other three "
@@ -689,7 +708,7 @@ int main(int argc, char** argv) {
         "\"07-01 0 Reserved for chip ID code (presently 0)\"]"
         " [6 claim(s), p.240/p.282: opus:8-appa-potgo.c20, opus:8-appa-potgo.c21, opus:8-dio.c20, sol:8-appa-pot.c48, sol:8-appa-pot.c49, sol:8-dio.c18]"); }
 
-    { UserioHarness h; checks.expect(prop10_start(h),
+    { UserioHarness h; checks.expect(prop10_start(h, mutating("PROP-10")),
         "PROP-10: writing POTGO bit 0 (START) zeroes pot0x (read via "
         "POT0DAT) and counting resumes from that fresh 0 on subsequent "
         "pot_cnt_en pulses -- POTGO bit 9/DATLX bit 8 held at the pattern "
@@ -699,7 +718,7 @@ int main(int argc, char** argv) {
         "Figure 8-6 p.237]"
         " [6 claim(s), p.237/p.240/p.282: opus:8-appa-potgo.c23, opus:8-dio.c22, opus:8-fig8-6r.c11, sol:8-appa-pot.c51, sol:8-dio.c20, sol:8-fig8-6r.c21]"); }
 
-    { UserioHarness h; checks.expect(prop11_right_button(h),
+    { UserioHarness h; checks.expect(prop11_right_button(h, mutating("PROP-11") ? 2 : 1),
         "PROP-11: with OUTLY=0 (bit 10/DATLY left as an input) and the "
         "_joy2[5] precondition held released, POTGOR bit 10 follows the "
         "right mouse button (mouse_btn[1]): released reads 1, pressed reads "
@@ -707,7 +726,7 @@ int main(int argc, char** argv) {
         "[p.240 \"10 DATLY data for port 1, pin 9 (right mouse button)\"]"
         " [2 claim(s), p.240: opus:8-dio.c16, sol:8-dio.c14]"); }
 
-    { UserioHarness h; checks.expect(prop12_middle_button(h),
+    { UserioHarness h; checks.expect(prop12_middle_button(h, mutating("PROP-12") ? 1 : 2),
         "PROP-12: with OUTLX=0 (bit 8/DATLX left as an input), POTGOR bit 8 "
         "follows the middle mouse button (mouse_btn[2]): released reads 1, "
         "pressed reads 0, released again reads 1; the other three pairs do "
