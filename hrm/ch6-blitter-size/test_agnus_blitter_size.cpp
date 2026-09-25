@@ -104,21 +104,34 @@
 // ADDED 2026-09-25 (unit backlog, SECOND lot, hrm-testpipeline/work/
 // 2026-09-25_unit-backlog/build2): one further claim, sol:3-large.c26
 // (p.76, originally classify.package=="ch3-ddf-fetch-window" - a chapter-3
-// playfield package, not a blitter one), quote "With the original chip set
-// the largest area the blitter can draw in is 1008 by 1024.", restated "On
-// OCS, the blitter's maximum drawable area is 1008x1024 pixels." This is
-// written from the spec-stage quote alone, before opening build2's full
-// claims file or the RTL again for this addition, per Prompt 7's order of
-// work. Note for the step that follows this commit: the claim's own width
-// figure, 1008 pixels, is NARROWER than the field's own raw maximum this
-// package already measures and grades (64 words = 1024 pixels, "the
-// maximum reachable only via this wrap" per SIZE-ZERO-WIDTH-WRAPS-TO-64's
-// own label) - 1008 is not a multiple this package has derived from
-// agnus_blitter.v:522 alone, so whether that narrower figure is a fact
-// BLTSIZE's width field itself enforces, or a fact about a DIFFERENT
-// boundary (the display DMA fetch window this claim's own original
-// package name names), is exactly the question the RTL/full-file step
-// this commit precedes must settle - not assumed here.
+// playfield package, not a blitter one; page 76's own classify.evidence
+// there is about agnus_bitplanedma's DDF fetch window, a different module
+// entirely), quote "With the original chip set the largest area the
+// blitter can draw in is 1008 by 1024.", restated "On OCS, the blitter's
+// maximum drawable area is 1008x1024 pixels." Written from build2's
+// spec-stage quote alone and committed before opening build2's full claims
+// file or the RTL, per Prompt 7's order of work.
+//
+// RESOLVED after opening the RTL: DECLINED (recorded, not asserted) - see
+// "NOT-ASSERTED-PRACTICAL-SHIFT-LIMIT" below. Page 171 itself (already
+// this package's oracle for the raw maxima) derives 1008 as "the largest
+// blit possible ... is 1024 by 1024 pixels. However, shifting and masking
+// operations MAY REQUIRE an extra word be fetched ... making the maximum
+// PRACTICAL horizontal width 1008 pixels" - verified directly against
+// docs/references/amiga-hrm-3rd/ch6/p171.txt before writing this note. The
+// hedge ("may require", "practical") marks this as a programming
+// convention about the barrel shifter (agnus_blitter_barrelshifter,
+// ash/bsh), not a register-enforced limit BLTSIZE's own width decode
+// carries - confirmed by grep: neither `63` nor `1008` occurs anywhere in
+// agnus_blitter.v, and the width decode (agnus_blitter.v:519-525) treats
+// 64 identically regardless of the shift value. Two sibling packages
+// already own barrel-shifter correctness (hrm/ch6-blitter-barrelshifter,
+// hrm/ch6-blitter-shift-chain); this SIZE package's own width/height-field
+// boundary is not where "why one extra word" is decided. The height half
+// of the claim's bundled area figure (1024) is the same fact
+// SIZE-ZERO-HEIGHT-WRAPS-TO-1024 already grades, but the id is withdrawn
+// whole rather than split onto that assertion, per Prompt 7's rule on
+// bundled clauses.
 //
 // Assertion name -> covered ids:
 //
@@ -207,6 +220,11 @@
 //     (pp.171, 308): ch6-dma.c45, 6-appc-big-blits.c24 . Printed as one
 //     RECORDED: line, never a PASS/FAIL line - see "NOT ASSERTED - UNIT
 //     CONVERSION" below for why both are declined.
+//
+//   NOT-ASSERTED-PRACTICAL-SHIFT-LIMIT [recorded, not asserted - second
+//     backlog lot, build2] (p.171): sol:3-large.c26 . Printed as one
+//     RECORDED: line - see the "ADDED 2026-09-25 (unit backlog, SECOND
+//     lot...)" note above for the full reasoning.
 //
 // NOT ASSERTED - UNIT CONVERSION (absent_signal: a bit-count or pixel-count
 //   port; reason_kind: absent - this RTL exposes only a word-count field
@@ -710,6 +728,56 @@ int main(int argc, char** argv) {
             "cannot deliver a signal for - declined here rather than graded "
             "on SIZE-WIDTH-FIELD-BITS-LITERAL or SIZE-ZERO-WIDTH-WRAPS-TO-64, "
             "whose own words-only claims stay exactly as they were.");
+    }
+
+    // ---------- NOT-ASSERTED-PRACTICAL-SHIFT-LIMIT (recorded, not asserted) ----------
+    {
+        // sol:3-large.c26's own quote, verified directly against
+        // docs/references/amiga-hrm-3rd/ch6/p171.txt (already this package's
+        // own primary oracle page for the raw 64-word/1024-row maxima):
+        // "Thus, the largest blit possible with the current Amiga blitter is
+        // 1024 by 1024 pixels. However, shifting and masking operations MAY
+        // REQUIRE an extra word be fetched for each raster scan line, making
+        // the maximum PRACTICAL horizontal width 1008 pixels." The claim's
+        // own restatement bundles two figures into one area (1008 width,
+        // 1024 height); the height half is the same 1024-row maximum
+        // SIZE-ZERO-HEIGHT-WRAPS-TO-1024 already grades (and 6-appc-big-
+        // blits.c22 already cites there), but the id is withdrawn whole
+        // rather than split, per Prompt 7's bundled-clause rule, because the
+        // width half is not gradable here: "may require" and "practical"
+        // are the manual's own hedge - this is a programming caution about
+        // how to USE the shifter (agnus_blitter_barrelshifter, ash/bsh,
+        // agnus_blitter.v:136,144,340-412), not a register-enforced limit.
+        // Confirmed directly in the RTL: `grep -n '63\|1008'
+        // agnus_blitter.v` returns nothing - the width decode
+        // (agnus_blitter.v:519-525) treats 64 no differently whether a
+        // shift is engaged or not, and nothing here special-cases 63.
+        // Verifying WHY one extra word is needed - what a shifted 64th word
+        // actually contains - is barrel-shifter correctness, already two
+        // other packages' declared job (hrm/ch6-blitter-barrelshifter,
+        // hrm/ch6-blitter-shift-chain), not this width/height-field
+        // package's. absent_signal: none - no port on agnus_blitter
+        // distinguishes a "practically usable" word from a merely "fetched"
+        // one; reason_kind: insufficient (the manual's own hedge, not a
+        // hardware behaviour this boundary can assert on).
+        checks.record(
+            "NOT ASSERTED - PRACTICAL SHIFT LIMIT: sol:3-large.c26 (p.171, "
+            "restated \"On OCS, the blitter's maximum drawable area is "
+            "1008x1024 pixels\") bundles the already-graded 1024-row height "
+            "maximum (SIZE-ZERO-HEIGHT-WRAPS-TO-1024, 6-appc-big-blits.c22) "
+            "with a width figure the manual itself states as a practical, "
+            "shift-dependent programming caution, not a register-enforced "
+            "limit - 'shifting and masking operations may require an extra "
+            "word be fetched ... making the maximum practical horizontal "
+            "width 1008 pixels' (p.171). No port on agnus_blitter "
+            "distinguishes a usable shifted word from a merely fetched one, "
+            "and the width decode (agnus_blitter.v:519-525) treats 64 "
+            "identically whether a shift is engaged or not; the underlying "
+            "'why one extra word' question is barrel-shifter correctness, "
+            "already hrm/ch6-blitter-barrelshifter's and "
+            "hrm/ch6-blitter-shift-chain's job, not this package's. "
+            "Withdrawn whole rather than split onto the already-graded "
+            "height assertion, per Prompt 7's bundled-clause rule.");
     }
 
     // ---------------- SIZE-ZERO-HEIGHT-WRAPS-TO-1024 (pp.171, 308) ----------------
