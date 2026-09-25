@@ -116,6 +116,22 @@
 //     violate this precondition too (e.g. all bits set), so nothing about
 //     this module's own behaviour depends on it holding.
 //
+// SPECIFICATION ADDITION, 2026-09-25_unit-backlog. One new proposition
+// routed to this package, added from the routed claim's quotation and
+// restatement alone -- the classification's evidence and the RTL were not
+// open when this paragraph was written:
+//   ch6-fig613.f21 (p.199, figure 6-13) -- the figure shows a switch,
+//   drawn just downstream of the minterm generator's final OR gate and the
+//   XOR gate that combines that OR output with the fill carry chain, and
+//   labelled "fill enable". The switch selects between two values as the
+//   one that proceeds onward (to "Fill Carry Out (to next block)" and to
+//   "D hold"): the unfilled minterm output -- the OR gate's own result,
+//   unchanged -- on one throw, and the XOR gate's output -- the filled
+//   result -- on the other.
+// The assertion measuring it, FIG613-FILL-ENABLE-SWITCH, is added below in
+// the exhaustive-sweeps section, written once the full claims file and the
+// RTL were opened after this addition was committed.
+//
 // Every mutation below was actually applied (edit -> rebuild -> run -> revert
 // -> rebuild-clean) under WSL/Verilator and the PASS/FAIL lines quoted are
 // what the run printed, not predictions.
