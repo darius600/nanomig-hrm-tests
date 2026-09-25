@@ -197,6 +197,52 @@
 //     still fully asserted below (BPLCON2-WO, BPLCON3-WO) -- only the
 //     address-specific half is left unsettled.
 //
+// APPENDIX C P.298, ROUTED 2026-09-25 -- three claims from the ECS
+//   "changed register" map, a third page distinct from Appendix A p.271 and
+//   Appendix B p.291 above, carrying BPLCON2's own row from that table. The
+//   printed row is column-scrambled in this corpus's OCR (hrm/text/p298.txt
+//   reads "104 BPLCON2 chg   WA" with nothing after it); a 200 dpi page-image
+//   render restores it to "104 BPLCON2 chg W D Bitplane control (video
+//   priority control)". Both readers' quotations preserve the scrambled
+//   corpus line and carry the image-verified reading in the restatement, not
+//   the quote -- the pipeline's own cross-read already confirmed the
+//   image-verified D against Appendix A p.271 and Appendix B p.291, which
+//   both independently print D for BPLCON2's chip column. Chipset scope:
+//   ECS (Appendix C p.295 defines the chip set; p.298 marks a register new
+//   or changed in that revision).
+//     7-appC-map-bplcon2.c3 (sol) -- "ECS BPLCON2 is write-only." Restates
+//       the identical proposition BPLCON2-WO already asserts below, under
+//       ECS scope; this file's fixture already runs ecs=1 throughout (see
+//       FIXTURE CONFIGURATION above), so BPLCON2-WO's own measurement is
+//       already an ECS measurement. Graded on a new assertion below
+//       (BPLCON2-WO-ECS) rather than folded into BPLCON2-WO's own citation
+//       list -- this package does not rewrite an already-printed
+//       assertion's label, and this id was never on that label before
+//       today.
+//     7-appC-map-bplcon2.c4 (sol) -- "ECS BPLCON2 is implemented in
+//       Denise." A chip-attribution claim, the identical proposition this
+//       file already declines twice over for BPLCON2 (sol:7-appB-bplcon2.c3,
+//       sol:7-appA-bplcon2.c3 above): a single-chip fixture producing an
+//       effect does not, on its own text's own reading, settle which
+//       chip's column entry the manual meant. Declined below for the
+//       identical, already-established reason -- not asserted.
+//     7-appC298.c4 (opus) -- bundles BPLCON2's address ($104), its "chg"
+//       revision mark, its direction (W), its chip (D) and its function
+//       ("Bitplane control (video priority control)") in a single claim
+//       (sol split the same source row into the five claims
+//       7-appC-map-bplcon2.c1-c5, of which only .c3 and .c4 above were
+//       routed to this package). Of the five bundled clauses: direction is
+//       established (BPLCON2-WO); address is the already out-of-scope
+//       BPLCON2-ADDR clause above; chip is the just-declined attribution
+//       clause; function is excluded by this file's own Non-goals
+//       paragraph ("BPLCON0/2/3's individual bit *semantics*"); "chg" is a
+//       manual revision marker with no RTL-observable counterpart this
+//       fixture can measure. This file's own bundling precedent
+//       (opus:7-appB.c34, opus:7-appC-bplcon2.c8 above) declines a
+//       multi-clause id as a whole rather than keeping it on the one
+//       clause that happens to be established -- applied identically here:
+//       declined below, not asserted.
+//
 // MUTATION-LOG SUMMARY (9 groups; the 60-id COLOR-ADDR loop and the 32-id
 //   COLOR-WO loop each carry one mutation covering the whole loop, matching
 //   hrm/ch3-colour-register-format/'s REG-09/ADDR-32-DISTINCT convention).
