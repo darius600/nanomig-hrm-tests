@@ -64,14 +64,12 @@ static void A(const std::string& id, int page, const std::string& reader,
 }
 
 // ---------------------------------------------------------------------------
-// Prompt 7's fixed call form (expect/note/record), used only for the 11
-// claims routed to this package in the 2026-09-25 unit-backlog build2 lot.
-// The 235 pre-existing assertions above use this package's own A()/SKIP()
-// helpers, unchanged -- BUILD-BRIEF item 1 keeps every existing label and
-// verdict as printed. expect()/record() share the SAME g_total/g_pass/g_fail
-// counters A() already updates (g_recorded is this block's own, separate
-// from A()'s g_skipped), so main()'s final PASS/FAIL tally covers both call
-// forms and record() never counts toward it.
+// Prompt 7's fixed call form (expect/note/record), used for this package's
+// extension claims below. This package's own A()/SKIP() helpers above grade
+// everything else, unchanged. expect()/record() share the SAME
+// g_total/g_pass/g_fail counters A() already updates (g_recorded is this
+// block's own, separate from A()'s g_skipped), so main()'s final PASS/FAIL
+// tally covers both call forms, and record() never counts toward it.
 // ---------------------------------------------------------------------------
 static int g_recorded = 0;
 static void expect(bool condition, const std::string& label) {
@@ -423,10 +421,56 @@ static void measureDualPlayfield() {
   }
 }
 
+// "Changes the way hardware can move the bitplanes on screen" (3-dual.c46,
+// page 72): measured directly, not via the colour-grouping proxy used for
+// the sentence's other clause (3-dual-activate.c4) -- that proxy does not
+// establish this clause. Drive plane 2 alone (an even / playfield-2 plane)
+// and measure the 28MHz-clock offset at which its data becomes visible, for
+// BPLCON1 PF2H nibble 4 vs nibble 12, once with DBLPF=0 and once with
+// DBLPF=1. If selecting dual-playfield mode changes how the hardware can
+// move the bitplanes, the shift PF2H induces should differ between the two
+// DBLPF settings.
+static int measurePf2hTransitionClk(bool dblpf, int pf2hNibble) {
+  // Full reset before every sample: baseline() alone does not clear hpos-
+  // alignment state carried over from a PRIOR call (measured directly: the
+  // same (dblpf, nibble) pair read a different absolute clock depending on
+  // what ran immediately before it, in the same run) -- resetPulse() makes
+  // each sample depend only on its own (dblpf, pf2hNibble) inputs.
+  resetPulse();
+  baseline(false);
+  writeReg(A_BPLCON0, mkBplcon0(false, 6, false, dblpf));
+  writeReg(A_BPLCON1, (uint16_t)(pf2hNibble << 4));
+  loadPlanes(0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000);  // plane 2 only
+  auto px = scanClk(300);
+  int firstT = -1;
+  int prev = decodeIndex(px[0].r, px[0].g, px[0].b);
+  for (size_t i = 1; i < px.size(); i++) {
+    int cur = decodeIndex(px[i].r, px[i].g, px[i].b);
+    if (cur != prev && cur >= 0 && firstT < 0) firstT = (int)i;
+    if (cur >= 0) prev = cur;
+  }
+  return firstT;
+}
+static int g_pf2h_shift_dblpf0 = -999, g_pf2h_shift_dblpf1 = -999;
+static void measureDualPlayfieldMovement() {
+  // One discarded warm-up sample first: measured directly (a 32-point sweep
+  // across every (dblpf, pf2hNibble) pair), the very first one or two calls
+  // of this specific (BPU=6, plane 2 only, this BPLCON1 write pattern) read
+  // a different absolute clock than every later call of the identical
+  // (dblpf, nibble) pair -- resetPulse() and baseline()'s own syncHpos()
+  // do not remove it, so a throwaway call settles it instead of guessing.
+  measurePf2hTransitionClk(false, 4);
+  int t0_lo = measurePf2hTransitionClk(false, 4);
+  int t0_hi = measurePf2hTransitionClk(false, 12);
+  int t1_lo = measurePf2hTransitionClk(true, 4);
+  int t1_hi = measurePf2hTransitionClk(true, 12);
+  g_pf2h_shift_dblpf0 = t0_hi - t0_lo;
+  g_pf2h_shift_dblpf1 = t1_hi - t1_lo;
+}
+
 // ---------------------------------------------------------------------------
-// build2 (2026-09-25) extension: two fresh measurement scenarios for the 11
-// claims routed to this package in that lot. Everything above this point is
-// unchanged (BUILD-BRIEF item 1).
+// Measurement scenarios for this package's extension claims. Everything
+// above this point is unchanged.
 // ---------------------------------------------------------------------------
 
 // decode a 12-bit COLORxx value into the rgb this fixture's own nibble-
@@ -463,11 +507,26 @@ static bool measureBpuZeroAgainstColor0(uint16_t color0Value) {
   for (auto& p : px) if (!(p.r == rExp && p.g == gExp && p.b == bExp)) return false;
   return true;
 }
+// Same "pixel equals COLOR00" comparator, fed a different STIMULUS: BPU
+// changed from 000 to 001 with plane 1 driven, COLOR0 left at its normal
+// preload. If the assertion is sensitive to the condition it names (BPU=000
+// specifically), this must now read false -- plane 1's data should show
+// through instead of the background colour.
+static bool measureBpuOneAgainstColor0Default() {
+  baseline(false);
+  writeReg(A_BPLCON0, mkBplcon0(false, 1, false, false));  // BPU=001 (stimulus mutation from 000)
+  loadPlanes(0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF);
+  auto px = scanHpos(8);
+  for (auto& p : px) if (!(p.r == 0 && p.g == 0 && p.b == 0)) return false;  // expect false: plane 1 shows through
+  return true;
+}
 static bool g_bpu0_bg_default_ok = false;  // COLOR0 at its normal preload (n=0 -> rgb 0,0,0)
 static bool g_bpu0_bg_probe_ok = false;    // COLOR0 overridden to 0x0f0f -- comparator-liveness probe
+static bool g_bpu0_bg_stillbg_under_bpu1 = true;  // stimulus mutation: expect false (plane 1 shows through)
 static void measureBpuZeroBackground() {
   g_bpu0_bg_default_ok = measureBpuZeroAgainstColor0(0x0000);
   g_bpu0_bg_probe_ok = measureBpuZeroAgainstColor0(0x0f0f);
+  g_bpu0_bg_stillbg_under_bpu1 = measureBpuOneAgainstColor0Default();
 }
 
 // HIRES dual-playfield plane identity (3-dual-planes.c5/c6, 3-dual.c19/c20).
@@ -799,6 +858,7 @@ int main(int argc, char** argv) {
   measureBpuTable();
   measureMsbOrder();
   measureDualPlayfield();
+  measureDualPlayfieldMovement();
   measureBpuZeroBackground();
   measureHiresDualPlayfield();
   measureBplcon2Priority();

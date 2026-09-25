@@ -2,12 +2,12 @@
 
 Written from the quoted manual text and PACKAGE.md's boundary description alone, **before** nanomig/src/minimig-aga/denise.v was opened. Order of work: this file is committed first; the RTL is opened only afterwards, and only harness-wiring mechanics (port names, exact bit widths, exact COLORxx encoding) are expected to change after that -- not the oracle stated here.
 
-**Extension, 2026-09-25 (build2 lot, 11 newly routed claims).** The sections below marked "added
-2026-09-25" were written from `ch3-bplcon0-display-modes-spec-stage.jsonl` alone (quote,
-restatement, page -- no `classify.evidence`), following this same rule: committed before the
-full claims file (with the router's evidence) or `denise.v` were opened for this extension.
-Nothing already accepted below this line changed; the additions only append new categories,
-rows and reason-group entries.
+**Extension.** The sections below describing categories 19 and 20, and the four rows added to
+category 2, the one row added to category 3, and the R9 reason group, were written from
+`ch3-bplcon0-display-modes-spec-stage.jsonl` alone (quote, restatement, page -- no
+`classify.evidence`), following this same rule: committed before the full claims file (with the
+router's evidence) or `denise.v` were opened for this extension. Nothing already accepted below
+this line changed; the additions only append new categories, rows and reason-group entries.
 
 ## Fixture and measurement primitives (planned)
 
@@ -172,14 +172,18 @@ not a pass/fail on plane count.
 | `A-bplcon.c62` | 271 | sol | BPLCON0.BPU codes 000 through 110 select zero through six bitplanes. |
 | `A-leg.bpu` | 271 | opus | Appendix A legend: BPU is a bitplane use code with the valid range 000 to 110, meaning none through six inclusive. |
 
-**Extension (2026-09-25, build2).** Four more claim rows restate BPU=000's Table 3-5 /
+**Extension.** Four more claim rows restate BPU=000's Table 3-5 /
 register-summary footnote ("Shows only a background color; no playfield is visible") from two
 more source locations (the footnote text itself, and the register-summary row) and two more
 readers. Colour index 0 is COLOR00, the register this package's own control case already
 identifies as "background colour" (its own outside-window MEASURED reading, category 0 above).
-No new stimulus is required: these are graded from the SAME code-000 measurement already
-computed for `3-bplcon0.c19`/`3-bplcon0.c4` above (BPU=000 with non-zero data driven on planes
-1-5, index stays 0), read as an identity claim about COLOR00 rather than a plane-count claim.
+Graded from a fresh, dedicated measurement, not a re-read of `g_bpu[0]`/`3-bplcon0.c19`/
+`3-bplcon0.c4` above (that entry is already logged in MUTATIONS.md as impossible to mutate under
+this package's six implementation mutations -- the trivial floor of the plane-gating chain, no
+stimulus can make a non-existent plane show through). These four claims instead check that what
+shows with BPU=000 tracks COLOR00's actual content: COLOR0 is driven to a chosen 12-bit value
+and the observed pixel decoded against that value, with a genuine stimulus mutation (BPU changed
+to 001 with plane 1 driven) confirming the comparator is sensitive to the BPU=000 condition.
 
 | claim id | page | reader | restatement |
 |---|---|---|---|
@@ -188,7 +192,7 @@ computed for `3-bplcon0.c19`/`3-bplcon0.c4` above (BPU=000 with non-zero data dr
 | `3-r0.bpu000` | 90 | opus | Register summary: BPLCON0 BPU code 000 shows only a background colour. |
 | `3-regsum-bplcon0.c19` | 90 | sol | BPLCON0.BPU=000 selects only background color. |
 
-50 assertion(s) in this category (46 original + 4 added 2026-09-25).
+50 assertion(s) in this category (46 original + 4 added).
 
 ### 3. Sixth bitplane usage footnote (dual-playfield / HAM)
 
@@ -209,7 +213,7 @@ footnote is asserted; the exclusive "only" half is not.
 | `3-t5.c16` | 48 | opus | Table 3-5 footnote: the sixth bitplane is used only in dual-playfield mode and in hold-and-modify mode. |
 | `3-bplcon0.c20` | 48 | sol | The sixth bitplane is available in dual-playfield mode. |
 
-3 assertion(s) in this category (`3-bplcon0.c20` added 2026-09-25 -- the DBLPF half of the same
+3 assertion(s) in this category (`3-bplcon0.c20` -- the DBLPF half of the same
 footnote, using the same combined dual-playfield/HAM evidence as the two rows above it, since
 that evidence already covers this half).
 
@@ -339,12 +343,10 @@ are independently controllable and that each group's achievable index range span
 (matching "each playfield ... formed from one, two or three bitplanes", 3-dual.c05 /
 3-dual-mode.c12) -- i.e. odd planes 1/3/5 form one 3-bit group and even planes 2/4/6 form the
 other, with no cross-contribution measured in either group when the other group's planes are
-driven. This single measurement setup is the evidence used for the odd/even grouping claims,
-the playfield-depth claims, and (as a proxy, since this package does not reach into
-BPLCON1/scroll interpretation, which is the ch3-bplcon1-scroll-delay sibling's territory) the
-"changes hardware movement" clause of 3-dual-activate.c4 -- only the structural, DBLPF-gated
-independence of the two groups is asserted for that claim, not the scroll-register mechanism
-itself.
+driven. This single measurement setup is the evidence used for the odd/even grouping claims and
+the playfield-depth claims. It does NOT establish the "changes hardware movement" clause of the
+same page-72 sentence (3-dual-activate.c4 / 3-dual.c46) -- that is a different clause of the
+sentence, graded separately in category 20 below.
 
 | claim id | page | reader | restatement |
 |---|---|---|---|
@@ -359,19 +361,16 @@ itself.
 | `A-bplcon.c68` | 271 | sol | In double-playfield mode, PF2 comprises even bitplanes. |
 | `C-bplcon0.b10` | 300 | opus | BPLCON0 bit 10 (DPF) is compatible with SuperHires mode. |
 | `C-shres.c15` | 300 | sol | Dual-playfield mode is compatible with ECS SuperHires. |
-| `3-dual.c46` | 72 | opus | Selecting dual-playfield mode also changes the way the hardware can move the bitplanes on the screen. |
 
-12 assertion(s) in this category (`3-dual.c46` added 2026-09-25: the identical "changes hardware
-movement" clause `3-dual-activate.c4` already carries, from a second reader's quotation of the
-same page-72 sentence -- graded via the same proxy already documented for that row: only the
-structural, DBLPF-gated independence of the two groups is asserted, not the scroll-register
-movement mechanism itself, which is the ch3-bplcon1-scroll-delay sibling's territory. Checked
-directly against `denise_bitplanes.v` before choosing this over the router-suggested PF1H/PF2H
-differential: `pf1h_del`/`pf2h_del` (BPLCON1's PF1H/PF2H fields) wire to the per-plane shifters
-unconditionally by plane parity there -- `bplshft1/3/5/7` always take `pf1h_del`, `bplshft2/4/6/8`
-always take `pf2h_del` -- and `dblpf` is not referenced anywhere in that file. A PF1H-vs-PF2H
-differential test would therefore measure the identical result whether DBLPF is 0 or 1: it does
-not test what this claim's clause says DBLPF changes, so it was not used.)
+11 assertion(s) in this category.
+
+**A note on `3-dual-activate.c4`, unchanged from before this package was extended:** this row's
+own claim, "DBLPF changes the hardware movement behavior of the bitplanes on-screen," is graded
+here by the colour-grouping evidence above -- which is the SAME wrong-clause proxy problem
+`3-dual.c46` (the identical clause, second reader) is NOT graded by, in category 20 below. That
+row predates this extension and stays as printed, per the rule that nothing already graded
+changes; category 20's measurement is the correct one for this clause and could resolve
+`3-dual-activate.c4` too, but that row is not this extension's to touch.
 
 ### 9. HOMOD (bit 11) -- hold-and-modify enable conditions
 
@@ -642,7 +641,7 @@ not adjusted.
 
 10 assertion(s) in this category.
 
-### 19. High-resolution dual-playfield plane identity (planes 1&3 / 2&4) -- added 2026-09-25
+### 19. High-resolution dual-playfield plane identity (planes 1&3 / 2&4)
 
 Measurement: a fresh stimulus, not a re-read of category 8's BPU=6/three-planes-per-side
 result. With HIRES=1 and DBLPF=1, set BPLCON0.BPU=100 (four planes total, matching the manual's
@@ -664,8 +663,38 @@ quoted text does not say that, and it is not measured here).
 
 4 assertion(s) in this category.
 
+### 20. Dual-playfield movement (PF1H/PF2H independence)
 
-Total claim-rows assigned to a measurement category: 245 (235 original + 10 added 2026-09-25)
+Measurement: the "changes hardware movement" clause of page 72's sentence (the clause
+`3-dual-activate.c4`/`3-dual.c46` name, distinct from the colour-grouping clause category 8
+measures) requires a PF1H/PF2H differential, not the colour-grouping evidence -- a wrong-clause
+proxy is exactly the "id on an assertion that does not establish its claim" case this package's
+own rules forbid. Drive plane 2 (a playfield-2/even plane) alone and measure the 28MHz-clock
+offset at which its data becomes visible, for BPLCON1 PF2H nibble 4 vs nibble 12, once with
+DBLPF=0 and once with DBLPF=1. Measured directly (a full 0-15 PF2H sweep under both DBLPF
+settings, reproduced across repeated runs): the shift PF2H induces on plane 2's position is
+identical under DBLPF=0 and DBLPF=1 -- 32 clocks either way, for this nibble pair, and the whole
+sweep matches point for point between the two DBLPF settings past an initial warm-up transient
+(a harness artifact, not an RTL property -- the very first one or two calls of this specific
+stimulus read a different absolute clock than every later call of the same inputs; a discarded
+warm-up call removes it, documented where it is discarded). Page 71's own text, in the section
+immediately preceding this one ("DUAL-PLAYFIELD PRIORITY AND CONTROL"), states the two
+playfields "can be scrolled separately" as something dual-playfield mode enables -- so the manual
+does make a movement claim here, and this fixture's own boundary (`denise`, where BPLCON1's
+pf1h_del/pf2h_del are consumed) is exactly where PF1H/PF2H reaching a plane's shifter is decided.
+Measured RED: at this fixture's boundary, PF2H's effect on an even plane's rendered position does
+not depend on DBLPF at all.
+
+| claim id | page | reader | restatement |
+|---|---|---|---|
+| `3-dual.c46` | 72 | opus | Selecting dual-playfield mode also changes the way the hardware can move the bitplanes on the screen. |
+
+1 assertion(s) in this category. RED -- a genuine finding, not adjusted. `3-dual-activate.c4`
+(category 8, unchanged, predates this extension) names the identical clause and is graded by the
+colour-grouping proxy instead; see the note at the end of category 8.
+
+
+Total claim-rows assigned to a measurement category: 245 (235 original + 10 added)
 
 ## Claims not asserted in this package
 
@@ -772,7 +801,7 @@ is withdrawn here in favour of declining the claim -- see MUTATIONS.md.)
 | `C-bplcon0.b04` | 300 | opus | BPLCON0 bit 4 is SPRHWRM in the ECS. |
 | `C-shres.c18` | 300 | sol | ECS BPLCON0 bit 4 is SPRHWRM. |
 
-### R9-software-not-hardware -- added 2026-09-25
+### R9-software-not-hardware
 
 Names what `graphics.library` (Amiga OS software) does, not what a chip does, so there is no
 RTL-observable claim here at any fixture boundary. The full quotation: "This mode is controlled
@@ -791,11 +820,11 @@ sibling package, not held here.
 | `C-shr.c13` | 300 | opus | SuperHires mode is controlled by writing BPLCON0 in the LOF copperlist (/SHF if interlaced). |
 
 
-Total not-asserted claim ids: 29 (28 original + 1 added 2026-09-25)
+Total not-asserted claim ids: 29 (28 original + 1 added)
 
 
 Grand total: 245 asserted claim-rows + 29 not-asserted claim ids = 274 (274 claim rows over 269
-unique claim ids -- 258 original + 11 added 2026-09-25, all 11 new ids unique; 5 ids in the HAM
+unique claim ids -- 258 original + 11 added, all 11 new ids unique; 5 ids in the HAM
 category are each backed by two independent reader rows, opus and sol, both asserted
 separately, unchanged from before).
 
