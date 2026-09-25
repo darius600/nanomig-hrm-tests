@@ -174,6 +174,17 @@
 //     of all bitplanes for that word (16 pixels)." -- each converted
 //     bitplane word supplies 16 pixels.
 //
+// CLAIM COVERAGE (routed additions): all seven claims above are asserted,
+// each attached as a bare id to an existing assertion's label whose
+// measurement already establishes its whole proposition -- see the source
+// comment beside each attachment: 3-memory.c20 and A-bpldat.c8 on
+// BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD; 3-ddf.c08 on FIXTURE-DATA-PATH-LIVE;
+// 3-dual-mode.c2 on PF1H-PF2H-SCROLL-INDEPENDENTLY; 3-hscr.c22,
+// 3-hscroll.c29 and 3-hscroll.c31 on
+// BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN. No new assertion,
+// mutation or PASS/FAIL line was added; every previously graded line keeps
+// its own verdict and text unchanged.
+//
 // RTL OPENED, BUILT AND RUN, 10.09.2026 (all after the spec-only commit
 // above; built under WSL/Verilator 5.052). denise_bitplanes.v carries a
 // `DENISE_EBR ifdef with a completely different port set on the other
@@ -607,6 +618,10 @@ int main(int argc, char** argv) {
         h.begin_write_reg(kBpl1DatAddr, mutating("FIXTURE-DATA-PATH-LIVE") ? 0x0000 : 0xACE1);  // MSB (bit15) set: a distinct, recognisable nonzero pattern.
         h.clear_reg();
         auto first = h.measure_first_high_all(400);
+        // 3-ddf.c08 (p.60) restates the same "requires some time after the
+        // first data fetch before it can display the data" sentence 3-fetch.c7
+        // already reads -- the identical nonzero-latency proposition, graded
+        // by this same measurement.
         checks.expect(
             first[1] > 0,
             "FIXTURE-DATA-PATH-LIVE: a distinct nonzero value (0xACE1) written to "
@@ -617,7 +632,7 @@ int main(int argc, char** argv) {
             "basis for 'The hardware requires some time after "
             "the first data fetch before it can actually display the data' (p.60) "
             "-- the measured latency here is that same nonzero delay, at this "
-            "module's own boundary. 3-fetch.c7 .");
+            "module's own boundary. 3-fetch.c7, 3-ddf.c08 .");
     }
 
     // ---------------- BPLCON1-ADDRESS-DECODE ----------------
@@ -758,6 +773,11 @@ int main(int argc, char** argv) {
             if (samples[px]) middle_zero = false;
         bool lsb_last = samples.size() == 16 && samples[15];
 
+        // 3-memory.c20 (p.53, "1 bit for each pixel position") and A-bpldat.c8
+        // (p.272, "16 pixels" per converted word) restate, in different words,
+        // exactly the 16-bits-in/16-pixels-out, one-bit-per-position mapping
+        // this same measurement already establishes (msb_first, middle_zero
+        // and lsb_last together cover all 16 bit/pixel positions of the word).
         checks.expect(
             first >= 0 && msb_first && middle_zero && lsb_last,
             "BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD: loading BPL1DAT with bit15 and "
@@ -768,7 +788,7 @@ int main(int argc, char** argv) {
             "'The MSB is output first, and is, therefore, always on the left' "
             "(p.272), 'indicating the completion of all bitplanes for that word "
             "(16 pixels)' (p.272). A-bpldat.c9, A-bpldat.c10, A-bplxdat.c07, "
-            "A-bplxdat.c08 .");
+            "A-bplxdat.c08, 3-memory.c20, A-bpldat.c8 .");
     }
 
     // Shared sweeps -- reused by every PF1H/PF2H-structural assertion below
@@ -865,6 +885,9 @@ int main(int argc, char** argv) {
         h.begin_write_reg(kBpl1DatAddr, 0x8000);
         h.clear_reg();
         auto first = h.measure_first_high_all(400);
+        // 3-dual-mode.c2 (p.67, "You can also move the two playfields
+        // independently") restates the same independent-movement proposition
+        // this measurement already establishes for the horizontal scroll delay.
         checks.expect(
             first[1] == sweep1[5] && first[2] == sweep2[11],
             "PF1H-PF2H-SCROLL-INDEPENDENTLY: with PF1H=5 and PF2H=11 written "
@@ -874,7 +897,7 @@ int main(int argc, char** argv) {
             "the other's simultaneous nonzero value -- 'They can be scrolled "
             "separately' (p.71), 'If you are using dual playfields, you can "
             "scroll them separately' (p.80). 3-dual-control.c3, 3-dual.c33, "
-            "3-scroll.c1 .");
+            "3-scroll.c1, 3-dual-mode.c2 .");
     }
 
     // ---------------- BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN ----------------
@@ -896,6 +919,11 @@ int main(int argc, char** argv) {
         auto first = h.measure_first_high_all(400);
         bool odd_ok = (first[1] == sweep1[6]) && (first[3] == sweep1[6]) && (first[5] == sweep1[6]);
         bool even_ok = (first[2] == sweep2[9]) && (first[4] == sweep2[9]) && (first[6] == sweep2[9]);
+        // 3-hscr.c22 ("delay is set separately for each playfield"),
+        // 3-hscroll.c29 ("playfield 1 delay applies to planes 1, 3, and 5")
+        // and 3-hscroll.c31 ("playfield 2 delay applies to planes 2, 4, and
+        // 6") restate, each in turn, exactly what odd_ok and even_ok already
+        // establish together.
         checks.expect(
             odd_ok && even_ok,
             "BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN: with PF1H=6 and "
@@ -904,7 +932,7 @@ int main(int argc, char** argv) {
             "PF2H=9's delay -- 'bits 3-0 for playfield 1 (bitplanes 1, 3, and 5) "
             "and bits 7-4 for playfield 2 (bitplanes 2, 4, and 6)' (p.85). "
             "3-hscr.c21, 3-hscr.c23, 3-hscr.c24, 3-hscroll.c27, 3-hscroll.c28, "
-            "3-hscroll.c30 .");
+            "3-hscroll.c30, 3-hscr.c22, 3-hscroll.c29, 3-hscroll.c31 .");
     }
 
     // ---------------- BPLCON1-SAME-VALUE-BOTH-FIELDS-SINGLE-PLAYFIELD ----------------
