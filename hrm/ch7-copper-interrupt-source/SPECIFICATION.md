@@ -156,14 +156,75 @@ to interrupt-request bit).
   here — P2 is reached through `opus:7-fig7-4.c15` alone, which was already
   this package's claim.)
 
+## opus:ch2-the-copper-and-the-680x0.c3 (printed p.35)
+
+> "To interrupt the 680x0, use the Copper  MOVE  instruction to store a 1
+> into the following bits of  INTREQ :"
+
+Restated: the 680x0 is interrupted by using the Copper MOVE instruction to
+store a 1 into bits of INTREQ.
+
+### Reading the claim: a technique, not an enumeration
+
+The quotation is the lead sentence of a list; the list itself (the specific
+bits it goes on to name) is not part of this claim's text and is not cited
+here. Read on its own terms, the sentence asserts a general technique: that
+the Copper's MOVE instruction, writing a 1 into a bit of INTREQ, is a way to
+interrupt the 680x0. That is a claim about the *mechanism* (Copper MOVE ->
+INTREQ bit -> CPU interrupt), not a claim that every bit the list goes on to
+name behaves identically, and not a claim that only one particular bit does.
+One faithful instance of the mechanism, exercised end to end at this
+fixture's real boundary, establishes it; the individual bit-to-function
+mapping the list supplies is separate cargo this package holds no claim for.
+
+### P3 — a Copper MOVE storing a 1 into an INTREQ bit results in the 680x0 receiving an interrupt
+
+This package's fixture already drives exactly this mechanism for P1: a
+Copper MOVE, travelling the Copper's real register-write path into
+`paula_intcontroller`, stores a 1 into an INTREQ bit. P1 grades that the
+write lands (bit 4 sets, and only bit 4). This claim asks the next question
+of the same stimulus: does that write reach the 680x0 as an interrupt at
+all — not which level (P2 already grades the specific level), only whether
+the CPU-visible interrupt line leaves its idle state.
+
+Testable form: after the same Copper-driven stimulus P1 and P2 use, the
+interrupt controller's `_ipl` output is no longer the idle encoding — some
+interrupt level is being presented to the CPU. `_ipl != idle` is the
+680x0-visible fact of "being interrupted": the 68000 samples IPL2-0 every
+cycle and treats any value other than the idle encoding as a pending request
+at that priority.
+
+Cited by: `opus:ch2-the-copper-and-the-680x0.c3` (printed p.35).
+
+### Control
+
+P2's own control (`_ipl` sampled at its idle value after COPER's enable bit
+is set but before the Copper's interrupt condition is presented) is on the
+identical measurement basis this claim uses — the same `_ipl` output, the
+same sample point in program order, before the same stimulus. It already
+rules out "stuck at non-idle" for this claim exactly as it does for P2; a
+separate control would measure nothing this one does not.
+
+### Mutation plan
+
+- **P3**: the same mutation P2 uses — drop the COPER enable bit from the
+  INTENA write while leaving the master-enable bit set, so the still-pending
+  request never reaches the priority encoder. Expect the assertion to go red
+  (`_ipl` stays at the idle encoding). Revert.
+
 ## Claims accounted for
 
-Both claims in `ch7-copper-interrupt-source-spec-stage.jsonl` are accounted
-for: `sol:7-interrupts.c41` → P1 (discriminator half asserted; convention
-half and whole-system-exclusivity half recorded, not asserted).
+Both claims from the prior cut of `ch7-copper-interrupt-source-spec-stage.jsonl`
+are accounted for: `sol:7-interrupts.c41` → P1 (discriminator half asserted;
+convention half and whole-system-exclusivity half recorded, not asserted).
 `opus:7-fig7-4.c15` → co-cited into P1 (naming/denotation half asserted)
 *and* into P2 (hardware-priority half asserted); its Exec-software-priority
 half is recorded, not asserted.
+
+The one claim in the latest cut of `ch7-copper-interrupt-source-spec-stage.jsonl`,
+`opus:ch2-the-copper-and-the-680x0.c3`, is accounted for: asserted as P3, on
+the same real Copper-write path and the same CPU-visible measurement basis
+P1 and P2 already established.
 
 ## Mutation plan
 
