@@ -134,6 +134,22 @@
 //   independence restatements, duplicate-of-sibling-package ATTACH-odd-
 //   only restatement, and attached-pair reversion-on-separation).
 //
+// FIGURE 4-6'S BOXED NOTE, id CH4OM-fig46.note (p.103, not part of the
+//   303-record count above -- a separate claims record): "Codes 01, 10 or
+//   11 select one of three possible registers from the normal color
+//   register group, from which the actual color data is taken." -- the
+//   note in the box at the left of Figure 4-6, carried by the PRINTED
+//   edition; the Developer CD rendering of the same figure, reproduced
+//   elsewhere on this page as an ASCII table, carries no such box. The
+//   three codes it names are this package's own three non-transparent
+//   2-bit sprite pixel codes; the proposition is that each of the three
+//   selects a DIFFERENT one of three registers within the sprite pair's
+//   own colour-register group -- "one of three possible registers", read
+//   the other way, is a distinctness/cardinality statement about exactly
+//   those three codes. Whether an already-committed assertion establishes
+//   the whole of this, or a new one is needed, is decided against the
+//   full claims file's routing and the RTL, not here.
+//
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH [control] proves the write -> arm
 //   -> hpos-sweep -> read-sprdata measurement basis every other assertion
 //   shares actually delivers distinct fetched values, in order, before any
