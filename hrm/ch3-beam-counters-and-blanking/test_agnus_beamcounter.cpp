@@ -341,15 +341,18 @@
 //   output being Verilator's own non-deterministic build-timing line).
 // MUTATION COLOUR-CLOCKS-PER-LINE-227POINT5 none impossible: (NTSC) and
 //   (PAL) are both red at baseline (a genuine, measured disagreement --
-//   counting run_cck() periods between two eol pulses on the hardwired
-//   default reads 227, not the manual's 227.5; this module's own
-//   HTOTAL_VAL comment already says so, "line length of 227 CCKs in PAL
-//   mode (NTSC line length of 227.5 CCKs is not supported)",
-//   agnus_beamcounter.v:86). No stimulus on an already-red assertion can
-//   fail it harder. The control immediately above exercises this identical
-//   run_cck()-periods-between-two-eol-pulses comparator against a known
-//   written value and reads it back exactly (101, then 121 once mutated),
-//   proving the comparator itself is live and not vacuous.
+//   a single line cannot last 227.5 colour clocks, since a line ends on a
+//   whole clock, so the check averages 4 consecutive run_cck()-periods-
+//   between-two-eol-pulses measurements; all four individual lines read
+//   227 under both standards (no alternation), so the average is 227 too,
+//   not the manual's 227.5; this module's own HTOTAL_VAL comment already
+//   says so, "line length of 227 CCKs in PAL mode (NTSC line length of
+//   227.5 CCKs is not supported)", agnus_beamcounter.v:86). No stimulus on
+//   an already-red assertion can fail it harder. The control immediately
+//   above exercises this identical run_cck()-periods-between-two-eol-
+//   pulses comparator against a known written value and reads it back
+//   exactly (101, then 121 once mutated), proving the comparator itself is
+//   live and not vacuous.
 // MUTATION COLOUR-CLOCKS-PER-LINE-227POINT5 none impossible: (NTSC bundled
 //   with line count) and (PAL bundled with line count) are both red at
 //   baseline for the same underlying reason -- the colour-clocks-per-line
@@ -1509,6 +1512,39 @@ int main(int argc, char** argv) {
         return static_cast<double>(ticks_second_line) / 4.0;
     };
 
+    // A single line cannot last 227.5 colour clocks -- a line ends on a
+    // whole clock, so any one line's length is a whole number of run_cck()
+    // periods. "227.5 colorclocks per scan line" (p.304) can only be an
+    // AVERAGE over lines of alternating length, so the NTSC/PAL and bundled
+    // checks below measure several consecutive lines and average them,
+    // rather than comparing one line's length against a fractional target.
+    // Same edge-counting technique as measure_cck_periods_per_line above,
+    // generalized to keep closing off one line's tick count each time a
+    // further eol edge is seen, instead of stopping after the first one.
+    auto measure_cck_periods_for_lines = [](Harness& h, int n_lines, long tick_bound) -> std::vector<double> {
+        std::vector<double> periods;
+        long i = 0;
+        int eol_edges = 0;
+        long ticks_this_line = 0;
+        bool eol_prev = false;
+        for (; i < tick_bound && static_cast<int>(periods.size()) < n_lines; ++i) {
+            h.dut->clk7_en = (i % 2 == 0);
+            h.dut->cck = (i % 4 < 2);
+            h.tick();
+            if (eol_edges >= 1) ++ticks_this_line;
+            bool eol_now = h.dut->eol;
+            if (eol_now && !eol_prev) {
+                ++eol_edges;
+                if (eol_edges >= 2) {
+                    periods.push_back(static_cast<double>(ticks_this_line) / 4.0);
+                    ticks_this_line = 0;
+                }
+            }
+            eol_prev = eol_now;
+        }
+        return periods;
+    };
+
     // Control (no claim id): with VARBEAMEN=1 and HTOTAL written to a known
     // value, the measured period count must equal exactly what was
     // written -- htotal_reg is the written byte doubled (l.206) and
@@ -1563,26 +1599,44 @@ int main(int argc, char** argv) {
     for (bool ntsc : {false, true}) {
         Harness h(/*ecs=*/false, ntsc);
         force_vpos(h, 0, /*long_frame=*/false);
-        double periods = measure_cck_periods_per_line(h, 500 * 4);
-        bool periods_match_manual = (periods == 227.5);
+        const int kLinesMeasured = 4;
+        auto line_periods = measure_cck_periods_for_lines(h, kLinesMeasured, 1500 * 4);
+        double sum_periods = 0.0;
+        std::string per_line_list;
+        for (size_t li = 0; li < line_periods.size(); ++li) {
+            sum_periods += line_periods[li];
+            if (li) per_line_list += ", ";
+            per_line_list += std::to_string(line_periods[li]);
+        }
+        double avg_periods = (line_periods.size() == static_cast<size_t>(kLinesMeasured))
+                                  ? sum_periods / kLinesMeasured
+                                  : -1.0;
+        bool periods_match_manual = (avg_periods == 227.5);
         checks.expect(
             periods_match_manual,
             std::string("COLOUR-CLOCKS-PER-LINE-227POINT5 (") +
                 (ntsc ? "NTSC" : "PAL") +
-                "): counting run_cck() periods between two eol pulses on "
-                "the hardwired default (VARBEAMEN=0) reads " +
-                std::to_string(periods) +
-                " colour clocks per line, not the manual's 227.5 -- '" +
+                "): a single line cannot last 227.5 colour clocks (a line "
+                "ends on a whole clock), so '227.5 colorclocks per scan "
+                "line' (p.304) can only be an average over lines of "
+                "alternating length -- counting run_cck() periods between "
+                "consecutive eol pulses over " +
+                std::to_string(kLinesMeasured) +
+                " consecutive lines on the hardwired default (VARBEAMEN=0) "
+                "reads [" + per_line_list + "], average " +
+                std::to_string(avg_periods) +
+                ", not the manual's 227.5 -- '" +
                 (ntsc ? "NTSC (525 lines, 227.5 colorclocks per scan line)"
                       : "PAL  (625 lines, 227.5 colorclocks per scan line)") +
                 "' (p.304). This module's own default-value comment agrees "
                 "with the measurement, not the manual: 'line length of 227 "
                 "CCKs in PAL mode (NTSC line length of 227.5 CCKs is not "
-                "supported)' (agnus_beamcounter.v:86) -- a genuine, "
-                "measured disagreement on the same run_cck()-periods-"
-                "between-two-eol-pulses comparator the control above "
-                "validates, with no RTL-derived tick-to-CCK conversion "
-                "involved. " +
+                "supported)' (agnus_beamcounter.v:86) -- every line reads "
+                "the same length (no alternation), so the average is that "
+                "same length; a genuine, measured disagreement on the same "
+                "run_cck()-periods-between-two-eol-pulses comparator the "
+                "control above validates, with no RTL-derived tick-to-CCK "
+                "conversion involved. " +
                 (ntsc ? "C-scan.c02 ." : "C-scan.c04 ."));
 
         // Re-derive the same-basis line-count half independently (not a
@@ -1609,8 +1663,10 @@ int main(int argc, char** argv) {
                 " default, sum of one long + one short field) above), "
                 "colour-clocks-per-line half " +
                 (periods_match_manual ? std::string("matches") : std::string("does not match")) +
-                " the manual (measured " + std::to_string(periods) +
-                " vs 227.5, graded immediately above) -- both halves must "
+                " the manual (measured average " + std::to_string(avg_periods) +
+                " over " + std::to_string(kLinesMeasured) +
+                " lines [" + per_line_list +
+                "] vs 227.5, graded immediately above) -- both halves must "
                 "hold for this unsplit claim to hold, and one does not. '" +
                 (ntsc ? "NTSC (525 lines, 227.5 colorclocks per scan line)"
                       : "PAL  (625 lines, 227.5 colorclocks per scan line)") +
