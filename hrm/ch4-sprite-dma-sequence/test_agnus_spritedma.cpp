@@ -731,11 +731,10 @@ int main(int argc, char** argv) {
             "A3u-TWO-DISTINCT-REGISTERS-RECEIVE-THE-FETCHED-PAIR (undisputed sub-claim of a conflict; "
             "conflict_resolution: p126 states the fetch order as SPRxDATA-then-SPRxDATB, a separate "
             "on-record p123 register-write convention states the opposite write order, and p107/p121 "
-            "separately dispute which word is the more-significant colour half -- CH4-det.c23, "
-            "CH4-det.c24, CH4-p126.c18, CH4-p126.c19 do not settle which page is right, so only what "
-            "all sides agree on is asserted here: for each displayed line, its two fetched words land "
-            "in two distinct registers, SPRxDATA and SPRxDATB, one word each, never the same register "
-            "twice) (CH4-det.c23, CH4-det.c24, CH4-p126.c18, CH4-p126.c19)");
+            "separately dispute which word is the more-significant colour half -- do not settle which "
+            "page is right, so only what all sides agree on is asserted here: for each displayed line, "
+            "its two fetched words land in two distinct registers, SPRxDATA and SPRxDATB, one word "
+            "each, never the same register twice)");
 
         std::vector<std::string> orderPerLine;
         for (int line : {40, 41, 42, 43}) {
