@@ -89,27 +89,38 @@ produces the correct fill, the other shows ascending mode (same blit,
 otherwise unchanged) does not.
 
 Area fill's own toggle mechanism is not itself among this package's claims
-(no claim here states inclusive/exclusive fill semantics), so the test is
-built to need only the one property every toggle-fill shares and that does
-not depend on any bit-serial direction internal to the hardware: with an
-odd number of boundary markers and the fill starting "off", reading the
-row in the bitmap's own left-to-right (ascending address) order, a fully
-marker-free word strictly between two consecutive markers is either wholly
-inside or wholly outside the fill, independent of how the hardware
-processes bits inside a marker word. That reference only needs standard
-bitmap layout (lower address = further left), not any RTL fact.
+(no claim here states inclusive/exclusive fill semantics), but reading it
+off `nanomig/src/minimig-aga/agnus_blitter_fill.v` -- the standard
+Amiga XOR/toggle fill, `carry[0] = fci ^ in[0]`, `carry[j] = carry[j-1] ^
+in[j]` for the rest, i.e. bit 0 (a word's own LSB) first, bit 15 last, with
+the final carry latched as the next word's carry-in -- and
+`agnus_blitter.v`'s pointer control (`incptr = ~desc; decptr = desc`,
+lines 674-677 etc., one word address step per processed word) fixes,
+mechanically, which of two complementary fill patterns a 3-marker row
+produces in each mode. This is standard, chip-independent Amiga fill
+arithmetic (not a fact about this particular RTL that could be wrong), so
+using it to pin down the test's own expected numbers is setup, not
+grading the RTL against itself: the grading in FILL-DESC-CORRECT and
+FILL-ASC-INCORRECT is the choice of DESC bit against a fixed pair of
+observed words, not the carry arithmetic.
 
 - Row: 5 words, 1 line. Word 0, word 2 and word 4 each carry a single set
-  bit (arbitrary bit position, the same one in each, so no other bit is
-  touched); words 1 and 3 are all zero going in and carry no marker, so
-  they read out uniform after a correct fill. Fill starts with carry-in
-  clear.
-- Reading the row in address order (word0, word1, word2, word3, word4) as
-  a person reads a scanline left to right: word1 lies strictly between the
-  markers in word0 and word2 (one crossing so far -- inside), word3 lies
-  strictly between the markers in word2 and word4 (two crossings -- outside
-  again). That gives the reference this package treats as "correct":
-  word1 = $FFFF, word3 = $0000.
+  bit (the same bit position in each, so no other bit is touched); words 1
+  and 3 are all zero going in and carry no marker, so each reads out
+  uniform ($0000 or $FFFF, never a mix) after any fill, independent of
+  where in a marker word its own set bit sits. Fill starts with carry-in
+  (`BLTCON1` bit 2) clear.
+- With the pointer started at word 4 and DESC set, the blitter visits
+  word4, word3, word2, word1, word0 in that cycle order (one address step
+  per word, decrementing). Word 4 is the first word processed
+  (`first_word_del`), so its carry-in is the clear `BLTCON1` bit 2; tracing
+  the XOR chain word by word: word4 (one set bit) flips the running carry
+  on; word3 (no marker) reads back all-on, $FFFF, and passes the carry on
+  unchanged; word2 (one set bit) flips the carry back off; word1 (no
+  marker) reads back all-off, $0000.
+- With the pointer started at word 0 and DESC clear, the visiting order
+  reverses (word0..word4, incrementing), and the same trace gives the
+  complementary result: word1 = $FFFF, word3 = $0000.
 
 ### Assertion FILL-DESC-CORRECT
 
@@ -117,31 +128,35 @@ bitmap layout (lower address = further left), not any RTL fact.
   mode is also necessary for area filling"); `6-area-fill.c7`,
   `ch6-fill.c6` (page 184, "descending mode must be used" for area fill).
 - Proposition: an area-fill blit of the 5-word/3-marker row, run with the
-  blitter's descending-mode bit set, reproduces the address-order reference
+  blitter's descending-mode bit set, produces the descending-mode trace
   above.
-- Program: `prog_fill_desc.s` places the marker row in chip RAM, sets up an
-  area-fill blit over it with the blitter's line-mode disabled and its
-  descending bit set (register-level detail from Appendix B, pinned down
-  once the full claims file/RTL are open in step 2), and stores the
-  resulting word1 and word3 to `RESULTS`.
+- Program: `prog_fill_desc.s` places the marker row in chip RAM, points the
+  boundary-source pointer at word4 (the row's last word), and sets up an
+  area-fill blit over it with line mode disabled and the descending bit
+  set, then stores the resulting word1 and word3 to `RESULTS`.
 - Observed: `peek_logical(RESULTS+0)`, `peek_logical(RESULTS+2)` (word1,
   word3 of the filled row).
-- Expected: word1 = $FFFF, word3 = $0000.
+- Expected: word1 = $0000, word3 = $FFFF.
 
 ### Assertion FILL-ASC-INCORRECT
 
 - Claims: `6-blitter-key-points.c18`, `ch6-keypoints.c20` (page 200, "area
   fill only works correctly in descending mode").
-- Proposition: the identical blit, with only the descending bit changed to
-  ascending, does not reproduce the reference fill.
+- Proposition: the identical blit, with only the descending bit cleared
+  (pointer started at word0 instead, ascending) and nothing else changed,
+  does not reproduce the descending-mode result.
 - Program: `prog_fill_asc.s` -- `prog_fill_desc.s` included with the
-  descending/ascending symbol flipped, nothing else different.
+  descending/ascending symbol flipped (starting pointer and DESC bit
+  together), nothing else different.
 - Observed: same two words.
-- Expected: NOT (word1 = $FFFF AND word3 = $0000). This is the literal,
+- Expected: NOT (word1 = $0000 AND word3 = $FFFF). This is the literal,
   minimal reading of "only works correctly in descending mode": it commits
   to the fill being wrong in ascending mode, not to which particular wrong
   pattern the hardware produces -- that finer claim is not among this
-  package's ids.
+  package's ids. (The trace above predicts the specific complementary
+  pattern, word1=$FFFF/word3=$0000; the assertion itself only grades the
+  mismatch, so it does not depend on that finer prediction holding
+  exactly.)
 
 ### Fixture
 
@@ -156,7 +171,7 @@ logic is layered on.
 
 FILL-DESC-CORRECT: `prog_fill_desc_mut.s` moves the middle marker from
 word 2 to word 1 (same descending setup otherwise). Word 1 is no longer a
-marker-free interior word, so it cannot read back as the clean $FFFF the
+marker-free interior word, so it cannot read back as the clean $0000 the
 unchanged expected value calls for -- the check must go red. Recorded as:
 
     MUTATION FILL-DESC-CORRECT stimulus red middle marker moved from word 2 to word 1
