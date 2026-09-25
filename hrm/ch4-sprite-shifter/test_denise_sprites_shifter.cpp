@@ -149,9 +149,16 @@
 //   (CH4-fig413.f1): the box feeding the comparator is labelled "beam
 //   counter (horizontal position)" and the comparator's other input is
 //   the register box labelled "SPRxPOS (horiz.)" -- the comparator
-//   drawn in the figure is the horizontal comparator. This is the
-//   undisputed side of the same axis contradiction CH4-hw.c21 and
-//   CH4-p124.c15 carry the disputed side of.
+//   drawn in the figure is the horizontal comparator. Both ids are
+//   added to COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART's own label
+//   below (id only, no prose in the label): that assertion already
+//   measures exactly this routing -- the comparator matching hpos, the
+//   beam counter's horizontal position, against a value built from
+//   SPRxPOS -- so the figure's own reading is established whole, not
+//   recorded. CH4-hw.c21 and CH4-p124.c15 carry the disputed, vertical
+//   reading of the same page-124/figure-4-13 contradiction and stay
+//   recorded below: this module's own port list has no vertical input
+//   to test that reading against, whichever way the dispute resolves.
 //
 //   THE FIGURE'S SECOND "ARM" LABEL (CH4-fig413.f12): figure marker,
 //   p.125 (figures/p125.png). Restated: Figure 4-13 prints the label
@@ -187,24 +194,25 @@
 //   compares two measurements taken the same way, so a constant latency
 //   cancels out.
 //
-// CLAIM COVERAGE: 107 asserted across 12 named propositions plus 1
-//   control (106 from the prior commit, plus CH4-p124.c16, added by id
-//   only to the already-existing COMPARATOR-MATCH-STARTS-OUTPUT-AT-
-//   HSTART assertion, which already establishes the whole of what that
-//   claim's own sentence says); 14 declined with reason for a boundary
-//   this fixture cannot reach (unchanged from the prior commit); 2
-//   recorded as covered elsewhere (unchanged); 6 recorded for a
-//   conflict or a redundancy the NEW PROPOSITIONS section above and
-//   the three new checks.record() calls below describe (CH4-hw.c21,
-//   CH4-p124.c15, CH4-fig4-13.c1, CH4-fig413.f1, CH4-hw.c23,
-//   CH4-fig413.f12). 107+14+2+6 = 129. See the prior commit's own
-//   listing for the 106+14+2 id groupings; each id is repeated in full
-//   inside its own expect()/record() label below.
+// CLAIM COVERAGE: 109 asserted across 12 named propositions plus 1
+//   control (106 from the prior commit, plus CH4-p124.c16, CH4-fig4-
+//   13.c1 and CH4-fig413.f1, all three added by id only to the
+//   already-existing COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART
+//   assertion, which already establishes the whole of what each
+//   claim's own sentence or figure reading says); 14 declined with
+//   reason for a boundary this fixture cannot reach (unchanged from
+//   the prior commit); 2 recorded as covered elsewhere (unchanged); 4
+//   recorded for a conflict or a redundancy the NEW PROPOSITIONS
+//   section above and the three new checks.record() calls below
+//   describe (CH4-hw.c21, CH4-p124.c15, CH4-hw.c23, CH4-fig413.f12).
+//   109+14+2+4 = 129. See the prior commit's own listing for the
+//   106+14+2 id groupings; each id is repeated in full inside its own
+//   expect()/record() label below.
 //
 // RESULTS (WSL/Verilator 5.052, AFTER the specification commit --
 //   denise_sprites_shifter.v was not reopened for this addition; the
-//   one added assertion-id and the six new checks.record() calls both
-//   rest on facts already on the record: the already-passing
+//   three added assertion-ids and the three new checks.record() calls
+//   all rest on facts already on the record: the already-passing
 //   COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART and WRITE-DATA-ARMS-
 //   SPRITE-DATB-ALONE-DOES-NOT measurements themselves, and the
 //   classification's own conflict_resolution field for the one fact
@@ -236,7 +244,7 @@
 // MUTATION SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM stimulus red: built with -DMUT_MOVE=1, which also writes SPRxCTL=0x00 alongside the SPRxPOS move -> FAIL (11 passed, 1 failed), only SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM newly red (the CTL write unconditionally disarms, so no active position was found after the move). Rebuilt with no flags: 12 passed, 0 failed.
 // MUTATION HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL stimulus red: built with -DMUT_HSTART=1, which steps SPRxPOS by 2 (0x20->0x22) instead of 1 while still checking for the original expected delta of 2 -> FAIL (11 passed, 1 failed), only HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL newly red (measured pos_delta 4, not 2). Rebuilt with no flags: 12 passed, 0 failed.
 // MUTATION [declined groups]: no record -- these three claims are declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
-// MUTATION [recorded groups]: no record -- the three new checks.record() calls (COMPARATOR-AXIS-IS-MEASURED-HORIZONTAL-HERE-NOT-VERTICAL, CONVERTER-NAME-IS-DISPUTED-BEHAVIOUR-IS-NOT, FIGURE-SECOND-ARM-LABEL-UNSUPPORTED-BY-PROSE) are checks.record() only, no checks.expect(), so there is no red/green state for a mutation to move; CH4-p124.c16, the one id added to an existing assertion's label, is covered by that assertion's own already-logged MUTATION COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART entry above -- no separate mutation, because no separate measurement was added.
+// MUTATION [recorded groups]: no record -- the three new checks.record() calls (COMPARATOR-AXIS-IS-MEASURED-HORIZONTAL-HERE-NOT-VERTICAL, CONVERTER-NAME-IS-DISPUTED-BEHAVIOUR-IS-NOT, FIGURE-SECOND-ARM-LABEL-UNSUPPORTED-BY-PROSE) are checks.record() only, no checks.expect(), so there is no red/green state for a mutation to move; CH4-p124.c16, CH4-fig4-13.c1 and CH4-fig413.f1, the three ids added to an existing assertion's label, are covered by that assertion's own already-logged MUTATION COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART entry above -- no separate mutation, because no separate measurement was added.
 //
 // Every mutation above isolated to EXACTLY its own named assertion (11
 // passed / 1 failed in each of the 12 runs, never more, never a
@@ -757,6 +765,16 @@ int main(int argc, char** argv) {
     // name (recorded, not asserted, as CH4-hw.c23 below) -- the
     // sentence's own behavioural claim does not depend on which
     // converter name is correct.
+    // CH4-fig4-13.c1 and CH4-fig413.f1 are also added to this
+    // assertion's own label below (id only, no prose in the label):
+    // both restate Figure 4-13's own routing of the beam counter's
+    // horizontal position and SPRxPOS's horizontal value into this
+    // same comparator, which is exactly what the measurement below
+    // grades -- hpos against a value built from SPRxPOS and SPRxCTL.
+    // The classification's own conflict_resolution reads them as the
+    // undisputed, horizontal side of the page-124/figure-4-13 axis
+    // contradiction; the disputed, vertical-reading side (CH4-hw.c21,
+    // CH4-p124.c15) is recorded, not asserted, below.
     {
         Harness h1; h1.arm(0x10, 0x00, 0x0000, 0x8000); Meas m1 = sweep(h1);
 #if MUT_COMPARATOR
@@ -801,7 +819,7 @@ int main(int argc, char** argv) {
             "p.125). CH4-manual.c8, CH4-p123.c5, CH4-hw.c22, "
             "CH4-fig4-13.c2, CH4-fig413.f2, CH4-fig413.f3, CH4-det.c28, "
             "CH4-det.c4, CH4-det.c5, CH4-p126.c22, CH4-p126.c4, "
-            "CH4-p124.c16 . measured "
+            "CH4-p124.c16, CH4-fig4-13.c1, CH4-fig413.f1 . measured "
             "delta=" + std::to_string(measured_delta) + " expected=" +
             std::to_string(expected_delta) + ".");
     }
@@ -813,22 +831,26 @@ int main(int argc, char** argv) {
         "position register SPRxPOS\" (CH4-hw.c21, CH4-p124.c15) -- "
         "vertical -- while Figure 4-13 draws the identical comparator's "
         "inputs as the beam counter's horizontal position and "
-        "\"SPRxPOS (horiz.)\" (CH4-fig4-13.c1, CH4-fig413.f1) -- "
-        "horizontal; the page and its own figure disagree, and no "
-        "prose on either page resolves it. COMPARATOR-MATCH-STARTS-"
-        "OUTPUT-AT-HSTART above already measures and grades the "
-        "horizontal side: this module's own load comparator matches "
-        "hpos against a written HSTART value built from SPRxPOS and "
-        "SPRxCTL, and this module's own disclosed port list (BOUNDARY, "
-        "above) carries hpos but no vertical-position input at all to "
-        "compare a \"Y value\" against -- the same absence already "
-        "given for VERTICAL-EXTENT-NOT-AT-THIS-BOUNDARY. A vertical "
-        "comparison does exist elsewhere in this RTL, but in a "
-        "different module, outside this package's own boundary: "
+        "\"SPRxPOS (horiz.)\" -- horizontal; the page and its own "
+        "figure disagree. The classification's own conflict_resolution "
+        "does resolve which reading this corpus takes: p124 line 49, "
+        "Figure 4-13 and appendix A p284 all say horizontal against "
+        "this one sentence alone, so the figure's own reading is "
+        "graded whole above on COMPARATOR-MATCH-STARTS-OUTPUT-AT-"
+        "HSTART (graded: CH4-fig4-13.c1, CH4-fig413.f1), not recorded "
+        "here. "
+        "What stays recorded is the disputed sentence itself, "
+        "CH4-hw.c21 and CH4-p124.c15: this module's own disclosed port "
+        "list (BOUNDARY, above) carries hpos but no vertical-position "
+        "input at all to compare a \"Y value\" against -- the same "
+        "absence already given for VERTICAL-EXTENT-NOT-AT-THIS-"
+        "BOUNDARY -- so this page's own outlier sentence cannot be "
+        "tested at this boundary, whichever way the dispute resolves. "
+        "A vertical comparison does exist elsewhere in this RTL, but "
+        "in a different module, outside this package's own boundary: "
         "agnus_spritedma's own DMA-start condition compares a vertical "
         "beam position against a vertical start value. Measured for "
-        "the record, asserted nowhere. CH4-hw.c21, CH4-p124.c15, "
-        "CH4-fig4-13.c1, CH4-fig413.f1 .");
+        "the record, asserted nowhere. CH4-hw.c21, CH4-p124.c15 .");
 
     checks.record(
         "CONVERTER-NAME-IS-DISPUTED-BEHAVIOUR-IS-NOT [recorded]: the "
