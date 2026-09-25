@@ -98,7 +98,8 @@
 //     in software, not a hardware behaviour of this module - agnus_blitter_
 //     minterm.v has no notion of "which bitplane" and applies the same
 //     combinational function regardless. Not constructible at this
-//     boundary.
+//     boundary. Routed record:ch6-blitter-minterm; printed as a RECORDED
+//     line by main() below, not left in this comment alone.
 //   ch6-fig613.f13 (p.199, figure 6-13: "A hold", "B hold", "C hold"
 //     register the shifted/plain sources before this module sees them)
 //     describes the mechanism that PLACES values on ain/bin/cin
@@ -303,6 +304,8 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    void note(const std::string& msg)   { std::cout << "MEASURED: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -913,6 +916,27 @@ int main(int argc, char** argv) {
             "ch6-fig613.f24)" +
             (diff != (1U << 0) ? " -- actual changed bits=" + hex4(diff) : ""));
     }
+
+    // ---------------- declined claim: ch6-minterms.c10 (routed record, not graded) ----------------
+    //
+    // Routed record:ch6-blitter-minterm rather than to an assertion (see file
+    // header, CLAIM COVERAGE): the router's own reason is that reusing one
+    // mask bitplane "in turn on" each background bitplane is a property of
+    // the memory image the caller/testbench builds, not of any port on this
+    // module -- the neighbouring claims from the same passage were discarded
+    // for the identical reason (ch6-minterms.c9, 6-function-generator.c40).
+    // Printed here, not left in the header comment alone.
+    checks.record(
+        "ch6-minterms.c10 (p.176, quote: 'depth of the background bitplane. "
+        "This mask can be used in turn on' -- restated: 'The same "
+        "single-bitplane mask can be used in turn on each of the background "
+        "bitplanes.'): describes a multi-bitplane looping convention in "
+        "software -- which bitplane the mask is currently applied to is a "
+        "property of the memory image the caller builds, not of any port on "
+        "agnus_blitter_minterm (agnus_blitter_minterm.v:7-14 has no notion "
+        "of \"which bitplane\"; the module applies the same combinational "
+        "function regardless). Not constructible at this module's boundary "
+        "-- declined, not graded.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     dut.final();
