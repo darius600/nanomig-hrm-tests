@@ -233,53 +233,60 @@ own colour and ENBPLCN3=1 blanks it to black.
 
 Cited by: `opus:7-appC-bplcon2.c9`.
 
-### P12 -- Appendix C's ECS register map places BPLCON2 at word offset $104 and marks it changed from OCS
+### P12 -- Appendix C's ECS register map places BPLCON2 at word offset $104
 
-> "104 BPLCON2 chg   WA" (printed p.298, Appendix C ECS register map; the
-> quotation is the corpus row as scanned -- the row's function text sits on
-> a different line of the same page and reads, once restored,
-> "Bitplane control (video priority control)")
+> "104 BPLCON2 chg   WA" (printed p.298, Appendix C ECS register map)
 
-Two propositions from the same table row:
+Testable form: PF2PRI (bit 6, P10) switches the painted playfield when
+written to word address $104; the identical bit pattern written to a
+neighbouring Denise address does not. This package's own Non-goals leave
+BPLCON2's address, as a subject in its own right, to
+`hrm/ch3-register-map-denise` -- this proposition only shows that $104,
+and not a neighbour, is where this package's own PF2PRI effect lives.
 
-- **Address** -- BPLCON2 is reached at word offset $104 on the ECS map.
-  Every proposition above that grades a BPLCON2-controlled effect (P7's
-  KILLEHB, P10's PF2PRI) does so by writing exactly that address and
-  observing the graded effect tied to it, which is what the row's "$104"
-  column states. This package's own Non-goals leave BPLCON2's address, as a
-  subject in its own right, to `hrm/ch3-register-map-denise`.
-- **"chg" mark** -- BPLCON2 is annotated changed from OCS on the ECS map.
-  The one concrete instance of that change this package's own claims
-  establish is P7's ECS half: bit 9 carries no OCS function (P7, undisputed)
-  and gains KILLEHB under ECS (P7, asserted) -- a function the OCS-era map
-  does not carry.
+Cited by: `sol:7-appC-map-bplcon2.c1`.
 
-Cited by: `sol:7-appC-map-bplcon2.c1` (address), `sol:7-appC-map-bplcon2.c2`
-("chg" mark).
+### P13 -- Appendix C's ECS register map marks BPLCON2 changed from OCS
 
-### P13 -- ECS BPLCON2's function retains video-priority control; the same row's genlock-field addition is only partly reachable at this boundary
+> "104 BPLCON2 chg   WA" (printed p.298, Appendix C ECS register map)
+
+The one concrete instance of that change this package's own claims
+establish is P7's ECS half: bit 9 carries no OCS function (P7, undisputed)
+and gains KILLEHB under ECS (P7, asserted) -- a function the OCS-era map
+does not carry. Co-cited on BPLCON2-BIT9-KILLEHB-LIVE-ECS, the same way
+this file already co-cites the Appendix A/B (E) mark there.
+
+Cited by: `sol:7-appC-map-bplcon2.c2`.
+
+### P14 -- ECS BPLCON2's function retains video-priority control and adds the p.307 genlock fields
 
 > "104 BPLCON2 chg   WA" [restored function text, same page:] "Bitplane
 > control (video priority control)" (printed p.298, Appendix C ECS register
 > map)
 
-A bundled claim, split as the classification already records it:
+A bundled claim: its own text states both a video-priority half and a
+genlock-fields half, and only one is reachable at this boundary.
 
-- **Video-priority half (testable)**: under `ecs=1`, BPLCON2 still selects
-  between playfields by PF2PRI (bit 6) -- P10's own testable form,
-  established by VIDEO-PRIORITY-PF2PRI-LIVE.
-- **Genlock-fields half (not testable at this boundary)**: five of the six
-  p.307 fields this half would need (ZDBPSEL2, ZDBPSEL1, ZDBPSEL0, ZDBPEN,
-  ZDCTEN) are already recorded elsewhere in this document (P2-P6) as
-  unimplemented; the sixth (KILLEHB) is P7's own centerpiece and is asserted
-  there, under its own id. absent_signal: "a genlock/border output driven
-  from bplcon2[14:9]" as the single, undivided field this half would need.
-  reason_kind: absent.
+- **Video-priority half**: under `ecs=1`, BPLCON2 still selects between
+  playfields by PF2PRI (bit 6) -- independently established by P10's own
+  testable form (VIDEO-PRIORITY-PF2PRI-LIVE), under P10's own id, not this
+  one.
+- **Genlock-fields half**: of the six p.307 fields this half points to,
+  KILLEHB (bit 9) is P7's own centerpiece and is asserted there, under its
+  own id; the other five (ZDBPSEL2, ZDBPSEL1, ZDBPSEL0, ZDBPEN, ZDCTEN,
+  bits 14-10) have no consumer and no output port in this design (absent)
+  and are already recorded per bit in this document (P2-P6). absent_signal:
+  "a genlock/border output driven from bplcon2[14:9]". reason_kind: absent.
 
 Per the rule that an id whose claim bundles an untested clause is withdrawn
-whole: `sol:7-appC-map-bplcon2.c5` stays off every graded line. The
-video-priority half it also states is already established under P10's own
-id, not this one.
+whole: `sol:7-appC-map-bplcon2.c5` stays off every graded line and is
+recorded instead, co-cited on each of the five BPLCON2-BITn-ECS-NOT-
+ASSERTED lines (bits 14-10). It does not go on VIDEO-PRIORITY-PF2PRI-LIVE:
+that assertion establishes the video-priority half in full, but not the
+genlock-fields half this claim also states, so the whole id is declined,
+not kept with a caveat. This is what `check_uid_placement.py` checks for a
+claim it finds on both a graded and a declined line, and which side of
+that pair loses the id.
 
 Cited by: `sol:7-appC-map-bplcon2.c5` (recorded, not asserted).
 
@@ -289,11 +296,8 @@ Cited by: `sol:7-appC-map-bplcon2.c5` (recorded, not asserted).
   p.307's ZDBPSEL2, ZDBPSEL1, ZDBPSEL0, ZDBPEN and ZDCTEN) -- see P2-P6
   above. Each of these claims is otherwise turned into an assertion (its OCS
   half); only this remainder is recorded, per each claim's own
-  `conflict_resolution`.
-- P13's genlock-fields half (`sol:7-appC-map-bplcon2.c5`) -- absent_signal
-  "a genlock/border output driven from bplcon2[14:9]", reason_kind absent.
-  The claim's other half (video priority) is asserted, but under P10's own
-  id, not this one; see P13.
+  `conflict_resolution`. P14's genlock-fields half is co-cited on the same
+  five recorded lines.
 
 ## Precondition to assert
 
@@ -348,7 +352,8 @@ All 21 claims in `ch7-bplcon2-live-bits-and-ecs-spec-stage.jsonl`:
 - P9: `opus:7-appA-bplcon2.c13` (1)
 - P10 (added by repair): `opus:7-vp.c16` (1)
 - P11 (added by repair): `opus:7-appC-bplcon2.c9` (1)
-- P12: `sol:7-appC-map-bplcon2.c1`, `sol:7-appC-map-bplcon2.c2` (2)
-- P13 (recorded, not asserted): `sol:7-appC-map-bplcon2.c5` (1)
+- P12: `sol:7-appC-map-bplcon2.c1` (1)
+- P13: `sol:7-appC-map-bplcon2.c2` (1)
+- P14 (asserted and recorded, one half each): `sol:7-appC-map-bplcon2.c5` (1)
 
-4 + 1 + 1 + 1 + 1 + 1 + 5 + 1 + 1 + 1 + 1 + 2 + 1 = 21.
+4 + 1 + 1 + 1 + 1 + 1 + 5 + 1 + 1 + 1 + 1 + 1 + 1 + 1 = 21.

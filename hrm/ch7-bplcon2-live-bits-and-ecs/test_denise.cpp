@@ -77,25 +77,32 @@
 //   package's own file header documents amiga_clk.v's c1/c3 overlap trap in
 //   full; repeating the working pattern here rather than re-deriving it).
 //
-// CLAIM GROUPS -- every one of the 18 claim uids in
+// CLAIM GROUPS -- every one of the 21 claim uids in
 //   ch7-bplcon2-live-bits-and-ecs.jsonl is cited, in full, on the single
 //   assertion (or note/record) that tests, measures or declines it,
 //   matching hrm/ch3-register-map-denise's own convention:
 //   CONTROL-FIXTURE-ALIVE (no claim uid)
+//   BPLCON2-ADDRESS-0x104-LIVE (1 uid)
 //   VIDEO-PRIORITY-PF2PRI-LIVE (1 uid)
 //   BPLCON2-BIT15-OCS/-ECS-MEASURED + BPLCON2-BIT15-NOT-GRADED (4 uids)
-//   BPLCON2-BIT14-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT14-ECS-RECORDED (same uid)
-//   BPLCON2-BIT13-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT13-ECS-RECORDED (same uid)
-//   BPLCON2-BIT12-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT12-ECS-RECORDED (same uid)
-//   BPLCON2-BIT11-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT11-ECS-RECORDED (same uid)
-//   BPLCON2-BIT10-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT10-ECS-RECORDED (same uid)
+//   BPLCON2-BIT14-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT14-ECS-RECORDED (same
+//     uid, plus sol:7-appC-map-bplcon2.c5 co-cited, declined here -- counted
+//     once, under BIT14-ECS-RECORDED, not repeated at BIT13/12/11/10 below)
+//   BPLCON2-BIT13-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT13-ECS-RECORDED (same
+//     uid, plus sol:7-appC-map-bplcon2.c5 co-cited, not counted again)
+//   BPLCON2-BIT12-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT12-ECS-RECORDED (same
+//     uid, plus sol:7-appC-map-bplcon2.c5 co-cited, not counted again)
+//   BPLCON2-BIT11-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT11-ECS-RECORDED (same
+//     uid, plus sol:7-appC-map-bplcon2.c5 co-cited, not counted again)
+//   BPLCON2-BIT10-OCS-MEASURED + -NOT-GRADED (1 uid) + BIT10-ECS-RECORDED (same
+//     uid, plus sol:7-appC-map-bplcon2.c5 co-cited, not counted again)
 //   EHB-ACTIVE-PRECONDITION (engineering precondition, no manual page)
 //   BPLCON2-BIT9-OCS-MEASURED + -NOT-GRADED (1 uid)
-//   BPLCON2-BIT9-KILLEHB-LIVE-ECS (2 uids + 2 co-cited (E)-mark uids)
+//   BPLCON2-BIT9-KILLEHB-LIVE-ECS (3 uids + 2 co-cited (E)-mark uids)
 //   BPLCON2-BIT8-OCS/-ECS-MEASURED + -NOT-GRADED (1 uid)
 //   BPLCON2-BIT7-OCS/-ECS-MEASURED + -NOT-GRADED (1 uid)
 //   ENBPLCN3-ENABLES-BRDRBLNK (1 uid)
-//   18 uids total: 4+1+1+1+1+1+1+2+2+1+1+1+1 = 18.
+//   21 uids total: 1+1+4+1+1+1+1+1+1+1+3+2+1+1+1 = 21.
 //
 // REPAIR (independent validation, work/2026-09-13_ch7_sol_validation_B2.md,
 //   slice B2, findings 1/5/6/7):
@@ -134,7 +141,7 @@
 //   PROMOTED to ENBPLCN3-ENABLES-BRDRBLNK: a graded enable/disable
 //   experiment at the already-opened denise boundary, no debug port added.
 //
-// MUTATION-LOG SUMMARY (5 assertions, 5 mutation flags; each was actually
+// MUTATION-LOG SUMMARY (6 assertions, 6 mutation flags; each was actually
 //   built with its own flag defined to 1, confirmed to turn only its own
 //   assertion red with no change to any expected value, then rebuilt with
 //   no flags to confirm the clean baseline returned). Demoted checks
@@ -168,15 +175,18 @@
 // MUTATION ENBPLCN3-ENABLES-BRDRBLNK stimulus red: the "ENBPLCN3=1" arm's
 //   own BPLCON0 write never actually set bit 0, so the border never
 //   blanked and both arms read white. (MUT_ENBPLCN3)
+// MUTATION BPLCON2-ADDRESS-0x104-LIVE stimulus red: the "neighbour" write
+//   landed on BPLCON2's own address ($104) instead of the neighbouring
+//   $106, so both arms wrote PF2PRI through the same register and painted
+//   the same playfield. (MUT_BPLCON2_ADDRESS)
 //
-// Baseline (no MUT_ flag defined): 5 passed, 0 failed (measured after this
-// repair; see the coordinator's build report for the before/after
-// baseline accounting). Every one of the 5 mutations above was built and
-// run individually (`make MUT=-DMUT_<NAME>=1`) and every one produced
-// exactly 4 passed, 1 failed -- only the named assertion turned red, no
-// other assertion moved, and a plain `make` afterward returned to 5
-// passed, 0 failed. No expected value was changed by any of them; only
-// what each check asks the module to do.
+// Baseline (no MUT_ flag defined): 6 passed, 0 failed. Every one of the 6
+// mutations above was built and run individually
+// (`make MUT=-DMUT_<NAME>=1`) and every one produced exactly 5 passed, 1
+// failed -- only the named assertion turned red, no other assertion moved,
+// and a plain `make` afterward returned to 6 passed, 0 failed. No expected
+// value was changed by any of them; only what each check asks the module
+// to do.
 //
 // GATE READABILITY, closed: an earlier draft graded all twelve
 //   BPLCON2-BITn-DEAD-* assertions through one shared function,
@@ -201,6 +211,38 @@
 // was built independently rather than copied from the classification
 // stage's own dn2.cpp harness. Reported per the coordinator's instruction,
 // not silently reconciled.
+//
+// EXTENSION -- three claims added for Appendix C's ECS register-map row for
+//   BPLCON2 (p.298, "104 BPLCON2 chg   WA"), SPECIFICATION.md P12-P14:
+//   (P12) the address itself, $104 -- PROMOTED to its own assertion,
+//   BPLCON2-ADDRESS-0x104-LIVE: the same PF2PRI discriminator P10 already
+//   uses (bplcon2[6], denise_playfields.v:24) written to word address $104
+//   switches the painted playfield; written to the neighbouring address
+//   $106 (BPLCON3) it does not -- BPLCON3's own bit 6 (spres, denise.v's
+//   `spres = bplcon3[7:6] & {2{aga}}`) is itself forced off at aga=0, so
+//   the neighbour write is a clean, argued no-op, not merely an untried
+//   one. This package's Non-goals still leave BPLCON2's address as a
+//   subject of its own to hrm/ch3-register-map-denise; this assertion only
+//   shows $104 is where THIS package's own effects live.
+//   (P13) the "chg" mark -- co-cited on BPLCON2-BIT9-KILLEHB-LIVE-ECS,
+//   the same way the Appendix A/B (E) mark already is: KILLEHB is the one
+//   function this design's BPLCON2 gains under ECS that OCS's map does not
+//   carry, which is what "chg" states.
+//   (P14) the bundled video-priority/genlock claim -- its own text states
+//   both halves, and only one is reachable here (five of the six p.307
+//   fields it points to have no consumer and no output port in this
+//   design; the sixth, KILLEHB, is already asserted under its own id, not
+//   this one), so per the rule that an id whose claim bundles an untested
+//   clause is withdrawn whole, this uid stays off every graded line and is
+//   recorded instead, co-cited on each of the five BPLCON2-BITn-ECS-NOT-
+//   ASSERTED lines for bits 14-10. The video-priority half it also states
+//   is independently established, but under P10's own id (opus:7-vp.c16
+//   on VIDEO-PRIORITY-PF2PRI-LIVE), not this one -- check_uid_placement.py
+//   is what settles a claim that is both asserted and declined in this
+//   direction, toward the record lines, not the graded one.
+//   No existing predicate, expected value, or label text changed by this
+//   extension -- confirmed by rebuilding to the identical baseline first,
+//   with only claim ids added to six already-existing labels.
 
 #include <cstdio>
 #include <cstdint>
@@ -224,6 +266,9 @@
 #endif
 #ifndef MUT_ENBPLCN3
 #define MUT_ENBPLCN3 0
+#endif
+#ifndef MUT_BPLCON2_ADDRESS
+#define MUT_BPLCON2_ADDRESS 0
 #endif
 
 namespace {
@@ -470,6 +515,57 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
+    // BPLCON2-ADDRESS-0x104-LIVE -- sol:7-appC-map-bplcon2.c1 (p.298, "104
+    // BPLCON2 chg   WA", Appendix C ECS register map): BPLCON2 is reached at
+    // word offset $104. Reuses the PF2PRI discriminator (bit 6, p.210/271,
+    // already this package's own P10 observable) as the live signal:
+    // writing it to $104 switches which playfield paints; writing the
+    // identical bit pattern to the neighbouring Denise address $106
+    // (BPLCON3) does not. denise.v gates BPLCON3 bit 6 (spres) on `aga`,
+    // and this file's rig holds aga=0 throughout, so the neighbour write is
+    // an argued no-op, not merely an untried one. This package's own
+    // Non-goals leave BPLCON2's address, as a subject in its own right, to
+    // hrm/ch3-register-map-denise; this assertion only shows that $104,
+    // not a neighbour, is where this package's own effects live.
+    // =========================================================================
+    {
+        auto measure_priority_at = [](uint16_t addr) -> uint32_t {
+            Harness h(true);  // ecs=1
+            h.write_reg(BPLCON0_ADDR, 0x2400);   // bpu=2, dpf=1, ham=0
+            h.write_reg(BPLCON2_ADDR, 0x0000);    // baseline: PF2PRI=0
+            h.write_reg(addr, BIT6);              // the write under test
+            h.write_reg(COLOR_BASE + 1, 0x0F00);  // COLOR01: red   (pf1 wins, PF2PRI=0)
+            h.write_reg(COLOR_BASE + 9, 0x00F0);  // COLOR09: green (pf2 wins, PF2PRI=1)
+            h.write_reg(DIWSTRT_ADDR, 0x0030);
+            h.write_reg(DIWSTOP_ADDR, 0x00A0);
+            h.sample_at_hpos(0x0130);
+            h.pulse_strhor();
+            h.advance_hpos(0x30 - 2);
+            for (int r = 0; r < 8; ++r) {
+                h.write_reg(BPL2DAT_ADDR, 0xFFFF);
+                h.write_reg(BPL1DAT_ADDR, 0xFFFF);
+            }
+            return h.current_rgb();
+        };
+
+        uint16_t neighbour_addr = BPLCON3_ADDR;
+#if MUT_BPLCON2_ADDRESS
+        neighbour_addr = BPLCON2_ADDR;  // stimulus red: the "neighbour" write lands on BPLCON2 too
+#endif
+        uint32_t at_bplcon2  = measure_priority_at(BPLCON2_ADDR);
+        uint32_t at_neighbor = measure_priority_at(neighbour_addr);
+        uint32_t red   = pack(0xFF, 0x00, 0x00);
+        uint32_t green = pack(0x00, 0xFF, 0x00);
+        checks.expect(at_bplcon2 == green && at_neighbor == red,
+            "BPLCON2-ADDRESS-0x104-LIVE (sol:7-appC-map-bplcon2.c1; p.298, \"104 BPLCON2 chg "
+            "WA\", Appendix C ECS register map): writing PF2PRI (bit 6) to word address $104 "
+            "paints COLOR09 (0x" + hexrgb(at_bplcon2) + ", playfield 2 in front), while writing "
+            "the identical bit pattern to the neighbouring address $106 leaves playfield 1 in "
+            "front (0x" + hexrgb(at_neighbor) + ") -- the PF2PRI effect lives at $104, not at "
+            "a neighbour.");
+    }
+
+    // =========================================================================
     // VIDEO-PRIORITY-PF2PRI-LIVE -- opus:7-vp.c16 (p.210, "You control the
     // video priorities by using the bits in BPLCON2 ... as shown in Table
     // 7-1") is testable, not merely framing (repair, finding 6:
@@ -511,7 +607,8 @@ int main(int argc, char** argv) {
         uint32_t red   = pack(0xFF, 0x00, 0x00);
         uint32_t green = pack(0x00, 0xFF, 0x00);
         checks.expect(pf1_front == red && pf2_front == green && pf1_front != pf2_front,
-            "VIDEO-PRIORITY-PF2PRI-LIVE (opus:7-vp.c16; p.210, \"You control the video "
+            "VIDEO-PRIORITY-PF2PRI-LIVE (opus:7-vp.c16; p.210, "
+            "\"You control the video "
             "priorities by using the bits in BPLCON2 ... as shown in Table 7-1\"): with a "
             "fully-covered two-bitplane dual-playfield line (BPLCON0=$2400), PF2PRI=0 paints "
             "COLOR01 (0x" + hexrgb(pf1_front) + ", playfield 1 in front) and PF2PRI=1 paints "
@@ -621,7 +718,8 @@ int main(int argc, char** argv) {
         checks.note("BPLCON2-BIT14-ECS (ZDBPSEL2, appendix C p.307): diff=" + std::to_string(diff) +
                      " of 120 -- confirms opus:7-appA-bplcon2.c6's conflict_resolution that this "
                      "design does not implement it.");
-        checks.record("BPLCON2-BIT14-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c6; p.307): appendix C "
+        checks.record("BPLCON2-BIT14-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c6, "
+                       "sol:7-appC-map-bplcon2.c5; p.307): appendix C "
                        "names bit 14 ZDBPSEL2 on ECS; recorded per SPECIFICATION.md P2, not asserted "
                        "-- the manual states a function this design does not implement, so there is "
                        "nothing to grade a pass/fail against.");
@@ -647,7 +745,8 @@ int main(int argc, char** argv) {
         checks.note("BPLCON2-BIT13-ECS (ZDBPSEL1, appendix C p.307): diff=" + std::to_string(diff) +
                      " of 120 -- confirms opus:7-appA-bplcon2.c7's conflict_resolution that this "
                      "design does not implement it.");
-        checks.record("BPLCON2-BIT13-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c7; p.307): appendix C "
+        checks.record("BPLCON2-BIT13-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c7, "
+                       "sol:7-appC-map-bplcon2.c5; p.307): appendix C "
                        "names bit 13 ZDBPSEL1 on ECS; recorded per SPECIFICATION.md P3, not asserted.");
     }
 
@@ -671,7 +770,8 @@ int main(int argc, char** argv) {
         checks.note("BPLCON2-BIT12-ECS (ZDBPSEL0, appendix C p.307): diff=" + std::to_string(diff) +
                      " of 120 -- confirms opus:7-appA-bplcon2.c8's conflict_resolution that this "
                      "design does not implement it.");
-        checks.record("BPLCON2-BIT12-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c8; p.307): appendix C "
+        checks.record("BPLCON2-BIT12-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c8, "
+                       "sol:7-appC-map-bplcon2.c5; p.307): appendix C "
                        "names bit 12 ZDBPSEL0 on ECS; recorded per SPECIFICATION.md P4, not asserted.");
     }
 
@@ -695,7 +795,8 @@ int main(int argc, char** argv) {
         checks.note("BPLCON2-BIT11-ECS (ZDBPEN, appendix C p.307): diff=" + std::to_string(diff) +
                      " of 120 -- confirms opus:7-appA-bplcon2.c9's conflict_resolution that this "
                      "design does not implement it.");
-        checks.record("BPLCON2-BIT11-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c9; p.307): appendix C "
+        checks.record("BPLCON2-BIT11-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c9, "
+                       "sol:7-appC-map-bplcon2.c5; p.307): appendix C "
                        "names bit 11 ZDBPEN on ECS; recorded per SPECIFICATION.md P5, not asserted.");
     }
 
@@ -719,7 +820,8 @@ int main(int argc, char** argv) {
         checks.note("BPLCON2-BIT10-ECS (ZDCTEN, appendix C p.307): diff=" + std::to_string(diff) +
                      " of 120 -- confirms opus:7-appA-bplcon2.c10's conflict_resolution that this "
                      "design does not implement it.");
-        checks.record("BPLCON2-BIT10-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c10; p.307): appendix C "
+        checks.record("BPLCON2-BIT10-ECS-NOT-ASSERTED (opus:7-appA-bplcon2.c10, "
+                       "sol:7-appC-map-bplcon2.c5; p.307): appendix C "
                        "names bit 10 ZDCTEN on ECS; recorded per SPECIFICATION.md P6, not asserted.");
     }
 
@@ -824,7 +926,8 @@ int main(int argc, char** argv) {
         // assertions in ch7-inter-sprite-priority: an expected value taken from
         // the implementation rather than from the page.
         checks.expect(halved == expect_halved && fold_removed != expect_halved,
-            "BPLCON2-BIT9-KILLEHB-LIVE-ECS (sol:7-appC-bplcon2.c5, opus:7-appC-bplcon2.c7; "
+            "BPLCON2-BIT9-KILLEHB-LIVE-ECS (sol:7-appC-bplcon2.c5, opus:7-appC-bplcon2.c7, "
+            "sol:7-appC-map-bplcon2.c2; "
             "p.307, \"09 KILLEHB Kill halfbrite\"; co-cited sol:7-appA-bplcon2.c4 p.271 and "
             "sol:7-appB-bplcon2.c5 p.291, the (E) mark): killehb=0 reads 0x" + hexrgb(halved) +
             " (expected 0x7F007F, COLOR00 folded and halved) and killehb=1 reads 0x"
