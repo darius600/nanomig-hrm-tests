@@ -442,23 +442,26 @@ static void expectBpuZeroBackground(const std::string& id, int page, const std::
   char buf[512];
   std::snprintf(buf, sizeof(buf),
                 "%s (p.%d, %s): BPU=000, all six planes hard-driven (0xFFFF each) -- "
-                "measured pixel equals COLOR00's own preloaded rgb (0,0,0) throughout the "
-                "scan, not a fixed/dead value (see MEASURED comparator-liveness line) -- %s",
+                "measured pixel equals COLOR00's own content at BOTH its normal preload "
+                "(rgb 0,0,0) AND overridden to a distinctive non-zero value (0x0f0f), so the "
+                "comparator is shown to track actual COLOR00 content rather than a fixed "
+                "constant it would report regardless of what COLOR00 holds -- %s",
                 id.c_str(), page, reader.c_str(), restatement.c_str());
-  expect(g_bpu0_bg_default_ok, buf);
+  expect(g_bpu0_bg_default_ok && g_bpu0_bg_probe_ok, buf);
 }
 
 static void expectSixthPlaneDblpf(const std::string& id, int page, const std::string& reader,
                                    const std::string& restatement) {
   char buf[512];
   std::snprintf(buf, sizeof(buf),
-                "%s (p.%d, %s): affirmative half only -- plane 6 measured reaching "
-                "playfield 2's index range under DBLPF=1 (g_pf2_ok) and measured acting "
-                "as a HAM control bit under HOMOD=1 (g_ham_ok), both at BPU=6, the same "
-                "evidence already used for 3-bplcon0.c21/3-t5.c16 above -- the footnote's "
-                "\"only\" qualifier is NOT asserted (see SPEC.md's EHB-tension note) -- %s",
+                "%s (p.%d, %s): affirmative half only -- plane 6 driven ALONE, DBLPF=1, "
+                "BPU=6, measured colour index equals 12 exactly (p.70 Table 3-11: plane 6 "
+                "is playfield 2's most significant bit, bit combination 100 -> COLOR12), "
+                "not the broad 8..15 range a bundled planes-2/4/6 measurement cannot tell "
+                "apart from plane 6 contributing nothing -- the footnote's \"only\" "
+                "qualifier is NOT asserted (see SPEC.md's EHB-tension note) -- %s",
                 id.c_str(), page, reader.c_str(), restatement.c_str());
-  expect(g_pf2_ok && g_ham_ok, buf);
+  expect(g_pf2_plane6_alone_ok, buf);
 }
 
 static void expectHiresDualPf1(const std::string& id, int page, const std::string& reader,
@@ -579,7 +582,6 @@ static void runAllClaims() {
   assertDblpfGroup("3-dual-mode.c12", 68, "sol", "The labels above both source playfields state that each playfield can contain 1, 2, or 3 bitplanes.");
   assertDblpfGroup("3-dual-activate.c2", 72, "sol", "DBLPF groups all odd-numbered bitplanes together for color interpretation.");
   assertDblpfGroup("3-dual-activate.c3", 72, "sol", "DBLPF groups all even-numbered bitplanes together for color interpretation.");
-  assertDblpfGroup("3-dual-activate.c4", 72, "sol", "DBLPF changes the hardware movement behavior of the bitplanes on-screen.");
   SKIP("3-big.c13", 76, "opus", "a pure arithmetic formula, not an RTL-observable behaviour");
   SKIP("3-vscroll.c7", 81, "sol", "outside the denise-only fixture boundary (Agnus/DMA/timing function)");
   SKIP("3-vscroll.c8", 81, "sol", "outside the denise-only fixture boundary (Agnus/DMA/timing function)");
@@ -759,10 +761,10 @@ static void runAllClaims() {
   assertEcsReassignBit0("C-genlock-ext.c17", 307, "sol", "ECS BPLCON0 bit 0 ENBPLCN3 enables the new BPLCON3 register.");
 
   // -------------------------------------------------------------------------
-  // This package's extension claims: 10 graded, 1 recorded. Everything above
+  // This package's extension claims: 9 graded, 2 recorded. Everything above
   // this point is unchanged.
   // -------------------------------------------------------------------------
-  // MUTATION 3-bplcon0.c18 stimulus red: BPLCON0 changed from BPU=000 to BPU=001 with plane 1 driven (0xFFFF), COLOR0 left at its default preload -- the same "pixel equals COLOR00" comparator now reads false (plane 1's data shows through instead of the background colour); reverted to BPU=000, confirmed green again.
+  // MUTATION 3-bplcon0.c18 stimulus red: BPLCON0 changed from BPU=000 to BPU=001 (measureBpuZeroAgainstColor0's own BPU stimulus, driving the default AND the non-black probe run this assertion now grades together) with plane 1 driven (0xFFFF) -- both runs' "pixel equals COLOR00" comparator now reads false (plane 1's data shows through instead); reverted to BPU=000, confirmed green again -- verified: 229/233 PASS, 4 FAIL, and the four BPU=000 ids below are the only new FAILs.
   expectBpuZeroBackground("3-bplcon0.c18", 48, "sol", "Selecting zero bitplanes shows only the background color.");
   // MUTATION 3-t5.c02 stimulus red: same BPU=001 stimulus run as 3-bplcon0.c18 immediately above (shared measurement); reverted, confirmed green again.
   expectBpuZeroBackground("3-t5.c02", 48, "opus", "Table 3-5 footnote: with BPU=000 only the background colour is shown and no playfield is visible.");
@@ -776,35 +778,39 @@ static void runAllClaims() {
        (g_bpu0_bg_stillbg_under_bpu1 ? "true (plane 1 did NOT show through -- unexpected)"
                                       : "false (plane 1's data shows through instead)") +
        ", confirming the comparator is sensitive to the BPU=000 condition it names.");
-  note(std::string("BPU=000 background-colour comparator liveness (supplementary): COLOR0 "
-       "overridden from the default preload (0x0000 -> rgb 0,0,0) to 0x0f0f (rgb 0xff,0x00,0xff) "
-       "before the same BPU=000/all-planes-driven measurement; the observed pixel ") +
-       (g_bpu0_bg_probe_ok ? "tracked the new COLOR0 value exactly" : "did NOT track the new COLOR0 value") +
-       " -- confirms the comparator compares against actual COLOR00 content, not a fixed constant "
-       "it would report regardless.");
 
-  // MUTATION 3-bplcon0.c20 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped) turned this assertion red -- run via `make MUTANT=M2 test`; reverted (plain `make -B test`), confirmed green again. Implementation mutations are this package's own accepted convention (MUTATIONS.md: all of its pre-existing 235 assertions are mutation-tested this way, not by a stimulus change) and the gate itself treats "implementation" as counting the same as "stimulus" for this purpose.
+  // MUTATION 3-bplcon0.c20 stimulus red: plane 6 left undriven (0x8000 -> 0x0000, all six planes then zero) in the same DBLPF=1/BPU=6 plane-6-alone measurement -- no pixel in the scan ever decodes to a non-zero index (transparent throughout; nothing reaches 12), so the exact-value comparator goes red; reverted, confirmed green again -- verified: 232/233 PASS, 1 FAIL, and 3-bplcon0.c20 is the only new FAIL.
   expectSixthPlaneDblpf("3-bplcon0.c20", 48, "sol", "The sixth bitplane is available in dual-playfield mode.");
 
-  // MUTATION 3-dual.c46 stimulus green: this claim's own verdict is already red against the unmutated RTL (see the expect() call below), so mutating harder is not the applicable technique -- substituted per Prompt 7's "different mechanism, same comparator" method instead. The same transition-clock-offset comparator this assertion's inequality depends on, fed a different, known-live stimulus (BPLCON1 PF2H nibble 4 vs nibble 12 compared directly under one fixed DBLPF setting, rather than across DBLPF settings), reads a real, non-zero difference (measured directly below), confirming the comparator is not vacuous.
+  // Not graded: p.85's own warning predicts the identical shift this
+  // comparator reads under DBLPF=0 and DBLPF=1 (see the RECORDED line
+  // below), so an inequality between them is not the applicable comparator
+  // for this clause. Kept as a measurement, not an assertion.
   {
     char buf[768];
     std::snprintf(buf, sizeof(buf),
-        "3-dual.c46 (p.72, opus): measured directly, not via the colour-grouping proxy "
-        "3-dual-activate.c4 above uses for the sentence's other clause (that proxy does not "
-        "establish this one) -- plane 2 (a playfield-2/even plane) driven alone, BPLCON1 "
-        "PF2H nibble 4 vs nibble 12 compared: shifts its rendered position by %d clocks under "
-        "DBLPF=0 and by %d clocks under DBLPF=1 -- Selecting dual-playfield mode also changes "
-        "the way the hardware can move the bitplanes on the screen.",
+        "dual-playfield movement (p.72, opus): plane 2 (a playfield-2/even plane) driven "
+        "alone, BPLCON1 PF2H nibble 4 vs nibble 12 compared: shifts its rendered position by "
+        "%d clocks under DBLPF=0 and by %d clocks under DBLPF=1 -- equal, as p.85's warning "
+        "predicts (see RECORDED line below); not a DBLPF-dependent movement difference.",
         g_pf2h_shift_dblpf0, g_pf2h_shift_dblpf1);
-    expect(g_pf2h_shift_dblpf0 != g_pf2h_shift_dblpf1, buf);
-    note(std::string("dual-playfield movement comparator liveness (supplementary): the same ")
-         + "clock-offset-difference comparator, applied to PF2H nibble 4 vs nibble 12 directly "
-         "under DBLPF=0 alone (not compared across DBLPF settings), reads "
-         + std::to_string(g_pf2h_shift_dblpf0) +
-         " clocks -- non-zero, confirming the comparator can and does detect a real difference "
-         "when one is present, and the red verdict above is not an artifact of a dead comparator.");
+    note(buf);
   }
+  record("3-dual.c46 (p.72, opus): declined -- names the \"the way hardware can move the "
+         "bitplanes on the screen\" clause of page 72's DBLPF sentence. Measured directly "
+         "(plane 2 alone, BPLCON1 PF2H nibble 4 vs nibble 12, DBLPF=0 vs DBLPF=1 -- see the "
+         "MEASURED line above): the shift is identical either way. p.85's warning (\"Always "
+         "set all six bits, even if you have only one playfield. Set 3-0 and 7-4 to the same "
+         "value if you are using only one playfield\") is exactly why: PF2H governs "
+         "bitplanes 2, 4 and 6's delay the same way regardless of DBLPF, so the identical "
+         "shift is what the manual itself states, not a DBLPF-dependent movement mechanism "
+         "this fixture could show -- Selecting dual-playfield mode also changes the way the "
+         "hardware can move the bitplanes on the screen.");
+  record("3-dual-activate.c4 (p.72, sol): declined -- names the identical page-72 clause the "
+         "record above names, same reason (p.85). This package's colour-grouping evidence "
+         "(category 8's DBLPF=1/BPU=6 odd-vs-even measurement) does not establish it either: "
+         "SPEC.md's own category-8 note calls that a wrong-clause proxy for this clause -- "
+         "DBLPF changes the hardware movement behavior of the bitplanes on-screen.");
 
   // MUTATION 3-dual-planes.c5 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped) turned this assertion red -- run via `make MUTANT=M2 test`; an earlier draft of this measurement used a broad 1-7 acceptance range instead of the exact expected index 3, and mutation 2 did NOT flip it then (the RTL's single-playfield fallback value, 5, coincidentally also falls in 1-7) -- the exact-value form below is what was actually kept and re-verified red under mutation 2; reverted, confirmed green again. Implementation mutations are this package's own accepted convention, see the note on 3-bplcon0.c20 above.
   expectHiresDualPf1("3-dual-planes.c5", 68, "sol", "High-resolution dual-mode playfield 1 uses planes 1 and 3.");

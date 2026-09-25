@@ -213,9 +213,13 @@ footnote is asserted; the exclusive "only" half is not.
 | `3-t5.c16` | 48 | opus | Table 3-5 footnote: the sixth bitplane is used only in dual-playfield mode and in hold-and-modify mode. |
 | `3-bplcon0.c20` | 48 | sol | The sixth bitplane is available in dual-playfield mode. |
 
-3 assertion(s) in this category (`3-bplcon0.c20` -- the DBLPF half of the same
-footnote, using the same combined dual-playfield/HAM evidence as the two rows above it, since
-that evidence already covers this half).
+3 assertion(s) in this category. `3-bplcon0.c20` -- the DBLPF half of the same footnote --
+no longer shares the combined dual-playfield/HAM evidence the two rows above it use: that
+bundled range (planes 2, 4, 6 driven together, any index 8..15 accepted) does not discriminate
+plane 6's own contribution, and its HAM half grades a different claim (3-bplcon0.c21) entirely.
+It is graded instead by its own measurement: plane 6 driven ALONE, DBLPF=1, BPU=6, checked
+against the exact expected index 12 (p.70 Table 3-11: plane 6 is playfield 2's most significant
+bit).
 
 ### 4. Whole-register reload (no independent bit set)
 
@@ -352,7 +356,6 @@ sentence, graded separately in category 20 below.
 |---|---|---|---|
 | `3-dual-activate.c2` | 72 | sol | DBLPF groups all odd-numbered bitplanes together for color interpretation. |
 | `3-dual-activate.c3` | 72 | sol | DBLPF groups all even-numbered bitplanes together for color interpretation. |
-| `3-dual-activate.c4` | 72 | sol | DBLPF changes the hardware movement behavior of the bitplanes on-screen. |
 | `3-dual-mode.c12` | 68 | sol | The labels above both source playfields state that each playfield can contain 1, 2, or 3 bitplanes. |
 | `3-dual.c05` | 67 | opus | Each playfield in a dual display is formed from one, two or three bitplanes. |
 | `3-r0.c20` | 90 | opus | BPLCON0 bit 10 = 0 enables a single playfield. |
@@ -362,15 +365,14 @@ sentence, graded separately in category 20 below.
 | `C-bplcon0.b10` | 300 | opus | BPLCON0 bit 10 (DPF) is compatible with SuperHires mode. |
 | `C-shres.c15` | 300 | sol | Dual-playfield mode is compatible with ECS SuperHires. |
 
-11 assertion(s) in this category.
+10 assertion(s) in this category.
 
-**A note on `3-dual-activate.c4`, unchanged from before this package was extended:** this row's
-own claim, "DBLPF changes the hardware movement behavior of the bitplanes on-screen," is graded
-here by the colour-grouping evidence above -- which is the SAME wrong-clause proxy problem
-`3-dual.c46` (the identical clause, second reader) is NOT graded by, in category 20 below. That
-row predates this extension and stays as printed, per the rule that nothing already graded
-changes; category 20's measurement is the correct one for this clause and could resolve
-`3-dual-activate.c4` too, but that row is not this extension's to touch.
+**A note on `3-dual-activate.c4`:** this row's own claim, "DBLPF changes the hardware movement
+behavior of the bitplanes on-screen," is the SAME wrong-clause proxy problem `3-dual.c46` (the
+identical clause, second reader) is NOT graded by, in category 20 below. Both ids name the same
+page-72 "changes hardware movement" clause, which the colour-grouping evidence above does not
+establish; both are withdrawn to a RECORDED line citing p.85 -- see "Claims not asserted in this
+package", R10 below.
 
 ### 9. HOMOD (bit 11) -- hold-and-modify enable conditions
 
@@ -663,7 +665,7 @@ quoted text does not say that, and it is not measured here).
 
 4 assertion(s) in this category.
 
-### 20. Dual-playfield movement (PF1H/PF2H independence)
+### 20. Dual-playfield movement (PF1H/PF2H independence) -- withdrawn to record
 
 Measurement: the "changes hardware movement" clause of page 72's sentence (the clause
 `3-dual-activate.c4`/`3-dual.c46` name, distinct from the colour-grouping clause category 8
@@ -677,24 +679,23 @@ identical under DBLPF=0 and DBLPF=1 -- 32 clocks either way, for this nibble pai
 sweep matches point for point between the two DBLPF settings past an initial warm-up transient
 (a harness artifact, not an RTL property -- the very first one or two calls of this specific
 stimulus read a different absolute clock than every later call of the same inputs; a discarded
-warm-up call removes it, documented where it is discarded). Page 71's own text, in the section
-immediately preceding this one ("DUAL-PLAYFIELD PRIORITY AND CONTROL"), states the two
-playfields "can be scrolled separately" as something dual-playfield mode enables -- so the manual
-does make a movement claim here, and this fixture's own boundary (`denise`, where BPLCON1's
-pf1h_del/pf2h_del are consumed) is exactly where PF1H/PF2H reaching a plane's shifter is decided.
-Measured RED: at this fixture's boundary, PF2H's effect on an even plane's rendered position does
-not depend on DBLPF at all.
+warm-up call removes it, documented where it is discarded).
 
-| claim id | page | reader | restatement |
-|---|---|---|---|
-| `3-dual.c46` | 72 | opus | Selecting dual-playfield mode also changes the way the hardware can move the bitplanes on the screen. |
+p.85's own warning is why: "Always set all six bits, even if you have only one playfield. Set
+3-0 and 7-4 to the same value if you are using only one playfield" -- PF2H governs bitplanes 2,
+4 and 6's delay the same way regardless of DBLPF, so the identical shift this fixture measures is
+what the manual itself states, not a DBLPF-dependent movement mechanism for this fixture to show.
+Page 71's "can be scrolled separately" (the section immediately preceding this one) is the
+independent ODD/EVEN pointer and modulo movement ch3-bitplane-pointers-and-modulo covers, not a
+DBLPF-dependent change to BPLCON1's delay mechanism -- reading one into it here would be treating
+the manual's silence as a requirement.
 
-1 assertion(s) in this category. RED -- a genuine finding, not adjusted. `3-dual-activate.c4`
-(category 8, unchanged, predates this extension) names the identical clause and is graded by the
-colour-grouping proxy instead; see the note at the end of category 8.
+0 assertion(s) in this category. `3-dual.c46` is kept as a MEASURED note (not graded) and
+withdrawn, together with `3-dual-activate.c4` (category 8), to a RECORDED line citing p.85; see
+"Claims not asserted in this package", R10.
 
 
-Total claim-rows assigned to a measurement category: 245 (235 original + 10 added)
+Total claim-rows assigned to a measurement category: 243 (235 original + 10 added, less 2 recorded under R10)
 
 ## Claims not asserted in this package
 
@@ -819,8 +820,26 @@ sibling package, not held here.
 |---|---|---|---|
 | `C-shr.c13` | 300 | opus | SuperHires mode is controlled by writing BPLCON0 in the LOF copperlist (/SHF if interlaced). |
 
+### R10-pf2h-delay-not-dblpf-gated
 
-Total not-asserted claim ids: 29 (28 original + 1 added)
+Both ids name page 72's "changes hardware movement" clause ("Selecting dual-playfield mode also
+changes ... the way hardware can move the bitplanes on the screen"). This package's
+colour-grouping evidence (category 8's DBLPF=1/BPU=6 odd-vs-even measurement) is a wrong-clause
+proxy for it, not an establishment of it. Measured directly instead (category 20's fixture:
+plane 2 alone, BPLCON1 PF2H nibble 4 vs nibble 12, DBLPF=0 vs DBLPF=1): the shift is identical
+either way. p.85's own warning is exactly why: "Always set all six bits, even if you have only
+one playfield. Set 3-0 and 7-4 to the same value if you are using only one playfield" -- PF2H
+governs bitplanes 2, 4 and 6's delay the same way regardless of DBLPF, so the identical shift is
+what the manual itself states, not a DBLPF-dependent movement mechanism this fixture's boundary
+could show.
+
+| claim id | page | reader | restatement |
+|---|---|---|---|
+| `3-dual-activate.c4` | 72 | sol | DBLPF changes the hardware movement behavior of the bitplanes on-screen. |
+| `3-dual.c46` | 72 | opus | Selecting dual-playfield mode also changes the way the hardware can move the bitplanes on the screen. |
+
+
+Total not-asserted claim ids: 31 (28 original + 1 added + 2 recorded under R10)
 
 
 Grand total: 245 asserted claim-rows + 29 not-asserted claim ids = 274 (274 claim rows over 269

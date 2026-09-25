@@ -421,6 +421,28 @@ static void measureDualPlayfield() {
   }
 }
 
+// Sixth-bitplane isolation (3-bplcon0.c20): plane 6 driven ALONE (planes
+// 1-5 held at zero), DBLPF=1, BPU=6 -- an EXACT expected index, not the
+// 8..15 range g_pf2_ok above accepts. That bundled range does not
+// discriminate plane 6's own contribution: measured directly, leaving
+// plane 6 undriven in that same bundled measurement (planes 2,4 alone)
+// still gives index 11, still inside 8..15, so g_pf2_ok would stay true
+// even if plane 6 contributed nothing. p.70's Table 3-11 gives the
+// bit-combination-to-colour mapping for playfield 2 directly ("Bits from
+// PLANE 6 have the highest significance"): plane 6 alone is bit
+// combination 100, which selects COLOR12 exactly -- the one value
+// reachable only if plane 6 itself reaches the playfield-2 colour path.
+static bool g_pf2_plane6_alone_ok = false;
+static void measurePf2Plane6Alone() {
+  baseline(false);
+  writeReg(A_BPLCON0, mkBplcon0(false, 6, false, true));  // BPU=110, DBLPF=1
+  loadPlanes(0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000);  // plane 6 only
+  auto px = scanHpos(8);
+  int idx = -1;
+  for (auto& p : px) { int d = decodeIndex(p.r, p.g, p.b); if (d > 0) idx = d; }
+  g_pf2_plane6_alone_ok = (idx == 12);
+}
+
 // "Changes the way hardware can move the bitplanes on screen" (3-dual.c46,
 // page 72): measured directly, not via the colour-grouping proxy used for
 // the sentence's other clause (3-dual-activate.c4) -- that proxy does not
@@ -858,6 +880,7 @@ int main(int argc, char** argv) {
   measureBpuTable();
   measureMsbOrder();
   measureDualPlayfield();
+  measurePf2Plane6Alone();
   measureDualPlayfieldMovement();
   measureBpuZeroBackground();
   measureHiresDualPlayfield();

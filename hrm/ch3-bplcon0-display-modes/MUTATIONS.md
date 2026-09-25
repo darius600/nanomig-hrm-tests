@@ -117,7 +117,7 @@ searched.
 | `3-color.c9` | 1 | red |
 | `3-dual-activate.c2` | 2 | red |
 | `3-dual-activate.c3` | 2 | red |
-| `3-dual-activate.c4` | 2 | red |
+| `3-dual-activate.c4` | none | impossible (see below) |
 | `3-dual-mode.c12` | 2 | red |
 | `3-dual.c05` | 2 | red |
 | `3-ehb.c01` | 4 | red |
@@ -343,7 +343,7 @@ searched.
 // MUTATION 3-color.c9 implementation red: mutation 1 (denise.v: bpldata[3..6] plane-gating thresholds each raised by one (l_bpu>2,3,4,5 became l_bpu>3,4,5,6), so BPU codes 3-6 each report one fewer gated plane than they should) turned this assertion red; reverted, confirmed green again.
 // MUTATION 3-dual-activate.c2 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped (ham was bplcon0[11]/dpf was bplcon0[10]; now ham=bplcon0[10]/dpf=bplcon0[11])) turned this assertion red; reverted, confirmed green again.
 // MUTATION 3-dual-activate.c3 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped (ham was bplcon0[11]/dpf was bplcon0[10]; now ham=bplcon0[10]/dpf=bplcon0[11])) turned this assertion red; reverted, confirmed green again.
-// MUTATION 3-dual-activate.c4 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped (ham was bplcon0[11]/dpf was bplcon0[10]; now ham=bplcon0[10]/dpf=bplcon0[11])) turned this assertion red; reverted, confirmed green again.
+// MUTATION 3-dual-activate.c4 none impossible: no longer asserted in this package -- this row's own claim, "DBLPF changes the hardware movement behavior of the bitplanes on-screen," named the page-72 "changes hardware movement" clause but was graded by the colour-grouping evidence above, which SPEC.md's own category-8 note calls a wrong-clause proxy for that clause. Withdrawn to a RECORDED line (test_denise.cpp/claims_gen.inc) citing p.85's warning ("Always set all six bits, even if you have only one playfield. Set 3-0 and 7-4 to the same value if you are using only one playfield"), which predicts PF2H governs bitplanes 2, 4 and 6's delay the same way regardless of DBLPF -- see the Extension section below, `3-dual.c46`, for the direct measurement. There is no red/green outcome left for a mutation to flip.
 // MUTATION 3-dual-mode.c12 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped (ham was bplcon0[11]/dpf was bplcon0[10]; now ham=bplcon0[10]/dpf=bplcon0[11])) turned this assertion red; reverted, confirmed green again.
 // MUTATION 3-dual.c05 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped (ham was bplcon0[11]/dpf was bplcon0[10]; now ham=bplcon0[10]/dpf=bplcon0[11])) turned this assertion red; reverted, confirmed green again.
 // MUTATION 3-ehb.c01 implementation red: mutation 4 (denise.v: ecsena remapped from bplcon0[0] to bplcon0[7], and the window-open/close comparisons against hdiwstrt/hdiwstop swapped (window now opens at DIWSTOP and closes at DIWSTRT)) turned this assertion red; reverted, confirmed green again.
@@ -514,9 +514,9 @@ searched.
 // MUTATION C-superhires.c4 implementation red: mutation 4 (denise.v: ecsena remapped from bplcon0[0] to bplcon0[7], and the window-open/close comparisons against hdiwstrt/hdiwstop swapped (window now opens at DIWSTOP and closes at DIWSTRT)) turned this assertion red; reverted, confirmed green again.
 ```
 
-## Extension claims -- 10 graded, 1 recorded
+## Extension claims -- 9 graded, 2 recorded
 
-Ten claims graded below, plus one recorded. These use
+Nine claims graded below, plus two recorded. These use
 Prompt 7's fixed `expect()`/`note()`/`record()` call form (test_denise.cpp), not this package's
 own `A()`/`SKIP()` helpers -- everything above this section is unchanged. The `// MUTATION`
 comments live inline in claims_gen.inc, next to each call; this section restates them for the
@@ -527,32 +527,43 @@ same reason the log above exists.
 found "impossible" to mutate under M1-M6 above -- the trivial floor of the gating chain). A
 fresh, dedicated measurement instead: COLOR0 driven to a chosen 12-bit value (overriding the
 default preload), all six planes hard-driven, and the observed pixel decoded against THAT
-value. The mutation is a genuine **stimulus** change: BPLCON0 changed from BPU=000 to BPU=001
-with plane 1 driven, COLOR0 left at its default preload -- the same "pixel equals COLOR00"
-comparator now reads false (plane 1's data shows through), confirming the assertion is sensitive
-to the BPU=000 condition it names; reverted to BPU=000, green again. A second, supplementary
-check (COLOR0 overridden to a distinctive non-zero value instead of the default) additionally
-confirms the comparator tracks actual COLOR00 content rather than a fixed constant.
+value. Graded on BOTH runs together -- COLOR0 at its normal preload AND overridden to a
+distinctive non-zero value (0x0f0f) -- so the comparator is shown to track actual COLOR00
+content rather than a fixed constant it would report regardless; the non-zero run previously
+existed only as an ungraded MEASURED note beside a comparator graded on the zero run alone. The
+mutation is a genuine **stimulus** change: BPLCON0 changed from BPU=000 to BPU=001 with plane 1
+driven, COLOR0 left at its default preload -- the same "pixel equals COLOR00" comparator both
+runs use now reads false (plane 1's data shows through), confirming the assertion is sensitive
+to the BPU=000 condition it names; reverted to BPU=000, green again -- verified: 229/233 PASS,
+4 FAIL, and these four ids are the only new FAILs.
 
-**Sixth-bitplane DBLPF half (3-bplcon0.c20).** Same evidence already used for 3-bplcon0.c21/
-3-t5.c16 above (`g_pf2_ok && g_ham_ok`). Mutation 2 (HOMOD/DBLPF bit sources swapped) turns it
-red, the same as its siblings -- this package's own accepted convention, all 235 pre-existing
-assertions above are mutation-tested this way (see the "Label correction" note near the top of
-this file).
+**Sixth-bitplane DBLPF half (3-bplcon0.c20).** No longer the combined dual-playfield/HAM
+evidence used for 3-bplcon0.c21/3-t5.c16 above (`g_pf2_ok && g_ham_ok`) -- that bundled range
+(planes 2, 4, 6 driven together, any index 8..15 accepted) does not discriminate plane 6's own
+contribution: with plane 6 left undriven in that same bundled measurement, the index is 11,
+still inside 8..15, so the claim would still read PASS; and `g_ham_ok` grades a different claim
+(3-bplcon0.c21) entirely. Measured directly instead: plane 6 driven ALONE, DBLPF=1, BPU=6 --
+p.70's Table 3-11 ("Bits from PLANE 6 have the highest significance") gives bit combination 100
+-> COLOR12 exactly, the one value reachable only if plane 6 itself reaches the playfield-2
+colour path. Mutation is a genuine **stimulus** change: plane 6 left undriven (0x8000 ->
+0x0000) in that same plane-6-alone measurement -- no pixel in the scan ever decodes to a
+non-zero index (transparent throughout), so the exact-value comparator goes red; reverted,
+confirmed green again -- verified: 232/233 PASS, 1 FAIL, and 3-bplcon0.c20 is the only new FAIL.
 
-**Dual-playfield movement clause (3-dual.c46).** NOT the colour-grouping proxy used for
-3-dual-activate.c4's identical clause -- that proxy does not establish this clause (a different
-clause of the same sentence), and citing it here would be exactly the "id on an assertion that
-does not establish its claim" case this package's own rules forbid. Measured directly instead:
-plane 2 (an even/playfield-2 plane) driven alone, BPLCON1 PF2H nibble 4 vs nibble 12 compared,
-once with DBLPF=0 and once with DBLPF=1. Measured RED: the shift PF2H induces on plane 2's
-position is identical either way (32 clocks, reproduced across a full 0-15 PF2H sweep under both
-DBLPF settings) -- at this fixture's boundary, DBLPF does not change how PF1H/PF2H move a plane.
-Mutation, since this claim's own verdict is already red against the unmutated RTL (mutating
-harder is not the applicable technique): a **stimulus**, comparator-liveness substitute -- the
-same clock-offset-difference comparator, fed PF2H nibble 4 vs nibble 12 directly under one fixed
-DBLPF setting (not compared across DBLPF settings), reads a real 32-clock difference, confirming
-the comparator is not vacuous.
+**Dual-playfield movement clause (3-dual.c46) -- withdrawn to record.** NOT the colour-grouping
+proxy used for 3-dual-activate.c4's identical clause -- that proxy does not establish this
+clause (a different clause of the same sentence), and citing it here would be exactly the "id on
+an assertion that does not establish its claim" case this package's own rules forbid. Measured
+directly instead: plane 2 (an even/playfield-2 plane) driven alone, BPLCON1 PF2H nibble 4 vs
+nibble 12 compared, once with DBLPF=0 and once with DBLPF=1. Measured: the shift PF2H induces on
+plane 2's position is identical either way (32 clocks, reproduced across a full 0-15 PF2H sweep
+under both DBLPF settings). p.85's own warning is exactly why: "Always set all six bits, even if
+you have only one playfield. Set 3-0 and 7-4 to the same value if you are using only one
+playfield" -- PF2H governs bitplanes 2, 4 and 6's delay the same way regardless of DBLPF, so the
+identical shift is what the manual itself states, not a DBLPF-dependent movement mechanism this
+fixture could show. Kept as a MEASURED note, not graded; the id (and `3-dual-activate.c4`, whose
+pre-backlog line loses its id for the same reason -- see the table entry above) is withdrawn to
+a RECORDED line citing p.85. There is no red/green outcome left for a mutation to flip.
 
 **HIRES dual-playfield plane identity (3-dual-planes.c5/c6, 3-dual.c19/c20).** A fresh
 measurement: HIRES=1, DBLPF=1, BPU=100, driving only the two named planes per side, checked
@@ -570,8 +581,8 @@ implementation-mutation convention, as above).
 | `3-t5.c02` | stimulus (BPU=001, plane 1 driven) | red |
 | `3-r0.bpu000` | stimulus (BPU=001, plane 1 driven) | red |
 | `3-regsum-bplcon0.c19` | stimulus (BPU=001, plane 1 driven) | red |
-| `3-bplcon0.c20` | 2 | red |
-| `3-dual.c46` | stimulus (comparator-liveness substitute) | green (own verdict: red) |
+| `3-bplcon0.c20` | stimulus (plane 6 left undriven) | red |
+| `3-dual.c46` | -- | recorded, not graded |
 | `3-dual-planes.c5` | 2 | red |
 | `3-dual.c19` | 2 | red |
 | `3-dual-planes.c6` | 2 | red |
