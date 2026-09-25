@@ -1456,7 +1456,7 @@ int main(int argc, char** argv) {
                 "it is set aside (see the DISPUTED measurement record "
                 "above). 3-ddf.c06, 3-ddf.c07, 3-ddf.c01, 3-fetch.c1, "
                 "3-ddf.c03, 3-fetch.c3, 3-fetch.c4, 3-fetch.c5, 3-ddf.c04, "
-                "3-fetch.c6, 3-fetch.c8.");
+                "3-fetch.c6.");
     }
 
     // ---------------- DIW-HORIZONTAL-ONE-PIXEL-RESOLUTION-VIA-HDE (p.57,59,60) ----------------
@@ -2219,14 +2219,16 @@ int main(int argc, char** argv) {
             "this module's. 3-dual-planes.c4, 3-dual.c18.");
     }
 
-    // ---------------- DDF-FETCH-LEADS-WINDOW measurement (p.60) ----------------
-    // Measures, does not grade, the classification's own "undisputed
-    // sub-claim" for 3-ddf.c10 ("the data fetch must begin before the
-    // display window opens, and the offset differs between low and high
-    // resolution"). The first half measures true; the second half measures
-    // FALSE for the manual's own standard configuration, so the id is kept
-    // off any PASS line - see the RECORDED line below, which covers both
-    // 3-ddf.c09 and 3-ddf.c10.
+    // ---------------- DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION (p.60) ----------------
+    // Grades the classification's own "undisputed sub-claim" for 3-ddf.c10:
+    // "the data fetch must begin before the display window opens, and the
+    // offset differs between low and high resolution. The number of colour
+    // clocks is NOT asserted." The manual's own worked arithmetic on p.60
+    // is $81/2 - 8.5 = $38 for lores and $81/2 - 4.5 = $3C for hires - the
+    // SAME DIWSTRT ($81), two different subtrahends, so the lead is
+    // supposed to differ between resolutions. Measured directly at the
+    // manual's own standard DDFSTRT/DIWSTRT pair, it does not: stays RED,
+    // per BUILD-BRIEF item 6 - a valid, finished outcome.
     {
         int common_hde = hde_rising_edge(DIWSTRT_STD);  // no hires term in
             // the RTL's own hde compare (l.171-176) - confirmed by reading
@@ -2246,37 +2248,57 @@ int main(int argc, char** argv) {
         hh.write_reg(BPLCON0_ADDR, bplcon0_word(true, 1));
         int hi_fetch = first_fetch_hpos(hh, 0x50);
 
-        checks.note(
-            "DDF-FETCH-LEADS-WINDOW: standard DDFSTRT ($0038 lores / "
-            "$003C hires), standard DIWSTRT ($2C81) - the first dma cycle "
-            "comes BEFORE hde's rising edge (hpos " + std::to_string(common_hde) +
-            ") in BOTH resolutions (lores hpos " + std::to_string(lo_fetch) +
-            ", hires hpos " + std::to_string(hi_fetch) +
-            " - IDENTICAL, both " + std::to_string(common_hde - lo_fetch) +
-            " hpos ticks early). The classification's conflict_resolution "
-            "for 3-ddf.c10 reads this lead as resolution-dependent; "
-            "measured directly, it is NOT, for the manual's own standard "
-            "DDFSTRT/DIWSTRT pair - cross-checked against DDFSTRT-H3-BIT-"
-            "RESPECTED-ONLY-IN-HIRES-MODE's own independently-measured "
-            "$0038/$003C first-fetch hpos values above, which agree "
-            "exactly (135 lores, 135 hires at these two DDFSTRT values).");
+        int lo_lead = common_hde - lo_fetch;
+        int hi_lead = common_hde - hi_fetch;
+        std::string nums = " (hde=" + std::to_string(common_hde) +
+            ", lores fetch=" + std::to_string(lo_fetch) + "/lead=" + std::to_string(lo_lead) +
+            ", hires fetch=" + std::to_string(hi_fetch) + "/lead=" + std::to_string(hi_lead) + ")";
+
+        checks.expect(
+            lo_fetch >= 0 && hi_fetch >= 0 && lo_lead > 0 && hi_lead > 0 && lo_lead != hi_lead,
+            "DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION: standard DDFSTRT "
+            "($0038 lores / $003C hires), standard DIWSTRT ($2C81) - the "
+            "first dma cycle must come BEFORE hde's rising edge in both "
+            "resolutions AND the lead must differ between them" + nums +
+            " - 'there is a difference between the value of window start "
+            "and data-fetch start of 4.5 color clocks', worked as "
+            "$81/2 - 8.5 = $38 (lores) and $81/2 - 4.5 = $3C (hires) "
+            "(p.60): two different subtrahends against the SAME DIWSTRT "
+            "imply two different leads. Measured instead: the lead is "
+            "IDENTICAL (135 hpos, 5 ticks before hde) in both resolutions "
+            "- fetch precedes window (holds), but the lead does not "
+            "differ by resolution (fails). RED against the manual's own "
+            "arithmetic - per this package's instructions, the RTL is "
+            "what is wrong here, not the assertion. Related to the "
+            "already-red DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE "
+            "above, not identical to it: that assertion's own numbers "
+            "(measured there, not repeated here) show H3 (ddfstrt[3], "
+            "the bit that changes between $0038 and $003C) shifts the "
+            "first-fetch hpos by a constant +8 UNCONDITIONALLY, and "
+            "switching resolution at a FIXED DDFSTRT shifts it by a "
+            "constant -8 the other way (135 lores / 127 hires at $0038; "
+            "143 lores / 135 hires at $003C, both pairs 8 apart) - two "
+            "independent, already-characterized effects of equal "
+            "magnitude and opposite sign, which is why they cancel "
+            "exactly at the manual's own lores/hires DDFSTRT pair and "
+            "this assertion reads a lead of zero difference rather than "
+            "merely a wrong number. 3-ddf.c10.");
     }
     checks.record(
-        "3-ddf.c09 and 3-ddf.c10 are DECLINED, not graded. Page 60's prose "
-        "gives the window-start-to-data-fetch-start difference as 4.5 "
-        "color clocks; the worked example on the same page subtracts 8.5 "
-        "for the low-resolution case ($81/2 - 8.5 = $38) and 4.5 only for "
-        "the high-resolution case ($81/2 - 4.5 = $3C) - the manual "
-        "disputes itself on this number (3-ddf.c09), which no RTL "
-        "measurement can resolve. 3-ddf.c10's own classification kept a "
-        "narrower sub-claim testable instead - fetch precedes window, by "
-        "an offset that differs between resolutions - but DDF-FETCH-"
-        "LEADS-WINDOW above measures the SECOND half false for the "
-        "manual's own standard DDFSTRT/DIWSTRT pair: the lead is "
-        "identical (135 hpos, 5 ticks before hde) in both resolutions, "
-        "not merely undetermined. Grading either id on that basis would "
-        "credit a claim this fixture measures does not hold; both stay "
-        "declined here rather than forced. 3-ddf.c09, 3-ddf.c10.");
+        "3-ddf.c09 is DECLINED, not graded. Page 60's prose gives the "
+        "window-start-to-data-fetch-start difference as 4.5 color clocks; "
+        "the worked example on the same page subtracts 8.5 for the "
+        "low-resolution case ($81/2 - 8.5 = $38) and 4.5 only for the "
+        "high-resolution case ($81/2 - 4.5 = $3C) - the manual disputes "
+        "itself on this specific number, which no RTL measurement can "
+        "resolve. The undisputed sub-claim underneath it (fetch precedes "
+        "window, by an offset that differs between resolutions) is "
+        "graded RED above on DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION "
+        "instead of being forced here. 3-fetch.c8 (sol twin, already "
+        "cited on DDF-16-PIXEL-EFFECTIVE-GRANULARITY's PASS line for a "
+        "DIFFERENT proposition - that assertion does not test the 4.5 "
+        "figure) is added here rather than left implying it was tested. "
+        "3-ddf.c09, 3-fetch.c8.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
@@ -2407,6 +2429,18 @@ int main(int argc, char** argv) {
 //    bitplane 4, no longer reached), failing the "exactly two of each
 //    parity" check while HIRES-BPU-CEILING-MAX-4-PLANES (a separate run)
 //    stayed green. Reverted; rebuilt clean.
+// 22. DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION: already RED at baseline (the
+//    lead measures identical, not different, at the manual's own standard
+//    DDFSTRT pair) - substituted per the rule for mutating an assertion
+//    that is already red: the lores leg's DDFSTRT changed from the
+//    standard $0038 to $0030 (still a real, elsewhere-used stimulus - the
+//    HSCROLL-EXTRA-WORD-21-FOR-20 value). Result: lores fetch moved from
+//    hpos 135 to 119 (lead 21) while the untouched hires leg stayed at
+//    hpos 135 (lead 5) - the leads now differ (21 != 5) and the assertion
+//    goes GREEN, proving the comparator is not vacuous: it correctly
+//    grades a lead difference GREEN when one is actually present, and
+//    RED (at the standard pair) when it measures none. Reverted; rebuilt
+//    clean.
 //
 // Machine-readable records, one per line, read by tools/check_gates.py's
 // mutation gate (MUTATION_RE):
@@ -2431,4 +2465,5 @@ int main(int argc, char** argv) {
 // MUTATION DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE none impossible: already red at baseline; H3 (ddfstrt[3], register bit 2) is part of the position compare's unconditional `ddfstrt[8:3]` group, gated by neither `ecs` nor `hires`, so an H3-only-differing DDFSTRT pair always shifts the first fetch in lores too - no ecs/hires/DDFSTRT combination this assertion drives can satisfy the manual's mode-based condition.
 // MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: control run's BPU dropped from 6 to 3 (lores); lores_reaches_4_and_5 false, control no longer reaches planes 5-6.
 // MUTATION DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD stimulus red: BPU dropped from 6 to 3 (hires); even_count dropped to 1, plane index 3 (bitplane 4) no longer reached.
+// MUTATION DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION stimulus green: already red at baseline (lead measures identical, not different); lores DDFSTRT changed from standard $0038 to $0030, lores fetch moved 135->119 (lead 5->21), hires unchanged at lead 5, leads now differ and the assertion passes.
 // ============================================================================
