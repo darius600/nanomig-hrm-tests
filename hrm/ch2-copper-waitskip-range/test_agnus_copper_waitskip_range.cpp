@@ -98,9 +98,6 @@
 //   comment warns about for $FF.
 // MUTATION S4 stimulus red: IR2 bit0 set (turning the WAIT into a SKIP) with the already-true position ->
 //   FAIL as expected.
-// MUTATION S5 stimulus red: the WAIT's target VP moved from $F0 (unreached in the run budget) to $00
-//   (already passed) -> both hypotheses (the WAIT ran, or the WAIT was itself skipped) now let the MOVE
-//   through immediately -> FAIL as expected.
 // MUTATION B2s stimulus red: BFD flipped from 0 to 1 in the SKIP, so the busy blitter no longer holds the
 //   condition back -> FAIL as expected (the position alone satisfies the SKIP and the MOVE is suppressed).
 // MUTATION B1 stimulus red: BFD flipped from 1 to 0 while the blitter is busy -> FAIL as expected (the WAIT is
@@ -527,13 +524,19 @@ int main(int argc, char** argv) {
                       "COP2-the-wait-instruction.c13, ch2-appa-copins.c107, ch2-appa-copins.c109, ch2-summary-of-copper-instructions.c94, ch2-summary-of-copper-instructions.c96, ch2-the-skip-instruction.c2, ch2-the-skip-instruction.c3, ch2-the-skip-instruction.c8, ch2-the-wait-instruction.c10]");
     }
 
-    // S5 - appendix A p.274 versus body p.31: does SKIP skip only a following
-    // MOVE, or the next instruction whatever it is? Same true condition as
-    // S1, but the instruction right after the SKIP is a WAIT (for a line the
-    // run budget never reaches), with a MOVE after that. If SKIP skips only a
-    // following MOVE (p.274), the WAIT runs and holds, so the MOVE never
-    // appears. If SKIP skips the next instruction whatever it is (p.31), the
-    // WAIT itself is skipped and the MOVE runs immediately.
+    // S5 - appendix A p.274 versus body p.31 disagree on what SKIP skips: "than
+    // (skips following MOVE instruction unless beam position has been reached)"
+    // (p.274) qualifies the skipped instruction to a MOVE; "skip the next
+    // instruction" (p.20, p.31), with no such qualifier, does not. No printed
+    // page resolves that conflict - the classification's own conflict_resolution
+    // picked the appendix reading by measuring agnus_copper.v, which is a
+    // measurement of the RTL, not a third page. Grading either reading here
+    // would score the implementation against itself, so this case is measured
+    // and recorded rather than asserted. Same true condition as S1, but the
+    // instruction right after the SKIP is a WAIT (for a line the run budget
+    // never reaches), with a MOVE after that: under p.274 the WAIT runs and
+    // holds, so the MOVE never appears; under p.20/p.31 the WAIT is itself
+    // skipped and the MOVE runs immediately.
     {
         CopperHarness h;
         h.seek_beam(0x70);
@@ -543,11 +546,15 @@ int main(int argc, char** argv) {
                    0xFFFF, 0xFFFE});
         h.start_list();
         h.run_cycles(4000);
-        checks.expect(h.move_count(COLOR00) == 0,
-                      "S5 SKIP with condition true, followed by a WAIT then a MOVE: the WAIT "
-                      "runs and holds, so the MOVE never appears - SKIP skips only a "
-                      "following MOVE (appendix A p.274), not the next instruction whatever "
-                      "it is (body p.31) [claims: ch2-appa-copins.c12]");
+        checks.note(
+            "S5 [measured, not graded] SKIP with condition true, followed by a WAIT "
+            "then a MOVE: move_count(COLOR00) == " + std::to_string(h.move_count(COLOR00)) +
+            " - 0 means the WAIT ran and held (appendix A p.274, \"skips following "
+            "MOVE instruction\"), a nonzero count would mean the WAIT was itself "
+            "skipped (body p.20, p.31, \"skip the next instruction\", no MOVE "
+            "qualifier). RECORDED rather than asserted: p.274 and p.20/p.31 "
+            "disagree and no page picks between them, so nothing is asserted "
+            "[claims: ch2-appa-copins.c12]");
     }
 
     // ---------------- BFD (COP-08, p.33) ----------------
@@ -569,7 +576,7 @@ int main(int argc, char** argv) {
                       "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
                       "COP2-using-the-copper-with-the-blitter.c5, "
-                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c122, ch2-appa-copins.c17, ch2-copper-loops-and-branches.c10, ch2-copper-loops-and-branches.c11, ch2-summary-of-copper-instructions.c4, ch2-the-wait-instruction.c11, ch2-using-the-copper-with-the-blitter.c3, ch2-using-the-copper-with-the-blitter.c5, ch2-appa-copins.c121]");
+                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c122, ch2-appa-copins.c17, ch2-copper-loops-and-branches.c10, ch2-copper-loops-and-branches.c11, ch2-summary-of-copper-instructions.c4, ch2-the-wait-instruction.c11, ch2-using-the-copper-with-the-blitter.c3, ch2-using-the-copper-with-the-blitter.c5]");
     }
 
     // B2 - BFD=0 additionally requires the blitter to have finished.
@@ -588,7 +595,7 @@ int main(int argc, char** argv) {
                       "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
                       "COP2-using-the-copper-with-the-blitter.c6, COP2-using-the-copper-with-the-blitter.c8, "
-                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c17, ch2-using-the-copper-with-the-blitter.c6, ch2-appa-copins.c121]");
+                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c17, ch2-using-the-copper-with-the-blitter.c6]");
     }
 
     // B2s - the same for SKIP. p.33 puts BFD in IR2, which both instructions
@@ -831,7 +838,7 @@ int main(int argc, char** argv) {
         checks.expect(first > 0 && latency >= 0 && latency < 64,
             "EHC [control] the HP walk's first bit releases at a plausible position, so "
             "the fetch latency can be calibrated from it rather than assumed "
-            "[claims: ch2-appa-copins.c118, COP2-copins-fields-p275.c11]");
+            "[claims: ch2-appa-copins.c118]");
 
         static const char* const kEhApxClaimId[7] = {
             "COP2-copins-encoding.c87, ch2-appa-copins.c100", "COP2-copins-encoding.c81, ch2-appa-copins.c94",
@@ -861,7 +868,7 @@ int main(int argc, char** argv) {
                 "(appendix A p274 instruction table) "
                 "[claims: " + std::string(kEhApxClaimId[bit]) +
                 ", " + std::string(kEhBodyClaimId[bit]) +
-                ", COP2-the-wait-instruction.c12]");
+                ", COP2-the-wait-instruction.c12, COP2-copins-fields-p275.c11]");
         }
     }
     //
@@ -920,9 +927,10 @@ int main(int argc, char** argv) {
             const int without   = release_line(vp, masked_out);
             std::cout << "[measured] VE bit " << bit << ": enabled -> line " << with_mask
                       << ", disabled -> line " << without << "\n";
-            // p275's "Enable comparison (mask bit)" legend itself is
-            // COP2-copins-fields-p275.c12, bound once here (bit 0) rather than
-            // repeated on all seven - it is one naming claim, not seven.
+            // p275's "Enable comparison (mask bit)" legend is
+            // COP2-copins-fields-p275.c12: VE is seven mask bits, and this walk
+            // measures each one, so the id is cited on all seven lines, not
+            // just bit 0.
             checks.expect(with_mask == static_cast<int>(vp) && without == 0,
                 "EM walking one: IR2 bit " + std::to_string(bit + 8) +
                 " carries VE" + std::to_string(bit) +
@@ -932,10 +940,9 @@ int main(int argc, char** argv) {
                 " (appendix A p274 table, p275 \"Enable comparison (mask bit)\") "
                 "[claims: " + std::string(kEmApxClaimId[bit]) +
                 ", " + std::string(kEmBodyClaimId[bit]) +
-                ", COP2-the-wait-instruction.c16" +
+                ", COP2-the-wait-instruction.c16, COP2-copins-fields-p275.c12" +
                 (bit == 0 ? std::string(", "
-                                        "COP2-copper-loops-and-branches-and-comparison-enable.c5, "
-                                        "COP2-copins-fields-p275.c12")
+                                        "COP2-copper-loops-and-branches-and-comparison-enable.c5")
                           : std::string()) + "]");
         }
     }
@@ -963,14 +970,15 @@ int main(int argc, char** argv) {
         "COP2-copins-encoding.c42, COP2-copins-encoding.c48, COP2-copins-encoding.c54, "
         "COP2-copins-encoding.c60, COP2-copins-encoding.c66, COP2-copins-encoding.c72, "
         "COP2-copins-encoding.c78, COP2-copins-encoding.c84, COP2-copins-encoding.c90, ch2-appa-copins.c103, ch2-appa-copins.c19, ch2-appa-copins.c25, ch2-appa-copins.c31, ch2-appa-copins.c37, ch2-appa-copins.c43, ch2-appa-copins.c49, ch2-appa-copins.c55, ch2-appa-copins.c61, ch2-appa-copins.c67, ch2-appa-copins.c73, ch2-appa-copins.c79, ch2-appa-copins.c85, ch2-appa-copins.c91, ch2-appa-copins.c97, ch2-the-skip-instruction.c10");
-    checks.note("UNBOUND (COP2-copins-fields-p275.c10, .c11 and .c12: \"VP\" denotes a "
-        "vertical-beam-position bit, \"HP\" a horizontal one, \"VE\" a comparison-enable "
-        "mask bit - three names, not three requirements. EVC measures release at line "
-        "zero, EHC measures release latency and EM0 measures bit 8's masking, and each "
-        "does what it says; none could fail because a field is CALLED something else. "
-        "They were bound there until 11.09.2026, while this same file already treated "
-        "the IR1, IR2 and BFD naming claims as unbound - the inconsistency was with "
-        "its own neighbours)");
+    checks.note("UNBOUND (COP2-copins-fields-p275.c10: \"VP\" denotes a "
+        "vertical-beam-position comparison bit - a name, not a requirement. EVC "
+        "measures release at line zero using a WAIT already encoded with ir1_pos()'s "
+        "VP mapping; it cannot fail because a field is CALLED something else, only "
+        "because the mapping under test is wrong, and that is what EV0-EV7 cover, not "
+        "EVC. Its twins .c11 (\"HP\") and .c12 (\"VE\") are no longer unbound here: "
+        "this file cites .c11 on the EH0-EH6 walk and .c12 on all seven EM lines, "
+        "where each line's own comparison measures the named bit's function directly "
+        "and so can fail if the naming does not hold, unlike EHC or a single EM line)");
     checks.note("UNBOUND (the HE field's own bit-position mapping and masking - EM0-EM6 "
         "walk VE's masking role bit by bit, but no equivalent walk exists for HE; W7 "
         "sets HE=$7F generally and W1 sets HE=$00, but W1's target HP happens to be 0, "
@@ -1015,10 +1023,13 @@ int main(int argc, char** argv) {
         "COP2-copins-encoding.c52/58/64/70/76/82/88: EM0-EM6 walk VE bit by bit, nothing "
         "walks HE the same way, and W1/W7 only exercise HE at its extremes (all-clear, "
         "all-set), which cannot show which bit governs which comparison bit. [claims: ch2-summary-of-copper-instructions.c52, ch2-summary-of-copper-instructions.c58, ch2-summary-of-copper-instructions.c64, ch2-summary-of-copper-instructions.c70, ch2-summary-of-copper-instructions.c76, ch2-summary-of-copper-instructions.c82, ch2-summary-of-copper-instructions.c88]");
-    checks.note("UNBOUND (COP2-copins-bfd.c1: \"BFD denotes blitter-finished "
-        "disable\" - a name, not a requirement. B1 and B2 listed it until 11.09.2026 "
-        "alongside c2, the behaviour they do check; no assertion can fail because a "
-        "bit is called something else)");
+    checks.note("UNBOUND (COP2-copins-bfd.c1, ch2-appa-copins.c121: \"BFD denotes "
+        "blitter-finished disable\" - a name, not a requirement. Their neighbour in "
+        "the same manual note, c2/ch2-appa-copins.c122 (\"when this bit is true the "
+        "Blitter Finished flag will have no effect on the Copper\"), is what B1 and "
+        "B2 actually check and keep graded; no assertion here can fail because a bit "
+        "is called something else, the same reason COP2-copins-fields-p275.c10 above "
+        "is unbound rather than folded into EVC)");
     checks.note("UNBOUND COP2-using-the-copper-with-the-blitter.c7 (\"BFD cleared: WAIT "
         "requires a true beam-counter comparison\") -- no assertion measures it. B2 and B3 "
         "both start with the position already satisfied (seek_beam past the WAIT's target), "
