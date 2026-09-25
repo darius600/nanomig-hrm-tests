@@ -61,10 +61,8 @@
 //     about historical deployment, not a hardware behaviour with any signal
 //     to name - not asserted, and not constructible.
 //
-// PROPOSITIONS ROUTED 2026-09-25 (work/2026-09-25_unit-backlog). Committed
-// from the spec-stage file alone (quote, restatement, page, no RTL); the
-// disposition each reached after ch6-blitter-status.jsonl and the RTL were
-// opened is given last:
+// PROPOSITIONS. Quote, restatement and page for each, with the disposition
+// each reached after the RTL was opened given last:
 //   ch6-blockdiag.c11 (p.198) quote "Not shown on this diagram is the logic
 //     for zero detection, which" -- restated: the logic for zero detection
 //     is not shown on Figure 6-13. RECORDED (same claim as above).
@@ -550,10 +548,9 @@ int main(int argc, char** argv) {
 
     // ---------------- Claims declined at this boundary (pp. 186-198) ----------------
     //
-    // Routed 2026-09-25 (work/2026-09-25_unit-backlog). Each of these five was
-    // classified testable and confirmed reachable by this fixture, but none is
-    // graded here, for the reason given on its own line - see the CLAIM
-    // COVERAGE note above for the fuller argument.
+    // Each of these five was classified testable and confirmed reachable by
+    // this fixture, but none is graded here, for the reason given on its
+    // own line - see the CLAIM COVERAGE note above for the fuller argument.
     checks.record(
         "ch6-blockdiag.c11 (p.198): 'Not shown on this diagram is the logic for "
         "zero detection' states what Figure 6-13 leaves out, not a hardware "
