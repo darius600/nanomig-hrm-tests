@@ -1,8 +1,21 @@
 // Test purpose: HRM conformance for ch8-adkcon-disk-control-bits -- ADKCON
 // ($DFF09E, write) / ADKCONR ($DFF010, read), the disk half of every
 // function-column row, PRECOMP 1-0 (bits 14-13) and WORDSYNC (bit 10), at
-// the `paula` boundary, per SPECIFICATION.md. Thirteen claims, all cited
+// the `paula` boundary, per SPECIFICATION.md. Fifteen claims, all cited
 // there; none declined.
+//
+// Extension: sol:5-appA-p265.c19 and opus:A-adkcon.b10 quote the same
+// p.265 WORDSYNC sentence A6 already grades and restate the same
+// proposition, so both ids were added to A6's label rather than given a
+// duplicate assertion. Routing on these two also named a clause A6 alone
+// does not cover -- the sentence's "located in address (3F)*2" half, i.e.
+// that the sync word WORDSYNC waits for is the content of the register at
+// that address (paula_floppy.v's DSKSYNC, parameter 9'h07e, ($07E>>1)=$3F
+// matching the page's own "(3F)*2") and not a value fixed elsewhere. A7
+// below is that one further trial: DSKSYNC loaded with a non-default value
+// before the read, WORDSYNC still set. Both ids are cited on A7 too, since
+// between A6 and A7 the sentence is now fully established through expect()
+// -- neither carries the other's clause as an unmeasured caveat.
 //
 // Boundary correction (disclosed by the build brief, independently
 // confirmed here by reading paula.v myself): ADKCON/ADKCONR decode inside
@@ -23,13 +36,15 @@
 // functions reach real disk-side logic (true, via the wordsync fan-out),
 // not that every disk-labelled bit has an effect; A3/A4/A5 grade PRECOMP's
 // position and per-bit storage only, per their own claims' explicit split
-// ("what the field DOES ... is not asserted"); A6 grades WORDSYNC's own
-// specific, real mechanism. Not overreaching into C8's red half (PRECOMP/
-// MFMPREC/MSBSYNC/FAST doing nothing) is deliberate: no claim in this
-// package's thirteen asserts an effect for those bits, so none is graded
-// through expect() -- inventing one would be exactly the overreach this
-// suite's process exists to prevent. The two note()s below report that red
-// half as MEASURED, graded by nothing.
+// ("what the field DOES ... is not asserted"); A6 and A7 together grade
+// WORDSYNC's own specific, real mechanism -- A6 the enable/hold-back
+// effect, A7 that the held-for word is the DSKSYNC register's own content.
+// Not overreaching into C8's red half (PRECOMP/MFMPREC/MSBSYNC/FAST doing
+// nothing) is deliberate: no claim in this package's fifteen asserts an
+// effect for those bits, so none is graded through expect() -- inventing
+// one would be exactly the overreach this suite's process exists to
+// prevent. The two note()s below report that red half as MEASURED, graded
+// by nothing.
 // Test class: HRM_CONFORMANCE
 // Non-goals: anything outside the `paula` fixture this package builds, and
 //   any claim it does not cite. A green here means those assertions
@@ -77,8 +92,9 @@
 // term -- disclosed rig hazard, not touched by any assertion here, but the
 // same fresh-model discipline is followed throughout regardless).
 //
-// Not turned into assertions: none. All thirteen claims map onto A1-A6
-// (see SPECIFICATION.md "Every claim accounted for").
+// Not turned into assertions: none. All fifteen claims map onto A1-A7
+// (see SPECIFICATION.md "Every claim accounted for" and "Extension: two
+// further claims on WORDSYNC (bit 10)").
 //
 // MUTATION records: see the bottom of this header, filled in after each
 // mutation was actually built and run (build brief: baseline colour must
@@ -107,11 +123,13 @@ std::string hex4(uint32_t v) {
 
 // Register addresses, as reg_address_in[8:1] (the $DFFxxx offset right-
 // shifted by 1) -- paula.v's own parameters DMACON=9'h096, ADKCON=9'h09e,
-// ADKCONR=9'h010, and paula_floppy.v's DSKLEN=9'h024, DSKDATR=9'h008.
+// ADKCONR=9'h010, and paula_floppy.v's DSKLEN=9'h024, DSKDATR=9'h008,
+// DSKSYNC=9'h07e (the page's own "(3F)*2": ($07E>>1)=$3F).
 const uint8_t ADDR_NONE    = 0x00;
 const uint8_t ADDR_ADKCONR = 0x08;  // $010 >> 1
 const uint8_t ADDR_DSKDATR = 0x04;  // $008 >> 1
 const uint8_t ADDR_DSKLEN  = 0x12;  // $024 >> 1
+const uint8_t ADDR_DSKSYNC = 0x3F;  // $07E >> 1
 const uint8_t ADDR_DMACON  = 0x4B;  // $096 >> 1
 const uint8_t ADDR_ADKCON  = 0x4F;  // $09E >> 1
 
@@ -431,7 +449,8 @@ int main(int argc, char** argv) {
     // unfiltered preamble word (0xAAAA) is delivered first; with WORDSYNC
     // set, delivery is held back until the sync word is found, so the
     // FIRST word delivered is the sync mark itself (0x4489), not the
-    // preamble.
+    // preamble. sol:5-appA-p265.c19 and opus:A-adkcon.b10 quote this same
+    // sentence and are graded here too -- see the file header.
     // ========================================================================
     {
         uint8_t sector[512];
@@ -470,9 +489,10 @@ int main(int argc, char** argv) {
             " (WORDSYNC set) -- the write function's disk half reaches real logic, not a dead bit");
 
         checks.expect(word0_wordsync_clear == 0xAAAA && word0_wordsync_set == 0x4489,
-            "A6-WORDSYNC-BIT10-EFFECT (opus:8-appA-adkcon.c20/sol:8-appa-adkbit.c11 p.265, quote '            10   "
-            "  WORDSYNC       Enables disk read synchronizing on a word\\nequal to DISK SYNC CODE, located in "
-            "address (3F)*2.'): with WORDSYNC clear the raw, unfiltered preamble word (0x" +
+            "A6-WORDSYNC-BIT10-EFFECT (opus:8-appA-adkcon.c20/sol:8-appa-adkbit.c11 sol:5-appA-p265.c19 "
+            "opus:A-adkcon.b10 p.265, quote '            10     WORDSYNC       Enables disk read synchronizing on "
+            "a word\\nequal to DISK SYNC CODE, located in address (3F)*2.'): with WORDSYNC clear the raw, "
+            "unfiltered preamble word (0x" +
             hex4(word0_wordsync_clear) + ", expected 0xAAAA) is delivered first; with WORDSYNC set, delivery is "
             "held back until the sync word is found, so the first word delivered is the sync mark itself (0x" +
             hex4(word0_wordsync_set) + ", expected 0x4489) -- WORDSYNC is a real synchronizing gate, matching the "
@@ -480,7 +500,55 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // C8's red half, ungraded: no claim in this package's thirteen asserts
+    // A7 -- the same p.265 sentence's other half, which A6 alone does not
+    // establish: that the word WORDSYNC waits for is the CONTENT of the
+    // register at "address (3F)*2" (DSKSYNC, paula_floppy.v parameter
+    // 9'h07e), not a value fixed elsewhere in the design. A6's own trial
+    // never writes DSKSYNC, so it cannot tell a register-driven match from
+    // a hardcoded one -- floppy_data synthesises 0x4489 at the sync-word
+    // position regardless of DSKSYNC's content, which is exactly why a
+    // second, independent value is needed: load DSKSYNC with 0xAAAA (the
+    // fixed value the model's own preamble/gap position already carries at
+    // word-count 0, per paula_floppy.v) before the read, WORDSYNC still
+    // set. If the match follows the register, trackrdok now latches at
+    // word-count 0 and the first DSKDATR word is 0xAAAA -- the loaded
+    // value -- rather than A6's 0x4489.
+    // sol:5-appA-p265.c19 and opus:A-adkcon.b10, p.265 (see A6 above for
+    // the full quotation).
+    // ========================================================================
+    {
+        uint8_t sector[512];
+        std::memset(sector, 0, sizeof sector);  // content irrelevant -- see header
+
+        Rig rig2;
+        rig2.do_reset();
+        rig2.write_reg(ADDR_ADKCON, SETCLR | ADK_BIT10_WORDSYNC);
+        // MUTATE=A7: leave DSKSYNC at its reset default (0x4489) instead of
+        // loading a non-default value, collapsing the intended contrast
+        // with A6's own trial.
+        if (!mutating("A7")) {
+            rig2.write_reg(ADDR_DSKSYNC, 0xAAAA);
+        }
+        rig2.arm_disk_read_dma(8);
+        rig2.feed_sector_read(sector);
+        rig2.wait_until([&]() { return rig2.dut->disk_dmal != 0; }, 200);
+        uint16_t word0_dsksync_loaded = rig2.dskdatr_pop();
+
+        checks.note("A7-STIMULUS: WORDSYNC set, DSKSYNC loaded 0xAAAA before the read -> first DSKDATR word=0x" +
+                    hex4(word0_dsksync_loaded));
+
+        checks.expect(word0_dsksync_loaded == 0xAAAA,
+            "A7-WORDSYNC-DSKSYNC-REGISTER (sol:5-appA-p265.c19 opus:A-adkcon.b10 p.265, quote '            10   "
+            "  WORDSYNC       Enables disk read synchronizing on a word\\nequal to DISK SYNC CODE, located in "
+            "address (3F)*2.'): with WORDSYNC set and DSKSYNC ($07E, reg_address_in $3F -- the page's '(3F)*2') "
+            "loaded with a non-default value (0xAAAA) before the read, the first word delivered follows the "
+            "loaded register rather than A6's default: 0x" + hex4(word0_dsksync_loaded) +
+            " (expected 0xAAAA, not the reset default 0x4489) -- WORDSYNC synchronizes on the word held in the "
+            "register located at address (3F)*2, not a value fixed elsewhere in the design");
+    }
+
+    // ========================================================================
+    // C8's red half, ungraded: no claim in this package's fifteen asserts
     // an effect for MFMPREC (12), MSBSYNC (9) or FAST (8), so none is
     // graded through expect(). Measured here and reported via note() only,
     // confirming the finding candidates document's own disclosed
@@ -497,9 +565,9 @@ int main(int argc, char** argv) {
         checks.note("C8-MFMPREC-MSBSYNC-FAST: bits 12/9/8 store and read back individually (ADKCONR=0x" +
                     hex4(v_set) + " set, 0x" + hex4(v_clr) + " cleared) -- confirmed by reading paula.v in full: "
                     "adkcon's only two fan-outs anywhere in src/minimig-aga are bit 11 (paula.v:211, UART, out of "
-                    "this package's scope) and bit 10 (paula.v:269, graded above as A1/A6). Bits 12, 9 and 8 drive "
-                    "no submodule port and reach no logic; this is storage with no consumer, not asserted by any "
-                    "claim in this package's thirteen and therefore not graded through expect().");
+                    "this package's scope) and bit 10 (paula.v:269, graded above as A1/A6/A7). Bits 12, 9 and 8 "
+                    "drive no submodule port and reach no logic; this is storage with no consumer, not asserted by "
+                    "any claim in this package's fifteen and therefore not graded through expect().");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
@@ -528,3 +596,7 @@ int main(int argc, char** argv) {
 // the trial that should have left it clear, so both trials deliver the
 // sync mark first, while the check still expects the WORDSYNC-clear trial
 // to deliver the raw preamble word (0xAAAA) (MUTATE=A6).
+// MUTATION A7-WORDSYNC-DSKSYNC-REGISTER stimulus red: DSKSYNC was left at
+// its reset default instead of being loaded with a non-default value,
+// while the check still expects the loaded value (0xAAAA) to be the first
+// word delivered (MUTATE=A7).
