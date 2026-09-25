@@ -157,9 +157,11 @@
 //     ch6-appc-map.bltcon0l, 6-appc-modifications.c11, ch6-appc-ecs.c9 .
 //
 //   BLTCON0L-WRITES-LOW-8-BITS-ONLY (p269, p309): 6-appa-registers.c28,
-//     6-appc-modifications.c8, ch6-appc-ecs.c7, ch6-appc-ecs.c8 (its
-//     "speeds up the software" half is not separately measured, see NOT
-//     ASSERTED - PROSE / NOTATION above).
+//     6-appc-modifications.c8, ch6-appc-ecs.c7 . ch6-appc-ecs.c8 was withdrawn
+//     from this label by independent validation - its "writes the low bits"
+//     half is the twin ch6-appc-ecs.c7 already graded here, and its "speeds
+//     up the software" half names no signal; RECORDED at runtime instead (see
+//     main()'s BLTCON0L-WRITES-LOW-8-BITS-ONLY block).
 //
 //   BLTXPTH-WIDTH-REGARDLESS-OF-ECS *** REQUIRED RED, SEE "ROUTING
 //     CORRECTION" ABOVE *** (p270, p309): 6-appa-registers.c110,
@@ -179,7 +181,9 @@
 //   BLTSIZH-GATED-BY-ECS (p172, p189, p269, p308, p310):
 //     6-appa-registers.c73, 6-appa-registers.c74, 6-appc-modifications.c13,
 //     ch6-appc-map.bltsizh, ch6-appc-bltsizh.c1, 6-appc-big-blits.c25,
-//     ch6-appc-bigblits.c5, 6-dma-channels.c66, ch6-dma.c68, ch6-line.c7 .
+//     ch6-appc-bigblits.c5, 6-dma-channels.c66, ch6-dma.c68, ch6-line.c7,
+//     ch6-appc-bigblits.c6 (OCS-comparison half, joined with the ZERO-WRAP
+//     pair below - independent validation, see this assertion's own header).
 //
 //   BLTSIZH-STARTS-BLIT (p269, p308): 6-appa-registers.c75,
 //     ch6-appa-bltsize.h2, 6-appc-big-blits.c66, ch6-appc-bigblits.c9 .
@@ -201,15 +205,20 @@
 //     actually supports, not bundled into one).
 //
 //   BLTSIZH-WIDTH-UPPER-BITS-IGNORED (p308 - the reserved half of the bit
-//     table, bits 15 down to 11): 6-appc-big-blits.c44, 6-appc-big-blits.c45,
-//     6-appc-big-blits.c46, 6-appc-big-blits.c47, 6-appc-big-blits.c48,
-//     ch6-appc-bltsizh.bit11, ch6-appc-bltsizh.bit12, ch6-appc-bltsizh.bit13,
-//     ch6-appc-bltsizh.bit14, ch6-appc-bltsizh.bit15 .
+//     table, bits 15 down to 11, PLUS the width field's upper ceiling by
+//     independent validation - see its own header): 6-appc-big-blits.c44,
+//     6-appc-big-blits.c45, 6-appc-big-blits.c46, 6-appc-big-blits.c47,
+//     6-appc-big-blits.c48, 6-appc-big-blits.c61 (also cited below, ceiling
+//     half), ch6-appc-bltsizh.bit11, ch6-appc-bltsizh.bit12,
+//     ch6-appc-bltsizh.bit13, ch6-appc-bltsizh.bit14, ch6-appc-bltsizh.bit15 .
 //
 //   BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS (p172, p308 - a genuinely new
 //     measurement, not an id moved onto an existing assertion):
 //     6-appc-big-blits.c1,
-//     6-appc-big-blits.c61, 6-appc-big-blits.c62 (width-only halves),
+//     6-appc-big-blits.c61 (reach half - paired with BLTSIZH-WIDTH-UPPER-
+//     BITS-IGNORED above, which supplies the ceiling half, so the pair
+//     together establishes c61's "at most 32768 pixels" whole),
+//     6-appc-big-blits.c62 (width-only halves),
 //     ch6-appc-bigblits.c2, ch6-appc-bigblits.c6, 6-dma-channels.c69,
 //     ch6-dma.c70 (joint width+height claims, the width half - cited here
 //     AND under BLTSIZV-HEIGHT-ZERO-WRAPS-TO-32768-ROWS below for the
@@ -334,12 +343,16 @@
 //     block), not only a header comment: ch6-blitter-ecs.jsonl's
 //     routing.route names this the one claim of the thirteen routed here as
 //     "record:ch6-blitter-ecs" rather than "package:ch6-blitter-ecs".
-//   (ch6-appc-ecs.c8, formerly listed here as "a programming-convenience
-//   justification, not a hardware behaviour", was moved onto
-//   BLTCON0L-WRITES-LOW-8-BITS-ONLY below - its testable core, "only the low
-//   bits move, upper bits survive", is exactly what that assertion already
-//   measures; the "speeds up the software" half remains unmeasured and
-//   rides on the same citation as a consequence, not a second signal.)
+//   ch6-appc-ecs.c8 (p309, "The BLTCON0L register writes the low bits of
+//     BLTCON0, thereby expediting" [the set up of some blits and generally
+//     speeds up the software]) - independent validation withdrew this id
+//     from BLTCON0L-WRITES-LOW-8-BITS-ONLY, where it had briefly ridden
+//     alongside its twin ch6-appc-ecs.c7: that assertion's "only the low
+//     bits move, upper bits survive" measurement establishes c7's "writes
+//     the low bits" half whole, but c8's own extra half, "speeds up the
+//     software", names no signal, so riding the same citation counted a
+//     clause nothing measures as covered. RECORDED at runtime instead (see
+//     main()'s BLTCON0L-WRITES-LOW-8-BITS-ONLY block).
 //
 // FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
@@ -868,19 +881,18 @@ int main(int argc, char** argv) {
     // p.308's "blits of up to 32768 x 32768 pixels", which this package's
     // BLTSIZH/BLTSIZV field-width assertions above already grade (11-bit
     // width, 15-bit height, and the zero-wraparound that reaches exactly
-    // 2048 words / 32768 rows). p.76's 16368x16384 figure is a DIFFERENT
-    // number for what reads as the same physical limit - a display-fetch-
-    // window-constrained drawable area, not a raw register field width -
-    // and this module (agnus_blitter) has no display-fetch-window logic of
-    // its own to adjudicate which of the two the RTL actually enforces.
-    // Neither reading is asserted; the conflict is not resolved here.
+    // 2048 words / 32768 rows). Independent validation trimmed the reason to
+    // the manual conflict alone: a "display-fetch-window" explanation for
+    // p.76's different figure previously stood here and named no page - none
+    // of p.76, p.172 or p.308 states anything about a display fetch window,
+    // and this module (agnus_blitter) has no such logic to invoke one way or
+    // the other. Neither reading is asserted; the conflict is not resolved
+    // here.
     checks.record("opus:3-big.c22 (p.76): \"the largest area the blitter can "
         "draw in is increased to 16368 by 16384 pixels\" [ECS] - conflicts "
         "with the 32768 x 32768 / 32K by 32K figures p.172 and p.308 state "
-        "and this package already grades (BLTSIZH/BLTSIZV field widths); "
-        "this module has no display-fetch-window logic to adjudicate which "
-        "figure the RTL enforces. Not asserted; not counted toward "
-        "pass/fail.");
+        "and this package already grades (BLTSIZH/BLTSIZV field widths). "
+        "Not asserted; not counted toward pass/fail.");
     checks.record("sol:3-large.c27 (p.76): \"the blitter's maximum drawable "
         "area is 16,368x16,384 pixels\" [ECS] - same conflict, same "
         "reading, as opus:3-big.c22 immediately above; recorded rather than "
@@ -961,7 +973,9 @@ int main(int argc, char** argv) {
         // BLTCON0L write, shiftaout would instead equal the unshifted 0x8000.
         // ch6-appc-ecs.c8's testable core - only the low bits move, ash survives - is exactly
         // what this assertion measures; its other half, "speeds up the software", names no
-        // signal and is not established here.
+        // signal and is not established here, so the id itself is withdrawn to a record()
+        // call below rather than kept on this label (independent validation: its "writes the
+        // low bits" half is already carried by its twin ch6-appc-ecs.c7, which stays here).
         checks.expect(h.data_writes.size() == 1 && h.data_writes[0] == 0x4000,
             "BLTCON0L-WRITES-LOW-8-BITS-ONLY: with ash preloaded to 1 via BLTCON0, a "
             "BLTCON0L write that changes the LF field to A-passthrough still shows A "
@@ -969,7 +983,14 @@ int main(int argc, char** argv) {
             "written by BLTCON0L (agnus_blitter.v:259-260), bltcon0[15:12] (ash) is untouched "
             "by that decode and is written only by the ordinary BLTCON0 path "
             "(agnus_blitter.v:219-230). 6-appa-registers.c28, 6-appc-modifications.c8, "
-            "ch6-appc-ecs.c7, ch6-appc-ecs.c8 .");
+            "ch6-appc-ecs.c7 .");
+        checks.record("ch6-appc-ecs.c8 (p.309): \"The BLTCON0L register writes the low bits "
+            "of BLTCON0, thereby expediting\" [the set up of some blits and generally "
+            "speeds up the software, since the upper bits are often the same] - the "
+            "\"writes the low bits\" half is its twin, already graded above on "
+            "BLTCON0L-WRITES-LOW-8-BITS-ONLY (graded: ch6-appc-ecs.c7); the \"speeds up "
+            "the software\" half names no signal - nothing at this boundary observes "
+            "software speed. Not asserted; not counted toward pass/fail.");
     }
 
     // ---------------- BLTXPTH-WIDTH-REGARDLESS-OF-ECS (p.270, p.309) ----------------
@@ -1109,6 +1130,23 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- BLTSIZH-GATED-BY-ECS (p.172, p.189, p.269, p.308, p.310) ----------------
+    // Also carries ch6-appc-bigblits.c6 (p.308, "much larger than the original
+    // chip set could accept" - the OCS-comparison half of the joint 32K-by-32K
+    // claim also cited on both ZERO-WRAP assertions) by independent validation.
+    // Judged: this assertion establishes it. Starting ANY blit sized through
+    // the ECS registers requires a BLTSIZH write - it is the register that
+    // sets `busy` and drives the FSM (agnus_blitter.v:500) - and this
+    // assertion shows that write has NO effect whatsoever when ecs=0: busy
+    // never rises, no D word is ever produced. So the original chip set
+    // cannot accept a blit sized through BLTxSIZH/BLTxSIZV at all, whatever
+    // its own BLTSIZE ceiling is (BLTSIZE's own numeric maximum is
+    // PKG-BLT-SIZE's territory, out of scope here per this file's own
+    // Non-goals) - a fortiori it cannot accept the 32768x32768-pixel ceiling
+    // the ZERO-WRAP pair measures. This does not depend on BLTSIZV's own gate
+    // (BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS, NM-HRM-020, is a genuinely
+    // separate defect - a height VALUE loads into BLTSIZV regardless of ecs);
+    // it depends only on BLTSIZH being the write that starts the blit, which
+    // is correctly gated and green here.
     {
         Harness h_off(false);
         h_off.write_reg(BLTSIZV, 1);  // height=1; loads regardless of ecs (see header note)
@@ -1137,7 +1175,7 @@ int main(int argc, char** argv) {
             "ecs, agnus_blitter.v:500 (busy), :523-524 (width). 6-appa-registers.c73, "
             "6-appa-registers.c74, 6-appc-modifications.c13, ch6-appc-map.bltsizh, "
             "ch6-appc-bltsizh.c1, 6-appc-big-blits.c25, ch6-appc-bigblits.c5, "
-            "6-dma-channels.c66, ch6-dma.c68, ch6-line.c7 .");
+            "6-dma-channels.c66, ch6-dma.c68, ch6-line.c7, ch6-appc-bigblits.c6 .");
     }
 
     // ---------------- BLTSIZH-STARTS-BLIT (p.269, p.308) ----------------
@@ -1185,6 +1223,19 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- BLTSIZH-WIDTH-UPPER-BITS-IGNORED (p.308) ----------------
+    // Also carries 6-appc-big-blits.c61 (p.308, "w = Width (11 bit width = 32768
+    // pixels max)", restated "at most 32768 pixels") by independent validation:
+    // BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS below shows the field REACHES 2048
+    // words (32768 pixels) via the zero-wrap; on its own that shows a lower
+    // bound, not a ceiling. This assertion supplies the other half - bits 15:11
+    // add nothing, so the field is genuinely 11 bits wide and no write can
+    // specify more than 2047 words directly. Together the pair is exhaustive:
+    // every representable field value is 0 (2048 words, wrap) or 1-2047 words
+    // (BLTSIZH-WIDTH-TOP-BIT-FUNCTIONAL and this assertion's own 7-write result
+    // are both within that span, and no bit outside it can push the count
+    // higher), so 2048 words is the true maximum reachable by any write, and
+    // 2048 x 16 = 32768 is the manual's stated ceiling exactly. Judged: the
+    // pair establishes "at most 32768 pixels" whole.
     {
         Harness h(true);
         h.write_reg(BLTSIZV, 1);
@@ -1200,9 +1251,9 @@ int main(int argc, char** argv) {
             "width[10:0] and have no effect. agnus_blitter.v:523-524 "
             "(`width[10:0] <= data_in[10:0]`, an 11-bit slice of a 16-bit data_in). "
             "6-appc-big-blits.c44, 6-appc-big-blits.c45, 6-appc-big-blits.c46, "
-            "6-appc-big-blits.c47, 6-appc-big-blits.c48, ch6-appc-bltsizh.bit11, "
-            "ch6-appc-bltsizh.bit12, ch6-appc-bltsizh.bit13, ch6-appc-bltsizh.bit14, "
-            "ch6-appc-bltsizh.bit15 .");
+            "6-appc-big-blits.c47, 6-appc-big-blits.c48, 6-appc-big-blits.c61, "
+            "ch6-appc-bltsizh.bit11, ch6-appc-bltsizh.bit12, ch6-appc-bltsizh.bit13, "
+            "ch6-appc-bltsizh.bit14, ch6-appc-bltsizh.bit15 .");
     }
 
     // ---------------- BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS (p.172, p.308) ----------------
