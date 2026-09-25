@@ -223,7 +223,7 @@
 // MUTATION PF2P-DIGITS-BOUND-TO-BIT-WEIGHT stimulus red: `make MUT=PF2P_DIGITS_BOUND_TO_BIT_WEIGHT` (guarded `#ifdef MUT_PF2P_DIGITS_BOUND_TO_BIT_WEIGHT` inside flips_at_others_zero(), swaps bits 3<->5 on the way into the DUT for the PF2P group only); measured 255 / 240 / 192 instead of 192 / 240 / 255; 11 passed, 1 failed, only PF2P-DIGITS-BOUND-TO-BIT-WEIGHT red; PF1P-DIGITS-BOUND-TO-BIT-WEIGHT stayed green (the guard is scoped to group_start==3 only). Reverted: 12/0.
 // MUTATION PF1P-GOVERNS-PLAYFIELD1-INDEPENDENT-OF-PF2P stimulus red: the inner comparison's nplayfield argument changed from PF1_ON to (PF1_ON | PF2_ON), so PF2 is also enabled while PF2P is swept -> FAIL ("9 passed, 1 failed"), only PF1P-GOVERNS-PLAYFIELD1-INDEPENDENT-OF-PF2P red (PF2P now genuinely affects sprsel once PF2 is enabled, breaking the claimed invariance). Reverted: 10/0.
 // MUTATION PF2P-GOVERNS-PLAYFIELD2-INDEPENDENT-OF-PF1P stimulus red: the inner comparison's nplayfield argument changed from PF2_ON to (PF1_ON | PF2_ON), so PF1 is also enabled while PF1P is swept -> FAIL ("9 passed, 1 failed"), only PF2P-GOVERNS-PLAYFIELD2-INDEPENDENT-OF-PF1P red. Reverted: 10/0.
-// MUTATION PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT stimulus red: `make MUT=PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT` (guarded `#ifndef MUT_PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT` around the both_spr_priority h.read() call's bplcon2 argument), forcing it from 0x3F to 0x00 -- the same bplcon2 already used for both_pf_priority, neutralizing the priority-flip stimulus while nplayfield/nsprite stay fixed; measured 12 passed, 1 failed, only PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT red (both_spr_priority now reads 0, matching both_pf_priority, so the "which one wins flips with bplcon2 alone" half of the check can no longer be shown). Reverted (plain `make`): 13/0.
+// MUTATION PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT stimulus red: `make MUT=PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT` (guarded `#ifndef MUT_PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT` around the both_spr_priority h.read() call's bplcon2 argument), forcing it from 0x24 to 0x00 -- the same bplcon2 already used for both_pf_priority, neutralizing the priority-flip stimulus while nplayfield/nsprite stay fixed; measured 12 passed, 1 failed, only PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT red (both_spr_priority now reads the same as both_pf_priority instead of matching sprite_only, so the "which one wins flips with bplcon2 alone" half of the check can no longer be shown). Reverted (plain `make`): 13/0.
 //
 // DEFECT CORRECTION, 11.09.2026 (independent review of the 10.09.2026
 // build above, before this commit) -- three defects, all in this file,
@@ -774,11 +774,21 @@ int main(int argc, char** argv) {
     // through -- there is no second output for the loser. Four points, all
     // on the same dut->eval()-then-read-sprsel basis as every assertion
     // above: an active playfield alone (no sprite) occupies sprsel; an
-    // active sprite alone (no playfield) occupies the SAME sprsel; and with
-    // BOTH a playfield and every sprite active at once, sprsel still picks
-    // exactly one of them, and which one flips with bplcon2's priority
-    // field alone, nplayfield/nsprite held fixed -- the two sources are
-    // arbitrated onto one shared output, not given one each.
+    // active sprite alone (no playfield) occupies the SAME sprsel, at a
+    // different reading than the playfield-only case; and with BOTH a
+    // playfield and every sprite active at once, sprsel still picks
+    // exactly one of them, matching the playfield-only reading at priority
+    // code 000 and the sprite-only reading at priority code 100 --
+    // PF1P2-PF1P0's own two extreme rows in Table 7-2 (p.210: "000 PF1
+    // SP01 SP23 SP45 SP67" places PF1 before every sprite group, "100 SP01
+    // SP23 SP45 SP67 PF1" places it after every sprite group) -- so the
+    // two sources are arbitrated onto one shared output, not given one
+    // each. REPAIR (validator ch3-b): the predicate below never hardcodes
+    // which literal value of sprsel means "playfield" or "sprite" -- that
+    // mapping is this module's own internal encoding, stated on no page --
+    // only the RELATION between the four readings is asserted; and the
+    // "sprite wins" stimulus is now priority code 100 (bplcon2=0x24, p.210)
+    // rather than code 111 (bplcon2=0x3F), which no page prints.
     {
         uint8_t playfield_only = h.read(/*bplcon2=*/0x00,
             static_cast<uint8_t>(PF1_ON | PF2_ON), /*nsprite=*/0x00);
@@ -792,28 +802,29 @@ int main(int argc, char** argv) {
         // below are never touched.
         uint8_t both_spr_priority = h.read(
 #ifndef MUT_PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT
-            /*bplcon2=*/0x3F,
+            /*bplcon2=*/0x24, // PF1P=PF2P=100 (p.210, Table 7-2)
 #else
             /*bplcon2=*/0x00, // MUTATION: same bplcon2 as both_pf_priority, neutralizing the priority-flip stimulus
 #endif
             static_cast<uint8_t>(PF1_ON | PF2_ON), /*nsprite=*/0xFF);
 
         checks.expect(
-            playfield_only == 0 && sprite_only == 1 &&
-            both_pf_priority == 0 && both_spr_priority == 1,
+            playfield_only != sprite_only &&
+            both_pf_priority == playfield_only &&
+            both_spr_priority == sprite_only,
             "PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT: with no sprite "
-            "active, an active playfield alone occupies sprsel (selects "
-            "the playfield, 0); with no playfield active, an active "
-            "sprite alone occupies the SAME sprsel output (selects the "
-            "sprite, 1); with both a playfield and all eight sprites "
-            "active at once, sprsel still picks exactly one of them, and "
-            "which one flips with bplcon2's priority field alone held "
-            "against the same fixed nplayfield/nsprite (playfield wins at "
-            "bplcon2=0x00, sprite wins at bplcon2=0x3F) -- playfield and "
-            "sprite data are arbitrated onto the one shared sprsel output "
-            "rather than each given a display output of its own: "
-            "'Playfields share the display with sprites.' (p.86). "
-            "3-adv.c01 .");
+            "active, an active playfield alone occupies sprsel; with no "
+            "playfield active, an active sprite alone occupies the SAME "
+            "sprsel output, at a different reading than the "
+            "playfield-only case; with both a playfield and all eight "
+            "sprites active at once, sprsel still picks exactly one of "
+            "them, matching the playfield-only reading at priority code "
+            "000 (bplcon2=0x00) and the sprite-only reading at priority "
+            "code 100 (bplcon2=0x24) -- PF1P2-PF1P0's own two extreme "
+            "rows in Table 7-2 (p.210) -- playfield and sprite data are "
+            "arbitrated onto the one shared sprsel output rather than "
+            "each given a display output of its own: 'Playfields share "
+            "the display with sprites.' (p.86). 3-adv.c01 .");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
