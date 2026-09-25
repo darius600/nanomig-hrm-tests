@@ -256,6 +256,98 @@
 // MUTATION SPRXDATA-SPRXDATB-DMA-PATH-ONLY-AT-THIS-BOUNDARY stimulus red: -DMUT_DATADATB=1 changes the arming SPR0POS write to 0x20 (VSTART=32) instead of 0x28 (VSTART=40), so the measured window no longer starts at line 40 -> FAIL ("8 passed, 1 failed"), only this assertion newly red (wd.start became 32, not 40). Rebuilt with no flags: 9/0 restored.
 // MUTATION SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED: no record -- this claim is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
 
+// ============================================================================
+// EXTENSION (2026-09-25): 14 new claims routed to this package from
+// build2/ch4-sprite-vertical-position-spec-stage.jsonl. Written from that
+// file's quote/restatement/page fields ALONE -- before
+// build2/ch4-sprite-vertical-position.jsonl (routing.route, routing.how) or
+// agnus_spritedma.v was opened for this pass, same gate as ORDER OF WORK
+// above. Committed before either is read.
+//
+// NEW-1 SPRXCTL-BITS-6-3-UNUSED-OCS (4 ids: CH4-p107.c8, CH4-sprctl.c6,
+//   CH4-p128.c14, CH4-sctl.c13): chapter body page 107 ("Bits 6-3 Unused
+//   (make zero)") and page 128 ("Bits 6-3 are reserved for future use (make
+//   zero)"), each read twice (sol, opus), state that SPRxCTL bits 6 through
+//   3 are unused/reserved and must be written zero. This package's own
+//   classify.conflict_resolution -- identical text on all four claims --
+//   names the SAME dispute already declined once in this file, under
+//   SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED above: appendix C p303 names bits 4
+//   and 3 SHSH1/SHSH0, "unimplemented ... in the ECS chips only", against
+//   the chapter's and appendix A's "unused". The undisputed sub-span in
+//   that earlier finding was bits 6 and 5, which this file's own MEASURED
+//   note above (not a claim, not asserted) already reports as inert on OCS
+//   (ecs=0) and live on ECS (ecs=1). These four new ids restate the
+//   identical BUNDLED span -- bits 6 through 3 together, not split per bit
+//   -- from two further pages and two further readers. Whether the
+//   undisputed sub-span (6,5) can carry an id here while the disputed one
+//   (4,3) cannot, per the bundled-claim rule, or whether the whole bundle
+//   is withdrawn again as its sibling was, is a step-3 decision once
+//   routing.how is read -- not assumed here.
+//
+// NEW-2 SPRXCTL-CHIP-COLUMN-CONFLICT (2 ids: APPB2-conf.c1, APPB2-conf.c2):
+//   appendix B p291 gives SPR0CTL's chip column as "A D(E)"; p292 gives
+//   SPR1CTL's as "A D", no qualifier -- the Denise/ECS-qualifier half of
+//   the same five-way chip-column conflict this package's own
+//   AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL assertion already leaves
+//   undisputed-but-untested (the Denise half, the "(E)" qualifier). Package
+//   field: "REGRESSION-CLASS: ch4-source-conflicts (record both readings,
+//   assert neither)"; both restatements end "Recorded, not resolved."
+//
+// NEW-3 SPR0POS-PCT-MARK-FREQUENCY (1 id: APPB2-conf.c5): appendix B p291's
+//   "%" mark on SPR0POS, chapter p128 ("normally only written by the sprite
+//   DMA channel itself") and appendix A p284 ("may be loaded by either
+//   processor at any time") all state a RELATIVE FREQUENCY for the same
+//   dual DMA/processor write path this package's own
+//   SPRXPOS-SPRXCTL-WRITE-BUS-HAS-BOTH-DMA-AND-PROCESSOR-PATHS assertion
+//   already asserts the structural half of and explicitly declines the
+//   frequency half of ("no port carries how often a write happens").
+//   Package field marks this REGRESSION-CLASS too; restatement: "recorded
+//   here because the mark is the only one of the three that is
+//   machine-readable per register."
+//
+// NEW-4 SPRXPOS-SPRXCTL-JOINT-SIZE-ECS (1 id: CH4-appC-position.c6):
+//   appendix C p303, the ECS appendix: "The ECS registers SPRxPOS and
+//   SPRxCTL work together as position, size and sprite feature control
+//   registers." Same substance as p284's "position, size and feature"
+//   wording this package's own AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-
+//   SPRXCTL assertion already cites (APPA-sprpair.c1) -- but sourced from
+//   the ECS appendix specifically, and that existing measurement was taken
+//   at this fixture's default ecs=0. Whether the existing OCS-mode
+//   measurement already establishes an ECS-scoped claim, or an independent
+//   ecs=1 measurement is needed, is a step-3 decision once the RTL's ecs
+//   port is open again -- not assumed here.
+//
+// NEW-5 SPRXCTL-ECS-MAP-ROW (4 ids: APPC2-SPRxCTL.addr, APPC2-SPRxCTL.v20,
+//   APPC2-SPRxCTL.acc, APPC2-SPRxCTL.chip): one printed row, appendix C
+//   p298's ECS register map, "142  SPRxCTL  chg   W  A   Sprite x position
+//   and control data", read column by column: address $142 (.addr),
+//   version-2.0 status "chg" i.e. changed-not-new (.v20), access "W" i.e.
+//   write (.acc), chip column "A" alone i.e. Agnus (.chip). classify's own
+//   conflict_resolution on two of these (.chip, and the related .conf1
+//   below) already separates an undisputed sub-claim -- SPRxCTL is an
+//   Agnus register -- from a disputed one -- whether Denise also
+//   implements it, kept record-only -- the same split this package's own
+//   AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL assertion already makes
+//   for the appendix A/B readings of the same fact.
+//
+// NEW-6 SPRXCTL-ECS-MAP-ROW-CONFLICTS (2 ids: APPC2-SPRxCTL.conf1,
+//   APPC2-SPRxCTL.conf3): the same appendix C p298 row's chip column read
+//   against four other printed readings of the same column (map p298 "A"
+//   alone; appendix A p284 "A D( E )"; appendix B p291 "A D(E)" for
+//   SPR0CTL; appendix B p292 "A D" for SPR1CTL-SPR7CTL; appendix C p303
+//   body text "A D") -- five readings, recorded not resolved
+//   (APPC2-SPRxCTL.conf1); and whether "SPRxCTL chg" printed once at $142
+//   means all eight sprite control registers changed, or only the one at
+//   $142, is not stated by the source (APPC2-SPRxCTL.conf3). Both
+//   restatements end "Recorded, not resolved."
+//
+// Disposition -- assert vs. record, and which existing assertion, if any,
+// already establishes a given id in full per the one allowed label change
+// -- is decided in the next pass, against
+// build2/ch4-sprite-vertical-position.jsonl's routing.route and
+// routing.how and the RTL, per ORDER OF WORK above. Not decided here.
+// ============================================================================
+
 // MUT_*: replay stimulus for this file's own mutation records (RESULTS/
 // MUTATION LOG below), one flag per non-declined assertion, each
 // isolated to that assertion's own call site so a mutation build changes
