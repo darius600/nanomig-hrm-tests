@@ -887,16 +887,45 @@
 // report, not silently dropped: this module has nothing to assert it
 // against.
 //
-// NO HIRES BPU CEILING. `bpu` (l.298-300) is computed from bplcon0_delayed
-// bits alone - for non-AGA it is bplcon0_delayed[2:0], with the single
-// special case that 3'b111 forces bpu=4 (the real OCS/ECS "BPU=7 code means
-// dual-playfield 4+4" encoding, not a hires-only rule) - `hires` is never
-// read anywhere in this computation. Setting BPU=6 with hires=1 is accepted
-// and fetched exactly like BPU=6 in lores. 3-res.c13/3-resolution.c6 ("up to
-// four bitplanes" in hires) are therefore reported as NOT ASSERTABLE at
-// this boundary in the final report: nothing here enforces the ceiling the
-// manual describes, and asserting a limit the RTL does not implement would
-// not be a meaningful pass/fail.
+// CORRECTED - an earlier version of this note said the opposite of both
+// points below and was titled "NO HIRES BPU CEILING"; kept here with its
+// correction on the record rather than silently rewritten.
+//
+// HIRES BPU CEILING, VIA THE PLANE ENCODER, NOT VIA `bpu` ITSELF. `bpu`
+// (l.298-300) is computed from bplcon0_delayed bits alone - for non-AGA it
+// is bplcon0_delayed[2:0], with the single special case that 3'b111 forces
+// bpu=4. The prior version of this note called that special case "the real
+// OCS/ECS 'BPU=7 code means dual-playfield 4+4' encoding" - WRONG against
+// the manual: Table 3-5 (p.48) and the BPLCON0 bit summary (p.90) both list
+// code 111 as "Value not used" / "not used", not as a defined dual-playfield
+// meaning; the sixth bitplane's dual-playfield/HAM use (p.48's own note) is
+// carried by code 110 (BPU=6), not 111. `hires` is correctly never read in
+// the `bpu` assignment itself - but the ceiling is real, enforced two lines
+// away, at the `plane` encoder (l.457-461): in hires with FMODE=0 (the
+// standard OCS/ECS fetch mode), `plane = {3'b000,~ddfseq[0],~ddfseq[1]}` -
+// only two bits wide, so `plane` can never reach 4 or 5 no matter what `bpu`
+// requests. `dma` (l.472) gates on `plane[4:0] < bpu[3:0]`, so a `plane`
+// that structurally cannot exceed 3 caps the fetch at 4 bitplanes regardless
+// of `bpu`. Measured directly, not merely read: HIRES-BPU-CEILING-MAX-4-
+// PLANES below sets BPU=6 in hires and confirms reg_address_out $8C/$8D
+// (bitplanes 5-6) never fire, with the same BPU=6 in lores as a control
+// showing they DO fire there - the ceiling is real and hires-specific.
+// 3-res.c13/3-resolution.c6 ("up to four bitplanes" in hires) are graded on
+// that assertion, not declined.
+//
+// DUAL-PLAYFIELD SPLIT (p.68, G20) FOLLOWS FROM THE SAME CEILING. This
+// module carries no DBLPF/playfield-assignment signal at all (grepped the
+// whole file for `dblpf`/`DBLPF`/`playfield`: no hit) - it cannot itself
+// distinguish "playfield 1" from "playfield 2". But the manual's own
+// bitplane-to-playfield numbering is fixed (odd bitplanes 1/3/5/7 to
+// playfield 1, even 2/4/6/8 to playfield 2, p.68), not something the RTL
+// needs to compute, and the four planes HIRES-BPU-CEILING-MAX-4-PLANES
+// shows are the only ones ever fetched in hires - bitplanes 1-4 - split
+// into exactly two of each parity. DUAL-PLAYFIELD-HIRES-CEILING-2-PER-
+// PLAYFIELD below measures that split directly (odd: reg $88/$8A; even:
+// $89/$8B) and grades 3-dual-planes.c4/3-dual.c18 on the fetch-side half of
+// the claim; which VISUAL playfield each parity renders to is Denise's
+// boundary, outside this module and outside this package.
 //
 // MUTATION LOG: see the bottom of this file, after main(). Recorded there
 // so it can quote this file's own assertion labels; every entry was
@@ -2103,6 +2132,152 @@ int main(int argc, char** argv) {
             "3-large.c6, 3-large.c8.");
     }
 
+    // ---------------- HIRES-BPU-CEILING-MAX-4-PLANES (p.49) ----------------
+    // This package's own prior "NO HIRES BPU CEILING" note had read only
+    // the `bpu` register term (l.300) and missed the plane encoder
+    // (l.457-461):
+    // in hires+FMODE0 the encoder itself is `{3'b000,~ddfseq[0],~ddfseq[1]}`
+    // - two bits wide, so `plane` can never reach 4 or 5 no matter what
+    // `bpu` says. See this file's IMPLEMENTATION NOTES above main() for the
+    // corrected note and the p.48/p.90 manual correction that went with it.
+    {
+        Harness hh;
+        hh.setup_standard();
+        hh.write_reg(DDFSTRT_ADDR, DDFSTRT_HIRES_STD);
+        hh.write_reg(DDFSTOP_ADDR, DDFSTOP_HIRES_STD);
+        hh.write_reg(BPLCON0_ADDR, bplcon0_word(true, 6));  // hires, BPU=6 requested
+        LineResult hi = run_to_line(hh, 0x50);
+
+        Harness hl;
+        hl.setup_standard();
+        hl.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        hl.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        hl.write_reg(BPLCON0_ADDR, bplcon0_word(false, 6));  // lores, BPU=6 - control
+        LineResult lo = run_to_line(hl, 0x50);
+
+        bool hi_seen[8] = {false, false, false, false, false, false, false, false};
+        for (auto& f : hi.fetches) hi_seen[(f.reg - 0x88) & 7] = true;
+        bool lo_seen[8] = {false, false, false, false, false, false, false, false};
+        for (auto& f : lo.fetches) lo_seen[(f.reg - 0x88) & 7] = true;
+
+        bool hires_only_0to3 = hi_seen[0] && hi_seen[1] && hi_seen[2] && hi_seen[3] &&
+            !hi_seen[4] && !hi_seen[5] && !hi_seen[6] && !hi_seen[7];
+        bool lores_reaches_4_and_5 = lo_seen[4] && lo_seen[5];
+
+        checks.expect(
+            hires_only_0to3 && lores_reaches_4_and_5,
+            "HIRES-BPU-CEILING-MAX-4-PLANES: BPLCON0 HIRES=1, BPU=6 "
+            "(FMODE=0, the standard OCS/ECS fetch mode), DDFSTRT=$003C/"
+            "DDFSTOP=$00D4 - only reg_address_out $88/$89/$8A/$8B "
+            "(bitplanes 1-4) ever receive a dma cycle over the line; "
+            "$8C/$8D (bitplanes 5-6) never do, though BPU asks for 6. "
+            "Control: the SAME BPU=6 in LORES (DDFSTRT=$0038/DDFSTOP=$00D0) "
+            "DOES reach $8C/$8D - this RTL can address planes 5-6, so the "
+            "hires absence is a real ceiling, not this fixture never "
+            "trying. 'Note that in high resolution mode, you can have up "
+            "to four bitplanes in the playfield and, therefore, up to 16 "
+            "colors' (p.49). 3-res.c13, 3-resolution.c6.");
+    }
+
+    // ---------------- DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD (p.68) ----------------
+    {
+        Harness h;
+        h.setup_standard();
+        h.write_reg(DDFSTRT_ADDR, DDFSTRT_HIRES_STD);
+        h.write_reg(DDFSTOP_ADDR, DDFSTOP_HIRES_STD);
+        h.write_reg(BPLCON0_ADDR, bplcon0_word(true, 6));  // hires, BPU=6 requested
+        LineResult r = run_to_line(h, 0x50);
+
+        bool seen[8] = {false, false, false, false, false, false, false, false};
+        for (auto& f : r.fetches) seen[(f.reg - 0x88) & 7] = true;
+
+        // "Playfield 1" = odd-numbered bitplanes (1,3,5,7 -> 0-based reg
+        // index 0,2,4,6); "playfield 2" = even-numbered (2,4,6,8 -> index
+        // 1,3,5,7) - the manual's own fixed numbering (p.68), not a signal
+        // this module reads: agnus_bitplanedma has no DBLPF port at all
+        // (grepped, absent - see the IMPLEMENTATION NOTES above main()).
+        int odd_count = (seen[0] ? 1 : 0) + (seen[2] ? 1 : 0) + (seen[4] ? 1 : 0) + (seen[6] ? 1 : 0);
+        int even_count = (seen[1] ? 1 : 0) + (seen[3] ? 1 : 0) + (seen[5] ? 1 : 0) + (seen[7] ? 1 : 0);
+        bool odd_is_1_and_3 = seen[0] && seen[2] && !seen[4] && !seen[6];
+        bool even_is_2_and_4 = seen[1] && seen[3] && !seen[5] && !seen[7];
+
+        checks.expect(
+            odd_count == 2 && even_count == 2 && odd_is_1_and_3 && even_is_2_and_4,
+            "DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD: same HIRES=1, "
+            "BPU=6, FMODE=0 run as HIRES-BPU-CEILING-MAX-4-PLANES - of the "
+            "(at most 4) bitplanes this RTL ever fetches in hires, exactly "
+            "the odd-numbered pair (bitplanes 1 and 3, reg $88/$8A) and "
+            "exactly the even-numbered pair (bitplanes 2 and 4, reg "
+            "$89/$8B) are present, never a third of either parity - 'In "
+            "high resolution mode, you can have up to two bitplanes in "
+            "each playfield -- bitplanes 1 and 3 in playfield 1 and "
+            "bitplanes 2 and 4 in playfield 2' (p.68). agnus_bitplanedma "
+            "has no DBLPF/playfield port - this assertion tests the "
+            "fetch-side half of the claim, the odd/even split of HIRES-"
+            "BPU-CEILING-MAX-4-PLANES' own 4-plane ceiling; which VISUAL "
+            "playfield each parity renders to is Denise's boundary, not "
+            "this module's. 3-dual-planes.c4, 3-dual.c18.");
+    }
+
+    // ---------------- DDF-FETCH-LEADS-WINDOW measurement (p.60) ----------------
+    // Measures, does not grade, the classification's own "undisputed
+    // sub-claim" for 3-ddf.c10 ("the data fetch must begin before the
+    // display window opens, and the offset differs between low and high
+    // resolution"). The first half measures true; the second half measures
+    // FALSE for the manual's own standard configuration, so the id is kept
+    // off any PASS line - see the RECORDED line below, which covers both
+    // 3-ddf.c09 and 3-ddf.c10.
+    {
+        int common_hde = hde_rising_edge(DIWSTRT_STD);  // no hires term in
+            // the RTL's own hde compare (l.171-176) - confirmed by reading
+            // every consumer, not assumed; same edge for both runs below.
+
+        Harness hl;
+        hl.setup_standard();
+        hl.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        hl.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        hl.write_reg(BPLCON0_ADDR, bplcon0_word(false, 1));
+        int lo_fetch = first_fetch_hpos(hl, 0x50);
+
+        Harness hh;
+        hh.setup_standard();
+        hh.write_reg(DDFSTRT_ADDR, DDFSTRT_HIRES_STD);
+        hh.write_reg(DDFSTOP_ADDR, DDFSTOP_HIRES_STD);
+        hh.write_reg(BPLCON0_ADDR, bplcon0_word(true, 1));
+        int hi_fetch = first_fetch_hpos(hh, 0x50);
+
+        checks.note(
+            "DDF-FETCH-LEADS-WINDOW: standard DDFSTRT ($0038 lores / "
+            "$003C hires), standard DIWSTRT ($2C81) - the first dma cycle "
+            "comes BEFORE hde's rising edge (hpos " + std::to_string(common_hde) +
+            ") in BOTH resolutions (lores hpos " + std::to_string(lo_fetch) +
+            ", hires hpos " + std::to_string(hi_fetch) +
+            " - IDENTICAL, both " + std::to_string(common_hde - lo_fetch) +
+            " hpos ticks early). The classification's conflict_resolution "
+            "for 3-ddf.c10 reads this lead as resolution-dependent; "
+            "measured directly, it is NOT, for the manual's own standard "
+            "DDFSTRT/DIWSTRT pair - cross-checked against DDFSTRT-H3-BIT-"
+            "RESPECTED-ONLY-IN-HIRES-MODE's own independently-measured "
+            "$0038/$003C first-fetch hpos values above, which agree "
+            "exactly (135 lores, 135 hires at these two DDFSTRT values).");
+    }
+    checks.record(
+        "3-ddf.c09 and 3-ddf.c10 are DECLINED, not graded. Page 60's prose "
+        "gives the window-start-to-data-fetch-start difference as 4.5 "
+        "color clocks; the worked example on the same page subtracts 8.5 "
+        "for the low-resolution case ($81/2 - 8.5 = $38) and 4.5 only for "
+        "the high-resolution case ($81/2 - 4.5 = $3C) - the manual "
+        "disputes itself on this number (3-ddf.c09), which no RTL "
+        "measurement can resolve. 3-ddf.c10's own classification kept a "
+        "narrower sub-claim testable instead - fetch precedes window, by "
+        "an offset that differs between resolutions - but DDF-FETCH-"
+        "LEADS-WINDOW above measures the SECOND half false for the "
+        "manual's own standard DDFSTRT/DIWSTRT pair: the lead is "
+        "identical (135 hpos, 5 ticks before hde) in both resolutions, "
+        "not merely undetermined. Grading either id on that basis would "
+        "credit a claim this fixture measures does not hold; both stay "
+        "declined here rather than forced. 3-ddf.c09, 3-ddf.c10.");
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }
@@ -2214,6 +2389,25 @@ int main(int argc, char** argv) {
 //        NOT shift. No stimulus this assertion explores can satisfy the
 //        manual's mode-based condition.
 //
+// 20. HIRES-BPU-CEILING-MAX-4-PLANES: the CONTROL half's stimulus changed -
+//    the lores run's BPU dropped from 6 to 3. Result: the control no longer
+//    reaches planes 5-6 (lores_reaches_4_and_5 false), so the overall
+//    condition failed even though the hires half was untouched - the
+//    control is not a decoration, this assertion's own pass condition
+//    depends on it. Reverted; rebuilt clean. (A more direct mutation - open
+//    the hires ceiling itself via FMODE - was tried first and does not
+//    apply here: FMODE only latches when `aga` is set (l.307,
+//    `else if (aga && ...) fmode <= data_in`), and `aga` is 0 for the whole
+//    of this Harness, always - checked, not assumed; grepped the file, one
+//    hit, in the constructor. AGA-mode fetch behaviour is NOT EXERCISED
+//    here, by the same scope decision that already keeps every other
+//    assertion in this file at aga=0.)
+// 21. DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD: BPU dropped from 6 to 3
+//    in the hires run. Result: even_count dropped to 1 (plane index 3,
+//    bitplane 4, no longer reached), failing the "exactly two of each
+//    parity" check while HIRES-BPU-CEILING-MAX-4-PLANES (a separate run)
+//    stayed green. Reverted; rebuilt clean.
+//
 // Machine-readable records, one per line, read by tools/check_gates.py's
 // mutation gate (MUTATION_RE):
 // MUTATION HARNESS-PROVES-PLANE-ADDRESS-ORDERING stimulus red: BPU dropped from 4 to 3; plane 3 (reg 0x8B) never appears.
@@ -2235,4 +2429,6 @@ int main(int argc, char** argv) {
 // MUTATION WIDER-PLAYFIELD-FIRST-LINE-UNCHANGED stimulus red: shared pointer helper made to add the modulo to the base address; addrs_m40 no longer equalled addrs_m0.
 // MUTATION MAX-WORDS-49-HIRES-AT-HW-LIMITS none impossible: already red at this package's true baseline; 49 is structurally unreachable (hires word count is always even in this RTL, confirmed by sweeping n=26..34), so no stimulus this assertion explores can turn it green.
 // MUTATION DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE none impossible: already red at baseline; H3 (ddfstrt[3], register bit 2) is part of the position compare's unconditional `ddfstrt[8:3]` group, gated by neither `ecs` nor `hires`, so an H3-only-differing DDFSTRT pair always shifts the first fetch in lores too - no ecs/hires/DDFSTRT combination this assertion drives can satisfy the manual's mode-based condition.
+// MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: control run's BPU dropped from 6 to 3 (lores); lores_reaches_4_and_5 false, control no longer reaches planes 5-6.
+// MUTATION DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD stimulus red: BPU dropped from 6 to 3 (hires); even_count dropped to 1, plane index 3 (bitplane 4) no longer reached.
 // ============================================================================
