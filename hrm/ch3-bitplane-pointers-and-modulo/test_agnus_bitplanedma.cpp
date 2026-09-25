@@ -1488,7 +1488,8 @@ int main(int argc, char** argv) {
             "many more lines can be fetched (HEIGHT). 'Another constraint "
             "on playfield size is the bit plane modulos which limit the "
             "width (but not the height) of a playfield to 262,144 pixels' "
-            "(p.76). 3-big.c19, 3-big.c20, 3-large.c24, 3-large.c25.");
+            "(p.76). 3-big.c19, 3-big.c20, 3-large.c24, 3-large.c25, "
+            "B-mod.c4.");
     }
 
     // ---------------- BPLEN-DMA-GATES-POINTER-ADVANCE (p.62) ----------------
