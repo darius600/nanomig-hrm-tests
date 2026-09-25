@@ -166,6 +166,89 @@
 // classify.package=="PKG-BLT-REGDECODE" -- exact match, no id missing, no
 // id invented.
 //
+// EXTENSION 2026-09-25 -- SPECIFICATION, from the routed spec-stage claims
+// ALONE (hrm-testpipeline/work/2026-09-25_unit-backlog/build2/ch6-blitter-
+// regdecode-spec-stage.jsonl), committed BEFORE this agent opened the full
+// claims file (whose classify.evidence field is the port list by another
+// name) or re-read the RTL. 24 claims, all reader opus, all page 289 or
+// 290, all flagged by the reader itself ["print-only", "not-named-in-
+// chapter", "added by opus's own completion audit 10.09.2026 -- NOT cross-
+// read"] -- disclosed here, not smoothed over. Every one is chapter 3's own
+// reading of Appendix B's address column for a blitter register -- the
+// same table this package's original build already read (p289-290) under
+// its own ch6-appb-*.addr claim ids. Each restatement below is quoted
+// verbatim from the spec-stage file; no RTL reasoning appears in this
+// block.
+//
+//   B-bltafwm.addr  (p289) "BLTAFWM      ~044   W     A          Blitter
+//     first word mask for source A" -> Appendix B, address order: BLTAFWM
+//     is listed at address $044.
+//   B-bltalwm.addr  (p289) "BLTALWM      ~046   W     A          Blitter
+//     last word mask for source A" -> BLTALWM is listed at address $046.
+//   B-bltamod.addr  (p289) "BLTAMOD      ~064    w    A          Blitter
+//     modulo for source A" -> BLTAMOD is listed at address $064.
+//   B-bltapth.addr  (p289) "BLTAPTH    + ~050    w    A (E)      Blitter
+//     pointer to source A (high 3 bits)" -> BLTAPTH is listed at address
+//     $050.
+//   B-bltaptl.addr  (p289) "BLTAPTL    + ~052    w    A          Blitter
+//     pointer to source A (low 15 bits)" -> BLTAPTL is listed at address
+//     $052.
+//   B-bltbdat.addr  (p289) "BLTBDAT    % ~072    w    A       Blitter
+//     source B data register" -> BLTBDAT is listed at address $072.
+//   B-bltbmod.addr  (p289) "BLTBMOD      ~062    w    A          Blitter
+//     modulo for source B" -> BLTBMOD is listed at address $062.
+//   B-bltbpth.addr  (p289) "BLTBPTH    + ~04C   W     A          Blitter
+//     pointer to source B (high 3 bits)" -> BLTBPTH is listed at address
+//     $04C.
+//   B-bltbptl.addr  (p289) "BLTBPTL    + ~04E   W     A          Blitter
+//     pointer to source B (low 15 bits)" -> BLTBPTL is listed at address
+//     $04E.
+//   B-bltcdat.addr  (p289) "BLTCDAT    % ~070    w    A       Blitter
+//     source C data register" -> BLTCDAT is listed at address $070.
+//   B-bltcmod.addr  (p289) "BLTCMOD      ~060    w    A          Blitter
+//     modulo for source C" -> BLTCMOD is listed at address $060.
+//   B-bltcon0.addr  (p289) "BLTCON0      ~040   W     A          Blitter
+//     control register 0" -> BLTCON0 is listed at address $040.
+//   B-bltcon0l.addr (p289) "BLTCON0L     ~05A    w    A (E)      Blitter
+//     control 0, lower 8 bits (minterms)" -> BLTCON0L is listed at address
+//     $05A.
+//   B-bltcon1.addr  (p289) "BLTCON1      ~042   W     A (E)      Blitter
+//     control register 1" -> BLTCON1 is listed at address $042.
+//   B-bltcpth.addr  (p289) "BLTCPTH    + ~048   W     A          Blitter
+//     pointer to source C (high 3 bits)" -> BLTCPTH is listed at address
+//     $048.
+//   B-bltcptl.addr  (p289) "BLTCPTL    + ~04A   W     A          Blitter
+//     pointer to source C (low 15 bits)" -> BLTCPTL is listed at address
+//     $04A.
+//   B-bltddat.addr  (p289) "BLTDDAT    & *000   ER    A          Blitter
+//     destination early read (dummy address)" -> BLTDDAT is listed at
+//     address $000.
+//   B-bltdmod.addr  (p289) "BLTDMOD      ~066    w    A          Blitter
+//     modulo for destination D" -> BLTDMOD is listed at address $066.
+//   B-bltdpth.addr  (p289) "BLTDPTH    + ~054    w    A          Blitter
+//     pointer to destination D (high 3 bits)" -> BLTDPTH is listed at
+//     address $054.
+//   B-bltdptl.addr  (p289) "BLTDPTL    + ~056    w    A          Blitter
+//     pointer to destination D (low 15 bits)" -> BLTDPTL is listed at
+//     address $056.
+//   B-bltsize.addr  (p289) "BLTSIZE      ~058    w    A          Blitter
+//     start and size (window width, height)" -> BLTSIZE is listed at
+//     address $058.
+//   B-bltsizh.addr  (p289) "BLTSIZH      ~05E    w    A (E)      Blitter H
+//     size and start (for 11 bit H size)" -> BLTSIZH is listed at address
+//     $05E.
+//   B-bltsizv.addr  (p289) "BLTSIZV      ~05C    w    A (E)      Blitter V
+//     size (for 15 bit vertical size)" -> BLTSIZV is listed at address
+//     $05C.
+//   B-bltadat.addr  (p290) "BLTADAT    % ~074     W               Blitter
+//     source A data register" -> BLTADAT is listed at address $074.
+//
+// Every one of these 24 propositions is, on its face, the identical
+// address-order fact this package's original build already read off the
+// same Appendix B table for the same 24 registers (its own ch6-appb-
+// *.addr claims, p289-290) -- confirmed or withdrawn only after re-opening
+// the full claims file and the RTL, next.
+//
 // MUTATION LOG. Every mutation below was actually run by this agent: the
 // named line(s) edited, `make test` rebuilt and re-run, the resulting
 // PASS/FAIL line read, then reverted and rebuilt again to confirm the
