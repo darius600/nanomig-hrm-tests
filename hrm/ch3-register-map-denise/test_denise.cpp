@@ -1057,10 +1057,11 @@ int main(int argc, char** argv) {
     checks.record(
         "opus:7-appC-bplcon2.c8 (p.307, appendix C's ECS chip-assignment table for all four bitplane control "
         "registers -- BPLCON0 Agnus+Denise, BPLCON1/BPLCON2/BPLCON3 Denise, all four write-only): not asserted as a "
-        "whole -- only the write-only clause is established for three of the four registers (BPLCON0-WO, "
-        "BPLCON2-WO, BPLCON3-WO above); BPLCON1 is untested here at all (see the opus:7-appA-bplcon2.c3 record just "
-        "above) and the chip-attribution clause for BPLCON2/BPLCON3 is explicitly not independently verified beyond "
-        "write-only (see the sol:7-appA-bplcon2.c3 and sol:7-appB-bplcon2.c3 records). This suite's own precedent "
+        "whole -- the write-only clause is established for all four registers (BPLCON0-WO, BPLCON1-WO, BPLCON2-WO, "
+        "BPLCON3-WO above); the chip-attribution clause is not independently verified for any of them beyond that "
+        "write-only measurement -- BPLCON0-WO's own text already limits itself to 'the Denise-visible half', "
+        "BPLCON1's chip clause is declined at opus:7-appA-bplcon2.c3 above, and BPLCON2/BPLCON3's are declined at "
+        "sol:7-appA-bplcon2.c3 and sol:7-appB-bplcon2.c3 above. This suite's own precedent "
         "(hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a multi-clause id bundling several registers "
         "and several properties is not partially kept on the clauses that happen to be established, so this bundled "
         "id is declined as a whole, matching this file's own opus:7-appB.c34 record above.");
