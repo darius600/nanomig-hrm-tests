@@ -140,10 +140,12 @@
 // not decode, on the same measurement basis as the positive case).
 //
 // CLAIM COVERAGE: all 113 records of claims.jsonl are accounted for below
-// -- 98 inside an expect() assertion string, 15 inside a note() call with a
-// stated reason (6 for the BPLxDAT DMA-only dispute, 9 for claims whose
-// subject needs a wider boundary than this module -- pointers, modulo,
-// Copper, or DIW). Every id is written out in full.
+// -- 97 inside an expect() assertion string, 16 inside a note() or
+// record() call with a stated reason (6 for the BPLxDAT DMA-only dispute,
+// 9 for claims whose subject needs a wider boundary than this module --
+// pointers, modulo, Copper, or DIW, and 1 for 3-dual-mode.c2, RECORDED
+// near PF1H-PF2H-SCROLL-INDEPENDENTLY -- see CLAIM COVERAGE (routed
+// additions) below). Every id is written out in full.
 //
 // SPECIFICATION ADDITIONS -- seven further propositions from the manual,
 // routed to this package at its module boundary, not yet built into an
@@ -174,16 +176,26 @@
 //     of all bitplanes for that word (16 pixels)." -- each converted
 //     bitplane word supplies 16 pixels.
 //
-// CLAIM COVERAGE (routed additions): all seven claims above are asserted,
-// each attached as a bare id to an existing assertion's label whose
-// measurement already establishes its whole proposition -- see the source
-// comment beside each attachment: 3-memory.c20 and A-bpldat.c8 on
+// CLAIM COVERAGE (routed additions): six of the seven claims above are
+// asserted, each attached as a bare id to an existing assertion's label
+// whose measurement already establishes its whole proposition -- see the
+// source comment beside each attachment: 3-memory.c20 and A-bpldat.c8 on
 // BPLXDAT-MSB-FIRST-16-PIXELS-PER-WORD; 3-ddf.c08 on FIXTURE-DATA-PATH-LIVE;
-// 3-dual-mode.c2 on PF1H-PF2H-SCROLL-INDEPENDENTLY; 3-hscr.c22,
-// 3-hscroll.c29 and 3-hscroll.c31 on
+// 3-hscr.c22, 3-hscroll.c29 and 3-hscroll.c31 on
 // BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN. No new assertion,
-// mutation or PASS/FAIL line was added; every previously graded line keeps
-// its own verdict and text unchanged.
+// mutation or PASS/FAIL line was added for those six; every previously
+// graded line keeps its own verdict and text unchanged.
+//
+// 3-dual-mode.c2 was attached to PF1H-PF2H-SCROLL-INDEPENDENTLY the same
+// way until a repair on independent validation removed it (RECORDED
+// instead, immediately after that assertion): the claim is "you can also
+// move the two playfields independently" in general, and the assertion
+// measures only BPLCON1's horizontal scroll delay -- one axis, one
+// mechanism. Coarse and vertical playfield movement is done with the
+// odd/even bitplane pointers and modulos (p.72), which this module has no
+// port for (see NOT ASSERTED: WIDER BOUNDARY below), so the assertion
+// cannot establish the claim's full generality and the id does not stay on
+// it with a caveat.
 //
 // RTL OPENED, BUILT AND RUN, 10.09.2026 (all after the spec-only commit
 // above; built under WSL/Verilator 5.052). denise_bitplanes.v carries a
@@ -404,6 +416,11 @@ public:
     // every claim declined below -- so coverage is findable by grepping the
     // file's own strings, not only its comments.
     void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
+    // A record is not a check either: it prints and does not touch passed/
+    // failed. Used to withdraw a claim id from a graded label to a decline,
+    // printed as a real C++ string (not only a `//` comment) so a coverage
+    // search of the file's own strings finds it.
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -886,8 +903,9 @@ int main(int argc, char** argv) {
         h.clear_reg();
         auto first = h.measure_first_high_all(400);
         // 3-dual-mode.c2 (p.67, "You can also move the two playfields
-        // independently") restates the same independent-movement proposition
-        // this measurement already establishes for the horizontal scroll delay.
+        // independently") is NOT attached here -- see the RECORDED call
+        // right below. That claim is about playfield movement in general;
+        // this measurement establishes only the horizontal scroll delay.
         checks.expect(
             first[1] == sweep1[5] && first[2] == sweep2[11],
             "PF1H-PF2H-SCROLL-INDEPENDENTLY: with PF1H=5 and PF2H=11 written "
@@ -897,7 +915,22 @@ int main(int argc, char** argv) {
             "the other's simultaneous nonzero value -- 'They can be scrolled "
             "separately' (p.71), 'If you are using dual playfields, you can "
             "scroll them separately' (p.80). 3-dual-control.c3, 3-dual.c33, "
-            "3-scroll.c1, 3-dual-mode.c2 .");
+            "3-scroll.c1 .");
+        checks.record(
+            "WITHDRAWN 3-dual-mode.c2 (sol, p.67, \"You can also move the "
+            "two playfields independently\") from PF1H-PF2H-SCROLL-"
+            "INDEPENDENTLY above. That claim is about playfield movement in "
+            "general; the assertion it was attached to establishes only "
+            "BPLCON1's 0-15-pixel horizontal scroll delay -- one axis, one "
+            "mechanism. Coarse and vertical movement of a playfield is done "
+            "with the odd/even bitplane pointers and modulos ('adjust the "
+            "modulo and the bitplane pointers of the playfield that is not "
+            "being scrolled', p.72), an Agnus DMA-address mechanism with no "
+            "pointer, modulo or Copper port anywhere in denise_bitplanes' "
+            "boundary (see NOT ASSERTED: WIDER BOUNDARY below). Withdrawn "
+            "whole rather than kept on the horizontal-only measurement with "
+            "a caveat -- a pointers-and-modulo fixture would be needed to "
+            "establish the rest.");
     }
 
     // ---------------- BPLCON1-PF1H-GOVERNS-ODD-PLANES-PF2H-GOVERNS-EVEN ----------------
