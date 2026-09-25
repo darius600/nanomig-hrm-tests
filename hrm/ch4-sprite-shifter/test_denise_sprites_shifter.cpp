@@ -99,16 +99,67 @@
 //   absolute equality that fixed latency would always fail.
 //
 // THE TWO PAGE-124 SELF-CONTRADICTIONS, THE TWO SMALL SELF-CHECKED
-//   READINGS, and FIGURE 4-13's DOUBLE "ARM" LABEL: unchanged from the
-//   prior commit -- see git history for the full reasoning. In short:
-//   neither disputed-side record of either page-124 contradiction
-//   occurs in this package's own claims.jsonl (both belong to the
-//   sibling ch4-regression-comparator-and-arming package); no assertion
-//   below names either direction of the converter's name or hedges on
-//   the comparator's axis (every claim actually in this file says
+//   READINGS, and FIGURE 4-13's DOUBLE "ARM" LABEL: no assertion below
+//   names either direction of the converter's name or hedges on the
+//   comparator's axis (every claim asserted in this file says
 //   "horizontal"); CH4-p107.c4/CH4-p128.c5 are read as consistent, not
-//   conflicting; and only CH4-fig413.f4, resting on the undisputed FIRST
-//   "ARM" occurrence, is among this package's Figure 4-13 claims.
+//   conflicting; and CH4-fig413.f4, resting on the undisputed FIRST
+//   "ARM" occurrence, is the only Figure 4-13 claim among this
+//   package's assertions. The disputed-side records of both page-124
+//   contradictions and the figure's second "ARM" occurrence are now
+//   present in this package's own claims and are addressed below, in
+//   NEW PROPOSITIONS, from their quotation and page alone.
+//
+// NEW PROPOSITIONS (quotation, restatement and page only -- no RTL
+//   evidence read for these):
+//
+//   THE COMPARATOR'S VERTICAL READING (CH4-hw.c21, CH4-p124.c15): "This
+//   device compares the value of the beam counter to the Y value in
+//   the position register SPRxPOS." (p.124; CH4-hw.c21 extracts the
+//   same sentence truncated before "the position register SPRxPOS.").
+//   Restated: the comparator compares the beam counter against
+//   SPRxPOS's vertical (Y) value -- the disputed side of this page's
+//   axis contradiction (the undisputed side, "horizontal", is what
+//   this package's own comparator claims already assert). This
+//   module's own disclosed port list (BOUNDARY, above) carries hpos
+//   but no vertical-position input at all -- the same fact already
+//   given for VERTICAL-EXTENT-NOT-AT-THIS-BOUNDARY.
+//
+//   THE CONVERTER'S DISPUTED NAME (CH4-hw.c23): "comparator issues a
+//   load signal to the serial-to-parallel converter" (p.124).
+//   Restated: the page names the converter that receives the
+//   comparator's load signal a "serial-to-parallel converter", where
+//   the same page's own heading and Figure 4-13 both call it a
+//   parallel-to-serial converter -- a naming conflict, not a
+//   behaviour.
+//
+//   THE LOAD-AT-START-POSITION READING (CH4-p124.c16): "If the beam
+//   has reached the position at which the leftmost upper pixel of the
+//   sprite is to appear, the comparator issues a load signal to the
+//   serial-to-parallel converter and the sprite display begins."
+//   (p.124; same disputed converter name as CH4-hw.c23). Restated: at
+//   the programmed start position, the comparator issues the load
+//   that begins sprite output -- the sentence's own behavioural claim
+//   does not depend on which of the two converter names is correct.
+//
+//   THE FIGURE'S HORIZONTAL COMPARATOR (CH4-fig4-13.c1, CH4-fig413.f1):
+//   figure marker, p.125 (figures/p125.png). Restated (CH4-fig4-13.c1):
+//   Figure 4-13 routes the beam counter's horizontal position and
+//   SPRxPOS's horizontal value into a comparator. Restated
+//   (CH4-fig413.f1): the box feeding the comparator is labelled "beam
+//   counter (horizontal position)" and the comparator's other input is
+//   the register box labelled "SPRxPOS (horiz.)" -- the comparator
+//   drawn in the figure is the horizontal comparator. This is the
+//   undisputed side of the same axis contradiction CH4-hw.c21 and
+//   CH4-p124.c15 carry the disputed side of.
+//
+//   THE FIGURE'S SECOND "ARM" LABEL (CH4-fig413.f12): figure marker,
+//   p.125 (figures/p125.png). Restated: Figure 4-13 prints the label
+//   "ARM" sprite twice -- once on the line from the SPRxDATA load
+//   decode to the arming flip-flop's S input (the occurrence
+//   CH4-fig413.f4 already carries), and a second time on the line from
+//   the SPRxDATB load decode to SPRxDATB's own load input, which no
+//   prose on the page supports (the prose arms only on SPRxDATA).
 //
 // NON-GOALS (declined claims, recorded not asserted, with reason):
 //   unchanged from the prior commit -- EIGHT-CHANNELS-AND-ATTACHMENT-
