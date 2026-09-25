@@ -296,6 +296,23 @@
 //   from this module's plain per-line address plus a field-parity offset),
 //   is an RTL question.
 //
+// -- G20: dual-playfield hires bitplane-per-playfield ceiling (p.68) -
+//    PENDING RTL --
+//   3-dual-planes.c4 (sol, p68): "In high resolution mode, you can have up
+//     to two bitplanes in each playfield -- bitplanes 1 and 3 in playfield
+//     1 and bitplanes 2 and 4 in playfield 2."
+//   3-dual.c18 (opus, p68): "In high resolution mode, you can have up to
+//     two bitplanes in each playfield." (same sentence, opening clause)
+//   This restates G3's total-of-four hires ceiling (p.49) split by
+//   playfield, and additionally names which physical bitplane goes to
+//   which playfield. Whether agnus_bitplanedma carries any
+//   playfield-assignment concept at all (DBLPF, or a signal distinguishing
+//   which fetched plane is "playfield 1" versus "playfield 2"), as opposed
+//   to only a total bitplane count, is answered after the RTL is open. If
+//   the RTL carries no such signal, these two ids move to the "could not
+//   assert" / record list, not to a green assertion built on an
+//   assumption.
+//
 // -- G10: dual-playfield scrolling shares one DDFSTRT/DDFSTOP pair; scrolling
 //    one playfield costs one extra word (lores) or two (hires); holding the
 //    other stationary needs its modulo offset by -2 (lores) / -4 (hires)
