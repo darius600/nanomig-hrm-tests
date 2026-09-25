@@ -9,7 +9,7 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   42, 43, 44, 46, 47, 48, 55, 56, 67, 83, 86, 90, 92, 95, 271, 273, 292,
-//   293 (claims.jsonl for ch3-colour-register-format, 163 records). A red
+//   293, 301 (claims.jsonl for ch3-colour-register-format, 163 records). A red
 //   result below means denise_colortable.v disagrees with the manual, not
 //   that the assertion is wrong -- no assertion here was, or should be,
 //   adjusted to make the RTL pass.
@@ -96,6 +96,24 @@
 //        ehb_en in, rgb out) has no separate register-content read bus,
 //        and this assertion confirms the one path that does exist behaves
 //        as such.
+//   APPC-SHR-REG0-3-BASELINE-NIBBLES (1 id)
+//     -- Appendix C's SuperHires section (p.301) states the baseline it is
+//        contrasting SuperHires against: outside SuperHires mode, each of
+//        the four registers COLOR0-COLOR3 holds its own 12-bit code split
+//        into three 4-bit R/G/B nibbles stored as 0x0RGB - the same
+//        nibble format RED-FIELD-BITS-11-8/GREEN-FIELD-BITS-7-4/
+//        BLUE-FIELD-BITS-3-0 above establish, but this claim names all
+//        three channels together on one sentence, so - per this file's own
+//        "cited in exactly one group" rule above - it gets one assertion
+//        of its own on one of the four named registers, rather than a
+//        citation split across those three single-channel groups. This
+//        module has no SuperHires-mode port at all (PACKAGE.md's port
+//        list: reg_address_in/data_in/rdram/select/bank/loct/ehb_en in,
+//        rgb out - no shres/hires-select input), so every measurement this
+//        fixture can make already sits outside SuperHires by construction;
+//        nothing here asserts anything about the sixteen-lower-registers
+//        SuperHires encoding the same sentence goes on to describe, which
+//        is a different mechanism this boundary cannot reach.
 //
 //   Two additional checks carry no claim id: CONTROL-KNOWN-VALUES-ARRIVE
 //   (the write/select/rgb data path is alive before anything above trusts
