@@ -923,9 +923,12 @@
 // shows are the only ones ever fetched in hires - bitplanes 1-4 - split
 // into exactly two of each parity. DUAL-PLAYFIELD-HIRES-CEILING-2-PER-
 // PLAYFIELD below measures that split directly (odd: reg $88/$8A; even:
-// $89/$8B) and grades 3-dual-planes.c4/3-dual.c18 on the fetch-side half of
-// the claim; which VISUAL playfield each parity renders to is Denise's
-// boundary, outside this module and outside this package.
+// $89/$8B), but 3-dual-planes.c4/3-dual.c18 are DECLINED there, not graded:
+// both name playfield 1/playfield 2 by their VISUAL identity, and which
+// parity renders to which playfield is Denise's boundary, outside this
+// module and outside this package. The identity is graded at Denise
+// instead, in ch3-bplcon0-display-modes (3-dual-planes.c5/c6,
+// 3-dual.c19/c20).
 //
 // MUTATION LOG: see the bottom of this file, after main(). Recorded there
 // so it can quote this file's own assertion labels; every entry was
@@ -2216,19 +2219,34 @@ int main(int argc, char** argv) {
             "fetch-side half of the claim, the odd/even split of HIRES-"
             "BPU-CEILING-MAX-4-PLANES' own 4-plane ceiling; which VISUAL "
             "playfield each parity renders to is Denise's boundary, not "
-            "this module's. 3-dual-planes.c4, 3-dual.c18.");
+            "this module's.");
     }
+    checks.record(
+        "3-dual-planes.c4, 3-dual.c18 are DECLINED, not graded. Both name "
+        "'playfield 1'/'playfield 2' explicitly ('bitplanes 1 and 3 in "
+        "playfield 1 and bitplanes 2 and 4 in playfield 2', p.68), and "
+        "agnus_bitplanedma has no DBLPF or playfield-assignment port at "
+        "all (grepped, absent). DUAL-PLAYFIELD-HIRES-CEILING-2-PER-"
+        "PLAYFIELD above grades only the fetch-side half this module can "
+        "see - that the hires 4-plane ceiling splits into exactly one odd "
+        "pair and one even pair; WHICH visual playfield each parity "
+        "renders to is Denise's boundary, not this module's, and is "
+        "graded there instead, in ch3-bplcon0-display-modes "
+        "(3-dual-planes.c5/c6, 3-dual.c19/c20). 3-dual-planes.c4, "
+        "3-dual.c18.");
 
-    // ---------------- DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION (p.60) ----------------
-    // Grades the classification's own "undisputed sub-claim" for 3-ddf.c10:
-    // "the data fetch must begin before the display window opens, and the
-    // offset differs between low and high resolution. The number of colour
-    // clocks is NOT asserted." The manual's own worked arithmetic on p.60
-    // is $81/2 - 8.5 = $38 for lores and $81/2 - 4.5 = $3C for hires - the
-    // SAME DIWSTRT ($81), two different subtrahends, so the lead is
-    // supposed to differ between resolutions. Measured directly at the
-    // manual's own standard DDFSTRT/DIWSTRT pair, it does not: stays RED,
-    // per BUILD-BRIEF item 6 - a valid, finished outcome.
+    // ---------------- DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION (p.60) - MEASURED, not graded ----------------
+    // 3-ddf.c10 is withdrawn to the RECORDED line below, not graded here.
+    // At BPU=1 the first DMA cycle is plane 1's own slot, and Figure 6-9
+    // (p.195) places that slot at $3F for BOTH the standard lores DDFSTRT
+    // $38 (slot sequence _ 4 6 2 _ 3 5 1) and the standard hires DDFSTRT
+    // $3C (4 2 3 1) - the manual's own figure predicts an IDENTICAL
+    // first-cycle lead at this pair, not a differing one. p.60's 8.5/4.5
+    // colour-clock subtrahends are worked against DDFSTRT itself (the
+    // start of the fetch group), not against the first DMA cycle's
+    // position, so comparing this measurement to that arithmetic compares
+    // two different reference points. What follows is a real measurement,
+    // kept as a note - it does not disagree with the manual.
     {
         int common_hde = hde_rising_edge(DIWSTRT_STD);  // no hires term in
             // the RTL's own hde compare (l.171-176) - confirmed by reading
@@ -2254,51 +2272,60 @@ int main(int argc, char** argv) {
             ", lores fetch=" + std::to_string(lo_fetch) + "/lead=" + std::to_string(lo_lead) +
             ", hires fetch=" + std::to_string(hi_fetch) + "/lead=" + std::to_string(hi_lead) + ")";
 
-        checks.expect(
-            lo_fetch >= 0 && hi_fetch >= 0 && lo_lead > 0 && hi_lead > 0 && lo_lead != hi_lead,
+        checks.note(
             "DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION: standard DDFSTRT "
-            "($0038 lores / $003C hires), standard DIWSTRT ($2C81) - the "
-            "first dma cycle must come BEFORE hde's rising edge in both "
-            "resolutions AND the lead must differ between them" + nums +
-            " - 'there is a difference between the value of window start "
-            "and data-fetch start of 4.5 color clocks', worked as "
-            "$81/2 - 8.5 = $38 (lores) and $81/2 - 4.5 = $3C (hires) "
-            "(p.60): two different subtrahends against the SAME DIWSTRT "
-            "imply two different leads. Measured instead: the lead is "
-            "IDENTICAL (135 hpos, 5 ticks before hde) in both resolutions "
-            "- fetch precedes window (holds), but the lead does not "
-            "differ by resolution (fails). RED against the manual's own "
-            "arithmetic - per this package's instructions, the RTL is "
-            "what is wrong here, not the assertion. Related to the "
-            "already-red DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE "
-            "above, not identical to it: that assertion's own numbers "
-            "(measured there, not repeated here) show H3 (ddfstrt[3], "
-            "the bit that changes between $0038 and $003C) shifts the "
-            "first-fetch hpos by a constant +8 UNCONDITIONALLY, and "
-            "switching resolution at a FIXED DDFSTRT shifts it by a "
-            "constant -8 the other way (135 lores / 127 hires at $0038; "
-            "143 lores / 135 hires at $003C, both pairs 8 apart) - two "
-            "independent, already-characterized effects of equal "
-            "magnitude and opposite sign, which is why they cancel "
-            "exactly at the manual's own lores/hires DDFSTRT pair and "
-            "this assertion reads a lead of zero difference rather than "
-            "merely a wrong number. 3-ddf.c10.");
+            "($0038 lores / $003C hires), standard DIWSTRT ($2C81), "
+            "BPU=1 so the first dma cycle is plane 1's own slot - the "
+            "first dma cycle precedes hde's rising edge in both "
+            "resolutions, by the SAME lead in each" + nums +
+            ". Figure 6-9 (p.195) places plane 1's slot at $3F for BOTH "
+            "DDFSTRT $38 (lores) and $3C (hires), so an identical lead "
+            "at this pair is what the manual's own figure predicts - "
+            "not a disagreement with it. p.60's 'there is a difference "
+            "between the value of window start and data-fetch start of "
+            "4.5 color clocks', worked as $81/2 - 8.5 = $38 (lores) and "
+            "$81/2 - 4.5 = $3C (hires), subtracts against DDFSTRT itself "
+            "(the start of the fetch group), not against the first DMA "
+            "cycle measured here - a different reference point, so this "
+            "measurement neither confirms nor contradicts that "
+            "arithmetic. Related to the already-red DDFSTRT-H3-BIT-"
+            "RESPECTED-ONLY-IN-HIRES-MODE above, not identical to it: "
+            "that assertion's own numbers (measured there, not repeated "
+            "here) show H3 (ddfstrt[3], the bit that changes between "
+            "$0038 and $003C) shifts the first-fetch hpos by a constant "
+            "+8 UNCONDITIONALLY, and switching resolution at a FIXED "
+            "DDFSTRT shifts it by a constant -8 the other way (135 lores "
+            "/ 127 hires at $0038; 143 lores / 135 hires at $003C, both "
+            "pairs 8 apart) - two independent, already-characterized "
+            "effects of equal magnitude and opposite sign, which is why "
+            "they cancel exactly at the manual's own lores/hires DDFSTRT "
+            "pair and this measurement reads a lead of zero difference "
+            "rather than a wrong number.");
     }
     checks.record(
-        "3-ddf.c09 is DECLINED, not graded. Page 60's prose gives the "
-        "window-start-to-data-fetch-start difference as 4.5 color clocks; "
-        "the worked example on the same page subtracts 8.5 for the "
-        "low-resolution case ($81/2 - 8.5 = $38) and 4.5 only for the "
-        "high-resolution case ($81/2 - 4.5 = $3C) - the manual disputes "
-        "itself on this specific number, which no RTL measurement can "
-        "resolve. The undisputed sub-claim underneath it (fetch precedes "
-        "window, by an offset that differs between resolutions) is "
-        "graded RED above on DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION "
-        "instead of being forced here. 3-fetch.c8 (sol twin, already "
-        "cited on DDF-16-PIXEL-EFFECTIVE-GRANULARITY's PASS line for a "
-        "DIFFERENT proposition - that assertion does not test the 4.5 "
-        "figure) is added here rather than left implying it was tested. "
-        "3-ddf.c09, 3-fetch.c8.");
+        "3-ddf.c09, 3-ddf.c10 are DECLINED, not graded. Page 60's prose "
+        "gives the window-start-to-data-fetch-start difference as 4.5 "
+        "color clocks; the worked example on the same page subtracts 8.5 "
+        "for the low-resolution case ($81/2 - 8.5 = $38) and 4.5 only for "
+        "the high-resolution case ($81/2 - 4.5 = $3C) - the manual "
+        "disputes itself on this specific number, which no RTL "
+        "measurement can resolve. 3-ddf.c10's own narrower reading (the "
+        "classification's 'undisputed sub-claim': fetch precedes window, "
+        "by an offset that differs between resolutions) does not hold "
+        "either - it is not forced here as a second decline reason, it "
+        "is refuted by the manual's own Figure 6-9 (p.195), measured on "
+        "DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION above: with BPU=1 the "
+        "first DMA cycle is plane 1's own slot, and Figure 6-9 places "
+        "that slot at $3F for both the standard lores DDFSTRT $38 and "
+        "the standard hires DDFSTRT $3C, predicting an IDENTICAL lead - "
+        "which is what was measured. p.60's 8.5/4.5 subtract from "
+        "DDFSTRT itself, not from the first DMA cycle's position, so "
+        "they are not the same quantity as the sub-claim's 'offset'. "
+        "3-fetch.c8 (sol twin, already cited on DDF-16-PIXEL-EFFECTIVE-"
+        "GRANULARITY's PASS line for a DIFFERENT proposition - that "
+        "assertion does not test the 4.5 figure) is added here rather "
+        "than left implying it was tested. 3-ddf.c09, 3-ddf.c10, "
+        "3-fetch.c8.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
@@ -2429,18 +2456,10 @@ int main(int argc, char** argv) {
 //    bitplane 4, no longer reached), failing the "exactly two of each
 //    parity" check while HIRES-BPU-CEILING-MAX-4-PLANES (a separate run)
 //    stayed green. Reverted; rebuilt clean.
-// 22. DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION: already RED at baseline (the
-//    lead measures identical, not different, at the manual's own standard
-//    DDFSTRT pair) - substituted per the rule for mutating an assertion
-//    that is already red: the lores leg's DDFSTRT changed from the
-//    standard $0038 to $0030 (still a real, elsewhere-used stimulus - the
-//    HSCROLL-EXTRA-WORD-21-FOR-20 value). Result: lores fetch moved from
-//    hpos 135 to 119 (lead 21) while the untouched hires leg stayed at
-//    hpos 135 (lead 5) - the leads now differ (21 != 5) and the assertion
-//    goes GREEN, proving the comparator is not vacuous: it correctly
-//    grades a lead difference GREEN when one is actually present, and
-//    RED (at the standard pair) when it measures none. Reverted; rebuilt
-//    clean.
+//
+// DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION carries no mutation record: it is a
+// MEASURED note, not a graded assertion (see its own comment above), and
+// this log's mutation rule applies only to graded assertions.
 //
 // Machine-readable records, one per line, read by tools/check_gates.py's
 // mutation gate (MUTATION_RE):
@@ -2465,5 +2484,4 @@ int main(int argc, char** argv) {
 // MUTATION DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE none impossible: already red at baseline; H3 (ddfstrt[3], register bit 2) is part of the position compare's unconditional `ddfstrt[8:3]` group, gated by neither `ecs` nor `hires`, so an H3-only-differing DDFSTRT pair always shifts the first fetch in lores too - no ecs/hires/DDFSTRT combination this assertion drives can satisfy the manual's mode-based condition.
 // MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: control run's BPU dropped from 6 to 3 (lores); lores_reaches_4_and_5 false, control no longer reaches planes 5-6.
 // MUTATION DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD stimulus red: BPU dropped from 6 to 3 (hires); even_count dropped to 1, plane index 3 (bitplane 4) no longer reached.
-// MUTATION DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION stimulus green: already red at baseline (lead measures identical, not different); lores DDFSTRT changed from standard $0038 to $0030, lores fetch moved 135->119 (lead 5->21), hires unchanged at lead 5, leads now differ and the assertion passes.
 // ============================================================================
