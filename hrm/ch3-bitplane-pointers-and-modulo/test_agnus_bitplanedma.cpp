@@ -326,6 +326,24 @@
 //     SOFTWARE-usage note - the Copper is one way to perform the ordinary
 //     register write this module has no way to distinguish from a CPU
 //     write; see NOT ASSERTED below)
+//   3-mod.c15 (opus, p62, routed 25.09.2026 - not part of this package's
+//     original 173): "Line 3   START+80" (Figure, 320-pixel-wide
+//     interlaced picture) - successive displayed lines of ONE field are
+//     80 bytes apart: the same modulo-40 field-skip mechanism above, at
+//     its own worked instance.
+//   3-mod.c13 (opus, p62, routed 25.09.2026): "The bitplanes for a
+//     full-screen-sized, interlaced display are 400 NTSC" - rather than
+//     200 lines: the TOTAL the two-field mechanism above produces over
+//     an NTSC field pair.
+//   3-modulo.c22 (sol, p62, routed 25.09.2026): "The bitplanes for a
+//     full-screen-sized, interlaced display are 400 NTSC (512 PAL),
+//     rather than 200 NTSC (256 PAL), lines long." (NTSC half, second
+//     reading of 3-mod.c13)
+//   3-mod.c14 (opus, p62, routed 25.09.2026): "...(512 PAL), rather than
+//     200 NTSC (256 PAL), lines long. Assuming that the" - the PAL half
+//     of the same sentence.
+//   3-modulo.c23 (sol, p62, routed 25.09.2026): same sentence as
+//     3-modulo.c22, second reading, PAL half.
 //
 // -- G14: bitplane modulos limit playfield WIDTH (not height) to 262,144
 //    pixels (p.76, 277) --
@@ -456,6 +474,21 @@
 //     (the DMACON bit-decode itself is agnus_top's boundary; this module's
 //     own `dmaena` input is the level DMACON's decode ultimately produces,
 //     and is in scope)
+//
+// -- G21: each playfield's memory representation and displayed portion can
+//    be set independently of the other's (p.71, routed 25.09.2026 - not
+//    part of this package's original 173) --
+//   3-dual-control.c1 (sol, p71): "They can have different-sized
+//     representations in memory, and different portions of each one can
+//     be selected for display." (the memory-size half: the odd-plane and
+//     even-plane groups' own modulo registers, G12's own mechanism)
+//   3-dual-control.c2 (sol, p71): same sentence, second reading (the
+//     displayed-portion half: each plane's own pointer independently
+//     chooses what it fetches, G1/G5's own mechanism)
+//   3-dual.c32 (opus, p71): "They can have different-sized representations
+//     in memory, and different portions of each one can be selected for
+//     display." (opus's single, unsplit reading of both halves the sol
+//     pair above states separately)
 //
 // -- NOT ASSERTED (software/CPU technique, or a different module's
 //    boundary, not a hardware behaviour of agnus_bitplanedma) --
