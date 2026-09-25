@@ -1137,7 +1137,7 @@ int main() {
     // ---------------------------------------------------------------
     // A17 -- BLTSIZV/BLTSIZH decode at 0x05C/0x05E, ECS-gated, write-only
     // (p289).
-    // ids: ch6-appb-bltsizv.addr, ch6-appb-bltsizv.rw, ch6-appb-bltsizh.addr,
+    // ids: ch6-appb-bltsizv.rw, ch6-appb-bltsizh.addr,
     //      ch6-appb-bltsizh.rw, 6-appendix-b.c19, 6-appendix-b.c20
     // Mechanism: agnus_blitter.v:523-524,548,557-558 -- BLTSIZH only loads
     // `width`/starts the blit when ecs=1 (`reg_address_in[8:1]==BLTSIZH[8:1]
@@ -1145,6 +1145,17 @@ int main() {
     // (unconditionally stored, but only READ into height_cnt by a
     // subsequent ecs-gated BLTSIZH write). With ecs=0, a BLTSIZH write
     // leaves `busy` at 0 (control, same measurement as A16).
+    // GAP, found by independent validation (2026-09-25): this assertion
+    // reads only `busy` right after the BLTSIZH write, so it establishes
+    // BLTSIZH's own decode (moving that write elsewhere leaves busy at 0,
+    // per its own MUTATION log below) but never varies BLTSIZV's address --
+    // a design that ignored the BLTSIZV write entirely would print the same
+    // PASS. Validator probe: with BLTSIZV's write retargeted to 0x035, A17
+    // stayed green (27 passed, 0 failed). ch6-appb-bltsizv.addr and
+    // B-bltsizv.addr are graded below instead, in A17B, which does vary
+    // BLTSIZV's own decoded value. ch6-appb-bltsizh.addr/B-bltsizh.addr
+    // stay here: BLTSIZH's write IS what this assertion's own MUTATION
+    // moves.
     // ---------------------------------------------------------------
     {
         Harness he;
@@ -1164,10 +1175,69 @@ int main() {
                            "WRITE-ONLY: writing BLTSIZV (0x05C) then BLTSIZH "
                            "(0x05E) starts a blit (busy rises) only when "
                            "ecs=1; the identical writes with ecs=0 leave busy "
-                           "at 0 (control) [ch6-appb-bltsizv.addr, "
-                           "ch6-appb-bltsizv.rw, ch6-appb-bltsizh.addr, "
+                           "at 0 (control) [ch6-appb-bltsizv.rw, "
+                           "ch6-appb-bltsizh.addr, "
                            "ch6-appb-bltsizh.rw, 6-appendix-b.c19, "
-                           "6-appendix-b.c20, B-bltsizv.addr, B-bltsizh.addr]");
+                           "6-appendix-b.c20, B-bltsizh.addr]");
+    }
+
+    // ---------------------------------------------------------------
+    // A17B -- BLTSIZV decodes at 0x05C, write-only, ECS 15-bit vertical
+    // size (p289: "BLTSIZV ~05C w A (E) Blitter V size (for 15 bit
+    // vertical size)"). Expected value from the page: BLTSIZV is listed at
+    // address $05C.
+    // ids: ch6-appb-bltsizv.addr, B-bltsizv.addr
+    // Mechanism: agnus_blitter.v:543-549 -- the write at BLTSIZV's own
+    // address (`reg_address_in[8:1]==BLTSIZV[8:1]`, unconditional, no ecs
+    // gate on the write itself) is the ONLY path into `height`;
+    // agnus_blitter.v:556-560 loads `height_cnt` from `height` on the
+    // following ecs-gated BLTSIZH write and decrements it once per
+    // completed row thereafter, so the number of rows a blit runs is
+    // BLTSIZV's own written value, unlike A17 above (which only reads
+    // `busy` and cannot distinguish BLTSIZV's value from any other).
+    // ---------------------------------------------------------------
+    {
+        Harness h1;
+        h1.set_ecs(true);
+        h1.write_reg(BLTAFWM, 0xFFFF);
+        h1.write_reg(BLTALWM, 0xFFFF);
+        h1.a_words = {0x1111};
+        h1.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USED | LF_A_PASSTHROUGH));
+        h1.write_reg(BLTSIZV, 1);               // height=1 (ECS 15-bit field)
+        h1.write_reg(BLTSIZH, 1);               // width=1 (ECS 11-bit field), triggers start
+        h1.run_until_writes(1, 200);
+        h1.settle(10);
+
+        Harness h3;
+        h3.set_ecs(true);
+        h3.write_reg(BLTAFWM, 0xFFFF);
+        h3.write_reg(BLTALWM, 0xFFFF);
+        h3.a_words = {0x1111, 0x2222, 0x3333};
+        h3.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USED | LF_A_PASSTHROUGH));
+        h3.write_reg(BLTSIZV, 3);               // height=3
+        h3.write_reg(BLTSIZH, 1);               // width=1, triggers start
+        h3.run_until_writes(3, 200);
+        h3.settle(10);
+
+        bool ok = h1.data_writes.size() == 1 && h3.data_writes.size() == 3;
+        checks.expect(ok, "A17B BLTSIZV-DECODES-AT-0x05C-WRITE-ONLY: writing "
+                           "BLTSIZV (0x05C) with height=1 under ecs=1 "
+                           "produces exactly 1 destination write across the "
+                           "blit, height=3 produces exactly 3 -- BLTSIZV's "
+                           "own written value, not merely the BLTSIZH strobe "
+                           "A17 measures, reaches the blit (measured " +
+                           std::to_string(h1.data_writes.size()) + " and " +
+                           std::to_string(h3.data_writes.size()) + ") "
+                           "[ch6-appb-bltsizv.addr, B-bltsizv.addr]");
+        // MUTATION A17B stimulus red: h3's BLTSIZV write retargeted to
+        // UNUSED_REG (0x035) -> RED, measured (1 and 5) against the
+        // expected (1, 3), 27 passed/1 failed -- `height` stays at its
+        // reset value 0 (agnus_blitter.v:547), so height_cnt loads 0 and
+        // wraps to 0x7FFF on its first post-row decrement (agnus_blitter.v:
+        // 559-560) instead of completing after row 3; the blit is still
+        // running when h3 is sampled, so two more D writes land inside
+        // settle(10) where the un-mutated run produces none. Reverted and
+        // rebuilt clean (28 passed, 0 failed) before proceeding.
     }
 
     // ---------------------------------------------------------------
