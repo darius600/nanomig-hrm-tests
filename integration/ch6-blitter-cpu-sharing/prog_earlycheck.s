@@ -4,7 +4,9 @@
 ; stores DMACONR. This file alone (no symbol set) is the SMALL build
 ; (one word). prog_earlycheck_large.s (EARLY_LARGE set) sizes the blit
 ; to take many more cycles, so the same immediate check finds it still
-; busy.
+; busy. prog_earlycheck_reordered.s (EARLY_REORDER set, A3PRE's
+; mutation) performs the dummy read before the blit is even started, so
+; its own destination write cannot precede it in ram_log().
 
         include "nanomig.i"
 
@@ -14,6 +16,10 @@ EC_DST  equ     $0C2100
         org     PROGRAM_ORG
 
 start:
+        ifd     EARLY_REORDER
+        move.w  RESULTS+2,d0           ; dummy read, before the blit is started at all
+        endif
+
         lea     CUSTOM,a0
         move.w  #$8240,DMACON(a0)      ; SET DMAEN,BLTEN
         move.w  #$09F0,BLTCON0(a0)
@@ -30,7 +36,10 @@ start:
         move.w  #$0041,BLTSIZE(a0)     ; height=1,width=1 -- starts the blit
         endif
 
+        ifd     EARLY_REORDER
+        else
         move.w  RESULTS+2,d0           ; the manual's prescribed dummy chip-memory read
+        endif
         move.w  DMACONR(a0),RESULTS    ; immediate first busy-bit check, stored for grading
 
         DONE

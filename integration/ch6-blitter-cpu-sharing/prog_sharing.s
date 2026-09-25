@@ -5,10 +5,16 @@
 ; (share mode). prog_sharing_nasty.s (NASTY set) runs the same blit with
 ; BLTPRI set (nasty mode, never yields). prog_sharing_tiny.s (SHARE and
 ; TINY both set) runs the share-mode blit shrunk to a near-instant
-; one-word transfer (A2's mutation). All run forever; the test runs each
-; for a fixed cycle budget and reads the RAM-port log, telling the CPU's
-; own progress (writes to SHARE_SCRATCH) apart from the blitter's (writes
-; to the SHARE_DST range) by address alone.
+; one-word transfer (A2's mutation). prog_sharing_aligned.s (ALIGNED set,
+; SYSDMA-C29's mutation and A6's own no-DMA reference) replaces the
+; counting loop's BRA.S (10 clocks, not a whole multiple of 4) with
+; JMP (An) (8 clocks): every instruction's own bus-cycle timing (MC68000
+; tables) is then a whole multiple of 4 clocks, so the loop's own period
+; never straddles a slot boundary the way BRA.S's does (see SYSDMA-C29 in
+; SPECIFICATION.md). All run forever; the test runs each for a fixed cycle
+; budget and reads the RAM-port log, telling the CPU's own progress
+; (writes to SHARE_SCRATCH) apart from the blitter's (writes to the
+; SHARE_DST range) by address alone.
 
         include "nanomig.i"
 
@@ -53,6 +59,13 @@ start:
 
         moveq   #0,d0
         lea     SHARE_SCRATCH,a1
+        ifd     ALIGNED
+        lea     .loop,a2
+.loop:  addq.w  #1,d0                   ; 4 clocks (1 slot)
+        move.w  d0,(a1)                 ; 8 clocks (2 slots)
+        jmp     (a2)                    ; 8 clocks (2 slots) -- aligned, unlike BRA.S's 10
+        else
 .loop:  addq.w  #1,d0
         move.w  d0,(a1)
         bra.s   .loop
+        endif

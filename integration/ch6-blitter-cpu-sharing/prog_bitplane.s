@@ -6,7 +6,10 @@
 ; set) is the four low-resolution-bitplane build (A9's baseline).
 ; prog_bitplane_hires.s (BP_HIRES4 set): four high-resolution bitplanes
 ; (A10). prog_bitplane_planes6.s (BP_PLANES6 set): six low-resolution
-; bitplanes (A11).
+; bitplanes (A11). prog_bitplane_aligned.s (ALIGNED set, A6) and
+; prog_bitplane_planes6_aligned.s (BP_PLANES6 and ALIGNED both set, A6's
+; mutation) replace the loop's BRA.S with JMP (An), the same whole-4-clock
+; -aligned loop prog_sharing_aligned.s uses -- see that file.
 ;
 ; DIWSTRT/DIWSTOP/DDFSTRT/DDFSTOP values are the manual's own standard
 ; display-window/fetch-window constants (Chapter 3), not RTL-derived.
@@ -56,6 +59,13 @@ start:
 
         moveq   #0,d0
         lea     BP_SCRATCH,a1
+        ifd     ALIGNED
+        lea     .loop,a2
+.loop:  addq.w  #1,d0                   ; 4 clocks (1 slot)
+        move.w  d0,(a1)                 ; 8 clocks (2 slots)
+        jmp     (a2)                    ; 8 clocks (2 slots) -- aligned, unlike BRA.S's 10
+        else
 .loop:  addq.w  #1,d0
         move.w  d0,(a1)
         bra.s   .loop
+        endif
