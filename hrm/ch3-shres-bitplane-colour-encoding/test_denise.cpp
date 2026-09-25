@@ -164,10 +164,10 @@
 //   scheme may be visually difficult to distinguish from each other."
 //   A human-perception statement, not an RTL-observable property.
 //
-// SPECIFICATION ADDITION. Three propositions routed to this package for a
-// fresh disposition, added from the routed claims' own quotation and
-// restatement alone -- the classification's evidence, the router's own
-// reasoning and the RTL were not open when this paragraph was written:
+// SPECIFICATION ADDITION. Three propositions, added from their own
+// quotation and restatement alone -- the classification's evidence, the
+// routing's own reasoning and the RTL were not open when this paragraph
+// was written:
 //   C-shrc.c06 (p.302) -- "SuperHires color encryption is not reflected in
 //   the ColorTable." Restated: SuperHires colour encryption is not
 //   reflected in the ColorTable.
@@ -188,8 +188,9 @@
 // (a software structure, not a chip register); C-shrc.c08 against the
 // routing's suggestion to grade its causal half, because that half is not
 // separable from the perceptual half without leaving the perceptual half
-// uncovered inside a green (Prompt 7's rule on bundled clauses -- see the
-// RECORDED, NOT GRADED block near the end of main() for the full reasoning).
+// uncovered inside a green (an id whose claim bundles a clause this
+// package does not test is not graded -- see the RECORDED, NOT GRADED
+// block near the end of main() for the full reasoning).
 //
 // CONTROL CASE: CONTROL-KNOWN-VALUES-ARRIVE (no claim id, no manual page)
 // is the control every page-cited assertion below shares: the fixture is
@@ -1247,7 +1248,7 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // RECORDED, NOT GRADED. Three claims routed to this package this round.
+    // RECORDED, NOT GRADED. Three claims routed to this package.
     //
     // C-shrc.c06 and C-shres-color.c9 (p.302, same quote, twins): the
     // manual's own next clause -- "The color encoding is, however,
@@ -1261,7 +1262,7 @@ int main(int argc, char** argv) {
     // SHRES-TWO-BITS-RESOLUTION above already measures "the stated cause"
     // and that only the claim's "visually difficult to distinguish" half
     // is perception and ungradable. That is a bundled claim by the
-    // router's own account, and Prompt 7's rule on bundled clauses holds
+    // router's own account, and the rule on bundled clauses holds
     // regardless of which half a routing note names first: where a claim's
     // text has two halves and the boundary exercises only one, the id is
     // withdrawn whole, not attached to an assertion with a caveat. Here the
@@ -1284,9 +1285,9 @@ int main(int argc, char** argv) {
         "established (graded: C-shrc.c01 C-shrc.c02) by SHRES-TWO-BITS-"
         "RESOLUTION above; the remaining content, 'may be visually "
         "difficult to distinguish', is a human-perception consequence not "
-        "observable at this RTL boundary -- withdrawn whole per Prompt 7's "
-        "rule on bundled clauses rather than attached to that assertion "
-        "with a caveat.");
+        "observable at this RTL boundary -- withdrawn whole: an id whose "
+        "claim bundles a clause this package does not test is not graded, "
+        "rather than attached to that assertion with a caveat.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
