@@ -405,6 +405,54 @@ int main(int argc, char** argv) {
             "CH4-fig4-13.c6 .");
     }
 
+    // ----------- PLAYFIELD-AND-SPRITE-SHARE-THE-DISPLAY -----------
+    // CH4-inter.c1 (p.131): "Playfields share the display with sprites."
+    // At this fixture's boundary (see FIXTURE BOUNDARY(d) above), tested as
+    // both halves together, directly, not by combining other assertions'
+    // results: (universal) with no sprite pair-group active, sprsel
+    // selects the playfield (0) for every one of the 64 bplcon2 values and
+    // every nplayfield combination, including nplayfield=0x00 -- playfield
+    // content is never blocked from reaching this decision; AND
+    // (existential) at least one (bplcon2, nplayfield) context exists,
+    // with a playfield enabled, where an active sprite pair-group still
+    // makes sprsel select the sprite (1) instead -- sprite content is not
+    // permanently locked out either. Both halves reachable is what "share
+    // the display" means at this boundary; either alone is not the whole
+    // claim.
+    {
+        bool playfield_always_reachable = true;
+        const uint8_t all_nplayfields[] = {0x00, PF1_ON, PF2_ON, static_cast<uint8_t>(PF1_ON | PF2_ON)};
+        for (int code = 0; code < 64; ++code)
+            for (uint8_t pf : all_nplayfields)
+                if (h.read(static_cast<uint8_t>(code), pf, 0x00) != 0) playfield_always_reachable = false;
+
+        bool sprite_reachable = false;
+        uint8_t active_candidates[] = {GROUP_BIT[0], GROUP_BIT[1], GROUP_BIT[2], GROUP_BIT[3], 0xFF};
+        if (MUT_ID == 5) {  // MUTATION 5: "active" sprite stimulus neutralized to 0x00 -- sprite can never be selected.
+            for (uint8_t& c : active_candidates) c = 0x00;
+        }
+        const uint8_t enabled_nplayfields[] = {PF1_ON, PF2_ON, static_cast<uint8_t>(PF1_ON | PF2_ON)};
+        for (int code = 0; code < 64 && !sprite_reachable; ++code) {
+            for (uint8_t pf : enabled_nplayfields) {
+                for (uint8_t act : active_candidates) {
+                    if (h.read(static_cast<uint8_t>(code), pf, act) == 1) { sprite_reachable = true; break; }
+                }
+                if (sprite_reachable) break;
+            }
+        }
+
+        checks.expect(playfield_always_reachable && sprite_reachable,
+            "PLAYFIELD-AND-SPRITE-SHARE-THE-DISPLAY: with no sprite "
+            "pair-group active, sprsel selects the playfield (0) for "
+            "every one of the 64 bplcon2 values and every nplayfield "
+            "combination; and at least one bplcon2/nplayfield context "
+            "exists, with a playfield enabled, where an active sprite "
+            "pair-group makes sprsel select the sprite (1) instead -- "
+            "both selections of this one compositing decision are "
+            "genuinely reachable, matching 'Playfields share the "
+            "display with sprites.' (p.131). CH4-inter.c1 .");
+    }
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
     return checks.failed == 0 ? 0 : 1;
 }
@@ -452,3 +500,24 @@ int main(int argc, char** argv) {
 // MUTATION SPRITE-PRIORITY-FIXED-BY-GROUP-NUMBER stimulus red
 // MUTATION ABSENT-SPRITE-CEDES-TO-LOWER-PRIORITY stimulus red
 // MUTATION SPRITE-DATA-REACHES-PRIORITY-CIRCUIT stimulus red
+//
+// EXTENSION RESULTS (CH4-inter.c1 / PLAYFIELD-AND-SPRITE-SHARE-THE-DISPLAY):
+// built and run the same way, after the ninth claim's header documentation
+// (see A NINTH CLAIM above and CLAIM COVERAGE) was committed. denise_
+// spritepriority.v was reopened for this addition only after that commit;
+// its logic (sprcode==3'd7 forces sprsel=0 before nplayfield is read;
+// otherwise sprsel=0 only while an enabled playfield is "in front" of the
+// active sprite group per bplcon2, else sprsel=1) needed no correction to
+// either half of the new assertion -- both were written from the claim's
+// own quotation and confirmed to hold, not adjusted to match. 5 passed, 0
+// failed -- the prior 4 assertions kept their exact verdict and label
+// text; the new one is a fifth, independent green. The router's routing.how
+// suggested citing CH4-inter.c1 directly on the existing SPRITE-DATA-
+// REACHES-PRIORITY-CIRCUIT assertion; that assertion only shows sprite
+// data reaches sprsel, not that playfield content is also independently
+// reachable through the same decision -- half the claim, not its whole --
+// so a new, self-contained assertion was written instead, per the rule
+// that an id may only sit on an assertion that establishes the whole of
+// its claim.
+//
+// MUTATION PLAYFIELD-AND-SPRITE-SHARE-THE-DISPLAY stimulus red sprite-active stimulus neutralized to 0x00, run, confirmed only this assertion went red (the other four stayed green), then reverted; baseline re-verified clean (5 passed, 0 failed).
