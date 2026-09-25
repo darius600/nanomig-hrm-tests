@@ -491,7 +491,7 @@ int main(int argc, char** argv) {
             "other playfield...or the background color) may be behind the "
             "playfield' (p.71). 3-dual-mode.c9, 3-dual.f05, "
             "3-dual-color.c23, 3-dual-color.c25, "
-            "3-dual-mode.c14. (3-dual.c31's third named case -- a sprite "
+            "3-dual-mode.c14. (the sentence's third named case -- a sprite "
             "behind a transparent playfield -- is outside "
             "denise_playfields' ports; there is no sprite input here, and "
             "this assertion does not test it; see among "
