@@ -10,7 +10,10 @@
 ; ASCENDING, if defined, runs the same blit with the pointer started at
 ; word0 instead of word4 and DESC cleared instead of set (prog_fill_asc.s).
 ; MOVE_MARKER, if defined, moves the middle marker from word2 into word1
-; (prog_fill_desc_mut.s).
+; (prog_fill_desc_mut.s). DROP_MARKER0, if defined, removes word0's marker,
+; leaving only word2 and word4 (prog_fill_asc_mut.s, combined with
+; ASCENDING: with word0 no longer contributing a toggle, the ascending scan
+; reproduces the descending-mode word1/word3 pattern by coincidence).
 
         include "nanomig.i"
         org     PROGRAM_ORG
@@ -28,11 +31,19 @@ start:
         move.w  #0,6(a1)                ; word3
         move.w  #MARK,8(a1)             ; word4
         else
+        ifd     DROP_MARKER0
+        move.w  #0,(a1)                ; word0 (marker removed)
+        move.w  #0,2(a1)                 ; word1
+        move.w  #MARK,4(a1)               ; word2
+        move.w  #0,6(a1)                   ; word3
+        move.w  #MARK,8(a1)                 ; word4
+        else
         move.w  #MARK,(a1)             ; word0
         move.w  #0,2(a1)                ; word1
         move.w  #MARK,4(a1)             ; word2
         move.w  #0,6(a1)                 ; word3
         move.w  #MARK,8(a1)              ; word4
+        endif
         endif
 
         move.l  #DST_ROW,a1

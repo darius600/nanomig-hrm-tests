@@ -176,14 +176,14 @@ unchanged expected value calls for -- the check must go red. Recorded as:
 
     MUTATION FILL-DESC-CORRECT stimulus red middle marker moved from word 2 to word 1
 
-FILL-ASC-INCORRECT: this assertion's own expected outcome (mismatch) is
-only known once step 2 shows whether ascending mode is actually green or
-red on this RTL. The mutation recorded in the test file's header will
-follow whichever the brief prescribes for that outcome -- a stimulus change
-that flips a green FILL-ASC-INCORRECT red, or, if it starts red, a
-different proven-live input through the same word1/word3 comparator that
-goes green (e.g. reusing the descending configuration through the same
-code path) -- decided and recorded once the real result is known.
+FILL-ASC-INCORRECT: `prog_fill_asc_mut.s` runs the ascending configuration
+with word0's marker removed (only word2 and word4 remain). Dropping that
+crossing shifts the parity so the ascending scan's word1/word3 happen to
+land on the same $0000/$FFFF pair descending mode produces -- the mismatch
+check the assertion grades must then go red, even though the mode is still
+ascending. Recorded as:
+
+    MUTATION FILL-ASC-INCORRECT stimulus red word0's marker dropped, ascending scan coincides with the descending pattern
 
 ## Withdrawn: Table 6-2's pipeline assumptions (page 189)
 
@@ -210,7 +210,6 @@ code path) -- decided and recorded once the real result is known.
   package's claims).
 - 2 fixtures (a known constant for the line program, a known plain-copy
   blit result for the fill program), 1 control case (no-swap endpoints),
-  2 stimulus mutations recorded, 1 mutation deferred pending step 2's
-  result for FILL-ASC-INCORRECT.
+  3 stimulus mutations recorded, one per assertion.
 - Both CPU cores (fx68k, TG68K) run every program; a verdict is reported
   for each, separately, per assertion.

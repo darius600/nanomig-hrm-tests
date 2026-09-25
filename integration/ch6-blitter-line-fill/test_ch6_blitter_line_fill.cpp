@@ -13,13 +13,15 @@
 //
 // NMH_MUTATE=LINE loads prog_line_mut.bin (different EP1 endpoints) in
 // place of prog_line.bin. NMH_MUTATE=FILL_DESC loads prog_fill_desc_mut.bin
-// (middle marker moved into word1) in place of prog_fill_desc.bin. Neither
-// is exercised by a plain `make test`; they are re-runs used to confirm the
-// MUTATION lines recorded below.
+// (middle marker moved into word1) in place of prog_fill_desc.bin.
+// NMH_MUTATE=FILL_ASC loads prog_fill_asc_mut.bin (word0's marker dropped)
+// in place of prog_fill_asc.bin. None is exercised by a plain `make test`;
+// they are re-runs used to confirm the MUTATION lines recorded below.
 //
 // MUTATION LINE-RAW-DELTA stimulus red endpoints changed from (10,5)-(3,40) to (0,0)-(6,2), via NMH_MUTATE=LINE
 // MUTATION LINE-NORMALIZE stimulus red endpoints changed from (10,5)-(3,40) to (0,0)-(6,2), via NMH_MUTATE=LINE
 // MUTATION FILL-DESC-CORRECT stimulus red middle marker moved from word 2 to word 1, via NMH_MUTATE=FILL_DESC
+// MUTATION FILL-ASC-INCORRECT stimulus red word0's marker dropped, ascending scan coincides with the descending pattern, via NMH_MUTATE=FILL_ASC
 
 #include <cstdio>
 #include <cstdlib>
@@ -94,6 +96,7 @@ int main(int argc, char** argv) {
     const char* mutate = std::getenv("NMH_MUTATE");
     const bool mutate_line       = mutate && std::string(mutate) == "LINE";
     const bool mutate_fill_desc  = mutate && std::string(mutate) == "FILL_DESC";
+    const bool mutate_fill_asc   = mutate && std::string(mutate) == "FILL_ASC";
 
     // ---- Topic 1: line-mode dx/dy (page 190-191) ----
     {
@@ -149,7 +152,8 @@ int main(int argc, char** argv) {
             c.note("fill descending: word1=" + hex4(w(r,0)) + " word3=" + hex4(w(r,1)));
     }
     {
-        Run r = run_program(dir + "/prog_fill_asc.bin", 2);
+        const std::string bin = dir + (mutate_fill_asc ? "/prog_fill_asc_mut.bin" : "/prog_fill_asc.bin");
+        Run r = run_program(bin, 2);
         const bool loaded = ok(r);
         c.expect(loaded && has(r,0) && has(r,1) && !(w(r,0) == 0x0000 && w(r,1) == 0xFFFF),
             "6-blitter-key-points.c18 ch6-keypoints.c20 p200: the identical blit run in ascending mode "
