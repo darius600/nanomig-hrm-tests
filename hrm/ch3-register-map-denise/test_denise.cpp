@@ -132,10 +132,11 @@
 //        next reading (read-only, not merely "happens to read something
 //        today").
 //   BPLCON0-ADDR (4 ids), BPLCON0-WO (5 ids)
-//   BPLCON2-WO (4 ids), BPLCON3-WO (4 ids)
-//     -- ADDR: BPLCON0's bpu field is proven to live at $100 by the one
-//        measurement PACKAGE.md's own evidence already discloses as
-//        MEASURED: with a single bitplane enabled (bpu=1) and BPL1DAT
+//   BPLCON2-ADDR (4 ids), BPLCON3-ADDR (4 ids), ROUTED 2026-09-25
+//   BPLCON2-WO (5 ids, one added 2026-09-25), BPLCON3-WO (4 ids)
+//     -- ADDR (BPLCON0): BPLCON0's bpu field is proven to live at $100 by
+//        the one measurement PACKAGE.md's own evidence already discloses
+//        as MEASURED: with a single bitplane enabled (bpu=1) and BPL1DAT
 //        held at a constant 1, the pixel inside the display window and
 //        the border outside it read back as different colours, and the
 //        border matches the colour written to $180 both before and after
@@ -143,9 +144,33 @@
 //        0, which requires BPLCON0's write at $100 to have taken effect).
 //        This same measurement is what settles COLOR00's and COLOR01's
 //        addresses below (COLOR-ADDR-00-01).
+//     -- ADDR (BPLCON2): with BPLCON0 set to bpu=5 and dual-playfield mode
+//        (bit 10), planes 1 and 2 held high put valid data on playfield 1
+//        and playfield 2 at once (denise_playfields.v:43-58). BPLCON2's
+//        own PF2PRI bit (bit 6, denise_playfields.v:24,68-90) then picks
+//        which playfield's data reaches the display, so toggling only
+//        that bit -- nothing else touched -- changes the displayed pixel.
+//        That requires BPLCON2's write to have reached this circuit, i.e.
+//        that BPLCON2 is decoded at $104. (This package's own earlier
+//        scope call had judged BPLCON2's address unreachable here, on the
+//        assumption that only killehb's 6-bitplane EHB path could settle
+//        it; PF2PRI needs only a second live bitplane inside the fixture's
+//        existing 5-bitplane, single-playfield-at-a-time machinery, with
+//        dpf=1 instead of dpf=0.)
+//     -- ADDR (BPLCON3): with BPLCON0's ECSENA bit (bit 0, denise.v:192)
+//        set and a display window open, BPLCON3's own BRDRBLNK bit (bit 5,
+//        denise.v:253) forces the border area to solid black
+//        (denise.v:513-518, `t_blank`); with BRDRBLNK clear the border
+//        instead reads COLOR00's own content. Toggling only BPLCON3
+//        changes the border colour, which requires BPLCON3's write to
+//        have reached this circuit, i.e. that BPLCON3 is decoded at $106.
+//        (This package's own earlier scope call had assumed ECSENA is
+//        never set in this fixture and treated the border path as
+//        unreachable; ECSENA is an ordinary BPLCON0 bit this fixture can
+//        set like any other.)
 //     -- WO: a distinct, non-zero pattern written to the register's own
 //        address reads back $0000 there -- 'BPLCON0 ... W' (p.271/291),
-//        'BPLCON2 ... W' (p.271/291), 'BPLCON3 ... W' (p.271/291).
+//        'BPLCON2 ... W' (p.271/291/298), 'BPLCON3 ... W' (p.271/291).
 //   COLOR-ADDR-00-01 (6 ids)
 //     -- COLOR00 and COLOR01 individually, plus the two ids that state
 //        where the COLORxx block begins ($180): settled by the same
@@ -168,88 +193,58 @@
 //     -- each of COLOR00..COLOR31 individually: a distinct pattern written
 //        to COLORi reads back $0000 at that same address.
 //
-//   Two additional groups carry claim ids but settle only the DIRECTION
-//   half of BPLCON2/BPLCON3 with no matching ADDR group -- see OUT OF
-//   SCOPE immediately below for why the ADDR half of those two registers
-//   is not attempted here.
-//
-// OUT OF SCOPE -- not asserted anywhere below; halted rather than forced,
-//   per the package brief's "a claim cannot be settled by ... a
-//   measurement":
-//   BPLCON2-ADDR (A-bplcon.c7, A-bplcon2.addr, B-bplcon2.addr,
-//     B-subject.c118) and BPLCON3-ADDR (A-bplcon.c10, A-bplcon3.addr,
-//     B-bplcon3.addr, B-subject.c122), 8 ids, p.271/291: BPLCON0's address
-//     is provable at this boundary because its bpu field gates how many
-//     bitplanes reach the colour-table index at all (an effect this file
-//     already has the machinery to see). BPLCON2's only fields with any
-//     observable path out of this fixture are killehb (needs a 6th
-//     bitplane and the EHB half-brite comparison the sibling package
-//     already owns) and the dual-playfield priority fields (need dpf=1 and
-//     a second full bitplane set) -- BPLCON3's fields (bank/loct/spres/
-//     border) are AGA- or ECS-border-specific and this file's fixture is
-//     plain ECS with the border path unreachable (ecsena=BPLCON0 bit0 is
-//     never set here, so `t_blank` is permanently 0, independent of
-//     BPLCON3.brdrblnk). Reaching either would mean re-deriving a second
-//     multi-bitplane behavioural rig purpose-built for a single register,
-//     which is exactly the kind of "wider mechanism than this fixture's
-//     boundary reaches" the sibling package's own OUT-OF-SCOPE section
-//     warns against manufacturing. Both registers' WRITE-ONLY direction is
-//     still fully asserted below (BPLCON2-WO, BPLCON3-WO) -- only the
-//     address-specific half is left unsettled.
-//
-// APPENDIX C P.298, ROUTED 2026-09-25 -- three claims from the ECS
-//   "changed register" map, a third page distinct from Appendix A p.271 and
+// ROUTED 2026-09-25 -- three claims from Appendix C's ECS "changed
+//   register" map (p.298), a third page distinct from Appendix A p.271 and
 //   Appendix B p.291 above, carrying BPLCON2's own row from that table. The
 //   printed row is column-scrambled in this corpus's OCR (hrm/text/p298.txt
-//   reads "104 BPLCON2 chg   WA" with nothing after it); a 200 dpi page-image
-//   render restores it to "104 BPLCON2 chg W D Bitplane control (video
-//   priority control)". Both readers' quotations preserve the scrambled
-//   corpus line and carry the image-verified reading in the restatement, not
-//   the quote -- the pipeline's own cross-read already confirmed the
-//   image-verified D against Appendix A p.271 and Appendix B p.291, which
-//   both independently print D for BPLCON2's chip column. Chipset scope:
-//   ECS (Appendix C p.295 defines the chip set; p.298 marks a register new
-//   or changed in that revision).
-//     7-appC-map-bplcon2.c3 (sol) -- "ECS BPLCON2 is write-only." Restates
-//       the identical proposition BPLCON2-WO already asserts below, under
-//       ECS scope; this file's fixture already runs ecs=1 throughout (see
+//   reads "104 BPLCON2 chg   WA" with nothing after it); a 200 dpi
+//   page-image render restores it to "104 BPLCON2 chg W D Bitplane control
+//   (video priority control)". Both readers' quotations preserve the
+//   scrambled corpus line and carry the image-verified reading in the
+//   restatement, not the quote -- the pipeline's own cross-read already
+//   confirmed the image-verified D against Appendix A p.271 and Appendix B
+//   p.291, which both independently print D for BPLCON2's chip column.
+//   Chipset scope: ECS (Appendix C p.295 defines the chip set; p.298 marks
+//   a register new or changed in that revision).
+//     sol:7-appC-map-bplcon2.c3 -- "ECS BPLCON2 is write-only." Restates
+//       the identical proposition BPLCON2-WO already asserts, under ECS
+//       scope; this file's fixture already runs ecs=1 throughout (see
 //       FIXTURE CONFIGURATION above), so BPLCON2-WO's own measurement is
-//       already an ECS measurement. Graded on a new assertion below
-//       (BPLCON2-WO-ECS) rather than folded into BPLCON2-WO's own citation
-//       list -- this package does not rewrite an already-printed
-//       assertion's label, and this id was never on that label before
-//       today.
-//     7-appC-map-bplcon2.c4 (sol) -- "ECS BPLCON2 is implemented in
-//       Denise." A chip-attribution claim, the identical proposition this
-//       file already declines twice over for BPLCON2 (sol:7-appB-bplcon2.c3,
-//       sol:7-appA-bplcon2.c3 above): a single-chip fixture producing an
-//       effect does not, on its own text's own reading, settle which
-//       chip's column entry the manual meant. Declined below for the
-//       identical, already-established reason -- not asserted.
-//     7-appC298.c4 (opus) -- bundles BPLCON2's address ($104), its "chg"
+//       already an ECS measurement. Added to BPLCON2-WO's own citation
+//       list, in full, rather than a second assertion of the identical
+//       predicate.
+//     sol:7-appC-map-bplcon2.c4 -- "ECS BPLCON2 is implemented in Denise."
+//       Declined -- p.298's own legend reads "A=Agnus chip, D=Denise chip,
+//       P=Paula chip": the CHIP column names a physical chip, not an RTL
+//       module, and this suite's symmetric chip-column rule
+//       (hrm/ch8-appb-chip-column-paula) declines claims like this one,
+//       the same reason this package already declines the same register's
+//       Appendix A/B chip claims (sol:7-appA-bplcon2.c3, sol:7-appB-bplcon2.c3
+//       above).
+//     opus:7-appC298.c4 -- bundles BPLCON2's address ($104), its "chg"
 //       revision mark, its direction (W), its chip (D) and its function
 //       ("Bitplane control (video priority control)") in a single claim
 //       (sol split the same source row into the five claims
 //       7-appC-map-bplcon2.c1-c5, of which only .c3 and .c4 above were
-//       routed to this package). Of the five bundled clauses: direction is
-//       established (BPLCON2-WO); address is the already out-of-scope
-//       BPLCON2-ADDR clause above; chip is the just-declined attribution
-//       clause; function is excluded by this file's own Non-goals
-//       paragraph ("BPLCON0/2/3's individual bit *semantics*"); "chg" is a
-//       manual revision marker with no RTL-observable counterpart this
-//       fixture can measure. This file's own bundling precedent
-//       (opus:7-appB.c34, opus:7-appC-bplcon2.c8 above) declines a
-//       multi-clause id as a whole rather than keeping it on the one
-//       clause that happens to be established -- applied identically here:
-//       declined below, not asserted.
+//       routed to this package). Declined as a whole, matching this
+//       file's own bundling precedent for the identical p.291 bundle
+//       (opus:7-appB.c34 above): its chip clause names a physical chip
+//       for the same reason sol:7-appC-map-bplcon2.c4 is declined above,
+//       and a multi-clause id is not kept on the clauses that happen to be
+//       gradeable. Its gradeable clauses are graded through sol's split,
+//       above at BPLCON2-ADDR and BPLCON2-WO.
+//   Both declines are printed as RECORDED lines in the run below, beside
+//   this package's other chip-attribution and bundling declines.
 //
-// MUTATION-LOG SUMMARY (9 groups; the 60-id COLOR-ADDR loop and the 32-id
+// MUTATION-LOG SUMMARY (11 groups; the 60-id COLOR-ADDR loop and the 32-id
 //   COLOR-WO loop each carry one mutation covering the whole loop, matching
 //   hrm/ch3-colour-register-format/'s REG-09/ADDR-32-DISTINCT convention).
 //
 // MUTATION CONTROL-FIXTURE-ALIVE stimulus red: CLXDAT's read address was redirected from $00E to DENISEID's own address ($07C), so both reads returned the same value ($FFFC) instead of two independently-decoded registers and the distinctness check failed (69/0 baseline went to 68 passed/1 failed, only this assertion); reverted (MUT_CONTROL back to 0) and rebuilt to confirm the 69/0 baseline was restored.
 // MUTATION DENISEID-ADDR-RO stimulus red: the "at its own address" read was redirected from $07C to $100 (an unrelated write-only address), so the reading came back $0000 instead of $FFFC.
 // MUTATION BPLCON0-ADDR stimulus red: the BPL1DAT write's data was changed from $FFFF (bitplane held high) to $0000, so the window pixel never differs from the border and the inside/outside comparison found no difference.
+// MUTATION BPLCON2-ADDR stimulus red: the second measurement's BPLCON2 write was changed from $0040 (PF2PRI=1) to $0000, the same value as the first measurement's, so PF2PRI was never actually toggled and the two displayed pixels came back identical.
+// MUTATION BPLCON3-ADDR stimulus red: the second border sample's BPLCON3 write was changed from $0020 (BRDRBLNK=1) to $0000, so BRDRBLNK was never actually set and the border never went black.
 // MUTATION BPLCON0-WO stimulus red: the post-write read was redirected from BPLCON0's own address ($100) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000.
 // MUTATION BPLCON2-WO stimulus red: the post-write read was redirected from BPLCON2's own address ($104) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000.
 // MUTATION BPLCON3-WO stimulus red: the post-write read was redirected from BPLCON3's own address ($106) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000.
@@ -279,6 +274,12 @@
 #endif
 #ifndef MUT_BPLCON0_ADDR
 #define MUT_BPLCON0_ADDR 0
+#endif
+#ifndef MUT_BPLCON2_ADDR
+#define MUT_BPLCON2_ADDR 0
+#endif
+#ifndef MUT_BPLCON3_ADDR
+#define MUT_BPLCON3_ADDR 0
 #endif
 #ifndef MUT_BPLCON0_WO
 #define MUT_BPLCON0_WO 0
@@ -637,6 +638,96 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
+    // BPLCON2-ADDR (p.271/291), ROUTED 2026-09-25 -- with BPLCON0 set to
+    // bpu=5 and dual-playfield mode (bit 10), planes 1 and 2 both held high
+    // put valid data on playfield 1 and playfield 2 at once
+    // (denise_playfields.v:43-58). BPLCON2's own PF2PRI bit (bit 6,
+    // denise_playfields.v:24,68-90) then picks which playfield's data
+    // reaches the display; toggling only that bit -- nothing else touched
+    // -- changes the displayed pixel, which requires BPLCON2's write to
+    // have reached this circuit, i.e. that BPLCON2 is decoded at $104.
+    // =========================================================================
+    {
+        auto sample_dual_playfield = [](uint16_t pf2pri_bits) -> uint32_t {
+            Harness h;
+            h.write_reg(DIWSTRT_ADDR, 0x0008);
+            h.write_reg(DIWSTOP_ADDR, 0x01D0);
+            h.write_reg(COLOR_BASE + 1, 0x0F0);  // index 1: playfield 1's index when pf2pri=0
+            h.write_reg(COLOR_BASE + 9, 0x00F);  // index 9: playfield 2's OCS/ECS-fixed index when pf2pri=1 (denise_playfields.v:73, non-AGA)
+            h.write_reg(BPLCON0_ADDR, 0x5400);   // bpu=5, dpf=1 (bplcon0[10])
+            h.write_reg(BPLCON2_ADDR, pf2pri_bits);  // pf2pri = bplcon2[6]
+            h.pulse_strhor();
+            h.advance_hpos(6);  // hpos ~8, past DIWSTRT, matching the COLOR-ADDR loop below
+            h.refresh_bitplanes(/*b1=*/true, /*b2=*/true, /*b3=*/false, /*b4=*/false, /*b5=*/false, /*rounds=*/10);
+            return h.read_rgb();
+        };
+
+        uint32_t with_pf1_priority = sample_dual_playfield(0x0000);  // pf2pri=0: playfield 1 wins
+
+        uint16_t pf2pri_val = 0x0040;  // pf2pri=1 (bplcon2[6]): playfield 2 wins
+#if MUT_BPLCON2_ADDR
+        pf2pri_val = 0x0000;  // mutation: PF2PRI never actually toggled between the two measurements
+#endif
+        uint32_t with_pf2_priority = sample_dual_playfield(pf2pri_val);
+
+        bool ok = with_pf1_priority != with_pf2_priority;
+        checks.expect(
+            ok,
+            "BPLCON2-ADDR: with dual-playfield mode on (BPLCON0 bit 10) and "
+            "planes 1 and 2 both held high so both playfields carry data, "
+            "writing only BPLCON2's PF2PRI bit (bit 6) between two "
+            "otherwise-identical measurements changes the displayed pixel (" +
+            hex4(static_cast<uint16_t>(with_pf1_priority >> 8)) + " vs " +
+            hex4(static_cast<uint16_t>(with_pf2_priority >> 8)) + ") - "
+            "'BPLCON2 104 W D(E) Bitplane control register' (p.271/291). "
+            "sol:A-bplcon.c7, opus:A-bplcon2.addr, opus:B-bplcon2.addr, "
+            "sol:B-subject.c118.");
+    }
+
+    // =========================================================================
+    // BPLCON3-ADDR (p.271/291), ROUTED 2026-09-25 -- with BPLCON0's ECSENA
+    // bit (bit 0, denise.v:192) set and a display window open, BPLCON3's
+    // own BRDRBLNK bit (bit 5, denise.v:253) forces the border area to
+    // solid black (denise.v:513-518, `t_blank`); with BRDRBLNK clear the
+    // border instead reads COLOR00's own content. Toggling only BPLCON3 --
+    // nothing else touched -- changes the border colour, which requires
+    // BPLCON3's write to have reached this circuit, i.e. that BPLCON3 is
+    // decoded at $106.
+    // =========================================================================
+    {
+        Harness h;
+        h.write_reg(DIWSTRT_ADDR, 0x0030);
+        h.write_reg(DIWSTOP_ADDR, 0x0050);
+        h.write_reg(DIWHIGH_ADDR, 0x0000);    // see BPLCON0-ADDR above for why
+        h.write_reg(COLOR_BASE + 0, 0x0FFF);  // COLOR00: white, clearly non-black
+        h.sample_at_hpos(0x60);  // clear `window`'s unreset garbage, as BPLCON0-ADDR above does
+
+        h.write_reg(BPLCON0_ADDR, 0x0001);  // ecsena=1 (bplcon0[0]); bpu=0, no bitplane needed outside the window
+        h.write_reg(BPLCON3_ADDR, 0x0000);  // brdrblnk=0 (bplcon3[5])
+        uint32_t border_no_blank = h.sample_at_hpos(0x20);  // before the window opens
+
+        uint16_t bplcon3_val = 0x0020;  // brdrblnk=1
+#if MUT_BPLCON3_ADDR
+        bplcon3_val = 0x0000;  // mutation: BRDRBLNK is never actually set
+#endif
+        h.write_reg(BPLCON3_ADDR, bplcon3_val);
+        uint32_t border_with_blank = h.sample_at_hpos(0x20);
+
+        bool ok = border_no_blank != 0x000000 && border_with_blank == 0x000000 &&
+                  border_no_blank != border_with_blank;
+        checks.expect(
+            ok,
+            "BPLCON3-ADDR: with ECSENA set (BPLCON0 bit 0) the border reads "
+            "COLOR00's own non-black content (" +
+            hex4(static_cast<uint16_t>(border_no_blank >> 8)) +
+            ") while BPLCON3's BRDRBLNK bit (bit 5) is clear; writing "
+            "BRDRBLNK=1 to $106 and nothing else forces that same border to "
+            "solid black ($000000) - 'BPLCON3 106 W D(E) Bitplane control "
+            "(enhanced features)' (p.271/291). sol:A-bplcon.c10, "
+            "opus:A-bplcon3.addr, opus:B-bplcon3.addr, sol:B-subject.c122.");
+    }
+
+    // =========================================================================
     // BPLCON0-WO (p.271/291/300/307) -- a distinct pattern written to $100
     // reads back $0000 there.
     // =========================================================================
@@ -683,7 +774,7 @@ int main(int argc, char** argv) {
             "(p.307). This fixture observes only the Denise half of 'used "
             "by ... Denise' - not independently verified here beyond that. "
             "A-bplcon.c8, A-bplcon2.rw, "
-            "B-subject.c119, C-genlock-ext.c7, sol:7-appA-bplcon2.c2, sol:7-appC-bplcon2.c1, opus:7-appA-bplcon2.c1, opus:7-appC-bplcon2.c1, sol:7-appB-bplcon2.c2.");
+            "B-subject.c119, C-genlock-ext.c7, sol:7-appA-bplcon2.c2, sol:7-appC-bplcon2.c1, opus:7-appA-bplcon2.c1, opus:7-appC-bplcon2.c1, sol:7-appB-bplcon2.c2, sol:7-appC-map-bplcon2.c3.");
     }
 
     // =========================================================================
@@ -933,6 +1024,30 @@ int main(int argc, char** argv) {
         "(hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a multi-clause id bundling several registers "
         "and several properties is not partially kept on the clauses that happen to be established, so this bundled "
         "id is declined as a whole, matching this file's own opus:7-appB.c34 record above.");
+
+    // =========================================================================
+    // ROUTED 2026-09-25 -- two of the three claims routed here today from
+    // Appendix C's p.298 ECS "changed register" map for BPLCON2 (see this
+    // file's own header, ROUTED 2026-09-25). The third,
+    // sol:7-appC-map-bplcon2.c3, is graded above, folded into BPLCON2-WO's
+    // own citation list. No predicate, stimulus or expected value above is
+    // touched by this block.
+    // =========================================================================
+    checks.record(
+        "sol:7-appC-map-bplcon2.c4 (p.298, ECS BPLCON2 is implemented in Denise): not asserted -- p.298's own legend "
+        "reads 'A=Agnus chip, D=Denise chip, P=Paula chip': the CHIP column names a physical chip, not an RTL "
+        "module, and this suite's symmetric chip-column rule (hrm/ch8-appb-chip-column-paula) declines claims like "
+        "this one, the same reason this package already declines the same register's Appendix A/B chip claims "
+        "(sol:7-appA-bplcon2.c3, sol:7-appB-bplcon2.c3 above).");
+    checks.record(
+        "opus:7-appC298.c4 (p.298): one id bundling BPLCON2's address, its 'chg' revision mark, write-only "
+        "direction, chip and function for the p.298 row (sol split the same source row into the five claims "
+        "7-appC-map-bplcon2.c1-c5, of which only .c3 and .c4 were routed to this package). Declined as a whole, "
+        "matching this file's own bundling precedent for the identical p.291 bundle (opus:7-appB.c34 above): its "
+        "chip clause names a physical chip for the same reason sol:7-appC-map-bplcon2.c4 is declined just above, "
+        "and this suite's precedent (hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a multi-clause id "
+        "is not partially kept on the clauses that happen to be established. Its gradeable clauses are graded "
+        "through sol's split, above at BPLCON2-ADDR and BPLCON2-WO.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
