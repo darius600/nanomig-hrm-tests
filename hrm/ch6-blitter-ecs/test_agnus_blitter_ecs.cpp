@@ -463,6 +463,75 @@
 //   against a saved pre-mutation copy of the whole file showed zero bytes of
 //   difference, and a clean rebuild reproduced 10 passed, 3 failed.
 
+// SPECIFICATION ADDENDUM (extension pass, from ch6-blitter-ecs-spec-
+// stage.jsonl's 13 records -- quotation, restatement and page only; this
+// block was written and committed before ch6-blitter-ecs.jsonl or the RTL
+// was opened again, per the build brief's gate for extending an accepted
+// package). Each new claim id is grouped under the one manual proposition
+// it restates; grouping is by wording alone at this stage, not by which
+// existing assertion (if any) already measures it -- that mapping is
+// decided, and recorded in CLAIM COVERAGE above and RESULTS below, only
+// after this block was committed.
+//
+//   [P1] ECS-CONTIGUOUS-BLITS-32768-WIDE (p.308) -- "which provide for
+//     contiguous blits of up to 32768 x 32768 pixels at a [time]" -- the
+//     ECS Agnus blitter supports contiguous blits up to 32768 pixels WIDE.
+//     6-appc-big-blits.c1.
+//
+//   [P2] ECS-CONTIGUOUS-BLITS-32768-HIGH (p.308) -- same sentence as P1,
+//     the HIGH half -- the ECS Agnus blitter supports contiguous blits up
+//     to 32768 pixels HIGH. 6-appc-big-blits.c2.
+//
+//   [P3] ECS-CONTIGUOUS-BLITS-32768-BY-32768-JOINT (p.308) -- same
+//     sentence as P1/P2, kept joint rather than split -- the ECS Agnus
+//     Blitter enhancements provide for contiguous blits of up to
+//     32768 x 32768 pixels at a time. ch6-appc-bigblits.c2.
+//
+//   [P4] BLTSIZH-ELEVEN-BITS-32768-PIXELS-MAX (p.308) -- "w = Width
+//     (11 bit width = 32768 pixels max)" -- the bit-table's own row for
+//     BLTSIZH states its 11-bit width field's pixel-equivalent ceiling as
+//     32768. ECS BLTSIZH supports at most 32768 pixels of width.
+//     6-appc-big-blits.c61.
+//
+//   [P5] BLTSIZV-BLTSIZH-32K-WIDE (p.308) -- "With these two registers,
+//     blits up to 32K by 32K are now possible -- much [larger ...]" -- the
+//     WIDE half -- together ECS BLTSIZV and BLTSIZH permit blits up to
+//     32K pixels wide. 6-appc-big-blits.c62.
+//
+//   [P6] BLTSIZV-BLTSIZH-32K-HIGH (p.308) -- same sentence as P5, the HIGH
+//     half -- together ECS BLTSIZV and BLTSIZH permit blits up to 32K
+//     pixels high. 6-appc-big-blits.c63.
+//
+//   [P7] BLTSIZV-BLTSIZH-32K-BY-32K-LARGER-THAN-OCS (p.308) -- same
+//     sentence as P5/P6, kept joint, plus its own OCS comparison -- with
+//     BLTSIZV and BLTSIZH, blits up to 32K by 32K are possible, much
+//     larger than the original chip set could accept. ch6-appc-bigblits.c6.
+//
+//   [P8] BLTCON0L-EXPEDITES-SETUP (p.309/310, cross-read by sol as prose,
+//     reopened here) -- "The BLTCON0L register writes the low bits of
+//     BLTCON0, thereby expediting" [setup] -- writing only the low bits of
+//     BLTCON0 expedites the set up of some blits and generally speeds up
+//     the software, since the upper bits are often the same.
+//     ch6-appc-ecs.c8.
+//
+//   [P9] REGISTER-MAP-LEGEND (p.310, cross-read by sol as prose, reopened
+//     here) -- "A=Agnus chip, D=Denise chip, P=Paula chip, W=Write,
+//     R=Read, S=Strobe" -- the register map's own notation legend.
+//     ch6-appc-map.legend.
+//
+//   [P10] BLITTER-POINTER-RANGE-INCREASED-UNDER-ECS (p.172) -- "The
+//     blitter size and pointer registers have increased range under the"
+//     [Enhanced Chip Set] -- the ECS blitter has larger pointer-register
+//     range than the original chip set, detailed in Appendix C p.309.
+//     6-dma-channels.c67, ch6-dma.c69 (opus, same sentence).
+//
+//   [P11] ECS-32K-BY-32K-PIXEL-BLITS-CHAPTER-BODY (p.172) -- "ECS version
+//     of the custom chips, up to 32K by 32K pixel blits are" [possible] --
+//     ECS permits blits up to 32K by 32K pixels. 6-dma-channels.c69,
+//     ch6-dma.c70 (opus, same sentence).
+//
+//   13 ids total: 1+1+1+1+1+1+1+1+1+2+2 = 13.
+
 #include <cstdint>
 #include <cstdio>
 #include <deque>
