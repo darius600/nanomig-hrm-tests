@@ -230,8 +230,9 @@
 //   DMACON-ADDRESS-AND-WRITE-ONLY (8): 5-appA-p278.c1, 5-appA-p278.c2,
 //     5-appA-p278.c4, 5-appB-p290.c1, 5-appB-p290.c2, 5-appB-p290.c4,
 //     A-dmacon.addr, A-dmacon.acc
-//   DMACON-DECODED-BY-PAULA (2, plus one DECLINED half): 5-appA-p278.c3,
-//     A-dmacon.chip
+//   DMACON-DECODED-BY-PAULA (0, both ids RECORDED-declined): 5-appA-p278.c3,
+//     A-dmacon.chip -- Paula's own decode is still asserted below, without
+//     a claim id, since the claim also bundles the Agnus and Denise thirds
 //   DMACONR-NOT-DECODED-BY-PAULA -- ASSERTED, EXPECTED RED, THE OWNERSHIP
 //     FINDING (3): 5-appA-p278.c7, 5-appB-p289.c3, A-dmaconr.chip
 //   ADKCON-ADDRESS-WRITE-ONLY-AND-CHIP (16): 5-appA-p265.c1,
@@ -281,11 +282,13 @@
 //     (intreq port, RTL_REGRESSION) or chapter 7's paula_intcontroller
 //     (_ipl/INTENA) (2): 5-p148.c4, 5-join.c9
 //
-//   43+16+16+14+10+9+8+6+4+3+3+3+2*9 = 155. All 155 ids named above; 149
+//   43+16+16+14+10+9+8+6+4+3+3+3+2*9 = 155. All 155 ids named above; 147
 //   are asserted inside this file's checks.expect() text (the DMACONR
-//   finding included), 6 are explicitly NOT COVERED BY THIS PACKAGE and
-//   appear only in this header, never inside an assertion or record()
-//   string.
+//   finding included), 2 (5-appA-p278.c3, A-dmacon.chip) are RECORDED as
+//   declined -- the Agnus and Denise thirds of DMACON-DECODED-BY-PAULA are
+//   not established at this fixture -- and 6 are explicitly NOT COVERED BY
+//   THIS PACKAGE, appearing only in this header, never inside an assertion
+//   or record() string.
 //
 // RESULTS (WSL/Verilator 5.052, rebuilt and rerun 12.09.2026 after the
 //   coverage repair above): 18 passed, 2 failed. ADKCON-ATTACH-BITS-DO-
@@ -1324,21 +1327,25 @@ int main(int argc, char** argv) {
         checks.expect(paula_decodes_it,
             "DMACON-DECODED-BY-PAULA: this fixture IS paula.v, and a write "
             "at $096 visibly changes its own audio_dmal output, so Paula "
-            "decodes DMACON. 'DMACON 096 W A D P...' (appendix A p.278, "
-            "5-appA-p278.c3, A-dmacon.chip) -- the P half.");
+            "decodes DMACON. 'DMACON 096 W A D P...' (appendix A p.278 -- "
+            "the P half.");
         checks.record(
-            "DMACON-DECODED-BY-PAULA [Denise half, RECORDED not "
-            "asserted]: the same appendix A row's 'D' (Denise) cannot be "
-            "measured at this fixture -- denise.v is outside paula.v's "
-            "boundary and this package does not compile it. Independently "
-            "confirmed by a plain grep over denise.v (not a Verilator "
-            "measurement): a search for '096' or 'DMACON' over the whole "
-            "file returns exactly one comment (denise.v:163, 'needs bits "
-            "in DMACON also') and no register decode at all. Appendix B "
-            "p.290's own chip column for this row gives only 'D' -- "
-            "conflicting with appendix A's 'A D P' by being narrower, not "
-            "opposite, per this repository's own chip-column.md finding "
-            "that appendix B's chip column demonstrably drops letters. "
+            "DMACON-DECODED-BY-PAULA [Agnus and Denise thirds, RECORDED "
+            "not asserted]: the same appendix A row's 'A' (Agnus) and 'D' "
+            "(Denise) are not established at this fixture -- agnus.v and "
+            "denise.v are both outside paula.v's boundary and this "
+            "package does not compile either. The Denise half is "
+            "independently confirmed by a plain grep over denise.v (not "
+            "a Verilator measurement): a search for '096' or 'DMACON' "
+            "over the whole file returns exactly one comment "
+            "(denise.v:163, 'needs bits in DMACON also') and no register "
+            "decode at all. Appendix B p.290's own chip column for this "
+            "row gives only 'D' -- conflicting with appendix A's 'A D P' "
+            "by being narrower, not opposite, per this repository's own "
+            "chip-column.md finding that appendix B's chip column "
+            "demonstrably drops letters. The Agnus half is not measured "
+            "or grepped at this fixture at all -- neither confirmed nor "
+            "contradicted here. "
             "5-appA-p278.c3, A-dmacon.chip.");
     }
 
