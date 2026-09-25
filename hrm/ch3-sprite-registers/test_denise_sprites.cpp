@@ -233,6 +233,73 @@
 // MUTATION SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE none impossible: already red at baseline (the FINDING above). Bit 4 of SPRxCTL is not captured by any register in this RTL at all (only bits 7 and 0 are), so no stimulus this harness can present makes it observable; there is nothing green here to break.
 // MUTATION SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED: no record -- this claim is declined (checks.note only, no checks.expect), so there is no red/green state for a mutation to move.
 
+// SPECIFICATION ADDENDUM (extension pass, from ch3-sprite-registers-
+// spec-stage.jsonl's 17 records -- quotation, restatement and page only;
+// this block was written and committed before ch3-sprite-registers.jsonl
+// or the RTL was opened again, per the build brief's gate for extending
+// an accepted package). Each new claim id is grouped under the one manual
+// proposition it restates; grouping is by wording alone at this stage,
+// not by which existing assertion (if any) already measures it -- that
+// mapping is decided, and recorded in CLAIM COVERAGE above and RESULTS
+// below, only after this block was committed.
+//
+//   [P1] SUPERHIRES-FINER-GRANULARITY-THAN-HIRES-AND-LORES (p.303) --
+//     "SuperHires mode has a finer granularity of sprite positioning than
+//     either Hires or Lores modes." Three readings of the same sentence:
+//     APPC-pos.c1 keeps both comparators ("either Hires or Lores");
+//     CH4-appC-position.c1 restates the Hires half alone;
+//     CH4-appC-position.c2 restates the Lores half alone.
+//
+//   [P2] SPRXCTL-BIT-TABLE-ROW-04-SHSH1 (p.303) -- "04      SHSH1
+//     Start horizontal (SHR mode) 70ns increment" -- SPRxCTL bit 4 is
+//     SHSH1, a 70ns SuperHires horizontal-start increment. APPC-pos.c10.
+//     source_defines records tension with chapter 4 pp.107/128 and
+//     appendix A p.284, which call the same bit range unused/reserved
+//     without naming a chipset -- the existing NM-HRM-019 regression.
+//
+//   [P3] SPRXCTL-BIT-TABLE-ROW-03-SHSH0 (p.303) -- "03      SHSH0
+//     Start horizontal (SHR mode) 35ns (unimplemented)" -- SPRxCTL bit 3
+//     is SHSH0, a 35ns SuperHires increment the manual's own row marks
+//     unimplemented. APPC-pos.c11, CH4-appC-position.c19.
+//
+//   [P4] SPRXCTL-BIT-TABLE-ROW-00-SH0 (p.303) -- "00      SH0
+//     Start horiz. value Low bit 140 ns increment" -- SPRxCTL bit 0 is
+//     SH0, a 140ns increment, the low bit of the horizontal start value.
+//     APPC-pos.c12, CH4-appC-position.c20.
+//
+//   [P5] SPRXPOS-SPRXCTL-PROCESSOR-LOADABLE (p.303) -- "They are usually
+//     loaded by the sprite DMA channel, during horizontal blank, however
+//     they may be loaded by the processor." SPRxPOS and SPRxCTL may be
+//     loaded by the processor, not only by DMA. APPC-pos.c6,
+//     CH4-appC-position.c9.
+//
+//   [P6] SPRXPOS-BIT-TABLE-ROW-07-00-SH8-SH1 (p.303) -- "07-00  SH8-SH1
+//     Start horizontal value. Low bit (SH0) in SPRxCTL." SPRxPOS bits
+//     07-00 are SH8-SH1, the upper 8 bits of the 9-bit horizontal start
+//     value; its low bit (SH0) lives in SPRxCTL. APPC-pos.c8,
+//     CH4-appC-position.c13, CH4-appC-position.c14.
+//
+//   [P7] SPRXCTL-REGISTER-MAP-ROW-POSITION-AND-CONTROL (p.303) --
+//     "SPRxCTL W   A D     Sprite x position and control data" --
+//     SPRxCTL's own register-map row describes it as holding sprite
+//     position and control data. CH4-appC-position.c17.
+//
+//   [P8] SPRXPOS-SPRXCTL-JOINT-POSITION-AND-FEATURES (p.303) -- "The ECS
+//     registers SPRxPOS and SPRxCTL work together as position, size and
+//     sprite feature control registers." CH4-appC-position.c5 restates
+//     the position half, CH4-appC-position.c7 the feature half.
+//
+//   [P9] SPRXCTL-CHIPSET-SCOPING-CONFLICT (p.298, vs pp.107/128/284) --
+//     "142  SPRxCTL  chg   W  A   Sprite x position and control data" --
+//     the appendix B register-summary map marks SPRxCTL "chg" (changed
+//     between chipsets), which appendix C p.303 explains as bits 3 and 4
+//     being ECS-only, against chapter 4 pp.107/128 and appendix A p.284,
+//     which call the same bits unused/reserved without naming a chipset.
+//     APPC2-SPRxCTL.conf2. Recorded as a conflict, not resolved, by the
+//     classifier.
+//
+//   17 ids total: 3+1+2+2+2+3+1+2+1 = 17.
+
 #include <cstdint>
 #include <iostream>
 #include <string>
