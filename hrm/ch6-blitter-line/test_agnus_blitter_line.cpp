@@ -275,6 +275,21 @@
 //     6-appa-control.c111, 6-appa-control.c112, 6-appa-control.c113,
 //     6-appa-control.c114, 6-appa-control.c115, 6-appa-control.c116 .
 //
+// NEW SPECIFICATION (added 25.09.2026, extending this accepted package per
+// work/2026-09-25_unit-backlog/BUILD-BRIEF.md; written from the spec-stage
+// quotations alone -- the RTL measurement that grades it is added in a
+// later commit, not this one).
+//   LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270): the appendix
+//   instructs preloading BLTAMOD with the value (4Y-4X) and BLTBMOD with
+//   the value (4Y) ("LINE DRAW ... with the values (4Y-4X) and (4Y)",
+//   6-appa-registers.c98 "the appendix gives BLTAMOD=4Y-4X", 6-appa-
+//   registers.c99 "the appendix gives BLTBMOD=4Y", ch6-appa-bltxmod.c10
+//   "in line draw BLTAMOD must be preloaded with (4Y-4X) and BLTBMOD with
+//   (4Y)", p.270) and states that Y/X is the line's slope ("LINE DRAW ...
+//   respectively. Y/X= line slope.", ch6-appa-bltxmod.c11 "in line draw
+//   Y/X is the line slope"; "LINE DRAW Y/X is the line slope. BLTCPT
+//   and", ch6-appa-bltxpt.c10 "in line draw Y/X is the line slope", p.270).
+//
 // NOT ASSERTED (reported, not silently dropped):
 //   ch6-line.c17 (p.191, "these calculations normalize the line into octant
 //     0") -- a programming-algorithm description (how software reduces an
