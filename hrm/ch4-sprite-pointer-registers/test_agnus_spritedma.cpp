@@ -144,7 +144,12 @@
 //     reported (MEASURED-WIDTH), not asserted, immediately after.
 //   36+34+37+38 = 145. All four groups' id lists are reproduced in full
 //   inside their own expect() label below (searchable there), not only in
-//   this comment. None declined.
+//   this comment -- except P2's 16 APPB2-SPRxPTH/PTL.chip ids, each of
+//   which restates "reads A alone": that exclusivity is outside this
+//   single-module boundary, so those 16 are named on P2's record() line
+//   instead of its expect() label. Their sol twins, CH4-APPB-SPRxPTH/
+//   PTL.chip, restate only 'reads "A"' with no exclusivity claim and stay
+//   on the expect() label. Nothing else among the 145 is declined.
 //
 // EXTENSION (2026-09-25 routing pass): 31 more ids, routed from
 //   ch4-sprite-pointer-registers-spec-stage.jsonl (a later classification/
@@ -466,12 +471,7 @@ int main(int argc, char** argv) {
             "sprite 3's own DMA fetch versus leaving them at their reset "
             "default -- these registers are implemented, and take effect, "
             "inside Agnus -- CH4-appA-sprite.c43, CH4-appA-sprite.c47, "
-            "APPB2-SPR0PTH.chip, APPB2-SPR0PTL.chip, APPB2-SPR1PTH.chip, "
-            "APPB2-SPR1PTL.chip, APPB2-SPR2PTH.chip, APPB2-SPR2PTL.chip, "
-            "APPB2-SPR3PTH.chip, APPB2-SPR3PTL.chip, APPB2-SPR4PTH.chip, "
-            "APPB2-SPR4PTL.chip, APPB2-SPR5PTH.chip, APPB2-SPR5PTL.chip, "
-            "APPB2-SPR6PTH.chip, APPB2-SPR6PTL.chip, APPB2-SPR7PTH.chip, "
-            "APPB2-SPR7PTL.chip, CH4-APPB-SPR0PTH.chip, "
+            "CH4-APPB-SPR0PTH.chip, "
             "CH4-APPB-SPR0PTL.chip, CH4-APPB-SPR1PTH.chip, "
             "CH4-APPB-SPR1PTL.chip, CH4-APPB-SPR2PTH.chip, "
             "CH4-APPB-SPR2PTL.chip, CH4-APPB-SPR3PTH.chip, "
@@ -483,12 +483,23 @@ int main(int argc, char** argv) {
         c.record("agnus_spritedma is the sole module in this package's "
             "boundary, so whether Denise separately decodes $120-$13E "
             "cannot be measured here; the inventory's own classify."
-            "evidence (APPB2-SPR0PTH.chip and twins) already records "
+            "evidence (APPB2-SPR0PTH.chip, APPB2-SPR0PTL.chip, "
+            "APPB2-SPR1PTH.chip, APPB2-SPR1PTL.chip, APPB2-SPR2PTH.chip, "
+            "APPB2-SPR2PTL.chip, APPB2-SPR3PTH.chip, APPB2-SPR3PTL.chip, "
+            "APPB2-SPR4PTH.chip, APPB2-SPR4PTL.chip, APPB2-SPR5PTH.chip, "
+            "APPB2-SPR5PTL.chip, APPB2-SPR6PTH.chip, APPB2-SPR6PTL.chip, "
+            "APPB2-SPR7PTH.chip, APPB2-SPR7PTL.chip) already records "
             "denise_sprites.v:104 requiring reg_address_in[8:6]==101, "
             "i.e. only $140 and above -- outside the $120-$13E sprite-"
             "pointer range -- a fact carried from that prior "
             "classification measurement, not established by this "
-            "harness.");
+            "harness. Each of these 16 ids' own restatement reads \"A "
+            "alone\"; that exclusivity claim is what this note declines "
+            "for them. Their sol twins, CH4-APPB-SPRxPTH/PTL.chip, "
+            "restate only 'reads \"A\"' with no exclusivity claim, so "
+            "the measurement above (that Agnus implements these "
+            "registers) is enough for those; they keep their place on "
+            "the P2 label.");
     }
 
     // ---- P3: SPRITE-POINTER-EVEN-ADDRESS-PAIR (37 ids) ----
