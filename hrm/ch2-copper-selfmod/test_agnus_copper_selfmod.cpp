@@ -74,6 +74,10 @@
 //   one reader's reading of one sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
+// Appendix B legend (ch2-appb-legend.c4), p.287: "S     Strobe (write address
+//   with no register bits). Writing the register causes the effect."
+//   Restated: a register marked S in appendix B is a strobe -- a write
+//   address with no register bits.
 
 #include <cstdint>
 #include <iostream>
