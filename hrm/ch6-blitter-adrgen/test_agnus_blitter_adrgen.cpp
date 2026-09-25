@@ -70,14 +70,19 @@
 // 15-bit field, not a 16-bit one - the register table's parenthetical beside
 // BLTxPTL's own entry, the same table whose BLTxPTH row carries the "(high 5
 // bits)"/"(high 3 bits)" wording ECS-FIVE-BIT-PTH already measures for the
-// high word above. PTR-FIFTEEN-BIT-PTL below asserts it: agnus_blitter_
-// adrgen.v:47's `reg [15:1] bltptl [3:0]` is a genuinely 15-bit array, loaded
-// from `data_in[15:1]` (lines 62, 76-77) - bit 0 of a write is never captured
-// anywhere. PTR-TWO-WORD-COMPOSITION and PTR-BYTE-LSB-IGNORED already touch
-// this register but only at two arbitrary bit positions plus bit 0, not
-// every one of the fifteen; PTR-FIFTEEN-BIT-PTL is the dedicated,
+// high word above. The row's own description reads "source (x=A,B,C) or
+// destination (x=D)", i.e. the width applies to all four channels, not to
+// channel A alone. PTR-FIFTEEN-BIT-PTL below asserts it on all four:
+// agnus_blitter_adrgen.v:47's `reg [15:1] bltptl [3:0]` is a genuinely
+// 15-bit array of four banks, one per channel, each loaded from
+// `data_in[15:1]` (lines 62, 76-77) - bit 0 of a write is never captured
+// anywhere, on any bank. PTR-TWO-WORD-COMPOSITION and PTR-BYTE-LSB-IGNORED
+// already touch this register but only at two arbitrary bit positions plus
+// bit 0, and only on channel A; PTR-FIFTEEN-BIT-PTL is the dedicated,
 // exhaustive-width check, the same rigor ECS-FIVE-BIT-PTH already applies to
-// BLTxPTH's high word.
+// BLTxPTH's high word, run through CHA, CHB, CHC and CHD in turn (repair to
+// the 2026-09-25 backlog's own new assertion: it first checked channel A
+// alone, one register of four, though the claim's own text names all four).
 //
 // CLAIM COVERAGE, for claims of the 92 with no assertion of their own:
 //   6-dma-channels.c56 (p.172, "16-bit modulo register called BLTxMOD") is a
@@ -178,7 +183,9 @@
 // MUTATION PTR-FIFTEEN-BIT-PTL stimulus red: the first BLTAPTL stimulus,
 //   0xFFFE (all fifteen bits set), changed to 0x0000 (all fifteen bits
 //   clear) -> PTR-FIFTEEN-BIT-PTL FAIL, got 0x0000 instead of the expected
-//   0x7FFF; every other assertion PASS.
+//   0x7FFF; every other assertion PASS. Re-run after the 2026-09-25 repair
+//   extended the same assertion to BLTBPTL/BLTCPTL/BLTDPTL: identical
+//   result, same single FAIL, same channel-A got/expected values.
 
 #include <cstdint>
 #include <iostream>
@@ -738,25 +745,54 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- PTR-FIFTEEN-BIT-PTL (p.270, routed 2026-09-25) ----------------
+    //
+    // p.270's row is generic over the channel - "source (x=A,B,C) or
+    // destination (x=D)" - so the low-15-bit width is checked on all four
+    // BLTxPTL registers, not channel A alone, using the same $FFFE/$FFFF
+    // stimulus on each, read back through its own channel select.
     {
         Harness h;
         h.bus_write(BLTAPTH, 0x0000);  // clear the high word so only BLTAPTL's own width shows
         h.bus_write(BLTAPTL, 0xFFFE);  // every one of the fifteen target bits set, bit0=0
-        const uint32_t all_ones_even = h.read_ptr(CHA);
+        const uint32_t a_even = h.read_ptr(CHA);
         h.bus_write(BLTAPTL, 0xFFFF);  // same fifteen bits, bit0=1 this time
-        const uint32_t all_ones_odd = h.read_ptr(CHA);
+        const uint32_t a_odd = h.read_ptr(CHA);
 
-        checks.expect(all_ones_even == 0x7FFF && all_ones_odd == 0x7FFF,
-            "PTR-FIFTEEN-BIT-PTL: writing BLTAPTL with every one of its "
-            "fifteen significant bits set ($FFFE) reads back as word address "
-            "$7FFF - none of the fifteen bits is stuck at 0 - and the "
-            "identical fifteen bits with bit 0 also set ($FFFF) read back the "
-            "same $7FFF, so that sixteenth bit position carries no value of "
-            "its own; together this is the register-table's '(low 15 bits)' "
-            "width, exercised across every bit position rather than the two "
+        h.bus_write(BLTBPTH, 0x0000);
+        h.bus_write(BLTBPTL, 0xFFFE);
+        const uint32_t b_even = h.read_ptr(CHB);
+        h.bus_write(BLTBPTL, 0xFFFF);
+        const uint32_t b_odd = h.read_ptr(CHB);
+
+        h.bus_write(BLTCPTH, 0x0000);
+        h.bus_write(BLTCPTL, 0xFFFE);
+        const uint32_t c_even = h.read_ptr(CHC);
+        h.bus_write(BLTCPTL, 0xFFFF);
+        const uint32_t c_odd = h.read_ptr(CHC);
+
+        h.bus_write(BLTDPTH, 0x0000);
+        h.bus_write(BLTDPTL, 0xFFFE);
+        const uint32_t d_even = h.read_ptr(CHD);
+        h.bus_write(BLTDPTL, 0xFFFF);
+        const uint32_t d_odd = h.read_ptr(CHD);
+
+        checks.expect(a_even == 0x7FFF && a_odd == 0x7FFF &&
+                       b_even == 0x7FFF && b_odd == 0x7FFF &&
+                       c_even == 0x7FFF && c_odd == 0x7FFF &&
+                       d_even == 0x7FFF && d_odd == 0x7FFF,
+            "PTR-FIFTEEN-BIT-PTL: writing BLTAPTL, BLTBPTL, BLTCPTL and "
+            "BLTDPTL, each with every one of its fifteen significant bits set "
+            "($FFFE), reads back through its own channel as word address "
+            "$7FFF on every one of the four - none of the fifteen bits is "
+            "stuck at 0, on any channel - and the identical fifteen bits with "
+            "bit 0 also set ($FFFF) read back the same $7FFF on every "
+            "channel, so that sixteenth bit position carries no value of its "
+            "own anywhere; together this is the register-table's '(low 15 "
+            "bits)' width, exercised across every bit position on all four "
+            "of 'source (x=A,B,C) or destination (x=D)', not just the two "
             "arbitrary values PTR-TWO-WORD-COMPOSITION and PTR-BYTE-LSB-"
-            "IGNORED above use (6-appa-registers.c109, ch6-appa-bltxpt.c5, "
-            "p.270)");
+            "IGNORED above use on channel A alone (6-appa-registers.c109, "
+            "ch6-appa-bltxpt.c5, p.270)");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
