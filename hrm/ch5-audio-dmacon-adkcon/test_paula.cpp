@@ -76,6 +76,23 @@
 //   logic, expected value and colour is unchanged (see RESULTS below for
 //   the before/after tally).
 //
+// CH4-DMACON-BITS EXTENSION (2026-09-25): eight more claims land on this
+//   package from the identical appendix A p.278 DMACON table rows this
+//   package's own AUDxEN-BIT-MAPS-TO-OWN-CHANNEL assertion already quotes
+//   and grades -- four read independently by opus (APPA-dmacon.c18 "03
+//   AUD3EN Audio channel 3 DMA enable", .c19 "02 AUD2EN Audio channel 2 DMA
+//   enable", .c20 "01 AUD1EN Audio channel 1 DMA enable", .c21 "00 AUD0EN
+//   Audio channel 0 DMA enable") and four by sol of the same four rows
+//   (CH4-appA-dmacon.c25/c26/c27/c28, identical quotes, indented). Each
+//   restates exactly the proposition AUDxEN-BIT-MAPS-TO-OWN-CHANNEL already
+//   establishes for all four bits: DMACON bit N is that channel's own named
+//   AUDxEN, audio channel N DMA enable, proven there by a walking-one sweep
+//   across bits 0-3 with a fresh reset per step. No new proposition and no
+//   new fixture are implied by the quotations alone; what carries an
+//   existing measurement's id and what needs its own is decided after this
+//   specification commit, per this package's own order of work, by opening
+//   the routed claims file next.
+//
 // BOUNDARY: paula.v, reached at $(NANOMIG)/src/minimig-aga/paula.v.
 //   paula.v itself instantiates paula_uart, paula_intcontroller,
 //   paula_floppy and paula_audio directly; paula_audio in turn
