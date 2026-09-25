@@ -14,6 +14,18 @@ PROGS    := \
   arbshrink arbshrink_wrongsize \
   mintbit mintbit_wrongbit \
   mintor mintor_missing \
-  wordonly wordonly_wrongword
+  wordonly wordonly_wrongword \
+  fig61 fig61_wrongstart \
+  fig63 fig63_wronglf \
+  fig64 fig64_wrongwidth \
+  mintdc mintdc_wrong \
+  truthorder truthorder_topdown \
+  fourcopies fourcopies_only3 \
+  descmod descmod_zeromod \
+  shiftdir_asc shiftdir_desc \
+  shiftc9 shiftc9_noptr \
+  arbmask arbmask_nomask \
+  mintper_n mintper_n_swap \
+  highbit
 
 include ../harness/nanomig.mk
