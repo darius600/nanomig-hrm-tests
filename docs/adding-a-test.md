@@ -128,7 +128,7 @@ fixes the expectation before opening the RTL is welcome; what the pipeline adds
 on top is a second independent reading of the same pages and a per-claim ledger,
 and a package without those is not thereby worth less — it just does not carry a
 completeness claim about its chapter. What a green means either way is defined in
-[`README.md`](../README.md#what-is-covered-and-by-which-method).
+[`README.md`](../README.md#what-a-green-means).
 
 An earlier suite of 23 packages had no claim file because it had no manual
 citation either: its oracle was a frozen module specification, written by reading

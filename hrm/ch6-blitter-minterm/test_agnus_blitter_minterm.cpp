@@ -21,7 +21,7 @@
 //   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // EXTENDS PRIOR ART (hrm/ch6-blitter-minterm, unchanged in shape since its
-// original commit; see docs/blitter-prior-art.md). What was already here and
+// original commit; see docs/evidence/blitter-prior-art.md). What was already here and
 // is kept, verbatim in mechanism: the `hrm_oracle()` function computing the
 // expected output from the manual's bit-selection description rather than
 // from the RTL; the exhaustive first stage driving A, B and C as all-zero or

@@ -1,13 +1,13 @@
 # Analyses behind the findings
 
 Work that produced or tested a **group** of findings and belongs to none of
-them alone. It was in [`findings.md`](findings.md) and made that file hard to
+them alone. It was in [`findings.md`](../findings.md) and made that file hard to
 read as a register: a reader scanning for a key met `NM-HRM-005` five times in
 three different tables.
 
-Nothing here is a status. The register is [`findings.md`](findings.md), and the
+Nothing here is a status. The register is [`findings.md`](../findings.md), and the
 maintained statement of any single finding is its page in
-[`findings/`](findings/).
+[`findings/`](../findings/).
 
 ## Where the five oldest findings come from, and whether they hold
 
@@ -19,11 +19,11 @@ elsewhere in the same manual.
 
 | Finding | Origin | Standing |
 |---|---|---|
-| [NM-HRM-003](findings/NM-HRM-003.md) | pipeline | corroborated — p273 and p309 give two different widths |
-| [NM-HRM-004](findings/NM-HRM-004.md) | pipeline | corroborated — two editions carry the appendix C sentence; challenged and upheld |
-| [NM-HRM-005](findings/NM-HRM-005.md) | pipeline | corroborated — p20 and p275, units settled on p275 itself |
-| [NM-HRM-002](findings/NM-HRM-002.md) | hand-written, Aug | **stands** — the manual contradicts itself, and four implementations split two against two |
-| [NM-HRM-001](findings/NM-HRM-001.md) | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
+| [NM-HRM-003](../findings/NM-HRM-003.md) | pipeline | corroborated — p273 and p309 give two different widths |
+| [NM-HRM-004](../findings/NM-HRM-004.md) | pipeline | corroborated — two editions carry the appendix C sentence; challenged and upheld |
+| [NM-HRM-005](../findings/NM-HRM-005.md) | pipeline | corroborated — p20 and p275, units settled on p275 itself |
+| [NM-HRM-002](../findings/NM-HRM-002.md) | hand-written, Aug | **stands** — the manual contradicts itself, and four implementations split two against two |
+| [NM-HRM-001](../findings/NM-HRM-001.md) | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
 
 Both August findings rested on a manual that says two different things, and
 neither could be decided by reading the manual harder. They were settled by a
@@ -214,9 +214,9 @@ says.**
 
 | Finding | Manual | Both emulators, and NanoMig |
 |---|---|---|
-| [NM-HRM-003](findings/NM-HRM-003.md) | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
-| [NM-HRM-004](findings/NM-HRM-004.md) | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
-| [NM-HRM-005](findings/NM-HRM-005.md) | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
+| [NM-HRM-003](../findings/NM-HRM-003.md) | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
+| [NM-HRM-004](../findings/NM-HRM-004.md) | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
+| [NM-HRM-005](../findings/NM-HRM-005.md) | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
 
 The citations are in [`third-witness.md`](third-witness.md).
 

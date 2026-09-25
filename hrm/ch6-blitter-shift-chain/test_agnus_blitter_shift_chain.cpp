@@ -36,7 +36,7 @@
 //   prefix, and they resolve in the claim files that
 //   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
-// PRIOR ART / RECONCILIATION (docs/blitter-prior-art.md and
+// PRIOR ART / RECONCILIATION (docs/evidence/blitter-prior-art.md and
 // work/2026-09-08_fpga-090_build_register.md, both read before writing this
 // file, as required). Nothing here supersedes anything: hrm/agnus_blitter_
 // barrelshifter compiles agnus_blitter_barrelshifter.v directly (not a local

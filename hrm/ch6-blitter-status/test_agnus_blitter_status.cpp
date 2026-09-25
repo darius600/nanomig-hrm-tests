@@ -29,7 +29,7 @@
 //
 // Supersedes hrm/agnus_blitter_zero, per the build register. That package
 // compiles a local copy of agnus_blitter.v:481-487 pasted into its own .v file
-// (see docs/blitter-prior-art.md, "Defect 1") - a change to agnus_blitter.v
+// (see docs/evidence/blitter-prior-art.md, "Defect 1") - a change to agnus_blitter.v
 // cannot make it go red. It is NOT deleted here: it stays in the tree, unchanged
 // and still green, until this package is confirmed green in its place.
 //
@@ -649,7 +649,7 @@ int main(int argc, char** argv) {
         // that describes an accumulator that only ever latches false, with no
         // stated (or plausible, given "for ALL destination bits" and "every
         // bit") path back to true within one blit. This is the prior art's
-        // most interesting uncited claim (docs/blitter-prior-art.md); it is
+        // most interesting uncited claim (docs/evidence/blitter-prior-art.md); it is
         // asserted here against that entailment, not against a direct quote.
         Harness h;
         h.c_words = {0x0000, 0x0001, 0x0000};

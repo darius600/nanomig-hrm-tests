@@ -23,9 +23,9 @@
 
 > **Deciding what to do about these:** start at [`rtl-review.md`](rtl-review.md),
 > the findings that ask for an RTL review by module. For six of them, chapter 2's
-> Copper and chapter 6's blitter findings, [`rtl-decisions.md`](rtl-decisions.md)
+> Copper and chapter 6's blitter findings, [`evidence/rtl-decisions.md`](evidence/rtl-decisions.md)
 > sets the question beside WinUAE's and vAmiga's implementation, with line
-> citations verified against the commits `third-witness.md` records.
+> citations verified against the commits `evidence/third-witness.md` records.
 
 Every red test in this suite points at a place where the RTL does something the
 *Amiga Hardware Reference Manual* does not describe. This file says which, so
@@ -43,7 +43,7 @@ printed page require what this asserts?".
 
 > **An independent validation revised seven of chapter 3's findings.** Every
 > affected entry below carries its own note; the round's own account is in
-> [`record-2026-09-11-validation.md`](record-2026-09-11-validation.md).
+> [`record-2026-09-11-validation.md`](https://github.com/darius600/hrm-testpipeline/blob/main/docs/2026-09-11_ch3-validation.md).
 
 ## The finding keys
 
@@ -108,7 +108,7 @@ published — the claim ids beside it are the public record of the same work.
 Every finding, with the package that measures it and what the third witness says.
 **The emulators are not an oracle and never decide a finding** -- they are read
 only for the report to the hardware developers
-([`third-witness-ch3-ch6.md`](third-witness-ch3-ch6.md), whose section letters
+([`evidence/third-witness-ch3-ch6.md`](evidence/third-witness-ch3-ch6.md), whose section letters
 this column cites). The manual decides; a red result stands until an Amiga
 specialist rules on it.
 
@@ -332,7 +332,7 @@ Where the five oldest findings came from and whether they hold, why
 NM-HRM-001's entry stays after withdrawal, how appendix C's five ECS blitter
 changes are implemented five different ways, and what the emulators say about
 the three Copper findings:
-**[`finding-analyses.md`](finding-analyses.md)**.
+**[`evidence/finding-analyses.md`](evidence/finding-analyses.md)**.
 
 ## How a finding is meant to end
 

@@ -23,7 +23,7 @@
 //   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // EXTENDS PRIOR ART (hrm/ch6-blitter-fill, unchanged in shape since its
-// original commit; see docs/blitter-prior-art.md "Defect 3" and the README).
+// original commit; see docs/evidence/blitter-prior-art.md "Defect 3" and the README).
 // What was already here and is kept: the `hrm_oracle()` function computing
 // expected fill behaviour from the manual's description rather than the RTL,
 // the exhaustive sweep of all 65536 possible 16-bit inputs x 2 FCI values x 2
@@ -31,14 +31,14 @@
 // case-count assertion that fails a loop that silently stops early. What the
 // pipeline added:
 //   - `Test class:` / `Primary oracle:` header (prior art had neither - the
-//     defect docs/blitter-prior-art.md records as "what puts all eight in
+//     defect docs/evidence/blitter-prior-art.md records as "what puts all eight in
 //     layer C").
 //   - every assertion now carries its own printed page and every covering
 //     claim id, instead of one collective PASS line with no per-assertion
 //     citation.
 //   - the four hardcoded "HRM examples" are now individually cited: pages 184
 //     (FCI=0) and 185 (FCI=1) - previously present but, per
-//     docs/blitter-prior-art.md "Defect 3", carrying no page of their own.
+//     docs/evidence/blitter-prior-art.md "Defect 3", carrying no page of their own.
 //   - two new single-case assertions, MECH-START and MECH-TOGGLE, isolate the
 //     carry chain's starting point/stopping point (p.186) and its per-bit
 //     toggle rule (p.186, and figure 6-13's "to next block" carry routing,
@@ -476,7 +476,7 @@ int main(int argc, char** argv) {
 
     // ---------------- the manual's own worked words (pp. 184-185, 199) ----------------
     //
-    // Kept from prior art (docs/blitter-prior-art.md "Defect 3" noted these ran
+    // Kept from prior art (docs/evidence/blitter-prior-art.md "Defect 3" noted these ran
     // but carried no page); each is now its own cited assertion. Source pattern
     // 0010010000011000 (0x2418) is the manual's own outline example - filling it
     // is a direct instance of 'the blitter can fill outlined shapes' (p.169,

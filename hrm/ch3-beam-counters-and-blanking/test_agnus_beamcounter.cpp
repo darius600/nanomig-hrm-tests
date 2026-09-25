@@ -609,7 +609,7 @@ int main(int argc, char** argv) {
     // last_line/extra_line logic makes a long_frame=1 non-interlaced field
     // run one line longer (a question already litigated and WITHDRAWN for
     // the sibling hrm/agnus_beamcounter fixture as NM-HRM-001 -- the manual
-    // itself sanctions 313 PAL lines elsewhere, see docs/third-witness.md).
+    // itself sanctions 313 PAL lines elsewhere, see docs/evidence/third-witness.md).
     // Chapter 3's own claim here is the plain "312"/"262" figure, so this
     // assertion sidesteps the LOF dispute entirely rather than re-litigate
     // it: force long_frame=0 by an explicit VPOSW write (data_in[15]=0,

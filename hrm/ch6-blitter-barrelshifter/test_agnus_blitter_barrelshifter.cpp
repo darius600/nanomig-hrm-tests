@@ -48,7 +48,7 @@
 //   lists under `inventories`.
 //
 // EXTENDS PRIOR ART (hrm/ch6-blitter-barrelshifter, unchanged in shape
-// since its original commit; see docs/blitter-prior-art.md). What was
+// since its original commit; see docs/evidence/blitter-prior-art.md). What was
 // already here and is kept, verbatim in mechanism: the `hrm_oracle()`
 // function computing the expected output from the manual's shift
 // description rather than from the RTL; the five-part exhaustive sweep

@@ -55,7 +55,7 @@
 // different package's proportionate job.
 //
 // Supersedes hrm/agnus_blitter_mask, per the build register and
-// docs/blitter-prior-art.md ("Defect 1"). That package compiles a LOCAL
+// docs/evidence/blitter-prior-art.md ("Defect 1"). That package compiles a LOCAL
 // COPY of agnus_blitter.v:311-319 pasted into agnus_blitter_mask.v - a
 // change to the real agnus_blitter.v cannot make it go red, because nothing
 // keeps the copy in step. This package compiles the design

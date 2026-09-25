@@ -36,7 +36,7 @@
 //   reader prefix, and they resolve in the claim files that
 //   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
-// NO PRIOR ART IS SUPERSEDED. docs/blitter-prior-art.md was read in full
+// NO PRIOR ART IS SUPERSEDED. docs/evidence/blitter-prior-art.md was read in full
 // before writing this file, per the build brief's explicit instruction to
 // say so rather than assume it. Its "eight blitter tests" table lists
 // barrelshifter, fill, minterm, modulo, ptr, line_octant, mask and zero -

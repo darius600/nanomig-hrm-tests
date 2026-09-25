@@ -124,7 +124,7 @@ packages were deleted before this rename: `agnus_blitter_modulo`,
 `agnus_blitter_ptr`, `agnus_blitter_mask`, `agnus_blitter_zero` and
 `agnus_blitter_line_octant`. They were the pre-chapter-6 blitter tests,
 superseded by the packages above,
-and [`blitter-prior-art.md`](blitter-prior-art.md) records what each one
+and [`evidence/blitter-prior-art.md`](evidence/blitter-prior-art.md) records what each one
 did and why it went. Comments that mention them cite that document.
 
 The Verilog modules keep their own names — `paula_uart.v`, `paula_audio_mixer.v`

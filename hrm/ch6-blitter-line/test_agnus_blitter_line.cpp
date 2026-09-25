@@ -50,8 +50,8 @@
 //   finding keys that replaced the ones that were findings.
 //
 // SUPERSESSION. Supersedes hrm/agnus_blitter_line_octant (deleted 10.09.2026; see
-// docs/blitter-prior-art.md), per the build
-// register. That package has TWO defects (docs/blitter-prior-art.md):
+// docs/evidence/blitter-prior-art.md), per the build
+// register. That package has TWO defects (docs/evidence/blitter-prior-art.md):
 //
 //   DEFECT 1: it compiles a LOCAL COPY of agnus_blitter.v:609-612 pasted into
 //   its own agnus_blitter_line_octant.v -- verified against
@@ -989,7 +989,7 @@ int main(int argc, char** argv) {
     // ---------------- LINE-MASKS-MUST-BE-FFFF (p.191, p.192, p.266) ----------------
     {
         // Deferred by PKG-BLT-MASKS's own header (hrm/ch6-blitter-masks,
-        // and docs/blitter-prior-art.md) to whoever builds the dedicated
+        // and docs/evidence/blitter-prior-art.md) to whoever builds the dedicated
         // line-mode fixture: 6-appa-registers.c13, ch6-line.c24,
         // ch6-linesum.c2/c3. These classify as classify.package==
         // "PKG-BLT-MASKS", not "PKG-BLT-LINE" -- picked up here per this
@@ -1446,7 +1446,7 @@ int main(int argc, char** argv) {
 
     // ---------------- OCTANT-MINOR-AXIS-SUPPRESSED-AT-SIGN1 [DEFECT-2 FIX] (p.190, p.268) ----------------
     {
-        // docs/blitter-prior-art.md's defect 2: the superseded
+        // docs/evidence/blitter-prior-art.md's defect 2: the superseded
         // agnus_blitter_line_octant test asserted "no X step" for its four
         // Y-major octants using ash=8, which makes lineinc's own
         // ash==4'b1111 gate AND linedec's ash==4'b0000 gate BOTH fail
@@ -1498,7 +1498,7 @@ int main(int argc, char** argv) {
             "3, 4, 7 (Y minor, not ash-gated), a single nonzero-modulo probe reads a "
             "zero delta (4 checks) -- 12 checks total, all confirmed. This directly "
             "replaces the superseded agnus_blitter_line_octant test's vacuous "
-            "ash=8-only assertion (docs/blitter-prior-art.md, defect 2) with the "
+            "ash=8-only assertion (docs/evidence/blitter-prior-art.md, defect 2) with the "
             "falsifiable pair packages.md requires");
     }
 

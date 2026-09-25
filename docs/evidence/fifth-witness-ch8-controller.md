@@ -65,7 +65,7 @@ virtuals whose base returns 0 (`input/controlPort/controlPort.h:27-28`) and no
 `libami` device overrides them.
 
 **Half of A is out of reach for all four**, exactly as
-[`NM-HRM-030`](findings/NM-HRM-030.md) already records: the pin-to-register
+[`NM-HRM-030`](../findings/NM-HRM-030.md) already records: the pin-to-register
 mapping is visible in every source, the *which chip answers* half is modelled
 nowhere.
 

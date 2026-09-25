@@ -114,7 +114,7 @@ other and not with the page: all three that fetch at the limits fetch 50, the
 p. 60 formula's window with nothing cut.
 
 The third-witness reading offers a mechanism
-([B4](../third-witness-ch3-ch6.md#b4--hires-fetches-50-words-at-both-hardware-limits-not-49-2-assertions)):
+([B4](../evidence/third-witness-ch3-ch6.md#b4--hires-fetches-50-words-at-both-hardware-limits-not-49-2-assertions)):
 $D8 − $18 = 192 is an exact multiple of the 8-CCK fetch block, so the stop lands
 on a block boundary and one whole further block completes; "only one word is
 fetched at this limit" would describe a stop that lands mid-block, which this

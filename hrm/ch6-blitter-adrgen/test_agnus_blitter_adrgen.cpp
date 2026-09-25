@@ -36,12 +36,12 @@
 // Supersedes hrm/agnus_blitter_modulo and hrm/agnus_blitter_ptr, per the build
 // register (work/2026-09-08_fpga-090_build_register.md). Both compile the same
 // agnus_blitter_adrgen.v this package does, but neither carries a page number,
-// a Test class:, or a Primary oracle: (docs/blitter-prior-art.md lists both as
+// a Test class:, or a Primary oracle: (docs/evidence/blitter-prior-art.md lists both as
 // "nowhere" cited) - so neither counts as HRM_CONFORMANCE evidence even though
 // both currently pass. Neither is deleted here: both stay in the tree, unchanged
 // and still green, until this package is confirmed green in their place.
 //
-// docs/blitter-prior-art.md names hrm/agnus_blitter_modulo's uncited claim by
+// docs/evidence/blitter-prior-art.md names hrm/agnus_blitter_modulo's uncited claim by
 // name: a modulo of $000A advances the word pointer by 5, and $FFF6 moves it
 // back by 5, with "where the manual says so is not recorded." MOD-ARITH-000A
 // below is that same case, now cited: p.172 "The modulo values are in bytes,
@@ -492,7 +492,7 @@ int main(int argc, char** argv) {
 
     // ---------------- MOD-ARITH-000A-PLUS5-WORDS (prior-art citation fix) ----------------
     //
-    // docs/blitter-prior-art.md names this exact case as hrm/agnus_blitter_
+    // docs/evidence/blitter-prior-art.md names this exact case as hrm/agnus_blitter_
     // modulo's one interesting uncited claim: modulo $000A advances the word
     // pointer by 5, and $FFF6 moves it back by 5, "where the manual says so is
     // not recorded." It is recorded here: $000A = 10 bytes = 5 words (p.172
@@ -519,7 +519,7 @@ int main(int argc, char** argv) {
             "MOD-ARITH-000A-PLUS5-WORDS: modulo $000A (10 bytes) advances the "
             "pointer by 5 words to $1005, and modulo $FFF6 (-10 bytes) moves it "
             "back by 5 words to $0FFB - the prior art's uncited case "
-            "(docs/blitter-prior-art.md), now cited against p.172 ('The modulo "
+            "(docs/evidence/blitter-prior-art.md), now cited against p.172 ('The modulo "
             "values are in bytes, not words', 6-dma-channels.c61, ch6-dma.c63; "
             "'the least significant bit is ignored', 6-dma-channels.c62, "
             "ch6-dma.c64; 'value is sign-extended to the full width of the "

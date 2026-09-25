@@ -2,7 +2,7 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 5,
 //   printed p. 137, corroborated by WinUAE and vAmiga against the
-//   contradicting appendix pin list - see docs/third-witness.md.
+//   contradicting appendix pin list - see docs/evidence/third-witness.md.
 // Non-goals: This does not claim numeric DAC scaling for HRM volume-register
 //   value 64.
 // Claim ids: none. The four checks are named by the channel they route and by
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     //
     // The appendix pin list is the outlier. paula_audio_mixer.v follows it and is
     // therefore wrong: the NanoMig stereo channels are swapped. See
-    // docs/third-witness.md for how this was established.
+    // docs/evidence/third-witness.md for how this was established.
     // MUTATION GUARD for four reds. An assertion red at baseline cannot be
     // made to fail harder; the proof that it measures the side a channel
     // reaches is a mechanism that turns it GREEN through the same comparator.
@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
     };
 
     // All four are expected RED: this is NM-HRM-002, not a broken assertion.
-    // See docs/findings.md and docs/third-witness.md - the
+    // See docs/findings.md and docs/evidence/third-witness.md - the
     // manual says both things, chapter 5 p.137 putting channels 1+2 left and
     // 0+3 right while the appendix pin list says the opposite, and two
     // independent emulators side with chapter 5 against the RTL. Making these

@@ -11,7 +11,7 @@ test**, and no expectation in the suite comes from an emulator.
 > not A1 but a two-against-two split**, and **NM-HRM-006 and NM-HRM-008 are not
 > B-with-two but B-with-four.** The sections here are left as they were written,
 > because what two emulators did is still what two emulators did; the register
-> table in [`findings.md`](findings.md) carries the current count.
+> table in [`findings.md`](../findings.md) carries the current count.
 
 ## Why this exists
 
@@ -23,8 +23,8 @@ stopped before the print and vanished from the count exactly when it went
 red. The suite-wide figure since that fix is **187 failing assertions**.
 The count for these two chapters was never recomputed; take the numbers
 below as the shape of the problem, not as its size, and read the current
-count from the register table in [`findings.md`](findings.md). Chapters 2 and
-5 have every family registered in [`findings.md`](findings.md) — NM-HRM-003,
+count from the register table in [`findings.md`](../findings.md). Chapters 2 and
+5 have every family registered in [`findings.md`](../findings.md) — NM-HRM-003,
 NM-HRM-004, NM-HRM-005, NM-HRM-002 — and three of those already carry an emulator
 comparison in [`third-witness.md`](third-witness.md).
 

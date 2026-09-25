@@ -110,7 +110,7 @@ neither news nor a problem. So a Minimig row is usually one sentence and nothing
 more — unless a maintained line has **changed** the code a finding is about and
 NanoMig has not picked it up. That is the only case with something to act on, and
 it gets a section. The full comparison is in
-[`../upstream-minimig-aga.md`](../upstream-minimig-aga.md).
+[`../upstream-minimig-aga.md`](../evidence/upstream-minimig-aga.md).
 
 **Both lines are stated once, in the comparison table, and nowhere else.** A
 separate header row would describe the same two implementations twice on one

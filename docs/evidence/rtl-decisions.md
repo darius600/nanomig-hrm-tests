@@ -11,7 +11,7 @@ what WinUAE and vAmiga do about the same question.
 
 ## How to read the emulator columns
 
-`docs/third-witness.md` sets the rules for consulting an emulator, and they still
+`docs/evidence/third-witness.md` sets the rules for consulting an emulator, and they still
 hold. The important one:
 
 > An emulator is **not** promoted to oracle. If the manual is clear and the RTL
@@ -295,7 +295,7 @@ with a re-reading of the manual rather than with RTL. NM-HRM-005 has since been
 compared and does not need more comparison: vAmiga measures exactly NanoMig's
 three numbers, so no emulator separates the two readings. What it needs is real
 hardware. The maintained statement of that is
-[`findings/NM-HRM-005.md`](findings/NM-HRM-005.md), which this section now
+[`findings/NM-HRM-005.md`](../findings/NM-HRM-005.md), which this section now
 defers to.
 
 Every red assertion named here re-runs with `make -C hrm/<package> test` from
