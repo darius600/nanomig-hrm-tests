@@ -479,11 +479,13 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // L1 -- opus:8-dsk.c35, opus:8-dma.c13, opus:8-appA-dsklen.c1,
-    //   sol:8-appa-dsklen.c1, opus:8-appB-dsklen.c1, sol:8-appb-dsklen.c1
-    //   (pp.241,246,279,289, DSKLEN's ADD cell): DSKLEN answers at $024, and
-    //   at $024 only. DSKLEN has no direct read decode, so this is graded
-    //   through the DSKBYTR mirror: writing the WRITE-bit at each of the 7
-    //   swept addresses, only $024 should move the mirror.
+    //   sol:8-appa-dsklen.c1, opus:8-appB-dsklen.c1, sol:8-appb-dsklen.c1,
+    //   opus:B-dsklen.addr (pp.241,246,279,289, DSKLEN's ADD cell): DSKLEN
+    //   answers at $024, and at $024 only. DSKLEN has no direct read decode,
+    //   so this is graded through the DSKBYTR mirror: writing the WRITE-bit
+    //   at each of the 7 swept addresses, only $024 should move the mirror.
+    //   opus:B-dsklen.addr restates the same p.289 Appendix B row already
+    //   cited above; cited here rather than graded separately.
     // ========================================================================
     {
         checks.note("L1-STIMULUS: sweeping 0x4000 across all 7 register addresses, reading "
@@ -508,9 +510,9 @@ int main(int argc, char** argv) {
         checks.expect(moved_only_at_dsklen,
             "L1-DSKLEN-ADDRESS (p.241 opus:8-dsk.c35; p.246 opus:8-dma.c13; p.279 "
             "opus:8-appA-dsklen.c1, sol:8-appa-dsklen.c1; p.289 opus:8-appB-dsklen.c1, "
-            "sol:8-appb-dsklen.c1): a write reaches DSKLEN's own state (observable via the "
-            "DSKBYTR mirror) only when addressed at $024 -- silent at $008, $01A, $020, $022, "
-            "$026 and $07E");
+            "sol:8-appb-dsklen.c1, opus:B-dsklen.addr): a write reaches DSKLEN's own state "
+            "(observable via the DSKBYTR mirror) only when addressed at $024 -- silent at "
+            "$008, $01A, $020, $022, $026 and $07E");
     }
 
     // ========================================================================
@@ -588,8 +590,10 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // B1 -- opus:8-dsk.c37, opus:8-appA-dskbytr.c1, sol:8-appa-dskbytr.c1,
-    //   opus:8-appB-dskbytr.c1, sol:8-appb-dskbytr.c1 (pp.241,278,289,
-    //   DSKBYTR's ADD cell): DSKBYTR answers at $01A, and at $01A only.
+    //   opus:8-appB-dskbytr.c1, sol:8-appb-dskbytr.c1, opus:B-dskbytr.addr
+    //   (pp.241,278,289, DSKBYTR's ADD cell): DSKBYTR answers at $01A, and
+    //   at $01A only. opus:B-dskbytr.addr restates the same p.289 Appendix
+    //   B row already cited above; cited here rather than graded separately.
     //
     // REPAIRED 2026-09-15 (lot B): the original form used "data_out !=
     //   0x0000" as its decode marker. At idle that nonzero-ness comes from
@@ -626,7 +630,8 @@ int main(int argc, char** argv) {
         }
         checks.expect(answers_only_at_dskbytr,
             "B1-DSKBYTR-ADDRESS (p.241 opus:8-dsk.c37; p.278 opus:8-appA-dskbytr.c1, "
-            "sol:8-appa-dskbytr.c1; p.289 opus:8-appB-dskbytr.c1, sol:8-appb-dskbytr.c1): with "
+            "sol:8-appa-dskbytr.c1; p.289 opus:8-appB-dskbytr.c1, sol:8-appb-dskbytr.c1, "
+            "opus:B-dskbytr.addr): with "
             "DISKWRITE (bit 13, p.278-defined mirror of DSKLEN's WRITE bit) set via an "
             "independent DSKLEN write, that bit reads 1 only when read at $01A -- 0 at $008, "
             "$020, $022, $024, $026 and $07E -- narrowed from the whole idle word (0x9000) since "
@@ -914,10 +919,12 @@ int main(int argc, char** argv) {
     // ========================================================================
     // S1 -- opus:8-dsk.c39, opus:8-adkcon.c22, sol:8-adkcon.c18,
     //   opus:8-appA-dsksync.c1, sol:8-appa-dsksync.c1, opus:8-appA-adkcon.c21,
-    //   sol:8-appa-adkbit.c12, opus:8-appB-dsksync.c1, sol:8-appb-dsksync.c1
-    //   (pp.241,249,265,279,290, DSKSYNC's ADD cell / the (3F)*2 arithmetic):
-    //   DSKSYNC answers (i.e. a write reaches its comparator) at $07E, and
-    //   at $07E only.
+    //   sol:8-appa-adkbit.c12, opus:8-appB-dsksync.c1, sol:8-appb-dsksync.c1,
+    //   opus:B-dsksync.addr (pp.241,249,265,279,290, DSKSYNC's ADD cell / the
+    //   (3F)*2 arithmetic): DSKSYNC answers (i.e. a write reaches its
+    //   comparator) at $07E, and at $07E only. opus:B-dsksync.addr restates
+    //   the same p.290 Appendix B row already cited above; cited here rather
+    //   than graded separately.
     //
     // REPAIRED 2026-09-15 (lot B): the original form only ever wrote the
     //   WRONG address ($024) and inferred "no effect" was proof of decode.
@@ -976,7 +983,8 @@ int main(int argc, char** argv) {
             "S1-DSKSYNC-ADDRESS (p.241 opus:8-dsk.c39; p.249 opus:8-adkcon.c22, "
             "sol:8-adkcon.c18; p.265 opus:8-appA-adkcon.c21, sol:8-appa-adkbit.c12; p.279 "
             "opus:8-appA-dsksync.c1, sol:8-appa-dsksync.c1; p.290 opus:8-appB-dsksync.c1, "
-            "sol:8-appb-dsksync.c1): a mismatching value written AT DSKSYNC's own address ($07E) "
+            "sol:8-appb-dsksync.c1, opus:B-dsksync.addr): a mismatching value written AT "
+            "DSKSYNC's own address ($07E) "
             "suppresses delivery entirely -- the write genuinely reaches the comparator, not "
             "merely coincides with an already-matching reset default -- while the identical "
             "write redirected to a DIFFERENT address ($024) has no effect and delivery proceeds "
@@ -1073,9 +1081,11 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // D1 -- opus:8-appA-dskdat.c1, sol:8-appa-dskdat.c1, opus:8-appB-dskdat.c1,
-    //   sol:8-appb-dskdat.c1 (pp.279,289, DSKDAT's ADD cell): DSKDAT answers
-    //   at $026, and at $026 only. Graded directly on the `buswr` public
-    //   wire -- pure combinational address decode.
+    //   sol:8-appb-dskdat.c1, opus:B-dskdat.addr (pp.279,289, DSKDAT's ADD
+    //   cell): DSKDAT answers at $026, and at $026 only. Graded directly on
+    //   the `buswr` public wire -- pure combinational address decode.
+    //   opus:B-dskdat.addr restates the same p.289 Appendix B row already
+    //   cited above; cited here rather than graded separately.
     // ========================================================================
     {
         Rig rig;
@@ -1098,8 +1108,9 @@ int main(int argc, char** argv) {
         rig.dut->eval();
         checks.expect(buswr_only_at_dskdat,
             "D1-DSKDAT-ADDRESS (p.279 opus:8-appA-dskdat.c1, sol:8-appa-dskdat.c1; p.289 "
-            "opus:8-appB-dskdat.c1, sol:8-appb-dskdat.c1): `buswr` asserts only when "
-            "reg_address_in selects $026 -- 0 at $008, $01A, $020, $022, $024 and $07E");
+            "opus:8-appB-dskdat.c1, sol:8-appb-dskdat.c1, opus:B-dskdat.addr): `buswr` asserts "
+            "only when reg_address_in selects $026 -- 0 at $008, $01A, $020, $022, $024 and "
+            "$07E");
     }
 
     // ========================================================================
@@ -1195,9 +1206,11 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // E1 -- opus:8-appA-dskdat.c5, sol:8-appa-dskdatr.c1, opus:8-appB-dskdatr.c1,
-    //   sol:8-appb-dskdatr.c1 (pp.279,289, DSKDATR's ADD cell): DSKDATR
-    //   answers at $008, and at $008 only. Graded directly on the `busrd`
-    //   public wire.
+    //   sol:8-appb-dskdatr.c1, opus:B-dskdatr.addr (pp.279,289, DSKDATR's ADD
+    //   cell): DSKDATR answers at $008, and at $008 only. Graded directly on
+    //   the `busrd` public wire. opus:B-dskdatr.addr restates the same
+    //   p.289 Appendix B row already cited above; cited here rather than
+    //   graded separately.
     // ========================================================================
     {
         Rig rig;
@@ -1220,8 +1233,9 @@ int main(int argc, char** argv) {
         rig.dut->eval();
         checks.expect(busrd_only_at_dskdatr,
             "E1-DSKDATR-ADDRESS (p.279 opus:8-appA-dskdat.c5, sol:8-appa-dskdatr.c1; p.289 "
-            "opus:8-appB-dskdatr.c1, sol:8-appb-dskdatr.c1): `busrd` asserts only when "
-            "reg_address_in selects $008 -- 0 at $01A, $020, $022, $024, $026 and $07E");
+            "opus:8-appB-dskdatr.c1, sol:8-appb-dskdatr.c1, opus:B-dskdatr.addr): `busrd` "
+            "asserts only when reg_address_in selects $008 -- 0 at $01A, $020, $022, $024, "
+            "$026 and $07E");
     }
 
     // ========================================================================
