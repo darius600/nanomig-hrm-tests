@@ -287,13 +287,11 @@
 //   bit added; expected per-word output left untouched) -> FAIL, word 7's
 //   output no longer matches a single isolated bit.
 //
-// The three mutations below were run for the 2026-09-25 unit-backlog
-// extension (P1-P4 above), after the specification addition was committed
-// separately and the full claims file and the RTL were opened. 32
+// The three mutations below were run for the extension (P1-P4 above). 32
 // passed/0 failed before; 35 passed/0 failed after; the same 32 PASS lines
 // printed identically, in the same order (checked with the ids stripped,
-// per the build brief - none of the three new assertions added an id to
-// an existing line).
+// confirming none of the three new assertions added an id to an existing
+// line).
 // MUTATION MINTERM-COMBINATION-FEEDS-FILL-WITH-COMPLEX-LOGIC stimulus red:
 //   the fed C word changed from 0xF000 to 0xF001 (A and B, and the expected
 //   literal 0x5550, left untouched) -> FAIL, the stored word no longer
