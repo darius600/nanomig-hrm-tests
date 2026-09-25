@@ -164,6 +164,16 @@
 //
 //   19 + 13 + 4 + 2 + 2 = 40 out-of-boundary; 40 + 15 = 55.
 //
+//   ADDITIONAL CLAIM, IN BOUNDARY, not part of the 55/15 tally above:
+//   3-video.c12 (page 40) quotes the identical full sentence 3-video.c13
+//   quotes ("The field time ... is approximately 1/60th of a second for an
+//   NTSC system and approximately 1/50th of a second for PAL"), restated to
+//   its NTSC half ("The NTSC display-field period is approximately 1/60
+//   second"). That is exactly the proposition NTSC-FIELD-PERIOD-APPROX-1-60S
+//   already establishes via 3-video.c09 -- the same relationship
+//   3-video.c13 already has to PAL-FIELD-PERIOD-APPROX-1-50S. Its id belongs
+//   on that assertion's label rather than on a new, duplicate measurement.
+//
 // CONTROL AND PRECONDITION, NOT FROM THIS PACKAGE'S OWN INVENTORY:
 //   PRECONDITION-LONG-FRAME-DEFAULT-AT-RESET checks the ground every
 //   field-length/field-period measurement below stands on: agnus_beamcounter
