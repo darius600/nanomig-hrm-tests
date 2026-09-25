@@ -24,9 +24,12 @@ cd nanomig-hrm-tests
 ./run_all.sh
 ```
 
-Requires Verilator (last verified with **5.052**) and `make`. If *every*
-package reports a build error, the toolchain is missing rather than the tree
-broken; on Windows both usually live only inside WSL.
+Requires Verilator (last verified with **5.052**) and `make`; the tests at
+`nanomig.v`'s own ports under `integration/` also need the 68000 assembler
+vasm (`vasmm68k_mot`, from http://sun.hasenbraten.de/vasm/, last verified
+with 2.0f) on the PATH. If *every* package reports a build error, the
+toolchain is missing rather than the tree broken; on Windows these usually
+live only inside WSL.
 
 Cloned without `--recursive`? `git submodule update --init`. NanoMig checked
 out elsewhere? `make -C hrm/<package> NANOMIG=/path/to/NanoMig`. Against

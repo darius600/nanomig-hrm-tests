@@ -62,5 +62,16 @@ else
     echo "$out" | grep -E '^%Error|^FAIL|CONTROL|normal run had' | head -5
     rc=1
 fi
+# The apparatus for 68000 programs assembled with vasm: loaded where the
+# harness says, started through the reset vectors, results read back, and a
+# control whose value check must fail. Needs vasmm68k_mot on the PATH.
+out=$(make $MAKE_ARGS -C integration/apparatus-vasm-program test 2>&1)
+if [ $? -eq 0 ]; then
+    echo "PASS  apparatus-vasm-program"
+else
+    echo "FAIL  apparatus-vasm-program"
+    echo "$out" | grep -E '^%Error|^FAIL|vasmm68k_mot|not found' | head -5
+    rc=1
+fi
 
 exit $rc

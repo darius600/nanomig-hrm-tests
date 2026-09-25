@@ -23,6 +23,9 @@
 #include <vector>
 #include <optional>
 #include <algorithm>
+#include <fstream>
+#include <iterator>
+#include <string>
 
 #include "Vnanomig.h"
 #include "verilated.h"
@@ -74,6 +77,16 @@ constexpr uint32_t kKickShadowByteBase = 0x780000; // physical byte offset of th
 constexpr uint32_t kKickShadowWordBase = kKickShadowByteBase / 2;
 constexpr uint32_t kRamWordCount       = 1u << 22;  // 22-bit word space (8 MiB), see above
 constexpr uint32_t kRamWordMask        = kRamWordCount - 1;
+
+// Where an assembled test program lives. Code and data sit in the
+// identity-mapped chip RAM ($080000-$1FFFFF, see above), never in the
+// overlay window: any write to CIA-A clears the overlay (minimig.v:862), and
+// a program running from $000000-$07FFFF would then lose its own code. Only
+// the two reset-vector longs are placed in the overlay shadow, by the harness.
+constexpr uint32_t kProgramOrg   = 0x00080400; // logical = physical byte address of the program's first word
+constexpr uint32_t kProgramStack = 0x000FFF00; // initial SSP, identity-mapped chip RAM
+constexpr uint32_t kChipIdentityLo = 0x00080000;
+constexpr uint32_t kChipIdentityHi = 0x00200000; // exclusive
 
 // Configuration inputs of nanomig.v (nanomig.v:31-41). Every field here is
 // a real top-level port; there is no other way into the design.
@@ -277,6 +290,54 @@ public:
 
     uint16_t peek_word(uint32_t phys_word_addr) const {
         return mem_[phys_word_addr & kRamWordMask];
+    }
+
+    // ---- assembled programs (vasm) --------------------------------------
+    //
+    // Loads a flat binary -- `vasmm68k_mot -Fbin` of a source whose ORG is
+    // kProgramOrg -- into the identity-mapped chip RAM at kProgramOrg, and
+    // points the reset vectors in the overlay shadow at it: SSP =
+    // kProgramStack, PC = kProgramOrg. The bytes are stored as the 68000 sees
+    // them, big-endian words. Returns the number of bytes loaded, 0 if the
+    // file is missing, empty, or would not fit below kChipIdentityHi.
+    size_t load_program(const std::string& path) {
+        std::ifstream f(path, std::ios::binary);
+        if (!f) return 0;
+        std::vector<uint8_t> b((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+        if (b.empty() || kProgramOrg + b.size() > kChipIdentityHi) return 0;
+        if (b.size() & 1) b.push_back(0);
+        for (size_t i = 0; i < b.size(); i += 2)
+            poke_word((kProgramOrg + i) / 2, uint16_t((b[i] << 8) | b[i + 1]));
+        poke_long(kKickShadowWordBase + 0, kProgramStack);
+        poke_long(kKickShadowWordBase + 2, kProgramOrg);
+        return b.size();
+    }
+
+    // Reads the word at a logical chip-RAM byte address in the identity-mapped
+    // range, where a program stores what it measured. Outside that range the
+    // physical and logical addresses differ, so it returns nullopt rather than
+    // a word from somewhere else.
+    std::optional<uint16_t> peek_logical(uint32_t logical_byte_addr) const {
+        if (logical_byte_addr & 1 || logical_byte_addr < kChipIdentityLo ||
+            logical_byte_addr >= kChipIdentityHi) return std::nullopt;
+        return peek_word(logical_byte_addr / 2);
+    }
+
+    // Runs until the RAM port shows a write of `value` to the logical
+    // identity-mapped byte address `logical_byte_addr` -- the program's own
+    // "done" mark -- or `max_cycles` clk_sys cycles pass. Returns the cycle of
+    // that write, or nullopt on timeout. Only writes after the call count.
+    std::optional<uint64_t> run_until_write(uint32_t logical_byte_addr, uint16_t value, uint64_t max_cycles) {
+        const uint32_t w = logical_byte_addr / 2;
+        size_t seen = log_.size();
+        const uint64_t start = cycle_;
+        while (cycle_ - start < max_cycles) {
+            tick_pair();
+            for (; seen < log_.size(); ++seen)
+                if (log_[seen].is_write && log_[seen].word_addr == w && log_[seen].data == value)
+                    return log_[seen].cycle;
+        }
+        return std::nullopt;
     }
 
     // ---- 68000 program builder -----------------------------------------

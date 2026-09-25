@@ -11,6 +11,10 @@ obj_dir*/
 *.vcd
 *.fst
 out*.txt
+build.log
+
+# 68000 programs assembled from integration/*/*.s by vasm
+integration/**/*.bin
 
 __pycache__/
 *.pyc
