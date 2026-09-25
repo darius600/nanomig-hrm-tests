@@ -22,6 +22,13 @@
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
 //   the frozen specification the suite's first version was written against
 //   (docs/legacy-names.md); no claim file carries them.
+// Specification additions: one claim id new to this file, from the
+//   inventory's quotation and restatement alone.
+//   ch2-about-the-copper.c3 (p.19, "About the Copper" introduction):
+//   "Amiga's custom chips. It retrieves its instructions via direct memory
+//   access (DMA). The Copper can control nearly the entire graphics
+//   system," Restated: the Copper retrieves its instructions by direct
+//   memory access (DMA).
 //
 // Why this test exists: FPGA-056 to FPGA-058 all filtered COPINS out in order
 // to find MOVE writes, i.e. they relied on R1 without ever establishing it.
