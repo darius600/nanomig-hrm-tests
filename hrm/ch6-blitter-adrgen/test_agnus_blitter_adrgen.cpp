@@ -62,6 +62,16 @@
 // assertion below measures the +1 and the assertion message spells out why
 // that agrees with the manual's "+2 bytes" wording.
 //
+// 6-appa-registers.c109 (p.270, "BLTxPTL    052      W       A     Blitter
+// pointer to x (low 15 bits)") and ch6-appa-bltxpt.c5 (p.270, the same
+// register-table row, restated as "BLTxPTL holds the low 15 bits of the
+// blitter pointer") were routed to this package in the 2026-09-25 unit
+// backlog: BLTxPTL, the low word of a channel's pointer register, is a
+// 15-bit field, not a 16-bit one - the register table's parenthetical beside
+// BLTxPTL's own entry, the same table whose BLTxPTH row carries the "(high 5
+// bits)"/"(high 3 bits)" wording ECS-FIVE-BIT-PTH already measures for the
+// high word above. Not yet asserted at this point in the file.
+//
 // CLAIM COVERAGE, for claims of the 92 with no assertion of their own:
 //   6-dma-channels.c56 (p.172, "16-bit modulo register called BLTxMOD") is a
 //     width description, not independently falsifiable on its own - its
