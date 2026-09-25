@@ -221,9 +221,16 @@
 //   LINE-SIGNFLAG-SETS-INITIAL-SIGN (p.191/192): 6-line-mode.c44,
 //     ch6-linesum.c22.
 //   LINE-SIGN-SELECTS-MODULO-BANK (p.191/192/270/268 -- bank-selection half
-//     only, see NOT ASSERTED for the arithmetic-formula half):
+//     only, and BLTAPTL's own identity as the accumulator; see NOT ASSERTED
+//     for the register-summary "4*(dy-dx)"/"4*dy" phrasing this does not
+//     cover, and LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE below for the
+//     appendix's own formula and the slope claim):
 //     6-appa-registers.c96, 6-appa-registers.c97, 6-appa-registers.c115,
 //     ch6-appa-bltxmod.c9, ch6-appa-bltxpt.c8b .
+//   LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270 -- added 25.09.2026,
+//     extending this accepted package): 6-appa-registers.c98,
+//     6-appa-registers.c99, ch6-appa-bltxmod.c10, ch6-appa-bltxmod.c11,
+//     ch6-appa-bltxpt.c10.
 //   LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE (p.191/192/270 -- ch6-linesum.c9,
 //     "BLTBPT is unused", is corroborated by direct RTL citation here
 //     rather than simulated: no `case (blt_state)` branch in BLT_L1-L4 ever
@@ -305,20 +312,24 @@
 //     programmed value; BLTCMOD/BLTDMOD are opaque 16-bit registers to this
 //     RTL, which never computes or checks this relationship. absent_signal:
 //     screen width (no such port); reason_kind: absent.
-//   ch6-appa-bltxmod.c11, ch6-appa-bltxpt.c10 (p.270, "Y/X is the line
-//     slope") -- defines what dy/dx mean to the programmer computing
-//     BLTAMOD/BLTBMOD/BLTAPTL's initial value; no dy/dx port exists.
-//     absent_signal: dy, dx; reason_kind: absent.
 //   6-line-mode.c47, 6-line-mode.c48, 6-line-mode.c77, 6-line-mode.c78,
-//     ch6-line.c21, ch6-line.c22, ch6-linesum.c4, ch6-linesum.c5,
-//     6-appa-registers.c98, 6-appa-registers.c99, ch6-appa-bltxmod.c10
-//     (p.191/192/270, the LITERAL "4*(dy-dx)"/"4*dy" formulas) -- the RTL
-//     treats BLTAMOD/BLTBMOD as opaque sign-extended modulo values
-//     (agnus_blitter_adrgen.v:112-119); it has no dy/dx ports and computes
-//     no such arithmetic. Only the bank-SELECTION half of these same claims
-//     (BLTAMOD used when sign=0, BLTBMOD when sign=1) is RTL behavior, and
-//     IS asserted, in LINE-SIGN-SELECTS-MODULO-BANK. absent_signal: dy, dx;
-//     reason_kind: absent.
+//     ch6-line.c21, ch6-line.c22, ch6-linesum.c4, ch6-linesum.c5
+//     (p.191/192, the LITERAL "4*(dy-dx)"/"4*dy" formulas, register-summary
+//     phrasing) -- the RTL treats BLTAMOD/BLTBMOD as opaque sign-extended
+//     modulo values (agnus_blitter_adrgen.v:112-119); it has no dy/dx ports
+//     and computes no such arithmetic itself. Only the bank-SELECTION half
+//     of these same claims (BLTAMOD used when sign=0, BLTBMOD when sign=1)
+//     is RTL behavior, and IS asserted, in LINE-SIGN-SELECTS-MODULO-BANK.
+//     absent_signal: dy, dx; reason_kind: absent. [25.09.2026: the SAME
+//     formula, for the appendix's own wording and for the "Y/X is the
+//     slope" claim that names what it produces, is no longer declined --
+//     6-appa-registers.c98, 6-appa-registers.c99, ch6-appa-bltxmod.c10,
+//     ch6-appa-bltxmod.c11 and ch6-appa-bltxpt.c10 are graded below, in
+//     LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE, by choosing concrete
+//     dx/dy, preloading BLTAMOD/BLTBMOD with the manual's own formula, and
+//     measuring the resulting accumulator trajectory on address_out --
+//     dx/dy are the fixture's own stimulus parameters there, not RTL ports,
+//     exactly as the objection above says they cannot be]
 //
 // Every mutation below was actually applied (edit -> rebuild -> run ->
 // revert -> rebuild-clean, confirmed byte-identical to the baseline by
@@ -403,6 +414,19 @@
 //   writes_bit9=88 (not 600), writes_control=88, writes_ecs1=600; 16/17
 //   others PASS, only this assertion red. Reverted, rebuilt clean, confirmed
 //   byte-identical to the pre-mutation file by `diff -q` and back to 17/0.
+//
+// MUTATION LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE stimulus red, added
+//   25.09.2026, extending this accepted package: BMOD's constant changed
+//   from 4*dy (4*3=12, matching the SAME dy used for AMOD) to 4*4=16 (as if
+//   dy were 4, mismatched against AMOD's dy=3) -- expected value (net==0)
+//   left untouched -> FAIL: net=-16 (raw address units; the register-level
+//   value differs by a further, already-calibrated factor this file's other
+//   accumulator helpers also see, see measure_accumulator_delta's own +32
+//   reading for an amod of 0x0040); 17/18 others PASS, only this assertion
+//   red. This confirms the assertion is sensitive to BOTH BLTAMOD and
+//   BLTBMOD being derived from the SAME dy, not merely to BMOD being
+//   positive. Reverted, rebuilt clean, confirmed byte-identical to the
+//   pre-mutation file by `git diff --stat` and back to 18/0.
 
 #include <cstdint>
 #include <cstdlib>
@@ -632,6 +656,7 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -719,6 +744,45 @@ int32_t measure_accumulator_delta(uint8_t initial_sign, uint16_t amod, uint16_t 
     const uint32_t acc_before_pixel1 = h.address_trace[h.we_ticks[0] - 3];
     const uint32_t acc_before_pixel2 = h.address_trace[h.we_ticks[1] - 3];
     return static_cast<int32_t>(acc_before_pixel2) - static_cast<int32_t>(acc_before_pixel1);
+}
+
+// Added 25.09.2026, extending this accepted package (LINE-MODULO-VALUES-
+// PRODUCE-DOCUMENTED-SLOPE below). Measures the NET change BLT_L1's
+// accumulator update applies to BLTAPTL over `n` consecutive pixels,
+// starting from BLTAPTL explicitly preloaded to 0: address_trace[we_ticks[n]-3]
+// minus address_trace[we_ticks[0]-3] -- the same "three ticks before this
+// pixel's own D-channel write reads the accumulator BEFORE this pixel's own
+// L1 step" fact measure_accumulator_delta above already establishes,
+// generalized from 2 writes (one delta) to n+1 writes (the net change over
+// n steps). 'sign' evolves pixel-to-pixel via BLT_L1's own new_sign
+// computation exactly as in real use -- initial_sign only sets pixel 0's
+// starting value (agnus_blitter.v:929-935); this function does not re-fix
+// it between pixels, unlike measure_pixel1_delta/measure_accumulator_delta
+// above, which only ever look at a single step. n+1 D-channel writes are
+// needed so we_ticks[n] exists.
+int32_t measure_accumulator_net_after(uint8_t initial_sign, uint16_t amod, uint16_t bmod, int n) {
+    Harness h;
+    h.c_words = std::deque<uint16_t>(static_cast<size_t>(n) + 1, 0);
+    h.write_reg(BLTADAT, 0x0000);
+    h.write_reg(BLTBDAT, 0x0000);
+    h.write_reg(BLTAFWM, 0xFFFF);
+    h.write_reg(BLTALWM, 0xFFFF);
+    h.write_reg(BLTAPTL, 0x0000);
+    h.write_reg(BLTAMOD, amod);
+    h.write_reg(BLTBMOD, bmod);
+    h.write_reg(BLTCPTL, 0x0400);
+    h.write_reg(BLTDPTL, 0x0400);
+    h.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+    h.write_reg(BLTCON1, static_cast<uint16_t>((static_cast<uint16_t>(initial_sign) << 6) | LINE_BIT));  // octant 6
+    h.write_reg(BLTSIZE, bltsize_word(2, static_cast<uint16_t>(n + 1)));
+    h.run_until_writes(static_cast<size_t>(n) + 1, 500);
+    if (h.we_ticks.size() < static_cast<size_t>(n) + 1 || h.we_ticks[0] < 3 ||
+        h.we_ticks[static_cast<size_t>(n)] < 3) {
+        return INT32_MIN;
+    }
+    const uint32_t acc_before_pixel0 = h.address_trace[h.we_ticks[0] - 3];
+    const uint32_t acc_after_n_steps = h.address_trace[h.we_ticks[static_cast<size_t>(n)] - 3];
+    return static_cast<int32_t>(acc_after_n_steps) - static_cast<int32_t>(acc_before_pixel0);
 }
 
 }  // namespace
@@ -820,7 +884,9 @@ int main(int argc, char** argv) {
             "'line-mode blit height equals dx+1'/'BLTSIZE bits 15-6 with dx+1'/'BLTSIZE "
             "bits 15-6 = dx + 1', 6-line-mode.c71/c100, ch6-linesum.c25, p.191/192; "
             "'in line mode, BLTSIZE height equals line length'/'BLTSIZE controls line "
-            "length', 6-appa-registers.c42/c65, ch6-appa-bltsize.c6/ld1, p.269. Height's "
+            "length', 6-appa-registers.c42/c65, ch6-appa-bltsize.c6/ld1 (ch6-appa-bltsize.ld1 "
+            "written out in full here: 'in line draw BLTSIZE controls the line length "
+            "and starts the line draw when written to'), p.269. Height's "
             "own 10-bit, zero-means-1024 field width and the literal 1024-pixel OCS "
             "maximum ('on the original chip set, line mode can draw lines up to 1024 "
             "pixels long', 6-line-mode.c4/ch6-line.c4, p.189; 'the original-chip-set h "
@@ -993,7 +1059,8 @@ int main(int argc, char** argv) {
             "load-bearing on this design's actual pixel-count mechanism, not a "
             "stylistic convention ('BLTSIZE w must be $02 for line drawing'/'in line "
             "draw the w field must be set to 02', 6-appa-registers.c69, "
-            "ch6-appa-bltsize.c5/ld3, p.269; 'the blitter operation (in line mode, "
+            "ch6-appa-bltsize.c5/ld3 (ch6-appa-bltsize.ld3 written out in full here: "
+            "'in line draw the w field must be set to 02'), p.269; 'the blitter operation (in line mode, "
             "width must...'/'in line mode, BLTSIZE width must equal 2', "
             "6-appa-registers.c41, p.269; 'line-mode blit width must be two words'/"
             "'the blit width must be set to two for all line drawing', 6-line-mode.c72/"
@@ -1050,8 +1117,11 @@ int main(int argc, char** argv) {
             "line mode even though bltaold itself stays zero, so '[BLTAFWM/BLTALWM] "
             "should be set to $FFFF' (ch6-line.c24, p.191) / 'BLTAFWM = $FFFF' / "
             "'BLTALWM = $FFFF' (ch6-linesum.c2/c3, p.192) / 'all mask bits are 1 in "
-            "line-drawing mode' (6-appa-registers.c13, p.266) is a real hardware "
-            "requirement, not a stylistic one");
+            "line-drawing mode' (6-appa-registers.c13, p.266) / 'in line mode, BLTAFWM "
+            "is set to $FFFF'/'in line mode, BLTALWM is set to $FFFF', 6-line-mode.c50 "
+            "6-line-mode.c51, p.191; 'the line-mode register summary sets BLTAFWM to "
+            "$FFFF'/'sets BLTALWM to $FFFF', 6-line-mode.c75 6-line-mode.c76, p.192 is "
+            "a real hardware requirement, not a stylistic one");
     }
 
     // ---------------- LINE-BLTADAT-8000-AND-A-WALKS (p.191, p.192, p.268, p.269) ----------------
@@ -1178,8 +1248,9 @@ int main(int argc, char** argv) {
             "FIRST pixel would have read bit 0 directly ('a B shift of zero starts the "
             "texture at its least-significant bit'/'a B shift value of zero means the "
             "last significant bit', 6-line-mode.c56/ch6-line.c29, p.191), which is what "
-            "the field's own zero point means. This is also the mechanism 'a special "
-            "line draw mode... for simple area fill' (6-line-mode.c6/ch6-line.c5, "
+            "the field's own zero point means. This is also the mechanism behind "
+            "'line mode supports a variety of textures' (6-line-mode.c5, p.189) and "
+            "'a special line draw mode... for simple area fill' (6-line-mode.c6/ch6-line.c5, "
             "p.189) and 'an area-fill outline must be drawn with untextured lines'/"
             "'the area to fill must be defined first by drawing untextured lines'/"
             "'those defining lines must have only one bit set per horizontal row'/'a "
@@ -1244,7 +1315,13 @@ int main(int argc, char** argv) {
             "'for one pixel per row BLTCON1 bit ONEDOT = 1'/'otherwise BLTCON1 bit "
             "ONEDOT = 0', ch6-linesum.c23/c24, p.192; 'line mode has a one-dot form "
             "suitable for preparing simple area fills'/'lines can be drawn in a "
-            "special way for simple area fill', 6-line-mode.c6/ch6-line.c5, p.189. "
+            "special way for simple area fill', 6-line-mode.c6/ch6-line.c5, p.189; "
+            "'the line-mode register summary sets ONEDOT for one pixel per row'/"
+            "'clears ONEDOT otherwise', 6-line-mode.c98 6-line-mode.c99, p.192 -- and "
+            "this same one-write-per-row mechanism is what 'an area-fill outline must "
+            "have only one set bit per horizontal row' (6-area-fill.c3, p.184) rests "
+            "on: an area-fill outline is a line drawn with ONEDOT=1, which is exactly "
+            "what is measured here. "
             "This is also the direct demonstration that bit 1 no longer means "
             "DESCENDING once LINE=1 is set ('line draw mode changes the meaning of "
             "some other bits in BLTCON0 and BLTCON1', 6-line-mode.c3/ch6-line.c3, "
@@ -1283,7 +1360,10 @@ int main(int argc, char** argv) {
             "LINE-SIGN-SELECTS-MODULO-BANK: with SIGNFLAG=0, only a nonzero BLTAMOD "
             "(0x0040, against a $0000 BLTBMOD) moves the accumulator by +32; with "
             "SIGNFLAG=1 and the modulo values swapped, only BLTBMOD moves it by the "
-            "same +32 -- BLT_L1 selects BLTAMOD's bank when sign=0 and BLTBMOD's bank "
+            "same +32 -- the accumulator being moved here IS BLTAPTL itself ('line mode "
+            "uses BLTAPTL as the error accumulator'/'in line draw BLTAPTL is used as an "
+            "accumulator register', 6-appa-registers.c115 ch6-appa-bltxpt.c8b, p.270), "
+            "read via the CHA pointer bank at BLT_L1 -- BLT_L1 selects BLTAMOD's bank when sign=0 and BLTBMOD's bank "
             "when sign=1 (agnus_blitter.v:799, `modsel = sign ? CHB : CHA`), which is "
             "'the sign flag driving the modulo choice' the build brief names, and the "
             "RTL fact underneath the register-summary's role assignment ('the A "
@@ -1298,6 +1378,55 @@ int main(int argc, char** argv) {
             "design's (no dy/dx port exists), so only the bank-selection half is "
             "asserted here; see the file header's NOT ASSERTED section for the "
             "formula half");
+    }
+
+    // ---------------- LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270) ----------------
+    // Added 25.09.2026, extending this accepted package (BUILD-BRIEF.md's
+    // unit-backlog routing). Chooses concrete dx=8 (major-axis pixel count)
+    // and dy=3 (minor-axis step count, dy<dx: a shallow line), preloads
+    // BLTAMOD and BLTBMOD with the appendix's own formula for those values
+    // (4*(dy-dx) and 4*dy, p.270), and measures BLT_L1's own accumulator
+    // (BLTAPTL) after dx consecutive pixels via measure_accumulator_net_after.
+    //
+    // Algebraic derivation (checked by hand before writing this block, not
+    // reverse-engineered from a simulation run): over dx pixels, each pixel
+    // adds AMOD (if the running sign is 0, "minor axis fires this pixel")
+    // or BMOD (if sign is 1, suppressed). If f pixels fire (add AMOD) and
+    // dx-f do not (add BMOD), the net change is f*AMOD + (dx-f)*BMOD.
+    // Substituting AMOD=4(dy-dx), BMOD=4dy: f*4(dy-dx) + (dx-f)*4dy =
+    // 4*dx*(dy-f), which is exactly zero if and only if f == dy (since
+    // dx != 0). So "the accumulator returns to its starting value after dx
+    // pixels" is algebraically equivalent to "the minor axis fired exactly
+    // dy times over dx pixels" -- i.e. the line's slope is dy/dx, Y/X,
+    // using EXACTLY the values the appendix instructs preloading. Starting
+    // SIGNFLAG=0 and BLTAPTL=0 (both free choices -- the disputed part of
+    // the classification is BLTAPTL's INITIAL VALUE formula, not touched
+    // here) with dx=8, dy=3: hand-simulated fire pixels are 0, 3, 6 (3
+    // fires, matching dy), net change 0.
+    {
+        constexpr int dx = 8;
+        constexpr int dy = 3;
+        constexpr uint16_t amod = static_cast<uint16_t>(4 * (dy - dx));  // 4*(dy-dx) = -20 -> 0xFFEC
+        constexpr uint16_t bmod = static_cast<uint16_t>(4 * dy);         // 4*dy = 12
+        const int32_t net = measure_accumulator_net_after(/*initial_sign=*/0, amod, bmod, dx);
+
+        checks.expect(net == 0,
+            "LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE: preloading BLTAMOD with the "
+            "appendix's own value (4*(dy-dx)) and BLTBMOD with (4*dy) for a chosen "
+            "dx=8, dy=3 (a shallow line, dy<dx), then running the accumulator through "
+            "dx=8 pixels from BLTAPTL=0, returns the accumulator to exactly 0 -- "
+            "algebraically (derived by hand before writing this block: over dx pixels "
+            "each pixel adds AMOD when the minor axis fires that pixel or BMOD when it "
+            "does not, so the net change is 4*dx*(dy-f) for f actual fires, zero iff "
+            "f==dy) this holds if and only if the minor axis fired exactly dy=3 times "
+            "over the dx=8 pixels, i.e. the line drawn has slope dy/dx -- confirming, "
+            "by direct RTL measurement of BLT_L1's own accumulator "
+            "(agnus_blitter.v:795-811,929-935; agnus_blitter_adrgen.v:122), that the "
+            "appendix's preload values genuinely produce the documented geometry "
+            "('LINE DRAW ... with the values (4Y-4X) and (4Y)', 6-appa-registers.c98 "
+            "6-appa-registers.c99 ch6-appa-bltxmod.c10, p.270; 'LINE DRAW ... "
+            "respectively. Y/X= line slope.'/'Y/X is the line slope. BLTCPT and', "
+            "ch6-appa-bltxmod.c11 ch6-appa-bltxpt.c10, p.270)");
     }
 
     // ---------------- LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE (p.191, p.192, p.270) ----------------
@@ -1448,7 +1577,33 @@ int main(int argc, char** argv) {
         }
         checks.expect(confirmed == 16,
             "OCTANT-MAJOR-AXIS-DIRECTION: for all 8 octants of Table 6-3/Appendix A "
-            "(6-line-mode.c15-c38, 6-appa-control.c93-c116, p.190/268), at BOTH "
+            "(6-line-mode.c7 6-line-mode.c8 6-line-mode.c9 6-line-mode.c10 "
+            "6-line-mode.c11 6-line-mode.c12 6-line-mode.c13 6-line-mode.c14 "
+            "6-line-mode.c15 6-line-mode.c16 6-line-mode.c17 6-line-mode.c18 "
+            "6-line-mode.c19 6-line-mode.c20 6-line-mode.c21 6-line-mode.c22 "
+            "6-line-mode.c23 6-line-mode.c24 6-line-mode.c25 6-line-mode.c26 "
+            "6-line-mode.c27 6-line-mode.c28 6-line-mode.c29 6-line-mode.c30 "
+            "6-line-mode.c31 6-line-mode.c32 6-line-mode.c33 6-line-mode.c34 "
+            "6-line-mode.c35 6-line-mode.c36 6-line-mode.c37 6-line-mode.c38 "
+            "6-line-mode.c94 ch6-t63.oct0.bit2 ch6-t63.oct0.bit3 ch6-t63.oct0.bit4 "
+            "ch6-t63.oct1.bit2 ch6-t63.oct1.bit3 ch6-t63.oct1.bit4 "
+            "ch6-t63.oct2.bit2 ch6-t63.oct2.bit3 ch6-t63.oct2.bit4 "
+            "ch6-t63.oct3.bit2 ch6-t63.oct3.bit3 ch6-t63.oct3.bit4 "
+            "ch6-t63.oct4.bit2 ch6-t63.oct4.bit3 ch6-t63.oct4.bit4 "
+            "ch6-t63.oct5.bit2 ch6-t63.oct5.bit3 ch6-t63.oct5.bit4 "
+            "ch6-t63.oct6.bit2 ch6-t63.oct6.bit3 ch6-t63.oct6.bit4 "
+            "ch6-t63.oct7.bit2 ch6-t63.oct7.bit3 ch6-t63.oct7.bit4 "
+            "ch6-line.f8.oct0 ch6-line.f8.oct1 ch6-line.f8.oct2 ch6-line.f8.oct3 "
+            "ch6-line.f8.oct4 ch6-line.f8.oct5 ch6-line.f8.oct6 ch6-line.f8.oct7 "
+            "6-appa-control.c93 6-appa-control.c94 6-appa-control.c95 "
+            "6-appa-control.c96 6-appa-control.c97 6-appa-control.c98 "
+            "6-appa-control.c99 6-appa-control.c100 6-appa-control.c101 "
+            "6-appa-control.c102 6-appa-control.c103 6-appa-control.c104 "
+            "6-appa-control.c105 6-appa-control.c106 6-appa-control.c107 "
+            "6-appa-control.c108 6-appa-control.c109 6-appa-control.c110 "
+            "6-appa-control.c111 6-appa-control.c112 6-appa-control.c113 "
+            "6-appa-control.c114 6-appa-control.c115 6-appa-control.c116 "
+            "ch6-linesum.c19, p.190/268), at BOTH "
             "SIGNFLAG=0 and SIGNFLAG=1 (16 checks total), the major axis steps "
             "exactly one unit in the documented direction regardless of sign -- 'the "
             "direction of the drawn line vector can lie in any of eight octants' "
@@ -1541,8 +1696,53 @@ int main(int argc, char** argv) {
             "Y-minor octants) -- positive confirmation that both lineinc/linedec's "
             "and lineadd/linesub's !sign_del-gated terms fire correctly, completing "
             "the octant table's direction behaviour across both sign states "
-            "(6-line-mode.c15-c38, 6-appa-control.c93-c116, p.190/268)");
+            "(6-line-mode.c7 6-line-mode.c8 6-line-mode.c9 6-line-mode.c10 "
+            "6-line-mode.c11 6-line-mode.c12 6-line-mode.c13 6-line-mode.c14 "
+            "6-line-mode.c15 6-line-mode.c16 6-line-mode.c17 6-line-mode.c18 "
+            "6-line-mode.c19 6-line-mode.c20 6-line-mode.c21 6-line-mode.c22 "
+            "6-line-mode.c23 6-line-mode.c24 6-line-mode.c25 6-line-mode.c26 "
+            "6-line-mode.c27 6-line-mode.c28 6-line-mode.c29 6-line-mode.c30 "
+            "6-line-mode.c31 6-line-mode.c32 6-line-mode.c33 6-line-mode.c34 "
+            "6-line-mode.c35 6-line-mode.c36 6-line-mode.c37 6-line-mode.c38 "
+            "6-line-mode.c94 ch6-t63.oct0.bit2 ch6-t63.oct0.bit3 ch6-t63.oct0.bit4 "
+            "ch6-t63.oct1.bit2 ch6-t63.oct1.bit3 ch6-t63.oct1.bit4 "
+            "ch6-t63.oct2.bit2 ch6-t63.oct2.bit3 ch6-t63.oct2.bit4 "
+            "ch6-t63.oct3.bit2 ch6-t63.oct3.bit3 ch6-t63.oct3.bit4 "
+            "ch6-t63.oct4.bit2 ch6-t63.oct4.bit3 ch6-t63.oct4.bit4 "
+            "ch6-t63.oct5.bit2 ch6-t63.oct5.bit3 ch6-t63.oct5.bit4 "
+            "ch6-t63.oct6.bit2 ch6-t63.oct6.bit3 ch6-t63.oct6.bit4 "
+            "ch6-t63.oct7.bit2 ch6-t63.oct7.bit3 ch6-t63.oct7.bit4 "
+            "ch6-line.f8.oct0 ch6-line.f8.oct1 ch6-line.f8.oct2 ch6-line.f8.oct3 "
+            "ch6-line.f8.oct4 ch6-line.f8.oct5 ch6-line.f8.oct6 ch6-line.f8.oct7 "
+            "6-appa-control.c93 6-appa-control.c94 6-appa-control.c95 "
+            "6-appa-control.c96 6-appa-control.c97 6-appa-control.c98 "
+            "6-appa-control.c99 6-appa-control.c100 6-appa-control.c101 "
+            "6-appa-control.c102 6-appa-control.c103 6-appa-control.c104 "
+            "6-appa-control.c105 6-appa-control.c106 6-appa-control.c107 "
+            "6-appa-control.c108 6-appa-control.c109 6-appa-control.c110 "
+            "6-appa-control.c111 6-appa-control.c112 6-appa-control.c113 "
+            "6-appa-control.c114 6-appa-control.c115 6-appa-control.c116 "
+            "ch6-linesum.c19, p.190/268)");
     }
+
+    // ---------------- RECORDED (routed record:ch6-blitter-line) ----------------
+    // Added 25.09.2026. These two claims are declined, not asserted -- their
+    // ids appear on no expect() line above, per Prompt 7's rule that a
+    // RECORDED line is not a measurement.
+    checks.record(
+        "ch6-line.c17 (p.191, \"these calculations normalize the line into "
+        "octant 0\"): the dx/dy normalisation is arithmetic the calling "
+        "program performs before any register is written -- no port carries "
+        "an endpoint coordinate for this design to normalise (ch6-line.c16, "
+        "6-line-mode.c41). The octant bits that undo the normalisation are "
+        "graded separately, in the OCTANT-* assertions above.");
+    checks.record(
+        "6-appa-registers.c103 (p.270, \"image width in bytes is normally "
+        "twice screen width in words\"): states the value programs "
+        "customarily load, not a circuit behaviour -- no signal reports "
+        "what a value normally or typically is, and BLTCMOD/BLTDMOD are "
+        "opaque 16-bit registers to this RTL, which never computes or "
+        "checks this relationship.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
