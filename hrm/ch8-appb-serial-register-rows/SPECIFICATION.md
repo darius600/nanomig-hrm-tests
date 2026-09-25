@@ -330,6 +330,35 @@ already visible from the claims alone:
 
 None. All 18 claims map onto P1–P9 above (2 uids each, 9 × 2 = 18).
 
+## Additional address-order claims (restate P1/P4/P7)
+
+Three further claims quote the same three printed rows already quoted above,
+each restating only the address fact its row states in Appendix B's own
+address-order listing:
+
+| uid | page | register | restatement |
+|---|---|---|---|
+| `B-serdatr.addr` | 289 | SERDATR | "Appendix B, address order: SERDATR is listed at address $018." |
+| `B-serdat.addr` | 289 | SERDAT | "Appendix B, address order: SERDAT is listed at address $030." |
+| `B-serper.addr` | 289 | SERPER | "Appendix B, address order: SERPER is listed at address $032." |
+
+Each quotes, verbatim, the identical full row already quoted for its sibling
+ADD claim above (`B-serdatr.addr` quotes the same row as
+`opus:8-appB.c33`/`sol:8-appB.c32`; `B-serdat.addr` the same row as
+`opus:8-appB.c38`/`sol:8-appB.c37`; `B-serper.addr` the same row as
+`opus:8-appB.c43`/`sol:8-appB.c42`) — same page, same register, same
+address. The restatement narrows to the address fact alone, which is
+exactly P1's/P4's/P7's own testable form ("the fixture answers/decodes
+address $0XX as REGISTER, shown by contrast against the other two rows'
+addresses"). No clause of these three claims falls outside what P1/P4/P7
+already establish, so none is bundling an untested half.
+
+No new proposition, assertion or mutation is added for these three ids. Each
+is appended, as a bare id, to the existing P1/P4/P7 assertion's label (the
+list form those labels already use) — P1's label gains `B-serdatr.addr`,
+P4's gains `B-serdat.addr`, P7's gains `B-serper.addr`. The reasoning above
+is also recorded as a source comment beside those three assertions.
+
 ## What this specification deliberately does not contain
 
 Port names, signal names and concrete stimulus/expected values, per the
