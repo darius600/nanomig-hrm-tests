@@ -164,6 +164,26 @@
 //   scheme may be visually difficult to distinguish from each other."
 //   A human-perception statement, not an RTL-observable property.
 //
+// SPECIFICATION ADDITION. Three propositions routed to this package for a
+// fresh disposition, added from the routed claims' own quotation and
+// restatement alone -- the classification's evidence, the router's own
+// reasoning and the RTL were not open when this paragraph was written:
+//   C-shrc.c06 (p.302) -- "SuperHires color encryption is not reflected in
+//   the ColorTable." Restated: SuperHires colour encryption is not
+//   reflected in the ColorTable.
+//   C-shres-color.c9 (p.302, same quote as C-shrc.c06) -- restated: the
+//   software ColorTable does not expose ECS SuperHires register
+//   multiplexing.
+//   C-shrc.c08 (p.302, flagged borderline by its own reader) -- "Keep in
+//   mind that because of the loss of lower bits of precision in specifying
+//   SuperHires colors, pastel colors in a closely graduated color scheme
+//   may be visually difficult to distinguish from each other." Restated:
+//   because of the loss of lower bits of precision in SuperHires colours,
+//   closely graduated pastel colours may be visually difficult to
+//   distinguish from one another.
+// Disposition (graded or recorded) is decided by this package's own routing
+// in the full claims file, opened only after this paragraph is committed.
+//
 // CONTROL CASE: CONTROL-KNOWN-VALUES-ARRIVE (no claim id, no manual page)
 // is the control every page-cited assertion below shares: the fixture is
 // shown to deliver two distinct, correctly-positioned, known RGB values
