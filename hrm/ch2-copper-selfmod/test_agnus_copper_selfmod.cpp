@@ -10,6 +10,7 @@
 // MUTATION SM3 stimulus red the loop's self-issued strobe changed from COPJMP1 to COPJMP2, which takes the road the assertion says is never taken
 // MUTATION SM5 stimulus red the self-written low half pointed back at SRC instead of ALT, so the Copper never reaches the marked list
 // MUTATION SM7 stimulus red the $FFFF-carrying MOVE retargeted from COPJMP2 to an ordinary register, so no strobe occurs at all
+// MUTATION SM8 stimulus red the $FFFF-carrying MOVE retargeted from COPJMP1 to an ordinary register, so no strobe occurs at all
 //
 // One mutation SURVIVED and is recorded here because the survivor was the
 // mutation, not the assertion. Moving SM2's preload from COP2LC to COP1LC
@@ -112,6 +113,7 @@ constexpr uint16_t MARK_SM4_LOOP   = to_reg(0x188);
 constexpr uint16_t MARK_SM5_LOOP   = to_reg(0x18A);
 constexpr uint16_t MARK_SM6_LOOP   = to_reg(0x18E);
 constexpr uint16_t MARK_SM7_TARGET = to_reg(0x190);
+constexpr uint16_t MARK_SM8_TARGET = to_reg(0x192);
 // Placed only on the list a *wrong* strobe would reach. It must never be
 // granted; if it is, the strobe read the other location register.
 constexpr uint16_t MARK_WRONG_PATH = to_reg(0x18C);
@@ -240,6 +242,9 @@ public:
     // Prints a record for a claim this file does NOT bind to any assertion
     // here. Never touches passed/failed - this is not an assertion.
     void note(const std::string& l) { std::cout << "NOTE: " << l << "\n"; }
+    // Declines a claim id with its own reason. Never touches passed/failed -
+    // this is not an assertion, and the id must stay off every expect() label.
+    void record(const std::string& l) { std::cout << "RECORDED: " << l << "\n"; }
     int passed = 0, failed = 0;
 };
 
@@ -493,10 +498,11 @@ int main(int argc, char** argv) {
     // passed all of them. The strobe is address-triggered; the data word is
     // irrelevant, and that is what "any MOVE" asserts.
     // Covers the "any" in: COP2-jump.c3
-    // ch2-appb-legend.c4 is a later reading of the same p.287 sentence
-    // already quoted in this assertion's label (twin of opus:7-appB.c10 /
-    // sol:8-appb-legend.c19); routed here rather than re-asserted, since
-    // this scenario already establishes it in full.
+    // ch2-appb-legend.c4 (p.287 S-strobe legend; older twins
+    // opus:7-appB.c10, sol:8-appb-legend.c19) reads the same sentence
+    // quoted in this assertion's label, but that legend is universal over
+    // every S-marked row of appendix B, not only COPJMP2 - see the record()
+    // below, past SM8, for why the id stays off this label.
     // ------------------------------------------------------------------
     {
         CopperHarness h;
@@ -523,19 +529,67 @@ int main(int argc, char** argv) {
             "non-zero data word ($FFFF) causes the identical effect a "
             "zero data word causes, because no register bits are ever "
             "read from the write at all "
-            "[claims: COP2-copjmp-strobes.c2, COP2-jump-strobe-address.c3, opus:7-appB.c10, "
-            "sol:8-appb-legend.c19, ch2-appb-legend.c4]");
+            "[claims: COP2-copjmp-strobes.c2, COP2-jump-strobe-address.c3]");
     }
 
     // ------------------------------------------------------------------
-    // Appendix claims considered for this package and left UNBOUND, with
+    // SM8 - the same "any MOVE" data-word independence SM7 establishes for
+    // COPJMP2, mirrored onto COPJMP1. Every self-issued COPJMP1 strobe
+    // elsewhere in this file (SM3, SM6) carries the manual's own $0000 data
+    // word, so a module that strobed COPJMP1 only on a zero data word would
+    // have passed all of them - the gap SM7's own comment already named for
+    // COPJMP2 before that scenario closed it, and the gap the NOTE below
+    // this file used to print for COPJMP1.
+    //
+    // Built as a self-loop back to SRC (SM3's shape), not as a jump to a
+    // second list: COP1LC is the same register start()'s own bootstrap
+    // strobe reads, so externally repointing it to a new target right
+    // after start() races the bootstrap's own strobe for it, which may not
+    // yet have landed. A loop back to the address already in COP1LC has no
+    // such race: COP1LC is never touched again after start().
+    // Covers the "any" in: COP2-jump.c3
+    // ------------------------------------------------------------------
+    {
+        CopperHarness h;
+        h.install(SRC, {
+            move_ir1(MARK_SM8_TARGET), 0xACE1,
+            move_ir1(COPJMP1), 0xFFFF,          // self-issued strobe, deliberately NOT $0000
+            move_ir1(MARK_WRONG_PATH), 0xBAD3,  // must never execute - only reached by falling through, never by the loop-back
+        });
+        h.start(SRC);
+        h.run_cycles(60000);
+
+        checks.expect(h.count_grants_for_register(MARK_SM8_TARGET) >= 3
+                      && h.count_grants_for_register(MARK_WRONG_PATH) == 0,
+            "SM8 [conformance] a self-issued MOVE to COPJMP1 strobes "
+            "regardless of its data word - $FFFF strobes as $0000 does "
+            "(p.26, \"any MOVE\") - repeatedly loops back to COP1LC and "
+            "never falls through to the next instruction - the same "
+            "address-triggered, data-independent effect appendix B's own "
+            "legend names: \"S Strobe (write address with no register "
+            "bits). Writing the register causes the effect.\" (p.287) - "
+            "COPJMP1 IS such a strobe register, demonstrated here "
+            "directly: an arbitrary, non-zero data word ($FFFF) causes "
+            "the identical effect a zero data word causes, because no "
+            "register bits are ever read from the write at all "
+            "[claims: COP2-copjmp-strobes.c1]");
+    }
+
+    // ------------------------------------------------------------------
+    // Appendix claims considered for this package and declined, with
     // reasons. None of these change any assertion above; they are a printed
     // record only.
     // ------------------------------------------------------------------
-    checks.note("UNBOUND (COP2-copjmp-strobes.c1: \"COPJMP1 is a strobe address\" - "
-        "SM7 above tests data-word independence specifically for COPJMP2; no "
-        "equivalent scenario here varies COPJMP1's own strobe data word, so the same "
-        "data-independence fact is not separately established for COPJMP1)");
+    checks.record("ch2-appb-legend.c4 (p.287 S-strobe legend; older twins "
+        "opus:7-appB.c10, sol:8-appb-legend.c19) is universal over every "
+        "S-marked row of appendix B: COPJMP1 and COPJMP2 (p.290, chip A) "
+        "and STREQU, STRVBL, STRHOR and STRLONG (p.289, chip D/P). SM7 and "
+        "SM8 above establish the address-triggered, data-word-independent "
+        "strobe effect directly for COPJMP1 and COPJMP2, the only S-marked "
+        "rows Agnus's Copper channel - this package's fixture - reaches; "
+        "STREQU/STRVBL/STRHOR/STRLONG belong to Denise and Paula and are "
+        "outside this module entirely, so the legend's universal claim is "
+        "not established whole by this package.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
