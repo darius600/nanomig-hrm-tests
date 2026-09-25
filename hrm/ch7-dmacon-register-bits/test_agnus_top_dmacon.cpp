@@ -410,15 +410,11 @@
 // rebuilt clean - by this agent, not predicted.
 // ============================================================================
 
-// SPECIFICATION ADDENDUM (extension pass, from ch7-dmacon-register-bits-
-// spec-stage.jsonl's 25 records -- quotation, restatement and page only;
-// this block was written and committed before ch7-dmacon-register-bits.jsonl
-// or the RTL was opened again, per the build brief's gate for extending an
-// accepted package. Each new claim id is grouped under the one manual
-// proposition it restates; grouping is by wording alone at this stage, not
-// by which existing assertion (if any) already measures it -- that mapping
-// is decided, and recorded in CLAIM COVERAGE and the assertion labels
-// themselves, only after this block was committed.
+// SPECIFICATION ADDENDUM: 25 records -- quotation, restatement and page
+// only. Each new claim id is grouped under the one manual proposition it
+// restates; grouping is by wording alone, not by which existing assertion
+// (if any) already measures it -- that mapping is decided, and recorded in
+// CLAIM COVERAGE and the assertion labels themselves.
 //
 //   [P1] DMACONR-APPENDIX-B-ADDRESS-ORDER (p.289) -- "DMACONR *002 R A P
 //     DMA control (and blitter status) read", the address-order table row:
@@ -843,7 +839,7 @@ std::vector<SpriteFetch> collect_sprite_fetches_over_lines(Harness& h, int n_lin
 // the ordering this section's own header comment explains.
 //
 // `bplcon0` defaults to $1200 (one bitplane, lores, colour on) - the fixture
-// value this file's DDFSTRT assertions used before 2026-09-25's repair pass.
+// value this file's DDFSTRT assertions use by default.
 // Neither p.80 ("using a data-fetch start earlier than ($38) will disable
 // some sprites") nor p.82/83 ("DDFSTRT = $0030 ... will disable sprite 7" /
 // "Fetching an extra word for scrolling will disable some sprites") names a
@@ -1121,7 +1117,6 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- BZERO-STAYS-CLEAR-AFTER-NONZERO-RESULT-BLIT (p.187/278) ----------------
-    // New 2026-09-25 (repair pass, independent validation, group `rest`):
     // APPA-dmacon.c7 ("zero status") and CH4-appA-dmacon.c14 ("reports
     // blitter zero-result status") both describe a bit that reflects the
     // blit's RESULT, but the assertion above shows only one direction (0
@@ -1203,7 +1198,6 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- SPREN-GATES-SPRITE-DMA-ALL-CHANNELS (bit 5, p.278) ----------------
-    // New 2026-09-25 (repair pass, independent validation, group `rest`):
     // CH4-appA-dmacon.c23 restates the p.278 SPREN row as "DMACON bit 5
     // enables sprite DMA for all sprite channels" - a universal claim the
     // assertion above cannot establish, since it arms sprite 0 alone.
@@ -1363,8 +1357,8 @@ int main(int argc, char** argv) {
                 "6-appa-dmacon.c22, ch6-appa-dmacon.bit09, ch6-appa-dmacon.dmaen2, sol:7-dma.c12, opus:7-dma.c13, sol:7-appA-dmacon.c17, opus:7-appA-dmacon.c12.");
     }
 
-    // Repaired 2026-09-25 (independent validation, group `rest`): APPA-dmacon.c12
-    // ("so sprite DMA also requires DMAEN") and CH4-appA-dmacon.c19 ("the master
+    // APPA-dmacon.c12 ("so sprite DMA also requires DMAEN") and
+    // CH4-appA-dmacon.c19 ("the master
     // enable for the individual DMA enables in bits 8 through 0") restate p.278's
     // "09 DMAEN Enable all DMA below" as covering EVERY bit below 9, but the
     // assertion above (and WALKING-BIT-9's own mechanical readback) gates only
@@ -1421,7 +1415,6 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- BLTPRI-COMPLETION-TICK-UNCHANGED-UNDER-CONTENTION (bit 10, p.278) ----------------
-    // New 2026-09-25 (repair pass, independent validation, group `rest`):
     // APPA-dmacon.c11 ("disables the /BLS pin, preventing the processor from
     // stealing any bus cycles") and CH4-appA-dmacon.c18 ("/BLS is disabled
     // so the CPU cannot steal bus cycles") both claim NO cycle is stolen, but
@@ -1490,8 +1483,8 @@ int main(int argc, char** argv) {
     // =========================================================================
 
     // ---------------- DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES (p.80) ----------------
-    // Repaired 2026-09-25 (independent validation, group `rest`): the original
-    // form graded only DDFSTRT=$0018 against the $0038 baseline. p.80's claim
+    // The original form graded only DDFSTRT=$0018 against the $0038 baseline.
+    // p.80's claim
     // is universal over the whole range below $38 ("using a data-fetch start
     // earlier than ($38) will disable some sprites"), and a probe at $0030 -
     // in this SAME one-bitplane fixture - found ALL EIGHT sprites unaffected
@@ -1542,15 +1535,13 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE (p.82) ----------------
-    // Repaired 2026-09-25: this line used to be plain "DDFSTRT-0030-SPRITE-7"
-    // and its red rested on the fixture's one-bitplane BPLCON0=$1200 without
-    // saying so - p.82 itself names no plane count. The label now says so,
-    // and the sibling assertion below repeats the SAME $0030-vs-$0038,
-    // sprite-7-only comparison at 2/4/6 bitplanes, where it is measured
-    // GREEN. This is where the p.83 ids (3-hscr.c17, 3-hscroll.c17) USED to
-    // sit too; withdrawn to their own assertions below, since sprite 7's own
-    // count cannot speak for p.83's "some sprites" (existential, any of the
-    // eight) claim - see the independent validation, group `rest`.
+    // This assertion's red rests on the fixture's one-bitplane BPLCON0=$1200,
+    // stated in the label since p.82 itself names no plane count. The
+    // sibling assertion below repeats the SAME $0030-vs-$0038, sprite-7-only
+    // comparison at 2/4/6 bitplanes, where it is measured GREEN. The p.83
+    // ids (3-hscr.c17, 3-hscroll.c17) are graded in their own assertions
+    // below, not here, since sprite 7's own count cannot speak for p.83's
+    // "some sprites" (existential, any of the eight) claim.
     {
         auto baseline = measure_sprite_data_fetch(0x0038);
         auto at_30 = measure_sprite_data_fetch(0x0030);  // the manual's own worked value
@@ -1571,8 +1562,8 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES (p.82) ----------------
-    // New 2026-09-25 (repair pass): the SAME sprite-7, $0030-vs-$0038
-    // comparison as the one-bitplane assertion above, repeated at 2, 4 and 6
+    // The SAME sprite-7, $0030-vs-$0038 comparison as the one-bitplane
+    // assertion above, repeated at 2, 4 and 6
     // bitplanes (BPLCON0=$2200/$4200/$6200 - agnus_bitplanedma.v:300's `bpu`
     // field reads BPLCON0[14:12] directly for these three values). p.82
     // names no plane count, so both this assertion and the one-bitplane
@@ -1608,12 +1599,11 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE (p.83) ----------------
-    // New 2026-09-25 (repair pass): p.83's NOTE is existential over all eight
-    // sprites ("Fetching an extra word for scrolling will disable some
-    // sprites"), not specific to sprite 7 - the withdrawn ids' former home
-    // (DDFSTRT-0030-SPRITE-7) could only ever speak for channel 7 and the
-    // independent validation found it could not honestly report "some
-    // sprites" either way. At one bitplane the same $0030 stimulus that
+    // p.83's NOTE is existential over all eight sprites ("Fetching an extra
+    // word for scrolling will disable some sprites"), not specific to sprite
+    // 7 - DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE above only speaks for
+    // channel 7 and cannot honestly report "some sprites" either way. At one
+    // bitplane the same $0030 stimulus that
     // leaves sprite 7 unaffected leaves EVERY channel unaffected (see the
     // DDFSTRT-EARLIER-THAN-$38 sweep above, $0030 row), so this is red here
     // too, for the same underlying reason and honestly labelled as such.
@@ -1638,8 +1628,8 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES (p.83) ----------------
-    // New 2026-09-25 (repair pass): sprite 7 alone is a sufficient witness
-    // for "some sprites" at each plane count, since it is one of the eight
+    // Sprite 7 alone is a sufficient witness for "some sprites" at each
+    // plane count, since it is one of the eight
     // the NOTE quantifies over - the same channel DDFSTRT-0030-SPRITE-7-AT-
     // MULTIPLE-BITPLANES reports. Measured independently here (its own
     // Harness runs, not shared variables) so this assertion's own mutation
@@ -1818,15 +1808,14 @@ int main(int argc, char** argv) {
 //     the write landed nowhere DMACONR reads from). Reverted to
 //     DMACON_ADDR; rebuilt clean (25 passed, 0 failed).
 //
-// REPAIR PASS (2026-09-25, independent validation, group `rest`). Entries
-// 12-19 below replace the two DDFSTRT mutation records that named assertions
-// this pass restructured (the old DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-
-// SPRITES-FETCH-CYCLES $18-only form and the old, unqualified DDFSTRT-0030-
-// SPRITE-7) and add records for every assertion this pass added. Each entry
-// again got its own separate mutate/build/run/revert cycle. Baseline before
-// this pass's first mutation and after every revert: "30 passed, 3 failed"
-// (three of the pass's own new assertions are the honest reds the repair
-// brief asks to keep - see their own headers above).
+// Entries 12-19 below replace the two DDFSTRT mutation records that named
+// assertions since restructured (the old DDFSTRT-EARLIER-THAN-$38-COSTS-
+// SOME-SPRITES-FETCH-CYCLES $18-only form and the old, unqualified
+// DDFSTRT-0030-SPRITE-7) and add records for every assertion added since.
+// Each entry again got its own separate mutate/build/run/revert cycle.
+// Baseline before the first of these mutations and after every revert: "30
+// passed, 3 failed" (three of the new assertions are honest reds, kept as
+// such - see their own headers above).
 //
 // 12. DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES: already red
 //     at baseline (the sweep's own $0030 row is the finding - one bitplane,
