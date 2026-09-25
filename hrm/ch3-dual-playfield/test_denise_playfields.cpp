@@ -110,7 +110,8 @@
 // hrm/ch3-ham-control-field/ both document and use.
 //
 //   TWO-PLAYFIELDS-CAPACITY (6 ids)     -- two playfields, each up to 3 planes.
-//   COLOUR-REGISTER-RANGES (9 ids)      -- 0-7 / 8-15, disjoint sets.
+//   COLOUR-REGISTER-RANGES-EVERY-CODE (9 ids) -- 1-7 / 9-15, swept over
+//                                          every non-zero code, disjoint sets.
 //   CODE-ZERO-TRANSPARENT (8 ids)       -- code 0 is transparent, per playfield.
 //   PF2PRI-PRIORITY (22 ids)            -- BPLCON2 bit 6 decides front/back.
 //   TRANSPARENCY-FALLTHROUGH (5 ids)    -- transparent reveals what is behind.
@@ -120,6 +121,18 @@
 //   MSB-BIT-IDENTITY (4 ids)            -- the undisputed high bit, each side.
 //   PF2-LSB-BIT-IDENTITY (2 ids)        -- playfield 2's undisputed low bit.
 //   6+9+8+22+5+12+14+6+4+2 = 88.
+//
+//   COLOUR-REGISTER-RANGES (0 ids) -- still in the file below, still
+//   passing, verdict/expected-values/label text unchanged from before the
+//   backlog: it samples only each playfield's own all-planes maximum (7,
+//   15). That two-point sample does not establish "every code stays in
+//   its own range" for a claim that says "each"/"different sets", so
+//   every id it used to carry -- the eight that sat there before the
+//   backlog (3-dual.c3, 3-dual-mode.c10, 3-dual-mode.c11, 3-dual-mode.c6,
+//   3-dual.c14, 3-dual.c15, 3-dual.c47, 3-dual.c48) and the backlog's own
+//   3-dual.c07 -- moved to COLOUR-REGISTER-RANGES-EVERY-CODE above, which
+//   sweeps every non-zero code of each playfield and establishes the
+//   claim whole.
 //
 // DECLINED CLAIMS (11 ids, not observable at this module's ports):
 //   3-dual-mode.c2 (p.67) -- "You can also move the two playfields
@@ -162,7 +175,7 @@
 // CONTROL-KNOWN-VALUES-ARRIVE and hrm/ch3-ham-control-field/'s equivalent
 // both use.
 //
-// RESULTS (after opening the RTL and building): 22 passed, 0 failed, plus
+// RESULTS (after opening the RTL and building): 23 passed, 0 failed, plus
 // the 1 MEASURED note (printed, not counted as pass or fail).
 // denise_playfields.v turned out to implement the manual's dual-playfield
 // description exactly as every assertion above expected -- no finding in
@@ -211,6 +224,7 @@
 // MUTATION CONTROL-KNOWN-VALUES-ARRIVE stimulus red: the second reading's own bpldata stimulus was changed from PF2_ALL (playfield 2's three planes) to PF1_ALL (playfield 1's three planes), so it collapsed onto the first reading's value (7) instead of producing its own distinct known value (15) -- confirmed 21 passed/1 failed with only CONTROL-KNOWN-VALUES-ARRIVE red, then reverted, restoring the clean 22-passed/0-failed baseline.
 // MUTATION TWO-PLAYFIELDS-CAPACITY stimulus red: playfield 1's "all three planes" stimulus was changed to drop plane 5, so playfield 1's code can no longer reach its 3-bitplane maximum of 7.
 // MUTATION COLOUR-REGISTER-RANGES stimulus red: playfield 2's maximum-code stimulus was changed to drop plane 6, so playfield 2's code can no longer reach register 15.
+// MUTATION COLOUR-REGISTER-RANGES-EVERY-CODE stimulus red: the sweep's own code-1 stimulus for playfield 1 was changed from playfield 1's own plane 1 to playfield 2's plane 2, so that iteration's playfield-1 read falls through to playfield 2's register (9) instead of landing inside playfield 1's own 1-7 range -- confirmed the sweep red (one of its seven playfield-1 iterations out of range) with every other assertion unaffected, then reverted.
 // MUTATION CODE-ZERO-TRANSPARENT stimulus red: playfield 1's "fully transparent" stimulus was changed to leave a stray plane-1 bit on, so playfield 1 is no longer transparent and its own code shows instead of falling through to playfield 2's.
 // MUTATION PF2PRI-PRIORITY stimulus red: the PF2-priority read's BPLCON2 value was changed to the same all-clear value as the PF1-priority read, so the two reads stopped differing.
 // MUTATION TRANSPARENCY-FALLTHROUGH stimulus red: playfield 1's stimulus in the fall-through case was changed to all-off, so there is nothing left behind playfield 2 to fall through to.
@@ -232,6 +246,9 @@
 #endif
 #ifndef MUT_RANGES
 #define MUT_RANGES 0
+#endif
+#ifndef MUT_RANGES_SWEEP
+#define MUT_RANGES_SWEEP 0
 #endif
 #ifndef MUT_ZEROTRANS
 #define MUT_ZEROTRANS 0
@@ -375,10 +392,12 @@ int main(int argc, char** argv) {
     // =========================================================================
     // COLOUR-REGISTER-RANGES (p.44/67/72) -- playfield 1 stays inside
     // registers 0-7, playfield 2 inside 8-15: separate, disjoint sets.
-    // 3-dual.c07 (p.67) is a second reader's independent citation of the
-    // identical page-67 sentence already quoted and tested here -- its
-    // twin is 3-dual-mode.c6, already in this assertion's own citation
-    // list below. Added to that list; not a new assertion.
+    // Sampled here at each playfield's own all-planes maximum only (7 and
+    // 15) -- verdict, expected values and label text unchanged from
+    // before the backlog. Its citation list has been emptied: every id it
+    // carried moved to COLOUR-REGISTER-RANGES-EVERY-CODE below, which
+    // sweeps every non-zero code rather than sampling two points and is
+    // what establishes those ids' "each"/"different sets" claim whole.
     // =========================================================================
     {
         Harness h;
@@ -393,6 +412,59 @@ int main(int argc, char** argv) {
             "COLOUR-REGISTER-RANGES (p.44/67/72): playfield 1's maximum "
             "code (7) stays inside colour registers 0-7 and playfield 2's "
             "maximum (15) stays inside 8-15 -- disjoint sets -- 'Color "
+            "registers 0 through 7 are assigned to playfield 1... Color "
+            "registers 8 through 15 are assigned to playfield 2' (p.67), "
+            "'Each of the two playfields uses a separate set of eight "
+            "different colors' (p.44), 'colors in each playfield...are "
+            "taken from different sets of color registers' (p.67), 'color "
+            "registers 0-7...used by playfield 1...registers 8 through 15 "
+            "are used by playfield 2' (p.72).");
+    }
+
+    // =========================================================================
+    // COLOUR-REGISTER-RANGES-EVERY-CODE (p.44/67/72) -- every one of
+    // playfield 1's seven non-zero codes (every combination of its own
+    // three planes, not just their all-planes maximum) stays inside
+    // colour registers 1-7, and every one of playfield 2's seven
+    // non-zero codes stays inside 9-15 -- the whole "disjoint sets"
+    // claim, swept, not sampled at two endpoints. 9 ids: the backlog's
+    // own 3-dual.c07, plus the eight ids that already sat on
+    // COLOUR-REGISTER-RANGES with this same gap before the backlog
+    // (3-dual.c3, 3-dual-mode.c10, 3-dual-mode.c11, 3-dual-mode.c6,
+    // 3-dual.c14, 3-dual.c15, 3-dual.c47, 3-dual.c48).
+    // =========================================================================
+    {
+        bool pf1_in_range = true;
+        bool pf2_in_range = true;
+        for (int code = 1; code <= 7; ++code) {
+            Harness h;
+            uint8_t pf1_stim = 0;
+            if (code & 1) pf1_stim = static_cast<uint8_t>(pf1_stim | PLANE(1));
+            if (code & 2) pf1_stim = static_cast<uint8_t>(pf1_stim | PLANE(3));
+            if (code & 4) pf1_stim = static_cast<uint8_t>(pf1_stim | PLANE(5));
+#if MUT_RANGES_SWEEP
+            if (code == 1) pf1_stim = PLANE(2);  // code 1's own plane-1 stimulus is replaced by playfield 2's plane 2
+#endif
+            uint8_t pf1_out = h.sample(pf1_stim, true, 0x00);
+            if (!(pf1_out >= 1 && pf1_out <= 7)) pf1_in_range = false;
+        }
+        for (int code = 1; code <= 7; ++code) {
+            Harness h;
+            uint8_t pf2_stim = 0;
+            if (code & 1) pf2_stim = static_cast<uint8_t>(pf2_stim | PLANE(2));
+            if (code & 2) pf2_stim = static_cast<uint8_t>(pf2_stim | PLANE(4));
+            if (code & 4) pf2_stim = static_cast<uint8_t>(pf2_stim | PLANE(6));
+            uint8_t pf2_out = h.sample(pf2_stim, true, PF2PRI_BIT);
+            if (!(pf2_out >= 9 && pf2_out <= 15)) pf2_in_range = false;
+        }
+        checks.expect(
+            pf1_in_range && pf2_in_range,
+            "COLOUR-REGISTER-RANGES-EVERY-CODE (p.44/67/72): swept over "
+            "all seven non-zero codes of each playfield (every "
+            "combination of its own three planes, not just its "
+            "all-planes maximum), playfield 1's code always lands inside "
+            "colour registers 1-7 and playfield 2's always lands inside "
+            "9-15 -- disjoint sets, over the whole range -- 'Color "
             "registers 0 through 7 are assigned to playfield 1... Color "
             "registers 8 through 15 are assigned to playfield 2' (p.67), "
             "'Each of the two playfields uses a separate set of eight "
