@@ -449,9 +449,9 @@ int main(int argc, char** argv) {
         "was not quoted by this record and is cross-referenced to "
         "Chapter 7. The 'sprites overlap each other' half is already "
         "asserted on solid quote ground as SPRITE-TO-SPRITE-COLLISION-"
-        "OCCURS (CH4-coll.c1) above; the 'hardware can detect' half is "
+        "OCCURS (graded: CH4-coll.c1) above; the 'hardware can detect' half is "
         "already asserted as COLLISION-DETECTABLE-VIA-REGISTER-READ "
-        "(CH4-coll.c3) above. Not asserted separately. CH4-p113.c5.");
+        "(graded: CH4-coll.c3) above. Not asserted separately. CH4-p113.c5.");
 
     // --------- PLAYFIELD-OVERLAP-DETECT-DECLINED [declined] ---------
     checks.record(
@@ -464,9 +464,9 @@ int main(int argc, char** argv) {
         "'sprites can collide' quote, not the (unquoted, Chapter-7-"
         "cross-referenced) detection sentence. The 'sprite overlaps a "
         "playfield' half is already asserted on solid quote ground as "
-        "SPRITE-TO-PLAYFIELD-COLLISION-EITHER (CH4-coll.c2) above; the "
+        "SPRITE-TO-PLAYFIELD-COLLISION-EITHER (graded: CH4-coll.c2) above; the "
         "'hardware can detect' half is already asserted as "
-        "COLLISION-DETECTABLE-VIA-REGISTER-READ (CH4-coll.c3) above. Not "
+        "COLLISION-DETECTABLE-VIA-REGISTER-READ (graded: CH4-coll.c3) above. Not "
         "asserted separately. CH4-p113.c6.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
