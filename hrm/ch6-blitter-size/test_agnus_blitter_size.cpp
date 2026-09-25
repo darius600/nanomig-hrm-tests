@@ -76,44 +76,34 @@
 // so many ids below are the same proposition stated up to four times. Every
 // id is written out in full, never a shared-prefix shorthand - two packages
 // before this one had to redo their citations for exactly that shortcut.
-// ADDED 2026-09-25 (unit backlog, hrm-testpipeline/work/2026-09-25_unit-
-// backlog): four further claims, routed here by that lot's routing pass,
-// from outside the original 118-claim PKG-BLT-SIZE filter above - three
-// were classified into sibling packages (ch6-line.c43 was
-// classify.package=="PKG-BLT-LINE"; 6-appc-big-blits.c22 and .c24 were
+// Four further claims from outside the original 118-claim PKG-BLT-SIZE
+// filter above: three were classified into sibling packages (ch6-line.c43
+// was classify.package=="PKG-BLT-LINE"; 6-appc-big-blits.c22 and .c24 were
 // classify.package=="PKG-BLT-ECS"), one (ch6-dma.c45) was already inside
-// the original 118 but, until today, only declined in this header's prose
-// and never printed on a runtime line - a gap the coverage-counting rule
-// ("HOW COVERAGE IS COUNTED ... by searching the text of lines the test
-// actually printed") does not allow a header comment to close. This
-// addition did not re-run the original 118-claim diff script, since it
-// does not touch anything that script already checked; what was checked
-// for the four added ids specifically, directly: `grep` on this file
-// before any edit confirmed none of the four appeared anywhere in it as an
-// id (a genuine gap, not already-covered ground under a different name),
-// and `grep` after confirms all four now appear inside an `expect()` or
+// the original 118 but was only declined in this header's prose and never
+// printed on a runtime line - a gap the coverage-counting rule ("HOW
+// COVERAGE IS COUNTED ... by searching the text of lines the test actually
+// printed") does not allow a header comment to close. What was checked for
+// the four added ids specifically, directly: `grep` on this file before
+// any edit confirmed none of the four appeared anywhere in it as an id (a
+// genuine gap, not already-covered ground under a different name), and
+// `grep` after confirms all four now appear inside an `expect()` or
 // `record()` call's own string argument, not only in a comment.
 // 6-appc-big-blits.c22 sits inside SIZE-ZERO-HEIGHT-WRAPS-TO-1024's own
-// already-mutated assertion. ch6-line.c43 was first placed inside
-// BLTSIZE-WRITE-SETS-BUSY and ch6-dma.c45 / 6-appc-big-blits.c24 inside a
-// RECORDED: line - an independent validator found both placements wrong
-// (ch6-line.c43 does not establish what BLTSIZE-WRITE-SETS-BUSY measures;
-// ch6-dma.c45 and 6-appc-big-blits.c24 were declined for a reason that did
-// not hold) and they were repaired: ch6-line.c43 now sits on its own
-// RECORDED line (NOT-ASSERTED-BLTSIZE-WRITE-ORDER, above), and ch6-dma.c45
-// / 6-appc-big-blits.c24 are graded on SIZE-WIDTH-FIELD-BITS-LITERAL and/or
+// already-mutated assertion. ch6-line.c43 does not establish what
+// BLTSIZE-WRITE-SETS-BUSY measures, so it sits on its own RECORDED line
+// (NOT-ASSERTED-BLTSIZE-WRITE-ORDER, above) instead; ch6-dma.c45 and
+// 6-appc-big-blits.c24 are graded on SIZE-WIDTH-FIELD-BITS-LITERAL and/or
 // SIZE-ZERO-WIDTH-WRAPS-TO-64 (see "UNIT CONVERSION, GRADED" below).
 //
-// ADDED 2026-09-25 (unit backlog, SECOND lot, hrm-testpipeline/work/
-// 2026-09-25_unit-backlog/build2): one further claim, sol:3-large.c26
-// (p.76, originally classify.package=="ch3-ddf-fetch-window" - a chapter-3
-// playfield package, not a blitter one; page 76's own classify.evidence
-// there is about agnus_bitplanedma's DDF fetch window, a different module
+// One further claim, sol:3-large.c26 (p.76, originally
+// classify.package=="ch3-ddf-fetch-window" - a chapter-3 playfield
+// package, not a blitter one; page 76's own classify.evidence there is
+// about agnus_bitplanedma's DDF fetch window, a different module
 // entirely), quote "With the original chip set the largest area the
 // blitter can draw in is 1008 by 1024.", restated "On OCS, the blitter's
-// maximum drawable area is 1008x1024 pixels." Written from build2's
-// spec-stage quote alone and committed before opening build2's full claims
-// file or the RTL, per Prompt 7's order of work.
+// maximum drawable area is 1008x1024 pixels." Written from the quote
+// alone.
 //
 // RESOLVED after opening the RTL: DECLINED (recorded, not asserted) - see
 // "NOT-ASSERTED-PRACTICAL-SHIFT-LIMIT" below. Page 171 itself (already
@@ -133,8 +123,8 @@
 // boundary is not where "why one extra word" is decided. The height half
 // of the claim's bundled area figure (1024) is the same fact
 // SIZE-ZERO-HEIGHT-WRAPS-TO-1024 already grades, but the id is withdrawn
-// whole rather than split onto that assertion, per Prompt 7's rule on
-// bundled clauses.
+// whole rather than split onto that assertion: an id whose claim bundles a
+// clause this package does not test is not graded.
 //
 // Assertion name -> covered ids:
 //
@@ -228,7 +218,7 @@
 //
 //   SIZE-ZERO-HEIGHT-WRAPS-TO-1024 (pp.171, 308): 6-dma-channels.c51,
 //     ch6-dma.c51, ch6-dma.c58b, 6-appc-big-blits.c22 .
-//     (6-appc-big-blits.c22, added 2026-09-25: p.308's "h = Height (10 bit
+//     (6-appc-big-blits.c22: p.308's "h = Height (10 bit
 //     height = 1024 lines  max)" is PKG-BLT-ECS's own package-boundary
 //     redirect back to this file - see the Non-goals note above and
 //     hrm/ch6-blitter-ecs's "NOT ASSERTED - REDIRECTED" entry for this same
@@ -760,8 +750,9 @@ int main(int argc, char** argv) {
         // 1024 height); the height half is the same 1024-row maximum
         // SIZE-ZERO-HEIGHT-WRAPS-TO-1024 already grades (and 6-appc-big-
         // blits.c22 already cites there), but the id is withdrawn whole
-        // rather than split, per Prompt 7's bundled-clause rule, because the
-        // width half is not gradable here: "may require" and "practical"
+        // rather than split (an id whose claim bundles a clause this
+        // package does not test is not graded), because the width half is
+        // not gradable here: "may require" and "practical"
         // are the manual's own hedge - this is a programming caution about
         // how to USE the shifter (agnus_blitter_barrelshifter, ash/bsh,
         // agnus_blitter.v:136,144,340-412), not a register-enforced limit.
@@ -794,7 +785,8 @@ int main(int argc, char** argv) {
             "already hrm/ch6-blitter-barrelshifter's and "
             "hrm/ch6-blitter-shift-chain's job, not this package's. "
             "Withdrawn whole rather than split onto the already-graded "
-            "height assertion, per Prompt 7's bundled-clause rule.");
+            "height assertion: an id whose claim bundles a clause this "
+            "package does not test is not graded.");
     }
 
     // ---------------- SIZE-ZERO-HEIGHT-WRAPS-TO-1024 (pp.171, 308) ----------------
