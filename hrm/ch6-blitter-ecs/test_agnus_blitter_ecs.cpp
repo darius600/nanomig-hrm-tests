@@ -833,6 +833,31 @@ int main(int argc, char** argv) {
         "S=Strobe) - no hardware behaviour, nothing to name a signal for. Not "
         "asserted; not counted toward pass/fail.");
 
+    // ---------------- opus:3-big.c22 / sol:3-large.c27: RECORDED, not graded (p.76) ----------------
+    // Both readings of p.76's "the largest area the blitter can draw in is
+    // increased to 16368 by 16384 pixels" are recorded, neither is asserted:
+    // this figure conflicts with p.172's "up to 32K by 32K pixel blits" and
+    // p.308's "blits of up to 32768 x 32768 pixels", which this package's
+    // BLTSIZH/BLTSIZV field-width assertions above already grade (11-bit
+    // width, 15-bit height, and the zero-wraparound that reaches exactly
+    // 2048 words / 32768 rows). p.76's 16368x16384 figure is a DIFFERENT
+    // number for what reads as the same physical limit - a display-fetch-
+    // window-constrained drawable area, not a raw register field width -
+    // and this module (agnus_blitter) has no display-fetch-window logic of
+    // its own to adjudicate which of the two the RTL actually enforces.
+    // Neither reading is asserted; the conflict is not resolved here.
+    checks.record("opus:3-big.c22 (p.76): \"the largest area the blitter can "
+        "draw in is increased to 16368 by 16384 pixels\" [ECS] - conflicts "
+        "with the 32768 x 32768 / 32K by 32K figures p.172 and p.308 state "
+        "and this package already grades (BLTSIZH/BLTSIZV field widths); "
+        "this module has no display-fetch-window logic to adjudicate which "
+        "figure the RTL enforces. Not asserted; not counted toward "
+        "pass/fail.");
+    checks.record("sol:3-large.c27 (p.76): \"the blitter's maximum drawable "
+        "area is 16,368x16,384 pixels\" [ECS] - same conflict, same "
+        "reading, as opus:3-big.c22 immediately above; recorded rather than "
+        "asserted for the same reason. Not counted toward pass/fail.");
+
     // ---------------- TEST-DATA-DELIVERY-ECS (fixture check, no page) ----------------
     {
         Harness h(false);
@@ -993,7 +1018,7 @@ int main(int argc, char** argv) {
             "construct-with-ecs/write/compare structure against a register that "
             "agnus_blitter.v:259-260 DOES gate on ecs, and goes green. "
             "Registered as NM-HRM-022 in docs/findings.md. "
-            "6-dma-channels.c67, ch6-dma.c69 .");
+            "6-dma-channels.c67, ch6-dma.c69.");
     }
 
     // ---------------- BLTSIZH-GATED-BY-ECS (p.172, p.189, p.269, p.308, p.310) ----------------
