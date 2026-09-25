@@ -105,7 +105,8 @@
 // MUTATION T12 stimulus red: changed the data written by install_single_move from 0xA55A to 0xA55B, oracle data left at 0xA55A -> FAIL as expected.
 // MUTATION T13 stimulus red: swapped the sweep's target register from BLTCON0 to COLOR00 (an always-writable register) in all five probes -> FAIL as expected (COLOR00 opens regardless of COPCON, breaking the "blocked" expectations).
 // MUTATION T14 stimulus red: changed the third probe's target register from COPCON to COPCON_NEIGHBOR_LOW (same value 0x0002, same BLTCON0 target) -> FAIL as expected (the "positive" case no longer touches the real COPCON address).
-// MUTATION T15 stimulus red: changed install_wait_then_move's v_target from 5 to 200, unreachable within the run window -> FAIL as expected (the WAIT never completes, so the MOVE never fires).
+// MUTATION T15 stimulus red: changed install_wait_then_move's v_target from 5 to 200, unreachable within the run window -> FAIL as expected (the WAIT never completes, so neither MOVE fires).
+// MUTATION T15 stimulus red: changed the second MOVE's target from DDFSTOP to DDFSTRT (duplicate register, same data) -> FAIL as expected (DDFSTOP itself never receives a write, so saw_move(DDFSTOP, 0x00D0) is false).
 // MUTATION T16 stimulus green: flipped cdang argument false->true on both move_reaches() calls (still ecs=1) -> PASS as expected (ECS+CDANG=1 opens $000-$1FE, per T10); confirms the harness registers writes at $03E and $07E when the RTL genuinely allows them, so T16's baseline FAIL is a real gap, not a broken fixture.
 
 #include <cstdint>
@@ -143,6 +144,7 @@ constexpr uint16_t RANGE_FLOOR_03E = to_reg(0x03E);  // Appendix C p.310's own p
                                                       // ECS/CDANG=0 range floor, one word
                                                       // below BLTCON0
 constexpr uint16_t DDFSTRT = to_reg(0x092);   // always writable, unrelated to CDANG
+constexpr uint16_t DDFSTOP = to_reg(0x094);   // always writable, unrelated to CDANG
 constexpr uint16_t COPCON_NEIGHBOR_LOW = to_reg(0x02C);   // one word below COPCON
 constexpr uint16_t COPCON_NEIGHBOR_HIGH = to_reg(0x030);  // one word above COPCON
 
@@ -196,14 +198,16 @@ public:
 
     // A list that WAITs for vertical position `v_target` (any horizontal
     // position - the horizontal compare mask bits are left clear so only
-    // vpos gates the WAIT), then MOVEs `data` to `reg`, then a terminating
-    // WAIT. Word encoding read directly off agnus_copper.v's beam
-    // comparator: vercmp[7]=ir1[15] unconditionally, vercmp[6:0]=ir1[14:8]
-    // when the matching ir2[14:8] mask bits are set; ir1 is loaded from the
-    // list's first word, ir2 from its second, same as a MOVE's address/data
-    // pair, and the first word's bit 0 (1 here) is what selects WAIT/SKIP
-    // over MOVE at FETCH2's decode.
-    void install_wait_then_move(uint8_t v_target, uint16_t reg, uint16_t data) {
+    // vpos gates the WAIT), then MOVEs `data` to `reg` (and, if `reg2` is
+    // given, `data2` to `reg2` right after), then a terminating WAIT. Word
+    // encoding read directly off agnus_copper.v's beam comparator:
+    // vercmp[7]=ir1[15] unconditionally, vercmp[6:0]=ir1[14:8] when the
+    // matching ir2[14:8] mask bits are set; ir1 is loaded from the list's
+    // first word, ir2 from its second, same as a MOVE's address/data pair,
+    // and the first word's bit 0 (1 here) is what selects WAIT/SKIP over
+    // MOVE at FETCH2's decode.
+    void install_wait_then_move(uint8_t v_target, uint16_t reg, uint16_t data,
+                                 uint16_t reg2 = 0xFFFF, uint16_t data2 = 0) {
         const uint16_t wait_w1 = static_cast<uint16_t>((((v_target >> 7) & 1) << 15) |
                                                          ((v_target & 0x7F) << 8) | 1);
         const uint16_t wait_w2 = 0x7F00;  // V compare fully masked in, H ignored, WAIT (bit0=0)
@@ -211,8 +215,15 @@ public:
         memory[LIST_ADDRESS + 1] = wait_w2;
         memory[LIST_ADDRESS + 2] = static_cast<uint16_t>(reg << 1);
         memory[LIST_ADDRESS + 3] = data;
-        memory[LIST_ADDRESS + 4] = 0xFFFF;
-        memory[LIST_ADDRESS + 5] = 0xFFFE;
+        if (reg2 != 0xFFFF) {
+            memory[LIST_ADDRESS + 4] = static_cast<uint16_t>(reg2 << 1);
+            memory[LIST_ADDRESS + 5] = data2;
+            memory[LIST_ADDRESS + 6] = 0xFFFF;
+            memory[LIST_ADDRESS + 7] = 0xFFFE;
+        } else {
+            memory[LIST_ADDRESS + 4] = 0xFFFF;
+            memory[LIST_ADDRESS + 5] = 0xFFFE;
+        }
     }
 
     void set_cdang(bool value) {
@@ -403,18 +414,18 @@ int main(int argc, char** argv) {
                   "T5 OCS CDANG=1: MOVE to BLTCON0 ($040) is written "
                   "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, "
                   "COP2-copcon-appa.c11, COP2-copcon-ecs.c8, "
-                  "COP2-control-register.c2, COP2-control-register.c13, COP2-the-move-instruction.c13, ch2-appa-copcon.c11, ch2-appa-copcon.c6, ch2-appb-legend.c2, ch2-appb-table.c7, ch2-appc-ecs.c18, ch2-control-register.c7]");
+                  "COP2-control-register.c2, COP2-control-register.c13, COP2-the-move-instruction.c13, ch2-appa-copcon.c11, ch2-appa-copcon.c6, ch2-appb-legend.c2, ch2-appb-table.c7, ch2-appc-ecs.c18, ch2-control-register.c7, ch2-control-register.c11]");
     checks.expect(move_reaches(false, true, BLTSIZE),
                   "T6 OCS CDANG=1: MOVE to BLTSIZE ($07E) is written "
                   "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, "
                   "COP2-copcon-appa.c11, COP2-copcon-ecs.c8, "
-                  "COP2-control-register.c2, COP2-control-register.c13]");
+                  "COP2-control-register.c2, COP2-control-register.c13, ch2-control-register.c11]");
 
     // T7 - below the protected range nothing is writable in OCS, not even with
     // CDANG set. COPCON itself lives here, so the Copper cannot set its own
     // danger bit.
     checks.expect(!move_reaches(false, true, COPCON), "T7 OCS CDANG=1: MOVE to COPCON ($02E) is blocked "
-                  "[claims: COP2-control-register.c3, COP2-using-the-copper-registers.c3, COP2-control-register.c6, ch2-appb-table.c2]");
+                  "[claims: COP2-control-register.c3, COP2-using-the-copper-registers.c3, COP2-control-register.c6, ch2-appb-table.c2, ch2-control-register.c4]");
 
     // T9, T10 - Appendix C p. 310: ECS shifts the scale by one step. With
     // CDANG clear the ECS Copper already reaches the blitter range, and with
@@ -477,7 +488,8 @@ int main(int argc, char** argv) {
                       "T13 OCS: COPCON bit 1, and only bit 1, gates the CDANG range - "
                       "sweep COPCON=0x0001(blocked)/0x0002(open)/0x0004(blocked)/"
                       "0xFFFD(blocked)/0xFFFF(open) against BLTCON0 ($040) "
-                      "[claims: ch2-appa-copcon.c9, ch2-appa-copcon.c10]");
+                      "[claims: ch2-appa-copcon.c9, ch2-appa-copcon.c10, COP2-copcon-appa.c10, "
+                      "COP2-copcon-appa.c5, ch2-appa-copcon.c5, COP2-control-register.c8, ch2-control-register.c6]");
     }
 
     // T14 - Appendix B p.289: "COPCON is listed at address $02E" (B-copcon.
@@ -492,31 +504,36 @@ int main(int argc, char** argv) {
             move_reaches_after_register_write(false, COPCON, 0x0002, BLTCON0);
         checks.expect(addr_isolated,
                       "T14 OCS: writing 0x0002 unlocks BLTCON0 ($040) only at $02E "
-                      "(COPCON), not at its neighbours $02C or $030 [claims: B-copcon.addr]");
+                      "(COPCON), not at its neighbours $02C or $030 "
+                      "[claims: B-copcon.addr, ch2-appb-table.c3, COP2-copcon-appa.c1, "
+                      "ch2-appa-copcon.c1, COP2-copcon-ecs.c2, ch2-appc-ecs.c13, "
+                      "ch2-the-move-instruction.c10]");
     }
 
     // T15 - print page 80: "the Copper can reset data-fetch registers during
-    // vertical blanking" (3-scroll-copper.c2). Install a list that WAITs for
-    // vertical position 5 (a line inside the conventional PAL blanking
-    // window; agnus_copper has no dedicated vblank input of its own, only
-    // the beam-position comparator driven by whatever vpos the caller
-    // presents - so this measures the WAIT/MOVE mechanism at a
-    // representative blanking line, not a fact this module could itself
-    // label "blanking") then MOVEs to DDFSTRT ($092), a data-fetch register
-    // above the CDANG-protected range. Confirm the write has not appeared
-    // partway through the wait, and has appeared once the line is passed.
+    // vertical blanking" (3-scroll-copper.c2). "Data-fetch registers" is
+    // DDFSTRT and DDFSTOP together (routing.how names both; agnus_bitplanedma.v
+    // decodes them as the pair that bounds the fetch window). Install a list
+    // that WAITs for vertical position 5 (a line inside the conventional PAL
+    // blanking window; agnus_copper has no dedicated vblank input of its own,
+    // only the beam-position comparator driven by whatever vpos the caller
+    // presents - so this measures the WAIT/MOVE mechanism at a representative
+    // blanking line, not a fact this module could itself label "blanking")
+    // then MOVEs to DDFSTRT ($092) and DDFSTOP ($094), both above the
+    // CDANG-protected range. Confirm neither write has appeared partway
+    // through the wait, and both have appeared once the line is passed.
     {
         CopperHarness h(false);
-        h.install_wait_then_move(5, DDFSTRT, 0x0038);
+        h.install_wait_then_move(5, DDFSTRT, 0x0038, DDFSTOP, 0x00D0);
         h.start_list();
         h.run_cycles(1500);
-        const bool not_before = h.move_count(DDFSTRT) == 0;
+        const bool not_before = h.move_count(DDFSTRT) == 0 && h.move_count(DDFSTOP) == 0;
         h.run_cycles(2000);
-        const bool after = h.saw_move(DDFSTRT, 0x0038);
+        const bool after = h.saw_move(DDFSTRT, 0x0038) && h.saw_move(DDFSTOP, 0x00D0);
         checks.expect(not_before && after,
-                      "T15 OCS: Copper WAITs for V=5 then MOVEs to DDFSTRT ($092) - the "
-                      "write appears only after that line is reached, not before "
-                      "[claims: 3-scroll-copper.c2]");
+                      "T15 OCS: Copper WAITs for V=5 then MOVEs to DDFSTRT ($092) and "
+                      "DDFSTOP ($094) - the writes appear only after that line is "
+                      "reached, not before [claims: 3-scroll-copper.c2]");
     }
 
     // T16 - Appendix C p.310, ch2-appc-ecs.c21: "If this bit is clear, the
@@ -528,7 +545,8 @@ int main(int argc, char** argv) {
     // claimed range is reached.
     checks.expect(move_reaches(true, false, RANGE_FLOOR_03E) && move_reaches(true, false, BLTSIZE),
                   "T16 ECS CDANG=0: MOVE reaches both range ends, $03E and $07E (Appendix C "
-                  "p.310) [NM-HRM-004, expected red], ch2-appc-ecs.c21");
+                  "p.310) [NM-HRM-004, expected red] "
+                  "[claims: ch2-appc-ecs.c21, COP2-copcon-ecs.c12, COP2-copcon-ecs.c13]");
 
     // Claims routed record:ch2-copper-move-range 2026-09-25: all eight
     // restate one side or the other of the page-21-versus-page-26 protected-
@@ -538,18 +556,17 @@ int main(int argc, char** argv) {
     // already measures the module's actual behaviour for that band.
     checks.record("ch2-the-move-instruction.c9 (p.21, \"$10 to $20 if CDANG=1\") vs. "
         "p.26/Appendix B (\"$40 to $7E\" is the CDANG band): NOT RESOLVED HERE per "
-        "classification, numbers recorded not asserted. Measured OCS cdang=1 set is "
-        "$040-$1FE - see T5/T6 and the NOTE recording ch2-appc-ecs.c19.");
+        "classification, numbers recorded not asserted. The continuous OCS cdang=1 "
+        "set $040-$1FE is swept in ch2-copper-move-sweep's SWEEP lines, not measured "
+        "here; this package's T5/T6 probe only its two range ends, $040 and $07E.");
     checks.record("ch2-the-move-instruction.c11 (p.21, \"cannot write below $10\") vs. "
         "p.26 (\"$00 to $3E\" is the never-writable band): NOT RESOLVED HERE per "
-        "classification. Measured never-accepted OCS set is $000-$03E - see T7 and the "
-        "NOTE already recording ch2-appb-table.c1 for the same band.");
+        "classification. The continuous never-accepted OCS set $000-$03E is swept in "
+        "ch2-copper-move-sweep's SWEEP lines, not measured here; this package's T7 "
+        "probes only the single address $02E within it.");
     checks.record("ch2-control-register.c3 (p.26, \"$00 to $3E\" never affected) vs. p.21 "
         "(\"lower than $10\"): NOT RESOLVED HERE per classification. Recorded beside T7 "
         "and the NOTE already recording ch2-appb-table.c1 for the same band.");
-    checks.record("ch2-control-register.c4 (p.26, COPCON lies inside the disputed $00-$3E "
-        "band): NOT RESOLVED HERE per classification. Its undisputed half - COPCON is not "
-        "writable without CDANG - is T7; the band figure itself is not asserted.");
     checks.record("ch2-control-register.c5 (p.26, \"$40 to $7E\" protected by CDANG) vs. "
         "p.21 (\"$10 to $20\"): NOT RESOLVED HERE per classification. Recorded beside "
         "T3-T6 with the measured OCS gate: $040-$07E opens only with CDANG set.");
@@ -560,54 +577,49 @@ int main(int argc, char** argv) {
         "p.21 on the band itself, not resolved. Recorded beside T3/T4 (OCS, blocked) and "
         "T9 (ECS vs. Appendix C, NM-HRM-004); the Appendix C reading itself (graded: "
         "ch2-appc-ecs.c21) is T16 above.");
-    checks.record("ch2-control-register.c11 (p.26, CDANG=1 opens $40-$7E): names the "
-        "disputed $40-$7E band, NOT RESOLVED HERE per classification. Recorded beside "
-        "T5/T6, which measure the OCS CDANG=1 write to this same band.");
 
     // ------------------------------------------------------------------
     // Appendix claims considered for this package and left UNBOUND, with
     // reasons. None of these change any assertion above; they are a printed
     // record only.
     // ------------------------------------------------------------------
-    checks.note("UNBOUND (COPCON address/access-type exercised as stimulus only via "
-        "set_cdang(), not independently asserted - no bit-arithmetic walk like "
-        "agnus_copper_locreg_width's RM1/RM3 isolates $02E as COPCON's own address; "
-        "T5/T6's contrast with T3/T4 shows writing there has *some* gating effect, "
-        "but not specifically that $02E is the address doing it): "
-        "COP2-copcon-appa.c1, COP2-copcon-appa.c2, COP2-copcon-appa.c4, "
-        "COP2-copcon-ecs.c1, COP2-copcon-ecs.c2, COP2-copcon-ecs.c3, "
-        "COP2-copcon-ecs.c5, COP2-copcon-ecs.c6, ch2-appa-copcon.c1, ch2-appa-copcon.c2, ch2-appa-copcon.c4, ch2-appb-table.c3, ch2-appb-table.c4, ch2-appb-table.c6, ch2-appc-ecs.c13, ch2-appc-ecs.c14, ch2-appc-ecs.c16, ch2-appc-ecs.c17, ch2-the-move-instruction.c10");
+    checks.note("UNBOUND (COPCON's access TYPE - read-only vs write-only - is never "
+        "measured: the harness only ever writes registers, through write_reg()/"
+        "write_register_raw()/MOVE, and has no CPU-read path to show a read is "
+        "rejected or ignored): "
+        "COP2-copcon-appa.c2, COP2-copcon-ecs.c3, ch2-appa-copcon.c2, ch2-appb-table.c4, ch2-appc-ecs.c14");
+    checks.note("UNBOUND (COPCON's identity as \"the Copper/Coprocessor control "
+        "register\" is the manual's own name for the row, not a signal any "
+        "measurement here can confirm or contradict): "
+        "COP2-copcon-appa.c4, COP2-copcon-ecs.c5, ch2-appa-copcon.c4, ch2-appb-table.c6, ch2-appc-ecs.c16");
+    checks.note("UNBOUND (COP2-copcon-ecs.c1: \"ECS extends the interpretation of "
+        "COPCON\" - T7 (OCS, blocked) and T10 (ECS, written) already show COPCON's "
+        "own accessibility differs between chipsets, but no assertion here names "
+        "that contrast as establishing this specific claim)");
+    checks.note("UNBOUND (COPCON's bit count on the Appendix C / ECS page - T13's "
+        "bit-isolation sweep (0x0001/0x0002/0x0004/0xFFFD/0xFFFF against BLTCON0) "
+        "runs in OCS only; no ECS-mode sweep exists to carry the same finding to "
+        "the ECS-page wording of the same fact): "
+        "COP2-copcon-ecs.c6, ch2-appc-ecs.c17");
     checks.note("UNBOUND (COP2-copcon-ecs.c7: the one COPCON bit \"is the danger bit "
         "named CDANG\" - the name again, and a second thing besides: that no OTHER "
         "COPCON bit exists. T5/T6 show the driven bit changes MOVE access, which is "
         "the separate claim .c8; the other-bit sweep this would need is itself unbound "
-        "a few lines below)");
-    checks.note("UNBOUND (COP2-copcon-appa.c10: \"Bit 01 is named CDANG\" - a name, not "
-        "a requirement, and nothing in the module can disagree with one. T5/T6 listed "
-        "this claim until 11.09.2026; they drive set_cdang(), which writes the VALUE "
-        "0x0002, and observe the range unlock - which happens identically whatever the "
-        "bit is called, so neither assertion could ever have failed on it. The sibling "
-        "c9, that the control occupies bit 01, stays bound: writing 0x0002 unlocks "
-        "nothing if the module reads a different bit)");
-    checks.note("UNBOUND (COP2-copcon-appa.c5: \"COPCON has one implemented control "
-        "bit\" - set_cdang() only ever writes 0x0000 or 0x0002; no assertion sweeps "
-        "COPCON's other bits to show they are unimplemented/inert) [claims: ch2-appa-copcon.c5]");
-    checks.note("UNBOUND COP2-control-register.c8 (\"COPCON bit 1 is the only bit "
-        "currently used by the system\") -- no assertion measures it. Same gap as "
-        "COP2-copcon-appa.c5 above, independently found: set_cdang() only ever writes "
-        "0x0000 or 0x0002 (bit 1 alone); no assertion sweeps COPCON's other 15 bits to "
-        "show they have no effect on the accepted-register set., ch2-control-register.c6");
-    checks.note("UNBOUND (exact byte-address floor/ceiling not discriminated: "
+        "a few lines above)");
+    checks.note("UNBOUND (OCS+CDANG=1 exact byte-address floor not discriminated: "
         "COP2-copcon-ecs.c9 and COP2-copcon-ecs.c10 state the OCS+CDANG=1 range as "
-        "$DFF03E through $DFF07E, and COP2-copcon-ecs.c12, COP2-copcon-ecs.c13 restate "
-        "the same two figures for the ECS CDANG=0 case. T3-T7 above probe BLTCON0 "
-        "($040) and BLTSIZE ($07E) and COPCON "
-        "($02E), but never probe $03E itself or anything between $02E and $040 "
-        "exclusive - so a RTL that actually gates at $040, not $03E, would pass every "
-        "assertion here unchanged. See agnus_copper_move_sweep, which uses the same "
-        "$040 floor under the name \"Reading B\" rather than $03E, and whose own "
-        "ecs=1/cdang=0 sweep has the identical gap: it asserts the whole accepted SET "
-        "against a $040-based expectation, never against $03E specifically) [claims: ch2-appb-table.c1, ch2-appc-ecs.c19]");
+        "$DFF03E through $DFF07E, and ch2-appc-ecs.c19 restates the same range "
+        "bundled. T3-T7 above probe BLTCON0 ($040) and BLTSIZE ($07E) and COPCON "
+        "($02E) under OCS+CDANG=1, but never probe $03E itself under OCS - so a RTL "
+        "that actually gates the OCS+CDANG=1 range at $040, not $03E, would pass "
+        "every assertion here unchanged. T16 now probes $03E, but only in ECS mode "
+        "(ch2-appc-ecs.c21 and its sol twins COP2-copcon-ecs.c12/.c13, which T16 now "
+        "grades) - the OCS+CDANG=1 floor stays untested. See agnus_copper_move_sweep, "
+        "which uses the same $040 floor under the name \"Reading B\" rather than "
+        "$03E, and whose own ecs=0/cdang=1 sweep has the identical gap. "
+        "ch2-appb-table.c1 (the Appendix B \"*\" legend, $000-$03E never writable) "
+        "has the same gap for the OCS never-writable band: T7 probes $02E within "
+        "it, not $03E itself.) [claims: ch2-appb-table.c1, ch2-appc-ecs.c19]");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
