@@ -6,7 +6,7 @@
 //   denise_bitplane_shifter and bitplane_ram instances, no other module).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 42, 57, 60, 71, 72, 80, 81, 82, 83, 84, 85, 90, 271, 272, 291.
+//   pp. 42, 53, 57, 60, 67, 71, 72, 80, 81, 82, 83, 84, 85, 90, 271, 272, 291.
 // Non-goals: vertical scrolling via bitplane pointer/modulo registers (pp.
 //   80-81), Copper-driven pointer resets during blanking (p.80), and the
 //   -2/-4 pointer and modulo adjustment for the non-scrolled playfield (p.
@@ -144,6 +144,35 @@
 // stated reason (6 for the BPLxDAT DMA-only dispute, 9 for claims whose
 // subject needs a wider boundary than this module -- pointers, modulo,
 // Copper, or DIW). Every id is written out in full.
+//
+// SPECIFICATION ADDITIONS -- seven further propositions from the manual,
+// routed to this package at its module boundary, not yet built into an
+// assertion:
+//   3-memory.c20 (sol, p.53): "Figure 3-7 shows an 8,000-byte memory area
+//     organized as 200 lines of 40 bytes each, providing 1 bit for each
+//     pixel position in the display plane." -- a bitplane provides one bit
+//     per displayed pixel position.
+//   3-ddf.c08 (opus, p.60): "the first data fetch before it can actually
+//     display the data. As a result," -- the hardware requires some time
+//     after the first data fetch before it can display the data.
+//   3-dual-mode.c2 (sol, p.67): "You can also move the two playfields
+//     independently." -- the two dual-mode playfields can move
+//     independently.
+//   3-hscr.c22 (opus, p.85): "The amount of delay in horizontal scrolling
+//     is controlled by bits 7-0 in BPLCON1. You set the delay separately
+//     for each playfield; bits 3-0 for playfield 1 (bitplanes 1, 3, and 5)
+//     and bits 7-4 for playfield 2 (bitplanes 2, 4, and 6)." -- the delay
+//     is set separately for each playfield.
+//   3-hscroll.c29 (sol, p.85): "You set the delay separately for each
+//     playfield; bits 3-0 for playfield 1 (bitplanes 1, 3, and 5) and bits
+//     7-4 for playfield 2 (bitplanes 2, 4, and 6)." -- the playfield 1
+//     delay applies to planes 1, 3, and 5.
+//   3-hscroll.c31 (sol, p.85): the same quotation as 3-hscroll.c29 above --
+//     the playfield 2 delay applies to planes 2, 4, and 6.
+//   A-bpldat.c8 (sol, p.272): "The parallel-to-serial conversion is
+//     triggered whenever bitplane #1 is written, indicating the completion
+//     of all bitplanes for that word (16 pixels)." -- each converted
+//     bitplane word supplies 16 pixels.
 //
 // RTL OPENED, BUILT AND RUN, 10.09.2026 (all after the spec-only commit
 // above; built under WSL/Verilator 5.052). denise_bitplanes.v carries a
