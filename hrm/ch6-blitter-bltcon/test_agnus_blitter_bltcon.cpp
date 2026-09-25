@@ -4,16 +4,16 @@
 //   bit the tables mark unused ("X"), reserved, or fixed-value, asserted as
 //   "setting this bit changes nothing observable" and made falsifiable with
 //   an explicit control per PKG-BLT-BLTCON-FIELDS's build brief. Extended
-//   25.09.2026 with one claim from Figure 6-13 (p.199) about which of these
-//   same BLTCON0/BLTCON1 fields are the control lines the figure draws
-//   entering the datapath from outside -- see "EXTENSION, 25.09.2026" below.
+//   with one claim from Figure 6-13 (p.199) about which of these same
+//   BLTCON0/BLTCON1 fields are the control lines the figure draws entering
+//   the datapath from outside -- see "EXTENSION" below.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 170, 174, 179, 184, 191-192, 198-199, 267-269 (appendix A's
 //   BLTCON0/BLTCON1 register tables and legends, the chapter prose that
 //   names the same fields, and p.198's prose plus Figure 6-13 itself on
-//   p.199, a diagram with no independent text layer -- see "EXTENSION,
-//   25.09.2026" below). Appendix A pp.267-268 verified against the actual
+//   p.199, a diagram with no independent text layer -- see "EXTENSION"
+//   below). Appendix A pp.267-268 verified against the actual
 //   PDF page scan via tools/show_page.py, not only against the OCR text
 //   corpus -- see "CORPUS DEFECT FOUND" below. p.199's figure was read
 //   directly as an image (docs/references/amiga-hrm-3rd/ch6/figures/
@@ -40,8 +40,8 @@
 //   prefix, and they resolve in the claim files that
 //   hrm-testpipeline/acceptance/ch6.json lists under `inventories`. One id,
 //   `ch6-fig613.f27`, is a figure claim (`source_kind: "figure"`) rather
-//   than a sentence claim -- see "EXTENSION, 25.09.2026" below for what
-//   that changes about how it is grounded and cited.
+//   than a sentence claim -- see "EXTENSION" below for what that changes
+//   about how it is grounded and cited.
 //
 // NO PRIOR ART IS SUPERSEDED. docs/evidence/blitter-prior-art.md was read in full
 // before writing this file, per the build brief's explicit instruction to
@@ -202,8 +202,8 @@
 // fix, all 219 ids are cited by exactly the assertions whose prose and
 // RTL citation actually match their `extract.quote`.
 //
-// EXTENSION, 25.09.2026 (ch6-fig613.f27): one claim from Figure 6-13 itself
-// (p.199, classify.package=="PKG-BLT-MINTERM", routed to THIS package
+// EXTENSION (ch6-fig613.f27): one claim from Figure 6-13 itself
+// (p.199, classify.package=="PKG-BLT-MINTERM"), graded in THIS package
 // rather than ch6-blitter-minterm -- its content is a bit/field-identity
 // claim like the rest of this file's scope, not minterm truth-table
 // correctness, which stays PKG-BLT-MINTERM's/ch6-blitter-minterm's job per
@@ -251,23 +251,21 @@
 // agnus_blitter_minterm.v were read to judge whether this one claim was
 // gradable at all -- specifically, whether "Fill Carry In," never
 // separately tested anywhere in this file before, had an effect observable
-// without the full fill-mode machinery this file's Non-goals excludes --
-// before this specification text was committed. The wording above draws
-// only on the manual (the page image and p.198's prose, both read above),
+// without the full fill-mode machinery this file's Non-goals excludes. The
+// wording above draws only on the manual (the page image and p.198's
+// prose, both read above),
 // not on any RTL signal name or value, and no expected value here was
 // reverse-engineered from the implementation. Recorded here rather than
 // papered over, per the standing rule.
 //
-// This claim bundles five sub-facts in one id. The routing record (opened
-// after this specification text, per step 2) confirms the same five-way
-// split at the RTL: "SHIFT A VALUE = BLTCON0[15:12] (:219-232), minterm
-// select = BLTCON0[7:0] (:254-261, :444), Fill Carry In = BLTCON1[2]
-// (:464), Fill Enable = BLTCON1[4:3] (:287-288), Store to Destination =
-// USED, BLTCON0[8] (:252)" and names which assertions already show which
-// piece: "AREA-ASH-BITS-15-13, BLTCON0-BITS-7-0-ARE-THE-LF-BYTE,
-// AREA-USE-BITS-11-8 and AREA-EFE-BIT4 already show four of these; add FCI
-// and IFE and cite this id on the set" (routing.how, medium confidence).
-// Independently checked against agnus_blitter.v/agnus_blitter_fill.v and
+// This claim bundles five sub-facts in one id, split at the RTL as follows:
+// SHIFT A VALUE = BLTCON0[15:12] (:219-232), minterm select = BLTCON0[7:0]
+// (:254-261, :444), Fill Carry In = BLTCON1[2] (:464), Fill Enable =
+// BLTCON1[4:3] (:287-288), Store to Destination = USED, BLTCON0[8] (:252).
+// AREA-ASH-BITS-15-13, BLTCON0-BITS-7-0-ARE-THE-LF-BYTE, AREA-USE-BITS-11-8
+// and AREA-EFE-BIT4 already show four of these; FCI and IFE are added and
+// cite this id too. Independently checked against
+// agnus_blitter.v/agnus_blitter_fill.v and
 // found accurate for three of the four: AREA-ASH-BITS-15-13-ARE-A-SHIFT-
 // VALUE (SHIFT A VALUE), AREA-USE-BITS-11-8-SELECT-CHANNELS (Store to
 // Destination, via its USED/D-grant result) and AREA-EFE-BIT4-ENABLES-
@@ -469,10 +467,10 @@
 // assertions green again) before moving to the next one; the final clean
 // rebuild after the last revert also printed "19 passed, 0 failed".
 //
-// EXTENSION, 25.09.2026 (ch6-fig613.f27's two new assertions): both
-// mutations below were run by THIS agent under WSL/Verilator on
-// 25.09.2026, the same edit -> rebuild -> run -> revert -> rebuild cycle as
-// above, against the file as extended (21 assertions). Both confirmed
+// EXTENSION (ch6-fig613.f27's two new assertions): both mutations below
+// were run by THIS agent under WSL/Verilator, the same edit -> rebuild ->
+// run -> revert -> rebuild cycle as above, against the file as extended
+// (21 assertions). Both confirmed
 // exactly ONE assertion red -- the one named -- with the other 20 staying
 // green, and a final clean rebuild after the last revert printed "21
 // passed, 0 failed".
