@@ -24,8 +24,7 @@
 // Appendix B are used as the oracle because they agree with each other and are
 // unambiguous full byte addresses.
 //
-// PROPOSITIONS ROUTED 2026-09-25 (work/2026-09-25_unit-backlog), spec-stage
-// only -- quote, restatement and page, RTL not opened for these yet:
+// PROPOSITIONS -- quote, restatement and page, RTL not opened for these yet:
 //   ch2-the-move-instruction.c9 (p.21) quote "Any register whose address is
 //     between $10 and $20 if the Copper danger bit is a 1..." -- restated:
 //     the Copper can store data into any register whose address is between
@@ -63,9 +62,8 @@
 //   are recorded, not asserted." Grading either side of a manual conflict
 //   the classifier explicitly declined to resolve is not this file's call
 //   to make unilaterally, however it happens to line up with the existing
-//   T3-T10 measurements below -- so these eight are expected to land on
-//   record() lines, not expect() lines, pending confirmation once
-//   <unit>.jsonl's routing is read.
+//   T3-T10 measurements below -- so these eight land on record() lines
+//   below, not expect() lines.
 //   ch2-appa-copcon.c9 (p.274) quote "01 CDANG Copper danger mode. Allows
 //     Copper access to blitter if true." -- restated: bit 1 of COPCON is
 //     named CDANG.
@@ -81,10 +79,8 @@
 //     handled by the Copper during the vertical blanking interval." --
 //     restated: for vertical or horizontal scrolling, the Copper can reset
 //     data-fetch registers during vertical blanking.
-//   Grading versus recording each of these four is decided after
-//   <unit>.jsonl and the RTL are opened, per Prompt 7's order of work; see
-//   the RECORDED and PASS/FAIL lines below for the disposition actually
-//   reached.
+//   Grading versus recording each of these four is settled below, by the
+//   RECORDED and PASS/FAIL lines that follow.
 //
 // MUTATION T1 stimulus red: swapped move_reaches() target from COLOR00 to BLTCON0 (still CDANG=0) -> FAIL as expected.
 // MUTATION T2 stimulus red: swapped move_reaches() target from BPL1PTH to BLTCON0 (still CDANG=0) -> FAIL as expected.
@@ -467,7 +463,8 @@ int main(int argc, char** argv) {
     }
 
     // ------------------------------------------------------------------
-    // Claims routed here 2026-09-25 (work/2026-09-25_unit-backlog).
+    // COPCON bit and address isolation, the data-fetch WAIT/MOVE sequence,
+    // and the Appendix C range ends (T13-T16).
     // ------------------------------------------------------------------
 
     // T13 - Appendix A p.274: "Bit 1 of COPCON is named CDANG" / "CDANG is
@@ -548,8 +545,8 @@ int main(int argc, char** argv) {
                   "p.310) [NM-HRM-004, expected red] "
                   "[claims: ch2-appc-ecs.c21, COP2-copcon-ecs.c12, COP2-copcon-ecs.c13]");
 
-    // Claims routed record:ch2-copper-move-range 2026-09-25: all eight
-    // restate one side or the other of the page-21-versus-page-26 protected-
+    // The following eight claims each restate one side or the other of the
+    // page-21-versus-page-26 protected-
     // range conflict, which classify.conflict_resolution leaves unresolved
     // ("NOT RESOLVED HERE: the numbers are recorded, not asserted"). Neither
     // side is graded; each is recorded beside the existing assertion that
