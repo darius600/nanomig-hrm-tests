@@ -2,10 +2,31 @@
 //   terminal waiting, and automatic COP1 restart through public ports.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 25-26, 30, 32-35, 273, 290, and 298; frozen specification a26e813.
+//   pp. 25-26, 30, 32-35, 273, 276, 290, and 298; frozen specification a26e813.
 // Requirement IDs: COP-05, COP-07
 // Non-goals: DMACON bit gating is tested separately at the real Agnus top
 //   level; this test does not inspect private Copper state.
+//
+// New propositions (page 30, and Appendix A page 276): all four restate one
+// procedural requirement -- initialize one of COP1LC or COP2LC and write to
+// its strobe address before Copper DMA is turned on, which the manual says
+// ensures a known, determined start address and state.
+//   ch2-starting-the-copper-after-reset.c1 (p.30) quote "At power-on or
+//     reset time, you must initialize one of the Copper location registers
+//     (COP1LC or COP2LC) and write to its strobe address before Copper DMA
+//     is turned on." -- restated: at power-on or reset time, one of COP1LC
+//     or COP2LC must be initialized before Copper DMA is turned on.
+//   ch2-starting-the-copper-after-reset.c2 (p.30) same quote -- restated:
+//     the strobe address of the initialized location register must be
+//     written before Copper DMA is turned on.
+//   ch2-starting-the-copper-after-reset.c4 (p.30) quote "before Copper DMA
+//     is turned on. This ensures a known start address and known state." --
+//     restated: initializing a location register and hitting its strobe
+//     before Copper DMA is enabled ensures a known state.
+//   ch2-appa-copins.c147 (p.276) quote "This insures a determined startup
+//     address and state." -- restated: initializing a jump register and
+//     hitting its strobe before Copper DMA insures a determined startup
+//     state.
 // Claim ids: the id below carries a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and it names
 //   one reader's reading of one printed sentence. They resolve in the chapter's
