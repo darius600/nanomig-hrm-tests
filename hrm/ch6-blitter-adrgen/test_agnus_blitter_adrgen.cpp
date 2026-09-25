@@ -80,9 +80,9 @@
 // already touch this register but only at two arbitrary bit positions plus
 // bit 0, and only on channel A; PTR-FIFTEEN-BIT-PTL is the dedicated,
 // exhaustive-width check, the same rigor ECS-FIVE-BIT-PTH already applies to
-// BLTxPTH's high word, run through CHA, CHB, CHC and CHD in turn (repair to
-// the 2026-09-25 backlog's own new assertion: it first checked channel A
-// alone, one register of four, though the claim's own text names all four).
+// BLTxPTH's high word, run through CHA, CHB, CHC and CHD in turn (repaired
+// from an earlier form that checked channel A alone, one register of four,
+// though the claim's own text names all four).
 //
 // CLAIM COVERAGE, for claims of the 92 with no assertion of their own:
 //   6-dma-channels.c56 (p.172, "16-bit modulo register called BLTxMOD") is a
@@ -183,8 +183,8 @@
 // MUTATION PTR-FIFTEEN-BIT-PTL stimulus red: the first BLTAPTL stimulus,
 //   0xFFFE (all fifteen bits set), changed to 0x0000 (all fifteen bits
 //   clear) -> PTR-FIFTEEN-BIT-PTL FAIL, got 0x0000 instead of the expected
-//   0x7FFF; every other assertion PASS. Re-run after the 2026-09-25 repair
-//   extended the same assertion to BLTBPTL/BLTCPTL/BLTDPTL: identical
+//   0x7FFF; every other assertion PASS. Re-run after the repair extended
+//   the same assertion to BLTBPTL/BLTCPTL/BLTDPTL: identical
 //   result, same single FAIL, same channel-A got/expected values.
 
 #include <cstdint>
@@ -744,7 +744,7 @@ int main(int argc, char** argv) {
             "constructible at this boundary and is not asserted - see header");
     }
 
-    // ---------------- PTR-FIFTEEN-BIT-PTL (p.270, routed 2026-09-25) ----------------
+    // ---------------- PTR-FIFTEEN-BIT-PTL (p.270) ----------------
     //
     // p.270's row is generic over the channel - "source (x=A,B,C) or
     // destination (x=D)" - so the low-15-bit width is checked on all four
