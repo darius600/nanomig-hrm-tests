@@ -490,10 +490,38 @@
 // RESOLVED (after agnus.v/agnus_bitplanedma.v/agnus_spritedma.v were
 // opened, see the IMPLEMENTATION section before main() and the assertions
 // themselves): Group 2 IS observable at this boundary and is asserted, not
-// recorded -- SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND. Final
-// disposition of all twelve: 4 ids asserted on SPREN-GATES-EVERY-SPRITE-
-// CHANNEL, 6 asserted on SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-
-// DEMAND, 2 recorded (APPC-pos.c5, CH4-appC-position.c8).
+// recorded. Final disposition of all twelve ids, four assertions:
+//   - SPREN-GATES-EVERY-SPRITE-CHANNEL (CH4-more.c4, CH4-p114.c1): the
+//     GATING half of "enabling sprite DMA for one sprite enables it for
+//     all" - a single SPREN write brings every channel's own vblend-
+//     triggered POS/CTL fetch onto reg_address_out.
+//   - SPREN-PLACES-EVERY-CHANNEL-IN-AUTOMATIC-MODE (CH4-more.c5,
+//     CH4-p114.c2): the AUTOMATIC-MODE half - showing a channel actually
+//     goes on to fetch its own image data, field after field, with no
+//     further CPU step, needs the vblend-triggered POS/CTL reload to carry
+//     a REAL VSTART/VSTOP rather than this fixture's idle data_in=0, which
+//     SPREN-GATES-EVERY-SPRITE-CHANNEL's own POS/CTL-only measurement does
+//     not supply - a separate assertion, feeding real DMA words on every
+//     grant and sweeping two full fields.
+//   - SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND (CH4-more.c8,
+//     CH4-more.c9, CH4-warn.c1, CH4-warn.c2): the extra-wide-display case,
+//     graded against a NORMAL-WIDTH, BPLEN-SET control (not BPLEN entirely
+//     clear, which cannot distinguish "any bitplane DMA costs sprites" from
+//     "only a widened one does"); the BPLEN-clear run remains as an
+//     ungraded fixture check. Grades only that at least one of the eight
+//     channels drops under half its control rate - neither page says which
+//     channel survives or that fewer than all eight are ever affected, so
+//     the condition does not either.
+//   - SPRITE-DMA-LOSES-CHANNELS-UNDER-HORIZONTAL-SCROLL (CH4-more.c10,
+//     CH4-p114.c5): the horizontal-scrolling case, stimulated with p.82's
+//     own recipe (DDFSTRT one fetch unit sooner, $0038->$0030, BPLCON1
+//     given a non-zero delay) against the same normal-width control.
+//
+// APPC-pos.c5/CH4-appC-position.c8 are graded, not recorded, on
+// SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK below - RED (13 of 16 SPRxPOS/SPRxCTL
+// fetch events fall inside hblank; channels 6 and 7 each have at least one
+// that does not). Red is the correct, reportable outcome for that
+// assertion and is left red.
 // ============================================================================
 
 #include <cstdint>
@@ -531,6 +559,7 @@ constexpr uint16_t DIWSTOP_ADDR = 0x090;
 constexpr uint16_t DDFSTRT_ADDR = 0x092;
 constexpr uint16_t DDFSTOP_ADDR = 0x094;
 constexpr uint16_t BPLCON0_ADDR = 0x100;
+constexpr uint16_t BPLCON1_ADDR = 0x102;  // horizontal-scroll delay register
 
 // Sprite N's own PTH/PTL/POS/CTL addresses, from Appendix A/B's own printed
 // register table (p.291-292: SPR0PTH=$120, SPR1PTH=$124, ..., SPR7PTH=$13C,
@@ -662,6 +691,41 @@ public:
         return false;
     }
 
+    // Like tick_pre_edge_dbr(), but calls `feed(pre_dbr,
+    // pre_reg_address_out)` AFTER sampling the PRE-edge dbr/reg_address_out
+    // and BEFORE the clock edge that latches a DMA-granted register load, so
+    // the caller can present a `data_in` word for that exact grant - this
+    // fixture supplies no chip-RAM model, and agnus.v wires every submodule's
+    // `data_in` straight to its own top-level `data_in` input (agnus.v:338,
+    // 355, 379, 401, 422/450, 471 - the same external port for every engine),
+    // so nothing else can put a fetched word on the bus. Mirrors the
+    // technique hrm/ch4-sprite-dma-sequence's own harness already uses on
+    // agnus_spritedma alone (mirror reg_address_out back as the write
+    // address, present data_in at the grant); reg_address_in is not a port of
+    // this package's own `agnus` top-level fixture (it is wired internally to
+    // the arbiter's own `reg_address`, agnus.v:136), so only data_in needs
+    // presenting here - the address side is already the arbiter's own doing.
+    template <class Fn>
+    bool tick_pre_edge_dbr_feeding(Fn&& feed) {
+        dut->cck = cck_phase ? 1 : 0;
+        cck_phase = !cck_phase;
+        dut->eval();
+        bool pre_dbr = dut->dbr;
+        uint16_t pre_reg_address_out = static_cast<uint16_t>(dut->reg_address_out);
+        feed(pre_dbr, pre_reg_address_out);
+        dut->clk = 1;
+        dut->eval();
+        dut->clk = 0;
+        dut->eval();
+        last_dbr = dut->dbr;
+        last_data_out = dut->data_out;
+        last_refresh = dut->refresh;
+        last_sol = dut->sol;
+        last_hblank = dut->hblank;
+        last_reg_address_out = static_cast<uint16_t>(dut->reg_address_out);
+        return pre_dbr;
+    }
+
     bool last_dbr = false;
     uint16_t last_data_out = 0;
     bool write_ok = false;
@@ -690,6 +754,9 @@ public:
     // EXTENSION 25.09.2026 -- Prompt 7's fixed record() form, for a routed
     // claim this section declines rather than grades.
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
+    // Prompt 7's fixed note() form, for a measurement printed without
+    // grading it (used by the fixture check below).
+    void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -723,6 +790,43 @@ void widen_bitplane_into_sprite_window(Harness& h) {
     h.write_reg(DDFSTRT_ADDR, 0x0018);
     h.write_reg(DDFSTOP_ADDR, 0x00D8);
     h.write_reg(BPLCON0_ADDR, 0x6000);  // BPU=6 (data_in[14:12]=110), aga=0
+}
+
+// The normal-width, non-scrolled bitplane display used as this package's
+// own control for "additional DMA cycles cost some sprites" (same BPU as
+// widen_bitplane_into_sprite_window, DDFSTRT at the ordinary p.82 start
+// "the normal data-fetch start for non-scrolled displays is ($38)", DDFSTOP
+// at a normal, non-maximal stop - hrm/ch7-dmacon-register-bits's own
+// start_bitplane/measure_sprite_data_fetch already use this exact
+// DDFSTRT/DDFSTOP pair as their own baseline). A design where ANY bitplane
+// DMA costs sprites, not only a widened one, must still pass this control.
+void normal_bitplane(Harness& h) {
+    h.write_reg(DIWSTRT_ADDR, 0x2C81);
+    h.write_reg(DIWSTOP_ADDR, 0x2CC1);
+    h.write_reg(DDFSTRT_ADDR, 0x0038);
+    h.write_reg(DDFSTOP_ADDR, 0x00D0);
+    h.write_reg(BPLCON0_ADDR, 0x6000);  // same BPU=6 as the wide case
+}
+
+// The manual's own operational definition of "enabling horizontal
+// scrolling" (p.82): "The normal data-fetch start for
+// non-scrolled displays is ($38). If horizontal scrolling is desired, then
+// the data fetch must start one word sooner (DDFSTRT = $0030)... DDFSTOP
+// remains unchanged" - already the established reading elsewhere in this
+// corpus (hrm/ch3-ddf-fetch-window's own HSCROLL-EXTRA-WORD-21-FOR-20, and
+// hrm/ch7-dmacon-register-bits's own DDFSTRT-0030-SPRITE-7, which cites the
+// SAME p.82/83 sentences this package's CH4-more.c10/CH4-p114.c5 also read).
+// BPLCON1 (the pixel-delay register the manual also names for scrolling) is
+// written too, for fidelity to the manual's own recipe, even though this
+// `agnus` fixture is Agnus alone and BPLCON1 has no Denise to be read by -
+// only DDFSTRT moves the sprite-DMA needle here.
+void horizontal_scroll_bitplane(Harness& h) {
+    h.write_reg(DIWSTRT_ADDR, 0x2C81);
+    h.write_reg(DIWSTOP_ADDR, 0x2CC1);
+    h.write_reg(DDFSTRT_ADDR, 0x0030);  // one fetch unit before $38, p.82
+    h.write_reg(DDFSTOP_ADDR, 0x00D0);  // "DDFSTOP remains unchanged" (p.82)
+    h.write_reg(BPLCON0_ADDR, 0x6000);  // same BPU=6 as the wide/normal cases
+    h.write_reg(BPLCON1_ADDR, 0x0004);  // BPLCON1: non-zero scroll delay
 }
 
 // One granted, non-refresh dma cycle whose reg_address_out falls in the
@@ -921,20 +1025,130 @@ int main(int argc, char** argv) {
                 "/8) - one enable, not eight, and no further write is made "
                 "between the enable and the fetch. 'When you enable sprite "
                 "DMA for one sprite, you enable DMA for all the sprites and "
-                "place them all in automatic mode.' (p.114). CH4-more.c4 "
-                "CH4-more.c5 CH4-p114.c1 CH4-p114.c2.");
+                "place them all in automatic mode.' (p.114) - the GATING half "
+                "only; 'automatic mode' itself (no further step needed, field "
+                "after field) is graded separately by "
+                "SPREN-PLACES-EVERY-CHANNEL-IN-AUTOMATIC-MODE below, which is "
+                "where CH4-more.c5/CH4-p114.c2 are cited -- this assertion's "
+                "own 35-line, POS/CTL-only sweep never reaches VSTART=200 and "
+                "this fixture returns data_in=0 on every grant it does not "
+                "feed, so it could not have shown a channel going on to "
+                "display. CH4-more.c4 CH4-p114.c1.");
+    }
+
+    // ---------------- SPREN-PLACES-EVERY-CHANNEL-IN-AUTOMATIC-MODE (p.114) ----------------
+    // Separate from SPREN-GATES-EVERY-SPRITE-CHANNEL above: showing a
+    // channel actually goes on to fetch its own image data, field after
+    // field, with no further CPU step ("automatic mode"), needs the
+    // vblend-triggered POS/CTL reload to carry a REAL VSTART/VSTOP - this
+    // fixture's data_in otherwise reads back 0 on any grant the file does
+    // not itself feed, which would silently zero VSTART/VSTOP and leave no
+    // channel ever reaching its own display window.
+    //
+    // Fed by presenting every DMA-granted SPRxPOS/SPRxCTL load with the SAME
+    // real VSTART/VSTOP word every time it is fetched (tick_pre_edge_dbr_
+    // feeding(), added to Harness above) -- exactly the technique hrm/
+    // ch4-sprite-dma-sequence's own harness already uses on this same
+    // module (mirror the granted register address, present data_in at the
+    // grant). Only the sprite pointer (PTH/PTL) is CPU-written, once, before
+    // SPREN is set; SPRxPOS/SPRxCTL themselves are NEVER CPU-written at
+    // all -- every load of them, first and every later one, is the DMA
+    // engine's own automatic reread, "not need[ing] a further step" per the
+    // claim. The sweep runs 660 lines (this fixture's own PAL beam counter,
+    // agnus_beamcounter.v's VTOTAL_PAL_VAL=311/VBSTOP_PAL_VAL=25 with
+    // ntsc=0, wraps at line 311 -- 660 comfortably covers TWO consecutive
+    // fields, split at line 330 for the per-field count below), and each of
+    // the eight channels' own SPRxDATA/SPRxDATB fetch (active for
+    // VSTART<=vpos<VSTOP, 40..220, well inside either half) is counted
+    // separately in each half.
+    {
+        constexpr uint8_t kVstart = 40, kVstop = 220;
+        Harness h;
+        for (int n = 0; n < 8; ++n) {
+            h.write_reg(SprPthAddr(n), 0x0000);
+            h.write_reg(SprPtlAddr(n), 0x2000);
+        }
+        h.write_reg(DMACON_ADDR, SET_CLR | DMAEN | SPREN);
+
+        auto feed_real_words = [&](bool pre_dbr, uint16_t pre_addr) {
+            if (!pre_dbr || (pre_addr & 0xE0) != 0xA0) return;
+            int type = pre_addr & 0x3;
+            if (type == 0) h.dut->data_in = static_cast<uint16_t>(kVstart) << 8;       // POS
+            else if (type == 1) h.dut->data_in = static_cast<uint16_t>(kVstop) << 8;   // CTL
+        };
+
+        constexpr int kFieldSplitLine = 330;   // > VBSTOP(25), < VTOTAL(311) into field 2
+        constexpr int kTotalLines = 660;       // > 2 * (VTOTAL_PAL_VAL+1) = 624
+        int field1[8] = {0}, field2[8] = {0};
+        for (int line = 0; line < kTotalLines; ++line) {
+            for (int t = 0; t < 1000; ++t) {
+                h.tick_pre_edge_dbr_feeding(feed_real_words);
+                if (h.last_sol) break;
+                if (h.last_dbr && !h.last_refresh) {
+                    uint16_t a = h.last_reg_address_out;
+                    if ((a & 0xE0) == 0xA0 && (a & 0x3) >= 2) {
+                        int sprite = (a >> 2) & 0x7;
+                        (line < kFieldSplitLine ? field1 : field2)[sprite]++;
+                    }
+                }
+            }
+        }
+
+        bool field1_all = true, field2_all = true;
+        int min1 = field1[0], min2 = field2[0];
+        for (int n = 0; n < 8; ++n) {
+            if (field1[n] == 0) field1_all = false;
+            if (field2[n] == 0) field2_all = false;
+            if (field1[n] < min1) min1 = field1[n];
+            if (field2[n] < min2) min2 = field2[n];
+        }
+        char min1_str[8], min2_str[8];
+        snprintf(min1_str, sizeof min1_str, "%d", min1);
+        snprintf(min2_str, sizeof min2_str, "%d", min2);
+
+        checks.expect(
+            field1_all && field2_all,
+            "SPREN-PLACES-EVERY-CHANNEL-IN-AUTOMATIC-MODE: all eight sprites' "
+            "pointers (PTH/PTL only) are CPU-written once and SPREN is set "
+            "once; SPRxPOS/SPRxCTL are NEVER CPU-written, only fed as DMA "
+            "words (VSTART=40/VSTOP=220) exactly when the fixture's own "
+            "reg_address_out shows them granted -- yet every one of the "
+            "eight channels' own SPRxDATA/SPRxDATB fetch reaches "
+            "reg_address_out in BOTH of two consecutive PAL fields (field 1: "
+            "min " +
+                std::string(min1_str) +
+                " events/channel; field 2: min " + std::string(min2_str) +
+                " events/channel, over a 660-line, field-split sweep) -- the "
+                "vblend-triggered reread repeats on its own, field after "
+                "field, without a further CPU step. 'you do not need' [a "
+                "further step] / 'place them all in automatic mode' (p.114). "
+                "CH4-more.c5, CH4-p114.c2.");
     }
 
     // ---------------- SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND (p.114-115) ----------------
-    // Same eight sprites, same SPREN|DMAEN, now measuring their per-line
+    // The control is a NORMAL-WIDTH display (same BPU, DDFSTRT=$38, BPLEN
+    // SET - normal_bitplane() above), not BPLEN entirely clear: a design
+    // where ANY bitplane DMA costs sprites, not only a widened one, must
+    // still pass this control, so BPLEN-clear alone cannot tell the two
+    // apart. The BPLEN-clear run is kept only as an ungraded fixture check
+    // (a MEASURED note below).
+    //
+    // The condition grades only "at least one of the eight channels' rate
+    // drops to under half the control's" - exactly what "some sprites can
+    // become unusable" states. Neither p.114 nor p.115 says WHICH channel
+    // survives or that fewer than all eight are ever affected, so the
+    // condition does not claim either (those would be facts about this
+    // fixture's own slot timing, not about the page).
+    //
+    // Same eight sprites, same SPREN|DMAEN, measuring their per-line
     // SPRxDATA/SPRxDATB fetch (active once vpos reaches each sprite's own
-    // VSTART) over a line window - once with BPLEN clear, once with it set
-    // and DDFSTRT/DDFSTOP pushed to the hardware fetch limits ($18-$D8),
-    // which starts the display fetch inside the sprite engine's own
-    // $18-$38 slot window. agnus.v's own fixed-priority mux tests dma_bpl
-    // before dma_spr (agnus.v:207 before :219), so a granted bitplane cycle
-    // on one of a sprite's two ticks silently costs that sprite the tick -
-    // no retry.
+    // VSTART) over a line window - once at the normal-width control, once
+    // with BPLEN set and DDFSTRT/DDFSTOP pushed to the hardware fetch
+    // limits ($18-$D8), which starts the display fetch inside the sprite
+    // engine's own $18-$38 slot window. agnus.v's own fixed-priority mux
+    // tests dma_bpl before dma_spr (agnus.v:207 before :219), so a granted
+    // bitplane cycle on one of a sprite's two ticks silently costs that
+    // sprite the tick - no retry.
     //
     // Each run first lets vblend (vpos==25, agnus_beamcounter.v's own
     // vbstop) pass with SPREN CLEAR - agnus_spritedma.v's own header
@@ -951,18 +1165,28 @@ int main(int argc, char** argv) {
     // next automatic refetch is a full field away, well outside this
     // assertion's own window.
     {
+        int wide_per_sprite[8] = {0};
         // 35 lines: the same budget SPREN-GATES-EVERY-SPRITE-CHANNEL's own
         // sweep already proved sufficient to reach vblend (its 8/8 result
         // is exactly the vblend-triggered fetch landing inside 35 lines).
         // No agnus.v port carries vpos or vblend directly - both are
         // internal to agnus_beamcounter.v - so this counts sol pulses
         // rather than reading either.
-        Harness h_base;
-        h_base.write_reg(DMACON_ADDR, SET_CLR | DMAEN);  // SPREN, BPLEN both clear
-        for (int i = 0; i < 35; ++i) h_base.sync_to_line_boundary();
-        for (int n = 0; n < 8; ++n) arm_sprite(h_base, n, 40, 220);
-        h_base.write_reg(DMACON_ADDR, SET_CLR | SPREN);  // control: BPLEN left clear
-        auto fetches_base = collect_sprite_fetches_over_lines(h_base, 90);
+        Harness h_none;
+        h_none.write_reg(DMACON_ADDR, SET_CLR | DMAEN);  // SPREN, BPLEN both clear
+        for (int i = 0; i < 35; ++i) h_none.sync_to_line_boundary();
+        for (int n = 0; n < 8; ++n) arm_sprite(h_none, n, 40, 220);
+        h_none.write_reg(DMACON_ADDR, SET_CLR | SPREN);  // fixture check: BPLEN left clear
+        auto fetches_none = collect_sprite_fetches_over_lines(h_none, 90);
+
+        Harness h_normal;
+        h_normal.write_reg(DMACON_ADDR, SET_CLR | DMAEN);
+        for (int i = 0; i < 35; ++i) h_normal.sync_to_line_boundary();
+        for (int n = 0; n < 8; ++n) arm_sprite(h_normal, n, 40, 220);
+        normal_bitplane(h_normal);
+        h_normal.write_reg(DMACON_ADDR, SET_CLR | SPREN | BPLEN);  // control: normal-width, BPLEN SET
+        auto fetches_normal = collect_sprite_fetches_over_lines(h_normal, 90);
+
         Harness h_wide;
         h_wide.write_reg(DMACON_ADDR, SET_CLR | DMAEN);
         for (int i = 0; i < 35; ++i) h_wide.sync_to_line_boundary();
@@ -980,73 +1204,191 @@ int main(int argc, char** argv) {
         // the claim were true, and does it differ from false" witness this
         // package's own DMACON-IS-WRITE-ONLY-AT-096 already uses, applied
         // per channel instead of per address.
-        int base_per_sprite[8] = {0}, wide_per_sprite[8] = {0};
-        for (const auto& f : fetches_base) {
-            if (f.type == 2 || f.type == 3) ++base_per_sprite[f.sprite];
+        int none_per_sprite[8] = {0}, normal_per_sprite[8] = {0};
+        for (const auto& f : fetches_none) {
+            if (f.type == 2 || f.type == 3) ++none_per_sprite[f.sprite];
+        }
+        for (const auto& f : fetches_normal) {
+            if (f.type == 2 || f.type == 3) ++normal_per_sprite[f.sprite];
         }
         for (const auto& f : fetches_wide) {
             if (f.type == 2 || f.type == 3) ++wide_per_sprite[f.sprite];
         }
-        int base_uniform = base_per_sprite[0];
-        bool base_all_equal = true;
+        int none_uniform = none_per_sprite[0];
+        bool none_all_equal = true;
+        int normal_uniform = normal_per_sprite[0];
+        bool normal_all_equal = true;
         int sprites_halved = 0;
         for (int n = 0; n < 8; ++n) {
-            if (base_per_sprite[n] != base_uniform) base_all_equal = false;
-            if (wide_per_sprite[n] * 2 < base_per_sprite[n]) ++sprites_halved;
+            if (none_per_sprite[n] != none_uniform) none_all_equal = false;
+            if (normal_per_sprite[n] != normal_uniform) normal_all_equal = false;
+            if (wide_per_sprite[n] * 2 < normal_per_sprite[n]) ++sprites_halved;
         }
 
-        char base_rate_str[8];
-        snprintf(base_rate_str, sizeof base_rate_str, "%d", base_uniform);
-        char sprite0_wide_str[8];
-        snprintf(sprite0_wide_str, sizeof sprite0_wide_str, "%d", wide_per_sprite[0]);
+        checks.note(
+            "SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND fixture "
+            "check (not graded): with BPLEN entirely clear (no bitplane "
+            "engine running at all), all eight channels' own SPRxDATA/"
+            "SPRxDATB fetch reaches reg_address_out at the SAME rate (" +
+                std::to_string(none_uniform) + " events/channel, uniform=" +
+                (none_all_equal ? std::string("yes") : std::string("no")) +
+                ") - the fixture delivers a known, non-zero rate before any "
+                "bitplane demand is added.");
+
+        char normal_rate_str[8];
+        snprintf(normal_rate_str, sizeof normal_rate_str, "%d", normal_uniform);
         char worst_wide_str[8];
-        int worst_sprite = 1;
-        for (int n = 2; n < 8; ++n) if (wide_per_sprite[n] < wide_per_sprite[worst_sprite]) worst_sprite = n;
+        int worst_sprite = 0;
+        for (int n = 1; n < 8; ++n) if (wide_per_sprite[n] < wide_per_sprite[worst_sprite]) worst_sprite = n;
         snprintf(worst_wide_str, sizeof worst_wide_str, "%d", wide_per_sprite[worst_sprite]);
         char halved_str[4];
         snprintf(halved_str, sizeof halved_str, "%d", sprites_halved);
 
         checks.expect(
-            base_all_equal && base_uniform > 0 && sprites_halved >= 1 && sprites_halved < 8 &&
-                wide_per_sprite[0] >= base_uniform,
+            normal_all_equal && normal_uniform > 0 && sprites_halved >= 1,
             "SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND: with all "
             "eight sprites armed identically (VSTART=40/VSTOP=220) and "
             "SPREN|DMAEN held set throughout, every one of the eight "
             "channels' own SPRxDATA/SPRxDATB fetch reaches reg_address_out "
             "at the SAME rate (" +
-                std::string(base_rate_str) +
-                " events/channel over a 90-line window) when BPLEN is clear "
-                "- the SAME setup, with BPLEN set and DDFSTRT/DDFSTOP pushed "
-                "to the hardware limits ($18-$D8, the widest display fetch "
-                "this fixture can produce, matching the manual's 'extra wide "
-                "display' wording) in the SAME run, leaves sprite channel 0 "
-                "untouched (" +
-                std::string(sprite0_wide_str) +
-                " events, its own DMA slot sits before the widened fetch "
-                "starts) while at least one other channel drops to under "
-                "half its baseline rate (channel " +
+                std::string(normal_rate_str) +
+                " events/channel over a 90-line window) at the CONTROL - a "
+                "NORMAL-WIDTH display, same BPU, DDFSTRT=$38, BPLEN SET (not "
+                "BPLEN clear: a design where any bitplane DMA costs sprites "
+                "must still pass this control) - the SAME setup, with "
+                "DDFSTRT/DDFSTOP pushed to the hardware limits ($18-$D8, the "
+                "widest display fetch this fixture can produce, matching the "
+                "manual's 'extra wide display' wording) in the SAME run, "
+                "drops at least one channel to under half the control's rate "
+                "(channel " +
                 std::to_string(worst_sprite) + ": " + std::string(worst_wide_str) +
                 " events; " + std::string(halved_str) +
-                " of 8 channels halved or worse) - SOME, not all, sprites "
+                " of 8 channels halved or worse) - SOME sprites "
                 "become unusable when additional DMA cycles are allocated to "
-                "displaying the screen, exactly the manual's own wording. "
-                "'Remember that some sprites can become unusable when "
-                "additional DMA cycles are allocated to displaying the "
-                "screen, for example when an extra wide display or "
-                "horizontal scrolling is enabled' (p.114) / 'Some sprites "
-                "become unusable when additional DMA cycles are allocated "
-                "... e.g. when enabling an extra wide display or [horizontal "
-                "scrolling]' (p.115, Warning). CH4-more.c8 CH4-more.c9 "
-                "CH4-more.c10 CH4-p114.c5 CH4-warn.c1 CH4-warn.c2.");
+                "displaying the screen, exactly the manual's own wording (no "
+                "claim is made here about WHICH channel survives or that "
+                "fewer than all eight are ever affected - neither page says "
+                "either). 'Remember that some sprites can become unusable "
+                "when additional DMA cycles are allocated to displaying the "
+                "screen, for example when an extra wide display ... is "
+                "enabled' (p.114) / 'Some sprites become unusable when "
+                "additional DMA cycles are allocated ... e.g. when enabling "
+                "an extra wide display' (p.115, Warning). CH4-more.c8 "
+                "CH4-more.c9 CH4-warn.c1 CH4-warn.c2.");
+    }
+
+    // ---------------- SPRITE-DMA-LOSES-CHANNELS-UNDER-HORIZONTAL-SCROLL (p.82-83, p.114-115) ----------------
+    // Separate from SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND
+    // above, which only ever widens BPU/DDFSTRT and never moves DDFSTRT the
+    // ONE fetch unit a scrolled display actually needs, never touches
+    // BPLCON1, and so never stimulates the horizontal-scrolling case
+    // CH4-more.c10/CH4-p114.c5 name. Same normal-width control as above
+    // (recomputed fresh on an isolated Harness), this time compared against
+    // horizontal_scroll_bitplane() - DDFSTRT moved from $38 to $30 (one
+    // fetch unit sooner) and BPLCON1 given a non-zero delay, the manual's
+    // own p.82 recipe for "horizontal scrolling is enabled", already the
+    // established reading of this exact sentence elsewhere in this corpus
+    // (hrm/ch3-ddf-fetch-window's HSCROLL-EXTRA-WORD-21-FOR-20; hrm/
+    // ch7-dmacon-register-bits's DDFSTRT-0030-SPRITE-7, which cites the
+    // SAME p.82/83 "will disable sprite 7" sentence CH4-more.c10/
+    // CH4-p114.c5 also read).
+    {
+        Harness h_normal;
+        h_normal.write_reg(DMACON_ADDR, SET_CLR | DMAEN);
+        for (int i = 0; i < 35; ++i) h_normal.sync_to_line_boundary();
+        for (int n = 0; n < 8; ++n) arm_sprite(h_normal, n, 40, 220);
+        normal_bitplane(h_normal);
+        h_normal.write_reg(DMACON_ADDR, SET_CLR | SPREN | BPLEN);
+        auto fetches_normal = collect_sprite_fetches_over_lines(h_normal, 90);
+
+        Harness h_scroll;
+        h_scroll.write_reg(DMACON_ADDR, SET_CLR | DMAEN);
+        for (int i = 0; i < 35; ++i) h_scroll.sync_to_line_boundary();
+        for (int n = 0; n < 8; ++n) arm_sprite(h_scroll, n, 40, 220);
+        horizontal_scroll_bitplane(h_scroll);
+        h_scroll.write_reg(DMACON_ADDR, SET_CLR | SPREN | BPLEN);
+        auto fetches_scroll = collect_sprite_fetches_over_lines(h_scroll, 90);
+
+        int normal_per_sprite[8] = {0}, scroll_per_sprite[8] = {0};
+        for (const auto& f : fetches_normal) {
+            if (f.type == 2 || f.type == 3) ++normal_per_sprite[f.sprite];
+        }
+        for (const auto& f : fetches_scroll) {
+            if (f.type == 2 || f.type == 3) ++scroll_per_sprite[f.sprite];
+        }
+        int normal_uniform = normal_per_sprite[0];
+        bool normal_all_equal = true;
+        int sprites_halved = 0;
+        int worst_sprite = 0;
+        for (int n = 0; n < 8; ++n) {
+            if (normal_per_sprite[n] != normal_uniform) normal_all_equal = false;
+            if (scroll_per_sprite[n] * 2 < normal_per_sprite[n]) ++sprites_halved;
+            if (scroll_per_sprite[n] < scroll_per_sprite[worst_sprite]) worst_sprite = n;
+        }
+
+        checks.expect(
+            normal_all_equal && normal_uniform > 0 && sprites_halved >= 1,
+            "SPRITE-DMA-LOSES-CHANNELS-UNDER-HORIZONTAL-SCROLL: with all "
+            "eight sprites armed identically (VSTART=40/VSTOP=220) and "
+            "SPREN|DMAEN held set throughout, every one of the eight "
+            "channels' own SPRxDATA/SPRxDATB fetch reaches reg_address_out "
+            "at the SAME rate (" +
+                std::to_string(normal_uniform) +
+                " events/channel over a 90-line window) at the normal-width "
+                "control (DDFSTRT=$38, BPLCON1=0) - the SAME setup with "
+                "DDFSTRT moved to $0030 (one fetch unit sooner, 'the data "
+                "fetch must start one word sooner (DDFSTRT = $0030)', p.82) "
+                "and BPLCON1 given a non-zero scroll delay in the SAME run "
+                "drops channel " +
+                std::to_string(worst_sprite) + " to " +
+                std::to_string(scroll_per_sprite[worst_sprite]) +
+                " events (" + std::to_string(sprites_halved) +
+                " of 8 channels halved or worse) - enabling horizontal "
+                "scrolling is one case that allocates additional DMA cycles "
+                "and can make some sprites unusable, exactly the manual's "
+                "own wording ('Incidentally, this will disable sprite 7', "
+                "p.82; 'Fetching an extra word for scrolling will disable "
+                "some sprites', p.83). 'Enabling horizontal scrolling is "
+                "one case that allocates additional DMA cycles and can make "
+                "some sprites unusable' / 'Additional display DMA demand, "
+                "including extra-wide display or horizontal scrolling, can "
+                "consume sprite DMA slots and make some channels "
+                "unavailable' (p.114). CH4-more.c10 CH4-p114.c5.");
     }
 
     // ---------------- SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK (p.303, Appendix C) ----------------
-    // The same vblend-triggered SPRxPOS/SPRxCTL fetch SPREN-GATES-EVERY-
-    // SPRITE-CHANNEL already swept, this time checked against agnus.v's own
-    // `hblank` output (agnus_beamcounter.v: high for hpos in
-    // [hbstrt=25,hbstop=102), fixed with varbeamen left at its reset value)
-    // at the SAME tick as each fetch - the "usually ... during horizontal
-    // blank" wording read literally, per-fetch, not assumed.
+    // "Usually" contrasts DMA loading against processor loading (not a
+    // frequency-of-DMA-events claim), and the DMA loads are placed "during
+    // horizontal blank" with no qualifier - a plain, per-fetch structural
+    // claim this fixture's own `hblank` output can grade directly, exactly
+    // as the id's own text reads. Graded, not recorded: the same
+    // vblend-triggered SPRxPOS/
+    // SPRxCTL fetch SPREN-GATES-EVERY-SPRITE-CHANNEL already swept, checked
+    // against agnus.v's own `hblank` output (agnus_beamcounter.v:
+    // HBSTRT_VAL=25, HBSTOP_VAL=102, fixed with varbeamen left at its reset
+    // value - hblank high for hpos in [25,102)) at the SAME tick as each
+    // fetch.
+    //
+    // MEASURED (per-event, not assumed): agnus_spritedma.v's own fetch
+    // region is hpos[8:1] in [$18,$38), i.e. REAL hpos in [49,113) (hpos[8:1]
+    // is a WORD address - real hpos is twice that plus the LSB set on the
+    // triggering edge, agnus_spritedma.v:267-271). That range starts safely
+    // inside hblank (49 > 25) but EXTENDS PAST hblank's own end at hpos 102
+    // (113 > 102) - the LAST ~1.5 of the fetch window's eight per-sprite
+    // slots (sprite 6's second half, all of sprite 7) fall after hpos 102,
+    // outside hblank, by construction: of 16 SPRxPOS/SPRxCTL events across
+    // 8 channels, 13 fall inside hblank (sprites 0-5 entirely, sprite 6's
+    // POS only) and 3 fall outside (sprite 6's CTL, sprite 7's POS and
+    // CTL) - confirmed per-event, not merely counted.
+    //
+    // This IS the router's grading ("assert every such fetch falls while
+    // hblank is high"), and it comes out RED: read literally, with no
+    // "usually" qualifier softening it, the manual's sentence is wrong for
+    // sprites 6/7 on this RTL. Red is the correct, reportable outcome, not
+    // an inverted oracle - matching this package's own DDFSTRT-0030-SPRITE-7
+    // sibling in hrm/ch7-dmacon-register-bits, which is red for the SAME
+    // reason (a page statement this RTL's own timing does not fully bear
+    // out).
     {
         Harness h;
         for (int n = 0; n < 8; ++n) arm_sprite(h, n, 200, 220);
@@ -1078,27 +1420,32 @@ int main(int argc, char** argv) {
         snprintf(outside_str, sizeof outside_str, "%d",
                   static_cast<int>(sprites_outside_hblank.size()));
 
-        checks.record(
-            "APPC-pos.c5 CH4-appC-position.c8: \"usually loaded by the sprite "
-            "DMA channel, during horizontal blank\" / \"normally loads SPRxPOS "
-            "and SPRxCTL during horizontal blanking\" (p.303) is a frequency "
-            "claim - MEASURED, not assumed, on this run: of " +
+        checks.expect(
+            sprites_outside_hblank.empty() && pos_ctl_events == pos_ctl_events_in_hblank &&
+                pos_ctl_events > 0,
+            "SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK: \"They are usually loaded "
+            "by the sprite DMA channel, during horizontal blank, however "
+            "they may be loaded by the processor\" / \"sprite DMA normally "
+            "loads SPRxPOS and SPRxCTL during horizontal blanking\" (p.303) "
+            "- 'usually' contrasts DMA loading against processor loading, "
+            "and the DMA loads themselves are placed 'during horizontal "
+            "blank' with no frequency qualifier, so this fixture's own "
+            "hblank output grades it directly, per fetch: of " +
                 std::string(events_str) +
                 " SPRxPOS/SPRxCTL fetch events across " +
                 std::string(sprites_seen_str) +
                 " sprite channels swept, " + std::string(in_hblank_str) +
                 " occurred while hblank was high; " + std::string(outside_str) +
-                " of those channels had at least one fetch outside hblank "
-                "(agnus_spritedma.v's own fetch region runs hpos $18-$38, "
-                "and hblank only covers hpos $19-$65 (25-101) of that range, "
-                "so the channels whose slot falls after hpos 101 fall outside "
-                "hblank by construction, not by chance). Declined as an "
-                "expect(): the id's own restatement bundles 'usually'/"
-                "'normally' into the one proposition being graded, and a "
-                "single per-run count cannot establish a frequency claim - "
-                "hrm/ch4-sprite-vertical-position already recorded the same "
-                "limit ('no port carries how often a write happens') for "
-                "the sibling SPRxDATA/SPRxDATB claims on this same module.");
+                " channels (6 and 7, the LAST two in the fetch window) had "
+                "at least one fetch outside hblank - agnus_spritedma.v's own "
+                "fetch region (real hpos 49-113, twice hpos[8:1]'s own "
+                "$18-$38 word range) starts inside hblank (hpos 25-102) but "
+                "runs past its own end at hpos 102, catching the window's "
+                "last ~1.5 of eight per-sprite slots outside it, by "
+                "construction. RED is the correct, reportable outcome: the "
+                "manual's own 'during horizontal blank' does not hold for "
+                "every channel on this RTL. APPC-pos.c5, "
+                "CH4-appC-position.c8.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
@@ -1175,4 +1522,51 @@ int main(int argc, char** argv) {
 // Machine-readable records, one per line:
 // MUTATION SPREN-GATES-EVERY-SPRITE-CHANNEL stimulus red: h_en's DMACON write dropped SPREN (SET_CLR|DMAEN only); 0/8 distinct channels seen, not 8/8.
 // MUTATION SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND stimulus red: DDFSTRT moved from $18 (sprite-window overlap) to $38 (normal, non-overlapping); 0 of 8 channels halved, not >=1.
+// ============================================================================
+
+// ============================================================================
+// MUTATION LOG (continued). Every entry below was actually applied - edited
+// into this file, rebuilt under WSL/Verilator (`make -B test`), run, the
+// PASS/FAIL line read from real output, then reverted and rebuilt clean
+// before the next entry. Baseline before this log's first mutation and
+// final clean run after the last revert were both "7 passed, 1 failed"
+// (the one failure is SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK's own genuine
+// finding, unaffected by the other mutations below).
+//
+// 1. SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND was re-verified
+//    against its own corrected control (the machine-readable record above
+//    still describes it correctly: DDFSTRT $18->$38 on
+//    widen_bitplane_into_sprite_window turns it red, unaffected by the
+//    control-basis change).
+//
+// 2. SPREN-PLACES-EVERY-CHANNEL-IN-AUTOMATIC-MODE: feed_real_words's body
+//    was emptied (data_in never fed on any grant, matching the pre-repair
+//    state). Result: "6 passed, 2 failed" - SPREN-PLACES-EVERY-CHANNEL-IN-
+//    AUTOMATIC-MODE went red (field 1 and field 2 both read 0 events/
+//    channel for every one of the eight channels, not >=1 in each).
+//    Reverted; rebuilt clean (7 passed, 1 failed).
+//
+// 3. SPRITE-DMA-LOSES-CHANNELS-UNDER-HORIZONTAL-SCROLL:
+//    horizontal_scroll_bitplane's DDFSTRT write changed from 0x0030 to
+//    0x0038 (the normal, non-scrolled start). Result: "6 passed, 2 failed"
+//    - SPRITE-DMA-LOSES-CHANNELS-UNDER-HORIZONTAL-SCROLL went red (0 of 8
+//    channels halved or worse, not >=1 - every channel's rate stayed at
+//    the 172-event control once DDFSTRT no longer moved). Reverted to
+//    0x0030; rebuilt clean (7 passed, 1 failed).
+//
+// 4. SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK is RED at baseline (the genuine
+//    finding: channels 6 and 7 each have a fetch outside hblank) - a
+//    failing assertion cannot be made to fail harder, so this substitutes
+//    a different, proven-live population through the SAME comparator
+//    instead: the counting loop's own `f.sprite < 6` filter, restricting
+//    it to sprites 0-5 (shown inside hblank in this SAME run). Result: "8
+//    passed, 0 failed" - SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK flipped GREEN
+//    (12 of 12 events in hblank for that subset), proving the hblank
+//    comparator itself is live and not vacuously red. Reverted to the real,
+//    all-eight-channel comparison, which stays red.
+//
+// Machine-readable records, one per line:
+// MUTATION SPREN-PLACES-EVERY-CHANNEL-IN-AUTOMATIC-MODE stimulus red: feed_real_words left data_in unfed on every grant; field 1 and field 2 both read 0 events/channel for all eight channels, not >=1 in each.
+// MUTATION SPRITE-DMA-LOSES-CHANNELS-UNDER-HORIZONTAL-SCROLL stimulus red: horizontal_scroll_bitplane's DDFSTRT moved from $0030 to $0038 (no scroll); 0 of 8 channels halved, not >=1.
+// MUTATION SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK stimulus green: already red at baseline (channels 6/7 fall outside hblank, the genuine finding) - substituted the proven-live sprite 0-5 subset (all inside hblank in the same run) through the same per-fetch hblank comparator in place of all eight; PASS (12 of 12 in hblank). A failing assertion cannot be made to fail harder, so this proves the comparator is not vacuous. Reverted to the real, all-eight-channel comparison, which stays red.
 // ============================================================================
