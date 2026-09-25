@@ -134,19 +134,22 @@
 //     -- CH4-attach.c25, CH4-attach.c26, CH4-attach.c27
 //   ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE (3 ids, candidate finding)
 //     -- CH4-p128.c8, CH4-sctl.c4, CH4-attach.c27
-//   CODE-0000-YIELDS-TRANSPARENT-PIXEL (2 ids, precondition/PASS)
-//     -- CH4-p122.c1, CH4-tab45.c17
-//   TABLE45-ROW0-REGISTER-NUMBER-CONFLICT [declined] (2 ids)
-//     -- CH4-tab45.c0, CH4-tab45.c1
-//   3+3+2+2 = 10 citations over 9 distinct ids (CH4-attach.c27 is cited
+//   CODE-0000-YIELDS-TRANSPARENT-PIXEL (1 id, precondition/PASS)
+//     -- CH4-tab45.c17
+//   TABLE45-ROW0-REGISTER-NUMBER-CONFLICT [declined] (3 ids)
+//     -- CH4-tab45.c0, CH4-tab45.c1, CH4-p122.c1
+//   3+3+1+3 = 10 citations over 9 distinct ids (CH4-attach.c27 is cited
 //   on both ATTACH-BIT assertions, since "for the odd-numbered" is the
 //   textual basis for both "the odd one enables it" and "not the even
 //   one" -- see THE TWO PROPOSITIONS above). All 4 of this package's
-//   own claims.jsonl records are covered: 2 asserted
-//   (CH4-p122.c1/CH4-tab45.c17), 2 declined with reason
-//   (CH4-tab45.c0/CH4-tab45.c1 -- see TABLE45-ROW0-REGISTER-NUMBER-
-//   CONFLICT below, matching this package's own classify block:
-//   "Measured for the record and asserted nowhere").
+//   own claims.jsonl records are covered: 1 asserted (CH4-tab45.c17),
+//   3 declined with reason (CH4-tab45.c0/CH4-tab45.c1/CH4-p122.c1 --
+//   see TABLE45-ROW0-REGISTER-NUMBER-CONFLICT below, matching this
+//   package's own classify block: "Measured for the record and
+//   asserted nowhere"; CH4-p122.c1's own claim bundles the same
+//   undecided register-16 number with a transparent-pixel half this
+//   file does measure, so the whole id moves here rather than being
+//   kept partly graded).
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id, labelled
 //   "[control]" so the mutation gate does not require a mutation
@@ -562,14 +565,14 @@ int main(int argc, char** argv) {
             "-- sprdata stays zero (no sprite pixel) across the whole "
             "hpos 0..511 sweep, matching Table 4-5's own row 0 and its "
             "footnote, the part of the row both disputing pages agree on: "
-            "'0            0000            16 *' (CH4-p122.c1/"
-            "CH4-tab45.c1, p.122) and '* Unused; yields transparent "
+            "'0            0000            16 *' p.122) and '* Unused; "
+            "yields transparent "
             "pixel.' (CH4-tab45.c17, p.122). This is the transparent "
             "precondition ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT and "
             "ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE both rest on (a pair "
             "that shows no pixel at all if never attached, and no pixel "
             "for this one all-zero code even when it is) -- asserted "
-            "directly here rather than left implicit. CH4-p122.c1, "
+            "directly here rather than left implicit. "
             "CH4-tab45.c17 .");
         checks.note("CODE-0000-YIELDS-TRANSPARENT-PIXEL: measured sprdata "
             "for combined code 0000 under an attached pair, across the "
@@ -599,12 +602,19 @@ int main(int argc, char** argv) {
         "sixteen. Table 4-5's own row 0 immediately below instead reads "
         "'0            0000            16 *' (CH4-tab45.c1) -- code 0000 "
         "addresses register 16, one below the prose's stated start of "
-        "17. The fifteen non-zero rows (0001-1111 -> 17-31) are "
-        "undisputed and outside this package's own scope (see Non-goals "
-        "above); only row 0 conflicts, and only between two passages on "
-        "the SAME printed page. Declined, not asserted either way, "
-        "matching this package's own classify block: 'Measured for the "
-        "record and asserted nowhere.' CH4-tab45.c0, CH4-tab45.c1 .");
+        "17. CH4-p122.c1 restates that same row-0 reading in its own "
+        "words, 'selector 0000 addresses color register 16 but yields a "
+        "transparent pixel' -- its transparent-pixel half is the "
+        "precondition CODE-0000-YIELDS-TRANSPARENT-PIXEL above measures "
+        "directly, but its register-16 half carries the identical "
+        "undecided number, so the whole id is declined here rather than "
+        "kept with a caveat. The fifteen non-zero rows (0001-1111 -> "
+        "17-31) are undisputed and outside this package's own scope "
+        "(see Non-goals above); only row 0 conflicts, and only between "
+        "two passages on the SAME printed page. Declined, not asserted "
+        "either way, matching this package's own classify block: "
+        "'Measured for the record and asserted nowhere.' CH4-tab45.c0, "
+        "CH4-tab45.c1, CH4-p122.c1 .");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
