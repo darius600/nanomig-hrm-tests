@@ -120,8 +120,8 @@
 //   listed with each block below), 73 declined with reason (8 groups).
 //   227 + 3 + 73 = 303.
 //
-//   TRANSPARENT-CODE-IS-INVISIBLE-NONZERO-CODE-IS-VISIBLE (41 ids)
-//   NONZERO-CODES-ORDER-MONOTONICALLY-WITHIN-A-GROUP (66 ids)
+//   TRANSPARENT-CODE-IS-INVISIBLE-NONZERO-CODE-IS-VISIBLE (40 ids)
+//   NONZERO-CODES-ORDER-MONOTONICALLY-WITHIN-A-GROUP (67 ids)
 //   DIFFERENT-PAIRS-SELECT-DIFFERENT-REGISTER-GROUPS (19 ids)
 //   HIGH-AND-LOW-ORDER-WORDS-BOTH-CONTRIBUTE-TO-THE-CODE (21 ids)
 //   ATTACHED-PAIR-BOTH-SPRITES-CONTRIBUTE-DISTINCT-BITS (45 ids)
@@ -539,8 +539,7 @@ int main(int argc, char** argv) {
             "CH4-tab46.c1, CH4-tab46.c2, CH4-tab46.c4, CH4-tab46.c13, "
             "CH4-tab46.c22, CH4-tab46.c31, CH4-color.c1, CH4-color.c2, "
             "CH4-p102.c2, CH4-p97.c6, CH4-p97.c7, CH4-intro.c9, "
-            "CH4-intro.c10, CH4-forming.c4, CH4-p98.c4, CH4-fig46.f1, "
-            "CH4OM-fig46.note, "
+            "CH4-intro.c10, CH4-forming.c4, CH4-p98.c4, "
             "CH4-fig46.f6, CH4-tab46.c3, CH4-tab46.c12, CH4-tab46.c21, "
             "CH4-tab46.c30 .");
         checks.note("code00 sprdata max=" + std::to_string(static_cast<int>(v00)) +
@@ -591,7 +590,7 @@ int main(int argc, char** argv) {
             "CH4-fig4-6.c6, CH4-fig4-6.c7, CH4-fig4-6.c8, CH4-fig4-6.c9, "
             "CH4-fig4-6.c10, CH4-fig4-6.c11, CH4-fig4-6.c12, "
             "CH4-fig4-6.c13, CH4-fig4-6.c14, CH4-fig4-6.c15, "
-            "CH4-fig4-6.c16 .");
+            "CH4-fig4-6.c16, CH4-fig46.f1, CH4OM-fig46.note .");
     }
 
     // ------- DIFFERENT-PAIRS-SELECT-DIFFERENT-REGISTER-GROUPS -------
