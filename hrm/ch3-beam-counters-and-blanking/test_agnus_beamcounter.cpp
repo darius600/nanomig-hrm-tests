@@ -83,11 +83,15 @@
 //   demonstrated by PAL-FIELD-312-NTSC-FIELD-262-LINES below and the id is
 //   cited once there, covering both, per the precedent in
 //   hrm/ch3-ham-control-field/test_denise_hamgenerator.cpp. C-scan.c01 and
-//   C-scan.c03 are each cited twice: once inside
-//   VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA below (the line-count half
-//   of their quoted sentence) and again inside the DECLINED note on the
-//   colour-clocks-per-line half of that same sentence (see REVIEW FINDING,
-//   RESOLVED below) -- one assertion and one decline, not two assertions.
+//   C-scan.c03 are each cited once, inside
+//   VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA below: their own restatement
+//   narrows the quoted p.304 sentence to its line-count half alone (525/625
+//   lines), which that assertion fully establishes, so neither id also sits
+//   on the DECLINED note below. The same sentence's colour-clocks-per-line
+//   half is covered there instead by C-scan.c02 and C-scan.c04, together
+//   with opus:7-appC-beam.c2 and opus:7-appC-beam.c3, whose own restatement
+//   does not split the sentence into two claims and is declined whole (see
+//   REVIEW FINDING, RESOLVED below).
 //
 // REVIEW FINDING, RESOLVED: an independent read flagged two assertions in
 //   an earlier version of this file as circular -- HTOTAL-FIXED-NOT-
@@ -1432,7 +1436,7 @@ int main(int argc, char** argv) {
                 std::to_string(sum) +
                 ") -- '" + (ntsc ? "NTSC (525 lines, 227.5 colorclocks per scan line)"
                                  : "PAL  (625 lines, 227.5 colorclocks per scan line)") +
-                "' (p.304). C-scan.c01, C-scan.c03, opus:7-appC-beam.c2, opus:7-appC-beam.c3 .");
+                "' (p.304). " + (ntsc ? "C-scan.c01 ." : "C-scan.c03 ."));
     }
 
     // ================= VBLANK-DURATION-NTSC-MATCHES-MANUAL / VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL =================
@@ -1604,8 +1608,19 @@ int main(int argc, char** argv) {
     checks.record(
         "DECLINED (translating manual colour-clock/280ns quantities into "
         "htotal_out's raw tick count needs an RTL-supplied conversion "
-        "factor -- 6 claims): C-htotal.c02, C-htotal.c03, C-scan.c8, "
-        "C-scan.c01, C-scan.c02, C-scan.c03, C-scan.c04. Formerly asserted "
+        "factor -- 7 claims): C-htotal.c02, C-htotal.c03, C-scan.c8, "
+        "C-scan.c02, C-scan.c04, opus:7-appC-beam.c2, opus:7-appC-beam.c3. "
+        "The line-count half of the same p.304 sentence "
+        "(graded: C-scan.c01, C-scan.c03) is not declined here -- "
+        "VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA above fully "
+        "establishes it, because each id's own restatement narrows the "
+        "sentence to that half alone (525/625 lines). opus:7-appC-beam.c2 "
+        "and opus:7-appC-beam.c3 restate the identical sentence as one unsplit "
+        "claim ('The NTSC scan rate is 525 lines with 227.5 colorclocks per "
+        "scan line.' / the PAL twin), bundling that same already-graded "
+        "line count together with the colour-clocks-per-line half below, so "
+        "no partial credit applies and both ids are declined whole here. "
+        "Formerly asserted "
         "as HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5: 'HTOTAL W A Highest "
         "number count in horizontal line' / 'The value in this register "
         "represents the number of 280ns increments on the horizontal "
