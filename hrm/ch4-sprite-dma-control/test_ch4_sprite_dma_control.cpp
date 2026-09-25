@@ -344,19 +344,9 @@
 // ============================================================================
 
 // ============================================================================
-// EXTENSION 25.09.2026 -- twelve new propositions routed to this package from
-// hrm-testpipeline/work/2026-09-25_unit-backlog/build2/
-// ch4-sprite-dma-control-spec-stage.jsonl (all classify.status=="testable"),
-// written from that file's quotations and restatements ALONE -- its
-// evidence field was stripped by tools/strip_evidence.py, and this section
-// was committed before ch4-sprite-dma-control.jsonl (the file that restores
-// the evidence and the router's `how`) was opened, and before agnus.v or
-// agnus_spritedma.v were reopened in this pass. Everything above this point
-// (through the first MUTATION LOG) is untouched by this extension -- run
-// before this section's own code was added:
-// hrm-testpipeline/work/2026-09-25_unit-backlog/runs/
-// ch4-sprite-dma-control-before.txt, "3 passed, 0 failed", kept in the
-// pipeline repository, not in this package.
+// EXTENSION -- twelve new propositions (all classify.status=="testable"),
+// written from quotations and restatements alone, without the evidence
+// field.
 //
 // SOURCE PAGES: printed pp.114-115 (Chapter 4, "Creating Additional
 // Sprites," its boxed "About sprite DMA." note and its "Warning:" callout)
@@ -473,8 +463,9 @@
 //   restatements bundle that same timing qualifier INTO the one
 //   proposition being graded ("usually ... during horizontal blank[ing]"),
 //   not as a separate claim beside it -- so even if the structural half
-//   were reproved here, Prompt 7's bundled-clause rule would still bar the
-//   id from riding on it. Planned as a record(), citing this
+//   were reproved here, the id could not ride on it: an id whose claim
+//   bundles a clause this package does not test is not graded. Planned as
+//   a record(), citing this
 //   already-established fact -- reconfirmed against this package's own
 //   fixture, not merely quoted from the sibling, once agnus.v/
 //   agnus_spritedma.v are reopened below. If that reading does not hold
@@ -545,9 +536,8 @@ constexpr uint16_t SPREN   = 1u << 5;
 constexpr uint16_t BPLEN   = 1u << 8;
 constexpr uint16_t DMAEN   = 1u << 9;
 
-// ---- EXTENSION 25.09.2026 -- addresses this section's own assertions need,
-// confirmed against agnus.v/agnus_bitplanedma.v/agnus_spritedma.v after the
-// specification above was committed (see the EXTENSION comment block) ----
+// ---- EXTENSION -- addresses this section's own assertions need, confirmed
+// against agnus.v/agnus_bitplanedma.v/agnus_spritedma.v ----
 //
 // DIWSTRT/DIWSTOP/DDFSTRT/DDFSTOP/BPLCON0: same custom-register addresses
 // hrm/ch7-dmacon-register-bits's own Harness already uses (agnus.v's own
@@ -680,9 +670,8 @@ public:
         return pre_dbr;
     }
 
-    // EXTENSION 25.09.2026 -- copied from hrm/ch7-dmacon-register-bits's own
-    // Harness (same fixture, same `sol` port): waits for the next
-    // start-of-line pulse.
+    // Copied from hrm/ch7-dmacon-register-bits's own Harness (same fixture,
+    // same `sol` port): waits for the next start-of-line pulse.
     bool sync_to_line_boundary(int max_ticks = 2000) {
         for (int i = 0; i < max_ticks; ++i) {
             tick();
@@ -730,10 +719,10 @@ public:
     uint16_t last_data_out = 0;
     bool write_ok = false;
     bool read_ok = false;
-    // EXTENSION 25.09.2026 -- observation-only additions, read by this
-    // section's own assertions; every existing call site above is
-    // untouched, and last_dbr/last_data_out/write_ok/read_ok keep exactly
-    // the meaning the first three assertions already depend on.
+    // Observation-only additions, read by this section's own assertions;
+    // every existing call site above is unaffected, and
+    // last_dbr/last_data_out/write_ok/read_ok keep exactly the meaning the
+    // first three assertions already depend on.
     bool last_refresh = false;
     bool last_sol = false;
     bool last_hblank = false;
@@ -751,17 +740,16 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
-    // EXTENSION 25.09.2026 -- Prompt 7's fixed record() form, for a routed
-    // claim this section declines rather than grades.
+    // record() form, for a claim this section declines rather than grades.
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
-    // Prompt 7's fixed note() form, for a measurement printed without
-    // grading it (used by the fixture check below).
+    // note() form, for a measurement printed without grading it (used by
+    // the fixture check below).
     void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
 
-// EXTENSION 25.09.2026 -- helpers this section's own assertions share.
+// Helpers this section's own assertions share.
 //
 // Arms sprite `n`: a safe pointer (mirrors hrm/ch7-dmacon-register-bits's
 // own start_sprite0 exactly, just at sprite n's own PTH/PTL address) and
@@ -980,11 +968,8 @@ int main(int argc, char** argv) {
     }
 
     // ============================================================================
-    // EXTENSION 25.09.2026 -- three new assertions for the twelve ids the
-    // header's own EXTENSION section plans. Written after agnus.v,
-    // agnus_bitplanedma.v and agnus_spritedma.v were opened (this is the
-    // first RTL read for this section); nothing above this point was
-    // touched.
+    // EXTENSION -- three new assertions for the twelve ids the header's own
+    // EXTENSION section plans.
     // ============================================================================
 
     // ---------------- SPREN-GATES-EVERY-SPRITE-CHANNEL (p.114) ----------------
@@ -1493,7 +1478,7 @@ int main(int argc, char** argv) {
 // ============================================================================
 
 // ============================================================================
-// MUTATION LOG (EXTENSION, 25.09.2026). Both entries below were actually
+// MUTATION LOG (EXTENSION). Both entries below were actually
 // applied - edited into this file, rebuilt under WSL/Verilator (`make -B
 // test`), run, the PASS/FAIL line read from real output (quoted verbatim
 // below), then reverted and rebuilt clean before the next entry. Baseline
