@@ -1168,10 +1168,12 @@ int main(int argc, char** argv) {
         // preloaded to a DIFFERENT value, 0xFF00, as the "wrong-order"
         // reference: if fill operated on raw C instead of the combined
         // (=A) result, the fill computation below would use 0xFF00, not
-        // 0x00FF. Exclusive fill, fci=0 (this single word is a row's first
-        // word, so fci tracks BLTCON1 bit 2 directly - see
-        // agnus_blitter.v:464, `fci = first_word_del ? bltcon1[2] : fcy` -
-        // and the write below leaves that bit clear).
+        // 0x00FF. Exclusive fill, BLTCON1 bit 2 (fci) written clear. This
+        // is a one-word blit, so fci's own word-position multiplexer
+        // (agnus_blitter.v:464, `fci = first_word_del ? bltcon1[2] : fcy`)
+        // is not exercised here - FILL-CARRY-IN-GATED-BY-WORD-POSITION
+        // below measures that; here fci=0 is only the fixed starting
+        // value the carry computation below needs.
         // carry[j] = XOR-prefix of in's bits starting at fci=0:
         //   in=0x00FF (bits0-7 set) -> carry = 0x0055
         //   in=0xFF00 (bits8-15 set, the wrong-order reference) -> 0x5500
@@ -1208,15 +1210,16 @@ int main(int argc, char** argv) {
     // ---------------- FILL-BEFORE-ZERO-FLAG (p.200) ----------------
     {
         // LF=0 (minterm output is always 0, for every word, regardless of
-        // any input). A two-word (one-row) blit: word 0 is the row's
-        // first word, so its fci tracks BLTCON1 bit 2 directly
-        // (agnus_blitter.v:464, `fci = first_word_del ? bltcon1[2] : fcy`
-        // - FILL-CARRY-IN-GATED-BY-WORD-POSITION below measures this).
+        // any input). A two-word (one-row) blit, BLTCON1 bit 2 (fci)
+        // written to 1. fci's word-position multiplexer (agnus_blitter.v:
+        // 464, `fci = first_word_del ? bltcon1[2] : fcy`) is not what this
+        // assertion measures - FILL-CARRY-IN-GATED-BY-WORD-POSITION below
+        // does; here the run only needs the zero flag to end up clear.
         // efe=1, fci-bit=1: exclusive fill of an all-zero word with fci=1
-        // gives carry=0xFFFF (nonzero) starting at word 0 and carried
-        // forward through word 1, clearing zero - even though the MINTERM
-        // output was zero throughout. Control: same LF=0, but no fill
-        // (bypass) - fill_out=minterm_out=0 always, zero must stay set.
+        // gives carry=0xFFFF (nonzero), which clears the zero flag by the
+        // end of the run - even though the MINTERM output was zero
+        // throughout. Control: same LF=0, but no fill (bypass) -
+        // fill_out=minterm_out=0 always, zero must stay set.
         bool clears;
         {
             // BLTCON1 carries efe=1 (bit4) and fci-bit=1 (bit2).
