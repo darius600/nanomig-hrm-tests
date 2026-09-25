@@ -12,10 +12,17 @@
 // that the sync word WORDSYNC waits for is the content of the register at
 // that address (paula_floppy.v's DSKSYNC, parameter 9'h07e, ($07E>>1)=$3F
 // matching the page's own "(3F)*2") and not a value fixed elsewhere. A7
-// below is that one further trial: DSKSYNC loaded with a non-default value
-// before the read, WORDSYNC still set. Both ids are cited on A7 too, since
+// below is that one further trial. Both ids are cited on A7 too, since
 // between A6 and A7 the sentence is now fully established through expect()
 // -- neither carries the other's clause as an unmeasured caveat.
+//
+// REPAIR: A7 previously loaded DSKSYNC with 0xAAAA, which is also the word
+// A6's own clear-WORDSYNC trial delivers with no synchronisation at all --
+// a probe with A7's DSKSYNC write removed left A7 green, so it could not
+// tell "matched the register" from "never synchronised". Corrected in
+// place, same ids, same label, same page -- see A7's own block below for
+// the fixed mechanism (two calibrated, mutually distinct header words used
+// as DSKSYNC targets instead of the aliasing 0xAAAA).
 //
 // Boundary correction (disclosed by the build brief, independently
 // confirmed here by reading paula.v myself): ADKCON/ADKCONR decode inside
@@ -89,8 +96,10 @@
 // Makefile for the corrected, paula_floppy_fifo-including list.
 //
 // Fixture: a fresh Vpaula per trial (paula_floppy's dsktrack has no reset
-// term -- disclosed rig hazard, not touched by any assertion here, but the
-// same fresh-model discipline is followed throughout regardless).
+// term -- disclosed rig hazard. A1-A6 never touch it. A7's repair (below)
+// does, through `track`'s fold into the sector header words it calibrates
+// against, and says so at the point it relies on it; the same fresh-model
+// discipline is followed throughout regardless).
 //
 // Not turned into assertions: none. All fifteen claims map onto A1-A7
 // (see SPECIFICATION.md "Every claim accounted for" and "Extension: two
@@ -503,16 +512,58 @@ int main(int argc, char** argv) {
     // A7 -- the same p.265 sentence's other half, which A6 alone does not
     // establish: that the word WORDSYNC waits for is the CONTENT of the
     // register at "address (3F)*2" (DSKSYNC, paula_floppy.v parameter
-    // 9'h07e), not a value fixed elsewhere in the design. A6's own trial
-    // never writes DSKSYNC, so it cannot tell a register-driven match from
-    // a hardcoded one -- floppy_data synthesises 0x4489 at the sync-word
-    // position regardless of DSKSYNC's content, which is exactly why a
-    // second, independent value is needed: load DSKSYNC with 0xAAAA (the
-    // fixed value the model's own preamble/gap position already carries at
-    // word-count 0, per paula_floppy.v) before the read, WORDSYNC still
-    // set. If the match follows the register, trackrdok now latches at
-    // word-count 0 and the first DSKDATR word is 0xAAAA -- the loaded
-    // value -- rather than A6's 0x4489.
+    // 9'h07e), not a value fixed elsewhere in the design.
+    //
+    // REPAIR: the previous A7 loaded DSKSYNC with 0xAAAA -- the SAME word
+    // A6's own clear-WORDSYNC trial already delivers first with no
+    // synchronisation at all (the raw, unfiltered gap/preamble filler,
+    // paula_floppy.v:500 `floppy_data = ... : 16'haaaa`). A7 therefore
+    // could not tell "matched the loaded register" from "never
+    // synchronised, delivered the first word anyway": a probe with A7's
+    // DSKSYNC write removed left A7 green (7 passed, 0 failed) -- a
+    // control that could not tell its two cases apart, corrected here
+    // directly, same ids, same label, same page.
+    //
+    // Fix: use a DSKSYNC value that cannot alias the two fixed constants
+    // (0xAAAA gap, 0x4489 sync mark). The sector header words (fifo_word_
+    // counter 4-7, paula_floppy.v:438 `sector_header_word = {8'hff, track,
+    // sector, 8'd11-sector}`, MFM-encoded through mfm_encoder_odd/even at
+    // :442-462) are non-default and, unlike the data region (fed-byte
+    // dependent but gated behind `fd_dma_buf_out`, which paula_floppy.v:216-
+    // 223 shows is refreshed only on an actual `fifo_wr` push -- so it
+    // stays at its cold-start value throughout the WORDSYNC=1 scan, before
+    // any push has happened, making fed-byte content unreachable as a sync
+    // target), are computed combinationally from `track`/`sector` alone and
+    // so are already present, correctly, during the scan.
+    //
+    // A second RTL fact this repair measured rather than assumed: sync_
+    // match (paula_floppy.v:914-915) and trackrdok's latch (:920-926) are
+    // one cycle apart -- trackrdok used by `fifo_wr` (:771) is the value
+    // from BEFORE the matching cycle, so the word that CAUSES the match is
+    // itself dropped, and the word immediately after it is what is
+    // actually delivered first (verified by a probe: loading DSKSYNC with
+    // the measured word-4 value delivered word 5's value, not word 4's).
+    // This is invisible in A6, only because words 2 and 3 both carry the
+    // same fixed 0x4489, so the off-by-one delivers the same value either
+    // way.
+    //
+    // So this trial is CALIBRATED, not hand-computed: a fresh rig with
+    // WORDSYNC clear (an entirely different code path -- trackrdok forced
+    // to 1 unconditionally, paula_floppy.v:924-925 -- unaffected by
+    // dsksync or sync_match) reads off what THIS pinned build actually
+    // synthesises at two header positions, four and six words in, and the
+    // graded trials below load DSKSYNC with each and check the delivered
+    // word is the calibrated NEXT word, for two independent, mutually
+    // distinct targets -- closing both the "hardcoded 0x4489" and the
+    // "any non-default value happens to pass" alternatives. (Measured this
+    // build: word4=0x5500, word5=0x0005, word6=0x5501, word7=0x0001 -- the
+    // four values used here are what `track`/`sector` this exact fixture
+    // presents, not a hand-picked constant; `track` folds in `dsktrack`,
+    // which this file's own fixture note above discloses has no RTL reset
+    // term, so this is the one assertion in this package that leans on
+    // Verilator's deterministic cold-start zero for it -- no assertion here
+    // ever drives `_step`, so it is never written away from that start
+    // value either.)
     // sol:5-appA-p265.c19 and opus:A-adkcon.b10, p.265 (see A6 above for
     // the full quotation).
     // ========================================================================
@@ -520,31 +571,65 @@ int main(int argc, char** argv) {
         uint8_t sector[512];
         std::memset(sector, 0, sizeof sector);  // content irrelevant -- see header
 
-        Rig rig2;
-        rig2.do_reset();
-        rig2.write_reg(ADDR_ADKCON, SETCLR | ADK_BIT10_WORDSYNC);
-        // MUTATE=A7: leave DSKSYNC at its reset default (0x4489) instead of
-        // loading a non-default value, collapsing the intended contrast
-        // with A6's own trial.
-        if (!mutating("A7")) {
-            rig2.write_reg(ADDR_DSKSYNC, 0xAAAA);
+        // Calibration: WORDSYNC clear, unfiltered -- read off the header
+        // words this exact build synthesises. No claim id; not graded.
+        Rig cal;
+        cal.do_reset();
+        cal.arm_disk_read_dma(8);
+        cal.feed_sector_read(sector);
+        uint16_t cal_word[8];
+        for (int i = 0; i < 8; i++) {
+            cal.wait_until([&]() { return cal.dut->disk_dmal != 0; }, 200);
+            cal_word[i] = cal.dskdatr_pop();
         }
-        rig2.arm_disk_read_dma(8);
-        rig2.feed_sector_read(sector);
-        rig2.wait_until([&]() { return rig2.dut->disk_dmal != 0; }, 200);
-        uint16_t word0_dsksync_loaded = rig2.dskdatr_pop();
+        uint16_t cal_word4 = cal_word[4], cal_word5 = cal_word[5];
+        uint16_t cal_word6 = cal_word[6], cal_word7 = cal_word[7];
+        checks.note("A7-CALIBRATION (WORDSYNC clear, unfiltered): word4=0x" + hex4(cal_word4) +
+                    " word5=0x" + hex4(cal_word5) + " word6=0x" + hex4(cal_word6) +
+                    " word7=0x" + hex4(cal_word7));
 
-        checks.note("A7-STIMULUS: WORDSYNC set, DSKSYNC loaded 0xAAAA before the read -> first DSKDATR word=0x" +
-                    hex4(word0_dsksync_loaded));
+        // Trial X: DSKSYNC loaded with the calibrated word4 -- expect the
+        // calibrated word5 delivered first (the word after the match).
+        // MUTATE=A7: leave DSKSYNC at its reset default (0x4489) instead,
+        // collapsing this trial back to A6's own fixed-default case.
+        Rig rigX;
+        rigX.do_reset();
+        rigX.write_reg(ADDR_ADKCON, SETCLR | ADK_BIT10_WORDSYNC);
+        if (!mutating("A7")) {
+            rigX.write_reg(ADDR_DSKSYNC, cal_word4);
+        }
+        rigX.arm_disk_read_dma(8);
+        rigX.feed_sector_read(sector);
+        rigX.wait_until([&]() { return rigX.dut->disk_dmal != 0; }, 200);
+        uint16_t word0_X = rigX.dskdatr_pop();
 
-        checks.expect(word0_dsksync_loaded == 0xAAAA,
+        // Trial Y: a second, independent, mutually distinct target
+        // (calibrated word6 -> expect calibrated word7), never mutated --
+        // shows the match tracks WHICHEVER value is loaded, not a second
+        // hidden constant.
+        Rig rigY;
+        rigY.do_reset();
+        rigY.write_reg(ADDR_ADKCON, SETCLR | ADK_BIT10_WORDSYNC);
+        rigY.write_reg(ADDR_DSKSYNC, cal_word6);
+        rigY.arm_disk_read_dma(8);
+        rigY.feed_sector_read(sector);
+        rigY.wait_until([&]() { return rigY.dut->disk_dmal != 0; }, 200);
+        uint16_t word0_Y = rigY.dskdatr_pop();
+
+        checks.note("A7-STIMULUS: DSKSYNC<=word4(0x" + hex4(cal_word4) + ") WORDSYNC=1 -> first=0x" + hex4(word0_X) +
+                    "; DSKSYNC<=word6(0x" + hex4(cal_word6) + ") WORDSYNC=1 -> first=0x" + hex4(word0_Y));
+
+        checks.expect(word0_X == cal_word5 && word0_Y == cal_word7 && cal_word5 != cal_word7,
             "A7-WORDSYNC-DSKSYNC-REGISTER (sol:5-appA-p265.c19 opus:A-adkcon.b10 p.265, quote '            10   "
             "  WORDSYNC       Enables disk read synchronizing on a word\\nequal to DISK SYNC CODE, located in "
-            "address (3F)*2.'): with WORDSYNC set and DSKSYNC ($07E, reg_address_in $3F -- the page's '(3F)*2') "
-            "loaded with a non-default value (0xAAAA) before the read, the first word delivered follows the "
-            "loaded register rather than A6's default: 0x" + hex4(word0_dsksync_loaded) +
-            " (expected 0xAAAA, not the reset default 0x4489) -- WORDSYNC synchronizes on the word held in the "
-            "register located at address (3F)*2, not a value fixed elsewhere in the design");
+            "address (3F)*2.'): with WORDSYNC set, loading DSKSYNC ($07E, reg_address_in $3F -- the page's "
+            "'(3F)*2') with two different, mutually distinct, non-default words each held by this exact track's "
+            "header content makes delivery track that SAME loaded value -- DSKSYNC=0x" + hex4(cal_word4) +
+            " delivers 0x" + hex4(word0_X) + " (expected the calibrated next word 0x" + hex4(cal_word5) +
+            "), DSKSYNC=0x" + hex4(cal_word6) + " delivers 0x" + hex4(word0_Y) + " (expected 0x" + hex4(cal_word7) +
+            ") -- two distinct results for two distinct loaded values, neither the raw preamble (0xAAAA) nor the "
+            "fixed sync mark (0x4489) -- WORDSYNC synchronizes on the word held in the register located at "
+            "address (3F)*2, not a value fixed elsewhere in the design");
     }
 
     // ========================================================================
@@ -597,6 +682,9 @@ int main(int argc, char** argv) {
 // sync mark first, while the check still expects the WORDSYNC-clear trial
 // to deliver the raw preamble word (0xAAAA) (MUTATE=A6).
 // MUTATION A7-WORDSYNC-DSKSYNC-REGISTER stimulus red: DSKSYNC was left at
-// its reset default instead of being loaded with a non-default value,
-// while the check still expects the loaded value (0xAAAA) to be the first
-// word delivered (MUTATE=A7).
+// its reset default (0x4489) for trial X instead of being loaded with the
+// calibrated word4 value, while the check still expects the calibrated
+// word5 value as trial X's first delivered word (MUTATE=A7). The previous
+// mutation (leaving DSKSYNC at default while expecting the loaded value to
+// equal 0xAAAA) could not have distinguished the two cases either, for the
+// same reason the baseline couldn't -- see A7's block above.
