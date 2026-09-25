@@ -21,6 +21,12 @@
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
 //   the frozen specification the suite's first version was written against
 //   (docs/legacy-names.md); no claim file carries them.
+// Specification additions: one claim id new to this file, from the
+//   inventory's quotation and restatement alone.
+//   ch2-appa-copins.c108 (p.274, Appendix A COPINS table, BIT# 00 row):
+//   "                 00       0    RD00      1      0       1      1"
+//   Restated: in the SKIP instruction's first instruction word (IR1),
+//   bit 0 is always 1.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. All eight
 // assertions were mutated at the STIMULUS on 05.09.2026 - the scenario changed,
