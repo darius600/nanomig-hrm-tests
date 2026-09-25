@@ -493,6 +493,10 @@ int main(int argc, char** argv) {
     // passed all of them. The strobe is address-triggered; the data word is
     // irrelevant, and that is what "any MOVE" asserts.
     // Covers the "any" in: COP2-jump.c3
+    // ch2-appb-legend.c4 is a later reading of the same p.287 sentence
+    // already quoted in this assertion's label (twin of opus:7-appB.c10 /
+    // sol:8-appb-legend.c19); routed here rather than re-asserted, since
+    // this scenario already establishes it in full.
     // ------------------------------------------------------------------
     {
         CopperHarness h;
@@ -520,7 +524,7 @@ int main(int argc, char** argv) {
             "zero data word causes, because no register bits are ever "
             "read from the write at all "
             "[claims: COP2-copjmp-strobes.c2, COP2-jump-strobe-address.c3, opus:7-appB.c10, "
-            "sol:8-appb-legend.c19]");
+            "sol:8-appb-legend.c19, ch2-appb-legend.c4]");
     }
 
     // ------------------------------------------------------------------
