@@ -106,6 +106,7 @@
 // MUTATION T13 stimulus red: swapped the sweep's target register from BLTCON0 to COLOR00 (an always-writable register) in all five probes -> FAIL as expected (COLOR00 opens regardless of COPCON, breaking the "blocked" expectations).
 // MUTATION T14 stimulus red: changed the third probe's target register from COPCON to COPCON_NEIGHBOR_LOW (same value 0x0002, same BLTCON0 target) -> FAIL as expected (the "positive" case no longer touches the real COPCON address).
 // MUTATION T15 stimulus red: changed install_wait_then_move's v_target from 5 to 200, unreachable within the run window -> FAIL as expected (the WAIT never completes, so the MOVE never fires).
+// MUTATION T16 stimulus green: flipped cdang argument false->true on both move_reaches() calls (still ecs=1) -> PASS as expected (ECS+CDANG=1 opens $000-$1FE, per T10); confirms the harness registers writes at $03E and $07E when the RTL genuinely allows them, so T16's baseline FAIL is a real gap, not a broken fixture.
 
 #include <cstdint>
 #include <functional>
@@ -138,6 +139,9 @@ constexpr uint16_t BPL1PTH = to_reg(0x0E0);   // always writable
 constexpr uint16_t DMACON  = to_reg(0x096);   // always writable, just above $80
 constexpr uint16_t BLTCON0 = to_reg(0x040);   // CDANG-protected, low boundary
 constexpr uint16_t BLTSIZE = to_reg(0x07E);   // CDANG-protected, high boundary
+constexpr uint16_t RANGE_FLOOR_03E = to_reg(0x03E);  // Appendix C p.310's own printed
+                                                      // ECS/CDANG=0 range floor, one word
+                                                      // below BLTCON0
 constexpr uint16_t DDFSTRT = to_reg(0x092);   // always writable, unrelated to CDANG
 constexpr uint16_t COPCON_NEIGHBOR_LOW = to_reg(0x02C);   // one word below COPCON
 constexpr uint16_t COPCON_NEIGHBOR_HIGH = to_reg(0x030);  // one word above COPCON
@@ -428,7 +432,7 @@ int main(int argc, char** argv) {
     // appendix C. COPCON is one of them ($02E, chip column A(E)). Neither that
     // legend nor the chapter body on p.26 mentions ECS at all, so neither can
     // govern the ECS case. Oracle unchanged.
-    checks.expect(move_reaches(true, false, BLTCON0), "T9 ECS CDANG=0: MOVE to BLTCON0 ($040) is written (Appendix C p.310) [NM-HRM-004, expected red], ch2-appc-ecs.c21");
+    checks.expect(move_reaches(true, false, BLTCON0), "T9 ECS CDANG=0: MOVE to BLTCON0 ($040) is written (Appendix C p.310) [NM-HRM-004, expected red]");
     checks.expect(move_reaches(true, true, COPCON),
                   "T10 ECS CDANG=1: MOVE to COPCON ($02E) is written (Appendix C p.310) "
                   "[claims: COP2-copcon-ecs.c11, ch2-appa-copcon.c3.s2, ch2-appb-legend.c9, ch2-appb-table.c5.s2, ch2-appc-ecs.c12]");
@@ -515,6 +519,17 @@ int main(int argc, char** argv) {
                       "[claims: 3-scroll-copper.c2]");
     }
 
+    // T16 - Appendix C p.310, ch2-appc-ecs.c21: "If this bit is clear, the
+    // Copper can access the address range from $DFF03E through $DFF07E" -
+    // the claim is the whole range, not the single $040 constant T9 above
+    // probes. This probes both of the range's own printed ends directly.
+    // T16 is expected RED for the same reason as T9 (NM-HRM-004): the RTL's
+    // ECS/CDANG=0 gate opens only at $080 and above, so neither end of the
+    // claimed range is reached.
+    checks.expect(move_reaches(true, false, RANGE_FLOOR_03E) && move_reaches(true, false, BLTSIZE),
+                  "T16 ECS CDANG=0: MOVE reaches both range ends, $03E and $07E (Appendix C "
+                  "p.310) [NM-HRM-004, expected red], ch2-appc-ecs.c21");
+
     // Claims routed record:ch2-copper-move-range 2026-09-25: all eight
     // restate one side or the other of the page-21-versus-page-26 protected-
     // range conflict, which classify.conflict_resolution leaves unresolved
@@ -542,9 +557,9 @@ int main(int argc, char** argv) {
         "vs. p.21: NOT RESOLVED HERE per classification. Recorded beside T3-T6 with the "
         "same measured OCS gate as ch2-control-register.c5.");
     checks.record("ch2-control-register.c10 (p.26, CDANG=0 blocks $40-$7E): conflict with "
-        "p.21 on the band itself and with the Appendix C record ch2-appc-ecs.c21 (ECS, "
-        "CDANG clear opens $03E-$07E per that reading), not resolved. Recorded beside "
-        "T3/T4 (OCS, blocked) and T9 (ECS vs. Appendix C, NM-HRM-004).");
+        "p.21 on the band itself, not resolved. Recorded beside T3/T4 (OCS, blocked) and "
+        "T9 (ECS vs. Appendix C, NM-HRM-004); the Appendix C reading itself (graded: "
+        "ch2-appc-ecs.c21) is T16 above.");
     checks.record("ch2-control-register.c11 (p.26, CDANG=1 opens $40-$7E): names the "
         "disputed $40-$7E band, NOT RESOLVED HERE per classification. Recorded beside "
         "T5/T6, which measure the OCS CDANG=1 write to this same band.");
