@@ -220,13 +220,18 @@
 //     6-line-mode.c3, ch6-line.c3, ch6-line.c6.
 //   LINE-SIGNFLAG-SETS-INITIAL-SIGN (p.191/192): 6-line-mode.c44,
 //     ch6-linesum.c22.
-//   LINE-SIGN-SELECTS-MODULO-BANK (p.191/192/270/268 -- bank-selection half
-//     only, and BLTAPTL's own identity as the accumulator; see NOT ASSERTED
-//     for the register-summary "4*(dy-dx)"/"4*dy" phrasing this does not
-//     cover, and LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE below for the
-//     appendix's own formula and the slope claim):
-//     6-appa-registers.c96, 6-appa-registers.c97, 6-appa-registers.c115,
-//     ch6-appa-bltxmod.c9, ch6-appa-bltxpt.c8b .
+//   LINE-SIGN-SELECTS-MODULO-BANK (p.191/192/270 -- bank-selection half
+//     only; see NOT ASSERTED for the register-summary "4*(dy-dx)"/"4*dy"
+//     phrasing this does not cover, LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-
+//     SLOPE below for the appendix's own formula and the slope claim, and
+//     LINE-ACCUMULATOR-IS-BLTAPTL below for BLTAPTL's own identity as the
+//     accumulator, which this assertion never writes and so never checks):
+//     6-appa-registers.c96, 6-appa-registers.c97, ch6-appa-bltxmod.c9.
+//   LINE-ACCUMULATOR-IS-BLTAPTL (p.270 -- BLTAPTL's own identity as the
+//     traced accumulator: this assertion preloads BLTAPTL with a value
+//     distinct from its post-reset default, confirms the traced value
+//     starts there, and confirms it then moves by the BLTAMOD step):
+//     6-appa-registers.c115, ch6-appa-bltxpt.c8b.
 //   LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270 -- added 25.09.2026,
 //     extending this accepted package): 6-appa-registers.c98,
 //     6-appa-registers.c99, ch6-appa-bltxmod.c10, ch6-appa-bltxmod.c11,
@@ -330,6 +335,14 @@
 //     measuring the resulting accumulator trajectory on address_out --
 //     dx/dy are the fixture's own stimulus parameters there, not RTL ports,
 //     exactly as the objection above says they cannot be]
+//   6-area-fill.c3 (p.184, "the area to fill must be defined first by
+//     drawing untextured lines with only one bit set per horizontal row")
+//     -- a requirement on FILL's own input, not a line-mode hardware
+//     behaviour: LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES measures the
+//     line-mode tool that PRODUCES a one-bit-per-row outline, and nothing
+//     in that assertion would change if fill tolerated two bits set in one
+//     row. absent_signal: none (the gap is fill's own module boundary, not
+//     a signal this module lacks); reason_kind: outside-uut.
 //
 // Every mutation below was actually applied (edit -> rebuild -> run ->
 // revert -> rebuild-clean, confirmed byte-identical to the baseline by
@@ -427,6 +440,12 @@
 //   BLTBMOD being derived from the SAME dy, not merely to BMOD being
 //   positive. Reverted, rebuilt clean, confirmed byte-identical to the
 //   pre-mutation file by `git diff --stat` and back to 18/0.
+//
+// MUTATION LINE-ACCUMULATOR-IS-BLTAPTL stimulus red: the preloaded amod
+//   argument changed from 0x0040 to 0x0080 (expected constants r.start==
+//   0x2000 and r.delta==32 left untouched) -> FAIL, only this assertion;
+//   18/1 others PASS. Reverted, rebuilt clean, confirmed byte-identical to
+//   the pre-mutation file by `git diff --stat` and back to 19/0.
 
 #include <cstdint>
 #include <cstdlib>
@@ -783,6 +802,38 @@ int32_t measure_accumulator_net_after(uint8_t initial_sign, uint16_t amod, uint1
     const uint32_t acc_before_pixel0 = h.address_trace[h.we_ticks[0] - 3];
     const uint32_t acc_after_n_steps = h.address_trace[h.we_ticks[static_cast<size_t>(n)] - 3];
     return static_cast<int32_t>(acc_after_n_steps) - static_cast<int32_t>(acc_before_pixel0);
+}
+
+// Unlike measure_accumulator_delta above, which starts BLTAPTL at its
+// post-reset default and never writes it (so it only ever reports a
+// DELTA), this variant explicitly preloads BLTAPTL with a caller-chosen
+// value and reports the trace's own STARTING value alongside the delta --
+// the only way to confirm the traced value genuinely is BLTAPTL, not
+// merely a same-shaped signal identified by reading the RTL's port list.
+// Same tick arithmetic as measure_accumulator_delta (three ticks before
+// each pixel's own D-channel write reads the accumulator before that
+// pixel's own L1 step).
+struct AccumulatorStartAndDelta { int32_t start; int32_t delta; };
+AccumulatorStartAndDelta measure_accumulator_start_and_delta(uint8_t initial_sign, uint16_t bltaptl,
+                                                              uint16_t amod, uint16_t bmod) {
+    Harness h;
+    h.write_reg(BLTADAT, 0x0000);
+    h.write_reg(BLTBDAT, 0x0000);
+    h.write_reg(BLTAFWM, 0xFFFF);
+    h.write_reg(BLTALWM, 0xFFFF);
+    h.write_reg(BLTAPTL, bltaptl);
+    h.write_reg(BLTAMOD, amod);
+    h.write_reg(BLTBMOD, bmod);
+    h.write_reg(BLTCPTL, 0x0400);
+    h.write_reg(BLTDPTL, 0x0400);
+    h.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+    h.write_reg(BLTCON1, static_cast<uint16_t>((static_cast<uint16_t>(initial_sign) << 6) | LINE_BIT));  // octant 6
+    h.write_reg(BLTSIZE, bltsize_word(2, 3));
+    h.run_until_writes(2, 200);
+    if (h.we_ticks.size() < 2 || h.we_ticks[0] < 3 || h.we_ticks[1] < 3) return {INT32_MIN, INT32_MIN};
+    const int32_t acc_before_pixel1 = static_cast<int32_t>(h.address_trace[h.we_ticks[0] - 3]);
+    const int32_t acc_before_pixel2 = static_cast<int32_t>(h.address_trace[h.we_ticks[1] - 3]);
+    return {acc_before_pixel1, acc_before_pixel2 - acc_before_pixel1};
 }
 
 }  // namespace
@@ -1279,13 +1330,15 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES (p.189,191,192) ----------------
-    // 25.09.2026: 6-line-mode.c98 ("the line-mode register summary sets
-    // ONEDOT for one pixel per row"), 6-line-mode.c99 ("...clears ONEDOT
-    // otherwise"), p.192, and 6-area-fill.c3 ("an area-fill outline must
-    // have only one set bit per horizontal row", p.184 -- the same
-    // one-write-per-row mechanism this assertion measures, since an
-    // area-fill outline is a line drawn with ONEDOT=1) added to the label
-    // below, bare.
+    // 6-line-mode.c98 ("the line-mode register summary sets ONEDOT for one
+    // pixel per row") and 6-line-mode.c99 ("...clears ONEDOT otherwise"),
+    // p.192, sit on the label below. 6-area-fill.c3 ("an area-fill outline
+    // must have only one set bit per horizontal row", p.184) is a
+    // requirement on FILL's own input, not on what ONEDOT itself does --
+    // this assertion measures the line-mode tool that PRODUCES a
+    // one-bit-per-row outline, and nothing in it would change if fill
+    // tolerated two bits set in one row, so that id is withdrawn to
+    // RECORDED below, not carried here.
     {
         // Octant 7 (SUD=1,SUL=0,AUL=0): X-major, unconditional INC. Self-
         // sustaining sign_del=1 for EVERY pixel, not only the first:
@@ -1346,7 +1399,7 @@ int main(int argc, char** argv) {
             "reverses the pointer's step direction (PKG-BLT-MASKS's DESC-* "
             "assertions), but here it silently drops writes instead -- a completely "
             "different effect, not a variant of descending mode "
-            "6-area-fill.c3 6-line-mode.c98 6-line-mode.c99");
+            "6-line-mode.c98 6-line-mode.c99");
     }
 
     // ---------------- LINE-SIGNFLAG-SETS-INITIAL-SIGN (p.191, p.192) ----------------
@@ -1370,13 +1423,12 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-SIGN-SELECTS-MODULO-BANK (p.191, p.192, p.270) ----------------
-    // 25.09.2026: 6-appa-registers.c115 ("line mode uses BLTAPTL as the
-    // error accumulator") and ch6-appa-bltxpt.c8b ("in line draw BLTAPTL
-    // is used as an accumulator register"), p.270, added to the label
-    // below, bare -- the header already listed these ids for this
-    // assertion but the graded label did not name them. The accumulator
-    // measure_accumulator_delta moves here IS BLTAPTL, read via the CHA
-    // pointer bank at BLT_L1.
+    // Only the bank-selection half: which modulo register (BLTAMOD vs
+    // BLTBMOD) the accumulator update draws from, gated by sign. This
+    // assertion never writes BLTAPTL and never compares the traced value
+    // against a value written there -- BLTAPTL's own identity as the
+    // traced accumulator is established separately, in
+    // LINE-ACCUMULATOR-IS-BLTAPTL below.
     {
         const int32_t delta_a = measure_accumulator_delta(/*initial_sign=*/0, /*amod=*/0x0040, /*bmod=*/0x0000);
         const int32_t delta_b = measure_accumulator_delta(/*initial_sign=*/1, /*amod=*/0x0000, /*bmod=*/0x0040);
@@ -1398,7 +1450,40 @@ int main(int argc, char** argv) {
             "p.270) -- the literal dy/dx arithmetic is the programmer's, not this "
             "design's (no dy/dx port exists), so only the bank-selection half is "
             "asserted here; see the file header's NOT ASSERTED section for the "
-            "formula half "
+            "formula half");
+    }
+
+    // ---------------- LINE-ACCUMULATOR-IS-BLTAPTL (p.270) ----------------
+    // Unlike LINE-SIGN-SELECTS-MODULO-BANK above, which never writes
+    // BLTAPTL, this assertion preloads it with a value distinct from its
+    // post-reset default and reads the SAME traced signal that assertion
+    // reads (measure_accumulator_start_and_delta, a variant of
+    // measure_accumulator_delta above that also reports the trace's own
+    // starting value) -- confirming the trace both STARTS at the preloaded
+    // BLTAPTL value and then MOVES by the modulo step, rather than being a
+    // same-shaped signal identified only by reading agnus_blitter.v:795-811
+    // (BLT_L1's ptrsel is unconditionally CHA).
+    {
+        const auto r = measure_accumulator_start_and_delta(/*initial_sign=*/0, /*bltaptl=*/0x4000,
+                                                             /*amod=*/0x0040, /*bmod=*/0x0000);
+        checks.expect(r.start == 0x2000 && r.delta == 32,
+            "LINE-ACCUMULATOR-IS-BLTAPTL: preloading BLTAPTL with 0x4000 (distinct "
+            "from its post-reset default of 0), the SAME traced value LINE-SIGN-"
+            "SELECTS-MODULO-BANK reads STARTS at 0x2000 (0x4000's own word-address "
+            "form) before pixel 0's own step, then moves by exactly +32 -- the same "
+            "BLTAMOD (0x0040) step that assertion measures as a bare delta -- "
+            "confirming the traced value genuinely is BLTAPTL, both preloaded "
+            "('BLTAPTL ... must be preloaded with the starting value of (2Y-X)', "
+            "p.270) and then moved by the modulo step it selects, not merely a "
+            "same-shaped signal read off the RTL's own port list ('line mode uses "
+            "BLTAPTL as the error accumulator', 6-appa-registers.c115, p.270; 'in "
+            "line draw BLTAPTL is used as an accumulator register', "
+            "ch6-appa-bltxpt.c8b, p.270). This also establishes, for "
+            "LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE below, that the "
+            "accumulator genuinely moves after pixel 0 by the BLTAMOD step "
+            "through the SAME BLT_L1 mechanism (agnus_blitter.v:795-811,929-935) "
+            "that assertion's own net==0 measurement depends on -- ruling out a "
+            "trace that never moves printing the same net==0 there "
             "6-appa-registers.c115 ch6-appa-bltxpt.c8b");
     }
 
@@ -1425,6 +1510,12 @@ int main(int argc, char** argv) {
     // the classification is BLTAPTL's INITIAL VALUE formula, not touched
     // here) with dx=8, dy=3: hand-simulated fire pixels are 0, 3, 6 (3
     // fires, matching dy), net change 0.
+    //
+    // net==0 alone is also what a trace that never moves would print.
+    // LINE-ACCUMULATOR-IS-BLTAPTL above supplies the missing precondition:
+    // it shows, through the SAME BLT_L1 mechanism this assertion depends
+    // on, that the traced accumulator genuinely moves after pixel 0 by the
+    // BLTAMOD step -- so this net==0 result is not vacuous.
     {
         constexpr int dx = 8;
         constexpr int dy = 3;
@@ -1765,6 +1856,15 @@ int main(int argc, char** argv) {
         "what a value normally or typically is, and BLTCMOD/BLTDMOD are "
         "opaque 16-bit registers to this RTL, which never computes or "
         "checks this relationship.");
+    checks.record(
+        "6-area-fill.c3 (p.184, \"the area to fill must be defined first by "
+        "drawing untextured lines with only one bit set per horizontal "
+        "row\"): a requirement on FILL's own input, not on what line "
+        "mode's ONEDOT bit itself does. LINE-ONEDOT-SUPPRESSES-REPEAT-"
+        "WRITES above measures the line-mode tool that PRODUCES a "
+        "one-bit-per-row outline; nothing in that assertion would change "
+        "if fill tolerated two bits set in one row -- that is fill's own "
+        "module boundary, not this one's.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
