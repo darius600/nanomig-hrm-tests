@@ -639,13 +639,18 @@ int main(int argc, char** argv) {
         // fourth - see the file header's "Fourth" trap: the D-channel store
         // trails the source fetch by one word, so done fires while fetching
         // the last (4th) word, which is the same cycle the 3rd word is stored.
+        //
+        // 6-blitter-done-flag.c4/ch6-done.c4 ("done flag, also called the
+        // busy flag") are cited on BUSY-MIDBLIT and BUSY-FLAG-ON-COMPLETION
+        // below because the only status flag at this module boundary is this
+        // busy port - "done flag" and "busy flag" name the one signal these
+        // two assertions measure (set while in progress, cleared on
+        // completion).
         h.run_until_writes(2, 60);
         checks.expect(h.busy(),
             "BUSY-MIDBLIT: busy still reads 1 after two of four destination words "
             "have been stored - the blitter is 'set while a blit is in progress' "
-            "(6-blitter-done-flag.c6, ch6-done.c7, p.186), and this is the one status "
-            "port the manual names as both the blitter done flag and the blitter busy "
-            "flag (6-blitter-done-flag.c4, ch6-done.c4, p.186)");
+            "(6-blitter-done-flag.c6, ch6-done.c7, 6-blitter-done-flag.c4, ch6-done.c4, p.186)");
 
         const int done_at = h.run_until_done(60);
         h.settle();
@@ -661,9 +666,8 @@ int main(int argc, char** argv) {
         checks.expect(done_at >= 0 && !h.busy(),
             "BUSY-FLAG-ON-COMPLETION: busy reads 0 after that same completion tick - "
             "'when the transfer is complete, the blitter will signal the processor "
-            "with a flag' (6-dma-channels.c41, ch6-dma.c38, p.171), the same busy/done "
-            "bit described on p.186-187 and named as one signal under two names "
-            "(6-blitter-done-flag.c4, ch6-done.c4). sol:7-interrupts.c52, opus:7-int.c49 .");
+            "with a flag' (6-blitter-done-flag.c4, ch6-done.c4, 6-dma-channels.c41, ch6-dma.c38, p.171), the same busy/done "
+            "bit described on p.186-187. sol:7-interrupts.c52, opus:7-int.c49 .");
     }
 
     // ---------------- zero / BZERO (p.187, p.198) ----------------
