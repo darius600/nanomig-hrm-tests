@@ -46,7 +46,7 @@
 // MUTATION T6 stimulus red the start-of-frame pulse removed, so no automatic field restart occurs
 // MUTATION T7 stimulus red the start-of-frame pulse removed, so the restart that must select COP1LC never happens
 // MUTATION T8 stimulus red the start-of-frame pulse removed, so the updated COP1LC is never taken up
-// MUTATION T9 stimulus red the initialized run's COP1LC low word skipped, so both runs strobe an unwritten location register and the two first-fetch addresses coincide instead of differing
+// MUTATION T9 stimulus red the initialized run's COP1LC low word skipped, so its first fetch lands at $8000 instead of the programmed $9234 and no longer equals init_expected (the uninitialized run's own address is untouched by this mutation and stays a different value throughout)
 // MUTATION T10 stimulus red a COPJMP1 strobe added after the location-only update, so the first fetch does reach the programmed address the assertion says it must not
 // MUTATION T11 stimulus red the recovery COP1LC programmed two words above the installed list, so the post-recovery fetch lands somewhere other than the newly strobed address
 //
@@ -476,13 +476,18 @@ int main(int argc, char** argv) {
     {
         // T9 grades ch2-starting-the-copper-after-reset.c1 by comparing two
         // runs on the same measurement basis: both strobe COPJMP1, and the
-        // only difference is whether COP1LC was written first. Without a
-        // COP1LC write the location register pair stays at its reset-cleared
-        // value (agnus_copper.v L141-152), so the strobe loads address 0;
-        // with COP1LC written, the strobe loads the address written. Only
-        // bit 0 of the high word is set below, which is inside every reading
-        // of the OCS/ECS high-bit width T4 disputes, so this measurement
-        // does not depend on that dispute either way.
+        // only difference is whether COP1LC was written first. Page 30
+        // states only that initializing the location register before the
+        // strobe is what ensures a known/determined start address; it says
+        // nothing about what address an uninitialized strobe reaches, so
+        // this assertion does not pin that value (agnus_copper.v L141-152
+        // clears it to 0 on reset, but that is the RTL's own reset value,
+        // not a page-30 requirement) - it shows only that the uninitialized
+        // run does not land on the address the initialized run was
+        // programmed to reach. Only bit 0 of the high word is set below,
+        // which is inside every reading of the OCS/ECS high-bit width T4
+        // disputes, so this measurement does not depend on that dispute
+        // either way.
         CopperHarness h_uninit;
         h_uninit.strobe(1);
         h_uninit.dma_allowed = true;
@@ -494,43 +499,49 @@ int main(int argc, char** argv) {
         const uint32_t init_address = observe_first_fetch(false, t9_high, t9_low);
         const uint32_t init_expected = ((t9_high & 0x001Fu) << 15) | (t9_low >> 1);
 
-        checks.expect(uninit_seen && uninit_address == 0
-                          && init_address == init_expected
-                          && init_address != uninit_address,
-                      "T9 initializing COP1LC before the COPJMP1 strobe moves the first fetch "
-                      "off the reset-cleared address an uninitialized strobe leaves it at "
-                      "[claims: ch2-starting-the-copper-after-reset.c1]");
+        checks.expect(uninit_seen && init_address == init_expected
+                          && uninit_address != init_expected,
+                      "T9 initializing COP1LC before the COPJMP1 strobe reaches the "
+                      "programmed address; an uninitialized strobe does not reach that "
+                      "address [claims: ch2-starting-the-copper-after-reset.c1]");
     }
 
     {
         // T10 grades ch2-starting-the-copper-after-reset.c2: initializing
         // COP1LC alone, without writing its strobe address (COPJMP1), must
-        // not move the first fetch there. T1 above is this assertion's
-        // strobed control -- the identical list at the identical address A,
-        // the one difference being that T1 does strobe COPJMP1 and reaches
-        // COLOR00 through it.
+        // not move the first fetch to the programmed address. Page 30 says
+        // only that the strobe write is required to reach that address; it
+        // says nothing about what address an unstrobed pointer reaches, so
+        // this assertion does not pin that value. T1 above is this
+        // assertion's strobed control -- the identical list at the
+        // identical address A, the one difference being that T1 does
+        // strobe COPJMP1 and reaches COLOR00 through it.
         CopperHarness h;
         h.install_signature_list(A, COLOR00);
         h.program_location(1, A);
         // No h.strobe(1) call: COPJMP1 is never written.
         h.dma_allowed = true;
         const bool seen = h.run_until([&]() { return !h.fetches.empty(); });
-        checks.expect(seen && h.fetches.front() == 0,
+        checks.expect(seen && h.fetches.front() != A,
                       "T10 initializing COP1LC without strobing COPJMP1 does not move the "
-                      "first fetch to the programmed address - the pointer stays at its "
-                      "reset-cleared value "
+                      "first fetch to the programmed address "
                       "[claims: ch2-starting-the-copper-after-reset.c2]");
     }
 
     {
         // T11 grades ch2-starting-the-copper-after-reset.c4 and its Appendix
         // A restatement ch2-appa-copins.c147, both "ensures a known/
-        // determined state" claims. Starting from a Copper HALTED mid-list
-        // (stuck in the impossible WAIT install_wait_then_forbidden_list also
-        // gives T6, not a fresh reset), writing a new COP1LC and strobing
-        // COPJMP1 must reach exactly the newly strobed address on the very
-        // next fetch - the same determinism T1 shows from a fresh reset,
-        // now shown regardless of the state the Copper was halted in.
+        // determined state" claims whose procedure is initialize-and-strobe
+        // BEFORE Copper DMA is turned on. Starting from a Copper HALTED
+        // mid-list (stuck in the impossible WAIT install_wait_then_forbidden_list
+        // also gives T6, not a fresh reset), grants are withheld while the
+        // new COP1LC is programmed and COPJMP1 is strobed, and only then is
+        // DMA turned back on - matching the claims' own ordering rather than
+        // delivering the strobe to an already-running Copper, which T2's
+        // third line already covers. The first grant afterward must reach
+        // exactly the newly strobed address, the same determinism T1 shows
+        // from a fresh reset, now shown regardless of the state the Copper
+        // was halted in.
         CopperHarness h;
         h.install_wait_then_forbidden_list(A, COLOR00, COLOR01);
         h.install_signature_list(B, COLOR02);
@@ -542,16 +553,18 @@ int main(int argc, char** argv) {
         const bool halted = started && h.move_count(COLOR01) == 0;
 
         const size_t fetches_before_recovery = h.fetches.size();
+        h.dma_allowed = false;
         h.program_location(1, B);
         h.strobe(1);
+        h.dma_allowed = true;
         const bool recovered = h.run_until([&]() { return h.move_count(COLOR02) == 1; });
 
         checks.expect(halted && recovered
                           && h.fetches.size() > fetches_before_recovery
                           && h.fetches[fetches_before_recovery] == B,
-                      "T11 initializing COP1LC and strobing COPJMP1 from a halted, non-initial "
-                      "Copper state still reaches exactly the newly strobed address on the next "
-                      "fetch, the same determinism T1 shows from a fresh reset "
+                      "T11 initializing COP1LC and strobing COPJMP1 before Copper DMA is "
+                      "turned back on, from a halted, non-initial Copper state, still "
+                      "reaches exactly the newly strobed address on the next fetch "
                       "[claims: ch2-starting-the-copper-after-reset.c4 ch2-appa-copins.c147]");
     }
 
