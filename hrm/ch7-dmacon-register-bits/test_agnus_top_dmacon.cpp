@@ -482,6 +482,7 @@
 // ============================================================================
 
 #include <cstdint>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -532,6 +533,16 @@ constexpr uint16_t BIT11_X = 1u << 11;
 constexpr uint16_t BIT12_X = 1u << 12;
 constexpr uint16_t BZERO_B = 1u << 13;  // DMACONR only, read-only
 constexpr uint16_t BBUSY_B = 1u << 14;  // DMACONR only, read-only
+
+// ---- BPLCON0 values for 1/2/4/6 bitplanes, lores, colour on (agnus_bitplanedma.v:282:
+// bplcon0<={data_in[6],data_in[15],aga&data_in[4],data_in[14:12]} - BPU is data_in[14:12]
+// directly for every value used here; the non-AGA "all three bits set" alias to 4 planes
+// never triggers for 1/2/4/6). Bit 9 (COLOR) is carried over unchanged from the original
+// $1200 fixture value; HIRES (bit15) and SHRES (bit6) stay clear throughout. ----
+constexpr uint16_t BPLCON0_1BPL = 0x1200;  // BPU=1 (existing fixture value)
+constexpr uint16_t BPLCON0_2BPL = 0x2200;  // BPU=2
+constexpr uint16_t BPLCON0_4BPL = 0x4200;  // BPU=4
+constexpr uint16_t BPLCON0_6BPL = 0x6200;  // BPU=6
 
 // ---- BLTCON0 use-channel bits (agnus_blitter.v:252) and a minterm that
 // passes channel C straight through to D (agnus_blitter_minterm.v; D = C
@@ -680,6 +691,24 @@ public:
         return total;
     }
 
+    // Returns the 1-based tick index of the Nth dbwe pulse (the D-channel
+    // write that completes a W*H-word blit, when N==W*H), or -1 if fewer
+    // than N pulses occur within max_ticks - the tighter measurement
+    // BLTPRI-BUS-SHARE-UNDER-CONTENTION's own window-based count cannot make:
+    // two runs finishing on the SAME tick is a much sharper "no cycles
+    // stolen" than two runs both finishing SOMEWHERE inside a shared window.
+    int tick_of_nth_dbwe(int n, int max_ticks) {
+        int count = 0;
+        for (int i = 1; i <= max_ticks; ++i) {
+            tick();
+            if (last_dbwe) {
+                ++count;
+                if (count == n) return i;
+            }
+        }
+        return -1;
+    }
+
     void run_ticks(int n) { for (int i = 0; i < n; ++i) tick(); }
 
     void tick() { tick_pre_edge_dbr(); }
@@ -812,7 +841,19 @@ std::vector<SpriteFetch> collect_sprite_fetches_over_lines(Harness& h, int n_lin
 // then all eight sprites armed (VSTART=40/VSTOP=220, comfortably inside the
 // display window this measures over), then SPREN and BPLEN set together -
 // the ordering this section's own header comment explains.
-std::vector<int> measure_sprite_data_fetch(uint16_t ddfstrt) {
+//
+// `bplcon0` defaults to $1200 (one bitplane, lores, colour on) - the fixture
+// value this file's DDFSTRT assertions used before 2026-09-25's repair pass.
+// Neither p.80 ("using a data-fetch start earlier than ($38) will disable
+// some sprites") nor p.82/83 ("DDFSTRT = $0030 ... will disable sprite 7" /
+// "Fetching an extra word for scrolling will disable some sprites") names a
+// bitplane count, and agnus_bitplanedma.v's own `bpu` field (BPLCON0[14:12],
+// read directly for 1/2/4/6 - the non-AGA "all-ones means 4" alias never
+// triggers for these values) changes how many of each 8-CCK fetch sequence's
+// 8 slots bitplane DMA actually occupies (`plane[4:0] < bpu`), so the repair
+// pass measures explicitly at 2, 4 and 6 bitplanes as well - see the
+// DDFSTRT-0030-SPRITE-7-* assertions below.
+std::vector<int> measure_sprite_data_fetch(uint16_t ddfstrt, uint16_t bplcon0 = 0x1200) {
     Harness h;
     h.write_reg(DMACON_ADDR, SET_CLR | DMAEN);
     for (int i = 0; i < 35; ++i) h.sync_to_line_boundary();
@@ -821,7 +862,7 @@ std::vector<int> measure_sprite_data_fetch(uint16_t ddfstrt) {
     h.write_reg(DIWSTOP_ADDR, 0x2CC1);
     h.write_reg(DDFSTRT_ADDR, ddfstrt);
     h.write_reg(DDFSTOP_ADDR, 0x00D0);
-    h.write_reg(BPLCON0_ADDR, 0x1200);
+    h.write_reg(BPLCON0_ADDR, bplcon0);
     h.write_reg(FMODE_ADDR, 0x0000);
     h.write_reg(DMACON_ADDR, SET_CLR | SPREN | BPLEN);
     auto fetches = collect_sprite_fetches_over_lines(h, 90);
@@ -928,12 +969,12 @@ int main(int argc, char** argv) {
             {2, AUD2EN, "AUD2EN", "ch6-appa-dmacon.bit02, sol:7-dma.c19, opus:7-dma.c20, sol:7-appA-dmacon.c24, opus:7-appA-dmacon.c19"},
             {3, AUD3EN, "AUD3EN", "ch6-appa-dmacon.bit03, sol:7-dma.c18, opus:7-dma.c19, sol:7-appA-dmacon.c23, opus:7-appA-dmacon.c18"},
             {4, DSKEN, "DSKEN", "ch6-appa-dmacon.bit04, sol:7-dma.c17, opus:7-dma.c18, sol:7-appA-dmacon.c22, opus:7-appA-dmacon.c17"},
-            {5, SPREN, "SPREN", "6-appa-dmacon.c26, ch6-appa-dmacon.bit05, sol:7-dma.c16, opus:7-dma.c17, sol:7-appA-dmacon.c21, opus:7-appA-dmacon.c16, APPA-dmacon.c16, CH4-appA-dmacon.c23"},
+            {5, SPREN, "SPREN", "6-appa-dmacon.c26, ch6-appa-dmacon.bit05, sol:7-dma.c16, opus:7-dma.c17, sol:7-appA-dmacon.c21, opus:7-appA-dmacon.c16, APPA-dmacon.c16"},
             {6, BLTEN, "BLTEN", "6-appa-dmacon.c25, ch6-appa-dmacon.bit06, sol:7-dma.c15, opus:7-dma.c16, sol:7-appA-dmacon.c20, opus:7-appA-dmacon.c15, APPA-dmacon.c15, CH4-appA-dmacon.c22"},
             {7, COPEN, "COPEN", "6-appa-dmacon.c24, ch6-appa-dmacon.bit07, sol:7-dma.c14, opus:7-dma.c15, sol:7-appA-dmacon.c19, opus:7-appA-dmacon.c14, APPA-dmacon.c14, CH4-appA-dmacon.c21"},
             {8, BPLEN, "BPLEN", "6-appa-dmacon.c23, ch6-appa-dmacon.bit08, sol:7-dma.c13, opus:7-dma.c14, sol:7-appA-dmacon.c18, opus:7-appA-dmacon.c13, APPA-dmacon.c13, CH4-appA-dmacon.c20"},
             {9, DMAEN, "DMAEN",
-             "6-appa-dmacon.c22, ch6-appa-dmacon.bit09, ch6-appa-dmacon.dmaen2, sol:7-dma.c11, opus:7-dma.c12, sol:7-dma.c12, opus:7-dma.c13, sol:7-appA-dmacon.c17, opus:7-appA-dmacon.c12, APPA-dmacon.c12, CH4-appA-dmacon.c19"},
+             "6-appa-dmacon.c22, ch6-appa-dmacon.bit09, ch6-appa-dmacon.dmaen2, sol:7-dma.c11, opus:7-dma.c12, sol:7-dma.c12, opus:7-dma.c13, sol:7-appA-dmacon.c17, opus:7-appA-dmacon.c12"},
             {10, BLTPRI, "BLTPRI",
              "6-appa-dmacon.c17, ch6-appa-dmacon.bit10, ch6-appa-dmacon.bltpri1, sol:7-dma.c9, opus:7-dma.c10, sol:7-appA-dmacon.c15, opus:7-appA-dmacon.c10, APPA-dmacon.c10, CH4-appA-dmacon.c17"},
             {11, BIT11_X, "bit11(X)", "6-appa-dmacon.c16, ch6-appa-dmacon.bit11, sol:7-dma.c8, opus:7-dma.c9, sol:7-appA-dmacon.c14, opus:7-appA-dmacon.c9"},
@@ -1076,7 +1117,54 @@ int main(int argc, char** argv) {
             "DMACONR' / '13 BZERO Blitter logic zero status bit (read only)' "
             "(p.187/278). 6-appa-dmacon.c13, 6-appa-dmacon.c14, "
             "ch6-appa-dmacon.bit13, ch6-appa-dmacon.bzero2, 6-zero-flag.c5, "
-            "ch6-zero.c5, ch6-zero.c6, sol:7-dma.c7, opus:7-dma.c7, opus:7-dma.c8, sol:7-appA-dmacon.c13, opus:7-appA-dmacon.c7, APPA-dmacon.c7, CH4-appA-dmacon.c14.");
+            "ch6-zero.c5, ch6-zero.c6, sol:7-dma.c7, opus:7-dma.c7, opus:7-dma.c8, sol:7-appA-dmacon.c13, opus:7-appA-dmacon.c7.");
+    }
+
+    // ---------------- BZERO-STAYS-CLEAR-AFTER-NONZERO-RESULT-BLIT (p.187/278) ----------------
+    // New 2026-09-25 (repair pass, independent validation, group `rest`):
+    // APPA-dmacon.c7 ("zero status") and CH4-appA-dmacon.c14 ("reports
+    // blitter zero-result status") both describe a bit that reflects the
+    // blit's RESULT, but the assertion above shows only one direction (0
+    // before any blit, 1 after an all-zero-result blit) - a bit that simply
+    // sets after any completed blit, zero-result or not, would also pass
+    // it. This runs a NONZERO-result blit and requires BZERO stay 0.
+    //
+    // agnus_blitter.v:420-421 loads `bltcdat` straight from `data_in` on the
+    // register-bus cycle where the blitter's own arbitrated fetch lands on
+    // BLTCDAT's address (this Harness's "no chip-RAM model" note applies
+    // here exactly as it does to bitplane/sprite DMA loads above) - holding
+    // `data_in` at a nonzero value for the whole blit therefore feeds a
+    // nonzero word through LF_C_PASSTHROUGH's channel C, so
+    // fill_out/bltdhold/zero (agnus_blitter.v:480-487, "store_result &&
+    // |fill_out[15:0]") see a real nonzero result, not a fixture artifact.
+    {
+        Harness h;
+        uint16_t idle = h.read_reg(DMACONR_ADDR);
+
+        // DMAEN|BLTEN must be live BEFORE the blit starts, exactly as the
+        // all-zero-result control above requires (its own comment: without
+        // BLTEN, agnus.v:443's `enadma` never goes high and the blitter FSM
+        // never reaches `init`, so `zero` - no reset branch of its own,
+        // agnus_blitter.v:480-487 - would default-read 0 regardless of any
+        // data_in stimulus, a vacuous pass this fixture must not produce.
+        h.write_reg(DMACON_ADDR, SET_CLR | DMAEN | BLTEN);
+        start_blit(h, BC_USEC | BC_USED | LF_C_PASSTHROUGH, 4, 4);
+        h.dut->data_in = 0xFFFF;  // held nonzero for the whole blit - see comment above
+        h.run_ticks(400);
+        uint16_t after_blit = h.read_reg(DMACONR_ADDR);
+        h.dut->data_in = 0x0000;
+
+        checks.expect(
+            h.read_ok && (idle & BZERO_B) == 0 && (after_blit & BZERO_B) == 0,
+            "BZERO-STAYS-CLEAR-AFTER-NONZERO-RESULT-BLIT: DMACONR bit 13 reads "
+            "0 idle and STAYS 0 once a real blit whose D-channel result is "
+            "nonzero (data_in held at 0xFFFF through channel C's own DMA fetch, "
+            "LF_C_PASSTHROUGH) finishes - the direction the all-zero-result "
+            "control above cannot show, since a bit that simply latched 1 after "
+            "any completed blit would also pass that one. '(13) "
+            "DMAF_BLTNZERO...bit (13) DMACONR' / '13 BZERO Blitter logic zero "
+            "status bit (read only)' (p.187/278). APPA-dmacon.c7, "
+            "CH4-appA-dmacon.c14.");
     }
 
     // =========================================================================
@@ -1111,7 +1199,53 @@ int main(int argc, char** argv) {
                 "measurement with SPREN left clear [control] grants none (" +
                 std::to_string(cycles_dis) +
                 "). '05 SPREN Sprite DMA enable' (p.278). 6-appa-dmacon.c26, "
-                "ch6-appa-dmacon.bit05, sol:7-dma.c16, opus:7-dma.c17, sol:7-appA-dmacon.c21, opus:7-appA-dmacon.c16, APPA-dmacon.c16, CH4-appA-dmacon.c23.");
+                "ch6-appa-dmacon.bit05, sol:7-dma.c16, opus:7-dma.c17, sol:7-appA-dmacon.c21, opus:7-appA-dmacon.c16, APPA-dmacon.c16.");
+    }
+
+    // ---------------- SPREN-GATES-SPRITE-DMA-ALL-CHANNELS (bit 5, p.278) ----------------
+    // New 2026-09-25 (repair pass, independent validation, group `rest`):
+    // CH4-appA-dmacon.c23 restates the p.278 SPREN row as "DMACON bit 5
+    // enables sprite DMA for all sprite channels" - a universal claim the
+    // assertion above cannot establish, since it arms sprite 0 alone.
+    // measure_sprite_data_fetch already arms all eight sprites identically;
+    // reused here (SPREN vs SPREN-clear, same DDFSTRT=$38/one-bitplane
+    // fixture the DDFSTRT assertions use) to grade every channel.
+    {
+        auto with_spren = measure_sprite_data_fetch(0x0038);  // SET_CLR|SPREN|BPLEN, see the function's own header
+        Harness h_dis;
+        h_dis.write_reg(DMACON_ADDR, SET_CLR | DMAEN);
+        for (int i = 0; i < 35; ++i) h_dis.sync_to_line_boundary();
+        for (int n = 0; n < 8; ++n) arm_sprite(h_dis, n, 40, 220);
+        h_dis.write_reg(DIWSTRT_ADDR, 0x2C81);
+        h_dis.write_reg(DIWSTOP_ADDR, 0x2CC1);
+        h_dis.write_reg(DDFSTRT_ADDR, 0x0038);
+        h_dis.write_reg(DDFSTOP_ADDR, 0x00D0);
+        h_dis.write_reg(BPLCON0_ADDR, BPLCON0_1BPL);
+        h_dis.write_reg(FMODE_ADDR, 0x0000);
+        h_dis.write_reg(DMACON_ADDR, SET_CLR | BPLEN);  // control: SPREN left clear, BPLEN set as above
+        auto fetches_dis = collect_sprite_fetches_over_lines(h_dis, 90);
+        std::vector<int> without_spren(8, 0);
+        for (const auto& f : fetches_dis)
+            if (f.type == 2 || f.type == 3) ++without_spren[f.sprite];
+
+        bool every_channel_gated = true;
+        std::string detail;
+        for (int n = 0; n < 8; ++n) {
+            if (!(with_spren[n] > 0 && without_spren[n] == 0)) every_channel_gated = false;
+            detail += std::to_string(n) + ":" + std::to_string(without_spren[n]) + "/" +
+                      std::to_string(with_spren[n]) + " ";
+        }
+
+        checks.expect(
+            every_channel_gated,
+            "SPREN-GATES-SPRITE-DMA-ALL-CHANNELS: with all eight sprites armed "
+            "identically (VSTART=40/VSTOP=220) and DMAEN|BPLEN held set in both "
+            "runs, EVERY one of the eight channels' own SPRxDATA/SPRxDATB fetch "
+            "count (without-SPREN/with-SPREN) is " + detail +
+                "- zero without SPREN and nonzero with it, for all eight, not "
+                "sprite 0 alone. 'DMACON bit 5 enables sprite DMA for all "
+                "sprite channels' (p.278, '05 SPREN Sprite DMA enable', "
+                "restated). CH4-appA-dmacon.c23.");
     }
 
     // ---------------- BLTEN-GATES-BLITTER-DMA (bit 6, p.278) ----------------
@@ -1226,8 +1360,25 @@ int main(int argc, char** argv) {
                 std::to_string(cycles_dis) +
                 "), confirming DMAEN gates all four together, not by coincidence "
                 "of any one of them. '09 DMAEN Enable all DMA below' (p.278). "
-                "6-appa-dmacon.c22, ch6-appa-dmacon.bit09, ch6-appa-dmacon.dmaen2, sol:7-dma.c12, opus:7-dma.c13, sol:7-appA-dmacon.c17, opus:7-appA-dmacon.c12, APPA-dmacon.c12, CH4-appA-dmacon.c19.");
+                "6-appa-dmacon.c22, ch6-appa-dmacon.bit09, ch6-appa-dmacon.dmaen2, sol:7-dma.c12, opus:7-dma.c13, sol:7-appA-dmacon.c17, opus:7-appA-dmacon.c12.");
     }
+
+    // Repaired 2026-09-25 (independent validation, group `rest`): APPA-dmacon.c12
+    // ("so sprite DMA also requires DMAEN") and CH4-appA-dmacon.c19 ("the master
+    // enable for the individual DMA enables in bits 8 through 0") restate p.278's
+    // "09 DMAEN Enable all DMA below" as covering EVERY bit below 9, but the
+    // assertion above (and WALKING-BIT-9's own mechanical readback) gates only
+    // SPREN/BLTEN/COPEN/BPLEN at this fixture's boundary - disk (bit 4) and audio
+    // (bits 0-3) are Paula-side and not driven or observed here at all.
+    checks.record(
+        "APPA-dmacon.c12, CH4-appA-dmacon.c19 (p.278, '09 DMAEN Enable all DMA "
+        "below', restated as covering bits 8 through 0): not asserted whole -- "
+        "this package's boundary (agnus alone, no Paula module compiled in, per "
+        "this Makefile's SRC list) shows DMAEN gating SPREN/BLTEN/COPEN/BPLEN "
+        "(bits 5-8) only. The disk (bit 4) and audio (bits 0-3) legs are Paula-"
+        "side: ch8-dmaon-enable-composition's A5 and ch5-audio-dmacon-adkcon's "
+        "DMAEN-AND-AUDxEN-BOTH-REQUIRED are where those channels' own DMAEN "
+        "gating is measured.");
 
     // ---------------- BLTPRI-BUS-SHARE-UNDER-CONTENTION (bit 10, p.198/278) ----------------
     // APPA-dmacon.c10 and CH4-appA-dmacon.c17 also cite WALKING-BIT-10-BLTPRI
@@ -1266,7 +1417,48 @@ int main(int argc, char** argv) {
                 "ch6-sysdma.c58, ch6-sysdma.c59, ch6-sysdma.c61, "
                 "6-appa-dmacon.c20, 6-appa-dmacon.c21, ch6-appa-dmacon.bltpri4, "
                 "ch6-appa-dmacon.bltpri5, sol:7-dma.c10, opus:7-dma.c11, sol:7-appA-dmacon.c16, opus:7-appA-dmacon.c11, "
-                "APPA-dmacon.c10, APPA-dmacon.c11, CH4-appA-dmacon.c17, CH4-appA-dmacon.c18.");
+                "APPA-dmacon.c10, CH4-appA-dmacon.c17.");
+    }
+
+    // ---------------- BLTPRI-COMPLETION-TICK-UNCHANGED-UNDER-CONTENTION (bit 10, p.278) ----------------
+    // New 2026-09-25 (repair pass, independent validation, group `rest`):
+    // APPA-dmacon.c11 ("disables the /BLS pin, preventing the processor from
+    // stealing any bus cycles") and CH4-appA-dmacon.c18 ("/BLS is disabled
+    // so the CPU cannot steal bus cycles") both claim NO cycle is stolen, but
+    // the assertion above only shows the blit completes SOMEWHERE inside a
+    // 500-tick window (64 writes needed, both runs finish at tick 391 - about
+    // 27% of the window is slack that could hide stolen cycles undetected).
+    // This compares the exact completion TICK, BLTPRI=1 throughout, with and
+    // without a sustained /BLS request: if even one cycle were stolen from
+    // the /BLS run, its completion tick would be LATER, not merely "still
+    // inside the window".
+    {
+        constexpr uint16_t W = 8, H = 8;
+        constexpr int MAX_TICKS = 500;
+
+        Harness h_contended;  // BLTPRI=1, /BLS held asserted throughout
+        h_contended.write_reg(DMACON_ADDR, SET_CLR | DMAEN | BLTEN | BLTPRI);
+        start_blit(h_contended, BC_USEC | BC_USED | LF_C_PASSTHROUGH, W, H);
+        h_contended.set_bls(true);
+        int tick_contended = h_contended.tick_of_nth_dbwe(W * H, MAX_TICKS);
+
+        Harness h_quiet;  // BLTPRI=1, /BLS never asserted
+        h_quiet.write_reg(DMACON_ADDR, SET_CLR | DMAEN | BLTEN | BLTPRI);
+        start_blit(h_quiet, BC_USEC | BC_USED | LF_C_PASSTHROUGH, W, H);
+        int tick_quiet = h_quiet.tick_of_nth_dbwe(W * H, MAX_TICKS);
+
+        checks.expect(
+            tick_contended > 0 && tick_quiet > 0 && tick_contended == tick_quiet,
+            "BLTPRI-COMPLETION-TICK-UNCHANGED-UNDER-CONTENTION: with BLTPRI=1 "
+            "throughout, the " + std::to_string(W * H) + "-word blit's own "
+            "completion tick (the tick of its " + std::to_string(W * H) +
+                "th D-channel write) is " + std::to_string(tick_contended) +
+                " under a sustained /BLS request and " + std::to_string(tick_quiet) +
+                " with /BLS never asserted - EQUAL, not merely both inside a "
+                "shared window, so no bus cycle is stolen from the blit by the "
+                "contending request. '(disables /BLS pin, preventing micro "
+                "from stealing any bus cycles while blitter DMA is running)' "
+                "(p.278). APPA-dmacon.c11, CH4-appA-dmacon.c18.");
     }
 
     // =========================================================================
@@ -1298,61 +1490,184 @@ int main(int argc, char** argv) {
     // =========================================================================
 
     // ---------------- DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES (p.80) ----------------
+    // Repaired 2026-09-25 (independent validation, group `rest`): the original
+    // form graded only DDFSTRT=$0018 against the $0038 baseline. p.80's claim
+    // is universal over the whole range below $38 ("using a data-fetch start
+    // earlier than ($38) will disable some sprites"), and a probe at $0030 -
+    // in this SAME one-bitplane fixture - found ALL EIGHT sprites unaffected
+    // (0 of 8 reduced), so the universal read literally is false at that one
+    // point in the range. This now sweeps $0030/$0028/$0020/$0018 and grades
+    // the conjunction, so the $0030 counterexample is not lost inside a
+    // single-point green.
     {
         auto baseline = measure_sprite_data_fetch(0x0038);
-        auto aggressive = measure_sprite_data_fetch(0x0018);  // agnus_bitplanedma.v's own hard lower limit
-
         bool baseline_uniform = true;
         for (int n = 1; n < 8; ++n)
             if (baseline[n] != baseline[0]) baseline_uniform = false;
-        int reduced = 0, unaffected = 0, worst = 0;
-        for (int n = 0; n < 8; ++n) {
-            if (aggressive[n] < baseline[n]) ++reduced;
-            if (aggressive[n] == baseline[n]) ++unaffected;
-            if (n == 0 || aggressive[n] < aggressive[worst]) worst = n;
+
+        const std::vector<uint16_t> sweep = {0x0030, 0x0028, 0x0020, 0x0018};
+        bool every_point_some_reduced = true;
+        std::string detail;
+        for (uint16_t ddfstrt : sweep) {
+            auto m = measure_sprite_data_fetch(ddfstrt);
+            int reduced = 0, unaffected = 0, worst = 0;
+            for (int n = 0; n < 8; ++n) {
+                if (m[n] < baseline[n]) ++reduced;
+                if (m[n] == baseline[n]) ++unaffected;
+                if (n == 0 || m[n] < m[worst]) worst = n;
+            }
+            bool some_reduced = (reduced > 0 && reduced < 8);
+            if (!some_reduced) every_point_some_reduced = false;
+            char buf[16];
+            snprintf(buf, sizeof buf, "$%04X", ddfstrt);
+            detail += std::string(buf) + ": " + std::to_string(reduced) +
+                      " of 8 reduced (worst ch" + std::to_string(worst) + " " +
+                      std::to_string(m[worst]) + "/" + std::to_string(baseline[worst]) + "); ";
         }
 
         checks.expect(
-            baseline_uniform && baseline[0] > 0 && reduced > 0 && reduced < 8 && unaffected > 0,
+            baseline_uniform && baseline[0] > 0 && every_point_some_reduced,
             "DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES: with all "
-            "eight sprites armed identically (VSTART=40/VSTOP=220) and "
-            "SPREN|DMAEN held set, every channel's own SPRxDATA/SPRxDATB fetch "
-            "reaches reg_address_out at the SAME rate (" +
-                std::to_string(baseline[0]) +
-                " events/channel over 90 lines) at the DDFSTRT=$38 baseline - "
-                "the SAME setup with DDFSTRT moved to $0018 (the widest fetch "
-                "agnus_bitplanedma.v's own hard limits allow) leaves " +
-                std::to_string(unaffected) +
-                " of the eight channels untouched while " + std::to_string(reduced) +
-                " lose some of their cycles (worst affected: channel " +
-                std::to_string(worst) + ", " + std::to_string(aggressive[worst]) +
-                " of " + std::to_string(baseline[worst]) +
-                ") - some, not all, sprites lose fetch cycles to the now much "
-                "earlier bitplane window. 'using a data-fetch start earlier "
-                "than ($38) will disable some sprites' (p.80). "
+            "eight sprites armed identically (VSTART=40/VSTOP=220), SPREN|DMAEN "
+            "held set and ONE BITPLANE (BPLCON0=$1200, the manual names no "
+            "plane count), every channel's own SPRxDATA/SPRxDATB fetch reaches "
+            "reg_address_out at the SAME rate (" + std::to_string(baseline[0]) +
+                " events/channel over 90 lines) at the DDFSTRT=$38 baseline. "
+                "Swept across $0030/$0028/$0020/$0018: " + detail +
+                "- the universal claim ('using a data-fetch start earlier than "
+                "($38) will disable some sprites', p.80) holds at $0028/$0020/"
+                "$0018 but is FALSE at $0030, one bitplane, where every one of "
+                "the eight channels reads the SAME count as the $0038 baseline. "
                 "3-max-window.c18, 3-max.c12.");
     }
 
-    // ---------------- DDFSTRT-0030-SPRITE-7 (p.82/83) ----------------
+    // ---------------- DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE (p.82) ----------------
+    // Repaired 2026-09-25: this line used to be plain "DDFSTRT-0030-SPRITE-7"
+    // and its red rested on the fixture's one-bitplane BPLCON0=$1200 without
+    // saying so - p.82 itself names no plane count. The label now says so,
+    // and the sibling assertion below repeats the SAME $0030-vs-$0038,
+    // sprite-7-only comparison at 2/4/6 bitplanes, where it is measured
+    // GREEN. This is where the p.83 ids (3-hscr.c17, 3-hscroll.c17) USED to
+    // sit too; withdrawn to their own assertions below, since sprite 7's own
+    // count cannot speak for p.83's "some sprites" (existential, any of the
+    // eight) claim - see the independent validation, group `rest`.
     {
         auto baseline = measure_sprite_data_fetch(0x0038);
         auto at_30 = measure_sprite_data_fetch(0x0030);  // the manual's own worked value
 
         checks.expect(
             at_30[7] < baseline[7],
-            "DDFSTRT-0030-SPRITE-7: sprite 7's own SPRxDATA/SPRxDATB fetch "
-            "count over the SAME 90-line window (all eight sprites armed "
-            "identically, VSTART=40/VSTOP=220, SPREN|DMAEN|BPLEN held set) "
-            "reads " + std::to_string(baseline[7]) + " at the DDFSTRT=$38 "
+            "DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE: sprite 7's own SPRxDATA/"
+            "SPRxDATB fetch count over the SAME 90-line window (all eight "
+            "sprites armed identically, VSTART=40/VSTOP=220, SPREN|DMAEN|BPLEN "
+            "held set, ONE BITPLANE - BPLCON0=$1200, the manual names no plane "
+            "count) reads " + std::to_string(baseline[7]) + " at the DDFSTRT=$38 "
             "baseline and " + std::to_string(at_30[7]) +
                 " at DDFSTRT=$0030 - the manual's own worked value - which is "
-                "not a reduction: this fixture measures sprite 7 unaffected at "
-                "$0030, where the manual states it is disabled. 'sooner "
-                "(DDFSTRT = $0030). Incidentally, this will disable sprite 7' "
-                "(p.82); 'Fetching an extra word for scrolling will disable "
-                "some sprites' (p.83, the same $0030 stimulus per this "
-                "package's own routing). 3-hscr.c10, 3-hscroll.c12, "
-                "3-hscr.c17, 3-hscroll.c17.");
+                "not a reduction: at exactly one bitplane this fixture measures "
+                "sprite 7 unaffected at $0030, where the manual states it is "
+                "disabled. 'sooner (DDFSTRT = $0030). Incidentally, this will "
+                "disable sprite 7' (p.82). 3-hscr.c10, 3-hscroll.c12.");
+    }
+
+    // ---------------- DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES (p.82) ----------------
+    // New 2026-09-25 (repair pass): the SAME sprite-7, $0030-vs-$0038
+    // comparison as the one-bitplane assertion above, repeated at 2, 4 and 6
+    // bitplanes (BPLCON0=$2200/$4200/$6200 - agnus_bitplanedma.v:300's `bpu`
+    // field reads BPLCON0[14:12] directly for these three values). p.82
+    // names no plane count, so both this assertion and the one-bitplane
+    // assertion above cite the SAME two ids: together they report the full
+    // range this fixture can measure, and neither hides the other's result.
+    {
+        auto baseline2 = measure_sprite_data_fetch(0x0038, BPLCON0_2BPL);
+        auto at30_2 = measure_sprite_data_fetch(0x0030, BPLCON0_2BPL);
+        auto baseline4 = measure_sprite_data_fetch(0x0038, BPLCON0_4BPL);
+        auto at30_4 = measure_sprite_data_fetch(0x0030, BPLCON0_4BPL);
+        auto baseline6 = measure_sprite_data_fetch(0x0038, BPLCON0_6BPL);
+        auto at30_6 = measure_sprite_data_fetch(0x0030, BPLCON0_6BPL);
+        bool reduced2 = at30_2[7] < baseline2[7];
+        bool reduced4 = at30_4[7] < baseline4[7];
+        bool reduced6 = at30_6[7] < baseline6[7];
+
+        checks.expect(
+            reduced2 && reduced4 && reduced6,
+            "DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES: the SAME sprite-7, "
+            "$0030-vs-$0038 comparison as DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE "
+            "above, repeated at 2/4/6 bitplanes (BPLCON0=$2200/$4200/$6200). "
+            "Sprite 7 reads " + std::to_string(baseline2[7]) +
+                " -> " + std::to_string(at30_2[7]) + " at 2 planes, " +
+                std::to_string(baseline4[7]) + " -> " +
+                std::to_string(at30_4[7]) + " at 4 planes, " +
+                std::to_string(baseline6[7]) + " -> " +
+                std::to_string(at30_6[7]) +
+                " at 6 planes - reduced at every one of the three, where the "
+                "one-bitplane case is the only one this fixture measures "
+                "unaffected. 'sooner (DDFSTRT = $0030). Incidentally, this "
+                "will disable sprite 7' (p.82), which names no plane count. "
+                "3-hscr.c10, 3-hscroll.c12.");
+    }
+
+    // ---------------- DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE (p.83) ----------------
+    // New 2026-09-25 (repair pass): p.83's NOTE is existential over all eight
+    // sprites ("Fetching an extra word for scrolling will disable some
+    // sprites"), not specific to sprite 7 - the withdrawn ids' former home
+    // (DDFSTRT-0030-SPRITE-7) could only ever speak for channel 7 and the
+    // independent validation found it could not honestly report "some
+    // sprites" either way. At one bitplane the same $0030 stimulus that
+    // leaves sprite 7 unaffected leaves EVERY channel unaffected (see the
+    // DDFSTRT-EARLIER-THAN-$38 sweep above, $0030 row), so this is red here
+    // too, for the same underlying reason and honestly labelled as such.
+    {
+        auto baseline = measure_sprite_data_fetch(0x0038);
+        auto at_30 = measure_sprite_data_fetch(0x0030);
+        bool some_reduced = false;
+        for (int n = 0; n < 8; ++n)
+            if (at_30[n] < baseline[n]) some_reduced = true;
+
+        checks.expect(
+            some_reduced,
+            "DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE: with all eight "
+            "sprites armed identically and ONE BITPLANE (BPLCON0=$1200, the "
+            "manual names no plane count), NONE of the eight channels' own "
+            "SPRxDATA/SPRxDATB fetch counts is reduced at DDFSTRT=$0030 versus "
+            "the $0038 baseline - the same measurement the sibling sprite-7 "
+            "assertion above reports for channel 7 alone, here checked across "
+            "all eight. 'Fetching an extra word for scrolling will disable "
+            "some sprites' (p.83, NOTE) is false at this one-bitplane "
+            "configuration. 3-hscr.c17, 3-hscroll.c17.");
+    }
+
+    // ---------------- DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES (p.83) ----------------
+    // New 2026-09-25 (repair pass): sprite 7 alone is a sufficient witness
+    // for "some sprites" at each plane count, since it is one of the eight
+    // the NOTE quantifies over - the same channel DDFSTRT-0030-SPRITE-7-AT-
+    // MULTIPLE-BITPLANES reports. Measured independently here (its own
+    // Harness runs, not shared variables) so this assertion's own mutation
+    // cycle cannot also move its sibling's.
+    {
+        auto baseline2 = measure_sprite_data_fetch(0x0038, BPLCON0_2BPL);
+        auto at30_2 = measure_sprite_data_fetch(0x0030, BPLCON0_2BPL);
+        auto baseline4 = measure_sprite_data_fetch(0x0038, BPLCON0_4BPL);
+        auto at30_4 = measure_sprite_data_fetch(0x0030, BPLCON0_4BPL);
+        auto baseline6 = measure_sprite_data_fetch(0x0038, BPLCON0_6BPL);
+        auto at30_6 = measure_sprite_data_fetch(0x0030, BPLCON0_6BPL);
+        bool reduced2 = at30_2[7] < baseline2[7];
+        bool reduced4 = at30_4[7] < baseline4[7];
+        bool reduced6 = at30_6[7] < baseline6[7];
+
+        checks.expect(
+            reduced2 && reduced4 && reduced6,
+            "DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES: sprite 7 "
+            "(one of the eight 'some sprites' quantifies over) is reduced at "
+            "DDFSTRT=$0030 versus the $0038 baseline at every one of 2, 4 and "
+            "6 bitplanes (BPLCON0=$2200/$4200/$6200; reads " +
+                std::to_string(baseline2[7]) + "->" + std::to_string(at30_2[7]) + ", " +
+                std::to_string(baseline4[7]) + "->" + std::to_string(at30_4[7]) + ", " +
+                std::to_string(baseline6[7]) + "->" + std::to_string(at30_6[7]) +
+                ") - the same channel DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES "
+                "reports in full. 'Fetching an extra word for scrolling will "
+                "disable some sprites' (p.83, NOTE), which names no plane "
+                "count, holds at each of these three. 3-hscr.c17, 3-hscroll.c17.");
     }
 
     checks.record(
@@ -1503,6 +1818,89 @@ int main(int argc, char** argv) {
 //     the write landed nowhere DMACONR reads from). Reverted to
 //     DMACON_ADDR; rebuilt clean (25 passed, 0 failed).
 //
+// REPAIR PASS (2026-09-25, independent validation, group `rest`). Entries
+// 12-19 below replace the two DDFSTRT mutation records that named assertions
+// this pass restructured (the old DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-
+// SPRITES-FETCH-CYCLES $18-only form and the old, unqualified DDFSTRT-0030-
+// SPRITE-7) and add records for every assertion this pass added. Each entry
+// again got its own separate mutate/build/run/revert cycle. Baseline before
+// this pass's first mutation and after every revert: "30 passed, 3 failed"
+// (three of the pass's own new assertions are the honest reds the repair
+// brief asks to keep - see their own headers above).
+//
+// 12. DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES: already red
+//     at baseline (the sweep's own $0030 row is the finding - one bitplane,
+//     zero of eight sprites reduced). Substituted a live point (the sweep's
+//     $0030 entry changed to $0018, known reduced) through the SAME
+//     conjunction - result "31 passed, 2 failed", only this assertion
+//     moved, confirming the comparator is not vacuous. Reverted to the real
+//     $0030/$0028/$0020/$0018 sweep, which stays red on its $0030 row.
+//
+// 13. DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE: already red at baseline (the
+//     finding itself). Substituted `measure_sprite_data_fetch(0x0018)[2]`
+//     for `at_30[7]` (channel 2 at $0018 is known reduced, proven by entry
+//     12's own sweep) through the SAME `< baseline[...]` comparator -
+//     result "31 passed, 2 failed", only this assertion moved. Reverted to
+//     the real channel-7/$0030 comparison, which stays red.
+//
+// 14. DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES: the 2-bitplane `at30_2`
+//     measurement's DDFSTRT argument changed from $0030 to $0038 (baseline,
+//     unmoved) - result "29 passed, 4 failed", only this assertion moved
+//     (sprite 7 read 172->172 at 2 planes instead of 172->90; the 4- and
+//     6-plane conjuncts were untouched and stayed true). DDFSTRT-0030-SOME-
+//     SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES (entry 16) does NOT share this
+//     assertion's measurements - each was refactored to its own independent
+//     Harness runs precisely so one's mutation cannot silently move the
+//     other - and it stayed green through this mutation, confirmed in the
+//     same run. Reverted; rebuilt clean (30 passed, 3 failed).
+//
+// 15. DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE: already red at
+//     baseline. Substituted $0018 for $0030 in the `at_30` measurement
+//     (known to reduce 3 of 8 channels, entry 12) through the SAME "exists n
+//     with at_30[n] < baseline[n]" comparator - result "31 passed, 2
+//     failed", only this assertion moved. Reverted to the real $0030
+//     measurement, which stays red (0 of 8 reduced there).
+//
+// 16. DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES: the
+//     4-bitplane `at30_4` measurement's DDFSTRT argument changed from $0030
+//     to $0038 - result "29 passed, 4 failed", only this assertion moved
+//     (sprite 7 read 172->172 at 4 planes instead of 172->8). Confirmed in
+//     the same run that DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES (entry
+//     14's own assertion) stayed green, for the same reason given there.
+//     Reverted; rebuilt clean (30 passed, 3 failed).
+//
+// 17. SPREN-GATES-SPRITE-DMA-ALL-CHANNELS: SPREN left SET in the "without
+//     SPREN" control run's own DMACON write (SET_CLR|SPREN|BPLEN instead of
+//     SET_CLR|BPLEN) - result "29 passed, 4 failed", only this assertion
+//     moved (every one of the eight without-SPREN counts read 172, equal to
+//     the with-SPREN counts, so "zero without SPREN" failed for all eight).
+//     Reverted; rebuilt clean (30 passed, 3 failed).
+//
+// 18. BZERO-STAYS-CLEAR-AFTER-NONZERO-RESULT-BLIT: `data_in` changed from
+//     the held 0xFFFF back to 0x0000 (an all-zero-result blit again) -
+//     result "29 passed, 4 failed", only this assertion moved (after_blit's
+//     bit 13 read 1, not 0). Reverted to 0xFFFF; rebuilt clean (30 passed, 3
+//     failed). NOTE: this assertion's first draft ran DID NOT write
+//     DMAEN|BLTEN to DMACON before start_blit, and PASSED "stays 0" under
+//     BOTH 0xFFFF and 0x0000 - a vacuous green, since without BLTEN
+//     agnus.v:443's `enadma` never goes high and `zero` (no reset branch of
+//     its own) simply defaults-reads 0 regardless of any data_in stimulus.
+//     This mutation cycle caught it: an oracle-identical mutation that
+//     SHOULD have moved the assertion did not, which is exactly what a
+//     mutation is for. Fixed by adding the missing
+//     `h.write_reg(DMACON_ADDR, SET_CLR | DMAEN | BLTEN)` before
+//     `start_blit`, matching the all-zero-result control's own setup; the
+//     counts and PASS/FAIL results in this entry are from the FIXED
+//     assertion, re-run after the fix.
+//
+// 19. BLTPRI-COMPLETION-TICK-UNCHANGED-UNDER-CONTENTION: BLTPRI dropped from
+//     the contended run's own DMACON write (SET_CLR|DMAEN|BLTEN instead of
+//     SET_CLR|DMAEN|BLTEN|BLTPRI) - result "29 passed, 4 failed", only this
+//     assertion moved (tick_contended read -1, i.e. the blit did not
+//     complete within the 500-tick budget at all once BLTPRI no longer held
+//     bls_cnt at 0 under sustained contention, against tick_quiet's
+//     unchanged 391). Reverted; rebuilt clean (30 passed, 3 failed).
+//
 // Machine-readable records, one per line, read by tools/check_gates.py's
 // mutation gate (MUTATION_RE):
 // MUTATION DMACON-WRITE-DECODED-AT-096 stimulus red: write's target address moved from $096 to $098 (not decoded by agnus.v's DMACON path); after read back 0x0000, not DMAEN.
@@ -1517,8 +1915,14 @@ int main(int argc, char** argv) {
 // MUTATION DMAEN-MASTER-GATES-ALL-DMA-BELOW stimulus red: DMAEN dropped from the enabled run's setup write (SPREN/BLTEN/COPEN/BPLEN left set); cycles_en fell to 0.
 // MUTATION BLTPRI-BUS-SHARE-UNDER-CONTENTION stimulus red: BLTPRI dropped from the hog run's setup write; writes_hog fell to 0, equal to the share run.
 // MUTATION WRITE-ADDRESS-MUST-MATCH-DMACON stimulus red: the decoy write's address changed from BLTAFWM_ADDR back to DMACON_ADDR, same data pattern (SET_CLR | DMAEN) -> 24 passed, 1 failed, only this assertion moves: the write now lands and DMACONR reads back non-zero, so `after == 0x0000` fails. Reverted: 25 passed, 0 failed. Added 11.09.2026; the assertion had no record because the gate could not read an id out of its "[...]" prefix and never reported it missing.
-// MUTATION DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES stimulus red: the aggressive measure_sprite_data_fetch call's DDFSTRT argument changed from $0018 back to $0038 (baseline, unmoved); reduced fell to 0 (unaffected 8 of 8) -> 26 passed, 1 failed, only this assertion moves. Reverted: 27 passed, 0 failed.
-// MUTATION DDFSTRT-0030-SPRITE-7 none green: already red at baseline (the FINDING itself - sprite 7 is measured unaffected at the manual's own $0030). Substituted a different, live mechanism through the SAME comparator (at_30[2] < baseline[2], DDFSTRT $0018 in place of $0030) - channel 2 IS reduced there, proven by the sibling assertion above, and the substitution went green, showing the comparator is not vacuous. Reverted to the real channel 7 / $0030 comparison, which stays red.
+// MUTATION DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES none green: already red at baseline (the sweep's own $0030 row is the finding). Substituted a live point (sweep's $0030 entry -> $0018, known reduced) through the SAME conjunction -> 31 passed, 2 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
+// MUTATION DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE none green: already red at baseline (the FINDING itself - sprite 7 is measured unaffected at the manual's own $0030, one bitplane). Substituted a different, live mechanism through the SAME comparator (measure_sprite_data_fetch(0x0018)[2] in place of at_30[7]) - channel 2 IS reduced at $0018, proven by the sweep assertion above, and the substitution went green, showing the comparator is not vacuous. Reverted to the real channel 7 / $0030 comparison, which stays red.
+// MUTATION DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES stimulus red: the 2-bitplane at30_2 measurement's DDFSTRT argument changed from $0030 back to $0038 (baseline, unmoved); sprite 7 read 172/172 (unaffected) instead of 90/172 -> 29 passed, 4 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
+// MUTATION DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE none green: already red at baseline (no channel is reduced at $0030, one bitplane). Substituted $0018 for $0030 in the at_30 measurement (known to reduce 3 of 8 channels) through the SAME "exists n" comparator -> 31 passed, 2 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
+// MUTATION DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES stimulus red: the 4-bitplane at30_4 measurement's DDFSTRT argument changed from $0030 back to $0038; sprite 7 read 172/172 instead of 8/172 -> 29 passed, 4 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
+// MUTATION SPREN-GATES-SPRITE-DMA-ALL-CHANNELS stimulus red: SPREN left SET in the without-SPREN control run's own DMACON write; all eight without-SPREN counts read 172, equal to the with-SPREN counts -> 29 passed, 4 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
+// MUTATION BZERO-STAYS-CLEAR-AFTER-NONZERO-RESULT-BLIT stimulus red: data_in changed from the held 0xFFFF back to 0x0000 (all-zero-result blit); after_blit's bit 13 read 1, not 0 -> 29 passed, 4 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
+// MUTATION BLTPRI-COMPLETION-TICK-UNCHANGED-UNDER-CONTENTION stimulus red: BLTPRI dropped from the contended run's own DMACON write; tick_contended read -1 (blit never completed within the 500-tick budget) against tick_quiet's unchanged 391 -> 29 passed, 4 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
 //
 // Not machine-recorded, and not required by the gate (see SCOPE above):
 // DMACON-WRITE-DECODED-AT-096's own control, "[control] WRITE-ADDRESS-MUST-
