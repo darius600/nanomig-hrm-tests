@@ -469,7 +469,7 @@ static void check_ntsc_field_period(Checks& c) {
     double nominal = 1.0 / 60.0;
     double rel_err = have ? std::fabs(seconds - nominal) / nominal : 1.0;
     bool ok = have && rel_err < 0.05;
-    c.report("NTSC-FIELD-PERIOD-APPROX-1-60S (3-video.c09, 3-video.c12, page 40, \"approximately 1/60th of a second for an NTSC system\"): measured " +
+    c.report("NTSC-FIELD-PERIOD-APPROX-1-60S (3-video.c09, sol:3-video.c12, page 40, \"approximately 1/60th of a second for an NTSC system\"): measured " +
               std::to_string(seconds * 1000.0) + " ms vs nominal " + std::to_string(nominal * 1000.0) +
               " ms, relative error " + std::to_string(rel_err * 100.0) + "% (bound 5%)", ok);
 }
