@@ -6,7 +6,7 @@
 //   busy rising on the BLTSIZE write.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 169-173, 186, 192, 200, 269, 308.
+//   pp. 169-173, 186, 191, 192, 200, 269, 308.
 // Non-goals: ECS BLTSIZH/BLTSIZV, their own field widths (11-bit/15-bit) and
 //   their `ecs` gating - PKG-BLT-ECS's territory (hrm/ch6-blitter-ecs),
 //   which explicitly redirects its own OCS-BLTSIZE-zero-means-1024 numeric
@@ -76,6 +76,31 @@
 // so many ids below are the same proposition stated up to four times. Every
 // id is written out in full, never a shared-prefix shorthand - two packages
 // before this one had to redo their citations for exactly that shortcut.
+// ADDED 2026-09-25 (unit backlog, hrm-testpipeline/work/2026-09-25_unit-
+// backlog): four further claims, routed here by that lot's routing pass,
+// from outside the original 118-claim PKG-BLT-SIZE filter above - three
+// were classified into sibling packages (ch6-line.c43 was
+// classify.package=="PKG-BLT-LINE"; 6-appc-big-blits.c22 and .c24 were
+// classify.package=="PKG-BLT-ECS"), one (ch6-dma.c45) was already inside
+// the original 118 but, until today, only declined in this header's prose
+// and never printed on a runtime line - a gap the coverage-counting rule
+// ("HOW COVERAGE IS COUNTED ... by searching the text of lines the test
+// actually printed") does not allow a header comment to close. This
+// addition did not re-run the original 118-claim diff script, since it
+// does not touch anything that script already checked; what was checked
+// for the four added ids specifically, directly: `grep` on this file
+// before any edit confirmed none of the four appeared anywhere in it as an
+// id (a genuine gap, not already-covered ground under a different name),
+// and `grep` after confirms all four now appear inside an `expect()` or
+// `record()` call's own string argument, not only in a comment - two
+// (ch6-line.c43, 6-appc-big-blits.c22) inside BLTSIZE-WRITE-SETS-BUSY's and
+// SIZE-ZERO-HEIGHT-WRAPS-TO-1024's own already-mutated assertions, two
+// (ch6-dma.c45, 6-appc-big-blits.c24) inside a new RECORDED: line that
+// asserts nothing - see "NOT ASSERTED - UNIT CONVERSION" below for why
+// those two are declined rather than graded. The routing file's own `how`
+// field for each (hrm-testpipeline/work/2026-09-25_unit-backlog/build/
+// ch6-blitter-size.jsonl) is what led here in each case.
+//
 // Assertion name -> covered ids:
 //
 //   TEST-DATA-DELIVERY: fixture check, no claim id - reproduces
@@ -84,10 +109,18 @@
 //     brief.
 //
 //   BLTSIZE-WRITE-SETS-BUSY [reused fact, control precondition - see below]
-//     (pp.169, 186, 192, 200, 269): 6-intro.c19, ch6-intro.c19,
+//     (pp.169, 186, 191, 192, 200, 269): 6-intro.c19, ch6-intro.c19,
 //     6-blitter-key-points.c1, ch6-keypoints.c2, 6-blitter-done-flag.c1,
 //     ch6-done.c1, 6-line-mode.c102, ch6-linesum.c27, 6-appa-registers.c43,
-//     6-appa-registers.c66, ch6-appa-bltsize.c7 .
+//     6-appa-registers.c66, ch6-appa-bltsize.c7, ch6-line.c43 .
+//     (ch6-line.c43, added 2026-09-25: p.191 "register should not be
+//     written until the very end, when all other [registers have been
+//     filled]" is the same "write BLTSIZE last" fact already cited above
+//     from five other pages - the busy-on-write mechanism this assertion
+//     measures IS the reason for the instruction, not a separate fact.
+//     Matches this file's own Non-goals note above about PKG-BLT-LINE's
+//     citing "the same 'writes BLTSIZE last' busy fact" rather than
+//     building its own.)
 //
 //   SIZE-SINGLE-WRITE-SETS-BOTH-FIELDS (pp.170-171): ch6-dma.c10,
 //     6-dma-channels.c44, ch6-dma.c43 .
@@ -135,8 +168,15 @@
 //   SIZE-ZERO-WIDTH-WRAPS-TO-64 (p.171, p.269, p.308): 6-dma-channels.c48,
 //     ch6-dma.c48, ch6-dma.c56, 6-appa-registers.c63, ch6-appa-bltsize.w2 .
 //
-//   SIZE-ZERO-HEIGHT-WRAPS-TO-1024 (p.171): 6-dma-channels.c51,
-//     ch6-dma.c51, ch6-dma.c58b .
+//   SIZE-ZERO-HEIGHT-WRAPS-TO-1024 (pp.171, 308): 6-dma-channels.c51,
+//     ch6-dma.c51, ch6-dma.c58b, 6-appc-big-blits.c22 .
+//     (6-appc-big-blits.c22, added 2026-09-25: p.308's "h = Height (10 bit
+//     height = 1024 lines  max)" is PKG-BLT-ECS's own package-boundary
+//     redirect back to this file - see the Non-goals note above and
+//     hrm/ch6-blitter-ecs's "NOT ASSERTED - REDIRECTED" entry for this same
+//     id, which explains why: the OCS zero-means-1024 height encoding is
+//     orthogonal to `ecs` and is exactly the maximum this assertion's own
+//     wrap case reaches.)
 //
 //   SIZE-WIDTH-DEFINES-ROW-HEIGHT-COUNTS-ROWS (pp.171, 172, 200):
 //     6-dma-channels.c49, ch6-dma.c49, ch6-dma.c55, ch6-dma.c57,
@@ -144,12 +184,31 @@
 //     6-blitter-key-points.c5, ch6-keypoints.c5, ch6-keypoints.c6 .
 //     (c5/c6 are the p.200 "height is in pixels" wording flagged above)
 //
-// NOT ASSERTED - UNIT CONVERSION (absent_signal: a bit-count port;
-//   reason_kind: absent - this RTL exposes only a word-count field (width),
-//   never a bit count; the manual's own word-to-bit arithmetic (x16) is the
-//   programmer's, not observable here, the same treatment PKG-BLT-ECS gives
-//   its own pixel-count claims):
+//   NOT-ASSERTED-UNIT-CONVERSION [recorded, not asserted - see below]
+//     (pp.171, 308): ch6-dma.c45, 6-appc-big-blits.c24 . Printed as one
+//     RECORDED: line, never a PASS/FAIL line - see "NOT ASSERTED - UNIT
+//     CONVERSION" below for why both are declined.
+//
+// NOT ASSERTED - UNIT CONVERSION (absent_signal: a bit-count or pixel-count
+//   port; reason_kind: absent - this RTL exposes only a word-count field
+//   (width), never a bit count or a pixel count; the manual's own
+//   word-to-bit and word-to-pixel arithmetic (x16) is the programmer's, not
+//   observable here - the same treatment PKG-BLT-ECS's own sibling package
+//   gives its own pixel-count claims (hrm/ch6-blitter-ecs's "NOT ASSERTED -
+//   PIXEL/WORD UNIT CONVERSION", which independently declines this exact
+//   page's width-in-pixels claim, below). Printed as one RECORDED: line at
+//   runtime, naming both ids in full):
 //   ch6-dma.c45 (p.171, "A width of 1 to 64 words is 16 to 1024 bits").
+//   6-appc-big-blits.c24 (p.308, "w = Width  (6 bit width  = 1024 pixels
+//     max)", restated "Original-chip-set BLTSIZE width has a 1024-pixel
+//     maximum" - added 2026-09-25. The words half of the same field (1 to
+//     64, reaching 64 only via the zero-wrap) is exactly what
+//     SIZE-WIDTH-FIELD-BITS-LITERAL and SIZE-ZERO-WIDTH-WRAPS-TO-64 already
+//     measure and is NOT what this id's own restatement states - its
+//     restatement is the pixel figure alone, so per Prompt 7's rule ("an id
+//     whose claim bundles an untested clause is withdrawn whole") it is
+//     declined here rather than kept on either width assertion with the
+//     pixel clause left silently uncounted.)
 //
 // FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
