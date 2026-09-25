@@ -23,6 +23,42 @@
 //   the frozen specification the suite's first version was written against
 //   (docs/legacy-names.md); no claim file carries them.
 //
+// PROPOSITIONS FOR THIS PACKAGE'S EXTENDED CLAIM SET (quote, restatement
+// and page only):
+//   COP2-copins-fields-p275.c11 (p.275) quote "HP =Horizontal beam position
+//     comparison bit." -- restated: "HP" denotes a horizontal-beam-position
+//     comparison bit.
+//   COP2-copins-fields-p275.c12 (p.275) quote "VE =Enable comparison (mask
+//     bit)." -- restated: "VE" denotes a comparison-enable mask bit.
+//   ch2-using-the-copper-with-the-blitter.c1 (p.35) quote "If the Copper is
+//     used to start up a sequence of blitter operations, it must wait for
+//     the blitter-finished interrupt before starting another blitter
+//     operation." -- restated: a Copper starting a sequence of blitter
+//     operations must wait for the blitter-finished interrupt before
+//     starting another blitter operation. Note: this package's own
+//     Non-goals above already put interrupt generation out of scope, and
+//     the claim's text names the blitter-finished INTERRUPT specifically,
+//     not the BFD/blit_busy level this package otherwise measures.
+//   ch2-appa-copins.c12 (p.274) quote "than (skips following MOVE
+//     instruction unless beam position has been reached)." -- restated:
+//     SKIP skips the following instruction only when that instruction is a
+//     MOVE. Flagged by its own classification as a conflict against the
+//     body text's p.31 wording, which omits the MOVE qualifier; its own
+//     conflict_resolution favours this appendix reading on a measurement
+//     that is the classifier's, not this file's.
+//   ch2-appa-copins.c121 (p.275) quote "* NOTE BFD=Blitter finished
+//     disable. When this bit" -- restated: BFD stands for blitter finished
+//     disable.
+//   7-beam.c2 (p.216) quote "The Copper is already capable of watching the
+//     display position for you and doing certain register-based operations
+//     automatically." -- restated: the Copper can monitor display position
+//     and automatically perform register operations at selected positions.
+//   7-bp.c2 (p.216) the same printed sentence, read independently as part
+//     of chapter 7 -- restated: the Copper can itself wait on display
+//     position and perform register operations at that position.
+//   Each id's disposition (asserted, folded into an existing label, or
+//   recorded) is given where it actually lands, in the RESULTS below.
+//
 // MUTATION W1 stimulus red: WAIT target retargeted from line $96 to $10 (already passed) -> the "does not run
 //   before line $96" check goes FAIL as expected. A second run retargeted it to $FF (unreachable in the run
 //   budget) -> both W1 checks FAIL as expected.
