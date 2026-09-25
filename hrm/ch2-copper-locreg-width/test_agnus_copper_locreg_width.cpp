@@ -29,6 +29,18 @@
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
 //   the frozen specification the suite's first version was written against
 //   (docs/legacy-names.md); no claim file carries them.
+// Specification additions: three claim ids new to this file, from the
+//   inventory's quotation and restatement alone.
+//   ch2-location-registers.c3 (p.25, register list): "COP1LCL Low 16 bits of
+//   first Copper list address." Restated: COP1LCL holds the low 16 bits of
+//   the first Copper list address. This is the register list's own wording
+//   for COP1LCL in the page-25 self-contradiction this file's Primary oracle
+//   paragraph above already describes (list says 16 bits, prose says 15).
+//   ch2-location-registers.c5 (p.25, register list): "COP2LCL Low 16 bits of
+//   second Copper list address." Restated: COP2LCL holds the low 16 bits of
+//   the second Copper list address. The same list wording, for COP2LCL.
+//   ch2-appb-legend.c6 (p.287, appendix B legend): "W=write-only;
+//   R=read-only," Restated: W in appendix B means write-only.
 // Disclosure: agnus_copper.v was read beyond the port list (the location-
 //   register write blocks at lines ~139-170 and the address_out reload mux
 //   at ~194-202) because there is no register read-back port: the only way
