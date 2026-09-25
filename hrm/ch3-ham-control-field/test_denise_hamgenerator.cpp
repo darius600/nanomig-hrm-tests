@@ -23,9 +23,17 @@
 //
 // Added proposition, opus:3-ham.c08 (p.86): "used to modify the way bits
 //   from planes 1 - 4 are treated, as follows:" -- planes 5 and 6 modify
-//   the way bits from planes 1-4 are treated. The same control/data-field
-//   relationship the Test purpose paragraph above already summarises, and
-//   that Table 3-19 (p.95, cited in Primary oracle) enumerates in full.
+//   the way bits from planes 1-4 are treated. A relation, not a single
+//   value: it is established only by HAM-CONTROL-00/01/10/11-... together
+//   (00 shows the control field passing the data field through
+//   unmodified; 01/10/11 show it replacing exactly one held component),
+//   never by any one of the four alone, so the id is cited on all four.
+//   Its twin sol:3-ham.c8 -- the same printed sentence, independently
+//   numbered without the leading zero by the other reader -- is cited on
+//   the same four assertions for the same reason. The same control/
+//   data-field relationship the Test purpose paragraph above already
+//   summarises, and that Table 3-19 (p.95, cited in Primary oracle)
+//   enumerates in full.
 //
 // BOUNDARY (from the classifier's own evidence, not from opening the RTL --
 // see "ORDER OF WORK" below): denise_hamgenerator.v:6-18 module header --
@@ -87,6 +95,11 @@
 // different sentences); citing the bare id once covers both, and where both
 // readers' sentences land in different assertions the id is cited in both
 // places, honestly, rather than picked once and dropped from the other.
+// opus:3-ham.c08 and its twin sol:3-ham.c8 state a relation, not a single
+// value ("planes 5 and 6 modify the way bits from planes 1-4 are
+// treated"), so neither is cited on one assertion alone: both are cited,
+// written out in full, on all four of HAM-CONTROL-00/01/10/11-..., which
+// together are what establish the relation.
 //
 // CONTROL CASE: HAM-CONTROL-00-NORMAL-SELECTION is the control every
 // HAM-CONTROL-01/10/11 modify assertion is measured against, on the
@@ -291,12 +304,14 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- HAM-CONTROL-00-NORMAL-SELECTION ----------------
-    // opus:3-ham.c08 added to this assertion's id list: routing.how names
-    // it the twin of the sol:3-ham.c8 already graded here -- the same
-    // printed sentence ("Planes 5 and 6 are used to modify the way bits
-    // from planes 1-4 are treated", p.86) already quoted in this label,
-    // independently numbered "c08" rather than "c8" by the other reader.
-    // No new quote, no new expected value; only the id list changes.
+    // opus:3-ham.c08 and its twin sol:3-ham.c8 ("Planes 5 and 6 are used
+    // to modify the way bits from planes 1-4 are treated", p.86,
+    // independently numbered "c08"/"c8" by the two readers) are cited
+    // here too, but this assertion alone measures only the 00 code, the
+    // one code that modifies nothing -- so both ids are also cited on
+    // HAM-CONTROL-01/10/11-... below, which measure the modification.
+    // Only the four together establish the claim. No new quote, no new
+    // expected value; only the id list changes.
     checks.expect(
         rgb0 == 0xAABBCCu,
         "HAM-CONTROL-00-NORMAL-SELECTION: with the 6-5 control field "
@@ -331,6 +346,10 @@ int main(int argc, char** argv) {
         "3-ham.c03, 3-ham.c04, 3-ham.c06, 3-ham.c4, 3-ham.c5, 3-ham.c6 .");
 
     // ---------------- HAM-CONTROL-01-MODIFIES-BLUE-HOLDS-RED-GREEN ----------------
+    // sol:3-ham.c8 and opus:3-ham.c08 also cited here (see the comment at
+    // HAM-CONTROL-00-NORMAL-SELECTION above): together with
+    // HAM-CONTROL-00/10/11-..., this establishes that the control field
+    // (planes 6,5) modifies how the data field (planes 4-1) is treated.
     checks.expect(
         R(rgb1) == R(rgb0) && G(rgb1) == G(rgb0) && B(rgb1) == 0x55u,
         "HAM-CONTROL-01-MODIFIES-BLUE-HOLDS-RED-GREEN: with the 6-5 "
@@ -343,9 +362,13 @@ int main(int argc, char** argv) {
         "replace the four \"blue\" bits' (pp.86-87), '0 1 Hold green and "
         "red  B = Bitplane 4-1 contents' (Table 3-19, p.95). "
         "sol:3-ham.c12, opus:3-ham.c13, sol:3-ham.c13, opus:3-ham.c14, 3-t19.c01, 3-table3-19.c2, "
-        "3-table3-19.c3, 3-table3-19.c4 .");
+        "3-table3-19.c3, 3-table3-19.c4, sol:3-ham.c8, opus:3-ham.c08 .");
 
     // ---------------- HAM-CONTROL-10-MODIFIES-RED-HOLDS-GREEN-BLUE ----------------
+    // sol:3-ham.c8 and opus:3-ham.c08 also cited here (see the comment at
+    // HAM-CONTROL-00-NORMAL-SELECTION above): together with
+    // HAM-CONTROL-00/01/11-..., this establishes that the control field
+    // (planes 6,5) modifies how the data field (planes 4-1) is treated.
     checks.expect(
         G(rgb2) == G(rgb1) && B(rgb2) == B(rgb1) && R(rgb2) == 0x33u,
         "HAM-CONTROL-10-MODIFIES-RED-HOLDS-GREEN-BLUE: with the 6-5 "
@@ -358,9 +381,13 @@ int main(int argc, char** argv) {
         "\"red\" bits' (p.87), '1 0 Hold green and blue  R = Bitplane 4-1 "
         "contents' (Table 3-19, p.95). "
         "sol:3-ham.c14, opus:3-ham.c15, sol:3-ham.c15, opus:3-ham.c18, 3-t19.c10, 3-table3-19.c5, "
-        "3-table3-19.c6, 3-table3-19.c7 .");
+        "3-table3-19.c6, 3-table3-19.c7, sol:3-ham.c8, opus:3-ham.c08 .");
 
     // ---------------- HAM-CONTROL-11-MODIFIES-GREEN-HOLDS-RED-BLUE ----------------
+    // sol:3-ham.c8 and opus:3-ham.c08 also cited here (see the comment at
+    // HAM-CONTROL-00-NORMAL-SELECTION above): together with
+    // HAM-CONTROL-00/01/10-..., this establishes that the control field
+    // (planes 6,5) modifies how the data field (planes 4-1) is treated.
     checks.expect(
         R(rgb3) == R(rgb2) && B(rgb3) == B(rgb2) && G(rgb3) == 0x99u,
         "HAM-CONTROL-11-MODIFIES-GREEN-HOLDS-RED-BLUE: with the 6-5 "
@@ -373,7 +400,7 @@ int main(int argc, char** argv) {
         "replace the four \"green\" bits' (p.87), '1 1 Hold blue and red  "
         "G = Bitplane 4-1 contents' (Table 3-19, p.95). "
         "opus:3-ham.c16, sol:3-ham.c16, opus:3-ham.c17, sol:3-ham.c17, 3-t19.c11, 3-table3-19.c10, 3-table3-19.c8, "
-        "3-table3-19.c9 .");
+        "3-table3-19.c9, sol:3-ham.c8, opus:3-ham.c08 .");
 
     // ---------------- HAM-SINGLE-REGISTER-TECHNIQUE-COLOR00 ----------------
     checks.expect(
