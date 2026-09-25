@@ -14,9 +14,10 @@
 //   screen", EHB half-intensity) that never found a home either.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
-//   42, 44, 57, 59, 60, 80, 81, 82, 86, 92, 95, 271, 272, 277, 290, 291,
-//   293, 296, 299, 303, 306, 307 (claims.jsonl for ch3-nominal-display-
-//   values, 61 records). A red result below means denise.v (or a sub-module
+//   42, 44, 46, 57, 59, 60, 80, 81, 82, 86, 92, 95, 271, 272, 273, 277, 290,
+//   291, 293, 296, 299, 303, 306, 307 (claims.jsonl for ch3-nominal-display-
+//   values, 61 records plus 9 routed 25.09.2026, 70 total). A red result
+//   below means denise.v (or a sub-module
 //   it instantiates) disagrees with the manual, not that the assertion is
 //   wrong -- no assertion here was, or should be, adjusted to make the RTL
 //   pass.
@@ -92,20 +93,25 @@
 //   exactly this structure: two different full DIWSTOP words that agree in
 //   their H-half.
 //
-// CLAIM COVERAGE: all 61 ids are accounted for below -- 50 inside an
-//   expect() assertion string (19 grouped/individual assertions: ids
-//   restating the identical proposition under a different manual wording,
-//   page, appendix or reader are grouped and cited together on the single
-//   assertion that tests that proposition, the convention
-//   hrm/ch3-colour-register-format and hrm/ch3-register-map-denise both
-//   document and use), 11 inside a note() call with a stated reason (four
-//   groups: visual/subjective "appears to move" claims with no frame port,
-//   a conjoined H+V claim whose V half is outside this fixture, "reserved"
-//   bits with no stated hardware behaviour to test, SuperHires's 1280px
-//   claim needing Agnus-owned horizontal total timing, and two sprite
-//   register-table entries needing a purpose-built sprite pipeline this
-//   package was not assigned to build). Every id is written out in full, in
-//   the assertion or note string itself, not only in a header comment.
+// CLAIM COVERAGE: all 70 ids are accounted for below -- 58 inside an
+//   expect() assertion string (19 grouped/individual assertions, the same
+//   19 as before 25.09.2026: ids restating the identical proposition under
+//   a different manual wording, page, appendix or reader are grouped and
+//   cited together on the single assertion that tests that proposition,
+//   the convention hrm/ch3-colour-register-format and
+//   hrm/ch3-register-map-denise both document and use -- COLOR-BITS-15-12-
+//   UNUSED itself now cites nine), 11 inside a note() call with a stated
+//   reason (four groups: visual/subjective "appears to move" claims with
+//   no frame port, a conjoined H+V claim whose V half is outside this
+//   fixture, "reserved" bits with no stated hardware behaviour to test,
+//   SuperHires's 1280px claim needing Agnus-owned horizontal total timing,
+//   and two sprite register-table entries needing a purpose-built sprite
+//   pipeline this package was not assigned to build), and 1 inside a
+//   record() call (3-colorsum.c7, p.92, the software-directed "(set these
+//   to 0)" half COLOR-BITS-15-12-UNUSED's own comment already declines --
+//   routed record:ch3-nominal-display-values 25.09.2026, not graded).
+//   Every id is written out in full, in the assertion, note or record
+//   string itself, not only in a header comment.
 //
 // TWO HARNESS FACTS DISCLOSED BY THE BUILD BRIEF ITSELF, USED BELOW WITHOUT
 //   REDISCOVERING THEM FROM RTL: hpos resets to 2, not 0, on strhor; the
@@ -769,6 +775,7 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -1480,6 +1487,26 @@ int main(int argc, char** argv) {
     // A single-plane pixel dialled to select COLOR01 must render
     // identically whether COLOR01 is written with bits 15-12 set or clear,
     // with the low 12 bits held constant.
+    //
+    // ROUTED ADDITION, 25.09.2026 (routing.jsonl, work/2026-09-25_unit-
+    //   backlog/build2/ch3-nominal-display-values.jsonl): eight more ids
+    //   route here with the identical "how" -- "COLOR-BITS-15-12-UNUSED
+    //   already does this" -- because denise_colortable.v's own data_in
+    //   port is [11:0], twelve bits wide, so no wiring exists in this
+    //   fixture's boundary for bits 15-12 to reach in the first place; the
+    //   $0 to $F sweep this assertion already runs establishes every one of
+    //   them, individually and as a group, the same measurement covers all
+    //   four. Added to this assertion's own label, in full, below:
+    //   3-colortable.c13/3-t3.c01 (p.46, the chapter body's own Table 3-3),
+    //   3-colorsum.c6 (p.92, the same appendix-B row 3-t15.c01 already
+    //   cites, a second extraction split to keep the hardware half its own
+    //   id), A-color.c7/c8/c9/c10 (p.273, Appendix A's own bit table, split
+    //   one id per bit: 15, 14, 13, 12), A-colorxx.bits1 (p.273, the same
+    //   row read as one group claim). The ninth routed claim,
+    //   3-colorsum.c7 ("must be written as zero", the "(set these to 0)"
+    //   half this assertion's own comment above already declines), routes
+    //   record: not graded here -- see the RECORDED call immediately below
+    //   this block.
     {
         Harness h;
         h.write_reg(BPLCON0_ADDR, 0x1000);  // bpu=1
@@ -1507,8 +1534,20 @@ int main(int argc, char** argv) {
             " both times) -- the hardware ignores bits 15-12, exactly "
             "'15 - 12  Unused (set these to 0)' (p.92); this assertion "
             "tests only the hardware-observable 'unused' half, not the "
-            "software-directed '(set these to 0)' half. 3-t15.c01.");
+            "software-directed '(set these to 0)' half. 3-t15.c01, "
+            "3-colortable.c13, 3-t3.c01, 3-colorsum.c6, A-color.c7, "
+            "A-color.c8, A-color.c9, A-color.c10, A-colorxx.bits1.");
     }
+    checks.record(
+        "3-colorsum.c7 (p.92, 'Color-register bits 15-12 must be written "
+        "as zero', the '(set these to 0)' half of '15 - 12  Unused (set "
+        "these to 0)'): routed record:ch3-nominal-display-values -- "
+        "'(set these to 0)' is an instruction to whoever writes the "
+        "register, not a behaviour a module has; nothing about denise's "
+        "output depends on what an ignored bit was last written as, so "
+        "there is no module-boundary effect for this or any fixture to "
+        "observe. The observable half of the same source row is "
+        "3-colorsum.c6, graded on COLOR-BITS-15-12-UNUSED above.");
 
     // ==================== FIGURE-COLOR-SELECT-INDEX6 ====================
     // 3-color.c23 (p44, Figure 3-4: "The fourth sample column's five bits
