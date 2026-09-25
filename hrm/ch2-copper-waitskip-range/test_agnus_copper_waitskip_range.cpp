@@ -98,6 +98,9 @@
 //   comment warns about for $FF.
 // MUTATION S4 stimulus red: IR2 bit0 set (turning the WAIT into a SKIP) with the already-true position ->
 //   FAIL as expected.
+// MUTATION S5 stimulus red: the WAIT's target VP moved from $F0 (unreached in the run budget) to $00
+//   (already passed) -> both hypotheses (the WAIT ran, or the WAIT was itself skipped) now let the MOVE
+//   through immediately -> FAIL as expected.
 // MUTATION B2s stimulus red: BFD flipped from 0 to 1 in the SKIP, so the busy blitter no longer holds the
 //   condition back -> FAIL as expected (the position alone satisfies the SKIP and the MOVE is suppressed).
 // MUTATION B1 stimulus red: BFD flipped from 1 to 0 while the blitter is busy -> FAIL as expected (the WAIT is
@@ -316,9 +319,9 @@ int main(int argc, char** argv) {
         const int at = h.first_move_vpos(COLOR00);
         checks.expect(h.move_count(COLOR00) == 1, "W1 WAIT line $96, HP masked: the following MOVE runs "
                       "[claims: COP2-about-the-copper.c11, COP2-what-is-a-copper-instruction.c3, "
-                      "COP2-the-wait-instruction.c5, ch2-about-the-copper.c12, ch2-about-the-copper.c18, ch2-copper-loops-and-branches.c5, ch2-the-wait-instruction.c15, ch2-the-wait-instruction.c4, ch2-what-is-a-copper-instruction.c3]");
+                      "COP2-the-wait-instruction.c5, ch2-about-the-copper.c12, ch2-about-the-copper.c18, ch2-copper-loops-and-branches.c5, ch2-the-wait-instruction.c15, ch2-the-wait-instruction.c4, ch2-what-is-a-copper-instruction.c3, sol:7-beam.c2, opus:7-bp.c2]");
         checks.expect(at >= 0x96, "W1 WAIT line $96: the MOVE does not run before line $96 "
-                      "[claims: COP2-copper-loops-and-branches-and-comparison-enable.c9]");
+                      "[claims: COP2-copper-loops-and-branches-and-comparison-enable.c9, sol:7-beam.c2, opus:7-bp.c2]");
     }
 
     // W2 - p.27: greater-or-equal, so a WAIT for an already-passed position
@@ -524,6 +527,29 @@ int main(int argc, char** argv) {
                       "COP2-the-wait-instruction.c13, ch2-appa-copins.c107, ch2-appa-copins.c109, ch2-summary-of-copper-instructions.c94, ch2-summary-of-copper-instructions.c96, ch2-the-skip-instruction.c2, ch2-the-skip-instruction.c3, ch2-the-skip-instruction.c8, ch2-the-wait-instruction.c10]");
     }
 
+    // S5 - appendix A p.274 versus body p.31: does SKIP skip only a following
+    // MOVE, or the next instruction whatever it is? Same true condition as
+    // S1, but the instruction right after the SKIP is a WAIT (for a line the
+    // run budget never reaches), with a MOVE after that. If SKIP skips only a
+    // following MOVE (p.274), the WAIT runs and holds, so the MOVE never
+    // appears. If SKIP skips the next instruction whatever it is (p.31), the
+    // WAIT itself is skipped and the MOVE runs immediately.
+    {
+        CopperHarness h;
+        h.seek_beam(0x70);
+        h.install({ir1_pos(0x64, 0x00), ir2_mask(true, 0x7F, 0x00, true),
+                   ir1_pos(0xF0, 0x00), ir2_mask(true, 0x7F, 0x00, false),
+                   move_ir1(COLOR00), 0x4321,
+                   0xFFFF, 0xFFFE});
+        h.start_list();
+        h.run_cycles(4000);
+        checks.expect(h.move_count(COLOR00) == 0,
+                      "S5 SKIP with condition true, followed by a WAIT then a MOVE: the WAIT "
+                      "runs and holds, so the MOVE never appears - SKIP skips only a "
+                      "following MOVE (appendix A p.274), not the next instruction whatever "
+                      "it is (body p.31) [claims: ch2-appa-copins.c12]");
+    }
+
     // ---------------- BFD (COP-08, p.33) ----------------
 
     // B1 - BFD=1 is the normal case: only the beam comparison controls the WAIT,
@@ -543,7 +569,7 @@ int main(int argc, char** argv) {
                       "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
                       "COP2-using-the-copper-with-the-blitter.c5, "
-                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c122, ch2-appa-copins.c17, ch2-copper-loops-and-branches.c10, ch2-copper-loops-and-branches.c11, ch2-summary-of-copper-instructions.c4, ch2-the-wait-instruction.c11, ch2-using-the-copper-with-the-blitter.c3, ch2-using-the-copper-with-the-blitter.c5]");
+                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c122, ch2-appa-copins.c17, ch2-copper-loops-and-branches.c10, ch2-copper-loops-and-branches.c11, ch2-summary-of-copper-instructions.c4, ch2-the-wait-instruction.c11, ch2-using-the-copper-with-the-blitter.c3, ch2-using-the-copper-with-the-blitter.c5, ch2-appa-copins.c121]");
     }
 
     // B2 - BFD=0 additionally requires the blitter to have finished.
@@ -562,7 +588,7 @@ int main(int argc, char** argv) {
                       "COP2-copper-loops-and-branches-and-comparison-enable.c14, "
                       "COP2-copper-loops-and-branches-and-comparison-enable.c15, "
                       "COP2-using-the-copper-with-the-blitter.c6, COP2-using-the-copper-with-the-blitter.c8, "
-                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c17, ch2-using-the-copper-with-the-blitter.c6]");
+                      "COP2-summary-of-copper-instructions.c4, ch2-appa-copins.c17, ch2-using-the-copper-with-the-blitter.c6, ch2-appa-copins.c121]");
     }
 
     // B2s - the same for SKIP. p.33 puts BFD in IR2, which both instructions
@@ -606,7 +632,7 @@ int main(int argc, char** argv) {
         h.run_cycles(2000);
         checks.expect(held && h.move_count(COLOR00) == 1, "B3 BFD=0: the WAIT releases once the blitter finishes (p.33) "
                       "[claims: COP2-copins-bfd.c3, COP2-copins-bfd.c5, "
-                      "COP2-using-the-copper-with-the-blitter.c8]");
+                      "COP2-using-the-copper-with-the-blitter.c8, ch2-using-the-copper-with-the-blitter.c1]");
     }
 
     // ---------------- Counter limits (COP-04) ----------------
@@ -805,7 +831,7 @@ int main(int argc, char** argv) {
         checks.expect(first > 0 && latency >= 0 && latency < 64,
             "EHC [control] the HP walk's first bit releases at a plausible position, so "
             "the fetch latency can be calibrated from it rather than assumed "
-            "[claims: ch2-appa-copins.c118]");
+            "[claims: ch2-appa-copins.c118, COP2-copins-fields-p275.c11]");
 
         static const char* const kEhApxClaimId[7] = {
             "COP2-copins-encoding.c87, ch2-appa-copins.c100", "COP2-copins-encoding.c81, ch2-appa-copins.c94",
@@ -908,7 +934,8 @@ int main(int argc, char** argv) {
                 ", " + std::string(kEmBodyClaimId[bit]) +
                 ", COP2-the-wait-instruction.c16" +
                 (bit == 0 ? std::string(", "
-                                        "COP2-copper-loops-and-branches-and-comparison-enable.c5")
+                                        "COP2-copper-loops-and-branches-and-comparison-enable.c5, "
+                                        "COP2-copins-fields-p275.c12")
                           : std::string()) + "]");
         }
     }
