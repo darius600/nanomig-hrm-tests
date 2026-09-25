@@ -85,6 +85,19 @@
 // as expected. Reverted.
 // MUTATION T9 stimulus red: same swap as T2, applied to INTREQ ECS -> FAIL
 // as expected. Reverted.
+//
+// ch2-appb-legend.c1 reads the same p.287 legend sentence as
+// sol:7-appB-legend.c4 / opus:7-appB.c5 ("* = Address not writable by the
+// Copper") and is routed to this package. It names no address, so it is
+// not its own scored proposition -- same reasoning already applied to the
+// two legend ids it is a twin of, per SPECIFICATION.md. Its own routing
+// note says it grades row by row alongside the other two legend ids on the
+// *-marked, ecs=0/cdang=1 checks (T1 and PROP-2..PROP-8 below); it says the
+// ECS/unmarked side of the same legend sentence is a different package's
+// subject, so this id is not added to T2's unmarked-address citation of the
+// other two legend ids. No new assertion and no new mutation follow from
+// this: T1 and PROP-2..PROP-8 already establish, and already carry, a
+// stimulus mutation each.
 
 #include <cstdint>
 #include <iostream>
@@ -329,7 +342,7 @@ int main(int argc, char** argv) {
                   "T1 OCS CDANG=1: Copper MOVE to DMACONR ($002) is blocked, "
                   "per Appendix B's \"*\" mark "
                   "[claims: sol:7-appB-dmaconr.c5, opus:7-appB.c14, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5]");
+                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
 
     // ------------------------------------------------------------------
     // PROP-2 through PROP-8 -- independent-validation finding 3 (PROMOTE,
@@ -356,27 +369,27 @@ int main(int argc, char** argv) {
                   "PROP-2 OCS CDANG=1: Copper MOVE to VPOSR ($004) is blocked, "
                   "per Appendix B's \"*\" mark "
                   "[claims: sol:7-appB-vposr.c5, opus:7-appB.c16, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5]");
+                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, VHPOSR),
                   "PROP-3 OCS CDANG=1: Copper MOVE to VHPOSR ($006) is blocked, "
                   "per Appendix B's \"*\" mark "
                   "[claims: sol:7-appB-vhposr.c5, opus:7-appB.c18, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5]");
+                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, CLXDAT),
                   "PROP-4 OCS CDANG=1: Copper MOVE to CLXDAT ($00E) is blocked, "
                   "per Appendix B's \"*\" mark "
                   "[claims: sol:7-appB-clxdat.c5, opus:7-appB.c20, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5]");
+                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, INTENAR),
                   "PROP-5 OCS CDANG=1: Copper MOVE to INTENAR ($01C) is blocked, "
                   "per Appendix B's \"*\" mark "
                   "[claims: sol:7-appB-intenar.c5, opus:7-appB.c22, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5]");
+                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, INTREQR),
                   "PROP-6 OCS CDANG=1: Copper MOVE to INTREQR ($01E) is blocked, "
                   "per Appendix B's \"*\" mark "
                   "[claims: sol:7-appB-intreqr.c5, opus:7-appB.c24, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5]");
+                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
     // VPOSW/VHPOSW get individual attention per the lead's note: another
     // package in this chapter measured these two ARE readable despite
     // their "W" column. That is a different proposition (readability);
@@ -386,13 +399,13 @@ int main(int argc, char** argv) {
                   "per Appendix B's \"*\" mark -- write-blocking only; VPOSW's "
                   "separately-measured readability is out of this package's scope "
                   "[claims: sol:7-appB-vposw.c5, opus:7-appB.c26, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5]");
+                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, VHPOSW),
                   "PROP-8 OCS CDANG=1: Copper MOVE to VHPOSW ($02C) is blocked, "
                   "per Appendix B's \"*\" mark -- write-blocking only; VHPOSW's "
                   "separately-measured readability is out of this package's scope "
                   "[claims: sol:7-appB-vhposw.c5, opus:7-appB.c28, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5]");
+                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
 
     // ------------------------------------------------------------------
     // T2/T3 -- DMACON ($096): unmarked, so the Copper may write it, run at
