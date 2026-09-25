@@ -83,7 +83,7 @@
 // `fco` says explicitly that it is reading this module's own carry-out state,
 // not the cross-word latch.
 //
-// CLAIM COVERAGE, for the 5 of 51 claims with no assertion of their own
+// CLAIM COVERAGE, for the 5 of 52 claims with no assertion of their own
 // (reported here, not silently dropped):
 //   ch6-blockdiag.c8 (p.198, "the fill operation works on the data generated
 //     by the minterm combinations") and ch6-blockdiag.c9 (p.198, "fill
@@ -195,6 +195,11 @@
 // MUTATION WORKED-P185-EXCLUSIVE stimulus red: same run as
 //   WORKED-P184-INCLUSIVE above -> this entry printed "FAIL:
 //   WORKED-P185-EXCLUSIVE ..." - run totalled "9 passed, 4 failed".
+// MUTATION FIG613-FILL-ENABLE-SWITCH stimulus red: the word driven into the
+//   unfilled (bypass) throw was changed from 0x0001 to 0x0002 while the
+//   filled throw's driven word and every expected value were left untouched
+//   -> printed "FAIL: FIG613-FILL-ENABLE-SWITCH ..." with no other assertion
+//   affected - run totalled "13 passed, 1 failed".
 // MUTATION CASE-COUNT stimulus red: the exclusive sweep's upper bound was
 //   lowered to 0x7FFFU (half the domain) while the inclusive sweep's bound
 //   stayed 0xFFFFU -> printed "FAIL: CASE-COUNT: 327688 of 393224 expected
@@ -206,7 +211,7 @@
 //   checked stopped early".
 //
 // After every mutation above, the file was reverted and rebuilt clean; the
-// final clean run prints "13 passed, 0 failed".
+// final clean run prints "14 passed, 0 failed".
 
 #include <array>
 #include <cstdint>
@@ -434,6 +439,35 @@ int main(int argc, char** argv) {
         "through the fill logic before the D hold register or bypasses it (p.199, "
         "6-blitter-block-diagram.c10)" +
         (bypass_sweep.mismatches ? " -- " + bypass_sweep.first_failure : ""));
+
+    // ---------------- figure 6-13 fill-enable switch (p. 199) ----------------
+    //
+    // SWEEP-BYPASS above proves the unfilled throw exhaustively and the four
+    // sweeps together prove the filled throw exhaustively, but no assertion
+    // yet reads both throws side by side on the same source word - which is
+    // what the figure itself draws: one switch, two throws. This case drives
+    // 0x0001 through both positions of the switch Figure 6-13 shows just past
+    // the minterm generator's OR gate and labels "fill enable": disabled
+    // (out = the OR gate's own, unfilled result, agnus_blitter_fill.v:38) and
+    // enabled in exclusive mode (out = the XOR gate's filled result, carry
+    // alone, agnus_blitter_fill.v:33-34). The two throws must disagree on
+    // this input, or the switch would not be shown selecting anything.
+    {
+        const std::uint16_t switch_input = 0x0001U;
+        const auto unfilled_throw = drive_bypass(dut, false, switch_input);
+        const auto filled_throw = drive_fill(dut, FillMode::exclusive, false, switch_input);
+        checks.expect(
+            unfilled_throw == switch_input &&
+            filled_throw.output == 0xFFFFU &&
+            unfilled_throw != filled_throw.output,
+            "FIG613-FILL-ENABLE-SWITCH: for source word 0001, the switch's "
+            "disabled throw passes the unfilled minterm output through unchanged "
+            "(ife=efe=0, out=in=0001) and its enabled throw substitutes the XOR "
+            "gate's filled output (efe=1, out=carry=ffff) - the two throws "
+            "disagree, confirming the switch actually selects between them rather "
+            "than being wired straight through (p.199, figure 6-13, "
+            "ch6-fig613.f21)");
+    }
 
     // ---------------- carry-chain mechanism, isolated (pp. 186, 199) ----------------
     //
