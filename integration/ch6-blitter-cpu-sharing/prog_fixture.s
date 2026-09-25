@@ -3,6 +3,8 @@
 ; word blit copying a known source word to a known destination word, then
 ; DONE. Every other program in this package that trusts RESULTS or a
 ; blit's destination content depends on this fixture passing first.
+; prog_fixture_mut.s (FIXTURE_MUTANT set) stores a different constant, so
+; the unchanged check (RESULTS == $BEEF) must go red.
 
         include "nanomig.i"
 
@@ -12,7 +14,11 @@ FIX_DST equ     $0C2100
         org     PROGRAM_ORG
 
 start:
+        ifd     FIXTURE_MUTANT
+        move.w  #$DEAD,RESULTS
+        else
         move.w  #$BEEF,RESULTS
+        endif
 
         move.w  #$DEAD,FIX_SRC
 

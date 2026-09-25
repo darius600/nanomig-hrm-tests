@@ -1,10 +1,11 @@
 # ch6-blitter-cpu-sharing: see SPECIFICATION.md.
 
 TEST_CPP := test_blitter_cpu_sharing.cpp
-PROGS    := prog_fixture \
+PROGS    := prog_fixture prog_fixture_mut \
             prog_pointer prog_pointer_mutant \
-            prog_sharing prog_sharing_share prog_sharing_nasty \
+            prog_sharing prog_sharing_share prog_sharing_nasty prog_sharing_tiny \
             prog_earlycheck prog_earlycheck_large \
-            prog_bitplane prog_bitplane_hires prog_bitplane_planes6
+            prog_bitplane prog_bitplane_hires prog_bitplane_planes6 \
+            prog_copyloop prog_tas
 
 include ../harness/nanomig.mk
