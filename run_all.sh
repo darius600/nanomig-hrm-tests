@@ -73,5 +73,28 @@ else
     echo "$out" | grep -E '^%Error|^FAIL|vasmm68k_mot|not found' | head -5
     rc=1
 fi
+# Graded integration packages: 68000 programs at nanomig.v's ports, graded
+# against the printed page like hrm/ and aa/, on both CPU cores. -k keeps
+# make going to the second core when the first has a red. One line per core,
+# in the form of the package lines above; a core that printed no summary is a
+# build error.
+for dir in integration/*/; do
+    pkg=$(basename "$dir")
+    case "$pkg" in harness|minimig_system|apparatus-*) continue ;; esac
+    rm -f "integration/$pkg"/out_*.txt
+    make $MAKE_ARGS -k -C "integration/$pkg" test > /dev/null 2>&1
+    for core in fx68k tg68k; do
+        line=$(grep -E '^[0-9]+ passed, [0-9]+ failed' "integration/$pkg/out_$core.txt" 2>/dev/null | tail -1)
+        if [ -z "$line" ]; then
+            echo "FAIL  $pkg/$core   no summary: build error"
+            rc=1
+        elif echo "$line" | grep -q ' 0 failed'; then
+            echo "PASS  $pkg/$core   $line"
+        else
+            echo "FAIL  $pkg/$core   $line"
+            rc=1
+        fi
+    done
+done
 
 exit $rc
