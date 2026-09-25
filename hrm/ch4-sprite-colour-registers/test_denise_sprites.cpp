@@ -540,6 +540,7 @@ int main(int argc, char** argv) {
             "CH4-tab46.c22, CH4-tab46.c31, CH4-color.c1, CH4-color.c2, "
             "CH4-p102.c2, CH4-p97.c6, CH4-p97.c7, CH4-intro.c9, "
             "CH4-intro.c10, CH4-forming.c4, CH4-p98.c4, CH4-fig46.f1, "
+            "CH4OM-fig46.note, "
             "CH4-fig46.f6, CH4-tab46.c3, CH4-tab46.c12, CH4-tab46.c21, "
             "CH4-tab46.c30 .");
         checks.note("code00 sprdata max=" + std::to_string(static_cast<int>(v00)) +
