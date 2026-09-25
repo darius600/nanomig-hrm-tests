@@ -179,7 +179,7 @@
 // MUTATION LOG filled in with real results.
 //
 // CLAIM COVERAGE: all 181 records of claims.jsonl are accounted for below
-// -- 146 inside an expect() assertion string (twelve grouped assertions
+// -- 146 inside an expect() assertion string (thirteen grouped assertions
 // -- G11 split into its own BRDRBLNK-works and BRDNTRAN-dead-code halves
 // once the RTL was opened, see RTL OPENED below -- plus
 // the ungrouped control), 35 inside a note() call with a stated reason
@@ -191,12 +191,17 @@
 //
 // SEVEN CLAIMS ADDED (3-video.c28, 3-colortable.c8, 3-colortable.c9,
 // 3-ct.c04, 3-ct.c05, 3-max-window.c31, 3-hscr.f07 -- see NEW CLAIMS above):
-// five were already fully established by an existing measurement once the
-// full claims file's own routing was read, and gained only their id, on
-// G2-WINDOW-DEFINES-VISIBLE-AREA (3-video.c28, 3-colortable.c9, 3-ct.c05,
-// 3-hscr.f07) and on G7-ECS-DIWHIGH-EXPANDS-RANGE (3-max-window.c31); two
-// (3-colortable.c8, 3-ct.c04) needed a genuinely new measurement, added as
-// G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT. No claim of the seven was declined.
+// 3-video.c28 sits on G2-WINDOW-DEFINES-VISIBLE-AREA and 3-max-window.c31 on
+// G7-ECS-DIWHIGH-EXPANDS-RANGE, each already fully established by that
+// block's own measurement. The other five (3-colortable.c9, 3-ct.c05,
+// 3-hscr.f07, 3-colortable.c8, 3-ct.c04) sit on
+// G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 below, not on G2 or G12: showing a
+// rendering IS COLOR00 needs a measurement that varies COLOR00, and neither
+// G2's nor G12's own calibration window ever does -- both take their
+// "border" reading from a Harness written with the SAME COLOR00 value as
+// the window under test, so both can show only "differs from some fixed
+// reading", never "follows the programmed register". G13 varies it. No
+// claim of the seven was declined.
 //
 // RTL OPENED, BUILT AND RUN, 11.09.2026 (all after the spec-only commit
 // above; built under WSL/Verilator 5.052). Every port name and address
@@ -364,6 +369,33 @@
 //
 // Final rebuild after this extension's revert: 12 passed, 1 failed,
 // confirmed again immediately before this commit.
+//
+// IDS MOVED, ONE ASSERTION ADDED: 3-colortable.c9, 3-ct.c05, 3-hscr.f07
+// (off G2-WINDOW-DEFINES-VISIBLE-AREA) and 3-colortable.c8, 3-ct.c04 (off
+// G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT) sit on
+// G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 instead: G2's and G12's own
+// "border" readings are both taken under the SAME COLOR00 write that
+// programs the window itself, so neither ever varies COLOR00 and neither
+// can establish that a rendering IS the programmed value rather than some
+// COLOR00-independent constant. G13 runs the identical DIWSTRT=$30/
+// DIWSTOP=$90, BPL1DAT-never-written configuration twice, with two
+// different COLOR00 values, and requires the pre-window (border) and
+// in-window-with-no-object (background) readings to move together between
+// the two runs while matching each other within a single run -- and its own
+// companion saturated run shows the window open independently of BPL1DAT,
+// which G12 never did. G2 and G12 keep their own verdict, expected value
+// and measurement unchanged; only the five ids moved.
+//
+// MUTATION G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 stimulus red: the second
+//   run's COLOR00 write changed from $00A to the same $0F0 the first run
+//   uses, so neither the border nor the background reading can differ
+//   between the two runs -> FAIL ("12 passed, 2 failed"), only
+//   G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 newly red (alongside the
+//   already-red D-BRDNTRAN-HAS-NO-EFFECT). Replayable as
+//   MUTATE=G13-BORDER-AND-BACKGROUND-TRACK-COLOR00. Reverted: 13/1.
+//
+// Final rebuild after this repair's revert: 13 passed, 1 failed, confirmed
+// again immediately before this commit.
 
 #include <array>
 #include <cstdint>
@@ -435,6 +467,13 @@ constexpr uint16_t kDiwhighStopH8Bit = 13;
 // need to be known here.
 constexpr uint16_t kColor00Value = 0x0F0;
 constexpr uint16_t kColor01Value = 0xF00;
+// A second, deliberately different COLOR00 value -- used only by
+// G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 below, to require a rendering to
+// change when the register it is supposed to reflect changes. Arbitrary and
+// non-black, like kColor00Value; the two together are what let that
+// assertion tell "follows COLOR00" from "renders some COLOR00-independent
+// constant".
+constexpr uint16_t kColor00AltValue = 0x00A;
 
 // Reused clocking mechanics for this fixture, on the same port set this
 // repository's own already-committed hrm/denise/test_denise.cpp declares
@@ -714,6 +753,66 @@ Edges measure_window(uint16_t diwstrt_h, uint16_t diwstop_h, uint16_t bplcon0_ex
     return find_edges(samples, border);
 }
 
+// Border and no-object-background readings for ONE COLOR00 value, at the
+// identical DIWSTRT=$30/DIWSTOP=$90 window G12 above uses -- built so a
+// caller can run this twice with two DIFFERENT color00_value arguments and
+// require both readings to move, which G2's and G12's own "border" samples
+// (each taken under the SAME COLOR00 write that programs the window under
+// test) never could.
+//
+// border comes from sample 4 of a run where BPL1DAT is never written at
+// all (no object anywhere, inside the window or outside it, exactly like
+// G12) -- read well before hpos reaches DIWSTRT=$30, i.e. with the window
+// definitely still closed. background comes from a sample inside the SAME
+// run, at an index this function only trusts once a companion SATURATED
+// run, sharing the identical DIWSTRT/DIWSTOP/COLOR00/COLOR01 registers, has
+// independently shown the window open there: `window` (denise.v:328-334)
+// depends only on hpos versus hdiwstrt/hdiwstop, never on BPL1DAT, so the
+// open/close edges measured on the saturated run apply unchanged to the
+// no-object run's own samples at the same indices.
+struct ColorTrack {
+    uint32_t border = 0;
+    uint32_t background = 0;
+    bool window_shown_open = false;
+};
+
+ColorTrack measure_color_track(uint16_t color00_value) {
+    Harness obj;
+    obj.write_reg(kColorbaseAddr, color00_value);
+    obj.write_reg(kColor01Addr, kColor01Value);
+    obj.write_reg(kBplcon0Addr, 0x1000);  // BPU=1; BPL1DAT never written below.
+    obj.write_reg(kDiwstrtAddr, 0x30);
+    obj.write_reg(kDiwstopAddr, 0x90);
+    obj.reset_line();
+    std::vector<uint32_t> no_object_samples;
+    no_object_samples.reserve(500);
+    for (int i = 0; i < 500; ++i) {
+        while (obj.phase != 0) obj.tick();
+        no_object_samples.push_back(Harness::pack_rgb(obj.dut));
+        obj.dut->reg_address_in = 0;
+        obj.dut->data_in = 0;
+        obj.tick();
+    }
+
+    Harness sat;
+    sat.write_reg(kColorbaseAddr, color00_value);
+    sat.write_reg(kColor01Addr, kColor01Value);
+    sat.write_reg(kBplcon0Addr, 0x1000);
+    sat.write_reg(kDiwstrtAddr, 0x30);
+    sat.write_reg(kDiwstopAddr, 0x90);
+    auto sat_samples = sat.scan_window(500, /*saturate=*/true);
+    Edges e = find_edges(sat_samples, sat_samples[4]);
+
+    ColorTrack r;
+    r.border = no_object_samples[4];
+    r.window_shown_open = e.is_clean() && (e.open_idx + 5) < e.close_idx;
+    long inside_idx = (e.open_idx >= 0) ? (e.open_idx + 5) : 4;
+    if (inside_idx < 0 || inside_idx >= static_cast<long>(no_object_samples.size()))
+        inside_idx = 4;
+    r.background = no_object_samples[static_cast<size_t>(inside_idx)];
+    return r;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -762,20 +861,21 @@ int main(int argc, char** argv) {
     }
 
     // ==================== G2: WINDOW-DEFINES-VISIBLE-AREA ====================
-    // Four ids added to this assertion's label below (3-video.c28,
-    // 3-colortable.c9, 3-ct.c05, 3-hscr.f07): each is already fully
-    // established by the measurement this block already makes, not by any
-    // new code. 3-video.c28 restates the same p.42 sentence this label
-    // already quotes ('the playfield in memory are often larger than the
-    // playfield displayed on the screen... by specifying a different size
-    // for the display window') -- narrowing DIWSTOP while the saturated
-    // data stays constant is exactly that mechanism. 3-colortable.c9,
-    // 3-ct.c05 (p.46) and 3-hscr.f07 (Figure 3-24, p.83) each say the
-    // background colour is displayed outside the display window, in the
-    // border -- and this block's own closing sentence already measures
-    // that every single sample outside [open_idx, close_idx) reads the
-    // border colour (COLOR00, the value written to COLORBASE), on both the
-    // narrow and the wide window.
+    // One id added to this assertion's label below (3-video.c28): it
+    // restates the same p.42 sentence this label already quotes ('the
+    // playfield in memory are often larger than the playfield displayed on
+    // the screen... by specifying a different size for the display
+    // window') -- narrowing DIWSTOP while the saturated data stays constant
+    // is exactly that mechanism, already fully established by the
+    // measurement this block already makes.
+    //
+    // 3-colortable.c9, 3-ct.c05 and 3-hscr.f07 do NOT sit here: this
+    // block's border sample comes from measure_window's own calibration
+    // Harness, written with the identical COLOR00 value as the window
+    // under test, so nothing here ever varies COLOR00 -- the comparison
+    // only ever shows "outside reads differently from inside", never
+    // "outside reads COLOR00's own programmed value". Moved to
+    // G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 below, which does vary it.
     {
         auto narrow = measure_window(0x30, 0x40);  // 16-lores-pixel-wide window
         // MUTATION G2-WINDOW-DEFINES-VISIBLE-AREA stimulus red: MUTATE=G2-
@@ -789,8 +889,7 @@ int main(int argc, char** argv) {
             narrow.is_clean() && wide.is_clean() && same_open && width_tracks_diwstop,
             "G2-WINDOW-DEFINES-VISIBLE-AREA: "
             "3-diw.c01 3-window.c1 3-window.c3 3-window.c5 3-diw.c04 3-diw.c03 "
-            "3-window.c4 3-window.c6 3-bpl.c16 3-video.c28 3-colortable.c9 "
-            "3-ct.c05 3-hscr.f07 : with a fully saturated bitplane 1 "
+            "3-window.c4 3-window.c6 3-bpl.c16 3-video.c28 : with a fully saturated bitplane 1 "
             "(colour present at EVERY sampled horizontal position, so nothing "
             "outside the window is a data-fetch accident -- see the HPOS[3:2] TRAP "
             "note above), narrowing DIWSTOP from $50 to $40 while DIWSTRT stays at "
@@ -1335,21 +1434,27 @@ int main(int argc, char** argv) {
     }
 
     // ==================== G12: BACKGROUND-SHOWS-WHERE-NO-OBJECT ====================
-    // New assertion for 3-colortable.c8 and 3-ct.c04 (opus twin), the
-    // GENERAL half of the same p.46 sentence G2 already covers the BORDER
-    // half of ('shows in any area on the display where there is no other
-    // object present', independent of whether that area is inside or
-    // outside the display window) -- routed here because a plane carrying
-    // no data selects colour register 0 (COLOR00) exactly like the border
-    // path does: denise.v:489-498 forces clut_data=0 outside the window
-    // (!window_ena), and inside it clut_data=plfdata^bplxor, where
-    // denise_playfields.v's own single-playfield path is plfdata=bpldata
-    // (l.100, confirmed by opening denise_playfields.v) and bplxor resets
-    // to 0 (denise.v:278) -- so with BPL1DAT never written (bpldata stays
-    // at its own zero reset) the two paths converge on the identical
-    // COLOR00 index whether or not the window is open. No prior assertion
-    // in this file scans with the bitplane left unsaturated, so this is a
-    // genuinely new measurement, not a relabelling of an existing one.
+    // Carries no claim id. A plane carrying no data selects colour
+    // register 0 (COLOR00) exactly like the border path does:
+    // denise.v:489-498 forces clut_data=0 outside the window (!window_ena),
+    // and inside it clut_data=plfdata^bplxor, where denise_playfields.v's
+    // own single-playfield path is plfdata=bpldata (l.100, confirmed by
+    // opening denise_playfields.v) and bplxor resets to 0 (denise.v:278) --
+    // so with BPL1DAT never written (bpldata stays at its own zero reset)
+    // the two paths converge on the identical COLOR00 index whether or not
+    // the window is open. No prior assertion in this file scans with the
+    // bitplane left unsaturated.
+    //
+    // 3-colortable.c8 and 3-ct.c04 do NOT sit here: the "border" this block
+    // compares against comes from a calibration Harness written with the
+    // identical COLOR00 value as the window under test, so this never
+    // varies COLOR00 either -- it shows every no-object sample matches
+    // *some* fixed reading, never that the reading is COLOR00's own
+    // programmed value. It also never shows the $30-$90 window actually
+    // opened in this harness; that is asserted separately, by the
+    // saturated companion run inside measure_color_track. Moved to
+    // G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 below, which establishes
+    // both.
     {
         Harness h;
         h.write_reg(kColorbaseAddr, kColor00Value);
@@ -1397,7 +1502,7 @@ int main(int argc, char** argv) {
         checks.expect(
             no_object_never_differs,
             "G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT: "
-            "3-colortable.c8 3-ct.c04 : with BPU=1 but BPL1DAT never written (no "
+            ": with BPU=1 but BPL1DAT never written (no "
             "bitplane object bit is ever set, across the whole 500-sample scan, "
             "inside the DIWSTRT=$30/DIWSTOP=$90 window or outside it) every single "
             "sample reads identically to the same COLOR00 calibration sample the "
@@ -1406,6 +1511,63 @@ int main(int argc, char** argv) {
             "whenever no other object supplies a differing bit: 'the background "
             "color shows in any area on the display where there is no other "
             "object present' (p.46).");
+    }
+
+    // ==================== G13: BORDER-AND-BACKGROUND-TRACK-COLOR00 ====================
+    // Establishes 3-colortable.c9, 3-ct.c05, 3-hscr.f07 (moved off G2) and
+    // 3-colortable.c8, 3-ct.c04 (moved off G12): neither block above ever
+    // varies COLOR00 -- each takes its "border" reading from a calibration
+    // Harness written with the SAME COLOR00 value as the window under
+    // test, so each can only show "outside/no-object reads a fixed
+    // colour", never "outside/no-object reads COLOR00's own programmed
+    // value". This assertion runs measure_color_track (defined above, in
+    // the anonymous namespace) TWICE, with two different COLOR00 values,
+    // and requires:
+    //   - the window is independently shown open both times (a
+    //     same-registers SATURATED companion run's own clean, non-empty
+    //     open/close edges, which depend only on hpos versus
+    //     hdiwstrt/hdiwstop and never on BPL1DAT);
+    //   - the pre-window (border) and in-window-with-no-object
+    //     (background) readings match EACH OTHER within a single run --
+    //     the p.46 claim itself, that the same background colour shows
+    //     both outside the window and inside it wherever no object is
+    //     present;
+    //   - both readings CHANGE when COLOR00 changes -- the part neither G2
+    //     nor G12 could show, since neither ever wrote a second value.
+    {
+        auto a = measure_color_track(kColor00Value);
+        // MUTATION G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 stimulus red:
+        //   MUTATE=G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 writes the SAME
+        //   COLOR00 value on the second run instead of a genuinely
+        //   different one, so neither reading can differ between the runs.
+        auto b = measure_color_track(
+            mutating("G13-BORDER-AND-BACKGROUND-TRACK-COLOR00") ? kColor00Value
+                                                                  : kColor00AltValue);
+
+        bool window_shown_open = a.window_shown_open && b.window_shown_open;
+        bool border_tracks_color00 = a.border != b.border;
+        bool background_tracks_color00 = a.background != b.background;
+        bool border_matches_background_per_run =
+            a.border == a.background && b.border == b.background;
+
+        checks.expect(
+            window_shown_open && border_tracks_color00 && background_tracks_color00 &&
+                border_matches_background_per_run,
+            "G13-BORDER-AND-BACKGROUND-TRACK-COLOR00: "
+            "3-colortable.c9 3-ct.c05 3-hscr.f07 3-colortable.c8 3-ct.c04 : "
+            "with the identical DIWSTRT=$30/DIWSTOP=$90 window and BPL1DAT "
+            "never written (no object present anywhere), a same-registers "
+            "saturated companion run independently shows this window open (a "
+            "clean, non-empty [open_idx,close_idx) measured off hpos versus "
+            "hdiwstrt/hdiwstop alone, never off BPL1DAT); writing COLOR00=$0F0 "
+            "makes the pre-window sample (border, hpos still below DIWSTRT) "
+            "and the in-window sample (background, inside the window just "
+            "shown open, still no object) read identically, and writing a "
+            "SECOND, different COLOR00=$00A changes BOTH readings together -- "
+            "'the background color shows in any area on the display where "
+            "there is no other object present and is also displayed outside "
+            "the defined display window, in the border area' (p.46), matching "
+            "Figure 3-24's 'background color' callout on the border (p.83).");
     }
 
     // ==================== DECLINED CLAIMS ====================
