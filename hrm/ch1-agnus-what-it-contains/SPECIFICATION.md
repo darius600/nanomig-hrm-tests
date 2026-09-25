@@ -764,6 +764,45 @@ confirms (for `DMACON`, the one register this fixture can drive both ways)
 that the same address's write has an observable effect — and that no
 address does both.
 
+## Extension — one claim routed here independently of `classify.package`
+
+Claim `sol:5-appA-p263.c6` (page 263, Appendix A) reads:
+
+> The lowest bit of all pointers must be written as zero.
+
+Restated: the least significant bit of every custom-chip pointer must be
+written as zero. Its own classification names `ch5-audio-location-pointer`
+as `classify.package`; it is graded in this package instead because the
+routing step that decides which package grades a claim, not
+`classify.package`, placed it here — and this package is the one place more
+than one engine's own pointer register (disk, audio, Copper, blitter
+destination) already sits in a single build, which a single-engine sibling
+package is not.
+
+| # | page | uids | disposition | label below |
+|---|---|---|---|---|
+| P34 | 263 | `sol:5-appA-p263.c6` | GRADE | POINTER-LOW-BIT-WRITTEN-ZERO |
+
+### P34 — POINTER-LOW-BIT-WRITTEN-ZERO (page 263, Appendix A)
+
+> The lowest bit of all pointers must be written as zero.
+— `sol:5-appA-p263.c6`
+
+Graded at this boundary rather than at a single-engine sibling package
+precisely because more than one pointer register already sits in this one
+fixture (see BOUNDARY above): at least two of them — disk (DSKPTH/DSKPTL)
+and audio (AUD0LCH/AUD0LCL) — are each written with their own low
+register's bit 0 forced to 1 instead of the clean, already-even values
+every proposition above uses, and the fixture confirms the DMA-fetched
+address it observes is identical to what the same pointer produces with bit
+0 held at 0 — bit 0, however written, has no effect on the address this
+fixture can observe, consistent with the manual's instruction that it
+always be written as zero. A companion measurement on the same register's
+own bit 1 (a bit the manual does not exempt) must show a *different*
+observed address when bit 1 differs, so the comparison is shown able to
+detect a real difference and this is not a vacuous equality for every bit
+position.
+
 ## Non-goals
 
 This package does not grade: Copper/blitter cycle-exact timing (chapter 2,
