@@ -308,6 +308,58 @@
 //   No change to the assertion's own boolean condition or to its mutation
 //   (MUTATION HAM-MODIFY-WRITES-PIXEL above, unchanged, still applies) --
 //   this was a print-only fix.
+//
+// ROUTED ADDITION, 25.09.2026 (spec-only commit -- from
+//   ch3-nominal-display-values-spec-stage.jsonl alone, the routing's own
+//   `how` and the full claims file's classification not yet opened, per the
+//   build brief's order of work). Nine more claims were routed to this
+//   package in today's backlog pass, all clustered on the one proposition
+//   COLOR-BITS-15-12-UNUSED above already specifies and asserts:
+//   - 3-colortable.c13 (sol) and 3-t3.c01 (opus), p.46, "Bits 15 - 12
+//     Unused" (Table 3-3, the chapter body's own colour-register-format
+//     table): restates, from a THIRD page/table (the chapter body, not the
+//     p.92 appendix-B summary row 3-t15.c01 already cites, nor the p.273
+//     appendix-A entry below), the identical hardware fact -- colour
+//     register bits 15-12 carry no effect -- this package already measures.
+//   - 3-colorsum.c6 (sol), p.92, the "Unused" half of "Bits 15 - 12
+//     Unused (set these to 0)": the same appendix-B summary row 3-t15.c01
+//     already cites, extracted a second time (a different reader/pass) and
+//     split so the hardware half is its own claim id rather than sharing
+//     one id with the software half below.
+//   - 3-colorsum.c7 (sol), p.92, the same row's "(set these to 0)" half,
+//     restated as its own claim, "Color-register bits 15-12 must be
+//     written as zero": this is exactly the software-directed half
+//     COLOR-BITS-15-12-UNUSED's own comment already names and already
+//     declines to assert -- forward-compatibility guidance to a programmer,
+//     not a hardware guarantee; nothing about denise's behaviour depends on
+//     what an ignored bit was last written as, so there is no module-
+//     boundary effect for any fixture to observe. On the manual's content
+//     alone this is not gradable here, the same call already made for the
+//     identical clause under 3-t15.c01 -- confirmed, not decided fresh,
+//     once routing.how is read below.
+//   - A-color.c7/c8/c9/c10 (sol), p.273, Appendix A's own COLORxx bit
+//     table ("BIT# 15,14,...00" / "RGB  X  X  X  X  R3 R2..."), one claim
+//     per bit (15, 14, 13, 12 respectively, each marked X): the identical
+//     "unused" proposition split to single-bit granularity, per the BIT
+//     TABLE rule -- the same appendix-A row hrm/ch3-colour-register-format
+//     and this package's own A-color.c10 (already asserted, see the header
+//     above) already draw on, now with three sibling bits given their own
+//     ids.
+//   - A-colorxx.bits1 (opus), p.273, the same appendix-A row read as one
+//     group claim ("bits 15-12 are X, i.e. unused") rather than split --
+//     opus's own twin of the four sol ids immediately above.
+//   None of these nine claims asks this fixture to observe anything
+//   COLOR-BITS-15-12-UNUSED does not already exercise (COLOR01 written with
+//   bits 15-12 at $0 and at $F, low 12 bits held constant, renders
+//   identically) -- eight are the same "unused" proposition restated from a
+//   different page, table, reader or bit-granularity, and the ninth
+//   (3-colorsum.c7) is the one already-declined software-guidance clause,
+//   restated as its own id. The build brief's item 1 covers exactly the
+//   eight: the existing assertion's own label gains their ids, written out
+//   in full, rather than a new assertion being built to reprove a fact
+//   already measured. No expected value, no oracle text and no existing
+//   assertion's verdict changes. The full claims file is opened next, to
+//   read routing.how and confirm this reading before the ids actually move.
 
 #include <cstdio>
 #include <cstring>
