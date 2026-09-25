@@ -76,9 +76,11 @@
 // (opus, p.271) -- see the two checks.note() calls in main() for the full
 // reasoning against each.
 //
-// CLAIM COVERAGE: all 77 records of claims.jsonl (both readers, every page)
-// are accounted for below -- 75 inside an expect() message, 2 inside a
-// note() call with a stated reason. Every id is written out in full; none
+// CLAIM COVERAGE: all 77 records of claims.jsonl (both readers, every page),
+// plus opus:3-ham.c08 (routed to this package separately from claims.jsonl;
+// same printed sentence and page as the already-graded sol:3-ham.c8), are
+// accounted for below -- 76 inside an expect() message, 2 inside a note()
+// call with a stated reason. Every id is written out in full; none
 // compressed to a shared prefix. c10 and c11 (page 86) and c14/c15/c16/c17/
 // c18/c19 (pages 86-87) and t19.c*/table3-19.c* (page 95) each name TWO
 // records (opus and sol independently assigned the same numeric id to
@@ -289,6 +291,12 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- HAM-CONTROL-00-NORMAL-SELECTION ----------------
+    // opus:3-ham.c08 added to this assertion's id list: routing.how names
+    // it the twin of the sol:3-ham.c8 already graded here -- the same
+    // printed sentence ("Planes 5 and 6 are used to modify the way bits
+    // from planes 1-4 are treated", p.86) already quoted in this label,
+    // independently numbered "c08" rather than "c8" by the other reader.
+    // No new quote, no new expected value; only the id list changes.
     checks.expect(
         rgb0 == 0xAABBCCu,
         "HAM-CONTROL-00-NORMAL-SELECTION: with the 6-5 control field "
@@ -301,7 +309,7 @@ int main(int argc, char** argv) {
         "color registers' (p.86), 'Planes 5 and 6 are used to modify the "
         "way bits from planes 1-4 are treated' (p.86), '0 0 Normal "
         "operation (use color register itself)' (Table 3-19, p.95). "
-        "3-ham.c09, opus:3-ham.c10, sol:3-ham.c10, opus:3-ham.c11, 3-ham.c8, 3-ham.c9, 3-t19.c00, "
+        "3-ham.c09, opus:3-ham.c10, sol:3-ham.c10, opus:3-ham.c11, 3-ham.c8, opus:3-ham.c08, 3-ham.c9, 3-t19.c00, "
         "3-table3-19.c1 .");
 
     // ---------------- HAM-HOLDS-PREVIOUS-VALUE-AND-MODIFIES-ONE-COMPONENT ----------------
