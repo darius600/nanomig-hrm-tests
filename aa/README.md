@@ -3,21 +3,22 @@
 The second oracle: Commodore's *Functional Specification for the Advanced Amiga
 Chip Set (AA)*, 06/07/91, PRELIMINARY. 31 pages.
 
-These are not in `hrm/` and not in the 208. `hrm/` is the Hardware Reference
-Manual's suite, `run_all.sh` and `check_published_counts.py` both count the
-directories there, and a second oracle's packages would silently change a
-published figure that means something else.
+These packages sit apart from `hrm/`, which is the Hardware Reference Manual's
+suite, because each oracle's figures are counted on their own: `run_all.sh`
+prints one summary line for `hrm/` and one for `aa/`. The root
+[`README.md`](../README.md#where-the-suite-stands) carries the current package
+and assertion counts for both.
 
-```
-wsl
-cd /mnt/c/code4nanomig/code/nanomig-hrm-tests/aa/aa-clxcon2-address
-make test      # 3 passed, 0 failed
-make mutate    # the address assertion goes red
+Run one package from the repository root:
+
+```sh
+make -C aa/aa-clxcon2-address test      # the graded assertions
+make -C aa/aa-clxcon2-address mutate    # the address assertion goes red
 ```
 
-| package | what it grades | finding |
-|---|---|---|
-| `aa-clxcon2-address` | where CLXCON2 is decoded, and that a CLXCON write clears it | [NM-AA-001](../docs/findings/NM-AA-001.md) |
+The AA findings have a register of their own,
+[The AA register](../docs/findings.md#the-aa-register), and one page each
+under [`docs/findings/`](../docs/findings/) (`NM-AA-nnn`).
 
 ## Where the claims come from
 
@@ -26,6 +27,8 @@ merged from three readings, 1134 load-bearing lines of which 1130 are
 corroborated by two or more. `hrm-testpipeline/docs/aa-text-extraction.md` says
 how it was built and what is wrong with it.
 
-The specification is **PRELIMINARY and contradicts itself**, which is why the
-first package grades a contradiction rather than a behaviour. It is never
-adjusted to make a test pass.
+The specification is **PRELIMINARY and contradicts itself**, which is why some
+packages grade a contradiction rather than a behaviour:
+`aa-clxcon2-address` does, and [NM-AA-001](../docs/findings/NM-AA-001.md) is
+filed against the printed page. The specification is never adjusted to make a
+test pass.

@@ -9,7 +9,7 @@ make mutate    # FAIL: the same line -- proving the assertion can go red
 ```
 
 Why it exists: [`adding-a-test.md`](../adding-a-test.md) used to send a first-time
-reader to a 1,749-line worked example. That file is still the reference for
+reader to a worked example some two thousand lines long. That file is still the reference for
 every rule; this one is the shape, in about a hundred lines.
 
 What to look at, in order:

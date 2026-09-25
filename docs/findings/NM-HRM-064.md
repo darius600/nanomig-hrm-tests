@@ -66,23 +66,6 @@ bit-6-clear board should go silent (`0x0`) — six assertions red, of the
 package's `5 passed, 8 failed`. See *What holds the finding up* below for the
 six assertions and the inverse control in full.
 
-## What holds the finding up
-
-`hrm/appK-autoconfig-base-address`, six assertions, all red. The fixture drives a
-real 68000 program through `cpu_wrapper`'s own bus — no internal signal is
-touched — writes 4C, and reads the board back:
-
-    board still answers after a write to 4C, raw nibble stays 0xE
-
-An inverse control in the same package writes register **48** instead, and the
-board does go silent. So the fixture can observe silencing; there is nothing to
-observe after 4C.
-
-The package builds `cpu_wrapper` with TG68K. The same test source built with
-fx68k, [`hrm/appK-autoconfig-base-address-fx68k`](../../hrm/appK-autoconfig-base-address-fx68k),
-gives the same six reds and the same control, so the finding does not rest on
-the CPU core or on the Verilator-only TG68K instance.
-
 ## What the others say
 
 | | 0x4C handled | |
@@ -152,6 +135,23 @@ stops the board answering — makes the design complete instead of merely honest
 and would be the first RAM-board shut-up in the family. Whether that is wanted
 is a question for Amiga specialists, and so is whether any Kickstart writes 4C
 to a RAM board at all.
+
+## What holds the finding up
+
+`hrm/appK-autoconfig-base-address`, six assertions, all red. The fixture drives a
+real 68000 program through `cpu_wrapper`'s own bus — no internal signal is
+touched — writes 4C, and reads the board back:
+
+    board still answers after a write to 4C, raw nibble stays 0xE
+
+An inverse control in the same package writes register **48** instead, and the
+board does go silent. So the fixture can observe silencing; there is nothing to
+observe after 4C.
+
+The package builds `cpu_wrapper` with TG68K. The same test source built with
+fx68k, [`hrm/appK-autoconfig-base-address-fx68k`](../../hrm/appK-autoconfig-base-address-fx68k),
+gives the same six reds and the same control, so the finding does not rest on
+the CPU core or on the Verilator-only TG68K instance.
 
 ## For the specialists
 

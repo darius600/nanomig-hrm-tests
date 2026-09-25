@@ -7,6 +7,12 @@ test that measures the RTL doing something the manual does not describe.
 This suite stops there. The decision is the specialist's, and each page's
 *Suggested change* states one option, not a verdict.
 
+**Have one evening?** Start at the register's shortlist,
+[If you have one evening](findings.md#if-you-have-one-evening): a few
+findings, each with what it takes to settle -- a page to re-read, or one
+short change and one package run. This list is sorted by module, not by
+effort.
+
 **48 findings ask for a review, in 25 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The

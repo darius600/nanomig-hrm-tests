@@ -36,7 +36,7 @@ example is not a package.
 [`hrm/ch3-beam-counters-and-blanking`](../hrm/ch3-beam-counters-and-blanking)
 grades `BPLCON0`'s `ERSY` bit and shows every rule below in place: the header
 block, per-assertion page citations, a control on the same measurement basis,
-and the mutation lines. It is 1,749 lines, which is what a package looks like
+and the mutation lines. It runs to some two thousand lines, which is what a package looks like
 when it carries a chapter's worth of claims — go to it once the shape is
 familiar, and read it for the rules rather than end to end.
 
@@ -46,6 +46,14 @@ familiar, and read it for the rules rather than end to end.
 it answers for, and — this one gets forgotten — **non-goals**: what a reader
 might expect to be covered here and is not, with the reason. Usually the reason
 is that the signal is not a port of the module under test.
+
+**The header of the test source is the package's record**, in every package.
+Markdown beside it is optional. About half the packages carry a
+`SPECIFICATION.md`, the specification their builder wrote from the claims
+before reading the RTL; a handful carry a `README.md`, and one carries its
+specification and mutation log as `SPEC.md` and `MUTATIONS.md`. None of these
+files is required, and whether a package has one says nothing about what kind
+of package it is.
 
 **One assertion per proposition**, each naming its printed page. Never a
 collective *"all cases passed"*: when it goes red, nobody can tell which

@@ -2,10 +2,13 @@
 
 **46 of the 68 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
-> **One page per finding now lives in [`findings/`](findings/).** Each has the
-> same six parts — what the HRM says, what NanoMig does, what the other four say,
+> **One page per finding now lives in [`findings/`](findings/).** Each opens
+> with the same three parts, in this order: what the HRM says, what NanoMig
+> does, what the other four say. Then come, where they apply and in this order,
 > a suggested change, what holds the finding up, and what is left for
-> specialists — with every source quoted and permalinked at a pinned revision.
+> specialists. What other Commodore documents say sits either after the other
+> four or at the end. A withdrawn page keeps only the reasoning that withdrew
+> it. Every source is quoted and permalinked at a pinned revision.
 > Those pages are the maintained form and are written to be readable by someone
 > who has never seen this project.
 >
@@ -126,6 +129,8 @@ never disagree. Eight values occur:
 | `open · page · none` | the same, with no test built against it yet |
 | `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested |
 | `**withdrawn**` | nothing; kept so the claim is not raised a second time |
+
+### If you have one evening
 
 **If you have one evening: 46 of these 68 ask you to decide something.** The
 rest are withdrawn, answered, or observations kept for context. The table below
