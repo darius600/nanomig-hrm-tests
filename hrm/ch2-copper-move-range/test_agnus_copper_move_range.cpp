@@ -24,6 +24,68 @@
 // Appendix B are used as the oracle because they agree with each other and are
 // unambiguous full byte addresses.
 //
+// PROPOSITIONS ROUTED 2026-09-25 (work/2026-09-25_unit-backlog), spec-stage
+// only -- quote, restatement and page, RTL not opened for these yet:
+//   ch2-the-move-instruction.c9 (p.21) quote "Any register whose address is
+//     between $10 and $20 if the Copper danger bit is a 1..." -- restated:
+//     the Copper can store data into any register whose address is between
+//     $10 and $20 if the Copper danger bit is a 1.
+//   ch2-the-move-instruction.c11 (p.21) quote "The Copper cannot write into
+//     any register whose address is lower than $10." -- restated: the
+//     Copper cannot write into any register whose address is lower than
+//     $10.
+//   ch2-control-register.c3 (p.26) quote "Those it cannot affect at all are
+//     numbered $00 to $3E inclusive. The Copper control register is within
+//     this group ($00 to $3E)." -- restated: the registers the Copper
+//     cannot affect at all are numbered $00 to $3E inclusive.
+//   ch2-control-register.c4 (p.26) quote "inclusive. The Copper control
+//     register is within this group ($00 to $3E)." -- restated: the Copper
+//     control register lies inside the $00 to $3E group the Copper cannot
+//     affect.
+//   ch2-control-register.c5 (p.26) quote "The rest of the registers, from
+//     $40 to $7E, are protected by a bit in the Copper control register."
+//     -- restated: the registers from $40 to $7E are protected by a bit in
+//     the Copper control register.
+//   ch2-control-register.c8 (p.26) quote "This bit, called CDANG (for
+//     Copper Danger Bit) protects all registers numbered between $40 and
+//     $7E inclusive." -- restated: CDANG protects all registers numbered
+//     between $40 and $7E inclusive.
+//   ch2-control-register.c10 (p.26) quote "When CDANG is 0, these registers
+//     cannot be written by the Copper." -- restated: when CDANG is 0 the
+//     registers from $40 to $7E cannot be written by the Copper.
+//   ch2-control-register.c11 (p.26) quote "When CDANG is 1, these registers
+//     can be written by the Copper." -- restated: when CDANG is 1 the
+//     registers from $40 to $7E can be written by the Copper.
+//   These eight restate the same page-21-versus-page-26 protected-range
+//   numbers this file already resolved editorially above (by favouring
+//   page 25/Appendix B), but the classifier's own conflict_resolution for
+//   these eight specific ids says plainly: "NOT RESOLVED HERE: the numbers
+//   are recorded, not asserted." Grading either side of a manual conflict
+//   the classifier explicitly declined to resolve is not this file's call
+//   to make unilaterally, however it happens to line up with the existing
+//   T3-T10 measurements below -- so these eight are expected to land on
+//   record() lines, not expect() lines, pending confirmation once
+//   <unit>.jsonl's routing is read.
+//   ch2-appa-copcon.c9 (p.274) quote "01 CDANG Copper danger mode. Allows
+//     Copper access to blitter if true." -- restated: bit 1 of COPCON is
+//     named CDANG.
+//   ch2-appa-copcon.c10 (p.274) same quote -- restated: CDANG is the
+//     Copper danger mode bit.
+//   B-copcon.addr (p.289) quote "COPCON *02E W A(E) Coprocessor control
+//     register (CDANG)" -- restated: Appendix B, address order: COPCON is
+//     listed at address $02E. Its own reader flagged it print-only,
+//     not-named-in-chapter, added by opus's own completion audit and not
+//     cross-read.
+//   3-scroll-copper.c2 (p.80, chapter 3, reader sol) quote "For either type
+//     of scrolling, resetting of pointers or data-fetch registers can be
+//     handled by the Copper during the vertical blanking interval." --
+//     restated: for vertical or horizontal scrolling, the Copper can reset
+//     data-fetch registers during vertical blanking.
+//   Grading versus recording each of these four is decided after
+//   <unit>.jsonl and the RTL are opened, per Prompt 7's order of work; see
+//   the RECORDED and PASS/FAIL lines below for the disposition actually
+//   reached.
+//
 // MUTATION T1 stimulus red: swapped move_reaches() target from COLOR00 to BLTCON0 (still CDANG=0) -> FAIL as expected.
 // MUTATION T2 stimulus red: swapped move_reaches() target from BPL1PTH to BLTCON0 (still CDANG=0) -> FAIL as expected.
 // MUTATION T3 stimulus red: flipped cdang argument false->true on the BLTCON0 call -> FAIL as expected (write now succeeds, unblocked assertion fails).
