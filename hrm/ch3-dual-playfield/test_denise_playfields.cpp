@@ -26,9 +26,10 @@
 //   naming independent bitplane scrolling (3-dual-mode.c2, 3-dual.c46) and
 //   the high-resolution two-bitplane-per-playfield cap (3-dual-planes.c4/
 //   c5/c6, 3-dual.c18/c19/c20) are declined -- see DECLINED CLAIMS below;
-//   this module has no scroll/position or resolution port. One claim naming
-//   sprite visibility through a transparent playfield (3-dual-color.c24) is
-//   declined for the same kind of reason -- no sprite port here. One claim
+//   this module has no scroll/position or resolution port. Two claims naming
+//   sprite visibility through a transparent playfield (3-dual-color.c24,
+//   3-dual.c31) are declined for the same kind of reason -- no sprite port
+//   here. One claim
 //   about a plane-6/HAM DMA restriction (3-bplcon0.c20) is declined as a
 //   system-level DMA policy question, not something this pure per-pixel
 //   composition module enforces.
@@ -100,8 +101,8 @@
 // what denise_playfields.v actually does with planes 1 and 3 in isolation,
 // without asserting either reading as correct.
 //
-// CLAIM COVERAGE: 89 of the 99 records in claims.jsonl are cited below, in
-// full, inside an expect() label; 10 are declined (see DECLINED CLAIMS).
+// CLAIM COVERAGE: 88 of the 99 records in claims.jsonl are cited below, in
+// full, inside an expect() label; 11 are declined (see DECLINED CLAIMS).
 // Ids restating the identical proposition under a different manual
 // wording, page or reader are grouped and cited together on the single
 // assertion (or single shared-mechanism loop) that tests that proposition
@@ -112,15 +113,15 @@
 //   COLOUR-REGISTER-RANGES (9 ids)      -- 0-7 / 8-15, disjoint sets.
 //   CODE-ZERO-TRANSPARENT (8 ids)       -- code 0 is transparent, per playfield.
 //   PF2PRI-PRIORITY (22 ids)            -- BPLCON2 bit 6 decides front/back.
-//   TRANSPARENCY-FALLTHROUGH (6 ids)    -- transparent reveals what is behind.
+//   TRANSPARENCY-FALLTHROUGH (5 ids)    -- transparent reveals what is behind.
 //   ODD-EVEN-GROUPING (12 ids, loop x6) -- each plane's playfield membership.
 //   FIG313-ROW-COUNTS (14 ids, loop x7) -- Figure 3-13's per-row split.
 //   DBLPF-ACTIVATION (6 ids)            -- BPLCON0 bit 10 enables the mode.
 //   MSB-BIT-IDENTITY (4 ids)            -- the undisputed high bit, each side.
 //   PF2-LSB-BIT-IDENTITY (2 ids)        -- playfield 2's undisputed low bit.
-//   6+9+8+22+6+12+14+6+4+2 = 89.
+//   6+9+8+22+5+12+14+6+4+2 = 88.
 //
-// DECLINED CLAIMS (10 ids, not observable at this module's ports):
+// DECLINED CLAIMS (11 ids, not observable at this module's ports):
 //   3-dual-mode.c2 (p.67) -- "You can also move the two playfields
 //     independently." Bitplane scrolling/positioning; this module has no
 //     scroll/position port (aga, bpldata, dblpf, pf2of, bplcon2 in;
@@ -142,11 +143,14 @@
 //     it accepts bit 5 (plane 6) whenever it is presented.
 //   3-dual-color.c24 (p.71) -- transparent playfield reveals "a sprite".
 //     No sprite port exists on this module; sprite compositing is
-//     ch3-sprite-playfield-priority's boundary. (The same quote's other
-//     two named cases -- the other playfield, the background colour -- are
-//     tested by TRANSPARENCY-FALLTHROUGH via 3-dual.c31, with the sprite
-//     portion of that compound claim explicitly not covered; see that
-//     assertion's own label.)
+//     ch3-sprite-playfield-priority's boundary.
+//   3-dual.c31 (p.71) -- the same page-71 sentence's three-way compound
+//     ("the other playfield, a sprite, or the background colour"). The
+//     other-playfield and background-colour cases are established by
+//     TRANSPARENCY-FALLTHROUGH above, but the claim bundles the sprite
+//     case too, and this module has no sprite port -- so the whole id is
+//     declined rather than kept on that assertion's citation list with a
+//     caveat.
 //
 // CONTROL CASE: CONTROL-KNOWN-VALUES-ARRIVE (no claim id, no manual page)
 // is the control every page-cited assertion below shares: the fixture is
@@ -486,11 +490,11 @@ int main(int argc, char** argv) {
             "transparent mode, to show the color of whatever object (the "
             "other playfield...or the background color) may be behind the "
             "playfield' (p.71). 3-dual-mode.c9, 3-dual.f05, "
-            "3-dual-color.c23, 3-dual-color.c25, 3-dual.c31, "
+            "3-dual-color.c23, 3-dual-color.c25, "
             "3-dual-mode.c14. (3-dual.c31's third named case -- a sprite "
             "behind a transparent playfield -- is outside "
             "denise_playfields' ports; there is no sprite input here, and "
-            "this assertion does not test it; see 3-dual-color.c24 among "
+            "this assertion does not test it; see among "
             "the declined claims.)");
     }
 
@@ -735,6 +739,42 @@ int main(int argc, char** argv) {
         "multi-clause claim is not partially kept on the one clause that "
         "happens to be established, so this id is declined as a whole "
         "rather than added to PF2PRI-PRIORITY's citation list.");
+
+    // =========================================================================
+    // TRANSPARENCY-FALLTHROUGH's sprite clause -- p.71's "Combination 000"
+    // sentence names three things a transparent pixel can reveal (the other
+    // playfield, a sprite, or the background colour); this module has no
+    // sprite port, so only two of the three are established above. Both
+    // ids below quote that same sentence; neither is kept on
+    // TRANSPARENCY-FALLTHROUGH's citation list on the strength of the
+    // other two clauses.
+    // =========================================================================
+    checks.record(
+        "sol:3-dual-color.c24 (p.71, \"Combination 000 selects transparent "
+        "mode, to show the color of whatever object (the other "
+        "playfield, a sprite, or the background color) may be 'behind' "
+        "the playfield\", restated as sprite visibility through a "
+        "transparent dual-playfield pixel): not asserted -- "
+        "denise_playfields has no sprite input (BOUNDARY: aga, bpldata, "
+        "dblpf, pf2of, bplcon2 in; nplayfield, plfdata out only); "
+        "TRANSPARENCY-FALLTHROUGH above establishes only the other-"
+        "playfield and background-colour cases of this sentence. Sprite "
+        "compositing is ch3-sprite-playfield-priority's boundary.");
+    checks.record(
+        "opus:3-dual.c31 (p.71, \"Combination 000 selects transparent "
+        "mode, to show the color of whatever object (the other "
+        "playfield, a sprite, or the background color) may be 'behind' "
+        "the playfield\", restated as the same three-way fall-through): "
+        "not asserted as a whole -- the other-playfield and background-"
+        "colour cases are established by TRANSPARENCY-FALLTHROUGH above, "
+        "but the claim's own third case (a sprite behind a transparent "
+        "playfield) needs a sprite input this module does not have, same "
+        "gap as sol:3-dual-color.c24 just above. This suite's own "
+        "precedent (hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is "
+        "that a multi-clause claim is not partially kept on the clauses "
+        "that happen to be established, so this id is declined as a "
+        "whole rather than kept on TRANSPARENCY-FALLTHROUGH's citation "
+        "list.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
