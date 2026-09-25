@@ -92,14 +92,17 @@
 // before any edit confirmed none of the four appeared anywhere in it as an
 // id (a genuine gap, not already-covered ground under a different name),
 // and `grep` after confirms all four now appear inside an `expect()` or
-// `record()` call's own string argument, not only in a comment - two
-// (ch6-line.c43, 6-appc-big-blits.c22) inside BLTSIZE-WRITE-SETS-BUSY's and
-// SIZE-ZERO-HEIGHT-WRAPS-TO-1024's own already-mutated assertions, two
-// (ch6-dma.c45, 6-appc-big-blits.c24) inside a new RECORDED: line that
-// asserts nothing - see "NOT ASSERTED - UNIT CONVERSION" below for why
-// those two are declined rather than graded. The routing file's own `how`
-// field for each (hrm-testpipeline/work/2026-09-25_unit-backlog/build/
-// ch6-blitter-size.jsonl) is what led here in each case.
+// `record()` call's own string argument, not only in a comment.
+// 6-appc-big-blits.c22 sits inside SIZE-ZERO-HEIGHT-WRAPS-TO-1024's own
+// already-mutated assertion. ch6-line.c43 was first placed inside
+// BLTSIZE-WRITE-SETS-BUSY and ch6-dma.c45 / 6-appc-big-blits.c24 inside a
+// RECORDED: line - an independent validator found both placements wrong
+// (ch6-line.c43 does not establish what BLTSIZE-WRITE-SETS-BUSY measures;
+// ch6-dma.c45 and 6-appc-big-blits.c24 were declined for a reason that did
+// not hold) and they were repaired: ch6-line.c43 now sits on its own
+// RECORDED line (NOT-ASSERTED-BLTSIZE-WRITE-ORDER, above), and ch6-dma.c45
+// / 6-appc-big-blits.c24 are graded on SIZE-WIDTH-FIELD-BITS-LITERAL and/or
+// SIZE-ZERO-WIDTH-WRAPS-TO-64 (see "UNIT CONVERSION, GRADED" below).
 //
 // ADDED 2026-09-25 (unit backlog, SECOND lot, hrm-testpipeline/work/
 // 2026-09-25_unit-backlog/build2): one further claim, sol:3-large.c26
@@ -144,15 +147,21 @@
 //     (pp.169, 186, 191, 192, 200, 269): 6-intro.c19, ch6-intro.c19,
 //     6-blitter-key-points.c1, ch6-keypoints.c2, 6-blitter-done-flag.c1,
 //     ch6-done.c1, 6-line-mode.c102, ch6-linesum.c27, 6-appa-registers.c43,
-//     6-appa-registers.c66, ch6-appa-bltsize.c7, ch6-line.c43 .
-//     (ch6-line.c43, added 2026-09-25: p.191 "register should not be
-//     written until the very end, when all other [registers have been
-//     filled]" is the same "write BLTSIZE last" fact already cited above
-//     from five other pages - the busy-on-write mechanism this assertion
-//     measures IS the reason for the instruction, not a separate fact.
-//     Matches this file's own Non-goals note above about PKG-BLT-LINE's
-//     citing "the same 'writes BLTSIZE last' busy fact" rather than
-//     building its own.)
+//     6-appa-registers.c66, ch6-appa-bltsize.c7 .
+//     (ch6-line.c43 does NOT sit here: p.191's "should not be written until
+//     the very end, when all other registers have been filled" is an
+//     ordering instruction, not a "writing BLTSIZE starts the blit" claim -
+//     this assertion measures only the latter and would print the same if
+//     registers written after BLTSIZE were still honoured. See
+//     NOT-ASSERTED-BLTSIZE-WRITE-ORDER below, where the id is declined
+//     instead, on an independent validator's finding.)
+//
+//   NOT-ASSERTED-BLTSIZE-WRITE-ORDER [recorded, not asserted]
+//     (p.191): ch6-line.c43 . Printed as one RECORDED: line - the ordering
+//     clause ("written last", i.e. whether a register written after
+//     BLTSIZE still takes effect) is PKG-BLT-LINE's territory, not this
+//     package's write/height-field boundary; see this file's own
+//     Non-goals note above.
 //
 //   SIZE-SINGLE-WRITE-SETS-BOTH-FIELDS (pp.170-171): ch6-dma.c10,
 //     6-dma-channels.c44, ch6-dma.c43 .
@@ -168,10 +177,18 @@
 //     ch6-appa-bltsize.bit03, ch6-appa-bltsize.bit04, ch6-appa-bltsize.bit05,
 //     6-dma-channels.c47, ch6-dma.c47, 6-appc-big-blits.c23,
 //     ch6-appc-bltsize.w, 6-appa-registers.c62, ch6-appa-bltsize.w1,
-//     6-dma-channels.c71, ch6-dma.c72, 6-dma-channels.c45, ch6-dma.c44 .
-//     (the last four tie p.173's "linear region" note and p.171's "1 to 64
-//     words" range statement to this assertion's own one-hot-plus-
-//     representative-value sweep - see the assertion's own comment for why)
+//     6-dma-channels.c71, ch6-dma.c72, 6-dma-channels.c45, ch6-dma.c44,
+//     ch6-dma.c45 .
+//     (the last five tie p.173's "linear region" note and p.171's "1 to 64
+//     words (16 to 1024 bits)" range statement to this assertion's own
+//     one-hot-plus-representative-value sweep, which only reaches 1..63 -
+//     so 6-dma-channels.c45 and ch6-dma.c45, both of which state the full
+//     "1 to 64" range plus the manual's own 16-bits-per-word figure, also
+//     sit on SIZE-ZERO-WIDTH-WRAPS-TO-64 below for the "64" end; so does
+//     their p.308 twin pair 6-appc-big-blits.c24 / ch6-appc-bltsize.w,
+//     whose "1024 pixels max" is the same wrap case in the manual's other
+//     fixed unit, 16 pixels per word. See SIZE-ZERO-WIDTH-WRAPS-TO-64's own
+//     list below.)
 //
 //   SIZE-HEIGHT-FIELD-BITS-LITERAL (pp.171, 269, 308): 6-appc-big-blits.c5,
 //     6-appc-big-blits.c6, 6-appc-big-blits.c7, 6-appc-big-blits.c8,
@@ -198,7 +215,16 @@
 //     statement to this assertion's own sweep)
 //
 //   SIZE-ZERO-WIDTH-WRAPS-TO-64 (p.171, p.269, p.308): 6-dma-channels.c48,
-//     ch6-dma.c48, ch6-dma.c56, 6-appa-registers.c63, ch6-appa-bltsize.w2 .
+//     ch6-dma.c48, ch6-dma.c56, 6-appa-registers.c63, ch6-appa-bltsize.w2,
+//     ch6-dma.c45, 6-dma-channels.c45, 6-appc-big-blits.c24,
+//     ch6-appc-bltsize.w .
+//     (the last four, added on an independent validator's finding that the
+//     original RECORDED/WIDTH-LITERAL-only placement did not establish
+//     their "64 words" / "16 to 1024 bits" / "1024 pixels max" clause:
+//     this assertion is exactly where writing 0 is shown to produce 64
+//     destination writes, and 1 word = 16 bits = 16 pixels is the
+//     manual's own fixed arithmetic on that same count, not a separate
+//     RTL fact needing a port this boundary does not have.)
 //
 //   SIZE-ZERO-HEIGHT-WRAPS-TO-1024 (pp.171, 308): 6-dma-channels.c51,
 //     ch6-dma.c51, ch6-dma.c58b, 6-appc-big-blits.c22 .
@@ -216,36 +242,24 @@
 //     6-blitter-key-points.c5, ch6-keypoints.c5, ch6-keypoints.c6 .
 //     (c5/c6 are the p.200 "height is in pixels" wording flagged above)
 //
-//   NOT-ASSERTED-UNIT-CONVERSION [recorded, not asserted - see below]
-//     (pp.171, 308): ch6-dma.c45, 6-appc-big-blits.c24 . Printed as one
-//     RECORDED: line, never a PASS/FAIL line - see "NOT ASSERTED - UNIT
-//     CONVERSION" below for why both are declined.
+//   NOT-ASSERTED-PRACTICAL-SHIFT-LIMIT [recorded, not asserted]
+//     (p.76, the claim's own page; p.171 is the source of the "practical"
+//     reading the record argues from): sol:3-large.c26 . Printed as one
+//     RECORDED: line - see the note above for the full reasoning.
 //
-//   NOT-ASSERTED-PRACTICAL-SHIFT-LIMIT [recorded, not asserted - second
-//     backlog lot, build2] (p.171): sol:3-large.c26 . Printed as one
-//     RECORDED: line - see the "ADDED 2026-09-25 (unit backlog, SECOND
-//     lot...)" note above for the full reasoning.
-//
-// NOT ASSERTED - UNIT CONVERSION (absent_signal: a bit-count or pixel-count
-//   port; reason_kind: absent - this RTL exposes only a word-count field
-//   (width), never a bit count or a pixel count; the manual's own
-//   word-to-bit and word-to-pixel arithmetic (x16) is the programmer's, not
-//   observable here - the same treatment PKG-BLT-ECS's own sibling package
-//   gives its own pixel-count claims (hrm/ch6-blitter-ecs's "NOT ASSERTED -
-//   PIXEL/WORD UNIT CONVERSION", which independently declines this exact
-//   page's width-in-pixels claim, below). Printed as one RECORDED: line at
-//   runtime, naming both ids in full):
-//   ch6-dma.c45 (p.171, "A width of 1 to 64 words is 16 to 1024 bits").
-//   6-appc-big-blits.c24 (p.308, "w = Width  (6 bit width  = 1024 pixels
-//     max)", restated "Original-chip-set BLTSIZE width has a 1024-pixel
-//     maximum" - added 2026-09-25. The words half of the same field (1 to
-//     64, reaching 64 only via the zero-wrap) is exactly what
-//     SIZE-WIDTH-FIELD-BITS-LITERAL and SIZE-ZERO-WIDTH-WRAPS-TO-64 already
-//     measure and is NOT what this id's own restatement states - its
-//     restatement is the pixel figure alone, so per Prompt 7's rule ("an id
-//     whose claim bundles an untested clause is withdrawn whole") it is
-//     declined here rather than kept on either width assertion with the
-//     pixel clause left silently uncounted.)
+// UNIT CONVERSION, GRADED (not recorded). ch6-dma.c45 (p.171, "A width of 1
+//   to 64 words is 16 to 1024 bits") and 6-appc-big-blits.c24 (p.308,
+//   "w = Width  (6 bit width  = 1024 pixels max)", restated
+//   "Original-chip-set BLTSIZE width has a 1024-pixel maximum") were first
+//   declined here as absent_signal (no bit-count or pixel-count port on
+//   agnus_blitter). An independent validator found that reasoning did not
+//   hold: 1 word = 16 bits = 16 pixels is the manual's own fixed
+//   arithmetic on the word count that SIZE-WIDTH-FIELD-BITS-LITERAL and
+//   SIZE-ZERO-WIDTH-WRAPS-TO-64 already measure in full (1..63 and 64
+//   respectively) - not a separate hardware fact needing its own port -
+//   the same reading PKG-BLT-ECS's own sibling package gives the identical
+//   p.308 pixel claims. Both ids are graded there instead; see those two
+//   assertions' own id lists above.
 //
 // FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
@@ -543,7 +557,32 @@ int main(int argc, char** argv) {
             "agnus_blitter.v:500-501. 6-intro.c19, ch6-intro.c19, "
             "6-blitter-key-points.c1, ch6-keypoints.c2, 6-blitter-done-flag.c1, "
             "ch6-done.c1, 6-line-mode.c102, ch6-linesum.c27, 6-appa-registers.c43, "
-            "6-appa-registers.c66, ch6-appa-bltsize.c7, ch6-line.c43 .");
+            "6-appa-registers.c66, ch6-appa-bltsize.c7 .");
+    }
+
+    // ------------- NOT-ASSERTED-BLTSIZE-WRITE-ORDER (recorded, not asserted) -------------
+    {
+        // ch6-line.c43 (p.191): "the BLTSIZE register should not be written
+        // until the very end, when all other registers have been filled."
+        // That is an ordering instruction - it says nothing about busy
+        // rising on the write, only about what must happen before BLTSIZE
+        // is written. BLTSIZE-WRITE-SETS-BUSY above shows busy rising on
+        // the write; it would print exactly the same if registers written
+        // AFTER BLTSIZE were still honoured, which is the actual content of
+        // "written last". Testing that needs a second register write after
+        // BLTSIZE and a check that its value was NOT used by the blit -
+        // PKG-BLT-LINE's own boundary (see this file's Non-goals note
+        // above), not this width/height-field package's.
+        checks.record(
+            "NOT ASSERTED - BLTSIZE WRITE ORDER: absent_signal: none - no "
+            "assertion in this file writes a register after BLTSIZE and "
+            "checks whether it took effect; reason_kind: insufficient. "
+            "ch6-line.c43 (p.191, restated \"BLTSIZE should not be written "
+            "until the very end, when all other registers have been "
+            "filled.\") is an ordering instruction, not a \"writing BLTSIZE "
+            "starts the blit\" fact - BLTSIZE-WRITE-SETS-BUSY above measures "
+            "only the latter. Declined here rather than kept on that "
+            "assertion with the ordering clause left silently uncounted.");
     }
 
     // ---------------- SIZE-SINGLE-WRITE-SETS-BOTH-FIELDS (pp.170-171) ----------------
@@ -616,7 +655,8 @@ int main(int argc, char** argv) {
             "ch6-appa-bltsize.bit03, ch6-appa-bltsize.bit04, ch6-appa-bltsize.bit05, "
             "6-dma-channels.c47, ch6-dma.c47, 6-appc-big-blits.c23, "
             "ch6-appc-bltsize.w, 6-appa-registers.c62, ch6-appa-bltsize.w1, "
-            "6-dma-channels.c71, ch6-dma.c72, 6-dma-channels.c45, ch6-dma.c44 .");
+            "6-dma-channels.c71, ch6-dma.c72, 6-dma-channels.c45, ch6-dma.c44, "
+            "ch6-dma.c45 .");
     }
 
     // ---------------- SIZE-HEIGHT-FIELD-BITS-LITERAL (pp.171, 269, 308) ----------------
@@ -697,38 +737,15 @@ int main(int argc, char** argv) {
             "64 (the seventh bit of the internal 11-bit `width` register is set "
             "only when all six written bits are zero). 6-dma-channels.c48, "
             "ch6-dma.c48, ch6-dma.c56, 6-appa-registers.c63, ch6-appa-bltsize.w2, "
-            "6-appa-registers.c64 .");
+            "6-appa-registers.c64, ch6-dma.c45, 6-dma-channels.c45, "
+            "6-appc-big-blits.c24, ch6-appc-bltsize.w .");
     }
 
-    // ------------- NOT-ASSERTED-UNIT-CONVERSION (recorded, not asserted) -------------
-    {
-        // Both claims restate the width field's 1-to-64-word range (the fact
-        // SIZE-WIDTH-FIELD-BITS-LITERAL and SIZE-ZERO-WIDTH-WRAPS-TO-64 above
-        // already measure, by counting destination writes) in a unit this
-        // module has no port for: BLTSIZE's width field is decoded here as a
-        // word count alone (agnus_blitter.v:522); there is no bit-count port
-        // and no pixel-count port anywhere on agnus_blitter, so "16 to 1024
-        // bits" and "1024 pixels max" are the manual's own x16 arithmetic,
-        // not something this boundary can observe. See this file's header,
-        // "NOT ASSERTED - UNIT CONVERSION", for the full reasoning, including
-        // why 6-appc-big-blits.c24 is withdrawn whole rather than kept on a
-        // width assertion with its pixel clause silently uncounted, and the
-        // independent, pre-existing precedent in hrm/ch6-blitter-ecs's own
-        // "NOT ASSERTED - PIXEL/WORD UNIT CONVERSION" section for the
-        // identical page-308 pixel claim.
-        checks.record(
-            "NOT ASSERTED - UNIT CONVERSION: absent_signal: a bit-count or "
-            "pixel-count port on agnus_blitter (none exists - only the "
-            "word-count `width` field is decoded, agnus_blitter.v:522); "
-            "reason_kind: absent. ch6-dma.c45 (p.171, restated \"A width of "
-            "1 to 64 words is 16 to 1024 bits\") and 6-appc-big-blits.c24 "
-            "(p.308, 'w = Width  (6 bit width  = 1024 pixels max)', restated "
-            "\"Original-chip-set BLTSIZE width has a 1024-pixel maximum\") "
-            "both state the width field's range in a unit this module "
-            "cannot deliver a signal for - declined here rather than graded "
-            "on SIZE-WIDTH-FIELD-BITS-LITERAL or SIZE-ZERO-WIDTH-WRAPS-TO-64, "
-            "whose own words-only claims stay exactly as they were.");
-    }
+    // ch6-dma.c45 and 6-appc-big-blits.c24 were RECORDED here (not asserted)
+    // until an independent validator found the decline did not hold - see
+    // "UNIT CONVERSION, GRADED" in the file header. Both ids now sit on
+    // SIZE-WIDTH-FIELD-BITS-LITERAL and/or SIZE-ZERO-WIDTH-WRAPS-TO-64
+    // above instead, with no assertion here.
 
     // ---------- NOT-ASSERTED-PRACTICAL-SHIFT-LIMIT (recorded, not asserted) ----------
     {
@@ -761,7 +778,7 @@ int main(int argc, char** argv) {
         // one; reason_kind: insufficient (the manual's own hedge, not a
         // hardware behaviour this boundary can assert on).
         checks.record(
-            "NOT ASSERTED - PRACTICAL SHIFT LIMIT: sol:3-large.c26 (p.171, "
+            "NOT ASSERTED - PRACTICAL SHIFT LIMIT: sol:3-large.c26 (p.76, "
             "restated \"On OCS, the blitter's maximum drawable area is "
             "1008x1024 pixels\") bundles the already-graded 1024-row height "
             "maximum (SIZE-ZERO-HEIGHT-WRAPS-TO-1024, graded: 6-appc-big-blits.c22) "
