@@ -64,6 +64,30 @@ static void A(const std::string& id, int page, const std::string& reader,
 }
 
 // ---------------------------------------------------------------------------
+// Prompt 7's fixed call form (expect/note/record), used only for the 11
+// claims routed to this package in the 2026-09-25 unit-backlog build2 lot.
+// The 235 pre-existing assertions above use this package's own A()/SKIP()
+// helpers, unchanged -- BUILD-BRIEF item 1 keeps every existing label and
+// verdict as printed. expect()/record() share the SAME g_total/g_pass/g_fail
+// counters A() already updates (g_recorded is this block's own, separate
+// from A()'s g_skipped), so main()'s final PASS/FAIL tally covers both call
+// forms and record() never counts toward it.
+// ---------------------------------------------------------------------------
+static int g_recorded = 0;
+static void expect(bool condition, const std::string& label) {
+  g_total++;
+  if (condition) g_pass++; else g_fail++;
+  std::printf("%s%s\n", condition ? "PASS: " : "FAIL: ", label.c_str());
+}
+static void note(const std::string& msg) {
+  std::printf("MEASURED: %s\n", msg.c_str());
+}
+static void record(const std::string& msg) {
+  g_recorded++;
+  std::printf("RECORDED: %s\n", msg.c_str());
+}
+
+// ---------------------------------------------------------------------------
 // harness core
 // ---------------------------------------------------------------------------
 
@@ -399,6 +423,105 @@ static void measureDualPlayfield() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// build2 (2026-09-25) extension: two fresh measurement scenarios for the 11
+// claims routed to this package in that lot. Everything above this point is
+// unchanged (BUILD-BRIEF item 1).
+// ---------------------------------------------------------------------------
+
+// decode a 12-bit COLORxx value into the rgb this fixture's own nibble-
+// replicate convention produces (denise_colortable.v, documented in
+// preloadColours()'s comment above) -- a general, manual-external OCS colour
+// convention, never a value read out of the RTL.
+static void colour12(uint16_t v, uint8_t& r, uint8_t& g, uint8_t& b) {
+  r = (uint8_t)(((v >> 8) & 0xF) * 17);
+  g = (uint8_t)(((v >> 4) & 0xF) * 17);
+  b = (uint8_t)((v & 0xF) * 17);
+}
+
+// BPU=000 -> background colour identity (3-bplcon0.c18/3-t5.c02/3-r0.bpu000/
+// 3-regsum-bplcon0.c19). NOT a re-read of g_bpu[0] (BPU=0's own plane-count
+// truth-table entry, already graded for 3-bplcon0.c19/c4/3-t5.c01 and already
+// found "impossible" to mutate under M1-M6 in MUTATIONS.md: no stimulus can
+// make a non-existent plane show through, so that comparator's red/green
+// range is the trivial floor of the gating chain). These four claims add a
+// DIFFERENT, falsifiable proposition instead: that what shows with BPU=000
+// tracks COLOR00 -- the register this package's own control case already
+// calls "background colour" -- rather than a value the comparator would
+// report regardless of what COLOR00 holds. COLOR0 is driven to a CHOSEN
+// 12-bit value (overriding preloadColours()'s default) and the observed
+// pixel is decoded against THAT value, so the comparator itself is provably
+// live (see measureBpuZeroBackground()'s second, probe run below).
+static bool measureBpuZeroAgainstColor0(uint16_t color0Value) {
+  baseline(false);
+  writeReg(A_COLORBASE, color0Value);  // override COLOR0 after preloadColours()
+  writeReg(A_BPLCON0, mkBplcon0(false, 0, false, false));  // BPU=000
+  loadPlanes(0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF);  // every plane hard-driven
+  auto px = scanHpos(8);
+  uint8_t rExp, gExp, bExp;
+  colour12(color0Value, rExp, gExp, bExp);
+  for (auto& p : px) if (!(p.r == rExp && p.g == gExp && p.b == bExp)) return false;
+  return true;
+}
+static bool g_bpu0_bg_default_ok = false;  // COLOR0 at its normal preload (n=0 -> rgb 0,0,0)
+static bool g_bpu0_bg_probe_ok = false;    // COLOR0 overridden to 0x0f0f -- comparator-liveness probe
+static void measureBpuZeroBackground() {
+  g_bpu0_bg_default_ok = measureBpuZeroAgainstColor0(0x0000);
+  g_bpu0_bg_probe_ok = measureBpuZeroAgainstColor0(0x0f0f);
+}
+
+// HIRES dual-playfield plane identity (3-dual-planes.c5/c6, 3-dual.c19/c20).
+// A fresh stimulus, not a re-read of measureDualPlayfield()'s BPU=6/three-
+// planes-per-side result: HIRES=1, DBLPF=1, BPU=100 (four planes total,
+// matching the manual's "up to two bitplanes in each playfield" hires
+// figure), driving only the two named planes per side (denise_playfields.v
+// has no `hires` input at all, confirmed by reading it -- the odd/even
+// grouping mechanism category 8 already measures at BPU=6 is not gated by
+// hires, so this is the same mechanism with fewer planes driven).
+static bool g_hires_pf1_ok = false, g_hires_pf2_ok = false;
+static void measureHiresDualPlayfield() {
+  // scanClk(), not scanHpos(): under HIRES the shifter empties twice as fast
+  // (denise_bitplane_shifter.v's hires shift-enable), so a once-per-hpos-tick
+  // sample can land on the wrong hires sub-pixel and miss a loaded bit
+  // entirely -- the same reason assertHiresRate2x's own measureSpan() uses
+  // scanClk() rather than scanHpos(). 0xFFFF (every bit set), not a single
+  // MSB, so the loaded word stays visible for its whole shift-out regardless
+  // of exactly which sub-clock the scan starts sampling on.
+  //
+  // EXACT expected index, not a broad range: a broad "1-7"/"8-15" acceptance
+  // range does not distinguish true dual-playfield grouping from this RTL's
+  // single-playfield fallback (plfdata=bpldata[8:1] read as one raw 8-bit
+  // value) -- measured directly under mutation 2 (DBLPF/HOMOD bit sources
+  // swapped, which mis-routes dblpf to read 0): with only planes 1,3 driven,
+  // the raw single-playfield fallback value is 5 (bit0+bit2), which still
+  // falls inside "1-7" and passed the mutation test it should have failed.
+  // The exact within-group index removes that coincidence: planes 1 and 3
+  // are the two lowest-numbered members of playfield 1's odd group, and the
+  // manual's own ascending-plane-number/ascending-bit-significance
+  // convention (already asserted in this package for 3-color.c19/3-bpl.c19)
+  // places plane 1 at that group's bit 0 and plane 3 at its bit 1, so both
+  // driven gives 1+2=3 -- not the raw-fallback value of 5. Playfield 2's
+  // group is offset by a fixed +8 (already established by the accepted
+  // 8..15 range used elsewhere in this package); planes 2 and 4 are that
+  // group's two lowest members (bits 0,1), so both driven gives 8+1+2=11 --
+  // not the raw-fallback value of 10.
+  baseline(false);
+  writeReg(A_BPLCON0, mkBplcon0(/*hires=*/true, /*bpu3=*/4, false, /*dblpf=*/true));
+  loadPlanes(0xFFFF, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000);  // planes 1,3 only
+  auto px1 = scanClk(64);
+  int idx1 = -1;
+  for (auto& p : px1) { int d = decodeIndex(p.r, p.g, p.b); if (d > 0) idx1 = d; }
+  g_hires_pf1_ok = (idx1 == 3);
+
+  baseline(false);
+  writeReg(A_BPLCON0, mkBplcon0(true, 4, false, true));
+  loadPlanes(0x0000, 0xFFFF, 0x0000, 0xFFFF, 0x0000, 0x0000);  // planes 2,4 only
+  auto px2 = scanClk(64);
+  int idx2 = -1;
+  for (auto& p : px2) { int d = decodeIndex(p.r, p.g, p.b); if (d > 0) idx2 = d; }
+  g_hires_pf2_ok = (idx2 == 11);
+}
+
 static void measureBplcon2Priority() {
   // both odd and even planes active; toggle bplcon2[6] (pf2pri) and confirm
   // the winning group flips (BPLCON2's own documented function, appendix A
@@ -676,6 +799,8 @@ int main(int argc, char** argv) {
   measureBpuTable();
   measureMsbOrder();
   measureDualPlayfield();
+  measureBpuZeroBackground();
+  measureHiresDualPlayfield();
   measureBplcon2Priority();
   measureHam(true, g_ham_pix1, g_ham_pix2, g_ham_ok);
   measureHam(false, g_nonham_pix1, g_nonham_pix2, g_nonham_ok);

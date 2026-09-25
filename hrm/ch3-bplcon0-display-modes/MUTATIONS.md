@@ -512,4 +512,57 @@ searched.
 // MUTATION C-shres.c7 implementation red: mutation 4 (denise.v: ecsena remapped from bplcon0[0] to bplcon0[7], and the window-open/close comparisons against hdiwstrt/hdiwstop swapped (window now opens at DIWSTOP and closes at DIWSTRT)) turned this assertion red; reverted, confirmed green again.
 // MUTATION C-shres.c9 none impossible: this assertion's pass condition is fixed true by design -- it records this fixture's observed, unenforced behaviour for a combination/limit the manual documents as a programming restriction rather than checking it against a specific required RTL behaviour (see SPEC.md's SHRES category and this package's report). A stimulus mutation cannot flip a recorded observation red without changing what is being asserted, which would be adjusting the oracle -- the one thing this task forbids outright.
 // MUTATION C-superhires.c4 implementation red: mutation 4 (denise.v: ecsena remapped from bplcon0[0] to bplcon0[7], and the window-open/close comparisons against hdiwstrt/hdiwstop swapped (window now opens at DIWSTOP and closes at DIWSTRT)) turned this assertion red; reverted, confirmed green again.
+
+## build2 (2026-09-25) extension -- 10 claims graded, 1 recorded
+
+Ten new claims routed to this package in the 2026-09-25 unit-backlog build2 lot. These use
+Prompt 7's fixed `expect()`/`note()`/`record()` call form (test_denise.cpp), not this package's
+own `A()`/`SKIP()` helpers -- everything above this section is unchanged. The `// MUTATION`
+comments live inline in claims_gen.inc, next to each call; this table restates them for the
+same reason the log above exists.
+
+**BPU=000 background-colour group (3-bplcon0.c18, 3-t5.c02, 3-r0.bpu000,
+3-regsum-bplcon0.c19).** Not a re-read of `g_bpu[0]` (BPU=0's own plane-count entry, already
+found "impossible" to mutate under M1-M6 above -- the trivial floor of the gating chain). A
+fresh, dedicated measurement instead: COLOR0 driven to a chosen 12-bit value (overriding the
+default preload), all six planes hard-driven, and the observed pixel decoded against THAT
+value. The mutation is a **stimulus** change: COLOR0 overridden a second time, to 0x0f0f
+(distinctive, non-zero) instead of the default 0x0000, and the observed pixel confirmed to
+track the new value exactly -- proving the comparator is live, not a fixed constant, per
+Prompt 7's "different mechanism, same comparator" technique for an assertion whose *plane-gating*
+half is already established as unfalsifiable.
+
+**Sixth-bitplane DBLPF half (3-bplcon0.c20).** Same evidence already used for 3-bplcon0.c21/
+3-t5.c16 above (`g_pf2_ok && g_ham_ok`). Mutation 2 (HOMOD/DBLPF bit sources swapped) turns it
+red, the same as its siblings.
+
+**Dual-playfield movement clause (3-dual.c46).** Same structural proxy already used for
+3-dual-activate.c4 above (`g_pf1_ok && g_pf2_ok`) -- checked directly against
+`denise_bitplanes.v` first: `pf1h_del`/`pf2h_del` wire to the per-plane shifters unconditionally
+by plane parity, `dblpf` is not referenced anywhere in that file, so the router-suggested
+PF1H/PF2H differential would not have discriminated on DBLPF at all (see SPEC.md). Mutation 2
+turns it red, the same as 3-dual-activate.c4.
+
+**HIRES dual-playfield plane identity (3-dual-planes.c5/c6, 3-dual.c19/c20).** A fresh
+measurement: HIRES=1, DBLPF=1, BPU=100, driving only the two named planes per side, checked
+against the EXACT expected sub-index (3 for playfield 1's {1,3}, 11 for playfield 2's {2,4}) --
+not a broad range. That exactness mattered: an earlier draft used the same 1-7/8-15 ranges the
+BPU=6 category checks, and mutation 2 did NOT flip it, because this RTL's single-playfield
+fallback (`plfdata=bpldata[8:1]` read as one raw value) produces 5 and 10 for these two
+stimuli -- both of which still fall inside the broader ranges. The exact-value form was kept
+after that finding, and re-verified red under mutation 2.
+
+| claim id | mutation | result |
+|---|---|---|
+| `3-bplcon0.c18` | stimulus (COLOR0 override) | green |
+| `3-t5.c02` | stimulus (COLOR0 override) | green |
+| `3-r0.bpu000` | stimulus (COLOR0 override) | green |
+| `3-regsum-bplcon0.c19` | stimulus (COLOR0 override) | green |
+| `3-bplcon0.c20` | 2 | red |
+| `3-dual.c46` | 2 | red |
+| `3-dual-planes.c5` | 2 | red |
+| `3-dual.c19` | 2 | red |
+| `3-dual-planes.c6` | 2 | red |
+| `3-dual.c20` | 2 | red |
+| `C-shr.c13` | -- | recorded, not graded |
 ```

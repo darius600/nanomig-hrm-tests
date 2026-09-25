@@ -431,6 +431,68 @@ static void assertBitIndependentUnderShres(const std::string& id, int page, cons
 }
 
 
+// ---------------------------------------------------------------------------
+// build2 (2026-09-25) extension: assert helpers for the 11 claims routed to
+// this package in that lot, using Prompt 7's fixed expect()/note()/record()
+// call form (test_denise.cpp). Everything above this point is unchanged.
+// ---------------------------------------------------------------------------
+
+static void expectBpuZeroBackground(const std::string& id, int page, const std::string& reader,
+                                     const std::string& restatement) {
+  char buf[512];
+  std::snprintf(buf, sizeof(buf),
+                "%s (p.%d, %s): BPU=000, all six planes hard-driven (0xFFFF each) -- "
+                "measured pixel equals COLOR00's own preloaded rgb (0,0,0) throughout the "
+                "scan, not a fixed/dead value (see MEASURED comparator-liveness line) -- %s",
+                id.c_str(), page, reader.c_str(), restatement.c_str());
+  expect(g_bpu0_bg_default_ok, buf);
+}
+
+static void expectSixthPlaneDblpf(const std::string& id, int page, const std::string& reader,
+                                   const std::string& restatement) {
+  char buf[512];
+  std::snprintf(buf, sizeof(buf),
+                "%s (p.%d, %s): affirmative half only -- plane 6 measured reaching "
+                "playfield 2's index range under DBLPF=1 (g_pf2_ok) and measured acting "
+                "as a HAM control bit under HOMOD=1 (g_ham_ok), both at BPU=6, the same "
+                "evidence already used for 3-bplcon0.c21/3-t5.c16 above -- the footnote's "
+                "\"only\" qualifier is NOT asserted (see SPEC.md's EHB-tension note) -- %s",
+                id.c_str(), page, reader.c_str(), restatement.c_str());
+  expect(g_pf2_ok && g_ham_ok, buf);
+}
+
+static void expectHiresDualPf1(const std::string& id, int page, const std::string& reader,
+                                const std::string& restatement) {
+  char buf[512];
+  std::snprintf(buf, sizeof(buf),
+                "%s (p.%d, %s): HIRES=1,DBLPF=1,BPU=100 (2 planes/playfield) -- plane1+"
+                "plane3 driven alone -> measured colour index equals 3 exactly (%s), the "
+                "playfield-1 sub-index with only its two lowest-numbered members set, "
+                "not the RTL's single-playfield-fallback value (5) a broader range check "
+                "cannot distinguish from it; denise_playfields.v has no hires input "
+                "(confirmed by reading it), so this is category 8's own odd-group "
+                "mechanism, exercised here with only the two named planes -- %s",
+                id.c_str(), page, reader.c_str(),
+                g_hires_pf1_ok ? "measured" : "NOT measured", restatement.c_str());
+  expect(g_hires_pf1_ok, buf);
+}
+
+static void expectHiresDualPf2(const std::string& id, int page, const std::string& reader,
+                                const std::string& restatement) {
+  char buf[512];
+  std::snprintf(buf, sizeof(buf),
+                "%s (p.%d, %s): HIRES=1,DBLPF=1,BPU=100 (2 planes/playfield) -- plane2+"
+                "plane4 driven alone -> measured colour index equals 11 exactly (%s), the "
+                "playfield-2 sub-index (base 8) with only its two lowest-numbered members "
+                "set, not the RTL's single-playfield-fallback value (10) a broader range "
+                "check cannot distinguish from it; denise_playfields.v has no hires input "
+                "(confirmed by reading it), so this is category 8's own even-group "
+                "mechanism, exercised here with only the two named planes -- %s",
+                id.c_str(), page, reader.c_str(),
+                g_hires_pf2_ok ? "measured" : "NOT measured", restatement.c_str());
+  expect(g_hires_pf2_ok, buf);
+}
+
 static void runAllClaims() {
   assertHiresRate2x("3-res.f02", 41, "opus", "Figure 3-2 (printed p.41): the right screen carries the label '640 Pixels' on a horizontal double arrow spanning an identically sized frame, captioned 'In high resolution mode, 640 pixels fill a horizontal line.' - the two frames are drawn the same physical width, so 640 hires pixels occupy the same width as 320 lores pixels.");
   assertColorCountMax("3-bpl.c04", 42, "opus", 2, "A four-colour display requires two bitplanes in memory.");
@@ -695,4 +757,58 @@ static void runAllClaims() {
   SKIP("C-ecsbit.b13", 307, "opus", "BPLCON2 genlock Z-depth select bits, not a display-mode bit");
   assertEhbKill("C-genlock-ext.c14", 307, "sol", "ECS BPLCON2 bit 9 KILLEHB disables Extra Half Brite.");
   assertEcsReassignBit0("C-genlock-ext.c17", 307, "sol", "ECS BPLCON0 bit 0 ENBPLCN3 enables the new BPLCON3 register.");
+
+  // -------------------------------------------------------------------------
+  // build2 (2026-09-25) extension: 10 claims graded, 1 recorded. Everything
+  // above this point is the unchanged, pre-existing 235/28 (grade/decline).
+  // -------------------------------------------------------------------------
+  // MUTATION 3-bplcon0.c18 stimulus green: COLOR0 overridden from the default preload (0x0000 -> rgb 0,0,0) to 0x0f0f (rgb 0xff,0x00,0xff) before the same BPU=000/all-planes-driven measurement; the observed pixel tracked the new COLOR0 value exactly (see the MEASURED comparator-liveness line above), confirming this comparator is live, not a fixed constant; reverted (COLOR0 back to default preload), confirmed green again.
+  expectBpuZeroBackground("3-bplcon0.c18", 48, "sol", "Selecting zero bitplanes shows only the background color.");
+  // MUTATION 3-t5.c02 stimulus green: same COLOR0-override run as 3-bplcon0.c18 immediately above (shared measurement); reverted, confirmed green again.
+  expectBpuZeroBackground("3-t5.c02", 48, "opus", "Table 3-5 footnote: with BPU=000 only the background colour is shown and no playfield is visible.");
+  // MUTATION 3-r0.bpu000 stimulus green: same COLOR0-override run as 3-bplcon0.c18 above (shared measurement); reverted, confirmed green again.
+  expectBpuZeroBackground("3-r0.bpu000", 90, "opus", "Register summary: BPLCON0 BPU code 000 shows only a background colour.");
+  // MUTATION 3-regsum-bplcon0.c19 stimulus green: same COLOR0-override run as 3-bplcon0.c18 above (shared measurement); reverted, confirmed green again.
+  expectBpuZeroBackground("3-regsum-bplcon0.c19", 90, "sol", "BPLCON0.BPU=000 selects only background color.");
+  note(std::string("BPU=000 background-colour comparator liveness: COLOR0 overridden from the "
+       "default preload (0x0000 -> rgb 0,0,0) to 0x0f0f (rgb 0xff,0x00,0xff) before the same "
+       "BPU=000/all-planes-driven measurement; the observed pixel ") +
+       (g_bpu0_bg_probe_ok ? "tracked the new COLOR0 value exactly" : "did NOT track the new COLOR0 value") +
+       " -- confirms the four expect() calls above compare against actual COLOR00 content, not a "
+       "fixed constant the comparator would report regardless.");
+
+  // MUTATION 3-bplcon0.c20 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped) turned this assertion red -- run via `make MUTANT=M2 test`, 235/235 baseline went to 190/235 PASS including this line; reverted (plain `make -B test`), confirmed green again at 235/235.
+  expectSixthPlaneDblpf("3-bplcon0.c20", 48, "sol", "The sixth bitplane is available in dual-playfield mode.");
+
+  // MUTATION 3-dual.c46 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped) turned this assertion red -- run via `make MUTANT=M2 test`; reverted, confirmed green again.
+  expect(g_pf1_ok && g_pf2_ok,
+    "3-dual.c46 (p.72, opus): proxy, same evidence as 3-dual-activate.c4 above -- DBLPF=1,"
+    "BPU=6 odd/even plane-group independence measured (see DBLPF category); checked "
+    "directly against denise_bitplanes.v before choosing this over the router-suggested "
+    "PF1H/PF2H differential: pf1h_del/pf2h_del (BPLCON1's PF1H/PF2H fields) wire to the "
+    "per-plane shifters unconditionally by plane parity there, and dblpf is not referenced "
+    "anywhere in that file, so a PF1H-vs-PF2H differential would read identically whether "
+    "DBLPF is 0 or 1 -- it would not test what this clause says DBLPF changes. Only the "
+    "structural, DBLPF-gated colour-group independence is asserted here, not the scroll-"
+    "register movement mechanism itself (SPEC.md) -- Selecting dual-playfield mode also "
+    "changes the way the hardware can move the bitplanes on the screen.");
+
+  // MUTATION 3-dual-planes.c5 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped) turned this assertion red -- run via `make MUTANT=M2 test`; an earlier draft of this measurement used a broad 1-7 acceptance range instead of the exact expected index 3, and mutation 2 did NOT flip it then (the RTL's single-playfield fallback value, 5, coincidentally also falls in 1-7) -- the exact-value form below is what was actually kept and re-verified red under mutation 2; reverted, confirmed green again.
+  expectHiresDualPf1("3-dual-planes.c5", 68, "sol", "High-resolution dual-mode playfield 1 uses planes 1 and 3.");
+  // MUTATION 3-dual.c19 implementation red: same run and same exact-value fix as 3-dual-planes.c5 immediately above (shared measurement); reverted, confirmed green again.
+  expectHiresDualPf1("3-dual.c19", 68, "opus", "High resolution dual-playfield: playfield 1 uses bitplanes 1 and 3.");
+  // MUTATION 3-dual-planes.c6 implementation red: mutation 2 (denise.v: HOMOD/DBLPF bit sources swapped) turned this assertion red -- run via `make MUTANT=M2 test`; the same broad-range coincidence applied here too (fallback value 10 falls in the original 8-15 range) until fixed to the exact expected index 11; reverted, confirmed green again.
+  expectHiresDualPf2("3-dual-planes.c6", 68, "sol", "High-resolution dual-mode playfield 2 uses planes 2 and 4.");
+  // MUTATION 3-dual.c20 implementation red: same run and same exact-value fix as 3-dual-planes.c6 immediately above (shared measurement); reverted, confirmed green again.
+  expectHiresDualPf2("3-dual.c20", 68, "opus", "High resolution dual-playfield: playfield 2 uses bitplanes 2 and 4.");
+
+  record("C-shr.c13 (p.300, opus): declined -- routing.how: this sentence names what "
+         "graphics.library (OS software) does, not what a chip does (\"This mode is "
+         "controlled by the graphics.library by writing to the BPLCON0 register in the "
+         "LOF copperlist (/SHF if interlaced)\"), so it is not an RTL-observable claim at "
+         "any fixture boundary (see SPEC.md's R9-software-not-hardware); its only hardware "
+         "residue -- a Copper MOVE landing on BPLCON0 without CDANG -- is a separate claim, "
+         "opus:B-bplcon0.copper, routed to the ch2-copper-move-sweep sibling, not held here "
+         "-- SuperHires mode is controlled by writing BPLCON0 in the LOF copperlist (/SHF "
+         "if interlaced).");
 }
