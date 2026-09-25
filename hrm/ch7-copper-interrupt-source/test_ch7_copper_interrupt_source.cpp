@@ -7,8 +7,9 @@
 // active-low encoding of it), per SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: the manual quotations cited inline (sol:7-interrupts.c41,
-// printed p.219; opus:7-fig7-4.c15, printed p.221), not the RTL. A red result
-// is a valid, finished outcome.
+// printed p.219; opus:7-fig7-4.c15, printed p.221;
+// opus:ch2-the-copper-and-the-680x0.c3, printed p.35), not the RTL. A red
+// result is a valid, finished outcome.
 // Non-goals: whole-system exclusivity of bit 4 to the Copper, the convention
 // half of "reserved for identifying" (not a runtime behaviour), and the Exec
 // software-priority-5 half of opus:7-fig7-4.c15 -- all out of this
@@ -51,6 +52,15 @@
 // instead of 4 -- bit 4 was still set in INTREQR but never reached the
 // priority encoder because it was masked off). 3 passed, 1 failed. Reverted,
 // rebuilt, back to green (4 passed, 0 failed).
+//
+// opus:ch2-the-copper-and-the-680x0.c3 (p.35, "use the Copper MOVE
+// instruction to store a 1 into the following bits of INTREQ" to interrupt
+// the 680x0): this claim's two halves -- the MOVE-stores-a-1-into-INTREQ
+// half, and the resulting interrupt reaching the 680x0 -- are exactly what
+// P1 and P2 already measure on the same stimulus, so the id is added to
+// both existing labels rather than a new assertion; no new proposition,
+// control or mutation. See SPECIFICATION.md's "opus:ch2-the-copper-and-
+// the-680x0.c3" section for the full reading.
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>
@@ -203,7 +213,8 @@ int main(int argc, char** argv) {
                                   (after  & static_cast<uint16_t>(~0x0010)));
 
     checks.expect(bit4_transitioned && other_bits_unchanged,
-        "P1 (sol:7-interrupts.c41 p.219, opus:7-fig7-4.c15 p.221): a Copper MOVE "
+        "P1 (sol:7-interrupts.c41 p.219, opus:ch2-the-copper-and-the-680x0.c3, "
+        "opus:7-fig7-4.c15 p.221): a Copper MOVE "
         "asserting COPER travelling the Copper's real register-write path into "
         "paula_intcontroller sets bit 4, and only bit 4, of INTREQR -- before=0x"
         + std::string(before_hex) + " after=0x" + std::string(after_hex));
@@ -217,7 +228,7 @@ int main(int argc, char** argv) {
     char ipl_str[4];
     snprintf(ipl_str, sizeof ipl_str, "%d", ipl);
     checks.expect(ipl == 4,
-        "P2 (opus:7-fig7-4.c15 p.221, hardware-priority half -- pp.219+221 "
+        "P2 (opus:ch2-the-copper-and-the-680x0.c3, opus:7-fig7-4.c15 p.221, hardware-priority half -- pp.219+221 "
         "together give the same numeral: p.219 states plainly 'Bit 4, COPER, "
         "is used by the Copper to issue a level 3 interrupt', and Figure 7-4 "
         "places COPER at hardware priority 3; that p.219 sentence's own claim "
