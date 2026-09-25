@@ -233,6 +233,56 @@ own colour and ENBPLCN3=1 blanks it to black.
 
 Cited by: `opus:7-appC-bplcon2.c9`.
 
+### P12 -- Appendix C's ECS register map places BPLCON2 at word offset $104 and marks it changed from OCS
+
+> "104 BPLCON2 chg   WA" (printed p.298, Appendix C ECS register map; the
+> quotation is the corpus row as scanned -- the row's function text sits on
+> a different line of the same page and reads, once restored,
+> "Bitplane control (video priority control)")
+
+Two propositions from the same table row:
+
+- **Address** -- BPLCON2 is reached at word offset $104 on the ECS map.
+  Every proposition above that grades a BPLCON2-controlled effect (P7's
+  KILLEHB, P10's PF2PRI) does so by writing exactly that address and
+  observing the graded effect tied to it, which is what the row's "$104"
+  column states. This package's own Non-goals leave BPLCON2's address, as a
+  subject in its own right, to `hrm/ch3-register-map-denise`.
+- **"chg" mark** -- BPLCON2 is annotated changed from OCS on the ECS map.
+  The one concrete instance of that change this package's own claims
+  establish is P7's ECS half: bit 9 carries no OCS function (P7, undisputed)
+  and gains KILLEHB under ECS (P7, asserted) -- a function the OCS-era map
+  does not carry.
+
+Cited by: `sol:7-appC-map-bplcon2.c1` (address), `sol:7-appC-map-bplcon2.c2`
+("chg" mark).
+
+### P13 -- ECS BPLCON2's function retains video-priority control; the same row's genlock-field addition is only partly reachable at this boundary
+
+> "104 BPLCON2 chg   WA" [restored function text, same page:] "Bitplane
+> control (video priority control)" (printed p.298, Appendix C ECS register
+> map)
+
+A bundled claim, split as the classification already records it:
+
+- **Video-priority half (testable)**: under `ecs=1`, BPLCON2 still selects
+  between playfields by PF2PRI (bit 6) -- P10's own testable form,
+  established by VIDEO-PRIORITY-PF2PRI-LIVE.
+- **Genlock-fields half (not testable at this boundary)**: five of the six
+  p.307 fields this half would need (ZDBPSEL2, ZDBPSEL1, ZDBPSEL0, ZDBPEN,
+  ZDCTEN) are already recorded elsewhere in this document (P2-P6) as
+  unimplemented; the sixth (KILLEHB) is P7's own centerpiece and is asserted
+  there, under its own id. absent_signal: "a genlock/border output driven
+  from bplcon2[14:9]" as the single, undivided field this half would need.
+  reason_kind: absent.
+
+Per the rule that an id whose claim bundles an untested clause is withdrawn
+whole: `sol:7-appC-map-bplcon2.c5` stays off every graded line. The
+video-priority half it also states is already established under P10's own
+id, not this one.
+
+Cited by: `sol:7-appC-map-bplcon2.c5` (recorded, not asserted).
+
 ## Not turned into assertions
 
 - The ECS-side reading of BPLCON2 bits 14, 13, 12, 11 and 10 (Appendix C
@@ -240,6 +290,10 @@ Cited by: `opus:7-appC-bplcon2.c9`.
   above. Each of these claims is otherwise turned into an assertion (its OCS
   half); only this remainder is recorded, per each claim's own
   `conflict_resolution`.
+- P13's genlock-fields half (`sol:7-appC-map-bplcon2.c5`) -- absent_signal
+  "a genlock/border output driven from bplcon2[14:9]", reason_kind absent.
+  The claim's other half (video priority) is asserted, but under P10's own
+  id, not this one; see P13.
 
 ## Precondition to assert
 
@@ -278,7 +332,7 @@ reading to prove the fixture is not stuck.
 
 ## Claims accounted for
 
-All 18 claims in `ch7-bplcon2-live-bits-and-ecs-spec-stage.jsonl`:
+All 21 claims in `ch7-bplcon2-live-bits-and-ecs-spec-stage.jsonl`:
 
 - P1: `opus:7-appA-bplcon2.c5`, `sol:7-video.c18`, `opus:7-vp.c17`,
   `sol:7-appA-bplcon2.c6` (4)
@@ -294,5 +348,7 @@ All 18 claims in `ch7-bplcon2-live-bits-and-ecs-spec-stage.jsonl`:
 - P9: `opus:7-appA-bplcon2.c13` (1)
 - P10 (added by repair): `opus:7-vp.c16` (1)
 - P11 (added by repair): `opus:7-appC-bplcon2.c9` (1)
+- P12: `sol:7-appC-map-bplcon2.c1`, `sol:7-appC-map-bplcon2.c2` (2)
+- P13 (recorded, not asserted): `sol:7-appC-map-bplcon2.c5` (1)
 
-4 + 1 + 1 + 1 + 1 + 1 + 5 + 1 + 1 + 1 + 1 = 18.
+4 + 1 + 1 + 1 + 1 + 1 + 5 + 1 + 1 + 1 + 1 + 2 + 1 = 21.
