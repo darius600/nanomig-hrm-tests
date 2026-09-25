@@ -49,6 +49,45 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
+// Specification addition (2026-09-25), from
+//   work/2026-09-25_unit-backlog/build2/ch2-copper-move-sweep-spec-stage.jsonl
+//   alone (quote, restatement, page -- no RTL argument): Appendix B's own
+//   per-register Copper-access marks, printed pp. 287, 289-293. The legend
+//   (p.287) defines two marks -- "*" ("Address not writable by the
+//   Copper.") and "~" ("Address not writable by the Copper unless the
+//   'copper danger bit', COPCON is set true.") -- and a row printed with
+//   neither mark is writable regardless of COPCON. Appendix B then prints
+//   one of the three states per named register (plus six rows at
+//   $068/$06A/$06C/$06E/$076/$07A that print the "~" mark with no register
+//   name), each at a fixed byte address. This file's `to_reg()` (already
+//   used above) is the only conversion applied: DA8-1, the value these
+//   assertions test, is that printed byte address shifted right one bit.
+//   The new propositions are graded ROW BY ROW, one assertion per printed
+//   row, each against the SWEEP ecs=0 accepted sets already computed above
+//   (`ocs_cdang0`, `ocs_cdang1`) -- not a fresh probe, since the sweep
+//   already exercises the full DA8-1 space these rows are drawn from:
+//     "*"  row (DA8-1 $00-$1F): absent from both ocs_cdang0 and ocs_cdang1.
+//     "~"  row (DA8-1 $20-$3F): absent from ocs_cdang0, present in ocs_cdang1.
+//     no-mark row cited below (DA8-1 $47-$F2): present in both.
+//   Two more assertions grade the legend's own definition (p.287) against
+//   the WHOLE band each mark covers, distinct from the per-row assertions
+//   naming one register each.
+//   Also added, as its own assertion rather than a caveat on the existing
+//   RESET line: ch2-control-register.c13 (p.26, "the CDANG bit is cleared
+//   after a reset"), corroborated against a different CDANG-gated
+//   destination ($30) than the existing RESET assertion uses ($20). The
+//   existing RESET assertion was not touched -- ch2-control-register.c13 is
+//   not named there under any spelling, so the "unreadable spelling"
+//   exception for extending an accepted package does not apply, and a
+//   fresh proposition gets its own assertion.
+//   NOT asserted, and printed as RECORDED instead: ch2-the-move-
+//   instruction.c8 (p.21, "$20 or above") and ch2-control-register.c2
+//   (p.26, "$80 through $FF") restate the two conflicting floor readings
+//   that PKG-COP-MOVE-RANGE-CONFLICT's own classify.conflict_resolution
+//   already declines to resolve ("the numbers are recorded, not
+//   asserted"); this file prints both readings beside the measured
+//   always-accepted floor rather than asserting either one correct.
+//
 // Discrimination proof (mutation, reverted before commit): each assertion
 // category was independently mutated, rebuilt and rerun, confirmed red, then
 // reverted and rerun, confirmed green again.
