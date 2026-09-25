@@ -383,17 +383,14 @@
 //   loops over all seven. B3's claim is that height has no cap distinct
 //   from VSTOP-VSTART; the first version fed a 100-line height, which
 //   cannot tell "no cap" apart from "capped at 128 or 255". It now feeds a
-//   300-line height (VSTART=209, well past both) and a second usage whose
-//   fed VSTOP (511) is never reached before vbl, showing vbl -- not some
-//   fixed cap -- is what ends the fetch. VSTART=209 rather than a lower
-//   value: sweeping channel 0 alone at several different VSTART/VSTOP pairs
-//   (and separately with every other channel's POS/CTL explicitly
-//   initialised first) found that vpos==208 drops that one line's
-//   image-fetch pair regardless of this channel's own VSTART/VSTOP -- a
-//   single-line anomaly uninvolved with sprite height, so this case starts
-//   past it rather than characterising it (also noted at the assertion
-//   itself). B4's claim is that the fetched address is "16-bit words" and
-//   "contiguous"; "+1 per grant" was read off address_out's own bit width
+//   300-line height (VSTART=150, VSTOP=450, spanning line 208) and a second
+//   usage whose fed VSTOP (511) is never reached before vbl, showing vbl --
+//   not some fixed cap -- is what ends the fetch. Case 1 grades channel 0's
+//   own POS/CTL/DATA/DATB grants only, the same per-channel filter B2 and
+//   B4 use, since the claim is about channel 0's own height rather than
+//   about grant counts across all eight channels (also noted at the
+//   assertion itself). B4's claim is that the fetched address is "16-bit
+//   words" and "contiguous"; "+1 per grant" was read off address_out's own bit width
 //   and never checked against a value this file actually wrote, so the
 //   unit was never calibrated. It now also checks that channel 0's very
 //   first grant reads back the pointer this file's own Harness constructor
@@ -626,6 +623,8 @@ public:
                                   ? ctlWord(ctrlWords[ctrlIdx].first, ctrlWords[ctrlIdx].second)
                                   : 0;
                         if (ctrlIdx < ctrlWords.size()) ++ctrlIdx;
+                    } else if ((reg & 0x2) == 0) {
+                        val = 0;  // another channel's POS/CTL: null control word, not a marker
                     } else {
                         val = (uint16_t)(0xD000 | ((line & 0x3F) << 2) | (reg & 0x3));
                     }
@@ -984,6 +983,8 @@ int main(int argc, char** argv) {
                         } else if (reg == SPR0CTL) {
                             val = ctrlIdx < pairs.size() ? ctlWord(pairs[ctrlIdx].first, pairs[ctrlIdx].second) : 0;
                             if (ctrlIdx < pairs.size()) ++ctrlIdx;
+                        } else if ((reg & 0x2) == 0) {
+                            val = 0;  // another channel's POS/CTL: null control word, not a marker
                         } else {
                             val = (uint16_t)(0xD000 | ((line & 0x3F) << 2) | (reg & 0x3));
                         }
@@ -1316,23 +1317,26 @@ int main(int argc, char** argv) {
     {
         // Case 1: a height (300) well past a 128- or 255-line cap -- a 100-line sweep (the first
         // draft of this assertion) cannot tell "no cap" apart from "capped somewhere above 100".
-        // VSTART is fed as 209, not a lower value: sweeping channel 0 alone at several different
-        // VSTART/VSTOP pairs found that vpos==208 drops that one line's image-fetch pair regardless
-        // of this channel's own VSTART/VSTOP (also confirmed with every other channel's POS/CTL
-        // explicitly initialised before the sweep, which did not change it) -- a single-line
-        // anomaly uninvolved with sprite height and unrelated to the claim under test here, so this
-        // case starts past it rather than characterising it. VSTOP is kept at or below 509 -- A9
-        // above already establishes the 9-bit split up to 511; going higher needs the ECS
-        // SPRxCTL bits 6/5 this package's ctlWord() does not encode.
+        // VSTART=150, VSTOP=450 (height 300) spans line 208, so this case covers that line rather
+        // than routing around it. Grading is scoped to channel 0's own POS/CTL/DATA/DATB grants
+        // (log1, filtered from log1all), the same per-channel filter B2 above and B4 below already
+        // use: this claim is about channel 0's own height, not about how many grants land on a line
+        // across all eight channels, and the latter view is sensitive to what the other seven
+        // channels are doing on that line (run()'s own comment above explains what each of their
+        // grants is fed).
         Harness h1;
         std::vector<int> expected1;
-        for (int l = 209; l < 509; ++l) expected1.push_back(l);  // fixed at height=300, unmutated
-        int vstopFed1 = 509;
+        for (int l = 150; l < 450; ++l) expected1.push_back(l);  // fixed at height=300, unmutated
+        int vstopFed1 = 450;
 #ifdef MUT_B3
-        vstopFed1 = 499;  // shrink the FED height to 290 while still expecting 300
+        vstopFed1 = 440;  // shrink the FED height to 290 while still expecting 300
 #endif
-        std::vector<std::pair<int, int>> pairs1 = {{209, vstopFed1}};
-        auto log1 = h1.run(0, 515, pairs1);
+        std::vector<std::pair<int, int>> pairs1 = {{150, vstopFed1}};
+        auto log1all = h1.run(0, 515, pairs1);
+        std::vector<Grant> log1;
+        for (auto& g : log1all)
+            if (g.reg == SPR0POS || g.reg == SPR0CTL || g.reg == SPR0DATA || g.reg == SPR0DATB)
+                log1.push_back(g);
         auto m1 = byLine(log1);
         auto dataLines1 = linesMatching(m1, isDataPair);
         bool ok1 = dataLines1 == expected1;
@@ -1366,6 +1370,8 @@ int main(int argc, char** argv) {
                                   ? ctlWord(pairs2[ctrlIdx2].first, pairs2[ctrlIdx2].second)
                                   : 0;
                         if (ctrlIdx2 < pairs2.size()) ++ctrlIdx2;
+                    } else if ((reg & 0x2) == 0) {
+                        val = 0;  // another channel's POS/CTL: null control word, not a marker
                     } else {
                         val = (uint16_t)(0xD000 | ((line & 0x3F) << 2) | (reg & 0x3));
                     }
@@ -1391,8 +1397,10 @@ int main(int argc, char** argv) {
         for (int l = vstart2; l < vblLine; ++l) expected2.push_back(l);  // runs to vbl, not to vstopFed2
         bool ok2 = dataLines2 == expected2;
 
-        c.note("Case 1 (VSTART=209,fed VSTOP=" + std::to_string(vstopFed1) + "): " +
-               std::to_string(dataLines1.size()) + " lines. Case 2 (fed VSTOP=" +
+        c.note("Case 1 (VSTART=150,fed VSTOP=" + std::to_string(vstopFed1) + "): " +
+               std::to_string(dataLines1.size()) + " lines" +
+               (std::find(dataLines1.begin(), dataLines1.end(), 208) != dataLines1.end() ? " (208 in)" : " (208 OUT)") +
+               ". Case 2 (fed VSTOP=" +
                std::to_string(vstopFed2) + ", never reached; vbl asserted at line " +
                std::to_string(vblLine) + "): " + std::to_string(dataLines2.size()) +
                " lines, last=" + (dataLines2.empty() ? std::string("<none>") : std::to_string(dataLines2.back())));
@@ -1400,7 +1408,7 @@ int main(int argc, char** argv) {
 
         c.expect(ok,
             "B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE: a sprite usage fed a 300-line "
-            "height (VSTART=209,VSTOP=509), far beyond a 128- or 255-line cap, still produces an "
+            "height (VSTART=150,VSTOP=450), far beyond a 128- or 255-line cap, still produces an "
             "unbroken image-fetch window of exactly that height, and a separate usage whose fed "
             "VSTOP (511, the top of VSTART/VSTOP's own 9-bit range) is never reached before vbl "
             "still fetches every line up to vbl and no further -- vbl, not some fixed cap below the "
@@ -1583,9 +1591,9 @@ int main(int argc, char** argv) {
 //   FAIL ("15 passed, 1 failed"), only
 //   B2-OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE newly red (measured
 //   "ch1=FAIL([20,21,22,23])", channels 2-7 unaffected). Reverted: 16/0.
-// MUTATION B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE stimulus red: case 1's fed VSTOP changed from 509 to 499
+// MUTATION B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE stimulus red: case 1's fed VSTOP changed from 450 to 440
 //   (fed height shrunk from 300 to 290) while the hardcoded expected window
-//   stayed at the original 300 lines (209-508) -> FAIL ("15 passed, 1
+//   stayed at the original 300 lines (150-449) -> FAIL ("15 passed, 1
 //   failed"), only B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE newly
 //   red (measured 290 lines against an expectation of 300). Reverted: 16/0.
 // MUTATION B4-SUCCESSIVE-GRANTS-FETCH-CONTIGUOUS-INCREASING-16BIT-WORDS stimulus red: FMODE's fetch-mode bits written to
