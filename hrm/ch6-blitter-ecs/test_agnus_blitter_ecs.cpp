@@ -122,14 +122,13 @@
 // classify.status=="testable" in work/2026-09-08_fpga-090_classified.jsonl,
 // PLUS the three routing-corrected ids above (classify.package=="PKG-BLT-
 // ADRGEN" in the inventory, reassigned here by Prompt 8 independent
-// validation), PLUS the 13 ids routed here by the Prompt 7 extension,
-// work/2026-09-25_unit-backlog (ch6-blitter-ecs.jsonl's routing.route ==
-// "package:ch6-blitter-ecs" or "record:ch6-blitter-ecs" - 12 graded, one
-// recorded; see the SPECIFICATION ADDENDUM below the mutation log for their
-// quotations and the two "moved onto" notes under NOT ASSERTED above for
-// where each one landed), are covered below, either by an assertion, a
-// checks.record() call, or under NOT ASSERTED with a reason. The original
-// 135 were verified by script (a
+// validation), PLUS 13 further ids whose ch6-blitter-ecs.jsonl routing.route
+// names them "package:ch6-blitter-ecs" or "record:ch6-blitter-ecs" (12
+// graded, one recorded; see the SPECIFICATION ADDENDUM below the mutation
+// log for their quotations and the two "moved onto" notes under NOT ASSERTED
+// above for where each one landed), are covered below, either by an
+// assertion, a checks.record() call, or under NOT ASSERTED with a reason.
+// The original 135 were verified by script (a
 // claim-id set built from the classify.package filter, diffed against every
 // id cited anywhere in this file) before this file was first built, so that
 // count is not a hand tally; this addition did not re-run that script over
@@ -158,18 +157,16 @@
 //     ch6-appc-map.bltcon0l, 6-appc-modifications.c11, ch6-appc-ecs.c9 .
 //
 //   BLTCON0L-WRITES-LOW-8-BITS-ONLY (p269, p309): 6-appa-registers.c28,
-//     6-appc-modifications.c8, ch6-appc-ecs.c7, ch6-appc-ecs.c8 (Prompt 7
-//     extension, work/2026-09-25_unit-backlog - the "speeds up the
-//     software" half is not separately measured, see NOT ASSERTED -
-//     PROSE / NOTATION above).
+//     6-appc-modifications.c8, ch6-appc-ecs.c7, ch6-appc-ecs.c8 (its
+//     "speeds up the software" half is not separately measured, see NOT
+//     ASSERTED - PROSE / NOTATION above).
 //
 //   BLTXPTH-WIDTH-REGARDLESS-OF-ECS *** REQUIRED RED, SEE "ROUTING
 //     CORRECTION" ABOVE *** (p270, p309): 6-appa-registers.c110,
 //     ch6-appa-bltxpt.c2, ch6-appa-bltxpt.c6 . Routing-corrected from
 //     PKG-BLT-ADRGEN by Prompt 8 independent validation - not part of this
 //     package's original 135-claim filter (see "ROUTING CORRECTION" above).
-//     6-dma-channels.c67, ch6-dma.c69 (Prompt 7 extension,
-//     work/2026-09-25_unit-backlog, p172 - the chapter-body echo of the
+//     6-dma-channels.c67, ch6-dma.c69 (p172, the chapter-body echo of the
 //     same Appendix-C pointer-range fact, see NOT ASSERTED - REDIRECTED
 //     above) also cited here, required red included.
 //
@@ -203,9 +200,9 @@
 //     ch6-appc-bltsizh.bit11, ch6-appc-bltsizh.bit12, ch6-appc-bltsizh.bit13,
 //     ch6-appc-bltsizh.bit14, ch6-appc-bltsizh.bit15 .
 //
-//   BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS (p172, p308 - Prompt 7 extension,
-//     work/2026-09-25_unit-backlog, a genuinely new measurement, not an id
-//     moved onto an existing assertion): 6-appc-big-blits.c1,
+//   BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS (p172, p308 - a genuinely new
+//     measurement, not an id moved onto an existing assertion):
+//     6-appc-big-blits.c1,
 //     6-appc-big-blits.c61, 6-appc-big-blits.c62 (width-only halves),
 //     ch6-appc-bigblits.c2, ch6-appc-bigblits.c6, 6-dma-channels.c69,
 //     ch6-dma.c70 (joint width+height claims, the width half - cited here
@@ -236,8 +233,7 @@
 //   BLTSIZV-HEIGHT-UPPER-BIT-IGNORED (p308 - the reserved half, bit 15):
 //     6-appc-big-blits.c26, ch6-appc-bltsizv.bit15 .
 //
-//   BLTSIZV-HEIGHT-ZERO-WRAPS-TO-32768-ROWS (p172, p308 - Prompt 7
-//     extension, work/2026-09-25_unit-backlog, height twin of
+//   BLTSIZV-HEIGHT-ZERO-WRAPS-TO-32768-ROWS (p172, p308 - height twin of
 //     BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS above): 6-appc-big-blits.c2,
 //     6-appc-big-blits.c63 (height-only halves), ch6-appc-bigblits.c2,
 //     ch6-appc-bigblits.c6, 6-dma-channels.c69, ch6-dma.c70 (joint
@@ -286,11 +282,10 @@
 //     classify.package filed it under PKG-BLT-ECS; not reached for here.
 //   (6-dma-channels.c67 and ch6-dma.c69 (opus), formerly redirected here as
 //   "a general chapter-body statement that does not itself distinguish 3
-//   bits from 5", were moved onto BLTXPTH-WIDTH-REGARDLESS-OF-ECS below by
-//   the Prompt 7 extension, work/2026-09-25_unit-backlog -
-//   ch6-blitter-ecs.jsonl's routing.how judged a chapter-body echo of a
-//   fact that assertion already measures worth citing there, required red
-//   included, rather than redirecting away from it.)
+//   bits from 5", were moved onto BLTXPTH-WIDTH-REGARDLESS-OF-ECS below - a
+//   chapter-body echo of a fact that assertion already measures is worth
+//   citing there, required red included, rather than redirecting away from
+//   it.)
 //
 // NOT ASSERTED - PIXEL/WORD UNIT CONVERSION (absent_signal: a pixel-count
 //   port; reason_kind: absent - this RTL exposes only a word-count field
@@ -310,19 +305,18 @@
 //   6-appc-big-blits.c1/.c2/.c61/.c62/.c63, ch6-appc-bigblits.c2/.c6,
 //   6-dma-channels.c69, ch6-dma.c70 (opus) - were moved onto
 //   BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS and
-//   BLTSIZV-HEIGHT-ZERO-WRAPS-TO-32768-ROWS below by the Prompt 7 extension,
-//   work/2026-09-25_unit-backlog. The reasoning above was correct for the
-//   field's raw WRITTEN maximum (2047 words = 32752 pixels, which never
-//   reaches 32768) but had not measured what writing zero does;
-//   ch6-blitter-ecs.jsonl's routing.how named an untested unsigned-
-//   underflow wraparound (agnus_blitter.v:531-536 for width, :559-560 for
-//   height) that reaches exactly 2048 words / 32768 rows, matching the
-//   manual's stated ceiling precisely - see those two assertions' own
-//   headers for the measurement. HEIGHT, unlike width, needs no pixels/word
-//   conversion at all - one BLTSIZV line IS one pixel row - so c2/c63 were
-//   never actually blocked by this section's absent-signal reasoning; they
-//   were bundled in only because their parent sentences are joint
-//   width+height prose this section did not separate by dimension.)
+//   BLTSIZV-HEIGHT-ZERO-WRAPS-TO-32768-ROWS below. The reasoning above was
+//   correct for the field's raw WRITTEN maximum (2047 words = 32752 pixels,
+//   which never reaches 32768) but had not measured what writing zero does:
+//   an untested unsigned-underflow wraparound (agnus_blitter.v:531-536 for
+//   width, :559-560 for height) reaches exactly 2048 words / 32768 rows,
+//   matching the manual's stated ceiling precisely - see those two
+//   assertions' own headers for the measurement. HEIGHT, unlike width,
+//   needs no pixels/word conversion at all - one BLTSIZV line IS one pixel
+//   row - so c2/c63 were never actually blocked by this section's absent-
+//   signal reasoning; they were bundled in only because their parent
+//   sentences are joint width+height prose this section did not separate
+//   by dimension.)
 //
 // NOT ASSERTED - PROSE / NOTATION (absent_signal: none; reason_kind:
 //   insufficient - no hardware behaviour, nothing to name a signal for):
@@ -330,17 +324,15 @@
 //     W=Write, R=Read, S=Strobe" - the register map's own notation legend,
 //     the same treatment packages.md gives "the book's own notation
 //     conventions (p175)") - RECORDED at runtime (see main()'s first
-//     block), not only a header comment, per the Prompt 7 extension,
-//     work/2026-09-25_unit-backlog: ch6-blitter-ecs.jsonl's routing.route
-//     names this the one claim of the thirteen routed there as
+//     block), not only a header comment: ch6-blitter-ecs.jsonl's
+//     routing.route names this the one claim of the thirteen routed here as
 //     "record:ch6-blitter-ecs" rather than "package:ch6-blitter-ecs".
 //   (ch6-appc-ecs.c8, formerly listed here as "a programming-convenience
 //   justification, not a hardware behaviour", was moved onto
-//   BLTCON0L-WRITES-LOW-8-BITS-ONLY below by the same extension -
-//   routing.how identified its testable core, "only the low bits move,
-//   upper bits survive", as exactly what that assertion already measures;
-//   the "speeds up the software" half remains unmeasured and rides on the
-//   same citation as a consequence, not a second signal.)
+//   BLTCON0L-WRITES-LOW-8-BITS-ONLY below - its testable core, "only the low
+//   bits move, upper bits survive", is exactly what that assertion already
+//   measures; the "speeds up the software" half remains unmeasured and
+//   rides on the same citation as a consequence, not a second signal.)
 //
 // FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
@@ -606,6 +598,21 @@
 //
 //   13 ids total: 1+1+1+1+1+1+1+1+1+2+2 = 13.
 
+// SPECIFICATION ADDENDUM 2 (extension pass, from ch6-blitter-ecs-spec-
+// stage.jsonl's 2 records in a second lot -- quotation, restatement and page
+// only; this block was written and committed before this file's second
+// ch6-blitter-ecs.jsonl was opened again, per the build brief's gate for
+// extending an accepted package).
+//
+//   [P12] ECS-BLITTER-MAX-DRAWABLE-AREA-16368-BY-16384 (p.76) -- "With the
+//     Enhanced Chip Set (ECS), the largest area the blitter can draw in is
+//     increased to 16368 by 16384 pixels." opus:3-big.c22 keeps the OCS
+//     comparator in its restatement ("increased to"); sol:3-large.c27
+//     restates the ECS figure alone ("the blitter's maximum drawable area
+//     is 16,368x16,384 pixels").
+//
+//   2 ids total: 1+1 = 2.
+
 #include <cstdint>
 #include <cstdio>
 #include <deque>
@@ -812,9 +819,8 @@ int main(int argc, char** argv) {
     Checks checks;
 
     // ---------------- ch6-appc-map.legend: RECORDED, not graded (p.310) ----------------
-    // Prompt 7 extension, work/2026-09-25_unit-backlog: routing.route for this
-    // one claim (of the 13 routed here) is "record:ch6-blitter-ecs", not
-    // "package:ch6-blitter-ecs" - the only one of the thirteen. "A=Agnus chip,
+    // ch6-blitter-ecs.jsonl's routing.route for this claim is
+    // "record:ch6-blitter-ecs", not "package:ch6-blitter-ecs". "A=Agnus chip,
     // D=Denise chip, P=Paula chip, W=Write, R=Read, S=Strobe" is the register
     // map's own notation legend (cross-read by sol judged it prose, routing.how
     // agrees: "not a behaviour"), same treatment packages.md gives "the book's
@@ -900,18 +906,16 @@ int main(int argc, char** argv) {
         // Barrel shifter, ascending mode, shift=1, previous=0 (first word), current=0x8000:
         // shiftaout = (0 << 15) | (0x8000 >> 1) = 0x4000. If ash had been reset to 0 by the
         // BLTCON0L write, shiftaout would instead equal the unshifted 0x8000.
+        // ch6-appc-ecs.c8's testable core - only the low bits move, ash survives - is exactly
+        // what this assertion measures; its other half, "speeds up the software", names no
+        // signal and is not established here.
         checks.expect(h.data_writes.size() == 1 && h.data_writes[0] == 0x4000,
             "BLTCON0L-WRITES-LOW-8-BITS-ONLY: with ash preloaded to 1 via BLTCON0, a "
             "BLTCON0L write that changes the LF field to A-passthrough still shows A "
             "shifted by 1 (D=0x4000, not the unshifted 0x8000) - bltcon0[7:0] alone is "
             "written by BLTCON0L (agnus_blitter.v:259-260), bltcon0[15:12] (ash) is untouched "
             "by that decode and is written only by the ordinary BLTCON0 path "
-            "(agnus_blitter.v:219-230). This is also the observable core of "
-            "ch6-appc-ecs.c8's \"expedites the set up ... since the upper bits are often the "
-            "same\" (Prompt 7 extension, work/2026-09-25_unit-backlog: routing.how names this "
-            "assertion directly) - the \"speeds up the software\" half is a consequence, not a "
-            "second signal, so it rides on the same measurement rather than being recorded "
-            "separately. 6-appa-registers.c28, 6-appc-modifications.c8, "
+            "(agnus_blitter.v:219-230). 6-appa-registers.c28, 6-appc-modifications.c8, "
             "ch6-appc-ecs.c7, ch6-appc-ecs.c8 .");
     }
 
@@ -930,6 +934,10 @@ int main(int argc, char** argv) {
     // straight through from the same adrgen submodule (agnus_blitter.v:96,
     // 576-591), so the pair the manual actually states - 3 bits without ECS, 5
     // bits with it - is measurable here, at the boundary where `ecs` exists.
+    // 6-dma-channels.c67 and ch6-dma.c69 restate the same Appendix-C pointer-range
+    // fact in chapter-body prose (p.172) without naming the 3-vs-5-bit split; a
+    // chapter-body echo of a fact this assertion already measures shares its
+    // verdict, required red included.
     {
         // Identical BLTAPTH stimulus ($001F, all five low bits of the high word
         // set - the same write hrm/ch6-blitter-adrgen's ECS-FIVE-BIT-PTH uses),
@@ -984,12 +992,6 @@ int main(int argc, char** argv) {
             "BLTCON0L-GATED-BY-ECS immediately above, which drives the identical "
             "construct-with-ecs/write/compare structure against a register that "
             "agnus_blitter.v:259-260 DOES gate on ecs, and goes green. "
-            "6-dma-channels.c67 and ch6-dma.c69 (opus) restate the same Appendix-C pointer-"
-            "range fact in chapter-body prose (p.172, \"increased range under the [ECS]\") "
-            "without naming the 3-vs-5-bit split; routing.how (Prompt 7 extension, "
-            "work/2026-09-25_unit-backlog) names this assertion for both, since a chapter-"
-            "body echo of a fact this assertion already measures shares its verdict, "
-            "required red included. "
             "Registered as NM-HRM-022 in docs/findings.md. "
             "6-dma-channels.c67, ch6-dma.c69 .");
     }
@@ -1092,8 +1094,8 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS (p.172, p.308) ----------------
-    // Routed by Prompt 7 extension, work/2026-09-25_unit-backlog: routing.how
-    // for 6-appc-big-blits.c1/.c61/.c62 names an untested wraparound -
+    // ch6-blitter-ecs.jsonl's routing.how for 6-appc-big-blits.c1/.c61/.c62
+    // names an untested wraparound -
     // width_cnt[10:0] (agnus_blitter.v:531-536) is loaded from width[10:0]
     // with no zero-special-case at the ECS BLTSIZH decode (agnus_blitter.v:524,
     // unlike OCS BLTSIZE's own explicit `~|data_in[5:0]` zero-means-64 encoding
@@ -1220,9 +1222,9 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- BLTSIZV-HEIGHT-ZERO-WRAPS-TO-32768-ROWS (p.172, p.308) ----------------
-    // Routed by Prompt 7 extension, work/2026-09-25_unit-backlog: routing.how
-    // for 6-appc-big-blits.c2/.c63 names the height twin of the width
-    // wraparound above - height_cnt[14:0] (agnus_blitter.v:557-558) is
+    // ch6-blitter-ecs.jsonl's routing.how for 6-appc-big-blits.c2/.c63 names
+    // the height twin of the width wraparound above - height_cnt[14:0]
+    // (agnus_blitter.v:557-558) is
     // reloaded from height[14:0] with no zero-special-case at the BLTSIZH
     // write that starts the blit, so writing BLTSIZV=0 loads height_cnt=0;
     // with width=1 (BLTSIZH) every word is also last_word, so height_cnt
