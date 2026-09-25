@@ -365,7 +365,13 @@ itself.
 movement" clause `3-dual-activate.c4` already carries, from a second reader's quotation of the
 same page-72 sentence -- graded via the same proxy already documented for that row: only the
 structural, DBLPF-gated independence of the two groups is asserted, not the scroll-register
-movement mechanism itself, which is the ch3-bplcon1-scroll-delay sibling's territory).
+movement mechanism itself, which is the ch3-bplcon1-scroll-delay sibling's territory. Checked
+directly against `denise_bitplanes.v` before choosing this over the router-suggested PF1H/PF2H
+differential: `pf1h_del`/`pf2h_del` (BPLCON1's PF1H/PF2H fields) wire to the per-plane shifters
+unconditionally by plane parity there -- `bplshft1/3/5/7` always take `pf1h_del`, `bplshft2/4/6/8`
+always take `pf2h_del` -- and `dblpf` is not referenced anywhere in that file. A PF1H-vs-PF2H
+differential test would therefore measure the identical result whether DBLPF is 0 or 1: it does
+not test what this claim's clause says DBLPF changes, so it was not used.)
 
 ### 9. HOMOD (bit 11) -- hold-and-modify enable conditions
 
@@ -683,13 +689,6 @@ Outside the denise-only fixture boundary: implemented by Agnus (DMA fetch, memor
 | `C-shr.c12` | 300 | opus | Two SuperHires bitplanes saturate DMA bandwidth as much as four Hires bitplanes do. |
 | `C-shres.c6` | 300 | sol | Two ECS SuperHires bitplanes consume as much DMA bandwidth as four Hires bitplanes. |
 | `C-vposr.c07` | 299 | opus | A VPOSR identification value of 20 or 30 indicates that the enhanced HiRes Agnus is present. |
-| `C-shr.c13` | 300 | opus | SuperHires mode is controlled by writing BPLCON0 in the LOF copperlist (/SHF if interlaced). |
-
-(`C-shr.c13` added 2026-09-25: the copper coprocessor and its LOF/SHF copperlist selection are
-Agnus's function, not observable at the `denise` top module this package builds -- this
-harness's register writes are driven directly by the test bus, not by a simulated copper list,
-so which mechanism issued a write is outside this fixture's boundary regardless. Same class of
-exclusion as every other row in this reason group.)
 
 ### R2-arith
 
@@ -772,6 +771,24 @@ is withdrawn here in favour of declining the claim -- see MUTATIONS.md.)
 |---|---|---|---|
 | `C-bplcon0.b04` | 300 | opus | BPLCON0 bit 4 is SPRHWRM in the ECS. |
 | `C-shres.c18` | 300 | sol | ECS BPLCON0 bit 4 is SPRHWRM. |
+
+### R9-software-not-hardware -- added 2026-09-25
+
+Names what `graphics.library` (Amiga OS software) does, not what a chip does, so there is no
+RTL-observable claim here at any fixture boundary. The full quotation: "This mode is controlled
+by the graphics.library by writing to the BPLCON0 register in the LOF copperlist (/SHF if
+interlaced)" (p.300) describes the OS's own convention for reaching BPLCON0, not a denise (or
+even Agnus) hardware behaviour; this harness's register writes are driven directly by the test
+bus regardless, so which software mechanism issued a write is outside any RTL fixture's
+boundary. Distinct from R1-boundary (Agnus DMA/timing functions this fixture cannot reach) --
+this claim's obstacle is not which chip implements it, but that it describes software, not
+hardware. Its only hardware residue -- a Copper MOVE instruction landing on BPLCON0 without
+CDANG set -- is a separate claim, `opus:B-bplcon0.copper`, routed to the ch2-copper-move-sweep
+sibling package, not held here.
+
+| claim id | page | reader | restatement |
+|---|---|---|---|
+| `C-shr.c13` | 300 | opus | SuperHires mode is controlled by writing BPLCON0 in the LOF copperlist (/SHF if interlaced). |
 
 
 Total not-asserted claim ids: 29 (28 original + 1 added 2026-09-25)
