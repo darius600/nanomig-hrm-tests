@@ -418,14 +418,20 @@ void write_diwstrt_diwstop(Harness& h, uint8_t vstart_byte, uint8_t vstop_byte) 
 // agnus_beamcounter.v:339-350,371, so already settled by the time
 // sync_to_sof() returns, the same convention measure_lines() above relies on
 // for `vblank`), the bitplane-DMA-active line count and its first line (same
-// dbr&&!refresh isolation as measure_floor() above), and the absolute tick
+// dbr&&!refresh isolation as measure_floor() above), the absolute tick
 // offset since this call began at which the `_vsync` port is first observed
-// to fall from 1 to 0.
+// to fall from 1 to 0, and the duration in ticks of one ordinary line on
+// this SAME run (`line_ticks`, sampled on line index 1 so it is never a
+// partial line sync_to_sof() may have left the caller mid-way through).
+// line_ticks is this package's own measured stand-in for the line period --
+// needed so P4/P5 can tell a genuine half-line field offset from any other
+// nonzero one, rather than assuming a constant from outside this run.
 struct FieldSample {
     bool field1 = false;
     int dma_line_count = 0;
     int first_dma_line = -1;
     long long vsync_fall_tick = -1;  // -1 if never observed in this call
+    int line_ticks = -1;             // -1 if line index 1 was never reached
 };
 
 FieldSample measure_field(Harness& h, int n_lines, int max_ticks_per_line = 1200) {
@@ -435,9 +441,11 @@ FieldSample measure_field(Harness& h, int n_lines, int max_ticks_per_line = 1200
     long long tick_count = 0;
     for (int line = 0; line < n_lines; ++line) {
         bool dma_active = false;
+        int line_tick_count = 0;
         for (int t = 0; t < max_ticks_per_line; ++t) {
             h.tick();
             ++tick_count;
+            ++line_tick_count;
             if (h.last_dbr && !h.last_refresh) dma_active = true;
             if (fs.vsync_fall_tick < 0) {
                 bool vsync_now = h.dut->_vsync;
@@ -446,6 +454,7 @@ FieldSample measure_field(Harness& h, int n_lines, int max_ticks_per_line = 1200
             }
             if (h.last_sol) break;
         }
+        if (line == 1 && fs.line_ticks < 0) fs.line_ticks = line_tick_count;
         if (dma_active) {
             ++fs.dma_line_count;
             if (fs.first_dma_line < 0) fs.first_dma_line = line;
@@ -789,14 +798,25 @@ int main(int argc, char** argv) {
         FieldSample f1b = measure_field(h1, LACE_FIELD_LINES);
 
         bool lace0_aligned = f0a.vsync_fall_tick >= 0 && f0a.vsync_fall_tick == f0b.vsync_fall_tick;
-        bool lace1_offset = f1a.vsync_fall_tick >= 0 && f1b.vsync_fall_tick >= 0 &&
-                             f1a.vsync_fall_tick != f1b.vsync_fall_tick;
+        // REPAIR (validation defect, opus:3-res.c16): a merely nonzero
+        // offset between the two LACE=1 fields' `_vsync` falls is satisfied
+        // by ANY jitter, including one that leaves the fields scanning the
+        // same physical lines out of step -- it does not show the second
+        // field's lines fall BETWEEN the first field's. Only an offset of
+        // exactly half THIS run's own measured line period does. line_ticks
+        // is measured on the same LACE=1 run, not assumed from elsewhere.
+        long long lace1_delta = f1a.vsync_fall_tick - f1b.vsync_fall_tick;
+        long long lace1_abs_delta = lace1_delta < 0 ? -lace1_delta : lace1_delta;
+        bool half_line_offset = f1a.vsync_fall_tick >= 0 && f1b.vsync_fall_tick >= 0 &&
+                                 f1a.line_ticks > 0 &&
+                                 lace1_abs_delta == static_cast<long long>(f1a.line_ticks) / 2;
         int distinct_lace0 = lace0_aligned ? f0a.dma_line_count : (f0a.dma_line_count + f0b.dma_line_count);
-        int distinct_lace1 = lace1_offset ? (f1a.dma_line_count + f1b.dma_line_count) : f1a.dma_line_count;
+        int distinct_lace1 = half_line_offset ? (f1a.dma_line_count + f1b.dma_line_count) : f1a.dma_line_count;
 
         checks.expect(
             f0a.dma_line_count == LACE_WINDOW_LINES && f0b.dma_line_count == LACE_WINDOW_LINES &&
                 f1a.dma_line_count == LACE_WINDOW_LINES && f1b.dma_line_count == LACE_WINDOW_LINES &&
+                half_line_offset &&
                 distinct_lace0 == LACE_WINDOW_LINES && distinct_lace1 == 2 * LACE_WINDOW_LINES,
             "P4-INTERLACE-DOUBLES-LINE-COUNT-PER-DISPLAYED-FRAME: with "
             "DIWSTRT/DIWSTOP set to a " + std::to_string(LACE_WINDOW_LINES) +
@@ -813,16 +833,21 @@ int main(int argc, char** argv) {
                 std::to_string(f0b.vsync_fall_tick) +
                 "), so the same " + std::to_string(LACE_WINDOW_LINES) +
                 " physical lines repeat; with LACE set the two fields' "
-                "`_vsync` falling edges land on DIFFERENT tick offsets "
+                "`_vsync` falling edges land exactly half this run's own "
+                "measured line period apart, not merely somewhere different "
                 "(measured: " + std::to_string(f1a.vsync_fall_tick) + " vs " +
-                std::to_string(f1b.vsync_fall_tick) +
-                "), so the " + std::to_string(LACE_WINDOW_LINES) + "+" +
-                std::to_string(LACE_WINDOW_LINES) +
-                " lines do not coincide -- " +
+                std::to_string(f1b.vsync_fall_tick) + ", delta " +
+                std::to_string(lace1_abs_delta) + " of a " +
+                std::to_string(f1a.line_ticks) +
+                "-tick line), so the second field's lines fall BETWEEN the "
+                "first field's -- " +
                 std::to_string(2 * LACE_WINDOW_LINES) +
                 " distinct lines across the two fields, twice the " +
                 std::to_string(LACE_WINDOW_LINES) +
-                " a LACE-clear pair shows. 'Interlaced mode allows twice as "
+                " a LACE-clear pair shows. A merely nonzero offset is not "
+                "graded here: it would also be satisfied by two fields "
+                "scanning the same lines out of step, which is not "
+                "doubling. 'Interlaced mode allows twice as "
                 "much data to be displayed in the same vertical area as in "
                 "non-interlaced mode. This is accomplished by doubling the "
                 "number of lines appearing on the video screen' (p.49). "
@@ -854,16 +879,39 @@ int main(int argc, char** argv) {
         h1.sync_to_sof();
         FieldSample f1b = measure_field(h1, LACE_FIELD_LINES);
 
+        // REPAIR (validation defect, opus:3-lace.f03): probed with LACE left
+        // clear on this block's own h1, this assertion stayed green (only P4
+        // went red) -- with h1's two "fields" identical to h0's, the span
+        // comparison below is trivially satisfied and says nothing about
+        // 400 interlaced lines. The same half-line-offset requirement P4
+        // grades, re-measured on THIS block's own h1, closes that: without
+        // it, this assertion cannot tell "genuinely interlaced, same span"
+        // from "LACE never reached the module, same field measured twice".
+        long long delta = f1a.vsync_fall_tick - f1b.vsync_fall_tick;
+        long long abs_delta = delta < 0 ? -delta : delta;
+        bool half_line_offset = f1a.vsync_fall_tick >= 0 && f1b.vsync_fall_tick >= 0 &&
+                                 f1a.line_ticks > 0 &&
+                                 abs_delta == static_cast<long long>(f1a.line_ticks) / 2;
+
         checks.expect(
-            f0.first_dma_line == static_cast<int>(LACE_VSTART_BYTE) &&
+            half_line_offset &&
+                f0.first_dma_line == static_cast<int>(LACE_VSTART_BYTE) &&
                 f0.dma_line_count == LACE_WINDOW_LINES &&
                 f1a.first_dma_line == f0.first_dma_line && f1a.dma_line_count == f0.dma_line_count &&
                 f1b.first_dma_line == f0.first_dma_line && f1b.dma_line_count == f0.dma_line_count,
-            "P5-DOUBLED-LINES-SAME-VERTICAL-SPAN: the bitplane-DMA-active "
-            "vpos span (first line, line count) measured for a single "
-            "LACE-clear field (" + std::to_string(f0.first_dma_line) + ", " +
+            "P5-DOUBLED-LINES-SAME-VERTICAL-SPAN: this run's own two LACE=1 "
+            "fields' `_vsync` falling edges land exactly half a measured "
+            "line apart (measured: " + std::to_string(f1a.vsync_fall_tick) +
+                " vs " + std::to_string(f1b.vsync_fall_tick) + ", delta " +
+                std::to_string(abs_delta) + " of a " +
+                std::to_string(f1a.line_ticks) +
+                "-tick line) -- so they are genuinely two distinct, "
+                "interlaced fields and not the same field measured twice -- "
+                "and the bitplane-DMA-active vpos span (first line, line "
+                "count) measured for a single LACE-clear field (" +
+                std::to_string(f0.first_dma_line) + ", " +
                 std::to_string(f0.dma_line_count) +
-                ") is the SAME span measured for EACH of the two LACE-set "
+                ") is the SAME span measured for EACH of those two LACE-set "
                 "fields whose 400 combined distinct lines P4 above measures "
                 "(" + std::to_string(f1a.first_dma_line) + ", " +
                 std::to_string(f1a.dma_line_count) + " and " +
@@ -1060,4 +1108,66 @@ int main(int argc, char** argv) {
 // matching this extension's baseline exactly -- eight graded propositions
 // (five original plus CONTROL-LACE-TOGGLES-FIELD1/P4/P5) and the one
 // withdrawn-but-recorded P3 measurement.
+// ============================================================================
+
+// ============================================================================
+// REPAIR LOG. Independent validation (Claude Opus 5.5) found P4 and P5's
+// interlace comparator too weak: both derived "the two LACE=1 fields are
+// distinct" from f1a.vsync_fall_tick != f1b.vsync_fall_tick, which any
+// nonzero jitter satisfies, not only a genuine half-line field offset --
+// and with LACE left clear on P5's own h1, P5 stayed green (probed: 7
+// passed, 1 failed, only P4 red), so P5 alone said nothing about 400
+// interlaced lines. Both P4 (opus:3-res.c16) and P5 (opus:3-lace.f03) are
+// backlog-added (committed ec52f73/f20025b, both inside 2bc070e~1..HEAD),
+// so this repair corrects each assertion directly rather than withdrawing
+// the id: `measure_field()` now also returns `line_ticks`, the duration in
+// ticks of one ordinary line measured on the SAME run, and both P4 and P5
+// require the two LACE=1 fields' `_vsync` falls to differ by EXACTLY
+// line_ticks/2, not merely by something. Both ids keep their original
+// placement; only the predicate and the label prose changed.
+//
+// The three pre-existing stimulus mutations (CONTROL_LACE_TOGGLES_FIELD1,
+// P4_INTERLACE_DOUBLES_LINE_COUNT, P5_DOUBLED_LINES_SAME_SPAN) were re-run
+// against the repaired code, unchanged in what they do, to confirm the
+// refactor did not silently change their effect:
+//   MUT=CONTROL_LACE_TOGGLES_FIELD1 -> 7 passed, 1 failed, only
+//     CONTROL-LACE-TOGGLES-FIELD1 red. Reverted: 8/0.
+//   MUT=P4_INTERLACE_DOUBLES_LINE_COUNT -> 7 passed, 1 failed, only P4 red
+//     (measured LACE=1 190/190, half_line_offset still true at delta 227 of
+//     454) -- the new conjunct does not mask the count conjunct. Reverted: 8/0.
+//   MUT=P5_DOUBLED_LINES_SAME_SPAN -> 7 passed, 1 failed, only P5 red
+//     (half_line_offset still true at delta 227 of 454; span mismatch 50 vs
+//     44 is what turns it red) -- the new conjunct does not mask the span
+//     conjunct either. Reverted: 8/0.
+//
+// A fourth, NEW mutation was needed for the conjunct this repair adds --
+// no legal register write moves an OCS `_vsync` pulse, since HCENTER only
+// takes effect when BEAMCON0's variable-beam bits are set (ECS-only,
+// agnus_beamcounter.v:133-135,226), so this is an IMPLEMENTATION mutation:
+// a disposable copy of agnus_beamcounter.v (never nanomig/, never committed;
+// built in this agent's own scratchpad and discarded after the run) with
+// HCENTER_VAL changed from its real 256+4+4=264 to 150 -- the position, in
+// hpos ticks, of the `!long_frame` field's own `_vsync` fall
+// (agnus_beamcounter.v:401-404) -- and nothing else. HCENTER is read only by
+// those two lines, so DIWSTRT/DIWSTOP/bitplane DMA and the LACE=0 fields'
+// (aligned) `_vsync` timing are untouched -- a single-variable mutation.
+//   replay (not a `make MUT=` target -- overrides SRC to substitute one
+//   disposable file for the real one, everything else from the pinned
+//   submodule):
+//     make clean && make SRC="<the 12 files this Makefile's SRC lists,
+//       agnus_beamcounter.v replaced by the disposable copy with
+//       HCENTER_VAL changed to 150>" test
+// MUTATION P4-INTERLACE-DOUBLES-LINE-COUNT-PER-DISPLAYED-FRAME implementation red: with HCENTER_VAL=150 in place of 264, the LACE=1 fields' `_vsync` falls moved from 1170 vs 1397 (delta 227, exactly half the 454-tick line) to 1056 vs 1397 (delta 341, NOT half of 454).
+// MUTATION P5-DOUBLED-LINES-SAME-VERTICAL-SPAN implementation red: same HCENTER_VAL=150 run, same 1056-vs-1397/delta-341 measurement.
+//   Result: "6 passed, 2 failed", P4 and P5 both newly red and ONLY those
+//   two (CONTROL-LACE-TOGGLES-FIELD1, P1, P2, P3-CONTROL all unaffected) --
+//   both dma_line_count pairs stayed 200/200 and P5's span stayed (44,200)
+//   on both fields, so the count and span conjuncts these two assertions
+//   also carry are unaffected; only the new half_line_offset conjunct
+//   catches this. Confirms the repair's conjunct is live: the OLD predicate
+//   (`!=`) would have stayed green here (227 vs 341 are both nonzero),
+//   which is exactly the defect being repaired. Reverted: discarded the
+//   disposable copy, `make clean && make` (default SRC, the real pinned
+//   submodule) -> 8 passed, 0 failed, 1 RECORDED, matching this extension's
+//   baseline exactly.
 // ============================================================================
