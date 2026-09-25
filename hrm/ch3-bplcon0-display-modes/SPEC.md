@@ -192,7 +192,7 @@ to 001 with plane 1 driven) confirming the comparator is sensitive to the BPU=00
 | `3-r0.bpu000` | 90 | opus | Register summary: BPLCON0 BPU code 000 shows only a background colour. |
 | `3-regsum-bplcon0.c19` | 90 | sol | BPLCON0.BPU=000 selects only background color. |
 
-50 assertion(s) in this category (46 original + 4 added).
+50 assertion(s) in this category (the sum of the two claim tables above).
 
 ### 3. Sixth bitplane usage footnote (dual-playfield / HAM)
 
@@ -387,7 +387,7 @@ DISPUTED BIT NUMBER, not resolved here: every claim row assigned to this package
 bit number for the HAM enable condition (3-ham.c20/c21 both readers, 3-r0.c21/c22,
 3-regsum-bplcon0.c16, A-bplcon.c63, A-bpc.b11.c0, C-bplcon0.b11 -- pages 87, 90, 271, 300) names
 bit 11. The task's own brief separately reports that printed page 95 states the HAM-enable bit
-as bit 10 elsewhere in that page's prose; no claim row in this package's assigned 263 carries
+as bit 10 elsewhere in that page's prose; no claim row this package holds carries
 that "bit 10" wording (the page-95 rows this package DOES hold, 3-ehb.c03/c04/3-ehb.c4/c5, are
 from the EHB paragraph on that same page and themselves say "bit 11") -- so this package asserts
 what its own quoted sources unanimously state (bit 11 enables HAM) and records, without a claim
@@ -695,7 +695,18 @@ withdrawn, together with `3-dual-activate.c4` (category 8), to a RECORDED line c
 "Claims not asserted in this package", R10.
 
 
-Total claim-rows assigned to a measurement category: 243 (235 original + 10 added, less 2 recorded under R10)
+Total claim-rows assigned to a measurement category: 243 -- the sum of the per-category counts
+above. This is a count of table rows in this document, not a number `make -B test` prints, and
+nothing re-checks it against the source below when a row's own claim id is added, withdrawn or
+re-routed. To measure what the package actually asserts today:
+
+    wsl bash -lc 'cd nanomig-hrm-tests/hrm/ch3-bplcon0-display-modes && make -B test'
+
+and count the printed `[PASS]`/`PASS:`, `[FAIL]`/`FAIL:`, `RECORDED:`, `[SKIP]` and `MEASURED:`
+lines -- as of the run this SPEC.md revision was checked against, that gave 233 passed, 0
+failed, 3 `RECORDED:` lines, 38 `[SKIP]` lines and 2 `MEASURED:` (note-only) lines, against the
+243 claimed here: a real gap this document does not explain, not re-measured further as part of
+this pass.
 
 ## Claims not asserted in this package
 
@@ -839,19 +850,23 @@ could show.
 | `3-dual.c46` | 72 | opus | Selecting dual-playfield mode also changes the way the hardware can move the bitplanes on the screen. |
 
 
-Total not-asserted claim ids: 31 (28 original + 1 added + 2 recorded under R10)
+Total not-asserted claim ids: 31 -- the sum of the R1-R10 tables above; a table-row count, not
+a run output, for the same reason given in the "Total claim-rows" paragraph above.
 
 
-Grand total: 245 asserted claim-rows + 29 not-asserted claim ids = 274 (274 claim rows over 269
-unique claim ids -- 258 original + 11 added, all 11 new ids unique; 5 ids in the HAM
-category are each backed by two independent reader rows, opus and sol, both asserted
-separately, unchanged from before).
+Grand total: 243 claim-rows assigned to a measurement category + 31 not-asserted claim ids =
+274 claim rows over 269 unique claim ids (5 ids in the HAM category are each backed by two
+independent reader rows, opus and sol, both asserted separately, so 274 rows resolve to 269
+unique ids). Both 243 and 31 are table-row counts read from this document as it stands now, not
+figures a run prints or a gate maintains -- see the "Total claim-rows" paragraph above for what
+`make -B test` actually asserts today (233 passed, 0 failed, 3 recorded, 38 skipped, 2
+measured-only).
 
 ## Two manual defects in this package's area (not mine to resolve)
 
 **HAM enable bit.** Every claim row this package holds that names a bit number for HAM enable
 says bit 11 (pages 87, 90, 271, 300 -- see the HAM category above). The task brief reports that
-printed page 95 elsewhere states bit 10; no claim row in this package's 263 carries that
+printed page 95 elsewhere states bit 10; no claim row this package holds carries that
 wording. Asserted: a BPLCON0 bit enables HAM (undisputed), specifically bit 11 per every quoted
 source this package holds. Recorded, not resolved: the page-95 "bit 10" reading per the task
 brief.
