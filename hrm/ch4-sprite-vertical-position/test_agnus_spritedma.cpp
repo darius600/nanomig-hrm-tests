@@ -257,12 +257,10 @@
 // MUTATION SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED: no record -- this claim is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
 
 // ============================================================================
-// EXTENSION (2026-09-25): 14 new claims routed to this package from
-// build2/ch4-sprite-vertical-position-spec-stage.jsonl. Written from that
-// file's quote/restatement/page fields ALONE -- before
-// build2/ch4-sprite-vertical-position.jsonl (routing.route, routing.how) or
-// agnus_spritedma.v was opened for this pass, same gate as ORDER OF WORK
-// above. Committed before either is read.
+// EXTENSION: 14 new claims. Written from quote/restatement/page fields
+// ALONE -- before this file's own routing fields or agnus_spritedma.v was
+// opened, same gate as ORDER OF WORK above. Committed before either is
+// read.
 //
 // NEW-1 SPRXCTL-BITS-6-3-UNUSED-OCS (4 ids: CH4-p107.c8, CH4-sprctl.c6,
 //   CH4-p128.c14, CH4-sctl.c13): chapter body page 107 ("Bits 6-3 Unused
@@ -281,8 +279,8 @@
 //   -- from two further pages and two further readers. Whether the
 //   undisputed sub-span (6,5) can carry an id here while the disputed one
 //   (4,3) cannot, per the bundled-claim rule, or whether the whole bundle
-//   is withdrawn again as its sibling was, is a step-3 decision once
-//   routing.how is read -- not assumed here.
+//   is withdrawn again as its sibling was, is decided once the RTL is read
+//   -- not assumed here.
 //
 // NEW-2 SPRXCTL-CHIP-COLUMN-CONFLICT (2 ids: APPB2-conf.c1, APPB2-conf.c2):
 //   appendix B p291 gives SPR0CTL's chip column as "A D(E)"; p292 gives
@@ -341,9 +339,8 @@
 //   $142, is not stated by the source (APPC2-SPRxCTL.conf3). Both
 //   restatements end "Recorded, not resolved."
 //
-// Disposition, as first routed against build2/ch4-sprite-vertical-position
-// .jsonl's own routing.route and routing.how, read after the commit above,
-// and the RTL, opened after that -- 9 ids graded, 5 recorded. An
+// Disposition, as first assessed against the full claims file and the
+// RTL, opened after the commit above -- 9 ids graded, 5 recorded. An
 // independent validation found five of those nine grades did not
 // establish the whole of what their claim states (each measured only
 // sprite 0, or only ecs=0, or graded one side of a stated ambiguity).
@@ -1233,20 +1230,19 @@ int main(int argc, char** argv) {
     }
 
     // ============================================================
-    // EXTENSION (2026-09-25): the 14 claims documented in the header
-    // EXTENSION section above, dispositioned per
-    // build2/ch4-sprite-vertical-position.jsonl's own routing.route and
-    // routing.how, read after the specification commit. Everything above
+    // EXTENSION: the 14 claims documented in the header
+    // EXTENSION section above, dispositioned against the full claims file
+    // and the RTL, opened after the specification commit. Everything above
     // this point is unchanged, except four label-only additions (an id in
     // full, per the one allowed change) on SPRXPOS-SPRXCTL-ADDRESS-MAP,
     // SPRXPOS-BYTE-IS-SV70-VSTART, SPRXCTL-BYTE-IS-EV70-VSTOP and
-    // AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL, where routing.how
-    // named those exact assertions as already establishing the new claim.
+    // AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL, which already
+    // establish the new claim.
     // ============================================================
 
     // ------------- SPRXCTL-BITS-6-3-UNUSED-AT-ECS0 -------------
     {
-        // routing.how (CH4-p107.c8, CH4-sprctl.c6, CH4-p128.c14,
+        // (CH4-p107.c8, CH4-sprctl.c6, CH4-p128.c14,
         // CH4-sctl.c13 -- identical text on all four): "Hold ecs=0 (this
         // RTL uses bits 6/5 as ECS V9 bits) and assert SPRxCTL with bits
         // 6..3 set leaves the reqdma/reg_address_out window identical to
@@ -1318,7 +1314,7 @@ int main(int argc, char** argv) {
 
     // ------------- SPRXCTL-CHG-IS-ECS-DEPENDENT -------------
     {
-        // routing.how (APPC2-SPRxCTL.v20): "The ecs input is the one
+        // (APPC2-SPRxCTL.v20): "The ecs input is the one
         // chipset switch here, and it changes what SPRxCTL does ...
         // promote the package's bits-6/5 probe to an assertion that the
         // same SPRxCTL value behaves differently at ecs=0 and ecs=1,
@@ -1360,7 +1356,7 @@ int main(int argc, char** argv) {
 
     // ------- SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS -------
     {
-        // routing.how (APPC2-SPRxCTL.conf3): "sprctl is one bank of eight
+        // (APPC2-SPRxCTL.conf3): "sprctl is one bank of eight
         // under one ecs gate; write each of $142, $14A, ..., $17A with the
         // same ecs-sensitive value and assert every channel's window
         // changes with ecs, not sprite 0's only." Independent measurement,
@@ -1544,8 +1540,7 @@ int main(int argc, char** argv) {
         "side of this five-way conflict, so APPC2-SPRxCTL.chip's own "
         "claim ('SPRxCTL's chip column in the ECS register map reads A "
         "alone') is declined here in full, not graded. The Denise-side "
-        "decode this conflict's own routing.how names as 'a measurement' "
-        "is reported in this package's own classify.evidence "
+        "decode is reported in this package's own classify.evidence "
         "(denise_sprites.v:104, denise_sprites_shifter.v:138-141 decode "
         "$142 too) -- not something this fixture, which builds "
         "agnus_spritedma alone with no Denise instance, can itself "
