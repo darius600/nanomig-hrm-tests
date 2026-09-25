@@ -3,11 +3,11 @@
 Written from the quoted manual text and PACKAGE.md's boundary description alone, **before** nanomig/src/minimig-aga/denise.v was opened. Order of work: this file is committed first; the RTL is opened only afterwards, and only harness-wiring mechanics (port names, exact bit widths, exact COLORxx encoding) are expected to change after that -- not the oracle stated here.
 
 **Extension.** The sections below describing categories 19 and 20, and the four rows added to
-category 2, the one row added to category 3, and the R9 reason group, were written from
-`ch3-bplcon0-display-modes-spec-stage.jsonl` alone (quote, restatement, page -- no
-`classify.evidence`), following this same rule: committed before the full claims file (with the
-router's evidence) or `denise.v` were opened for this extension. Nothing already accepted below
-this line changed; the additions only append new categories, rows and reason-group entries.
+category 2, the one row added to category 3, and the R9 reason group, were written from quote,
+restatement and page alone (no `classify.evidence`), following this same rule: committed before
+the full claims file (with the router's evidence) or `denise.v` were opened for this extension.
+Nothing already accepted below this line changed; the additions only append new categories, rows
+and reason-group entries.
 
 ## Fixture and measurement primitives (planned)
 

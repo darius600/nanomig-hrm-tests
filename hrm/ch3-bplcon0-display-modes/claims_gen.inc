@@ -432,7 +432,7 @@ static void assertBitIndependentUnderShres(const std::string& id, int page, cons
 
 
 // ---------------------------------------------------------------------------
-// Assert helpers for this package's extension claims, using Prompt 7's fixed
+// Assert helpers for this package's extension claims, using the fixed
 // expect()/note()/record() call form (test_denise.cpp). Everything above
 // this point is unchanged.
 // ---------------------------------------------------------------------------

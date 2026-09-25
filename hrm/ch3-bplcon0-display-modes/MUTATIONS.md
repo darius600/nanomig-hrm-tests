@@ -517,7 +517,7 @@ searched.
 ## Extension claims -- 9 graded, 2 recorded
 
 Nine claims graded below, plus two recorded. These use
-Prompt 7's fixed `expect()`/`note()`/`record()` call form (test_denise.cpp), not this package's
+the fixed `expect()`/`note()`/`record()` call form (test_denise.cpp), not this package's
 own `A()`/`SKIP()` helpers -- everything above this section is unchanged. The `// MUTATION`
 comments live inline in claims_gen.inc, next to each call; this section restates them for the
 same reason the log above exists.
@@ -562,7 +562,7 @@ you have only one playfield. Set 3-0 and 7-4 to the same value if you are using 
 playfield" -- PF2H governs bitplanes 2, 4 and 6's delay the same way regardless of DBLPF, so the
 identical shift is what the manual itself states, not a DBLPF-dependent movement mechanism this
 fixture could show. Kept as a MEASURED note, not graded; the id (and `3-dual-activate.c4`, whose
-pre-backlog line loses its id for the same reason -- see the table entry above) is withdrawn to
+existing line loses its id for the same reason -- see the table entry above) is withdrawn to
 a RECORDED line citing p.85. There is no red/green outcome left for a mutation to flip.
 
 **HIRES dual-playfield plane identity (3-dual-planes.c5/c6, 3-dual.c19/c20).** A fresh

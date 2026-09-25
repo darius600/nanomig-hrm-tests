@@ -64,7 +64,7 @@ static void A(const std::string& id, int page, const std::string& reader,
 }
 
 // ---------------------------------------------------------------------------
-// Prompt 7's fixed call form (expect/note/record), used for this package's
+// The fixed call form (expect/note/record), used for this package's
 // extension claims below. This package's own A()/SKIP() helpers above grade
 // everything else, unchanged. expect()/record() share the SAME
 // g_total/g_pass/g_fail counters A() already updates (g_recorded is this
