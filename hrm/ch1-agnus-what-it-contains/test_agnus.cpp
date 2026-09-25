@@ -7,10 +7,13 @@
 //   boundary -- structural questions, not mechanism-correctness questions.
 //   Package ch1-agnus-what-it-contains, fixture `agnus` (top module, plus
 //   every submodule it instantiates -- see SPECIFICATION.md's BOUNDARY
-//   section). 67 claims / 34 propositions; 18 graded here, 16 declined via
+//   section). 67 claims / 34 propositions; 18 graded here, 17 declined via
 //   record() (see SPECIFICATION.md for the full citation of each decline).
 //   Plus one claim routed here independently of classify.package (page 263,
-//   Appendix A -- see SPECIFICATION.md's Extension section): P34, graded.
+//   Appendix A -- see SPECIFICATION.md's Extension section): P34, recorded,
+//   not graded -- p.263 states a software write obligation with no stated
+//   hardware consequence, and is universal over six pointer engines of
+//   which this fixture built only two.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 1-6, 8, 9, 12-14.
@@ -39,9 +42,12 @@
 // PER-ASSERTION MUTATION RECORD. Format (tools/check_gates.py):
 // // MUTATION <assertion-label> <oracle|stimulus|none> <red|green|
 // impossible> <what changed>. Every mutation below is `stimulus`, except
-// the two `none impossible` records for P34's primary assertions (no
-// stimulus on the exempted bit alone can move address_out; each cites its
-// own positive control).
+// the two `none impossible` records for POINTER-LOW-BIT-WRITTEN-ZERO-DISK
+// and -AUDIO, which are unfalsifiable at this boundary (no stimulus on the
+// exempted bit alone can move address_out on any implementation sharing
+// this port width; each cites its own positive control). P34
+// (sol:5-appA-p263.c6) itself is recorded, not graded -- see the record()
+// call near the end of main() and SPECIFICATION.md's Extension section.
 //
 // MUTATION DMA-CHANNEL-TAKES-BUS-FROM-CPU stimulus red MUT_P1 leaves disk_dmal deasserted throughout instead of asserting it -- no DMA request is ever made, so dbr/address_out never show the written pointer and cpu_custom never drops.
 // MUTATION ADDRESS-OUTPUT-CEILING-2MB stimulus red MUT_P2 writes a disk pointer of 0 instead of the top-of-range value -- address_out reads 0, not near $FFFFF, during the granted cycle.
@@ -62,9 +68,9 @@
 // MUTATION HETEROGENEOUS-DMA-SHARES-ONE-BUS stimulus red MUT_P31 the audio leg's location pointer is written to a different address than the disk/blitter legs use -- the "all three reach the same address" check fails.
 // MUTATION READ-ALONE-RETRIGGERS-COPJMP stimulus red MUT_P32 performs a write (hwr/lwr) to COPJMP1 instead of a bare read -- (kept as a write, which the RTL treats identically to a read for this strobe, so this mutation is expected to stay green; MUT_P32 instead skips the COPJMP1 access entirely) so the address never returns to A.
 // MUTATION NO-REGISTER-IS-BOTH-READABLE-AND-WRITABLE stimulus red MUT_P33 reads back from DMACON's own address ($096) instead of DMACONR's ($002) -- the assertion's "DMACON's address answers a read" check, which must be false, becomes true.
-// MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-DISK none impossible: agnus_diskdma.v:56 forms the ALU input for DSKPTL as {data_in[4:0],data_in[15:1]} -- data_in[0] drives no wire anywhere in this module, so no stimulus that varies DSKPTL's own bit 0 alone can move address_out. Positive control: POINTER-LOW-BIT-WRITTEN-ZERO-DISK-BIT1-CONTROL below, which flips the adjacent bit 1 and requires address_out to move by one word.
+// MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-DISK none impossible: unfalsifiable at this boundary -- agnus_diskdma.v:56 forms the ALU input for DSKPTL as {data_in[4:0],data_in[15:1]}, so data_in[0] drives no wire anywhere in this module, and address_out is itself declared only [20:1] (agnus.v:67), a word address with no bit-0 position to disagree in. No stimulus on this bit, under any implementation sharing this port width, could ever move it. Positive control: POINTER-LOW-BIT-WRITTEN-ZERO-DISK-BIT1-CONTROL below, which flips the adjacent bit 1 and requires address_out to move by one word.
 // MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-DISK-BIT1-CONTROL stimulus red MUT_P34_DISK_CTRL leaves DSKPTL's bit 1 at 0 (same as the bit-0 baseline) instead of setting it -- address_out no longer differs from the baseline, and the control (which must show a difference) fails.
-// MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO none impossible: agnus_audiodma.v:89 captures only data_in[15:1] into audlcl -- data_in[0] drives no wire in this module either, for the same reason as the disk leg above. Positive control: POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO-BIT1-CONTROL below.
+// MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO none impossible: unfalsifiable at this boundary -- agnus_audiodma.v:89 captures only data_in[15:1] into audlcl, so data_in[0] drives no wire in this module either, for the same reason as the disk leg above (address_out is [20:1], agnus.v:67). Positive control: POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO-BIT1-CONTROL below.
 // MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO-BIT1-CONTROL stimulus red MUT_P34_AUDIO_CTRL same shape as the disk control -- AUD0LCL's bit 1 left at 0 instead of set, so the audio leg's two observed addresses no longer differ.
 
 #include <cstdint>
@@ -1238,12 +1244,21 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // POINTER-LOW-BIT-WRITTEN-ZERO (Appendix A p.263) -- sol:5-appA-p263.c6.
-    // See SPECIFICATION.md P34. Graded on two of this fixture's own pointer
-    // engines (disk, audio); bit 0 of a pointer's own low register has no
-    // wire to address_out in either (agnus_diskdma.v:56, agnus_audiodma.v:89
-    // -- both capture only data_in[15:1]), so no stimulus varying that bit
-    // alone can move address_out -- an "impossible" mutation, not a
+    // POINTER-LOW-BIT-WRITTEN-ZERO (Appendix A p.263). See SPECIFICATION.md
+    // P34. sol:5-appA-p263.c6 is RECORDED, not graded here (record() call
+    // near the end of main()): p.263 states a software write obligation
+    // ("must be written as zero"), with no stated hardware consequence for
+    // writing it as 1, and is universal over six pointer engines of which
+    // this fixture builds only two.
+    //
+    // These two assertions are kept anyway, without the claim id, as an
+    // unfalsifiable-at-this-boundary observation: bit 0 of a pointer's own
+    // low register has no wire to address_out in either engine
+    // (agnus_diskdma.v:56, agnus_audiodma.v:89 -- both capture only
+    // data_in[15:1]), and address_out itself is declared only [20:1]
+    // (agnus.v:67) -- a word address with no bit-0 position to disagree in.
+    // No stimulus in this module's whole input space, on this bit, could
+    // ever make either assertion fail -- an "impossible" mutation, not a
     // stimulus one. Comparator liveness is shown by flipping the adjacent
     // bit instead (the pointer's own real LSB, one position above the bit
     // this claim exempts, which the manual does not exempt) and requiring
@@ -1266,14 +1281,19 @@ int main(int argc, char** argv) {
         }
         h.dut->disk_dmal = 0;
         checks.expect(seen && seen_addr == PTR,
-            std::string("POINTER-LOW-BIT-WRITTEN-ZERO-DISK (appA p.263): "
-            "DSKPTL written with its own bit 0 forced to 1 still produces "
-            "address_out == $") + hexstr(PTR, 5) +
-            ", the pointer's even value unchanged -- bit 0, however "
-            "written, has no effect on the address this fixture can "
-            "observe, as \"The lowest bit of all pointers must be written "
-            "as zero.\" (p.263) requires. sol:5-appA-p263.c6. Measured: "
-            "seen=" + std::string(seen ? "1" : "0") + " addr=$" +
+            std::string("POINTER-LOW-BIT-WRITTEN-ZERO-DISK (appA p.263) -- "
+            "unfalsifiable at this boundary: DSKPTL written with its own "
+            "bit 0 forced to 1 still produces address_out == $") +
+            hexstr(PTR, 5) +
+            ", the pointer's even value unchanged. Not because the design "
+            "honours the manual's rule: agnus_diskdma.v:56 never wires "
+            "data_in[0] to anything, and address_out is declared only "
+            "[20:1] (agnus.v:67), so no stimulus on this bit, under any "
+            "implementation sharing this port width, could ever move it. "
+            "This green does not establish the appA p.263 pointer-LSB "
+            "claim -- see the record() call near the end of main() for "
+            "its id and reason. Measured: seen=" +
+            std::string(seen ? "1" : "0") + " addr=$" +
             hexstr(seen_addr, 5) + ".");
 
         // -- comparator liveness: DSKPTL's own bit 1 (the pointer's real
@@ -1325,14 +1345,20 @@ int main(int argc, char** argv) {
         }
         h.dut->audio_dmal = 0; h.dut->audio_dmas = 0;
         checks.expect(seen && seen_addr == PTR,
-            std::string("POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO (appA p.263): "
-            "AUD0LCL written with its own bit 0 forced to 1 still produces "
-            "address_out == $") + hexstr(PTR, 5) +
-            ", the pointer's even value unchanged -- bit 0, however "
-            "written, has no effect on the address this fixture can "
-            "observe, as \"The lowest bit of all pointers must be written "
-            "as zero.\" (p.263) requires. sol:5-appA-p263.c6. Measured: "
-            "seen=" + std::string(seen ? "1" : "0") + " addr=$" +
+            std::string("POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO (appA p.263) -- "
+            "unfalsifiable at this boundary: AUD0LCL written with its own "
+            "bit 0 forced to 1 still produces address_out == $") +
+            hexstr(PTR, 5) +
+            ", the pointer's even value unchanged. Not because the design "
+            "honours the manual's rule: agnus_audiodma.v:89 captures only "
+            "data_in[15:1] into audlcl -- data_in[0] drives no wire in "
+            "this module either -- and address_out is declared only "
+            "[20:1] (agnus.v:67), so no stimulus on this bit, under any "
+            "implementation sharing this port width, could ever move it. "
+            "This green does not establish the appA p.263 pointer-LSB "
+            "claim -- see the record() call near the end of main() for "
+            "its id and reason. Measured: seen=" +
+            std::string(seen ? "1" : "0") + " addr=$" +
             hexstr(seen_addr, 5) + ".");
 
         // -- comparator liveness: AUD0LCL's own bit 1, which the manual
@@ -1361,6 +1387,25 @@ int main(int argc, char** argv) {
             ". MUTATION: bit 1 left at 0 instead of set -- address_out no "
             "longer differs from the bit-0 baseline.");
     }
+
+    checks.record(
+        "sol:5-appA-p263.c6 (appA p.263, \"The lowest bit of all pointers "
+        "must be written as zero.\"): not graded. In context -- between "
+        "\"These registers may be written with one MOVE.L instruction\" and "
+        "the Chip-memory warning that follows -- the sentence tells the "
+        "programmer what to write; the page states no hardware consequence "
+        "for writing it as 1, and silence is not a requirement. The claim "
+        "is also universal over every custom-chip pointer (bitplane, "
+        "sprite, Copper, blitter destination, disk, audio); this fixture "
+        "built only two of the six (disk, audio). Even read as a hardware "
+        "claim, it would be unfalsifiable at this boundary: "
+        "agnus_diskdma.v:56 and agnus_audiodma.v:89 never wire the "
+        "pointer's own bit 0 to anything, and agnus's own address_out is "
+        "declared only [20:1] (agnus.v:67) -- a word address with no bit-0 "
+        "position to disagree in, so no measurement this fixture can take "
+        "could ever contradict the page. POINTER-LOW-BIT-WRITTEN-ZERO-DISK "
+        "and -AUDIO above are kept as that unfalsifiable-at-this-boundary "
+        "observation, without this id. See SPECIFICATION.md P34.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

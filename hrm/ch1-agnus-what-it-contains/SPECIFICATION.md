@@ -772,36 +772,51 @@ Claim `sol:5-appA-p263.c6` (page 263, Appendix A) reads:
 
 Restated: the least significant bit of every custom-chip pointer must be
 written as zero. Its own classification names `ch5-audio-location-pointer`
-as `classify.package`; it is graded in this package instead because the
-routing step that decides which package grades a claim, not
-`classify.package`, placed it here — and this package is the one place more
-than one engine's own pointer register (disk, audio, Copper, blitter
-destination) already sits in a single build, which a single-engine sibling
-package is not.
+as `classify.package`; the routing step that decides which package grades a
+claim, not `classify.package`, placed it here instead — this package is the
+one place more than one engine's own pointer register (disk, audio, Copper,
+blitter destination) already sits in a single build, which a single-engine
+sibling package is not. That is why the claim was routed here, not why it
+grades: it does not.
 
 | # | page | uids | disposition | label below |
 |---|---|---|---|---|
-| P34 | 263 | `sol:5-appA-p263.c6` | GRADE | POINTER-LOW-BIT-WRITTEN-ZERO |
+| P34 | 263 | `sol:5-appA-p263.c6` | RECORD | POINTER-LOW-BIT-WRITTEN-ZERO |
 
-### P34 — POINTER-LOW-BIT-WRITTEN-ZERO (page 263, Appendix A)
+### P34 — POINTER-LOW-BIT-WRITTEN-ZERO (page 263, Appendix A) — recorded, not graded
 
 > The lowest bit of all pointers must be written as zero.
 — `sol:5-appA-p263.c6`
 
-Graded at this boundary rather than at a single-engine sibling package
-precisely because more than one pointer register already sits in this one
-fixture (see BOUNDARY above): at least two of them — disk (DSKPTH/DSKPTL)
-and audio (AUD0LCH/AUD0LCL) — are each written with their own low
-register's bit 0 forced to 1 instead of the clean, already-even values
-every proposition above uses, and the fixture confirms the DMA-fetched
-address it observes is identical to what the same pointer produces with bit
-0 held at 0 — bit 0, however written, has no effect on the address this
-fixture can observe, consistent with the manual's instruction that it
-always be written as zero. A companion measurement on the same register's
-own bit 1 (a bit the manual does not exempt) must show a *different*
-observed address when bit 1 differs, so the comparison is shown able to
-detect a real difference and this is not a vacuous equality for every bit
-position.
+In context — between "These registers may be written with one MOVE.L
+instruction" and the Chip-memory warning that follows — this sentence tells
+the programmer what to write; the page states no hardware consequence for
+writing it as 1, and silence is not a requirement. The claim is also
+universal over every custom-chip pointer (bitplane, sprite, Copper, blitter
+destination, disk, audio); this fixture has only two of the six built
+(disk, audio).
+
+Even read as a hardware claim, it would be unfalsifiable at this boundary:
+`agnus_diskdma.v:56` forms DSKPTL's ALU input as
+`{data_in[4:0],data_in[15:1]}` and `agnus_audiodma.v:89` captures only
+`data_in[15:1]` into `audlcl` — the pointer's own bit 0 drives no wire in
+either module — and `agnus`'s own `address_out` is declared only `[20:1]`
+(`agnus.v:67`), a word address with no bit-0 position to disagree in. No
+stimulus varying that bit, on any implementation sharing this port width,
+could ever move it.
+
+The file keeps two assertions, `POINTER-LOW-BIT-WRITTEN-ZERO-DISK` and
+`-AUDIO` — each written with its own low register's bit 0 forced to 1
+instead of the clean, already-even values every proposition above uses,
+confirming the DMA-fetched address it observes is identical to what the
+same pointer produces with bit 0 held at 0 — as that
+unfalsifiable-at-this-boundary observation, and each is paired with a
+`-BIT1-CONTROL` companion measurement on the same register's own bit 1 (a
+bit the manual does not exempt), which must show a *different* observed
+address when bit 1 differs, proving the comparator can detect a real
+difference and the bit-0 result is not a vacuous equality for every bit
+position. Neither carries this claim id; `sol:5-appA-p263.c6` is declined
+via `record()` instead.
 
 ## Non-goals
 
