@@ -11,8 +11,8 @@
 //   denise_spritepriority, bitplane_ram).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 39, 42, 57, 58, 59, 60, 64, 67, 73, 74, 76, 77, 78, 79, 80, 82, 91,
-//   270, 277, 293, 296, 297, 305, 306, 307.
+//   pp. 39, 42, 46, 57, 58, 59, 60, 64, 67, 73, 74, 76, 77, 78, 79, 80, 82,
+//   83, 91, 270, 277, 293, 296, 297, 305, 306, 307.
 // Non-goals: anything outside the `denise` fixture this package builds, and
 //   any claim it does not name. A green here means those assertions held on
 //   this fixture at the pinned revision -- not that the module is correct,
@@ -58,6 +58,43 @@
 //    window bounds, it does not know where a monitor's own visible area
 //    sits relative to that -- declined, needs a wider (whole-system/CRT-
 //    timing) boundary than this fixture.
+//
+// NEW CLAIMS -- SPECIFICATION ONLY, FROM QUOTATIONS ALONE (this package's
+// full claims file, with its routing and evidence, and the RTL, are not yet
+// open when this paragraph is written -- see ORDER OF WORK below for why
+// that order matters). These seven propositions are added to this
+// package's specification from ch3-horizontal-display-window-spec-stage's
+// own quote/restatement/page fields alone; each is resolved into an
+// assertion, a note, or a decline only in the commit that follows, once the
+// full claims file and the RTL are open:
+//
+//  * 3-video.c28 (p.42, text): "Also, the dimensions of the playfield in
+//    memory are often larger than the playfield displayed on the screen."
+//    A memory-resident playfield may be larger than the portion displayed.
+//  * 3-colortable.c8 (p.46, text): "The background color shows in any area
+//    on the display where there is no other object present and is also
+//    displayed outside the defined display window, in the border area."
+//    The background color appears wherever no other display object is
+//    present.
+//  * 3-colortable.c9 (p.46, text): the same sentence as 3-colortable.c8.
+//    The background color appears in the border outside the display
+//    window.
+//  * 3-ct.c04 (p.46, text): "shows in any area on the display where there
+//    is no other object present" (the same sentence's first half, read as
+//    its own proposition). The background colour shows wherever no other
+//    object is present on the display.
+//  * 3-ct.c05 (p.46, text): "and is also displayed outside the defined
+//    display window, in the border" (the same sentence's second half,
+//    read as its own proposition). The background colour is also
+//    displayed outside the defined display window, in the border area.
+//  * 3-max-window.c31 (p.80, text): "In the Enhanced Chip Set (ECS), the
+//    limits for playfield display windows have been changed." ECS changes
+//    the OCS playfield display-window limits.
+//  * 3-hscr.f07 (p.83, figure -- Figure 3-24; the reader's own extraction
+//    flags the printed page as possibly wrong for this figure): in the
+//    figure's top panel the "background color" callout points at the
+//    thick border drawn around the display window -- the area outside the
+//    display window shows the background colour.
 //
 // BOUNDARY (from PACKAGE.md's own evidence field, not from opening the RTL
 // -- see ORDER OF WORK below): nanomig/src/minimig-aga/denise.v:56-57
