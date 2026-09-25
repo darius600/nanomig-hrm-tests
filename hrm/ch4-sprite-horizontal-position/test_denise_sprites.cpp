@@ -117,8 +117,8 @@
 //     CH4-other.c2..c8 (7)
 //   SPRXCTL-WRITE-DISARMS-SPRITE (4 ids)              -- APPA-sprctl.c3,
 //     CH4-appA-sprite.c18, APPA-sprdat.c9, CH4-appA-sprite.c39
-//   SPRXCTL-BIT7-ATT-ODD-SPRITES-ATTACH (2 ids)       -- APPA-sprctl.c5,
-//     CH4-appA-sprite.c20
+//   SPRXCTL-BIT7-ATT-ODD-SPRITES-ATTACH (3 ids)       -- APPA-sprctl.c5,
+//     CH4-appA-sprite.c20, CH4-appA-sprite.c11
 //   SPRXCTL-BIT0-SH0-LOW-BIT-OF-HORIZONTAL-START (2 ids) -- APPA-sprctl.c9,
 //     CH4-appA-sprite.c24
 //   ARMED-SPRITE-EMITS-AT-SPRXPOS-MATCH (3 ids)       -- APPA-sprdat.c10,
@@ -144,11 +144,14 @@
 //   2+25+4+2+2+3+2+2+2+2+2+2+6 = 56, +96 = 152. All 152 claim ids of
 //   ch4-sprite-horizontal-and-arming.jsonl are cited below. None declined.
 //
-//   PLUS a 153rd, routed claim -- CH4-appA-sprite.c11 (p.284, feature
-//     half of "These two registers work together as position, size and
-//     feature sprite-control registers.", see the paragraph above BOUNDARY)
-//     -- not yet cited on an assertion; grading follows once the full
-//     claims file and the RTL are opened.
+//   PLUS a 153rd, routed claim: CH4-appA-sprite.c11 (p.284, feature half
+//     of "These two registers work together as position, size and
+//     feature sprite-control registers.", see the paragraph above
+//     BOUNDARY) is cited on SPRXCTL-BIT7-ATT-ODD-SPRITES-ATTACH above --
+//     that assertion's own measurement (SPRxCTL's ATT bit switching the
+//     emitted colour code, independent of SPRxPOS) already establishes
+//     the feature role this id's reading is scoped to; no condition,
+//     expected value or verdict on that assertion changed.
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id) arms sprite
 // 0 with a distinctive, non-uniform bit pattern (SPR0DATA=0xA000: bits 15
@@ -443,6 +446,15 @@ int main(int argc, char** argv) {
     }
 
     // ------------- SPRXCTL-BIT7-ATT-ODD-SPRITES-ATTACH -------------
+    // Also cites CH4-appA-sprite.c11 (p.284, "These two registers work
+    // together as position, size and feature sprite-control registers.",
+    // feature half only -- the size/vertical half is a separate id read
+    // against ch4-sprite-vertical-position). Unchanged from the run this
+    // package already had: this same measurement -- SPRxCTL's bit 7
+    // switching the emitted colour code independently of SPRxPOS's own
+    // position value -- is exactly what shows SPRxCTL contributing a
+    // sprite-control FEATURE alongside SPRxPOS's position role, so it
+    // establishes that half of c11's claim whole, not a proxy for it.
     {
         // (a) sprite 0 alone, unattached.
         Meas base = measure(0, 0x40, 0x00, 0x8000, 0x0000);
@@ -484,7 +496,7 @@ int main(int argc, char** argv) {
             "the same bit 7 on SPR0CTL (sprite 0, even) alone, with no odd "
             "partner armed at all, changes nothing -- matching '07      "
             "ATT       Sprite attach control bit (odd sprites)' (p.284). "
-            "APPA-sprctl.c5, CH4-appA-sprite.c20 .");
+            "APPA-sprctl.c5, CH4-appA-sprite.c20, CH4-appA-sprite.c11 .");
     }
 
     // ----- SPRXCTL-BIT0-SH0-LOW-BIT-OF-HORIZONTAL-START -----
@@ -777,8 +789,9 @@ int main(int argc, char** argv) {
 // RESULTS: built and run under WSL/Verilator 5.052 against the pinned
 // nanomig submodule, after this file's own header/assertions/expected
 // values were committed (see ORDER OF WORK above). 30 passed, 0 failed --
-// every one of this package's 152 claims holds at the denise_sprites
-// boundary, as tested here. No red findings.
+// every one of this package's 153 claims (152 original plus the routed
+// CH4-appA-sprite.c11) holds at the denise_sprites boundary, as tested
+// here. No red findings.
 //
 //   SPRXCTL-BIT0-SH0-LOW-BIT-OF-HORIZONTAL-START measured sh0_delta = 1,
 //   independently derived from SH0's own "low bit" name (see the note
@@ -801,14 +814,19 @@ int main(int argc, char** argv) {
 //   That specific scenario is outside what SPRXCTL-BIT7-ATT-ODD-SPRITES-
 //   ATTACH's own two-part design measures; it is not claimed to be
 //   covered here, and this package takes no position on it beyond what it
-//   actually ran. All other assertions measured exactly what their own
-//   label states; see each assertion's own PASS line above for its
-//   specific measurement.
+//   actually ran. The same (a)/(b) measurement is also what establishes
+//   CH4-appA-sprite.c11's feature-role reading (SPRxCTL contributing a
+//   sprite-control FEATURE distinct from SPRxPOS's position role) -- the
+//   deviation noted above does not touch that narrower claim, which needs
+//   only that ATT switches the colour code on an armed odd sprite. All
+//   other assertions measured exactly what their own label states; see
+//   each assertion's own PASS line above for its specific measurement.
 //
-// A separate check on this package's own 152 claims (done before opening
-// the RTL, alongside writing the spec) found no claim shaped like "SPRxCTL
-// bit 4 is the implemented 70ns increment" and no CH4-appA-sprite.c11 --
-// see the header commentary above.
+// A separate check on this package's original 152 claims (done before
+// opening the RTL, alongside writing the spec) found no claim shaped like
+// "SPRxCTL bit 4 is the implemented 70ns increment" -- see the header
+// commentary above. CH4-appA-sprite.c11, the 153rd claim, is cited on
+// SPRXCTL-BIT7-ATT-ODD-SPRITES-ATTACH, per the CLAIM COVERAGE note above.
 //
 // MUTATION LOG: one stimulus mutation per assertion, each built with
 // `-DMUT_ID=N` (N = the assertion's 1-based position in source order,
