@@ -194,18 +194,20 @@
 //    Claims: 5-appA-p280.c18, 5-appA-p280.c19, 5-appA-p280.c37, A-int.b15,
 //    A-intreq.c3 .
 //
-// 5. MASTER-ENABLE-BIT14-GATE (2 claim ids; ASSERTS ONLY THE ENABLE HALF).
+// 5. MASTER-ENABLE-BIT14-GATE (0 claim ids graded; ASSERTS ONLY THE
+//    ENABLE HALF).
 //    Quote: appendix A p.280 "14 INTEN Master interrupt (enable only, no
 //    request)".
 //    Expected and ASSERTED: with every individual source enabled and
 //    pending, _ipl stays inactive (7) while INTEN (bit 14 of INTENA) is
 //    clear, and goes active the instant INTEN is set - a master gate over
 //    every other enable bit.
-//    Claims: 5-appA-p280.c20, A-int.b14 .
+//    Claims: none graded here -- 5-appA-p280.c20 and A-int.b14 also state
+//    the "no request" half, which this assertion does not test; both are
+//    recorded at MASTER-BIT14-NO-REQUEST-NOT-GRADED below.
 //
-// 5B. MASTER-BIT14-NO-REQUEST (same 2 claim ids; ASSERTS ONLY THE "NO
-//    REQUEST" HALF - added in the 2026-09-12 repair, see the header note
-//    above).
+// 5B. MASTER-BIT14-NO-REQUEST (2 claim ids; ASSERTS ONLY THE "NO
+//    REQUEST" HALF, see the header note above).
 //    Quote: appendix A p.280 "14 INTEN Master interrupt (enable only, no
 //    request)".
 //    Expected if NanoMig conforms: a plain SET write to INTREQ naming only
@@ -783,7 +785,7 @@ int main(int argc, char** argv) {
             "stayed 7 (inactive) while INTEN was clear, and went active "
             "(_ipl=%d, level 4) the instant INTEN was set with no other "
             "stimulus changed - INTEN gates every other enable bit at once. "
-            "[claims:",
+            "[claims: ]",
             active_ipl);
         checks.expect(inactive_without_inten && active_with_inten, buf);
     }
