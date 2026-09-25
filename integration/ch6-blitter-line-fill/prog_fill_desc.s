@@ -1,11 +1,15 @@
-; prog_fill_desc.s -- ch6-blitter-line-fill: FILL-DESC-CORRECT /
-; FILL-ASC-INCORRECT (page 182, 184, 200). Builds a 5-word, 1-line boundary
-; row in chip RAM with a single marker bit in word0, word2 and word4 (words
-; 1 and 3 carry no marker), then blits it through the blitter's inclusive
-; area-fill logic: channel C supplies the row (DMA fetch), channel A and B
-; are unused, BLTCON0's minterm is programmed so D = C (channel A/B forced
-; to 0, see SPECIFICATION.md), and channel D writes the filled row to a
-; second buffer. Reads back the two marker-free words (word1, word3).
+; prog_fill_desc.s -- ch6-blitter-line-fill: the CONTROL-FILL-DESC control
+; (this file, descending, no claim ids) and, via ASCENDING below, the
+; carrier for the page 182/184/200 descending-mode-required ids. Builds a
+; 5-word, 1-line boundary row in chip RAM with a single marker bit in
+; word0, word2 and word4 (words 1 and 3 carry no marker), then blits it
+; through the blitter's inclusive area-fill logic: channel C supplies the
+; row (DMA fetch), channel A and B are unused, BLTCON0's minterm is
+; programmed so D = C (channel A/B forced to 0, see SPECIFICATION.md), and
+; channel D writes the filled row to a second buffer that starts out holding
+; the sentinel $A5A5 in every word (not zero), so the harness can tell the
+; blit actually ran before grading word1/word3. Waits for BBUSY per p.186:
+; one throwaway read, then read-and-test in a loop.
 ;
 ; ASCENDING, if defined, runs the same blit with the pointer started at
 ; word0 instead of word4 and DESC cleared instead of set (prog_fill_asc.s).
@@ -46,12 +50,12 @@ start:
         endif
         endif
 
-        move.l  #DST_ROW,a1
-        move.w  #0,(a1)
-        move.w  #0,2(a1)
-        move.w  #0,4(a1)
-        move.w  #0,6(a1)
-        move.w  #0,8(a1)
+        move.l  #DST_ROW,a1             ; sentinel, not zero: proves the blit overwrote it
+        move.w  #$A5A5,(a1)
+        move.w  #$A5A5,2(a1)
+        move.w  #$A5A5,4(a1)
+        move.w  #$A5A5,6(a1)
+        move.w  #$A5A5,8(a1)
 
         lea     CUSTOM,a0
         move.w  #$8240,DMACON(a0)      ; set DMAEN | BLTEN
@@ -83,6 +87,7 @@ start:
 
         move.w  #$0045,BLTSIZE(a0)     ; height=1, width=5 -- starts the blit
 
+        move.w  DMACONR(a0),d3          ; p.186: the first test of the done bit may be wrong -- discard it
 .wait:  move.w  DMACONR(a0),d3
         btst.l  #14,d3                 ; BBUSY
         bne.s   .wait

@@ -1,8 +1,14 @@
-; prog_fill_plain.s -- FIXTURE for the fill cluster: the same 5-word,
-; 1-line, 3-marker row as prog_fill_desc.s, blitted with fill disabled
-; (IFE=EFE=0, a plain channel C -> D copy through the minterm). Proves the
-; marker data and the blit's pointer/pipeline setup reach RESULTS exactly
-; as written before any fill-mode assertion is trusted.
+; prog_fill_plain.s -- FIXTURE-FILL: the same 5-word, 1-line, 3-marker row
+; as prog_fill_desc.s, blitted with fill disabled (IFE=EFE=0, a plain
+; channel C -> D copy through the minterm). Proves the marker data and the
+; blit's pointer/pipeline setup reach RESULTS exactly as written before any
+; fill-mode assertion is trusted. The destination starts out holding the
+; sentinel $A5A5 in every word (not zero), so a blit that never wrote would
+; not be mistaken for one that reproduced the row by coincidence. Waits for
+; BBUSY per p.186: one throwaway read, then read-and-test in a loop.
+;
+; MUTATE_MARKER, if defined, drops the word4 marker (prog_fill_plain_mut.s):
+; the exact-reproduction check must go red.
 
         include "nanomig.i"
         org     PROGRAM_ORG
@@ -17,14 +23,18 @@ start:
         move.w  #0,2(a1)                ; word1
         move.w  #MARK,4(a1)             ; word2
         move.w  #0,6(a1)                 ; word3
+        ifd     MUTATE_MARKER
+        move.w  #0,8(a1)                  ; word4 (marker dropped)
+        else
         move.w  #MARK,8(a1)              ; word4
+        endif
 
-        move.l  #DST_ROW,a1
-        move.w  #0,(a1)
-        move.w  #0,2(a1)
-        move.w  #0,4(a1)
-        move.w  #0,6(a1)
-        move.w  #0,8(a1)
+        move.l  #DST_ROW,a1             ; sentinel, not zero: proves the blit overwrote it
+        move.w  #$A5A5,(a1)
+        move.w  #$A5A5,2(a1)
+        move.w  #$A5A5,4(a1)
+        move.w  #$A5A5,6(a1)
+        move.w  #$A5A5,8(a1)
 
         lea     CUSTOM,a0
         move.w  #$8240,DMACON(a0)      ; set DMAEN | BLTEN
@@ -49,6 +59,7 @@ start:
 
         move.w  #$0045,BLTSIZE(a0)     ; height=1, width=5 -- starts the blit
 
+        move.w  DMACONR(a0),d3          ; p.186: the first test of the done bit may be wrong -- discard it
 .wait:  move.w  DMACONR(a0),d3
         btst.l  #14,d3                 ; BBUSY
         bne.s   .wait

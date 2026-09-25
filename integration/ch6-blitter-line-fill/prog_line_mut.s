@@ -1,6 +1,8 @@
-; prog_line_mut.s -- MUTATION support for LINE-RAW-DELTA and LINE-NORMALIZE:
-; prog_line.s with EP1 changed to (0,0)-(6,2), whose raw and normalized
-; dx/dy (6,2,6,2) differ from the hardcoded expected 7,35,35,7.
+; prog_line_mut.s -- MUTATION support for the drawn-line assertion:
+; prog_line.s with MUTATE_UNNORM defined, feeding the raw unswapped deltas
+; into the registers instead of the normalized major/minor axis. BLTSIZE's
+; height field becomes 8 instead of 36, so the line comes up 28 rows short
+; and neither the pixel count nor the last-pixel check can pass.
 
-MUTATE_EP1 equ 1
+MUTATE_UNNORM equ 1
         include "prog_line.s"

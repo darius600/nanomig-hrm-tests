@@ -1,189 +1,244 @@
 # ch6-blitter-line-fill
 
-Built from the spec-stage claims alone (`ch6-blitter-line-fill-spec-stage.jsonl`):
-21 claim ids across two unrelated chapter-6 topics plus a third group that
-this package cannot settle. Every id below is either carried by an
-assertion or withdrawn with a reason; none is silently dropped.
+21 claim ids across two unrelated chapter-6 topics plus a third group this
+package cannot settle. Every id below is either carried by an assertion or
+withdrawn with a reason; none is silently dropped.
 
-## Topic 1: line-mode dx/dy (page 190-191)
+## Topic 1: the line-mode claims (page 189-191)
 
-The manual's line-drawing setup is arithmetic a program performs before it
-touches any blitter register: given two endpoints, compute the raw
-coordinate deltas, then normalize them so the larger becomes "dx" (the
-major axis) and the smaller "dy" (the minor axis), swapping if necessary.
-This is CPU arithmetic executed by the 68000 core inside `nanomig.v`; it is
-tested by running it and reading back what the program stored, the same
-mechanism the apparatus check already proves works.
+Nine ids describe the recipe a program follows before starting a
+line-drawing blit: compute the raw coordinate deltas (page 190), then
+normalize them so the larger becomes the major axis "dx" and the smaller
+the minor axis "dy", swapping if necessary (page 191). The recipe has no
+port-visible consequence of its own -- there is no register that reports
+"dx" or "dy" back; its only observable effect is the line the blitter
+draws once the normalized values are programmed into the registers page
+191's "REGISTER SUMMARY FOR LINE MODE" lists. So the assertion is on the
+drawn line itself, not on an intermediate CPU value.
 
-### Assertion LINE-RAW-DELTA
+### Assertion (drawn line)
 
-- Claims: `6-line-mode.c39`, `ch6-line.c12` (page 190, "dx = abs(x2 - x1)");
-  `6-line-mode.c40`, `ch6-line.c13` (page 190, "dy = abs(y2 - y1)").
-- Proposition: for chosen endpoints, the pre-normalization dx equals
-  abs(x2-x1) and dy equals abs(y2-y1).
-- Program: `prog_line.s` computes dx0, dy0 for endpoints
-  (x1,y1)=(10,5), (x2,y2)=(3,40) -- chosen so x2-x1 and y2-y1 are both
-  negative, which actually exercises the abs step -- and stores both to
-  `RESULTS`.
-- Observed: `peek_logical(RESULTS+0)`, `peek_logical(RESULTS+2)`.
-- Expected, from the page's formula applied to the chosen endpoints:
-  dx0 = abs(3-10) = 7, dy0 = abs(40-5) = 35.
+- Claims: `6-line-mode.c39`, `6-line-mode.c40`, `ch6-line.c12`,
+  `ch6-line.c13` (page 190, raw dx/dy); `6-line-mode.c41`,
+  `6-line-mode.c42`, `ch6-line.c14`, `ch6-line.c15`, `ch6-line.c16` (page
+  191, normalized dx/dy and the rearrangement). One assertion settles all
+  nine: the normalized values are exactly what a correctly drawn line for
+  these endpoints requires, and a line drawn from unnormalized values comes
+  out the wrong length (see Mutation) -- so the drawn line is evidence for
+  the whole recipe, not just its last step.
+- Proposition: for endpoints (x1,y1)=(10,5), (x2,y2)=(3,40), a line-mode
+  blit set up per page 191's register summary, with the octant fixed by
+  Fig 6-8/Table 6-3 (page 190) for dy(35) > dx(7) -- Y the major axis, x
+  falling, y rising -- draws a line with the following three properties,
+  the only ones the pages fix:
+  1. First pixel at (10,5), last pixel at (3,40) (page 189: "the blitter
+     draws a line from one point to another").
+  2. Exactly dx_normalized+1 = 36 pixels (page 191: "We set the blit
+     height to the length of the line, which is dx + 1").
+  3. Consequently one pixel in every row y=5..40, with x falling by 0 or 1
+     between consecutive rows (dx is the minor axis and dx < dy, so x
+     cannot change in every row, and cannot change by more than one row
+     per pixel since dy is major).
+  What the pages do not fix: the initial error term and the two modulos
+  fix the exact row at which x falls, but not a formula this package's
+  claims state -- so no exact intermediate (x,y) pair is graded, only the
+  three properties above.
+- Program: `prog_line.s` builds this blit (BLTAPT as the Bresenham
+  accumulator, BLTAMOD/BLTBMOD as its two increments, BLTCON0's ASH as the
+  starting bit position, BLTCON1's octant bits) and leaves the result in a
+  36-word row buffer, one word per row y=5..40, each word's single set bit
+  at bit-index x (words never cross a boundary since x stays within
+  3..10). The register-level encoding (which bit is which octant flag, the
+  accumulator's bit-drop/sign-extension format) is mechanical setup, not a
+  page-derived value; it is what the full claims file's RTL citations
+  (`agnus_blitter.v`'s line-mode states, `agnus_blitter_adrgen.v`'s
+  accumulator sign) are for, and its correctness was checked against the
+  three graded properties above by running the blit, not assumed.
+- Observed: `peek_logical` on all 36 row words directly (the program does
+  not copy them through `RESULTS`).
+- Expected: row 0's word has its one set bit at index 10; row 35's word
+  has its one set bit at index 3; every row's word has exactly one set
+  bit; consecutive rows' bit indices never rise and never fall by more
+  than one.
 
-### Assertion LINE-NORMALIZE
+### Fixture: FIXTURE-LINE
 
-- Claims: `6-line-mode.c41`, `ch6-line.c15` (page 191, "dx = max(...)");
-  `6-line-mode.c42`, `ch6-line.c16` (page 191, "dy = min(...)");
-  `ch6-line.c14` (page 191, "rearranged if necessary so dx is greater than
-  dy"). These three phrasings describe one act -- the max/min formulas and
-  the "rearrange" prose are the same normalization -- so one test settles
-  all five ids: it can only produce a swap by comparing the two raw deltas
-  and picking the larger as dx, which is exactly "rearrange so dx > dy" and
-  exactly "dx = max(...), dy = min(...)".
-- Proposition: normalized dx is the greater of the two raw absolute deltas,
-  normalized dy the lesser, with the values swapped if the raw dx was not
-  already the greater.
-- Program: `prog_line.s`, continuing from LINE-RAW-DELTA's dx0=7, dy0=35 --
-  raw dx0 < dy0, so a real swap must happen -- computes dx_n = max(dx0,dy0),
-  dy_n = min(dx0,dy0) and stores both to `RESULTS+4`/`RESULTS+6`.
-- Observed: `peek_logical(RESULTS+4)`, `peek_logical(RESULTS+6)`.
-- Expected: dx_n = max(7,35) = 35, dy_n = min(7,35) = 7.
-
-### Control: LINE-NORMALIZE-NOOP
-
-Same comparator, a second endpoint pair (x1,y1)=(0,0), (x2,y2)=(50,10)
-where dx0=50, dy0=10 is already ordered (dx0 > dy0), so normalization must
-leave both unchanged: dx_n=50, dy_n=10. This is the "at least one control
-case expected to PASS on the same measurement basis" fixture for the line
-cluster -- it proves the max/min/store path is not accidentally always
-swapping (or always not swapping).
-
-### Fixture
-
-Before any computed value is trusted, `prog_line.s` first stores a fixed
-constant ($BEEF) to `RESULTS-2` unconditionally, as its very first
-instruction after `lea RESULTS,a1` -- read back and checked first, ahead of
-LINE-RAW-DELTA, so a failure there is never explained by
-`load_program`/`peek_logical` themselves (already proven by the apparatus
-check, re-verified here since this package's program is new).
+Before the blit runs, `prog_line.s` stores a fixed constant ($BEEF) to
+`RESULTS`, read back and checked first -- proof `load_program`/
+`peek_logical` work for this package's own new program before the drawn
+line is trusted.
 
 ### Mutation
 
-`prog_line_mut.s` = `prog_line.s` included with different endpoint symbols:
-(x1,y1)=(0,0), (x2,y2)=(6,2). Both deltas are already ordered (dx0=6,
-dy0=2), so this program's true dx0/dy0/dx_n/dy_n are 6,2,6,2 -- all four
-different from the hardcoded expected 7,35,35,7. Loading it (selected by an
-environment variable) while keeping the LINE-RAW-DELTA/LINE-NORMALIZE
-checks unchanged must turn both red. Recorded as:
+`prog_line_mut.s` = `prog_line.s` with `MUTATE_UNNORM` defined: it feeds
+the raw, unswapped deltas (dx0=7 as if it were the major axis, dy0=35 as
+if it were the minor) into BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE instead of the
+normalized dmax=35/dmin=7. BLTSIZE's height field becomes dx0+1=8 instead
+of 36, so the drawn line stops 28 rows short: rows 8-35 are never written
+(fail "exactly one set bit") and the last-pixel check fails outright.
+Recorded as:
 
-    MUTATION LINE-RAW-DELTA stimulus red endpoints changed from (10,5)-(3,40) to (0,0)-(6,2)
-    MUTATION LINE-NORMALIZE stimulus red endpoints changed from (10,5)-(3,40) to (0,0)-(6,2)
+    MUTATION 6-line-mode.c39 stimulus red unnormalized deltas fed into BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE, height becomes 8 instead of 36
+
+`prog_line_fixture_mut.s` = `prog_line.s` with `MUTATE_FIXTURE` defined:
+stores $DEAD instead of $BEEF, turning FIXTURE-LINE red on its own,
+unchanged expected value. Recorded as:
+
+    MUTATION FIXTURE-LINE stimulus red stored constant changed to DEAD instead of BEEF
 
 ## Topic 2: area fill requires descending mode (pages 182, 184, 200)
 
 Six ids across three pages state one rule two ways: four say descending
-mode is necessary/must be used for area fill (pages 182, 184); two say area
-fill only works correctly in descending mode (page 200) -- the same rule
-stated as a requirement and as its converse (other modes do not work). That
-split maps directly onto two assertions: one shows descending mode
-produces the correct fill, the other shows ascending mode (same blit,
-otherwise unchanged) does not.
+mode is necessary/must be used for area fill (pages 182, 184); two say
+area fill only works correctly in descending mode (page 200) -- the same
+rule stated as a requirement and as its converse. Only a run that is *not*
+descending can falsify "necessary": a descending run that fills correctly
+is equally consistent with "descending happens to work" and with
+"descending is required", but an ascending run that also filled correctly
+would refute "required" outright. So the six ids sit on the ascending
+assertion, which is the one that can fail that way; the descending run is
+the control on the same measurement basis, carrying no ids of its own.
 
-Area fill's own toggle mechanism is not itself among this package's claims
-(no claim here states inclusive/exclusive fill semantics), but reading it
-off `nanomig/src/minimig-aga/agnus_blitter_fill.v` -- the standard
-Amiga XOR/toggle fill, `carry[0] = fci ^ in[0]`, `carry[j] = carry[j-1] ^
-in[j]` for the rest, i.e. bit 0 (a word's own LSB) first, bit 15 last, with
-the final carry latched as the next word's carry-in -- and
-`agnus_blitter.v`'s pointer control (`incptr = ~desc; decptr = desc`,
-lines 674-677 etc., one word address step per processed word) fixes,
-mechanically, which of two complementary fill patterns a 3-marker row
-produces in each mode. This is standard, chip-independent Amiga fill
-arithmetic (not a fact about this particular RTL that could be wrong), so
-using it to pin down the test's own expected numbers is setup, not
-grading the RTL against itself: the grading in FILL-DESC-CORRECT and
-FILL-ASC-INCORRECT is the choice of DESC bit against a fixed pair of
-observed words, not the carry arithmetic.
+### Fill direction, from the printed pages alone
 
-- Row: 5 words, 1 line. Word 0, word 2 and word 4 each carry a single set
-  bit (the same bit position in each, so no other bit is touched); words 1
-  and 3 are all zero going in and carry no marker, so each reads out
-  uniform ($0000 or $FFFF, never a mix) after any fill, independent of
-  where in a marker word its own set bit sits. Fill starts with carry-in
-  (`BLTCON1` bit 2) clear.
-- With the pointer started at word 4 and DESC set, the blitter visits
-  word4, word3, word2, word1, word0 in that cycle order (one address step
-  per word, decrementing). Word 4 is the first word processed
-  (`first_word_del`), so its carry-in is the clear `BLTCON1` bit 2; tracing
-  the XOR chain word by word: word4 (one set bit) flips the running carry
-  on; word3 (no marker) reads back all-on, $FFFF, and passes the carry on
-  unchanged; word2 (one set bit) flips the carry back off; word1 (no
-  marker) reads back all-off, $0000.
-- With the pointer started at word 0 and DESC clear, the visiting order
-  reverses (word0..word4, incrementing), and the same trace gives the
-  complementary result: word1 = $FFFF, word3 = $0000.
+- **Word order relative to the descending pointer.** Page 182: "initialize
+  the address pointer registers to point to the last word in a block,
+  rather than the first word", and "the first word mask masks the last
+  word in a row (which is still the first word fetched)". The last word of
+  a row is its right edge (page 181: "a first word mask with the most
+  significant five bits set to zero ... and a last word mask with the
+  least significant four bits set to zero", Figure 6-4 draws the first
+  word on the left; page 182: "a last word mask with the rightmost nine
+  bits set to zero"). So word 4 (the row's last word, where the descending
+  pointer starts) holds the rightmost pixels.
+- **Bit order within a word.** Page 180: "the least significant
+  (rightmost) four bits of the first word shifted in" -- bit 0 is the
+  rightmost pixel of a word.
+- **Direction of the fill.** Page 186: "The blitter uses the fill
+  carry-in bit as the starting fill state beginning at the rightmost edge
+  of each line. For each '1' bit in the source area, the blitter flips
+  the fill state, either filling or not filling the space with ones. This
+  continues for each line until the left edge of the blit is reached, at
+  which point the filling stops." Descending mode -- pointer at the last
+  (rightmost) word, stepping toward the first (leftmost) -- is what walks
+  the row in this right-to-left order the fill logic assumes; the other
+  direction does not.
+- **Inclusive fill.** Page 184: "The inclusive fill mode fills between
+  lines, leaving the lines intact", and "(Of course, fills are always done
+  on full 16-bit words.)"
+- **Starting state.** Appendix A, page 267: `BLTCON1` bit 02 is FCI. The
+  program's $0002 bit clear leaves it 0, so the fill starts outside.
+  (Page 185 prints "FILL_CARRYIN" at bit 3 of `BLTCON1`, which conflicts
+  with both page 184, where bit 3 is FILL_OR (IFE), and page 267's own
+  table; page 267's bit 02=FCI/bit 03=IFE is what the program follows, and
+  what page 184's own running text names.)
+- **Reading the row 0100 0000 0100 0000 0100 from the rightmost edge**
+  (word4 bit 0) **leftward:**
 
-### Assertion FILL-DESC-CORRECT
+  | Word | Result | How |
+  |---|---|---|
+  | word4 | $FF00 | bits 0-7 outside; bit 8 flips the state; the line is kept |
+  | word3 | $FFFF | inside |
+  | word2 | $01FF | bits 0-7 inside; bit 8 flips back; the line is kept |
+  | word1 | $0000 | outside |
+  | word0 | $FF00 | as word4 |
+
+  Word1 and word3 (the two marker-free words the package reads) depend
+  only on how many markers lie to their right in this scan, so only the
+  word order matters for them; the bit order only matters for words 0, 2
+  and 4, which the package does not read. The descending run therefore
+  reads word1 = $0000, word3 = $FFFF; running the identical blit ascending
+  reverses the scan and gives the complementary word1 = $FFFF, word3 =
+  $0000 -- not what page 186 describes, and the numbers this package's
+  ascending assertion grades against.
+
+### Precondition: PRECONDITION-FILL-DESC, PRECONDITION-FILL-ASC
+
+Each fill program's destination starts holding the sentinel $A5A5 in
+every word, not zero, and the harness waits for the blit as page 186's own
+caution requires: "The first 'test' of the blitter done bit may not
+return the correct result, but the second will" -- one throwaway
+`DMACONR` read, then read-and-test in a loop. Before grading word1/word3
+against either fill assertion's expected value, a precondition checks they
+no longer read back as $A5A5: a blit that never ran, or was read before it
+finished, would leave the sentinel in place and must not be mistaken for
+a fill result. Carries no claim id.
+
+### Assertion: CONTROL-FILL-DESC (no claim ids)
+
+- Proposition: an area-fill blit of the 5-word/3-marker row, run with the
+  blitter's descending-mode bit set and the pointer at word4, reads back
+  word1 = $0000, word3 = $FFFF, per the derivation above.
+- Program: `prog_fill_desc.s`.
+- Observed: `peek_logical(RESULTS+0)`, `peek_logical(RESULTS+2)`.
+- Expected: word1 = $0000, word3 = $FFFF.
+- This is the control on the same measurement basis as the ascending
+  assertion below: it proves the comparator and the fill datapath work
+  before the ascending run's mismatch is trusted.
+
+### Assertion (ascending)
 
 - Claims: `6-descending-mode.c10`, `ch6-desc.c13` (page 182, "descending
   mode is also necessary for area filling"); `6-area-fill.c7`,
-  `ch6-fill.c6` (page 184, "descending mode must be used" for area fill).
-- Proposition: an area-fill blit of the 5-word/3-marker row, run with the
-  blitter's descending-mode bit set, produces the descending-mode trace
-  above.
-- Program: `prog_fill_desc.s` places the marker row in chip RAM, points the
-  boundary-source pointer at word4 (the row's last word), and sets up an
-  area-fill blit over it with line mode disabled and the descending bit
-  set, then stores the resulting word1 and word3 to `RESULTS`.
-- Observed: `peek_logical(RESULTS+0)`, `peek_logical(RESULTS+2)` (word1,
-  word3 of the filled row).
-- Expected: word1 = $0000, word3 = $FFFF.
-
-### Assertion FILL-ASC-INCORRECT
-
-- Claims: `6-blitter-key-points.c18`, `ch6-keypoints.c20` (page 200, "area
-  fill only works correctly in descending mode").
+  `ch6-fill.c6` (page 184, "descending mode must be used"); `6-blitter-
+  key-points.c18`, `ch6-keypoints.c20` (page 200, "area fill only works
+  correctly in descending mode").
 - Proposition: the identical blit, with only the descending bit cleared
-  (pointer started at word0 instead, ascending) and nothing else changed,
-  does not reproduce the descending-mode result.
+  (pointer started at word0 instead) and nothing else changed, does not
+  reproduce the descending-mode/control result -- the run that could
+  falsify "necessary", and does.
 - Program: `prog_fill_asc.s` -- `prog_fill_desc.s` included with the
   descending/ascending symbol flipped (starting pointer and DESC bit
   together), nothing else different.
 - Observed: same two words.
 - Expected: NOT (word1 = $0000 AND word3 = $FFFF). This is the literal,
-  minimal reading of "only works correctly in descending mode": it commits
-  to the fill being wrong in ascending mode, not to which particular wrong
-  pattern the hardware produces -- that finer claim is not among this
-  package's ids. (The trace above predicts the specific complementary
-  pattern, word1=$FFFF/word3=$0000; the assertion itself only grades the
-  mismatch, so it does not depend on that finer prediction holding
-  exactly.)
+  minimal reading of "only works correctly"/"necessary": it commits to the
+  fill being wrong in ascending mode, not to which particular wrong
+  pattern comes out -- though the derivation above predicts the specific
+  complement, word1=$FFFF/word3=$0000, the assertion itself only grades
+  the mismatch.
 
-### Fixture
+### Fixture: FIXTURE-FILL
 
 `prog_fill_plain.s` runs the same 5-word/3-marker row through a plain,
-fill-disabled blit (a minterm copy) before any fill assertion is trusted,
-and stores all 5 result words. Expected: source reproduced exactly
-(word0/2/4 carry their marker bit, word1/word3 are zero) -- proof the
-marker data and the blit datapath reach `RESULTS` correctly before fill
-logic is layered on.
+fill-disabled blit (a minterm copy) into a destination that starts as the
+sentinel $A5A5, before any fill assertion is trusted, and stores all 5
+result words. Expected: source reproduced exactly (word0/2/4 carry their
+marker bit, word1/word3 are zero) -- proof the marker data and the blit
+datapath reach `RESULTS` correctly (and that the sentinel was genuinely
+overwritten, since $A5A5 matches none of the five expected words) before
+fill logic is layered on.
 
 ### Mutation
 
-FILL-DESC-CORRECT: `prog_fill_desc_mut.s` moves the middle marker from
+CONTROL-FILL-DESC: `prog_fill_desc_mut.s` moves the middle marker from
 word 2 to word 1 (same descending setup otherwise). Word 1 is no longer a
 marker-free interior word, so it cannot read back as the clean $0000 the
 unchanged expected value calls for -- the check must go red. Recorded as:
 
-    MUTATION FILL-DESC-CORRECT stimulus red middle marker moved from word 2 to word 1
+    MUTATION CONTROL-FILL-DESC stimulus red middle marker moved from word 2 to word 1
 
-FILL-ASC-INCORRECT: `prog_fill_asc_mut.s` runs the ascending configuration
-with word0's marker removed (only word2 and word4 remain). Dropping that
-crossing shifts the parity so the ascending scan's word1/word3 happen to
-land on the same $0000/$FFFF pair descending mode produces -- the mismatch
-check the assertion grades must then go red, even though the mode is still
-ascending. Recorded as:
+Ascending assertion: `prog_fill_asc_mut.s` runs the ascending
+configuration with word0's marker removed (only word2 and word4 remain).
+Dropping that crossing shifts the parity so the ascending scan's
+word1/word3 happen to land on the same $0000/$FFFF pair the descending
+run produces -- the mismatch check must then go red, even though the mode
+is still ascending. Recorded as:
 
-    MUTATION FILL-ASC-INCORRECT stimulus red word0's marker dropped, ascending scan coincides with the descending pattern
+    MUTATION 6-descending-mode.c10 stimulus red word0's marker dropped, ascending scan coincides with the descending pattern
+
+FIXTURE-FILL: `prog_fill_plain_mut.s` drops the word4 marker, so the exact
+five-word reproduction check must go red. Recorded as:
+
+    MUTATION FIXTURE-FILL stimulus red word4's marker dropped
+
+PRECONDITION-FILL-DESC and PRECONDITION-FILL-ASC carry no dedicated
+mutation: not exercised, by a scope decision. Their own stimulus is
+identical to CONTROL-FILL-DESC's and the ascending assertion's, whose
+mutations (marker moved / dropped) change which fill pattern comes out,
+not whether the blit writes at all; a mutation isolating "the blit
+completed without ever writing channel D" (for example clearing
+`BLTCON0`'s USED bit) is out of scope for this repair.
 
 ## Withdrawn: Table 6-2's pipeline assumptions (page 189)
 
@@ -205,11 +260,13 @@ ascending. Recorded as:
 
 ## Summary
 
-- 4 assertions carrying 15 claim ids (9 line-mode, 6 area-fill).
-- 6 claim ids withdrawn (Table 6-2's assumptions; no expected value in this
-  package's claims).
-- 2 fixtures (a known constant for the line program, a known plain-copy
-  blit result for the fill program), 1 control case (no-swap endpoints),
-  3 stimulus mutations recorded, one per assertion.
+- 2 assertions carrying 15 claim ids (9 on the drawn line, 6 on the
+  ascending fill).
+- 6 claim ids withdrawn (Table 6-2's assumptions; no expected value in
+  this package's claims).
+- 2 fixtures (FIXTURE-LINE, FIXTURE-FILL), 1 control (CONTROL-FILL-DESC,
+  no ids), 2 preconditions (sentinel overwritten, descending and
+  ascending), 5 stimulus mutations recorded; the two preconditions carry
+  no mutation of their own, noted as a scope decision.
 - Both CPU cores (fx68k, TG68K) run every program; a verdict is reported
   for each, separately, per assertion.
