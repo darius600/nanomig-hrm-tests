@@ -92,12 +92,13 @@
 // address, so none is its own scored proposition. p.287's legend covers all
 // 32 *-marked rows of Appendix B ($000-$03E); T1 and PROP-2..PROP-8 below
 // probe only 8 of the 32, so citing the legend there would grade a
-// universal claim on one case of eight-of-thirty-two. All three ids are
-// withdrawn from T1 and PROP-2..PROP-8 and recorded below instead: the
-// whole band is graded on hrm/ch2-copper-move-sweep's APPBSTAR LEGEND line,
-// which sweeps all 32 * rows at ecs=0 with CDANG clear and set -- that line
-// now carries ch2-appb-legend.c1. sol:7-appB-legend.c4 and opus:7-appB.c5
-// carry no such whole-band line and stay recorded here.
+// universal claim on one case of eight-of-thirty-two. T2's unmarked-address
+// reading (DMACON) does not establish them either -- it grades only the
+// freely-writable side, never the *-marked side the legend states. All
+// three ids are withdrawn from T1, T2 and PROP-2..PROP-8 and recorded below
+// instead: the whole band is graded on hrm/ch2-copper-move-sweep's APPBSTAR
+// LEGEND line, which sweeps all 32 * rows at ecs=0 with CDANG clear and
+// set -- that line now carries all three ids.
 
 #include <cstdint>
 #include <iostream>
@@ -418,7 +419,7 @@ int main(int argc, char** argv) {
                       "T2 OCS: Copper MOVEs 0x1111 then 0x2222 to DMACON ($096) both arrive, "
                       "in order, unmodified (fixture-liveness proof; also: DMACON carries no "
                       "restriction mark so the Copper may write it) "
-                      "[claims: opus:7-appB.c33, legend sol:7-appB-legend.c4, opus:7-appB.c5]");
+                      "[claims: opus:7-appB.c33, legend]");
     }
     checks.expect(move_reaches(/*ecs=*/true, /*cdang=*/false, DMACON),
                   "T3 ECS: Copper MOVE to DMACON ($096) is written -- run at ECS as this claim's own "
@@ -454,14 +455,13 @@ int main(int argc, char** argv) {
     // Neither line touches passed/failed -- these are not assertions.
     // ------------------------------------------------------------------
     checks.record("The three claim ids carrying this package's copy of the p.287 legend "
-        "sentence (\"* Address not writable by the Copper\") are withdrawn from T1 and "
-        "PROP-2 through PROP-8: that legend covers all 32 *-marked rows of Appendix B "
-        "($000-$03E), and this package's eight starred propositions probe only 8 of the 32, "
-        "so citing it there would grade a universal claim on one case of eight. Two of the "
-        "three remain graded above, jointly with the unmarked-address reading, on T2 "
-        "(graded: sol:7-appB-legend.c4, opus:7-appB.c5). The third is not cited on T2; it "
-        "instead reads the whole 32-row band, graded on hrm/ch2-copper-move-sweep's "
-        "APPBSTAR LEGEND line (graded: ch2-appb-legend.c1).");
+        "sentence (\"* Address not writable by the Copper\") are not graded in this package: "
+        "that legend covers all 32 *-marked rows of Appendix B ($000-$03E), and this package "
+        "probes only 8 of the 32 (T1, PROP-2 through PROP-8) -- T2's unmarked-address reading "
+        "does not establish them either, since it grades only the freely-writable side at "
+        "DMACON. All three now read the whole 32-row band, graded on "
+        "hrm/ch2-copper-move-sweep's APPBSTAR LEGEND line "
+        "(graded: ch2-appb-legend.c1, sol:7-appB-legend.c4, opus:7-appB.c5).");
     checks.record("The \"~\" (danger-bit-required) mark is not asserted by this package. Its "
         "legend claims (sol:7-appB-legend.c5, opus:7-appB.c6) exist in this chapter's corpus "
         "but are routed to \"covered by an existing package\": chapter 2's Copper packages "
