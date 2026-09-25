@@ -187,19 +187,34 @@
 //   compares two measurements taken the same way, so a constant latency
 //   cancels out.
 //
-// CLAIM COVERAGE -- unchanged from the prior commit: 106 asserted across
-//   12 named propositions plus 1 control; 14 declined with reason; 2
-//   recorded as covered elsewhere. 106+14+2 = 122. See the prior
-//   commit's own listing for the full id groupings; each is repeated in
-//   full inside its own expect()/record() label below.
+// CLAIM COVERAGE: 107 asserted across 12 named propositions plus 1
+//   control (106 from the prior commit, plus CH4-p124.c16, added by id
+//   only to the already-existing COMPARATOR-MATCH-STARTS-OUTPUT-AT-
+//   HSTART assertion, which already establishes the whole of what that
+//   claim's own sentence says); 14 declined with reason for a boundary
+//   this fixture cannot reach (unchanged from the prior commit); 2
+//   recorded as covered elsewhere (unchanged); 6 recorded for a
+//   conflict or a redundancy the NEW PROPOSITIONS section above and
+//   the three new checks.record() calls below describe (CH4-hw.c21,
+//   CH4-p124.c15, CH4-fig4-13.c1, CH4-fig413.f1, CH4-hw.c23,
+//   CH4-fig413.f12). 107+14+2+6 = 129. See the prior commit's own
+//   listing for the 106+14+2 id groupings; each id is repeated in full
+//   inside its own expect()/record() label below.
 //
-// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026, AFTER the
-//   specification commit -- denise_sprites_shifter.v was opened only
-//   once, for this build, not before): 12 passed, 0 failed. Every
-//   assertion this package could put to the DUT agrees with the manual
-//   on the first try; nothing was adjusted to make that happen. No
-//   candidate finding to report for this package -- see the three
-//   declined groups above for what this boundary genuinely cannot
+// RESULTS (WSL/Verilator 5.052, AFTER the specification commit --
+//   denise_sprites_shifter.v was not reopened for this addition; the
+//   one added assertion-id and the six new checks.record() calls both
+//   rest on facts already on the record: the already-passing
+//   COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART and WRITE-DATA-ARMS-
+//   SPRITE-DATB-ALONE-DOES-NOT measurements themselves, and the
+//   classification's own conflict_resolution field for the one fact
+//   about a different module, agnus_spritedma, that this boundary
+//   cannot itself measure): 12 passed, 0 failed, the same 12 in the
+//   same order as the prior commit's own RESULTS. Every assertion this
+//   package could put to the DUT agrees with the manual on the first
+//   try; nothing was adjusted to make that happen. No candidate
+//   finding to report for this package -- see the declined and
+//   recorded groups above for what this boundary genuinely cannot
 //   settle, not for anything suppressed.
 //
 // MUTATION LOG (WSL/Verilator, same session as RESULTS above; each
@@ -221,6 +236,7 @@
 // MUTATION SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM stimulus red: built with -DMUT_MOVE=1, which also writes SPRxCTL=0x00 alongside the SPRxPOS move -> FAIL (11 passed, 1 failed), only SPRXPOS-WRITE-MOVES-ARMED-SPRITE-WITHOUT-DISARM newly red (the CTL write unconditionally disarms, so no active position was found after the move). Rebuilt with no flags: 12 passed, 0 failed.
 // MUTATION HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL stimulus red: built with -DMUT_HSTART=1, which steps SPRxPOS by 2 (0x20->0x22) instead of 1 while still checking for the original expected delta of 2 -> FAIL (11 passed, 1 failed), only HSTART-IS-9BIT-FIELD-ACROSS-SPRXPOS-AND-SPRXCTL newly red (measured pos_delta 4, not 2). Rebuilt with no flags: 12 passed, 0 failed.
 // MUTATION [declined groups]: no record -- these three claims are declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
+// MUTATION [recorded groups]: no record -- the three new checks.record() calls (COMPARATOR-AXIS-IS-MEASURED-HORIZONTAL-HERE-NOT-VERTICAL, CONVERTER-NAME-IS-DISPUTED-BEHAVIOUR-IS-NOT, FIGURE-SECOND-ARM-LABEL-UNSUPPORTED-BY-PROSE) are checks.record() only, no checks.expect(), so there is no red/green state for a mutation to move; CH4-p124.c16, the one id added to an existing assertion's label, is covered by that assertion's own already-logged MUTATION COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART entry above -- no separate mutation, because no separate measurement was added.
 //
 // Every mutation above isolated to EXACTLY its own named assertion (11
 // passed / 1 failed in each of the 12 runs, never more, never a
@@ -684,6 +700,21 @@ int main(int argc, char** argv) {
             "CH4-p123.c3 .");
     }
 
+    checks.record(
+        "FIGURE-SECOND-ARM-LABEL-UNSUPPORTED-BY-PROSE [recorded]: "
+        "Figure 4-13 prints the label \"ARM\" sprite twice -- once on "
+        "the line from the SPRxDATA load decode to the arming "
+        "flip-flop's S input, the occurrence WRITE-DATA-ARMS-SPRITE-"
+        "DATB-ALONE-DOES-NOT above already grades, "
+        "and a second time on the line from the SPRxDATB load decode "
+        "to SPRxDATB's own load input, which no prose on the page "
+        "supports. WRITE-DATA-ARMS-SPRITE-DATB-ALONE-DOES-NOT already "
+        "measures the behaviour the second label would imply and "
+        "finds it false: a DATB write alone does not arm the sprite. "
+        "The conflict is the figure's own second label against its "
+        "own page's prose, not a proposition this file can assert on "
+        "its own. CH4-fig413.f12 .");
+
     // ---------------- WRITE-CTL-DISARMS-ALREADY-ARMED-SPRITE ----------------
     {
         Harness h; h.arm(0x20, 0x00, 0x0000, 0x8000);
@@ -719,6 +750,13 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- COMPARATOR-MATCH-STARTS-OUTPUT-AT-HSTART ----------------
+    // CH4-p124.c16 is added to this assertion's own label below (id only,
+    // no prose in the label): the same undisputed load-at-HSTART
+    // behaviour already measured here, read from a sentence whose quote
+    // also carries the page's disputed "serial-to-parallel" converter
+    // name (recorded, not asserted, as CH4-hw.c23 below) -- the
+    // sentence's own behavioural claim does not depend on which
+    // converter name is correct.
     {
         Harness h1; h1.arm(0x10, 0x00, 0x0000, 0x8000); Meas m1 = sweep(h1);
 #if MUT_COMPARATOR
@@ -762,10 +800,49 @@ int main(int argc, char** argv) {
             "converters (CH4-fig4-13.c2, CH4-fig413.f2, CH4-fig413.f3, "
             "p.125). CH4-manual.c8, CH4-p123.c5, CH4-hw.c22, "
             "CH4-fig4-13.c2, CH4-fig413.f2, CH4-fig413.f3, CH4-det.c28, "
-            "CH4-det.c4, CH4-det.c5, CH4-p126.c22, CH4-p126.c4 . measured "
+            "CH4-det.c4, CH4-det.c5, CH4-p126.c22, CH4-p126.c4, "
+            "CH4-p124.c16 . measured "
             "delta=" + std::to_string(measured_delta) + " expected=" +
             std::to_string(expected_delta) + ".");
     }
+
+    checks.record(
+        "COMPARATOR-AXIS-IS-MEASURED-HORIZONTAL-HERE-NOT-VERTICAL "
+        "[recorded]: the same page-124 sentence that introduces the "
+        "comparator names its second input \"the Y value in the "
+        "position register SPRxPOS\" (CH4-hw.c21, CH4-p124.c15) -- "
+        "vertical -- while Figure 4-13 draws the identical comparator's "
+        "inputs as the beam counter's horizontal position and "
+        "\"SPRxPOS (horiz.)\" (CH4-fig4-13.c1, CH4-fig413.f1) -- "
+        "horizontal; the page and its own figure disagree, and no "
+        "prose on either page resolves it. COMPARATOR-MATCH-STARTS-"
+        "OUTPUT-AT-HSTART above already measures and grades the "
+        "horizontal side: this module's own load comparator matches "
+        "hpos against a written HSTART value built from SPRxPOS and "
+        "SPRxCTL, and this module's own disclosed port list (BOUNDARY, "
+        "above) carries hpos but no vertical-position input at all to "
+        "compare a \"Y value\" against -- the same absence already "
+        "given for VERTICAL-EXTENT-NOT-AT-THIS-BOUNDARY. A vertical "
+        "comparison does exist elsewhere in this RTL, but in a "
+        "different module, outside this package's own boundary: "
+        "agnus_spritedma's own DMA-start condition compares a vertical "
+        "beam position against a vertical start value. Measured for "
+        "the record, asserted nowhere. CH4-hw.c21, CH4-p124.c15, "
+        "CH4-fig4-13.c1, CH4-fig413.f1 .");
+
+    checks.record(
+        "CONVERTER-NAME-IS-DISPUTED-BEHAVIOUR-IS-NOT [recorded]: the "
+        "same page names the converter that receives the comparator's "
+        "load signal a \"serial-to-parallel converter\" in prose "
+        "(CH4-hw.c23, p.124), while the same page's own earlier "
+        "heading and Figure 4-13 both call it a parallel-to-serial "
+        "converter -- a naming conflict internal to the manual, not a "
+        "behaviour this RTL can settle. The behaviour the disputed "
+        "name sits on -- parallel load from the data registers, then "
+        "serial output, most significant bit first -- is exactly what "
+        "SHIFT-OUT-MSB-FIRST and TWO-WORDS-JOINTLY-FORM-EACH-PIXEL "
+        "above already grade; no assertion in this file adjudicates "
+        "which name is correct. CH4-hw.c23 .");
 
     // ---------------- UNCHANGED-DATA-REPEATS-RELOAD-VARIES ----------------
     {
