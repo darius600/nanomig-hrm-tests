@@ -202,3 +202,20 @@ named here will be disclosed in the next commit's file header.
 LIVENESS withdrawn to `note()` — it carries no claim uid, so it was never
 conformance evidence; grading it through `expect()` cost no coverage to
 remove. All six graded assertions (A1-A6) are unchanged and still GREEN.
+
+## Extension: two further claims on WORDSYNC (bit 10)
+
+| uid | page | quote | restatement |
+|---|---|---|---|
+| `sol:5-appA-p265.c19` | 265 | "            10     WORDSYNC       Enables disk read synchronizing on a word\n                              equal to DISK SYNC CODE, located in\n                              address (3F)*2." | ADKCON bit 10 enables disk-read synchronization to the disk sync code at address (3F)*2. |
+| `opus:A-adkcon.b10` | 265 | "            10     WORDSYNC       Enables disk read synchronizing on a word\n                              equal to DISK SYNC CODE, located in\n                              address (3F)*2." | ADKCON bit 10 is WORDSYNC and enables disk-read synchronisation on the word held at chip address (3F)*2, i.e. $07E (DSKSYNC). |
+
+Both quote the same appendix-A WORDSYNC sentence A6 already cites
+(`opus:8-appA-adkcon.c20`/`sol:8-appa-adkbit.c11`, p.265) and restate the
+same proposition: bit 10 is WORDSYNC and enables disk-read synchronisation
+to the word at address (3F)*2. Neither carries a clause A6 does not already
+establish — opus's "$07E (DSKSYNC)" is arithmetic on the same cited address
+((3F)*2 = $07E), not an additional manual statement. On that basis these two
+are expected to be graded by adding their ids to A6's existing label, not by
+a new assertion — confirmed once the full claims file and A6's assertion
+text are reopened after this commit.
