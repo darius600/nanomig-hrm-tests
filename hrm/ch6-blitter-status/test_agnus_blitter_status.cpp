@@ -33,8 +33,9 @@
 // cannot make it go red. It is NOT deleted here: it stays in the tree, unchanged
 // and still green, until this package is confirmed green in its place.
 //
-// CLAIM COVERAGE, for the three claims of the 28 with no assertion of their
-// own (reported here, not silently dropped):
+// CLAIM COVERAGE. Five claims below are declined, each with its own
+// RECORDED: line printed at runtime (see the "Claims declined at this
+// boundary" block below) rather than left in this comment alone:
 //   ch6-blockdiag.c11 (p.198, "Not shown on this diagram is the logic for
 //     zero detection") states that a figure omits something, not a hardware
 //     behaviour - it is preamble to the paragraph c12/ch6-blockdiag.c12 and
@@ -53,43 +54,48 @@
 //     about historical deployment, not a hardware behaviour with any signal
 //     to name - not asserted, and not constructible.
 //
-// PROPOSITIONS ROUTED 2026-09-25 (work/2026-09-25_unit-backlog), spec-stage
-// only -- quote, restatement and page, RTL not opened for these yet:
+// PROPOSITIONS ROUTED 2026-09-25 (work/2026-09-25_unit-backlog). Committed
+// from the spec-stage file alone (quote, restatement, page, no RTL); the
+// disposition each reached after ch6-blitter-status.jsonl and the RTL were
+// opened is given last:
 //   ch6-blockdiag.c11 (p.198) quote "Not shown on this diagram is the logic
 //     for zero detection, which" -- restated: the logic for zero detection
-//     is not shown on Figure 6-13.
+//     is not shown on Figure 6-13. RECORDED (same claim as above).
 //   6-blitter-done-flag.c4 (p.186) quote "A blitter done flag, also called
 //     the blitter busy flag, is provided as" -- restated: the blitter-done
-//     flag is also called the blitter-busy flag.
+//     flag is also called the blitter-busy flag. GRADED: the only status
+//     flag at this module boundary is the busy port (agnus_blitter.v:91),
+//     set on the BLTSIZE write and cleared by done (:496-504) - "done flag"
+//     and "busy flag" name that one signal, so BUSY-MIDBLIT (busy=1 while
+//     in progress) and BUSY-FLAG-ON-COMPLETION (the same bit signalling
+//     completion) below now carry this id.
 //   6-blitter-done-flag.c7 (p.186) quote "access because of, for instance,
 //     display fetches, this bit may not" -- restated: on pre-Fat-Agnus
 //     chips, a just-started blit that has not received memory access may
 //     not yet assert busy; p.187 states Fat Agnus fixed this
-//     generation-dependent behavior.
+//     generation-dependent behavior. RECORDED (same pre-Fat-Agnus group as
+//     above).
 //   ch6-done.c4 (p.186) quote "A blitter done flag, also called the blitter
 //     busy flag, is provided as" -- restated: the blitter done flag is also
-//     called the blitter busy flag.
+//     called the blitter busy flag. GRADED, twin of 6-blitter-done-flag.c4,
+//     same two assertions.
 //   ch6-done.c7 (p.186) quote "DMAF_BLTDONE (bit 14) in DMACONR. This flag
 //     is set when a blit is in" -- restated: the blitter done flag is set
-//     when a blit is in progress.
+//     when a blit is in progress. GRADED: this is exactly what BUSY-MIDBLIT
+//     measures (busy=1 after two of four words stored); its twin
+//     6-blitter-done-flag.c6 was already on that label, this id joins it.
 //   6-blitter-done-flag.c13 (p.187) quote "when the blitter gets its first
 //     DMA cycle. However, not all machines" -- restated: on pre-Fat-Agnus
 //     chips, the busy bit becomes set when the blitter receives its first
-//     DMA cycle.
+//     DMA cycle. RECORDED (same pre-Fat-Agnus group as above).
 //   ch6-done.c14 (p.187) quote "when the blitter gets its first DMA cycle.
 //     However, not all machines" -- restated: before the Fat Agnus the
 //     blitter busy bit was set when the blitter got its first DMA cycle.
+//     RECORDED, twin of 6-blitter-done-flag.c13.
 //   ch6-done.c15 (p.187) quote "when the blitter gets its first DMA cycle.
 //     However, not all machines" -- restated: not all machines use the
-//     newer chips in which the busy bit is fixed.
-// These eight are the same three groups the CLAIM COVERAGE note above
-// already names by id (blockdiag.c11; the pre-Fat-Agnus trio c7/c13/c14;
-// c15) plus the nomenclature pair (6-blitter-done-flag.c4/ch6-done.c4) and
-// the in-progress restatement (ch6-done.c7) that the BUSY section's comment
-// below discusses but had not put in any printed line. Grading vs recording
-// each is decided after <package>.jsonl and the RTL are opened, per Prompt
-// 7's order of work; see the RECORDED lines and BUSY-MIDBLIT's label below
-// for the disposition actually reached.
+//     newer chips in which the busy bit is fixed. RECORDED (same claim as
+//     above).
 //
 // FIXTURE NOTE FOR THE NEXT NINE agnus_blitter PACKAGES.
 //   The starting harness salvaged into scratchpad/salvaged-harness/diag.cpp had
@@ -490,6 +496,7 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -533,15 +540,50 @@ int main(int argc, char** argv) {
             "data-dependent assertion below depends on");
     }
 
+    // ---------------- Claims declined at this boundary (pp. 186-198) ----------------
+    //
+    // Routed 2026-09-25 (work/2026-09-25_unit-backlog). Each of these five was
+    // classified testable and confirmed reachable by this fixture, but none is
+    // graded here, for the reason given on its own line - see the CLAIM
+    // COVERAGE note above for the fuller argument.
+    checks.record(
+        "ch6-blockdiag.c11 (p.198): 'Not shown on this diagram is the logic for "
+        "zero detection' states what Figure 6-13 leaves out, not a hardware "
+        "behaviour - it is preamble to the sentence ch6-blockdiag.c12/c13 state, "
+        "whose zero-detect behaviour is graded below as Z-D-CLEAR and "
+        "Z-CLEAR/Z-NEVER-RESTORED");
+    checks.record(
+        "6-blitter-done-flag.c7 (p.186): pre-Fat-Agnus busy timing - a "
+        "just-started blit that has not yet received memory access 'may not' "
+        "assert busy. Chip generation is not a module input, so the "
+        "pre-Fat-Agnus alternative is not constructible here; BUSY-NO-DMA-NEEDED "
+        "below measures the Fat-Agnus behaviour this design actually implements");
+    checks.record(
+        "6-blitter-done-flag.c13 (p.187): pre-Fat-Agnus busy timing - 'when the "
+        "blitter gets its first DMA cycle'. Chip generation is not a module "
+        "input, so the pre-Fat-Agnus alternative is not constructible here; "
+        "BUSY-NO-DMA-NEEDED below measures the Fat-Agnus side");
+    checks.record(
+        "ch6-done.c14 (p.187): before the Fat Agnus the busy bit was set on the "
+        "first DMA cycle. Chip generation is not a module input, so the "
+        "pre-Fat-Agnus alternative is not constructible here; "
+        "BUSY-NO-DMA-NEEDED below measures the Fat-Agnus side");
+    checks.record(
+        "ch6-done.c15 (p.187): 'not all machines use the newer chips' is prose "
+        "about historical machine deployment, not a hardware behaviour with any "
+        "signal to name");
+
     // ---------------- BUSY / done / int3 (pp. 186-187, 171) ----------------
     //
     // busy is set on the BLTSIZE write and cleared when the blit finishes
     // (agnus_blitter.v:496-504). "Also called the blitter busy flag"
     // (6-blitter-done-flag.c4, ch6-done.c4, p.186) and "This flag is set when a
     // blit is in progress" (ch6-done.c7, p.186) are nomenclature/definition for
-    // exactly this signal - not independently assertable (naming is not RTL
-    // behaviour), covered by the busy assertions below rather than asserted on
-    // their own.
+    // exactly this signal - the only status flag at this module boundary is
+    // the busy port, so "done flag" and "busy flag" name the one bit BUSY-SET,
+    // BUSY-MIDBLIT and BUSY-FLAG-ON-COMPLETION measure below. Routed
+    // 2026-09-25: BUSY-MIDBLIT and BUSY-FLAG-ON-COMPLETION now carry these
+    // three ids in their own labels (see below) instead of only here.
     {
         // BUSY-SET / BUSY-NO-DMA-NEEDED / BUSY-RELEASES: hold enadma low across
         // the BLTSIZE write, so `enable` (= enadma & clkena) stays 0 and the FSM
@@ -601,7 +643,9 @@ int main(int argc, char** argv) {
         checks.expect(h.busy(),
             "BUSY-MIDBLIT: busy still reads 1 after two of four destination words "
             "have been stored - the blitter is 'set while a blit is in progress' "
-            "(6-blitter-done-flag.c6, p.186)");
+            "(6-blitter-done-flag.c6, ch6-done.c7, p.186), and this is the one status "
+            "port the manual names as both the blitter done flag and the blitter busy "
+            "flag (6-blitter-done-flag.c4, ch6-done.c4, p.186)");
 
         const int done_at = h.run_until_done(60);
         h.settle();
@@ -618,7 +662,8 @@ int main(int argc, char** argv) {
             "BUSY-FLAG-ON-COMPLETION: busy reads 0 after that same completion tick - "
             "'when the transfer is complete, the blitter will signal the processor "
             "with a flag' (6-dma-channels.c41, ch6-dma.c38, p.171), the same busy/done "
-            "bit described on p.186-187. sol:7-interrupts.c52, opus:7-int.c49 .");
+            "bit described on p.186-187 and named as one signal under two names "
+            "(6-blitter-done-flag.c4, ch6-done.c4). sol:7-interrupts.c52, opus:7-int.c49 .");
     }
 
     // ---------------- zero / BZERO (p.187, p.198) ----------------
