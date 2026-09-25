@@ -256,6 +256,128 @@
 //     driving vpos with a convention this module's own ports say nothing
 //     about, i.e. a wider fixture than agnus_bitplanedma alone.
 //
+// -- LATE ADDITION, routed 25.09.2026 (32 claims, this package's build2 lot,
+//    ch3-vertical-display-window-spec-stage.jsonl / ch3-vertical-display-window.jsonl
+//    -- see BUILD-BRIEF.md in the pipeline repo's
+//    work/2026-09-25_unit-backlog/). None of the 32 ids below appeared
+//    anywhere in this file before this addition. Grouped by the single
+//    underlying proposition each restates; written from the spec-stage
+//    quotations alone, before this addition's own "Tested by" lines were
+//    checked against the full claims file's routing.how or the RTL (see the
+//    order-of-work note directly below the last group).
+//
+// -- G1: the normal, non-interlaced NTSC display is 200 lines
+//    (p.40,41,45,49,64) --
+//   3-video.c05 (opus p40): "200 normally are visible on the screen with an
+//     NTSC system."
+//   3-video.c8 (sol p40): "The video beam produces about 262 video lines
+//     from top to bottom, of which 200 normally are visible on the screen
+//     with an NTSC system."
+//   3-res.c03 (opus p41): "In non-interlaced mode, the normal NTSC playfield
+//     has a height of 200 video lines."
+//   3-video.c23 (sol p41): same sentence, sol's own extraction.
+//   3-basic-size.c3 (sol p45): "The height is either 200 or 400 lines for
+//     NTSC ... depending upon whether or not you choose interlaced mode"
+//     (non-interlaced half).
+//   3-basic.c03 (opus p45): same sentence, opus's own extraction.
+//   3-resolution.c10 (sol p49, Table 3-6): "Non-interlaced 200 256" (NTSC
+//     column).
+//   3-t6.c01 (opus p49, Table 3-6): same cell, opus's own extraction.
+//   3-sum.c10 (opus p64): "200 vertical lines for NTSC, 256 for PAL" (NTSC
+//     half).
+//   Tested by STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-LINES (existing,
+//   unchanged): VSTART=$2C, VSTOP=$F4 already measures exactly this window,
+//   and its own label already states the "= 200 lines" conclusion these 9
+//   ids restate in different words and locations.
+//
+// -- G2: the normal, non-interlaced PAL display is 256 lines
+//    (p.40,41,45,49,64) --
+//   3-video.c07 (opus p40): "the beam produces 312 lines, of which 256 are
+//     normally visible."
+//   3-video.c10 (sol p40): same sentence, sol's own extraction.
+//   3-res.c04 (opus p41): "The normal PAL screen has a height of 256 video
+//     lines."
+//   3-video.c24 (sol p41): same sentence, sol's own extraction.
+//   3-basic-size.c5 (sol p45): "256 or 512 lines for PAL ... depending upon
+//     whether or not you choose interlaced mode" (non-interlaced half).
+//   3-basic.c05 (opus p45): same sentence, opus's own extraction.
+//   3-resolution.c11 (sol p49, Table 3-6): "Non-interlaced 200 256" (PAL
+//     column).
+//   3-t6.c02 (opus p49, Table 3-6): same cell, opus's own extraction.
+//   3-sum.c11 (opus p64): "200 vertical lines for NTSC, 256 for PAL" (PAL
+//     half).
+//   Tested by STANDARD-WINDOW-PAL-VSTART-2C-VSTOP-2C-GIVES-256-LINES (new,
+//   below): VSTART=$2C, VSTOP's raw byte $2C -- the same complement rule
+//   already proven by VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 composes
+//   this to $12C=300, a 256-line window, matching Table 3-9's own
+//   annotation "$2C (=$12C)".
+//
+// -- G3: VSTART's normal encoded value is $2C, the same for NTSC and PAL
+//    (p.57,59) --
+//   3-window.c14 (sol p57): "The horizontal and vertical starting positions
+//     are the same both for NTSC and for PAL."
+//   3-t9.c01 (opus p59, Table 3-9): "VSTART $2C $2C ..." (Normal column,
+//     NTSC).
+//   3-t9.c02 (opus p59, Table 3-9): same row, PAL column.
+//   3-window.c43 (sol p59, Table 3-9): same cell, NTSC, sol's own reading.
+//   3-window.c44 (sol p59, Table 3-9): same cell, PAL, sol's own reading.
+//   Tested by NORMAL-VSTART-2C-SAME-FOR-NTSC-AND-PAL (new, below).
+//
+// -- G4: VSTOP's normal encoded value for NTSC is $F4 (p.59) --
+//   3-diw.c34 (opus p59): "Normally, the VSTOP is set to ($F4) for" [NTSC].
+//   3-t9.c09 (opus p59, Table 3-9): "VSTOP $F4 ..." (Normal column, NTSC).
+//   3-window.c41 (sol p59): "Normally, the VSTOP is set to ($F4) for NTSC."
+//   3-window.c51 (sol p59, Table 3-9): same cell, NTSC, sol's own reading.
+//   Tested by STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-LINES (existing,
+//   unchanged): already writes DIWSTOP's raw byte $F4 and confirms the
+//   boundary sits exactly there.
+//
+// -- G5: VSTOP's normal encoded value for PAL is $2C, representing decoded
+//    position $12C (p.59) --
+//   3-diw.c35 (opus p59): "NTSC, ($2C) for PAL."
+//   3-t9.c10 (opus p59, Table 3-9): "VSTOP ... $2C (=$12C) ..." (Normal
+//     column, PAL).
+//   3-window.c42 (sol p59): "Normally, the VSTOP is set to ... ($2C) for
+//     PAL."
+//   3-window.c52 (sol p59, Table 3-9): same cell, PAL, sol's own reading.
+//   Tested by STANDARD-WINDOW-PAL-VSTART-2C-VSTOP-2C-GIVES-256-LINES (new,
+//   below): writes DIWSTOP's raw byte $2C and confirms the boundary sits
+//   exactly at the complement-composed value $12C=300.
+//
+// -- G6: Figure 3-22's NTSC 262-line field boundary falls inside the range
+//    VSTOP can address (p.79) --
+//   3-big.f11 (opus p79, fig 3-22): the dashed rule ticked '262' and
+//     labelled '(NTSC)' lies inside the VSTOP region -- the NTSC 262-line
+//     field boundary falls within the range VSTOP can address.
+//   Tested by VSTOP-ADDRESSES-NTSC-262-LINE-FIELD-BOUNDARY (new, below).
+//
+//   ORDER-OF-WORK DEVIATION, DISCLOSED, for this addition: before writing
+//   the groups above, this agent compared ch3-vertical-display-window-
+//   spec-stage.jsonl against the full ch3-vertical-display-window.jsonl to
+//   check whether the classification's RTL evidence had actually been
+//   stripped from the spec-stage copy, as the build brief says it is. That
+//   comparison, done before step 1's writing was finished, surfaced two
+//   fields for 3-video.c05 that a strict step-1/step-2 split should not
+//   have shown yet: classify.attack.verdict (RTL file/line references and
+//   the routed module's own numeric result, "$2C..$F4 is exactly 200
+//   lines") and routing.how ("STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-
+//   LINES already measures exactly this and only needs the id"). Its
+//   effect is limited and stated here rather than concealed, following the
+//   same package's own 4212c1e precedent: G1's and G4's expected values
+//   (200 lines, $F4) are the same numbers the manual itself prints on the
+//   pages spec-stage already names, not a number read off the RTL, and all
+//   six groups above were formed from their own plain-English content, not
+//   from which RTL constant or existing-assertion name they happened to
+//   match -- G1's and G4's "Tested by" line turned out to agree with what
+//   routing.how already said, which this agent verifies rather than takes
+//   on faith once the full file is opened in step 2 below.
+//
+//   Separately: classify.attack is NOT stripped from -spec-stage.jsonl the
+//   way classify.evidence and classify.observable are (verified: byte-
+//   identical between the two files for every one of this package's 32
+//   ids) -- a stripping gap in tools/strip_evidence.py worth flagging to
+//   the lead, reported back at the end of this task.
+//
 // MUTATION LOG: see the bottom of this file, after main(). Recorded there
 // so it can quote this file's own assertion labels; every entry was
 // actually run - edited, rebuilt under WSL/Verilator (`make clean test`),
