@@ -241,14 +241,12 @@
 //
 //   188 + 44 = 232.
 //
-// CLAIM COVERAGE ADDENDUM (unit-backlog build pass, committed 2026-09-25):
+// CLAIM COVERAGE ADDENDUM:
 //   20 ids previously declined above (in Dc, Dw and Dm) were re-classified
-//   testable at this module's boundary by a separate reader pass and routed
-//   back to this package -- ch4-sprite-dma-sequence-spec-stage.jsonl,
-//   2026-09-25_unit-backlog/build2/. This addendum was written from that
-//   file's quotations and restatements alone, before ch4-sprite-dma-
-//   sequence.jsonl (this pass's own evidence file) or agnus_spritedma.v was
-//   reopened for this pass -- same ORDER OF WORK as the rest of this file.
+//   testable at this module's boundary by a separate reader pass. This
+//   addendum was written from that pass's own quotations and restatements
+//   alone, before this file's own evidence or agnus_spritedma.v was
+//   reopened -- same ORDER OF WORK as the rest of this file.
 //   It reuses only facts already disclosed elsewhere in this same accepted
 //   file: A7's own comment (the SPR0..SPR7 register-block addresses and the
 //   16-grants-on-line-0 measurement) and A1's own comment (the vpos==0 /
@@ -309,7 +307,7 @@
 //     stay off every graded line.
 //   Dm2 RAM-WORD-WIDTH-AND-ADDRESS-DIRECTION, REAFFIRMED (8 ids) --
 //     CH4-build.c1, CH4-build.c2, CH4-p104.c1, CH4-tab41.c1, CH4-fig4-7.c4,
-//     CH4-fig47.f2, CH4-fig4-10.c1, CH4-fig410.f1. Also routed back as
+//     CH4-fig47.f2, CH4-fig4-10.c1, CH4-fig410.f1. Also re-classified
 //     testable and re-examined; the original Dm/Dp reasoning is reaffirmed
 //     for these specific ids, not merely repeated: "16-bit word" is a fact
 //     about what a programmer writes into RAM, not a behaviour of this
@@ -322,7 +320,7 @@
 //     do not carry -- reg_address_out names a REGISTER (SPR0DATA vs
 //     SPR0DATB), never a RAM address, so it cannot show which of two
 //     fetches used the higher address. The original Dm bucket's own two
-//     ids (CH4-mem.c1, CH4-p105.c8) were not routed to this pass and are
+//     ids (CH4-mem.c1, CH4-p105.c8) were not part of this pass and are
 //     untouched.
 //
 //   Grand total after this addendum: 188 + 10 newly asserted (B1 4, B2 2,
@@ -514,8 +512,8 @@ struct Grant {
     int hpos;
     int reg;
     uint16_t data_sent;
-    // address_out at the moment this grant was sampled -- added for the
-    // unit-backlog addendum's B4 (see CLAIM COVERAGE ADDENDUM / its
+    // address_out at the moment this grant was sampled -- added for this
+    // addendum's B4 (see CLAIM COVERAGE ADDENDUM / its
     // CORRECTION below); every pre-existing call site that builds a Grant
     // with only four fields still compiles (this field defaults to 0) and
     // no pre-existing assertion reads it, so this is purely additive.
@@ -1108,8 +1106,8 @@ int main(int argc, char** argv) {
             "CH4-sprpos.c3, CH4-sprpos.c4)");
     }
 
-    // ==== unit-backlog addendum: B1-B4, Dn, Di -- see the CLAIM COVERAGE  ====
-    // ==== ADDENDUM and its CORRECTIONS in the header comment.            ====
+    // ==== ADDENDUM: B1-B4, Dn, Di -- see the CLAIM COVERAGE ADDENDUM and  ====
+    // ==== its CORRECTIONS in the header comment.                         ====
 
     // ---- B1: EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED ----
     {
@@ -1567,7 +1565,7 @@ int main(int argc, char** argv) {
 //   never compared against an expected value, so there is no red/green
 //   state for a mutation to move.
 //
-// RESULTS ADDENDUM (unit-backlog build pass): with B1-B4 added per the
+// RESULTS ADDENDUM: with B1-B4 added per the
 // CLAIM COVERAGE ADDENDUM and its CORRECTIONS above, baseline (make -B test,
 // no MUTFLAGS) is 16 passed, 0 failed. The original 12 PASS lines are
 // byte-for-byte unchanged from the pre-addendum run (diffed directly, not
