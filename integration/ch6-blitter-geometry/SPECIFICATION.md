@@ -264,26 +264,32 @@ Page 183. Claims: `6-copying-arbitrary-regions.c2`, `ch6-copy.c3`,
 
 Proposition: an image spanning three words may, for certain shifts, fit in
 two destination words. In that case the blit size is still set to the
-larger of the two spans (3, the source's own span, so it is not truncated
-mid-blit), the A channel's shift value is set the same as the source (B
-channel)'s shift, and the first/last masks are set as if masking the B
-source data; masking is applied to mask out the unwanted (spilled-over)
-data.
+larger of the two spans (3, the source's own span, so the shifter is not
+truncated mid-blit), the A channel's shift value is set the same as the
+source (B channel)'s shift, and the first/last masks are set as if masking
+the B source data.
 
-Program: a known 3-word source pattern, shifted so its non-zero content
-compacts into 2 destination words, blit size 3, masks computed for the
-source's own span, a sentinel word immediately after the 2-word real
-footprint.
+Program: channel A is pointed at the same 3-word source as channel B
+(ASH=BSH), so D = A AND B reproduces B's own shifted stream masked as if
+masking B's own edges; the chosen source (20 true bits inside 3 words)
+compacts, once shifted, into the second and third of the three destination
+words the blit still writes, the first being genuinely empty. Masks are
+set to B's own true edge shape (`$FFFF` at both ends: this particular
+source has no real data adjacent to its 3-word span, so there is nothing
+for the masks to clip here -- unlike A8a, where the destination's larger
+span forces an extra fetch past the true source and gives the masks
+something real to remove).
 
-Observed: `peek_logical()` on the 2 real destination words and the
-sentinel word.
+Observed: `peek_logical()` on all 3 destination words.
 
-Expected: the 2 real words equal the compacted pattern, computed
-independently in the test; the sentinel word is unchanged.
+Expected: the 3 words equal the compacted pattern, computed independently
+in the test; the third destination word depends on the source's third
+(real) fetch, which only happens because the blit size is 3.
 
-Mutation: `MUTATION A8b-source-larger stimulus red use $FFFF masks instead
-of the computed ones` -- unmasked data spills into the sentinel word and
-the "sentinel unchanged" check fails.
+Mutation: `MUTATION A8b-source-larger stimulus red set blit size to 2
+instead of 3` -- the third fetch never happens and the second (real,
+nonzero) destination word stays at its unwritten seed instead of the
+computed value.
 
 ### A9 -- minterm n is bit n of the LF byte
 Page 178, 179. Claims: `ch6-venn.c2`, `ch6-venn.c8`.
