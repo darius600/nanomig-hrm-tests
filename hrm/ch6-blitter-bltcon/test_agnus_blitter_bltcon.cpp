@@ -3,14 +3,21 @@
 //   which named field, in both registers, in both modes -- including every
 //   bit the tables mark unused ("X"), reserved, or fixed-value, asserted as
 //   "setting this bit changes nothing observable" and made falsifiable with
-//   an explicit control per PKG-BLT-BLTCON-FIELDS's build brief.
+//   an explicit control per PKG-BLT-BLTCON-FIELDS's build brief. Extended
+//   25.09.2026 with one claim from Figure 6-13 (p.199) about which of these
+//   same BLTCON0/BLTCON1 fields are the control lines the figure draws
+//   entering the datapath from outside -- see "EXTENSION, 25.09.2026" below.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 170, 174, 179, 184, 191-192, 267-269 (appendix A's BLTCON0/BLTCON1
-//   register tables and legends, and the chapter prose that names the same
-//   fields). Appendix A pp.267-268 verified against the actual PDF page scan
-//   via tools/show_page.py, not only against the OCR text corpus -- see
-//   "CORPUS DEFECT FOUND" below.
+//   pp. 170, 174, 179, 184, 191-192, 198-199, 267-269 (appendix A's
+//   BLTCON0/BLTCON1 register tables and legends, the chapter prose that
+//   names the same fields, and p.198's prose plus Figure 6-13 itself on
+//   p.199, a diagram with no independent text layer -- see "EXTENSION,
+//   25.09.2026" below). Appendix A pp.267-268 verified against the actual
+//   PDF page scan via tools/show_page.py, not only against the OCR text
+//   corpus -- see "CORPUS DEFECT FOUND" below. p.199's figure was read
+//   directly as an image (docs/references/amiga-hrm-3rd/ch6/figures/
+//   p199.png); it has no OCR text layer to compare it against.
 // Non-goals: exact minterm/truth-table correctness for a given LF byte
 //   (PKG-BLT-MINTERM's job -- this file uses the minterm generator only as
 //   plumbing to prove which BITS reach it, sampling the two end bits LF7/
@@ -31,7 +38,10 @@
 // Claim ids: ids such as `6-appa-control.c1` and `6-appa-control.c3` name one
 //   sentence of the manual in this chapter's reading. They carry no reader
 //   prefix, and they resolve in the claim files that
-//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
+//   hrm-testpipeline/acceptance/ch6.json lists under `inventories`. One id,
+//   `ch6-fig613.f27`, is a figure claim (`source_kind: "figure"`) rather
+//   than a sentence claim -- see "EXTENSION, 25.09.2026" below for what
+//   that changes about how it is grounded and cited.
 //
 // NO PRIOR ART IS SUPERSEDED. docs/evidence/blitter-prior-art.md was read in full
 // before writing this file, per the build brief's explicit instruction to
@@ -191,6 +201,80 @@
 // list in place, not by weakening or duplicating an assertion. After the
 // fix, all 219 ids are cited by exactly the assertions whose prose and
 // RTL citation actually match their `extract.quote`.
+//
+// EXTENSION, 25.09.2026 (ch6-fig613.f27): one claim from Figure 6-13 itself
+// (p.199, classify.package=="PKG-BLT-MINTERM", routed to THIS package
+// rather than ch6-blitter-minterm -- its content is a bit/field-identity
+// claim like the rest of this file's scope, not minterm truth-table
+// correctness, which stays PKG-BLT-MINTERM's/ch6-blitter-minterm's job per
+// this file's own Non-goals above). It is not part of the 219-record count
+// in "CLAIM COVERAGE" above, which is scoped to
+// classify.package=="PKG-BLT-BLTCON-FIELDS" only.
+//
+// extract.quote for this id is literally "[FIGURE 6-13 -- figures/p199.png
+// -- not text; open the image and read it]"; extract.restatement reads "In
+// Figure 6-13 the 'Blitter Control' block supplies SHIFT A VALUE, the
+// multi-minterm select bits, Fill Carry In, Fill Enable and Store to
+// Destination." Grounded against the actual page image
+// (docs/references/amiga-hrm-3rd/ch6/figures/p199.png, opened directly,
+// never read from extract.restatement -- this file's own established
+// practice, see "CORPUS DEFECT FOUND" above) and against p.198's prose
+// introducing the same figure: the diagram does NOT draw an arrow from a
+// box literally labelled "Blitter Control" into the five named lines. It
+// draws SIX sibling incoming lines entering the datapath from off-page --
+// SHIFT A VALUE, Multi-minterm select bits (8), Fill Carry In, Fill Enable,
+// Store to Destination, and a sixth, separately boxed line that itself
+// reads "Blitter Control" -- distinct from the boxes the SAME figure feeds
+// directly off DATA BUS at the top (FW Mask, A new, LW Mask, B new, C
+// hold). The only other "(Blitter Control)" annotation on the page sits
+// beside the unrelated SHIFT B VALUE box near the top, confirming the
+// phrase is used as a descriptive tag for "this line is blitter-control-
+// register-sourced," not as the name of an enclosing block with drawn
+// output arrows. p.198's own prose bullets introducing Figure 6-13 use
+// exactly that generic, unlabelled framing and nowhere name a "Blitter
+// Control" block: shift values "based on the A shift or B shift values
+// shown in BLTCON0 and BLTCON1" (bullet 2, SHIFT A VALUE); "the minterm
+// select bits either allow or inhibit the use of a specific minterm"
+// (bullet 3, Multi-minterm select bits); fill operating on the minterm
+// output (bullet 4, Fill Carry In / Fill Enable); and "data generated for
+// the destination can be prevented from being written to a destination by
+// using one of the blitter control bits" (bullet 5, Store to Destination).
+// Read this way the claim's substance holds -- all five are
+// BLTCON0/BLTCON1-programmable, not hardwired or purely data-derived --
+// even though "the 'Blitter Control' block supplies" overstates the
+// diagram's own arrow topology; extract.restatement is a paraphrase, not
+// the quotation, and what the assertion below actually measures is the
+// substance, grounded against the page.
+//
+// PROCESS NOTE, kept rather than hidden per this file's own TAKEOVER
+// section above: agnus_blitter.v, agnus_blitter_fill.v and
+// agnus_blitter_minterm.v were read to judge whether this one claim was
+// gradable at all -- specifically, whether "Fill Carry In," never
+// separately tested anywhere in this file before, had an effect observable
+// without the full fill-mode machinery this file's Non-goals excludes --
+// before this specification text was committed. The wording above draws
+// only on the manual (the page image and p.198's prose, both read above),
+// not on any RTL signal name or value, and no expected value here was
+// reverse-engineered from the implementation. Recorded here rather than
+// papered over, per the standing rule.
+//
+// This claim bundles five sub-facts in one id. Three of the five are
+// already independently established, under their OWN ids, by
+// AREA-ASH-BITS-15-13-ARE-A-SHIFT-VALUE (SHIFT A VALUE),
+// BLTCON0-BITS-7-0-ARE-THE-LF-BYTE-IN-BOTH-MODES (Multi-minterm select
+// bits) and AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL (Fill Enable), and a
+// fourth by AREA-USE-BITS-11-8-SELECT-CHANNELS's USED/D-grant result
+// (Store to Destination) -- but per the build brief, an id whose claim
+// bundles several clauses may sit only on an assertion that establishes
+// the WHOLE of what the claim says, and none of those four, alone,
+// establishes more than its own one-fifth. ch6-fig613.f27 is therefore NOT
+// added to any of them, and is instead established fresh, by one new,
+// self-contained assertion below
+// (FIG613-BLITTER-CONTROL-SUPPLIES-SHIFT-MINTERM-FILL-STORE) that
+// re-measures all five together, combined with AND, under this one id --
+// including the one sub-fact this package had never measured before, Fill
+// Carry In (BLTCON1 bit 2), which is new coverage, not a restatement of
+// existing coverage.
 //
 // UNUSED-BIT ASSERTIONS ARE MADE FALSIFIABLE WITH A CONTROL, per the build
 // brief's explicit requirement. Three assertions below claim "setting this
