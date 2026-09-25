@@ -487,8 +487,7 @@
 //   0xFFFF` in place of the earlier `on != off`, which passed under any
 //   value change and did not actually pin the inclusive-fill result to
 //   0xFFFF): reverted, 22/0.
-// MUTATION BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM stimulus
-//   red: the per-bit probe's own LF stimulus changed from
+// MUTATION BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM stimulus red: the per-bit probe's own LF stimulus changed from
 //   `static_cast<uint16_t>(1u << k)` to `static_cast<uint16_t>(1u <<
 //   ((k + 1) % 8))`, so each iteration k now sets a DIFFERENT LF bit than
 //   the one its own (A,B,C) comparison expects -> FAIL, every one of the
