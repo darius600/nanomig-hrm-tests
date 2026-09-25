@@ -727,7 +727,7 @@ int main() {
                            "[ch6-appa-bltcon0.c1, ch6-appa-bltcon0.c2, "
                            "6-appa-registers.c14, 6-appa-registers.c15, "
                            "6-appa-registers.c17, ch6-appb-bltcon0.addr, "
-                           "ch6-appb-bltcon0.rw]");
+                           "ch6-appb-bltcon0.rw, B-bltcon0.addr]");
         // MUTATION A1 stimulus red: h1's BLTCON0 write retargeted to the
         // unused offset 0x035 -> RED (h1's result read 0x0000, not the
         // expected 0xFFFF). Reverted. Full mutation log above, before the
@@ -773,7 +773,8 @@ int main() {
                            "[ch6-appa-bltcon0.c4, ch6-appa-bltcon0.c5, "
                            "6-appa-registers.c18, 6-appa-registers.c19, "
                            "6-appa-registers.c21, ch6-appb-bltcon1.addr, "
-                           "ch6-appb-bltcon1.rw, ch6-appc-ecs.c5]");
+                           "ch6-appb-bltcon1.rw, ch6-appc-ecs.c5, "
+                           "B-bltcon1.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -811,7 +812,7 @@ int main() {
                            "identical write with ecs=0 changes nothing (control) "
                            "[ch6-appa-bltcon0l.c1, ch6-appa-bltcon0l.c2, "
                            "ch6-appb-bltcon0l.addr, ch6-appb-bltcon0l.rw, "
-                           "6-appendix-b.c18]");
+                           "6-appendix-b.c18, B-bltcon0l.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -846,7 +847,8 @@ int main() {
                            "through unmasked (0xBEEF); leaving it at its reset "
                            "default masks the same word to 0x0000 (control) "
                            "[ch6-appa-masks.c1, ch6-appa-masks.c2, "
-                           "ch6-appb-bltafwm.addr, ch6-appb-bltafwm.rw]");
+                           "ch6-appb-bltafwm.addr, ch6-appb-bltafwm.rw, "
+                           "B-bltafwm.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -880,7 +882,7 @@ int main() {
                            "it at its reset default masks that same word to "
                            "0x0000 (control) [ch6-appa-masks.c5, "
                            "ch6-appa-masks.c6, ch6-appb-bltalwm.addr, "
-                           "ch6-appb-bltalwm.rw]");
+                           "ch6-appb-bltalwm.rw, B-bltalwm.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -919,7 +921,8 @@ int main() {
                            "once 0x100 is written to BLTAMOD (0x064) -- "
                            "measured deltas " + std::to_string(base) + " and " +
                            std::to_string(mod) +
-                           " [ch6-appb-bltamod.addr, ch6-appb-bltamod.rw]");
+                           " [ch6-appb-bltamod.addr, ch6-appb-bltamod.rw, "
+                           "B-bltamod.addr]");
     }
     {
         long base = modulo_delta(USEB, BLTBPTH, BLTBPTL, BLTBMOD, false, 0, 'B');
@@ -931,7 +934,8 @@ int main() {
                            "once 0x100 is written to BLTBMOD (0x062) -- "
                            "measured deltas " + std::to_string(base) + " and " +
                            std::to_string(mod) +
-                           " [ch6-appb-bltbmod.addr, ch6-appb-bltbmod.rw]");
+                           " [ch6-appb-bltbmod.addr, ch6-appb-bltbmod.rw, "
+                           "B-bltbmod.addr]");
     }
     {
         long base = modulo_delta(USEC, BLTCPTH, BLTCPTL, BLTCMOD, false, 0, 'C');
@@ -943,7 +947,8 @@ int main() {
                            "once 0x100 is written to BLTCMOD (0x060) -- "
                            "measured deltas " + std::to_string(base) + " and " +
                            std::to_string(mod) +
-                           " [ch6-appb-bltcmod.addr, ch6-appb-bltcmod.rw]");
+                           " [ch6-appb-bltcmod.addr, ch6-appb-bltcmod.rw, "
+                           "B-bltcmod.addr]");
     }
     {
         // D's pointer only steps once its own DMA grant occurs, which trails
@@ -960,7 +965,8 @@ int main() {
                            "once 0x100 is written to BLTDMOD (0x066) -- "
                            "measured deltas " + std::to_string(base) + " and " +
                            std::to_string(mod) +
-                           " [ch6-appb-bltdmod.addr, ch6-appb-bltdmod.rw]");
+                           " [ch6-appb-bltdmod.addr, ch6-appb-bltdmod.rw, "
+                           "B-bltdmod.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -989,7 +995,8 @@ int main() {
                            "halves makes channel A's own DMA grant address "
                            "0x12345 verbatim (measured " + std::to_string(a) + ") "
                            "[ch6-appb-bltapth.addr, ch6-appb-bltapth.rw, "
-                           "ch6-appb-bltaptl.addr, ch6-appb-bltaptl.rw]");
+                           "ch6-appb-bltaptl.addr, ch6-appb-bltaptl.rw, "
+                           "B-bltapth.addr, B-bltaptl.addr]");
     }
     {
         long b = pointer_addr(USEB, BLTBPTH, BLTBPTL, 'B', 0x23456);
@@ -998,7 +1005,8 @@ int main() {
                            "(0x04E) with 0x23456's halves makes channel B's "
                            "own DMA grant address 0x23456 verbatim "
                            "[ch6-appb-bltbpth.addr, ch6-appb-bltbpth.rw, "
-                           "ch6-appb-bltbptl.addr, ch6-appb-bltbptl.rw]");
+                           "ch6-appb-bltbptl.addr, ch6-appb-bltbptl.rw, "
+                           "B-bltbpth.addr, B-bltbptl.addr]");
     }
     {
         long c = pointer_addr(USEC, BLTCPTH, BLTCPTL, 'C', 0x34567);
@@ -1007,7 +1015,8 @@ int main() {
                            "(0x04A) with 0x34567's halves makes channel C's "
                            "own DMA grant address 0x34567 verbatim "
                            "[ch6-appb-bltcpth.addr, ch6-appb-bltcpth.rw, "
-                           "ch6-appb-bltcptl.addr, ch6-appb-bltcptl.rw]");
+                           "ch6-appb-bltcptl.addr, ch6-appb-bltcptl.rw, "
+                           "B-bltcpth.addr, B-bltcptl.addr]");
     }
     {
         long d = pointer_addr(USED, BLTDPTH, BLTDPTL, 'D', 0x45678);
@@ -1016,7 +1025,8 @@ int main() {
                            "(0x056) with 0x45678's halves makes channel D's "
                            "own DMA grant address 0x45678 verbatim "
                            "[ch6-appb-bltdpth.addr, ch6-appb-bltdpth.rw, "
-                           "ch6-appb-bltdptl.addr, ch6-appb-bltdptl.rw]");
+                           "ch6-appb-bltdptl.addr, ch6-appb-bltdptl.rw, "
+                           "B-bltdpth.addr, B-bltdptl.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -1095,7 +1105,7 @@ int main() {
                            "ch6-appa-bltsize.c4, 6-appa-registers.c36, "
                            "6-appa-registers.c37, 6-appa-registers.c39, "
                            "6-appa-registers.c40, ch6-appb-bltsize.addr, "
-                           "ch6-appb-bltsize.rw]");
+                           "ch6-appb-bltsize.rw, B-bltsize.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -1157,7 +1167,7 @@ int main() {
                            "at 0 (control) [ch6-appb-bltsizv.addr, "
                            "ch6-appb-bltsizv.rw, ch6-appb-bltsizh.addr, "
                            "ch6-appb-bltsizh.rw, 6-appendix-b.c19, "
-                           "6-appendix-b.c20]");
+                           "6-appendix-b.c20, B-bltsizv.addr, B-bltsizh.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -1179,7 +1189,8 @@ int main() {
                            "unaltered under A-passthrough LF (0x5A5A) "
                            "[ch6-appb-bltadat.addr, ch6-appb-bltadat.rw, "
                            "6-appa-registers.c76, 6-appa-registers.c77, "
-                           "ch6-appa-bltxdat.c1, ch6-appa-bltxdat.c2]");
+                           "ch6-appa-bltxdat.c1, ch6-appa-bltxdat.c2, "
+                           "B-bltadat.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -1196,7 +1207,8 @@ int main() {
                            "fetched from memory reaches the blit through "
                            "BLTBDAT (0x072) and comes out the D channel "
                            "unaltered under B-passthrough LF (0x6B6B) "
-                           "[ch6-appb-bltbdat.addr, ch6-appb-bltbdat.rw]");
+                           "[ch6-appb-bltbdat.addr, ch6-appb-bltbdat.rw, "
+                           "B-bltbdat.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -1213,7 +1225,8 @@ int main() {
                            "fetched from memory reaches the blit through "
                            "BLTCDAT (0x070) and comes out the D channel "
                            "unaltered under C-passthrough LF (0x7C7C) "
-                           "[ch6-appb-bltcdat.addr, ch6-appb-bltcdat.rw]");
+                           "[ch6-appb-bltcdat.addr, ch6-appb-bltcdat.rw, "
+                           "B-bltcdat.addr]");
     }
 
     // ---------------------------------------------------------------
@@ -1400,6 +1413,70 @@ int main() {
                            "probes DO fire immediately afterward on a real "
                            "D-channel grant (control, same run) "
                            "[ch6-appb-legend.wr]");
+    }
+
+    // ---------------------------------------------------------------
+    // A25 -- BLTDDAT is listed at address $000 in Appendix B (p289).
+    // ids: B-bltddat.addr
+    // Per routing.how (build2/ch6-blitter-regdecode.jsonl): chapter 6's own
+    // ch6-appb-bltddat.addr was declined (not-asserted, "needs a wider
+    // boundary") for the "early read" TIMING half of its restatement, not
+    // for the address digit -- the extract itself flags a page-289
+    // "conflict" between Appendix A's "---" and Appendix B's "*000". This
+    // claim states only the address, so it is graded independently of that
+    // decline: `we`/`data_out` (agnus_blitter.v:490-491, "ackdma &&
+    // chsel[1:0]==CHD") and `reg_address_out` (agnus_blitter.v:594-601, a
+    // SEPARATE `case(chsel)` block) are two different combinational outputs
+    // of the same `chsel` register, read independently here tick by tick
+    // (NOT through this file's own `grants` bookkeeping, whose 'D' channel
+    // label is itself derived from reg_address_out and would make that
+    // route circular). CONTROL, same measurement: a fresh, D-disabled
+    // harness never sees `we` fire at all, so the sweep this assertion runs
+    // cannot pass by coincidence on a channel that never activates.
+    // ---------------------------------------------------------------
+    {
+        Harness h;
+        h.write_reg(BLTAFWM, 0xFFFF);
+        h.write_reg(BLTALWM, 0xFFFF);
+        h.a_words = {0x1234};
+        start_blit(h, USEA | USED, LF_A_PASSTHROUGH, 1, 1);
+        bool saw_we_at_bltddat = false;
+        bool saw_we_elsewhere = false;
+        for (int i = 0; i < 200 && !saw_we_at_bltddat; ++i) {
+            h.run_cycles(1);
+            if (h.we()) {
+                if (h.reg_address_out() == BLTDDAT) saw_we_at_bltddat = true;
+                else saw_we_elsewhere = true;
+            }
+        }
+        bool ok = saw_we_at_bltddat && !saw_we_elsewhere;
+        checks.expect(ok, "A25 BLTDDAT-IS-THE-D-CHANNELS-REG_ADDRESS_OUT-AT-"
+                           "0x000: sampled independently of this file's own "
+                           "grant bookkeeping, reg_address_out reads BLTDDAT "
+                           "(0x000) at the exact tick `we` fires during a "
+                           "D-channel write, and at no other value on any "
+                           "tick `we` fires -- confirming the RTL's own "
+                           "reported identity for the destination-write cycle "
+                           "matches Appendix B's printed address for BLTDDAT "
+                           "[B-bltddat.addr]");
+        // MUTATION A25 stimulus red: start_blit's BLTSIZE write retargeted
+        // to UNUSED_REG (0x035), the same mechanism A15/A16 use -> RED (no
+        // blit ever starts -- `busy` stays 0 per A16's own finding -- so
+        // `we` never fires across 200 cycles and saw_we_at_bltddat stays
+        // false). MEASURED FIRST, NOT ASSUMED: a simpler mutation was tried
+        // first -- clearing the USED (D-enable) bit alone while leaving
+        // BLTSIZE untouched -- did NOT go red. Built and run: `we` still
+        // fired once, at reg_address_out==BLTDDAT, even with `used`==0.
+        // Read back against agnus_blitter.v's BLT_A/BLT_D transitions
+        // (:668-757): with useb=usec=0, BLT_A unconditionally advances to
+        // BLT_D regardless of `used`, and BLT_D's own next-state logic can
+        // still produce one visit whose grant this fixture observes before
+        // `used`s absence steers the FSM to BLT_IDLE -- a real property of
+        // this RTL, not a fixture defect, and not this assertion's
+        // proposition (which is only about what reg_address_out reads
+        // WHEN `we` fires, not about whether `used` gates `we` at all).
+        // Reverted from that first attempt before building the version
+        // above.
     }
 
     // ---------------------------------------------------------------
