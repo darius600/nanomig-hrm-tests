@@ -68,16 +68,27 @@
 // states anything about bit 3 or bit 4 (that material -- SHSH0/SHSH1,
 // "(unimplemented)", the ECS scoping note -- belongs to Appendix C p303,
 // which is quoted in a different package, hrm/ch3-sprite-registers/, not
-// in this file's 152 records); and CH4-appA-sprite.c11, which the brief
-// said was moved onto this fixture during an earlier gate repair, is not
-// among this file's 152 ids at all -- it is not here to evaluate. Two
-// claims in this package's own twin bookkeeping (APPA-sprdat.c1,
-// APPA-sprdat.c2) are noted as needing "a wider boundary: denise --
-// denise_sprites" than this fixture provides; neither id is present in
-// this package's actual 152 records (their twins here,
-// CH4-appA-sprite.c28 and .c32, are independently marked "observable:
-// yes, at denise_sprites" and are asserted below) -- so nothing in this
-// file's own claim set requires a boundary wider than denise_sprites.
+// in this file's 152 records). Two claims in this package's own twin
+// bookkeeping (APPA-sprdat.c1, APPA-sprdat.c2) are noted as needing "a
+// wider boundary: denise -- denise_sprites" than this fixture provides;
+// neither id is present in this package's actual 152 records (their
+// twins here, CH4-appA-sprite.c28 and .c32, are independently marked
+// "observable: yes, at denise_sprites" and are asserted below) -- so
+// nothing in this file's own 152-record claim set requires a boundary
+// wider than denise_sprites.
+//
+// A 153rd claim is added to this specification below the 152-record
+// listing: CH4-appA-sprite.c11 (p.284), quoted "These two registers work
+// together as position, size and feature sprite-control registers.",
+// restated as "SPRxPOS and SPRxCTL jointly define sprite control
+// features." Its own reading scopes it to the feature half of that
+// sentence only -- the size/vertical half of the same sentence is read
+// as a separate id (CH4-appA-sprite.c9, c10) against a different
+// package's fixture (ch4-sprite-vertical-position), not against this
+// one. This paragraph is written from the claim's quotation and page
+// alone; which assertion grades the feature half is decided after this
+// specification is committed and the full claims file and the RTL are
+// opened.
 //
 // BOUNDARY: denise_sprites.v, top module, per the claims file's own
 // "observable: yes, at denise_sprites" on all 152 records. No claim here
@@ -132,6 +143,12 @@
 //
 //   2+25+4+2+2+3+2+2+2+2+2+2+6 = 56, +96 = 152. All 152 claim ids of
 //   ch4-sprite-horizontal-and-arming.jsonl are cited below. None declined.
+//
+//   PLUS a 153rd, routed claim -- CH4-appA-sprite.c11 (p.284, feature
+//     half of "These two registers work together as position, size and
+//     feature sprite-control registers.", see the paragraph above BOUNDARY)
+//     -- not yet cited on an assertion; grading follows once the full
+//     claims file and the RTL are opened.
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id) arms sprite
 // 0 with a distinctive, non-uniform bit pattern (SPR0DATA=0xA000: bits 15
