@@ -85,16 +85,16 @@
 // MUTATION T1 stimulus red: swapped move_reaches() target from COLOR00 to BLTCON0 (still CDANG=0) -> FAIL as expected.
 // MUTATION T2 stimulus red: swapped move_reaches() target from BPL1PTH to BLTCON0 (still CDANG=0) -> FAIL as expected.
 // MUTATION T3 stimulus red: flipped cdang argument false->true on the BLTCON0 call -> FAIL as expected (write now succeeds, unblocked assertion fails).
-// MUTATION T4 stimulus red: flipped cdang argument false->true on the BLTSIZE call -> FAIL as expected.
+// MUTATION T4 stimulus red: flipped cdang argument false->true on the DSKSYNC call -> FAIL as expected.
 // MUTATION T5 stimulus red: flipped cdang argument true->false on the BLTCON0 call -> FAIL as expected (write now blocked).
-// MUTATION T6 stimulus red: flipped cdang argument true->false on the BLTSIZE call -> FAIL as expected.
+// MUTATION T6 stimulus red: flipped cdang argument true->false on the DSKSYNC call -> FAIL as expected.
 // MUTATION T7 stimulus red: flipped ecs argument false->true on the COPCON call -> FAIL as expected (ECS+CDANG unlocks COPCON, per T10).
 // MUTATION T8 stimulus red: swapped move_reaches() target from DMACON to COPCON (still CDANG=1) -> FAIL as expected.
 // MUTATION T9 stimulus green: swapped move_reaches() target from BLTCON0 to COLOR00 (ecs=1,cdang=0, unprotected register) -> PASS as expected;
 //   confirms the harness/check mechanism does register a write in ECS mode, so T9's baseline FAIL is a genuine
 //   DUT non-conformance (Appendix C p.310 range scaling not implemented for ECS+CDANG=0), not a broken assertion.
 // MUTATION T9 stimulus red: a second probe for the same assertion - swapped
-//   move_reaches() target from BLTCON0 to BLTSIZE (still ecs=1,cdang=0) -> still FAIL;
+//   move_reaches() target from BLTCON0 to DSKSYNC (still ecs=1,cdang=0) -> still FAIL;
 //   the gap is range-wide (both CDANG-range boundaries), not isolated to one register constant, reinforcing it is a real RTL gap.
 // MUTATION T10 stimulus red: flipped ecs argument true->false on the COPCON call -> FAIL as expected (OCS+CDANG=1 still blocks COPCON, per T7).
 // MUTATION T11 stimulus red: forced cdang=true and set_cdang_explicitly=true (simulating "reset fails to clear CDANG") -> FAIL as expected.
@@ -135,7 +135,7 @@ constexpr uint16_t COLOR00 = to_reg(0x180);   // always writable
 constexpr uint16_t BPL1PTH = to_reg(0x0E0);   // always writable
 constexpr uint16_t DMACON  = to_reg(0x096);   // always writable, just above $80
 constexpr uint16_t BLTCON0 = to_reg(0x040);   // CDANG-protected, low boundary
-constexpr uint16_t BLTSIZE = to_reg(0x07E);   // CDANG-protected, high boundary
+constexpr uint16_t DSKSYNC = to_reg(0x07E);   // CDANG-protected, high boundary
 constexpr uint16_t RANGE_FLOOR_03E = to_reg(0x03E);  // Appendix C p.310's own printed
                                                       // ECS/CDANG=0 range floor, one word
                                                       // below BLTCON0
@@ -402,7 +402,7 @@ int main(int argc, char** argv) {
     // T3, T4 - the CDANG-protected range is blocked while CDANG is clear.
     checks.expect(!move_reaches(false, false, BLTCON0), "T3 OCS CDANG=0: MOVE to BLTCON0 ($040) is blocked "
                   "[claims: COP2-control-register.c2]");
-    checks.expect(!move_reaches(false, false, BLTSIZE), "T4 OCS CDANG=0: MOVE to BLTSIZE ($07E) is blocked "
+    checks.expect(!move_reaches(false, false, DSKSYNC), "T4 OCS CDANG=0: MOVE to DSKSYNC ($07E) is blocked "
                   "[claims: COP2-control-register.c2, ch2-appb-table.c11]");
 
     // T5, T6 - and permitted once CDANG is set.
@@ -411,8 +411,8 @@ int main(int argc, char** argv) {
                   "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, "
                   "COP2-copcon-appa.c11, COP2-copcon-ecs.c8, "
                   "COP2-control-register.c2, COP2-control-register.c13, COP2-the-move-instruction.c13, ch2-appa-copcon.c11, ch2-appa-copcon.c6, ch2-appb-legend.c2, ch2-appb-table.c7, ch2-appc-ecs.c18, ch2-control-register.c7, ch2-control-register.c11]");
-    checks.expect(move_reaches(false, true, BLTSIZE),
-                  "T6 OCS CDANG=1: MOVE to BLTSIZE ($07E) is written "
+    checks.expect(move_reaches(false, true, DSKSYNC),
+                  "T6 OCS CDANG=1: MOVE to DSKSYNC ($07E) is written "
                   "[claims: COP2-copcon-appa.c6, COP2-copcon-appa.c9, "
                   "COP2-copcon-appa.c11, COP2-copcon-ecs.c8, "
                   "COP2-control-register.c2, COP2-control-register.c13, ch2-control-register.c11]");
@@ -540,7 +540,7 @@ int main(int argc, char** argv) {
     // T16 is expected RED for the same reason as T9 (NM-HRM-004): the RTL's
     // ECS/CDANG=0 gate opens only at $080 and above, so neither end of the
     // claimed range is reached.
-    checks.expect(move_reaches(true, false, RANGE_FLOOR_03E) && move_reaches(true, false, BLTSIZE),
+    checks.expect(move_reaches(true, false, RANGE_FLOOR_03E) && move_reaches(true, false, DSKSYNC),
                   "T16 ECS CDANG=0: MOVE reaches both range ends, $03E and $07E (Appendix C "
                   "p.310) [NM-HRM-004, expected red] "
                   "[claims: ch2-appc-ecs.c21, COP2-copcon-ecs.c12, COP2-copcon-ecs.c13]");
@@ -606,7 +606,7 @@ int main(int argc, char** argv) {
     checks.note("UNBOUND (OCS+CDANG=1 exact byte-address floor not discriminated: "
         "COP2-copcon-ecs.c9 and COP2-copcon-ecs.c10 state the OCS+CDANG=1 range as "
         "$DFF03E through $DFF07E, and ch2-appc-ecs.c19 restates the same range "
-        "bundled. T3-T7 above probe BLTCON0 ($040) and BLTSIZE ($07E) and COPCON "
+        "bundled. T3-T7 above probe BLTCON0 ($040) and DSKSYNC ($07E) and COPCON "
         "($02E) under OCS+CDANG=1, but never probe $03E itself under OCS - so a RTL "
         "that actually gates the OCS+CDANG=1 range at $040, not $03E, would pass "
         "every assertion here unchanged. T16 now probes $03E, but only in ECS mode "
