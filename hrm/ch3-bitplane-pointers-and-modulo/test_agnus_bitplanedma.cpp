@@ -954,7 +954,9 @@ int main(int argc, char** argv) {
             "anything. 'Chip memory pointer that addresses DMA data' "
             "(p.288), 'This pair of registers contains the...pointer to the "
             "address of bitplane x...DMA data' (p.272). B-pointer.c1, "
-            "A-bplptr.c8, A-bplxpt.c02.");
+            "A-bplptr.c8, A-bplxpt.c02, 3-mem.c03, 3-mem.c04, 3-memory.c3, "
+            "3-memory.c4, 3-memory.c24, 3-memory.c26, 3-ptr.c01, "
+            "3-ptr.c03.");
     }
 
     // ---------------- POINTER-PAIR-IS-ONE-ADDRESS (p.54, 63) ----------------
@@ -996,7 +998,8 @@ int main(int argc, char** argv) {
             "and write to them as one long word' (p.54), 'BPLxPTH - pointer "
             "to bitplane starting position in memory (written as a long "
             "word)' (p.63 summary). 3-memory.c28, 3-memory.c29, 3-ptr.c05, "
-            "3-ptr.c06, 3-sum.c02.");
+            "3-ptr.c06, 3-sum.c02, 3-regsum-pointers.c1, "
+            "3-regsum-pointers.c2, 3-rptr.c01, 3-rptr.c02.");
     }
 
     // ---------------- SIX-PLANE-TWELVE-REGISTER-BANK (p.42, 54) ----------------
