@@ -805,18 +805,20 @@ either module — and `agnus`'s own `address_out` is declared only `[20:1]`
 stimulus varying that bit, on any implementation sharing this port width,
 could ever move it.
 
-The file keeps two assertions, `POINTER-LOW-BIT-WRITTEN-ZERO-DISK` and
-`-AUDIO` — each written with its own low register's bit 0 forced to 1
+The file keeps four measurements — `POINTER-LOW-BIT-WRITTEN-ZERO-DISK` and
+`-AUDIO`, each written with its own low register's bit 0 forced to 1
 instead of the clean, already-even values every proposition above uses,
 confirming the DMA-fetched address it observes is identical to what the
-same pointer produces with bit 0 held at 0 — as that
-unfalsifiable-at-this-boundary observation, and each is paired with a
-`-BIT1-CONTROL` companion measurement on the same register's own bit 1 (a
-bit the manual does not exempt), which must show a *different* observed
-address when bit 1 differs, proving the comparator can detect a real
-difference and the bit-0 result is not a vacuous equality for every bit
-position. Neither carries this claim id; `sol:5-appA-p263.c6` is declined
-via `record()` instead.
+same pointer produces with bit 0 held at 0; and a `-BIT1-CONTROL`
+companion for each, on the same register's own bit 1 (a bit the manual
+does not exempt), showing a *different* observed address when bit 1
+differs — but all four print through `checks.note()`, not
+`checks.expect()`. An assertion that no stimulus could ever turn red is
+not coverage, and would otherwise still count in the package's pass
+total; the `-BIT1-CONTROL` pair controlled for nothing graded once the
+primaries stopped being graded, so they became notes too, and none of the
+four carries a `// MUTATION` record — a note is not gated. None carries
+this claim id; `sol:5-appA-p263.c6` is declined via `record()` instead.
 
 ## Non-goals
 
