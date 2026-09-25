@@ -101,6 +101,25 @@
 // field for each (hrm-testpipeline/work/2026-09-25_unit-backlog/build/
 // ch6-blitter-size.jsonl) is what led here in each case.
 //
+// ADDED 2026-09-25 (unit backlog, SECOND lot, hrm-testpipeline/work/
+// 2026-09-25_unit-backlog/build2): one further claim, sol:3-large.c26
+// (p.76, originally classify.package=="ch3-ddf-fetch-window" - a chapter-3
+// playfield package, not a blitter one), quote "With the original chip set
+// the largest area the blitter can draw in is 1008 by 1024.", restated "On
+// OCS, the blitter's maximum drawable area is 1008x1024 pixels." This is
+// written from the spec-stage quote alone, before opening build2's full
+// claims file or the RTL again for this addition, per Prompt 7's order of
+// work. Note for the step that follows this commit: the claim's own width
+// figure, 1008 pixels, is NARROWER than the field's own raw maximum this
+// package already measures and grades (64 words = 1024 pixels, "the
+// maximum reachable only via this wrap" per SIZE-ZERO-WIDTH-WRAPS-TO-64's
+// own label) - 1008 is not a multiple this package has derived from
+// agnus_blitter.v:522 alone, so whether that narrower figure is a fact
+// BLTSIZE's width field itself enforces, or a fact about a DIFFERENT
+// boundary (the display DMA fetch window this claim's own original
+// package name names), is exactly the question the RTL/full-file step
+// this commit precedes must settle - not assumed here.
+//
 // Assertion name -> covered ids:
 //
 //   TEST-DATA-DELIVERY: fixture check, no claim id - reproduces
