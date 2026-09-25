@@ -321,16 +321,21 @@
 //   3-t9.c02 (opus p59, Table 3-9): same row, PAL column.
 //   3-window.c43 (sol p59, Table 3-9): same cell, NTSC, sol's own reading.
 //   3-window.c44 (sol p59, Table 3-9): same cell, PAL, sol's own reading.
-//   Tested by STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-LINES (existing,
-//   unchanged): agnus_bitplanedma has no ntsc/pal-distinguishing input at
-//   all, so the one measurement of VSTART=$2C the existing assertion
-//   already performs -- silent at $2B, active at $2C -- is the whole of
-//   what "NTSC and PAL use the same normal VSTART, $2C" can mean at this
-//   boundary: there is no separate NTSC-VSTART and PAL-VSTART mechanism in
-//   the RTL to test twice. Corrected from this addition's first draft
-//   (which had proposed a new combined assertion) once the router's own
-//   routing.how for these 5 ids was read in step 2 below and said the same
-//   thing.
+//   Tested by the NTSC/PAL assertion pair, split by column: 3-t9.c01 and
+//   3-window.c43 (the NTSC column) on
+//   STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-LINES; 3-t9.c02 and
+//   3-window.c44 (the PAL column) on
+//   STANDARD-WINDOW-PAL-VSTART-2C-VSTOP-2C-GIVES-256-LINES. Neither
+//   assertion alone measures anything the other column's value would
+//   change -- the NTSC assertion's result does not depend on what the PAL
+//   VSTART value is, and vice versa -- so each column id sits only where
+//   its own value is the one written. 3-window.c14 is the comparison
+//   itself ("the same both for NTSC and for PAL") and needs both
+//   assertions: together they show the same VSTART byte $2C produces the
+//   correctly-positioned window start in both the NTSC (VSTOP=$F4) and PAL
+//   (VSTOP raw=$2C) configurations, which is the whole of what "the same"
+//   can mean at this boundary -- there is no separate NTSC-VSTART and
+//   PAL-VSTART mechanism in the RTL to test twice.
 //
 // -- G4: VSTOP's normal encoded value for NTSC is $F4 (p.59) --
 //   3-diw.c34 (opus p59): "Normally, the VSTOP is set to ($F4) for" [NTSC].
@@ -621,7 +626,7 @@ int main(int argc, char** argv) {
             "3-video.c05, 3-video.c8, 3-res.c03, 3-video.c23, "
             "3-basic-size.c3, 3-basic.c03, 3-resolution.c10, 3-t6.c01, "
             "3-sum.c10, 3-diw.c34, 3-t9.c09, 3-window.c41, 3-window.c51, "
-            "3-window.c14, 3-t9.c01, 3-t9.c02, 3-window.c43, 3-window.c44 .");
+            "3-window.c14, 3-t9.c01, 3-window.c43 .");
     }
 
     // ---------------- STANDARD-WINDOW-PAL-VSTART-2C-VSTOP-2C-GIVES-256-LINES (p.40,41,45,49,59,64) ----------------
@@ -658,7 +663,7 @@ int main(int argc, char** argv) {
             "(summary, p.64). 3-video.c07, sol:3-video.c10, 3-res.c04, "
             "3-video.c24, 3-basic-size.c5, 3-basic.c05, 3-resolution.c11, "
             "3-t6.c02, 3-sum.c11, 3-diw.c35, 3-t9.c10, 3-window.c42, "
-            "3-window.c52 .");
+            "3-window.c52, 3-window.c14, 3-t9.c02, 3-window.c44 .");
     }
 
     // ---------------- VSTOP-ADDRESSES-NTSC-262-LINE-FIELD-BOUNDARY (p.79) ----------------
