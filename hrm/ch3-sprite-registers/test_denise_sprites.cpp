@@ -14,7 +14,9 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 297, 298, 303 (claims.jsonl for ch3-sprite-registers, 20 records,
 //   plus 17 more routed here in a later extension pass -- see CLAIM
-//   COVERAGE ADDENDUM below). A red result below means denise_sprites.v
+//   COVERAGE ADDENDUM below -- plus a repair pass fixing 8 under-graded
+//   backlog ids and 3 pre-backlog ids with the same defects -- see
+//   REPAIR PASS below). A red result below means denise_sprites.v
 //   disagrees with the manual, not that the assertion is wrong -- no
 //   assertion here was, or should be, adjusted to make the RTL pass.
 // CORRECTION (this pass, working from p303.txt -- print page 303 -- read
@@ -36,12 +38,15 @@
 //   CLAIM COVERAGE below for where each landed); see RESULTS for what
 //   each one measured.
 // Non-goals: "size" (vertical extent, VSTART/VSTOP) is part of what
-//   C-shres-sprite.c4/c5/C-spr.c03 say SPRxPOS/SPRxCTL jointly control, but
+//   C-shres-sprite.c4/C-spr.c03 say SPRxPOS/SPRxCTL jointly control, but
 //   this module's own port list (below) carries no vertical-position input
 //   at all -- only `hpos`. SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING therefore
 //   asserts only the two components this boundary can observe, position and
 //   feature (attach) control, and says so in its own label rather than
-//   silently dropping the "size" half of the claim.
+//   silently dropping the "size" half of the claim. C-shres-sprite.c5, whose
+//   entire restatement is the "size" clause alone, is withdrawn whole to a
+//   record instead of kept there with a caveat (this repair pass) -- see
+//   RESULTS below.
 //   SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE tests only that bit 4 is live
 //   (changes something observable), not the OCS/ECS chip-scoping the
 //   manual's NOTE separately states ('Note: bits 3 and 4 are in the ECS
@@ -287,6 +292,72 @@
 // APPC2-SPRxCTL.conf2), both beside SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-
 // LIVE per their own routing.how.
 //
+// REPAIR PASS (this session, from validation/ch3-b.md's ch3-sprite-
+// registers section and its "Outside scope" note): 4 defects on
+// backlog-added ids (8 ids across 4 defect lines) and 3 pre-backlog ids
+// with the same defects (C-shres-sprite.c5, c7, c8) were repaired.
+// Baseline before this pass (measured, same RTL, same build): 7 passed,
+// 1 failed. After: 10 passed, 1 failed -- the one finding is unchanged.
+// Every one of the four pre-backlog assertions this pass touched
+// (PROCESSOR-WRITE-REACHES-SPRXPOS, SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2,
+// SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING, SPRXCTL-BIT4-SHSH1-70NS-
+// SUPERHIRES-LIVE) kept its verdict, expected value and label text --
+// the only change on any of them was removing an id. No id was added to
+// an existing pre-backlog assertion; every id that needed to be
+// established was moved onto a brand-new assertion instead, or
+// withdrawn to a record.
+//
+//   PROCESSOR-WRITE-REACHES-SPRXPOS-AND-SPRXCTL (new assertion, 3 ids)
+//     -- C-shres-sprite.c7, APPC-pos.c6, CH4-appC-position.c9. Removed
+//     from PROCESSOR-WRITE-REACHES-SPRXPOS, which drives SPR0POS only
+//     and so never established the SPRxCTL half of "they may be loaded
+//     by the processor" (p.303); the new assertion drives SPR0POS AND
+//     SPR0CTL independently, through fresh measurements, and requires
+//     both to move the measured start.
+//   SPRXPOS-EACH-BIT-IS-SH8-SH1-WEIGHTED (new assertion, 3 ids) --
+//     C-shres-sprite.c8, APPC-pos.c8 (its SPRxPOS-byte half only -- its
+//     SPRxCTL/SH0 half stays on SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT,
+//     untouched by this pass), CH4-appC-position.c13. Removed from
+//     SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2, which moves only bit 0 and so
+//     measures only that one bit's own weight, not the eight the claim
+//     states ("07-00  SH8-SH1", p.303); the new assertion measures
+//     every one of the eight bits' own weight (2^(k+1) raw units each).
+//     C-spr.c05, out of this repair's named scope, stays on SPRXPOS-
+//     BYTE-IS-SH8-SH1-STEP-OF-2 unchanged.
+//   SPRXCTL-HOLDS-POSITION-AND-CONTROL-DATA (new assertion, 1 id) --
+//     CH4-appC-position.c17. Removed from SPRXPOS-SPRXCTL-JOINTLY-LOAD-
+//     BEARING, whose position half is measured through SPRxPOS, not
+//     SPRxCTL, so it never established that SPRxCTL's OWN register-map
+//     row ("SPRxCTL W   A D     Sprite x position and control data",
+//     p.303) carries position data; the new assertion measures both
+//     halves entirely through SPRxCTL writes, SPRxPOS held fixed.
+//   C-shres-sprite.c5 [withdrawn, recorded] -- removed from SPRXPOS-
+//     SPRXCTL-JOINTLY-LOAD-BEARING. Its whole restatement is the "size"
+//     clause this module cannot observe (no vertical-position input) --
+//     unlike C-shres-sprite.c4/C-spr.c03, which state clauses this
+//     boundary DOES measure and were left in place, c5 has no unbundled
+//     half to keep. Withdrawn whole to the record() beside SPRXPOS-
+//     SPRXCTL-JOINTLY-LOAD-BEARING below (see Non-goals above).
+//   APPC-pos.c1, CH4-appC-position.c1, CH4-appC-position.c2
+//     [withdrawn, recorded] -- removed from SPRXCTL-BIT4-SHSH1-70NS-
+//     SUPERHIRES-LIVE. Their claim compares positioning granularity
+//     across SuperHires/Hires/Lores; this module's position-match
+//     comparator does not read `spres` at all (SH0's own delta is 1 raw
+//     unit at every spres value, measured above), and the bits that
+//     would carry a finer-than-SH0 step within SuperHires are dead code
+//     (the FINDING above), so no stimulus at this boundary could show
+//     the comparison. Withdrawn whole to the record() beside SPRXCTL-
+//     BIT4-SHSH1-70NS-SUPERHIRES-LIVE below.
+//
+// Every graded PASS/FAIL/MEASURED line carried over from before this
+// pass is byte-identical once claim ids are stripped -- verified by
+// tools/check_labels_gained_only_ids.py against this pass's own before/
+// after capture ("problems: 0"). tools/check_uid_placement.py against
+// the after capture reports "packages asserting AND declining one : 0".
+// No assertion this pass removed an id from was added by the backlog
+// (2bc070e~1..HEAD) -- all four predate it -- so no correction-on-
+// purpose exception to the first check applies or is claimed.
+//
 // MUTATION LOG (the first 5 stimulus entries below were run by an
 // earlier pass of this agent under WSL/Verilator on 11.09.2026, against
 // the then-current 5-passed/2-failed baseline -- edit -> rebuild -> run
@@ -315,6 +386,9 @@
 // MUTATION SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED: no record -- this claim is declined (checks.note only, no checks.expect), so there is no red/green state for a mutation to move.
 // MUTATION SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES stimulus red (extension pass, run under WSL/Verilator this session against the then-current 7-passed/1-failed baseline): built with -DMUT_BIT3=1, which substitutes bit 0 (SH0, already proven live above) for bit 3 in this assertion's own per-spres toggle, so the "identical trace" comparator has a live bit to catch -> FAIL ("6 passed, 2 failed"), only SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES newly red (the off/on traces differed at every spres once bit 0 was the one toggled); every other line, including SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE (already red, unrelated), was unchanged. Rebuilt with `make -B test` (no flags): 7/1, the one finding unchanged.
 // MUTATION APPC-pos.c10, APPC2-SPRxCTL.conf2: no record -- both are recorded, not asserted (checks.record only, no checks.expect carrying either id), so there is no red/green state of their own for a mutation to move; the assertion they are recorded beside, SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE, already carries its own mutation record above (none, impossible -- already red at baseline).
+// MUTATION PROCESSOR-WRITE-REACHES-SPRXPOS-AND-SPRXCTL stimulus red (repair pass, run under WSL/Verilator this session against the then-current 10-passed/1-failed baseline): built with -DMUT_PROC_CTL=1, which withholds the SPR0CTL stimulus in this assertion's own independent ctl_hi measurement (held at 0x00 instead of 0x01) -> FAIL ("9 passed, 2 failed"), only PROCESSOR-WRITE-REACHES-SPRXPOS-AND-SPRXCTL newly red (ctl_reached became false; pos_reached, measured independently, stayed true). Rebuilt with no flags: 10/1, the one finding unchanged.
+// MUTATION SPRXPOS-EACH-BIT-IS-SH8-SH1-WEIGHTED stimulus red (repair pass, run under WSL/Verilator this session against the then-current 10-passed/1-failed baseline): built with -DMUT_POSBITS=1, which at k=5 substitutes bit 4's own stimulus for bit 5's -> FAIL ("9 passed, 2 failed"), only SPRXPOS-EACH-BIT-IS-SH8-SH1-WEIGHTED newly red (deltas[5] read 32, the weight of bit 4, not the asserted 64). Rebuilt with no flags: 10/1, the one finding unchanged; the per-bit MEASURED note above the assertion confirms the clean deltas 2,4,8,16,32,64,128,256 at baseline.
+// MUTATION SPRXCTL-HOLDS-POSITION-AND-CONTROL-DATA stimulus red (repair pass, run under WSL/Verilator this session against the then-current 10-passed/1-failed baseline): built with -DMUT_CTL_ATTACH=1, which withholds the ATTACH stimulus in this assertion's own independent "attached" measurement (SPR1CTL held at 0x00 instead of 0x80) -> FAIL ("9 passed, 2 failed"), only SPRXCTL-HOLDS-POSITION-AND-CONTROL-DATA newly red (attached read 1, the same as plain, not the asserted 13; position_via_ctl, measured independently, stayed true). Rebuilt with no flags: 10/1, the one finding unchanged.
 
 // SPECIFICATION ADDENDUM (extension pass, from ch3-sprite-registers-
 // spec-stage.jsonl's 17 records -- quotation, restatement and page only;
@@ -405,6 +479,30 @@
 // "identical trace" comparator has something it should catch.
 #ifndef MUT_BIT3
 #define MUT_BIT3 0
+#endif
+
+// MUT_PROC_CTL: replay stimulus for PROCESSOR-WRITE-REACHES-SPRXPOS-AND-
+// SPRXCTL's own mutation record below (-DMUT_PROC_CTL=1). Withholds the
+// SPR0CTL stimulus in that assertion's own independent ctl_hi
+// measurement, so only its SPRxCTL half goes red.
+#ifndef MUT_PROC_CTL
+#define MUT_PROC_CTL 0
+#endif
+
+// MUT_POSBITS: replay stimulus for SPRXPOS-EACH-BIT-IS-SH8-SH1-WEIGHTED's
+// own mutation record below (-DMUT_POSBITS=1). At k=5, substitutes bit
+// 4's stimulus for bit 5's own, so the per-bit weight check has a wrong
+// delta to catch at exactly one index.
+#ifndef MUT_POSBITS
+#define MUT_POSBITS 0
+#endif
+
+// MUT_CTL_ATTACH: replay stimulus for SPRXCTL-HOLDS-POSITION-AND-CONTROL-
+// DATA's own mutation record below (-DMUT_CTL_ATTACH=1). Withholds the
+// ATTACH stimulus in that assertion's own independent "attached"
+// measurement, so only its control half goes red.
+#ifndef MUT_CTL_ATTACH
+#define MUT_CTL_ATTACH 0
 #endif
 
 namespace {
@@ -609,7 +707,43 @@ int main(int argc, char** argv) {
             "on this interface reaches SPRxPOS and takes effect: 'They are "
             "usually loaded by the sprite DMA channel, during horizontal "
             "blank, however they may be loaded by the processor.' (p.303). "
-            "C-shres-sprite.c7, APPC-pos.c6, CH4-appC-position.c9 .");
+            ".");
+    }
+
+    // ------ PROCESSOR-WRITE-REACHES-SPRXPOS-AND-SPRXCTL (new) ------
+    // New for this repair pass. The claim above ("They are usually loaded
+    // by the sprite DMA channel ... however they may be loaded by the
+    // processor.", p.303) names SPRxPOS AND SPRxCTL together, but
+    // PROCESSOR-WRITE-REACHES-SPRXPOS only drives SPR0POS -- it does not
+    // by itself show a processor write reaches SPRxCTL too. Independent
+    // measurements here (fresh Harness per call, no shared state with the
+    // block above) so this assertion's own mutation cannot move that one
+    // or vice versa.
+    {
+        Meas pos_lo = measure(/*pos=*/0x10, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+        Meas pos_hi = measure(/*pos=*/0x50, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+        Meas ctl_lo = measure(/*pos=*/0x40, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+#if MUT_PROC_CTL
+        Meas ctl_hi = measure(/*pos=*/0x40, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);  // MUTATION: SPR0CTL stimulus withheld (held at 0x00 instead of 0x01).
+#else
+        Meas ctl_hi = measure(/*pos=*/0x40, /*ctl=*/0x01, /*spres=*/0, /*aga=*/0);
+#endif
+        bool pos_reached = pos_lo.start != -1 && pos_hi.start != -1 && pos_hi.start != pos_lo.start;
+        bool ctl_reached = ctl_lo.start != -1 && ctl_hi.start != -1 && ctl_hi.start != ctl_lo.start;
+        checks.expect(pos_reached && ctl_reached,
+            "PROCESSOR-WRITE-REACHES-SPRXPOS-AND-SPRXCTL: writing distinct "
+            "values to SPR0POS (0x10 vs 0x50) through reg_address_in/"
+            "data_in changes the measured start position, and, "
+            "independently, writing distinct values to SPR0CTL (0x00 vs "
+            "0x01, bit 0) through the same interface also changes it -- "
+            "this module's only register-write interface, with no "
+            "separate DMA-tagged path to distinguish a processor write "
+            "from a DMA-sourced one -- so a value placed on this "
+            "interface reaches BOTH SPRxPOS and SPRxCTL and takes effect: "
+            "'They are usually loaded by the sprite DMA channel, during "
+            "horizontal blank, however they may be loaded by the "
+            "processor.' (p.303). C-shres-sprite.c7, APPC-pos.c6, "
+            "CH4-appC-position.c9 .");
     }
 
     // ---------------- SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 ----------------
@@ -627,7 +761,63 @@ int main(int argc, char** argv) {
             "its own least-significant bit is worth 2 raw units, with the "
             "true bit-0 (SH0) living elsewhere: "
             "'07-00  SH8-SH1  Start horizontal value. Low bit (SH0) in "
-            "SPRxCTL.' (p.303). C-shres-sprite.c8, C-spr.c05, APPC-pos.c8, "
+            "SPRxCTL.' (p.303). C-spr.c05 "
+            ".");
+    }
+
+    // ------------- SPRXPOS-EACH-BIT-IS-SH8-SH1-WEIGHTED (new) -------------
+    // New for this repair pass. SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 above
+    // moves only SPR0POS's bit 0 (0x40 -> 0x41) and so measures only that
+    // one bit's own weight (SH1, worth 2 raw units) -- the claim
+    // "07-00  SH8-SH1  Start horizontal value. Low bit (SH0) in SPRxCTL."
+    // (p.303) is about all eight bits. Independent per-bit measurement:
+    // base = SPR0POS carrying a fixed anchor bit (SPR0CTL held at 0),
+    // toggled = the same anchor plus bit k; delta must be 2^(k+1) at
+    // every k, matching SPRxPOS's role as the upper 8 bits (SH8-SH1) of
+    // the 9-bit start value whose true bit 0 (SH0) lives in SPRxCTL, not
+    // SPRxPOS.
+    {
+        // base/toggled both carry a fixed ANCHOR bit (a bit other than k)
+        // so hstart is never 0 in either measurement: with hstart==0 and
+        // this Harness's hpos held at its post-reset value (0) for the
+        // whole write_reg() sequence that PRECEDES the sweep, the POS/CTL/
+        // DATA writes themselves satisfy the position-match comparator a
+        // beat early, and "start" reads a fixture artifact (measured: a
+        // uniform +1 on every delta, k=0..7, not a per-bit RTL fact).
+        // Anchor eliminates the collision; base and toggled differ by bit
+        // k alone, same as SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2's 0x40/0x41
+        // pair above.
+        bool all_weighted = true;
+        int deltas[8];
+        for (int k = 0; k < 8; ++k) {
+            int anchor = (k + 1) % 8;
+            uint8_t base_byte = static_cast<uint8_t>(1u << anchor);
+#if MUT_POSBITS
+            uint8_t bit_k = static_cast<uint8_t>(1u << (k == 5 ? 4 : k));  // MUTATION: at k=5, bit 4's stimulus substituted for bit 5's own.
+#else
+            uint8_t bit_k = static_cast<uint8_t>(1u << k);
+#endif
+            Meas base = measure(base_byte, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+            Meas toggled = measure(static_cast<uint8_t>(base_byte | bit_k), /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+            bool armed = base.start != -1 && toggled.start != -1;
+            deltas[k] = armed ? (toggled.start - base.start) : -1000;
+            if (!armed || deltas[k] != (1 << (k + 1))) all_weighted = false;
+        }
+        checks.note("SPRXPOS-EACH-BIT-IS-SH8-SH1-WEIGHTED: per-bit deltas "
+            "d0=" + std::to_string(deltas[0]) + " d1=" + std::to_string(deltas[1]) +
+            " d2=" + std::to_string(deltas[2]) + " d3=" + std::to_string(deltas[3]) +
+            " d4=" + std::to_string(deltas[4]) + " d5=" + std::to_string(deltas[5]) +
+            " d6=" + std::to_string(deltas[6]) + " d7=" + std::to_string(deltas[7]) +
+            " (expected 2,4,8,16,32,64,128,256).");
+        checks.expect(all_weighted,
+            "SPRXPOS-EACH-BIT-IS-SH8-SH1-WEIGHTED: adding SPR0POS bit k "
+            "alone to a fixed anchor bit (SPR0CTL held at 0), for every k "
+            "0..7, moves the measured start position by exactly 2^(k+1) "
+            "raw hpos units (2,4,8,16,32,64,128,256) -- matching SPRxPOS's "
+            "own row, where bits 07-00 are the UPPER 8 bits (SH8-SH1) of "
+            "the 9-bit start value: "
+            "'07-00  SH8-SH1  Start horizontal value. Low bit (SH0) in "
+            "SPRxCTL.' (p.303). C-shres-sprite.c8, APPC-pos.c8, "
             "CH4-appC-position.c13 .");
     }
 
@@ -758,9 +948,64 @@ int main(int argc, char** argv) {
             "feature-control components are measured here; the size "
             "(vertical extent) component of this claim is outside what can "
             "be observed at this boundary -- see Non-goals above. "
-            "C-shres-sprite.c4, C-shres-sprite.c5, C-spr.c03, "
-            "CH4-appC-position.c17, CH4-appC-position.c5, "
+            "C-shres-sprite.c4, C-spr.c03, "
+            "CH4-appC-position.c5, "
             "CH4-appC-position.c7 .");
+    }
+
+    // -------- C-shres-sprite.c5 [withdrawn, recorded] --------
+    // Withdrawn from SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING above (this
+    // repair pass): its own restatement is only the "size" third of the
+    // same p.303 sentence, and, unlike C-shres-sprite.c4/C-spr.c03 (which
+    // state position/feature clauses this boundary DOES measure, and stay
+    // above), c5's whole content is the clause this boundary cannot reach
+    // at all -- see Non-goals above. Withdrawn whole, not kept with a
+    // caveat.
+    checks.record(
+        "C-shres-sprite.c5 [withdrawn from SPRXPOS-SPRXCTL-JOINTLY-LOAD-"
+        "BEARING]: 'ECS SPRxPOS and SPRxCTL jointly control sprite size.' "
+        "-- restates only the 'size' third of 'The ECS registers SPRxPOS "
+        "and SPRxCTL work together as position, size and sprite feature "
+        "control registers.' (p.303). This module's own port list carries "
+        "no vertical-position input at all (only hpos) -- see Non-goals "
+        "above -- so 'size' (vertical extent, VSTART/VSTOP) cannot be "
+        "observed by any stimulus at this boundary. Withdrawn whole.");
+
+    // ------- SPRXCTL-HOLDS-POSITION-AND-CONTROL-DATA (new) -------
+    // New for this repair pass. CH4-appC-position.c17 restates SPRxCTL's
+    // OWN register-map row -- 'SPRxCTL W   A D     Sprite x position and
+    // control data' (p.303) -- a claim about SPRxCTL alone, not the
+    // SPRxPOS/SPRxCTL pair. SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING above
+    // shows SPRxCTL's control half (ATTACH) but measures the position
+    // half through SPRxPOS, not SPRxCTL. Independent measurement here,
+    // entirely through SPRxCTL writes (SPRxPOS held fixed): bit 0 (SH0)
+    // alone moves the measured start position (SPRxCTL carries position
+    // data), and bit 7 (ATTACH) alone changes the measured colour
+    // (SPRxCTL carries control data) -- distinct stimulus values (0x60,
+    // not 0x40) from the assertions above, so this one's own mutation
+    // cannot move theirs or vice versa.
+    {
+        Meas ctl_pos_lo = measure(/*pos=*/0x40, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+        Meas ctl_pos_hi = measure(/*pos=*/0x40, /*ctl=*/0x01, /*spres=*/0, /*aga=*/0);
+        bool position_via_ctl = ctl_pos_lo.start != -1 && ctl_pos_hi.start != -1
+                              && ctl_pos_hi.start != ctl_pos_lo.start;
+        uint8_t plain = measure_attach_color(/*pos=*/0x60, /*attach=*/false);
+#if MUT_CTL_ATTACH
+        uint8_t attached = measure_attach_color(/*pos=*/0x60, /*attach=*/false);  // MUTATION: ATTACH stimulus withheld.
+#else
+        uint8_t attached = measure_attach_color(/*pos=*/0x60, /*attach=*/true);
+#endif
+        bool control_via_ctl = plain == 1 && attached == 13 && plain != attached;
+        checks.expect(position_via_ctl && control_via_ctl,
+            "SPRXCTL-HOLDS-POSITION-AND-CONTROL-DATA: through SPRxCTL "
+            "writes alone (SPRxPOS held fixed at 0x40 for the position "
+            "half, 0x60 for the control half), toggling bit 0 (SH0) "
+            "moves the measured start position, and, independently, "
+            "toggling bit 7 (ATTACH) changes the measured colour (1 "
+            "unattached, 13 attached) -- SPRxCTL itself carries both "
+            "position and control data, matching its own register-map "
+            "row: 'SPRxCTL W   A D     Sprite x position and control "
+            "data' (p.303). CH4-appC-position.c17 .");
     }
 
     // ---------------- SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE ----------------
@@ -792,9 +1037,31 @@ int main(int argc, char** argv) {
             "separate OCS-vs-ECS select to test the chip-scoping itself "
             "against). C-library.c2, C-shr.c05, C-shres-sprite.c1, "
             "C-shres-sprite.c2, C-spr.c01, C-shres-sprite.c15, C-spr.c10, "
-            "C-shres-sprite.c14, C-spr.c09, APPC-pos.c1, "
-            "CH4-appC-position.c1, CH4-appC-position.c2 .");
+            "C-shres-sprite.c14, C-spr.c09 "
+            ".");
     }
+
+    // ---- APPC-pos.c1, CH4-appC-position.c1/c2 [withdrawn, recorded] ----
+    // Withdrawn from SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE above (this
+    // repair pass): their claim compares three resolution settings, and
+    // the assertion above sets bit 4 at spres=0 only, with no SuperHires
+    // setting and no Hires/Lores comparison.
+    checks.record(
+        "APPC-pos.c1, CH4-appC-position.c1, CH4-appC-position.c2 "
+        "[withdrawn from SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE]: "
+        "'SuperHires mode has a finer granularity of sprite positioning "
+        "than either Hires or Lores modes.' (p.303) is a comparison across "
+        "three resolution settings. This module's position-match "
+        "comparator ('hpos[7:0] == hstart[7:0]' plus the hpos[8] term, "
+        "denise_sprites_shifter.v) does not read `spres` at all -- SH0's "
+        "own delta stayed 1 raw unit at every one of the 4 spres "
+        "encodings, measured above under SPRXCTL-BIT0-SH0-IS-140NS-LOW-"
+        "BIT -- and the bits that would carry a finer-than-SH0 step "
+        "within SuperHires (SHSH1/SHSH0, bits 4/3) are dead code in this "
+        "RTL (the FINDING above: only bits 7 and 0 of a CTL write are "
+        "ever captured). There is no stimulus at this boundary through "
+        "which SuperHires positioning could be shown finer than Hires/"
+        "Lores. Withdrawn whole, not built as a vacuous comparison.");
 
     // ---- APPC-pos.c10, APPC2-SPRxCTL.conf2 [recorded, not asserted] ----
     // Both routed record:ch3-sprite-registers, "Print RECORDED beside
