@@ -178,8 +178,8 @@
 // Harness bugs fixed (documented below, oracle text untouched), and the
 // MUTATION LOG filled in with real results.
 //
-// CLAIM COVERAGE: all 174 records of claims.jsonl are accounted for below
-// -- 139 inside an expect() assertion string (eleven grouped assertions
+// CLAIM COVERAGE: all 181 records of claims.jsonl are accounted for below
+// -- 146 inside an expect() assertion string (twelve grouped assertions
 // -- G11 split into its own BRDRBLNK-works and BRDNTRAN-dead-code halves
 // once the RTL was opened, see RTL OPENED below -- plus
 // the ungrouped control), 35 inside a note() call with a stated reason
@@ -188,6 +188,15 @@
 // claims, and Figure 3-9's physical-screen-geometry reading). Every id is
 // written out in full, in the assertion or note string itself, not only in
 // a header comment or grouping name.
+//
+// SEVEN CLAIMS ADDED (3-video.c28, 3-colortable.c8, 3-colortable.c9,
+// 3-ct.c04, 3-ct.c05, 3-max-window.c31, 3-hscr.f07 -- see NEW CLAIMS above):
+// five were already fully established by an existing measurement once the
+// full claims file's own routing was read, and gained only their id, on
+// G2-WINDOW-DEFINES-VISIBLE-AREA (3-video.c28, 3-colortable.c9, 3-ct.c05,
+// 3-hscr.f07) and on G7-ECS-DIWHIGH-EXPANDS-RANGE (3-max-window.c31); two
+// (3-colortable.c8, 3-ct.c04) needed a genuinely new measurement, added as
+// G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT. No claim of the seven was declined.
 //
 // RTL OPENED, BUILT AND RUN, 11.09.2026 (all after the spec-only commit
 // above; built under WSL/Verilator 5.052). Every port name and address
@@ -337,6 +346,24 @@
 //
 // Final rebuild after the last revert: 11 passed, 1 failed, confirmed
 // again immediately before this commit.
+//
+// EXTENSION MUTATION LOG (the one new assertion added for this extension;
+// G2's and G7's own mutations above already cover the ids added to their
+// labels, since a mutation record pairs against an assertion's own leading
+// id token, not its full id list -- adding ids after the colon does not
+// change what those mutations replay):
+//
+// MUTATION G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT stimulus red: a single
+//   non-zero BPL1DAT sample (0xFFFF) is written at scan index 100, well
+//   inside the DIWSTRT=$30/DIWSTOP=$90 window, planting one real object
+//   where the assertion otherwise expects none for the whole scan -> FAIL
+//   ("11 passed, 2 failed"), only G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT
+//   newly red (alongside the already-red D-BRDNTRAN-HAS-NO-EFFECT).
+//   Replayable as MUTATE=G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT. Reverted:
+//   12/1.
+//
+// Final rebuild after this extension's revert: 12 passed, 1 failed,
+// confirmed again immediately before this commit.
 
 #include <array>
 #include <cstdint>
@@ -735,6 +762,20 @@ int main(int argc, char** argv) {
     }
 
     // ==================== G2: WINDOW-DEFINES-VISIBLE-AREA ====================
+    // Four ids added to this assertion's label below (3-video.c28,
+    // 3-colortable.c9, 3-ct.c05, 3-hscr.f07): each is already fully
+    // established by the measurement this block already makes, not by any
+    // new code. 3-video.c28 restates the same p.42 sentence this label
+    // already quotes ('the playfield in memory are often larger than the
+    // playfield displayed on the screen... by specifying a different size
+    // for the display window') -- narrowing DIWSTOP while the saturated
+    // data stays constant is exactly that mechanism. 3-colortable.c9,
+    // 3-ct.c05 (p.46) and 3-hscr.f07 (Figure 3-24, p.83) each say the
+    // background colour is displayed outside the display window, in the
+    // border -- and this block's own closing sentence already measures
+    // that every single sample outside [open_idx, close_idx) reads the
+    // border colour (COLOR00, the value written to COLORBASE), on both the
+    // narrow and the wide window.
     {
         auto narrow = measure_window(0x30, 0x40);  // 16-lores-pixel-wide window
         // MUTATION G2-WINDOW-DEFINES-VISIBLE-AREA stimulus red: MUTATE=G2-
@@ -748,7 +789,8 @@ int main(int argc, char** argv) {
             narrow.is_clean() && wide.is_clean() && same_open && width_tracks_diwstop,
             "G2-WINDOW-DEFINES-VISIBLE-AREA: "
             "3-diw.c01 3-window.c1 3-window.c3 3-window.c5 3-diw.c04 3-diw.c03 "
-            "3-window.c4 3-window.c6 3-bpl.c16 : with a fully saturated bitplane 1 "
+            "3-window.c4 3-window.c6 3-bpl.c16 3-video.c28 3-colortable.c9 "
+            "3-ct.c05 3-hscr.f07 : with a fully saturated bitplane 1 "
             "(colour present at EVERY sampled horizontal position, so nothing "
             "outside the window is a data-fetch accident -- see the HPOS[3:2] TRAP "
             "note above), narrowing DIWSTOP from $50 to $40 while DIWSTRT stays at "
@@ -998,6 +1040,13 @@ int main(int argc, char** argv) {
     }
 
     // ==================== G7: ECS-DIWHIGH-EXPANDS-RANGE ====================
+    // One id added to this assertion's label below (3-max-window.c31): its
+    // p.80 sentence is the same one this label already quotes ('in the
+    // [ECS] the limits... have been changed') and is already fully
+    // established by measurement (a) below (the unmodified DIWSTRT/DIWSTOP
+    // byte's OCS-era 0-255/256-511 range) against measurement (b) (DIWHIGH
+    // reaching a position that range can never hold) -- not by any new
+    // code.
     Edges base_no_diwhigh = measure_window(0x30, 0x50);  // DIWHIGH never written in this call
     {
         // (a) DIWHIGH untouched: the old OCS scheme holds -- literally true
@@ -1037,7 +1086,8 @@ int main(int argc, char** argv) {
             "A-diwhigh.chip A-diwhigh.fn B-subject.c294 B-subject.c295 C-diw.c01 "
             "C-diw.c3 C-diw.c9 C-diw.c10 C-diw.c11 C-diw.c12 C-diw.c13 C-diw.c14 "
             "C-diwhigh.c02 C-diwhigh.c03 C-diwhigh.c04 3-max.c13 3-max.c14 "
-            "3-max-window.c30 : with DIWHIGH never written, DIWSTRT=$30/DIWSTOP=$50 "
+            "3-max-window.c30 3-max-window.c31 : with DIWHIGH never written, "
+            "DIWSTRT=$30/DIWSTOP=$50 "
             "opens/closes exactly where G2/G3/G4 above already measured it -- 'if "
             "[DIWHIGH] is not written, the old scheme for DIWSTRT and DIWSTOP... "
             "holds' (p.306), and 'the limits... described in this section apply to "
@@ -1282,6 +1332,80 @@ int main(int argc, char** argv) {
             "this boundary. This is a red result about the RTL, not an adjustment "
             "to the oracle -- the manual is what these seven claims are measured "
             "against, and this fixture does not implement what it describes.");
+    }
+
+    // ==================== G12: BACKGROUND-SHOWS-WHERE-NO-OBJECT ====================
+    // New assertion for 3-colortable.c8 and 3-ct.c04 (opus twin), the
+    // GENERAL half of the same p.46 sentence G2 already covers the BORDER
+    // half of ('shows in any area on the display where there is no other
+    // object present', independent of whether that area is inside or
+    // outside the display window) -- routed here because a plane carrying
+    // no data selects colour register 0 (COLOR00) exactly like the border
+    // path does: denise.v:489-498 forces clut_data=0 outside the window
+    // (!window_ena), and inside it clut_data=plfdata^bplxor, where
+    // denise_playfields.v's own single-playfield path is plfdata=bpldata
+    // (l.100, confirmed by opening denise_playfields.v) and bplxor resets
+    // to 0 (denise.v:278) -- so with BPL1DAT never written (bpldata stays
+    // at its own zero reset) the two paths converge on the identical
+    // COLOR00 index whether or not the window is open. No prior assertion
+    // in this file scans with the bitplane left unsaturated, so this is a
+    // genuinely new measurement, not a relabelling of an existing one.
+    {
+        Harness h;
+        h.write_reg(kColorbaseAddr, kColor00Value);
+        h.write_reg(kColor01Addr, kColor01Value);
+        h.write_reg(kBplcon0Addr, 0x1000);  // BPU=1; BPL1DAT is deliberately never
+                                             // written below, so bpldata stays at its
+                                             // own zero reset -- no object bit is ever
+                                             // set, inside the window or outside it.
+        h.write_reg(kDiwstrtAddr, 0x30);
+        h.write_reg(kDiwstopAddr, 0x90);
+        h.reset_line();
+        std::vector<uint32_t> samples;
+        samples.reserve(500);
+        for (int i = 0; i < 500; ++i) {
+            while (h.phase != 0) h.tick();
+            samples.push_back(Harness::pack_rgb(h.dut));
+            // MUTATION G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT stimulus red:
+            //   MUTATE=G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT writes a single
+            //   non-zero BPL1DAT sample at index 100 (well inside the open
+            //   $30-$90 window), planting one real object where this
+            //   assertion otherwise expects none for the whole scan.
+            if (mutating("G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT") && i == 100) {
+                h.dut->reg_address_in = static_cast<uint8_t>(kBpl1DatAddr >> 1);
+                h.dut->data_in = 0xFFFF;
+            } else {
+                h.dut->reg_address_in = 0;
+                h.dut->data_in = 0;
+            }
+            h.tick();
+        }
+        h.dut->reg_address_in = 0;
+        h.dut->data_in = 0;
+
+        Harness cal;
+        cal.write_reg(kColorbaseAddr, kColor00Value);
+        cal.write_reg(kColor01Addr, kColor01Value);
+        cal.write_reg(kBplcon0Addr, 0x1000);
+        cal.write_reg(kDiwstrtAddr, 0x60);
+        cal.write_reg(kDiwstopAddr, 0x20);  // stop < start: guaranteed never-open calibration
+        auto cal_samples = cal.scan_window(8, /*saturate=*/true);
+        uint32_t border = cal_samples[4];
+
+        Edges e = find_edges(samples, border);
+        bool no_object_never_differs = (e.open_idx < 0);  // no sample anywhere differs from COLOR00
+        checks.expect(
+            no_object_never_differs,
+            "G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT: "
+            "3-colortable.c8 3-ct.c04 : with BPU=1 but BPL1DAT never written (no "
+            "bitplane object bit is ever set, across the whole 500-sample scan, "
+            "inside the DIWSTRT=$30/DIWSTOP=$90 window or outside it) every single "
+            "sample reads identically to the same COLOR00 calibration sample the "
+            "border measurements above use -- the background colour, COLOR00, "
+            "shows through inside the open window exactly as it does outside it, "
+            "whenever no other object supplies a differing bit: 'the background "
+            "color shows in any area on the display where there is no other "
+            "object present' (p.46).");
     }
 
     // ==================== DECLINED CLAIMS ====================
