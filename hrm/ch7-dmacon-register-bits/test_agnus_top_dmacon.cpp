@@ -410,6 +410,77 @@
 // rebuilt clean - by this agent, not predicted.
 // ============================================================================
 
+// SPECIFICATION ADDENDUM (extension pass, from ch7-dmacon-register-bits-
+// spec-stage.jsonl's 25 records -- quotation, restatement and page only;
+// this block was written and committed before ch7-dmacon-register-bits.jsonl
+// or the RTL was opened again, per the build brief's gate for extending an
+// accepted package. Each new claim id is grouped under the one manual
+// proposition it restates; grouping is by wording alone at this stage, not
+// by which existing assertion (if any) already measures it -- that mapping
+// is decided, and recorded in CLAIM COVERAGE and the assertion labels
+// themselves, only after this block was committed.
+//
+//   [P1] DMACONR-APPENDIX-B-ADDRESS-ORDER (p.289) -- "DMACONR *002 R A P
+//     DMA control (and blitter status) read", the address-order table row:
+//     DMACONR is listed at $002. B-dmaconr.addr (opus; its own reader flags
+//     this row print-only/not-cross-read).
+//
+//   [P2] DDFSTRT-BELOW-$38-DISABLES-SPRITES (p.80) -- "using a data-fetch
+//     start earlier than ($38) will disable some sprites." 3-max-window.c18
+//     (sol), 3-max.c12 (opus) -- two readings of the same sentence.
+//
+//   [P3] DDFSTRT-$0030-DISABLES-SPRITE-7 (p.82) -- "sooner (DDFSTRT =
+//     $0030). Incidentally, this will disable sprite 7." 3-hscr.c10 (opus),
+//     3-hscroll.c12 (sol).
+//
+//   [P4] SCROLL-FETCH-WORD-DISABLES-SPRITES (p.83) -- "Fetching an extra
+//     word for scrolling will disable some sprites." 3-hscr.c17 (opus),
+//     3-hscroll.c17 (sol).
+//
+//   [P5] DMACON-BIT10-IS-BLTPRI (p.278) -- "10 BLTPRI Blitter DMA
+//     priority" -- DMACON bit 10 is BLTPRI. APPA-dmacon.c10 (opus, position
+//     only). CH4-appA-dmacon.c17 (sol) restates the same row with its
+//     crossread-restored parenthetical included -- "(over CPU micro) (also
+//     called \"blitter nasty\")" -- so its own restatement is the compound
+//     "DMACON bit 10 enables blitter DMA priority over CPU bus use, also
+//     called blitter nasty", naming both the position and the function.
+//
+//   [P6] BLTPRI-DISABLES-BLS-PIN (p.278) -- "(disables /BLS pin,
+//     preventing micro from stealing any bus cycles while blitter DMA is
+//     running)." APPA-dmacon.c11 (opus), CH4-appA-dmacon.c18 (sol).
+//
+//   [P7] DMACON-BIT9-DMAEN-ENABLES-ALL-BELOW (p.278) -- "09 DMAEN Enable
+//     all DMA below." APPA-dmacon.c12 (opus) restates this as "so sprite
+//     DMA also requires DMAEN" -- flagged by crossread as
+//     restatement_exceeds_quote, since the row names no sprite and the
+//     sprite-specific consequence also depends on the separate SPREN row,
+//     not quoted here. CH4-appA-dmacon.c19 (sol) restates the same row as
+//     "the master enable for the individual DMA enables in bits 8 through
+//     0" without naming any one of them.
+//
+//   [P8] DMACON-BIT8-IS-BPLEN (p.278) -- "08 BPLEN Bitplane DMA enable."
+//     APPA-dmacon.c13 (opus), CH4-appA-dmacon.c20 (sol).
+//
+//   [P9] DMACON-BIT7-IS-COPEN (p.278) -- "07 COPEN Copper DMA enable."
+//     APPA-dmacon.c14 (opus), CH4-appA-dmacon.c21 (sol).
+//
+//   [P10] DMACON-BIT6-IS-BLTEN (p.278) -- "06 BLTEN Blitter DMA enable."
+//     APPA-dmacon.c15 (opus), CH4-appA-dmacon.c22 (sol).
+//
+//   [P11] DMACON-BIT5-IS-SPREN (p.278) -- "05 SPREN Sprite DMA enable."
+//     APPA-dmacon.c16 (opus), CH4-appA-dmacon.c23 (sol).
+//
+//   [P12] DMACON-BIT14-BBUSY-READONLY (p.278) -- "14 BBUSY Blitter busy
+//     status bit (read only)." APPA-dmacon.c6 (opus), CH4-appA-dmacon.c13
+//     (sol).
+//
+//   [P13] DMACON-BIT13-BZERO-READONLY (p.278) -- "13 BZERO Blitter logic
+//     zero status bit (read only)." APPA-dmacon.c7 (opus),
+//     CH4-appA-dmacon.c14 (sol).
+//
+//   25 ids total: 1+2+2+2+2+2+2+2+2+2+2+2+2 = 25.
+// ============================================================================
+
 #include <cstdint>
 #include <iostream>
 #include <string>
