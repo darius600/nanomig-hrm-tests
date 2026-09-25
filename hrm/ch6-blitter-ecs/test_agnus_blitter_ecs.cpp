@@ -516,6 +516,26 @@
 //   Reverted to the baseline (USED restored in h_doff1) afterward; `diff`
 //   against a saved pre-mutation copy of the whole file showed zero bytes of
 //   difference, and a clean rebuild reproduced 10 passed, 3 failed.
+// MUTATION BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS stimulus red: the width
+//   written via BLTSIZH changed from 0 to 1 (expected constant 2048 left
+//   untouched, height pinned at 1 via BLTSIZV unchanged) -> FAIL, only 1
+//   destination write occurs, not 2048 - width_cnt reloads to 1 directly (no
+//   underflow to trigger), so last_word is true on the very first word and
+//   the blit completes in one write; totals 11 passed, 4 failed (this
+//   assertion, still red, plus the three pre-existing required reds).
+//   Reverted to 0 afterward; `diff` against a saved pre-mutation copy of the
+//   whole file showed zero bytes of difference, and a clean rebuild
+//   reproduced 12 passed, 3 failed.
+// MUTATION BLTSIZV-HEIGHT-ZERO-WRAPS-TO-32768-ROWS stimulus red: the height
+//   written via BLTSIZV changed from 0 to 1 (expected constant 32768 left
+//   untouched, width pinned at 1 via BLTSIZH unchanged) -> FAIL, only 1
+//   destination write occurs, not 32768 - height_cnt reloads to 1 directly
+//   (no underflow to trigger), so last_line is true on the very first row
+//   and the blit completes in one write; totals 11 passed, 4 failed (this
+//   assertion, still red, plus the three pre-existing required reds).
+//   Reverted to 0 afterward; `diff` against a saved pre-mutation copy of the
+//   whole file showed zero bytes of difference, and a clean rebuild
+//   reproduced 12 passed, 3 failed.
 
 // SPECIFICATION ADDENDUM (extension pass, from ch6-blitter-ecs-spec-
 // stage.jsonl's 13 records -- quotation, restatement and page only; this
