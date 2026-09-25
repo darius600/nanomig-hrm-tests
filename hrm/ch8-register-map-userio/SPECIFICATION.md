@@ -253,3 +253,26 @@ proposition anywhere among the 117; the two sibling packages
 `ch8-appb-chip-column-denise` and `ch8-appb-chip-column-paula` own that
 material, and this package's own subject line does not require re-deriving
 it.
+
+## Addendum — seven further Appendix-B address citations
+
+Seven further claims each restate one register's page-289 Appendix-B row,
+address-order rather than by topic:
+
+| Claim id | Register | Page-289 quote | Address |
+|---|---|---|---|
+| `B-joy0dat.addr` | JOY0DAT | "JOY0DAT      *00A   R        D       Joystick-mouse 0 data (vert,horiz)" | $00A |
+| `B-joy1dat.addr` | JOY1DAT | "JOY1DAT      *00C   R        D       Joystick-mouse 1 data (vert,horiz)" | $00C |
+| `B-joytest.addr` | JOYTEST | "JOYTEST      *036   W        D       Write to all four joystick-mouse counters at once" | $036 |
+| `B-pot0dat.addr` | POT0DAT | "POT0DAT      *012   R           P (E)Pot counter pair 0 data (vert,horiz)" | $012 |
+| `B-pot1dat.addr` | POT1DAT | "POT1DAT      *014   R           P (E)Pot counter pair 1 data (vertfhoriz)" | $014 |
+| `B-potgo.addr` | POTGO | "POTGO        *034   W           P    Pot port data write and start" | $034 |
+| `B-potgor.addr` | POTGOR | "POTGOR       *016   R           P    Pot port data read (formerly POTINP)" | $016 |
+
+Each of these seven restates, register for register, exactly the page-289
+address already fixed by that register's PROP-ADDR-* proposition above (see
+the ADDR table's "p.289 uids" column above) — same register, same page, same
+printed offset. No new proposition is required: each PROP-ADDR-* assertion
+already establishes the whole of what its matching claim here states, so
+each id is added to its own register's existing PROP-ADDR-* assertion label
+rather than measured again.
