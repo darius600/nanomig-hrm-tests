@@ -184,10 +184,11 @@
 //     NOT part of the pointer-width conflict in G6 and is not automatically
 //     assumed correct either)
 //   B-mod.c2 (sol, p288): same sentence, second reading.
-//   B-mod.c4 (sol, p288, routed 25.09.2026 - not part of this package's
-//     original 173): "Uses 15 bits, plus sign extend." (the field-width
-//     half of the same B-mod legend entry as B-mod.c1/c2 above; verified
-//     against the RTL directly, in assertion 15 below)
+//   B-mod.c4 (sol, p288): "Uses 15 bits, plus sign extend." (the
+//     field-width half of the same B-mod legend entry as B-mod.c1/c2
+//     above; verified against the RTL directly with an ODD-valued probe,
+//     which the EVEN-only probes below could not tell apart from a 16-bit
+//     field -- see MODULO-ODD-PROBE-CONFIRMS-15-BIT-FIELD)
 //
 // -- G8: modulo is zero when the memory picture equals the display window
 //    (basic playfield) (p.61, 73) --
@@ -617,15 +618,19 @@
 //     versus chapter-text 19-bit versus this RTL's 20-bit-significant
 //     address_out[20:1] figures - recorded, never asserted against each
 //     other.
-//   - B-mod.c1/c2/c4's "15-bit modulo...plus sign extend" (same appendix
+//   - B-mod.c1/c2's "15-bit modulo...plus sign extend" (same appendix
 //     passage) - the modulo register's actual bit width is measured
 //     directly against the RTL once opened, not assumed from the printed
-//     figure, per assertion 15 above. B-mod.c4 (routed 25.09.2026) is
-//     graded, not merely recorded: MODULO-WIDTH-262144-PIXEL-LIMIT's own
-//     two boundary numbers (+32766 for the largest positive field value,
-//     exactly -32768 for the most-negative) are the arithmetic signature
-//     of nothing else BUT a 15-bit two's-complement field sign-extended to
-//     the wider add operand - see IMPLEMENTATION NOTES below.
+//     figure, per assertion 15 above. B-mod.c4 is graded, not merely
+//     recorded, but not on assertion 15 alone: MODULO-WIDTH-262144-PIXEL-
+//     LIMIT's own two boundary numbers (+32766 for the largest positive
+//     field value, exactly -32768 for the most-negative) both come from
+//     EVEN raw probes ($7FFE, $8000), whose bit 0 is already 0 - so they
+//     cannot by themselves tell a 15-bit stored field from a 16-bit one
+//     that happened to agree on those two inputs. MODULO-ODD-PROBE-
+//     CONFIRMS-15-BIT-FIELD supplies the missing ODD probe ($7FFF) that
+//     only a genuinely 15-bit-stored field reproduces - see IMPLEMENTATION
+//     NOTES below.
 //
 // No RTL has been opened yet to write this comment block. Every port name,
 // register offset and bit-slice fact above (BPLPTBASE_REG, pointer banks,
@@ -705,11 +710,12 @@
 // the ORIGINAL data_in bit 15) across 5 more bits before being added to
 // address_out[20:1] - a 15-bit-plus-sign-extend modulo, which is exactly
 // what B-mod.c1/B-mod.c4 (Appendix B's MOD legend entry, same passage as
-// this package's own B-mod.c1/c2/c3; B-mod.c4 routed here 25.09.2026)
-// states, and is NOT part of the pointer-width conflict (G6): this is a
-// separate register with its own separate width, measured directly here
-// (assertion 15) rather than assumed correct because it
-// happens to agree.
+// this package's own B-mod.c1/c2/c3) states, and is NOT part of the
+// pointer-width conflict (G6): this is a separate register with its own
+// separate width, measured directly here (assertion 15's two EVEN probes,
+// and MODULO-ODD-PROBE-CONFIRMS-15-BIT-FIELD's ODD one, which is what
+// actually distinguishes 15 stored bits from 16) rather than assumed
+// correct because it happens to agree.
 //
 // ddfstrt/ddfstop/BPLCON0/DIWSTRT/DIWSTOP decode, hardware $18/$D8 limits,
 // hde generation, and the fetch-window/word-count sequencer (l.50-60, 336-
@@ -995,9 +1001,8 @@ int main(int argc, char** argv) {
             "anything. 'Chip memory pointer that addresses DMA data' "
             "(p.288), 'This pair of registers contains the...pointer to the "
             "address of bitplane x...DMA data' (p.272). B-pointer.c1, "
-            "A-bplptr.c8, A-bplxpt.c02, 3-mem.c03, 3-mem.c04, 3-memory.c3, "
-            "3-memory.c4, 3-memory.c24, 3-memory.c26, 3-ptr.c01, "
-            "3-ptr.c03, 3-dual-control.c2, 3-dual.c32.");
+            "A-bplptr.c8, A-bplxpt.c02, 3-mem.c04, 3-memory.c4, "
+            "3-dual-control.c2, 3-dual.c32.");
     }
 
     // ---------------- POINTER-PAIR-IS-ONE-ADDRESS (p.54, 63) ----------------
@@ -1039,8 +1044,7 @@ int main(int argc, char** argv) {
             "and write to them as one long word' (p.54), 'BPLxPTH - pointer "
             "to bitplane starting position in memory (written as a long "
             "word)' (p.63 summary). 3-memory.c28, 3-memory.c29, 3-ptr.c05, "
-            "3-ptr.c06, 3-sum.c02, 3-regsum-pointers.c1, "
-            "3-regsum-pointers.c2, 3-rptr.c01, 3-rptr.c02.");
+            "3-ptr.c06, 3-sum.c02.");
     }
 
     // ---------------- SIX-PLANE-TWELVE-REGISTER-BANK (p.42, 54) ----------------
@@ -1083,6 +1087,58 @@ int main(int argc, char** argv) {
             "B-subject.c44, B-subject.c51, B-subject.c58, B-subject.c65, "
             "B-subject.c72, B-subject.c79, B-subject.c86, B-subject.c93, "
             "B-subject.c100, B-subject.c107.");
+    }
+
+    // ---------------- SIX-PLANE-NONZERO-PTH-PTL-PAIR (p.52, 54, 91) ----------------
+    {
+        Harness h;
+        h.setup_standard();
+        h.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        h.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        h.write_reg(BPLCON0_ADDR, bplcon0_word(false, 6));  // lores, BPU=6
+
+        prime_to_line(h, 0x4F);
+        // Six DISTINCT pointers, each carrying a NONZERO PTH field as well
+        // as a nonzero PTL field - unlike FIXTURE-DELIVERS-KNOWN-POINTERS-
+        // IN-ORDER and SIX-PLANE-TWELVE-REGISTER-BANK above, whose bases
+        // (0x001000..0x00B000) all sit below bit 16 and therefore write
+        // PTH=0 on every plane: with the PTH writes removed entirely, both
+        // of those assertions still PASS unchanged, so neither one actually
+        // exercises BPLxPTH.
+        constexpr uint32_t kBaseNZ[6] = {
+            0x011000, 0x033000, 0x055000, 0x077000, 0x099000, 0x0BB000};
+        for (int p = 0; p < 6; ++p) h.write_ptr(p, kBaseNZ[p]);
+        LineResult r = run_single_line(h, 0x50);
+
+        std::map<uint16_t, uint32_t> first;
+        for (auto& f : r.fetches) if (!first.count(f.reg)) first[f.reg] = f.address;
+
+        bool six_match = true;
+        for (int p = 0; p < 6; ++p) {
+            uint16_t reg = static_cast<uint16_t>(0x88 + p);
+            if (!first.count(reg) || first[reg] != kBaseNZ[p]) six_match = false;
+        }
+        checks.expect(
+            six_match,
+            "SIX-PLANE-NONZERO-PTH-PTL-PAIR: six DISTINCT pointers, EACH "
+            "with a nonzero PTH field as well as a nonzero PTL field "
+            "(0x011000, 0x033000, 0x055000, 0x077000, 0x099000, 0x0BB000, "
+            "one per plane), each arrive UNCHANGED at their own plane's "
+            "fetched address - BPLxPTH is not merely written, it visibly "
+            "contributes to the fetched address, for all six bitplanes at "
+            "once. 'set the bitplane pointer registers (BPLxPTH/BPLxPTL) "
+            "to point to the starting memory address of each bitplane you "
+            "are using' (p.52), 'Access to bitplanes in memory is provided "
+            "by two address registers, BPLxPTH and BPLxPTL, for each "
+            "bitplane (12 registers in all)' (p.54), 'The x position in "
+            "the name holds the bitplane number; for example BPL1PTH and "
+            "BPL1PTL hold the starting address of PLANE 1' (p.54), "
+            "'BPLxPTH - Bitplane Pointer (Bitplane pointer high word, "
+            "where x is the bitplane number)' / 'BPLxPTL - ...pointer low "
+            "word, where x is the bitplane number' (p.91). 3-mem.c03, "
+            "3-memory.c3, 3-memory.c24, 3-memory.c26, 3-ptr.c01, "
+            "3-ptr.c03, 3-regsum-pointers.c1, 3-regsum-pointers.c2, "
+            "3-rptr.c01, 3-rptr.c02.");
     }
 
     // ---------------- POINTER-ALWAYS-EVEN (p.61, 287) ----------------
@@ -1522,8 +1578,47 @@ int main(int argc, char** argv) {
             "many more lines can be fetched (HEIGHT). 'Another constraint "
             "on playfield size is the bit plane modulos which limit the "
             "width (but not the height) of a playfield to 262,144 pixels' "
-            "(p.76). 3-big.c19, 3-big.c20, 3-large.c24, 3-large.c25, "
-            "B-mod.c4.");
+            "(p.76). 3-big.c19, 3-big.c20, 3-large.c24, 3-large.c25.");
+    }
+
+    // ---------------- MODULO-ODD-PROBE-CONFIRMS-15-BIT-FIELD (p.288) ----------------
+    {
+        // MODULO-WIDTH-262144-PIXEL-LIMIT above probes only EVEN raw values
+        // ($7FFE, $8000): bit 0 of an even value is already 0, so a
+        // register that happened to store all 16 written bits would read
+        // back identically to a 15-bit-stored one on those two probes alone
+        // - a validator probe confirmed this reads PASS either way. An ODD
+        // raw value tells the two hypotheses apart: if bit 0 is truly never
+        // stored (the same "always even" shape POINTER-ALWAYS-EVEN measures
+        // on the pointer registers), $7FFF must contribute the IDENTICAL
+        // amount as $7FFE, because both collapse to the same 15-bit stored
+        // value once bit 0 is dropped.
+        constexpr uint32_t kLineWidthBytes = 40;
+        Harness ho;
+        ho.setup_standard();
+        ho.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        ho.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        ho.write_reg(BPLCON0_ADDR, bplcon0_word(false, 1));
+        ho.write_reg(BPL1MOD_ADDR, 0x7FFF);  // ODD raw value - the discriminating probe
+        prime_to_line(ho, 0x4F);
+        constexpr uint32_t kBaseO = 0x00003000;
+        ho.write_ptr(0, kBaseO);
+        uint32_t startO0 = first_fetch_addr_for_plane(run_single_line(ho, 0x50), 0x88);
+        uint32_t startO1 = first_fetch_addr_for_plane(run_single_line(ho, 0x51), 0x88);
+        uint32_t total_deltaO = delta21(startO0, startO1);
+        uint32_t mod_contribO = delta21(kLineWidthBytes, total_deltaO);
+
+        checks.expect(
+            mod_contribO == 32766,
+            "MODULO-ODD-PROBE-CONFIRMS-15-BIT-FIELD: writing the ODD raw "
+            "value $7FFF to BPL1MOD contributes exactly +" +
+            std::to_string(mod_contribO) + " bytes to the line-to-line "
+            "step - IDENTICAL to MODULO-WIDTH-262144-PIXEL-LIMIT's own "
+            "$7FFE probe (also +32766) - so bit 0 of the written value is "
+            "never part of the stored field; a register that stored all 16 "
+            "written bits would have produced a different, odd-byte "
+            "contribution from this odd input. '15-bit modulo...Uses 15 "
+            "bits, plus sign extend' (p.288). B-mod.c4.");
     }
 
     // ---------------- INTERLACED-FIELD-PAIR-NTSC-400-LINES (p.62) ----------------
@@ -1722,6 +1817,7 @@ int main(int argc, char** argv) {
 // MUTATION FIXTURE-DELIVERS-KNOWN-POINTERS-IN-ORDER stimulus red: pointer write loop shortened from 4 planes to 3; plane 3 (reg 0x8B) never received its pointer, starts_match failed.
 // MUTATION POINTER-PAIR-IS-ONE-ADDRESS stimulus red: the PTL-then-PTH run's PTH value changed from pth to pth+1; PTL-then-PTH result (0x1258582) no longer equalled PTH-then-PTL's (0x1193046).
 // MUTATION SIX-PLANE-TWELVE-REGISTER-BANK stimulus red: BPU changed from 6 to 5; plane 6 (BPL6, reg 0x8D) never fetched, six_present failed.
+// MUTATION SIX-PLANE-NONZERO-PTH-PTL-PAIR stimulus red: BPU changed from 6 to 5; plane 6 (BPL6, reg 0x8D) never fetched, six_match failed.
 // MUTATION POINTER-ALWAYS-EVEN stimulus red: PTL raw value changed from 0x2469 to 0x246B; fetched address became 0x9322, not the expected 0x2468.
 // MUTATION POINTER-NOT-SELF-RESETTING stimulus red: BPL1MOD written to 40 (nonzero) before the 5-line sweep; the per-line step became 80 bytes, not the expected plain 40.
 // MUTATION MODULO-ZERO-CONTIGUOUS-LINES stimulus red: DDFSTOP changed from $00D0 to $00C0; word count and line-2 start no longer matched the modulo-0 worked numbers.
@@ -1732,6 +1828,7 @@ int main(int argc, char** argv) {
 // MUTATION DUAL-PLAYFIELD-SCROLL-POINTER-MODULO-OFFSET stimulus red: BPL2MOD (the stationary playfield's -2 compensation) changed from $FFFE to $0000; its step became 42 bytes, not the expected 40.
 // MUTATION VERTICAL-SCROLL-POINTER-STEP stimulus red: the per-redisplay pointer step changed from 40 bytes to 20; successive starts no longer matched the expected 0x60000/+40/+80/+120 sequence.
 // MUTATION MODULO-WIDTH-262144-PIXEL-LIMIT stimulus red: the positive-extreme modulo changed from $7FFE to $3FFE (half); the isolated modulo contribution became +16382 bytes, not the expected +32766.
+// MUTATION MODULO-ODD-PROBE-CONFIRMS-15-BIT-FIELD stimulus red: the odd probe changed from $7FFF to $7FFD; the isolated modulo contribution became +32764 bytes, not the expected +32766.
 // MUTATION INTERLACED-FIELD-PAIR-NTSC-400-LINES stimulus red: the even field's pointer changed from START+40 to START+80; every field-B line landed 80 bytes past its field-A counterpart, not the expected 40, offsets_ok failed.
 // MUTATION INTERLACED-FIELD-PAIR-PAL-512-LINES stimulus red: the even field's pointer changed from START+40 to START+80; every field-B line landed 80 bytes past its field-A counterpart, not the expected 40, offsets_ok failed.
 // MUTATION BPLEN-DMA-GATES-POINTER-ADVANCE stimulus red: the "off" harness's dmaena changed from 0 to 1; it produced 20 fetches, not the expected 0.
