@@ -88,16 +88,16 @@
 //
 // ch2-appb-legend.c1 reads the same p.287 legend sentence as
 // sol:7-appB-legend.c4 / opus:7-appB.c5 ("* = Address not writable by the
-// Copper") and is routed to this package. It names no address, so it is
-// not its own scored proposition -- same reasoning already applied to the
-// two legend ids it is a twin of, per SPECIFICATION.md. Its own routing
-// note says it grades row by row alongside the other two legend ids on the
-// *-marked, ecs=0/cdang=1 checks (T1 and PROP-2..PROP-8 below); it says the
-// ECS/unmarked side of the same legend sentence is a different package's
-// subject, so this id is not added to T2's unmarked-address citation of the
-// other two legend ids. No new assertion and no new mutation follow from
-// this: T1 and PROP-2..PROP-8 already establish, and already carry, a
-// stimulus mutation each.
+// Copper") and is routed to this package as a third twin. All three name no
+// address, so none is its own scored proposition. p.287's legend covers all
+// 32 *-marked rows of Appendix B ($000-$03E); T1 and PROP-2..PROP-8 below
+// probe only 8 of the 32, so citing the legend there would grade a
+// universal claim on one case of eight-of-thirty-two. All three ids are
+// withdrawn from T1 and PROP-2..PROP-8 and recorded below instead: the
+// whole band is graded on hrm/ch2-copper-move-sweep's APPBSTAR LEGEND line,
+// which sweeps all 32 * rows at ecs=0 with CDANG clear and set -- that line
+// now carries ch2-appb-legend.c1. sol:7-appB-legend.c4 and opus:7-appB.c5
+// carry no such whole-band line and stay recorded here.
 
 #include <cstdint>
 #include <iostream>
@@ -341,8 +341,7 @@ int main(int argc, char** argv) {
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, DMACONR),
                   "T1 OCS CDANG=1: Copper MOVE to DMACONR ($002) is blocked, "
                   "per Appendix B's \"*\" mark "
-                  "[claims: sol:7-appB-dmaconr.c5, opus:7-appB.c14, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
+                  "[claims: sol:7-appB-dmaconr.c5, opus:7-appB.c14, legend]");
 
     // ------------------------------------------------------------------
     // PROP-2 through PROP-8 -- independent-validation finding 3 (PROMOTE,
@@ -368,28 +367,23 @@ int main(int argc, char** argv) {
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, VPOSR),
                   "PROP-2 OCS CDANG=1: Copper MOVE to VPOSR ($004) is blocked, "
                   "per Appendix B's \"*\" mark "
-                  "[claims: sol:7-appB-vposr.c5, opus:7-appB.c16, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
+                  "[claims: sol:7-appB-vposr.c5, opus:7-appB.c16, legend]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, VHPOSR),
                   "PROP-3 OCS CDANG=1: Copper MOVE to VHPOSR ($006) is blocked, "
                   "per Appendix B's \"*\" mark "
-                  "[claims: sol:7-appB-vhposr.c5, opus:7-appB.c18, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
+                  "[claims: sol:7-appB-vhposr.c5, opus:7-appB.c18, legend]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, CLXDAT),
                   "PROP-4 OCS CDANG=1: Copper MOVE to CLXDAT ($00E) is blocked, "
                   "per Appendix B's \"*\" mark "
-                  "[claims: sol:7-appB-clxdat.c5, opus:7-appB.c20, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
+                  "[claims: sol:7-appB-clxdat.c5, opus:7-appB.c20, legend]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, INTENAR),
                   "PROP-5 OCS CDANG=1: Copper MOVE to INTENAR ($01C) is blocked, "
                   "per Appendix B's \"*\" mark "
-                  "[claims: sol:7-appB-intenar.c5, opus:7-appB.c22, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
+                  "[claims: sol:7-appB-intenar.c5, opus:7-appB.c22, legend]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, INTREQR),
                   "PROP-6 OCS CDANG=1: Copper MOVE to INTREQR ($01E) is blocked, "
                   "per Appendix B's \"*\" mark "
-                  "[claims: sol:7-appB-intreqr.c5, opus:7-appB.c24, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
+                  "[claims: sol:7-appB-intreqr.c5, opus:7-appB.c24, legend]");
     // VPOSW/VHPOSW get individual attention per the lead's note: another
     // package in this chapter measured these two ARE readable despite
     // their "W" column. That is a different proposition (readability);
@@ -398,14 +392,12 @@ int main(int argc, char** argv) {
                   "PROP-7 OCS CDANG=1: Copper MOVE to VPOSW ($02A) is blocked, "
                   "per Appendix B's \"*\" mark -- write-blocking only; VPOSW's "
                   "separately-measured readability is out of this package's scope "
-                  "[claims: sol:7-appB-vposw.c5, opus:7-appB.c26, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
+                  "[claims: sol:7-appB-vposw.c5, opus:7-appB.c26, legend]");
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, VHPOSW),
                   "PROP-8 OCS CDANG=1: Copper MOVE to VHPOSW ($02C) is blocked, "
                   "per Appendix B's \"*\" mark -- write-blocking only; VHPOSW's "
                   "separately-measured readability is out of this package's scope "
-                  "[claims: sol:7-appB-vhposw.c5, opus:7-appB.c28, legend "
-                  "sol:7-appB-legend.c4, opus:7-appB.c5, ch2-appb-legend.c1]");
+                  "[claims: sol:7-appB-vhposw.c5, opus:7-appB.c28, legend]");
 
     // ------------------------------------------------------------------
     // T2/T3 -- DMACON ($096): unmarked, so the Copper may write it, run at
@@ -461,6 +453,15 @@ int main(int argc, char** argv) {
     // Claims considered for this package and left unbound, with reasons.
     // Neither line touches passed/failed -- these are not assertions.
     // ------------------------------------------------------------------
+    checks.record("The three claim ids carrying this package's copy of the p.287 legend "
+        "sentence (\"* Address not writable by the Copper\") are withdrawn from T1 and "
+        "PROP-2 through PROP-8: that legend covers all 32 *-marked rows of Appendix B "
+        "($000-$03E), and this package's eight starred propositions probe only 8 of the 32, "
+        "so citing it there would grade a universal claim on one case of eight. Two of the "
+        "three remain graded above, jointly with the unmarked-address reading, on T2 "
+        "(graded: sol:7-appB-legend.c4, opus:7-appB.c5). The third is not cited on T2; it "
+        "instead reads the whole 32-row band, graded on hrm/ch2-copper-move-sweep's "
+        "APPBSTAR LEGEND line (graded: ch2-appb-legend.c1).");
     checks.record("The \"~\" (danger-bit-required) mark is not asserted by this package. Its "
         "legend claims (sol:7-appB-legend.c5, opus:7-appB.c6) exist in this chapter's corpus "
         "but are routed to \"covered by an existing package\": chapter 2's Copper packages "

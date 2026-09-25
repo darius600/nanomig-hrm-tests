@@ -18,10 +18,11 @@ A further claim is routed to this package: `ch2-appb-legend.c1`, page 287,
 quote `"    *    Address not writable by the Copper."` — the identical
 printed legend sentence already covered by `sol:7-appB-legend.c4` and
 `opus:7-appB.c5` below, read independently a third time. It joins the
-LEGEND entry as a third twin, on the same reasoning already recorded there:
-it does not name an address, so it is not its own scored proposition, and
-its content is realized jointly with each addressed proposition that
-already cites the legend.
+LEGEND entry as a third twin: it does not name an address, so it is not its
+own scored proposition here. Unlike the other two twins, `ch2-appb-legend.c1`
+is graded elsewhere: `hrm/ch2-copper-move-sweep`'s APPBSTAR LEGEND line
+sweeps all 32 of the legend's *-marked rows, while this package's own
+PROP-1 through PROP-8 probe only 8 of the 32 (see "LEGEND" below).
 
 ## Claim inventory (all 20)
 
@@ -66,11 +67,16 @@ crossreads passed)
 `opus:7-appB.c5`; identical quote, same page)
 
 This legend is not itself worded about any one address, so it is not made
-into its own scored assertion. Per the task sheet's instruction to "read the
-legend as a statement about each marked address, not as page furniture," its
-whole content is realized in PROP-1 through PROP-8 below: each of those
-propositions cites this legend jointly with its own marked row, because the
-row alone (a bare asterisk before an offset) has no meaning without it.
+into its own scored assertion. p.287's legend covers all 32 *-marked rows of
+Appendix B ($000-$03E), and this package's PROP-1 through PROP-8 probe only
+8 of the 32 -- citing the legend jointly on those eight lines would grade a
+universal claim on one case of eight-of-thirty-two. None of the three
+legend ids (`sol:7-appB-legend.c4`, `opus:7-appB.c5`, `ch2-appb-legend.c1`)
+is cited on PROP-1 through PROP-8 below; all three are recorded instead
+(see "Claims not assigned an assertion"). `ch2-appb-legend.c1` is graded on
+the whole band by `hrm/ch2-copper-move-sweep`'s APPBSTAR LEGEND line, which
+sweeps all 32 * rows at ecs=0 with CDANG clear and set; the other two ids
+carry no such whole-band line.
 
 ## PROP-1 through PROP-8 — eight addresses the Copper cannot write
 
@@ -204,10 +210,15 @@ lines are written in step 3.
 
 None outright unassigned. Three claims (`sol:7-appB-legend.c4`,
 `opus:7-appB.c5`, `ch2-appb-legend.c1`) are not made into their own scored
-proposition because none names an address — all three are cited jointly
-with every one of PROP-1 through PROP-8 instead, per the task sheet's own
-instruction on how to read the legend. All other 17 claims map onto exactly
-one of PROP-1 through PROP-12 as shown in the inventory table.
+proposition because none names an address, and none is cited on PROP-1
+through PROP-8 either: the legend covers all 32 *-marked rows of Appendix B
+and this package's eight starred propositions probe only 8 of the 32, so
+citing it there would grade a universal claim on one case of eight. All
+three are `record()`ed instead. `ch2-appb-legend.c1` is graded on the whole
+band by `hrm/ch2-copper-move-sweep`'s APPBSTAR LEGEND line; `sol:7-appB-legend.c4`
+and `opus:7-appB.c5` carry no such whole-band line and stay recorded. All
+other 17 claims map onto exactly one of PROP-1 through PROP-12 as shown in
+the inventory table.
 
 ## What this specification deliberately does not contain
 
