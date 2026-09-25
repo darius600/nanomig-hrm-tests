@@ -38,6 +38,55 @@
 //   prefix, and they resolve in the claim files that
 //   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
 //
+// EXTENSION (2026-09-25_unit-backlog). Nine further propositions were routed
+//   to this package, all restating -- from four different printed pages and
+//   two readers, at finer granularity -- the same pair of facts this
+//   package's own IDENTITY-MAPPING-SWEEP row N=0 and BIT-SIGNIFICANCE-
+//   ORDER's plane-1 case already measure numerically (combination 0 ->
+//   register 0; bitplane 1 alone -> register 1):
+//     3-colortable.c7 (sol, p.46) and 3-ct.c03 (opus, p.46), both quoting
+//       "COLOR00 is always reserved for the background color."
+//     3-code.c02 (opus, p.55), quoting "...low resolution bitplane with the
+//       background color ( COLOR00 ) by writing", restated "An all-zero
+//       bitplane displays the background colour, COLOR00."
+//     3-coding.c2 (sol, p.55), quoting "This code fills a low resolution
+//       bitplane with the background color ( COLOR00 ) by writing all
+//       \"0\"s into its memory area."
+//     3-code.f03 (opus, p.56, figure), Figure 3-8's right-hand rendered
+//       display labelled "Color 00 (background)" over the stippled area
+//       where both bitplanes hold 0.
+//     3-bpl.c02 (opus, p.42), quoting "determined by whether a single bit
+//       is on or off. If the bit is 0, the\npixel is one user-defined
+//       color; if the bit is 1, the pixel is another" -- the full quoted
+//       sentence states BOTH halves (bit 0 -> one user-defined colour, bit
+//       1 -> another), though the reader's own restatement names only the
+//       first.
+//     3-code.c03 (opus, p.55), quoting "want the background color and
+//       \"1\"s where you want the color in register 1.", restated "In a
+//       two-colour playfield a 0 bit shows the background colour and a 1
+//       bit shows the colour in register 1."
+//     3-coding.c3 (sol, p.55) and 3-coding.c4 (sol, p.55), both quoting the
+//       same sentence as 3-code.c03 above ("For a two-color playfield, you
+//       define a bitplane that has \"0\"s where you want the background
+//       color and \"1\"s where you want the color in register 1."), split
+//       by that reader into its two halves: c3 for the zero-bit/background
+//       half, c4 for the one-bit/register-1 half.
+//   None of these nine ids is a compressed spelling of an id either
+//   existing assertion already carries, so the build brief's one allowed
+//   addition to a frozen label does not apply here -- a new assertion is
+//   needed. Planned: TWO-COLOUR-CODE-SELECT below, testing the same two
+//   data points (bpldata=0 -> plfdata=0, bpldata=PLANE(1) -> plfdata=1)
+//   under its own label and its own mutation record, leaving IDENTITY-
+//   MAPPING-SWEEP and BIT-SIGNIFICANCE-ORDER's existing labels untouched.
+//   `classify.package` on these nine claims, in the spec-stage file, names
+//   ch3-colour-register-format and ch3-ddf-fetch-window -- neither of
+//   which is this package. That field is the classifier's own plan from
+//   Prompt 4, not today's routing (see hrm-testpipeline's ROUTING-BRIEF.md:
+//   "some were assigned to a package that exists but never took them").
+//   This task's routing sends all nine claims here; the full claims.jsonl's
+//   own routing.route/routing.how (read only after this commit, per the
+//   build brief's gate) is what this package treats as authoritative.
+//
 // COVERAGE CORRECTION (recorded for traceability): an earlier version of
 // this file declined 134 dual-playfield-flavoured claim ids as "already
 // covered by hrm/ch3-dual-playfield," reasoning from topic overlap rather
@@ -116,7 +165,10 @@
 // in full, inside an expect() label; 14 are declined (see DECLINED CLAIMS).
 // Verified by script: every one of the 272 ids in claims.jsonl is
 // classified exactly once, either asserted or declined, with zero overlap
-// and zero omissions.
+// and zero omissions. Plus nine further claims routed in the
+// 2026-09-25_unit-backlog extension (see EXTENSION above: 3-colortable.c7,
+// 3-ct.c03, 3-code.c02, 3-coding.c2, 3-code.f03, 3-bpl.c02, 3-code.c03,
+// 3-coding.c3, 3-coding.c4), covered by TWO-COLOUR-CODE-SELECT below.
 //
 //   COLOUR-INDIRECTION-MECHANISM (7 ids)          -- the general principle.
 //   BIT-SIGNIFICANCE-ORDER (7 ids, loop x5)        -- single-playfield MSB..LSB = bitplane 5..1.
