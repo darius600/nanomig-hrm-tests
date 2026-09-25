@@ -305,6 +305,17 @@
 //   one new ADKCON-SETCLR-CLR assertion (PASS). No pre-existing
 //   assertion's colour moved.
 //
+// RESULTS AFTER THE CH4-DMACON-BITS EXTENSION (WSL/Verilator 5.052,
+//   rebuilt and rerun 25.09.2026): 19 passed, 2 failed -- the identical 21
+//   graded lines, in the same order and with the same verdicts, as the
+//   15.09.2026 tally above (tools/check_labels_gained_only_ids.py: before
+//   21 graded, after 21, 21 kept with only id tokens changed, 0 new, 0
+//   problems). No new assertion: all eight ids (opus:APPA-dmacon.c18-c21,
+//   sol:CH4-appA-dmacon.c25-c28) were appended to AUDxEN-BIT-MAPS-TO-OWN-
+//   CHANNEL's own existing label, which already establishes, for all four
+//   bits via its walking-one sweep, the exact proposition these eight
+//   restate -- ids only, no other token on that line changed.
+//
 // MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
 //   actually run: rebuild with the named -CFLAGS -DMUT_X=1 -> run -> read
 //   the PASS/FAIL lines -> confirm only the named assertion changed
@@ -1196,7 +1207,12 @@ int main(int argc, char** argv) {
             "'AUD3EN Audio channel 3 DMA enable.'/'AUD2EN.../AUD1EN.../"
             "AUD0EN...' (appendix A p.278, 5-appA-p278.c22, "
             "5-appA-p278.c23, 5-appA-p278.c24, 5-appA-p278.c25, "
-            "A-dmacon.b03, A-dmacon.b02, A-dmacon.b01, A-dmacon.b00). "
+            "A-dmacon.b03, A-dmacon.b02, A-dmacon.b01, "
+            "opus:APPA-dmacon.c18, sol:CH4-appA-dmacon.c25, "
+            "opus:APPA-dmacon.c19, sol:CH4-appA-dmacon.c26, "
+            "opus:APPA-dmacon.c20, sol:CH4-appA-dmacon.c27, "
+            "opus:APPA-dmacon.c21, sol:CH4-appA-dmacon.c28, "
+            "A-dmacon.b00). "
             "measured" + detail + ".");
     }
 
