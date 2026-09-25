@@ -11,12 +11,12 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 44, 48, 67, 68, 69, 70, 71, 72, 90, 271 (claims.jsonl for
-//   ch3-dual-playfield, 98 records). A red result below means
+//   ch3-dual-playfield, 99 records). A red result below means
 //   denise_playfields.v disagrees with the manual, not that the assertion is
 //   wrong -- no assertion here was, or should be, adjusted to make the RTL
 //   pass.
 // Non-goals: `aga` and `pf2of` are held at their non-goal default (0)
-//   throughout -- no claim in this package's 98-record inventory names
+//   throughout -- no claim in this package's 99-record inventory names
 //   either one (AGA extensions and the undocumented OCS priority-offset
 //   behaviour some games rely on are out of scope here). `nplayfield` is
 //   never read: no claim in this inventory describes its semantics, and
@@ -90,7 +90,7 @@
 // mid-sentence, names "PLANE 0" as the plane with the lowest significance.
 // Table 3-10's three-bit mapping agrees with the first reading (planes 1,
 // 3, 5; no plane 0 belongs to playfield 1 at all). This is not resolved
-// here. No claim in this package's 98-record inventory asserts which plane
+// here. No claim in this package's 99-record inventory asserts which plane
 // supplies playfield 1's least-significant bit -- the extraction readers
 // captured the undisputed most-significant fact (3-dual.c23, quoting the
 // PLANE-5 sentence) but never split out a "PLANE 0 is playfield 1's LSB"
@@ -100,7 +100,7 @@
 // what denise_playfields.v actually does with planes 1 and 3 in isolation,
 // without asserting either reading as correct.
 //
-// CLAIM COVERAGE: 88 of the 98 records in claims.jsonl are cited below, in
+// CLAIM COVERAGE: 89 of the 99 records in claims.jsonl are cited below, in
 // full, inside an expect() label; 10 are declined (see DECLINED CLAIMS).
 // Ids restating the identical proposition under a different manual
 // wording, page or reader are grouped and cited together on the single
@@ -109,7 +109,7 @@
 // hrm/ch3-ham-control-field/ both document and use.
 //
 //   TWO-PLAYFIELDS-CAPACITY (6 ids)     -- two playfields, each up to 3 planes.
-//   COLOUR-REGISTER-RANGES (8 ids)      -- 0-7 / 8-15, disjoint sets.
+//   COLOUR-REGISTER-RANGES (9 ids)      -- 0-7 / 8-15, disjoint sets.
 //   CODE-ZERO-TRANSPARENT (8 ids)       -- code 0 is transparent, per playfield.
 //   PF2PRI-PRIORITY (22 ids)            -- BPLCON2 bit 6 decides front/back.
 //   TRANSPARENCY-FALLTHROUGH (6 ids)    -- transparent reveals what is behind.
@@ -118,15 +118,7 @@
 //   DBLPF-ACTIVATION (6 ids)            -- BPLCON0 bit 10 enables the mode.
 //   MSB-BIT-IDENTITY (4 ids)            -- the undisputed high bit, each side.
 //   PF2-LSB-BIT-IDENTITY (2 ids)        -- playfield 2's undisputed low bit.
-//   6+8+8+22+6+12+14+6+4+2 = 88.
-//
-//   3-dual.c07 (p.67) -- "...taken from different sets of color
-//   registers." restates COLOUR-REGISTER-RANGES's own proposition (the
-//   two playfields' colours come from different sets of colour
-//   registers) under an independent reader's citation of the identical
-//   sentence COLOUR-REGISTER-RANGES already quotes and tests above;
-//   folded into that group's own citation list rather than counted as an
-//   eleventh group.
+//   6+9+8+22+6+12+14+6+4+2 = 89.
 //
 // DECLINED CLAIMS (10 ids, not observable at this module's ports):
 //   3-dual-mode.c2 (p.67) -- "You can also move the two playfields
@@ -379,6 +371,10 @@ int main(int argc, char** argv) {
     // =========================================================================
     // COLOUR-REGISTER-RANGES (p.44/67/72) -- playfield 1 stays inside
     // registers 0-7, playfield 2 inside 8-15: separate, disjoint sets.
+    // 3-dual.c07 (p.67) is a second reader's independent citation of the
+    // identical page-67 sentence already quoted and tested here -- its
+    // twin is 3-dual-mode.c6, already in this assertion's own citation
+    // list below. Added to that list; not a new assertion.
     // =========================================================================
     {
         Harness h;
@@ -400,8 +396,8 @@ int main(int argc, char** argv) {
             "taken from different sets of color registers' (p.67), 'color "
             "registers 0-7...used by playfield 1...registers 8 through 15 "
             "are used by playfield 2' (p.72). 3-dual.c3, 3-dual-mode.c10, "
-            "3-dual-mode.c11, 3-dual-mode.c6, 3-dual.c14, 3-dual.c15, "
-            "3-dual.c47, 3-dual.c48.");
+            "3-dual-mode.c11, 3-dual-mode.c6, 3-dual.c07, 3-dual.c14, "
+            "3-dual.c15, 3-dual.c47, 3-dual.c48.");
     }
 
     // =========================================================================
@@ -682,7 +678,7 @@ int main(int argc, char** argv) {
             "paragraph and in Table 3-10, to be formed from planes 1, 3 "
             "and 5 only; there is no 'plane 0' in that grouping. Table "
             "3-10's three-bit mapping agrees with the 1/3/5 reading, not "
-            "with 'PLANE 0'. No claim in this package's 98-record "
+            "with 'PLANE 0'. No claim in this package's 99-record "
             "inventory names a specific plane as playfield 1's "
             "least-significant bit -- only the undisputed most-"
             "significant fact (plane 5, MSB-BIT-IDENTITY) was extracted "
