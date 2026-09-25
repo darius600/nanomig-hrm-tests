@@ -554,13 +554,36 @@ int main(int argc, char** argv) {
     // overwrites the first, so the case fails for the ordinary reason and tells
     // you nothing about aliasing.
     //
-    // ch2-appb-legend.c6 ("W=write-only; R=read-only," p.287): RM1 writes to
-    // the W-marked row $080/$082 and RM3 to $084/$086, and each already shows
-    // the write takes effect (bit 17 reaches address_out after the jump) -
-    // that is the whole of this claim's testable part here (the write
-    // half). The read-only half of the same legend entry - that these rows
-    // cannot be read - is a different id, not routed to this package, and
-    // stays off both labels.
+    // ch2-appb-legend.c6 ("W=write-only; R=read-only," p.287) and its older
+    // twin ch2-appb-legend.c3 ("+ ... Address register pair. Must be an even
+    // address pointing to chip memory.", p.287) are both legend entries: each
+    // defines its mark ONCE for every row of Appendix B that carries it,
+    // across all chips - not the four Copper location-register rows alone.
+    // RM1 and RM3 below show the write taking effect, and landing even, for
+    // four of those rows ($080-$086); no boundary in this package can sweep
+    // every W-marked row or every +-marked row of Appendix B (the legend
+    // covers rows in modules this fixture never touches), so neither id
+    // establishes its claim whole here. Both are withdrawn from the graded
+    // labels and recorded below; each row's own appendix-B-table claim
+    // (ch2-appb-table.c15/c16/c21 for COP1LCH/COP1LCL, c25/c26/c31 for
+    // COP2LCH/COP2LCL - already on RM1/RM3 below) carries that row's own W
+    // and + reading and is unaffected.
+    checks.record("ch2-appb-legend.c6 (p.287 legend, \"W=write-only; "
+        "R=read-only,\"): the W mark is defined once for every W-marked row "
+        "of Appendix B, across all chips. RM1 and RM3 below exercise only "
+        "four of those rows (COP1LCH $080, COP1LCL $082, COP2LCH $084, "
+        "COP2LCL $086); no boundary in this package sweeps every W row, so "
+        "this package does not establish the claim whole. Each row's own "
+        "appendix-B-table claim carries that row (graded: "
+        "ch2-appb-table.c16, ch2-appb-table.c26).");
+    checks.record("ch2-appb-legend.c3 (p.287 legend, \"+ ... Address "
+        "register pair. Must be an even address pointing to chip memory.\"): "
+        "the + mark is likewise defined once for every +-marked row of "
+        "Appendix B. RM1 below exercises only one +-marked pair (COP1LCH "
+        "$080 / COP1LCL $082); no boundary in this package sweeps every + "
+        "row, so this package does not establish the claim whole. Each "
+        "row's own appendix-B-table claim carries that row (graded: "
+        "ch2-appb-table.c15, ch2-appb-table.c21).");
     {
         // Bit 17 sits in the high half, so the target is only reachable when
         // the high register really is the one that was written.
@@ -575,7 +598,7 @@ int main(int argc, char** argv) {
             "(appendix A p273 register rows) "
             "[claims: COP2-cop1lch.c1, COP2-cop1lch.c2, COP2-cop1lch.c4, "
             "COP2-cop1lcl.c1, COP2-cop1lcl.c2, COP2-cop1lcl.c4, COP2-cop-locations.c1, "
-            "COP2-location-registers.c7, ch2-appa-location-registers.c1, ch2-appa-location-registers.c2, ch2-appb-legend.c3, ch2-appb-legend.c6, ch2-appb-table.c14, ch2-appb-table.c15, ch2-appb-table.c16, ch2-appb-table.c21, ch2-location-registers.c12, ch2-location-registers.c6]");
+            "COP2-location-registers.c7, ch2-appa-location-registers.c1, ch2-appa-location-registers.c2, ch2-appb-table.c14, ch2-appb-table.c15, ch2-appb-table.c16, ch2-appb-table.c21, ch2-location-registers.c12, ch2-location-registers.c6]");
         checks.expect(!lands_with(COP1LCL, COP1LCH, COPJMP1),
             "RM2 the same two addresses swapped does NOT - $080 and $082 are not "
             "interchangeable (p273). Says nothing about addresses outside this pair "
@@ -586,7 +609,7 @@ int main(int argc, char** argv) {
             "pointer (appendix A p273) "
             "[claims: COP2-cop2lch.c1, COP2-cop2lch.c2, COP2-cop2lch.c4, "
             "COP2-cop2lcl.c1, COP2-cop2lcl.c2, COP2-cop2lcl.c4, COP2-cop-locations.c1, "
-            "COP2-location-registers.c7, ch2-appa-location-registers.c10, ch2-appa-location-registers.c11, ch2-appb-legend.c6, ch2-appb-table.c24, ch2-appb-table.c25, ch2-appb-table.c26, ch2-appb-table.c31]");
+            "COP2-location-registers.c7, ch2-appa-location-registers.c10, ch2-appa-location-registers.c11, ch2-appb-table.c24, ch2-appb-table.c25, ch2-appb-table.c26, ch2-appb-table.c31]");
         checks.expect(!lands_with(COP2LCL, COP2LCH, COPJMP2),
             "RM4 the second pair swapped does NOT (p273)");
 
