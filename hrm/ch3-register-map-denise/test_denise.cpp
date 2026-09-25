@@ -265,13 +265,13 @@
 // MUTATION BPLCON0-ADDR stimulus red: the BPL1DAT write's data was changed from $FFFF (bitplane held high) to $0000, so the window pixel never differs from the border and the inside/outside comparison found no difference.
 // MUTATION BPLCON2-ADDR stimulus red: the second measurement's BPLCON2 write was changed from $0040 (PF2PRI=1) to $0000, the same value as the first measurement's, so PF2PRI was never actually toggled and the two displayed pixels came back identical.
 // MUTATION BPLCON3-ADDR stimulus red: the second border sample's BPLCON3 write was changed from $0020 (BRDRBLNK=1) to $0000, so BRDRBLNK was never actually set and the border never went black.
-// MUTATION BPLCON0-WO response red: the post-write read was forced to echo back the exact pattern written ($BEEF), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_BPLCON0_WO back to 0) and rebuilt to confirm the baseline was restored.
-// MUTATION BPLCON1-WO response red: the post-write read was forced to echo back the exact pattern written ($1357), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_BPLCON1_WO back to 0) and rebuilt to confirm the baseline was restored.
-// MUTATION BPLCON2-WO response red: the post-write read was forced to echo back the exact pattern written ($DEAD), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_BPLCON2_WO back to 0) and rebuilt to confirm the baseline was restored.
-// MUTATION BPLCON3-WO response red: the post-write read was forced to echo back the exact pattern written ($C0DE), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_BPLCON3_WO back to 0) and rebuilt to confirm the baseline was restored.
-// MUTATION COLOR-GENERAL-WO response red: the post-write read was forced to echo back the exact pattern written ($357), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_COLOR_GENERAL_WO back to 0) and rebuilt to confirm the baseline was restored.
+// MUTATION BPLCON0-WO stimulus red: the written pattern changed from $BEEF to $0000 -- this register's own idle-read value in this fixture (denise.v's data_out mux is col_out|deniseid_out|rgb_out, and none of the three claims $100: col_out only answers CLXDAT, deniseid_out only DENISEID, rgb_out is held 0 by aga=0) -- so the write-only predicate (r != pattern) no longer had a question to ask -> FAIL ("71 passed, 1 failed"), only BPLCON0-WO newly red. Reverted (MUT_BPLCON0_WO back to 0) and rebuilt: 72 passed, 0 failed restored.
+// MUTATION BPLCON1-WO stimulus red: the written pattern changed from $1357 to $0000, this register's own idle-read value in this fixture (same data_out reasoning as BPLCON0-WO, at $102) -> FAIL ("71 passed, 1 failed"), only BPLCON1-WO newly red. Reverted (MUT_BPLCON1_WO back to 0) and rebuilt: 72 passed, 0 failed restored.
+// MUTATION BPLCON2-WO stimulus red: the written pattern changed from $DEAD to $0000, this register's own idle-read value in this fixture (same data_out reasoning as BPLCON0-WO, at $104) -> FAIL ("71 passed, 1 failed"), only BPLCON2-WO newly red. Reverted (MUT_BPLCON2_WO back to 0) and rebuilt: 72 passed, 0 failed restored.
+// MUTATION BPLCON3-WO stimulus red: the written pattern changed from $C0DE to $0000, this register's own idle-read value in this fixture (same data_out reasoning as BPLCON0-WO, at $106) -> FAIL ("71 passed, 1 failed"), only BPLCON3-WO newly red. Reverted (MUT_BPLCON3_WO back to 0) and rebuilt: 72 passed, 0 failed restored.
+// MUTATION COLOR-GENERAL-WO stimulus red: the written pattern changed from $357 to $0000, this register's own idle-read value in this fixture (same data_out reasoning as BPLCON0-WO, at COLOR00/$180) -> FAIL ("71 passed, 1 failed"), only COLOR-GENERAL-WO newly red. Reverted (MUT_COLOR_GENERAL_WO back to 0) and rebuilt: 72 passed, 0 failed restored.
 // MUTATION COLOR-ADDR stimulus red: index 5's second COLOR write was redirected to COLOR06's address ($18A) instead of COLOR05's ($188), so COLOR05's own reading never changed between the first and second write.
-// MUTATION COLOR-WO response red: index 5's post-write read was forced to echo back the exact pattern written ($405), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_COLOR_WO back to 0) and rebuilt to confirm the baseline was restored.
+// MUTATION COLOR-WO stimulus red: index 5's written pattern changed from $405 to $0000, COLOR05's own idle-read value in this fixture (same data_out reasoning as BPLCON0-WO) -> FAIL ("71 passed, 1 failed"), only COLOR-WO 05 newly red, every other index unchanged. Reverted (MUT_COLOR_WO back to 0) and rebuilt: 72 passed, 0 failed restored.
 //
 // Every mutation record listed above was actually built and run (see the commit history
 // for this package for the per-mutation pass/fail counts) with the flag
@@ -676,13 +676,14 @@ int main(int argc, char** argv) {
     // =========================================================================
     {
         Harness h;
-        h.write_reg(BPLCON1_ADDR, 0x1357);
-        uint16_t r = h.read_reg(BPLCON1_ADDR);
+        uint16_t pattern = 0x1357;
 #if MUT_BPLCON1_WO
-        r = 0x1357;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
+        pattern = 0x0000;  // mutation: the written pattern becomes the register's own idle-read value ($0000 -- denise.v's data_out mux drives 0 for any address CLXDAT/DENISEID/rdram do not claim), so the write-only predicate (r != pattern) no longer poses a question
 #endif
+        h.write_reg(BPLCON1_ADDR, pattern);
+        uint16_t r = h.read_reg(BPLCON1_ADDR);
         checks.expect(
-            r != 0x1357,
+            r != pattern,
             "BPLCON1-WO: a distinct non-zero pattern ($1357) written to "
             "$102 does not read back that same pattern at that same "
             "address (write-only) - 'BPLCON1 102 W D Bitplane control "
@@ -788,13 +789,14 @@ int main(int argc, char** argv) {
     // =========================================================================
     {
         Harness h;
-        h.write_reg(BPLCON0_ADDR, 0xBEEF);
-        uint16_t r = h.read_reg(BPLCON0_ADDR);
+        uint16_t pattern = 0xBEEF;
 #if MUT_BPLCON0_WO
-        r = 0xBEEF;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
+        pattern = 0x0000;  // mutation: written pattern set to the register's own idle-read value ($0000), so the write-only predicate (r != pattern) no longer poses a question
 #endif
+        h.write_reg(BPLCON0_ADDR, pattern);
+        uint16_t r = h.read_reg(BPLCON0_ADDR);
         checks.expect(
-            r != 0xBEEF,
+            r != pattern,
             "BPLCON0-WO: a distinct non-zero pattern ($BEEF) written to "
             "$100 does not read back that same pattern at that same "
             "address (write-only) - 'BPLCON0 100 W A D(E) Bitplane control "
@@ -810,13 +812,14 @@ int main(int argc, char** argv) {
     // =========================================================================
     {
         Harness h;
-        h.write_reg(BPLCON2_ADDR, 0xDEAD);
-        uint16_t r = h.read_reg(BPLCON2_ADDR);
+        uint16_t pattern = 0xDEAD;
 #if MUT_BPLCON2_WO
-        r = 0xDEAD;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
+        pattern = 0x0000;  // mutation: written pattern set to the register's own idle-read value ($0000), so the write-only predicate (r != pattern) no longer poses a question
 #endif
+        h.write_reg(BPLCON2_ADDR, pattern);
+        uint16_t r = h.read_reg(BPLCON2_ADDR);
         checks.expect(
-            r != 0xDEAD,
+            r != pattern,
             "BPLCON2-WO: a distinct non-zero pattern ($DEAD) written to "
             "$104 does not read back that same pattern at that same "
             "address (write-only) - 'BPLCON2 104 W D(E) Bitplane control "
@@ -834,13 +837,14 @@ int main(int argc, char** argv) {
     // =========================================================================
     {
         Harness h;
-        h.write_reg(BPLCON3_ADDR, 0xC0DE);
-        uint16_t r = h.read_reg(BPLCON3_ADDR);
+        uint16_t pattern = 0xC0DE;
 #if MUT_BPLCON3_WO
-        r = 0xC0DE;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
+        pattern = 0x0000;  // mutation: written pattern set to the register's own idle-read value ($0000), so the write-only predicate (r != pattern) no longer poses a question
 #endif
+        h.write_reg(BPLCON3_ADDR, pattern);
+        uint16_t r = h.read_reg(BPLCON3_ADDR);
         checks.expect(
-            r != 0xC0DE,
+            r != pattern,
             "BPLCON3-WO: a distinct non-zero pattern ($C0DE) written to "
             "$106 does not read back that same pattern at that same "
             "address (write-only) - 'BPLCON3 106 W D(E) Bitplane control "
@@ -857,13 +861,14 @@ int main(int argc, char** argv) {
     // =========================================================================
     {
         Harness h;
-        h.write_reg(COLOR_BASE + 0, 0x357);
-        uint16_t r = h.read_reg(COLOR_BASE + 0);
+        uint16_t pattern = 0x357;
 #if MUT_COLOR_GENERAL_WO
-        r = 0x357;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
+        pattern = 0x0000;  // mutation: written pattern set to the register's own idle-read value ($0000), so the write-only predicate (r != pattern) no longer poses a question
 #endif
+        h.write_reg(COLOR_BASE + 0, pattern);
+        uint16_t r = h.read_reg(COLOR_BASE + 0);
         checks.expect(
-            r != 0x357,
+            r != pattern,
             "COLOR-GENERAL-WO: a distinct pattern ($357) written to COLOR00 "
             "($180) does not read back that same pattern at that same "
             "address, representative of the block-level statement that the "
@@ -974,11 +979,11 @@ int main(int argc, char** argv) {
         for (const auto& wc : cases) {
             int i = wc.idx;
             uint16_t pattern = static_cast<uint16_t>(0x400 + i);
+#if MUT_COLOR_WO
+            if (i == 5) pattern = 0x0000;  // mutation: index 5's written pattern set to the register's own idle-read value ($0000), so the write-only predicate (r != pattern) no longer poses a question
+#endif
             h.write_reg(static_cast<uint16_t>(COLOR_BASE + i), pattern);
             uint16_t r = h.read_reg(static_cast<uint16_t>(COLOR_BASE + i));
-#if MUT_COLOR_WO
-            if (i == 5) r = pattern;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
-#endif
 
             char idxbuf[4];
             std::snprintf(idxbuf, sizeof(idxbuf), "%02d", i);
