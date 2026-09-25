@@ -53,6 +53,44 @@
 //     about historical deployment, not a hardware behaviour with any signal
 //     to name - not asserted, and not constructible.
 //
+// PROPOSITIONS ROUTED 2026-09-25 (work/2026-09-25_unit-backlog), spec-stage
+// only -- quote, restatement and page, RTL not opened for these yet:
+//   ch6-blockdiag.c11 (p.198) quote "Not shown on this diagram is the logic
+//     for zero detection, which" -- restated: the logic for zero detection
+//     is not shown on Figure 6-13.
+//   6-blitter-done-flag.c4 (p.186) quote "A blitter done flag, also called
+//     the blitter busy flag, is provided as" -- restated: the blitter-done
+//     flag is also called the blitter-busy flag.
+//   6-blitter-done-flag.c7 (p.186) quote "access because of, for instance,
+//     display fetches, this bit may not" -- restated: on pre-Fat-Agnus
+//     chips, a just-started blit that has not received memory access may
+//     not yet assert busy; p.187 states Fat Agnus fixed this
+//     generation-dependent behavior.
+//   ch6-done.c4 (p.186) quote "A blitter done flag, also called the blitter
+//     busy flag, is provided as" -- restated: the blitter done flag is also
+//     called the blitter busy flag.
+//   ch6-done.c7 (p.186) quote "DMAF_BLTDONE (bit 14) in DMACONR. This flag
+//     is set when a blit is in" -- restated: the blitter done flag is set
+//     when a blit is in progress.
+//   6-blitter-done-flag.c13 (p.187) quote "when the blitter gets its first
+//     DMA cycle. However, not all machines" -- restated: on pre-Fat-Agnus
+//     chips, the busy bit becomes set when the blitter receives its first
+//     DMA cycle.
+//   ch6-done.c14 (p.187) quote "when the blitter gets its first DMA cycle.
+//     However, not all machines" -- restated: before the Fat Agnus the
+//     blitter busy bit was set when the blitter got its first DMA cycle.
+//   ch6-done.c15 (p.187) quote "when the blitter gets its first DMA cycle.
+//     However, not all machines" -- restated: not all machines use the
+//     newer chips in which the busy bit is fixed.
+// These eight are the same three groups the CLAIM COVERAGE note above
+// already names by id (blockdiag.c11; the pre-Fat-Agnus trio c7/c13/c14;
+// c15) plus the nomenclature pair (6-blitter-done-flag.c4/ch6-done.c4) and
+// the in-progress restatement (ch6-done.c7) that the BUSY section's comment
+// below discusses but had not put in any printed line. Grading vs recording
+// each is decided after <package>.jsonl and the RTL are opened, per Prompt
+// 7's order of work; see the RECORDED lines and BUSY-MIDBLIT's label below
+// for the disposition actually reached.
+//
 // FIXTURE NOTE FOR THE NEXT NINE agnus_blitter PACKAGES.
 //   The starting harness salvaged into scratchpad/salvaged-harness/diag.cpp had
 //   correct busy/int3/we timing but never actually delivered data: every
