@@ -1146,9 +1146,10 @@ int main(int argc, char** argv) {
         // preloaded to a DIFFERENT value, 0xFF00, as the "wrong-order"
         // reference: if fill operated on raw C instead of the combined
         // (=A) result, the fill computation below would use 0xFF00, not
-        // 0x00FF. Exclusive fill, fci=0 (guaranteed for a first word
-        // regardless of BLTCON1 - see agnus_blitter.v:464, first_word_del
-        // has no reset and starts false).
+        // 0x00FF. Exclusive fill, fci=0 (this single word is a row's first
+        // word, so fci tracks BLTCON1 bit 2 directly - see
+        // agnus_blitter.v:464, `fci = first_word_del ? bltcon1[2] : fcy` -
+        // and the write below leaves that bit clear).
         // carry[j] = XOR-prefix of in's bits starting at fci=0:
         //   in=0x00FF (bits0-7 set) -> carry = 0x0055
         //   in=0xFF00 (bits8-15 set, the wrong-order reference) -> 0x5500
@@ -1185,16 +1186,15 @@ int main(int argc, char** argv) {
     // ---------------- FILL-BEFORE-ZERO-FLAG (p.200) ----------------
     {
         // LF=0 (minterm output is always 0, for every word, regardless of
-        // any input). A two-word blit so that word 1's fill computation
-        // genuinely sees fci=BLTCON1[2] (agnus_blitter.v:464 -
-        // first_word_del is only set true AFTER word 0's next_word has
-        // registered it, so word 0 itself always sees fci=fcy=0
-        // regardless of programming; word 1 is the first word that can
-        // observe a programmed fci=1). efe=1, fci-bit=1: exclusive fill of
-        // an all-zero word with fci=1 gives carry=0xFFFF (nonzero) for
-        // that word, clearing zero - even though the MINTERM output was
-        // zero throughout. Control: same LF=0, but no fill (bypass) -
-        // fill_out=minterm_out=0 always, zero must stay set.
+        // any input). A two-word (one-row) blit: word 0 is the row's
+        // first word, so its fci tracks BLTCON1 bit 2 directly
+        // (agnus_blitter.v:464, `fci = first_word_del ? bltcon1[2] : fcy`
+        // - FILL-CARRY-IN-GATED-BY-WORD-POSITION below measures this).
+        // efe=1, fci-bit=1: exclusive fill of an all-zero word with fci=1
+        // gives carry=0xFFFF (nonzero) starting at word 0 and carried
+        // forward through word 1, clearing zero - even though the MINTERM
+        // output was zero throughout. Control: same LF=0, but no fill
+        // (bypass) - fill_out=minterm_out=0 always, zero must stay set.
         bool clears;
         {
             // BLTCON1 carries efe=1 (bit4) and fci-bit=1 (bit2).
@@ -1246,8 +1246,9 @@ int main(int argc, char** argv) {
         bool done = h.run_until_done(200) >= 0;
         h.settle();
 
-        // Inclusive fill (carry | in), fci=0 for word0 (first_word_del
-        // guaranteed false): word0 in=0x0000 -> carry stays 0 -> out=0.
+        // Inclusive fill (carry | in), fci=0 for word0 (BLTCON1 bit 2 is
+        // left clear by the write below, so fci=0 whether or not word0 is
+        // a row's first word): word0 in=0x0000 -> carry stays 0 -> out=0.
         // word1 in=0x0001 -> carry[0]=0^1=1, carry[1..15]=1 (unchanged
         // thereafter) -> carry=0xFFFF; out=carry|in=0xFFFF. word2 in=0x0000
         // -> carry stays 0xFFFF (unchanged by zero bits); out=0xFFFF|0=0xFFFF.
@@ -1672,10 +1673,12 @@ int main(int argc, char** argv) {
         // is numerically distinct from "fill of any single raw channel" -
         // all four candidates computed below are pairwise different, so the
         // stored word can only match ONE of them. Single word (width=1,
-        // height=1): first_word_del stays false for this, its only word, so
-        // fci=fcy=0 is guaranteed regardless of BLTCON1 programming
-        // (agnus_blitter.v:464) - the same fci=0 baseline COMBINE-BEFORE-FILL
-        // above already relies on, reused here for the same reason.
+        // height=1): this word is a row's first word, so fci tracks BLTCON1
+        // bit 2 directly (agnus_blitter.v:464, `fci = first_word_del ?
+        // bltcon1[2] : fcy`; FILL-CARRY-IN-GATED-BY-WORD-POSITION below
+        // measures this). The write below leaves that bit clear, so fci=0
+        // by that explicit setting - the same fci=0 baseline COMBINE-
+        // BEFORE-FILL above relies on the same way.
         Harness h;
         h.write_reg(BLTAFWM, 0xFFFF);
         h.write_reg(BLTALWM, 0xFFFF);
