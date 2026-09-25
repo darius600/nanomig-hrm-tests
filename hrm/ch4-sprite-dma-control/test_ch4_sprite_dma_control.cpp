@@ -486,11 +486,21 @@
 // 2 planned as record(). No RTL has been opened for this extension yet --
 // the SPR1/SPR7 register addresses above come from Appendix A/B's own
 // printed table (p.291-292), not from agnus.v or agnus_spritedma.v.
+//
+// RESOLVED (after agnus.v/agnus_bitplanedma.v/agnus_spritedma.v were
+// opened, see the IMPLEMENTATION section before main() and the assertions
+// themselves): Group 2 IS observable at this boundary and is asserted, not
+// recorded -- SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND. Final
+// disposition of all twelve: 4 ids asserted on SPREN-GATES-EVERY-SPRITE-
+// CHANNEL, 6 asserted on SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-
+// DEMAND, 2 recorded (APPC-pos.c5, CH4-appC-position.c8).
 // ============================================================================
 
 #include <cstdint>
 #include <iostream>
+#include <set>
 #include <string>
+#include <vector>
 
 #include <verilated.h>
 #include "Vagnus.h"
@@ -506,6 +516,33 @@ constexpr uint16_t SET_CLR = 0x8000;  // bit 15
 constexpr uint16_t SPREN   = 1u << 5;
 constexpr uint16_t BPLEN   = 1u << 8;
 constexpr uint16_t DMAEN   = 1u << 9;
+
+// ---- EXTENSION 25.09.2026 -- addresses this section's own assertions need,
+// confirmed against agnus.v/agnus_bitplanedma.v/agnus_spritedma.v after the
+// specification above was committed (see the EXTENSION comment block) ----
+//
+// DIWSTRT/DIWSTOP/DDFSTRT/DDFSTOP/BPLCON0: same custom-register addresses
+// hrm/ch7-dmacon-register-bits's own Harness already uses (agnus.v's own
+// localparams DIWSTRT/DIWSTOP at agnus.v:105-106; DDFSTRT/DDFSTOP/BPLCON0 are
+// agnus_bitplanedma.v's own DDFSTRT_REG/DDFSTOP_REG/BPLCON0_REG, 0x092/
+// 0x094/0x100).
+constexpr uint16_t DIWSTRT_ADDR = 0x08E;
+constexpr uint16_t DIWSTOP_ADDR = 0x090;
+constexpr uint16_t DDFSTRT_ADDR = 0x092;
+constexpr uint16_t DDFSTOP_ADDR = 0x094;
+constexpr uint16_t BPLCON0_ADDR = 0x100;
+
+// Sprite N's own PTH/PTL/POS/CTL addresses, from Appendix A/B's own printed
+// register table (p.291-292: SPR0PTH=$120, SPR1PTH=$124, ..., SPR7PTH=$13C,
+// stride 4; SPR0POS=$140, SPR1POS=$148, ..., SPR7POS=$178, stride 8; CTL is
+// POS+2) - confirmed against agnus_spritedma.v's own
+// SPRPTBASE_REG=9'h120/SPRPOSCTLBASE_REG=9'h140 localparams, which use the
+// same base and the same per-sprite indexing (reg_address_in[4:2] selects
+// the pointer bank, reg_address_in[5:3] the position/control bank).
+constexpr uint16_t SprPthAddr(int n) { return static_cast<uint16_t>(0x120 + 4 * n); }
+constexpr uint16_t SprPtlAddr(int n) { return static_cast<uint16_t>(0x122 + 4 * n); }
+constexpr uint16_t SprPosAddr(int n) { return static_cast<uint16_t>(0x140 + 8 * n); }
+constexpr uint16_t SprCtlAddr(int n) { return static_cast<uint16_t>(0x142 + 8 * n); }
 
 // Harness: copied from hrm/ch7-dmacon-register-bits's own Harness class unchanged
 // (same fixture, same arbitrated register bus, same reason for the
@@ -607,13 +644,36 @@ public:
         dut->eval();
         last_dbr = dut->dbr;
         last_data_out = dut->data_out;
+        last_refresh = dut->refresh;
+        last_sol = dut->sol;
+        last_hblank = dut->hblank;
+        last_reg_address_out = static_cast<uint16_t>(dut->reg_address_out);
         return pre_dbr;
+    }
+
+    // EXTENSION 25.09.2026 -- copied from hrm/ch7-dmacon-register-bits's own
+    // Harness (same fixture, same `sol` port): waits for the next
+    // start-of-line pulse.
+    bool sync_to_line_boundary(int max_ticks = 2000) {
+        for (int i = 0; i < max_ticks; ++i) {
+            tick();
+            if (last_sol) return true;
+        }
+        return false;
     }
 
     bool last_dbr = false;
     uint16_t last_data_out = 0;
     bool write_ok = false;
     bool read_ok = false;
+    // EXTENSION 25.09.2026 -- observation-only additions, read by this
+    // section's own assertions; every existing call site above is
+    // untouched, and last_dbr/last_data_out/write_ok/read_ok keep exactly
+    // the meaning the first three assertions already depend on.
+    bool last_refresh = false;
+    bool last_sol = false;
+    bool last_hblank = false;
+    uint16_t last_reg_address_out = 0;
 
     Vagnus* dut;
 
@@ -627,9 +687,84 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    // EXTENSION 25.09.2026 -- Prompt 7's fixed record() form, for a routed
+    // claim this section declines rather than grades.
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
+
+// EXTENSION 25.09.2026 -- helpers this section's own assertions share.
+//
+// Arms sprite `n`: a safe pointer (mirrors hrm/ch7-dmacon-register-bits's
+// own start_sprite0 exactly, just at sprite n's own PTH/PTL address) and
+// VSTART/VSTOP written into SPRxPOS[15:8]/SPRxCTL[15:8] - the 8-bit,
+// non-ECS form both readers' own restatements describe (this Harness's
+// `ecs` input is held 0 throughout, as it is in every already-committed
+// sibling package's own Harness).
+void arm_sprite(Harness& h, int n, uint8_t vstart, uint8_t vstop) {
+    h.write_reg(SprPthAddr(n), 0x0000);
+    h.write_reg(SprPtlAddr(n), 0x2000);
+    h.write_reg(SprPosAddr(n), static_cast<uint16_t>(vstart) << 8);
+    h.write_reg(SprCtlAddr(n), static_cast<uint16_t>(vstop) << 8);
+}
+
+// Pushes the bitplane data-fetch window to the hardware limits
+// (agnus_bitplanedma.v's own hard_start/hard_stop, hpos word $18/$D8 -
+// $18 is also exactly where agnus_spritedma.v's own sprite-fetch region
+// begins) and arms six bitplanes (the heaviest non-AGA fetch demand this
+// harness's own `aga=0` allows) - the widest display fetch this fixture can
+// produce, matching the manual's own "extra wide display" wording. DIWSTRT/
+// DIWSTOP are hrm/ch7-dmacon-register-bits's own already-proven-live values
+// (its BPLEN-GATES-BITPLANE-DMA assertion).
+void widen_bitplane_into_sprite_window(Harness& h) {
+    h.write_reg(DIWSTRT_ADDR, 0x2C81);
+    h.write_reg(DIWSTOP_ADDR, 0x2CC1);
+    h.write_reg(DDFSTRT_ADDR, 0x0018);
+    h.write_reg(DDFSTOP_ADDR, 0x00D8);
+    h.write_reg(BPLCON0_ADDR, 0x6000);  // BPU=6 (data_in[14:12]=110), aga=0
+}
+
+// One granted, non-refresh dma cycle whose reg_address_out falls in the
+// sprite engine's own 8-bit range (agnus_spritedma.v: {SPRPOSCTLBASE_REG
+// [8:6]=3'b101, sprite[2:0], type[1:0]}, i.e. $A0-$BF - never produced by
+// any other engine on this fixture, confirmed against every other engine's
+// own *_REG localparam in agnus.v/agnus_bitplanedma.v/agnus_copper.v/
+// agnus_blitter.v/agnus_diskdma.v, none of which fall in $A0-$BF).
+struct SpriteFetch {
+    int sprite;   // 0-7
+    int type;     // 0=POS 1=CTL 2=DATA 3=DATB (agnus_spritedma.v's own encoding)
+    bool hblank;  // agnus.v's own `hblank` output, sampled the same tick
+};
+
+std::vector<SpriteFetch> collect_sprite_fetches_over_lines(Harness& h, int n_lines,
+                                                            int max_ticks_per_line = 1000) {
+    std::vector<SpriteFetch> out;
+    for (int line = 0; line < n_lines; ++line) {
+        for (int t = 0; t < max_ticks_per_line; ++t) {
+            h.tick();
+            if (h.last_sol) break;
+            if (h.last_dbr && !h.last_refresh) {
+                uint16_t a = h.last_reg_address_out;
+                if ((a & 0xE0) == 0xA0) {
+                    out.push_back(SpriteFetch{(a >> 2) & 0x7, a & 0x3, h.last_hblank});
+                }
+            }
+        }
+    }
+    return out;
+}
+
+// Number of DISTINCT sprite indices (0-7) with at least one fetch of the
+// given type(s) in `fetches`. type_mask bit i set means type i is counted;
+// e.g. 0x3 = POS or CTL, 0xC = DATA or DATB.
+int distinct_sprites(const std::vector<SpriteFetch>& fetches, int type_mask) {
+    std::set<int> seen;
+    for (const auto& f : fetches) {
+        if (type_mask & (1 << f.type)) seen.insert(f.sprite);
+    }
+    return static_cast<int>(seen.size());
+}
 
 }  // namespace
 
@@ -740,6 +875,232 @@ int main(int argc, char** argv) {
             "CH4-appA-dmacon.c7.");
     }
 
+    // ============================================================================
+    // EXTENSION 25.09.2026 -- three new assertions for the twelve ids the
+    // header's own EXTENSION section plans. Written after agnus.v,
+    // agnus_bitplanedma.v and agnus_spritedma.v were opened (this is the
+    // first RTL read for this section); nothing above this point was
+    // touched.
+    // ============================================================================
+
+    // ---------------- SPREN-GATES-EVERY-SPRITE-CHANNEL (p.114) ----------------
+    // All eight sprites are armed identically. Their shared, once-per-field
+    // SPRxPOS/SPRxCTL fetch (agnus_spritedma.v's own `vblend` trigger - the
+    // last line of vertical blanking, the same event for every sprite, not
+    // tied to any per-sprite VSTART/VSTOP) is swept over enough lines to
+    // reach it, once with SPREN set and once with SPREN left clear
+    // [control] - same DMAEN, same sprite setup, same sweep.
+    {
+        Harness h_en;
+        for (int n = 0; n < 8; ++n) arm_sprite(h_en, n, 200, 220);
+        h_en.write_reg(DMACON_ADDR, SET_CLR | DMAEN | SPREN);
+        auto fetches_en = collect_sprite_fetches_over_lines(h_en, 35);
+        int channels_en = distinct_sprites(fetches_en, 0x3);  // POS(1)|CTL(2)
+
+        Harness h_dis;
+        for (int n = 0; n < 8; ++n) arm_sprite(h_dis, n, 200, 220);
+        h_dis.write_reg(DMACON_ADDR, SET_CLR | DMAEN);  // control: SPREN left clear
+        auto fetches_dis = collect_sprite_fetches_over_lines(h_dis, 35);
+        int channels_dis = distinct_sprites(fetches_dis, 0x3);
+
+        char en_str[4];
+        snprintf(en_str, sizeof en_str, "%d", channels_en);
+        char dis_str[4];
+        snprintf(dis_str, sizeof dis_str, "%d", channels_dis);
+
+        checks.expect(
+            channels_en == 8 && channels_dis == 0,
+            "SPREN-GATES-EVERY-SPRITE-CHANNEL: with all eight sprites armed "
+            "identically (pointer plus VSTART/VSTOP on every SPRxPOS/SPRxCTL) "
+            "and DMAEN held set throughout, a single SPREN write brings the "
+            "vblend-triggered SPRxPOS/SPRxCTL fetch of every one of the eight "
+            "sprite channels onto reg_address_out within a 35-line sweep (" +
+                std::string(en_str) +
+                "/8 distinct channels), while the SAME setup with SPREN left "
+                "clear [control] shows none (" + std::string(dis_str) +
+                "/8) - one enable, not eight, and no further write is made "
+                "between the enable and the fetch. 'When you enable sprite "
+                "DMA for one sprite, you enable DMA for all the sprites and "
+                "place them all in automatic mode.' (p.114). CH4-more.c4 "
+                "CH4-more.c5 CH4-p114.c1 CH4-p114.c2.");
+    }
+
+    // ---------------- SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND (p.114-115) ----------------
+    // Same eight sprites, same SPREN|DMAEN, now measuring their per-line
+    // SPRxDATA/SPRxDATB fetch (active once vpos reaches each sprite's own
+    // VSTART) over a line window - once with BPLEN clear, once with it set
+    // and DDFSTRT/DDFSTOP pushed to the hardware fetch limits ($18-$D8),
+    // which starts the display fetch inside the sprite engine's own
+    // $18-$38 slot window. agnus.v's own fixed-priority mux tests dma_bpl
+    // before dma_spr (agnus.v:207 before :219), so a granted bitplane cycle
+    // on one of a sprite's two ticks silently costs that sprite the tick -
+    // no retry.
+    //
+    // Each run first lets vblend (vpos==25, agnus_beamcounter.v's own
+    // vbstop) pass with SPREN CLEAR - agnus_spritedma.v's own header
+    // comment says vblend is "the only chance for DMA to fetch new values
+    // of SPRxPOS/SPRxCTL" each field, and this harness supplies no chip-RAM
+    // model, so a vblend fetch with SPREN set would silently overwrite the
+    // VSTART/VSTOP this run is about to write with data_in's idle value (0)
+    // - caught empirically: the first version of this assertion armed the
+    // sprites and set SPREN before vblend, and measured 16 POS/CTL events
+    // (the vblend refetch itself) but zero DATA/DATB events in either run,
+    // because that refetch had already zeroed every VSTART/VSTOP. Arming
+    // AFTER vblend, with SPREN still clear until the arm is done, means the
+    // CPU-written VSTART/VSTOP are the last word in sprpos/sprctl - the
+    // next automatic refetch is a full field away, well outside this
+    // assertion's own window.
+    {
+        // 35 lines: the same budget SPREN-GATES-EVERY-SPRITE-CHANNEL's own
+        // sweep already proved sufficient to reach vblend (its 8/8 result
+        // is exactly the vblend-triggered fetch landing inside 35 lines).
+        // No agnus.v port carries vpos or vblend directly - both are
+        // internal to agnus_beamcounter.v - so this counts sol pulses
+        // rather than reading either.
+        Harness h_base;
+        h_base.write_reg(DMACON_ADDR, SET_CLR | DMAEN);  // SPREN, BPLEN both clear
+        for (int i = 0; i < 35; ++i) h_base.sync_to_line_boundary();
+        for (int n = 0; n < 8; ++n) arm_sprite(h_base, n, 40, 220);
+        h_base.write_reg(DMACON_ADDR, SET_CLR | SPREN);  // control: BPLEN left clear
+        auto fetches_base = collect_sprite_fetches_over_lines(h_base, 90);
+        Harness h_wide;
+        h_wide.write_reg(DMACON_ADDR, SET_CLR | DMAEN);
+        for (int i = 0; i < 35; ++i) h_wide.sync_to_line_boundary();
+        for (int n = 0; n < 8; ++n) arm_sprite(h_wide, n, 40, 220);
+        widen_bitplane_into_sprite_window(h_wide);
+        h_wide.write_reg(DMACON_ADDR, SET_CLR | SPREN | BPLEN);
+        auto fetches_wide = collect_sprite_fetches_over_lines(h_wide, 90);
+
+        // distinct_sprites (>=1 event, ever) is too weak here: a sprite
+        // that loses most, not all, of its per-line DATA/DATB cycles still
+        // shows up at least once across 90 lines. The manual's own
+        // "unusable" is a per-sprite RATE claim, so this counts each
+        // sprite's own total DATA+DATB events in both runs and compares
+        // them sprite by sprite - the same "what would this look like if
+        // the claim were true, and does it differ from false" witness this
+        // package's own DMACON-IS-WRITE-ONLY-AT-096 already uses, applied
+        // per channel instead of per address.
+        int base_per_sprite[8] = {0}, wide_per_sprite[8] = {0};
+        for (const auto& f : fetches_base) {
+            if (f.type == 2 || f.type == 3) ++base_per_sprite[f.sprite];
+        }
+        for (const auto& f : fetches_wide) {
+            if (f.type == 2 || f.type == 3) ++wide_per_sprite[f.sprite];
+        }
+        int base_uniform = base_per_sprite[0];
+        bool base_all_equal = true;
+        int sprites_halved = 0;
+        for (int n = 0; n < 8; ++n) {
+            if (base_per_sprite[n] != base_uniform) base_all_equal = false;
+            if (wide_per_sprite[n] * 2 < base_per_sprite[n]) ++sprites_halved;
+        }
+
+        char base_rate_str[8];
+        snprintf(base_rate_str, sizeof base_rate_str, "%d", base_uniform);
+        char sprite0_wide_str[8];
+        snprintf(sprite0_wide_str, sizeof sprite0_wide_str, "%d", wide_per_sprite[0]);
+        char worst_wide_str[8];
+        int worst_sprite = 1;
+        for (int n = 2; n < 8; ++n) if (wide_per_sprite[n] < wide_per_sprite[worst_sprite]) worst_sprite = n;
+        snprintf(worst_wide_str, sizeof worst_wide_str, "%d", wide_per_sprite[worst_sprite]);
+        char halved_str[4];
+        snprintf(halved_str, sizeof halved_str, "%d", sprites_halved);
+
+        checks.expect(
+            base_all_equal && base_uniform > 0 && sprites_halved >= 1 && sprites_halved < 8 &&
+                wide_per_sprite[0] >= base_uniform,
+            "SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND: with all "
+            "eight sprites armed identically (VSTART=40/VSTOP=220) and "
+            "SPREN|DMAEN held set throughout, every one of the eight "
+            "channels' own SPRxDATA/SPRxDATB fetch reaches reg_address_out "
+            "at the SAME rate (" +
+                std::string(base_rate_str) +
+                " events/channel over a 90-line window) when BPLEN is clear "
+                "- the SAME setup, with BPLEN set and DDFSTRT/DDFSTOP pushed "
+                "to the hardware limits ($18-$D8, the widest display fetch "
+                "this fixture can produce, matching the manual's 'extra wide "
+                "display' wording) in the SAME run, leaves sprite channel 0 "
+                "untouched (" +
+                std::string(sprite0_wide_str) +
+                " events, its own DMA slot sits before the widened fetch "
+                "starts) while at least one other channel drops to under "
+                "half its baseline rate (channel " +
+                std::to_string(worst_sprite) + ": " + std::string(worst_wide_str) +
+                " events; " + std::string(halved_str) +
+                " of 8 channels halved or worse) - SOME, not all, sprites "
+                "become unusable when additional DMA cycles are allocated to "
+                "displaying the screen, exactly the manual's own wording. "
+                "'Remember that some sprites can become unusable when "
+                "additional DMA cycles are allocated to displaying the "
+                "screen, for example when an extra wide display or "
+                "horizontal scrolling is enabled' (p.114) / 'Some sprites "
+                "become unusable when additional DMA cycles are allocated "
+                "... e.g. when enabling an extra wide display or [horizontal "
+                "scrolling]' (p.115, Warning). CH4-more.c8 CH4-more.c9 "
+                "CH4-more.c10 CH4-p114.c5 CH4-warn.c1 CH4-warn.c2.");
+    }
+
+    // ---------------- SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK (p.303, Appendix C) ----------------
+    // The same vblend-triggered SPRxPOS/SPRxCTL fetch SPREN-GATES-EVERY-
+    // SPRITE-CHANNEL already swept, this time checked against agnus.v's own
+    // `hblank` output (agnus_beamcounter.v: high for hpos in
+    // [hbstrt=25,hbstop=102), fixed with varbeamen left at its reset value)
+    // at the SAME tick as each fetch - the "usually ... during horizontal
+    // blank" wording read literally, per-fetch, not assumed.
+    {
+        Harness h;
+        for (int n = 0; n < 8; ++n) arm_sprite(h, n, 200, 220);
+        h.write_reg(DMACON_ADDR, SET_CLR | DMAEN | SPREN);
+        auto fetches = collect_sprite_fetches_over_lines(h, 35);
+
+        int pos_ctl_events = 0, pos_ctl_events_in_hblank = 0;
+        std::set<int> sprites_seen, sprites_outside_hblank;
+        for (const auto& f : fetches) {
+            if (f.type == 0 || f.type == 1) {
+                ++pos_ctl_events;
+                sprites_seen.insert(f.sprite);
+                if (f.hblank) {
+                    ++pos_ctl_events_in_hblank;
+                } else {
+                    sprites_outside_hblank.insert(f.sprite);
+                }
+            }
+        }
+
+        char events_str[8];
+        snprintf(events_str, sizeof events_str, "%d", pos_ctl_events);
+        char in_hblank_str[8];
+        snprintf(in_hblank_str, sizeof in_hblank_str, "%d", pos_ctl_events_in_hblank);
+        char sprites_seen_str[4];
+        snprintf(sprites_seen_str, sizeof sprites_seen_str, "%d",
+                  static_cast<int>(sprites_seen.size()));
+        char outside_str[4];
+        snprintf(outside_str, sizeof outside_str, "%d",
+                  static_cast<int>(sprites_outside_hblank.size()));
+
+        checks.record(
+            "APPC-pos.c5 CH4-appC-position.c8: \"usually loaded by the sprite "
+            "DMA channel, during horizontal blank\" / \"normally loads SPRxPOS "
+            "and SPRxCTL during horizontal blanking\" (p.303) is a frequency "
+            "claim - MEASURED, not assumed, on this run: of " +
+                std::string(events_str) +
+                " SPRxPOS/SPRxCTL fetch events across " +
+                std::string(sprites_seen_str) +
+                " sprite channels swept, " + std::string(in_hblank_str) +
+                " occurred while hblank was high; " + std::string(outside_str) +
+                " of those channels had at least one fetch outside hblank "
+                "(agnus_spritedma.v's own fetch region runs hpos $18-$38, "
+                "and hblank only covers hpos $19-$65 (25-101) of that range, "
+                "so the channels whose slot falls after hpos 101 fall outside "
+                "hblank by construction, not by chance). Declined as an "
+                "expect(): the id's own restatement bundles 'usually'/"
+                "'normally' into the one proposition being graded, and a "
+                "single per-run count cannot establish a frequency claim - "
+                "hrm/ch4-sprite-vertical-position already recorded the same "
+                "limit ('no port carries how often a write happens') for "
+                "the sibling SPRxDATA/SPRxDATB claims on this same module.");
+    }
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }
@@ -782,4 +1143,36 @@ int main(int argc, char** argv) {
 // MUTATION DMACON-SEQUENTIAL-WRITES-READ-BACK-IN-ORDER stimulus red: first write's target address moved from $096 to $098 (not decoded by agnus.v's DMACON path); after_a read back 0x0000, not SPREN|DMAEN.
 // MUTATION DMACON-IS-WRITE-ONLY-AT-096 stimulus red: the read aimed at $096 was retargeted to $002, so both reads returned the same value (0x0220) instead of 0x0000 vs 0x0220.
 // MUTATION DMACONR-IS-READ-ONLY-AT-002 stimulus red: the write attempt's target address moved from $002 to $096, turning the attempt into a real write; after_attempt came back 0x0320 instead of the unchanged 0x0300.
+// ============================================================================
+
+// ============================================================================
+// MUTATION LOG (EXTENSION, 25.09.2026). Both entries below were actually
+// applied - edited into this file, rebuilt under WSL/Verilator (`make -B
+// test`), run, the PASS/FAIL line read from real output (quoted verbatim
+// below), then reverted and rebuilt clean before the next entry. Baseline
+// before this log's first mutation and final clean run after the last
+// revert were both "5 passed, 0 failed".
+//
+// 1. SPREN-GATES-EVERY-SPRITE-CHANNEL: h_en's DMACON write changed from
+//    SET_CLR|DMAEN|SPREN to SET_CLR|DMAEN (SPREN left clear, matching the
+//    already-clear [control] run exactly). Result: "4 passed, 1 failed" -
+//    SPREN-GATES-EVERY-SPRITE-CHANNEL went red (0/8 distinct channels with
+//    SPREN "set" to this mutated value, not 8/8). Reverted to
+//    SET_CLR|DMAEN|SPREN; rebuilt clean (5 passed, 0 failed).
+//
+// 2. SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND:
+//    widen_bitplane_into_sprite_window's DDFSTRT write changed from
+//    0x0018 (the hardware-minimum start, overlapping the sprite engine's
+//    own $18-$38 slot window) to 0x0038 (the normal, non-overlapping
+//    start hrm/ch7-dmacon-register-bits's own start_bitplane already
+//    uses). Result: "4 passed, 1 failed" -
+//    SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND went red (0 of 8
+//    channels halved or worse, not >=1 - every channel's DATA/DATB rate
+//    stayed at the 172-event baseline once the display fetch no longer
+//    reached into the sprite window). Reverted to 0x0018; rebuilt clean (5
+//    passed, 0 failed).
+//
+// Machine-readable records, one per line:
+// MUTATION SPREN-GATES-EVERY-SPRITE-CHANNEL stimulus red: h_en's DMACON write dropped SPREN (SET_CLR|DMAEN only); 0/8 distinct channels seen, not 8/8.
+// MUTATION SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND stimulus red: DDFSTRT moved from $18 (sprite-window overlap) to $38 (normal, non-overlapping); 0 of 8 channels halved, not >=1.
 // ============================================================================
