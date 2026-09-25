@@ -764,7 +764,7 @@ int main(int argc, char** argv) {
             "NOT ASSERTED - PRACTICAL SHIFT LIMIT: sol:3-large.c26 (p.171, "
             "restated \"On OCS, the blitter's maximum drawable area is "
             "1008x1024 pixels\") bundles the already-graded 1024-row height "
-            "maximum (SIZE-ZERO-HEIGHT-WRAPS-TO-1024, 6-appc-big-blits.c22) "
+            "maximum (SIZE-ZERO-HEIGHT-WRAPS-TO-1024, graded: 6-appc-big-blits.c22) "
             "with a width figure the manual itself states as a practical, "
             "shift-dependent programming caution, not a register-enforced "
             "limit - 'shifting and masking operations may require an extra "
