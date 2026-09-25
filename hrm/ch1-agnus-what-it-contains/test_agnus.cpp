@@ -9,6 +9,8 @@
 //   every submodule it instantiates -- see SPECIFICATION.md's BOUNDARY
 //   section). 67 claims / 34 propositions; 18 graded here, 16 declined via
 //   record() (see SPECIFICATION.md for the full citation of each decline).
+//   Plus one claim routed here independently of classify.package (page 263,
+//   Appendix A -- see SPECIFICATION.md's Extension section): P34, graded.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 1-6, 8, 9, 12-14.
@@ -36,7 +38,10 @@
 //
 // PER-ASSERTION MUTATION RECORD. Format (tools/check_gates.py):
 // // MUTATION <assertion-label> <oracle|stimulus|none> <red|green|
-// impossible> <what changed>. Every mutation below is `stimulus`.
+// impossible> <what changed>. Every mutation below is `stimulus`, except
+// the two `none impossible` records for P34's primary assertions (no
+// stimulus on the exempted bit alone can move address_out; each cites its
+// own positive control).
 //
 // MUTATION DMA-CHANNEL-TAKES-BUS-FROM-CPU stimulus red MUT_P1 leaves disk_dmal deasserted throughout instead of asserting it -- no DMA request is ever made, so dbr/address_out never show the written pointer and cpu_custom never drops.
 // MUTATION ADDRESS-OUTPUT-CEILING-2MB stimulus red MUT_P2 writes a disk pointer of 0 instead of the top-of-range value -- address_out reads 0, not near $FFFFF, during the granted cycle.
@@ -57,6 +62,10 @@
 // MUTATION HETEROGENEOUS-DMA-SHARES-ONE-BUS stimulus red MUT_P31 the audio leg's location pointer is written to a different address than the disk/blitter legs use -- the "all three reach the same address" check fails.
 // MUTATION READ-ALONE-RETRIGGERS-COPJMP stimulus red MUT_P32 performs a write (hwr/lwr) to COPJMP1 instead of a bare read -- (kept as a write, which the RTL treats identically to a read for this strobe, so this mutation is expected to stay green; MUT_P32 instead skips the COPJMP1 access entirely) so the address never returns to A.
 // MUTATION NO-REGISTER-IS-BOTH-READABLE-AND-WRITABLE stimulus red MUT_P33 reads back from DMACON's own address ($096) instead of DMACONR's ($002) -- the assertion's "DMACON's address answers a read" check, which must be false, becomes true.
+// MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-DISK none impossible: agnus_diskdma.v:56 forms the ALU input for DSKPTL as {data_in[4:0],data_in[15:1]} -- data_in[0] drives no wire anywhere in this module, so no stimulus that varies DSKPTL's own bit 0 alone can move address_out. Positive control: POINTER-LOW-BIT-WRITTEN-ZERO-DISK-BIT1-CONTROL below, which flips the adjacent bit 1 and requires address_out to move by one word.
+// MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-DISK-BIT1-CONTROL stimulus red MUT_P34_DISK_CTRL leaves DSKPTL's bit 1 at 0 (same as the bit-0 baseline) instead of setting it -- address_out no longer differs from the baseline, and the control (which must show a difference) fails.
+// MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO none impossible: agnus_audiodma.v:89 captures only data_in[15:1] into audlcl -- data_in[0] drives no wire in this module either, for the same reason as the disk leg above. Positive control: POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO-BIT1-CONTROL below.
+// MUTATION POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO-BIT1-CONTROL stimulus red MUT_P34_AUDIO_CTRL same shape as the disk control -- AUD0LCL's bit 1 left at 0 instead of set, so the audio leg's two observed addresses no longer differ.
 
 #include <cstdint>
 #include <cstdio>
@@ -123,6 +132,12 @@
 #endif
 #ifndef MUT_P33
 #define MUT_P33 0
+#endif
+#ifndef MUT_P34_DISK_CTRL
+#define MUT_P34_DISK_CTRL 0
+#endif
+#ifndef MUT_P34_AUDIO_CTRL
+#define MUT_P34_AUDIO_CTRL 0
 #endif
 
 namespace {
@@ -1220,6 +1235,131 @@ int main(int argc, char** argv) {
             "read-only-address check reads DMACONR's own address instead of "
             "DMACON's -- the check that must read 0 instead reads the real "
             "value.");
+    }
+
+    // =========================================================================
+    // POINTER-LOW-BIT-WRITTEN-ZERO (Appendix A p.263) -- sol:5-appA-p263.c6.
+    // See SPECIFICATION.md P34. Graded on two of this fixture's own pointer
+    // engines (disk, audio); bit 0 of a pointer's own low register has no
+    // wire to address_out in either (agnus_diskdma.v:56, agnus_audiodma.v:89
+    // -- both capture only data_in[15:1]), so no stimulus varying that bit
+    // alone can move address_out -- an "impossible" mutation, not a
+    // stimulus one. Comparator liveness is shown by flipping the adjacent
+    // bit instead (the pointer's own real LSB, one position above the bit
+    // this claim exempts, which the manual does not exempt) and requiring
+    // address_out to move.
+    // =========================================================================
+    {
+        Harness h;
+        const uint32_t PTR = 0x00600; // word address, deliberately even (bit0=0)
+        uint16_t low_even = (uint16_t)((PTR & 0x7FFF) << 1);
+
+        // -- primary: DSKPTL's own bit 0 forced to 1 --
+        h.write_reg(A_DSKPTH, (uint16_t)((PTR >> 15) & 0x1F));
+        h.write_reg(A_DSKPTL, (uint16_t)(low_even | 0x1));
+        h.dmacon_set(1 << DMAEN_BIT);
+        h.dut->disk_dmal = 1; h.dut->disk_dmas = 0;
+        bool seen = false; uint32_t seen_addr = 0;
+        for (int i = 0; i < 4000 && !seen; ++i) {
+            h.tick();
+            if (h.dut->dbr && !h.dut->cpu_custom) { seen = true; seen_addr = h.dut->address_out; }
+        }
+        h.dut->disk_dmal = 0;
+        checks.expect(seen && seen_addr == PTR,
+            std::string("POINTER-LOW-BIT-WRITTEN-ZERO-DISK (appA p.263): "
+            "DSKPTL written with its own bit 0 forced to 1 still produces "
+            "address_out == $") + hexstr(PTR, 5) +
+            ", the pointer's even value unchanged -- bit 0, however "
+            "written, has no effect on the address this fixture can "
+            "observe, as \"The lowest bit of all pointers must be written "
+            "as zero.\" (p.263) requires. sol:5-appA-p263.c6. Measured: "
+            "seen=" + std::string(seen ? "1" : "0") + " addr=$" +
+            hexstr(seen_addr, 5) + ".");
+
+        // -- comparator liveness: DSKPTL's own bit 1 (the pointer's real
+        // LSB), which the manual does not exempt, must move address_out.
+        h.write_reg(A_DSKPTH, (uint16_t)((PTR >> 15) & 0x1F));
+#if !MUT_P34_DISK_CTRL
+        h.write_reg(A_DSKPTL, (uint16_t)(low_even | 0x2));
+#else
+        h.write_reg(A_DSKPTL, low_even); // mutation: bit 1 left at 0, same as baseline
+#endif
+        bool seen2 = false; uint32_t seen_addr2 = 0;
+        h.dut->disk_dmal = 1; h.dut->disk_dmas = 0;
+        for (int i = 0; i < 4000 && !seen2; ++i) {
+            h.tick();
+            if (h.dut->dbr && !h.dut->cpu_custom) { seen2 = true; seen_addr2 = h.dut->address_out; }
+        }
+        h.dut->disk_dmal = 0;
+        checks.expect(seen2 && seen_addr2 == PTR + 1,
+            std::string("POINTER-LOW-BIT-WRITTEN-ZERO-DISK-BIT1-CONTROL "
+            "(appA p.263): the same DSKPTL write with bit 1 set instead of "
+            "bit 0 produces address_out == $") + hexstr(PTR + 1, 5) +
+            " -- one word past the bit-0 baseline -- proving the "
+            "comparator above can detect a real difference and its bit-0 "
+            "result is not vacuous. Measured: seen=" +
+            std::string(seen2 ? "1" : "0") + " addr=$" + hexstr(seen_addr2, 5) +
+            ". MUTATION: bit 1 left at 0 instead of set -- address_out no "
+            "longer differs from the bit-0 baseline.");
+    }
+    {
+        Harness h;
+        const uint32_t PTR = 0x00700; // word address, deliberately even (bit0=0)
+        uint16_t low_even = (uint16_t)((PTR & 0x7FFF) << 1);
+
+        // -- primary: AUD0LCL's own bit 0 forced to 1 --
+        h.write_reg(A_AUD0LCH, (uint16_t)((PTR >> 15) & 0x1F));
+        h.write_reg(A_AUD0LCL, (uint16_t)(low_even | 0x1));
+        h.dut->audio_dmal = 0x1; h.dut->audio_dmas = 0x1;
+        // Waits for the exact expected address, as DMA-CHORES-INDEPENDENT-
+        // OF-CPU's and HETEROGENEOUS-DMA-SHARES-ONE-BUS's own audio legs
+        // do above -- agnus_audiodma.v's own `channel` select is
+        // combinational on hpos[3:2] alone, independent of dbr, so
+        // address_out briefly shows other channels' (unwritten, stale)
+        // content on ticks that are not this engine's own granted cycle; a
+        // generic "any nonzero" wait can catch one of those instead.
+        bool seen = false; uint32_t seen_addr = 0;
+        for (int i = 0; i < 8000 && !seen; ++i) {
+            h.tick();
+            if (h.dut->dbr && h.dut->address_out == PTR) { seen = true; seen_addr = h.dut->address_out; }
+        }
+        h.dut->audio_dmal = 0; h.dut->audio_dmas = 0;
+        checks.expect(seen && seen_addr == PTR,
+            std::string("POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO (appA p.263): "
+            "AUD0LCL written with its own bit 0 forced to 1 still produces "
+            "address_out == $") + hexstr(PTR, 5) +
+            ", the pointer's even value unchanged -- bit 0, however "
+            "written, has no effect on the address this fixture can "
+            "observe, as \"The lowest bit of all pointers must be written "
+            "as zero.\" (p.263) requires. sol:5-appA-p263.c6. Measured: "
+            "seen=" + std::string(seen ? "1" : "0") + " addr=$" +
+            hexstr(seen_addr, 5) + ".");
+
+        // -- comparator liveness: AUD0LCL's own bit 1, which the manual
+        // does not exempt, must move address_out.
+        h.write_reg(A_AUD0LCH, (uint16_t)((PTR >> 15) & 0x1F));
+#if !MUT_P34_AUDIO_CTRL
+        h.write_reg(A_AUD0LCL, (uint16_t)(low_even | 0x2));
+#else
+        h.write_reg(A_AUD0LCL, low_even); // mutation: bit 1 left at 0, same as baseline
+#endif
+        bool seen2 = false; uint32_t seen_addr2 = 0;
+        h.dut->audio_dmal = 0x1; h.dut->audio_dmas = 0x1;
+        for (int i = 0; i < 8000 && !seen2; ++i) {
+            h.tick();
+            if (h.dut->dbr && h.dut->address_out == PTR + 1) { seen2 = true; seen_addr2 = h.dut->address_out; }
+        }
+        h.dut->audio_dmal = 0; h.dut->audio_dmas = 0;
+        checks.expect(seen2 && seen_addr2 == PTR + 1,
+            std::string("POINTER-LOW-BIT-WRITTEN-ZERO-AUDIO-BIT1-CONTROL "
+            "(appA p.263): the same AUD0LCL write with bit 1 set instead "
+            "of bit 0 produces address_out == $") + hexstr(PTR + 1, 5) +
+            " -- one word past the bit-0 baseline -- proving the "
+            "comparator above can detect a real difference and its bit-0 "
+            "result is not vacuous. Measured: seen=" +
+            std::string(seen2 ? "1" : "0") + " addr=$" + hexstr(seen_addr2, 5) +
+            ". MUTATION: bit 1 left at 0 instead of set -- address_out no "
+            "longer differs from the bit-0 baseline.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
