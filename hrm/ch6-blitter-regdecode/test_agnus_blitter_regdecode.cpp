@@ -166,19 +166,15 @@
 // classify.package=="PKG-BLT-REGDECODE" -- exact match, no id missing, no
 // id invented.
 //
-// EXTENSION 2026-09-25 -- SPECIFICATION, from the routed spec-stage claims
-// ALONE (hrm-testpipeline/work/2026-09-25_unit-backlog/build2/ch6-blitter-
-// regdecode-spec-stage.jsonl), committed BEFORE this agent opened the full
-// claims file (whose classify.evidence field is the port list by another
-// name) or re-read the RTL. 24 claims, all reader opus, all page 289 or
+// EXTENSION -- SPECIFICATION, from quotations alone; no RTL reasoning
+// appears in this block. 24 claims, all reader opus, all page 289 or
 // 290, all flagged by the reader itself ["print-only", "not-named-in-
 // chapter", "added by opus's own completion audit 10.09.2026 -- NOT cross-
 // read"] -- disclosed here, not smoothed over. Every one is chapter 3's own
 // reading of Appendix B's address column for a blitter register -- the
 // same table this package's original build already read (p289-290) under
 // its own ch6-appb-*.addr claim ids. Each restatement below is quoted
-// verbatim from the spec-stage file; no RTL reasoning appears in this
-// block.
+// verbatim from the source.
 //
 //   B-bltafwm.addr  (p289) "BLTAFWM      ~044   W     A          Blitter
 //     first word mask for source A" -> Appendix B, address order: BLTAFWM
@@ -1145,7 +1141,7 @@ int main() {
     // (unconditionally stored, but only READ into height_cnt by a
     // subsequent ecs-gated BLTSIZH write). With ecs=0, a BLTSIZH write
     // leaves `busy` at 0 (control, same measurement as A16).
-    // GAP, found by independent validation (2026-09-25): this assertion
+    // GAP, found by independent validation: this assertion
     // reads only `busy` right after the BLTSIZH write, so it establishes
     // BLTSIZH's own decode (moving that write elsewhere leaves busy at 0,
     // per its own MUTATION log below) but never varies BLTSIZV's address --
@@ -1488,8 +1484,7 @@ int main() {
     // ---------------------------------------------------------------
     // A25 -- BLTDDAT is listed at address $000 in Appendix B (p289).
     // ids: B-bltddat.addr
-    // Per routing.how (build2/ch6-blitter-regdecode.jsonl): chapter 6's own
-    // ch6-appb-bltddat.addr was declined (not-asserted, "needs a wider
+    // Chapter 6's own ch6-appb-bltddat.addr was declined (not-asserted, "needs a wider
     // boundary") for the "early read" TIMING half of its restatement, not
     // for the address digit -- the extract itself flags a page-289
     // "conflict" between Appendix A's "---" and Appendix B's "*000". This
