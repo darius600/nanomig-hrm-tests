@@ -452,7 +452,10 @@ static bool measure_field_period_seconds(int ntsc_pin, double cck_hz, double& se
 // ---------------------------------------------------------------------
 // NTSC-FIELD-PERIOD-APPROX-1-60S (3-video.c09, page 40, "the field time,
 // i.e. the time required for a complete display field to be produced, is
-// approximately 1/60th of a second for an NTSC system").
+// approximately 1/60th of a second for an NTSC system"; 3-video.c12, page
+// 40, "The field time ... is approximately 1/60th of a second for an NTSC
+// system and approximately 1/50th of a second for PAL" -- same NTSC
+// proposition, covered by the same measurement).
 // ---------------------------------------------------------------------
 static void check_ntsc_field_period(Checks& c) {
 #ifndef MUT_NTSC_FIELD_PERIOD_APPROX_1_60S
@@ -466,7 +469,7 @@ static void check_ntsc_field_period(Checks& c) {
     double nominal = 1.0 / 60.0;
     double rel_err = have ? std::fabs(seconds - nominal) / nominal : 1.0;
     bool ok = have && rel_err < 0.05;
-    c.report("NTSC-FIELD-PERIOD-APPROX-1-60S (3-video.c09, page 40, \"approximately 1/60th of a second for an NTSC system\"): measured " +
+    c.report("NTSC-FIELD-PERIOD-APPROX-1-60S (3-video.c09, 3-video.c12, page 40, \"approximately 1/60th of a second for an NTSC system\"): measured " +
               std::to_string(seconds * 1000.0) + " ms vs nominal " + std::to_string(nominal * 1000.0) +
               " ms, relative error " + std::to_string(rel_err * 100.0) + "% (bound 5%)", ok);
 }
