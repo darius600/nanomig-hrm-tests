@@ -36,8 +36,8 @@
 //   prefix, and they resolve in the claim files that
 //   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
-// EXTENSION (2026-09-25_unit-backlog). One further proposition was routed to
-//   this package: Figure 6-13 (p.199) draws the C channel's hold register
+// EXTENSION. One further proposition:
+//   Figure 6-13 (p.199) draws the C channel's hold register
 //   loaded straight from the data bus - "In Figure 6-13 'C hold' is loaded
 //   straight from the DATA BUS: the C source passes through neither a mask
 //   nor a shifter" (ch6-fig613.f12). This is the figure-level structural
@@ -115,9 +115,8 @@
 // the same proposition stated by both readers (sol/opus) or by the same
 // reader in a general and a worked-example form, so they are asserted once
 // and every covering id is cited in that assertion's message. No claim in
-// this package has zero assertion. Plus one further claim routed in the
-// 2026-09-25_unit-backlog extension, ch6-fig613.f12 (see EXTENSION above),
-// covered by C-BYPASSES-MASK-AND-SHIFT below.
+// this package has zero assertion. Plus one further claim, ch6-fig613.f12
+// (see EXTENSION above), covered by C-BYPASSES-MASK-AND-SHIFT below.
 //
 // Every mutation below was actually applied (edit -> rebuild -> run -> revert
 // -> rebuild-clean) and the FAIL/PASS lines quoted are what the run printed,
