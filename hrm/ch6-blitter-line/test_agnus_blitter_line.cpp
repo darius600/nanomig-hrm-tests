@@ -428,18 +428,16 @@
 //   others PASS, only this assertion red. Reverted, rebuilt clean, confirmed
 //   byte-identical to the pre-mutation file by `diff -q` and back to 17/0.
 //
-// MUTATION LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE stimulus red, added
-//   25.09.2026, extending this accepted package: BMOD's constant changed
-//   from 4*dy (4*3=12, matching the SAME dy used for AMOD) to 4*4=16 (as if
-//   dy were 4, mismatched against AMOD's dy=3) -- expected value (net==0)
-//   left untouched -> FAIL: net=-16 (raw address units; the register-level
-//   value differs by a further, already-calibrated factor this file's other
-//   accumulator helpers also see, see measure_accumulator_delta's own +32
-//   reading for an amod of 0x0040); 17/18 others PASS, only this assertion
-//   red. This confirms the assertion is sensitive to BOTH BLTAMOD and
-//   BLTBMOD being derived from the SAME dy, not merely to BMOD being
-//   positive. Reverted, rebuilt clean, confirmed byte-identical to the
-//   pre-mutation file by `git diff --stat` and back to 18/0.
+// MUTATION LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE stimulus red: amod
+//   and bmod both changed from their formula values (4*(dy-dx)=0xFFEC,
+//   4*dy=12) to 0x0000, freezing the accumulator so it never moves at all
+//   (expected predicate, r.delta_after_pixel0 != 0 && r.net_after_n == 0,
+//   left untouched) -> FAIL: a frozen accumulator still trivially satisfies
+//   net_after_n == 0, but delta_after_pixel0 is now 0 too, failing the
+//   != 0 half -- exactly the vacuous case the two-part predicate exists to
+//   catch; 18/19 others PASS, only this assertion red. Reverted, rebuilt
+//   clean, confirmed byte-identical to the pre-mutation file by
+//   `git diff --stat` and back to 19/0.
 //
 // MUTATION LINE-ACCUMULATOR-IS-BLTAPTL stimulus red: the preloaded amod
 //   argument changed from 0x0040 to 0x0080 (expected constants r.start==
@@ -765,21 +763,28 @@ int32_t measure_accumulator_delta(uint8_t initial_sign, uint16_t amod, uint16_t 
     return static_cast<int32_t>(acc_before_pixel2) - static_cast<int32_t>(acc_before_pixel1);
 }
 
-// Added 25.09.2026, extending this accepted package (LINE-MODULO-VALUES-
-// PRODUCE-DOCUMENTED-SLOPE below). Measures the NET change BLT_L1's
-// accumulator update applies to BLTAPTL over `n` consecutive pixels,
-// starting from BLTAPTL explicitly preloaded to 0: address_trace[we_ticks[n]-3]
-// minus address_trace[we_ticks[0]-3] -- the same "three ticks before this
-// pixel's own D-channel write reads the accumulator BEFORE this pixel's own
-// L1 step" fact measure_accumulator_delta above already establishes,
-// generalized from 2 writes (one delta) to n+1 writes (the net change over
-// n steps). 'sign' evolves pixel-to-pixel via BLT_L1's own new_sign
+// Measures, in ONE run, both (a) the delta BLT_L1's accumulator update
+// applies to BLTAPTL over just pixel 0 (the intermediate displacement) and
+// (b) the NET change over `n` consecutive pixels, starting from BLTAPTL
+// explicitly preloaded to 0. Both readings come from the SAME simulation:
+// address_trace[we_ticks[0]-3] (before pixel 0's own L1 step),
+// address_trace[we_ticks[1]-3] (after pixel 0's step, before pixel 1's) and
+// address_trace[we_ticks[n]-3] (after n steps) -- the same "three ticks
+// before this pixel's own D-channel write reads the accumulator BEFORE
+// this pixel's own L1 step" fact measure_accumulator_delta above already
+// establishes, generalized from 2 writes (one delta) to n+1 writes.
+// Reporting BOTH readings from the one run (rather than a net-only result
+// plus a separate assertion's run) is what lets a caller tell "the
+// accumulator returned to 0 after genuinely moving" apart from "the
+// accumulator never moved at all" without trusting a different run's
+// trace. 'sign' evolves pixel-to-pixel via BLT_L1's own new_sign
 // computation exactly as in real use -- initial_sign only sets pixel 0's
 // starting value (agnus_blitter.v:929-935); this function does not re-fix
 // it between pixels, unlike measure_pixel1_delta/measure_accumulator_delta
 // above, which only ever look at a single step. n+1 D-channel writes are
-// needed so we_ticks[n] exists.
-int32_t measure_accumulator_net_after(uint8_t initial_sign, uint16_t amod, uint16_t bmod, int n) {
+// needed so we_ticks[n] exists, and n must be >= 1 so we_ticks[1] exists.
+struct AccumulatorNetAfter { int32_t delta_after_pixel0; int32_t net_after_n; };
+AccumulatorNetAfter measure_accumulator_net_after(uint8_t initial_sign, uint16_t amod, uint16_t bmod, int n) {
     Harness h;
     h.c_words = std::deque<uint16_t>(static_cast<size_t>(n) + 1, 0);
     h.write_reg(BLTADAT, 0x0000);
@@ -796,12 +801,13 @@ int32_t measure_accumulator_net_after(uint8_t initial_sign, uint16_t amod, uint1
     h.write_reg(BLTSIZE, bltsize_word(2, static_cast<uint16_t>(n + 1)));
     h.run_until_writes(static_cast<size_t>(n) + 1, 500);
     if (h.we_ticks.size() < static_cast<size_t>(n) + 1 || h.we_ticks[0] < 3 ||
-        h.we_ticks[static_cast<size_t>(n)] < 3) {
-        return INT32_MIN;
+        h.we_ticks[1] < 3 || h.we_ticks[static_cast<size_t>(n)] < 3) {
+        return {INT32_MIN, INT32_MIN};
     }
-    const uint32_t acc_before_pixel0 = h.address_trace[h.we_ticks[0] - 3];
-    const uint32_t acc_after_n_steps = h.address_trace[h.we_ticks[static_cast<size_t>(n)] - 3];
-    return static_cast<int32_t>(acc_after_n_steps) - static_cast<int32_t>(acc_before_pixel0);
+    const int32_t acc_before_pixel0 = static_cast<int32_t>(h.address_trace[h.we_ticks[0] - 3]);
+    const int32_t acc_after_pixel0 = static_cast<int32_t>(h.address_trace[h.we_ticks[1] - 3]);
+    const int32_t acc_after_n_steps = static_cast<int32_t>(h.address_trace[h.we_ticks[static_cast<size_t>(n)] - 3]);
+    return {acc_after_pixel0 - acc_before_pixel0, acc_after_n_steps - acc_before_pixel0};
 }
 
 // Unlike measure_accumulator_delta above, which starts BLTAPTL at its
@@ -1478,12 +1484,7 @@ int main(int argc, char** argv) {
             "same-shaped signal read off the RTL's own port list ('line mode uses "
             "BLTAPTL as the error accumulator', 6-appa-registers.c115, p.270; 'in "
             "line draw BLTAPTL is used as an accumulator register', "
-            "ch6-appa-bltxpt.c8b, p.270). This also establishes, for "
-            "LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE below, that the "
-            "accumulator genuinely moves after pixel 0 by the BLTAMOD step "
-            "through the SAME BLT_L1 mechanism (agnus_blitter.v:795-811,929-935) "
-            "that assertion's own net==0 measurement depends on -- ruling out a "
-            "trace that never moves printing the same net==0 there "
+            "ch6-appa-bltxpt.c8b, p.270) "
             "6-appa-registers.c115 ch6-appa-bltxpt.c8b");
     }
 
@@ -1511,29 +1512,34 @@ int main(int argc, char** argv) {
     // here) with dx=8, dy=3: hand-simulated fire pixels are 0, 3, 6 (3
     // fires, matching dy), net change 0.
     //
-    // net==0 alone is also what a trace that never moves would print.
-    // LINE-ACCUMULATOR-IS-BLTAPTL above supplies the missing precondition:
-    // it shows, through the SAME BLT_L1 mechanism this assertion depends
-    // on, that the traced accumulator genuinely moves after pixel 0 by the
-    // BLTAMOD step -- so this net==0 result is not vacuous.
+    // net==0 alone is also what a trace that never moves would print. The
+    // predicate below adds the missing precondition IN THIS SAME RUN, not
+    // by cross-referencing a different assertion's run: it also reads the
+    // accumulator's own displacement after just pixel 0 (delta_after_pixel0,
+    // from the same measure_accumulator_net_after() call that produces
+    // net_after_n) and requires it to be nonzero -- the trace must genuinely
+    // have moved by a BLTAMOD step before net==0 over the full dx pixels
+    // counts for anything.
     {
         constexpr int dx = 8;
         constexpr int dy = 3;
         constexpr uint16_t amod = static_cast<uint16_t>(4 * (dy - dx));  // 4*(dy-dx) = -20 -> 0xFFEC
         constexpr uint16_t bmod = static_cast<uint16_t>(4 * dy);         // 4*dy = 12
-        const int32_t net = measure_accumulator_net_after(/*initial_sign=*/0, amod, bmod, dx);
+        const auto r = measure_accumulator_net_after(/*initial_sign=*/0, amod, bmod, dx);
 
-        checks.expect(net == 0,
+        checks.expect(r.delta_after_pixel0 != 0 && r.net_after_n == 0,
             "LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE: preloading BLTAMOD with the "
             "appendix's own value (4*(dy-dx)) and BLTBMOD with (4*dy) for a chosen "
-            "dx=8, dy=3 (a shallow line, dy<dx), then running the accumulator through "
-            "dx=8 pixels from BLTAPTL=0, returns the accumulator to exactly 0 -- "
-            "algebraically (derived by hand before writing this block: over dx pixels "
-            "each pixel adds AMOD when the minor axis fires that pixel or BMOD when it "
-            "does not, so the net change is 4*dx*(dy-f) for f actual fires, zero iff "
-            "f==dy) this holds if and only if the minor axis fired exactly dy=3 times "
-            "over the dx=8 pixels, i.e. the line drawn has slope dy/dx -- confirming, "
-            "by direct RTL measurement of BLT_L1's own accumulator "
+            "dx=8, dy=3 (a shallow line, dy<dx), the SAME run shows the accumulator "
+            "moves by a nonzero amount (the BLTAMOD step) after just pixel 0 -- ruling "
+            "out a trace that never moves -- and THEN, running through the full dx=8 "
+            "pixels from BLTAPTL=0, returns to exactly 0 -- algebraically (derived by "
+            "hand before writing this block: over dx pixels each pixel adds AMOD when "
+            "the minor axis fires that pixel or BMOD when it does not, so the net "
+            "change is 4*dx*(dy-f) for f actual fires, zero iff f==dy) this holds if "
+            "and only if the minor axis fired exactly dy=3 times over the dx=8 pixels, "
+            "i.e. the line drawn has slope dy/dx -- confirming, by direct RTL "
+            "measurement of BLT_L1's own accumulator "
             "(agnus_blitter.v:795-811,929-935; agnus_blitter_adrgen.v:122), that the "
             "appendix's preload values genuinely produce the documented geometry "
             "('LINE DRAW ... with the values (4Y-4X) and (4Y)', 6-appa-registers.c98 "
