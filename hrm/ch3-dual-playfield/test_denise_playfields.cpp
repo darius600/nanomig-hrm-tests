@@ -120,6 +120,14 @@
 //   PF2-LSB-BIT-IDENTITY (2 ids)        -- playfield 2's undisputed low bit.
 //   6+8+8+22+6+12+14+6+4+2 = 88.
 //
+//   3-dual.c07 (p.67) -- "...taken from different sets of color
+//   registers." restates COLOUR-REGISTER-RANGES's own proposition (the
+//   two playfields' colours come from different sets of colour
+//   registers) under an independent reader's citation of the identical
+//   sentence COLOUR-REGISTER-RANGES already quotes and tests above;
+//   folded into that group's own citation list rather than counted as an
+//   eleventh group.
+//
 // DECLINED CLAIMS (10 ids, not observable at this module's ports):
 //   3-dual-mode.c2 (p.67) -- "You can also move the two playfields
 //     independently." Bitplane scrolling/positioning; this module has no
