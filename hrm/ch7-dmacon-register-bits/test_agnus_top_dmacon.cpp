@@ -1520,7 +1520,7 @@ int main(int argc, char** argv) {
 
         checks.expect(
             baseline_uniform && baseline[0] > 0 && every_point_some_reduced,
-            "DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES: with all "
+            "DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES: with all "
             "eight sprites armed identically (VSTART=40/VSTOP=220), SPREN|DMAEN "
             "held set and ONE BITPLANE (BPLCON0=$1200, the manual names no "
             "plane count), every channel's own SPRxDATA/SPRxDATB fetch reaches "
@@ -1904,7 +1904,7 @@ int main(int argc, char** argv) {
 // MUTATION DMAEN-MASTER-GATES-ALL-DMA-BELOW stimulus red: DMAEN dropped from the enabled run's setup write (SPREN/BLTEN/COPEN/BPLEN left set); cycles_en fell to 0.
 // MUTATION BLTPRI-BUS-SHARE-UNDER-CONTENTION stimulus red: BLTPRI dropped from the hog run's setup write; writes_hog fell to 0, equal to the share run.
 // MUTATION WRITE-ADDRESS-MUST-MATCH-DMACON stimulus red: the decoy write's address changed from BLTAFWM_ADDR back to DMACON_ADDR, same data pattern (SET_CLR | DMAEN) -> 24 passed, 1 failed, only this assertion moves: the write now lands and DMACONR reads back non-zero, so `after == 0x0000` fails. Reverted: 25 passed, 0 failed. Added 11.09.2026; the assertion had no record because the gate could not read an id out of its "[...]" prefix and never reported it missing.
-// MUTATION DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES none green: already red at baseline (the sweep's own $0030 row is the finding). Substituted a live point (sweep's $0030 entry -> $0018, known reduced) through the SAME conjunction -> 31 passed, 2 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
+// MUTATION DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES none green: already red at baseline (the sweep's own $0030 row is the finding). Substituted a live point (sweep's $0030 entry -> $0018, known reduced) through the SAME conjunction -> 31 passed, 2 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
 // MUTATION DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE none green: already red at baseline (the FINDING itself - sprite 7 is measured unaffected at the manual's own $0030, one bitplane). Substituted a different, live mechanism through the SAME comparator (measure_sprite_data_fetch(0x0018)[2] in place of at_30[7]) - channel 2 IS reduced at $0018, proven by the sweep assertion above, and the substitution went green, showing the comparator is not vacuous. Reverted to the real channel 7 / $0030 comparison, which stays red.
 // MUTATION DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES stimulus red: the 2-bitplane at30_2 measurement's DDFSTRT argument changed from $0030 back to $0038 (baseline, unmoved); sprite 7 read 172/172 (unaffected) instead of 90/172 -> 29 passed, 4 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
 // MUTATION DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE none green: already red at baseline (no channel is reduced at $0030, one bitplane). Substituted $0018 for $0030 in the at_30 measurement (known to reduce 3 of 8 channels) through the SAME "exists n" comparator -> 31 passed, 2 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
