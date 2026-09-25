@@ -81,6 +81,12 @@
 // MUTATION P6 none impossible: same. P6 asserts the DIFFERENCE between a WAIT
 //   and a MOVE and is red for the same reason; with P5 red there is no green
 //   baseline for it either.
+// MUTATION P7 none impossible: unfalsifiable at this boundary, not a scope
+//   decision. agnus_copper.v assigns reqdma = dma_req & bus_ena & clk_ena and
+//   clk_ena = hpos[0] by direct combinational assignment, so reqdma can only
+//   ever be high when hpos is odd, for any stimulus in the module's whole
+//   input space -- no mutation can turn this red because no input drives
+//   reqdma around that gate.
 //
 // Those last two are POSITIVE CONTROLS, and they are what makes AC5/AC6's red
 // mean something. With a SKIP in the measurement window the module grants two
@@ -160,6 +166,7 @@ public:
         write_reg(COPJMP1, 0x0000);
         run_cycles(4);
         grants.clear();          // ignore the start handshake itself
+        reqdma_parity.clear();
         tick = 0;
         dma_allowed = true;
     }
@@ -201,6 +208,10 @@ public:
 
     std::vector<Grant> grants;
     bool dma_allowed = false;
+    // (hpos sampled this cycle, reqdma sampled the same cycle) for every
+    // cycle since the last start()/clear -- not just granted ones. P7 reads
+    // this to check reqdma's parity against hpos regardless of ackdma.
+    std::vector<std::pair<uint16_t, bool>> reqdma_parity;
 
 private:
     Vagnus_copper* dut;
@@ -216,6 +227,7 @@ private:
 
     void cycle(bool cpu_write = false, uint16_t cpu_reg = IDLE_REG, uint16_t cpu_data = 0) {
         dut->eval();
+        reqdma_parity.push_back({hpos, static_cast<bool>(dut->reqdma)});
         const bool accepted = !cpu_write && dma_allowed && dut->reqdma;
         if (cpu_write) {
             dut->ackdma = 0; dut->reg_address_in = cpu_reg; dut->data_in = cpu_data;
@@ -288,18 +300,35 @@ int main(int argc, char** argv) {
                       "P1 consecutive Copper bus grants are two memory cycle times apart (p.19, p.20) "
                       "[claims: COP2-about-the-copper.c20, COP2-copins-timing.c1, ch2-about-the-copper.c19, ch2-appa-copins.c126]");
 
-        // COP2-about-the-copper.c21 and COP2-copins-timing.c2 ("the Copper
-        // requests the bus only during
-        // odd-numbered memory cycles") is UNBOUND. P1 above tests the same
-        // sentence's SPACING (every other cycle), by this test's own design
-        // and comment ("Asserted as spacing rather than absolute parity: the
-        // numbering origin is a property of the surrounding beam counter,
-        // which the HRM does not fix at this boundary."). c21 requires the
-        // parity itself (why "odd" rather than "even"), which is a labelling
+        // P7 - p.275: "The Copper is basically a two-cycle machine that
+        // requests the bus only during odd memory cycles". Distinct from P1:
+        // P1 checks the SPACING between grants (two memory cycle times apart,
+        // unaffected by where "odd" starts); P7 checks the PARITY of reqdma
+        // against the module's own hpos PORT directly, sampled every cycle of
+        // this same run (h.reqdma_parity), not only granted ones. This is a
+        // port-level relation of the module to its own input, not the
+        // "absolute slot parity" the Non-goals line above declines (an
+        // external, wall-clock origin): agnus_copper.v gates reqdma with
+        // clk_ena, and clk_ena is assigned hpos[0] directly, so the relation
+        // holds for whatever the caller drives hpos to, without reference to
+        // any origin outside the module.
+        bool parity_ok = true;
+        for (const auto& sample : h.reqdma_parity)
+            if (sample.second && (sample.first & 1) == 0) parity_ok = false;
+        checks.expect(parity_ok,
+                      "P7 reqdma is raised only when hpos is odd (p.275 \"requests the bus only "
+                      "during odd memory cycles\"), sampled every cycle of P1's own run "
+                      "[claims: COP2-copins-timing.c2]");
+
+        // COP2-about-the-copper.c21 ("the Copper requests the bus only during
+        // odd-numbered memory cycles") is UNBOUND. c21 requires the parity
+        // itself (why "odd" rather than "even"), which is a labelling
         // convention this fixture explicitly declines to pin down - no
         // stimulus here could distinguish "odd" from "even" without also
         // fixing an origin the HRM does not give. Reason: no assertion
-        // measures it.
+        // measures it. (P7 above measures a different, sibling id --
+        // COP2-copins-timing.c2 -- as a port-level relation, which does not
+        // need that origin; see P7's own comment.)
         checks.note("UNBOUND COP2-about-the-copper.c21 -- no assertion measures it "
                      "(odd/even is a numbering-origin convention this fixture does not fix, see P1's own comment) [claims: ch2-about-the-copper.c20, ch2-appa-copins.c127, ch2-appa-copins.c129, ch2-what-is-a-copper-instruction.c14]");
     }
@@ -316,9 +345,13 @@ int main(int argc, char** argv) {
         h.start();
         h.run_cycles(600);
         move_span = h.span_in_memory_cycle_times(0, 2);
+        // ch2-what-is-a-copper-instruction.c15 and ch2-appa-copins.c137 are
+        // siblings of COP2-what-is-a-copper-instruction.c16 / COP2-copins-timing.c5
+        // already on this line: same sentence, same measurement, another
+        // reader's id. Added on routing's instruction, beside their twins.
         checks.expect_eq(move_span, 4, "P2 a MOVE spans four memory cycle times (p.20) "
                          "[claims: COP2-what-is-a-copper-instruction.c16, COP2-copins-timing.c4, "
-                         "COP2-copins-timing.c5]");
+                         "COP2-copins-timing.c5, ch2-what-is-a-copper-instruction.c15, ch2-appa-copins.c137]");
     }
 
     // P3 - p.20, same sentence: SKIP is stated at four as well. Condition true,
@@ -332,9 +365,13 @@ int main(int argc, char** argv) {
                    TERMINAL_IR1, WAIT_ALL});
         h.start();
         h.run_cycles(4000);
+        // ch2-what-is-a-copper-instruction.c15 and ch2-appa-copins.c137 are
+        // siblings of COP2-what-is-a-copper-instruction.c17 already on this
+        // line, for the SKIP half of the same claim. Added on routing's
+        // instruction, beside its twin.
         checks.expect_eq(h.span_in_memory_cycle_times(0, 2), 4,
                          "P3 a SKIP whose condition is true spans four memory cycle times (p.20) [NM-HRM-005, expected red] "
-                         "[claims: COP2-what-is-a-copper-instruction.c17]");
+                         "[claims: COP2-what-is-a-copper-instruction.c17, ch2-what-is-a-copper-instruction.c15, ch2-appa-copins.c137]");
     }
 
     // P4 - the same claim with the condition false, so the following MOVE runs.
@@ -346,9 +383,14 @@ int main(int argc, char** argv) {
                    TERMINAL_IR1, WAIT_ALL});
         h.start();
         h.run_cycles(4000);
+        // ch2-what-is-a-copper-instruction.c15 is a sibling of
+        // COP2-what-is-a-copper-instruction.c17 already on this line -- the
+        // SKIP-not-taken half. Added on routing's instruction, beside its
+        // twin. (ch2-appa-copins.c137 does not route here: routing names
+        // only P3 for the SKIP case.)
         checks.expect_eq(h.span_in_memory_cycle_times(0, 2), 4,
                          "P4 a SKIP whose condition is false spans four memory cycle times (p.20) [NM-HRM-005, expected red] "
-                         "[claims: COP2-what-is-a-copper-instruction.c17]");
+                         "[claims: COP2-what-is-a-copper-instruction.c17, ch2-what-is-a-copper-instruction.c15]");
     }
 
     // P5/P6 - p.20: "The WAIT instruction requires three memory cycles and six
@@ -439,10 +481,13 @@ int main(int argc, char** argv) {
             "AC1 a MOVE is granted two bus cycles (p.275 \"All instructions (except for "
             "WAIT) require two bus cycles\") "
             "[claims: COP2-copins-instructions.c5, ch2-appa-copins.c135]");
+        // ch2-appa-copins.c137 is this same appendix sentence read by another
+        // reader; added on routing's instruction, beside its twin
+        // COP2-copins-timing.c5 already on this line.
         checks.expect_eq(span, 4,
             "AC2 a MOVE spans four memory cycle times (p.275 \"four memory cycle times are "
             "required per instruction\") "
-            "[claims: COP2-copins-timing.c4, COP2-copins-timing.c5]");
+            "[claims: COP2-copins-timing.c4, COP2-copins-timing.c5, ch2-appa-copins.c137]");
         // Multiply rather than divide. `span / bus == 2` is integer division and
         // would accept span=5, bus=2 - which is not "exactly twice" and not what
         // the sentence says. Caught by independent review on 06.09.2026.
@@ -492,6 +537,12 @@ int main(int argc, char** argv) {
             "AC4 a SKIP is granted two bus cycles (p.275, SKIP is not the sentence's "
             "exception) "
             "[claims: COP2-copins-instructions.c6, COP2-copins-instructions.c8, ch2-appa-copins.c135]");
+        // ch2-appa-copins.c137 (the appendix sentence's SKIP half, which
+        // routing also names on this line) is not added here: this label has
+        // no existing claims bracket, so a new one is new label text, not an
+        // id-only change. P3 above already carries the id in its existing
+        // bracket and, with AC4 here establishing the SKIP's bus-cycle count,
+        // fully covers the SKIP half; see P3's own comment.
         checks.expect_eq(span, 4,
             "AC5 a SKIP spans four memory cycle times (p.275, same sentence)");
         checks.expect_eq(span, 2 * bus,
