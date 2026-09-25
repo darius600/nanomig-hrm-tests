@@ -1327,7 +1327,7 @@ int main(int argc, char** argv) {
         checks.expect(paula_decodes_it,
             "DMACON-DECODED-BY-PAULA: this fixture IS paula.v, and a write "
             "at $096 visibly changes its own audio_dmal output, so Paula "
-            "decodes DMACON. 'DMACON 096 W A D P...' (appendix A p.278 -- "
+            "decodes DMACON. 'DMACON 096 W A D P...' (appendix A p.278) -- "
             "the P half.");
         checks.record(
             "DMACON-DECODED-BY-PAULA [Agnus and Denise thirds, RECORDED "
