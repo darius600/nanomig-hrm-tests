@@ -321,7 +321,16 @@
 //   3-t9.c02 (opus p59, Table 3-9): same row, PAL column.
 //   3-window.c43 (sol p59, Table 3-9): same cell, NTSC, sol's own reading.
 //   3-window.c44 (sol p59, Table 3-9): same cell, PAL, sol's own reading.
-//   Tested by NORMAL-VSTART-2C-SAME-FOR-NTSC-AND-PAL (new, below).
+//   Tested by STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-LINES (existing,
+//   unchanged): agnus_bitplanedma has no ntsc/pal-distinguishing input at
+//   all, so the one measurement of VSTART=$2C the existing assertion
+//   already performs -- silent at $2B, active at $2C -- is the whole of
+//   what "NTSC and PAL use the same normal VSTART, $2C" can mean at this
+//   boundary: there is no separate NTSC-VSTART and PAL-VSTART mechanism in
+//   the RTL to test twice. Corrected from this addition's first draft
+//   (which had proposed a new combined assertion) once the router's own
+//   routing.how for these 5 ids was read in step 2 below and said the same
+//   thing.
 //
 // -- G4: VSTOP's normal encoded value for NTSC is $F4 (p.59) --
 //   3-diw.c34 (opus p59): "Normally, the VSTOP is set to ($F4) for" [NTSC].
@@ -608,7 +617,75 @@ int main(int argc, char** argv) {
             "and VSTOP', p.78). 3-diw.c11, 3-window.c12, 3-diw.c20, "
             "3-window.c19, 3-window.c25, 3-window.c26, 3-diw.c26, "
             "3-window.c32, 3-diw.f01, 3-big.c29, 3-window-range.c10, "
-            "A-diwstop.fn, A-diwstrt.fn, B-subject.c12, B-subject.c15 .");
+            "A-diwstop.fn, A-diwstrt.fn, B-subject.c12, B-subject.c15, "
+            "3-video.c05, 3-video.c8, 3-res.c03, 3-video.c23, "
+            "3-basic-size.c3, 3-basic.c03, 3-resolution.c10, 3-t6.c01, "
+            "3-sum.c10, 3-diw.c34, 3-t9.c09, 3-window.c41, 3-window.c51, "
+            "3-window.c14, 3-t9.c01, 3-t9.c02, 3-window.c43, 3-window.c44 .");
+    }
+
+    // ---------------- STANDARD-WINDOW-PAL-VSTART-2C-VSTOP-2C-GIVES-256-LINES (p.40,41,45,49,59,64) ----------------
+    {
+        Harness h;
+        h.setup_dma();
+        h.write_reg(DIWSTRT_ADDR, static_cast<uint16_t>((0x2C << 8) | H_ARBITRARY_START));
+        h.write_reg(DIWSTOP_ADDR, static_cast<uint16_t>((0x2C << 8) | H_ARBITRARY_STOP));
+        // Same boundary basis as the NTSC assertion above, on the PAL
+        // encoding: DIWSTOP's raw byte $2C has V7=0, so the implied
+        // V8=~V7=1 fires (the same complement rule
+        // VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 already proves at the
+        // $80/$7F bytes) and composes to $12C=300 -- Table 3-9's own
+        // annotation for this exact cell. One line before VSTART, VSTART
+        // itself, VSTOP-1 (last enabled line), VSTOP itself.
+        auto c = counts_at(h, {0x2B, 0x2C, 0x12B, 0x12C});
+
+        checks.expect(
+            c[0x2B] == 0 && c[0x2C] > 0 && c[0x12B] > 0 && c[0x12C] == 0,
+            "STANDARD-WINDOW-PAL-VSTART-2C-VSTOP-2C-GIVES-256-LINES: with "
+            "DIWSTRT's high byte $2C (the same value the NTSC normal window "
+            "uses -- 'the first vertical position is $2C' / 'You write $2C "
+            "for VSTART', p.57-58; 'The horizontal and vertical starting "
+            "positions are the same both for NTSC and for PAL', p.57) and "
+            "DIWSTOP's raw byte $2C -- Table 3-9's 'Normal' PAL column, "
+            "'$2C (=$12C)', p.59 -- dma is silent one line before $2C, "
+            "active at $2C, still active at $12B, silent again at $12C -- "
+            "exactly the window ($2C..$12C) = 256 lines: 'the beam produces "
+            "312 lines, of which 256 are normally visible' (p.40), 'The "
+            "normal PAL screen has a height of 256 video lines' (p.41), "
+            "'256 or 512 lines for PAL' (p.45), Table 3-6's PAL "
+            "non-interlaced column (p.49), 'the VSTOP is set to ... ($2C) "
+            "for PAL' (p.59), 'Non-interlaced mode: ... 256 for PAL' "
+            "(summary, p.64). 3-video.c07, 3-video.c10, 3-res.c04, "
+            "3-video.c24, 3-basic-size.c5, 3-basic.c05, 3-resolution.c11, "
+            "3-t6.c02, 3-sum.c11, 3-diw.c35, 3-t9.c10, 3-window.c42, "
+            "3-window.c52 .");
+    }
+
+    // ---------------- VSTOP-ADDRESSES-NTSC-262-LINE-FIELD-BOUNDARY (p.79) ----------------
+    {
+        Harness h;
+        h.setup_dma();
+        h.write_reg(DIWSTRT_ADDR, static_cast<uint16_t>((0x00 << 8) | H_ARBITRARY_START));
+        // Raw VSTOP byte $06: V7=0, so the implied V8=~V7=1 fires (the same
+        // rule VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 already proves),
+        // composing to $106=262 -- the NTSC field's own line count (already
+        // measured as agnus_beamcounter's total in
+        // hrm/ch3-beam-counters-and-blanking/), here reached as a VSTOP
+        // value on THIS module.
+        h.write_reg(DIWSTOP_ADDR, static_cast<uint16_t>((0x06 << 8) | H_ARBITRARY_STOP));
+        auto c = counts_at(h, {261, 262});
+
+        checks.expect(
+            c[261] > 0 && c[262] == 0,
+            "VSTOP-ADDRESSES-NTSC-262-LINE-FIELD-BOUNDARY: DIWSTOP's raw "
+            "byte $06 (V7=0, implied V8=~V7=1) composes to exactly 262 -- "
+            "dma is still active at line 261, silent at line 262 -- so the "
+            "NTSC field's own 262-line boundary sits inside the range VSTOP "
+            "can address, exactly as Figure 3-22 draws it: 'the dashed rule "
+            "ticked 262 and labelled (NTSC) lies inside the VSTOP region' "
+            "(p.79), the same 128-383 range "
+            "VSTOP-V8-EQUALS-NOT-V7-RESTRICTS-128-TO-383 already measures "
+            "at its own two boundary bytes. 3-big.f11 .");
     }
 
     // ---------------- VSTART-LIVES-IN-DIWSTRT-BITS-15-8 (p.64,77,91) ----------------
@@ -1034,6 +1111,27 @@ int main(int argc, char** argv) {
 //    short of per_line*200 - the last ~16 lines of the summed range no
 //    longer fetch anything). Reverted: 14/0.
 //
+// LATE ADDITION mutations (25.09.2026), same discipline -- applied, rebuilt
+// under WSL/Verilator (`make clean test`), run, the PASS/FAIL line for the
+// named assertion read from real output (quoted verbatim below), then
+// reverted and rebuilt clean. A final clean build after both reverts
+// reproduced "16 passed, 0 failed" exactly, and `git diff` against the
+// working file at that point showed only the two new assertions and the
+// extended STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-LINES citation list
+// -- no other content difference, confirming both mutations were fully
+// reverted.
+// 15. STANDARD-WINDOW-PAL-VSTART-2C-VSTOP-2C-GIVES-256-LINES: DIWSTOP's raw
+//    byte changed from $2C to $1C (still V7=0/complement fires, but now
+//    composes to $11C=284, not $12C=300). Result: "15 passed, 1 failed",
+//    only STANDARD-WINDOW-PAL-VSTART-2C-VSTOP-2C-GIVES-256-LINES red
+//    (c[0x12B] became 0, line 299 now past the new, earlier VSTOP).
+//    Reverted: 16/0.
+// 16. VSTOP-ADDRESSES-NTSC-262-LINE-FIELD-BOUNDARY: DIWSTOP's raw byte
+//    changed from $06 to $16 (still V7=0/complement fires, but now composes
+//    to $116=278, not $106=262). Result: "15 passed, 1 failed", only
+//    VSTOP-ADDRESSES-NTSC-262-LINE-FIELD-BOUNDARY red (c[262] became >0,
+//    line 262 now still inside the wider window). Reverted: 16/0.
+//
 // Machine-readable records, one per line, read by tools/check_gates.py's
 // mutation gate (MUTATION_RE):
 // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: wide-window config's DIWSTRT raw byte changed from $00 to $65 (VSTART=101, past witness line 100); wide[100] became 0.
@@ -1050,4 +1148,6 @@ int main(int argc, char** argv) {
 // MUTATION DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-BINARY-WEIGHTS stimulus red: (bit 9 = V9, weight 512) DIWHIGH write changed from $0200 to $0100 (bit 8 instead of bit 9); c9[511] became 0.
 // MUTATION DIWHIGH-BITS-8-9-10-EXTEND-VSTOP-BINARY-WEIGHTS stimulus red: (bit 10 = V10, weight 1024) DIWHIGH write changed from $0400 to $0200 (bit 9 instead of bit 10); c10[1023] became 0.
 // MUTATION VERTICAL-BITPLANE-DMA-TIMING-MATCHES-DISPLAY-WINDOW stimulus red: the summed harness's DIWSTOP raw byte changed from $F4 to $E4, narrower than the per-line-anchor harness's window; total fell short of per_line*200.
+// MUTATION STANDARD-WINDOW-PAL-VSTART-2C-VSTOP-2C-GIVES-256-LINES stimulus red: DIWSTOP raw byte changed from $2C to $1C; composed VSTOP became $11C=284, not $12C=300, so c[0x12B] became 0.
+// MUTATION VSTOP-ADDRESSES-NTSC-262-LINE-FIELD-BOUNDARY stimulus red: DIWSTOP raw byte changed from $06 to $16; composed VSTOP became $116=278, not $106=262, so c[262] became >0.
 // ============================================================================
