@@ -18,6 +18,10 @@
 ; leaving only word2 and word4 (prog_fill_asc_mut.s, combined with
 ; ASCENDING: with word0 no longer contributing a toggle, the ascending scan
 ; reproduces the descending-mode word1/word3 pattern by coincidence).
+; NOWRITE, if defined, clears BLTCON0's USED bit so channel D never writes:
+; the blit completes but the destination keeps the $A5A5 sentinel
+; (prog_fill_desc_nowrite.s / prog_fill_asc_nowrite.s) -- the case the two
+; PRECONDITION checks exist to catch.
 
         include "nanomig.i"
         org     PROGRAM_ORG
@@ -65,7 +69,11 @@ start:
         move.w  #0,BLTBMOD(a0)
         move.w  #0,BLTCMOD(a0)
         move.w  #0,BLTDMOD(a0)
+        ifd     NOWRITE
+        move.w  #$0202,BLTCON0(a0)     ; USEC only, USED=0: channel D never writes, sentinel must survive
+        else
         move.w  #$0302,BLTCON0(a0)     ; USEC|USED, LF=$02 (D = C when A=B=0)
+        endif
 
         ifd     ASCENDING
         move.w  #$0008,BLTCON1(a0)     ; DESC=0, IFE=1, FCI=0

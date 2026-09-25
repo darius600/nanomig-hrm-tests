@@ -2,12 +2,26 @@
 //
 // ch6-blitter-line-fill: see SPECIFICATION.md.
 //
-// Topic 1 (page 189-191): prog_line.s runs a real line-mode blit for
-// endpoints (10,5)-(3,40) and leaves the drawn line in a 36-word row
-// buffer (LINE_ROW0, one word per row y=5..40, bit index = x); the harness
-// reads all 36 rows back with peek_logical and grades only what page 189
-// and 191 fix -- first pixel, last pixel, one pixel per row, x falling by
-// 0 or 1 -- never an exact intermediate position.
+// Topic 1 (page 180-181, 189-192, 268): prog_line.s and prog_line2.s each
+// run a real line-mode blit -- the same two endpoints (10,5) and (3,40),
+// walked in opposite directions -- and leave the drawn line in a 36-word
+// row buffer (LINE_ROW0, one word per row y=5..40, address = LINE_ROW0 +
+// 2*(y-5)). Every register (ASH, the octant code, BLTCON0's fixed bits and
+// LF byte, BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE) is built from the pages, not
+// read off the RTL: p.192 for the register summary, p.268 (Appendix A) for
+// which bit is which, p.190 (Figure 6-8 / Table 6-3) for the octant, p.181
+// for the AB+AC minterm byte. Because pixel x sits at bit 15-x within a
+// word (p.180: "the least significant (rightmost) four bits ... shifted
+// in"; p.181: the most significant bits are the first, leftmost pixels),
+// the grading checks bit 5 at row 0 (x=10) and bit 12 at row 35 (x=3),
+// rising by 0 or 1 between rows -- never an exact intermediate position.
+// Two guard words bracket the 36-word window (y=4 and y=41) and must stay
+// zero, so a line that overruns the window cannot pass unnoticed.
+//
+// prog_line2.s exists because prog_line.s's line has y2 > y1 (y2-y1 = +35),
+// so it cannot tell "dy = abs(y2-y1)" (p.190) from "dy = y2-y1": abs is the
+// identity there. prog_line2.s walks the same two points the other way
+// (y2 < y1, y2-y1 = -35), so only a genuine abs() gives the right length.
 //
 // Topic 2 (page 182, 184, 200): prog_fill_desc.s / prog_fill_asc.s run the
 // same 5-word/3-marker boundary row through the blitter's inclusive
@@ -22,26 +36,23 @@
 // NMH_MUTATE selects a mutated program in place of its normal counterpart;
 // none is exercised by a plain `make test`. Re-runs used to confirm the
 // MUTATION lines below:
-//   NMH_MUTATE=LINE          prog_line_mut.bin (unnormalized registers)
-//   NMH_MUTATE=LINE_FIXTURE  prog_line_fixture_mut.bin (wrong constant)
-//   NMH_MUTATE=FILL_FIXTURE  prog_fill_plain_mut.bin (word4 marker dropped)
-//   NMH_MUTATE=FILL_DESC     prog_fill_desc_mut.bin (marker moved to word1)
-//   NMH_MUTATE=FILL_ASC      prog_fill_asc_mut.bin (word0 marker dropped)
+//   NMH_MUTATE=LINE              prog_line_mut.bin (unnormalized registers)
+//   NMH_MUTATE=LINE_FIXTURE      prog_line_fixture_mut.bin (wrong constant)
+//   NMH_MUTATE=LINE2             prog_line2_mut.bin (dy not abs'd)
+//   NMH_MUTATE=FILL_FIXTURE      prog_fill_plain_mut.bin (word4 marker dropped)
+//   NMH_MUTATE=FILL_DESC         prog_fill_desc_mut.bin (marker moved to word1)
+//   NMH_MUTATE=FILL_ASC          prog_fill_asc_mut.bin (word0 marker dropped)
+//   NMH_MUTATE=FILL_DESC_NOWRITE prog_fill_desc_nowrite.bin (channel D disabled)
+//   NMH_MUTATE=FILL_ASC_NOWRITE  prog_fill_asc_nowrite.bin (channel D disabled)
 //
 // MUTATION 6-line-mode.c39 stimulus red unnormalized deltas fed into BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE, height becomes 8 instead of 36, via NMH_MUTATE=LINE
 // MUTATION FIXTURE-LINE stimulus red stored constant changed to DEAD instead of BEEF, via NMH_MUTATE=LINE_FIXTURE
+// MUTATION 6-line-mode.c40 stimulus red raw signed y2-y1 fed into the min/max normalization instead of abs(y2-y1), height becomes 8 instead of 36, via NMH_MUTATE=LINE2
 // MUTATION FIXTURE-FILL stimulus red word4's marker dropped, via NMH_MUTATE=FILL_FIXTURE
 // MUTATION CONTROL-FILL-DESC stimulus red middle marker moved from word 2 to word 1, via NMH_MUTATE=FILL_DESC
 // MUTATION 6-descending-mode.c10 stimulus red word0's marker dropped, ascending scan coincides with the descending pattern, via NMH_MUTATE=FILL_ASC
-//
-// PRECONDITION-FILL-DESC and PRECONDITION-FILL-ASC (the sentinel-overwritten
-// checks) carry no dedicated mutation: not exercised, by a scope decision.
-// Their own stimulus is identical to CONTROL-FILL-DESC's and
-// 6-descending-mode.c10's, whose mutations (marker moved / dropped) change
-// which fill pattern comes out, not whether the blit writes at all; a
-// mutation isolating "the blit completed without ever writing channel D"
-// (for example clearing BLTCON0's USED bit) is out of scope for this
-// repair.
+// MUTATION PRECONDITION-FILL-DESC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives, via NMH_MUTATE=FILL_DESC_NOWRITE
+// MUTATION PRECONDITION-FILL-ASC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives, via NMH_MUTATE=FILL_ASC_NOWRITE
 
 #include <cstdio>
 #include <cstdlib>
@@ -66,9 +77,12 @@ constexpr uint16_t kDoneValue  = 0x600D;
 constexpr uint64_t kBootBudget = 6'000'000;
 constexpr uint64_t kRunBudget  = 4'000'000;
 
-// prog_line.s's row buffer: 36 words, one per row y=5..40.
-constexpr uint32_t kLineRow0 = 0x082400;
+// prog_line.s / prog_line2.s's row buffer: 36 words, one per row y=5..40,
+// plus one guard word immediately before (y=4) and after (y=41).
+constexpr uint32_t kLineRow0   = 0x082400;
 constexpr int kLineRows = 36;
+constexpr uint32_t kLineGuardLo = kLineRow0 - 2;
+constexpr uint32_t kLineGuardHi = kLineRow0 + 72;
 
 class Checks {
 public:
@@ -110,33 +124,40 @@ std::string hex4(uint16_t v) {
     return std::string(buf);
 }
 
-// Analyzes the 36 row words (r.words[1..36], r.words[0] is the fixture).
-// Grades only what page 189/191 fix: exactly one bit per row, the first
-// row's bit at x=10, the last row's bit at x=3, and x never rising and
-// never falling by more than one between consecutive rows. Never checks an
-// exact intermediate position.
+// Analyzes 36 row words plus two guard words, starting at r.words[row_start].
+// Grades only what the pages fix: exactly one bit per row, row 0's bit at
+// index 5 (x=10), row 35's bit at index 12 (x=3) -- p.180/181's bit-15-
+// minus-x mapping -- the bit index rising by 0 or 1 between consecutive
+// rows (x falls by 0 or 1: p.191, dx is the minor axis), and both guard
+// words still zero (the line does not overrun the 36-word window). Never
+// checks an exact interior position.
 struct LineAnalysis {
     bool have_all = false;
     bool all_single_bit = false;
     bool first_ok = false;
     bool last_ok = false;
     bool monotonic_ok = false;
+    bool guard_ok = false;
     int first_bit = -1;
     int last_bit = -1;
     int max_step = -1;
     int bad_row = -1;  // first row whose word does not carry exactly one bit, else -1
-    bool complete() const { return have_all && all_single_bit && first_ok && last_ok && monotonic_ok; }
+    uint16_t guard_lo = 0xDEAD;
+    uint16_t guard_hi = 0xDEAD;
+    bool complete() const {
+        return have_all && all_single_bit && first_ok && last_ok && monotonic_ok && guard_ok;
+    }
 };
 
-LineAnalysis analyze_line(const Run& r) {
+LineAnalysis analyze_line(const Run& r, size_t row_start) {
     LineAnalysis a;
-    if (r.words.size() < 1 + kLineRows) return a;
+    if (r.words.size() < row_start + kLineRows + 2) return a;
     std::vector<int> bits(kLineRows, -1);
     a.have_all = true;
     a.all_single_bit = true;
     for (int i = 0; i < kLineRows; ++i) {
-        if (!has(r, 1 + i)) { a.have_all = false; break; }
-        uint16_t v = w(r, 1 + i);
+        if (!has(r, row_start + i)) { a.have_all = false; break; }
+        uint16_t v = w(r, row_start + i);
         int pc = 0, idx = -1;
         for (int b = 0; b < 16; ++b) if (v & (1 << b)) { ++pc; idx = b; }
         bits[i] = idx;
@@ -146,17 +167,27 @@ LineAnalysis analyze_line(const Run& r) {
     if (!a.have_all) return a;
     a.first_bit = bits[0];
     a.last_bit = bits[kLineRows - 1];
-    a.first_ok = (a.first_bit == 10);
-    a.last_ok = (a.last_bit == 3);
+    a.first_ok = (a.first_bit == 5);   // x=10, bit = 15-10
+    a.last_ok = (a.last_bit == 12);    // x=3,  bit = 15-3
     a.monotonic_ok = true;
     a.max_step = 0;
     for (int i = 0; i < kLineRows - 1; ++i) {
         if (bits[i] < 0 || bits[i + 1] < 0) { a.monotonic_ok = false; continue; }
-        int step = bits[i] - bits[i + 1];
+        int step = bits[i + 1] - bits[i];  // bit index rises as x falls
         if (step < 0 || step > 1) a.monotonic_ok = false;
         if (step > a.max_step) a.max_step = step;
     }
+    a.guard_lo = w(r, row_start + kLineRows);
+    a.guard_hi = w(r, row_start + kLineRows + 1);
+    a.guard_ok = has(r, row_start + kLineRows) && has(r, row_start + kLineRows + 1) &&
+                 a.guard_lo == 0 && a.guard_hi == 0;
     return a;
+}
+
+std::string dump_rows(const Run& r, size_t row_start) {
+    std::string dump;
+    for (int i = 0; i < kLineRows; ++i) dump += hex4(w(r, row_start + i)) + " ";
+    return dump;
 }
 
 }  // namespace
@@ -168,13 +199,16 @@ int main(int argc, char** argv) {
 
     const char* mutate = std::getenv("NMH_MUTATE");
     const std::string mv = mutate ? mutate : "";
-    const bool mutate_line          = mv == "LINE";
-    const bool mutate_line_fixture  = mv == "LINE_FIXTURE";
-    const bool mutate_fill_fixture  = mv == "FILL_FIXTURE";
-    const bool mutate_fill_desc     = mv == "FILL_DESC";
-    const bool mutate_fill_asc      = mv == "FILL_ASC";
+    const bool mutate_line              = mv == "LINE";
+    const bool mutate_line_fixture      = mv == "LINE_FIXTURE";
+    const bool mutate_line2             = mv == "LINE2";
+    const bool mutate_fill_fixture      = mv == "FILL_FIXTURE";
+    const bool mutate_fill_desc         = mv == "FILL_DESC";
+    const bool mutate_fill_asc          = mv == "FILL_ASC";
+    const bool mutate_fill_desc_nowrite = mv == "FILL_DESC_NOWRITE";
+    const bool mutate_fill_asc_nowrite  = mv == "FILL_ASC_NOWRITE";
 
-    // ---- Topic 1: the line-mode claims (page 189-191) ----
+    // ---- Topic 1: the line-mode claims (page 180-181, 189-192, 268) ----
     {
         std::string bin = dir + "/prog_line.bin";
         if (mutate_line) bin = dir + "/prog_line_mut.bin";
@@ -183,6 +217,8 @@ int main(int argc, char** argv) {
         std::vector<uint32_t> addrs;
         addrs.push_back(kResults);  // fixture
         for (int i = 0; i < kLineRows; ++i) addrs.push_back(kLineRow0 + 2 * i);
+        addrs.push_back(kLineGuardLo);
+        addrs.push_back(kLineGuardHi);
 
         Run r = run_program(bin, addrs);
         const bool loaded = ok(r);
@@ -190,26 +226,57 @@ int main(int argc, char** argv) {
         c.expect(loaded && has(r, 0) && w(r, 0) == 0xBEEF,
             "FIXTURE-LINE: prog_line stores a known constant (BEEF) first, read back before the drawn line is trusted");
 
-        LineAnalysis a = analyze_line(r);
+        LineAnalysis a = analyze_line(r, 1);
         c.expect(loaded && a.complete(),
             "6-line-mode.c39 6-line-mode.c40 ch6-line.c12 ch6-line.c13 "
             "6-line-mode.c41 6-line-mode.c42 ch6-line.c14 ch6-line.c15 ch6-line.c16 "
-            "p189 p190 p191: a line-mode blit for endpoints (10,5)-(3,40) draws exactly one "
-            "pixel in every row y=5..40 (36 rows), the first at x=10, the last at x=3, x falling "
-            "by 0 or 1 between consecutive rows (interior positions not graded)");
+            "p180 p181 p189 p190 p192 p268: a line-mode blit for endpoints (10,5)-(3,40) draws "
+            "exactly one pixel in every row y=5..40 (36 rows), the first at bit 5 (x=10), the last "
+            "at bit 12 (x=3), the bit index rising by 0 or 1 between consecutive rows (x falling by "
+            "0 or 1), and the guard words at y=4 and y=41 stay zero (interior positions not graded)");
 
         if (loaded && a.have_all)
-            c.note("line: first_x=" + std::to_string(a.first_bit) + " last_x=" + std::to_string(a.last_bit) +
+            c.note("line: first_bit=" + std::to_string(a.first_bit) + " last_bit=" + std::to_string(a.last_bit) +
                     " max_step=" + std::to_string(a.max_step) +
                     " all_single_bit=" + (a.all_single_bit ? "yes" : "no") +
+                    " guard_lo=" + hex4(a.guard_lo) + " guard_hi=" + hex4(a.guard_hi) +
                     (a.bad_row >= 0 ? (" bad_row=" + std::to_string(a.bad_row)) : ""));
         else if (loaded)
             c.note("line: could not read all 36 rows");
-        if (loaded) {
-            std::string dump;
-            for (int i = 0; i < kLineRows; ++i) dump += hex4(w(r, 1 + i)) + " ";
-            c.note("line raw rows: " + dump);
-        }
+        if (loaded) c.note("line raw rows: " + dump_rows(r, 1));
+    }
+
+    // ---- Topic 1, second stimulus: same endpoints, y2 < y1 (page 190's abs()) ----
+    {
+        std::string bin = dir + "/prog_line2.bin";
+        if (mutate_line2) bin = dir + "/prog_line2_mut.bin";
+
+        std::vector<uint32_t> addrs;
+        for (int i = 0; i < kLineRows; ++i) addrs.push_back(kLineRow0 + 2 * i);
+        addrs.push_back(kLineGuardLo);
+        addrs.push_back(kLineGuardHi);
+
+        Run r = run_program(bin, addrs);
+        const bool loaded = ok(r);
+
+        LineAnalysis a = analyze_line(r, 0);
+        c.expect(loaded && a.complete(),
+            "6-line-mode.c40 ch6-line.c13 "
+            "p180 p181 p189 p190 p192 p268: the same line walked the other way, endpoints "
+            "(3,40)-(10,5) (y2 < y1, so dy = abs(y2-y1) != y2-y1), draws the identical pattern -- "
+            "one pixel per row y=5..40, bit 5 at row 0 (x=10), bit 12 at row 35 (x=3), the bit index "
+            "rising by 0 or 1 between rows, guard words at y=4 and y=41 zero -- proving dy is the "
+            "absolute value, not the signed difference");
+
+        if (loaded && a.have_all)
+            c.note("line2: first_bit=" + std::to_string(a.first_bit) + " last_bit=" + std::to_string(a.last_bit) +
+                    " max_step=" + std::to_string(a.max_step) +
+                    " all_single_bit=" + (a.all_single_bit ? "yes" : "no") +
+                    " guard_lo=" + hex4(a.guard_lo) + " guard_hi=" + hex4(a.guard_hi) +
+                    (a.bad_row >= 0 ? (" bad_row=" + std::to_string(a.bad_row)) : ""));
+        else if (loaded)
+            c.note("line2: could not read all 36 rows");
+        if (loaded) c.note("line2 raw rows: " + dump_rows(r, 0));
     }
 
     // ---- Topic 2: area fill requires descending mode (pages 182, 184, 200) ----
@@ -229,7 +296,9 @@ int main(int argc, char** argv) {
                     " " + hex4(w(r,3)) + " " + hex4(w(r,4)));
     }
     {
-        const std::string bin = mutate_fill_desc ? dir + "/prog_fill_desc_mut.bin" : dir + "/prog_fill_desc.bin";
+        std::string bin = dir + "/prog_fill_desc.bin";
+        if (mutate_fill_desc) bin = dir + "/prog_fill_desc_mut.bin";
+        if (mutate_fill_desc_nowrite) bin = dir + "/prog_fill_desc_nowrite.bin";
         Run r = run_program(bin, {kResults, kResults + 2});
         const bool loaded = ok(r);
 
@@ -244,7 +313,9 @@ int main(int argc, char** argv) {
             c.note("fill descending: word1=" + hex4(w(r,0)) + " word3=" + hex4(w(r,1)));
     }
     {
-        const std::string bin = mutate_fill_asc ? dir + "/prog_fill_asc_mut.bin" : dir + "/prog_fill_asc.bin";
+        std::string bin = dir + "/prog_fill_asc.bin";
+        if (mutate_fill_asc) bin = dir + "/prog_fill_asc_mut.bin";
+        if (mutate_fill_asc_nowrite) bin = dir + "/prog_fill_asc_nowrite.bin";
         Run r = run_program(bin, {kResults, kResults + 2});
         const bool loaded = ok(r);
 

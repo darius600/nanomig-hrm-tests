@@ -4,7 +4,7 @@
 package cannot settle. Every id below is either carried by an assertion or
 withdrawn with a reason; none is silently dropped.
 
-## Topic 1: the line-mode claims (page 189-191)
+## Topic 1: the line-mode claims (page 180-181, 189-192, 268)
 
 Nine ids describe the recipe a program follows before starting a
 line-drawing blit: compute the raw coordinate deltas (page 190), then
@@ -13,53 +13,112 @@ the minor axis "dy", swapping if necessary (page 191). The recipe has no
 port-visible consequence of its own -- there is no register that reports
 "dx" or "dy" back; its only observable effect is the line the blitter
 draws once the normalized values are programmed into the registers page
-191's "REGISTER SUMMARY FOR LINE MODE" lists. So the assertion is on the
+192's "REGISTER SUMMARY FOR LINE MODE" lists. So the assertion is on the
 drawn line itself, not on an intermediate CPU value.
+
+Every register this package's programs write is built from the pages
+alone, not read off the RTL:
+
+- **ASH** (BLTCON0 bits 15-12) = x1 modulo 15 (page 192).
+- **dx0, dy0** = abs(x2-x1), abs(y2-y1) (page 190); normalized dx =
+  max(dx0,dy0), dy = min(dx0,dy0) (page 191/192).
+- **Octant.** Figure 6-8 (page 190) gives two numbers per sector: the
+  parenthesized one is the octant number Table 6-3 indexes, the other is
+  already the decimal value of BLTCON1 bits 4-2 for that sector (page 189:
+  "The number in parenthesis is the octant numbering; the other number
+  represents the value that should be placed in bits 4 through 2 of
+  BLTCON1."). For (10,5)-(3,40) -- x falling, y rising, steep (dy > dx) --
+  that is the down-and-left sector, octant 5, code 010.
+- **BLTCON0's fixed bits and LF byte.** Appendix A, page 268, gives BLTCON0
+  bits 11-8 as 1,0,1,1 in line mode -- matching page 192's "SRCA, SRCC, and
+  SRCD = 1" and "SRCB = 0" -- and BLTCON1 bits 4-2 as the octant code (page
+  190's caption) and bit 6 as SIGN. The LF byte is "AB+AC" for the common
+  (non-exclusive-or) case (page 191/192); that expression is $CA by the
+  same minterm arithmetic page 181 works through for the identical formula
+  ("we... pass along the original destination data... wherever A is 0 (for
+  a minterm of AC), yielding our classic cookie-cut function of AB+AC, or
+  $CA"). So BLTCON0 = ASH<<12 | $BCA.
+- **BLTAPT, BLTAMOD, BLTBMOD, BLTSIZE, SIGN** follow page 192's formulas
+  directly: BLTAPT = 4\*dy-2\*dx, BLTAMOD = 4\*(dy-dx), BLTBMOD = 4\*dy,
+  BLTSIZE bits 15-6 = dx+1 and bits 5-0 = 2, SIGN = 1 if BLTAPT < 0.
+- **Bit-to-pixel mapping.** Page 180: "the least significant (rightmost)
+  four bits ... shifted in". Page 181's worked example: the most
+  significant bits of a word are its leftmost pixels. So pixel x sits at
+  bit 15-x within a word, not at bit x.
 
 ### Assertion (drawn line)
 
 - Claims: `6-line-mode.c39`, `6-line-mode.c40`, `ch6-line.c12`,
   `ch6-line.c13` (page 190, raw dx/dy); `6-line-mode.c41`,
   `6-line-mode.c42`, `ch6-line.c14`, `ch6-line.c15`, `ch6-line.c16` (page
-  191, normalized dx/dy and the rearrangement). One assertion settles all
-  nine: the normalized values are exactly what a correctly drawn line for
-  these endpoints requires, and a line drawn from unnormalized values comes
-  out the wrong length (see Mutation) -- so the drawn line is evidence for
-  the whole recipe, not just its last step.
+  191/192, normalized dx/dy and the rearrangement). One assertion settles
+  all nine: the normalized values are exactly what a correctly drawn line
+  for these endpoints requires, and a line drawn from unnormalized values
+  comes out the wrong length (see Mutation) -- so the drawn line is
+  evidence for the whole recipe, not just its last step.
 - Proposition: for endpoints (x1,y1)=(10,5), (x2,y2)=(3,40), a line-mode
-  blit set up per page 191's register summary, with the octant fixed by
-  Fig 6-8/Table 6-3 (page 190) for dy(35) > dx(7) -- Y the major axis, x
-  falling, y rising -- draws a line with the following three properties,
-  the only ones the pages fix:
+  blit set up per page 192's register summary and the octant/bit
+  derivation above -- Y the major axis, x falling, y rising -- draws a
+  line with the following three properties, the only ones the pages fix:
   1. First pixel at (10,5), last pixel at (3,40) (page 189: "the blitter
-     draws a line from one point to another").
-  2. Exactly dx_normalized+1 = 36 pixels (page 191: "We set the blit
-     height to the length of the line, which is dx + 1").
-  3. Consequently one pixel in every row y=5..40, with x falling by 0 or 1
-     between consecutive rows (dx is the minor axis and dx < dy, so x
-     cannot change in every row, and cannot change by more than one row
-     per pixel since dy is major).
+     draws a line from one point to another"), which at bit 15-x sit at
+     bit 5 (row 0) and bit 12 (row 35).
+  2. Exactly dx+1 = 36 pixels (page 192: "BLTSIZE bits 15-6 = dx + 1").
+  3. Consequently one pixel in every row y=5..40, with the bit index
+     rising by 0 or 1 between consecutive rows as x falls by 0 or 1 (dx is
+     the minor axis and dx < dy, so x cannot change in every row, and
+     cannot change by more than one row per pixel since dy is major).
   What the pages do not fix: the initial error term and the two modulos
   fix the exact row at which x falls, but not a formula this package's
   claims state -- so no exact intermediate (x,y) pair is graded, only the
-  three properties above.
+  three properties above. Two guard words, one row before (y=4) and one
+  after (y=41) the 36-word window, are cleared and checked to stay zero,
+  so a line that runs long cannot pass unnoticed.
 - Program: `prog_line.s` builds this blit (BLTAPT as the Bresenham
   accumulator, BLTAMOD/BLTBMOD as its two increments, BLTCON0's ASH as the
-  starting bit position, BLTCON1's octant bits) and leaves the result in a
-  36-word row buffer, one word per row y=5..40, each word's single set bit
-  at bit-index x (words never cross a boundary since x stays within
-  3..10). The register-level encoding (which bit is which octant flag, the
-  accumulator's bit-drop/sign-extension format) is mechanical setup, not a
-  page-derived value; it is what the full claims file's RTL citations
-  (`agnus_blitter.v`'s line-mode states, `agnus_blitter_adrgen.v`'s
-  accumulator sign) are for, and its correctness was checked against the
-  three graded properties above by running the blit, not assumed.
-- Observed: `peek_logical` on all 36 row words directly (the program does
-  not copy them through `RESULTS`).
-- Expected: row 0's word has its one set bit at index 10; row 35's word
-  has its one set bit at index 3; every row's word has exactly one set
-  bit; consecutive rows' bit indices never rise and never fall by more
-  than one.
+  starting bit position, BLTCON1's octant bits, all derived above) and
+  leaves the result in a 36-word row buffer, one word per row y=5..40
+  (address = LINE_ROW0 + 2\*(y-5)), plus the two guard words.
+- Observed: `peek_logical` on all 36 row words and both guard words
+  directly (the program does not copy them through `RESULTS`).
+- Expected: row 0's word has its one set bit at bit index 5 (x=10); row
+  35's word has its one set bit at bit index 12 (x=3); every row's word
+  has exactly one set bit; consecutive rows' bit indices never fall and
+  never rise by more than one; both guard words read back zero.
+
+### Assertion (drawn line, second stimulus)
+
+Page 190: "dx = abs(x2-x1); dy = abs(y2-y1)". For (10,5)-(3,40), y2-y1 =
+40-5 = +35, so abs is the identity there and that stimulus alone cannot
+tell "dy = abs(y2-y1)" from "dy = y2-y1". The x claims do not share the
+problem (x2-x1 = -7 already).
+
+- Claims: `6-line-mode.c40`, `ch6-line.c13` (page 190, "dy = abs(y2-y1)"
+  specifically -- already carried by the first stimulus above, but not
+  falsifiable by it alone; this stimulus closes that gap).
+- Proposition: `prog_line2.s` walks the identical two points the other way
+  -- endpoints (x1,y1)=(3,40), (x2,y2)=(10,5), y2-y1 = 5-40 = -35 -- so
+  only a genuine abs() gives the right magnitude. Built the same way from
+  the pages: x1=3 gives ASH=3; the direction (x rising, y falling, steep)
+  is the up-and-right sector, octant 1, code 001; BLTAPT/BLTAMOD/BLTBMOD/
+  BLTSIZE come out to the same magnitudes as the first stimulus's line,
+  since normalization only uses abs values. It reuses the row-buffer
+  layout (address = LINE_ROW0 + 2\*(y-5)), so its first pixel (3,40) is at
+  row 35 and BLTCPT/BLTDPT start there; BLTCMOD/BLTDMOD stay the plain
+  positive "width of the bitplane in bytes" page 192 gives (unlike
+  BLTAPT/BLTAMOD/BLTBMOD, which the page gives as signed formulas), since
+  Appendix A's octant table assigns this octant's AUL bit ("always up or
+  left") = 1 where the first stimulus's octant has AUL=0 -- the octant
+  code, not the sign the program loads into BLTCMOD/BLTDMOD, is what the
+  blitter uses to pick the major-axis step direction. A correct abs()'d
+  result lands on the identical two graded extremes the first stimulus
+  uses.
+- Program: `prog_line2.s`, same 36-word row buffer and two guard words as
+  `prog_line.s`.
+- Observed: `peek_logical` on all 36 row words and both guard words.
+- Expected: same as the first stimulus -- bit 5 at row 0 (x=10), bit 12 at
+  row 35 (x=3), one set bit per row, bit index rising by 0 or 1 between
+  rows, both guard words zero.
 
 ### Fixture: FIXTURE-LINE
 
@@ -73,7 +132,7 @@ line is trusted.
 `prog_line_mut.s` = `prog_line.s` with `MUTATE_UNNORM` defined: it feeds
 the raw, unswapped deltas (dx0=7 as if it were the major axis, dy0=35 as
 if it were the minor) into BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE instead of the
-normalized dmax=35/dmin=7. BLTSIZE's height field becomes dx0+1=8 instead
+normalized dx=35/dy=7. BLTSIZE's height field becomes dx0+1=8 instead
 of 36, so the drawn line stops 28 rows short: rows 8-35 are never written
 (fail "exactly one set bit") and the last-pixel check fails outright.
 Recorded as:
@@ -85,6 +144,16 @@ stores $DEAD instead of $BEEF, turning FIXTURE-LINE red on its own,
 unchanged expected value. Recorded as:
 
     MUTATION FIXTURE-LINE stimulus red stored constant changed to DEAD instead of BEEF
+
+`prog_line2_mut.s` = `prog_line2.s` with `MUTATE_NOABS` defined: it feeds
+the raw signed y2-y1=-35 (not abs'd) into the min/max normalization
+alongside dx0=7, giving dx_bad=max(7,-35)=7 (wrong, should be 35) and
+dy_bad=min(7,-35)=-35 (wrong sign and magnitude). BLTSIZE's height field
+becomes dx_bad+1=8 instead of 36, the same observable failure as
+`MUTATE_UNNORM`, reached by skipping abs() instead of skipping the
+major/minor swap. Recorded as:
+
+    MUTATION 6-line-mode.c40 stimulus red raw signed y2-y1 fed into the min/max normalization instead of abs(y2-y1), height becomes 8 instead of 36
 
 ## Topic 2: area fill requires descending mode (pages 182, 184, 200)
 
@@ -127,7 +196,7 @@ the control on the same measurement basis, carrying no ids of its own.
   lines, leaving the lines intact", and "(Of course, fills are always done
   on full 16-bit words.)"
 - **Starting state.** Appendix A, page 267: `BLTCON1` bit 02 is FCI. The
-  program's $0002 bit clear leaves it 0, so the fill starts outside.
+  program's $0004 bit clear leaves it 0, so the fill starts outside.
   (Page 185 prints "FILL_CARRYIN" at bit 3 of `BLTCON1`, which conflicts
   with both page 184, where bit 3 is FILL_OR (IFE), and page 267's own
   table; page 267's bit 02=FCI/bit 03=IFE is what the program follows, and
@@ -232,13 +301,22 @@ five-word reproduction check must go red. Recorded as:
 
     MUTATION FIXTURE-FILL stimulus red word4's marker dropped
 
-PRECONDITION-FILL-DESC and PRECONDITION-FILL-ASC carry no dedicated
-mutation: not exercised, by a scope decision. Their own stimulus is
-identical to CONTROL-FILL-DESC's and the ascending assertion's, whose
-mutations (marker moved / dropped) change which fill pattern comes out,
-not whether the blit writes at all; a mutation isolating "the blit
-completed without ever writing channel D" (for example clearing
-`BLTCON0`'s USED bit) is out of scope for this repair.
+PRECONDITION-FILL-DESC: `prog_fill_desc_nowrite.s` (`prog_fill_desc.s` with
+`NOWRITE` defined) clears BLTCON0's USED bit, so channel D never writes.
+The blit still runs and BBUSY still clears, but the destination keeps the
+$A5A5 sentinel -- the precondition, and CONTROL-FILL-DESC which shares the
+same run, must both go red. Recorded as:
+
+    MUTATION PRECONDITION-FILL-DESC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives
+
+PRECONDITION-FILL-ASC: `prog_fill_asc_nowrite.s` (`prog_fill_desc.s` with
+`ASCENDING` and `NOWRITE` both defined) does the same for the ascending
+run. The precondition goes red; the ascending assertion carrying the six
+claim ids does not (it reads back A5A5/A5A5, which still satisfies "not
+(word1=0000 and word3=FFFF)") -- exactly the silent-pass case the
+precondition exists to catch. Recorded as:
+
+    MUTATION PRECONDITION-FILL-ASC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives
 
 ## Withdrawn: Table 6-2's pipeline assumptions (page 189)
 
@@ -260,13 +338,14 @@ completed without ever writing channel D" (for example clearing
 
 ## Summary
 
-- 2 assertions carrying 15 claim ids (9 on the drawn line, 6 on the
-  ascending fill).
+- 3 assertions carrying 15 claim ids (9 on the drawn line, 2 on the second,
+  reversed-direction line, 6 on the ascending fill; `6-line-mode.c40` and
+  `ch6-line.c13` appear on both line assertions, since the first cannot by
+  itself falsify "dy = abs(y2-y1)").
 - 6 claim ids withdrawn (Table 6-2's assumptions; no expected value in
   this package's claims).
 - 2 fixtures (FIXTURE-LINE, FIXTURE-FILL), 1 control (CONTROL-FILL-DESC,
   no ids), 2 preconditions (sentinel overwritten, descending and
-  ascending), 5 stimulus mutations recorded; the two preconditions carry
-  no mutation of their own, noted as a scope decision.
+  ascending), 8 stimulus mutations recorded, one per assertion.
 - Both CPU cores (fx68k, TG68K) run every program; a verdict is reported
   for each, separately, per assertion.
