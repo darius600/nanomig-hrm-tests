@@ -997,7 +997,7 @@ int main(int argc, char** argv) {
             "address of bitplane x...DMA data' (p.272). B-pointer.c1, "
             "A-bplptr.c8, A-bplxpt.c02, 3-mem.c03, 3-mem.c04, 3-memory.c3, "
             "3-memory.c4, 3-memory.c24, 3-memory.c26, 3-ptr.c01, "
-            "3-ptr.c03.");
+            "3-ptr.c03, 3-dual-control.c2, 3-dual.c32.");
     }
 
     // ---------------- POINTER-PAIR-IS-ONE-ADDRESS (p.54, 63) ----------------
@@ -1260,7 +1260,7 @@ int main(int argc, char** argv) {
             "3-large.c9, 3-large.c10, 3-large.c11, 3-mod.c09, 3-mod.c16, "
             "3-mod.c17, 3-mod.c18, 3-modulo.c28, 3-modulo.c29, "
             "3-modulo.c30, 3-sum.c19, 3-summary.c6, 3-big.c19, 3-big.c20, "
-            "3-large.c24, 3-large.c25, A-ddf.c8.");
+            "3-large.c24, 3-large.c25, A-ddf.c8, 3-mod.c15.");
     }
 
     // ---------------- MODULO-INDEPENDENT-OF-BASE-VALUE (p.75) ----------------
@@ -1332,7 +1332,8 @@ int main(int argc, char** argv) {
             "3-modulo.c16, 3-modulo.c17, 3-modulo.c18, 3-regsum-mod.c1, "
             "3-regsum-mod.c2, 3-rmod.c01, 3-rmod.c02, A-bpl1mod.fn, "
             "A-bpl2mod.fn, A-bplmod.c4, A-bplmod.c8, A-bplmod.c11, "
-            "A-bplmod.c12, A-mod.c02, B-subject.c129, B-subject.c133.");
+            "A-bplmod.c12, A-mod.c02, B-subject.c129, B-subject.c133, "
+            "3-dual-control.c1, 3-dual.c32.");
     }
 
     // ---------------- HSCROLL-MODULO-COMPENSATION-FORMULA (p.82, 84) ----------------
@@ -1525,6 +1526,131 @@ int main(int argc, char** argv) {
             "B-mod.c4.");
     }
 
+    // ---------------- INTERLACED-FIELD-PAIR-NTSC-400-LINES (p.62) ----------------
+    {
+        // The NTSC vertical display window is used ONLY as a stimulus knob
+        // here (its own decode is ch3-vertical-display-window's boundary,
+        // not retested): vdiwstrt <= data_in[15:8] (l.184-185), vdiwstop <=
+        // {~data_in[15], data_in[15:8]} (l.197-198, "V8 = ~V7"). DIWSTRT
+        // stays DIWSTRT_STD = $2C81 -> vdiwstrt=44; DIWSTOP=$F4C1 -> V7=0 so
+        // V8=1, vdiwstop=256+0xF4=244 - a 244-44=200-line window, the
+        // manual's own NTSC field height.
+        constexpr uint16_t kDiwstopNtsc = 0xF4C1;
+        constexpr int kFieldLines = 200;
+        constexpr uint32_t kBase = 0x00040000;
+        constexpr int kFirstLine = 44;  // = vdiwstrt
+
+        Harness ha;
+        ha.setup_standard();
+        ha.write_reg(DIWSTOP_ADDR, kDiwstopNtsc);
+        ha.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        ha.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        ha.write_reg(BPLCON0_ADDR, bplcon0_word(false, 1));
+        ha.write_reg(BPL1MOD_ADDR, 40);
+        prime_to_line(ha, kFirstLine - 1);
+        ha.write_ptr(0, kBase);
+        std::vector<uint32_t> fieldA = line_starts(ha, kFirstLine, kFieldLines, 0x88);
+
+        Harness hb;
+        hb.setup_standard();
+        hb.write_reg(DIWSTOP_ADDR, kDiwstopNtsc);
+        hb.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        hb.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        hb.write_reg(BPLCON0_ADDR, bplcon0_word(false, 1));
+        hb.write_reg(BPL1MOD_ADDR, 40);
+        prime_to_line(hb, kFirstLine - 1);
+        hb.write_ptr(0, kBase + 40);  // even field: START+40
+        std::vector<uint32_t> fieldB = line_starts(hb, kFirstLine, kFieldLines, 0x88);
+
+        bool sizes_ok = fieldA.size() == static_cast<size_t>(kFieldLines) &&
+                        fieldB.size() == static_cast<size_t>(kFieldLines);
+        bool fieldA_starts_at_base = sizes_ok && fieldA[0] == kBase;
+        bool steps_ok = sizes_ok, offsets_ok = sizes_ok;
+        if (sizes_ok) {
+            for (int i = 1; i < kFieldLines; ++i) {
+                if (delta21(fieldA[i - 1], fieldA[i]) != 80) steps_ok = false;
+                if (delta21(fieldB[i - 1], fieldB[i]) != 80) steps_ok = false;
+            }
+            for (int i = 0; i < kFieldLines; ++i)
+                if (delta21(fieldA[i], fieldB[i]) != 40) offsets_ok = false;
+        }
+
+        checks.expect(
+            sizes_ok && fieldA_starts_at_base && steps_ok && offsets_ok,
+            "INTERLACED-FIELD-PAIR-NTSC-400-LINES: two software-driven "
+            "fields over the manual's own 200-line NTSC field height (odd "
+            "field pointer at START, even field pointer at START+40, BOTH "
+            "BPL1MOD=40 - p.62's own field-skip recipe) each fetch 200 "
+            "lines stepping 80 bytes apart, the same single step "
+            "MODULO-NONZERO-FOR-WIDER-PLAYFIELD already measures, extended "
+            "across the whole field; every field-B line sits exactly 40 "
+            "bytes past its OWN field-A counterpart, so together the two "
+            "fields interleave into 400 CONSECUTIVE 40-byte-spaced lines, "
+            "never just 200. 'The bitplanes for a full-screen-sized, "
+            "interlaced display are 400 NTSC (512 PAL), rather than 200 "
+            "NTSC (256 PAL), lines long' (p.62). 3-mod.c13, 3-modulo.c22.");
+    }
+
+    // ---------------- INTERLACED-FIELD-PAIR-PAL-512-LINES (p.62) ----------------
+    {
+        // DIWSTRT/DIWSTOP stay DIWSTRT_STD/DIWSTOP_STD ($2C81/$2CC1) here:
+        // vdiwstrt=44 (same decode as NTSC above), and DIWSTOP=$2CC1 gives
+        // data_in[15:8]=$2C (bit7=0, so V8=~0=1), vdiwstop=256+0x2C=300 - a
+        // 300-44=256-line window, the manual's own PAL field height. This
+        // package's own existing DIWSTOP_STD is, by coincidence, exactly
+        // the PAL figure.
+        constexpr int kFieldLines = 256;
+        constexpr uint32_t kBase = 0x00060000;
+        constexpr int kFirstLine = 44;  // = vdiwstrt, same as NTSC above
+
+        Harness ha;
+        ha.setup_standard();
+        ha.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        ha.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        ha.write_reg(BPLCON0_ADDR, bplcon0_word(false, 1));
+        ha.write_reg(BPL1MOD_ADDR, 40);
+        prime_to_line(ha, kFirstLine - 1);
+        ha.write_ptr(0, kBase);
+        std::vector<uint32_t> fieldA = line_starts(ha, kFirstLine, kFieldLines, 0x88);
+
+        Harness hb;
+        hb.setup_standard();
+        hb.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        hb.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        hb.write_reg(BPLCON0_ADDR, bplcon0_word(false, 1));
+        hb.write_reg(BPL1MOD_ADDR, 40);
+        prime_to_line(hb, kFirstLine - 1);
+        hb.write_ptr(0, kBase + 40);  // even field: START+40
+        std::vector<uint32_t> fieldB = line_starts(hb, kFirstLine, kFieldLines, 0x88);
+
+        bool sizes_ok = fieldA.size() == static_cast<size_t>(kFieldLines) &&
+                        fieldB.size() == static_cast<size_t>(kFieldLines);
+        bool fieldA_starts_at_base = sizes_ok && fieldA[0] == kBase;
+        bool steps_ok = sizes_ok, offsets_ok = sizes_ok;
+        if (sizes_ok) {
+            for (int i = 1; i < kFieldLines; ++i) {
+                if (delta21(fieldA[i - 1], fieldA[i]) != 80) steps_ok = false;
+                if (delta21(fieldB[i - 1], fieldB[i]) != 80) steps_ok = false;
+            }
+            for (int i = 0; i < kFieldLines; ++i)
+                if (delta21(fieldA[i], fieldB[i]) != 40) offsets_ok = false;
+        }
+
+        checks.expect(
+            sizes_ok && fieldA_starts_at_base && steps_ok && offsets_ok,
+            "INTERLACED-FIELD-PAIR-PAL-512-LINES: two software-driven "
+            "fields over the manual's own 256-line PAL field height (odd "
+            "field pointer at START, even field pointer at START+40, BOTH "
+            "BPL1MOD=40 - p.62's own field-skip recipe) each fetch 256 "
+            "lines stepping 80 bytes apart, the same single step "
+            "MODULO-NONZERO-FOR-WIDER-PLAYFIELD already measures, extended "
+            "across the whole field; every field-B line sits exactly 40 "
+            "bytes past its OWN field-A counterpart, so together the two "
+            "fields interleave into 512 CONSECUTIVE 40-byte-spaced lines, "
+            "never just 256. '...(512 PAL), rather than 200 NTSC (256 "
+            "PAL), lines long' (p.62). 3-mod.c14, 3-modulo.c23.");
+    }
+
     // ---------------- BPLEN-DMA-GATES-POINTER-ADVANCE (p.62) ----------------
     {
         Harness h_off;
@@ -1606,6 +1732,8 @@ int main(int argc, char** argv) {
 // MUTATION DUAL-PLAYFIELD-SCROLL-POINTER-MODULO-OFFSET stimulus red: BPL2MOD (the stationary playfield's -2 compensation) changed from $FFFE to $0000; its step became 42 bytes, not the expected 40.
 // MUTATION VERTICAL-SCROLL-POINTER-STEP stimulus red: the per-redisplay pointer step changed from 40 bytes to 20; successive starts no longer matched the expected 0x60000/+40/+80/+120 sequence.
 // MUTATION MODULO-WIDTH-262144-PIXEL-LIMIT stimulus red: the positive-extreme modulo changed from $7FFE to $3FFE (half); the isolated modulo contribution became +16382 bytes, not the expected +32766.
+// MUTATION INTERLACED-FIELD-PAIR-NTSC-400-LINES stimulus red: the even field's pointer changed from START+40 to START+80; every field-B line landed 80 bytes past its field-A counterpart, not the expected 40, offsets_ok failed.
+// MUTATION INTERLACED-FIELD-PAIR-PAL-512-LINES stimulus red: the even field's pointer changed from START+40 to START+80; every field-B line landed 80 bytes past its field-A counterpart, not the expected 40, offsets_ok failed.
 // MUTATION BPLEN-DMA-GATES-POINTER-ADVANCE stimulus red: the "off" harness's dmaena changed from 0 to 1; it produced 20 fetches, not the expected 0.
 // ============================================================================
 
