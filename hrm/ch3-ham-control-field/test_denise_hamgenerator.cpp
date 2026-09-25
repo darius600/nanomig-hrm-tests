@@ -21,6 +21,12 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
+// Added proposition, opus:3-ham.c08 (p.86): "used to modify the way bits
+//   from planes 1 - 4 are treated, as follows:" -- planes 5 and 6 modify
+//   the way bits from planes 1-4 are treated. The same control/data-field
+//   relationship the Test purpose paragraph above already summarises, and
+//   that Table 3-19 (p.95, cited in Primary oracle) enumerates in full.
+//
 // BOUNDARY (from the classifier's own evidence, not from opening the RTL --
 // see "ORDER OF WORK" below): denise_hamgenerator.v:6-18 module header --
 // ports reg_address_in, data_in[11:0], select[7:0], bplxor, bank, loct,
