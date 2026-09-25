@@ -5,15 +5,18 @@
 //   fixed priority with respect to all the other sprites, that an object
 //   (sprite or playfield) with low priority is composited behind an object
 //   with higher priority, that a transparent sprite lets a lower-priority
-//   sprite or playfield show through, and that sprite data is fed to a
-//   priority circuit that decides sprite-versus-playfield compositing -- all
-//   at the denise_spritepriority module boundary. Package
-//   ch4-sprite-priority, fixture denise_spritepriority (one Verilator build,
-//   this module only, per this package's own claims.jsonl --
-//   ch4_packages/ch4-sprite-playfield-priority.jsonl, 8 records).
+//   sprite or playfield show through, that sprite data is fed to a
+//   priority circuit that decides sprite-versus-playfield compositing, and
+//   that playfields and sprites both actually reach the display through
+//   that same compositing decision -- all at the denise_spritepriority
+//   module boundary. Package ch4-sprite-priority, fixture
+//   denise_spritepriority (one Verilator build, this module only), per
+//   this package's own claims: ch4_packages/ch4-sprite-playfield-priority.
+//   jsonl's original 8 records, plus a ninth added later (CH4-inter.c1,
+//   p.131; see the note below CLAIM COVERAGE) -- 9 total.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 103, 124, 125. A red result below means denise_spritepriority.v
+//   pp. 103, 124, 125, 131. A red result below means denise_spritepriority.v
 //   disagrees with the manual, not that the assertion is wrong -- no
 //   assertion here was, or should be, adjusted to make the RTL pass.
 // Non-goals: anything outside the `denise_spritepriority` fixture this
@@ -88,6 +91,12 @@
 //       PF1P/PF2P-GOVERNS-...-INDEPENDENT-OF-...). This package tests the
 //       general principle by sweeping every bplcon2 value existentially/
 //       universally as needed, never by pinning a single hand-picked code.
+//   (d) "Playfields share the display with sprites" (CH4-inter.c1, p.131)
+//       is tested here only as: both selections of this one compositing
+//       decision (sprsel=0 for playfield, sprsel=1 for sprite) are
+//       genuinely reachable outputs, not as anything about the actual
+//       pixel colour placed on-screen -- this fixture has no colour or
+//       pixel-position port, only the priority module's own select line.
 //
 // OVERLAP WITH THE TWO EXISTING PACKAGES ON THIS FIXTURE (read in full
 // before this file was written, per the build brief):
@@ -129,19 +138,35 @@
 //     and sprite data's structural path to the priority circuit
 //     (CH4-hw.c14 / CH4-p124.c10 / CH4-fig4-13.c6) -- is asserted below.
 //
-// CLAIM COVERAGE (8 records total):
+// A NINTH CLAIM, ADDED LATER, ON THE SAME FIXTURE:
+//   CH4-inter.c1 (p.131) states the chapter's own general premise behind
+//   all of the above: playfields and sprites both actually reach the
+//   display, mediated by this module's own compositing decision (sprsel).
+//   Neither fact already established above is, by itself, the whole of
+//   that claim -- ABSENT-SPRITE-CEDES-TO-LOWER-PRIORITY shows only the
+//   playfield half (sprsel=0 with no sprite group active) and
+//   SPRITE-DATA-REACHES-PRIORITY-CIRCUIT shows only the sprite half (some
+//   context flips sprsel to 1) -- so CH4-inter.c1 is not tagged onto
+//   either. A new assertion, PLAYFIELD-AND-SPRITE-SHARE-THE-DISPLAY,
+//   measures both halves together as one proposition. Written from
+//   CH4-inter.c1's own quotation alone; the RTL was not reopened for it
+//   until after this note and the CLAIM COVERAGE entry below were
+//   committed.
+//
+// CLAIM COVERAGE (9 records total):
 //   [control] FIXTURE-LIVE-DATA-PATH (no ids, no page)
 //   SPRITE-PRIORITY-FIXED-BY-GROUP-NUMBER (3 ids, p.103) -- CH4-p103.c20,
 //     CH4-prio.c1, CH4-prio.c3
 //   ABSENT-SPRITE-CEDES-TO-LOWER-PRIORITY (1 id, p.103) -- CH4-color.c13
 //   SPRITE-DATA-REACHES-PRIORITY-CIRCUIT (3 ids, pp.124-125) --
 //     CH4-hw.c14, CH4-p124.c10, CH4-fig4-13.c6
+//   PLAYFIELD-AND-SPRITE-SHARE-THE-DISPLAY (1 id, p.131) -- CH4-inter.c1
 //   DECLINED, not duplicated (1 id) -- CH4-p103.c22: already measured by
 //     hrm/ch3-sprite-playfield-priority/'s BPLCON2-BITS-0-5-ARE-LIVE-
 //     PRIORITY-FIELD on this same fixture, and its mechanism (BPLCON2) is
 //     not named by chapter 4's own quoted text; see OVERLAP above.
-//   3 + 1 + 3 + 1(declined) = 8. All 8 claim ids of
-//   ch4-sprite-playfield-priority.jsonl are accounted for above.
+//   3 + 1 + 3 + 1 + 1(declined) = 9. All 9 claim ids across this
+//   package's two claim-file generations are accounted for above.
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id) sweeps
 // nplayfield and nsprite (bplcon2 held at 0) and requires sprsel to take
