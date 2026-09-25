@@ -98,11 +98,14 @@
 //     uid, plus sol:7-appC-map-bplcon2.c5 co-cited, not counted again)
 //   EHB-ACTIVE-PRECONDITION (engineering precondition, no manual page)
 //   BPLCON2-BIT9-OCS-MEASURED + -NOT-GRADED (1 uid)
-//   BPLCON2-BIT9-KILLEHB-LIVE-ECS (3 uids + 2 co-cited (E)-mark uids)
+//   BPLCON2-BIT9-KILLEHB-LIVE-ECS (2 uids + 2 co-cited (E)-mark uids)
+//   BPLCON2-BIT9-CHG-NOT-COMPARED (1 uid, sol:7-appC-map-bplcon2.c2 -- withdrawn
+//     from KILLEHB-LIVE-ECS above: that assertion never compares against ecs=0,
+//     so the "changed from OCS" claim is recorded, not asserted)
 //   BPLCON2-BIT8-OCS/-ECS-MEASURED + -NOT-GRADED (1 uid)
 //   BPLCON2-BIT7-OCS/-ECS-MEASURED + -NOT-GRADED (1 uid)
 //   ENBPLCN3-ENABLES-BRDRBLNK (1 uid)
-//   21 uids total: 1+1+4+1+1+1+1+1+1+1+3+2+1+1+1 = 21.
+//   21 uids total: 1+1+4+1+1+1+1+1+1+1+2+1+2+1+1+1 = 21.
 //
 // REPAIR (independent validation, work/2026-09-13_ch7_sol_validation_B2.md,
 //   slice B2, findings 1/5/6/7):
@@ -926,8 +929,7 @@ int main(int argc, char** argv) {
         // assertions in ch7-inter-sprite-priority: an expected value taken from
         // the implementation rather than from the page.
         checks.expect(halved == expect_halved && fold_removed != expect_halved,
-            "BPLCON2-BIT9-KILLEHB-LIVE-ECS (sol:7-appC-bplcon2.c5, opus:7-appC-bplcon2.c7, "
-            "sol:7-appC-map-bplcon2.c2; "
+            "BPLCON2-BIT9-KILLEHB-LIVE-ECS (sol:7-appC-bplcon2.c5, opus:7-appC-bplcon2.c7; "
             "p.307, \"09 KILLEHB Kill halfbrite\"; co-cited sol:7-appA-bplcon2.c4 p.271 and "
             "sol:7-appB-bplcon2.c5 p.291, the (E) mark): killehb=0 reads 0x" + hexrgb(halved) +
             " (expected 0x7F007F, COLOR00 folded and halved) and killehb=1 reads 0x"
@@ -935,6 +937,23 @@ int main(int argc, char** argv) {
             "half-brite substitution demonstrably stops when killehb is set. The colour "
             "that appears instead is measured, not graded: p.307 does not name one, and on "
             "this fixture it is RAM address 32, which no register write can reach.");
+
+        // BPLCON2-BIT9-CHG-NOT-COMPARED -- sol:7-appC-map-bplcon2.c2 (p.298,
+        // "104 BPLCON2 chg   WA", Appendix C ECS register map) restates as
+        // "the ECS map marks BPLCON2 changed from OCS": a comparison. The
+        // assertion just above only runs at ecs=1 (Harness h(true)); it shows
+        // KILLEHB live under ECS but never shows the OCS side, so a design
+        // where KILLEHB already lived under OCS too would still pass it. The
+        // OCS side is separately declined at BPLCON2-BIT9-OCS-NOT-GRADED, for
+        // the unrelated "keep at 0" reasoning (p.210/264/271), not for this
+        // comparison -- so nothing in this file establishes "changed from
+        // OCS" as such. Withdrawn from the graded line above; recorded here.
+        checks.record("BPLCON2-BIT9-CHG-NOT-COMPARED (sol:7-appC-map-bplcon2.c2; p.298, "
+            "\"104 BPLCON2 chg   WA\", Appendix C ECS register map): the claim is a "
+            "comparison -- BPLCON2 changed from OCS -- and BPLCON2-BIT9-KILLEHB-LIVE-ECS "
+            "above only runs at ecs=1; it never shows killehb absent or inert at ecs=0, "
+            "so the comparison itself is not established here. The OCS side is declined "
+            "separately at BPLCON2-BIT9-OCS-NOT-GRADED, on unrelated grounds.");
     }
 
     // =========================================================================

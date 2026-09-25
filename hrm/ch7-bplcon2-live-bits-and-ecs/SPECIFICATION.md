@@ -250,13 +250,17 @@ Cited by: `sol:7-appC-map-bplcon2.c1`.
 
 > "104 BPLCON2 chg   WA" (printed p.298, Appendix C ECS register map)
 
-The one concrete instance of that change this package's own claims
-establish is P7's ECS half: bit 9 carries no OCS function (P7, undisputed)
-and gains KILLEHB under ECS (P7, asserted) -- a function the OCS-era map
-does not carry. Co-cited on BPLCON2-BIT9-KILLEHB-LIVE-ECS, the same way
-this file already co-cites the Appendix A/B (E) mark there.
+The claim is a comparison against OCS. BPLCON2-BIT9-KILLEHB-LIVE-ECS (P7's
+ECS half) only runs at `ecs=1` (`Harness h(true)`); it shows KILLEHB live
+under ECS but never shows the OCS side, so a design where KILLEHB already
+lived under OCS too would still pass that assertion. P7's OCS half is
+separately declined at BPLCON2-BIT9-OCS-NOT-GRADED, for the unrelated
+"keep at 0" reasoning (p.210/264/271), not for this comparison. The id is
+withdrawn from BPLCON2-BIT9-KILLEHB-LIVE-ECS and recorded instead, on
+BPLCON2-BIT9-CHG-NOT-COMPARED: whether killehb's ECS behaviour is new
+relative to OCS is not established by anything in this file.
 
-Cited by: `sol:7-appC-map-bplcon2.c2`.
+Cited by: `sol:7-appC-map-bplcon2.c2` (recorded, not asserted).
 
 ### P14 -- ECS BPLCON2's function retains video-priority control and adds the p.307 genlock fields
 
@@ -298,6 +302,9 @@ Cited by: `sol:7-appC-map-bplcon2.c5` (recorded, not asserted).
   half); only this remainder is recorded, per each claim's own
   `conflict_resolution`. P14's genlock-fields half is co-cited on the same
   five recorded lines.
+- P13's OCS-vs-ECS comparison (BPLCON2-BIT9-KILLEHB-LIVE-ECS runs at
+  `ecs=1` only and never shows the OCS side) -- recorded on
+  BPLCON2-BIT9-CHG-NOT-COMPARED, not co-cited on the KILLEHB assertion.
 
 ## Precondition to assert
 
@@ -353,7 +360,7 @@ All 21 claims in `ch7-bplcon2-live-bits-and-ecs-spec-stage.jsonl`:
 - P10 (added by repair): `opus:7-vp.c16` (1)
 - P11 (added by repair): `opus:7-appC-bplcon2.c9` (1)
 - P12: `sol:7-appC-map-bplcon2.c1` (1)
-- P13: `sol:7-appC-map-bplcon2.c2` (1)
+- P13 (recorded, not asserted): `sol:7-appC-map-bplcon2.c2` (1)
 - P14 (asserted and recorded, one half each): `sol:7-appC-map-bplcon2.c5` (1)
 
 4 + 1 + 1 + 1 + 1 + 1 + 5 + 1 + 1 + 1 + 1 + 1 + 1 + 1 = 21.
