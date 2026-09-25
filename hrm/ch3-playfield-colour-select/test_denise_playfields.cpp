@@ -181,6 +181,10 @@
 //   PF2-CODE-SWEEP (50 ids, loop x8)               -- Tables 3-11/3-12b + dual columns: PF2 code -> register.
 //   7+7+113+6+6+4+14+51+50 = 258.
 //
+//   Extension (2026-09-25_unit-backlog), on top of the 258/272 above:
+//   TWO-COLOUR-CODE-SELECT (9 ids, one assertion)  -- corroborates N=0/N=1
+//                                                      from pp.42/46/55/56.
+//
 // DECLINED CLAIMS (14 ids, grouped by reason -- every one names a port
 // this module does not have; none is declined as "covered elsewhere"):
 //
@@ -242,11 +246,13 @@
 // itself been shown able to go red. Corrected here: see MUTATION
 // CONTROL-KNOWN-VALUES-ARRIVE below, same as every other assertion.
 //
-// RESULTS (after opening the RTL and building): 70 passed, 0 failed, plus
-// the 1 MEASURED note (printed, not counted as pass or fail). No finding
-// in this package -- denise_playfields.v implements the manual's
-// single-playfield AND dual-playfield colour-selection description
-// exactly as every assertion expected. One RTL observation, checked
+// RESULTS (after opening the RTL and building): 71 passed, 0 failed, plus
+// the 1 MEASURED note (printed, not counted as pass or fail) -- 70 passed
+// from the original acceptance plus 1 from the 2026-09-25_unit-backlog
+// extension's TWO-COLOUR-CODE-SELECT. No finding in this package --
+// denise_playfields.v implements the manual's single-playfield AND
+// dual-playfield colour-selection description exactly as every assertion
+// expected. One RTL observation, checked
 // rather than assumed, on opening the RTL: denise_playfields.v:96-99
 // hides an undocumented "OCS/ECS...Swiv score display" exception in the
 // single-playfield branch (forces plfdata to the constant 16 when
@@ -281,6 +287,7 @@
 // MUTATION FIGURE-3-13-ROWS stimulus red: row n=1's single active plane was presented as bitplane 2 instead of bitplane 1, so that row now shows playfield 2 present and playfield 1 empty instead of the reverse.
 // MUTATION PF1-CODE-SWEEP stimulus red: row k=1's own stimulus was changed to present k=2's combination instead, so that row no longer reads back as register 1.
 // MUTATION PF2-CODE-SWEEP stimulus red: row k=1's own stimulus was changed to present k=2's combination instead, so that row no longer reads back as register 9.
+// MUTATION TWO-COLOUR-CODE-SELECT stimulus red (2026-09-25_unit-backlog extension, actually built via `-CFLAGS -DMUT_TWOCOLOUR=1`): the bitplane-1 stimulus was changed to present bitplane 2 instead, so the second reading no longer matches the value 1 the label names -- 70 passed, 1 failed (only this assertion moved); reverted and rebuilt clean, 71 passed, 0 failed, with all 70 pre-existing PASS/FAIL lines byte-identical and in the same order.
 
 #include <cstdint>
 #include <cstdio>
@@ -318,6 +325,9 @@
 #endif
 #ifndef MUT_PF2SWEEP
 #define MUT_PF2SWEEP 0
+#endif
+#ifndef MUT_TWOCOLOUR
+#define MUT_TWOCOLOUR 0
 #endif
 
 namespace {
@@ -611,6 +621,42 @@ int main(int argc, char** argv) {
                 (row.note[0] ? " " : "") + row.ids;
             checks.expect(out == row.n, label);
         }
+    }
+
+    // =========================================================================
+    // TWO-COLOUR-CODE-SELECT (p.42/46/55/56) -- corroborates IDENTITY-
+    // MAPPING-SWEEP's own N=0 and N=1 rows from four further printed pages
+    // and two readers, at finer granularity: combination 0 (all bitplanes
+    // off) selects colour register 0, which the manual calls COLOR00 and
+    // reserves for the background; bitplane 1 alone selects colour register
+    // 1 (COLOR01) -- the two-colour playfield's whole vocabulary.
+    // =========================================================================
+    {
+        Harness h;
+        uint8_t stim_zero = 0;
+        uint8_t stim_one = PLANE(1);
+#if MUT_TWOCOLOUR
+        stim_one = PLANE(2);  // the bit-1 stimulus is presented as bit 2 instead, so the reading no longer matches register 1
+#endif
+        uint8_t out_zero = h.sample(stim_zero);
+        uint8_t out_one = h.sample(stim_one);
+        checks.expect(
+            out_zero == 0 && out_one == 1,
+            "TWO-COLOUR-CODE-SELECT (p.42/46/55/56): all bitplanes off "
+            "(combination 0) selects colour register 0, which the manual "
+            "calls COLOR00 and reserves for the background; bitplane 1 "
+            "alone (combination 1) selects colour register 1 (COLOR01) -- "
+            "'COLOR00 is always reserved for the background color' (p.46), "
+            "'this code fills a low resolution bitplane with the "
+            "background color ( COLOR00 ) by writing all \"0\"s into its "
+            "memory area' (p.55), 'you define a bitplane that has \"0\"s "
+            "where you want the background color and \"1\"s where you want "
+            "the color in register 1' (p.55), 'if the bit is 0, the pixel "
+            "is one user-defined color; if the bit is 1, the pixel is "
+            "another' (p.42), Figure 3-8's 'Color 00 (background)' label "
+            "over the both-planes-zero region (p.56). 3-colortable.c7, "
+            "3-ct.c03, 3-code.c02, 3-coding.c2, 3-code.f03, 3-bpl.c02, "
+            "3-code.c03, 3-coding.c3, 3-coding.c4.");
     }
 
     // =========================================================================
