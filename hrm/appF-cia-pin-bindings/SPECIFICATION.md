@@ -18,10 +18,14 @@ accepted package/uid (matches the task sheet's "38 claims, 27 already
 graded"). Of those 27, two (`sol:F-signals.c84`, `opus:F-signals.c15`)
 carry a note that only declines HALF their content ("Already graded for
 the CIAB leg... The build should decline that leg and grade AT MOST the
-CIAA leg") — this package takes that invitation, so the final split is
-**13 uids graded fresh, 25 declined** (both numbers verified directly
-against this package's own captured output, not asserted from the note
-count alone).
+CIAA leg") — this package takes that invitation. Two more noted rows,
+`sol:F-ciaa-map.c55`/`opus:F-ciaa-map.c32` ("CIAA can generate interrupt
+INT2") and `sol:F-ciab-map.c62`/`opus:F-ciab-map.c32` ("CIAB can generate
+interrupt INT6"), are established whole by this package's own
+CIAA-IRQ-REACHES-INT2/-PORTS and CIAB-IRQ-REACHES-EXTER assertions, so
+those four are graded rather than declined. The final split is **17 uids
+graded fresh, 21 declined** (both numbers verified directly against this
+package's own captured output, not asserted from the note count alone).
 
 ## Disclosure — the order of work did not fully hold
 
@@ -98,7 +102,18 @@ uid on a graded line counts as asserted whatever the prose says, both
 uids' full content is considered covered by this one assertion, not
 independently re-declined elsewhere.
 
-**25 uids declined** across 8 `record()` groups — see "Duplicate-grading
+**4 more uids graded fresh, cited on assertions built for a different
+pair of ids:** `sol:F-ciaa-map.c55`/`opus:F-ciaa-map.c32` ("CIAA can
+generate interrupt INT2") are established whole by `CIAA-IRQ-REACHES-INT2`
+and `CIAA-IRQ-REACHES-PORTS` (ciaa's own `irq` pin actually reaching,
+respectively, `int2` and INTREQ bit 3). `sol:F-ciab-map.c62`/
+`opus:F-ciab-map.c32` ("CIAB can generate interrupt INT6") are established
+whole by `CIAB-IRQ-REACHES-EXTER` (ciab's own `irq` pin reaching INTREQ
+bit 13, which p.219 "Bit 13, EXTER, becomes a 1 when ... INT6* ..." ties
+to CIAB generating INT6). All four uids are cited directly on those
+assertions' own labels, not carried by proximity.
+
+**21 uids declined** across 6 `record()` groups — see "Duplicate-grading
 check" below for the full citation-by-citation account; grouped by
 identical or closely-related `classify.note` text, verified directly
 against the filtered claim data (not paraphrased from memory).
@@ -112,8 +127,10 @@ lines, written from an incomplete first read of the claim data, invented
 citations to packages this package's real rows never mention
 (`ch8-controller-port-inventory`, `appF-cia-register-map`,
 `appF-ciab-port-assignments`, `appF-cia-address-decode`), caught and
-discarded before this file or the test source were finalized. The real 27
-noted rows fall into these groups:
+discarded before this file or the test source were finalized. The 21
+declined rows fall into these groups (of the 27 noted rows, 4 —
+`sol:F-ciaa-map.c55`/`opus:F-ciaa-map.c32`, `sol:F-ciab-map.c62`/
+`opus:F-ciab-map.c32` — are graded instead; see above):
 
 1. **CIAA-MAP-PASSTHROUGH** — `sol:F-ciaa-map.c3`/`c4`, `opus:F-ciaa-map.c2`
    (partial) — PA7/PA6 fire-button pass-through, already graded by
@@ -132,25 +149,14 @@ noted rows fall into these groups:
    `F-portsig.c15`'s own "the bit-level half is new here" — there is no
    PA0-specific gating in this RTL to test bit-level, so declined rather
    than testing a mechanism the RTL does not implement.
-5. **CIAA-INT2-JOIN** — `sol:F-ciaa-map.c55`, `opus:F-ciaa-map.c32` —
-   `hrm/ch5-audio-interrupt` already grades the downstream
-   `paula_intcontroller` half (int2 on the PORTS bit); the join itself is
-   what `CIAA-IRQ-REACHES-INT2` grades fresh, but under
-   `F-signals.c84`/`F-signals.c15`'s own citation, not these two (a uid
-   may not lose its home).
-6. **CIAB-MAP-PB7-PB0** — `sol:F-ciab-map.c13`-`c20`, `opus:F-ciab-map.c4`
+5. **CIAB-MAP-PB7-PB0** — `sol:F-ciab-map.c13`-`c20`, `opus:F-ciab-map.c4`
    — already graded by `hrm/ch8-cia-disk-signal-bindings`
    PB7..PB0-BINDING.
-7. **CIAB-INT6-JOIN** — `sol:F-ciab-map.c62`, `opus:F-ciab-map.c32` — the
-   mirror of group 5 for CIAB/int6; unlike the CIAA leg, this exact join's
-   *other* half (irq -> int6) is independently already graded by
-   `hrm/ch8-disk-index-interrupt-path` PROP-FLAG-PIN, so no gap is left to
-   grade fresh here.
-8. **INTRO-DUTY-ENUMERATION** — `opus:F-intro.c1` — `hrm/ch1-cia-timers`
+6. **INTRO-DUTY-ENUMERATION** — `opus:F-intro.c1` — `hrm/ch1-cia-timers`
    already declined the same duty-enumeration shape from p.6 at the
    `ciaa`/`ciab` boundary.
 
-## Assertion design (13 fresh uids, 8 propositions)
+## Assertion design (17 fresh uids, 10 propositions)
 
 - **`TWO-CIA-CHIPS-EXIST`** — also this package's control/liveness case:
   CIAA ($BFE201) and CIAB ($BFD200) each store and read back their own
@@ -176,13 +182,29 @@ noted rows fall into these groups:
   `ciaa` alone), starts the timer, and confirms the internal `int2` net
   (public-flat-rw, read-only — never forced) goes from false to true —
   showing ciaa's own `irq` pin doesn't just exist at the chip boundary but
-  actually reaches the `minimig.v:621` join.
+  actually reaches the `minimig.v:621` join. Also establishes, whole,
+  "CIAA can generate interrupt INT2" (`sol:F-ciaa-map.c55`,
+  `opus:F-ciaa-map.c32`).
+- **`CIAA-IRQ-REACHES-PORTS`** — same Timer A/ICR/CRA idiom, read one
+  register further downstream at INTREQ bit 3
+  (`paula_intcontroller.v:112`); the CIA leg only of Figure 7-4's PORTS
+  row (p.221) — the expansion-connector leg is absent from this RTL. Also
+  establishes, whole, "CIAA can generate interrupt INT2" (same two ids as
+  above); the bit-3 = PORTS identification is cited to p.219/p.280, not to
+  Figure 7-4 or the RTL line.
+- **`CIAB-IRQ-REACHES-EXTER`** — the CIAB mirror of
+  `CIAA-IRQ-REACHES-PORTS`, at INTREQ bit 13 (`paula_intcontroller.v:132`)
+  for Figure 7-4's EXTER row. Establishes, whole, "CIAB can generate
+  interrupt INT6" (`sol:F-ciab-map.c62`, `opus:F-ciab-map.c32`); the
+  bit-13 = EXTER identification is likewise cited to p.219/p.280.
 
-All eight measured via WSL Verilator 5.052: **8 passed, 0 failed** on
-first build with the corrected addressing and reset budget (the two
-earlier failures — wrong address bit-alignment, insufficient reset wait —
-were both caught and fixed before this file or `test_minimig.cpp` reached
-their committed form, not after).
+All eight base propositions measured via WSL Verilator 5.052: **8 passed,
+0 failed** on first build with the corrected addressing and reset budget
+(the two earlier failures — wrong address bit-alignment, insufficient
+reset wait — were both caught and fixed before this file or
+`test_minimig.cpp` reached their committed form, not after). The two
+Extension assertions below add 2 more, for **10 passed, 0 failed** across
+this package's ten propositions.
 
 ## Control / liveness
 
@@ -204,17 +226,23 @@ bus-timing signals — nothing is ever forced.
 
 ## Extension — interrupt-source naming (Figure 7-4, p.221)
 
-| proposition | page | uids |
-|---|---|---|
-| "The name PORTS denotes the interrupt raised by CIAA's irq output." | 221 | `opus:7-fig7-4.c12` |
-| "The name EXTER denotes the interrupt raised by CIAB's irq output." | 221 | `opus:7-fig7-4.c42` |
-
 Figure 7-4's "Description" cells name each interrupt's raising condition as
-two sources joined by "&": PORTS reads "external INT2 & CIAA", EXTER reads
-"external INT6 & CIAB". One of the two named sources on each row is an
-expansion-connector pin; the other is a CIA's own irq output. Only the CIA
-leg of each row is asserted here — the expansion-connector leg names a pin
-outside this fixture's boundary.
+TWO sources joined by "&": `opus:7-fig7-4.c12`'s own restatement is "the
+name PORTS denotes the interrupt raised by the condition 'external INT2 &
+CIAA'"; `opus:7-fig7-4.c42`'s is the EXTER mirror for "external INT6 &
+CIAB". One of the two named sources on each row is an expansion-connector
+pin absent from this RTL entirely; the other is a CIA's own irq output.
+Only the CIA leg of each row is measured here (`CIAA-IRQ-REACHES-PORTS`,
+`CIAB-IRQ-REACHES-EXTER`), so neither id is carried on those assertions —
+a passing label may not carry an id for a clause it does not establish,
+even with a caveat next to it. Both are instead declined on their own
+record() lines (`PORTS-DENOTATION-TWO-SOURCES`,
+`EXTER-DENOTATION-TWO-SOURCES`); see "The claim inventory" and "Assertion
+design" above for the single-source claims (`sol:F-ciaa-map.c55`/
+`opus:F-ciaa-map.c32`, `sol:F-ciab-map.c62`/`opus:F-ciab-map.c32`) those
+two assertions establish whole instead. The bit index each assertion
+checks (INTREQ bit 3 for PORTS, bit 13 for EXTER) is cited to p.219/p.280,
+not to Figure 7-4 (which prints no bit numbers) or to the RTL line alone.
 
 ## What this specification deliberately does not contain
 

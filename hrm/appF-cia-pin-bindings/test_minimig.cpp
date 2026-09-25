@@ -21,22 +21,37 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// CLAIM COVERAGE: 27 of 38 uids are declined on record() lines (duplicate
-//   citations, see SPECIFICATION.md). The remaining 11 uids (across 8
+// CLAIM COVERAGE: 21 of 38 uids are declined on record() lines (duplicate
+//   citations, see SPECIFICATION.md). The remaining 17 uids (across 10
 //   propositions) are graded with expect() below: TWO-CIA-CHIPS-EXIST
 //   (sol:F-overview.c2, opus:F-intro.c2), CIAA-LOW-CIAB-HIGH-BYTE
 //   (sol:F-signals.c59, sol:F-signals.c60, opus:F-conn.c3),
 //   DTR-IS-PRA-BIT7/RTS-IS-PRA-BIT6/CD-IS-PRA-BIT5/CTS-IS-PRA-BIT4/
 //   DSR-IS-PRA-BIT3 (sol:F-ciab-map.c3/c4/c5/c6/c7, each also citing
 //   opus:F-ciab-map.c2, whose own single claim covers all five bindings in
-//   one row -- see SPECIFICATION.md).
+//   one row -- see SPECIFICATION.md), CIAA-IRQ-REACHES-INT2 and
+//   CIAA-IRQ-REACHES-PORTS (sol:F-signals.c84, opus:F-signals.c15,
+//   sol:F-ciaa-map.c55, opus:F-ciaa-map.c32 -- both assertions establish
+//   "CIAA can generate interrupt INT2" whole), CIAB-IRQ-REACHES-EXTER
+//   (sol:F-ciab-map.c62, opus:F-ciab-map.c32, establishing "CIAB can
+//   generate interrupt INT6" whole).
 //
-// EXTENSION: two more uids, routed here fresh (not by classify.package --
-//   see SPECIFICATION.md's own extension section), are graded with
-//   expect() below: CIAA-IRQ-REACHES-PORTS (opus:7-fig7-4.c12) and
-//   CIAB-IRQ-REACHES-EXTER (opus:7-fig7-4.c42), Figure 7-4's naming of the
-//   PORTS/EXTER interrupt sources, CIA leg only -- the expansion-connector
-//   leg of each row is absent from this RTL and stays out of scope.
+// EXTENSION: Figure 7-4's naming of the PORTS/EXTER interrupt sources
+//   (p.221), routed here by hand, not by classify.package -- see
+//   SPECIFICATION.md's own extension section. opus:7-fig7-4.c12 and
+//   opus:7-fig7-4.c42 each name TWO sources joined by "&" ("external INT2
+//   & CIAA" / "external INT6 & CIAB"); only the CIA leg is measured here
+//   (CIAA-IRQ-REACHES-PORTS / CIAB-IRQ-REACHES-EXTER below), and the
+//   expansion-connector leg of each row is absent from this RTL entirely,
+//   so both ids are withdrawn to record() rather than carried on a
+//   passing label with a caveat -- see the PORTS-DENOTATION-TWO-SOURCES
+//   and EXTER-DENOTATION-TWO-SOURCES record() lines below.
+//   CIAA-IRQ-REACHES-PORTS and CIAB-IRQ-REACHES-EXTER instead establish,
+//   whole, the single-source claims sol:F-ciaa-map.c55/opus:F-ciaa-map.c32
+//   ("CIAA can generate interrupt INT2") and
+//   sol:F-ciab-map.c62/opus:F-ciab-map.c32 ("CIAB can generate interrupt
+//   INT6") -- moved here from the CIAA-INT2-JOIN / CIAB-INT6-JOIN
+//   record() lines, whose stated decline reasons no longer held.
 //
 // RTL read directly: minimig.v's CIAA1/CIAB1 instantiations (lines
 //   607-650) confirm CIAA's data_in/data_out are cpu_data_out/cia_data_out
@@ -431,9 +446,11 @@ int main(int argc, char** argv) {
     // grade AT MOST the CIAA leg (minimig.v:621, irq -> int2)." ch1-cia-
     // timers already shows ciaa's own `irq` pin asserting in isolation;
     // what is new here is whether that pin actually REACHES `int2` at the
-    // `minimig` join -- a fact hrm/ch5-audio-interrupt's own note (see the
-    // CIAA-INT2-JOIN record() below) independently says is not graded
-    // anywhere else either.
+    // `minimig` join -- a fact hrm/ch5-audio-interrupt's own note
+    // independently says is not graded anywhere else either. This
+    // assertion, together with CIAA-IRQ-REACHES-PORTS below, also
+    // establishes sol:F-ciaa-map.c55/opus:F-ciaa-map.c32 ("CIAA can
+    // generate interrupt INT2") whole -- see both assertions' own labels.
     // =====================================================================
     {
         Harness h;
@@ -459,7 +476,8 @@ int main(int argc, char** argv) {
                     "TA bit and starting the timer, int2 became true = " + std::to_string(int2_after) + ".");
         checks.expect(!int2_before && int2_after,
             "CIAA-IRQ-REACHES-INT2 (p.354, sol:F-signals.c84, "
-            "opus:F-signals.c15 -- graded for the CIAA leg only, per "
+            "opus:F-signals.c15, sol:F-ciaa-map.c55, opus:F-ciaa-map.c32 "
+            "-- graded for the CIAA leg only, per "
             "these uids' own classify.note: the CIAB leg is already "
             "graded by ch8-disk-index-interrupt-path PROP-FLAG-PIN "
             "(irq -> int6), so only the CIAA leg (minimig.v:621, "
@@ -476,14 +494,23 @@ int main(int argc, char** argv) {
 
     // =====================================================================
     // CIAA-IRQ-REACHES-PORTS -- Figure 7-4's PORTS row (p.221) names the
-    // interrupt raised by "external INT2 & CIAA". The expansion-connector
-    // half of that condition is absent from this RTL (SPECIFICATION.md's
-    // extension section) and stays out of scope; only the CIA leg is
-    // graded here: does ciaa's own irq pin, already shown above to reach
-    // int2, go on to actually set INTREQ bit 3 -- the bit
-    // paula_intcontroller.v:112 names PORTS (`intreq[3] <= tmp[3] |
-    // int2;`)? Same Timer A/ICR/CRA idiom as CIAA-IRQ-REACHES-INT2, its own
-    // fresh Harness, now read one register further downstream at
+    // interrupt raised by "external INT2 & CIAA", two sources joined by
+    // "&". Only the CIA leg is graded here (the expansion-connector INT2*
+    // input is absent from this RTL entirely -- SPECIFICATION.md's
+    // extension section -- so opus:7-fig7-4.c12 itself is withdrawn to a
+    // record() line below rather than carried on this passing label with
+    // a caveat): does ciaa's own irq pin, already shown above to reach
+    // int2, go on to actually set INTREQ bit 3? p.219 ("Bit 3, PORTS,
+    // becomes a 1 when the system line called INT2* becomes a logic 0")
+    // and p.280's register table ("03 PORTS 2 I/O ports and timers") name
+    // bit 3 as PORTS; paula_intcontroller.v:112 (`intreq[3] <= tmp[3] |
+    // int2;`) confirms which wire is inspected, not which bit PORTS is --
+    // Figure 7-4 itself prints no bit numbers. Established whole here,
+    // instead, is the single-source claim "CIAA can generate interrupt
+    // INT2" (sol:F-ciaa-map.c55, opus:F-ciaa-map.c32), moved from a
+    // CIAA-INT2-JOIN record() whose decline reason no longer held. Same
+    // Timer A/ICR/CRA idiom as CIAA-IRQ-REACHES-INT2, its own fresh
+    // Harness, now read one register further downstream at
     // dut->rootp->minimig->PAULA1->pi1__DOT__intreq -- the same
     // --public-flat-rw path hrm/ch8-disk-interrupt-path already reads at
     // this identical minimig fixture.
@@ -507,22 +534,41 @@ int main(int argc, char** argv) {
                     std::to_string(ports_before) + "; after loading a small count, unmasking ICR's "
                     "TA bit and starting the timer, INTREQ bit 3 became true = " + std::to_string(ports_after) + ".");
         checks.expect(!ports_before && ports_after,
-            "CIAA-IRQ-REACHES-PORTS (p.221, opus:7-fig7-4.c12): Figure 7-4's "
-            "PORTS row reads \"external INT2 & CIAA\" -- CIAA's own `irq` pin, "
-            "driven true by an unmasked Timer A underflow (the same mechanism "
-            "CIAA-IRQ-REACHES-INT2 above grades at the int2 net), reaches all the "
-            "way to INTREQ bit 3 (paula_intcontroller.v:112, `intreq[3] <= "
-            "tmp[3] | int2;`, the bit Figure 7-4 names PORTS) -- the "
-            "expansion-connector half of the row's condition (\"external "
-            "INT2\") is absent from this RTL and out of scope; INTREQ bit 3 is "
-            "false beforehand and becomes true once the timer underflows.");
+            "CIAA-IRQ-REACHES-PORTS (p.221, sol:F-ciaa-map.c55, "
+            "opus:F-ciaa-map.c32): Figure 7-4's PORTS row names the CIA leg of "
+            "\"external INT2 & CIAA\"; \"CIAA can generate interrupt INT2\" "
+            "(p.339) -- CIAA's own `irq` pin, driven true by an unmasked Timer A "
+            "underflow (the same mechanism CIAA-IRQ-REACHES-INT2 above grades at "
+            "the int2 net), reaches all the way to INTREQ bit 3, the bit p.219 "
+            "(\"Bit 3, PORTS, becomes a 1 when the system line called INT2* "
+            "becomes a logic 0\") and p.280's register table (\"03 PORTS 2 I/O "
+            "ports and timers\") both name PORTS -- paula_intcontroller.v:112 "
+            "(`intreq[3] <= tmp[3] | int2;`) confirms which wire is inspected, "
+            "not which bit PORTS is -- the expansion-connector half of Figure "
+            "7-4's own condition (\"external INT2\") is absent from this RTL "
+            "and out of scope; INTREQ bit 3 is false beforehand and becomes "
+            "true once the timer underflows.");
     }
     // MUTATION CIAA-IRQ-REACHES-PORTS stimulus red MUT_NO_TIMERA_START_PORTS: never write CRA's start bit at all -- Timer A never starts, so INTREQ bit 3 never sets and the ports_after conjunct goes red.
 
     // =====================================================================
     // CIAB-IRQ-REACHES-EXTER -- the mirror of CIAA-IRQ-REACHES-PORTS for
     // CIAB/int6/EXTER: Figure 7-4's EXTER row (p.221) reads "external INT6
-    // & CIAB". CIAB's Timer A/ICR/CRA are the same generic cia_int/
+    // & CIAB", two sources joined by "&". Only the CIA leg is graded here
+    // (the expansion-connector INT6* input is absent from this RTL
+    // entirely, so opus:7-fig7-4.c42 itself is withdrawn to a record()
+    // line below rather than carried on this passing label with a
+    // caveat). p.219 ("Bit 13, EXTER, becomes a 1 when the system line
+    // called INT6* becomes a logic 0") and p.280's register table ("13
+    // EXTER 6 External interrupt") name bit 13 as EXTER; Figure 7-4 itself
+    // prints no bit numbers. Established whole here, instead, is the
+    // single-source claim "CIAB can generate interrupt INT6"
+    // (sol:F-ciab-map.c62, opus:F-ciab-map.c32), moved from a
+    // CIAB-INT6-JOIN record() whose decline reason no longer held: it
+    // declined on the strength of a sibling package's C++-level join
+    // (ciab.irq wired to int6 in a testbench, not in this RTL's own
+    // paula_intcontroller), which this assertion's own real minimig.v join
+    // now supersedes. CIAB's Timer A/ICR/CRA are the same generic cia_int/
     // cia_timera cores ciaa.v instantiates (ciab.v:175/195), addressed at
     // the even (high) byte the way CIAB_PRA/CIAB_DDRA above already are
     // (rs==4'h4/5/D/E confirmed directly in ciab.v, same encoding as
@@ -548,13 +594,18 @@ int main(int argc, char** argv) {
                     std::to_string(exter_before) + "; after loading a small count, unmasking ICR's "
                     "TA bit and starting the timer, INTREQ bit 13 became true = " + std::to_string(exter_after) + ".");
         checks.expect(!exter_before && exter_after,
-            "CIAB-IRQ-REACHES-EXTER (p.221, opus:7-fig7-4.c42): Figure 7-4's "
-            "EXTER row reads \"external INT6 & CIAB\" -- CIAB's own `irq` pin, "
-            "driven true by an unmasked Timer A underflow (the same idiom as "
-            "CIAA-IRQ-REACHES-PORTS above, at CIAB's own register addresses), "
-            "reaches all the way to INTREQ bit 13 (paula_intcontroller.v:132, "
-            "`intreq[13] <= tmp[13] | int6;`, the bit Figure 7-4 names EXTER) "
-            "-- the expansion-connector half of the row's condition "
+            "CIAB-IRQ-REACHES-EXTER (p.221, sol:F-ciab-map.c62, "
+            "opus:F-ciab-map.c32): Figure 7-4's EXTER row names the CIA leg of "
+            "\"external INT6 & CIAB\"; \"CIAB can generate interrupt INT6\" "
+            "(p.340) -- CIAB's own `irq` pin, driven true by an unmasked Timer A "
+            "underflow (the same idiom as CIAA-IRQ-REACHES-PORTS above, at "
+            "CIAB's own register addresses), reaches all the way to INTREQ bit "
+            "13, the bit p.219 (\"Bit 13, EXTER, becomes a 1 when the system "
+            "line called INT6* becomes a logic 0\") and p.280's register table "
+            "(\"13 EXTER 6 External interrupt\") both name EXTER -- "
+            "paula_intcontroller.v:132 (`intreq[13] <= tmp[13] | int6;`) "
+            "confirms which wire is inspected, not which bit EXTER is -- the "
+            "expansion-connector half of Figure 7-4's own condition "
             "(\"external INT6\") is absent from this RTL and out of scope; "
             "INTREQ bit 13 is false beforehand and becomes true once the "
             "timer underflows.");
@@ -618,17 +669,16 @@ int main(int argc, char** argv) {
         "opus:F-portsig.c15]");
 
     checks.record(
-        "CIAA-INT2-JOIN (p.339, ch5-audio-interrupt, the "
-        "`paula_intcontroller` half -- int2 on the PORTS bit): already "
-        "grades that int2, once asserted, sets the PORTS interrupt-request "
-        "bit. The CIA-A-to-int2 join itself (minimig.v:621, ciaa's own "
-        "`irq` pin actually driving int2) is NOT graded there -- that gap "
-        "is what this package's own CIAA-IRQ-REACHES-INT2 assertion above "
-        "grades fresh, under a different pair of uids naming the IRQ pin "
-        "itself rather than this PORTS-bit consequence of it (a uid may "
-        "not lose its home: these two stay declined, citing "
-        "ch5-audio-interrupt for the half that really is graded there). "
-        "[claims: sol:F-ciaa-map.c55, opus:F-ciaa-map.c32]");
+        "PORTS-DENOTATION-TWO-SOURCES (p.221, opus:7-fig7-4.c12): Figure "
+        "7-4's own restatement, \"the name PORTS denotes the interrupt "
+        "raised by the condition 'external INT2 & CIAA'\", names TWO "
+        "sources joined by \"&\". CIAA-IRQ-REACHES-PORTS above grades the "
+        "CIA leg only (INTREQ bit 3 follows CIAA's own irq pin); the "
+        "expansion-connector INT2* input this row's other half names is "
+        "absent from this RTL entirely (SPECIFICATION.md's own extension "
+        "section), so the two-source claim cannot be established whole "
+        "here. Declined in full, not carried on a passing label with a "
+        "caveat. [claims: opus:7-fig7-4.c12]");
 
     checks.record(
         "CIAB-MAP-PB7-PB0 (p.340, ch8-cia-disk-signal-bindings "
@@ -643,16 +693,16 @@ int main(int argc, char** argv) {
         "opus:F-ciab-map.c4]");
 
     checks.record(
-        "CIAB-INT6-JOIN (p.340, ch5-audio-interrupt, the "
-        "`paula_intcontroller` half -- int6 on the EXTER bit): the mirror "
-        "of CIAA-INT2-JOIN above, for CIAB/int6. The CIA-B-to-int6 join "
-        "itself is not graded there either, but unlike the CIAA leg, a "
-        "sibling p.354 IRQ-pin claim's own note (not this package's uids "
-        "-- see this package's own CIAA-IRQ-REACHES-INT2 assertion above "
-        "for that citation) says this exact CIAB leg IS already graded "
-        "elsewhere (ch8-disk-index-interrupt-path PROP-FLAG-PIN, "
-        "irq -> int6) -- so, unlike the CIAA leg, no gap is left here to "
-        "grade fresh. [claims: sol:F-ciab-map.c62, opus:F-ciab-map.c32]");
+        "EXTER-DENOTATION-TWO-SOURCES (p.221, opus:7-fig7-4.c42): the "
+        "mirror of PORTS-DENOTATION-TWO-SOURCES above, for CIAB/int6/EXTER. "
+        "Figure 7-4's own restatement, \"the name EXTER denotes the "
+        "interrupt raised by the condition 'external INT6 & CIAB'\", names "
+        "TWO sources joined by \"&\". CIAB-IRQ-REACHES-EXTER above grades "
+        "the CIA leg only; the expansion-connector INT6* input this row's "
+        "other half names is absent from this RTL entirely, so the "
+        "two-source claim cannot be established whole here. Declined in "
+        "full, not carried on a passing label with a caveat. [claims: "
+        "opus:7-fig7-4.c42]");
 
     checks.record(
         "INTRO-DUTY-ENUMERATION (p.339, ch1-cia-timers, declining the "
