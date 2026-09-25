@@ -115,8 +115,8 @@
 //   (SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL) is recorded as "impossible",
 //   not skipped.
 //
-// CLAIM COVERAGE -- 94 ids are cited in full inside an expect()/note() call's
-//   own text below (never only in a header comment). Three further ids are
+// CLAIM COVERAGE -- 92 ids are cited in full inside an expect()/note() call's
+//   own text below (never only in a header comment). Five further ids are
 //   named in full inside a record() call instead, kept off every graded
 //   line:
 //   - A-audxdat.c4: its sentence bundles a measured sequential-output-
@@ -128,16 +128,18 @@
 //     than kept with a caveat. A-audxdat.c4 needs an analog/DAC output-pin
 //     boundary that does not exist anywhere in this project (no port on any
 //     module in this chipset carries a voltage or an analog signal).
-//   - 5-p148.c4, 5-join.c9: this worked-example sentence states the MOMENT
-//     of the audio interrupt (immediately after working copies of length
-//     and location are retrieved) -- the same disputed moment 5-p147.c6/
-//     5-join.c4 state generally. INTERRUPT-CADENCE-TIED-TO-LENGTH grades
-//     only the request's existence and its cadence tied to AUDxLEN, not the
-//     moment; three manual passages (p147/p148, p164, appendix A p265) give
-//     three different moments and the measured first rise matches none of
-//     them literally, so crediting these two ids on that green would be the
-//     same partial-predicate defect as A-audxdat.c4 above. Declined whole;
-//     see the RECORD() call in the INTERRUPT-CADENCE-TIED-TO-LENGTH block.
+//   - 5-p147.c6, 5-join.c4, 5-p148.c4, 5-join.c9: all four restatements
+//     state the MOMENT of the audio interrupt (immediately after working
+//     copies of length and location are retrieved) -- 5-p147.c6/5-join.c4
+//     in the manual's general p.147 wording, 5-p148.c4/5-join.c9 in its
+//     p.148 worked-example wording of the identical fact.
+//     INTERRUPT-CADENCE-TIED-TO-LENGTH grades only the request's existence
+//     and its cadence tied to AUDxLEN, not the moment; three manual
+//     passages (p147/p148, p164, appendix A p265) give three different
+//     moments and the measured first rise matches none of them literally,
+//     so crediting any of these four ids on that green would be the same
+//     partial-predicate defect as A-audxdat.c4 above. Declined whole; see
+//     the RECORD() call in the INTERRUPT-CADENCE-TIED-TO-LENGTH block.
 //   Nineteen assertion groups, ids folded onto whichever group tests the
 //   identical underlying proposition (many ids are the same quotation or
 //   the same fact independently read by both lots):
@@ -149,7 +151,7 @@
 //     DMA-CONTINUES-UNTIL-STOPPED-REPLAYS             4 ids
 //     RESTART-DOES-NOT-RESUME-MIDBUFFER               4 ids
 //     LENGTH-IS-A-BACKUP-REGISTER                     3 ids
-//     INTERRUPT-CADENCE-TIED-TO-LENGTH                6 ids (5-p148.c4, 5-join.c9 declined via record(), see above)
+//     INTERRUPT-CADENCE-TIED-TO-LENGTH                4 ids (5-p147.c6, 5-join.c4, 5-p148.c4, 5-join.c9 declined via record(), see above)
 //     PERIOD-SETS-SAMPLE-INTERVAL                     14 ids (incl. 2 terminal-count ids, recorded in a trailing note)
 //     LOWER-PERIOD-YIELDS-HIGHER-RATE                 5 ids
 //     PERIOD-MAX-16BIT-RANGE                          2 ids
@@ -157,7 +159,7 @@
 //     VOLUME-REGISTER-SEVEN-BITS-READBACK             9 ids
 //     PWM-PATH-DISTINGUISHES-ALL-65-LEVELS            2 ids
 //     CPU-CAN-WRITE-AUDXDAT-DIRECTLY                  10 ids
-//   Total = 4+14+3+2+10+4+4+3+6+14+5+2+1+9+2+10 = 93.
+//   Total = 4+14+3+2+10+4+4+3+4+14+5+2+1+9+2+10 = 91.
 //   Two further scenarios (FIXTURE-LIVENESS-DMA-PATH, FIXTURE-LIVENESS-
 //   DIRECT-WRITE-PATH) carry no claim id -- pure liveness controls -- and
 //   still get their own mutation, matching hrm/ch5-audio-volume-scale/'s own
@@ -171,7 +173,7 @@
 //   endpoint pair, not a frequency. Both signed two's-complement extremes,
 //   -128 and +127, are shown reaching `sample` intact through the eight-bit
 //   path and its sign extension -- no clock, tick count, or Hz figure is
-//   involved on either side of this one. New total = 93 + 1 = 94.
+//   involved on either side of this one. New total = 91 + 1 = 92.
 //
 // WHAT IS RECORDED, NOT ASSERTED (measure-and-report, per this chapter's own
 //   silence/conflict rulings -- never forced into a graded pass/fail that
@@ -187,11 +189,11 @@
 //     cadence is identical under either reading regardless.
 //   - the exact MOMENT of the audio interrupt: three manual passages (p147/
 //     p148, p164, appendix A p265) disagree with each other; existence and
-//     cadence are asserted, the moment is recorded. 5-p148.c4 and 5-join.c9
-//     state that moment directly (p.148's worked-example wording of the
-//     same event 5-p147.c6/5-join.c4 state generally) and are declined via
-//     record() rather than kept on the existence/cadence green, since that
-//     green does not establish the moment they claim.
+//     cadence are asserted, the moment is recorded. 5-p147.c6 and 5-join.c4
+//     state that moment in p.147's general wording, and 5-p148.c4/5-join.c9
+//     state the identical fact in p.148's worked-example wording; all four
+//     are declined via record() rather than kept on the existence/cadence
+//     green, since that green does not establish the moment they claim.
 //   - 5-sum.c3's restart-address half (AUDxLC): agnus_audiodma's register,
 //     outside this module's boundary; only the word-count half is asserted.
 //   - A-audxdat.c4 is declined via record() (see "CLAIM COVERAGE" above and
@@ -1033,19 +1035,17 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // INTERRUPT-CADENCE-TIED-TO-LENGTH
-    // (5-p147.c6, 5-join.c4, 5-appA-p265.c46, 5-appA-p265.c47, A-audxdat.c8,
-    //  A-audxdat.c9)
+    // (5-appA-p265.c46, 5-appA-p265.c47, A-audxdat.c8, A-audxdat.c9)
     //
-    // 5-p148.c4 and 5-join.c9 state the same interrupt event as 5-p147.c6/
-    // 5-join.c4 above, in the manual's worked-example wording ("c. Create
-    // an interrupt... after retrieving working copies of length and
-    // location registers"), but that sentence states the MOMENT of the
-    // interrupt (immediately after the register copy), and this assertion
-    // grades only existence and cadence tied to AUDxLEN -- not the moment.
-    // The moment is disputed (see the trailing MEASURED note) and the
-    // RTL's own first rise matches none of the three manual passages
-    // literally, so 5-p148.c4/5-join.c9 are declined via record() below
-    // rather than kept on this green with a caveat.
+    // 5-p147.c6/5-join.c4 (p.147, general wording) and 5-p148.c4/5-join.c9
+    // (p.148, worked-example step "c.", "Create an interrupt... after
+    // retrieving working copies of length and location registers") all
+    // state the MOMENT of the interrupt (immediately after the register
+    // copy), and this assertion grades only existence and cadence tied to
+    // AUDxLEN -- not the moment. The moment is disputed (see the trailing
+    // MEASURED note) and the RTL's own first rise matches none of the
+    // three manual passages literally, so all four ids are declined via
+    // record() below rather than kept on this green with a caveat.
     // =========================================================================
     {
         Harness h;
@@ -1073,7 +1073,7 @@ int main(int argc, char** argv) {
           << "shows the one unconditional startup pulse, per dma_advance's header comment) and "
           << obs.dmas_edges.size() << " dmas transitions, over " << obs.word_count
           << " delivered words with AUDxLEN=4.";
-        CHECK("INTERRUPT-CADENCE-TIED-TO-LENGTH (5-p147.c6, 5-join.c4, "
+        CHECK("INTERRUPT-CADENCE-TIED-TO-LENGTH ("
               "5-appA-p265.c46, 5-appA-p265.c47, A-audxdat.c8, A-audxdat.c9): with AUDxLEN=4 and "
               "DMA running, the buffered interrupt request (intreq2, which `intreq` reflects onto "
               "the port at the next period-timer transition) is set once per completed 4-word "
@@ -1087,16 +1087,18 @@ int main(int argc, char** argv) {
              "used. This package asserts only that the request exists and recurs at a stable "
              "cadence tied to AUDxLEN; which of the three moments the RTL implements is "
              "recorded, not graded, here.");
-        RECORD("5-p148.c4, 5-join.c9 (p.148, worked-example step \"c.\") \"Create an interrupt "
-               "for the 680x0 saying that it has completed retrieving working copies of length "
-               "and location registers.\": this sentence states the MOMENT of the interrupt "
-               "(immediately after the register copy) -- the same disputed moment stated "
-               "generally, in p.147's general wording, by (graded: 5-p147.c6, 5-join.c4). "
-               "INTERRUPT-CADENCE-TIED-TO-LENGTH above grades only the request's existence and "
-               "its cadence tied to AUDxLEN, not the moment: p147/p148, p164 and appendix A p265 "
-               "give three different moments, and the measured first rise (two delivered words "
-               "after DMA start) matches none of them literally. Declined whole rather than "
-               "credited on a partial predicate.");
+        RECORD("5-p147.c6, 5-join.c4 (p.147) \"Interrupts occur immediately after the audio DMA "
+               "channel has read the location and length registers and stored their values in "
+               "the back-up registers.\" and 5-p148.c4, 5-join.c9 (p.148, worked-example step "
+               "\"c.\") \"Create an interrupt for the 680x0 saying that it has completed "
+               "retrieving working copies of length and location registers.\": all four "
+               "restatements state the MOMENT of the interrupt (immediately after the register "
+               "copy) -- the general (p.147) and worked-example (p.148) wordings of the same "
+               "disputed fact. INTERRUPT-CADENCE-TIED-TO-LENGTH above grades only the request's "
+               "existence and its cadence tied to AUDxLEN, not the moment: p147/p148, p164 and "
+               "appendix A p265 give three different moments, and the measured first rise (two "
+               "delivered words after DMA start) matches none of them literally. Declined whole "
+               "rather than credited on a partial predicate.");
         MUTATION("INTERRUPT-CADENCE-TIED-TO-LENGTH", "stimulus", "red",
                   "built with -DMUT_INTCAD=1, which shortens the run to under two full AUDxLEN "
                   "blocks -- fewer than two intreq/dmas events have time to occur and the >=2 "
