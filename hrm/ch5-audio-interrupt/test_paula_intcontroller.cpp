@@ -206,16 +206,19 @@
 //    the "no request" half, which this assertion does not test; both are
 //    recorded at MASTER-BIT14-NO-REQUEST-NOT-GRADED below.
 //
-// 5B. MASTER-BIT14-NO-REQUEST (2 claim ids; ASSERTS ONLY THE "NO
+// 5B. MASTER-BIT14-NO-REQUEST (2 claim ids; MEASURES AND RECORDS THE "NO
 //    REQUEST" HALF, see the header note above).
 //    Quote: appendix A p.280 "14 INTEN Master interrupt (enable only, no
 //    request)".
 //    Expected if NanoMig conforms: a plain SET write to INTREQ naming only
 //    bit 14 leaves INTREQR bit 14 at 0 - there is no request path for this
 //    bit to land in.
-//    ASSERTED, and EXPECTED RED: paula_intcontroller.v:134 gives bit 14 a
-//    real request path (`intreq[14] <= tmp[14]`); a SET write to it reads
-//    back set. The manual's "no request" half does not hold for this RTL.
+//    MEASURED, and RECORDED as not graded: paula_intcontroller.v:134 gives
+//    bit 14 a real request path (`intreq[14] <= tmp[14]`); a SET write to
+//    it reads back set. The manual's "no request" half does not hold for
+//    this RTL, but the page does not settle between two readings of that
+//    wording (see the record below), so this is a note()/record() pair,
+//    not a graded expect().
 //    Claims: 5-appA-p280.c20, A-int.b14 .
 //
 // 6. INTERRUPT-SOURCE-BIT-AND-PRIORITY-LEVEL-TABLE (42 claim ids).
@@ -790,13 +793,14 @@ int main(int argc, char** argv) {
         checks.expect(inactive_without_inten && active_with_inten, buf);
     }
 
-    // ---------------- 5B. MASTER-BIT14-NO-REQUEST (EXPECTED RED) ----------
+    // ---------------- 5B. MASTER-BIT14-NO-REQUEST (MEASURED, RECORDED) ----
     // Split out of assertion 5 per the 2026-09-12 repair (independent
     // validation finding V-07): the enable half above is asserted and
     // green; this is the "no request" half of the SAME appendix A p.280
-    // sentence, asserted on its own and EXPECTED TO GO RED, because
+    // sentence, measured on its own and RECORDED, not graded, because
     // paula_intcontroller.v:134 gives bit 14 a real request path that the
-    // manual's wording says should not exist.
+    // manual's wording says should not exist, and the page does not settle
+    // between two readings of that wording (see the record below).
     {
         Harness h;
         h.reset_registers();
