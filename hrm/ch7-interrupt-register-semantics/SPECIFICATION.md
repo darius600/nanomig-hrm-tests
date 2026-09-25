@@ -395,6 +395,32 @@ for the disputed INTEN-self-request half, folding in Figure 7-4's
 corroborating (and, per `opus:7-appA-int.c6`'s crossread, genuinely
 conflicting) placement — material neither prior package's claims name.
 
+## Appendix B address-order rows — INTENAR and INTREQR
+
+Two further claims, both from appendix B's address-order table, quote a
+single register row each. Written from their quotations alone, the same way
+as P1-P19 above.
+
+### P20 -- Appendix B lists INTENAR's read address as $01C
+
+> "INTENAR      *01C   R           P    Interrupt enable bits read" (printed
+> p.289)
+
+Testable form: appendix B's address-order table gives INTENAR's read address
+as $01C.
+
+Cited by: `opus:B-intenar.addr`.
+
+### P21 -- Appendix B lists INTREQR's read address as $01E
+
+> "INTREQR      *01E   R           P    Interrupt request bits read" (printed
+> p.289)
+
+Testable form: appendix B's address-order table gives INTREQR's read address
+as $01E.
+
+Cited by: `opus:B-intreqr.addr`.
+
 ## Claims accounted for
 
 All 41 claims in `ch7-interrupt-register-semantics-spec-stage.jsonl` are
@@ -408,3 +434,6 @@ accounted for above:
 
 Total distinct claim rows: 41 (`sol:` 21, `opus:` 20), matching the task
 sheet's count.
+
+P20 and P21 above account for the two further claims added to this
+package: `opus:B-intenar.addr`, `opus:B-intreqr.addr`.
