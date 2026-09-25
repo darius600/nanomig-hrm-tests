@@ -186,6 +186,16 @@
 //   the expected vector left as it was -> 10 passed 1 failed, and
 //   UNSHIFTED-WORD-COUNT is the only assertion that moves (its harness is
 //   its own block). Reverted: 11/0.
+// MUTATION C-BYPASSES-MASK-AND-SHIFT stimulus red: the same four words, same
+//   BLTAFWM=BLTALWM=0x0000, same ash=bsh=15, routed through channel A instead
+//   of channel C (LF changed from C-passthrough 0xAA to A-passthrough 0xF0,
+//   fed via a_words instead of c_words, USEA instead of USEC) -> FAIL: A has
+//   both a real mask (agnus_blitter.v:312-319) and a real shifter, so at
+//   BLTAFWM=BLTALWM=0x0000 and ash=15 the captured words no longer equal the
+//   raw fed words the way C's did (11 passed, 1 failed - only this assertion
+//   moved). Confirms the comparator actually distinguishes "has neither
+//   mechanism" from "has both", not merely true of any channel. Reverted:
+//   12/0, same 11 pre-existing PASS lines unchanged plus this one.
 // MUTATION EXTRA-WORD-COST-IN-CYCLES stimulus red: the shifted case's width
 //   reduced from 4 back to 3 (i.e. the "extra" word is not requested) ->
 //   FAIL: exactly 3 words are fetched/stored, not the hardcoded expected 4.
@@ -441,6 +451,36 @@ int main(int argc, char** argv) {
             "shift) is independently established by ZEROS-FIRST-WORD-ONLY, "
             "PREV-WORD-BITS, ROW-BOUNDARY-CHAIN and SHIFT-ON-LOAD below, all of which "
             "show A or B's output changing with the shift value");
+    }
+
+    // ---------------- C-BYPASSES-MASK-AND-SHIFT (p. 199, Figure 6-13) ----------------
+    {
+        // Both potential mechanisms driven to their harshest setting at once:
+        // ash=bsh=15 (max shift, as NO-SHIFT-ON-C above) AND BLTAFWM=BLTALWM
+        // =0x0000 (the value that, on channel A - the only channel with a
+        // mask register at all - forces every masked bit of a first/last
+        // word to zero; agnus_blitter.v:312-319). Channel C has no mask
+        // register and no shifter instance in the RTL (bltcdat is loaded
+        // directly from data_in, agnus_blitter.v:417-422, and fed straight
+        // to the minterm generator's cin, agnus_blitter.v:447) - so neither
+        // setting should have any effect on a C-passthrough blit.
+        Harness h;
+        h.c_words = {0x1234, 0x5678, 0x9ABC, 0xDEF0};
+        h.write_reg(BLTAFWM, 0x0000);
+        h.write_reg(BLTALWM, 0x0000);
+        h.write_reg(BLTCON0, static_cast<uint16_t>((15u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+        h.write_reg(BLTCON1, static_cast<uint16_t>(15u << 12));
+        h.write_reg(BLTSIZE, bltsize_word(4, 1));
+        h.run_until_writes(4, 60);
+
+        const std::vector<uint16_t> expected = {0x1234, 0x5678, 0x9ABC, 0xDEF0};
+        checks.expect(h.data_writes == expected,
+            "C-BYPASSES-MASK-AND-SHIFT: with ash=bsh=15 (max shift) AND "
+            "BLTAFWM=BLTALWM=0x0000 (the harshest mask value in the design) both "
+            "held at once, a C-passthrough blit still delivers the four fed words "
+            "completely unchanged - ch6-fig613.f12: \"In Figure 6-13 'C hold' is "
+            "loaded straight from the DATA BUS: the C source passes through "
+            "neither a mask nor a shifter\" (Figure 6-13, p.199)");
     }
 
     // ---------------- ZEROS-FIRST-WORD-ONLY (pp. 179-180) ----------------
