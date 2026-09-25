@@ -165,10 +165,13 @@
 // in full, inside an expect() label; 14 are declined (see DECLINED CLAIMS).
 // Verified by script: every one of the 272 ids in claims.jsonl is
 // classified exactly once, either asserted or declined, with zero overlap
-// and zero omissions. Plus nine further claims routed in the
-// 2026-09-25_unit-backlog extension (see EXTENSION above: 3-colortable.c7,
-// 3-ct.c03, 3-code.c02, 3-coding.c2, 3-code.f03, 3-bpl.c02, 3-code.c03,
-// 3-coding.c3, 3-coding.c4), covered by TWO-COLOUR-CODE-SELECT below.
+// and zero omissions. Plus nine further claims routed in the extension
+// above (see EXTENSION): seven of them -- 3-code.c02, 3-coding.c2,
+// 3-code.f03, 3-bpl.c02, 3-code.c03, 3-coding.c3, 3-coding.c4 -- are
+// covered by TWO-COLOUR-CODE-SELECT below. The other two -- 3-colortable.c7,
+// 3-ct.c03 -- state a universal claim that TWO-COLOUR-CODE-SELECT's own two
+// data points do not establish whole; they are declined instead (see
+// DECLINED CLAIMS, group COLOR00-UNIVERSAL).
 //
 //   COLOUR-INDIRECTION-MECHANISM (7 ids)          -- the general principle.
 //   BIT-SIGNIFICANCE-ORDER (7 ids, loop x5)        -- single-playfield MSB..LSB = bitplane 5..1.
@@ -181,12 +184,14 @@
 //   PF2-CODE-SWEEP (50 ids, loop x8)               -- Tables 3-11/3-12b + dual columns: PF2 code -> register.
 //   7+7+113+6+6+4+14+51+50 = 258.
 //
-//   Extension (2026-09-25_unit-backlog), on top of the 258/272 above:
-//   TWO-COLOUR-CODE-SELECT (9 ids, one assertion)  -- corroborates N=0/N=1
+//   Extension, on top of the 258/272 above:
+//   TWO-COLOUR-CODE-SELECT (7 ids, one assertion)  -- corroborates N=0/N=1
 //                                                      from pp.42/46/55/56.
 //
-// DECLINED CLAIMS (14 ids, grouped by reason -- every one names a port
-// this module does not have; none is declined as "covered elsewhere"):
+// DECLINED CLAIMS (16 ids, grouped by reason -- all but one name a port
+// this module does not have; the exception, COLOR00-UNIVERSAL, bundles a
+// port gap with a combination range TWO-COLOUR-CODE-SELECT does not sweep;
+// none is declined as "covered elsewhere"):
 //
 //   NO-MEMORY-PORT (p.42/44/53/54/71/76) -- playfield memory geometry: for
 //     a single playfield (bytes-per-line organization, memory-vs-displayed
@@ -232,7 +237,17 @@
 //     bitplane DMA/shift-register logic this module has no port into.
 //     (1 id) A-bpldat.c8
 //
-//   7+1+3+1+1+1 = 14.
+//   COLOR00-UNIVERSAL (p.46) -- "COLOR00 is always reserved for the
+//     background color" is universal: it needs every combination other
+//     than 0, in both single- and dual-playfield mode, and every sprite
+//     pixel, to never select register 0. TWO-COLOUR-CODE-SELECT measures
+//     only combination 0 and combination 1; the rest of the playfield
+//     range is corroborated by other assertions in this package (which do
+//     not carry these ids), and the sprite half has no port here at all
+//     -- see NO-SPRITE-PORT above, the same gap.
+//     (2 ids) 3-colortable.c7, 3-ct.c03
+//
+//   7+1+3+1+1+1+2 = 16.
 //
 // CONTROL CASE: CONTROL-KNOWN-VALUES-ARRIVE (no claim id, no manual page)
 // is the control every page-cited assertion below shares: the fixture is
@@ -247,9 +262,11 @@
 // CONTROL-KNOWN-VALUES-ARRIVE below, same as every other assertion.
 //
 // RESULTS (after opening the RTL and building): 71 passed, 0 failed, plus
-// the 1 MEASURED note (printed, not counted as pass or fail) -- 70 passed
-// from the original acceptance plus 1 from the 2026-09-25_unit-backlog
-// extension's TWO-COLOUR-CODE-SELECT. No finding in this package --
+// 2 RECORDED lines (printed, not counted as pass or fail) -- 70 passed from
+// the original acceptance plus 1 from the extension's TWO-COLOUR-CODE-SELECT.
+// The 2 RECORDED lines are the Table 3-17 print defect and the
+// COLOR00-UNIVERSAL decline of 3-colortable.c7/3-ct.c03 above. No finding
+// in this package --
 // denise_playfields.v implements the manual's single-playfield AND
 // dual-playfield colour-selection description exactly as every assertion
 // expected. One RTL observation, checked
@@ -646,7 +663,6 @@ int main(int argc, char** argv) {
             "(combination 0) selects colour register 0, which the manual "
             "calls COLOR00 and reserves for the background; bitplane 1 "
             "alone (combination 1) selects colour register 1 (COLOR01) -- "
-            "'COLOR00 is always reserved for the background color' (p.46), "
             "'this code fills a low resolution bitplane with the "
             "background color ( COLOR00 ) by writing all \"0\"s into its "
             "memory area' (p.55), 'you define a bitplane that has \"0\"s "
@@ -654,10 +670,33 @@ int main(int argc, char** argv) {
             "the color in register 1' (p.55), 'if the bit is 0, the pixel "
             "is one user-defined color; if the bit is 1, the pixel is "
             "another' (p.42), Figure 3-8's 'Color 00 (background)' label "
-            "over the both-planes-zero region (p.56). 3-colortable.c7, "
-            "3-ct.c03, 3-code.c02, 3-coding.c2, 3-code.f03, 3-bpl.c02, "
-            "3-code.c03, 3-coding.c3, 3-coding.c4.");
+            "over the both-planes-zero region (p.56). 3-code.c02, "
+            "3-coding.c2, 3-code.f03, 3-bpl.c02, 3-code.c03, 3-coding.c3, "
+            "3-coding.c4.");
     }
+
+    // =========================================================================
+    // DECLINED -- 3-colortable.c7 and 3-ct.c03 quote 'COLOR00 is always
+    // reserved for the background color' (p.46). Read as a universal
+    // claim, that needs every combination other than 0, in both
+    // single- and dual-playfield mode, AND every sprite pixel, to never
+    // select register 0. TWO-COLOUR-CODE-SELECT above measures only
+    // combination 0 and combination 1 in single-playfield mode. The rest of
+    // the playfield range is corroborated elsewhere in this package
+    // (IDENTITY-MAPPING-SWEEP's N=1..31 rows and PF1-CODE-SWEEP's/
+    // PF2-CODE-SWEEP's k=1..7 rows all read back nonzero), but none of
+    // those assertions carries these two ids, and the sprite half has no
+    // port on this module at all (see NO-SPRITE-PORT among the declined
+    // claims below) -- it needs the denise fixture, which this package
+    // does not build.
+    // =========================================================================
+    checks.record(
+        "3-colortable.c7 3-ct.c03: 'COLOR00 is always reserved for the "
+        "background color' (p.46) is universal and TWO-COLOUR-CODE-SELECT's "
+        "two data points do not establish it whole -- no assertion in this "
+        "package sweeps every playfield combination against register 0 "
+        "under these ids, and none can reach sprites, which this module "
+        "has no port for (see NO-SPRITE-PORT).");
 
     // =========================================================================
     // DUAL-MODE-CAPACITY (p.44/93/94) -- with all six dual-mode bitplanes
