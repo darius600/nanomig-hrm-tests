@@ -202,6 +202,20 @@ requirement. `--public-flat-rw` is used read-only, for `int2` and (during
 diagnosis only, not in the committed assertions) `sel_cia_a`/internal
 bus-timing signals — nothing is ever forced.
 
+## Extension — interrupt-source naming (Figure 7-4, p.221)
+
+| proposition | page | uids |
+|---|---|---|
+| "The name PORTS denotes the interrupt raised by CIAA's irq output." | 221 | `opus:7-fig7-4.c12` |
+| "The name EXTER denotes the interrupt raised by CIAB's irq output." | 221 | `opus:7-fig7-4.c42` |
+
+Figure 7-4's "Description" cells name each interrupt's raising condition as
+two sources joined by "&": PORTS reads "external INT2 & CIAA", EXTER reads
+"external INT6 & CIAB". One of the two named sources on each row is an
+expansion-connector pin; the other is a CIA's own irq output. Only the CIA
+leg of each row is asserted here — the expansion-connector leg names a pin
+outside this fixture's boundary.
+
 ## What this specification deliberately does not contain
 
 Exact register addresses, bit patterns and tick budgets are step-2/test-
