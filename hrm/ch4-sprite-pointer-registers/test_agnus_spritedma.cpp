@@ -6,16 +6,21 @@
 //   implemented in Agnus, marked as an even-address register pair whose low
 //   bit is not part of the fetched address, and (the undisputed half of a
 //   four-way width conflict) that SPRxPTH supplies the more significant part
-//   of the composed pointer and SPRxPTL the less significant part. Package
-//   ch4-sprite-pointer-registers, fixture agnus_spritedma (one Verilator
-//   build, this module only).
+//   of the composed pointer and SPRxPTL the less significant part -- and (a
+//   2026-09-25 extension) that each channel's pair is individually named and
+//   reachable only through its own channel, and that the general "sprite
+//   memory addresses are word addresses" rule is the same fact as the low-
+//   bit exclusion. Package ch4-sprite-pointer-registers, fixture
+//   agnus_spritedma (one Verilator build, this module only).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A
 //   p.285, Appendix B pp.287/291 (claims.jsonl for
-//   ch4-sprite-pointer-registers, 145 records; the printed chapter-4 pages
-//   110/126/127 this inventory's own conflict_resolution fields quote
-//   against are NOT independently read here -- their wording reaches this
-//   file only through those fields). A red result below means
+//   ch4-sprite-pointer-registers, 145 records -- 176 after the 2026-09-25
+//   routing extension below, 165 asserted + 11 recorded; the printed
+//   chapter-4 pages 105/110/114/126/127 this inventory's own
+//   conflict_resolution fields quote against are NOT independently read
+//   here -- their wording reaches this file only through those fields). A
+//   red result below means
 //   agnus_spritedma.v disagrees with the manual, not that the assertion is
 //   wrong -- no assertion here was, or should be, adjusted to make the RTL
 //   pass.
@@ -140,6 +145,59 @@
 //   36+34+37+38 = 145. All four groups' id lists are reproduced in full
 //   inside their own expect() label below (searchable there), not only in
 //   this comment. None declined.
+//
+// EXTENSION (2026-09-25 routing pass): 31 more ids, routed from
+//   ch4-sprite-pointer-registers-spec-stage.jsonl (a later classification/
+//   routing pass over pages 105/110/114/126/127 and appendix B), add two
+//   more propositions and one more record group. Written from that
+//   spec-stage file's quotations and its own classify.conflict_resolution
+//   field ALONE -- the full claims file (with the routing decision) and
+//   the RTL were not opened until after this specification addition was
+//   committed, matching this file's own ORDER OF WORK discipline above.
+//   No existing assertion, MUTATION record, or claim id above is touched.
+//   P5 SPRITE-POINTER-NAMED-PER-CHANNEL-POINTS-TO-OWN-DATA (14 ids) -- the
+//     general naming rule (each sprite channel x has its own pointer pair
+//     called SPRxPTH and SPRxPTL, x being the sprite DMA channel number,
+//     p.110/p.127) and its specific instances for channels 1 through 7
+//     (p.114, p.127), plus the general definition of a pointer register
+//     (p.127: "used by the system to point to the current data being
+//     used") applied to this pair: writing channel x's own named pair
+//     changes what channel x's own DMA fetch reads, and does not move any
+//     other channel's fetch. Ids: CH4-p110.c2, CH4-ptr.c3, CH4-ptr.c4,
+//     CH4-det.c10, CH4-more.c2, CH4-more.c3, CH4-ptrs.c1, CH4-ptrs.c5,
+//     CH4-ptrs.c6, CH4-ptrs.c7, CH4-ptrs.c8, CH4-ptrs.c9, CH4-ptrs.c10,
+//     CH4-ptrs.c11.
+//   P6 SPRITE-POINTER-WORD-ADDRESSING (6 ids) -- the same undisputed
+//     word-alignment fact P3 above already measures (SPRxPTL's least
+//     significant bit is not part of the fetched address), restated once
+//     as page 105's general rule that all sprite memory addresses are word
+//     addresses, and once more in page 110's "bits 15 through 1" phrasing
+//     -- this package's own classify.conflict_resolution field names these
+//     ids explicitly as part of "the undisputed half [that] stays
+//     testable", alongside the two ids P3 already carries (CH4-p110.c5,
+//     CH4-ptr.c7). Ids: CH4-mem.c1, CH4-p105.c8, CH4-p110.c5, CH4-p110.c6,
+//     CH4-ptr.c7, CH4-ptr.c8.
+//   14+6 = 20. Their citation lists are reproduced in full inside their
+//   own expect() label below, exactly as P1-P4's are. Both reuse the
+//   existing control case's already-established measurement basis
+//   (pointer-write -> DMA-grant -> address_out path alive, ordered,
+//   distinct) -- no new control case is added.
+//
+//   NOT ASSERTED, RECORDED (11 ids): the same routing pass also carries 11
+//   ids whose entire content is the DISPUTED total pointer width -- the
+//   identical four-way self-contradiction MEASURED-WIDTH above already
+//   reports and never scores (p110 "high three bits"+"low sixteen
+//   bits"+"only fifteen bits used", p126 "18-bit", p127 "32-bit word
+//   address", appendix B "(high 3 bits)"/"(low 15 bits)"). This package's
+//   own classify.conflict_resolution field names these as the disputed
+//   half kept out of every assertion ("the width numbers go to a
+//   regression class"), and two of them (APPB2-conf.c3, APPB2-conf.c4)
+//   carry "Recorded, not resolved" in their own classification restatement
+//   text. Printed as record() lines in RESULTS below, each with its own id
+//   and reason, none on a graded line: CH4-p110.c3, CH4-p110.c4,
+//   CH4-ptr.c5, CH4-ptr.c6, CH4-ptr.c9, CH4-det.c9, CH4-p126.c9,
+//   CH4-p127.c9, CH4-ptrs.c4, APPB2-conf.c3, APPB2-conf.c4.
+//   20+11 = 31, matching the spec-stage file's own line count.
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id, labelled
 // "[control]") arms two different sprites with two different pointer
