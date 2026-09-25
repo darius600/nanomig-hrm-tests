@@ -91,10 +91,11 @@
 //   LIVE-READ, LIVE-WRITE (no claim id) -- required by the build brief in
 //     exactly these words: distinct known words fed in, and their arrival
 //     asserted, before anything data-dependent is graded.
-//   PROP-ADDR-JOY0DAT .. PROP-ADDR-JOYTEST (7 composed propositions, 41
+//   PROP-ADDR-JOY0DAT .. PROP-ADDR-JOYTEST (7 composed propositions, 48
 //     ids total) -- each register's address, composed from the p.229
 //     prose (where it exists), the p.281/282 Appendix A row and the p.289
-//     Appendix B row.
+//     Appendix B row, plus one further page-289 address-order id per
+//     register (see ADDENDUM below).
 //   PROP-RW-JOY0DAT .. PROP-RW-JOYTEST (7 composed propositions, 32 ids
 //     from this package's own 117, plus the four external p.287 legend
 //     uids named in SPECIFICATION.md) -- each register's read/write
@@ -117,6 +118,14 @@
 //     package's file, other agents working in this repository); the
 //     sibling/line mapping each record states is what the citation there
 //     should match.
+//
+// ADDENDUM -- seven further page-289 address-order claim ids (B-joy0dat.addr,
+//   B-joy1dat.addr, B-joytest.addr, B-pot0dat.addr, B-pot1dat.addr,
+//   B-potgo.addr, B-potgor.addr) restate, register for register, the exact
+//   Appendix-B row each PROP-ADDR-* assertion below already cites and
+//   grades (see SPECIFICATION.md's addendum for the row-by-row mapping).
+//   No new proposition and no new assertion: each id is appended to its own
+//   register's existing PROP-ADDR-* label, and to that label only.
 //
 // MUTATION-LOG SUMMARY (16 groups, one per expect()). Every mutation below
 //   is a STIMULUS change (a target address, or how many steps/pulses are
@@ -477,7 +486,8 @@ int main() {
             "vertical, horizontal)' (p.281), 'JOY0DAT *00A R D "
             "Joystick-mouse 0 data (vert,horiz)' (p.289). "
             "opus:8-regs.c1, sol:8-reg.c1, opus:8-appa-joy.c1, "
-            "sol:8-appa-joy.c1, opus:8-appB.c8, sol:8-appB.c7.");
+            "sol:8-appa-joy.c1, opus:8-appB.c8, sol:8-appB.c7, "
+            "opus:B-joy0dat.addr.");
     }
     {
         Harness h;
@@ -503,7 +513,8 @@ int main() {
             "vertical, horizontal)' (p.281), 'JOY1DAT *00C R D "
             "Joystick-mouse 1 data (vert,horiz)' (p.289). "
             "opus:8-regs.c3, sol:8-reg.c3, opus:8-appa-joy.c5, "
-            "sol:8-appa-joy.c6, opus:8-appB.c13, sol:8-appB.c12.");
+            "sol:8-appa-joy.c6, opus:8-appB.c13, sol:8-appB.c12, "
+            "opus:B-joy1dat.addr.");
     }
     {
         Harness h;
@@ -528,7 +539,7 @@ int main() {
             "left pair (vert,horiz.)' (p.282), 'POT0DAT *012 R P (E)Pot "
             "counter pair 0 data (vert,horiz)' (p.289). opus:8-regs.c7, "
             "sol:8-reg.c8, opus:8-appa-pot.c1, sol:8-appa-pot.c1, "
-            "opus:8-appB.c18, sol:8-appB.c17.");
+            "opus:8-appB.c18, sol:8-appB.c17, opus:B-pot0dat.addr.");
     }
     {
         Harness h;
@@ -553,7 +564,7 @@ int main() {
             "right pair (vert,horiz.)' (p.282), 'POT1DAT *014 R P (E)Pot "
             "counter pair 1 data (vertfhoriz)' (p.289). opus:8-regs.c9, "
             "sol:8-reg.c10, opus:8-appa-pot.c5, sol:8-appa-pot.c6, "
-            "opus:8-appB.c23, sol:8-appB.c22.");
+            "opus:8-appB.c23, sol:8-appB.c22, opus:B-pot1dat.addr.");
     }
     {
         Harness h;
@@ -579,7 +590,7 @@ int main() {
             "POTINP)' (p.282), 'POTGOR *016 R P Pot port data read "
             "(formerly POTINP)' (p.289). opus:8-regs.c13, sol:8-reg.c15, "
             "opus:8-appa-potgo.c5, sol:8-appa-pot.c33, opus:8-appB.c28, "
-            "sol:8-appB.c27.");
+            "sol:8-appB.c27, opus:B-potgor.addr.");
     }
     {
         Harness h;
@@ -607,7 +618,7 @@ int main() {
             "'POTGO *034 W P Pot port data write and start' (p.289). "
             "opus:8-regs.c11, sol:8-reg.c12, opus:8-dio.c2, "
             "opus:8-appa-potgo.c1, sol:8-appa-pot.c28, opus:8-appB.c48, "
-            "sol:8-appB.c47.");
+            "sol:8-appB.c47, opus:B-potgo.addr.");
     }
     {
         Harness h;
@@ -630,7 +641,7 @@ int main() {
             "at once.' (p.282), 'JOYTEST *036 W D Write to all four "
             "joystick-mouse counters at once' (p.289). "
             "opus:8-appa-joytest.c1, sol:8-appa-joytest.c1, "
-            "opus:8-appB.c53, sol:8-appB.c52.");
+            "opus:8-appB.c53, sol:8-appB.c52, opus:B-joytest.addr.");
     }
 
     // =========================================================================
