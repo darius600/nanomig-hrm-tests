@@ -66,9 +66,12 @@ arrives unmodified and distinguishable from a second, different known value.
 | `sol:8-appa-dsklen.c1` | 279 | "DSKLEN     024      W       P     Disk length" |
 | `opus:8-appB-dsklen.c1` | 289 | "DSKLEN       *024   W           P    Disk length" |
 | `sol:8-appb-dsklen.c1` | 289 | "DSKLEN       *024   W           P    Disk length" |
+| `opus:B-dsklen.addr` | 289 | "DSKLEN       *024   W           P    Disk length" |
 
 Proposition: DSKLEN answers (i.e. a write reaches state observable through
 this fixture) at $024, and at $024 only — not at $008, $01A, $026 or $07E.
+`opus:B-dsklen.addr` is a later Appendix B extraction of this same row and
+states the same fact; L1 already establishes it in full.
 
 ### L2 — DSKLEN_WRITE_ONLY
 
@@ -108,8 +111,11 @@ ends.
 | `sol:8-appa-dskbytr.c1` | 278 | "DSKBYTR    01A      R       P     Disk data byte and status read" |
 | `opus:8-appB-dskbytr.c1` | 289 | "DSKBYTR      *01A   R           P    Disk data byte and status read" |
 | `sol:8-appb-dskbytr.c1` | 289 | "DSKBYTR      *01A   R           P    Disk data byte and status read" |
+| `opus:B-dskbytr.addr` | 289 | "DSKBYTR      *01A   R           P    Disk data byte and status read" |
 
-Proposition: DSKBYTR answers at $01A, and at $01A only.
+Proposition: DSKBYTR answers at $01A, and at $01A only. `opus:B-dskbytr.addr`
+is a later Appendix B extraction of this same row and states the same fact;
+B1 already establishes it in full.
 
 ### B2 — DSKBYTR_READ_ONLY
 
@@ -233,10 +239,13 @@ apparatus is not itself silently broken or vacuous.
 | `sol:8-appa-adkbit.c12` | 265 | "            10     WORDSYNC       Enables disk read synchronizing on a word\n                              equal to DISK SYNC CODE, located in\n                              address (3F)*2." |
 | `opus:8-appB-dsksync.c1` | 290 | "    DSKSYNC      ~07E     W               Disk sync pattern register for disk\n                                               read" |
 | `sol:8-appb-dsksync.c1` | 290 | "    DSKSYNC      ~07E     W               Disk sync pattern register for disk\n                                               read" |
+| `opus:B-dsksync.addr` | 290 | "    DSKSYNC      ~07E     W               Disk sync pattern register for disk" |
 
 Proposition (the p.265/p.249 pair composes the arithmetic "(3F)*2 = $07E"
 with the register list's own $07E): DSKSYNC answers at $07E, and at $07E
-only. Only the register-offset half of the p.249/p.265 pair is graded — the
+only. `opus:B-dsksync.addr` is a later Appendix B extraction of this same
+row and states the same fact; S1 already establishes it in full. Only the
+register-offset half of the p.249/p.265 pair is graded — the
 $DFF page base that turns $07E into $DFF07E is decoded above this package's
 fixture boundary and belongs to a different package (`ch7-custom-address-
 space`, per this claims file's own `classify.split`); WORDSYNC's own
@@ -279,8 +288,11 @@ delivery/interrupt behaviour on whether the two match.
 | `sol:8-appa-dskdat.c1` | 279 | "DSKDAT     026      W       P     Disk DMA data write" |
 | `opus:8-appB-dskdat.c1` | 289 | "DSKDAT     & *026   W           P    Disk DMA data write" |
 | `sol:8-appb-dskdat.c1` | 289 | "DSKDAT     & *026   W           P    Disk DMA data write" |
+| `opus:B-dskdat.addr` | 289 | "DSKDAT     & *026   W           P    Disk DMA data write" |
 
-Proposition: DSKDAT answers at $026, and at $026 only.
+Proposition: DSKDAT answers at $026, and at $026 only. `opus:B-dskdat.addr`
+is a later Appendix B extraction of this same row and states the same fact;
+D1 already establishes it in full.
 
 ### D2 — DSKDAT_WRITE_ONLY
 
@@ -315,8 +327,11 @@ enters the disk-write data path.
 | `sol:8-appa-dskdatr.c1` | 279 | "DSKDATR    008      ER      P     Disk DMA data read (early read dummy\n                                      address)" |
 | `opus:8-appB-dskdatr.c1` | 289 | "DSKDATR    & *008   ER          P    Disk data early read (dummy address)" |
 | `sol:8-appb-dskdatr.c1` | 289 | "DSKDATR    & *008   ER          P    Disk data early read (dummy address)" |
+| `opus:B-dskdatr.addr` | 289 | "DSKDATR    & *008   ER          P    Disk data early read (dummy address)" |
 
-Proposition: DSKDATR answers at $008, and at $008 only.
+Proposition: DSKDATR answers at $008, and at $008 only. `opus:B-dskdatr.addr`
+is a later Appendix B extraction of this same row and states the same fact;
+E1 already establishes it in full.
 
 ### E2 — DSKDATR_EARLY_READ_ACCESS_IS_TRIGGER
 
