@@ -268,21 +268,31 @@
 // AREA-USE-BITS-11-8 and AREA-EFE-BIT4 already show four of these; add FCI
 // and IFE and cite this id on the set" (routing.how, medium confidence).
 // Independently checked against agnus_blitter.v/agnus_blitter_fill.v and
-// found accurate. Followed as given: ch6-fig613.f27 is added to the id
-// list of AREA-ASH-BITS-15-13-ARE-A-SHIFT-VALUE (SHIFT A VALUE),
-// BLTCON0-BITS-7-0-ARE-THE-LF-BYTE-IN-BOTH-MODES (Multi-minterm select
-// bits), AREA-USE-BITS-11-8-SELECT-CHANNELS (Store to Destination, via its
-// USED/D-grant result) and AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL (the EFE
-// half of Fill Enable) -- each already measures exactly the one sub-fact
-// it is cited for, no more, and none of the four claims by itself to
-// establish the whole of what ch6-fig613.f27 says; the set of all six
-// assertions carrying the id, taken together, does. The router's "add FCI
-// and IFE" is two genuinely new measurements: FCI (BLTCON1 bit 2), never
-// tested anywhere in this file before, and IFE (BLTCON1 bit 3, the other
-// half of "Fill Enable" -- AREA-EFE-BIT4 only ever covered EFE/bit 4),
-// also never tested anywhere in this file before. Both are new assertions
-// below, FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY and
+// found accurate for three of the four: AREA-ASH-BITS-15-13-ARE-A-SHIFT-
+// VALUE (SHIFT A VALUE), AREA-USE-BITS-11-8-SELECT-CHANNELS (Store to
+// Destination, via its USED/D-grant result) and AREA-EFE-BIT4-ENABLES-
+// EXCLUSIVE-FILL (the EFE half of Fill Enable) each measure exactly the
+// one sub-fact they are cited for. The fourth did not: BLTCON0-BITS-7-0-
+// ARE-THE-LF-BYTE-IN-BOTH-MODES samples only bit 7 and bit 0, the two ends
+// of the eight select lines Figure 6-13 draws, and never shows the other
+// six come from BLTCON0 at all -- so ch6-fig613.f27 is carried instead by
+// BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM below, which sets
+// each of the eight LF bits alone in turn and shows each selects only its
+// own selector word. None of the six assertions carrying the id claims to
+// establish the whole of what ch6-fig613.f27 says by itself; the set of
+// all six, taken together, does. The router's "add FCI and IFE" is two
+// genuinely new measurements: FCI (BLTCON1 bit 2), never tested anywhere
+// in this file before, and IFE (BLTCON1 bit 3, the other half of "Fill
+// Enable" -- AREA-EFE-BIT4 only ever covered EFE/bit 4), also never tested
+// anywhere in this file before. Both are new assertions below,
+// FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY and
 // AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL, each also citing ch6-fig613.f27.
+// AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL's own predicate (`on != off`)
+// separately proved too weak: any change from the unfilled 0x8001 passed,
+// so it did not actually pin the inclusive-fill result to the value p.184
+// implies (0xFFFF for an all-ones fill span). Tightened to `on == 0xFFFF`,
+// matching AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL's own already-exact
+// comparison.
 //
 // UNUSED-BIT ASSERTIONS ARE MADE FALSIFIABLE WITH A CONTROL, per the build
 // brief's explicit requirement. Three assertions below claim "setting this
@@ -474,8 +484,18 @@
 // MUTATION AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL stimulus red: the BLTCON1
 //   write changed from `ife ? (1u << 3) : 0x0000` to an unconditional
 //   `0x0000`, so the "on" run no longer actually sets bit 3 -> FAIL,
-//   "on != off" fails (both runs produce the unfilled 0x8001 result).
-//   Reverted: 21/0.
+//   "on == 0xFFFF" fails (the "on" run stays at the unfilled 0x8001, same
+//   as the "off" run). Re-run against the tightened predicate (`on ==
+//   0xFFFF` in place of the earlier `on != off`, which passed under any
+//   value change and did not actually pin the inclusive-fill result to
+//   0xFFFF): reverted, 22/0.
+// MUTATION BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM stimulus
+//   red: the per-bit probe's own LF stimulus changed from
+//   `static_cast<uint16_t>(1u << k)` to `static_cast<uint16_t>(1u <<
+//   ((k + 1) % 8))`, so each iteration k now sets a DIFFERENT LF bit than
+//   the one its own (A,B,C) comparison expects -> FAIL, every one of the
+//   eight per-k comparisons mismatches (the selected word is always one
+//   position away from where the check looks). Reverted: 22/0.
 
 #include <cstdint>
 #include <deque>
@@ -945,7 +965,61 @@ int main(int argc, char** argv) {
             "ch6-appa-bltcon0.line.b07.con0, ch6-appa-bltcon0.line.b06.con0, "
             "ch6-appa-bltcon0.line.b05.con0, ch6-appa-bltcon0.line.b04.con0, "
             "ch6-appa-bltcon0.line.b03.con0, ch6-appa-bltcon0.line.b02.con0, "
-            "ch6-appa-bltcon0.line.b01.con0, ch6-appa-bltcon0.line.b00.con0, "
+            "ch6-appa-bltcon0.line.b01.con0, ch6-appa-bltcon0.line.b00.con0 .");
+    }
+
+    // ---------------- BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM ----------------
+    {
+        // Figure 6-13 (p.199, ch6-fig613.f27): "Multi-minterm select bits
+        // (8)" draws eight separate lines from the control block to eight
+        // separate AND gates, one per LF bit. BLTCON0-BITS-7-0-ARE-THE-LF-
+        // BYTE-IN-BOTH-MODES above samples only bit 7 and bit 0, the two
+        // ends of the byte; it does not show the other six select lines
+        // come from BLTCON0 at all. This assertion carries the id instead:
+        // the same probe function, run for every one of the eight LF bits
+        // k=0..7 set alone, showing each selects ONLY its own selector word
+        // k and no other -- the whole of what the figure's eight lines
+        // state, not just the two ends.
+        auto probe_lf_bit = [](uint16_t lf_bit) {
+            Harness h;
+            h.write_reg(BLTAFWM, 0xFFFF);
+            h.write_reg(BLTALWM, 0xFFFF);
+            std::vector<uint16_t> a, b, c;
+            for (int k = 0; k < 8; ++k) {
+                a.push_back((k & 4) ? 0x8000 : 0x0000);
+                b.push_back((k & 2) ? 0x8000 : 0x0000);
+                c.push_back((k & 1) ? 0x8000 : 0x0000);
+            }
+            h.a_words.assign(a.begin(), a.end());
+            h.b_words.assign(b.begin(), b.end());
+            h.c_words.assign(c.begin(), c.end());
+            start_blit(h, USEA | USEB | USEC | USED, static_cast<uint16_t>(lf_bit), 8, 1);
+            h.run_until_writes(8, 200);
+            h.settle();
+            return h.data_writes;
+        };
+        bool all_ok = true;
+        for (int k = 0; k < 8 && all_ok; ++k) {
+            const auto out = probe_lf_bit(static_cast<uint16_t>(1u << k));
+            if (out.size() != 8) { all_ok = false; break; }
+            for (int j = 0; j < 8; ++j) {
+                const uint16_t expect_bit = (j == k) ? 0x8000 : 0x0000;
+                if ((out[j] & 0x8000) != expect_bit) { all_ok = false; break; }
+            }
+        }
+
+        checks.expect(all_ok,
+            "BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM: for each "
+            "of the eight LF bits k=0..7 set alone (all seven others clear), "
+            "ONLY the selector word whose (A,B,C) triple equals k produces a "
+            "1 in the output, and every other selector word of the eight "
+            "produces a 0 - Figure 6-13's 'Multi-minterm select bits (8)' "
+            "(p.199), drawn as eight separate lines from the control block "
+            "to eight separate AND gates, one per LF bit, matching the "
+            "AREA-MODE and LINE-MODE table rows '07 LF7' through '00 LF0' "
+            "(pp.267-268). agnus_blitter_minterm.v:29-40 ties each lf[k] to "
+            "its own AND gate before the final OR at :44 - eight independent "
+            "gates, not one shared enable. "
             "ch6-fig613.f27 .");
     }
 
@@ -1124,11 +1198,11 @@ int main(int argc, char** argv) {
         const uint16_t off = ife_output(false);
         const uint16_t on = ife_output(true);
 
-        checks.expect(off == 0x8001 && on != off,
+        checks.expect(off == 0x8001 && on == 0xFFFF,
             "AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL: with BLTCON1 bit 3 clear the "
             "minterm output (0x8001, two isolated bits) passes through unfilled; "
-            "with it set, the SAME minterm output is inclusive-filled into a "
-            "different word - 'The inclusive fill mode fills between lines, "
+            "with it set, the SAME minterm output is inclusive-filled into "
+            "0xFFFF - 'The inclusive fill mode fills between lines, "
             "leaving the lines intact' (p.184), and appendix A p.267's bit-3 "
             "table row (the corpus's OCR of this exact row is defective -- see "
             "'CORPUS DEFECT FOUND' above -- but the PDF scan and "
