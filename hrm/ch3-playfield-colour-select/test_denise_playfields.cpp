@@ -38,7 +38,7 @@
 //   prefix, and they resolve in the claim files that
 //   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
 //
-// EXTENSION (2026-09-25_unit-backlog). Nine further propositions were routed
+// EXTENSION. Nine further propositions were routed
 //   to this package, all restating -- from four different printed pages and
 //   two readers, at finer granularity -- the same pair of facts this
 //   package's own IDENTITY-MAPPING-SWEEP row N=0 and BIT-SIGNIFICANCE-
@@ -78,14 +78,13 @@
 //   data points (bpldata=0 -> plfdata=0, bpldata=PLANE(1) -> plfdata=1)
 //   under its own label and its own mutation record, leaving IDENTITY-
 //   MAPPING-SWEEP and BIT-SIGNIFICANCE-ORDER's existing labels untouched.
-//   `classify.package` on these nine claims, in the spec-stage file, names
-//   ch3-colour-register-format and ch3-ddf-fetch-window -- neither of
-//   which is this package. That field is the classifier's own plan from
-//   Prompt 4, not today's routing (see hrm-testpipeline's ROUTING-BRIEF.md:
-//   "some were assigned to a package that exists but never took them").
-//   This task's routing sends all nine claims here; the full claims.jsonl's
-//   own routing.route/routing.how (read only after this commit, per the
-//   build brief's gate) is what this package treats as authoritative.
+//   `classify.package` on these nine claims names ch3-colour-register-format
+//   and ch3-ddf-fetch-window -- neither of which is this package. That
+//   field reflects an earlier classification pass, not this package's own
+//   routing (see hrm-testpipeline's ROUTING-BRIEF.md: "some were assigned
+//   to a package that exists but never took them"). This package's own
+//   routing sends all nine claims here; the full claims.jsonl's own
+//   routing.route/routing.how is what this package treats as authoritative.
 //
 // COVERAGE CORRECTION (recorded for traceability): an earlier version of
 // this file declined 134 dual-playfield-flavoured claim ids as "already
@@ -304,7 +303,7 @@
 // MUTATION FIGURE-3-13-ROWS stimulus red: row n=1's single active plane was presented as bitplane 2 instead of bitplane 1, so that row now shows playfield 2 present and playfield 1 empty instead of the reverse.
 // MUTATION PF1-CODE-SWEEP stimulus red: row k=1's own stimulus was changed to present k=2's combination instead, so that row no longer reads back as register 1.
 // MUTATION PF2-CODE-SWEEP stimulus red: row k=1's own stimulus was changed to present k=2's combination instead, so that row no longer reads back as register 9.
-// MUTATION TWO-COLOUR-CODE-SELECT stimulus red (2026-09-25_unit-backlog extension, actually built via `-CFLAGS -DMUT_TWOCOLOUR=1`): the bitplane-1 stimulus was changed to present bitplane 2 instead, so the second reading no longer matches the value 1 the label names -- 70 passed, 1 failed (only this assertion moved); reverted and rebuilt clean, 71 passed, 0 failed, with all 70 pre-existing PASS/FAIL lines byte-identical and in the same order.
+// MUTATION TWO-COLOUR-CODE-SELECT stimulus red (extension, built via `-CFLAGS -DMUT_TWOCOLOUR=1`): the bitplane-1 stimulus was changed to present bitplane 2 instead, so the second reading no longer matches the value 1 the label names -- 70 passed, 1 failed (only this assertion moved); reverted and rebuilt clean, 71 passed, 0 failed, with all 70 pre-existing PASS/FAIL lines byte-identical and in the same order.
 
 #include <cstdint>
 #include <cstdio>
