@@ -175,6 +175,11 @@ public:
     void note(const std::string& l) {
         std::cout << "NOTE: " << l << "\n";
     }
+    // Declines a claim id with its own reason. Never touches passed/failed -
+    // this is not an assertion, and the id must stay off every expect() label.
+    void record(const std::string& l) {
+        std::cout << "RECORDED: " << l << "\n";
+    }
     int passed = 0, failed = 0;
 };
 
@@ -237,6 +242,19 @@ int main(int argc, char** argv) {
             "\"low 15 bits\", not the table's \"low 16 bits\" (p25:20 vs "
             "p25:28-30, both cited, neither adjudicated) "
             "[claims: COP2-cop1lcl.c5, COP2-location-registers.c10, ch2-appa-location-registers.c6, ch2-appa-location-registers.c7, ch2-appa-location-registers.c9, ch2-appb-table.c20, ch2-appb-table.c22, ch2-appb-table.c23, ch2-location-registers.c9]");
+        // ch2-location-registers.c3 is the register list's own "Low 16 bits"
+        // wording for COP1LCL - the other side of the same page-25
+        // self-contradiction LR1 measures. It is declined, not asserted: the
+        // 16th bit (data-word bit 0) has no wire anywhere on this boundary,
+        // so no stimulus can distinguish a 15-bit register from a 16-bit one
+        // - LR1 above already measures 15 surviving bits and names both
+        // readings without adjudicating between them.
+        checks.record("ch2-location-registers.c3 (p.25 register list, "
+            "\"COP1LCL Low 16 bits of first Copper list address\"): "
+            "conflicts with the prose's \"low 15 bits\" of the same "
+            "register (both cited by LR1 above, neither adjudicated); the "
+            "16th bit has no wire anywhere on this boundary, so no "
+            "stimulus can distinguish 15 from 16.");
     }
 
     // ------------------------------------------------------------------
@@ -265,6 +283,17 @@ int main(int argc, char** argv) {
             "repeated via COPJMP2 - width and bit-0 exclusion match COP1LCL "
             "(COP2-loc.c5/-location-registers.c5 vs COP2-loc.c7/3/"
             "-location-registers.c11) [claims: COP2-cop2lcl.c5, COP2-location-registers.c10, ch2-appa-location-registers.c15, ch2-appa-location-registers.c16, ch2-appa-location-registers.c18, ch2-appb-table.c30, ch2-appb-table.c32, ch2-appb-table.c33]");
+        // ch2-location-registers.c5 is the same page-25 self-contradiction
+        // as ch2-location-registers.c3 above, for COP2LCL. Declined for the
+        // same reason: no wire on this boundary distinguishes bit 0 from the
+        // rest, and LR2 above already measures 15 surviving bits for the
+        // second pair without adjudicating between the two manual readings.
+        checks.record("ch2-location-registers.c5 (p.25 register list, "
+            "\"COP2LCL Low 16 bits of second Copper list address\"): the "
+            "same page-25 self-contradiction as ch2-location-registers.c3, "
+            "for COP2LCL; LR2 above, the COPJMP2 walk of the second pair, "
+            "already measures 15 surviving bits and names both readings "
+            "without adjudicating.");
     }
 
     // ------------------------------------------------------------------
@@ -524,6 +553,14 @@ int main(int argc, char** argv) {
     // writes land in the same register and the second one - the zero - simply
     // overwrites the first, so the case fails for the ordinary reason and tells
     // you nothing about aliasing.
+    //
+    // ch2-appb-legend.c6 ("W=write-only; R=read-only," p.287): RM1 writes to
+    // the W-marked row $080/$082 and RM3 to $084/$086, and each already shows
+    // the write takes effect (bit 17 reaches address_out after the jump) -
+    // that is the whole of this claim's testable part here (the write
+    // half). The read-only half of the same legend entry - that these rows
+    // cannot be read - is a different id, not routed to this package, and
+    // stays off both labels.
     {
         // Bit 17 sits in the high half, so the target is only reachable when
         // the high register really is the one that was written.
@@ -538,7 +575,7 @@ int main(int argc, char** argv) {
             "(appendix A p273 register rows) "
             "[claims: COP2-cop1lch.c1, COP2-cop1lch.c2, COP2-cop1lch.c4, "
             "COP2-cop1lcl.c1, COP2-cop1lcl.c2, COP2-cop1lcl.c4, COP2-cop-locations.c1, "
-            "COP2-location-registers.c7, ch2-appa-location-registers.c1, ch2-appa-location-registers.c2, ch2-appb-legend.c3, ch2-appb-table.c14, ch2-appb-table.c15, ch2-appb-table.c16, ch2-appb-table.c21, ch2-location-registers.c12, ch2-location-registers.c6]");
+            "COP2-location-registers.c7, ch2-appa-location-registers.c1, ch2-appa-location-registers.c2, ch2-appb-legend.c3, ch2-appb-legend.c6, ch2-appb-table.c14, ch2-appb-table.c15, ch2-appb-table.c16, ch2-appb-table.c21, ch2-location-registers.c12, ch2-location-registers.c6]");
         checks.expect(!lands_with(COP1LCL, COP1LCH, COPJMP1),
             "RM2 the same two addresses swapped does NOT - $080 and $082 are not "
             "interchangeable (p273). Says nothing about addresses outside this pair "
@@ -549,7 +586,7 @@ int main(int argc, char** argv) {
             "pointer (appendix A p273) "
             "[claims: COP2-cop2lch.c1, COP2-cop2lch.c2, COP2-cop2lch.c4, "
             "COP2-cop2lcl.c1, COP2-cop2lcl.c2, COP2-cop2lcl.c4, COP2-cop-locations.c1, "
-            "COP2-location-registers.c7, ch2-appa-location-registers.c10, ch2-appa-location-registers.c11, ch2-appb-table.c24, ch2-appb-table.c25, ch2-appb-table.c26, ch2-appb-table.c31]");
+            "COP2-location-registers.c7, ch2-appa-location-registers.c10, ch2-appa-location-registers.c11, ch2-appb-legend.c6, ch2-appb-table.c24, ch2-appb-table.c25, ch2-appb-table.c26, ch2-appb-table.c31]");
         checks.expect(!lands_with(COP2LCL, COP2LCH, COPJMP2),
             "RM4 the second pair swapped does NOT (p273)");
 
