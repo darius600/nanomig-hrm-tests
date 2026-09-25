@@ -354,8 +354,15 @@ int main(int argc, char** argv) {
         int enar_addr = mutating("P3") ? INTREQR : INTENAR;  // MUTATION: secretly read the request pair's read address and call it the enable pair's
         uint16_t enar2 = read_reg(enar_addr);
         uint16_t reqr2 = read_reg(INTREQR);
+        // P20/P21 (SPECIFICATION.md): appendix B's own address-order rows for
+        // INTENAR ($01C) and INTREQR ($01E), opus:B-intenar.addr and
+        // opus:B-intreqr.addr. This assertion already reads INTENAR at its
+        // own $01C address and INTREQR at its own $01E address -- the RTL's
+        // INTENAR/INTREQR parameters (paula_intcontroller.v:27-28) -- which
+        // is the whole of what each of those two claims states, so they are
+        // cited here rather than reasserted.
         checks.expect(enar2 == 0x0021 && reqr2 == 0x0044,
-            "P3-FOUR-DISTINCT-ADDRESSES (p.217, sol:7-interrupts.c11, opus:7-int.c9; also grades appendix B's reoffered address rows sol:7-appB-intena.c1, sol:7-appB-intenar.c1, sol:7-appB-intreq.c1, sol:7-appB-intreqr.c1): after writing distinct known patterns into the two write addresses, each pair's own read address still reflects only its own pair's write -- the four named addresses decode to independent storage, not a shared one");
+            "P3-FOUR-DISTINCT-ADDRESSES (p.217, sol:7-interrupts.c11, opus:7-int.c9; also grades appendix B's reoffered address rows sol:7-appB-intena.c1, sol:7-appB-intenar.c1, sol:7-appB-intreq.c1, sol:7-appB-intreqr.c1, opus:B-intenar.addr, opus:B-intreqr.addr): after writing distinct known patterns into the two write addresses, each pair's own read address still reflects only its own pair's write -- the four named addresses decode to independent storage, not a shared one");
     }
 
     // ========================================================================
