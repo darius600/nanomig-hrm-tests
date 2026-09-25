@@ -49,10 +49,9 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// Specification addition (2026-09-25), from
-//   work/2026-09-25_unit-backlog/build2/ch2-copper-move-sweep-spec-stage.jsonl
-//   alone (quote, restatement, page -- no RTL argument): Appendix B's own
-//   per-register Copper-access marks, printed pp. 287, 289-293. The legend
+// Specification addition, from Appendix B's own per-register Copper-access
+//   marks alone (quote, restatement, page -- no RTL argument), printed pp.
+//   287, 289-293. The legend
 //   (p.287) defines two marks -- "*" ("Address not writable by the
 //   Copper.") and "~" ("Address not writable by the Copper unless the
 //   'copper danger bit', COPCON is set true.") -- and a row printed with
@@ -130,7 +129,7 @@
 // 10.09.2026 -- this sentence said cdang=1 and undercounted by one check
 // (DECODE was added after it was written), verified by rerunning `make test`).
 //
-// Baseline before and after each of the four 2026-09-25 mutations above
+// Baseline before and after each of the four mutations above
 // (APPBSTAR, APPBTILDE, APPBNONE, RESET2): 92 passed, 1 failed (the same
 // NM-HRM-004 divergence, unaffected by these ecs=0-only additions); each
 // mutation, run alone and reverted, moved the count to 91 passed, 2 failed
@@ -345,7 +344,7 @@ public:
     }
 
     // Declines to grade a claim, with the reason. Never a measurement, and
-    // never touches passed/failed. Added 2026-09-25 for the two
+    // never touches passed/failed. Used for the two
     // PKG-COP-MOVE-RANGE-CONFLICT claims this package records instead of
     // asserting; see the header's "Specification addition" note.
     void record(const std::string& label) {
@@ -639,7 +638,7 @@ int main(int argc, char** argv) {
     }
 
     // ------------------------------------------------------------------
-    // APPENDIX B PER-ROW COPPER-ACCESS MARKS (added 2026-09-25) -- see the
+    // APPENDIX B PER-ROW COPPER-ACCESS MARKS -- see the
     // header's "Specification addition" note. Graded from the SWEEP ecs=0
     // accepted sets already computed above (ocs_cdang0, ocs_cdang1), one
     // assertion per printed Appendix B row, plus the legend's own
