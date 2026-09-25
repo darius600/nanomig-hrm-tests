@@ -16,7 +16,7 @@
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   42, 44, 46, 57, 59, 60, 80, 81, 82, 86, 92, 95, 271, 272, 273, 277, 290,
 //   291, 293, 296, 299, 303, 306, 307 (claims.jsonl for ch3-nominal-display-
-//   values, 61 records plus 9 routed 25.09.2026, 70 total). A red result
+//   values, 70 records). A red result
 //   below means denise.v (or a sub-module
 //   it instantiates) disagrees with the manual, not that the assertion is
 //   wrong -- no assertion here was, or should be, adjusted to make the RTL
@@ -94,8 +94,8 @@
 //   their H-half.
 //
 // CLAIM COVERAGE: all 70 ids are accounted for below -- 57 inside an
-//   expect() assertion string (19 grouped/individual assertions, the same
-//   19 as before 25.09.2026: ids restating the identical proposition under
+//   expect() assertion string (19 grouped/individual assertions: ids
+//   restating the identical proposition under
 //   a different manual wording, page, appendix or reader are grouped and
 //   cited together on the single assertion that tests that proposition,
 //   the convention hrm/ch3-colour-register-format and
@@ -109,7 +109,7 @@
 //   pipeline this package was not assigned to build), and 2 inside a
 //   record() call (3-colorsum.c7, p.92, the software-directed "(set these
 //   to 0)" half COLOR-BITS-15-12-UNUSED's own comment already declines --
-//   routed record:ch3-nominal-display-values 25.09.2026, not graded; and
+//   recorded, not graded; and
 //   3-t15.c01, p.92, the same appendix-B row read as one unsplit claim
 //   that bundles the same software-directed half with the hardware half
 //   COLOR-BITS-15-12-UNUSED does establish -- an id whose claim bundles an
@@ -319,12 +319,10 @@
 //   (MUTATION HAM-MODIFY-WRITES-PIXEL above, unchanged, still applies) --
 //   this was a print-only fix.
 //
-// ROUTED ADDITION, 25.09.2026 (spec-only commit -- from
-//   ch3-nominal-display-values-spec-stage.jsonl alone, the routing's own
-//   `how` and the full claims file's classification not yet opened, per the
-//   build brief's order of work). Nine more claims were routed to this
-//   package in today's backlog pass, all clustered on the one proposition
-//   COLOR-BITS-15-12-UNUSED above already specifies and asserts:
+// ADDITION (quote, restatement and page alone; the claims file's own
+//   classification not yet opened). Nine more claims cluster on the one
+//   proposition COLOR-BITS-15-12-UNUSED above already specifies and
+//   asserts:
 //   - 3-colortable.c13 (sol) and 3-t3.c01 (opus), p.46, "Bits 15 - 12
 //     Unused" (Table 3-3, the chapter body's own colour-register-format
 //     table): restates, from a THIRD page/table (the chapter body, not the
@@ -345,16 +343,15 @@
 //     what an ignored bit was last written as, so there is no module-
 //     boundary effect for any fixture to observe. On the manual's content
 //     alone this is not gradable here, the same call already made for the
-//     identical clause under 3-t15.c01 -- confirmed, not decided fresh,
-//     once routing.how is read below.
+//     identical clause under 3-t15.c01.
 //   - A-color.c7/c8/c9/c10 (sol), p.273, Appendix A's own COLORxx bit
 //     table ("BIT# 15,14,...00" / "RGB  X  X  X  X  R3 R2..."), one claim
 //     per bit (15, 14, 13, 12 respectively, each marked X): the identical
 //     "unused" proposition split to single-bit granularity, per the BIT
 //     TABLE rule -- the same appendix-A row hrm/ch3-colour-register-format
-//     already draws on. This backlog is what first puts A-color.c10, along
-//     with its three sibling bits, onto COLOR-BITS-15-12-UNUSED below --
-//     none of the four was asserted anywhere before this commit.
+//     already draws on. A-color.c10, along with its three sibling bits, is
+//     added to COLOR-BITS-15-12-UNUSED below -- none of the four was
+//     asserted anywhere before.
 //   - A-colorxx.bits1 (opus), p.273, the same appendix-A row read as one
 //     group claim ("bits 15-12 are X, i.e. unused") rather than split --
 //     opus's own twin of the four sol ids immediately above.
@@ -364,12 +361,10 @@
 //   identically) -- eight are the same "unused" proposition restated from a
 //   different page, table, reader or bit-granularity, and the ninth
 //   (3-colorsum.c7) is the one already-declined software-guidance clause,
-//   restated as its own id. The build brief's item 1 covers exactly the
-//   eight: the existing assertion's own label gains their ids, written out
-//   in full, rather than a new assertion being built to reprove a fact
-//   already measured. No expected value, no oracle text and no existing
-//   assertion's verdict changes. The full claims file is opened next, to
-//   read routing.how and confirm this reading before the ids actually move.
+//   restated as its own id. For the eight: the existing assertion's own
+//   label gains their ids, written out in full, rather than a new
+//   assertion being built to reprove a fact already measured. No expected
+//   value, no oracle text and no existing assertion's verdict changes.
 
 #include <cstdio>
 #include <cstring>
@@ -1492,8 +1487,7 @@ int main(int argc, char** argv) {
     // identically whether COLOR01 is written with bits 15-12 set or clear,
     // with the low 12 bits held constant.
     //
-    // ROUTED ADDITION, 25.09.2026 (routing.jsonl, work/2026-09-25_unit-
-    //   backlog/build2/ch3-nominal-display-values.jsonl): eight more ids
+    // ADDITION: eight more ids
     //   route here with the identical "how" -- "COLOR-BITS-15-12-UNUSED
     //   already does this" -- because denise_colortable.v's own data_in
     //   port is [11:0], twelve bits wide, so no wiring exists in this
@@ -1545,7 +1539,7 @@ int main(int argc, char** argv) {
     checks.record(
         "3-colorsum.c7 (p.92, 'Color-register bits 15-12 must be written "
         "as zero', the '(set these to 0)' half of '15 - 12  Unused (set "
-        "these to 0)'): routed record:ch3-nominal-display-values -- "
+        "these to 0)'): "
         "'(set these to 0)' is an instruction to whoever writes the "
         "register, not a behaviour a module has; nothing about denise's "
         "output depends on what an ignored bit was last written as, so "
