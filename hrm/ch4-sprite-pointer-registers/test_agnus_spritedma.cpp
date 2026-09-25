@@ -6,17 +6,17 @@
 //   implemented in Agnus, marked as an even-address register pair whose low
 //   bit is not part of the fetched address, and (the undisputed half of a
 //   four-way width conflict) that SPRxPTH supplies the more significant part
-//   of the composed pointer and SPRxPTL the less significant part -- and (a
-//   2026-09-25 extension) that each channel's pair is individually named and
-//   reachable only through its own channel, and that the general "sprite
+//   of the composed pointer and SPRxPTL the less significant part -- and
+//   that each channel's pair is individually named and reachable only
+//   through its own channel, and that the general "sprite
 //   memory addresses are word addresses" rule is the same fact as the low-
 //   bit exclusion. Package ch4-sprite-pointer-registers, fixture
 //   agnus_spritedma (one Verilator build, this module only).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A
 //   p.285, Appendix B pp.287/291 (claims.jsonl for
-//   ch4-sprite-pointer-registers, 145 records -- 176 after the 2026-09-25
-//   routing extension below, 166 asserted + 10 recorded; the printed
+//   ch4-sprite-pointer-registers, 145 records -- 176 after the extension
+//   below, 166 asserted + 10 recorded; the printed
 //   chapter-4 pages 105/110/114/126/127 this inventory's own
 //   conflict_resolution fields quote against are NOT independently read
 //   here -- their wording reaches this file only through those fields). A
@@ -151,14 +151,11 @@
 //   PTL.chip, restate only 'reads "A"' with no exclusivity claim and stay
 //   on the expect() label. Nothing else among the 145 is declined.
 //
-// EXTENSION (2026-09-25 routing pass): 31 more ids, routed from
-//   ch4-sprite-pointer-registers-spec-stage.jsonl (a later classification/
-//   routing pass over pages 105/110/114/126/127 and appendix B). The
-//   specification addition above (this EXTENSION note plus the 20 ids it
-//   names) was written and committed from that spec-stage file's
-//   quotations alone; the full claims file, its `routing` field, and the
-//   RTL were opened only afterward. The router's `routing.how` on each id
-//   turned out to name a specific EXISTING assertion each new naming/
+// EXTENSION: 31 more ids, from a later classification/routing pass over
+//   pages 105/110/114/126/127 and appendix B, written from quotations
+//   alone; the full claims file and the RTL were opened only afterward.
+//   Each id's disposition turned out to name a specific EXISTING assertion
+//   each new naming/
 //   alignment id is already fully established by -- 19 of the 20 asserted
 //   ids therefore carry no new measurement at all: they are appended, id
 //   only, to an assertion already above (SPRITE-POINTER-PAIR-PER-CHANNEL-
@@ -184,22 +181,21 @@
 //   label, exactly as P1-P4's are. All reuse this file's existing
 //   measurement basis -- no new control case is added.
 //
-//   NOT ASSERTED, RECORDED (10 ids): the same routing pass also carries 10
+//   NOT ASSERTED, RECORDED (10 ids): a further 10
 //   ids -- CH4-p110.c3, CH4-p110.c4, CH4-ptr.c5, CH4-ptr.c6, CH4-det.c9,
 //   CH4-p126.c9, CH4-p127.c9, CH4-ptrs.c4, APPB2-conf.c3, APPB2-conf.c4 --
 //   whose entire content is the DISPUTED total pointer width, the
 //   identical four-way self-contradiction MEASURED-WIDTH above already
 //   reports and never scores (p110 "high three bits"+"low sixteen
 //   bits"+"only fifteen bits used", p126 "18-bit", p127 "32-bit word
-//   address", appendix B "(high 3 bits)"/"(low 15 bits)"). `routing.how`
-//   gives the identical reason for 8 of them ("Pointer width is the
+//   address", appendix B "(high 3 bits)"/"(low 15 bits)"). The identical
+//   reason applies to 8 of them ("Pointer width is the
 //   disputed half: conflict_resolution 'Only the total width is disputed
 //   ... the width numbers go to a regression class'"); the remaining two
 //   (APPB2-conf.c3, APPB2-conf.c4) already carry "Recorded, not resolved"
 //   in their own classification restatement text. Printed as one
 //   record() line per claim in RESULTS below, id in full, none on a
-//   graded line. 21+10 = 31, matching the spec-stage file's own line
-//   count.
+//   graded line. 21+10 = 31, the total this extension adds.
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id, labelled
 // "[control]") arms two different sprites with two different pointer
@@ -228,7 +224,7 @@
 // written, so every PASS/FAIL and MUTATION record here reflects the
 // corrected harness.
 //
-// RESULTS, EXTENSION (2026-09-25): after adding the one new assertion and
+// RESULTS, EXTENSION: after adding the one new assertion and
 // the 10 record() calls above, 6 passed, 0 failed -- the original 5 lines
 // print identically (verified by stripping the appended ids back out and
 // diffing byte-for-byte against the pre-extension capture), and the new
@@ -668,12 +664,12 @@ int main(int argc, char** argv) {
             "so would score the manual's internal disagreement, not the "
             "RTL.");
 
-        // RECORDED, not asserted: 10 ids from the 2026-09-25 routing pass
-        // whose entire content is the disputed total pointer width above
-        // -- routing.how: "Pointer width is the disputed half:
-        // conflict_resolution 'Only the total width is disputed ... the
-        // width numbers go to a regression class.'" One record() line per
-        // claim, id in full, kept off every graded line above.
+        // RECORDED, not asserted: 10 ids whose entire content is the
+        // disputed total pointer width above -- "Pointer width is the
+        // disputed half: conflict_resolution 'Only the total width is
+        // disputed ... the width numbers go to a regression class.'" One
+        // record() line per claim, id in full, kept off every graded line
+        // above.
         c.record("CH4-p110.c3: 'SPRxPTH supplies the high three bits of "
             "the sprite DMA start address' states the disputed width "
             "(page 110's 'high three bits'); not asserted -- see "
