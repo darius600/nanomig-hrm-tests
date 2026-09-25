@@ -41,6 +41,7 @@
 // MUTATION L6 stimulus red COP2LC pointed at the uninstalled LIST_A instead of LIST_B, so running from the second pointer reaches no instruction at all
 // MUTATION L7 stimulus red the terminal WAIT removed, so the instructions the assertion says are unreachable become reachable
 // MUTATION L8 stimulus red the data word that deliberately looks like a MOVE opcode replaced by an ordinary constant, so the scenario no longer poses the question the assertion answers
+// MUTATION L9 stimulus red IR1 bit 0 cleared on the same word (IR2's skip flag left set), so the word becomes a MOVE to COLOR00 instead of a SKIP, and the following instruction the assertion says is suppressed runs
 
 #include <cstdint>
 #include <iostream>
@@ -367,6 +368,26 @@ int main(int argc, char** argv) {
         checks.expect(paired, "L8 instructions are consumed as word pairs, the data word is not decoded (p.20) "
                       "[claims: COP2-what-is-a-copper-instruction.c8, COP2-what-is-a-copper-instruction.c14, "
                       "COP2-copins-instructions.c7, ch2-what-is-a-copper-instruction.c11, ch2-what-is-a-copper-instruction.c6]");
+    }
+
+    // L9 - p.274 (Appendix A COPINS table, BIT# 00 row): in the SKIP
+    // instruction, IR1 bit 0 is always 1. Repeats L4's construction with
+    // IR2 bit 0 (the skip flag) set to 1 instead of 0, so the same
+    // beam-compare word this time decodes as SKIP rather than WAIT: it is
+    // still not a MOVE, and the already-satisfied condition suppresses
+    // exactly the following instruction, letting the one after it run.
+    {
+        CopperHarness h;
+        h.seek_beam(0x20);
+        h.install(LIST_A, {static_cast<uint16_t>(move_ir1(COLOR00) | 1), ir2_mask(true, 0x7F, 0x00, true),
+                           move_ir1(COLOR01), 0x0BCD,   // skipped
+                           move_ir1(COLOR02), 0x0DEF,   // runs
+                           TERMINAL_IR1, WAIT_ALL});
+        h.start(1, LIST_A);
+        h.run_cycles(8000);
+        checks.expect(h.move_count(COLOR00) == 0 && h.move_count(COLOR01) == 0 && h.move_count(COLOR02) == 1,
+                      "L9 SKIP instruction with IR1 bit 0 = 1: not a MOVE, and its condition suppresses exactly "
+                      "the following instruction (p.274) [claims: ch2-appa-copins.c108]");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
