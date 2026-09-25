@@ -174,17 +174,17 @@
 //        unreachable; ECSENA is an ordinary BPLCON0 bit this fixture can
 //        set like any other.)
 //     -- WO: a distinct, non-zero pattern written to the register's own
-//        address reads back $0000 there -- 'BPLCON0 ... W' (p.271/291),
-//        'BPLCON2 ... W' (p.271/291/298), 'BPLCON3 ... W' (p.271/291).
-//        BPLCON1-WO instead only requires that the written pattern itself
-//        does not read back: 'BPLCON1 ... W' (p.271) says nothing about
-//        the value an idle read returns, only that the register is
-//        write-only ("do not attempt to read from it, as this may trash
-//        the register", p.264). BPLCON1-WO carries no claim id: the only
-//        claim about BPLCON1 (opus:7-appA-bplcon2.c3) bundles this
-//        direction clause with address, chip and function in one id, and
-//        only the direction clause is established here -- see that id's
-//        own record below.
+//        address does not read back that same pattern there -- 'BPLCON0
+//        ... W' (p.271/291), 'BPLCON1 ... W' (p.271), 'BPLCON2 ... W'
+//        (p.271/291/298), 'BPLCON3 ... W' (p.271/291). No page prints what
+//        an idle read of a write-only register returns ("do not attempt
+//        to read from it, as this may trash the register", p.264), so
+//        none of the four assumes $0000 -- each requires only that the
+//        written pattern itself does not come back. BPLCON1-WO carries no
+//        claim id: the only claim about BPLCON1 (opus:7-appA-bplcon2.c3)
+//        bundles this direction clause with address, chip and function in
+//        one id, and only the direction clause is established here -- see
+//        that id's own record below.
 //   COLOR-ADDR-00-01 (6 ids)
 //     -- COLOR00 and COLOR01 individually, plus the two ids that state
 //        where the COLORxx block begins ($180): settled by the same
@@ -205,7 +205,8 @@
 //        on COLOR00.
 //   COLOR-WO (32 ids, one shared loop over i=0..31)
 //     -- each of COLOR00..COLOR31 individually: a distinct pattern written
-//        to COLORi reads back $0000 at that same address.
+//        to COLORi does not read back that same pattern at that same
+//        address.
 //
 // APPENDIX C P.298 -- three claims from Appendix C's ECS "changed
 //   register" map (p.298), a third page distinct from Appendix A p.271 and
@@ -264,13 +265,13 @@
 // MUTATION BPLCON0-ADDR stimulus red: the BPL1DAT write's data was changed from $FFFF (bitplane held high) to $0000, so the window pixel never differs from the border and the inside/outside comparison found no difference.
 // MUTATION BPLCON2-ADDR stimulus red: the second measurement's BPLCON2 write was changed from $0040 (PF2PRI=1) to $0000, the same value as the first measurement's, so PF2PRI was never actually toggled and the two displayed pixels came back identical.
 // MUTATION BPLCON3-ADDR stimulus red: the second border sample's BPLCON3 write was changed from $0020 (BRDRBLNK=1) to $0000, so BRDRBLNK was never actually set and the border never went black.
-// MUTATION BPLCON0-WO stimulus red: the post-write read was redirected from BPLCON0's own address ($100) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000.
+// MUTATION BPLCON0-WO response red: the post-write read was forced to echo back the exact pattern written ($BEEF), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_BPLCON0_WO back to 0) and rebuilt to confirm the baseline was restored.
 // MUTATION BPLCON1-WO response red: the post-write read was forced to echo back the exact pattern written ($1357), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_BPLCON1_WO back to 0) and rebuilt to confirm the baseline was restored.
-// MUTATION BPLCON2-WO stimulus red: the post-write read was redirected from BPLCON2's own address ($104) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000.
-// MUTATION BPLCON3-WO stimulus red: the post-write read was redirected from BPLCON3's own address ($106) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000.
-// MUTATION COLOR-GENERAL-WO stimulus red: the post-write read was redirected from COLOR00's own address ($180) to DENISEID's ($07C), so the reading came back $FFFC instead of $0000.
+// MUTATION BPLCON2-WO response red: the post-write read was forced to echo back the exact pattern written ($DEAD), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_BPLCON2_WO back to 0) and rebuilt to confirm the baseline was restored.
+// MUTATION BPLCON3-WO response red: the post-write read was forced to echo back the exact pattern written ($C0DE), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_BPLCON3_WO back to 0) and rebuilt to confirm the baseline was restored.
+// MUTATION COLOR-GENERAL-WO response red: the post-write read was forced to echo back the exact pattern written ($357), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_COLOR_GENERAL_WO back to 0) and rebuilt to confirm the baseline was restored.
 // MUTATION COLOR-ADDR stimulus red: index 5's second COLOR write was redirected to COLOR06's address ($18A) instead of COLOR05's ($188), so COLOR05's own reading never changed between the first and second write.
-// MUTATION COLOR-WO stimulus red: index 5's post-write read was redirected from COLOR05's own address to DENISEID's, so the reading came back $FFFC instead of $0000.
+// MUTATION COLOR-WO response red: index 5's post-write read was forced to echo back the exact pattern written ($405), simulating a register that is not actually write-only, instead of the RTL's real (write-only) reading; reverted (MUT_COLOR_WO back to 0) and rebuilt to confirm the baseline was restored.
 //
 // Every mutation record listed above was actually built and run (see the commit history
 // for this package for the per-mutation pass/fail counts) with the flag
@@ -782,76 +783,71 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // BPLCON0-WO (p.271/291/300/307) -- a distinct pattern written to $100
-    // reads back $0000 there.
+    // BPLCON0-WO (p.271/291) -- a distinct pattern written to $100 does not
+    // read back that same pattern there.
     // =========================================================================
     {
         Harness h;
         h.write_reg(BPLCON0_ADDR, 0xBEEF);
-        uint16_t read_addr = BPLCON0_ADDR;
+        uint16_t r = h.read_reg(BPLCON0_ADDR);
 #if MUT_BPLCON0_WO
-        read_addr = DENISEID_ADDR;
+        r = 0xBEEF;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
 #endif
-        uint16_t r = h.read_reg(read_addr);
         checks.expect(
-            r == 0x0000,
+            r != 0xBEEF,
             "BPLCON0-WO: a distinct non-zero pattern ($BEEF) written to "
-            "$100 reads back $0000 at that same address (write-only) - "
-            "'BPLCON0 100 W A D(E) ...' (p.271/291), 'BPLCON0 chg W A,D "
-            "Bitplane control register (misc control bits)' (p.300), "
-            "'BPLCON0 W A,D Bitplane control (miscellaneous control bits)' "
-            "(p.307). This fixture observes only the Denise-visible half of "
-            "'affects ECS Agnus and Denise' / 'used by Agnus and Denise' - "
-            "Agnus's own decode of $100 is outside this boundary and is not "
-            "asserted here. A-bplcon.c2, A-bplcon0.rw, B-subject.c111, "
-            "C-shres.c8, C-genlock-ext.c5, opus:7-appA-bplcon2.c2.");
+            "$100 does not read back that same pattern at that same "
+            "address (write-only) - 'BPLCON0 100 W A D(E) Bitplane control "
+            "register (misc. control bits)' (p.271/291). No page prints "
+            "what an idle read of $100 returns (p.264: 'do not attempt to "
+            "read from it, as this may trash the register'), so this does "
+            "not assume $0000. A-bplcon.c2, A-bplcon0.rw, B-subject.c111.");
     }
 
     // =========================================================================
-    // BPLCON2-WO (p.271/291/307) -- a distinct pattern written to $104
-    // reads back $0000 there.
+    // BPLCON2-WO (p.271/291/298) -- a distinct pattern written to $104 does
+    // not read back that same pattern there.
     // =========================================================================
     {
         Harness h;
         h.write_reg(BPLCON2_ADDR, 0xDEAD);
-        uint16_t read_addr = BPLCON2_ADDR;
+        uint16_t r = h.read_reg(BPLCON2_ADDR);
 #if MUT_BPLCON2_WO
-        read_addr = DENISEID_ADDR;
+        r = 0xDEAD;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
 #endif
-        uint16_t r = h.read_reg(read_addr);
         checks.expect(
-            r == 0x0000,
+            r != 0xDEAD,
             "BPLCON2-WO: a distinct non-zero pattern ($DEAD) written to "
-            "$104 reads back $0000 at that same address (write-only) - "
-            "'BPLCON2 104 W D(E) Bitplane control register' (p.271/291), "
-            "'BPLCON2 W D Bitplane control (video priority control)' "
-            "(p.307). This fixture observes only the Denise half of 'used "
-            "by ... Denise' - not independently verified here beyond that. "
-            "A-bplcon.c8, A-bplcon2.rw, "
-            "B-subject.c119, C-genlock-ext.c7, sol:7-appA-bplcon2.c2, sol:7-appB-bplcon2.c2, sol:7-appC-map-bplcon2.c3.");
+            "$104 does not read back that same pattern at that same "
+            "address (write-only) - 'BPLCON2 104 W D(E) Bitplane control "
+            "register' (p.271/291), '104 BPLCON2 chg WA' (p.298, ECS). No "
+            "page prints what an idle read of $104 returns (p.264: 'do not "
+            "attempt to read from it, as this may trash the register'), so "
+            "this does not assume $0000. A-bplcon.c8, A-bplcon2.rw, "
+            "B-subject.c119, sol:7-appA-bplcon2.c2, sol:7-appB-bplcon2.c2, "
+            "sol:7-appC-map-bplcon2.c3.");
     }
 
     // =========================================================================
-    // BPLCON3-WO (p.271/291/307) -- a distinct pattern written to $106
-    // reads back $0000 there.
+    // BPLCON3-WO (p.271/291) -- a distinct pattern written to $106 does not
+    // read back that same pattern there.
     // =========================================================================
     {
         Harness h;
         h.write_reg(BPLCON3_ADDR, 0xC0DE);
-        uint16_t read_addr = BPLCON3_ADDR;
+        uint16_t r = h.read_reg(BPLCON3_ADDR);
 #if MUT_BPLCON3_WO
-        read_addr = DENISEID_ADDR;
+        r = 0xC0DE;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
 #endif
-        uint16_t r = h.read_reg(read_addr);
         checks.expect(
-            r == 0x0000,
+            r != 0xC0DE,
             "BPLCON3-WO: a distinct non-zero pattern ($C0DE) written to "
-            "$106 reads back $0000 at that same address (write-only) - "
-            "'BPLCON3 106 W D(E) Bitplane control (enhanced features)' "
-            "(p.271/291), 'BPLCON3 W D Bitplane control (enhanced "
-            "features)' (p.307), a write-only Denise register for enhanced "
-            "features. A-bplcon.c11, A-bplcon3.rw, B-subject.c123, "
-            "C-genlock-ext.c8, opus:7-appA-bplcon2.c4.");
+            "$106 does not read back that same pattern at that same "
+            "address (write-only) - 'BPLCON3 106 W D(E) Bitplane control "
+            "(enhanced features)' (p.271/291). No page prints what an idle "
+            "read of $106 returns (p.264: 'do not attempt to read from it, "
+            "as this may trash the register'), so this does not assume "
+            "$0000. A-bplcon.c11, A-bplcon3.rw, B-subject.c123.");
     }
 
     // =========================================================================
@@ -862,20 +858,21 @@ int main(int argc, char** argv) {
     {
         Harness h;
         h.write_reg(COLOR_BASE + 0, 0x357);
-        uint16_t read_addr = COLOR_BASE + 0;
+        uint16_t r = h.read_reg(COLOR_BASE + 0);
 #if MUT_COLOR_GENERAL_WO
-        read_addr = DENISEID_ADDR;
+        r = 0x357;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
 #endif
-        uint16_t r = h.read_reg(read_addr);
         checks.expect(
-            r == 0x0000,
+            r != 0x357,
             "COLOR-GENERAL-WO: a distinct pattern ($357) written to COLOR00 "
-            "($180) reads back $0000 at that same address, representative "
-            "of the block-level statement that the colour registers as a "
-            "whole are write-only - 'The color registers are write-only' "
-            "(p.47), 'color register. All color registers are write-only' "
-            "(p.92), 'COLORxx 180 W D Color table xx' (p.273). 3-ct.c09, "
-            "3-csum.c05, A-color.c2, A-colorxx.rw.");
+            "($180) does not read back that same pattern at that same "
+            "address, representative of the block-level statement that the "
+            "colour registers as a whole are write-only - 'The color "
+            "registers are write-only' (p.47), 'color register. All color "
+            "registers are write-only' (p.92), 'COLORxx 180 W D Color "
+            "table xx' (p.273). No page prints what an idle read of a "
+            "colour register returns, so this does not assume $0000. "
+            "3-ct.c09, 3-csum.c05, A-colorxx.rw.");
     }
 
     // =========================================================================
@@ -950,8 +947,9 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // COLOR-WO (p.47/92/292/293), i=0..31 -- one shared loop: a distinct
-    // pattern written to COLORi reads back $0000 at that same address.
+    // COLOR-WO (p.292/293), i=0..31 -- one shared loop: a distinct pattern
+    // written to COLORi does not read back that same pattern at that same
+    // address.
     // =========================================================================
     {
         Harness h;
@@ -975,23 +973,82 @@ int main(int argc, char** argv) {
         };
         for (const auto& wc : cases) {
             int i = wc.idx;
-            h.write_reg(static_cast<uint16_t>(COLOR_BASE + i), static_cast<uint16_t>(0x400 + i));
-            int read_addr = COLOR_BASE + i;
+            uint16_t pattern = static_cast<uint16_t>(0x400 + i);
+            h.write_reg(static_cast<uint16_t>(COLOR_BASE + i), pattern);
+            uint16_t r = h.read_reg(static_cast<uint16_t>(COLOR_BASE + i));
 #if MUT_COLOR_WO
-            if (i == 5) read_addr = DENISEID_ADDR;
+            if (i == 5) r = pattern;  // mutation: simulate a register that is not actually write-only and echoes back exactly what was written
 #endif
-            uint16_t r = h.read_reg(static_cast<uint16_t>(read_addr));
 
             char idxbuf[4];
             std::snprintf(idxbuf, sizeof(idxbuf), "%02d", i);
             checks.expect(
-                r == 0x0000,
+                r != pattern,
                 std::string("COLOR-WO ") + idxbuf + " (p." + std::to_string(wc.page) +
                     "): a distinct pattern written to COLOR" + idxbuf +
-                    " reads back $0000 at that same address (write-only). " +
-                    wc.subj_id + ".");
+                    " does not read back that same pattern at that same "
+                    "address (write-only). " + wc.subj_id + ".");
         }
     }
+
+    // =========================================================================
+    // WO PREDICATE NARROWED, BUNDLED IDS WITHDRAWN -- BPLCON0-WO, BPLCON2-WO,
+    // BPLCON3-WO and COLOR-GENERAL-WO above were narrowed from "reads back
+    // $0000" (an RTL idle-value fact no page states) to "does not read back
+    // the written pattern" (BPLCON1-WO's own form; p.264 says only that
+    // reading a write-only register may trash it, not what it returns). The
+    // direction clause any id below carries is still established by that
+    // narrower predicate; what is withdrawn is the id as a whole, because
+    // each one bundles a second clause (chip attribution, sometimes
+    // function too) in the same id, matching this file's own opus:7-appB.c34
+    // bundling precedent (a multi-clause id is not partially kept on the
+    // clause that happens to be established). opus:7-appA-bplcon2.c2 is not
+    // among these: it remains cited on BPLCON0-ADDR above for its address
+    // clause (an assertion this block does not touch), and withdrawing it
+    // here as well would put the same uid on both a graded line and a
+    // record() line in this same package. No predicate, stimulus or
+    // expected value above is touched by this block.
+    // =========================================================================
+    checks.record(
+        "sol:C-shres.c8 (p.300, 'BPLCON0 chg W A,D Bitplane control register (misc control bits)'): not asserted "
+        "as a whole -- the write-only clause is established here (BPLCON0-WO above); chip is the same "
+        "physical-chip-vs-RTL-module problem this file already declines for BPLCON1/BPLCON2/BPLCON3 "
+        "(opus:7-appA-bplcon2.c3, sol:7-appA-bplcon2.c3 above), and this id bundles both in one claim. A "
+        "multi-clause id is not partially kept on the clause that happens to be established, matching this file's "
+        "own bundling precedent (opus:7-appB.c34 above).");
+    checks.record(
+        "sol:C-genlock-ext.c5 (p.307, 'BPLCON0 W A,D Bitplane control (miscellaneous control bits)'): not "
+        "asserted as a whole -- the write-only clause is established here (BPLCON0-WO above); chip is declined "
+        "for the same reason (a physical chip column, not an RTL module), matching this file's own bundling "
+        "precedent (opus:7-appB.c34 above).");
+    checks.record(
+        "sol:C-genlock-ext.c7 (p.307, 'BPLCON2 W D Bitplane control (video priority control)'): not asserted as "
+        "a whole -- the write-only clause is established here (BPLCON2-WO above); chip is declined for the same "
+        "reason as sol:7-appA-bplcon2.c3 / sol:7-appB-bplcon2.c3 above, and function ('video priority control') "
+        "is excluded by this file's own Non-goals paragraph (sol:7-appB-bplcon2.c4 above). A multi-clause id is "
+        "not partially kept on the clause that happens to be established, matching this file's own bundling "
+        "precedent (opus:7-appB.c34 above).");
+    checks.record(
+        "sol:C-genlock-ext.c8 (p.307, 'BPLCON3 W D Bitplane control (enhanced features)'): not asserted as a "
+        "whole -- the write-only clause is established here (BPLCON3-WO above); chip is declined for the same "
+        "reason (a physical chip column, not an RTL module), matching this file's own bundling precedent "
+        "(opus:7-appB.c34 above).");
+    checks.record(
+        "opus:7-appA-bplcon2.c4 (p.271, BPLCON3 -- address $106, write-only, Denise (E), function 'Bitplane "
+        "control (enhanced features)'): not asserted as a whole -- the write-only clause is established here "
+        "(BPLCON3-WO above) and the address clause is established above (BPLCON3-ADDR); chip is the same "
+        "physical-chip-vs-RTL-module problem this file already declines for BPLCON1/BPLCON2 "
+        "(opus:7-appA-bplcon2.c3, sol:7-appA-bplcon2.c3 above), and function is excluded by this file's own "
+        "Non-goals paragraph (sol:7-appB-bplcon2.c4 above). A multi-clause id is not partially kept on the "
+        "clauses that happen to be established, matching this file's own bundling precedent (opus:7-appB.c34, "
+        "opus:7-appA-bplcon2.c1 above).");
+    checks.record(
+        "sol:A-color.c2 (p.273, 'COLORxx 180 W D Color table xx'): not asserted as a whole -- the write-only "
+        "clause is established here (COLOR-GENERAL-WO above, also opus:A-colorxx.rw's own single-clause reading "
+        "of the same row); chip ('implemented by Denise') is declined for the same physical-chip-vs-RTL-module "
+        "reason this file already applies to BPLCON0/BPLCON2/BPLCON3 above. A multi-clause id is not partially "
+        "kept on the clause that happens to be established, matching this file's own bundling precedent "
+        "(opus:7-appB.c34 above).");
 
     // =========================================================================
     // APPENDIX B REOFFER -- 13 claims reasoned about in this file's own header
