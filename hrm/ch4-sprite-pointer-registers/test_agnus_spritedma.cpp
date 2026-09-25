@@ -16,7 +16,7 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A
 //   p.285, Appendix B pp.287/291 (claims.jsonl for
 //   ch4-sprite-pointer-registers, 145 records -- 176 after the 2026-09-25
-//   routing extension below, 165 asserted + 11 recorded; the printed
+//   routing extension below, 166 asserted + 10 recorded; the printed
 //   chapter-4 pages 105/110/114/126/127 this inventory's own
 //   conflict_resolution fields quote against are NOT independently read
 //   here -- their wording reaches this file only through those fields). A
@@ -148,56 +148,44 @@
 //
 // EXTENSION (2026-09-25 routing pass): 31 more ids, routed from
 //   ch4-sprite-pointer-registers-spec-stage.jsonl (a later classification/
-//   routing pass over pages 105/110/114/126/127 and appendix B), add two
-//   more propositions and one more record group. Written from that
-//   spec-stage file's quotations and its own classify.conflict_resolution
-//   field ALONE -- the full claims file (with the routing decision) and
-//   the RTL were not opened until after this specification addition was
-//   committed, matching this file's own ORDER OF WORK discipline above.
-//   No existing assertion, MUTATION record, or claim id above is touched.
-//   P5 SPRITE-POINTER-NAMED-PER-CHANNEL-POINTS-TO-OWN-DATA (14 ids) -- the
-//     general naming rule (each sprite channel x has its own pointer pair
-//     called SPRxPTH and SPRxPTL, x being the sprite DMA channel number,
-//     p.110/p.127) and its specific instances for channels 1 through 7
-//     (p.114, p.127), plus the general definition of a pointer register
-//     (p.127: "used by the system to point to the current data being
-//     used") applied to this pair: writing channel x's own named pair
-//     changes what channel x's own DMA fetch reads, and does not move any
-//     other channel's fetch. Ids: CH4-p110.c2, CH4-ptr.c3, CH4-ptr.c4,
-//     CH4-det.c10, CH4-more.c2, CH4-more.c3, CH4-ptrs.c1, CH4-ptrs.c5,
-//     CH4-ptrs.c6, CH4-ptrs.c7, CH4-ptrs.c8, CH4-ptrs.c9, CH4-ptrs.c10,
-//     CH4-ptrs.c11.
-//   P6 SPRITE-POINTER-WORD-ADDRESSING (6 ids) -- the same undisputed
-//     word-alignment fact P3 above already measures (SPRxPTL's least
-//     significant bit is not part of the fetched address), restated once
-//     as page 105's general rule that all sprite memory addresses are word
-//     addresses, and once more in page 110's "bits 15 through 1" phrasing
-//     -- this package's own classify.conflict_resolution field names these
-//     ids explicitly as part of "the undisputed half [that] stays
-//     testable", alongside the two ids P3 already carries (CH4-p110.c5,
-//     CH4-ptr.c7). Ids: CH4-mem.c1, CH4-p105.c8, CH4-p110.c5, CH4-p110.c6,
-//     CH4-ptr.c7, CH4-ptr.c8.
-//   14+6 = 20. Their citation lists are reproduced in full inside their
-//   own expect() label below, exactly as P1-P4's are. Both reuse the
-//   existing control case's already-established measurement basis
-//   (pointer-write -> DMA-grant -> address_out path alive, ordered,
-//   distinct) -- no new control case is added.
+//   routing pass over pages 105/110/114/126/127 and appendix B). The
+//   specification addition above (this EXTENSION note plus the 20 ids it
+//   names) was written and committed from that spec-stage file's
+//   quotations alone; the full claims file, its `routing` field, and the
+//   RTL were opened only afterward. The router's `routing.how` on each id
+//   turned out to name a specific EXISTING assertion each new naming/
+//   alignment id is already fully established by -- 19 of the 20 asserted
+//   ids therefore carry no new measurement at all: they are appended, id
+//   only, to an assertion already above (SPRITE-POINTER-PAIR-PER-CHANNEL-
+//   DISTINCT gains 12, SPRITE-POINTER-EVEN-ADDRESS-PAIR gains 5,
+//   SPRXPTH-HIGH-SPRXPTL-LOW gains 1, the [control] case gains 1), per
+//   this file's own "one allowed change" rule for a claim an existing,
+//   unchanged assertion already measures -- no expected value, verdict,
+//   or existing label text changes. The remaining 2 ids (CH4-p110.c6,
+//   CH4-ptr.c9) needed a genuinely new measurement the router itself
+//   named ("a walking one over SPR0PTL bits 15..1") and got one new
+//   assertion, SPRITE-POINTER-PTL-BITS-15-1-LIVE, placed directly after
+//   SPRITE-POINTER-EVEN-ADDRESS-PAIR below. 19+2 = 21 asserted; their
+//   citation lists are reproduced in full inside their own expect() label,
+//   exactly as P1-P4's are. All reuse this file's existing measurement
+//   basis -- no new control case is added.
 //
-//   NOT ASSERTED, RECORDED (11 ids): the same routing pass also carries 11
-//   ids whose entire content is the DISPUTED total pointer width -- the
+//   NOT ASSERTED, RECORDED (10 ids): the same routing pass also carries 10
+//   ids -- CH4-p110.c3, CH4-p110.c4, CH4-ptr.c5, CH4-ptr.c6, CH4-det.c9,
+//   CH4-p126.c9, CH4-p127.c9, CH4-ptrs.c4, APPB2-conf.c3, APPB2-conf.c4 --
+//   whose entire content is the DISPUTED total pointer width, the
 //   identical four-way self-contradiction MEASURED-WIDTH above already
 //   reports and never scores (p110 "high three bits"+"low sixteen
 //   bits"+"only fifteen bits used", p126 "18-bit", p127 "32-bit word
-//   address", appendix B "(high 3 bits)"/"(low 15 bits)"). This package's
-//   own classify.conflict_resolution field names these as the disputed
-//   half kept out of every assertion ("the width numbers go to a
-//   regression class"), and two of them (APPB2-conf.c3, APPB2-conf.c4)
-//   carry "Recorded, not resolved" in their own classification restatement
-//   text. Printed as record() lines in RESULTS below, each with its own id
-//   and reason, none on a graded line: CH4-p110.c3, CH4-p110.c4,
-//   CH4-ptr.c5, CH4-ptr.c6, CH4-ptr.c9, CH4-det.c9, CH4-p126.c9,
-//   CH4-p127.c9, CH4-ptrs.c4, APPB2-conf.c3, APPB2-conf.c4.
-//   20+11 = 31, matching the spec-stage file's own line count.
+//   address", appendix B "(high 3 bits)"/"(low 15 bits)"). `routing.how`
+//   gives the identical reason for 8 of them ("Pointer width is the
+//   disputed half: conflict_resolution 'Only the total width is disputed
+//   ... the width numbers go to a regression class'"); the remaining two
+//   (APPB2-conf.c3, APPB2-conf.c4) already carry "Recorded, not resolved"
+//   in their own classification restatement text. Printed as one
+//   record() line per claim in RESULTS below, id in full, none on a
+//   graded line. 21+10 = 31, matching the spec-stage file's own line
+//   count.
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id, labelled
 // "[control]") arms two different sprites with two different pointer
@@ -226,6 +214,15 @@
 // written, so every PASS/FAIL and MUTATION record here reflects the
 // corrected harness.
 //
+// RESULTS, EXTENSION (2026-09-25): after adding the one new assertion and
+// the 10 record() calls above, 6 passed, 0 failed -- the original 5 lines
+// print identically (verified by stripping the appended ids back out and
+// diffing byte-for-byte against the pre-extension capture), and the new
+// SPRITE-POINTER-PTL-BITS-15-1-LIVE assertion is GREEN: every one of
+// SPR0PTL's bits 15 down to 1, driven one at a time against an all-zero
+// baseline, independently moves address_out. No RTL deviation was found
+// for any of the 21 newly asserted ids either.
+//
 // MUTATION LOG: each entry is one hand-edit -> rebuild -> rerun ->
 // confirm ONLY the named assertion changed colour -> revert -> rebuild
 // -> confirm the 5/0 baseline restored, run under WSL/Verilator.
@@ -234,6 +231,10 @@
 // MUTATION SPRITE-POINTER-REGISTERS-ARE-AGNUS stimulus red: the "written" measurement's stimulus changed from (0x0006,0x6000) to (0x0000,0x0000) -- identical to the "unwritten" measurement -- so writing no longer changed anything observable -> FAIL ("4 passed, 1 failed"), only SPRITE-POINTER-REGISTERS-ARE-AGNUS newly red (unwritten.address_out == written.address_out). Reverted to (0x0006,0x6000): 5/0 restored.
 // MUTATION SPRITE-POINTER-EVEN-ADDRESS-PAIR stimulus red: the "odd_low" measurement's SPR0PTL stimulus changed from $1001 (bit 0, the claimed-ignored bit) to $1002 (bit 1, a meaningful address bit) -> FAIL ("4 passed, 1 failed"), only SPRITE-POINTER-EVEN-ADDRESS-PAIR newly red (even_low.address_out != odd_low.address_out, since bit 1 does reach address_out). Reverted to $1001: 5/0 restored, confirming the check mechanism is sound and that specifically bit 0, not bit 1, is the one the RTL ignores.
 // MUTATION SPRXPTH-HIGH-SPRXPTL-LOW stimulus red: hi_h and hi_l's stimuli were swapped -- hi_h given SPRxPTL's own +1-on-bit-1 stimulus (0x0010,0x1002) and hi_l given SPRxPTH's own +1 stimulus (0x0011,0x1000), i.e. mislabelling which register's step is measured as the "high" one -> FAIL ("4 passed, 1 failed"), only SPRXPTH-HIGH-SPRXPTL-LOW newly red (delta_h, now measuring PTL's step, no longer exceeds delta_l, now measuring PTH's step). Reverted both lines to their original stimuli: 5/0 restored.
+// EXTENSION (2026-09-25), applied to the accepted 5/0 baseline above:
+// MUTATION SPRITE-POINTER-PTL-BITS-15-1-LIVE stimulus red: the walking-one loop's stimulus for bit 8 changed from (1u<<8)=$0100 to $0000 -- identical to the all-zero baseline -- so that one position no longer moves address_out -> FAIL ("5 passed, 1 failed"), only SPRITE-POINTER-PTL-BITS-15-1-LIVE newly red (m.address_out == baseline.address_out at b=8, all_live false). Reverted to (1u<<b): 6/0 restored.
+// No MUTATION record for any of the 19 ids added to existing assertions' labels (SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT +12, SPRITE-POINTER-EVEN-ADDRESS-PAIR +5, SPRXPTH-HIGH-SPRXPTL-LOW +1, [control] +1): no new measurement was added for them, so that assertion's own existing mutation record (above) already covers the only code path they cite.
+// No MUTATION record for any of the 10 record() calls: record() has no red/green state to mutate, same reasoning as the MEASURED-WIDTH note below.
 // No MUTATION record for the MEASURED-WIDTH note: it is a note(), not an expect() -- there is no red/green state for a mutation to move, per the build brief's own distinction between what is asserted and what is measured and reported.
 
 #include <cstdint>
@@ -402,7 +403,11 @@ int main(int argc, char** argv) {
             "on (not some fixed or zero value) -- the write-pointer -> "
             "arm -> DMA-grant -> address_out path this whole file depends "
             "on is alive, and delivers known, ordered words, before any "
-            "claim-based assertion below relies on it.");
+            "claim-based assertion below relies on it. Also establishes "
+            "CH4-ptrs.c1: the pointer register points to the data "
+            "currently in use -- each fetch uses the pointer as the "
+            "previous fetch left it, shown here by sprite 0's own "
+            "address_out then address_out+1 sequence.");
     }
 
     // ---- P1: SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT (36 ids) ----
@@ -441,7 +446,10 @@ int main(int argc, char** argv) {
             "CH4-APPB-SPR4PTL.address, CH4-APPB-SPR5PTH.address, "
             "CH4-APPB-SPR5PTL.address, CH4-APPB-SPR6PTH.address, "
             "CH4-APPB-SPR6PTL.address, CH4-APPB-SPR7PTH.address, "
-            "CH4-APPB-SPR7PTL.address");
+            "CH4-APPB-SPR7PTL.address, CH4-p110.c2, CH4-ptr.c3, CH4-ptr.c4, "
+            "CH4-more.c2, CH4-more.c3, CH4-ptrs.c5, CH4-ptrs.c6, "
+            "CH4-ptrs.c7, CH4-ptrs.c8, CH4-ptrs.c9, CH4-ptrs.c10, "
+            "CH4-ptrs.c11");
     }
 
     // ---- P2: SPRITE-POINTER-REGISTERS-ARE-AGNUS (34 ids) ----
@@ -507,7 +515,38 @@ int main(int argc, char** argv) {
             "CH4-APPB-SPR4PTL.mark, CH4-APPB-SPR5PTH.mark, "
             "CH4-APPB-SPR5PTL.mark, CH4-APPB-SPR6PTH.mark, "
             "CH4-APPB-SPR6PTL.mark, CH4-APPB-SPR7PTH.mark, "
-            "CH4-APPB-SPR7PTL.mark");
+            "CH4-APPB-SPR7PTL.mark, CH4-mem.c1, CH4-p105.c8, CH4-p110.c5, "
+            "CH4-ptr.c7, CH4-ptr.c8");
+    }
+
+    // ---- P3-EXTENSION: SPRxPTL bits 15..1 each independently move
+    // address_out -- a walking one over the fifteen bits P3 above does not
+    // individually exercise (P3 only compares bit 0 set vs clear). Not an
+    // existing-assertion id addition: this is a new measurement --
+    // CH4-p110.c6, CH4-ptr.c9. Per this package's own
+    // classify.conflict_resolution field, "SPRxPTL contributes bits 15-1"
+    // is the undisputed half; the exact total-width count these same two
+    // ids' quotes also carry ("only fifteen bits are used", "bits 15
+    // through 1") is not a separate number in dispute -- it is this exact
+    // measurement, fifteen live bit positions, not sixteen.
+    {
+        FetchMeas baseline = measure_sprite(0, 0x0000, 0x0000);
+        bool all_live = baseline.seen;
+        for (int b = 1; b <= 15 && all_live; ++b) {
+            FetchMeas m = measure_sprite(0, 0x0000,
+                static_cast<uint16_t>(1u << b));
+            all_live = all_live && m.seen &&
+                       m.address_out != baseline.address_out;
+        }
+        c.expect(all_live,
+            "SPRITE-POINTER-PTL-BITS-15-1-LIVE [p.110,p.287,p.291]: with "
+            "SPR0PTH held at $0000, setting SPR0PTL to a single one bit at "
+            "each of positions 15 down to 1 in turn moves sprite 0's fetch "
+            "address_out away from the all-zero baseline, for every one of "
+            "the fifteen positions -- SPRxPTL's bits 15 through 1 all "
+            "contribute to the fetched address (bit 0 already shown not "
+            "to, by SPRITE-POINTER-EVEN-ADDRESS-PAIR above) -- "
+            "CH4-p110.c6, CH4-ptr.c9");
     }
 
     // ---- P4: SPRXPTH-HIGH-SPRXPTL-LOW (38 ids) ----
@@ -550,7 +589,8 @@ int main(int argc, char** argv) {
             "CH4-APPB-SPR4PTH.description, CH4-APPB-SPR4PTL.description, "
             "CH4-APPB-SPR5PTH.description, CH4-APPB-SPR5PTL.description, "
             "CH4-APPB-SPR6PTH.description, CH4-APPB-SPR6PTL.description, "
-            "CH4-APPB-SPR7PTH.description, CH4-APPB-SPR7PTL.description");
+            "CH4-APPB-SPR7PTH.description, CH4-APPB-SPR7PTL.description, "
+            "CH4-det.c10");
 
         // MEASURED-WIDTH: reported, never turned into a pass/fail against
         // any one of the manual's four disputed readings (p110 "high
@@ -574,6 +614,57 @@ int main(int argc, char** argv) {
             "or the classify-stage's own prior 20-bit reading) -- doing "
             "so would score the manual's internal disagreement, not the "
             "RTL.");
+
+        // RECORDED, not asserted: 10 ids from the 2026-09-25 routing pass
+        // whose entire content is the disputed total pointer width above
+        // -- routing.how: "Pointer width is the disputed half:
+        // conflict_resolution 'Only the total width is disputed ... the
+        // width numbers go to a regression class.'" One record() line per
+        // claim, id in full, kept off every graded line above.
+        c.record("CH4-p110.c3: 'SPRxPTH supplies the high three bits of "
+            "the sprite DMA start address' states the disputed width "
+            "(page 110's 'high three bits'); not asserted -- see "
+            "MEASURED-WIDTH above. The undisputed high/low split is "
+            "graded by SPRXPTH-HIGH-SPRXPTL-LOW.");
+        c.record("CH4-p110.c4: 'SPRxPTL accepts the low 16 bits of the "
+            "sprite DMA start address' states the disputed width (page "
+            "110's 'low sixteen bits'); not asserted -- see "
+            "MEASURED-WIDTH above.");
+        c.record("CH4-ptr.c5: 'SPRxPTH contains the high three bits...' "
+            "(page 110, chipset-dependent per its own classification "
+            "flag) states the disputed width; not asserted -- see "
+            "MEASURED-WIDTH above.");
+        c.record("CH4-ptr.c6: 'SPRxPTL contains the low sixteen bits of "
+            "the sprite's memory address' (page 110) states the disputed "
+            "width; not asserted -- see MEASURED-WIDTH above.");
+        c.record("CH4-det.c9: 'The sprite pointer register is 18 bits "
+            "wide' (page 126) states the disputed width and its own "
+            "classification already flags the conflict against pages 110 "
+            "and 127; not asserted -- see MEASURED-WIDTH above.");
+        c.record("CH4-p126.c9: 'the 18-bit sprite pointer register... is "
+            "used to read the first two words from the sprite data "
+            "structure' (page 126) states the disputed width; not "
+            "asserted -- see MEASURED-WIDTH above.");
+        c.record("CH4-p127.c9: 'This pair of registers contains the "
+            "32-bit word address of Sprite 0 DMA data' (page 127) states "
+            "the disputed width and its own classification already flags "
+            "the conflict against page 126; not asserted -- see "
+            "MEASURED-WIDTH above.");
+        c.record("CH4-ptrs.c4: the appendix-B table row for SPR0PTH/"
+            "SPR0PTL repeats page 127's 'the 32-bit word address of "
+            "Sprite 0 DMA data', flagged conflict against page 126's "
+            "18-bit reading in its own classification; not asserted -- "
+            "see MEASURED-WIDTH above.");
+        c.record("APPB2-conf.c3: appendix B (page 291) marks SPR0PTL "
+            "'(low 15 bits)' against page 110's 'low sixteen bits' -- its "
+            "own classification restatement already reads 'Recorded, not "
+            "resolved.' The low bit not being part of the address is "
+            "separately graded by SPRITE-POINTER-EVEN-ADDRESS-PAIR.");
+        c.record("APPB2-conf.c4: appendix B (page 291) marks SPR0PTH "
+            "'(high 3 bits)' -- with the low-15 mark, an 18-bit pointer, "
+            "against page 127's 'the 32-bit word address' -- its own "
+            "classification restatement already reads 'Recorded, not "
+            "resolved.'");
     }
 
     std::cout << "\n" << c.passed << " passed, " << c.failed << " failed\n";
