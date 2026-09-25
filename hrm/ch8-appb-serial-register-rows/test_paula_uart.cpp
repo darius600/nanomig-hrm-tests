@@ -85,6 +85,15 @@
 //   `opus:7-appA-pre.c10` joint-citation practice in
 //   hrm/ch7-appb-beamcounter-marks.
 //
+// ADDRESS-ORDER RESTATEMENT IDS: B-serdatr.addr, B-serdat.addr and
+//   B-serper.addr quote the same three printed rows already sourcing
+//   P1/P4/P7 above, restated as the address fact alone -- exactly what
+//   P1/P4/P7's ADDRESS method (above) already measures, so no unaddressed
+//   clause remains and no new assertion is added. Each id is appended,
+//   bare, to its sibling P1/P4/P7 label (SPECIFICATION.md's "Additional
+//   address-order claims" section): B-serdatr.addr on P1-SERDATR-ADD,
+//   B-serdat.addr on P4-SERDAT-ADD, B-serper.addr on P7-SERPER-ADD.
+//
 // CONTROL CASES: P1 (SERDATR answers $018 with live content, $030/$032
 //   answer 0x0000) and P4/P7 (a write reaches state at $030/$032, has no
 //   effect at the wrong address) are each other's control on the SAME
@@ -384,7 +393,7 @@ int main(int argc, char** argv) {
             "a readable address. 'SERDATR      *018' (p.289, ADD cell), "
             "composed with the column heading 'NAME        ADD     R/W   "
             "CHIP    FUNCTION' (p.289) naming ADD as the address column. "
-            "opus:8-appB.c33, sol:8-appB.c32, composing partner opus:8-appB.c7.");
+            "opus:8-appB.c33, sol:8-appB.c32, B-serdatr.addr, composing partner opus:8-appB.c7.");
     }
     {
         Harness h;
@@ -468,7 +477,7 @@ int main(int argc, char** argv) {
             "a transmission starts. Only $030 decodes as SERDAT's write "
             "target. 'SERDAT       *030' (p.289, ADD cell), composed with "
             "the column heading naming ADD as the address column (p.289). "
-            "opus:8-appB.c38, sol:8-appB.c37, composing partner opus:8-appB.c7.");
+            "opus:8-appB.c38, sol:8-appB.c37, B-serdat.addr, composing partner opus:8-appB.c7.");
     }
     {
         Harness h;
@@ -570,7 +579,7 @@ int main(int argc, char** argv) {
             "Only $032 decodes as SERPER's write target. "
             "'SERPER       *032' (p.289, ADD cell), composed with the "
             "column heading naming ADD as the address column (p.289). "
-            "opus:8-appB.c43, sol:8-appB.c42, composing partner opus:8-appB.c7.");
+            "opus:8-appB.c43, sol:8-appB.c42, B-serper.addr, composing partner opus:8-appB.c7.");
     }
     {
         Harness h5;
