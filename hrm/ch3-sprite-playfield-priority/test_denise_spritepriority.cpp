@@ -11,7 +11,7 @@
 //   priority" summary line, Appendix A's combined bit table naming
 //   PF1P0-2 and PF2P0-2 to specific BPLCON2 bit positions, Appendix A's
 //   PF1P/PF2P legend entries, and the display-sharing sentence on p.86).
-// Non-goals: this package's claims.jsonl (18 records) never quotes the
+// Non-goals: this package's claims.jsonl (19 records) never quotes the
 //   manual's priority-CODE-to-front/behind-outcome table (which of the 0-7
 //   numeric code values puts which sprite pairs in front of the playfield)
 //   -- no such quotation exists among the 18 claims, so no assertion below
@@ -75,9 +75,9 @@
 // range's own numbering -- and is reused, as already recorded, from
 // hrm/denise_spritepriority/test_denise_spritepriority.cpp's own
 // already-committed, already-built harness for this SAME module; it is
-// tool plumbing, not a claim from this package's own 18-record inventory.
+// tool plumbing, not a claim from this package's own 19-record inventory.
 //
-// CLAIM COVERAGE: all 18 records of claims.jsonl are accounted for below,
+// CLAIM COVERAGE: all 19 records of claims.jsonl are accounted for below,
 // each inside an expect() assertion string. Where two readers (opus and
 // sol) independently quoted the same table row or legend entry under two
 // different ids, both ids are cited together in the one assertion the row
@@ -93,6 +93,15 @@
 // note records a true, measured fact about the SAME claim that the claim
 // itself does not assert and that the assertion above therefore does not
 // test either.
+//
+// ONE CLAIM ADDED (3-adv.c01 -- see NEW CLAIMS above): routed here from the
+// full claims file (routing.route, not classify.package, which named a
+// sibling package) with the reasoning that driving nplayfield and nsprite
+// at this boundary shows playfield and sprite data sharing the one sprsel
+// output. Needed a genuinely new measurement -- none of the 18 existing
+// assertions establishes it, so none gained the id -- added as
+// PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT with its own mutation and
+// revert. Not declined.
 //
 // COORDINATOR REVIEW, 10.09.2026 (after the build below, before this
 // commit): the first committed build measured BIT0-IS-PF1P0,
@@ -214,6 +223,7 @@
 // MUTATION PF2P-DIGITS-BOUND-TO-BIT-WEIGHT stimulus red: `make MUT=PF2P_DIGITS_BOUND_TO_BIT_WEIGHT` (guarded `#ifdef MUT_PF2P_DIGITS_BOUND_TO_BIT_WEIGHT` inside flips_at_others_zero(), swaps bits 3<->5 on the way into the DUT for the PF2P group only); measured 255 / 240 / 192 instead of 192 / 240 / 255; 11 passed, 1 failed, only PF2P-DIGITS-BOUND-TO-BIT-WEIGHT red; PF1P-DIGITS-BOUND-TO-BIT-WEIGHT stayed green (the guard is scoped to group_start==3 only). Reverted: 12/0.
 // MUTATION PF1P-GOVERNS-PLAYFIELD1-INDEPENDENT-OF-PF2P stimulus red: the inner comparison's nplayfield argument changed from PF1_ON to (PF1_ON | PF2_ON), so PF2 is also enabled while PF2P is swept -> FAIL ("9 passed, 1 failed"), only PF1P-GOVERNS-PLAYFIELD1-INDEPENDENT-OF-PF2P red (PF2P now genuinely affects sprsel once PF2 is enabled, breaking the claimed invariance). Reverted: 10/0.
 // MUTATION PF2P-GOVERNS-PLAYFIELD2-INDEPENDENT-OF-PF1P stimulus red: the inner comparison's nplayfield argument changed from PF2_ON to (PF1_ON | PF2_ON), so PF1 is also enabled while PF1P is swept -> FAIL ("9 passed, 1 failed"), only PF2P-GOVERNS-PLAYFIELD2-INDEPENDENT-OF-PF1P red. Reverted: 10/0.
+// MUTATION PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT stimulus red: `make MUT=PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT` (guarded `#ifndef MUT_PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT` around the both_spr_priority h.read() call's bplcon2 argument), forcing it from 0x3F to 0x00 -- the same bplcon2 already used for both_pf_priority, neutralizing the priority-flip stimulus while nplayfield/nsprite stay fixed; measured 12 passed, 1 failed, only PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT red (both_spr_priority now reads 0, matching both_pf_priority, so the "which one wins flips with bplcon2 alone" half of the check can no longer be shown). Reverted (plain `make`): 13/0.
 //
 // DEFECT CORRECTION, 11.09.2026 (independent review of the 10.09.2026
 // build above, before this commit) -- three defects, all in this file,
@@ -543,7 +553,7 @@ int main(int argc, char** argv) {
         "(p.271). A-bpc.b05.c2, A-bplcon.c45, opus:7-appA-bplcon2.c15 .");
 
     // ---------------- MEASURED (not asserted, computed at run time): the dead contexts ----------------
-    // Neither of the two notes below is a claim of this package's 18-record
+    // Neither of the two notes below is a claim of this package's 19-record
     // inventory -- no claim quotes denise_spritepriority.v's encoder code
     // range, its sprcode==7 override, or a per-value outcome table. Each
     // note names the same claim ids as the corresponding BITn-IS-...
@@ -755,6 +765,55 @@ int main(int argc, char** argv) {
             "decided, as its own name states: 'PF2P=Playfield 2 priority "
             "code (with respect to sprites)' (p.271). A-leg.pf2p, "
             "A-bplcon.c81, sol:7-appA-bplcon2.c11, opus:7-appA-bplcon2.c22 .");
+    }
+
+    // ---------------- PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT ----------------
+    // 3-adv.c01 ("Playfields share the display with sprites.", p.86) is
+    // operationalized at this module's own boundary: sprsel is the single
+    // output this module sends either a playfield's or a sprite's data
+    // through -- there is no second output for the loser. Four points, all
+    // on the same dut->eval()-then-read-sprsel basis as every assertion
+    // above: an active playfield alone (no sprite) occupies sprsel; an
+    // active sprite alone (no playfield) occupies the SAME sprsel; and with
+    // BOTH a playfield and every sprite active at once, sprsel still picks
+    // exactly one of them, and which one flips with bplcon2's priority
+    // field alone, nplayfield/nsprite held fixed -- the two sources are
+    // arbitrated onto one shared output, not given one each.
+    {
+        uint8_t playfield_only = h.read(/*bplcon2=*/0x00,
+            static_cast<uint8_t>(PF1_ON | PF2_ON), /*nsprite=*/0x00);
+        uint8_t sprite_only = h.read(/*bplcon2=*/0x00, /*nplayfield=*/0x00,
+            /*nsprite=*/0xFF);
+        uint8_t both_pf_priority = h.read(/*bplcon2=*/0x00,
+            static_cast<uint8_t>(PF1_ON | PF2_ON), /*nsprite=*/0xFF);
+        // MUTATE-HERE(shared-output, priority flip): the bplcon2 stimulus
+        // fed to this one h.read() call is the only thing a mutation
+        // changes; nplayfield, nsprite and the expected-value comparison
+        // below are never touched.
+        uint8_t both_spr_priority = h.read(
+#ifndef MUT_PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT
+            /*bplcon2=*/0x3F,
+#else
+            /*bplcon2=*/0x00, // MUTATION: same bplcon2 as both_pf_priority, neutralizing the priority-flip stimulus
+#endif
+            static_cast<uint8_t>(PF1_ON | PF2_ON), /*nsprite=*/0xFF);
+
+        checks.expect(
+            playfield_only == 0 && sprite_only == 1 &&
+            both_pf_priority == 0 && both_spr_priority == 1,
+            "PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT: with no sprite "
+            "active, an active playfield alone occupies sprsel (selects "
+            "the playfield, 0); with no playfield active, an active "
+            "sprite alone occupies the SAME sprsel output (selects the "
+            "sprite, 1); with both a playfield and all eight sprites "
+            "active at once, sprsel still picks exactly one of them, and "
+            "which one flips with bplcon2's priority field alone held "
+            "against the same fixed nplayfield/nsprite (playfield wins at "
+            "bplcon2=0x00, sprite wins at bplcon2=0x3F) -- playfield and "
+            "sprite data are arbitrated onto the one shared sprsel output "
+            "rather than each given a display output of its own: "
+            "'Playfields share the display with sprites.' (p.86). "
+            "3-adv.c01 .");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
