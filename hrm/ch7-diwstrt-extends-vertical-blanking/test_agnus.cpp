@@ -349,6 +349,111 @@ FloorResult measure_floor(bool ntsc, uint8_t vstart, int window_margin = 40) {
     return r;
 }
 
+// ============================================================================
+// Extension: interlace doubles the line count (SPECIFICATION.md, "Extension:
+// interlace doubles the line count (p.49-50)"). Claims opus:3-res.c16 (p.49)
+// and opus:3-lace.f03 (p.50, Figure 3-5). Routed here (routing.route in
+// ch7-diwstrt-extends-vertical-blanking.jsonl) because `agnus` is the only
+// module in this repo whose port list carries both the interlace condition
+// (BPLCON0's LACE bit into agnus_beamcounter.v, surfaced on the `field1`,
+// `lace` and `_vsync` ports) and the displayed-line marker this package
+// already established for P1-P3 above (`dbr && !refresh`).
+//
+// `agnus.v` has no `hpos`/`vpos` output port (confirmed by its port list,
+// agnus.v:54-100, the same finding the OBSERVABLE section above already made
+// for P1-P3). What DOES reach a port is `_vsync` (agnus.v:74) itself, and
+// reading agnus_beamcounter.v:397-406 shows its falling edge is keyed on
+// `long_frame` (the registered field-parity flag `field1` is wired from,
+// agnus_beamcounter.v:371) at a DIFFERENT (vpos, hpos) pair for each parity:
+// `vpos==vsstrt+1 && hpos==hsstrt` when long_frame, `vpos==vsstrt &&
+// hpos==hcenter` when not. Since `hpos` increments once per tick of this
+// harness's own clock exactly as it does for P1-P3's line walk, counting
+// ticks since a known origin (sync_to_sof) is this fixture's port-visible
+// stand-in for "where in the field, at sub-line resolution" -- built
+// entirely from `_vsync`, `field1`, the existing `dbr`/`refresh`/`sol`/`sof`
+// ports, and this harness's own tick counter. No `rootp`.
+//
+// agnus_bitplanedma.v's own vertical-window-enable logic (`vdiwena`,
+// l.208-215, the same lines the OBSERVABLE section above already read for
+// P3) has no reference anywhere to `lace`, `field1` or `long_frame` -- it is
+// driven purely by `sof`, `vpos`, `vdiwstrt` and `vdiwstop`, confirmed by
+// grep across the whole file. So the per-field bitplane-DMA-active line
+// count this package already measures via `dbr && !refresh` is expected, by
+// this same reading, to be identical whichever way LACE is set -- and P5
+// below measures exactly that.
+// ============================================================================
+
+constexpr uint16_t LACE_BIT = 1u << 2;  // BPLCON0[2], agnus_beamcounter.v:157-164
+// $2C/$F4: vdiwstrt=44, vdiwstop=244 (top bit of the DIWSTOP high byte is
+// set, so agnus_bitplanedma.v:198's V8=~data_in[15] adds no +256 offset) --
+// 244-44 = 200 lines, the window this extension's routing.how names.
+constexpr uint8_t  LACE_VSTART_BYTE  = 0x2C;
+constexpr uint8_t  LACE_VSTOP_BYTE   = 0xF4;
+constexpr int       LACE_WINDOW_LINES = 200;
+// Long enough to cover the full $2C-$F4 window plus margin, short enough to
+// stay well inside one PAL field (312/313 lines) so it is the caller's own
+// sync_to_sof() between calls that advances to the next field, not this
+// bound.
+constexpr int LACE_FIELD_LINES = 280;
+
+// Same isolation as setup_bitplane_isolated() above (DMAEN|BPLEN only,
+// disk/audio dmal idle, fixed DDFSTRT/DDFSTOP/FMODE), but BPLCON0's LACE bit
+// is under caller control -- setup_bitplane_isolated() intentionally never
+// sets it, and the CONTROL/P4/P5 blocks below need to.
+void setup_bitplane_isolated_lace(Harness& h, bool lace_on) {
+    h.write_reg(DMACON_ADDR, SET_CLR | DMAEN | BPLEN);
+    h.write_reg(DDFSTRT_ADDR, DDFSTRT_VAL);
+    h.write_reg(DDFSTOP_ADDR, DDFSTOP_VAL);
+    h.write_reg(BPLCON0_ADDR, static_cast<uint16_t>(BPLCON0_VAL | (lace_on ? LACE_BIT : 0)));
+    h.write_reg(FMODE_ADDR, FMODE_VAL);
+}
+
+void write_diwstrt_diwstop(Harness& h, uint8_t vstart_byte, uint8_t vstop_byte) {
+    h.write_reg(DIWSTRT_ADDR, static_cast<uint16_t>((static_cast<uint16_t>(vstart_byte) << 8) | HSTART_BYTE));
+    h.write_reg(DIWSTOP_ADDR, static_cast<uint16_t>((static_cast<uint16_t>(vstop_byte) << 8) | HSTOP_BYTE));
+}
+
+// One field's worth of measurement: `field1` (sampled once, right after
+// sync_to_sof -- a combinational function of the registered `long_frame`,
+// agnus_beamcounter.v:339-350,371, so already settled by the time
+// sync_to_sof() returns, the same convention measure_lines() above relies on
+// for `vblank`), the bitplane-DMA-active line count and its first line (same
+// dbr&&!refresh isolation as measure_floor() above), and the absolute tick
+// offset since this call began at which the `_vsync` port is first observed
+// to fall from 1 to 0.
+struct FieldSample {
+    bool field1 = false;
+    int dma_line_count = 0;
+    int first_dma_line = -1;
+    long long vsync_fall_tick = -1;  // -1 if never observed in this call
+};
+
+FieldSample measure_field(Harness& h, int n_lines, int max_ticks_per_line = 1200) {
+    FieldSample fs;
+    fs.field1 = h.dut->field1;
+    bool vsync_prev_high = true;
+    long long tick_count = 0;
+    for (int line = 0; line < n_lines; ++line) {
+        bool dma_active = false;
+        for (int t = 0; t < max_ticks_per_line; ++t) {
+            h.tick();
+            ++tick_count;
+            if (h.last_dbr && !h.last_refresh) dma_active = true;
+            if (fs.vsync_fall_tick < 0) {
+                bool vsync_now = h.dut->_vsync;
+                if (vsync_prev_high && !vsync_now) fs.vsync_fall_tick = tick_count;
+                vsync_prev_high = vsync_now;
+            }
+            if (h.last_sol) break;
+        }
+        if (dma_active) {
+            ++fs.dma_line_count;
+            if (fs.first_dma_line < 0) fs.first_dma_line = line;
+        }
+    }
+    return fs;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -613,6 +718,164 @@ int main(int argc, char** argv) {
                 "harness or the isolation technique.");
     }
 
+    // =========================================================================
+    // Extension: interlace doubles the line count. CONTROL (interlace), P4,
+    // P5. SPECIFICATION.md, "Extension: interlace doubles the line count
+    // (p.49-50)".
+    // =========================================================================
+    {
+        // ---- CONTROL (interlace) -- the fixture can toggle interlace and
+        // observe a change on the same measurement basis. ----
+        Harness h;
+        setup_bitplane_isolated_lace(h, false);
+        write_diwstrt_diwstop(h, LACE_VSTART_BYTE, LACE_VSTOP_BYTE);
+        h.sync_to_sof();
+        FieldSample lace_off_a = measure_field(h, LACE_FIELD_LINES);
+        h.sync_to_sof();
+        FieldSample lace_off_b = measure_field(h, LACE_FIELD_LINES);
+
+#ifndef MUT_CONTROL_LACE_TOGGLES_FIELD1
+        h.write_reg(BPLCON0_ADDR, static_cast<uint16_t>(BPLCON0_VAL | LACE_BIT));
+#else
+        // Mutation: ask for the LACE=1 half of this same run without ever
+        // writing BPLCON0's LACE bit -- the module is never told to
+        // interlace.
+        h.write_reg(BPLCON0_ADDR, BPLCON0_VAL);
+#endif
+        h.sync_to_sof();
+        FieldSample lace_on_a = measure_field(h, LACE_FIELD_LINES);
+        h.sync_to_sof();
+        FieldSample lace_on_b = measure_field(h, LACE_FIELD_LINES);
+
+        checks.expect(
+            lace_off_a.field1 == lace_off_b.field1 &&
+                lace_on_a.field1 != lace_on_b.field1,
+            "CONTROL-LACE-TOGGLES-FIELD1: on the SAME run, with BPLCON0's "
+            "LACE bit clear `field1` reads the same value (" +
+                std::to_string(static_cast<int>(lace_off_a.field1)) + " then " +
+                std::to_string(static_cast<int>(lace_off_b.field1)) +
+                ") on two consecutive fields; after writing LACE set, "
+                "`field1` reads a DIFFERENT value on each of the next two "
+                "consecutive fields (" +
+                std::to_string(static_cast<int>(lace_on_a.field1)) + " then " +
+                std::to_string(static_cast<int>(lace_on_b.field1)) +
+                ") -- the interlace toggle reaches the module and produces "
+                "an observable per-field effect, the basis the P4/P5 "
+                "measurements below depend on.");
+    }
+    {
+        // ---- P4 -- INTERLACE DOUBLES THE LINE COUNT PER DISPLAYED FRAME. ----
+        uint8_t vstop_lace1 = LACE_VSTOP_BYTE;
+#ifdef MUT_P4_INTERLACE_DOUBLES_LINE_COUNT
+        // Mutation: shrink the LACE=1 run's own window by 10 lines (VSTOP
+        // 0xF4/244 -> 0xEA/234) -- its per-field DMA count drops from 200 to
+        // 190, without touching the LACE bit itself.
+        vstop_lace1 = 0xEA;
+#endif
+        Harness h0;
+        setup_bitplane_isolated_lace(h0, false);
+        write_diwstrt_diwstop(h0, LACE_VSTART_BYTE, LACE_VSTOP_BYTE);
+        h0.sync_to_sof();
+        FieldSample f0a = measure_field(h0, LACE_FIELD_LINES);
+        h0.sync_to_sof();
+        FieldSample f0b = measure_field(h0, LACE_FIELD_LINES);
+
+        Harness h1;
+        setup_bitplane_isolated_lace(h1, true);
+        write_diwstrt_diwstop(h1, LACE_VSTART_BYTE, vstop_lace1);
+        h1.sync_to_sof();
+        FieldSample f1a = measure_field(h1, LACE_FIELD_LINES);
+        h1.sync_to_sof();
+        FieldSample f1b = measure_field(h1, LACE_FIELD_LINES);
+
+        bool lace0_aligned = f0a.vsync_fall_tick >= 0 && f0a.vsync_fall_tick == f0b.vsync_fall_tick;
+        bool lace1_offset = f1a.vsync_fall_tick >= 0 && f1b.vsync_fall_tick >= 0 &&
+                             f1a.vsync_fall_tick != f1b.vsync_fall_tick;
+        int distinct_lace0 = lace0_aligned ? f0a.dma_line_count : (f0a.dma_line_count + f0b.dma_line_count);
+        int distinct_lace1 = lace1_offset ? (f1a.dma_line_count + f1b.dma_line_count) : f1a.dma_line_count;
+
+        checks.expect(
+            f0a.dma_line_count == LACE_WINDOW_LINES && f0b.dma_line_count == LACE_WINDOW_LINES &&
+                f1a.dma_line_count == LACE_WINDOW_LINES && f1b.dma_line_count == LACE_WINDOW_LINES &&
+                distinct_lace0 == LACE_WINDOW_LINES && distinct_lace1 == 2 * LACE_WINDOW_LINES,
+            "P4-INTERLACE-DOUBLES-LINE-COUNT-PER-DISPLAYED-FRAME: with "
+            "DIWSTRT/DIWSTOP set to a " + std::to_string(LACE_WINDOW_LINES) +
+                "-line window ($2C/$F4), each of two consecutive fields "
+                "shows " + std::to_string(LACE_WINDOW_LINES) +
+                " bitplane-DMA-active lines whether LACE is clear or set "
+                "(measured: LACE=0 " + std::to_string(f0a.dma_line_count) +
+                "/" + std::to_string(f0b.dma_line_count) + ", LACE=1 " +
+                std::to_string(f1a.dma_line_count) + "/" +
+                std::to_string(f1b.dma_line_count) +
+                "); with LACE clear the two fields' `_vsync` falling edges "
+                "land on the identical tick offset (measured: " +
+                std::to_string(f0a.vsync_fall_tick) + " vs " +
+                std::to_string(f0b.vsync_fall_tick) +
+                "), so the same " + std::to_string(LACE_WINDOW_LINES) +
+                " physical lines repeat; with LACE set the two fields' "
+                "`_vsync` falling edges land on DIFFERENT tick offsets "
+                "(measured: " + std::to_string(f1a.vsync_fall_tick) + " vs " +
+                std::to_string(f1b.vsync_fall_tick) +
+                "), so the " + std::to_string(LACE_WINDOW_LINES) + "+" +
+                std::to_string(LACE_WINDOW_LINES) +
+                " lines do not coincide -- " +
+                std::to_string(2 * LACE_WINDOW_LINES) +
+                " distinct lines across the two fields, twice the " +
+                std::to_string(LACE_WINDOW_LINES) +
+                " a LACE-clear pair shows. 'Interlaced mode allows twice as "
+                "much data to be displayed in the same vertical area as in "
+                "non-interlaced mode. This is accomplished by doubling the "
+                "number of lines appearing on the video screen' (p.49). "
+                "opus:3-res.c16.");
+    }
+    {
+        // ---- P5 -- THE DOUBLED LINES OCCUPY THE SAME SPAN, NOT A TALLER ONE. ----
+        uint8_t vstart_lace1 = LACE_VSTART_BYTE;
+#ifdef MUT_P5_DOUBLED_LINES_SAME_SPAN
+        // Mutation: shift the LACE=1 run's own window start by 6 lines
+        // (VSTART 0x2C/44 -> 0x32/50), VSTOP shifted the same amount so the
+        // window WIDTH stays 200 -- P4's per-field count is untouched, but
+        // this window's own START no longer matches the LACE=0 run's.
+        vstart_lace1 = 0x32;
+#endif
+        uint8_t vstop_lace1 = static_cast<uint8_t>(LACE_VSTOP_BYTE + (vstart_lace1 - LACE_VSTART_BYTE));
+
+        Harness h0;
+        setup_bitplane_isolated_lace(h0, false);
+        write_diwstrt_diwstop(h0, LACE_VSTART_BYTE, LACE_VSTOP_BYTE);
+        h0.sync_to_sof();
+        FieldSample f0 = measure_field(h0, LACE_FIELD_LINES);
+
+        Harness h1;
+        setup_bitplane_isolated_lace(h1, true);
+        write_diwstrt_diwstop(h1, vstart_lace1, vstop_lace1);
+        h1.sync_to_sof();
+        FieldSample f1a = measure_field(h1, LACE_FIELD_LINES);
+        h1.sync_to_sof();
+        FieldSample f1b = measure_field(h1, LACE_FIELD_LINES);
+
+        checks.expect(
+            f0.first_dma_line == static_cast<int>(LACE_VSTART_BYTE) &&
+                f0.dma_line_count == LACE_WINDOW_LINES &&
+                f1a.first_dma_line == f0.first_dma_line && f1a.dma_line_count == f0.dma_line_count &&
+                f1b.first_dma_line == f0.first_dma_line && f1b.dma_line_count == f0.dma_line_count,
+            "P5-DOUBLED-LINES-SAME-VERTICAL-SPAN: the bitplane-DMA-active "
+            "vpos span (first line, line count) measured for a single "
+            "LACE-clear field (" + std::to_string(f0.first_dma_line) + ", " +
+                std::to_string(f0.dma_line_count) +
+                ") is the SAME span measured for EACH of the two LACE-set "
+                "fields whose 400 combined distinct lines P4 above measures "
+                "(" + std::to_string(f1a.first_dma_line) + ", " +
+                std::to_string(f1a.dma_line_count) + " and " +
+                std::to_string(f1b.first_dma_line) + ", " +
+                std::to_string(f1b.dma_line_count) +
+                ") -- the doubled line count is packed into the same "
+                "vertical span, not a taller one. Figure 3-5 (p.50): the "
+                "combined interlaced frame is captioned 'Same physical "
+                "space as used by a 200-line, noninterlaced display.' "
+                "opus:3-lace.f03.");
+    }
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }
@@ -744,4 +1007,57 @@ int main(int argc, char** argv) {
 // Final rebuild after the last revert: 5 passed, 1 failed, matching the
 // baseline above exactly -- six graded propositions, before P3 was
 // withdrawn. Today: 5 passed, 0 failed, 1 RECORDED.
+// ============================================================================
+
+// ============================================================================
+// MUTATION LOG, EXTENSION (interlace doubles the line count). Same discipline
+// as the log above: every entry was actually run under WSL/Verilator (`make
+// clean && make MUT=<NAME>`, read ./obj_dir/Vagnus's own printed tally
+// directly, never `echo $?` under `bash -lc`), before moving to the next one.
+//
+// BASELINE for this extension (measured after CONTROL-LACE-TOGGLES-FIELD1,
+// P4 and P5 were added to the five original graded assertions plus the one
+// RECORDED P3 line): 8 passed, 0 failed, 1 RECORDED. All three new
+// assertions measured GREEN against the RTL on the first run -- unlike P3
+// above, this extension found no disagreement with the page to report. A
+// green here is as valid an outcome as a red one; the mutations below are
+// what shows each green is a real measurement and not an artifact of a
+// vacuous comparator.
+//
+// replay: make clean && make MUT=CONTROL_LACE_TOGGLES_FIELD1
+// MUTATION CONTROL-LACE-TOGGLES-FIELD1 stimulus red: the BPLCON0 write that
+//   sets the LACE bit for this run's second half is replaced with the SAME
+//   value the first half already wrote (LACE stays clear throughout) ->
+//   "7 passed, 1 failed", only CONTROL-LACE-TOGGLES-FIELD1 newly red
+//   (measured: field1 reads 0 then 0 before the write, 0 then 0 after --
+//   with long_frame never toggling, `field1` cannot differ). P4 and P5 are
+//   unaffected (each opens its own fresh Harness with its own explicit
+//   setup_bitplane_isolated_lace(h1, true) call, never touching this run).
+//   Reverted: `make clean && make` -> 8 passed, 0 failed, 1 RECORDED,
+//   matching this extension's baseline exactly.
+// replay: make clean && make MUT=P4_INTERLACE_DOUBLES_LINE_COUNT
+// MUTATION P4-INTERLACE-DOUBLES-LINE-COUNT-PER-DISPLAYED-FRAME stimulus red:
+//   the LACE=1 run's own DIWSTOP is shrunk by 10 lines (VSTOP $F4/244 ->
+//   $EA/234, VSTART and the LACE=0 run both untouched) -> "7 passed, 1
+//   failed", only P4 newly red (measured: LACE=0 still 200/200, LACE=1 now
+//   190/190 -- the per-field-count-equals-200 half of the assertion breaks).
+//   CONTROL-LACE-TOGGLES-FIELD1 and P5 are unaffected (P5 opens its own
+//   fresh Harness pair with the unmutated $2C/$F4 window). Reverted: 8
+//   passed, 0 failed, 1 RECORDED.
+// replay: make clean && make MUT=P5_DOUBLED_LINES_SAME_SPAN
+// MUTATION P5-DOUBLED-LINES-SAME-VERTICAL-SPAN stimulus red: the LACE=1 run's
+//   own DIWSTRT/DIWSTOP are both shifted by 6 lines (VSTART $2C/44 -> $32/50,
+//   VSTOP shifted the same amount so the window WIDTH stays 200, the LACE=0
+//   run untouched) -> "7 passed, 1 failed", only P5 newly red (measured: the
+//   LACE=0 span stays (44, 200); both LACE=1 fields now report (50, 200) --
+//   same width, different start, so the "SAME span" equality breaks). P4
+//   is unaffected (it only compares each run's own two fields' dma_line_count
+//   to LACE_WINDOW_LINES and to each other, not to the LACE=0 run's start
+//   line) and stays green off this same mutated run's measurements.
+//   Reverted: 8 passed, 0 failed, 1 RECORDED.
+//
+// Final rebuild after the last revert: 8 passed, 0 failed, 1 RECORDED,
+// matching this extension's baseline exactly -- eight graded propositions
+// (five original plus CONTROL-LACE-TOGGLES-FIELD1/P4/P5) and the one
+// withdrawn-but-recorded P3 measurement.
 // ============================================================================
