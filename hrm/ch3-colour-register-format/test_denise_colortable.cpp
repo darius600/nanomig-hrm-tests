@@ -188,6 +188,7 @@
 // MUTATION SAMPLE stimulus red: the Light green entry ($8E0) was replaced with $000 (black) instead of its own code, so its readback equals the black baseline and the liveness check fails.
 // MUTATION EHB-HALVES-INTENSITY stimulus red: the EHB read was moved from register 15 (the register just loaded and read in normal mode) to register 16 (loaded with a different, unrelated pattern), so halved(normal) no longer matches the EHB reading.
 // MUTATION NO-READBACK-PORT stimulus red: the read after each write moved from register 20 (the register actually written) to register 21 (never written), so the two reads no longer differ.
+// MUTATION APPC-SHR-REG0-3-BASELINE-NIBBLES stimulus red: the stimulus meant to probe the red nibble alone ($F00) was replaced with the green-nibble stimulus ($0F0) instead, so the red byte no longer changes while the check still expects it to.
 // MUTATION CONTROL-KNOWN-VALUES-ARRIVE stimulus red: the control's second write (originally to register 2, the same register the two reads target) was redirected to register 3 instead, so register 2 was never rewritten and the second read came back equal to the first ($1F0 both times, a == b) instead of distinct; reverted to writing register 2 again and confirmed the 55-passed/0-failed baseline returned.
 // MUTATION EHB-CONTROL-NORMAL-REPRODUCIBLE stimulus red: the post-EHB normal-mode re-read was redirected from register 15 (the register loaded and read earlier in the same block) to register 16 (never written, still at its power-on value), so the re-read no longer matched the value recorded before the EHB reading; reverted to reading register 15 again and confirmed the 55-passed/0-failed baseline returned.
 //
@@ -237,6 +238,9 @@
 #endif
 #ifndef MUT_EHBCTRL
 #define MUT_EHBCTRL 0
+#endif
+#ifndef MUT_APPCSHR
+#define MUT_APPCSHR 0
 #endif
 
 namespace {
@@ -752,6 +756,50 @@ int main(int argc, char** argv) {
             "you find out the contents' (p.47), 'All color registers are "
             "write-only' (p.92). 3-colortable.c21, 3-ct.c10, "
             "3-colorsum.c5.");
+    }
+
+    // =========================================================================
+    // APPC-SHR-REG0-3-BASELINE-NIBBLES (p.301) -- Appendix C's SuperHires
+    // section states the baseline it contrasts SuperHires against: outside
+    // SuperHires mode, one of the four registers COLOR0-COLOR3 the claim
+    // names holds a 12-bit code split into three independent 4-bit R/G/B
+    // fields (bits 11-8/7-4/3-0), the same field positions RED-FIELD-BITS-
+    // 11-8/GREEN-FIELD-BITS-7-4/BLUE-FIELD-BITS-3-0 establish above on a
+    // different register (10/11/12). Tested fresh here on register 0
+    // because this claim names registers 0-3 specifically and bundles all
+    // three channels in one sentence, so it gets one assertion of its own
+    // rather than a citation split across those three single-channel
+    // groups. This module has no SuperHires-mode port at all, so this
+    // measurement already sits outside SuperHires by construction.
+    // =========================================================================
+    {
+        Harness h;
+        h.write_reg(0, 0x000);
+        uint32_t base = h.read_reg(0);
+
+        uint16_t r_stim = 0xF00;
+#if MUT_APPCSHR
+        r_stim = 0x0F0;
+#endif
+        h.write_reg(0, r_stim);
+        uint32_t vR = h.read_reg(0);
+        h.write_reg(0, 0x0F0);
+        uint32_t vG = h.read_reg(0);
+        h.write_reg(0, 0x00F);
+        uint32_t vB = h.read_reg(0);
+
+        bool ok = R_of(vR) != R_of(base) && G_of(vR) == G_of(base) && B_of(vR) == B_of(base) &&
+                  G_of(vG) != G_of(base) && R_of(vG) == R_of(base) && B_of(vG) == B_of(base) &&
+                  B_of(vB) != B_of(base) && R_of(vB) == R_of(base) && G_of(vB) == G_of(base);
+        checks.expect(
+            ok,
+            "APPC-SHR-REG0-3-BASELINE-NIBBLES: on COLOR0, setting the red "
+            "field ($F00), then the green field ($0F0), then the blue "
+            "field ($00F) each moves only its own byte of rgb versus an "
+            "all-zero baseline, the other two bytes unchanged - outside "
+            "SuperHires mode, COLOR0-COLOR3 each hold 4 bits each of red, "
+            "green and blue stored as 0x0RGB in four color registers "
+            "(p.301). APPC-shr.c7.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
