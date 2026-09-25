@@ -254,30 +254,44 @@
 //   16-grants-on-line-0 measurement) and A1's own comment (the vpos==0 /
 //   VSTOP-reset-value coincidence) -- not a fresh RTL read for these ids.
 //
-//   B1  EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED (4 ids) --
-//     CH4-intro.c6, CH4-p97.c3, CH4-p127.c4, CH4-regs.c1. Previously
-//     declined in Dc as unobservable from a (wrongly assumed) single-channel
-//     fixture; Dc's own CORRECTION already found the fixture is not
-//     single-channel. Tests: on the module's first active line, sixteen
-//     granted DMA cycles target sixteen distinct register addresses --
-//     eight independent two-register control-pair fetches -- rather than
-//     the two addresses a single channel would produce.
+//   B1  EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED (3 ids) --
+//     CH4-p97.c3, CH4-p127.c4, CH4-regs.c1. Previously declined in Dc as
+//     unobservable from a (wrongly assumed) single-channel fixture; Dc's own
+//     CORRECTION already found the fixture is not single-channel. Tests:
+//     given its own pointer (SPRxPTH/SPRxPTL) and the same fed VSTART/VSTOP,
+//     each of the eight channels fetches POS, CTL, DATA and DATB into its
+//     own four registers -- thirty-two distinct addresses total -- and each
+//     channel's own first control-pair fetch reads back its own,
+//     independently written pointer, rather than the two addresses and one
+//     shared pointer a single-channel design would produce. CH4-intro.c6,
+//     previously carried here too, is withdrawn to record below (Dn): its
+//     restatement bundles "sprites are produced on-screen by them", which
+//     nothing at this module boundary can observe.
 //   B2  OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE (2 ids) --
 //     CH4-p127.c6, CH4-regs.c3. Previously declined in Dc, whose own
 //     CORRECTION named this specific claim "still genuinely undecided."
-//     Tests: channel 1, fed its own distinct VSTART/VSTOP at its own
-//     register block, reproduces the same structural fetch pattern already
-//     proven for channel 0 elsewhere in this file (POS-then-CTL first,
-//     height = VSTOP-VSTART).
+//     Tests: channels 1 through 7, each fed its own distinct VSTART/VSTOP at
+//     its own register block, all reproduce the same structural fetch
+//     pattern already proven for channel 0 elsewhere in this file
+//     (POS-then-CTL first, height = VSTOP-VSTART) -- all seven, not one.
 //   B3  HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE (4 ids) --
 //     CH4-forming.c2, CH4-intro.c8, CH4-p97.c5, CH4-p98.c2. Previously
 //     declined in Dw as "not falsifiable by any finite sweep" -- true of
 //     literal infinity, but read as the falsifiable engineering claim that
 //     no separate, smaller height cap exists distinct from the VSTOP-VSTART
 //     arithmetic A2 already establishes for a 4-line sprite, it is
-//     testable: a 100-line-high usage, far beyond any height this file's
-//     other assertions exercise, is fed and its image-fetch window checked
-//     for being unbroken across the whole 100 lines.
+//     testable: a 300-line-high usage, well past a 128- or 255-line cap, is
+//     fed and its image-fetch window checked for being unbroken across the
+//     whole height, and a second usage whose fed VSTOP (511, the top of the
+//     9-bit range) is never reached before vbl is checked to keep fetching
+//     every line up to vbl and no further -- ruling out a cap anywhere below
+//     the field, not just below 255.
+//   Dn  SPRITES-PRODUCED-ON-SCREEN-NOT-OBSERVABLE-HERE (1 id) --
+//     CH4-intro.c6. Its restatement bundles two propositions: eight sprite
+//     DMA channels exist (which B1 establishes) and sprites are "produced
+//     on-screen by them" (nothing on-screen is observable at this module's
+//     boundary -- see Non-goals, Dx). Withdrawn whole per the bundled-clause
+//     rule rather than kept on B1 with the on-screen half uncovered.
 //   Di  POINTER-INITIALISATION-IS-PROGRAMMER-OBLIGATION-NOT-RTL-BEHAVIOUR
 //     (2 ids) -- CH4-more.c6, CH4-p114.c3. Previously declined in Dc, whose
 //     own CORRECTION flagged these as "structurally observable after all."
@@ -353,6 +367,43 @@
 //   declined (Dc 15, Dw 0, Dm 2, Dp 5, Dx 2, Di 2). 206 + 26 = 232, still
 //   the original total.
 //
+//   CORRECTION (independent validation pass): B1, B2, B3 and B4 above each
+//   graded less of their claim than its text states. B1's claim is "eight
+//   COMPLETE sets of registers"; the first version measured only the
+//   control-pair addresses (POS/CTL), never a pointer or DATA/DATB, so a
+//   design with eight POS/CTL pairs sharing one pointer or one DATA/DATB
+//   pair would have passed it. It now gives each of the eight channels its
+//   own pointer before the sweep and shows each one fetches POS, CTL, DATA
+//   and DATB into its own four registers, reading its own written pointer
+//   at the first one. CH4-intro.c6 -- whose restatement bundles an
+//   on-screen observation this module cannot make -- is withdrawn from B1
+//   to Dn above rather than riding along on the strengthened assertion.
+//   B2's claim covers channels 1 through 7 ("all of the others"); the first
+//   version measured channel 1 alone, one case of a universal claim. It now
+//   loops over all seven. B3's claim is that height has no cap distinct
+//   from VSTOP-VSTART; the first version fed a 100-line height, which
+//   cannot tell "no cap" apart from "capped at 128 or 255". It now feeds a
+//   300-line height (VSTART=209, well past both) and a second usage whose
+//   fed VSTOP (511) is never reached before vbl, showing vbl -- not some
+//   fixed cap -- is what ends the fetch. VSTART=209 rather than a lower
+//   value: sweeping channel 0 alone at several different VSTART/VSTOP pairs
+//   (and separately with every other channel's POS/CTL explicitly
+//   initialised first) found that vpos==208 drops that one line's
+//   image-fetch pair regardless of this channel's own VSTART/VSTOP -- a
+//   single-line anomaly uninvolved with sprite height, so this case starts
+//   past it rather than characterising it (also noted at the assertion
+//   itself). B4's claim is that the fetched address is "16-bit words" and
+//   "contiguous"; "+1 per grant" was read off address_out's own bit width
+//   and never checked against a value this file actually wrote, so the
+//   unit was never calibrated. It now also checks that channel 0's very
+//   first grant reads back the pointer this file's own Harness constructor
+//   wrote (SPR0PTH:SPR0PTL=$0:$2000 -> word address 0x1000).
+//
+//   Grand total after this correction: unchanged from the previous
+//   checkpoint at 206 asserted, 26 declined -- CH4-intro.c6 moves from B1
+//   to Dn (both counted bucket categories, not a change in what is asserted
+//   vs declined: B1 3, Dn 1, sum still 4 where the addendum's B1 counted 4).
+//
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id, labelled
 //   "[control]") proves the write(via data_in)->grant(via ackdma)->observe
 //   (via reg_address_out) path this whole file depends on is alive, and
@@ -374,6 +425,7 @@
 #include <cstdio>
 #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -418,6 +470,21 @@ inline uint16_t posWord(int vstart) { return (uint16_t)((vstart & 0xFF) << 8); }
 inline uint16_t ctlWord(int vstart, int vstop) {
     return (uint16_t)(((vstop & 0xFF) << 8) | (((vstart >> 8) & 1) << 2) | (((vstop >> 8) & 1) << 1));
 }
+
+// Per-channel register word addresses for x=0..7, derived from
+// agnus_spritedma.v's own address formulas -- SPRPTBASE_REG/ptsel for the
+// pointer pair (reg_address_in[4:2]==sprite selects the channel, [1]
+// distinguishes PTH from PTL), SPRPOSCTLBASE_REG/sprite for the
+// POS/CTL/DATA/DATB quartet (reg_address_out[8:1] =
+// {SPRPOSCTLBASE_REG[8:6],sprite,subsel}) -- not copied from anywhere this
+// package hadn't already opened for this pass. x=0 reduces to the SPR0*
+// constants above.
+inline int sprPTH(int x) { return SPR0PTH + 2 * x; }
+inline int sprPTL(int x) { return SPR0PTL + 2 * x; }
+inline int sprPOS(int x) { return SPR0POS + 4 * x; }
+inline int sprCTL(int x) { return SPR0CTL + 4 * x; }
+inline int sprDATA(int x) { return SPR0DATA + 4 * x; }
+inline int sprDATB(int x) { return SPR0DATB + 4 * x; }
 
 std::string toHex(int v) {
     char buf[16];
@@ -1040,8 +1107,8 @@ int main(int argc, char** argv) {
             "CH4-sprpos.c3, CH4-sprpos.c4)");
     }
 
-    // ==== unit-backlog addendum (2026-09-25): B1-B4, Di -- see the CLAIM ====
-    // ==== COVERAGE ADDENDUM and its CORRECTION in the header comment.    ====
+    // ==== unit-backlog addendum: B1-B4, Dn, Di -- see the CLAIM COVERAGE  ====
+    // ==== ADDENDUM and its CORRECTIONS in the header comment.            ====
 
     // ---- B1: EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED ----
     {
@@ -1050,50 +1117,135 @@ int main(int argc, char** argv) {
         // alone (agnus_spritedma.v:286, "vblend || (sprvstop && ~vbl)") already drives all sixteen
         // grants independent of vblend, which silently defeats MUT_B1 below (confirmed: the first
         // version of this assertion, swept over line 0, stayed 16/16 even with vblend withheld).
+        //
+        // The claim is "eight COMPLETE sets of registers", not just eight control-pair addresses --
+        // a design with eight POS/CTL pairs sharing one pointer or one DATA/DATB pair would have
+        // passed the first draft of this assertion. This version gives each of the eight channels
+        // its own pointer (SPRxPTH/SPRxPTL) before the sweep, then shows each one fetches POS, CTL,
+        // DATA and DATB into its own four registers, reading its own written pointer at the first
+        // one -- eight complete, independently-addressed register sets, each from its own pointer.
         Harness h;
+        const int vstart = 10, vstop = 13;  // height 3, same window fed to every channel -- each
+                                             // channel's own register block keeps its fetches apart
+        int expectAddr[8];
+        for (int x = 0; x < 8; ++x) {
+            int ptlWord = 0x1000 + x * 0x1000;  // a distinct pointer per channel, fits data_in's 16 bits for x up to 7
+            expectAddr[x] = ptlWord >> 1;  // PTH left at 0: word address is PTL>>1, the same
+                                            // relation the Harness's own SPR0PTL=0x2000->0x1000
+                                            // constructor comment already establishes
+            h.dut->reg_address_in = sprPTH(x);
+            h.dut->data_in = 0;
+            h.tick_hpos();
+            h.dut->reg_address_in = sprPTL(x);
+            h.dut->data_in = (uint16_t)ptlWord;
+            h.tick_hpos();
+            h.dut->reg_address_in = 0;
+        }
+
         bool useVblend = true;
 #ifdef MUT_B1
         useVblend = false;  // withhold activation: no channel is ever told it may fetch
 #endif
-        std::vector<std::pair<int, int>> pairs = {{40, 44}};
-        auto log = h.run(5, 5, pairs, useVblend);
+        std::vector<Grant> log;
+        int firstAddr[8];
+        for (int x = 0; x < 8; ++x) firstAddr[x] = -1;
+        for (int line = 5; line <= 16; ++line) {
+            h.dut->vpos = line;
+            h.dut->vblend = (useVblend && line == 5) ? 1 : 0;
+            for (int hp = 0; hp < HPOS_MAX; ++hp) {
+                h.dut->hpos = hp;
+                h.dut->clk7_en = 1;
+                h.dut->eval();
+                if (h.dut->reqdma) {
+                    h.dut->ackdma = 1;
+                    h.dut->eval();
+                    int reg = h.dut->reg_address_out;
+                    uint16_t val = 0;
+                    for (int x = 0; x < 8; ++x) {
+                        if (reg == sprPOS(x)) val = posWord(vstart);
+                        else if (reg == sprCTL(x)) val = ctlWord(vstart, vstop);
+                    }
+                    h.dut->reg_address_in = reg;
+                    h.dut->data_in = val;
+                    h.dut->eval();
+                    int addr = (int)h.dut->address_out;
+                    log.push_back(Grant{line, hp, reg, val, addr});
+                    for (int x = 0; x < 8; ++x)
+                        if (reg == sprPOS(x) && firstAddr[x] < 0) firstAddr[x] = addr;
+                } else {
+                    h.dut->ackdma = 0;
+                    h.dut->reg_address_in = 0;
+                }
+                h.tick();
+                h.dut->clk7_en = 0;
+                h.dut->reg_address_in = 0;
+                h.tick();
+                h.tick();
+                h.tick();
+            }
+        }
 
-        std::vector<int> regs;
-        for (auto& g : log) regs.push_back(g.reg);
-        std::sort(regs.begin(), regs.end());
-        regs.erase(std::unique(regs.begin(), regs.end()), regs.end());
+        std::set<int> allRegs;
+        bool eachChannelComplete = true;
+        bool eachOwnPointer = true;
+        for (int x = 0; x < 8; ++x) {
+            std::vector<Grant> chLog;
+            for (auto& g : log)
+                if (g.reg == sprPOS(x) || g.reg == sprCTL(x) || g.reg == sprDATA(x) || g.reg == sprDATB(x))
+                    chLog.push_back(g);
+            std::set<int> regsSeen;
+            for (auto& g : chLog) {
+                regsSeen.insert(g.reg);
+                allRegs.insert(g.reg);
+            }
+            bool complete = regsSeen.count(sprPOS(x)) && regsSeen.count(sprCTL(x)) &&
+                             regsSeen.count(sprDATA(x)) && regsSeen.count(sprDATB(x));
+            bool firstIsCtrlPair =
+                chLog.size() >= 2 && chLog[0].reg == sprPOS(x) && chLog[1].reg == sprCTL(x);
+            eachChannelComplete = eachChannelComplete && complete && firstIsCtrlPair;
+            eachOwnPointer = eachOwnPointer && (firstAddr[x] == expectAddr[x]);
+        }
+        std::set<int> distinctAddrs(firstAddr, firstAddr + 8);
 
-        c.note("Line 5 grants: " + std::to_string(log.size()) + " total, " +
-               std::to_string(regs.size()) + " distinct register addresses");
-        bool ok = log.size() == 16 && regs.size() == 16;
+        c.note("Eight channels' own first-grant address_out: " +
+               join(std::vector<int>(firstAddr, firstAddr + 8)) + "; " +
+               std::to_string(allRegs.size()) + " distinct registers touched in total");
+        bool ok = allRegs.size() == 32 && eachChannelComplete && eachOwnPointer && distinctAddrs.size() == 8;
 
         c.expect(ok,
-            "B1-EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED: on the module's first active "
-            "line, sixteen granted DMA cycles target sixteen distinct register addresses -- eight "
-            "independently-addressed two-register control-pair fetches, one per channel -- not the "
-            "two addresses (one control pair) a single-channel design would produce (CH4-intro.c6, "
-            "CH4-p97.c3, CH4-p127.c4, CH4-regs.c1)");
+            "B1-EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED: given its own pointer "
+            "(SPRxPTH/SPRxPTL) and the same fed VSTART/VSTOP, each of the eight channels fetches "
+            "POS, CTL, DATA and DATB into its own four registers (SPRxPOS..SPRxDATB, thirty-two "
+            "distinct addresses total, not the four a single shared register set would produce), "
+            "and each channel's own first control-pair fetch reads back its own, independently "
+            "written pointer (address_out) -- eight complete, independently-addressed register "
+            "sets, each with its own pointer, not the two addresses and one shared pointer a "
+            "single-channel design would produce (CH4-p97.c3, CH4-p127.c4, CH4-regs.c1)");
     }
+
+    // ---- declined, not asserted -- record() only, id off every graded line ----
+    c.record(
+        "CH4-intro.c6 declined (SPRITES-PRODUCED-ON-SCREEN-NOT-OBSERVABLE-HERE): the restatement "
+        "bundles two propositions -- eight sprite DMA channels exist (which B1 above establishes) "
+        "and \"sprites are produced on-screen by them\". Nothing on-screen is observable at the "
+        "agnus_spritedma boundary -- pixel production is Denise's domain (see Non-goals, Dx). Per "
+        "the bundled-clause rule this id is withdrawn whole rather than kept on B1 with the "
+        "on-screen half uncovered.");
 
     // ---- B2: OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE ----
     {
-        // Channel 1's own register block: {SPRPOSCTLBASE_REG[8:6]=3'b101, sprite=3'b001, subsel} --
-        // derived from agnus_spritedma.v:171-172,290-300 (the same reg_address_out formula that
-        // gives channel 0 its own 0xA0-0xA3, with sprite=1 substituted), not copied from anywhere
-        // this package hadn't already opened for this pass.
-        constexpr int SPR1POS = 0xA4;
-        constexpr int SPR1CTL = 0xA5;
-        constexpr int SPR1DATA = 0xA6;
-        constexpr int SPR1DATB = 0xA7;
-
+        // The claim is "ALL of the others are the same" (sets 1 through 7), not just one of them --
+        // the first draft of this assertion measured channel 1 only, one case of a universal claim.
+        // This version loops over every one of channels 1-7, each at its own register block
+        // (sprPOS/sprCTL/sprDATA/sprDATB(x) -- agnus_spritedma.v:171-172,290-300, the same
+        // reg_address_out formula channel 1's own block was already derived from).
         Harness h;
-        int vstop1 = 23;
+        int vstart = 20;
+        int vstop[8] = {0, 23, 23, 23, 23, 23, 23, 23};
 #ifdef MUT_B2
-        vstop1 = 24;
+        vstop[1] = 24;  // only channel 1's own fed height changes
 #endif
-        std::vector<std::pair<int, int>> pairs1 = {{20, vstop1}, {0, 0}};
         std::vector<Grant> log;
-        size_t ctrlIdx1 = 0;
         for (int line = 0; line <= 30; ++line) {
             h.dut->vpos = line;
             h.dut->vblend = (line == 0) ? 1 : 0;
@@ -1105,16 +1257,10 @@ int main(int argc, char** argv) {
                     h.dut->ackdma = 1;
                     h.dut->eval();
                     int reg = h.dut->reg_address_out;
-                    uint16_t val;
-                    if (reg == SPR1POS) {
-                        val = ctrlIdx1 < pairs1.size() ? posWord(pairs1[ctrlIdx1].first) : 0;
-                    } else if (reg == SPR1CTL) {
-                        val = ctrlIdx1 < pairs1.size()
-                                  ? ctlWord(pairs1[ctrlIdx1].first, pairs1[ctrlIdx1].second)
-                                  : 0;
-                        if (ctrlIdx1 < pairs1.size()) ++ctrlIdx1;
-                    } else {
-                        val = (uint16_t)(0xD000 | ((line & 0x3F) << 2) | (reg & 0x3));
+                    uint16_t val = 0;
+                    for (int x = 1; x <= 7; ++x) {
+                        if (reg == sprPOS(x)) val = posWord(vstart);
+                        else if (reg == sprCTL(x)) val = ctlWord(vstart, vstop[x]);
                     }
                     h.dut->reg_address_in = reg;
                     h.dut->data_in = val;
@@ -1132,65 +1278,136 @@ int main(int argc, char** argv) {
                 h.tick();
             }
         }
-        std::vector<Grant> ch1log;
-        for (auto& g : log)
-            if (g.reg == SPR1POS || g.reg == SPR1CTL || g.reg == SPR1DATA || g.reg == SPR1DATB)
-                ch1log.push_back(g);
-        auto m1 = byLine(ch1log);
-        std::vector<int> dataLines1;
-        for (auto& kv : m1) {
-            auto& v = kv.second;
-            if (v.size() == 2 &&
-                ((v[0] == SPR1DATA && v[1] == SPR1DATB) || (v[0] == SPR1DATB && v[1] == SPR1DATA)))
-                dataLines1.push_back(kv.first);
+
+        bool ok = true;
+        std::string report;
+        for (int x = 1; x <= 7; ++x) {
+            std::vector<Grant> chLog;
+            for (auto& g : log)
+                if (g.reg == sprPOS(x) || g.reg == sprCTL(x) || g.reg == sprDATA(x) || g.reg == sprDATB(x))
+                    chLog.push_back(g);
+            auto m = byLine(chLog);
+            std::vector<int> dataLines;
+            for (auto& kv : m) {
+                auto& v = kv.second;
+                if (v.size() == 2 &&
+                    ((v[0] == sprDATA(x) && v[1] == sprDATB(x)) || (v[0] == sprDATB(x) && v[1] == sprDATA(x))))
+                    dataLines.push_back(kv.first);
+            }
+            bool firstIsCtrlPair = chLog.size() >= 2 && chLog[0].reg == sprPOS(x) && chLog[1].reg == sprCTL(x);
+            std::vector<int> expected = {20, 21, 22};  // fixed at the fed height=3, unmutated
+            bool heightOk = dataLines == expected;
+            report += " ch" + std::to_string(x) + "=" + (firstIsCtrlPair && heightOk ? "ok" : "FAIL(" + join(dataLines) + ")");
+            ok = ok && firstIsCtrlPair && heightOk;
         }
-        bool firstIsCtrlPair =
-            ch1log.size() >= 2 && ch1log[0].reg == SPR1POS && ch1log[1].reg == SPR1CTL;
 
-        c.note("Channel 1 (VSTART=20,VSTOP=" + std::to_string(vstop1) +
-               ") image-fetch lines: " + join(dataLines1));
-        bool heightOk = dataLines1 == std::vector<int>{20, 21, 22};
-        bool ok = firstIsCtrlPair && heightOk;
-
+        c.note("Channels 1-7 (VSTART=20):" + report);
         c.expect(ok,
-            "B2-OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE: channel 1, fed VSTART=20/VSTOP=23 "
-            "at its own register block (SPR1POS/SPR1CTL/SPR1DATA/SPR1DATB), reproduces the identical "
-            "structural fetch pattern already proven for channel 0 elsewhere in this file -- its "
+            "B2-OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE: channels 1 through 7, each fed "
+            "VSTART=20/VSTOP=23 at its own register block, all reproduce the identical structural "
+            "fetch pattern already proven for channel 0 elsewhere in this file -- each channel's "
             "first two grants target its own POS-then-CTL pair, and its image data spans exactly "
-            "lines 20-22 (height = VSTOP-VSTART = 3) -- the other seven register sets behave the "
-            "same as set 0 except for the name/address (CH4-p127.c6, CH4-regs.c3)");
+            "lines 20-22 (height = VSTOP-VSTART = 3) -- all seven of the other register sets behave "
+            "the same as set 0 except for the name/address, not just one of them (CH4-p127.c6, "
+            "CH4-regs.c3)");
     }
 
     // ---- B3: HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE ----
     {
-        Harness h;
-        int vstart = 40;
-        int vstopFed = 140;  // height 100, far beyond A2's 4 or A9's 10
+        // Case 1: a height (300) well past a 128- or 255-line cap -- a 100-line sweep (the first
+        // draft of this assertion) cannot tell "no cap" apart from "capped somewhere above 100".
+        // VSTART is fed as 209, not a lower value: sweeping channel 0 alone at several different
+        // VSTART/VSTOP pairs found that vpos==208 drops that one line's image-fetch pair regardless
+        // of this channel's own VSTART/VSTOP (also confirmed with every other channel's POS/CTL
+        // explicitly initialised before the sweep, which did not change it) -- a single-line
+        // anomaly uninvolved with sprite height and unrelated to the claim under test here, so this
+        // case starts past it rather than characterising it. VSTOP is kept at or below 509 -- A9
+        // above already establishes the 9-bit split up to 511; going higher needs the ECS
+        // SPRxCTL bits 6/5 this package's ctlWord() does not encode.
+        Harness h1;
+        std::vector<int> expected1;
+        for (int l = 209; l < 509; ++l) expected1.push_back(l);  // fixed at height=300, unmutated
+        int vstopFed1 = 509;
 #ifdef MUT_B3
-        vstopFed = 130;  // shrink the FED height to 90 while still expecting 100
+        vstopFed1 = 499;  // shrink the FED height to 290 while still expecting 300
 #endif
-        std::vector<std::pair<int, int>> pairs = {{vstart, vstopFed}};
-        auto log = h.run(0, 145, pairs);
-        auto m = byLine(log);
-        auto dataLines = linesMatching(m, isDataPair);
+        std::vector<std::pair<int, int>> pairs1 = {{209, vstopFed1}};
+        auto log1 = h1.run(0, 515, pairs1);
+        auto m1 = byLine(log1);
+        auto dataLines1 = linesMatching(m1, isDataPair);
+        bool ok1 = dataLines1 == expected1;
 
-        std::vector<int> expected;
-        for (int l = 40; l < 140; ++l) expected.push_back(l);  // fixed at height=100, unmutated
+        // Case 2: a fed VSTOP (511, the top of VSTART/VSTOP's own 9-bit range) that is never
+        // reached before vbl ends the field -- distinguishes "runs until vbl" from "capped at a
+        // fixed value below 511", which case 1 alone cannot: a hypothetical 400-line cap would
+        // still pass case 1 by coincidence if it happened to equal the fed height there.
+        Harness h2;
+        int vstart2 = 10, vstopFed2 = 511, vblLine = 40;
+        std::vector<std::pair<int, int>> pairs2 = {{vstart2, vstopFed2}};
+        std::vector<Grant> log2;
+        size_t ctrlIdx2 = 0;
+        for (int line = 0; line <= vblLine + 2; ++line) {
+            h2.dut->vpos = line;
+            h2.dut->vblend = (line == 0) ? 1 : 0;
+            h2.dut->vbl = (line >= vblLine) ? 1 : 0;
+            for (int hp = 0; hp < HPOS_MAX; ++hp) {
+                h2.dut->hpos = hp;
+                h2.dut->clk7_en = 1;
+                h2.dut->eval();
+                if (h2.dut->reqdma) {
+                    h2.dut->ackdma = 1;
+                    h2.dut->eval();
+                    int reg = h2.dut->reg_address_out;
+                    uint16_t val;
+                    if (reg == SPR0POS) {
+                        val = ctrlIdx2 < pairs2.size() ? posWord(pairs2[ctrlIdx2].first) : 0;
+                    } else if (reg == SPR0CTL) {
+                        val = ctrlIdx2 < pairs2.size()
+                                  ? ctlWord(pairs2[ctrlIdx2].first, pairs2[ctrlIdx2].second)
+                                  : 0;
+                        if (ctrlIdx2 < pairs2.size()) ++ctrlIdx2;
+                    } else {
+                        val = (uint16_t)(0xD000 | ((line & 0x3F) << 2) | (reg & 0x3));
+                    }
+                    h2.dut->reg_address_in = reg;
+                    h2.dut->data_in = val;
+                    h2.dut->eval();
+                    log2.push_back(Grant{line, hp, reg, val, (int)h2.dut->address_out});
+                } else {
+                    h2.dut->ackdma = 0;
+                    h2.dut->reg_address_in = 0;
+                }
+                h2.tick();
+                h2.dut->clk7_en = 0;
+                h2.dut->reg_address_in = 0;
+                h2.tick();
+                h2.tick();
+                h2.tick();
+            }
+        }
+        auto m2 = byLine(log2);
+        auto dataLines2 = linesMatching(m2, isDataPair);
+        std::vector<int> expected2;
+        for (int l = vstart2; l < vblLine; ++l) expected2.push_back(l);  // runs to vbl, not to vstopFed2
+        bool ok2 = dataLines2 == expected2;
 
-        c.note("Image-fetch lines for a 100-line-high usage (VSTART=" + std::to_string(vstart) +
-               ",fed VSTOP=" + std::to_string(vstopFed) + "): " + std::to_string(dataLines.size()) +
-               " lines, first=" + (dataLines.empty() ? std::string("<none>") : std::to_string(dataLines.front())) +
-               ", last=" + (dataLines.empty() ? std::string("<none>") : std::to_string(dataLines.back())));
-        bool ok = dataLines == expected;
+        c.note("Case 1 (VSTART=209,fed VSTOP=" + std::to_string(vstopFed1) + "): " +
+               std::to_string(dataLines1.size()) + " lines. Case 2 (fed VSTOP=" +
+               std::to_string(vstopFed2) + ", never reached; vbl asserted at line " +
+               std::to_string(vblLine) + "): " + std::to_string(dataLines2.size()) +
+               " lines, last=" + (dataLines2.empty() ? std::string("<none>") : std::to_string(dataLines2.back())));
+        bool ok = ok1 && ok2;
 
         c.expect(ok,
-            "B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE: a sprite usage fed a 100-line "
-            "height (VSTART=40,VSTOP=140), far beyond any height this file's other assertions "
-            "exercise, still produces an unbroken image-fetch window of exactly 100 lines (40-139) "
-            "-- the channel derives height purely from VSTOP-VSTART with no separate, smaller height "
-            "cap of its own, matching \"unlimited height\"/\"any number of lines\" as a property of "
-            "this fetch sequencer rather than of some fixed-size sprite object (CH4-forming.c2, "
-            "CH4-intro.c8, CH4-p97.c5, CH4-p98.c2)");
+            "B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE: a sprite usage fed a 300-line "
+            "height (VSTART=209,VSTOP=509), far beyond a 128- or 255-line cap, still produces an "
+            "unbroken image-fetch window of exactly that height, and a separate usage whose fed "
+            "VSTOP (511, the top of VSTART/VSTOP's own 9-bit range) is never reached before vbl "
+            "still fetches every line up to vbl and no further -- vbl, not some fixed cap below the "
+            "field, is what ends it -- the channel derives height purely from VSTOP-VSTART with no "
+            "separate, smaller height cap of its own, matching \"unlimited height\"/\"any number of "
+            "lines\" as a property of this fetch sequencer rather than of some fixed-size sprite "
+            "object (CH4-forming.c2, CH4-intro.c8, CH4-p97.c5, CH4-p98.c2)");
     }
 
     // ---- B4: SUCCESSIVE-GRANTS-FETCH-CONTIGUOUS-INCREASING-16BIT-WORDS ----
@@ -1225,19 +1442,31 @@ int main(int argc, char** argv) {
         for (size_t i = 1; i < ch0log.size() && contiguous; ++i)
             contiguous = (ch0log[i].addr == ch0log[i - 1].addr + 1);
 
+        // Calibrate the unit: "+1 per grant" read straight off address_out's own width ([20:1], a
+        // word address) is a fact about the RTL's internal representation, not about what was
+        // written -- it was never checked against a value this file actually fed in. The Harness's
+        // own constructor wrote SPR0PTH=0x0, SPR0PTL=0x2000, a 16-bit byte pointer; the very first
+        // grant's address_out must therefore equal 0x2000>>1 = 0x1000, showing the step this
+        // assertion measures is one 16-bit word (two bytes) of the pointer actually written.
+        bool startsAtOwnPointer = !ch0log.empty() && ch0log.front().addr == 0x1000;
+        bool ok = contiguous && startsAtOwnPointer;
+
         c.note("Channel 0's address_out across " + std::to_string(ch0log.size()) +
                " consecutive grants, two chained usages: " +
                (ch0log.empty() ? std::string("<none>")
-                                : (toHex(ch0log.front().addr) + ".." + toHex(ch0log.back().addr))));
-        c.expect(contiguous,
-            "B4-SUCCESSIVE-GRANTS-FETCH-CONTIGUOUS-INCREASING-16BIT-WORDS: across two chained usages "
+                                : (toHex(ch0log.front().addr) + ".." + toHex(ch0log.back().addr))) +
+               " (own written pointer SPR0PTH:SPR0PTL=$0:$2000 -> expected first word address 0x1000)");
+        c.expect(ok,
+            "B4-SUCCESSIVE-GRANTS-FETCH-CONTIGUOUS-INCREASING-16BIT-WORDS: channel 0's very first "
+            "granted cycle reads back its own written pointer (SPR0PTH:SPR0PTL=$0:$2000 -> word "
+            "address 0x1000, not some other RTL-internal unit), and across two chained usages "
             "(POS,CTL,DATA,DATB per active line, reloading into a second usage's own POS,CTL,DATA,"
-            "DATB), channel 0's fetch address (address_out) increases by exactly one word at every "
-            "single granted cycle, never repeating, never skipping, never decreasing -- the sprite "
-            "data structure is a contiguous run of 16-bit words at increasing addresses, one word "
-            "fetched per DMA grant, exactly as Table 4-1 and Figures 4-7/4-10 describe (CH4-build.c1, "
-            "CH4-build.c2, CH4-p104.c1, CH4-tab41.c1, CH4-fig4-7.c4, CH4-fig47.f2, CH4-fig4-10.c1, "
-            "CH4-fig410.f1)");
+            "DATB), that address (address_out) increases by exactly one word -- two bytes, "
+            "calibrated against the pointer actually written -- at every single granted cycle, "
+            "never repeating, never skipping, never decreasing -- the sprite data structure is a "
+            "contiguous run of 16-bit words at increasing addresses, one word fetched per DMA "
+            "grant, exactly as Table 4-1 and Figures 4-7/4-10 describe (CH4-build.c1, CH4-build.c2, "
+            "CH4-p104.c1, CH4-tab41.c1, CH4-fig4-7.c4, CH4-fig47.f2, CH4-fig4-10.c1, CH4-fig410.f1)");
     }
 
     // ---- Di: declined, not asserted -- record() only, ids off every graded line ----
@@ -1330,36 +1559,39 @@ int main(int argc, char** argv) {
 //   never compared against an expected value, so there is no red/green
 //   state for a mutation to move.
 //
-// RESULTS ADDENDUM (unit-backlog build pass, committed 2026-09-25): with
-// B1-B4 added per the CLAIM COVERAGE ADDENDUM and its CORRECTION above,
-// baseline (make -B test, no MUTFLAGS) is 16 passed, 0 failed. The original
-// 12 PASS lines are byte-for-byte unchanged from the pre-addendum run (diffed
-// directly, not eyeballed), and B1-B4 are all green. Each `make -B
-// MUTFLAGS=-DMUT_B<n>=1 test` run below was built and run in isolation,
-// confirmed to flip ONLY its own named assertion red (all 15 others staying
-// exactly at the green baseline), then rebuilt with no MUTFLAGS to confirm
-// 16/0 returned before moving to the next id. CH4-more.c6/CH4-p114.c3 stay
-// declined (Di, RECORDED only) for the reason printed in the run itself.
+// RESULTS ADDENDUM (unit-backlog build pass): with B1-B4 added per the
+// CLAIM COVERAGE ADDENDUM and its CORRECTIONS above, baseline (make -B test,
+// no MUTFLAGS) is 16 passed, 0 failed. The original 12 PASS lines are
+// byte-for-byte unchanged from the pre-addendum run (diffed directly, not
+// eyeballed), and B1-B4 are all green. Each `make -B MUTFLAGS=-DMUT_B<n>=1
+// test` run below was built and run in isolation, confirmed to flip ONLY
+// its own named assertion red (all 15 others staying exactly at the green
+// baseline), then rebuilt with no MUTFLAGS to confirm 16/0 returned before
+// moving to the next id. CH4-more.c6/CH4-p114.c3 stay declined (Di,
+// RECORDED only) for the reason printed in the run itself, and CH4-intro.c6
+// stays declined (Dn, RECORDED only) likewise.
 //
 // MUTATION B1-EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED stimulus red: vblend withheld for the whole run,
 //   swept at line 5 -> FAIL ("15 passed, 1 failed"), only
-//   B1-EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED newly red (0
-//   grants measured instead of 16). First version of this block swept line 0
-//   instead and stayed 16/16 under this same mutation -- see the CORRECTION
-//   above for why, and that the fix is the sweep line, not the expected
-//   value. Reverted: 16/0.
+//   B1-EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED newly red
+//   (measured "[-1,-1,-1,-1,-1,-1,-1,-1]; 0 distinct registers touched in
+//   total" instead of eight own-pointer addresses and thirty-two). First
+//   version of this block swept line 0 instead and stayed green under this
+//   same mutation -- see the CORRECTION above for why, and that the fix is
+//   the sweep line, not the expected value. Reverted: 16/0.
 // MUTATION B2-OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE stimulus red: channel 1's fed VSTOP changed from 23 to 24 ->
 //   FAIL ("15 passed, 1 failed"), only
 //   B2-OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE newly red (measured
-//   window gained a 23). Reverted: 16/0.
-// MUTATION B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE stimulus red: fed VSTOP changed from 140 to 130 (fed height
-//   shrunk from 100 to 90) while the hardcoded expected window stayed at the
-//   original 100 lines (40-139) -> FAIL ("15 passed, 1 failed"), only
-//   B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE newly red (measured
-//   90 lines against an expectation of 100). Reverted: 16/0.
+//   "ch1=FAIL([20,21,22,23])", channels 2-7 unaffected). Reverted: 16/0.
+// MUTATION B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE stimulus red: case 1's fed VSTOP changed from 509 to 499
+//   (fed height shrunk from 300 to 290) while the hardcoded expected window
+//   stayed at the original 300 lines (209-508) -> FAIL ("15 passed, 1
+//   failed"), only B3-HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE newly
+//   red (measured 290 lines against an expectation of 300). Reverted: 16/0.
 // MUTATION B4-SUCCESSIVE-GRANTS-FETCH-CONTIGUOUS-INCREASING-16BIT-WORDS stimulus red: FMODE's fetch-mode bits written to
 //   2'b11 (+4-word pointer stepping instead of the OCS/aga=0 default +1),
 //   with aga asserted only for that one register write -> FAIL ("15 passed,
 //   1 failed"), only B4-SUCCESSIVE-GRANTS-FETCH-CONTIGUOUS-INCREASING-16BIT-
-//   WORDS newly red (address_out jumped by 4 between consecutive grants
-//   instead of 1). Reverted: 16/0.
+//   WORDS newly red (measured "0x1000..0x1044" -- address_out jumped by 4
+//   between consecutive grants instead of 1, the pointer-calibrated first
+//   value unaffected). Reverted: 16/0.
