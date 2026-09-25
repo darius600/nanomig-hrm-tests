@@ -64,7 +64,10 @@ Testable form: presenting `reg_address_in` = 9'h020[8:1] together with a
 Cited by: `opus:8-dsk.c32` (p.241), `opus:8-dma.c11` (p.246),
 `sol:8-dskpth.c7` (p.246, twin), `opus:8-appA-dskpt.c1` (p.279),
 `sol:8-appa-dskpth.c1` (p.279, twin), `opus:8-appB-dskpth.c1` (p.289),
-`sol:8-appb-dskpth.c1` (p.289, twin).
+`sol:8-appb-dskpth.c1` (p.289, twin), `opus:B-dskpth.addr` (p.289, the same
+row read for its address rather than its bit-width wording -- the quoted
+text is identical to `opus:8-appB-dskpth.c1`'s, and this testable form
+already establishes it).
 
 ### P2 -- DSKPTL is decoded at chip-register offset $DFF022
 
@@ -75,7 +78,10 @@ Testable form: presenting `reg_address_in` = 9'h022[8:1] together with a
 `data_in` value causes that value's bits [15:1] to reach `address_out[15:1]`.
 
 Cited by: `opus:8-appA-dskpt.c6` (p.279), `sol:8-appa-dskptl.c1` (p.279,
-twin), `opus:8-appB-dskptl.c1` (p.289), `sol:8-appb-dskptl.c1` (p.289, twin).
+twin), `opus:8-appB-dskptl.c1` (p.289), `sol:8-appb-dskptl.c1` (p.289, twin),
+`opus:B-dskptl.addr` (p.289, the same row read for its address rather than
+its field-width wording -- the quoted text is identical to
+`opus:8-appB-dskptl.c1`'s, and this testable form already establishes it).
 
 ### P3 -- DSKPTH and DSKPTL are write-only: neither is readable back through this boundary -- DECLINED 2026-09-15 (repair lot D)
 
@@ -415,13 +421,15 @@ simply wired to always report red.
 
 ## Claims accounted for
 
-All 55 claims in `ch8-disk-dma-pointer.jsonl` are accounted for: P1 (7),
-P2 (4), P3 (8), P4A (2), P4B (2), P5 (4), P6 (5 direct + 2 partial halves of
-P7's pair claims), P7 (7, 2 of which contribute only their pair-membership
-half to this count and their evenness half to P6), P8 (7), P9 (2), P10 (2),
-P11A (3), P11B (2). The CPU-access-size, requester-identity and
-chip-memory halves noted above belong to claims already fully cited under
-P6/P7/P9 for their other, graded half.
+57 claims are accounted for: the original 55 of `ch8-disk-dma-pointer.jsonl`
+plus 2 routed in separately (`opus:B-dskpth.addr`, `opus:B-dskptl.addr`) --
+P1 (8, including `opus:B-dskpth.addr`), P2 (5, including
+`opus:B-dskptl.addr`), P3 (8), P4A (2), P4B (2), P5 (4), P6 (5 direct + 2
+partial halves of P7's pair claims), P7 (7, 2 of which contribute only their
+pair-membership half to this count and their evenness half to P6), P8 (7),
+P9 (2), P10 (2), P11A (3), P11B (2). The CPU-access-size, requester-identity
+and chip-memory halves noted above belong to claims already fully cited
+under P6/P7/P9 for their other, graded half.
 
 **2026-09-15 repair:** P4A's 2, P4B's 2 and P11B's 2 claims (6 of the 55)
 are now **declined**, not graded -- see their sections above. They remain
