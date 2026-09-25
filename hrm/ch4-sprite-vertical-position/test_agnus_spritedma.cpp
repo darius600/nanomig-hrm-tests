@@ -421,15 +421,14 @@
 // checks.expect()), so there is no red/green state for a mutation to
 // move, same as SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED above.
 //
-// UID PLACEMENT: tools/check_uid_placement.py's uid pattern requires a
-// `<reader>:` prefix (`opus:`/`sol:` per uid_expand.py's BASE regex) and
-// reads zero uids from this package's bare id convention (`CH4-p107.c8`,
-// `APPC2-SPRxCTL.chip`, ...) at any commit, old or new -- confirmed by
-// running uids_in() directly against this file's own printed lines. Its
-// "packages asserting AND declining one : 0" is therefore not a
-// verification of this package and is not cited as one. Checked by hand
-// instead, against the full post-extension run: each of the 9 graded ids
-// appears on a PASS: line and never on a RECORDED: line; each of the 5
+// UID PLACEMENT: tools/check_uid_placement.py reads a `<reader>:`-prefixed
+// uid (`opus:`/`sol:` per uid_expand.py's BASE regex) and, separately, a
+// bare id in this package's own convention (`CH4-p107.c8`,
+// `APPC2-SPRxCTL.chip`, ...) under its own `bare:` pseudo-prefix (the
+// tool's BARE regex) -- it is not blind to this package. Its "packages
+// asserting AND declining one : 0" on this file is therefore a real check,
+// not just a hand check, and by hand the same holds: each of the 9 graded
+// ids appears on a PASS: line and never on a RECORDED: line; each of the 5
 // recorded ids appears on a RECORDED: line and never on a PASS:/FAIL:
 // line. No id is printed on both a PASS: and a RECORDED: line.
 // ============================================================================
