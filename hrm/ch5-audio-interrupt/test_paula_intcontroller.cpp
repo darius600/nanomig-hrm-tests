@@ -783,7 +783,7 @@ int main(int argc, char** argv) {
             "stayed 7 (inactive) while INTEN was clear, and went active "
             "(_ipl=%d, level 4) the instant INTEN was set with no other "
             "stimulus changed - INTEN gates every other enable bit at once. "
-            "[claims: 5-appA-p280.c20, A-int.b14]",
+            "[claims:",
             active_ipl);
         checks.expect(inactive_without_inten && active_with_inten, buf);
     }
