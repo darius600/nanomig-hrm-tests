@@ -152,6 +152,33 @@ Proposition: DMACON's (master) DMAEN bit is one of DMAON's required terms —
 with DSKLEN's DMAEN and DMACON's DSKEN both held at the "enabled" value,
 clearing DMACON's master DMAEN alone must make DMAON read 0.
 
+### A6 — DMACON_BIT4_NAMED_DSKEN_DISK_DMA_ENABLE (Appendix A's own DMACON
+bit-4 row, p.278; written from the routed claims' quotations alone, before
+the full claims file or any RTL beyond what A1-A5 already disclosed above
+was opened for this proposition)
+
+| uid | page | quote |
+|---|---|---|
+| `APPA-dmacon.c17` | 278 | "04    DSKEN       Disk DMA enable" |
+| `CH4-appA-dmacon.c24` | 278 | "                 04    DSKEN       Disk DMA enable" |
+| `5-appA-p278.c21` | 278 | "                 04    DSKEN       Disk DMA enable" |
+| `A-dmacon.b04` | 278 | "                 04    DSKEN       Disk DMA enable" |
+
+Proposition, read literally off p.278: DMACON's own bit-4 row, in the same
+Appendix A register table and on the same printed page as A2's DSKBYTR
+bit-14 row above, names bit 4 `DSKEN` and describes it in one line as "Disk
+DMA enable" -- the disk channel's own DMA-enable term, as distinct from
+DSKLEN's own DMAEN bit (A3) and from DMACON's master DMAEN bit (A5). Four
+claims, from four independent readings/cross-reads of this identical row (a
+mix of chapter-4 and chapter-5 `classify.package` labels, per this
+package's own spec-stage file), all restate the same fact.
+
+Which grading disposition applies to these four ids -- a new assertion, or
+writing them onto whichever existing assertion already measures the whole
+of what this row states, at this package's own `paula` boundary -- is
+decided after this specification is committed, from the full claims file's
+own `routing.route` and `routing.how`.
+
 ## Control case
 
 **A1 (`DMAON_P248_THREE_TERM_COMPOSITION`) is this package's control case.**
