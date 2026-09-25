@@ -441,6 +441,8 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    void note(const std::string& msg)   { std::cout << "MEASURED: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -504,7 +506,7 @@ int main(int argc, char** argv) {
             "agnus_blitter.v:500-501. 6-intro.c19, ch6-intro.c19, "
             "6-blitter-key-points.c1, ch6-keypoints.c2, 6-blitter-done-flag.c1, "
             "ch6-done.c1, 6-line-mode.c102, ch6-linesum.c27, 6-appa-registers.c43, "
-            "6-appa-registers.c66, ch6-appa-bltsize.c7 .");
+            "6-appa-registers.c66, ch6-appa-bltsize.c7, ch6-line.c43 .");
     }
 
     // ---------------- SIZE-SINGLE-WRITE-SETS-BOTH-FIELDS (pp.170-171) ----------------
@@ -661,7 +663,37 @@ int main(int argc, char** argv) {
             "6-appa-registers.c64 .");
     }
 
-    // ---------------- SIZE-ZERO-HEIGHT-WRAPS-TO-1024 (p.171) ----------------
+    // ------------- NOT-ASSERTED-UNIT-CONVERSION (recorded, not asserted) -------------
+    {
+        // Both claims restate the width field's 1-to-64-word range (the fact
+        // SIZE-WIDTH-FIELD-BITS-LITERAL and SIZE-ZERO-WIDTH-WRAPS-TO-64 above
+        // already measure, by counting destination writes) in a unit this
+        // module has no port for: BLTSIZE's width field is decoded here as a
+        // word count alone (agnus_blitter.v:522); there is no bit-count port
+        // and no pixel-count port anywhere on agnus_blitter, so "16 to 1024
+        // bits" and "1024 pixels max" are the manual's own x16 arithmetic,
+        // not something this boundary can observe. See this file's header,
+        // "NOT ASSERTED - UNIT CONVERSION", for the full reasoning, including
+        // why 6-appc-big-blits.c24 is withdrawn whole rather than kept on a
+        // width assertion with its pixel clause silently uncounted, and the
+        // independent, pre-existing precedent in hrm/ch6-blitter-ecs's own
+        // "NOT ASSERTED - PIXEL/WORD UNIT CONVERSION" section for the
+        // identical page-308 pixel claim.
+        checks.record(
+            "NOT ASSERTED - UNIT CONVERSION: absent_signal: a bit-count or "
+            "pixel-count port on agnus_blitter (none exists - only the "
+            "word-count `width` field is decoded, agnus_blitter.v:522); "
+            "reason_kind: absent. ch6-dma.c45 (p.171, restated \"A width of "
+            "1 to 64 words is 16 to 1024 bits\") and 6-appc-big-blits.c24 "
+            "(p.308, 'w = Width  (6 bit width  = 1024 pixels max)', restated "
+            "\"Original-chip-set BLTSIZE width has a 1024-pixel maximum\") "
+            "both state the width field's range in a unit this module "
+            "cannot deliver a signal for - declined here rather than graded "
+            "on SIZE-WIDTH-FIELD-BITS-LITERAL or SIZE-ZERO-WIDTH-WRAPS-TO-64, "
+            "whose own words-only claims stay exactly as they were.");
+    }
+
+    // ---------------- SIZE-ZERO-HEIGHT-WRAPS-TO-1024 (pp.171, 308) ----------------
     {
         Harness h;
         start_blit(h, 1, 0);  // height field written as 0
@@ -678,7 +710,8 @@ int main(int argc, char** argv) {
             "wrap, corroborating SIZE-HEIGHT-FIELD-BITS-LITERAL's 1-to-1023 sweep "
             "for the other end of the range). `~|data_in[15:6]` "
             "agnus_blitter.v:556 turns a written zero height into 1024. "
-            "6-dma-channels.c51, ch6-dma.c51, ch6-dma.c58b, 6-appa-registers.c61 .");
+            "6-dma-channels.c51, ch6-dma.c51, ch6-dma.c58b, 6-appa-registers.c61, "
+            "6-appc-big-blits.c22 .");
     }
 
     // ---------------- SIZE-WIDTH-DEFINES-ROW-HEIGHT-COUNTS-ROWS (pp.171,172,200) ----------------
