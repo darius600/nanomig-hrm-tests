@@ -7,15 +7,15 @@ test that measures the RTL doing something the manual does not describe.
 This suite stops there. The decision is the specialist's, and each page's
 *Suggested change* states one option, not a verdict.
 
-**47 findings ask for a review, in 25 modules.** They are listed by the
+**48 findings ask for a review, in 25 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
 
 | findings | why no RTL review |
 |---|---|
-| 12 | filed against the printed page or the classification: no RTL change follows |
-| 5 | filed against the RTL, but a source observation no test measures yet: it needs a test before it asks anything |
+| 14 | filed against the printed page or the classification: no RTL change follows |
+| 4 | filed against the RTL, but a source observation no test measures yet: it needs a test before it asks anything |
 | 7 | withdrawn |
 
 The marks and this list are derived from each page's header table by
@@ -35,12 +35,13 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 |---|---|---|
 | [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | a graded red |
 
-## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v) — 6
+## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v) — 7
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23, where the AA list gives an Alice $22 | a graded red |
 | [NM-AA-005](findings/NM-AA-005.md) | the long-line toggle runs, but no line is a colour clock longer | a graded red |
+| [NM-HRM-010](findings/NM-HRM-010.md) | the NTSC line is 227 colour clocks every time, where the manual alternates 228 and 227 | a graded red |
 | [NM-HRM-011](findings/NM-HRM-011.md) | PAL vertical blanking is 26 lines, the manual says 29 | a graded red |
 | [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | a graded red |
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | a graded red |

@@ -1,6 +1,6 @@
 # Findings
 
-**45 of the 66 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**46 of the 68 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each has the
 > same six parts — what the HRM says, what NanoMig does, what the other four say,
@@ -127,7 +127,7 @@ never disagree. Eight values occur:
 | `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested |
 | `**withdrawn**` | nothing; kept so the claim is not raised a second time |
 
-**If you have one evening: 45 of these 66 ask you to decide something.** The
+**If you have one evening: 46 of these 68 ask you to decide something.** The
 rest are withdrawn, answered, or observations kept for context. The table below
 is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
@@ -154,7 +154,7 @@ it for what an unresolvable case looks like, not for something to do.
 | [NM-HRM-006](findings/NM-HRM-006.md) | DDFSTRT bit H3 is respected in lores, where p.91 says hires only | open · page · **red** | `hrm/ch3-ddf-fetch-window` | **unanimous with NanoMig**: all four respect H3 at every resolution; what they gate on the chipset is register bit 1 |
 | [NM-HRM-007](findings/NM-HRM-007.md) | hires fetch cannot reach the manual's 49 words | open · RTL · **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** for the first two; Copperline asserts an even hires word count in its own test |
 | [NM-HRM-008](findings/NM-HRM-008.md) | playfield-1 collision depends on playfield 2 | open · RTL · **red** | `hrm/ch3-collision-registers` | **all four** gate playfield 1 on playfield 2 in single-playfield mode |
-| [NM-HRM-010](findings/NM-HRM-010.md) | the scan line is a whole number of colour clocks | open · RTL · source observation | `hrm/ch3-beam-counters-and-blanking` | Denise and Copperline both alternate whole line lengths |
+| [NM-HRM-010](findings/NM-HRM-010.md) | the NTSC line is 227 colour clocks every time, where the manual alternates 228 and 227 | open · RTL · **red** | `hrm/ch3-beam-counters-and-blanking` · `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)` and its bundled form | **unanimous against NanoMig**: WinUAE, vAmiga, Denise and Copperline all make every other NTSC line 228 colour clocks; NanoMig toggles the long-line bit and keeps every line at 227 |
 | [NM-HRM-011](findings/NM-HRM-011.md) | PAL vertical blanking is 26 lines, manual says 29 | open · RTL · **red** | `hrm/ch3-beam-counters-and-blanking` | **B6** for the first two; Denise's PAL-NTSC gap is 5 lines like NanoMig's, not the manual's 8 |
 | [NM-HRM-014](findings/NM-HRM-014.md) | the manual applies its own ECS pointer note inconsistently | open · RTL · source observation | `hrm/ch3-register-map-agnus` | one of four extends every DMA pointer by chipset; no implementation can settle a question about the manual's own text |
 | [NM-HRM-015](findings/NM-HRM-015.md) | BRDNTRAN is declared and never connected | open · RTL · **red** | `hrm/ch3-horizontal-display-window` | **B3** for the first two; **Copperline implements it, with a test** |
@@ -163,7 +163,7 @@ it for what an unresolvable case looks like, not for something to do.
 | [NM-HRM-019](findings/NM-HRM-019.md) | SPRxCTL bit 4 (SHSH1) is not implemented | open · RTL · **red** | `hrm/ch3-sprite-registers` | **C2** for the first two; Denise and Copperline both implement bit 4 |
 | [NM-HRM-020](findings/NM-HRM-020.md) | BLTSIZV is not gated on ECS, while its siblings are | open · RTL · **red** | `hrm/ch6-blitter-ecs` | **A2** — **all four** gate it; NanoMig alone does not |
 | [NM-HRM-021](findings/NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | open · RTL · **red** | `hrm/ch6-blitter-ecs` | **C1**; Denise implements it and ECS-gates it |
-| [NM-HRM-022](findings/NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | open · RTL · **red** | `hrm/ch6-blitter-ecs` | **B2** — Copperline narrows every DMA pointer by Agnus revision, and WinUAE narrows the Agnus bus on OCS (`memory.cpp:2619-2623`) rather than the register |
+| [NM-HRM-022](findings/NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | open · RTL · **red** | `hrm/ch6-blitter-ecs` · `BLTXPTH-WIDTH-REGARDLESS-OF-ECS`, `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE` | **B2** — Copperline narrows every DMA pointer by Agnus revision, and WinUAE narrows the Agnus bus on OCS (`memory.cpp:2619-2623`) rather than the register |
 | [NM-HRM-023](findings/NM-HRM-023.md) | the ATTACH bit is honoured in the even sprite, not only the odd | open · RTL · **red** | `hrm/ch4-attached-sprites` | **Denise applies the manual's rule exactly**: `(nr & 1) && (value & 0x80)` |
 | [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | open · RTL · **red** | `hrm/ch5-audio-location-pointer` | **B2**, as NM-HRM-003 and NM-HRM-022 — Copperline alone narrows the REGISTER by revision; WinUAE narrows the bus instead (`memory.cpp:2619-2623`) |
 | [NM-HRM-025](findings/NM-HRM-025.md) | volume 64 and volume 63 are the same gain on the multiply path | open · RTL · **red** | `hrm/ch5-audio-volume-scale`, `hrm/ch5-audio-register-map` | **all four** clamp at 64 and keep it distinct; two say why in their own comments |
@@ -205,7 +205,9 @@ it for what an unresolvable case looks like, not for something to do.
 | [NM-HRM-063](findings/NM-HRM-063.md) | FLAG is negative edge-sensitive; the RTL ORs a level | open · RTL · **red** | `hrm/appF-ciab-port-assignments` | **unanimous, and all four implement the page**: WinUAE, vAmiga and Denise raise the bit from a transition and have no level input at all; Copperline keeps the pin state and latches only on `flag_pin_high && !high` |
 | [NM-HRM-064](findings/NM-HRM-064.md) | the board advertises that it can be shut up, and register 4C has no handler | open · RTL · **red** | `hrm/appK-autoconfig-base-address` | **3–1**: WinUAE, Denise and Copperline all handle a write to 4C — Denise gates it on the very capability bit p.433 defines — while vAmiga has no `0x4C` case, its boards being a fixed internal set it plugs and unplugs itself |
 | [NM-HRM-065](findings/NM-HRM-065.md) | register 48 does not configure a Zorro III board, and the implementations side with NanoMig | open · page · **red** | `hrm/appK-autoconfig-base-address` | **two of four do exactly this**: WinUAE and Copperline both configure a Zorro III board on register 44 inside the Zorro II block; vAmiga and Denise have no Zorro III board type and configure on 48 because every board they own is a Zorro II one |
-| [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | open · RTL · **red**, contested | `hrm/ch7-dmacon-register-bits` | **3–1 for the page**: WinUAE, vAmiga and Denise block sprite DMA for the whole bitplane fetch at any plane count; Copperline keeps sprite 7 at $0030 at any plane count. NanoMig leaves sprite 7 all 172 fetches with one lores plane, 90 with two or three, 8 with four or more; TC64, a descendant, already blocks for the whole fetch |
+| [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | open · RTL · **red**, contested | `hrm/ch7-dmacon-register-bits` · the three one-bitplane assertions `DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES`, `DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE`, `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE` | **3–1 for p. 82**: WinUAE, vAmiga and Denise block sprite DMA for the whole bitplane fetch at any plane count; Copperline keeps sprite 7 at $0030 at any plane count. NanoMig leaves sprite 7 all 172 fetches with one lores plane, 90 with two or three, 8 with four or more — the counts Figure 6-9 predicts when its slots are read by plane; TC64, a descendant, already blocks for the whole fetch |
+| [NM-HRM-067](findings/NM-HRM-067.md) | sprites 6 and 7 fetch their control words after horizontal blanking ends, and no implementation keeps them inside it | open · page · **red** | `hrm/ch4-sprite-dma-control` · `SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK` | **two of four end blanking before the last sprite slots, none keeps all sixteen inside it**: vAmiga ends it at $23 and rejects the $0F and $35 bounds p. 23 prints, Denise ends it before the same three fetches NanoMig loses; WinUAE blanks on Denise's own counter and Copperline has no hardwired end, so neither can be placed on the slot grid |
+| [NM-HRM-068](findings/NM-HRM-068.md) | p. 304 gives a PAL line 227.5 colour clocks, p. 23 gives it 227, and every implementation makes it 227 | open · page · **red** | `hrm/ch3-beam-counters-and-blanking` · `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)` and its bundled form | **unanimous with NanoMig and with p. 23**: WinUAE, vAmiga, Denise and Copperline all end every PAL line at 227 colour clocks and alternate line lengths only in NTSC |
 
 ### Withdrawn — kept on purpose
 
@@ -237,7 +239,10 @@ the AUTOCONFIG responder — the one part of the Zorro bus the Minimig family
 implements. The responder is inherited from MiSTer, not NanoMig’s own, and
 NM-HRM-065’s behaviour is inherited with it. Chapter 3 contributes NM-HRM-066,
 measured in chapter 7's DMACON package because only the Agnus top level
-compiles the bitplane and the sprite engine together.
+compiles the bitplane and the sprite engine together. Appendix C contributes
+NM-HRM-067 and NM-HRM-068, both filed against the printed page: the first
+measured in chapter 4's sprite DMA package, the second beside the NTSC half of
+the same p. 304 sentence, which is NM-HRM-010's.
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
 keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to

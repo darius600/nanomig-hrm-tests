@@ -8,8 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_blitter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
-| **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs) |
-| **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs) · `BLTXPTH-WIDTH-REGARDLESS-OF-ECS`, claims `6-appa-registers.c110`, `ch6-appa-bltxpt.c2`, `ch6-appa-bltxpt.c6` (p. 270), and `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE`, claims `6-dma-channels.c67`, `ch6-dma.c69` (p. 172) |
+| **Chapter** | 6 — Blitter, printed p. 172; Appendix A, printed p. 270; Appendix C, printed p. 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 2 red, on one measurement: `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` expects the two chipsets to differ, `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE` expects the direction as well — three bits at `ecs = 0`, five at `ecs = 1`. `BLTCON0L-GATED-BY-ECS`, the same write-and-compare against a register the RTL does gate, is green in the same run |
 | **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — by Agnus revision |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper) and [NM-HRM-024](NM-HRM-024.md) (audio) — the same decision in two other engines |
 
@@ -21,7 +22,17 @@
 
 > "Blitter pointer to x (high 3 bits, 5 bits if ECS)"
 
-Three on OCS, five on ECS.
+**Appendix C, printed p. 309**, in the list of registers ECS changed:
+
+> BLTxPTH 050 W A Blitter pointer to x (high 5 bits, was 3 bits)
+
+**Chapter 6, printed p. 172**, gives the direction:
+
+> The blitter size and pointer registers have increased range under the
+> Enhanced Chip Set (ECS).
+
+Three on OCS, five on ECS. No page gives the original chip set more than
+three.
 
 ---
 
@@ -38,7 +49,11 @@ with no chipset condition anywhere.
 | `BLTAPTH = $001F` at `ecs = 0` | `0xF8000` |
 | `BLTAPTH = $001F` at `ecs = 1` | `0xF8000` |
 
-Identical. An OCS Agnus should drop the top two bits.
+Identical. An OCS Agnus should drop the top two bits and land `0x38000`. The
+package grades this one measurement twice: `BLTXPTH-WIDTH-REGARDLESS-OF-ECS`
+because the two rows are equal, `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE` because the
+`ecs = 0` row is not `0x38000`. Both are red, two of the package's `12 passed,
+4 failed`.
 
 ---
 
