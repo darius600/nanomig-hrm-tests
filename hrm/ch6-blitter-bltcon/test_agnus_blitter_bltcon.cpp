@@ -258,23 +258,31 @@
 // reverse-engineered from the implementation. Recorded here rather than
 // papered over, per the standing rule.
 //
-// This claim bundles five sub-facts in one id. Three of the five are
-// already independently established, under their OWN ids, by
-// AREA-ASH-BITS-15-13-ARE-A-SHIFT-VALUE (SHIFT A VALUE),
+// This claim bundles five sub-facts in one id. The routing record (opened
+// after this specification text, per step 2) confirms the same five-way
+// split at the RTL: "SHIFT A VALUE = BLTCON0[15:12] (:219-232), minterm
+// select = BLTCON0[7:0] (:254-261, :444), Fill Carry In = BLTCON1[2]
+// (:464), Fill Enable = BLTCON1[4:3] (:287-288), Store to Destination =
+// USED, BLTCON0[8] (:252)" and names which assertions already show which
+// piece: "AREA-ASH-BITS-15-13, BLTCON0-BITS-7-0-ARE-THE-LF-BYTE,
+// AREA-USE-BITS-11-8 and AREA-EFE-BIT4 already show four of these; add FCI
+// and IFE and cite this id on the set" (routing.how, medium confidence).
+// Independently checked against agnus_blitter.v/agnus_blitter_fill.v and
+// found accurate. Followed as given: ch6-fig613.f27 is added to the id
+// list of AREA-ASH-BITS-15-13-ARE-A-SHIFT-VALUE (SHIFT A VALUE),
 // BLTCON0-BITS-7-0-ARE-THE-LF-BYTE-IN-BOTH-MODES (Multi-minterm select
-// bits) and AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL (Fill Enable), and a
-// fourth by AREA-USE-BITS-11-8-SELECT-CHANNELS's USED/D-grant result
-// (Store to Destination) -- but per the build brief, an id whose claim
-// bundles several clauses may sit only on an assertion that establishes
-// the WHOLE of what the claim says, and none of those four, alone,
-// establishes more than its own one-fifth. ch6-fig613.f27 is therefore NOT
-// added to any of them, and is instead established fresh, by one new,
-// self-contained assertion below
-// (FIG613-BLITTER-CONTROL-SUPPLIES-SHIFT-MINTERM-FILL-STORE) that
-// re-measures all five together, combined with AND, under this one id --
-// including the one sub-fact this package had never measured before, Fill
-// Carry In (BLTCON1 bit 2), which is new coverage, not a restatement of
-// existing coverage.
+// bits), AREA-USE-BITS-11-8-SELECT-CHANNELS (Store to Destination, via its
+// USED/D-grant result) and AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL (the EFE
+// half of Fill Enable) -- each already measures exactly the one sub-fact
+// it is cited for, no more, and none of the four claims by itself to
+// establish the whole of what ch6-fig613.f27 says; the set of all six
+// assertions carrying the id, taken together, does. The router's "add FCI
+// and IFE" is two genuinely new measurements: FCI (BLTCON1 bit 2), never
+// tested anywhere in this file before, and IFE (BLTCON1 bit 3, the other
+// half of "Fill Enable" -- AREA-EFE-BIT4 only ever covered EFE/bit 4),
+// also never tested anywhere in this file before. Both are new assertions
+// below, FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY and
+// AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL, each also citing ch6-fig613.f27.
 //
 // UNUSED-BIT ASSERTIONS ARE MADE FALSIFIABLE WITH A CONTROL, per the build
 // brief's explicit requirement. Three assertions below claim "setting this
@@ -450,6 +458,24 @@
 // Every mutation was confirmed reverted by re-running `make test` (all 19
 // assertions green again) before moving to the next one; the final clean
 // rebuild after the last revert also printed "19 passed, 0 failed".
+//
+// EXTENSION, 25.09.2026 (ch6-fig613.f27's two new assertions): both
+// mutations below were run by THIS agent under WSL/Verilator on
+// 25.09.2026, the same edit -> rebuild -> run -> revert -> rebuild cycle as
+// above, against the file as extended (21 assertions). Both confirmed
+// exactly ONE assertion red -- the one named -- with the other 20 staying
+// green, and a final clean rebuild after the last revert printed "21
+// passed, 0 failed".
+// MUTATION FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY stimulus red:
+//   the BLTCON1 write's `(fci ? (1u << 2) : 0)` term changed to an
+//   unconditional `0`, so the "fci=true" run no longer actually sets bit 2
+//   -> FAIL, "fci1 == 0xFFFF" fails (the stored word stays 0x0000, same as
+//   the fci=false run). Reverted: 21/0.
+// MUTATION AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL stimulus red: the BLTCON1
+//   write changed from `ife ? (1u << 3) : 0x0000` to an unconditional
+//   `0x0000`, so the "on" run no longer actually sets bit 3 -> FAIL,
+//   "on != off" fails (both runs produce the unfilled 0x8001 result).
+//   Reverted: 21/0.
 
 #include <cstdint>
 #include <deque>
@@ -749,7 +775,7 @@ int main(int argc, char** argv) {
             "6-appa-control.c1, 6-appa-control.c3, 6-appa-control.c5, "
             "ch6-appa-bltcon0.area.b15.con0, ch6-appa-bltcon0.area.b14.con0, "
             "ch6-appa-bltcon0.area.b13.con0, ch6-appa-bltcon0.legend.ASH30, "
-            "ch6-shifts.c8 .");
+            "ch6-shifts.c8, ch6-fig613.f27 .");
     }
 
     // ---------------- AREA-BSH-BITS-15-12-ARE-B-SHIFT-VALUE ----------------
@@ -841,7 +867,7 @@ int main(int argc, char** argv) {
             "ch6-appa-bltcon0.legend.USEA, ch6-appa-bltcon0.legend.USEB, "
             "ch6-appa-bltcon0.legend.USEC, ch6-appa-bltcon0.legend.USED, "
             "6-dma-channels.c25, 6-dma-channels.c26, 6-dma-channels.c9, "
-            "ch6-dma.c25, ch6-dma.c26, ch6-dma.c7 .");
+            "ch6-dma.c25, ch6-dma.c26, ch6-dma.c7, ch6-fig613.f27 .");
     }
 
     // ---------------- BLTCON0-BITS-7-0-ARE-THE-LF-BYTE-IN-BOTH-MODES ----------------
@@ -919,7 +945,8 @@ int main(int argc, char** argv) {
             "ch6-appa-bltcon0.line.b07.con0, ch6-appa-bltcon0.line.b06.con0, "
             "ch6-appa-bltcon0.line.b05.con0, ch6-appa-bltcon0.line.b04.con0, "
             "ch6-appa-bltcon0.line.b03.con0, ch6-appa-bltcon0.line.b02.con0, "
-            "ch6-appa-bltcon0.line.b01.con0, ch6-appa-bltcon0.line.b00.con0 .");
+            "ch6-appa-bltcon0.line.b01.con0, ch6-appa-bltcon0.line.b00.con0, "
+            "ch6-fig613.f27 .");
     }
 
     // ---------------- BLTCON0L-ALIASES-LF-BYTE-WHEN-ECS ----------------
@@ -1024,7 +1051,98 @@ int main(int argc, char** argv) {
             "& bltcon1[4]`, :455 feeds the fill block's efe input. "
             "6-appa-control.c24, 6-appa-control.c40, "
             "ch6-appa-bltcon0.area.b04.con1, ch6-appa-bltcon0.legend.EFE, "
-            "6-area-fill.c9, ch6-fill.c8 .");
+            "6-area-fill.c9, ch6-fill.c8, ch6-fig613.f27 .");
+    }
+
+    // ---------------- FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY ----------------
+    {
+        // LF=0x00 makes the minterm output constant 0 regardless of A/B/C
+        // (agnus_blitter_minterm.v:29-40: all eight lf bits clear means
+        // every mt[k]=0, so out=0), isolating the fill carry chain
+        // (agnus_blitter_fill.v: `carry[0]=fci^in[0]`, then
+        // `carry[j]=carry[j-1]^in[j]` for j=1..15) from the minterm logic
+        // PKG-BLT-MINTERM's own package tests (Non-goals above). With
+        // in=0 throughout, carry[15:0] is FCI replicated across all 16
+        // bits. EFE is held set so the fill block's output is the carry
+        // itself (`out=carry` when efe, agnus_blitter_fill.v), making
+        // FCI's effect visible on a single word without any multi-word/
+        // 16-BLOCKS fill machinery -- the same single-word-blit technique
+        // AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL above already uses.
+        auto fci_output = [](bool fci) {
+            Harness h;
+            h.write_reg(BLTAFWM, 0xFFFF);
+            h.write_reg(BLTALWM, 0xFFFF);
+            h.a_words = {0x8001};
+            h.c_words = {0x0000};
+            write_bltcon0(h, 0, USEA | USEC | USED, 0x00);  // LF=0: minterm output constant 0
+            h.write_reg(BLTCON1, static_cast<uint16_t>((1u << 4) | (fci ? (1u << 2) : 0)));  // EFE=1 fixed, FCI (bit 2) toggled
+            h.write_reg(BLTSIZE, bltsize_word(1, 1));
+            h.run_until_writes(1, 60);
+            h.settle();
+            return h.data_writes.empty() ? uint16_t{0xDEAD} : h.data_writes[0];
+        };
+        const uint16_t fci0 = fci_output(false);
+        const uint16_t fci1 = fci_output(true);
+
+        checks.expect(fci0 == 0x0000 && fci1 == 0xFFFF,
+            "FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY: with the minterm "
+            "output held at a constant 0 (LF=0x00) and exclusive fill enabled "
+            "(BLTCON1 bit 4), a single-word blit's stored word is 0x0000 with "
+            "BLTCON1 bit 2 clear and 0xFFFF with it set - the fill carry chain "
+            "seeded by, and only by, this one bit on a word with nothing else to "
+            "carry. Figure 6-13 (p.199): the 'Fill Carry In' line into the fill "
+            "logic, one of the five control lines ch6-fig613.f27 names; 'If the "
+            "FCI bit is a 1 instead of a 0, the area outside the lines is filled' "
+            "(p.185, Figure 6-6, the worked FCI example). agnus_blitter.v:464 "
+            "`assign fci = first_word_del ? bltcon1[2] : fcy`, "
+            "agnus_blitter_fill.v `carry[0] = fci ^ in[0]` chained through "
+            "`carry[j] = carry[j-1] ^ in[j]` for j=1..15, `out = carry` when efe. "
+            "ch6-fig613.f27 .");
+    }
+
+    // ---------------- AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL ----------------
+    {
+        // Same D=A-passthrough minterm output as AREA-EFE-BIT4 above
+        // (LF=0xF0, A=0x8001), so `off` reproduces that assertion's own
+        // unfilled baseline. BLTCON1 bit 2 (FCI) is left clear in both
+        // runs here, so this run's fill-carry seed is 0 -- a different,
+        // narrower probe than FILL-CARRY-IN-BIT2 above, which holds LF=0x00
+        // and toggles bit 2 instead.
+        auto ife_output = [](bool ife) {
+            Harness h;
+            h.write_reg(BLTAFWM, 0xFFFF);
+            h.write_reg(BLTALWM, 0xFFFF);
+            h.a_words = {0x8001};
+            h.c_words = {0x0000};
+            write_bltcon0(h, 0, USEA | USEC | USED, 0xF0);  // D=A passthrough into fill
+            h.write_reg(BLTCON1, ife ? static_cast<uint16_t>(1u << 3) : 0x0000);
+            h.write_reg(BLTSIZE, bltsize_word(1, 1));
+            h.run_until_writes(1, 60);
+            h.settle();
+            return h.data_writes.empty() ? uint16_t{0xDEAD} : h.data_writes[0];
+        };
+        const uint16_t off = ife_output(false);
+        const uint16_t on = ife_output(true);
+
+        checks.expect(off == 0x8001 && on != off,
+            "AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL: with BLTCON1 bit 3 clear the "
+            "minterm output (0x8001, two isolated bits) passes through unfilled; "
+            "with it set, the SAME minterm output is inclusive-filled into a "
+            "different word - 'The inclusive fill mode fills between lines, "
+            "leaving the lines intact' (p.184), and appendix A p.267's bit-3 "
+            "table row (the corpus's OCR of this exact row is defective -- see "
+            "'CORPUS DEFECT FOUND' above -- but the PDF scan and "
+            "appA-blitter/p267.txt agree bit 3 is IFE, matching "
+            "agnus_blitter.v:288 below). Figure 6-13 (p.199): the 'Fill Enable' "
+            "line into the fill logic, one of the five control lines "
+            "ch6-fig613.f27 names, drawn as one line covering both this bit and "
+            "BLTCON1 bit 4 (AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL above, which "
+            "already carries ch6-fig613.f27 for the EFE half); this assertion is "
+            "new coverage for the IFE half, not previously asserted anywhere in "
+            "this file. agnus_blitter.v:288 `assign ife = ~line & bltcon1[3]`, "
+            ":455 feeds the fill block's ife input; agnus_blitter_fill.v "
+            "`out = carry | in` when ife (and not efe). "
+            "ch6-fig613.f27 .");
     }
 
     // ---------------- AREA-DESC-BIT1-SELECTS-DESCENDING-MODE ----------------
