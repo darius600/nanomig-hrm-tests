@@ -3,12 +3,16 @@
 //   actually required for DMAON to read 1 -- graded against BOTH of the
 //   manual's own conflicting statements of this fact: the chapter's own
 //   p.248 DMAON row (three terms) and Appendix A's p.278 DSKBYTR bit-14 row
-//   (two terms, omitting DSKEN). 8 claims, from
+//   (two terms, omitting DSKEN). 12 claims, from
 //   work/ch8-s2-build/ch8-dmaon-enable-composition.jsonl, reduced to 5
 //   graded propositions (A1-A5) + fixture liveness (A0) + one
-//   mutation-demonstration substitute (A2-SUBSTITUTE, no claim uid). Full
-//   derivation in SPECIFICATION.md (committed as c1b7870, before any RTL was
-//   opened).
+//   mutation-demonstration substitute (A2-SUBSTITUTE, no claim uid). Four
+//   of the 12 (Appendix A's own DMACON bit-4 row, p.278: "DSKEN, Disk DMA
+//   enable") are cited on A4's own label rather than as a separate
+//   proposition -- A4 already grades their whole functional claim at this
+//   fixture; see A4's own header comment below and SPECIFICATION.md's A6.
+//   Full derivation in SPECIFICATION.md (committed as c1b7870, before any
+//   RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.248 (chapter 8's own DMAON row) and Appendix A printed p.278 (DSKBYTR
@@ -586,6 +590,17 @@ int main(int argc, char** argv) {
     // fixture's data_out, per the claims file's own evidence). Sub-term
     // necessity: DMACON.DSKEN is one of DMAON's required terms -- the exact
     // term p.278's two-term reading (A2) omits.
+    //
+    // APPA-dmacon.c17, CH4-appA-dmacon.c24, 5-appA-p278.c21, A-dmacon.b04
+    // (Appendix A's own DMACON bit-4 row, p.278, "DSKEN, Disk DMA enable")
+    // are cited on this same label below, per each id's own routing.how:
+    // this assertion already grades the whole of that row's functional
+    // half at this fixture -- clearing DMACON bit 4 alone (with DSKLEN
+    // armed and DMACON's master DMAEN held true) makes DMAON read 0, and
+    // the reference sub-case above shows it read 1 when bit 4 is set. The
+    // row's storage/read-back half is out of this package's boundary (a
+    // different fixture's concern, per those ids' own classify.evidence)
+    // and is not cited here.
     // ========================================================================
     {
         bool ref_dmaon, target_dmaon;
@@ -613,7 +628,8 @@ int main(int argc, char** argv) {
                         "): DSKBYTR=0x" + hex4(v) + " DMAON=" + std::to_string(target_dmaon));
         }
         checks.expect(ref_dmaon && !target_dmaon,
-            "A4-DMAON_REQUIRES_DMACON_DSKEN (p.248, sol:8-dskbytr.c12, quote 'This means the\\n                   "
+            "A4-DMAON_REQUIRES_DMACON_DSKEN (p.248, sol:8-dskbytr.c12 APPA-dmacon.c17 CH4-appA-dmacon.c24 "
+            "5-appA-p278.c21 A-dmacon.b04, quote 'This means the\\n                   "
             "     DMAEN bit in  DSKLEN , and the DSKEN & DMAEN bits\\n                        in  DMACON .'): with "
             "DSKLEN.DMAEN armed and DMACON.DMAEN(master) held true, DMAON reads 1 when DMACON.DSKEN is also true "
             "and reads 0 when it is not -- DMACON.DSKEN is a required term. This is the specific term p.278's "

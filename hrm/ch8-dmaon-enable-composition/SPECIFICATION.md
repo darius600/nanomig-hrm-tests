@@ -173,11 +173,18 @@ claims, from four independent readings/cross-reads of this identical row (a
 mix of chapter-4 and chapter-5 `classify.package` labels, per this
 package's own spec-stage file), all restate the same fact.
 
-Which grading disposition applies to these four ids -- a new assertion, or
-writing them onto whichever existing assertion already measures the whole
-of what this row states, at this package's own `paula` boundary -- is
-decided after this specification is committed, from the full claims file's
-own `routing.route` and `routing.how`.
+**Resolved from the full claims file.** All four ids route to this package
+(`routing.route: package:ch8-dmaon-enable-composition`), and each one's own
+`routing.how` names the same disposition: `A4-DMAON_REQUIRES_DMACON_DSKEN`
+already grades the whole of this row's proposition at this package's
+`paula` boundary -- with DSKLEN armed and DMACON's master DMAEN set, disk
+DMA runs (DSKBYTR DMAON=1) only when DMACON bit 4 is also set, which is
+exactly "DSKEN, Disk DMA enable" read as a functional claim. No new
+assertion is added for A6; the four ids are written onto A4's own label
+instead. The storage/read-back half of this same printed row (that DMACON's
+own register decode returns bit 4 as written) is out of this package's
+boundary -- the routed claims' own `classify.evidence` places that half at
+a different fixture entirely, one this package does not build.
 
 ## Control case
 
