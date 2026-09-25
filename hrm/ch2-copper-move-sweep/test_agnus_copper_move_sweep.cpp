@@ -683,7 +683,8 @@ int main(int argc, char** argv) {
         checks.expect(star_band_ok,
             "APPBSTAR LEGEND ecs=0: the whole '*' band $000-$03E (DA8-1 $00-$1F) is "
             "rejected on reg_address_out with CDANG clear and with CDANG set, matching the "
-            "legend's own definition (p.287) [claims: B-leg.star B-legend.c6 ch2-appb-legend.c1]");
+            "legend's own definition (p.287) [claims: B-leg.star B-legend.c6 ch2-appb-legend.c1 "
+            "sol:7-appB-legend.c4 opus:7-appB.c5]");
     }
     {
         bool tilde_band_ok = true;
