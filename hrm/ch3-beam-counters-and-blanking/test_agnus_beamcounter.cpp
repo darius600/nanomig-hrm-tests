@@ -88,10 +88,14 @@
 //   narrows the quoted p.304 sentence to its line-count half alone (525/625
 //   lines), which that assertion fully establishes, so neither id also sits
 //   on the DECLINED note below. The same sentence's colour-clocks-per-line
-//   half is covered there instead by C-scan.c02 and C-scan.c04, together
-//   with opus:7-appC-beam.c2 and opus:7-appC-beam.c3, whose own restatement
-//   does not split the sentence into two claims and is declined whole (see
-//   REVIEW FINDING, RESOLVED below).
+//   half is graded instead by COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)/(PAL)
+//   -- C-scan.c02 and C-scan.c04 -- which counts run_cck() periods between
+//   two eol pulses directly, with no htotal_out conversion factor (see
+//   REVIEW FINDING, RESOLVED below for why that factor was avoided).
+//   opus:7-appC-beam.c2 and opus:7-appC-beam.c3, whose own restatement does
+//   not split the sentence into two claims, sit on
+//   COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC/PAL bundled with line count)
+//   instead, which grades both halves together.
 //
 // REVIEW FINDING, RESOLVED: an independent read flagged two assertions in
 //   an earlier version of this file as circular -- HTOTAL-FIXED-NOT-
@@ -323,6 +327,45 @@
 //   revert -> rebuild procedure: 27 passed, 1 failed
 //   (VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL only, left completely
 //   alone throughout, per instruction).
+//
+// MUTATION COLOUR-CLOCKS-PER-LINE-227POINT5 stimulus red: (control, no
+//   claim id) `make clean && make MUT=COLOUR_CLOCKS_PER_LINE_CONTROL test`
+//   (the written HTOTAL changed from 100 to 120, guarded by
+//   `#ifndef MUT_COLOUR_CLOCKS_PER_LINE_CONTROL` around that one write_reg
+//   call) -> "27 passed, 6 failed", only
+//   COLOUR-CLOCKS-PER-LINE-227POINT5 (control, no claim id) newly red
+//   (measured periods=121, not the expected 101; every other assertion's
+//   FAIL/PASS set unchanged from baseline). `make clean && make -B test`
+//   reverted to 28 passed, 5 failed, confirmed byte-for-byte identical to
+//   the pre-mutation baseline by `diff` (the only difference in the raw
+//   output being Verilator's own non-deterministic build-timing line).
+// MUTATION COLOUR-CLOCKS-PER-LINE-227POINT5 none impossible: (NTSC) and
+//   (PAL) are both red at baseline (a genuine, measured disagreement --
+//   counting run_cck() periods between two eol pulses on the hardwired
+//   default reads 227, not the manual's 227.5; this module's own
+//   HTOTAL_VAL comment already says so, "line length of 227 CCKs in PAL
+//   mode (NTSC line length of 227.5 CCKs is not supported)",
+//   agnus_beamcounter.v:86). No stimulus on an already-red assertion can
+//   fail it harder. The control immediately above exercises this identical
+//   run_cck()-periods-between-two-eol-pulses comparator against a known
+//   written value and reads it back exactly (101, then 121 once mutated),
+//   proving the comparator itself is live and not vacuous.
+// MUTATION COLOUR-CLOCKS-PER-LINE-227POINT5 none impossible: (NTSC bundled
+//   with line count) and (PAL bundled with line count) are both red at
+//   baseline for the same underlying reason -- the colour-clocks-per-line
+//   conjunct fails as above, so the AND of both halves fails too, even
+//   though the line-count conjunct (525/625) passes. Both conjuncts'
+//   comparators are independently proven live elsewhere in this same run:
+//   the colour-clocks-per-line conjunct by the control mutation just
+//   above, and the line-count conjunct by
+//   VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA (NTSC/PAL default, sum of
+//   one long + one short field)'s own stimulus mutation already in this
+//   log (the removed-LACE-write edit), which turns exactly that half red.
+//
+// Final rebuild after adding COLOUR-CLOCKS-PER-LINE-227POINT5: 28 passed, 5
+// failed (the pre-existing VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL plus
+// the four new (NTSC)/(PAL)/(NTSC bundled)/(PAL bundled) reds), confirmed
+// byte-for-byte identical to the post-mutation-revert rebuild by `diff`.
 
 #include <cstdint>
 #include <cstdlib>
@@ -1439,6 +1482,142 @@ int main(int argc, char** argv) {
                 "' (p.304). " + (ntsc ? "C-scan.c01 ." : "C-scan.c03 ."));
     }
 
+    // ================= COLOUR-CLOCKS-PER-LINE-227POINT5 =================
+    // cck is an input this harness drives itself (Harness::run_cck(), "One
+    // full colour-clock period" per call, l.427-440 above) and eol is an
+    // output (`assign eol = vpos_inc;`, agnus_beamcounter.v:320) -- so,
+    // exactly as ch3-field-geometry's measure_field_period_seconds counts
+    // raw ticks between two eof pulses and divides by 4 to get CCK cycles
+    // for one field, colour clocks per LINE is the number of run_cck()
+    // periods between two eol pulses. No htotal_out tick-to-CCK conversion
+    // factor is involved anywhere below.
+    auto measure_cck_periods_per_line = [](Harness& h, long tick_bound) -> double {
+        long i = 0;
+        int eol_edges = 0;
+        long ticks_second_line = 0;
+        bool eol_prev = false;
+        for (; i < tick_bound && eol_edges < 2; ++i) {
+            h.dut->clk7_en = (i % 2 == 0);
+            h.dut->cck = (i % 4 < 2);
+            h.tick();
+            if (eol_edges == 1) ++ticks_second_line;
+            bool eol_now = h.dut->eol;
+            if (eol_now && !eol_prev) ++eol_edges;
+            eol_prev = eol_now;
+        }
+        if (eol_edges < 2) return -1.0;
+        return static_cast<double>(ticks_second_line) / 4.0;
+    };
+
+    // Control (no claim id): with VARBEAMEN=1 and HTOTAL written to a known
+    // value, the measured period count must equal exactly what was
+    // written -- htotal_reg is the written byte doubled (l.206) and
+    // end_of_line compares hpos against that same value with its own LSB
+    // forced to 0 (l.250), and hpos advances by 2 raw ticks per run_cck()
+    // period (established at RASTER-SWEEP-LEFT-TO-RIGHT-TOP-TO-BOTTOM
+    // above), so a written HTOTAL of N makes a line exactly N periods long.
+    // Same technique as VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA
+    // (non-interlaced) already uses against a known written VTOTAL for the
+    // vertical axis, applied here to the horizontal one -- proves the
+    // comparator this section depends on is live before trusting it against
+    // a disputed value below.
+    {
+        Harness h(/*ecs=*/true, /*ntsc=*/false);
+        h.write_reg(A_BEAMCON0, 1 << BC_VARBEAMEN);
+#ifndef MUT_COLOUR_CLOCKS_PER_LINE_CONTROL
+        h.write_reg(A_HTOTAL, 100); // htotal_reg = 200 raw ticks = 100 CCK periods/line
+#else
+        h.write_reg(A_HTOTAL, 120); // MUTATION: written value changed, periods must track it
+#endif
+        force_vpos(h, 0, /*long_frame=*/false);
+        double periods = measure_cck_periods_per_line(h, 300 * 4);
+        // Measured (not assumed): writing HTOTAL=100 reads back 101
+        // periods, one more than the written byte -- the identical +1
+        // relationship this module's own default exhibits (HTOTAL_VAL=226
+        // written, "line length of 227 CCKs" is its own comment, matching
+        // the 227 measured on the hardwired default below). The control
+        // asserts this fixed, repeatable relationship, not a guessed one.
+        checks.expect(
+            periods == 101.0,
+            "COLOUR-CLOCKS-PER-LINE-227POINT5 (control, no claim id): with "
+            "HTOTAL written to 100 (200 raw ticks), counting run_cck() "
+            "periods between two eol pulses reads exactly " +
+                std::to_string(periods) +
+                " -- one more than the written byte, the same relationship "
+                "the hardwired default exhibits below (226 written, 227 "
+                "measured) -- proving the run_cck()-periods-between-two-"
+                "eol-pulses comparator used below tracks a written value in "
+                "a fixed, repeatable way, with no htotal_out tick-to-CCK "
+                "conversion involved.");
+    }
+
+    // NTSC/PAL hardwired default (VARBEAMEN=0): 'NTSC (525 lines, 227.5
+    // colorclocks per scan line)' / 'PAL  (625 lines, 227.5 colorclocks per
+    // scan line)' (p.304). opus:7-appC-beam.c2 and opus:7-appC-beam.c3
+    // restate the identical sentence as one unsplit claim, bundling this
+    // colour-clocks-per-line half together with the line-count half that
+    // VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA (NTSC/PAL default, sum of
+    // one long + one short field) above already establishes (525/625,
+    // PASS) -- so the bundled ids are graded on both halves together below,
+    // not on this half alone.
+    for (bool ntsc : {false, true}) {
+        Harness h(/*ecs=*/false, ntsc);
+        force_vpos(h, 0, /*long_frame=*/false);
+        double periods = measure_cck_periods_per_line(h, 500 * 4);
+        bool periods_match_manual = (periods == 227.5);
+        checks.expect(
+            periods_match_manual,
+            std::string("COLOUR-CLOCKS-PER-LINE-227POINT5 (") +
+                (ntsc ? "NTSC" : "PAL") +
+                "): counting run_cck() periods between two eol pulses on "
+                "the hardwired default (VARBEAMEN=0) reads " +
+                std::to_string(periods) +
+                " colour clocks per line, not the manual's 227.5 -- '" +
+                (ntsc ? "NTSC (525 lines, 227.5 colorclocks per scan line)"
+                      : "PAL  (625 lines, 227.5 colorclocks per scan line)") +
+                "' (p.304). This module's own default-value comment agrees "
+                "with the measurement, not the manual: 'line length of 227 "
+                "CCKs in PAL mode (NTSC line length of 227.5 CCKs is not "
+                "supported)' (agnus_beamcounter.v:86) -- a genuine, "
+                "measured disagreement on the same run_cck()-periods-"
+                "between-two-eol-pulses comparator the control above "
+                "validates, with no RTL-derived tick-to-CCK conversion "
+                "involved. " +
+                (ntsc ? "C-scan.c02 ." : "C-scan.c04 ."));
+
+        // Re-derive the same-basis line-count half independently (not a
+        // second PASS/FAIL line for a fact already graded above -- a local
+        // value only, so the bundled claim below is graded on both halves
+        // at once, per its own unsplit restatement).
+        Harness h2(/*ecs=*/false, ntsc);
+        h2.write_reg(A_BPLCON0, 1 << BP_LACE);
+        auto lens2 = measure_field_lengths(h2, 2, 2 * 320 * 240 * 4);
+        int sum2 = (lens2.size() == 2) ? (lens2[0] + lens2[1]) : -1;
+        int expected_sum2 = ntsc ? 525 : 625;
+        bool lines_match_manual = (sum2 == expected_sum2);
+        checks.expect(
+            lines_match_manual && periods_match_manual,
+            std::string("COLOUR-CLOCKS-PER-LINE-227POINT5 (") +
+                (ntsc ? "NTSC" : "PAL") +
+                " bundled with line count): the unsplit sentence states both "
+                "halves together -- lines half " +
+                (lines_match_manual ? std::string("matches") : std::string("does not match")) +
+                " the manual (measured sum=" + std::to_string(sum2) + " vs " +
+                std::to_string(expected_sum2) +
+                ", the same measurement as VTOTAL-PLUS-ONE-PLUS-TWO-"
+                "INTERLACE-FORMULA (" + (ntsc ? "NTSC" : "PAL") +
+                " default, sum of one long + one short field) above), "
+                "colour-clocks-per-line half " +
+                (periods_match_manual ? std::string("matches") : std::string("does not match")) +
+                " the manual (measured " + std::to_string(periods) +
+                " vs 227.5, graded immediately above) -- both halves must "
+                "hold for this unsplit claim to hold, and one does not. '" +
+                (ntsc ? "NTSC (525 lines, 227.5 colorclocks per scan line)"
+                      : "PAL  (625 lines, 227.5 colorclocks per scan line)") +
+                "' (p.304). " +
+                (ntsc ? "opus:7-appC-beam.c2 ." : "opus:7-appC-beam.c3 ."));
+    }
+
     // ================= VBLANK-DURATION-NTSC-MATCHES-MANUAL / VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL =================
     // vbl = (vpos <= vbstop) (l.444), continuous on vpos -- track vpos
     // changes directly (rather than eol, which pulses at a different point
@@ -1591,10 +1770,11 @@ int main(int argc, char** argv) {
         "any of these five bits changes nothing this fixture can observe.");
 
     checks.record(
-        "NOT ASSERTED (HTOTAL bits 15:8, 'must be zero' -- 8 claims): "
+        "NOT ASSERTED (HTOTAL bits 15:8, 'must be zero' -- 9 claims): "
         "C-htotal-bits.c1, C-htotal-bits.c2, C-htotal-bits.c3, "
         "C-htotal-bits.c4, C-htotal-bits.c5, C-htotal-bits.c6, "
-        "C-htotal-bits.c7, C-htotal-bits.c8 (bits 15,14,13,12,11,10,9,8). HTOTAL "
+        "C-htotal-bits.c7, C-htotal-bits.c8 (bits 15,14,13,12,11,10,9,8), "
+        "C-htotal.c02. HTOTAL "
         "is write-only here (same reasoning as the BEAMCON0 note above): "
         "the write-decode unconditionally takes data_in[7:0] into "
         "htotal_reg[8:1] (l.206) and silently discards data_in[15:8] "
@@ -1603,23 +1783,22 @@ int main(int argc, char** argv) {
         "the low byte was ever read' by observing htotal_out, the only "
         "externally visible effect of a HTOTAL write. "
         "HTOTAL-H8-H1-BIT-MAPPING above asserts the half of "
-        "the same quoted row (h8..h1) that IS observable this way.");
+        "the same quoted row (h8..h1) that IS observable this way. "
+        "C-htotal.c02 restates the same row as one unsplit claim ('HTOTAL "
+        "bits 7-0 carry h8..h1 and bits 15-8 are 0') bundling both halves "
+        "together -- the h8..h1 half is established (HTOTAL-H8-H1-BIT-"
+        "MAPPING) but the bits-15:8-zero half is not, for the identical "
+        "write-only reason as the eight C-htotal-bits ids above, so the "
+        "unsplit id is "
+        "withdrawn whole here rather than credited on the established half "
+        "alone. This id is not about colour clocks or 280ns at all, and so "
+        "does not belong on the DECLINED note below despite sharing its "
+        "printed page.");
 
     checks.record(
         "DECLINED (translating manual colour-clock/280ns quantities into "
         "htotal_out's raw tick count needs an RTL-supplied conversion "
-        "factor -- 7 claims): C-htotal.c02, C-htotal.c03, C-scan.c8, "
-        "C-scan.c02, C-scan.c04, opus:7-appC-beam.c2, opus:7-appC-beam.c3. "
-        "The line-count half of the same p.304 sentence "
-        "(graded: C-scan.c01, C-scan.c03) is not declined here -- "
-        "VTOTAL-PLUS-ONE-PLUS-TWO-INTERLACE-FORMULA above fully "
-        "establishes it, because each id's own restatement narrows the "
-        "sentence to that half alone (525/625 lines). opus:7-appC-beam.c2 "
-        "and opus:7-appC-beam.c3 restate the identical sentence as one unsplit "
-        "claim ('The NTSC scan rate is 525 lines with 227.5 colorclocks per "
-        "scan line.' / the PAL twin), bundling that same already-graded "
-        "line count together with the colour-clocks-per-line half below, so "
-        "no partial credit applies and both ids are declined whole here. "
+        "factor -- 2 claims): C-htotal.c03, C-scan.c8. "
         "Formerly asserted "
         "as HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5: 'HTOTAL W A Highest "
         "number count in horizontal line' / 'The value in this register "
@@ -1653,10 +1832,13 @@ int main(int argc, char** argv) {
         "gives no manual-anchored unit to state that claim in at this "
         "boundary, so no tick-count assertion is made here. What IS "
         "observable without that conversion -- the h1..h8 bit-weight "
-        "ordering, and PAL vblank duration disagreeing with the manual on "
-        "a plain line-count basis -- is already covered by "
-        "HTOTAL-H8-H1-BIT-MAPPING and VBLANK-DURATION-PAL-DISAGREES-WITH-"
-        "MANUAL above.");
+        "ordering, PAL vblank duration disagreeing with the manual on a "
+        "plain line-count basis, and colour clocks per line (a different "
+        "quantity from htotal_out's raw ticks: cck is an input this "
+        "harness drives itself, so counting run_cck() periods between two "
+        "eol pulses needs no such conversion) -- is already covered by "
+        "HTOTAL-H8-H1-BIT-MAPPING, VBLANK-DURATION-PAL-DISAGREES-WITH-"
+        "MANUAL and COLOUR-CLOCKS-PER-LINE-227POINT5 above.");
 
     checks.record(
         "NOT ASSERTED (ports this module does not have -- 3 claims): "
