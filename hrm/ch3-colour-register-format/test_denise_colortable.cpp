@@ -189,7 +189,7 @@
 // MUTATION SAMPLE stimulus red: the Light green entry ($8E0) was replaced with $000 (black) instead of its own code, so its readback equals the black baseline and the liveness check fails.
 // MUTATION EHB-HALVES-INTENSITY stimulus red: the EHB read was moved from register 15 (the register just loaded and read in normal mode) to register 16 (loaded with a different, unrelated pattern), so halved(normal) no longer matches the EHB reading.
 // MUTATION NO-READBACK-PORT stimulus red: the read after each write moved from register 20 (the register actually written) to register 21 (never written), so the two reads no longer differ.
-// MUTATION APPC-SHR-REG0-3-BASELINE-NIBBLES stimulus red: on COLOR0 only (the other three registers in the loop unchanged), the stimulus meant to probe the red nibble alone ($F00) was replaced with the green-nibble stimulus ($0F0) instead, so COLOR0's red byte no longer changes while the check still expects it to, failing the all-four-registers AND.
+// MUTATION APPC-SHR-REG0-3-BASELINE-NIBBLES stimulus red: on COLOR0 only (the other three registers in the loop unchanged), the bit probed for R3 (bit 11) was moved to bit 7 (G3) instead, so COLOR0's green byte changes when the check expects only the red byte to move, failing the all-four-registers AND.
 // MUTATION CONTROL-KNOWN-VALUES-ARRIVE stimulus red: the control's second write (originally to register 2, the same register the two reads target) was redirected to register 3 instead, so register 2 was never rewritten and the second read came back equal to the first ($1F0 both times, a == b) instead of distinct; reverted to writing register 2 again and confirmed the 55-passed/0-failed baseline returned.
 // MUTATION EHB-CONTROL-NORMAL-REPRODUCIBLE stimulus red: the post-EHB normal-mode re-read was redirected from register 15 (the register loaded and read earlier in the same block) to register 16 (never written, still at its power-on value), so the re-read no longer matched the value recorded before the EHB reading; reverted to reading register 15 again and confirmed the 55-passed/0-failed baseline returned.
 //
@@ -768,11 +768,20 @@ int main(int argc, char** argv) {
     // 11-8/GREEN-FIELD-BITS-7-4/BLUE-FIELD-BITS-3-0 establish above on a
     // different register (10/11/12). Tested here on all four registers the
     // claim names, not one, because "four color registers" is the claim -
-    // one register passing would not establish it. This claim bundles all
-    // three channels in one sentence, so it gets one assertion of its own
-    // rather than a citation split across those three single-channel
-    // groups. This module has no SuperHires-mode port at all, so this
-    // measurement already sits outside SuperHires by construction.
+    // one register passing would not establish it. Each of the twelve bits
+    // (four per channel) is walked alone, MSB heaviest -- the same control
+    // RED-FIELD-BITS-11-8 uses on register 10 above -- rather than a
+    // whole-nibble stimulus: a register that stored only some of a
+    // nibble's bits would still pass a whole-nibble ($F00/$0F0/$00F)
+    // stimulus, because that only checks that the byte moved at all, not
+    // that all four bits of the nibble each move it. The whole-nibble
+    // stimulus was the control originally here and could not tell that
+    // case apart from a design that stores all four bits; replaced with
+    // the per-bit walk. This claim bundles all three channels in one
+    // sentence, so it gets one assertion of its own rather than a citation
+    // split across those three single-channel groups. This module has no
+    // SuperHires-mode port at all, so this measurement already sits
+    // outside SuperHires by construction.
     // =========================================================================
     {
         Harness h;
@@ -781,32 +790,78 @@ int main(int argc, char** argv) {
             h.write_reg(idx, 0x000);
             uint32_t base = h.read_reg(idx);
 
-            uint16_t r_stim = 0xF00;
+            int red_msb = 11;
 #if MUT_APPCSHR
-            if (idx == 0) r_stim = 0x0F0;
+            if (idx == 0) red_msb = 7;
 #endif
-            h.write_reg(idx, r_stim);
-            uint32_t vR = h.read_reg(idx);
-            h.write_reg(idx, 0x0F0);
-            uint32_t vG = h.read_reg(idx);
-            h.write_reg(idx, 0x00F);
-            uint32_t vB = h.read_reg(idx);
+            h.write_reg(idx, static_cast<uint16_t>(1u << red_msb));
+            uint32_t r11 = h.read_reg(idx);
+            h.write_reg(idx, 1u << 10);
+            uint32_t r10 = h.read_reg(idx);
+            h.write_reg(idx, 1u << 9);
+            uint32_t r9 = h.read_reg(idx);
+            h.write_reg(idx, 1u << 8);
+            uint32_t r8 = h.read_reg(idx);
 
-            bool reg_ok = R_of(vR) != R_of(base) && G_of(vR) == G_of(base) && B_of(vR) == B_of(base) &&
-                          G_of(vG) != G_of(base) && R_of(vG) == R_of(base) && B_of(vG) == B_of(base) &&
-                          B_of(vB) != B_of(base) && R_of(vB) == R_of(base) && G_of(vB) == G_of(base);
+            h.write_reg(idx, 1u << 7);
+            uint32_t g7 = h.read_reg(idx);
+            h.write_reg(idx, 1u << 6);
+            uint32_t g6 = h.read_reg(idx);
+            h.write_reg(idx, 1u << 5);
+            uint32_t g5 = h.read_reg(idx);
+            h.write_reg(idx, 1u << 4);
+            uint32_t g4 = h.read_reg(idx);
+
+            h.write_reg(idx, 1u << 3);
+            uint32_t b3 = h.read_reg(idx);
+            h.write_reg(idx, 1u << 2);
+            uint32_t b2 = h.read_reg(idx);
+            h.write_reg(idx, 1u << 1);
+            uint32_t b1 = h.read_reg(idx);
+            h.write_reg(idx, 1u << 0);
+            uint32_t b0 = h.read_reg(idx);
+
+            int dR11 = static_cast<int>(R_of(r11)) - static_cast<int>(R_of(base));
+            int dR10 = static_cast<int>(R_of(r10)) - static_cast<int>(R_of(base));
+            int dR9  = static_cast<int>(R_of(r9))  - static_cast<int>(R_of(base));
+            int dR8  = static_cast<int>(R_of(r8))  - static_cast<int>(R_of(base));
+            int dG7 = static_cast<int>(G_of(g7)) - static_cast<int>(G_of(base));
+            int dG6 = static_cast<int>(G_of(g6)) - static_cast<int>(G_of(base));
+            int dG5 = static_cast<int>(G_of(g5)) - static_cast<int>(G_of(base));
+            int dG4 = static_cast<int>(G_of(g4)) - static_cast<int>(G_of(base));
+            int dB3 = static_cast<int>(B_of(b3)) - static_cast<int>(B_of(base));
+            int dB2 = static_cast<int>(B_of(b2)) - static_cast<int>(B_of(base));
+            int dB1 = static_cast<int>(B_of(b1)) - static_cast<int>(B_of(base));
+            int dB0 = static_cast<int>(B_of(b0)) - static_cast<int>(B_of(base));
+
+            bool reg_ok =
+                G_of(r11) == G_of(base) && B_of(r11) == B_of(base) && dR11 > 0 &&
+                G_of(r10) == G_of(base) && B_of(r10) == B_of(base) && dR10 > 0 &&
+                G_of(r9)  == G_of(base) && B_of(r9)  == B_of(base) && dR9  > 0 &&
+                G_of(r8)  == G_of(base) && B_of(r8)  == B_of(base) && dR8  > 0 &&
+                dR11 > dR10 && dR10 > dR9 && dR9 > dR8 &&
+                R_of(g7) == R_of(base) && B_of(g7) == B_of(base) && dG7 > 0 &&
+                R_of(g6) == R_of(base) && B_of(g6) == B_of(base) && dG6 > 0 &&
+                R_of(g5) == R_of(base) && B_of(g5) == B_of(base) && dG5 > 0 &&
+                R_of(g4) == R_of(base) && B_of(g4) == B_of(base) && dG4 > 0 &&
+                dG7 > dG6 && dG6 > dG5 && dG5 > dG4 &&
+                R_of(b3) == R_of(base) && G_of(b3) == G_of(base) && dB3 > 0 &&
+                R_of(b2) == R_of(base) && G_of(b2) == G_of(base) && dB2 > 0 &&
+                R_of(b1) == R_of(base) && G_of(b1) == G_of(base) && dB1 > 0 &&
+                R_of(b0) == R_of(base) && G_of(b0) == G_of(base) && dB0 > 0 &&
+                dB3 > dB2 && dB2 > dB1 && dB1 > dB0;
             ok = ok && reg_ok;
         }
         checks.expect(
             ok,
             "APPC-SHR-REG0-3-BASELINE-NIBBLES: on each of COLOR0, COLOR1, "
-            "COLOR2 and COLOR3 in turn, setting the red field ($F00), then "
-            "the green field ($0F0), then the blue field ($00F) each moves "
-            "only its own byte of rgb versus an all-zero baseline on that "
-            "same register, the other two bytes unchanged, holding on all "
-            "four registers - outside SuperHires mode, COLOR0-COLOR3 each "
-            "hold 4 bits each of red, green and blue stored as 0x0RGB in "
-            "four color registers (p.301). APPC-shr.c7.");
+            "COLOR2 and COLOR3 in turn, each of the twelve bits (four per "
+            "channel, MSB heaviest) set alone moves only its own byte of "
+            "rgb versus an all-zero baseline on that same register, the "
+            "other two bytes unchanged, holding on all four registers - "
+            "outside SuperHires mode, COLOR0-COLOR3 each hold 4 bits each "
+            "of red, green and blue stored as 0x0RGB in four color "
+            "registers (p.301). APPC-shr.c7.");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
