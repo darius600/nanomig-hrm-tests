@@ -271,7 +271,13 @@ int main(int argc, char** argv) {
     }
 
     // --- P1: DSKPTH decodes at $DFF020 -- a write there, and only there,
-    // reaches address_out[20:16]. ---
+    // reaches address_out[20:16].
+    // opus:B-dskpth.addr restates the same printed row already cited below
+    // (opus:8-appB-dskpth.c1) for its address rather than its bit-width
+    // wording; the write-at-$DFF020/read-back-on-address_out[20:16]
+    // measurement this assertion already performs establishes that address
+    // in full, so the id is cited here rather than carrying a new
+    // assertion. ---
     {
         write_reg(DSKPTH_ADDR, 0x0000); // clean the high field first
         uint32_t before = high_field();
@@ -285,13 +291,20 @@ int main(int argc, char** argv) {
         checks.expect(before == 0x00 && after == (probe & 0x1F),
             "P1 (opus:8-dsk.c32 p.241, opus:8-dma.c11/sol:8-dskpth.c7 p.246, "
             "opus:8-appA-dskpt.c1/sol:8-appa-dskpth.c1 p.279, "
-            "opus:8-appB-dskpth.c1/sol:8-appb-dskpth.c1 p.289): a write at $DFF020 reaches "
+            "opus:8-appB-dskpth.c1/sol:8-appb-dskpth.c1 opus:B-dskpth.addr p.289): "
+            "a write at $DFF020 reaches "
             "address_out[20:16] -- before=0x" + hex32(before) +
             " after=0x" + hex32(after) + " expected 0x" + hex32(probe & 0x1F));
     }
 
     // --- P2: DSKPTL decodes at $DFF022 -- a write there, and only there,
-    // reaches address_out[15:1]. ---
+    // reaches address_out[15:1].
+    // opus:B-dskptl.addr restates the same printed row already cited below
+    // (opus:8-appB-dskptl.c1) for its address rather than its field-width
+    // wording; the write-at-$DFF022/read-back-on-address_out[15:1]
+    // measurement this assertion already performs establishes that address
+    // in full, so the id is cited here rather than carrying a new
+    // assertion. ---
     {
         write_reg(DSKPTL_ADDR, 0x0000); // clean the low field first
         uint32_t before = low_field();
@@ -305,7 +318,8 @@ int main(int argc, char** argv) {
         uint32_t expected_low = (probe >> 1) & 0x7FFF;
         checks.expect(before == 0x0000 && after == expected_low,
             "P2 (opus:8-appA-dskpt.c6/sol:8-appa-dskptl.c1 p.279, "
-            "opus:8-appB-dskptl.c1/sol:8-appb-dskptl.c1 p.289): a write at $DFF022 reaches "
+            "opus:8-appB-dskptl.c1/sol:8-appb-dskptl.c1 opus:B-dskptl.addr p.289): "
+            "a write at $DFF022 reaches "
             "address_out[15:1] -- before=0x" + hex32(before) + " after=0x" + hex32(after) +
             " expected 0x" + hex32(expected_low));
     }
