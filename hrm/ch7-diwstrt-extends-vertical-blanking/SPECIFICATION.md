@@ -140,3 +140,87 @@ ordinary stimulus only; no internal signal is read through `rootp`.
 That marker is sound for a claim about movement, which is what P1 and P2 make.
 It is not sound for a claim about the display having started, which is why P3
 was withdrawn above.
+
+## Extension: interlace doubles the line count (p.49-50)
+
+Written from `ch7-diwstrt-extends-vertical-blanking-spec-stage.jsonl` alone,
+before its full claims file or the RTL is opened, exactly as P1-P3 above were.
+
+### The oracle
+
+> Interlaced mode allows twice as much data to be displayed in the same
+> vertical area as in non-interlaced mode. This is accomplished by doubling
+> the number of lines appearing on the video screen.
+>
+> -- p.49
+
+> Figure 3-5 (printed p.50): under the combined frame the caption reads
+> "(Same physical space as used by a 200-line, noninterlaced display.)" --
+> the 400 interlaced lines occupy the same physical height as 200
+> non-interlaced lines.
+>
+> -- p.50, Figure 3-5
+
+Claims: `opus:3-res.c16` (the sentence above), `opus:3-lace.f03` (the figure
+caption above).
+
+`3-lace.f03`'s own extract carries the flag `corpus-print-disagreement`: the
+machine-readable text pulled from this figure reads "by a 200-line (256)
+PAL)," which is garbled. P5 below rests on the figure image as read and
+transcribed by the reader, not on that corpus text.
+
+Two things are asserted, and they are read together rather than singly:
+
+1. an interlaced frame carries twice as many lines as a non-interlaced one;
+2. that doubled line count occupies the *same* vertical span the
+   non-interlaced count occupied -- it is not simply twice as tall.
+
+### Propositions
+
+**P4 -- INTERLACE DOUBLES THE LINE COUNT PER DISPLAYED FRAME.**
+With interlace mode enabled versus disabled, and everything else held
+constant, the number of lines belonging to one displayed frame is twice the
+number belonging to one non-interlaced frame (p.49: "twice as much data ...
+doubling the number of lines appearing on the video screen").
+
+**P5 -- THE DOUBLED LINES OCCUPY THE SAME SPAN, NOT A TALLER ONE.**
+The doubled line count of P4 spans the same overall vertical extent as the
+non-interlaced frame it is compared against (p.50, Figure 3-5: the combined
+interlaced frame is captioned "Same physical space as used by a 200-line,
+noninterlaced display").
+
+**CONTROL (interlace) -- the fixture can toggle interlace and observe a
+change on the same measurement basis.**
+Before P4/P5 are trusted: with interlace mode enabled, whatever signal P4/P5
+measure is observed to differ from interlace mode disabled, on the same run
+and the same clock -- confirming the toggle reaches the module and the
+measurement is not vacuous.
+
+### What this extension does NOT claim
+
+- **Nothing about which specific line totals are correct.** Whether a
+  non-interlaced frame is 200, 312 or 262 lines is not this package's
+  subject; P4 asserts only that the interlaced count is double whatever the
+  non-interlaced count on this fixture measures.
+- **Nothing about the half-line vertical timing mechanism** by which real
+  interlaced video achieves the visual effect described. Only the line-count
+  and physical-space claims in the two quotations above.
+- **Nothing about colour, bitplane content, or what is displayed.**
+
+### Expected values
+
+As above: every expected value comes from the page or from arithmetic on
+this test's own stimulus -- "the interlaced count is double the
+non-interlaced count measured on this same fixture" -- never from what the
+RTL produces.
+
+### Observable, to be fixed when the RTL is opened
+
+Required: a way to enable/disable interlace mode independent of DIWSTRT and
+DMACON, and a per-field count of how many lines belong to a displayed frame,
+measured on the same basis with the toggle in each state. The exact port(s)
+are chosen when the RTL is opened; the build commit will say which and why.
+
+If no port on `agnus.v` carries either of these, P4 and P5 cannot be graded
+here, and this package will `record()` that with the reason rather than
+grading a weaker proposition.
