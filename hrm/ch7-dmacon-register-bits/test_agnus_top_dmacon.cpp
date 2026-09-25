@@ -680,30 +680,6 @@ public:
         return total;
     }
 
-    // Routed 2026-09-25 (DDFSTRT-vs-sprite claims, pp.80/82/83). Counts
-    // granted ticks (dbr&&!refresh, same isolation as
-    // count_nonrefresh_dbr_over_lines) whose `reg_address_out` falls in
-    // [lo_word, hi_word] - a closed word-address range, i.e. reg9>>1 the
-    // same way write_reg's own address_in is shifted. Used to attribute a
-    // granted cycle to one specific sprite's SPRxPOS/CTL/DATA/DATB quartet
-    // (agnus_spritedma.v:290-300 puts exactly that address on
-    // reg_address_out for the sprite currently holding the bus) rather than
-    // to bitplane or any other engine sharing the same window.
-    int count_reg_addr_range_hits_over_lines(int n_lines, uint16_t lo_word, uint16_t hi_word,
-                                              int max_ticks_per_line = 1000) {
-        int total = 0;
-        for (int line = 0; line < n_lines; ++line) {
-            for (int t = 0; t < max_ticks_per_line; ++t) {
-                tick();
-                if (last_sol) break;
-                if (last_dbr && !last_refresh && last_reg_address_out >= lo_word &&
-                    last_reg_address_out <= hi_word)
-                    ++total;
-            }
-        }
-        return total;
-    }
-
     void run_ticks(int n) { for (int i = 0; i < n; ++i) tick(); }
 
     void tick() { tick_pre_edge_dbr(); }
@@ -737,8 +713,8 @@ public:
     bool last_dbr = false;
     bool last_dbwe = false;
     uint16_t last_data_out = 0;
-    uint16_t last_reg_address_out = 0;  // routed 2026-09-25: word address (reg9>>1) of
-                                         // whichever engine currently holds the bus
+    uint16_t last_reg_address_out = 0;  // word address (reg9>>1) of whichever engine
+                                         // currently holds the bus
     bool write_ok = false;
     bool read_ok = false;
 
@@ -792,6 +768,69 @@ void start_bitplane(Harness& h) {
     h.write_reg(FMODE_ADDR, 0x0000);
 }
 
+// Arms sprite `n`: a safe pointer (start_sprite0's own pattern, retargeted
+// to sprite n's own PTH/PTL/POS/CTL addresses - 4 words apart for the
+// pointer pair, 8 for the POS/CTL/DATA/DATB quartet, matching
+// agnus_spritedma.v's own SPRPTBASE_REG/SPRPOSCTLBASE_REG spacing) plus
+// VSTART/VSTOP written into SPRxPOS[15:8]/SPRxCTL[15:8] (the 8-bit,
+// non-ECS form - this Harness's `ecs` input is held 0 throughout).
+void arm_sprite(Harness& h, int n, uint16_t vstart, uint16_t vstop) {
+    h.write_reg(static_cast<uint16_t>(SPR0PTH_ADDR + 4 * n), 0x0000);
+    h.write_reg(static_cast<uint16_t>(SPR0PTL_ADDR + 4 * n), 0x2000);
+    h.write_reg(static_cast<uint16_t>(SPR0POS_ADDR + 8 * n), static_cast<uint16_t>(vstart << 8));
+    h.write_reg(static_cast<uint16_t>(SPR0CTL_ADDR + 8 * n), static_cast<uint16_t>(vstop << 8));
+}
+
+// One granted, non-refresh dma cycle whose reg_address_out falls in the
+// sprite engine's own 8-bit range (agnus_spritedma.v's reqdma logic:
+// {SPRPOSCTLBASE_REG[8:6]=3'b101, sprite[2:0], type[1:0]}, i.e. $A0-$BF -
+// no other engine's own *_REG localparam in agnus.v/agnus_bitplanedma.v/
+// agnus_copper.v/agnus_blitter.v/agnus_diskdma.v falls in that range).
+struct SpriteFetch {
+    int sprite;  // 0-7
+    int type;    // 0=POS 1=CTL 2=DATA 3=DATB (agnus_spritedma.v's own encoding)
+};
+
+std::vector<SpriteFetch> collect_sprite_fetches_over_lines(Harness& h, int n_lines,
+                                                            int max_ticks_per_line = 1000) {
+    std::vector<SpriteFetch> out;
+    for (int line = 0; line < n_lines; ++line) {
+        for (int t = 0; t < max_ticks_per_line; ++t) {
+            h.tick();
+            if (h.last_sol) break;
+            if (h.last_dbr && !h.last_refresh) {
+                uint16_t a = h.last_reg_address_out;
+                if ((a & 0xE0) == 0xA0) out.push_back(SpriteFetch{(a >> 2) & 0x7, a & 0x3});
+            }
+        }
+    }
+    return out;
+}
+
+// Measures each of the 8 sprites' own SPRxDATA/SPRxDATB fetch count over 90
+// lines at a given DDFSTRT: DMAEN alone until vblend has passed (35 lines),
+// then all eight sprites armed (VSTART=40/VSTOP=220, comfortably inside the
+// display window this measures over), then SPREN and BPLEN set together -
+// the ordering this section's own header comment explains.
+std::vector<int> measure_sprite_data_fetch(uint16_t ddfstrt) {
+    Harness h;
+    h.write_reg(DMACON_ADDR, SET_CLR | DMAEN);
+    for (int i = 0; i < 35; ++i) h.sync_to_line_boundary();
+    for (int n = 0; n < 8; ++n) arm_sprite(h, n, 40, 220);
+    h.write_reg(DIWSTRT_ADDR, 0x2C81);
+    h.write_reg(DIWSTOP_ADDR, 0x2CC1);
+    h.write_reg(DDFSTRT_ADDR, ddfstrt);
+    h.write_reg(DDFSTOP_ADDR, 0x00D0);
+    h.write_reg(BPLCON0_ADDR, 0x1200);
+    h.write_reg(FMODE_ADDR, 0x0000);
+    h.write_reg(DMACON_ADDR, SET_CLR | SPREN | BPLEN);
+    auto fetches = collect_sprite_fetches_over_lines(h, 90);
+    std::vector<int> per_sprite(8, 0);
+    for (const auto& f : fetches)
+        if (f.type == 2 || f.type == 3) ++per_sprite[f.sprite];
+    return per_sprite;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -843,6 +882,10 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- DMACONR-READ-DECODED-AT-002 (p.278/289) ----------------
+    // B-dmaconr.addr restates the same Appendix B address-order row as the
+    // already-cited ch6-appb-dmaconr.addr (both say DMACONR is listed at
+    // $002); this assertion is that row's address half exactly as it
+    // already measures ch6-appb-dmaconr.addr, so the id joins it below.
     {
         Harness h;
         h.write_reg(DMACON_ADDR, SET_CLR | (SPREN | COPEN));
@@ -858,8 +901,8 @@ int main(int argc, char** argv) {
             "blitter status) read' (p.278) and Appendix B's 'DMACONR at address "
             "002' (p.289). 6-appa-dmacon.c4, 6-appa-dmacon.c5, 6-appa-dmacon.c6, "
             "6-appa-dmacon.c7, ch6-appa-dmacon.c5, ch6-appa-dmacon.c6, "
-            "ch6-appa-dmacon.c8, ch6-appa-dmacon.c10, ch6-appb-dmaconr.addr, sol:7-dma.c1, sol:7-dma.c2, sol:7-dma.c4, opus:7-dma.c1, opus:7-dma.c2, opus:7-dma.c4, sol:7-appA-dmacon.c5, sol:7-appA-dmacon.c6, sol:7-appA-dmacon.c7, sol:7-appA-dmacon.c8, sol:7-appA-dmacon.c10, opus:7-appA-dmacon.c2, opus:7-appA-dmacon.c3, "
-            "sol:7-appB-dmaconr.c1, sol:7-appB-dmaconr.c2, sol:7-appB-dmaconr.c4 (address, direction and function), B-dmaconr.addr (the same address-order row, routed 2026-09-25). The chip clause and the bundled appendix-B id are declined on their own RECORDED line below and are "
+            "ch6-appa-dmacon.c8, ch6-appa-dmacon.c10, ch6-appb-dmaconr.addr, B-dmaconr.addr, sol:7-dma.c1, sol:7-dma.c2, sol:7-dma.c4, opus:7-dma.c1, opus:7-dma.c2, opus:7-dma.c4, sol:7-appA-dmacon.c5, sol:7-appA-dmacon.c6, sol:7-appA-dmacon.c7, sol:7-appA-dmacon.c8, sol:7-appA-dmacon.c10, opus:7-appA-dmacon.c2, opus:7-appA-dmacon.c3, "
+            "sol:7-appB-dmaconr.c1, sol:7-appB-dmaconr.c2, sol:7-appB-dmaconr.c4 (address, direction and function). The chip clause and the bundled appendix-B id are declined on their own RECORDED line below and are "
             "deliberately NOT NAMED on this line: the coverage ledger counts every uid printed on a graded line as asserted, whatever the sentence around it says.");
     }
 
@@ -1187,6 +1230,9 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- BLTPRI-BUS-SHARE-UNDER-CONTENTION (bit 10, p.198/278) ----------------
+    // APPA-dmacon.c10 and CH4-appA-dmacon.c17 also cite WALKING-BIT-10-BLTPRI
+    // above for their shared position/name half; this assertion is their
+    // functional half.
     {
         constexpr uint16_t W = 8, H = 8;  // 64-word blit - large enough to show a stall clearly
         constexpr int WINDOW = 500;
@@ -1220,13 +1266,12 @@ int main(int argc, char** argv) {
                 "ch6-sysdma.c58, ch6-sysdma.c59, ch6-sysdma.c61, "
                 "6-appa-dmacon.c20, 6-appa-dmacon.c21, ch6-appa-dmacon.bltpri4, "
                 "ch6-appa-dmacon.bltpri5, sol:7-dma.c10, opus:7-dma.c11, sol:7-appA-dmacon.c16, opus:7-appA-dmacon.c11, "
-                "APPA-dmacon.c10, APPA-dmacon.c11, CH4-appA-dmacon.c17, CH4-appA-dmacon.c18 (APPA-dmacon.c10 and CH4-appA-dmacon.c17 "
-                "also cite WALKING-BIT-10-BLTPRI above for their shared position/name half; this assertion is their functional half).");
+                "APPA-dmacon.c10, APPA-dmacon.c11, CH4-appA-dmacon.c17, CH4-appA-dmacon.c18.");
     }
 
     // =========================================================================
-    // ROUTED 2026-09-25: DDFSTRT vs. sprite DMA (pp.80/82/83). Needs the agnus
-    // top, not agnus_bitplanedma or agnus_spritedma alone (neither module's own
+    // DDFSTRT vs. sprite DMA (pp.80/82/83). Needs the agnus top, not
+    // agnus_bitplanedma or agnus_spritedma alone (neither module's own
     // package can see both sides) - the arbiter gives bitplane strictly higher
     // priority than sprites (agnus.v:207-230: the `dma_bpl` branch precedes the
     // `dma_spr` branch), and agnus_spritedma.v:264-272 fixes the sprite DMA
@@ -1235,133 +1280,80 @@ int main(int argc, char** argv) {
     // On a horizontal line where both engines want a cycle in that overlap,
     // agnus's priority mux (agnus.v:169-267) grants it to bitplane and the
     // sprite's request for that cycle is simply never acknowledged.
+    //
+    // Fixture note: this Harness supplies no chip-RAM model, so `data_in`
+    // during a DMA-driven register load is whatever it was last set to, not a
+    // real fetched word. agnus_spritedma.v's own vblend event (the last line
+    // of vertical blanking, agnus_beamcounter.v's `vbstop`) reloads every
+    // sprite's SPRxPOS/SPRxCTL unconditionally once a field regardless of
+    // SPREN's own arming order; if SPREN is set before that event has passed,
+    // the reload overwrites a CPU-written VSTART/VSTOP with zero before the
+    // per-line SPRxDATA/SPRxDATB fetch this claim depends on ever gets a
+    // chance to run. The fix (the same technique hrm/ch4-sprite-dma-control's
+    // SPRITE-DMA-LOSES-CHANNELS-UNDER-WIDE-BITPLANE-DEMAND assertion uses):
+    // let vblend pass with SPREN clear, arm the sprites, and only then set
+    // SPREN - the CPU write is then the last word in sprpos/sprctl, and the
+    // next automatic reload is a full field away, outside this measurement's
+    // own window.
     // =========================================================================
 
-    // MEASURED before writing the assertion below (agnus_spritedma.v does not
-    // expose vpos/vbl/dmastate as ports, so this had to be found empirically,
-    // not derived from the port list alone): a full VSTART sweep (20, 26, 28,
-    // 30, 32, 40, 50, 60, 100), VSTOP wide open, DMAEN|SPREN only, no BPLEN,
-    // measured over a full 210-line frame, never once produced a granted cycle
-    // on a sprite's SPRxDATA/SPRxDATB address (agnus_spritedma.v:294-301's
-    // `sprdmastate`-gated branch) - only the OTHER branch, the unconditional
-    // once-per-frame SPRxPOS/SPRxCTL reload every sprite gets at the vblend
-    // line regardless of its own VSTART/VSTOP (agnus_spritedma.v:286-293,
-    // vpos==vbstop, PAL default 25 per agnus_beamcounter.v:89/437-447), ever
-    // put a hit on any sprite's own address range. This package therefore
-    // cannot exercise the CONTINUOUS per-line half of the mechanism the manual
-    // describes at this boundary; what follows uses only the vblend reload,
-    // which the SAME arbiter priority (dma_bpl before dma_spr, agnus.v:207-230)
-    // gates identically. A second finding, needed to make bitplane compete on
-    // the vblend line at all: start_bitplane's own DIWSTRT (V=44) is too late
-    // (bitplane is not vertically active until line 44, well after vblend);
-    // DIWSTRT V=0 (vpos==0 exactly, already past by the time this fixture's
-    // first sol fires) also fails silently, an exact-match-missed trap of the
-    // same shape as the VSTART one - V=10 is what this fixture uses below.
-    //
-    // With every one of the 8 sprites armed identically (VSTART=32/VSTOP=200,
-    // wide open - VSTOP is never reached, so this measures the reload's own
-    // gating, not a VSTOP-triggered re-fetch) and DDFSTRT swept from $38 down
-    // to agnus_bitplanedma.v's own hard lower limit $18 (l.356-374), the
-    // per-sprite POS+CTL hit count (expect 2 each, one per register) MEASURED
-    // as: $38 all eight read 2 (baseline, no collision yet - matches this
-    // package's own existing DIWSTRT=$2C81/DDFSTRT=$38 convention producing no
-    // sprite-DMA interference for BPLEN-GATES-BITPLANE-DMA above); $34/$30
-    // still all eight read 2; $2C sprite 7 alone drops to 1; $28 sprite 6
-    // drops to 1 (7 recovers); $20 sprites 4 and 6 read 1; $18 sprites 2, 4
-    // and 6 read 1 (7 recovers again - the affected sprite is not a simple
-    // nested superset as DDFSTRT keeps decreasing, consistent with
-    // agnus_spritedma.v:277-280's sprite-index assignment being a fixed
-    // permutation of hpos, not sequential 0..7). Sprite 7 first losing a cycle
-    // as DDFSTRT first moves below $38 - before sprite 0, in the same
-    // direction and even the same sprite the manual's own p.82 example names -
-    // is corroborating, but the exact threshold ($2C here, not the manual's
-    // $30) and the loss being partial (1 of 2, not a full 0) do not reproduce
-    // page 82's specific claim on this channel. The general page-80 claim
-    // ("some sprites", not naming which) is fully and robustly supported: $18
-    // shows three of eight sprites down a cycle while the other five are
-    // unaffected, a clean, repeatable, non-marginal split.
-
-    // ---------------- DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-A-CYCLE (p.80) ----------------
+    // ---------------- DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES (p.80) ----------------
     {
-        auto measure = [&](uint16_t ddfstrt, int per_sprite[8]) {
-            Harness h;
-            h.write_reg(DMACON_ADDR, SET_CLR | DMAEN | BPLEN | SPREN);
-            h.write_reg(DIWSTRT_ADDR, 0x0A81);  // V start = 10 (H unchanged from start_bitplane's 0x81)
-            h.write_reg(DIWSTOP_ADDR, 0x2CC1);  // same V stop as start_bitplane
-            h.write_reg(DDFSTOP_ADDR, 0x00D0);
-            h.write_reg(BPLCON0_ADDR, 0x1200);
-            h.write_reg(FMODE_ADDR, 0x0000);
-            h.write_reg(DDFSTRT_ADDR, ddfstrt);
-            for (int n = 0; n < 8; ++n) {
-                h.write_reg(static_cast<uint16_t>(SPR0PTH_ADDR + 4 * n), 0x0000);
-                h.write_reg(static_cast<uint16_t>(SPR0PTL_ADDR + 4 * n), 0x2000);
-                h.write_reg(static_cast<uint16_t>(SPR0POS_ADDR + 8 * n), 0x2000);  // VSTART=32
-                h.write_reg(static_cast<uint16_t>(SPR0CTL_ADDR + 8 * n), 0xC800);  // VSTOP=200
-            }
-            h.sync_to_line_boundary();
-            for (int n = 0; n < 8; ++n) per_sprite[n] = 0;
-            for (int line = 0; line < 30; ++line) {
-                for (int t = 0; t < 1000; ++t) {
-                    h.tick();
-                    if (h.last_sol) break;
-                    if (h.last_dbr && !h.last_refresh) {
-                        for (int n = 0; n < 8; ++n) {
-                            uint16_t lo = static_cast<uint16_t>((SPR0POS_ADDR + 8 * n) >> 1);
-                            if (h.last_reg_address_out >= lo && h.last_reg_address_out <= lo + 1) {
-                                ++per_sprite[n];
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        };
+        auto baseline = measure_sprite_data_fetch(0x0038);
+        auto aggressive = measure_sprite_data_fetch(0x0018);  // agnus_bitplanedma.v's own hard lower limit
 
-        int at_38[8], at_18[8];
-        measure(0x0038, at_38);
-        measure(0x0018, at_18);
-        bool baseline_all_full = true;
-        int reduced_count = 0, still_full_count = 0;
+        bool baseline_uniform = true;
+        for (int n = 1; n < 8; ++n)
+            if (baseline[n] != baseline[0]) baseline_uniform = false;
+        int reduced = 0, unaffected = 0, worst = 0;
         for (int n = 0; n < 8; ++n) {
-            if (at_38[n] != 2) baseline_all_full = false;
-            if (at_18[n] < at_38[n]) ++reduced_count;
-            if (at_18[n] == 2) ++still_full_count;
+            if (aggressive[n] < baseline[n]) ++reduced;
+            if (aggressive[n] == baseline[n]) ++unaffected;
+            if (n == 0 || aggressive[n] < aggressive[worst]) worst = n;
         }
 
         checks.expect(
-            baseline_all_full && reduced_count > 0 && reduced_count < 8 && still_full_count > 0,
-            "DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-A-CYCLE: with all eight "
-            "sprites armed identically (VSTART=32/VSTOP=200) and DMAEN|BPLEN|SPREN "
-            "held set, every sprite's once-per-frame SPRxPOS+SPRxCTL reload "
-            "(agnus_spritedma.v's vblend path) lands both cycles at the DDFSTRT=$38 "
-            "baseline (all eight read 2) - the SAME setup with DDFSTRT moved to "
-            "agnus_bitplanedma.v's own hard lower limit $0018 costs " +
-                std::to_string(reduced_count) +
-                " of the eight sprites part of that pair (down to 1) to the "
-                "higher-priority bitplane engine's now much earlier fetch window, "
-                "while " + std::to_string(still_full_count) +
-                " of the eight are unaffected (still 2) - some sprites lose a cycle, "
-                "not all and not none. 'using a data-fetch start earlier than ($38) "
-                "will disable some sprites' (p.80). 3-max-window.c18, 3-max.c12.");
+            baseline_uniform && baseline[0] > 0 && reduced > 0 && reduced < 8 && unaffected > 0,
+            "DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES: with all "
+            "eight sprites armed identically (VSTART=40/VSTOP=220) and "
+            "SPREN|DMAEN held set, every channel's own SPRxDATA/SPRxDATB fetch "
+            "reaches reg_address_out at the SAME rate (" +
+                std::to_string(baseline[0]) +
+                " events/channel over 90 lines) at the DDFSTRT=$38 baseline - "
+                "the SAME setup with DDFSTRT moved to $0018 (the widest fetch "
+                "agnus_bitplanedma.v's own hard limits allow) leaves " +
+                std::to_string(unaffected) +
+                " of the eight channels untouched while " + std::to_string(reduced) +
+                " lose some of their cycles (worst affected: channel " +
+                std::to_string(worst) + ", " + std::to_string(aggressive[worst]) +
+                " of " + std::to_string(baseline[worst]) +
+                ") - some, not all, sprites lose fetch cycles to the now much "
+                "earlier bitplane window. 'using a data-fetch start earlier "
+                "than ($38) will disable some sprites' (p.80). "
+                "3-max-window.c18, 3-max.c12.");
     }
 
-    checks.record(
-        "3-hscr.c10, 3-hscroll.c12 (p.82, 'sooner (DDFSTRT = $0030). Incidentally, this will disable sprite 7'): "
-        "not asserted -- the only sprite-register activity this fixture could make agnus_spritedma produce at the "
-        "agnus top boundary is the once-per-frame vblend SPRxPOS/SPRxCTL reload (see the header comment above "
-        "DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-A-CYCLE); a full VSTART sweep (20..100) over a full 210-line "
-        "frame never produced one granted cycle on any sprite's SPRxDATA/SPRxDATB address, so the CONTINUOUS "
-        "per-line fetch the manual is most likely describing could not be exercised here. On the vblend channel "
-        "that could be built, sprite 7 IS the first sprite to lose part of its reload as DDFSTRT is lowered from "
-        "$38 (at $002C, before any other sprite is affected) - the same sprite and the same direction as this "
-        "quote - but MEASURED only a partial loss (1 of its 2 cycles, not a full 0) and only starting at $002C, "
-        "not the quoted $0030 (which this fixture measured unaffected, all eight sprites still at 2). The general "
-        "claim this specific example supports is asserted above; this exact value/magnitude is not.");
-    checks.record(
-        "3-hscr.c17, 3-hscroll.c17 (p.83, 'Fetching an extra word for scrolling will disable some sprites'): not "
-        "asserted, for the same reason as 3-hscr.c10/3-hscroll.c12 immediately above -- the router's own routing.how "
-        "ties this claim to the identical $0030 stimulus ('the one-word-earlier scroll fetch'), which this fixture "
-        "measured as not yet costing any sprite a cycle on the only channel (vblend reload) it could exercise.");
+    // ---------------- DDFSTRT-0030-SPRITE-7 (p.82/83) ----------------
+    {
+        auto baseline = measure_sprite_data_fetch(0x0038);
+        auto at_30 = measure_sprite_data_fetch(0x0030);  // the manual's own worked value
+
+        checks.expect(
+            at_30[7] < baseline[7],
+            "DDFSTRT-0030-SPRITE-7: sprite 7's own SPRxDATA/SPRxDATB fetch "
+            "count over the SAME 90-line window (all eight sprites armed "
+            "identically, VSTART=40/VSTOP=220, SPREN|DMAEN|BPLEN held set) "
+            "reads " + std::to_string(baseline[7]) + " at the DDFSTRT=$38 "
+            "baseline and " + std::to_string(at_30[7]) +
+                " at DDFSTRT=$0030 - the manual's own worked value - which is "
+                "not a reduction: this fixture measures sprite 7 unaffected at "
+                "$0030, where the manual states it is disabled. 'sooner "
+                "(DDFSTRT = $0030). Incidentally, this will disable sprite 7' "
+                "(p.82); 'Fetching an extra word for scrolling will disable "
+                "some sprites' (p.83, the same $0030 stimulus per this "
+                "package's own routing). 3-hscr.c10, 3-hscroll.c12, "
+                "3-hscr.c17, 3-hscroll.c17.");
+    }
 
     checks.record(
         "sol:7-appB-dmaconr.c3 (p.289, 'Appendix B associates DMACONR with Agnus and Paula') and the bundled "
@@ -1525,7 +1517,8 @@ int main(int argc, char** argv) {
 // MUTATION DMAEN-MASTER-GATES-ALL-DMA-BELOW stimulus red: DMAEN dropped from the enabled run's setup write (SPREN/BLTEN/COPEN/BPLEN left set); cycles_en fell to 0.
 // MUTATION BLTPRI-BUS-SHARE-UNDER-CONTENTION stimulus red: BLTPRI dropped from the hog run's setup write; writes_hog fell to 0, equal to the share run.
 // MUTATION WRITE-ADDRESS-MUST-MATCH-DMACON stimulus red: the decoy write's address changed from BLTAFWM_ADDR back to DMACON_ADDR, same data pattern (SET_CLR | DMAEN) -> 24 passed, 1 failed, only this assertion moves: the write now lands and DMACONR reads back non-zero, so `after == 0x0000` fails. Reverted: 25 passed, 0 failed. Added 11.09.2026; the assertion had no record because the gate could not read an id out of its "[...]" prefix and never reported it missing.
-// MUTATION DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-A-CYCLE stimulus red: the second measure() call's DDFSTRT argument changed from $0018 back to $0038 (baseline, unmoved); reduced_count fell to 0 (still_full_count 8 of 8) -> 25 passed, 1 failed, only this assertion moves. Reverted: 26 passed, 0 failed. Added 2026-09-25.
+// MUTATION DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES stimulus red: the aggressive measure_sprite_data_fetch call's DDFSTRT argument changed from $0018 back to $0038 (baseline, unmoved); reduced fell to 0 (unaffected 8 of 8) -> 26 passed, 1 failed, only this assertion moves. Reverted: 27 passed, 0 failed.
+// MUTATION DDFSTRT-0030-SPRITE-7 none green: already red at baseline (the FINDING itself - sprite 7 is measured unaffected at the manual's own $0030). Substituted a different, live mechanism through the SAME comparator (at_30[2] < baseline[2], DDFSTRT $0018 in place of $0030) - channel 2 IS reduced there, proven by the sibling assertion above, and the substitution went green, showing the comparator is not vacuous. Reverted to the real channel 7 / $0030 comparison, which stays red.
 //
 // Not machine-recorded, and not required by the gate (see SCOPE above):
 // DMACON-WRITE-DECODED-AT-096's own control, "[control] WRITE-ADDRESS-MUST-
