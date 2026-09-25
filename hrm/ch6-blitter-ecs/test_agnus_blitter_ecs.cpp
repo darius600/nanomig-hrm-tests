@@ -166,9 +166,15 @@
 //     ch6-appa-bltxpt.c2, ch6-appa-bltxpt.c6 . Routing-corrected from
 //     PKG-BLT-ADRGEN by Prompt 8 independent validation - not part of this
 //     package's original 135-claim filter (see "ROUTING CORRECTION" above).
-//     6-dma-channels.c67, ch6-dma.c69 (p172, the chapter-body echo of the
-//     same Appendix-C pointer-range fact, see NOT ASSERTED - REDIRECTED
-//     above) also cited here, required red included.
+//
+//   BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE *** REQUIRED RED, SAME CAUSE AS
+//     NM-HRM-022 *** (p172, p270, p309): 6-dma-channels.c67, ch6-dma.c69 .
+//     This pre-existing package's BLTXPTH-WIDTH-REGARDLESS-OF-ECS carries a
+//     directionless predicate (`ocs_ptr != ecs_ptr`) and its verdict/label
+//     text stay as they are, per the repair rule for assertions that
+//     pre-date this backlog - only these two ids moved off it, onto this
+//     new assertion, which states the direction p.172/p.270/p.309 give and
+//     is required red for the identical RTL cause.
 //
 //   BLTSIZH-GATED-BY-ECS (p172, p189, p269, p308, p310):
 //     6-appa-registers.c73, 6-appa-registers.c74, 6-appc-modifications.c13,
@@ -282,10 +288,11 @@
 //     classify.package filed it under PKG-BLT-ECS; not reached for here.
 //   (6-dma-channels.c67 and ch6-dma.c69 (opus), formerly redirected here as
 //   "a general chapter-body statement that does not itself distinguish 3
-//   bits from 5", were moved onto BLTXPTH-WIDTH-REGARDLESS-OF-ECS below - a
-//   chapter-body echo of a fact that assertion already measures is worth
-//   citing there, required red included, rather than redirecting away from
-//   it.)
+//   bits from 5", were moved onto BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE below,
+//   not onto BLTXPTH-WIDTH-REGARDLESS-OF-ECS - independent validation found
+//   that assertion's `ocs_ptr != ecs_ptr` predicate directionless, unable to
+//   establish "increased range", and moved the two ids to a new assertion
+//   that states the direction instead. Required red included, same cause.)
 //
 // NOT ASSERTED - PIXEL/WORD UNIT CONVERSION (absent_signal: a pixel-count
 //   port; reason_kind: absent - this RTL exposes only a word-count field
@@ -440,6 +447,27 @@
 //   pre-mutation file exactly (`diff` against a saved pre-mutation copy of
 //   the whole file, zero bytes of difference), and a clean rebuild reproduced
 //   10 passed, 3 failed.
+// MUTATION BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE stimulus red: added by the unit-
+//   backlog repair that split 6-dma-channels.c67/ch6-dma.c69 off
+//   BLTXPTH-WIDTH-REGARDLESS-OF-ECS onto this new assertion; diagnosed the
+//   same way, since this assertion is also already red before the mutation.
+//   The BLTAPTH stimulus written in BOTH the ecs=0 and the ecs=1 branches
+//   changed from 0x001F to 0x0015 (same value in both branches; expected
+//   constants 0x38000/0xF8000 left untouched) -> MEASURED: both branches'
+//   reported pointer become 0xA8000 (was 0xF8000/0xF8000 before the
+//   mutation), CONFIRMING address_out() genuinely tracks the written
+//   stimulus - but neither branch reaches either expected constant
+//   (0xA8000 != 0x38000, 0xA8000 != 0xF8000), so the assertion still FAILS,
+//   for the same reason as before the mutation and the same reason as
+//   BLTXPTH-WIDTH-REGARDLESS-OF-ECS and NM-HRM-022: agnus_blitter.v:590
+//   carries no `&& ecs` on the reg_address_in connection into
+//   agnus_blitter_adrgen, so no value written to BLTAPTH can make the ecs=0
+//   branch land only 3 bits. Totals unchanged: 12 passed, 4 failed (this
+//   assertion, still red, plus BLTXPTH-WIDTH-REGARDLESS-OF-ECS, BLTSIZV-
+//   LOADS-HEIGHT-REGARDLESS-OF-ECS and DOFF). Reverted to 0x001F in both
+//   branches afterward; `diff` against a saved pre-mutation copy of the
+//   whole file showed zero bytes of difference, and a clean rebuild
+//   reproduced 12 passed, 4 failed.
 // MUTATION BLTSIZH-GATED-BY-ECS stimulus red: h_on's `ecs` changed from
 //   true to false (so BOTH harnesses now run with ecs=0) -> FAIL - busy
 //   never sets in h_on either, so `on_busy_immediate` reads false; totals
@@ -959,10 +987,14 @@ int main(int argc, char** argv) {
     // straight through from the same adrgen submodule (agnus_blitter.v:96,
     // 576-591), so the pair the manual actually states - 3 bits without ECS, 5
     // bits with it - is measurable here, at the boundary where `ecs` exists.
-    // 6-dma-channels.c67 and ch6-dma.c69 restate the same Appendix-C pointer-range
-    // fact in chapter-body prose (p.172) without naming the 3-vs-5-bit split; a
-    // chapter-body echo of a fact this assertion already measures shares its
-    // verdict, required red included.
+    // This assertion pre-dates the unit backlog; per the repair rule for
+    // pre-existing assertions its predicate and label text stay as they are.
+    // Independent validation found the predicate (`ocs_ptr != ecs_ptr`)
+    // directionless - satisfied equally by a design that gave ECS the 3-bit
+    // form and OCS the 5-bit form - so it does not establish 6-dma-channels.c67
+    // and ch6-dma.c69 (p.172's "increased range under the" ECS, a directional
+    // claim). Those two ids moved to BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE below,
+    // which states the direction and grades them; see its own header.
     {
         // Identical BLTAPTH stimulus ($001F, all five low bits of the high word
         // set - the same write hrm/ch6-blitter-adrgen's ECS-FIVE-BIT-PTH uses),
@@ -1017,8 +1049,63 @@ int main(int argc, char** argv) {
             "BLTCON0L-GATED-BY-ECS immediately above, which drives the identical "
             "construct-with-ecs/write/compare structure against a register that "
             "agnus_blitter.v:259-260 DOES gate on ecs, and goes green. "
-            "Registered as NM-HRM-022 in docs/findings.md. "
-            "6-dma-channels.c67, ch6-dma.c69.");
+            "Registered as NM-HRM-022 in docs/findings.md.");
+    }
+
+    // ---------------- BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE (p.172, p.270, p.309) ----------------
+    // *** REQUIRED RED, SAME CAUSE AS NM-HRM-022 - do not adjust this assertion to pass. ***
+    // BLTXPTH-WIDTH-REGARDLESS-OF-ECS above pre-dates this backlog and its
+    // predicate (`ocs_ptr != ecs_ptr`) is directionless: it is satisfied by
+    // ANY design where the two chipsets disagree, including a hypothetical
+    // one that gave ECS the 3-bit form and OCS the 5-bit form. It therefore
+    // does not establish the two chapter-body ids the backlog had put on it,
+    // 6-dma-channels.c67 and ch6-dma.c69 (p.172, "The blitter size and
+    // pointer registers have increased range under the" [ECS]) - "increased"
+    // is a direction, and a directionless predicate cannot grade a directional
+    // claim. This assertion states the direction Appendix A p.270 and
+    // Appendix C p.309 give for BLTxPTH and grades those two ids: at ecs=0
+    // only the low 3 of the 5 written bits should reach the pointer's high
+    // word (A16-A18), at ecs=1 all 5 should. For the same stimulus this file's
+    // BLTXPTH-WIDTH-REGARDLESS-OF-ECS already uses ($001F, all five low bits
+    // of BLTAPTH set), p.270's "(high 3 bits, 5 bits if ECS)" gives exactly
+    // two word addresses: ecs=0, only bits 0-2 of $001F land (0b111=7),
+    // 7*0x8000=0x38000; ecs=1, all five bits land (0b11111=31),
+    // 31*0x8000=0xF8000 - the same 0xF8000 BLTXPTH-WIDTH-REGARDLESS-OF-ECS
+    // already measures for its ecs=1 branch.
+    {
+        Harness h_ocs(false);
+        h_ocs.write_reg(BLTAPTL, 0x0000);
+        h_ocs.write_reg(BLTAPTH, 0x001F);
+        const uint32_t ocs_ptr = h_ocs.address_out();
+
+        Harness h_ecs(true);
+        h_ecs.write_reg(BLTAPTL, 0x0000);
+        h_ecs.write_reg(BLTAPTH, 0x001F);
+        const uint32_t ecs_ptr = h_ecs.address_out();
+
+        char ocs_hex[8], ecs_hex[8];
+        std::snprintf(ocs_hex, sizeof(ocs_hex), "%05X", static_cast<unsigned>(ocs_ptr));
+        std::snprintf(ecs_hex, sizeof(ecs_hex), "%05X", static_cast<unsigned>(ecs_ptr));
+
+        checks.expect(ocs_ptr == 0x38000u && ecs_ptr == 0xF8000u,
+            "BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE: p.172 states the direction plainly - "
+            "'The blitter size and pointer registers have increased range under the' "
+            "[ECS] - and Appendix A p.270 ('Blitter pointer to x (high 3 bits, 5 bits "
+            "if ECS)') plus Appendix C p.309 ('BLTxPTH ... (high 5 bits, was 3 bits)') "
+            "give the exact values: writing BLTAPTH=$001F should land as only its low "
+            "3 bits (A16-A18) at ecs=0 - word address 0x38000 - and as all 5 bits at "
+            "ecs=1 - word address 0xF8000. MEASURED: ocs_ptr=0x" + std::string(ocs_hex) +
+            ", ecs_ptr=0x" + std::string(ecs_hex) + ". THIS ASSERTION IS REQUIRED TO "
+            "FAIL, for the identical RTL cause as BLTXPTH-WIDTH-REGARDLESS-OF-ECS above "
+            "and NM-HRM-022 in docs/findings.md: agnus_blitter.v:590 carries no `&& ecs` "
+            "on the reg_address_in connection into agnus_blitter_adrgen, and "
+            "agnus_blitter_adrgen.v:62 takes data_in[4:0] unconditionally, so the ecs=0 "
+            "branch lands all 5 bits too, the same 0xF8000 the ecs=1 branch produces - "
+            "never the 3-bit 0x38000 this assertion expects of it. The control ruling "
+            "out a fixture that never varies ecs is BLTCON0L-GATED-BY-ECS above, which "
+            "drives the identical construct-with-ecs/write/compare structure against a "
+            "register that DOES gate on ecs and goes green. Registered as NM-HRM-022 in "
+            "docs/findings.md. 6-dma-channels.c67, ch6-dma.c69.");
     }
 
     // ---------------- BLTSIZH-GATED-BY-ECS (p.172, p.189, p.269, p.308, p.310) ----------------
