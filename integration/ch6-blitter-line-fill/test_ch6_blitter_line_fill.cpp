@@ -228,9 +228,9 @@ int main(int argc, char** argv) {
 
         LineAnalysis a = analyze_line(r, 1);
         c.expect(loaded && a.complete(),
-            "6-line-mode.c39 6-line-mode.c40 ch6-line.c12 ch6-line.c13 "
+            "6-line-mode.c39 ch6-line.c12 "
             "6-line-mode.c41 6-line-mode.c42 ch6-line.c14 ch6-line.c15 ch6-line.c16 "
-            "p180 p181 p189 p190 p192 p268: a line-mode blit for endpoints (10,5)-(3,40) draws "
+            "p180 p181 p189 p190 p191 p192 p268: a line-mode blit for endpoints (10,5)-(3,40) draws "
             "exactly one pixel in every row y=5..40 (36 rows), the first at bit 5 (x=10), the last "
             "at bit 12 (x=3), the bit index rising by 0 or 1 between consecutive rows (x falling by "
             "0 or 1), and the guard words at y=4 and y=41 stay zero (interior positions not graded)");

@@ -48,14 +48,16 @@ alone, not read off the RTL:
 
 ### Assertion (drawn line)
 
-- Claims: `6-line-mode.c39`, `6-line-mode.c40`, `ch6-line.c12`,
-  `ch6-line.c13` (page 190, raw dx/dy); `6-line-mode.c41`,
-  `6-line-mode.c42`, `ch6-line.c14`, `ch6-line.c15`, `ch6-line.c16` (page
-  191/192, normalized dx/dy and the rearrangement). One assertion settles
-  all nine: the normalized values are exactly what a correctly drawn line
-  for these endpoints requires, and a line drawn from unnormalized values
-  comes out the wrong length (see Mutation) -- so the drawn line is
-  evidence for the whole recipe, not just its last step.
+- Claims: `6-line-mode.c39`, `ch6-line.c12` (page 190, raw dx/dy);
+  `6-line-mode.c41`, `6-line-mode.c42`, `ch6-line.c14`, `ch6-line.c15`,
+  `ch6-line.c16` (page 191, normalized dx/dy and the rearrangement). One
+  assertion settles all seven: the normalized values are exactly what a
+  correctly drawn line for these endpoints requires, and a line drawn from
+  unnormalized values comes out the wrong length (see Mutation) -- so the
+  drawn line is evidence for the recipe's normalization step, not just the
+  registers it feeds. (`6-line-mode.c40` and `ch6-line.c13`, dy's raw-delta
+  claim, sit on the second stimulus below only: this line's y2-y1 is
+  already positive, so it cannot falsify "dy = abs(y2-y1)".)
 - Proposition: for endpoints (x1,y1)=(10,5), (x2,y2)=(3,40), a line-mode
   blit set up per page 192's register summary and the octant/bit
   derivation above -- Y the major axis, x falling, y rising -- draws a
@@ -94,8 +96,8 @@ tell "dy = abs(y2-y1)" from "dy = y2-y1". The x claims do not share the
 problem (x2-x1 = -7 already).
 
 - Claims: `6-line-mode.c40`, `ch6-line.c13` (page 190, "dy = abs(y2-y1)"
-  specifically -- already carried by the first stimulus above, but not
-  falsifiable by it alone; this stimulus closes that gap).
+  specifically -- not falsifiable by the first stimulus, whose y2-y1 is
+  already positive; this is the only stimulus that carries them).
 - Proposition: `prog_line2.s` walks the identical two points the other way
   -- endpoints (x1,y1)=(3,40), (x2,y2)=(10,5), y2-y1 = 5-40 = -35 -- so
   only a genuine abs() gives the right magnitude. Built the same way from
@@ -338,10 +340,10 @@ precondition exists to catch. Recorded as:
 
 ## Summary
 
-- 3 assertions carrying 15 claim ids (9 on the drawn line, 2 on the second,
-  reversed-direction line, 6 on the ascending fill; `6-line-mode.c40` and
-  `ch6-line.c13` appear on both line assertions, since the first cannot by
-  itself falsify "dy = abs(y2-y1)").
+- 3 assertions carrying 15 claim ids (7 on the drawn line, 2 on the second,
+  reversed-direction line -- `6-line-mode.c40` and `ch6-line.c13`, which
+  the first line cannot falsify since its y2-y1 is already positive -- 6 on
+  the ascending fill).
 - 6 claim ids withdrawn (Table 6-2's assumptions; no expected value in
   this package's claims).
 - 2 fixtures (FIXTURE-LINE, FIXTURE-FILL), 1 control (CONTROL-FILL-DESC,
