@@ -23,6 +23,15 @@
 //   the frozen specification the suite's first version was written against
 //   (docs/legacy-names.md); no claim file carries them.
 //
+// Specification additions: three further propositions from the manual, at
+//   this package's boundary.
+//   p.275 (claim COP2-copins-timing.c2): The Copper requests the bus only on
+//     odd-numbered memory cycles.
+//   p.20 (claim ch2-what-is-a-copper-instruction.c15): Four memory cycle
+//     times are required per MOVE or SKIP instruction.
+//   p.275 (claim ch2-appa-copins.c137): Because only the odd bus cycles are
+//     requested, four memory cycle times are required per instruction.
+//
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was already
 // inspected during FPGA-063 and FPGA-065 before this specification was written.
 // Every expected figure below is a verbatim printed-page quotation, and the unit
