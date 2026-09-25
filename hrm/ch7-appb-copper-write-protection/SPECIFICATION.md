@@ -14,31 +14,41 @@ printed propositions to be tested; port names, concrete stimulus values, and
 the `expect()` assertions themselves are added only after this file is
 committed and step 3 (opening `agnus_copper.v`) begins, per `BUILD-BRIEF.md`.
 
-## Claim inventory (all 19)
+A further claim is routed to this package: `ch2-appb-legend.c1`, page 287,
+quote `"    *    Address not writable by the Copper."` — the identical
+printed legend sentence already covered by `sol:7-appB-legend.c4` and
+`opus:7-appB.c5` below, read independently a third time. It joins the
+LEGEND entry as a third twin, on the same reasoning already recorded there:
+it does not name an address, so it is not its own scored proposition, and
+its content is realized jointly with each addressed proposition that
+already cites the legend.
+
+## Claim inventory (all 20)
 
 | # | uid | page | role |
 |---|---|---|---|
 | 1 | `sol:7-appB-legend.c4` | 287 | LEGEND, primary |
 | 2 | `opus:7-appB.c5` | 287 | LEGEND, twin of #1 |
-| 3 | `sol:7-appB-dmaconr.c5` | 289 | PROP-1, primary |
-| 4 | `sol:7-appB-vposr.c5` | 289 | PROP-2, primary |
-| 5 | `sol:7-appB-vhposr.c5` | 289 | PROP-3, primary |
-| 6 | `sol:7-appB-clxdat.c5` | 289 | PROP-4, primary |
-| 7 | `sol:7-appB-intenar.c5` | 289 | PROP-5, primary |
-| 8 | `sol:7-appB-intreqr.c5` | 289 | PROP-6, primary |
-| 9 | `sol:7-appB-vposw.c5` | 289 | PROP-7, primary |
-| 10 | `sol:7-appB-vhposw.c5` | 289 | PROP-8, primary |
-| 11 | `opus:7-appB.c14` | 289 | PROP-1, twin of #3 |
-| 12 | `opus:7-appB.c16` | 289 | PROP-2, twin of #4 |
-| 13 | `opus:7-appB.c18` | 289 | PROP-3, twin of #5 |
-| 14 | `opus:7-appB.c20` | 289 | PROP-4, twin of #6 |
-| 15 | `opus:7-appB.c22` | 289 | PROP-5, twin of #7 |
-| 16 | `opus:7-appB.c24` | 289 | PROP-6, twin of #8 |
-| 17 | `opus:7-appB.c26` | 289 | PROP-7, twin of #9 |
-| 18 | `opus:7-appB.c28` | 289 | PROP-8, twin of #10 |
-| 19 | `opus:7-appB.c33` | 290 | PROP-9, PROP-10, PROP-11, PROP-12 (one claim, split four ways) |
+| 3 | `ch2-appb-legend.c1` | 287 | LEGEND, twin of #1 |
+| 4 | `sol:7-appB-dmaconr.c5` | 289 | PROP-1, primary |
+| 5 | `sol:7-appB-vposr.c5` | 289 | PROP-2, primary |
+| 6 | `sol:7-appB-vhposr.c5` | 289 | PROP-3, primary |
+| 7 | `sol:7-appB-clxdat.c5` | 289 | PROP-4, primary |
+| 8 | `sol:7-appB-intenar.c5` | 289 | PROP-5, primary |
+| 9 | `sol:7-appB-intreqr.c5` | 289 | PROP-6, primary |
+| 10 | `sol:7-appB-vposw.c5` | 289 | PROP-7, primary |
+| 11 | `sol:7-appB-vhposw.c5` | 289 | PROP-8, primary |
+| 12 | `opus:7-appB.c14` | 289 | PROP-1, twin of #4 |
+| 13 | `opus:7-appB.c16` | 289 | PROP-2, twin of #5 |
+| 14 | `opus:7-appB.c18` | 289 | PROP-3, twin of #6 |
+| 15 | `opus:7-appB.c20` | 289 | PROP-4, twin of #7 |
+| 16 | `opus:7-appB.c22` | 289 | PROP-5, twin of #8 |
+| 17 | `opus:7-appB.c24` | 289 | PROP-6, twin of #9 |
+| 18 | `opus:7-appB.c26` | 289 | PROP-7, twin of #10 |
+| 19 | `opus:7-appB.c28` | 289 | PROP-8, twin of #11 |
+| 20 | `opus:7-appB.c33` | 290 | PROP-9, PROP-10, PROP-11, PROP-12 (one claim, split four ways) |
 
-All 19 claims are accounted for; none is left unassigned at this stage.
+All 20 claims are accounted for; none is left unassigned at this stage.
 
 ## LEGEND — meaning of the `*` mark
 
@@ -50,6 +60,10 @@ Page 287.
 > \*    Address not writable by the Copper.
 — `opus:7-appB.c5` (twin of `sol:7-appB-legend.c4`; identical quote, both
 crossreads passed)
+
+> \*    Address not writable by the Copper.
+— `ch2-appb-legend.c1` (twin of `sol:7-appB-legend.c4` and
+`opus:7-appB.c5`; identical quote, same page)
 
 This legend is not itself worded about any one address, so it is not made
 into its own scored assertion. Per the task sheet's instruction to "read the
@@ -188,12 +202,12 @@ lines are written in step 3.
 
 ## Claims not assigned an assertion
 
-None outright unassigned. Two claims (`sol:7-appB-legend.c4`,
-`opus:7-appB.c5`) are not made into their own scored proposition because
-neither names an address — both are cited jointly with every one of
-PROP-1 through PROP-8 instead, per the task sheet's own instruction on how
-to read the legend. All other 17 claims map onto exactly one of PROP-1
-through PROP-12 as shown in the inventory table.
+None outright unassigned. Three claims (`sol:7-appB-legend.c4`,
+`opus:7-appB.c5`, `ch2-appb-legend.c1`) are not made into their own scored
+proposition because none names an address — all three are cited jointly
+with every one of PROP-1 through PROP-8 instead, per the task sheet's own
+instruction on how to read the legend. All other 17 claims map onto exactly
+one of PROP-1 through PROP-12 as shown in the inventory table.
 
 ## What this specification deliberately does not contain
 
