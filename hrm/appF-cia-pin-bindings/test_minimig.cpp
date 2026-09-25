@@ -31,6 +31,13 @@
 //   opus:F-ciab-map.c2, whose own single claim covers all five bindings in
 //   one row -- see SPECIFICATION.md).
 //
+// EXTENSION: two more uids, routed here fresh (not by classify.package --
+//   see SPECIFICATION.md's own extension section), are graded with
+//   expect() below: CIAA-IRQ-REACHES-PORTS (opus:7-fig7-4.c12) and
+//   CIAB-IRQ-REACHES-EXTER (opus:7-fig7-4.c42), Figure 7-4's naming of the
+//   PORTS/EXTER interrupt sources, CIA leg only -- the expansion-connector
+//   leg of each row is absent from this RTL and stays out of scope.
+//
 // RTL read directly: minimig.v's CIAA1/CIAB1 instantiations (lines
 //   607-650) confirm CIAA's data_in/data_out are cpu_data_out/cia_data_out
 //   [7:0] and CIAB's are [15:8]; CIAB1's porta_in/porta_out concatenation
@@ -68,6 +75,7 @@
 #include "Vminimig.h"
 #include "Vminimig___024root.h"
 #include "Vminimig_minimig.h"
+#include "Vminimig_paula.h"
 
 #ifndef MUT_ALIAS_CIAB_INTO_CIAA
 #define MUT_ALIAS_CIAB_INTO_CIAA 0
@@ -89,6 +97,12 @@
 #endif
 #ifndef MUT_NO_TIMERA_START
 #define MUT_NO_TIMERA_START 0
+#endif
+#ifndef MUT_NO_TIMERA_START_PORTS
+#define MUT_NO_TIMERA_START_PORTS 0
+#endif
+#ifndef MUT_NO_TIMERB_START_EXTER
+#define MUT_NO_TIMERB_START_EXTER 0
 #endif
 
 namespace {
@@ -459,6 +473,93 @@ int main(int argc, char** argv) {
             "beforehand and becomes true once the timer underflows.");
     }
     // MUTATION CIAA-IRQ-REACHES-INT2 stimulus red MUT_NO_TIMERA_START: never write CRA's start bit at all -- Timer A never starts, so int2_after stays false and the int2_after conjunct goes red.
+
+    // =====================================================================
+    // CIAA-IRQ-REACHES-PORTS -- Figure 7-4's PORTS row (p.221) names the
+    // interrupt raised by "external INT2 & CIAA". The expansion-connector
+    // half of that condition is absent from this RTL (SPECIFICATION.md's
+    // extension section) and stays out of scope; only the CIA leg is
+    // graded here: does ciaa's own irq pin, already shown above to reach
+    // int2, go on to actually set INTREQ bit 3 -- the bit
+    // paula_intcontroller.v:112 names PORTS (`intreq[3] <= tmp[3] |
+    // int2;`)? Same Timer A/ICR/CRA idiom as CIAA-IRQ-REACHES-INT2, its own
+    // fresh Harness, now read one register further downstream at
+    // dut->rootp->minimig->PAULA1->pi1__DOT__intreq -- the same
+    // --public-flat-rw path hrm/ch8-disk-interrupt-path already reads at
+    // this identical minimig fixture.
+    // =====================================================================
+    {
+        Harness h;
+        constexpr uint32_t CIAA_TALO = 0xBFE401, CIAA_TAHI = 0xBFE501,
+                            CIAA_ICR = 0xBFED01, CIAA_CRA = 0xBFEE01;
+        h.write_byte(CIAA_TALO, 0x08);
+        h.write_byte(CIAA_TAHI, 0x00);
+        h.write_byte(CIAA_ICR, 0x81);  // set-mode, unmask TA (bit0)
+        bool ports_before = ((h.dut->rootp->minimig->PAULA1->pi1__DOT__intreq >> 3) & 1) != 0;
+        if (!MUT_NO_TIMERA_START_PORTS)
+            h.write_byte(CIAA_CRA, 0x01);  // start, continuous mode
+        bool ports_after = false;
+        for (int i = 0; i < 4000 && !ports_after; ++i) {
+            h.tick();
+            if ((h.dut->rootp->minimig->PAULA1->pi1__DOT__intreq >> 3) & 1) ports_after = true;
+        }
+        checks.note("CIAA-IRQ-REACHES-PORTS: INTREQ bit 3 before starting Timer A = " +
+                    std::to_string(ports_before) + "; after loading a small count, unmasking ICR's "
+                    "TA bit and starting the timer, INTREQ bit 3 became true = " + std::to_string(ports_after) + ".");
+        checks.expect(!ports_before && ports_after,
+            "CIAA-IRQ-REACHES-PORTS (p.221, opus:7-fig7-4.c12): Figure 7-4's "
+            "PORTS row reads \"external INT2 & CIAA\" -- CIAA's own `irq` pin, "
+            "driven true by an unmasked Timer A underflow (the same mechanism "
+            "CIAA-IRQ-REACHES-INT2 above grades at the int2 net), reaches all the "
+            "way to INTREQ bit 3 (paula_intcontroller.v:112, `intreq[3] <= "
+            "tmp[3] | int2;`, the bit Figure 7-4 names PORTS) -- the "
+            "expansion-connector half of the row's condition (\"external "
+            "INT2\") is absent from this RTL and out of scope; INTREQ bit 3 is "
+            "false beforehand and becomes true once the timer underflows.");
+    }
+    // MUTATION CIAA-IRQ-REACHES-PORTS stimulus red MUT_NO_TIMERA_START_PORTS: never write CRA's start bit at all -- Timer A never starts, so INTREQ bit 3 never sets and the ports_after conjunct goes red.
+
+    // =====================================================================
+    // CIAB-IRQ-REACHES-EXTER -- the mirror of CIAA-IRQ-REACHES-PORTS for
+    // CIAB/int6/EXTER: Figure 7-4's EXTER row (p.221) reads "external INT6
+    // & CIAB". CIAB's Timer A/ICR/CRA are the same generic cia_int/
+    // cia_timera cores ciaa.v instantiates (ciab.v:175/195), addressed at
+    // the even (high) byte the way CIAB_PRA/CIAB_DDRA above already are
+    // (rs==4'h4/5/D/E confirmed directly in ciab.v, same encoding as
+    // ciaa.v). Observes INTREQ bit 13 (paula_intcontroller.v:132,
+    // `intreq[13] <= tmp[13] | int6;`).
+    // =====================================================================
+    {
+        Harness h;
+        constexpr uint32_t CIAB_TALO = 0xBFD400, CIAB_TAHI = 0xBFD500,
+                            CIAB_ICR = 0xBFDD00, CIAB_CRA = 0xBFDE00;
+        h.write_byte(CIAB_TALO, 0x08);
+        h.write_byte(CIAB_TAHI, 0x00);
+        h.write_byte(CIAB_ICR, 0x81);  // set-mode, unmask TA (bit0)
+        bool exter_before = ((h.dut->rootp->minimig->PAULA1->pi1__DOT__intreq >> 13) & 1) != 0;
+        if (!MUT_NO_TIMERB_START_EXTER)
+            h.write_byte(CIAB_CRA, 0x01);  // start, continuous mode
+        bool exter_after = false;
+        for (int i = 0; i < 4000 && !exter_after; ++i) {
+            h.tick();
+            if ((h.dut->rootp->minimig->PAULA1->pi1__DOT__intreq >> 13) & 1) exter_after = true;
+        }
+        checks.note("CIAB-IRQ-REACHES-EXTER: INTREQ bit 13 before starting Timer A = " +
+                    std::to_string(exter_before) + "; after loading a small count, unmasking ICR's "
+                    "TA bit and starting the timer, INTREQ bit 13 became true = " + std::to_string(exter_after) + ".");
+        checks.expect(!exter_before && exter_after,
+            "CIAB-IRQ-REACHES-EXTER (p.221, opus:7-fig7-4.c42): Figure 7-4's "
+            "EXTER row reads \"external INT6 & CIAB\" -- CIAB's own `irq` pin, "
+            "driven true by an unmasked Timer A underflow (the same idiom as "
+            "CIAA-IRQ-REACHES-PORTS above, at CIAB's own register addresses), "
+            "reaches all the way to INTREQ bit 13 (paula_intcontroller.v:132, "
+            "`intreq[13] <= tmp[13] | int6;`, the bit Figure 7-4 names EXTER) "
+            "-- the expansion-connector half of the row's condition "
+            "(\"external INT6\") is absent from this RTL and out of scope; "
+            "INTREQ bit 13 is false beforehand and becomes true once the "
+            "timer underflows.");
+    }
+    // MUTATION CIAB-IRQ-REACHES-EXTER stimulus red MUT_NO_TIMERB_START_EXTER: never write CIAB's CRA start bit at all -- Timer A never starts, so INTREQ bit 13 never sets and the exter_after conjunct goes red.
 
     // =====================================================================
     // Declined claims (record() only -- 27 of 38 uids, all verified
