@@ -113,6 +113,10 @@
 //   The four assertions here all begin their label with the word SWEEP, so the
 //   gate reads one id for the family; this record covers it.
 // MUTATION BITS15-9 stimulus red the ecs=0/cdang=0 hi-bits loop's probed register changed from CONTROL_REG ($C0, always accepted) to $00 (never accepted under cdang=0), so all_stable goes false on the first iteration (hi=0) instead of holding true across the 128-value sweep
+// MUTATION APPBSTAR stimulus red the ADKCONR line's tested address changed from 0x08 (star-marked, rejected under CDANG clear and set) to 0x28 (BLTAPTH, tilde-marked, accepted once CDANG=1) -- only that one line went red (91 passed, 2 failed), every other APPBSTAR-family line stayed green; reverted (92 passed, 1 failed). The 32 star-family and 1 legend-band assertion begin their label with the word APPBSTAR, so the gate reads one id for the family; this record covers it.
+// MUTATION APPBTILDE stimulus red the BLTAFWM line's tested address changed from 0x22 (tilde-marked, rejected under CDANG clear, accepted under CDANG set) to 0x08 (ADKCONR, star-marked, rejected under both) -- only that one line went red (91 passed, 2 failed), every other APPBTILDE-family line stayed green; reverted (92 passed, 1 failed). The 32 tilde-family and 1 legend-band assertion begin their label with the word APPBTILDE, so the gate reads one id for the family; this record covers it.
+// MUTATION APPBNONE stimulus red the DIWSTRT line's tested address changed from 0x47 (unmarked, accepted under both CDANG states) to 0x08 (ADKCONR, star-marked, rejected under both) -- only that one line went red (91 passed, 2 failed), every other APPBNONE-family line stayed green; reverted (92 passed, 1 failed). The 14 no-mark assertions begin their label with the word APPBNONE, so the gate reads one id for the family; this record covers it.
+// MUTATION RESET2 stimulus red the reset removed after CDANG is set, so CDANG survives and the MOVE to $30 the assertion expects to be refused is accepted (91 passed, 2 failed); reverted (92 passed, 1 failed)
 //
 // The CTRL mutation turned the two cdang=0 rows red and left the two cdang=1
 // rows green, which is the correct discrimination and not a partial result:
@@ -123,6 +127,12 @@
 // documented ecs=1/cdang=0 ECS-extension divergence, see above; corrected
 // 10.09.2026 -- this sentence said cdang=1 and undercounted by one check
 // (DECODE was added after it was written), verified by rerunning `make test`).
+//
+// Baseline before and after each of the four 2026-09-25 mutations above
+// (APPBSTAR, APPBTILDE, APPBNONE, RESET2): 92 passed, 1 failed (the same
+// NM-HRM-004 divergence, unaffected by these ecs=0-only additions); each
+// mutation, run alone and reverted, moved the count to 91 passed, 2 failed
+// with exactly the one targeted line red, verified with `make -B test`.
 
 #include <cstdint>
 #include <functional>
@@ -330,6 +340,14 @@ public:
     // here. Never touches passed/failed - this is not an assertion.
     void note(const std::string& label) {
         std::cout << "NOTE: " << label << "\n";
+    }
+
+    // Declines to grade a claim, with the reason. Never a measurement, and
+    // never touches passed/failed. Added 2026-09-25 for the two
+    // PKG-COP-MOVE-RANGE-CONFLICT claims this package records instead of
+    // asserting; see the header's "Specification addition" note.
+    void record(const std::string& label) {
+        std::cout << "RECORDED: " << label << "\n";
     }
 
     int passed = 0;
@@ -616,6 +634,325 @@ int main(int argc, char** argv) {
             if (all_wrong.size() > 8) detail << " and " << (all_wrong.size() - 8) << " more";
         }
         checks.expect(all_wrong.empty(), detail.str());
+    }
+
+    // ------------------------------------------------------------------
+    // APPENDIX B PER-ROW COPPER-ACCESS MARKS (added 2026-09-25) -- see the
+    // header's "Specification addition" note. Graded from the SWEEP ecs=0
+    // accepted sets already computed above (ocs_cdang0, ocs_cdang1), one
+    // assertion per printed Appendix B row, plus the legend's own
+    // whole-band definition and a reset corroboration. Not a fresh probe:
+    // the exhaustive sweep above already covers the whole DA8-1 space
+    // these rows are drawn from.
+    // ------------------------------------------------------------------
+
+    // --- PKG-COP-MOVE-RANGE-CONFLICT: recorded, not asserted. Page 21
+    // reads the Copper's always-writable floor as "$20 or above"; page 26
+    // reads it as "$80 through $FF" (Appendix B's own numbering, i.e.
+    // DA8-1). classify.conflict_resolution for both claims says the
+    // numbers are recorded, not asserted; the undisputed sub-claim (a
+    // CDANG-gated three-way partition exists at all) is what the SWEEP
+    // assertions above already grade.
+    checks.record(
+        "ch2-the-move-instruction.c8 -- NOT RESOLVED HERE: p.21 reads the Copper's "
+        "always-writable floor as \"$20 or above\"; p.26 (ch2-control-register.c2) reads "
+        "it as \"$80 through $FF\"; Appendix B corroborates 26's structure over 21's. "
+        "Measured always-accepted floor (ecs=0, independent of CDANG): byte $080-$1FE "
+        "(DA8-1 $40-$FF). classify.conflict_resolution: the numbers are recorded, not "
+        "asserted; see PKG-COP-MOVE-RANGE-CONFLICT.");
+    checks.record(
+        "ch2-control-register.c2 -- NOT RESOLVED HERE: p.26 reads the Copper's "
+        "always-writable floor as \"$80 through $FF\"; p.21 (ch2-the-move-instruction.c8) "
+        "reads it as \"$20 or above\". Measured always-accepted floor (ecs=0, independent "
+        "of CDANG): byte $080-$1FE (DA8-1 $40-$FF). classify.conflict_resolution: the "
+        "numbers are recorded, not asserted; see PKG-COP-MOVE-RANGE-CONFLICT.");
+
+    // --- Appendix B legend (p.287), the WHOLE band each mark covers, not
+    // one row -- distinct from the per-row assertions below, which name
+    // one register each.
+    {
+        bool star_band_ok = true;
+        for (int a = 0x00; a <= 0x1F; ++a) {
+            if (ocs_cdang0.count(a) || ocs_cdang1.count(a)) star_band_ok = false;
+        }
+        checks.expect(star_band_ok,
+            "APPBSTAR LEGEND ecs=0: the whole '*' band $000-$03E (DA8-1 $00-$1F) is "
+            "rejected on reg_address_out with CDANG clear and with CDANG set, matching the "
+            "legend's own definition (p.287) [claims: B-leg.star B-legend.c6]");
+    }
+    {
+        bool tilde_band_ok = true;
+        for (int a = 0x20; a <= 0x3F; ++a) {
+            if (ocs_cdang0.count(a) || !ocs_cdang1.count(a)) tilde_band_ok = false;
+        }
+        checks.expect(tilde_band_ok,
+            "APPBTILDE LEGEND ecs=0: the whole '~' band $040-$07E (DA8-1 $20-$3F) is "
+            "rejected on reg_address_out with CDANG clear and accepted with CDANG set, "
+            "matching the legend's own definition (p.287) [claims: B-leg.tilde B-legend.c7]");
+    }
+
+    // --- Per-row "*" marks (p.289): "Address not writable by the Copper."
+    // -- rejected on reg_address_out with CDANG clear AND with CDANG set.
+    checks.expect(!ocs_cdang0.count(0x00) && !ocs_cdang1.count(0x00),
+        "APPBSTAR $00 BLTDDAT ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $000) [claims: B-bltddat.copper B-copper-star.c1]");
+    checks.expect(!ocs_cdang0.count(0x01) && !ocs_cdang1.count(0x01),
+        "APPBSTAR $01 DMACONR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $002) [claims: B-copper-star.c2 B-dmaconr.copper]");
+    checks.expect(!ocs_cdang0.count(0x02) && !ocs_cdang1.count(0x02),
+        "APPBSTAR $02 VPOSR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $004) [claims: B-copper-star.c3 B-vposr.copper]");
+    checks.expect(!ocs_cdang0.count(0x03) && !ocs_cdang1.count(0x03),
+        "APPBSTAR $03 VHPOSR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $006) [claims: B-copper-star.c4 B-vhposr.copper]");
+    checks.expect(!ocs_cdang0.count(0x04) && !ocs_cdang1.count(0x04),
+        "APPBSTAR $04 DSKDATR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $008) [claims: B-copper-star.c5 B-dskdatr.copper]");
+    checks.expect(!ocs_cdang0.count(0x05) && !ocs_cdang1.count(0x05),
+        "APPBSTAR $05 JOY0DAT ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $00A) [claims: B-copper-star.c6 B-joy0dat.copper]");
+    checks.expect(!ocs_cdang0.count(0x06) && !ocs_cdang1.count(0x06),
+        "APPBSTAR $06 JOY1DAT ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $00C) [claims: B-copper-star.c7 B-joy1dat.copper]");
+    checks.expect(!ocs_cdang0.count(0x07) && !ocs_cdang1.count(0x07),
+        "APPBSTAR $07 CLXDAT ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $00E) [claims: B-clxdat.copper B-clxdat.copper-verbatim B-copper-star.c8]");
+    checks.expect(!ocs_cdang0.count(0x08) && !ocs_cdang1.count(0x08),
+        "APPBSTAR $08 ADKCONR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $010) [claims: B-adkconr.copper B-copper-star.c9]");
+    checks.expect(!ocs_cdang0.count(0x09) && !ocs_cdang1.count(0x09),
+        "APPBSTAR $09 POT0DAT ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $012) [claims: B-copper-star.c10 B-pot0dat.copper]");
+    checks.expect(!ocs_cdang0.count(0x0A) && !ocs_cdang1.count(0x0A),
+        "APPBSTAR $0A POT1DAT ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $014) [claims: B-copper-star.c11 B-pot1dat.copper]");
+    checks.expect(!ocs_cdang0.count(0x0B) && !ocs_cdang1.count(0x0B),
+        "APPBSTAR $0B POTGOR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $016) [claims: B-copper-star.c12 B-potgor.copper]");
+    checks.expect(!ocs_cdang0.count(0x0C) && !ocs_cdang1.count(0x0C),
+        "APPBSTAR $0C SERDATR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $018) [claims: B-copper-star.c13 B-serdatr.copper]");
+    checks.expect(!ocs_cdang0.count(0x0D) && !ocs_cdang1.count(0x0D),
+        "APPBSTAR $0D DSKBYTR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $01A) [claims: B-copper-star.c14 B-dskbytr.copper]");
+    checks.expect(!ocs_cdang0.count(0x0E) && !ocs_cdang1.count(0x0E),
+        "APPBSTAR $0E INTENAR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $01C) [claims: B-copper-star.c15 B-intenar.copper]");
+    checks.expect(!ocs_cdang0.count(0x0F) && !ocs_cdang1.count(0x0F),
+        "APPBSTAR $0F INTREQR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $01E) [claims: B-copper-star.c16 B-intreqr.copper]");
+    checks.expect(!ocs_cdang0.count(0x10) && !ocs_cdang1.count(0x10),
+        "APPBSTAR $10 DSKPTH ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $020) [claims: B-copper-star.c17 B-dskpth.copper]");
+    checks.expect(!ocs_cdang0.count(0x11) && !ocs_cdang1.count(0x11),
+        "APPBSTAR $11 DSKPTL ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $022) [claims: B-copper-star.c18 B-dskptl.copper]");
+    checks.expect(!ocs_cdang0.count(0x12) && !ocs_cdang1.count(0x12),
+        "APPBSTAR $12 DSKLEN ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $024) [claims: B-copper-star.c19 B-dsklen.copper]");
+    checks.expect(!ocs_cdang0.count(0x13) && !ocs_cdang1.count(0x13),
+        "APPBSTAR $13 DSKDAT ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $026) [claims: B-copper-star.c20 B-dskdat.copper]");
+    checks.expect(!ocs_cdang0.count(0x14) && !ocs_cdang1.count(0x14),
+        "APPBSTAR $14 REFPTR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $028) [claims: B-copper-star.c21 B-refptr.copper]");
+    checks.expect(!ocs_cdang0.count(0x15) && !ocs_cdang1.count(0x15),
+        "APPBSTAR $15 VPOSW ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $02A) [claims: B-copper-star.c22 B-vposw.copper]");
+    checks.expect(!ocs_cdang0.count(0x16) && !ocs_cdang1.count(0x16),
+        "APPBSTAR $16 VHPOSW ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $02C) [claims: B-copper-star.c23 B-vhposw.copper]");
+    checks.expect(!ocs_cdang0.count(0x17) && !ocs_cdang1.count(0x17),
+        "APPBSTAR $17 COPCON ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $02E) [claims: B-copcon.copper B-copper-star.c24]");
+    checks.expect(!ocs_cdang0.count(0x18) && !ocs_cdang1.count(0x18),
+        "APPBSTAR $18 SERDAT ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $030) [claims: B-copper-star.c25 B-serdat.copper]");
+    checks.expect(!ocs_cdang0.count(0x19) && !ocs_cdang1.count(0x19),
+        "APPBSTAR $19 SERPER ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $032) [claims: B-copper-star.c26 B-serper.copper]");
+    checks.expect(!ocs_cdang0.count(0x1A) && !ocs_cdang1.count(0x1A),
+        "APPBSTAR $1A POTGO ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $034) [claims: B-copper-star.c27 B-potgo.copper]");
+    checks.expect(!ocs_cdang0.count(0x1B) && !ocs_cdang1.count(0x1B),
+        "APPBSTAR $1B JOYTEST ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $036) [claims: B-copper-star.c28 B-joytest.copper]");
+    checks.expect(!ocs_cdang0.count(0x1C) && !ocs_cdang1.count(0x1C),
+        "APPBSTAR $1C STREQU ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $038) [claims: B-copper-star.c29 B-strequ.copper]");
+    checks.expect(!ocs_cdang0.count(0x1D) && !ocs_cdang1.count(0x1D),
+        "APPBSTAR $1D STRVBL ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $03A) [claims: B-copper-star.c30 B-strvbl.copper]");
+    checks.expect(!ocs_cdang0.count(0x1E) && !ocs_cdang1.count(0x1E),
+        "APPBSTAR $1E STRHOR ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $03C) [claims: B-copper-star.c31 B-strhor.copper]");
+    checks.expect(!ocs_cdang0.count(0x1F) && !ocs_cdang1.count(0x1F),
+        "APPBSTAR $1F STRLONG ecs=0: rejected on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B '*', p.289, byte $03E) [claims: B-copper-star.c32 B-strlong.copper]");
+
+    // --- Per-row "~" marks (pp.289-290): "Address not writable by the
+    // Copper unless the \"copper danger bit\", COPCON is set true." --
+    // rejected with CDANG clear, accepted once CDANG is set.
+    checks.expect(!ocs_cdang0.count(0x20) && ocs_cdang1.count(0x20),
+        "APPBTILDE $20 BLTCON0 ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $040) [claims: B-bltcon0.copper B-copper-tilde.c1]");
+    checks.expect(!ocs_cdang0.count(0x21) && ocs_cdang1.count(0x21),
+        "APPBTILDE $21 BLTCON1 ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $042) [claims: B-bltcon1.copper B-copper-tilde.c2]");
+    checks.expect(!ocs_cdang0.count(0x22) && ocs_cdang1.count(0x22),
+        "APPBTILDE $22 BLTAFWM ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $044) [claims: B-bltafwm.copper B-copper-tilde.c3]");
+    checks.expect(!ocs_cdang0.count(0x23) && ocs_cdang1.count(0x23),
+        "APPBTILDE $23 BLTALWM ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $046) [claims: B-bltalwm.copper B-copper-tilde.c4]");
+    checks.expect(!ocs_cdang0.count(0x24) && ocs_cdang1.count(0x24),
+        "APPBTILDE $24 BLTCPTH ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $048) [claims: B-bltcpth.copper B-copper-tilde.c5]");
+    checks.expect(!ocs_cdang0.count(0x25) && ocs_cdang1.count(0x25),
+        "APPBTILDE $25 BLTCPTL ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $04A) [claims: B-bltcptl.copper B-copper-tilde.c6]");
+    checks.expect(!ocs_cdang0.count(0x26) && ocs_cdang1.count(0x26),
+        "APPBTILDE $26 BLTBPTH ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $04C) [claims: B-bltbpth.copper B-copper-tilde.c7]");
+    checks.expect(!ocs_cdang0.count(0x27) && ocs_cdang1.count(0x27),
+        "APPBTILDE $27 BLTBPTL ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $04E) [claims: B-bltbptl.copper B-copper-tilde.c8]");
+    checks.expect(!ocs_cdang0.count(0x28) && ocs_cdang1.count(0x28),
+        "APPBTILDE $28 BLTAPTH ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $050) [claims: B-bltapth.copper B-copper-tilde.c9]");
+    checks.expect(!ocs_cdang0.count(0x29) && ocs_cdang1.count(0x29),
+        "APPBTILDE $29 BLTAPTL ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $052) [claims: B-bltaptl.copper B-copper-tilde.c10]");
+    checks.expect(!ocs_cdang0.count(0x2A) && ocs_cdang1.count(0x2A),
+        "APPBTILDE $2A BLTDPTH ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $054) [claims: B-bltdpth.copper B-copper-tilde.c11]");
+    checks.expect(!ocs_cdang0.count(0x2B) && ocs_cdang1.count(0x2B),
+        "APPBTILDE $2B BLTDPTL ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $056) [claims: B-bltdptl.copper B-copper-tilde.c12]");
+    checks.expect(!ocs_cdang0.count(0x2C) && ocs_cdang1.count(0x2C),
+        "APPBTILDE $2C BLTSIZE ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $058) [claims: B-bltsize.copper B-copper-tilde.c13]");
+    checks.expect(!ocs_cdang0.count(0x2D) && ocs_cdang1.count(0x2D),
+        "APPBTILDE $2D BLTCON0L ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $05A) [claims: B-bltcon0l.copper B-copper-tilde.c14]");
+    checks.expect(!ocs_cdang0.count(0x2E) && ocs_cdang1.count(0x2E),
+        "APPBTILDE $2E BLTSIZV ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $05C) [claims: B-bltsizv.copper B-copper-tilde.c15]");
+    checks.expect(!ocs_cdang0.count(0x2F) && ocs_cdang1.count(0x2F),
+        "APPBTILDE $2F BLTSIZH ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $05E) [claims: B-bltsizh.copper B-copper-tilde.c16]");
+    checks.expect(!ocs_cdang0.count(0x30) && ocs_cdang1.count(0x30),
+        "APPBTILDE $30 BLTCMOD ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $060) [claims: B-bltcmod.copper B-copper-tilde.c17]");
+    checks.expect(!ocs_cdang0.count(0x31) && ocs_cdang1.count(0x31),
+        "APPBTILDE $31 BLTBMOD ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $062) [claims: B-bltbmod.copper B-copper-tilde.c18]");
+    checks.expect(!ocs_cdang0.count(0x32) && ocs_cdang1.count(0x32),
+        "APPBTILDE $32 BLTAMOD ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $064) [claims: B-bltamod.copper B-copper-tilde.c19]");
+    checks.expect(!ocs_cdang0.count(0x33) && ocs_cdang1.count(0x33),
+        "APPBTILDE $33 BLTDMOD ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $066) [claims: B-bltdmod.copper B-copper-tilde.c20]");
+    checks.expect(!ocs_cdang0.count(0x34) && ocs_cdang1.count(0x34),
+        "APPBTILDE $34 UNNAMED-$068 ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $068) [claims: B-gap.068.copper]");
+    checks.expect(!ocs_cdang0.count(0x35) && ocs_cdang1.count(0x35),
+        "APPBTILDE $35 UNNAMED-$06A ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $06A) [claims: B-gap.06a.copper]");
+    checks.expect(!ocs_cdang0.count(0x36) && ocs_cdang1.count(0x36),
+        "APPBTILDE $36 UNNAMED-$06C ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $06C) [claims: B-gap.06c.copper]");
+    checks.expect(!ocs_cdang0.count(0x37) && ocs_cdang1.count(0x37),
+        "APPBTILDE $37 UNNAMED-$06E ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $06E) [claims: B-gap.06e.copper]");
+    checks.expect(!ocs_cdang0.count(0x38) && ocs_cdang1.count(0x38),
+        "APPBTILDE $38 BLTCDAT ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $070) [claims: B-bltcdat.copper B-copper-tilde.c21]");
+    checks.expect(!ocs_cdang0.count(0x39) && ocs_cdang1.count(0x39),
+        "APPBTILDE $39 BLTBDAT ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $072) [claims: B-bltbdat.copper B-copper-tilde.c22]");
+    checks.expect(!ocs_cdang0.count(0x3A) && ocs_cdang1.count(0x3A),
+        "APPBTILDE $3A BLTADAT ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.290, byte $074) [claims: B-bltadat.copper B-copper-tilde.c23]");
+    checks.expect(!ocs_cdang0.count(0x3B) && ocs_cdang1.count(0x3B),
+        "APPBTILDE $3B UNNAMED-$076 ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.290, byte $076) [claims: B-gap.076.copper]");
+    checks.expect(!ocs_cdang0.count(0x3C) && ocs_cdang1.count(0x3C),
+        "APPBTILDE $3C SPRHDAT ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.290, byte $078) [claims: B-copper-tilde.c24 B-sprhdat.copper]");
+    checks.expect(!ocs_cdang0.count(0x3D) && ocs_cdang1.count(0x3D),
+        "APPBTILDE $3D UNNAMED-$07A ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.290, byte $07A) [claims: B-gap.07a.copper]");
+    checks.expect(!ocs_cdang0.count(0x3E) && ocs_cdang1.count(0x3E),
+        "APPBTILDE $3E DENISEID ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.290, byte $07C) [claims: B-copper-tilde.c25 B-deniseid.copper]");
+    checks.expect(!ocs_cdang0.count(0x3F) && ocs_cdang1.count(0x3F),
+        "APPBTILDE $3F DSKSYNC ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.290, byte $07E) [claims: B-copper-tilde.c26 B-dsksync.copper]");
+
+    // --- Per-row no mark (pp.290-293): writable regardless of COPCON --
+    // accepted on reg_address_out with CDANG clear AND with CDANG set.
+    checks.expect(ocs_cdang0.count(0x47) && ocs_cdang1.count(0x47),
+        "APPBNONE $47 DIWSTRT ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.290, byte $08E) [claims: B-diwstrt.copper]");
+    checks.expect(ocs_cdang0.count(0x48) && ocs_cdang1.count(0x48),
+        "APPBNONE $48 DIWSTOP ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.290, byte $090) [claims: B-diwstop.copper]");
+    checks.expect(ocs_cdang0.count(0x49) && ocs_cdang1.count(0x49),
+        "APPBNONE $49 DDFSTRT ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.290, byte $092) [claims: B-ddfstrt.copper]");
+    checks.expect(ocs_cdang0.count(0x4A) && ocs_cdang1.count(0x4A),
+        "APPBNONE $4A DDFSTOP ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.290, byte $094) [claims: B-ddfstop.copper]");
+    checks.expect(ocs_cdang0.count(0x70) && ocs_cdang1.count(0x70),
+        "APPBNONE $70 BPL1PTH ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.291, byte $0E0) [claims: B-bplptr.copper]");
+    checks.expect(ocs_cdang0.count(0x80) && ocs_cdang1.count(0x80),
+        "APPBNONE $80 BPLCON0 ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.291, byte $100) [claims: B-bplcon0.copper]");
+    checks.expect(ocs_cdang0.count(0x81) && ocs_cdang1.count(0x81),
+        "APPBNONE $81 BPLCON1 ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.291, byte $102) [claims: B-bplcon1.copper]");
+    checks.expect(ocs_cdang0.count(0x82) && ocs_cdang1.count(0x82),
+        "APPBNONE $82 BPLCON2 ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.291, byte $104) [claims: B-bplcon2.copper]");
+    checks.expect(ocs_cdang0.count(0x83) && ocs_cdang1.count(0x83),
+        "APPBNONE $83 BPLCON3 ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.291, byte $106) [claims: B-bplcon3.copper]");
+    checks.expect(ocs_cdang0.count(0x84) && ocs_cdang1.count(0x84),
+        "APPBNONE $84 BPL1MOD ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.291, byte $108) [claims: B-bpl1mod.copper]");
+    checks.expect(ocs_cdang0.count(0x85) && ocs_cdang1.count(0x85),
+        "APPBNONE $85 BPL2MOD ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.291, byte $10A) [claims: B-bpl2mod.copper]");
+    checks.expect(ocs_cdang0.count(0x88) && ocs_cdang1.count(0x88),
+        "APPBNONE $88 BPL1DAT ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.291, byte $110) [claims: B-bpldat.copper]");
+    checks.expect(ocs_cdang0.count(0xC0) && ocs_cdang1.count(0xC0),
+        "APPBNONE $C0 COLOR00 ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.292, byte $180) [claims: B-color.copper]");
+    checks.expect(ocs_cdang0.count(0xF2) && ocs_cdang1.count(0xF2),
+        "APPBNONE $F2 DIWHIGH ecs=0: accepted on reg_address_out with CDANG clear and with CDANG set "
+        "(Appendix B no mark, p.293, byte $1E4) [claims: B-diwhigh.copper]");
+
+    // --- CDANG cleared after reset (ch2-control-register.c13, p.26),
+    // corroborated independently of the existing RESET assertion above: a
+    // different CDANG-gated destination ($30 / BLTCMOD, also CDANG-gated
+    // under Reading B) is used so this is a distinct measurement, not a
+    // copy of it. The existing RESET assertion was left untouched: this
+    // claim id is not named there under any spelling, so it gets its own
+    // assertion rather than being added to that label.
+    {
+        CopperHarness h(false);
+        h.set_cdang(true);
+        h.assert_reset();
+        h.install_single_move(0x30, 0x0ABC);
+        h.start_list();
+        h.run_cycles(600);
+        checks.expect(h.events.size() < 3,
+                       "RESET2 ecs=0: CDANG=1 set, then reset, then MOVE to $30 (BLTCMOD, "
+                       "CDANG-gated) is rejected -- reset clears CDANG (p.26) "
+                       "[claims: ch2-control-register.c13]");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
