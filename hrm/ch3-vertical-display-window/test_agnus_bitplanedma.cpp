@@ -655,7 +655,7 @@ int main(int argc, char** argv) {
             "'256 or 512 lines for PAL' (p.45), Table 3-6's PAL "
             "non-interlaced column (p.49), 'the VSTOP is set to ... ($2C) "
             "for PAL' (p.59), 'Non-interlaced mode: ... 256 for PAL' "
-            "(summary, p.64). 3-video.c07, 3-video.c10, 3-res.c04, "
+            "(summary, p.64). 3-video.c07, sol:3-video.c10, 3-res.c04, "
             "3-video.c24, 3-basic-size.c5, 3-basic.c05, 3-resolution.c11, "
             "3-t6.c02, 3-sum.c11, 3-diw.c35, 3-t9.c10, 3-window.c42, "
             "3-window.c52 .");
