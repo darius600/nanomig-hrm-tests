@@ -76,7 +76,7 @@
 //   logic, expected value and colour is unchanged (see RESULTS below for
 //   the before/after tally).
 //
-// CH4-DMACON-BITS EXTENSION (2026-09-25): eight more claims land on this
+// CH4-DMACON-BITS EXTENSION: eight more claims land on this
 //   package from the identical appendix A p.278 DMACON table rows this
 //   package's own AUDxEN-BIT-MAPS-TO-OWN-CHANNEL assertion already quotes
 //   and grades -- four read independently by opus (APPA-dmacon.c18 "03
@@ -89,9 +89,8 @@
 //   AUDxEN, audio channel N DMA enable, proven there by a walking-one sweep
 //   across bits 0-3 with a fresh reset per step. No new proposition and no
 //   new fixture are implied by the quotations alone; what carries an
-//   existing measurement's id and what needs its own is decided after this
-//   specification commit, per this package's own order of work, by opening
-//   the routed claims file next.
+//   existing measurement's id and what needs its own is decided against
+//   the full claims file's own routing (see RESULTS below).
 //
 // BOUNDARY: paula.v, reached at $(NANOMIG)/src/minimig-aga/paula.v.
 //   paula.v itself instantiates paula_uart, paula_intcontroller,
@@ -308,10 +307,10 @@
 //   one new ADKCON-SETCLR-CLR assertion (PASS). No pre-existing
 //   assertion's colour moved.
 //
-// RESULTS AFTER THE CH4-DMACON-BITS EXTENSION (WSL/Verilator 5.052,
-//   rebuilt and rerun 25.09.2026): 19 passed, 2 failed -- the identical 21
+// RESULTS AFTER THE CH4-DMACON-BITS EXTENSION (WSL/Verilator 5.052):
+//   19 passed, 2 failed -- the identical 21
 //   graded lines, in the same order and with the same verdicts, as the
-//   15.09.2026 tally above (tools/check_labels_gained_only_ids.py: before
+//   tally above (tools/check_labels_gained_only_ids.py: before
 //   21 graded, after 21, 21 kept with only id tokens changed, 0 new, 0
 //   problems). No new assertion: all eight ids (opus:APPA-dmacon.c18-c21,
 //   sol:CH4-appA-dmacon.c25-c28) were appended to AUDxEN-BIT-MAPS-TO-OWN-
