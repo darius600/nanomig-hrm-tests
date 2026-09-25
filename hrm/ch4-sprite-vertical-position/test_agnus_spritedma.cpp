@@ -343,12 +343,14 @@
 //
 // Disposition -- decided against build2/ch4-sprite-vertical-position.jsonl's
 // own routing.route and routing.how, read after the commit above, and the
-// RTL, opened after that. 10 ids graded, 4 recorded, per routing.route:
+// RTL, opened after that. 9 ids graded, 5 recorded:
 //
-//   GRADED (10 ids, 3 new assertions + 4 label-only additions to existing
-//   ones, per routing.how naming that exact assertion as already
-//   establishing the claim -- the one allowed label change, an id added in
-//   full, no expected value, verdict or other text touched):
+//   GRADED (9 ids, 3 new assertions + 3 further ids added by label-only
+//   addition to 4 existing assertions (CH4-appC-position.c6 is the same
+//   id added to two of them jointly), per routing.how naming that exact
+//   assertion as already establishing the claim -- the one allowed label
+//   change, an id added in full, no expected value, verdict or other
+//   text touched):
 //     SPRXCTL-BITS-6-3-UNUSED-AT-ECS0 (new): CH4-p107.c8, CH4-sprctl.c6,
 //       CH4-p128.c14, CH4-sctl.c13 (4 ids)
 //     SPRXCTL-CHG-IS-ECS-DEPENDENT (new): APPC2-SPRxCTL.v20 (1 id)
@@ -358,18 +360,25 @@
 //     SPRXCTL-BYTE-IS-EV70-VSTOP (label addition): CH4-appC-position.c6
 //       (same id as above -- routing.how names both assertions jointly)
 //     SPRXPOS-SPRXCTL-ADDRESS-MAP (label addition): APPC2-SPRxCTL.addr
-//     AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL (label additions):
-//       APPC2-SPRxCTL.addr, APPC2-SPRxCTL.acc, APPC2-SPRxCTL.chip
-//     4+1+1+1(appC, counted once)+1(addr, counted once)+1(acc)+1(chip) = 10.
+//     AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL (label addition):
+//       APPC2-SPRxCTL.acc
+//     4+1+1+1(appC, counted once)+1(addr, counted once)+1(acc) = 9.
 //
-//   RECORDED (4 ids, 3 new checks.record() calls, per routing.how's own
-//   "record both readings" / "Recorded, not resolved" / frequency-claim
-//   instruction -- none of these four ids appears on any graded line):
+//   RECORDED (5 ids, 3 new checks.record() calls plus APPC2-SPRxCTL.chip
+//   -- routing.how named APPC2-SPRxCTL.chip's undisputed 'A' as graded
+//   alongside .addr/.acc above, but its own restatement reads 'reads A
+//   ALONE', and 'alone' is the disputed side of the same five-way
+//   conflict SPRXCTL-CHIP-COLUMN-FIVE-WAY-CONFLICT already declines, so
+//   it is declined there too rather than graded with a caveat; the other
+//   four ids follow routing.how's own "record both readings" / "Recorded,
+//   not resolved" / frequency-claim instruction -- none of these five ids
+//   appears on any graded line):
 //     SPRXCTL-CHIP-COLUMN-DENISE-ECS-QUALIFIER-CONFLICT: APPB2-conf.c1,
 //       APPB2-conf.c2 (2 ids)
-//     SPRXCTL-CHIP-COLUMN-FIVE-WAY-CONFLICT: APPC2-SPRxCTL.conf1 (1 id)
+//     SPRXCTL-CHIP-COLUMN-FIVE-WAY-CONFLICT: APPC2-SPRxCTL.conf1,
+//       APPC2-SPRxCTL.chip (2 ids)
 //     SPR0POS-PCT-MARK-FREQUENCY: APPB2-conf.c5 (1 id)
-//     2+1+1 = 4.
+//     2+2+1 = 5.
 //
 // RESULTS: 12 passed, 0 failed (9 original + 3 new). All 11 of the
 // original run's PASS:/FAIL:/RECORDED:/MEASURED: lines print identically,
@@ -377,11 +386,11 @@
 // -- verified line-for-line against
 // work/2026-09-25_unit-backlog/runs/ch4-sprite-vertical-position-before.txt,
 // after stripping only the 4 permitted label additions listed above. No
-// RTL deviation found among the 10 new claims carried by a
+// RTL deviation found among the 9 new claims carried by a
 // checks.expect(): the manual's OCS "bits 6-3 unused" statement holds at
 // ecs=0 (with bits 4/3 unfalsifiable, as the assertion's own label says),
 // the ECS map's "chg" classification for SPRxCTL is real and ecs-gated,
-// it is real for all 8 channels and not sprite 0 alone, and the four
+// it is real for all 8 channels and not sprite 0 alone, and the three
 // label-only additions were each already established by their existing
 // measurement.
 //
@@ -419,17 +428,10 @@
 // running uids_in() directly against this file's own printed lines. Its
 // "packages asserting AND declining one : 0" is therefore not a
 // verification of this package and is not cited as one. Checked by hand
-// instead, against the full post-extension run: each of the 10 graded ids
-// appears on a PASS: line and never on a RECORDED: line as a genuine
-// decline; each of the 4 recorded ids appears on a RECORDED: line and
-// never on a PASS:/FAIL: line. The one id printed on both a PASS: and a
-// RECORDED: line, APPC2-SPRxCTL.chip, is a cross-reference inside the
-// FIVE-WAY-CONFLICT record's own prose ("is graded above on
-// AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL (APPC2-SPRxCTL.chip)"),
-// naming where it is graded rather than declining it again -- the same
-// shape the wider corpus already uses and that check_uid_placement.py's
-// own XREF pattern is built to recognise, had it been able to read this
-// package's ids at all.
+// instead, against the full post-extension run: each of the 9 graded ids
+// appears on a PASS: line and never on a RECORDED: line; each of the 5
+// recorded ids appears on a RECORDED: line and never on a PASS:/FAIL:
+// line. No id is printed on both a PASS: and a RECORDED: line.
 // ============================================================================
 
 // MUT_*: replay stimulus for this file's own mutation records (RESULTS/
@@ -1031,25 +1033,53 @@ int main(int argc, char** argv) {
             "(p284). This boundary exposes no ATTACH/feature observable "
             "(see FIXTURE BOUNDARY above), so only the position and size "
             "components of that joint claim are asserted here. "
-            "APPA-sprpos.c2, CH4-appA-sprite.c7, APPB2-SPR0POS.chip, "
-            "APPB2-SPR1POS.chip, CH4-APPB-SPR0POS.chip, "
-            "CH4-APPB-SPR1POS.chip, APPB2-SPR2POS.chip, "
-            "APPB2-SPR3POS.chip, APPB2-SPR4POS.chip, APPB2-SPR5POS.chip, "
-            "APPB2-SPR6POS.chip, APPB2-SPR7POS.chip, "
-            "CH4-APPB-SPR2POS.chip, CH4-APPB-SPR3POS.chip, "
-            "CH4-APPB-SPR4POS.chip, CH4-APPB-SPR5POS.chip, "
-            "CH4-APPB-SPR6POS.chip, CH4-APPB-SPR7POS.chip, "
-            "APPA-sprctl.c2, CH4-appA-sprite.c3, APPB2-SPR0CTL.chip, "
-            "CH4-APPB-SPR0CTL.chip, APPB2-SPR1CTL.chip, "
-            "APPB2-SPR2CTL.chip, APPB2-SPR3CTL.chip, APPB2-SPR4CTL.chip, "
-            "APPB2-SPR5CTL.chip, APPB2-SPR6CTL.chip, APPB2-SPR7CTL.chip, "
-            "CH4-APPB-SPR1CTL.chip, CH4-APPB-SPR2CTL.chip, "
-            "CH4-APPB-SPR3CTL.chip, CH4-APPB-SPR4CTL.chip, "
-            "CH4-APPB-SPR5CTL.chip, CH4-APPB-SPR6CTL.chip, "
-            "CH4-APPB-SPR7CTL.chip, APPA-sprpair.c1, "
             "CH4-appA-sprite.c10, CH4-appA-sprite.c9, APPC2-SPRxCTL.addr, "
-            "APPC2-SPRxCTL.acc, APPC2-SPRxCTL.chip . ");
+            "APPC2-SPRxCTL.acc . ");
     }
+
+    // No checks.expect() for the Denise half of the chip-column claims
+    // AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL's own prose already
+    // discusses: each of these ids bundles the untested 'D'/'(E)' half
+    // into the same sentence as the tested 'A' half, so the id is
+    // declined whole rather than kept on the graded line with a caveat.
+    checks.record(
+        "AGNUS-IS-WRITE-TARGET-DENISE-HALF-UNTESTED [declined]: "
+        "APPA-sprpos.c2, APPA-sprctl.c2, CH4-appA-sprite.c3, "
+        "CH4-appA-sprite.c7, APPB2-SPR0POS.chip, APPB2-SPR1POS.chip, "
+        "APPB2-SPR2POS.chip, APPB2-SPR3POS.chip, APPB2-SPR4POS.chip, "
+        "APPB2-SPR5POS.chip, APPB2-SPR6POS.chip, APPB2-SPR7POS.chip, "
+        "APPB2-SPR0CTL.chip, APPB2-SPR1CTL.chip, APPB2-SPR2CTL.chip, "
+        "APPB2-SPR3CTL.chip, APPB2-SPR4CTL.chip, APPB2-SPR5CTL.chip, "
+        "APPB2-SPR6CTL.chip, APPB2-SPR7CTL.chip, CH4-APPB-SPR0POS.chip, "
+        "CH4-APPB-SPR1POS.chip, CH4-APPB-SPR2POS.chip, "
+        "CH4-APPB-SPR3POS.chip, CH4-APPB-SPR4POS.chip, "
+        "CH4-APPB-SPR5POS.chip, CH4-APPB-SPR6POS.chip, "
+        "CH4-APPB-SPR7POS.chip, CH4-APPB-SPR0CTL.chip, "
+        "CH4-APPB-SPR1CTL.chip, CH4-APPB-SPR2CTL.chip, "
+        "CH4-APPB-SPR3CTL.chip, CH4-APPB-SPR4CTL.chip, "
+        "CH4-APPB-SPR5CTL.chip, CH4-APPB-SPR6CTL.chip, "
+        "CH4-APPB-SPR7CTL.chip -- each restates the SPRxPOS/SPRxCTL chip "
+        "column as 'A D', 'A D(E)' or 'Agnus and Denise' (appendix A "
+        "p284, appendix B pp291-292). AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-"
+        "AND-SPRXCTL above establishes only the 'A' half -- this fixture "
+        "has no Denise instance (see FIXTURE BOUNDARY above), so the 'D' "
+        "half of every one of these claims, and the '(E)' qualifier "
+        "where printed, is NOT tested here. Declined, not graded: each "
+        "claim bundles a clause this package cannot observe.");
+
+    // Same treatment for the one id whose bundled claim names a third,
+    // untested component (feature/ATTACH) instead of Denise.
+    checks.record(
+        "AGNUS-IS-WRITE-TARGET-FEATURE-CLAUSE-UNTESTED [declined]: "
+        "APPA-sprpair.c1 -- 'SPRxPOS and SPRxCTL work together as the "
+        "position, size and feature sprite-control registers.' (p284). "
+        "AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL above establishes "
+        "the position and size components of that same sentence, but "
+        "this boundary exposes no ATTACH/feature observable (see FIXTURE "
+        "BOUNDARY above) -- the feature component is a horizontal-"
+        "boundary claim this package's fixture does not deliver. "
+        "Declined, not graded: the claim bundles a clause this package "
+        "cannot observe.");
 
     // --- SPRXPOS-SPRXCTL-WRITE-BUS-HAS-BOTH-DMA-AND-PROCESSOR-PATHS ---
     {
@@ -1345,19 +1375,24 @@ int main(int argc, char** argv) {
 
     checks.record(
         "SPRXCTL-CHIP-COLUMN-FIVE-WAY-CONFLICT [declined]: "
-        "APPC2-SPRxCTL.conf1 -- the ECS register map's chip column for "
-        "SPRxCTL (p298, 'A' alone) against appendix A p284 ('A D( E )'), "
-        "appendix B p291 ('A D(E)' for SPR0CTL), appendix B p292 ('A D' "
-        "for SPR1CTL-SPR7CTL) and appendix C p303 body text ('A D') -- "
-        "five readings of the same column, recorded not resolved. The "
-        "undisputed 'A' -- Agnus reaches $142 and changes the vertical "
-        "compare -- is graded above on AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-"
-        "AND-SPRXCTL (APPC2-SPRxCTL.chip). The Denise-side decode this "
-        "conflict's own routing.how names as 'a measurement' is reported "
-        "in this package's own classify.evidence (denise_sprites.v:104, "
-        "denise_sprites_shifter.v:138-141 decode $142 too) -- not "
-        "something this fixture, which builds agnus_spritedma alone with "
-        "no Denise instance, can itself measure.");
+        "APPC2-SPRxCTL.conf1, APPC2-SPRxCTL.chip -- the ECS register "
+        "map's chip column for SPRxCTL (p298, 'A' alone) against "
+        "appendix A p284 ('A D( E )'), appendix B p291 ('A D(E)' for "
+        "SPR0CTL), appendix B p292 ('A D' for SPR1CTL-SPR7CTL) and "
+        "appendix C p303 body text ('A D') -- five readings of the same "
+        "column, recorded not resolved. AGNUS-IS-WRITE-TARGET-FOR-"
+        "SPRXPOS-AND-SPRXCTL above establishes only that Agnus reaches "
+        "$142 and changes the vertical compare -- the undisputed 'A' -- "
+        "not that it reaches $142 alone: 'alone' is exactly the disputed "
+        "side of this five-way conflict, so APPC2-SPRxCTL.chip's own "
+        "claim ('SPRxCTL's chip column in the ECS register map reads A "
+        "alone') is declined here in full, not graded. The Denise-side "
+        "decode this conflict's own routing.how names as 'a measurement' "
+        "is reported in this package's own classify.evidence "
+        "(denise_sprites.v:104, denise_sprites_shifter.v:138-141 decode "
+        "$142 too) -- not something this fixture, which builds "
+        "agnus_spritedma alone with no Denise instance, can itself "
+        "measure.");
 
     checks.record(
         "SPR0POS-PCT-MARK-FREQUENCY [declined]: APPB2-conf.c5 -- the '%' "
