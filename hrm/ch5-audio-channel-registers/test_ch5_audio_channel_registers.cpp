@@ -115,30 +115,30 @@
 //   (SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL) is recorded as "impossible",
 //   not skipped.
 //
-// CLAIM COVERAGE -- 93 of the 94 original ids in ch5-audio-channel-registers.jsonl
-//   are cited in full inside an expect()/note() call's own text below (never
-//   only in a header comment). The remaining one, A-audxdat.c4, was withdrawn
-//   2026-09-12 (revalidation blocker 1b): its sentence bundles a measured
-//   sequential-output-order clause (also separately claimed by 5-appA-p265.c41,
-//   which stays on SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL) with a digital-to-
-//   analog/audio-output-pin clause that is not measured anywhere in this
-//   fixture -- crediting the whole id on a partial predicate is a coverage
-//   defect, not conservative wording, so the id itself is withdrawn rather
-//   than kept with a caveat. A-audxdat.c4 is NOT COVERED BY THIS PACKAGE and
-//   needs an analog/DAC output-pin boundary that does not exist anywhere in
-//   this project (no port on any module in this chipset carries a voltage or
-//   analog signal). Eighteen assertion groups, ids folded onto
-//   whichever group tests the identical underlying proposition (many ids are
-//   the same quotation or the same fact independently read by both lots):
+// CLAIM COVERAGE -- 96 ids are cited in full inside an expect()/note() call's
+//   own text below (never only in a header comment). One further id,
+//   A-audxdat.c4, is named in full inside a record() call instead, kept off
+//   every graded line: its sentence bundles a measured sequential-output-
+//   order clause (also separately claimed by 5-appA-p265.c41, which stays on
+//   SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL) with a digital-to-analog/
+//   audio-output-pin clause that is not measured anywhere in this fixture --
+//   crediting the whole id on a partial predicate is a coverage defect, not
+//   conservative wording, so the id is declined whole rather than kept with
+//   a caveat. A-audxdat.c4 needs an analog/DAC output-pin boundary that does
+//   not exist anywhere in this project (no port on any module in this
+//   chipset carries a voltage or an analog signal). Nineteen assertion
+//   groups, ids folded onto whichever group tests the identical underlying
+//   proposition (many ids are the same quotation or the same fact
+//   independently read by both lots):
 //     SAMPLE-ITEM-WIDTH-EIGHT-BITS                    4 ids
 //     WORD-CONTAINS-TWO-SAMPLES                       14 ids
-//     SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL         3 ids (A-audxdat.c4 withdrawn -- NOT COVERED BY THIS PACKAGE, see above)
+//     SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL         3 ids (A-audxdat.c4 declined via record(), see above)
 //     AUDXDAT-IS-PERCHANNEL-DATA-BUFFER               2 ids
 //     AUDXLEN-SETS-WORDS-PER-BLOCK                    10 ids (incl. 2 terminal-count ids, recorded in a trailing note)
 //     DMA-CONTINUES-UNTIL-STOPPED-REPLAYS             4 ids
 //     RESTART-DOES-NOT-RESUME-MIDBUFFER               4 ids
 //     LENGTH-IS-A-BACKUP-REGISTER                     3 ids
-//     INTERRUPT-CADENCE-TIED-TO-LENGTH                6 ids
+//     INTERRUPT-CADENCE-TIED-TO-LENGTH                8 ids (incl. 5-p148.c4, 5-join.c9 -- the same event, read on p.148's worked-example wording)
 //     PERIOD-SETS-SAMPLE-INTERVAL                     14 ids (incl. 2 terminal-count ids, recorded in a trailing note)
 //     LOWER-PERIOD-YIELDS-HIGHER-RATE                 5 ids
 //     PERIOD-MAX-16BIT-RANGE                          2 ids
@@ -146,21 +146,21 @@
 //     VOLUME-REGISTER-SEVEN-BITS-READBACK             9 ids
 //     PWM-PATH-DISTINGUISHES-ALL-65-LEVELS            2 ids
 //     CPU-CAN-WRITE-AUDXDAT-DIRECTLY                  10 ids
-//   Total = 4+14+3+2+10+4+4+3+6+14+5+2+1+9+2+10 = 93.
+//   Total = 4+14+3+2+10+4+4+3+8+14+5+2+1+9+2+10 = 95.
 //   Two further scenarios (FIXTURE-LIVENESS-DMA-PATH, FIXTURE-LIVENESS-
 //   DIRECT-WRITE-PATH) carry no claim id -- pure liveness controls -- and
 //   still get their own mutation, matching hrm/ch5-audio-volume-scale/'s own
 //   CONTROL-CLOCKED-LIVENESS convention.
 //
 // GAP CLOSURE (V-10 reclassification): one further claim, previously
-//   discarded as `not-hardware`, is asserted below as a nineteenth group:
+//   discarded as `not-hardware`, is asserted below as a further group:
 //     SAMPLE-SIGNED-RANGE-FULL-SCALE                  1 id (5-noise.c1)
 //   V-10's argument was that no port carries a Hertz-valued frequency, which
 //   is true but irrelevant here: 5-noise.c1 states a digitally observable
 //   endpoint pair, not a frequency. Both signed two's-complement extremes,
 //   -128 and +127, are shown reaching `sample` intact through the eight-bit
 //   path and its sign extension -- no clock, tick count, or Hz figure is
-//   involved on either side of this one. New total = 93 + 1 = 94.
+//   involved on either side of this one. New total = 95 + 1 = 96.
 //
 // WHAT IS RECORDED, NOT ASSERTED (measure-and-report, per this chapter's own
 //   silence/conflict rulings -- never forced into a graded pass/fail that
@@ -179,11 +179,11 @@
 //     cadence are asserted, the moment is recorded.
 //   - 5-sum.c3's restart-address half (AUDxLC): agnus_audiodma's register,
 //     outside this module's boundary; only the word-count half is asserted.
-//   - A-audxdat.c4 is not recorded here at all -- it is WITHDRAWN (see "CLAIM
-//     COVERAGE" above), not partially credited: no analog boundary exists at
-//     any port this or any other module in this chipset exposes, so its
-//     digital-to-analog/output-pin clause cannot even be measured-and-
-//     reported, let alone asserted.
+//   - A-audxdat.c4 is declined via record() (see "CLAIM COVERAGE" above and
+//     the RECORD() call in main()), not partially credited: no analog
+//     boundary exists at any port this or any other module in this chipset
+//     exposes, so its digital-to-analog/output-pin clause cannot even be
+//     measured-and-reported, let alone asserted.
 //   - the six-vs-seven-bit VOLUME REGISTER WIDTH dispute itself (p139/p140
 //     say six bits/bits 5-0; p149 and appendix A p266 say seven bits/bits
 //     6-0): the RTL's own seven-bit storage is measured and asserted; which
@@ -196,23 +196,6 @@
 //   - printed p159's alternative AUDxPER maximum, 65536: not attemptable at
 //     any boundary of this module, since it needs a 17th bit the write path
 //     (`data[15:0]`) does not have.
-//
-// FURTHER PROPOSITIONS, ROUTED HERE -- SPECIFICATION ONLY, RTL not yet
-//   opened for these three; quote, restatement and page only, no assertion
-//   or record() decision made yet:
-//   - 5-p148.c4 (p.148, worked-example step "c."): "Create an interrupt for
-//     the 680x0 saying that it has completed retrieving working copies of
-//     length and location registers." Restatement: after working copies of
-//     length and location are acquired, the audio DMA creates an interrupt
-//     for the 680x0.
-//   - 5-join.c9: the identical sentence, independently read. Restatement:
-//     an interrupt is raised to the 680x0 once the working copies of length
-//     and location have been taken.
-//   - A-audxdat.c4 (p.265, appendix A): "It contains 2 bytes of data that
-//     are each 2's complement and are outputted sequentially (with
-//     digital-to-analog conversion) to the audio output pins." Restatement:
-//     the two bytes are output sequentially, through digital-to-analog
-//     conversion, to the audio output pins. Same sentence as A-audxdat.c2.
 //
 // VOLUME -- WHICH PORT WAS MEASURED, STATED EXPLICITLY EVERY TIME: this
 //   module's own `volume[6:0]` and `sample_okk[7:0]` ports carry the written
@@ -339,6 +322,12 @@ void CHECK(const std::string& label, bool ok) {
 }
 void NOTE(const std::string& msg) {
     std::cout << "MEASURED: " << msg << "\n";
+}
+void RECORD(const std::string& msg) {
+    // Declines a routed claim with a reason -- never a measurement, never
+    // graded. Matching CHECK/NOTE's free-function style already used in
+    // this file rather than introducing a class-based harness.
+    std::cout << "RECORDED: " << msg << "\n";
 }
 void MUTATION(const std::string& id, const char* kind, const char* result,
               const std::string& detail) {
@@ -817,6 +806,23 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
+    // A-audxdat.c4 -- declined, not graded. Its "output sequentially" clause
+    // is the same sentence SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL already
+    // grades above via 5-appA-p265.c41; the remaining digital-to-analog/
+    // audio-output-pin clause names an analog domain no port on any module
+    // in this chipset exposes (paula_audio.v's own outputs are digital: a
+    // 15-bit word pair and a 9-bit PWM pair, never a voltage or a DAC pin).
+    // =========================================================================
+    RECORD("A-audxdat.c4 (p.265, appendix A) \"It contains 2 bytes of data that are each "
+           "2's complement and are outputted sequentially (with digital-to-analog "
+           "conversion) to the audio output pins.\": the sequential-output half of this "
+           "sentence is a different claim, already fully established by the "
+           "SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL assertion above on its own cited ids; "
+           "the digital-to-analog/audio-output-pin half is not constructible at this or any "
+           "boundary in this chipset -- no port anywhere carries a voltage, a DAC or an "
+           "analog pin. Declined whole rather than credited on a partial predicate.");
+
+    // =========================================================================
     // AUDXDAT-IS-PERCHANNEL-DATA-BUFFER
     // (A-audxdat.c1, 5-appA-p265.c38, opus:8-appA-adkcon.c37)
     // =========================================================================
@@ -1012,8 +1018,16 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // INTERRUPT-CADENCE-TIED-TO-LENGTH
-    // (5-p147.c6, 5-join.c4, 5-appA-p265.c46, 5-appA-p265.c47, A-audxdat.c8,
-    //  A-audxdat.c9)
+    // (5-p147.c6, 5-join.c4, 5-p148.c4, 5-join.c9, 5-appA-p265.c46,
+    //  5-appA-p265.c47, A-audxdat.c8, A-audxdat.c9)
+    //
+    // 5-p148.c4 and 5-join.c9 state the same interrupt-after-register-copy
+    // event as 5-p147.c6/5-join.c4 above, in the manual's worked-example
+    // wording ("c. Create an interrupt... after retrieving working copies
+    // of length and location registers") rather than its general statement
+    // on p.147 -- folded onto this same assertion for the same reason:
+    // existence and cadence are graded here, the disputed moment stays in
+    // the moment note below, unchanged.
     // =========================================================================
     {
         Harness h;
@@ -1041,11 +1055,11 @@ int main(int argc, char** argv) {
           << "shows the one unconditional startup pulse, per dma_advance's header comment) and "
           << obs.dmas_edges.size() << " dmas transitions, over " << obs.word_count
           << " delivered words with AUDxLEN=4.";
-        CHECK("INTERRUPT-CADENCE-TIED-TO-LENGTH (5-p147.c6, 5-join.c4, 5-appA-p265.c46, "
-              "5-appA-p265.c47, A-audxdat.c8, A-audxdat.c9): with AUDxLEN=4 and DMA running, the "
-              "buffered interrupt request (intreq2, which `intreq` reflects onto the port at the "
-              "next period-timer transition) is set once per completed 4-word block -- existence "
-              "and cadence, tied to AUDxLEN, both hold", ok);
+        CHECK("INTERRUPT-CADENCE-TIED-TO-LENGTH (5-p147.c6, 5-join.c4, 5-p148.c4, 5-join.c9, "
+              "5-appA-p265.c46, 5-appA-p265.c47, A-audxdat.c8, A-audxdat.c9): with AUDxLEN=4 and "
+              "DMA running, the buffered interrupt request (intreq2, which `intreq` reflects onto "
+              "the port at the next period-timer transition) is set once per completed 4-word "
+              "block -- existence and cadence, tied to AUDxLEN, both hold", ok);
         NOTE(m.str());
         NOTE("Three manual passages give three different MOMENTS for this same interrupt: "
              "p147/p148 say immediately after the location+length registers are copied into "
