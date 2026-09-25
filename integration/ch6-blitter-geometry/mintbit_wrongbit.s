@@ -1,4 +1,4 @@
-; mintbit_wrongbit.s -- A9 mutation: LF = $40 (minterm 6) instead of $80
-; (minterm 7) for the first blit.
+; mintbit_wrongbit.s -- A9b mutation: LF = $30 (minterms 5, 4) instead of
+; $0F (minterms 0-3).
 WRONGBIT        equ     1
         include "mintbit.s"

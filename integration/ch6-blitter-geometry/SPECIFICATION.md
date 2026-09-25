@@ -8,13 +8,11 @@ descending pointer order, the arbitrary-region copy recipe, the minterm
 function generator's bit layout, and the four figures of the chapter, read
 as blit geometry rather than as pictures.
 
-This is the package's second revision, after an independent validation
-found fit and coverage defects (`validation-ch6-blitter-geometry.md`) and
-several declines that did not hold against the page. Every register-bit
-layout, DMACON encoding and pointer/modulo rule this file states is
-verified against `nanomig.i` (register offsets) and the manual (page
-citations throughout); nothing here is stated only because a run on the
-RTL showed it, except where marked `MEASURED` in a program's own comments.
+Every register-bit layout, DMACON encoding and pointer/modulo rule this
+file states is verified against `nanomig.i` (register offsets) and the
+manual (page citations throughout); nothing here is stated only because a
+run on the RTL showed it, except where named as harness plumbing (a
+program's own placement in memory), never as a claim's oracle.
 
 Every program drives `nanomig.v` only through the blitter's custom
 registers and observes only the RAM port (`ram_log()`), `peek_logical()`/
@@ -394,23 +392,29 @@ Proposition: when shifting, ascending mode shifts right and descending
 mode shifts left (`ch6-copy.c7`, `ch6-copy.c8` -- p.182: "shifts are then
 towards the left, rather than the right"; p.200 gives the same rule for
 both modes). The shift value itself is the bit position of the leftmost
-edge within a word, not an absolute shift (`ch6-copy.c9`): moving an image
-four pixels left can be realized as a rightward within-word shift (ASH=12)
-combined with a destination pointer one word lower, because the edge lands
-at bit 14 of the word before.
+edge within a word, not an absolute shift (`ch6-copy.c9`): source 1111
+2222 3333 has its own left edge at a word boundary, so moving it four
+pixels left can be realized as a rightward within-word shift (ASH=12)
+combined with a destination pointer one word lower, because the edge
+lands at bit 12 of the word before (16-4).
 
 Program, three cases on source 1111 2222 3333:
-- **A12-shift-right**: ASH=4, ascending, same-address dest pointer.
+- **A12-shift-right**: ASH=4, ascending, same-address dest pointer, width
+  3.
 - **A12-shift-left**: the same ASH=4, descending, pointers at the last
-  word.
+  word, width 3.
 - **A12-within-word**: ASH=12, ascending, dest pointer one word lower
-  than "naive" (same-address).
+  than "naive" (same-address). p.183: the blit size is the larger of the
+  two spans -- the shift grows the 3-word source to 4 destination words,
+  so width is 4; BLTALWM=$0000 (p.180: masks are ANDed before shifting)
+  forces the 4th, past-the-source word to contribute nothing of its own,
+  deterministically.
 
 Observed: `peek_logical()` on the destination words in each case.
 
 Expected: shift-right gives 0111 1222 2333; shift-left gives 1112 2223
-3330; within-word gives 0001 1112 2223 at DST-2, DST, DST+2 -- all
-computed independently in the test from the barrel-shift arithmetic.
+3330; within-word gives 0001 1112 2223 3330 at DST-2, DST, DST+2, DST+4 --
+all computed independently in the test from the barrel-shift arithmetic.
 
 Mutations: `NMH_MUTATE=A12-shift-right` (descending instead of ascending)
 and `NMH_MUTATE=A12-shift-left` (ascending instead of descending) are each
@@ -524,42 +528,48 @@ LF=$3F -- gives 0FFF instead (NOT (A AND B)), a different function.
 ### A18 -- moving a sixteen-colour image needs four copy operations
 Page 171. Claims: `6-dma-channels.c36`, `ch6-dma.c34`.
 
-Proposition: because a copy blit moves one contiguous source/destination
-pair per BLTSIZE trigger, moving a four-bitplane image needs four separate
-copy operations, one per plane.
+Proposition: because a copy blit's row modulo only ever steps within the
+one bitmap its own pointer was given, moving a four-bitplane image needs
+four separate copy operations, one per plane -- not merely four separate
+word-sized writes, which a single wider blit could still do in one pass.
 
-Program: four one-word "plane" buffers, one blit per plane, each its own
-pointer pair.
+Program: four separate plane bitmaps (40 bytes x 12 rows each, far apart
+in memory), a 7-word x 6-row image embedded at row 2, column 0 in each.
+One blit's row modulo (40 - 2*7 = 26 bytes) steps to the next row of the
+same bitmap only; it cannot reach a different plane's separate buffer.
+BLTAPT is reloaded before each of the (up to) four blits: ascending mode
+leaves it advanced past the image once a blit completes.
 
-Observed: `peek_logical()` on all four plane destinations.
+Observed: `peek_logical()` on the image's position in all four plane
+bitmaps.
 
-Expected: after all four blits, every destination equals its own source.
+Expected: all four bitmaps show the image only once all four blits (one
+per plane, its own pointer pair) have run.
 
-Mutation `NMH_MUTATE=A18-fourcopies`: stop after three of the four planes
--- the fourth destination stays at its unwritten seed instead of its
-source.
+Mutation `NMH_MUTATE=A18-fourplanes`: only the first plane's blit runs --
+the other three planes stay at their unwritten seed.
 
 ### A19 -- some of a pointer's most significant bits are ignored
-Page 170. Claims: `6-dma-channels.c21`, `ch6-dma.c19`.
+Page 170, 309. Claims: `6-dma-channels.c21`, `ch6-dma.c19`.
 
 Proposition: some of the most significant bits of a pointer address are
 ignored, because only Chip memory is accessible -- true independent of
-chip size, since BLTDPTH (and the other pointer-high registers) only
-store the low 5 bits of the word written to them (pointer bits 20:16), so
-bits above 20 of a 32-bit-style address are structurally unreachable.
+chip size. Appendix B (p.309, "BLTxPTH ... (high 5 bits, was 3 bits)")
+gives the edge for this configuration directly: the register keeps
+pointer bits 20:16, so bit 21 is the lowest bit no design can honour,
+while bit 20 is within the kept range and does change the target.
 
-Program: a plain copy blit whose destination pointer is DST with bit 24
-also set (DST|$01000000).
+Program: a plain copy blit whose destination pointer is DST with bit 21
+also set (DST|$00200000).
 
 Observed: `peek_logical()` on the destination.
 
-Expected: the source pattern lands at DST unchanged -- bit 24 never
+Expected: the source pattern lands at DST unchanged -- bit 21 never
 reaches the register.
 
-Mutation: not exercised, by a scope decision. The register only stores
-bits 20:16 of the word it is written; every possible stimulus already
-demonstrates the same structural truncation, so there is no variant that
-would leave it undemonstrated.
+Mutation `NMH_MUTATE=A19-highbit`: bit 20 instead of bit 21 -- within the
+register's kept range, this changes the actual target to DST|$100000, so
+DST itself stays unwritten.
 
 ### A20 -- 512 KB Chip RAM ignores 13 pointer bits; more memory ignores fewer
 Page 170. Claims: `6-dma-channels.c22`, `6-dma-channels.c23`,
@@ -567,33 +577,33 @@ Page 170. Claims: `6-dma-channels.c22`, `6-dma-channels.c23`,
 
 Proposition: on a machine with 512 KB of Chip memory, a pointer's most
 significant 13 bits are ignored; on a machine with more Chip memory, fewer
-bits are ignored.
+bits are ignored. p.170 describes the pointer as composed of two words
+(32 bits); with the top 13 ignored, 19 remain -- the pointer wraps modulo
+$80000 ($086000 mod $80000 = $006000).
 
-Program: the harness's `Config.memory_config` field selects the Chip RAM
-size; under 0 (512 KB), every Chip bank folds onto the first 512 KB
-(confirmed against `minimig_bankmapper.v`: under `memory_config=0`,
-`bank_r[3:0] = {0,0,0, chip3|chip2|chip1|chip0}`), so any logical address
-in $080000-$0FFFFF collapses to its offset within $000000-$07FFFF. Because
-`load_program()`/`peek_logical()` assume the 2 MB identity map (physical
-== logical), this case pokes the assembled fixture program directly with
-`poke_word()` at the collapsed physical address and reads results with
-`peek_word()`, bypassing those two harness calls -- a harness gap named
-here rather than a change to the harness. The normal run uses
-`memory_config=0`; the plain fixture program and its own known source
-pattern are reused unchanged.
+Program: both chip sizes are graded in the one normal run. Under
+`memory_config=0` (512 KB), three pointers distinguish which bits fold:
+DST=$086000 wraps to $006000 (bit 19 dropped); DST+$040000=$0C6000 wraps
+to $046000 (bit 18 kept -- so exactly 13 bits, not 14, are ignored);
+DST+$100002=$186002 wraps to $006002 (bit 20 dropped too, distinguishing
+"13 bits" from "only bit 19"). Under `memory_config=3` (2 MB), the same
+DST is honoured directly, unwrapped -- the same program run again.
+`load_program()`/`peek_logical()` assume the 2 MB identity map and cannot
+place or read the 512 KB run (logical $080400 is physical $000400 there,
+a CPU-side fold the page does not describe -- harness plumbing, not this
+claim's oracle); that half pokes the assembled program directly with
+`poke_word()` and reads results with `peek_word()`, a harness gap named
+here rather than a change to the harness.
 
-Observed: `peek_word()` at the collapsed physical address corresponding to
-logical DST.
+Observed: `peek_word()` at the collapsed physical addresses (512 KB half);
+`peek_logical()` at DST (2 MB half).
 
-Expected: the source pattern (1234 ...) at physical DST-$080000
-($006000), confirming bit 19 (and above, within the pointer's 21-bit
-range) is ignored under the 512 KB configuration.
+Expected: 512 KB: $AAAA at $006000, $BBBB at $046000, $CCCC at $006002.
+2 MB: $AAAA at DST, honoured directly.
 
-Mutation `NMH_MUTATE=A20-mem512`: `memory_config=3` (2 MB) instead of 0,
-with the normal `load_program()`/`peek_logical()` (no collapse needed) --
-the pattern is honoured at the uncollapsed address instead, so nothing
-reaches the physical location the 512 KB case expects, demonstrating that
-a larger chip ignores fewer bits.
+Mutation `NMH_MUTATE=A20-mem512`: `memory_config=0` for the 2 MB half too
+-- DST (unwrapped) is never written under 512 KB, so that half goes red
+on its own.
 
 ## Claims not asserted
 

@@ -11,8 +11,11 @@ DST             equ     SCRATCH+$4000   ; primary destination buffer
 DST2            equ     SCRATCH+$4800   ; secondary destination buffer
 BITMAP          equ     SCRATCH+$6000   ; whole-bitmap scratch (A3, figure 6-2)
 DST3            equ     SCRATCH+$A000   ; a third destination buffer
-PLANES          equ     SCRATCH+$C000   ; four one-word "bitplane" sources
-PLANESDST       equ     SCRATCH+$C100   ; four one-word "bitplane" destinations
+PLANEIMG        equ     SCRATCH+$10000  ; a 7-word x 6-row image, one flat source
+PLANEBMP0       equ     SCRATCH+$20000  ; four separate plane bitmaps, each
+PLANEBMP1       equ     SCRATCH+$21000  ; 40 bytes x 12 rows -- far enough apart
+PLANEBMP2       equ     SCRATCH+$22000  ; that no constant row modulo reaches
+PLANEBMP3       equ     SCRATCH+$23000  ; from one into the next
 
 ; DFF register offsets not in nanomig.i (not custom chip DMA registers).
 CIAAPRA         equ     $BFE001         ; any write here clears the overlay

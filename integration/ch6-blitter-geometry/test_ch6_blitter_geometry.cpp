@@ -37,9 +37,9 @@
 // MUTATION A15-fig64 stimulus red NMH_MUTATE=A15-fig64: 3 words/row instead of 2
 // MUTATION A16-mintdc stimulus red NMH_MUTATE=A16-mintdc: LF=$DE instead of $DC
 // MUTATION A17-truthorder stimulus red NMH_MUTATE=A17-truthorder: the top-down reading, LF=$3F
-// MUTATION A18-fourcopies stimulus red NMH_MUTATE=A18-fourcopies: stop after three of the four planes
-// MUTATION A19-highbit not exercised, by a scope decision: the register only stores bits 20:16 of the pointer, so any stimulus already demonstrates the truncation; no variant would leave it undemonstrated
-// MUTATION A20-mem512 stimulus red NMH_MUTATE=A20-mem512: memory_config=3 instead of 0
+// MUTATION A18-fourplanes stimulus red NMH_MUTATE=A18-fourplanes: only the first plane's blit runs
+// MUTATION A19-highbit stimulus red NMH_MUTATE=A19-highbit: bit 20 instead of bit 21
+// MUTATION A20-mem512 stimulus red NMH_MUTATE=A20-mem512: memory_config 0 for the 2 MB half too
 
 #include <cstdio>
 #include <cstdint>
@@ -77,8 +77,10 @@ constexpr uint32_t kDst       = kScratch + 0x4000;
 constexpr uint32_t kDst2      = kScratch + 0x4800;
 constexpr uint32_t kBitmap    = kScratch + 0x6000;
 constexpr uint32_t kDst3      = kScratch + 0xA000;
-constexpr uint32_t kPlanes    = kScratch + 0xC000;
-constexpr uint32_t kPlanesDst = kScratch + 0xC100;
+constexpr uint32_t kPlaneBmp0 = kScratch + 0x20000;
+constexpr uint32_t kPlaneBmp1 = kScratch + 0x21000;
+constexpr uint32_t kPlaneBmp2 = kScratch + 0x22000;
+constexpr uint32_t kPlaneBmp3 = kScratch + 0x23000;
 
 // The assertion call form is fixed by BRIEF.md.
 class Checks {
@@ -478,7 +480,7 @@ void assertion_A9(const std::string& dir) {
         matches = matches && W(r, kDst + slot * 2) == expected_by_slot[slot];
     checks.expect(matches,
         "A9-minterm-bit p178 ch6-venn.c2: with A=FF00, B=F0F0, C=CCCC, LF="
-        "1<<n for each n=7..0 gives C000 3000 0C00 00C0 0300 0030 000C "
+        "1<<n for each n=7..0 gives C000 3000 0C00 0300 00C0 0030 000C "
         "0003 at DST+0..DST+14, the minterm-number-order truth table read "
         "bit by bit, not just at n=7 and as a group for n=0-3");
 }
@@ -540,13 +542,18 @@ void assertion_A12(const std::string& dir) {
 
     Run r_c9 = run(dir, pick("A12-within-word", "shiftc9", "shiftc9_noptr"));
     bool within_word = ok(r_c9) &&
-        W(r_c9, kDst - 2) == 0x0001 && W(r_c9, kDst + 0) == 0x1112 && W(r_c9, kDst + 2) == 0x2223;
+        W(r_c9, kDst - 2) == 0x0001 && W(r_c9, kDst + 0) == 0x1112 &&
+        W(r_c9, kDst + 2) == 0x2223 && W(r_c9, kDst + 4) == 0x3330;
     checks.expect(within_word,
-        "A12-within-word p183 ch6-copy.c9: moving source 1111 2222 3333 "
-        "four pixels left lands its edge at bit 14 of the word before -- "
-        "ASH=12 (a rightward within-word shift) with BLTDPT one word lower "
-        "gives 0001 1112 2223, the same leftward result, showing the shift "
-        "value is the leftmost edge's bit position, not an absolute shift");
+        "A12-within-word p183 ch6-copy.c9: source 1111 2222 3333 has its "
+        "own left edge at a word boundary; moving it four pixels left "
+        "lands that edge at bit 12 of the word before -- ASH=12 (a "
+        "rightward within-word shift) with BLTDPT one word lower, blit "
+        "size 4 (p.183: the larger of the two spans) and BLTALWM=$0000 "
+        "(the 4th, past-the-source word contributes nothing of its own) "
+        "gives 0001 1112 2223 3330, the same leftward result, showing the "
+        "shift value is the leftmost edge's bit position, not an absolute "
+        "shift");
 }
 
 // -----------------------------------------------------------------------
@@ -621,10 +628,11 @@ void assertion_A15(const std::string& dir) {
         "A15-fig64: the figure's drawn second-word mask is 7 bits "
         "(11111110 00000000, matching a 23-bit extraction) but its printed "
         "final rows take 8 bits from the source (row 1 \"00000000 "
-        "11111111\", where the recipe's own FE00 second word gives "
-        "\"00000001 11111111\") -- a one-bit conflict between the drawing "
-        "and the printed numbers that this package does not resolve, so "
-        "the recipe is graded structurally (reads/writes per row), not "
+        "11111111\", where the drawn second-word mask $FE00, applied to "
+        "the figure's row 1 over a destination of ones, gives \"00000001 "
+        "11111111\") -- a one-bit conflict between the drawing and the "
+        "printed numbers that this package does not resolve, so the "
+        "recipe is graded structurally (reads/writes per row), not "
         "against those exact final-row values");
 }
 
@@ -657,68 +665,105 @@ void assertion_A17(const std::string& dir) {
 // -----------------------------------------------------------------------
 // A18 -- moving a sixteen-colour image needs four separate copy
 // operations, one per plane. Page 171. 6-dma-channels.c36, ch6-dma.c34.
+// Four separate plane bitmaps (not four adjacent words): a single blit's
+// own row modulo can only step within the one bitmap it was given, never
+// into a different plane's separate buffer, so one blit moves at most one
+// plane's image.
 void assertion_A18(const std::string& dir) {
-    Run r = run(dir, pick("A18-fourcopies", "fourcopies", "fourcopies_only3"));
-    bool matches = ok(r) &&
-        W(r, kPlanesDst + 0) == 0xAAAA && W(r, kPlanesDst + 2) == 0xBBBB &&
-        W(r, kPlanesDst + 4) == 0xCCCC && W(r, kPlanesDst + 6) == 0xDDDD;
+    Run r = run(dir, pick("A18-fourplanes", "fourplanes", "fourplanes_only1"));
+    auto plane_ok = [&](uint32_t bmp) {
+        return W(r, bmp + 80 + 0) == 0x1111 && W(r, bmp + 80 + 2) == 0x2222 &&
+               W(r, bmp + 80 + 4) == 0x3333 && W(r, bmp + 80 + 6) == 0x4444 &&
+               W(r, bmp + 80 + 8) == 0x5555 && W(r, bmp + 80 + 10) == 0x6666 &&
+               W(r, bmp + 80 + 12) == 0x7777;
+    };
+    bool matches = ok(r) && plane_ok(kPlaneBmp0) && plane_ok(kPlaneBmp1) &&
+        plane_ok(kPlaneBmp2) && plane_ok(kPlaneBmp3);
     checks.expect(matches,
-        "A18-fourcopies p171 6-dma-channels.c36 ch6-dma.c34: four separate "
-        "one-plane blits, each its own pointer pair, are what moves all "
-        "four planes -- all four destinations equal their sources only "
-        "once all four blits have run");
+        "A18-fourplanes p171 6-dma-channels.c36 ch6-dma.c34: four separate "
+        "plane bitmaps (40 bytes x 12 rows each), a 7-word x 6-row image "
+        "embedded at row 2 of each; one blit's row modulo (40-2*7=26 "
+        "bytes) only steps within its own bitmap, so moving all four "
+        "planes' images takes four separate blits, one pointer pair each "
+        "-- all four bitmaps show the image only once all four blits have "
+        "run");
 }
 
 // -----------------------------------------------------------------------
-// A19 -- some of a pointer's most significant bits are ignored:
-// BLTDPTH only stores data_in[4:0] (pointer bits 20:16), so bits above
-// 20 of a 32-bit-style address are structurally unreachable regardless
-// of chip size. Page 170. 6-dma-channels.c21, ch6-dma.c19.
+// A19 -- some of a pointer's most significant bits are ignored, for any
+// chip size: p.309, "BLTxPTH ... (high 5 bits, was 3 bits)" keeps
+// pointer bits 20:16, so bit 21 is the lowest bit no design can honour.
+// Page 170, 309. 6-dma-channels.c21, ch6-dma.c19.
 void assertion_A19(const std::string& dir) {
-    Run r = run(dir, "highbit");
+    Run r = run(dir, pick("A19-highbit", "highbit", "highbit_bit20"));
     bool matches = ok(r) &&
         W(r, kDst + 0) == 0x1234 && W(r, kDst + 2) == 0x5678 &&
         W(r, kDst + 4) == 0x9ABC && W(r, kDst + 6) == 0xDEF0;
     checks.expect(matches,
-        "A19-highbit p170 6-dma-channels.c21 ch6-dma.c19: BLTDPT set to "
-        "DST with bit 24 also set (DST|$01000000) still writes at DST -- "
-        "bit 24 never reaches the pointer register, which stores only "
-        "bits 20:16 of the high word it is written");
+        "A19-highbit p170,309 6-dma-channels.c21 ch6-dma.c19: BLTDPT set "
+        "to DST with bit 21 also set (DST|$00200000, above BLTxPTH's kept "
+        "high 5 bits per p.309's Appendix B entry) still writes at DST");
 }
 
 // -----------------------------------------------------------------------
 // A20 -- 512 KB Chip RAM ignores 13 pointer bits (6-dma-channels.c22,
 // ch6-dma.c20); more Chip memory ignores fewer (6-dma-channels.c23,
-// ch6-dma.c21). memory_config 0 folds every chip bank onto the first
-// 512 KB (minimig_bankmapper.v): a write to logical DST=$086000 lands at
-// physical $006000 -- physical = logical - $080000. Under the mutation
-// (memory_config 3, 2 MB) it is honoured at $086000 instead, so nothing
-// reaches the collapsed address.
+// ch6-dma.c21). p.170: the pointer is composed of two words (32 bits);
+// on 512 KB Chip memory the most significant 13 are ignored, leaving 19
+// -- i.e. the pointer wraps modulo $80000. Both chip sizes are graded in
+// the same, normal run: under 512 KB, DST=$086000 wraps to $006000 (bit
+// 19 dropped), DST+$040000=$0C6000 wraps to $046000 (bit 18 kept, so 13
+// bits, not 14, are what is ignored), and DST+$100002=$186002 wraps to
+// $006002 (bit 20 dropped too); under 2 MB, DST is honoured directly,
+// unwrapped. (The CPU-side program placement under 512 KB -- physical
+// $000400 for logical $080400 -- is harness plumbing the page does not
+// describe, not part of the oracle; load_program()/peek_logical() assume
+// the 2 MB identity map and cannot be used for it, so this case pokes the
+// assembled program directly with poke_word()/peek_word(), a harness gap,
+// not a change to the harness.)
 void assertion_A20(const std::string& dir) {
-    bool use_2mb = mutating("A20-mem512");
-    nmh::Config cfg;
-    cfg.memory_config = use_2mb ? 0x03 : 0x00;
-    auto h = std::make_unique<nmh::NanomigHarness>(cfg);
-    size_t loaded;
-    std::optional<uint64_t> done;
-    if (use_2mb) {
-        loaded = h->load_program(dir + "/fixture.bin");
-        h->boot(kBootBudget);
-        done = h->run_until_write(kDoneAddr, kDoneValue, kBootBudget + kRunBudget);
+    // 512 KB: three pointers distinguish 13 ignored bits from 14, or from
+    // just bit 19.
+    nmh::Config cfg0;
+    cfg0.memory_config = 0x00;
+    auto h0 = std::make_unique<nmh::NanomigHarness>(cfg0);
+    size_t loaded0 = load_program_collapsed(*h0, dir + "/mem512.bin");
+    h0->boot(kBootBudget);
+    auto done0 = h0->run_until_write(kDoneAddr - kChipCollapseBase, kDoneValue, kBootBudget + kRunBudget);
+    bool half_512k = loaded0 > 0 && done0.has_value() &&
+        h0->peek_word(0x006000 / 2) == 0xAAAA &&
+        h0->peek_word(0x046000 / 2) == 0xBBBB &&
+        h0->peek_word(0x006002 / 2) == 0xCCCC;
+
+    // 2 MB: the same program, DST honoured directly. The mutation swaps
+    // this half to memory_config 0 too, so DST (unwrapped) is never
+    // written and this half goes red on its own.
+    bool mutated_2mb = mutating("A20-mem512");
+    nmh::Config cfg3;
+    cfg3.memory_config = mutated_2mb ? 0x00 : 0x03;
+    auto h3 = std::make_unique<nmh::NanomigHarness>(cfg3);
+    size_t loaded3;
+    std::optional<uint64_t> done3;
+    if (mutated_2mb) {
+        loaded3 = load_program_collapsed(*h3, dir + "/mem512.bin");
+        h3->boot(kBootBudget);
+        done3 = h3->run_until_write(kDoneAddr - kChipCollapseBase, kDoneValue, kBootBudget + kRunBudget);
     } else {
-        loaded = load_program_collapsed(*h, dir + "/fixture.bin");
-        h->boot(kBootBudget);
-        done = h->run_until_write(kDoneAddr - kChipCollapseBase, kDoneValue, kBootBudget + kRunBudget);
+        loaded3 = h3->load_program(dir + "/mem512.bin");
+        h3->boot(kBootBudget);
+        done3 = h3->run_until_write(kDoneAddr, kDoneValue, kBootBudget + kRunBudget);
     }
-    bool collapsed = loaded > 0 && done.has_value() &&
-        h->peek_word((kDst - kChipCollapseBase) / 2) == 0x1234;
-    checks.expect(collapsed,
+    bool half_2mb = loaded3 > 0 && done3.has_value() && h3->peek_word(kDst / 2) == 0xAAAA;
+
+    checks.expect(half_512k && half_2mb,
         "A20-mem512 p170 6-dma-channels.c22 6-dma-channels.c23 ch6-dma.c20 "
-        "ch6-dma.c21: under memory_config=0 (512 KB Chip RAM), a blit "
-        "targeting logical DST=$086000 lands at physical $006000 -- bit 19 "
-        "(and above, within the pointer's 21-bit range) of the pointer is "
-        "ignored, and a larger chip (memory_config=3, this assertion's own "
-        "mutation) honours it instead, ignoring fewer bits");
+        "ch6-dma.c21: a 32-bit pointer wraps modulo $80000 under 512 KB "
+        "Chip memory (the top 13 of its 32 bits ignored) -- DST=$086000 "
+        "wraps to $006000, DST+$040000=$0C6000 wraps to $046000 (bit 18 "
+        "kept, so exactly 13 bits, not 14), DST+$100002=$186002 wraps to "
+        "$006002 (bit 20 dropped too) -- while under 2 MB Chip memory the "
+        "same DST is honoured directly, unwrapped: a larger chip ignores "
+        "fewer bits");
 }
 
 }  // namespace

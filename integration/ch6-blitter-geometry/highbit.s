@@ -1,8 +1,8 @@
 ; highbit.s -- 6-dma-channels.c21, ch6-dma.c19: some of a pointer's most
-; significant bits are ignored. BLTDPTH only stores the low 5 bits of the
-; word written to it (bits 20:16 of the pointer), so bits above 20 of a
-; 32-bit-style address are structurally unreachable regardless of chip
-; size -- setting one (bit 24) has no effect on where the blit writes.
+; significant bits are ignored. p.309: "BLTxPTH ... (high 5 bits, was 3
+; bits)" -- the register keeps pointer bits 20:16, so bit 21 is the
+; lowest structurally-ignored bit, for any chip size. Bit 20 is within
+; that kept range and does change the target.
         include "nanomig.i"
         include "geom.i"
 
@@ -16,7 +16,11 @@ start:
         move.w  #0,BLTAMOD(a0)
         move.w  #0,BLTDMOD(a0)
         SETPTR  BLTAPTH,BLTAPTL,SRC
-        SETPTR  BLTDPTH,BLTDPTL,DST|$01000000   ; bit 24 set, above the register's range
+        ifnd    WRONGBIT
+        SETPTR  BLTDPTH,BLTDPTL,DST|$00200000   ; bit 21, above the kept range (p.309)
+        else
+        SETPTR  BLTDPTH,BLTDPTL,DST|$00100000   ; mutation: bit 20, within the kept range
+        endc
         BLTEN_ON
         move.w  #(1<<6)|4,BLTSIZE(a0)
         WAITBLT

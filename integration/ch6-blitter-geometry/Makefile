@@ -20,12 +20,13 @@ PROGS    := \
   fig64 fig64_wrongwidth \
   mintdc mintdc_wrong \
   truthorder truthorder_topdown \
-  fourcopies fourcopies_only3 \
+  fourplanes fourplanes_only1 \
   descmod descmod_zeromod \
   shiftdir_asc shiftdir_desc \
   shiftc9 shiftc9_noptr \
   arbmask arbmask_nomask \
   mintper_n mintper_n_swap \
-  highbit
+  highbit highbit_bit20 \
+  mem512
 
 include ../harness/nanomig.mk
