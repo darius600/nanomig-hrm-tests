@@ -168,9 +168,9 @@
 //
 // EXTENSION -- SPECIFICATION, from quotations alone; no RTL reasoning
 // appears in this block. 24 claims, all reader opus, all page 289 or
-// 290, all flagged by the reader itself ["print-only", "not-named-in-
-// chapter", "added by opus's own completion audit 10.09.2026 -- NOT cross-
-// read"] -- disclosed here, not smoothed over. Every one is chapter 3's own
+// 290, all flagged by the reader itself as print-only and not named in the
+// chapter, and none cross-read by a second reader -- disclosed here, not
+// smoothed over. Every one is chapter 3's own
 // reading of Appendix B's address column for a blitter register -- the
 // same table this package's original build already read (p289-290) under
 // its own ch6-appb-*.addr claim ids. Each restatement below is quoted
