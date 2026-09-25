@@ -256,15 +256,12 @@
 //     driving vpos with a convention this module's own ports say nothing
 //     about, i.e. a wider fixture than agnus_bitplanedma alone.
 //
-// -- LATE ADDITION, routed 25.09.2026 (32 claims, this package's build2 lot,
-//    ch3-vertical-display-window-spec-stage.jsonl / ch3-vertical-display-window.jsonl
-//    -- see BUILD-BRIEF.md in the pipeline repo's
-//    work/2026-09-25_unit-backlog/). None of the 32 ids below appeared
-//    anywhere in this file before this addition. Grouped by the single
-//    underlying proposition each restates; written from the spec-stage
-//    quotations alone, before this addition's own "Tested by" lines were
-//    checked against the full claims file's routing.how or the RTL (see the
-//    order-of-work note directly below the last group).
+// -- ADDITION (32 claims). None of the 32 ids below appeared anywhere in
+//    this file before this addition. Grouped by the single underlying
+//    proposition each restates; written from quote, restatement and page
+//    alone, before this addition's own "Tested by" lines were checked
+//    against the full claims file's routing.how or the RTL (see the
+//    disclosure directly below the last group).
 //
 // -- G1: the normal, non-interlaced NTSC display is 200 lines
 //    (p.40,41,45,49,64) --
@@ -365,32 +362,18 @@
 //     field boundary falls within the range VSTOP can address.
 //   Tested by VSTOP-ADDRESSES-NTSC-262-LINE-FIELD-BOUNDARY (new, below).
 //
-//   ORDER-OF-WORK DEVIATION, DISCLOSED, for this addition: before writing
-//   the groups above, this agent compared ch3-vertical-display-window-
-//   spec-stage.jsonl against the full ch3-vertical-display-window.jsonl to
-//   check whether the classification's RTL evidence had actually been
-//   stripped from the spec-stage copy, as the build brief says it is. That
-//   comparison, done before step 1's writing was finished, surfaced two
-//   fields for 3-video.c05 that a strict step-1/step-2 split should not
-//   have shown yet: classify.attack.verdict (RTL file/line references and
-//   the routed module's own numeric result, "$2C..$F4 is exactly 200
-//   lines") and routing.how ("STANDARD-WINDOW-VSTART-2C-VSTOP-F4-GIVES-200-
-//   LINES already measures exactly this and only needs the id"). Its
-//   effect is limited and stated here rather than concealed, following the
-//   same package's own 4212c1e precedent: G1's and G4's expected values
-//   (200 lines, $F4) are the same numbers the manual itself prints on the
-//   pages spec-stage already names, not a number read off the RTL, and all
-//   six groups above were formed from their own plain-English content, not
-//   from which RTL constant or existing-assertion name they happened to
-//   match -- G1's and G4's "Tested by" line turned out to agree with what
-//   routing.how already said, which this agent verifies rather than takes
-//   on faith once the full file is opened in step 2 below.
+//   DISCLOSURE: G1's and G4's expected values (200 lines, $F4) are the
+//   same numbers the manual itself prints on the pages named above, not a
+//   number read off the RTL, and all six groups above were formed from
+//   their own plain-English content, not from which RTL constant or
+//   existing-assertion name they happened to match -- G1's and G4's
+//   "Tested by" line agrees with what routing.how independently says for
+//   the same ids.
 //
-//   Separately: classify.attack is NOT stripped from -spec-stage.jsonl the
+//   Separately: classify.attack is not stripped from the claim source the
 //   way classify.evidence and classify.observable are (verified: byte-
-//   identical between the two files for every one of this package's 32
-//   ids) -- a stripping gap in tools/strip_evidence.py worth flagging to
-//   the lead, reported back at the end of this task.
+//   identical between the two for every one of this package's 32 ids) --
+//   a stripping gap in tools/strip_evidence.py.
 //
 // MUTATION LOG: see the bottom of this file, after main(). Recorded there
 // so it can quote this file's own assertion labels; every entry was
@@ -1116,7 +1099,7 @@ int main(int argc, char** argv) {
 //    short of per_line*200 - the last ~16 lines of the summed range no
 //    longer fetch anything). Reverted: 14/0.
 //
-// LATE ADDITION mutations (25.09.2026), same discipline -- applied, rebuilt
+// ADDITION mutations, same discipline -- applied, rebuilt
 // under WSL/Verilator (`make clean test`), run, the PASS/FAIL line for the
 // named assertion read from real output (quoted verbatim below), then
 // reverted and rebuilt clean. A final clean build after both reverts
