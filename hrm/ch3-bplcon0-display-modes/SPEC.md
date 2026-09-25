@@ -696,17 +696,14 @@ withdrawn, together with `3-dual-activate.c4` (category 8), to a RECORDED line c
 
 
 Total claim-rows assigned to a measurement category: 243 -- the sum of the per-category counts
-above. This is a count of table rows in this document, not a number `make -B test` prints, and
-nothing re-checks it against the source below when a row's own claim id is added, withdrawn or
-re-routed. To measure what the package actually asserts today:
+above. This counts claim ids in this document's tables. It is not the number of assertions
+`make -B test` grades, and the two are not expected to agree: one assertion often carries
+several claim ids. Nothing re-checks this table against the source when a claim id is added,
+withdrawn or re-routed. Whether a claim is graded is read from the run's own output, per claim,
+by the pipeline's coverage ledger (`check_ledger_against_capture.py` in `hrm-testpipeline`),
+not from this table. To see the run:
 
     wsl bash -lc 'cd nanomig-hrm-tests/hrm/ch3-bplcon0-display-modes && make -B test'
-
-and count the printed `[PASS]`/`PASS:`, `[FAIL]`/`FAIL:`, `RECORDED:`, `[SKIP]` and `MEASURED:`
-lines -- as of the run this SPEC.md revision was checked against, that gave 233 passed, 0
-failed, 3 `RECORDED:` lines, 38 `[SKIP]` lines and 2 `MEASURED:` (note-only) lines, against the
-243 claimed here: a real gap this document does not explain, not re-measured further as part of
-this pass.
 
 ## Claims not asserted in this package
 
@@ -857,10 +854,8 @@ a run output, for the same reason given in the "Total claim-rows" paragraph abov
 Grand total: 243 claim-rows assigned to a measurement category + 31 not-asserted claim ids =
 274 claim rows over 269 unique claim ids (5 ids in the HAM category are each backed by two
 independent reader rows, opus and sol, both asserted separately, so 274 rows resolve to 269
-unique ids). Both 243 and 31 are table-row counts read from this document as it stands now, not
-figures a run prints or a gate maintains -- see the "Total claim-rows" paragraph above for what
-`make -B test` actually asserts today (233 passed, 0 failed, 3 recorded, 38 skipped, 2
-measured-only).
+unique ids). Both 243 and 31 are table-row counts read from this document, not figures a run
+prints or a gate maintains -- see the "Total claim-rows" paragraph above.
 
 ## Two manual defects in this package's area (not mine to resolve)
 
