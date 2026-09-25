@@ -54,6 +54,7 @@
 //
 // MUTATION C5 stimulus red the WAIT retargeted to a position already satisfied on arrival (seek_beam 0x10, target VP $00); still FAIL with the same 2-cycle count
 // MUTATION C6 stimulus red the same retarget; still FAIL with the same 2-cycle count
+// MUTATION C7 stimulus red the `h.dma_allowed = false` withhold before the first run_cycles(50) removed, so the grant is never withheld -> FAIL as expected (nothing_fetched_while_withheld goes false: the first word is already in h.grants by the time it is checked).
 //
 //   Written as two lines because tools/check_gates.py --tests reads one
 //   assertion id per record, and the earlier single "C5/C6" line matched
@@ -150,6 +151,10 @@ public:
 
     bool dma_allowed = false;
     std::vector<Grant> grants;
+    // Cycles on which the module drove reqdma (Verilog port comment: "copper
+    // requests dma cycle"), whether or not ackdma was granted that cycle.
+    // Read as a before/after delta, never reset mid-run.
+    int reqdma_count = 0;
 
 private:
     Vagnus_copper* dut;
@@ -164,7 +169,9 @@ private:
 
     void cycle(bool cpu_write = false, uint16_t cpu_reg = IDLE_REG, uint16_t cpu_data = 0) {
         dut->eval();
-        const bool accepted = !cpu_write && dma_allowed && dut->reqdma;
+        const bool requesting = !cpu_write && dut->reqdma;
+        if (requesting) ++reqdma_count;
+        const bool accepted = requesting && dma_allowed;
         if (cpu_write) {
             dut->ackdma = 0; dut->reg_address_in = cpu_reg; dut->data_in = cpu_data;
         } else if (accepted) {
@@ -293,6 +300,38 @@ int main(int argc, char** argv) {
         checks.expect(wait_cycles == move_cycles + 1,
                       "C6 a WAIT consumes exactly one memory cycle more than a MOVE (p.20 'one extra to wake up') [NM-HRM-005, expected red] "
                       "[claims: COP2-what-is-a-copper-instruction.c20, ch2-what-is-a-copper-instruction.c18]");
+    }
+
+    // C7 - p.19 "About the Copper": "It retrieves its instructions via direct
+    // memory access (DMA)." The module's own request/grant pair (reqdma, an
+    // output; ackdma, an input granting it - agnus_copper.v ports, comments
+    // "copper requests dma cycle" / "agnus dma priority logic grants dma
+    // cycle") is what a memory access being DMA rather than a dedicated bus
+    // means here: the Copper cannot get a word without being granted one.
+    // Withhold the grant after start() and show nothing arrives although the
+    // module keeps requesting, then give the grant and show the very same
+    // first word arrives.
+    {
+        CopperHarness h;
+        h.seek_beam(0x20);
+        h.install({move_ir1(COLOR00), 0x0777,
+                   TERMINAL_IR1, WAIT_ALL});
+        h.start();
+        h.dma_allowed = false;                 // withhold every grant
+        const int reqdma_before = h.reqdma_count;
+        h.run_cycles(50);
+        const bool requested_while_withheld = h.reqdma_count > reqdma_before;
+        const bool nothing_fetched_while_withheld = h.grants.empty();
+        h.dma_allowed = true;                  // grant restored
+        h.run_cycles(4000);
+        const bool fetched_once_granted = !h.grants.empty()
+            && h.grants.front().reg == COPINS && h.grants.front().address == LIST;
+        checks.expect(requested_while_withheld && nothing_fetched_while_withheld && fetched_once_granted,
+                      "C7 the Copper's instruction word arrives only over a granted "
+                      "DMA cycle: it keeps asserting reqdma while ackdma is withheld "
+                      "and fetches nothing, then the same first word arrives once the "
+                      "grant is given (p.19) "
+                      "[claims: ch2-about-the-copper.c3]");
     }
 
     // ---------------- CI1-CI4: the "every ... except" of COPINS ----------------
