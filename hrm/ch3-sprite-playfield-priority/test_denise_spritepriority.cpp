@@ -7,10 +7,10 @@
 //   denise_spritepriority (one Verilator build, this module only).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 90, 271 (the BPLCON2 register's "Bits 0-5 Playfield sprite priority"
-//   summary line, Appendix A's combined bit table naming PF1P0-2 and PF2P0-2
-//   to specific BPLCON2 bit positions, and Appendix A's PF1P/PF2P legend
-//   entries).
+//   pp. 86, 90, 271 (the BPLCON2 register's "Bits 0-5 Playfield sprite
+//   priority" summary line, Appendix A's combined bit table naming
+//   PF1P0-2 and PF2P0-2 to specific BPLCON2 bit positions, Appendix A's
+//   PF1P/PF2P legend entries, and the display-sharing sentence on p.86).
 // Non-goals: this package's claims.jsonl (18 records) never quotes the
 //   manual's priority-CODE-to-front/behind-outcome table (which of the 0-7
 //   numeric code values puts which sprite pairs in front of the playfield)
@@ -29,6 +29,18 @@
 //   names one reader's reading of one sentence. They resolve in the
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
+//
+// NEW CLAIMS -- SPECIFICATION ONLY, FROM QUOTATIONS ALONE (this package's
+// full claims file, with its routing and evidence, and the RTL, are not yet
+// open when this paragraph is written -- see ORDER OF WORK below for why
+// that order matters). This one proposition is added to this package's
+// specification from ch3-sprite-playfield-priority-spec-stage's own
+// quote/restatement/page fields alone; it is resolved into an assertion, a
+// note, or a decline only in the commit that follows, once the full claims
+// file and the RTL are open:
+//
+//  * 3-adv.c01 (p.86, text): "Playfields share the display with sprites."
+//    Playfields share the display with sprites.
 //
 // BOUNDARY (from the classifier's own evidence field, carried into every
 // claim record -- see "ORDER OF WORK" below): denise_spritepriority.v:5-11
