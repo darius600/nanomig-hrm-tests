@@ -549,9 +549,9 @@ int main(int argc, char** argv) {
     checks.record(
         "ch6-blockdiag.c11 (p.198): 'Not shown on this diagram is the logic for "
         "zero detection' states what Figure 6-13 leaves out, not a hardware "
-        "behaviour - it is preamble to the sentence ch6-blockdiag.c12/c13 state, "
-        "whose zero-detect behaviour is graded below as Z-D-CLEAR and "
-        "Z-CLEAR/Z-NEVER-RESTORED");
+        "behaviour - it is preamble to the sentence that follows, whose "
+        "zero-detect behaviour is graded below (graded: ch6-blockdiag.c12, "
+        "ch6-blockdiag.c13) as Z-D-CLEAR and Z-CLEAR/Z-NEVER-RESTORED");
     checks.record(
         "6-blitter-done-flag.c7 (p.186): pre-Fat-Agnus busy timing - a "
         "just-started blit that has not yet received memory access 'may not' "
