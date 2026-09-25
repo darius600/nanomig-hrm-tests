@@ -1547,7 +1547,7 @@ int main(int argc, char** argv) {
         "output depends on what an ignored bit was last written as, so "
         "there is no module-boundary effect for this or any fixture to "
         "observe. The observable half of the same source row is "
-        "3-colorsum.c6, graded on COLOR-BITS-15-12-UNUSED above.");
+        "graded on COLOR-BITS-15-12-UNUSED above (graded: 3-colorsum.c6).");
 
     // ==================== FIGURE-COLOR-SELECT-INDEX6 ====================
     // 3-color.c23 (p44, Figure 3-4: "The fourth sample column's five bits
