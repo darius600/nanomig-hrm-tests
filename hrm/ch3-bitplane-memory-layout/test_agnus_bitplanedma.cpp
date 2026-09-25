@@ -614,6 +614,7 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -759,7 +760,7 @@ int main(int argc, char** argv) {
                 "address or an odd byte modulo. 'Keep in mind that the "
                 "number of bytes you allocate for a bitplane must be "
                 "even' (p.52), 'The number of bytes must be even' (p.76). "
-                "3-mem.c05, 3-memory.c9, 3-big.c14.");
+                "3-mem.c05, 3-memory.c9, 3-big.c14, 3-large.c22.");
     }
 
     // ---------------- TWO-BITPLANES-SEPARATE-CONTIGUOUS-BLOCKS (p.53) ----------------
@@ -1262,6 +1263,13 @@ int main(int argc, char** argv) {
         "increment - not a restriction this module enforces, so no "
         "stimulus this module accepts could even in principle make it "
         "read otherwise.");
+    checks.record(
+        "3-mem.c12 (p.54): 'You may need to allocate additional memory "
+        "for other parts of the display -- sprites, audio, animation -- "
+        "and for your application programs' is a memory-budgeting "
+        "instruction to the programmer, not a behaviour of any module - "
+        "its own reader flagged it borderline, and no sol reading of the "
+        "sentence exists.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed
               << " failed\n";
