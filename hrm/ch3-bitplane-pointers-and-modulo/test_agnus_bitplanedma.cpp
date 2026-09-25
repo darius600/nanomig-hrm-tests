@@ -184,6 +184,10 @@
 //     NOT part of the pointer-width conflict in G6 and is not automatically
 //     assumed correct either)
 //   B-mod.c2 (sol, p288): same sentence, second reading.
+//   B-mod.c4 (sol, p288, routed 25.09.2026 - not part of this package's
+//     original 173): "Uses 15 bits, plus sign extend." (the field-width
+//     half of the same B-mod legend entry as B-mod.c1/c2 above; verified
+//     against the RTL directly, in assertion 15 below)
 //
 // -- G8: modulo is zero when the memory picture equals the display window
 //    (basic playfield) (p.61, 73) --
@@ -580,11 +584,15 @@
 //     versus chapter-text 19-bit versus this RTL's 20-bit-significant
 //     address_out[20:1] figures - recorded, never asserted against each
 //     other.
-//   - B-mod.c1/c2's "15-bit modulo...plus sign extend" (B-mod.c4, NOT part
-//     of this package's claim set but part of the same appendix passage) -
-//     the modulo register's actual bit width is measured directly against
-//     the RTL once opened, not assumed from the printed figure, per assertion
-//     15 above.
+//   - B-mod.c1/c2/c4's "15-bit modulo...plus sign extend" (same appendix
+//     passage) - the modulo register's actual bit width is measured
+//     directly against the RTL once opened, not assumed from the printed
+//     figure, per assertion 15 above. B-mod.c4 (routed 25.09.2026) is
+//     graded, not merely recorded: MODULO-WIDTH-262144-PIXEL-LIMIT's own
+//     two boundary numbers (+32766 for the largest positive field value,
+//     exactly -32768 for the most-negative) are the arithmetic signature
+//     of nothing else BUT a 15-bit two's-complement field sign-extended to
+//     the wider add operand - see IMPLEMENTATION NOTES below.
 //
 // No RTL has been opened yet to write this comment block. Every port name,
 // register offset and bit-slice fact above (BPLPTBASE_REG, pointer banks,
@@ -663,11 +671,11 @@
 // arithmetic the field is sign-extended from its own top bit (`[15]`, i.e.
 // the ORIGINAL data_in bit 15) across 5 more bits before being added to
 // address_out[20:1] - a 15-bit-plus-sign-extend modulo, which is exactly
-// what B-mod.c1/B-mod.c4 (Appendix B's MOD legend entry - not itself a
-// claim id in this package's 173, but the same passage as this package's own
-// B-mod.c1/c2/c3) states, and is NOT part of the pointer-width conflict
-// (G6): this is a separate register with its own separate width, measured
-// directly here (assertion 15) rather than assumed correct because it
+// what B-mod.c1/B-mod.c4 (Appendix B's MOD legend entry, same passage as
+// this package's own B-mod.c1/c2/c3; B-mod.c4 routed here 25.09.2026)
+// states, and is NOT part of the pointer-width conflict (G6): this is a
+// separate register with its own separate width, measured directly here
+// (assertion 15) rather than assumed correct because it
 // happens to agree.
 //
 // ddfstrt/ddfstop/BPLCON0/DIWSTRT/DIWSTOP decode, hardware $18/$D8 limits,
