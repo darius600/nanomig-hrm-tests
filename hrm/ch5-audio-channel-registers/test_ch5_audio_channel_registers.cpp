@@ -197,6 +197,23 @@
 //     any boundary of this module, since it needs a 17th bit the write path
 //     (`data[15:0]`) does not have.
 //
+// FURTHER PROPOSITIONS, ROUTED HERE -- SPECIFICATION ONLY, RTL not yet
+//   opened for these three; quote, restatement and page only, no assertion
+//   or record() decision made yet:
+//   - 5-p148.c4 (p.148, worked-example step "c."): "Create an interrupt for
+//     the 680x0 saying that it has completed retrieving working copies of
+//     length and location registers." Restatement: after working copies of
+//     length and location are acquired, the audio DMA creates an interrupt
+//     for the 680x0.
+//   - 5-join.c9: the identical sentence, independently read. Restatement:
+//     an interrupt is raised to the 680x0 once the working copies of length
+//     and location have been taken.
+//   - A-audxdat.c4 (p.265, appendix A): "It contains 2 bytes of data that
+//     are each 2's complement and are outputted sequentially (with
+//     digital-to-analog conversion) to the audio output pins." Restatement:
+//     the two bytes are output sequentially, through digital-to-analog
+//     conversion, to the audio output pins. Same sentence as A-audxdat.c2.
+//
 // VOLUME -- WHICH PORT WAS MEASURED, STATED EXPLICITLY EVERY TIME: this
 //   module's own `volume[6:0]` and `sample_okk[7:0]` ports carry the written
 //   value intact (all 65 programmed levels distinct); the DIFFERENT module
