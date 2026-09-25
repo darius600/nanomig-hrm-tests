@@ -341,11 +341,95 @@
 //   $142, is not stated by the source (APPC2-SPRxCTL.conf3). Both
 //   restatements end "Recorded, not resolved."
 //
-// Disposition -- assert vs. record, and which existing assertion, if any,
-// already establishes a given id in full per the one allowed label change
-// -- is decided in the next pass, against
-// build2/ch4-sprite-vertical-position.jsonl's routing.route and
-// routing.how and the RTL, per ORDER OF WORK above. Not decided here.
+// Disposition -- decided against build2/ch4-sprite-vertical-position.jsonl's
+// own routing.route and routing.how, read after the commit above, and the
+// RTL, opened after that. 10 ids graded, 4 recorded, per routing.route:
+//
+//   GRADED (10 ids, 3 new assertions + 4 label-only additions to existing
+//   ones, per routing.how naming that exact assertion as already
+//   establishing the claim -- the one allowed label change, an id added in
+//   full, no expected value, verdict or other text touched):
+//     SPRXCTL-BITS-6-3-UNUSED-AT-ECS0 (new): CH4-p107.c8, CH4-sprctl.c6,
+//       CH4-p128.c14, CH4-sctl.c13 (4 ids)
+//     SPRXCTL-CHG-IS-ECS-DEPENDENT (new): APPC2-SPRxCTL.v20 (1 id)
+//     SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS (new): APPC2-SPRxCTL.conf3
+//       (1 id)
+//     SPRXPOS-BYTE-IS-SV70-VSTART (label addition): CH4-appC-position.c6
+//     SPRXCTL-BYTE-IS-EV70-VSTOP (label addition): CH4-appC-position.c6
+//       (same id as above -- routing.how names both assertions jointly)
+//     SPRXPOS-SPRXCTL-ADDRESS-MAP (label addition): APPC2-SPRxCTL.addr
+//     AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL (label additions):
+//       APPC2-SPRxCTL.addr, APPC2-SPRxCTL.acc, APPC2-SPRxCTL.chip
+//     4+1+1+1(appC, counted once)+1(addr, counted once)+1(acc)+1(chip) = 10.
+//
+//   RECORDED (4 ids, 3 new checks.record() calls, per routing.how's own
+//   "record both readings" / "Recorded, not resolved" / frequency-claim
+//   instruction -- none of these four ids appears on any graded line):
+//     SPRXCTL-CHIP-COLUMN-DENISE-ECS-QUALIFIER-CONFLICT: APPB2-conf.c1,
+//       APPB2-conf.c2 (2 ids)
+//     SPRXCTL-CHIP-COLUMN-FIVE-WAY-CONFLICT: APPC2-SPRxCTL.conf1 (1 id)
+//     SPR0POS-PCT-MARK-FREQUENCY: APPB2-conf.c5 (1 id)
+//     2+1+1 = 4.
+//
+// RESULTS: 12 passed, 0 failed (9 original + 3 new). All 11 of the
+// original run's PASS:/FAIL:/RECORDED:/MEASURED: lines print identically,
+// in the same order, with the same verdicts as the pre-extension baseline
+// -- verified line-for-line against
+// work/2026-09-25_unit-backlog/runs/ch4-sprite-vertical-position-before.txt,
+// after stripping only the 4 permitted label additions listed above. No
+// RTL deviation found among the 10 new claims carried by a
+// checks.expect(): the manual's OCS "bits 6-3 unused" statement holds at
+// ecs=0 (with bits 4/3 unfalsifiable, as the assertion's own label says),
+// the ECS map's "chg" classification for SPRxCTL is real and ecs-gated,
+// it is real for all 8 channels and not sprite 0 alone, and the four
+// label-only additions were each already established by their existing
+// measurement.
+//
+// MUTATION LOG (extension, run under WSL/Verilator 5.052 on 25.09.2026,
+// same protocol as the original MUTATION LOG above -- build with
+// -DMUT_NAME=1, rebuild, run, confirm the named assertion and only that
+// assertion changed colour, rebuild with no flags, confirm 12/0 restored):
+//
+// MUTATION SPRXCTL-BITS-6-3-UNUSED-AT-ECS0 stimulus red: -DMUT_BITS63=1
+// switches ecs on (was off) for the bits-6-3-set side of the comparison
+// only -> FAIL ("11 passed, 1 failed"), only this assertion newly red (the
+// two measured windows, equal at ecs=0, diverge once bit6/bit5 go live at
+// ecs=1). Rebuilt with no flags: 12/0 restored.
+// MUTATION SPRXCTL-CHG-IS-ECS-DEPENDENT stimulus red: -DMUT_CHGECS=1
+// withholds bit 6 in the probe (was set) -> FAIL ("11 passed, 1 failed"),
+// only this assertion newly red (the ecs=0 and ecs=1 measurements become
+// equal, since the one bit that differs between them was never written).
+// Rebuilt with no flags: 12/0 restored.
+// MUTATION SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS stimulus red:
+// -DMUT_ALLCHANNELS=1 restricts the bit6 stimulus to sprite channel 0
+// only (channels 1-7 always get it clear, were all set) -> FAIL ("11
+// passed, 1 failed"), only this assertion newly red (channels 1-7 no
+// longer show an ecs=0/ecs=1 difference). Rebuilt with no flags: 12/0
+// restored.
+// MUTATION SPRXCTL-CHIP-COLUMN-DENISE-ECS-QUALIFIER-CONFLICT,
+// SPRXCTL-CHIP-COLUMN-FIVE-WAY-CONFLICT, SPR0POS-PCT-MARK-FREQUENCY: no
+// record -- these three claims are declined (checks.record() only, no
+// checks.expect()), so there is no red/green state for a mutation to
+// move, same as SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED above.
+//
+// UID PLACEMENT: tools/check_uid_placement.py's uid pattern requires a
+// `<reader>:` prefix (`opus:`/`sol:` per uid_expand.py's BASE regex) and
+// reads zero uids from this package's bare id convention (`CH4-p107.c8`,
+// `APPC2-SPRxCTL.chip`, ...) at any commit, old or new -- confirmed by
+// running uids_in() directly against this file's own printed lines. Its
+// "packages asserting AND declining one : 0" is therefore not a
+// verification of this package and is not cited as one. Checked by hand
+// instead, against the full post-extension run: each of the 10 graded ids
+// appears on a PASS: line and never on a RECORDED: line as a genuine
+// decline; each of the 4 recorded ids appears on a RECORDED: line and
+// never on a PASS:/FAIL: line. The one id printed on both a PASS: and a
+// RECORDED: line, APPC2-SPRxCTL.chip, is a cross-reference inside the
+// FIVE-WAY-CONFLICT record's own prose ("is graded above on
+// AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL (APPC2-SPRxCTL.chip)"),
+// naming where it is graded rather than declining it again -- the same
+// shape the wider corpus already uses and that check_uid_placement.py's
+// own XREF pattern is built to recognise, had it been able to read this
+// package's ids at all.
 // ============================================================================
 
 // MUT_*: replay stimulus for this file's own mutation records (RESULTS/
@@ -378,6 +462,15 @@
 #endif
 #ifndef MUT_DATADATB
 #define MUT_DATADATB 0
+#endif
+#ifndef MUT_BITS63
+#define MUT_BITS63 0
+#endif
+#ifndef MUT_CHGECS
+#define MUT_CHGECS 0
+#endif
+#ifndef MUT_ALLCHANNELS
+#define MUT_ALLCHANNELS 0
 #endif
 
 #include <cstdint>
@@ -481,10 +574,12 @@ void write_pos(Harness& h, int sprite_idx, uint8_t vstart_low8) {
 // measured (vstart[9]=bit6, vstop[9]=bit5) -- used ONLY by the MEASURED
 // note below, never inside a pass/fail expect().
 void write_ctl(Harness& h, int sprite_idx, uint8_t ev70_byte, bool sv8, bool ev8,
-               bool bit6 = false, bool bit5 = false) {
+               bool bit6 = false, bool bit5 = false, bool bit4 = false, bool bit3 = false) {
     uint16_t v = (static_cast<uint16_t>(ev70_byte) << 8)
                | (bit6 ? 0x0040u : 0u)
                | (bit5 ? 0x0020u : 0u)
+               | (bit4 ? 0x0010u : 0u)
+               | (bit3 ? 0x0008u : 0u)
                | (sv8  ? 0x0004u : 0u)
                | (ev8  ? 0x0002u : 0u);
     h.write_reg(CtlWordAddr(sprite_idx), v);
@@ -667,7 +762,7 @@ int main(int argc, char** argv) {
             "CH4-APPB-SPR1CTL.address, CH4-APPB-SPR2CTL.address, "
             "CH4-APPB-SPR3CTL.address, CH4-APPB-SPR4CTL.address, "
             "CH4-APPB-SPR5CTL.address, CH4-APPB-SPR6CTL.address, "
-            "CH4-APPB-SPR7CTL.address . ");
+            "CH4-APPB-SPR7CTL.address, APPC2-SPRxCTL.addr . ");
     }
 
     // ------------- SPRXPOS-BYTE-IS-SV70-VSTART -------------
@@ -701,7 +796,7 @@ int main(int argc, char** argv) {
             "CH4-APPB-SPR1POS.description, CH4-APPB-SPR2POS.description, "
             "CH4-APPB-SPR3POS.description, CH4-APPB-SPR4POS.description, "
             "CH4-APPB-SPR5POS.description, CH4-APPB-SPR6POS.description, "
-            "CH4-APPB-SPR7POS.description . ");
+            "CH4-APPB-SPR7POS.description, CH4-appC-position.c6 . ");
     }
 
     // ------------- SPRXCTL-BYTE-IS-EV70-VSTOP -------------
@@ -734,7 +829,8 @@ int main(int argc, char** argv) {
             "CH4-APPB-SPR0CTL.description, CH4-APPB-SPR1CTL.description, "
             "CH4-APPB-SPR2CTL.description, CH4-APPB-SPR3CTL.description, "
             "CH4-APPB-SPR4CTL.description, CH4-APPB-SPR5CTL.description, "
-            "CH4-APPB-SPR6CTL.description, CH4-APPB-SPR7CTL.description . ");
+            "CH4-APPB-SPR6CTL.description, CH4-APPB-SPR7CTL.description, "
+            "CH4-appC-position.c6 . ");
     }
 
     // ------------- SPRXCTL-BIT2-SV8-IS-VSTART-HIGH-BIT -------------
@@ -951,7 +1047,8 @@ int main(int argc, char** argv) {
             "CH4-APPB-SPR3CTL.chip, CH4-APPB-SPR4CTL.chip, "
             "CH4-APPB-SPR5CTL.chip, CH4-APPB-SPR6CTL.chip, "
             "CH4-APPB-SPR7CTL.chip, APPA-sprpair.c1, "
-            "CH4-appA-sprite.c10, CH4-appA-sprite.c9 . ");
+            "CH4-appA-sprite.c10, CH4-appA-sprite.c9, APPC2-SPRxCTL.addr, "
+            "APPC2-SPRxCTL.acc, APPC2-SPRxCTL.chip . ");
     }
 
     // --- SPRXPOS-SPRXCTL-WRITE-BUS-HAS-BOTH-DMA-AND-PROCESSOR-PATHS ---
@@ -1088,6 +1185,192 @@ int main(int argc, char** argv) {
             "CH4-APPB-SPR7DATB.mark, APPA-sprdat.c4, APPA-sprdat.c5, "
             "CH4-appA-sprite.c34, CH4-appA-sprite.c35 . ");
     }
+
+    // ============================================================
+    // EXTENSION (2026-09-25): the 14 claims documented in the header
+    // EXTENSION section above, dispositioned per
+    // build2/ch4-sprite-vertical-position.jsonl's own routing.route and
+    // routing.how, read after the specification commit. Everything above
+    // this point is unchanged, except four label-only additions (an id in
+    // full, per the one allowed change) on SPRXPOS-SPRXCTL-ADDRESS-MAP,
+    // SPRXPOS-BYTE-IS-SV70-VSTART, SPRXCTL-BYTE-IS-EV70-VSTOP and
+    // AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL, where routing.how
+    // named those exact assertions as already establishing the new claim.
+    // ============================================================
+
+    // ------------- SPRXCTL-BITS-6-3-UNUSED-AT-ECS0 -------------
+    {
+        // routing.how (CH4-p107.c8, CH4-sprctl.c6, CH4-p128.c14,
+        // CH4-sctl.c13 -- identical text on all four): "Hold ecs=0 (this
+        // RTL uses bits 6/5 as ECS V9 bits) and assert SPRxCTL with bits
+        // 6..3 set leaves the reqdma/reg_address_out window identical to
+        // bits clear; the package's probe already measures bits 6/5 at
+        // ecs=0." Reuses that same probe technique (see the MEASURED note
+        // above), now as a graded comparison instead of a report.
+        Harness h0(/*ecs=*/false);
+        write_pos(h0, 0, 0x04);
+        write_ctl(h0, 0, 0x08, false, false, false, false, false, false);
+        Window w_clear = measure_window(h0, 0, 530);
+
+#if MUT_BITS63
+        Harness h1(/*ecs=*/true);  // MUTATION: ecs on for the bits-set side (was false).
+#else
+        Harness h1(/*ecs=*/false);
+#endif
+        write_pos(h1, 0, 0x04);
+        write_ctl(h1, 0, 0x08, false, false, /*bit6=*/true, /*bit5=*/true, /*bit4=*/true, /*bit3=*/true);
+        Window w_set = measure_window(h1, 0, 530);
+
+        bool ok = w_clear.start != -1 && w_set.start != -1
+               && w_clear.start == w_set.start && w_clear.end == w_set.end;
+        checks.expect(ok,
+            "SPRXCTL-BITS-6-3-UNUSED-AT-ECS0: with ecs held at 0 (this "
+            "fixture's default), setting SPRxCTL bits 6-3 all at once "
+            "(VSTART=4/VSTOP=8 fixed on the low byte) leaves the measured "
+            "DMA-active window identical to bits 6-3 clear, matching "
+            "'Bits 6-3 Unused (make zero)' (p107) and 'Bits 6-3 are "
+            "reserved for future use (make zero)' (p128). This is NOT "
+            "unfalsifiable across the whole span: bits 6 and 5 of it are "
+            "genuinely live when ecs=1 (this package's own MEASURED note "
+            "above), and the MUTATION below reproduces that by switching "
+            "ecs on for the bits-set side alone, which turns this "
+            "assertion red -- proving the comparator is not vacuous for "
+            "that half. Bits 4 and 3 of the same span ARE unfalsifiable "
+            "at this boundary: agnus_spritedma.v's SPRxCTL write reads "
+            "only data_in[15:8],[6],[5],[2],[1] into sprctl -- bits 4 and "
+            "3 reach no wire in this module under any ecs value, so no "
+            "stimulus in this module's whole input space can make that "
+            "half fail. Which bits 4/3 ARE -- appendix C's disputed "
+            "SHSH1/SHSH0, ECS-only per its own note -- is the separate "
+            "question SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED above declines; "
+            "this assertion only answers whether they change this "
+            "module's behaviour on OCS, which they provably do not. "
+            "CH4-p107.c8 CH4-sprctl.c6 CH4-p128.c14 CH4-sctl.c13 . ");
+    }
+
+    // ------------- SPRXCTL-CHG-IS-ECS-DEPENDENT -------------
+    {
+        // routing.how (APPC2-SPRxCTL.v20): "The ecs input is the one
+        // chipset switch here, and it changes what SPRxCTL does ...
+        // promote the package's bits-6/5 probe to an assertion that the
+        // same SPRxCTL value behaves differently at ecs=0 and ecs=1,
+        // without claiming the SHSH change p303 names." Same probe as the
+        // MEASURED note above (VSTART=4, SPR0CTL upper byte=8, bit 6
+        // set), now graded.
+        auto probe = [](bool ecs) -> Window {
+            Harness h(ecs);
+            write_pos(h, 0, 0x04);
+#if MUT_CHGECS
+            write_ctl(h, 0, 0x08, false, false, /*bit6=*/false, false);  // MUTATION: bit6 withheld (was true).
+#else
+            write_ctl(h, 0, 0x08, false, false, /*bit6=*/true, false);
+#endif
+            return measure_window(h, 0, 530);
+        };
+        Window w_ecs0 = probe(false);
+        Window w_ecs1 = probe(true);
+        bool ok = w_ecs0.start != -1 && w_ecs1.start != -1 && w_ecs0.start != w_ecs1.start;
+        checks.expect(ok,
+            "SPRXCTL-CHG-IS-ECS-DEPENDENT: writing the SAME SPRxCTL value "
+            "(bit 6 set, VSTART=4/VSTOP=8) measures a DIFFERENT DMA-active "
+            "start line depending on this module's own ecs input (start=4 "
+            "at ecs=0, start=516 at ecs=1, per the MEASURED note above) -- "
+            "SPRxCTL demonstrably behaves differently under the Enhanced "
+            "Chip Set, matching the ECS register map's own 'chg' "
+            "classification for this row rather than 'new' (p298, '142  "
+            "SPRxCTL  chg   W  A'). This asserts only that the behaviour "
+            "changes with ecs, not that the change IS the SHSH1/SHSH0 "
+            "reading appendix C p303 gives bits 4/3 -- that identification "
+            "is exactly what SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED above "
+            "declines to take a side on. APPC2-SPRxCTL.v20 . ");
+    }
+
+    // ------- SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS -------
+    {
+        // routing.how (APPC2-SPRxCTL.conf3): "sprctl is one bank of eight
+        // under one ecs gate; write each of $142, $14A, ..., $17A with the
+        // same ecs-sensitive value and assert every channel's window
+        // changes with ecs, not sprite 0's only." Independent measurement,
+        // own Harness instances, sprite indices 0-7.
+        bool all_channels_changed = true;
+        for (int n = 0; n < 8; ++n) {
+            auto probe = [n](bool ecs) -> Window {
+                Harness h(ecs);
+                write_pos(h, n, 0x04);
+#if MUT_ALLCHANNELS
+                // MUTATION: only channel 0 ever gets bit6 set; channels
+                // 1-7 always get it clear, so only channel 0 should show a
+                // measured difference between ecs=0 and ecs=1.
+                bool bit6 = (n == 0);
+#else
+                bool bit6 = true;
+#endif
+                write_ctl(h, n, 0x08, false, false, bit6, false);
+                return measure_window(h, n, 530);
+            };
+            Window w0 = probe(false);
+            Window w1 = probe(true);
+            bool changed = w0.start != -1 && w1.start != -1 && w0.start != w1.start;
+            if (!changed) all_channels_changed = false;
+        }
+        checks.expect(all_channels_changed,
+            "SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS: writing the SAME "
+            "ecs-sensitive SPRxCTL value (bit 6 set) to each of the 8 "
+            "sprite channels' own SPRxCTL register in turn -- $142, $14A, "
+            "$152, $15A, $162, $16A, $172, $17A -- and comparing its "
+            "measured DMA-active start at ecs=0 against ecs=1 shows every "
+            "one of the 8 channels' start line move, not sprite 0's "
+            "($142's) alone: the printed map's single row 'chg' "
+            "classification (p298, '142  SPRxCTL  chg   W  A') describes "
+            "the whole indexed family sprctl[0..7] behind one shared ecs "
+            "gate, matching the table's own 'x' wildcard convention used "
+            "elsewhere on the same page for other indexed families (e.g. "
+            "'050 BLTxPTH chg', '0A0 AUDxLCH chg') rather than a claim "
+            "about the one printed address alone. APPC2-SPRxCTL.conf3 . ");
+    }
+
+    checks.record(
+        "SPRXCTL-CHIP-COLUMN-DENISE-ECS-QUALIFIER-CONFLICT [declined]: "
+        "APPB2-conf.c1, APPB2-conf.c2 -- SPR0CTL's chip column reads "
+        "'A D(E)' (p291) while SPR1CTL-SPR7CTL read plain 'A D' (p292), "
+        "appendix A page 284 gives the generic SPRxCTL as 'A D( E )', and "
+        "appendix C page 303 gives it as 'A D' -- four readings of one "
+        "column, the Denise/ECS-qualifier half of the same conflict "
+        "AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL above already "
+        "leaves undisputed-but-untested for the undisputed Agnus half. "
+        "This fixture has no Denise instance (see FIXTURE BOUNDARY above), "
+        "so neither reading can be graded here; both are recorded per "
+        "classify.package's own instruction ('record both readings, "
+        "assert neither').");
+
+    checks.record(
+        "SPRXCTL-CHIP-COLUMN-FIVE-WAY-CONFLICT [declined]: "
+        "APPC2-SPRxCTL.conf1 -- the ECS register map's chip column for "
+        "SPRxCTL (p298, 'A' alone) against appendix A p284 ('A D( E )'), "
+        "appendix B p291 ('A D(E)' for SPR0CTL), appendix B p292 ('A D' "
+        "for SPR1CTL-SPR7CTL) and appendix C p303 body text ('A D') -- "
+        "five readings of the same column, recorded not resolved. The "
+        "undisputed 'A' -- Agnus reaches $142 and changes the vertical "
+        "compare -- is graded above on AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-"
+        "AND-SPRXCTL (APPC2-SPRxCTL.chip). The Denise-side decode this "
+        "conflict's own routing.how names as 'a measurement' is reported "
+        "in this package's own classify.evidence (denise_sprites.v:104, "
+        "denise_sprites_shifter.v:138-141 decode $142 too) -- not "
+        "something this fixture, which builds agnus_spritedma alone with "
+        "no Denise instance, can itself measure.");
+
+    checks.record(
+        "SPR0POS-PCT-MARK-FREQUENCY [declined]: APPB2-conf.c5 -- the '%' "
+        "mark on SPR0POS (p291), chapter page 128 ('normally only written "
+        "by the sprite DMA channel itself') and appendix A page 284 ('may "
+        "be loaded by either processor at any time') all name a RELATIVE "
+        "FREQUENCY for the same dual DMA/processor write path "
+        "SPRXPOS-SPRXCTL-WRITE-BUS-HAS-BOTH-DMA-AND-PROCESSOR-PATHS above "
+        "already asserts the structural half of. Per this package's own "
+        "classify.evidence, no port at this boundary carries how often a "
+        "write happens; the three sources agree in substance and none is "
+        "assertable, so all three are recorded rather than graded, per "
+        "classify.conflict_resolution's own instruction.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
