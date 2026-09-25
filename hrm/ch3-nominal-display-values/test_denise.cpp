@@ -93,23 +93,27 @@
 //   exactly this structure: two different full DIWSTOP words that agree in
 //   their H-half.
 //
-// CLAIM COVERAGE: all 70 ids are accounted for below -- 58 inside an
+// CLAIM COVERAGE: all 70 ids are accounted for below -- 57 inside an
 //   expect() assertion string (19 grouped/individual assertions, the same
 //   19 as before 25.09.2026: ids restating the identical proposition under
 //   a different manual wording, page, appendix or reader are grouped and
 //   cited together on the single assertion that tests that proposition,
 //   the convention hrm/ch3-colour-register-format and
 //   hrm/ch3-register-map-denise both document and use -- COLOR-BITS-15-12-
-//   UNUSED itself now cites nine), 11 inside a note() call with a stated
+//   UNUSED itself now cites eight), 11 inside a note() call with a stated
 //   reason (four groups: visual/subjective "appears to move" claims with
 //   no frame port, a conjoined H+V claim whose V half is outside this
 //   fixture, "reserved" bits with no stated hardware behaviour to test,
 //   SuperHires's 1280px claim needing Agnus-owned horizontal total timing,
 //   and two sprite register-table entries needing a purpose-built sprite
-//   pipeline this package was not assigned to build), and 1 inside a
+//   pipeline this package was not assigned to build), and 2 inside a
 //   record() call (3-colorsum.c7, p.92, the software-directed "(set these
 //   to 0)" half COLOR-BITS-15-12-UNUSED's own comment already declines --
-//   routed record:ch3-nominal-display-values 25.09.2026, not graded).
+//   routed record:ch3-nominal-display-values 25.09.2026, not graded; and
+//   3-t15.c01, p.92, the same appendix-B row read as one unsplit claim
+//   that bundles the same software-directed half with the hardware half
+//   COLOR-BITS-15-12-UNUSED does establish -- an id whose claim bundles an
+//   untested clause is withdrawn whole, not graded with a caveat).
 //   Every id is written out in full, in the assertion, note or record
 //   string itself, not only in a header comment.
 //
@@ -348,9 +352,9 @@
 //     per bit (15, 14, 13, 12 respectively, each marked X): the identical
 //     "unused" proposition split to single-bit granularity, per the BIT
 //     TABLE rule -- the same appendix-A row hrm/ch3-colour-register-format
-//     and this package's own A-color.c10 (already asserted, see the header
-//     above) already draw on, now with three sibling bits given their own
-//     ids.
+//     already draws on. This backlog is what first puts A-color.c10, along
+//     with its three sibling bits, onto COLOR-BITS-15-12-UNUSED below --
+//     none of the four was asserted anywhere before this commit.
 //   - A-colorxx.bits1 (opus), p.273, the same appendix-A row read as one
 //     group claim ("bits 15-12 are X, i.e. unused") rather than split --
 //     opus's own twin of the four sol ids immediately above.
@@ -1480,7 +1484,7 @@ int main(int argc, char** argv) {
     }
 
     // ==================== COLOR-BITS-15-12-UNUSED ====================
-    // 3-t15.c01 (p92, "15 - 12  Unused (set these to 0)"): this assertion
+    // (p92, "15 - 12  Unused (set these to 0)"): this assertion
     // tests only the hardware-observable half of the quote (bits ignored
     // by the module) -- the "(set these to 0)" half is software guidance
     // to a programmer, not a hardware guarantee, and is not asserted here.
@@ -1534,7 +1538,7 @@ int main(int argc, char** argv) {
             " both times) -- the hardware ignores bits 15-12, exactly "
             "'15 - 12  Unused (set these to 0)' (p.92); this assertion "
             "tests only the hardware-observable 'unused' half, not the "
-            "software-directed '(set these to 0)' half. 3-t15.c01, "
+            "software-directed '(set these to 0)' half. "
             "3-colortable.c13, 3-t3.c01, 3-colorsum.c6, A-color.c7, "
             "A-color.c8, A-color.c9, A-color.c10, A-colorxx.bits1.");
     }
@@ -1548,6 +1552,18 @@ int main(int argc, char** argv) {
         "there is no module-boundary effect for this or any fixture to "
         "observe. The observable half of the same source row is "
         "graded on COLOR-BITS-15-12-UNUSED above (graded: 3-colorsum.c6).");
+    checks.record(
+        "3-t15.c01 (p.92, 'Table 3-15: colour register bits 15-12 are "
+        "unused and should be set to 0.', the same p.92 row as "
+        "3-colorsum.c7 above, read as one unsplit claim rather than "
+        "split by half): bundles the hardware 'unused' half "
+        "COLOR-BITS-15-12-UNUSED measures with the software-directed "
+        "'(set these to 0)' half it does not -- an id whose claim bundles "
+        "an untested clause is withdrawn whole, not kept on the assertion "
+        "with a caveat in its label. The 'unused' half of the identical "
+        "row is graded on COLOR-BITS-15-12-UNUSED above via its split "
+        "reading (graded: 3-colorsum.c6); the '(set these to 0)' half is "
+        "recorded above (3-colorsum.c7).");
 
     // ==================== FIGURE-COLOR-SELECT-INDEX6 ====================
     // 3-color.c23 (p44, Figure 3-4: "The fourth sample column's five bits
@@ -1759,9 +1775,12 @@ int main(int argc, char** argv) {
         "is a documentation designation (do not rely on this value), not a "
         "stated hardware behaviour -- the manual makes no claim here about "
         "what the upper 8 bits DO, so there is no falsifiable proposition "
-        "to build an assertion around. (Contrast 3-t15.c01 above, which "
-        "this package DOES assert: that quote says 'Unused', a claim about "
-        "hardware behaviour this fixture can and does measure.)");
+        "to build an assertion around. (Contrast 3-t15.c01 above: unlike "
+        "'reserved', 'Unused' states a hardware behaviour, and this "
+        "fixture does measure it -- graded under the split siblings on "
+        "COLOR-BITS-15-12-UNUSED; 3-t15.c01 itself is withdrawn to a "
+        "record because it bundles that hardware half with an untested "
+        "software-directed half.)");
 
     checks.note(
         "C-shr.c01, C-superhires.c1, C-superhires.c2 (p296, 'up to 1280 "
