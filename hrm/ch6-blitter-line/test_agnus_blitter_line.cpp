@@ -232,8 +232,7 @@
 //     distinct from its post-reset default, confirms the traced value
 //     starts there, and confirms it then moves by the BLTAMOD step):
 //     6-appa-registers.c115, ch6-appa-bltxpt.c8b.
-//   LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270 -- added 25.09.2026,
-//     extending this accepted package): 6-appa-registers.c98,
+//   LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270): 6-appa-registers.c98,
 //     6-appa-registers.c99, ch6-appa-bltxmod.c10, ch6-appa-bltxmod.c11,
 //     ch6-appa-bltxpt.c10.
 //   LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE (p.191/192/270 -- ch6-linesum.c9,
@@ -287,10 +286,7 @@
 //     6-appa-control.c111, 6-appa-control.c112, 6-appa-control.c113,
 //     6-appa-control.c114, 6-appa-control.c115, 6-appa-control.c116 .
 //
-// NEW SPECIFICATION (added 25.09.2026, extending this accepted package per
-// work/2026-09-25_unit-backlog/BUILD-BRIEF.md; written from the spec-stage
-// quotations alone -- the RTL measurement that grades it is added in a
-// later commit, not this one).
+// NEW SPECIFICATION
 //   LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270): the appendix
 //   instructs preloading BLTAMOD with the value (4Y-4X) and BLTBMOD with
 //   the value (4Y) ("LINE DRAW ... with the values (4Y-4X) and (4Y)",
@@ -325,7 +321,7 @@
 //     and computes no such arithmetic itself. Only the bank-SELECTION half
 //     of these same claims (BLTAMOD used when sign=0, BLTBMOD when sign=1)
 //     is RTL behavior, and IS asserted, in LINE-SIGN-SELECTS-MODULO-BANK.
-//     absent_signal: dy, dx; reason_kind: absent. [25.09.2026: the SAME
+//     absent_signal: dy, dx; reason_kind: absent. [The SAME
 //     formula, for the appendix's own wording and for the "Y/X is the
 //     slope" claim that names what it produces, is no longer declined --
 //     6-appa-registers.c98, 6-appa-registers.c99, ch6-appa-bltxmod.c10,
@@ -919,11 +915,10 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-HEIGHT-IS-PIXEL-COUNT (p.191, p.192, p.269) ----------------
-    // 25.09.2026: ch6-appa-bltsize.ld1 ("in line draw BLTSIZE controls the
-    // line length and starts the line draw when written to", p.269) added
-    // to the label below, bare -- the label already cited its twin
-    // ch6-appa-bltsize.c6 in the compressed run "c6/ld1", which the
-    // coverage ledger reads as only the first member.
+    // ch6-appa-bltsize.ld1 ("in line draw BLTSIZE controls the line length
+    // and starts the line draw when written to", p.269) is cited bare in
+    // the label below: the label's compressed twin citation "c6/ld1" would
+    // count toward the coverage ledger as only its first member, c6.
     {
         Harness h;
         h.c_words = std::deque<uint16_t>(5, 0);
@@ -1080,10 +1075,10 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-WIDTH-MUST-BE-2 (p.191, p.192, p.269) ----------------
-    // 25.09.2026: ch6-appa-bltsize.ld3 ("in line draw the w field must be
-    // set to 02", p.269) added to the label below, bare -- the label
-    // already cited its twin ch6-appa-bltsize.c5 in the compressed run
-    // "c5/ld3", which the coverage ledger reads as only the first member.
+    // ch6-appa-bltsize.ld3 ("in line draw the w field must be set to 02",
+    // p.269) is cited bare in the label below: the label's compressed twin
+    // citation "c5/ld3" would count toward the coverage ledger as only its
+    // first member, c5.
     {
         Harness h_correct;
         h_correct.c_words = std::deque<uint16_t>(6, 0);
@@ -1133,12 +1128,12 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-MASKS-MUST-BE-FFFF (p.191, p.192, p.266) ----------------
-    // 25.09.2026: 6-line-mode.c50 ("in line mode, BLTAFWM is set to
-    // $FFFF"), 6-line-mode.c51 ("...BLTALWM is set to $FFFF"), p.191, and
-    // the register-summary echoes 6-line-mode.c75/c76 ("the line-mode
-    // register summary sets BLTAFWM/BLTALWM to $FFFF"), p.192, added to
-    // the label below, bare -- the header already listed them for this
-    // assertion but the graded label did not name them.
+    // 6-line-mode.c50 ("in line mode, BLTAFWM is set to $FFFF"),
+    // 6-line-mode.c51 ("...BLTALWM is set to $FFFF"), p.191, and the
+    // register-summary echoes 6-line-mode.c75/c76 ("the line-mode register
+    // summary sets BLTAFWM/BLTALWM to $FFFF"), p.192, are cited in the
+    // label below, matching the header, which lists them for this
+    // assertion.
     {
         // Deferred by PKG-BLT-MASKS's own header (hrm/ch6-blitter-masks,
         // and docs/evidence/blitter-prior-art.md) to whoever builds the dedicated
@@ -1274,10 +1269,9 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-B-TEXTURE-BSH-START-BIT (p.169,184,191,192,268,269) ----------------
-    // 25.09.2026: 6-line-mode.c5 ("line mode supports a variety of
-    // textures", p.189) added to the label below, bare -- the header
-    // already listed this id for this assertion but the graded label did
-    // not name it.
+    // 6-line-mode.c5 ("line mode supports a variety of textures", p.189)
+    // is cited in the label below, matching the header, which lists this
+    // id for this assertion.
     {
         // BLTBDAT bits 3,2,1,0 = 1,0,1,0. Initial BSH=3 (BLTCON1[15:12]),
         // decrementing one per pixel (decbsh, agnus_blitter.v:945,
@@ -1489,8 +1483,7 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270) ----------------
-    // Added 25.09.2026, extending this accepted package (BUILD-BRIEF.md's
-    // unit-backlog routing). Chooses concrete dx=8 (major-axis pixel count)
+    // Chooses concrete dx=8 (major-axis pixel count)
     // and dy=3 (minor-axis step count, dy<dx: a shallow line), preloads
     // BLTAMOD and BLTBMOD with the appendix's own formula for those values
     // (4*(dy-dx) and 4*dy, p.270), and measures BLT_L1's own accumulator
@@ -1844,10 +1837,9 @@ int main(int argc, char** argv) {
             "ch6-linesum.c19, p.190/268)");
     }
 
-    // ---------------- RECORDED (routed record:ch6-blitter-line) ----------------
-    // Added 25.09.2026. These two claims are declined, not asserted -- their
-    // ids appear on no expect() line above, per Prompt 7's rule that a
-    // RECORDED line is not a measurement.
+    // ---------------- RECORDED ----------------
+    // These two claims are declined, not asserted -- their ids appear on
+    // no expect() line above: a RECORDED line is not a measurement.
     checks.record(
         "ch6-line.c17 (p.191, \"these calculations normalize the line into "
         "octant 0\"): the dx/dy normalisation is arithmetic the calling "
