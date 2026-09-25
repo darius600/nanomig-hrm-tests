@@ -1482,7 +1482,7 @@ int main(int argc, char** argv) {
     // own window.
     // =========================================================================
 
-    // ---------------- DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES (p.80) ----------------
+    // ---------------- DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES (p.80) ----------------
     // The original form graded only DDFSTRT=$0018 against the $0038 baseline.
     // p.80's claim
     // is universal over the whole range below $38 ("using a data-fetch start
@@ -1605,7 +1605,7 @@ int main(int argc, char** argv) {
     // channel 7 and cannot honestly report "some sprites" either way. At one
     // bitplane the same $0030 stimulus that
     // leaves sprite 7 unaffected leaves EVERY channel unaffected (see the
-    // DDFSTRT-EARLIER-THAN-$38 sweep above, $0030 row), so this is red here
+    // DDFSTRT-EARLIER-THAN-0038 sweep above, $0030 row), so this is red here
     // too, for the same underlying reason and honestly labelled as such.
     {
         auto baseline = measure_sprite_data_fetch(0x0038);
@@ -1808,16 +1808,13 @@ int main(int argc, char** argv) {
 //     the write landed nowhere DMACONR reads from). Reverted to
 //     DMACON_ADDR; rebuilt clean (25 passed, 0 failed).
 //
-// Entries 12-19 below replace the two DDFSTRT mutation records that named
-// assertions since restructured (the old DDFSTRT-EARLIER-THAN-$38-COSTS-
-// SOME-SPRITES-FETCH-CYCLES $18-only form and the old, unqualified
-// DDFSTRT-0030-SPRITE-7) and add records for every assertion added since.
-// Each entry again got its own separate mutate/build/run/revert cycle.
+// Entries 12-19 below cover the DDFSTRT assertions, one record each.
+// Each entry got its own separate mutate/build/run/revert cycle.
 // Baseline before the first of these mutations and after every revert: "30
 // passed, 3 failed" (three of the new assertions are honest reds, kept as
 // such - see their own headers above).
 //
-// 12. DDFSTRT-EARLIER-THAN-$38-COSTS-SOME-SPRITES-FETCH-CYCLES: already red
+// 12. DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES: already red
 //     at baseline (the sweep's own $0030 row is the finding - one bitplane,
 //     zero of eight sprites reduced). Substituted a live point (the sweep's
 //     $0030 entry changed to $0018, known reduced) through the SAME
