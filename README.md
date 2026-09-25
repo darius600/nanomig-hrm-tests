@@ -1,19 +1,34 @@
 # NanoMig HRM Tests
 
 Conformance tests for the Amiga chipset RTL in
-[NanoMig](https://github.com/harbaum/NanoMig). The tests in `hrm/` and `aa/`
-are graded against two printed oracles:
+[NanoMig](https://github.com/harbaum/NanoMig). **The only oracle is printed
+literature:** two documents Commodore wrote about the chips. Every assertion
+in `hrm/` and `aa/` names the page it grades against, and no expected value
+comes from NanoMig, from another core or from an emulator. Emulators appear
+on the finding pages as witnesses, never as the judge.
 
 | Oracle | Documents | Tests |
 |---|---|---|
 | *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 216 packages |
 | Commodore's *Functional Specification for the Advanced Amiga Chip Set (AA)* | the AGA chip set | `aa/`, 33 packages |
 
-A third tree, `integration/`, runs whole systems rather than one module:
-`minimig.v`, and `nanomig.v` with a 68000 program. Its checks are not graded
-against a printed page. Two apparatus packages prove the test harness itself
-works, and `minimig_system` smoke-tests register access and one Copper move
-through the CPU bus. A red there is not a finding.
+**`integration/` holds no conformance tests.** It runs whole systems rather
+than one module, `minimig.v` and `nanomig.v` with a 68000 program, and
+nothing in it is graded against a page. So nothing in it says whether the
+RTL is right:
+
+- `apparatus-cpu-to-video` and `apparatus-vasm-program` test the test
+  harness, not the chipset. They check values the test program itself
+  writes: a word stored and read back, a colour written and seen on the
+  video port. Each has a control that must fail, and the package fails if
+  the control passes.
+- `minimig_system` is a smoke test of register access and one Copper move
+  through the CPU bus. Its expected values rest partly on the manual's
+  register addresses and set/clear semantics and partly on NanoMig's own
+  bus interface, so it is not independent of the implementation. It catches
+  breakage, for example after an upstream change.
+
+A red in `integration/` is not a finding.
 
 **The printed page is the oracle, never the RTL.** A red test in `hrm/` or
 `aa/` marks a place where the RTL does something the page does not describe.
@@ -113,8 +128,8 @@ never implied by a green.
 hrm/            216 packages against the manual, each at one module's ports;
                 chN-… or appX-… names the unit of the manual that judges it
 aa/             33 packages against the AA specification
-integration/    tests across module boundaries: minimig.v, and nanomig.v's
-                own ports on both CPU cores
+integration/    no conformance tests: checks of the test harness at
+                nanomig.v's ports, and a smoke test of minimig.v
 nanomig/        submodule, the RTL under test
 docs/           findings, the RTL review list, the rules for adding a test
 run_all.sh      runs all three layers; hrm/run_all.sh runs only hrm/
