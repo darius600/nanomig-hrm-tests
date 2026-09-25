@@ -862,6 +862,11 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-HEIGHT-IS-PIXEL-COUNT (p.191, p.192, p.269) ----------------
+    // 25.09.2026: ch6-appa-bltsize.ld1 ("in line draw BLTSIZE controls the
+    // line length and starts the line draw when written to", p.269) added
+    // to the label below, bare -- the label already cited its twin
+    // ch6-appa-bltsize.c6 in the compressed run "c6/ld1", which the
+    // coverage ledger reads as only the first member.
     {
         Harness h;
         h.c_words = std::deque<uint16_t>(5, 0);
@@ -884,9 +889,8 @@ int main(int argc, char** argv) {
             "'line-mode blit height equals dx+1'/'BLTSIZE bits 15-6 with dx+1'/'BLTSIZE "
             "bits 15-6 = dx + 1', 6-line-mode.c71/c100, ch6-linesum.c25, p.191/192; "
             "'in line mode, BLTSIZE height equals line length'/'BLTSIZE controls line "
-            "length', 6-appa-registers.c42/c65, ch6-appa-bltsize.c6/ld1 (ch6-appa-bltsize.ld1 "
-            "written out in full here: 'in line draw BLTSIZE controls the line length "
-            "and starts the line draw when written to'), p.269. Height's "
+            "length', 6-appa-registers.c42/c65, ch6-appa-bltsize.c6/ld1 ch6-appa-bltsize.ld1, "
+            "p.269. Height's "
             "own 10-bit, zero-means-1024 field width and the literal 1024-pixel OCS "
             "maximum ('on the original chip set, line mode can draw lines up to 1024 "
             "pixels long', 6-line-mode.c4/ch6-line.c4, p.189; 'the original-chip-set h "
@@ -1019,6 +1023,10 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-WIDTH-MUST-BE-2 (p.191, p.192, p.269) ----------------
+    // 25.09.2026: ch6-appa-bltsize.ld3 ("in line draw the w field must be
+    // set to 02", p.269) added to the label below, bare -- the label
+    // already cited its twin ch6-appa-bltsize.c5 in the compressed run
+    // "c5/ld3", which the coverage ledger reads as only the first member.
     {
         Harness h_correct;
         h_correct.c_words = std::deque<uint16_t>(6, 0);
@@ -1059,8 +1067,7 @@ int main(int argc, char** argv) {
             "load-bearing on this design's actual pixel-count mechanism, not a "
             "stylistic convention ('BLTSIZE w must be $02 for line drawing'/'in line "
             "draw the w field must be set to 02', 6-appa-registers.c69, "
-            "ch6-appa-bltsize.c5/ld3 (ch6-appa-bltsize.ld3 written out in full here: "
-            "'in line draw the w field must be set to 02'), p.269; 'the blitter operation (in line mode, "
+            "ch6-appa-bltsize.c5/ld3 ch6-appa-bltsize.ld3, p.269; 'the blitter operation (in line mode, "
             "width must...'/'in line mode, BLTSIZE width must equal 2', "
             "6-appa-registers.c41, p.269; 'line-mode blit width must be two words'/"
             "'the blit width must be set to two for all line drawing', 6-line-mode.c72/"
@@ -1069,6 +1076,12 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-MASKS-MUST-BE-FFFF (p.191, p.192, p.266) ----------------
+    // 25.09.2026: 6-line-mode.c50 ("in line mode, BLTAFWM is set to
+    // $FFFF"), 6-line-mode.c51 ("...BLTALWM is set to $FFFF"), p.191, and
+    // the register-summary echoes 6-line-mode.c75/c76 ("the line-mode
+    // register summary sets BLTAFWM/BLTALWM to $FFFF"), p.192, added to
+    // the label below, bare -- the header already listed them for this
+    // assertion but the graded label did not name them.
     {
         // Deferred by PKG-BLT-MASKS's own header (hrm/ch6-blitter-masks,
         // and docs/evidence/blitter-prior-art.md) to whoever builds the dedicated
@@ -1117,11 +1130,9 @@ int main(int argc, char** argv) {
             "line mode even though bltaold itself stays zero, so '[BLTAFWM/BLTALWM] "
             "should be set to $FFFF' (ch6-line.c24, p.191) / 'BLTAFWM = $FFFF' / "
             "'BLTALWM = $FFFF' (ch6-linesum.c2/c3, p.192) / 'all mask bits are 1 in "
-            "line-drawing mode' (6-appa-registers.c13, p.266) / 'in line mode, BLTAFWM "
-            "is set to $FFFF'/'in line mode, BLTALWM is set to $FFFF', 6-line-mode.c50 "
-            "6-line-mode.c51, p.191; 'the line-mode register summary sets BLTAFWM to "
-            "$FFFF'/'sets BLTALWM to $FFFF', 6-line-mode.c75 6-line-mode.c76, p.192 is "
-            "a real hardware requirement, not a stylistic one");
+            "line-drawing mode' (6-appa-registers.c13, p.266) is a real hardware "
+            "requirement, not a stylistic one "
+            "6-line-mode.c50 6-line-mode.c51 6-line-mode.c75 6-line-mode.c76");
     }
 
     // ---------------- LINE-BLTADAT-8000-AND-A-WALKS (p.191, p.192, p.268, p.269) ----------------
@@ -1206,6 +1217,10 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-B-TEXTURE-BSH-START-BIT (p.169,184,191,192,268,269) ----------------
+    // 25.09.2026: 6-line-mode.c5 ("line mode supports a variety of
+    // textures", p.189) added to the label below, bare -- the header
+    // already listed this id for this assertion but the graded label did
+    // not name it.
     {
         // BLTBDAT bits 3,2,1,0 = 1,0,1,0. Initial BSH=3 (BLTCON1[15:12]),
         // decrementing one per pixel (decbsh, agnus_blitter.v:945,
@@ -1248,8 +1263,7 @@ int main(int argc, char** argv) {
             "FIRST pixel would have read bit 0 directly ('a B shift of zero starts the "
             "texture at its least-significant bit'/'a B shift value of zero means the "
             "last significant bit', 6-line-mode.c56/ch6-line.c29, p.191), which is what "
-            "the field's own zero point means. This is also the mechanism behind "
-            "'line mode supports a variety of textures' (6-line-mode.c5, p.189) and "
+            "the field's own zero point means. This is also the mechanism "
             "'a special line draw mode... for simple area fill' (6-line-mode.c6/ch6-line.c5, "
             "p.189) and 'an area-fill outline must be drawn with untextured lines'/"
             "'the area to fill must be defined first by drawing untextured lines'/"
@@ -1260,10 +1274,18 @@ int main(int argc, char** argv) {
             "'one bit set per horizontal row' is ONEDOT (see "
             "LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES below); the application-level "
             "instruction to use them THAT way for area-fill is not itself a hardware "
-            "signal");
+            "signal "
+            "6-line-mode.c5");
     }
 
     // ---------------- LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES (p.189,191,192) ----------------
+    // 25.09.2026: 6-line-mode.c98 ("the line-mode register summary sets
+    // ONEDOT for one pixel per row"), 6-line-mode.c99 ("...clears ONEDOT
+    // otherwise"), p.192, and 6-area-fill.c3 ("an area-fill outline must
+    // have only one set bit per horizontal row", p.184 -- the same
+    // one-write-per-row mechanism this assertion measures, since an
+    // area-fill outline is a line drawn with ONEDOT=1) added to the label
+    // below, bare.
     {
         // Octant 7 (SUD=1,SUL=0,AUL=0): X-major, unconditional INC. Self-
         // sustaining sign_del=1 for EVERY pixel, not only the first:
@@ -1315,13 +1337,7 @@ int main(int argc, char** argv) {
             "'for one pixel per row BLTCON1 bit ONEDOT = 1'/'otherwise BLTCON1 bit "
             "ONEDOT = 0', ch6-linesum.c23/c24, p.192; 'line mode has a one-dot form "
             "suitable for preparing simple area fills'/'lines can be drawn in a "
-            "special way for simple area fill', 6-line-mode.c6/ch6-line.c5, p.189; "
-            "'the line-mode register summary sets ONEDOT for one pixel per row'/"
-            "'clears ONEDOT otherwise', 6-line-mode.c98 6-line-mode.c99, p.192 -- and "
-            "this same one-write-per-row mechanism is what 'an area-fill outline must "
-            "have only one set bit per horizontal row' (6-area-fill.c3, p.184) rests "
-            "on: an area-fill outline is a line drawn with ONEDOT=1, which is exactly "
-            "what is measured here. "
+            "special way for simple area fill', 6-line-mode.c6/ch6-line.c5, p.189. "
             "This is also the direct demonstration that bit 1 no longer means "
             "DESCENDING once LINE=1 is set ('line draw mode changes the meaning of "
             "some other bits in BLTCON0 and BLTCON1', 6-line-mode.c3/ch6-line.c3, "
@@ -1329,7 +1345,8 @@ int main(int argc, char** argv) {
             "line-drawing mode', ch6-line.c6, p.189): with LINE=0 the same bit "
             "reverses the pointer's step direction (PKG-BLT-MASKS's DESC-* "
             "assertions), but here it silently drops writes instead -- a completely "
-            "different effect, not a variant of descending mode");
+            "different effect, not a variant of descending mode "
+            "6-area-fill.c3 6-line-mode.c98 6-line-mode.c99");
     }
 
     // ---------------- LINE-SIGNFLAG-SETS-INITIAL-SIGN (p.191, p.192) ----------------
@@ -1353,6 +1370,13 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- LINE-SIGN-SELECTS-MODULO-BANK (p.191, p.192, p.270) ----------------
+    // 25.09.2026: 6-appa-registers.c115 ("line mode uses BLTAPTL as the
+    // error accumulator") and ch6-appa-bltxpt.c8b ("in line draw BLTAPTL
+    // is used as an accumulator register"), p.270, added to the label
+    // below, bare -- the header already listed these ids for this
+    // assertion but the graded label did not name them. The accumulator
+    // measure_accumulator_delta moves here IS BLTAPTL, read via the CHA
+    // pointer bank at BLT_L1.
     {
         const int32_t delta_a = measure_accumulator_delta(/*initial_sign=*/0, /*amod=*/0x0040, /*bmod=*/0x0000);
         const int32_t delta_b = measure_accumulator_delta(/*initial_sign=*/1, /*amod=*/0x0000, /*bmod=*/0x0040);
@@ -1360,10 +1384,7 @@ int main(int argc, char** argv) {
             "LINE-SIGN-SELECTS-MODULO-BANK: with SIGNFLAG=0, only a nonzero BLTAMOD "
             "(0x0040, against a $0000 BLTBMOD) moves the accumulator by +32; with "
             "SIGNFLAG=1 and the modulo values swapped, only BLTBMOD moves it by the "
-            "same +32 -- the accumulator being moved here IS BLTAPTL itself ('line mode "
-            "uses BLTAPTL as the error accumulator'/'in line draw BLTAPTL is used as an "
-            "accumulator register', 6-appa-registers.c115 ch6-appa-bltxpt.c8b, p.270), "
-            "read via the CHA pointer bank at BLT_L1 -- BLT_L1 selects BLTAMOD's bank when sign=0 and BLTBMOD's bank "
+            "same +32 -- BLT_L1 selects BLTAMOD's bank when sign=0 and BLTBMOD's bank "
             "when sign=1 (agnus_blitter.v:799, `modsel = sign ? CHB : CHA`), which is "
             "'the sign flag driving the modulo choice' the build brief names, and the "
             "RTL fact underneath the register-summary's role assignment ('the A "
@@ -1377,7 +1398,8 @@ int main(int argc, char** argv) {
             "p.270) -- the literal dy/dx arithmetic is the programmer's, not this "
             "design's (no dy/dx port exists), so only the bank-selection half is "
             "asserted here; see the file header's NOT ASSERTED section for the "
-            "formula half");
+            "formula half "
+            "6-appa-registers.c115 ch6-appa-bltxpt.c8b");
     }
 
     // ---------------- LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270) ----------------
