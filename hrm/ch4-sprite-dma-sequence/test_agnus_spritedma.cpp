@@ -241,6 +241,90 @@
 //
 //   188 + 44 = 232.
 //
+// CLAIM COVERAGE ADDENDUM (unit-backlog build pass, committed 2026-09-25):
+//   20 ids previously declined above (in Dc, Dw and Dm) were re-classified
+//   testable at this module's boundary by a separate reader pass and routed
+//   back to this package -- ch4-sprite-dma-sequence-spec-stage.jsonl,
+//   2026-09-25_unit-backlog/build2/. This addendum was written from that
+//   file's quotations and restatements alone, before ch4-sprite-dma-
+//   sequence.jsonl (this pass's own evidence file) or agnus_spritedma.v was
+//   reopened for this pass -- same ORDER OF WORK as the rest of this file.
+//   It reuses only facts already disclosed elsewhere in this same accepted
+//   file: A7's own comment (the SPR0..SPR7 register-block addresses and the
+//   16-grants-on-line-0 measurement) and A1's own comment (the vpos==0 /
+//   VSTOP-reset-value coincidence) -- not a fresh RTL read for these ids.
+//
+//   B1  EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED (4 ids) --
+//     CH4-intro.c6, CH4-p97.c3, CH4-p127.c4, CH4-regs.c1. Previously
+//     declined in Dc as unobservable from a (wrongly assumed) single-channel
+//     fixture; Dc's own CORRECTION already found the fixture is not
+//     single-channel. Tests: on the module's first active line, sixteen
+//     granted DMA cycles target sixteen distinct register addresses --
+//     eight independent two-register control-pair fetches -- rather than
+//     the two addresses a single channel would produce.
+//   B2  OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE (2 ids) --
+//     CH4-p127.c6, CH4-regs.c3. Previously declined in Dc, whose own
+//     CORRECTION named this specific claim "still genuinely undecided."
+//     Tests: channel 1, fed its own distinct VSTART/VSTOP at its own
+//     register block, reproduces the same structural fetch pattern already
+//     proven for channel 0 elsewhere in this file (POS-then-CTL first,
+//     height = VSTOP-VSTART).
+//   B3  HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE (4 ids) --
+//     CH4-forming.c2, CH4-intro.c8, CH4-p97.c5, CH4-p98.c2. Previously
+//     declined in Dw as "not falsifiable by any finite sweep" -- true of
+//     literal infinity, but read as the falsifiable engineering claim that
+//     no separate, smaller height cap exists distinct from the VSTOP-VSTART
+//     arithmetic A2 already establishes for a 4-line sprite, it is
+//     testable: a 100-line-high usage, far beyond any height this file's
+//     other assertions exercise, is fed and its image-fetch window checked
+//     for being unbroken across the whole 100 lines.
+//   Di  POINTER-INITIALISATION-IS-PROGRAMMER-OBLIGATION-NOT-RTL-BEHAVIOUR
+//     (2 ids) -- CH4-more.c6, CH4-p114.c3. Previously declined in Dc, whose
+//     own CORRECTION flagged these as "structurally observable after all."
+//     Re-examined and declined again, for a DIFFERENT and narrower reason:
+//     each claim's text has two halves -- "each of the eight channels uses
+//     its own pointer" (structurally observable, and already covered
+//     without qualification by B1's own citations above) and "[therefore
+//     each pointer] must be initialized... to either a real sprite or a
+//     safe null sprite" (a system-software obligation plus a value-validity
+//     constraint on what counts as "safe" -- neither is a hardware
+//     behaviour this module's ports can be true or false about; nothing
+//     here enforces or rejects an uninitialized pointer). Per the
+//     bundled-clause rule an id whose claim has an untested half is
+//     withdrawn whole rather than kept on B1 with a caveat -- these two ids
+//     stay off every graded line.
+//   Dm2 RAM-WORD-WIDTH-AND-ADDRESS-DIRECTION, REAFFIRMED (8 ids) --
+//     CH4-build.c1, CH4-build.c2, CH4-p104.c1, CH4-tab41.c1, CH4-fig4-7.c4,
+//     CH4-fig47.f2, CH4-fig4-10.c1, CH4-fig410.f1. Also routed back as
+//     testable and re-examined; the original Dm/Dp reasoning is reaffirmed
+//     for these specific ids, not merely repeated: "16-bit word" is a fact
+//     about what a programmer writes into RAM, not a behaviour of this
+//     address-sequencing module -- the one port that could speak to bus
+//     width, data_in, is fed by this file's own C++ harness as a 16-bit
+//     host variable regardless of what the RTL does with it, so an
+//     assertion on it would be unfalsifiable at this boundary, not
+//     coverage. "Contiguous" and "increasing addresses" (the two figure
+//     ids) need a raw RAM fetch-address readback this module's known ports
+//     do not carry -- reg_address_out names a REGISTER (SPR0DATA vs
+//     SPR0DATB), never a RAM address, so it cannot show which of two
+//     fetches used the higher address. The original Dm bucket's own two
+//     ids (CH4-mem.c1, CH4-p105.c8) were not routed to this pass and are
+//     untouched.
+//
+//   Grand total after this addendum: 188 + 10 newly asserted (B1 4, B2 2,
+//   B3 4) = 198 asserted or measured-and-reported; 44 - 10 = 34 declined
+//   (Dc now 15 of its original 23, Dw now 0 of 4 -- folded entirely into
+//   B3, Dm still 2 of its original 10, Dp 5, Dx 2, Di 2 new, Dm2 8 new).
+//   198 + 34 = 232, unchanged from the original total -- these 20 ids were
+//   already inside that 232, only their bucket moved.
+//
+//   B1/B2/B3's own assertion code, mutation records and RESULTS are appended
+//   at the end of this file's assertions and its MUTATION LOG, written and
+//   run only after this addendum's own commit, once ch4-sprite-dma-
+//   sequence.jsonl's evidence and agnus_spritedma.v were reopened for this
+//   pass -- see ORDER OF WORK above, which binds this addendum exactly as
+//   it bound the original file.
+//
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id, labelled
 //   "[control]") proves the write(via data_in)->grant(via ackdma)->observe
 //   (via reg_address_out) path this whole file depends on is alive, and
