@@ -10,6 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted — see *Suggested change* |
 | **Test** | [`hrm/ch2-copper-move-range`](../../hrm/ch2-copper-move-range), [`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 3 red: `T9` (`$040`) and `T16` (both ends Appendix C prints, `$03E` and `$07E`, claim `ch2-appc-ecs.c21`) in `hrm/ch2-copper-move-range`, and the `ecs=1 cdang=0` sweep in `hrm/ch2-copper-move-sweep` |
 | **Verdict of the four** | **all four read the appendix the other way round** |
 
 ---
@@ -35,7 +36,10 @@ It rejects that range. With `CDANG` clear the accepted set is `$080`–`$1FE` at
 | falsely rejected | 32 addresses, `$040`–`$07E` |
 | falsely accepted | none |
 
-Both a single-address probe and an exhaustive sweep agree.
+Two single-address probes and an exhaustive sweep agree. `T9` moves to `$040`,
+`T16` to both ends Appendix C prints, `$03E` and `$07E`, and none of the three
+addresses is written. The table is the sweep's, whose expected set starts at
+`$040`; `$03E` is the one address the appendix names that only `T16` probes.
 
 *Addresses here are the manual's byte addresses. A Copper instruction encodes
 DA8-1, so the module's register ports carry them halved and the sweep prints them

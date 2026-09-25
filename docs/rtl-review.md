@@ -7,7 +7,7 @@ test that measures the RTL doing something the manual does not describe.
 This suite stops there. The decision is the specialist's, and each page's
 *Suggested change* states one option, not a verdict.
 
-**46 findings ask for a review, in 24 modules.** They are listed by the
+**47 findings ask for a review, in 25 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -22,6 +22,12 @@ The marks and this list are derived from each page's header table by
 `hrm-testpipeline/tools/write_rtl_review.py`, which lives in the separate
 `hrm-testpipeline` repository, and are rewritten whenever a header changes.
 Module links point at the NanoMig revision the pages cite, `4495f86`.
+
+## [`src/minimig-aga/agnus.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v) — 1
+
+| finding | subject | evidence |
+|---|---|---|
+| [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | a graded red, contested — the implementations split |
 
 ## [`src/minimig-aga/agnus_audiodma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v) — 1
 
@@ -40,11 +46,12 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | a graded red |
 | [NM-HRM-034](findings/NM-HRM-034.md) | VPOSR reports the video standard in bit 12 of an OCS configuration | a graded red, contested — the implementations split |
 
-## [`src/minimig-aga/agnus_bitplanedma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v) — 1
+## [`src/minimig-aga/agnus_bitplanedma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v) — 2
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-007](findings/NM-HRM-007.md) | the hires fetch width cannot reach the manual's maximum of 49 words | a graded red |
+| [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | a graded red, contested — the implementations split |
 
 ## [`src/minimig-aga/agnus_blitter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v) — 3
 

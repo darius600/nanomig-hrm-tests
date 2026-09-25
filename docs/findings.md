@@ -1,6 +1,6 @@
 # Findings
 
-**44 of the 65 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**45 of the 66 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each has the
 > same six parts — what the HRM says, what NanoMig does, what the other four say,
@@ -127,7 +127,7 @@ never disagree. Eight values occur:
 | `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested |
 | `**withdrawn**` | nothing; kept so the claim is not raised a second time |
 
-**If you have one evening: 44 of these 65 ask you to decide something.** The
+**If you have one evening: 45 of these 66 ask you to decide something.** The
 rest are withdrawn, answered, or observations kept for context. The table below
 is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
@@ -205,6 +205,7 @@ it for what an unresolvable case looks like, not for something to do.
 | [NM-HRM-063](findings/NM-HRM-063.md) | FLAG is negative edge-sensitive; the RTL ORs a level | open · RTL · **red** | `hrm/appF-ciab-port-assignments` | **unanimous, and all four implement the page**: WinUAE, vAmiga and Denise raise the bit from a transition and have no level input at all; Copperline keeps the pin state and latches only on `flag_pin_high && !high` |
 | [NM-HRM-064](findings/NM-HRM-064.md) | the board advertises that it can be shut up, and register 4C has no handler | open · RTL · **red** | `hrm/appK-autoconfig-base-address` | **3–1**: WinUAE, Denise and Copperline all handle a write to 4C — Denise gates it on the very capability bit p.433 defines — while vAmiga has no `0x4C` case, its boards being a fixed internal set it plugs and unplugs itself |
 | [NM-HRM-065](findings/NM-HRM-065.md) | register 48 does not configure a Zorro III board, and the implementations side with NanoMig | open · page · **red** | `hrm/appK-autoconfig-base-address` | **two of four do exactly this**: WinUAE and Copperline both configure a Zorro III board on register 44 inside the Zorro II block; vAmiga and Denise have no Zorro III board type and configure on 48 because every board they own is a Zorro II one |
+| [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | open · RTL · **red**, contested | `hrm/ch7-dmacon-register-bits` | **3–1 for the page**: WinUAE, vAmiga and Denise block sprite DMA for the whole bitplane fetch at any plane count; Copperline keeps sprite 7 at $0030 at any plane count. NanoMig leaves sprite 7 all 172 fetches with one lores plane, 90 with two or three, 8 with four or more; TC64, a descendant, already blocks for the whole fetch |
 
 ### Withdrawn — kept on purpose
 
@@ -234,7 +235,9 @@ Chapter 1 contributes NM-HRM-060 and NM-HRM-061, and Appendix F NM-HRM-062
 and NM-HRM-063. Appendix K contributes NM-HRM-064 and NM-HRM-065, both from
 the AUTOCONFIG responder — the one part of the Zorro bus the Minimig family
 implements. The responder is inherited from MiSTer, not NanoMig’s own, and
-NM-HRM-065’s behaviour is inherited with it.
+NM-HRM-065’s behaviour is inherited with it. Chapter 3 contributes NM-HRM-066,
+measured in chapter 7's DMACON package because only the Agnus top level
+compiles the bitplane and the sprite engine together.
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
 keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to

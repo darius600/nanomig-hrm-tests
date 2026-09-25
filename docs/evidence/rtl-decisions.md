@@ -211,7 +211,7 @@ NanoMig, in the other direction.**
 |---|---|
 | Manual | Appendix C p.310: with ECS and CDANG=0 the writable range equals the OCS CDANG=1 range, `$20`-`$FF` |
 | NanoMig | `$40`-`$FF`; 32 addresses `$20`-`$3F` rejected, none falsely accepted |
-| Tests | `hrm/ch2-copper-move-range` `T9`; `hrm/ch2-copper-move-sweep` (red) |
+| Tests | `hrm/ch2-copper-move-range` `T9` and `T16` (both ends the appendix prints); `hrm/ch2-copper-move-sweep` (red) |
 
 **WinUAE** - `custom.cpp:2806`:
 
