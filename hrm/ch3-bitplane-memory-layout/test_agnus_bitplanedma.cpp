@@ -101,6 +101,9 @@
 //   3-big.c14 (opus, p76): "The number of bytes must be even.  Thus, if the
 //     wide playfield described" -> same rule restated in the wide-playfield
 //     section.
+//   3-large.c22 (sol, p76): "The number of bytes must be even." -> "A
+//     playfield memory allocation must have an even byte count." Same
+//     page-76 sentence as 3-big.c14 above, a third reading.
 //   Witness: this is a property of the ALLOCATION, not of any one fetch;
 //   what the fetch port can show is that its own granularity structurally
 //   forecloses an odd total - every fetch step is exactly 2 (G2), so the
@@ -401,6 +404,20 @@
 //   enforces, so there is no stimulus that could make it read otherwise
 //   even in principle. Needs a wider boundary than this package's assigned
 //   fixture provides.
+//
+// -- D9: playfield memory figures exclude sprites/audio/animation/
+//    application memory (p.54) - DECLINE --
+//   3-mem.c12 (opus, p54, borderline): "Note that the memory requirements
+//     given here are for the playfield only. You may need to allocate
+//     additional memory for other parts of the display  --  sprites ,
+//     audio ,  animation  -- and for your application programs." -> "The
+//     memory figures given cover the playfield only; sprites, audio and
+//     animation need additional memory."
+//   Why declined: a caveat about what a byte-total FIGURE does not include
+//   - not itself a number or a behaviour this fetch-only module could
+//   drive or observe. agnus_bitplanedma has no port distinguishing
+//   "playfield" memory from sprite, audio or application memory at all;
+//   it fetches whatever address it is pointed at, playfield or not.
 // ============================================================================
 
 // ===================== RTL-OPENED FROM HERE DOWN =====================
