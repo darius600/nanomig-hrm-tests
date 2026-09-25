@@ -389,6 +389,12 @@ int main(int argc, char** argv) {
     Checks c;
 
     // ---- CONTROL CASE: FIXTURE-LIVE-DATA-PATH ----
+    // CH4-ptrs.c1 ("Pointer registers are used by the system to point to
+    // the current data being used", p.127) is cited on this assertion's
+    // existing condition, unchanged: sprite 0's own address_out then
+    // address_out+1 sequence already shown below is exactly a pointer
+    // register pointing to the data currently in use, each fetch using
+    // the pointer as the previous fetch left it.
     {
         FetchMeas a = measure_sprite(0, 0x0001, 0x1000);
         FetchMeas b = measure_sprite(1, 0x0002, 0x2000);
@@ -403,11 +409,7 @@ int main(int argc, char** argv) {
             "on (not some fixed or zero value) -- the write-pointer -> "
             "arm -> DMA-grant -> address_out path this whole file depends "
             "on is alive, and delivers known, ordered words, before any "
-            "claim-based assertion below relies on it. Also establishes "
-            "CH4-ptrs.c1: the pointer register points to the data "
-            "currently in use -- each fetch uses the pointer as the "
-            "previous fetch left it, shown here by sprite 0's own "
-            "address_out then address_out+1 sequence.");
+            "claim-based assertion below relies on it. CH4-ptrs.c1");
     }
 
     // ---- P1: SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT (36 ids) ----
