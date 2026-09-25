@@ -343,6 +343,151 @@
 // reverted and rebuilt clean before the next entry.
 // ============================================================================
 
+// ============================================================================
+// EXTENSION 25.09.2026 -- twelve new propositions routed to this package from
+// hrm-testpipeline/work/2026-09-25_unit-backlog/build2/
+// ch4-sprite-dma-control-spec-stage.jsonl (all classify.status=="testable"),
+// written from that file's quotations and restatements ALONE -- its
+// evidence field was stripped by tools/strip_evidence.py, and this section
+// was committed before ch4-sprite-dma-control.jsonl (the file that restores
+// the evidence and the router's `how`) was opened, and before agnus.v or
+// agnus_spritedma.v were reopened in this pass. Everything above this point
+// (through the first MUTATION LOG) is untouched by this extension -- run
+// before this section's own code was added:
+// hrm-testpipeline/work/2026-09-25_unit-backlog/runs/
+// ch4-sprite-dma-control-before.txt, "3 passed, 0 failed", kept in the
+// pipeline repository, not in this package.
+//
+// SOURCE PAGES: printed pp.114-115 (Chapter 4, "Creating Additional
+// Sprites," its boxed "About sprite DMA." note and its "Warning:" callout)
+// and printed p.303 (Appendix C, ECS chip-differences table, the SPRxPOS/
+// SPRxCTL row).
+//
+// -- Group 1 (4 ids): SPREN is a single, chip-wide enable -- enabling
+//    sprite DMA for one sprite enables DMA for every sprite, not just the
+//    one named, and keeps every channel running without a further step --
+//   CH4-more.c4 (opus, p114): quote "When you enable sprite DMA for one
+//     sprite, you enable DMA for all the" -> "Enabling sprite DMA for one
+//     sprite enables DMA for all the sprites."
+//   CH4-more.c5 (opus, p114): quote "sprites and place them all in
+//     automatic mode. Thus, you do not need" -> "Enabling sprite DMA places
+//     all the sprites in automatic mode."
+//   CH4-p114.c1 (sol, p114): quote (restored) "When you enable sprite DMA
+//     for one sprite, you enable DMA for all the sprites and place them all
+//     in automatic mode." -> "The SPREN control enables sprite DMA globally
+//     for all eight sprite channels."
+//   CH4-p114.c2 (sol, p114): same restored quote -> "Enabling sprite DMA
+//     places every sprite channel in automatic mode."
+//   All four read the SAME sentence (p114's "About sprite DMA." box), split
+//   the same way by both readers: a "gates every channel" half
+//   (CH4-more.c4 / CH4-p114.c1) and an "automatic mode" half (CH4-more.c5 /
+//   CH4-p114.c2). hrm/ch7-dmacon-register-bits's own SPREN-GATES-SPRITE-DMA
+//   already shows SPREN gates sprite channel 0's DMA cycles (under ITS OWN
+//   ids, none of these four) -- planned assertion
+//   SPREN-GATES-EVERY-SPRITE-CHANNEL below extends that to a second and a
+//   third channel (sprite 1 and sprite 7 -- SPR1PTH/PTL/POS/CTL =
+//   $124/$126/$148/$14A, SPR7PTH/PTL/POS/CTL = $13C/$13E/$178/$17A, both
+//   from Appendix A/B's own register table, p.291-292, not from agnus.v),
+//   each independently held clear then set, to show it is the SAME one bit
+//   -- not a per-channel one -- that gates a channel other than sprite 0.
+//   "Automatic mode" (printed p.113: a sprite whose data is "reread" from
+//   its data structure "for each display field" with no further action) is
+//   the channel autonomously continuing to request its own DMA cycles once
+//   armed -- the same observable this assertion already measures over a
+//   40-line window with no CPU write after the initial pointer/POS/CTL
+//   setup. CH4-more.c5 and CH4-p114.c2 are cited on that same assertion,
+//   not withdrawn: what they assert (DMA continuing to run the channel
+//   without repeating the enable step) is exactly what a sustained,
+//   multi-line measurement with a single SPREN write shows.
+//
+// -- Group 2 (6 ids): additional display DMA demand can leave some sprites
+//    unusable --
+//   CH4-more.c8 (opus, p114): quote "Remember that some sprites can become
+//     unusable when additional DMA cycles" -> "Some sprites can become
+//     unusable when additional DMA cycles are allocated to displaying the
+//     screen."
+//   CH4-more.c9 (opus, p114): quote "are allocated to displaying the
+//     screen, for example when an extra" -> "Enabling an extra wide display
+//     is one case that allocates additional DMA cycles and can make some
+//     sprites unusable."
+//   CH4-more.c10 (opus, p114): quote "wide display or horizontal scrolling
+//     is enabled (see" -> "Enabling horizontal scrolling is one case that
+//     allocates additional DMA cycles and can make some sprites unusable."
+//   CH4-p114.c5 (sol, p114): quote (restored) "Remember that some sprites
+//     can become unusable when additional DMA cycles are allocated to
+//     displaying the screen, for example when an extra wide display or
+//     horizontal scrolling is enabled (see Figure 6-9: DMA Time Slot
+//     Allocation)." -> "Additional display DMA demand, including
+//     extra-wide display or horizontal scrolling, can consume sprite DMA
+//     slots and make some channels unavailable."
+//   CH4-warn.c1 (opus, p115): quote "Some sprites become unusable when
+//     additional DMA cycles are allocated" -> "Some sprites become unusable
+//     when additional DMA cycles are allocated to displaying the screen."
+//   CH4-warn.c2 (opus, p115): quote "to displaying the screen, e.g. when
+//     enabling an extra wide display or" -> "Enabling an extra wide display
+//     is one such case." (corpus-truncated after "or"; printed p115
+//     continues "horizontal scrolling. (See Figure 6-11: DMA Time Slot
+//     Allocation.)", per the classification's own note.)
+//   p.114's "Remember that..." paragraph and p.115's boxed "Warning:" are
+//   the SAME sentence printed twice (once inline, once as a callout,
+//   citing Figure 6-9 and Figure 6-11 respectively for what appears to be
+//   the same figure content) -- six ids, one proposition. The manual's own
+//   cross-reference names the mechanism as a fixed per-line DMA time-slot
+//   map, not a probabilistic one: widening the active display (more
+//   bitplane fetch demand, or a horizontal-scroll DDF extension) competes
+//   for the same bus this package's own DMACON-gated engines share. Whether
+//   that competition is OBSERVABLE at this package's own `agnus` boundary
+//   -- by holding SPREN and one sprite channel active, then comparing its
+//   own attributable DMA-cycle count with BPLEN/a wide DDF window clear
+//   against the same count with it driven wide -- is a question for
+//   agnus.v's own arbiter (agnus.v:171-262, already named as this
+//   package's downstream-function non-goal for the DMACON-bits reading,
+//   never previously tried for a competing-demand reading) and is answered
+//   below, after that file is reopened, not assumed here. If no port
+//   attributes a granted cycle to "this sprite's own register" distinctly
+//   from "the bitplane engine's own fetch," or the arbiter's fixed
+//   priority order makes the outcome known without a live measurement
+//   either way, this group is recorded, not asserted, and the reason given
+//   is the concrete one found in agnus.v, not this paragraph's forecast of
+//   it.
+//
+// -- Group 3 (2 ids): SPRxPOS/SPRxCTL "usually loaded by [DMA] ... during
+//    horizontal blank" --
+//   APPC-pos.c5 (opus, p303, Appendix C, ECS): quote (restored) "They are
+//     usually loaded by the sprite DMA channel, during horizontal blank,
+//     however they may be loaded by the processor." -> "SPRxPOS and
+//     SPRxCTL are usually loaded by the sprite DMA channel during
+//     horizontal blank."
+//   CH4-appC-position.c8 (sol, p303, Appendix C, ECS): same quote ->
+//     "On ECS automatic mode, sprite DMA normally loads SPRxPOS and
+//     SPRxCTL during horizontal blanking."
+//   A sibling package on the same underlying module,
+//   hrm/ch4-sprite-vertical-position (already committed), read this exact
+//   family of claims for SPRxDATA/SPRxDATB and recorded, from its own
+//   classify.evidence, that "no port carries how often a write happens"
+//   and that the DMA slot window this module produces is "hpos-gated ...,
+//   not blank-gated" -- frequency and blanking-correspondence words
+//   ("usually," "during horizontal blank") are accordingly never asserted
+//   in that file, only the structural fact that a DMA path (and,
+//   separately, a processor-write path) exists. Both of these two ids' own
+//   restatements bundle that same timing qualifier INTO the one
+//   proposition being graded ("usually ... during horizontal blank[ing]"),
+//   not as a separate claim beside it -- so even if the structural half
+//   were reproved here, Prompt 7's bundled-clause rule would still bar the
+//   id from riding on it. Planned as a record(), citing this
+//   already-established fact -- reconfirmed against this package's own
+//   fixture, not merely quoted from the sibling, once agnus.v/
+//   agnus_spritedma.v are reopened below. If that reading does not hold
+//   here, this section says so instead of recording on inherited
+//   authority.
+//
+// Twelve ids total: 4 planned for SPREN-GATES-EVERY-SPRITE-CHANNEL, 6
+// pending Group 2's own RTL answer below (asserted or recorded, not both),
+// 2 planned as record(). No RTL has been opened for this extension yet --
+// the SPR1/SPR7 register addresses above come from Appendix A/B's own
+// printed table (p.291-292), not from agnus.v or agnus_spritedma.v.
+// ============================================================================
+
 #include <cstdint>
 #include <iostream>
 #include <string>
