@@ -12,10 +12,11 @@
 //   module only, per PACKAGE.md).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 297, 303 (claims.jsonl for ch3-sprite-registers, 20 records). A red
-//   result below means denise_sprites.v disagrees with the manual, not that
-//   the assertion is wrong -- no assertion here was, or should be, adjusted
-//   to make the RTL pass.
+//   pp. 297, 298, 303 (claims.jsonl for ch3-sprite-registers, 20 records,
+//   plus 17 more routed here in a later extension pass -- see CLAIM
+//   COVERAGE ADDENDUM below). A red result below means denise_sprites.v
+//   disagrees with the manual, not that the assertion is wrong -- no
+//   assertion here was, or should be, adjusted to make the RTL pass.
 // CORRECTION (this pass, working from p303.txt -- print page 303 -- read
 //   in full against the RTL findings already on record below): two
 //   assertions in an earlier version of this file misstated the manual
@@ -149,6 +150,68 @@
 //   declared 20 and are not cited here for that reason -- the quotes
 //   stand on the printed page itself, which is the oracle).
 //
+// CLAIM COVERAGE ADDENDUM (extension pass, 17 further records from
+// ch3-sprite-registers.jsonl / ch3-sprite-registers-spec-stage.jsonl,
+// routed after the 20 above were already graded): grouped per
+// routing.how, onto the SAME assertions above (their expected values,
+// verdicts and pre-existing label text unchanged -- only new ids added,
+// per the build brief's one allowed change) except for one new assertion
+// and two records:
+//
+//   PROCESSOR-WRITE-REACHES-SPRXPOS (+2 ids) -- APPC-pos.c6,
+//     CH4-appC-position.c9
+//   SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 (+2 ids) -- APPC-pos.c8,
+//     CH4-appC-position.c13
+//   SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT (+4 ids) -- APPC-pos.c8,
+//     APPC-pos.c12, CH4-appC-position.c14, CH4-appC-position.c20
+//   SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING (+3 ids) -- CH4-appC-position.c17,
+//     CH4-appC-position.c5, CH4-appC-position.c7
+//   SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE (+3 ids) -- APPC-pos.c1,
+//     CH4-appC-position.c1, CH4-appC-position.c2
+//   SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES (new assertion, 2 ids) --
+//     APPC-pos.c11, CH4-appC-position.c19
+//   Recorded, not asserted (2 ids, printed beside SPRXCTL-BIT4-SHSH1-
+//     70NS-SUPERHIRES-LIVE) -- APPC-pos.c10, APPC2-SPRxCTL.conf2
+//
+//   2+2+4+3+3+2+2 = 18 id-citations for 17 distinct new ids (APPC-pos.c8
+//   is cited twice: its own sentence states both the SPRxPOS-byte half and
+//   the SPRxCTL-bit-0 half, so it is cited on both assertions that
+//   together establish it, the same way this package's own APPC-pos.c8
+//   twin note describes -- CH4-appC-position.c13/c14 split the identical
+//   sentence into two separate ids instead, one per half, and each is
+//   cited only where its own half is established).
+//
+//   Bundled-clause check for the two ids initially routed to two
+//   assertions each (CH4-appC-position.c5, "jointly control sprite
+//   position"; CH4-appC-position.c7, "jointly control sprite features"):
+//   routing.how proposed citing c5 on both SPRXPOS-SPRXCTL-JOINTLY-LOAD-
+//   BEARING and SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2. Declined the second
+//   half of that: SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING is the assertion
+//   this package already built for this exact p303 sentence ("The ECS
+//   registers SPRxPOS and SPRxCTL work together as position, size and
+//   sprite feature control registers.", carrying C-shres-sprite.c4/c5,
+//   C-spr.c03 already), and citing c5/c7 there alone matches how "jointly"
+//   is used in the source sentence -- the register PAIR takes on the
+//   three roles collectively, not that each register does all three
+//   individually. Citing c5 on SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 as well
+//   would be redundant, not wrong, but adds nothing that assertion's own
+//   label doesn't already establish about SPRxPOS's byte step.
+//
+//   Deviation from routing.how, and why: CH4-appC-position.c13's own
+//   restatement ("On ECS, SPRxPOS bits 7 through 0 hold start-horizontal
+//   bits SH8 through SH1.") states nothing about SPRxCTL or SH0 -- its
+//   routing.how text ("Cite on ... and SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT")
+//   appears to be carried over verbatim from its twin APPC-pos.c8's own
+//   routing (which legitimately spans both halves, since APPC-pos.c8's
+//   own sentence states both). Citing c13 on SPRXCTL-BIT0-SH0-IS-140NS-
+//   LOW-BIT would put an id on an assertion that does not test what that
+//   id's own restatement says at all -- not a partial-bundle case, a
+//   mismatch. c13 is cited on SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 only, its
+//   twin CH4-appC-position.c14 (the SPRxCTL/SH0 half, split out
+//   separately, matching the sol/opus split this package's own twin notes
+//   already describe) carries the SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT
+//   citation instead.
+//
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id, labelled
 // "[control]" so the mutation gate does not require a mutation record
 // for it, matching hrm/ch3-collision-registers/'s convention) proves the
@@ -206,6 +269,24 @@
 //   line, the exact expression), not inferred from the test's failure
 //   alone.
 //
+// RESULTS ADDENDUM (extension pass): baseline before this pass (measured,
+// same RTL, same build) was 6 passed, 1 failed. After adding the new
+// SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES assertion and the id additions
+// above: 7 passed, 1 failed. The 7 pre-existing PASS/FAIL/MEASURED lines
+// are byte-identical to the pre-extension baseline once claim ids are
+// stripped -- no expected value, verdict or measurement changed. The new
+// assertion is GREEN: SPR0CTL bit 3 set against clear leaves the full
+// sprdata trace identical at every one of the 4 spres values, matching
+// the manual's own "(unimplemented)" verdict for this bit's row and the
+// same {attach,hstart[0]} <= {data_in[7],data_in[0]} write path already
+// read for the bit-4 finding above (bit 3 is likewise never captured).
+// This is a genuine measurement, not a restatement of the declined
+// SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED assertion below -- that one prints the
+// manual's row without measuring anything; this one measures and confirms
+// it. Two claims are recorded rather than asserted (APPC-pos.c10,
+// APPC2-SPRxCTL.conf2), both beside SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-
+// LIVE per their own routing.how.
+//
 // MUTATION LOG (the first 5 stimulus entries below were run by an
 // earlier pass of this agent under WSL/Verilator on 11.09.2026, against
 // the then-current 5-passed/2-failed baseline -- edit -> rebuild -> run
@@ -232,6 +313,8 @@
 // MUTATION SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT stimulus red: built with -DMUT_BIT0=1, which withholds the SH0 stimulus in this assertion's own independent hi0 measurement (SPR0CTL held at 0x00 instead of 0x01, spres=0) -> FAIL ("5 passed, 2 failed"), only SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT newly red (sh0_delta0 became 0, not the asserted 1); SH0-IS-HALF-OF-POS-BYTE-STEP, which shares this block's earlier delta[]/superhires_spres loop but not this flag, stayed green, confirming the isolation held. Rebuilt with no flags: 6/1, the one finding unchanged.
 // MUTATION SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE none impossible: already red at baseline (the FINDING above). Bit 4 of SPRxCTL is not captured by any register in this RTL at all (only bits 7 and 0 are), so no stimulus this harness can present makes it observable; there is nothing green here to break.
 // MUTATION SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED: no record -- this claim is declined (checks.note only, no checks.expect), so there is no red/green state for a mutation to move.
+// MUTATION SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES stimulus red (extension pass, run under WSL/Verilator this session against the then-current 7-passed/1-failed baseline): built with -DMUT_BIT3=1, which substitutes bit 0 (SH0, already proven live above) for bit 3 in this assertion's own per-spres toggle, so the "identical trace" comparator has a live bit to catch -> FAIL ("6 passed, 2 failed"), only SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES newly red (the off/on traces differed at every spres once bit 0 was the one toggled); every other line, including SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE (already red, unrelated), was unchanged. Rebuilt with `make -B test` (no flags): 7/1, the one finding unchanged.
+// MUTATION APPC-pos.c10, APPC2-SPRxCTL.conf2: no record -- both are recorded, not asserted (checks.record only, no checks.expect carrying either id), so there is no red/green state of their own for a mutation to move; the assertion they are recorded beside, SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE, already carries its own mutation record above (none, impossible -- already red at baseline).
 
 // SPECIFICATION ADDENDUM (extension pass, from ch3-sprite-registers-
 // spec-stage.jsonl's 17 records -- quotation, restatement and page only;
@@ -314,6 +397,14 @@
 // goes red.
 #ifndef MUT_BIT0
 #define MUT_BIT0 0
+#endif
+
+// MUT_BIT3: replay stimulus for SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES's
+// own mutation record below (-DMUT_BIT3=1). Substitutes bit 0 (SH0,
+// already proven live) for bit 3 in that assertion's own toggle, so the
+// "identical trace" comparator has something it should catch.
+#ifndef MUT_BIT3
+#define MUT_BIT3 0
 #endif
 
 namespace {
@@ -518,7 +609,7 @@ int main(int argc, char** argv) {
             "on this interface reaches SPRxPOS and takes effect: 'They are "
             "usually loaded by the sprite DMA channel, during horizontal "
             "blank, however they may be loaded by the processor.' (p.303). "
-            "C-shres-sprite.c7 .");
+            "C-shres-sprite.c7, APPC-pos.c6, CH4-appC-position.c9 .");
     }
 
     // ---------------- SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 ----------------
@@ -536,7 +627,8 @@ int main(int argc, char** argv) {
             "its own least-significant bit is worth 2 raw units, with the "
             "true bit-0 (SH0) living elsewhere: "
             "'07-00  SH8-SH1  Start horizontal value. Low bit (SH0) in "
-            "SPRxCTL.' (p.303). C-shres-sprite.c8, C-spr.c05 .");
+            "SPRxCTL.' (p.303). C-shres-sprite.c8, C-spr.c05, APPC-pos.c8, "
+            "CH4-appC-position.c13 .");
     }
 
     // ---------------- SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT ----------------
@@ -608,7 +700,8 @@ int main(int argc, char** argv) {
             "bits 4 and 3 (SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE below), "
             "not this one -- SH0's own row carries no such qualifier, and "
             "this assertion requires none. C-shres-sprite.c12, "
-            "C-shres-sprite.c9 .");
+            "C-shres-sprite.c9, APPC-pos.c8, APPC-pos.c12, "
+            "CH4-appC-position.c14, CH4-appC-position.c20 .");
     }
 
     // ---------------- SH0-IS-HALF-OF-POS-BYTE-STEP ----------------
@@ -665,7 +758,9 @@ int main(int argc, char** argv) {
             "feature-control components are measured here; the size "
             "(vertical extent) component of this claim is outside what can "
             "be observed at this boundary -- see Non-goals above. "
-            "C-shres-sprite.c4, C-shres-sprite.c5, C-spr.c03 .");
+            "C-shres-sprite.c4, C-shres-sprite.c5, C-spr.c03, "
+            "CH4-appC-position.c17, CH4-appC-position.c5, "
+            "CH4-appC-position.c7 .");
     }
 
     // ---------------- SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE ----------------
@@ -697,7 +792,80 @@ int main(int argc, char** argv) {
             "separate OCS-vs-ECS select to test the chip-scoping itself "
             "against). C-library.c2, C-shr.c05, C-shres-sprite.c1, "
             "C-shres-sprite.c2, C-spr.c01, C-shres-sprite.c15, C-spr.c10, "
-            "C-shres-sprite.c14, C-spr.c09 .");
+            "C-shres-sprite.c14, C-spr.c09, APPC-pos.c1, "
+            "CH4-appC-position.c1, CH4-appC-position.c2 .");
+    }
+
+    // ---- APPC-pos.c10, APPC2-SPRxCTL.conf2 [recorded, not asserted] ----
+    // Both routed record:ch3-sprite-registers, "Print RECORDED beside
+    // SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE" (routing.how). Neither id
+    // goes on the expect() above -- printing them there would count them
+    // ASSERTED on a line that also carries plainly-asserting ids, which is
+    // not what their own restatement says of itself.
+    checks.record(
+        "APPC-pos.c10 [recorded, not asserted]: 'SPRxCTL bit 04 is SHSH1, "
+        "the start horizontal 70ns increment in SuperHires mode ... "
+        "Recorded as a conflict, not resolved.' (source_defines: page 303 "
+        "versus pages 107/128 and appendix A page 284). The disputed half "
+        "-- whether bit 4 is a working 70ns increment on ECS -- is sent by "
+        "the claim's own classification to the NM-HRM-019 regression "
+        "record, not to an assertion; SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-"
+        "LIVE above already grades that same underlying RTL fact (RED, "
+        "bit 4 captured by no register in this RTL at all) for the ids "
+        "that assert it plainly. Recorded beside that assertion, per "
+        "routing.how, rather than asserted on it.");
+    checks.record(
+        "APPC2-SPRxCTL.conf2 [recorded, not asserted]: the appendix B "
+        "register-summary row '142  SPRxCTL  chg   W  A   Sprite x "
+        "position and control data' (p.298) marks SPRxCTL 'chg', and "
+        "appendix C p.303 explains that as bits 3 and 4 being ECS-only, "
+        "against chapter 4 pp.107/128 and appendix A p.284, which call "
+        "the same bits unused/reserved without naming a chipset -- "
+        "'Recorded, not resolved.' A second, independent source for the "
+        "same NM-HRM-019 regression SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-"
+        "LIVE above already grades (RED: bit 4 is not chip-scoped in this "
+        "RTL, it is simply absent from the implementation, a stronger "
+        "deviation than 'ECS chips only' chip-scoping describes). "
+        "Recorded beside that assertion, per routing.how, rather than "
+        "asserted on it.");
+
+    // ------- SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES (new assertion) -------
+    // New for this extension pass. Distinct from SPRXCTL-BIT3-SHSH0-
+    // UNIMPLEMENTED [declined] below, which declines C-shres-sprite.c13
+    // because the manual's own row already states the field's verdict --
+    // a scope decision made for THAT id. The router for this pass's two
+    // new bit-3 ids (APPC-pos.c11, CH4-appC-position.c19) asks for a
+    // measurement instead: "grade it as an inert bit, SPR0CTL bit 3 set
+    // against clear leaving the sprdata/nsprite trace identical at every
+    // spres" (routing.how). That is observable at this boundary via
+    // sprdata, so it is graded here, not declined -- a different
+    // disposition for a different pair of ids, not a change to the
+    // existing declined assertion's own scope.
+    {
+        bool inert_everywhere = true;
+        for (int sp = 0; sp < 4; ++sp) {
+#if MUT_BIT3
+            // MUTATION: bit 0 (SH0, already proven live above) substituted
+            // for bit 3, so the "identical trace" comparator has something
+            // it should catch.
+            uint8_t toggle_bit = 0x01;
+#else
+            uint8_t toggle_bit = 0x08;  // bit 3 (SHSH0).
+#endif
+            Meas off = measure(/*pos=*/0x40, /*ctl=*/0x00, static_cast<uint8_t>(sp), /*aga=*/0);
+            Meas on  = measure(/*pos=*/0x40, toggle_bit, static_cast<uint8_t>(sp), /*aga=*/0);
+            if (off.trace != on.trace) inert_everywhere = false;
+        }
+        checks.expect(inert_everywhere,
+            "SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES: setting SPR0CTL bit "
+            "3 alone (all other bits, including SH0, held at 0) leaves the "
+            "full sprdata trace measured across hpos 0..511 identical to "
+            "the same sweep with bit 3 clear, at every one of the 4 spres "
+            "values this module's `spres` input can take -- matching the "
+            "manual's own verdict on this bit's row: "
+            "'03      SHSH0     Start horizontal (SHR mode) 35ns "
+            "(unimplemented)' (p.303). APPC-pos.c11, "
+            "CH4-appC-position.c19 .");
     }
 
     // ------------- SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED [declined] -------------
