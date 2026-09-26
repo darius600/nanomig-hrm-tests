@@ -1,0 +1,783 @@
+# Specification: controller-port package (chapter 8 and Appendix A)
+
+This specification was written from the package's claims
+(`claims-spec-stage.jsonl`) and the pages of the *Amiga Hardware Reference
+Manual*, 3rd edition, by an author who never saw the implementation or any
+test. Page numbers are printed page numbers. Where the text layer and the
+printed page differ, the printed page (rendered image) was read and is what is
+quoted.
+
+The package has 22 claims. They give four propositions; 2 claims give none.
+
+| proposition | claims | page |
+|---|---|---|
+| P1: POTGO bit 0 (START) dumps the capacitors on the pot lines that are inputs | `opus:8-dio.c21`, `sol:8-dio.c19` | 240 |
+| P2: JOY0DAT serves the left connector, JOY1DAT the right one | `opus:8-appa-joy.c11`, `opus:8-appa-joy.c12`, `sol:8-appa-joy.c13`, `sol:8-appa-joy.c14` | 281 |
+| P3: pins 1 and 3 clock the Y counter, pins 2 and 4 the X counter | `opus:8-appa-joy.c17`, `opus:8-appa-joy.c18`, `sol:8-appa-joy.c19`, `sol:8-appa-joy.c20` | 281 |
+| P4: the Table 8-1 buttons on pins 3, 4 and 1 read as closed in their connector's JOYxDAT | `opus:8-tbl8-1.c3`, `opus:8-tbl8-1.c8`, `opus:8-tbl8-1.c9`, `opus:8-tbl8-1.c12`, `opus:8-tbl8-1.c13`, `sol:8-pin.c3`, `sol:8-pin.c9`, `sol:8-pin.c10`, `sol:8-pin.c13`, `sol:8-pin.c14` | 228 |
+
+---
+
+## Claims that give no proposition
+
+### Sampling into Denise (p.281)
+
+- `opus:8-appa-joy.c51`, `sol:8-appa-joy.c25`: "The pins (and their functions)
+  are sampled (multiplexed) into the DENISE chip during the clock times shown in
+  the table."
+
+Reason:
+
+- The sampling and the multiplexing happen inside the chip. Which chip samples
+  a pin, through which of its pins (38, 9, 39, 8), and at which clock (CCK or
+  CCK*) never appears on any output a test sees. It is also not something a
+  program can read back.
+- A test drives steady digital levels on the connector pins. It cannot place a
+  level change at a chosen phase of CCK, and the page gives no expected value
+  for a change shorter than a sampling period.
+- The page itself says, in the next sentence: "This table is for reference only
+  and should not be needed by the programmer."
+
+Everything the table leads to that a program can see is covered by P2 to P4:
+which pins reach which counter of which register, and what the low counter bits
+show.
+
+Two parts of other claims also cannot be checked. They are named inside the
+propositions that use the rest of those claims:
+
+- which pin a real controller wires its button to (P4);
+- a mouse's quadrature pulse trains (P3).
+
+---
+
+## Terms and setup used by every proposition
+
+### Connectors and levels
+
+- **Connector A** is the controller port the harness documents as the
+  manual's left connector: "0=left controller pair" (p.281), "port 1" in
+  chapter 8's numbering (p.230), the "PORT 1 (mouse)" connector of Figure 8-3
+  (p.233). **Connector B** is the other one. P2 checks this designation
+  (section 7 of P2).
+- A **level** is the electrical level the harness puts on a connector pin:
+  **1 = open** (switch released) and **0 = shorted to ground** (switch closed).
+  - p.232: "Digital joystick switches are of the normally open type. When the
+    switches are pressed, the input line is shorted to ground."
+  - p.281: "the joystick functions are all 'active low' at the connector pins."
+- **Pins** (Table 8-1, p.228): 1 forward/up, 2 back/down, 3 left, 4 right,
+  6 fire, 5 and 9 the pot lines. The harness's "up, down, left, right" are pins
+  1, 2, 3, 4 in that order.
+- **Released** means level 1 on every one of these pins, with no mouse movement
+  injected and no key sent.
+
+### Registers
+
+From Appendix B, p.289 to p.291, and Appendix A, p.281 and p.282, except
+CIAAPRA and CIAADDRA, which come from p.229 and p.241.
+
+| name | address | access | use here |
+|---|---|---|---|
+| JOY0DAT | $DFF00A | R | counters of connector A (P2) |
+| JOY1DAT | $DFF00C | R | counters of connector B (P2) |
+| POTGO | $DFF034 | W | pot port data write and start |
+| POTGOR | $DFF016 | R | pot port data read (the print also calls it POTINP) |
+| VPOSR / VHPOSR | $DFF004 / $DFF006 | R | beam position, read as one long word at VPOSR (p.238) |
+| BPLCON0 | $DFF100 | W | bit 3 LPEN must be 0 |
+| DMACON | $DFF096 | W | setup only |
+| INTENA | $DFF09A | W | setup only |
+| CIAAPRA | $BFE001 | R | bit 6: fire button of port 1; bit 7: of port 2 (p.232) |
+| CIAADDRA | $BFE201 | R/W | direction mask for CIAAPRA (p.241) |
+
+JOY0DAT and JOY1DAT have the same layout (p.281). Bits 15-8 are the Y (vertical)
+counter, Y7 to Y0. Bits 7-0 are the X (horizontal) counter, X7 to X0.
+
+### Setup, at the start of every program
+
+- **S1.** INTENA ← $7FFF and DMACON ← $7FFF. With bit 15 SET/CLR = 0, this
+  clears every enable (p.278, p.280). Nothing in this package needs DMA or
+  interrupts.
+- **S2.** BPLCON0 ← $0000. LPEN = 0, so VPOSR counts and is not latched. p.239:
+  "when the light pen latch is enabled, the VPOSR register may be latched at any
+  time, and cannot be relied on as a counter".
+- **Beam position.** V = (bit 0 of VPOSR) × 256 + (bits 15-8 of VHPOSR), from
+  p.238: VPOSR bit 0 is V8, VHPOSR bits 15-8 are V7-V0.
+
+### Configurations
+
+- Every program runs on each of the two CPU cores.
+- It runs in PAL and NTSC, and with ECS and OCS selected, with 2 MB of Chip
+  memory.
+- The pages state no dependence on any of these, so each run is graded on its
+  own and in the same way.
+
+---
+
+## Proposition 1: POTGO bit 0 (START) dumps the capacitors on the pot lines that are inputs
+
+### 1. Proposition
+
+Writing POTGO ($DFF034) with bit 0 (START) set dumps (discharges) the capacitor
+on each of the four pot lines that is configured as an input. So while the read
+circuitry is held in its reset state, POTGOR ($DFF016) reads 0 in the data bit
+of every such line.
+
+- Claims: `opus:8-dio.c21` and `sol:8-dio.c19`, printed page **240**,
+  Table 8-4: "00 START Start pots (dump capacitors, start counters)".
+  Appendix A (p.282) prints the same row.
+- The claims cover the dump only. "start counters", and the POT0DAT/POT1DAT
+  reset of p.236 ("All counts are reset to zero when POTGO is written with bit
+  zero high"), are not among this package's claims and are not graded.
+
+Why POTGOR shows the dump:
+
+- The capacitors sit on the pot lines. p.240: "There are large capacitors on
+  these lines". Figure 8-6 (p.237) draws a 47 nF capacitor from the pot line to
+  ground, between connector pin 9 and the chip.
+- POTGOR reads the lines. p.240: "To use the entire register as an input,
+  sensing the current state of the pot pins, write all 0s to POTGO. Thereafter
+  you can read the current state by using read-only address POTGOR."
+- The capacitor stays discharged through the reset interval. p.235: "The read
+  circuitry stays in a reset state for the first seven or eight horizontal
+  video scan lines. Following the reset interval, the circuit allows a charge to
+  begin building up on a timing capacitor". Figure 8-5 starts both charging
+  curves at zero, "eight horizontal lines after POTGO is written".
+
+A dumped capacitor is at ground, and so is the line it sits on.
+
+The page limits the proposition to input lines. p.240: "If you set the output
+enable for any pin to a 1, the Amiga disconnects the potentiometer control
+circuitry from the port, and configures the pin for output. The state of the
+data bit controls the logic level on the output pin." Also p.240: "Note that
+bits set as inputs will be connected to the proportional counters (See the
+description of the START bit in POTGO)."
+
+Quantifiers:
+
+- "capacitors" is plural, and p.240 says the register "shares the same four
+  pins as the four pot inputs". Every one of the four lines is graded, and all
+  four must pass.
+- The circuitry "stays" in reset. Every graded read inside the window of
+  section 7 must show the dump.
+
+### 2. Stimulus
+
+POTGO/POTGOR bits (p.240 Table 8-4; p.282):
+
+| bit | name | meaning |
+|---|---|---|
+| 15 | OUTRY | output enable for bit 14 (1=output) |
+| 14 | DATRY | data for port 2, pin 9 (Paula pin 36) |
+| 13 | OUTRX | output enable for bit 12 |
+| 12 | DATRX | data for port 2, pin 5 (Paula pin 35) |
+| 11 | OUTLY | output enable for bit 10 |
+| 10 | DATLY | data for port 1, pin 9 (Paula pin 33) |
+| 09 | OUTLX | output enable for bit 8 |
+| 08 | DATLX | data for port 1, pin 5 (Paula pin 32) |
+| 07-01 | | chip ID; always written as 0 |
+| 00 | START | start pots (dump capacitors, start counters) |
+
+The names LX, LY, RX and RY below refer only to these bit positions. P1 does not
+depend on which connector a bit belongs to.
+
+**Harness:** all inputs released throughout. In particular, the four pot lines
+(pins 5 and 9 of both connectors) are held at level 1, the level a released
+button gives. The contrasting case K5 is the one exception.
+
+**Setup:** S1, S2.
+
+**The two steps used for every POTGO write:**
+
+- **W (write step), line 4:** wait for V == 4. Read V (Vw0), write POTGO, read V
+  (Vw1). Then store marker M1 to Chip memory, together with Vw0 and Vw1. In step
+  Fc, POTGOR is also read once between Vw0 and the POTGO write (Rpre).
+- **R (read step), line 10:** wait for V == 10. Repeat the following for as
+  long as V is still 10: read V (Vr0), store marker M2, read POTGOR, read V
+  (Vr1), store the three values. Every record with Vr0 == Vr1 == 10 counts.
+  There must be at least one.
+
+The write happens during vertical blanking at the top of the screen, as the page
+prescribes. p.234: "During vertical blanking, you write a value into an address
+called POTGO. For a standard X-Y joystick, this value is hex 0001." p.235: "You
+normally issue POTGO at the beginning of a video screen". Lines 4 and 10 are
+both inside internal vertical blanking, which ends at vertical position 20
+(p.239).
+
+**Sequence.** Each step below occupies one frame and uses the next time V
+reaches 4.
+
+Phase P (checks that POTGOR reads the pins):
+
+- F1: W with POTGO ← $FF00: all four lines outputs, driven high ("set both
+  OUT... and DAT... to 1", p.241). Then R, giving Rhigh.
+- F2: W with POTGO ← $AA00: all four lines outputs, driven low. Then R, giving
+  Rlow.
+- F3: W with POTGO ← $FF00. Then R, giving Rhigh2.
+
+Phase D (the dump), run for each configuration C in this order:
+
+| C | value | output (driven high) | inputs |
+|---|---|---|---|
+| C0 | $0000 | none | LX, LY, RX, RY |
+| C1 | $0300 | LX | LY, RX, RY |
+| C2 | $0C00 | LY | LX, RX, RY |
+| C3 | $3000 | RX | LX, LY, RY |
+| C4 | $C000 | RY | LX, LY, RX |
+
+Each configuration takes three frames:
+
+- Fa: W with POTGO ← $FF00. Then R, giving Ra.
+- Fb: W with POTGO ← C. Then R, giving Rb.
+- Fc: W with Rpre, and POTGO ← C | $0001. Then R, giving Rpost. **Rpost is the
+  graded read.**
+
+The START write differs from the configuration already in place only in bit 0.
+
+### 3. Observation
+
+The test reads what the program stored in Chip memory (the POTGOR words and the
+V words), and the Chip-memory-port timestamps of the CPU writes of M1 and M2.
+
+- Graded: the Rpost records of every Fc, in line L0+6, where L0 is the line of
+  the START write (L0 = 4, so line 10).
+- Bits: only 14, 12, 10 and 8 are graded (mask $5500).
+- Not graded: reads in lines L0 to L0+5, reads after line L0+6, and all other
+  POTGOR bits.
+
+### 4. Expected value
+
+For every counted Rpost record:
+
+| C | expected `Rpost & $5500` | lines at 0 (dumped) | line at 1 |
+|---|---|---|---|
+| C0 | $0000 | LX, LY, RX, RY | none |
+| C1 | $0100 | LY, RX, RY | LX (output) |
+| C2 | $0400 | LX, RX, RY | LY (output) |
+| C3 | $1000 | LX, LY, RY | RX (output) |
+| C4 | $4000 | LX, LY, RX | RY (output) |
+
+- **The proposition** is the "0" column. Each line must read 0 in every counted
+  record of every configuration in which it is an input.
+- **The "1" column** comes from the output-enable sentence of p.240. A failure
+  there is reported against that sentence, not against the START claims.
+
+Sources: p.240 Table 8-4 (and p.282) "00 START Start pots (dump capacitors,
+start counters)"; p.235 as quoted in section 1; p.240 "Thereafter you can read
+the current state by using read-only address POTGOR."
+
+### 5. Preconditions
+
+If one fails, the result is "not established", never "pass".
+
+- **PC1: line position.**
+  - For every W: Vw0 == Vw1 == 4, with V8 = 0.
+  - For every counted R record: Vr0 == Vr1 == 10.
+  - LPEN = 0 (S2).
+
+  If a W straddles a line change, the program repeats that frame's step in the
+  next frame.
+- **PC2: POTGOR follows the level on the pins, and the harness's level 1 gives
+  way to the chip's own drive.**
+  - Rhigh, Rhigh2 and every Ra: `& $5500` == $5500.
+  - Rlow: `& $5500` == $0000, although the harness holds the lines at 1.
+
+  Basis: p.240 "The state of the data bit controls the logic level on the output
+  pin."; p.241 "Reading POTGOR will produce a 0 if the button is pressed, a 1 if
+  it is not."
+- **PC3: each input line reads 1 just before the dump.**
+  - Rb & $5500 == $5500 and Rpre & $5500 == $5500 in every configuration.
+  - The harness's drive log shows the pot lines at level 1 from Fa to the end of
+    Fc.
+
+  If a line reads 0 here, a 0 in Rpost would not show a dump. That line is then
+  "not established" in that configuration, and so is the proposition's "all
+  four".
+- **PC4: the graded read comes after the only settling time the pages give.**
+  - For every R record used above: t(M2) − t(M1) ≥ 300 µs, converted from
+    system clock cycles with the harness clock frequency.
+
+  Basis: p.240 "There are large capacitors on these lines, and it can take up to
+  300 microseconds for the line to change state." The pages give no settling
+  time for the dump itself.
+
+### 6. Contrasting cases
+
+- **K1 (bit 0).** Every Fc writes C instead of C | $0001.
+  - Predicted: no dump; Rpost & $5500 == $5500 in every configuration.
+  - The "0" checks go red for every input line. PC1 to PC4 are unchanged.
+- **K2 (per line; already in the sequence).** In C1 to C4, one line is an
+  output driven high when START is written, and must read 1 while the other
+  three read 0. This catches a POTGOR that reads 0 in every data bit after any
+  START.
+- **K3 (PC1).** The R step of every Fc moves to line 12. PC1 must fail, and the
+  result must be "not established".
+- **K4 (PC2).** F1 writes $AA00 instead of $FF00. Rhigh reads $0000, and PC2
+  must fail.
+- **K5 (PC3).** The harness holds all four pot lines at level 0 (buttons
+  pressed) during Fb and Fc of every configuration.
+  - Rb and Rpre read $0000, and PC3 must fail.
+  - The result must be "not established", even though the input lines of Rpost
+    read 0.
+- **K6 (PC4).** The R step of every Fc moves to line 5.
+  - PC4 must fail. PC1 fails with it: as long as PC1 holds, the read is at least
+    five lines after the write. PC4 guards against line timing that is itself
+    wrong.
+
+### 7. Reference frame
+
+- **Line numbering:** V (p.238), non-interlaced. L0 = 4, the line of the START
+  write.
+- **The reset interval as drawn:** "the first seven or eight horizontal video
+  scan lines" (p.235); charging "starts eight horizontal lines after POTGO is
+  written" (Figure 8-5).
+- **What is left open:** whether the partly elapsed line L0 counts, and whether
+  the reset starts at the write or at the next line.
+- **The window every reading agrees on:** lines L0+1 to L0+6. If L0 counts, the
+  reset ends at the start of L0+7; otherwise at the start of L0+8 or later.
+  Graded reads use L0+6.
+- **How the test checks the anchor:** PC1's V brackets; lines 4 and 10 are in
+  the same frame with V8 = 0 and below 20; the M1 and M2 times increase from W
+  to R.
+
+---
+
+## The joystick program (shared by P2, P3 and P4)
+
+### Setup
+
+- S1, S2.
+- POTGO ← $0000, which makes all four pot lines inputs without starting the
+  pots. p.240: "To use the entire register as an input, sensing the current
+  state of the pot pins, write all 0s to POTGO."
+- Read CIAADDRA, clear bits 6 and 7, and write it back, which makes both fire
+  bits inputs. p.241: "CIAADDRA ($BFE201) contains a mask that corresponds
+  one-to-one with the data read register, CIAAPRA ($BFE001). Setting a 1 in the
+  direction position makes the corresponding bit an output." The program does
+  not write JOYTEST.
+
+### Step protocol, for step k = 0, 1, 2, ...
+
+1. The program stores the step number k to a fixed Chip-memory word (marker
+   S_k).
+2. When the test sees that CPU write at the Chip-memory port, it sets the pin
+   levels of step k at time t_apply(k). It holds them until it sees S_(k+1).
+3. The program waits until V has changed twice, so that at least one full line
+   passes. It then stores marker T_k.
+4. The program reads JOY0DAT, JOY1DAT, CIAAPRA (byte) and POTGOR, and stores the
+   four values (record k; the time of its first store is t(U_k)).
+
+The pages give no time for a level on a pin to reach the counter register. They
+say only that the pins are sampled "at CCK" and "at CCK*" (p.281). The wait of
+at least one line is a margin, not a value from the page.
+
+### Step table
+
+Only the lines named in a step differ from released. Every step changes exactly
+one pin from the step before it. For a pair (p, q), the values are the levels
+of those two pins in that order.
+
+- **N0, N1:** everything released (baseline).
+- **Block A:** the steps below on connector A, with connector B released.
+- **Block B:** the same steps on connector B, with connector A released.
+
+Steps of one block, on connector P:
+
+| steps | pins driven | levels, in order |
+|---|---|---|
+| F1(P), F0(P) | pin 6 | 0, then 1 |
+| Y-up(P) | (pin 1, pin 3) | (0,1), (0,0), (1,0), (1,1) |
+| Y-down(P) | (pin 1, pin 3) | (1,0), (0,0), (0,1), (1,1) |
+| X-up(P) | (pin 2, pin 4) | (0,1), (0,0), (1,0), (1,1) |
+| X-down(P) | (pin 2, pin 4) | (1,0), (0,0), (0,1), (1,1) |
+| Buttons(P) | set of pins held at 0, among 1, 3, 4 | {1}, {1,3}, {3}, {3,4}, {1,3,4}, {1,4}, {4}, {} |
+
+In the Y steps pins 2 and 4 are 1. In the X steps pins 1 and 3 are 1. In the
+Buttons steps pin 2 is 1.
+
+These are steady levels, each held for at least a line, as a joystick produces
+when it moves between neutral, a direction and a diagonal. No pulse train is
+driven, and the harness's mouse path (counts per axis) is not used.
+
+### Preconditions shared by P2, P3 and P4
+
+A record that fails one of these is not graded, and the proposition is "not
+established" for the steps it covers.
+
+- **Q1: the harness applied the levels before the read and held them.**
+  - t_apply(k) < t(T_k), and the levels of step k are unchanged in the drive log
+    until t(U_k).
+- **Q2: no other input was active.**
+  - In every record, CIAAPRA bits 6 and 7 read 1, except bit 6 in F1(A) and
+    bit 7 in F1(B), which read 0 (p.232: "A logic state of 1 means 'switch
+    open.' A logic state of 0 means 'switch closed.'").
+  - POTGOR bits 14, 12, 10 and 8 read 1: the pot lines are inputs and released.
+  - The drive log shows no mouse movement and no key.
+- **Q3: the counters do not move without input.**
+  - JOY0DAT and JOY1DAT are equal in N0 and N1.
+  - Basis, p.281: "Each counter is clocked by signals from two controller pins."
+- **Q4: the harness level convention matches the page.**
+  - Level 0 on pin 6 of A reads 0 in CIAAPRA bit 6 in F1(A), and level 1 reads 1
+    in F0(A).
+  - This ties the harness's levels to the page's "shorted to ground" and "open".
+
+Contrasting cases for these preconditions. Each keeps the program running.
+
+- **Q1:** the harness applies the levels of Y-up(A) only after it sees U_k.
+  Q1 must fail for those records, and they must not be graded.
+- **Q2:** the harness holds pin 9 of A at 0 during Y-up(A). POTGOR bit 10 or 14
+  then reads 0, and Q2 must fail for those records.
+- **Q3:** the harness applies the first Y-up(A) level between N0 and N1. The two
+  records then differ, and Q3 must fail.
+- **Q4:** F1(A) is driven at level 1 instead of 0. CIAAPRA bit 6 reads 1 in
+  F1(A), and Q4 must fail.
+
+---
+
+## Proposition 2: JOY0DAT serves the left connector, JOY1DAT the right one
+
+### 1. Proposition
+
+Every change on the direction lines (pins 1 to 4) of the left connector (A)
+shows in JOY0DAT and never in JOY1DAT. Every change on the right connector (B)
+shows in JOY1DAT and never in JOY0DAT. Both counters of each register belong to
+the same connector.
+
+- Claims: `opus:8-appa-joy.c11`, `opus:8-appa-joy.c12`, `sol:8-appa-joy.c13`,
+  `sol:8-appa-joy.c14`, printed page **281**: "These addresses each read a pair
+  of 8-bit mouse counters. 0=left controller pair, 1=right controller pair (four
+  counters total)."
+- The same assignment appears on p.281 in the register rows ("JOY0DAT ...
+  Joystick-mouse 0 data (left vertical, horizontal)", "JOY1DAT ...
+  Joystick-mouse 1 data (right vertical, horizontal)"), on p.230 ("These
+  registers contain counts for ports 1 and 2 respectively"), and in Figure 8-3
+  (p.233): "PORT 1 (mouse)" wired to "JOY0DAT DFF00A", "JOY1DAT DFF00C is wired
+  similarly" for "PORT 2".
+
+### 2. Stimulus
+
+The joystick program: block A, then block B.
+
+### 3. Observation
+
+- JOY0DAT and JOY1DAT in every record of the Y, X and Buttons steps of both
+  blocks.
+- The reference value for each register is its value in the last record before
+  the block: N1 for block A, the last step of block A for block B.
+
+### 4. Expected
+
+- **In block A:** in every record, JOY1DAT equals its value at N1. In every
+  record of a Y, X or Buttons step, JOY0DAT differs from its value in the record
+  before. (The F steps change pin 6 only, which is not a counter pin; P3 grades
+  them.)
+- **In block B:** in every record, JOY0DAT equals its value at the last record
+  of block A. In every record of a Y, X or Buttons step, JOY1DAT differs from its
+  value in the record before.
+- **"four counters total":**
+  - The Y steps of A move bits 15-8 of JOY0DAT, and the X steps of A move bits
+    7-0 of JOY0DAT.
+  - The Y steps of B move bits 15-8 of JOY1DAT, and the X steps of B move bits
+    7-0 of JOY1DAT.
+  - None of the four counters ever moves on a step of the other connector.
+
+The size of each change is graded by P3, not here.
+
+Source sentences: p.281 as quoted in section 1; p.230 "These registers contain
+counts for ports 1 and 2 respectively."
+
+### 5. Preconditions
+
+Q1 to Q4, and the anchor of section 7.
+
+### 6. Contrasting case
+
+- **Built in:** block B changes the lines of the other connector, and the page
+  predicts that JOY0DAT stays unchanged there. The "JOY0DAT moves" check does
+  not apply in block B; the "JOY0DAT unchanged" check does.
+- **Variant:** the harness applies block A's steps to connector B and block B's
+  to connector A, keeping the F steps where they are. The block-A expectation
+  "JOY0DAT moves, JOY1DAT does not" must then go red. Q1 to Q4 and the anchor
+  still hold.
+
+### 7. Reference frame: which connector is left
+
+- **What the page draws:** the left connector is the one read as JOY0DAT
+  (p.281), "port 1" (p.230), whose fire button is CIAAPRA bit 6 (p.232: "Port 1
+  uses bit 6 and port 2 uses bit 7"; p.233: "The fire buttons for ports 0 and 1
+  are connected to bits 6 and 7 of CIAAPRA").
+- **Where the pages disagree:** they number the ports differently (1 and 2 on
+  p.230 and p.232, 0 and 1 in p.233's text). They agree on the order: the
+  connector of JOY0DAT is the one whose fire button is bit 6.
+- **The anchor:**
+  - The harness's documentation names connector A as the manual's left, port-1
+    connector.
+  - The fire button checks this. In F1(A), CIAAPRA bit 6 must read 0 and bit 7
+    must read 1. In F1(B), bit 7 must read 0 and bit 6 must read 1.
+- **If the anchor fails** (A's fire shows at bit 7, or B's at bit 6), P2 is
+  "not established". The disagreement is reported, and the test must not
+  silently swap A and B.
+- **Contrast for the anchor:** drive F1(A) on connector B instead. Bit 7 then
+  reads 0 in F1(A), and the anchor must fail.
+
+---
+
+## Proposition 3: pins 1 and 3 clock the Y counter, pins 2 and 4 the X counter
+
+### 1. Proposition
+
+On each connector:
+
+- A change of pin 1 or pin 3 clocks the Y counter (bits 15-8 of the connector's
+  JOYxDAT) by one count.
+- A change of pin 2 or pin 4 clocks the X counter (bits 7-0) by one count.
+- Neither pair of pins moves the other counter, and pin 6 moves neither.
+- Bits 1 and 0 of each counter show the state of its two pins.
+
+- Claims: `opus:8-appa-joy.c17`, `sol:8-appa-joy.c19` (pins 1 and 3 are the Y
+  clock) and `opus:8-appa-joy.c18`, `sol:8-appa-joy.c20` (pins 2 and 4 are the X
+  clock), printed page **281**: "Mouse counter usage: (pins 1,3=Yclock, pins
+  2,4=Xclock)".
+- The same page: "Each counter is clocked by signals from two controller pins.
+  Bits 1 and 0 of each counter may be read to determine the state of these two
+  clock pins." And: "After being sampled, these connector pin signals are used
+  in quadrature to clock the mouse counters."
+
+What stays uncheckable: a mouse's own pulse trains. The harness delivers mouse
+movement as counts per axis, which bypasses the pins, so the mouse path says
+nothing about which pin clocks which counter. The pins are driven as joystick
+levels instead.
+
+### 2. Stimulus
+
+The joystick program. Every Y, X, Buttons and F step of both blocks.
+
+### 3. Observation
+
+- For each step k and its connector P: the register of P in records k−1 and k.
+  That register is JOY0DAT for A and JOY1DAT for B, as P2 assigns.
+- If P2 finds a clean swap (A's steps move only JOY1DAT and B's only JOY0DAT),
+  P3 uses the swapped registers, and the swap is reported under P2 only.
+
+### 4. Expected
+
+**Quadrature state.** For the Y counter, V = level of pin 1 and VQ = level of
+pin 3. For the X counter, H = level of pin 2 and HQ = level of pin 4. Figure 8-2
+(p.230) gives the state:
+
+| V VQ (or H HQ) | D1 D0 | s |
+|---|---|---|
+| 1 1 | 0 0 | 0 |
+| 0 1 | 0 1 | 1 |
+| 0 0 | 1 0 | 2 |
+| 1 0 | 1 1 | 3 |
+
+**For every step that changes a pin of a counter:**
+
+- **Count.** That counter's byte in record k equals its byte in record k−1 plus
+  d, modulo 256. d is +1 if s_new ≡ s_old + 1 (mod 4), and −1 if
+  s_new ≡ s_old − 1 (mod 4). Every step changes one pin, so d is always ±1.
+- **Low bits.** The counter's bits 1 and 0 (bits 9 and 8 for Y, 1 and 0 for X)
+  equal D1 D0 of s_new.
+- **The other counter** of the same register is unchanged.
+
+**For every F step:** both counter bytes are unchanged.
+
+**Quantifiers:**
+
+- Both pins of each pair, in both directions (the up and down cycles), on all
+  four counters.
+- "Clock" means counting, not only showing the pins. Over a full up cycle the
+  byte changes by +4, and over a down cycle by −4.
+- The step from s = 3 to s = 0, or from 0 to 3, must also change bits 7-2 by
+  one. That is the step that tells a counter from a pin readout.
+
+Sources:
+
+- p.281 as quoted in section 1.
+- Figure 8-2: the table "V VQ : D1 D0 / 0 0 : 1 0 / 0 1 : 0 1 / 1 0 : 1 1 /
+  1 1 : 0 0", and the "Count Up" and "Count Down" waveforms, in which D0, D1
+  ("D2 etc") are the counter bits, D0 changing on every edge of V or VQ.
+- Figure 8-3 (p.233): FORWARD and LEFT (pins 1 and 3) are wired to the "MOUSE 0
+  Y counter" ("vertical"), and BACK and RIGHT (pins 2 and 4) to the "MOUSE 0
+  X counter" ("horizontal").
+
+### 5. Preconditions
+
+Q1 to Q4.
+
+### 6. Contrasting cases
+
+- **Built in:**
+  - The down cycles predict d = −1 where the up cycles predict +1.
+  - The X steps predict an unchanged Y byte.
+  - The F steps predict no change at all.
+
+  Each of these would turn a wrong mapping red.
+- **Variant:** in Y-up(A), the harness drives pin 2 where the table says pin 1.
+  The Y byte then does not follow the table, and the X byte moves. The Y
+  expectations must go red.
+
+### 7. Reference frame
+
+- **The state numbering s** is anchored on Figure 8-2's table, read with V and
+  VQ as the levels on pins 1 and 3.
+  - This is the only reading that agrees with p.281 ("The LEFT and RIGHT
+    joystick functions (active high) are directly available on the Y1 and X1
+    bits") and with p.232 Table 8-3 ("The true logic state of the switch data in
+    these registers is '1 = switch closed.'"). Pin 3 at 0 gives D1 = 1.
+- **For X**, the page draws no table. The same numbering follows from p.281's
+  "Back: X1 xor X0 (BIT#01 xor BIT#00)" and "Right: X1", which have the same
+  form as Forward and Left for Y, and from Figure 8-3.
+- **How the test checks the anchor:** at N0 (all open, s = 0), bits 9, 8, 1 and
+  0 of both registers read 0.
+
+---
+
+## Proposition 4: the Table 8-1 buttons on pins 3, 4 and 1 read as closed in their connector's JOYxDAT
+
+### 1. Proposition
+
+On each connector, a button placed where Table 8-1 places it reads as closed in
+that connector's JOYxDAT exactly while its pin is shorted to ground:
+
+| pin | Table 8-1 button | read at |
+|---|---|---|
+| 3 | left button of a proportional controller pair; button 1 of an X-Y proportional joystick | bit 9 (Y1) |
+| 4 | right button of a proportional controller pair; button 2 of an X-Y proportional joystick | bit 1 (X1) |
+| 1 | button 3 of an X-Y proportional joystick | bit 9 xor bit 8 |
+
+- Claims, printed page **228**, Table 8-1:
+  - pin 3: `opus:8-tbl8-1.c8` and `sol:8-pin.c9` (left button),
+    `opus:8-tbl8-1.c9` and `sol:8-pin.c10` (button 1);
+  - pin 4: `opus:8-tbl8-1.c12` and `sol:8-pin.c13` (right button),
+    `opus:8-tbl8-1.c13` and `sol:8-pin.c14` (button 2);
+  - pin 1: `opus:8-tbl8-1.c3` and `sol:8-pin.c3` (button 3).
+- The rows quoted: "3 Left VQ-pulse Left button Button 1 ---", "4 Right
+  HQ-pulse Right button Button 2 ---", "1 Forward V-pulse --- Button 3** ---".
+
+What Table 8-1 states and a test cannot check: that a real controller wires its
+button to that pin. That is a property of the controller. The test checks what
+the chip set does with a button closed on that pin.
+
+How the chip set reads these pins:
+
+- p.234: "For the paddle controllers, the left and right joystick direction
+  lines serve as the fire buttons for the left and right paddles."
+- p.281: "The LEFT and RIGHT joystick functions (active high) are directly
+  available on the Y1 and X1 bits of each counter", and "Forward: Y1 xor Y0
+  (BIT#09 xor BIT#08)".
+- "** These buttons are optional" (Table 8-1) concerns the controller. The pin
+  is read either way.
+
+### 2. Stimulus
+
+The joystick program. Buttons(P) walks through all eight combinations of pins
+1, 3 and 4, changing one pin per step. Every other record also has a known
+combination: N0, N1, the Y and X cycles, and the F steps.
+
+### 3. Observation
+
+The register of connector P (as assigned by P2, with the same swap rule as P3),
+in every record of block P, and in N0 and N1.
+
+### 4. Expected
+
+In every record, and on both connectors:
+
+- bit 9 = 1 exactly when pin 3 is at 0;
+- bit 1 = 1 exactly when pin 4 is at 0;
+- (bit 9 xor bit 8) = 1 exactly when pin 1 is at 0;
+- (bit 1 xor bit 0) = 1 exactly when pin 2 is at 0. Pin 2 carries no Table 8-1
+  button; this checks that no button reads where none is closed.
+
+"Exactly" is graded both ways, in all eight combinations of the Buttons walk:
+
+- pressed reads 1 and released reads 0;
+- one button's press never shows as another's, including when two or three are
+  closed together.
+
+Sources: p.281 "To detect / Read these counter bits: Forward Y1 xor Y0 (BIT#09
+xor BIT#08); Left Y1; Back X1 xor X0 (BIT#01 xor BIT#00); Right X1"; p.232
+Table 8-3 ("1: True logic state of 'right' switch. 9: True logic state of
+'left' switch." with the XOR rows) and "The true logic state of the switch data
+in these registers is '1 = switch closed.'"; p.234 as quoted in section 1.
+
+### 5. Preconditions
+
+Q1 to Q4.
+
+### 6. Contrasting cases
+
+- **Built in:** every press is followed by a release, and the page predicts 0
+  for the released button.
+- **Variant:** in Buttons(A), the harness grounds pin 2 wherever the table says
+  pin 1. The pin-1 reading (bit 9 xor bit 8) then stays 0 while it is expected
+  to be 1, and must go red.
+
+### 7. Reference frame
+
+- The level convention (0 = shorted to ground), checked by Q4.
+- The bit assignment of p.281, whose anchor is P3's N0 check.
+
+---
+
+## Open points (the pages give no value; the test must not invent one)
+
+- **P1, the line level after the reset interval:** the charge rate "will be
+  controlled by the position of the external controller resistance" (p.235),
+  and a harness pot line carries no resistance. Not graded.
+- **P1, reads in lines L0 to L0+5:** the pages give no time for the dump to pull
+  the line down. Not graded.
+- **P1, a pot line held high by an external driver:** the pages describe the
+  dump only on a line nothing else holds. PC2's Rlow shows that the harness's
+  level 1 gives way to the chip's own low output. If the harness level did not
+  give way to the dump in the same manner, that would be a harness limitation,
+  not a finding.
+- **POTGOR bits 7-1, bit 0 and bits 15, 13, 11, 9 when read:**
+  - bits 7-1: p.240 "chip revision identification number"; p.282 "Reserved for
+    chip ID code (presently 0)".
+  - bit 0 and the output-enable positions: Figure 8-6 draws them as 0, and
+    Table 8-4 does not say what they read.
+
+  None of these is graded.
+- **"start counters" and the POT0DAT/POT1DAT reset** (p.236): outside this
+  package's claims. Not graded here.
+- **P3 and P4, the time for a pin level to reach JOYxDAT:** not given. The
+  sampling is "at CCK" / "at CCK*" (p.281). The program waits at least one line.
+- **Two pins of one counter changing at the same instant:** Figure 8-2 does not
+  say what the counter does. The step table never does it.
+
+---
+
+## Disagreements between pages
+
+- **Reset length (P1).** p.235 says "the first seven or eight horizontal video
+  scan lines"; Figure 8-5 says "starts eight horizontal lines after POTGO is
+  written". Only the window both allow is used.
+- **The right paddle's button (P4).** Table 8-1 (p.228) puts the paddle pair's
+  "right button" on pin 4, and the p.234 prose agrees ("the left and right
+  joystick direction lines serve as the fire buttons for the left and right
+  paddles"). Figure 8-4 (p.234) draws both the left and the right paddle with
+  the fire button on pin 3 and the pot on pin 9, and Table 8-1 puts the right
+  pot on pin 5.
+  - Where a right paddle's button is wired is a controller property the test
+    cannot see either way.
+  - What P4 grades for pin 4 (a closed switch reads at X1) is stated alike on
+    p.281, in p.232 Table 8-3 and in Figure 8-3.
+  - The claims `opus:8-tbl8-1.c12` and `sol:8-pin.c13` are graded only in that
+    agreed form.
+- **Port numbering (P2).**
+  - p.230, p.232, p.236 and p.240 number the ports 1 and 2 (JOY0DAT, POT0DAT,
+    CIAAPRA bit 6 and DATLX/DATLY belong to port 1). Appendix A (p.281, p.282)
+    says left and right. p.233's text says "ports 0 and 1".
+  - Figure 8-6 (p.237) draws a "PORT 1 connector" wired to POT1Y/POT1DAT and to
+    OUTRY/DATRY/RY. With the 1-based numbering of p.236 ("POT1DAT - port 2
+    data") and p.240 ("DATRY data for port 2, pin 9") that is a contradiction.
+    With p.233's 0-based numbering it agrees.
+  - The only mapping all pages share is the order: the connector of JOY0DAT is
+    the one whose fire button is CIAAPRA bit 6. P2's anchor uses only that.
+- **The name of $DFF016.** The printed p.240, p.241 and Figure 8-6 call it
+  POTINP. p.282 says "Pot port data read (formerly called POTINP)" under
+  POTGOR, and Appendix B p.289 says "POTGOR ... (formerly POTINP)". Same
+  address; no effect on the test.
+- **Table 8-1's header.** The printed table heads its first column "Pen" where
+  the Developer CD text has "Pin". The rows are pin numbers.
