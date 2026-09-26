@@ -4,12 +4,13 @@
 #
 #   ./run_all.sh            rebuild everything (make -B) and run
 #   ./run_all.sh --fast     reuse existing binaries where possible
+#   ./run_all.sh --jobs 8   run up to 8 hrm/ and aa/ packages at a time
 #
-# Why this exists alongside hrm/run_all.sh: that one only looks at hrm/. On
-# 07.09.2026 an upstream change broke the integration test at build time -
-# PINNOTFOUND, not a single line ran - while the HRM summary still read 38/8/0.
-# The failure was noticed only because the test happened to be run by hand.
-# That should not be necessary again.
+# Why this exists alongside hrm/run_all.sh: that one only looks at one tree. An
+# upstream change can break the integration tests at build time, so that not a
+# single line of them runs, while the HRM summary still reads as before. Every
+# layer reports here, so such a break shows without anyone running a test by
+# hand.
 cd "$(dirname "$0")" || exit 2
 
 if [ ! -e nanomig/src/minimig-aga/agnus_copper.v ]; then
@@ -25,12 +26,8 @@ rc=0
 echo "===== HRM suite ====="
 ./hrm/run_all.sh "$@" || rc=1
 
-# The AA packages live in their own tree and this script -- the one whose first
-# line says "every test in this repository" -- did not run them. hrm/run_all.sh
-# grew --in on 21.09.2026 for exactly that reason and the repair stopped one
-# level short, so three packages and 15 assertions stayed invisible to the
-# repository's own entry point on the day they were written. That is the same
-# failure the header above describes from 07.09.2026, one tree over.
+# The AA packages live in their own tree; hrm/run_all.sh reaches them only
+# through --in, so this entry point names them explicitly.
 if [ -d aa ]; then
     echo
     echo "===== AA suite ====="
@@ -40,7 +37,7 @@ fi
 echo
 echo "===== Integration ====="
 MAKE_ARGS="-B"
-[ "$1" = "--fast" ] && MAKE_ARGS=""
+for arg in "$@"; do [ "$arg" = "--fast" ] && MAKE_ARGS=""; done
 for target in test_minimig_system test_copper; do
     out=$(make $MAKE_ARGS -C integration/minimig_system "$target" 2>&1)
     if [ $? -eq 0 ] && echo "$out" | grep -q 'All tests passed'; then
