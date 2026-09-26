@@ -388,3 +388,11 @@ The ids break down as follows:
 | Group 1, bits 15-12, not used | 32 |
 | Group 3, c268 and c269, not used as stated | 2 |
 | **Total** | **224** |
+
+## Build measurement: horizontal sample width
+
+The stimulus of section 3 runs to completion on both cores: the fixture, PC0 and PC4 hold, and PC4's Copper-pass count (>=3 complete passes before the graded frame) is confirmed from the Copper-list fetch log. `a1-a0` measures 50 samples on the graded frame's sprite-band lines, matching section 4.4's own p.107-derived figure (25 low-res pixels between HSTART 192 and 217, times 2).
+
+Against that same measurement, the width of each sprite's own lit run does not match section 4.4's factor of 2. On the graded frame's first sprite-band line (source line 80, both sprites' L1 line, every pixel colour 17), sprite 0's lit run is 16 samples wide (offsets a0..a0+15) and sprite 1's run, starting 50 samples later, is also 16 samples wide -- not the 32 that "sprite pixel i covers samples a0+2i and a0+2i+1" (4.4, derived from p.101, p.124, p.300 and the harness sampling one of every two SuperHires pixels) predicts for a 16-pixel-wide sprite. The horizontal position of each sprite matches the page exactly; the horizontal width of what each sprite pixel occupies on nanomig.v's video port does not match the factor of 2 the derivation gives it.
+
+PC1, PC2, PC3 and P1-P4 all read samples through that same a0+2i/a1+2i indexing, so none of them can be graded against a 32-sample-wide observation window the trace does not show: `test_ch4_shres_sprite_b.cpp` records this once, by name, in place of asserting them, on both cores.
