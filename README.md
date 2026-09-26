@@ -12,7 +12,7 @@ on the finding pages as witnesses, never as the judge.
 | *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 216 packages |
 | Commodore's *Functional Specification for the Advanced Amiga Chip Set (AA)* | the AGA chip set | `aa/`, 33 packages |
 
-**`integration/` holds no conformance tests.** It runs whole systems rather
+**`integration/` holds no conformance tests yet.** It runs whole systems rather
 than one module, `minimig.v` and `nanomig.v` with a 68000 program, and
 nothing in it is graded against a page. So nothing in it says whether the
 RTL is right:
@@ -29,6 +29,13 @@ RTL is right:
   breakage, for example after an upstream change.
 
 A red in `integration/` is not a finding.
+
+**Integration tests against the manual are work in progress.** Some of the
+manual's claims can only be checked across module boundaries, with a 68000
+program running on `nanomig.v`; the pipeline's integration inventory lists
+them. Packages that grade them against the printed page, the way `hrm/`
+does, are being built and validated, chapter 6's blitter first. None is
+published here yet.
 
 **The printed page is the oracle, never the RTL.** A red test in `hrm/` or
 `aa/` marks a place where the RTL does something the page does not describe.
@@ -137,8 +144,9 @@ never implied by a green.
 hrm/            216 packages against the manual, each at one module's ports;
                 chN-… or appX-… names the unit of the manual that judges it
 aa/             33 packages against the AA specification
-integration/    no conformance tests: checks of the test harness at
-                nanomig.v's ports, and a smoke test of minimig.v
+integration/    no conformance tests yet: checks of the test harness at
+                nanomig.v's ports, and a smoke test of minimig.v; packages
+                graded against the manual are work in progress
 nanomig/        submodule, the RTL under test
 docs/           findings, the RTL review list, the rules for adding a test
 run_all.sh      runs all three layers; hrm/run_all.sh runs only hrm/
