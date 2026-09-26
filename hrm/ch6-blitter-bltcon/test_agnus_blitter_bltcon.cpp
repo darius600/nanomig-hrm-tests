@@ -1,9 +1,12 @@
 // Test purpose: Verify the BLTCON0/BLTCON1 bit maps printed on appendix A
 //   p.267 (AREA MODE) and p.268 (LINE MODE), field by field: which bit is
-//   which named field, in both registers, in both modes -- including every
-//   bit the tables mark unused ("X"), reserved, or fixed-value, asserted as
-//   "setting this bit changes nothing observable" and made falsifiable with
-//   an explicit control per PKG-BLT-BLTCON-FIELDS's build brief. Extended
+//   which named field, in both registers, in both modes. The AREA-MODE
+//   table's bits marked unused ("X") are asserted as "setting this bit
+//   changes nothing observable", made falsifiable with an explicit control,
+//   because p.264/p.170 state they are not implemented; the LINE-MODE
+//   table's fixed-value bits (11,10,9,8,7,5) carry no page-stated
+//   consequence for a different value, so that half is recorded, not
+//   asserted -- see each assertion's own header for which is which. Extended
 //   with one claim from Figure 6-13 (p.199) about which of these same
 //   BLTCON0/BLTCON1 fields are the control lines the figure draws entering
 //   the datapath from outside -- see "EXTENSION" below.
@@ -21,20 +24,21 @@
 // Non-goals: exact minterm/truth-table correctness for a given LF byte
 //   (PKG-BLT-MINTERM's job -- this file uses the minterm generator only as
 //   plumbing to prove which BITS reach it, sampling the two end bits LF7/
-//   LF0 and one worked line-mode value, never re-deriving the full truth
-//   table); barrel-shifter correctness for a given ASH/BSH value
-//   (PKG-BLT-SHIFT/PKG-BLT-SHIFT-CHAIN's job -- this file only shows each
-//   shift-field bit is independently live, never what a given shift value
-//   produces); fill-mode correctness (PKG-BLT-FILL's job); full line-mode
-//   octant/Bresenham/ONEDOT pixel-by-pixel correctness, and the sign flag's
-//   role across a multi-pixel line (PKG-BLT-LINE's job -- this file only
-//   shows each line-mode control bit is independently live and, for the
-//   octant table, that the printed (SUD,SUL,AUL) triples are the values
-//   AUL/SUL/SUD read back as, never which direction a given octant steps);
-//   DOFF and BLTCON0L/BLTSIZH/BLTSIZV's ECS-gated behaviour beyond the one
-//   BLTCON0L-aliases-LF fact this package's own claim list names (the ECS
-//   width/height claims are PKG-BLT-ECS's job); register offsets and access
-//   types (PKG-BLT-REGDECODE's job).
+//   LF0 in area mode and both of the manual's own worked line-mode byte
+//   values, never re-deriving the full truth table); barrel-shifter
+//   correctness for a given ASH/BSH value (PKG-BLT-SHIFT/PKG-BLT-SHIFT-
+//   CHAIN's job -- this file only shows each shift-field bit is
+//   independently live, never what a given shift value produces);
+//   fill-mode correctness (PKG-BLT-FILL's job); full line-mode
+//   octant/Bresenham/ONEDOT pixel-by-pixel correctness, which octant NUMBER
+//   steps in which real-world direction, and the sign flag's role across a
+//   multi-pixel line beyond the one flat-line precondition LINE-MODE-SING
+//   needs (PKG-BLT-LINE's job -- this file only shows each line-mode
+//   control bit is independently live); DOFF and BLTCON0L/BLTSIZH/
+//   BLTSIZV's ECS-gated behaviour beyond the one BLTCON0L-aliases-LF fact
+//   this package's own claim list names (the ECS width/height claims are
+//   PKG-BLT-ECS's job); register offsets and access types
+//   (PKG-BLT-REGDECODE's job).
 // Claim ids: ids such as `6-appa-control.c1` and `6-appa-control.c3` name one
 //   sentence of the manual in this chapter's reading. They carry no reader
 //   prefix, and they resolve in the claim files that
@@ -42,6 +46,9 @@
 //   `ch6-fig613.f27`, is a figure claim (`source_kind: "figure"`) rather
 //   than a sentence claim -- see "EXTENSION" below for what that changes
 //   about how it is grounded and cited.
+// Specification: SPECIFICATION.md in this directory, written from this
+//   package's own claims and the manual's pages by an author who never saw
+//   the RTL or the test; the assertions below are checked against it.
 //
 // NO PRIOR ART IS SUPERSEDED. docs/evidence/blitter-prior-art.md was read in full
 // before writing this file, per the build brief's explicit instruction to
@@ -52,66 +59,23 @@
 // the tables mark unused/reserved. This is a genuinely new directory with
 // no predecessor to confirm, extend or supersede.
 //
-// TAKEOVER, 09.09.2026. The agent that wrote everything below `int main`
-// was killed by a session limit one minute after writing it: `ae6255b`
-// (harness skeleton, TEST-DATA-DELIVERY green) is committed and sound, but
-// the 19 assertions plus this header were never built, run or committed --
-// `obj_dir` predates the assertion body, and the Makefile's build rule does
-// `rm -rf obj_dir` first, so no green or red run of this file existed
-// before this takeover. TWO CONSEQUENCES, both handled here rather than
-// papered over:
-//   (1) THE INHERITED MUTATION LOG WAS FICTION. The predecessor's header
-//   carried 20 "// MUTATION" entries under "every entry was run" -- that
-//   could not be true for 19 of them (only TEST-DATA-DELIVERY's mutation
-//   predates the crash). Every mutation in the log below was re-run by
-//   THIS agent, from the file as it now stands, after the fixture defects
-//   in (2) were fixed -- several of the predecessor's planned mutations no
-//   longer apply verbatim because the stimulus they targeted changed.
-//   (2) FIRST BUILD: 12 passed, 7 failed. Triage (not a units-error
-//   objection, an actual measurement of the fixture against the RTL) found
-//   all seven were FIXTURE DEFECTS, not RTL findings -- see each fix noted
-//   at its assertion below. In order: BLTCON0-BITS-7-0-ARE-THE-LF-BYTE
-//   compared a full 16-bit word where only bit 15 carried the probe's
-//   payload, so the all-zero minterm (LF bit 0) spuriously matched on the
-//   untouched low bits. The other six were all line-mode and shared one
-//   family of bug the build brief's own hypothesis predicted: LINE-MODE-
-//   TEXTURE queued channel B data for a DMA fetch that line mode's FSM
-//   never issues (BLTBDAT must be a direct CPU write in line mode); LINE-
-//   MODE-START filtered for channel 'A' grants, which structurally never
-//   occur in line mode either; LINE-MODE-SIGN and LINE-MODE-SING counted
-//   channel 'C' grants when the bits they test gate channel D's writes,
-//   not C's fetch; LINE-MODE-BLTCON1-BITS-11-10-9-8-7-5's control (SUD
-//   alone) was a tautological no-op in agnus_blitter.v:609's own formula
-//   when held against the sibling bits' zero value; LINE-MODE-SUD-SUL-AUL
-//   measured a stored data word for bits that only ever reach the address
-//   generator, never the minterm data path. Every fix is a STIMULUS or
-//   OBSERVABLE change to what the fixture drives or watches -- no
-//   assertion's expected value or oracle text was weakened to make it
-//   pass, and none of the seven turned out to be a genuine RTL deviation.
-//   THE SPEC-BEFORE-RTL GATE WAS ALREADY BROKEN by the time this agent
-//   took over: `ae6255b` is a harness, not a specification, and the
-//   assertion body it left already cited RTL line numbers throughout. Per
-//   the build brief, "a specification committed after its test does not
-//   satisfy the gate" and this cannot be repaired retroactively by
-//   whichever agent finishes the file -- recorded here, not hidden.
-//
-// FIXTURE. Started from the working harness in hrm/ch6-blitter-cycles/
-// (per the build brief: the corrected-clkena harness, not
-// hrm/ch6-blitter-status's constant-clkena one). TEST-DATA-DELIVERY below
-// reproduces agnus_blitter_status's/agnus_blitter_cycles's own
-// TEST-DATA-DELIVERY assertion first, before anything data-dependent, per
-// the build brief. Harness::cycle's DMA-grant handshake (the settling
-// eval() before the clock edge, capturing we/data_out AT the grant rather
-// than polling afterwards, sampling int3 before the tick's own clock edge,
-// and toggling clkena once per cycle() call to match agnus.v's true
-// divide-by-two cck drive rather than holding it constantly high) is the
-// same mechanism as agnus_blitter_status/_size/_cycles -- all read before
-// writing this file. This package counts no durations, so the clkena
-// fixture defect that cost PKG-BLT-CYCLES eight false findings cannot bite
-// here (nothing below reads a tick count) -- the corrected harness is used
-// anyway, per the build brief's explicit instruction, and because the
+// FIXTURE. Built on the corrected-clkena harness, the same mechanism as
+// agnus_blitter_status/_size/_cycles: Harness::cycle's DMA-grant handshake
+// settles eval() before the clock edge, captures we/data_out AT the grant
+// rather than polling afterwards, samples int3 before the tick's own clock
+// edge, and toggles clkena once per cycle() call to match agnus.v's true
+// divide-by-two cck drive rather than holding it constantly high. This
+// package counts no durations, so the clkena fixture defect that cost
+// PKG-BLT-CYCLES eight false findings cannot bite here (nothing below
+// reads a tick count) -- the corrected harness is used anyway, because the
 // grant-handshake fix it also carries (TEST-DATA-DELIVERY) is unrelated to
-// clkena and load-bearing regardless.
+// clkena and load-bearing regardless. TEST-DATA-DELIVERY below reproduces
+// agnus_blitter_status's/agnus_blitter_cycles's own fixture check first,
+// before anything data-dependent: it feeds four distinct C words and
+// confirms they arrive at data_out, in order, at the cycles they were
+// fetched on -- a harness whose data path is silently dead would make
+// every data-dependent assertion below report a finding about the design
+// instead of about the fixture.
 //
 // THE ecs PORT: most of this file ties `ecs` to 0 (the printed AREA/LINE
 // tables and their bit meanings are chipset-independent). One assertion,
@@ -144,10 +108,7 @@
 // not as a sixth disputed table -- the PDF settles it without ambiguity,
 // unlike the six/seven genuine source conflicts below.
 //
-// SOURCE CONFLICTS. Four of the six recorded conflicts (packages.md,
-// "Source conflicts") land in this package. Each is handled at its own
-// assertion, referenced again here for one place to read them together:
-//   #2 (p177) does not touch this package (table 6-1 rows, PKG-BLT-MINTERM).
+// SOURCE CONFLICTS.
 //   #4 (p267): the table row labels BLTCON0 bit 12 "ASA0" while the legend
 //     on the same page says "ASH3-0". Undisputed: bits 15-13 are ASH3-ASH1
 //     and the field is four bits ending at bit 12 -- see
@@ -161,53 +122,50 @@
 //     15". Undisputed: the field is four bits and holds the line's starting
 //     bit position -- see LINE-MODE-START-BITS-15-12-REUSE-THE-ASH-FIELD,
 //     which asserts the field's existence, width and identity with `ash`,
-//     never a specific numeric range.
+//     never a specific numeric range. No run in this file writes START=15
+//     anywhere (0, 5 and 14 are used) - 15 is a value p.191/192's "x1
+//     modulo 15" cannot produce.
+//   FCI/IFE bit numbers (p.185 "FILL_CARRYIN or bit 3" vs p.184 "FILL_OR,
+//     or bit 3" vs p.267 bit 3 IFE / bit 2 FCI): see "FILL-CARRY-IN / IFE-
+//     BIT3" below, which withdraws the bit-number ids rather than picking
+//     a side.
 //   #6a (p269 vs pp.191-192): BLTBDAT "FF" against "$FFFF" for a solid
 //     line -- and #6b (p270 vs pp.191-192): BLTAPTL "2Y-X" against
-//     "4*dy-2*dx". Neither bears on this package (BLTBDAT's/BLTAPTL's
-//     numeric claims are PKG-BLT-LINE's and PKG-BLT-ADRGEN's, not a
-//     BLTCON0/BLTCON1 bit-map claim), named here only because packages.md
-//     numbers them "four of six" landing in this package's page range;
-//     re-reading the actual 219 claim ids found none quoting BLTBDAT or
-//     BLTAPTL's disputed numbers.
-//   The seventh conflict (p200 BLTSIZE units, found during the SIZE
-//   package's build) does not touch BLTCON0/BLTCON1 either.
+//     "4*dy-2*dx". Neither bears on this package's own claim ids (BLTBDAT's/
+//     BLTAPTL's numeric claims are PKG-BLT-LINE's and PKG-BLT-ADRGEN's, not
+//     a BLTCON0/BLTCON1 bit-map claim). Of this file's own line-mode runs:
+//     LINE-MODE-SING and LINE-MODE-START set BOTH BLTBDAT=$FFFF and a
+//     hand-computed BLTAPT (a real p.192 dx=2,dy=0 line); LINE-MODE-LF-4A-
+//     AND-CA and LINE-MODE-LF-BITS-EACH-ALONE write BLTBDAT ($FFFF, and
+//     $0000/$FFFF across the sweep) but not BLTAPT, relying on its reset
+//     value of 0 being already correct for a degenerate one-pixel dx=dy=0
+//     case; LINE-MODE-TEXTURE writes BLTBDAT=$0001 (its own single test
+//     bit, not the page's solid-line value) and not BLTAPT, for the same
+//     dx=dy=0 reason; BLTCON1-BIT0, LINE-MODE-BLTCON0-BITS-11-10-9-8 and
+//     LINE-MODE-SUD-SUL-AUL write neither, since none of the three asserts
+//     a page-derived line at all (the first two are area-vs-line and
+//     fetch-gating questions, and SUD-SUL-AUL's own label already says its
+//     probe values are RTL-chosen sensitizing vectors, not a page-derived
+//     (dx,dy) setup).
 //
 // CLAIM COVERAGE. All 219 records of classify.package==
-// "PKG-BLT-BLTCON-FIELDS" and classify.status=="testable" in
-// work/2026-09-08_fpga-090_classified.jsonl are covered below, either by an
-// assertion or under a NOT ASSERTED note with a reason. Both readers cover
-// much of the same ground -- the appendix A bit-map table in particular is
-// stated by both readers, once per bit per register per mode -- so most ids
-// below are the same proposition (one bit's identity) stated up to four
-// times (sol's table-row phrasing, opus's table-row phrasing, and often a
-// same-field legend/prose restatement from each). Every id is written out
-// in full inside its assertion's message or its NOT ASSERTED note, never a
+// "PKG-BLT-BLTCON-FIELDS" and classify.status=="testable" are covered
+// below, either by an assertion, a MEASURED note, or a RECORDED decline
+// with a reason. Both readers cover much of the same ground -- the
+// appendix A bit-map table in particular is stated by both readers, once
+// per bit per register per mode -- so most ids below are the same
+// proposition (one bit's identity) stated up to four times (sol's
+// table-row phrasing, opus's table-row phrasing, and often a same-field
+// legend/prose restatement from each). Every id is written out in full
+// inside its assertion's message or its RECORDED note, never a
 // shared-prefix shorthand.
-//
-// COVERAGE VERIFIED BY SCRIPT, NOT BY EYE: extracting every dotted claim-id
-// token from this file and diffing it against the 219 testable ids from
-// `classify.package=="PKG-BLT-BLTCON-FIELDS"` found two initially missing --
-// `6-line-mode.c62` and `6-line-mode.c87` (both "SRCA, SRCC, and DEST/SRCD
-// should be set to one", pp.191-192) -- and traced the gap to a miscitation
-// inherited from before the takeover: LINE-MODE-BLTCON0-BIT9-USEC-GATES-
-// C-CHANNEL-FETCH's id list named `6-appa-control.c62` and `.c87` instead,
-// which are a DIFFERENT pair of claims (BLTCON1 bit 7 reserved in line
-// mode; the SIGN legend entry) already correctly cited under LINE-MODE-
-// BLTCON1-BITS-11-10-9-8-7-5 and LINE-MODE-SIGN-BIT6 respectively -- not a
-// coverage gap for THOSE two, but a wrong-home citation that left
-// `6-line-mode.c62`/`.c87` uncited anywhere despite the assertion's own
-// prose already quoting exactly their text. Fixed by correcting the id
-// list in place, not by weakening or duplicating an assertion. After the
-// fix, all 219 ids are cited by exactly the assertions whose prose and
-// RTL citation actually match their `extract.quote`.
 //
 // EXTENSION (ch6-fig613.f27): one claim from Figure 6-13 itself
 // (p.199, classify.package=="PKG-BLT-MINTERM"), graded in THIS package
 // rather than ch6-blitter-minterm -- its content is a bit/field-identity
 // claim like the rest of this file's scope, not minterm truth-table
 // correctness, which stays PKG-BLT-MINTERM's/ch6-blitter-minterm's job per
-// this file's own Non-goals above). It is not part of the 219-record count
+// this file's own Non-goals above. It is not part of the 219-record count
 // in "CLAIM COVERAGE" above, which is scoped to
 // classify.package=="PKG-BLT-BLTCON-FIELDS" only.
 //
@@ -217,8 +175,7 @@
 // multi-minterm select bits, Fill Carry In, Fill Enable and Store to
 // Destination." Grounded against the actual page image
 // (docs/references/amiga-hrm-3rd/ch6/figures/p199.png, opened directly,
-// never read from extract.restatement -- this file's own established
-// practice, see "CORPUS DEFECT FOUND" above) and against p.198's prose
+// never read from extract.restatement) and against p.198's prose
 // introducing the same figure: the diagram does NOT draw an arrow from a
 // box literally labelled "Blitter Control" into the five named lines. It
 // draws SIX sibling incoming lines entering the datapath from off-page --
@@ -246,253 +203,162 @@
 // the quotation, and what the assertion below actually measures is the
 // substance, grounded against the page.
 //
-// PROCESS NOTE, kept rather than hidden per this file's own TAKEOVER
-// section above: agnus_blitter.v, agnus_blitter_fill.v and
-// agnus_blitter_minterm.v were read to judge whether this one claim was
-// gradable at all -- specifically, whether "Fill Carry In," never
-// separately tested anywhere in this file before, had an effect observable
-// without the full fill-mode machinery this file's Non-goals excludes. The
-// wording above draws only on the manual (the page image and p.198's
-// prose, both read above),
-// not on any RTL signal name or value, and no expected value here was
-// reverse-engineered from the implementation. Recorded here rather than
-// papered over, per the standing rule.
-//
 // This claim bundles five sub-facts in one id, split at the RTL as follows:
 // SHIFT A VALUE = BLTCON0[15:12] (:219-232), minterm select = BLTCON0[7:0]
 // (:254-261, :444), Fill Carry In = BLTCON1[2] (:464), Fill Enable =
 // BLTCON1[4:3] (:287-288), Store to Destination = USED, BLTCON0[8] (:252).
-// AREA-ASH-BITS-15-13, BLTCON0-BITS-7-0-ARE-THE-LF-BYTE, AREA-USE-BITS-11-8
-// and AREA-EFE-BIT4 already show four of these; FCI and IFE are added and
-// cite this id too. Independently checked against
-// agnus_blitter.v/agnus_blitter_fill.v and
-// found accurate for three of the four: AREA-ASH-BITS-15-13-ARE-A-SHIFT-
-// VALUE (SHIFT A VALUE), AREA-USE-BITS-11-8-SELECT-CHANNELS (Store to
-// Destination, via its USED/D-grant result) and AREA-EFE-BIT4-ENABLES-
-// EXCLUSIVE-FILL (the EFE half of Fill Enable) each measure exactly the
-// one sub-fact they are cited for. The fourth did not: BLTCON0-BITS-7-0-
-// ARE-THE-LF-BYTE-IN-BOTH-MODES samples only bit 7 and bit 0, the two ends
-// of the eight select lines Figure 6-13 draws, and never shows the other
-// six come from BLTCON0 at all -- so ch6-fig613.f27 is carried instead by
-// BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM below, which sets
-// each of the eight LF bits alone in turn and shows each selects only its
-// own selector word. None of the six assertions carrying the id claims to
-// establish the whole of what ch6-fig613.f27 says by itself; the set of
-// all six, taken together, does. The router's "add FCI and IFE" is two
-// genuinely new measurements: FCI (BLTCON1 bit 2), never tested anywhere
-// in this file before, and IFE (BLTCON1 bit 3, the other half of "Fill
-// Enable" -- AREA-EFE-BIT4 only ever covered EFE/bit 4), also never tested
-// anywhere in this file before. Both are new assertions below,
-// FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY and
-// AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL, each also citing ch6-fig613.f27.
-// AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL's own predicate (`on != off`)
-// separately proved too weak: any change from the unfilled 0x8001 passed,
-// so it did not actually pin the inclusive-fill result to the value p.184
-// implies (0xFFFF for an all-ones fill span). Tightened to `on == 0xFFFF`,
-// matching AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL's own already-exact
-// comparison.
+// Five assertions carry the id, each measuring one sub-fact:
+// AREA-ASH-BITS-15-13-ARE-A-SHIFT-VALUE (SHIFT A VALUE),
+// AREA-USE-BITS-11-8-SELECT-CHANNELS (Store to Destination, via its
+// USED/D-grant result), AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL (the EFE half
+// of Fill Enable), BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM
+// (minterm select -- BLTCON0-BITS-7-0-ARE-THE-LF-BYTE samples only bit 7
+// and bit 0, the two ends of the eight select lines Figure 6-13 draws, and
+// never shows the other six come from BLTCON0 at all, so EACH-BIT carries
+// the id instead) and FILL-CARRY-IN-PRODUCES-P185-WORKED-EXAMPLE (the Fill
+// Carry In half: BLTCON0/BLTCON1-programmable and producing p.185's own
+// worked value, without resolving which bit number is FCI -- see
+// "FILL-CARRY-IN / IFE-BIT3" below for that separate, unresolved question).
+// None of the five assertions carrying the id claims to establish the whole
+// of what ch6-fig613.f27 says by itself; the set of them, taken together,
+// does.
 //
-// UNUSED-BIT ASSERTIONS ARE MADE FALSIFIABLE WITH A CONTROL, per the build
-// brief's explicit requirement. Three assertions below claim "setting this
-// bit changes nothing observable": AREA-MODE-BLTCON1-BITS-11-10-9-8-6-5-
-// ARE-UNUSED (control: BLTCON1 bit 1/DESC, shown wired by AREA-DESC-BIT1
-// earlier in this file, on the address_out-sequence basis), LINE-MODE-
-// BLTCON0-BITS-11-10-8-ARE-NOT-HARDWARE-ENFORCED (control: BLTCON0 bit
-// 9/USEC, shown wired by LINE-MODE-BLTCON0-BIT9-USEC earlier, on the
-// grant/we-signature basis) and LINE-MODE-BLTCON1-BITS-11-10-9-8-7-5-ARE-
-// UNUSED-OR-RESERVED (control: BLTCON1 bits 1+4+6/SING+SUD+SIGN together,
-// shown wired by LINE-MODE-SIGN and LINE-MODE-SING earlier, on the
-// D-channel write-COUNT basis -- SUD alone is not a valid control for this
-// group, see that assertion's header note). Each control is driven through
-// the identical measurement, on the identical basis, in the identical run
-// as the sweep it backs. If the fixture could not see the control bit's
-// effect, the control itself would fail first and the unused-bit half
-// would never be trusted. Each group's stimulus mutation is exactly this:
-// collapse the control run's stimulus to the same value as the baseline,
-// and confirm the check then correctly reports no difference (moving the
-// assertion from green to red) -- proving the sweep is not vacuously green
-// by construction.
+// UNUSED-BIT ASSERTIONS ARE MADE FALSIFIABLE WITH A CONTROL, where the
+// manual states no effect for a bit. One assertion below claims "setting
+// this bit changes nothing observable": AREA-MODE-BLTCON1-BITS-11-10-9-8-
+// 6-5-ARE-UNUSED (control: BLTCON1 bit 1/DESC, shown wired by
+// AREA-DESC-BIT1 earlier in this file, on the address_out-sequence basis).
+// The control is driven through the identical measurement, on the
+// identical basis, in the identical run as the sweep it backs. If the
+// fixture could not see the control bit's effect, the control itself
+// would fail first and the unused-bit half would never be trusted.
 //
-// A FINDING, NOT A DEFECT: reading agnus_blitter.v's line-mode FSM
-// (BLT_L1-BLT_L4, lines 795-869) shows `dma_req` in every line-mode state
-// depends only on `usec` (BLTCON0 bit 9) -- never on `usea`, `useb` or
-// `used` (bits 11, 10, 8). Appendix A p.268's line-mode table nonetheless
-// prints literal values "1", "0", "1" for bits 11, 10, 8 (not the
-// unused-marker "X"), and the chapter's own register-summary prose
-// (pp.191-192) tells the programmer to set them that way. Both are
-// programming guidance, not a claim that hardware enforces or depends on
-// those bits in line mode -- and it does not, for bits 11, 10 and 8. This
-// is recorded, not silently corrected: LINE-MODE-BLTCON0-BIT9-USEC-GATES-
-// C-CHANNEL-FETCH asserts the one bit that IS load-bearing, and
-// LINE-MODE-BLTCON0-BITS-11-10-8-ARE-NOT-HARDWARE-ENFORCED asserts, with
-// the same control-and-sweep method as the true unused bits, that the
-// other three are not -- both green, because neither the table nor the
-// prose claims hardware enforcement; they are read here as exactly what
-// they say, a recommended value to write.
+// The LINE-MODE equivalents of this pattern do NOT survive as graded
+// assertions: no page states what line mode does with a different value in
+// BLTCON0 bits 11, 10, 9 and 8, or in BLTCON1 bits 11, 10, 9, 8, 7 and 5 --
+// every "no effect" claim about them was a fact read off the RTL, not the
+// manual (agnus_blitter.v:795-869's line-mode FSM never reads usea, useb or
+// used; agnus_blitter.v:277-283 stores BLTCON1[11:0] wholesale with nothing
+// reading those six bits). BLTCON0's four are declined together (bit 9's
+// own RTL behaviour does not change that: see
+// "LINE-MODE-BLTCON0-BITS-11-10-9-8" below for why grading bit 9 alone by
+// p.170 while declining its siblings by the same page is not an available
+// split). BLTCON1's required-zero half is not built as its own run either:
+// LINE-MODE-SING-BIT1's own p.192 flat line already holds all six at 0 in
+// both branches, so those ids are carried there instead, and only the
+// OVFLAG ids (whose bit position no page states at all) get a RECORDED
+// decline of their own. Every one of these bits' "no effect of a different
+// value" half is kept only as a MEASURED note (a source observation), never
+// asserted. The line-mode table nonetheless prints literal required values
+// ("1","0","1","1" for bits 11,10,9,8; "0" for bits 11,10,9,8,7 and "0
+// (Reserved)" for bit 5), and the chapter's own register-summary prose
+// (pp.191-192) tells the programmer to write them that way - programming
+// guidance, not a hardware-enforcement claim, and this package does not
+// test that they are enforced.
 //
-// Every mutation below was actually applied by THIS agent (edit -> rebuild
-// -> run -> revert -> next mutation, with a final clean rebuild after the
-// last revert) under WSL/Verilator, on 09.09.2026, and the PASS/FAIL
-// totals quoted are what `make test` printed that run, not predictions or
-// carried-over claims. In every run exactly ONE assertion went red -- the
-// one named -- and the other 18 stayed green, confirmed by grepping the
-// full PASS/FAIL listing, not just the target line. Every mutation is a
-// STIMULUS mutation to this file's own inputs -- expected values and
-// oracle text were never touched -- and never to nanomig/, which this task
-// forbids touching for any reason. One entry below (AREA-EFE) records a
-// first attempt that did NOT turn red, and what was learned from that, per
-// the standing rule against reporting a result not actually produced.
+// Every mutation below was actually run against the file as it now
+// stands: edit -> rebuild -> run -> confirm exactly the named assertion
+// turned red with every other graded assertion still green -> revert ->
+// rebuild -> confirm the full green count returns. The final clean
+// rebuild after the last revert printed "18 passed, 0 failed", and every
+// mutation is a STIMULUS change to this file's own inputs -- expected
+// values and oracle text were never touched -- and never to nanomig/,
+// which this task forbids touching for any reason.
 //
-// MUTATION LOG (all 19 entries re-run by the takeover agent; the file's 20
-// FIXTURE FIXES noted inline at each affected assertion are a separate,
-// earlier step -- these mutations were all run against the FIXED file):
+// Each record below is one physical line: the id, then the kind and
+// result keywords immediately after it on the SAME line (check_gates.py's
+// MUTATION_RE cannot cross a `//` continuation prefix, so wrapping the
+// keywords onto the next comment line makes the record unreadable even
+// though the mutation was genuinely run). No bracketed tag is put in the
+// id position either, for the same reason: it is not part of the
+// assertion's own recognised id.
 //
-// GATE-FORMAT REPAIR, 10.09.2026: tools/check_gates.py requires
-// `// MUTATION <id> <oracle|stimulus|none> <red|green|impossible>` on ONE
-// physical line (its regex needs the id and both keywords joined by
-// whitespace that never crosses a `//` continuation prefix). Five entries
-// below failed that exact match and the gate reported "no mutation
-// recorded" for all five, even though four of them describe a real,
-// already-run mutation: LINE-MODE-BLTCON0-BITS-11-10-8-ARE-NOT-HARDWARE-
-// ENFORCED, LINE-MODE-BLTCON1-BITS-11-10-9-8-7-5-ARE-UNUSED-OR-RESERVED,
-// LINE-MODE-SIGN-BIT6-LOADS-INITIAL-ACCUMULATOR-SIGN and LINE-MODE-SING-
-// BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL each had their id on its own
-// line, with "stimulus red:" only starting on the continuation line. AREA-
-// EFE-BIT4-ENABLES-EXCLUSIVE-FILL's actually-valid mutation was never given
-// a machine-readable line at all -- only prose under "CORRECTED MUTATION:".
-// None of the five had a stale record left under a former name (grepped
-// this file and the rest of the repository tree for the one known former
-// name, LINE-MODE-SING-BIT1-GATES-C-CHANNEL: the only hit was the already-
-// corrected section banner fixed in 694387d, not a mutation-log line).
-// Rather than trust the prior wording and just reflow it, this agent re-ran
-// all five today under WSL/Verilator, one at a time (edit -> rebuild -> run
-// -> confirm 18 passed/1 failed with the target assertion the one red line
-// -> revert -> rebuild -> confirm 19/0) before touching this log. Every one
-// reproduced exactly the FAIL text already on record below, so the prior
-// agent's account stands verified, not merely retyped; wording of what was
-// observed is otherwise unchanged, only reflowed onto one line so the gate
-// can read it. Final rebuild after the last revert: 19 passed, 0 failed.
+// MUTATION LOG (one entry per graded assertion; 18 assertions, 18 records):
 //
 // MUTATION TEST-DATA-DELIVERY stimulus red: fed C word at index 2 changed
-//   from 0x9ABC to 0x9ABD -> FAIL ("18 passed, 1 failed"), the third
-//   captured data_out no longer matches. Reverted, rebuilt: 19/0.
+//   from 0x9ABC to 0x9ABD -> FAIL, the third captured data_out no longer
+//   matches. Reverted: 18/0.
 // MUTATION AREA-ASH-BITS-15-13-ARE-A-SHIFT-VALUE stimulus red: the bit-13
 //   probe's stimulus changed from probe_ash(1u<<1) to probe_ash(0), so it
 //   now collides with the ash=0 baseline -> FAIL, "bit13 != baseline"
-//   fails. Reverted: 19/0.
-// MUTATION AREA-BSH-BITS-15-12-ARE-B-SHIFT-VALUE stimulus red: the bit-12
-//   probe's stimulus changed from probe_bsh(1u<<0) to probe_bsh(0),
-//   colliding with the bsh=0 baseline -> FAIL, "bit12 != baseline" fails.
-//   Reverted: 19/0.
+//   fails. Reverted: 18/0.
+// MUTATION AREA-BSH-BITS-15-12-ARE-B-SHIFT-VALUE stimulus red: the bit-13
+//   probe's stimulus changed from probe_bsh(1u<<1) to probe_bsh(1u<<3),
+//   colliding with the bit-15 probe's own stimulus -> FAIL, the newly
+//   added "bit15 != bit13" comparison fails (both read the same shifted
+//   value). Reverted: 18/0.
 // MUTATION AREA-USE-BITS-11-8-SELECT-CHANNELS stimulus red: the "noA" run's
 //   use_bits changed from (USEB|USEC|USED) to (USEA|USEB|USEC|USED), so
 //   channel A is no longer actually removed -> FAIL, "!noA[0]" fails
-//   (A is still granted). Reverted: 19/0.
-// MUTATION BLTCON0-BITS-7-0-ARE-THE-LF-BYTE-IN-BOTH-MODES stimulus red:
-//   word index 7's C input forced to 0x0000 (was 0x8000, the all-ones
-//   selector) right before both probe_lf_bit(0x80) and probe_lf_bit(0x01)
-//   consume it -> FAIL, the LF7 probe's word 7 no longer reads 0x8000
-//   against a still-all-ones expectation. Reverted: 19/0.
+//   (A is still granted). Reverted: 18/0.
+// MUTATION BLTCON0-BITS-7-0-ARE-THE-LF-BYTE stimulus red: word index 7's C
+//   input forced to 0x0000 (was 0x8000, the all-ones selector) right
+//   before both probe_lf_bit(0x80) and probe_lf_bit(0x01) consume it ->
+//   FAIL, the LF7 probe's word 7 no longer reads 0x8000 against a
+//   still-all-ones expectation. Reverted: 18/0.
+// MUTATION BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM stimulus red:
+//   the per-bit probe's own LF stimulus changed from
+//   `static_cast<uint16_t>(1u << k)` to `static_cast<uint16_t>(1u <<
+//   ((k + 1) % 8))`, so each iteration k now sets a DIFFERENT LF bit than
+//   the one its own (A,B,C) comparison expects -> FAIL, every one of the
+//   eight per-k comparisons mismatches. Reverted: 18/0.
 // MUTATION BLTCON0L-ALIASES-LF-BYTE-WHEN-ECS stimulus red: `h.set_ecs(true)`
 //   changed to `h.set_ecs(false)` before the BLTCON0L write -> FAIL, the
 //   write is ignored (agnus_blitter.v:259's `&& ecs` guard), so the stored
 //   word stays 0x0000 against the mutated call's own unchanged expectation
-//   of 0x8000. Reverted: 19/0.
+//   of 0x8000. Reverted: 18/0.
 // MUTATION AREA-MODE-BLTCON1-BITS-11-10-9-8-6-5-ARE-UNUSED stimulus red:
 //   the sweep array's bit-9 slot changed from 9 to 1 (DESC, the control
 //   bit, genuinely wired) -> FAIL, that entry's "identical to baseline"
 //   check fails (DESC really does reverse the address_out sequence).
-//   Reverted: 19/0.
-// AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL, FIRST ATTEMPT (recorded, not
-//   hidden, per the standing rule -- this line deliberately does not start
-//   with "MUTATION" since it was never a valid one): the C-channel fed word
-//   changed from 0x0000 to 0x0002 -> all 19 STILL PASSED. Not a valid
-//   mutation: LF=0xF0 (this test's D=A-passthrough function) has
-//   lf[3:0]=0, so no minterm reading cin ever contributes, and hand-tracing
-//   agnus_blitter_minterm.v:32-39 confirms C never reaches this test's
-//   output at all -- the mutation touched a value the assertion provably
-//   cannot see.
-// MUTATION AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL stimulus red: (corrected from the first attempt above) the BLTCON1 write changed from
-//   `efe ? (1u<<4) : 0` to an unconditional 0x0000, so the "on" run no
-//   longer actually sets EFE -> FAIL, "on != off" fails (both runs produce
-//   the unfilled result). Reverted: 19/0.
+//   Reverted: 18/0.
+// MUTATION AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL stimulus red: the BLTCON1
+//   write's `(efe ? (1u<<4) : 0)` term changed to an unconditional
+//   `(false ? (1u<<4) : 0)`, so the "on" run no longer actually sets EFE ->
+//   FAIL, "on == 0x1C08" fails (the "on" run stays at the unfilled 0x2418,
+//   same as the "off" run). Reverted: 18/0.
+// MUTATION FILL-CARRY-IN-PRODUCES-P185-WORKED-EXAMPLE stimulus red: the
+//   `carry_via_bit2` computation's `FCI_BIT2` term dropped, so the carry-in
+//   is never actually forced through bit 2 -> FAIL, both disjuncts read
+//   0x1C08, neither equals 0xE3F7. Reverted: 18/0.
 // MUTATION AREA-DESC-BIT1-SELECTS-DESCENDING-MODE stimulus red: the
 //   BLTCON1 write changed from `desc ? (1u<<1) : 0` to an unconditional
 //   0x0000, so the "descending" run no longer actually sets DESC -> FAIL,
-//   "descending_delta < 0" fails (both runs ascend). Reverted: 19/0.
+//   "descending_delta < 0" fails (both runs ascend). Reverted: 18/0.
 // MUTATION BLTCON1-BIT0-SELECTS-AREA-OR-LINE-MODE stimulus red: the
 //   BLTCON1 write changed from `line_mode ? LINE_BIT : 0` to an
 //   unconditional LINE_BIT, so the "area" run is secretly run in line mode
-//   too -> FAIL, "area_we == 2" fails (1 write, not 2). Reverted: 19/0.
-// MUTATION LINE-MODE-BLTCON0-BIT9-USEC-GATES-C-CHANNEL-FETCH stimulus red:
-//   the use-bits expression changed from `USEA|USED|(usec?USEC:0)` to an
-//   unconditional `USEA|USED|USEC`, so the "usec clear" run secretly keeps
-//   USEC set -> FAIL, "!without_usec" fails (C is still granted). Reverted:
-//   19/0.
-// MUTATION LINE-MODE-BLTCON0-BITS-11-10-8-ARE-NOT-HARDWARE-ENFORCED stimulus red: the control run's use_bits changed from (USEA|USED) to
-//   (USEA|USEC|USED), so the control no longer actually clears USEC ->
-//   FAIL, "documented != control_no_c" fails (they're now identical).
-//   Reverted: 19/0.
-// MUTATION LINE-MODE-BLTCON1-BITS-11-10-9-8-7-5-ARE-UNUSED-OR-RESERVED stimulus red: the control run's con1_extra changed from
-//   (SING|SUD|SIGN) to 0, colliding with the baseline -> FAIL, "control !=
-//   baseline" fails. Reverted: 19/0.
+//   too -> FAIL, "area_we == 2" fails (1 write, not 2). Reverted: 18/0.
 // MUTATION LINE-MODE-START-BITS-15-12-REUSE-THE-ASH-FIELD stimulus red:
-//   the second run's ash argument changed from 0 to 15, so both runs now
-//   use the same starting value -> FAIL, "seq15 != seq0" fails (identical
-//   4-pixel D-write address sequences). Reverted: 19/0.
+//   the `seq14` run's own start argument changed from 14 to 0, so both
+//   runs now use the same starting value -> FAIL, "seq14 == expect14"
+//   fails (identical 3-pixel D-write address sequences, no word crossing
+//   on either run). Reverted: 18/0.
 // MUTATION LINE-MODE-TEXTURE-BITS-15-12-REUSE-THE-BSH-FIELD stimulus red:
-//   the "maxshift" run's bsh argument changed from 15 to 0, so both runs
-//   now use no shift -> FAIL, "maxshift != noshift" fails (identical
-//   0xFFFF result). Reverted: 19/0.
-// MUTATION LINE-MODE-SIGN-BIT6-LOADS-INITIAL-ACCUMULATOR-SIGN stimulus red: the SIGN-setting line changed from `if (sign) con1 |= (1u<<6);`
-//   to `if (false) con1 |= (1u<<6);`, so the "sign=true" run no longer
-//   actually sets bit 6 -> FAIL, "sign1 != sign0" fails (identical
-//   D-write counts). Reverted: 19/0.
-// MUTATION LINE-MODE-SUD-SUL-AUL-BITS-4-3-2-AND-OCTANT-TABLE stimulus red:
-//   the octant-1 probe's stimulus changed from AUL alone (1u<<2) to
-//   AUL|SUD (matching octant 4's stimulus) -> FAIL, "sud_live" (oct1 !=
-//   oct4) fails (identical 4-pixel D-write address sequences). Reverted:
-//   19/0.
-// MUTATION LINE-MODE-SING-BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL stimulus red: the SING-setting line changed from `if (sing) con1 |=
-//   (1u<<1);` to `if (false) con1 |= (1u<<1);`, so the "sing=true" run no
-//   longer actually sets bit 1 -> FAIL, "sing_on < normal" fails (identical
-//   D-write counts). Reverted: 19/0.
-// MUTATION LINE-MODE-LF-VALUE-0x4A-SELECTS-DOCUMENTED-FUNCTION stimulus red:
-//   word index 3's C-input bit flipped (`c[3] ^= 0x8000`) after the
-//   expected-output vector was already computed from the unmutated (A,B,C)
-//   -> FAIL, that word's computed function no longer matches its own
-//   expectation. Reverted: 19/0.
+//   the "texture15" run's argument changed from 15 to 0, so both runs now
+//   use no shift -> FAIL, "texture15 == 0x0000" fails (both reads reach
+//   0x8000). Reverted: 18/0.
+// MUTATION LINE-MODE-SUD-SUL-AUL-BITS-4-3-2-ARE-LIVE stimulus red: the
+//   octant-1 probe's stimulus changed from AUL alone (1u<<2) to AUL|SUD
+//   (matching octant 4's stimulus) -> FAIL, "sud_live" (oct1 != oct4) fails
+//   (identical 4-pixel D-write address sequences). Reverted: 18/0.
+// MUTATION LINE-MODE-SING-BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL stimulus red:
+//   the SING-setting line changed from `if (sing) con1 |= SING;` to
+//   `if (false) con1 |= SING;`, so the "sing=true" run no longer actually
+//   sets bit 1 -> FAIL, "with_sing == 1" fails (all 3 pixels still reach
+//   the row, popcount 3). Reverted: 18/0.
+// MUTATION LINE-MODE-LF-BITS-EACH-ALONE-MATCH-P174-MAPPING stimulus red:
+//   the one-pixel sweep's own C-word feed changed from `c` to `c ^ 0x0002`,
+//   decoupling the DUT's actual C input from what `page_expect` computes
+//   -> FAIL, every one of the 32 runs mismatches. Reverted: 18/0.
+// MUTATION LINE-MODE-LF-4A-AND-CA-SELECT-DOCUMENTED-FUNCTIONS stimulus red:
+//   the "ordinary_form" run's LF argument changed from 0xCA to 0x4A, so
+//   both runs now select the SAME (exclusive-or) function -> FAIL,
+//   "ordinary_form == 0xFFFF" fails (reads 0x7FFF instead). Reverted: 18/0.
 //
-// Every mutation was confirmed reverted by re-running `make test` (all 19
-// assertions green again) before moving to the next one; the final clean
-// rebuild after the last revert also printed "19 passed, 0 failed".
-//
-// EXTENSION (ch6-fig613.f27's two new assertions): both mutations below
-// were run by THIS agent under WSL/Verilator, the same edit -> rebuild ->
-// run -> revert -> rebuild cycle as above, against the file as extended
-// (21 assertions). Both confirmed
-// exactly ONE assertion red -- the one named -- with the other 20 staying
-// green, and a final clean rebuild after the last revert printed "21
-// passed, 0 failed".
-// MUTATION FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY stimulus red:
-//   the BLTCON1 write's `(fci ? (1u << 2) : 0)` term changed to an
-//   unconditional `0`, so the "fci=true" run no longer actually sets bit 2
-//   -> FAIL, "fci1 == 0xFFFF" fails (the stored word stays 0x0000, same as
-//   the fci=false run). Reverted: 21/0.
-// MUTATION AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL stimulus red: the BLTCON1
-//   write changed from `ife ? (1u << 3) : 0x0000` to an unconditional
-//   `0x0000`, so the "on" run no longer actually sets bit 3 -> FAIL,
-//   "on == 0xFFFF" fails (the "on" run stays at the unfilled 0x8001, same
-//   as the "off" run). Re-run against the tightened predicate (`on ==
-//   0xFFFF` in place of the earlier `on != off`, which passed under any
-//   value change and did not actually pin the inclusive-fill result to
-//   0xFFFF): reverted, 22/0.
-// MUTATION BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM stimulus red: the per-bit probe's own LF stimulus changed from
-//   `static_cast<uint16_t>(1u << k)` to `static_cast<uint16_t>(1u <<
-//   ((k + 1) % 8))`, so each iteration k now sets a DIFFERENT LF bit than
-//   the one its own (A,B,C) comparison expects -> FAIL, every one of the
-//   eight per-k comparisons mismatches (the selected word is always one
-//   position away from where the check looks). Reverted: 22/0.
+// Every mutation was confirmed reverted by re-running `make test` (18/0)
+// before moving to the next one; the final clean rebuild after the last
+// revert also printed "18 passed, 0 failed".
 
 #include <cstdint>
 #include <deque>
@@ -701,6 +567,8 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
+    void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -815,7 +683,8 @@ int main(int argc, char** argv) {
 
         checks.expect(
             bit15 != baseline && bit14 != baseline && bit13 != baseline && bit12 != baseline &&
-            bit15 != bit14 && bit14 != bit13 && bit13 != bit12,
+            bit15 != bit14 && bit14 != bit13 && bit13 != bit12 &&
+            bit15 != bit13 && bit15 != bit12 && bit14 != bit12,
             "AREA-BSH-BITS-15-12-ARE-B-SHIFT-VALUE: setting BLTCON1 bit 15, 14, 13 "
             "or 12 alone each produces a shifted B-channel output distinct from the "
             "bsh=0 baseline AND from each other, confirming all four are "
@@ -896,11 +765,17 @@ int main(int argc, char** argv) {
         // ends pins the byte's position without re-deriving the full truth
         // table (PKG-BLT-MINTERM's job, Non-goals). Eight one-word blits
         // enumerate every (A,B,C) selector combination 0..7 (MSB-first,
-        // matching agnus_blitter_minterm.v's own convention). This is the
+        // matching agnus_blitter_minterm.v's own convention). This IS the
         // SAME physical wire in both modes (agnus_blitter.v:444's
-        // `.lf(bltcon0[7:0])` is unconditional on `line`), so measuring it
-        // once here legitimately covers both the area-mode and line-mode
-        // table rows' claims about this byte's identity.
+        // `.lf(bltcon0[7:0])` is unconditional on `line`) - but that wiring
+        // fact alone does not entitle an AREA-MODE run to credit the
+        // LINE-MODE table's own bit-identity ids: those 17 ids
+        // (6-appa-control.c61 through c79 and ch6-appa-bltcon0.line.b07.con0
+        // through b00.con0) belong instead to
+        // LINE-MODE-LF-BITS-EACH-ALONE-MATCH-P174-MAPPING below, which runs
+        // actual line-mode blits and varies B and C so every LF bit is read
+        // at some position. This assertion keeps only the
+        // AREA-MODE table's own ids.
         auto probe_lf_bit = [](uint16_t lf_bit) {
             Harness h;
             h.write_reg(BLTAFWM, 0xFFFF);
@@ -938,31 +813,21 @@ int main(int argc, char** argv) {
         for (int k = 0; k < 8 && lf0_ok; ++k) lf0_ok = lf0_ok && ((lf0[k] & 0x8000) == (k == 0 ? 0x8000 : 0x0000));
 
         checks.expect(lf7_ok && lf0_ok,
-            "BLTCON0-BITS-7-0-ARE-THE-LF-BYTE-IN-BOTH-MODES: with only LF bit 7 "
+            "BLTCON0-BITS-7-0-ARE-THE-LF-BYTE: with only LF bit 7 "
             "set (0x80), only the all-(A,B,C)-ones selector word produces a 1 in "
             "the output; with only LF bit 0 set (0x01), only the all-zeros "
             "selector word does - pinning bits 7 and 0 as the two ends of the "
-            "8-bit LF field, in both the AREA-MODE table ('07 LF7' through '00 "
-            "LF0', p.267) and the LINE-MODE table (same rows, p.268, and "
-            "'LF7-0 Logic function minterm select lines should be preloaded "
-            "with 4A...', p.268). agnus_blitter.v:255-261 `bltcon0[7:0] <= "
-            "data_in[7:0]` (unconditional on `line`), :444 `.lf(bltcon0[7:0])`. "
-            "6-appa-control.c17, 6-appa-control.c19, 6-appa-control.c21, "
-            "6-appa-control.c23, 6-appa-control.c25, 6-appa-control.c27, "
-            "6-appa-control.c29, 6-appa-control.c31, 6-appa-control.c39, "
-            "ch6-appa-bltcon0.area.b07.con0, ch6-appa-bltcon0.area.b06.con0, "
-            "ch6-appa-bltcon0.area.b05.con0, ch6-appa-bltcon0.area.b04.con0, "
-            "ch6-appa-bltcon0.area.b03.con0, ch6-appa-bltcon0.area.b02.con0, "
-            "ch6-appa-bltcon0.area.b01.con0, ch6-appa-bltcon0.area.b00.con0, "
-            "ch6-appa-bltcon0.legend.LF70, "
-            "6-function-generator.c6, ch6-funcgen.c10, ch6-funcgen.c4, "
-            "6-appa-control.c61, 6-appa-control.c63, 6-appa-control.c65, "
-            "6-appa-control.c67, 6-appa-control.c69, 6-appa-control.c71, "
-            "6-appa-control.c73, 6-appa-control.c75, 6-appa-control.c79, "
-            "ch6-appa-bltcon0.line.b07.con0, ch6-appa-bltcon0.line.b06.con0, "
-            "ch6-appa-bltcon0.line.b05.con0, ch6-appa-bltcon0.line.b04.con0, "
-            "ch6-appa-bltcon0.line.b03.con0, ch6-appa-bltcon0.line.b02.con0, "
-            "ch6-appa-bltcon0.line.b01.con0, ch6-appa-bltcon0.line.b00.con0 .");
+            "8-bit LF field, in the AREA-MODE table ('07 LF7' and '00 "
+            "LF0', p.267). This run measures LF7 and LF0 only, so it does "
+            "not carry the ids for bits 6-1 or the whole-field ids - see "
+            "BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM below, "
+            "which measures all eight. The physical wire is unconditional "
+            "on `line` (agnus_blitter.v:255-261, :444), but the LINE-MODE "
+            "table's own bit-identity ids are graded by an actual line-mode "
+            "run instead - see LINE-MODE-LF-BITS-EACH-ALONE-MATCH-P174-"
+            "MAPPING below. "
+            "6-appa-control.c17, 6-appa-control.c31, "
+            "ch6-appa-bltcon0.area.b07.con0, ch6-appa-bltcon0.area.b00.con0 .");
     }
 
     // ---------------- BLTCON0-BITS-7-0-EACH-BIT-SELECTS-ONLY-ITS-OWN-MINTERM ----------------
@@ -1013,10 +878,27 @@ int main(int argc, char** argv) {
             "produces a 0 - Figure 6-13's 'Multi-minterm select bits (8)' "
             "(p.199), drawn as eight separate lines from the control block "
             "to eight separate AND gates, one per LF bit, matching the "
-            "AREA-MODE and LINE-MODE table rows '07 LF7' through '00 LF0' "
-            "(pp.267-268). agnus_blitter_minterm.v:29-40 ties each lf[k] to "
-            "its own AND gate before the final OR at :44 - eight independent "
-            "gates, not one shared enable. "
+            "AREA-MODE table rows '07 LF7' through '00 LF0' (p.267) and the "
+            "legend and mechanism sentences for the byte as a whole - 'LF7-0 "
+            "Logic function minterm select lines' (p.267 legend), 'There are "
+            "eight possible combinations of values of the three bits, for "
+            "each of which we need to specify the corresponding destination "
+            "bit as a zero or one' (p.174), 'the LF (Logic Function) control "
+            "byte in the BLTCON0 register' (p.174), 'bits 6 through 0 of the "
+            "LF control byte, which specify the D output for these "
+            "situations, are set to 0' (p.174). This run measures all eight "
+            "bits individually, so it -- not BLTCON0-BITS-7-0-ARE-THE-LF-"
+            "BYTE, which measures only bits 7 and 0 -- carries the ids for "
+            "bits 6-1 and the whole-field ids. agnus_blitter_minterm.v:29-40 ties "
+            "each lf[k] to its own AND gate before the final OR at :44 - "
+            "eight independent gates, not one shared enable. "
+            "6-appa-control.c19, 6-appa-control.c21, 6-appa-control.c23, "
+            "6-appa-control.c25, 6-appa-control.c27, 6-appa-control.c29, "
+            "ch6-appa-bltcon0.area.b06.con0, ch6-appa-bltcon0.area.b05.con0, "
+            "ch6-appa-bltcon0.area.b04.con0, ch6-appa-bltcon0.area.b03.con0, "
+            "ch6-appa-bltcon0.area.b02.con0, ch6-appa-bltcon0.area.b01.con0, "
+            "6-appa-control.c39, ch6-appa-bltcon0.legend.LF70, "
+            "6-function-generator.c6, ch6-funcgen.c10, ch6-funcgen.c4, "
             "ch6-fig613.f27 .");
     }
 
@@ -1095,14 +977,22 @@ int main(int argc, char** argv) {
 
     // ---------------- AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL ----------------
     {
+        // This predicate pins the manual's own worked example verbatim
+        // (p.184: "00100100-00011000" filled exclusively becomes
+        // "00011100-00001000", i.e. 0x2418 -> 0x1C08), not merely "any
+        // change from the unfilled baseline". DESC is set in the fill run,
+        // since p.184 also says "Descending mode must be used" for the fill
+        // examples -- every fill run in this file sets DESC for that
+        // reason.
         auto efe_output = [](bool efe) {
             Harness h;
             h.write_reg(BLTAFWM, 0xFFFF);
             h.write_reg(BLTALWM, 0xFFFF);
-            h.a_words = {0x8001};
+            h.a_words = {0x2418};
             h.c_words = {0x0000};
             write_bltcon0(h, 0, USEA | USEC | USED, 0xF0);  // D=A passthrough into fill
-            h.write_reg(BLTCON1, efe ? static_cast<uint16_t>(1u << 4) : 0x0000);
+            const uint16_t DESC = 1u << 1;
+            h.write_reg(BLTCON1, static_cast<uint16_t>(DESC | (efe ? (1u << 4) : 0)));
             h.write_reg(BLTSIZE, bltsize_word(1, 1));
             h.run_until_writes(1, 60);
             h.settle();
@@ -1111,13 +1001,14 @@ int main(int argc, char** argv) {
         const uint16_t off = efe_output(false);
         const uint16_t on = efe_output(true);
 
-        checks.expect(off == 0x8001 && on != off,
+        checks.expect(off == 0x2418 && on == 0x1C08,
             "AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL: with BLTCON1 bit 4 clear the "
-            "minterm output (0x8001, two isolated bits) passes through "
-            "unfilled; with it set, the SAME minterm output is exclusive-filled "
-            "into a different word - 'bit (FILL_XOR, or bit 4) in BLTCON1. The "
-            "inclusive fill mode fills' (p.184), table row '04 LF4 EFE' (p.267, "
-            "no dispute: p.184 and p.267 agree, and p.185's disputed bit is "
+            "minterm output (0x2418, DESC set) passes through unfilled; with "
+            "it set, the SAME input is exclusive-filled into 0x1C08 - the "
+            "manual's own worked example: 'with exclusive fill, the result "
+            "would be 00011100-00001000' for an input of "
+            "'00100100-00011000' (p.184), table row '04 LF4 EFE' (p.267, no "
+            "dispute: p.184 and p.267 agree, and p.185's disputed bit is "
             "BLTCON1 bit 3, not bit 4). agnus_blitter.v:287 `assign efe = ~line "
             "& bltcon1[4]`, :455 feeds the fill block's efe input. "
             "6-appa-control.c24, 6-appa-control.c40, "
@@ -1125,95 +1016,112 @@ int main(int argc, char** argv) {
             "6-area-fill.c9, ch6-fill.c8, ch6-fig613.f27 .");
     }
 
-    // ---------------- FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY ----------------
+    // ---------------- FILL-CARRY-IN / IFE-BIT3: WITHDRAWN, PAGES DISAGREE ----------------
     {
-        // LF=0x00 makes the minterm output constant 0 regardless of A/B/C
-        // (agnus_blitter_minterm.v:29-40: all eight lf bits clear means
-        // every mt[k]=0, so out=0), isolating the fill carry chain
-        // (agnus_blitter_fill.v: `carry[0]=fci^in[0]`, then
-        // `carry[j]=carry[j-1]^in[j]` for j=1..15) from the minterm logic
-        // PKG-BLT-MINTERM's own package tests (Non-goals above). With
-        // in=0 throughout, carry[15:0] is FCI replicated across all 16
-        // bits. EFE is held set so the fill block's output is the carry
-        // itself (`out=carry` when efe, agnus_blitter_fill.v), making
-        // FCI's effect visible on a single word without any multi-word/
-        // 16-BLOCKS fill machinery -- the same single-word-blit technique
-        // AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL above already uses.
-        auto fci_output = [](bool fci) {
+        // The page conflict, verified on the scans:
+        //   p.267 (appendix A legend and table): bit 3 = IFE, bit 2 = FCI.
+        //   p.184: "inclusive-fill-enable bit (FILL_OR, or bit 3)" - agrees
+        //     with p.267 on bit 3.
+        //   p.185: "another bit (FILL_CARRYIN or bit 3 in BLTCON1)" - names
+        //     bit 3 for the CARRY-IN, disagreeing with both p.267 and p.184.
+        // The pipeline's own classifier already resolved every claim naming
+        // FCI's or bit 3's bit number to not-asserted (6-appa-control.c26/
+        // c28/c41/c42, ch6-appa-bltcon0.area.b02.con1/b03.con1,
+        // legend.FCI/IFE) - none of those ids are cited by this package.
+        // ch6-fig613.f27 (Figure 6-13's "Fill Carry In" / "Fill Enable"
+        // lines, which name no bit numbers at all) is already carried by
+        // AREA-ASH, AREA-USE, BLTCON0-BITS-7-0-EACH-BIT and AREA-EFE-BIT4
+        // above, and by the neutral assertion below: none of the five
+        // grounds a bit-3- or bit-2-specific claim, so f27 does not settle
+        // the bit-number question either.
+        //
+        // The measurement below (DESC set, per p.184's "Descending mode
+        // must be used") is printed as a MEASURED note first; this package
+        // takes no side on which page's bit numbering is right. The
+        // assertion that follows it grades a narrower, bit-number-neutral
+        // claim instead (see its own comment).
+        auto fill_output = [](uint16_t a_word, uint16_t con1_bits) {
             Harness h;
             h.write_reg(BLTAFWM, 0xFFFF);
             h.write_reg(BLTALWM, 0xFFFF);
-            h.a_words = {0x8001};
+            h.a_words = {a_word};
             h.c_words = {0x0000};
-            write_bltcon0(h, 0, USEA | USEC | USED, 0x00);  // LF=0: minterm output constant 0
-            h.write_reg(BLTCON1, static_cast<uint16_t>((1u << 4) | (fci ? (1u << 2) : 0)));  // EFE=1 fixed, FCI (bit 2) toggled
+            write_bltcon0(h, 0, USEA | USEC | USED, 0xF0);
+            const uint16_t DESC = 1u << 1;
+            h.write_reg(BLTCON1, static_cast<uint16_t>(DESC | con1_bits));
             h.write_reg(BLTSIZE, bltsize_word(1, 1));
             h.run_until_writes(1, 60);
             h.settle();
             return h.data_writes.empty() ? uint16_t{0xDEAD} : h.data_writes[0];
         };
-        const uint16_t fci0 = fci_output(false);
-        const uint16_t fci1 = fci_output(true);
-
-        checks.expect(fci0 == 0x0000 && fci1 == 0xFFFF,
-            "FILL-CARRY-IN-BIT2-SEEDS-THE-FIRST-WORD-FILL-CARRY: with the minterm "
-            "output held at a constant 0 (LF=0x00) and exclusive fill enabled "
-            "(BLTCON1 bit 4), a single-word blit's stored word is 0x0000 with "
-            "BLTCON1 bit 2 clear and 0xFFFF with it set - the fill carry chain "
-            "seeded by, and only by, this one bit on a word with nothing else to "
-            "carry. Figure 6-13 (p.199): the 'Fill Carry In' line into the fill "
-            "logic, one of the five control lines ch6-fig613.f27 names; 'If the "
-            "FCI bit is a 1 instead of a 0, the area outside the lines is filled' "
-            "(p.185, Figure 6-6, the worked FCI example). agnus_blitter.v:464 "
-            "`assign fci = first_word_del ? bltcon1[2] : fcy`, "
-            "agnus_blitter_fill.v `carry[0] = fci ^ in[0]` chained through "
-            "`carry[j] = carry[j-1] ^ in[j]` for j=1..15, `out = carry` when efe. "
-            "ch6-fig613.f27 .");
-    }
-
-    // ---------------- AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL ----------------
-    {
-        // Same D=A-passthrough minterm output as AREA-EFE-BIT4 above
-        // (LF=0xF0, A=0x8001), so `off` reproduces that assertion's own
-        // unfilled baseline. BLTCON1 bit 2 (FCI) is left clear in both
-        // runs here, so this run's fill-carry seed is 0 -- a different,
-        // narrower probe than FILL-CARRY-IN-BIT2 above, which holds LF=0x00
-        // and toggles bit 2 instead.
-        auto ife_output = [](bool ife) {
-            Harness h;
-            h.write_reg(BLTAFWM, 0xFFFF);
-            h.write_reg(BLTALWM, 0xFFFF);
-            h.a_words = {0x8001};
-            h.c_words = {0x0000};
-            write_bltcon0(h, 0, USEA | USEC | USED, 0xF0);  // D=A passthrough into fill
-            h.write_reg(BLTCON1, ife ? static_cast<uint16_t>(1u << 3) : 0x0000);
-            h.write_reg(BLTSIZE, bltsize_word(1, 1));
-            h.run_until_writes(1, 60);
-            h.settle();
-            return h.data_writes.empty() ? uint16_t{0xDEAD} : h.data_writes[0];
+        auto hex4 = [](uint16_t v) {
+            char buf[8];
+            std::snprintf(buf, sizeof buf, "0x%04X", v);
+            return std::string(buf);
         };
-        const uint16_t off = ife_output(false);
-        const uint16_t on = ife_output(true);
+        const uint16_t EFE = 1u << 4, IFE_BIT3 = 1u << 3, FCI_BIT2 = 1u << 2;
+        const uint16_t carry_via_bit2 = fill_output(0x2418, static_cast<uint16_t>(EFE | FCI_BIT2));
+        const uint16_t carry_via_bit3 = fill_output(0x2418, static_cast<uint16_t>(EFE | IFE_BIT3));
+        const uint16_t plain_exclusive = fill_output(0x2418, EFE);
+        const uint16_t inclusive = fill_output(0x2418, IFE_BIT3);
+        const bool bit2_matches_page = (carry_via_bit2 == 0xE3F7);
+        const bool bit3_matches_plain = (carry_via_bit3 == plain_exclusive);
 
-        checks.expect(off == 0x8001 && on == 0xFFFF,
-            "AREA-IFE-BIT3-ENABLES-INCLUSIVE-FILL: with BLTCON1 bit 3 clear the "
-            "minterm output (0x8001, two isolated bits) passes through unfilled; "
-            "with it set, the SAME minterm output is inclusive-filled into "
-            "0xFFFF - 'The inclusive fill mode fills between lines, "
-            "leaving the lines intact' (p.184), and appendix A p.267's bit-3 "
-            "table row (the corpus's OCR of this exact row is defective -- see "
-            "'CORPUS DEFECT FOUND' above -- but the PDF scan and "
-            "appA-blitter/p267.txt agree bit 3 is IFE, matching "
-            "agnus_blitter.v:288 below). Figure 6-13 (p.199): the 'Fill Enable' "
-            "line into the fill logic, one of the five control lines "
-            "ch6-fig613.f27 names, drawn as one line covering both this bit and "
-            "BLTCON1 bit 4 (AREA-EFE-BIT4-ENABLES-EXCLUSIVE-FILL above, which "
-            "already carries ch6-fig613.f27 for the EFE half); this assertion is "
-            "new coverage for the IFE half, not previously asserted anywhere in "
-            "this file. agnus_blitter.v:288 `assign ife = ~line & bltcon1[3]`, "
-            ":455 feeds the fill block's ife input; agnus_blitter_fill.v "
-            "`out = carry | in` when ife (and not efe). "
+        checks.note("with DESC set and an exclusive fill (EFE) of 0x2418, "
+            "forcing the fill carry-in through BLTCON1 bit 2 gives " +
+            hex4(carry_via_bit2) + " (" +
+            (bit2_matches_page ? "matches" : "does NOT match") +
+            " p.185's own worked FCI-exclusive value 0xE3F7), while forcing "
+            "it through bit 3 instead gives " + hex4(carry_via_bit3) + " (" +
+            (bit3_matches_plain ? "identical to" : "differs from") +
+            " the plain-exclusive baseline " + hex4(plain_exclusive) +
+            ", measured here with neither bit set). agnus_blitter.v:288 "
+            "`assign ife = ~line & bltcon1[3]`, :464 `assign fci = "
+            "first_word_del ? bltcon1[2] : fcy`. A source observation, not "
+            "a conformance finding: the page conflict is not resolved by "
+            "running the RTL.");
+
+        // Figure 6-13 (p.199, ch6-fig613.f27) draws "Fill Carry In" as one
+        // of the five control lines the figure names. This assertion
+        // establishes that sub-fact's substance without taking a side on
+        // the bit-number conflict above: p.185's own worked FCI-exclusive
+        // example, $E3F7, is
+        // produced by forcing the carry-in through BLTCON1 bit 2 OR by
+        // forcing it through bit 3 - true whichever page's numbering this
+        // RTL happens to follow, so the assertion does not depend on the
+        // still-open question above.
+        checks.expect(carry_via_bit2 == 0xE3F7 || carry_via_bit3 == 0xE3F7,
+            "FILL-CARRY-IN-PRODUCES-P185-WORKED-EXAMPLE: with DESC set and "
+            "an exclusive fill of 0x2418, forcing the fill carry-in through "
+            "EITHER BLTCON1 bit 2 or bit 3 produces p.185's own worked "
+            "exclusive-fill result, $E3F7 - 'for the above example, ... "
+            "with exclusive fill, the output would be 11100011-11110111' "
+            "(p.185); the same sentence begins 'There is another bit "
+            "(FILL_CARRYIN or bit 3 in BLTCON1) that forces the area "
+            "\"outside\" the lines be filled', naming bit 3, the disputed "
+            "number. Figure 6-13's 'Fill Carry In' line (p.199, "
+            "ch6-fig613.f27) is BLTCON0/BLTCON1-programmable either way, "
+            "which is the substance the figure claim needs; which specific "
+            "bit number is FCI is the separate, unresolved question recorded "
+            "below. "
             "ch6-fig613.f27 .");
+
+        checks.record(
+            "FILL-CARRY-IN-BIT2-AND-AREA-IFE-BIT3: BLTCON1 bit 2 (FCI, 'Fill "
+            "carry input') and bit 3 (IFE, 'Inclusive fill enable') per "
+            "appendix A p.267's table and legend - but p.185 reads 'another "
+            "bit (FILL_CARRYIN or bit 3 in BLTCON1) that forces the area "
+            "\"outside\" the lines be filled', naming bit 3 for the carry-in "
+            "and disagreeing with p.267 (and with p.184's 'FILL_OR, or bit "
+            "3' for IFE, which agrees with p.267 on bit 3). Two pages "
+            "against one on the same bit number; whether p.185 is a misprint "
+            "is a question for Amiga experts, not for this package, so "
+            "neither bit number is graded until one rules. The inclusive-"
+            "fill VALUE for a bit-3 IFE reading is recorded, not asserted: "
+            "with BLTCON1 bit 3 set, the input 0x2418 fills to " +
+            hex4(inclusive) + " (the page's own worked example, p.184, "
+            "prints '00111100-00011000' = 0x3C18) - only the BIT "
+            "NUMBER is withdrawn, not the fill behaviour.");
     }
 
     // ---------------- AREA-DESC-BIT1-SELECTS-DESCENDING-MODE ----------------
@@ -1251,7 +1159,7 @@ int main(int argc, char** argv) {
 
     // ---------------- BLTCON1-BIT0-SELECTS-AREA-OR-LINE-MODE ----------------
     {
-        // The SAME BLTCON0 (USEA|USEC|USED, ash=15, LF=0) and the SAME
+        // The SAME BLTCON0 (USEA|USEC|USED, ash=14, LF=0) and the SAME
         // BLTSIZE(width=2,height=1) word behave as two entirely different
         // FSMs depending on this one bit: as an ordinary 2-word rectangle
         // (2 destination writes) with LINE=0, or as a single-pixel line
@@ -1260,7 +1168,7 @@ int main(int argc, char** argv) {
         auto we_count_for = [](bool line_mode) {
             Harness h;
             for (int i = 0; i < 4; ++i) h.c_words.push_back(0x0000);
-            write_bltcon0(h, 15, USEA | USEC | USED, 0x00);
+            write_bltcon0(h, 14, USEA | USEC | USED, 0x00);  // any non-zero shift; not this claim's subject
             h.write_reg(BLTCON1, line_mode ? LINE_BIT : uint16_t{0x0000});
             h.write_reg(BLTSIZE, bltsize_word(2, 1));
             h.run_cycles(70);
@@ -1278,8 +1186,8 @@ int main(int argc, char** argv) {
             "2-word-wide, 1-row rectangle) with BLTCON1 bit 0 clear, and exactly "
             "1 destination write (a single-pixel line draw, the same BLTSIZE "
             "word now read as a pixel count, not a rectangle) with it set - "
-            "'the two basic modes, area and line, which are selected by bit 0 of "
-            "BLTCON1' (p.267), table rows '00 LF0 LINE(=0)' (p.267) and '00 LF0 "
+            "'There are two basic modes, area and line, which are selected by "
+            "bit 0 of BLTCON1' (p.267), table rows '00 LF0 LINE(=0)' (p.267) and '00 LF0 "
             "LINE(=1)' (p.268). agnus_blitter.v:285 `assign line = bltcon1[0]`, "
             ":659-663 `if (line) blt_next=BLT_L1; else blt_next=BLT_A;` is the "
             "only branch point between the two FSMs. "
@@ -1295,13 +1203,29 @@ int main(int argc, char** argv) {
     // LINE MODE (appendix A p.268)
     // ============================================================
 
-    // ---------------- LINE-MODE-BLTCON0-BIT9-USEC-GATES-C-CHANNEL-FETCH ----------------
+    // ---------------- LINE-MODE-BLTCON0-BITS-11-10-9-8: DECLINED, SOURCE OBSERVATIONS KEPT ----------------
     {
+        // Grading bit 9 (USEC) as load-bearing by p.170's general "disabled
+        // channel, no memory cycles" rule while declining its siblings 11,
+        // 10 and 8 by the SAME page for lack of a page-derived expectation
+        // is not an available split: either p.170 governs these four bits
+        // in line mode, or it does not.
+        //   - If it does: USED=0 should predict no D writes and USEB=1
+        //     should predict B fetches. Neither happens in this RTL (see
+        //     the MEASURED note below) -- so grading bit 9 by p.170 while
+        //     declining 11/10/8 by the same page is inconsistent.
+        //   - If it does not (p.189: line mode "changes the meaning of some
+        //     other bits in BLTCON0 and BLTCON1"; p.268 prints the line-mode
+        //     constants "1 0 1 1" where p.267 prints USEA..USED as area-mode
+        //     enables): then bit 9 has no page-derived expectation either.
+        // Either way, none of the four bits is graded here. The manual
+        // prescribes the fixed line-mode pattern and states no consequence
+        // for a different one; silence is not a requirement.
         auto c_granted = [](bool usec) {
             Harness h;
             for (int i = 0; i < 4; ++i) h.c_words.push_back(0x0000);
             const uint16_t use = static_cast<uint16_t>(USEA | USED | (usec ? USEC : 0));
-            write_bltcon0(h, 15, use, 0x00);
+            write_bltcon0(h, 14, use, 0x00);
             h.write_reg(BLTCON1, LINE_BIT);
             h.write_reg(BLTSIZE, bltsize_word(2, 2));
             h.run_cycles(60);
@@ -1311,33 +1235,10 @@ int main(int argc, char** argv) {
         const bool with_usec = c_granted(true);
         const bool without_usec = c_granted(false);
 
-        checks.expect(with_usec && !without_usec,
-            "LINE-MODE-BLTCON0-BIT9-USEC-GATES-C-CHANNEL-FETCH: with BLTCON0 bit "
-            "9 (USEC) set, channel C is granted during a line-mode blit; with it "
-            "clear (bits 11 and 8 held identical in both runs), C is never "
-            "granted - 'The SRCA, SRCC, and DEST bits of BLTCON0 should be set "
-            "to one' (p.191), 'The C DMA channel represents the original [...]' "
-            "(p.191), table row '09 1 0' (appendix A p.268, SRCC/USEC). "
-            "agnus_blitter.v:823 `dma_req = usec;` inside BLT_L2, the line "
-            "mode's C-channel fetch state. "
-            "6-appa-control.c57, 6-line-mode.c62, 6-line-mode.c87, "
-            "6-line-mode.c68, ch6-appa-bltcon0.line.b09.con0 .");
-    }
-
-    // ---------------- LINE-MODE-BLTCON0-BITS-11-10-8-ARE-NOT-HARDWARE-ENFORCED ----------------
-    {
-        // BLTCON0 bits 11 (USEA), 10 (USEB) and 8 (USED) are read the SAME
-        // way in line mode as in area mode (agnus_blitter.v:252 is
-        // unconditional on `line`), but no line-mode FSM state
-        // (BLT_L1-BLT_L4, agnus_blitter.v:795-869) ever tests usea, useb or
-        // used - only usec (previous assertion). CONTROL: clearing usec on
-        // this exact measurement basis DOES change the signature (already
-        // shown above with a boolean; re-demonstrated here on the same
-        // string-signature basis the sweep below uses).
         auto line_signature = [](uint16_t use_bits) {
             Harness h;
             for (int i = 0; i < 4; ++i) h.c_words.push_back(0x0000);
-            write_bltcon0(h, 15, use_bits, 0x00);
+            write_bltcon0(h, 14, use_bits, 0x00);
             h.write_reg(BLTCON1, LINE_BIT);
             h.write_reg(BLTSIZE, bltsize_word(2, 2));
             h.run_cycles(60);
@@ -1348,87 +1249,112 @@ int main(int argc, char** argv) {
             return sig;
         };
         const std::string documented = line_signature(USEA | USEC | USED);
-        const std::string control_no_c = line_signature(USEA | USED);
         const std::string no_a = line_signature(USEC | USED);
         const std::string b_set = line_signature(USEA | USEB | USEC | USED);
         const std::string no_d = line_signature(USEA | USEC);
+        const bool usec_differs = (with_usec != without_usec);
+        const bool no_a_equal = (no_a == documented);
+        const bool b_set_equal = (b_set == documented);
+        const bool no_d_equal = (no_d == documented);
 
-        checks.expect(
-            documented != control_no_c &&
-            no_a == documented && b_set == documented && no_d == documented,
-            "LINE-MODE-BLTCON0-BITS-11-10-8-ARE-NOT-HARDWARE-ENFORCED [control: "
-            "clearing USEC (bit 9, shown load-bearing above) on the same "
-            "measurement DOES change the grant/we signature]: clearing USEA "
-            "(bit 11), setting USEB (bit 10) against its documented zero, or "
-            "clearing USED (bit 8) each leaves the grant/we signature over a "
-            "2-pixel line blit IDENTICAL to the documented-pattern baseline - "
-            "'The SRCA, SRCC, and DEST bits of BLTCON0 should be set to one, and "
-            "the SRCB flag should be set to zero' (p.191), matching table rows "
-            "'11 1 0', '10 0 0', '08 1 0' (appendix A p.268). "
-            "agnus_blitter.v:795-869 (BLT_L1-BLT_L4) never reads usea, useb or "
-            "used. "
+        // Source observations, not conformance findings (this package's own
+        // "reading inside the module" standard: would this red still be red
+        // at the pins, and does any page ask the question at all? Here no
+        // page asks it, so there is nothing for a red OR a green to confirm
+        // or contradict).
+        checks.note(std::string("agnus_blitter.v:823 `dma_req = usec;` inside "
+            "BLT_L2: with USEC set, channel C granted = ") +
+            (with_usec ? "true" : "false") +
+            "; with USEC clear, channel C granted = " +
+            (without_usec ? "true" : "false") + "; the two values differ = " +
+            (usec_differs ? "true" : "false") + ".");
+        checks.note("agnus_blitter.v:795-869 (BLT_L1-BLT_L4) never reads usea, "
+            "useb or used: the grant/we signature of a 2-pixel line blit, "
+            "documented pattern (USEA|USEC|USED) = \"" + documented + "\", "
+            "USEA cleared = \"" + no_a + "\" (equal to documented = " +
+            (no_a_equal ? "true" : "false") + "), USEB set = \"" + b_set +
+            "\" (equal to documented = " + (b_set_equal ? "true" : "false") +
+            "), USED cleared = \"" + no_d + "\" (equal to documented = " +
+            (no_d_equal ? "true" : "false") + ").");
+
+        checks.record(
+            "LINE-MODE-BLTCON0-BITS-11-10-9-8-REQUIRED-PATTERN-NOT-GRADED-HERE: "
+            "the line-mode table requires BLTCON0 bits 11, 10, 9 and 8 to hold "
+            "1, 0, 1 and 1 - 'The SRCA, SRCC, and DEST bits of BLTCON0 should be "
+            "set to one, and the SRCB flag should be set to zero' (p.191), "
+            "table rows '11 1 0', '10 0 0', '09 1 0', '08 1 0' (appendix A "
+            "p.268) - but no page states what the blitter does with a "
+            "different pattern in any of the four. Two readings are "
+            "available and neither settles it: p.170's general 'Each of the "
+            "DMA channels can be independently enabled or disabled ... When "
+            "disabled, no memory cycles will be executed for that channel' "
+            "would predict specific misbehaviour for USEB/USED that "
+            "this RTL does not show (see the MEASURED note above), and p.189 "
+            "says line mode 'changes the meaning of some other bits in "
+            "BLTCON0 and BLTCON1' in the first place, which would mean p.170 "
+            "simply does not apply to any of these four bits in line mode - "
+            "in which case bit 9 has no page-derived expectation either, "
+            "despite the RTL happening to gate channel C's fetch on it. This "
+            "package does not assert full line-mode pixel-by-pixel "
+            "correctness (that is PKG-BLT-LINE's job, per this file's own "
+            "Non-goals), so there is no in-scope observable left to grade "
+            "any of the four ids by. Withdrawn rather than graded by the "
+            "RTL's own behaviour either way. "
+            "6-appa-control.c57, 6-line-mode.c62, 6-line-mode.c87, "
+            "ch6-appa-bltcon0.line.b09.con0, "
             "6-line-mode.c61, 6-line-mode.c63, 6-line-mode.c64, 6-line-mode.c86, "
             "6-line-mode.c88, 6-line-mode.c89, ch6-line.c32, ch6-line.c33, "
             "ch6-linesum.c13, ch6-linesum.c14, 6-appa-control.c53, "
             "6-appa-control.c55, 6-appa-control.c59, "
             "ch6-appa-bltcon0.line.b11.con0, ch6-appa-bltcon0.line.b10.con0, "
             "ch6-appa-bltcon0.line.b08.con0 .");
+
+        // 6-line-mode.c68 is about the C channel's role in the line-mode
+        // logic function, a different subject from bit 9's fetch-gating
+        // question above, so it is recorded on its own.
+        checks.record(
+            "LINE-MODE-USEC-C68-NOT-USED: 6-line-mode.c68's own restatement "
+            "reads 'The C DMA channel represents the original destination "
+            "data'; the page (p.191) reads 'The C DMA channel represents "
+            "the original source, the A channel the bit to set in the "
+            "line, and the B channel the pattern to draw' - the "
+            "restatement does not match the page (source, not destination "
+            "data), and no proposition in this package's specification "
+            "rests on this id. "
+            "6-line-mode.c68 .");
     }
 
-    // ---------------- LINE-MODE-BLTCON1-BITS-11-10-9-8-7-5-ARE-UNUSED-OR-RESERVED ----------------
+    // ---------------- LINE-MODE-BLTCON1 REQUIRED-ZERO IDS: CARRIED ON SING'S OWN RUN ----------------
     {
-        // FIXED (was: SUD alone as control, comparing a flat "every grant's
-        // address, any channel" signature). Two problems in the original:
-        // (1) it mixed C-bank grant addresses (BLT_L2) and D/C-bank grant
-        // addresses (BLT_L4) into one undifferentiated string; (2) SUD alone,
-        // held against SUL=AUL=0, is a tautological no-op in
-        // agnus_blitter.v:609-612's own formula (`lineinc = (SUD&&!AUL) ||
-        // (!SUD&&!SUL&&!sign_del)`: with SUL=AUL=0 both branches evaluate to
-        // 1 regardless of SUD), so the control could never have shown a
-        // difference and this assertion could not pass regardless of the
-        // "unused" bits. CONTROL, corrected: SING (bit 1) + SUD (bit 4)
-        // together are shown genuinely wired by the fixed LINE-MODE-SIGN and
-        // LINE-MODE-SING assertions above (both now green), gating the
-        // D-channel write count itself (agnus_blitter.v:860) - a simpler,
-        // more robust observable than an address sequence for a control.
-        auto line_write_count = [](uint16_t con1_extra) {
-            Harness h;
-            for (int i = 0; i < 6; ++i) h.c_words.push_back(0x0000);
-            write_bltcon0(h, 15, USEA | USEC | USED, 0x00);
-            h.write_reg(BLTCON1, static_cast<uint16_t>(LINE_BIT | con1_extra));
-            h.write_reg(BLTSIZE, bltsize_word(2, 3));
-            h.run_cycles(90);
-            h.settle();
-            return h.data_writes.size();
-        };
-        const size_t baseline = line_write_count(0);
-        const size_t control = line_write_count(static_cast<uint16_t>((1u << 1) | (1u << 4) | (1u << 6)));  // SING+SUD+SIGN
-        const uint8_t unused_bits[] = {11, 10, 9, 8, 7, 5};
-        bool all_unchanged = true;
-        for (uint8_t b : unused_bits)
-            if (line_write_count(static_cast<uint16_t>(1u << b)) != baseline) all_unchanged = false;
-
-        checks.expect(control != baseline && all_unchanged,
-            "LINE-MODE-BLTCON1-BITS-11-10-9-8-7-5-ARE-UNUSED-OR-RESERVED [control: "
-            "setting bits 1+4+6 (SING+SUD+SIGN) together, on the identical "
-            "measurement, DOES change the D-channel write count - SIGN=1 is "
-            "needed alongside SING+SUD to make `first_pixel` ever drop to 0, "
-            "see LINE-MODE-SING's header note]: setting BLTCON1 bit 11, 10, "
-            "9, 8, 7 or 5 alone (LINE still set) leaves the number of D-channel "
-            "writes over a 3-pixel line blit IDENTICAL to the all-clear baseline "
-            "- table row values '0','0','0','0','0','0 (Reserved)' at bits "
-            "11,10,9,8,7,5 (appendix A p.268), and 'The OVFLAG should be "
-            "cleared' (p.191, p.192 register summary). agnus_blitter.v:277-283 "
-            "stores BLTCON1[11:0] wholesale; no expression in the file reads "
-            "bits 11, 10, 9, 8, 7 or 5. "
-            "6-appa-control.c54, 6-appa-control.c56, 6-appa-control.c58, "
-            "6-appa-control.c60, 6-appa-control.c62, 6-appa-control.c66, "
-            "6-appa-control.c88, "
-            "ch6-appa-bltcon0.line.b11.con1, ch6-appa-bltcon0.line.b10.con1, "
-            "ch6-appa-bltcon0.line.b09.con1, ch6-appa-bltcon0.line.b08.con1, "
-            "ch6-appa-bltcon0.line.b07.con1, ch6-appa-bltcon0.line.b05.con1, "
-            "ch6-appa-lf.legend.reserved, 6-line-mode.c65, 6-line-mode.c93, "
-            "ch6-line.c34, ch6-linesum.c18 .");
+        // An ad-hoc line (all-zero pointers/moduli, START=15 -- a value
+        // p.191/192's "x1 modulo 15" cannot produce) showing that the
+        // documented zero pattern for BLTCON1 bits 11,10,9,8,7,5 "draws a
+        // correctly-counted line" via a raw D-channel write COUNT is not
+        // what any page states (p.269 measures line length in DOTS, and
+        // this package's own SING assertion shows the RTL does not write
+        // once per dot when SING is set), and would not be a real p.192
+        // line to begin with.
+        //
+        // No separate run is needed: LINE-MODE-SING-BIT1 below already runs
+        // a genuine p.192 flat line (dx=2, dy=0, BLTAPT=-4, BLTAMOD=-8,
+        // BLTBMOD=0, SIGN=1, octant 7) with BLTCON1 bits 11,10,9,8,7,5 ALL
+        // clear in both its runs -- its own SING=0 branch IS the documented
+        // zero pattern, drawing a real, page-derived line. These 13 ids are
+        // carried there instead of on a separate, weaker run. The "no
+        // effect of setting any of them to 1" half is not asserted anywhere
+        // (no page states it); OVFLAG is declined separately below, since
+        // no page gives its bit position at all.
+        checks.record(
+            "LINE-MODE-BLTCON1-OVFLAG-BIT-POSITION-UNSTATED: p.191 says 'The "
+            "OVFLAG should be cleared' and the p.192 register summary says "
+            "'BLTCON1 bit OVFLAG = 0', but no page read for this task states "
+            "which of BLTCON1's bit positions OVFLAG occupies - it is not one "
+            "of the named bits in the line-mode table (p.268), which lists "
+            "START/TEXTURE, the constants above, LF7-0, SIGN, the reserved "
+            "bit, SUD/SUL/AUL, SING and LINE. This package does not assign "
+            "OVFLAG to bit 11, 10, 9, 8, 7 or 5 without further evidence "
+            "(SPECIFICATION.md Proposition 16). "
+            "6-line-mode.c65, 6-line-mode.c93, ch6-line.c34, ch6-linesum.c18 .");
     }
 
     // ---------------- LINE-MODE-START-BITS-15-12-REUSE-THE-ASH-FIELD ----------------
@@ -1448,46 +1374,65 @@ int main(int argc, char** argv) {
         // BLT_L1 and fed the "2Y-X" formula per source conflict #6a,
         // packages.md item 6 - see agnus_blitter_adrgen.v:104-122); ash is
         // the START3-0 bit-position field the table names, nothing more.
-        // The previous version of this assertion filtered h.grants for
-        // channel=='A' to find that pointer's step - but line mode's FSM
-        // (BLT_L1-L4, agnus_blitter.v:795-869) never sets chsel==CHA at a
-        // state where dma_req is asserted (chsel is CHA only at BLT_L1 and
-        // BLT_L3, both dma_req=0 there), so no 'A' grant is EVER recorded
-        // in line mode and first/second stayed -1 for every run,
-        // structurally forcing delta15==delta0==0 regardless of ash or any
-        // other RTL behavior. FIXED: observe the D-channel write ADDRESS
-        // SEQUENCE (agnus_blitter.v:491's `we`) over 4 pixels instead -
-        // ash=15 makes lineinc fire on pixel 1 (ash==1111), stepping the
-        // pointer bank one word early relative to ash=0, which propagates
-        // into a different address trajectory for every later pixel too.
-        auto d_addr_sequence = [](uint16_t ash) {
+        // A fixture with no BLTAPT/modulo (an ad-hoc line, not a page one)
+        // using ash=15 would not describe any line the manual's own
+        // arithmetic allows: 15 is a START value p.191/192's "x1 modulo 15"
+        // cannot produce (modulo 15 gives 0-14 only).
+        //
+        // This run instead uses the same genuine p.192 flat line
+        // LINE-MODE-SING uses (dx=2, dy=0: BLTAPT=-4, BLTAMOD=-8, BLTBMOD=0,
+        // SIGN=1, octant 7,
+        // LF=$CA, BLTBDAT=$FFFF solid, C=$0000), varying only START3-0
+        // (x1=14 versus x1=0 - both within "0 thru 15 hex" AND within "x1
+        // modulo 15"). The page's own expectation is that the line's first
+        // pixel sits at the START bit position and the hardware "moves the
+        // A bit across the word" (p.268) as the line proceeds: starting at
+        // bit 14 (one pixel before the word boundary), the third of three
+        // pixels crosses into the next word; starting at bit 0, none of the
+        // three do.
+        auto flat_line_d_addrs = [](uint16_t start) {
             Harness h;
-            for (int i = 0; i < 8; ++i) h.c_words.push_back(0x0000);
-            h.write_reg(BLTAPTH, 0);
-            h.write_reg(BLTAPTL, 0);       // accumulator stays 0 all run (BLTAMOD/BLTBMOD also left 0)
+            for (int i = 0; i < 3; ++i) h.c_words.push_back(0x0000);
+            h.write_reg(BLTAFWM, 0xFFFF);
+            h.write_reg(BLTALWM, 0xFFFF);
+            h.write_reg(BLTADAT, 0x8000);
+            h.write_reg(BLTBDAT, 0xFFFF);
+            h.write_reg(BLTAPTH, 0xFFFF);
+            h.write_reg(BLTAPTL, 0xFFFC);        // BLTAPT = 4*dy-2*dx = -4 (dx=2,dy=0)
+            h.write_reg(BLTAMOD, 0xFFF8);         // 4*(dy-dx) = -8
+            h.write_reg(BLTBMOD, 0x0000);         // 4*dy = 0
+            h.write_reg(BLTCMOD, 40);
+            h.write_reg(BLTDMOD, 40);
+            h.write_reg(BLTCPTH, 0);
+            h.write_reg(BLTCPTL, 0x1000);
             h.write_reg(BLTDPTH, 0);
             h.write_reg(BLTDPTL, 0x1000);
-            write_bltcon0(h, ash, USEA | USEC | USED, 0x00);
-            h.write_reg(BLTCON1, LINE_BIT);  // octant 6: SUD=SUL=AUL=0
-            h.write_reg(BLTSIZE, bltsize_word(2, 4));
-            h.run_cycles(120);
+            write_bltcon0(h, start, USEA | USEC | USED, 0xCA);
+            const uint16_t SIGN = 1u << 6, SUD = 1u << 4;  // SIGN=1 per p.192; octant 7
+            h.write_reg(BLTCON1, static_cast<uint16_t>(LINE_BIT | SIGN | SUD));
+            h.write_reg(BLTSIZE, bltsize_word(2, 3));  // width=2 fixed, height=dx+1=3 (p.191/192)
+            h.run_cycles(90);
             h.settle();
             std::vector<uint32_t> addrs;
             for (auto& g : h.grants) if (g.channel == 'D') addrs.push_back(g.address);
             return addrs;
         };
-        const auto seq15 = d_addr_sequence(15);
-        const auto seq0 = d_addr_sequence(0);
+        const std::vector<uint32_t> expect14 = {0x800, 0x800, 0x801};
+        const std::vector<uint32_t> expect0  = {0x800, 0x800, 0x800};
+        const auto seq14 = flat_line_d_addrs(14);
+        const auto seq0 = flat_line_d_addrs(0);
 
-        checks.expect(seq15.size() == 4 && seq0.size() == 4 && seq15 != seq0,
-            "LINE-MODE-START-BITS-15-12-REUSE-THE-ASH-FIELD: starting a line "
-            "blit (octant 6) with BLTCON0[15:12]=15 versus =0 - all else "
-            "identical - changes the D-channel write-address sequence over a "
-            "4-pixel line, confirming line mode's START3-0 field is the SAME "
-            "physical bits as area mode's ASH3-0, genuinely consumed (not "
-            "merely stored) as the line's starting bit-position value - table "
-            "rows '15 START3 ...' through '12 START0 ...' (appendix A p.268), "
-            "'START3-0 Starting point of line' (p.268 legend), 'The A bit is "
+        checks.expect(seq14 == expect14 && seq0 == expect0,
+            "LINE-MODE-START-BITS-15-12-REUSE-THE-ASH-FIELD: on p.192's own "
+            "flat line (dx=2, dy=0), starting at BLTCON0[15:12]=14 crosses "
+            "into the next word on the third pixel (D addresses 0x800, "
+            "0x800, 0x801); starting at 0, all three pixels stay in the "
+            "first word (0x800, 0x800, 0x800) - confirming line mode's "
+            "START3-0 field is the SAME physical bits as area mode's "
+            "ASH3-0, genuinely consumed (not merely stored) as the line's "
+            "starting bit-position value - table rows '15 START3 ...' "
+            "through '12 START0 ...' (appendix A p.268), 'START3-0 "
+            "Starting point of line' (p.268 legend), 'The A bit is "
             "automatically moved across the word by the hardware' (p.268). "
             "agnus_blitter.v:609 `wire lineinc = (...) && ash==4'b1111`. "
             "6-appa-control.c45, 6-appa-control.c47, 6-appa-control.c49, "
@@ -1499,48 +1444,56 @@ int main(int argc, char** argv) {
 
     // ---------------- LINE-MODE-TEXTURE-BITS-15-12-REUSE-THE-BSH-FIELD ----------------
     {
-        // `bsh` (BLTCON1[15:12]) is the identical unconditional wire
-        // AREA-BSH-BITS-15-12-ARE-B-SHIFT-VALUE already measured
-        // (agnus_blitter.v:274 has no `line` condition); this assertion
-        // adds the one line-mode-specific fact: line mode reads bit 0 of
-        // the SHIFTED result, not the raw register (agnus_blitter.v:410
-        // `bltbhold <= {16{shiftbout[0]}}` when `line`). BLTBDAT=0x0001
-        // (bit 0 only) with bsh=0 (no shift) should leave that bit at
-        // position 0; with bsh=15 (maximum shift) it should not.
-        auto texture_bit = [](uint16_t bsh) {
+        // A predicate over the ENTIRE 16-bit output word would claim it
+        // becomes uniform - that line mode replicates the texture bit
+        // across all 16 positions is agnus_blitter.v:410 (`bltbhold <=
+        // {16{shiftbout[0]}}`), not anything the page states; p.268/p.192
+        // say only which BIT of BLTBDAT the texture read starts at ("0 =
+        // last significant bit").
+        //
+        // This assertion uses p.192's own setup and asserts only the bit at
+        // the A position: BLTADAT=$8000 (A's one set bit, per p.192's own
+        // register summary), C held at $0000 throughout, LF=$4A (the
+        // exclusive-or line function, also p.192's own value). At the bit
+        // position where A=1, ABC=A.B.NOT(C) + NOT(A).C reduces (C=0) to
+        // just B - i.e. the output AT THAT ONE BIT equals the texture bit
+        // the page describes, whatever the other 15 bits do (they are 0
+        // here because C=0 and A=0 forces NOT(A).C=0 at every other
+        // position - a consequence of this probe's own chosen C, not an
+        // assumption about replication).
+        auto texture_at_a_bit = [](uint16_t texture) {
             Harness h;
-            for (int i = 0; i < 2; ++i) h.c_words.push_back(0x0000);
-            // FIXED (was h.b_words = {...}): line mode's FSM (BLT_L1-L4,
-            // agnus_blitter.v:795-869) never sets chsel==CHB and never
-            // requests a DMA grant for channel B -- b_words, which is only
-            // consumed on a CHB grant, is dead stimulus here and BLTBDAT
-            // stayed at its reset value of 0 regardless of bsh. BLTBDAT is
-            // the same register either way (reg_address_in/data_in path,
-            // agnus_blitter.v:359-366); in line mode the programmer loads it
-            // with an ordinary CPU register write instead of via DMA fetch,
-            // which is what write_reg does.
-            write_bltcon0(h, 0, USEC | USED, 0xCC);  // D=B passthrough
-            h.write_reg(BLTCON1, static_cast<uint16_t>(LINE_BIT | (bsh << 12)));
+            for (int i = 0; i < 2; ++i) h.c_words.push_back(0x0000);  // C held at 0 (this probe's own choice, not a page value)
+            h.write_reg(BLTAFWM, 0xFFFF);
+            h.write_reg(BLTALWM, 0xFFFF);
+            h.write_reg(BLTADAT, 0x8000);  // p.192: "BLTADAT = $8000"
+            write_bltcon0(h, 0 /* START, not this claim's subject */, USEA | USEC | USED, 0x4A);
+            h.write_reg(BLTCON1, static_cast<uint16_t>(LINE_BIT | (texture << 12)));
             h.write_reg(BLTBDAT, 0x0001);
             h.write_reg(BLTSIZE, bltsize_word(2, 1));
             h.run_cycles(50);
             h.settle();
-            return h.data_writes.empty() ? uint16_t{0xDEAD} : h.data_writes[0];
+            const uint16_t d = h.data_writes.empty() ? uint16_t{0xDEAD} : h.data_writes[0];
+            return static_cast<uint16_t>(d & 0x8000);  // only the A-position bit (15)
         };
-        const uint16_t noshift = texture_bit(0);
-        const uint16_t maxshift = texture_bit(15);
+        const uint16_t texture0 = texture_at_a_bit(0);
+        const uint16_t texture15 = texture_at_a_bit(15);
 
-        checks.expect(noshift == 0xFFFF && maxshift != noshift,
-            "LINE-MODE-TEXTURE-BITS-15-12-REUSE-THE-BSH-FIELD: with BLTBDAT's "
-            "single set bit at position 0 and BLTCON1[15:12]=0 (no shift), the "
-            "line's texture replication reads that bit as 1 (D=0xFFFF, since "
-            "line mode replicates shiftbout[0] across all 16 output bits); with "
-            "BLTCON1[15:12]=15 (maximum shift) the SAME BLTBDAT no longer reads "
-            "as 1 there - confirming BLTCON1[15:12] is the identical BSH3-0 "
-            "field, genuinely consumed as line mode's texture-bit selector, not "
-            "a separately-named but inert field - table rows '15 ... TEXTURE3' "
-            "through '12 ... TEXTURE0' (appendix A p.268), 'The \"B\" source is "
-            "used for texturing the drawn lines' (p.268). "
+        checks.expect(texture0 == 0x8000 && texture15 == 0x0000,
+            "LINE-MODE-TEXTURE-BITS-15-12-REUSE-THE-BSH-FIELD: with BLTADAT="
+            "$8000, BLTBDAT's single set bit at position 0, C held at $0000 "
+            "(this probe's own choice, isolating the one bit under test), "
+            "and LF=$4A (p.192's own exclusive-or byte value), the bit at "
+            "the A position reads set with BLTCON1[15:12]=0 (TEXTURE=0, 'start bit "
+            "for line texture (0 = last significant bit)', p.192) and clear "
+            "with BLTCON1[15:12]=15 (TEXTURE=15) - confirming BLTCON1[15:12] "
+            "is the identical BSH3-0 field, genuinely consumed as line "
+            "mode's texture-bit selector - table rows '15 ... TEXTURE3' "
+            "through '12 ... TEXTURE0' (appendix A p.268), 'The \"B\" source "
+            "is used for texturing the drawn lines' (p.268). Only the one "
+            "bit the page names is asserted; that line mode also replicates "
+            "it across the rest of the word is agnus_blitter.v:410, not "
+            "graded here. "
             "6-appa-control.c46, 6-appa-control.c48, 6-appa-control.c50, "
             "6-appa-control.c52, "
             "ch6-appa-bltcon0.line.b15.con1, ch6-appa-bltcon0.line.b14.con1, "
@@ -1548,49 +1501,37 @@ int main(int argc, char** argv) {
             "ch6-appa-lf.c8 .");
     }
 
-    // ---------------- LINE-MODE-SIGN-BIT6-LOADS-INITIAL-ACCUMULATOR-SIGN ----------------
+    // ---------------- LINE-MODE-SIGN-BIT6: WITHDRAWN, OUT OF THIS PACKAGE'S SCOPE ----------------
     {
-        // SING=1 and SUD=1 (ONEDOT-style setup) make `first_pixel` gate
-        // channel C's DMA request (agnus_blitter.v:860); `first_pixel`
-        // itself, from the second pixel on, is `~sign_del`
-        // (agnus_blitter.v:913), and `sign_del` is last pixel's `sign`
-        // (agnus_blitter.v:940) - which on the very first BLTCON1 write is
-        // loaded directly from bit 6 (agnus_blitter.v:932 `sign <=
-        // data_in[6]`). So the INITIAL bit-6 value should change how many
-        // of 3 pixels request channel C.
-        // FIXED (was: count grants with channel=='C'): channel C's own DMA
-        // request (BLT_L2, agnus_blitter.v:823 `dma_req = usec;`) is
-        // unconditional -- it never reads bltcon1 at all, so it cannot
-        // possibly show SIGN's effect and a 'C'-grant count is identical
-        // for both runs by construction. SING/SUD gate the D-CHANNEL store
-        // instead (BLT_L4, agnus_blitter.v:860, chsel==CHD, `we` asserted -
-        // agnus_blitter.v:491 `we = ackdma && chsel==CHD`), which is exactly
-        // what h.data_writes (populated only when `we` fires) already
-        // counts. Using it directly is simpler and more direct than
-        // filtering h.grants by channel letter.
-        auto d_write_count = [](bool sign) {
-            Harness h;
-            for (int i = 0; i < 4; ++i) h.c_words.push_back(0x0000);
-            write_bltcon0(h, 15, USEA | USEC | USED, 0x00);
-            uint16_t con1 = static_cast<uint16_t>(LINE_BIT | (1u << 1) /*SING*/ | (1u << 4) /*SUD*/);
-            if (sign) con1 |= (1u << 6);
-            h.write_reg(BLTCON1, con1);
-            h.write_reg(BLTSIZE, bltsize_word(2, 3));
-            h.run_cycles(90);
-            h.settle();
-            return h.data_writes.size();
-        };
-        const size_t sign1 = d_write_count(true);
-        const size_t sign0 = d_write_count(false);
-
-        checks.expect(sign1 != sign0,
-            "LINE-MODE-SIGN-BIT6-LOADS-INITIAL-ACCUMULATOR-SIGN: with SING and "
-            "SUD set (ONEDOT-style), the number of D-channel writes (of 3 "
-            "pixels) differs between BLTCON1 bit 6 initially 1 versus "
-            "initially 0, all else identical - table row '06 LF6 SIGN' "
-            "(appendix A p.268), 'SIGN Sign flag' (p.268 legend). "
-            "agnus_blitter.v:932 `sign <= data_in[6];  // initial sign value`, "
-            "loaded on every BLTCON1 write regardless of `line`. "
+        // SPECIFICATION.md Proposition 18: the manual states only SIGN's
+        // ROLE (a sign flag for the line's initial error term, set when
+        // (4*dy-2*dx) < 0) and gives no port-level expected sequence a test
+        // could grade against - "this specification asserts only the bit's
+        // role..., not the stepping it produces." This package's own header
+        // already excludes exactly that: "the sign flag's role across a
+        // multi-pixel line" is named as PKG-BLT-LINE's job, not this
+        // package's (Non-goals above).
+        //
+        // Counting D-channel writes with BLTAPT/BLTAMOD/BLTBMOD left at
+        // their reset value of 0 would not be a real line (dx=0,dy=0 is
+        // degenerate), so SIGN=1 would contradict p.192's own SIGNFLAG rule
+        // for any real line the manual describes. LINE-MODE-SING below
+        // instead uses a genuinely page-derived flat-line setup (p.191/192:
+        // dx=2, dy=0) that DOES need SIGN set correctly as a precondition -
+        // SING's own run always
+        // sets SIGN=1 and never varies it, so that precondition is assumed
+        // there, not independently measured; SIGN's own graded behaviour is
+        // declined here, matching P18.
+        checks.record(
+            "LINE-MODE-SIGN-BIT6: BLTCON1 bit 6 is SIGN - 'SIGN   Sign flag' "
+            "(p.268 table/legend), set 'if (((4*dy)-(2*dx)) < 0)' (p.192). "
+            "The manual gives no port-level observable for the stepping "
+            "SIGN produces, and this package's own Non-goals reserve 'the "
+            "sign flag's role across a multi-pixel line' for PKG-BLT-LINE. "
+            "Not graded independently here; LINE-MODE-SING below assumes "
+            "SIGN=1 as a fixed setup precondition (p.192's own SIGNFLAG rule "
+            "for a flat, dy=0 line) and never varies it, so that precondition "
+            "is not independently measured, only relied upon. "
             "6-appa-control.c64, 6-appa-control.c87, "
             "ch6-appa-bltcon0.line.b06.con1, ch6-appa-lf.legend.SIGN .");
     }
@@ -1662,7 +1603,7 @@ int main(int argc, char** argv) {
             h.write_reg(BLTAPTL, 0);
             h.write_reg(BLTDPTH, 0);
             h.write_reg(BLTDPTL, 0x1000);
-            write_bltcon0(h, 15, USEA | USEC | USED, 0x00);
+            write_bltcon0(h, 14, USEA | USEC | USED, 0x00);
             h.write_reg(BLTCON1, static_cast<uint16_t>(LINE_BIT | con1_bits));
             h.write_reg(BLTSIZE, bltsize_word(2, 4));
             h.run_cycles(120);
@@ -1683,22 +1624,55 @@ int main(int argc, char** argv) {
         const bool sul_live = oct6 != oct5;  // SUL toggled, SUD held at 0
         const bool aul_live = oct7 != oct4;  // AUL toggled, SUD held at 1
 
+        // None of the eight octants' (SUD,SUL,AUL) table cells is
+        // exercised as a table cell by this file: `all_distinct`
+        // checks only this test's OWN hardcoded array against the PDF scan
+        // (a transcription self-check, not a DUT measurement, and BLTCON1
+        // is write-only per p.267 "W" so nothing can "read back" a wrong
+        // transcription either). The probes for octants 1, 4, 5, 6 and 7
+        // drive BLTCON1 bits 4/3/2 as sensitizing vectors chosen by
+        // hand-expanding agnus_blitter.v:609-612's formula, not by page
+        // text - they ground "this bit is read and live", never "octant N
+        // has this triple" or "octant N steps in its documented direction"
+        // (the latter is PKG-BLT-LINE's job either way, per this file's own
+        // Non-goals). So the graded assertion below keeps only the three
+        // BIT-IDENTITY id groups (SUD=bit4, SUL=bit3, AUL=bit2, and their
+        // legend definitions); all 24 octant-table-cell ids move to the
+        // RECORDED line.
         checks.expect(all_distinct && complete && sud_live && sul_live && aul_live,
-            "LINE-MODE-SUD-SUL-AUL-BITS-4-3-2-AND-OCTANT-TABLE: the eight printed "
-            "(SUD,SUL,AUL) triples for octants 0-7 are pairwise distinct (verified "
-            "against the PDF page image, tools/show_page.py --page 268), and each "
-            "of BLTCON1 bit 4 (SUD), bit 3 (SUL) and bit 2 (AUL) independently "
-            "changes the D-channel write-address sequence of a 4-pixel line when "
-            "probed against the adjacent octant-table row that isolates it - "
-            "table rows '04 LF4 SUD','03 LF3 SUL','02 LF2 AUL' and the octant "
-            "table (appendix A p.268), 'SUD Sometimes up or down', 'SUL "
-            "Sometimes up or left', 'AUL Always up or left' (p.268 legend). "
-            "agnus_blitter.v:609-612 read bltcon1[4],[3],[2] directly in the "
-            "lineinc/linedec/lineadd/linesub formulas. "
+            "LINE-MODE-SUD-SUL-AUL-BITS-4-3-2-ARE-LIVE: BLTCON1 bit 4 (SUD), "
+            "bit 3 (SUL) and bit 2 (AUL) each independently changes the "
+            "D-channel write-address sequence of a 4-pixel line when probed "
+            "with a sensitizing BLTCON1 value chosen from the octant table "
+            "(appendix A p.268) - table rows '04 LF4 SUD','03 LF3 SUL','02 "
+            "LF2 AUL', 'SUD Sometimes up or down', 'SUL Sometimes up or "
+            "left', 'AUL Always up or left' (p.268 legend). Which octant "
+            "NUMBER has which triple, or steps in which real-world "
+            "direction, is not asserted here (PKG-BLT-LINE's job, per this "
+            "file's Non-goals); the probe values are RTL-derived "
+            "sensitizing vectors (agnus_blitter.v:609-612's lineinc/"
+            "linedec/lineadd/linesub formulas), not a page-derived (dx,dy) "
+            "setup. "
             "6-appa-control.c68, 6-appa-control.c70, 6-appa-control.c72, "
             "ch6-appa-bltcon0.line.b04.con1, ch6-appa-bltcon0.line.b03.con1, "
             "ch6-appa-bltcon0.line.b02.con1, "
-            "ch6-appa-lf.legend.SUD, ch6-appa-lf.legend.SUL, ch6-appa-lf.legend.AUL, "
+            "ch6-appa-lf.legend.SUD, ch6-appa-lf.legend.SUL, ch6-appa-lf.legend.AUL .");
+
+        checks.record(
+            "LINE-MODE-OCTANT-TABLE-CELLS-NOT-GRADED-HERE: none of the "
+            "eight (SUD,SUL,AUL) table cells (appendix A p.268, Table 6-3 "
+            "p.190) is graded as a table cell by this package - octants 0, "
+            "2 and 3 are never used as stimulus at all, and octants 1, 4, "
+            "5, 6 and 7 are driven only as RTL-chosen sensitizing vectors "
+            "for the bit-identity assertion above, which does not establish "
+            "any specific octant's triple. BLTCON1 is write-only (p.267 "
+            "'W'), so there is no port at which a wrong transcription of "
+            "any row would read back differently either. As far as this "
+            "suite's own cross-references show, these 24 ids are not "
+            "graded elsewhere in the suite: ch6-blitter-line cites only "
+            "(graded: ch6-appa-oct.select), not the individual per-octant "
+            "sud/sul/aul ids. Left to PKG-BLT-LINE, which would draw a real "
+            "line per octant against Figure 6-8 (p.190). "
             "ch6-appa-oct0.aul, ch6-appa-oct0.sud, ch6-appa-oct0.sul, "
             "ch6-appa-oct1.aul, ch6-appa-oct1.sud, ch6-appa-oct1.sul, "
             "ch6-appa-oct2.aul, ch6-appa-oct2.sud, ch6-appa-oct2.sul, "
@@ -1711,112 +1685,225 @@ int main(int argc, char** argv) {
 
     // ---------------- LINE-MODE-SING-BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL ----------------
     {
-        // FIXED (was: count grants with channel=='C', name said "GATES
-        // C-CHANNEL"): agnus_blitter.v:860's `dma_req = usec & (~bltcon1[1]
-        // | ~bltcon1[4] | first_pixel);` is BLT_L4's dma_req -- the
-        // D-CHANNEL store (chsel==CHD there, unconditionally), not the C
-        // fetch. Channel C's own request (BLT_L2, agnus_blitter.v:823
-        // `dma_req = usec;`) never reads bltcon1 and is unconditional, so a
-        // 'C'-grant count is identical whether SING is set or not, by
-        // construction -- it cannot show what this claim is about. SING (with
-        // SUD) actually suppresses repeat D-channel WRITES within the
-        // horizontal run (the manual's own "single bit per horizontal line",
-        // matching agnus_blitter_line's LINE-ONEDOT-SUPPRESSES-REPEAT-WRITES
-        // finding for the same bit). h.data_writes.size() -- populated only
-        // when `we` fires (agnus_blitter.v:491, chsel==CHD) -- is the direct
-        // count of D-channel writes and needs no channel filtering.
-        // ALSO NEEDED: SIGN (bit 6) set to 1. `first_pixel` (agnus_blitter.v
-        // :907-914) only ever drops to 0 via `first_pixel <= ~sign_del`, and
-        // sign_del (:937-941) only becomes 1 by inheriting the INITIALLY
-        // WRITTEN SIGN bit at pixel 1's own BLT_L1 (`sign_del<=sign`, using
-        // sign's pre-edge value, i.e. the value the BLTCON1 write itself set
-        // - agnus_blitter.v:929-935) - because BLTAPTL/BLTAMOD/BLTBMOD are
-        // all left at their reset value of 0 here (this file never gives the
-        // real Bresenham accumulator a nonzero modulo to move it, which is
-        // out of scope - see the LINE-MODE-START/-SUD-SUL-AUL header notes),
-        // `sign` itself is overwritten to sign_out=0 starting pixel 1's own
-        // BLT_L1 and stays 0 for every LATER pixel regardless of the initial
-        // SIGN bit. So with SIGN left at its default 0 (as the original,
-        // now-fixed draft of this assertion left it), first_pixel never
-        // drops and SING's gate never fires for either run - both measure
-        // 3/3, and the assertion cannot distinguish SING on/off no matter
-        // how the D-writes are counted. Setting SIGN=1 makes sign_del=1 at
-        // pixel 1, dropping first_pixel to 0 for pixel 2 specifically (and
-        // back to 1 from pixel 3 on, since `sign` has already reverted to
-        // its sign_out-driven 0 by then) - exactly the one-pixel gap SING
-        // is supposed to produce.
-        auto d_writes_over_pixels = [](bool sing) {
+        // Counting D-writes with BLTAPT/BLTAMOD/BLTBMOD left at 0 would
+        // not be a real line by p.192's own arithmetic (dx=dy=0 is
+        // degenerate), and a write COUNT alone is not "a single bit per
+        // horizontal line" (p.268 legend), which is what the page actually
+        // states.
+        //
+        // This run uses a genuinely page-derived flat line: p.191/192's own
+        // worked setup for dx=2, dy=0 (a 3-pixel horizontal run, "we set
+        // the blit height to the length of the line, which is dx+1"):
+        //   BLTAPT  = 4*dy - 2*dx = -4          (negative -> SIGN=1, p.192)
+        //   BLTAMOD = 4*(dy-dx)   = -8
+        //   BLTBMOD = 4*dy        =  0
+        //   octant: SUD=1,SUL=0,AUL=0 (table row for octant 7, p.268/
+        //     Table 6-3). Figure 6-8 (p.190) draws octant 7 as the
+        //     right-down shallow ray; octant 0 (SUD=1,SUL=1,AUL=0) is
+        //     equally a dy=0 ray on the same figure. The choice between the
+        //     two is inconsequential for this run: with SUD=1, SUL does not
+        //     appear in any of lineinc/linedec/lineadd/linesub
+        //     (agnus_blitter.v:609-612), so octants 0 and 7 drive identical
+        //     stepping here. With SUD=1 and AUL=0, linedec and lineadd/
+        //     linesub are structurally 0 (AUL=0 kills their non-sign_del
+        //     halves, SUD=1 kills the sign_del-gated halves once sign_del
+        //     settles to 1, which it does from this run's first pixel
+        //     onward since SIGN=1 is written before the blit starts). lineinc
+        //     is NOT structurally 0: its SUD&&!AUL term is unconditional on
+        //     ash, so it fires whenever ash==4'b1111 regardless of octant or
+        //     sign_del. START=5 keeps ash at 5, 6 and 7 across these 3
+        //     pixels - never 1111 - which is why they land in the same
+        //     destination word; a different START can cross a word boundary
+        //     on the identical octant and formula (LINE-MODE-START above,
+        //     same SUD=1/AUL=0, START=14, does exactly that).
+        //   LF = $CA, the ordinary line function AB+AC (p.191/192): with
+        //     BLTBDAT=$FFFF (solid line, p.192) and C held at $0000, this
+        //     reduces at every bit position to D=A - i.e. the current
+        //     line-bit alone, so each pixel's OWN write can be examined
+        //     without needing a real memory model to fold successive
+        //     writes into one word (this package has none): the pixels of
+        //     a flat line all target the SAME word in real hardware, so the
+        //     UNION of what each pixel's write would have contributed is
+        //     exactly what "the row" would end up containing.
+        //   BLTADAT=$8000, START=5: the A-bit walks positions 15-START=10,
+        //     9, 8 across the 3 pixels (agnus_blitter_barrelshifter's own
+        //     right-shift-by-`ash` behaviour, already established by
+        //     LINE-MODE-START above) - three DISTINCT bits, so the union's
+        //     popcount is exactly the pixel count when every pixel writes,
+        //     and less when SING suppresses some.
+        // SING's own gate (agnus_blitter.v:860, BLT_L4, chsel==CHD) fires
+        // dma_req = usec & (~SING | ~SUD | first_pixel): with SUD=1, SING=1
+        // suppresses every D-write but the first, so only pixel 1's bit
+        // (position 10) ever reaches the row - one set bit. With SING=0,
+        // all 3 pixels write - three set bits, one per pixel.
+        auto row_bits_set = [](bool sing) {
             Harness h;
-            for (int i = 0; i < 4; ++i) h.c_words.push_back(0x0000);
-            write_bltcon0(h, 15, USEA | USEC | USED, 0x00);
-            uint16_t con1 = static_cast<uint16_t>(LINE_BIT | (1u << 4) | (1u << 6));  // SUD=1, SIGN=1
-            if (sing) con1 |= (1u << 1);
+            for (int i = 0; i < 3; ++i) h.c_words.push_back(0x0000);  // C held at 0 (this probe's own choice)
+            h.write_reg(BLTAFWM, 0xFFFF);
+            h.write_reg(BLTALWM, 0xFFFF);
+            h.write_reg(BLTADAT, 0x8000);       // p.192: "BLTADAT = $8000"
+            h.write_reg(BLTBDAT, 0xFFFF);       // p.192: "$FFFF for a solid line"
+            h.write_reg(BLTAPTH, 0xFFFF);
+            h.write_reg(BLTAPTL, 0xFFFC);       // BLTAPT = 4*dy-2*dx = -4 (dx=2,dy=0)
+            h.write_reg(BLTAMOD, 0xFFF8);        // 4*(dy-dx) = -8
+            h.write_reg(BLTBMOD, 0x0000);        // 4*dy = 0
+            h.write_reg(BLTCMOD, 40);
+            h.write_reg(BLTDMOD, 40);
+            h.write_reg(BLTCPTH, 0);
+            h.write_reg(BLTCPTL, 0x1000);
+            h.write_reg(BLTDPTH, 0);
+            h.write_reg(BLTDPTL, 0x1000);
+            write_bltcon0(h, 5 /* START = x1 modulo 15 */, USEA | USEC | USED, 0xCA);  // LF: ordinary line function AB+AC
+            const uint16_t SIGN = 1u << 6, SUD = 1u << 4, SING = 1u << 1;
+            uint16_t con1 = static_cast<uint16_t>(LINE_BIT | SIGN | SUD);  // octant 7 (1,0,0); SIGN=1 per p.192's rule
+            if (sing) con1 |= SING;
             h.write_reg(BLTCON1, con1);
-            h.write_reg(BLTSIZE, bltsize_word(2, 3));
+            h.write_reg(BLTSIZE, bltsize_word(2, 3));  // width=2 fixed, height=dx+1=3 (p.191/192)
             h.run_cycles(90);
             h.settle();
-            return h.data_writes.size();
+            uint16_t row = 0;
+            for (auto v : h.data_writes) row |= v;  // the row's content: the union every pixel would fold into the same word
+            int bits = 0;
+            for (int i = 0; i < 16; ++i) if (row & (1u << i)) ++bits;
+            return bits;
         };
-        const size_t normal = d_writes_over_pixels(false);
-        const size_t sing_on = d_writes_over_pixels(true);
+        const int without_sing = row_bits_set(false);
+        const int with_sing = row_bits_set(true);
 
-        checks.expect(sing_on < normal && sing_on >= 1,
-            "LINE-MODE-SING-BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL: over a "
-            "3-pixel line blit with SUD and SIGN set, the D channel writes "
-            "fewer times with SING (BLTCON1 bit 1) set than with it clear - "
-            "table row '01 LF1 SING' (appendix A p.268), 'SING Single bit per "
-            "horizontal line for use with subsequent area fill' (p.268 "
-            "legend). "
-            "agnus_blitter.v:860 `dma_req = usec & (~bltcon1[1] | ~bltcon1[4] "
-            "| first_pixel);` inside BLT_L4 (chsel==CHD, the D-channel store "
-            "state, not the C fetch - see agnus_blitter.v:491 `we = ackdma && "
-            "chsel==CHD` and :813-823's BLT_L2, whose own dma_req never reads "
-            "bltcon1 at all). "
+        checks.expect(with_sing == 1 && without_sing == 3,
+            "LINE-MODE-SING-BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL: a flat "
+            "3-pixel line (p.191/192's own dx=2,dy=0 setup: BLTAPT=-4, "
+            "BLTAMOD=-8, BLTBMOD=0, SIGN=1, octant 7) draws 1 set bit in the "
+            "row with SING (BLTCON1 bit 1) set, and 3 with it clear - 'SING "
+            "Single bit per horizontal line for use with subsequent area "
+            "fill' (p.268 legend), table row '01 LF1 SING' (p.268). "
+            "agnus_blitter.v:860 `dma_req = usec & (~bltcon1[1] | "
+            "~bltcon1[4] | first_pixel);` inside BLT_L4 (chsel==CHD, the "
+            "D-channel store state - agnus_blitter.v:491 `we = ackdma && "
+            "chsel==CHD`). This run's SING=0 branch also carries the "
+            "line-mode table's required-zero ids for BLTCON1 bits 11, 10, "
+            "9, 8, 7 and 5 (table row values '0','0','0','0','0','0 "
+            "(Reserved)', appendix A p.268): all six are clear in both "
+            "branches of this run, which draws a genuine p.192 flat line "
+            "('BLTSIZE bits 15-6 = dx+1', p.192) - the documented pattern, "
+            "not an ad-hoc one. "
             "6-appa-control.c74, 6-appa-control.c89, "
-            "ch6-appa-bltcon0.line.b01.con1, ch6-appa-lf.legend.SING .");
+            "ch6-appa-bltcon0.line.b01.con1, ch6-appa-lf.legend.SING, "
+            "6-appa-control.c54, 6-appa-control.c56, 6-appa-control.c58, "
+            "6-appa-control.c60, 6-appa-control.c62, 6-appa-control.c66, "
+            "6-appa-control.c88, "
+            "ch6-appa-bltcon0.line.b11.con1, ch6-appa-bltcon0.line.b10.con1, "
+            "ch6-appa-bltcon0.line.b09.con1, ch6-appa-bltcon0.line.b08.con1, "
+            "ch6-appa-bltcon0.line.b07.con1, ch6-appa-bltcon0.line.b05.con1, "
+            "ch6-appa-lf.legend.reserved .");
     }
 
-    // ---------------- LINE-MODE-LF-VALUE-0x4A-SELECTS-DOCUMENTED-FUNCTION ----------------
+    // ---------------- LINE-MODE-LF-BITS-EACH-ALONE-MATCH-P174-MAPPING ----------------
     {
-        // Eight one-word blits enumerate all 8 (A,B,C) selector
-        // combinations with LF=$4A: the manual's own worked line-mode
-        // function, quoted at appendix A p.268 as "D=(AC+ABC)" (overbars
-        // lost in the OCR corpus; 6-line-mode.c90/c91 restate it, with the
-        // negations, as (A&B&~C) OR (~A&C)). Uses the same area-mode
-        // combinational measurement as BLTCON0-BITS-7-0-ARE-THE-LF-BYTE-
-        // IN-BOTH-MODES, for the same reason: `lf` is the unconditional
-        // wire bltcon0[7:0] regardless of `line` (agnus_blitter.v:444), so
-        // measuring what 0x4A produces in area mode is equally valid
-        // evidence for line mode's use of it.
-        Harness h;
-        h.write_reg(BLTAFWM, 0xFFFF);
-        h.write_reg(BLTALWM, 0xFFFF);
-        std::vector<uint16_t> a, b, c, expected;
-        for (int k = 0; k < 8; ++k) {
-            const bool A = (k & 4) != 0, B = (k & 2) != 0, C = (k & 1) != 0;
-            a.push_back(A ? 0x8000 : 0x0000);
-            b.push_back(B ? 0x8000 : 0x0000);
-            c.push_back(C ? 0x8000 : 0x0000);
-            const bool out = (A && B && !C) || (!A && C);
-            expected.push_back(out ? 0x8000 : 0x0000);
-        }
-        h.a_words.assign(a.begin(), a.end());
-        h.b_words.assign(b.begin(), b.end());
-        h.c_words.assign(c.begin(), c.end());
-        start_blit(h, USEA | USEB | USEC | USED, 0x4A, 8, 1);
-        h.run_until_writes(8, 200);
-        h.settle();
+        // A one-pixel run using B=$FFFF and C=$FFFF for both of p.192's
+        // worked byte values makes A's combination (1,1,1)=position 7 and
+        // every OTHER bit's combination (0,1,1)=position 3 (p.174: position
+        // = 4A+2B+C) - no other LF bit position is ever read by such a run,
+        // so it cannot ground all 17 line-mode bit-identity ids by itself
+        // (masking LF to keep only bits 7 and 3 leaves the two worked-value
+        // checks below green, confirming no other bit is read).
+        //
+        // This run instead varies B and C so every LF bit gets its own,
+        // distinct (A,B,C) combination at some bit of the word: for each
+        // LF bit k
+        // alone, with BLTBDAT in {$0000,$FFFF} and C in {$5555,$AAAA} (4
+        // runs per bit, 32 total), the expected output bit i is LF bit
+        // (4*[i==15] + 2*B_i + C_i) - p.174's own mapping, since BLTADAT=
+        // $8000 makes A's bit 1 only at position 15.
+        auto one_pixel_lf = [](uint16_t lf, uint16_t b, uint16_t c) {
+            Harness h;
+            for (int i = 0; i < 4; ++i) h.c_words.push_back(c);
+            h.write_reg(BLTAFWM, 0xFFFF);
+            h.write_reg(BLTALWM, 0xFFFF);
+            h.write_reg(BLTADAT, 0x8000);
+            h.write_reg(BLTBDAT, b);
+            write_bltcon0(h, 0 /* START=0 */, USEA | USEC | USED, lf);
+            h.write_reg(BLTCON1, LINE_BIT);
+            h.write_reg(BLTSIZE, bltsize_word(2, 1));
+            h.run_cycles(60);
+            h.settle();
+            return h.data_writes.empty() ? uint16_t{0xDEAD} : h.data_writes[0];
+        };
+        auto page_expect = [](uint16_t lf, uint16_t b, uint16_t c) {
+            uint16_t d = 0;
+            for (int i = 0; i < 16; ++i) {
+                const int a_i = (i == 15) ? 1 : 0;
+                const int b_i = (b >> i) & 1;
+                const int c_i = (c >> i) & 1;
+                const int pos = 4 * a_i + 2 * b_i + c_i;
+                if ((lf >> pos) & 1) d = static_cast<uint16_t>(d | (1u << i));
+            }
+            return d;
+        };
+        const uint16_t bs[] = {0x0000, 0xFFFF};
+        const uint16_t cs[] = {0x5555, 0xAAAA};
+        bool all_match = true;
+        for (int k = 0; k < 8 && all_match; ++k)
+            for (uint16_t b : bs)
+                for (uint16_t c : cs) {
+                    const uint16_t lf = static_cast<uint16_t>(1u << k);
+                    if (one_pixel_lf(lf, b, c) != page_expect(lf, b, c)) all_match = false;
+                }
 
-        checks.expect(h.data_writes == expected,
-            "LINE-MODE-LF-VALUE-0x4A-SELECTS-DOCUMENTED-FUNCTION: LF=0x4A "
-            "computes (A AND B AND NOT C) OR (NOT A AND C) across all eight "
-            "(A,B,C) selector combinations, exactly as the worked example "
-            "describes - 'LF7-0 [...] should be preloaded with 4A to select the "
-            "equation D=(AC+ABC). Since A contains a single bit true (8000), "
-            "most bits will pass the C field unchanged (not A and C), but one "
-            "bit will invert the C field and combine it with texture (A and B "
-            "and not C)' (appendix A p.268). agnus_blitter_minterm.v:29-40 "
-            "(lf[6] selects A&B&~C, lf[1]/lf[3] together select ~A&C). "
+        checks.expect(all_match,
+            "LINE-MODE-LF-BITS-EACH-ALONE-MATCH-P174-MAPPING: for each of "
+            "the eight LF bits set alone, with BLTBDAT in {$0000,$FFFF} and "
+            "C in {$5555,$AAAA} (32 runs), the one-pixel line-mode output "
+            "matches p.174's own position = 4A+2B+C mapping bit-for-bit - "
+            "'There are eight possible combinations of values of the three "
+            "bits, for each of which we need to specify the corresponding "
+            "destination bit as a zero or one' (p.174), matching table rows "
+            "'07 LF7' through '00 LF0' in the LINE-MODE table (p.268). "
+            "agnus_blitter.v:444 `.lf(bltcon0[7:0])` (unconditional on "
+            "`line`), agnus_blitter_minterm.v:29-40. "
+            "6-appa-control.c61, 6-appa-control.c63, 6-appa-control.c65, "
+            "6-appa-control.c67, 6-appa-control.c69, 6-appa-control.c71, "
+            "6-appa-control.c73, 6-appa-control.c75, 6-appa-control.c79, "
+            "ch6-appa-bltcon0.line.b07.con0, ch6-appa-bltcon0.line.b06.con0, "
+            "ch6-appa-bltcon0.line.b05.con0, ch6-appa-bltcon0.line.b04.con0, "
+            "ch6-appa-bltcon0.line.b03.con0, ch6-appa-bltcon0.line.b02.con0, "
+            "ch6-appa-bltcon0.line.b01.con0, ch6-appa-bltcon0.line.b00.con0 .");
+    }
+
+    // ---------------- LINE-MODE-LF-4A-AND-CA-SELECT-DOCUMENTED-FUNCTIONS ----------------
+    {
+        // The manual's own two worked LF byte values, run in an ACTUAL
+        // line-mode blit (LINE_BIT=1) per p.192's own setup: BLTADAT=$8000,
+        // BLTBDAT=$FFFF (solid line), C=$FFFF, START=0.
+        auto line_lf_output = [](uint16_t lf) {
+            Harness h;
+            for (int i = 0; i < 4; ++i) h.c_words.push_back(0xFFFF);  // p.192's own worked C = $FFFF
+            h.write_reg(BLTAFWM, 0xFFFF);
+            h.write_reg(BLTALWM, 0xFFFF);
+            h.write_reg(BLTADAT, 0x8000);   // p.192: "BLTADAT = $8000"
+            h.write_reg(BLTBDAT, 0xFFFF);   // p.192: "$FFFF for a solid line"
+            write_bltcon0(h, 0 /* START=0 */, USEA | USEC | USED, lf);
+            h.write_reg(BLTCON1, LINE_BIT);
+            h.write_reg(BLTSIZE, bltsize_word(2, 1));
+            h.run_cycles(60);
+            h.settle();
+            return h.data_writes.empty() ? uint16_t{0xDEAD} : h.data_writes[0];
+        };
+        const uint16_t xor_form = line_lf_output(0x4A);
+        const uint16_t ordinary_form = line_lf_output(0xCA);
+
+        checks.expect(xor_form == 0x7FFF && ordinary_form == 0xFFFF,
+            "LINE-MODE-LF-4A-AND-CA-SELECT-DOCUMENTED-FUNCTIONS: a "
+            "one-pixel line-mode blit (BLTADAT=$8000, BLTBDAT=$FFFF solid, "
+            "C=$FFFF, START=0) with LF=$4A (exclusive-or line mode) stores "
+            "$7FFF, and the SAME setup with LF=$CA (ordinary line mode) "
+            "stores $FFFF - 'LF7-0 [...] should be preloaded with 4A to "
+            "select the equation D=(AC+ABC)' (appendix A p.268), 'then "
+            "BLTCON0 LF control byte = ABC + AC' (exclusive-or) / 'else "
+            "BLTCON0 LF control byte = AB + AC' (ordinary) [overbars over "
+            "the C of the first term and the A of the second] (p.192). "
+            "agnus_blitter.v:444 `.lf(bltcon0[7:0])` (unconditional on "
+            "`line`), agnus_blitter_minterm.v:29-40. "
             "6-line-mode.c90, 6-line-mode.c91 .");
     }
 

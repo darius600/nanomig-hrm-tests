@@ -72,7 +72,7 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | | |
 |---|---:|
 | test packages, `hrm/` | **216** |
-| assertions, `hrm/` | **3655** — 3452 pass, **203 fail** |
+| assertions, `hrm/` | **3651** — 3448 pass, **203 fail** |
 | packages, `hrm/` | 147 green, 69 carrying at least one red, **0 build errors** |
 | test packages, `aa/` | **33** |
 | assertions, `aa/` | **184** — 179 pass, **5 fail** |
