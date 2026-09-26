@@ -1309,13 +1309,9 @@ int main(int argc, char** argv) {
             "ch6-appa-bltcon0.line.b11.con0, ch6-appa-bltcon0.line.b10.con0, "
             "ch6-appa-bltcon0.line.b08.con0 .");
 
-        // S1: 6-line-mode.c68 was uncited after USEC's own assertion was
-        // folded into the record above (that assertion's label used to
-        // explain, in passing, why c68 did not belong to it; removing the
-        // assertion removed the only place the id was written down at
-        // all). Recorded here on its own, since its content (the C
-        // channel's role in the line-mode logic function) is a different
-        // subject from bit 9's fetch-gating question above.
+        // 6-line-mode.c68 is about the C channel's role in the line-mode
+        // logic function, a different subject from bit 9's fetch-gating
+        // question above, so it is recorded on its own.
         checks.record(
             "LINE-MODE-USEC-C68-NOT-USED: 6-line-mode.c68's own restatement "
             "reads 'The C DMA channel represents the original destination "
