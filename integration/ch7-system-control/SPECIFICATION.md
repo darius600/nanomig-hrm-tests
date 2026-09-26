@@ -1,0 +1,549 @@
+# Specification: chapter 7 system control — display priority, the light-pen read at the beam-position address, BEAMCON0
+
+This specification was written from the package's claims (`claims-spec-stage.jsonl`) and the pages of the *Amiga Hardware Reference Manual*, 3rd edition, by an author who never saw the implementation or any test. Every expected value below comes from a quoted page; where the pages leave a value open, the specification says so and grades nothing there. Page numbers are printed page numbers.
+
+## Claims that give no proposition
+
+| Claim | Page | Reason |
+|---|---|---|
+| `opus:7-reset.c3` | 223 | The page makes the outcome model-dependent: "On some Amiga models, portions of the RAM still respond. On other models, no RAM responds. Software must assume that memory is not available." Both outcomes conform, so no expected value exists and a test must not invent one. |
+| `sol:7-reset.c6` | 223 | Same sentence, first half. It says that *some* models behave this way. One system cannot confirm or refute a statement about some models, so there is no expected value. |
+| `sol:7-reset.c7` | 223 | Same sentence, second half. It says that *other* models behave this way. As for c6, there is no expected value. |
+| `opus:7-appC-beamcon0.c7` | 305 | BEAMCON0 bit 10 CSCBEN "Composite sync redirection". The page gives only this name. It says neither where composite sync is redirected to nor from where, and gives no pin, polarity or timing. Appendix J (pp. 379, 381) lists composite sync on a pin of its own (CSY\*), separate from HSY\* and VSY\*, and a test sees only horizontal and vertical sync. There is no stated effect and no observable output, so the claim cannot be checked. |
+| `sol:7-appC-beamcon0.c7` | 305 | Same row of the same table, so the same reason applies. |
+
+No claim in this package needs a disk image.
+
+## Claims and the propositions they support
+
+| Proposition | Claims | Page |
+|---|---|---|
+| P1: at every pixel, the colour of the highest-priority object is displayed | `opus:7-cd.c3`, `sol:7-collision.c5` | 213 |
+| P2: bitplane and sprite data are combined into one video output | `opus:7-cd.c2` | 213 |
+| P3: with a light pen in use, the beam-position address returns the light-pen position, not the beam position | `opus:7-bp.c3`, `sol:7-beam.c3`, `opus:7-bp.c11` | 216 |
+| P4 (ECS): with LPENDIS set, a vertical-position read ignores the latched pen value | `opus:7-appC-beamcon0.c4`, `sol:7-appC-beamcon0.c4` | 305 |
+
+---
+
+## Common conventions
+
+### Run matrix
+
+Each proposition runs on both 68000 cores, one at a time. P1, P2 and P3 run under OCS and under ECS behaviour, and in PAL (required) and NTSC. P4 needs ECS, because BEAMCON0 is marked `A(E)` (ECS Agnus) on p. 293 and p. 266 and described as "A new register in the enhanced Agnus" on p. 305. P4 runs in PAL; NTSC is optional (see P4).
+
+### Memory placement
+
+The program keeps every Copper list, bitplane, sprite structure and result buffer below `$80000`. Under OCS the pointer registers hold "high 3 bits" (p. 25, p. 110), and p. 309 widens them only for ECS. Each data structure is word aligned, as p. 104 requires.
+
+### Register addresses (Appendix B, pp. 287–293)
+
+VPOSR `$004`, VHPOSR `$006`, INTENAR `$01C`, INTREQR `$01E`, COP1LCH `$080`, COPJMP1 `$088`, DIWSTRT `$08E`, DIWSTOP `$090`, DDFSTRT `$092`, DDFSTOP `$094`, DMACON `$096`, INTENA `$09A`, INTREQ `$09C`, BPLxPTH `$0E0 + 4(x−1)` (PTL at +2), BPLCON0 `$100`, BPLCON1 `$102`, BPLCON2 `$104`, BPL1MOD `$108`, BPL2MOD `$10A`, SPRxPTH `$120 + 4x` (PTL at +2), COLORnn `$180 + 2nn`, BEAMCON0 `$1DC`. All are offsets from `$DFF000`. CIA-A DDRA is at `$BFE201` (p. 339).
+
+### Bit values used
+
+- DMACON (p. 222, p. 278): bit 15 SET/CLR, 9 DMAEN, 8 BPLEN, 7 COPEN, 5 SPREN. The write `$7FFF` clears all enables. `$83A0` sets DMAEN, BPLEN, COPEN and SPREN. `$8280` sets DMAEN and COPEN.
+- INTENA and INTREQ use the SET/CLR rule on p. 218: "When you wish to set a bit … a 1 into position 15 … to clear a bit … a 0 into position 15." `$7FFF` clears all. Writing `$0020` to INTREQ clears VERTB and writing `$0010` clears COPER. The Copper writes `$8010` to set COPER. The Copper may write INTREQ because "The registers that the Copper can always affect are numbered $80 through $FF inclusive" (p. 26).
+- BPLCON0 (p. 48, p. 271): BPU in bits 14–12, bit 10 DBLPF, bit 9 COLOR, bit 3 LPEN. "The bits in the BPLCON0 register cannot be set independently" (p. 48), so every write is the full value. `$2600` is two lores planes in dual playfield. `$6600` is six lores planes in dual playfield. `$1200` is one lores plane in single playfield. `$0008` sets LPEN with no bitplanes. On ECS, bit 0 (ENBPLCN3, p. 307) stays 0.
+- BPLCON2 (p. 210, Table 7-1): bit 6 PF2PRI, bits 5–3 PF2P, bits 2–0 PF1P, bits 15–7 "Not used (keep at 0)". The value is `PF2PRI<<6 | PF2P<<3 | PF1P`. On ECS the extra bits 14–9 (p. 307) stay 0.
+- Copper WAIT (p. 22): the first word is `V<<8 | (H & $FE) | 1` and the second is `$FFFE`. A MOVE is `register offset, data` (p. 21). The list ends with `$FFFF,$FFFE` (p. 23, p. 29).
+
+### Palette
+
+The CPU writes the palette once, before DMA is enabled. Each value is 12 bits, with red in bits 11–8, green in 7–4 and blue in 3–0 (p. 46, Table 3-3). The video output's 4-bit R, G and B must equal these three nibbles.
+
+| Register | Value | Role |
+|---|---|---|
+| COLOR00 | `$000` | background, BG (p. 46) |
+| COLOR01 | `$F00` | PF1 value 1 (dual) or pixel value 1 (single); this colour is called PF1C |
+| COLOR02 | `$A00` | PF1 value 2 (plane 3 alone, P2 only) |
+| COLOR04 | `$500` | PF1 value 4 (plane 5 alone, P2 only) |
+| COLOR08 | `$333` | PF2 "transparent" register (p. 67); must never appear |
+| COLOR09 | `$0F0` | PF2 value 1; this colour is called PF2C |
+| COLOR10 | `$0A0` | PF2 value 2 (plane 4 alone, P2 only) |
+| COLOR12 | `$050` | PF2 value 4 (plane 6 alone, P2 only) |
+| COLOR03, 05–07, 11, 13–15 | `$222` | not selected by any stimulus; must never appear |
+| COLOR16, 20, 24, 28 | `$444` | "ignored by sprites" (p. 103); must never appear |
+| COLOR19 | `$FF0` | SC0, the colour of sprite 0 (value 11) |
+| COLOR17 = COLOR18 | `$F0F` | SC1, the colour of sprite 1 (value 01) |
+| COLOR23 | `$0FF` | SC2, the colour of sprite 2 (value 11) |
+| COLOR21 = COLOR22 | `$F80` | SC3, the colour of sprite 3 (value 01) |
+| COLOR27 | `$08F` | SC4, the colour of sprite 4 (value 11) |
+| COLOR25 = COLOR26 | `$8F0` | SC5, the colour of sprite 5 (value 01) |
+| COLOR31 | `$FFF` | SC6, the colour of sprite 6 (value 11) |
+| COLOR29 = COLOR30 | `$888` | SC7, the colour of sprite 7 (value 01) |
+
+Even-numbered sprites draw every pixel with value 11: DATA (low word) `$FFFF` and DATB (high word) `$FFFF`. Odd-numbered sprites draw value 01: low `$FFFF`, high `$0000`. The register pairs 17/18, 21/22, 25/26 and 29/30 hold equal values, so the expected colour does not depend on which data word is the low digit. pp. 105 and 108 place the low word first and p. 126 stores the first word in SPRxDATA, but this specification relies on neither. Sprite colour registers follow Table 4-6 (p. 130) and Figure 4-6 (p. 103). The ATTACH bit (SPRxCTL bit 7, p. 128) is 0 for every sprite.
+
+### Sprite data structures (pp. 105–108, 126–128)
+
+Each sprite has its own block: SPRxPOS = `VSTART[7:0]<<8 | X[8:1]` and SPRxCTL = `VSTOP[7:0]<<8 | VSTART[8]<<2 | VSTOP[8]<<1 | X[0]`. Then come (VSTOP − VSTART) pairs of data words, then `$0000,$0000`. VSTOP is "the line AFTER the last displayed row" (p. 107). Every one of the eight pointers is written in every field, to a real block or to a null block of two zero words: "all eight sprite pointers must be initialized to either a real sprite or a safe null sprite" (p. 114).
+
+### Playfield geometry and row tags (P1, P2)
+
+The window is DIWSTRT `$2C81`, DIWSTOP `$2CC1` for PAL or `$F4C1` for NTSC (p. 59), DDFSTRT `$0038`, DDFSTOP `$00D0` (p. 60), BPL1MOD = BPL2MOD = 0 and BPLCON1 = 0. Each bitplane image is 320 × 256 lores pixels at 40 bytes per row, and row *y* is displayed on beam line 44 + *y*. p. 58 places the window top at `$2C`, and p. 100 uses line 44 as the top of the display window for sprites, so vertical sprite positions and bitmap rows share one frame. All content is lores. Sprites are lores too: "The shift occurs once during each low resolution pixel time" (p. 124). Every lores pixel therefore keeps at least one visible output sample through the line doubler.
+
+Rows are identified from the video output by a tag drawn in bitplane 1 only, never under a sprite:
+
+- x = 0–7 (block 0): always 1. It marks the left edge of the display window in the output, and its width in samples gives *k*, the number of output samples per lores pixel.
+- x = 8–39 (blocks 1–4): the band id in binary, most significant bit in block 1. A block is 1 (all eight pixels set) or 0.
+- x ≥ 40: content.
+
+In both modes used here, plane 1 alone selects COLOR01 (Table 3-10 p. 70 for dual playfield, p. 42 for single playfield). A tag block therefore reads as PF1C or BG. Rows with id 0 carry block 0 only.
+
+The pages disagree about the horizontal sprite frame. p. 99 uses "a window with horizontal positions from pixel 64 to pixel 383" and adds 64 to X, while p. 57 and p. 59 put the window start at `$81` (129). No stimulus depends on how sprite X maps onto bitmap x. Sprite positions lie at X 170–326, which is inside the window under either frame and clear of the tag region (x < 40) and of the P2 plane blocks (x ≥ 272) under either frame. The test locates sprites in the output instead of computing where they should be.
+
+### Program skeleton (P1, P2)
+
+1. Write INTENA `$7FFF`, INTREQ `$7FFF` and DMACON `$7FFF`.
+2. Build the images, sprite blocks, null block and one Copper list per configuration.
+3. Write the palette, DIWSTRT, DIWSTOP, DDFSTRT, DDFSTOP, the modulos and BPLCON1.
+4. Clear VERTB (INTREQ `$0020`) and poll INTREQR bit 5 until it is set. VERTB "causes an interrupt at line 0" (p. 219).
+5. Write COP1LC with the list of the first configuration (a long write to COP1LCH, p. 25) and strobe COPJMP1. Only then write DMACON `$83A0`. p. 30 prescribes this order: "you must initialize one of the Copper location registers … and write to its strobe address before Copper DMA is turned on."
+6. For each configuration *k* in turn:
+   - wait for VERTB;
+   - write COP1LC with list *k*;
+   - store the marker word `$C000 + k`;
+   - stay for three fields.
+
+   At every VERTB, store a tick word (the field counter). The ticks give field boundaries in memory-port time.
+7. Store `$CFFF` and loop.
+
+Each Copper list writes BPLCON0, BPLCON2, all BPLxPT used, and all eight SPRxPT, then ends with `$FFFF,$FFFE`.
+
+The configuration is evaluated in its **second** field, the field that begins at the tick after marker *k*. p. 25 says the Copper restarts from COP1LC "At the start of each vertical blanking interval" and, a sentence later, "when the end of vertical blanking occurs". p. 32 says "at the start of the vertical blanking period". The first field after a COP1LC write may therefore still run the old list, and the second cannot.
+
+---
+
+## P1 — At every pixel, the colour of the highest-priority object is displayed
+
+**Proposition.** At every pixel position of the display, the output shows the colour of the highest-priority object present there, and the background colour where no object is present. The claims are `opus:7-cd.c3` and `sol:7-collision.c5`, on p. 213.
+
+> "For each of the pixel positions on the screen, the color of the highest priority object is displayed." (p. 213)
+
+**What "priority" and "object" mean.** The pages that define them are:
+
+- Sprites against each other: "They will always appear on the screen with the lower-numbered sprites appearing in front of (having higher screen priority than) the higher-numbered sprites." (p. 207; also p. 115 and p. 118.)
+- Sprite groups: "For playfield priority and collision purposes only, sprites are treated as four groups of two sprites each." (p. 208) Sprite *i* is in group g(i) = ⌊i/2⌋.
+- Playfield against sprite groups: Table 7-2 (p. 210) gives PF1P = 000 as `PF1 SP01 SP23 SP45 SP67`, 001 as `SP01 PF1 SP23 …`, and so on up to 100 as `SP01 SP23 SP45 SP67 PF1`. So PF1 is in front of group g exactly when g ≥ PF1P. "Bits PF2P2-PF2P0 let you position playfield 2 among the sprite priorities in exactly the same way" (p. 211), so PF2 is in front of group g exactly when g ≥ PF2P.
+- Playfield against playfield: "Normally, playfield 1 appears in front of playfield 2. The PF2PRI bit reverses this relationship" (p. 210). Also: "it is the PF2PRI bit that determines which of the two playfields appears in front of the other" (p. 211), and p. 71.
+- Transparency: a sprite value 00 "becomes transparent and shows the color of any other sprite or play-field that has lower video priority" (p. 103). In dual playfield, "Combination 000 selects transparent mode, to show the color of whatever object (the other playfield, a sprite, or the background color) may be 'behind' the playfield" (p. 71).
+- Background: "The background color shows in any area on the display where there is no other object present and is also displayed outside the defined display window" (p. 46).
+
+A sprite is present where its pixel value is non-zero, and a dual-playfield playfield is present where its value is non-zero. Stimuli never place a sprite over a single-playfield pixel of value 0, because the pages do not say whether such a pixel is an object (see *Left open*).
+
+### Configurations
+
+**Group A: sprite against sprite.** BPLCON0 is `$2600` and BPLCON2 is `$0024` (both playfields behind all groups). Plane 1 carries tags only and plane 2 is all zero.
+
+Eight slots j = 0–7 sit at X = 200 + 8j, so neighbouring slots overlap by 8 pixels and no three overlap. Even slots have VSTART 60 and VSTOP 100; odd slots have VSTART 80 and VSTOP 120.
+
+| Lines | Tag id | Band | Content |
+|---|---|---|---|
+| 60–79 | 1 | E | only the even slots, which abut without overlapping |
+| 80–99 | 2 | X | all eight slots |
+| 100–119 | 3 | O | only the odd slots |
+
+| Variant | Sprite in slots 0–7 |
+|---|---|
+| A1 | 0, 1, 2, 3, 4, 5, 6, 7 |
+| A2 | 7, 0, 6, 1, 5, 2, 4, 3 |
+
+**Group B: sprites against dual playfields.** BPLCON0 is `$2600`. Sprite *i* sits at X = 170 + 20*i*, with VSTART 60 and VSTOP 140. The sprites are disjoint from each other, with 4-pixel gaps.
+
+| Lines | Tag id | Band | Plane 1 (x ≥ 40) | Plane 2 (x ≥ 40) | Sprites |
+|---|---|---|---|---|---|
+| 60–79 | 1 | S | 0 | 0 | yes |
+| 80–99 | 2 | P1 | 1 | 0 | yes |
+| 100–119 | 3 | P2 | 0 | 1 | yes |
+| 120–139 | 4 | T | 1 | 1 | yes |
+| 140–149 | 5 | B0 | 0 | 0 | no |
+| 150–169 | 6 | F1 | 1 | 0 | no |
+| 170–189 | 7 | F2 | 0 | 1 | no |
+| 190–209 | 8 | F12 | 1 | 1 | no |
+
+Plane 2 is 0 in the tag region (x < 40) on every row.
+
+| Config | PF1P (v) | PF2P (w) | PF2PRI | BPLCON2 |
+|---|---|---|---|---|
+| B1 | 0 | 4 | 0 | `$0020` |
+| B2 | 1 | 0 | 1 | `$0041` |
+| B3 | 2 | 1 | 1 | `$004A` |
+| B4 | 3 | 2 | 1 | `$0053` |
+| B5 | 4 | 3 | 1 | `$005C` |
+| B6 | 2 | 2 | 0 | `$0012` |
+| B7 | 2 | 2 | 1 | `$0052` |
+| B8 | 0 | 2 | 1 | `$0050` (the example on p. 211) |
+
+Every PF1P and every PF2P value 0–4 occurs, both PF2PRI values occur, and in B1–B5 and B8 v ≠ w, so an exchange of the two fields is visible.
+
+**Group E: sprites against a single playfield.** BPLCON0 is `$1200`, and BPLCON2 = `v<<3 | v` for v = 0, 1, 2, 3, 4 (configurations E0–E4). The sprites have the Group B X positions, with VSTART 60 and VSTOP 100.
+
+| Lines | Tag id | Band | Plane 1 (x ≥ 40) | Sprites |
+|---|---|---|---|---|
+| 60–99 | 2 | P | 1 | yes |
+| 100–119 | 6 | F1 | 1 | no |
+
+PF1P and PF2P are set equal because the pages leave open which field governs a single playfield (see *Left open*).
+
+The schedule is A1, A2, B1–B8, E0–E4: fifteen configurations of three fields each.
+
+### Stimulus
+
+The program skeleton above runs this schedule. The Copper list of each configuration writes BPLCON0, BPLCON2, BPL1PT and BPL2PT (Group E: BPL1PT only), and SPR0PT–SPR7PT, then ends.
+
+### Observation
+
+The observation is the video output of the evaluated field of each configuration: every output row whose tag decodes, together with 8 lores pixels (8*k* samples) of border on each side of the window.
+
+### Reference frames and how the test checks them
+
+- **Window columns.** s0 is the first sample of tag block 0 in a row, and *k* is the width of block 0 in samples divided by 8. The lores x of a sample *s* is ⌊(s − s0)/k⌋, and the window spans x = 0–319.
+  - Check: block 0 is exactly 8*k* samples wide, and s0 is the same sample index in every row of every evaluated field.
+  - Contrast: DDFSTRT `$0030` instead of `$0038`. p. 60 ties the fetch start to the window start, so the image moves against the window, and the block 0 width or position check fails.
+- **Rows.** A row belongs to the band its tag decodes to.
+  - Check: the bands appear in the order and with the relative row counts of the band table, because every band of 20 lines has the same number of output rows.
+  - Contrast: BPLEN clear (DMACON `$8280|$0020`). No tags appear, and the check fails.
+- **Sprite columns.** A sprite is drawn with "the leftmost pixel of the sprite data placed at the position defined in the horizontal part of SPRxPOS" on each line (p. 126). Its columns are therefore the same on every line of its height. Sprites "are independent of playfield modes of display" (p. 101).
+  - Group B: the reference set R(i) is the set of samples that show SC(i) in band S.
+  - Group A: slot references come from band E (even slots) and band O (odd slots).
+  - Group E: the Group B R(i) are reused, since the X positions are identical.
+  - Check: in every row of the reference band, R(i) is one contiguous run of exactly 16*k* samples with colour SC(i). The runs are identical in every row of the band and ordered left to right as the X values are.
+  - Contrast: SPREN clear (DMACON `$8000|$0200|$0100|$0080`). The runs are absent and the check fails.
+- **Field association.** The evaluated field lies between the tick after marker *k* and the next tick.
+  - Check: every Copper instruction fetch seen at the memory port in that field lies inside list *k*'s address range, and the list's last fetch (the ending WAIT) comes before the field's first bitplane fetch.
+  - Contrast: the program omits the COP1LC write for one configuration. The fetches stay in the previous list and the check fails.
+
+### Expected values
+
+For every sample of every graded row, the objects present are the sprites whose reference set contains the sample (only in bands whose lines lie inside the sprites' VSTART–VSTOP), plus the playfields the band's data sets at that x. The expected colour is the colour of the object in front of all the others present, or BG if none is present. The rules below restate the pages quoted above.
+
+**Group A, band X.** Column blocks are 8 lores pixels wide. Block 0 is covered by slot 0 alone, block 8 by slot 7 alone, and block *j* (1–7) by slots *j*−1 and *j*. The expected colour is that of the lower-numbered of the sprites covering the block (p. 207).
+
+| Block | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|---|
+| A1 | SC0 | SC0 | SC1 | SC2 | SC3 | SC4 | SC5 | SC6 | SC7 |
+| A2 | SC7 | SC0 | SC0 | SC1 | SC1 | SC2 | SC2 | SC3 | SC3 |
+
+Outside the slot columns, samples in the window show BG, apart from the tag region.
+
+**Group B, sprite columns.** For sprite *i* in group g = g(i):
+
+| Band | Expected colour |
+|---|---|
+| S | SC(i) |
+| P1 | SC(i) if g < v, else PF1C |
+| P2 | SC(i) if g < w, else PF2C |
+| T | SC(i) if g < v and g < w; otherwise PF1C if PF2PRI = 0 and g ≥ v; PF2C if PF2PRI = 1 and g ≥ w; otherwise not graded (see *Left open*) |
+
+The ungraded T case arises only in B8 for groups 0 and 1.
+
+**Group B, columns without a sprite, x ≥ 40.**
+
+| Band | Expected colour |
+|---|---|
+| S, B0 | BG |
+| P1, F1 | PF1C |
+| P2, F2 | PF2C |
+| T, F12 | PF1C if PF2PRI = 0, else PF2C |
+
+**Group B, band T, worked out per configuration.**
+
+| Config | Groups 0–3 |
+|---|---|
+| B1 | all PF1C |
+| B2 | all PF2C |
+| B3 | group 0 sprite, groups 1–3 PF2C |
+| B4 | groups 0–1 sprite, 2–3 PF2C |
+| B5 | groups 0–2 sprite, 3 PF2C |
+| B6 | groups 0–1 sprite, 2–3 PF1C |
+| B7 | groups 0–1 sprite, 2–3 PF2C |
+| B8 | groups 2–3 PF2C; groups 0–1 not graded |
+
+**Group E, band P.** Sprite columns show SC(i) if g(i) < v, else PF1C. Other columns (x ≥ 40) show PF1C. In band F1 every column x ≥ 40 shows PF1C.
+
+**All groups, other samples.**
+
+- The tag region shows PF1C where a block is 1 and BG where it is 0.
+- Rows with id 0 show BG at x ≥ 40.
+- The border margins show BG (p. 46, and p. 57: "You cannot display objects outside of the defined display window").
+- COLOR08, COLOR16/20/24/28 and the `$222` registers never appear.
+
+**Quantifier.** "For each of the pixel positions" is graded on every sample of every row of the evaluated field, across all fifteen configurations. One sample or one row does not establish it.
+
+### Preconditions
+
+Each precondition is checked before grading, and each has a contrast that makes it fail.
+
+1. **Frame association**, as in the reference frames above. Contrast: omit a COP1LC write.
+2. **Tags decode and the band order holds**, as above. Contrast: BPLEN clear.
+3. **Sprite runs are present and complete in the reference band**, as above. Contrast: SPREN clear.
+4. **Playfields are present.** In Group B, band F1 shows PF1C at every x ≥ 40 and band F2 shows PF2C. In Group E, band F1 shows PF1C. Contrast: point BPL2PT at an all-zero image; band F2 then shows BG and the precondition fails.
+5. **Vertical extent of the sprites.** Sprites appear in every row of the bands inside their VSTART–VSTOP and in no row of the first band after VSTOP (Group B: B0; Group A: the rows after band O). Contrast: Group B sprites with VSTOP 130. p. 107 says VSTOP is "the line AFTER the last displayed row", so band T loses its sprites in its last ten lines and the precondition fails.
+
+### Contrasting cases (the check must go red)
+
+- **A-mirror.** Run A1 with slot *j* holding sprite 7 − *j*. The page predicts other colours in blocks 1–7 (block 1: SC6 instead of SC0), so the check graded against A1's table fails.
+- **B-swap.** Run B1–B8 with the PF1P and PF2P fields exchanged. The page predicts other colours in bands P1 and P2 of B1–B5 and B8 (B1, band P1: every sprite in front of PF1 instead of behind it), so the original expectations fail.
+- **PF2PRI flip.** Run B1–B8 with bit 6 inverted. Band F12 changes colour in every configuration, so the check fails.
+- **E-reverse.** Run E0–E4 with v replaced by 4 − v. Every configuration except E2 changes colour, so the check fails.
+
+### Left open by the pages (not graded)
+
+- **Three objects with no single highest.** In B8 (PF2PRI = 1, PF2P = 010, PF1P = 000), p. 211 gives `PF1 SP01 SP23 PF2 SP45 SP67` and says "playfield 1 is in front of sprite 0 or 1; and sprites 0 through 3 are in front of playfield 2. However, playfield 2 is in front of playfield 1 in any area where they overlap and where playfield 2 is not blocked by sprites 0 through 3." Where PF1, PF2 and a sprite of group 0 or 1 overlap, these rules form a cycle, so no object is the highest. The text reads as if PF2 is "blocked" there and PF1 shows. Figure 7-3 (p. 212), drawn for the same case, shows the sprite vanishing and says "even though you can't see the boundary, the sprite disappears 'behind' the invisible PF1 boundary", which reads as PF2's colour showing. Those samples are not graded. The colour seen may be recorded, but it carries no verdict.
+- **Which field sets the priority of a single playfield.** p. 210's note says "PF2P2 - PF2P0, bits 5-3, are the priority bits for normal (non-dual) playfields", while Table 7-2 is described in terms of PF1P and "playfield 1". Group E sets both fields equal, so both readings give the same expectation.
+- **Whether a single-playfield pixel of value 0 hides a sprite behind the playfield.** p. 46 calls COLOR00 the background shown "where there is no other object present". The pages do not say whether a value-0 pixel of a single playfield is an object. No stimulus places a sprite over such a pixel.
+
+---
+
+## P2 — Bitplane and sprite data are combined into one video output
+
+**Proposition.** The data of all six bitplanes and of all eight sprites reach the one video output together, so a single output row shows the contribution of each. The claim is `opus:7-cd.c2`, on p. 213.
+
+> "The video output is formed when the input data from all of the bitplanes and the sprites is combined into a common data stream for the display." (p. 213)
+
+### Stimulus
+
+The program skeleton runs with one configuration.
+
+- **Mode.** BPLCON0 `$6600`: six lores planes in dual playfield. p. 48 says "Sixth bitplane is used only in dual-playfield mode". BPLCON2 is `$0000`.
+- **Band.** Lines 60–79, tag id 1 in plane 1. In these rows, plane *k* (k = 1–6) is 1 exactly at x = 272 + 8(k−1) to 279 + 8(k−1), and every plane is 0 at every other x ≥ 40. Rows outside the band carry block 0 only.
+- **Sprites.** Sprite *i* sits at X = 170 + 20*i*, with VSTART 60 and VSTOP 80.
+
+### Observation
+
+The observation is every output row with tag id 1 in the evaluated field. The reference frames for window columns, rows, field association and sprite runs are the same as in P1; the sprite runs are read in the band itself, where every plane is 0 beneath them.
+
+### Expected values
+
+Every row of the band contains all fourteen contributions:
+
+- **Sprites.** Eight runs of 16*k* samples in the colours SC0–SC7, ordered left to right. Sprites are "Together with playfields … the graphics display" (p. 97), and their colours are given in Table 4-6.
+- **Planes.** Six blocks of 8*k* samples. Plane 1 shows COLOR01 `$F00`, plane 3 COLOR02 `$A00` and plane 5 COLOR04 `$500`, from Table 3-10 (p. 70), where planes 5, 3, 1 form PF1's number from most to least significant. Plane 2 shows COLOR09 `$0F0`, plane 4 COLOR10 `$0A0` and plane 6 COLOR12 `$050`, from Table 3-11.
+- **Elsewhere.** Other samples at x from 40 to 271 show BG, and the tag region shows as in P1.
+
+"All of the bitplanes and the sprites" is graded as all six planes and all eight sprites, in every row of the band.
+
+### Preconditions
+
+- **Frame association, tags and window columns**, as in P1, with the same contrasts.
+- **Each plane pointer points at its own image.** Check: the bitplane fetches seen at the memory port in the band's lines read from all six images.
+  - Contrast: point BPL4PT at plane 2's image. The fetch check fails, and so does the plane-4 block.
+
+### Contrasting cases
+
+- **SPREN clear.** The sprite runs show BG, so the check fails.
+- **BPL4PT at an all-zero image.** The plane-4 block shows BG instead of `$0A0`, so the check fails. This case shows that each bitplane is checked separately, not only the set as a whole.
+
+### Left open
+
+No value on the page is left open for this stimulus.
+
+---
+
+## P3 — With a light pen in use, the beam-position address returns the light-pen position
+
+**Proposition.** Once the light-pen input is enabled and a trigger arrives on the controller port's beam-trigger line, VPOSR and VHPOSR return the beam position latched at the trigger, not the moving beam position, until the end of internal vertical blanking of the next field. The claims are `opus:7-bp.c3`, `sol:7-beam.c3` and `opus:7-bp.c11`, on p. 216.
+
+> "In addition, when you are using a light pen, this same address is used to read the light pen position rather than the beam position." (p. 216)
+> VHPOSR: "Read vertical and horizontal position of the counter that is producing the beam on the screen (also reads the light pen)." (p. 216, Table 7-5)
+
+p. 216 refers to Chapter 8 ("This is described fully in Chapter 8"), and these pages there qualify the claim:
+
+- p. 238: "Just as the system exits vertical blank, the capture circuitry for the light pen is automatically enabled." Also: "The pen converts this light pulse into an electrical pulse on the 'Beam Trigger' line (pin 6)." And: "This trigger signal tells the internal circuitry to capture and save the current contents of the beam register, VPOSR."
+- p. 239: "To enable the light pen input, write a 1 into bit 3 (LPEN) of BPLCON0. Once the light pen input is enabled and the light pen issues a trigger signal, the value in VPOSR is frozen. If no trigger is seen, the counters latch at the end of the display field. It is impossible to read the current beam location while the VPOSR register is latched. This freeze is released at the end of internal vertical blanking (vertical position 20)."
+- p. 239: "If the VPOSR value is greater than $10500, the light pen has not triggered since the last top-of-screen. If the value is less, the light pen has triggered and the value read is the screen position of the light pen."
+- p. 238: "A light pen can be connected to one of the controller ports. On the A1000, the light pen must be connected to port 1. … On the A500, A2000 and A3000 the default is port 2."
+
+### Read value
+
+Each read is a long read of VPOSR (p. 216: the pair "can be read from … as long words") followed by a word read of VHPOSR. The value graded is M = (VPOSR bit 0) × 2¹⁶ + VHPOSR, which is "mask off the upper 15 bits" (p. 239). From it, V = M >> 8 (V8–V0) and H = M & `$FF` (H8–H1, one unit per colour clock: "Horizontal resolution is 1/160th of the screen width", p. 216; "RESOLUTION = 1/160 of screen width (280 ns)", p. 285). VPOSR bits 15–1 are ignored: p. 216 calls bits 14–1 "Unused", p. 238 calls them "Chip ID code. Do not depend on value!", and bit 15 is LOF.
+
+### Stimulus (program)
+
+1. Write INTENA `$7FFF`, INTREQ `$7FFF` and DMACON `$7FFF`.
+2. Read CIA-A DDRA and store it. If bit 6 or bit 7 is 1, clear those two bits and write the result back with bits 0–5 unchanged. Pin 6 of both ports must be an input: p. 228 says "These pins may also be configured as outputs", p. 229 describes CIAAPRA as "Input and output for pin 6 (port 1 & 2 fire buttons)", and p. 351 assigns PA6 and PA7 to the fire buttons.
+3. ECS only: store a tick at each of two successive VERTBs, which gives the field period before the write. Then write BEAMCON0 `$0020` (PAL) or `$0000` (NTSC). This makes LPENDIS 0 and keeps bit 5 ("Programmable pal mode enable", p. 305) at the selected standard. The pages give no reset value for BEAMCON0.
+4. Write BPLCON0 `$0008` (LPEN = 1, no bitplanes) and COLOR00 `$000`.
+5. Build the Copper list, in beam order as p. 27 requires. The column Ev names the event:
+
+   | Wait | Move | Ev |
+   |---|---|---|
+   | `$2801,$FFFE` (line 40) | INTREQ ← `$8010` | E40 |
+   | `$3C01,$FFFE` (line 60) | INTREQ ← `$8010` | E60 |
+   | `$6441,$FFFE` (line 100, H `$40`) | COLOR00 ← `$F00` | anchor A1 |
+   | `$64A1,$FFFE` (line 100, H `$A0`) | COLOR00 ← `$000` | anchor A2 |
+   | `$6E01,$FFFE` (line 110) | INTREQ ← `$8010` | E110 |
+   | `$8201,$FFFE` (line 130) | INTREQ ← `$8010` | E130 |
+   | `$B441,$FFFE` (line 180, H `$40`) | COLOR00 ← `$00F` | anchor B1 |
+   | `$B4A1,$FFFE` (line 180, H `$A0`) | COLOR00 ← `$000` | anchor B2 |
+   | `$BE01,$FFFE` (line 190) | INTREQ ← `$8010` | E190 |
+   | `$D201,$FFFE` (line 210) | INTREQ ← `$8010` | E210 |
+   | `$FFFF,$FFFE` | — | end |
+
+6. Write COP1LC, strobe COPJMP1, then write DMACON `$8280` (the p. 30 order).
+7. Run an event loop that polls INTREQR.
+   - On bit 5 (VERTB), clear it with `$0020` and advance the field counter. Store the tick, wait about 2 lines, read (event V1), wait about 8 more lines, and read again (event V2).
+   - On bit 4 (COPER), clear it with `$0010`, read, and number the event by its order in the field: E40, E60, E110, E130, E190, E210.
+   - Each read stores a record: field number, event id, VPOSR, VHPOSR (both from the long read), and VHPOSR from the word read.
+8. Run one settling field F−1 with LPEN already on, then fields F0–F6, then the V1 and V2 reads at the start of F7, then store an end marker.
+
+### Stimulus (driven by the test)
+
+The test drives a trigger on pin 6 of **both** controller ports at the same instant. The trigger is the level of a pressed fire button, held for 4 colour clocks, then released. At all other times pin 6 is at the released level.
+
+Both ports are driven because p. 238 makes the port model-dependent. The pressed level is used because the chip's input is named LP\* (Appendix J, p. 379), and an asterisk marks an active-low line, as in "INT6\* becomes a logic 0" (p. 219). The pages give neither the pulse polarity nor the pulse width in words.
+
+| Field | Trigger |
+|---|---|
+| F1 | t(A1) + 16 colour clocks |
+| F3 | t(A1) + 56 colour clocks |
+| F5 | t(B1) + 16 colour clocks |
+| F0, F2, F4, F6 | none |
+
+t(A1) is the memory-port time of the fetch of the MOVE that follows the WAIT for (100, `$40`) in the same field, and t(B1) likewise for (180, `$40`). One colour clock is one memory slot. p. 194 says "there are 227.5 'color clocks', or memory access cycles", and p. 285 gives 280 ns. Both triggers in F1 and F3 start at the same phase within a colour clock.
+
+### Observation
+
+The observation is the records in memory, their store times at the memory port, and the Copper fetch times.
+
+### Reference frame and how the test checks it
+
+- **Line numbers.** A WAIT holds the Copper "until the video beam counters are equal to (or greater than) the coordinates specified" (p. 22). The fetch after WAIT (L, H) therefore happens with the beam at or past (L, H). VERTB marks line 0 (p. 219).
+- **Anchor check.**
+  - In every field, t(A2) − t(A1) and t(B2) − t(B1) each equal `$A0` − `$40` = 96 colour clocks, within 2. Both anchors of a pair are then on the same line with equal Copper delay, and each trigger lies between them.
+  - The field period t(A1, Fn+1) − t(A1, Fn) is the same for all fields.
+  - Contrast: change the second anchor's WAIT to `$65A1` (line 101). The spacing becomes about 323 colour clocks and the check fails.
+- **Read-time check.**
+  - Each Copper-signalled read is stored within one line (227 colour clocks) after the fetch of its signalling MOVE.
+  - V1 and V2 are stored less than 18 lines after the CPU leaves its VERTB poll loop (seen as instruction fetches at the memory port). This places them before vertical position 20.
+  - Contrast: add a 30-line delay before V1. The check fails.
+
+### Expected values (LPEN = 1)
+
+Let L1, L3 and L5 be the values read at E110 of F1, E110 of F3 and E190 of F5.
+
+1. **Latched after a trigger.**
+   - In F1 and F3, the reads at E110, E130, E190 and E210, and at V1 and V2 of the following field, all return the same M.
+   - In F5, the reads at E190 and E210, and at V1 and V2 of F6, all return the same M.
+   - In every one of these reads, the word read of VHPOSR equals the low word of the long read.
+
+   Source: "the value in VPOSR is frozen … This freeze is released at the end of internal vertical blanking (vertical position 20)" (p. 239).
+2. **The latched value is the light-pen position.**
+   - V(L1) = 100, V(L3) = 100 and V(L5) = 180.
+   - H(L3) − H(L1) = 40 exactly. The two triggers are 40 colour clocks apart relative to the same anchor, and the latch saves "the current contents of the beam register" at the trigger (p. 238).
+
+   Source: "the value read is the screen position of the light pen" (p. 239).
+3. **Not the beam position.** Every read in item 1 returns V = 100 or 180 although the beam is at lines 110, 130, 190, 210 or the first lines of the next field. Source: "rather than the beam position" (p. 216) and "It is impossible to read the current beam location while the VPOSR register is latched" (p. 239).
+4. **Before the trigger and after the release, the address reads the beam.**
+   - In every field, E40 and E60 read V ∈ {40, 41} and V ∈ {60, 61}.
+   - In fields without a trigger, E110 to E210 read V equal to their line or the next.
+   - In F2, F4 and F6, E40 reads V ∈ {40, 41} even though the previous field latched. That latch was released at vertical position 20, or 25 under p. 219 (see *Left open*), and both are before line 40.
+
+   Source: p. 216, Table 7-5, and the release sentence on p. 239.
+5. **No trigger: latched at the end of the field.** V1 and V2 of F1, F3, F5 and F7 (after the fields without a trigger, F0, F2, F4, F6) are equal to each other. Their M is greater than `$10500` in PAL and not less than `$10500` in NTSC. Source: "If no trigger is seen, the counters latch at the end of the display field" and the `$10500` rule (p. 239).
+
+**Quantifiers.** "Rather than the beam position" is graded on every read inside a latched interval, not on one read. The interval runs from the trigger to vertical position 20 of the next field. The reads are three to six per trigger, over three triggers on two lines and at two horizontal offsets.
+
+### Preconditions
+
+1. **Anchor check**, as above. Contrast: move the second anchor to line 101.
+2. **Read-time check**, as above. Contrast: add a 30-line delay before V1.
+3. **Pin 6 is not driven by the CIA.** The stored DDRA has bits 6 and 7 at 0 after step 2. Contrast: the program sets DDRA bits 6 and 7 to 1, and the check fails.
+4. **The pulse was driven.** The test's own drive log shows each pulse at its scheduled time and nothing else on pin 6. Contrast: omit the F1 pulse. The log check fails, and item 1 goes red as well (F1 reads live).
+5. **The beam reads live when not latched** (item 4). It shows that the register is not stuck. Contrast: hold pin 6 pressed from line 30 of F2 until the end of F2. p. 239 then predicts a freeze at line 30, so E40 and E60 of F2 both read V = 30 and the check fails.
+6. **ECS: the BEAMCON0 write changed nothing but LPENDIS.** The field period after step 3 equals the one measured before it (VERTB ticks). Contrast: write bit 5 opposite to the selected standard. p. 305 names bit 5 "Programmable pal mode enable", and p. 24 gives the line counts, so the period changes and the check fails.
+
+### Contrasting cases
+
+- **LPEN clear.** BPLCON0 is `$0000` with the same pulses. Every read tracks the beam: E110 reads V ∈ {110, 111}, and V1 and V2 differ. Items 1, 2 and 5 fail.
+- **Trigger on line 100 at another offset in a repeat run** (t(A1) + 30 colour clocks in F1). Graded against the original table, H(L3) − H(L1) is no longer 40, so item 2 fails.
+
+### Left open by the pages
+
+- **The absolute H of the latch.** The pages do not state the delay between a WAIT being satisfied and the Copper's next fetch, so the absolute H at the trigger cannot be derived to the colour clock. Only differences are graded.
+- **Which port carries the pen.** It depends on the model (p. 238), so both ports are driven. A run with one port driven may be recorded without a verdict.
+- **Pulse polarity and width.** The pages state neither in words.
+- **The end of the latch in PAL.** p. 239 says the freeze ends at "vertical position 20", while p. 219 gives PAL vertical blanking as running "to line 25". Reads are placed before line 18 and triggers after line 26, so both readings agree.
+- **The value at exactly `$10500`.** p. 239 is written for NTSC (`$10500` is V = 261) and says nothing about an equal value, so NTSC grades "not less than".
+
+---
+
+## P4 (ECS) — With LPENDIS set, a vertical-position read ignores the latched pen value
+
+**Proposition.** On ECS, with BEAMCON0 bit 13 (LPENDIS) set, a read of the vertical position does not return the latched light-pen value, while the latch itself still holds it. The claims are `opus:7-appC-beamcon0.c4` and `sol:7-appC-beamcon0.c4`, on p. 305.
+
+> "13 LPENDIS Ignore latched pen value on vertical pos read" (p. 305, BEAMCON0)
+
+### What the page leaves open, and how the stimulus avoids depending on it
+
+The page does not say:
+
+- whether "vertical pos read" means VPOSR (V8), the V7–V0 byte of VHPOSR, or both;
+- what the read returns instead of the latched value;
+- whether the horizontal byte is affected.
+
+No expected positive value is therefore graded. The graded relation is that the vertical pair (V8, V7–V0) read with LPENDIS set differs from the latched pair. To make that relation hold under every reading above:
+
+- The trigger is placed on line 100, so the latched pair is (0, 100).
+- The read is made on a line of 256 or more of the same field, still inside the latched interval. A live read there has V8 = 1 and a low byte different from 100.
+
+Any reading that replaces at least one of the two vertical fields with the live counter therefore gives a pair different from (0, 100).
+
+### Stimulus
+
+The P3 program runs in ECS and PAL with these changes:
+
+- BEAMCON0 starts at `$0020`.
+- The Copper list gains `$FA01,$FFFE` (line 250) → INTREQ ← `$8010` (E250) before its end. Lines above 255 are not waited for by the Copper, because p. 24's method for them is unclear (see the ambiguities list).
+- **F1.** At E60, the CPU writes BEAMCON0 `$2020` (LPENDIS = 1, PAL bit kept). The test drives the trigger at t(A1) + 16 colour clocks. At E250, the CPU waits about 20 lines and reads X. It then writes BEAMCON0 `$0020` and reads Y at once.
+- **F3.** This is a control inside the same run. At E60 the CPU writes BEAMCON0 `$0020`. The trigger is at t(A1) + 16. At E250 the CPU waits about 20 lines, reads X′, writes `$0020` again, and reads Y′.
+- F0, F2 and F4 have no trigger. BEAMCON0 stays `$0020` outside the F1 window.
+
+NTSC is optional. The Copper waits for line 250 as in PAL, and the CPU waits about 8 lines, which puts the read in lines 256–261. The PAL bit is 0 throughout, so the writes are `$2000` and `$0000`.
+
+### Observation
+
+The observation is the records X, Y, X′ and Y′, their store times, the anchors, and the VERTB ticks.
+
+### Reference frame
+
+The anchors and the read-time check are those of P3. In addition, the store time of X must lie at least 156 × 228 colour clocks after t(A1) of the same field, which is line 256 or later. The store time of Y must lie at least 100 × 228 colour clocks before t(A1) of the next field, which is before line 0 of the next field. 228 is the long-line length on p. 23, used here as the bound. The latch is frozen until vertical position 20 of the next field (p. 239), so both reads are inside it. Contrast: wait only 2 lines after E250. X then falls before line 256 and the check fails.
+
+### Expected values
+
+- **Latch present (precondition, from p. 239 as in P3).** Y has V = 100 and H(Y) = H(X′) = H(Y′). X′ equals Y′.
+- **Graded.** The pair (V8, V7–V0) of X is not (0, 100).
+- **Left open, not graded.**
+  - The value of X, including its horizontal byte.
+  - The reads at E110, E130, E190 and E210 in F1 while LPENDIS is set, because under some readings they are the latched value and under others the live one.
+
+### Preconditions
+
+1. **Anchor check, read-time check and the CIA pin 6 check**, as in P3, with the same contrasts.
+2. **The latch is present in F1.** V(Y) = 100. Contrast: omit the F1 pulse. Y then reads the live beam (V8 = 1) and the check fails.
+3. **The control field shows the latched value with LPENDIS clear.** In F3, X′ equals Y′ and V(X′) = 100. Contrast: write `$2020` at E60 of F3 as well. X′ then differs from Y′ and the check fails.
+4. **Field period.** The field period is unchanged across all BEAMCON0 writes, measured from the VERTB ticks. Contrast: write `$2000` in PAL. p. 305 bit 5 and p. 24 predict a change, and the check fails.
+
+### Contrasting case
+
+**LPENDIS never set.** At E60 of F1 the CPU writes `$0020` instead of `$2020`. X then equals Y, which is (0, 100), so the graded relation fails.
+
+On OCS, BEAMCON0 does not exist ("A new register in the enhanced Agnus", p. 305). Selecting OCS behaviour with the F1 stimulus is expected to make X equal Y, which is a second contrast. It is optional, because the pages do not say what a write to that address does on OCS.
+
+---
+
+## Points where the pages are ambiguous or disagree
+
+These are listed because they shaped the stimuli above.
+
+1. **p. 25 and p. 32 on when the Copper restarts from COP1LC.** p. 25 says "At the start of each vertical blanking interval" and, in the next sentence, "when the end of vertical blanking occurs". p. 32 says "at the start of the vertical blanking period". The design holds each configuration for three fields, evaluates the second, and puts no Copper anchor in lines 0–25.
+2. **p. 99 and p. 100 against p. 57 and p. 59 on horizontal coordinates.** Sprite examples use a window from X = 64, while the display window starts at H = `$81` (129). Vertically they agree (line 44 = `$2C`). The design locates sprites in the output.
+3. **p. 210 on which bits govern a single playfield.** Table 7-2 is described with PF1P and playfield 1, and the "Be careful" note says PF2P governs normal (non-dual) playfields. The design sets both fields equal.
+4. **p. 211 text against Figure 7-3 (p. 212) on the three-way overlap** in the p. 211 configuration. The text implies PF1 shows there, and the figure shows PF2's area with the PF1 boundary invisible. Those samples are not graded.
+5. **p. 219 against p. 239 on the end of internal vertical blanking in PAL.** p. 219 gives line 25 for PAL and p. 239 gives line 20. The design avoids lines 18–26.
+6. **p. 239 on NTSC and PAL.** The method is written for NTSC (`$10500` = V 261), says nothing about PAL, and does not say what an equal value means. The printed "0<V20" is presumably "0 < V < 20".
+7. **p. 216 against p. 238 on VPOSR bits 14–1.** p. 216 calls them "Unused" and p. 238 calls them "Chip ID code. Do not depend on value!". They are masked.
+8. **p. 238 on the pen's port.** The port depends on the model and a jumper. Pulse polarity and width are not stated.
+9. **p. 305 on LPENDIS and BEAMCON0.** LPENDIS is described in one line and leaves open which register and bits "vertical pos read" means and what is returned. No reset value of BEAMCON0 is given.
+10. **p. 304 against p. 23 on PAL line length.** p. 304 says "PAL … 227.5 colorclocks per scan line" and p. 23 says "In PAL, they are all 227 long". Only measured periods and differences within one line are used.
+11. **p. 24 on waiting for lines above 255.** The method (WAIT for (0,255), then WAIT for lines 0 through 5) would, read literally, end the second wait at once, because line 255 already compares as greater than or equal to lines 0–5. The design does not have the Copper wait past line 255.
