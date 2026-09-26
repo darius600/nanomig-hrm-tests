@@ -618,3 +618,76 @@ A failing precondition means "not graded", never green.
   "2us"/"4us" and "two"/"four microseconds" with no further precision. P6
   grades the absolute values only to one significant figure. The factor of
   two between them is the sharper check.
+
+## 5. What the build adds
+
+Registers this package's programs use beyond `integration/harness/nanomig.i`
+(`ADKCONR`, `DSKBYTR`, `DSKPTH`/`DSKPTL`, `DSKLEN`, `ADKCON`, `AUD0LCH`/
+`AUD0LCL`/`AUD0LEN`/`AUD0PER`/`AUD0VOL`, `AUD1VOL`-`AUD3VOL`, `HTOTAL`,
+`VTOTAL`, `BEAMCON0`) are defined in the package's own `ch5regs.i`, offsets
+from Appendix B. Table/buffer content (T1, T2, T3 and the two disk buffers)
+is poked into chip RAM directly by the C++ test before `boot()`, the same
+mechanism `load_program()` itself uses; no program instruction writes it.
+
+- **Chip bank 0.** T1/T2/T3 and the two disk buffers sit below $080000
+  (2.1), inside the range the boot-time Kickstart overlay otherwise
+  redirects. Both `prog_audio.s` and `prog_diskrate.s` start with a single
+  write to $BFE001 (CIA-A Port A), `CLEAR_OVL` in `ch5regs.i`: this design
+  ties `cpuhlt` to 0 (`minimig.v`), so chip bank 0 is gated by "!ovl" alone
+  for both CPU and DMA access (`gary.v`), and any CIA-A write clears `ovl`
+  unconditionally (`minimig.v`). CIA-A is a separate chip-select from CIA-B
+  (`gary.v` `sel_cia_a`/`sel_cia_b`), so this touches no floppy-drive select
+  line; P6's "the program makes no CIA writes" is otherwise honoured.
+- **Time base.** F1's color-clock ratio (8 `clk_sys` cycles per color
+  clock) comes from `amiga_clk.v`'s clock divider (`clk7_cnt` a mod-4
+  counter; `cck` toggles every 4th cycle, so its own period is 8) and
+  `nanomig.v`'s `clk28m(clk_sys)`. The F1 anchor itself is the guard: it
+  measures 227.00 color clocks per line on this RTL, inside the page's
+  227-228 window, confirming the ratio.
+- **Audio port sign.** `audio_left`/`audio_right` are themselves two's
+  complement, not an unsigned magnitude: `paula_audio_mixer.v` sums two
+  channels' signed `sample*volume` products with a one-bit sign extension
+  (`ldatasum <= {msample0[13], msample0} + {msample3[13], msample3}`).
+  LEVELS/FIT read the port as signed 15-bit; an unsigned reading breaks
+  every fit whose pass contains a code with bit 7 set (T2, T3).
+- **Left/right.** `paula_audio_mixer.v` routes channels 0 and 3 to
+  `ldatasum` ("channel 0&3 --> left"), the opposite of channels-to-jacks
+  pairing on p.137 ("Channels 0 and 3 are connected to the right-side
+  output jack."). No P1-P6 assertion depends on which named wire carries
+  channel 0, only that channel 0's own bytes are observed in order, so
+  this is a port-selection fact, not a graded proposition: the test reads
+  `audio_left`.
+- **F2's first pass, measured.** On this RTL, pass 1 (between t_1 and t_2)
+  is exactly one word short for a 4-word table (it reads the table's
+  first 3 words and restarts one word early); every later pass reads all
+  of them. This matches p.164's own pipelining note ("the first data word
+  must be thrown away") and is exactly why F2 exempts t_1 and the window
+  graded starts at t_2 (2.4, 2.6): pass 1's own content is never used.
+- **G1/G2/G3 (P6) are a measured RTL/page disagreement, not a defect.**
+  ADKCON bit 8 (FAST) reads back correctly (B1 holds on both runs) but is
+  not wired to anything that paces disk write DMA: `paula.v` routes only
+  `adkcon[10]` (wordsync) and `adkcon[11]` (uartbrk) out of the register;
+  neither `paula_floppy.v` nor `agnus_diskdma.v` references `adkcon` or a
+  FAST/bit-cell signal anywhere. Measured D_F equals D_S exactly (310520
+  `clk_sys` cycles for 512 words, both runs, every configuration), giving
+  T_F = T_S ~= 1.336 us (PAL) -- the Chip-memory read rate is paced by
+  disk-DMA-slot availability alone (about 75.9 color clocks/word, close
+  to the page's own "3 disk DMA slots per line", p.194: 227.5/3 ~= 75.8),
+  never by the bit-cell clock the page describes. G1, G2 and G3 are kept
+  as the graded, printed, red result this produces.
+- **Mutation scope.** Every mutation is demonstrated once, under the
+  ECS/PAL configuration (the F1/B4 contrasting case only under ECS, per
+  2.4); it is not repeated under OCS/PAL or, for P6, ECS/NTSC. The normal
+  run still grades every proposition in every configuration 2.1 lists.
+- **F1/B4's own contrasting case did not reproduce.** Rewriting VTOTAL,
+  HTOTAL and BEAMCON0 exactly as 2.4 states (measured under NMH_MUTATE=F1)
+  leaves the refresh-group anchor at 227.00 color clocks, unchanged from
+  the normal run. It is not inert: the same write measurably speeds up
+  disk write DMA (confirmed further at an untried HTOTAL=20, where D_F
+  fell from 310520 to 28712 `clk_sys` cycles), and `agnus.v` feeds the
+  same `hpos` to both `agnus_refresh` and `agnus_diskdma`. Disk DMA has
+  higher arbitration priority than refresh in that module's if-else
+  chain, which is consistent with disk's now much more frequent requests
+  starving refresh's own grants back down near the original rate -- a
+  plausible mechanism, not a confirmed one. This is reported as measured,
+  not worked around: the stimulus was not tuned to force a red result.
