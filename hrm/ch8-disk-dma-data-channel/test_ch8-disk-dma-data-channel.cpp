@@ -4,7 +4,7 @@
 //   rig over `paula_floppy` + `agnus_diskdma` (disk_dma_data_channel_rig.v,
 //   this package's own wrapper, NOT pinned RTL). 19 claims, from
 //   work/ch8-s2-build/ch8-disk-dma-data-channel.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 3e0f075, before any RTL was opened).
+//   SPECIFICATION.md (committed as d03c70e, before any RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.279 (Appendix
 //   A, DSKDAT/DSKDATR) and pp.287,289 (Appendix B, the ER legend and the
@@ -57,7 +57,7 @@
 //   clearing this package's uid-placement offenses
 //   (tools/check_uid_placement.py flagged all four).
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (3e0f075):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (d03c70e):
 //   1. $(NANOMIG)/src/minimig-aga/agnus_diskdma.v -- full file (80 lines).
 //   2. $(NANOMIG)/src/minimig-aga/paula_floppy_fifo.v -- full file (60
 //      lines): a 2048-word memory FIFO; write enters `mem[in_ptr]` and

@@ -54,7 +54,7 @@
 //
 // ORDER OF WORK: SPECIFICATION.md (this package's 8 PROPs, grouping the 17
 // claims) was written and committed from ch8-keyboard-events.jsonl's
-// `quote`/`restatement` fields alone -- commit 48c1c3a -- before hid.v or
+// `quote`/`restatement` fields alone -- commit 54c9dca -- before hid.v or
 // amiga_keymap.v were opened. See SPECIFICATION.md's own "Order of work"
 // section for exactly what RTL-derived background this package's task
 // assignment had already supplied before that commit (module name, a

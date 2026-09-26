@@ -5,7 +5,7 @@
 //   the Chip-memory/slow-memory regions and why each is named what it is,
 //   the CIA/Paula address split, and every block Figure 1-1 (p.8) draws
 //   inside or immediately around gary's own boundary, per SPECIFICATION.md
-//   (committed 3c7a722, before this file was opened).
+//   (committed 6717841, before this file was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   1-6, 8 (Figure 1-1 + its footnote), 12.

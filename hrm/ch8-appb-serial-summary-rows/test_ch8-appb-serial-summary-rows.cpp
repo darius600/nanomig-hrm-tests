@@ -11,7 +11,7 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 257, 265, 287, 289; committed specification (SPECIFICATION.md,
-//   this package, commit 2f706f3).
+//   this package, commit e78a14a).
 // Fixture boundary: `paula` (paula.v), compiled with everything it itself
 //   instantiates -- paula_uart.v, paula_intcontroller.v, paula_floppy.v
 //   (and its own paula_floppy_fifo.v), paula_audio.v (and its own
@@ -26,7 +26,7 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// RTL read for step 2/3, after SPECIFICATION.md was committed (2f706f3):
+// RTL read for step 2/3, after SPECIFICATION.md was committed (e78a14a):
 //   paula.v in full, paula_uart.v in full.
 //   - paula.v:67 `input [8:1] reg_address_in`; paula.v:126-127
 //     `ADKCON=9'h09e`, `ADKCONR=9'h010`; ADKCON write paula.v:182-195 (SET/

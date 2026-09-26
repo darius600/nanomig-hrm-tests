@@ -5,7 +5,7 @@
 //   over `gary` + `ciaa` + `ciab` (cia_disk_port_windows_rig.v, this
 //   package's own wrapper -- not pinned RTL). 7 claims, from
 //   work/ch8-s2-build/ch8-cia-disk-port-windows.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as ed5890a, before any RTL was opened).
+//   SPECIFICATION.md (committed as 9d3366c, before any RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.241 ("The disk
 //   subsystem uses two ports on the system's 8520 CIA chips..." and "CIABPRB
@@ -41,7 +41,7 @@
 //   is what CIABPRB-ALIAS-*, DSKINDEX-ALIAS-* and OVERLAP-BOTH-SELECTS-ACTIVE
 //   below make checkable rather than merely cited.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (ed5890a):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (9d3366c):
 //   1. hrm/ch8-ciaa-port-direction/Makefile -- build pattern (ciaa/ciab need
 //      cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v to elaborate),
 //      named in the build brief.

@@ -23,7 +23,7 @@
 //   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER OF WORK: SPECIFICATION.md in this directory (assertions, uids,
-// scope) was written and committed (5cf4dd5) from the claims file's own
+// scope) was written and committed (c9ac428) from the claims file's own
 // quotations alone -- denise_spritepriority.v was not opened until after
 // that commit, per the build brief's gate. Everything below that depends on
 // a port name, bit width, or the internal grouping/priority-encoder
@@ -391,7 +391,7 @@ int main(int argc, char** argv) {
 
 // RESULTS: built and run under WSL/Verilator 5.052 against the pinned
 // nanomig submodule, after this file's own header/assertions/expected
-// values were written following the committed SPECIFICATION.md (5cf4dd5).
+// values were written following the committed SPECIFICATION.md (c9ac428).
 // 9 passed, 0 failed. All 8 claim-bearing assertions plus the fixture-live
 // control hold at the denise_spritepriority boundary, as tested here. No
 // red findings. The MEASURED line reproduces, without disagreement, the

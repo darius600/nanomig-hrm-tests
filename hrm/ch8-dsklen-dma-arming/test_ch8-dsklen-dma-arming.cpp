@@ -6,7 +6,7 @@
 //   work/ch8-s2-build/ch8-dsklen-dma-arming.jsonl, reduced to 12 assertions
 //   + fixture liveness (13 after the 2026-09-15 lot-B repair added the A13
 //   substitute; see the repair notes below). Full derivation in
-//   SPECIFICATION.md (committed as e97f8f2, before any RTL was opened;
+//   SPECIFICATION.md (committed as 0ab5023, before any RTL was opened;
 //   updated 2026-09-15 for the repair).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed pp.246-247, 279.
@@ -21,7 +21,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (e97f8f2):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (0ab5023):
 //   1. hrm/ch8-ciaapra-address-window/Makefile, test_ch8-ciaapra-address-
 //      window.cpp, SPECIFICATION.md -- for this suite's established
 //      harness/mutation boilerplate (the Checks class, the MUTATE env-var

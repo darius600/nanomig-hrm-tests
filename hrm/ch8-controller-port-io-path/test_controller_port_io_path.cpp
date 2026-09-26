@@ -2,7 +2,7 @@
 //   fire/mouse-button path, printed pages 227, 229 and 232. 10 claims from
 //   work/ch8-s1-build/ch8-controller-port-io-path.jsonl. Full derivation
 //   (propositions, KNOWN-CONFLICT-3 handling, per-claim boundary check) is
-//   in SPECIFICATION.md, committed as 52418ca before this file, the wrapper
+//   in SPECIFICATION.md, committed as 3eaea2c before this file, the wrapper
 //   Verilog, or any sibling Makefile was read.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed

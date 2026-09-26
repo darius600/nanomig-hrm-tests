@@ -8,7 +8,7 @@
 //   types of controllers can be attached through the two controller ports on
 //   the base unit including joysticks, keypads, trackballs, light pens, and
 //   graphics tablets." against `userio` (userio.v). SPECIFICATION.md
-//   (committed before this file or userio.v were opened -- commit f19d07c)
+//   (committed before this file or userio.v were opened -- commit 2c11fe2)
 //   records the reasoning in full; this file carries it out and states the
 //   final, RTL-confirmed disposition.
 // Test class: HRM_CONFORMANCE

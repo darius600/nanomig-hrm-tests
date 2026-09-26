@@ -3,7 +3,7 @@
 //   and register-identity facts pages 266/298/305/309 of the manual assign
 //   to this package. Package ch7-beamcon0-ecs-control-bits, fixture
 //   agnus_beamcounter (one Verilator build, this module only). Built from
-//   SPECIFICATION.md, committed as ff23268 BEFORE this file or the RTL was
+//   SPECIFICATION.md, committed as 5fd1a70 BEFORE this file or the RTL was
 //   opened, per BUILD-BRIEF's two-step order.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -1071,5 +1071,5 @@ int main(int argc, char** argv) {
 // Final rebuild after the last revert: 9 passed, 3 failed, byte-for-byte
 // identical (`diff`) to the file before the mutation sweep began.
 // That was the sweep's baseline, before P6 graded LOLDIS on its own
-// (30c7fe8). The package reads 8 passed, 4 failed since: P6 is NM-HRM-033,
+// (9a85a64). The package reads 8 passed, 4 failed since: P6 is NM-HRM-033,
 // P11-P13 are NM-HRM-032.

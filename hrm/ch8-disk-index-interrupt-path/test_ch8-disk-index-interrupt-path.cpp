@@ -4,14 +4,14 @@
 //   pp.245 and 250. RIG over three independently-instantiated Verilated tops
 //   (no shared Verilog parent): paula_floppy (+ paula_floppy_fifo), ciab (+
 //   cia_int, cia_timera, cia_timerb, cia_timerd), and paula_intcontroller.
-//   Full derivation in SPECIFICATION.md (committed aeca195, before this file
+//   Full derivation in SPECIFICATION.md (committed 3b26ed5, before this file
 //   or any RTL assigned to this fixture was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed page 250 ("INDEX
 //   (level 6, 8520 Flag pin) -- index sensor triggered.") and printed page
 //   245 ("FLAG DSKINDEX* Disk index pulse ($BFDD00, bit 4). Can be used to
 //   create a level 6 interrupt. See Appendix F for details."); committed
-//   specification aeca195 (SPECIFICATION.md, this package). Claims file:
+//   specification 3b26ed5 (SPECIFICATION.md, this package). Claims file:
 //   hrm-testpipeline/work/ch8-s2-build/ ch8-disk-index-interrupt-path.jsonl
 //   (7 claims, all `classify.status: testable`, all 7 cited on a graded line
 //   below -- none declined).
@@ -40,7 +40,7 @@
 //      below: `pic->int6 = cb->irq;`.
 //   No other signal is shared between the three DUTs.
 //
-// RTL READ FOR STEP 2, after SPECIFICATION.md was committed (aeca195), in
+// RTL READ FOR STEP 2, after SPECIFICATION.md was committed (3b26ed5), in
 //   this order: paula_floppy.v (full, 1041 lines) and paula_floppy_fifo.v
 //   (not opened for content, only confirmed as the sole sub-instance);
 //   ciab.v (full) and cia_int.v (full) -- cia_timera.v (full, for the

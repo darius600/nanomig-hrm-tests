@@ -34,7 +34,7 @@
 //   denise_spritepriority) and IS observable here.
 //
 // ORDER OF WORK: SPECIFICATION.md was written and committed (commit
-//   6604937) from claims.jsonl's quotations and the two oracle figures
+//   abaf43c) from claims.jsonl's quotations and the two oracle figures
 //   ALONE, before this file or denise_sprites.v/denise_sprites_shifter.v
 //   were opened. Register word-address map (SPR0POS=0xA0 step 4 per
 //   sprite), the clk7_en/c1/c3 four-phase clocking, and the arm-on-write

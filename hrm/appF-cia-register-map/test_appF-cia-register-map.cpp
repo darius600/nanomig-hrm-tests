@@ -8,7 +8,7 @@
 //   package's own ciaa-only boundary reason) on RECORDED lines in main().
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 339, 340, 351, 352, 353, 354; committed specification 4ea8578
+//   pages 339, 340, 351, 352, 353, 354; committed specification 3851dcd
 //   (SPECIFICATION.md, this package).
 // Requirement IDs: REG0-PRA .. REGF-CRB, REG-COUNT-16, CS-GATES-ACCESS,
 //   RS-SELECTS-DISTINCT, DATA-BUS-8BIT, READ-DRIVES-BUS,
@@ -27,7 +27,7 @@
 //   `work/2026-09-17_appF_packages.jsonl` in the sibling repository
 //   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (4ea8578):
+// RTL read for step 2, after SPECIFICATION.md was committed (3851dcd):
 //   ciaa.v (388 lines) in full; cia_int.v (70 lines), cia_timera.v (112
 //   lines), cia_timerb.v (107 lines) and cia_timerd.v (142 lines) in full.
 //   ciab.v (251 lines) read in full for the chip-generic-scope comparison

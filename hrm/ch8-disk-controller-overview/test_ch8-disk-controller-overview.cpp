@@ -7,7 +7,7 @@
 //   paula_floppy_fifo.v only; paula_floppy_ebr.v excluded, it declares a
 //   second `module paula_floppy`). 22 claims, from
 //   work/ch8-s2-build/ch8-disk-controller-overview.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as d8666c6, before this file or any RTL was
+//   SPECIFICATION.md (committed as 850e370, before this file or any RTL was
 //   opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.241 (and p.247
@@ -23,7 +23,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (d8666c6):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (850e370):
 //   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines),
 //      read myself for the first time at this step (SPECIFICATION.md's own
 //      process note discloses that I had already seen RTL-mechanism

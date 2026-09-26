@@ -355,7 +355,7 @@
 // after capture ("problems: 0"). tools/check_uid_placement.py against
 // the after capture reports "packages asserting AND declining one : 0".
 // No assertion this pass removed an id from was added by the backlog
-// (2bc070e~1..HEAD) -- all four predate it -- so no correction-on-
+// (816bea1~1..HEAD) -- all four predate it -- so no correction-on-
 // purpose exception to the first check applies or is claimed.
 //
 // MUTATION LOG (the first 5 stimulus entries below were run by an

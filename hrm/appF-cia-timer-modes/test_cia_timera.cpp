@@ -6,12 +6,12 @@
 //   unused bit 7, the p.352 worked timing example, and the p.354 reset
 //   paragraph -- against `cia_timera` (cia_timera.v), the module that reads
 //   and acts on these bits, compiled alone. SPECIFICATION.md (committed
-//   7dfb444, before this file or cia_timera.v/cia_timerb.v were opened for
+//   b64c416, before this file or cia_timera.v/cia_timerb.v were opened for
 //   the second time -- see its own disclosure section) records the claim
 //   inventory and proposition grouping in full; this file carries it out.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 345, 348, 349, 352, 354; committed specification 7dfb444
+//   pages 345, 348, 349, 352, 354; committed specification b64c416
 //   (SPECIFICATION.md, this package).
 // Requirement IDs: CRA-START, CRA-RUNMODE, CRA-LOAD, CRA-INMODE,
 //   CRA-SPMODE, CRA-BIT7-UNUSED, CRA-EXAMPLE-SETUP-MASK,

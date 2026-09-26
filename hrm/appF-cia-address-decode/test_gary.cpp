@@ -5,7 +5,7 @@
 //   (sel_cia, sel_cia_a, sel_cia_b, gary.v:190-192) actually decodes it --
 //   the CIAA/CIAB address-map figures (p.339, p.340) and the "Hardware
 //   Connection Details" decode rule (p.353), per SPECIFICATION.md (committed
-//   52d8fd1, before this file was opened).
+//   e22e317, before this file was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   339, 340, 353.

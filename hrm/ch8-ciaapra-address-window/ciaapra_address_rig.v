@@ -7,7 +7,7 @@
 // $(NANOMIG)/src/minimig-aga/minimig.v (lines 607-630 for the ciaa
 // instantiation, 762-821 for gary's, both citing cpu_address_out as the
 // address both modules see) only after SPECIFICATION.md was committed
-// (commit 09a9ba3).
+// (commit bd0970f).
 //
 // Why ciaa alone cannot be the fixture: ciaa.v's own interface is an
 // internal register-select input (`rs`, 4 bits) with an address-enable pin

@@ -6,7 +6,7 @@
 // read-only, pinned submodule) with every one of their own ports brought
 // straight out to this wrapper's top level. There is NO internal Verilog
 // wiring between the two module instances below -- read after
-// SPECIFICATION.md was committed (commit 3e0f075), `paula_floppy` and
+// SPECIFICATION.md was committed (commit d03c70e), `paula_floppy` and
 // `agnus_diskdma` are not directly wired to each other anywhere in the real
 // chip either: paula.v connects paula_floppy's dmal/dmas outputs up to
 // disk_dmal/disk_dmas, and agnus.v connects those into agnus_diskdma's own

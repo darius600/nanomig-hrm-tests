@@ -294,7 +294,7 @@ document out.
 ## Deletion completed — 10.09.2026, the fifth
 
 `agnus_blitter_mask` is now deleted too. The condition it was held on is met:
-`agnus_blitter_masks` carries `MASK-MUX-RANDOM-SWEEP` (commit `3ea0115`) — 1000
+`agnus_blitter_masks` carries `MASK-MUX-RANDOM-SWEEP` (commit `7265db5`) — 1000
 randomised cases over BLTAFWM, BLTALWM, source-A data and word position, run
 against the **real compiled `agnus_blitter`** rather than a pasted copy of
 `agnus_blitter.v:311-319`.

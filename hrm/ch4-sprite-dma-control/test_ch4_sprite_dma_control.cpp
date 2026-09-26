@@ -294,7 +294,7 @@
 // IMPLEMENTATION NOTES (added in this commit, after agnus.v was opened for
 // the first time - the specification comment above this point was committed
 // on its own first, per the chapter's spec-before-RTL gate; see this
-// package's own git history, commit f16df80).
+// package's own git history, commit 59c9b46).
 //
 // agnus.v confirms every fact the claims' own classify.evidence already
 // handed over, at the exact lines cited there: `localparam DMACON = 9'h096`

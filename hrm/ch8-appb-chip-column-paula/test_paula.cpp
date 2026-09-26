@@ -3,7 +3,7 @@
 //   POTGO, composed with p.287's chip-letter legend ("P=Paula chip"),
 //   against the `paula` module compiled alone. 14 claims, from
 //   work/ch8-s1-build/ch8-appb-chip-column-paula.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as a387dd3 before this file was written).
+//   SPECIFICATION.md (committed as 7f65534 before this file was written).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.289 (Appendix B row for each register), composed with printed p.287

@@ -8,7 +8,7 @@
 //   CIA enumeration): see the RECORDED block at the end of main().
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   page 12; committed specification 069192a (SPECIFICATION.md, this
+//   page 12; committed specification de74e0d (SPECIFICATION.md, this
 //   package).
 // Requirement IDs: PROP-TIMER, per SPECIFICATION.md's claim inventory.
 //   Claims file: hrm-testpipeline/work/2026-09-16_ch1_packages.jsonl,
@@ -39,7 +39,7 @@
 //   builder (Read, not re-typed from what was pre-exposed) after
 //   SPECIFICATION.md's commit, as step 2.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (069192a):
+// RTL read for step 2, after SPECIFICATION.md was committed (de74e0d):
 //   ciaa.v (388 lines, pinned submodule commit
 //   d6f7df957fad655bc07f6a381e5094a9edff0be0) in full; cia_timera.v (112
 //   lines) in full; cia_int.v (70 lines) in full; cia_timerb.v/cia_timerd.v

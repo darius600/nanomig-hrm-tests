@@ -4,7 +4,7 @@
 //   meaning" on the read-only addresses, the INTEN master gate, and
 //   write-to-clear stickiness. 41 claims, from
 //   work/ch7-build/ch7-interrupt-register-semantics.jsonl. Full derivation
-//   in SPECIFICATION.md (committed as 9ed37e0 before this file was written).
+//   in SPECIFICATION.md (committed as 4fbfa90 before this file was written).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.217-218 (chapter 7 body), corroborated by appendix A p.280 and Figure

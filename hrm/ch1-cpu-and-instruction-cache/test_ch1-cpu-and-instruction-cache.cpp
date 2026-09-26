@@ -22,7 +22,7 @@
 //
 // ORDER OF WORK, AND ITS ONE DISCLOSED BREAK: SPECIFICATION.md was written
 //   from the 15 claims' quote/restatement fields alone and committed
-//   (nanomig-hrm-tests ab72c2f) before cpu_wrapper.v or cpu_cache_new.v was
+//   (nanomig-hrm-tests 32dbed3) before cpu_wrapper.v or cpu_cache_new.v was
 //   opened for this package's own purposes. That file also discloses that
 //   the claims' own classify.evidence text already carried file:line RTL
 //   citations before this agent started -- the blind order was not fully

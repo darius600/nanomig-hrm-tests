@@ -31,7 +31,7 @@
 //   this build). Instantiated at denise.v:474-486 with bpldata and nsprite.
 //
 // ORDER OF WORK: SPECIFICATION.md in this directory was written from
-//   claims.jsonl's quotations alone and committed (6d30b7d) before this
+//   claims.jsonl's quotations alone and committed (e7c413a) before this
 //   agent opened denise_collision.v. This file's assertions, expected
 //   values, and claim-id coverage follow that committed specification; the
 //   RTL was opened only after the commit, per the build brief's gate. Before

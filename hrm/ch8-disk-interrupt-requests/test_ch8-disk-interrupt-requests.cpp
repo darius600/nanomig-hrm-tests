@@ -6,7 +6,7 @@
 //   paula_floppy`). 8 claims, from
 //   hrm-testpipeline/work/ch8-s2-build/ch8-disk-interrupt-requests.jsonl,
 //   reduced to 4 propositions. Full derivation in SPECIFICATION.md
-//   (committed as ee1ba33, before this file or paula_floppy.v was opened).
+//   (committed as e6f93d0, before this file or paula_floppy.v was opened).
 //
 // REPAIR (2026-09-15, repair lot C, against DOKTRIN.md/LOS-C.md). Independent
 //   validation of chapter 8 slice s2 found every claim in this package graded
@@ -88,7 +88,7 @@
 //   "three kinds" claim (index's own local-pin-to-_cpu_ipl join is still not
 //   closed anywhere -- see that record() for the full picture).
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (ee1ba33):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (e6f93d0):
 //   1. hrm/ch8-drive-sense-lines/test_ch8-drive-sense-lines.cpp (committed)
 //      -- for this suite's Checks class, mutating(id)/MUTATE convention, the
 //      fixed // MUTATION comment form, and the twin-claim pattern (two

@@ -5,7 +5,7 @@
 //   light -- against paula_floppy (this suite's only model of a physical
 //   Amiga floppy drive). 8 claims, from
 //   work/ch8-s2-build/ch8-drive-select-motor-led.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 0ae4b60, before this file or
+//   SPECIFICATION.md (committed as 7f27d6d, before this file or
 //   paula_floppy.v was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.244 ("PB7
@@ -25,7 +25,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (0ae4b60):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (7f27d6d):
 //   1. $(NANOMIG)/src/minimig-aga/paula_floppy.v -- full file (1041 lines).
 //   2. $(NANOMIG)/src/minimig-aga/paula_floppy_fifo.v -- full file, to
 //      confirm it instantiates nothing else and the two-file build closes

@@ -2,7 +2,7 @@
 //   WORDSYNC gate, the "resync every time" claim, word alignment, and the
 //   paula_floppy-side half of the INTREQ DSKSYNC signal (pp.247, 249, 250,
 //   279). 22 claims, from work/ch8-s2-build/ch8-dsksync-word-match.jsonl.
-//   Full derivation in SPECIFICATION.md (committed as 86b4935, before
+//   Full derivation in SPECIFICATION.md (committed as ebca41d, before
 //   paula_floppy.v was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual pp.247, 249, 250, 279 --
@@ -18,7 +18,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (86b4935):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (ebca41d):
 //   1. hrm/ch8-ciaapra-address-window and hrm/ch8-drive-select-motor-led's
 //      test sources -- already disclosed in SPECIFICATION.md as read BEFORE
 //      the spec, for this suite's Checks/mutating()/MUTATION boilerplate.

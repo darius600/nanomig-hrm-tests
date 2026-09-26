@@ -4,7 +4,7 @@
 //   independent bit-position transfer, their reset/pull-up deasserted (HIGH)
 //   default, the DSKDIREC/DSKSTEP* separate-write ordering rule, and
 //   DSKSTEP*'s high-momentarily-low-high pulse shape. Per SPECIFICATION.md
-//   (committed 8125735, before this file was opened for the RTL): `ciab`
+//   (committed 8b20431, before this file was opened for the RTL): `ciab`
 //   alone carries no signal named DSKMOTOR*, DSKSEL3*-DSKSEL0*, DSKSIDE,
 //   DSKDIREC or DSKSTEP* -- only a generic `portb_out[7:0]`. The binding of
 //   a bit POSITION to one of those NAMES is a one-line structural fact at
@@ -14,7 +14,7 @@
 //   DEASSERT, PROP-ORDER, PROP-STEP-SHAPE.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 244-245; committed specification 8125735 (SPECIFICATION.md, this
+//   pages 244-245; committed specification 8b20431 (SPECIFICATION.md, this
 //   package).
 // Requirement IDs: PROP-POSITION, PROP-RESET-DEASSERT, PROP-ORDER,
 //   PROP-STEP-SHAPE, per SPECIFICATION.md's claim inventory. Claims file:
@@ -44,7 +44,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (8125735): read
+// RTL read for step 2, after SPECIFICATION.md was committed (8b20431): read
 //   ciab.v (224 lines) in full, plus its four instantiated submodules
 //   (cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v -- needed only for
 //   Verilator to elaborate the top module, not opened/read for content).

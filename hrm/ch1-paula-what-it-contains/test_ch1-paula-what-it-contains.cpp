@@ -11,7 +11,7 @@
 // coarse proposition on two different pages).
 //
 // RTL read for step 2, after SPECIFICATION.md was committed (commit
-// a07d14e): paula.v in full (311 lines -- confirms DMACON bit9=DMAEN
+// 900981b): paula.v in full (311 lines -- confirms DMACON bit9=DMAEN
 // master, bit4=DSKEN, bits3:0=audio channel enables, all SET/CLR at
 // paula.v:159-175; confirms paula_audio ad1's instantiation at
 // paula.v:289-307 carries no adkcon port at all), paula_intcontroller.v in

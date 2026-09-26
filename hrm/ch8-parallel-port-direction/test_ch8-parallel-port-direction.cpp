@@ -5,7 +5,7 @@
 //   (output) -- at the `ciaa` module boundary, compiled alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   page 259; committed specification 5eb4afb (SPECIFICATION.md, this
+//   page 259; committed specification df8138f (SPECIFICATION.md, this
 //   package).
 // Requirement IDs: PROP-1, per SPECIFICATION.md's claim inventory.
 //   Claims file: hrm-testpipeline/work/ch8-s4-build/ch8-parallel-port-direction.jsonl

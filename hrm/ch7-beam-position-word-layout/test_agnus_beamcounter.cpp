@@ -27,7 +27,7 @@
 //   -- ports clk, clk7_en, reset, cck, ntsc, aga, ecs, a1k, data_in[15:0],
 //   data_out[15:0], reg_address_in[8:1], hpos[8:0], vpos[10:0], plus the
 //   sync/blanking outputs this package does not use. Read directly by this
-//   agent AFTER SPECIFICATION.md was committed (commit 6de9690) -- no port
+//   agent AFTER SPECIFICATION.md was committed (commit a2ca1cb) -- no port
 //   name, register address or RTL line appears anywhere in that file. The
 //   Harness class (tick/run_cck/write_reg/read) and force_vpos() below are
 //   reused near-verbatim from hrm/ch3-beam-counters-and-blanking/

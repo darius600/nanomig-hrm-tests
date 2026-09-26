@@ -4,7 +4,7 @@
 //   compiled alone. 6 claims (3 propositions, each claimed independently by
 //   readers opus and sol as twins), from
 //   work/ch8-s1-build/ch8-appb-chip-column-denise.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as feaf659 before this file was written).
+//   SPECIFICATION.md (committed as 5639577 before this file was written).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.289 (Appendix B row for each register), composed with printed p.287

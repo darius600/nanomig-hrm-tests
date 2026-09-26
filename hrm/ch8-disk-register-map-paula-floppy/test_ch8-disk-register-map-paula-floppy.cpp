@@ -5,7 +5,7 @@
 //   excluded, it declares a second `module paula_floppy`). 79 claims, from
 //   work/ch8-s2-build/ch8-disk-register-map-paula-floppy.jsonl, reduced to
 //   20 assertions (19 after the 2026-09-15 repair below removed E4; see
-//   REPAIR NOTE). Full derivation in SPECIFICATION.md (committed as 0ae6d09,
+//   REPAIR NOTE). Full derivation in SPECIFICATION.md (committed as bb401bb,
 //   before any RTL was opened; updated 2026-09-15 for the repair).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -94,7 +94,7 @@
 //   249, 265, 278-279, 289-290 -- the per-proposition pages behind the range
 //   given at the top of this file.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (0ae6d09):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (bb401bb):
 //   1. hrm/ch8-dsklen-dma-arming/{Makefile,test_ch8-dsklen-dma-arming.cpp,
 //      SPECIFICATION.md} -- a sibling package targeting the SAME fixture,
 //      read for this suite's established harness/mutation boilerplate (the

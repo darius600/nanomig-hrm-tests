@@ -37,7 +37,7 @@
 //   public in that already-built sibling's own file, so reading it to reuse
 //   the mechanics is not "opening the RTL" a second time (same precedent
 //   that file itself cites). agnus_beamcounter.v was read directly by this
-//   package only AFTER SPECIFICATION.md was committed (commit d189b7a).
+//   package only AFTER SPECIFICATION.md was committed (commit bcb43e1).
 //
 // METHODOLOGY:
 //

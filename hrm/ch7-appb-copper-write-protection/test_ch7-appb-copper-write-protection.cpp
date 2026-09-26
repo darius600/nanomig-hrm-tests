@@ -5,7 +5,7 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 // p.287 (Appendix B legend) and pp.289-290 (Appendix B register list);
-// committed specification 4647f19 (SPECIFICATION.md, this package).
+// committed specification 933e430 (SPECIFICATION.md, this package).
 // Requirement IDs: claims cited per-assertion by uid below; see
 // SPECIFICATION.md for the full inventory of all 19.
 // Non-goals: the "~" (danger-bit-required) mark is out of scope for this

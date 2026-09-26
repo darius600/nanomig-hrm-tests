@@ -7,7 +7,7 @@
 //   distinctly from the others, and no write through either the direction
 //   register (DDRA) or the data register (PRA) itself ever moves what a
 //   CIAAPRA read reports at that position. Per SPECIFICATION.md (committed
-//   93ce31d, before this file was opened for the RTL): `ciaa` alone carries
+//   140d670, before this file was opened for the RTL): `ciaa` alone carries
 //   no signal named DSKRDY*, DSKTRACK0*, DSKPROT* or DSKCHANGE* -- only a
 //   generic `porta_in[7:2]`. The binding of a bit POSITION to one of those
 //   NAMES is a one-line structural fact at minimig.v:622, one level above
@@ -18,7 +18,7 @@
 //   SPECIFICATION.md assigns: PROP-INPUT.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   page 244; committed specification 93ce31d (SPECIFICATION.md, this
+//   page 244; committed specification 140d670 (SPECIFICATION.md, this
 //   package).
 // Requirement IDs: PROP-INPUT, per SPECIFICATION.md's claim inventory.
 //   Claims file:
@@ -57,7 +57,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (93ce31d): read
+// RTL read for step 2, after SPECIFICATION.md was committed (140d670): read
 //   ciaa.v (388 lines) in full, plus its four instantiated submodules
 //   (cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v -- needed only for
 //   Verilator to elaborate the top module, not opened/read for content).

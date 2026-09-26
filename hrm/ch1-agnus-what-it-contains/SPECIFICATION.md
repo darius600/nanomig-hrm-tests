@@ -50,14 +50,14 @@ instruction.
 **What was written before the RTL was opened, and what was added after,
 stated plainly rather than left to be inferred from the commit log:**
 
-- **Before** (commit `6c293f5`, the first commit of this file, made before
+- **Before** (commit `b72e8fd`, the first commit of this file, made before
   `test_agnus.cpp` existed at all): the whole 34-proposition structure below
   — every quotation, the claim inventory table, which propositions are
   graded versus declined and why, and the wording of what each graded
   proposition would measure. This is the content the order-of-work rule is
   actually about, and it held: no proposition's GRADE/DECLINE disposition or
   measurement description changed after the fixture existed.
-- **After** (commit `7341b0a`, once the fixture was built, run, and its
+- **After** (commit `3f85bdf`, once the fixture was built, run, and its
   baseline read): five sections' *mechanism prose* was corrected to match
   what the built fixture actually does, without changing any proposition's
   disposition, expected value, or citation — P3 now says the check keys on

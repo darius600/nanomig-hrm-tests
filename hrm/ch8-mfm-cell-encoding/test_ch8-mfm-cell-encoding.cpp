@@ -6,7 +6,7 @@
 //   paula_floppy`). 8 claims, from
 //   work/ch8-s2-build/ch8-mfm-cell-encoding.jsonl, reduce to 4 assertions +
 //   fixture liveness. Full derivation in SPECIFICATION.md (committed as
-//   7adfeb4, before any RTL was opened).
+//   b66244a, before any RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.250.
 // Non-goals: anything outside the `paula_floppy` fixture this package
@@ -20,7 +20,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (7adfeb4):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (b66244a):
 //   1. hrm/ch8-dsklen-dma-arming/Makefile, test_ch8-dsklen-dma-arming.cpp,
 //      SPECIFICATION.md -- this suite's established harness/mutation
 //      boilerplate against this SAME fixture (the Checks class, the MUTATE

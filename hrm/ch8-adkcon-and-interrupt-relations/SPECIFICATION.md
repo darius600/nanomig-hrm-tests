@@ -248,7 +248,7 @@ bug.
 
 ## Repair addendum: 47 claims were citing correctly but invisibly
 
-The first build (commit `2dfbef2`) grouped several claims under one
+The first build (commit `575f0d6`) grouped several claims under one
 assertion by writing e.g. `opus:8-serial.c64 c66 c67` -- a shared prefix
 followed by bare trailing numbers, to save space in an already-long label.
 Every one of those 47 claims *was* covered by an assertion whose content

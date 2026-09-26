@@ -10,7 +10,7 @@
 //   exercise all eight positions, not one.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 228 and 241; committed specification 7345496 (SPECIFICATION.md,
+//   pages 228 and 241; committed specification 02448ac (SPECIFICATION.md,
 //   this package).
 // Requirement IDs: PROP-1, PROP-2, per SPECIFICATION.md's claim inventory.
 //   Claims file: hrm-testpipeline/work/ch8-s1-build/ch8-ciaa-port-direction.jsonl
@@ -47,7 +47,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (7345496): read
+// RTL read for step 2, after SPECIFICATION.md was committed (02448ac): read
 //   ciaa.v (388 lines) in full, plus its four instantiated submodules
 //   (cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v -- needed only for
 //   Verilator to elaborate the top module, not opened/read for content).

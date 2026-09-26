@@ -14,7 +14,7 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 5 and 15; committed specification (SPECIFICATION.md, this package,
-//   commit bf2da7b). All six claims are graded green at baseline -- the
+//   commit b49bf78). All six claims are graded green at baseline -- the
 //   RTL's arbitration logic matches every one of these sentences on its own
 //   measurement basis; no assertion here was, or could be, adjusted to make
 //   that happen, since a red result would have been reported as one.
@@ -65,7 +65,7 @@
 //   constructor forces one such edge before any assertion relies on
 //   `_dtack`, exactly as ch7-overlay-source's own constructor does.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (bf2da7b): read
+// RTL read for step 2, after SPECIFICATION.md was committed (b49bf78): read
 //   minimig_m68k_bridge.v (168 lines) in full. Also read, per the build
 //   brief's instruction to model a package on an existing chapter-8 one:
 //   hrm/ch8-ciaa-port-direction (Makefile/SPECIFICATION.md/test .cpp, for

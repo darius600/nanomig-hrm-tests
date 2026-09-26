@@ -7,7 +7,7 @@
 //   37 claims (19 propositions, two readers `sol`/`opus`), from
 //   hrm-testpipeline/work/2026-09-16_ch1_packages.jsonl filtered to
 //   classify.package == "ch1-denise-what-it-contains". Full derivation in
-//   SPECIFICATION.md (committed e58468c before this file was written).
+//   SPECIFICATION.md (committed 18b007d before this file was written).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.1-4, 8 (Figure 1-1). A red result below means denise.v disagrees with
@@ -37,7 +37,7 @@
 //   claims) are graded here, on 4 expect() assertions plus one
 //   infrastructure liveness control.
 //
-// ORDER OF WORK: SPECIFICATION.md was written and committed (e58468c) from
+// ORDER OF WORK: SPECIFICATION.md was written and committed (18b007d) from
 //   the 37 claims' own quotations/classify.evidence and from grepping
 //   already-committed sibling packages -- but the claims data itself
 //   already carried file:line RTL citations for every claim, so the letter

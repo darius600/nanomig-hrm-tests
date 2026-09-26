@@ -301,7 +301,7 @@
 // agnus_bitplanedma.v, agnus_diskdma.v and agnus_audiodma.v were read in
 // full for the first time - the specification comment above this point was
 // committed on its own first, per the chapter's spec-before-RTL gate; see
-// this package's own git history, commit 919d353).
+// this package's own git history, commit 5a6da13).
 //
 // REGISTER MECHANICS (agnus.v:271-302):
 //   `dmacon` is a 13-bit register (`reg [12:0] dmacon;`, agnus.v:271) - bits

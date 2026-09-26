@@ -3,7 +3,7 @@
 // Test purpose: grade page 2's "A professional keyboard with numeric keypad,
 //   10 function keys, and cursor keys." against `keymap`
 //   (amiga_keymap.v:10-13). SPECIFICATION.md (committed before this file, or
-//   amiga_keymap.v, were opened -- commit 76bacde) records the reasoning;
+//   amiga_keymap.v, were opened -- commit f8fceee) records the reasoning;
 //   this file carries it out.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed

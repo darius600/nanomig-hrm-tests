@@ -75,7 +75,7 @@
 // RTL - but it was not written in ignorance of the RTL, so it does not
 // satisfy the build brief's "write the specification from the inventory's
 // quotations alone, commit it, only then open the RTL" ordering gate. This
-// chapter's own precedent (PKG-BLT-BLTCON-FIELDS, ae6255b/914f38a) recorded
+// chapter's own precedent (PKG-BLT-BLTCON-FIELDS, 657e4ff/28bc035) recorded
 // the identical defect rather than paper over it; this file does the same.
 //
 // FIXTURE. Started from hrm/ch6-blitter-bltcon's Harness (itself started

@@ -43,7 +43,7 @@
 //
 // ORDER OF WORK: SPECIFICATION.md (this package's 3 propositions, PROP-A/
 // PROP-B/PROP-C) was written and committed from ch7-overlay-source-spec-
-// stage.jsonl's quotations alone -- commit e258c9e -- before minimig.v,
+// stage.jsonl's quotations alone -- commit b4cec3b -- before minimig.v,
 // gary.v, minimig_syscontrol.v or minimig_m68k_bridge.v were opened.
 //
 // FIXTURE SIZE, MEASURED: this build Verilates 53 modules (11.1MB source)

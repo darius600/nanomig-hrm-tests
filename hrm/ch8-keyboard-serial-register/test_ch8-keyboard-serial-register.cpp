@@ -13,7 +13,7 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 251, 357, 358, 359, 364; committed specification
-//   (SPECIFICATION.md, this package, commit 2357132).
+//   (SPECIFICATION.md, this package, commit e0501b5).
 // Requirement IDs: PROP-1 .. PROP-9, plus three untagged assertions
 //   (WIDTH-8BIT, MAPPING-SAME-CLASS, FLAG-LAST-GENERAL) that back seven
 //   partially-gradeable uids via `record()` rather than carrying those uids
@@ -32,7 +32,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (2357132): read
+// RTL read for step 2, after SPECIFICATION.md was committed (e0501b5): read
 //   ciaa.v (388 lines) in full, plus cia_int.v (needed for PROP-2's interrupt
 //   path) in full. cia_timera.v/cia_timerb.v/cia_timerd.v were not read
 //   beyond confirming they exist and are instantiated -- Verilator needs them

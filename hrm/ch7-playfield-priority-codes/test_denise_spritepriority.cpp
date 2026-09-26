@@ -12,7 +12,7 @@
 //   pp. 207-212 (Table 7-2, its p.209 descriptive-prose twin, the p.211
 //   worked example, Figures 7-2 and 7-3).
 // Package: ch7-playfield-priority-codes. Specification: SPECIFICATION.md
-//   in this directory, committed as 873db3e before this file was written
+//   in this directory, committed as a1bbfb7 before this file was written
 //   or the RTL below was opened.
 // Non-goals (see SPECIFICATION.md "Out of scope" / "Declined content" for
 //   the claim-level accounting): sprite-group-to-sprite-group ordering

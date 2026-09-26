@@ -778,7 +778,7 @@
 // IMPLEMENTATION NOTES (added in this commit, after agnus_bitplanedma.v was
 // read in full for the first time - the specification comment above this
 // point was committed on its own first, per the chapter's spec-before-RTL
-// gate; see this package's own git history, commit 69109a2).
+// gate; see this package's own git history, commit bdb8f55).
 //
 // PORTS (agnus_bitplanedma.v:29-47): clk, clk7_en, reset, harddis, aga, ecs,
 // a1k, sof, dmaena, vpos[10:0], hpos[8:0] are inputs; hde, dma, address_out

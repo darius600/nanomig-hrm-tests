@@ -7,7 +7,7 @@
 //   disposition claims from work/ch8-s2-build/ch8-ciaapra-address-
 //   window.jsonl (opus:8-dsk.c20, opus:8-cia.c3 -- added to A1-A4's citation
 //   list, no new assertion). Full derivation in SPECIFICATION.md (committed
-//   as 09a9ba3, before any RTL was opened).
+//   as bd0970f, before any RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.229 ("CIAAPRA
 //   ($BFE001) Input and output for pin 6 (port 1 & 2 fire buttons)") and
@@ -39,7 +39,7 @@
 //   ciaa+gary rig reaches the literal value $BFE001; no wider boundary was
 //   needed, and none was added.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (09a9ba3):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (bd0970f):
 //   1. hrm/ch8-ciaa-port-direction/Makefile -- build pattern (ciaa.v needs
 //      cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v to elaborate),
 //      named in the build brief.

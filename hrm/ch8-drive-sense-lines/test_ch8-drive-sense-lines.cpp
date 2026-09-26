@@ -4,7 +4,7 @@
 //   outward-step block at track zero, against paula_floppy (this suite's
 //   only model of a physical Amiga floppy drive). 10 claims, from
 //   work/ch8-s2-build/ch8-drive-sense-lines.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as faa5d71, before this file or
+//   SPECIFICATION.md (committed as df3f984, before this file or
 //   paula_floppy.v was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.244 (PA5
@@ -40,7 +40,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (faa5d71):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (df3f984):
 //   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines).
 //   2. nanomig/src/minimig-aga/paula_floppy_fifo.v -- full file, to confirm
 //      it instantiates nothing else and the two-file build closes (it does;

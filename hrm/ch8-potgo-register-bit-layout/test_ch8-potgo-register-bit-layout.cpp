@@ -6,7 +6,7 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 // p.240 (ch.8 Table 8-4 and its two explanatory paragraphs), p.282
 // (Appendix A POTGO/POTGOR entry), and Figure 8-6 (p.237); committed
-// specification 67d4b32 (SPECIFICATION.md, this package).
+// specification 5a8f27f (SPECIFICATION.md, this package).
 // Requirement IDs: PROP-1 through PROP-13, per SPECIFICATION.md's claim
 // inventory (all 81 claims in
 // hrm-testpipeline/work/ch8-s1-build/ch8-potgo-register-bit-layout.jsonl are

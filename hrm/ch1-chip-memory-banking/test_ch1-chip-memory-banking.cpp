@@ -9,7 +9,7 @@
 //   cited here).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 3 and 5; committed specification 658c8de (SPECIFICATION.md, this
+//   pages 3 and 5; committed specification 66660e9 (SPECIFICATION.md, this
 //   package).
 // Requirement IDs (8 claims, 4 sentences x 2 independent readers -- (reader,
 //   id) is the uid, the bare id is not):

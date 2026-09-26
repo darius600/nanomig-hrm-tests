@@ -168,7 +168,7 @@
 //     cases rather than one worked value each)
 //
 // ADDED FOR FPGA-090 (build register 2026-09-08, "Still to do when the last
-// two packages land" item 3; commit 113acff's note on what the deletion of
+// two packages land" item 3; commit dc85384's note on what the deletion of
 // hrm/agnus_blitter_mask would genuinely lose): MASK-MUX-RANDOM-SWEEP below
 // keeps that package's randomised-sweep TECHNIQUE, not its harness - it
 // compiles and drives the real agnus_blitter (this file's existing Harness,

@@ -11,7 +11,7 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.260. Claims file ch8-video-signal-set.jsonl, 10 records (5
 //   propositions after twins are grouped, per SPECIFICATION.md, committed at
-//   8d29f9b before this file was written).
+//   06c03f7 before this file was written).
 // Non-goals: this package does not test the 23-pin connector's existence
 //   (NanoMig has none; that is why 129 of p.260's other claims are
 //   not-asserted elsewhere in this slice) or the "4,096 different colors"
@@ -93,7 +93,7 @@
 //
 // ORDER OF WORK: SPECIFICATION.md (this package's 5 propositions,
 // PROP-COUNT/PROP-RED/PROP-GREEN/PROP-BLUE/PROP-SYNC) was written and
-// committed -- commit 8d29f9b -- from the claims file's quote/restatement
+// committed -- commit 06c03f7 -- from the claims file's quote/restatement
 // fields, before minimig.v, denise.v, denise_colortable.v or
 // agnus_beamcounter.v were opened for this build. SPECIFICATION.md
 // discloses one exception to that order: the claims file's own

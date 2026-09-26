@@ -37,7 +37,7 @@
 //
 // ORDER OF WORK: SPECIFICATION.md (446 claims -> 229 propositions, from
 //   extract.quote/extract.restatement alone) was written and committed --
-//   commit 8972201 -- before amiga_keymap.v or hid.v were opened.
+//   commit 0a6e61a -- before amiga_keymap.v or hid.v were opened.
 //
 // CLAIM COVERAGE: every one of the 446 claim uids in the claims file is
 //   cited on exactly one line below (graded expect() or declined

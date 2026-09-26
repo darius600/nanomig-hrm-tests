@@ -3,7 +3,7 @@
 //   support for as many as three mouse buttons, against the `userio` module
 //   compiled alone. 11 claims, from
 //   work/ch8-s1-build/ch8-mouse-button-pins.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 610dfc4 before this file was written).
+//   SPECIFICATION.md (committed as 7624886 before this file was written).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.232 ("There are
 //   two buttons on the standard Amiga mouse. However, the control circuitry

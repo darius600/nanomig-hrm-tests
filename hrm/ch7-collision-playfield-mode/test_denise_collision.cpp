@@ -34,7 +34,7 @@
 //
 // ORDER OF WORK: SPECIFICATION.md (this package's propositions, test intent,
 // control-case and mutation plan) was written and committed from
-// ch7-collision-playfield-mode.jsonl's quotations alone -- commit b2589af --
+// ch7-collision-playfield-mode.jsonl's quotations alone -- commit d8cd73f --
 // before denise_collision.v was opened. The harness's port names and
 // clocking mechanics (clk/clk7_en toggling, reg_address_in/data_in
 // sequencing, the $098->0x4C/$00E->0x07 word-address convention, bpldata as

@@ -2,7 +2,7 @@
 //   controller-port fire-button bits (6 and 7), against the `ciaa` module
 //   compiled alone. 10 claims, from
 //   work/ch8-s1-build/ch8-ciaapra-fire-buttons.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 9460ba1 before this file was written).
+//   SPECIFICATION.md (committed as 311ea78 before this file was written).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.232 ("Port 1
 //   uses bit 6 and port 2 uses bit 7. A logic state of 1 means 'switch

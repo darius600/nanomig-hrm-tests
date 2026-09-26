@@ -6,7 +6,7 @@
 //   (opus:8-display.c13, sol:8-display.c12) restate that same sentence.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   page 260; committed specification 79e9104 (SPECIFICATION.md, this
+//   page 260; committed specification 1ddc065 (SPECIFICATION.md, this
 //   package).
 // Requirement IDs: opus:8-display.c13, sol:8-display.c12 -- both graded by
 //   the single PALETTE-RESOLVES-4096-CODES assertion below. Claims file:

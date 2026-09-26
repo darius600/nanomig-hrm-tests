@@ -32,7 +32,7 @@
 //   other file is compiled alongside it.
 //
 // ORDER OF WORK: SPECIFICATION.md (this package's own) was written from
-//   the 8 claims' quote/restatement fields alone and committed (949fef6)
+//   the 8 claims' quote/restatement fields alone and committed (d8da386)
 //   before gary.v was opened. This file was written after that commit,
 //   with gary.v open. The four propositions below (PROP-A..PROP-D) are
 //   exactly the ones the specification named; nothing here was widened

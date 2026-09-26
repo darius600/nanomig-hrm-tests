@@ -4,7 +4,7 @@
 // `gary`, `ciaa` and `ciab` (all $(NANOMIG)/src/minimig-aga/*.v, read-only,
 // pinned submodule) and wires them exactly the way minimig.v wires them,
 // for the signals this package measures. Read in full, after
-// SPECIFICATION.md was committed (ed5890a):
+// SPECIFICATION.md was committed (9d3366c):
 //   gary.v, ciaa.v, ciab.v, cia_int.v (cia_timera.v/cia_timerb.v/cia_timerd.v
 //   were not read -- ciaa/ciab instantiate them for the timers, which none
 //   of this package's assertions touch, the same scoping call

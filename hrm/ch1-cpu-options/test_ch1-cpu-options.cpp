@@ -18,7 +18,7 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed page
 //   1; committed specification (SPECIFICATION.md, this package, commit
-//   c481d19).
+//   b9a5afa).
 // Requirement IDs: CPU-OPTIONS-FOUR-DISTINCT-STATES (PROP-1),
 //   RAM-EXPANSION-CEILING-8MB and RAM-BASE-FLOOR-BELOW-256K-ABSENT
 //   (PROP-2, partial), per SPECIFICATION.md's claim inventory.
@@ -70,7 +70,7 @@
 //   obj_dir/*.cpp Verilator output are build artefacts). No existing
 //   package builds `sysctrl`. Nothing here re-grades an accepted verdict.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (c481d19):
+// RTL read for step 2, after SPECIFICATION.md was committed (b9a5afa):
 //   sysctrl.v in full (320 lines). Key facts:
 //   - sysctrl.v:16-18 (data_in_strobe/data_in_start/data_in[7:0]) and
 //     :171-261 are the whole serial config protocol: a command is a

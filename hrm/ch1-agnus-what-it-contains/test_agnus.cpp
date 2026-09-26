@@ -32,7 +32,7 @@
 //   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER OF WORK: SPECIFICATION.md was written from the 67 claims' own
-// quote/restatement fields and committed (commit 6c293f5) before this file
+// quote/restatement fields and committed (commit b72e8fd) before this file
 // was written. Its own header discloses the order-of-work compromise this
 // build could not avoid: classify.evidence already carried file:line
 // citations, and the brief's own grep-for-prior-assertion requirement could

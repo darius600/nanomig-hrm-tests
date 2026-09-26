@@ -29,7 +29,7 @@
 //   data_out[15:0], pot_cnt_en, _fire0, _fire1, _fire0_dat, _fire1_dat,
 //   _joy1[15:0], _joy2[15:0], joy_ana1[15:0], joy_ana2[15:0], mouse_btn[2:0],
 //   kms_level, kbd_mouse_type[1:0], kbd_mouse_data[7:0]. Read directly by
-//   this agent AFTER SPECIFICATION.md was committed (commit 7c1e3c7) -- no
+//   this agent AFTER SPECIFICATION.md was committed (commit 7458312) -- no
 //   port name, register address or RTL line appears anywhere in that file.
 //
 // METHODOLOGY, established by direct measurement on this fixture (a scratch

@@ -11,7 +11,7 @@
 //   enable") are cited on A4's own label rather than as a separate
 //   proposition -- A4 already grades their whole functional claim at this
 //   fixture; see A4's own header comment below and SPECIFICATION.md's A6.
-//   Full derivation in SPECIFICATION.md (committed as c1b7870, before any
+//   Full derivation in SPECIFICATION.md (committed as 86c9c8e, before any
 //   RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -39,7 +39,7 @@
 //   readable -- paula_floppy alone only exposes a single collapsed
 //   `enable` port, which cannot separate DSKEN from the master DMAEN.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (c1b7870):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (86c9c8e):
 //   1. hrm/ch8-dsklen-dma-arming/Makefile, test_ch8-dsklen-dma-arming.cpp,
 //      SPECIFICATION.md -- for this suite's established harness/mutation
 //      boilerplate (the Checks class, the MUTATE env-var convention, the

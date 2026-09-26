@@ -54,7 +54,7 @@
 // distinct proposition in this package to split them across.
 //
 // PROVENANCE / SPEC-BEFORE-RTL GATE - RECORDED, NOT HIDDEN (carried over from
-// the previous commit, 18afde3, "PKG-AGNUS-SLOTS: specification from
+// the previous commit, c022920, "PKG-AGNUS-SLOTS: specification from
 // inventory quotations" - see hrm/ch6-refresh-dma-slots's own history): this
 // package's build brief (FPGA-090 Prompt 7, section D) itself quotes agnus.v
 // line numbers as background handed to the building agent, and explicitly

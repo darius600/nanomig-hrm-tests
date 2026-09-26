@@ -1118,7 +1118,7 @@ int main(int argc, char** argv) {
 // and with LACE left clear on P5's own h1, P5 stayed green (probed: 7
 // passed, 1 failed, only P4 red), so P5 alone said nothing about 400
 // interlaced lines. Both P4 (opus:3-res.c16) and P5 (opus:3-lace.f03) are
-// backlog-added (committed ec52f73/f20025b, both inside 2bc070e~1..HEAD),
+// backlog-added (committed 9ff187c/00f32d4, both inside 816bea1~1..HEAD),
 // so this repair corrects each assertion directly rather than withdrawing
 // the id: `measure_field()` now also returns `line_ticks`, the duration in
 // ticks of one ordinary line measured on the SAME run, and both P4 and P5

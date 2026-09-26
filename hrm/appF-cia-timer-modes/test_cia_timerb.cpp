@@ -4,14 +4,14 @@
 // Test purpose: grade printed pages 349-350 and 354's claims about CRB's
 //   control bits -- START, RUNMODE, LOAD, INMODE -- against `cia_timerb`
 //   (cia_timerb.v), the module that reads and acts on these bits, compiled
-//   alone. SPECIFICATION.md (committed 7dfb444) records the claim
+//   alone. SPECIFICATION.md (committed b64c416) records the claim
 //   inventory and proposition grouping in full; this file carries it out.
 //   This package has two fixtures -- this is the second, mirroring
 //   `hrm/ch1-cia-timers`'s own two-fixture (ciaa/ciab) shape -- because CRA
 //   and CRB act on two different, independently-instantiated modules.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 349, 350, 354; committed specification 7dfb444
+//   pages 349, 350, 354; committed specification b64c416
 //   (SPECIFICATION.md, this package).
 // Requirement IDs: CRB-START, CRB-RUNMODE, CRB-LOAD, CRB-INMODE-ARITY,
 //   CRB-INMODE-CODE-00, CRB-INMODE-CODE-10, CRA/CRB-RESET (CRB half), per

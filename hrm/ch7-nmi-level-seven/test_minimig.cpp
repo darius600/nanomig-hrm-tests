@@ -40,7 +40,7 @@
 //   driven by this harness instead of by amiga_clk.v/a real 68000.
 //
 // MECHANISM READ FROM THE RTL (step 3, after SPECIFICATION.md's own commit
-//   f7d2cce): the "NMI"/freeze signal chain is
+//   120e9e8): the "NMI"/freeze signal chain is
 //     ciaa.v:187 (Action Replay freeze keycode 0x5f, gated by hrtmon_en ==
 //       memory_config[6], latched into freeze_reg on a kbd_mouse_type==2
 //       keystrobe) --output--> minimig.v:355/628 wire freeze
@@ -65,7 +65,7 @@
 // ORDER-OF-WORK, DISCLOSED: SPECIFICATION.md was written from
 //   ch7-nmi-level-seven-spec-stage.jsonl's own 3 claims' quotations alone,
 //   before any RTL or STEP3-NOTES-ch7-nmi-level-seven.md/
-//   ch7-nmi-level-seven.jsonl reading, and committed (f7d2cce) before this
+//   ch7-nmi-level-seven.jsonl reading, and committed (120e9e8) before this
 //   file was opened or written -- per BUILD-BRIEF.md and the task sheet's
 //   own two-step order. The mechanism paragraph above, the port names, and
 //   every stimulus value below were only added in this step-3 file.
