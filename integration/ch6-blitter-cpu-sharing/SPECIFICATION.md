@@ -45,12 +45,18 @@ program is the stimulus; the C++ test grades what the ports showed.
   - `BPL1PTH`/`BPL1PTL` ($DFF0E0/$DFF0E2) and the following bitplane
     pointer pairs, each 4 bytes apart.
   - `COP1LCH`/`COP1LCL` ($DFF080/$DFF082) and `COPJMP1` ($DFF088):
-    the Copper's own first-list pointer and its strobe (FASTRUN's own
-    stimulus, below, uses these to start a blit without any CPU chip-bus
-    write of its own).
-  - `COPCON` ($DFF02E) bit 1 `CDANG` ("Copper danger bit"): without it,
-    the Copper may only reach registers $080-$1FE; FASTRUN's own stimulus
-    sets it so the Copper's own list can reach `BLTSIZE` ($058).
+    the Copper's own first-list pointer and its strobe (FASTRUN's and
+    FASTRUN-LOCKOUT's own stimuli, below, use these to start a blit
+    without any CPU chip-bus write of its own).
+  - `COPCON` ($DFF02E) bit 1 `CDANG` ("Copper danger bit"). p.26: the
+    registers from $40 to $7E "are protected by a bit in the Copper
+    control register ... When CDANG is 0, these registers cannot be
+    written by the Copper. When CDANG is 1, these registers can be
+    written by the Copper." Appendix B (p.289) marks `BLTSIZE` ($058)
+    `~058`; the legend (p.287): "Address not writable by the Copper
+    unless the 'copper danger bit', COPCON is set true." FASTRUN's and
+    FASTRUN-LOCKOUT's own stimuli set it so the Copper's own list can
+    reach `BLTSIZE`.
 - One colour clock (one memory slot) is 8 `clk_sys` cycles
   (`amiga_clk.v`: `cck` toggles once every 4 `clk_sys`).
 - Every assertion's `expect()` label starts with its own short id (`A1`,
@@ -804,12 +810,15 @@ here.
 
 ### FASTRUN [p186] Fast memory keeps running during a nasty blit
 
-Claims: `6-blitter-done-flag.c8`, `ch6-done.c9`.
+Claim: `ch6-done.c9`.
 
-Proposition: "A processor running from Fast memory or cache can continue
-executing while the blitter is denied Chip-memory access" / "may be
-running completely uninhibited out of Fast memory or its internal cache
-and continue to have memory cycles."
+Proposition: "may be running completely uninhibited out of Fast memory or
+its internal cache and continue to have memory cycles." This claim sets
+no condition on the blitter itself (unlike `6-blitter-done-flag.c8`,
+graded separately below by FASTRUN-LOCKOUT): a nasty blit that denies the
+CPU all Chip-memory access (A4) is a fair, and simpler, case for it, so
+`c9` stays on this nasty-blit stimulus rather than moving to
+FASTRUN-LOCKOUT's own display-locked-out one.
 
 Program (`prog_fastrun.s`, 50 iterations; `prog_fastrun_long.s`, `FR_LONG`
 set, 2000 iterations): enables the design's Zorro II fast-RAM path
@@ -820,28 +829,22 @@ words, the same span A4/ORDER establish -- `BLTCON*`, `BLTAPTH`/`BLTDPTH`,
 `DMACON` SET `DMAEN,BLTEN,BLTPRI`) and points the Copper's own list at a
 single `MOVE` to `BLTSIZE` followed by a WAIT-forever, all from chip RAM,
 then jumps to the relocated loop. `COPCON`'s `CDANG` bit is set first
-(`$0002`): without it the Copper may reach only $080-$1FE
-(`agnus_copper.v`'s own illegal-register-access check), and `BLTSIZE`
-($058) is below that, so the Copper's own `MOVE` would otherwise halt it
-instead of starting the blit. `DMACON`'s `COPEN` bit and the `COPJMP1`
-strobe that makes the Copper reload from `COP1LC` and start running are
-both deferred to the relocated loop's own first two instructions, in fast
-RAM, not issued before the jump: `COP1LC` is already pointed at the list
-by then, so enabling `COPEN` in chip RAM risks the Copper reloading on
-its own at the next vertical blank, independently of any CPU strobe --
-and a nasty blit started that way, while the CPU is still in chip RAM
-reaching for the jump, denies the CPU's own next instruction fetch (A4:
-a nasty blit denies every chip-bus access, fetches included) and stalls
-it there until the blit's own end, never reaching fast RAM inside the
-blit's window at all. Enabling `COPEN` and strobing `COPJMP1` from fast
-RAM are themselves the CPU's occasional chip-bus writes while "running
-from Fast memory or cache" and "continu[ing] to have memory cycles"
-(p.186); everything else in the loop (`addq.w #1,(a2)` / `dbra d0,.loop`)
-touches only fast RAM. The loop returns through `jmp (a3)`, the return
-address loaded into `a3` before the jump into fast RAM: a direct `jmp` to
-the instruction immediately following it is what vasm deletes at assembly
-time, since the branch target and the fall-through address coincide; an
-indirect jump through a register is not collapsed the same way.
+(`$0002`, p.26/Appendix B, see "Shared setup" above). p.30: "you must
+initialize one of the Copper location registers (COP1LC or COP2LC) and
+write to its strobe address before Copper DMA is turned on. This ensures
+a known start address and known state." `COPJMP1` is therefore strobed
+from chip RAM, with `COPEN` still clear; `DMACON`'s `COPEN` bit, set from
+the relocated loop's own first instruction in fast RAM, is the one event
+that starts the Copper running the already-loaded list. Enabling `COPEN`
+from fast RAM is the CPU's own deliberate, occasional chip-bus write while
+"running from Fast memory or cache" and "continu[ing] to have memory
+cycles" (p.186); everything else in the loop (`addq.w #1,(a2)` /
+`dbra d0,.loop`) touches only fast RAM. The loop returns through
+`jmp (a3)`, the return address loaded into `a3` before the jump into fast
+RAM: a direct `jmp` to the instruction immediately following it is what
+vasm deletes at assembly time, since the branch target and the
+fall-through address coincide; an indirect jump through a register is not
+collapsed the same way.
 
 Fast-RAM activity is only visible on `nanomig.v`'s own
 `fastram_sel`/`fastram_addr`/`fastram_wr` ports, never on `ram_log()`
@@ -853,30 +856,154 @@ harness's own comment on `ports()` permits.
 Observed: the blit's own active window (first to last destination write,
 the same yardstick A2/A4/ORDER use); the fast-RAM counter's own writes
 that fall strictly inside it; whether each capture reaches `DONE` with
-`RESULTS` holding its own iteration count.
+`RESULTS` holding its own iteration count; the modal (most frequent) gap
+between consecutive counter writes, taken separately strictly inside the
+window and at or after its own end (the same in-window/no-DMA split A6
+makes), from the 2000-iteration capture, which outlasts the window on
+both sides.
 
 Expected value: at least one fast-RAM counter write strictly inside the
-blit's own active window, and both the 50- and the 2000-iteration
-capture reach `DONE` with `RESULTS` equal to their own iteration count.
-No count, ratio or bound beyond that -- the page states only that the
-CPU continues to have memory cycles, not how many.
+blit's own active window; both the 50- and the 2000-iteration capture
+reach `DONE` with `RESULTS` equal to their own iteration count; and the
+in-window modal period equals the at-or-after-window modal period --
+"completely uninhibited" graded as an equality between two measured
+periods (the same comparison A6 makes), not a count or bound the page
+does not state.
 
-Measured: on fx68k, the blit's own active window spans 2276521..2284689
-(8168 `clk_sys`, the same span as A4/ORDER); the fast-RAM counter's own
-writes strictly inside it are 50 of 50 (50-iteration build) and 76 (of
-2000, 2000-iteration build -- the loop outlasts the window, as designed).
-On TG68K: window 2276265..2284409 (8144 `clk_sys`); 49 of 50 and 128 of
-2000 strictly inside. Both builds reach `DONE` with `RESULTS` equal to
-their own iteration count (50 and 2000) on both cores.
+Measured: on fx68k, the blit's own active window spans 2276281..2284425
+(8144 `clk_sys`); the fast-RAM counter's own writes strictly inside it are
+49 of 50 (50-iteration build) and 75 (of 2000, 2000-iteration build -- the
+loop outlasts the window, as designed); the in-window period is 108
+`clk_sys` (74 gaps), the after-window period 108 `clk_sys` (1923 gaps),
+equal. On TG68K: window 2276057..2284169 (8112 `clk_sys`); 48 of 50 and
+127 of 2000 strictly inside; in-window period 64 `clk_sys` (126 gaps),
+after-window period 64 `clk_sys` (1870 gaps), equal. Both builds reach
+`DONE` with `RESULTS` equal to their own iteration count (50 and 2000) on
+both cores.
 
-Mutation (`NMH_MUTATE=FASTRUN`): `Config.fastram_config` is cleared to 0
-instead of 1. `cpu_wrapper.v:117`'s `sel_z2ram` needs `z2ram_ena`, which
-only a write to $E80048 sets (`cpu_wrapper.v:640`), itself gated by
-`cpu_wrapper.v:611`'s `sel_autoconfig`, which needs `|fastramcfg_d`; with
-`fastram_config==0` that write decodes to nothing, `z2ram_ena` never
-sets, and the later jump to $200000 does not reach fast RAM either. The
-unchanged comparator (a fast-RAM counter write strictly inside the
-blit's window, and completion under both iteration counts) must go red.
+Mutation (`NMH_MUTATE=FASTRUN`): `prog_fastrun_chipcode.s` /
+`prog_fastrun_long_chipcode.s` (`FR_CHIPCODE` set) -- only `FR_CODE` moves
+to chip RAM ($0C8000); `FR_CNT` stays in fast RAM; `Config.fastram_config`
+stays 1 throughout (the mutation substitutes a different binary, not this
+setting). A4 (`BLTPRI` set denies the CPU every chip-bus cycle, fetches
+included, for the whole of the blit's active window) predicts zero
+counter writes there, since the CPU cannot even fetch its own next loop
+instruction while the window holds. Measured, both builds, both cores:
+0 counter writes strictly inside the window (fx68k window
+2276217..2284329; both builds still reach `DONE` with `RESULTS` 50 and
+2000); the in-window period is therefore 0 `clk_sys` (0 gaps, undefined),
+against an after-window period of 104 `clk_sys` (1998 gaps) -- unequal.
+The unchanged comparator goes red through both of its own clauses.
+
+### FASTRUN-LOCKOUT [p186,p197] The blitter locked out of Chip memory by display fetches
+
+Claim: `6-blitter-done-flag.c8`.
+
+Proposition: "If a blit has just been started but has been locked out of
+memory access because of, for instance, display fetches, this bit may not
+yet be set. The processor, on the other hand, may be running completely
+uninhibited out of Fast memory or its internal cache, so it will continue
+to have memory cycles." Unlike FASTRUN above (a nasty blit with no
+display, where the blitter itself holds the bus and the CPU is the
+locked-out party), this reaches the page's own case: the blitter itself
+locked out, by the display.
+
+Program (`prog_fastrun_lockout.s`): enables the same Zorro II fast-RAM
+path as FASTRUN and relocates a counting loop there (`FR_ITERS`=8000, kept
+running well past the interval below); sets up a four-high-resolution-
+bitplane display (`prog_bitplane_hires.s`'s own `DIWSTRT`/`DIWSTOP`/
+`DDFSTRT`/`DDFSTOP`/`BPLCON0` values -- A10's own build, whose fetch
+windows claim every one of their 160 slots, A10PRE); arms a nasty blit
+(the same 500-word span as FASTRUN) with `BLTSIZE` left unwritten; sets
+`CDANG`; then spin-reads `VHPOSR` from chip RAM until the beam's own line
+is confirmed inside the display's active vertical area. The Copper's own
+list is then built: a `WAIT` whose own `VP` target is 20 lines past the
+line the spin just confirmed (so the `{VP,HP}` comparison -- compared as
+one concatenated value, `agnus_copper.v` -- cannot already be true the
+moment the Copper first checks it, which a same-line, vertically-masked
+`WAIT` measurably can be) and whose `HP` target is $14; four `MOVE`s to
+`COLOR00` (a harmless, otherwise-unused write); then the real
+`MOVE #$7D01,BLTSIZE`; then `WAIT`-forever. `COPJMP1` is strobed from chip
+RAM with `COPEN` still clear (p.30, as FASTRUN); `COPEN`, set from fast
+RAM as the loop's own first instruction, is the one start event -- so the
+counting loop is already running, and has been for however long the
+Copper's own 20-line-ahead `WAIT` takes to release, before the Copper (and
+through it, the blit) is allowed to move at all.
+
+`agnus_bitplanedma.v` compares its own internal `hpos[8:1]` against
+`DDFSTRT`, while `agnus_copper.v`'s own `WAIT` compares `hpos[8:2]` -- one
+bit position coarser -- against the `WAIT`'s own `HP` field; `hpos`
+advances by 4 every color clock, so a `WAIT` `HP` value of N reaches the
+same beam position as a `DDFSTRT` value of 2*N. `DDFSTRT`=$3C (60)
+therefore falls at `WAIT`-HP=30; $14 (20), with both fields fully
+compared, is measured to release 18 color clocks before the fetch window
+that follows -- wider than the blitter's own natural first-access latency
+(measured ~6 color clocks after the Copper's own data-word fetch, on an
+otherwise identical but unobstructed capture). The four `MOVE`s to
+`COLOR00` close most of that margin: each is measured at 4 color clocks
+(not the 2 an uncontended single access would suggest -- the Copper's own
+access here is itself throttled to every other slot, the same halving
+SLOTSPAN measures for the CPU), so four of them consume 16 color clocks,
+leaving 2 -- inside the blitter's own natural latency, so its first
+attempt lands after the window has already claimed the bus.
+
+The Copper's own write to `BLTSIZE` (a custom register) is not itself on
+the physical RAM port, the same as `COPJMP1`; the Copper's own fetch of
+the `MOVE`'s data word (a plain chip-RAM read, `COP_LIST+22`) is, and
+bounds the `BLTSIZE` write from below by at most the Copper's own
+single-slot `MOVE`-execution latency. The blitter's own first DMA access
+(its first A-read, in `BLIT_SRC`'s range, or its first D-write if that
+happens to be logged first) is a physical RAM-port access throughout.
+
+Observed (precondition, "FASTRUN-LOCKOUT-PRE", no claim id): the interval
+from the Copper's own data-word fetch to the blitter's own first DMA
+access, against the display's own per-line fetch windows (A10's own
+construction).
+
+Expected value (precondition): that interval fully contains one such
+window (the window's own `lo` at or after the data-word fetch, its own
+`hi` at or before the blitter's own first access) -- p.197's own lockout,
+not this package's invention: if it goes red, it stays red.
+
+Observed (claim): the fast-RAM counter's own writes strictly inside that
+interval; whether the capture reaches `DONE` with `RESULTS` equal to its
+own iteration count (8000).
+
+Expected value: precondition holds, and at least one fast-RAM counter
+write falls strictly inside the interval. No count, ratio or bound beyond
+that -- the page states only that the CPU continues to have memory
+cycles, not how many.
+
+Measured, identical on both cores: the Copper's own data-word fetch at
+cycle 2401033; the display's own fetch window 2401049..2402321 (1272
+`clk_sys`, fully inside the interval); the blitter's own first DMA access
+at cycle 2402361 (40 `clk_sys` after the window's own end -- its first
+attempt was denied throughout the window). Fast-RAM counter writes
+strictly inside the interval: 12 on fx68k, 20 on TG68K (both cores'
+own loop periods differ, as elsewhere in this package). Both cores reach
+`DONE` with `RESULTS`=8000.
+
+Mutation (`NMH_MUTATE=FASTRUN-LOCKOUT`): `prog_fastrun_lockout_chipcode.s`
+(`FR_CHIPCODE` set) -- only `FR_CODE` moves to chip RAM ($0C0800; not
+$0C8000, which falls inside `BP_PTR`'s own $0C6000-$0D6000 heuristic range
+and would corrupt this capture's own window detection); `FR_CNT` stays in
+fast RAM. A10 (four high-resolution bitplanes give the CPU no chip-bus
+access at all inside any line's fetch window) predicts zero counter
+writes strictly inside the window itself. Measured, both cores: the
+Copper's own data-word fetch, the fetch window and the blitter's own
+first DMA access all land at the same cycles as the unmutated capture
+(2401033, 2401049..2402321, 2402361) -- FASTRUN-LOCKOUT-PRE still holds --
+but the graded interval starts 16 `clk_sys` before the window itself (the
+margin the WAIT's own timing-fill MOVEs leave, see above), and the
+relocated chip-RAM loop keeps fetching normally, uncontended, for that
+whole 16 `clk_sys` slice: one last counter write lands there just before
+the window closes it out (1 write on fx68k, 1 on TG68K -- see the
+mutation record below), so **this mutation does not go red**: it shows
+the same 16-`clk_sys` pre-window slice the main capture's own margin
+already relies on, not a live but different population, and not a
+falsification of A10 (which bounds the window itself, not the few
+`clk_sys` immediately before it). Recorded as such; see the test file's
+own header comment.
 
 ## Claims not asserted
 
@@ -893,10 +1020,12 @@ blit's window, and completion under both iteration counts) must go red.
 | `ch6-sysdma.c32` | 196 | "The 68000 test-and-set instruction (TAS) should never be used in the Amiga" is prescriptive advice to a programmer, not an RTL-observable claim; holds as written. |
 | `ch6-sysdma.c31` | 196 | "Most instructions do not cause cycles to be missed" is a statistic over the instruction set with no numeric tolerance; holds as written (SYSDMA-C29 above establishes the *existence* of misses, per `c29`, not their rate). |
 
-Total: 17 graded assertions (A1, A3, DESC-OFFBY1, A2, A4, A8, SYSDMA-C29,
+Total: 18 graded assertions (A1, A3, DESC-OFFBY1, A2, A4, A8, SYSDMA-C29,
 A9, A10, A11, A6, SLOTSPAN, OPEN50, PARITY, ORDER, BBUSY-PREDICTS,
-FASTRUN), plus unlabelled apparatus/precondition checks that carry no
-claim id (FIXTURE, DESC-BASE, A3PRE, A4PRE, A9PRE, A10PRE, PARITY-REF). 3
-claim ids withdrawn by `checks.record()` as A5-WITHDRAWN. 1 claim id
-withdrawn as TAS-WITHDRAWN. 1 claim id withdrawn as `ch6-multi.c4`. 17
-claim ids withdrawn in the table above.
+FASTRUN, FASTRUN-LOCKOUT), carrying 39 claim ids in full, plus unlabelled
+apparatus/precondition checks that carry no claim id (FIXTURE, DESC-BASE,
+A3PRE, A4PRE, A9PRE, A10PRE, PARITY-REF, FASTRUN-LOCKOUT-PRE). 3 claim
+ids withdrawn by `checks.record()` as A5-WITHDRAWN. 1 claim id withdrawn
+as TAS-WITHDRAWN. 1 claim id withdrawn as `ch6-multi.c4`. 17 claim ids
+withdrawn in the table above. 39 + 17 + 3 + 1 + 1 = 61 claim ids checked
+in total.
