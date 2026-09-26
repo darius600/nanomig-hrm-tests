@@ -176,8 +176,8 @@ start:
         ; Chapter 3's standard display-window/fetch-window constants): four
         ; of them (BPLCON0=$C000, below) make every one of the resulting
         ; 160-slot-per-line fetch windows full DMA, none left over
-        ; (A10PRE); FR_2PLANE's own two (BPLCON0=$A000) leave half of each
-        ; window's 80 slots free (see the header comment). BPL2-4's own
+        ; (A10PRE); FR_2PLANE's own two (BPLCON0=$A000) leave 80 of each
+        ; window's 160 slots free (see the header comment). BPL2-4's own
         ; pointers are left unset, as in prog_bitplane.s.
         move.w  #$2C81,DIWSTRT(a0)
         move.w  #$2CC1,DIWSTOP(a0)
