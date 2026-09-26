@@ -1,10 +1,9 @@
-; prog_tas_share.s -- TAS [p196] 6-system-dma.c56: TAS's read-modify-write
-; cycle is indivisible even under active bus contention. Runs a
-; continuously-demanding share-mode blit (BLTPRI clear, so the blitter
-; keeps requesting cycles throughout) concurrently with one TAS.B, then
-; DONE. prog_tas_share_mutant.s (MUTANT set, TAS's mutation) replaces the
-; single TAS.B with an ordinary, separately-arbitrated read-then-write
-; pair of the same byte, which a genuinely contended bus can interrupt.
+; prog_tas_share.s -- 6-system-dma.c56 [p196]: measures whether any other
+; RAM-port access lands between one TAS.B's own read and its own write
+; under active bus contention (a continuously-demanding share-mode blit,
+; BLTPRI clear, keeps requesting cycles throughout). The claim is
+; withdrawn (TAS-WITHDRAWN in test_blitter_cpu_sharing.cpp): p.196's NOTE
+; states a 68000 bus-protocol fact, not a chipset-observable requirement.
 
         include "nanomig.i"
 
@@ -28,11 +27,6 @@ start:
         move.w  #$7D01,BLTSIZE(a0)     ; height=500,width=1 -- long-running, share-mode blit
 
         move.b  #$00,TAS_ADDR
-        ifd     MUTANT
-        move.b  TAS_ADDR,d1             ; ordinary, separately-arbitrated read...
-        move.b  d1,TAS_ADDR             ; ...then write -- not one indivisible cycle
-        else
         tas.b   TAS_ADDR
-        endif
 
         DONE

@@ -9,7 +9,8 @@ PROGS    := prog_fixture prog_fixture_mut \
             prog_bitplane prog_bitplane_hires prog_bitplane_planes6 \
             prog_bitplane_aligned prog_bitplane_planes6_aligned \
             prog_copyloop prog_copyloop_tiny \
-            prog_tas_share prog_tas_share_mutant \
-            prog_descblit prog_descblit_offby1
+            prog_tas_share \
+            prog_descblit prog_descblit_offby1 prog_descblit_offby2 \
+            prog_fastrun prog_fastrun_long
 
 include ../harness/nanomig.mk

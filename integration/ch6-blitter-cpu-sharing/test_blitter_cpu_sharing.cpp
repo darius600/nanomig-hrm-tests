@@ -10,25 +10,27 @@
 //
 // MUTATION FIXTURE stimulus red stored constant changed to DEAD instead of BEEF, via NMH_MUTATE=FIXTURE
 // MUTATION A1 stimulus red pointer value changed to a different source address, via NMH_MUTATE=A1
-// MUTATION DESC stimulus red the off-by-one capture substituted with the same last-word capture (no displacement to compare against), via NMH_MUTATE=DESC
+// MUTATION DESC-BASE stimulus red the blitter's-own-convention capture substituted with the off-by-one capture, via NMH_MUTATE=DESC-BASE
+// MUTATION DESC-OFFBY1 stimulus red the one-word-past capture substituted with a two-words-past capture (outside the exact range graded), via NMH_MUTATE=DESC-OFFBY1
 // MUTATION A2 stimulus red blit shrunk to a near-instant one-word transfer, via NMH_MUTATE=A2
 // MUTATION A3 stimulus red blit size grown from one word to two hundred, via NMH_MUTATE=A3
 // MUTATION A3PRE stimulus red dummy chip-memory read moved before the blit is started, via NMH_MUTATE=A3PRE
 // MUTATION BBUSY-PREDICTS stimulus red the true 200-word blit substituted with the one-word build (already finished, BBUSY clear), via NMH_MUTATE=BBUSY-PREDICTS
 // MUTATION A4 stimulus red BLTPRI cleared (nasty -> share), via NMH_MUTATE=A4
 // MUTATION A6 stimulus red six aligned planes substituted for four inside the fetch window, via NMH_MUTATE=A6
-// MUTATION A8 stimulus red baseline capture substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator), via NMH_MUTATE=A8
+// MUTATION A8 stimulus green baseline capture substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator), via NMH_MUTATE=A8
+// MUTATION A8 stimulus red baseline capture substituted with the share-mode blit's own active-window CPU accesses (live, odd-slot spacings on both cores, same unchanged comparator), via NMH_MUTATE=A8-SHARE
 // MUTATION A9 stimulus red bitplane resolution changed from low to high, via NMH_MUTATE=A9
 // MUTATION A9PRE stimulus red bitplane program substituted with one that never enables bitplane DMA, via NMH_MUTATE=A9PRE
 // MUTATION A10 stimulus red bitplane resolution changed from high to low, via NMH_MUTATE=A10
 // MUTATION A10PRE stimulus red bitplane program substituted with one that never enables bitplane DMA, via NMH_MUTATE=A10PRE
 // MUTATION A11 stimulus red both sides run the same four-bitplane config, via NMH_MUTATE=A11
 // MUTATION PARITY stimulus red no-DMA and share-window captures substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator), via NMH_MUTATE=PARITY
-// MUTATION SYSDMA-C29 stimulus red no-DMA baseline substituted with the whole-4-clock-aligned loop (no fractional-slot instruction, no missed cycle), via NMH_MUTATE=SYSDMA-C29
+// MUTATION PARITY-REF stimulus red the lores-plane capture substituted with the no-bitplane-DMA baseline (no BPL1 reads at all), via NMH_MUTATE=PARITY-REF
+// MUTATION SYSDMA-C29 stimulus red the misaligned (BRA.S) in-window capture substituted with the whole-4-clock-aligned loop's own (no waited step), via NMH_MUTATE=SYSDMA-C29
 // MUTATION SLOTSPAN stimulus red baseline capture substituted with the share-mode blit's own active-window CPU accesses (contended, 5 slots apart), via NMH_MUTATE=SLOTSPAN
 // MUTATION OPEN50 stimulus red six-plane side substituted with the four-plane capture (no reduction), via NMH_MUTATE=OPEN50
-// MUTATION ORDER stimulus red the 500-word CPU copy loop substituted with a 1-word copy (finishes before the blit), via NMH_MUTATE=ORDER
-// MUTATION TAS stimulus red TAS.B replaced by an ordinary, separately-arbitrated read-then-write pair of the same byte under the same share-mode contention, via NMH_MUTATE=TAS
+// MUTATION ORDER stimulus red the 500-word CPU copy loop substituted with a 50-word copy (shorter, nonzero span, finishes before the blit), via NMH_MUTATE=ORDER
 //
 // A4's precondition (the nasty-mode window's own length) is not exercised
 // by a dedicated mutation: every capture in this package that shrinks the
@@ -38,6 +40,8 @@
 // withdrawn (see the A5-WITHDRAWN record below); it carries no assertion
 // and no mutation. ch6-multi.c4 is withdrawn (see the MULTI-C4-WITHDRAWN
 // record below); it carries no assertion and no mutation.
+// 6-system-dma.c56 is withdrawn (see the TAS-WITHDRAWN record below); it
+// carries no assertion and no mutation.
 // 6-blitter-done-flag.c8/ch6-done.c9 is withdrawn (see the
 // FASTRUN-WITHDRAWN record below); it carries no assertion and no
 // mutation.
@@ -88,6 +92,7 @@ constexpr uint32_t kEcDummy   = 0x0C0002;
 // prog_copyloop.s addresses.
 constexpr uint32_t kClDst = 0x0C8800;
 constexpr uint32_t kClN   = 500;
+constexpr uint32_t kClShortN = 50; // ORDER's own mutation (prog_copyloop_tiny.s, CL_SHORT set)
 
 // prog_tas_share.s address.
 constexpr uint32_t kTasAddr = 0x0C2000;
@@ -367,6 +372,17 @@ PairStats within_line_parity(const LineRef& ref, const std::vector<uint64_t>& cy
     return s;
 }
 
+// Counts consecutive-pair gaps in `cycles` (already sorted) that are
+// exactly `slots` colour-clock slots apart -- used to find one specific,
+// recurring step (not every odd- or even-slot pair) among a mixed
+// population of in-window CPU-access gaps.
+size_t count_gap_slots(const std::vector<uint64_t>& cycles, uint64_t slots) {
+    size_t n = 0;
+    for (size_t i = 1; i < cycles.size(); ++i)
+        if (cycles[i] - cycles[i - 1] == slots * kCck) ++n;
+    return n;
+}
+
 std::vector<uint64_t> sorted_cpu_cycles(const Capture& cap, uint32_t scratch_word) {
     std::vector<uint64_t> v;
     for (const auto& a : cap.log) if (is_cpu_access(a, scratch_word)) v.push_back(a.cycle);
@@ -428,16 +444,19 @@ int main(int argc, char** argv) {
 
     // ---- DESC-BASE / DESC-OFFBY1 [p182] ch6-desc.c12: the blitter's own
     // descending-mode pointer convention (BLTAPTH/BLTDPTH at the LAST
-    // word, BLTCON1 bit 1, agnus_blitter.v:286) differs from the 680x0
-    // -(An) predecrement convention (which would leave a pointer one word
-    // past the last): starting one word too high displaces the whole
+    // word, BLTCON1 bit 1 -- p.182: "Descending mode is turned on by
+    // setting bit one of BLTCON1") differs from the 680x0 -(An)
+    // predecrement convention (which would leave a pointer one word past
+    // the last): starting one word too high displaces the whole
     // descending copy by one word, observable in ram_log() as which
     // destination words are written.
     {
-        bool mutated = (mv == "DESC");
-        Capture db_a = run_capture(dir + "/prog_descblit.bin", kBootBudget + kDoneRunBudget, true,
+        bool mutated_base = (mv == "DESC-BASE");
+        bool mutated_offby1 = (mv == "DESC-OFFBY1");
+        Capture db_a = run_capture(dir + (mutated_base ? "/prog_descblit_offby1.bin" : "/prog_descblit.bin"),
+                                    kBootBudget + kDoneRunBudget, true,
                                     {0x0C2100, 0x0C2102, 0x0C2104, 0x0C2106, 0x0C2108});
-        Capture db_b = run_capture(dir + (mutated ? "/prog_descblit.bin" : "/prog_descblit_offby1.bin"),
+        Capture db_b = run_capture(dir + (mutated_offby1 ? "/prog_descblit_offby2.bin" : "/prog_descblit_offby1.bin"),
                                     kBootBudget + kDoneRunBudget, true, {});
 
         bool a_ok = db_a.loaded && db_a.done.has_value() && db_a.peeks.size() == 5;
@@ -457,19 +476,27 @@ int main(int argc, char** argv) {
         };
         bool a_first = written(db_a, kDbDst);
         bool a_extra = written(db_a, kDbDst + 8);
-        bool b_first = written(db_b, kDbDst);
-        bool b_extra = written(db_b, kDbDst + 8);
+        bool b_w0  = written(db_b, kDbDst + 0);
+        bool b_w2  = written(db_b, kDbDst + 2);
+        bool b_w4  = written(db_b, kDbDst + 4);
+        bool b_w6  = written(db_b, kDbDst + 6);
+        bool b_w8  = written(db_b, kDbDst + 8);
+        bool b_w10 = written(db_b, kDbDst + 10);
         checks.note("DESC-OFFBY1: A (pointer at last word) writes first=" + std::string(a_first ? "yes" : "no") +
                     " extra=" + std::string(a_extra ? "yes" : "no") + "; B (" +
-                    (mutated ? "same capture as A" : "pointer one word past the last") +
-                    ") writes first=" + std::string(b_first ? "yes" : "no") +
-                    " extra=" + std::string(b_extra ? "yes" : "no"));
-        checks.expect(a_first && !a_extra && !b_first && b_extra,
+                    (mutated_offby1 ? "pointer two words past the last" : "pointer one word past the last") +
+                    ") writes $0C2100=" + std::string(b_w0 ? "yes" : "no") +
+                    " $0C2102=" + std::string(b_w2 ? "yes" : "no") +
+                    " $0C2104=" + std::string(b_w4 ? "yes" : "no") +
+                    " $0C2106=" + std::string(b_w6 ? "yes" : "no") +
+                    " $0C2108=" + std::string(b_w8 ? "yes" : "no") +
+                    " $0C210A=" + std::string(b_w10 ? "yes" : "no"));
+        checks.expect(a_first && !a_extra && !b_w0 && b_w2 && b_w4 && b_w6 && b_w8 && !b_w10,
             "DESC-OFFBY1 [p182] ch6-desc.c12: pointing BLTAPTH/BLTDPTH one word past the last word "
-            "(the 680x0 -(An) predecrement convention) displaces the same descending copy by one "
-            "word -- the block's own first destination word goes unwritten and the word past it is "
-            "written instead, where the blitter's own convention (pointer at the last word) writes "
-            "the first word and leaves that extra one alone");
+            "(the 680x0 -(An) predecrement convention) displaces the same descending copy by "
+            "exactly one word -- $0C2102-$0C2108 are written and neither $0C2100 nor $0C210A is, "
+            "where the blitter's own convention (pointer at the last word) writes $0C2100-$0C2106 "
+            "and leaves $0C2108 alone");
     }
 
     // ---- A3 [p187] a small blit can finish before the CPU's first check,
@@ -499,7 +526,7 @@ int main(int argc, char** argv) {
         bool a3_pre = pre_cap.loaded && pre_cap.done.has_value() && !dst_w.empty() && !dummy_r.empty() &&
                       dst_w.front() < dummy_r.front();
         checks.expect(a3_pre,
-            "A3PRE [p187] ch6-multi.c3: the blit's destination write is already in "
+            "A3PRE [p187]: the blit's destination write is already in "
             "ram_log() before the manual's prescribed dummy chip-memory read");
 
         // BBUSY-PREDICTS's own capture: normally the true LARGE (200-word)
@@ -570,29 +597,26 @@ int main(int argc, char** argv) {
     };
 
     // ---- A2 [p169,p186] the CPU keeps running while the blitter works --
+    // existence only: p.169 ("the 680x0 CPU continues to run as the blit
+    // is executing") and p.186 ("they can both work concurrently") give
+    // no bound on how long the CPU may then wait between two chip-bus
+    // writes -- p.198's own release rule (three denied cycles, one
+    // released) is what governs that, graded separately (the A5 halt).
     {
         const Capture& cap = (mv == "A2") ? cap_tiny : cap_share;
         auto [lo, hi] = dst_span(cap);
         auto sc = scratch_writes(cap);
         std::vector<uint64_t> in_win;
-        for (auto c : sc) if (c >= lo && c <= hi) in_win.push_back(c);
-        uint64_t max_gap = 0;
-        for (size_t i = 1; i < in_win.size(); ++i) max_gap = std::max(max_gap, in_win[i] - in_win[i - 1]);
-        uint64_t win_len = (lo == hi) ? 0 : hi - lo;
+        for (auto c : sc) if (c > lo && c < hi) in_win.push_back(c);
         checks.note("A2: active window " + std::to_string(lo) + ".." + std::to_string(hi) +
-                    " (" + std::to_string(win_len) + " clk_sys), " + std::to_string(in_win.size()) +
-                    " scratch writes inside it, largest in-window gap " + std::to_string(max_gap) + " clk_sys");
-        // No numeric factor from the page: "half the window" is a
-        // deliberately loose sanity bound (the measured gap is a small
-        // fraction of it), not a calibrated one -- it only needs to rule
-        // out the CPU stopping for a meaningful fraction of the window,
-        // which a genuinely halted CPU would fail by a wide margin.
-        checks.expect(lo != hi && in_win.size() >= 2 && max_gap * 2 < win_len,
+                    ", " + std::to_string(in_win.size()) +
+                    " scratch write(s) strictly inside it (excluding the window's own endpoints)");
+        checks.expect(lo != hi && !in_win.empty(),
             "A2 [p169,p186] 6-intro.c20,ch6-intro.c21,ch6-intro.c22,6-blitter-done-flag.c2,"
-            "6-blitter-done-flag.c3,ch6-done.c2,ch6-done.c3: the CPU keeps writing to its own "
-            "counter throughout a share-mode blit's active window, with no gap between "
-            "consecutive writes reaching even half the window's own length (largest gap " +
-            std::to_string(max_gap) + " of " + std::to_string(win_len) + " clk_sys)");
+            "6-blitter-done-flag.c3,ch6-done.c2,ch6-done.c3: the CPU makes at least one write to "
+            "its own counter strictly inside a share-mode blit's active window (" +
+            std::to_string(in_win.size()) + " such write(s)) -- existence only, no bound of its "
+            "own on the gap between writes");
     }
 
     // ---- A4 [p194,p198] the blitter has higher DMA priority than the 68000 --
@@ -648,14 +672,24 @@ int main(int argc, char** argv) {
     // counted as a violation).
     {
         bool mutated = (mv == "A8");
-        const Capture& src_cap = mutated ? cap_lores4 : cap_base;
-        std::vector<uint64_t> cpu_src = mutated ? lores_inwindow_cpu_cycles(cap_lores4)
-                                                 : sorted_cpu_cycles(cap_base, word_addr(kShareScratch));
+        bool mutated_share = (mv == "A8-SHARE");
+        const Capture& src_cap = mutated ? cap_lores4 : (mutated_share ? cap_share : cap_base);
+        std::vector<uint64_t> cpu_src;
+        std::string src_desc;
+        if (mutated) { cpu_src = lores_inwindow_cpu_cycles(cap_lores4); src_desc = "four-lores-plane in-window accesses"; }
+        else if (mutated_share) {
+            auto [lo, hi] = dst_span(cap_share);
+            for (const auto& a : cap_share.log)
+                if (is_cpu_access(a, word_addr(kShareScratch)) && a.cycle >= lo && a.cycle <= hi)
+                    cpu_src.push_back(a.cycle);
+            std::sort(cpu_src.begin(), cpu_src.end());
+            src_desc = "share-mode blit's own active window";
+        } else { cpu_src = sorted_cpu_cycles(cap_base, word_addr(kShareScratch)); src_desc = "no-DMA baseline"; }
         LineRef lref = make_line_ref(src_cap.log);
         PairStats s = within_line_parity(lref, cpu_src);
         checks.note("A8: " + std::to_string(s.odd) + " odd-slot-spacing instance(s) of " +
                     std::to_string(s.pairs) + " within-line, slot-aligned consecutive-CPU-access "
-                    "pairs (" + (mutated ? "four-lores-plane in-window accesses" : "no-DMA baseline") + ")");
+                    "pairs (" + src_desc + ")");
         checks.expect(s.pairs > 0 && s.odd == 0,
             "A8 [p194,p196] 6-system-dma.c54,6-system-dma.c55,ch6-sysdma.c30: no two consecutive "
             "CPU bus accesses within one line are an odd number of slots apart -- a denied cycle "
@@ -664,39 +698,42 @@ int main(int argc, char** argv) {
     }
 
     // ---- SYSDMA-C29 [p196] ch6-sysdma.c29: some 68000 instructions miss
-    // the even-cycle allocation. Existential -- fx68k's own no-DMA loop
-    // (BRA.S, a 10-clock internal operation, not a whole multiple of 4)
-    // shows the fetch after it land on an odd slot once per iteration
-    // instead of waiting for the next even one (the same fact A8 grades
-    // above) -- a recurring, structural count (thousands of instances),
-    // not an isolated one. The whole-4-clock-aligned loop
-    // (prog_sharing_aligned.s, JMP (An) in place of BRA.S) shows no such
-    // recurring gap -- used here as SYSDMA-C29's own mutation. (A single
-    // stray instance can still occur once, at the loop's own startup
-    // transient before its steady rhythm settles; requiring more than one
-    // instance is what tells a recurring, per-iteration miss apart from
-    // that one-off, exactly as `mode_of()` elsewhere in this file discounts
-    // a lone outlier gap rather than a structurally-recurring value.)
-    // TG68K's own BRA.S-based loop shows no such gap either, so it is
-    // reported not exercised there rather than graded.
+    // the even-cycle allocation, and p.196 gives the consequence of a
+    // missed cycle as a wait, not a landing: "If cycles are missed, the
+    // 68000 must wait until its next available memory slot before
+    // continuing." That wait is only observable where the page's own
+    // allocation actually holds the odd slots against the CPU -- inside
+    // the four-lores-plane fetch window (Figure 6-11: planes on the odd
+    // slots), not the free-running no-DMA baseline, where the same
+    // fractional-slot instruction (BRA.S, a 10-clock internal operation,
+    // not a whole multiple of 4) simply lands on the odd slot instead
+    // (A8's/PARITY's own red, a different fact). Inside the window, the
+    // fetch after BRA.S's internal operation instead waits a full extra
+    // slot: a recurring 4-slot step, not the free-running 3-slot one.
+    // The whole-4-clock-aligned loop (prog_bitplane_aligned.s, JMP (An)
+    // in place of BRA.S) has no such step -- used here as SYSDMA-C29's
+    // own mutation. TG68K's own loop has no fractional-slot instruction
+    // either, so it is reported not exercised rather than graded.
     {
         bool mutated = (mv == "SYSDMA-C29");
-        const Capture& cap = mutated ? cap_base_aligned : cap_base;
-        LineRef lref = make_line_ref(cap.log);
-        PairStats s = within_line_parity(lref, sorted_cpu_cycles(cap, word_addr(kShareScratch)));
-        checks.note("SYSDMA-C29: " + std::to_string(s.odd) + " odd-slot (missed-cycle) instance(s) of " +
-                    std::to_string(s.pairs) + " within-line pairs, no-DMA baseline (" +
+        const Capture& cap = mutated ? cap_lores4_aligned : cap_lores4;
+        std::vector<uint64_t> cpu_src = lores_inwindow_cpu_cycles(cap);
+        size_t total_pairs = cpu_src.empty() ? 0 : cpu_src.size() - 1;
+        size_t waited4 = count_gap_slots(cpu_src, 4);
+        checks.note("SYSDMA-C29: " + std::to_string(waited4) + " in-window 4-slot (waited-to-"
+                    "next-even) step instance(s) of " + std::to_string(total_pairs) +
+                    " in-window consecutive-CPU-access pairs (" +
                     (mutated ? "whole-4-clock-aligned loop" : "BRA.S-based loop") + ")");
         if (!is_tg68k) {
-            checks.expect(s.pairs > 0 && s.odd > 1,
+            checks.expect(waited4 > 0,
                 "SYSDMA-C29 [p196] ch6-sysdma.c29: some 68000 instructions miss the even-cycle "
-                "allocation -- the fetch after a fractional-slot internal operation (BRA.S) lands "
-                "on an odd slot once per loop iteration instead of waiting for the next even one, "
-                "recurring rather than a single one-off (" +
-                std::to_string(s.odd) + " of " + std::to_string(s.pairs) + " within-line pairs)");
+                "allocation -- inside the four-lores-plane fetch window, the fetch after a "
+                "fractional-slot internal operation (BRA.S) waits a full extra slot instead of "
+                "landing on the odd one denied it (" + std::to_string(waited4) + " of " +
+                std::to_string(total_pairs) + " in-window pairs, exactly 4 slots apart)");
         } else {
             checks.note("SYSDMA-C29 [p196] ch6-sysdma.c29: not exercised on TG68K -- its own "
-                        "no-DMA loop shows no odd-slot (missed-cycle) gap within a line");
+                        "loop has no fractional-slot internal operation, so no such wait occurs");
         }
     }
 
@@ -846,6 +883,35 @@ int main(int argc, char** argv) {
             std::to_string(open_lo6) + " of " + std::to_string(open_lo4) + " open slots remain)");
     }
 
+    // ---- PARITY-REF [Figure 6-9] (no claim id): the per-line slot
+    // reference PARITY and A8 both use is not merely asserted by
+    // construction -- it is anchored to the display schedule Figure 6-9
+    // draws: refresh's own last read is on an odd slot, and BPL1 lands
+    // 58 slots later at $3F, which is also odd. Every BPL1 fetch of the
+    // four-lores-plane build must therefore classify odd by this same
+    // reference; a reference that mislabelled the phase would not show
+    // this.
+    {
+        const Capture& cap = (mv == "PARITY-REF") ? cap_base : cap_lores4;
+        auto bpl = bp_reads_of(cap);
+        LineRef lref = make_line_ref(cap.log);
+        size_t known_n = 0, odd_n = 0;
+        for (auto c : bpl) {
+            bool known; bool even = is_even_slot(lref, c, &known);
+            if (!known) continue;
+            ++known_n;
+            if (!even) ++odd_n;
+        }
+        checks.note("PARITY-REF: " + std::to_string(odd_n) + " of " + std::to_string(known_n) +
+                    " BPL1 reads classify odd by the per-line reference (" +
+                    std::string((mv == "PARITY-REF") ? "no-bitplane-DMA baseline" : "four-lores-plane build") + ")");
+        checks.expect(known_n > 0 && odd_n == known_n,
+            "PARITY-REF [Figure 6-9]: every BPL1 fetch of the four-lores-plane build classifies "
+            "odd by the same per-line reference PARITY and A8 use (refresh's own last read is odd, "
+            "and BPL1 lands 58 slots later at $3F -- still odd) (" + std::to_string(odd_n) + " of " +
+            std::to_string(known_n) + ")");
+    }
+
     // ---- PARITY [p196] 6-system-dma.c50,ch6-sysdma.c25,6-system-dma.c60:
     // the 68000 uses only the even-numbered memory-access cycles, by
     // Figure 6-9's own per-line slot numbering (see "How slots are
@@ -903,7 +969,7 @@ int main(int argc, char** argv) {
         bool mutated = (mv == "ORDER");
         std::string cl_bin = dir + (mutated ? "/prog_copyloop_tiny.bin" : "/prog_copyloop.bin");
         Capture cl = run_capture(cl_bin, kBootBudget + kDoneRunBudget, true, {});
-        uint32_t n = mutated ? 1u : kClN;
+        uint32_t n = mutated ? kClShortN : kClN;
         auto cl_writes = write_cycles_in_range(cl.log, word_addr(kClDst), word_addr(kClDst) + n);
         bool cl_ok = cl.loaded && cl.done.has_value() && cl_writes.size() == n;
         uint64_t cl_first = cl_writes.empty() ? 0 : *std::min_element(cl_writes.begin(), cl_writes.end());
@@ -922,16 +988,17 @@ int main(int argc, char** argv) {
             " clk_sys) -- ordering only, no numeric factor asserted");
     }
 
-    // ---- TAS [p196] 6-system-dma.c56: TAS's read-modify-write cycle is
-    // indivisible, graded under active share-mode contention (a
-    // continuously-demanding blit keeps requesting cycles throughout) by
-    // whether any OTHER RAM-port access lands between TAS's own read and
-    // its own write. A CPU-core bus-protocol property (fx68k and TG68K
-    // model the 68000's own bus cycle, not the Amiga chipset's
-    // arbitration): reported per core, not reconciled.
+    // ---- 6-system-dma.c56 [p196] -- withdrawn. The NOTE ("the indivisible
+    // read-modify-write cycle that is used only in this instruction will
+    // not fit into a DMA memory access slot") states a fact about the
+    // 68000's own bus protocol: it does not require the chipset to hold
+    // other masters off between TAS's own read and its own write, and the
+    // page names no chipset-observable consequence of that fact. Measured
+    // under active share-mode contention (a continuously-demanding blit
+    // keeps requesting cycles throughout) all the same, so the record
+    // below states what the RAM port actually shows.
     {
-        std::string bin = dir + (mv == "TAS" ? "/prog_tas_share_mutant.bin" : "/prog_tas_share.bin");
-        Capture t = run_capture(bin, kBootBudget + kDoneRunBudget, true, {});
+        Capture t = run_capture(dir + "/prog_tas_share.bin", kBootBudget + kDoneRunBudget, true, {});
         std::vector<nmh::RamAccess> raw_at_addr;
         for (const auto& a : t.log) if (a.word_addr == word_addr(kTasAddr)) raw_at_addr.push_back(a);
         auto coalesced = nmh::coalesce(raw_at_addr);
@@ -952,13 +1019,15 @@ int main(int argc, char** argv) {
                 if ((int64_t)a.cycle > r_cycle && (int64_t)a.cycle < w_cycle) ++between;
         }
         checks.note("TAS: read-to-write gap = " + std::to_string(w_cycle - r_cycle) + " clk_sys, " +
-                    std::to_string(between) + " other RAM-port access(es) between them (" +
-                    (mv == "TAS" ? "ordinary read-then-write pair" : "TAS.B") + ", share-mode blit concurrent)");
-        checks.expect(r_cycle >= 0 && between == 0,
-            "TAS [p196] 6-system-dma.c56: TAS's read-modify-write cycle is indivisible -- no other "
-            "RAM-port access lands between its own read and its own write while a share-mode blit "
-            "actively contends for the bus (" + std::to_string(between) +
-            " intervening access(es); a 68000 bus-cycle property, reported per core)");
+                    std::to_string(between) + " other RAM-port access(es) between them "
+                    "(TAS.B, share-mode blit concurrent)");
+        checks.record(
+            "TAS-WITHDRAWN [p196] 6-system-dma.c56: 68000 bus-protocol fact; p.196 states no "
+            "chipset-observable requirement -- the NOTE describes the 68000's own indivisible "
+            "read-modify-write cycle not fitting a DMA memory access slot, not a bound on what the "
+            "chipset may do between TAS's own read and its own write. Measured (share-mode blit "
+            "concurrent): " + std::to_string(between) + " other RAM-port access(es) land between "
+            "them, which the page does not forbid");
     }
 
     // ---- ch6-multi.c4 [p187] -- TG68K only; cpu_config selects
@@ -990,21 +1059,84 @@ int main(int argc, char** argv) {
                     "cpu_config selects TG68K-only behaviour, nanomig.v:198)");
     }
 
-    // ---- 6-blitter-done-flag.c8,ch6-done.c9 [p186] -- attempted, withdrawn.
-    checks.record(
-        "FASTRUN-WITHDRAWN [p186] 6-blitter-done-flag.c8,ch6-done.c9: not tested -- a program was "
-        "built and run (not committed, since its own measurement was not trustworthy): it enabled "
-        "the design's Zorro II fast-RAM path with one register write at $E80048 (cpu_wrapper.v's "
-        "sel_z2ram, independent of Config.turbo_config/the CPU cache and of the overlay), copied a "
-        "counting loop there, and ran it concurrently with a nasty blit. The write decodes and the "
-        "run completes (it does not hang), but the elapsed time between the last chip-bus access "
-        "before the jump and the RESULTS store after the loop came out identical, to the clk_sys, "
-        "for a 50-iteration and a 2000-iteration loop on fx68k -- a result the loop's own execution "
-        "cannot explain, so something about this measurement is not understood and is not reported "
-        "as a finding either way. Not a harness gap in the sense the first report used the phrase "
-        "(the Zorro II path itself is reachable through the public Config/harness surface, per the "
-        "validator's own reading of cpu_wrapper.v); the step that fails is establishing what the "
-        "fixed span actually is");
+    // ---- FASTRUN [p186] 6-blitter-done-flag.c8,ch6-done.c9: "A processor
+    // running from Fast memory or cache can continue executing while the
+    // blitter is denied Chip-memory access" / "may be running completely
+    // uninhibited out of Fast memory or its internal cache and continue
+    // to have memory cycles." prog_fastrun.s enables the design's Zorro
+    // II fast-RAM path with one register write at $E80048
+    // (cpu_wrapper.v:117 sel_z2ram, cpu_wrapper.v:640), relocates a
+    // counting loop there, and starts a nasty blit through the Copper's
+    // own list -- never through a CPU chip-bus write -- so the CPU's own
+    // last chip-bus write before it jumps into fast RAM is unaffected by
+    // the blit that begins slightly afterward (A4 shows 0 CPU chip-bus
+    // accesses for the whole of a nasty blit's window otherwise).
+    // prog_fastrun_long.s (2000 iterations, prog_fastrun.s: 50) runs a
+    // loop long enough to outlast the blit's own ~8112 clk_sys (the same
+    // known span as A4/ORDER's own nasty capture). Fixing the earlier
+    // report's own gap: that record's "identical span regardless of
+    // iteration count" came from a CPU chip-bus write (BLTSIZE) itself
+    // starting the blit, which then locked the CPU's own next fetch out
+    // for the blit's whole duration before it ever reached fast RAM --
+    // the Copper removes that dependency.
+    {
+        // A much smaller run budget than the rest of this file's captures:
+        // both programs are identical up to the jump into fast RAM, and
+        // the measurement below is that nothing at all happens afterward
+        // -- confirmed once, at the full kBootBudget+kDoneRunBudget (see
+        // FASTRUN-WITHDRAWN in SPECIFICATION.md), holds equally at this
+        // much shorter one, without paying its cost on every run.
+        constexpr uint64_t kFastrunBudget = kBootBudget + 50'000;
+        nmh::Config cfg_fr; cfg_fr.fastram_config = 0x01; // 2MB Zorro II fast RAM (cpu_wrapper.v:571-572)
+        Capture cap_short = run_capture(dir + "/prog_fastrun.bin", kFastrunBudget, true, {kResults}, cfg_fr);
+        Capture cap_long  = run_capture(dir + "/prog_fastrun_long.bin", kFastrunBudget, true, {kResults}, cfg_fr);
+        constexpr uint32_t kPreJump = 0x0C0006;
+
+        auto last_prog_fetch = [&](const Capture& c) -> int64_t {
+            int64_t last = -1;
+            for (const auto& a : c.log)
+                if (!a.is_write && a.word_addr >= word_addr(kProgLo) && a.word_addr < word_addr(kProgHi))
+                    last = (int64_t)a.cycle;
+            return last;
+        };
+        auto pre_short = write_cycles_in_range(cap_short.log, word_addr(kPreJump), word_addr(kPreJump) + 1);
+        auto pre_long  = write_cycles_in_range(cap_long.log, word_addr(kPreJump), word_addr(kPreJump) + 1);
+        int64_t last_short = last_prog_fetch(cap_short);
+        int64_t last_long  = last_prog_fetch(cap_long);
+
+        checks.note("FASTRUN: 50-iteration capture -- loaded=" + std::string(cap_short.loaded ? "y" : "n") +
+                    " done=" + std::string(cap_short.done.has_value() ? "y" : "n") +
+                    " PRE_JUMP write=" + std::string(pre_short.empty() ? "no" : "yes") +
+                    " last program-range fetch cycle=" + std::to_string(last_short) +
+                    " RESULTS=" + (cap_short.peeks.size() && cap_short.peeks[0] ? std::to_string(*cap_short.peeks[0]) : std::string("?")) +
+                    "; 2000-iteration capture -- loaded=" + std::string(cap_long.loaded ? "y" : "n") +
+                    " done=" + std::string(cap_long.done.has_value() ? "y" : "n") +
+                    " PRE_JUMP write=" + std::string(pre_long.empty() ? "no" : "yes") +
+                    " last program-range fetch cycle=" + std::to_string(last_long) +
+                    " RESULTS=" + (cap_long.peeks.size() && cap_long.peeks[0] ? std::to_string(*cap_long.peeks[0]) : std::string("?")));
+        checks.record(
+            "FASTRUN-WITHDRAWN [p186] 6-blitter-done-flag.c8,ch6-done.c9: not tested -- "
+            "prog_fastrun.s/prog_fastrun_long.s (committed) enable the design's Zorro II fast-RAM "
+            "path (Config.fastram_config=0x01, cpu_wrapper.v:117 sel_z2ram, cpu_wrapper.v:640), "
+            "relocate a counting loop there with its own chip-RAM marker write (PRE_JUMP) "
+            "immediately before jumping, then start a nasty blit through the Copper's own list -- "
+            "never a CPU chip-bus write -- so the CPU's last chip-bus write before the jump is not "
+            "itself blocked by the blit. Both the 50- and the 2000-iteration capture correctly make "
+            "that PRE_JUMP write, fetch every instruction up to and including the jump's own address "
+            "extension (last program-range fetch on fx68k at cycle " + std::to_string(last_short) +
+            " and " + std::to_string(last_long) + "), then produce no further RAM-port activity of "
+            "any kind for the whole of a " + std::to_string(kFastrunBudget) + "-clk_sys "
+            "budget: run_until_write() never sees DONE, and RESULTS still reads back its "
+            "harness-zero-initialized value on both. This isolates the earlier report's own finding "
+            "away from the blit entirely (no blit or Copper is needed to reproduce it) and rules out "
+            "that report's own candidate explanation (a CPU chip-bus write starting the blit and "
+            "locking the CPU's own next fetch out for the blit's duration): here nothing but the "
+            "jump into fast RAM itself precedes the silence. Not a harness gap in the sense the "
+            "package's own comment at nanomig_harness.h uses the phrase (the Zorro II path is "
+            "reachable through the public Config surface); the step that fails is establishing why "
+            "the first bus cycle at a Zorro II fast-RAM address, once reached, produces no further "
+            "observable RTL activity");
+    }
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;
