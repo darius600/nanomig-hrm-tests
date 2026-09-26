@@ -12,6 +12,6 @@ PROGS    := prog_fixture prog_fixture_mut \
             prog_tas_share \
             prog_descblit prog_descblit_offby1 prog_descblit_offby2 \
             prog_fastrun prog_fastrun_long prog_fastrun_chipcode prog_fastrun_long_chipcode \
-            prog_fastrun_lockout prog_fastrun_lockout_chipcode
+            prog_fastrun_lockout prog_fastrun_lockout_chipcode prog_fastrun_lockout_2plane
 
 include ../harness/nanomig.mk

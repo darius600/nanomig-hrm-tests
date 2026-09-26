@@ -864,22 +864,23 @@ both sides.
 
 Expected value: at least one fast-RAM counter write strictly inside the
 blit's own active window; both the 50- and the 2000-iteration capture
-reach `DONE` with `RESULTS` equal to their own iteration count; and the
-in-window modal period equals the at-or-after-window modal period --
-"completely uninhibited" graded as an equality between two measured
-periods (the same comparison A6 makes), not a count or bound the page
-does not state.
+reach `DONE` with `RESULTS` equal to their own iteration count; and every
+counter-write gap strictly inside the window equals the modal
+after-window period -- "completely" graded as every gap, not a
+mode-to-mode comparison (which would also pass a loop slowed in only some
+of its in-window iterations), and not a count or bound the page does not
+state.
 
 Measured: on fx68k, the blit's own active window spans 2276281..2284425
 (8144 `clk_sys`); the fast-RAM counter's own writes strictly inside it are
 49 of 50 (50-iteration build) and 75 (of 2000, 2000-iteration build -- the
-loop outlasts the window, as designed); the in-window period is 108
-`clk_sys` (74 gaps), the after-window period 108 `clk_sys` (1923 gaps),
-equal. On TG68K: window 2276057..2284169 (8112 `clk_sys`); 48 of 50 and
-127 of 2000 strictly inside; in-window period 64 `clk_sys` (126 gaps),
-after-window period 64 `clk_sys` (1870 gaps), equal. Both builds reach
-`DONE` with `RESULTS` equal to their own iteration count (50 and 2000) on
-both cores.
+loop outlasts the window, as designed); all 74 in-window gaps equal 108
+`clk_sys`, the same period measured after the window (1923 gaps). On
+TG68K: window 2276057..2284169 (8112 `clk_sys`); 48 of 50 and 127 of 2000
+strictly inside; all 126 in-window gaps equal 64 `clk_sys`, the same
+period measured after the window (1870 gaps). Both builds reach `DONE`
+with `RESULTS` equal to their own iteration count (50 and 2000) on both
+cores.
 
 Mutation (`NMH_MUTATE=FASTRUN`): `prog_fastrun_chipcode.s` /
 `prog_fastrun_long_chipcode.s` (`FR_CHIPCODE` set) -- only `FR_CODE` moves
@@ -888,12 +889,15 @@ stays 1 throughout (the mutation substitutes a different binary, not this
 setting). A4 (`BLTPRI` set denies the CPU every chip-bus cycle, fetches
 included, for the whole of the blit's active window) predicts zero
 counter writes there, since the CPU cannot even fetch its own next loop
-instruction while the window holds. Measured, both builds, both cores:
-0 counter writes strictly inside the window (fx68k window
-2276217..2284329; both builds still reach `DONE` with `RESULTS` 50 and
-2000); the in-window period is therefore 0 `clk_sys` (0 gaps, undefined),
-against an after-window period of 104 `clk_sys` (1998 gaps) -- unequal.
-The unchanged comparator goes red through both of its own clauses.
+instruction while the window holds. Measured: on fx68k, both builds, 0
+counter writes strictly inside the window (window 2276217..2284329), so
+there are no in-window gaps to compare, against an after-window period of
+104 `clk_sys` (1998 gaps) -- red through both the existence and the
+every-gap clause. On TG68K, both builds, 1 counter write strictly inside
+the window (window 2276185..2284297): the existence clause alone stays
+green, but one write forms no in-window gap either, against an
+after-window period of 80 `clk_sys` (1997 gaps) -- there the every-gap
+clause alone is what goes red.
 
 ### FASTRUN-LOCKOUT [p186,p197] The blitter locked out of Chip memory by display fetches
 
@@ -918,10 +922,10 @@ windows claim every one of their 160 slots, A10PRE); arms a nasty blit
 `CDANG`; then spin-reads `VHPOSR` from chip RAM until the beam's own line
 is confirmed inside the display's active vertical area. The Copper's own
 list is then built: a `WAIT` whose own `VP` target is 20 lines past the
-line the spin just confirmed (so the `{VP,HP}` comparison -- compared as
-one concatenated value, `agnus_copper.v` -- cannot already be true the
-moment the Copper first checks it, which a same-line, vertically-masked
-`WAIT` measurably can be) and whose `HP` target is $14; four `MOVE`s to
+line the spin just confirmed (so the `{VP,HP}` comparison -- taken as one
+concatenated value, p.23 -- cannot already be true the moment the Copper
+first checks it) and whose `HP` target is $28, in the page's own notation
+(p.22/p.23; the same color-clock unit as `DDFSTRT`, p.60); four `MOVE`s to
 `COLOR00` (a harmless, otherwise-unused write); then the real
 `MOVE #$7D01,BLTSIZE`; then `WAIT`-forever. `COPJMP1` is strobed from chip
 RAM with `COPEN` still clear (p.30, as FASTRUN); `COPEN`, set from fast
@@ -930,22 +934,19 @@ counting loop is already running, and has been for however long the
 Copper's own 20-line-ahead `WAIT` takes to release, before the Copper (and
 through it, the blit) is allowed to move at all.
 
-`agnus_bitplanedma.v` compares its own internal `hpos[8:1]` against
-`DDFSTRT`, while `agnus_copper.v`'s own `WAIT` compares `hpos[8:2]` -- one
-bit position coarser -- against the `WAIT`'s own `HP` field; `hpos`
-advances by 4 every color clock, so a `WAIT` `HP` value of N reaches the
-same beam position as a `DDFSTRT` value of 2*N. `DDFSTRT`=$3C (60)
-therefore falls at `WAIT`-HP=30; $14 (20), with both fields fully
-compared, is measured to release 18 color clocks before the fetch window
-that follows -- wider than the blitter's own natural first-access latency
-(measured ~6 color clocks after the Copper's own data-word fetch, on an
-otherwise identical but unobstructed capture). The four `MOVE`s to
-`COLOR00` close most of that margin: each is measured at 4 color clocks
-(not the 2 an uncontended single access would suggest -- the Copper's own
-access here is itself throttled to every other slot, the same halving
-SLOTSPAN measures for the CPU), so four of them consume 16 color clocks,
-leaving 2 -- inside the blitter's own natural latency, so its first
-attempt lands after the window has already claimed the bus.
+`HP`=$28 (40) is 20 color clocks before `DDFSTRT`=$3C (60): measured, the
+Copper's first fetch after the `WAIT` lands exactly 20 slots before the
+fetch window that follows -- wider than the blitter's own natural
+first-access latency (measured ~6 color clocks after the Copper's own
+data-word fetch, on an otherwise identical but unobstructed capture), so a
+blit armed right there would still get its first access before the window
+opens. The four `MOVE`s to `COLOR00` close most of that margin: Figure
+6-9's own note gives each Copper Data Move instruction 4 slots, so four of
+them consume 16 color clocks, leaving 2 -- inside the blitter's own
+natural latency, so its first attempt lands after the window has already
+claimed the bus. The number of fill `MOVE`s (four) was chosen on this RTL
+to land `BLTSIZE` there; FASTRUN-LOCKOUT-PRE, below, is what checks the
+placement.
 
 The Copper's own write to `BLTSIZE` (a custom register) is not itself on
 the physical RAM port, the same as `COPJMP1`; the Copper's own fetch of
@@ -965,45 +966,55 @@ window (the window's own `lo` at or after the data-word fetch, its own
 `hi` at or before the blitter's own first access) -- p.197's own lockout,
 not this package's invention: if it goes red, it stays red.
 
-Observed (claim): the fast-RAM counter's own writes strictly inside that
-interval; whether the capture reaches `DONE` with `RESULTS` equal to its
-own iteration count (8000).
+Observed (claim): the fast-RAM counter's own writes strictly inside the
+display's own fetch window -- not the wider Copper-to-blitter interval:
+p.186's own condition ("locked out ... because of ... display fetches")
+holds only inside that window, not in the slots before or after it;
+whether the capture reaches `DONE` with `RESULTS` equal to its own
+iteration count (8000).
 
 Expected value: precondition holds, and at least one fast-RAM counter
-write falls strictly inside the interval. No count, ratio or bound beyond
-that -- the page states only that the CPU continues to have memory
+write falls strictly inside the fetch window. No count, ratio or bound
+beyond that -- the page states only that the CPU continues to have memory
 cycles, not how many.
 
 Measured, identical on both cores: the Copper's own data-word fetch at
 cycle 2401033; the display's own fetch window 2401049..2402321 (1272
-`clk_sys`, fully inside the interval); the blitter's own first DMA access
-at cycle 2402361 (40 `clk_sys` after the window's own end -- its first
-attempt was denied throughout the window). Fast-RAM counter writes
-strictly inside the interval: 12 on fx68k, 20 on TG68K (both cores'
-own loop periods differ, as elsewhere in this package). Both cores reach
-`DONE` with `RESULTS`=8000.
+`clk_sys`, fully inside the Copper-to-blitter interval); the blitter's own
+first DMA access at cycle 2402361 (40 `clk_sys` after the window's own end
+-- its first attempt was denied throughout the window). Fast-RAM counter
+writes strictly inside the fetch window: 12 on fx68k, 20 on TG68K (both
+cores' own loop periods differ, as elsewhere in this package). Both cores
+reach `DONE` with `RESULTS`=8000.
 
 Mutation (`NMH_MUTATE=FASTRUN-LOCKOUT`): `prog_fastrun_lockout_chipcode.s`
 (`FR_CHIPCODE` set) -- only `FR_CODE` moves to chip RAM ($0C0800; not
 $0C8000, which falls inside `BP_PTR`'s own $0C6000-$0D6000 heuristic range
 and would corrupt this capture's own window detection); `FR_CNT` stays in
-fast RAM. A10 (four high-resolution bitplanes give the CPU no chip-bus
-access at all inside any line's fetch window) predicts zero counter
-writes strictly inside the window itself. Measured, both cores: the
-Copper's own data-word fetch, the fetch window and the blitter's own
-first DMA access all land at the same cycles as the unmutated capture
-(2401033, 2401049..2402321, 2402361) -- FASTRUN-LOCKOUT-PRE still holds --
-but the graded interval starts 16 `clk_sys` before the window itself (the
-margin the WAIT's own timing-fill MOVEs leave, see above), and the
-relocated chip-RAM loop keeps fetching normally, uncontended, for that
-whole 16 `clk_sys` slice: one last counter write lands there just before
-the window closes it out (1 write on fx68k, 1 on TG68K -- see the
-mutation record below), so **this mutation does not go red**: it shows
-the same 16-`clk_sys` pre-window slice the main capture's own margin
-already relies on, not a live but different population, and not a
-falsification of A10 (which bounds the window itself, not the few
-`clk_sys` immediately before it). Recorded as such; see the test file's
-own header comment.
+fast RAM. The window is entirely DMA (A10PRE: p.197's own "40 * 4 = 160
+time slots", none left over), so no CPU access is possible anywhere
+strictly inside it: zero counter writes predicted there. Measured, both
+cores: the Copper's own data-word fetch, the fetch window and the
+blitter's own first DMA access all land at the same cycles as the
+unmutated capture (2401033, 2401049..2402321, 2402361) -- FASTRUN-LOCKOUT-
+PRE still holds -- and the relocated chip-RAM loop has 0 counter writes
+strictly inside the window, on both cores. The claim goes red on both
+cores, through its own existence clause.
+
+Mutation (precondition, `NMH_MUTATE=FASTRUN-LOCKOUT-PRE`):
+`prog_fastrun_lockout_2plane.s` (`FR_2PLANE` set) -- the same lockout
+program with two high-resolution bitplanes (`BPLCON0`=$A000) instead of
+four, the same `DDFSTRT`/`DDFSTOP`. Figure 6-9's own double dagger ("These
+operations only take slots if the associated operation is being
+performed") together with p.197's own full lockout, stated only for four
+hi-res planes ("40 * 4 = 160 time slots"), predict that halving the plane
+count frees half the window's slots, into one of which the blitter's own
+first access can fall. Measured, identical on both cores: the Copper's own
+data-word fetch and the fetch window land at the same cycles as the
+unmutated capture (2401033, 2401049..2402321 -- `BPL1`'s own fetch cadence
+is unaffected by the plane count); the blitter's own first DMA access now
+falls at cycle 2401113, inside the window instead of 40 `clk_sys` after
+it. The precondition goes red on both cores.
 
 ## Claims not asserted
 

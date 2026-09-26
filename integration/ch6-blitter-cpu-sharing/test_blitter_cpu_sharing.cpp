@@ -31,8 +31,9 @@
 // MUTATION SLOTSPAN stimulus red baseline capture substituted with the share-mode blit's own active-window CPU accesses (contended, 5 slots apart), via NMH_MUTATE=SLOTSPAN
 // MUTATION OPEN50 stimulus red six-plane side substituted with the four-plane capture (no reduction), via NMH_MUTATE=OPEN50
 // MUTATION ORDER stimulus red the 500-word CPU copy loop substituted with a 50-word copy (shorter, nonzero span, finishes before the blit), via NMH_MUTATE=ORDER
-// MUTATION FASTRUN stimulus red FR_CODE moved to chip RAM ($0C8000, prog_fastrun_chipcode.s/prog_fastrun_long_chipcode.s), FR_CNT still in fast RAM: A4 predicts zero counter writes in the blit's window, since a nasty blit denies the CPU every chip-bus cycle, fetches included, via NMH_MUTATE=FASTRUN
-// MUTATION FASTRUN-LOCKOUT stimulus DOES NOT GO RED FR_CODE moved to chip RAM ($0C0800, prog_fastrun_lockout_chipcode.s), FR_CNT still in fast RAM: A10 predicts zero CPU accesses strictly inside the fetch window itself, and the window measurably still has none -- but the graded interval also covers the 16 clk_sys immediately before the window (the margin FASTRUN-LOCKOUT's own WAIT leaves so its own comparator's interval starts before the window opens), and the relocated chip-RAM loop, uncontended there, lands one write in that slice on both cores: 1 of 1, not the 0 A10 predicts for the window itself. See SPECIFICATION.md's own FASTRUN-LOCKOUT mutation paragraph for the measurement and why the comparator does not isolate the window alone. Measured via NMH_MUTATE=FASTRUN-LOCKOUT.
+// MUTATION FASTRUN stimulus red FR_CODE moved to chip RAM ($0C8000, prog_fastrun_chipcode.s/prog_fastrun_long_chipcode.s), FR_CNT still in fast RAM: A4 predicts zero counter writes in the blit's window, since a nasty blit denies the CPU every chip-bus cycle, fetches included; measured 0 in-window writes on fx68k (red through both the existence and the every-gap-equals-period clause) and 1 on TG68K (existence clause stays green; red only through the every-gap-equals-period clause, since a single in-window write forms no in-window gap), via NMH_MUTATE=FASTRUN
+// MUTATION FASTRUN-LOCKOUT stimulus red FR_CODE moved to chip RAM ($0C0800, prog_fastrun_lockout_chipcode.s), FR_CNT still in fast RAM: the fetch window is entirely DMA (A10PRE: p.197's own "40 * 4 = 160 time slots", none left over), so no CPU access is possible anywhere strictly inside it; measured 0 counter writes strictly inside the window on both cores, via NMH_MUTATE=FASTRUN-LOCKOUT
+// MUTATION FASTRUN-LOCKOUT-PRE stimulus red prog_fastrun_lockout_2plane.s (FR_2PLANE set): two hi-res bitplanes (BPLCON0 $A000, same DDFSTRT/DDFSTOP) leave half the fetch window's 80 slots free (Figure 6-9's own double dagger); the blitter's own first access lands inside the window instead of after it, so the precondition itself goes red, via NMH_MUTATE=FASTRUN-LOCKOUT-PRE
 //
 // A4's precondition (the nasty-mode window's own length) is not exercised
 // by a dedicated mutation: every capture in this package that shrinks the
@@ -1142,8 +1143,12 @@ int main(int argc, char** argv) {
     // the blit that begins slightly afterward (A4 shows 0 CPU chip-bus
     // accesses for the whole of a nasty blit's window otherwise). p.30's
     // own start sequence (COPJMP1 strobed in chip RAM while COPEN is
-    // clear, then COPEN set as the one start event, from fast RAM) makes
-    // the Copper fetch its list exactly once. The relocated loop returns
+    // clear, then COPEN set as the one start event, from fast RAM) starts
+    // the Copper running its list. p.25 has the list read again at every
+    // following vertical blank; each later pass restarts it from COP1LC
+    // and writes BLTSIZE again, starting a further nasty blit outside this
+    // assertion's own graded windows, before the 2000-iteration loop's own
+    // budget ends. The relocated loop returns
     // through an indirect JMP (a3), the return address loaded into a3
     // before the jump into fast RAM: a direct JMP to the instruction
     // immediately following it is what vasm deletes at assembly time (the
@@ -1157,11 +1162,12 @@ int main(int argc, char** argv) {
     // time (see its own comment above).
     //
     // "Completely uninhibited" is graded as an equality, not an existence
-    // count: the counter-write period strictly inside the blit's own
-    // window must equal the period after it -- the same comparison A6
-    // makes between its own in-window and no-DMA periods. A threshold on
-    // the count (however small) would not be from the page; an equality
-    // between two measured periods is.
+    // count: every counter-write gap strictly inside the blit's own
+    // window must equal the modal period after it -- not just the two
+    // periods' own modes, which would also pass a loop slowed in only
+    // some of its in-window iterations. A threshold on the count (however
+    // small) would not be from the page; every gap matching the measured
+    // after-window period is.
     {
         bool mutated = (mv == "FASTRUN");
         nmh::Config cfg_fr;
@@ -1217,8 +1223,9 @@ int main(int argc, char** argv) {
         // The period comparison itself: from the long (2000-iteration)
         // capture, which outlasts the blit on both sides, split every
         // consecutive-write gap into "strictly inside the window" and
-        // "at or after the window's own end", each taken as its own modal
-        // (most frequent) value -- the same split A6 makes.
+        // "at or after the window's own end" -- the same split A6 makes.
+        // "Completely" is graded by requiring every in-window gap, not
+        // just their mode, to equal the after-window period.
         auto fr_all = fr_write_cycles(cap_long);
         std::vector<uint64_t> in_gaps, after_gaps;
         for (size_t i = 1; i < fr_all.size(); ++i) {
@@ -1228,6 +1235,9 @@ int main(int argc, char** argv) {
         }
         uint64_t in_period = mode_of(in_gaps);
         uint64_t after_period = mode_of(after_gaps);
+        bool every_in_gap_matches_period = !in_gaps.empty() && !after_gaps.empty() &&
+            std::all_of(in_gaps.begin(), in_gaps.end(),
+                        [after_period](uint64_t g) { return g == after_period; });
 
         checks.note("FASTRUN: 50-iteration -- done=" + std::string(cap_short.done.has_value() ? "y" : "n") +
                     " RESULTS=" + (cap_short.peeks.size() && cap_short.peeks[0] ? std::to_string(*cap_short.peeks[0]) : std::string("?")) +
@@ -1237,23 +1247,25 @@ int main(int argc, char** argv) {
                     " RESULTS=" + (cap_long.peeks.size() && cap_long.peeks[0] ? std::to_string(*cap_long.peeks[0]) : std::string("?")) +
                     " blit window=" + std::to_string(lo_l) + ".." + std::to_string(hi_l) +
                     " FR_CNT fast-RAM writes strictly inside=" + std::to_string(inwin_long) +
-                    "; in-window period=" + std::to_string(in_period) + " clk_sys (" + std::to_string(in_gaps.size()) +
+                    "; in-window period(mode)=" + std::to_string(in_period) + " clk_sys (" + std::to_string(in_gaps.size()) +
                     " gaps), after-window period=" + std::to_string(after_period) + " clk_sys (" +
-                    std::to_string(after_gaps.size()) + " gaps)");
+                    std::to_string(after_gaps.size()) + " gaps), every in-window gap equals after-window period=" +
+                    (every_in_gap_matches_period ? std::string("y") : std::string("n")));
 
         checks.expect(
             cap_short.loaded && cap_short.done.has_value() && results_ok_short && inwin_short > 0 &&
             cap_long.loaded && cap_long.done.has_value() && results_ok_long &&
-            !in_gaps.empty() && !after_gaps.empty() && in_period == after_period,
+            every_in_gap_matches_period,
             "FASTRUN [p186] ch6-done.c9: \"may be running completely uninhibited out of Fast "
             "memory or its internal cache and continue to have memory cycles\" -- a CPU loop "
             "relocated into Zorro II fast RAM writes its own counter strictly inside a nasty "
             "blit's own active window (" + std::to_string(inwin_short) + " such write(s)) and runs "
             "to completion under both a 50- and a 2000-iteration budget (RESULTS 50 and 2000 "
-            "respectively, both observed at DONE), and its own counter-write period strictly "
-            "inside the window equals the period after it (" + std::to_string(in_period) + " = " +
-            std::to_string(after_period) + " clk_sys) -- the same equality A6 grades between its "
-            "own in-window and no-DMA periods, not a count or bound the page lacks");
+            "respectively, both observed at DONE), and every counter-write gap strictly inside "
+            "the window equals the period measured after it (" + std::to_string(after_period) +
+            " clk_sys, " + std::to_string(in_gaps.size()) + " in-window gap(s) checked) -- "
+            "\"completely\" graded as every gap, not a mode-to-mode comparison, not a count or "
+            "bound the page lacks");
     }
 
     // ---- FASTRUN-LOCKOUT [p186,p197] 6-blitter-done-flag.c8: "If a blit
@@ -1273,12 +1285,17 @@ int main(int argc, char** argv) {
     // DMA access until the window ends. The counting loop runs in fast
     // RAM throughout, already running (COPEN, the one start event, is set
     // from fast RAM, as in FASTRUN above) before the Copper -- and
-    // through it, the blit -- is allowed to move at all.
+    // through it, the blit -- is allowed to move at all. prog_fastrun_
+    // lockout_2plane.s (FR_2PLANE set) instead frees half the window's
+    // slots by reducing the display to two hi-res bitplanes: the
+    // blitter's own first access then falls inside the window instead of
+    // after it, which is this package's own precondition mutation
+    // (NMH_MUTATE=FASTRUN-LOCKOUT-PRE, below).
     //
     // The Copper's own write to BLTSIZE is a custom-register write, not
     // on the physical RAM port (like COPJMP1, see prog_fastrun.s's own
     // PRE_JUMP comment); the Copper's own fetch of the MOVE's data word
-    // (COP_LIST+6 = $0C1006, a plain chip-RAM read) is, and bounds the
+    // (COP_LIST+22 = $0C1016, a plain chip-RAM read) is, and bounds the
     // BLTSIZE write from below by at most the Copper's own single-slot
     // MOVE-execution latency. The blitter's own first DMA access (its
     // first A-read, BLIT_SRC's range, or its first D-write if that
@@ -1290,13 +1307,19 @@ int main(int argc, char** argv) {
     // blitter's own first DMA access -- must fully contain one of the
     // display's own fetch windows (A10's own per-line construction),
     // which also means no blitter access before that window's own end.
+    // p.186's own condition ("locked out ... because of ... display
+    // fetches") holds only inside that fetch window, not in the slots
+    // before or after it: the claim below is graded strictly inside the
+    // window itself, not over the whole Copper-to-blitter interval.
     {
-        bool mutated = (mv == "FASTRUN-LOCKOUT");
+        bool mutated_chipcode = (mv == "FASTRUN-LOCKOUT");
+        bool mutated_2plane = (mv == "FASTRUN-LOCKOUT-PRE");
         nmh::Config cfg_lockout;
         cfg_lockout.fastram_config = 0x01;
-        FastCapture cap = run_capture_fastram(
-            dir + (mutated ? "/prog_fastrun_lockout_chipcode.bin" : "/prog_fastrun_lockout.bin"),
-            kFastrunStepBudget, {kResults}, cfg_lockout);
+        std::string bin_lockout = dir + "/prog_fastrun_lockout.bin";
+        if (mutated_chipcode) bin_lockout = dir + "/prog_fastrun_lockout_chipcode.bin";
+        else if (mutated_2plane) bin_lockout = dir + "/prog_fastrun_lockout_2plane.bin";
+        FastCapture cap = run_capture_fastram(bin_lockout, kFastrunStepBudget, {kResults}, cfg_lockout);
 
         auto cop_fetch = read_cycles_in_range(cap.log, word_addr(kFrCopDataWord), word_addr(kFrCopDataWord) + 1);
         auto blit_reads = read_cycles_in_range(cap.log, word_addr(kFrLockoutSrcLo), word_addr(kFrLockoutSrcHi));
@@ -1312,10 +1335,13 @@ int main(int argc, char** argv) {
         for (auto& fw : wins) if (fw.lo >= cop_bound) { w = &fw; break; }
         bool precondition = !cop_fetch.empty() && !blit_all.empty() && w != nullptr && w->hi <= blit_first;
 
+        // p.186's condition holds only inside the fetch window itself
+        // (w->lo, w->hi), not over the whole Copper-to-blitter interval:
+        // counted strictly inside the window, not (cop_bound, blit_first).
         size_t inwin = 0;
-        if (!cop_fetch.empty() && !blit_all.empty() && blit_first > cop_bound)
+        if (w != nullptr)
             for (const auto& a : cap.fastlog)
-                if (a.is_write && a.word_addr == word_addr(kFrCnt) && a.cycle > cop_bound && a.cycle < blit_first) ++inwin;
+                if (a.is_write && a.word_addr == word_addr(kFrCnt) && a.cycle > w->lo && a.cycle < w->hi) ++inwin;
 
         bool results_ok = cap.peeks.size() && cap.peeks[0] && *cap.peeks[0] == 8000;
 
@@ -1324,7 +1350,7 @@ int main(int argc, char** argv) {
                     "; Copper's own MOVE-data-word fetch at cycle=" + std::to_string(cop_bound) +
                     "; fetch window=" + (w ? std::to_string(w->lo) + ".." + std::to_string(w->hi) : std::string("none found at/after the fetch")) +
                     "; blitter's own first DMA access at cycle=" + std::to_string(blit_first) +
-                    "; FR_CNT fast-RAM writes strictly between=" + std::to_string(inwin));
+                    "; FR_CNT fast-RAM writes strictly inside the fetch window=" + std::to_string(inwin));
 
         checks.expect(precondition,
             "FASTRUN-LOCKOUT-PRE [p197]: the interval from the Copper's own fetch of the MOVE's "
@@ -1338,9 +1364,9 @@ int main(int argc, char** argv) {
             "The processor, on the other hand, may be running completely uninhibited out of Fast "
             "memory or its internal cache, so it will continue to have memory cycles\" -- a CPU "
             "loop relocated into Zorro II fast RAM writes its own counter (" + std::to_string(inwin) +
-            " such write(s)) strictly between the Copper's own MOVE to BLTSIZE and the blitter's "
-            "own first DMA access, an interval that fully contains the display's own fetch window "
-            "(FASTRUN-LOCKOUT-PRE)");
+            " such write(s)) strictly inside the display's own fetch window, an interval the "
+            "precondition (FASTRUN-LOCKOUT-PRE) confirms falls entirely between the Copper's own "
+            "MOVE to BLTSIZE and the blitter's own first DMA access");
     }
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);

@@ -25,41 +25,42 @@
 ; inside that) -- establishing a known line, LINES_AHEAD lines short of
 ; where the Copper's own WAIT (built right after, from that same known
 ; line) is targeted, so the WAIT's own condition cannot already be true
-; the moment the Copper first checks it: agnus_copper.v compares {vpos,hpos} as one
-; concatenated value against the WAIT's own (VP,HP) fields (also
-; concatenated), so a VP target strictly ahead of any VP already reached
-; holds the WAIT until that exact future line, and only then does the HP
-; field's own comparison take over -- releasing precisely at that line's
-; own HP=$14, not at some arbitrary position already passed by the time
-; the Copper was started. (VE=$00 would mask the vertical field, but the
-; unmaskable top bit alone leaves a same-line "already true" case
-; unresolved whenever the Copper happens to start past the HP target on
-; whatever line it is already on -- a real, measured failure mode, not a
-; hypothetical one; a fully compared VP field removes it.)
+; the moment the Copper first checks it. p.23: "the largest number that
+; will ever appear in the comparison is $FFE2", and "as soon as the line
+; number becomes higher than the entered number, the comparison will
+; evaluate to true" -- {VP,HP} is compared as one concatenated value, so a
+; VP target strictly ahead of any VP already reached holds the WAIT until
+; that exact future line, and only then does the HP field's own
+; comparison take over -- releasing precisely at that line's own HP=$28,
+; not at some arbitrary position already passed by the time the Copper
+; was started. (VE=$00 would mask the vertical field, leaving a same-line
+; "already true" case unresolved whenever the Copper happens to start
+; past the HP target on whatever line it is already on; a fully compared
+; VP field removes it.)
 ;
-; The WAIT's own HP target ($14) is not DDFSTRT's own written value taken
-; directly: agnus_bitplanedma.v compares its internal hpos[8:1] against
-; DDFSTRT, while agnus_copper.v's own WAIT compares hpos[8:2] -- one bit
-; position coarser -- against the WAIT's own HP field. hpos itself
-; advances by 4 every color clock (agnus_bitplanedma.v's own comment), so
-; hpos[8:1] advances by 2 and hpos[8:2] by 1 per color clock: a WAIT HP
-; value of N reaches the same beam position as a DDFSTRT value of 2*N.
-; DDFSTRT=$3C (60) therefore falls at WAIT-HP=30 ($1E); $14 (20), fully
-; (VP and HP) compared, is measured to release 18 color clocks before the
-; fetch window that follows -- wider than the blitter's own natural
-; first-access latency (measured ~6 color clocks after the Copper's own
-; data-word fetch, on an otherwise identical but unobstructed capture), so
-; a blit armed right there would still get its first access before the
-; window opens. Four MOVEs to COLOR00 ($180, a harmless, otherwise-unused
-; write) between the WAIT and the real MOVE to BLTSIZE close most of that
-; margin: each is a Copper MOVE fetching two words, measured at 4 color
-; clocks (not the 2 a single uncontended memory cycle would suggest --
-; the Copper's own access here is itself throttled to every other slot,
-; the same halving SLOTSPAN measures for the CPU), so four of them consume
-; 16 color clocks, leaving 2 -- inside the blitter's own natural latency,
-; so its first attempt lands after the window has already claimed the
-; bus (measured: the blitter's first successful access follows the
-; window's own end, not before its start).
+; The WAIT's own HP target is written in the page's own notation, not an
+; RTL-internal one. p.22: IR1 "Bits 7 - 1 Horizontal beam position (called
+; HP)". p.23: "The horizontal beam position has a value of $0 to $E2 ...
+; The least significant bit is not used in the comparison". p.60: "the
+; hardware resolution of display window start and stop is twice the
+; hardware resolution of data fetch" -- DDFSTRT and the WAIT's own HP
+; field are the same color-clock unit (Figure 6-9 draws data-fetch start
+; on that same axis). HP=$28 (40) is therefore 20 color clocks before
+; DDFSTRT=$3C (60): measured, the Copper's first fetch after the WAIT
+; lands exactly 20 slots before the fetch window that follows -- wider
+; than the blitter's own natural first-access latency (measured ~6 color
+; clocks after the Copper's own data-word fetch, on an otherwise identical
+; but unobstructed capture), so a blit armed right there would still get
+; its first access before the window opens. Four MOVEs to COLOR00 ($180,
+; a harmless, otherwise-unused write) between the WAIT and the real MOVE
+; to BLTSIZE close most of that margin: Figure 6-9's own note gives each
+; Copper Data Move instruction 4 slots, so four of them consume 16 color
+; clocks, leaving 2 -- inside the blitter's own natural latency, so its
+; first attempt lands after the window has already claimed the bus
+; (measured: the blitter's first successful access follows the window's
+; own end, not before its start). The number of fill MOVEs (four) was
+; chosen on this RTL to land BLTSIZE there; FASTRUN-LOCKOUT-PRE, below, is
+; what checks the placement, not this comment.
 ;
 ; The Copper's own write to BLTSIZE (a custom register) is not itself on
 ; the physical RAM port, the same as COPJMP1 (see PRE_JUMP's own comment
@@ -83,12 +84,23 @@
 ; happen, not have already finished and returned.
 ;
 ; This file alone (no symbol set) runs the loop in fast RAM ($200000,
-; FR_CODE below). prog_fastrun_lockout_chipcode.s (FR_CHIPCODE set) moves
-; only FR_CODE to chip RAM ($0C0800; FR_CNT stays in fast RAM) -- this
-; program's own MUTATION: A10's own zero-CPU-access-in-window finding
-; then predicts zero counter writes in the interval, since the CPU cannot
-; even fetch its own next loop instruction while the window holds every
-; slot.
+; FR_CODE below), with four high-resolution bitplanes (BPLCON0=$C000).
+; prog_fastrun_lockout_chipcode.s (FR_CHIPCODE set) moves only FR_CODE to
+; chip RAM ($0C0800; FR_CNT stays in fast RAM) -- this program's own
+; MUTATION: the window is entirely DMA (A10PRE: p.197's own "40 * 4 = 160
+; time slots", none left over), so no CPU access is possible anywhere
+; strictly inside it, and the counter-write count graded there (see
+; test_blitter_cpu_sharing.cpp) predicts zero.
+;
+; prog_fastrun_lockout_2plane.s (FR_2PLANE set) instead keeps the loop in
+; fast RAM but reduces the display to two hi-res bitplanes (BPLCON0=$A000,
+; same DDFSTRT/DDFSTOP): the window then holds 80 bitplane fetches instead
+; of 160 (Figure 6-9's own double dagger, "These operations only take
+; slots if the associated operation is being performed"; p.197 gives the
+; full lockout only for four hi-res planes, "40 * 4 = 160 time slots").
+; Freeing half the window's slots lets the blitter's own first access fall
+; inside it instead of after it -- this program's own precondition
+; MUTATION (FASTRUN-LOCKOUT-PRE, below): the precondition goes red.
 
         include "nanomig.i"
 
@@ -131,12 +143,13 @@ BPL1PTH         equ     $0E0
 BPL1PTL         equ     $0E2
 BP_PTR          equ     $0C6000         ; prog_bitplane.s's own convention: BPL2-4 pointers left unset
 
-COP_LIST        equ     $0C1000         ; WAIT (VP,HP=$14 both compared), MOVE BLTSIZE, WAIT-forever
+COP_LIST        equ     $0C1000         ; WAIT (VP,HP=$28 both compared), MOVE BLTSIZE, WAIT-forever
 PRE_JUMP        equ     $0C0006         ; last chip-RAM write before the jump (see prog_fastrun.s)
 
-WAIT_HP         equ     $14             ; see the header comment
-WAIT_HP_FIELD   equ     (WAIT_HP*2)+1   ; HP<<1 | bit0=1 (WAIT marker), precomputed to keep the
-                                        ; operand below a plain immediate
+WAIT_HP         equ     $28             ; page's own notation: the same color-clock unit as DDFSTRT
+                                        ; (p.60); see the header comment
+WAIT_HP_FIELD   equ     (WAIT_HP|1)     ; HP with bit0 forced to 1 (the WAIT marker, IR1 bit 0),
+                                        ; precomputed to keep the operand below a plain immediate
 LINES_AHEAD     equ     20              ; the WAIT's own VP target: this many lines past the one the
                                         ; spin loop confirms, so the WAIT cannot already be satisfied
 
@@ -159,10 +172,12 @@ start:
 
         lea     CUSTOM,a0
 
-        ; Four high-resolution bitplanes (prog_bitplane_hires.s's own
-        ; values, Chapter 3's standard display-window/fetch-window
-        ; constants): every one of the resulting 160-slot-per-line fetch
-        ; windows is full DMA, none left over (A10PRE). BPL2-4's own
+        ; High-resolution bitplanes (prog_bitplane_hires.s's own values,
+        ; Chapter 3's standard display-window/fetch-window constants): four
+        ; of them (BPLCON0=$C000, below) make every one of the resulting
+        ; 160-slot-per-line fetch windows full DMA, none left over
+        ; (A10PRE); FR_2PLANE's own two (BPLCON0=$A000) leave half of each
+        ; window's 80 slots free (see the header comment). BPL2-4's own
         ; pointers are left unset, as in prog_bitplane.s.
         move.w  #$2C81,DIWSTRT(a0)
         move.w  #$2CC1,DIWSTOP(a0)
@@ -171,7 +186,12 @@ start:
         move.l  #BP_PTR,BPL1PTH(a0)
         move.w  #$003C,DDFSTRT(a0)
         move.w  #$00D4,DDFSTOP(a0)
+        ifd     FR_2PLANE
+        move.w  #$A000,BPLCON0(a0)     ; HIRES, 2 bitplanes -- this program's own
+                                        ; precondition MUTATION (see header)
+        else
         move.w  #$C000,BPLCON0(a0)     ; HIRES, 4 bitplanes
+        endif
         move.w  #$8300,DMACON(a0)      ; SET DMAEN,BPLEN -- display starts fetching now
 
         ; The blit itself: BLTPRI set (nasty), the same 500-word A-to-D
@@ -214,10 +234,10 @@ start:
 
         ; The Copper list (see the header comment): a WAIT whose own VP
         ; target is LINES_AHEAD past the line the spin above just
-        ; confirmed (so the {VP,HP} comparison cannot already be true --
-        ; agnus_copper.v compares the two fields concatenated, so this
-        ; also delays the HP half until that specific future line),
-        ; HP=WAIT_HP, both fields fully compared (IR2=$FFFE); then
+        ; confirmed (so the {VP,HP} comparison, taken as one concatenated
+        ; value (p.23), cannot already be true the moment the Copper first
+        ; checks it -- this also delays the HP half until that specific
+        ; future line), HP=WAIT_HP, both fields fully compared (IR2=$FFFE); then
         ; MOVE #$7D01,BLTSIZE (height=500,width=1); then WAIT-forever.
         add.w   #LINES_AHEAD,d1
         lsl.w   #8,d1
