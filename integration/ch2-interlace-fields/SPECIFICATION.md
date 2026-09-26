@@ -42,7 +42,10 @@ Every other claim is used. The mapping is:
 
 Enhanced Chip Set (the default), 2 MB Chip memory, PAL unless a program says
 NTSC. No page distinguishes OCS from ECS for these claims. Each check is
-graded once per CPU core, and no expected value depends on the core.
+graded once per CPU core, and no expected value depends on the core. Both
+programs use only 68000 instructions and run each core in its default 68000
+mode. The level-3 autovector is used at $6C, which assumes the vector base is
+at its reset value of 0.
 `BEAMCON0` and `DIWHIGH` are never written. p305 says of `BEAMCON0` "Do not
 write to this register", and p306 says that if `DIWHIGH` "is not written, the
 old scheme for DIWSTRT and DIWSTOP described above holds".
