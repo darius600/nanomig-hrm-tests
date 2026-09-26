@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a graded red, contested — the implementations split |
+| **Evidence** | a test fails against the page; the implementations split |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus.v`, `agnus_bitplanedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L125) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L123) |
 | **Report to** | **NanoMig and MiSTer-devel/Minimig-AGA_MiSTer.** TC64 already blocks sprite DMA for the whole bitplane fetch, so a fix exists to port — see *Where a fix already exists*. There is no automatic merge in either direction |

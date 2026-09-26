@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a graded red |
+| **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L89-L90) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L89-L90) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's figure is upheld — see *Suggested change* |

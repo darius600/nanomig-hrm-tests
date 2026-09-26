@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a source observation, not test-backed |
+| **Evidence** | seen in the RTL source; no test yet |
 | **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. |
 | **Module** | — |
 | **Test** | [`hrm/ch3-register-map-agnus`](../../hrm/ch3-register-map-agnus) — recorded as a `note()`, not an assertion |

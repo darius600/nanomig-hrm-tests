@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
-| **Evidence** | a graded green with an inverse control |
+| **Evidence** | a test passes; the page's other reading fails |
 | **What is asked of a reader** | Nothing in the RTL. NanoMig already follows the address the shipping header confirms. What is asked is whether this document is fit to be cited as an oracle for CLXCON2 at all, and if so which of its two statements a claim may rest on. |
 | **Module** | `src/minimig-aga/denise_collision.v:20` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_collision.v#L20) at the pinned revision |
 | **Report to** | **nowhere in code.** The defect is in a 1991 Commodore document, and the company is gone. It is filed so that no AA claim cites the wrong half of it |

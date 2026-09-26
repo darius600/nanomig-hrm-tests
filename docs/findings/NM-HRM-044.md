@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a source observation, not test-backed |
+| **Evidence** | seen in the RTL source; no test yet |
 | **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. One assertion does carry it as red; *Why the status is not red* says why that is not a conformance failure. |
 | **Module** | — · the RTL is described below because it is evidence, not because it is the subject |
 | **Report to** | **nobody.** There is no repository that can fix a disagreement between two printed pages |

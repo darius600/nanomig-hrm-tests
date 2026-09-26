@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the classification |
-| **Evidence** | a graded red |
+| **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change. What is contested is how the claim was classified. It is filed against neither the RTL nor the page. |
 | **Module** | `sysctrl.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/sysctrl.v#L228-L246) |
 | **Report to** | nobody. **This is a finding about this suite**, and the decision it asks for is O72's |

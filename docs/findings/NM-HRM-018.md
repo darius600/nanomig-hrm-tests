@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
-| **Evidence** | a source observation, not test-backed |
+| **Evidence** | seen in the RTL source; no test yet |
 | **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. Withdrawn as a conformance finding; the source observation remains. |
 | **Module** | `denise.v` |
 | **Test** | [`hrm/ch3-bplcon0-display-modes`](../../hrm/ch3-bplcon0-display-modes) — 225/2 became 225/0 |

@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a graded red |
+| **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `hid.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/hid.v#L100-L104) · no counterpart upstream |
 | **Report to** | **NanoMig.** There is no ancestor line to file this against, and the finding does not generalise to the Minimig family |

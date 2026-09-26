@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
-| **Evidence** | a graded red |
+| **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. Printed p. 304 lists PAL at 227.5 colour clocks per line; printed p. 23 says every PAL line is 227 long. NanoMig makes every PAL line 227, and so do all four implementations. The entry exists so the next reader does not take the red for an implementation fault. |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86) |
 | **Report to** | **nobody, as an RTL defect.** The question is p. 304's PAL row; the RTL's PAL line is the one p. 23 prints |

@@ -16,7 +16,7 @@ before any prose is read:
 |---|---|
 | **Lifecycle** | `open` or `withdrawn` |
 | **Filed against** | `the RTL`, `the printed page`, `the classification`, or `—` when withdrawn |
-| **Evidence** | a graded red (plain, contested or inverted), a graded green with an inverse control, a source observation, or none |
+| **Evidence** | what holds the finding up, in plain words: *a test fails against the page* (with *the implementations split* when the other implementations disagree among themselves, or *because NanoMig lacks a documented bug* when the page describes a defect of the original chips); *a test passes; the page's other reading fails* (the page says two things, and a control shows the reading NanoMig does not follow fails); *seen in the RTL source; no test yet*; or *none* |
 | **What is asked of a reader** | one sentence. If it begins *No RTL change* or *Nothing*, the rest of the page is context |
 | **Module** | the RTL under discussion, permalinked at the pinned revision |
 | **Test** | the package that measures it, or `none yet` |
@@ -39,7 +39,7 @@ A header table that is shorter than the one on the page before it is therefore
 not an incomplete page. Counted across all 73.
 
 **A title that ends in [RTL review]** marks a page whose header says three
-things: `open`, filed against `the RTL`, and a graded red. That page asks an
+things: `open`, filed against `the RTL`, and a test that fails against the page. That page asks an
 Amiga specialist to decide whether the RTL should change;
 [`../rtl-review.md`](../rtl-review.md) lists every such page by the module it
 is about. The mark is derived from the header, never set by hand, so it cannot

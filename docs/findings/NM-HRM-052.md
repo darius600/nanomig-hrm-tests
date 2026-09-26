@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a source observation, not test-backed |
+| **Evidence** | seen in the RTL source; no test yet |
 | **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. |
 | **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/amiga_keymap.v#L135-L139) |
 | **Report to** | **nobody, yet.** Two printed pages contradict each other; which is right is an Amiga-history question, not a conformance question |

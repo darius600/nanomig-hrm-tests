@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
-| **Evidence** | a graded red |
+| **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. The manual puts all sixteen sprite control-word fetches inside horizontal blanking; NanoMig ends its blanking before the last three, and no independent implementation keeps all sixteen inside its own blanking either. The entry exists so the next reader does not take the red for an implementation fault. |
 | **Module** | `agnus_beamcounter.v`, `agnus_spritedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L78-L81) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L78-L81) |
 | **Report to** | **nobody, as an RTL defect.** Both constants and the sprite window are inherited unchanged from MiSTer, and TC64 drives its displayed blank from the same positions. The question is whether printed pp. 23 and 303 describe where real Agnus blanks |
