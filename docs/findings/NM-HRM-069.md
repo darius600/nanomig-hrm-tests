@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted. NanoMig has the acknowledge and the counter from there and TC64 carries the same two, so there is no fix to port; no implementation read here holds the 68000 to one parity either — see *What the others say* |
 | **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing) — two assertions, run on both CPU cores: `A8`, claims `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30` (pp. 194, 196), red on fx68k; `PARITY`, claims `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60` (p. 196), red on fx68k and on TG68K |
 | **Chapter** | 6 — Blitter, printed pp. 194–198; 2 — Coprocessor, printed p. 20; Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red on fx68k (`A8`, `PARITY`; 21 passed, 2 failed), 1 red on TG68K (`PARITY`, through its share-mode half alone; 21 passed, 1 failed). In the same run `PARITY-REF`, green on both cores, anchors the slot numbering to Figure 6-9, and `SYSDMA-C29`, green on fx68k, shows the step that takes an odd slot without DMA waiting for the next even one where bitplane DMA holds the odd slots |
+| **Assertions** | 2 red on fx68k (`A8`, `PARITY`; 24 passed, 2 failed), 1 red on TG68K (`PARITY`, through its share-mode half alone; 24 passed, 1 failed). In the same run `PARITY-REF`, green on both cores, anchors the slot numbering to Figure 6-9, and `SYSDMA-C29`, green on fx68k, shows the step that takes an odd slot without DMA waiting for the next even one where bitplane DMA holds the odd slots |
 | **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, and none of them consults the colour clock's parity; WinUAE, vAmiga and Denise charge BRA's two internal clocks as one colour clock, as fx68k does. All four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity, and Copperline's own test grants the CPU colour clock $27 there |
 
 ---
@@ -266,7 +266,7 @@ Figure 6-9 calls odd — so the CPU would be held to the colour clocks whose
 - **The comparators read green on a live input.** The package's mutation
   records feed the unchanged `A8` and `PARITY` comparators the CPU accesses
   inside the four-plane lores fetch windows, where bitplane DMA holds the odd
-  slots: 0 odd of 50109 pairs and 0 of 50946 accesses on fx68k, 0 of 60467
+  slots: 0 odd of 50178 pairs and 0 of 50946 accesses on fx68k, 0 of 60672
   pairs and 0 of 61440 accesses on TG68K.
 - **The same core waits where DMA makes it.** fx68k's 3-slot step becomes a
   4-slot step inside the lores window in 9984 of 9984 cases (`SYSDMA-C29`),
