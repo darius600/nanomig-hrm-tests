@@ -1,6 +1,6 @@
 # Findings
 
-**46 of the 68 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**47 of the 69 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each opens
 > with the same three parts, in this order: what the HRM says, what NanoMig
@@ -132,7 +132,7 @@ never disagree. Eight values occur:
 
 ### If you have one evening
 
-**If you have one evening: 46 of these 68 ask you to decide something.** The
+**If you have one evening: 47 of these 69 ask you to decide something.** The
 rest are withdrawn, answered, or observations kept for context. The table below
 is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
@@ -213,6 +213,7 @@ it for what an unresolvable case looks like, not for something to do.
 | [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | open · RTL · **red**, contested | `hrm/ch7-dmacon-register-bits` · the three one-bitplane assertions `DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES`, `DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE`, `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE` | **3–1 for p. 82**: WinUAE, vAmiga and Denise block sprite DMA for the whole bitplane fetch at any plane count; Copperline keeps sprite 7 at $0030 at any plane count. NanoMig leaves sprite 7 all 172 fetches with one lores plane, 90 with two or three, 8 with four or more — the counts Figure 6-9 predicts when its slots are read by plane; TC64, a descendant, already blocks for the whole fetch |
 | [NM-HRM-067](findings/NM-HRM-067.md) | sprites 6 and 7 fetch their control words after horizontal blanking ends, and no implementation keeps them inside it | open · page · **red** | `hrm/ch4-sprite-dma-control` · `SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK` | **two of four end blanking before the last sprite slots, none keeps all sixteen inside it**: vAmiga ends it at $23 and rejects the $0F and $35 bounds p. 23 prints, Denise ends it before the same three fetches NanoMig loses; WinUAE blanks on Denise's own counter and Copperline has no hardwired end, so neither can be placed on the slot grid |
 | [NM-HRM-068](findings/NM-HRM-068.md) | p. 304 gives a PAL line 227.5 colour clocks, p. 23 gives it 227, and every implementation makes it 227 | open · page · **red** | `hrm/ch3-beam-counters-and-blanking` · `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)` and its bundled form | **unanimous with NanoMig and with p. 23**: WinUAE, vAmiga, Denise and Copperline all end every PAL line at 227 colour clocks and alternate line lengths only in NTSC |
+| [NM-HRM-069](findings/NM-HRM-069.md) | the 68000 is given chip-bus slots of both parities, where p. 196 allows it only the even ones | open · RTL · **red** | `integration/ch6-blitter-cpu-sharing` · `A8` on fx68k; `PARITY` on fx68k (no DMA and beside a share-mode blit) and on TG68K (beside the blit only) | **unanimous with NanoMig, against p. 196**: WinUAE, vAmiga, Denise and Copperline all let a CPU access take any colour clock DMA leaves free, and hand the bus back from a non-nasty blitter after a count of missed cycles, not at a parity; three of them spend BRA's internal operation as one colour clock, as fx68k does |
 
 ### Withdrawn — kept on purpose
 
@@ -247,7 +248,10 @@ measured in chapter 7's DMACON package because only the Agnus top level
 compiles the bitplane and the sprite engine together. Appendix C contributes
 NM-HRM-067 and NM-HRM-068, both filed against the printed page: the first
 measured in chapter 4's sprite DMA package, the second beside the NTSC half of
-the same p. 304 sentence, which is NM-HRM-010's.
+the same p. 304 sentence, which is NM-HRM-010's. Chapter 6 contributes
+NM-HRM-069, the first finding measured by an integration package — the whole
+design at `nanomig.v`'s own ports, run once with each CPU core — and red on
+both cores.
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
 keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to

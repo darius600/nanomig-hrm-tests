@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**48 findings ask for a review, in 25 modules.** They are listed by the
+**49 findings ask for a review, in 26 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -29,11 +29,12 @@ The marks and this list are derived from each page's header table by
 `hrm-testpipeline` repository, and are rewritten whenever a header changes.
 Module links point at the NanoMig revision the pages cite, `4495f86`.
 
-## [`src/minimig-aga/agnus.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v) — 1
+## [`src/minimig-aga/agnus.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v) — 2
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | a test fails against the page; the implementations split |
+| [NM-HRM-069](findings/NM-HRM-069.md) | the 68000 is given chip-bus slots of both parities, where p. 196 allows it only the even ones | a test fails against the page |
 
 ## [`src/minimig-aga/agnus_audiodma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v) — 1
 
@@ -153,6 +154,12 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-035](findings/NM-HRM-035.md) | any write to CIA-A clears the kickstart overlay, not only a write to the OVL bit | a test fails against the page |
+
+## [`src/minimig-aga/minimig_m68k_bridge.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v) — 1
+
+| finding | subject | evidence |
+|---|---|---|
+| [NM-HRM-069](findings/NM-HRM-069.md) | the 68000 is given chip-bus slots of both parities, where p. 196 allows it only the even ones | a test fails against the page |
 
 ## [`src/minimig-aga/paula.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v) — 2
 
