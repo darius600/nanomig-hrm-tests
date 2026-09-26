@@ -842,3 +842,46 @@ counted as in P3, as a calibration.
   read occurs.
 - **Byte order of a long store** is not on these pages. P2 grades the halves
   as an unordered pair.
+
+---
+
+## 10. Build
+
+- **Addresses.** `PROGRAM_ORG` ($080400) is the harness's own fixed code
+  entry; every program's first instruction clears the boot overlay
+  (`CIAAPRA`, $BFE001, any write) so that the identity-mapped range
+  extends down to $000000, making 2.2's own literal addresses ($3FF0,
+  $4000-$4544, $8000 taken as "wherever code starts") real, writable chip
+  RAM, including P1's abs.W cases and P5's exception vectors. `ch1.i`
+  documents the exact reasoning.
+- **X_c/X_k self-report.** Every case/block stores the address of its own
+  CLR/MOVE/stop instruction into a table (XTAB, XTAB3, XTAB6) with a
+  PC-relative LEA, so the C++ side never hand-counts instruction lengths.
+- **Measured, P1's own contrast (P1-MOVE, section 3).** The page's
+  contrast (MOVE.x #0 avoids CLR's extra read) does not flip the
+  assertion on this core: measured directly on case 1 (.B, (An)), MOVE.B
+  #0,(a0) shows a CPU read of the prefill ($A5A5) at the operand's word,
+  then a write -- the same read-then-write pattern as CLR, not the page's
+  own contrast. The comparator stays green under this mutation for that
+  reason; recorded, not adjusted.
+- **Measured, P4 (section 6).** On the second core (TG68K) with
+  cpu_config=68020, all 21 cases showed the same read-then-write pair p.13
+  attributes to the 68000 (0/21 cases showed a single write with no
+  preceding read). Measured directly on case 1 (.B, (An)): a CPU read of
+  the prefill ($A5A5) at the operand's word, then a write. P4 is red
+  through this clause on the second core; the first core has no 68020
+  mode and does not run it.
+- **Measured, P6 (section 8).** D(68020 mode) = D(68000 mode) = 2 on the
+  second core (the same image, cpu_config=68020 vs 68000); the guard was
+  6 words long (P6.e held: 2 < 6). P6 is red through the "D(68020) >
+  D(68000)" clause: this core's measured prefetch depth does not differ
+  between the two settings.
+- **P5's and P6's own "contrasting case"** (first core vs. second core in
+  68000 mode) spans both cores' separate executables; neither build can
+  read the other's data, so each core prints its own RECORDED frame/depth
+  data (F_1..F_5 for P5, D for P6) and the comparison is drawn once both
+  outputs exist, not as a `checks.expect` inside either binary. Measured:
+  the first core's F_1..F_5 and the second core's own 68000-mode F_1..F_5
+  are byte-for-byte identical, and both cores' D(68000 mode) = 2 -- both
+  contrasts hold exactly as the page predicts (two 68000s write the same
+  frame; neither side is "more advanced").
