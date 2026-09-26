@@ -70,20 +70,29 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | test packages, `aa/` | **33** |
 | assertions, `aa/` | **184** — 179 pass, **5 fail** |
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
-| registered findings | **73** — 68 against the Hardware Reference Manual and 5 against the AA specification. **48 ask you to decide whether the RTL should change** — 66 open, 7 withdrawn; of the open ones 58 rest on a graded red, 4 are source observations, 3 on a graded green with an inverse control, and one is filed against the printed page with no test yet |
+| registered findings | **73** — 68 against the Hardware Reference Manual and 5 against the AA specification. **48 ask you to decide whether the RTL should change** — 66 open, 7 withdrawn; of the open ones 58 rest on a failing test, 4 were seen in the RTL source with no test yet, 3 rest on a passing test whose other reading fails, and one is filed against the printed page with no test yet |
 | AA findings | **5** — two are reds of this RTL, three are filed against the printed page |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
 
-**What each state asks of you.** A *red* assertion is a result: its label
-names the claim, and [`docs/findings.md`](docs/findings.md) names the finding
-it belongs to. An *open* finding asks for the decision its page names. For most
-of them that is whether the RTL should change; those filed against the printed
-page ask about the manual instead. A *source observation* is a disagreement
-read from the RTL source with no graded red behind it: read it, but nothing has
-been measured yet. A *withdrawn* finding asks nothing. Its page keeps the
-reasoning that withdrew it. A *green* asks nothing either; [what a green
-means](#what-a-green-means) says how far it reaches.
+**Reading a test's output.** A test prints four kinds of line:
+
+| line | what it is |
+|---|---|
+| `PASS:` / `FAIL:` | a check: the measurement compared with the value the page gives. Only these lines count, and a `FAIL` is a failing test |
+| `MEASURED:` | a value observed and printed, compared with nothing |
+| `RECORDED:` | a claim of the page this test deliberately does not check, with the reason |
+| the summary, `N passed, M failed` | the count of `PASS:` and `FAIL:` lines |
+
+**What each state of a finding asks of you.** A *failing test* is a result:
+its label names the claim, and [`docs/findings.md`](docs/findings.md) names the
+finding it belongs to. An *open* finding asks for the decision its page names.
+For most of them that is whether the RTL should change; those filed against
+the printed page ask about the manual instead. A finding *seen in the RTL
+source* has no test behind it yet: read it, but nothing has been measured. A
+*withdrawn* finding asks nothing; its page keeps the reasoning that withdrew
+it. A *passing* test asks nothing either; [what a green means](#what-a-green-means)
+says how far it reaches.
 
 **All 249 packages report both a verdict and an assertion count.**
 `./run_all.sh` prints `tests: 147 passed, 69 failed, 0 build errors` for `hrm/`
@@ -106,8 +115,8 @@ Each finding page says what the printed page says, what NanoMig does and how
 that was measured, what four independent
 implementations (WinUAE, vAmiga, Denise, Copperline) and NanoMig's two Minimig
 ancestors do, and what is asked of the reader. A withdrawn page keeps only the
-reasoning that withdrew it, and a source observation may name fewer of the
-four. Keys are `NM-HRM-nnn` against
+reasoning that withdrew it, and a finding seen only in the RTL source may
+name fewer of the four. Keys are `NM-HRM-nnn` against
 the manual and `NM-AA-nnn` against the AA specification. Where a bit means
 something different under ECS and AGA, the finding says which chip set its
 fixture drives.

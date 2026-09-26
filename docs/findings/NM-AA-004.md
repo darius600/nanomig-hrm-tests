@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a graded red |
+| **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Decide whether the RTL should change. The AA specification lists the identifier every Agnus reports, and this core answers one bit more than the value it gives for the part it describes. Whether real Alice silicon answers `$22` or `$23` is an Amiga question, not one this repository can settle. |
 | **Module** | `src/minimig-aga/agnus_beamcounter.v:110` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L110) at the pinned revision |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** if the line is upstream's; the identifier word is one expression and a change to it is one edit |

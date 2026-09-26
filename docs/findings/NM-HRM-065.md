@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
-| **Evidence** | a graded red |
+| **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The implementations side with NanoMig. |
 | **Module** | `src/minimig-aga/cpu_wrapper.v:639-664`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L639-L664) at the pinned revision |
 | **Report to** | **the Minimig family** if it is reported at all — the behaviour is **inherited**, identical in MiSTer and reached independently by TC64. No RTL change is proposed; the question is whether printed page 436 describes what Commodore's own system software did |

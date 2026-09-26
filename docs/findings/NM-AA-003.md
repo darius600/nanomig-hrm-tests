@@ -4,7 +4,7 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
-| **Evidence** | a graded green with an inverse control |
+| **Evidence** | a test passes; the page's other reading fails |
 | **What is asked of a reader** | Nothing in the RTL. NanoMig takes all four bits as one shift field, which is what the page's own legend asks for. What is asked is whether `ASA0` is a typographic slip for `ASH0` — which the same row's second column, the legend two lines below it, and the three cells above it all say — or a name this document means. |
 | **Module** | `src/minimig-aga/agnus_blitter.v:232` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L232) at the pinned revision |
 | **Report to** | **nowhere in code.** The defect is in a 1991 Commodore document, and the company is gone. It is filed so that no AA claim rests on BLTCON0 bit 12 carrying a field name of its own |
