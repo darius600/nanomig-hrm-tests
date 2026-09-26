@@ -94,7 +94,12 @@ struct Config {
     uint8_t memory_config  = 0x03; // [3:2] slow ram, [1:0] chip ram (11 = 2.0 MB, identity-mapped, see above)
     uint8_t fastram_config = 0x00; // 0 = no Zorro II fast RAM offered
     uint8_t cpu_config     = 0x00; // 00 = 68000 core behaviour (nanomig.v:198 comment)
-    uint8_t chipset_config = 0x00; // 0 = OCS; COLOR00 stays a 12-bit RGB444 register in this mode
+    // ECS: bit 3 sets the ecs input of Agnus and Denise (minimig.v:483, |chipset_config[4:3]).
+    // 2 MB of Chip memory is a machine the manual describes only with the ECS chips: a
+    // blitter pointer keeps its high 5 bits under ECS and 3 under OCS (p.309), and an OCS
+    // pointer reaches 512 KB (p.170). AGA (bit 4) stays off, so COLOR00 is a 12-bit
+    // RGB444 register.
+    uint8_t chipset_config = 0x08;
     uint8_t floppy_config  = 0x00; // 0 = no floppy drives; sdc_* stays idle
     uint8_t video_config   = 0x00; // filters/scanlines off
     uint8_t turbo_config   = 0x00; // 000 = no turbo chip/kick/data cache; every CPU access uses the
