@@ -553,23 +553,30 @@ the other three planes stay at their unwritten seed.
 Page 170, 309. Claims: `6-dma-channels.c21`, `ch6-dma.c19`.
 
 Proposition: some of the most significant bits of a pointer address are
-ignored, because only Chip memory is accessible -- true independent of
-chip size. Appendix B (p.309, "BLTxPTH ... (high 5 bits, was 3 bits)")
-gives the edge for this configuration directly: the register keeps
-pointer bits 20:16, so bit 21 is the lowest bit no design can honour,
-while bit 20 is within the kept range and does change the target.
+ignored, because only Chip memory is accessible, and a machine with more
+Chip memory ignores fewer of them (p.170). By that rule, bits ignored =
+32 - log2(chip size); the harness's configured Chip memory is 2 MB
+(`Config.memory_config` defaults to 0x03), so 21 bits are kept (0-20):
+bit 20 is honoured and bit 21 is the lowest ignored bit, for this
+configured size. Appendix C (p.309, "Other ECS Modifications": "BLTxPTH
+... (high 5 bits, was 3 bits)") corroborates the same bit 20/21 edge, but
+only because the harness runs the Enhanced Chip Set (`Config.chipset_
+config` defaults to 0x08) -- p.309 states its "high 5 bits" hold "when
+the Enhanced Chip Set is present"; under OCS the same page would predict
+bit 20 ignored too, which this configuration does not exercise.
 
 Program: a plain copy blit whose destination pointer is DST with bit 21
 also set (DST|$00200000).
 
 Observed: `peek_logical()` on the destination.
 
-Expected: the source pattern lands at DST unchanged -- bit 21 never
-reaches the register.
+Expected: the source pattern lands at DST unchanged -- bit 21 is above
+the honoured range for the harness's configured 2 MB and never reaches
+the register.
 
 Mutation `NMH_MUTATE=A19-highbit`: bit 20 instead of bit 21 -- within the
-register's kept range, this changes the actual target to DST|$100000, so
-DST itself stays unwritten.
+honoured range, this changes the actual target to DST|$100000, so DST
+itself stays unwritten.
 
 ### A20 -- 512 KB Chip RAM ignores 13 pointer bits; more memory ignores fewer
 Page 170. Claims: `6-dma-channels.c22`, `6-dma-channels.c23`,

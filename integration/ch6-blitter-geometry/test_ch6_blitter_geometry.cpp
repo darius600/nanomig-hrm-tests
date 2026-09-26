@@ -690,19 +690,29 @@ void assertion_A18(const std::string& dir) {
 }
 
 // -----------------------------------------------------------------------
-// A19 -- some of a pointer's most significant bits are ignored, for any
-// chip size: p.309, "BLTxPTH ... (high 5 bits, was 3 bits)" keeps
-// pointer bits 20:16, so bit 21 is the lowest bit no design can honour.
-// Page 170, 309. 6-dma-channels.c21, ch6-dma.c19.
+// A19 -- some of a pointer's most significant bits are ignored, because
+// only Chip memory is accessible, and a bigger Chip ignores fewer of
+// them (p.170). The harness's configured Chip memory is 2 MB
+// (Config.memory_config defaults to 0x03; nanomig_harness.h), i.e. bits
+// ignored = 32 - log2(chip size) = 32 - 21 = 11 -- so bit 20 is the top
+// of the honoured range and bit 21 is the lowest ignored bit, for this
+// configured size. (Appendix C, p.309, "BLTxPTH ... (high 5 bits, was 3
+// bits)" corroborates the same bit 20/21 edge, but only because the
+// harness runs the Enhanced Chip Set: Config.chipset_config defaults to
+// 0x08, and p.309's "high 5 bits" is stated to hold "when the Enhanced
+// Chip Set is present" -- under OCS the same page would predict bit 20
+// ignored too.) Page 170, 309. 6-dma-channels.c21, ch6-dma.c19.
 void assertion_A19(const std::string& dir) {
     Run r = run(dir, pick("A19-highbit", "highbit", "highbit_bit20"));
     bool matches = ok(r) &&
         W(r, kDst + 0) == 0x1234 && W(r, kDst + 2) == 0x5678 &&
         W(r, kDst + 4) == 0x9ABC && W(r, kDst + 6) == 0xDEF0;
     checks.expect(matches,
-        "A19-highbit p170,309 6-dma-channels.c21 ch6-dma.c19: BLTDPT set "
-        "to DST with bit 21 also set (DST|$00200000, above BLTxPTH's kept "
-        "high 5 bits per p.309's Appendix B entry) still writes at DST");
+        "A19-highbit p170 6-dma-channels.c21 ch6-dma.c19: with the "
+        "harness's configured 2 MB of Chip memory, BLTDPT set to DST with "
+        "bit 21 also set (DST|$00200000, above the top of the honoured "
+        "range for 2 MB) still writes at DST -- corroborated by Appendix "
+        "C, p.309, for the harness's configured ECS chipset");
 }
 
 // -----------------------------------------------------------------------
