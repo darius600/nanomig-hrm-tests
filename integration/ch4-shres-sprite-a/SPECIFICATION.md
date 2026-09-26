@@ -566,3 +566,56 @@ from these pages can show that.
 | `APPC-sprtab.*`, `CH4-appC-color.c18`–`c29`, `c34`–`c45`, `c50`–`c61`, `c66`–`c77`, `c82`–`c93`, `c98`–`c109`, `c114`–`c125`, `c130`–`c141` | 192 | stimulus only; no single cell can be graded (section 1.2) |
 | `CH4-appC-color.c14`–`c17`, `c30`–`c33`, `c46`–`c49`, `c62`–`c65`, `c78`–`c81`, `c94`–`c97`, `c110`–`c113`, `c126`–`c129` | 32 | none: dot bits, no expected value (section 1.3) |
 | **total** | **249** | |
+
+---
+
+## 6. The build
+
+`prog.s` performs the register writes of section 3.3 and the pointer writes
+of section 3.2; wrapper sources (`prog_c1.s`, `prog_c2.s`, `prog_c3.s`,
+`prog_c6.s`) each set one symbol and `include "prog.s"`, giving the CPU-side
+contrasts (C1, C2, C3, C6) their own assembled program. The sprite,
+bitplane and Copper-list data of sections 3.2 and 3.4 is poked directly
+into chip RAM by `test_ch4_shres_sprite_a.cpp`, the same technique the
+ch6 packages use for their own DMA data areas; the data-only contrasts (C4,
+C5, C7, C8, C9, C10, C11) select a different poked value in place of a
+separate assembled program. `ch4.i` gives the register offsets (Appendix
+B, pp. 289-292) and this package's own chip-RAM addresses.
+
+Section 3.2's "Chip memory below `$80000`" is cited to p.104 for word
+alignment only, not for the `$80000` figure itself, which is not tied to
+any claim. This harness's Chip RAM is identity-mapped at `$080000`-`$1FFFFF`
+regardless of the CIA-A overlay bit; reaching addresses below `$080000`
+needs a CIA-A write to clear that bit first (a real, standard technique,
+not used here). The sprite structures, the bitplane buffer and the Copper
+list are placed at `$082000`, `$090000` and `$0A0000`, still ordinary
+word-aligned Chip RAM on the 2 MB machine the harness runs.
+
+**Measured: the sprite pixel period in SuperHires.** R2's own anchor
+(section 3.6) is confirmed by the C1 (HIRES) run: there, each sprite run
+measures 31-33 samples and the shared colour check (section 3.7) passes in
+full, including the run-length clause. In the normal (SuperHires) run, on
+both cores, every sprite run instead measures 16 samples -- half the
+expected width -- while every interior pixel still shows exactly the U
+value section 3.5 predicts for its band and colour (confirmed group by
+group). This package therefore reads red on P1, P2, P3 and P4 through the
+run-length clause of section 3.7 alone: the colour-match clause passes
+throughout (see the "Report back" for the per-check breakdown). Table 4-1
+and pp. 101, 128 state that sprite size is independent of the playfield
+resolution; this build's own measurement is that this RTL's sprite pixel
+period in SuperHires is half of what that independence predicts, relative
+to the same bitplane-pattern calibration (R2) that the HIRES run confirms
+at full width.
+
+**Build note: PC5's own background reads only the gap between the two
+runs.** Outside the display window's own active area, and in the narrow
+approach to it, the design forces the video output to (0,0,0) regardless
+of any colour register (blanking, nanomig.v). A whole output line's
+non-run pixels therefore are not uniformly "the background colour
+register's own value": they read (0,0,0) wherever blanking reaches, which
+coincides with groups 0-11's own expected background but not with groups
+12-14's (10,10,10). PC5 reads only the interior of the gap strictly
+between sprite 0's and sprite 1's own runs (excluding the pixel next to
+each run's ends, as section 3.7 already does), since that gap is confirmed
+visible by construction (it sits between two confirmed-visible runs); it
+does not read the line outside that gap.
