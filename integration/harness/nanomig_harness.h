@@ -502,8 +502,11 @@ private:
                 if (fastram_wr_) {
                     uint16_t cur = fastmem_[a];
                     uint16_t nv = cur;
-                    if (fastram_uds_) nv = uint16_t((nv & 0x00FF) | (fastram_din_ & 0xFF00));
-                    if (fastram_lds_) nv = uint16_t((nv & 0xFF00) | (fastram_din_ & 0x00FF));
+                    // fastram_uds/lds are the CPU's data strobes, active low:
+                    // the board tops hand them to the SDRAM controller as byte
+                    // masks (misc/sdram.sv:483, sd_dqm <= ram_ds; 1 = masked).
+                    if (!fastram_uds_) nv = uint16_t((nv & 0x00FF) | (fastram_din_ & 0xFF00));
+                    if (!fastram_lds_) nv = uint16_t((nv & 0xFF00) | (fastram_din_ & 0x00FF));
                     fastmem_[a] = nv;
                 } else {
                     top_->fastram_dout = fastmem_[a];
