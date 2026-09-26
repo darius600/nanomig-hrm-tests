@@ -4,16 +4,22 @@
 ; uninhibited out of Fast memory or its internal cache and continue to
 ; have memory cycles."
 ;
-; The nasty blit (BLTPRI set, A4: locks the CPU out of the chip bus for
-; its whole active window) is started by the Copper's own list, never by
-; a CPU chip-bus write -- the Copper is its own DMA channel, so starting
-; the blit needs no CPU chip-bus access at all, and the CPU's own last
-; chip-bus write before it jumps into Zorro II fast RAM (cpu_wrapper.v:
-; 117 sel_z2ram, enabled by one register write at $E80048,
-; cpu_wrapper.v:640) is unaffected by the blit that only begins slightly
-; afterward. The loop that then runs in fast RAM touches only a fast-RAM
-; counter and its own registers -- no chip-bus access at all -- until it
-; is done, when it stores the counter to RESULTS.
+; The blit is armed (BLTCON*, BLTAPTH/DPTH, DMAEN/BLTEN/BLTPRI) and the
+; Copper's own list is built and pointed at (COP1LC), all from chip RAM,
+; but the CPU never itself writes BLTSIZE -- the Copper does, once it
+; runs. COPEN and the COPJMP1 strobe that starts the Copper running are
+; both deferred to fast RAM, not issued before the jump: with COP1LC
+; already pointed at the list, enabling COPEN from chip RAM risks the
+; Copper reloading its own instruction pointer from COP1LC on its own, at
+; the next vertical blank, independently of any CPU strobe -- and a nasty
+; blit (BLTPRI set, A4: locks the CPU out of the chip bus for its whole
+; active window, instruction fetches included) started that way, while
+; the CPU is still in chip RAM reaching for the jump, would stall the CPU
+; there until the blit's own end, defeating the point. Enabling COPEN and
+; strobing COPJMP1 from fast RAM are the CPU's own deliberate, occasional
+; chip-bus writes while "running from Fast memory or cache" and
+; "continu[ing] to have memory cycles" (p.186) -- everything after them,
+; the counting loop itself, touches only fast RAM.
 ;
 ; This file alone (no symbol set) runs FR_ITERS=50 passes.
 ; prog_fastrun_long.s (FR_LONG set) runs FR_ITERS=2000: a loop long
@@ -41,6 +47,7 @@ FR_REG          equ     $E80048         ; Zorro II autoconfig "Register 0x48", Z
 FR_CODE         equ     $200000         ; Zorro II fast RAM, bank 1 (cpu_wrapper.v:117, addr[23:21]=1)
 FR_CNT          equ     $200100         ; the loop's own counter word, in fast RAM
 
+COPCON          equ     $02E
 COP1LCH         equ     $080
 COP1LCL         equ     $082
 COPJMP1         equ     $088
@@ -82,6 +89,12 @@ start:
         move.l  #BLIT_SRC,BLTAPTH(a0)
         move.l  #BLIT_DST,BLTDPTH(a0)
 
+        ; CDANG (COPCON bit 1): without it, the Copper may only reach
+        ; $080-$1FE (agnus_copper.v's own "illegal register access" check);
+        ; BLTSIZE ($058) is below that, so the Copper's own MOVE to it
+        ; would otherwise halt the Copper instead of starting the blit.
+        move.w  #$0002,COPCON(a0)
+
         ; The Copper list: MOVE #$7D01,BLTSIZE (height=500,width=1 --
         ; A4/ORDER's own known ~8112 clk_sys span), then WAIT-forever.
         move.w  #BLTSIZE,COP_LIST.l
@@ -94,25 +107,37 @@ start:
         swap    d0
         move.w  d0,COP1LCH(a0)
 
-        ; Arm DMAEN, BLTEN, BLTPRI and COPEN together, then strobe
-        ; COPJMP1 -- the last chip-bus write this program makes before
-        ; jumping into fast RAM. The Copper, not the CPU, writes BLTSIZE,
-        ; so nothing here needs the CPU to touch the chip bus again.
-        move.w  #$86C0,DMACON(a0)      ; SET DMAEN,BLTEN,BLTPRI,COPEN
-        move.w  #0,COPJMP1(a0)
+        ; Arm DMAEN, BLTEN and BLTPRI only -- COPEN stays clear here, so
+        ; the Copper cannot reload from COP1LC on its own yet (no vertical
+        ; blank can trigger it): the blitter is primed but nothing can
+        ; make it run until BLTSIZE is written, which only the Copper
+        ; does, which only runs once COPEN is set below, from fast RAM.
+        move.w  #$8640,DMACON(a0)      ; SET DMAEN,BLTEN,BLTPRI
 
         move.w  #$FADE,PRE_JUMP.l      ; last chip-bus write before the jump (see PRE_JUMP above)
 
         lea     FR_CNT,a2
         move.w  #FR_ITERS-1,d0
+        lea     back_from_fastram,a3    ; return address, loaded before the
+                                        ; jump: an indirect JMP through a3
+                                        ; cannot be collapsed by the
+                                        ; assembler the way a direct jump to
+                                        ; the following instruction can.
         jmp     FR_CODE
 
-; ---- relocated into FR_CODE (see above). Touches only a2/d0 and fast
-; RAM -- no chip-bus access until the final JMP back.
+; ---- relocated into FR_CODE (see above). Touches a2/a3/d0 and fast RAM,
+; plus the two deliberate chip-bus writes below that start the blit.
 loop_template:
+        move.w  #$8080,DMACON(a0)      ; SET COPEN, from fast RAM (a0 still
+                                        ; holds CUSTOM, unchanged since the
+                                        ; blit setup above): only now can
+                                        ; the Copper reload from COP1LC
+        move.w  #0,COPJMP1(a0)         ; strobe now: starts the already-
+                                        ; armed blit without costing the
+                                        ; CPU an instruction fetch in chip RAM
 .loop:  addq.w  #1,(a2)
         dbra    d0,.loop
-        jmp     back_from_fastram
+        jmp     (a3)
 loop_template_end:
 
 back_from_fastram:

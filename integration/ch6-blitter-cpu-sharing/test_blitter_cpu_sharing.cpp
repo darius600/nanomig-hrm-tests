@@ -31,6 +31,7 @@
 // MUTATION SLOTSPAN stimulus red baseline capture substituted with the share-mode blit's own active-window CPU accesses (contended, 5 slots apart), via NMH_MUTATE=SLOTSPAN
 // MUTATION OPEN50 stimulus red six-plane side substituted with the four-plane capture (no reduction), via NMH_MUTATE=OPEN50
 // MUTATION ORDER stimulus red the 500-word CPU copy loop substituted with a 50-word copy (shorter, nonzero span, finishes before the blit), via NMH_MUTATE=ORDER
+// MUTATION FASTRUN stimulus red fastram_config cleared to 0 (no Zorro II fast RAM offered at all: cpu_wrapper.v:117 sel_z2ram never asserts, so neither the $E80048 register write nor the jump into $200000 reach fast RAM), via NMH_MUTATE=FASTRUN
 //
 // A4's precondition (the nasty-mode window's own length) is not exercised
 // by a dedicated mutation: every capture in this package that shrinks the
@@ -42,9 +43,6 @@
 // record below); it carries no assertion and no mutation.
 // 6-system-dma.c56 is withdrawn (see the TAS-WITHDRAWN record below); it
 // carries no assertion and no mutation.
-// 6-blitter-done-flag.c8/ch6-done.c9 is withdrawn (see the
-// FASTRUN-WITHDRAWN record below); it carries no assertion and no
-// mutation.
 
 #include <algorithm>
 #include <cstdint>
@@ -153,6 +151,50 @@ Capture run_capture(const std::string& bin, uint64_t run_budget, bool wait_done,
     // place a single logical cycle is expected to span multiple samples)
     // coalesces its own narrow, single-address slice instead, below.
     c.log = h.ram_log();
+    for (auto a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
+    return c;
+}
+
+// ---- FASTRUN's own capture: the fast-RAM port, stepped by hand --------
+//
+// ram_log() only samples the physical chip-RAM port; fast-RAM (Zorro II)
+// activity is only visible on nanomig.v's own fastram_sel/fastram_addr/
+// fastram_wr ports (nanomig_harness.h's own comment on ports(): "the
+// top-level ports only ... never use ->rootp"). Reaching them means
+// stepping the harness one clk_sys cycle at a time through its already
+// public run_cycles(1) and reading ports() after each step -- boot is
+// still done in bulk (the fast-RAM port carries nothing during boot).
+struct FastCapture {
+    bool loaded = false;
+    std::optional<uint64_t> done;
+    std::vector<nmh::RamAccess> log;      // chip-bus port (ram_log())
+    std::vector<nmh::RamAccess> fastlog;  // fast-RAM port, coalesced
+    std::vector<std::optional<uint16_t>> peeks;
+};
+
+FastCapture run_capture_fastram(const std::string& bin, uint64_t step_budget,
+                                 const std::vector<uint32_t>& peek_addrs, nmh::Config cfg) {
+    FastCapture c;
+    nmh::NanomigHarness h(cfg);
+    c.loaded = h.load_program(bin) > 0;
+    if (!c.loaded) return c;
+    h.boot(kBootBudget);
+    std::vector<nmh::RamAccess> raw_fast;
+    for (uint64_t i = 0; i < step_budget; ++i) {
+        h.run_cycles(1);
+        if (h.ports()->fastram_sel) {
+            // The sample taken this step reflects the cycle just finished
+            // (h.cycles() was already incremented past it), matching
+            // ram_log()'s own convention of recording the cycle a sample
+            // was taken at.
+            raw_fast.push_back({h.cycles() - 1, (uint32_t)h.ports()->fastram_addr, 0,
+                                 bool(h.ports()->fastram_wr), false, false});
+        }
+    }
+    c.log = h.ram_log();
+    for (const auto& a : c.log)
+        if (a.is_write && a.word_addr == word_addr(kDoneAddr) && a.data == kDoneValue) c.done = a.cycle;
+    c.fastlog = nmh::coalesce(raw_fast);
     for (auto a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
     return c;
 }
@@ -308,18 +350,33 @@ struct LineRef {
     std::vector<LineGroup> groups;
 };
 
+// Every read below word address $1000 is grouped by gap (over 100 clk_sys
+// starts a new group), then only the groups matching Figure 6-9's own
+// refresh shape -- exactly four reads, each two slots (16 clk_sys) after
+// the one before -- are kept as line anchors. In the bitplane builds,
+// BPL2-4's own pointers are left unset and so also read low memory, in
+// groups of a different size (60 or 48) and spacing; a group that is not
+// four reads two slots apart is some other master's low read, not a
+// line's own refresh, and must not anchor a line.
 LineRef make_line_ref(const std::vector<nmh::RamAccess>& log) {
     LineRef ref;
-    std::vector<uint64_t> refresh;
-    for (const auto& a : log) if (!a.is_write && a.word_addr < 0x1000) refresh.push_back(a.cycle);
-    if (refresh.empty()) return ref;
-    uint64_t s = refresh[0], p = refresh[0];
-    for (size_t i = 1; i < refresh.size(); ++i) {
-        uint64_t c = refresh[i];
-        if (c - p > 100) { ref.groups.push_back({s, p}); s = c; }
-        p = c;
+    std::vector<uint64_t> low_reads;
+    for (const auto& a : log) if (!a.is_write && a.word_addr < 0x1000) low_reads.push_back(a.cycle);
+    if (low_reads.empty()) return ref;
+    std::vector<std::vector<uint64_t>> groups;
+    groups.push_back({low_reads[0]});
+    for (size_t i = 1; i < low_reads.size(); ++i) {
+        if (low_reads[i] - low_reads[i - 1] > 100) groups.push_back({});
+        groups.back().push_back(low_reads[i]);
     }
-    ref.groups.push_back({s, p});
+    for (const auto& g : groups) {
+        if (g.size() != 4) continue;
+        bool refresh_shape = true;
+        for (size_t i = 1; i < g.size(); ++i)
+            if (g[i] - g[i - 1] != 2 * kCck) { refresh_shape = false; break; }
+        if (!refresh_shape) continue;
+        ref.groups.push_back({g.front(), g.back()});
+    }
     for (auto& g : ref.groups) ref.firsts.push_back(g.first);
     return ref;
 }
@@ -1070,72 +1127,88 @@ int main(int argc, char** argv) {
     // own list -- never through a CPU chip-bus write -- so the CPU's own
     // last chip-bus write before it jumps into fast RAM is unaffected by
     // the blit that begins slightly afterward (A4 shows 0 CPU chip-bus
-    // accesses for the whole of a nasty blit's window otherwise).
-    // prog_fastrun_long.s (2000 iterations, prog_fastrun.s: 50) runs a
-    // loop long enough to outlast the blit's own ~8112 clk_sys (the same
-    // known span as A4/ORDER's own nasty capture). Fixing the earlier
-    // report's own gap: that record's "identical span regardless of
-    // iteration count" came from a CPU chip-bus write (BLTSIZE) itself
-    // starting the blit, which then locked the CPU's own next fetch out
-    // for the blit's whole duration before it ever reached fast RAM --
-    // the Copper removes that dependency.
+    // accesses for the whole of a nasty blit's window otherwise). The
+    // relocated loop returns through an indirect JMP (a3), the return
+    // address loaded into a3 before the jump into fast RAM: a direct JMP
+    // to the instruction immediately following it is what vasm deletes at
+    // assembly time (the branch and the fall-through coincide), which an
+    // indirect jump through a register does not. prog_fastrun_long.s
+    // (2000 iterations, prog_fastrun.s: 50) runs a loop long enough to
+    // outlast the blit's own ~8112 clk_sys (the same known span as
+    // A4/ORDER's own nasty capture). Fast-RAM activity is only visible on
+    // nanomig.v's own fastram_sel/fastram_addr/fastram_wr ports, reached
+    // here by run_capture_fastram() stepping the harness one clk_sys
+    // cycle at a time (see its own comment above).
     {
-        // A much smaller run budget than the rest of this file's captures:
-        // both programs are identical up to the jump into fast RAM, and
-        // the measurement below is that nothing at all happens afterward
-        // -- confirmed once, at the full kBootBudget+kDoneRunBudget (see
-        // FASTRUN-WITHDRAWN in SPECIFICATION.md), holds equally at this
-        // much shorter one, without paying its cost on every run.
-        constexpr uint64_t kFastrunBudget = kBootBudget + 50'000;
-        nmh::Config cfg_fr; cfg_fr.fastram_config = 0x01; // 2MB Zorro II fast RAM (cpu_wrapper.v:571-572)
-        Capture cap_short = run_capture(dir + "/prog_fastrun.bin", kFastrunBudget, true, {kResults}, cfg_fr);
-        Capture cap_long  = run_capture(dir + "/prog_fastrun_long.bin", kFastrunBudget, true, {kResults}, cfg_fr);
-        constexpr uint32_t kPreJump = 0x0C0006;
+        bool mutated = (mv == "FASTRUN");
+        // Same post-boot budget every other DONE-driven capture in this
+        // file uses (kBootBudget + kDoneRunBudget): boot()'s own polling
+        // loop releases cpu_nrst_out almost at once, but the design's
+        // internal system reset (minimig_syscontrol counting sof pulses)
+        // still holds the chip bus from acknowledging the CPU's first
+        // access for a comparable span, so the real cost of reaching the
+        // program's first instruction is paid here, stepped, rather than
+        // inside boot() itself.
+        constexpr uint64_t kFastrunStepBudget = kDoneRunBudget;
+        constexpr uint32_t kFrCnt = 0x200100; // the loop's own counter word, in fast RAM (prog_fastrun.s)
+        nmh::Config cfg_fr;
+        // Mutation: no Zorro II fast RAM offered at all. cpu_wrapper.v:
+        // 117's sel_z2ram needs z2ram_ena, which only a write to $E80048
+        // can set (cpu_wrapper.v:640), gated by cpu_wrapper.v:611's own
+        // sel_autoconfig, which itself needs |fastramcfg_d -- with
+        // fastram_config==0 that write decodes to nothing, z2ram_ena never
+        // sets, and the later jump to $200000 does not reach fast RAM
+        // either. The unchanged comparator (a fast-RAM counter write
+        // strictly inside the blit's window, and completion under both
+        // iteration counts) must go red.
+        cfg_fr.fastram_config = mutated ? 0x00 : 0x01; // 2MB Zorro II fast RAM when enabled (cpu_wrapper.v:571-572)
 
-        auto last_prog_fetch = [&](const Capture& c) -> int64_t {
-            int64_t last = -1;
-            for (const auto& a : c.log)
-                if (!a.is_write && a.word_addr >= word_addr(kProgLo) && a.word_addr < word_addr(kProgHi))
-                    last = (int64_t)a.cycle;
-            return last;
+        FastCapture cap_short = run_capture_fastram(dir + "/prog_fastrun.bin", kFastrunStepBudget, {kResults}, cfg_fr);
+        FastCapture cap_long  = run_capture_fastram(dir + "/prog_fastrun_long.bin", kFastrunStepBudget, {kResults}, cfg_fr);
+
+        // The blit's own active window, on the same yardstick (first to
+        // last destination write) A2/A4/ORDER use -- prog_fastrun.s uses
+        // the same BLIT_DST ($0C4000, 500 words) as prog_sharing.s.
+        auto blit_window = [&](const FastCapture& c) -> std::pair<uint64_t, uint64_t> {
+            auto d = write_cycles_in_range(c.log, word_addr(kShareDstLo), word_addr(kShareDstHi));
+            if (d.empty()) return {0, 0};
+            return {*std::min_element(d.begin(), d.end()), *std::max_element(d.begin(), d.end())};
         };
-        auto pre_short = write_cycles_in_range(cap_short.log, word_addr(kPreJump), word_addr(kPreJump) + 1);
-        auto pre_long  = write_cycles_in_range(cap_long.log, word_addr(kPreJump), word_addr(kPreJump) + 1);
-        int64_t last_short = last_prog_fetch(cap_short);
-        int64_t last_long  = last_prog_fetch(cap_long);
+        auto fr_writes_strictly_inside = [&](const FastCapture& c, uint64_t lo, uint64_t hi) {
+            size_t n = 0;
+            for (const auto& a : c.fastlog)
+                if (a.is_write && a.word_addr == word_addr(kFrCnt) && a.cycle > lo && a.cycle < hi) ++n;
+            return n;
+        };
 
-        checks.note("FASTRUN: 50-iteration capture -- loaded=" + std::string(cap_short.loaded ? "y" : "n") +
-                    " done=" + std::string(cap_short.done.has_value() ? "y" : "n") +
-                    " PRE_JUMP write=" + std::string(pre_short.empty() ? "no" : "yes") +
-                    " last program-range fetch cycle=" + std::to_string(last_short) +
+        auto [lo_s, hi_s] = blit_window(cap_short);
+        auto [lo_l, hi_l] = blit_window(cap_long);
+        size_t inwin_short = (lo_s != hi_s) ? fr_writes_strictly_inside(cap_short, lo_s, hi_s) : 0;
+        size_t inwin_long  = (lo_l != hi_l) ? fr_writes_strictly_inside(cap_long, lo_l, hi_l) : 0;
+        bool results_ok_short = cap_short.peeks.size() && cap_short.peeks[0] && *cap_short.peeks[0] == 50;
+        bool results_ok_long  = cap_long.peeks.size() && cap_long.peeks[0] && *cap_long.peeks[0] == 2000;
+
+        checks.note("FASTRUN: fastram_config=" + std::to_string((int)cfg_fr.fastram_config) +
+                    "; 50-iteration -- done=" + std::string(cap_short.done.has_value() ? "y" : "n") +
                     " RESULTS=" + (cap_short.peeks.size() && cap_short.peeks[0] ? std::to_string(*cap_short.peeks[0]) : std::string("?")) +
-                    "; 2000-iteration capture -- loaded=" + std::string(cap_long.loaded ? "y" : "n") +
-                    " done=" + std::string(cap_long.done.has_value() ? "y" : "n") +
-                    " PRE_JUMP write=" + std::string(pre_long.empty() ? "no" : "yes") +
-                    " last program-range fetch cycle=" + std::to_string(last_long) +
-                    " RESULTS=" + (cap_long.peeks.size() && cap_long.peeks[0] ? std::to_string(*cap_long.peeks[0]) : std::string("?")));
-        checks.record(
-            "FASTRUN-WITHDRAWN [p186] 6-blitter-done-flag.c8,ch6-done.c9: not tested -- "
-            "prog_fastrun.s/prog_fastrun_long.s (committed) enable the design's Zorro II fast-RAM "
-            "path (Config.fastram_config=0x01, cpu_wrapper.v:117 sel_z2ram, cpu_wrapper.v:640), "
-            "relocate a counting loop there with its own chip-RAM marker write (PRE_JUMP) "
-            "immediately before jumping, then start a nasty blit through the Copper's own list -- "
-            "never a CPU chip-bus write -- so the CPU's last chip-bus write before the jump is not "
-            "itself blocked by the blit. Both the 50- and the 2000-iteration capture correctly make "
-            "that PRE_JUMP write, fetch every instruction up to and including the jump's own address "
-            "extension (last program-range fetch on fx68k at cycle " + std::to_string(last_short) +
-            " and " + std::to_string(last_long) + "), then produce no further RAM-port activity of "
-            "any kind for the whole of a " + std::to_string(kFastrunBudget) + "-clk_sys "
-            "budget: run_until_write() never sees DONE, and RESULTS still reads back its "
-            "harness-zero-initialized value on both. This isolates the earlier report's own finding "
-            "away from the blit entirely (no blit or Copper is needed to reproduce it) and rules out "
-            "that report's own candidate explanation (a CPU chip-bus write starting the blit and "
-            "locking the CPU's own next fetch out for the blit's duration): here nothing but the "
-            "jump into fast RAM itself precedes the silence. Not a harness gap in the sense the "
-            "package's own comment at nanomig_harness.h uses the phrase (the Zorro II path is "
-            "reachable through the public Config surface); the step that fails is establishing why "
-            "the first bus cycle at a Zorro II fast-RAM address, once reached, produces no further "
-            "observable RTL activity");
+                    " blit window=" + std::to_string(lo_s) + ".." + std::to_string(hi_s) +
+                    " FR_CNT fast-RAM writes strictly inside=" + std::to_string(inwin_short) +
+                    "; 2000-iteration -- done=" + std::string(cap_long.done.has_value() ? "y" : "n") +
+                    " RESULTS=" + (cap_long.peeks.size() && cap_long.peeks[0] ? std::to_string(*cap_long.peeks[0]) : std::string("?")) +
+                    " blit window=" + std::to_string(lo_l) + ".." + std::to_string(hi_l) +
+                    " FR_CNT fast-RAM writes strictly inside=" + std::to_string(inwin_long));
+
+        checks.expect(
+            cap_short.loaded && cap_short.done.has_value() && results_ok_short && inwin_short > 0 &&
+            cap_long.loaded && cap_long.done.has_value() && results_ok_long,
+            "FASTRUN [p186] 6-blitter-done-flag.c8,ch6-done.c9: \"A processor running from Fast "
+            "memory or cache can continue executing while the blitter is denied Chip-memory "
+            "access\" / \"may be running completely uninhibited out of Fast memory or its "
+            "internal cache and continue to have memory cycles\" -- a CPU loop relocated into "
+            "Zorro II fast RAM writes its own counter strictly inside a nasty blit's own active "
+            "window (" + std::to_string(inwin_short) + " such write(s)) and runs to completion "
+            "under both a 50- and a 2000-iteration budget (RESULTS 50 and 2000 respectively, both "
+            "observed at DONE)");
     }
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);

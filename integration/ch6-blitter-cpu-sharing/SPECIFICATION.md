@@ -45,9 +45,12 @@ program is the stimulus; the C++ test grades what the ports showed.
   - `BPL1PTH`/`BPL1PTL` ($DFF0E0/$DFF0E2) and the following bitplane
     pointer pairs, each 4 bytes apart.
   - `COP1LCH`/`COP1LCL` ($DFF080/$DFF082) and `COPJMP1` ($DFF088):
-    the Copper's own first-list pointer and its strobe (FASTRUN-WITHDRAWN's
-    own stimulus, below, uses these to start a blit without any CPU
-    chip-bus write of its own).
+    the Copper's own first-list pointer and its strobe (FASTRUN's own
+    stimulus, below, uses these to start a blit without any CPU chip-bus
+    write of its own).
+  - `COPCON` ($DFF02E) bit 1 `CDANG` ("Copper danger bit"): without it,
+    the Copper may only reach registers $080-$1FE; FASTRUN's own stimulus
+    sets it so the Copper's own list can reach `BLTSIZE` ($058).
 - One colour clock (one memory slot) is 8 `clk_sys` cycles
   (`amiga_clk.v`: `cck` toggles once every 4 `clk_sys`).
 - Every assertion's `expect()` label starts with its own short id (`A1`,
@@ -237,8 +240,8 @@ Claims: `6-intro.c20`, `ch6-intro.c21`, `ch6-intro.c22`,
 `ch6-done.c3`.
 
 Proposition: the blitter is an asynchronous coprocessor; the 68000 is not
-halted or blocked while a blit is in progress -- not just briefly, but
-for the whole of it.
+halted or blocked while a blit is in progress -- existence only, at least
+one CPU write strictly inside the blit's active window.
 
 Program (`prog_sharing.s`, `SHARE` build): a tight CPU loop increments a
 counter and stores it to the scratch word on every pass, concurrently
@@ -339,20 +342,22 @@ At the RAM port, refresh shows up as reads below word address $1000 --
 far below every program-specific range this package uses (`PROGRAM_ORG`,
 every scratch word, every blit source/destination, every bitplane
 pointer) -- 4 per line, 2 slots apart, matching Figure 6-9's own refresh
-block, grouped (a gap over 100 `clk_sys` starts a new group) into each
-line's own start, independent of any single global reference. This is
-not quite "every low read is refresh": in the bitplane builds, BPL2-4's
-own pointers are left unset and so also read low memory (groups of 60
-and 48, distinct in size and position from refresh's own groups of 4).
-PARITY-REF's own precondition below, not an unproven assumption, is what
-confirms the grouping used here still lands on the real refresh schedule
-despite that. A CPU chip-bus access is graded even/odd by its own slot
-offset from *its own line's* last refresh read, floor-divided by one
-slot (8 `clk_sys`) -- not by its raw remainder, since a CPU sample and a
-DMA (refresh) sample are each taken at a fixed sub-slot phase 4 `clk_sys`
-apart, so their difference is never an exact multiple of a slot, only its
-floor is meaningful. This is a fact about this RTL's own two sample
-phases, not a page citation.
+block. Every low read is grouped (a gap over 100 `clk_sys` starts a new
+group), but not every such group is a line's own refresh: in the
+bitplane builds, BPL2-4's own pointers are left unset and so also read
+low memory, in groups of a different size (60 and 48, not 4) and
+spacing. Only a group that is exactly four reads, each two slots (16
+`clk_sys`) after the one before, is kept as a line's own start; any other
+group is some other master's low read, not refresh, and does not anchor
+a line. PARITY-REF's own precondition below, not an unproven assumption,
+is what confirms the reads this restricted grouping keeps still land on
+the real refresh schedule. A CPU chip-bus access is graded even/odd by
+its own slot offset from *its own line's* last refresh read,
+floor-divided by one slot (8 `clk_sys`) -- not by its raw remainder,
+since a CPU sample and a DMA (refresh) sample are each taken at a fixed
+sub-slot phase 4 `clk_sys` apart, so their difference is never an exact
+multiple of a slot, only its floor is meaningful. This is a fact about
+this RTL's own two sample phases, not a page citation.
 
 ### PARITY-REF [Figure 6-9] the per-line reference's own anchor
 
@@ -411,7 +416,7 @@ fx68k red is.
 
 Mutation (`NMH_MUTATE=A8`): the baseline capture is replaced with the
 four-lores-plane build's own in-fetch-window CPU accesses (a different,
-live, nonzero population -- 50109 pairs on fx68k, 60467 on TG68K) through
+live, nonzero population -- 50178 pairs on fx68k, 60672 on TG68K) through
 the same, unchanged comparator (including its `pairs > 0` guard); the
 check reads GREEN there on both cores, showing the comparator is not
 hard-wired to fail.
@@ -797,10 +802,9 @@ have to clear the overlay with a CIA-A write) while a blit is actively
 writing the same address the CPU reads. No such stimulus is written
 here.
 
-### FASTRUN-WITHDRAWN [p186] Fast memory keeps running during a nasty blit -- withdrawn
+### FASTRUN [p186] Fast memory keeps running during a nasty blit
 
-Claims: `6-blitter-done-flag.c8`, `ch6-done.c9`. **Withdrawn**
-(`checks.record()`; measured; committed).
+Claims: `6-blitter-done-flag.c8`, `ch6-done.c9`.
 
 Proposition: "A processor running from Fast memory or cache can continue
 executing while the blitter is denied Chip-memory access" / "may be
@@ -811,42 +815,68 @@ Program (`prog_fastrun.s`, 50 iterations; `prog_fastrun_long.s`, `FR_LONG`
 set, 2000 iterations): enables the design's Zorro II fast-RAM path
 (`Config.fastram_config=0x01`; `cpu_wrapper.v:117 sel_z2ram`, turned on by
 one register write at $E80048, `cpu_wrapper.v:640`), relocates a counting
-loop there, initializes its own fast-RAM counter, then starts a nasty
-blit (500 words, the same span A4/ORDER establish) through the Copper's
-own list (`COP1LCH`/`COP1LCL`/`COPJMP1`) rather than a CPU chip-bus
-write, so starting the blit needs no further CPU chip-bus access -- the
-CPU's own last chip-bus write before it jumps into fast RAM (`PRE_JUMP`,
-a real chip-RAM word, since custom-register writes such as `COPJMP1` do
-not themselves appear in `ram_log()`) is therefore not itself something
-the blit could block. This rules out the previous version's own
-candidate explanation for its "identical span" finding (a CPU chip-bus
-write starting the blit, then locking the CPU's own very next fetch out
-for the blit's whole duration before it ever reached fast RAM).
+loop there, initializes its own fast-RAM counter, arms a nasty blit (500
+words, the same span A4/ORDER establish -- `BLTCON*`, `BLTAPTH`/`BLTDPTH`,
+`DMACON` SET `DMAEN,BLTEN,BLTPRI`) and points the Copper's own list at a
+single `MOVE` to `BLTSIZE` followed by a WAIT-forever, all from chip RAM,
+then jumps to the relocated loop. `COPCON`'s `CDANG` bit is set first
+(`$0002`): without it the Copper may reach only $080-$1FE
+(`agnus_copper.v`'s own illegal-register-access check), and `BLTSIZE`
+($058) is below that, so the Copper's own `MOVE` would otherwise halt it
+instead of starting the blit. `DMACON`'s `COPEN` bit and the `COPJMP1`
+strobe that makes the Copper reload from `COP1LC` and start running are
+both deferred to the relocated loop's own first two instructions, in fast
+RAM, not issued before the jump: `COP1LC` is already pointed at the list
+by then, so enabling `COPEN` in chip RAM risks the Copper reloading on
+its own at the next vertical blank, independently of any CPU strobe --
+and a nasty blit started that way, while the CPU is still in chip RAM
+reaching for the jump, denies the CPU's own next instruction fetch (A4:
+a nasty blit denies every chip-bus access, fetches included) and stalls
+it there until the blit's own end, never reaching fast RAM inside the
+blit's window at all. Enabling `COPEN` and strobing `COPJMP1` from fast
+RAM are themselves the CPU's occasional chip-bus writes while "running
+from Fast memory or cache" and "continu[ing] to have memory cycles"
+(p.186); everything else in the loop (`addq.w #1,(a2)` / `dbra d0,.loop`)
+touches only fast RAM. The loop returns through `jmp (a3)`, the return
+address loaded into `a3` before the jump into fast RAM: a direct `jmp` to
+the instruction immediately following it is what vasm deletes at assembly
+time, since the branch target and the fall-through address coincide; an
+indirect jump through a register is not collapsed the same way.
 
-Measured: on both cores and both iteration counts, `PRE_JUMP` is written,
-and every instruction fetch up to and including the `jmp`'s own address
-extension is present in `ram_log()` (last program-range fetch at cycle
-2275597 on fx68k, 2275493 on TG68K -- identical for the 50- and the
-2000-iteration capture, since the two programs are identical up to that
-point). After that fetch, `ram_log()` shows no further activity of any
-kind -- no further program fetch, no `PRE_JUMP`-range or `RESULTS`-range
-write, nothing but the display's own periodic refresh -- for the whole
-of a 6,050,000 `clk_sys` budget (`kBootBudget` plus 50,000, well past
-where setup finishes at cycle ~2,275,600) on both cores and both
-iteration counts:
-`run_until_write()` never observes `DONE`, and `RESULTS` still reads back
-its harness-zero-initialized value.
+Fast-RAM activity is only visible on `nanomig.v`'s own
+`fastram_sel`/`fastram_addr`/`fastram_wr` ports, never on `ram_log()`
+(which only samples the physical chip-RAM port): the test steps the
+harness one `clk_sys` cycle at a time through its own public
+`run_cycles(1)` and reads `ports()` after each step, exactly as the
+harness's own comment on `ports()` permits.
 
-**Not tested; not a harness gap in the sense `nanomig_harness.h`'s own
-comment on `service_fastram()` uses the phrase** (it is reachable through
-the public `Config`/harness surface). This isolates the previous
-version's own finding away from the blit and the Copper entirely -- no
-blit is running, and none is needed, for the silence to start exactly at
-the jump into fast RAM -- which is a materially different, narrower
-finding than an unexplained fixed span during contention. The step that
-fails is establishing why the first bus cycle at a Zorro II fast-RAM
-address, once reached, produces no further observable RTL activity on
-either core.
+Observed: the blit's own active window (first to last destination write,
+the same yardstick A2/A4/ORDER use); the fast-RAM counter's own writes
+that fall strictly inside it; whether each capture reaches `DONE` with
+`RESULTS` holding its own iteration count.
+
+Expected value: at least one fast-RAM counter write strictly inside the
+blit's own active window, and both the 50- and the 2000-iteration
+capture reach `DONE` with `RESULTS` equal to their own iteration count.
+No count, ratio or bound beyond that -- the page states only that the
+CPU continues to have memory cycles, not how many.
+
+Measured: on fx68k, the blit's own active window spans 2276521..2284689
+(8168 `clk_sys`, the same span as A4/ORDER); the fast-RAM counter's own
+writes strictly inside it are 50 of 50 (50-iteration build) and 76 (of
+2000, 2000-iteration build -- the loop outlasts the window, as designed).
+On TG68K: window 2276265..2284409 (8144 `clk_sys`); 49 of 50 and 128 of
+2000 strictly inside. Both builds reach `DONE` with `RESULTS` equal to
+their own iteration count (50 and 2000) on both cores.
+
+Mutation (`NMH_MUTATE=FASTRUN`): `Config.fastram_config` is cleared to 0
+instead of 1. `cpu_wrapper.v:117`'s `sel_z2ram` needs `z2ram_ena`, which
+only a write to $E80048 sets (`cpu_wrapper.v:640`), itself gated by
+`cpu_wrapper.v:611`'s `sel_autoconfig`, which needs `|fastramcfg_d`; with
+`fastram_config==0` that write decodes to nothing, `z2ram_ena` never
+sets, and the later jump to $200000 does not reach fast RAM either. The
+unchanged comparator (a fast-RAM counter write strictly inside the
+blit's window, and completion under both iteration counts) must go red.
 
 ## Claims not asserted
 
@@ -854,7 +884,6 @@ either core.
 |---|---|---|
 | `6-intro.c5`, `ch6-intro.c5` | 169 | Factor not toleranced ("approximately twice as fast" has no numeric tolerance on the page); ordering asserted by ORDER above (a blitter A-to-D copy of 500 words, uncontended, finishes before a 68000 `MOVE.W` copy loop of the same 500 words). ORDER carries no claim id of its own -- only the ordering is graded, not the factor, so these ids stay withdrawn rather than moving onto ORDER's own label. |
 | `6-blitter-done-flag.c9`, `ch6-done.c11`, `ch6-done.c8` | 186 | These claims are permissive ("may not return the correct result", "may not yet be set"), so no simulation outcome contradicts them; a deterministic Verilator run cannot falsify a "may". The mechanism the page actually gives (p.186's NOTE) is deterministic, not metastable: a blit just started can be locked out of its first DMA cycle by display fetches, so `DMAF_BLTDONE` has not yet gone high, while the CPU keeps running and can observe the not-yet-set flag. BBUSY-PREDICTS above demonstrates the deterministic half directly (`c10`/`c12`). |
-| `6-blitter-done-flag.c8`, `ch6-done.c9` | 186 | See FASTRUN-WITHDRAWN above: measured, committed, withdrawn -- the loop hangs the instant it reaches Zorro II fast RAM, on both cores. |
 | `ch6-done.c10` | 186 | "Reading a chip memory or hardware register address with the processor before testing the bit avoids the problem" needs a case where the bit would otherwise have been misleading -- a blit locked out of its own first DMA cycle by display fetches (p.186's NOTE), not merely a large blit still running. BBUSY-PREDICTS's own fixture is the latter; the former is not built here. `6-blitter-done-flag.c10`/`ch6-done.c12` state the narrower "the [test after the read] returns the correct result", which BBUSY-PREDICTS does demonstrate. |
 | `ch6-multi.c4` | 187 | See its own section above: `cpu_config`=3 was tried on TG68K and measured, producing no observable difference from `cpu_config`=0 in a no-DMA fixture; fx68k does not read `cpu_config` at all. The page's own consequence needs the CPU cache path too, which was not exercised. |
 | `6-system-dma.c12`, `ch6-sysdma.c10` | 194 | "The two lowest priority levels" ranks the blitter and CPU against every other DMA channel (audio, disk, sprites, copper, bitplane), not just against each other. Confirming it needs all of those channels driven simultaneously against blitter and CPU, a materially larger fixture than this package's scope. The narrower fact -- the blitter outranks the CPU specifically -- is A4. Holds as a scope decision with a named fixture. |
@@ -864,10 +893,10 @@ either core.
 | `ch6-sysdma.c32` | 196 | "The 68000 test-and-set instruction (TAS) should never be used in the Amiga" is prescriptive advice to a programmer, not an RTL-observable claim; holds as written. |
 | `ch6-sysdma.c31` | 196 | "Most instructions do not cause cycles to be missed" is a statistic over the instruction set with no numeric tolerance; holds as written (SYSDMA-C29 above establishes the *existence* of misses, per `c29`, not their rate). |
 
-Total: 16 graded assertions (A1, A3, DESC-OFFBY1, A2, A4, A8, SYSDMA-C29,
-A9, A10, A11, A6, SLOTSPAN, OPEN50, PARITY, ORDER, BBUSY-PREDICTS), plus
-unlabelled apparatus/precondition checks that carry no claim id (FIXTURE,
-DESC-BASE, A3PRE, A4PRE, A9PRE, A10PRE, PARITY-REF). 3 claim ids withdrawn
-by `checks.record()` as A5-WITHDRAWN. 1 claim id withdrawn as
-TAS-WITHDRAWN. 1 claim id withdrawn as `ch6-multi.c4`. 2 claim ids
-withdrawn as FASTRUN-WITHDRAWN. 15 claim ids withdrawn in the table above.
+Total: 17 graded assertions (A1, A3, DESC-OFFBY1, A2, A4, A8, SYSDMA-C29,
+A9, A10, A11, A6, SLOTSPAN, OPEN50, PARITY, ORDER, BBUSY-PREDICTS,
+FASTRUN), plus unlabelled apparatus/precondition checks that carry no
+claim id (FIXTURE, DESC-BASE, A3PRE, A4PRE, A9PRE, A10PRE, PARITY-REF). 3
+claim ids withdrawn by `checks.record()` as A5-WITHDRAWN. 1 claim id
+withdrawn as TAS-WITHDRAWN. 1 claim id withdrawn as `ch6-multi.c4`. 17
+claim ids withdrawn in the table above.
