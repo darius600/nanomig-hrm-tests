@@ -532,3 +532,59 @@ Precondition contrast runs:
    harness that the output pulse width does not follow the chip's pulse
    width, P4 cannot be checked with what a test sees and is reported "not
    observable", not red.
+
+## 7. Measurements
+
+Values below are what the build produced; both cores agree except where
+marked.
+
+**P1.** Graded max H: H1 = $B0 (= N), H2 = $C0 (= N), H1c = $E2, H2c = $E2.
+Anchor A1's bound ($E2−16 to $E3) holds in both contrast runs.
+
+**P2.** Graded periods: H1 563 (fx68k) / 565 (TG68K), first = 1416
+`clk_sys` cycles on both; H2 516 (fx68k) / 518 (TG68K), first = 1544 on
+both; H1c 438 (fx68k) / 440 (TG68K), first = 1816 on both; H2c matches
+H1c's count and period exactly on both cores. Converted with the ratio
+above: T1 = 177 CCK, T2 = 193 CCK (both N+1, page note 2's second
+reading); T2 − T1 = 16 CCK (b); T1c = T2c = 227 CCK (anchor A3, matching
+p.23's own PAL count exactly, LOLDIS holding the line to one length).
+Every graded period within a run is identical (expected (a)); the period
+counts differ between cores only because the two cores reach MARK1/MARK2
+at different real times within the same cycle budget, not because a
+period's own length differs.
+
+**P1-COVER.** Largest consecutive-sample gap in H1's graded range: 13 CCK
+on both cores (bound: 16).
+
+**P3, P4.** dL(SA) = dL(SB) = dL(SC) = 655, dT(SA) = dT(SB) = dT(SC) = 589,
+identical in both parity classes, on both cores, whether VARHSYEN is 1
+(SA/SB/SC) or 0 (SA0/SB0/SC0). Neither HSSTRT nor HSSTOP moves either edge
+under this package's stimulus. P3 and P4 are red on both cores: expected
+(b) (a move of at least 4 output pixel clocks) never holds, so no parity
+class satisfies the proposition, though every precondition (P3/P4-LINES,
+512 graded lines per run) and anchor A4 (white run = 192 output pixel
+clocks, identical across all six runs and both classes) hold cleanly.
+
+The cause is in `nanomig/src/minimig-aga/agnus_beamcounter.v`: `hsstrt`
+and `hsstop` read from their registers only when `varhsyen && varbeamen`
+hold together --
+
+    wire [8:0] hsstrt = varhsyen && varbeamen ? hsstrt_reg  : HSSTRT_VAL[8:0];
+    wire [8:0] hsstop = varhsyen && varbeamen ? hsstop_reg  : HSSTOP_VAL[8:0];
+
+-- not VARHSYEN alone. Page note 8 already flagged that the pages do not
+say whether VARHSYEN suffices without VARBEAMEN, and chose VARHSYEN alone
+as the narrower reading the pages actually name for variable horizontal
+sync; that reading is what this package's BEAMCON0 values (`$0120`,
+`$0020`) implement, and it does not move either register on this RTL. A
+build with VARBEAMEN also set (not part of this package's stimulus, tried
+only to confirm the measurement chain itself) does move dL, which is why
+this is reported as a finding about the enabling condition rather than
+about the check: the comparator, the leading/trailing-edge detection and
+the landmark all measure correctly when there is a genuine move to see.
+
+**Mutations.** Every one of PC-ID (`X-OCS`, `X-NTSC`), PC-MARK (`X-HALT-H`,
+`X-HALT-S`), P1-LINES/P2-LINES (`X-SHORT`), P1-COVER (`X-BURST`),
+P3/P4-LINES and A4 (`X-NOBPL`), A1 (`A1`) and A3 (`A3`) turns its own named
+check red on both cores, and nothing else, as its header comment in
+`test_ch8_ecs_sync_registers.cpp` records.
