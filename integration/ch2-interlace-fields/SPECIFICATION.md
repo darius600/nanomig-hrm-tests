@@ -740,3 +740,56 @@ comparison works on the least significant bits of the vertical count").
     320 x 256 bitplane and 16,384 for 320 x 512. At 40 bytes per line (p53)
     these are 10,240 and 20,480. The table is not used; PIC is 512 x 40 =
     20,480 bytes.
+
+---
+
+## 7. Build
+
+Files: `prog_i.s` (Program I) with variants `prog_i_a.s` to `prog_i_l.s`
+(I-a to I-l, section 3.5); `prog_t.s` (Program T) with variants `prog_t_a.s`,
+`prog_t_c.s` to `prog_t_h.s` (T-a, T-c to T-h, section 4.4; T-b is the same
+binary as T-0 with PAL selected in the harness, not a separate source);
+`m1.i` (Measurement M1, shared); `ch2.i` (register offsets Appendix B gives
+that `nanomig.i` does not, and the CIA-A address used only to release the
+reset-time overlay so Program I can install its own interrupt vector at
+$6C -- any write to CIA-A's decoded range does this, per gary.v/minimig.v,
+independently of Appendix B); `listt_body.i` (LISTT's 255 WAIT/MOVE pairs,
+generated once, not by hand); `test_ch2_interlace_fields.cpp`.
+
+**Clock ratio.** Every check that compares a cycle count against colour
+clocks (p194, section 2.3) converts by 8 clk_sys cycles per colour clock:
+amiga_clk.v divides clk_sys 4-for-1 into the 7 MHz enable the harness
+itself samples the RAM port on, and the colour clock is half of that again.
+This is the clock generator's own fixed ratio, not a value fitted to a
+measurement.
+
+**M1_DELAY.** The precondition contrasts I-j and T-f set `M1_DELAY=3000`,
+a busy-wait of 3000 iterations inside the M1 sampling loop. It is not a
+page value; it is guarded by the very check it is meant to break (PI-1,
+PT-1), and by design several times longer than one line, so the contrast
+does not depend on its exact size.
+
+**Measured (recorded, not graded).**
+- P1 (Program I, both cores): the 8 recorded PAL field lengths are
+  313, 312, 313, 312, 313, 312, 313, 312.
+- Program T's Delta (section 2.7, both cores): 1288 clk_sys cycles
+  (161 colour clocks).
+- P3's last-line length x_k (section 2.7, both cores): 227 on every one
+  of the 12 graded fields, never 228. `nanomig/src/minimig-aga/
+  agnus_beamcounter.v` fixes the line length at `HTOTAL_VAL` (227) and
+  comments, at its own `long_line` signal and `htotal` assignment, "line
+  length of 227 CCKs in PAL mode (NTSC line length of 227.5 CCKs is not
+  supported)" and "long line signal for NTSC compatibility (actually long
+  lines are not supported yet)". P3 measures red on both cores for this
+  reason: the RTL does not generate the alternating 227/228 last line
+  p24 describes for NTSC. PT-5 (every measured length is 227 or 228) is
+  unaffected and stays green, since 227 is one of the two page values.
+
+**Halt reported.** Section 5's own contrast note for P4 (a): "I-b ...
+(a) and (e) stay green, because every field still starts where its own
+list pointed." Measured on both cores, under I-b (LISTB also writes
+PIC): P4a, read exactly as (a) is worded ("of every B-field at PIC +
+40"), goes red -- every B-field's first fetch is at PIC under I-b, not
+PIC + 40. P4e (the restart list still alternates LISTA, LISTB) does
+stay green, as the note says. P4a is asserted and graded only as (a) is
+worded; the note's claim for (a) is not asserted.
