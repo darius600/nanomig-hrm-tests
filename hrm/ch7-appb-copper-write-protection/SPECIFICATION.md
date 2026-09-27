@@ -9,10 +9,9 @@ file speaks to a "may write only with the danger bit set" mark — see the
 closing section).
 
 This file is written from the `extract.quote` / `restatement` fields of the
-19 claims alone. No RTL file for this package has been opened. It fixes the
-printed propositions to be tested; port names, concrete stimulus values, and
-the `expect()` assertions themselves are added only after this file is
-committed and step 3 (opening `agnus_copper.v`) begins, per `BUILD-BRIEF.md`.
+claims alone. It fixes the printed propositions to be tested; port names,
+concrete stimulus values, and the `expect()` assertions themselves are in the
+test source.
 
 A further claim is routed to this package: `ch2-appb-legend.c1`, page 287,
 quote `"    *    Address not writable by the Copper."` — the identical
@@ -50,7 +49,7 @@ establish the *-marked side either (see "LEGEND" below).
 | 19 | `opus:7-appB.c28` | 289 | PROP-8, twin of #11 |
 | 20 | `opus:7-appB.c33` | 290 | PROP-9, PROP-10, PROP-11, PROP-12 (one claim, split four ways) |
 
-All 20 claims are accounted for; none is left unassigned at this stage.
+All 20 claims are accounted for; none is left unassigned.
 
 ## LEGEND — meaning of the `*` mark
 
@@ -118,10 +117,9 @@ from each claim's own `classify.chipset.applies_to: ["OCS"]` field in the
 claims file — not from any RTL reading. The claims file's own stated reason
 is that the printed chapter (p.224) scopes this material to OCS and
 Appendix C (p.310) is where the ECS-scaled ranges live; that is a fact about
-which pages govern which chipset, not a fact about port names or signals,
-so using it here does not violate the "no RTL before commit" rule. All
-eight of these propositions must be exercised with the fixture configured
-for OCS, and not asserted for ECS.
+which pages govern which chipset, not a fact about port names or signals.
+All eight of these propositions must be exercised with the fixture
+configured for OCS, and not asserted for ECS.
 
 Status: testable, all eight.
 
@@ -174,19 +172,17 @@ register's contents change to reflect the written value.
 field says explicitly this proposition "must be RUN at both, or it only
 half tests the proposition." This specification carries that instruction
 forward: each of PROP-9 through PROP-12 is exercised once with the fixture
-configured for OCS and once for ECS at step 3 — two graded checks per
-proposition, not a doubling of the proposition count.
+configured for OCS and once for ECS — two graded checks per proposition, not
+a doubling of the proposition count.
 
 Status: testable, all four (one claim, split four ways as directed).
 
 ## On a control case and on mutation
 
-`BUILD-BRIEF.md` requires at least one control case expected to PASS on the
-same measurement basis as any case under suspicion, and a stimulus mutation
-per assertion. Concrete stimulus values and port names are step-3 material
-and are deliberately not fixed here, but the shape of both is already
-visible from the claims alone and is recorded so step 3 does not have to
-re-derive it:
+Every case under suspicion needs at least one control case expected to PASS
+on the same measurement basis, and every assertion a stimulus mutation.
+Concrete stimulus values and port names are not fixed here, but the shape
+of both follows from the claims alone:
 
 - PROP-9 through PROP-12 (freely writable) are the natural control cases
   for PROP-1 through PROP-8 (protected): both groups are exercised through
@@ -207,7 +203,7 @@ re-derive it:
 
 This section states a strategy, not the assertions themselves; the actual
 `expect()` calls, their exact stimulus values, and the `// MUTATION` header
-lines are written in step 3.
+lines are in the test source.
 
 ## Claims not assigned an assertion
 
@@ -225,12 +221,11 @@ through PROP-12 as shown in the inventory table.
 ## What this specification deliberately does not contain
 
 Port names, signal names, and concrete stimulus values are absent by
-design, per `BUILD-BRIEF.md`'s order of work — they are added only after
-this file is committed and `agnus_copper.v` is read for step 3. Nothing in
-this file asserts a "may write only with the danger bit set" mark: no claim
-in `ch7-appb-copper-write-protection-spec-stage.jsonl` quotes such a mark
-(some claims' own analysis fields mention, in passing, that a second mark
-exists in the source material — that is not the same as this staged file
+design — they are in the test source. Nothing in this file asserts a "may
+write only with the danger bit set" mark: no claim in
+`ch7-appb-copper-write-protection-spec-stage.jsonl` quotes such a mark (some
+claims' own analysis fields mention, in passing, that a second mark exists
+in the source material — that is not the same as this staged file
 containing a claim about it), so this package's specification cannot rest
-an assertion on it. That gap is reported to the lead rather than filled in
-by guessing what the mark says or where it falls.
+an assertion on it, and does not guess what the mark says or where it
+falls. The test source records where that mark is covered instead.

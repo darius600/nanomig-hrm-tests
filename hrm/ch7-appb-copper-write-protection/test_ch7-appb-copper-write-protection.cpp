@@ -24,28 +24,20 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// Originally one proposition scored, not eight: the eight starred claims in
-// this package's slice ($002, $004, $006, $00E, $01C, $01E, $02A, $02C) are
-// all decided by the single expression at agnus_copper.v:225,
+// Eight propositions scored, one per starred address: the eight starred
+// claims in this package's slice ($002, $004, $006, $00E, $01C, $01E, $02A,
+// $02C) are all decided by the single expression at agnus_copper.v:225,
 // `ir2[8:6]==3'b000 && !ecs`, which reads only the destination address's
 // top three bits (all eight fall inside byte range $000-$03E) and never
-// distinguishes one named register from another. This file originally
-// SCORED one representative case (T1, DMACONR $002) with its own control
-// and mutation, and MEASURED (via `note`, never graded) the other seven --
-// a forbidden write to any of those seven would have printed "was WRITTEN"
-// while the package stayed green.
-//
-// REPAIR (2026-09-13, independent-validation finding 3, PROMOTE): "the same
-// RTL expression decides all eight" is not an oracle reason to grade only
-// one of eight printed "*" marks (p.287/p.289) -- each of the eight rows on
-// p.289 carries its own mark, and the committed SPECIFICATION.md already
-// specified all eight (PROP-1..PROP-8) as independent propositions before
-// this file collapsed seven of them to `note()`. PROP-2 through PROP-8 are
-// now their own expect() calls, same move_reaches() basis as T1, same
-// shared control (T1's block + T2/T4/T6/T8's pass-through, per
-// SPECIFICATION.md's "On a control case" section). Baseline moved 9 passed,
-// 0 failed -> 16 passed, 0 failed; no new red -- the RTL's shared decode
-// expression blocks all eight addresses, not only DMACONR.
+// distinguishes one named register from another. "The same RTL expression
+// decides all eight" is not an oracle reason to grade only one of eight
+// printed "*" marks (p.287/p.289) -- each of the eight rows on p.289
+// carries its own mark, and SPECIFICATION.md specifies all eight
+// (PROP-1..PROP-8) as independent propositions. T1 (DMACONR) and PROP-2
+// through PROP-8 are each their own expect() call, on the same
+// move_reaches() basis, with a shared control (T1's block +
+// T2/T4/T6/T8's pass-through, per SPECIFICATION.md's "On a control case"
+// section). The RTL's shared decode expression blocks all eight addresses.
 //
 // MUTATION T1 stimulus red: swapped move_reaches() target from DMACONR
 // ($002, protected) to DMACON ($096, this package's own unmarked control
@@ -95,10 +87,10 @@
 // universal claim on one case of eight-of-thirty-two. T2's unmarked-address
 // reading (DMACON) does not establish them either -- it grades only the
 // freely-writable side, never the *-marked side the legend states. All
-// three ids are withdrawn from T1, T2 and PROP-2..PROP-8 and recorded below
-// instead: the whole band is graded on hrm/ch2-copper-move-sweep's APPBSTAR
-// LEGEND line, which sweeps all 32 * rows at ecs=0 with CDANG clear and
-// set -- that line now carries all three ids.
+// three ids are recorded below rather than cited on T1, T2 or
+// PROP-2..PROP-8: the whole band is graded on hrm/ch2-copper-move-sweep's
+// APPBSTAR LEGEND line, which sweeps all 32 * rows at ecs=0 with CDANG
+// clear and set, and carries all three ids.
 
 #include <cstdint>
 #include <iostream>
@@ -123,8 +115,8 @@ constexpr uint16_t COPINS = to_reg(0x08C);
 constexpr uint16_t COPCON = to_reg(0x02E);
 constexpr uint16_t IDLE_REG = 0x0FF;
 
-// This package's eight starred (protected) addresses -- p.289. Only DMACONR
-// is scored (T1); the other seven are measured only (see the header note).
+// This package's eight starred (protected) addresses -- p.289. Each is
+// scored (T1, PROP-2..PROP-8).
 constexpr uint16_t DMACONR = to_reg(0x002);
 constexpr uint16_t VPOSR   = to_reg(0x004);
 constexpr uint16_t VHPOSR  = to_reg(0x006);
@@ -190,8 +182,7 @@ public:
 
     // Two sequential MOVEs, then a terminating WAIT -- used to prove the
     // fixture delivers distinct known words, in order, before any assertion
-    // trusts a single write's outcome (BUILD-BRIEF's fixture-liveness
-    // requirement).
+    // trusts a single write's outcome (a fixture-liveness check).
     void install_two_moves(uint16_t reg1, uint16_t data1, uint16_t reg2, uint16_t data2) {
         memory[LIST_ADDRESS + 0] = static_cast<uint16_t>(reg1 << 1);
         memory[LIST_ADDRESS + 1] = data1;
@@ -332,8 +323,8 @@ int main(int argc, char** argv) {
     Checks checks;
 
     // ------------------------------------------------------------------
-    // T1 -- the one scored protected-address proposition, at the strongest
-    // configuration this package's own claims license: CDANG SET (proving
+    // T1 -- DMACONR, the first of the eight protected-address propositions,
+    // at the strongest configuration this package's own claims license: CDANG SET (proving
     // the "*" mark is unconditional, unlike the CDANG-gated "~" range that
     // is out of this package's scope) and ecs=0 (OCS, per this package's
     // claims' own chipset scope -- running this at ecs=1 would test a chip
@@ -345,25 +336,20 @@ int main(int argc, char** argv) {
                   "[claims: sol:7-appB-dmaconr.c5, opus:7-appB.c14, legend]");
 
     // ------------------------------------------------------------------
-    // PROP-2 through PROP-8 -- independent-validation finding 3 (PROMOTE,
-    // 2026-09-13). The other seven addresses in this package's starred
-    // slice are decided by the same RTL expression as T1
+    // PROP-2 through PROP-8 -- the other seven addresses in this package's
+    // starred slice, decided by the same RTL expression as T1
     // (agnus_copper.v:225, `ir2[8:6]==3'b000 && !ecs`, reading only the
-    // destination address's top three bits) but were only MEASURED here
-    // until this repair, never graded: a forbidden write would have
-    // printed "was WRITTEN" while the package stayed green. p.287 defines
-    // "*" as "Address not writable by the Copper," and p.289 gives each of
-    // these seven rows its OWN "*", exactly like DMACONR's. The committed
-    // SPECIFICATION.md (PROP-2..PROP-8) already specified these as eight
-    // INDEPENDENT propositions; "they use the same RTL expression" is not
-    // an oracle reason to collapse eight printed marks into one grade.
-    // Each is now its own expect(), on the identical move_reaches() basis
-    // as T1. T1 above (blocked) and T2/T4/T6/T8 below (freely-writable,
-    // OCS) remain this family's shared control -- BUILD-BRIEF's "control
-    // on the same measurement basis" is already satisfied file-wide, per
-    // SPECIFICATION.md's own "On a control case" section: PROP-9..12 are
-    // the natural controls for PROP-1..8, same harness, same
-    // move_reaches() call, differing only in target address.
+    // destination address's top three bits). p.287 defines "*" as "Address
+    // not writable by the Copper," and p.289 gives each of these seven rows
+    // its OWN "*", exactly like DMACONR's. SPECIFICATION.md (PROP-2..PROP-8)
+    // specifies these as INDEPENDENT propositions; "they use the same RTL
+    // expression" is not an oracle reason to collapse eight printed marks
+    // into one grade. Each is its own expect(), on the identical
+    // move_reaches() basis as T1. T1 above (blocked) and T2/T4/T6/T8 below
+    // (freely-writable, OCS) are this family's shared control on the same
+    // measurement basis, per SPECIFICATION.md's own "On a control case"
+    // section: PROP-9..12 are the natural controls for PROP-1..8, same
+    // harness, same move_reaches() call, differing only in target address.
     // ------------------------------------------------------------------
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, VPOSR),
                   "PROP-2 OCS CDANG=1: Copper MOVE to VPOSR ($004) is blocked, "
@@ -385,10 +371,10 @@ int main(int argc, char** argv) {
                   "PROP-6 OCS CDANG=1: Copper MOVE to INTREQR ($01E) is blocked, "
                   "per Appendix B's \"*\" mark "
                   "[claims: sol:7-appB-intreqr.c5, opus:7-appB.c24, legend]");
-    // VPOSW/VHPOSW get individual attention per the lead's note: another
-    // package in this chapter measured these two ARE readable despite
-    // their "W" column. That is a different proposition (readability);
-    // this package only grades whether the Copper's WRITE takes effect.
+    // VPOSW/VHPOSW: another package in this chapter measures these two as
+    // readable despite their "W" column. That is a different proposition
+    // (readability); this package only grades whether the Copper's WRITE
+    // takes effect.
     checks.expect(!move_reaches(/*ecs=*/false, /*cdang=*/true, VPOSW),
                   "PROP-7 OCS CDANG=1: Copper MOVE to VPOSW ($02A) is blocked, "
                   "per Appendix B's \"*\" mark -- write-blocking only; VPOSW's "
@@ -459,20 +445,18 @@ int main(int argc, char** argv) {
         "that legend covers all 32 *-marked rows of Appendix B ($000-$03E), and this package "
         "probes only 8 of the 32 (T1, PROP-2 through PROP-8) -- T2's unmarked-address reading "
         "does not establish them either, since it grades only the freely-writable side at "
-        "DMACON. All three now read the whole 32-row band, graded on "
+        "DMACON. All three are graded on the whole 32-row band, on "
         "hrm/ch2-copper-move-sweep's APPBSTAR LEGEND line "
         "(graded: ch2-appb-legend.c1, sol:7-appB-legend.c4, opus:7-appB.c5).");
     checks.record("The \"~\" (danger-bit-required) mark is not asserted by this package. Its "
         "legend claims (sol:7-appB-legend.c5, opus:7-appB.c6) exist in this chapter's corpus "
         "but are routed to \"covered by an existing package\": chapter 2's Copper packages "
         "(hrm/ch2-copper-move-range T3-T7, T9-T10, and others) already assert CDANG/danger-bit "
-        "behaviour on this same RTL expression. Confirmed by the lead after this package's "
-        "specification was committed; nothing for this package to build.");
+        "behaviour on this same RTL expression; nothing for this package to build.");
     checks.record("Whether VPOSW ($02A) or VHPOSW ($02C) are readable despite Appendix B's \"W\" "
-        "column is a different package's subject in this chapter (already measured elsewhere). "
-        "This package measured only whether the Copper's WRITE to those two addresses takes "
-        "effect (see the notes above); both behaved consistent with every other address in "
-        "this package's starred slice, with nothing to report as off.");
+        "column is a different package's subject in this chapter (measured elsewhere). "
+        "This package grades only whether the Copper's WRITE to those two addresses takes "
+        "effect (PROP-7, PROP-8).");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
