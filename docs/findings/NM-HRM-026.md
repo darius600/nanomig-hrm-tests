@@ -19,9 +19,11 @@
 
 **Nothing outside the chip can observe `sq2,1,0`.** All eight of this entry's red
 assertions read `audio_state` directly; without Verilator's `--public-flat-rw`
-they would not compile. Reformulated at the ports they **pass**: `sample`,
-`dmareq`, `dmas` and `intreq` carry the figure's actions, ordering and timing
-exactly as printed.
+they would not compile. Re-pointed at the RTL's own state codes they **pass**, and
+the package's assertions at the ports are green: `sample`, `dmareq`, `dmas` and
+`intreq` carry the figure's actions and ordering. The one departure at a port,
+`dmas` computed one register stage later than the NOTE's
+`AUDxDSR=AUDxDR·dmasen`, is recorded, not graded.
 
 A behavioural implementation is free to re-encode an internal state machine
 unless state-identical reconstruction is an explicit requirement, and this
@@ -29,16 +31,17 @@ project has no such requirement. So the disagreement is confined to which bit
 pattern happens to be stored, and the entry is a note for whoever reads Figure
 5-8 as a specification — not a defect at the pins.
 
-It is kept because the figure is the only place chapter 5 prints a state encoding
-at all, and because four independent implementations read those patterns as
-specification.
+It is kept because the figure, with the p. 164 prose that walks through it, is the
+only place chapter 5 prints a state encoding, and because four independent
+implementations read those patterns as specification.
 
 ---
 
 ## What the HRM says
 
-**Figure 5-8, printed p. 166** labels its states `000`, `001`, `101`, `010`,
-`011`, and names the flip-flops in its own legend:
+**Figure 5-8, printed p. 166** labels its working states `000`, `001`, `101`,
+`010`, `011`, draws `100`, `110` and `111` as unused states that return to `000`,
+and names the flip-flops in its own legend:
 
 > `sq2,1,0` — "The name of the state flip-flops, MSB to LSB"
 
@@ -66,10 +69,10 @@ parameter AUDIO_STATE_4 = 3'b110;
 
 ### Measured
 
-An 80 000-tick sweep reaches `000`, `001`, `010`, `011`, `110` and **never**
-`100`, `101` or `111`. The figure's `101` is unreachable; `110`, which the figure
-does not print, is live. "In the 011 state the lower byte is output" measures
-`sample = 0x0` there, and the `010→011→010` loop measures its destination as `6`.
+The package's legal-stimulus runs, one DMA-driven and one direct, reach `000`,
+`001`, `010`, `011`, `110` and **never** `100`, `101` or `111`. The figure's `101`
+is unreachable; `110`, which the figure draws as unused, is live. "In the 011
+state the lower byte is output" measures `sample = 0x0` there, and the `010→011→010` loop measures its destination as `6`.
 
 ---
 
@@ -77,12 +80,12 @@ does not print, is live. "In the 011 state the lower byte is output" measures
 
 | | code | |
 |---|---|---|
-| **WinUAE** | `audio.cpp` | states 0, 1, 2, 3 |
-| **vAmiga** | `StateMachine.cpp` | `0b000`, `0b001`, `0b010`, `0b101` |
+| **WinUAE** | [`audio.cpp:1872`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1872) | states 0, 1, **5**, 2, 3 — `cdp->state = 5;` follows the first DMA word, as `101` does in the figure |
+| **vAmiga** | [`Core/Components/Paula/Audio/StateMachine.cpp:253`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L253) | `0b000`, `0b001`, `0b101`, `0b010`, `0b011` — `state = 0b101;` in `move_001_101()` |
 | **Denise** | `emulation/libami/paula/audio.cpp` | states 0, 1, 2, 3 and **5** |
 | **Copperline** | [`src/chipset/paula.rs:107-111`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L107-L111) | <pre>const AUD_IDLE: u8 = 0b000;<br>const AUD_DMA_FIRST: u8 = 0b001;<br>const AUD_DMA_SECOND: u8 = 0b101;<br>const AUD_OUT_HI: u8 = 0b010;<br>const AUD_OUT_LO: u8 = 0b011;</pre> |
 | **MiSTer** | [`rtl/paula_audio_channel.v:242-246`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L242-L246) | descendant — byte-identical to NanoMig; the whole file matches, confirmed by a full-file comparison. The same encoding mismatch against Figure 5-8 |
-| **TC64** | [`rtl/minimig/paula_audio_channel.v:219-223`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L219-L223) | descendant — the same five `parameter AUDIO_STATE_*` lines verbatim, though the file around them differs: TC64 lacks the ~29-line PWM volume-gating block (see [NM-HRM-025](NM-HRM-025.md)) that sits between the audio-state-machine's neighbours in NanoMig, which is why the line numbers shift from NanoMig's 242-246 to TC64's 219-223. The encoding mismatch against Figure 5-8 is inherited by both lines equally |
+| **TC64** | [`rtl/minimig/paula_audio_channel.v:219-223`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L219-L223) | descendant — the same five `parameter AUDIO_STATE_*` lines verbatim, though the file around them differs: TC64 lacks the PWM volume-gating block (NanoMig `:136-150`, see [NM-HRM-025](NM-HRM-025.md)) together with its declarations and the `sample_okk` output, 23 lines in all before this point, which is why the line numbers shift from NanoMig's 242-246 to TC64's 219-223. The encoding mismatch against Figure 5-8 is inherited by both lines equally |
 
 **All four independent implementations use the figure's numbering, including
 `101`.** Copperline writes the five constants out with the manual's bit patterns

@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs) · `BLTXPTH-WIDTH-REGARDLESS-OF-ECS`, claims `6-appa-registers.c110`, `ch6-appa-bltxpt.c2`, `ch6-appa-bltxpt.c6` (p. 270), and `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE`, claims `6-dma-channels.c67`, `ch6-dma.c69` (p. 172) |
 | **Chapter** | 6 — Blitter, printed p. 172; Appendix A, printed p. 270; Appendix C, printed p. 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red, on one measurement: `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` expects the two chipsets to differ, `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE` expects the direction as well — three bits at `ecs = 0`, five at `ecs = 1`. `BLTCON0L-GATED-BY-ECS`, the same write-and-compare against a register the RTL does gate, is green in the same run |
-| **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`). vAmiga and Denise do not — by Agnus revision |
+| **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper) and [NM-HRM-024](NM-HRM-024.md) (audio) — the same decision in two other engines |
 
 ---
@@ -62,15 +62,16 @@ because the two rows are equal, `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE` because the
 | | | |
 |---|---|---|
 | **WinUAE** | [`memory.cpp:2619-2623`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2619-L2623) | **narrows the BUS, not the register.** `chipmem_full_mask = 0x80000 - 1` when `CSMASK_ECS_AGNUS` is clear — 19 bits on OCS, on the Agnus-side chip-RAM path disk and every other DMA fetch uses. The register itself stays full width. Two caveats in the same function stop it being a clean vote for the manual: `cs_agnussize` overrides it either way (`:2627-2644`), and with JIT on, `if (currprefs.cachesize) chipmem_full_mask = chipmem_bank.allocated_size - 1` (`:2646-2648`) drops the chipset term entirely |
-| **vAmiga** | — | no chipset narrowing |
-| **Denise** | — | no mask on the high word |
+| **vAmiga** | [`Core/Components/Memory/Memory.cpp:1621-1623`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L1621-L1623)<br>[`Core/Components/Agnus/Agnus.cpp:190-194`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L190-L194) | **narrows the BUS, not the register**, by Agnus revision. Every Agnus DMA read goes through `Memory::peek16 <Accessor::AGNUS>`, which begins `addr &= agnus.ptrMask;` (writes likewise, `:2157-2159`), and the mask is set per revision: <pre>case AgnusRevision::OCS:     ptrMask = 0x07FFFF; break;<br>case AgnusRevision::ECS_1MB: ptrMask = 0x0FFFFF; break;</pre> The blitter's pointer register itself stays full width |
+| **Denise** | [`emulation/libami/agnus/blitter.cpp:340-344`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/blitter.cpp#L340-L344)<br>[`emulation/libami/agnus/memory.cpp:695-698`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/memory.cpp#L695-L698) | masks the stored pointer, but to the installed chip RAM, not by Agnus revision: `bltApt &= agnus.dmaChipMemMask;`, with `dmaChipMemMask = chipMemMask`, the chip RAM size less one. Its one chipset condition widens rather than narrows: an ECS Agnus with 512K chip and at least 512K slow RAM gets `dmaChipMemMask = 0xfffff` |
 | **Copperline** | [`src/chipset/agnus.rs:113-118`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L113-L118) | <pre>pub fn dma_addr_capability_mask(self) -&gt; u32 {<br>&nbsp;&nbsp;&nbsp;&nbsp;match self {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Self::Ocs =&gt; 0x0007_FFFF,</pre> applied centrally to every DMA pointer, blitter included |
 | **MiSTer** | [`rtl/agnus_blitter_adrgen.v:62`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter_adrgen.v#L62) | descendant — identical to NanoMig: `assign bltptr_in[20:1] = enaptr ? newptr[20:1] : {data_in[4:0], data_in[15:1]};`. The instantiation at `agnus_blitter.v:596` connects no `.ecs()` |
 | **TC64** | [`rtl/minimig/agnus_blitter_adrgen.v:62`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_blitter_adrgen.v#L62) | descendant — the same line, byte for byte; the file is unchanged in both forks. The instantiation at `agnus_blitter.v:596` (MiSTer) / `agnus_blitter.v:576` (TC64, same line as NanoMig) connects no `.ecs()` in either tree. A fix here diverges from neither line |
 
-**Three of the four independent implementations side with NanoMig.** Copperline
-narrows in the register, and it does so in one place for all engines rather than per
-engine. MiSTer and TC64 carry the same unconditional five-bit latch, inherited
+**Three of the four independent implementations narrow by chipset; only Denise
+does not.** Copperline narrows in the register, and it does so in one place for all
+engines rather than per engine; WinUAE and vAmiga narrow the address every DMA
+fetch drives. MiSTer and TC64 carry the same unconditional five-bit latch, inherited
 rather than independently arrived at.
 
 
@@ -129,13 +130,10 @@ Three separate patches in three engines is the option to avoid.
 
 ## What holds the finding up
 
-**Measured at `agnus_blitter`, the parent that has the `ecs` port** — after an
-independent validation rejected handling it one fixture lower, where that port
-does not exist. A test cannot demonstrate that a chipset input is ignored from
-inside a module the input never reaches.
-
-Every statement on this page was checked by reading the RTL directly rather than
-taken from the classifier's report.
+**Measured at `agnus_blitter`, the parent that has the `ecs` port** — not one
+fixture lower, at `agnus_blitter_adrgen`, where that port does not exist. A test
+cannot demonstrate that a chipset input is ignored from inside a module the input
+never reaches.
 
 The measurement, its control and its mutation are recorded in the package. The
 finding is kept separate from [NM-HRM-003](NM-HRM-003.md) because the two rest on separate
@@ -147,10 +145,9 @@ answer.
 
 ## For the specialists
 
-Three of four implementations do what NanoMig does. Read with [NM-HRM-003](NM-HRM-003.md), where
-the same is true, that points at the manual rather than at the RTL.
+Three of the four independent implementations narrow by chipset, as the manual
+does; only Denise leaves the chipset out, and it narrows to the installed chip RAM
+instead. The implementations do not make the printed sentence the outlier.
 
-It does not close either one. The manual is this project's oracle and an
-implementation never promotes to that — but where three independent
-implementations and the design under test all disagree with a printed sentence,
-the sentence is worth re-reading before the RTL is.
+It does not close the finding. The manual is this project's oracle and an
+implementation never promotes to that.

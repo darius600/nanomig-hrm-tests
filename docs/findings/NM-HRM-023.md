@@ -16,7 +16,9 @@
 
 ## What the HRM says
 
-It says it **twice, on two pages**, and neither sentence admits an exception.
+It says it **twice, on two pages** of chapter 4, and neither sentence admits an
+exception; Appendix A's register table, printed p. 284, marks the bit "(odd
+sprites)" as well.
 
 **Printed p. 128:**
 
@@ -28,8 +30,8 @@ It says it **twice, on two pages**, and neither sentence admits an exception.
 > 2, is set to 1 in the data structure for the odd-numbered" sprite
 
 The chapter's own design depends on it: the odd sprite's control word is what
-carries the attachment, which is why its data words supply the high two bits of
-the combined colour.
+carries the attachment, and its data words supply the high two bits of the
+combined colour.
 
 ---
 
@@ -57,7 +59,7 @@ opens the combined-colour path on its own. The manual requires SPR1CTL.
 | **WinUAE** | [`drawing.cpp:2838`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L2838) | <pre>dspr[num & ~1].attached = (dspr[num \| 1].ctl & 0x80) != 0;</pre> the **odd** sprite only |
 | **vAmiga** | [`Core/Components/Denise/Denise.cpp:1130`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L1130) | <pre>bool attached = GET_BIT(sprctl[sprite2], 7);</pre> with `sprite2 = 2*pair + 1` — the odd one |
 | **Denise** | [`emulation/libami/video/denise.cpp:300`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L300) | <pre>spr.attached = (nr & 1) && (value & 0x80);</pre> **the manual's rule exactly** |
-| **Copperline** | — | reads the bit without the odd-sprite condition *(source reading, not run)* |
+| **Copperline** | [`src/video/bitplane/sprite.rs:1096-1110`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/sprite.rs#L1096-L1110) | <pre>even_lines<br>&nbsp;&nbsp;&nbsp;&nbsp;.iter()<br>&nbsp;&nbsp;&nbsp;&nbsp;.chain(odd_lines.iter())<br>&nbsp;&nbsp;&nbsp;&nbsp;.filter(\|line\| line.attached)</pre> reads the bit without the odd-sprite condition: a pair renders attached on any line where either sprite's own bit is set (`attached: ctl & 0x0080 != 0`, `:322`), with no chipset condition *(source reading, not run)* |
 | **MiSTer** | [`rtl/denise_sprites.v:283`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v#L283) | descendant — byte-identical: `if (attach1 \|\| (!aga && attach0)) // sprites are attached -> 15 colors + transparant`, the same even-sprite term and the same `!aga` gate |
 | **TC64** | [`rtl/minimig/denise_sprites.v:273`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_sprites.v#L273) | descendant — the identical line. A fix here diverges from both lines at once, and the `!aga` gate this finding's caution asks about is theirs too, not something NanoMig added |
 
@@ -124,15 +126,6 @@ not.
 - **The data path is proven live first.** A separate
   `[control] FIXTURE-LIVE-DATA-PATH` shows the sprite path delivers distinct
   known values in order before anything reads one.
-
-### Found three times before it was built
-
-Two classifiers working different lots of chapter 4 measured it independently,
-neither having seen the other's work; the lead then verified it against the
-source and both printed pages; and the builder reproduced it from the quotations
-alone, having written and committed its specification before opening the RTL.
-
-That is the strongest provenance any finding in this register has.
 
 ---
 

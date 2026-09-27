@@ -81,7 +81,7 @@ assign volgate = (volcnt < audvol);
 | path | volumes 63, 64, 65, 96, 127 | levels |
 |---|---|---|
 | multiply (`ldata`/`rdata`) | `ldatasum = 4032` for **all five** | 64 distinct |
-| PWM (`ldata_okk`/`rdata_okk`) | open-tick counts 0, 4, 128, 252, 256 for volumes 0, 1, 32, 63, 64 — exactly 4× each written value | **65 distinct** |
+| PWM (`ldata_okk`/`rdata_okk`) | open-tick counts 0, 4, 128, 252, 256 for volumes 0, 1, 32, 63, 64 — exactly 4× each written value | **65 distinct** by that rule; five sampled |
 
 ---
 
@@ -110,10 +110,6 @@ appendix A's "bit 6 forces maximum" and they arrive at different answers: Denise
 masks to seven bits and then forces the **value** to `0x40` — 64 — while
 `paula_audio_mixer` ORs bit 6 down into the low six bits and arrives at 63.
 
-*Citation corrected when the sources were checked out: the register previously
-gave Denise's line as `paula/audio.cpp:153`. The clamp is at **154**; 153 is the
-seven-bit mask above it.*
-
 
 ---
 
@@ -140,7 +136,7 @@ the helper itself to widen, or the mixer to special-case it:
 ```
 
 with `paula_audio_volume`'s `volume` port widened to `[6:0]`. That change makes
-the multiply path agree with the PWM path already in the same file.
+the multiply path agree with the PWM path already in the same design.
 
 **This is a suggestion, not a decision.** Whether it matters depends on which
 path reaches the DAC in a real build — see the closing note.
@@ -160,7 +156,7 @@ make -C hrm/ch5-audio-volume-scale  test NANOMIG=/path/to/your/NanoMig
 Leave `NANOMIG` off only when you deliberately want the pinned revision — for
 instance to reproduce the before-state in the table below.
 
-**Before any change, measured 19.09.2026 against the pinned submodule:**
+**Before any change, measured against the pinned submodule:**
 
 | Package | Result | Which reds |
 |---|---|---|
@@ -195,6 +191,7 @@ concluding anything: each one names the finding it belongs to.
 
 ## For the specialists
 
-The whole of Table 5-9 runs **+0.10 to +0.18 dB high** on the multiply path and
-reproduces to the printed decimal on the PWM path. Which of the two reaches the
-DAC in a real build decides whether this is audible or bookkeeping.
+Measured against the multiply path's own maximum, the whole of Table 5-9 runs
+**+0.09 to +0.18 dB high** there, and reproduces to the printed decimal on the PWM
+path. Which of the two reaches the DAC in a real build decides whether this is
+audible or bookkeeping.
