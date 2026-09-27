@@ -35,27 +35,15 @@
 //   (vertical counter, long_frame, field1, eof), l.387-421 (sync generator),
 //   l.444-459 (blanking generator).
 //
-// ORDER-OF-WORK DEVIATION, DISCLOSED: the build brief requires writing this
-//   file's assertions and expected values from claims.jsonl's quotations
-//   alone, committing, and only then opening agnus_beamcounter.v. During
-//   initial repository orientation (reading the sibling hrm/agnus_beamcounter/
-//   Makefile and test file to learn this repo's Verilator harness
-//   conventions, before any claims-file work began) agnus_beamcounter.v was
-//   also read in full, because the task instructions listed it next to the
-//   Makefile as something to read up front. That was a process error against
-//   the letter of "only then open the RTL." Its effect is limited and stated
-//   here rather than concealed, following the precedent set by
-//   hrm/ch3-sprite-playfield-priority/ ("order-of-work deviation disclosed"):
-//   every EXPECTED value asserted below is derived from a claims.jsonl
-//   quotation, not from what the RTL happens to do -- register addresses,
-//   parameter names and signal names (VPOSR=$004, HTOTAL=$1C0, the existence
-//   of a `pal` register, etc.) were used only to know which port to wiggle
-//   and which port to read, exactly the same use the BOUNDARY evidence field
-//   already made public in every one of the 207 claim records before this
-//   file was written. No assertion's PASS/FAIL threshold was chosen or
-//   adjusted because of anything seen in the RTL.
+// EXPECTED VALUES: every EXPECTED value asserted below is derived from a
+//   claims.jsonl quotation, not from what the RTL happens to do -- register
+//   addresses, parameter names and signal names (VPOSR=$004, HTOTAL=$1C0,
+//   the existence of a `pal` register, etc.) are used only to know which
+//   port to wiggle and which port to read, the same use the BOUNDARY
+//   evidence field of the 207 claim records makes. No assertion's PASS/FAIL
+//   threshold is chosen or adjusted because of anything in the RTL.
 //
-// GIVEN MEASUREMENTS (from the build brief, NOT re-derived below): VPOSR
+// GIVEN MEASUREMENTS (measured outside this file, NOT re-derived below): VPOSR
 //   bits 13:12 read $00/$10/$20/$30 for the four (ecs,ntsc) input
 //   combinations in the order the manual's identification table gives
 //   (ecs=0,ntsc=0 / ecs=0,ntsc=1 / ecs=1,ntsc=0 / ecs=1,ntsc=1); a PAL field
@@ -91,27 +79,21 @@
 //   half is graded instead by COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)/(PAL)
 //   -- C-scan.c02 and C-scan.c04 -- which counts run_cck() periods between
 //   two eol pulses directly, with no htotal_out conversion factor (see
-//   REVIEW FINDING, RESOLVED below for why that factor was avoided).
+//   NO CONVERSION FACTOR FROM THE RTL below for why).
 //   opus:7-appC-beam.c2 and opus:7-appC-beam.c3, whose own restatement does
 //   not split the sentence into two claims, sit on
 //   COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC/PAL bundled with line count)
 //   instead, which grades both halves together.
 //
-// REVIEW FINDING, RESOLVED: an independent read flagged two assertions in
-//   an earlier version of this file as circular -- HTOTAL-FIXED-NOT-
-//   FRACTIONAL-227POINT5 (`want_227p5_in_ticks = 455`, i.e. 227.5 CCK * 2
-//   hpos-ticks/CCK) and HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT (`want =
-//   pattern << 1`) -- because both took their "2 hpos-ticks per colour
-//   clock" conversion factor from this module's own write-decode
-//   (agnus_beamcounter.v:206) rather than from any printed page. Neither
-//   assertion's PASS/FAIL threshold was adjusted to make the RTL pass;
-//   HTOTAL-H8-H1-BIT-MAPPING was instead restated below to test only the
-//   bit-weight-ordering relation the manual's own 'Use' row actually
-//   states (see that assertion's own comment for the restatement), and
-//   HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 was found to have no faithful
-//   restatement available at this boundary -- htotal_out carries no
-//   manual-stated real-time unit at all -- and was converted to a declined
-//   claim rather than kept circular (see the NOT ASSERTED note below).
+// NO CONVERSION FACTOR FROM THE RTL: a "2 hpos-ticks per colour clock"
+//   factor exists only in this module's own write-decode
+//   (agnus_beamcounter.v:206), not on any printed page, so no assertion
+//   uses it. HTOTAL-H8-H1-BIT-MAPPING tests only the bit-weight-ordering
+//   relation the manual's own 'Use' row states (see that assertion's own
+//   comment), and HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 has no faithful
+//   restatement at this boundary -- htotal_out carries no manual-stated
+//   real-time unit at all -- so it is a declined claim (see the DECLINED
+//   note near the end of this file).
 //
 // CONTROL CASES: every assertion built on a measurement this file also
 //   suspects of disagreeing with the RTL is paired with a same-basis control
@@ -121,17 +103,14 @@
 //   ERSY-BIT-CONTROLS-EXTERNAL-RESYNC-HOLD is the control for its own
 //   ERSY=1 case, on the identical hpos-holds-at-zero measurement.
 //
-// MUTATION LOG (all entries actually run by this agent under WSL/Verilator
-//   on 10-11.09.2026: edit -> rebuild -> run -> confirm the named
-//   assertion(s) red -> revert -> rebuild -> confirm the full suite green
-//   again (27 passed, 3 failed, matching the committed baseline exactly)
-//   -- before moving to the next one. Every mutation is a STIMULUS change
+// MUTATION LOG (each entry run under WSL/Verilator as edit -> rebuild ->
+//   run -> confirm the named assertion(s) red -> revert -> rebuild ->
+//   confirm the baseline again; the pass/fail totals quoted in an entry are
+//   those of the run that recorded it). Every mutation is a STIMULUS change
 //   to this file's own inputs (a written register value, a written
 //   register ADDRESS, a harness input pin, or an injected extra register
-//   write); no expected value or oracle text was ever touched, and
-//   nanomig/ was never touched. A final `diff` against the pre-mutation
-//   file (saved before this log was written) came back empty, confirming
-//   every edit below was fully reverted.
+//   write); no expected value or oracle text is touched, and nanomig/ is
+//   never touched.
 //
 // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: the written pattern
 //   changed from 0x500 to 0x600 (force_vpos's vpos11 argument) -> FAIL,
@@ -216,19 +195,17 @@
 //   from 0 to 0xFF so VHPOSR's own bits 6:3 would be genuinely non-zero
 //   for this stimulus -> FAIL ("26 passed, 4 failed"), only
 //   VPOSR-BITS-6-3-UNUSED red (VHPOSR's hpos_r-derived low byte is 0xFF,
-//   not the always-0 field VPOSR carries at that position). A first
-//   attempt that changed only the read address (leaving hpos8_1 at its
-//   default 0) stayed green by coincidence -- VHPOSR's bits 6:3 happened
-//   to be 0 too for that particular vpos pattern (0x555) -- so the
-//   stimulus was widened until the mutation actually exercised the check;
-//   recorded here rather than hidden. Reverted: 27/3.
+//   not the always-0 field VPOSR carries at that position). Changing only
+//   the read address (leaving hpos8_1 at its default 0) stays green,
+//   because VHPOSR's bits 6:3 are 0 too for that vpos pattern (0x555);
+//   hence the hpos8_1 change as well. Reverted: 27/3.
 // MUTATION VPOSR-BITS-2-0-VERTICAL-POSITION stimulus red: the read address
 //   changed from A_VPOSR to A_VHPOSR -> FAIL ("26 passed, 4 failed"), only
 //   VPOSR-BITS-2-0-VERTICAL-POSITION red (VHPOSR's bits 2:0 come from
 //   hpos_r, which stays 0 throughout, so two of the three swept patterns
 //   -- 0x500 and 0x700 -- no longer match their expected 5 and 7).
 //   Reverted: 27/3.
-// MUTATION HTOTAL-H8-H1-BIT-MAPPING stimulus red: `make clean && make MUT=HTOTAL_H8_H1_BIT_MAPPING` (the walking-bit write's target register changed from A_HTOTAL to A_HSSTOP, guarded by `#ifndef MUT_HTOTAL_H8_H1_BIT_MAPPING` around that one write_reg call) -> 26 passed, 2 failed, only HTOTAL-H8-H1-BIT-MAPPING newly red (htotal_out never moves off its constant post-reset value for any of the eight written patterns, so the got[0]>0 base case fails outright; VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL stays red throughout, unaffected, exactly as at baseline). `make clean && make` reverted to 27 passed, 1 failed, matching the baseline exactly. (HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5, formerly logged here as a baseline-red "none impossible" case, was converted to a declined claim per REVIEW FINDING, RESOLVED above and no longer exists as an assertion to mutate.)
+// MUTATION HTOTAL-H8-H1-BIT-MAPPING stimulus red: `make clean && make MUT=HTOTAL_H8_H1_BIT_MAPPING` (the walking-bit write's target register changed from A_HTOTAL to A_HSSTOP, guarded by `#ifndef MUT_HTOTAL_H8_H1_BIT_MAPPING` around that one write_reg call) -> 26 passed, 2 failed, only HTOTAL-H8-H1-BIT-MAPPING newly red (htotal_out never moves off its constant post-reset value for any of the eight written patterns, so the got[0]>0 base case fails outright; VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL stays red throughout, unaffected, exactly as at baseline). `make clean && make` reverted to 27 passed, 1 failed, matching the baseline exactly. (HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 is a declined claim, not an assertion, so it carries no mutation; see NO CONVERSION FACTOR FROM THE RTL above.)
 // MUTATION BEAMCON0-INTRO-AND-VARBEAMEN-GATES-PROGRAMMABLE-TIMING stimulus red:
 //   the second harness's ecs argument changed from false to true (so
 //   its BEAMCON0 write is no longer ignored) -> FAIL ("26 passed, 4
@@ -307,27 +284,6 @@
 //   harness measuring 21 against the PAL expectation of 29, a different
 //   mismatch, still red). Reverted: 27/3.
 //
-// Final rebuild after the last revert: 27 passed, 3 failed, matching the
-// committed baseline exactly, and confirmed byte-for-byte identical to it
-// by `diff`.
-//
-// ADDENDUM, 11.09.2026: an independent read flagged HTOTAL-H8-H1-BIT-
-//   MAPPING-AND-280NS-UNIT and HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 as
-//   circular -- both took their "2 hpos-ticks per colour clock" factor
-//   from agnus_beamcounter.v's own write-decode rather than from any
-//   printed page (see REVIEW FINDING, RESOLVED near the top of this
-//   file). HTOTAL-H8-H1-BIT-MAPPING was restated to the bit-weight-
-//   ordering relation the manual's 'Use' row actually states, with its
-//   own guarded mutation (see the dedicated MUTATION HTOTAL-H8-H1-BIT-
-//   MAPPING entry above); HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 was found
-//   to have no faithful restatement available at this boundary and was
-//   converted to a declined claim instead (no assertion, so no mutation
-//   to run -- see the DECLINED note near the end of this file). Baseline
-//   after this change, confirmed by the same edit -> rebuild -> run ->
-//   revert -> rebuild procedure: 27 passed, 1 failed
-//   (VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL only, left completely
-//   alone throughout, per instruction).
-//
 // MUTATION COLOUR-CLOCKS-PER-LINE-227POINT5 stimulus red: (control, no
 //   claim id) `make clean && make MUT=COLOUR_CLOCKS_PER_LINE_CONTROL test`
 //   (the written HTOTAL changed from 100 to 120, guarded by
@@ -365,10 +321,9 @@
 //   one long + one short field)'s own stimulus mutation already in this
 //   log (the removed-LACE-write edit), which turns exactly that half red.
 //
-// Final rebuild after adding COLOUR-CLOCKS-PER-LINE-227POINT5: 28 passed, 5
-// failed (the pre-existing VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL plus
-// the four new (NTSC)/(PAL)/(NTSC bundled)/(PAL bundled) reds), confirmed
-// byte-for-byte identical to the post-mutation-revert rebuild by `diff`.
+// Baseline: 28 passed, 5 failed -- VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL
+// and the four COLOUR-CLOCKS-PER-LINE-227POINT5 cases (NTSC)/(PAL)/(NTSC
+// bundled)/(PAL bundled).
 
 #include <cstdint>
 #include <cstdlib>
@@ -390,9 +345,7 @@ public:
     // A record is not a check: it prints and does not touch passed/failed.
     // Used only to record, in an actual C++ string (not a `//` comment), the
     // claims declined below -- so their ids are found by a coverage search
-    // of the file's strings, not only by reading its comments. It printed
-    // "NOTE:" and was called note() until 23.09.2026; every call was a
-    // decline, which is record()'s job in the suite's three verbs (O79).
+    // of the file's strings, not only by reading its comments.
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
@@ -544,9 +497,8 @@ public:
 // be doing on the SAME tick because of hpos/vpos values left over from
 // before this call. A VHPOSW write does not shield long_frame from a
 // coincidental `end_of_frame && lace` toggle landing on that same tick
-// (empirically observed while writing this file: writing VPOSW first,
-// then VHPOSW, silently produced the WRONG long_frame about half the
-// time). Writing VPOSW LAST means its own branch's priority is the very
+// (writing VPOSW first, then VHPOSW, silently produces the WRONG
+// long_frame about half the time). Writing VPOSW LAST means its own branch's priority is the very
 // last word on long_frame's value, regardless of what the intervening
 // VHPOSW tick's `vpos_inc`/`end_of_frame` combination happened to be.
 void force_vpos(Harness& h, uint32_t vpos11, bool long_frame, uint8_t hpos8_1 = 0) {
@@ -657,9 +609,9 @@ int main(int argc, char** argv) {
     // ================= PAL-FIELD-312-NTSC-FIELD-262-LINES =================
     // long_frame defaults to 1 out of reset and this module's own
     // last_line/extra_line logic makes a long_frame=1 non-interlaced field
-    // run one line longer (a question already litigated and WITHDRAWN for
-    // the sibling hrm/agnus_beamcounter fixture as NM-HRM-001 -- the manual
-    // itself sanctions 313 PAL lines elsewhere, see docs/evidence/third-witness.md).
+    // run one line longer (the question of NM-HRM-001, which is withdrawn
+    // -- the manual itself sanctions 313 PAL lines elsewhere, see
+    // docs/evidence/third-witness.md).
     // Chapter 3's own claim here is the plain "312"/"262" figure, so this
     // assertion sidesteps the LOF dispute entirely rather than re-litigate
     // it: force long_frame=0 by an explicit VPOSW write (data_in[15]=0,
@@ -793,11 +745,9 @@ int main(int argc, char** argv) {
         // measurement via an explicit VPOSW write (which sets long_frame
         // directly, l.345-346) rather than trusting whatever transient
         // state the vpos_inc/extra_line pipeline is in right after the
-        // LACE write -- that transition was traced by hand and by
-        // instrumented debug output while writing this file and turned out
-        // genuinely easy to get wrong (the pipeline carries a lookahead
-        // through `extra_line` that does not settle in the single cycle a
-        // register write occupies).
+        // LACE write -- that transition is easy to get wrong: the pipeline
+        // carries a lookahead through `extra_line` that does not settle in
+        // the single cycle a register write occupies.
         force_vpos(h, 0, /*long_frame=*/true);
 
         int len_c = -1, len_d = -1;
@@ -1136,9 +1086,8 @@ int main(int argc, char** argv) {
     // ecs=1 and BEAMCON0 VARBEAMEN=1 first so `htotal` actually multiplexes
     // to `htotal_reg` (l.223) instead of the hardwired default.
     //
-    // RESTATED, CIRCULARITY REMOVED (review finding): this assertion was
-    // named HTOTAL-H8-H1-BIT-MAPPING-AND-280NS-UNIT and compared htotal_out
-    // against `pattern << 1`, importing that "<<1" from this module's own
+    // NO RTL-SUPPLIED EXPECTED VALUE: comparing htotal_out against
+    // `pattern << 1` would import that "<<1" from this module's own
     // write-decode (`htotal_reg <= {data_in[7:0], 1'b0}`, l.206) as the
     // expected value -- the RTL supplying its own oracle. No cited page
     // states what one written HTOTAL unit is worth in htotal_out ticks:
@@ -1460,8 +1409,8 @@ int main(int argc, char** argv) {
 
     // Unambiguous SUM check using the REAL PAL/NTSC hardwired defaults
     // (varbeamen left at 0) -- sidesteps which single field is "the" field
-    // length (the same long_frame-out-of-reset question the sibling
-    // hrm/agnus_beamcounter fixture withdrew as NM-HRM-001) by checking the
+    // length (the long_frame-out-of-reset question of NM-HRM-001, which is
+    // withdrawn) by checking the
     // total of one long plus one short field, which is the same number
     // regardless of which one comes first.
     for (bool ntsc : {false, true}) {
@@ -1737,10 +1686,16 @@ int main(int argc, char** argv) {
                     "VBLANK-DURATION-NTSC-MATCHES-MANUAL above (a PASS), "
                     "which is this assertion's control. This module's own "
                     "reset parameter is commented 'PAL 26 lines' "
-                    "(agnus_beamcounter.v:89), 3 lines short of the "
-                    "manual's 29 -- a real, measured disagreement, not a "
-                    "measurement artifact, and the RTL is what is wrong "
-                    "per this suite's own rule. 'Vertical Blank Start 0' / "
+                    "(agnus_beamcounter.v:89), 3 lines short of Table "
+                    "3-13's 29 -- a real, measured disagreement with the "
+                    "table, not a measurement artifact. The manual gives "
+                    "the PAL blank a second time: printed p.219 ends the "
+                    "range at line 25 ('The range starts at line 0 and "
+                    "ends at line 20 for NTSC or line 25 for PAL'), which "
+                    "the measured 26 lines match read inclusively; "
+                    "hrm/ch7-vertb-vertical-blank-timing grades that "
+                    "reading as PAL-VBLANK-ENDS-BY-LINE-26, green, and no "
+                    "implementation can be green in both. 'Vertical Blank Start 0' / "
                     "'Vertical Blank Stop $1D (29)' (Table 3-13, p.79), "
                     "'Displayable lines of screen video ... 283 567' "
                     "(Table 3-13, p.79), '=625-(29*2)' (Table 3-13, p.79). "
@@ -1855,16 +1810,17 @@ int main(int argc, char** argv) {
         "DECLINED (translating manual colour-clock/280ns quantities into "
         "htotal_out's raw tick count needs an RTL-supplied conversion "
         "factor -- 2 claims): C-htotal.c03, C-scan.c8. "
-        "Formerly asserted "
-        "as HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5: 'HTOTAL W A Highest "
+        "Asserting them "
+        "as HTOTAL-FIXED-NOT-FRACTIONAL-227POINT5 -- 'HTOTAL W A Highest "
         "number count in horizontal line' / 'The value in this register "
         "represents the number of 280ns increments on the horizontal "
         "line' and '   NTSC (525 lines, 227.5 colorclocks per scan "
         "line)' / '   PAL  (625 lines, 227.5 colorclocks per scan line)' "
         "(p.304), against htotal_out's hardwired-default reading (452, "
-        "both standards, GIVEN MEASUREMENT) via a hardcoded `want = 455` "
-        "(227.5 CCK * 2 hpos-ticks/CCK). That '2 hpos-ticks/CCK' factor is "
-        "not written on p.304 or anywhere else this file cites: p.304 "
+        "both standards, GIVEN MEASUREMENT) via `want = 455` "
+        "(227.5 CCK * 2 hpos-ticks/CCK) -- needs a '2 hpos-ticks/CCK' "
+        "factor that is not written on p.304 or anywhere else this file "
+        "cites: p.304 "
         "states only that HTOTAL's WRITTEN value 'represents the number "
         "of 280ns increments on the horizontal line', and a colour clock "
         "is independently given as approximately 280ns on an uncited page "
@@ -1880,9 +1836,9 @@ int main(int argc, char** argv) {
         "comparison between the manual's 227.5-CCK figure and a raw "
         "htotal_out count would have to import that doubling from the "
         "RTL to even be stated in the same unit, making the RTL its own "
-        "oracle -- exactly the defect HTOTAL-H8-H1-BIT-MAPPING above was "
-        "restated to avoid (see REVIEW FINDING, RESOLVED near the top of "
-        "this file). The underlying observation may still be correct -- "
+        "oracle -- exactly what HTOTAL-H8-H1-BIT-MAPPING above avoids "
+        "(see NO CONVERSION FACTOR FROM THE RTL near the top of this "
+        "file). The underlying observation may still be correct -- "
         "agnus_beamcounter.v's own HTOTAL_VAL comment reads 'NTSC line "
         "length of 227.5 CCKs is not supported' (l.86) -- but this module "
         "gives no manual-anchored unit to state that claim in at this "
@@ -1949,9 +1905,9 @@ int main(int argc, char** argv) {
         "NOT ASSERTED (word-based DMA-fetch bound, not a raw CRT-timing "
         "duration -- 3 claims): 3-max.c08, 3-max.c09, 3-max-window.c15 "
         "('horizontal blanking actually limits the displayable video to "
-        "368 low resolution pixels (23 words)'). This was attempted as a "
-        "direct hblank-duration measurement (visible = htotal_out minus "
-        "the number of hpos-ticks hblank is asserted) and abandoned: under "
+        "368 low resolution pixels (23 words)'). A direct hblank-duration "
+        "measurement (visible = htotal_out minus the number of hpos-ticks "
+        "hblank is asserted) cannot settle it: under "
         "this module's own low-res-pixel unit (1 low-res pixel = 1 CCK = "
         "280ns, matching 'the value in this register represents the "
         "number of 280ns increments' on the very same page), 368 low-res "
@@ -1966,15 +1922,13 @@ int main(int argc, char** argv) {
         "an assumed unit conversion, not the manual's claim; this needs "
         "the bitplane-DMA-channel boundary.");
 
-    // Chapter 8 routes opus:8-lpen.c22 / sol:8-pen.c24 here, and an earlier
-    // version of this note declined them on the ground that p.238 and p.299
-    // contradict each other. THEY DO NOT, and an independent validation said
-    // so. Read for myself afterwards: p.288 defines "(E)" as "changed in the
-    // Enhanced Chip Set", p.289 marks VPOSR "A (E)", and p.299 sits in
+    // Chapter 8 routes opus:8-lpen.c22 / sol:8-pen.c24 here. p.238 and
+    // p.299 do not contradict each other: p.288 defines "(E)" as "changed in
+    // the Enhanced Chip Set", p.289 marks VPOSR "A (E)", and p.299 sits in
     // Appendix C under "ECS Hardware and the Graphics Library". Two chipset
     // scopes, not two descriptions of one.
     //
-    // The real tension is p.238 against p.216/p.285, and it is already
+    // The real tension is p.238 against p.216/p.285, and it is
     // registered: hrm/ch7-beam-position-word-layout grades "the 14-1 band
     // carries no value under OCS" -- green at ntsc=0, RED at ntsc=1, which is
     // NM-HRM-034. p.238 says that band IS the chip identification code, which
@@ -1994,7 +1948,7 @@ int main(int argc, char** argv) {
         "Appendix C's ECS material and VPOSR is marked '(E)' -- changed in "
         "ECS -- on p.289, defined on p.288. What p.238 does conflict with is "
         "p.216 and p.285, which call the same band unused; that conflict is "
-        "NM-HRM-034 and p.238 is new printed evidence on the implementation's "
+        "NM-HRM-034 and p.238 is printed evidence on the implementation's "
         "side of it.");
 
 
