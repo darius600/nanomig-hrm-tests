@@ -539,8 +539,8 @@ int main(int argc, char** argv) {
             "                bits, a DMA enable bit, and a DMA direction\\n                 (read/write) bit.'): "
             "a SINGLE write with the WRITE (direction) bit set takes effect immediately -- DISKWRITE (DSKBYTR bit "
             "13, p.278-defined) reads 1 -- unlike DMAEN (A5/A6), which needs two -- confirming WRITE and DMAEN are "
-            "two separately-behaving control bits, not one shared mechanism; narrowed from the whole readback word "
-            "(0xB000) to bit 13 alone, since p.278 gives DSKBYTR no required reset/idle value");
+            "two separately-behaving control bits, not one shared mechanism; graded on bit 13 alone, not the whole "
+            "readback word (0xB000), since p.278 gives DSKBYTR no required reset/idle value");
     }
 
     // ========================================================================
@@ -588,8 +588,8 @@ int main(int argc, char** argv) {
             "fully double-written, armed DSKLEN does not start a transfer while this fixture's DMACON-derived "
             "`enable` port is 0 (DMAON, bit 14, stays 0; fdd_led stays 0); raising enable alone, with no further "
             "DSKLEN write, then starts it (DMAON sets, fdd_led becomes 1) -- the enable item is a real, "
-            "independent precondition, not a formality; narrowed from the whole readback word (0x9000/0xD000) to "
-            "DMAON (bit 14, p.278-defined) alone, since p.278 gives DSKBYTR no required reset/idle value");
+            "independent precondition, not a formality; graded on DMAON (bit 14, p.278-defined) alone, not the "
+            "whole readback word (0x9000/0xD000), since p.278 gives DSKBYTR no required reset/idle value");
     }
 
     // ========================================================================
@@ -642,10 +642,10 @@ int main(int argc, char** argv) {
             "A4-DSKLEN-4000-FORCES-OFF-FROM-IDLE (p.247, opus:8-dma.c21/sol:8-dsklen.c10, quote step 2 'Set DSKLEN "
             "to $4000, thereby forcing the DMA for the disk to be\\n      turned off.'): starting from a genuinely "
             "ACTIVE transfer (fdd_led and DMAON both set beforehand), writing $4000 forces it off -- DMAON (bit "
-            "14) drops, fdd_led drops, DISKWRITE (bit 13, the bit $4000 itself sets) reads 1 -- narrowed to DMAON "
-            "and DISKWRITE, both p.278-defined, rather than the whole readback word; and repaired to start from an "
-            "ACTIVE transfer rather than idle, since from idle `dmaen` is already 0 and the write forces nothing "
-            "observable off");
+            "14) drops, fdd_led drops, DISKWRITE (bit 13, the bit $4000 itself sets) reads 1 -- graded on DMAON "
+            "and DISKWRITE, both p.278-defined, rather than the whole readback word; and started from an ACTIVE "
+            "transfer rather than idle, whatever the name says, since from idle `dmaen` is already 0 and the "
+            "write forces nothing observable off");
     }
 
     // ========================================================================
@@ -678,7 +678,7 @@ int main(int argc, char** argv) {
             "requires a special sequence in order to start DMA to the\\ndisk.'; opus:8-dma.c22/sol:8-dsklen.c11, "
             "quote step 3 'Put the value you want into the DSKLEN register.'): a single write of 0x800A does not "
             "start DMA (DMAON, bit 14, stays clear; fdd_led=0) -- a single write is not the special sequence the "
-            "page requires; narrowed from the whole idle word (0x9000) to DMAON alone, since p.278 gives DSKBYTR "
+            "page requires; graded on DMAON alone, not the whole idle word (0x9000), since p.278 gives DSKBYTR "
             "no required reset/idle value");
     }
 
@@ -715,7 +715,7 @@ int main(int argc, char** argv) {
             "sol:8-dsklen.c8 'must be turned on twice'; opus:8-dma.c23/sol:8-dsklen.c12 step 4 'Write this value "
             "again into the DSKLEN register. This actually\\n      starts the DMA.'): a second write repeating "
             "0x800A arms DMAEN and starts disk read DMA (DMAON, bit 14, sets; fdd_led=1, sdc_rd requested for the "
-            "selected drive) -- narrowed from the whole readback word (0xD000) to DMAON alone, since p.278 gives "
+            "selected drive) -- graded on DMAON alone, not the whole readback word (0xD000), since p.278 gives "
             "DSKBYTR no required reset/idle value");
     }
 
@@ -755,9 +755,9 @@ int main(int argc, char** argv) {
             "A7-DSKLEN-4000-FORCES-OFF-DURING-ACTIVE (p.247, opus:8-dma.c24/sol:8-dsklen.c13, quote step 5 'After "
             "the DMA is complete, set the DSKLEN register back to\\n      $4000, to prevent accidental writes to "
             "the disk.'): writing $4000 while a transfer is ACTIVE also forces it off (DMAON, bit 14, drops; "
-            "DISKWRITE, bit 13, reads 1; fdd_led drops to 0), the same as it does from idle (A4) -- narrowed from "
-            "the whole readback word (0xB000) to DMAON/DISKWRITE, since p.278 gives DSKBYTR no required reset/idle "
-            "value");
+            "DISKWRITE, bit 13, reads 1; fdd_led drops to 0), the same transition A4 grades under p.247 step 2 -- "
+            "graded on DMAON/DISKWRITE, not the whole readback word (0xB000), since p.278 gives DSKBYTR no "
+            "required reset/idle value");
     }
 
     // ========================================================================
@@ -810,8 +810,8 @@ int main(int argc, char** argv) {
             "'This sequence prevents accidental writes to the disk.'): double-writing 0xC00A (WRITE+DMAEN) arms a "
             "RAM-to-disk transfer (DMAON and DISKWRITE both set; dmal=1, dmas=1); a SINGLE write of the same value "
             "starts nothing (dmas=0, sdc_wr=0, fdd_led=0) -- the two-write sequence is what prevents that one "
-            "stray write from becoming an accidental disk write; narrowed from the whole readback word (0xF000) "
-            "to DMAON/DISKWRITE, since p.278 gives DSKBYTR no required reset/idle value");
+            "stray write from becoming an accidental disk write; graded on DMAON/DISKWRITE, not the whole "
+            "readback word (0xF000), since p.278 gives DSKBYTR no required reset/idle value");
     }
 
     // ========================================================================
