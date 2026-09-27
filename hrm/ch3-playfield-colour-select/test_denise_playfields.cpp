@@ -11,8 +11,8 @@
 // both Table 3-17's and Table 3-18's dual-playfield columns), extracted by
 // different readers from different sentences than the sibling package
 // hrm/ch3-dual-playfield's own 98-claim inventory. Those two inventories
-// share zero claim ids (measured, not assumed -- see COVERAGE CORRECTION
-// below): the sibling's assertions test its own ids, not these ones, so
+// share zero claim ids (measured, not assumed -- see COVERAGE ACROSS
+// PACKAGES below): the sibling's assertions test its own ids, not these ones, so
 // every one of this package's own claim ids is tested here, on this same
 // fixture, under dblpf=1 where the proposition calls for it.
 // Test class: HRM_CONFORMANCE
@@ -38,7 +38,7 @@
 //   prefix, and they resolve in the claim files that
 //   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
 //
-// EXTENSION. Nine further propositions were routed
+// ROUTED CLAIMS. Nine further propositions are routed
 //   to this package, all restating -- from four different printed pages and
 //   two readers, at finer granularity -- the same pair of facts this
 //   package's own IDENTITY-MAPPING-SWEEP row N=0 and BIT-SIGNIFICANCE-
@@ -71,13 +71,11 @@
 //       color and \"1\"s where you want the color in register 1."), split
 //       by that reader into its two halves: c3 for the zero-bit/background
 //       half, c4 for the one-bit/register-1 half.
-//   None of these nine ids is a compressed spelling of an id either
-//   existing assertion already carries, so the build brief's one allowed
-//   addition to a frozen label does not apply here -- a new assertion is
-//   needed. Planned: TWO-COLOUR-CODE-SELECT below, testing the same two
-//   data points (bpldata=0 -> plfdata=0, bpldata=PLANE(1) -> plfdata=1)
-//   under its own label and its own mutation record, leaving IDENTITY-
-//   MAPPING-SWEEP and BIT-SIGNIFICANCE-ORDER's existing labels untouched.
+//   None of these nine ids is a compressed spelling of an id either of
+//   those assertions carries, so they sit on an assertion of their own:
+//   TWO-COLOUR-CODE-SELECT below, testing the same two data points
+//   (bpldata=0 -> plfdata=0, bpldata=PLANE(1) -> plfdata=1) under its own
+//   label and its own mutation record.
 //   `classify.package` on these nine claims names ch3-colour-register-format
 //   and ch3-ddf-fetch-window -- neither of which is this package. That
 //   field reflects an earlier classification pass, not this package's own
@@ -86,30 +84,27 @@
 //   routing sends all nine claims here; the full claims.jsonl's own
 //   routing.route/routing.how is what this package treats as authoritative.
 //
-// COVERAGE CORRECTION (recorded for traceability): an earlier version of
-// this file declined 134 dual-playfield-flavoured claim ids as "already
-// covered by hrm/ch3-dual-playfield," reasoning from topic overlap rather
-// than claim-id coverage. Measured: the two packages' claims.jsonl files
-// share zero ids (272 here, 98 there, 0 in common), and none of this
-// package's declined ids appeared anywhere in the sibling's assertion
-// strings. A claim is covered only by an assertion that names its own id
-// -- coverage does not transfer across packages just because both extract
-// propositions from the same module and the same general subject. 131 of
-// those 134 are asserted below (PF1-CODE-SWEEP, PF2-CODE-SWEEP,
-// FIGURE-3-13-ROWS, DUAL-PRIORITY, BIT-ORDER-DUAL, DUAL-MODE-CAPACITY); 3
-// (3-dual.c32, 3-dual-control.c1, 3-dual-control.c2) turned out, on
-// re-examination, to genuinely name a port this module does not have
-// (independently-sized playfield memory / scroll position) and are
-// declined below for that reason instead, joined with the memory-geometry
-// group they share their exact quotation with.
+// COVERAGE ACROSS PACKAGES: the claims.jsonl files of this package and
+// hrm/ch3-dual-playfield share zero ids (272 here, 98 there, 0 in common),
+// and none of this package's ids appears anywhere in the sibling's
+// assertion strings. A claim is covered only by an assertion that names its
+// own id -- coverage does not transfer across packages just because both
+// extract propositions from the same module and the same general subject --
+// so this package's 134 dual-playfield-flavoured ids are graded here: 131
+// are asserted below (PF1-CODE-SWEEP, PF2-CODE-SWEEP, FIGURE-3-13-ROWS,
+// DUAL-PRIORITY, BIT-ORDER-DUAL, DUAL-MODE-CAPACITY); 3 (3-dual.c32,
+// 3-dual-control.c1, 3-dual-control.c2) name a port this module does not
+// have (independently-sized playfield memory / scroll position) and are
+// declined below for that reason, joined with the memory-geometry group
+// they share their exact quotation with.
 //
 // BOUNDARY (from PACKAGE.md's own evidence field, carried into every claim
 // record): nanomig/src/minimig-aga/denise_playfields.v:8-17 module header
 //   (aga l.10, `bpldata`[8:1] l.11, dblpf l.12, pf2of l.13, `bplcon2`[6:0]
 //   l.14, `nplayfield`[2:1] l.15, `plfdata`[7:0] l.16) | l.95-100 (single
 //   playfield: plfdata = bpldata[8:1]); MEASURED (d_pf): bit combination N
-//   selects colour register N for every N in 0..31. Opening the RTL (after
-//   the spec-only commit) additionally showed l.41-63 (nplayfield valid
+//   selects colour register N for every N in 0..31. The RTL additionally
+//   shows l.41-63 (nplayfield valid
 //   logic, dblpf-gated) and l.65-94 (dual-playfield priority/code-select
 //   logic, dblpf-gated: PF1 code = bpldata[7,5,3,1], PF2 code =
 //   8+bpldata[8,6,4,2] non-AGA, PF2PRI = bplcon2[6] selects which of the
@@ -118,30 +113,19 @@
 //   PF2-CODE-SWEEP, FIGURE-3-13-ROWS, DUAL-PRIORITY, BIT-ORDER-DUAL and
 //   DUAL-MODE-CAPACITY below exercise.
 //
-// ORDER OF WORK: this file (assertions, expected values, claim-id coverage)
-// was written and committed from claims.jsonl's quotations and PACKAGE.md's
-// own evidence field ONLY -- denise_playfields.v itself was not opened
-// until after that commit, per the build brief's explicit gate. The
-// Harness's port names (aga, bpldata, dblpf, pf2of, bplcon2, plfdata) come
-// from PACKAGE.md's own evidence field, which quotes the module header
-// directly, and are identical to the already-built, already-committed
-// sibling harness for the SAME module (hrm/ch3-dual-playfield/
-// test_denise_playfields.cpp) -- reused exactly as the build brief instructs
-// ("Copy the Makefile pattern from hrm/ch3-dual-playfield/"). The bit-
-// packing convention for bpldata (C++ bit (n-1) is Verilog bitplane n's
-// live data bit, n=1..8), the general-form sample(bpldata,dblpf,bplcon2)
-// signature, and the FIGURE-3-13-ROWS presence-inference technique
-// (via_pf1 in 1..7 means playfield 1 present; via_pf2 >= 9 means playfield
-// 2 present) are likewise carried from that sibling's already-verified
-// harness, not learned by opening this package's own forbidden-until-
-// committed file. The single-playfield assertions and their build/mutation
-// results are unchanged from the spec-only and first-build commits; the
-// dual-playfield assertions below are new, added per coordinator review
-// (see COVERAGE CORRECTION) and built/mutated the same way, after the RTL
-// was already open.
+// HARNESS: the port names (aga, bpldata, dblpf, pf2of, bplcon2, plfdata)
+// come from PACKAGE.md's own evidence field, which quotes the module header
+// directly, and are identical to the sibling harness for the SAME module
+// (hrm/ch3-dual-playfield/test_denise_playfields.cpp), whose Makefile
+// pattern this package shares. The bit-packing convention for bpldata (C++
+// bit (n-1) is Verilog bitplane n's live data bit, n=1..8), the
+// general-form sample(bpldata,dblpf,bplcon2) signature, and the
+// FIGURE-3-13-ROWS presence-inference technique (via_pf1 in 1..7 means
+// playfield 1 present; via_pf2 >= 9 means playfield 2 present) are
+// likewise that sibling's.
 //
-// PRINT DEFECT #1 (Table 3-17, printed page 93 -- not this package's to
-// resolve, per the build brief): the table's middle column (headed
+// PRINT DEFECT #1 (Table 3-17, printed page 93 -- not resolved here): the
+// table's middle column (headed
 // "Bitplanes 4,3,2,1", the 4-bit hold-and-modify/HAM code -- itself out of
 // this module's boundary, see NO-HAM-PORT below) prints the same value,
 // 0100, on both the 00100 row and the 00110 row -- so 0100 appears to
@@ -158,14 +142,14 @@
 // PRINT DEFECT #2 (Table 3-18 mis-paged in the corpus): Table 3-18's rows
 // carry printed page 94 in claims.jsonl, not 93 -- this is correct as
 // extracted (not a defect to fix here) and every Table 3-18 citation below
-// cites page 94 accordingly, per the build brief's explicit instruction.
+// cites page 94 accordingly.
 //
 // CLAIM COVERAGE: 258 of the 272 records in claims.jsonl are cited below,
 // in full, inside an expect() label; 14 are declined (see DECLINED CLAIMS).
 // Verified by script: every one of the 272 ids in claims.jsonl is
 // classified exactly once, either asserted or declined, with zero overlap
-// and zero omissions. Plus nine further claims routed in the extension
-// above (see EXTENSION): seven of them -- 3-code.c02, 3-coding.c2,
+// and zero omissions. Plus nine further routed claims (see ROUTED CLAIMS
+// above): seven of them -- 3-code.c02, 3-coding.c2,
 // 3-code.f03, 3-bpl.c02, 3-code.c03, 3-coding.c3, 3-coding.c4 -- are
 // covered by TWO-COLOUR-CODE-SELECT below. The other two -- 3-colortable.c7,
 // 3-ct.c03 -- state a universal claim that TWO-COLOUR-CODE-SELECT's own two
@@ -183,7 +167,7 @@
 //   PF2-CODE-SWEEP (50 ids, loop x8)               -- Tables 3-11/3-12b + dual columns: PF2 code -> register.
 //   7+7+113+6+6+4+14+51+50 = 258.
 //
-//   Extension, on top of the 258/272 above:
+//   Routed claims, on top of the 258/272 above:
 //   TWO-COLOUR-CODE-SELECT (7 ids, one assertion)  -- corroborates N=0/N=1
 //                                                      from pp.42/46/55/56.
 //
@@ -252,24 +236,19 @@
 // is the control every page-cited assertion below shares: the fixture is
 // shown to deliver two distinct, known plfdata values (5 and 22) through
 // the same eval() path used everywhere else, before anything below trusts
-// it. It carries no claim id and is prefixed "[control]"; an earlier
-// convention (shared with hrm/ch3-dual-playfield's and
-// hrm/ch3-collision-registers' equivalents) treated that prefix as
-// exempting it from a mutation record too -- a gate blind spot, since a
-// passing control only proves the fixture is alive once the control has
-// itself been shown able to go red. Corrected here: see MUTATION
-// CONTROL-KNOWN-VALUES-ARRIVE below, same as every other assertion.
+// it. It carries no claim id and is prefixed "[control]", and it carries a
+// mutation record like every other assertion (MUTATION
+// CONTROL-KNOWN-VALUES-ARRIVE below): a passing control only proves the
+// fixture is alive once the control has itself been shown able to go red.
 //
-// RESULTS (after opening the RTL and building): 71 passed, 0 failed, plus
-// 2 RECORDED lines (printed, not counted as pass or fail) -- 70 passed from
-// the original acceptance plus 1 from the extension's TWO-COLOUR-CODE-SELECT.
-// The 2 RECORDED lines are the Table 3-17 print defect and the
+// RESULTS: 71 passed, 0 failed, plus 2 RECORDED lines (printed, not
+// counted as pass or fail): the Table 3-17 print defect and the
 // COLOR00-UNIVERSAL decline of 3-colortable.c7/3-ct.c03 above. No finding
 // in this package --
 // denise_playfields.v implements the manual's single-playfield AND
 // dual-playfield colour-selection description exactly as every assertion
-// expected. One RTL observation, checked
-// rather than assumed, on opening the RTL: denise_playfields.v:96-99
+// expects. One RTL observation, checked
+// rather than assumed: denise_playfields.v:96-99
 // hides an undocumented "OCS/ECS...Swiv score display" exception in the
 // single-playfield branch (forces plfdata to the constant 16 when
 // bplcon2[5:3]>5 and bitplane 5 is active and aga=0). No claim in this
@@ -281,17 +260,15 @@
 // which set bitplane 5 and still read back correctly rather than
 // collapsing to that constant.
 //
-// One build-only fix was needed, and it was in the harness, not the
-// oracle: none. The Harness written in the spec-only commit compiled and
-// linked against Vdenise_playfields.h without modification -- PACKAGE.md's
-// port list (aga, bpldata, dblpf, pf2of, bplcon2, plfdata) matched the
-// actual module header exactly, and the eval()-only usage needed no clock
-// or reset handling.
+// The Harness uses eval() only: PACKAGE.md's port list (aga, bpldata,
+// dblpf, pf2of, bplcon2, plfdata) is the module header's, and no clock or
+// reset handling is needed.
 //
-// MUTATION LOG (each line below was actually built with its own flag
-// defined to 1 via `-CFLAGS -DMUT_X=1`, confirmed to turn only its own
-// assertion red -- every other assertion unaffected -- then rebuilt with
-// no flags and reconfirmed the clean 70-passed/0-failed baseline):
+// MUTATION LOG (each line below built with its own flag defined to 1 via
+// `-CFLAGS -DMUT_X=1`, confirmed to turn only its own assertion red --
+// every other assertion unaffected -- then rebuilt with no flags to
+// reconfirm the baseline; the totals quoted in an entry are those of the
+// run that recorded it):
 //
 // MUTATION CONTROL-KNOWN-VALUES-ARRIVE stimulus red: the first control stimulus was changed from 5 to 4, so the first reading no longer matches the value 5 the check expects; reverted, and the clean 70-passed/0-failed baseline was reconfirmed.
 // MUTATION COLOUR-INDIRECTION-MECHANISM stimulus red: the stimulus was changed from 21 (10101) to 20 (10100), so the reading no longer matches the value 21 the label and citations name.
@@ -524,8 +501,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // CONTROL -- the fixture can deliver a known value before anything below
-    // is trusted to read one back (package brief, "the fixture proves it can
-    // deliver a known value before anything reads one").
+    // is trusted to read one back.
     // =========================================================================
     {
         Harness h;
