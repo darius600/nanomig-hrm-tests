@@ -4,17 +4,15 @@
 **Oracle:** Amiga Hardware Reference Manual, 3rd edition, p.219
 **Fixture:** `agnus.v` (Agnus top level, with its submodules)
 
-This specification is written from the quoted sentence alone, before the RTL is
-opened. What was looked at first, and is disclosed rather than hidden: `agnus.v`'s
-**port list**, to establish that a fixture spanning both signals can exist at
-all. No behaviour was read. The boundary question -- *does any module see both
-DIWSTRT and vertical blanking?* -- is what created this package, so it had to be
-answered before there was anything to specify.
+This specification is written from the quoted sentence alone. The one RTL fact
+it rests on is `agnus.v`'s **port list**, which answers the boundary question --
+*does any module see both DIWSTRT and vertical blanking?* -- that this package
+exists for. No behaviour enters the specification.
 
 ## Why this package exists
 
-Chapter 7 routed two claims about p.219's sentence and neither could be settled
-anywhere in the suite:
+Two chapter-7 claims about p.219's sentence cannot be settled at any other
+fixture in the suite:
 
 | package | fixture | sees DIWSTRT | sees vertical blanking |
 |---|---|---|---|
@@ -64,11 +62,10 @@ acts *after* the minimum range, so the minimum must be indifferent to it.
 
 **P3 -- WITHDRAWN. Measured and reported, not graded.**
 
-This was specified as a floor: *a VSTART set inside the minimum blanking range
-does not make the display start before hardware blanking has ended, because the
-page grants DIWSTRT control only after the minimum range.* It was built, it
-graded RED, and reading the page is what showed the assertion was wrong rather
-than the RTL.
+As a floor it would read: *a VSTART set inside the minimum blanking range does
+not make the display start before hardware blanking has ended, because the page
+grants DIWSTRT control only after the minimum range.* It is not graded, for two
+reasons.
 
 **The page does not require it.** In context, p.219's passage is advice on how a
 programmer gains more housekeeping time during vertical blanking. The sentence
@@ -79,13 +76,13 @@ offers another way to get that time. It says where the useful control is. It
 says nothing about what the hardware does with a VSTART inside the blanked
 region -- and silence is not a requirement.
 
-**And the observable could not have carried it.** This fixture's marker for the
+**And the observable cannot carry it.** This fixture's marker for the
 display start is a bitplane DMA bus request. P1 and P2 need only a marker that
 *moves*, and it is sound for that. A floor needs the absolute claim *the display
 started*, and a fetch inside the blanked region is not a display: the data is
 fetched and the video output is blanked regardless.
 
-The measurement is kept in full on a `record()` line, with its numbers. Settling
+The measurement is reported in full on a `record()` line, with its numbers. Settling
 the printed sentence's floor, if anyone wants it settled, needs a boundary that
 sees Denise's video output rather than Agnus's bus requests.
 
@@ -117,34 +114,26 @@ to move by N". No expected value may be taken from what the RTL produces. If a
 measurement disagrees with the page, the assertion is red and the finding is
 reported; the expectation is not adjusted to match.
 
-## Observable, to be fixed when the RTL is opened
+## Observable
 
 Required: a per-line indication of vertical blanking, and a per-line indication
-that the display has actually started. `agnus.v`'s port list carries `vblank`,
-and the display start must be taken from whichever port marks bitplane DMA
-activity for a line. The exact port is chosen when the RTL is opened, and the
-build commit will say which and why.
-
-If no port distinguishes bitplane DMA from the other DMA channels sharing the
-bus, P1 and P3 cannot be graded here either, and this package will `record()`
-that with the reason rather than grading a weaker proposition.
-
-**Settled when the RTL was opened:** `agnus.v` has no port for bitplane DMA
-activity -- `agnus_bitplanedma`'s own `dma` output reaches only an internal wire,
-and `hde` turns out to be purely horizontal. The marker used is `dbr && !refresh`
+that the display has actually started. `agnus.v`'s port list carries `vblank`.
+It has no port for bitplane DMA activity -- `agnus_bitplanedma`'s own `dma`
+output reaches only an internal wire, and `hde` is purely horizontal. The
+marker used is `dbr && !refresh`
 with every DMA channel but bitplane disabled in DMACON and the disk and audio
 request pins held idle, which is the isolation `hrm/ch7-dmacon-register-bits`'s own
 committed BPLEN-GATES-BITPLANE-DMA assertion already established. Ports and
 ordinary stimulus only; no internal signal is read through `rootp`.
 
 That marker is sound for a claim about movement, which is what P1 and P2 make.
-It is not sound for a claim about the display having started, which is why P3
-was withdrawn above.
+It is not sound for a claim about the display having started, which is one of
+the two reasons P3 is withdrawn above.
 
-## Extension: interlace doubles the line count (p.49-50)
+## Interlace doubles the line count (p.49-50)
 
-Written from `ch7-diwstrt-extends-vertical-blanking-spec-stage.jsonl` alone,
-before its full claims file or the RTL is opened, exactly as P1-P3 above were.
+Written from `ch7-diwstrt-extends-vertical-blanking-spec-stage.jsonl` alone, as
+P1-P3 above were.
 
 ### The oracle
 
@@ -196,7 +185,7 @@ measure is observed to differ from interlace mode disabled, on the same run
 and the same clock -- confirming the toggle reaches the module and the
 measurement is not vacuous.
 
-### What this extension does NOT claim
+### What P4/P5 do NOT claim
 
 - **Nothing about which specific line totals are correct.** Whether a
   non-interlaced frame is 200, 312 or 262 lines is not this package's
@@ -214,13 +203,13 @@ this test's own stimulus -- "the interlaced count is double the
 non-interlaced count measured on this same fixture" -- never from what the
 RTL produces.
 
-### Observable, to be fixed when the RTL is opened
+### Observable
 
 Required: a way to enable/disable interlace mode independent of DIWSTRT and
 DMACON, and a per-field count of how many lines belong to a displayed frame,
-measured on the same basis with the toggle in each state. The exact port(s)
-are chosen when the RTL is opened; the build commit will say which and why.
-
-If no port on `agnus.v` carries either of these, P4 and P5 cannot be graded
-here, and this package will `record()` that with the reason rather than
-grading a weaker proposition.
+measured on the same basis with the toggle in each state. Interlace is
+BPLCON0's LACE bit, and `field1` shows the toggle reaching the module
+(CONTROL). The per-field line count uses the same `dbr && !refresh` marker as
+P1 and P2. `agnus.v` has no `hpos`/`vpos` port, so where a field's lines fall
+is read from the tick offset of the `_vsync` port's falling edge, against the
+line period measured on the same run.

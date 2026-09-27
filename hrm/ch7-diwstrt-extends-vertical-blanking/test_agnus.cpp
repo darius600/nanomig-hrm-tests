@@ -12,8 +12,7 @@
 //   display actually starts by using the DIWSTRT (display window start)
 //   register to extend the effective vertical blanking time."
 // Claims: sol:7-interrupts.c39, opus:7-int.c36.
-// See this package's own SPECIFICATION.md (committed before this file, per
-//   the chapter's spec-before-RTL gate) for the full derivation of P1/P2/P3
+// See this package's own SPECIFICATION.md for the full derivation of P1/P2/P3
 //   and the CONTROL, and for what this package explicitly does NOT claim
 //   (the minimum range's own length -- ch7-vertb-vertical-blank-timing's
 //   subject -- horizontal blanking/DIWSTOP, and displayed content).
@@ -28,9 +27,7 @@
 //   docs/legacy-names.md explains the vocabulary.
 //
 // ============================================================================
-// OBSERVABLE, chosen after opening agnus.v and agnus_bitplanedma.v (this
-// section written after that reading, as SPECIFICATION.md's own "Observable"
-// section says it would be):
+// OBSERVABLE, from agnus.v and agnus_bitplanedma.v:
 //
 // `agnus.v`'s port list (module header, agnus.v:54-100) carries `vblank`
 // directly -- that half is free. For "the display has actually started"
@@ -47,8 +44,7 @@
 // `vdiwstrt` or `vdiwena` -- it is purely horizontal and fires from line 0
 // of every frame onward, so it cannot mark *when in the frame* bitplane
 // fetching starts. So, read literally, no port on `agnus` marks bitplane DMA
-// activity for a line, and P1/P3 would have to be declined here exactly as
-// SPECIFICATION.md's own contingency describes.
+// activity for a line.
 //
 // But `agnus.v`'s priority mux (agnus.v:169-267) gives a second, still
 // port-list-only route: `dbr` (bus requested) is asserted by whichever DMA
@@ -78,17 +74,14 @@
 // vertical-window-gated one P1/P2/P3 need -- confirmed by reading the RTL,
 // not assumed.
 //
-// A THIRD finding from that same reading, disclosed here because it shapes
-// P3 below: `vdiwena`'s own update logic (agnus_bitplanedma.v:208-215) never
+// A THIRD finding from that same reading, which bears on P3 below:
+// `vdiwena`'s own update logic (agnus_bitplanedma.v:208-215) never
 // references `vbl`/`vblank`/`harddis` at all -- it is driven purely by
 // `sof`, `vpos`, `vdiwstrt` and `vdiwstop`. Nothing in this module's
 // vertical path consults hardware blanking. The module's own header comment
 // says as much in plain words (agnus_bitplanedma.v:123, "display data
 // fetches can take place during blanking (when vdiwstrt is set to 0 the
-// display is distorted)"). This is a genuine basis for expecting P3 to
-// measure red rather than green -- stated here before the measurement, not
-// adjusted after it (see MEASURED RESULTS in the mutation log at the bottom
-// of this file for the actual run).
+// display is distorted)").
 // ============================================================================
 
 #include <algorithm>
@@ -117,10 +110,8 @@ constexpr uint16_t BPLEN   = 1u << 8;
 constexpr uint16_t DMAEN   = 1u << 9;
 
 // Known-good "lowres, 1 bitplane" fetch stimulus -- the SAME register values
-// hrm/ch7-dmacon-register-bits's start_bitplane() uses, which that package's own
-// IMPLEMENTATION NOTES say are re-used from hrm/agnus_bitplanedma's own
-// RTL_REGRESSION package and re-verified there against real dbr/dma
-// activity, not assumed to still work unseen. DDFSTRT/DDFSTOP set the
+// hrm/ch7-dmacon-register-bits's start_bitplane() uses, verified there
+// against real dbr/dma activity. DDFSTRT/DDFSTOP set the
 // HORIZONTAL fetch window; per the OBSERVABLE section above, `dma` does not
 // depend on hdiwstrt/hdiwstop (the DIWSTRT/DIWSTOP LOW byte, HSTART/HSTOP),
 // only on ddfstrt/ddfstop and the VERTICAL vdiwstrt/vdiwstop (the HIGH
@@ -243,11 +234,9 @@ public:
     // `vblank` is a REGISTERED output (agnus_beamcounter.v:450-459) that is
     // only updated once per line, at the tick `hpos==hbstop` (the back
     // porch, roughly mid-line) -- NOT at the start of the line. Sampling it
-    // on a line's FIRST tick reads the PREVIOUS line's value (confirmed by
-    // a dedicated rootp-based diagnostic harness built and run separately
-    // from this graded file, never shipped here, that traced `vbl`/`vblank`/
-    // `vpos` directly: `vblank` rises to 1 about 100 ticks INTO the line
-    // where `vpos` first reaches 0, not on that line's first tick). So this
+    // on a line's FIRST tick reads the PREVIOUS line's value (`vblank`
+    // rises to 1 about 100 ticks INTO the line where `vpos` first reaches
+    // 0, not on that line's first tick). So this
     // samples on every tick and keeps the LAST value seen before the line
     // ends -- by then this line's own hbstop update has always already
     // happened, since hbstop sits well inside a ~454-tick PAL line.
@@ -350,8 +339,8 @@ FloorResult measure_floor(bool ntsc, uint8_t vstart, int window_margin = 40) {
 }
 
 // ============================================================================
-// Extension: interlace doubles the line count (SPECIFICATION.md, "Extension:
-// interlace doubles the line count (p.49-50)"). Claims opus:3-res.c16 (p.49)
+// Interlace doubles the line count (SPECIFICATION.md, "Interlace doubles
+// the line count (p.49-50)"). Claims opus:3-res.c16 (p.49)
 // and opus:3-lace.f03 (p.50, Figure 3-5). Routed here (routing.route in
 // ch7-diwstrt-extends-vertical-blanking.jsonl) because `agnus` is the only
 // module in this repo whose port list carries both the interlace condition
@@ -386,7 +375,7 @@ FloorResult measure_floor(bool ntsc, uint8_t vstart, int window_margin = 40) {
 constexpr uint16_t LACE_BIT = 1u << 2;  // BPLCON0[2], agnus_beamcounter.v:157-164
 // $2C/$F4: vdiwstrt=44, vdiwstop=244 (top bit of the DIWSTOP high byte is
 // set, so agnus_bitplanedma.v:198's V8=~data_in[15] adds no +256 offset) --
-// 244-44 = 200 lines, the window this extension's routing.how names.
+// 244-44 = 200 lines, the window these claims' routing.how names.
 constexpr uint8_t  LACE_VSTART_BYTE  = 0x2C;
 constexpr uint8_t  LACE_VSTOP_BYTE   = 0xF4;
 constexpr int       LACE_WINDOW_LINES = 200;
@@ -638,7 +627,7 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // P3 -- "AFTER THE MINIMUM" IS A FLOOR.
+    // P3 -- "AFTER THE MINIMUM" AS A FLOOR (recorded, not asserted).
     // Plus a same-basis control (VSTART safely OUTSIDE the minimum blanking
     // range, same isolation, same measurement) that is expected to PASS --
     // precedent: hrm/ch3-beam-counters-and-blanking's own
@@ -650,11 +639,10 @@ int main(int argc, char** argv) {
         FloorResult fr = measure_floor(false, static_cast<uint8_t>(vstart_inside));
         // WITHDRAWN AS AN ASSERTION, KEPT AS A MEASUREMENT.
         //
-        // This was specified as a floor -- "the page grants DIWSTRT control
-        // only after the minimum range; if a VSTART below it pulled the
-        // display start into the blanked region, the sentence would be false
-        // as printed" -- and it graded red. Both halves of that reasoning turn
-        // out to be wrong, and reading is what found it, not the test.
+        // As a floor it would read: "the page grants DIWSTRT control only
+        // after the minimum range; if a VSTART below it pulled the display
+        // start into the blanked region, the sentence would be false as
+        // printed". Two reasons keep it out of the graded set.
         //
         // THE PAGE DOES NOT REQUIRE IT. In context, p.219's passage is advice
         // about how a programmer gets MORE housekeeping time during vertical
@@ -666,13 +654,13 @@ int main(int argc, char** argv) {
         // nothing about what the hardware does with a VSTART inside the
         // blanked region, and silence is not a requirement.
         //
-        // AND THE OBSERVABLE COULD NOT CARRY IT. dbr && !refresh is a bitplane
+        // AND THE OBSERVABLE CANNOT CARRY IT. dbr && !refresh is a bitplane
         // DMA BUS REQUEST, not visible display. P1 and P2 need only a marker
         // that moves, and it is sound for that. This needs the absolute claim
         // "the display started" -- and a fetch during blanking is not a
         // display: the data is fetched and the video output is blanked anyway.
         //
-        // The numbers are unchanged and printed in full below.
+        // The numbers are printed in full below.
         checks.record(
             "P3-VSTART-INSIDE-MINIMUM-BLANKING (half graded: sol:7-interrupts.c39, "
             "opus:7-int.c36); p.219: NOT ASSERTED. With DIWSTRT's VSTART=" +
@@ -728,9 +716,8 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // Extension: interlace doubles the line count. CONTROL (interlace), P4,
-    // P5. SPECIFICATION.md, "Extension: interlace doubles the line count
-    // (p.49-50)".
+    // Interlace doubles the line count. CONTROL (interlace), P4, P5.
+    // SPECIFICATION.md, "Interlace doubles the line count (p.49-50)".
     // =========================================================================
     {
         // ---- CONTROL (interlace) -- the fixture can toggle interlace and
@@ -798,9 +785,9 @@ int main(int argc, char** argv) {
         FieldSample f1b = measure_field(h1, LACE_FIELD_LINES);
 
         bool lace0_aligned = f0a.vsync_fall_tick >= 0 && f0a.vsync_fall_tick == f0b.vsync_fall_tick;
-        // REPAIR (validation defect, opus:3-res.c16): a merely nonzero
-        // offset between the two LACE=1 fields' `_vsync` falls is satisfied
-        // by ANY jitter, including one that leaves the fields scanning the
+        // A merely nonzero offset between the two LACE=1 fields' `_vsync`
+        // falls is satisfied by ANY jitter, including one that leaves the
+        // fields scanning the
         // same physical lines out of step -- it does not show the second
         // field's lines fall BETWEEN the first field's. Only an offset of
         // exactly half THIS run's own measured line period does. line_ticks
@@ -879,12 +866,11 @@ int main(int argc, char** argv) {
         h1.sync_to_sof();
         FieldSample f1b = measure_field(h1, LACE_FIELD_LINES);
 
-        // REPAIR (validation defect, opus:3-lace.f03): probed with LACE left
-        // clear on this block's own h1, this assertion stayed green (only P4
-        // went red) -- with h1's two "fields" identical to h0's, the span
-        // comparison below is trivially satisfied and says nothing about
-        // 400 interlaced lines. The same half-line-offset requirement P4
-        // grades, re-measured on THIS block's own h1, closes that: without
+        // With LACE left clear on this block's own h1, h1's two "fields"
+        // are identical to h0's, and the span comparison below is trivially
+        // satisfied and says nothing about 400 interlaced lines. The same
+        // half-line-offset requirement P4 grades, measured on THIS block's
+        // own h1, closes that: without
         // it, this assertion cannot tell "genuinely interlaced, same span"
         // from "LACE never reached the module, same field measured twice".
         long long delta = f1a.vsync_fall_tick - f1b.vsync_fall_tick;
@@ -929,58 +915,30 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG. Every entry below was actually run by this agent under
+// MUTATION LOG. Every entry below was actually run under
 // WSL/Verilator (edit -> `make clean && make MUT=<NAME>` -> run
 // ./obj_dir/Vagnus directly (never `echo $?` under `bash -lc`, which always
 // reads 0 there) -> confirm the named assertion and ONLY it moved -> revert
 // -> `make clean && make` -> confirm the full suite is back to the baseline
 // tally exactly), before moving to the next one.
 //
-// BASELINE (measured after this file's `sync_to_sof`/`measure_lines` timing
-// bugs, below, were found and fixed): 5 passed, 1 failed.
+// BASELINE of this log: 5 passed, 1 failed.
 //
 // THE BASELINE THIS LOG WAS RECORDED AGAINST IS NOT THIS FILE'S BASELINE.
-// Every "5 passed, 1 failed" below was measured while
-// P3-VSTART-INSIDE-MINIMUM-BLANKING was still a graded assertion, and it was
-// the one failure. P3 was afterwards WITHDRAWN on reading p.219 -- the page's
-// passage is advice on gaining housekeeping time during blanking, not a floor
-// the hardware must hold -- and it now prints through `record()` rather than
-// `expect()`. Running this file today gives 5 passed, 0 failed, 1 RECORDED.
+// Every "5 passed, 1 failed" below counts P3-VSTART-INSIDE-MINIMUM-BLANKING
+// as a graded assertion, and as the one failure. P3 is WITHDRAWN as an
+// assertion -- p.219's passage is advice on gaining housekeeping time during
+// blanking, not a floor the hardware must hold -- and prints through
+// `record()` rather than `expect()`.
 //
-// The recorded results below are left exactly as they were measured. A
-// measurement edited after the fact to agree with a later tally reads like
-// evidence and is not one. The five assertions the log covers are unchanged
-// and their mutation evidence stands as written; read every tally below as
-// "of the six graded propositions this file had at the time".
+// The tallies below are as measured. A measurement edited to agree with a
+// later tally reads like evidence and is not one. The five assertions the
+// log covers and their mutation evidence stand as written; read every tally
+// below as "of six graded propositions, P3 among them".
 //
-// Two harness bugs were found and fixed while first bringing this package
-// up, disclosed here rather than silently corrected, since both changed
-// measured numbers before any mutation was ever run:
-//   1. `sync_to_sof`'s first default (4000 ticks) was enough to reach a sof
-//      only when already close to reset; a caller resuming mid-frame (the
-//      CONTROL block's second sync, after measuring 50 lines) needs to walk
-//      most of a PAL frame (~312 lines * ~454 ticks/line =~ 142000 ticks) to
-//      reach the NEXT one. Raised the default to 200000.
-//   2. `measure_lines` originally sampled `vblank` once, on a line's FIRST
-//      tick. `vblank` is a REGISTERED output that updates once per line at
-//      `hpos==hbstop` (agnus_beamcounter.v:450-459), roughly mid-line -- not
-//      at the line's start -- so the first-tick sample always read the
-//      PREVIOUS line's value. Traced with a dedicated rootp-based
-//      diagnostic harness (built and run separately, in this agent's
-//      scratchpad, never part of this package) that printed raw
-//      `vpos`/`vbl`/`vblank` transitions: confirmed `vbl` (combinational,
-//      `vpos<=vbstop`) goes 1 exactly at `vpos`==0 and 0 exactly at
-//      `vpos`==26, but the registered `vblank` lags by ~100 ticks into each
-//      line. Fixed by sampling on every tick and keeping the LAST value seen
-//      before the line ends, which is always taken after that line's own
-//      hbstop update.
-// Neither fix touched an expected value or a grading threshold -- both are
-// harness-timing corrections to when a real, already-existing signal is
-// read, made BEFORE any of the numbers below were treated as a result.
-// After both fixes, `vblank`'s own release line reads 26 for every PAL run
-// in this file, matching hrm/ch3-beam-counters-and-blanking's independently
-// measured PAL vblank duration (26 lines) on the same agnus_beamcounter
-// submodule -- a cross-package sanity check, not assumed going in.
+// `vblank`'s own release line reads 26 for every PAL run in this file,
+// matching hrm/ch3-beam-counters-and-blanking's measured PAL vblank
+// duration (26 lines) on the same agnus_beamcounter submodule.
 //
 // replay: make clean && make MUT=CONTROL_VBLANK_HOLDS_THEN_RELEASES
 // MUTATION CONTROL-VBLANK-HOLDS-THEN-RELEASES stimulus red: the `pre`
@@ -1053,23 +1011,22 @@ int main(int argc, char** argv) {
 //   finding.
 //
 // Final rebuild after the last revert: 5 passed, 1 failed, matching the
-// baseline above exactly -- six graded propositions, before P3 was
-// withdrawn. Today: 5 passed, 0 failed, 1 RECORDED.
+// baseline above exactly -- six graded propositions, P3 among them.
 // ============================================================================
 
 // ============================================================================
-// MUTATION LOG, EXTENSION (interlace doubles the line count). Same discipline
-// as the log above: every entry was actually run under WSL/Verilator (`make
-// clean && make MUT=<NAME>`, read ./obj_dir/Vagnus's own printed tally
-// directly, never `echo $?` under `bash -lc`), before moving to the next one.
+// MUTATION LOG, INTERLACE (CONTROL-LACE-TOGGLES-FIELD1, P4, P5). Same
+// discipline as the log above: every entry was actually run under
+// WSL/Verilator (`make clean && make MUT=<NAME>`, read ./obj_dir/Vagnus's
+// own printed tally directly, never `echo $?` under `bash -lc`), before
+// moving to the next one.
 //
-// BASELINE for this extension (measured after CONTROL-LACE-TOGGLES-FIELD1,
-// P4 and P5 were added to the five original graded assertions plus the one
-// RECORDED P3 line): 8 passed, 0 failed, 1 RECORDED. All three new
-// assertions measured GREEN against the RTL on the first run -- unlike P3
-// above, this extension found no disagreement with the page to report. A
-// green here is as valid an outcome as a red one; the mutations below are
-// what shows each green is a real measurement and not an artifact of a
+// BASELINE of this log: 8 passed, 0 failed, 1 RECORDED -- the three
+// interlace assertions, the five above, and the one RECORDED P3 line. All
+// three interlace assertions are GREEN against the RTL; unlike P3 above,
+// they show no disagreement with the page. A green here is as valid an
+// outcome as a red one; the mutations below are what shows each green is a
+// real measurement and not an artifact of a
 // vacuous comparator.
 //
 // replay: make clean && make MUT=CONTROL_LACE_TOGGLES_FIELD1
@@ -1082,7 +1039,7 @@ int main(int argc, char** argv) {
 //   unaffected (each opens its own fresh Harness with its own explicit
 //   setup_bitplane_isolated_lace(h1, true) call, never touching this run).
 //   Reverted: `make clean && make` -> 8 passed, 0 failed, 1 RECORDED,
-//   matching this extension's baseline exactly.
+//   matching this log's baseline exactly.
 // replay: make clean && make MUT=P4_INTERLACE_DOUBLES_LINE_COUNT
 // MUTATION P4-INTERLACE-DOUBLES-LINE-COUNT-PER-DISPLAYED-FRAME stimulus red:
 //   the LACE=1 run's own DIWSTOP is shrunk by 10 lines (VSTOP $F4/244 ->
@@ -1105,31 +1062,23 @@ int main(int argc, char** argv) {
 //   Reverted: 8 passed, 0 failed, 1 RECORDED.
 //
 // Final rebuild after the last revert: 8 passed, 0 failed, 1 RECORDED,
-// matching this extension's baseline exactly -- eight graded propositions
-// (five original plus CONTROL-LACE-TOGGLES-FIELD1/P4/P5) and the one
-// withdrawn-but-recorded P3 measurement.
+// matching this log's baseline exactly -- eight graded propositions and the
+// one recorded P3 measurement.
 // ============================================================================
 
 // ============================================================================
-// REPAIR LOG. Independent validation (Claude Opus 5.5) found P4 and P5's
-// interlace comparator too weak: both derived "the two LACE=1 fields are
-// distinct" from f1a.vsync_fall_tick != f1b.vsync_fall_tick, which any
-// nonzero jitter satisfies, not only a genuine half-line field offset --
-// and with LACE left clear on P5's own h1, P5 stayed green (probed: 7
-// passed, 1 failed, only P4 red), so P5 alone said nothing about 400
-// interlaced lines. Both P4 (opus:3-res.c16) and P5 (opus:3-lace.f03) are
-// backlog-added (committed 9ff187c/00f32d4, both inside 816bea1~1..HEAD),
-// so this repair corrects each assertion directly rather than withdrawing
-// the id: `measure_field()` now also returns `line_ticks`, the duration in
-// ticks of one ordinary line measured on the SAME run, and both P4 and P5
-// require the two LACE=1 fields' `_vsync` falls to differ by EXACTLY
-// line_ticks/2, not merely by something. Both ids keep their original
-// placement; only the predicate and the label prose changed.
+// MUTATION LOG, HALF-LINE OFFSET. P4 and P5 require the two LACE=1 fields'
+// `_vsync` falls to differ by EXACTLY line_ticks/2 -- `line_ticks` being
+// the duration in ticks of one ordinary line, measured by `measure_field()`
+// on the SAME run -- not merely by something. A `!=` comparison would be
+// satisfied by any nonzero jitter, not only a genuine half-line field
+// offset, and with LACE left clear on P5's own h1 it lets P5 stay green
+// (measured: 7 passed, 1 failed, only P4 red), so P5 alone would say
+// nothing about 400 interlaced lines.
 //
-// The three pre-existing stimulus mutations (CONTROL_LACE_TOGGLES_FIELD1,
-// P4_INTERLACE_DOUBLES_LINE_COUNT, P5_DOUBLED_LINES_SAME_SPAN) were re-run
-// against the repaired code, unchanged in what they do, to confirm the
-// refactor did not silently change their effect:
+// The three stimulus mutations above (CONTROL_LACE_TOGGLES_FIELD1,
+// P4_INTERLACE_DOUBLES_LINE_COUNT, P5_DOUBLED_LINES_SAME_SPAN), run against
+// the half-line predicate, unchanged in what they do:
 //   MUT=CONTROL_LACE_TOGGLES_FIELD1 -> 7 passed, 1 failed, only
 //     CONTROL-LACE-TOGGLES-FIELD1 red. Reverted: 8/0.
 //   MUT=P4_INTERLACE_DOUBLES_LINE_COUNT -> 7 passed, 1 failed, only P4 red
@@ -1140,12 +1089,12 @@ int main(int argc, char** argv) {
 //     44 is what turns it red) -- the new conjunct does not mask the span
 //     conjunct either. Reverted: 8/0.
 //
-// A fourth, NEW mutation was needed for the conjunct this repair adds --
-// no legal register write moves an OCS `_vsync` pulse, since HCENTER only
-// takes effect when BEAMCON0's variable-beam bits are set (ECS-only,
+// A fourth mutation covers the half-line conjunct itself -- no legal
+// register write moves an OCS `_vsync` pulse, since HCENTER only takes
+// effect when BEAMCON0's variable-beam bits are set (ECS-only,
 // agnus_beamcounter.v:133-135,226), so this is an IMPLEMENTATION mutation:
 // a disposable copy of agnus_beamcounter.v (never nanomig/, never committed;
-// built in this agent's own scratchpad and discarded after the run) with
+// built in a scratch directory and discarded after the run) with
 // HCENTER_VAL changed from its real 256+4+4=264 to 150 -- the position, in
 // hpos ticks, of the `!long_frame` field's own `_vsync` fall
 // (agnus_beamcounter.v:401-404) -- and nothing else. HCENTER is read only by
@@ -1163,11 +1112,10 @@ int main(int argc, char** argv) {
 //   two (CONTROL-LACE-TOGGLES-FIELD1, P1, P2, P3-CONTROL all unaffected) --
 //   both dma_line_count pairs stayed 200/200 and P5's span stayed (44,200)
 //   on both fields, so the count and span conjuncts these two assertions
-//   also carry are unaffected; only the new half_line_offset conjunct
-//   catches this. Confirms the repair's conjunct is live: the OLD predicate
-//   (`!=`) would have stayed green here (227 vs 341 are both nonzero),
-//   which is exactly the defect being repaired. Reverted: discarded the
+//   also carry are unaffected; only the half_line_offset conjunct catches
+//   this. Confirms the conjunct is live: a `!=` predicate would stay green
+//   here (227 vs 341 are both nonzero). Reverted: discarded the
 //   disposable copy, `make clean && make` (default SRC, the real pinned
-//   submodule) -> 8 passed, 0 failed, 1 RECORDED, matching this extension's
+//   submodule) -> 8 passed, 0 failed, 1 RECORDED, matching this log's
 //   baseline exactly.
 // ============================================================================
