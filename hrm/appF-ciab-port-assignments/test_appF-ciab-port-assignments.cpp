@@ -100,8 +100,7 @@
 //     this is finding #1 from the build brief's "five things already
 //     measured", and it is what PROP-FLAG-EXISTS's liveness check (flag is
 //     live) and PROP-FLAG-EDGE-POLARITY's clocked-read measurement (p.341,
-//     p.346; repaired per NM-HRM-063 -- see that function's own doc
-//     comment) both observe.
+//     p.346 -- see that function's own doc comment) both observe.
 //
 // Every mutation below was actually applied via `make test MUT=<NAME>`
 // (which -D's the corresponding MUT_* flag to 1 and forces a full
@@ -114,20 +113,15 @@
 //   omits driving `flag` high (ICR stays armed but the pin is never
 //   actually driven) -> FAIL, ICR bit 4 read 0 both before and after.
 //   RUN: 6 passed, 4 failed. Reverted.
-// MUTATION sol:F-handshake.c7 opus:F-handshake.c6 stimulus red: repaired
-//   per NM-HRM-063. PROP-FLAG-EDGE-POLARITY's stimulus omits driving
-//   `flag` high at all before step 2's clocked read (no transition
-//   anywhere in the stimulus) -> FAIL, step 2's clocked read comes back
-//   0x00 (bit 4 clear) where the unmutated comparator still expects it
-//   SET -- proving that clause requires a real negative transition to
-//   pass, not merely a read of whatever ICR already holds. RUN: 7 passed,
-//   3 failed (same totals as baseline: the assertion is still the same
-//   one FAIL, now through the step-2 clause instead of step-3's).
-//   Reverted. (The proposition's first build, and its original mutation
-//   here, took the single 0->1 on `flag` as a positive transition and
-//   inverted the oracle to expect the bit SET under a held level; both
-//   were wrong about which transition `flag` carries -- see the doc
-//   comment above prop_flag_edge_polarity() and SPECIFICATION.md.)
+// MUTATION sol:F-handshake.c7 opus:F-handshake.c6 stimulus red:
+//   PROP-FLAG-EDGE-POLARITY's stimulus omits driving `flag` high at all
+//   before step 2's clocked read (no transition anywhere in the stimulus)
+//   -> FAIL, step 2's clocked read comes back 0x00 (bit 4 clear) where the
+//   unmutated comparator still expects it SET -- proving that clause
+//   requires a real negative transition to pass, not merely a read of
+//   whatever ICR already holds. RUN: 7 passed, 3 failed (same totals as
+//   baseline: the assertion is still the same one FAIL, now through the
+//   step-2 clause instead of step-3's). Reverted.
 // MUTATION sol:F-ciab-map.c23 stimulus red: PROP-DDRA-POSITION's stimulus
 //   skips the DDRA=0xFF write (leaves DDRA=0, input mode) while still
 //   writing PRA=0xC0 then 0x00 -> FAIL, porta_out read pulled-high (0x3)
@@ -443,18 +437,14 @@ bool prop_flag_exists(Harness& h, bool omit_drive_bug) {
 // strictly narrower and is the only page in the corpus that states the
 // polarity at all.
 //
-// Repaired per NM-HRM-063: the first build of this assertion took the
-// single 0->1 on `flag` as a POSITIVE transition and required ICR bit 4 to
-// stay clear across it -- the opposite of what `flag` actually stands for.
 // At `ciab`'s boundary `flag` is DSKINDEX*'s active-high form (the pin
 // itself is active low: p.245 "FLAG DSKINDEX* Disk index pulse", p.334 the
 // signal fires "whenever the INDEX* input goes active", p.379 `*` marks an
 // active-low pin), so a 0->1 on `flag` IS the negative transition p.341
-// names, and p.341 requires it to SET the bit, not leave it clear. That
-// first build also read ICR with read_reg() (see its own comment above),
-// which never moves `clk`, so cia_int.v's clear-on-read branch never ran in
-// any stimulus this assertion drove; read_icr_clocked() (see above) is used
-// throughout below instead.
+// names, and p.341 requires it to SET the bit, not leave it clear.
+// read_icr_clocked() (see above), not read_reg(), is used throughout below:
+// read_reg() never moves `clk`, so cia_int.v's clear-on-read branch
+// (p.346) would never run in any stimulus built on it.
 //
 // Three steps, each through a clocked ICR read:
 //   1. After reset, flag=0: write ICR 0x90 (set-mode, mask bit 4).

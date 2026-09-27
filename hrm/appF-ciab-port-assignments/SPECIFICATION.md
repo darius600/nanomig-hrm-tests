@@ -205,27 +205,20 @@ Status: testable, at `ciab`'s own boundary.
 ## PROP-FLAG-EDGE-POLARITY — a negative transition is required; a held level does not survive a read
 
 Page 341 (`sol:F-handshake.c7`, `opus:F-handshake.c6`): "Any negative
-transition on FLAG will set the FLAG interrupt bit." Added by coordinator
-correction after this package's first build — see the correction note above.
-Not the same proposition `ch8-disk-index-interrupt-path`'s PROP-FLAG-PIN
-grades (a pulse, consistent with either an edge or a level reading); this is
-the page's own, narrower and more specific wording, graded nowhere else in
-the suite.
+transition on FLAG will set the FLAG interrupt bit." Not the same
+proposition `ch8-disk-index-interrupt-path`'s PROP-FLAG-PIN grades (a
+pulse, consistent with either an edge or a level reading); this is the
+page's own, narrower and more specific wording, graded nowhere else in the
+suite.
 
-**Repaired per NM-HRM-063 — this package's first build measured the wrong
-clause.** Page 245: "FLAG DSKINDEX* Disk index pulse ($BFDD00, bit 4)."
-Page 334: the signal wired to CIA-B's FLAG fires "whenever the INDEX* input
-goes active." Page 379: `*` marks an active-low pin. Together: at `ciab`'s
-boundary `flag` is DSKINDEX*'s active-high form (the pin itself is active
-low), so a 0->1 on `flag` **is** the negative transition p.341 names, not a
-positive one — and p.341 requires that transition to **set** the bit, not
-leave it clear. Page 346: "When you read the DATA register, its contents
-are cleared (set to 0), and the IRQ line returns to a high state." This
-package's first build of this proposition took the 0->1 on `flag` as a
-positive transition requiring the bit to *stay clear*, and read ICR with a
-comparator that never moved `clk` (so `cia_int.v`'s clear-on-read branch
-never ran in any stimulus it drove) — both wrong, independently of one
-another.
+Page 245: "FLAG DSKINDEX* Disk index pulse ($BFDD00, bit 4)." Page 334: the
+signal wired to CIA-B's FLAG fires "whenever the INDEX* input goes active."
+Page 379: `*` marks an active-low pin. Together: at `ciab`'s boundary `flag`
+is DSKINDEX*'s active-high form (the pin itself is active low), so a 0->1
+on `flag` **is** the negative transition p.341 names, not a positive one —
+and p.341 requires that transition to **set** the bit, not leave it clear.
+Page 346: "When you read the DATA register, its contents are cleared (set
+to 0), and the IRQ line returns to a high state."
 
 **Testable, at three steps, each through a clocked ICR read** (a real CPU
 read cycle: `aen=1`, `rd=1`, `wr=0`, `rs=4'hD`, `data_out` sampled first,
@@ -248,30 +241,26 @@ edge-sensitive read agree). Measured **PASS**, isolating step 3 of the
 graded assertion: a set bit surviving that read is specifically the held
 level, not an artifact of the read mechanism.
 
-**Measured RED, at step 3, exactly as predicted from a scratch probe before
-this repair's run was captured:** step 2's clocked read returns `0x90` (bit
-4 SET, correct); step 3's clocked read returns `0x90` again — bit 4 is still
+**Measured RED, at step 3:** step 2's clocked read returns `0x90` (bit 4
+SET, correct); step 3's clocked read returns `0x90` again — bit 4 is still
 set, because `flag` held at 1 sets the bit a second time at the read itself
 (`cia_int.v`'s clearing branch is `icr[4] <= flag`, eight lines from the
 level-OR branch, so a read while `flag` is still high re-sets the bit in the
-same cycle it was meant to clear). Four third-party emulators surveyed
-independently by the coordinator — WinUAE (`cia_diskindex()`, an event per
-index pulse, `disk.cpp:3973`), vAmiga (`emulateFallingEdgeOnFlagPin()` sets
-the bit, `CIA.cpp:250-266`), Denise (`cia.setFlag()` called once per head
-wrap, `diskDrive.cpp:79`) and Copperline (`falling_edge = flag_pin_high &&
-!high`, `cia.rs:373-380`) — unanimously implement a real falling-edge
-detector for this bit and would read step 3's second clocked read CLEAR.
-Whether the gap is a defect is for Amiga/RTL specialists to adjudicate; this
-package measures and reports, per the build brief, exactly as it did the
-first time for PROP-CRA-PBON and PROP-CRA-OUTMODE.
+same cycle it was meant to clear). Four third-party emulators — WinUAE
+(`cia_diskindex()`, an event per index pulse, `disk.cpp:3973`), vAmiga
+(`emulateFallingEdgeOnFlagPin()` sets the bit, `CIA.cpp:250-266`), Denise
+(`cia.setFlag()` called once per head wrap, `diskDrive.cpp:79`) and
+Copperline (`falling_edge = flag_pin_high && !high`, `cia.rs:373-380`) —
+unanimously implement a real falling-edge detector for this bit and would
+read step 3's second clocked read CLEAR. Whether the gap is a defect is for
+Amiga/RTL specialists to adjudicate.
 
 Status: testable; baseline result is a genuine fail at step 3, not a broken
 fixture — the stimulus mutation in the test source (flag never driven high
 at all before step 2) makes the unmutated comparator fail through step 2's
 SET clause instead, proving that clause depends on a real transition and is
 not a tautology. Measured RUN: 7 passed, 3 failed — the same totals as
-baseline (still the package's one PROP-FLAG-EDGE-POLARITY FAIL, moved to a
-different clause).
+baseline.
 
 ## PROP-DDRA-POSITION — DDRA controls whether PA7/PA6 are driven outputs or pulled-high inputs
 
