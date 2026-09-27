@@ -234,8 +234,8 @@ int main(int argc, char** argv) {
         "-- the video half of 'The Amiga does this through the use of custom "
         "silicon hardware' (p.1). [no uid, and none may be NAMED here either, "
         "not even as a pointer: the ledger reads uids off the graded LINE "
-        "whatever the prose around them says, so citing the claim here counted "
-        "it as asserted. The record() immediately below carries its full "
+        "whatever the prose around them says, so citing the claim here would "
+        "count it as asserted. The record() immediately below carries its full "
         "disposition.]");
     checks.record(
         "sol:1-components.c2 opus:1-components.c2 (p.1, 'The Amiga does this "
