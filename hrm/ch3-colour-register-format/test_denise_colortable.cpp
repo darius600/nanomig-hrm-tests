@@ -30,8 +30,8 @@
 //   rdram, select[7:0], bank, loct, ehb_en, rgb[23:0]. clk/clk7_en/bplxor
 //   and the reg_address_in write-address convention (COLORBASE 9'h180 ->
 //   word address $C0..$DF, i.e. reg_address_in = 0xC0 + register index)
-//   are taken from the sibling package hrm/denise_colortable/'s harness,
-//   along with its Makefile shape.
+//   are taken from the pre-pipeline hrm/denise_colortable/ harness
+//   (removed), along with its Makefile shape.
 //
 // ASSUMPTION carried into the byte-extraction helpers R_of/G_of/B_of
 //   below: a port literally named `rgb[23:0]` is assumed to pack Red in
