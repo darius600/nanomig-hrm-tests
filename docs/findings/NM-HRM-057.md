@@ -39,8 +39,8 @@ counting.
 
 [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) measures a
 delay of 3 `clk7_en` enable(s) between a pin change and bit 11 —
-`RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, red, one of the package's `11
-passed, 3 failed`. [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface)
+`RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, red, one of the package's `12
+passed, 2 failed`. [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface)
 measures the same path from its own starting point as 2 `clk7_en` beats,
 against a control showing the bus read path itself is purely combinational —
 `C4`, red, one of the package's `48 passed, 3 failed`.

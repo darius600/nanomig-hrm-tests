@@ -7,9 +7,9 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. p. 258 moves a word written from idle into the shift register at the start of the operation, so TBE returns to 1 at once, as NanoMig's does; where p. 257 needs the bit clear, while a second word waits behind a busy shift register, NanoMig holds it at 0 until the shift register takes the word. |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L139) |
-| **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) — its `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` assertion still fails, because it requires a bus read to find TBE at 0 after a write from idle |
+| **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) — its `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` assertion writes a second word while the first is shifting, the case p. 257 describes, and requires TBE to read 0 on at least 20 consecutive reads before it reads 1 with TSRE 0 (`test_ch8-serdatr-read-word.cpp:533-592`) |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` — red. `DOUBLE-BUFFER-AND-TBE` in [`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) grades p. 258 on the same write from idle and is green: TBE back at 1 within 3 ticks |
+| **Assertions** | `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` — green: TBE read 0 on 219 consecutive reads while the second word waited, then 1 with TSRE 0; one of the package's `12 passed, 2 failed`. `DOUBLE-BUFFER-AND-TBE` in [`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) grades p. 258 on a write from idle and is green: TBE back at 1 within 3 ticks |
 | **Error class** | **a silence read as a requirement** |
 | **Verdict of the four** | **unanimous with NanoMig where p. 257 needs the bit clear**: all four keep TBE at 0 while a second word waits behind a busy shift register. After a write from idle, vAmiga, Denise and Copperline move the word into the shift register at once, as NanoMig does; WinUAE holds TBE at 0 for one `CYCLE_UNIT` in its `ser_accurate` mode |
 
@@ -17,9 +17,8 @@
 
 ## Why it was withdrawn
 
-`TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` writes SERDAT with the transmitter idle
-and requires the next bus read of SERDATR to find bit 13, TBE, at 0. No page
-asks for that.
+The withdrawn claim is that the next bus read of SERDATR after a SERDAT write
+with the transmitter idle must find bit 13, TBE, at 0. No page asks for that.
 
 **p. 258 says when the word leaves SERDAT, and it is at once:**
 
@@ -82,13 +81,16 @@ only from `TX_IDLE`:
 ### Measured
 
 [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) reads SERDATR idle
-(`0x3800`) and immediately after a SERDAT write from idle (`0x2800`: TBE set,
-TSRE clear) — `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY`, red, one of the
-package's `11 passed, 3 failed`; a mutation that peeks the register
-unsynchronised, before the next `clk7_en` edge, turns it green.
-[`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) measures the same
-window per tick, `tbe_duration=1 ticks, tsre_duration=374 ticks`, and grades it
-green as `DOUBLE-BUFFER-AND-TBE`.
+as `0x3800`, writes a second word while the first is shifting and polls: TBE
+reads 0 on 219 consecutive reads, one per `clk7_en` period, until the first
+word's frame has gone, and then 1 with TSRE clear (`0x2800`), the second word
+now shifting — `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY`, green, one of the
+package's `12 passed, 2 failed`. On the read after a single write from idle the
+same package finds `0x2800`, TBE already set
+(`TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION`, which grades bit 12 only).
+[`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) measures the window
+after a write from idle per tick, `tbe_duration=1 ticks, tsre_duration=374
+ticks`, and grades it green as `DOUBLE-BUFFER-AND-TBE`.
 
 ---
 
@@ -113,14 +115,26 @@ cycle-accurate mode; no page decides between the two.
 ## What the test measures
 
 `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY`
-(`test_ch8-serdatr-read-word.cpp:559-600`) writes SERDAT with the transmitter
-idle and requires the next `read_reg(A_SERDATR)` to return bit 13 clear. That
-bus cycle spans a `clk7_en` edge, and on that edge an implementation that
-transfers at the start of the operation, as p. 258 says, has already set TBE
-again. No package asserts TBE while a second word waits:
-[`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface)'s `C3` and `D4`
-write a second word during a frame and grade TSRE and the combined frame
-length, both green, but not bit 13.
+(`test_ch8-serdatr-read-word.cpp:533-592`) reads SERDATR idle (`:536`), writes a
+first word to SERDAT with the transmitter idle (`:537`), lets one `clk7_en`
+period pass, the edge on which NanoMig moves that word into the shift register
+(`:538`), and writes a second word while the first is shifting (`:547`). It then
+reads SERDATR, one `read_reg(A_SERDATR)` bus cycle per `clk7_en` period
+(`:170-177`), until bit 13 reads 1, for at most 300 reads (`:552`, `:561-565`).
+It passes when TBE reads 1 idle, at least 20 reads find it at 0 before it
+returns (`:570`), and the read that finds it at 1 has TSRE, bit 12, at 0
+(`:567`, `:571-572`): the second word has left SERDAT and is shifting. Measured:
+`idle=0x3800 (TBE=1) reads_while_clear=219 final=0x2800 (TBE=1 TSRE=0)`. The 219
+reads are the rest of the first word's frame; TBE returns on the edge after it,
+when `tx_state` is `TX_IDLE` again. Without the second write, the package's
+mutation (`:542-546`), the first read already finds TBE at 1 and the 20-read
+floor fails.
+
+No assertion in the package grades bit 13 on the bus read after a single write
+from idle, and the first word's own transfer is not read. The window p. 258 puts
+at the start of the operation is graded per tick by
+[`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit)'s
+`DOUBLE-BUFFER-AND-TBE`.
 
 ---
 
@@ -141,5 +155,5 @@ p. 257 defines TBE, and a test that writes SERDAT once and reads SERDATR next
 finds it already set on this core and on three of the four implementations. The
 bit is clear where p. 257's TSRE row puts a waiting word, and p. 258 has the word
 from idle leave SERDAT at the start of the operation. A reader who grades the TBE
-row with one write from idle will find the same red again; this page is where
+row with one write from idle will find a red; this page is where
 they find pp. 257 and 258 read together.
