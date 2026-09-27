@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-shres-bitplane-colour-encoding`](../../hrm/ch3-shres-bitplane-colour-encoding) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | **two against two**, the same split as [NM-HRM-016](NM-HRM-016.md) |
+| **Verdict of the four** | **two against two**: WinUAE and vAmiga reinterpret, Denise and Copperline do not |
 | **See also** | [NM-HRM-016](NM-HRM-016.md), the sprite half of the same mechanism |
 
 ---
@@ -63,8 +63,11 @@ The stimulus was changed to `0x0C39` and the finding **restored as test-backed**
   SuperHires: *"The maximum plane depth for a SuperHires viewport is 2
   bitplanes"*, and the register row reads `13  BPU1  } Depth of SuperHires mode
   (1 or 2)`. At a compliant depth `denise.v:369` forces `bpldata[3]` to zero, so
-  registers 4–15 are not merely un-reinterpreted but **unaddressable**. They are
-  now declined on that ground rather than asserted.
+  in a single playfield registers 4–15 are not merely un-reinterpreted but
+  **unaddressable** through NanoMig's plane-index lookup. They are now kept red on
+  that ground by an unconditional `expect(false)`, not measured: twelve of the
+  package's `5 passed, 19 failed`, and `SHRES-USES-SIXTEEN-LOWER-REGISTERS`,
+  which requires all sixteen, is red by the same construction.
 - `OCS-BASELINE-0RGB-FORMAT` had baked `denise_colortable.v`'s nibble-to-byte
   duplication into its expected value — an implementation detail as an oracle. It
   now checks only the top nibble of each component, which follows from "COLORxx
@@ -113,5 +116,6 @@ now rests on a stimulus that would have exposed a working implementation, at a
 plane depth the manual defines, with an expected value that follows from the
 manual rather than from the colour table's internals.
 
-Three circularities were removed from one package in one pass. That is the reason
+Two circularities were removed from one package in one pass; the third,
+registers 4–15, remains as twelve reds no implementation could turn green. That is the reason
 to keep the objection visible here rather than quietly fixing the test.

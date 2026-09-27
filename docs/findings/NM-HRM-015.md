@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-horizontal-display-window`](../../hrm/ch3-horizontal-display-window) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | one of four treats `BRDNTRAN` as real border behaviour |
+| **Verdict of the four** | two of four implement `BRDNTRAN`, both as genlock keying; none changes the border's colour |
 
 ---
 
@@ -28,7 +28,7 @@ assignment, while its neighbour is live:
 
 ```verilog
 wire          brdrblnk;   // border blank enable; disabled when ECSENA is low
-//wire        brdntran;   // border area is non-transparent; disabled when ECSENA is low
+//wire          brdntran;   // border area is non-transparent; disabled when ECSENA is low
 
 assign brdrblnk = bplcon3[5] & ecsena;
 //assign brdntran = bplcon3[4] & ecsena;
@@ -44,7 +44,7 @@ like work left for later, not a decision to omit the feature.
 [`hrm/ch3-horizontal-display-window`](../../hrm/ch3-horizontal-display-window)
 sets BPLCON3 bit 4 alone (ECSENA set, BRDRBLNK clear) and compares the
 border's rendered colour against leaving it clear: identical —
-`D-BRDNTRAN-HAS-NO-EFFECT`, red, one of the package's `11 passed, 1 failed`.
+`D-BRDNTRAN-HAS-NO-EFFECT`, red, one of the package's `13 passed, 1 failed`.
 The same fixture's `G11-BRDRBLNK-WORKS`, green, shows bit 5 of the same
 register does change the rendering — the control described in *What holds
 the finding up* below.
@@ -55,18 +55,19 @@ the finding up* below.
 
 | | |
 |---|---|
-| **WinUAE** | no border effect |
+| **WinUAE** | **implements it**, as genlock keying only: with ECSENA set on ECS Denise, `bordertrans = (bplcon3_denise & 0x10) && ecsena;` ([`drawing.cpp:3117`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L3117)) keeps the border from being genlock-transparent ([`drawing.cpp:1246-1255`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L1246-L1255)); the border's colour does not change |
 | **vAmiga** | no border effect |
 | **Denise** | the name is not present anywhere in its Amiga core |
-| **Copperline** | **implements it**, with its own test |
+| **Copperline** | **implements it**, with its own test, as genlock keying only: while it is set the border is never genlock-transparent ([`src/video/bitplane.rs:997`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane.rs#L997)); the test ([`src/video/bitplane/tests.rs:1389-1415`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L1389-L1415)) expects the border's colour unchanged and only its alpha opaque |
 | **MiSTer** | descendant — `rtl/denise.v:197-198,216-217` — same as NanoMig: `brdntran` is declared and assigned but both lines stay commented out; 91 lines differ elsewhere in the file, `BRDNTRAN` in none of them. No border effect |
 | **TC64** | descendant — `rtl/minimig/denise.v:205,224` — diverges here: both lines are live — `wire brdntran;` and `assign brdntran = bplcon3[4] & ecsena;` — computing the signal NanoMig and MiSTer leave commented out. TC64 goes no further, though: `brdntran` appears nowhere else in the file, so the computed value still reaches no consumer. A fix meets MiSTer where NanoMig already is; against TC64 it inherits a live signal but still has to write the border-composition wiring that no line has. The observable behaviour is unchanged from NanoMig's; only the shape underneath it differs |
 
-One of the four independent implementations treats `BRDNTRAN` as real border
-behaviour. Three of the four do not — which is worth weighing before calling
-this urgent. MiSTer matches NanoMig exactly. TC64 is neither: it computes the
+Two of the four independent implementations, WinUAE and Copperline, implement
+`BRDNTRAN`, and both as genlock keying: the border stops being transparent to
+the overlay, and its colour does not change. vAmiga and Denise do not implement
+it. MiSTer matches NanoMig exactly. TC64 is neither: it computes the
 signal, unlike NanoMig and MiSTer, but wires it nowhere, so at the pins it still
-behaves like the three that do nothing at all — live is not the same as
+behaves like the two that do nothing at all — live is not the same as
 connected.
 
 
@@ -92,7 +93,7 @@ Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 
 ## Suggested change
 
 Uncomment the two lines and wire the signal where the border is composed. The
-neighbour two lines up is the model: `brdrblnk` is gated identically and reaches
+neighbour one line up is the model: `brdrblnk` is gated identically and reaches
 `t_blank`.
 
 ```verilog

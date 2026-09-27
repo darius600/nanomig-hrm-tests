@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | **three of four implement it**, and Denise scopes it exactly as the page's Warning states |
+| **Verdict of the four** | **all four implement it**, and on ECS all four confine its effect on position to SuperHires, as the page's Warning states |
 | **Origin** | the surviving half of the withdrawn [NM-HRM-013](NM-HRM-013.md) |
 
 ---
@@ -41,7 +41,7 @@ Nothing with it. Bit 4 is not read in the sprite path.
 [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) sets SPR0CTL bit
 4 alone, all other bits including SH0 held at 0, and checks whether the full
 `sprdata` trace across `hpos` 0..511 changes, which is what the row promises
-— `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`, red, one of the package's `6
+— `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`, red, one of the package's `10
 passed, 1 failed`.
 
 ---
@@ -50,20 +50,23 @@ passed, 1 failed`.
 
 | | code | |
 |---|---|---|
-| **WinUAE** | [`custom.cpp:1199-1203`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L1199-L1203) | <pre>sprite_sprctlmask = 0x01 \| 0x08 \| 0x10;<br>} else if (ecs_denise) {<br>&nbsp;&nbsp;&nbsp;&nbsp;sprite_sprctlmask = 0x01 \| 0x10;<br>} else {<br>&nbsp;&nbsp;&nbsp;&nbsp;sprite_sprctlmask = 0x01;</pre> bit 4 (`0x10`) from ECS Denise on; bit 3 (`0x08`) only on AGA |
-| **vAmiga** | — | does not implement it |
+| **WinUAE** | [`drawing.cpp:2825-2836`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L2825-L2836) | <pre>} else if (ecs_denise) {<br>&nbsp;&nbsp;&nbsp;&nbsp;if (s-&gt;ctl & 0x10) {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sprxp \|= 2;</pre> bit 4 (`0x10`) from ECS Denise on; bit 3 (`0x08`) only on AGA. Outside SuperHires the match drops it ([`:5318`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L5318), `sp->xpos & ~3`); in ECS hires it only clips the sprite's leftmost pixel ([`:5325-5329`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L5325-L5329)) |
+| **vAmiga** | [`Core/Components/Denise/Denise.cpp:171-173`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L171-L173) | <pre>(sprctl[x] & 0x10) &gt;&gt; 4);  // SHSH1 (ECS only)</pre> the lowest bit of the sprite's start; the start is then masked to the sprite pixel's width ([`:968`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L968), [`DeniseRegs.cpp:854`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/DeniseRegs.cpp#L854)), which on OCS and ECS keeps the bit only in SuperHires |
 | **Denise** | [`emulation/libami/video/denise.cpp:299`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L299) | <pre>spr.shsh10 = (value & 0x10) &gt;&gt; 3;</pre> compared only when `_shres` |
 | **Copperline** | [`src/video/bitplane/sprite.rs:1857-1859`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/sprite.rs#L1857-L1859) | <pre>pub(super) fn sprite_hsub_70ns(ctl: u16) -&gt; bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;ctl & 0x0010 != 0<br>}</pre> |
 | **MiSTer** | — | descendant — `rtl/denise_sprites.v` — the same absence: no `sprctl[4]`, `SHSH1` or `shsh1` anywhere in the file |
 | **TC64** | — | descendant — `rtl/minimig/denise_sprites.v` — likewise absent. A fix is new work on both lines; neither reads bit 4 for NanoMig to have dropped |
 
-**Three of the four independent implementations implement it**, and Denise
-scopes it exactly as p. 303's Warning states — read always, compared only in
-SuperHires. MiSTer and TC64 have never read the bit either, which is the same
-absence NanoMig has, not a fourth vote against it.
+**All four independent implementations implement it**, and on ECS all four
+confine its effect on position to SuperHires, as p. 303's Warning states: Denise reads it
+always and compares it only in SuperHires; vAmiga and WinUAE mask it out of the
+start position outside SuperHires; Copperline adds it only while SHRES is
+set.
+MiSTer and TC64 have never read the bit either, which is the same absence
+NanoMig has, not a vote against it.
 
-WinUAE's mask is the clearest statement of the ECS-versus-AGA split: `0x10` is
-present from ECS Denise onwards, `0x08` only on AGA. That is the split the
+WinUAE's decode is the clearest statement of the ECS-versus-AGA split: `0x10` is
+read from ECS Denise onwards, `0x08` only on AGA. That is the split the
 withdrawn [NM-HRM-013](NM-HRM-013.md) was broken into.
 
 

@@ -7,7 +7,7 @@
 | **Evidence** | seen in the RTL source; no test yet |
 | **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. Withdrawn as a conformance finding; the source observation remains. |
 | **Module** | `denise.v` |
-| **Test** | [`hrm/ch3-bplcon0-display-modes`](../../hrm/ch3-bplcon0-display-modes) — 225/2 became 225/0 |
+| **Test** | [`hrm/ch3-bplcon0-display-modes`](../../hrm/ch3-bplcon0-display-modes) — `233 passed, 0 failed`; both claims declined |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a name read as a requirement** |
 
@@ -22,7 +22,7 @@
 ```
 
 A mnemonic with **no description column** — unlike `06  SHRES  SuperHires 35ns
-pixel enable bit` three rows above, which shows what the manual looks like when
+pixel enable bit` two rows above, which shows what the manual looks like when
 it actually specifies something.
 
 The manual gives bit 4 a name and no behaviour, so there is **no printed
@@ -70,9 +70,8 @@ Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 19
 
 ## Why this entry is kept
 
-**The overreach was the lead's**, recorded earlier the same day and corrected the
-same day. A row carrying only a mnemonic was turned into a conformance finding;
-the contrast with the `SHRES` row three lines above is what settles it.
+A row carrying only a mnemonic was turned into a conformance finding;
+the contrast with the `SHRES` row two lines above is what settles it.
 
 This is the sharpest of the four "silence is not a requirement" withdrawals,
 because the counter-example sits on the same page.
