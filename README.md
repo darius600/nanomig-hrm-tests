@@ -1,5 +1,16 @@
 # NanoMig HRM Tests
 
+**Why this exists.** The Minimig chipset, and NanoMig built on it, is already a
+mature core. This repository tries to help improve it a small bit further: it
+reads the chips' original documentation statement by statement, tests the RTL
+against each one, and offers what it finds to the maintainers of NanoMig and of
+the Minimig lines it descends from, as questions rather than verdicts.
+
+**All of it is best effort.** The reading of the original materials, the tests
+built from that reading and the conclusions drawn from the tests can each be
+incorrect. Every finding page names its sources so that a reader can check it,
+and a finding that does not hold is withdrawn, not deleted.
+
 Conformance tests for the Amiga chipset RTL in
 [NanoMig](https://github.com/harbaum/NanoMig). **The only oracle is printed
 literature:** two documents Commodore wrote about the chips. Every assertion
