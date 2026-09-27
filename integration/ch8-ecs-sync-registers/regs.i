@@ -21,3 +21,7 @@ COP1LCH         equ     $080    ; p.30: Copper first location register, high wor
 COP1LCL         equ     $082    ; p.30: Copper first location register, low word
 COPJMP1         equ     $088    ; p.30: Copper restart strobe ("causes copper to load PC from COP1LC")
 COLOR01         equ     $182    ; p.63: colour table entry 1
+AUD0LCH         equ     $0A0    ; Appendix B: audio channel 0 pointer, high word
+AUD0LEN         equ     $0A4    ; Appendix B: audio channel 0 length
+AUD0PER         equ     $0A6    ; Appendix B: audio channel 0 period
+AUD0VOL         equ     $0A8    ; Appendix B: audio channel 0 volume

@@ -17,7 +17,7 @@ and does not change what it specifies.
 | `opus:8-appA-oos.c1` | HBSTOP, 1C6, "Horizontal line position for HBLANK stop" | No page names the condition under which the programmed position takes effect, and no page says what HBLANK does to the outputs a test sees. Details below. |
 | `opus:8-appA-oos.c2` | HBSTRT, 1C4, "Horizontal line position for HBLANK start" | As c1. |
 | `opus:8-appA-oos.c3` | HCENTER, 1E2, "Horizontal position for Vsync on interlace" | No enabling condition, no statement of which field or which VSYNC edge it positions, and the effect lies in the sub-line timing of VSYNC, which the test sees only after the line doubler. Details below. |
-| `opus:8-appA-oos.c7` | p.260, "RGB Monitors ("analog RGB")" | The claim states the name and kind of a connector output. The test sees digital 4-bit R, G, B values and separate H and V sync, not the connector. Details below. |
+| `opus:8-display.c7` | p.260, "RGB Monitors ("analog RGB")" | The claim states the name and kind of a connector output. The test sees digital 4-bit R, G, B values and separate H and V sync, not the connector. Details below. |
 
 **HBSTRT, HBSTOP (c2, c1).** p.304: "Programmable blanking is implemented
 through four new ECS Agnus registers: HBSTRT ... Horizontal line position
@@ -120,12 +120,16 @@ kind of connector output have no consequence at the outputs a test sees.
    share one linear scale, but it gives neither the scale nor the direction.
    Values here are written in bits 7 to 0 with bits 15 to 8 zero, and only
    "moves" or "does not move" is graded, never by how much or which way.
-8. **Enable for HSSTOP.** Only HSSTRT carries "(VARHSY)" (p.280, p.293,
-   p.298). HSSTOP is tied to it only because p.304 groups it with HSSTRT
-   under "Programmable synchronization" and p.305 names bit 8 "Variable
-   horizontal sync enable". The pages also do not say whether VARHSYEN
-   suffices without VARBEAMEN. This specification uses VARHSYEN alone, the
-   only enable the pages name for variable horizontal sync.
+8. **Enable for HSSTRT and HSSTOP.** p.280, p.293 and p.298 name VARHSY
+   (VARHSYEN) as HSSTRT's condition and do not say whether VARBEAMEN is
+   also needed. HSSTOP carries no condition in any register table and is
+   tied to HSSTRT only because p.304 groups it with HSSTRT under
+   "Programmable synchronization is implemented through five new enhanced
+   Agnus registers" and p.305 names bit 8 "Variable horizontal sync
+   enable". Both bits are therefore set: VARHSYEN and VARBEAMEN together
+   are the only setting every reading of p.280, p.298 and p.305 agrees
+   predicts a move (section 7, "P3, P4"). VARHSYEN without VARBEAMEN has
+   no page-predicted outcome and is not part of this package's stimulus.
 9. **Chip ID radix.** p.299 prints the VPOSR chip identification values as
    "10", "00", "20" and "30" with no "$", while p.21 says "Hexadecimal
    numbers are distinguished from decimal numbers by the $ prefix."
@@ -181,8 +185,10 @@ that address at the Chip-memory port, and its time.
 - A *color clock* is one memory access cycle: "there are 227.5 'color
   clocks', or memory access cycles. A memory cycle is approximately 280 ns in
   duration." (p.194). The builder converts the port's system-clock times
-  into color clocks with the harness's fixed ratio. The conversion is
-  checked by anchor A3 below.
+  into color clocks with a ratio neither the page nor the harness header
+  defines; it is read off the implementation (section 7) and is checked at
+  runtime by anchor A3 below, which the conversion must place at 227 or
+  228, the page's own PAL line length.
 - An *output pixel clock* is the video output's sample clock.
 - Horizontal counts written to HTOTAL and read from VHPOSR are in the same
   unit. HTOTAL uses "h8 h7 h6 h5 h4 h3 h2 h1" in bits 7 to 0 (p.304).
@@ -250,8 +256,14 @@ refresh (p.194). The run lasts until MARK2 has been written.
    "Causes copper to load PC from COP1LC"). Only then
    `DMACON ← $8380` (SET, DMAEN, BPLEN, COPEN; p.30, p.278).
 5. `HSSTRT ← s`, then `HSSTOP ← e`.
-6. `BEAMCON0 ← B`.
-7. Write MARK1, then `BRA.S *`.
+6. `HTOTAL ← $00E2`, then `VTOTAL ← $0138`, before BEAMCON0: B now sets
+   VARBEAMEN, and HTOTAL and VTOTAL each carry "(VARBEAMEN=1)" (p.280,
+   p.298), so the enabled comparators must not use an unprogrammed value
+   -- the same reasoning as Program H's own HTOTAL/VTOTAL writes. $00E2 is
+   "The horizontal position has a maximum value of $E2" (p.23); $0138 =
+   312 is Program H's own PAL field size (p.216, "PAL line counts (313)").
+7. `BEAMCON0 ← B`.
+8. Write MARK1, then `BRA.S *`.
 
 Data in Chip memory:
 
@@ -280,19 +292,23 @@ The run lasts until the third output VSYNC after MARK1 has ended.
 | H2 | H | $00C0 | $08A0 | – | – | P1, P2 |
 | H1c | H | $00B0 | $0820 | – | – | contrast of P1, P2 |
 | H2c | H | $00C0 | $0820 | – | – | contrast of P1, P2 |
-| SA | S | – | $0120 | $0010 | $0030 | P3, P4 |
-| SB | S | – | $0120 | $0020 | $0030 | P3 |
-| SC | S | – | $0120 | $0010 | $0040 | P4 |
-| SA0 | S | – | $0020 | $0010 | $0030 | contrast of P3, P4 |
-| SB0 | S | – | $0020 | $0020 | $0030 | contrast of P3 |
-| SC0 | S | – | $0020 | $0010 | $0040 | contrast of P4 |
+| SA | S | ($00E2) | $01A0 | $0010 | $0030 | P3, P4 |
+| SB | S | ($00E2) | $01A0 | $0020 | $0030 | P3 |
+| SC | S | ($00E2) | $01A0 | $0010 | $0040 | P4 |
+| SA0 | S | ($00E2) | $00A0 | $0010 | $0030 | contrast of P3, P4 |
+| SB0 | S | ($00E2) | $00A0 | $0020 | $0030 | contrast of P3 |
+| SC0 | S | ($00E2) | $00A0 | $0010 | $0040 | contrast of P4 |
+
+N for the S runs is the fixed `$00E2` every one of them writes (sec.4 step
+6), not a varying stimulus; it is parenthesised to mark that difference
+from the H runs' N.
 
 BEAMCON0 bit values from p.305:
 
 - $08A0 = LOLDIS (bit 11) + VARBEAMEN (bit 7) + PAL (bit 5).
 - $0820 = LOLDIS + PAL.
-- $0120 = VARHSYEN (bit 8) + PAL.
-- $0020 = PAL.
+- $01A0 = VARHSYEN (bit 8) + VARBEAMEN (bit 7) + PAL (bit 5).
+- $00A0 = VARBEAMEN (bit 7) + PAL (bit 5).
 
 PAL ("Programmable pal mode enable") is set in every write to match the
 harness's PAL selection. HSYTRUE and every other bit are 0.
@@ -309,8 +325,11 @@ Precondition contrast runs:
 | X-HALT-H | H1 with `BRA.S *` before the HTOTAL write | PC-MARK |
 | X-HALT-S | SA with `BRA.S *` before the HSSTRT write | PC-MARK |
 | X-SHORT | H1 with a `DBRA` count of 16 blocks (1024 samples) | P1-LINES, P2-LINES |
-| X-BURST | H1 whose sampling loop reads VHPOSR without storing until H decreases, then stores 4 samples, 4096 times | P1-COVER |
+| X-BURST | H1 and H2 whose sampling loop reads VHPOSR without storing until H decreases, then stores 4 samples, 400 times | P1-COVER (both runs) |
 | X-NOBPL | SA with `DMACON ← $8280` (BPLEN not set) in step 4 | P3/P4-LINES |
+| X-AUD0 | H1 with audio channel 0 DMA started | A2 [H1] |
+| X-A4DOUBLE | SA with data words 14-19 of every line changed to two white spans instead of one | A4 |
+| X-A4DROP | SA with the HSYNC pulse repositioned past the landmark (s=$00C8, e=$00D8) | A4-DROPPED |
 
 ## 6. Propositions
 
@@ -340,17 +359,20 @@ Precondition contrast runs:
 5. **Preconditions.**
    - PC-ID and PC-MARK.
    - **P1-LINES:** the graded samples contain at least 320 wraps.
-   - **P1-COVER:** consecutive sample stores at the port in the graded
-     range are never more than 16 color clocks apart, and at least one
-     graded sample has H ≥ N − 16. Together these show that the samples
-     cover every part of the line, including its end, so the green is not
-     an artefact of samples that never looked there.
+   - **P1-COVER [H1], P1-COVER [H2]:** consecutive sample stores at the
+     port in the graded range are never more than 16 color clocks apart
+     (compared as raw clk_sys cycles against 16 × the clk_sys-per-CCK
+     ratio, not after integer-dividing first), and at least one graded
+     sample has H ≥ N − 16, for each run. Together these show that the
+     samples cover every part of the line, including its end, so the
+     green is not an artefact of samples that never looked there.
 6. **Contrasting cases.**
    - Runs H1c and H2c (VARBEAMEN = 0, all else equal). Here the counter
      runs its standard course, "a value of $0 to $E2" (p.23). At least one
      graded sample must have H > N: > $B0 in H1c and > $C0 in H2c.
    - For the preconditions: X-SHORT fails P1-LINES, X-BURST fails
-     P1-COVER, and X-OCS, X-NTSC and X-HALT-H fail the shared ones.
+     P1-COVER (both runs), and X-OCS, X-NTSC and X-HALT-H fail the shared
+     ones.
 7. **Reference frame.** The H field of VHPOSR (bits 7 to 0, H8 to H1) is
    compared with HTOTAL's field (bits 7 to 0, h8 to h1). The bit names are
    the same on p.216, p.285 and p.304.
@@ -415,12 +437,12 @@ Precondition contrast runs:
 
 ### P3. With VARHSYEN set, HSSTRT alone sets where the HSYNC pulse begins
 
-1. **Proposition.** While BEAMCON0 bit 8 (VARHSYEN) is 1, changing only
+1. **Proposition.** While VARHSYEN and VARBEAMEN are both 1, changing only
    HSSTRT moves the start of the horizontal sync pulse relative to the
    picture and leaves its end in place, in every line. This rests on
    `opus:8-appA-oos.c5`, p.280, with p.298, p.304 and p.305.
 2. **Stimulus.** Program S, runs SA (s = $0010) and SB (s = $0020), both
-   with e = $0030 and B = $0120.
+   with e = $0030 and B = $01A0.
 3. **Observation.** The video output's horizontal sync and R, G, B.
    - Graded output lines are those between the second and third output
      VSYNC pulses after MARK1 that contain a white pixel (R = G = B = 15).
@@ -436,11 +458,20 @@ Precondition contrast runs:
    - (b) |dL(SB) − dL(SA)| ≥ 4 output pixel clocks.
    - (c) |dT(SB) − dT(SA)| ≤ 1 output pixel clock.
 
+   dL(SA), dL(SB), dT(SA) and dT(SB) in (b) and (c) are each the median of
+   that run's class (established constant to ±1 by (a); the median names
+   the one value (a) already guarantees, rather than picking a single
+   line's own reading).
+
    Sources: "HSSTRT 1DE W A(E) Horizontal sync start (VARHSY)" (p.280),
    "HSSTRT W A Horizontal line position for HSYNC start" (p.304), and "8
    VARHSYEN Variable horizontal sync enable" (p.305). The end of the pulse
    is HSSTOP's: "Horizontal line position for HSYNC stop" (p.280, p.304).
-   HSSTOP is unchanged, so its edge stays.
+   HSSTOP is unchanged, so its edge stays. VARBEAMEN is also set (page
+   note 8): p.305's "7 VARBEAMEN Variable beam counter comparator enable"
+   names no comparator it excludes, and HSSTRT and HSSTOP are themselves
+   positions compared with the horizontal beam counter ("Horizontal line
+   position for HSYNC start/stop", p.304).
 
    The direction and size of the move are not graded, because the pages
    give neither the unit nor the bit layout of HSSTRT (page note 7). The
@@ -451,9 +482,10 @@ Precondition contrast runs:
    - PC-ID and PC-MARK.
    - **P3/P4-LINES:** at least 400 graded output lines.
 6. **Contrasting cases.**
-   - Runs SA0 and SB0 (VARHSYEN = 0, all else equal). The page ties HSSTRT
-     to "(VARHSY)", so with the enable clear, the HSSTRT value must not move
-     either edge: |dL(SB0) − dL(SA0)| ≤ 1 and |dT(SB0) − dT(SA0)| ≤ 1.
+   - Runs SA0 and SB0 (VARBEAMEN = 1, VARHSYEN = 0, all else equal). The
+     page ties HSSTRT to "(VARHSY)", so with the enable clear, the HSSTRT
+     value must not move either edge: |dL(SB0) − dL(SA0)| ≤ 1 and
+     |dT(SB0) − dT(SA0)| ≤ 1.
    - For the preconditions: X-NOBPL fails P3/P4-LINES, and X-OCS, X-NTSC
      and X-HALT-S fail the shared ones.
 7. **Reference frame.** The output line runs from one HSYNC leading edge to
@@ -470,6 +502,12 @@ Precondition contrast runs:
      out of white, and a white run whose length is the same, to ±1, in all
      six S runs. The same white run in every run shows the
      picture did not move with the sync settings.
+   - **A4-DROPPED:** A4's own quantifier ("every graded line") is graded
+     only over the lines that measurement can turn into a value; a
+     white-carrying line with 0 or 2 or more trailing edges, or with no
+     black-to-white transition strictly after L, is silently dropped
+     instead of counted red. A4-DROPPED counts such drops across all six
+     S runs and requires 0.
 
    **Doubled lines.** The line doubler emits two output lines per chip
    line, and nothing on the pages covers the second. The graded lines are
@@ -496,17 +534,20 @@ Precondition contrast runs:
 
 ### P4. With VARHSYEN set, HSSTOP alone sets where the HSYNC pulse ends
 
-1. **Proposition.** While VARHSYEN is 1, changing only HSSTOP moves the end
-   of the horizontal sync pulse relative to the picture and leaves its start
-   in place, in every line. This rests on `opus:8-appA-oos.c4`, p.280, with
-   p.298, p.304 and p.305.
+1. **Proposition.** While VARHSYEN and VARBEAMEN are both 1, changing only
+   HSSTOP moves the end of the horizontal sync pulse relative to the
+   picture and leaves its start in place, in every line. This rests on
+   `opus:8-appA-oos.c4`, p.280, with p.298, p.304 and p.305.
 2. **Stimulus.** Program S, runs SA (e = $0030) and SC (e = $0040), both
-   with s = $0010 and B = $0120.
+   with s = $0010 and B = $01A0.
 3. **Observation.** As P3: graded lines, L, T, M, dL and dT.
 4. **Expected.**
    - (a) Within each run, dL and dT are constant to ±1 in every graded line.
    - (b) |dT(SC) − dT(SA)| ≥ 4 output pixel clocks.
    - (c) |dL(SC) − dL(SA)| ≤ 1 output pixel clock.
+
+   As in P3, dT(SA), dT(SC), dL(SA) and dL(SC) in (b) and (c) are each the
+   median of that run's class.
 
    Sources: "HSSTOP 1C2 W A(E) Horizontal line position for HSYNC stop"
    (p.280, and in the same words on p.304 and p.298). The start is HSSTRT's
@@ -518,8 +559,8 @@ Precondition contrast runs:
    are not graded (page note 7). The quantifier is as in P3.
 5. **Preconditions.** PC-ID, PC-MARK and P3/P4-LINES.
 6. **Contrasting cases.**
-   - Runs SA0 and SC0 (VARHSYEN = 0). With variable horizontal sync
-     disabled, the HSSTOP value must not move either edge:
+   - Runs SA0 and SC0 (VARBEAMEN = 1, VARHSYEN = 0). With variable
+     horizontal sync disabled, the HSSTOP value must not move either edge:
      |dT(SC0) − dT(SA0)| ≤ 1 and |dL(SC0) − dL(SA0)| ≤ 1.
    - For the preconditions: as P3.
 7. **Reference frame.** As P3, including anchor A4 and the grading by
@@ -544,47 +585,60 @@ Anchor A1's bound ($E2−16 to $E3) holds in both contrast runs.
 **P2.** Graded periods: H1 563 (fx68k) / 565 (TG68K), first = 1416
 `clk_sys` cycles on both; H2 516 (fx68k) / 518 (TG68K), first = 1544 on
 both; H1c 438 (fx68k) / 440 (TG68K), first = 1816 on both; H2c matches
-H1c's count and period exactly on both cores. Converted with the ratio
-above: T1 = 177 CCK, T2 = 193 CCK (both N+1, page note 2's second
-reading); T2 − T1 = 16 CCK (b); T1c = T2c = 227 CCK (anchor A3, matching
-p.23's own PAL count exactly, LOLDIS holding the line to one length).
-Every graded period within a run is identical (expected (a)); the period
-counts differ between cores only because the two cores reach MARK1/MARK2
-at different real times within the same cycle budget, not because a
-period's own length differs.
+H1c's count and period exactly on both cores. Converted at 8 `clk_sys`
+cycles per colour clock -- read off the implementation, not from the
+page; checked by A3 against p.23's 227 -- T1 = 177 CCK, T2 = 193 CCK
+(N+1, the first reading of page note 2); T2 − T1 = 16 CCK (b); T1c = T2c
+= 227 CCK (anchor A3, matching p.23's own PAL count exactly, LOLDIS
+holding the line to one length). Every graded period within a run is
+identical (expected (a)).
 
-**P1-COVER.** Largest consecutive-sample gap in H1's graded range: 13 CCK
-on both cores (bound: 16).
+**P1-COVER.** Largest consecutive-sample gap in the graded range: H1 13
+CCK, H2 13 CCK, on both cores (bound: 16).
 
-**P3, P4.** dL(SA) = dL(SB) = dL(SC) = 655, dT(SA) = dT(SB) = dT(SC) = 589,
-identical in both parity classes, on both cores, whether VARHSYEN is 1
-(SA/SB/SC) or 0 (SA0/SB0/SC0). Neither HSSTRT nor HSSTOP moves either edge
-under this package's stimulus. P3 and P4 are red on both cores: expected
-(b) (a move of at least 4 output pixel clocks) never holds, so no parity
-class satisfies the proposition, though every precondition (P3/P4-LINES,
-512 graded lines per run) and anchor A4 (white run = 192 output pixel
-clocks, identical across all six runs and both classes) hold cleanly.
+**P3, P4.** With HTOTAL/VTOTAL preset and BEAMCON0 setting VARHSYEN and
+VARBEAMEN together (`$01A0` for SA/SB/SC, `$00A0` for SA0/SB0/SC0), on
+both cores, for every one of 512 graded lines, in both parity classes:
 
-The cause is in `nanomig/src/minimig-aga/agnus_beamcounter.v`: `hsstrt`
-and `hsstop` read from their registers only when `varhsyen && varbeamen`
-hold together --
+| Run | dL | dT |
+|---|---|---|
+| SA | 665 | 537 |
+| SB (s = $0020) | 601 | 537 |
+| SC (e = $0040) | 665 | 473 |
+| SA0, SB0, SC0 (VARHSYEN=0) | 655 | 589 |
 
-    wire [8:0] hsstrt = varhsyen && varbeamen ? hsstrt_reg  : HSSTRT_VAL[8:0];
-    wire [8:0] hsstop = varhsyen && varbeamen ? hsstop_reg  : HSSTOP_VAL[8:0];
+P3's (b): \|dL(SB) − dL(SA)\| = 64 ≥ 4. P3's (c): \|dT(SB) − dT(SA)\| =
+0 ≤ 1. P4's (b): \|dT(SC) − dT(SA)\| = 64 ≥ 4. P4's (c): \|dL(SC) −
+dL(SA)\| = 0 ≤ 1. Both contrasts hold: with VARHSYEN=0, dL and dT do not
+move between SA0/SB0/SC0. P3 and P4 are PASS on both cores. A4 and
+A4-DROPPED hold throughout (white run 192, 0 dropped white-carrying
+lines).
 
--- not VARHSYEN alone. Page note 8 already flagged that the pages do not
-say whether VARHSYEN suffices without VARBEAMEN, and chose VARHSYEN alone
-as the narrower reading the pages actually name for variable horizontal
-sync; that reading is what this package's BEAMCON0 values (`$0120`,
-`$0020`) implement, and it does not move either register on this RTL. A
-build with VARBEAMEN also set (not part of this package's stimulus, tried
-only to confirm the measurement chain itself) does move dL, which is why
-this is reported as a finding about the enabling condition rather than
-about the check: the comparator, the leading/trailing-edge detection and
-the landmark all measure correctly when there is a genuine move to see.
+**Mutations.** Replayed on both cores, from `out_<core>.txt` under each
+`NMH_MUTATE` value; each run turned exactly the check(s) named red and
+nothing else.
 
-**Mutations.** Every one of PC-ID (`X-OCS`, `X-NTSC`), PC-MARK (`X-HALT-H`,
-`X-HALT-S`), P1-LINES/P2-LINES (`X-SHORT`), P1-COVER (`X-BURST`),
-P3/P4-LINES and A4 (`X-NOBPL`), A1 (`A1`) and A3 (`A3`) turns its own named
-check red on both cores, and nothing else, as its header comment in
-`test_ch8_ecs_sync_registers.cpp` records.
+| NMH_MUTATE | Went red | fx68k | TG68K |
+|---|---|---|---|
+| `X-OCS` | PC-ID [H1, X-OCS] | FAIL | FAIL |
+| `X-NTSC` | PC-ID [H1, X-NTSC] | FAIL | FAIL |
+| `X-HALT-H` | PC-MARK [H1, X-HALT-H] | FAIL | FAIL |
+| `X-HALT-S` | PC-MARK [SA, X-HALT-S] | FAIL | FAIL |
+| `X-SHORT` | P1-LINES [H1], P2-LINES [H1] | FAIL, FAIL | FAIL, FAIL |
+| `X-BURST` | P1-COVER [H1], P1-COVER [H2] | FAIL, FAIL (148, 164 CCK) | FAIL, FAIL (153, 169 CCK) |
+| `X-NOBPL` | P3/P4-LINES [SA] (0 graded lines) | FAIL | FAIL |
+| `X-A4DOUBLE` | A4 (SA=n/a, both classes) | FAIL | FAIL |
+| `X-A4DROP` | A4-DROPPED (1 dropped white-carrying line) | FAIL | FAIL |
+| `X-AUD0` | A2 [H1] | FAIL | FAIL |
+| `A1` | A1 [H1c], A1 [H2c] | FAIL, FAIL | FAIL, FAIL |
+| `A3` | A3 [H1c], A3 [H2c] | FAIL, FAIL | FAIL, FAIL |
+| `P2A` | P2(a) [H1] | FAIL | FAIL |
+| `P2C` | P2(c) | FAIL | FAIL |
+| `P3-NOMOVE` | P3 (dL(SB)=dL(SA)=665) | FAIL | FAIL |
+| `P4-NOMOVE` | P4 (dT(SC)=dT(SA)=537) | FAIL | FAIL |
+
+In every row the setup still worked: PC-ID, PC-MARK and the run's other
+preconditions held except the one named, the program reached its marks,
+and the measured population was not emptied (A4-DROPPED's single dropped
+line left 511 others graded; every other row's graded population matched
+the normal run).

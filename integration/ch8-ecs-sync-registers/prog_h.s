@@ -1,11 +1,13 @@
 ; prog_h.s -- Program H (SPECIFICATION.md sec.4, "Program H (used by P1 and
 ; P2)"). Never assembled directly: an includer sets N (HTOTAL value) and B
-; (BEAMCON0 value) and includes this file. Three optional symbols select a
-; precondition mutation in place of the normal body:
+; (BEAMCON0 value) and includes this file. Optional symbols select a
+; precondition or anchor mutation in place of the normal body:
 ;   HALT_BEFORE  -- X-HALT-H: BRA.S * inserted before the HTOTAL write.
 ;   SHORT_LOOP   -- X-SHORT: 16 blocks (1024 samples) instead of 256 (16384).
 ;   BURST_MODE   -- X-BURST: read VHPOSR without storing until H decreases
-;                   (a wrap), then store 4 samples; repeat 4096 times.
+;                   (a wrap), then store 4 samples; repeat 400 times.
+;   AUD0_ON      -- X-AUD0: audio channel 0 DMA started, so a DMA access
+;                   other than refresh appears at the port.
 ; MARK1/MARK2 are two words the test finds as the CPU write of $A5A5/$5A5A
 ; at the Chip-memory port. ID holds the VPOSR value read before any
 ; BEAMCON0 write (PC-ID). SAMPLES holds the 16384 words the sampling loop
@@ -18,6 +20,7 @@ MARK1           equ     $0C0100
 MARK2           equ     $0C0102
 ID              equ     $0C0104
 SAMPLES         equ     $0C4000
+AUDBUF          equ     $0C0200
 
         org     PROGRAM_ORG
 
@@ -29,6 +32,14 @@ start:
 
         move.w  VPOSR(a0),d0
         move.w  d0,ID
+
+        ifd     AUD0_ON
+        move.l  #AUDBUF,AUD0LCH(a0)
+        move.w  #1,AUD0LEN(a0)
+        move.w  #50,AUD0PER(a0)
+        move.w  #32,AUD0VOL(a0)
+        move.w  #$8201,DMACON(a0)      ; SET,DMAEN,AUD0EN
+        endif
 
         ifd     HALT_BEFORE
         bra.s   *
@@ -44,7 +55,7 @@ start:
         lea     SAMPLES,a0
 
         ifd     BURST_MODE
-        move.w  #4095,d1
+        move.w  #399,d1                  ; 400 bursts of 4 = 1600 stores
 .burst: move.w  (a1),d2
         and.w   #$00FF,d2
 .spin:  move.w  d2,d3

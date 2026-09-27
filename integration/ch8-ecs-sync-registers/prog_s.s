@@ -1,17 +1,26 @@
 ; prog_s.s -- Program S (SPECIFICATION.md sec.4, "Program S (used by P3 and
 ; P4)"). Never assembled directly: an includer sets BCON (BEAMCON0), SVAL
-; (HSSTRT) and EVAL (HSSTOP) and includes this file. Two optional symbols
-; select a precondition mutation in place of the normal body:
+; (HSSTRT) and EVAL (HSSTOP) and includes this file. Optional symbols
+; select a precondition or anchor mutation in place of the normal body:
 ;   HALT_BEFORE  -- X-HALT-S: BRA.S * inserted before the HSSTRT write.
 ;   NOBPL        -- X-NOBPL: the DMACON SET write omits BPLEN (bitplane
 ;                   DMA never starts).
+;   A4_DOUBLE    -- X-A4DOUBLE: every line's data words 14-19 become
+;                   $FFFF,$FFFF,$0000,$FFFF,$FFFF,$FFFF instead of six
+;                   $FFFF words, so the display carries two transitions
+;                   into white per line instead of one.
 ; MARK1 is the word the test finds as the CPU write of $A5A5 at the
 ; Chip-memory port. ID holds the VPOSR value read before any BEAMCON0
 ; write (PC-ID). COPLIST and PLANE are filled by the CPU itself before the
 ; Copper is started, exactly as SPECIFICATION.md sec.4 describes: three
 ; Copper instructions (two MOVEs loading BPL1PTH/BPL1PTL from the CPU-
 ; filled COPLIST, then a WAIT that never completes) and 256 lines of 20
-; words each (14 words $0000, 6 words $FFFF).
+; words each.
+;
+; HTOTAL and VTOTAL are written before BEAMCON0 because their own rows
+; carry "(VARBEAMEN=1)" (p.280, p.298) and this program's BCON now sets
+; VARBEAMEN: the enabled comparators must not use an unprogrammed value
+; (as Program H's own HTOTAL/VTOTAL writes already do for the same reason).
 
         include "nanomig.i"
         include "regs.i"
@@ -42,15 +51,28 @@ start:
         move.w  #$0038,DDFSTRT(a0)
         move.w  #$00D0,DDFSTOP(a0)
 
-        ; PLANE: 256 lines of 20 words each -- 14 words $0000, then 6 words $FFFF.
+        ; PLANE: 256 lines of 20 words each.
         lea     PLANE,a1
         move.w  #255,d1
-.line:  moveq   #13,d0
+.line:
+        ifd     A4_DOUBLE
+        moveq   #13,d0
+.blk0:  move.w  #$0000,(a1)+
+        dbra    d0,.blk0
+        move.w  #$FFFF,(a1)+
+        move.w  #$FFFF,(a1)+
+        move.w  #$0000,(a1)+
+        move.w  #$FFFF,(a1)+
+        move.w  #$FFFF,(a1)+
+        move.w  #$FFFF,(a1)+
+        else
+        moveq   #13,d0
 .blk0:  move.w  #$0000,(a1)+
         dbra    d0,.blk0
         moveq   #5,d0
 .blk1:  move.w  #$FFFF,(a1)+
         dbra    d0,.blk1
+        endif
         dbra    d1,.line
 
         ; COPLIST: MOVE BPL1PTH,hi(PLANE); MOVE BPL1PTL,lo(PLANE); WAIT forever (p.21,p.30).
@@ -77,6 +99,8 @@ start:
 
         move.w  #SVAL,HSSTRT(a0)
         move.w  #EVAL,HSSTOP(a0)
+        move.w  #$00E2,HTOTAL(a0)       ; p.23: horizontal position's maximum value
+        move.w  #$0138,VTOTAL(a0)       ; 312: standard PAL field size (p.216), matching Program H
         move.w  #BCON,BEAMCON0(a0)
 
         move.w  #$A5A5,MARK1
