@@ -527,7 +527,7 @@ int main(int argc, char** argv) {
 
     // ---------------- Claims declined at this boundary (pp. 186-198) ----------------
     //
-    // Each of these five was classified testable and confirmed reachable by
+    // Each of these seven was classified testable and confirmed reachable by
     // this fixture, but none is graded here, for the reason given on its
     // own line - see the CLAIM COVERAGE note above for the fuller argument.
     checks.record(
