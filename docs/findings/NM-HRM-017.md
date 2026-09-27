@@ -4,74 +4,135 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
+| **Evidence** | a test fails against the page; the implementations split |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. Two of the package's nineteen reds carry the finding; the other seventeen reds and one green do not measure what the page says (*What the test measures*). |
 | **Module** | `denise_colortable.v`, `denise.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_colortable.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-shres-bitplane-colour-encoding`](../../hrm/ch3-shres-bitplane-colour-encoding) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | **two against two**: WinUAE and vAmiga reinterpret, Denise and Copperline do not |
+| **Verdict of the four** | **two against two**: WinUAE and vAmiga pair SuperHires pixels into the sixteen lower registers and show two bits per component, ECS Denise only; Denise and Copperline show each pixel's own register in full |
 | **See also** | [NM-HRM-016](NM-HRM-016.md), the sprite half of the same mechanism |
 
 ---
 
 ## What the HRM says
 
-**Printed pp. 297 and 301** give the SuperHires bitplane colour scheme: the same
-pair encoding as the sprite case, reading each colour register as two slots so
-that colour can be carried at the doubled pixel rate.
+**Printed p. 301** limits a SuperHires pixel to two bits per component and
+moves the four bitplane colours into sixteen registers:
+
+> SuperHires mode has a coarser granularity of color control than either Hires
+> or Lores modes. ... There are only two bits of red, green and blue color
+> resolution per hires pixel.
+
+> In order to decode sprite and bitplane color information in SuperHires mode,
+> certain multiplexing occurs in the use of the registers. Instead of 4 bits of
+> red, green, and blue for bitplane registers 0-3 stored as 0x0RGB in four color
+> registers, SuperHires bitplane colors are specially encoded in the sixteen
+> lower color registers:
+
+The key names each colour's two bits per component, and the table places them
+in the registers (the key's first two lines and three of the sixteen rows):
+
+```
+                              R    G    B
+      Bitplane (Color 0) :   ab-- cd-- ef--
+      Bitplane (Color 1) :   gh-- ij-- kl--
+
+      BIT  15  14  13  12  11  10  09  08  07  06  05  04  03  02  01  00
+   O  01   .   .   .   .   g   h   a   b   i   j   c   d   k   l   e   f
+   R  04   .   .   .   .   a   b   g   h   c   d   i   j   e   f   k   l
+      05   .   .   .   .   g   h   g   h   i   j   i   j   k   l   k   l
+```
+
+Row *n* carries Color (*n* mod 4) in bits 11–10, 7–6 and 3–2 and Color
+(*n* div 4) in bits 9–8, 5–4 and 1–0. Row 05 is the one row that holds Color 1
+alone; row 01 holds Color 1 in its upper bit pairs and Color 0 in its lower
+ones. The page does not say which register, or which half of it, a given pixel
+reads, nor what a pixel shows in the two positions the key marks `--`.
+
+**Printed p. 297** calls this a new reading of the same registers:
+
+> There are new color register interpretations as part of the SuperHires mode.
+
+and **printed p. 300** limits the depth it applies to:
+
+> The maximum plane depth for a SuperHires viewport is 2 bitplanes
+
+so the sixteen lower registers hold the colours of one or two bitplanes.
 
 ---
 
 ## What NanoMig does
 
 Same root cause as [NM-HRM-016](NM-HRM-016.md), reached down a different path:
-`denise_colortable.v` has **no `shres` port**, so no colour lookup anywhere in
-the design can depend on the mode.
+`denise_colortable.v` has **no `shres` port**
+([`denise_colortable.v:7-20`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_colortable.v#L7-L20)),
+so no colour lookup anywhere in the design can depend on the mode. In a single
+playfield its address is the plane bits themselves
+([`denise_playfields.v:100`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_playfields.v#L100),
+`plfdata[7:0] = bpldata[8:1];`), and all twelve bits of the register it reads
+reach the output
+([`denise_colortable.v:56-58`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_colortable.v#L56-L58)).
+
+At a SuperHires depth the address never reaches COLOR04–COLOR0F:
+[`denise.v:369-370`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L369-L370)
+hold planes 3 and 4 at zero whenever BPU is 2 or less,
+
+```verilog
+assign bpldata[3] = l_bpu > 2 ? bpldata_out[3] : 1'b0;
+assign bpldata[4] = l_bpu > 3 ? bpldata_out[4] : 1'b0;
+```
+
+so with one or two bitplanes a pixel reads one of COLOR00–COLOR03, as in Hires.
+
+The package's port shows every SuperHires pixel: under `shres` the plane
+shifter moves on every 28 MHz clock
+([`denise_bitplane_shifter.v:206-208`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_bitplane_shifter.v#L206-L208)),
+and `red`, `green` and `blue` follow the colour table on that clock
+([`denise.v:518`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L518)),
+so one sample per clock is one 35 ns pixel.
 
 ### Measured
 
-With `COLOR01 = 0x0C39` — every nibble's top two bits differing from its bottom
-two, so a rearrangement would be visible in all three channels:
+Two assertions measure it; the package reports `5 passed, 19 failed`.
+
+`SHRES-REINTERPRETS-SAME-REGISTERS`: COLOR00 = `0x0000`, COLOR01 = `0x0C39`, a
+solid colour-1 run (plane 1 all ones, BPU = 1). NanoMig shows COLOR01 in full in
+both modes:
 
 | | |
 |---|---|
 | `ocs` | `0xCC3399` |
 | `shres` | `0xCC3399` |
 
-**Identical.** Reproduced from a clean build.
+`SHRES-TWO-BITS-RESOLUTION`: one bit of COLOR01's blue nibble set at a time, a
+solid colour-1 run at BPU = 2, `shres` = 1. **All four** bits move the blue
+output. Row 01 puts Color 0's `e f` in bits 1–0; the key gives a colour-1
+pixel Color 1's two blue bits `k l`, so at most two of the four can decide it.
 
 ---
 
-## Why the measurement looks the way it does — a correction worth reading
+## What the test measures
 
-An independent validator objected that the original assertion **could not have
-gone green even against a perfect implementation**, and was right.
+The package's assertions, set against an implementation of p. 301. The *pair
+lookup* is WinUAE's and vAmiga's (*What the others say*): a solid run of value
+*v* reads COLOR(5*v*), and each pixel shows two bits per component, repeated to
+fill the component. Its column is derived from their code applied to the
+package's stimuli, not run.
 
-It wrote `COLOR01 = 0x0FFF` — all ones in every nibble. The claimed SuperHires
-encoding is a **rearrangement** of bits, and rearranging all ones yields all
-ones. So the red was not evidence of anything: it is the mirror image of a
-circular oracle, an assertion that cannot pass for a reason unrelated to the
-design.
+| assertion (`test_denise.cpp`) | NanoMig | pair lookup | what it shows |
+|---|---|---|---|
+| `SHRES-REINTERPRETS-SAME-REGISTERS` (`:946`) | red | green: the run reads COLOR05, which the test does not write, and each component can only be `0x00`, `0x55`, `0xAA` or `0xFF`, so the reading is never `0xCC3399` | the finding |
+| `SHRES-TWO-BITS-RESOLUTION` (`:1126`, `:1180`) | red, 4 of 4 | green, 0 of 4: COLOR01 reaches no pixel of a solid colour-1 run | the finding |
+| `SHRES-BITPLANE-TABLE-COLOR-04` to `-0F` (`:1046-1074`) | red | red: `checks.expect(false, label)` | nothing: red on every implementation. The reason they give, that COLOR04–COLOR0F need planes 3 and 4, is NanoMig's lookup; p. 301 puts those registers under one or two bitplanes |
+| `SHRES-USES-SIXTEEN-LOWER-REGISTERS` (`:1152`) | red | red: it requires the twelve above | nothing |
+| `SHRES-BITPLANE-TABLE-COLOR-00` to `-03` (`:1121`) | red | green, `-01` to `-03` because a run of value 1, 2 or 3 reads COLOR05, COLOR0A or COLOR0F, which the sweep never writes | not their rows. They require every used bit to make the SuperHires reading differ from the plain one, which p. 301 does not state: with the two `--` positions shown as zeros, bit 11 of row 00 gives the plain `0x88` red |
+| `SHRES-BPL01-BIT11-ISOLATES-RED` (`:1231-1236`) | green | red: bit 11 of COLOR01 does not reach a solid colour-1 run | NanoMig's lookup: p. 301 says what bit 11 carries, not which pixels read it |
 
-The stimulus was changed to `0x0C39` and the finding **restored as test-backed**
-— now on evidence that could have gone the other way.
-
-**Two further corrections came out of the same pass:**
-
-- The sweep had been running at `bpu = 4`, a depth p. 300 does not define for
-  SuperHires: *"The maximum plane depth for a SuperHires viewport is 2
-  bitplanes"*, and the register row reads `13  BPU1  } Depth of SuperHires mode
-  (1 or 2)`. At a compliant depth `denise.v:369` forces `bpldata[3]` to zero, so
-  in a single playfield registers 4–15 are not merely un-reinterpreted but
-  **unaddressable** through NanoMig's plane-index lookup. They are now kept red on
-  that ground by an unconditional `expect(false)`, not measured: twelve of the
-  package's `5 passed, 19 failed`, and `SHRES-USES-SIXTEEN-LOWER-REGISTERS`,
-  which requires all sixteen, is red by the same construction.
-- `OCS-BASELINE-0RGB-FORMAT` had baked `denise_colortable.v`'s nibble-to-byte
-  duplication into its expected value — an implementation detail as an oracle. It
-  now checks only the top nibble of each component, which follows from "COLORxx
-  stores 0x0RGB" alone. Still green.
+The four controls (`CONTROL-KNOWN-VALUES-ARRIVE`, `FIXTURE-DATA-PATH-LIVE`,
+`OCS-BASELINE-0RGB-FORMAT`, `SELECT-REGISTER-ADDRESSES-CORRECTLY`) run with
+`shres` = 0 and pass. `OCS-BASELINE-0RGB-FORMAT` checks only the top four bits
+of each 8-bit component, the part that "stored as 0x0RGB" fixes.
 
 ---
 
@@ -79,10 +140,10 @@ The stimulus was changed to `0x0C39` and the finding **restored as test-backed**
 
 | | code | |
 |---|---|---|
-| **WinUAE** | — | reinterprets, ECS Denise only |
-| **vAmiga** | — | reinterprets, ECS Denise only |
-| **Denise** | [`emulation/libami/video/denise.cpp:200`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L200) | <pre>colors[pos] = value;</pre> one table, no mode |
-| **Copperline** | [`src/video/bitplane/tests.rs:7563`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L7563) | *"each 35 ns half resolves palette[1], never a pair-encoded entry"* |
+| **WinUAE** | [`drawing.cpp:2991-3000`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L2991-L3000) | <pre>uae_u8 off = ((p1 & 3) * 4) + (p0 & 3) + ((p0 \| p1) & 16);</pre> reinterprets, ECS Denise only ([`:6470`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L6470)): two adjacent SuperHires pixels select one of the sixteen lower registers; the first shows its bits 11–10, 7–6, 3–2 (`& 0xccc`), the second its bits 9–8, 5–4, 1–0 (`& 0x333`). A solid colour-1 run reads COLOR05 |
+| **vAmiga** | [`Core/Components/Denise/PixelEngine.h:301-305`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/PixelEngine.h#L301-L305) | <pre>return ((mbuf[base + 2] & 3) * 4) + (mbuf[base] & 3);</pre> reinterprets, ECS Denise only ([`PixelEngine.cpp:215-222`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/PixelEngine.cpp#L215-L222)): pixels 0 and 2, and pixels 1 and 3, of each group of four select one of the sixteen lower registers; even pixels show the high bit pair of each component, odd pixels the low pair ([`PixelEngine.cpp:620`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/PixelEngine.cpp#L620), [`Colors.cpp:127-148`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Colors.cpp#L127-L148)). A solid colour-1 run reads COLOR05; a mixed pattern can read a different register than under WinUAE's pairing |
+| **Denise** | [`emulation/libami/video/denise.cpp:200`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L200) | <pre>colors[pos] = value;</pre> one table, no mode; a SuperHires pixel shows its own register in full ([`:797`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L797), `color = colors[colIndex];`) |
+| **Copperline** | [`src/video/bitplane/tests.rs:7563`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L7563) | *"each 35 ns half resolves palette[1], never a pair-encoded entry"*; the path under test looks up each 35 ns sample on its own ([`src/video/bitplane/output.rs:324-333`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/output.rs#L324-L333)) |
 | **MiSTer** | [`rtl/denise_colortable.v:32-35`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v#L32-L35) | descendant — same as [NM-HRM-016](NM-HRM-016.md): no `shres` port on `rtl/denise_colortable.v:32-35`; `rtl/denise.v:339` has the identical `l_bpu > 2` depth-force line, with an added `window_ena &&` term NanoMig's line lacks |
 | **TC64** | [`rtl/minimig/denise_colortable.v:32-35`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_colortable.v#L32-L35) | descendant — (`rtl/minimig/denise_colortable.v:32-35`) both keep the interface mode-blind, and their 11-line diffs from NanoMig (a RAM primitive's word width) are identical to each other and unrelated to colour mode. `denise.v`: **MiSTer** `rtl/denise.v:339` — `assign bpldata[3] = window_ena && (l_bpu > 2) ? bpldata_out[3] : 1'b0;`, the same `l_bpu > 2` depth force as NanoMig's `:369`, with an added `window_ena &&` term NanoMig's line lacks. **TC64** `rtl/minimig/denise.v:354` — the identical line, `window_ena` term included. The depth truncation this finding rests on is unchanged in both lines; the `window_ena` difference is a separate, narrower divergence this finding does not measure |
 
@@ -102,20 +163,9 @@ Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS), 1
 
 ## Suggested change
 
-As with [NM-HRM-016](NM-HRM-016.md): `denise_colortable` needs a mode input it does not have.
+As with [NM-HRM-016](NM-HRM-016.md): `denise_colortable` needs a mode input it
+does not have, and at a depth of one or two bitplanes its address must reach
+COLOR04–COLOR0F, which `denise.v:369-370` keep out of reach.
 The two findings are one mechanism and should be closed together or not at all —
 they are kept as separate entries because they rest on separate measurements at
 separate boundaries, not because they are separate problems.
-
----
-
-## Why this entry is worth more than it was
-
-The validator's objection was correct and the correction answers it. The finding
-now rests on a stimulus that would have exposed a working implementation, at a
-plane depth the manual defines, with an expected value that follows from the
-manual rather than from the colour table's internals.
-
-Two circularities were removed from one package in one pass; the third,
-registers 4–15, remains as twelve reds no implementation could turn green. That is the reason
-to keep the objection visible here rather than quietly fixing the test.
