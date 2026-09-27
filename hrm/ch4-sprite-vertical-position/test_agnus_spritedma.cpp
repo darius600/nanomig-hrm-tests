@@ -55,14 +55,16 @@
 //   6/5 are exercised only by a RECORDED/MEASURED note, never inside a
 //   checks.expect() pass/fail condition, and are cited by no claim id.
 //
-// CONFLICTS: 20 of this package's 178 claims are classified `conflict`,
-//   each carrying its own classify.conflict_resolution naming an
-//   undisputed sub-claim. Both conflicts are handled below by asserting
-//   only the undisputed part: SPRXCTL-CHIP-MARK-AGNUS-HALF (18 ids, the
-//   "A D(E)"/"A D" chip-column claims for SPRxCTL) asserts only that
-//   Agnus is a genuine write target -- the "A" -- and leaves the (E)
-//   qualifier and the Denise ("D") side undisputed-but-untested (out of
-//   this boundary); SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED (2 ids) declines
+// CONFLICTS: 20 of this package's 178 claims carry a
+//   classify.conflict_resolution naming an undisputed sub-claim, in two
+//   conflicts, and none of the 20 is graded. The 18 "A D(E)"/"A D"
+//   chip-column claims for SPRxCTL are declined whole on
+//   AGNUS-IS-WRITE-TARGET-DENISE-HALF-UNTESTED: each bundles the (E)
+//   qualifier and the Denise ("D") side, both out of this boundary, into
+//   the same sentence as the "A". The undisputed Agnus half -- Agnus is a
+//   genuine write target -- is graded by
+//   AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL, which carries none of
+//   the 18. SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED (2 ids) declines
 //   entirely, because the disputed part (what bits 6-3 are) is exactly
 //   what an "unused" assertion would have to pick a side on, and the
 //   undisputed bits in that same row (SV8 at bit 2, EV8 at bit 1) are
@@ -164,7 +166,8 @@
 //   SPRXCTL-BIT2-SV8-IS-VSTART-HIGH-BIT (4 ids)
 //   SPRXCTL-BIT1-EV8-IS-VSTOP-HIGH-BIT (2 ids)
 //   SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED [declined] (2 ids)
-//   AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL (39 ids)
+//   AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL (39 ids: 2 on the
+//     assertion, 37 on its two [declined] records)
 //   SPRXPOS-SPRXCTL-WRITE-BUS-HAS-BOTH-DMA-AND-PROCESSOR-PATHS (39 ids)
 //   SPRXDATA-SPRXDATB-DMA-PATH-ONLY-AT-THIS-BOUNDARY (36 ids)
 //   34+11+11+4+2+2+39+39+36 = 178.
@@ -1461,9 +1464,9 @@ int main(int argc, char** argv) {
             "  W  A  Sprite x position and control data' (appendix C "
             "p298) is real at the chip set the map itself is scoped to, "
             "not only at this fixture's default ecs=0; the ecs=0 "
-            "measurement on SPRXPOS-SPRXCTL-ADDRESS-MAP and AGNUS-IS-"
-            "WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL above was a proxy for "
-            "this ECS-scoped row, not itself an ECS measurement. "
+            "measurements of SPRXPOS-SPRXCTL-ADDRESS-MAP and AGNUS-IS-"
+            "WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL above are not ECS "
+            "measurements of this ECS-scoped row. "
             "APPC2-SPRxCTL.addr, APPC2-SPRxCTL.acc . ");
     }
 
