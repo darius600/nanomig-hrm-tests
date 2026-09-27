@@ -6,8 +6,9 @@
 ;   P4_RUN2             -- Run 2 (COP2): COP1LC=A, COP2LC=B, COPJMP2
 ;   P4_RUN2+P4_RUN3      -- Run 3: ...COPJMP2, COP2LC=C (no strobe)
 ;   P4_RUN2+P4_RUN3+P4_RUN3_REORDER -- Run 3 with COP2LC=C moved before
-;                           COPJMP2 (graded normally: its own "Main" case)
-;   P4_MUT_A             -- precondition (a) mutation: DMACON=$8280 written
+;                           COPJMP2
+;   P4_CTRL_COP1B        -- comparator contrast: COP1LC=B (not A), COPJMP1
+;   P4_MUT_A             -- precondition (a) mutation: DMACON=$8080 written
 ;                           before the DMACONR read
 ;   P4_MUT_B             -- precondition (b) mutation: the whole Run 1
 ;                           sequence, DMACON write included, run once early
@@ -20,14 +21,20 @@
         org     PROGRAM_ORG
 
 start:
-        CLEAR_OVL
         lea     CUSTOM,a0
 
         ifd     P4_MUT_A
-        move.w  #$8280,DMACON(a0)       ; precondition (a) mutation
+        move.w  #$8080,DMACON(a0)       ; precondition (a) mutation: COPEN
+                                         ; without DMAEN (p.222) -- DMACONR
+                                         ; bit 7 misreports "on" without
+                                         ; starting real DMA
         endif
 
         move.w  DMACONR(a0),RESULTS+4   ; the program's very first action
+
+        CLEAR_OVL
+        move.w  #$7FFF,INTENA(a0)
+        move.w  #$3FFF,INTREQ(a0)
 
         ; Lists A, B, C: $0180,x ; $FFFF,$FFFE, a different x each.
         move.l  #$018000AA,LIST1        ; A
@@ -46,6 +53,33 @@ start:
         move.w  #$8280,DMACON(a0)
         endif
 
+        lea     RECBUF,a6
+        moveq   #0,d7                   ; running record count
+
+        ; Wait for a record showing V between $40 and $C0 (p.219: vertical
+        ; blanking ends at line 25 for PAL) before writing any location
+        ; register or strobe.
+.w1:    SAMPLE
+        addq.l  #1,d7
+        move.l  -6(a6),d0
+        move.l  d0,d1
+        lsr.l   #8,d1
+        and.l   #$1FF,d1
+        cmpi.w  #$40,d1
+        blt.s   .w1
+        cmpi.w  #$C0,d1
+        bgt.s   .w1
+
+        move.w  #9,MARKBUF+4             ; MS: precedes the first
+                                          ; location-register write
+
+        ifd     P4_CTRL_COP1B
+        ; Comparator contrast: COP1LC = B (LIST2), COPJMP1 (p.25 predicts
+        ; the first fetch is B's, not A's).
+        move.l  #LIST1,COP2LCH(a0)      ; decoy, never strobed
+        move.l  #LIST2,COP1LCH(a0)
+        move.w  #0,COPJMP1(a0)
+        else
         ifd     P4_RUN2
         ifd     P4_RUN3
         ; Run 3 (strobe, then rewrite): COP1LC=A, COP2LC=B, COPJMP2,
@@ -71,38 +105,20 @@ start:
         move.l  #LIST1,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
         endif
-
-        move.w  #9,MARKBUF+4             ; M0: bounds the run-specific writes,
-                                          ; diagnostic only (2.3's marker
-                                          ; technique; not a page value)
-
-        lea     RECBUF,a6
-        moveq   #0,d7                   ; running record count
-
-        ; sampler until a record shows V between $40 and $C0
-.w1:    SAMPLE
-        addq.l  #1,d7
-        move.l  -4(a6),d0
-        move.l  d0,d1
-        lsr.l   #8,d1
-        and.l   #$1FF,d1
-        cmpi.w  #$40,d1
-        blt.s   .w1
-        cmpi.w  #$C0,d1
-        bgt.s   .w1
+        endif
 
         move.w  #1,MARKBUF              ; M1
 
         ifd     P4_MUT_C
         ; precondition (c) mutation: wait for a frame wrap before DMACON
-        move.l  -4(a6),d0
+        move.l  -6(a6),d0
         move.l  d0,d1
         lsr.l   #8,d1
         and.l   #$1FF,d1
         move.w  d1,d4
 .wwrap: SAMPLE
         addq.l  #1,d7
-        move.l  -4(a6),d0
+        move.l  -6(a6),d0
         move.l  d0,d1
         lsr.l   #8,d1
         and.l   #$1FF,d1

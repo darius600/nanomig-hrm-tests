@@ -41,7 +41,7 @@ start:
         ; step 4: sampler until a record shows V between $40 and $C0
 .w1:    FAST_SAMPLE
         addq.l  #1,d7
-        move.l  -4(a6),d0
+        move.l  -6(a6),d0
         move.l  d0,d1
         lsr.l   #8,d1
         and.l   #$1FF,d1               ; d1 = V
@@ -72,21 +72,29 @@ start:
         ; C++ side finds "two complete frames after M2" itself from the
         ; wraps in the captured data -- SPECIFICATION.md 2.4). A plain
         ; `dbra` loop around FAST_SAMPLE, with no per-iteration V decode,
-        ; is needed to keep density at or above the anchor B2 (>= 8
-        ; records/line): decoding V inline roughly halved achievable
-        ; density in an earlier build of this program.
+        ; keeps density at or above the anchor B2 (>= 7 records/line,
+        ; SPECIFICATION.md 2.4); the main case unrolls eight FAST_SAMPLEs
+        ; per iteration, sharing the addq/dbra overhead across them.
         ifd     P1_MUT_SLOWSAMP
         move.w  #4000-1,d3             ; precondition (c) mutation: fewer
                                         ; iterations, each slowed further
-        else
-        move.w  #20000-1,d3
-        endif
 .w2:    FAST_SAMPLE
         addq.l  #1,d7
-        ifd     P1_MUT_SLOWSAMP
         SLOWDELAY
-        endif
         dbra    d3,.w2
+        else
+        move.w  #3000-1,d3
+.w2:    FAST_SAMPLE
+        FAST_SAMPLE
+        FAST_SAMPLE
+        FAST_SAMPLE
+        FAST_SAMPLE
+        FAST_SAMPLE
+        FAST_SAMPLE
+        FAST_SAMPLE
+        addq.l  #8,d7
+        dbra    d3,.w2
+        endif
 
         move.l  d7,RESULTS+8           ; record count, for the C++ side
 

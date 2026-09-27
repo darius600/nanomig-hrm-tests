@@ -43,25 +43,30 @@ DATA2           equ     $004000
 ; Ordinary identity-mapped chip RAM scratch: CPU-only cells (no DMA pointer
 ; ever addresses these), so no overlay handling needed. RESULTS/DONE_ADDR
 ; are nanomig.i's.
-MARKBUF         equ     $0C1000         ; M1, M2, MH1, MH2, ... one word each
-RECBUF          equ     $0C4000         ; beam/poll sample records, 6 bytes each
+MARKBUF         equ     $0C1000         ; M1(+0), M2(+2), MS(+4, P4), MPC(+6, P2)
+RECBUF          equ     $0C4000         ; beam/poll sample records, 8 bytes each
 
 ; One beam/poll-sample record (SPECIFICATION.md 2.4, extended with INTREQR
 ; per 2.6 where a proposition needs it -- harmless extra data otherwise):
-; INTREQR (word) then VPOSR/VHPOSR read as one long word, 6 bytes total,
-; advancing a6. a0 must hold CUSTOM.
+; INTREQR, then VPOSR/VHPOSR read as one long word, then VPOSR read again --
+; 4 words, 8 bytes, advancing a6. The re-read lets the C++ side keep a
+; record only when both VPOSR reads agree on bit 0 (V8): VPOSR and VHPOSR
+; are two separate bus reads (p.216), so a record whose V crosses 255->256
+; or 312->0 between them can otherwise tear. a0 must hold CUSTOM.
 SAMPLE          macro
                 move.w  INTREQR(a0),(a6)+
                 move.l  VPOSR(a0),(a6)+
+                move.w  VPOSR(a0),(a6)+
                 endm
 
-; Same 6-byte record layout as SAMPLE, but the first word is a constant
+; Same 4-word record layout as SAMPLE, but the first word is a constant
 ; (not a real INTREQR read): for a proposition that does not grade INTREQR,
 ; this halves the per-record register-read cost, needed to keep the
 ; anchor-B2 density (>= 8 records/line) with only a `dbra` loop around it.
 FAST_SAMPLE     macro
                 clr.w   (a6)+
                 move.l  VPOSR(a0),(a6)+
+                move.w  VPOSR(a0),(a6)+
                 endm
 
 ; Precondition-(c)-style mutation: a fixed delay inserted between samples,

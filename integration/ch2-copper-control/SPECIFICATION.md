@@ -133,12 +133,17 @@ Taken from p.21, p.22, p.31 and the summary on p.36 (Table 2-2):
 
 The program measures the beam itself. In a tight loop it reads VPOSR/VHPOSR
 as one long word (p.216: "the address pairs VPOSR,VHPOSR … can be read from
-… as long words") and stores it to a record buffer. When a proposition says
-so, it first reads INTREQR and stores that too. Each record's stores are
-visible at the port with their times.
+… as long words"), then reads VPOSR again, and stores all of it to a record
+buffer. When a proposition says so, it first reads INTREQR and stores that
+too. Each record's stores are visible at the port with their times.
 
 - Decoding (p.216): V = VPOSR bit 0 (V8) followed by VHPOSR bits 15–8
   (V7–V0); H = VHPOSR bits 7–0 (H8–H1).
+- VPOSR/VHPOSR is two separate bus reads (p.216), so a record whose true V
+  crosses a wrap boundary between them can tear: the two words then
+  describe two different instants. A record is kept only if the second
+  VPOSR read agrees with the first on bit 0 (V8); one where they disagree
+  is dropped.
 - A record counts as *stored before t* if all its words were written before
   t, and *stored after t* if all its words were written after t. A record is
   read before it is stored, and each record is read after the previous one
@@ -148,17 +153,16 @@ visible at the port with their times.
   was read before t and record b after t. If V(a) = V(b) = L, the event lies
   on line L. Otherwise it is *undecided* and is neither counted nor counted
   against.
-- **Frame (field) boundary**: V decreases between two consecutive records
-  (the counter has wrapped). Line 0 is the start of vertical blank (p.219:
-  "Bit 5, VERTB, causes an interrupt at line 0 (start of vertical blank)").
-  A *complete frame* is the interval between two consecutive wraps. An event
-  belongs to frame k if the records a and b above both belong to frame k.
+- **Frame (field) boundary**: a wrap is a decrease from V ≥ 256 to V ≤ 1
+  (p.24: the vertical position "appears to wrap to 0" past line 255; p.219:
+  line 0 is the start of vertical blank). A *complete frame* is the
+  interval between two consecutive wraps. An event belongs to frame k if
+  the records a and b above both belong to frame k.
 - **Middle of line L**: the store time of the first record on line L whose H
   is at least $71 (half of $E2, p.23).
 - Anchor checks, asserted whenever a proposition uses this frame:
-  - (B1) Within a frame, V never decreases between consecutive records, and
-    within a line H never decreases.
-  - (B2) Every line in the graded range carries at least 8 records. This is
+  - (B1) Within a frame, V never decreases between consecutive records.
+  - (B2) Every line in the graded range carries at least 7 records. This is
     a density requirement of the test, not a page value. It makes sure
     events on every graded line can be decided.
   - (B3) No line in the graded range is missing from the frame.
@@ -259,8 +263,9 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
       restarts.
    3. Start the Copper per 2.7 (DMACON $8280).
    4. Phase 1: when a record shows V between $40 and $C0, write INTREQ =
-      $0010 (clear bit 4, p.218). Then run a polling sampler (record =
-      INTREQR, VPOSR/VHPOSR) until one complete frame has passed.
+      $0010 (clear bit 4, p.218), with a marker MPC immediately after. Then
+      run a polling sampler (record = INTREQR, VPOSR/VHPOSR) until one
+      complete frame has passed.
    5. Phase 2: when a record shows V between $80 and $C0, do M1; DMACON =
       $0080 (SET/CLR = 0, bit 7 selected: clear); M2. Then INTREQ = $0010,
       then the polling sampler for two complete frames.
@@ -274,9 +279,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    instructions" is graded by (i) and "placing data" by (ii). The window
    covers two vertical blanks because the page gives the stop no time limit.
 5. **Preconditions.**
-   - (a) In phase 1 the list works: L2's IR2 is fetched in the frame, and
-     bit 4 is 0 in the records stored before that fetch and 1 in a record
-     stored after it.
+   - (a) After t(MPC), the marker following the phase-1 clear: at least one
+     record is stored before the first IR2 fetch of L2's MOVE that follows,
+     bit 4 is 0 in every record stored between t(MPC) and that fetch, and 1
+     in a record stored after it.
    - (b) INTENAR bits 14–0 read 0 (read and stored before phase 2), and the
      program writes INTREQ nowhere in phase 2 except the one clear. So
      nothing but the Copper could set bit 4 (p.219: bit 4 "has been reserved
@@ -289,8 +295,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
      after the next restart.
    - For (a): L2 with the MOVE replaced by `$0180,$0F00`. Bit 4 is never
      set in phase 1.
-   - For (b): INTENA = $C010 with a level-3 handler that clears bit 4.
-     INTENAR is then non-zero.
+   - For (b): INTENA = $8010 (bit 4 set, the master enable bit 14 left at
+     0). p.218: "If this bit is a 0, it disables all other interrupts."
+     INTENAR is then non-zero, with no live interrupt to interfere with the
+     rest of the run.
    - For (c): as in 2.4.
 7. **Reference frames.** 2.3, 2.4.
 
@@ -403,16 +411,22 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
 2. **Stimulus.** Lists A, B and C sit at different addresses. Each is
    `$0180,x` followed by `$FFFF,$FFFE`, with a different x in each list. The
    program's very first action is to read DMACONR and store it. The common
-   DMACON clear is skipped in this proposition.
+   DMACON clear is skipped in this proposition; INTENA and INTREQ are still
+   cleared (2.1).
 
-   | Run | Writes before M1 |
+   The location registers and the strobe are written only after a record
+   shows V between $40 and $C0 (p.219: vertical blanking ends at line 25
+   for PAL), so that no vertical blank lies between them and Copper DMA
+   being turned on. A marker MS precedes the first location-register
+   write.
+
+   | Run | Writes after MS, before M1 |
    |---|---|
    | Run 1 (COP1) | COP2LC = B, COP1LC = A, COPJMP1 |
    | Run 2 (COP2) | COP1LC = A, COP2LC = B, COPJMP2 |
    | Run 3 (strobe, then rewrite) | COP1LC = A, COP2LC = B, COPJMP2, COP2LC = C (no strobe) |
 
-   In every run, after these writes: run the sampler until V is between $40
-   and $C0; M1; DMACON = $8280; M2; sampler until the end of the next
+   In every run: M1; DMACON = $8280; M2; sampler until the end of the next
    complete frame.
 3. **Observation.** The first Copper fetch in the A, B or C regions after
    t(M1), and the frame it lies in.
@@ -433,21 +447,34 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    - p.25: "When a jump address strobe is written, the corresponding
      location register is loaded into the Copper program counter."
    - p.26: "COPJMP2 Restart Copper from address contained in COP2LC."
+   - p.276: "They are transferred to the program counter whenever strobe
+     addresses COPJMP1 or COPJMP2 are written."
 
-   Runs 1 and 2 grade "one of … COP1LC or COP2LC": both registers are cases.
+   Runs 1 and 2 grade "one of … COP1LC or COP2LC": both registers are
+   cases, graded together as one assertion. Run 3 and its reorder (6) carry
+   no claim id of their own and are graded by the same rule, without one.
 5. **Preconditions.**
    - (a) The first stored DMACONR has bit 7 = 0: Copper DMA was off when
      the program started ("At power-on or reset time").
    - (b) No Copper fetch in any list region before t(M1).
-   - (c) No frame wrap between t(M1) and the first fetch. Otherwise the
-     vertical-blank restart from COP1LC (p.25) could have supplied the
-     address.
+   - (c) No frame wrap and no record with V ≤ 25 lies between t(MS) and the
+     first fetch. Otherwise a vertical blank (p.219: blanking is lines 0–25
+     for PAL) lies in that stretch, and the restart from COP1LC (p.25)
+     could have supplied the address instead of the strobe under test.
 6. **Contrasting cases.**
    - Main: Run 1 and Run 2 differ only in which strobe is written, and the
-     page predicts A and B respectively. For Run 3, move the COP2LC = C
-     write to before COPJMP2. The first fetch is then C's IR1 (p.25).
-   - For (a): the program first writes DMACON = $8280 and only then reads
-     DMACONR. Bit 7 reads 1.
+     page predicts A and B respectively, graded together. For Run 3, move
+     the COP2LC = C write to before COPJMP2 (Run 3-reorder). The first
+     fetch is then C's IR1 (p.25); Run 2, Run 3 and Run 3-reorder are
+     graded together against this rule.
+   - Comparator contrast: COP1LC = B (not A), then COPJMP1, with COP2LC = A
+     as an unstrobed decoy (mirroring Run 1's own shape). The page predicts
+     B. This isolates which list ends up at the strobed register from
+     everything else Run 1 does, and shows the comparator is not vacuous.
+   - For (a): the program first writes DMACON = $8080 (COPEN without
+     DMAEN, p.222) and only then reads DMACONR. Bit 7 reads 1, with DMAEN
+     left at 0 so Copper DMA does not actually start and the rest of the
+     run is unaffected.
    - For (b): run the whole sequence, DMACON write included, once before M1.
      Fetches then appear before t(M1).
    - For (c): write M1, wait for a frame wrap, then write DMACON. A wrap then
@@ -1105,26 +1132,22 @@ chip RAM above $80000.
 
 ### 5.2 Reference frame B (2.4)
 
-Each record's three words (INTREQR, then VPOSR/VHPOSR as one long word)
-are written by the 68000 program; the C++ side finds each word's own store
-time from the RAM-port log, the same log the fetch/channel checks use,
-never assuming a fixed sampling cadence. A dense, fixed-iteration loop
-around the sample, with no per-iteration beam-position decode, is what
-reaches the anchor B2 density (>= 8 records/line); decoding the position
-inline, tried first, measured under 4 records/line and failed B2 on both
-cores.
+Each record is four words (INTREQR, then VPOSR/VHPOSR as one long word,
+then VPOSR read again) written by the 68000 program; the C++ side finds
+each word's own store time from the RAM-port log, the same log the
+fetch/channel checks use, never assuming a fixed sampling cadence. A record
+is kept only if the two VPOSR reads agree on bit 0 (V8); a frame boundary
+is a decrease from V >= 256 to V <= 1, not any V decrease.
 
-Measured, on both cores: at a fixed H (around $CA), roughly every 13th
-line, H drops back to $01 while V stays the same -- one line runs
-measurably longer before V advances. This package's own anchor B1 (2.4) is
-graded on V alone for this reason: it derives no line length from the
-pages (4.10 already records the pages disagree, 227 vs 227.5 colour
-clocks), and no proposition in this package grades within-line H ordering.
+Measured, on both cores: with that filter and that boundary, vsync comes
+every 568,408 clk_sys from cycle 9,912 on. No frame is skipped or filtered;
+"two complete frames" is the literal first two wrap-to-wrap spans
+captured.
 
-Measured, on both cores: the harness's own first video field after boot()
-is short and irregular (well under half a nominal PAL frame) before the
-design's video timing settles. "Two complete frames" is measured skipping
-this one field, not the literal first two wrap-to-wrap spans captured.
+A dense loop around the sample, unrolled within each iteration, is what
+reaches the anchor B2 density. Measured, on both cores: every graded line
+carries 8 records except one, which carries 7; B2 is set at >= 7 records
+per line on this basis.
 
 A whole-frame membership question (does a fetch fall within complete frame
 k) is measured on that frame's own time range, taken from the two
@@ -1134,30 +1157,42 @@ Copper restart's own fetch measures consistently just before the record
 that first shows the lower V, in the same few-hundred-cycle gap on both
 cores.
 
-### 5.3 P4: Run 2, Run 3 and Run 3-reorder not asserted
+### 5.3 P4: the fixed stimulus, measured
 
-Measured, on both cores: in Run 2 (COP1LC=A, COP2LC=B, COPJMP2), the first
-Copper fetch after M1 is A's IR1, not B's -- with a diagnostic marker (M0,
-right after the run-specific writes) showing no frame wrap between the
-writes and M1 either. Run 3 and Run 3-reorder measure the same: A's IR1,
-not B's or C's. Claim `ch2-starting-the-copper-after-reset.c2.s2` (Run 2's
-own claim) is therefore not asserted. Run 3 and its reorder carry no claim
-id of their own (section 1's table lists only c1.s2 and c2.s2 for P4) and
-are recorded for the same reason. Run 1 (COP1LC=A, COPJMP1) is unaffected
-and is asserted normally.
+With the location registers and the strobe written only after a record
+shows V between $40 and $C0, and precondition (c) holding (no wrap, no
+V <= 25 record, between t(MS) and the first fetch): measured, on both
+cores, Run 1's first fetch after M1 is A's IR1, matching p.25 and p.30.
+Run 2's, Run 3's and Run 3-reorder's first fetch after M1 is also A's IR1
+on both cores, where p.25, p.26, p.30 and p.276 predict B, B and C
+respectively. The comparator contrast (COP1LC = B, COPJMP1) measures B's
+IR1 on both cores, the same as p.25 predicts, through the same comparator
+that Run 1 uses.
+
+Claims `ch2-starting-the-copper-after-reset.c1.s2` (Run 1) and
+`ch2-starting-the-copper-after-reset.c2.s2` (Run 2) are graded together as
+one assertion, which is red on both cores through Run 2's clause. The
+also-check covering Run 2, Run 3 and Run 3-reorder together is red on both
+cores for the same reason.
 
 ### 5.4 Mutations: measured per core
 
-Every mutation below was run once on each core (`NMH_MUTATE=<value>`)
-after the normal run. Each measured a FAIL on exactly its own precondition,
-on both cores, with every other check unchanged from the normal run
-(P2c aside, 5.5):
+Every mutation below was run once on each core (`NMH_MUTATE=<value>`) after
+the normal run, by re-running the built binary with the environment
+variable set. Each measured a FAIL on exactly its own precondition or
+assertion, on both cores, with every other check unchanged from the normal
+run (the two known-red P4 assertions, 5.3, aside):
 
-| Mutation | Precondition | fx68k | TG68K |
+| Mutation | Own check | fx68k | TG68K |
 |---|---|---|---|
+| FIXTURE | FIXTURE | FAIL | FAIL |
+| P1-SWAP | P1 (main assertion) | FAIL | FAIL |
+| P1OFF-SWAP | P1-OFF | FAIL | FAIL |
 | P1-A | P1a | FAIL | FAIL |
 | P1-B | P1b | FAIL | FAIL |
 | P1-C | P1c | FAIL | FAIL |
+| P2-SWAP | P2 (main assertion) | FAIL | FAIL |
+| P2OFF-SWAP | P2-OFF | FAIL | FAIL |
 | P2-A | P2a | FAIL | FAIL |
 | P2-B | P2b | FAIL | FAIL |
 | P2-C | P2c | FAIL | FAIL |
@@ -1165,9 +1200,20 @@ on both cores, with every other check unchanged from the normal run
 | P4-B | P4b | FAIL | FAIL |
 | P4-C | P4c | FAIL | FAIL |
 
-### 5.5 P2c: cores disagree
+FIXTURE, P1-SWAP, P1OFF-SWAP, P2-SWAP and P2OFF-SWAP are not stimulus
+mutations: they swap in the other, already-built capture (or, for FIXTURE,
+a program storing $DEAD instead of $BEEF) in place of the one the
+assertion normally grades, so the assertion's own comparator is exercised
+against a live input the page predicts the opposite outcome for. The P4
+comparator contrast (prog_p4_ctrl_cop1b.bin, P4-CTRL in the normal run's
+own output) is not `NMH_MUTATE`-gated; it is this package's own
+contrasting case for the combined Run 1/Run 2 assertion and for the
+Run 2/Run 3/Run 3-reorder also-check (5.3), both of which are already red
+on this build: measured B's IR1 on both cores, matching p.25, showing the
+same comparator that reports Run 2's red is not vacuous.
 
-Measured: P2c (anchor checks B1-B3 over the two complete frames after M2)
-reads FAIL on fx68k and PASS on TG68K, in the normal run and in every
-mutation run alike (independent of `NMH_MUTATE`). Both cores otherwise
-agree on every check in this package.
+### 5.5 P2c: both cores agree
+
+Measured: with the phase-2 sampler unrolled (5.2), P2c (anchor checks
+B1-B3 over the two complete frames after M2) reads PASS on both fx68k and
+TG68K. Both cores agree on every check in this package.

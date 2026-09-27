@@ -8,8 +8,8 @@
 ;                      2 writes DMACON = $0000 (no bit selected -- a no-op)
 ;   P2_MUT_A        -- precondition (a) mutation: L2's MOVE replaced by
 ;                      $0180,$0F00 (COLOR00, never touches INTREQ)
-;   P2_MUT_B        -- precondition (b) mutation: INTENA = $C010 with a
-;                      level-3 handler installed that clears bit 4
+;   P2_MUT_B        -- precondition (b) mutation: INTENA = $8010 (bit 4 set,
+;                      master enable bit 14 left clear)
 ;   P2_MUT_SLOWSAMP -- precondition (c) mutation: a delay inserted between
 ;                      phase-2 samples
 
@@ -20,11 +20,6 @@
 
 start:
         CLEAR_OVL
-
-        ifd     P2_MUT_B
-        move.l  #p2_handler3,$6C        ; autovector 3 (COPER, p.219/p.280)
-        endif
-
         lea     CUSTOM,a0
         CLEAR_DMA_INT
 
@@ -43,8 +38,12 @@ start:
         move.w  #$8280,DMACON(a0)
 
         ifd     P2_MUT_B
-        move.w  #$C010,INTENA(a0)       ; precondition (b) mutation
-        move.w  #$2000,sr               ; lower the 680x0 mask to accept it
+        move.w  #$8010,INTENA(a0)       ; precondition (b) mutation: bit 4
+                                         ; set, but the master enable (bit
+                                         ; 14) is left at 0 -- p.218 "If this
+                                         ; bit is a 0, it disables all other
+                                         ; interrupts", so INTENAR is
+                                         ; non-zero without a live interrupt
         endif
 
         lea     RECBUF,a6
@@ -53,7 +52,7 @@ start:
         ; Phase 1: wait for a record showing V between $40 and $C0
 .w1:    SAMPLE
         addq.l  #1,d7
-        move.l  -4(a6),d0
+        move.l  -6(a6),d0
         move.l  d0,d1
         lsr.l   #8,d1
         and.l   #$1FF,d1
@@ -63,6 +62,7 @@ start:
         bgt.s   .w1
 
         move.w  #$0010,INTREQ(a0)       ; clear bit 4 (p.218)
+        move.w  #7,MARKBUF+6            ; MPC: immediately after the clear
 
         ; Polling sampler until one complete frame has passed: a fixed,
         ; generous iteration count (real INTREQR each time -- observation
@@ -77,7 +77,7 @@ start:
         ; Phase 2: wait for a record showing V between $80 and $C0
 .w2:    SAMPLE
         addq.l  #1,d7
-        move.l  -4(a6),d0
+        move.l  -6(a6),d0
         move.l  d0,d1
         lsr.l   #8,d1
         and.l   #$1FF,d1
@@ -96,27 +96,44 @@ start:
 
         move.w  #$0010,INTREQ(a0)       ; clear bit 4 again
 
+        ; Phase-2 sampler: dense enough to keep the anchor-B2 density (>= 7
+        ; records/line, SPECIFICATION.md 2.4) on both cores. The main/off
+        ; case unrolls sixteen SAMPLEs per loop iteration, with the running
+        ; count added once after the loop instead of once per iteration, so
+        ; the loop itself spends as much of its time as possible on the
+        ; samples; the slow-sample mutation stays a single SAMPLE per
+        ; iteration, deliberately sparse (2.4's own contrasting case for
+        ; B2/B3).
         ifd     P2_MUT_SLOWSAMP
         move.w  #4000-1,d3
-        else
-        move.w  #20000-1,d3
-        endif
 .pd:    SAMPLE
         addq.l  #1,d7
-        ifd     P2_MUT_SLOWSAMP
         SLOWDELAY
-        endif
         dbra    d3,.pd
+        else
+        move.w  #2000-1,d3
+.pd:    SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        SAMPLE
+        dbra    d3,.pd
+        add.l   #16*2000,d7            ; the count is known outright: the
+                                        ; per-iteration bookkeeping this
+                                        ; replaces cost real density
+        endif
 
         move.l  d7,RESULTS+8            ; record count, for the C++ side
 
         DONE
-
-        ifd     P2_MUT_B
-p2_handler3:
-        movem.l d0/a0,-(sp)
-        lea     CUSTOM,a0
-        move.w  #$0010,INTREQ(a0)
-        movem.l (sp)+,d0/a0
-        rte
-        endif
