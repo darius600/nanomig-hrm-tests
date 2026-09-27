@@ -29,7 +29,7 @@ start:
         lea     CUSTOM,a0
         SETUP_S1
         SETUP_S2
-        move.w  #$0000,POTGO(a0)       ; all four pot lines inputs, no START
+        move.w  #$FF00,POTGO(a0)       ; p.241's recipe: OUT=1,DAT=1 on all four (no START)
         move.b  CIAADDRA,d0
         and.b   #$3F,d0                ; clear DDRA bits 6,7: both fire bits inputs
         move.b  d0,CIAADDRA

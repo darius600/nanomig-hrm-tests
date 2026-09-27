@@ -54,11 +54,10 @@ propositions that use the rest of those claims:
 
 ### Connectors and levels
 
-- **Connector A** is the controller port the harness documents as the
-  manual's left connector: "0=left controller pair" (p.281), "port 1" in
-  chapter 8's numbering (p.230), the "PORT 1 (mouse)" connector of Figure 8-3
-  (p.233). **Connector B** is the other one. P2 checks this designation
-  (section 7 of P2).
+- **Connector A** is the connector whose fire button reads at CIAAPRA bit 6,
+  as asserted by the anchor (section 7 of P2): "0=left controller pair"
+  (p.281), "port 1" in chapter 8's numbering (p.230), the "PORT 1 (mouse)"
+  connector of Figure 8-3 (p.233). **Connector B** is the other one.
 - A **level** is the electrical level the harness puts on a connector pin:
   **1 = open** (switch released) and **0 = shorted to ground** (switch closed).
   - p.232: "Digital joystick switches are of the normally open type. When the
@@ -312,15 +311,36 @@ If one fails, the result is "not established", never "pass".
   result must be "not established".
 - **K4 (PC2).** F1 writes $AA00 instead of $FF00. Rhigh reads $0000, and PC2
   must fail.
-- **K5 (PC3).** The harness holds all four pot lines at level 0 (buttons
-  pressed) during Fb and Fc of every configuration.
-  - Rb and Rpre read $0000, and PC3 must fail.
-  - The result must be "not established", even though the input lines of Rpost
-    read 0.
-- **K6 (PC4).** The R step of every Fc moves to line 5.
-  - PC4 must fail. PC1 fails with it: as long as PC1 holds, the read is at least
-    five lines after the write. PC4 guards against line timing that is itself
-    wrong.
+- **K5 (PC3).** The harness grounds every pot line it can reach at these ports
+  (LX, LY, RY; RX has no port at this boundary) from each configuration's Fb W
+  step through the end of its Fc R step.
+  - Rb and Rpre read $1000 (only bit 12, RX, stays 1: it cannot be reached), and
+    PC3 must fail.
+  - The result must be "not established" for every configuration, even though
+    three of the four input lines of Rpost already read 0.
+- **K6.** The R step of every Fc moves to line 5.
+  - A record only counts when Vr0=Vr1=10 (the grader's own fixed target, section
+    3): moving the R step to line 5 means no record of any Fc ever counts, so
+    PC1 ("every R step has at least one qualifying record") fails, not PC4. PC4
+    has no contrasting case at this boundary while PC1 holds: the only way to
+    shorten the margin PC4 measures is to move the R step, which PC1 catches
+    first.
+- **VGREEN (C0-Fc to C4-Fc, proven-live green).** These five are confirmed reds,
+  not stimulus defects, so no mutation turns them green through an invalid
+  setup. Instead: the harness grounds each
+  configuration's reachable input lines (excluding that configuration's own
+  output line) from Fc's M1 marker to the end of its R step, after START. C3's
+  three input lines (LX, LY, RY) are all reachable this way, and C3-Fc goes
+  green through the same comparator, with PC1-PC4 unaffected. C0, C1, C2 and C4
+  keep bit 12 (RX) among their input lines; no port at this boundary reaches it,
+  so they cannot be shown green here.
+- **OUTLOW (the "1" column, C1-Fc-OUT to C4-Fc-OUT).** In C1 to C4, Fc's write
+  sets the output-enable bit but drives its data bit to 0 instead of 1 ($0201,
+  $0801, $2001, $8001), with START unchanged.
+  - Predicted: the output-driven line reads 0, not 1 (p.240 "The state of the
+    data bit controls the logic level on the output pin"), so the "1" check
+    must fail for that configuration's own line, through its own clause.
+  - PC1 to PC4 are unaffected.
 
 ### 7. Reference frame
 
@@ -345,9 +365,12 @@ If one fails, the result is "not established", never "pass".
 ### Setup
 
 - S1, S2.
-- POTGO ← $0000, which makes all four pot lines inputs without starting the
-  pots. p.240: "To use the entire register as an input, sensing the current
-  state of the pot pins, write all 0s to POTGO."
+- POTGO ← $FF00: all four pot lines set to output, driven high. p.241's
+  button-reading recipe: "set the proper pin to output, and drive the line
+  high (set both OUT... and DAT... to 1). Reading POTGOR will produce a 0 if
+  the button is pressed, a 1 if it is not." Nothing in this program's stimulus
+  presses a button on a pot line, so Q2 grades the released ("1") side of that
+  recipe.
 - Read CIAADDRA, clear bits 6 and 7, and write it back, which makes both fire
   bits inputs. p.241: "CIAADDRA ($BFE201) contains a mask that corresponds
   one-to-one with the data read register, CIAAPRA ($BFE001). Setting a 1 in the
@@ -409,7 +432,8 @@ established" for the steps it covers.
   - In every record, CIAAPRA bits 6 and 7 read 1, except bit 6 in F1(A) and
     bit 7 in F1(B), which read 0 (p.232: "A logic state of 1 means 'switch
     open.' A logic state of 0 means 'switch closed.'").
-  - POTGOR bits 14, 12, 10 and 8 read 1: the pot lines are inputs and released.
+  - POTGOR bits 14, 12, 10 and 8 read 1: the pot lines are driven high as
+    outputs (p.241's button recipe) and released.
   - The drive log shows no mouse movement and no key.
 - **Q3: the counters do not move without input.**
   - JOY0DAT and JOY1DAT are equal in N0 and N1.
@@ -427,8 +451,9 @@ Contrasting cases for these preconditions. Each keeps the program running.
   then reads 0, and Q2 must fail for those records.
 - **Q3:** the harness applies the first Y-up(A) level between N0 and N1. The two
   records then differ, and Q3 must fail.
-- **Q4:** F1(A) is driven at level 1 instead of 0. CIAAPRA bit 6 reads 1 in
-  F1(A), and Q4 must fail.
+- **Q4:** F0(A) is held at level 0 instead of 1. CIAAPRA bit 6 reads 0 in
+  F0(A) instead of 1, and Q4 must fail; F1(A) is unchanged, so the anchor
+  (which reads only F1 records) is unaffected.
 
 ---
 
@@ -508,15 +533,17 @@ Q1 to Q4, and the anchor of section 7.
   p.230 and p.232, 0 and 1 in p.233's text). They agree on the order: the
   connector of JOY0DAT is the one whose fire button is bit 6.
 - **The anchor:**
-  - The harness's documentation names connector A as the manual's left, port-1
-    connector.
+  - Connector A is the connector whose fire button reads at CIAAPRA bit 6, as
+    the fire-button check below asserts; nothing else in this package assumes
+    the assignment ahead of that check.
   - The fire button checks this. In F1(A), CIAAPRA bit 6 must read 0 and bit 7
     must read 1. In F1(B), bit 7 must read 0 and bit 6 must read 1.
 - **If the anchor fails** (A's fire shows at bit 7, or B's at bit 6), P2 is
   "not established". The disagreement is reported, and the test must not
   silently swap A and B.
-- **Contrast for the anchor:** drive F1(A) on connector B instead. Bit 7 then
-  reads 0 in F1(A), and the anchor must fail.
+- **Contrast for the anchor:** F1(A) additionally grounds pin 6 of connector B.
+  Bit 7 then reads 0 in F1(A) instead of 1, and the anchor must fail; A's own
+  F1 pattern (which Q4 reads) is unchanged, so Q4 is unaffected.
 
 ---
 
@@ -602,7 +629,8 @@ Sources:
 
 ### 5. Preconditions
 
-Q1 to Q4.
+Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
+(section 7 below).
 
 ### 6. Contrasting cases
 
@@ -627,8 +655,10 @@ Q1 to Q4.
 - **For X**, the page draws no table. The same numbering follows from p.281's
   "Back: X1 xor X0 (BIT#01 xor BIT#00)" and "Right: X1", which have the same
   form as Forward and Left for Y, and from Figure 8-3.
-- **How the test checks the anchor:** at N0 (all open, s = 0), bits 9, 8, 1 and
-  0 of both registers read 0.
+- **How the test checks the anchor:** a dedicated assertion, printed before P3
+  is graded and gating P3 and P4: at N0 (all open, s = 0), bits 9, 8, 1 and 0 of
+  both registers read 0. Its own mutation drives Yup(A) sub-step 0's pattern at
+  N0 instead of leaving N0 released, which must turn the anchor red.
 
 ---
 
@@ -703,7 +733,8 @@ in these registers is '1 = switch closed.'"; p.234 as quoted in section 1.
 
 ### 5. Preconditions
 
-Q1 to Q4.
+Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
+(P3 section 7).
 
 ### 6. Contrasting cases
 
@@ -818,36 +849,32 @@ Q1 to Q4.
 ### Measured: the R step's own timing margin
 
 The R step's instruction count had to fit inside the one scan line (~1820
-`clk_sys` cycles at 28.375160 MHz) that PC1 grades. An earlier version of
-`READV` (`ch8_regs.i`) read `VPOSR` as one long word (p.238's own
-technique) and then extracted V7-V0/V8 with two longword shifts; measured
-directly, that left too little of the line between Vr0 and Vr1 for the
-loop to reliably land both reads on the same line: 12 of 18 R steps had at
-least one qualifying record. The version committed extracts the same two
-fields with `SWAP` and word shifts instead (cheaper on a real 68000, and
-on TG68K here); measured, 20 qualifying records across the same 18 R
-steps, none missing. PC1 is the precondition that checks this margin at
-every run; a run where it fails is "not established", not "pass". This is
-an engineering adjustment to fit the page's own one-line window, not a
-value read from the RTL.
+`clk_sys` cycles at Appendix F's PAL clock, p.352 "PAL 28.37516 MHz"; that
+`clk_sys` is this clock comes from the implementation, since the harness
+contract defines no clock) that PC1 grades. `READV` (`ch8_regs.i`) reads
+`VPOSR`/`VHPOSR` as one long word (p.238's own technique) and extracts
+V7-V0/V8 with `SWAP` and word shifts. PC1 is the precondition that checks
+this margin at every run; a run where it fails is "not established", not
+"pass". Measured: fx68k yields 20 of a possible 72 records (4 per R step x
+18 R steps) with Vr0=Vr1=10; TG68K yields 42.
 
 ### Measured: P1's main claim on this build
 
-Both cores print the identical pattern, in every one of the four
-SPECIFICATION.md "Configurations" (PAL/NTSC x ECS/OCS): PC1 through PC4
-all print `PASS`. Every "0" column (`C0-Fc` through `C4-Fc`) prints `FAIL`:
-POTGOR does not read 0 in the input lines after START. Every "1" column
-(`C1-Fc-OUT` through `C4-Fc-OUT`) prints `PASS`: the output-driven line
-still reads 1, as p.240's output-enable sentence predicts. `P1-CONFIGS`
-prints `PASS` on both cores (all four configurations load, release and
-reach `DONE`).
+Both cores print the identical verdict pattern in every one of the four
+SPECIFICATION.md "Configurations" (PAL/NTSC x ECS/OCS), each graded on its
+own: PC1 through PC4 all print `PASS`. Every "0" column (`C0-Fc` through
+`C4-Fc`) prints `FAIL`: POTGOR does not read 0 in the input lines after
+START. Every "1" column (`C1-Fc-OUT` through `C4-Fc-OUT`) prints `PASS`:
+the output-driven line still reads 1, as p.240's output-enable sentence
+predicts. `P1-CONFIGS` prints `PASS` on both cores (all four
+configurations load, release and reach `DONE`). The qualifying-record
+counts (PC1, PC4) differ by configuration and by core; each is printed
+against its own configuration's labels.
 
-The four pot lines are not equally reachable at `nanomig.v`'s ports: LX
-(connector A pin 5) only through `mouse_buttons` bit 2; LY (connector A
-pin 9) through `mouse_buttons` bit 1 AND connector A's own `joystick1` bit
-5; RY (connector B pin 9) through connector B's own `joystick0` bit 5; RX
-(connector B pin 5) through no port at all. K5 (below) is scoped to the
-three reachable lines for this reason.
+Measured at `nanomig.v`'s ports (K5, below, with every reachable port
+input grounded): bits 8, 10 and 14 read 0; bit 12 reads 1. K5 is scoped to
+the ports that reach bits 8, 10 and 14; no port at this boundary reaches
+bit 12.
 
 ### Mutations: what went red, and through which clause
 
@@ -856,52 +883,81 @@ directory (`./Vnanomig ..`). Every result below is the pass/fail count and
 the clause that actually printed; fx68k and TG68K printed the identical
 pattern for every mutation below, line for line.
 
-- **FIXTURE** (apparatus check): 26 passed, 6 failed on both cores (5 more
-  than the unmutated run's 5, plus `FIXTURE` itself) — the stored constant
-  read back does not match, and `FIXTURE` alone flips from `PASS` to
-  `FAIL`.
-- **K1** (`C1-Fc-OUT` through `C4-Fc-OUT`): 27 passed, 5 failed on both
+- **FIXTURE** (apparatus check): 27 passed, 6 failed on both cores — the
+  stored constant read back does not match, and `FIXTURE` alone flips from
+  `PASS` to `FAIL`.
+- **K1** (`C1-Fc-OUT` through `C4-Fc-OUT`): 28 passed, 5 failed on both
   cores — the same 5 clauses fail as the unmutated run, and `C1-Fc-OUT`
   through `C4-Fc-OUT` (the "1"/output column) print `PASS`, unchanged.
-- **K3** (`PC1`): 22 passed, 10 failed on both cores — `PC1` itself prints
+- **K3** (`PC1`): 23 passed, 10 failed on both cores — `PC1` itself prints
   `FAIL` ("every R step has at least one record with Vr0=Vr1=10"), and
   because `PC1` gates "established", `C0-Fc` through `C4-Fc` and
   `C1-Fc-OUT` through `C4-Fc-OUT` all print `FAIL` too ("preconditions not
   established: not graded as pass").
-- **K4** (`PC2`): 22 passed, 10 failed on both cores — `PC2` prints `FAIL`,
+- **K4** (`PC2`): 23 passed, 10 failed on both cores — `PC2` prints `FAIL`,
   and, gated by it, the same nine `C*-Fc`/`C*-Fc-OUT` lines as K3 print
   `FAIL` ("not established").
-- **K5** (`PC3`): 21 passed, 11 failed on both cores — `PC2` and `PC3` both
-  print `FAIL`, and the same nine `C*-Fc`/`C*-Fc-OUT` lines print `FAIL`
-  ("not established"); RX (connector B pin 5) is outside this mutation's
-  reach (`RECORDED`, see above) and is not part of what it grades.
-- **K6** (`PC4`): 22 passed, 10 failed on both cores — `PC4` prints `FAIL`,
-  and the same nine `C*-Fc`/`C*-Fc-OUT` lines print `FAIL` ("not
+- **K5** (`PC3`): 23 passed, 10 failed on both cores — `PC3` alone prints
+  `FAIL` (`PC2` prints `PASS`: Phase P is outside this mutation's Fb/Fc
+  windows), and the same nine `C*-Fc`/`C*-Fc-OUT` lines print `FAIL` ("not
+  established"). Measured (RECORDED): Rb=Rpre=$1000 with every reachable
+  port input grounded — bit 12 (RX) is outside this mutation's reach and
+  stays 1, the three others read 0.
+- **K6** (`PC1`, not `PC4`): 23 passed, 10 failed on both cores — moving
+  the R step to line 5 leaves no record with Vr0=Vr1=10, so `PC1` prints
+  `FAIL` and `PC4` prints `PASS` (nothing there for it to check); the same
+  nine `C*-Fc`/`C*-Fc-OUT` lines print `FAIL` ("not established"). PC4 has
+  no contrasting case at this boundary while PC1 holds (`RECORDED`, above).
+- **OUTLOW** (`C1-Fc-OUT` through `C4-Fc-OUT`): 24 passed, 9 failed on both
+  cores — `PC1` through `PC4` stay `PASS`; `C1-Fc-OUT` through `C4-Fc-OUT`
+  all print `FAIL` (the output-driven line reads 0 with its data bit held
+  low), and `C0-Fc` through `C4-Fc` are unaffected (still the confirmed
+  reds).
+- **VGREEN** (`C3-Fc`, proven-live green): 29 passed, 4 failed on both
+  cores — `PC1` through `PC4` stay `PASS`; `C3-Fc` prints `PASS` (its three
+  input lines, LX/LY/RY, are all grounded and all reachable), with
+  `C1-Fc-OUT`, `C2-Fc-OUT` and `C4-Fc-OUT` unaffected (still `PASS`, since
+  each configuration's own output line is excluded from the ground);
+  `C0-Fc`, `C1-Fc`, `C2-Fc` and `C4-Fc` stay red on bit 12 alone
+  (`RECORDED`, above).
+- **Q1**: 16 passed, 17 failed on both cores — `Q1` prints `FAIL`
+  ("t_apply(k) < t(T_k)", now graded over all 54 steps), and, gated by it,
+  all eleven P2/P3/P4 lines print `FAIL` ("not established"); `P3-ANCHOR`
+  is unaffected (`PASS`: N0 itself is untouched by this mutation).
+- **Q2**: 16 passed, 17 failed on both cores — `Q2` prints `FAIL` (the
+  additional ground on connector A pin 9 during Yup(A) breaks its POTGOR
+  clause), and the same eleven P2/P3/P4 lines print `FAIL` ("not
   established").
-- **Q1**: 21 passed, 11 failed on both cores — `Q1` prints `FAIL`
-  ("t_apply(k) < t(T_k)"), and `P2-BLOCKA-JOY0`, `P2-FOUR-COUNTERS`,
-  `P3-Y`, `P4-PIN3` and `P4-PIN1` also print `FAIL` (they read the same
-  four Yup(A) records Q1's own delay corrupts).
-- **Q2**: 26 passed, 6 failed on both cores — the same 5 clauses fail as
-  the unmutated run, plus `Q2` alone ("POTGOR bits 14,12,10,8 read 1").
-- **Q3**: 24 passed, 8 failed on both cores — `Q3` prints `FAIL` ("JOY0DAT
-  and JOY1DAT are equal in N0 and N1"), and `P3-Y` and `P4-PIN1` also
-  print `FAIL` (both read the N1 record Q3's own injection changes).
-- **Q4**: 25 passed, 7 failed on both cores — `Q4` prints `FAIL`, and
-  `P2-ANCHOR` also prints `FAIL` (it reads the same F1(A) record).
-- **P2VAR**: 16 passed, 16 failed on both cores — `P2-BLOCKA-JOY1`,
+- **Q3**: 16 passed, 17 failed on both cores — `Q3` prints `FAIL` ("JOY0DAT
+  and JOY1DAT are equal in N0 and N1"), and the same eleven P2/P3/P4 lines
+  print `FAIL` ("not established").
+- **Q4**: 15 passed, 18 failed on both cores — `Q4` prints `FAIL` (F0(A)
+  held low instead of released), and, gated by it, the same eleven P2/P3/P4
+  lines print `FAIL` too; `P2-ANCHOR` is unaffected (`PASS`: F1(A), which
+  the anchor reads, is untouched by this mutation).
+- **P2VAR**: 17 passed, 16 failed on both cores — `P2-BLOCKA-JOY1`,
   `P2-BLOCKA-JOY0`, `P2-BLOCKB-JOY0`, `P2-BLOCKB-JOY1` and
-  `P2-FOUR-COUNTERS` all print `FAIL` (swapping which connector receives
-  each block's steps reverses what each register is supposed to do), and
-  `P3-Y`, `P3-X`, `P4-PIN3`, `P4-PIN4`, `P4-PIN1` and `P4-PIN2` print
-  `FAIL` alongside them (all read the same swapped records).
-- **P2ANCHOR**: 25 passed, 7 failed on both cores — `Q4` and `P2-ANCHOR`
-  both print `FAIL` (driving F1(A) on connector B instead reads the same
-  way as Q4's own change, at the CIAAPRA bit the anchor checks).
-- **P3VAR**: 22 passed, 10 failed on both cores — `P2-FOUR-COUNTERS`,
+  `P2-FOUR-COUNTERS` all print `FAIL` through their own clause (swapping
+  which connector receives each block's steps reverses what each register
+  is supposed to do), and `P3-Y`, `P3-X`, `P4-PIN3`, `P4-PIN4`, `P4-PIN1`
+  and `P4-PIN2` print `FAIL` alongside them (all read the same swapped
+  records); `Q4` and `P2-ANCHOR` are unaffected (`PASS`: the F1/F0 steps
+  stay on their own connector).
+- **P2ANCHOR**: 15 passed, 18 failed on both cores — `P2-ANCHOR` prints
+  `FAIL` through its own clause (F1(A) additionally grounds pin 6 of B),
+  `Q4` is unaffected (`PASS`: A's own F1 pattern, which Q4 reads, is
+  untouched), and, gated by the anchor, the same eleven P2/P3/P4 lines
+  print `FAIL` ("not established").
+- **P3ANCHOR**: 15 passed, 18 failed on both cores — `P3-ANCHOR` prints
+  `FAIL` through its own clause (N0 carries Yup(A) sub-step 0's pattern
+  instead of staying released), `Q3` also prints `FAIL` (N0 no longer
+  equals N1), and, gated by the anchor, `P3-Y`, `P3-X` and all four
+  `P4-PIN*` lines print `FAIL` ("not established").
+- **P3VAR**: 23 passed, 10 failed on both cores — `P2-FOUR-COUNTERS`,
   `P3-Y`, `P3-X`, `P4-PIN1` and `P4-PIN2` print `FAIL` (routing Yup(A)'s
   pattern to pin 2 instead of pin 1 corrupts both axes' records, since the
-  same steps carry both).
-- **P4VAR**: 23 passed, 9 failed on both cores — `P3-Y`, `P3-X`,
+  same steps carry both); `P4-PIN3` and `P4-PIN4` are unaffected (`PASS`).
+- **P4VAR**: 24 passed, 9 failed on both cores — `P3-Y`, `P3-X`,
   `P4-PIN1` and `P4-PIN2` print `FAIL` (grounding pin 2 wherever
-  Buttons(A) grounds pin 1 corrupts both axes' records the same way).
+  Buttons(A) grounds pin 1 corrupts both axes' records the same way);
+  `P2-FOUR-COUNTERS`, `P4-PIN3` and `P4-PIN4` are unaffected (`PASS`).

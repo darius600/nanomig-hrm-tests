@@ -7,12 +7,13 @@
 ; except the K5 variant, which is the same binary run under a different
 ; harness stimulus (no separate source needed).
 ;
-; K1, K3, K4 and K6 are compiled-in variants (this source with a symbol
-; set, included by prog_p1_k1.s etc.), because they change a value the CPU
-; instruction stream itself writes or a wait target baked into the code --
-; not something the harness can vary at its ports. K2 is already inside
-; the sequence below (every Phase-D config's own output-driven line). K5
-; is a harness-side stimulus variant of this same binary (see the test).
+; K1, K3, K4, K6 and OUTLOW are compiled-in variants (this source with a
+; symbol set, included by prog_p1_k1.s etc.), because they change a value
+; the CPU instruction stream itself writes or a wait target baked into the
+; code -- not something the harness can vary at its ports. K2 is already
+; inside the sequence below (every Phase-D config's own output-driven
+; line). K5 and VGREEN are harness-side stimulus variants of this same
+; binary (see the test).
 
         include "nanomig.i"
         include "ch8_regs.i"
@@ -114,7 +115,11 @@ start:
         RSTEP        10
         WSTEP        $0300
         RSTEP        10
+        ifd     OUTLOW
+        WSTEP_RPRE   $0201   ; OUTLOW mutant: OUTLX=1, DATLX=0 (output driven low), + START
+        else
         WSTEP_RPRE   $0301
+        endif
         RSTEP        FCTARGET
 
 ; C2 ($0C00): LY output.
@@ -122,7 +127,11 @@ start:
         RSTEP        10
         WSTEP        $0C00
         RSTEP        10
+        ifd     OUTLOW
+        WSTEP_RPRE   $0801   ; OUTLOW mutant: OUTLY=1, DATLY=0, + START
+        else
         WSTEP_RPRE   $0C01
+        endif
         RSTEP        FCTARGET
 
 ; C3 ($3000): RX output.
@@ -130,7 +139,11 @@ start:
         RSTEP        10
         WSTEP        $3000
         RSTEP        10
+        ifd     OUTLOW
+        WSTEP_RPRE   $2001   ; OUTLOW mutant: OUTRX=1, DATRX=0, + START
+        else
         WSTEP_RPRE   $3001
+        endif
         RSTEP        FCTARGET
 
 ; C4 ($C000): RY output.
@@ -138,7 +151,11 @@ start:
         RSTEP        10
         WSTEP        $C000
         RSTEP        10
+        ifd     OUTLOW
+        WSTEP_RPRE   $8001   ; OUTLOW mutant: OUTRY=1, DATRY=0, + START
+        else
         WSTEP_RPRE   $C001
+        endif
         RSTEP        FCTARGET
 
         DONE

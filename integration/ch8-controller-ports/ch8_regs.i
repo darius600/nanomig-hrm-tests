@@ -22,14 +22,14 @@ CIAADDRA        equ     $BFE201 ; R/W -- direction mask for CIAAPRA (p.241)
 ; READV: out d1.w = V (0-511). Clobbers d0. a0 must hold CUSTOM.
 ;
 ; Reads VPOSR/VHPOSR as one long word (p.238's own technique, one bus
-; cycle for both), then extracts with SWAP (4 cycles) and word shifts
-; instead of the longword shifts an earlier version used: those cost
-; 8+2n cycles each on a real 68000 (24 cycles per 8-bit .l shift) and,
-; with two V reads per R-step iteration (SPECIFICATION.md's R step),
-; left too little of one scan line's ~1820 clk_sys cycles between Vr0
-; and Vr1 -- measured directly: PC1's own R-step yield (a genuine
-; measurement, not a value from the RTL) rose from 12/18 qualifying R
-; steps to the version this macro now is once this was cut.
+; cycle for both), then extracts with SWAP (4 cycles) and word shifts,
+; cheaper than a longword shift's 8+2n cycles (24 cycles per 8-bit .l
+; shift) on a real 68000. With two V reads per R-step iteration
+; (SPECIFICATION.md's R step), this fits inside one scan line's ~1820
+; clk_sys cycles between Vr0 and Vr1 for most of the 18 R steps.
+; PC1 guards this margin at every run: measured, fx68k yields 20 of a
+; possible 72 records (4 per R step x 18 R steps) with Vr0=Vr1=10;
+; TG68K yields 42.
 READV           macro
                 move.l  VPOSR(a0),d0    ; d0 = {VPOSR:16, VHPOSR:16}
                 move.w  d0,d1
