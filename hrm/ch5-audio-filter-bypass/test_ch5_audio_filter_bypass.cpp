@@ -4,8 +4,7 @@
 //   back - at the ciaa module boundary. This does NOT and CANNOT assert any
 //   audio consequence of that bit (see Non-goals).
 //
-// COVERAGE JUDGEMENT (2026-09-12 repair, independent validation finding
-//   V-04): the two claim ids below, 5-p157.c8 and 5-filt.c9, each name a
+// COVERAGE JUDGEMENT: the two claim ids below, 5-p157.c8 and 5-filt.c9, each name a
 //   single sentence with TWO clauses - a register clause ("this bit exists,
 //   is independently writable, and reads back") and a downstream-identity
 //   clause ("this is the same output bit that drives the power LED and the
@@ -18,8 +17,8 @@
 //   be observed, pass or fail. CONCLUSION: 5-p157.c8 and 5-filt.c9 should
 //   NOT count as fully covered by this package - only their register half is
 //   covered. This is stated here, in the "Claims covered" note below, and in
-//   each assertion's own text, per the repair's instruction that the honest
-//   fix is a split classification, not an invented assertion.
+//   each assertion's own text: the honest classification is a split one,
+//   not an invented assertion.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, chapter 5,
 //   printed p.157.
@@ -36,7 +35,7 @@
 //   asserted here, because there is nothing downstream in this design to
 //   observe - a claim about "the filter engages/bypasses" would have no
 //   fixture that could ever go anything but vacuously green or vacuously
-//   red. Per BOUNDARIES.md's framing for this chapter, this package is
+//   red. This package is
 //   measured entirely at ciaa and does not reach into minimig.v's
 //   _led/pwr_led wiring or any audio module.
 // Claim ids: ids such as `5-p157.c8` and `5-filt.c9` name one sentence of the
@@ -53,15 +52,12 @@
 //   is no filter cutoff signal anywhere in this design to measure any of
 //   them against.
 //
-// RTL read before this spec was written: ciaa.v (388 lines, read in full,
-//   including its four instantiated submodules cia_int.v, cia_timera.v,
-//   cia_timerb.v, cia_timerd.v needed only so Verilator can elaborate the
-//   top module) and this chapter's BOUNDARIES.md/CANDIDATES.md - per
-//   BRIEF.md's own note that the chapter's literal "write the spec, commit
-//   it, then open the RTL" order cannot be met here. What the rule protects
-//   is still honoured: the expected values below (bit 1 of PRA, at register
-//   select 0, following data_in bit 1) come from the chapter's printed
-//   p.157 quotation, not from tuning to whatever ciaa.v happens to do.
+// RTL AND EXPECTED VALUES: ciaa.v (with its four instantiated submodules
+//   cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v, needed only so
+//   Verilator can elaborate the top module) supplies the register wiring.
+//   The expected values below (bit 1 of PRA, at register select 0,
+//   following data_in bit 1) come from the chapter's printed p.157
+//   quotation, not from tuning to whatever ciaa.v happens to do.
 //
 // Claims PARTIALLY covered (work/ch5_packages/ch5-audio-filter-bypass.jsonl,
 //   both) - REGISTER HALF ONLY, see COVERAGE JUDGEMENT above:
@@ -75,16 +71,14 @@
 //   clause of the same sentence; that clause is not covered by this
 //   package and is not constructible in this project at all.)
 //
-// FIXTURE. New harness for this package, following the write_reg/tick
-// pattern already established in hrm/agnus_audiodma and the blitter packages (both since renamed or removed -- see docs/legacy-names.md)
-// (both read before this file was written): reset, then one clk7_en tick to
+// FIXTURE: reset, then one clk7_en tick to
 // latch a register write (ciaa.v's regporta/ddrporta are posedge-clk,
 // clk7_en-gated - ciaa.v:227-239), while reads (pa_out, ciaa.v:251-259, and
 // porta_out, ciaa.v:262, a continuous assign) are purely combinational and
 // need only eval(), not another clock edge. TEST-DATA-DELIVERY below proves
 // this fixture's write/read path actually carries a distinct value through
-// ciaa.v before either PRA-bit assertion is trusted, per BRIEF.md's fixture-
-// liveness requirement.
+// ciaa.v before either PRA-bit assertion is trusted: a fixture proves it can
+// deliver a known value before anything reads one.
 //
 // Every mutation below was actually applied (edit -> rebuild -> run ->
 // revert -> rebuild-clean) and the FAIL/PASS lines quoted are what the run
@@ -101,19 +95,6 @@
 //   changed from 0b00000010 to 0b00000000 (the expected ==1 comparison left
 //   untouched) -> FAIL, the PRA read-back bit 1 reads 0, not the expected 1;
 //   every other assertion PASS.
-//
-// REPAIR (2026-09-12, V-04): only the assertion TEXT changed (added the
-// PARTIAL COVERAGE ONLY wording above and the header's COVERAGE JUDGEMENT);
-// no assertion's condition changed. Baseline (3 passed, 0 failed) and both
-// CIA-A-PRA-BIT1-WRITABLE/-READS-BACK mutations above were re-applied,
-// re-observed (each -> 2 passed, 1 failed, same FAIL line as originally
-// recorded) and reverted against the new text, each revert confirmed
-// byte-identical by `diff` before a clean `make clean && make` reproduced
-// 3 passed / 0 failed once more. No claim was reassigned and no assertion
-// was added or removed - claim ids 5-p157.c8 and 5-filt.c9 are now
-// explicitly recorded, in this header and in both assertions' own text, as
-// covering the register half only. They should NOT be counted as fully
-// covered by this package.
 
 #include <cstdint>
 #include <iostream>
