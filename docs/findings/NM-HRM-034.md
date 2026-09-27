@@ -9,7 +9,7 @@
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L108-L110) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L114-L116) |
 | **Test** | [`hrm/ch7-beam-position-word-layout`](../../hrm/ch7-beam-position-word-layout) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `VPOSR-OCS-BITS-14-1-UNUSED (ntsc=1)` — red. `VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0)` is the green control, same label stem |
+| **Assertions** | none graded: `VPOSR-OCS-BITS-14-1-UNUSED` is a `record()` that declines sol:7-beam.c7, opus:7-bp.c7, sol:7-appA-vpos.c5, sol:7-appA-vpos.c11 and opus:7-appA-beam.c10, because p. 264 and p. 299 give two readings of the band and neither decides; the band is printed as measured, `0x0000` at `ntsc=0` and `0x0800` at `ntsc=1`. The package reads `11 passed, 0 failed` |
 | **Error class** | **a silence read as a requirement** |
 | **Verdict of the four** | **2–2**: WinUAE and Denise report `$10` in bits 14-8 of an OCS NTSC read, p. 299's value for the 8361 and 8370, exactly as NanoMig does; vAmiga, which models only the PAL parts 8367 and 8371, and Copperline report `$00`. All four build bits 14-8 as a chip identification; none treats them as unused |
 
@@ -17,8 +17,8 @@
 
 ## Why it was withdrawn
 
-`VPOSR-OCS-BITS-14-1-UNUSED` requires bits 14-1 of a VPOSR read to be zero with
-`ecs=0`, at `ntsc=0` and at `ntsc=1`. It grades **printed p. 216**, Table 7-5:
+The withdrawn claim is that bits 14-1 of a VPOSR read must be zero with
+`ecs=0`, at `ntsc=0` and at `ntsc=1`. It rests on **printed p. 216**, Table 7-5:
 
 > "Bits 14-1 Unused"
 
