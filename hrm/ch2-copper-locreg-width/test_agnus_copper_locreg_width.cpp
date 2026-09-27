@@ -41,30 +41,19 @@
 //   the second Copper list address. The same list wording, for COP2LCL.
 //   ch2-appb-legend.c6 (p.287, appendix B legend): "W=write-only;
 //   R=read-only," Restated: W in appendix B means write-only.
-// Disclosure: agnus_copper.v was read beyond the port list (the location-
-//   register write blocks at lines ~139-170 and the address_out reload mux
-//   at ~194-202) because there is no register read-back port: the only way
-//   to observe what a location register holds is to strobe a jump and see
-//   where the module fetches from next. That reading showed
-//   `cop1lcl[15:1] <= data_in[15:1]` (15 bits, data_in bit 0 excluded) and
-//   `cop1lch[20:16] <= data_in[4:0]` (5 bits, not the documented 3), same
-//   for cop2lch/cop2lcl. The FIRST version of this test's fixture, built
-//   from a naive reading of that assignment (assuming Verilog preserves
-//   literal bit-index labels across the concatenation into address_out),
-//   produced results that did not match either manual reading OR a clean
-//   bit-for-bit pattern (input bit i landing at a shifted, seemingly
-//   inconsistent position) and was WRONG - not because of an RTL surprise,
-//   but because address_out is declared as a [20:1] port: Verilog's own
-//   label 1 becomes Verilator's C++ bit 0 of `dut->address_out`, an offset
-//   the first fixture did not account for. That bug was found by installing
-//   a marker instruction at every candidate output-bit address at once and
-//   noticing two input bits alias to the same marker - a result that cannot
-//   come from a clean bit-independent mapping, and was the tell. The
-//   fixture below installs exactly one marker per trial, at the address a
-//   correctly-offset reading of the RTL predicts, and the pass/fail below
-//   is the simulation's own answer, not a copy of that prediction: every
-//   width and address stated below was independently confirmed by running
-//   this fixture, not assumed from the source reading alone.
+// RTL read beyond the port list: agnus_copper.v's location-register write
+//   blocks (lines ~139-170) and the address_out reload mux (~194-202),
+//   because there is no register read-back port: the only way to observe
+//   what a location register holds is to strobe a jump and see where the
+//   module fetches from next. They show `cop1lcl[15:1] <= data_in[15:1]`
+//   (15 bits, data_in bit 0 excluded) and `cop1lch[20:16] <= data_in[4:0]`
+//   (5 bits, not the documented 3), same for cop2lch/cop2lcl. address_out
+//   is declared as a [20:1] port: Verilog's own label 1 is Verilator's C++
+//   bit 0 of `dut->address_out`, and the expected addresses below account
+//   for that offset. The fixture installs exactly one marker per trial, at
+//   the address a correctly-offset reading of the RTL predicts, and the
+//   pass/fail below is the simulation's own answer, not a copy of that
+//   prediction.
 // Mutation check: see the MUTATION RESULT comment near the bottom of this
 //   file.
 
@@ -100,8 +89,8 @@ struct Grant { long tick; uint32_t address; uint16_t reg; uint16_t data; };
 // Copper test.
 class CopperHarness {
 public:
-    // The chipset is a parameter since 06.09.2026, defaulting to the original
-    // chip set so every existing call is unchanged. Appendix A p.273 and
+    // The chipset is a parameter, defaulting to the original chip set
+    // (ecs = 0). Appendix A p.273 and
     // appendix C p.309 state the high half's width per chipset -- "(high 3
     // bits, high 5 bits if ECS)" and "(high 5 bits,was 3 bits)" -- so the width
     // cannot be measured in one mode alone without assuming the answer.
@@ -260,8 +249,8 @@ int main(int argc, char** argv) {
     // ------------------------------------------------------------------
     // LR2 - COP2LCL low-field walk, same claims, via COPJMP2.
     //
-    // Called a "control on LR1" until 06.09.2026, which it is not. Symmetry
-    // cannot validate LR1: a fault shared by both register pairs - and the pairs
+    // LR2 is not a control on LR1. Symmetry cannot validate LR1: a fault
+    // shared by both register pairs - and the pairs
     // are written by near-identical RTL, agnus_copper.v:147-153 against
     // :164-170 - would leave both walks agreeing and both wrong. What LR2
     // establishes is that the second pair matches the first, which is a claim
@@ -299,20 +288,14 @@ int main(int argc, char** argv) {
     // ------------------------------------------------------------------
     // LR3 - COP2LCH high-field walk. The second pointer's HIGH half.
     //
-    // An earlier revision used this slot for a control that re-ran a bit LR1
-    // had already exercised. Independent validation on 05.09.2026 found it
-    // carried no claim and could not detect any module fault LR1 did not
-    // already detect, while the second pointer's high register was never
-    // measured at all - a COP2LCH wired differently from COP1LCH would have
-    // gone unnoticed. The slot now does that job instead.
+    // Without it, a COP2LCH wired differently from COP1LCH would go
+    // unnoticed: no other assertion measures the second pointer's high
+    // register.
     //
-    // The sentence that used to follow here said the rig-works control was
-    // covered by LR1's bit-0 case, "which fails if the marker detection stops
-    // working". **That is backwards**, found by independent review on
-    // 06.09.2026: if marker detection died, `bit0_survives` would come out
-    // false, which is precisely what LR1 expects. LR1 would then fail only
-    // because the seven positive walks found no survivors - so the positive
-    // walks are the rig-works evidence, and the bit-0 case is not.
+    // The rig-works evidence is the positive walks, not LR1's bit-0 case:
+    // if marker detection died, `bit0_survives` would come out false, which
+    // is precisely what LR1 expects, and LR1 would fail only because the
+    // positive walks found no survivors.
     // ------------------------------------------------------------------
     int measured_cop2_high = -1;
     {
@@ -346,25 +329,19 @@ int main(int argc, char** argv) {
         }
         // Bits beyond the captured 5-bit field must have NO effect at all.
         //
-        // An earlier revision checked this by asking whether bit 5 landed at
-        // address 1<<20 and bit 15 at 1<<30. Neither can be expressed through
-        // a [20:1] port, so both probes passed of necessity and would have
-        // missed a bit that was rewired to somewhere reachable. Found in
-        // independent validation, 05.09.2026. The check now compares the
-        // landing address against the same trial with the bit cleared: if a
-        // high bit beyond the field influences the pointer at all, in any
-        // direction, the two differ.
+        // Asking whether bit 5 lands at address 1<<20 or bit 15 at 1<<30
+        // would prove nothing: neither can be expressed through a [20:1]
+        // port, so such probes pass of necessity and miss a bit rewired to
+        // somewhere reachable. The check compares the landing address against
+        // the same trial with the bit cleared: if a high bit beyond the field
+        // influences the pointer at all, in any direction, the two differ.
         // Low data-word bit 1 alone puts the list head at address 1. Setting a
         // high data-word bit beyond the captured field must leave it there. If
         // such a bit were wired in anywhere reachable, the jump would land
         // somewhere else and the marker at address 1 would not fire - so this
-        // probe can actually fail, which the address-1<<30 form could not.
-        // Every bit above the field, not a sample of four. The earlier version
-        // walked {5, 6, 10, 15} and the comment claimed the bits beyond the
-        // field had no effect "at all", leaving seven of them untested -
-        // independent review on 06.09.2026 pointed out the gap. Walking all
-        // eleven costs nothing and removes the overclaim rather than softening
-        // the wording.
+        // probe can actually fail, which an address-1<<30 probe could not.
+        // Every bit above the field (all eleven, 5-15), not a sample, so "no
+        // effect at all" is measured for each of them.
         bool beyond_field_inert = true;
         for (int j = 5; j <= 15; ++j) {
             const bool still_lands =
@@ -378,9 +355,8 @@ int main(int argc, char** argv) {
         clean = clean && beyond_field_inert;
 
         // Measured, not pinned: LR1 reports the low width, this block the
-        // high width. An earlier revision hardcoded low_width = 15, which made
-        // total_width == 20 follow algebraically from survivors == 5 and
-        // measured nothing.
+        // high width. Hardcoding low_width = 15 would make total_width == 20
+        // follow algebraically from survivors == 5 and measure nothing.
         const int high_width = survivors;
         const int total_width = measured_low_width + high_width;
         std::cout << "[measured] COP1LCH high-field width = " << survivors << " bits\n";
@@ -399,10 +375,9 @@ int main(int argc, char** argv) {
 
     // ------------------------------------------------------------------
     // LW1-LW3 - the high half's width is CHIPSET-DEPENDENT, and the appendix
-    // states both values side by side. Added 06.09.2026, FPGA-085, package
-    // PKG-APPX-LOCWIDTH. Class: HRM_CONFORMANCE, not regression - LR1-LR4
-    // above carry "no oracle" because chapter 2 alone could not settle the
-    // width, and that is no longer the situation.
+    // states both values side by side. Class: HRM_CONFORMANCE, not
+    // regression - LR1-LR4 above carry "no oracle" because chapter 2 alone
+    // does not settle the width; the appendix does.
     //
     //   appendix A p.273:  "(high 3 bits, high 5 bits if ECS)"
     //   appendix C p.309:  "COP1LCH  080  W  A  Coprocessor 1st location
@@ -413,21 +388,17 @@ int main(int argc, char** argv) {
     // of a parenthesis.
     //
     // LR3/LR4 measure 5 bits with the harness in OCS (`ecs = 0`). The single
-    // number is already tracked - NM-HRM-003, and agnus_copper_control T4 is red
-    // on it. What could not be said before is the SHAPE of the defect: the
-    // module has no chipset dependence at all here. `cop1lch[20:16] <=
+    // number is tracked as NM-HRM-003, and agnus_copper_control T4 is red on
+    // it. LW1-LW3 add the SHAPE of the defect: the module has no chipset
+    // dependence at all here. `cop1lch[20:16] <=
     // data_in[4:0]` (agnus_copper.v:144) and the COP2LCH equivalent
     // (agnus_copper.v:161) latch five bits unconditionally; `ecs` appears in
     // neither assignment.
     //
     // LW2 is a consistency check, NOT a control - see the note at the
-    // assertion. An earlier revision of this comment called it the positive
-    // control and said it was what made LW1 and LW3 mean something. It is not:
-    // it would pass with `ecs` dead, because the module latches five bits
-    // whatever that input does. Corrected 06.09.2026 after two independent
-    // reviews said so; the first correction changed the assertion text and left
-    // this paragraph and the mutation appendix contradicting it, which the
-    // second review caught.
+    // assertion. It is not what makes LW1 and LW3 mean something: it would
+    // pass with `ecs` dead, because the module latches five bits whatever
+    // that input does.
     // ------------------------------------------------------------------
     {
         auto high_width = [](uint16_t hi, uint16_t lo, uint16_t jmp, bool ecs_mode) {
@@ -447,11 +418,10 @@ int main(int argc, char** argv) {
         std::cout << "[measured] COP1LCH high-field width: OCS " << ocs_width
                   << " bits, ECS " << ecs_width << " bits\n";
 
-        // The second pointer, both chipsets. Independent review found that the
-        // ECS walk covered only COP1LCH, while LR3 measures COP2LCH in the
-        // default OCS mode - so the classified claim that COP2LCH carries five
-        // bits under ECS had no test at all. Appendices A and C state the
-        // widths for both pairs, not just the first.
+        // The second pointer, both chipsets. LR3 measures COP2LCH only in the
+        // default OCS mode, and the classified claim that COP2LCH carries five
+        // bits under ECS needs the ECS walk as well. Appendices A and C state
+        // the widths for both pairs, not just the first.
         const int ocs_width2 = high_width(COP2LCH, COP2LCL, COPJMP2, false);
         const int ecs_width2 = high_width(COP2LCH, COP2LCL, COPJMP2, true);
         std::cout << "[measured] COP2LCH high-field width: OCS " << ocs_width2
@@ -471,11 +441,10 @@ int main(int argc, char** argv) {
             "ECS-appendix COP2-cop2lch-ecs.c5/c6 counterparts are covered above - no "
             "assertion states an absolute expected width for COP2LCH on its own.");
 
-        // LW2 is a CONSISTENCY CHECK, not a control, and calling it a control
-        // was wrong. Independent validation on 06.09.2026 pointed out that it
-        // would pass just as well with the `ecs` input disconnected or stuck,
-        // because the module latches five bits regardless - so it cannot show
-        // that the fixture is able to switch chipsets at all.
+        // LW2 is a CONSISTENCY CHECK, not a control: it would pass just as
+        // well with the `ecs` input disconnected or stuck, because the module
+        // latches five bits regardless - so it cannot show that the fixture
+        // is able to switch chipsets at all.
         //
         // What it does show is that the walk measures a width correctly against
         // a value the manual states, which is worth having but is not the same
@@ -512,10 +481,10 @@ int main(int argc, char** argv) {
         // are used to modify the program counter for initialization or jumps."
         //
         // LR4 above computes the same total and asserts 20 as a REGRESSION,
-        // because chapter 2 could not settle it: page 25 gives both "low 16
-        // bits" (which would make 19) and "low 15 bits" (18), and the project
-        // recorded that as an unresolved source conflict. The appendix ends the
-        // conflict by stating the total directly, in a sentence that quotes no
+        // because chapter 2 does not settle it: page 25 gives both "low 16
+        // bits" (which would make 19) and "low 15 bits" (18), an unresolved
+        // source conflict. The appendix settles the total by stating it
+        // directly, in a sentence that quotes no
         // half-widths at all and so cannot be read two ways. This is therefore
         // a conformance claim, and it is the number a programmer actually uses.
         const int total_ocs = measured_low_width + ocs_width;
@@ -529,7 +498,7 @@ int main(int argc, char** argv) {
 
     // ---------------- RM1-RM8: the register addresses, asserted ----------------
     //
-    // Added 06.09.2026, FPGA-088, package PKG-APPX-REGMAP. Appendix A page 273
+    // Appendix A page 273
     // gives each location register an address: COP1LCH $080, COP1LCL $082,
     // COP2LCH $084, COP2LCL $086.
     //
@@ -537,8 +506,7 @@ int main(int argc, char** argv) {
     // constants like `to_reg(0x080)` and would fail if the module decoded them
     // differently - so the map is exercised, and it is not asserted.
     //
-    // WHAT THESE SIX DO AND DO NOT SHOW, stated after independent review
-    // objected to an earlier, broader claim. They show that the four addresses
+    // WHAT THESE SIX DO AND DO NOT SHOW. They show that the four addresses
     // are not interchangeable in the two specific ways tested: swapping a
     // pair's high and low halves does not work (RM2, RM4), and the first pair's
     // registers are not aliases of the second pair's (RM5, RM6).
@@ -548,8 +516,8 @@ int main(int argc, char** argv) {
     // for MOVE destinations but nothing does for writes into the Copper's own
     // registers.
     //
-    // The earlier comment also claimed the swap would catch a decoder that
-    // ignored the low address bit. **It would not.** Under such a decoder both
+    // Nor would the swap catch a decoder that ignored the low address bit:
+    // under such a decoder both
     // writes land in the same register and the second one - the zero - simply
     // overwrites the first, so the case fails for the ordinary reason and tells
     // you nothing about aliasing.
@@ -563,8 +531,8 @@ int main(int argc, char** argv) {
     // four of those rows ($080-$086); no boundary in this package can sweep
     // every W-marked row or every +-marked row of Appendix B (the legend
     // covers rows in modules this fixture never touches), so neither id
-    // establishes its claim whole here. Both are withdrawn from the graded
-    // labels and recorded below; each row's own appendix-B-table claim
+    // establishes its claim whole here. Both are kept off the graded labels
+    // and recorded below; each row's own appendix-B-table claim
     // (ch2-appb-table.c15/c16/c21 for COP1LCH/COP1LCL, c25/c26/c31 for
     // COP2LCH/COP2LCL - already on RM1/RM3 below) carries that row's own W
     // and + reading and is unaffected.
@@ -644,29 +612,26 @@ int main(int argc, char** argv) {
 // MUTATION LR4 oracle red total_width == 20 changed to == 18
 // MUTATION LR4 stimulus red inert-bit sweep {5,6,10,15} changed to {4,6,10,15}; bit 4 is inside the captured field and moved the landing address
 //
-// Added 05.09.2026 - LR1 and LR2 had only oracle mutations, and LR3 none at
-// all, so all three were mutated at the stimulus:
+// Stimulus mutations for LR1, LR2 and LR3:
 // MUTATION LR1 stimulus red the low-field walk strobed through COPJMP2 while still writing COP1LC, so the pointer under measurement is never the one the jump reads
 // MUTATION LR2 stimulus red the same swap in the other direction: COP2LC written, COPJMP1 strobed, so the second pointer is never the one read
 // MUTATION LR3 stimulus red the walked bit moved from the high half to the low half, so the high register the assertion measures is never written
 //
-// Added 06.09.2026 with LW1-LW3 (FPGA-085, PKG-APPX-LOCWIDTH):
+// Stimulus mutation for LW2:
 // MUTATION LW2 stimulus red the walk writes COP1LCH but strobes COPJMP2, so the pointer under measurement is never the one the jump reads and no bit lands anywhere
 //
 // LW1, LW3 and LW4 ARE RED AT BASELINE, so none carries a red-going mutation -
 // there is nothing green to break, which is trivially true and not evidence of
 // anything.
 //
-// Two things an earlier revision got wrong here, both caught by independent
-// review on 06.09.2026:
+// Two limits on what these records say:
 //
-//   - "no stimulus makes them green" is FALSE as an absolute. An
-//     under-stimulated walk covering only bits 0-2 yields ocs_width == 3 and
-//     turns LW1 and LW4 green; walking one mode differently from the other
-//     turns LW3 green. Those are broken measurements rather than compliant
-//     behaviour, and the true statement is narrower: no LEGITIMATE stimulus
-//     makes them green, because both high registers latch five bits
-//     unconditionally (agnus_copper.v:144 and :161).
+//   - No LEGITIMATE stimulus makes them green, because both high registers
+//     latch five bits unconditionally (agnus_copper.v:144 and :161). That is
+//     narrower than "no stimulus": an under-stimulated walk covering only
+//     bits 0-2 yields ocs_width == 3 and turns LW1 and LW4 green; walking one
+//     mode differently from the other turns LW3 green. Those are broken
+//     measurements rather than compliant behaviour.
 //
 //   - their credibility does NOT rest on LW2. LW2 would pass with `ecs` dead
 //     and therefore vouches for nothing about chipset switching. What it does
@@ -684,10 +649,10 @@ int main(int argc, char** argv) {
 // LW3 additionally cannot be turned green by any stimulus at all: the module
 // has no chipset dependence in this register to exercise
 // (`cop1lch[20:16] <= data_in[4:0]`, agnus_copper.v:144, with no `ecs` in the
-// assignment). Same limitation class as AC4 in agnus_copper_cycle_times - the
-// forbidden behaviour cannot be induced from outside, only by changing the RTL.
+// assignment). The forbidden behaviour cannot be induced from outside, only
+// by changing the RTL.
 //
-// Added 06.09.2026 with RM1-RM6 (FPGA-088, PKG-APPX-REGMAP):
+// RM1-RM6:
 // MUTATION RM1 stimulus red the target moved to bit 21, one place beyond the 20-bit address_out, so no correctly decoded write can reach it
 // MUTATION RM3 stimulus red the same move
 // MUTATION RM2 none impossible negative assertion - turning it red means producing the address aliasing it forbids, which no external stimulus can do
@@ -704,8 +669,7 @@ int main(int argc, char** argv) {
 // would mean producing the very decoder fault they forbid; only an RTL change
 // could. They are worth having anyway: nothing else in the suite shows the
 // module decodes ONLY the stated address, and a decoder that also accepted a
-// neighbour would pass every other test here. Third instance of this limitation
-// today, after AC4 and LW3.
+// neighbour would pass every other test here.
 //
 // LR1's and LR3's mutations also took LR4 down with them, which is expected
 // and worth stating: LR4 consumes LR1's measured width, so breaking the
@@ -714,13 +678,13 @@ int main(int argc, char** argv) {
 //
 // MUTATION RESULTS, each reverted immediately after observing red.
 //
-// A distinction independent validation insisted on, 05.09.2026, and it is
-// the right one: an **oracle mutation** changes the expected value and shows
+// The distinction that matters: an **oracle mutation** changes the expected
+// value and shows
 // only that the boolean can become false. A **stimulus mutation** changes
 // what the module is asked to do and shows that the assertion notices a
 // different behaviour. The second is the one that means something.
 //
-// Oracle mutations (three, from the first revision of this file):
+// Oracle mutations (three):
 //   - LR1: `survivors == 15` -> `== 16`. FAIL, LR2-LR4 unaffected.
 //   - LR2: `survivors == 15` -> `== 14`. FAIL.
 //   - LR4: `total_width == 20` -> `== 18` (the prose's own total). FAIL.
@@ -731,11 +695,4 @@ int main(int argc, char** argv) {
 //     the field. The landing point moved away from address 1, the probe
 //     reported "H data-word bit 4 moved the landing point away from address
 //     1", and LR4 turned FAIL (3 passed, 1 failed). The probe therefore
-//     detects a high bit that reaches the pointer, which its predecessor
-//     could not: that version asked whether bit 5 landed at 1<<20 and bit 15
-//     at 1<<30, neither of which a [20:1] port can express, so both passed
-//     of necessity.
-//
-// Not separately mutated: LR3, which repeats LR4's measurement on the second
-// register pair. Its earlier occupant was a control that re-ran a bit LR1
-// had already exercised and carried no claim of its own.
+//     detects a high bit that reaches the pointer.
