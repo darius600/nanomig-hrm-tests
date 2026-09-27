@@ -1545,10 +1545,10 @@ int main(int argc, char** argv) {
             "selected by the first "
             "five bitplanes is SHIFTED to half-intensity by the sixth "
             "bitplane' (p.95) -- 'shifted' names a specific bit operation, "
-            "not a vague darkening, and this check now rejects "
+            "not a vague darkening, so this check rejects "
             "quarter-intensity or a blue-only darkening, either of which "
-            "would have passed the prior 'no component greater, at least "
-            "one strictly smaller' check. 3-ehb.c7.");
+            "a 'no component greater, at least one strictly smaller' "
+            "check would pass. 3-ehb.c7.");
     }
 
     // ==================== HAM-MODIFY-WRITES-PIXEL ====================
@@ -1685,11 +1685,10 @@ int main(int argc, char** argv) {
         "positioning pipeline (SPRxPOS+SPRxCTL+SPRxDATA/DATB feeding "
         "denise_sprites/denise_sprites_shifter, compared against hpos) that "
         "this package's own inventory (the chapter's nominal-display-values "
-        "residue) was never assigned to build from scratch. A properly "
-        "scoped sibling for exactly this domain already exists "
-        "(ch3-sprite-registers, hrm/denise_sprites fixture) even though it "
-        "does not happen to cite these two ids (checked: grep found no "
-        "match) -- building a purpose-built sprite rig here to settle 2 ids "
+        "residue) does not otherwise build. A package scoped to exactly "
+        "this domain exists (ch3-sprite-registers, on the denise_sprites "
+        "fixture), although it does not cite these two ids -- building a "
+        "purpose-built sprite rig here to settle 2 ids "
         "would duplicate that sibling's own boundary machinery, the same "
         "'wider mechanism than this fixture's boundary reaches' reasoning "
         "hrm/ch3-register-map-denise's own BPLCON2-ADDR/BPLCON3-ADDR "

@@ -12,8 +12,7 @@ CPP_TEST = test_$(TOP_MODULE).cpp
 # lines in test_denise.cpp) by defining MUT_<NAME>=1 for the build, so the
 # exact stimulus change that assertion's log entry describes can be
 # reproduced later. Run `make clean` first when switching MUT values --
-# obj_dir is reused otherwise and Verilator will not relink. Modelled on
-# hrm/ch3-field-geometry's own Makefile.
+# obj_dir is reused otherwise and Verilator will not relink.
 MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)
 
 .PHONY: all test clean
