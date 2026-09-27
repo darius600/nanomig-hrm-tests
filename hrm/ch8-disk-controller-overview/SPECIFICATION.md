@@ -1,42 +1,16 @@
 # ch8-disk-controller-overview — SPECIFICATION
 
-Written from the quotations in
-`work/ch8-s2-build/ch8-disk-controller-overview.jsonl` alone (the 22 claims
-assigned to this package). This document is committed before any RTL file
-(`$(NANOMIG)/src/minimig-aga/*.v`) is opened by me.
-
-**Process note, disclosed up front rather than left implicit:** before writing
-this file I read three already-built sibling packages on the same
-`paula_floppy` fixture in full — `hrm/ch8-drive-sense-lines`,
-`hrm/ch8-drive-select-motor-led` and `hrm/ch8-dsklen-dma-arming`
-(`SPECIFICATION.md` and `.cpp` for each) — to see this suite's directory
-layout, file-naming convention, and harness mechanics before creating my own.
-Unlike the lighter precedent those packages themselves describe (reading only
-a sibling's harness boilerplate), these three are fully built, and their
-`.cpp` files carry `MECHANISM, confirmed by reading paula_floppy.v myself`
-comment blocks with genuine RTL derivations — register address encoding
-(`reg_address_in = addr>>1`, with `DSKLEN=9'h024`, `DSKBYTR=9'h01a`,
-`DSKSYNC=9'h07e`, `DSKDATR=9'h008`), the `DSKBYTR` bit composition, the
-`dskstate`/`fdd_led`/`dmaen` double-write mechanism, and the `motor_on`/
-`index` latch. I did read that content, not only the harness boilerplate
-around it, before writing this file — recorded exactly so it is not
-mistaken for a clean read. What I am using from it below is **only**
-plumbing common to every `paula_floppy` package (register-address
-convention, the `Checks`/`mutating()`/`Rig` shape, the DSKLEN double-write
-idiom, the fresh-model-per-trial discipline) that the build brief already
-discloses independently (the DSKLEN double-write sequence and its measured
-0x9000/0xD000/0xB000/0xF000 values are given verbatim in the build brief
-itself, not discovered by me in a sibling's RTL trace). **No expected value
-below for any of my own 22 claims is drawn from those siblings' RTL
-findings** — every proposition and its expected colour is derived from this
-package's own claims file (`classify.evidence`, which is itself
-classification-stage-disclosed evidence, exactly as the sibling packages'
-own specifications treat their own claims files) and from the build brief
-and finding-candidates document handed to me for this unit. Where a sibling
-package's RTL trace happens to cover the same signal my own claim's evidence
-already names (e.g. `fdd_led`, `_ready`), I have used only my own claim's
-evidence for the proposition — the sibling material is disclosed for
-completeness, not cited as a source for any oracle value.
+The package carries the quotations in
+`work/ch8-s2-build/ch8-disk-controller-overview.jsonl` (the 22 claims
+assigned to this package). Every proposition and its expected colour is
+derived from this claims file (`classify.evidence`, classification-stage
+evidence) and the printed pages; the plumbing common to every
+`paula_floppy` package (register-address convention, the
+`Checks`/`mutating()`/`Rig` shape, the DSKLEN double-write idiom, the
+fresh-model-per-trial discipline) follows the sibling packages on the same
+fixture, `hrm/ch8-drive-sense-lines`, `hrm/ch8-drive-select-motor-led` and
+`hrm/ch8-dsklen-dma-arming`. No expected value below is drawn from those
+siblings' RTL findings.
 
 ## Source claims (verbatim quotations)
 
@@ -67,232 +41,183 @@ All 22 claims are `disposition: new`, page 241 except the last two (p.247).
 | `sol:8-dskdma.c6` | 247 | Whole-track buffering with DSKSYNC requires only one disk read for the track. | "With this process you need to read from the disk only once for the\nentire track." |
 | `sol:8-dskdma.c7` | 247 | The drive can step to the next head while software processes and checksums the preceding track. | "In a high speed loader, the step to the next head can occur\nwhile the previous track is processed and checksummed." |
 
-## What this package is for (build brief)
+## What this package is for
 
 Printed p.241 opens the floppy section: how many drives the built-in
 controller supports, what kind, what the controller is made of, and how the
 disk subsystem is reached — structural propositions about the controller as
 a whole, not about one register. Two claims (p.247) extend this to the
-buffering/scheduling picture the chapter builds on p.241's foundation. What
-is **not** in scope, per the build brief: form factors, physical sizes, what
-is "typically" fitted, what is installed in the basic unit — facts about a
-*product*, not a module. None of my 22 claims' quotations name any such
-product-level fact; all 22 are propositions about the controller module
-itself (drive count, DMA capacity, register presence, port bit counts), so
-no claim in this package is declined on that ground. I checked, rather than
-assumed, this for every one of the 22 quotes above.
+buffering/scheduling picture the chapter builds on p.241's foundation. Not
+in scope: form factors, physical sizes, what is "typically" fitted, what is
+installed in the basic unit — facts about a *product*, not a module. None of
+the 22 claims' quotations names any such product-level fact; all 22 are
+propositions about the controller module itself (drive count, DMA capacity,
+register presence, port bit counts), so no claim in this package is declined
+on that ground.
 
 ## Split content, deliberately excluded from this package's assertions
 
-Two qualifiers inside my own claims' quotations are explicitly split off by
-the classify stage as *separate* propositions belonging to *other* claims
-not in this package:
+Two qualifiers inside this package's claims' quotations are explicitly split
+off by the classify stage as *separate* propositions belonging to *other*
+claims not in this package:
 
 - **"MFM-type"** in `opus:8-dsk.c1`/`sol:8-dsk.c1` — the classify evidence
   states the media-format qualifier is carried by `opus:8-dsk.c10-c17` /
-  `sol:8-dsk.c10-c20` (not in this package). My drive-count assertion grades
-  the **count** only ("up to four ... devices"), not the "MFM-type" media
-  qualifier.
+  `sol:8-dsk.c10-c20` (not in this package). The drive-count assertion
+  grades the **count** only ("up to four ... devices"), not the "MFM-type"
+  media qualifier.
 - **"raw"** in `opus:8-dsk.c6`/`c7`/`sol:8-dsk.c7` — the classify evidence
   states the "unmediated medium bit cells" sense of "raw" is the same
   media-format family (`opus:8-dsk.c10-c17`), not this package's concern.
-  My whole-track assertions grade an MFM **word stream** delivered by DMA,
-  not any claim about medium-level bit cells. This lines up with finding
-  candidates C1/C2 in `work/2026-09-15_ch8_s2_finding_candidates.md`: the
-  floppy data path terminates at `sdc_byte_in_data`/`sdc_byte_out_data` (an
-  SD card, not a medium), so no port here can ever answer a raw-medium
-  claim — consistent with, not derived from, C1/C2.
+  The floppy data path terminates at `sdc_byte_in_data`/`sdc_byte_out_data`
+  (an SD card, not a medium), so no port here can ever answer a raw-medium
+  claim.
 
-I checked all 8 constraint-carrying claims named in the build brief
-("partly-overturned", DSKDATR/DSKDAT rows, grade-only-the-half-the-evidence-
-names) against my own 22 claims: **none of my 22 carries such a `note`
-field**, and none of my quotations mentions DSKDATR/DSKDAT or an
-exclusivity word ("only") whose bare grading would overreach. That
-constraint therefore does not apply to any assertion in this package.
+None of the 22 claims carries a `note` field restricting it to half of its
+evidence, and none of the quotations mentions DSKDATR/DSKDAT or an
+exclusivity word ("only") whose bare grading would overreach.
 
-## Reduction to thirteen testable propositions
+## Propositions
 
 - **P-DRIVE-COUNT** — `opus:8-dsk.c1`, `sol:8-dsk.c1` (twins). The
   controller supports (up to) four drives — a structural property of the
   module's own select/target width, not of what medium is in a given drive.
-- **P-WHOLETRACK-CAPACITY** — `opus:8-dsk.c6`, `sol:8-dsk.c7` (partial
-  twin). A single DMA programming can move a whole-track-sized run of MFM
-  words (larger than what one SD-sector-sized fetch alone would hold),
-  completing as one continuous operation.
-- **P-REVOLUTION-RATIO** — `opus:8-dsk.c7`, `sol:8-dsk.c7` (partial twin).
-  That whole-track transfer's duration, measured in the module's own
-  revolution-counting units, does not exceed one revolution's worth — a
-  dimensionless ratio, not a millisecond figure.
+  Graded: with `floppy_drives` at its maximum, each of the four `_sel` bits
+  independently selects a working drive slot.
+- **P-WHOLETRACK-DMA** — `opus:8-dsk.c6`, `opus:8-dsk.c7`, `sol:8-dsk.c7`
+  (p.241, "It can DMA an entire track of raw MFM data into memory in a
+  single disk revolution") and `sol:8-dskdma.c6` (p.247, "you need to read
+  from the disk only once for the entire track"). Measured and printed, not
+  graded — declined via `record()` for two independent reasons, either
+  alone sufficient: the whole-track word count (5984) is derived from
+  `paula_floppy.v`'s own sector-counter structure, not a figure the manual
+  states; and this fixture never drives `sof` or observes an index-to-index
+  interval, so a transfer in any number of revolutions would pass. The
+  manual states neither a rotation speed nor a clock frequency (neither the
+  s2 slice, pp.241-250, nor the full 687-page corpus does), so no
+  real-time comparison replaces it. A sound assertion would drive `sof` on
+  a real timebase and bracket the transfer between two consecutive `index`
+  pulses.
 - **P-DSKSYNC-MATCH** — `opus:8-dsk.c8`, `sol:8-dsk.c8` (twins). The
   dedicated sync register gates delivery on a specific programmed data
   pattern actually being matched, not merely on wordsync being enabled.
+  Graded.
 - **P-DSKBYTR-BYTE-READ** — `opus:8-dsk.c9`, `sol:8-dsk.c9` (twins). The
   dedicated byte-read register should present, at the instant a KNOWN
-  incoming byte is current, that same byte.
-  **Repaired (independent validation, 2026-09-15):** the original form
-  compared two arbitrary DSKBYTR snapshots ("near word 5" vs "near word
-  60" of two differently-patterned runs) with no independent ground truth
-  for either — withdrawn soundly. THIS IS THE SAME UNDERLYING FACT as
+  incoming byte is current, that same byte. A known byte (0xFF) is bound to
+  the DSKBYTR sampling instant through the DSKDATR/FIFO, the technique
+  `ch8-mfm-cell-encoding` uses: the locator is the fixed
+  `FIRST_PAYLOAD_POP_INDEX` (= 33), taken from `paula_floppy.v`'s own
+  word-counter framing thresholds (:484-497), structurally independent of
+  what any cell encodes to, so it cannot break when the encoder is fixed.
+  The peek at that instant confirms the sampled word is the known byte's
+  own encoding (0xFFFF on this RTL); a confirmation failure declines via
+  `record()` rather than grading — 0xFFFF is not itself a page-legal MFM
+  encoding of 0xFF (p.250 makes 0xFF → 0x5555), so a search for it would
+  report a DATA-field defect against a conforming encoder that would not be
+  there. THIS IS THE SAME UNDERLYING FACT as
   `ch8-dskbytr-status-register`/A9 and
-  `ch8-disk-register-map-paula-floppy`/B4 — one fact, repaired identically
-  in all three packages that carry it. Repaired to bind a known byte
-  (0xFF) to the DSKBYTR sampling instant via the DSKDATR/FIFO marker
-  technique the accepted `ch8-mfm-cell-encoding` package established.
-  Still RED — measured `known_word=0xFFFF` (bound, at pop #33), DSKBYTR's
-  DATA field reads 0x00.
-  **Repaired again (lot G, 2026-09-16):** the 2026-09-15 form's
-  `find_ff_marker_pop_index()` SEARCHED for the 0xFFFF marker and used
-  `bound_ok` (whether the search found it) as a CONJUNCT of the graded
-  condition — but 0xFFFF is THIS RTL's own non-conformant encoding of 0xFF
-  (p.250 makes 0xFF → 0x5555), so against a conforming encoder the search
-  would return -1 and the assertion would FAIL anyway, reporting a
-  DATA-field defect that would not be there. Repaired to a FIXED locator
-  (`FIRST_PAYLOAD_POP_INDEX` = 33, taken from `paula_floppy.v`'s own
-  word-counter framing thresholds, :484-497, structurally independent of
-  what any cell encodes to) plus a PRECONDITION: the peek at that fixed
-  instant still confirms the sampled word is the known byte's own encoding,
-  but confirmation failure now DECLINES via `record()` rather than folding
-  into a graded FAIL — the shape already accepted in
-  `ch8-dskbytr-status-register`/A9. Measured values unchanged.
-- **P-CIAAPRA-FOUR-BITS** — `opus:8-dsk.c21`, `sol:8-reglist.c4` (twins).
-  Exactly four independently-controllable sense signals reach the CIAAPRA
-  side of the boundary from the floppy side (not fewer, not aliased).
-- **P-CIAAPRA-SENSING** — `opus:8-dsk.c22`. Those four signals are each
-  driven by a genuinely distinct disk-sensing condition (track position,
-  media presence, selection/readiness, write-protect), not four copies of
-  one condition under different names.
-- **P-CIABPRB-EIGHT-BITS** — `opus:8-dsk.c24`, `sol:8-reglist.c6` (twins).
-  Exactly eight independently-drivable control inputs reach paula_floppy
-  from the CIABPRB side.
-- **P-CIABPRB-SELECTION** — `opus:8-dsk.c25`, `sol:8-reglist.c7` (twins).
-  Those bits include a drive-selection function: driving a different select
-  pattern targets a different drive.
-- **P-CIABPRB-CONTROL** — `opus:8-dsk.c26`, `sol:8-reglist.c8` (twins).
-  Those bits include drive-control functions (motor being the case this
-  package exercises).
-- **P-CIABPRB-STEPPING** — `opus:8-dsk.c27`, `sol:8-reglist.c9` (twins).
-  Those bits include a head-stepping function.
-- **P-ONE-READ-PER-TRACK** — `sol:8-dskdma.c6` (p.247). A transfer spanning
-  more data than a single SD-sector-sized fetch delivers is requested from
-  the storage side as one continuous read operation, not as a series of
-  separate reads.
+  `ch8-disk-register-map-paula-floppy`/B4, graded identically in all three
+  packages. RED: measured `known_word=0xFFFF` (bound, at pop #33), DSKBYTR's
+  DATA field reads 0x00 (`paula_floppy.v:699` hardwires bits 7:0 to 8'h00).
+- **P-CIAAPRA-FOUR-BITS** — `opus:8-dsk.c21`, `sol:8-reglist.c4` (twins),
+  and **P-CIAAPRA-SENSING** — `opus:8-dsk.c22`. Four independently-
+  controllable sense signals, each driven by its own disk-sensing condition,
+  reach paula_floppy's own ports. Measured and printed, not graded —
+  declined via `record()`: this fixture never reaches CIAAPRA itself (the
+  `minimig.v:622` join), so a severed or swapped join would pass.
+  `hrm/ch8-cia-disk-signal-bindings`'s PA5/PA4/PA3/PA2-BINDING assertions
+  grade the fact through a real CPU read of CIAAPRA ($BFE001).
+- **P-CIABPRB-EIGHT-BITS** — `opus:8-dsk.c24`, `sol:8-reglist.c6`;
+  **P-CIABPRB-SELECTION** — `opus:8-dsk.c25`, `sol:8-reglist.c7`;
+  **P-CIABPRB-CONTROL** — `opus:8-dsk.c26`, `sol:8-reglist.c8`;
+  **P-CIABPRB-STEPPING** — `opus:8-dsk.c27`, `sol:8-reglist.c9` (twins
+  each). Eight independently-drivable control inputs (`_sel[3:0]`, `_step`,
+  `direc`, `side`, `_motor`) reach paula_floppy, with selection, control and
+  stepping functions. Measured and printed, not graded — declined via
+  `record()`: this fixture never reaches CIABPRB itself (the `minimig.v:650`
+  join). `hrm/ch8-cia-disk-signal-bindings`'s PB7-BINDING through
+  PB0-BINDING assertions grade the fact through a real CPU write to CIABPRB
+  ($BFD100).
 - **P-STEP-DURING-DMA** — `sol:8-dskdma.c7` (p.247). Head stepping is
   accepted while a DMA transfer is in progress, not gated on the transfer
-  being idle.
+  being idle. Graded.
 
-## Fixture boundary: `paula_floppy`, assigned not derived
+## Fixture boundary: `paula_floppy`
 
-The build brief assigns `paula_floppy` as this package's fixture:
-`paula_floppy.v` + `paula_floppy_fifo.v` only. `paula_floppy_ebr.v` declares
-a **second** `module paula_floppy` and must not be compiled alongside it —
-disclosed by the build brief and independently by the finding-candidates
-document (C1's rig-hazard section, "one more rig hazard").
+`paula_floppy.v` + `paula_floppy_fifo.v` only. `paula_floppy_ebr.v`
+declares a **second** `module paula_floppy` and is not compiled alongside
+it.
 
-The CIAAPRA/CIABPRB propositions (P-CIAAPRA-*, P-CIABPRB-*) are graded **at
-paula_floppy's own ports**, not at `ciaa`/`ciab`/`minimig.v`'s wiring —
-every one of the eight relevant claims' `classify.observable` field already
+Every one of the eight CIAAPRA/CIABPRB claims' `classify.observable` field
 says `"yes, at paula_floppy"`, and their `observable_detail` fields note
 that the *specific CIA bit-position* mapping needs `ciaa`/`ciab`
-(`minimig.v`), which is outside this package's assigned module boundary.
-This package therefore grades the **count, independence and functional
-category** of the floppy-side signals that occupy those CIA bits (four
-sense outputs, eight control inputs) — not their exact landing bit position
-inside a physical CIAAPRA/CIABPRB register, which this fixture cannot
-reach. This matches the package purpose stated in every one of my claims'
-`package.package_purpose` field: "the CIA port-bit counts seen from the
-floppy side."
+(`minimig.v`), outside this package's module boundary. At this boundary the
+count, independence and functional category of the floppy-side signals can
+be measured, but not that they land at the named CIA bits; that join is
+graded in `hrm/ch8-cia-disk-signal-bindings`.
 
-## Rig hazards (disclosed by the build brief and finding-candidates
-document, not derived by me from RTL)
+## Rig hazards
 
 - **`dsktrack` has no reset term** (`paula_floppy.v:671-680`). A reused
   Verilated model would carry stale head position between trials. **A
   fresh `Vpaula_floppy` instance is allocated per trial** in this package —
   no instance is shared across two assertions or two mutation runs.
 - **`paula_floppy_ebr.v` declares a second `module paula_floppy`.** Left out
-  of the source list entirely, per the build brief's stated preference over
-  `-Wno-fatal`.
-- **DSKLEN needs the double write** (`paula_floppy.v:743`) to arm DMA,
-  measured end to end by the build brief: first write leaves
-  `data_out`=0x9000, `fdd_led`=0; second gives `data_out`=0xD000,
-  `fdd_led`=1, `sdc_rd`=1. A single 0xC00A leaves `dmas`=0. Every assertion
-  in this package that needs disk DMA armed performs the double write.
+  of the source list entirely, rather than compiled with `-Wno-fatal`.
+- **DSKLEN needs the double write** (`paula_floppy.v:743`) to arm DMA:
+  first write leaves `data_out`=0x9000, `fdd_led`=0; second gives
+  `data_out`=0xD000, `fdd_led`=1, `sdc_rd`=1. A single 0xC00A leaves
+  `dmas`=0. Every trial in this package that needs disk DMA armed performs
+  the double write.
 
-## Assertions — one per proposition, each naming its page
+## Assertions and verdicts
 
-All page 241 except P-ONE-READ-PER-TRACK and P-STEP-DURING-DMA (page 247).
+All page 241 except `sol:8-dskdma.c6` and `sol:8-dskdma.c7` (page 247).
 
-| assertion | uids | expected |
+| check | uids | verdict |
 |---|---|---|
-| FIXTURE-LIVE | (none, apparatus) | GREEN |
+| FIXTURE-LIVE | (none, apparatus) | `note()`, not graded |
 | P-DRIVE-COUNT | `opus:8-dsk.c1`, `sol:8-dsk.c1` | GREEN |
-| P-WHOLETRACK-CAPACITY | `opus:8-dsk.c6`, `sol:8-dsk.c7` | GREEN (to be measured) |
-| P-REVOLUTION-RATIO | `opus:8-dsk.c7`, `sol:8-dsk.c7` | GREEN (to be measured) |
+| P-WHOLETRACK-DMA | `opus:8-dsk.c6`, `opus:8-dsk.c7`, `sol:8-dsk.c7`, `sol:8-dskdma.c6` | declined (`record()`) |
 | P-DSKSYNC-MATCH | `opus:8-dsk.c8`, `sol:8-dsk.c8` | GREEN |
-| P-DSKBYTR-BYTE-READ | `opus:8-dsk.c9`, `sol:8-dsk.c9` | **RED** (C6: DATA field measured hardwired 0x00 in this package's own claims-file evidence) |
-| DSKBYTR-CONTROL | (none, control case for the red above) | GREEN |
-| P-CIAAPRA-FOUR-BITS | `opus:8-dsk.c21`, `sol:8-reglist.c4` | GREEN |
-| P-CIAAPRA-SENSING | `opus:8-dsk.c22` | GREEN |
-| P-CIABPRB-EIGHT-BITS | `opus:8-dsk.c24`, `sol:8-reglist.c6` | GREEN |
-| P-CIABPRB-SELECTION | `opus:8-dsk.c25`, `sol:8-reglist.c7` | GREEN |
-| P-CIABPRB-CONTROL | `opus:8-dsk.c26`, `sol:8-reglist.c8` | GREEN |
-| P-CIABPRB-STEPPING | `opus:8-dsk.c27`, `sol:8-reglist.c9` | GREEN |
-| P-ONE-READ-PER-TRACK | `sol:8-dskdma.c6` | to be measured (RTL's `sdc_rd` protocol across a multi-sector transfer is not yet known to me) |
+| P-DSKBYTR-BYTE-READ | `opus:8-dsk.c9`, `sol:8-dsk.c9` | **RED** (C6: DATA field hardwired 0x00) |
+| DSKBYTR-CONTROL | (none, control case for the red above) | `note()`, not graded |
+| P-CIAAPRA-FOUR-BITS | `opus:8-dsk.c21`, `sol:8-reglist.c4` | declined (`record()`) |
+| P-CIAAPRA-SENSING | `opus:8-dsk.c22` | declined (`record()`) |
+| P-CIABPRB-EIGHT-BITS | `opus:8-dsk.c24`, `sol:8-reglist.c6` | declined (`record()`) |
+| P-CIABPRB-SELECTION | `opus:8-dsk.c25`, `sol:8-reglist.c7` | declined (`record()`) |
+| P-CIABPRB-CONTROL | `opus:8-dsk.c26`, `sol:8-reglist.c8` | declined (`record()`) |
+| P-CIABPRB-STEPPING | `opus:8-dsk.c27`, `sol:8-reglist.c9` | declined (`record()`) |
 | P-STEP-DURING-DMA | `sol:8-dskdma.c7` | GREEN |
 
-`opus:8-dsk.c9`'s own `classify.evidence` already reports the measured
-result this package's P-DSKBYTR-BYTE-READ assertion is expected to
-reproduce: "two consecutive reads of \$DFF01A both return `data_out`=0x9000
-... the proposition is posed and answered at `data_out`, and the answer is
-a divergence to record, not a reason to call it untestable." That measured
-divergence is why P-DSKBYTR-BYTE-READ is listed RED above, before any RTL
-of my own has been opened — it comes from my claims file's own disclosed
-evidence, exactly as C4 was disclosed to `ch8-drive-sense-lines` before that
-package's author opened RTL.
+FIXTURE-LIVE and DSKBYTR-CONTROL carry no claim uid, so they are printed
+via `note()` and never graded. DSKBYTR-CONTROL compares two readings for
+inequality only, never the whole DSKBYTR word, whose p.278 layout marks
+bits "X Not used" with no stated reset/idle value.
 
-P-WHOLETRACK-CAPACITY, P-REVOLUTION-RATIO and P-ONE-READ-PER-TRACK are
-marked "to be measured": nothing in my 22 claims' own evidence, the build
-brief, or the finding-candidates document states a definite expected colour
-for these three, unlike P-DSKBYTR-BYTE-READ. I am not guessing a colour for
-them here — the RTL is opened next specifically to find out, and each will
-be reported with whatever colour the run actually produces.
+`opus:8-dsk.c9`'s own `classify.evidence` reports the measured result
+P-DSKBYTR-BYTE-READ reproduces: "two consecutive reads of \$DFF01A both
+return `data_out`=0x9000 ... the proposition is posed and answered at
+`data_out`, and the answer is a divergence to record, not a reason to call
+it untestable."
 
 ## Mutation plan
 
-Each assertion above gets its own
+Each graded assertion has its own
 `// MUTATION <label> <oracle|stimulus|none> <red|green|impossible> <what changed>`
 record in the C++ source, `<label>` being the exact leading token of the
-string literal passed to `expect()` — the claim's own `classify.uid` where
-one exists, a plain uppercase id for FIXTURE-LIVE and DSKBYTR-CONTROL.
+string literal passed to `expect()` — the claim's own `classify.uid`.
 
-- Every assertion expected **GREEN** at baseline: a `stimulus red` record —
-  change what the rig *asks* the module to do (a different drive stays
-  selected than the one the loop is checking, the double write is reduced
-  to a single write, the sync value fed no longer matches DSKSYNC, the
-  qualifying step edge is skipped, etc.), leave the expected value alone,
-  confirm the targeted assertion alone goes red, then revert.
-- P-DSKBYTR-BYTE-READ, expected **RED**: a stimulus mutation cannot
-  demonstrate anything on an already-failing check (the substitute rule
-  applies) — the mutation run substitutes DSKBYTR-CONTROL's mechanism (the
-  WRITE-bit mirror, proven live and green in the same run) through the
-  identical data_out-varies comparator, expected to flip GREEN.
-- P-WHOLETRACK-CAPACITY / P-REVOLUTION-RATIO / P-ONE-READ-PER-TRACK: mutation
-  form fixed once their baseline colour is known from the run (ordinary
-  stimulus-red if green at baseline; substitute if red at baseline, per the
-  same rule).
-
-Which exact stimulus each mutation changes, and the measured before/after
-pass/fail tally, is recorded in the C++ source once the package is built and
-run — this section states the plan, not a claim that any run has happened.
-
-## What happens next
-
-Only after this file is committed: open `paula_floppy.v` in full (register
-address parameters, the `_sel`/drive-count decode, DSKSYNC/`wordsync`
-gating, DSKBYTR's construction, the CIAAPRA/CIABPRB-side port list, the
-`sdc_rd` protocol across a multi-word/multi-sector transfer, the revolution
-counter) and `paula_floppy_fifo.v` in full; then write this package's own
-Makefile and test source, resolving the three "to be measured" rows above
-to whatever the RTL and a run of it actually show. All of that reading, and
-anything else opened beyond what is named here, will be disclosed in the
-next commit's file header.
+- Every assertion GREEN at baseline: a `stimulus red` record — change what
+  the rig *asks* the module to do (a drive is never actually selected, the
+  "should not match" DSKSYNC probe is programmed with the matching value,
+  DMA is never armed), leave
+  the expected value alone, confirm the targeted assertion alone goes red,
+  then revert.
+- P-DSKBYTR-BYTE-READ, RED at baseline: a stimulus mutation cannot
+  demonstrate anything on an already-failing check — the mutation run
+  substitutes DSKBYTR-CONTROL's mechanism (the WRITE-bit mirror, proven
+  live in the same run) through the identical data_out-varies comparator,
+  and flips GREEN.
+- A `note()` or `record()` carries no mutation record.

@@ -1,14 +1,13 @@
 // Test purpose: HRM conformance package for the p.241 disk-controller
 //   overview (plus two p.247 buffering/scheduling claims that build on it):
-//   drive count, whole-track DMA capacity and its revolution-ratio,
+//   drive count, whole-track DMA in a single revolution (declined),
 //   DSKSYNC-gated synchronisation, DSKBYTR's byte-read field, and the
 //   CIAAPRA/CIABPRB bit counts and functional categories seen from the
 //   floppy side -- against `paula_floppy` (paula_floppy.v +
 //   paula_floppy_fifo.v only; paula_floppy_ebr.v excluded, it declares a
 //   second `module paula_floppy`). 22 claims, from
 //   work/ch8-s2-build/ch8-disk-controller-overview.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 850e370, before this file or any RTL was
-//   opened).
+//   SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.241 (and p.247
 //   for the two dskdma claims); full quotations in SPECIFICATION.md.
@@ -23,14 +22,10 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (850e370):
-//   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines),
-//      read myself for the first time at this step (SPECIFICATION.md's own
-//      process note discloses that I had already seen RTL-mechanism
-//      comments inside three sibling packages' built .cpp files before
-//      writing the spec -- register-address convention and the DSKLEN
-//      double-write shape only, not any of THIS package's own oracle
-//      values, which all come from my claims file's own evidence).
+// RTL READ:
+//   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines).
+//      None of this package's own oracle values comes from it; they come
+//      from the claims file's own evidence.
 //   2. nanomig/src/minimig-aga/paula_floppy_fifo.v -- full file (60 lines):
 //      a straightforward 2048-word-deep circular buffer.
 //
@@ -61,24 +56,18 @@
 //     ITS real-world rate cannot be read off this fixture, and this file
 //     does not drive `sof`/`index` for any grading purpose.
 //
-//     CORRECTION, recorded rather than silently fixed: an earlier revision
-//     of this file graded a separate P-REVOLUTION-RATIO assertion by
-//     comparing the whole-track transfer's measured clk7_en-tick duration
-//     against an imported real-time constant (300 RPM = 200 ms/revolution;
-//     clk7_en ~= 7.09379 MHz PAL, 2x the PAL colour clock -- ordinary,
-//     well-known Amiga chipset facts). The coordinator checked both the s2
-//     slice (pp.241-250) and the full 687-page extracted corpus for a
-//     stated rotation speed or clock frequency: absent from both. This
-//     suite's oracle is the manual, not general chipset knowledge, and a
-//     duration compared against a real-time figure the manual never
-//     states is an ABSOLUTE reading with no oracle here (the classify
-//     brief's ratio-or-absolute rule: no port emits Hertz or milliseconds).
-//     A green assertion resting on an imported number reads as the manual
-//     being confirmed when it was not. P-REVOLUTION-RATIO is REMOVED, not
-//     reworded to a smaller number -- see P-WHOLETRACK-DMA below, which now
-//     also carries opus:8-dsk.c7/sol:8-dsk.c7's DIMENSIONLESS reading
-//     (single continuous pass covers a whole track, 1:1, no real-time
-//     calibration needed) in its place.
+//     NO REAL-TIME COMPARISON: neither the s2 slice (pp.241-250) nor the
+//     full 687-page extracted corpus states a rotation speed or clock
+//     frequency. This suite's oracle is the manual, not general chipset
+//     knowledge (300 RPM = 200 ms/revolution; clk7_en ~= 7.09379 MHz PAL),
+//     and a duration compared against a real-time figure the manual never
+//     states is an ABSOLUTE reading with no oracle here (the
+//     ratio-or-absolute rule: no port emits Hertz or milliseconds). A green
+//     assertion resting on an imported number would read as the manual
+//     being confirmed when it was not. No clk7_en-tick count is compared
+//     against any real-time figure in this file; opus:8-dsk.c7/
+//     sol:8-dsk.c7's "in a single disk revolution" is declined with
+//     P-WHOLETRACK-DMA below.
 //   - dsksync (:701-709) only ever feeds `sync_match` (:914-915,
 //     dsksync==floppy_data && fifo_reading_sector && trackrd) -- it is
 //     compared against WHATEVER the generator is currently emitting, not
@@ -90,59 +79,43 @@
 //     deterministic aaaa/4489/checksum-of-zeros stream this fixture
 //     generates, so trackrdok (:920-926) never latches and nothing is ever
 //     pushed to the fifo. This is P-DSKSYNC-MATCH's mechanism, and matches
-//     my own claims file's own MEASURED evidence (opus:8-dsk.c8/
+//     the claims file's own MEASURED evidence (opus:8-dsk.c8/
 //     sol:8-dsk.c8) exactly.
 //   - dskbytr (:699): {1'b1,(trackrd|trackwr),dsklen[14],5'b1_0000,8'h00}
 //     at DSKBYTR's own address, else 0. Bits 7:0 (the DATA field
 //     opus:8-dsk.c9/sol:8-dsk.c9 grade) are a LITERAL CONSTANT 8'h00 --
 //     structurally incapable of ever reflecting disk-stream content, no
-//     matter what flows through DSKDATR/the fifo. This is C6 (finding
-//     candidates doc), and matches my claims file's own MEASURED evidence
-//     (two consecutive $DFF01A reads both returning 0x9000) exactly.
+//     matter what flows through DSKDATR/the fifo. This is C6, and matches
+//     the claims file's own MEASURED evidence (two consecutive $DFF01A
+//     reads both returning 0x9000) exactly.
 //
-// REPAIR NOTE (independent validation, 2026-09-15): opus:8-dsk.c9 and
-//   sol:8-dsk.c9 were withdrawn -- soundly. The original form compared two
-//   arbitrary DSKBYTR snapshots ("near word 5" vs "near word 60" of two
-//   differently-patterned runs) with no independent ground truth for
-//   either. Repaired to bind a KNOWN incoming byte (0xFF) to the DSKBYTR
-//   sampling instant via the DSKDATR/FIFO marker technique the accepted
-//   ch8-mfm-cell-encoding package established (find_ff_marker_pop_index()
-//   below, reused verbatim): a uniform 0xFF sector's payload word can only
-//   ever arrive as exactly 0xFFFF. THIS IS THE SAME UNDERLYING FACT as
-//   ch8-dskbytr-status-register/A9 and
-//   ch8-disk-register-map-paula-floppy/B4 -- one fact, repaired identically
-//   in all three packages that carry it. Still RED, for the reason already
-//   given above (the literal constant 8'h00).
-//
-// REPAIR NOTE (lot G, 2026-09-16): a defect in the 2026-09-15 repair above.
-//   find_ff_marker_pop_index() SEARCHED the drained DSKDATR stream for a
-//   payload word of exactly 0xFFFF -- but 0xFFFF is what THIS RTL's own
-//   non-conformant, context-free MFM encoder happens to produce for a
-//   uniform 0xFF sector (paula_floppy.v:467-477); p.250 makes 0xFF
-//   page-encode to 0x5555. Against a conforming encoder the search would
-//   return -1, `if (idx > 0)` would never run, `bound_ok` would stay false,
-//   and `checks.expect(bound_ok && data_field == 0xFF, ...)` would FAIL
-//   anyway -- `bound_ok` sat as a CONJUNCT of the graded condition, not a
-//   precondition, so a conforming encoder would make opus:8-dsk.c9/
-//   sol:8-dsk.c9 report a DATA-field defect that would not be there.
-//   Repaired two ways, together: (1) find_ff_marker_pop_index() is REMOVED
-//   -- every trial below feeds a uniform 0xFF sector, so any payload word
-//   is as good a sample as any other (matching ch8-mfm-cell-encoding's own
-//   Lot G repair) -- the locator is now the fixed, RTL-structural
-//   FIRST_PAYLOAD_POP_INDEX (=33) defined below, taken from
-//   paula_floppy.v's own word-counter framing thresholds (:484-497), a
-//   piece of logic structurally distinct from, and unmoved by fixing, the
-//   per-bit encoder (:467-477) that is the actual defect site -- a locator
-//   that cannot break when the RTL is fixed. (2) the peek at that fixed
-//   instant still CONFIRMS the sampled word is the known byte's own
-//   encoding (`bound_ok = (known_word == 0xFFFF)`, unchanged) -- the second
-//   purpose the binding check always served, independent of locating -- but
-//   confirmation failure is now a PRECONDITION that DECLINES via record(),
-//   never a conjunct that grades, matching the already-accepted repair
-//   shape in ch8-dskbytr-status-register/A9. Against the RTL actually under
-//   test here, bound_ok is true and both assertions' finding is unchanged
-//   (still RED, same measured values: known_word=0xFFFF, DSKBYTR=0xD000,
-//   DATA field=0x0000).
+// DSKBYTR DATA-FIELD SAMPLING (opus:8-dsk.c9/sol:8-dsk.c9). Two arbitrary
+//   DSKBYTR snapshots with no independent ground truth for either cannot
+//   show the DATA field -- both reading 0x00 is compatible with a
+//   conforming implementation that simply had not caught up yet. So a
+//   KNOWN incoming byte (0xFF) is bound to the DSKBYTR sampling instant
+//   through the DSKDATR/FIFO, the technique ch8-mfm-cell-encoding uses.
+//   THIS IS THE SAME UNDERLYING FACT as ch8-dskbytr-status-register/A9 and
+//   ch8-disk-register-map-paula-floppy/B4 -- one fact, graded identically
+//   in all three packages that carry it.
+//   The locator is the fixed, RTL-structural FIRST_PAYLOAD_POP_INDEX (=33)
+//   defined below, taken from paula_floppy.v's own word-counter framing
+//   thresholds (:484-497), a piece of logic structurally distinct from the
+//   per-bit encoder (:467-477) -- so it cannot break when the encoder is
+//   fixed. Every trial feeds a uniform 0xFF sector, so any payload word is
+//   as good a sample as any other. Searching the drained stream for 0xFFFF
+//   would not do: 0xFFFF is what THIS RTL's own non-conformant,
+//   context-free MFM encoder produces for a uniform 0xFF sector, while
+//   p.250 makes 0xFF page-encode to 0x5555, so against a conforming encoder
+//   the search would find nothing and the assertion would report a
+//   DATA-field defect that would not be there.
+//   The peek at that fixed instant CONFIRMS the sampled word is the known
+//   byte's own encoding (`bound_ok = (known_word == 0xFFFF)`); a
+//   confirmation failure is a PRECONDITION that DECLINES via record(),
+//   never a conjunct that grades -- the shape ch8-dskbytr-status-register/
+//   A9 uses. Against the RTL under test here, bound_ok is true and both
+//   assertions are RED: known_word=0xFFFF, DSKBYTR=0xD000, DATA
+//   field=0x0000.
 //   - dmal (:950): for a read (dsklen[14]=0), dmal = dmaon & ~fifo_empty --
 //     a real port telling the host exactly when a word is ready to pop.
 //     dmaon (:1011, ACTIVE state) = ~lenzero | ~dsklen[14], which for a
@@ -172,17 +145,15 @@
 //   startup -- one build serves the real run (MUTATE unset) and every
 //   mutation run (MUTATE=<id>, one id per assertion). Ids are the claim's
 //   own `classify.uid` where an assertion grades exactly one claim, and a
-//   plain uppercase/P- id where an assertion grades several claims'
-//   shared content at once (P-WHOLETRACK-DMA) or grades no claim at all
-//   (FIXTURE-LIVE, DSKBYTR-CONTROL).
+//   plain uppercase/P- id for measurements that grade no claim (FIXTURE-LIVE,
+//   DSKBYTR-CONTROL, both note()s).
 //   opus:8-dsk.c9/sol:8-dsk.c9 are RED at baseline (C6), so per this
 //   suite's rule against mutating an already-failing check, their MUTATE
 //   run substitutes DSKBYTR-CONTROL's mechanism (the WRITE-bit mirror,
 //   proven live elsewhere in this run) through the IDENTICAL
 //   data_out-varies comparator instead of a stimulus mutation.
 //
-// MUTATION RUN LOG: recorded in the commit message and build report after
-//   the run, not predicted here.
+// MUTATION records: at the bottom of this file.
 
 #include <cstdint>
 #include <cstdio>
@@ -225,7 +196,7 @@ public:
     int passed = 0, failed = 0;
 };
 
-// RIG HAZARD (SPECIFICATION.md, build brief): dsktrack has no reset term
+// RIG HAZARD (SPECIFICATION.md): dsktrack has no reset term
 // anywhere in paula_floppy.v. A FRESH Vpaula_floppy is allocated per
 // trial; no instance below is reused for a second measurement.
 struct Rig {
@@ -397,8 +368,8 @@ struct Rig {
     }
 };
 
-// opus:8-dsk.c9/sol:8-dsk.c9's payload-word locator (Lot G repair,
-// 2026-09-16; see each assertion's own comment below for why). Payload
+// opus:8-dsk.c9/sol:8-dsk.c9's payload-word locator (see the file
+// header's DSKBYTR DATA-FIELD SAMPLING note for why it is fixed). Payload
 // words are fifo_word_counter 32-543; word-counter 0-31 is sync/preamble/
 // header/label/checksum framing, fixed by paula_floppy.v's own
 // state-machine thresholds (:484-497) and structurally independent of what
@@ -409,7 +380,7 @@ struct Rig {
 // word (fifo_word_counter=32) is therefore always pop #33 -- a locator
 // taken from the generator's own word-counter thresholds, not from what any
 // cell encodes to, so it cannot break when the per-bit encoder
-// (paula_floppy.v:467-477, the actual site of finding candidate C6/C9) is
+// (paula_floppy.v:467-477) is
 // fixed. Every opus:8-dsk.c9/sol:8-dsk.c9 trial feeds a uniform 0xFF
 // sector, so this one fixed index is as good a payload sample as any other.
 constexpr int FRAMING_WORDS = 32;
@@ -453,15 +424,13 @@ int main(int argc, char** argv) {
     std::cout << "Starting ch8-disk-controller-overview...\n";
 
     // ========================================================================
-    // FIXTURE-LIVE -- no claim uid, no manual page: the build brief's own
-    // requirement that the fixture prove it can deliver a known, distinct
-    // word before any read-based assertion below is trusted.
+    // FIXTURE-LIVE -- no claim uid, no manual page: the fixture proves it
+    // can deliver a known, distinct word before any read-based assertion
+    // below is trusted.
     //
-    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
-    // claim uid -- it is apparatus, never conformance evidence -- so
-    // demoting it from a graded expect() costs no coverage. No longer
-    // mutated (MUTATE=FIXTURE-LIVE removed with it): a note() is not graded,
-    // so there is nothing left for a mutation to flip.
+    // A note(), not an expect(): it carries no claim uid -- it is
+    // apparatus, never conformance evidence -- and a note() is not graded,
+    // so it carries no mutation record.
     // ========================================================================
     {
         Rig r; r.do_reset();
@@ -528,68 +497,43 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // P-WHOLETRACK-DMA -- opus:8-dsk.c6 (p.241, capacity half of its own
-    // split), opus:8-dsk.c7 (p.241, dimensionless single-pass reading --
-    // see note below), sol:8-dsk.c7 (p.241, both halves of its combined
-    // c6+c7 claim), sol:8-dskdma.c6 (p.247, "read from the disk only once
-    // for the entire track", graded on sol's own operative reading: one
-    // DSKLEN double-write / one blckint covers a whole track). A single
-    // arming delivers all 5984 words of a whole track's real content (11
-    // sectors * 544 MFM words, paula_floppy.v:499,530-538) and raises
-    // blckint exactly once, even though the SD-side ingest issues eleven
-    // separate sdc_rd requests underneath -- the CPU/DMA-programming side
-    // sees ONE operation.
-    //
-    // CORRECTED after this package's own build report was checked against
-    // the manual corpus (RPM/clock frequency absent from both the s2 slice
-    // and the whole 687-page corpus): this assertion previously ALSO
-    // graded a separate P-REVOLUTION-RATIO check comparing this same
-    // transfer's measured clk7_en-tick duration against an externally
-    // supplied real-time constant (300 RPM, ~7.09379 MHz PAL clk7_en) --
-    // neither number is stated anywhere in the manual, so that duration
-    // comparison had no oracle in this suite and has been REMOVED, not
-    // reworded. What survives, folded into THIS assertion instead of a
-    // separate one, is the part of "in a single disk revolution" that
-    // needs no real-time calibration at all: a whole track's worth of
-    // data (5984 words, matching the track size 1:1) is delivered in ONE
-    // continuous DMA session -- one arm, one blckint -- never needing a
-    // second pass/re-arm to cover the same ground. That is exactly what
-    // this assertion already measured for the capacity half; opus:8-dsk.c7
-    // and sol:8-dsk.c7's ratio content is cited here under that SAME
-    // single-pass measurement, and it grades the single-pass property
-    // only, not duration -- no clk7_en-tick count is compared against any
-    // real-time figure anywhere in this file.
+    // split), opus:8-dsk.c7 (p.241, "in a single disk revolution"),
+    // sol:8-dsk.c7 (p.241, both halves of its combined c6+c7 claim),
+    // sol:8-dskdma.c6 (p.247, "read from the disk only once for the entire
+    // track"). Measured, not graded: a single arming delivers all 5984
+    // words of a whole track's real content (11 sectors * 544 MFM words,
+    // paula_floppy.v:499,530-538) and raises blckint exactly once, even
+    // though the SD-side ingest issues eleven separate sdc_rd requests
+    // underneath -- the CPU/DMA-programming side sees ONE operation.
     // ========================================================================
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): TRACK_WORDS
-    // (5984) is an RTL-DERIVED constant (paula_floppy.v:499,530-538 -- 11
-    // sectors * 544 MFM words each), not a figure the manual states anywhere
-    // in the s2 slice or the full 687-page corpus (the P-REVOLUTION-RATIO
-    // removal note above already checked both and found neither RPM nor
-    // clock frequency stated). Using an RTL-derived number as this
-    // assertion's own delivery target makes the RTL under test the reason
-    // the assertion expects that value -- the defect this whole repair
-    // exists to remove.
+    // DECLINED via record(), for two independent reasons, either alone
+    // sufficient. (1) TRACK_WORDS (5984) is an RTL-DERIVED constant
+    // (paula_floppy.v:499,530-538 -- 11 sectors * 544 MFM words each), not
+    // a figure the manual states anywhere in the s2 slice or the full
+    // 687-page corpus (which state neither RPM nor clock frequency either,
+    // see the header). Using an RTL-derived number as this assertion's own
+    // delivery target would make the RTL under test the reason the
+    // assertion expects that value.
     //
-    // Independently: this session never drives `sof` or observes an
-    // index-to-index interval -- this package's own header says so directly
-    // ("sof itself is agnus-generated, outside paula_floppy's boundary, so
-    // ITS real-world rate cannot be read off this fixture, and this file
-    // does not drive sof/index for any grading purpose"). So a transfer of
-    // the implementation's own chosen word count, delivered at ANY rate, in
-    // ANY number of revolutions, still passes this assertion -- it cannot
-    // distinguish "an entire track ... in a single disk revolution" (p.241)
-    // or "read from the disk only once for the entire track" (p.247,
-    // sol:8-dskdma.c6) from "some implementation-defined-length blob moved
-    // in one uninterrupted DMA session." Both faults are independently
-    // sufficient; either alone would withdraw this assertion.
+    // (2) This file never drives `sof` or observes an index-to-index
+    // interval -- this package's own header says so directly ("sof itself
+    // is agnus-generated, outside paula_floppy's boundary, so ITS
+    // real-world rate cannot be read off this fixture, and this file does
+    // not drive sof/index for any grading purpose"). So a transfer of the
+    // implementation's own chosen word count, delivered at ANY rate, in ANY
+    // number of revolutions, would pass -- it cannot distinguish "an entire
+    // track ... in a single disk revolution" (p.241) or "read from the disk
+    // only once for the entire track" (p.247, sol:8-dskdma.c6) from "some
+    // implementation-defined-length blob moved in one uninterrupted DMA
+    // session."
     //
     // What an assertion would need to observe: two consecutive `index`
     // pulses -- this fixture would have to drive `sof` itself, on a real
     // timebase -- bracketing the whole-track transfer, so an implementation
     // that took two revolutions to move the same word count is caught. No
-    // package in this suite currently builds that; nothing grades these four
-    // uids elsewhere (checked: opus:8-dsk.c6, opus:8-dsk.c7, sol:8-dsk.c7,
-    // sol:8-dskdma.c6 appear nowhere else in hrm/).
+    // package in this suite builds that; nothing in hrm/ grades these four
+    // uids (opus:8-dsk.c6, opus:8-dsk.c7, sol:8-dsk.c7, sol:8-dskdma.c6).
     // ========================================================================
     {
         const int TRACK_WORDS = 5984;
@@ -598,7 +542,7 @@ int main(int argc, char** argv) {
         r.arm_dma_read((uint16_t)TRACK_WORDS);
         auto res = run_read_transfer(r, TRACK_WORDS,
             [](int sector, int i){ return (uint8_t)(sector * 53 + i * 7 + 11); }, 400000);
-        checks.note("P-WHOLETRACK-DMA [not graded -- see WITHDRAWN note above]: programmed=" +
+        checks.note("P-WHOLETRACK-DMA [not graded -- declined, see the record() below]: programmed=" +
                     std::to_string(TRACK_WORDS) + " words, delivered=" + std::to_string(res.delivered) +
                     ", blckint_seen=" + std::to_string(res.blckint_seen));
         checks.record(
@@ -677,52 +621,26 @@ int main(int argc, char** argv) {
     // ========================================================================
     // opus:8-dsk.c9 / sol:8-dsk.c9 (p.241, twins) -- P-DSKBYTR-BYTE-READ.
     //
-    // REPAIRED (independent validation, 2026-09-15): the original form
-    // compared two arbitrary DSKBYTR snapshots ("near word 5" vs "near
-    // word 60" of two differently-patterned runs) for inequality, with no
-    // independent ground truth for either sample -- both reading 0x00 is
-    // compatible with a conforming implementation that simply had not
-    // caught up yet. THIS IS THE SAME UNDERLYING FACT as
-    // ch8-dskbytr-status-register/A9 and
-    // ch8-disk-register-map-paula-floppy/B4 -- one fact, repaired
-    // identically in all three packages that carry it (each package's own
+    // A KNOWN incoming byte (0xFF) is bound to the DSKBYTR sampling instant
+    // (see the file header's DSKBYTR DATA-FIELD SAMPLING note). THIS IS THE
+    // SAME UNDERLYING FACT as ch8-dskbytr-status-register/A9 and
+    // ch8-disk-register-map-paula-floppy/B4 -- one fact, graded identically
+    // in all three packages that carry it (each package's own
     // header/SPECIFICATION.md says so).
     //
-    // Repaired to bind a KNOWN incoming byte (0xFF) to the DSKBYTR
-    // sampling instant via the DSKDATR/FIFO marker technique already
-    // established by the sibling ch8-mfm-cell-encoding package: a uniform
-    // 0xFF sector's payload word can only ever arrive as exactly 0xFFFF.
-    // find_ff_marker_pop_index() (above) calibrates the pop index at which
-    // that marker appears (a fresh, throwaway rig); the real trial then
-    // discards pops up to just before that index, PEEKS (does not pop)
-    // DSKDATR to confirm the known word is present RIGHT NOW, then peeks
-    // DSKBYTR -- zero clock edges elapse between the two peeks, so both
-    // are read at the SAME instant. Both bytes of 0xFFFF are 0xFF,
-    // sidestepping any high/low-byte ordering ambiguity in what "the
-    // current byte" means.
+    // The trial feeds a uniform 0xFF sector, discards pops up to just
+    // before the fixed payload-start index (FIRST_PAYLOAD_POP_INDEX, defined
+    // above), PEEKS (does not pop) DSKDATR to confirm the known word is
+    // present RIGHT NOW, then peeks DSKBYTR -- zero clock edges elapse
+    // between the two peeks, so both are read at the SAME instant. Both
+    // bytes of 0xFFFF are 0xFF, sidestepping any high/low-byte ordering
+    // ambiguity in what "the current byte" means. If the peek does not
+    // confirm the known byte's own encoding (bound_ok), the trial DECLINES
+    // via record() rather than grading an unconfirmed sample.
     //
-    // Still RED -- paula_floppy.v:699 hardwires bits 7:0 (DATA) to the
-    // literal constant 8'h00; a known, bound, nonzero incoming byte still
-    // never appears there. Finding candidate C6.
-    //
-    // REPAIRED AGAIN (lot G, 2026-09-16; see the file header's own lot G
-    // note): the 2026-09-15 form above searched for the 0xFFFF marker and
-    // used `bound_ok` (whether the search found it) as a CONJUNCT of the
-    // graded condition (`bound_ok && data_field == 0xFF`). 0xFFFF is THIS
-    // RTL's own non-conformant encoding of 0xFF, not the page-legal one
-    // (p.250 makes 0xFF -> 0x5555) -- against a conforming encoder the
-    // search would return -1, bound_ok would be false, and the assertion
-    // would FAIL anyway, reporting a DATA-field defect that would not be
-    // there. Repaired to a FIXED locator (FIRST_PAYLOAD_POP_INDEX, defined
-    // above -- taken from paula_floppy.v's own word-counter framing
-    // thresholds, :484-497, independent of what any cell encodes to, so it
-    // cannot break when the encoder is fixed) plus a PRECONDITION: the peek
-    // at that fixed instant still confirms the sampled word is the known
-    // byte's own encoding (bound_ok, unchanged check), but a confirmation
-    // failure now DECLINES via record() rather than folding into a graded
-    // FAIL -- the same shape already accepted in
-    // ch8-dskbytr-status-register/A9. Against the RTL actually under test
-    // here, bound_ok is true and the finding is unchanged.
+    // RED -- paula_floppy.v:699 hardwires bits 7:0 (DATA) to the literal
+    // constant 8'h00; a known, bound, nonzero incoming byte never appears
+    // there. Finding candidate C6.
     // ========================================================================
     {
         bool mut = mutating("opus:8-dsk.c9");
@@ -836,14 +754,11 @@ int main(int argc, char** argv) {
     // proof the port is live, so their red is a genuine constant-DATA
     // finding, not a dead or stuck read path.
     //
-    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
-    // claim uid -- it is apparatus, never conformance evidence -- so
-    // demoting it costs no coverage. Its previous graded form also required
-    // the WHOLE DSKBYTR word (0x9000/0xB000), including bits DSKBYTR's own
-    // page (p.278) marks "X Not used" with no stated reset/idle value -- a
-    // second, independent reason it should never have been an equality
-    // check. No longer mutated (MUTATE=DSKBYTR-CONTROL removed with it): a
-    // note() is not graded, so there is nothing left for a mutation to flip.
+    // A note(), not an expect(): it carries no claim uid -- it is
+    // apparatus, never conformance evidence -- and a note() is not graded,
+    // so it carries no mutation record. It compares two readings for
+    // inequality only, never the WHOLE DSKBYTR word (0x9000/0xB000): p.278
+    // marks bits of that word "X Not used" with no stated reset/idle value.
     // ========================================================================
     {
         Rig r; r.do_reset();
@@ -862,13 +777,13 @@ int main(int argc, char** argv) {
     // Four independently-controllable sense signals: _track0, _change,
     // _ready, _wprot -- toggling one condition moves only its own bit.
     // ========================================================================
-    // WITHDRAWN to record() (independent validation, 2026-09-15): this
+    // DECLINED via record(): this
     // block only ever reaches paula_floppy's own generic sense ports
     // (_ready/_track0/_wprot/_change); it never touches CIAAPRA itself --
     // that join is one level up, at minimig.v:622, outside this package's
     // assigned fixture boundary (paula_floppy alone). A severed, swapped or
     // wrong-bit join at minimig.v:622 passes this assertion exactly as
-    // written. hrm/ch8-cia-disk-signal-bindings now carries the fact, at
+    // written. hrm/ch8-cia-disk-signal-bindings carries the fact, at
     // TOP_MODULE=minimig, over a real CPU bus access to CIAAPRA ($BFE001):
     // its PA5-BINDING/PA4-BINDING/PA3-BINDING/PA2-BINDING assertions
     // (opus:8-cia.c6/sol:8-cia.c5, opus:8-cia.c11/sol:8-cia.c9,
@@ -904,7 +819,7 @@ int main(int argc, char** argv) {
         bool t4_ready = !r.ready();
 
         bool ok = t1_wprot && t1_others && t2_track0 && t2_others && t3_change && t3_others && t4_ready;
-        checks.note("opus:8-dsk.c21 [not graded -- see WITHDRAWN note above]: wprot(" + std::to_string(t1_wprot) +
+        checks.note("opus:8-dsk.c21 [not graded -- declined, see the record() below]: wprot(" + std::to_string(t1_wprot) +
                     "," + std::to_string(t1_others) + ") track0(" + std::to_string(t2_track0) + "," +
                     std::to_string(t2_others) + ") change(" + std::to_string(t3_change) + "," +
                     std::to_string(t3_others) + ") ready(" + std::to_string(t4_ready) + ") -- measured " +
@@ -915,13 +830,13 @@ int main(int argc, char** argv) {
             "four input bits for disk sensing'): CANNOT be graded at this boundary. Four independently-"
             "controllable sense signals reach paula_floppy's own ports, but this package's fixture is "
             "paula_floppy alone -- it never reaches CIAAPRA, so it cannot confirm those four bits actually land "
-            "there rather than being severed, swapped, or aliased at the minimig.v:622 join. That join is now "
+            "there rather than being severed, swapped, or aliased at the minimig.v:622 join. That join is "
             "graded by hrm/ch8-cia-disk-signal-bindings's PA5/PA4/PA3/PA2-BINDING assertions, over a real CPU "
             "bus access at $BFE001 against the pinned system top -- 15 passed / 0 failed, 15 of 15 mutations "
             "killed.");
     }
-    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
-    // opus:8-dsk.c21 above -- same fault, same redirect.
+    // DECLINED via record(): twin of
+    // opus:8-dsk.c21 above -- same fault, the same package carrying the fact.
     {
         Rig r; r.do_reset();
         r.mount(0, 1000);
@@ -949,15 +864,15 @@ int main(int argc, char** argv) {
         bool t4_ready = !r.ready();
 
         bool ok = t1_wprot && t1_others && t2_track0 && t2_others && t3_change && t3_others && t4_ready;
-        checks.note("sol:8-reglist.c4 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c21, same "
+        checks.note("sol:8-reglist.c4 [not graded -- declined, see the record() below]: twin of opus:8-dsk.c21, same "
                     "measurement -> ok=" + std::to_string(ok));
         checks.record(
             "sol:8-reglist.c4 P-CIAAPRA-FOUR-BITS (p.241, quote '   CIAAPRA    (\\$BFE001)    four input bits "
             "for disk sensing'): twin of opus:8-dsk.c21 (same printed quote, independent reader) -- same "
             "boundary fault (this package's fixture is paula_floppy alone; it never reaches CIAAPRA). The same "
-            "underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "underlying fact this uid names is carried by hrm/ch8-cia-disk-signal-bindings's "
             "PA5/PA4/PA3/PA2-BINDING assertions (cited there under opus:8-cia.c6/sol:8-cia.c5 et al., not this "
-            "uid string -- the fact, not the uid, has the new home).");
+            "uid string -- the fact, not the uid, is carried there).");
     }
 
     // ========================================================================
@@ -966,7 +881,7 @@ int main(int argc, char** argv) {
     // response to its OWN real sensing condition), a weaker/different
     // emphasis than c21's cross-independence grading above.
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): same
+    // DECLINED via record(): same
     // boundary fault as opus:8-dsk.c21/sol:8-reglist.c4 above -- this block
     // never reaches CIAAPRA either, only paula_floppy's own ports, so a
     // severed or wrong-bit minimig.v:622 join passes it too. Each of
@@ -1000,7 +915,7 @@ int main(int argc, char** argv) {
         bool ready_fires = !r.ready();
 
         bool ok = wprot_fires && track0_fires && change_fires && ready_fires;
-        checks.note("opus:8-dsk.c22 [not graded -- see WITHDRAWN note above]: wprot_fires=" +
+        checks.note("opus:8-dsk.c22 [not graded -- declined, see the record() below]: wprot_fires=" +
                     std::to_string(wprot_fires) + " track0_fires=" + std::to_string(track0_fires) +
                     " change_fires=" + std::to_string(change_fires) + " ready_fires=" + std::to_string(ready_fires));
         checks.record(
@@ -1008,7 +923,7 @@ int main(int argc, char** argv) {
             "disk sensing'): CANNOT be graded at this boundary -- same fault as opus:8-dsk.c21/sol:8-reglist.c4 "
             "above (paula_floppy-only fixture, never reaches CIAAPRA). hrm/ch8-cia-disk-signal-bindings's "
             "PA5/PA4/PA3/PA2-BINDING assertions (opus:8-cia.c6/sol:8-cia.c5, opus:8-cia.c11/sol:8-cia.c9, "
-            "opus:8-cia.c16/sol:8-cia.c16, opus:8-cia.c18/sol:8-cia.c17) now carry the fact, each confirming its "
+            "opus:8-cia.c16/sol:8-cia.c16, opus:8-cia.c18/sol:8-cia.c17) carry the fact, each confirming its "
             "own bit responds to its own real sensing condition through a genuine CPU read of CIAAPRA.");
     }
 
@@ -1017,13 +932,13 @@ int main(int argc, char** argv) {
     // Eight independently-drivable control inputs reach paula_floppy from
     // the CIABPRB side: _sel[3:0] (4), _step, direc, side, _motor.
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): same fault
+    // DECLINED via record(): same fault
     // family as the CIAAPRA blocks above -- this block never reaches
     // CIABPRB, only paula_floppy's own generic ports; the minimig.v:650
     // join is outside this package's fixture boundary and a severed/
     // swapped/wrong-bit join there passes this assertion unchanged.
     // hrm/ch8-cia-disk-signal-bindings's eight PB7..PB0-BINDING assertions
-    // now carry the fact, each writing a real byte through a real CPU bus
+    // carry the fact, each writing a real byte through a real CPU bus
     // access to CIABPRB ($BFD100) and requiring the target join wire low
     // AND the other seven high -- catching exactly the swap this block
     // cannot, and together establishing the COUNT at the real port.
@@ -1074,7 +989,7 @@ int main(int argc, char** argv) {
             motor_ok = on_reading && !off_reading;
         }
         bool ok = sel_ok && step_direc_ok && side_ok && motor_ok;
-        checks.note("opus:8-dsk.c24 [not graded -- see WITHDRAWN note above]: sel_ok=" + std::to_string(sel_ok) +
+        checks.note("opus:8-dsk.c24 [not graded -- declined, see the record() below]: sel_ok=" + std::to_string(sel_ok) +
                     " step_direc_ok=" + std::to_string(step_direc_ok) + " side_ok=" + std::to_string(side_ok) +
                     " (sector " + std::to_string(sec_side0) + " vs " + std::to_string(sec_side1) + ") motor_ok=" +
                     std::to_string(motor_ok));
@@ -1084,11 +999,11 @@ int main(int argc, char** argv) {
             "be graded at this boundary. Eight independently-drivable control inputs reach paula_floppy's own "
             "ports, but this package's fixture never reaches CIABPRB itself (minimig.v:650, outside paula_floppy "
             "alone), so it cannot confirm those eight bits actually land there. hrm/ch8-cia-disk-signal-bindings's "
-            "PB7-BINDING through PB0-BINDING assertions now carry the fact, over a real CPU bus write to "
+            "PB7-BINDING through PB0-BINDING assertions carry the fact, over a real CPU bus write to "
             "$BFD100 against the pinned system top -- 15 passed / 0 failed, 15 of 15 mutations killed.");
     }
-    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
-    // opus:8-dsk.c24 above -- same fault, same redirect.
+    // DECLINED via record(): twin of
+    // opus:8-dsk.c24 above -- same fault, the same package carrying the fact.
     {
         bool sel_ok = true;
         {
@@ -1135,14 +1050,14 @@ int main(int argc, char** argv) {
             motor_ok = on_reading && !off_reading;
         }
         bool ok = sel_ok && step_direc_ok && side_ok && motor_ok;
-        checks.note("sol:8-reglist.c6 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c24, same "
+        checks.note("sol:8-reglist.c6 [not graded -- declined, see the record() below]: twin of opus:8-dsk.c24, same "
                     "measurement -> ok=" + std::to_string(ok));
         checks.record(
             "sol:8-reglist.c6 P-CIABPRB-EIGHT-BITS (p.241, quote '   CIABPRB    (\\$BFD100)    eight output "
             "bits'): twin of opus:8-dsk.c24 (same printed quote, independent reader) -- same boundary fault. The "
-            "same underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "same underlying fact this uid names is carried by hrm/ch8-cia-disk-signal-bindings's "
             "PB7-BINDING through PB0-BINDING assertions (cited there under their own opus:8-cia.*/sol:8-cia.* "
-            "uids, not this uid string -- the fact, not the uid, has the new home).");
+            "uids, not this uid string -- the fact, not the uid, is carried there).");
     }
 
     // ========================================================================
@@ -1150,12 +1065,12 @@ int main(int argc, char** argv) {
     // _sel[3:0] targets a specific drive for DMA (paula_floppy.v:285,363,
     // sdc_rd<=~_sel).
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): same fault
+    // DECLINED via record(): same fault
     // family -- sdc_rd is paula_floppy's own internal request line, never
     // CIABPRB, so this cannot confirm the selection bits (PB6../DSKSEL3*..
     // PB3/DSKSEL0*) actually land at their named CIABPRB positions.
     // hrm/ch8-cia-disk-signal-bindings's PB6/PB5/PB4/PB3-BINDING assertions
-    // (the four _sel3.._sel0 bindings) now carry the selection half of this
+    // (the four _sel3.._sel0 bindings) carry the selection half of this
     // fact, over a real CPU bus write to $BFD100.
     // ========================================================================
     {
@@ -1171,7 +1086,7 @@ int main(int argc, char** argv) {
         r2.wait_edges([&]{ return r2.d->sdc_rd != 0; }, 60);
         uint8_t rd2 = r2.d->sdc_rd;
 
-        checks.note("opus:8-dsk.c25 [not graded -- see WITHDRAWN note above]: drive0 -> sdc_rd=" + hex4(rd0) +
+        checks.note("opus:8-dsk.c25 [not graded -- declined, see the record() below]: drive0 -> sdc_rd=" + hex4(rd0) +
                     "; target drive " + std::to_string(target) + " -> sdc_rd=" + hex4(rd2));
         checks.record(
             "opus:8-dsk.c25 sol:8-reglist.c7 P-CIABPRB-SELECTION (p.241, quote '   CIABPRB    (\\$BFD100)    "
@@ -1179,11 +1094,11 @@ int main(int argc, char** argv) {
             "be graded at this boundary. _sel targets a specific drive at paula_floppy's own sdc_rd request "
             "line, but this package's fixture never reaches CIABPRB itself, so it cannot confirm the selection "
             "bits land at their named CIABPRB positions (PB6/DSKSEL3* .. PB3/DSKSEL0*). "
-            "hrm/ch8-cia-disk-signal-bindings's PB6-BINDING/PB5-BINDING/PB4-BINDING/PB3-BINDING assertions now "
+            "hrm/ch8-cia-disk-signal-bindings's PB6-BINDING/PB5-BINDING/PB4-BINDING/PB3-BINDING assertions "
             "carry the fact, over a real CPU bus write to $BFD100 against the pinned system top.");
     }
-    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
-    // opus:8-dsk.c25 above -- same fault, same redirect.
+    // DECLINED via record(): twin of
+    // opus:8-dsk.c25 above -- same fault, the same package carrying the fact.
     {
         Rig r; r.do_reset(); r.select(0);
         r.arm_dma_read(8);
@@ -1197,14 +1112,14 @@ int main(int argc, char** argv) {
         r2.wait_edges([&]{ return r2.d->sdc_rd != 0; }, 60);
         uint8_t rd2 = r2.d->sdc_rd;
 
-        checks.note("sol:8-reglist.c7 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c25, same "
+        checks.note("sol:8-reglist.c7 [not graded -- declined, see the record() below]: twin of opus:8-dsk.c25, same "
                     "measurement -> rd0=" + hex4(rd0) + " rd(target)=" + hex4(rd2));
         checks.record(
             "sol:8-reglist.c7 P-CIABPRB-SELECTION (p.241, quote '   CIABPRB    (\\$BFD100)    eight output "
             "bits'): twin of opus:8-dsk.c25 (same printed quote, independent reader) -- same boundary fault. The "
-            "same underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "same underlying fact this uid names is carried by hrm/ch8-cia-disk-signal-bindings's "
             "PB6/PB5/PB4/PB3-BINDING assertions (cited there under their own opus:8-cia.*/sol:8-cia.* uids, not "
-            "this uid string -- the fact, not the uid, has the new home).");
+            "this uid string -- the fact, not the uid, is carried there).");
     }
 
     // ========================================================================
@@ -1212,12 +1127,12 @@ int main(int argc, char** argv) {
     // _motor latches motor_on per drive; side selects the head surface
     // (paula_floppy.v:624-659, :669).
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): same fault
+    // DECLINED via record(): same fault
     // family -- motor_on/index and the requested sdc_sector base are
     // paula_floppy's own internal signals, never CIABPRB, so this cannot
     // confirm PB7/DSKMOTOR* and PB2/DSKSIDE land at their named CIABPRB
     // positions. hrm/ch8-cia-disk-signal-bindings's PB7-BINDING and
-    // PB2-BINDING assertions now carry this fact, over a real CPU bus write
+    // PB2-BINDING assertions carry this fact, over a real CPU bus write
     // to $BFD100.
     // ========================================================================
     {
@@ -1244,7 +1159,7 @@ int main(int argc, char** argv) {
             sec1 = r.d->sdc_sector;
         }
         bool side_ok = (sec0 != sec1);
-        checks.note("opus:8-dsk.c26 [not graded -- see WITHDRAWN note above]: motor_ok=" + std::to_string(motor_ok) +
+        checks.note("opus:8-dsk.c26 [not graded -- declined, see the record() below]: motor_ok=" + std::to_string(motor_ok) +
                     " side_ok=" + std::to_string(side_ok) + " (sector " + std::to_string(sec0) + " vs " +
                     std::to_string(sec1) + ")");
         checks.record(
@@ -1253,10 +1168,10 @@ int main(int argc, char** argv) {
             "graded at this boundary. _motor and side are real, effective inputs at paula_floppy's own ports, "
             "but this package's fixture never reaches CIABPRB itself, so it cannot confirm PB7/DSKMOTOR* and "
             "PB2/DSKSIDE land there. hrm/ch8-cia-disk-signal-bindings's PB7-BINDING and PB2-BINDING assertions "
-            "now carry the fact, over a real CPU bus write to $BFD100 against the pinned system top.");
+            "carry the fact, over a real CPU bus write to $BFD100 against the pinned system top.");
     }
-    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
-    // opus:8-dsk.c26 above -- same fault, same redirect.
+    // DECLINED via record(): twin of
+    // opus:8-dsk.c26 above -- same fault, the same package carrying the fact.
     {
         bool motor_ok;
         {
@@ -1281,25 +1196,25 @@ int main(int argc, char** argv) {
             sec1 = r.d->sdc_sector;
         }
         bool side_ok = (sec0 != sec1);
-        checks.note("sol:8-reglist.c8 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c26, same "
+        checks.note("sol:8-reglist.c8 [not graded -- declined, see the record() below]: twin of opus:8-dsk.c26, same "
                     "measurement -> motor_ok=" + std::to_string(motor_ok) + " side_ok=" + std::to_string(side_ok));
         checks.record(
             "sol:8-reglist.c8 P-CIABPRB-CONTROL (p.241, quote '   CIABPRB    (\\$BFD100)    eight output "
             "bits'): twin of opus:8-dsk.c26 (same printed quote, independent reader) -- same boundary fault. The "
-            "same underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "same underlying fact this uid names is carried by hrm/ch8-cia-disk-signal-bindings's "
             "PB7-BINDING and PB2-BINDING assertions (cited there under their own opus:8-cia.*/sol:8-cia.* uids, "
-            "not this uid string -- the fact, not the uid, has the new home).");
+            "not this uid string -- the fact, not the uid, is carried there).");
     }
 
     // ========================================================================
     // opus:8-dsk.c27 / sol:8-reglist.c9 (p.241, twins) -- P-CIABPRB-STEPPING.
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): same fault
+    // DECLINED via record(): same fault
     // family -- _step/direc and dsktrack are paula_floppy's own internal
     // signals, never CIABPRB, so this cannot confirm PB1/DSKDIREC and
     // PB0/DSKSTEP* land at their named CIABPRB positions.
     // hrm/ch8-cia-disk-signal-bindings's PB1-BINDING and PB0-BINDING
-    // assertions now carry this fact, over a real CPU bus write to $BFD100.
+    // assertions carry this fact, over a real CPU bus write to $BFD100.
     // ========================================================================
     {
         Rig r; r.do_reset();
@@ -1310,7 +1225,7 @@ int main(int argc, char** argv) {
         r.saturate_step_ena();
         r.do_step(true);
         bool returned = r.track0();
-        checks.note("opus:8-dsk.c27 [not graded -- see WITHDRAWN note above]: at_zero=" + std::to_string(at_zero) +
+        checks.note("opus:8-dsk.c27 [not graded -- declined, see the record() below]: at_zero=" + std::to_string(at_zero) +
                     " left_zero=" + std::to_string(left_zero) + " returned=" + std::to_string(returned));
         checks.record(
             "opus:8-dsk.c27 sol:8-reglist.c9 P-CIABPRB-STEPPING (p.241, quote '   CIABPRB    (\\$BFD100)    "
@@ -1318,11 +1233,11 @@ int main(int argc, char** argv) {
             "be graded at this boundary. _step/direc move the selected drive's track counter, a real function at "
             "paula_floppy's own ports, but this package's fixture never reaches CIABPRB itself, so it cannot "
             "confirm PB1/DSKDIREC and PB0/DSKSTEP* land there. hrm/ch8-cia-disk-signal-bindings's PB1-BINDING "
-            "and PB0-BINDING assertions now carry the fact, over a real CPU bus write to $BFD100 against the "
+            "and PB0-BINDING assertions carry the fact, over a real CPU bus write to $BFD100 against the "
             "pinned system top.");
     }
-    // WITHDRAWN to record() (independent validation, 2026-09-15): twin of
-    // opus:8-dsk.c27 above -- same fault, same redirect.
+    // DECLINED via record(): twin of
+    // opus:8-dsk.c27 above -- same fault, the same package carrying the fact.
     {
         Rig r; r.do_reset();
         r.select(0); r.saturate_step_ena();
@@ -1332,15 +1247,15 @@ int main(int argc, char** argv) {
         r.saturate_step_ena();
         r.do_step(true);
         bool returned = r.track0();
-        checks.note("sol:8-reglist.c9 [not graded -- see WITHDRAWN note above]: twin of opus:8-dsk.c27, same "
+        checks.note("sol:8-reglist.c9 [not graded -- declined, see the record() below]: twin of opus:8-dsk.c27, same "
                     "measurement -> at_zero=" + std::to_string(at_zero) + " left_zero=" + std::to_string(left_zero) +
                     " returned=" + std::to_string(returned));
         checks.record(
             "sol:8-reglist.c9 P-CIABPRB-STEPPING (p.241, quote '   CIABPRB    (\\$BFD100)    eight output "
             "bits'): twin of opus:8-dsk.c27 (same printed quote, independent reader) -- same boundary fault. The "
-            "same underlying fact this uid names is now carried by hrm/ch8-cia-disk-signal-bindings's "
+            "same underlying fact this uid names is carried by hrm/ch8-cia-disk-signal-bindings's "
             "PB1-BINDING and PB0-BINDING assertions (cited there under their own opus:8-cia.*/sol:8-cia.* uids, "
-            "not this uid string -- the fact, not the uid, has the new home).");
+            "not this uid string -- the fact, not the uid, is carried there).");
     }
 
     // ========================================================================
