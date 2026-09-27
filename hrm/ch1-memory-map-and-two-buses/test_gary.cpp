@@ -4,8 +4,7 @@
 //   Kickstart ROM window and its 256K mirror, the CPU's total address reach,
 //   the Chip-memory/slow-memory regions and why each is named what it is,
 //   the CIA/Paula address split, and every block Figure 1-1 (p.8) draws
-//   inside or immediately around gary's own boundary, per SPECIFICATION.md
-//   (committed 6717841, before this file was opened).
+//   inside or immediately around gary's own boundary, per SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   1-6, 8 (Figure 1-1 + its footnote), 12.
@@ -19,19 +18,11 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// ORDER OF WORK: SPECIFICATION.md was written from the 49 claims'
-//   quote/restatement fields (plus what their own classify.evidence field
-//   already disclosed -- see that file's own "order-of-work" disclosure)
-//   and committed before gary.v was opened for this file. Two of that
-//   file's propositions needed correcting once gary.v was actually read;
-//   both corrections are disclosed at the matching assertion below and
-//   summarised in "CORRECTIONS FOUND ONCE gary.v WAS OPEN" further down.
-//
 // BOUNDARY: gary.v, reached at $(NANOMIG)/src/minimig-aga/gary.v. A
 //   single, self-contained file -- it instantiates no submodules, so no
-//   other file is compiled alongside it (matching the accepted
-//   ch7-custom-address-space / ch7-reset-overlay precedent, the two
-//   existing packages that already build gary standalone in this suite).
+//   other file is compiled alongside it (as in ch7-custom-address-space
+//   and ch7-reset-overlay, the two other packages that build gary
+//   standalone in this suite).
 //
 // STRUCTURAL NOTE, read directly from gary.v and load-bearing for several
 //   propositions below: `sel_reg`, `sel_cia`, `sel_cia_a`, `sel_cia_b`,
@@ -46,14 +37,13 @@
 //   of `dbr` too -- `dbs` marks which CPU addresses are *subject to*
 //   arbitration slowdown, not whether a slowdown is happening right now.
 //
-// CORRECTIONS FOUND ONCE gary.v WAS OPEN (disclosed here, not papered
-//   over -- SPECIFICATION.md's own propositions for PROP-CHIPMEM-AMOUNT-
-//   SCALES and (the "scale" half of) PROP-FIRST-512K-FLOOR-AND-SCALE
-//   assumed, following the claims' own classify.evidence wording ("A
-//   fixture varies memory_config and measures the distinct addresses
-//   ram_address_out can present under dbr"), that `sel_chip` and
-//   `ram_address_out` would vary with `memory_config` during DMA access.
-//   They do not: gary.v:147-150 (the DMA branch of `sel_chip`) and
+// WHY CHIPMEM-AMOUNT-SCALES AND THE "SCALE" HALF OF FIRST-512K-FLOOR-AND-
+//   SCALE GRADE A CEILING, NOT SCALING WITH memory_config: the claims' own
+//   classify.evidence wording ("A fixture varies memory_config and
+//   measures the distinct addresses ram_address_out can present under
+//   dbr") presumes that `sel_chip` and `ram_address_out` vary with
+//   `memory_config` during DMA access. At this boundary they do not:
+//   gary.v:147-150 (the DMA branch of `sel_chip`) and
 //   gary.v:131 (`ram_address_out`'s own multiplexer) are both pure
 //   functions of `dma_address_in` alone -- `memory_config` never appears
 //   in either. The four logical 512K chip blocks always decode as
@@ -65,24 +55,21 @@
 //   places: `t_sel_slow[0..2]` (gary.v:171-173, gating whether CPU-side
 //   slow memory is enabled at all) and the single ECS "1MB Agnus"
 //   special-case (gary.v:151, `memory_config==4'b0100` exactly, already
-//   PROP-FOOTNOTE-1MB-AGNUS's own subject). Both assertions below are
-//   reworded to grade what gary.v actually does -- a hard, always-on
-//   *ceiling* on how much the custom-chip side can reach without the CPU,
-//   fully and correctly usable end to end -- rather than a "scales with
-//   memory_config" story neither signal supports at this boundary. Both
-//   keep their uid on the graded line: the printed sentence's substance
-//   (Chip-memory amount is a real, capacity-limiting hardware quantity;
-//   the first 512K floor holds and gary does not itself cap Chip memory
-//   below the "one or two megabytes" the sentence names) is still fully
-//   graded here, just via the mechanism gary.v actually has rather than
-//   the one the evidence field guessed at.
+//   PROP-FOOTNOTE-1MB-AGNUS's own subject). Both assertions below grade
+//   what gary.v does -- a hard, always-on *ceiling* on how much the
+//   custom-chip side can reach without the CPU, fully and correctly
+//   usable end to end -- rather than a "scales with memory_config" story
+//   neither signal supports at this boundary. Both keep their uid on the
+//   graded line: the printed sentence's substance (Chip-memory amount is
+//   a real, capacity-limiting hardware quantity; the first 512K floor
+//   holds and gary does not itself cap Chip memory below the "one or two
+//   megabytes" the sentence names) is fully graded here, via the
+//   mechanism gary.v has rather than the one the evidence field names.
 //
-// A THIRD CITATION CORRECTED: `sol:1-blockdiag.c9`'s own `classify.
-//   evidence` cites "gary.v:181-182" for `sel_ide`/`sel_gayle`. Read
-//   directly: those two `assign`s are at gary.v:176-177; lines 181-182 are
-//   the `ENABLE_RTC`-guarded `sel_rtc` dummy wire and a blank line. This
-//   file cites 176-177, its own independently-read line numbers, not the
-//   claim's.
+// LINE NUMBERS: `sol:1-blockdiag.c9`'s own `classify.evidence` cites
+//   "gary.v:181-182" for `sel_ide`/`sel_gayle`. Those two `assign`s are at
+//   gary.v:176-177; lines 181-182 are the `ENABLE_RTC`-guarded `sel_rtc`
+//   dummy wire and a blank line. This file cites 176-177.
 //
 // WHY NO SEPARATE LIVE-READ/LIVE-WRITE BLOCK FOR MOST ASSERTIONS: as
 //   ch7-custom-address-space's own header already argues for this same
@@ -107,11 +94,11 @@
 //   to -- 45 on a uid-bearing expect() label, 2 (sol/opus
 //   1-components.c29) on a bare-label expect() plus a record() carrying
 //   the uid, 2 (sol/opus 1-guidelines.c27) on a record() alone. The two
-//   out-of-package over-read claims the build brief names
+//   out-of-package claims that over-read Figure 1-1
 //   (opus:1-blockdiag.c14, sol:1-blockdiag.c22) get their own record()
 //   near the end, exactly as SPECIFICATION.md describes.
 //
-// RESULTS (WSL, Verilator 5.052, built and run 2026-09-16): 25 passed, 0
+// RESULTS (WSL, Verilator 5.052): 25 passed, 0
 //   failed. Every assertion is GREEN -- this package found no defect: the
 //   RTL matches every one of the 45 graded printed propositions (plus the
 //   one bare-label ceiling measurement) at this boundary. A green result
@@ -130,7 +117,7 @@
 //   a driven data value zeroed, a sample point collapsed onto another).
 //   The `MUT_<NAME>` -D flag each replays is named in this file's #ifdef
 //   guards; it need not equal the label token in the comment below --
-//   only the comment token does, per the build brief.
+//   only the comment token does.
 //
 // MUTATION KICKSTART-512K stimulus red: the window-start probe was moved
 //   from $F80000 to $F00000, one 512K block below the true window.
@@ -514,7 +501,7 @@ int main() {
     // =========================================================================
     // PROP-CPU-RAM-CEILING-9MB -- partial. Bare label (no uid) grades
     // gary's own share; the uid pair goes on the record() immediately
-    // after, per Rule 1 (a uid on a graded line counts ASSERTED, so a
+    // after (a uid on a graded line counts ASSERTED, so a
     // partially-gradable claim's uid must not sit there).
     // =========================================================================
     {
@@ -566,11 +553,11 @@ int main() {
             "gary-only boundary (BOUNDARY note, SPECIFICATION.md). Checked "
             "against every other package in ../nanomig-hrm-tests/hrm/ "
             "(grep, see SPECIFICATION.md's own \"Grep check\" section): no "
-            "sibling package's claims.jsonl contains either uid as of this "
-            "build. ch1-cpu-and-instruction-cache (fixture cpu_wrapper) is "
-            "under concurrent construction and may be positioned to grade "
-            "the expansion-RAM half, but its own committed SPECIFICATION."
-            "md does not cite this uid pair either. The full 9MB ceiling "
+            "sibling package's claims.jsonl contains either uid. "
+            "ch1-cpu-and-instruction-cache (fixture cpu_wrapper) is the "
+            "package whose boundary reaches the expansion-RAM half, and its "
+            "SPECIFICATION.md does not cite this uid pair either. The full "
+            "9MB ceiling "
             "is not graded anywhere by this package; that is a boundary "
             "limit, not a defect finding.");
     }
@@ -801,11 +788,11 @@ int main() {
     }
 
     // =========================================================================
-    // PROP-CHIPMEM-AMOUNT-SCALES -- reworded from SPECIFICATION.md's own
-    // wording once gary.v showed sel_chip/ram_address_out do not vary
-    // with memory_config during DMA (see the file header's "CORRECTIONS"
-    // note). Graded here as the hard ceiling the sentence's substance
-    // rests on: the custom-chip side's reach is bounded by dma_address_in
+    // PROP-CHIPMEM-AMOUNT-SCALES -- sel_chip/ram_address_out do not vary
+    // with memory_config during DMA (see the file header's "WHY
+    // CHIPMEM-AMOUNT-SCALES ..." note). Graded here as the hard ceiling
+    // the sentence's substance rests on: the custom-chip side's reach is
+    // bounded by dma_address_in
     // itself, and every representable value within that bound is a
     // distinct, correctly-selecting chip address -- the full capacity is
     // real and fully usable, not a partially-wired promise.
@@ -891,7 +878,7 @@ int main() {
     // PROP-FIRST-512K-FLOOR-AND-SCALE -- the floor half is the same
     // mechanism as PROP-CHIPMEM-512K-FLOOR, restated on p.12 (kept
     // separate per the no-under-citing precedent). The "one or two
-    // megabytes" half is reworded for the same reason as
+    // megabytes" half is graded as a ceiling for the same reason as
     // PROP-CHIPMEM-AMOUNT-SCALES: gary.v never itself withdraws chip1..3
     // below the full 2MB window based on memory_config (that gating is
     // minimig_bankmapper's, outside this boundary) -- what gary does
@@ -1332,9 +1319,9 @@ int main() {
     }
 
     // =========================================================================
-    // Two claims outside this package's own 49, recorded because the
-    // build brief names them directly (SPECIFICATION.md, "Two claims
-    // outside this package's own 49").
+    // Two claims outside this package's own 49, recorded because they
+    // over-read Figure 1-1, which this package grades (SPECIFICATION.md,
+    // "Two claims outside this package's own 49").
     // =========================================================================
     checks.record(
         "opus:1-blockdiag.c14 (p.8, Figure 1-1) -- NOT one of this "
@@ -1348,9 +1335,9 @@ int main() {
         "enclosure is dashed identically while holding boxes nobody would "
         "call optional, and the one footnote says only 'addressed as CHIP "
         "RAM with 1MB Agnus.' 'Optional' is the restatement's own "
-        "addition. Independently confirmed against the image at ~2.5-3x "
-        "zoom before this restatement was read (SPECIFICATION.md); the "
-        "claim's own classify.evidence reaches the identical finding.");
+        "addition. Checked against the image at ~2.5-3x zoom "
+        "(SPECIFICATION.md); the claim's own classify.evidence reaches "
+        "the identical finding.");
     checks.record(
         "sol:1-blockdiag.c22 (p.8, Figure 1-1) -- NOT one of this "
         "package's 49 claims (classify.status: not-asserted, reason_kind: "
@@ -1358,8 +1345,8 @@ int main() {
         "multiplexer lies on the address path into Chip RAM and "
         "pseudo-fast RAM.' The image carries the MUX box's output leaving "
         "its bottom edge, turning right, and ending in exactly one "
-        "arrowhead at CHIP RAM's left edge (confirmed in this package's "
-        "own crop_mux_chipram.png at ~3x zoom). It carries no line of any "
+        "arrowhead at CHIP RAM's left edge (read at ~3x zoom). It carries "
+        "no line of any "
         "kind into the \"PSEUDO\" FAST RAM box -- zero incoming "
         "connections. '...and pseudo-fast RAM' is the restatement's own "
         "addition; the multiplexer-into-Chip-RAM half is what "

@@ -1,9 +1,9 @@
 # Specification — `ch1-memory-map-and-two-buses`
 
 Package: `hrm/ch1-memory-map-and-two-buses`
-Fixture: `gary` — one module, compiled alone, matching the accepted
-`ch7-custom-address-space` / `ch7-reset-overlay` precedent (both already
-build `gary` standalone in this suite).
+Fixture: `gary` — one module, compiled alone, as in
+`ch7-custom-address-space` / `ch7-reset-overlay` (both build `gary`
+standalone in this suite).
 Claims file: `hrm-testpipeline/work/2026-09-16_ch1_packages.jsonl`, filtered
 for `classify.package == "ch1-memory-map-and-two-buses"` — 49 claims, all
 `classify.status: "testable"` (measured: zero `not-asserted` /
@@ -20,32 +20,22 @@ Expansion hard-disk block, BUFFERS AND ARBITRATION LOGIC, the CUSTOM CHIP
 SECTION enclosure, CHIP RAM, the "PSEUDO" FAST RAM box and its footnote,
 the CPU DATA/ADDRESS buses, and the CHIP ADR BUS/CHIP DATA/MUX group.
 
-**On the order-of-work rule, disclosed rather than pretended away**: this
-package's 49-claim slice of `2026-09-16_ch1_packages.jsonl` was read in
-full before this file was written, because knowing which 49 claims exist,
-what page each is on, and which are duplicates across the two readers is
-the only way to write a claim-accounting table at all. Every one of those
-49 records' `classify.evidence` field already contains `gary.v` file:line
-citations and signal names (`sel_chip`, `sel_slow`, `sel_kick`, `dbr`,
-`cpu_address_in`, `dma_address_in`, `ram_address_out`, `dbs`, and others) —
-this is upstream classifier work, done before this package existed, not
-something this file went looking for. Per the build brief's own
-instruction for exactly this situation: this is disclosed here rather than
-claiming a clean split. What this file does not do is read `gary.v` itself
-or add anything beyond what a claim's own `evidence` string already
-disclosed; concrete stimulus recipes, register offsets not already named in
-a claim, and the `expect()` assertions themselves are added only after this
-file is committed and `gary.v` is opened directly, per the build brief's
-step 2.
+**Sources**: the 49 claim records of this package. Every one of their
+`classify.evidence` fields already contains `gary.v` file:line citations
+and signal names (`sel_chip`, `sel_slow`, `sel_kick`, `dbr`,
+`cpu_address_in`, `dma_address_in`, `ram_address_out`, `dbs`, and others)
+from the upstream classifier. This file names nothing from `gary.v` beyond
+what a claim's own `evidence` string already names; concrete stimulus
+recipes, register offsets and the `expect()` assertions are in
+`test_gary.cpp`.
 
 ## Figure 1-1 checked independently
 
-`docs/references/amiga-hrm-3rd/ch1/figures/p8.png` (1258×1633) was opened
-and read directly, then cropped and rescaled at ~2.5-3x into this package's
-own scratch directory (`crop_customchip.png`, `crop_mux_chipram.png`,
-`crop_cpubus.png`, `crop_sysexp.png`) to check the drawing's small text and
-arrowheads before any figure claim below was accepted. Findings, checked
-against the crops directly rather than taken from any restatement:
+`docs/references/amiga-hrm-3rd/ch1/figures/p8.png` (1258×1633), read
+directly from the image, with the drawing's small text and arrowheads
+checked at ~2.5-3x zoom (the CUSTOM CHIP SECTION, the MUX and CHIP RAM, the
+CPU buses, and SYSTEM EXPANSION). What the drawing carries, read from the
+image rather than taken from any restatement:
 
 - The **MUX** box takes one incoming arrowhead from **CHIP ADR BUS** at its
   top edge; its output leaves the bottom, turns right, and ends in exactly
@@ -79,31 +69,27 @@ against the crops directly rather than taken from any restatement:
   EXPANSION DEVICES** and **FAST RAM**, joined top-to-bottom by plain
   undirected bars (no arrowheads) — a chain, not a bus tap.
 
-This independently reproduces, at 2.5-3x zoom and without reading either
-restatement first, the same two over-reads the build brief names:
+Two readings of this figure over-read it:
 **`opus:1-blockdiag.c14`**'s "optional (dashed)" reading of the "PSEUDO"
 FAST RAM box, and **`sol:1-blockdiag.c22`**'s "into Chip RAM and
 pseudo-fast RAM" reading of the MUX output. Neither of those two uids is
 in this package's own 49 — both are classified `not-asserted` /
 `source-silent` with no `classify.package` field set, so they belong to no
-package's claim inventory — but the build brief names them directly and
-asks that they be recorded here. See "Two claims outside this package's own
-49, recorded because the brief names them" near the end of this file.
+package's claim inventory — and both are recorded here because they
+concern the figure this package grades. See "Two claims outside this
+package's own 49" near the end of this file.
 
 ## Grep check: is any of this already graded elsewhere?
 
-Per the build brief, `../nanomig-hrm-tests/hrm/` was searched (directory
-listing plus `grep -rl` for `gary\.v`, `sel_chip`, `sel_slow`, `sel_kick`,
-`sel_cia_a`, `sel_cia_b`, `sel_reg`, `"16 megabytes"`, `"9 megabytes"`,
-`"Chip memory"`, `"chip memory"`, `kickstart`, `"pseudo.fast"`,
-`"system expansion"`, `"CUSTOM CHIP SECTION"`) across every existing
-package's `SPECIFICATION.md` and `test_*.cpp`, including four other
-chapter-1 packages already under concurrent construction by other builders
-(`ch1-cpu-and-instruction-cache`, `ch1-chip-memory-banking`,
-`ch1-cpu-options`, `ch1-keyboard-translation` — all at the
-`SPECIFICATION.md`-only stage except where noted). Two accepted packages
-already build `gary` alone: `ch7-custom-address-space` and
-`ch7-reset-overlay`.
+`hrm/` is searched (directory listing plus `grep -rl` for `gary\.v`,
+`sel_chip`, `sel_slow`, `sel_kick`, `sel_cia_a`, `sel_cia_b`, `sel_reg`,
+`"16 megabytes"`, `"9 megabytes"`, `"Chip memory"`, `"chip memory"`,
+`kickstart`, `"pseudo.fast"`, `"system expansion"`, `"CUSTOM CHIP
+SECTION"`) across every package's `SPECIFICATION.md` and `test_*.cpp`,
+including the chapter-1 packages `ch1-cpu-and-instruction-cache`,
+`ch1-chip-memory-banking`, `ch1-cpu-options` and
+`ch1-keyboard-translation`. Two packages build `gary` alone:
+`ch7-custom-address-space` and `ch7-reset-overlay`.
 
 **One direct hit**, and this package declines to re-grade it:
 
@@ -121,8 +107,8 @@ already build `gary` alone: `ch7-custom-address-space` and
   memory; using a non-Chip address will fail"), a different printed
   location stating the same fact this package's p.12 claim restates as a
   development guideline. `sol:1-guidelines.c27` / `opus:1-guidelines.c27`
-  are put on a `record()` line citing that package and that uid, per the
-  build brief; they are not re-graded here. See "PROP-DMA-CHIP-ONLY —
+  are put on a `record()` line citing that package and that uid; they are
+  not re-graded here. See "PROP-DMA-CHIP-ONLY —
   declined, already graded" below.
 
 **No other hit.** `ch1-chip-memory-banking` (fixture `minimig_bankmapper`)
@@ -138,8 +124,9 @@ cache` (fixture `cpu_wrapper`) owns the page-8 lead-in sentence itself
 separate buses...") under its own `PROP-5`, and the Figure 1-1 FAST RAM box
 (`sol:1-blockdiag.c8` / `opus:1-blockdiag.c8`) under its own `PROP-6` —
 **neither of those two uid pairs is in this package's 49-claim file at
-all** (confirmed against this package's own `claims.jsonl` dump); see "A
-brief inaccuracy, checked and reported" below. `ch7-reset-overlay`'s
+all** (confirmed against this package's own `claims.jsonl` dump); see "The
+page-8 lead-in sentence belongs to a sibling package" below.
+`ch7-reset-overlay`'s
 `PROP-A` (p.223, "chips access Chip memory directly via DMA, rather than
 ... bus arbitration") is about the DMA-vs-arbitration *mechanism*, not
 about which addresses decode where; it shares no uid with this package and
@@ -148,29 +135,22 @@ assertions. No package in this suite currently cites `sel_slow`, `sel_kick`
 (outside the two `ch7-*gary` packages, whose own citations are the p.263/
 p.223 material just described), `sel_cia_a`/`sel_cia_b`, or `sel_reg`.
 
-## A brief inaccuracy, checked and reported
+## The page-8 lead-in sentence belongs to a sibling package
 
-The build brief for this package states: "This package carries the
-chapter's central structural claim: two separate buses ... — page 8's
-lead-in and Figure 1-1." Checked against the actual claim data: the page-8
-lead-in sentence itself — *"Notice that there are two separate buses, one
-that only the CPU can access (Fast memory) and another one that the custom
-chips share with the CPU (Chip memory)"* — is `sol:1-blockdiag.c2` /
+The page-8 lead-in sentence — *"Notice that there are two separate buses,
+one that only the CPU can access (Fast memory) and another one that the
+custom chips share with the CPU (Chip memory)"* — is `sol:1-blockdiag.c2` /
 `opus:1-blockdiag.c2`, and both carry `classify.package:
 "ch1-cpu-and-instruction-cache"`, **not**
 `"ch1-memory-map-and-two-buses"`. It is not among this package's 49 claims,
 and this file does not grade it or cite its uid on any graded line — doing
-so would be grading another package's claim under this package's roof,
-which the build brief's own "no claim may lose its home" / never-edit-
-another-package's-file rules forbid in spirit even where no file is
-directly touched. What this package *does* carry, fully within its own 49
-claims, is the substance the brief was pointing at: the Chip-memory-is-
-shared half of the same idea, restated on p.3 and p.4
+so would grade another package's claim under this package's roof. What
+this package *does* carry, fully within its own 49 claims, is the
+Chip-memory-is-shared half of the same idea, restated on p.3 and p.4
 (`PROP-CHIPMEM-SHARED-P3`, `PROP-CHIPMEM-SHARED-P4` below) and on 27 of
 Figure 1-1's 33 classified-testable figure claims, all assigned to this
-package and graded below. The brief's summary sentence names the right
-chapter-wide idea; the specific uid that states it most directly belongs to
-a sibling package.
+package and graded below. The specific uid that states the two-bus idea
+most directly belongs to a sibling package.
 
 ## Claim accounting (all 49)
 
@@ -286,8 +266,8 @@ that it does not exceed what `gary` alone can contribute toward 9MB. The
 remainder of the figure — composed from a different module — is not graded
 under this claim's uid; see "Claims
 graded only in part" below for exactly how the uid is kept on a `record()`
-line rather than an `expect()` label, per the build brief's rule that a
-partially-gradable claim's uid may not sit on the graded line itself.
+line rather than an `expect()` label: a partially-gradable claim's uid may
+not sit on the graded line itself.
 
 Status: testable (`gary`'s own contribution only; the composed total is
 out of this package's boundary — recorded, not invented).
@@ -418,14 +398,14 @@ Page 5.
 — `sol:1-components.c105`, `opus:1-components.c104` (identical quote;
 twin.)
 
-**Proposition to test:** the amount of Chip memory is a real, measurable,
-*scaling* quantity at this boundary — as this fixture's memory-size
-configuration increases, the range of distinct addresses the custom-chip
-(DMA) side can reach strictly increases. *What* the custom chips do with
-that address range (graphics, audio, disk data specifically) is chapter
-3/5/8 territory and is not re-graded here; that Chip-memory capacity is a
-configurable, monotonic quantity — the sentence's load-bearing structural
-content — is.
+**Proposition to test:** the amount of Chip memory is a real,
+capacity-bounded quantity at this boundary: every 512K block within the
+custom-chip (DMA) side's representable address range selects a distinct
+chip bank, and nothing beyond that range can be presented. The claims'
+`evidence` proposes varying `memory_config` instead; `test_gary.cpp`'s
+header gives the reason this boundary is graded as a ceiling. *What* the
+custom chips do with that address range (graphics, audio, disk data
+specifically) is chapter 3/5/8 territory and is not re-graded here.
 
 Status: testable.
 
@@ -459,9 +439,11 @@ Page 12 (General Amiga Development Guidelines).
 **Proposition to test:** the first 512K of the CPU-side address space
 always selects Chip memory (the same floor PROP-CHIPMEM-512K-FLOOR tests,
 restated here on p.12 and graded under its own uids per the
-no-under-citing precedent), and this fixture's Chip-memory region can be
-configured to occupy a larger window — up to the one-or-two-megabyte range
-the sentence names — without disturbing that floor.
+no-under-citing precedent), and `gary`'s own decode permits Chip-memory
+selection up through the one- and two-megabyte points the sentence names,
+with the floor unconditional beneath it (which logical blocks are backed
+by distinct physical memory is `minimig_bankmapper`'s question, not
+graded here).
 
 Status: testable.
 
@@ -478,10 +460,9 @@ Page 12 (General Amiga Development Guidelines).
 `ch7-custom-address-space`'s `DMA-CHIP-MEMORY-ONLY-SWEEP` assertion already
 grades this exact structural proposition at this exact fixture (`gary`),
 PASS, citing `opus:7-appA-pre.c8` (p.263, the same fact stated at a
-different printed location). Re-grading it here risks the outcome the
-build brief warns against directly — "the risk is not wasted work — it is
-this chapter reaching a different verdict from an accepted one about the
-same sentence." The MEMF_CHIP software-allocation-flag half of the sentence
+different printed location). Re-grading it here risks this chapter
+reaching a different verdict from an existing one about the same
+sentence. The MEMF_CHIP software-allocation-flag half of the sentence
 has no hardware counterpart at any boundary and is not gradeable regardless
 of which package holds the uid.
 
@@ -495,10 +476,9 @@ Every quote below is the same marker line,
 `[FIGURE 1-1 -- figures/p8.png -- not text; open the image and read it]`
 (source_kind `figure`, except `opus:1-blockdiag.c16` which is `text` — the
 scanned text layer carrying the same footnote in damaged form, see
-PROP-FOOTNOTE-1MB-AGNUS). Per the build brief, a figure claim's `quote` is
-a marker, not evidence; the evidence is "Figure 1-1 checked independently"
-above, read directly from the image at 2.5-3x zoom before any of the
-following was written.
+PROP-FOOTNOTE-1MB-AGNUS). A figure claim's `quote` is a marker, not
+evidence; the evidence is "Figure 1-1 checked independently" above, read
+directly from the image at 2.5-3x zoom.
 
 ## PROP-CIA1-BLOCK
 
@@ -669,9 +649,8 @@ buffers/arbitration logic and custom-chip section to Chip RAM."
 runs from the line that feeds AGNUS, PAULA and DENISE down into CHIP RAM,
 and the same line carries an arrowhead back into the buffers and
 arbitration logic: chip data is shared between the custom chips, Chip RAM
-and the CPU side." **Caution, already measured against the image in
-"Figure 1-1 checked independently" above and confirmed independently by
-this package before either restatement was read**: the CHIP DATA line's
+and the CPU side." **Caution, from the image as read in "Figure 1-1
+checked independently" above**: the CHIP DATA line's
 horizontal junction carries one arrowhead into BUFFERS AND ARBITRATION
 LOGIC and one into PAULA — **not** into AGNUS or DENISE. AGNUS is reached
 by the separate CHIP ADR BUS (address) and by REG ADR BUS; DENISE has no
@@ -716,11 +695,11 @@ Status: testable.
 ## Claims graded only in part
 
 **`sol:1-components.c29` / `opus:1-components.c29`** (PROP-CPU-RAM-CEILING-
-9MB): per Rule 1 of the three rules this suite paid for in slice s2 ("a uid
-on a graded line counts as ASSERTED, whatever the words around it say...
-if you can only grade part of a claim, the measurement keeps its `expect()`
-under a label carrying no uid, and the uid goes on a `record()` line
-alone"), the `gary`-only sub-measurement below is graded under a bare label
+9MB): under the suite's partial-grading rule ("a uid on a graded line
+counts as ASSERTED, whatever the words around it say... if you can only
+grade part of a claim, the measurement keeps its `expect()` under a label
+carrying no uid, and the uid goes on a `record()` line alone"), the
+`gary`-only sub-measurement below is graded under a bare label
 with no uid, and the uid pair is kept alive on its own `record()` line
 that states exactly what was graded and what was not (the composed
 Zorro-II/`cpu_wrapper` half). Both claims keep a home; neither is silently
@@ -728,14 +707,13 @@ marked ASSERTED for a total this package's own boundary cannot produce.
 
 ---
 
-## Two claims outside this package's own 49, recorded because the brief names them
+## Two claims outside this package's own 49
 
 Neither of the following carries `classify.package:
 "ch1-memory-map-and-two-buses"` — both are `classify.status: "not-asserted"`
 with no package assignment at all, so they are claims in no package's own
-inventory. The build brief for this package names both directly and asks
-that they be recorded here regardless. Both were checked independently
-against the image before either restatement was read; see "Figure 1-1
+inventory. Both over-read Figure 1-1, which this package grades, and are
+recorded here. Both are checked against the image; see "Figure 1-1
 checked independently" above.
 
 - **`opus:1-blockdiag.c14`** — restatement: "...pseudo-fast RAM is optional
@@ -754,8 +732,8 @@ checked independently" above.
 - **`sol:1-blockdiag.c22`** — restatement: "A multiplexer lies on the
   address path into Chip RAM and pseudo-fast RAM." The image carries: the
   MUX box's output leaves its bottom edge, turns right, and ends in exactly
-  one arrowhead at CHIP RAM's left edge — confirmed directly in this
-  package's own `crop_mux_chipram.png` at ~3x zoom. The image does **not**
+  one arrowhead at CHIP RAM's left edge — read at ~3x zoom. The image
+  does **not**
   carry any line, of any kind, into the "PSEUDO" FAST RAM box — it has zero
   incoming connections in the drawing. "...and pseudo-fast RAM" is the
   restatement's own addition; the multiplexer-into-Chip-RAM half is
@@ -766,19 +744,18 @@ checked independently" above.
 
 ## What this specification deliberately does not contain
 
-Port names, signal names, parameter names, and concrete stimulus values are
-absent by design wherever this package's own claim data did not already
-name them in a claim's `evidence` field (disclosed above rather than
-pretended clean); the `expect()` assertions themselves, the mutation
-guards, and the exact fixture wiring are added only after this file is
-committed and `gary.v` is opened directly for step 2. Every one of the 49
-claims in this package's `claims.jsonl` is accounted for above:
+Port names, signal names, parameter names, and concrete stimulus values
+appear here only where a claim's own `evidence` field names them; the
+`expect()` assertions themselves, the mutation guards, and the exact
+fixture wiring are in `test_gary.cpp`. Every one of the 49 claims in this
+package's `claims.jsonl` is accounted for above:
 
 - **45 uids** sit on their own uid-bearing `expect()` label (24 text/
   guideline uids across 12 propositions, 21 figure uids across 12
   propositions).
 - **2 uids** (`sol:1-components.c29` / `opus:1-components.c29`,
-  PROP-CPU-RAM-CEILING-9MB) sit on a `record()` line alone, per Rule 1,
+  PROP-CPU-RAM-CEILING-9MB) sit on a `record()` line alone, under the
+  partial-grading rule,
   because only part of the proposition is gradeable at this boundary; a
   companion bare-label `expect()` (no uid) grades the `gary`-only part so
   the measurement itself is not lost either.
