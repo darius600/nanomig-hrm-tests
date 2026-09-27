@@ -280,7 +280,33 @@ PulseTiming pulse_timing(const BeamModel& m, int64_t base_idx, const PulseDef& p
     return t;
 }
 
-void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cfgLabel) {
+// Each proposition's page and claim ids, for the "preconditions failed"
+// record below -- SPECIFICATION.md section 2.
+struct PropIds { const char* label; const char* page; const char* ids; };
+static const PropIds kPropIds[] = {
+    {"P1",  "p238,p227", "opus:8-lpen.c1 sol:8-pen.c1 opus:8-intro.c12 sol:8-overview.c6"},
+    {"P2",  "p238,p228", "opus:8-lpen.c16 sol:8-pen.c17 opus:8-tbl8-1.c20 sol:8-pin.c22"},
+    {"P3",  "p238",      "opus:8-lpen.c17 opus:8-lpen.c18 sol:8-pen.c18 sol:8-pen.c19 sol:8-pen.c20"},
+    {"P4",  "p229,p238", "opus:8-regs.c18 opus:8-regs.c20 sol:8-reg.c20 sol:8-reg.c22"},
+    {"P5",  "p239",      "opus:8-lpen.c36 sol:8-pen.c36"},
+    {"P6",  "p239",      "opus:8-lpen.c38 sol:8-pen.c38"},
+    {"P7",  "p239",      "opus:8-lpen.c37 sol:8-pen.c37"},
+    {"P8",  "p239",      "opus:8-lpen.c39"},
+    {"P9",  "p238",      "(none)"},
+    {"P10", "p239,p229", "opus:8-lpen.c35 sol:8-pen.c35 opus:8-regs.c16 sol:8-reg.c18"},
+    {"P11", "p239",      "opus:8-lpen.c43 sol:8-pen.c41 opus:8-lpen.c47 sol:8-pen.c44 opus:8-lpen.c48 sol:8-pen.c45 sol:8-pen.c46"},
+    {"P12", "p239",      "opus:8-lpen.c52"},
+    {"P13", "p238",      "opus:8-lpen.c10 opus:8-lpen.c11 sol:8-pen.c10 sol:8-pen.c11"},
+};
+
+void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cfgLabel, bool cpOk = true) {
+    if (!cpOk) {
+        for (const auto& pi : kPropIds)
+            checks.record(std::string(pi.label) + " " + cfgLabel + " " + pi.page + " " + pi.ids +
+                ": not evaluated -- a required precondition (CP1-CP6) failed for this run, so this "
+                "proposition is reported as not evaluated, not as green");
+        return;
+    }
     int Vrun = ntsc ? 21 : 29;
     auto pulses = phaseB_pin6_pulses(ntsc);
     std::map<std::string, PulseTiming> timing;
@@ -652,12 +678,8 @@ void run_config(const std::string& dir, bool ecs, bool ntsc, const std::string& 
     }
 
     Preconds pc = grade_preconditions(r, ntsc, label);
-    if (pc.cp1 && pc.cp2 && pc.cp3 && pc.cp4 && pc.cp5 && pc.cp6) {
-        grade_P1_P13(r, ntsc, ecs, label);
-    } else {
-        checks.record(label + ": one or more preconditions failed -- P1-P13 are reported as not evaluated "
-            "for this configuration, not as green");
-    }
+    bool cpOk = pc.cp1 && pc.cp2 && pc.cp3 && pc.cp4 && pc.cp5 && pc.cp6;
+    grade_P1_P13(r, ntsc, ecs, label, cpOk);
 }
 
 void run_main(const std::string& dir) {
