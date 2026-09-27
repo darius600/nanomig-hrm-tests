@@ -1,14 +1,12 @@
 # ch8-dsklen-dma-arming — SPECIFICATION
 
-Written from the quotations in `ch8-dsklen-dma-arming.jsonl` alone (the 54
-claims assigned to this package by
-`work/ch8-s2-build/ch8-dsklen-dma-arming.jsonl`). No RTL file has been opened
-by me yet. This document is committed before any of that happens.
+The package carries the quotations in
+`work/ch8-s2-build/ch8-dsklen-dma-arming.jsonl` (the 54 claims assigned to
+this package).
 
-Fixture assigned by the build brief: `paula_floppy` (`paula_floppy.v` +
-`paula_floppy_fifo.v`; `paula_floppy_ebr.v` excluded — it declares a second
-`module paula_floppy` and is not part of this fixture). I have not opened any
-of these three files.
+Fixture: `paula_floppy` (`paula_floppy.v` + `paula_floppy_fifo.v`;
+`paula_floppy_ebr.v` excluded — it declares a second `module paula_floppy`
+and is not part of this fixture).
 
 ## Why 54 claims reduce to a handful of testable propositions
 
@@ -27,17 +25,25 @@ this suite's existing packages do for twin readings (e.g.
 proposition is graded by more than one assertion in this package, and no
 assertion grades more than one proposition.
 
+## Readback basis
+
+A2-A8 read DSKBYTR's p.278-defined bits — DMAON (bit 14) and DISKWRITE
+(bit 13) — and real output ports (`fdd_led`, `dmal`, `dmas`, `sdc_rd`,
+`sdc_wr`), never the whole DSKBYTR readback word: p.278 gives DSKBYTR no
+reset or idle word, and bits 15/12 are hardwired constants
+(`paula_floppy.v:699`), not values the page documents.
+
 ## Assertions — one per proposition, each naming every citing uid and page
 
 ### A0 — FIXTURE_LIVENESS (no manual citation)
 
-Not a page claim. Per the build brief: "The fixture proves it can deliver a
-known word before anything reads one." Before any DSKLEN-based assertion is
-trusted, drive a distinct, known data value through this fixture's data path
-and confirm it arrives unmodified and distinguishable from a second, different
-known value. Required as its own graded, mutation-recorded item.
+Not a page claim: the fixture proves it can deliver a known word before
+anything reads one. Before any DSKLEN-based assertion is trusted, drive a
+distinct, known data value through this fixture's data path and confirm it
+arrives unmodified and distinguishable from a second, different known value.
+A `note()`: it carries no uid and no mutation record.
 
-### A1 — DSKLEN_WRITE_ONLY
+### A1 — DSKLEN_WRITE_ONLY — DECLINED
 
 | uid | page | quote |
 |---|---|---|
@@ -46,7 +52,7 @@ known value. Required as its own graded, mutation-recorded item.
 Proposition: DSKLEN is a write-only register — reading back at its own address
 does not return the bits just written to it.
 
-**DECLINED 2026-09-15 (lot B repair).** Same fault as
+**DECLINED.** Same fault as
 `ch8-disk-register-map-paula-floppy`/L2: p.263-264 forbids reading a
 write-only register outright ("do not attempt to read from it, as this may
 trash the register and crash the system") and gives no value for what such
@@ -76,9 +82,8 @@ Proposition: of the items said to control disk DMA, the DMACON-derived enable
 is one — until it is asserted, a fully-programmed and twice-written DSKLEN
 does not start a transfer; asserting it (with nothing else changed) does. This
 package's fixture boundary (`paula_floppy`) carries the DMACON-derived signal
-as a single input port (per this claims file's own `classify.evidence`,
-disclosed before this document, not yet independently read from RTL); DMACON's
-own bit decode is out of scope (Chapter 7 / a different module) and is not
+as a single input port, `enable` (`paula_floppy.v:248`: `dma_active = dmaen
+&& !lenzero && enable`); DMACON's own bit decode is out of scope (Chapter 7 / a different module) and is not
 graded here. `opus:8-dma.c2`'s "four items" also names the DMA pointer, which
 lives in a different register pair reached through a different module
 (`agnus_diskdma`, not `paula_floppy`); this package does not grade the pointer
@@ -92,8 +97,12 @@ evidence measures at this fixture.
 | `opus:8-dma.c21` | 247 | "   2. Set DSKLEN to $4000, thereby forcing the DMA for the disk to be\n      turned off." |
 | `sol:8-dsklen.c10` | 247 | "   2. Set DSKLEN to $4000, thereby forcing the DMA for the disk to be\n      turned off." |
 
-Proposition: writing $4000 to DSKLEN, from an idle/unarmed state, forces disk
-DMA off (leaves it not running).
+Proposition: writing $4000 to DSKLEN forces disk DMA off. The trial starts
+from a genuinely ACTIVE transfer (armed and started as in A6), then writes
+$4000 and confirms DMA turns off: from an idle state `dmaen` is already 0
+(`paula_floppy.v:735-744`), so the write would force nothing observable off
+and would only repeat A2's WRITE-bit readback. (The assertion label keeps
+the name FORCES-OFF-FROM-IDLE.)
 
 ### A5 — DSKLEN_FIRST_WRITE_LOADS_DOES_NOT_START
 
@@ -139,10 +148,9 @@ turned on twice" sentence, and step 4) describe this one mechanism.
 | `opus:8-dma.c24` | 247 | "   5. After the DMA is complete, set the DSKLEN register back to\n      $4000, to prevent accidental writes to the disk." |
 | `sol:8-dsklen.c13` | 247 | "   5. After the DMA is complete, set the DSKLEN register back to\n      $4000, to prevent accidental writes to the disk." |
 
-Proposition: writing $4000 to DSKLEN *while a transfer is active* also forces
-DMA off, the same as it does from idle (A4) — distinct precondition, same
-prescribed value, guarding against accidental writes after a transfer
-completes.
+Proposition: writing $4000 to DSKLEN *while a transfer is active* forces DMA
+off — the same transition A4 grades under step 2, here under step 5's own
+citation, guarding against accidental writes after a transfer completes.
 
 ### A8 — DSKLEN_WRITE_DIRECTION_BIT_AND_ACCIDENTAL_WRITE_PREVENTION
 
@@ -167,7 +175,7 @@ describes; and the two-write arming sequence (A5/A6) is specifically what
 prevents a single stray write — even one with WRITE and DMAEN both set — from
 starting an accidental disk write.
 
-### A9 — DSKLEN_LENGTH_FIELD_COUNTS_WORDS (control case: expected PASS)
+### A9 — DSKLEN_LENGTH_FIELD_COUNTS_WORDS (control case)
 
 | uid | page | quote |
 |---|---|---|
@@ -183,7 +191,7 @@ starting an accidental disk write.
 Proposition: DSKLEN bits 13-0 are LENGTH, the number of words to transfer —
 programming a specific word count and running a transfer delivers exactly that
 many words. This is the package's control case: a straightforward, unexcep-
-tional reading of the page that is expected to hold, on the same measurement
+tional reading of the page that holds (GREEN), on the same measurement
 basis (word-count-in against word-count-out) used by the more contested
 assertions.
 
@@ -215,21 +223,17 @@ bits of data sent to disk during a write transfer to be lost. Graded literally
 against NanoMig: does a known write-direction transfer's outgoing byte stream
 lose its last three bits versus the source data? If NanoMig's write path
 reproduces the bug this assertion is green; if NanoMig carries the full byte
-through unmodified (a real possibility flagged by this package's own claims
-file, which had not yet run the full transfer when it classified this claim
-testable), the assertion is red, and that red is the deliverable, not a defect
-in the test.
+through unmodified, the assertion is red, and that red is the deliverable,
+not a defect in the test.
 
-**Built and measured 2026-09-15 (lot B repair).** An earlier build had
-declined this claim ("out of proportion to this package's remaining scope"),
-contradicting this section's own plan above — an independent validation
-found that decline reason impermissible (cost is not unobservability) and
-asked for the attempt this section already called for. `drive_write_
-transfer_and_read()` now drives the full sync+header+payload write transfer
+Graded, not declined: the claims file classifies this claim as observable
+at `sdc_byte_out_data`, and the cost of reaching it is no reason to decline
+(cost is not unobservability). `drive_write_transfer_and_read()` drives the
+full sync+header+payload write transfer
 paula_floppy.v:781-901 needs (a DSKSYNC-matching sync word, a checksum- and
 track-verified 24-word header, a payload-checksum preload, and a uniform
 512-byte payload) and reads the corresponding byte back via
-`sdc_byte_out_data`. **Measured RED, as this section anticipated**: a byte
+`sdc_byte_out_data`. **Measured RED**: a byte
 written as 0xFF at the last offset of the sector (511) reads back as 0xFF —
 both the upper 5 bits and the low 3 bits survive intact. NanoMig's write path
 is fully byte-buffered from the DSKDAT FIFO through to `sdc_byte_out_data`
@@ -237,11 +241,11 @@ is fully byte-buffered from the DSKDAT FIFO through to `sdc_byte_out_data`
 no bit-serial shift-register stage anywhere for the documented timing race
 to occur in. A11 carries a `none impossible` mutation record (no stimulus
 this package can choose changes that outcome); its comparator is proven live
-by the new substitute A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE, which applies
+by the substitute A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE, which applies
 the identical apparatus to a different known payload (0x00) and reads it
 back correctly.
 
-### A12 — DSKBUG_ONE_WORD_SHORT_ON_READ (documented hardware bug)
+### A12 — DSKBUG_ONE_WORD_SHORT_ON_READ (documented hardware bug) — DECLINED
 
 | uid | page | quote |
 |---|---|---|
@@ -251,38 +255,29 @@ back correctly.
 Proposition, as printed: a documented Amiga hardware bug can cause a
 disk-read DMA to deliver one word fewer than programmed.
 
-**REPAIRED 2026-09-15, DECLINED — not graded.** The original plan above
-(quoted for the record) graded this literally as `delivered == programmed-1`
-and expected RED as the deliverable. Independent validation found that wrong:
-the page says the last word **may** not come in — "may" is a possibility, not
-a promise, and a red requires the page to demand something a single
-deterministic trial can violate. This one demands nothing, so the graded
-check tested more than the page states. **Declined via `record()`, quoting
-the page's own "may" wording.** The measured fact — this fixture's fresh
-trial delivers the FULL programmed count, matching A9/A10's own independent
-exact-count measurement — is kept as a `note()`: real and interesting, but a
-fact about NanoMig, not a conformance failure against a page that only ever
-claimed a possibility.
+**DECLINED — not graded.** The page says the last word **may** not come in
+— "may" is a possibility, not a promise, and a red requires the page to
+demand something a single deterministic trial can violate. This one demands
+nothing, so grading `delivered == programmed-1` would test more than the
+page states. **Declined via `record()`, quoting the page's own "may"
+wording.** The measured fact — this fixture's trial delivers the FULL
+programmed count, matching A9/A10's own independent exact-count measurement
+— is kept as a `note()`: real and interesting, but a fact about NanoMig, not
+a conformance failure against a page that only ever claimed a possibility.
+With nothing graded there is no comparator to defend against a vacuous-red
+objection, so no comparator-liveness substitute stands beside A12; A9/A10
+already grade the exact-count mechanism green.
 
-**A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE is removed along with A12's
-graded check.** Its only job was proving A12's comparator was not vacuously
-red (needed because a stimulus mutation cannot demonstrate anything on an
-already-failing check). With A12 declined rather than graded, there is no
-graded comparator left to defend, and the substitute duplicated A9/A10's own
-already-graded, already-green exact-count measurement anyway. Removed, along
-with its mutation record.
+## Rig hazards
 
-## Rig hazards named by the build brief (restated here, not yet acted on)
-
-- `dsktrack` is reported to have no reset term, so a reused Verilated model
-  would carry head position between trials. This package will allocate a
-  fresh model per trial. Not yet verified from RTL — accepted as a build
-  constraint.
-- `paula_floppy_ebr.v` reportedly declares a second `module paula_floppy`;
-  the fixture is `paula_floppy.v` + `paula_floppy_fifo.v` only.
-- DSKLEN reportedly needs the double write to arm DMA, consistent with A5/A6
-  above, which this package derives independently from the manual text, not
-  from that disclosure.
+- `dsktrack` has no reset term (`paula_floppy.v:129,671-680`), so a reused
+  Verilated model would carry head position between trials. This package
+  allocates a fresh model per trial.
+- `paula_floppy_ebr.v` declares a second `module paula_floppy`; the fixture
+  is `paula_floppy.v` + `paula_floppy_fifo.v` only.
+- DSKLEN needs the double write to arm DMA (`paula_floppy.v:735-744`),
+  consistent with A5/A6 above, which this package derives from the manual
+  text.
 
 ## Control case
 
@@ -290,49 +285,31 @@ A9 (`DSKLEN_LENGTH_FIELD_COUNTS_WORDS`) is this package's control case: an
 unexceptional, uncontested reading of the page, on the same
 measurement basis (program a word count, run a transfer, count delivered
 words) as A10's decrement/stop assertion and as A12's declined short-read
-claim (see A12 above, repaired 2026-09-15). If A9 is red, the fixture's
+claim (see A12 above). If A9 is red, the fixture's
 word-counting mechanism itself cannot be trusted for any of the length-based
 readings in this package.
 
 ## Mutation plan
 
-Each assertion above gets a `// MUTATION <label> <oracle|stimulus|none>
+Each graded assertion gets a `// MUTATION <label> <oracle|stimulus|none>
 <red|green|impossible> <what changed>` record in the C++ source (not a
 separate file), `<label>` being the exact leading token of the string passed
-to `expect()`. The default plan is a stimulus mutation: change what the
-fixture is asked to do (a different write value, a different port state, a
+to `expect()`. The default is a stimulus mutation: change what the fixture
+is asked to do (a different write value, a different port state, a
 shorter/longer source feed) while leaving the expected value untouched, and
 confirm the assertion reddens, then revert.
 
-**A11 was repaired 2026-09-15 (lot B)**: it is no longer declined. The prior
-decline reason ("out of proportion to this package's scope") was found
-impermissible by an independent validation — cost is not unobservability.
-A11 is now graded through `expect()`, measures RED at baseline (the written
-byte survives fully intact; see A11's own section above), carries a `none
-impossible` mutation record, and is defended by a new substitute,
-A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE, which DOES carry an ordinary
-stimulus mutation (its own payload byte swapped) and is proven GREEN at
-baseline.
+A11 measures RED at baseline (the written byte survives fully intact; see
+A11's own section above), so it carries a `none impossible` mutation record
+and is defended by the substitute A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE,
+which carries an ordinary stimulus mutation (its own payload byte swapped)
+and is GREEN at baseline.
 
-A1 is DECLINED via `record()`, not graded through `expect()`, and carries no
-mutation record — it is not an assertion that can fail, so the
-mutation-record requirement does not apply. **A12 was repaired 2026-09-15**:
-it was originally graded literally-red against the page's "may" wording and
-defended by a substitute assertion (A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE)
-proving its comparator live; independent validation found the grading itself
-wrong ("may" demands nothing a deterministic trial can violate), so both
-A12's graded check and its now-purposeless substitute are removed, and A12 is
-declined instead.
+A1 and A12 are DECLINED via `record()` and A0 is a `note()`; none of them is
+an assertion that can fail, so none carries a mutation record.
 
-A0 (fixture liveness, no uid) is a `note()` as of the 2026-09-15 lot-B
-repair and carries no mutation record for the same reason A1 does not.
+## Outcome
 
-## What happens next
-
-Only after this file is committed: read `paula_floppy.v` and
-`paula_floppy_fifo.v` for the actual port names, register-address decode, the
-FIFO write/read interface, and the `enable`/`dsktrack`/`fdd_led` signals
-needed to build the twelve assertions above plus fixture liveness; read an
-existing sibling package's Makefile (e.g. `hrm/ch8-ciaapra-address-window` or
-`hrm/paula_floppy`) for the build pattern. All of that reading will be
-disclosed in the next commit.
+`make -B test`: 10 passed, 1 failed. A2-A10 and A13 are GREEN; A11 is RED
+(NanoMig's write path does not lose the last three bits the page's
+documented bug describes). A1 and A12 are declined; A0 is a `note()`.

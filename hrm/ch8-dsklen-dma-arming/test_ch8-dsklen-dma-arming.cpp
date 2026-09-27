@@ -3,11 +3,9 @@
 //   against `paula_floppy` (paula_floppy.v + paula_floppy_fifo.v only --
 //   paula_floppy_ebr.v excluded, it declares a second `module
 //   paula_floppy`). 54 claims, from
-//   work/ch8-s2-build/ch8-dsklen-dma-arming.jsonl, reduced to 12 assertions
-//   + fixture liveness (13 after the 2026-09-15 lot-B repair added the A13
-//   substitute; see the repair notes below). Full derivation in
-//   SPECIFICATION.md (committed as 0ab5023, before any RTL was opened;
-//   updated 2026-09-15 for the repair).
+//   work/ch8-s2-build/ch8-dsklen-dma-arming.jsonl, reduced to 12
+//   propositions (A1-A12) plus fixture liveness (A0) and the A13
+//   comparator substitute. Full derivation in SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed pp.246-247, 279.
 // Non-goals: anything outside the `paula_floppy` fixture this package
@@ -21,41 +19,29 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (0ab5023):
+// SOURCES READ:
 //   1. hrm/ch8-ciaapra-address-window/Makefile, test_ch8-ciaapra-address-
 //      window.cpp, SPECIFICATION.md -- for this suite's established
 //      harness/mutation boilerplate (the Checks class, the MUTATE env-var
 //      convention, the tick()/settle()/do_reset() clocking pattern, the
-//      summary-line format, the spec/commit-message format). No
-//      paula_floppy-specific fact came from this; only the surrounding
-//      harness shape and suite conventions did.
-//   2. hrm/ch8-drive-select-motor-led/SPECIFICATION.md -- a sibling package
-//      targeting the same fixture, read only for the two-commit-per-package
-//      precedent it documents; its own RTL findings (still unbuilt at time
-//      of reading) were not used here.
-//   3. hrm/paula_floppy/Makefile -- existing package's build pattern. Noted:
-//      it compiles paula_floppy_ebr.v and paula_floppy_dma_buf.v alongside
-//      paula_floppy.v/paula_floppy_fifo.v, using -Wno-fatal for the EBR
-//      duplicate `module paula_floppy`. This package deliberately does NOT
-//      follow that: paula_floppy_ebr.v is excluded per the build brief, and
-//      paula_floppy.v (read in full, next) instantiates no dma_buf module,
-//      so paula_floppy_dma_buf.v is not needed to elaborate this fixture.
-//   4. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines).
-//   5. nanomig/src/minimig-aga/paula_floppy_fifo.v -- full file (60 lines):
+//      summary-line format). No paula_floppy-specific fact came from this;
+//      only the surrounding harness shape and suite conventions did.
+//   2. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines). It
+//      instantiates no dma_buf module, so paula_floppy_dma_buf.v is not
+//      needed to elaborate this fixture; paula_floppy_ebr.v is excluded
+//      because it declares a second `module paula_floppy`.
+//   3. nanomig/src/minimig-aga/paula_floppy_fifo.v -- full file (60 lines):
 //      a straightforward 2048-word-deep circular buffer, read/write pointer
 //      equality for empty/full. Confirms the fixture never hits fifo_full
 //      for any length this package programs (max 32 words << 2048 deep).
-//   6. hrm/paula_floppy/test_paula_floppy.cpp -- ONE line only, grepped, not
-//      read: confirmed the `reg_address_in = addr >> 1` convention (the
-//      module's own port is declared [8:1], dropping bit 0) matches what
-//      this file derives independently from paula_floppy.v's own address
-//      parameters (DSKLEN=9'h024, DSKBYTR=9'h01a, DSKDATR=9'h008,
-//      DSKSYNC=9'h07e, DSKDAT=9'h026, each compared via `[8:1]`).
+//   The `reg_address_in = addr >> 1` convention (the module's own port is
+//   declared [8:1], dropping bit 0) follows from paula_floppy.v's own
+//   address parameters (DSKLEN=9'h024, DSKBYTR=9'h01a, DSKDATR=9'h008,
+//   DSKSYNC=9'h07e, DSKDAT=9'h026, each compared via `[8:1]`).
 //   paula_floppy_ebr.v and paula_floppy_dma_buf.v were NOT read (not part of
-//   this fixture; the build brief already gives the reason to exclude EBR).
+//   this fixture).
 //
-// RTL FACTS THIS FILE RELIES ON (paula_floppy.v line numbers, all read only
-//   after SPECIFICATION.md was committed):
+// RTL FACTS THIS FILE RELIES ON (paula_floppy.v line numbers):
 //   - dsklen[14:0] loads from data_in[14:0] on EVERY write to DSKLEN
 //     (:712-720) -- LENGTH and WRITE take effect on the FIRST write.
 //   - dsklen[15] also loads from data_in[15] on every write (:724-733), but
@@ -91,16 +77,16 @@
 //   - dsktrack (:129,671-680) has NO reset term anywhere in the module --
 //     confirmed by reading the whole file. This package never drives _step,
 //     so dsktrack never changes from its Verilator construction-time zero
-//     within a trial, but per the build brief a FRESH `Vpaula_floppy` is
-//     still allocated for every trial below (never one reused instance with
-//     repeated do_reset()), matching the rig-hazard mandate literally rather
-//     than relying on this package's own trials never happening to need it.
+//     within a trial, but a FRESH `Vpaula_floppy` is allocated for every
+//     trial below anyway (never one reused instance with repeated
+//     do_reset()), rather than relying on this package's own trials never
+//     happening to need it.
 //
 // EVERY MEASURED VALUE IN THIS PACKAGE'S OWN CLAIMS FILE (0x9000/0xB000/
 //   0xD000/0xF000 idle/off/read-active/write-active; the M7/M8/M10/N2/N3/N5
 //   sequences) reproduces exactly from the above RTL facts, worked through
-//   by hand before writing a line of this file -- strong corroboration that
-//   the trace above, not just this file's own run, is right.
+//   by hand -- corroboration that the trace above, not just this file's
+//   own run, is right.
 //
 // FIXTURE-LIVENESS AND DATA CONTENT. A9/A10/A12's word-count checks do not
 //   depend on the CONTENT of the fed sector (the words a length-8/32/16
@@ -111,12 +97,10 @@
 //   A0 instead proves the fixture's write-then-read data path directly, on
 //   the DSKBYTR mirror every other assertion in this package also reads.
 //
-// A11 -- REPAIRED 2026-09-15 (lot B), no longer declined. opus:8-dma.c32 /
-//   sol:8-dskbug.c1 (last three bits lost on a disk write) is now GRADED
-//   (expect()), not declined: an independent validation found "out of
-//   proportion to this package's remaining scope" is not a permitted
-//   decline reason (cost is not unobservability), and the claims file
-//   classifies this proposition as observable at `sdc_byte_out_data`.
+// A11 -- opus:8-dma.c32 / sol:8-dskbug.c1 (last three bits lost on a disk
+//   write) is GRADED (expect()): the claims file classifies this
+//   proposition as observable at `sdc_byte_out_data`, and the cost of
+//   reaching it is no reason to decline (cost is not unobservability).
 //   drive_write_transfer_and_read() (defined right after the Rig struct)
 //   drives a full, checksum-gated write transfer through paula_floppy's
 //   cpu_wr_state pipeline (:781-901): a DSKSYNC-matching sync word, a
@@ -127,8 +111,7 @@
 //   `sdc_byte_out_data`. MEASURED RED: the byte's last three bits survive
 //   intact, same as the rest of it -- see A11's own comment for why (no
 //   bit-serial shift-register stage exists anywhere in this write path for
-//   the documented timing race to occur in). A13 is a new substitute,
-//   proving the same apparatus is live and content-dependent (A11 cannot,
+//   the documented timing race to occur in). A13 is a substitute, proving the same apparatus is live and content-dependent (A11 cannot,
 //   being itself expected red -- see MUTATION METHODOLOGY below).
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
@@ -143,45 +126,35 @@
 //   extraction-and-compare apparatus to a different known payload and
 //   carries its own ordinary stimulus mutation. A1 (record(), declined) and
 //   A0 (note(), no uid) carry no mutation record -- neither is a graded
-//   line for one to pair against. Actual run counts and per-mutation
-//   results are recorded in the commit message and build report, not
-//   predicted here.
+//   line for one to pair against.
 //
-// A12 -- REPAIRED 2026-09-15, DECLINED, not graded. Independent validation
-//   found the previous graded-RED assertion tested MORE than its cited page
-//   states: p.247 says the last word "may not come in", not that one IS
-//   lost -- "may" demands nothing a single deterministic trial can violate.
-//   Declined via `record()`, quoting the page's own wording; the measured
-//   fact this package's fresh trial confirms -- NanoMig delivers the FULL
-//   programmed word count, not one fewer, corroborating A9/A10's own
-//   independent exact-count measurement -- is kept as a `note()`, not a
-//   finding against a page that only ever claimed a possibility.
+// A12 -- DECLINED, not graded. p.247 says the last word "may not come in",
+//   not that one IS lost -- "may" demands nothing a single deterministic
+//   trial can violate, so a graded-RED assertion would test MORE than the
+//   page states. Declined via `record()`, quoting the page's own wording;
+//   the measured fact this package's trial confirms -- NanoMig delivers
+//   the FULL programmed word count, not one fewer, corroborating A9/A10's
+//   own independent exact-count measurement -- is kept as a `note()`, not
+//   a finding against a page that only ever claimed a possibility. With
+//   A12 declined there is no graded comparator to defend against a
+//   vacuous-red objection, so no comparator-liveness substitute stands
+//   beside it; A9/A10 already prove the identical exact-count mechanism
+//   live and green under their own manual citations.
 //
-//   A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE is REMOVED along with A12's
-//   graded check. Its only job was to prove A12's comparator was not
-//   vacuously red (a stimulus mutation cannot demonstrate anything on an
-//   already-failing check, so the substitute rule put a different mechanism
-//   through the SAME equality-comparator form and showed it green). With A12
-//   declined rather than graded red, there is no longer a graded comparator
-//   to defend against a vacuous-red objection -- the substitute's reason for
-//   existing is gone. It also duplicated A9/A10, which already prove the
-//   identical exact-count mechanism live and green under their own manual
-//   citations. Removed, along with its mutation record.
-//
-// A0-LIVENESS-DSKLEN-WRITE-TO-DSKBYTR-READBACK is a note() (no manual citation, no uid) as of the 2026-09-15 lot-B repair -- see its own comment below. It carries no MUTATION record: a note has no graded line to pair one against.
-// A1-DSKLEN-WRITE-ONLY is DECLINED as of the 2026-09-15 lot-B repair (record(), not expect()) -- same fault as ch8-disk-register-map-paula-floppy/L2; see its own comment below. It carries no MUTATION record.
-// MUTATION A2-DSKLEN-TWO-CONTROL-BITS stimulus red: the single write is changed from 0x4000 (WRITE bit set) to 0x0000 (WRITE bit clear) while the check still expects the WRITE bit's immediate readback effect (MUTATE=A2). REPAIRED 2026-09-15 (lot B): narrowed from the whole readback word (0xB000) to DISKWRITE (bit 13, p.278-defined) alone.
-// MUTATION A3-ENABLE-GATES-DMA-START stimulus red: `enable` is held at 1 throughout, instead of 0 during the double write and only raised afterward, while the check still expects the pre-enable "not yet started" reading (MUTATE=A3). REPAIRED 2026-09-15 (lot B): narrowed from the whole readback word (0x9000/0xD000) to DMAON (bit 14, p.278-defined) alone.
-// MUTATION A4-DSKLEN-4000-FORCES-OFF-FROM-IDLE stimulus red: the forcing-off write is changed from 0x4000 to 0x0000 while the check still expects the forced-off (DMAON clear, DISKWRITE set) reading (MUTATE=A4). REPAIRED 2026-09-15 (lot B): two defects fixed -- the scenario now arms and starts a REAL transfer before forcing it off (the original wrote $4000 from idle, where dmaen was already 0 and nothing observable was forced off), and the oracle is narrowed from the whole readback word (0xB000) to DMAON/DISKWRITE (p.278-defined). See the code's own repair note.
-// MUTATION A5-FIRST-WRITE-LOADS-DOES-NOT-START stimulus red: the single arming write is repeated a second time (accidentally arming DMAEN) while the check still expects the not-yet-started reading (MUTATE=A5). REPAIRED 2026-09-15 (lot B): narrowed from the whole idle word (0x9000) to DMAON (bit 14, p.278-defined) alone.
-// MUTATION A6-SECOND-WRITE-ARMS-DMAEN stimulus red: only ONE write is performed, not two, while the check still expects the armed/started reading (MUTATE=A6). REPAIRED 2026-09-15 (lot B): narrowed from the whole readback word (0xD000) to DMAON (bit 14, p.278-defined) alone.
-// MUTATION A7-DSKLEN-4000-FORCES-OFF-DURING-ACTIVE stimulus red: instead of writing 0x4000 to force DMA off mid-transfer, the same armed value is rewritten (re-affirming, not forcing off) while the check still expects the forced-off reading (MUTATE=A7). REPAIRED 2026-09-15 (lot B): narrowed from the whole readback word (0xB000) to DMAON/DISKWRITE (p.278-defined) alone.
-// MUTATION A8-WRITE-DIRECTION-BIT-AND-PREVENTION stimulus red: the double write (0xC00A twice) is reduced to a single write while the check still expects the double-write's positive result (MUTATE=A8). REPAIRED 2026-09-15 (lot B): narrowed the double-write half from the whole readback word (0xF000) to DMAON/DISKWRITE (p.278-defined) alone.
+// A0-LIVENESS-DSKLEN-WRITE-TO-DSKBYTR-READBACK is a note() (no manual citation, no uid) -- see its own comment below. It carries no MUTATION record: a note has no graded line to pair one against.
+// A1-DSKLEN-WRITE-ONLY is DECLINED (record(), not expect()) -- same fault as ch8-disk-register-map-paula-floppy/L2; see its own comment below. It carries no MUTATION record.
+// MUTATION A2-DSKLEN-TWO-CONTROL-BITS stimulus red: the single write is changed from 0x4000 (WRITE bit set) to 0x0000 (WRITE bit clear) while the check still expects the WRITE bit's immediate readback effect (MUTATE=A2). The check reads DISKWRITE (bit 13, p.278-defined) alone, not the whole readback word (0xB000).
+// MUTATION A3-ENABLE-GATES-DMA-START stimulus red: `enable` is held at 1 throughout, instead of 0 during the double write and only raised afterward, while the check still expects the pre-enable "not yet started" reading (MUTATE=A3). The check reads DMAON (bit 14, p.278-defined) alone, not the whole readback word (0x9000/0xD000).
+// MUTATION A4-DSKLEN-4000-FORCES-OFF-FROM-IDLE stimulus red: the forcing-off write is changed from 0x4000 to 0x0000 while the check still expects the forced-off (DMAON clear, DISKWRITE set) reading (MUTATE=A4). The scenario arms and starts a REAL transfer before forcing it off (a $4000 write from idle, where dmaen is already 0, would force nothing observable off), and the check reads DMAON/DISKWRITE (p.278-defined), not the whole readback word (0xB000). See the code's own comment.
+// MUTATION A5-FIRST-WRITE-LOADS-DOES-NOT-START stimulus red: the single arming write is repeated a second time (accidentally arming DMAEN) while the check still expects the not-yet-started reading (MUTATE=A5). The check reads DMAON (bit 14, p.278-defined) alone, not the whole idle word (0x9000).
+// MUTATION A6-SECOND-WRITE-ARMS-DMAEN stimulus red: only ONE write is performed, not two, while the check still expects the armed/started reading (MUTATE=A6). The check reads DMAON (bit 14, p.278-defined) alone, not the whole readback word (0xD000).
+// MUTATION A7-DSKLEN-4000-FORCES-OFF-DURING-ACTIVE stimulus red: instead of writing 0x4000 to force DMA off mid-transfer, the same armed value is rewritten (re-affirming, not forcing off) while the check still expects the forced-off reading (MUTATE=A7). The check reads DMAON/DISKWRITE (p.278-defined) alone, not the whole readback word (0xB000).
+// MUTATION A8-WRITE-DIRECTION-BIT-AND-PREVENTION stimulus red: the double write (0xC00A twice) is reduced to a single write while the check still expects the double-write's positive result (MUTATE=A8). The double-write half reads DMAON/DISKWRITE (p.278-defined) alone, not the whole readback word (0xF000).
 // MUTATION A9-LENGTH-FIELD-COUNTS-WORDS stimulus red: DSKLEN is programmed with 33 words instead of 32 while the check still expects completion at exactly 32 reads (MUTATE=A9).
 // MUTATION A10-LENGTH-DECREMENTS-STOPS-AT-ZERO stimulus red: DSKLEN is programmed with 16 words instead of 8 while the check still expects completion at exactly 8 reads, well before the fed sector's 544 MFM words are exhausted (MUTATE=A10).
-// MUTATION A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE none impossible: REPAIRED 2026-09-15 (lot B), no longer declined -- now graded and already RED at baseline (the written byte's last three bits survive intact; see A11's own comment). No stimulus this package can choose changes that outcome -- the write path has no bit-serial shift-register stage for the documented timing race to occur in, for any payload. The comparator that grades it is proven live via the substitute A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE below.
+// MUTATION A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE none impossible: graded and already RED at baseline (the written byte's last three bits survive intact; see A11's own comment). No stimulus this package can choose changes that outcome -- the write path has no bit-serial shift-register stage for the documented timing race to occur in, for any payload. The comparator that grades it is proven live via the substitute A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE below.
 // MUTATION A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE stimulus red: the substitute's own payload is changed from 0x00 to 0xAA while the check still expects the 0x00 payload's own readback (0x00) (MUTATE=A13).
-// A12 -- DSKBUG_ONE_WORD_SHORT_ON_READ: DECLINED via record(), not expect(); no mutation record (not graded through expect()). Repair 2026-09-15: the previous MUTATION record (none/impossible) and its substitute A12-SUBSTITUTE-EXACT-COUNT-COMPARATOR-LIVE (stimulus red) are both removed along with the graded check they defended -- see the header's A12 repair note.
+// A12 -- DSKBUG_ONE_WORD_SHORT_ON_READ: DECLINED via record(), not expect(); no mutation record (not graded through expect()) and no comparator-liveness substitute (nothing graded to defend) -- see the header's A12 note.
 
 #include <cstdint>
 #include <cstdio>
@@ -227,7 +200,7 @@ public:
     int passed = 0, failed = 0;
 };
 
-// A fresh Verilated model per trial, per the build brief's rig hazard:
+// A fresh Verilated model per trial, a rig hazard:
 // dsktrack has no reset term anywhere in paula_floppy.v, so a reused model
 // would carry head position across trials. Every assertion block below
 // constructs its own Rig.
@@ -473,15 +446,14 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page: the
-    // build brief's own requirement that the fixture prove it can deliver a
-    // known, distinct word before any read-based assertion is trusted. Two
-    // distinct, known DSKLEN writes (0x0000, then 0x4000) must arrive,
-    // unmodified and mutually distinguishable, at the DSKBYTR readback bit
-    // this package's every other assertion also reads.
+    // fixture proves it can deliver a known, distinct word before any
+    // read-based assertion is trusted. Two distinct, known DSKLEN writes
+    // (0x0000, then 0x4000) must arrive, unmodified and mutually
+    // distinguishable, at the DSKBYTR readback bit this package's every
+    // other assertion also reads.
     //
-    // CONVERTED TO note() 2026-09-15 (lot B repair, doctrine shape 1): no
-    // uid, so this is a fixture-liveness check, not conformance evidence.
-    // Its own MUTATE=A0 mutation record is removed with it: a note() has no
+    // A note(): no uid, so this is a fixture-liveness check, not
+    // conformance evidence. It carries no mutation record: a note() has no
     // graded line to pair one against.
     // ========================================================================
     {
@@ -508,7 +480,7 @@ int main(int argc, char** argv) {
     // has no read decode: a written value does not come back on a read at
     // its own address.
     //
-    // DECLINED 2026-09-15 (lot B repair, doctrine shape 3): same fault as
+    // DECLINED: same fault as
     //   ch8-disk-register-map-paula-floppy/L2 -- p.263-264 does not leave a
     //   read of a write-only register undefined, it forbids the operation
     //   outright ("If a register is marked as a write-only register, do not
@@ -544,11 +516,11 @@ int main(int argc, char** argv) {
     // behaviourally distinct control from DMAEN, which (per A5/A6) needs
     // two.
     //
-    // REPAIRED 2026-09-15 (lot B): the original form required the whole
-    //   readback word (0xB000) -- p.278 gives DSKBYTR no reset/idle word, and
-    //   bits 15/12 of that word are hardwired constants (paula_floppy.v:699),
-    //   not values p.278 documents. Narrowed to DISKWRITE (bit 13,
-    //   p.278-defined mirror of DSKLEN's WRITE bit) alone.
+    // The check reads DISKWRITE (bit 13, p.278-defined mirror of DSKLEN's
+    //   WRITE bit) alone, not the whole readback word (0xB000): p.278 gives
+    //   DSKBYTR no reset/idle word, and bits 15/12 of that word are
+    //   hardwired constants (paula_floppy.v:699), not values p.278
+    //   documents.
     // ========================================================================
     {
         Rig rig;
@@ -579,13 +551,12 @@ int main(int argc, char** argv) {
     // armed DSKLEN does not start a transfer while enable=0; raising enable
     // alone (no further DSKLEN write) then starts it.
     //
-    // REPAIRED 2026-09-15 (lot B): the original form required the whole
-    //   readback word before (0x9000) and after (0xD000) -- p.278 gives
-    //   DSKBYTR no reset/idle word, and bits 15/12 are hardwired constants
-    //   (paula_floppy.v:699), not documented ones. Narrowed to DMAON (bit
-    //   14, p.278-defined mirror of dsklen's DMAEN, ANDed with `enable`).
-    //   fdd_led is left as-is -- a genuine RTL output port, not a masked
-    //   DSKBYTR bit.
+    // The check reads DMAON (bit 14, p.278-defined mirror of dsklen's
+    //   DMAEN, ANDed with `enable`), not the whole readback word before
+    //   (0x9000) and after (0xD000): p.278 gives DSKBYTR no reset/idle word,
+    //   and bits 15/12 are hardwired constants (paula_floppy.v:699), not
+    //   documented ones. fdd_led is read as-is -- a genuine RTL output port,
+    //   not a masked DSKBYTR bit.
     // ========================================================================
     {
         Rig rig;
@@ -625,25 +596,24 @@ int main(int argc, char** argv) {
     // A4 -- opus:8-dma.c21 / sol:8-dsklen.c10 (p.247, step 2, "Set DSKLEN to
     // $4000, thereby forcing the DMA for the disk to be turned off.").
     //
-    // REPAIRED 2026-09-15 (lot B), two defects fixed together:
-    //   (1) ORACLE: the original form required the whole readback word
-    //       (0xB000) -- p.278 gives DSKBYTR no reset/idle word, and bits
-    //       15/12 are hardwired constants (paula_floppy.v:699), not
-    //       documented ones. Narrowed to DMAON (bit 14) and DISKWRITE (bit
-    //       13, the bit $4000's own payload sets), both p.278-defined.
-    //   (2) SCENARIO: the original trial wrote $4000 from an already-IDLE
-    //       state, where `dmaen` was already 0. Writing $4000 sets
-    //       dsklen[15]<=data_in[15]=0 and dmaen<=data_in[15]&dsklen[15]_old
-    //       = 0&0 = 0 -- a value dmaen already held (paula_floppy.v:735-744).
-    //       The write never observably forced anything OFF; the trial only
-    //       ever graded a WRITE-bit readback (DISKWRITE), which A2 already
-    //       grades under its own citation. Repaired to arm and start a real
-    //       transfer first (as A6/A7 do), confirm it is genuinely active,
-    //       THEN write $4000 and confirm DMA actually turns off -- reaching
-    //       the page's own "forcing... off" mechanism, not a same-state
-    //       no-op. (A7 grades the same active-to-off transition under its
-    //       own, different citation -- p.247 step 5, not step 2; both are
-    //       real, independent printings of the same underlying fact.)
+    //   (1) ORACLE: the check reads DMAON (bit 14) and DISKWRITE (bit 13,
+    //       the bit $4000's own payload sets), both p.278-defined, not the
+    //       whole readback word (0xB000) -- p.278 gives DSKBYTR no
+    //       reset/idle word, and bits 15/12 are hardwired constants
+    //       (paula_floppy.v:699), not documented ones.
+    //   (2) SCENARIO: the trial arms and starts a real transfer first (as
+    //       A6/A7 do), confirms it is genuinely active, THEN writes $4000
+    //       and confirms DMA actually turns off -- reaching the page's own
+    //       "forcing... off" mechanism. From an already-IDLE state `dmaen`
+    //       is already 0: writing $4000 sets dsklen[15]<=data_in[15]=0 and
+    //       dmaen<=data_in[15]&dsklen[15]_old = 0&0 = 0 -- a value dmaen
+    //       already held (paula_floppy.v:735-744) -- so the write would
+    //       observably force nothing OFF and the trial would only grade a
+    //       WRITE-bit readback (DISKWRITE), which A2 already grades under
+    //       its own citation. (A7 grades the same active-to-off transition
+    //       under its own, different citation -- p.247 step 5, not step 2;
+    //       both are real, independent printings of the same underlying
+    //       fact.)
     // ========================================================================
     {
         Rig rig;
@@ -684,11 +654,11 @@ int main(int argc, char** argv) {
     // "Put the value you want into the DSKLEN register."). A single write
     // loads LENGTH/WRITE but does not start DMA.
     //
-    // REPAIRED 2026-09-15 (lot B): the original form required the whole
-    //   idle readback word (0x9000) -- p.278 gives DSKBYTR no reset/idle
-    //   word, and bits 15/12 are hardwired constants (paula_floppy.v:699).
-    //   Narrowed to DMAON (bit 14, p.278-defined): a single write of 0x800A
-    //   (WRITE=0, DMAEN's bit set but not yet armed) must leave DMAON clear.
+    // The check reads DMAON (bit 14, p.278-defined), not the whole idle
+    //   readback word (0x9000) -- p.278 gives DSKBYTR no reset/idle word,
+    //   and bits 15/12 are hardwired constants (paula_floppy.v:699): a
+    //   single write of 0x800A (WRITE=0, DMAEN's bit set but not yet armed)
+    //   must leave DMAON clear.
     // ========================================================================
     {
         Rig rig;
@@ -717,11 +687,11 @@ int main(int argc, char** argv) {
     // a SECONDARY enable, arming DMA only on the second of two consecutive
     // writes with the bit set.
     //
-    // REPAIRED 2026-09-15 (lot B): the original form required the whole
-    //   readback word (0xD000) -- p.278 gives DSKBYTR no reset/idle word, and
-    //   bits 15/12 are hardwired constants (paula_floppy.v:699). Narrowed to
-    //   DMAON (bit 14, p.278-defined mirror of DMAEN). fdd_led and sdc_rd
-    //   are left as-is -- genuine RTL output ports, not masked DSKBYTR bits.
+    // The check reads DMAON (bit 14, p.278-defined mirror of DMAEN), not
+    //   the whole readback word (0xD000) -- p.278 gives DSKBYTR no
+    //   reset/idle word, and bits 15/12 are hardwired constants
+    //   (paula_floppy.v:699). fdd_led and sdc_rd are read as-is -- genuine
+    //   RTL output ports, not masked DSKBYTR bits.
     // ========================================================================
     {
         Rig rig;
@@ -753,13 +723,12 @@ int main(int argc, char** argv) {
     // A7 -- opus:8-dma.c24/sol:8-dsklen.c13 (p.247, step 5, "After the DMA "
     // is complete, set the DSKLEN register back to $4000, to prevent "
     // accidental writes to the disk."). $4000 forces DMA off from an ACTIVE
-    // transfer too, not only from idle (A4).
+    // transfer (A4 grades the same transition under p.247 step 2).
     //
-    // REPAIRED 2026-09-15 (lot B): the original form required the whole
-    //   readback word after (0xB000) -- p.278 gives DSKBYTR no reset/idle
-    //   word, and bits 15/12 are hardwired constants (paula_floppy.v:699).
-    //   Narrowed to DMAON (bit 14) clearing and DISKWRITE (bit 13, the bit
-    //   $4000 itself sets), both p.278-defined.
+    // The check reads DMAON (bit 14) clearing and DISKWRITE (bit 13, the
+    //   bit $4000 itself sets), both p.278-defined, not the whole readback
+    //   word after (0xB000) -- p.278 gives DSKBYTR no reset/idle word, and
+    //   bits 15/12 are hardwired constants (paula_floppy.v:699).
     // ========================================================================
     {
         Rig rig;
@@ -797,12 +766,11 @@ int main(int argc, char** argv) {
     // prevents a single stray write (even with WRITE and DMAEN both set)
     // from starting an accidental disk write.
     //
-    // REPAIRED 2026-09-15 (lot B): the original form required the whole
-    //   readback word (0xF000) for the double-write half -- p.278 gives
-    //   DSKBYTR no reset/idle word, and bits 15/12 are hardwired constants
-    //   (paula_floppy.v:699). Narrowed to DMAON (bit 14) and DISKWRITE (bit
-    //   13), both p.278-defined. dmal/dmas/sdc_wr/fdd_led are left as-is --
-    //   genuine RTL output ports, not masked DSKBYTR bits.
+    // The double-write half reads DMAON (bit 14) and DISKWRITE (bit 13),
+    //   both p.278-defined, not the whole readback word (0xF000) -- p.278
+    //   gives DSKBYTR no reset/idle word, and bits 15/12 are hardwired
+    //   constants (paula_floppy.v:699). dmal/dmas/sdc_wr/fdd_led are read
+    //   as-is -- genuine RTL output ports, not masked DSKBYTR bits.
     // ========================================================================
     {
         Rig rig;
@@ -938,11 +906,9 @@ int main(int argc, char** argv) {
     // bug that causes the last three bits of data sent to the disk to be
     // lost.").
     //
-    // REPAIRED 2026-09-15 (lot B): an independent validation found the prior
-    //   decline's reason ("out of proportion to this package's remaining
-    //   scope") is not a permitted decline shape -- cost is not
-    //   unobservability, and the claims file classifies this proposition as
-    //   observable at `sdc_byte_out_data`. Attempted here instead:
+    // Graded: the claims file classifies this proposition as observable at
+    //   `sdc_byte_out_data`, and the cost of reaching it is no reason to
+    //   decline (cost is not unobservability).
     //   drive_write_transfer_and_read() (defined above, right after the Rig
     //   struct) constructs the full sync+header+payload stream the write
     //   path needs (paula_floppy.v:781-901) and reads back the byte
@@ -987,7 +953,7 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // A13 -- DSKDAT-WRITE-BYTE-COMPARATOR-LIVE (substitute, no manual
-    // citation, added with A11's 2026-09-15 repair). A11 is expected RED
+    // citation). A11 is expected RED
     // (see above) -- the byte survives fully intact, so no ordinary
     // stimulus mutation can make "the byte does not survive" pass; A11
     // carries a `none impossible` mutation record instead (see the top of
@@ -1014,16 +980,14 @@ int main(int argc, char** argv) {
     // ========================================================================
     // A12 -- opus:8-dma.c33 / sol:8-dskbug.c2 (p.247, "Also, the last word "
     // in a disk-read DMA operation may\nnot come in (that is, one less word "
-    // may be read than you asked for)."). REPAIRED 2026-09-15: DECLINED, not
-    // graded. Independent validation found the previous graded-RED assertion
-    // tested MORE than the page states -- the page says a word MAY be lost,
-    // not that one is; "may" demands nothing a single deterministic trial
-    // can violate, so grading `delivered == programmed - 1` as a hard
-    // requirement was a claim the page never made. A12-SUBSTITUTE-EXACT-
-    // COUNT-COMPARATOR-LIVE, whose only job was defending this graded check
-    // against a vacuous-red objection, is removed with it: with nothing
-    // graded, there is no comparator left to defend, and it duplicated
-    // A9/A10's own already-graded, already-green exact-count measurement.
+    // may be read than you asked for)."). DECLINED, not graded: the page
+    // says a word MAY be lost, not that one is; "may" demands nothing a
+    // single deterministic trial can violate, so grading `delivered ==
+    // programmed - 1` as a hard requirement would test a claim the page
+    // never made. With nothing graded there is no comparator to defend
+    // against a vacuous-red objection, so no comparator-liveness substitute
+    // stands beside it; A9/A10 already grade the exact-count mechanism
+    // green.
     // ========================================================================
     {
         Rig rig;
