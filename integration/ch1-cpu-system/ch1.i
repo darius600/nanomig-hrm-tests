@@ -15,19 +15,12 @@
 ;
 ; Every program below clears the boot overlay (CLEAR_OVL) as its very
 ; first instruction, exactly as ch2-copper-control, ch4-shres-sprite-b,
-; ch5-audio-output-scanrate and ch6-blitter-geometry already do for the
-; same reason: gary.v gates sel_chip[0] on "!ovl", so a CPU access to
-; $000000-$07FFFF is redirected to the Kickstart shadow (reads) or hits no
-; bank at all (writes, silently dropped) until one CIA-A write clears it
-; (minimig.v, "ovl <= 0" on sel_cia_a, unconditional on the data written).
-; Once cleared, minimig_sram_bridge's "chipram access" branch (bank[5])
-; maps that range 1:1 onto physical address, identically to the
-; $080000-$1FFFFF blocks the harness's own comments describe -- so
-; SPECIFICATION.md 2.2's literal addresses become ordinary, real,
-; identity-mapped chip RAM, including for P1's own abs.W cases (2.2: "P1's
-; absolute-short cases need their operand below $8000") and for P5's
-; exception vectors ($000010 etc., 68000 instruction set), both of which
-; only work at all in this low range.
+; ch5-audio-output-scanrate and ch6-blitter-geometry already do: one CIA-A
+; write is what makes $000000-$07FFFF ordinary, real, identity-mapped chip
+; RAM at this boundary, needed for SPECIFICATION.md 2.2's literal
+; addresses (including P1's own abs.W cases, 2.2: "P1's absolute-short
+; cases need their operand below $8000", and P5's exception vectors,
+; $000010 etc., 68000 instruction set).
 
 ; ---- common sentinels and results (2.2 table) ------------------------
 S_A             equ     $4000           ; window-open sentinel (P1, P2, P5)

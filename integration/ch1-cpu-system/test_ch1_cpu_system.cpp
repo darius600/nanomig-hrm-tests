@@ -8,27 +8,87 @@
 // plain `make test`. The normal run prints only the fixture-equivalent
 // setup, the preconditions and the assertions -- no separate line.
 //
-// MUTATION P1 stimulus NMH_MUTATE=P1-MOVE: every CLR.x replaced by MOVE.x #0 (p1_move.bin); measured stimulus GREEN, not red -- this core shows the same read-then-write pattern for MOVE.x #0 as for CLR, so the page's own contrast does not flip the assertion here (a finding, reported as a RECORDED line, not a code adjustment), via NMH_MUTATE=P1-MOVE
-// MUTATION P1.a stimulus red NMH_MUTATE=P1A: case 5's S_A store left out (p1_muta.bin), via NMH_MUTATE=P1A
-// MUTATION P1.b stimulus red NMH_MUTATE=P1B: case 8's effective address is T_8+8 (p1_mutb.bin), via NMH_MUTATE=P1B
-// MUTATION P1.c stimulus red NMH_MUTATE=P1C: case 11 assembled as CLR.L while the table still names CLR.W (p1_mutc.bin), via NMH_MUTATE=P1C
-// MUTATION C1 stimulus red NMH_MUTATE=C1: an extra INTENA write follows step 2 (p1_mutc1.bin), via NMH_MUTATE=C1
-// MUTATION C2 stimulus red NMH_MUTATE=C2: an extra DMACON write follows step 4 (p1_mutc2.bin), via NMH_MUTATE=C2
-// MUTATION C3 stimulus red NMH_MUTATE=C3: a branch to FAILRUN precedes the normal S_END write (p1_mutc3.bin), via NMH_MUTATE=C3
-// MUTATION C4 stimulus red NMH_MUTATE=C4: the S_START write is left out (p1_mutc4.bin), via NMH_MUTATE=C4
-// MUTATION P4 stimulus red NMH_MUTATE=C5: p1.bin run with cpu_config left at 68000 while the run is labelled 68020 (C5's own contrast, reused by P4), via NMH_MUTATE=C5
-// MUTATION P2 stimulus red NMH_MUTATE=P2-LOW: every register loaded with its pattern's lower half, zero-extended (p2_low.bin), via NMH_MUTATE=P2-LOW
-// MUTATION P2.a stimulus red NMH_MUTATE=P2A: step 8's S_B write left out (p2_muta.bin), via NMH_MUTATE=P2A
-// MUTATION P2.b stimulus red NMH_MUTATE=P2B: the store of D3 left out (p2_mutb.bin), via NMH_MUTATE=P2B
-// MUTATION P2.c stimulus red NMH_MUTATE=P2C: a TRAP #0 through an RTE-only handler runs between steps 6 and 7 (p2_mutc.bin), via NMH_MUTATE=P2C
-// MUTATION P3.a stimulus red NMH_MUTATE=P3A: block 1's BRA.S replaced by NOP, falling into the guard (p3_mutnop.bin), via NMH_MUTATE=P3A
-// MUTATION P3.b stimulus red NMH_MUTATE=P3B: the same NOP substitution (p3_mutnop.bin), via NMH_MUTATE=P3B
-// MUTATION P3.c stimulus red NMH_MUTATE=P3C: a TST.W W_3 is inserted before block 3 (p3_mutc.bin), via NMH_MUTATE=P3C
-// MUTATION P3.d stimulus red NMH_MUTATE=P3D: block 1 assembled as BRA.W while the table still names BRA.S (p3_mutd.bin), via NMH_MUTATE=P3D
-// MUTATION P5.a stimulus red NMH_MUTATE=P5A: case 1's TRAP #0 replaced by NOP, no exception taken (p5_muta.bin), via NMH_MUTATE=P5A
-// MUTATION P5.b stimulus red NMH_MUTATE=P5B: SUBQ.L #4,A7 inserted before case 1 in the 68010 image (p5_mutb.bin), via NMH_MUTATE=P5B
-// MUTATION P5.c stimulus red NMH_MUTATE=P5C: an extra MOVE.W D0,S_P lands inside W_2 (p5_mutc.bin), via NMH_MUTATE=P5C
-// MUTATION P6.e stimulus red NMH_MUTATE=P6E: every guard shortened to one word, so D(68000 mode) equals the guard length instead of being less than it (p6_mute.bin), via NMH_MUTATE=P6E
+// Every line below is a measured result (run at most two simulations at a
+// time, one core each), not a prediction: "first core" = fx68k, "second
+// core" = TG68K. Baseline (no mutation): first core 33 passed/0 failed;
+// second core 65 passed/2 failed (P4, P6 already red -- see SPECIFICATION.md
+// section 10). Where a mutation's own file is not loaded by a core's run at
+// all, that core's count equals its baseline and is marked "not applicable".
+//
+// MUTATION P1-MOVE NMH_MUTATE=P1-MOVE: every CLR.x replaced by MOVE.x #0
+//   (p1_move.bin) -- measured: first core 32/0 failed, second core 64/2
+//   failed (both at their baseline failure count, no new clause). MOVE.x #0
+//   shows the same read-then-write pattern as CLR on both cores, so the
+//   page's own contrast does not flip the assertion here; recorded via
+//   checks.record(), not adjusted.
+// MUTATION P1A NMH_MUTATE=P1A: case 5's S_A store left out (p1_muta.bin) --
+//   measured: first core 31/2 failed (P1.a, P1), second core 63/4 failed
+//   (P1.a, P1, plus the baseline P4/P6).
+// MUTATION P1B NMH_MUTATE=P1B: case 8's effective address is T_8+8
+//   (p1_mutb.bin) -- measured: first core 31/2 failed (P1.b, P1), second
+//   core 63/4 failed (P1.b, P1, plus baseline P4/P6).
+// MUTATION P1C NMH_MUTATE=P1C: case 11 assembled as CLR.L while the table
+//   still names CLR.W (p1_mutc.bin) -- measured: first core 32/1 failed
+//   (P1.c), second core 64/3 failed (P1.c, plus baseline P4/P6).
+// MUTATION C1 NMH_MUTATE=C1: an extra INTENA write follows step 2
+//   (p1_mutc1.bin) -- measured: first core 32/1 failed (C1), second core
+//   64/3 failed (C1, plus baseline P4/P6).
+// MUTATION C2 NMH_MUTATE=C2: an extra DMACON write follows step 4
+//   (p1_mutc2.bin) -- measured: first core 32/1 failed (C2), second core
+//   64/3 failed (C2, plus baseline P4/P6).
+// MUTATION C3 NMH_MUTATE=C3: a branch to FAILRUN precedes the normal S_END
+//   write (p1_mutc3.bin) -- measured: first core 32/1 failed (C3), second
+//   core 64/3 failed (C3, plus baseline P4/P6).
+// MUTATION C4 NMH_MUTATE=C4: the S_START write is left out (p1_mutc4.bin) --
+//   measured: first core 32/1 failed (C4), second core 64/3 failed (C4,
+//   plus baseline P4/P6).
+// MUTATION C5/P4 NMH_MUTATE=C5: p1.bin run with cpu_config left at 68000
+//   while the run is labelled 68020 (C5's own contrast, reused by P4) --
+//   measured: first core 33/0 failed (not applicable: P4/C5 are not run on
+//   this core, SPECIFICATION.md section 6), second core 64/3 failed (C5,
+//   plus baseline P4/P6, already red on this core for an unrelated reason).
+// MUTATION P2-LOW NMH_MUTATE=P2-LOW: every register loaded with its
+//   pattern's lower half, zero-extended (p2_low.bin) -- measured: first
+//   core 32/1 failed (P2), second core 64/3 failed (P2, plus baseline
+//   P4/P6).
+// MUTATION P2A NMH_MUTATE=P2A: step 8's S_B write left out (p2_muta.bin) --
+//   measured: first core 30/3 failed (P2.a, P2.b, P2), second core 62/5
+//   failed (P2.a, P2.b, P2, plus baseline P4/P6).
+// MUTATION P2B NMH_MUTATE=P2B: the store of D3 left out (p2_mutb.bin) --
+//   measured: first core 31/2 failed (P2.b, P2), second core 63/4 failed
+//   (P2.b, P2, plus baseline P4/P6).
+// MUTATION P2C NMH_MUTATE=P2C: a TRAP #0 through an RTE-only handler runs
+//   between steps 6 and 7 (p2_mutc.bin) -- measured: first core 32/1 failed
+//   (P2.c), second core 64/3 failed (P2.c, plus baseline P4/P6).
+// MUTATION P3A NMH_MUTATE=P3A: block 1's BRA.S replaced by NOP, falling
+//   into the guard (p3_mutnop.bin) -- measured: first core 27/6 failed (C3,
+//   P3.a, P3.b, P3.d, P3.c, P3), second core 59/8 failed (the same six,
+//   plus baseline P4/P6).
+// MUTATION P3B NMH_MUTATE=P3B: the same NOP substitution (p3_mutnop.bin) --
+//   measured: first core 27/6 failed (C3, P3.a, P3.b, P3.d, P3.c, P3),
+//   second core 59/8 failed (the same six, plus baseline P4/P6).
+// MUTATION P3C NMH_MUTATE=P3C: a TST.W W_3 is inserted before block 3
+//   (p3_mutc.bin) -- measured: first core 32/1 failed (P3.c), second core
+//   64/3 failed (P3.c, plus baseline P4/P6).
+// MUTATION P3D NMH_MUTATE=P3D: block 1 assembled as BRA.W while the table
+//   still names BRA.S (p3_mutd.bin) -- measured: first core 32/1 failed
+//   (P3.d), second core 64/3 failed (P3.d, plus baseline P4/P6).
+// MUTATION P5A NMH_MUTATE=P5A: case 1's TRAP #0 replaced by NOP, no
+//   exception taken (p5_muta.bin) -- measured: first core 31/2 failed
+//   (P5.a, P5.c), second core 62/5 failed (P5.a, P5.c, P5.b, plus baseline
+//   P4/P6).
+// MUTATION P5B NMH_MUTATE=P5B: SUBQ.L #4,A7 inserted before case 1 in the
+//   68010 image (p5_mutb.bin) -- measured: first core 33/0 failed (not
+//   applicable: this core never loads the 68010 image), second core 64/3
+//   failed (P5.b, plus baseline P4/P6).
+// MUTATION P5C NMH_MUTATE=P5C: an extra MOVE.W D0,S_P lands inside W_2
+//   (p5_mutc.bin) -- measured: first core 32/1 failed (P5.c), second core
+//   64/3 failed (P5.c, plus baseline P4/P6).
+// MUTATION P6E NMH_MUTATE=P6E: every guard shortened to one word, so
+//   D(68000 mode) equals the guard length instead of being less than it
+//   (p6_mute.bin) -- measured: first core 32/1 failed (P6.e), second core
+//   64/3 failed (P6.e, plus the cross-core P6 clause and P4, both already
+//   red on this core for an unrelated reason).
 //
 // P3's own main relation has no page-predicted contrasting case
 // (SPECIFICATION.md section 5: "None exists on the pages") -- not

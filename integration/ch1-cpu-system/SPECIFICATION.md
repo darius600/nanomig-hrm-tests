@@ -852,8 +852,7 @@ counted as in P3, as a calibration.
   (`CIAAPRA`, $BFE001, any write) so that the identity-mapped range
   extends down to $000000, making 2.2's own literal addresses ($3FF0,
   $4000-$4544, $8000 taken as "wherever code starts") real, writable chip
-  RAM, including P1's abs.W cases and P5's exception vectors. `ch1.i`
-  documents the exact reasoning.
+  RAM, including P1's abs.W cases and P5's exception vectors.
 - **X_c/X_k self-report.** Every case/block stores the address of its own
   CLR/MOVE/stop instruction into a table (XTAB, XTAB3, XTAB6) with a
   PC-relative LEA, so the C++ side never hand-counts instruction lengths.
