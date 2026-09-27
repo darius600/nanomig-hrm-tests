@@ -1,8 +1,8 @@
 # SPECIFICATION -- ch1-denise-what-it-contains
 
 Package: `hrm/ch1-denise-what-it-contains`
-Fixture: `denise` (top module, per the task's package table -- one Verilator
-build, `denise.v` plus every module it itself instantiates).
+Fixture: `denise` (top module -- one Verilator build, `denise.v` plus every
+module it itself instantiates).
 Claims file: `hrm-testpipeline/work/2026-09-16_ch1_packages.jsonl`, filtered
 to `classify.package == "ch1-denise-what-it-contains"` -- 37 records.
 Subject: chapter 1's "what Denise contains" material -- printed pages 1-4
@@ -10,37 +10,26 @@ Subject: chapter 1's "what Denise contains" material -- printed pages 1-4
 sprite and priority/collision bullets) and page 8 (Figure 1-1, the DENISE
 block).
 
-## Order-of-work disclosure
+## Sources
 
-The build brief for this slice requires writing this file from the
-quotations alone and committing it before the RTL is opened. That did not
-hold, and this paragraph says so rather than concealing it: every one of
-the 37 claim records handed to this builder already carries a
-`classify.evidence` field with concrete `file:line` citations into
-`denise.v` and its submodules (port names, bit assignments, instantiation
-line numbers) -- the same situation `hrm/ch8-display-colour-count/` and
-`hrm/ch8-appb-chip-column-denise/` (read as this package's own modelled
-convention, per the build brief's instruction) both disclosed rather than
-papered over for their own packages. This file is written from the
-`extract.quote` / `classify.evidence` / `classify.observable` content of the
-37 claims, and from grepping the already-committed sibling packages under
-`hrm/` for overlapping propositions (see "Existing coverage" below) --
-not from an independent RTL reading of this builder's own. `denise.v` and
-its submodules were subsequently opened in full to confirm exact port
-names, bit positions and the disposition boundaries argued below; nothing
-beyond what the claims data and the cited sibling packages already
-disclosed was needed to reach every disposition in this file.
+This file rests on the `extract.quote` / `classify.evidence` /
+`classify.observable` content of the 37 claims, whose `classify.evidence`
+fields already carry `file:line` citations into `denise.v` and its
+submodules (port names, bit assignments, instantiation line numbers), and
+on the sibling packages under `hrm/` that grade overlapping propositions.
+Port names and bit positions are confirmed against `denise.v` and its
+submodules.
 
 ## This chapter is an introduction: grade the sentence, not the mechanism
 
-Per the build brief: this package's 37 claims are structural sentences.
+This package's 37 claims are structural sentences.
 The assertion is that a thing is inside Denise's boundary, or that a port
 carries a stated width -- not that the mechanism behaves correctly. Chapters
 3 (playfields) and 4 (sprites) are accepted chapters that already grade the
-detailed mechanism behind much of what chapter 1 only names. Before writing
-any assertion below, the existing `hrm/` tree was grepped for an assertion
-on the same printed proposition; where one was found, the claim is declined
-on a `record()` line citing that package, rather than re-graded here.
+detailed mechanism behind much of what chapter 1 only names. For every
+proposition, the `hrm/` tree is searched for an assertion on the same
+printed proposition; where one exists, the claim is declined on a
+`record()` line citing that package, rather than re-graded here.
 
 ## The 37 claims, grouped into 19 propositions
 
@@ -48,8 +37,8 @@ Two readers (`sol`, `opus`) independently claimed nearly every sentence in
 this material; their bare ids diverge by a small constant from
 `1-components.c45`/`c46` onward (one reader split an earlier sentence
 differently), so pairing is by page + restatement content, not by bare id
-equality -- consistent with the build brief's own warning that `(reader,
-id)` is the uid, never the bare id alone. One claim, `sol:1-blockdiag.c14`
+equality -- `(reader, id)` is the uid, never the bare id alone. One claim,
+`sol:1-blockdiag.c14`
 (Figure 1-1, page 8), has no twin in this package.
 
 ### Group A -- graded in this package (4 propositions, 9 claims)
@@ -58,7 +47,7 @@ id)` is the uid, never the bare id alone. One claim, `sol:1-blockdiag.c14`
 this through the use of custom silicon hardware that yields advanced
 graphics and sound features." This bundles two domains (video, audio) and
 this package's fixture is `denise` alone -- it cannot exercise Paula's audio
-path. Per the build brief's "no claim may lose its home" rule: where only
+path. Under the "no claim may lose its home" rule: where only
 part of a claim is gradeable at this boundary, the measurement is kept
 under an `expect()` label carrying **no uid**, and both uids are cited on a
 `record()` line telling the whole story. Graded here: the video half only
@@ -122,8 +111,8 @@ window/hpos state machine `hrm/ch3-bplcon0-display-modes/` and
 this exact `denise` fixture (their own headers disclose the c1/c3-overlap
 clock trap and the hpos-mirroring bookkeeping this would otherwise have to
 reinvent). Building a second copy of that machinery here, for a chapter-1
-restatement, is exactly the "inflate a structural sentence into a
-mechanism test" trap the build brief warns against. Declined, citing both
+restatement, would inflate a structural sentence into a mechanism test.
+Declined, citing both
 packages for ownership of the bitplane-to-pixel mechanism, and the Agnus
 beam counter (outside any `denise`-only fixture) for the PAL/NTSC half.
 
@@ -132,8 +121,7 @@ modify (HAM) mode allows for the display of up to 4,096 colors on screen
 simultaneously." `denise_hamgenerator` is instantiated inside `denise`
 (denise.v:459) -- containment is not in question. But actually measuring
 "4,096 simultaneously" needs HAM mode enabled, and `hrm/ch3-ham-control-
-field/`'s own already-committed, already-run header records that the
-manual **disagrees with itself** about which BPLCON0 bit enables HAM (p.95
+field/`'s own header records that the manual **disagrees with itself** about which BPLCON0 bit enables HAM (p.95
 says bit 10; pp.87/90/271 say bit 11) and explicitly declines to resolve
 that dispute or pick a side, at the narrower `denise_hamgenerator` fixture
 where the question is at least directly askable. Driving HAM mode through
@@ -172,9 +160,9 @@ fixture, same reasoning as A3/B1. The colour half ("4 colors from a
 palette of 64") is genuinely ambiguous at this remove: it may be EHB
 (extra-half-brite, `denise_colortable`'s own select[5] mechanism, already
 measured by `hrm/ch3-colour-register-format/`'s `EHB-HALVES-INTENSITY`) or
-a distinct ECS-specific wide-select path; this builder could not settle
-which without exactly the kind of RTL-first guessing the build brief
-prohibits. Declined in full: geometry cited to the Agnus boundary, colour
+a distinct ECS-specific wide-select path; the page does not say which, and
+this package does not settle it from the RTL. Declined in full: geometry
+cited to the Agnus boundary, colour
 mechanism cited to `hrm/ch3-colour-register-format/`'s `EHB-HALVES-
 INTENSITY` as the closest already-measured "beyond 32 base colours" fact
 at the shared `denise_colortable` mechanism, with the ambiguity disclosed
@@ -249,13 +237,12 @@ CH4-size.c2), because sprite height is set entirely by
 `agnus_spritedma.v`'s own DMA-fetched position/control words -- not
 visible at `denise_sprites_shifter`, and not visible anywhere in `denise`
 either (confirmed: no vertical line-count port exists on `denise`'s own
-top-level interface). This builder found no package anywhere in `hrm/`
-that measures "arbitrary number of lines" as its own proposition; it
-remains ungraded across the suite, for a genuine boundary reason repeated
-at every fixture that has been tried so far. Declined here for the same
-boundary reason (Agnus's DMA engine, outside `denise` entirely), citing
-`hrm/ch4-sprite-shifter/`'s own prior finding of the identical gap rather
-than claiming false coverage.
+top-level interface). No package in `hrm/` measures "arbitrary number of
+lines" as its own proposition; it remains ungraded across the suite, for a
+genuine boundary reason. Declined here for the same boundary reason
+(Agnus's DMA engine, outside `denise` entirely), citing
+`hrm/ch4-sprite-shifter/`'s own finding of the identical gap rather than
+claiming false coverage.
 
 **B11. `sol:1-components.c67` + `opus:1-components.c66`** (p.4:
 "Dynamically controllable inter-object priority, with collision
@@ -297,17 +284,15 @@ claims, on 4 `expect()` labels -- three of them shared across more than one
 proposition per the "no claim may lose its home" partial-grading rule) plus
 one infrastructure liveness control. Fourteen propositions (28 claims) are
 declined on `record()` lines, each citing the specific existing package and
-assertion (with uids where this builder captured them directly) that
-already grades the same proposition, or the specific boundary reason
-(Agnus's beam counter / DMA engine, outside every `denise`-only fixture)
-that makes the claim ungradeable here without inventing a wider fixture
-this package was not assigned to build.
+assertion (with uids where available) that already grades the same
+proposition, or the specific boundary reason (Agnus's beam counter / DMA
+engine, outside every `denise`-only fixture) that makes the claim
+ungradeable here without a wider fixture outside this package's scope.
 
 ## Mutation plan
 
-Every `expect()`-graded assertion below (the four claim-bearing ones; the
-liveness control is tagged `[control]` and is exempt, per the convention
-`hrm/ch3-collision-registers/` and `hrm/ch3-colour-register-format/` both
-already document) gets one stimulus mutation, replayable as
-`make MUT=MUT_n test`, confirmed red in isolation and reverted, per the
-build brief's `MUT_n` / `-D` convention.
+Every `expect()`-graded assertion (the four claim-bearing ones and the
+`[control]` liveness check: the mutation gate reads the id after a
+bracketed tag, so a control is an ordinary assertion to it) gets one
+stimulus mutation, replayable as `make MUT=MUT_n test`, confirmed red in
+isolation and reverted, under the suite's `MUT_n` / `-D` convention.

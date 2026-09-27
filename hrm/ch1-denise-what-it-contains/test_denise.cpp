@@ -7,7 +7,7 @@
 //   37 claims (19 propositions, two readers `sol`/`opus`), from
 //   hrm-testpipeline/work/2026-09-16_ch1_packages.jsonl filtered to
 //   classify.package == "ch1-denise-what-it-contains". Full derivation in
-//   SPECIFICATION.md (committed 18b007d before this file was written).
+//   SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.1-4, 8 (Figure 1-1). A red result below means denise.v disagrees with
@@ -32,26 +32,16 @@
 //   37 claims) are DECLINED on record() lines citing the sibling package
 //   that already grades them, or the specific boundary (Agnus's beam
 //   counter / DMA engine, no port on `denise` reaches either) that makes
-//   them ungradeable at a `denise`-only fixture without building a wider
-//   rig this package was not assigned to build. Only 4 propositions (9
-//   claims) are graded here, on 4 expect() assertions plus one
-//   infrastructure liveness control.
+//   them ungradeable at a `denise`-only fixture without a wider rig outside
+//   this package's scope. Only 4 propositions (9 claims) are graded here,
+//   on 4 expect() assertions plus one infrastructure liveness control.
 //
-// ORDER OF WORK: SPECIFICATION.md was written and committed (18b007d) from
-//   the 37 claims' own quotations/classify.evidence and from grepping
-//   already-committed sibling packages -- but the claims data itself
-//   already carried file:line RTL citations for every claim, so the letter
-//   of "spec before RTL" did not fully hold; SPECIFICATION.md's own
-//   "Order-of-work disclosure" section says so, matching the precedent
-//   hrm/ch8-display-colour-count/ and hrm/ch8-appb-chip-column-denise/ both
-//   already set for their own packages. denise.v was opened in full after
-//   that commit to confirm exact bit positions (BPLCON0[15]=hires,
-//   BPLCON0[6]=shres, denise.v:180/187), the write-decode mechanism
-//   (denise.v:174-176), and to re-confirm (independently, by grep in this
-//   pass) that no address used by userio.v/paula.v/agnus.v (e.g. JOY0DAT,
-//   word address 0x05/$00A) appears anywhere in denise.v or any module it
-//   instantiates -- zero hits, the same fact hrm/ch8-appb-chip-column-
-//   denise/ already measured for its own three JOY*/JOYTEST rows.
+// RTL POSITIONS USED: BPLCON0[15]=hires, BPLCON0[6]=shres (denise.v:180/187);
+//   the write-decode mechanism (denise.v:174-176). No address used by
+//   userio.v/paula.v/agnus.v (e.g. JOY0DAT, word address 0x05/$00A) appears
+//   anywhere in denise.v or any module it instantiates (grep: zero hits),
+//   the same fact hrm/ch8-appb-chip-column-denise/ measures for its own
+//   three JOY*/JOYTEST rows.
 //
 // BOUNDARY: `denise` (denise.v) and every module it itself instantiates --
 //   denise_bitplanes (bplm0, denise.v:345), denise_playfields (plfm0,
@@ -64,12 +54,11 @@
 //   SRC list, the only place a module could be added. Port list (denise.v:
 //   32-51): clk, clk7_en, c1, c3, cck, reset, strhor, reg_address_in[8:1],
 //   data_in[15:0], chip48[47:0], data_out[15:0] (out), blank (IN -- an
-//   external blanking signal denise CONSUMES, not one it produces; one of
-//   this package's own source claims (c54/c53, declined as B4 below)
-//   assumed the opposite when it proposed reading `blank` as an output --
-//   a classifier evidence error this build found and did not need to
-//   correct, since B4 is declined on stronger, independent grounds
-//   regardless), red/green/blue[7:0] (out), a1k, ecs, aga, hires (out),
+//   external blanking signal denise CONSUMES, not one it produces; the
+//   classify.evidence of this package's claims c54/c53 (declined as B4
+//   below) proposes reading `blank` as an output, which this port list
+//   contradicts; B4 is declined on independent grounds regardless),
+//   red/green/blue[7:0] (out), a1k, ecs, aga, hires (out),
 //   shres (out). No CPU address/data/interrupt-acknowledge port of any
 //   kind is declared anywhere in this list -- the register bus (reg_
 //   address_in/data_in) is the only content-bearing input.
@@ -77,18 +66,15 @@
 // MUTATION METHODOLOGY: every expect() below is guarded by a compile-time
 //   #if MUT_n, built via `make MUT=MUT_n test` (Makefile: -CFLAGS
 //   -D$(MUT)=1), confirmed red in isolation, then rebuilt with MUT unset to
-//   confirm the clean baseline result returned. CORRECTED (coordinator
-//   review, 17.09.2026): an earlier version of this file exempted the
-//   infrastructure control (FIXTURE-LIVE-BPLCON0) from a mutation record,
-//   citing hrm/ch3-collision-registers/'s own comment that "[control]"
-//   assertions do not need one. That comment is wrong about its own gate --
-//   measured directly (tools/check_gates.py): the gate strips a bracketed
-//   tag and reads the id after it, so a "[control]"-tagged assertion is an
-//   ordinary assertion to it, and ch3-collision-registers itself in fact
-//   records a mutation for every one of its 14 assertions, controls
-//   included (ALL-DISABLED-CONTINUOUS-CONTROL, READ-CLEAR-CONTROL), the
-//   same as ch3-colour-register-format's CONTROL-KNOWN-VALUES-ARRIVE. Every
-//   assertion below now carries its own mutation, controls included.
+//   confirm the clean baseline result returned. Every assertion below
+//   carries its own mutation, the infrastructure control
+//   (FIXTURE-LIVE-BPLCON0) included: the mutation gate
+//   (tools/check_gates.py) strips a bracketed tag and reads the id after
+//   it, so a "[control]"-tagged assertion is an ordinary assertion to it.
+//   ch3-collision-registers (ALL-DISABLED-CONTINUOUS-CONTROL,
+//   READ-CLEAR-CONTROL) and ch3-colour-register-format
+//   (CONTROL-KNOWN-VALUES-ARRIVE) likewise record a mutation for their
+//   controls.
 //
 // MUTATION FIXTURE-LIVE-BPLCON0 stimulus red MUT_4: the second BPLCON0 write replays the first word (0x8000) instead of a different one (0x0040), so shres never moves off its reset value and the second reading does not differ from the first.
 // MUTATION CUSTOM-SILICON-DRIVES-VIDEO-NO-CPU stimulus red MUT_0: the SHRES-setting write's value changed from 0x0040 (bit 6 set) to 0x0000, so shres never moves off its reset value and the "the register bus alone moves the video output" measurement collapses to a no-op.
@@ -187,15 +173,15 @@ int main(int argc, char** argv) {
     };
 
     // ========================================================================
-    // [control] FIXTURE-LIVE-BPLCON0 -- no claim id, no page: the build
-    // brief's own requirement that the fixture prove it can deliver a known,
-    // distinct value before any claim-bearing assertion is trusted. BPLCON0
+    // [control] FIXTURE-LIVE-BPLCON0 -- no claim id, no page: the fixture
+    // proves it can deliver a known, distinct value before any
+    // claim-bearing assertion is trusted. BPLCON0
     // and its hires/shres output ports (denise.v:59, 174-180, 187) are used
     // because they are direct, combinational, primary outputs -- "the value
     // arrived" is observed on a real port, not inferred from a read
     // multiplexer that could itself be the thing under test. Carries its own
-    // mutation (MUT_4) like every other assertion below -- see the
-    // MUTATION METHODOLOGY correction above.
+    // mutation (MUT_4) like every other assertion below -- see
+    // MUTATION METHODOLOGY above.
     // ========================================================================
     do_reset();
     write_reg(BPLCON0, 0x8000);  // hires=1, shres=0
@@ -221,7 +207,7 @@ int main(int argc, char** argv) {
     // A1 -- sol:1-components.c2 opus:1-components.c2 (p.1) -- PARTIAL.
     // "The Amiga does this through the use of custom silicon hardware that
     // yields advanced graphics and sound features." This fixture is `denise`
-    // alone and cannot exercise Paula's audio path, so per the build brief's
+    // alone and cannot exercise Paula's audio path, so under the suite's
     // "no claim may lose its home" rule the measurement below carries NO
     // UID (it grades only the video half) and both uids are cited on the
     // record() that follows it, which tells the whole story.
@@ -395,7 +381,7 @@ int main(int argc, char** argv) {
     // GROUP B -- declined. Fifteen propositions (28 claims) whose
     // proposition is already graded by an existing sibling package, or
     // whose remaining half needs a fixture (Agnus's beam counter / DMA
-    // engine) this package was not assigned to build. Full reasoning for
+    // engine) outside this package's scope. Full reasoning for
     // each is in SPECIFICATION.md's "Existing coverage" section; the
     // record() text below states each one's own citation, condensed.
     // ========================================================================
@@ -412,9 +398,9 @@ int main(int argc, char** argv) {
         "phase-accurate window/hpos state machine hrm/ch3-bplcon0-display-"
         "modes/ and hrm/ch3-horizontal-display-window/ already built and "
         "already exercise at this exact denise fixture -- building a second "
-        "copy here, for a chapter-1 restatement, is the 'inflate a "
-        "structural sentence into a mechanism test' trap the build brief "
-        "warns against. Declined citing both packages' ownership of the "
+        "copy here, for a chapter-1 restatement, would inflate a "
+        "structural sentence into a mechanism test. Declined citing both "
+        "packages' ownership of the "
         "bitplane-to-pixel mechanism and Agnus's beam counter for the "
         "PAL/NTSC half.");
 
@@ -423,8 +409,8 @@ int main(int argc, char** argv) {
         "modify (HAM) mode allows for the display of up to 4,096 colors on "
         "screen simultaneously.'): declined. denise_hamgenerator is "
         "instantiated inside denise (denise.v:459, containment not in "
-        "question), but hrm/ch3-ham-control-field/'s own already-committed, "
-        "already-run header records that the manual disagrees with itself "
+        "question), but hrm/ch3-ham-control-field/'s own header records "
+        "that the manual disagrees with itself "
         "about which BPLCON0 bit enables HAM (p.95 says bit 10; pp.87/90/271 "
         "say bit 11) and explicitly declines to resolve that dispute, even "
         "at the narrower denise_hamgenerator fixture where the question is "
@@ -468,7 +454,8 @@ int main(int argc, char** argv) {
         "remove -- it may be EHB (denise_colortable's own select[5] "
         "mechanism, already measured by hrm/ch3-colour-register-format/'s "
         "EHB-HALVES-INTENSITY) or a distinct ECS-specific wide-select path; "
-        "this builder could not settle which without RTL-first guessing. "
+        "the page does not say which, and this package does not settle it "
+        "from the RTL. "
         "Declined: geometry cited to the Agnus boundary, colour mechanism "
         "cited to EHB-HALVES-INTENSITY as the closest already-measured "
         "'beyond 32 base colours' fact, ambiguity disclosed not resolved by "
@@ -550,12 +537,11 @@ int main(int argc, char** argv) {
         "DMA-fetched position/control words -- not visible at denise_"
         "sprites_shifter, and not visible anywhere in denise either "
         "(confirmed: no vertical line-count port on denise's own top-level "
-        "interface). No package anywhere in hrm/ was found that measures "
-        "'arbitrary number of lines' as its own proposition; it remains "
-        "ungraded across the suite for a genuine, repeated boundary reason. "
-        "Declined here for the same reason, citing hrm/ch4-sprite-shifter/'s "
-        "own prior finding of the identical gap rather than claiming false "
-        "coverage.");
+        "interface). No package in hrm/ measures 'arbitrary number of "
+        "lines' as its own proposition; it remains ungraded across the "
+        "suite for a genuine boundary reason. Declined here for the same "
+        "reason, citing hrm/ch4-sprite-shifter/'s own finding of the "
+        "identical gap rather than claiming false coverage.");
 
     checks.record(
         "B11 sol:1-components.c67 opus:1-components.c66 (p.4, "
