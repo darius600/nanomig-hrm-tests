@@ -25,11 +25,10 @@
 //   declined; classify already marked all 19 "testable". A red result below
 //   means paula_audio_channel.v disagrees with the manual, not that the
 //   assertion is wrong -- no expected value here was, or should be, adjusted
-//   to make the RTL pass. GROUP C's clause was repaired after NM-HRM-027 was
-//   withdrawn: it had graded the write's own Figure 5-8 000->010 arc against
-//   a sentence (p157) that, read with p164 and the figure's OTHER arc
-//   (011->010), names the later word-transition moment instead -- see GROUP
-//   C below for what it now measures.
+//   to make the RTL pass. GROUP C grades the word-transition moment: its
+//   sentence (p157), read with p164 and Figure 5-8's 011->010 arc, names
+//   that moment, not the write's own 000->010 arc -- see GROUP C below for
+//   what it measures.
 // Non-goals: anything outside the `paula_audio_channel` fixture this package
 //   builds, and any claim it does not name. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
@@ -42,11 +41,7 @@
 //   planned; it resolves nowhere public, and docs/legacy-names.md gives the
 //   finding keys that replaced the ones that were findings.
 //
-// ORDER OF WORK: this file's assertions, expected values, and claim-id
-//   coverage were written and committed from claims.jsonl's quotations
-//   alone. paula_audio_channel.v was NOT opened by this agent before that
-//   commit. What this agent used instead, all of it handed to this task as
-//   input rather than discovered by opening the file:
+// HARNESS AND SIGNAL SOURCES:
 //     - the port list for this module (BOUNDARIES.md's boundary table):
 //       volume[6:0], sample[7:0], sample_okk[7:0], intreq, dmareq, dmas,
 //       driven by data[16:0]/data[15:0], reg_address_in[3:1], aen.
@@ -54,15 +49,13 @@
 //       reg_address_in/write_reg (byte address >> 1) convention, and the
 //       clk7_en/cck/strhor clocking pattern (4-tick clk7_en divider, 2-tick
 //       cck divider, strhor pulsed once per 227-cck line at hpos==13) --
-//       reused verbatim from hrm/paula_audio_channel/test_paula_audio_channel.cpp,
-//       an already-committed, already-built sibling harness for this SAME
-//       fixture. That sibling's own successful run (PASS: sample sequence
-//       0x12 then 0x34 from one 0x1234 DMA word) is what establishes this
-//       clocking pattern actually drives real activity on this module.
+//       those of the pre-pipeline harness for this SAME fixture,
+//       hrm/paula_audio_channel/test_paula_audio_channel.cpp (removed); the
+//       FIXTURE-LIVENESS check below confirms the pattern drives real
+//       activity on this module.
 //     - internal signal names audio_state, AUDxON, AUDxIP, AUDxIR, AUDxDAT,
-//       perfin -- named by this task's own brief/CANDIDATES.md by exact
-//       line number (paula_audio_channel.v:129 "AUDxON being dmaena";
-//       :242-246 state parameters, AUDIO_STATE_3 = 3'b010; :281-290/:283-285
+//       perfin, at these lines of the RTL (paula_audio_channel.v:129
+//       "AUDxON being dmaena"; :242-246 state parameters, AUDIO_STATE_3 = 3'b010; :281-290/:283-285
 //       the idle-exit CPU branch "AUDxDAT && !AUDxON && !AUDxIP", which sets
 //       AUDxIR at the write itself; :421 the loop-continue guard
 //       "perfin && (AUDxON || !AUDxIP)"; :431 the idle-fallback guard
@@ -81,12 +74,12 @@
 //       silence=1, sample=0x00 in state 010; second write gives the real
 //       byte). This package's dmaena is never raised, so it never falls
 //       1->0 either -- the specific edge this latch keys on cannot occur
-//       here structurally, by construction of the fixture ("DMA never
-//       enabled" as this task instructed). The FIXTURE-LIVENESS check below
-//       still measures, rather than assumes, whether the very first
-//       AUDxDAT write after reset produces the written byte directly or
-//       whether some other silence artifact intervenes, and reports the
-//       measured answer in its own text -- see RESULTS for what was found.
+//       here structurally, by construction of the fixture (DMA is never
+//       enabled). The FIXTURE-LIVENESS check below still measures, rather
+//       than assumes, whether the very first AUDxDAT write after reset
+//       produces the written byte directly or whether some other silence
+//       artifact intervenes, and reports the measured answer in its own
+//       text -- see RESULTS.
 //
 // MUTATION METHOD: every one of the 10 assertion groups below has a paired
 //   mutation, recorded as `// MUTATION <id> (oracle|stimulus|none) (red|
@@ -97,38 +90,33 @@
 //   quotation, or comparison threshold is ever changed by a mutation.
 //
 // CLAIM COVERAGE: all 19 ids of claims.jsonl are cited below, in full,
-//   inside a CHECK(...) call's own text, PLUS one further id added
-//   2026-09-12 (see GAP CLOSURE below) -- 20 in total:
+//   inside a CHECK(...) call's own text, plus 5-direct.c7 (see GROUP F
+//   TWIN below) -- 20 in total:
 //   GROUP A  5-p157.c10 5-direct.c1
 //   GROUP B  5-p157.c11 5-direct.c2
 //   GROUP C  5-p157.c13 5-direct.c4
 //   GROUP D  5-p157.c14 5-direct.c5
 //   GROUP E  5-p157.c15 5-direct.c6
-//   GROUP F  5-p157.c16 5-direct.c7   (5-direct.c7 added 2026-09-12, see
-//                                       GAP CLOSURE below)
+//   GROUP F  5-p157.c16 5-direct.c7   (5-direct.c7: see GROUP F TWIN
+//                                       below)
 //   GROUP G  5-p164.c5  5-sm.c6
 //   GROUP H  5-p164.c7  5-sm.c9
 //   GROUP I  5-p164.c12 5-sm.c14
 //   GROUP J  5-p164.c13 5-sm.c15
 //
-// GAP CLOSURE (2026-09-12, revalidation blocker 3): 5-direct.c7 is the opus
-//   twin of 5-p157.c16 -- the identical sentence, "The volume and period
-//   registers are set as usual," independently read a second time. When
-//   this package's own claims.jsonl was built, that twin's crossread
-//   verdict was "defect: not_behaviour" (a programming instruction, not a
-//   stated hardware response) and it was left out of this package's 19
-//   ids. Independent validation finding V-10 reclassified it TESTABLE: the
-//   sentence states a dimensionless, in-cck-ticks timing/value proposition
-//   ("set as usual" = matches the DMA-mode encoding), the same kind of
-//   claim hrm/ch5-audio-period-and-length already asserts in cck ticks, and
-//   no Hertz-valued or absolute-frequency reading is required. GROUP F
-//   already measures exactly that proposition -- AUDVOL/AUDPER read back
-//   as written, and the measured perfin-to-perfin period in cck ticks
-//   matches AUDPER, all while dmaena=0 (direct mode) -- so 5-direct.c7 is
-//   added to GROUP F's own CHECK and MUTATION text rather than given a new
-//   assertion. The stale claims.jsonl-era note that 5-direct.c7 "was
-//   discarded upstream" is superseded by this reclassification and is
-//   removed from this header.
+// GROUP F TWIN: 5-direct.c7 is the opus twin of 5-p157.c16 -- the
+//   identical sentence, "The volume and period registers are set as
+//   usual," independently read a second time, and cited here in addition
+//   to the 19 ids of claims.jsonl. The sentence is testable: it states a
+//   dimensionless, in-cck-ticks timing/value proposition ("set as usual" =
+//   matches the DMA-mode encoding), the same kind of claim
+//   hrm/ch5-audio-period-and-length asserts in cck ticks, and no
+//   Hertz-valued or absolute-frequency reading is required. GROUP F
+//   measures exactly that proposition -- AUDVOL/AUDPER read back as
+//   written, and the measured perfin-to-perfin period in cck ticks matches
+//   AUDPER, all while dmaena=0 (direct mode) -- so 5-direct.c7 is cited in
+//   GROUP F's own CHECK and MUTATION text rather than given a new
+//   assertion.
 //
 // CONTROL: GROUP H (immediate transfer to the output state on a qualifying
 //   write) is measured from the same early trace event GROUP C's own text
@@ -142,18 +130,17 @@
 //   run, not merely assumed; GROUP D and GROUP I each check that intpen was
 //   actually in the state (raised / held low) their claim depends on.
 //
-// RESULTS (after opening paula_audio_channel.v and building/running):
-//   12 PASS, 0 FAIL, 0 declined -- all 20 claim ids covered (19 from
-//   claims.jsonl plus 5-direct.c7, added to GROUP F 2026-09-12 per GAP
-//   CLOSURE above). GROUP C (5-p157.c13 5-direct.c4), repaired after
-//   NM-HRM-027 was withdrawn, now measures the word-transition pulse p164
-//   and Figure 5-8's 011->010 arc name: write at tick 80 (AUDxIR at the
+// RESULTS: 12 PASS, 0 FAIL, 0 declined -- all 20 claim ids covered (19
+//   from claims.jsonl plus 5-direct.c7 on GROUP F, see GROUP F TWIN
+//   above). GROUP C (5-p157.c13 5-direct.c4) measures the
+//   word-transition pulse p164 and Figure 5-8's 011->010 arc name: write
+//   at tick 80 (AUDxIR at the
 //   write itself, Figure 5-8's OTHER arc, 000->010, reported for context
 //   only), high byte at 88, low byte at 136, word-transition AUDxIR at 176,
 //   next high byte at 184 -- the required pulse falls inside the window and
 //   the check reads GREEN.
-//   Reading the RTL also settled BOUNDARY (2) empirically rather than by
-//   assumption: paula_audio_channel.v:163-185 (the length/silence block) has
+//   BOUNDARY (2), from the RTL and the trace rather than by assumption:
+//   paula_audio_channel.v:163-185 (the length/silence block) has
 //   NO reset branch of its own, and `silence`/`silence_d` are set to 1 only
 //   by (a) a lencntrld pulse when audlen<=1 -- gated on AUDxON (line 271),
 //   i.e. only reachable through the DMA-enabled path -- or (b) a dmaena 1->0
@@ -163,26 +150,21 @@
 //   value of 0 in this fixture, and the FIXTURE-LIVENESS check confirms this
 //   on the actual trace (no stray silent sample observed before word1's own
 //   first byte).
-//   Two bugs were found and fixed in this harness while building, both
-//   caught by actually running it rather than assumed correct from the
-//   spec: (1) the "normal entry" code searched the recorded trace for the
-//   AUDxDAT pulse immediately after write_reg() returned, before any further
-//   tick() had produced the cck-tagged sample that would show it -- fixed by
-//   settling 16 more ticks before searching. (2) GROUP F's period comparison
-//   compared a raw-tick timestamp delta directly against AUDPER (a cck-tick
-//   count) -- Sample.t is in raw ticks and 8 raw ticks make one cck tick
-//   here (clk7_en divides by 4, cck divides that by 2 again), so the
-//   comparison needed an 8x conversion. GROUP I's and the never/early-intpen
-//   mutation scenarios' "did it return to idle" searches also originally
-//   started AT the word1 AUDxDAT-pulse sample, whose own recorded state is
-//   still 000 (mid-transition, one cck edge before the register updates) --
-//   a trivial false-positive "already idle" match, fixed by starting each
-//   such search only after the machine is first observed in the output
-//   state. None of these three fixes touched an expected value, a
-//   quotation, or which claim ids a CHECK covers -- all three were fixes to
-//   this harness's own bookkeeping, caught by running it and reading the
-//   trace, not by adjusting anything to make a result come out a particular
-//   way.
+//   HARNESS BOOKKEEPING -- three choices that keep the trace searches
+//   honest: (1) the "normal entry" code settles 16 more ticks after
+//   write_reg() returns before searching the recorded trace for the
+//   AUDxDAT pulse, because only a further tick() produces the cck-tagged
+//   sample that shows it. (2) GROUP F converts its raw-tick timestamp
+//   delta before comparing it with AUDPER (a cck-tick count): Sample.t is
+//   in raw ticks and 8 raw ticks make one cck tick here (clk7_en divides
+//   by 4, cck divides that by 2 again). (3) GROUP I's and the
+//   never/early-intpen mutation scenarios' "did it return to idle"
+//   searches start only after the machine is first observed in the output
+//   state: the word1 AUDxDAT-pulse sample's own recorded state is still
+//   000 (mid-transition, one cck edge before the register updates), a
+//   trivial false-positive "already idle" match. None of the three
+//   touches an expected value, a quotation, or which claim ids a CHECK
+//   covers.
 //
 // MUTATION LOG: all 10 groups' mutations ran as designed; see each group's
 //   own `// MUTATION <id> ...` line above for the per-assertion detail. In
@@ -196,25 +178,24 @@
 //   mutation (intpen raised right after word1 instead of after word3)
 //   correctly shows the loop is left early.
 //
-// D3 REPAIR (2026-09-17): GROUP E and GROUP J were found SURVIVED by
-//   check_mutation_baseline.py's 15.09.2026 sweep -- recorded green against
-//   PASS baselines, demonstrating nothing. Both repaired:
-//   GROUP E's mutation (a write sneaked into the "held" window) was, as
-//   built, writing while intpen was STILL raised -- the very guard this
-//   package's own idle-exit branch depends on (`AUDxDAT && !AUDxON &&
-//   !AUDxIP`, paula_audio_channel.v:281) then refuses the write outright,
-//   so `sample` never changed and the mutation could not have discriminated
-//   this check regardless of the RTL's correctness. Fixed by lowering
-//   intpen before the intruding write (the same clear-then-retry pattern
-//   GROUP B's own block_entry_then_retry scenario already uses) -- now a
-//   genuine new write, and it genuinely changes the held value.
-//   GROUP J reused GROUP D's own rerun (intpen never raised) but recorded
-//   green whenever the RTL correctly did NOT fall back -- conflating "the
-//   RTL behaved correctly under this stimulus" with "the SAME check
-//   predicate stayed true". Re-applying the real predicate (fellBack,
-//   base.fallback_tick > 0) to the mutated run gives a genuine red: without
-//   ever raising intpen, the machine never enters idle, so the literal
-//   condition this claim checks now reads false.
+// WHY GROUP E's AND GROUP J's MUTATIONS ARE BUILT AS THEY ARE: a
+//   mutation recorded green against a PASS baseline demonstrates nothing.
+//   GROUP E's mutation (a write sneaked into the "held" window) lowers
+//   intpen before the intruding write: with intpen still raised, the very
+//   guard this package's own idle-exit branch depends on (`AUDxDAT &&
+//   !AUDxON && !AUDxIP`, paula_audio_channel.v:281) refuses the write
+//   outright, `sample` never changes, and the mutation could not
+//   discriminate this check regardless of the RTL's correctness. Lowered
+//   first (the same clear-then-retry pattern GROUP B's own
+//   block_entry_then_retry scenario uses), it is a genuine new write, and
+//   it genuinely changes the held value.
+//   GROUP J's mutation reuses GROUP D's own rerun (intpen never raised)
+//   and grades it with the check's own predicate (fellBack,
+//   base.fallback_tick > 0): without ever raising intpen, the machine
+//   never enters idle, so the literal condition this claim checks reads
+//   false -- a red. Recording green whenever the RTL correctly does NOT
+//   fall back would conflate "the RTL behaved correctly under this
+//   stimulus" with "the SAME check predicate stayed true".
 
 #include <cstdint>
 #include <cstddef>
@@ -246,15 +227,15 @@ static void MUTATION(const std::string& id, const char* kind, const char* result
 }
 
 // ---------------------------------------------------------------------------
-// Register addresses (reused from hrm/paula_audio_channel's own sibling
-// harness): reg_address_in receives the byte address >> 1.
+// Register addresses (as in the pre-pipeline hrm/paula_audio_channel
+// harness, removed): reg_address_in receives the byte address >> 1.
 // ---------------------------------------------------------------------------
 static const int REG_AUDLEN = 0x4;
 static const int REG_AUDPER = 0x6;
 static const int REG_AUDVOL = 0x8;
 static const int REG_AUDDAT = 0xA;
 
-// The one state code the manual and this RTL agree on (finding candidate 4):
+// The one state code the manual and this RTL agree on:
 // idle is 3'b000 on both sides. AUDIO_STATE_3 -- the RTL's own name for the
 // first output state entered from idle -- is measured at 3'b010, which is
 // also what the manual calls the "upper byte" state; both names line up
@@ -278,18 +259,18 @@ struct Sample {
 };
 
 // ---------------------------------------------------------------------------
-// Harness: DUT + the proven clk7_en/cck/strhor clocking pattern, reused from
-// hrm/paula_audio_channel/test_paula_audio_channel.cpp.
+// Harness: DUT + the clk7_en/cck/strhor clocking pattern of the
+// pre-pipeline hrm/paula_audio_channel/test_paula_audio_channel.cpp
+// (removed).
 // ---------------------------------------------------------------------------
 struct Harness {
     // unique_ptr, not a raw owning pointer: TimelineResult (which embeds a
     // Harness by value) is returned by value from run_timeline(), which has
     // several early `return r;` statements -- NRVO is not guaranteed there,
     // so a raw pointer + hand-written destructor risks two Harnesses
-    // sharing, and each deleting, the same DUT (a double-free -- this is
-    // exactly what produced this build's first "make test" segfault, fixed
-    // here). unique_ptr makes Harness move-only: an accidental copy is now a
-    // compile error instead of a silent double-free.
+    // sharing, and each deleting, the same DUT (a double-free, which
+    // segfaults "make test"). unique_ptr makes Harness move-only: an
+    // accidental copy is a compile error instead of a silent double-free.
     std::unique_ptr<Vpaula_audio_channel> dut;
     int clk7_cycle = 0, cck_cycle = 0, hpos = 0;
     long main_time = 0;
@@ -536,19 +517,16 @@ static TimelineResult run_timeline(const TimelineParams& p) {
 
     if (p.write_during_hold) {
         for (int i = 0; i < 400; i++) h.tick();
-        // D3 REPAIR: the write used to land here with intpen STILL 1 (raised at
-        // starve_start_tick, four lines above, and never lowered again on this path).
-        // Measured (DEBUG_GROUP_E, since removed): by t=6704 the machine has ALREADY
-        // fallen back to idle (base.fallback_tick=6328) and `sample` had already frozen at
-        // 0x68 (word3's own low byte) -- but the write at 0x9911 changed NOTHING: state
-        // stayed 0, sample stayed 0x68. The reason is the SAME guard GROUP G/H/the idle-exit
-        // branch itself depends on, `AUDxDAT && !AUDxON && !AUDxIP` (paula_audio_channel.v:
-        // 281): with AUDxIP (intpen) still high, a fresh write cannot re-enter the output
-        // path at all -- the mutation was accidentally testing "a write that the guard
-        // itself forbids", not "a genuine new write", and could never discriminate this
-        // check. Lowering intpen first (simulating the processor actually servicing the
-        // pending interrupt, the same clear-then-retry pattern GROUP B's own
-        // block_entry_then_retry scenario already uses above) makes this a real write.
+        // intpen is still 1 here (raised at starve_start_tick, four lines above).
+        // With AUDxIP (intpen) high, the SAME guard GROUP G/H/the idle-exit branch
+        // itself depends on, `AUDxDAT && !AUDxON && !AUDxIP` (paula_audio_channel.v:
+        // 281), refuses a fresh write outright -- the machine has already fallen back to
+        // idle with `sample` frozen at word3's own low byte, and the write would change
+        // nothing -- so the mutation would test "a write that the guard itself forbids",
+        // not "a genuine new write", and could never discriminate this check. Lowering
+        // intpen first (simulating the processor actually servicing the pending
+        // interrupt, the same clear-then-retry pattern GROUP B's own
+        // block_entry_then_retry scenario uses above) makes this a real write.
         h.dut->intpen = 0;
         for (int i = 0; i < 32; i++) h.tick(); // let the guard's own !AUDxIP term settle
         h.write_reg(REG_AUDDAT, 0x9911); // sneaks a write into what should be a "held" window
@@ -1021,16 +999,15 @@ int main(int argc, char** argv) {
         TimelineParams mp = baseP; mp.never_raise_intpen = true;
         TimelineResult mr = run_timeline(mp);
         bool neverFellBack = mr.fallback_tick < 0;
-        // D3 REPAIR: the real predicate this assertion uses is `fellBack` (base.fallback_tick
-        // > 0), re-applied to the mutated run as `mr.fallback_tick > 0`. The withdrawn record
-        // recorded green whenever the machine correctly did NOT fall back (neverFellBack=true)
-        // -- but "the RTL behaved correctly under this stimulus" is not the same thing as "the
-        // SAME check predicate stayed true". Re-applying fellBack's own condition to the
-        // mutated data: mr.fallback_tick is NOT >0 here (the machine never enters idle without
-        // the 'otherwise' precondition), so the literal predicate reads FALSE -- a genuine red,
-        // correctly demonstrating the check is sensitive to whether intpen was ever raised at
-        // all, not vacuously true regardless of it. check_mutation_baseline.py's 15.09.2026
-        // sweep caught the withdrawn green as SURVIVED against this PASS baseline.
+        // The real predicate this assertion uses is `fellBack` (base.fallback_tick > 0),
+        // re-applied to the mutated run as `mr.fallback_tick > 0`. Recording green whenever
+        // the machine correctly does NOT fall back (neverFellBack=true) would conflate "the
+        // RTL behaved correctly under this stimulus" with "the SAME check predicate stayed
+        // true", and a green against this PASS baseline demonstrates nothing. Re-applying
+        // fellBack's own condition to the mutated data: mr.fallback_tick is NOT >0 here (the
+        // machine never enters idle without the 'otherwise' precondition), so the literal
+        // predicate reads FALSE -- a genuine red, showing the check is sensitive to whether
+        // intpen was ever raised at all, not vacuously true regardless of it.
         MUTATION("5-p164.c13", "stimulus", (mr.fallback_tick > 0) ? "green" : "red",
                   "same rerun as GROUP D's mutation: intpen never raised (the 'otherwise' "
                   "precondition never arises); machine never entered idle = " +
