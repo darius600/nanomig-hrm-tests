@@ -117,7 +117,7 @@ specialist rules on it.
 
 **The status column reads `lifecycle · filed against · evidence`**, and every row
 is built from the three fields at the top of the page it links to, so the two can
-never disagree. Eight values occur:
+never disagree. Nine values occur:
 
 | status | what it asks of you |
 |---|---|
@@ -127,6 +127,7 @@ never disagree. Eight values occur:
 | `open · RTL · source observation` | nothing yet — read from the source, not measured |
 | `open · page · **red**` | **no RTL change**; the printed page is the likely defect |
 | `open · page · none` | the same, with no test built against it yet |
+| `open · page · green with an inverse control` | **no RTL change**; the printed page is the likely defect, and the assertion that holds NanoMig's reading is green |
 | `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested |
 | `**withdrawn**` | nothing; kept so the claim is not raised a second time |
 
@@ -176,7 +177,7 @@ it for what an unresolvable case looks like, not for something to do.
 | [NM-HRM-026](findings/NM-HRM-026.md) | the audio state codes are not the ones Figure 5-8 prints | open · RTL · source observation | `hrm/ch5-audio-channel-state` | **all four** use the figure's numbering; Copperline names the five constants with it |
 | [NM-HRM-028](findings/NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | open · RTL · **red** | `hrm/ch5-audio-dmacon-adkcon` | **all four** implement attach and modulation; NanoMig's own first line says it does not |
 | [NM-HRM-030](findings/NM-HRM-030.md) | Paula does not decode DMACONR, though the appendix gives it part ownership | open · RTL · **red** | `hrm/ch5-audio-dmacon-adkcon` | not read — the emulators are monolithic and model no per-chip decode |
-| [NM-HRM-031](findings/NM-HRM-031.md) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | open · RTL · **red** | `hrm/ch5-audio-interrupt` | **vAmiga and Denise also allow it**; NanoMig's own comment calls it undocumented |
+| [NM-HRM-031](findings/NM-HRM-031.md) | INTREQ bit 14 is a settable request bit where the appendix says enable-only | open · page · green with an inverse control | `hrm/ch5-audio-interrupt`, `hrm/ch7-interrupt-priority-encoder` · `P3-INTREQ-FULLY-WRITABLE` | **unanimous with NanoMig and with Figure 7-4**: WinUAE, vAmiga, Denise and Copperline all latch a written bit 14 in INTREQ, read it back through INTREQR and serve it at level 6; none implements p. 280's parenthesis |
 | [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | open · RTL · **red** | `hrm/ch7-beamcon0-ecs-control-bits`, `aa/aa-beamcon0-control-bits` | **split**: only WinUAE implements all three, Denise implements CSYTRUE alone, two model none |
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | open · RTL · **red** | `hrm/ch7-beamcon0-ecs-control-bits` | **all four** use LOLDIS alone; NanoMig also requires VARBEAMEN |
 | [NM-HRM-035](findings/NM-HRM-035.md) | any write to CIA-A clears the kickstart overlay, not only a write to the OVL bit | open · RTL · **red** | `hrm/ch7-overlay-source` | **split by model**: vAmiga, Denise and Copperline follow the OVL bit's value; WinUAE does for its default and A500/A2000-class models, and releases the overlay on any CIA-A write for its A600, A1200, CD32 and CDTV-CR models, as NanoMig does |
