@@ -4,14 +4,13 @@
 //   meaning" on the read-only addresses, the INTEN master gate, and
 //   write-to-clear stickiness. 41 claims, from
 //   work/ch7-build/ch7-interrupt-register-semantics.jsonl. Full derivation
-//   in SPECIFICATION.md (committed as 4fbfa90 before this file was written).
+//   in SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.217-218 (chapter 7 body), corroborated by appendix A p.280 and Figure
 //   7-4 p.221 for the INTEN master-gate claim group, and by appendix A p.280
 //   alone (its "not automatically reset ... writing to this address"
-//   sentence) for P7-STICKY-PERSISTS's persistence half - a citation-mapping
-//   repair, see the MUTATION METHODOLOGY note below.
+//   sentence) for P7-STICKY-PERSISTS's persistence half.
 // Fixture boundary: paula_intcontroller.v ONLY. No other module is
 //   instantiated anywhere in this file.
 // Non-goals: anything outside the `paula_intcontroller` fixture this package
@@ -31,15 +30,10 @@
 //   write-only-reads-as-constant behaviour, the shared bit-layout between
 //   INTENA and INTREQ, the full SET/CLR bit-15 mechanics including the
 //   two-write requirement, the 14-source bit/priority-level table, pending
-//   bits pollable independent of enable, sticky-until-explicit-clear, and the
-//   INTEN master-gate/no-request split (its own assertions 5 and 5B - 5B
-//   asserts the "no request" half and is EXPECTED RED there).
-//   hrm/paula_intcontroller (no ch7- prefix, pre-expect()-harness, no claim
-//   citations, "FPGA-038/039/040" numbering) already covers one
-//   write+readback+one-clear round trip, a VBLANK hardware latch, and four
-//   _ipl priority scenarios - it is NOT being retired: the coordinator's
-//   reply says its VBLANK-pin-to-request-bit-5 latch check has no home in
-//   the new chapter split and stays there permanently.
+//   bits pollable independent of enable, sticky-until-explicit-clear, and
+//   the INTEN master gate: its assertion 5 (MASTER-ENABLE-BIT14-GATE) grades
+//   the enable half; its 5B (MASTER-BIT14-NO-REQUEST) measures the "no
+//   request" half and records it without grading it.
 //   This package's own 41 claims are chapter 7's body-text reading of
 //   pp.217-218 (a different printed passage than either prior package's
 //   evidence) plus Figure 7-4 p.221's corroborating and conflicting reading
@@ -48,14 +42,14 @@
 //   meaning" on the read-only addresses (P10 - ch5-audio-interrupt's own
 //   claim notes say it does not assert this); a `record`, not `expect`,
 //   disposition for the disputed INTEN-self-request half (P19), folding in
-//   Figure 7-4's corroborating placement, in place of ch5's own assertion 5B
-//   (which asserts that same disputed half and is EXPECTED RED there).
+//   Figure 7-4's corroborating placement; ch5's 5B measures that same
+//   disputed half at its own boundary and records it without grading it.
 //   P9 (bit-position correspondence between INTENA and INTREQ, printed
 //   p.218) is cited below but NOT reasserted: its own claim row
 //   (sol:7-interrupts.c19) says hrm/ch5-audio-interrupt's assertion 3 already
 //   covers it. Ledger cross-reference only.
 //
-// THE INTEN SELF-CONTRADICTION (P18/P19) - resolved exactly as directed.
+// THE INTEN SELF-CONTRADICTION (P18/P19).
 //   Printed p.218 ("This bit is used for enable/disable only. It creates no
 //   interrupt request.") and appendix A p.280 ("Master interrupt (enable
 //   only, no request)") agree that INTEN cannot itself raise a request.
@@ -65,14 +59,13 @@
 //   RECORDED, never graded (P19). No `expect()` anywhere in this file grades
 //   whether INTEN can raise its own request.
 //
-// P10 - "reads zero" is an experiment, not a claim (coordinator's
-//   correction). The quotation this package is built from ("bit 15 has no
-//   meaning in the read-only addresses") does not name a constant and does
-//   not promise the value is stable across write histories either - a bit
-//   declared meaningless is not thereby declared constant. P10 below only
-//   `note`s the measured constant (both `expect()`s that once compared
-//   stability across two write histories were DEMOTED to `record()` in the
-//   independent-validation repair; see MUTATION METHODOLOGY below).
+// P10 - "reads zero" is an experiment, not a claim. The quotation this
+//   package is built from ("bit 15 has no meaning in the read-only
+//   addresses") does not name a constant and does not promise the value is
+//   stable across write histories either - a bit declared meaningless is not
+//   thereby declared constant. P10 below only `note`s the measured constant;
+//   stability across two write histories is a `record()`, not an
+//   `expect()`.
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
@@ -80,33 +73,28 @@
 //   (MUTATE unset) and all 26 mutation runs (MUTATE=<id>, one id per
 //   assertion). Each mutation changes what the module is ASKED TO DO (a
 //   written value, a selected address, a skipped stimulus step) and leaves
-//   the `expect()` call's own expected-value code untouched, per BUILD-BRIEF.
+//   the `expect()` call's own expected-value code untouched.
 //   Every one of the 26 below was run with its own id and confirmed red, then
 //   reverted (MUTATE unset) and confirmed green again; results are logged
-//   next to each assertion and summarised in the build report.
+//   next to each assertion.
 //
-//   Repaired against an independent validation
-//   (work/2026-09-13_ch7_sol_validation_B1.md, findings 1/3/4/5/7): P4, P6's
-//   write-only readback and both P10 bit15-stability checks were DEMOTED
-//   (they graded a read value or a stability guarantee the manual never
-//   specifies for a write-only or "no meaning" address - pp.217-218, 263-264
-//   - so they are now `note()`+`record()`, reason_kind source-silent, with
-//   their MUTATE ids and mutation records retired along with them).
-//   P16-ONE-WRITE-RESULT was PROMOTED from `note()` to a graded `expect()`
-//   (the two-write assertion alone had no failing predicate for a device
-//   that reached the mixed target in one write - finding 1) and gained its
-//   own MUTATE=P16_ONE record below. P3-FOUR-DISTINCT-ADDRESSES was
-//   rewritten (finding 4): it no longer probes an unrelated, manual-silent
-//   address and instead shows the two register pairs hold independent,
-//   non-aliased content. P2, P3, both A0 pairs, both P5, both P8, P14 and
-//   P15 each gained an explicit all-clear write (CLR encoding, P13) before
-//   the equality check they already made, so exact-equality no longer
-//   silently assumes an undocumented reset value of zero (finding 5) - same
-//   assertions, same expected numbers, grounded precondition. P7-STICKY-
-//   PERSISTS's citation was remapped from p.218 to p.280, which is what
-//   actually states the persistence half (finding 7).
+//   What is measured only, and why: P4, P6's write-only readback and both
+//   P10 bit-15 stability checks would grade a read value or a stability
+//   guarantee the manual never specifies for a write-only or "no meaning"
+//   address (pp.217-218, 263-264), so they are `note()`+`record()`,
+//   reason_kind source-silent, with no MUTATE id or mutation record.
+//   P16-ONE-WRITE-RESULT is graded beside the two-write assertion, which
+//   alone has no failing predicate for a device that reaches the mixed
+//   target in one write; it has its own MUTATE=P16_ONE record below.
+//   P3-FOUR-DISTINCT-ADDRESSES shows the two register pairs hold
+//   independent, non-aliased content, without probing a manual-silent
+//   address. P2, P3, both A0 pairs, both P5, both P8, P14 and P15 each
+//   write an explicit all-clear (CLR encoding, P13) before their equality
+//   check, so exact equality does not assume an undocumented reset value of
+//   zero. P7-STICKY-PERSISTS cites p.280, which is what states the
+//   persistence half.
 //
-// MUTATION RECORDS. One per assertion, in BUILD-BRIEF's fixed grammar so the
+// MUTATION RECORDS. One per assertion, in the gate's fixed grammar so the
 //   gate can pair them. The switch is the MUTATE environment variable
 //   described above; the trailing (MUTATE=<id>) names it. Every colour below
 //   was MEASURED -- each id was run against this build and the assertion it
@@ -146,8 +134,8 @@
 // MUTATION P18a-MASTER-GATE-CLOSES stimulus red: the master bit is never actually cleared (MUTATE=P18_CLOSE)
 // MUTATION P18b-MASTER-GATE-OPENS stimulus red: the master bit is never set back (MUTATE=P18_OPEN)
 //
-// FIXTURE-INTEGRITY PRECONDITION (A0). Per BUILD-BRIEF's silence-trap rule,
-//   distinct known words are written and read back through both register
+// FIXTURE-INTEGRITY PRECONDITION (A0). Per the silence-trap rule, distinct
+//   known words are written and read back through both register
 //   pairs, in sequence, before any later assertion that depends on a read
 //   reflecting a write is trusted.
 
@@ -253,8 +241,8 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page: the
-    // BUILD-BRIEF's own requirement that the fixture prove it can deliver a
-    // known, distinct word before any read-based assertion is trusted.
+    // fixture proves it can deliver a known, distinct word before any
+    // read-based assertion is trusted.
     // ========================================================================
     do_reset();
     {
@@ -532,11 +520,11 @@ int main(int argc, char** argv) {
     // ========================================================================
     // P10 -- bit 15 has no meaning on the read-only addresses. printed p.218:
     // "bit 15 has no meaning in the read-only addresses." An EXPERIMENT, not
-    // a claim (see header note): measure the actual constant only. Demoted
-    // (independent-validation repair, finding 3) from an `expect()` that
-    // compared the constant across two write histories for stability -- "no
-    // meaning" rules out tracking stored content but does not promise a
-    // stable value either, so nothing here is graded.
+    // a claim (see header note): measure the actual constant only.
+    // Comparing it across two write histories for stability would grade
+    // more than the page says -- "no meaning" rules out tracking stored
+    // content but does not promise a stable value either, so nothing here
+    // is graded.
     // Cited: sol:7-interrupts.c20, opus:7-int.c16.
     // ========================================================================
     do_reset();
@@ -741,8 +729,8 @@ int main(int argc, char** argv) {
     // ========================================================================
     // P19 -- [RECORD ONLY, no pass/fail] Disputed half: can INTEN raise a
     // request of its own? printed p.218 and appendix A p.280 say no; Figure
-    // 7-4 p.221 places INTEN at hardware priority 6. Per the coordinator's
-    // instruction: do not grade either reading. Cited (record, not assert):
+    // 7-4 p.221 places INTEN at hardware priority 6. Neither reading is
+    // graded. Cited (record, not assert):
     // sol:7-interrupts.c28, opus:7-int.c25, sol:7-appA-int.c10,
     // opus:7-appA-int.c6, opus:7-fig7-4.c45 (hardware-priority-6 half).
     // ========================================================================

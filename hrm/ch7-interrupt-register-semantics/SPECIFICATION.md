@@ -5,9 +5,8 @@ SET/CLR convention, bit 15 reading zero, the master gate, and write-to-clear
 stickiness.
 
 Written from the quotations in `ch7-interrupt-register-semantics-spec-stage.jsonl`
-alone (41 claims). No RTL has been opened to produce this document. Every
-claim is cited by its `uid` (`<reader>:<id>`), never by the bare `id`, per
-BUILD-BRIEF.
+alone (41 claims). Every claim is cited by its `uid` (`<reader>:<id>`),
+never by the bare `id`.
 
 ## Chipset scope
 
@@ -171,17 +170,15 @@ Unique to this package: `sol:7-interrupts.c20`'s own note says "Chapter 7's
 own sentence; appendix A does not carry it and hrm/ch5-audio-interrupt does
 not assert it."
 
-Testable form, held strictly to what the quote supports: the manual commits
+Measured form, held strictly to what the quote supports: the manual commits
 only to bit 15 carrying **no defined meaning** on INTENAR/INTREQR reads, not
-to any specific value. The proposition this package can actually grade is
-that bit 15 of a read from either read-only address does not track or vary
-with stored register content — i.e. whatever fixed behaviour it shows is
-independent of what has been written. The package's own subject line calls
-this "bit 15 reading zero"; this document deliberately does not pre-commit
-to that specific constant, because the quotation itself does not name one —
-whatever constant it turns out to be will be measured in step 3 and used as
-the concrete expected value there, not assumed here. (See "A note on how
-this proposition was written" below.)
+to any specific value, and not to that value being stable across write
+histories — a bit declared meaningless is not thereby declared constant. So
+the test source reads bit 15 from either read-only address after two
+different write histories and records what it measures; nothing about bit 15
+is graded. The package's own subject line calls this "bit 15 reading zero";
+this document does not commit to that specific constant, because the
+quotation itself does not name one. (See "Why P10 does not say zero" below.)
 
 Cited by: `sol:7-interrupts.c20`, `opus:7-int.c16`.
 
@@ -243,8 +240,8 @@ Testable form: any selector bit written 0 keeps its previously stored value
 regardless of bit 15. This is also the control/precondition that makes
 P12-P14 mean "selected bits only, nothing else disturbed" rather than a
 whole-register overwrite — needed for those propositions' green to be
-meaningful, so it is asserted in its own right, per BUILD-BRIEF's rule for
-preconditions a green depends on.
+meaningful, so it is asserted in its own right, as a precondition a green
+depends on.
 
 Cited by: `sol:7-interrupts.c25`, `opus:7-int.c21`.
 
@@ -281,8 +278,7 @@ Cited by: `sol:7-interrupts.c26`, `opus:7-int.c23`.
 > "If this bit is a 0, it disables all other interrupts." (printed p.218)
 
 This is the undisputed half of a claim group where the manual disagrees with
-itself (see P19). Per the task's explicit resolution: assert this half,
-because appendix A (p.280, "Master interrupt (enable only, no request)") and
+itself (see P19). This half is asserted, because appendix A (p.280, "Master interrupt (enable only, no request)") and
 Figure 7-4's own gloss (p.221, "special (master enable)") agree with it —
 nothing printed contradicts the gate function itself, only whether INTEN can
 also raise a request of its own (P19).
@@ -312,10 +308,8 @@ software priority 15, special (master enable), INTEN, at hardware priority
 6") — assigns it a 68000 interrupt level, i.e. treats it as a source capable
 of raising a request in its own right. p.218 and p.280 contradict p.221.
 
-Per the task's explicit instruction: do not put a red on a proposition one
-printed page contradicts. Neither reading is asserted; this row is measured
-and reported (`record`, never `expect`) once the fixture can show what the
-RTL actually does here.
+A proposition one printed page contradicts gets no red. Neither reading is
+asserted; this row is measured and reported (`record`, never `expect`).
 
 Cited (record, not assert): `sol:7-interrupts.c28`, `opus:7-int.c25`,
 `sol:7-appA-int.c10`, `opus:7-appA-int.c6` (this last row's own crossread
@@ -327,7 +321,7 @@ beside p.221's assignment of level 6 — the conflict is real), and
 
 ## Fixture data-path liveness precondition
 
-Per BUILD-BRIEF's silence-trap requirement, before any assertion above that
+Per the silence-trap requirement, before any assertion above that
 depends on a read reflecting a write (P4-P10, P12-P19 all do), the harness
 must first prove the fixture's write/read path is alive: write a distinct,
 non-trivial 15-bit pattern to the enable register and confirm the paired
@@ -349,20 +343,18 @@ carries — and is asserted as such, not cited to a page.
 - P19 (whether INTEN can raise its own request) — recorded, not asserted,
   per the manual's self-contradiction.
 
-## A note on how P10 was written
+## Why P10 does not say zero
 
-The task briefing's own subject line for this package says "bit 15 reading
-zero." The quotation this package is restricted to only supports "bit 15 has
-no meaning" — it does not commit to which constant that is. Committing to
-"zero" in this document, ahead of any RTL, would be writing an expected
-value that starts life as a fact about the implementation rather than the
-manual — the exact defect BUILD-BRIEF and the task briefing both warn
-against. P10 is written to the weaker, quote-supported form; the concrete
-constant is left for step 3 to measure and report against that form.
+This package's subject line says "bit 15 reading zero." The quotation this
+package is restricted to only supports "bit 15 has no meaning" — it does not
+commit to which constant that is. Writing "zero" here would make an expected
+value start life as a fact about the implementation rather than the manual.
+P10 is written to the weaker, quote-supported form; the constant is measured
+and reported, not graded.
 
-## Package boundary — prior coverage in this tree
+## Package boundary — other coverage of this module
 
-Two existing, accepted packages already test this module:
+An accepted package already tests this module:
 
 - **`hrm/ch5-audio-interrupt`** (chapter 5, appendix A p.280 / appendix B
   pp.289-290-sourced, 106 claims, its own `expect()`-based harness) already
@@ -371,29 +363,19 @@ Two existing, accepted packages already test this module:
   package's P9), the full SET/CLR bit-15 mechanics including the two-write
   requirement, the 14-source bit/priority-level table, pending-bits
   pollable independent of enable, sticky-until-explicit-clear, and the
-  INTEN master-gate / no-request split (its assertions 5 and 5B — 5B is
-  asserted and EXPECTED RED there, a different disposition than this
-  package's `record` for the same disputed fact).
-- **`hrm/paula_intcontroller`** (no `ch7-` prefix; chapter 7, printed
-  pp.217-222, pre-`expect()`-harness, no claim citations, "FPGA-038/039/040"
-  numbering — found by name inside `ch5-audio-interrupt`'s own header while
-  reading it per this package's task instructions, not part of the 41
-  claims; **that package has since been removed** — see
-  `docs/legacy-names.md`): a single monolithic pass/fail test covering one INTENA/INTREQ
-  write+readback+one-clear round trip (038), a VBLANK hardware pulse
-  latching into INTREQ (039), and four `_ipl` priority-level scenarios
-  (040: none enabled=7, VBLANK alone=level 3, VBLANK+COPER=still level 3,
-  EXTERNAL alone=level 6).
+  INTEN master gate: its assertion 5 grades the enable half; its 5B
+  measures the "no request" half and records it without grading it — the
+  same disposition as this package's `record` for that disputed fact.
 
-What this package adds beyond both: an independent, chapter-7-body-sourced
+What this package adds beyond it: an independent, chapter-7-body-sourced
 (pp.217-218, plus Figure 7-4 p.221) reading of the same register semantics,
 which is valuable as cross-chapter corroboration in its own right; P1's
-general masking statement (present in neither prior package); P10, bit 15's
-"no meaning" on the read-only addresses (explicitly absent from both, per
+general masking statement (absent from that package); P10, bit 15's "no
+meaning" on the read-only addresses (absent from it, per
 `sol:7-interrupts.c20`'s own note); and a `record`, not `expect`, disposition
 for the disputed INTEN-self-request half, folding in Figure 7-4's
 corroborating (and, per `opus:7-appA-int.c6`'s crossread, genuinely
-conflicting) placement — material neither prior package's claims name.
+conflicting) placement — material that package's claims do not name.
 
 ## Appendix B address-order rows — INTENAR and INTREQR
 
@@ -432,8 +414,7 @@ accounted for above:
 - P18: 2 primary + 3 corroborating (shared with P19) — P19: 5 (record only,
   3 shared with P18's corroboration)
 
-Total distinct claim rows: 41 (`sol:` 21, `opus:` 20), matching the task
-sheet's count.
+Total distinct claim rows: 41 (`sol:` 21, `opus:` 20).
 
-P20 and P21 above account for the two further claims added to this
-package: `opus:B-intenar.addr`, `opus:B-intreqr.addr`.
+P20 and P21 above account for two further claims: `opus:B-intenar.addr`,
+`opus:B-intreqr.addr`.
