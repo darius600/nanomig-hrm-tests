@@ -1,9 +1,8 @@
-// ch3-nominal-display-values -- Denise chapter-3 RESIDUE package.
+// ch3-nominal-display-values -- denise conformance test.
 //
-// Test purpose: 61 claims that reached no package in chapter 3's first build
-//   round and no recorded out-of-scope reason (found 11.09.2026 by
-//   tools/check_chapter_coverage.py, reconciling the chapter total rather
-//   than any one package's own coverage -- see PACKAGE.md). They are largely
+// Test purpose: 61 chapter-3 claims that no other chapter-3 package covers
+//   or declines (tools/check_chapter_coverage.py reconciles the chapter
+//   total -- see PACKAGE.md). They are largely
 //   the *nominal* display-window values (DIWSTRT $2C81 / DIWSTOP $F4C1 for
 //   NTSC, DIWSTOP $2CC1 for PAL, Table 3-9's HSTART $81 / HSTOP $C1 columns,
 //   whether NTSC and PAL share the same nominal HSTART/HSTOP) and Appendix
@@ -11,7 +10,7 @@
 //   DIWSTRT/DIWSTOP/DIWHIGH write-only, DENISEID's identity, colour register
 //   bits 15-12 unused), plus a handful of Chapter 3 prose claims (Figure
 //   3-4's bit-to-COLOR6 mapping, HAM's "modified pixel written to the
-//   screen", EHB half-intensity) that never found a home either.
+//   screen", EHB half-intensity).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., printed pages
 //   42, 44, 46, 57, 59, 60, 80, 81, 82, 86, 92, 95, 271, 272, 273, 277, 290,
@@ -42,44 +41,25 @@
 //   data_out[16-1:0], blank, red/green/blue[8-1:0], a1k, ecs, aga, hires
 //   (out), shres (out). fixture a1k=0, ecs=1, aga=0 throughout, matching
 //   both hrm/ch3-horizontal-display-window and hrm/ch3-register-map-denise
-//   (their own published, committed files already disclose why: DENISEID
+//   (their own files give the reason: DENISEID
 //   answering $FFFC and the DIWSTRT/DIWSTOP H-field mechanics both need
 //   exactly this configuration; it is also the OCS/ECS-era chip the pages
 //   cited here describe, not the AGA extension).
 //
-// CHECKED AGAINST THE TWO NAMED SIBLINGS FIRST: hrm/ch3-horizontal-display-
-//   window and hrm/ch3-register-map-denise test neighbouring properties at
-//   this same denise boundary. Both files' full assertion text was grepped
-//   for every one of this package's 61 claim ids before writing a single
-//   assertion below -- zero matches, in either file, for any id. (The build
-//   brief warns this is not a safe assumption to skip: a sibling builder in
-//   this chapter declined 134 claims as "covered by a sibling" that shared
-//   no claim ids at all.) The infrastructure PATTERNS below -- the write_reg
-//   /read_reg register round-trip, the phase-accurate c1/c3 tick() drive,
-//   the saturating-BPLxDAT colour-index dialling, the prime_window_closed
-//   fix and the DIWSTRT/DIWSTOP/DIWHIGH/BPLCON0/BPL1-6DAT/COLORx address
-//   constants -- ARE reused from those two siblings' own already-published,
-//   RTL-verified files (the build brief explicitly points at
-//   ch3-horizontal-display-window's Makefile "to model yours on"); every
-//   ORACLE value and claim-to-assertion mapping below is this package's own,
-//   independently derived from claims.jsonl's quotations.
+// SIBLINGS: hrm/ch3-horizontal-display-window and hrm/ch3-register-map-
+//   denise test neighbouring properties at this same denise boundary;
+//   neither file's assertion text contains any of this package's 61 claim
+//   ids. The infrastructure PATTERNS below -- the write_reg/read_reg
+//   register round-trip, the phase-accurate c1/c3 tick() drive, the
+//   saturating-BPLxDAT colour-index dialling, the prime_window_closed
+//   measure and the DIWSTRT/DIWSTOP/DIWHIGH/BPLCON0/BPL1-6DAT/COLORx address
+//   constants -- are shared with those two siblings' files; every ORACLE
+//   value and claim-to-assertion mapping below is this package's own,
+//   derived from claims.jsonl's quotations.
 //
-// ORDER OF WORK: this file (Harness, expected values, claim-id coverage,
-//   declines) was written and committed from claims.jsonl's quotations and
-//   the two named siblings' own published source (read, not nanomig's RTL)
-//   -- denise.v itself was not opened until after that commit. Page 59 was
-//   independently re-opened from
-//   docs/references/amiga-hrm-3rd/ch3/p59.txt (the manual scan, not RTL) to
-//   check 3-diw.c39's "$2CC1" against the printed page before trusting it as
-//   an oracle value -- see DIW-NOMINAL-HSTOP below for what that page
-//   actually says. A second commit follows once denise.v is opened, the
-//   build run under WSL/Verilator, any Harness bugs fixed (oracle text
-//   untouched), and the MUTATION LOG filled in with real results.
-//
-// PAGE 59 CHECKED BEFORE TRUSTING IT (build-brief-mandated check): the
-//   build brief singles out 3-diw.c39 ("The normal PAL DIWSTOP is
-//   ($2CC1)") as one to read on the page rather than trust blindly, since
-//   3-diw.c37 gives NTSC DIWSTOP as ($F4C1) -- different words for a
+// PAGE 59 (docs/references/amiga-hrm-3rd/ch3/p59.txt): 3-diw.c39 ("The
+//   normal PAL DIWSTOP is ($2CC1)") and 3-diw.c37 (NTSC DIWSTOP ($F4C1))
+//   give different words for a
 //   register the same table calls "the same both for NTSC and for PAL"
 //   (3-window.c37/3-diw.c30). Page 59's own printed text resolves this
 //   itself, in full: "Normally, the VSTOP is set to ($F4) for NTSC, ($2C)
@@ -100,7 +80,7 @@
 //   cited together on the single assertion that tests that proposition,
 //   the convention hrm/ch3-colour-register-format and
 //   hrm/ch3-register-map-denise both document and use -- COLOR-BITS-15-12-
-//   UNUSED itself now cites eight), 11 inside a note() call with a stated
+//   UNUSED itself cites eight), 11 inside a note() call with a stated
 //   reason (four groups: visual/subjective "appears to move" claims with
 //   no frame port, a conjoined H+V claim whose V half is outside this
 //   fixture, "reserved" bits with no stated hardware behaviour to test,
@@ -117,94 +97,48 @@
 //   Every id is written out in full, in the assertion, note or record
 //   string itself, not only in a header comment.
 //
-// TWO HARNESS FACTS DISCLOSED BY THE BUILD BRIEF ITSELF, USED BELOW WITHOUT
-//   REDISCOVERING THEM FROM RTL: hpos resets to 2, not 0, on strhor; the
-//   `window` register has no reset clause and must be primed closed once
-//   per Harness (prime_window_closed(), reused from
-//   hrm/ch3-horizontal-display-window's own published fix). Combined with
-//   claims.jsonl's own evidence field ("the horizontal window compare is
-//   hpos[8:0]==hdiwstrt[8:0]", "H8 forced 0 for start, 1 for stop"), the
-//   PRE-RTL commit expected open_idx=raw_start-2 / close_idx=raw_stop+254.
+// TWO HARNESS FACTS: hpos resets to 2, not 0, on strhor; the `window`
+//   register has no reset clause and must be primed closed once per
+//   Harness (prime_window_closed(), the same measure
+//   hrm/ch3-horizontal-display-window takes).
 //
-// RTL-INFORMED CORRECTION (found once denise.v was opened -- see RTL
-//   OPENED below): denise.v:291-303 registers the hpos comparator's result
-//   through TWO clk7_en-gated stages (`window` on the compare itself, then
-//   `window_ena <= window` one clk7_en edge later) before window_del (a
-//   plain-every-28MHz-edge register that catches up within the same
-//   sample) gates the output mux -- a 2-sample pipeline latency the manual
-//   says nothing about (it states register VALUES, not this Harness's own
-//   sample-counting latency) and this package's pre-RTL commit did not
-//   know to account for. Measured directly: DIWSTRT=$2C81 opened the
-//   window at sample index 129 (not the predicted 127); DIWSTOP=$F4C1 and
-//   =$2CC1 both closed it at sample index 449 (not the predicted 447) --
-//   BOTH off by exactly +2, the same constant, confirming a fixed
-//   measurement-pipeline offset rather than a disagreement about the
-//   register values themselves (a real address/value bug would not move
-//   both edges by the identical constant, and DIW-ONE-PIXEL-RESOLUTION's
-//   own DELTA-based check, unaffected by any constant offset, already
-//   passed at the pre-RTL commit, confirming the underlying open-edge
-//   detection is sound). Corrected formula, oracle values ($81/$C1)
-//   untouched, only the sample-index TRANSLATION fixed:
+// SAMPLE-INDEX TRANSLATION: denise.v:291-303 registers the hpos
+//   comparator's result through TWO clk7_en-gated stages (`window` on the
+//   compare itself, then `window_ena <= window` one clk7_en edge later)
+//   before window_del (a plain-every-28MHz-edge register that catches up
+//   within the same sample) gates the output mux -- a 2-sample pipeline
+//   latency the manual says nothing about (it states register VALUES, not
+//   this Harness's own sample-counting latency). With hpos starting at 2,
+//   a raw register value maps to sample indices as:
 //     open_idx(raw_start)  = raw_start
 //     close_idx(raw_stop)  = raw_stop + 256
+//   Measured: DIWSTRT=$2C81 opens the window at sample index 129 ($81);
+//   DIWSTOP=$F4C1 and =$2CC1 both close it at sample index 449 ($1C1).
+//   DIW-ONE-PIXEL-RESOLUTION's own DELTA-based check does not depend on
+//   this translation at all.
 //
-// RTL OPENED, BUILT AND RUN, 11.09.2026 (all after the spec-only commit
-//   above; built under WSL/Verilator 5.052). Every port name and address
-//   assumed in the spec-only commit matched exactly -- no port name,
-//   width, or address needed changing. Two Harness bugs were found once
-//   the RTL was readable, both fixed as stimulus/methodology only (no
-//   oracle text touched):
-//
-//   1. FIGURE-COLOR-SELECT-INDEX6, EHB-HALF-INTENSITY, HAM-MODIFY-WRITES-
-//      PIXEL and COLOR-BITS-15-12-UNUSED wrote DIWSTRT/DIWSTOP but never
-//      pulsed strhor or advanced hpos into the window before sampling --
-//      denise.v:436-444 forces clut_data (and therefore rgb) to border/0
-//      whenever !window_ena, so these four samples were reading the
-//      permanently-closed post-construction state, not the dialled-in
-//      colour index at all. Fixed by adding Harness::enter_wide_window()
-//      (reset_line() + advance into a wide $08..$1F0 window before any
-//      bitplane pattern is dialled in) and calling it in all four.
-//
-//   2. DIW-NOMINAL-HSTART and DIW-NOMINAL-HSTOP's pre-RTL sample-index
-//      arithmetic (open_idx=raw_start-2, close_idx=raw_stop+254) was
-//      wrong: denise.v:291-303 registers the hpos comparator through TWO
-//      clk7_en-gated stages (`window`, then `window_ena<=window`) before
-//      window_del gates the output mux -- a 2-sample measurement-pipeline
-//      latency the manual says nothing about (it states register VALUES,
-//      not this Harness's own sample-counting scheme). Both assertions
-//      failed by exactly +2 at first build (open_idx measured 129 not
-//      127; close_idx measured 449 not 447 for BOTH the NTSC and PAL
-//      DIWSTOP words, which still agreed with EACH OTHER) -- the identical
-//      constant on both edges, plus DIW-ONE-PIXEL-RESOLUTION's own
-//      DELTA-based check already passing unmodified, is what distinguishes
-//      a measurement-pipeline offset from a genuine value/address defect.
-//      Fixed by correcting the sample-index translation to
-//      open_idx=raw_start, close_idx=raw_stop+256 (see header above) --
-//      the oracle values themselves ($81, $C1, $2C81, $F4C1, $2CC1) were
-//      never touched.
-//
-// First build after both fixes: 21 passed, 0 failed -- no red finding in
-//   this package (unlike hrm/ch3-horizontal-display-window's own
-//   BRDNTRAN result); every one of the 50 asserted claim ids matches the
-//   RTL as measured.
+// RTL NOTES (WSL/Verilator 5.052): denise.v:436-444 forces clut_data (and
+//   therefore rgb) to border/0 whenever !window_ena, so
+//   FIGURE-COLOR-SELECT-INDEX6, EHB-HALF-INTENSITY, HAM-MODIFY-WRITES-PIXEL
+//   and COLOR-BITS-15-12-UNUSED call Harness::enter_wide_window()
+//   (reset_line() + advance into a wide $08..$1F0 window) before any
+//   bitplane pattern is dialled in; without it they would sample the
+//   permanently-closed post-construction state, not the dialled-in colour
+//   index.
 //
 // MUTATION LOG -- all 21 assertions (19 substantive plus the 2 controls),
-//   run under WSL/Verilator on 11.09.2026 by rebuilding with each single
-//   -DMUT_<NAME>=1 in turn (no source edits -- the #ifndef guards already
-//   default to 0, so a mutation build changes nothing but that one
-//   compile-time flag) and confirming exactly that one assertion went red
-//   and the other 20 stayed green, then rebuilding with no flags to
-//   reconfirm the clean 21/0 baseline. Two mutations needed a design fix
-//   before they bit (both caught by this very sweep, both stimulus-only,
-//   recorded here as the mutation that was actually shipped):
-//   CONTROL-REG-ALIVE's first draft redirected the DENISEID read to
-//   CLXDAT's own address (same register twice), which is not guaranteed
-//   to differ from itself and did not fail; redirected to BPLCON1's
-//   address (independently proven always-$0000 by BPLCON1-WO) instead.
-//   COLOR-BITS-15-12-UNUSED's first draft's "mutation" set the second
-//   COLOR01 write to the SAME value as the first (a no-op), which
-//   trivially cannot fail; changed to also perturb a low (observable) bit
-//   instead of only the high nibble.
+//   each run under WSL/Verilator by rebuilding with a single
+//   -DMUT_<NAME>=1 (no source edits -- the #ifndef guards default to 0, so
+//   a mutation build changes nothing but that one compile-time flag) and
+//   confirming exactly that one assertion goes red and the other 20 stay
+//   green, then rebuilding with no flags to reconfirm the baseline. Two
+//   mechanisms are chosen for a reason: CONTROL-REG-ALIVE's mutation
+//   redirects the DENISEID read to BPLCON1's address (always $0000, see
+//   BPLCON1-WO), because redirecting it to CLXDAT's own address reads the
+//   same register twice, which need not differ and does not fail;
+//   COLOR-BITS-15-12-UNUSED's mutation also perturbs a low (observable)
+//   bit, because a second COLOR01 write equal to the first is a no-op
+//   that cannot fail.
 //
 // MUTATION CONTROL-REG-ALIVE stimulus red: DENISEID's read address redirected to BPLCON1's ($102, proven write-only/always-$0000), so the first reading came back $0000 instead of $FFFC and the "both non-zero" half of the control failed; reverted.
 // MUTATION CONTROL-BITPLANE-ALIVE stimulus red: the one-shot BPL1DAT stimulus changed from $ACE1 to $0000, so no sample ever differed from the border and the data-path-live proof failed; reverted.
@@ -215,8 +149,8 @@
 // MUTATION BPL1DAT-WO stimulus red: the same redirect applied to BPL1DAT's own write, so plane 1 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR1's $AABB; reverted.
 // MUTATION BPL2DAT-WO stimulus red: the same redirect applied to BPL2DAT's own write, so plane 2 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR2's $AABB; reverted.
 // MUTATION BPL3DAT-WO stimulus red: the same redirect applied to BPL3DAT's own write, so plane 3 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR4's $AABB; reverted.
-// MUTATION BPL4DAT-WO stimulus red: the same redirect applied to BPL4DAT's own write, so plane 4 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR8's $AABB -- this is the exact register the reviewer's own proof pointed at $0A0 (a Paula audio pointer) and left green; reverted.
-// MUTATION BPL5DAT-WO stimulus red: the same redirect applied to BPL5DAT's own write, so plane 5 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR16's $AABB -- this is the exact register the reviewer's own proof pointed at $1FE (the same bus NO-OP used as this file's redirect target) and left green; reverted.
+// MUTATION BPL4DAT-WO stimulus red: the same redirect applied to BPL4DAT's own write, so plane 4 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR8's $AABB; reverted.
+// MUTATION BPL5DAT-WO stimulus red: the same redirect applied to BPL5DAT's own write, so plane 5 was never actually toggled and the rendered pixel stayed at $0000 instead of moving to COLOR16's $AABB; reverted.
 // MUTATION BPL6DAT-WO stimulus red: the same redirect applied to BPL6DAT's own write, so plane 6 (the EHB flag) was never actually set and the index-6 pixel stayed at $BBAA instead of darkening to $5D55; reverted.
 // MUTATION DIWSTRT-WO stimulus red: the same redirect applied to DIWSTRT's own write, so the $7777 pattern never reached the real register and the open edge was never found (open_idx=-1) instead of landing at $77=119; reverted.
 // MUTATION DIWSTOP-WO stimulus red: the same redirect applied to DIWSTOP's own write, so the $8888 pattern never reached the real register and the close edge stayed at the DIWSTRT-driven default (256) instead of $88+256=392; reverted.
@@ -224,32 +158,27 @@
 // MUTATION DENISEID-IS-REVISION-REGISTER stimulus red: the ecs=0 reading's address redirected from DENISEID's own ($07C) to BPLCON0's ($100), so it came back $0000 instead of $FFFF and the "both non-zero" half failed; reverted.
 // MUTATION DENISEID-ECS-VALUE stimulus red: the ecs=1 reading forced to $0000 in the comparison, so its low byte no longer matched $FC; reverted.
 // MUTATION COLOR-BITS-15-12-UNUSED stimulus red: the second COLOR01 write changed from $F345 to $F346 (a low, observable bit flipped, not only bits 15-12), so the two renderings genuinely differed and the equality check failed; reverted.
-// MUTATION EHB-HALF-INTENSITY stimulus red: the second (plane-6-set) measurement's plane 6 input forced back to false, so it read the identical un-halved colour ($BBAA88) instead of the exact per-component >>1 halving ($5D5544) D6 FIX now checks; reverted.
+// MUTATION EHB-HALF-INTENSITY stimulus red: the second (plane-6-set) measurement's plane 6 input forced back to false, so it read the identical un-halved colour ($BBAA88) instead of the exact per-component >>1 halving ($5D5544) the assertion checks; reverted.
 // MUTATION FIGURE-COLOR-SELECT-INDEX6 stimulus red: the second write's target address changed from COLOR6's own ($18C) to COLOR7's ($18E), so COLOR6's own reading never changed between the first and second write; reverted.
 // MUTATION HAM-MODIFY-WRITES-PIXEL stimulus red: plane 5 in the second (modify) phase forced to false, changing the 6-5 combo from 01 (modify blue) to 00 (plain colour select), so the sampled pixel read $0000 instead of a colour differing from the held COLOR01 only in blue; reverted.
 //
-// All 21 mutations rebuilt clean afterward, confirming the 21/0 baseline
-// was restored each time (verified via a full sweep with no flags set,
-// immediately before this commit). No oracle/expected value was changed
-// by any of them; only what each check asks the module to do.
+// No mutation changes an oracle/expected value; only what each check asks
+// the module to do.
 //
-// D5 FIX, 11.09.2026 (independent-review defect correction; no oracle text
-//   touched, only what each of the nine WO assertions below checks): a
-//   reviewer proved BPLCON1-WO, BPL1DAT-WO..BPL6DAT-WO, DIWSTRT-WO,
-//   DIWSTOP-WO and DIWHIGH-WO were all vacuous. denise.v:102/130 is
-//   `data_out = col_out | deniseid_out | rgb_out` -- exactly three read
-//   sources -- so "the written address reads back $0000" is true of nearly
-//   every address in the map, including ones Denise does not implement at
-//   all: pointing BPL4DAT-WO at $0A0 (a Paula audio pointer) and
-//   BPL5DAT-WO at $1FE (the bus NO-OP) left both PASS and the suite still
-//   read 21/0. Reading back zero is half of write-only, and the worthless
-//   half; the half that carries information is that the write had an
-//   effect. All nine now assert (a) a write EFFECT specific to that named
-//   register, observed directly on this fixture, AND (b) that address then
-//   reads $0000 -- with the assertion text stating outright that (b) alone
-//   is structural. Effects found, all measured on this fixture, none cited
-//   without also being repeated locally so a redirect mutation has
-//   something to break:
+// WHY THE NINE WO ASSERTIONS PAIR A WRITE EFFECT WITH THE $0000 READ-BACK
+//   (BPLCON1-WO, BPL1DAT-WO..BPL6DAT-WO, DIWSTRT-WO, DIWSTOP-WO,
+//   DIWHIGH-WO): denise.v:102/130 is `data_out = col_out | deniseid_out |
+//   rgb_out` -- exactly three read sources -- so "the written address reads
+//   back $0000" is true of nearly every address in the map, including ones
+//   Denise does not implement at all (a Paula audio pointer at $0A0, the
+//   bus NO-OP at $1FE). Reading back zero is half of write-only, and the
+//   uninformative half; the half that carries information is that the
+//   write has an effect. All nine assert (a) a write EFFECT specific to
+//   that named register, observed directly on this fixture, AND (b) that
+//   address then reads $0000 -- with the assertion text stating outright
+//   that (b) alone is structural. The effects, all measured on this
+//   fixture, each repeated locally so a redirect mutation has something to
+//   break:
 //     BPLCON1  -- PF1H (bits 3-0) delays a one-shot BPL1DAT bit's rendered
 //                 sample by exactly 1 per unit (swept all 16 values: idx=
 //                 nib+2 exactly); p.307's own "horizontal scroll control".
@@ -257,10 +186,8 @@
 //                 held at 0) moves the index from 0 to 1.
 //     BPL2DAT  -- same, plane 2 alone, index 0 to 2.
 //     BPL3DAT  -- same, plane 3 alone, index 0 to 4.
-//     BPL4DAT  -- same, plane 4 alone, index 0 to 8 (the reviewer's own
-//                 $0A0 example).
-//     BPL5DAT  -- same, plane 5 alone, index 0 to 16 (the reviewer's own
-//                 $1FE example).
+//     BPL4DAT  -- same, plane 4 alone, index 0 to 8.
+//     BPL5DAT  -- same, plane 5 alone, index 0 to 16.
 //     BPL6DAT  -- at bpu=6/ham=0, plane 6 is the EHB flag (denise.v:
 //                 ehb_en=!killehb&&!a1k&&!ham&&!dpf&&l_bpu==6), not an
 //                 index bit; toggling it alone darkens the index-6 pixel,
@@ -274,55 +201,38 @@
 //                 DIWHIGH (ecs=1) loads data_in[13] into it; the $9999
 //                 this assertion already writes has bit13=0 and pulls the
 //                 close edge in from $C1+256=449 to exactly $C1=193.
-//   All nine effects are genuine measurements, not stretched claims -- no
-//   register in this group needed a decline. Each register's own write
-//   address is now a local variable, redirected to NOOP_ADDR ($1FE, the
-//   same bus NO-OP the reviewer used) under its `#ifndef MUT_<NAME>` guard
-//   -- ONLY that one register's write moves, leaving every other write at
-//   its real address, the same single-register-only redirect the
-//   reviewer's own proof used. `make MUT=<NAME>` was run for all nine in
-//   turn: every one flipped its OWN assertion red (the write-effect half
-//   failing while the $0000 read-back half stayed vacuously true, exactly
-//   demonstrating why the pairing is the fix) and left the other 20 green,
-//   then a clean rebuild with no flags restored 21/0. Makefile gained the
-//   MUT= plumbing (MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)) this
-//   package previously lacked, modelled on hrm/ch3-field-geometry's own.
+//   All nine effects are genuine measurements; no register in this group
+//   is declined. Each register's own write address is a local variable,
+//   redirected to NOOP_ADDR ($1FE, the bus NO-OP) under its
+//   `#ifndef MUT_<NAME>` guard -- ONLY that one register's write moves,
+//   leaving every other write at its real address. Each such mutation
+//   flips its OWN assertion red (the write-effect half failing while the
+//   $0000 read-back half stays vacuously true, which is why the pairing is
+//   needed) and leaves the other 20 green. The Makefile's MUT= plumbing
+//   (MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)) builds each one.
 //
-// D6 FIX, 11.09.2026 (independent-review defect correction, same review as
-//   D5 above): EHB-HALF-INTENSITY asserted only "no component greater, at
-//   least one strictly smaller" -- a check quarter-intensity, or a
-//   blue-only darkening, would also pass, even though neither is what
-//   "half-intensity" means. Page 95 was re-read directly
-//   (docs/references/amiga-hrm-3rd/ch3/p95.txt): "shifted to
+// WHY EHB-HALF-INTENSITY CHECKS AN EXACT HALF: page 95
+//   (docs/references/amiga-hrm-3rd/ch3/p95.txt) says "shifted to
 //   half-intensity" -- SHIFTED, a specific bit operation -- and the value
-//   this fixture already measured ($BBAA88 -> $5D5544) is exactly every
-//   component right-shifted by one bit, not a coincidental "somewhat
-//   darker" reading. The check now asserts exact_half (component ==
-//   normal_component>>1 for R, G AND B) instead of the three-part
-//   loose-inequality check. The exact check costs nothing extra to run and
-//   was confirmed to still pass: 21/0 unchanged. Its mutation entry above
-//   was updated to describe the new failure mode (un-halved colour vs the
-//   exact >>1 target, rather than "differs"/"strictly smaller").
+//   this fixture measures ($BBAA88 -> $5D5544) is exactly every component
+//   right-shifted by one bit, not a coincidental "somewhat darker"
+//   reading. A looser "no component greater, at least one strictly
+//   smaller" check would also pass quarter-intensity or a blue-only
+//   darkening, neither of which is what "half-intensity" means; the
+//   assertion checks exact_half (component == normal_component>>1 for R,
+//   G AND B).
 //
-// D9 FIX, 11.09.2026 (independent-review defect correction, same review as
-//   D5/D6 above): HAM-MODIFY-WRITES-PIXEL's boolean check (hr==mr &&
-//   hg==mg && hb!=mb) was already correct -- red/green held, blue
-//   modified, exactly what p.86 describes -- but both printed values used
-//   hex4(rgb>>8), which right-shifts away the LOW byte, i.e. exactly the
-//   blue component this assertion exists to show changed. Both phases
-//   printed the visually identical "$FF00" regardless of what blue
-//   actually did, so a reader could not see the one thing the assertion
-//   claims to have found. Printed values now use the new hex6() helper
-//   (full 24-bit R:G:B) plus an explicit "blue $xx -> $xx" fragment, so the
-//   held red/green and the changed blue are all visible in the evidence.
-//   No change to the assertion's own boolean condition or to its mutation
-//   (MUTATION HAM-MODIFY-WRITES-PIXEL above, unchanged, still applies) --
-//   this was a print-only fix.
+// WHY HAM-MODIFY-WRITES-PIXEL PRINTS 24 BITS: its boolean check (hr==mr &&
+//   hg==mg && hb!=mb) tests red/green held, blue modified, exactly what
+//   p.86 describes. hex4(rgb>>8) would right-shift away the LOW byte --
+//   exactly the blue component this assertion exists to show changed --
+//   and print the identical "$FF00" in both phases, so its printed values
+//   use hex6() (full 24-bit R:G:B) plus an explicit "blue $xx -> $xx"
+//   fragment, making the held red/green and the changed blue visible in
+//   the evidence.
 //
-// ADDITION (quote, restatement and page alone; the claims file's own
-//   classification not yet opened). Nine more claims cluster on the one
-//   proposition COLOR-BITS-15-12-UNUSED above already specifies and
-//   asserts:
+// NINE CLAIMS ON COLOR-BITS-15-12-UNUSED's PROPOSITION (from their quote,
+//   restatement and page):
 //   - 3-colortable.c13 (sol) and 3-t3.c01 (opus), p.46, "Bits 15 - 12
 //     Unused" (Table 3-3, the chapter body's own colour-register-format
 //     table): restates, from a THIRD page/table (the chapter body, not the
@@ -349,9 +259,7 @@
 //     per bit (15, 14, 13, 12 respectively, each marked X): the identical
 //     "unused" proposition split to single-bit granularity, per the BIT
 //     TABLE rule -- the same appendix-A row hrm/ch3-colour-register-format
-//     already draws on. A-color.c10, along with its three sibling bits, is
-//     added to COLOR-BITS-15-12-UNUSED below -- none of the four was
-//     asserted anywhere before.
+//     draws on. A-color.c7..c10 sit on COLOR-BITS-15-12-UNUSED below.
 //   - A-colorxx.bits1 (opus), p.273, the same appendix-A row read as one
 //     group claim ("bits 15-12 are X, i.e. unused") rather than split --
 //     opus's own twin of the four sol ids immediately above.
@@ -360,11 +268,10 @@
 //   bits 15-12 at $0 and at $F, low 12 bits held constant, renders
 //   identically) -- eight are the same "unused" proposition restated from a
 //   different page, table, reader or bit-granularity, and the ninth
-//   (3-colorsum.c7) is the one already-declined software-guidance clause,
-//   restated as its own id. For the eight: the existing assertion's own
-//   label gains their ids, written out in full, rather than a new
-//   assertion being built to reprove a fact already measured. No expected
-//   value, no oracle text and no existing assertion's verdict changes.
+//   (3-colorsum.c7) is the declined software-guidance clause, restated as
+//   its own id. The eight sit, written out in full, on that assertion's
+//   own label rather than on a new assertion reproving a measured fact;
+//   3-colorsum.c7 is declined on a record().
 
 #include <cstdio>
 #include <cstring>
@@ -441,9 +348,9 @@
 namespace {
 
 // Custom chip-register addresses (word address, reg_address_in[8:1]
-// convention: byte address >> 1), as printed in the manual and reused from
-// hrm/ch3-horizontal-display-window's and hrm/ch3-register-map-denise's own
-// already-published, RTL-verified constants.
+// convention: byte address >> 1), as printed in the manual and as
+// hrm/ch3-horizontal-display-window and hrm/ch3-register-map-denise use
+// them.
 constexpr uint16_t IDLE_ADDR     = 0x00;
 constexpr uint16_t CLXDAT_ADDR   = 0x07;  // 9'h00E >> 1
 constexpr uint16_t DIWSTRT_ADDR  = 0x47;  // 9'h08E >> 1
@@ -459,14 +366,12 @@ constexpr uint16_t BPL5DAT_ADDR  = 0x8C;  // 9'h118 >> 1
 constexpr uint16_t BPL6DAT_ADDR  = 0x8D;  // 9'h11A >> 1, per B-subject.c160's own quoted address
 constexpr uint16_t COLOR_BASE    = 0xC0;  // 9'h180 >> 1; COLORi = COLOR_BASE+i
 constexpr uint16_t DIWHIGH_ADDR  = 0xF2;  // 9'h1E4 >> 1
-// D5 FIX: the bus NO-OP address (per denise.v/the manual's own "no chip
-// register decodes here" convention) -- reading OR writing it touches no
-// register denise.v implements at all. Used only inside a MUT_<NAME> guard
-// to redirect a single register's own write to prove the write-effect half
-// of that register's WO pairing actually depends on the real address, the
-// same single-register redirect the reviewer's own BPL4DAT-WO/BPL5DAT-WO
-// proof used (there: $0A0 and $1FE, two different unimplemented addresses;
-// here: $1FE alone, reused for every one of this package's nine).
+// The bus NO-OP address (per denise.v/the manual's own "no chip register
+// decodes here" convention) -- reading OR writing it touches no register
+// denise.v implements at all. Used only inside a MUT_<NAME> guard to
+// redirect a single register's own write, proving the write-effect half of
+// that register's WO pairing depends on the real address; used for every
+// one of this package's nine.
 constexpr uint16_t NOOP_ADDR     = 0xFF;  // 9'h1FE >> 1
 
 std::string hex4(uint16_t v) {
@@ -475,7 +380,7 @@ std::string hex4(uint16_t v) {
     return std::string(buf);
 }
 
-// D9 FIX: full 24-bit R:G:B, used where the blue byte matters and must not
+// Full 24-bit R:G:B, used where the blue byte matters and must not
 // be silently dropped by hex4(rgb>>8) -- see EHB-HALF-INTENSITY and
 // HAM-MODIFY-WRITES-PIXEL below.
 std::string hex6(uint32_t rgb) {
@@ -484,7 +389,7 @@ std::string hex6(uint32_t rgb) {
     return std::string(buf);
 }
 
-// D9 FIX: a single 8-bit component, two hex digits -- used alongside hex6
+// A single 8-bit component, two hex digits -- used alongside hex6
 // so a single R/G/B byte prints as e.g. "$FF", not hex4's padded "$00FF".
 std::string hex2(uint8_t v) {
     char buf[6];
@@ -521,8 +426,8 @@ public:
     Harness(const Harness&) = delete;
     Harness& operator=(const Harness&) = delete;
 
-    // Proven four-phase c1/c3/clk7_en pattern (reused from both named
-    // siblings' own published Harnesses -- see amiga_clk.v's c1/c3 overlap,
+    // Proven four-phase c1/c3/clk7_en pattern (the same as both named
+    // siblings' Harnesses -- see amiga_clk.v's c1/c3 overlap,
     // documented at length in both files' headers): phase 0 is the
     // clk7_en register-capture phase (one lores-pixel-resolution step),
     // phase 1 has c1 AND c3 both high.
@@ -575,8 +480,8 @@ public:
         dut->strhor = 0;
     }
 
-    // HARNESS FIX reused verbatim from hrm/ch3-horizontal-display-window's
-    // own published, RTL-verified constructor fix: denise.v's `window`
+    // The same constructor measure hrm/ch3-horizontal-display-window
+    // takes: denise.v's `window`
     // register has no reset clause, so a fresh Vdenise can spuriously latch
     // it open before any real DIWSTRT/DIWSTOP write. Force DIWSTOP to its
     // smallest actual value and run hpos all the way past it once, so
@@ -596,9 +501,9 @@ public:
                static_cast<uint32_t>(d->blue);
     }
 
-    // Colour-index dialling infrastructure, reused from
-    // hrm/ch3-register-map-denise's own published, MEASURED mechanical
-    // note: a single BPLxDAT write only pulses the shifter's parallel load
+    // Colour-index dialling infrastructure, as in
+    // hrm/ch3-register-map-denise's own MEASURED mechanical note: a single
+    // BPLxDAT write only pulses the shifter's parallel load
     // once, so a steady index needs the same value rewritten repeatedly.
     // Order matters: BPL2..6DAT before BPL1DAT (BPL1DAT's write is what
     // latches l_bpu and pulses the shared `load`).
@@ -627,7 +532,7 @@ public:
 
     uint32_t read_rgb_now() { return pack_rgb(dut); }
 
-    // D5 FIX (write-effect infrastructure): samples n consecutive
+    // Write-effect infrastructure: samples n consecutive
     // clk7_en-aligned pixels with NO further writes in between (unlike
     // scan_window_bpu1, which continuously rewrites BPL1DAT to saturate the
     // shifter). Used by BPLCON1-WO's own write-effect measurement below to
@@ -644,13 +549,12 @@ public:
         return samples;
     }
 
-    // D5 FIX (write-effect infrastructure): like refresh_bitplanes, but the
+    // Write-effect infrastructure: like refresh_bitplanes, but the
     // ONE named plane's BPLxDAT write is issued at `mut_addr` instead of its
     // own real address. mut_plane==0 means no redirection (identical to
     // refresh_bitplanes). Lets a per-register mutation redirect exactly the
     // one write under test -- and nothing else -- to an address Denise does
-    // not decode, the same single-register-only redirect the reviewer's own
-    // BPL4DAT-WO/BPL5DAT-WO proof used.
+    // not decode.
     void refresh_bitplanes_mut(bool b1, bool b2, bool b3, bool b4, bool b5, bool b6,
                                 int rounds, int mut_plane, uint16_t mut_addr) {
         auto addr_for = [&](int p, uint16_t real_addr) -> uint16_t {
@@ -666,7 +570,7 @@ public:
         }
     }
 
-    // RTL-INFORMED FIX (denise.v:436-444: clut_data = 0 (border) whenever
+    // WHY THIS EXISTS (denise.v:436-444: clut_data = 0 (border) whenever
     // !window_ena, regardless of bitplane content; denise.v:446-452:
     // window_del lags window_ena by one 28MHz edge, not gated by clk7_en)
     // -- every colour-index/EHB/HAM measurement needs to actually be
@@ -737,8 +641,7 @@ Edges find_edges(const std::vector<uint32_t>& samples, uint32_t border) {
 // from a SEPARATE, guaranteed-empty-range calibration window on a fresh
 // Harness sharing the identical COLOR00/COLOR01 programming (same technique
 // as hrm/ch3-horizontal-display-window's own measure_window).
-// D5 FIX: diwstrt_addr/diwstop_addr default to the real registers (every
-// pre-existing call site below is unaffected); DIWSTRT-WO/DIWSTOP-WO/
+// diwstrt_addr/diwstop_addr default to the real registers; DIWSTRT-WO/DIWSTOP-WO/
 // DIWHIGH-WO's own write-effect measurements pass a possibly-MUT-redirected
 // address for the ONE register under test, so a mutation that sends that
 // register's write to NOOP_ADDR shows up here as the window failing to move
@@ -786,10 +689,10 @@ int main(int argc, char** argv) {
     Checks checks;
 
     // ==================== CONTROL-REG-ALIVE (no claim id) ====================
-    // "the fixture proves it can deliver a known word before anything reads
-    // one" -- DENISEID and CLXDAT are two independently-decoded read-only
-    // registers (reused address knowledge from hrm/ch3-register-map-denise's
-    // own published file); both answering distinct, non-zero values before
+    // The fixture proves it can deliver a known word before anything reads
+    // one: DENISEID and CLXDAT are two independently-decoded read-only
+    // registers (addresses as in hrm/ch3-register-map-denise); both
+    // answering distinct, non-zero values before
     // any write-only-register-reads-zero assertion below is trusted rules
     // out "data_out is stuck at zero" as the explanation.
     {
@@ -813,8 +716,8 @@ int main(int argc, char** argv) {
     // ==================== CONTROL-BITPLANE-ALIVE (no claim id) ====================
     // A one-shot, non-constant, recognisable BPLxDAT value must reach the
     // rgb output before any DIW-window/colour-index measurement below
-    // trusts the bitplane data path (reused proof technique from
-    // hrm/ch3-horizontal-display-window's own published FIXTURE-DATA-PATH-LIVE).
+    // trusts the bitplane data path (the same proof technique as
+    // hrm/ch3-horizontal-display-window's FIXTURE-DATA-PATH-LIVE).
     {
         Harness h;
         h.write_reg(COLOR_BASE + 0, 0x0F0);
@@ -860,8 +763,8 @@ int main(int argc, char** argv) {
     // this same observation) -- so one write, one measurement, settles
     // every id in this group at once: writing $2C81 to DIWSTRT opens the
     // window exactly where Table 3-9's HSTART=$81 says it should
-    // (open_idx = $81 = 129, this package's own RTL-informed sample-index
-    // translation -- see header's RTL-INFORMED CORRECTION note).
+    // (open_idx = $81 = 129, this package's own sample-index
+    // translation -- see header's SAMPLE-INDEX TRANSLATION note).
     {
         Edges e = measure_window(0x2C81, 0x00FF, 300);
 #if MUT_DIW_HSTART
@@ -893,8 +796,8 @@ int main(int argc, char** argv) {
     // is a real measurement, not a restatement: both words are written on
     // separate fresh Harnesses and must produce the IDENTICAL close edge,
     // exactly where the shared H-byte ($C1) predicts (close_idx =
-    // $C1+256 = 449, this package's own RTL-informed sample-index
-    // translation -- see header's RTL-INFORMED CORRECTION note).
+    // $C1+256 = 449, this package's own sample-index
+    // translation -- see header's SAMPLE-INDEX TRANSLATION note).
     {
         Edges ntsc = measure_window(0x0002, 0xF4C1, 512);
         Edges pal = measure_window(0x0002, 0x2CC1, 512);
@@ -950,8 +853,8 @@ int main(int argc, char** argv) {
     // C-genlock-ext.c6 (p307, "BPLCON1 W D Bitplane control (horizontal
     // scroll control)").
     //
-    // D5 FIX: a $0000 readback alone is structural at this boundary (see
-    // file header's D5 FIX note -- data_out is only ever col_out |
+    // A $0000 readback alone is structural at this boundary (see the
+    // file header's WHY THE NINE WO ASSERTIONS note -- data_out is only ever col_out |
     // deniseid_out | rgb_out, so nearly every unimplemented address reads
     // $0000 too). Paired here with BPLCON1's own measured write EFFECT:
     // PF1H (bits 3-0, non-aga) is the horizontal-scroll-control field p.307
@@ -1013,15 +916,14 @@ int main(int argc, char** argv) {
     // Bitplane 1 data"): representative of the general write-only claim
     // plus BPL1DAT specifically.
     //
-    // D5 FIX: paired with an observable write EFFECT specific to THIS
+    // Paired with an observable write EFFECT specific to THIS
     // register, not merely "some $0000 address": with bpu=5 colour-select
     // mode (COLOR0=$000, COLOR1=$0ABC) and planes 2-5 held at 0, toggling
     // ONLY plane 1 moves the colour index from 0 to 1 -- the pixel must go
     // from COLOR0's black to a non-black colour. A per-register mutation
     // redirects exactly this one plane's own BPLxDAT write (and nothing
-    // else) to NOOP_ADDR ($1FE, decoded nowhere in denise.v), the same
-    // single-register redirect the reviewer's own BPL4DAT-WO/BPL5DAT-WO
-    // proof used -- see file header.
+    // else) to NOOP_ADDR ($1FE, decoded nowhere in denise.v) -- see file
+    // header.
     {
         uint16_t addr = BPL1DAT_ADDR;
 #if MUT_BPL1DAT_WO
@@ -1061,7 +963,7 @@ int main(int argc, char** argv) {
     }
 
     // ==================== BPL2DAT-WO ==================== B-subject.c140 (p291)
-    // D5 FIX: same per-plane isolation as BPL1DAT-WO above, plane 2 (index
+    // Same per-plane isolation as BPL1DAT-WO above, plane 2 (index
     // bit 1, value 2).
     {
         uint16_t addr = BPL2DAT_ADDR;
@@ -1100,7 +1002,7 @@ int main(int argc, char** argv) {
     }
 
     // ==================== BPL3DAT-WO ==================== B-subject.c145 (p291)
-    // D5 FIX: same per-plane isolation, plane 3 (index bit 2, value 4).
+    // Same per-plane isolation, plane 3 (index bit 2, value 4).
     {
         uint16_t addr = BPL3DAT_ADDR;
 #if MUT_BPL3DAT_WO
@@ -1138,9 +1040,8 @@ int main(int argc, char** argv) {
     }
 
     // ==================== BPL4DAT-WO ==================== B-subject.c150 (p291)
-    // D5 FIX: same per-plane isolation, plane 4 (index bit 3, value 8).
-    // This is exactly the register the reviewer's own proof pointed at
-    // $0A0 (a Paula audio pointer) to show a green that meant nothing.
+    // Same per-plane isolation, plane 4 (index bit 3, value 8). A $0000
+    // read-back alone would also pass at $0A0 (a Paula audio pointer).
     {
         uint16_t addr = BPL4DAT_ADDR;
 #if MUT_BPL4DAT_WO
@@ -1178,9 +1079,8 @@ int main(int argc, char** argv) {
     }
 
     // ==================== BPL5DAT-WO ==================== B-subject.c155 (p291)
-    // D5 FIX: same per-plane isolation, plane 5 (index bit 4, value 16).
-    // This is exactly the register the reviewer's own proof pointed at
-    // $1FE (the bus NO-OP) to show a green that meant nothing.
+    // Same per-plane isolation, plane 5 (index bit 4, value 16). A $0000
+    // read-back alone would also pass at $1FE (the bus NO-OP).
     {
         uint16_t addr = BPL5DAT_ADDR;
 #if MUT_BPL5DAT_WO
@@ -1218,7 +1118,7 @@ int main(int argc, char** argv) {
     }
 
     // ==================== BPL6DAT-WO ==================== B-subject.c160 (p291)
-    // D5 FIX: plane 6 does NOT contribute an index bit in bpu=6/ham=0 mode
+    // Plane 6 does NOT contribute an index bit in bpu=6/ham=0 mode
     // -- it is the EHB half-intensity flag (denise.v: ehb_en = !killehb &&
     // !a1k && !ham && !dpf && l_bpu==6), exactly what EHB-HALF-INTENSITY
     // above already measures and mutation-tests. Paired here with that
@@ -1278,15 +1178,14 @@ int main(int argc, char** argv) {
     // reads $0000 at $100 -- the manual's "W" column means no readback
     // path at this boundary, not that the write has no internal effect).
     //
-    // D5 FIX: that prior text already correctly CITES DIW-NOMINAL-HSTART as
-    // corroboration -- kept below -- but citation alone still let a
-    // mutation that redirects the WHOLE assertion (write AND read) to an
-    // unimplemented address pass (the reviewer's own proof, on BPL4DAT-WO/
-    // BPL5DAT-WO). So the SAME $7777 write this assertion already makes is
-    // now also used to measure the window opening exactly where it says:
-    // open_idx must equal $77 (the RTL-informed formula this file's own
-    // header derives: open_idx=raw_start), through this assertion's own
-    // (possibly redirected) address.
+    // The text above CITES DIW-NOMINAL-HSTART as corroboration, but
+    // citation alone would let a mutation that redirects the WHOLE
+    // assertion (write AND read) to an unimplemented address pass. So the
+    // SAME $7777 write this assertion makes is also used to measure the
+    // window opening exactly where it says: open_idx must equal $77 (the
+    // sample-index translation this file's own header derives:
+    // open_idx=raw_start), through this assertion's own (possibly
+    // redirected) address.
     {
         uint16_t addr = DIWSTRT_ADDR;
 #if MUT_DIWSTRT_WO
@@ -1319,9 +1218,9 @@ int main(int argc, char** argv) {
     // ==================== DIWSTOP-WO ====================
     // A-diw.c4, A-diwstop.rw (p277), B-subject.c14 (p290), C-diw.c2 (p306).
     //
-    // D5 FIX: same reasoning as DIWSTRT-WO above -- the $8888 already
-    // written by this assertion also closes the window exactly where the
-    // RTL-informed formula (close_idx=raw_stop+256) says: $88+256=392.
+    // Same reasoning as DIWSTRT-WO above -- the $8888 written by this
+    // assertion also closes the window exactly where the sample-index
+    // translation (close_idx=raw_stop+256) says: $88+256=392.
     {
         uint16_t addr = DIWSTOP_ADDR;
 #if MUT_DIWSTOP_WO
@@ -1354,7 +1253,7 @@ int main(int argc, char** argv) {
     // A-diw.c2, A-diwhigh.rw (p277), B-subject.c293 (p293), C-diw.c8,
     // C-diwhigh.c01 (p306).
     //
-    // D5 FIX: DIWHIGH has a real, ECS-gated effect at THIS boundary --
+    // DIWHIGH has a real, ECS-gated effect at THIS boundary --
     // denise.v:314-319: hdiwstop[8] defaults to 1 (close edge = raw_stop+
     // 256) unless DIWHIGH is written with ecs=1, which loads data_in[13]
     // into it instead. The $9999 pattern this assertion already writes has
@@ -1487,14 +1386,13 @@ int main(int argc, char** argv) {
     // identically whether COLOR01 is written with bits 15-12 set or clear,
     // with the low 12 bits held constant.
     //
-    // ADDITION: eight more ids
-    //   route here with the identical "how" -- "COLOR-BITS-15-12-UNUSED
-    //   already does this" -- because denise_colortable.v's own data_in
+    // Eight more ids sit here on the same measurement, because
+    //   denise_colortable.v's own data_in
     //   port is [11:0], twelve bits wide, so no wiring exists in this
     //   fixture's boundary for bits 15-12 to reach in the first place; the
-    //   $0 to $F sweep this assertion already runs establishes every one of
+    //   $0 to $F sweep this assertion runs establishes every one of
     //   them, individually and as a group, the same measurement covers all
-    //   four. Added to this assertion's own label, in full, below:
+    //   four. On this assertion's own label, in full, below:
     //   3-colortable.c13/3-t3.c01 (p.46, the chapter body's own Table 3-3),
     //   3-colorsum.c6 (p.92, the same appendix-B row 3-t15.c01 already
     //   cites, a second extraction split to keep the hardware half its own
@@ -1605,19 +1503,16 @@ int main(int argc, char** argv) {
     // and plane 6 set reads exactly HALF that colour, component by
     // component.
     //
-    // D6 FIX: page 95 was re-read directly
-    // (docs/references/amiga-hrm-3rd/ch3/p95.txt) -- it says "SHIFTED to
+    // Page 95 (docs/references/amiga-hrm-3rd/ch3/p95.txt) says "SHIFTED to
     // half-intensity", not merely "darker" or "reduced": a shift is a
     // specific bit operation, not a vague qualitative one, and the values
-    // this fixture actually measures ($BBAA88 -> component-wise >>1 =
-    // $5D5544) match a literal >>1 (integer halving, truncating) on EVERY
-    // component, exactly. The previous "no component greater, at least one
-    // strictly smaller" check is also satisfied by quarter-intensity or a
+    // this fixture measures ($BBAA88 -> component-wise >>1 = $5D5544)
+    // match a literal >>1 (integer halving, truncating) on EVERY
+    // component, exactly. A "no component greater, at least one strictly
+    // smaller" check would also be satisfied by quarter-intensity or a
     // blue-only darkening -- neither of which is what page 95 says, and
-    // both of which this exact check now correctly rejects. Printed values
-    // are now the full 24-bit R:G:B (hex6), not rgb>>8, so the blue
-    // component -- previously invisible in the printed evidence -- is
-    // shown too.
+    // both of which this exact check rejects. Printed values are the full
+    // 24-bit R:G:B (hex6), not rgb>>8, so the blue component is shown too.
     {
         Harness h;
         h.write_reg(COLOR_BASE + 6, 0x0BA8);  // bright, non-degenerate colour
@@ -1670,14 +1565,11 @@ int main(int argc, char** argv) {
     // "the value... is held, and one of the three components... is
     // modified", tested as: two components held, one changed.
     //
-    // D9 FIX: the boolean check (hr==mr && hg==mg && hb!=mb) was already
-    // sound -- it does test held-red, held-green, changed-blue -- but both
-    // printed values used hex4(rgb>>8), which drops the LOW byte, i.e.
-    // exactly the blue component that IS this assertion's whole result;
-    // both phases therefore printed the identical-looking $FF00 regardless
-    // of what blue actually did. Printed values are now the full 24-bit
-    // R:G:B (hex6), so the blue difference the assertion is actually
-    // testing is visible in the evidence.
+    // The boolean check (hr==mr && hg==mg && hb!=mb) tests held-red,
+    // held-green, changed-blue. Printed values are the full 24-bit R:G:B
+    // (hex6): hex4(rgb>>8) would drop the LOW byte, i.e. exactly the blue
+    // component that IS this assertion's whole result, and print the
+    // identical-looking $FF00 in both phases whatever blue did.
     {
         Harness h;
         h.write_reg(COLOR_BASE + 1, 0x0F08);  // COLOR01: distinct R/G/B components
@@ -1715,11 +1607,11 @@ int main(int argc, char** argv) {
     }
 
     // ==================== DECLINED -- not asserted above ====================
-    // Per the build brief's HALT conditions ("the manual is ambiguous",
-    // "a claim cannot be settled by... a measurement", "the package needs
-    // a wider module boundary than the one assigned"): these 11 ids are
-    // recorded here, with the specific reason, rather than forced into a
-    // measurement that would not actually settle them.
+    // Where the manual is ambiguous, a claim cannot be settled by a
+    // measurement, or the claim needs a wider module boundary than this
+    // one, the id is recorded here with the specific reason rather than
+    // forced into a measurement that would not actually settle it (11
+    // ids).
 
     checks.note(
         "3-video.c30 (p42, 'A playfield taller than the screen can be "
