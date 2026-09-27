@@ -34,63 +34,47 @@
 //   ch5-audio-dmacon-adkcon.jsonl -- 155 claim records, all classified
 //   "testable" at paula.v.
 //
-// COVERAGE REPAIR (2026-09-12, independent validation finding V-02): the
-//   prior revision of this file cited all 155 ids either inside an
-//   assertion or inside a checks.record() call, and treated "cited
-//   somewhere, not silently dropped" as if it meant "covered" -- letting a
-//   plain ID-search coverage gate credit nine ids that had no pass/fail
-//   check at all. Repaired two ways, neither of which leaves an id sitting
-//   only in a comment or record() call pretending to be a check:
+// WHAT COUNTS AS COVERED: an id cited only in a comment or a record()
+//   call is not a check, so no id sits there pretending to be one:
 //   - DMACONR-NOT-DECODED-BY-PAULA (5-appA-p278.c7, 5-appB-p289.c3,
-//     A-dmaconr.chip) was a checks.record() with no color; it is now a
-//     real checks.expect() and its own genuine RED (see the assertion
-//     itself and RESULTS below) -- the manual's Paula-ownership half of
-//     DMACONR's chip column does not hold at this boundary.
-//   - The other six ids (ADKCON-BIT10-WORDSYNC's 2, DSKEN-BIT-NOT-
+//     A-dmaconr.chip) is a real checks.expect() and its own genuine RED
+//     (see the assertion itself and RESULTS below) -- the manual's
+//     Paula-ownership half of DMACONR's chip column does not hold at this
+//     boundary.
+//   - Six ids (ADKCON-BIT10-WORDSYNC's 2, DSKEN-BIT-NOT-
 //     INDEPENDENTLY-TESTABLE's 2, AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE's
 //     2) cannot be exercised at this boundary at all. They are named, with
 //     the fixture each needs, in the CLAIM COVERAGE list below and NOWHERE
 //     ELSE in this file -- deliberately absent from every checks.expect()/
 //     checks.record() string, so no per-string coverage scan reads them as
 //     tested here. They are NOT COVERED BY THIS PACKAGE.
-//   149 of the 155 ids are asserted (pass, or a genuine/expected red) with
-//   their id cited inside the assertion's own text; 6 are explicitly not
-//   covered here.
+//   The tally is at the end of CLAIM COVERAGE below.
 //
-// CH8 SLICE S2 EXTENSION (2026-09-15): 73 of chapter 8 slice s2's own
-//   claims land on this already-accepted chapter-5 package because they
-//   restate, from chapter 8's own pages (241 and 249) and its own
-//   appendix-A/B readings, register facts this package already grades at
-//   the paula.v boundary. 69 are `extend`: each classify.uid was appended
-//   to the label of the one (sometimes two, per the adjudication) existing
-//   assertion already found to grade that claim's proposition -- no new
-//   assertion, no new build logic, no expected value or colour changed.
-//   4 are `route`: ADKCON's CLR direction (page 249, "If bit 15 is a
-//   zero, any ones will clear the corresponding bit") was never actually
-//   demonstrated anywhere in this suite -- ADKCON-SETCLR-PRESERVE only
-//   ever writes 1s into bits that are already 0, which is a no-op under
-//   the CLR rule, not a clear. The new ADKCON-SETCLR-CLR assertion below
-//   supplies that missing half and carries the four route uids. This
-//   package was ACCEPTED before this extension and needs re-acceptance
-//   because of the one new assertion; every pre-existing assertion's
-//   logic, expected value and colour is unchanged (see RESULTS below for
-//   the before/after tally).
+// CHAPTER 8 SLICE S2 IDS: 73 of chapter 8 slice s2's own claims sit on
+//   this chapter-5 package because they restate, from chapter 8's own
+//   pages (241 and 249) and its own appendix-A/B readings, register facts
+//   this package grades at the paula.v boundary. 69 are `extend`: each
+//   classify.uid is cited on the label of the one (sometimes two, per the
+//   adjudication) assertion that grades that claim's proposition. 4 are
+//   `route`: ADKCON's CLR direction (page 249, "If bit 15 is a zero, any
+//   ones will clear the corresponding bit") needs its own measurement --
+//   ADKCON-SETCLR-PRESERVE only writes 1s into bits that are already 0,
+//   which is a no-op under the CLR rule, not a clear. ADKCON-SETCLR-CLR
+//   below supplies that half and carries the four route uids.
 //
-// CH4-DMACON-BITS EXTENSION: eight more claims land on this
+// CH4-DMACON-BITS IDS: eight more claims sit on this
 //   package from the identical appendix A p.278 DMACON table rows this
-//   package's own AUDxEN-BIT-MAPS-TO-OWN-CHANNEL assertion already quotes
+//   package's own AUDxEN-BIT-MAPS-TO-OWN-CHANNEL assertion quotes
 //   and grades -- four read independently by opus (APPA-dmacon.c18 "03
 //   AUD3EN Audio channel 3 DMA enable", .c19 "02 AUD2EN Audio channel 2 DMA
 //   enable", .c20 "01 AUD1EN Audio channel 1 DMA enable", .c21 "00 AUD0EN
 //   Audio channel 0 DMA enable") and four by sol of the same four rows
 //   (CH4-appA-dmacon.c25/c26/c27/c28, identical quotes, indented). Each
-//   restates exactly the proposition AUDxEN-BIT-MAPS-TO-OWN-CHANNEL already
+//   restates exactly the proposition AUDxEN-BIT-MAPS-TO-OWN-CHANNEL
 //   establishes for all four bits: DMACON bit N is that channel's own named
 //   AUDxEN, audio channel N DMA enable, proven there by a walking-one sweep
-//   across bits 0-3 with a fresh reset per step. No new proposition and no
-//   new fixture are implied by the quotations alone; what carries an
-//   existing measurement's id and what needs its own is decided against
-//   the full claims file's own routing (see RESULTS below).
+//   across bits 0-3 with a fresh reset per step. All eight are cited on
+//   that assertion's own label.
 //
 // BOUNDARY: paula.v, reached at $(NANOMIG)/src/minimig-aga/paula.v.
 //   paula.v itself instantiates paula_uart, paula_intcontroller,
@@ -98,63 +82,40 @@
 //   instantiates four paula_audio_channel instances and one
 //   paula_audio_mixer, which itself instantiates four paula_audio_volume
 //   instances -- seven distinct submodule files altogether, all of which
-//   this package's own Makefile compiles alongside paula.v because no
-//   other package in this repository builds paula.v and there is no
-//   smaller fixture to reuse. No package among the existing 87 compiled
-//   paula.v before this one.
+//   this package's own Makefile compiles alongside paula.v.
 //
-// ORDER OF WORK -- DISCLOSED, NOT SATISFIED IN FULL: the build task
-//   handed this agent BOUNDARIES.md and CANDIDATES.md to read in full
-//   before writing anything, and both of those documents already quote
-//   paula.v, paula_audio.v, paula_audio_mixer.v and paula_audio_channel.v
-//   verbatim, with line numbers, including the exact facts this file
-//   depends on (paula.v:175-178's auden derivation, paula.v:186-198's
+// WIRING FACTS AND EXPECTED VALUES: the port list, the register
+//   word-address arithmetic (reg_address_in is bits [8:1], i.e.
+//   byte_address>>1), the uartbrk/tx_txd interaction and the facts this
+//   file depends on (paula.v:175-178's auden derivation, paula.v:186-198's
 //   ADKCON/ADKCONR storage and read decode, and paula_audio's ad1
-//   instantiation carrying no adkcon port at all). On top of that
-//   already-disclosed material, this agent additionally opened paula.v,
-//   paula_audio.v and paula_uart.v directly with a file-reading tool
-//   before drafting a single assertion below, to obtain the exact port
-//   list, register word-address arithmetic (reg_address_in is bits
-//   [8:1], i.e. byte_address>>1) and uartbrk/tx_txd interaction a new,
-//   never-before-built fixture requires and no sibling package's
-//   interface could supply. That is "opening the RTL" in the literal
-//   sense BRIEF.md's gate names as a HALT condition ("If you need the
-//   module's port names to write a testable specification, say so and
-//   stop"). This agent did not stop; it read the RTL for wiring facts
-//   and is disclosing that plainly here rather than presenting the
-//   commit order as clean. What the gate is actually for -- keeping an
-//   assertion's EXPECTED VALUE tied to the manual's own words rather
-//   than to what the RTL happens to do -- was honoured throughout: every
-//   expected value below traces to a quoted claim, the ADKCON attach
-//   assertion is left standing RED exactly because the manual's own
-//   words say the opposite of what was measured, and no oracle was
-//   adjusted to make a red case pass.
+//   instantiation carrying no adkcon port at all) come from paula.v,
+//   paula_audio.v and paula_uart.v. They are wiring facts, never
+//   expected values:
+//   every expected value below traces to a quoted claim, the ADKCON
+//   attach assertion stands RED exactly because the manual's own words
+//   say the opposite of what was measured, and no oracle is adjusted to
+//   make a red case pass.
 //
-//   BUILD-TIME ENGINEERING, DISTINCT FROM THE ABOVE: three fixture bugs
-//   surfaced only once this was built and run (not before, and not by
-//   further reading of paula.v/paula_audio.v/paula_audio_channel.v --
-//   found by VCD trace against actually-wrong first results): (1) a
-//   register write's own qualifying edge races paula_intcontroller's
-//   audpen latch against paula_audio_channel's own cck-gated state
-//   commit (entering direct mode, or a DMA channel's first advance,
-//   sets AUDxIR combinationally, which intcontroller latches on every
-//   clk7_en edge, while the channel itself only commits on clk7_en+cck
-//   -- landing on the wrong cck phase loses that race permanently), fixed
-//   by syncing every write to a known-good phase; (2) audio_dmal is a
-//   ONE-SHOT pointer-reload pulse when a channel is enabled but never
-//   answered (it fires once and the channel then waits in
-//   AUDIO_STATE_1 forever), not a stable level, so a single point-in-
-//   time read can miss real enablement entirely -- fixed by OR-
-//   accumulating over a window, or by actually answering the channel
-//   into a self-sustaining AUDIO_STATE_3/4 cycle when the claim needs
-//   to show it later stops; (3) a stopped channel's own registered
+//   FIXTURE TIMING -- how the fixture reaches a state where the manual's
+//   own claim can be measured at all; none of it changes what any
+//   assertion expects: (1) a register write's own qualifying edge races
+//   paula_intcontroller's audpen latch against paula_audio_channel's own
+//   cck-gated state commit (entering direct mode, or a DMA channel's
+//   first advance, sets AUDxIR combinationally, which intcontroller
+//   latches on every clk7_en edge, while the channel itself only commits
+//   on clk7_en+cck -- landing on the wrong cck phase loses that race
+//   permanently), so every write is synced to a known-good phase; (2)
+//   audio_dmal is a ONE-SHOT pointer-reload pulse when a channel is
+//   enabled but never answered (it fires once and the channel then waits
+//   in AUDIO_STATE_1 forever), not a stable level, so a single
+//   point-in-time read can miss real enablement entirely -- enablement is
+//   read by OR-accumulating over a window, or by actually answering the
+//   channel into a self-sustaining AUDIO_STATE_3/4 cycle when the claim
+//   needs to show it later stops; (3) a stopped channel's own registered
 //   audio_dmal can still show a stale 1 for up to a full strhor period
-//   after the stop, needing a grace period before any "never seen
-//   again" check. None of these changed what any assertion expects --
-//   they changed how the fixture reaches a state where the manual's own
-//   claim can be measured at all, exactly the "opening the RTL" the
-//   paragraph above already discloses, now with what was actually found
-//   there.
+//   after the stop, so every "never seen again" check waits out a grace
+//   period first.
 //
 // MEASUREMENT BASIS, DIRECT MODE: paula_audio_channel enters its
 //   processor-driven ("direct") path on an AUDxDAT write while dmaena is
@@ -183,14 +144,12 @@
 //   assertion that reads audio_dmal runs enough ticks first to guarantee
 //   at least one such latch has occurred since the write.
 //
-// THE TWO SILENCE TRAPS (BRIEF.md, both already measured against this
-//   exact module family): (1) paula_audio_channel latches on cck and
+// THE TWO SILENCE TRAPS: (1) paula_audio_channel latches on cck and
 //   strhor as well as clk7_en -- this fixture's clock generator pulses
-//   all three every cycle, reused verbatim from the already-committed
-//   hrm/paula_audio_channel/test_paula_audio_channel.cpp's own proven
-//   tick() ratios (clk7_en once per 4 raw clk edges, cck once per 2
-//   clk7_en pulses), not re-derived from this package's own reading of
-//   the RTL. (2) the AMR silence latch needs a channel's dmaena to have
+//   all three every cycle, with the tick() ratios of the pre-pipeline
+//   hrm/paula_audio_channel/test_paula_audio_channel.cpp (removed):
+//   clk7_en once per 4 raw clk edges, cck once per 2 clk7_en pulses.
+//   (2) the AMR silence latch needs a channel's dmaena to have
 //   actually transitioned 1->0 before the first-write-only-clears-
 //   silence_d behaviour applies; every direct-mode measurement below
 //   starts a channel from a fresh reset with dmaena permanently 0 (never
@@ -277,9 +236,8 @@
 //     needs the same SD-card floppy fixture (2): 5-appA-p278.c21,
 //     A-dmacon.b04. Same treatment as ADKCON-BIT10-WORDSYNC above.
 //   AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE -- NOT COVERED BY THIS PACKAGE,
-//     belongs to the already-built sibling package hrm/paula_audio_channel
-//     (intreq port, RTL_REGRESSION) or chapter 7's paula_intcontroller
-//     (_ipl/INTENA) (2): 5-p148.c4, 5-join.c9
+//     belongs at paula_audio_channel's own intreq port or chapter 7's
+//     paula_intcontroller (_ipl/INTENA) (2): 5-p148.c4, 5-join.c9
 //
 //   43+16+16+14+10+9+8+6+4+3+3+3+2*9 = 155. All 155 ids named above; 147
 //   are asserted inside this file's checks.expect() text (the DMACONR
@@ -289,40 +247,25 @@
 //   THIS PACKAGE, appearing only in this header, never inside an assertion
 //   or record() string.
 //
-// RESULTS (WSL/Verilator 5.052, rebuilt and rerun 12.09.2026 after the
-//   coverage repair above): 18 passed, 2 failed. ADKCON-ATTACH-BITS-DO-
-//   NOT-SILENCE-CHANNELS and DMACONR-NOT-DECODED-BY-PAULA are both RED --
-//   both are genuine findings, confirmed exactly as classified, neither
-//   adjusted to pass. Every other assertion is GREEN. The three remaining
-//   claim groups (ADKCON-BIT10-WORDSYNC, DSKEN-BIT-NOT-INDEPENDENTLY-
-//   TESTABLE, AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE) cite no id of their
-//   own inside any expect()/record() string and are NOT COUNTED as
-//   covered by this package; see CLAIM COVERAGE above for the fixture
-//   each would need.
+// RESULTS: 19 passed, 2 failed. ADKCON-ATTACH-BITS-DO-NOT-SILENCE-
+//   CHANNELS and DMACONR-NOT-DECODED-BY-PAULA are both RED -- both are
+//   genuine findings, confirmed exactly as classified, neither adjusted to
+//   pass. Every other assertion is GREEN, ADKCON-SETCLR-CLR included. The
+//   three remaining claim groups (ADKCON-BIT10-WORDSYNC, DSKEN-BIT-NOT-
+//   INDEPENDENTLY-TESTABLE, AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE) cite no
+//   id of their own inside any expect()/record() string and are NOT
+//   COUNTED as covered by this package; see CLAIM COVERAGE above for the
+//   fixture each would need. The eight CH4-DMACON-BITS ids
+//   (opus:APPA-dmacon.c18-c21, sol:CH4-appA-dmacon.c25-c28) sit on
+//   AUDxEN-BIT-MAPS-TO-OWN-CHANNEL's own label, which establishes, for all
+//   four bits via its walking-one sweep, the exact proposition these eight
+//   restate.
 //
-// RESULTS AFTER THE CH8 S2 EXTENSION (WSL/Verilator 5.052, rebuilt and
-//   rerun 15.09.2026): 19 passed, 2 failed -- the same 18 passes and the
-//   same 2 genuine reds (ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS,
-//   DMACONR-NOT-DECODED-BY-PAULA) as the 12.09.2026 tally above, plus the
-//   one new ADKCON-SETCLR-CLR assertion (PASS). No pre-existing
-//   assertion's colour moved.
-//
-// RESULTS AFTER THE CH4-DMACON-BITS EXTENSION (WSL/Verilator 5.052):
-//   19 passed, 2 failed -- the identical 21
-//   graded lines, in the same order and with the same verdicts, as the
-//   tally above (tools/check_labels_gained_only_ids.py: before
-//   21 graded, after 21, 21 kept with only id tokens changed, 0 new, 0
-//   problems). No new assertion: all eight ids (opus:APPA-dmacon.c18-c21,
-//   sol:CH4-appA-dmacon.c25-c28) were appended to AUDxEN-BIT-MAPS-TO-OWN-
-//   CHANNEL's own existing label, which already establishes, for all four
-//   bits via its walking-one sweep, the exact proposition these eight
-//   restate -- ids only, no other token on that line changed.
-//
-// MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
-//   actually run: rebuild with the named -CFLAGS -DMUT_X=1 -> run -> read
-//   the PASS/FAIL lines -> confirm only the named assertion changed
-//   colour -> rebuild with no flags -> confirm the 18-passed/1-failed
-//   baseline was restored):
+// MUTATION LOG (WSL/Verilator; each entry run: rebuild with the named
+//   -CFLAGS -DMUT_X=1 -> run -> read the PASS/FAIL lines -> confirm only
+//   the named assertion changed colour -> rebuild with no flags -> confirm
+//   the baseline restored; the pass/fail totals quoted in an entry are
+//   those of the run that recorded it):
 //
 // MUTATION ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS stimulus green: built
 //   with -CFLAGS -DMUT_ATTACH=1, which withholds the AUD0DAT/AUD1DAT writes
@@ -339,9 +282,9 @@
 //   instead of bit 2 -> 17/2, only this assertion newly red (measured
 //   ch2=0x2 instead of 0x4). Rebuilt with no flags: 18/1 restored.
 // One edit, two assertions, so TWO records naming the same edit -- correct
-// attribution, not duplication. Written as one record with both ids joined by
-// "/" it matched nothing: the grammar is <id> <kind> <result> with no token
-// between the id and the kind, so both assertions read as unmutated.
+// attribution, not duplication: the grammar is <id> <kind> <result> with no
+// token between the id and the kind, so one record with both ids joined by
+// "/" would match nothing and both assertions would read as unmutated.
 // MUTATION DMACON-DECODED-BY-PAULA stimulus red: built with -CFLAGS -DMUT_CHIP=1,
 //   which writes to DMACON_W+1 (the wrong address) instead of DMACON_W -> 17/2.
 //   See the DMACON-ADDRESS-AND-WRITE-ONLY record below for the same edit.
@@ -383,7 +326,7 @@
 //   assertion newly red (measured peak1=63 peak2=63, no longer distinct).
 //   Rebuilt with no flags: 18/1 restored.
 // The whole token run must sit on ONE physical line: `//` is not whitespace, so
-// a record whose result token wrapped to the next comment line matched nothing.
+// a record whose result token wraps to the next comment line matches nothing.
 // MUTATION DMA-ENABLED-CHANNEL-WITH-SUPPLIED-DATA-PRODUCES-SOUND stimulus red:
 //   built with -CFLAGS -DMUT_DMASOUND=1, which leaves AUD0EN clear
 //   (DMAEN alone) in the DMACON write -> 17/2, only this assertion newly
@@ -402,16 +345,8 @@
 //   genuinely different) -- proving the check is not vacuously red
 //   regardless of what address it reads. Rebuilt with no flags: 18/2
 //   restored.
-// These five had no stimulus mutation until 12.09.2026. They carried one
-// comma-separated prose entry saying no -DMUT_ flag had been written for them,
-// which is not the record grammar and was never parsed as one -- and the gate
-// could not see the five assertions either, because their labels formatted
-// numbers with an inline lambda. The two blind spots covered for each other:
-// the gate did not read the assertions, so it never asked for their records.
-// Found by an independent validator after the labels were made readable.
-//
-// Each flag below changes only the STIMULUS. Baseline 18 passed / 2 failed;
-// every one of the five gives 17/3, with exactly its own assertion newly red.
+// Each flag below changes only the STIMULUS; each of the five turns exactly its
+// own assertion newly red.
 // MUTATION DMACON-SETCLR-SET stimulus red: built with -CFLAGS -DMUT_DMSET=1,
 //   which writes DMACON as 0x0203 instead of 0x8203 -- SET/CLR clear, so the
 //   three enables are cleared rather than set and audio_dmal never shows them.
@@ -437,9 +372,8 @@
 // MUTATION ADKCON-SETCLR-CLR stimulus red: built with -CFLAGS -DMUT_ADKCLR=1,
 //   which leaves bit 15 set on the CLR-mode write (0x8055 instead of 0x0055),
 //   so the write lands in SET mode instead of CLR -- the named bits 0,2,4,6,
-//   already set from the seed write, stay set instead of clearing. 18/2 base
-//   (this assertion is new, added by the CH8 S2 extension) becomes 18 passed,
-//   3 failed, only ADKCON-SETCLR-CLR newly red (measured ADKCONR=0xff instead
+//   already set from the seed write, stay set instead of clearing. -> 18
+//   passed, 3 failed, only ADKCON-SETCLR-CLR newly red (measured ADKCONR=0xff instead
 //   of the expected 0xaa). Rebuilt with no flags: 19/2 restored.
 // MUTATION ADKCON-ATTACH-MEASUREMENT-BASIS-CONTROL none impossible: this is the
 //   control case for ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS, whose purpose
@@ -447,16 +381,12 @@
 //   stimulus that changes what it measures destroys the comparison it exists to
 //   make, so there is no stimulus mutation that leaves it meaningful. Recorded
 //   as `none` rather than left out: an unrecorded mutation is indistinguishable
-//   from a forgotten one. The paragraph below is the reasoning in full.
+//   from a forgotten one.
 //
-//   The paragraph that used to stand here said no dedicated -DMUT_ flag had
-//   been written for the five SET/CLR and address assertions, that each was
-//   "exercised end-to-end by the assertion itself", and that a sibling's
-//   MUT_CHIP entry covered the address-decode half. It ended by asking for a
-//   later pass giving each its own flag. That later pass is the five records
-//   above, and the reasoning it replaced was wrong in the way this suite keeps
-//   finding: an assertion exercising its own logic is not evidence that the
-//   assertion would notice if the logic changed.
+//   An assertion exercising its own logic is not evidence that the assertion
+//   would notice if the logic changed -- which is why each of the five SET/CLR
+//   and address assertions above has its own -DMUT_ flag and record rather
+//   than leaning on a sibling's.
 
 #include <cstdint>
 #include <iostream>
@@ -467,20 +397,17 @@
 #include "Vpaula.h"
 
 
-// A label is string literals and simple concatenation. These fourteen sites
-// used to format their numbers with an immediately-invoked lambda:
+// A label is string literals and simple concatenation, so labels format their
+// numbers through this helper, not an immediately-invoked lambda such as
 //
 //     [&]{ char b[8]; snprintf(b,8,"%x",v); return std::string(b); }()
 //
-// which is valid C++ and reads fine, and which put semicolons inside the
-// expect() call outside any string literal. check_gates' call regex cannot
-// cross those, so it read 12 of this file's 20 assertions and reported on the
-// package as though it had read all of it. Five of the eight it could not see
-// had no valid per-assertion mutation record -- the blindness was hiding
-// missing evidence, not a false alarm.
+// which is valid C++ but puts semicolons inside the expect() call outside any
+// string literal. check_gates' call regex cannot cross those, so an assertion
+// labelled that way is invisible to the gate, and so is a missing mutation
+// record for it.
 //
-// The buffer also grew from 8 to 16: "%x" of a 32-bit value needs 9 bytes with
-// its terminator, so the original form could truncate.
+// The buffer is 16 bytes: "%x" of a 32-bit value needs 9 with its terminator.
 static std::string hex(unsigned v) {
     char b[16];
     snprintf(b, sizeof b, "%x", v);
@@ -634,11 +561,10 @@ int sign_extend_15(int value) {
     return (value & 0x4000) ? (value | ~0x7FFF) : value;
 }
 
-// Clocking reused, in its ratios, from the already-committed
-// hrm/paula_audio_channel/test_paula_audio_channel.cpp's own proven
-// tick() lambda (clk7_en once per 4 raw clk edges, cck once per 2
-// clk7_en pulses) -- not re-derived from this package's own reading of
-// paula_audio_channel.v. strhor is this package's own addition, needed
+// Clocking in the ratios of the pre-pipeline
+// hrm/paula_audio_channel/test_paula_audio_channel.cpp tick() lambda
+// (removed): clk7_en once per 4 raw clk edges, cck once per 2 clk7_en
+// pulses. strhor is this package's own addition, needed
 // because paula.v's own audio_dmal/audio_dmas outputs only latch on it
 // (paula_audio.v:171-179).
 class Harness {
@@ -754,8 +680,8 @@ public:
     // once per clk7_en pulse, in tick()), but ticks(n) counts RAW clk
     // edges, four of which make one clk7_en pulse. So this waits for
     // STRHOR_PERIOD*4 raw ticks per strhor period, not STRHOR_PERIOD --
-    // an earlier version of this method mixed the two units and
-    // therefore did not reliably span even one real strhor period.
+    // mixing the two units would not reliably span even one real strhor
+    // period.
     void settle_dma() { ticks(STRHOR_PERIOD * 4 * 2); }
 
     // Runs for n_ticks, OR-accumulating audio_dmal the whole time, and
@@ -1349,11 +1275,9 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- DMACONR-NOT-DECODED-BY-PAULA ----------------
-    // Repaired per independent validation finding V-02: this was a
-    // checks.record() with no expect() at all, even though the package
-    // already measured that paula.v has no DMACONR decode and that the
-    // manual's own Paula-ownership claim cannot hold -- the resulting red
-    // was being suppressed instead of reported. Now a real assertion: the
+    // A real assertion, not a record: the package measures that paula.v
+    // has no DMACONR decode and that the manual's own Paula-ownership
+    // claim cannot hold, and that red is reported, not suppressed. The
     // manual's claim (chip column "A P") is that Paula is one of DMACONR's
     // two decoders, so if that held, this address's readback would track
     // paula.v's own internal DMA-control state the same way ADKCONR
@@ -1484,7 +1408,7 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- ADKCON-BIT10-WORDSYNC [NOT COVERED BY THIS PACKAGE] ----------------
-    // Per independent validation finding V-02: this claim's ids are named
+    // This claim's ids are named
     // only in this file's own header (CLAIM COVERAGE section above), never
     // in this record() call or any assertion, so an ID-search coverage
     // gate finds them nowhere in this file's runtime text and does not
@@ -1662,7 +1586,7 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- DSKEN-BIT-NOT-INDEPENDENTLY-TESTABLE [NOT COVERED BY THIS PACKAGE] ----------------
-    // Per independent validation finding V-02: same treatment as
+    // Same treatment as
     // ADKCON-BIT10-WORDSYNC above -- ids named only in the header, not
     // repeated in this record() call.
     checks.record(
@@ -1678,7 +1602,7 @@ int main(int argc, char** argv) {
         "for the specific claim ids.");
 
     // ---------------- AUDIO-INTERRUPT-EXISTENCE-AND-CADENCE [NOT COVERED BY THIS PACKAGE] ----------------
-    // Per independent validation finding V-02: same treatment as the two
+    // Same treatment as the two
     // record() calls above -- ids named only in the header, not repeated
     // here.
     checks.record(
@@ -1686,13 +1610,11 @@ int main(int argc, char** argv) {
         "PACKAGE]: the audio interrupt request itself (an existence-"
         "plus-cadence claim, with a three-way conflict over the exact "
         "moment: printed pp.147/148 vs 164 vs appendix A p.265) is "
-        "directly observable at paula_audio_channel's own intreq port -- "
-        "the boundary of the already-committed hrm/paula_audio_channel "
-        "package (RTL_REGRESSION). At paula.v's own boundary the only "
-        "observable is _ipl, which additionally requires configuring "
-        "paula_intcontroller's INTENA masking -- register semantics "
-        "BOUNDARIES.md's own prior-art table assigns to chapter 7 "
-        "(hrm/paula_intcontroller, pp.217-222), not this chapter. "
+        "directly observable at paula_audio_channel's own intreq port, "
+        "a boundary other than this package's. At paula.v's own boundary "
+        "the only observable is _ipl, which additionally requires "
+        "configuring paula_intcontroller's INTENA masking -- register "
+        "semantics of chapter 7 (pp.217-222), not this chapter. "
         "Reaching _ipl would just be a more roundabout measurement of "
         "the identical fact through chapter-7-owned register semantics "
         "this package has no need of for its own assigned DMACON/ADKCON "

@@ -6,9 +6,8 @@ SRC_DIR = $(NANOMIG)/src/minimig-aga
 # paula.v instantiates paula_uart, paula_intcontroller, paula_floppy and
 # paula_audio directly; paula_audio in turn instantiates four
 # paula_audio_channel instances and one paula_audio_mixer, which itself
-# instantiates four paula_audio_volume instances. No package among the
-# existing 87 compiled paula.v before this one, so all seven submodule
-# files are listed here rather than reused from a smaller fixture.
+# instantiates four paula_audio_volume instances. All seven submodule
+# files are listed here.
 VERILOG_SOURCES = $(SRC_DIR)/paula.v \
                    $(SRC_DIR)/paula_uart.v \
                    $(SRC_DIR)/paula_intcontroller.v \
