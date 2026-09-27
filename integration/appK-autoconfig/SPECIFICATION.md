@@ -6,10 +6,11 @@ This specification was written from the package's claims (`claims-spec-stage.jso
 
 | Claim | What is not used | Reason |
 |---|---|---|
-| opus:K-0164, sol:K-0155 (p.394) | The bus-line levels themselves: that /RST and /BUSRST are driven and /HLT is not. | No expansion-bus line is an output the test can see. Both claims enter P1, P2 and P6 only through the consequences that other pages name (drive motor and CIA reset, the CPU continuing, PICs returning to the unconfigured state). |
-| opus:K-0014, sol:K-0008 (p.384) | "Addressing jumpers were eliminated". | A fact about how cards are built. This system has no jumper whose absence could be observed. The other half, "the card's address instead being assigned by software", is P3. |
-| opus:K-0014, sol:K-0008, K-0840, K-0838 and P6 | Everything, unless an AUTOCONFIG device is present. | The system under test is described as the chip set, a 680x0 CPU and Chip memory. The description names no expansion device, and the test cannot plug one in. P3-P6 need a PIC that answers in the Zorro II configuration space $00E8xxxx. Gate G (§5.2) decides whether one does. If none does, P3-P6 are reported "not checkable: no AUTOCONFIG device", never as passed. |
-| K-0838 (p.435) | Everything, unless a Zorro III PIC sits in the Zorro II block and the CPU drives 32-bit addresses. | The table that holds the claim is headed "For Zorro III boards configured in the Zorro II space". A27-A24 do not exist on a 24-bit bus: the Zorro II bus "provides 24 bits of addressing information" (p.391). P5 is specified for that case only. |
+| opus:K-0164, sol:K-0155 (p.394) | The bus-line levels themselves: that /RST and /BUSRST are driven and /HLT is not. | No expansion-bus line is an output the test can see. No page identifies nanomig.v's `cpu_nrst_out` output with /RST, /BUSRST, /HLT or any other signal, so the specification gives it no meaning and grades nothing on it; a builder may record its level during RESET as a measurement at the ports, labelled as such. Both claims are graded whole by P7 (§5.3) through the consequences that other pages name: the system reset (P1's reset witness), no /HLT (the CPU continuing, P2), and /BUSRST (a PIC returning to the unconfigured state, P6). |
+| opus:K-0014, sol:K-0008 (p.384) | Everything. | Both claims state "Addressing jumpers were eliminated", a fact about how cards are built. This system has no jumper whose absence could be observed, so the claims are declined whole rather than graded in part. P3 grades the other half, "the card's address instead being assigned by software", and carries neither id. |
+| K-0840 (p.435) | Everything. | The table that holds the claim is headed "For Zorro III boards configured in the Zorro II space". Applying it to a Zorro II board is a derivation the page does not print, and the only expansion device the harness offers is Zorro II fast RAM (§5.2). P4 is therefore not specified. |
+| P3, P6, and the /BUSRST part of P7 | Everything, unless an AUTOCONFIG device is present. | The system under test is the chip set, a 680x0 CPU and Chip memory. The harness offers one expansion device, Zorro II fast RAM, through the `fastram_config` input, whose default 0 means "no Zorro II fast RAM offered" (`nanomig_harness.h`, `Config`). Every run of gate G, P3 and P6 sets `fastram_config` to a value that offers it (§5.2). P3 and P6 need a PIC that answers in the Zorro II configuration space $00E8xxxx. Gate G (§5.2) decides whether one does. If none does, P3 and P6 are reported "not checkable: no AUTOCONFIG device", never as passed, and P7's two ids are withdrawn whole to a record (§5.3). |
+| K-0838 (p.435) | Everything. | Not testable at this boundary. The table that holds the claim is headed "For Zorro III boards configured in the Zorro II space", so the claim needs a Zorro III PIC (type 10) and a CPU that drives A27-A24. The only expansion device the harness offers is "Zorro II fast RAM" (`Config.fastram_config`, `nanomig_harness.h`). nanomig.v's memory address ports are `ram_address[23:1]` and `fastram_addr[23:1]`, and the harness's `cpu_config` settings change the core's behaviour, not its bus (§2.1). A27-A24 do not exist on a 24-bit bus: the Zorro II bus "provides 24 bits of addressing information" (p.391). |
 
 No claim of this package needs data read from or written to a disk surface.
 
@@ -20,9 +21,10 @@ Propositions:
 | P1 | RESET asserts the system reset (drive LED and power LED, graded separately as P1a and P1b) | nothing beyond the system |
 | P2 | RESET does not reset the CPU; the next instruction executes | nothing beyond the system |
 | P3 | A PIC's base address is the one software writes | a PIC (gate G) |
-| P4 | Register 4A's nybble supplies A19-A16, and the write to 48 configures | a PIC that is a memory board of 512 KB or less |
-| P5 | Register 46's nybble supplies A27-A24 | a Zorro III PIC in the Zorro II block, the 68020 setting and 32-bit decoding |
+| P4 | Register 4A's nybble supplies A19-A16: declined (§1, K-0840) | a Zorro III PIC in the Zorro II block, which this boundary does not offer |
+| P5 | Register 46's nybble supplies A27-A24: declined (§1, K-0838) | a Zorro III PIC and a 32-bit address bus, which this boundary does not offer |
 | P6 | RESET returns a configured PIC to the unconfigured state | a PIC, and Chip memory answering after RESET |
+| P7 | RESET drives only /RST and /BUSRST: one assertion over P1's reset witness, P2 and P6, carrying opus:K-0164 and sol:K-0155 | what P1, P2 and P6 need |
 
 ## 2. Conventions for every run
 
@@ -30,11 +32,15 @@ Propositions:
 
 - The program runs in supervisor mode with SR = $2700 from its first instruction.
 - It writes $7FFF to INTENA ($DFF09A) and to DMACON ($DFF096). With SET/CLR = 0, this clears every interrupt enable and every DMA enable. Custom-register addresses are "680x0 address = (chip address) + $DFF000" (p.263).
+- ROM overlay: after reset "An additional copy of the system ROM responds starting at memory location $00000000. The system RAM that would normally be located at this address is not available", and "The OVL bit in one of the 8520 Chips disables the overlay" (p.223). OVL is CIA-A pra bit 0 (p.339). Before it writes a vector, the program writes ddra ($BFE201) ← $03 ("Direction for port A (BFE001);1=output (set to 0x03)", p.339), then pra ($BFE001) ← $02: bit 0 (OVL) = 0, bit 1 (/LED) = 1. No page prints which OVL level disables the overlay; 0 is the level §7.10 infers, and the vector-table check below confirms that RAM answers at the vectors. Every later write to pra keeps bit 0 at 0.
 - Exception vectors 2, 3, 4, 8, 10 and 11 (addresses $000008, $00000C, $000010, $000020, $000028, $00002C) point to a handler H_E, which writes C_E to COLOR00, writes V_E to chip word MK_E, and then loops. The vector numbers are Motorola, not the manual. With the 68010 and 68020 settings, VBR = 0. With the 68020 setting the instruction cache stays disabled (CACR = 0), so every instruction fetch reaches the bus (Motorola, not the manual).
-- Vector-table check: the program writes H_E's address into $000020/$000022 and reads it back. Both accesses must appear at the Chip-memory port with that value. This shows that Chip memory, not the ROM overlay (p.223), answers at the vectors. Otherwise the run stops as "vector table not in Chip memory".
-- Placement: code and data sit in the top 64 KB of the configured Chip memory. p.223 says the overlay ROM copy "responds starting at memory location $00000000" but not where it ends. Placing the code high only makes a continuation after RESET possible (§2.3); nothing assumes it.
+- Vector-table check: the program writes H_E's address into $000020/$000022, reads it back and stores what it read. The check is that the long reads back as written; it does not depend on the RAM-port address at which the harness places $000020. This shows that RAM, not the ROM overlay (p.223), answers at the vectors. A failed check is a fixture failure and stops the package: nothing is graded.
+- Placement: the harness loads the program at PROGRAM_ORG = $080400, sets the supervisor stack to PROGRAM_STACK = $0FFF00, and keeps results at RESULTS = $0C0000 (`nanomig.i`). All three lie in $080000-$1FFFFF, which the harness maps one-to-one. MK0, MK1, MK2, MK_E, the scratch word and every stored result are distinct words in $0C0000-$0C0FFD. The completion marker is `nanomig.i`'s DONE (DONE_VALUE $600D to DONE_ADDR $0C0FFE). Below $080000 the program writes only the vectors. p.223 says the overlay ROM copy "responds starting at memory location $00000000" but not where it ends, so nothing assumes that the program's addresses answer after RESET (§2.3, P6's preconditions).
+- Chip-memory port: nanomig.v's RAM port (`ram_address`, `ram_data`, `_ram_we`, `_ram_oe`, `_ram_bhe`, `_ram_ble`), logged by the harness's `ram_log()`. It carries more than Chip memory: the harness keeps the overlay's ROM copy on it at physical byte address $780000 (`nanomig_harness.h`), and an expansion board's memory may appear on it. A Chip-memory address on it is a byte address below $200000, the 2 MB of Chip memory the harness configures (`Config.memory_config` = $03); the harness maps $080000-$1FFFFF one-to-one.
 - Marker M0: the first action of the program writes V0 to MK0. All results are CPU writes to chip words, which the test sees at the Chip-memory port with address and data.
-- CPU settings: every run of P1 and P2 is repeated for core A (68000), core B as 68000, core B as 68010 and core B as 68020. PAL and ECS are the defaults, and no page makes these propositions depend on either.
+- CPU settings: every run of P1, P2 and P6 (R1, R6 and R6m, and their contrasts) is repeated for core A (68000), core B as 68000, core B as 68010 and core B as 68020, because p.394 speaks of "the 680x0 RESET instruction" and P7 grades that sentence whole. The harness's `cpu_config` selects the core's behaviour, not its bus: with `turbo_config` = 0 "every CPU access uses the slow chip bus" (`nanomig_harness.h`), the 16-bit RAM port, on every setting. PAL and ECS are the defaults, and no page makes these propositions depend on either.
+- Every program is assembled for the 68000, vasm's default, on every CPU setting. No stimulus needs a later instruction, and with `-m68010` or higher vasm assembles `MOVE #0,<ea>` as `CLR <ea>`, which on the 68000 reads before it writes (the zero writes to BPLCON0, SPRxCTL, the scratch word, and a zero nybble or byte to a configuration register).
+- Floppy drive: the harness default `floppy_config` = 0 means "no floppy drives" (`nanomig_harness.h`, `Config`). Every run that performs P1 step c sets `floppy_config` to a value that connects drive 0. The builder picks it from the harness's documented `Config` values and states it in the package; it is harness setup, not an expected value. P1's drive-LED calibration shows at the port whether the drive latches the motor. No disk image is needed.
 - Colour values: C1 = $0C30, C2 = $03AC, C_E = $0F0F. Bits 15-12 are zero ("Unused", p.46), the three values are pairwise different, and none is $000. The builder may choose others with these properties.
 
 ### 2.2 Unanswered-address rule
@@ -43,9 +49,9 @@ No page states what a CPU access to an address that no device answers does. p.38
 
 - all other results are stored first;
 - a completion marker follows the access;
-- if the marker never appears, the run records "no answer" for that access. "Never appears" means no CPU access at the Chip-memory port within 10 ms, a harness limit rather than a page value.
+- if the marker never appears, the run records "no answer" for that access. "Never appears" means no CPU access at the Chip-memory port between the access and the second vertical-sync leading edge after it (§3), a harness limit rather than a page value. It is counted in frames on the video output, so no conversion from `clk_sys` to time is needed.
 
-This covers configuration space before gate G has passed, a base address before its board is configured, and an address a board has been moved away from. Because of this rule, several checks below need a run of their own.
+This covers configuration space before gate G has passed, a base address before its board is configured, and an address a board has been moved away from, including configuration space once its board has been configured by the write to register 48 or shut up. Because of this rule, several checks below need a run of their own.
 
 ### 2.3 The RESET sequence (used by P1, P2 and P6)
 
@@ -61,7 +67,7 @@ A+4:  tail              ; MOVE.W #V2,MK2, then a branch to itself
 
 Why this shape: p.223 warns "Since RAM may not be available, special care is needed to write reboot code that will reliably reboot all Amiga models". Before that it says, of the reset state, "On some Amiga models, portions of the RAM still respond. On other models, no RAM responds. Software must assume that memory is not available."
 
-The instruction at A+2 is fetched before RESET executes: on the 68000 and 68010 by the two-word prefetch, on the 68020 because it shares one long word with RESET (Motorola, not the manual). It needs no memory to execute, because its source is a register and its destination a custom register, and its effect is visible on the video output.
+On a 68000 the instruction at A+2 is fetched before RESET executes, by the two-word prefetch (Motorola, not the manual). The harness's 68010 and 68020 settings do not change the bus (§2.1): every setting fetches over the 16-bit RAM port, and the long-word fetch of a real 68020 is not assumed. The instruction at A+2 needs no memory to execute, because its source is a register and its destination a custom register, and its effect is visible on the video output.
 
 The tail runs only if Chip memory answers at A+4 onward after RESET. P1 and P2 depend on nothing in the tail. A run ends at t_V2 (§3) whether or not M2 appears.
 
@@ -75,7 +81,7 @@ The tail runs only if Chip memory answers at A+4 onward after RESET. P1 and P2 d
 - **t_C2**: the first visible pixel of value C2 after t_M1, or t_V2 if there is none.
 - **LED levels**: L_bright and L_dim for the power LED, and L_on and L_off for the drive LED, as calibrated in P1's preconditions.
 
-## 4. Configuration-register conventions (for P3-P6)
+## 4. Configuration-register conventions (for P3 and P6)
 
 - **Configuration space**: "The Zorro II configuration space is the 64K memory block $00E8xxxx" (p.431). "An unconfigured Zorro PIC responds to the 64K address space starting at $00E80000 if its /CFGIN signal is asserted" (p.395).
 - **Pairs**: a register is named by the first address of its pair (p.432), and "Every AUTOCONFIG register is logically considered to be 8 bits wide; the 8 bits actually being nybbles from two paired addresses" (p.431).
@@ -84,7 +90,7 @@ The tail runs only if Chip memory answers at A+4 onward after RESET. P1 and P2 d
 - **Complement**: "all read registers except for the 00 register are physically complemented" (p.432). The logical value of any register other than 00 is the inverse of the physical nybbles.
 - **Writes**:
   - A nybble write puts the nybble in bits 7-4 of a byte written to the register's address. The page shows no write bit position, so this is an interpretation by analogy with the reads and with Figure K-14 (§7).
-  - A byte write to 48 carries A23-A16 (p.435 table).
+  - A byte write to 48 carries A23-A16: "the low order register takes bits 23-16" (p.435). By the pair mapping above, the nybble at 4A is its bits 3-0, A19-A16. This is how the stimulus writes a Zorro II base; no proposition grades which of the two a board uses.
 - **IMG**: the 32 physical nybbles read at $00E80000, $00E80002, ... $00E8003E, which are read registers 00 to 3C. Two IMGs are equal if all 32 nybbles are equal.
 - **Decoded fields** (p.432-433):
   - type = register 00 bits 7-6: "10 Zorro III", "11 Zorro II", 00 and 01 "Reserved".
@@ -107,7 +113,7 @@ The tail runs only if Chip memory answers at A+4 onward after RESET. P1 and P2 d
 - P1a: the disk drive motor turns off, and with it the drive LED.
 - P1b: CIA-A's port A reverts to inputs, and the power LED leaves its bright state.
 
-Claims opus:K-0164 and sol:K-0155, p.394: "an I/O-only reset, such as initiated by the 680x0 RESET instruction, will drive only /RST and /BUSRST on the bus". The same page says of these two: "The bus supplies two versions of the system reset signal."
+p.394: "an I/O-only reset, such as initiated by the 680x0 RESET instruction, will drive only /RST and /BUSRST on the bus". The same page says of these two: "The bus supplies two versions of the system reset signal." P1 carries no claim id; its reset witness is part (i) of P7, which carries opus:K-0164 and sol:K-0155.
 
 Supporting pages:
 
@@ -127,9 +133,8 @@ a. Environment of §2.1. Then:
    - COLOR00 ($DFF180) ← C1.
 
 b. Power LED:
-   - Read CIA-A ddra ($BFE201) and pra ($BFE001).
-   - Set ddra bit 1 = 1 (p.339: "1=output"), leaving bit 0 (OVL) of ddra and pra as they are. OVL's polarity is not printed (§7).
-   - pra bit 1 ← 1; wait one frame. Then pra bit 1 ← 0; wait one frame. This is the calibration, and it leaves the LED bright.
+   - ddra ($BFE201) bit 1 is 1 from §2.1 (p.339: "1=output"), and every write to pra ($BFE001) keeps bit 0 (OVL) at 0, as §2.1 set it.
+   - pra bit 1 ← 1 (pra ← $02); wait one frame. Then pra bit 1 ← 0 (pra ← $00); wait one frame. This is the calibration, and it leaves the LED bright.
 
 c. Drive motor, using CIA-B ddrb ($BFD300) and prb ($BFD100). Bits of prb (p.340): /MTR /SEL3 /SEL2 /SEL1 /SEL0 /SIDE DIR /STEP.
    - ddrb ← $FF (p.340, "set to 0xFF").
@@ -160,7 +165,7 @@ e. The RESET sequence of §2.3.
 - Drive-LED calibration: after the "off" latch the LED is L_off, and after the "on" latch it is L_on while prb = $FF (so the /MTR line itself is high); L_on ≠ L_off. This shows the drive LED shows the latched motor state, which is what p.244 says a system reset turns off.
 - Display anchor: F_ref as in §3.
 - No exception: no pixel of value C_E and no write of V_E to MK_E anywhere in the run.
-- The write V1→MK1 appears exactly once, and the write V0→MK0 appears exactly once.
+- The write V1→MK1 appears exactly once, and the write V0→MK0 appears exactly once before t_M1. Writes of V0 after t_M1 are P2's record, not a precondition.
 
 **6. Contrasting cases.**
 
@@ -176,7 +181,7 @@ e. The RESET sequence of §2.3.
 
 **1. Proposition.** RESET is an I/O-only reset: it leaves the CPU running, and the CPU executes the instruction that follows RESET.
 
-Claims opus:K-0164 and sol:K-0155, p.394: "an I/O-only reset, such as initiated by the 680x0 RESET instruction, will drive only /RST and /BUSRST on the bus. A full-system reset, such as a powerup reset or a keyboard reset, drives /HLT low as well. PICs that wish to reset the system CPU as well as the bus and I/O devices drive /RST and /HLT".
+p.394: "an I/O-only reset, such as initiated by the 680x0 RESET instruction, will drive only /RST and /BUSRST on the bus. A full-system reset, such as a powerup reset or a keyboard reset, drives /HLT low as well. PICs that wish to reset the system CPU as well as the bus and I/O devices drive /RST and /HLT". P2 carries no claim id; its graded expected value is part (ii) of P7, which carries opus:K-0164 and sol:K-0155.
 
 p.223 says it outright for the 68000: "The difference is that the CPU continues execution with the next instruction." p.411 agrees: /HLT "is driven, along with /RESET, to assert a full-system reset. A full-system reset is asserted on a powerup reset or a keyboard reset".
 
@@ -187,7 +192,7 @@ p.223 says it outright for the 68000: "The difference is that the CPU continues 
 **4. Expected.**
 
 - At least one visible pixel of value C2 in (t_M1, t_V2]: the MOVE.W D0,(A0) after RESET was executed.
-- No write of V0 to MK0 after t_M1: the program was not started again.
+- Recorded, not graded: the number of writes of V0 to MK0 in (t_M1, t_V2], which is zero if the program was not started again. No contrasting input exists inside a window the page supports (item 6 below), so this is a measurement.
 - Quantifier: p.394 says "680x0 RESET instruction", so R1 runs on all four CPU settings (§2.1). p.223 names only the 68000; for the 68010 and the 68020 only p.394 speaks.
 - Not graded:
   - whether C1 stays on screen until C2 appears;
@@ -202,14 +207,14 @@ p.223 says it outright for the 68000: "The difference is that the CPU continues 
 **6. Contrasting cases.**
 
 - R1b: MOVE.W D0,(A0) at A+2 replaced by NOP. The page predicts the next instruction, now a NOP, runs and nothing writes COLOR00: no C2 pixel in (t_M1, t_V2]. P1's LED changes still occur.
-- The full-system reset that p.394 contrasts with RESET is not usable:
-  - the harness sends key codes, not the keyboard hard reset, which is KCLK held low for at least 500 ms (p.361, "Valid for all keyboards except the Amiga 500");
-  - a power-up reset would end the program.
+- For the recorded V0 count there is no contrasting input inside (t_M1, t_V2]. The full-system reset that p.394 contrasts with RESET would start the program again from the reset vectors ("The next two words are used as the initial program counter by the 680x0 processor", p.223), and nanomig.v has a `reset` input, which the harness drives in `boot()` to start the system. But no page says how long the system takes to restart after it: p.370 gives DRESB- "approximately one second" for power-up and "as long as keyboard reset is held down" for a keyboard reset. The restart may fall after t_V2, and a longer window would rest on no page value. The harness sends key codes, not the keyboard hard reset, which is KCLK held low for at least 500 ms (p.361, "Valid for all keyboards except the Amiga 500").
 - For "reset witnessed": R1a (P1's contrast) shows this precondition failing.
 
 **7. Reference frame.** t_M1, t_V2 and the visible-pixel anchor F_ref (§3).
 
 ### 5.2 Conditional: an AUTOCONFIG device answers in $00E8xxxx
+
+The harness offers one expansion device, Zorro II fast RAM, through the `fastram_config` input; its default 0 means "no Zorro II fast RAM offered" (`nanomig_harness.h`, `Config`). Every run of gate G, P3 and P6, contrasts included, sets `fastram_config` to a value that offers it. The builder picks it from the harness's documented `Config` values and states it in the package; it is harness setup, not an expected value. Gate G decides whether a PIC answers.
 
 #### Gate G: an unconfigured PIC is present
 
@@ -219,7 +224,7 @@ G passes when:
 
 - G1: the run completes;
 - G2: type ∈ {10, 11};
-- G3: registers 0C, 34, 38 and 3C read logical 0, that is physical 1111 at both pair addresses. They are "Reserved, must be 0" (pp.434-435); p.432 gives this example for 3C. Registers 30 and 40 are not used, because the page doubts their status: "Unsupported base register reset register under Zorro II?" (p.435).
+- G3: registers 0C, 34, 38 and 3C read logical 0, that is physical 1111 at both pair addresses. They are "Reserved, must be 0" (pp.434-435); p.432 gives this example for 3C. Registers 30 and 40 are not used: p.435 adds "Unsupported base register reset register under Zorro II." and "Unsupported control state register under Zorro II." with footnotes 6 and 7 (7 reads "IBID"), and footnote 6 says "The original Zorro specifications called for a few registers, like these, that remained active after configuration."
 
 G does not separate a PIC from a data bus that floats to all ones, which also satisfies G2 and G3. Presence is established only by P3's second expected value (IMG2 ≠ IMG0).
 
@@ -227,13 +232,13 @@ The PIC must still be unconfigured when the program starts. If the harness's sta
 
 Contrasting case for G (run R_G'): only if register 08 bit 6 is logical 0 ("can be shut up"). The program writes $00 to $00E8004C and then reads IMG, which is expected to differ from IMG0: "Anything written to 4C will cause a board that supports shut-up to completely disappear until the next reset" (p.436). Otherwise P3 serves as G's contrast.
 
-If G fails, P3-P6 are "not checkable: no AUTOCONFIG device answers in $00E8xxxx".
+If G fails, P3 and P6 are "not checkable: no AUTOCONFIG device answers in $00E8xxxx", and P7's ids are withdrawn whole to a record (§5.3).
 
 #### P3: Software assigns the PIC's base address
 
 **1. Proposition.** An unconfigured Zorro II PIC takes the base address that software writes to its base-address register. After the final write it leaves the configuration space and answers at that address.
 
-Claims opus:K-0014 and sol:K-0008, p.384: "Addressing jumpers were eliminated, the card's address instead being assigned by software".
+p.384: "the card's address instead being assigned by software". P3 carries no claim id: opus:K-0014 and sol:K-0008 also state "Addressing jumpers were eliminated", which this system cannot show, and are declined whole (§1).
 
 Supporting pages:
 
@@ -242,35 +247,33 @@ Supporting pages:
 - p.435 footnote 6: "the configuration registers generally disappear when a board is configured, and absolutely must move out of the $00E8xxxx space."
 - p.436: "writing to register 48 actually configures the board for both Zorro II and Zorro III boards in the Zorro II configuration block."
 
-Applies to type 11. A type-10 PIC belongs to P5.
+Applies to type 11. A type-10 PIC is outside this specification (K-0838, §1).
 
-**2. Stimulus (run R3).**
+**2. Stimulus (runs R3 and R3n, identical up to the last step).**
 
 a. §2.1 environment; read IMG0.
 
-b. Choose B1 per §4. Byte write to $00E8004A with bits 7-4 = B1 bits 19-16 (register 4A nybble, "A19-A16", p.435). Read IMG1.
+b. Choose B1 per §4. Byte write to $00E8004A with bits 7-4 = B1 bits 19-16 (§4 Writes). Read IMG1.
 
-c. Byte write to $00E80048 with the value B1 bits 23-16 (register 48, nybble "A23-A20" / byte "A23-A16", p.435). This is the order of the p.435 table: 4A before 48. Read IMG2.
+c. Byte write to $00E80048 with the value B1 bits 23-16 (§4 Writes: "the low order register takes bits 23-16", p.435). 4A comes before 48 because "writing to register 48 actually configures the board for both Zorro II and Zorro III boards in the Zorro II configuration block" (p.436). After this write the PIC leaves configuration space (p.435 fn.6), which may then be unanswered, so configuration space is read again only as the last action (§2.2).
 
 d. Memory board only ("with memory starting at the base address", p.433):
    - write P0 = $A55A to B1 and P1 = $3CC3 to B1+2;
-   - write $0000 to a chip scratch word;
+   - write $0000 to the scratch word;
    - read B1 and B1+2 and store them as R0 and R1.
 
-e. Last action (§2.2), memory board only:
-   - write P2 = $5AA5 to B2, the base that R3' uses;
-   - write $0000 to the scratch word;
-   - read B2 and store it as R2;
-   - write the completion marker.
+e. Last action (§2.2):
+   - R3: read IMG2, store it, and write the completion marker.
+   - R3n, memory board only: write P2 = $5AA5 to B2, the base that R3' uses; write $0000 to the scratch word; read B2 and store it as R2; write the completion marker.
 
-**3. Observation.** The stored IMG0, IMG1, IMG2, R0, R1 and R2 as Chip-port writes, and the Chip-port log from the first write of step d to the store of R1.
+**3. Observation.** The stored IMG0, IMG1, R0 and R1 of both runs, IMG2 (R3) and R2 (R3n) as Chip-port writes or "no answer", and the Chip-port log from the first write of step d to the store of R1.
 
 **4. Expected.**
 
 - IMG1 = IMG0: the 4A write alone does not configure. Configuration happens on "writing the final bit of base address" (p.431), and "writing to register 48 actually configures the board" (p.436).
-- IMG2 ≠ IMG0: the PIC leaves $00E8xxxx (p.435 fn.6, p.431). If the next PIC in the chain has an identical image, IMG2 = IMG0 would be legitimate. The builder therefore states the number of AUTOCONFIG devices from the system configuration, and this value is expected when that number is one.
-- Memory board: R0 = P0 and R1 = P1.
-- Memory board: before the store of R0, no CPU write with data P0 or P1 appears at the Chip-memory port. This excludes B1 aliasing Chip memory.
+- IMG2 ≠ IMG0, or "no answer": the PIC leaves $00E8xxxx (p.435 fn.6, p.431). If the next PIC in the chain has an identical image, IMG2 = IMG0 would be legitimate. The builder therefore states the number of AUTOCONFIG devices from the system configuration, and this value is expected when that number is one.
+- Memory board: R0 = P0 and R1 = P1, in both runs.
+- Memory board: before the store of R0, no CPU write with data P0 or P1 appears at a Chip-memory address of the Chip-memory port (§2.1). This excludes B1 aliasing Chip memory. A write of P0 or P1 at a Chip-memory-port address of $200000 or above is not in Chip memory; it is recorded with its address, not graded.
 - Memory board: R2 ≠ P2, or "no answer". The board does not also answer at the base it was not given.
 - Quantifier: "the card's address" is a statement about every card. The test covers the PIC or PICs present, with two bases (R3 and R3').
 
@@ -283,118 +286,27 @@ e. Last action (§2.2), memory board only:
 
 **6. Contrasting cases.**
 
-- R3': R3 with B1 and B2 exchanged. B2 = B1 + size (or B1 + $100000 for boards under 1 MB), with the whole board inside the space. The page predicts that the board answers at B2 and not at B1. For an 8 MB board no second base exists; the contrast is then unavailable and is reported as such.
+- R3' and R3n': R3 and R3n with B1 and B2 exchanged. B2 = B1 + size (or B1 + $100000 for boards under 1 MB), with the whole board inside the space. The page predicts that the board answers at B2 and not at B1. Where no such B2 satisfies §4 (an 8 MB board, which can only sit at $00200000; a 4 MB board, whose only multiple of its size inside the space is $00400000), the contrast is unavailable; the board size and the missing second base are recorded, not graded.
+- For IMG1 = IMG0 (run R3c): step b writes step c's byte to $00E80048 in place of the 4A write, and IMG1 is read as the last action (§2.2). The page predicts IMG1 ≠ IMG0, or "no answer": "writing to register 48 actually configures the board" (p.436).
+- For IMG2 ≠ IMG0 (run R3u): R3 without the write to 48 of step c and without step d. The page predicts IMG2 = IMG0: until register 48 is written the board is not configured (p.436) and stays in configuration space.
 - For G: R_G'.
 - For the memory flag: an I/O board runs only the IMG part.
 
 **7. Reference frame.** The register pairs of Figure K-14 and the complement of p.432. G3 checks the anchor: the reserved registers read physical 1111, which confirms the pair mapping and the complement on this PIC.
 
-#### P4: Register 4A's nybble supplies A19-A16, and the write to 48 configures (K-0840)
+#### P4: Register 4A's nybble supplies A19-A16 (K-0840)
 
-**1. Proposition.** In the Zorro II configuration block:
-
-- a nybble written to register 4A supplies base bits A19-A16;
-- a byte written there is not applicable;
-- the following write to register 48 (nybble A23-A20, byte A23-A16) completes the configuration.
-
-Claim K-0840, p.435 table: "4A A19-A16 N/A" and "48 A23-A20 A23-A16".
-
-The table is headed "For Zorro III boards configured in the Zorro II space". For a Zorro II PIC the same assignment follows from two things: the low-order register "takes bits 23-16" (p.435), and Figure K-14 puts bits 3-0 of register 48 at $00E8004A.
-
-Whether a given PIC's register is nybble-wide or byte-wide is the designer's choice: "Write registers are written to support nybble, byte, and word registers for the same register, again based on what works best in hardware" (p.431).
-
-Applicable when: a memory board of 512 KB or less (size codes 001-100), so that some of A19-A16 lie at or above the board's size.
-
-**2. Stimulus.** Runs R4x and R4y, identical up to the last step.
-
-a. §2.1 environment; read IMG0.
-
-b. Choose H (A23-A20) and two nybbles X ≠ Y so that B_X = H·$100000 + X·$10000 and B_Y = H·$100000 + Y·$10000:
-   - are valid bases per §4;
-   - differ in at least one bit at or above the board's size.
-
-   Example for a 64 KB board: H = 2, X = 3, Y = 5.
-
-c. Byte write to $00E8004A with bits 7-4 = X. Byte write to $00E80048 with the value H·16 + Y. Read IMG2.
-
-d. Last action:
-   - R4x: write P0 to B_X, write the scratch word, read B_X into RX, write the completion marker.
-   - R4y: the same at B_Y, into RY.
-
-**3. Observation.** IMG2, and RX and RY (or "no answer").
-
-**4. Expected.**
-
-- IMG2 ≠ IMG0: the write to 48 configured the board.
-- Exactly one of RX = P0 and RY = P0 holds:
-  - RX = P0 if the PIC's register is nybble-wide (K-0840: 4A supplies A19-A16);
-  - RY = P0 if it is byte-wide (the 48 byte supplies A23-A16, and 4A is "N/A").
-- The page does not say which a given PIC is, so neither alone is expected. Both, or neither, is a failure.
-- Only this write with X ≠ Y exercises K-0840. P3's consistent write cannot tell the two widths apart.
-
-**5. Preconditions.**
-
-- G passed.
-- Memory board of 512 KB or less.
-- B_X and B_Y are valid.
-- The scratch write appears at the port.
-- Before step c, IMG after the 4A write equals IMG0 (as in P3).
-
-**6. Contrasting case.** X = Y. For both widths the page predicts the board at B_X = B_Y, so RX = RY = P0.
-
-**7. Reference frame.** As P3.
+Not specified: K-0840 is declined (§1). The table that assigns A19-A16 to a nybble at 4A is headed "For Zorro III boards configured in the Zorro II space" (p.435); for a Zorro II board the assignment is a derivation the page does not print. The harness offers only Zorro II fast RAM. P3 writes the base consistently through 4A and 48 (§4 Writes) and grades nothing that depends on which of the two a board uses.
 
 #### P5: Register 46's nybble supplies A27-A24 (K-0838)
 
-**1. Proposition.** For a Zorro III PIC configured in the Zorro II block, a nybble written to register 46 supplies A27-A24, and a byte write there is not applicable. The four registers are written in the table's order 46, 44, 4A, 48, and the 48 write configures the board.
-
-Claim K-0838, p.435: "46 A27-A24 N/A", "44 A31-A28 A31-A24". p.436: "writing to register 48 actually configures the board for both Zorro II and Zorro III boards in the Zorro II configuration block".
-
-Applicable when all three hold:
-
-- G passes with type 10;
-- the program runs with the 68020 setting;
-- the system decodes addresses above 24 bits.
-
-Otherwise it is not checkable: A27-A24 are not on a 24-bit bus (p.391).
-
-**2. Stimulus.**
-
-a. Probe run R5p (68020): write V to chip word W, then write V' ≠ V to W + $01000000 as the last action. If a write of V' to W appears at the Chip-memory port, the system ignores A31-A24 and P5 is not checkable.
-
-b. Runs R5x and R5y (68020). Read IMG0. Choose a base in "Zorro III expansion space" ($10000000-$7FFFFFFF on the A3000 map, Figure K-1 p.386), aligned on the board's natural boundary: "all new sized cards get aligned on their natural boundaries" (p.433). The board must be smaller than 16 MB, so that A27-A24 select its base.
-
-c. Choose A31-A28 = 1, X ≠ Y, B_X = $1X000000 and B_Y = $1Y000000. Then write, in this order:
-   - $00E80046: nybble X;
-   - $00E80044: byte $10 + Y;
-   - $00E8004A: nybble 0;
-   - $00E80048: byte $00.
-
-   Read IMG2.
-
-d. Last action:
-   - R5x: write P0 to B_X, write the scratch word, read B_X into RX, write the completion marker.
-   - R5y: the same at B_Y, into RY.
-
-**3. Observation.** IMG2, RX and RY.
-
-**4. Expected.**
-
-- IMG2 ≠ IMG0.
-- Exactly one of RX = P0 (nybble-wide: 46 supplies A27-A24) and RY = P0 (byte-wide: the 44 byte supplies A31-A24) holds. As in P4, the page leaves the width open.
-- If the PIC's register 00 bit 5 is clear (not memory), only IMG2 ≠ IMG0 is graded.
-
-**5. Preconditions.** G with type 10, the probe of step a, and the scratch write visible.
-
-**6. Contrasting case.** X = Y: the page predicts RX = RY = P0.
-
-**7. Reference frame.** As P3.
+Not specified: K-0838 is declined (§1). A nybble written to register 46 supplies A27-A24 only for "Zorro III boards configured in the Zorro II space" (p.435), and only a CPU that drives A27-A24 can reach such a base. The harness offers only Zorro II fast RAM, and nanomig.v's memory address ports are 24 bits wide.
 
 #### P6: RESET returns a configured PIC to the unconfigured state
 
 **1. Proposition.** RESET asserts /BUSRST, on which every expansion device resets its autoconfiguration logic. A PIC configured before RESET therefore answers again, unconfigured, in the configuration space afterwards.
 
-Claims opus:K-0164 and sol:K-0155, p.394: RESET "will drive only /RST and /BUSRST on the bus".
+p.394: RESET "will drive only /RST and /BUSRST on the bus". P6 carries no claim id; its expected values are part (iii) of P7, which carries opus:K-0164 and sol:K-0155.
 
 Supporting pages:
 
@@ -402,20 +314,19 @@ Supporting pages:
 - p.431: "When an Amiga powers up or resets, every card in the system goes to its unconfigured state."
 - p.223: "All memory and AUTOCONFIG(TM) cards disappear".
 
-**2. Stimulus (run R6).**
+**2. Stimulus (runs R6 and R6m, identical up to the last action of the tail).**
 
 a. §2.1 environment, and P1 steps a-d.
 
-b. Read IMG0. Configure at B1 as in P3 steps b-c, and read IMG2. For a memory board, write P0 to B1, write the scratch word, and read B1 into R0.
+b. Read IMG0. Configure at B1 with the two writes of P3 steps b and c (4A, then 48). Configuration space is not read again before RESET: after the write to 48 it may be unanswered (§2.2). For a memory board, write P0 to B1, write the scratch word, and read B1 into R0.
 
-c. The RESET sequence of §2.3. Its tail is:
-   - MOVE.W #V2,MK2;
-   - read IMG3 and store it;
-   - memory board, as the last action: write P0' = $6996 to B1, write the scratch word, read B1 into R3, write the completion marker.
+c. The RESET sequence of §2.3. Its tail is MOVE.W #V2,MK2, then the last action (§2.2):
+   - R6: read IMG3, store it, and write the completion marker;
+   - R6m, memory board only: write P0' = $6996 to B1, write the scratch word, read B1 into R3, and write the completion marker.
 
    Configuration space is at $00E8xxxx; the overlay is described as "starting at memory location $00000000" (p.223).
 
-**3. Observation.** IMG3, R3 and M2.
+**3. Observation.** IMG3 (R6), R3 (R6m) and M2, each as a Chip-port write or "no answer".
 
 **4. Expected.**
 
@@ -426,17 +337,51 @@ c. The RESET sequence of §2.3. Its tail is:
 **5. Preconditions.**
 
 - G passed.
-- P3's expected values hold in this run before RESET (IMG2 ≠ IMG0; R0 = P0 for a memory board).
+- The configuration took effect before RESET: for a memory board, R0 = P0 in this run; for an I/O board, P3's IMG2 ≠ IMG0 in run R3, whose configuration writes are the same.
 - P1's reset witness: at least one LED change in [t_M1, t_C2].
 - M2 appears at the Chip-memory port, and the CPU's instruction fetches from A+4 onward appear there. That is, Chip memory answers at the program's addresses after RESET. The page does not promise this (p.223). If it does not happen, P6 is "not checkable on this system".
 
 **6. Contrasting cases.**
 
-- R6a: RESET replaced by NOP. The page predicts IMG3 = IMG2 (≠ IMG0) and R3 = P0'.
+- R6a and R6am: R6 and R6m with RESET replaced by NOP. The page predicts IMG3 ≠ IMG0, or "no answer", because the board stays configured and out of $00E8xxxx (p.435 fn.6; P3's note on a second PIC with an identical image applies), and R3 = P0'.
 - For the reset-witness precondition: R1a.
 - For "Chip memory answers after RESET": no page predicts an outcome either way ("On some Amiga models, portions of the RAM still respond. On other models, no RAM responds", p.223), so there is no contrasting stimulus with a page-predicted result. This is stated here rather than invented.
 
 **7. Reference frame.** As P1 and P3.
+
+### 5.3 Combined: the claims of p.394
+
+#### P7: RESET drives only /RST and /BUSRST
+
+**1. Proposition.** The RESET instruction drives both versions of the system reset and not /HLT: it resets the system's I/O devices, leaves the CPU running, and makes the expansion devices reset their autoconfiguration logic.
+
+Claims opus:K-0164 and sol:K-0155, p.394: "an I/O-only reset, such as initiated by the 680x0 RESET instruction, will drive only /RST and /BUSRST on the bus". P7 is the only assertion that carries these two ids. It grades the sentence whole through three parts, each a consequence that a page names:
+
+- (i) /RST, the system reset: P1's reset witness, that is at least one of P1's LED changes (P1a or P1b) in [t_M1, t_C2] of R1. "The bus supplies two versions of the system reset signal" (p.394); the consequences are those of P1 (p.370, p.244, p.354).
+- (ii) "only", that is not /HLT: P2's graded expected value, a visible pixel of value C2 in (t_M1, t_V2] of R1. "A full-system reset, such as a powerup reset or a keyboard reset, drives /HLT low as well. PICs that wish to reset the system CPU as well as the bus and I/O devices drive /RST and /HLT" (p.394); "the CPU continues execution with the next instruction" (p.223).
+- (iii) /BUSRST: P6's expected values in R6 and R6m, that is IMG3 = IMG0, and for a memory board R3 ≠ P0' or "no answer". "All expansion devices are required to reset their autoconfiguration logic when /BUSRST is asserted" (p.394).
+
+**2. Stimulus.** Runs R1, R6 and R6m, at every CPU setting of §2.1. No run of its own.
+
+**3. Observation.** What P1, P2 and P6 observe in those runs.
+
+**4. Expected.** On a core, P7 passes when parts (i), (ii) and (iii) all hold at every CPU setting that core runs (core A: 68000; core B: 68000, 68010 and 68020), and fails when any part fails at any of them. "680x0" is covered for the settings the harness offers (§7.1).
+
+**5. Preconditions.**
+
+- For parts (i) and (ii): P1's preconditions (the two LED calibrations, the display anchor, no exception, the V1 and V0 markers).
+- For part (iii): gate G, and P6's preconditions other than the reset witness (the configuration took effect before RESET; Chip memory answers after RESET).
+- The reset witness is part (i). It is not a precondition of P7, although P2 and P6 use it as one of theirs: as a precondition it would turn a RESET that resets nothing into "not graded".
+- If gate G fails (no board, so /BUSRST has no witness), or any other of these preconditions fails at a setting, both ids are withdrawn whole to a record for that run, naming the precondition. They are never graded in part.
+
+**6. Contrasting cases.** One per part; each changes only the run its part reads.
+
+- Part (i): R1a (RESET replaced by NOP in R1). No LED change; part (i) fails while (ii) still holds.
+- Part (ii): R1b (the MOVE.W D0,(A0) at A+2 replaced by NOP in R1). No C2 pixel; part (ii) fails while (i) still holds.
+- Part (iii): R6a and R6am (RESET replaced by NOP in R6 and R6m). IMG3 ≠ IMG0 or "no answer", and R3 = P0'; part (iii) fails.
+- For the withdrawal: `fastram_config` at the harness default 0 ("no Zorro II fast RAM offered"). Gate G fails, and both ids go to a record.
+
+**7. Reference frame.** As P1, P2 and P6.
 
 ## 6. What the pages leave open (no expected value; a test must not invent one)
 
@@ -446,20 +391,22 @@ c. The RESET sequence of §2.3. Its tail is:
 - "some bus devices such as processor cards may internally reset only on full-system resets" (p.394): "may", and not applicable here.
 - The width of a PIC's base-address register, nybble, byte or word (p.431).
 - What a CPU access to an address that no device answers does (§2.2).
-- The polarity of OVL (§7). The program therefore never changes OVL.
+- The polarity of OVL (§7.10). The program drives OVL to 0 only to reach the vectors (§2.1), the vector-table check confirms that RAM answers there, and no expected value depends on the polarity.
+- What nanomig.v's `cpu_nrst_out` output carries. No page identifies it, so it has no expected value; its level during RESET may be recorded as a measurement, labelled as such (§1).
+- How long a full-system reset takes before the program starts again (p.370 gives DRESB- "approximately one second" for power-up). P2's V0 count after t_M1 is therefore recorded, not graded.
 - The ROM's first word: "The value of the ID code may change in the future" (p.223). Not used.
 - Any drive other than drive 0 (p.244 "All drive motors"): no LED is seen for it.
 
 ## 7. Page conflicts and ambiguities
 
-1. **Scope of the RESET statement.** p.223 speaks of "The 68000 RESET instruction", p.394 of "the 680x0 RESET instruction". The two agree for the 68000. For the 68010 and 68020 only p.394 speaks, and P1 and P2 follow it.
+1. **Scope of the RESET statement.** p.223 speaks of "The 68000 RESET instruction", p.394 of "the 680x0 RESET instruction". The two agree for the 68000. For the 68010 and 68020 only p.394 speaks, and P1, P2, P6 and P7 follow it.
 2. **"All memory".** p.223, "All memory and AUTOCONFIG(TM) cards disappear", can be read as all memory cards or as all RAM. The same page says some models keep portions of RAM after reset and others none. Not graded.
 3. **Data lines of a read.** p.431 says read registers return data "on D31-D28 for either bus mode", which is the top of the A3000's 32-bit bus. p.432 speaks of "the upper nybbles of locations". On this system's 16-bit bus that is D15-D12 of a word read, and §4 uses that interpretation.
 4. **Figure number.** p.432 refers to "Figure 9-10", but the figure is captioned "Figure K-14".
-5. **Scope of the nybble/byte table.** p.435's table is headed for Zorro III boards in the Zorro II space. For Zorro II boards the same 48/4A assignment is derived (P4), not printed.
-6. **Registers 30 and 40.** p.435 describes them with question marks ("Unsupported base register reset register under Zorro II?", "Unsupported control state register under Zorro II?"). They are not used.
+5. **Scope of the nybble/byte table.** p.435's table is headed for Zorro III boards in the Zorro II space. For Zorro II boards its 48/4A rows are a derivation, not printed, so K-0840 is declined (§1); P3's stimulus writes the base through both registers (§4) and grades nothing that depends on the width. Its 46/44 rows (K-0838) need a Zorro III board and are declined (§1).
+6. **Registers 30 and 40.** p.435 marks them "Unsupported base register reset register under Zorro II." and "Unsupported control state register under Zorro II.", with footnotes 6 and 7 ("IBID"). Footnote 6: "The original Zorro specifications called for a few registers, like these, that remained active after configuration." They are not used.
 7. **Register 08 bit 7.** Its meaning differs between Zorro II ("place the card in the 8 megabyte Zorro II space") and Zorro III ("the board is basically a memory device") (p.433). Only the memory flag of register 00 is used.
 8. **Alignment.** Natural alignment is stated only for new-sized Zorro III cards (p.433). An 8 MB Zorro II board in $00200000-$009FFFFF (p.388) cannot be naturally aligned, so these pages give no alignment rule for Zorro II boards.
 9. **CIA name on p.244.** The printed p.244 says "Bits labeled "PB" are output bits located in CIAAPRB ($BFD100)". The name says CIA-A, but $BFD100 is CIA-B's prb (p.340), and the page's own heading reads "CIAAPRA/CIABPRB". The specification uses $BFD100 with p.340's bit layout.
-10. **OVL polarity.** No page prints it (p.223, p.339, p.351). It can only be inferred: after reset the port pins read high (p.354) and the overlay is present (p.223). Not relied on.
+10. **OVL polarity.** No page prints it (p.223, p.339, p.351). It can only be inferred: after reset the port pins read high (p.354) and the overlay is present (p.223), so OVL = 1 keeps the overlay and 0 disables it. §2.1 drives OVL to 0 to reach the vectors and checks the result at the port; no expected value relies on the inference.
 11. **Write bit position.** No page shows which bits of a written byte a nybble-wide configuration register takes. §4 assumes bits 7-4, like the reads.
