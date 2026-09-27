@@ -40,9 +40,10 @@ proposition as each of this package's 37 claims, per the build brief's
 instruction ("Chapters 5 (audio) and 7 (interrupts) are accepted chapters
 covering machinery yours only names, and chapter 8 covers the serial port
 and the floppy"). 12 of the 19 distinct propositions below (24 of the 37
-claims) were found already graded, at a near-identical or textually broader
-proposition, in an accepted package; those are declined via `record()`,
-never re-graded, citing the package/assertion/uid that already carries them.
+claims) are measured, at a near-identical or textually broader proposition,
+in an accepted package; those are declined here via `record()`, citing the
+package/assertion/uid that carries them. Ten of them (20 claims) are graded
+there; P10 and P11 (4 claims) are declined there too (see below).
 The remaining 7 propositions (13 claims) are not found anywhere else in the
 tree and are graded here.
 
@@ -158,11 +159,11 @@ testable content: writing $7FFF to INTENA (SET/CLR bit clear, all fifteen
 named bits) leaves every one of Paula's interrupt sources disabled, so that
 no combination of pending requests reaches the processor.
 
-## Already graded elsewhere -- 12 propositions declined, not re-graded
+## Already graded or declined elsewhere -- 12 propositions declined here
 
-For each, the assertion cited measures the same or a strictly broader
-version of this package's proposition, in an accepted package, and is not
-reproduced here.
+For each, the package cited measures the same or a strictly broader
+version of this package's proposition, and the measurement is not
+reproduced here. Ten are graded there; P10 and P11 are declined there too.
 
 - **P2** (p.2, "Built-in 3.5 inch ... drive with ... ports for ... up to
   three additional disk drives"), **P12** (p.6, "Floppy disk storage is
@@ -221,12 +222,16 @@ reproduced here.
 - **P10** (p.4, "DMA controlled floppy disk read and write on a full track
   basis.") and **P11** (p.4, "This means that the built-in disk can read
   over 5600 bytes of data in a single disk revolution (11 sectors of 512
-  bytes each)."): both already graded by the same assertion in
+  bytes each)."): both measured, and declined, by the same check in
   `hrm/ch8-disk-controller-overview`, **P-WHOLETRACK-DMA** (uids
   `opus:8-dsk.c6`, `opus:8-dsk.c7`, `sol:8-dsk.c7`, `sol:8-dskdma.c6`,
   p.241/p.247): a single DSKLEN arming delivers all 5984 words of a whole
   track's real content (11 sectors x 544 MFM words) and raises `blckint`
-  exactly once -- one DMA operation, one whole track.
+  exactly once -- one DMA operation, one whole track. That package declines
+  to grade it: 5984 is derived from the RTL's own sector-counter
+  structure, not a figure the manual states, and its fixture never observes
+  an index-to-index interval, so it cannot show "a single disk revolution".
+  Neither package grades P10 or P11.
 
 - **P15** (p.6, "The Amiga includes a standard RS-232-C serial port for
   external serial input/output devices such as a modem, MIDI interface, or

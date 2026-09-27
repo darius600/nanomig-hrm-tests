@@ -47,7 +47,7 @@ all: test
 # newer than its listed prerequisites, which would silently reuse a STALE
 # binary across `make MUT=X test` invocations (MUT is not a file, so it
 # can never make a file target look out of date) and report the previous
-# build's result as the new mutation's -- the build brief's own named trap.
+# build's result as the new mutation's.
 test: $(SRC) $(TEST_SRC) Makefile
 	rm -rf $(OBJ_DIR)
 	$(VERILATOR) $(FLAGS) --Mdir $(OBJ_DIR) --top-module $(TOP) $(SRC) $(TEST_SRC)

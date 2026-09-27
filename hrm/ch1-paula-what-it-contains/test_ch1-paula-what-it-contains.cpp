@@ -2,11 +2,13 @@
 // 1's ("Introduction") sentences naming what is inside Paula: the four
 // audio channels, the floppy disk interface, the serial/parallel ports and
 // the interrupt controller, at the `paula` boundary (paula.v:59), per
-// SPECIFICATION.md. 37 claims total: 24 already graded in accepted
-// packages elsewhere (record(), not re-graded -- ch5-audio-dmacon-adkcon,
-// ch5-audio-register-map, ch5-audio-location-pointer,
-// ch8-disk-controller-overview, ch8-parallel-port-direction,
-// ch8-serial-interface); 13 graded here through 5 expect() assertions
+// SPECIFICATION.md. 37 claims total: 24 measured in accepted packages
+// elsewhere and declined here with record() -- 20 of them graded there
+// (ch5-audio-dmacon-adkcon, ch5-audio-register-map,
+// ch5-audio-location-pointer, ch8-disk-controller-overview,
+// ch8-parallel-port-direction, ch8-serial-interface), 4 declined there too
+// (ch8-disk-controller-overview's P-WHOLETRACK-DMA); 13 graded here through
+// 5 expect() assertions
 // (two of the five each cover two claim-pairs that state the identical
 // coarse proposition on two different pages).
 //
@@ -552,9 +554,11 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // 12 propositions (24 claims) already graded in accepted packages
-    // elsewhere. See SPECIFICATION.md's "Already graded elsewhere" section
-    // for the full citation and reasoning behind each.
+    // 12 propositions (24 claims) measured in accepted packages elsewhere:
+    // 10 of them (20 claims) graded there, 2 (4 claims, P-WHOLETRACK-DMA)
+    // declined there too. See SPECIFICATION.md's "Already graded or
+    // declined elsewhere" section for the full citation and reasoning
+    // behind each.
     // ========================================================================
     checks.record("ALREADY GRADED in hrm/ch8-disk-controller-overview, assertion P-DRIVE-COUNT (uids "
         "opus:8-dsk.c1, sol:8-dsk.c1, p.241 \"The built-in disk controller in the system can handle up to four "
@@ -592,14 +596,16 @@ int main(int argc, char** argv) {
         "all). This is this package's own disclosed measured fact. Claim: sol:1-components.c78, "
         "opus:1-components.c77 (p.4, \"The audio channels may be linked together to provide amplitude or "
         "frequency modulation or both forms of modulation simultaneously.\"). Not re-graded.");
-    checks.record("ALREADY GRADED in hrm/ch8-disk-controller-overview, assertion P-WHOLETRACK-DMA (uids "
-        "opus:8-dsk.c6, opus:8-dsk.c7, sol:8-dsk.c7, sol:8-dskdma.c6, p.241/p.247): a single DSKLEN arming "
+    checks.record("NOT GRADED IN ANY PACKAGE: hrm/ch8-disk-controller-overview measures the same thing as P-WHOLETRACK-DMA "
+        "(uids opus:8-dsk.c6, opus:8-dsk.c7, sol:8-dsk.c7, sol:8-dskdma.c6, p.241/p.247) -- a single DSKLEN arming "
         "delivers all 5984 words of a whole track's real content (11 sectors * 544 MFM words) and raises blckint "
-        "exactly once -- one DMA operation, one whole track. Claims: sol:1-components.c79, opus:1-components.c78 "
+        "exactly once -- and declines it there: 5984 is derived from the RTL's own sector-counter structure, "
+        "not a figure the manual states, and that fixture never observes an index-to-index interval, so it "
+        "cannot show 'a single disk revolution'. Claims: sol:1-components.c79, opus:1-components.c78 "
         "(p.4, \"DMA controlled floppy disk read and write on a full track basis.\"); sol:1-components.c80, "
         "opus:1-components.c79 (p.4, \"...the built-in disk can read over 5600 bytes of data in a single disk "
         "revolution (11 sectors of 512 bytes each).\"). Both are the same measurement's mechanism half and "
-        "arithmetic half. Not re-graded.");
+        "arithmetic half. Not graded here either.");
     checks.record("ALREADY GRADED in hrm/ch8-serial-interface across its own 97 expect() assertions against pp. "
         "255-259 (device-agnostic register-level programmability and function; \"modem, MIDI interface, or "
         "printer\" names the use, not a distinct RTL boundary). Claim: sol:1-components.c126, "
