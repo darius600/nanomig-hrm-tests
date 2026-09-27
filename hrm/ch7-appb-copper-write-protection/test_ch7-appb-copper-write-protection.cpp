@@ -7,7 +7,8 @@
 // p.287 (Appendix B legend) and pp.289-290 (Appendix B register list);
 // committed specification 933e430 (SPECIFICATION.md, this package).
 // Requirement IDs: claims cited per-assertion by uid below; see
-// SPECIFICATION.md for the full inventory of all 19.
+// SPECIFICATION.md for the full inventory of all 20 (the 19 of the claims
+// file plus one routed legend claim).
 // Non-goals: the "~" (danger-bit-required) mark is out of scope for this
 // package -- its legend claims (sol:7-appB-legend.c5, opus:7-appB.c6) are
 // routed to chapter 2's Copper packages, which already assert CDANG
