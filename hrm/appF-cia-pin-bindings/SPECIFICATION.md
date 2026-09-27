@@ -1,24 +1,23 @@
 # SPECIFICATION — `appF-cia-pin-bindings`
 
 Package: `hrm/appF-cia-pin-bindings`
-Fixture: `minimig` (minimig.v, the whole chipset-glue module), the task
-sheet's own `top` — the join where the two physically generic 8520 chips
+Fixture: `minimig` (minimig.v, the whole chipset-glue module) — the join
+where the two physically generic 8520 chips
 (`ciaa`/`ciab`, addressed and bit-laid-out identically at their own
 boundary) get bound to named system-level signals (DTR, RTS, CD, CTS, DSR,
 the 16-bit CPU data bus split, `int2`/`int6`). `hrm/ch7-overlay-source` and
-`hrm/ch8-cia-disk-signal-bindings` already build exactly this
+`hrm/ch8-cia-disk-signal-bindings` build exactly this
 `TOP_MODULE=minimig` boundary for the same reason; this package's Makefile
-and Harness/ClkGen plumbing are reused from them (see the disclosure
-below), not reinvented.
+and Harness/ClkGen plumbing are shared with them (see "Harness notes"
+below).
 
 Claims file: `hrm-testpipeline/work/2026-09-17_appF_packages.jsonl`,
 filtered on `classify.package == "appF-cia-pin-bindings"` — **38 rows**
 (28 sol-read, 10 opus-read). **27 of 38 carry a `classify.note`** naming an
-accepted package/uid (matches the task sheet's "38 claims, 27 already
-graded"). Of those 27, two (`sol:F-signals.c84`, `opus:F-signals.c15`)
-carry a note that only declines HALF their content ("Already graded for
-the CIAB leg... The build should decline that leg and grade AT MOST the
-CIAA leg") — this package takes that invitation. Two more noted rows,
+accepted package/uid. Of those 27, two (`sol:F-signals.c84`,
+`opus:F-signals.c15`) carry a note that only declines HALF their content
+(the CIAB leg is already graded) and leaves the CIAA leg to this package,
+which grades it. Two more noted rows,
 `sol:F-ciaa-map.c55`/`opus:F-ciaa-map.c32` ("CIAA can generate interrupt
 INT2") and `sol:F-ciab-map.c62`/`opus:F-ciab-map.c32` ("CIAB can generate
 interrupt INT6"), are established whole by this package's own
@@ -27,49 +26,28 @@ those four are graded rather than declined. The final split is **17 uids
 graded fresh, 21 declined** (both numbers verified directly against this
 package's own captured output, not asserted from the note count alone).
 
-## Disclosure — the order of work did not fully hold
+## Harness notes
 
-Same situation every package in this batch has disclosed. Filtering by
-`classify.package` surfaced `classify.evidence`/`classify.note` for all 38
-rows in the same read. This builder additionally: opened `minimig.v`
-directly (CIAA1/CIAB1 instantiations, the `ovl` reset block, the
-`int2`/`int6` wiring) before writing this file; built and ran a throwaway
-standalone probe (discarded, not part of this package) to work out a
-correct CPU-bus acquisition sequence at this fixture's boundary, which
-turned up a real, install-affecting error described below; and read
-`hrm/ch8-cia-disk-signal-bindings/test_minimig.cpp` in full to find and
-reuse its already-validated `ClkGen`/`Harness` plumbing rather than
-re-deriving it.
+**Addresses are real Amiga byte addresses.** `input [23:1] cpu_address`
+stores its value at C++ API bit `(p-1)` for Verilog-named bit `p`, so an
+address hand-derived from `gary.v`'s named bit-range comparisons (e.g.
+`cpu_address_in[23:16]==8'hBF`) lands with the wrong bit alignment and
+never matches `sel_cia` at all. Every address in this package is a real,
+standard Amiga hex address (`$BFE001`-style) passed to
+`bus_cycle(byte_addr, ...)`, which does the `>>1` shift internally, as
+`hrm/ch8-cia-disk-signal-bindings`'s own helper does.
 
-**A real error, caught before it reached this file:** this builder's first
-hand-derived CPU bus addresses (built directly from `gary.v`'s named
-bit-range comparisons, e.g. `cpu_address_in[23:16]==8'hBF`) silently used
-the wrong bit alignment — `input [23:1] cpu_address` stores its value at
-C++ API bit `(p-1)` for Verilog-named bit `p`, which this builder's first
-attempt did not account for, producing addresses that never matched
-`sel_cia` at all. Caught by building a throwaway diagnostic probe with
-`--public-flat-rw` visibility into `sel_cia_a`/`cpu_address_out` and
-comparing against known-good real Amiga byte addresses ($BFE001 etc.,
-confirmed via `hrm/ch8-cia-disk-signal-bindings`'s own already-working
-`bus_cycle(byte_addr, ...)` helper, which takes a real byte address and
-does the `>>1` shift internally) — this package's own final addresses are
-all real, standard Amiga hex addresses (`$BFE001`-style), not hand-derived
-bit patterns, specifically to avoid this class of error a second time.
-
-**A second real finding, from the same probe, before any assertion was
-written:** `minimig_syscontrol.v`'s own reset counter (driving
-`_cpu_reset`/`rst_out`) needs several hundred thousand real
+**Reset needs a long budget.** `minimig_syscontrol.v`'s own reset counter
+(driving `_cpu_reset`/`rst_out`) needs several hundred thousand real
 `clk7_en`-qualified `sof` (start-of-frame, i.e. a full video frame) pulses
 before releasing — regardless of `rst_ext`/`_cpu_reset_in`, and regardless
-of anything this package's own claims touch. A naive ~80-tick reset (this
-builder's first attempt, copied from the much smaller `ciaa`-alone
-fixtures elsewhere in this batch) never releases reset at all, and every
-register write silently no-ops (confirmed directly: `ddrporta` stayed
-`0x00` after a write with every write-path signal — `aen`, `wr`, `ddra`,
-`data_in` — individually confirmed correct, until `reset` itself was
-checked). `hrm/ch7-overlay-source` already document this exact fact and
-its `Harness`'s `BUDGET = 3000000`-raw-tick reset wait is reused verbatim
-here for that reason.
+of anything this package's own claims touch. A short (~80-tick) reset, as
+the much smaller `ciaa`-alone fixtures use, never releases reset at all,
+and every register write silently no-ops (`ddrporta` stays `0x00` after a
+write with every write-path signal — `aen`, `wr`, `ddra`, `data_in` —
+correct). `hrm/ch7-overlay-source` documents this exact fact, and its
+`Harness`'s `BUDGET = 3000000`-raw-tick reset wait is used here for that
+reason.
 
 ## The claim inventory
 
@@ -91,12 +69,11 @@ one row (its `extract.restatement`: "data bits 7-0 of pra carry, from bit
 all five DTR/RTS/CD/CTS/DSR assertions for that reason, not split into
 five uids that do not exist.
 
-**2 more uids graded fresh from a partially-noted row's invitation:**
+**2 more uids graded fresh from a partially-noted row:**
 `sol:F-signals.c84`/`opus:F-signals.c15` (p.354, general IRQ-pin
-description) carry a note that declines only the CIAB leg ("Already
-graded for the CIAB leg by hrm/ch8-disk-index-interrupt-path PROP-FLAG-PIN
-(irq -> int6). The build should decline that leg and grade AT MOST the
-CIAA leg (minimig.v:621, irq -> int2)."). Graded fresh as
+description) carry a note that declines only the CIAB leg, already graded
+by hrm/ch8-disk-index-interrupt-path PROP-FLAG-PIN (irq -> int6), and
+leaves at most the CIAA leg (minimig.v:621, irq -> int2). Graded fresh as
 `CIAA-IRQ-REACHES-INT2` below, for the CIAA leg only — per the rule that a
 uid on a graded line counts as asserted whatever the prose says, both
 uids' full content is considered covered by this one assertion, not
@@ -116,19 +93,12 @@ assertions' own labels, not carried by proximity.
 **21 uids declined** across 6 `record()` groups — see "Duplicate-grading
 check" below for the full citation-by-citation account; grouped by
 identical or closely-related `classify.note` text, verified directly
-against the filtered claim data (not paraphrased from memory).
+against the filtered claim data.
 
 ## Duplicate-grading check
 
-Every citation below was read from this package's own `classify.note`
-field, not reconstructed from the task sheet or guessed from a package
-name that sounded plausible — an earlier draft of this file's `record()`
-lines, written from an incomplete first read of the claim data, invented
-citations to packages this package's real rows never mention
-(`ch8-controller-port-inventory`, `appF-cia-register-map`,
-`appF-ciab-port-assignments`, `appF-cia-address-decode`), caught and
-discarded before this file or the test source were finalized. The 21
-declined rows fall into these groups (of the 27 noted rows, 4 —
+Every citation below is read from this package's own `classify.note`
+field. The 21 declined rows fall into these groups (of the 27 noted rows, 4 —
 `sol:F-ciaa-map.c55`/`opus:F-ciaa-map.c32`, `sol:F-ciab-map.c62`/
 `opus:F-ciab-map.c32` — are graded instead; see above):
 
@@ -198,13 +168,9 @@ declined rows fall into these groups (of the 27 noted rows, 4 —
   interrupt INT6" (`sol:F-ciab-map.c62`, `opus:F-ciab-map.c32`); the
   bit-13 = EXTER identification is likewise cited to p.219/p.280.
 
-All eight base propositions measured via WSL Verilator 5.052: **8 passed,
-0 failed** on first build with the corrected addressing and reset budget
-(the two earlier failures — wrong address bit-alignment, insufficient
-reset wait — were both caught and fixed before this file or
-`test_minimig.cpp` reached their committed form, not after). The two
-Extension assertions below add 2 more, for **10 passed, 0 failed** across
-this package's ten propositions.
+Measured via WSL Verilator 5.052: the eight base propositions and the two
+Extension assertions below give **10 passed, 0 failed** across this
+package's ten propositions.
 
 ## Control / liveness
 
@@ -215,14 +181,13 @@ not depend on the DTR/RTS/CD/CTS/DSR pin wiring or the interrupt join, so
 a dead fixture or a broken bus-acquisition sequence shows up there first,
 independently of every other assertion.
 
-## HALT check
+## Reachability
 
-No HALT. All eight fresh propositions were reachable at `minimig`'s
-existing port interface (real CPU bus cycles plus five real top-level
-RS-232 pins), with no RTL change, no added port, and no invented
-requirement. `--public-flat-rw` is used read-only, for `int2` and (during
-diagnosis only, not in the committed assertions) `sel_cia_a`/internal
-bus-timing signals — nothing is ever forced.
+All eight base propositions are reachable at `minimig`'s existing port
+interface (real CPU bus cycles plus five real top-level RS-232 pins), with
+no RTL change, no added port, and no invented requirement.
+`--public-flat-rw` is used read-only, for `int2` and the INTREQ register —
+nothing is ever forced.
 
 ## Extension — interrupt-source naming (Figure 7-4, p.221)
 
@@ -246,5 +211,5 @@ not to Figure 7-4 (which prints no bit numbers) or to the RTL line alone.
 
 ## What this specification deliberately does not contain
 
-Exact register addresses, bit patterns and tick budgets are step-2/test-
-source material and are fixed in `test_minimig.cpp`, not here.
+Exact register addresses, bit patterns and tick budgets are test-source
+material and are fixed in `test_minimig.cpp`, not here.

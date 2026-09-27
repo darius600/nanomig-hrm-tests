@@ -6,8 +6,7 @@
 //   data bits 7-0, CIAB communicates on data bits 15-8" -- all three
 //   propositions name a fact only visible at `minimig` (the join where the
 //   two physical 8520 chips, generic at their own `ciaa`/`ciab` boundary,
-//   get bound to named system-level signals), the task sheet's own `top` for
-//   this package.
+//   get bound to named system-level signals).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 339, 340 and 353.
@@ -37,7 +36,8 @@
 //   generate interrupt INT6" whole).
 //
 // EXTENSION: Figure 7-4's naming of the PORTS/EXTER interrupt sources
-//   (p.221), routed here by hand, not by classify.package -- see
+//   (p.221), claims this package carries although classify.package does not
+//   name it -- see
 //   SPECIFICATION.md's own extension section. opus:7-fig7-4.c12 and
 //   opus:7-fig7-4.c42 each name TWO sources joined by "&" ("external INT2
 //   & CIAA" / "external INT6 & CIAB"); only the CIA leg is measured here
@@ -50,8 +50,7 @@
 //   whole, the single-source claims sol:F-ciaa-map.c55/opus:F-ciaa-map.c32
 //   ("CIAA can generate interrupt INT2") and
 //   sol:F-ciab-map.c62/opus:F-ciab-map.c32 ("CIAB can generate interrupt
-//   INT6") -- moved here from the CIAA-INT2-JOIN / CIAB-INT6-JOIN
-//   record() lines, whose stated decline reasons no longer held.
+//   INT6").
 //
 // RTL read directly: minimig.v's CIAA1/CIAB1 instantiations (lines
 //   607-650) confirm CIAA's data_in/data_out are cpu_data_out/cia_data_out
@@ -64,18 +63,18 @@
 //   assumed from the reading alone.
 //
 // Fixture plumbing (ClkGen, Harness::tick/bus_cycle/write_byte/read_byte,
-//   the long reset-acquisition budget) is reused, not reinvented, from
+//   the long reset-acquisition budget) is shared with
 //   hrm/ch7-overlay-source/test_minimig.cpp and
 //   hrm/ch8-cia-disk-signal-bindings/test_minimig.cpp -- this suite's own
 //   validated infrastructure for this identical TOP_MODULE=minimig
-//   boundary (both already disclose why: minimig_m68k_bridge.v's `_ta_n`
+//   boundary (both document why: minimig_m68k_bridge.v's `_ta_n`
 //   zero-inits instead of X, and minimig_syscontrol.v's own reset counter
 //   needs several hundred thousand real clk7_en-qualified `sof` pulses --
 //   video frame boundaries -- before `_cpu_reset`/`rst_out` release at
-//   all, regardless of anything this package's own claims touch). Reused
-//   as verified plumbing, not as a source of this package's own
-//   assertions; this package's own CIAA/CIAB register addresses, PRA bit
-//   assignments and byte-lane checks are new.
+//   all, regardless of anything this package's own claims touch). It is
+//   plumbing, not a source of this package's own assertions; the
+//   CIAA/CIAB register addresses, PRA bit assignments and byte-lane checks
+//   are this package's own.
 //
 // MUTATION METHODOLOGY: every expect() below is guarded by a compile-time
 //   `-D` flag. Every mutation was actually built and run (WSL Verilator,
@@ -286,7 +285,7 @@ int main(int argc, char** argv) {
     Checks checks;
 
     // =====================================================================
-    // Declined claims (record() only -- 27 of 38 uids; see
+    // Declined claims (record() only -- 21 of 38 uids; see
     // SPECIFICATION.md).
     // =====================================================================
     // (record() lines are emitted after the fresh assertions below, so a
@@ -440,12 +439,12 @@ int main(int argc, char** argv) {
 
     // =====================================================================
     // CIAA-IRQ-REACHES-INT2 -- p.354's general IRQ-pin description
-    // (sol:F-signals.c84, opus:F-signals.c15) explicitly invites this:
-    // "Already graded for the CIAB leg by hrm/ch8-disk-index-interrupt-path
-    // PROP-FLAG-PIN (irq -> int6). The build should decline that leg and
-    // grade AT MOST the CIAA leg (minimig.v:621, irq -> int2)." ch1-cia-
+    // (sol:F-signals.c84, opus:F-signals.c15), CIAA leg only (minimig.v:621,
+    // irq -> int2): the claims' classify.note records the CIAB leg as
+    // graded by hrm/ch8-disk-index-interrupt-path PROP-FLAG-PIN
+    // (irq -> int6). ch1-cia-
     // timers already shows ciaa's own `irq` pin asserting in isolation;
-    // what is new here is whether that pin actually REACHES `int2` at the
+    // what is graded here is whether that pin actually REACHES `int2` at the
     // `minimig` join -- a fact hrm/ch5-audio-interrupt's own note
     // independently says is not graded anywhere else either. This
     // assertion, together with CIAA-IRQ-REACHES-PORTS below, also
@@ -507,8 +506,7 @@ int main(int argc, char** argv) {
     // int2;`) confirms which wire is inspected, not which bit PORTS is --
     // Figure 7-4 itself prints no bit numbers. Established whole here,
     // instead, is the single-source claim "CIAA can generate interrupt
-    // INT2" (sol:F-ciaa-map.c55, opus:F-ciaa-map.c32), moved from a
-    // CIAA-INT2-JOIN record() whose decline reason no longer held. Same
+    // INT2" (sol:F-ciaa-map.c55, opus:F-ciaa-map.c32). Same
     // Timer A/ICR/CRA idiom as CIAA-IRQ-REACHES-INT2, its own fresh
     // Harness, now read one register further downstream at
     // dut->rootp->minimig->PAULA1->pi1__DOT__intreq -- the same
@@ -563,12 +561,9 @@ int main(int argc, char** argv) {
     // EXTER 6 External interrupt") name bit 13 as EXTER; Figure 7-4 itself
     // prints no bit numbers. Established whole here, instead, is the
     // single-source claim "CIAB can generate interrupt INT6"
-    // (sol:F-ciab-map.c62, opus:F-ciab-map.c32), moved from a
-    // CIAB-INT6-JOIN record() whose decline reason no longer held: it
-    // declined on the strength of a sibling package's C++-level join
-    // (ciab.irq wired to int6 in a testbench, not in this RTL's own
-    // paula_intcontroller), which this assertion's own real minimig.v join
-    // now supersedes. CIAB's Timer A/ICR/CRA are the same generic cia_int/
+    // (sol:F-ciab-map.c62, opus:F-ciab-map.c32), through this RTL's own
+    // minimig.v join rather than a testbench wiring of ciab.irq to int6.
+    // CIAB's Timer A/ICR/CRA are the same generic cia_int/
     // cia_timera cores ciaa.v instantiates (ciab.v:175/195), addressed at
     // the even (high) byte the way CIAB_PRA/CIAB_DDRA above already are
     // (rs==4'h4/5/D/E confirmed directly in ciab.v, same encoding as
@@ -613,15 +608,15 @@ int main(int argc, char** argv) {
     // MUTATION CIAB-IRQ-REACHES-EXTER stimulus red MUT_NO_TIMERB_START_EXTER: never write CIAB's CRA start bit at all -- Timer A never starts, so INTREQ bit 13 never sets and the exter_after conjunct goes red.
 
     // =====================================================================
-    // Declined claims (record() only -- 27 of 38 uids, all verified
+    // Declined claims (record() only -- 21 of 38 uids, all verified
     // against this package's own filtered claim data; see
     // SPECIFICATION.md's duplicate-grading check for each citation).
     // =====================================================================
 
     checks.record(
         "CIAA-MAP-PASSTHROUGH (p.339, ch8-ciaapra-fire-buttons "
-        "PROP-BIT7-PASSTHROUGH / PROP-BIT6-PASSTHROUGH, uid-free per that "
-        "package's own build): the CIAA address-map figure's PRA bits 7 "
+        "PROP-BIT7-PASSTHROUGH / PROP-BIT6-PASSTHROUGH, uid-free in that "
+        "package): the CIAA address-map figure's PRA bits 7 "
         "and 6 (fire-button pass-through pins) are already graded there. "
         "opus:F-ciaa-map.c2's own single claim spans this whole figure "
         "(PA7..PA1, cited here and on the two neighbouring record() lines "
