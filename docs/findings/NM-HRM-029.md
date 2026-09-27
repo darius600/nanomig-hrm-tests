@@ -38,13 +38,16 @@ it.** The red reported the opposite of what the figure says.
 
 ## What replaced it
 
-The test now evaluates the implication `dmasen → lenfin`, which passes vacuously
-when no non-excepted `dmasen` occurs. The companion formula
+The test now evaluates the implication `dmasen → lenfin`, and it passes
+vacuously: no sample outside the `000→001` exception carries `dmasen`, and the
+package states that none can, because `dmasen` is high only while the state is
+`000` and each sample is taken after the edge that leaves it (a control trace
+counts 0 of 24 samples, the exception included). `dmasen` is observed by a
+direct capture at the `000→001` arc, where it is high. The companion formula
 `AUDxDSR = AUDxDR · dmasen` became an informational `MEASURED` note.
 
-If the package cannot produce a `dmasen` at all, that is a green with a caveat —
-recorded, not asserted, because an implication no stimulus ever triggers has not
-been tested.
+That is a green with a caveat, stated in the assertion's own text: an
+implication no sample can trigger has not been tested.
 
 ---
 
@@ -58,9 +61,10 @@ been tested.
 The excepted case is the `000→001` transition, whose action bracket is
 `[lencntrld, AUDxDR, dmasen]`.
 
-**Measured:** `dmasen` never correlates with `lenfin` anywhere outside that
-stated exception. The note's own AND equation holds at the first restart and at
-neither later, `lenfin`-driven one.
+**Measured:** the periodic trace does not show `dmasen` outside the exception
+(above), so it says nothing about the note's first sentence; the RTL line below
+does. The note's own AND equation holds at the first restart and at neither
+later, `lenfin`-driven one.
 
 **RTL:** `dmasen` is raised only in the idle-state DMA branch
 ([`paula_audio_channel.v:276`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L276)); the block-end restart comes from
@@ -99,5 +103,5 @@ Four other withdrawals in this register read a **permission or a silence** as a
 requirement. This is the same error **in the direction nobody was watching for**:
 a one-way implication tested both ways.
 
-It is the first of its kind here, and it is the reason the playbook now says:
-write the claim as a formula before writing the predicate.
+It is the first of its kind here. The rule it gives: write the claim as a
+formula before writing the predicate.

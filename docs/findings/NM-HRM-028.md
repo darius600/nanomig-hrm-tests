@@ -26,8 +26,9 @@ used as period or volume data for the next channel:
 > "If you set either the volume or period attach bits for a channel, that
 > channel's audio output will be disabled…"
 
-**Appendix A, printed p. 265** gives `ADKCON` bits 7–0 as `ATPER3–0` and
-`ATVOL3–0`.
+**Appendix A, printed p. 265** gives `ADKCON` bits 7–0 as `USE3PN`–`USE0P1` and
+`USE3VN`–`USE0V1`; Table 5-5 on printed p. 151 names the same bits `ATPER3–0`
+and `ATVOL3–0`.
 
 ---
 
@@ -43,7 +44,7 @@ The channel module states it in its own first line:
 [`src/minimig-aga/paula_audio_channel.v#L1`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L1)
 
 ```verilog
-// This module handles a single amiga audio channel. attached modes are not supported
+//This module handles a single amiga audio channel. attached modes are not supported
 ```
 
 ### Measured
@@ -57,8 +58,9 @@ With **every** attach bit set — `ADKCON = 0x80FF`, all of `ATPER3–0` and
 | `rdata` peak | 8001 |
 | expected if the manual held | 0 and 0 |
 
-8001 is sample 127 × effective volume 63 — the manual's own arithmetic for an
-**unmodulated** channel. Nothing was silenced.
+8001 is sample 127 × effective volume 63 — what this path gives an
+**unmodulated** channel at `AUDxVOL = 64`, which it treats as 63
+([NM-HRM-025](NM-HRM-025.md)). Nothing was silenced.
 
 ---
 
@@ -69,8 +71,8 @@ the pinned revision and the quotation verified there.
 
 | | code | |
 |---|---|---|
-| **WinUAE** | [`audio.cpp:2761-2767`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L2761-L2767) | <pre>void audio_update_adkmasks (void)<br>{<br>&nbsp;&nbsp;&nbsp;&nbsp;unsigned long t = adkcon \| (adkcon &gt;&gt; 4);<br>&nbsp;&nbsp;&nbsp;&nbsp;audio_channel[0].data.adk_mask = (((t &gt;&gt; 0) & 1) - 1);</pre> a per-channel mask built from both attach fields |
-| **vAmiga** | [`Core/Components/Paula/Audio/StateMachine.cpp:118-131`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L118-L131) | <pre>if (!AUDxAV()) { buffer = auddat; return; }<br>if constexpr (nr == 0) paula.channel1.pokeAUDxVOL(auddat);<br>…<br>if constexpr (nr == 0) paula.channel1.pokeAUDxPER(auddat);</pre> the modulator's word is written into the **next** channel's volume or period |
+| **WinUAE** | [`audio.cpp:2761-2767`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L2761-L2767) | <pre>void audio_update_adkmasks (void)<br>{<br>&nbsp;&nbsp;&nbsp;&nbsp;static int prevcon = -1;<br>&nbsp;&nbsp;&nbsp;&nbsp;unsigned long t = adkcon \| (adkcon &gt;&gt; 4);<br>&nbsp;&nbsp;&nbsp;&nbsp;audio_channel[0].data.adk_mask = (((t &gt;&gt; 0) & 1) - 1);</pre> a per-channel mask built from both attach fields |
+| **vAmiga** | [`Core/Components/Paula/Audio/StateMachine.cpp:118-135`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L118-L135) | <pre>if (!AUDxAV()) { buffer = auddat; return; }<br>if constexpr (nr == 0) paula.channel1.pokeAUDxVOL(auddat);<br>…<br>if constexpr (nr == 0) paula.channel1.pokeAUDxPER(auddat);</pre> the modulator's word is written into the **next** channel's volume or period |
 | **Denise** | [`emulation/libami/paula/audio.cpp:79-81`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L79-L81) | <pre>cha.audav = adkcon & (0x01 &lt;&lt; nr);<br>cha.audap = adkcon & (0x10 &lt;&lt; nr);<br>cha.napnav = !cha.audap \|\| cha.audav;</pre> |
 | **Copperline** | [`src/chipset/paula.rs:1190-1192`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1190-L1192) | <pre>fn channel_attached_as_modulator(&self, ch_idx: usize) -&gt; bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;let volume_attach = 1u16 &lt;&lt; ch_idx;<br>&nbsp;&nbsp;&nbsp;&nbsp;let period_attach = 1u16 &lt;&lt; (ch_idx + 4);</pre> |
 | **MiSTer** | [`rtl/paula_audio_channel.v:1`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L1) | descendant — carries the identical first-line comment, *"attached modes are not supported"*. No ADKCON port on the audio-channel module here either |
@@ -132,7 +134,8 @@ they did something.
   attach bits and the same peak detection reads silence — so the technique
   reports silence when a channel is genuinely silent, which rules out a
   units error in the peak measurement.
-- The assertion's stimulus mutation is recorded and red.
+- The assertion's stimulus mutation is recorded and turns it green: with the
+  `AUD0DAT`/`AUD1DAT` writes withheld, both peaks read 0.
 
 ---
 
@@ -142,8 +145,12 @@ Only the half whose stimulus **and** consequence are both on real ports of
 `paula.v`: write `ADKCON`, observe that the modulating channel is not silenced.
 
 The other half — a modulator's word reaching another channel's period or volume
-register — is not testable at any boundary in this design, because no audio
-module has an attach port to observe it on. It is recorded rather than asserted.
+register — is not asserted in this package: no audio module has an attach port,
+so it could show only as a change in the next channel's output.
+[`integration/ch5-audio-attach-modulation`](../../integration/ch5-audio-attach-modulation)
+grades that output through the CPU and is red on both cores, but its own
+preconditions `PC4` and `PC5` are red as well, so it does not hold this half
+up yet.
 
 **This is an absent feature, of the same character as [NM-HRM-015](NM-HRM-015.md) and
 [NM-HRM-021](NM-HRM-021.md):** declared in a register, accepted by the decode, reaching nothing.

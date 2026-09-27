@@ -18,9 +18,9 @@
 
 **Appendix A, printed p. 278** gives `DMACONR` at `$002` the chip column:
 
-> `A D P`
+> `A P`
 
-— Agnus, Denise and Paula. **Appendix B, printed p. 289** lists it among the read
+— Agnus and Paula. **Appendix B, printed p. 289** lists it among the read
 registers.
 
 The claim under test is narrow: that Paula is one of the chips answering a read

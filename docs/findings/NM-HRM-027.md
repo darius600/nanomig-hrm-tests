@@ -28,7 +28,7 @@
 The branch leaving the idle state on a CPU write to `AUDxDAT` raises the
 interrupt request in the same step, before any byte has left the channel:
 
-[`src/minimig-aga/paula_audio_channel.v#L283-L285`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L283-L285)
+[`src/minimig-aga/paula_audio_channel.v#L281-L285`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L281-L285)
 
 ```verilog
 else if (AUDxDAT && !AUDxON && !AUDxIP) begin
@@ -72,7 +72,8 @@ in the same chapter, nothing here depends on reading inside the module.
 belongs upstream of all three rather than in NanoMig alone.
 
 Nobody has read any of the four independent implementations for this finding. It
-is the one chapter-5 entry with no third-party reading among the four at all, and
+is one of two chapter-5 entries with no third-party reading among the four at all
+(the other, [NM-HRM-030](NM-HRM-030.md), asks a question no emulator models), and
 it is the one where such a reading would be most useful — see below. MiSTer and
 TC64 are not that reading: both inherit NanoMig's interrupt-before-output timing
 unchanged, so they confirm the ancestry rather than add a witness.
@@ -124,7 +125,7 @@ hardware follows.
 
 ## What holds the finding up
 
-Assertion H — "immediate transfer to the main loop", from the same page and
+Assertion H — "immediate transfer to the main loop", from printed p. 164 and
 measured on the same trace event — is **green** and is the control. The trace is
 being read correctly; it is the interrupt's position in it that fails.
 

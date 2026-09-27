@@ -74,7 +74,7 @@ identical because nothing is happening on them.
 `hrm/ch3-beam-counters-and-blanking` discarded these bits on the reasoning that
 there was nothing at this boundary to observe. That reasoning does not hold:
 `_csync`, `_vsync` and `_hsync` are **real outputs of this module** (port list,
-l.44-46), and the manual says each bit transforms one of them. A bit the RTL
+l.42-46), and the manual says each bit transforms one of them. A bit the RTL
 never decodes, driving a pin that exists, is a deviation and not an unobservable.
 
 Chapter 7 therefore overrules chapter 3 on this point.
@@ -91,9 +91,9 @@ at the pinned revision named in the link.
 | **WinUAE** | [`custom.cpp:9809-9817`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L9809-L9817) | <pre>if (beamcon0 & BEAMCON0_CSYTRUE) flags ^= DENISE_RGA_FLAG_CSYNC;<br>if (beamcon0 & BEAMCON0_VSYTRUE) flags ^= DENISE_RGA_FLAG_VSYNC;<br>if (beamcon0 & BEAMCON0_HSYTRUE) flags ^= DENISE_RGA_FLAG_HSYNC;</pre> all three |
 | **Denise** | [`emulation/libami/agnus/agnus.cpp:1051-1053`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L1051-L1053) | <pre>inline auto Agnus::csyncPolTrue(bool state) -> bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;return (beamCon & CSYTRUE) ? !state : state;<br>}</pre> **CSYTRUE only** — no VSYTRUE or HSYTRUE exists anywhere in the tree |
 | **vAmiga** | [`Core/Components/Agnus/AgnusRegs.cpp:550-570`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L550-L570) | `pokeBEAMCON0` names all three in its bit-map comment and acts on **PAL and LOLDIS only** |
-| **Copperline** | [`src/chipset/agnus.rs:27-42`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L27-L42) | defines `BEAMCON0_` constants for bits 3 and 5-14 — **no constant exists for bits 0, 1 or 2** |
+| **Copperline** | [`src/chipset/agnus.rs:21-42`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L21-L42) | defines `BEAMCON0_` constants for bits 3 and 5-14 — **no constant exists for bits 0, 1 or 2**; its own comment gives the reason: *"the xSYTRUE pin polarities are latched without physical host output"* |
 | **MiSTer** | [`rtl/agnus_beamcounter.v:146-148`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148) | descendant — identical to NanoMig: `csynctrue`/`vsynctrue`/`hsynctrue` are commented-out declarations, nothing reads `beamcon0_reg[2:0]` |
-| **TC64** | [`rtl/minimig/agnus_beamcounter.v:171-173`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L171-L173) | descendant — `rtl/minimig/agnus_beamcounter.v:171-173` diverges here: the three wires are **not** commented out — `wire hsynctrue = displaydual ? beamcon0_sh[0] : beamcon0_reg[0];` and likewise for `vsynctrue`, feeding two new module outputs, `hsyncpol`/`vsyncpol` (`:175-176`), that `agnus.v` forwards on outward. `csynctrue` (CSYTRUE, bit 2) is declared the same uncommented way but, like NanoMig's commented-out version, used nowhere else in the file — `_csync` is still formed at `:458` as `(_hsync & _vsync) vser`, no `csynctrue` term anywhere. So HSYTRUE and VSYTRUE reach a real output in TC64 that NanoMig and MiSTer both lack outright; CSYTRUE stays exactly as dead in TC64 as in the other two. A fix to CSYTRUE diverges from all three; a fix decoding HSYTRUE/VSYTRUE would diverge from MiSTer but meet TC64, which has already built that plumbing. **and not alike across its own three bits**. |
+| **TC64** | [`rtl/minimig/agnus_beamcounter.v:171-173`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L171-L173) | descendant — `rtl/minimig/agnus_beamcounter.v:171-173` diverges here: the three wires are **not** commented out — `wire hsynctrue = displaydual ? beamcon0_sh[0] : beamcon0_reg[0];` and likewise for `vsynctrue`, feeding two new module outputs, `hsyncpol`/`vsyncpol` (`:175-176`), that `agnus.v` forwards on outward. `csynctrue` (CSYTRUE, bit 2) is declared the same uncommented way but, like NanoMig's commented-out version, used nowhere else in the file — `_csync` is still formed at `:458` as `(_hsync & _vsync) \| vser`, no `csynctrue` term anywhere. So HSYTRUE and VSYTRUE reach a real output in TC64 that NanoMig and MiSTer both lack outright; CSYTRUE stays exactly as dead in TC64 as in the other two. A fix to CSYTRUE diverges from all three; a fix decoding HSYTRUE/VSYTRUE would diverge from MiSTer but meet TC64, which has already built that plumbing. |
 
 **Among the four independent implementations: one implements all three bits;
 a second implements one of the three; two do not model them at all.** This
@@ -150,13 +150,12 @@ MEASURED: over a line the three sync pins differ in 0 of 260 samples between
 driving a beam -- and the bits change nothing about them.
 
 That assertion's baseline is red, so its mutation runs the other way and must
-make it GREEN: under `MUTATE=1` the second trace starts three colour clocks
-later, which does move the pins, showing the comparison can see a difference
-when there is one.
+make it GREEN: under `MUTATE=SYNC-POLARITY-BITS-CHANGE-THE-PINS` the second
+trace starts three colour clocks later, which does move the pins, showing the
+comparison can see a difference when there is one.
 
-**This is corroboration, not a second finding.** Two independent documents, read
-by four different readers across two rounds, state the same requirement, and one
-RTL answers neither. No new key was issued for it.
+**This is corroboration, not a second finding.** Two independent documents state
+the same requirement, and one RTL answers neither. No new key was issued for it.
 
 ## Suggested change
 

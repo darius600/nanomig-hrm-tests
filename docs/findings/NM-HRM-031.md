@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch5-audio-interrupt`](../../hrm/ch5-audio-interrupt) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | two of four behave the same way; one masks bit 15 and nothing else, deliberately |
+| **Verdict of the four** | two of four behave the same way; both mask bit 15 and nothing else |
 
 ---
 
@@ -61,15 +61,15 @@ the pinned revision and the quotation verified there.
 | | code | |
 |---|---|---|
 | **WinUAE** | — | not read for this finding |
-| **vAmiga** | [`Core/Components/Paula/PaulaRegs.cpp:92-93`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaRegs.cpp#L92-L93) | <pre>if (setclr) {<br>&nbsp;&nbsp;&nbsp;&nbsp;intreq \|= value;</pre> no mask at all — bit 14 is settable |
+| **vAmiga** | [`Core/Components/Paula/PaulaRegs.cpp:92-93`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaRegs.cpp#L92-L93) | <pre>if (setclr) {<br>&nbsp;&nbsp;&nbsp;&nbsp;intreq \|= value;</pre> the caller, [`Paula.h:263`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Paula.h#L263), splits off bit 15 with `value & 0x7FFF` and masks **only** that — bit 14 is settable |
 | **Denise** | [`emulation/libami/paula/irq.cpp:17-18`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/irq.cpp#L17-L18) | <pre>if (value & 0x8000)<br>&nbsp;&nbsp;&nbsp;&nbsp;intreq \|= value & 0x7fff;</pre> masks **only** bit 15 |
 | **Copperline** | — | not read for this finding |
 | **MiSTer** | [`rtl/paula_intcontroller.v:132-134`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_intcontroller.v#L132-L134) | descendant — byte-identical to NanoMig, same line numbers, comments included |
 | **TC64** | [`rtl/minimig/paula_intcontroller.v:132-134`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_intcontroller.v#L132-L134) | descendant — the same, byte-identical; `paula_intcontroller.v` is identical across all three trees throughout, confirmed by a full-file comparison. The settable bit-14 request is inherited unchanged by both lines |
 
-**Two of the four let bit 14 be set as a request, and Denise's mask is the
-precise statement**: `0x7fff` strips the SET/CLR bit and nothing else, so bit 14
-survives on purpose rather than by omission. NanoMig is not alone, and the
+**Two of the four let bit 14 be set as a request, and both masks are precise
+statements**: Denise's `0x7fff` and vAmiga's `0x7FFF` strip the SET/CLR bit and
+nothing else, so bit 14 passes the mask. NanoMig is not alone, and the
 printed "no request" is the outlier among the implementations that have been
 read.
 
@@ -122,7 +122,9 @@ That is a decision for someone who knows what real Paula latches.
 - **The other half of the same sentence passes.** `MASTER-ENABLE-BIT14-GATE` is
   green, so the assertion is not failing because the fixture cannot reach
   `INTENA`/`INTREQ` at all.
-- Each half has its own assertion, its own control and its own mutation.
+- The enable half is an assertion with its own control and mutation; the
+  "no request" half is measured with its own control and reported, not graded
+  (`MASTER-BIT14-NO-REQUEST-NOT-GRADED`).
 
 ---
 
