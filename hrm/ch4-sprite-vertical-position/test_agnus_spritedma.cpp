@@ -42,8 +42,7 @@
 //   a different package on a different fixture, not tested here.
 //
 // SPRxCTL BITS 6 AND 5 -- SILENT IN THE PRINTED SOURCE: this package's
-//   own classify.evidence (from the classification stage, before this
-//   file was written) already measured that "bits 6 and 5 -- which p284
+//   own classify.evidence measured that "bits 6 and 5 -- which p284
 //   calls unused -- carry the ECS ninth vertical bits, gated by the ecs
 //   input" (rtl/agnus_spritedma.v:221/225, :242/244): vstart[9]=bit6,
 //   vstop[9]=bit5, alongside the PRINTED SV8=bit2=vstart[8] and
@@ -51,8 +50,8 @@
 //   6/5 that way (APPA-sprctl.c6 and CH4-appA-sprite.c21 print "06-04 X
 //   Not used" and are themselves a recorded conflict against appendix C
 //   p303's different bit assignment for that span -- see SPRXCTL-BITS-6-
-//   4-SPAN-IS-DISPUTED below). Per this package's own build brief: where
-//   the corpus is silent, measure and report, do not assert -- so bits
+//   4-SPAN-IS-DISPUTED below). Where the corpus is silent, this file
+//   measures and reports and does not assert -- so bits
 //   6/5 are exercised only by a RECORDED/MEASURED note, never inside a
 //   checks.expect() pass/fail condition, and are cited by no claim id.
 //
@@ -98,8 +97,8 @@
 //   blanking-window correspondence.
 //
 // BOUNDARY: nanomig/src/minimig-aga/agnus_spritedma.v, per this package's
-//   own claims.jsonl classify.evidence field (produced by an earlier
-//   classification pass, not by this file opening the RTL): register
+//   own claims.jsonl classify.evidence field (the classification
+//   stage's own measurement of the RTL): register
 //   writes decode at reg_address_in[8:6]==$140[8:6] with [2:1] selecting
 //   POS(00)/CTL(01) and [5:3] the sprite channel (0-7), "confirmed by
 //   measurement I (eight distinct pointer banks)"; observable ports are
@@ -110,38 +109,24 @@
 //   port; every assertion below observes them only indirectly, through
 //   the DMA-active line range they produce on reqdma/reg_address_out.
 //
-// ORDER OF WORK: this file (assertions, expected values, claim-id
-// coverage, register addresses, bit positions) was written and committed
-// from claims.jsonl's quotations and its own classify.evidence field
-// ONLY -- agnus_spritedma.v itself was not opened until after that
-// commit, per the build brief's explicit gate. The classify.evidence
-// field is itself a pre-existing artifact of an earlier classification
-// pass over the RTL (the same status as a sibling package's own
-// PACKAGE.md evidence field, e.g. hrm/ch3-sprite-registers/), not
-// something this file's own author derived by reading the module --
-// exactly the precedent hrm/ch3-sprite-registers/test_denise_sprites.cpp
-// itself sets ("BOUNDARY" section there cites denise.v line numbers "per
-// PACKAGE.md"). The Harness's port names, clk7_en 4-cycle-per-hpos
-// clocking, reg_address_in/data_in write sequencing, the reqdma/ackdma
-// same-cycle-sample-then-grant handshake, and the word-address map
-// ($140->0xA0 for SPR0POS, +4 words per sprite) are reused from
-// hrm/agnus_spritedma/test_agnus_spritedma.cpp -- an already-built,
-// already-verified sibling harness for this SAME module ("fixture
-// agnus_spritedma (one module, builds standalone -- verified today)" per
-// this package's own build brief) -- not learned by opening this
-// package's own forbidden-until-committed file. Three numeric stimulus
-// values (SPR0POS=$28/VSTART=40, SPR0CTL=$2C/VSTOP=44, and the second
-// SPR0CTL=$2E/VSTOP=46) are reused directly from this package's own
-// classify.evidence field, which already reports them as measured:
+// HARNESS AND STIMULUS SOURCES: the classify.evidence field is the
+// classification stage's own measurement of the RTL (the same status as
+// a sibling package's own PACKAGE.md evidence field -- the "BOUNDARY"
+// section of hrm/ch3-sprite-registers/test_denise_sprites.cpp cites
+// denise.v line numbers "per PACKAGE.md"). The Harness's port names,
+// clk7_en 4-cycle-per-hpos clocking, reg_address_in/data_in write
+// sequencing, the reqdma/ackdma same-cycle-sample-then-grant handshake,
+// and the word-address map ($140->0xA0 for SPR0POS, +4 words per sprite)
+// are those of hrm/agnus_spritedma/test_agnus_spritedma.cpp, the sibling
+// harness for this SAME module. Three numeric stimulus values
+// (SPR0POS=$28/VSTART=40, SPR0CTL=$2C/VSTOP=44, and the second
+// SPR0CTL=$2E/VSTOP=46) come from this package's own classify.evidence
+// field, which reports them as measured:
 // "with SPR0POS=$2800 (VSTART=40) and SPR0CTL=$2C00 (VSTOP=44), reqdma is
 // granted twice per line with reg_address_out naming SPR0DATA at hpos 53
 // and SPR0DATB at hpos 57 on lines 40-43, and naming SPR0POS/SPR0CTL on
 // line 44; with SPR0CTL=$2E00 (VSTOP=46) the identical stimulus carries
-// the window through line 45 instead." Reusing an already-measured,
-// already-reported stimulus recipe from the classification stage is not
-// the same thing as this file's own author opening the RTL -- the
-// classification stage's own job was exactly to establish what is
-// observable and how, before any package is built on top of it.
+// the window through line 45 instead."
 //
 // MEASUREMENT BASIS: every non-declined assertion below writes SPR0POS
 // and/or SPR0CTL directly through reg_address_in/data_in (the same single
@@ -185,9 +170,8 @@
 //   34+11+11+4+2+2+39+39+36 = 178.
 //
 // CONTROL CASE: FIXTURE-DELIVERS-DISTINCT-VALUES-IN-ORDER (no page, no
-// claim id, labelled "[control]" so the mutation gate does not require a
-// mutation record beyond its own) proves this fixture can deliver a known
-// word before anything reads one, per this package's own build brief:
+// claim id, labelled "[control]"; it carries its own mutation record)
+// proves this fixture can deliver a known word before anything reads one:
 // two DIFFERENT (VSTART,VSTOP) pairs, written directly through
 // reg_address_in/data_in, each land in their OWN correct role (VSTART
 // governs where the window starts, VSTOP where it ends -- not swapped,
@@ -195,58 +179,54 @@
 // already measured (40..44, then 40..46) -- before any claim-based
 // assertion below depends on the same write -> sweep -> observe path.
 //
-// STIMULUS FIXES (this pass, after opening agnus_spritedma.v -- neither
-// changes an expected value, only stimulus): (1) SPRXCTL-BIT2-SV8-IS-
-// VSTART-HIGH-BIT's SV8=0 case originally armed SPR0CTL with the SAME
-// byte (0xFF) used for SPR0POS, making VSTART and VSTOP both 255; per
-// agnus_spritedma.v:242 (VSTOP is checked before VSTART on a
-// simultaneous vpos match, giving VSTOP precedence), that sprite would
-// never have activated at all, and the assertion would have measured
-// start==-1 for the wrong reason. Fixed by giving that case's SPR0CTL an
-// EV8-set (VSTOP=511) value instead, comfortably clear of VSTART=255; the
-// asserted value (start==255) is unchanged. (2) SPRXPOS-SPRXCTL-ADDRESS-
-// MAP's and SPRXPOS-SPRXCTL-WRITE-BUS-HAS-BOTH-DMA-AND-PROCESSOR-PATHS's
-// own address-set sweeps originally started at vpos=0; every sprite
-// channel's own (never-written) VSTOP defaults to 0, which coincidentally
-// equals vpos=0 on that first line and independently latches `sprvstop`
-// (agnus_spritedma.v:255-258), triggering the very POS/CTL-prefetch cycle
-// these two assertions observe THROUGH A DIFFERENT PATH than the one
-// (`vblend`) they meant to exercise -- discovered when the MUT_ADDRMAP/
-// MUT_WRITEBUS mutations below (withholding vblend) failed to move either
-// assertion on the first mutation pass. Fixed by starting both sweeps at
-// vpos=1 instead (no channel's default VSTOP=0 matches vpos=1); the
-// addresses asserted for are unchanged, and both mutations now correctly
-// turn only their own assertion red (see MUTATION LOG below).
+// STIMULUS CHOICES (neither changes an expected value, only stimulus):
+// (1) SPRXCTL-BIT2-SV8-IS-VSTART-HIGH-BIT's SV8=0 case arms SPR0CTL with
+// an EV8-set (VSTOP=511) value, comfortably clear of VSTART=255. Arming
+// it with the SAME byte (0xFF) used for SPR0POS would make VSTART and
+// VSTOP both 255; per agnus_spritedma.v:242 (VSTOP is checked before
+// VSTART on a simultaneous vpos match, giving VSTOP precedence), that
+// sprite would never activate at all, and the assertion would measure
+// start==-1 for the wrong reason. (2) SPRXPOS-SPRXCTL-ADDRESS-MAP's and
+// SPRXPOS-SPRXCTL-WRITE-BUS-HAS-BOTH-DMA-AND-PROCESSOR-PATHS's own
+// address-set sweeps start at vpos=1, not 0: every sprite channel's own
+// (never-written) VSTOP defaults to 0, which equals vpos=0 on that first
+// line and independently latches `sprvstop` (agnus_spritedma.v:255-258),
+// triggering the very POS/CTL-prefetch cycle these two assertions observe
+// THROUGH A DIFFERENT PATH than the one (`vblend`) they exercise -- with
+// a vpos=0 start, the MUT_ADDRMAP/MUT_WRITEBUS mutations below
+// (withholding vblend) do not move either assertion. No channel's
+// default VSTOP=0 matches vpos=1, so each mutation turns only its own
+// assertion red (see MUTATION LOG below).
 //
-// RESULTS: 9 passed, 0 failed. No RTL deviation found among the 176
-// claims carried by a checks.expect() (the remaining 2 are the declined
-// SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED). agnus_spritedma.v conforms, at this
-// boundary, to every printed proposition this package could test: the
-// SV7-SV0/EV7-EV0 byte fields, the SV8/EV8 high bits, the full 16-address
-// POS/CTL map for all 8 channels, Agnus's own genuine write-target status
-// for SPRxPOS/SPRxCTL, and the structural existence of both a DMA path
-// and a processor path for SPRxPOS/SPRxCTL (DMA-only for SPRxDATA/
-// SPRxDATB, per the module's own decode). The one MEASURED (non-claim)
-// finding -- SPRxCTL bits 6/5 are vstart[9]/vstop[9], gated by `ecs`,
-// each contributing exactly +512 to the measured line when set (base=4
-// bit6=4 at ecs=0, base=4 bit6=516 at ecs=1; base=8 bit5=8 at ecs=0,
-// base=8 bit5=520 at ecs=1) -- is not a deviation against any claim (no
-// claim in this package's 178 records states what these bits do), so it
-// is reported, not scored red or green, per this package's own build
-// brief.
+// RESULTS: 14 passed, 0 failed. No RTL deviation found at this boundary.
+// agnus_spritedma.v conforms, at this boundary, to every printed
+// proposition this package could test: the SV7-SV0/EV7-EV0 byte fields,
+// the SV8/EV8 high bits, the full 16-address POS/CTL map for all 8
+// channels, Agnus's own genuine write-target status for SPRxPOS/SPRxCTL,
+// and the structural existence of both a DMA path and a processor path
+// for SPRxPOS/SPRxCTL (DMA-only for SPRxDATA/SPRxDATB, per the module's
+// own decode); and, for the routed claims below, the ECS register map's
+// "chg" row for SPRxCTL is real and ecs-gated for all 8 channels, and
+// appendix C's "position, size and feature" claim and the ECS map's $142
+// request/write claims both hold at Harness(ecs=1), not only at this
+// fixture's default ecs=0. The one MEASURED (non-claim) finding --
+// SPRxCTL bits 6/5 are vstart[9]/vstop[9], gated by `ecs`, each
+// contributing exactly +512 to the measured line when set (base=4 bit6=4
+// at ecs=0, base=4 bit6=516 at ecs=1; base=8 bit5=8 at ecs=0, base=8
+// bit5=520 at ecs=1) -- is not a deviation against any claim (no claim in
+// this package's 178 records states what these bits do), so it is
+// reported, not scored red or green.
 //
-// MUTATION LOG (all 9 stimulus entries below were run by this agent under
-// WSL/Verilator (5.052) on 12.09.2026, against the 9-passed/0-failed
-// baseline above -- build with -DMUT_NAME=1 -> rebuild -> run -> confirm
-// the named assertion, and only that assertion, changed colour -> rebuild
-// with no flags -> confirm the 9/0 baseline restored -- before moving to
-// the next one. nanomig/ was never touched; no expected value, oracle
-// text or comparison logic was ever edited, only stimulus, each guarded
-// behind its own #if MUT_NAME flag so the baseline file is unchanged by
-// default:
+// MUTATION LOG (each entry run under WSL/Verilator: build with
+// -DMUT_NAME=1 -> rebuild -> run -> confirm the named assertion, and only
+// that assertion, changed colour -> rebuild with no flags -> confirm the
+// baseline restored; the pass/fail totals quoted in an entry are those of
+// the run that recorded it. nanomig/ is not touched; every entry changes
+// stimulus only, each guarded behind its own #if MUT_NAME flag so the
+// default build is unmutated):
 //
 // MUTATION FIXTURE-DELIVERS-DISTINCT-VALUES-IN-ORDER stimulus red: -DMUT_CONTROL=1 makes the second measurement's SPR0CTL write 0x2C (the SAME as the first measurement's) instead of 0x2E, so the two windows stop differing -> FAIL ("8 passed, 1 failed"), only this control case newly red (w2.end became 44, not the asserted 46). Rebuilt with no flags: 9/0 restored.
-// MUTATION SPRXPOS-SPRXCTL-ADDRESS-MAP stimulus red: -DMUT_ADDRMAP=1 withholds vblend (held low instead of high) across the sweep -> FAIL ("8 passed, 1 failed"), only this assertion newly red (the collected address set came back empty -- see STIMULUS FIXES above for why the sweep had to start at vpos=1, not 0, for this mutation to be meaningful at all). Rebuilt with no flags: 9/0 restored.
+// MUTATION SPRXPOS-SPRXCTL-ADDRESS-MAP stimulus red: -DMUT_ADDRMAP=1 withholds vblend (held low instead of high) across the sweep -> FAIL ("8 passed, 1 failed"), only this assertion newly red (the collected address set came back empty -- see STIMULUS CHOICES above for why the sweep had to start at vpos=1, not 0, for this mutation to be meaningful at all). Rebuilt with no flags: 9/0 restored.
 // MUTATION SPRXPOS-BYTE-IS-SV70-VSTART stimulus red: -DMUT_SV70=1 makes the second SPR0POS write 0x20 (the same as the first) instead of 0x21 -> FAIL ("8 passed, 1 failed"), only this assertion newly red (wb.start no longer differs from wa.start by 1; the two are equal). Rebuilt with no flags: 9/0 restored.
 // MUTATION SPRXCTL-BYTE-IS-EV70-VSTOP stimulus red: -DMUT_EV70=1 makes the second SPR0CTL write 0x20 (the same as the first) instead of 0x21 -> FAIL ("8 passed, 1 failed"), only this assertion newly red (wb.end no longer differs from wa.end by 1). Rebuilt with no flags: 9/0 restored.
 // MUTATION SPRXCTL-BIT2-SV8-IS-VSTART-HIGH-BIT stimulus red: -DMUT_SV8=1 withholds the SV8 stimulus in the "hb" measurement (SPR0CTL held at $FF/SV8=0 instead of SV8=1) -> FAIL ("8 passed, 1 failed"), only this assertion newly red (wb.start no longer 511). Rebuilt with no flags: 9/0 restored.
@@ -257,32 +237,26 @@
 // MUTATION SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED: no record -- this claim is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
 
 // ============================================================================
-// EXTENSION: 14 new claims. Written from quote/restatement/page fields
-// ALONE -- before this file's own routing fields or agnus_spritedma.v was
-// opened, same gate as ORDER OF WORK above. Committed before either is
-// read.
+// ROUTED CLAIMS: 14 further ids, from chapter pages 107/128 and
+// appendices B and C. What each states:
 //
-// NEW-1 SPRXCTL-BITS-6-3-UNUSED-OCS (4 ids: CH4-p107.c8, CH4-sprctl.c6,
+// R1 SPRXCTL-BITS-6-3-UNUSED-OCS (4 ids: CH4-p107.c8, CH4-sprctl.c6,
 //   CH4-p128.c14, CH4-sctl.c13): chapter body page 107 ("Bits 6-3 Unused
 //   (make zero)") and page 128 ("Bits 6-3 are reserved for future use (make
 //   zero)"), each read twice (sol, opus), state that SPRxCTL bits 6 through
 //   3 are unused/reserved and must be written zero. This package's own
 //   classify.conflict_resolution -- identical text on all four claims --
-//   names the SAME dispute already declined once in this file, under
-//   SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED above: appendix C p303 names bits 4
-//   and 3 SHSH1/SHSH0, "unimplemented ... in the ECS chips only", against
-//   the chapter's and appendix A's "unused". The undisputed sub-span in
-//   that earlier finding was bits 6 and 5, which this file's own MEASURED
-//   note above (not a claim, not asserted) already reports as inert on OCS
-//   (ecs=0) and live on ECS (ecs=1). These four new ids restate the
-//   identical BUNDLED span -- bits 6 through 3 together, not split per bit
-//   -- from two further pages and two further readers. Whether the
-//   undisputed sub-span (6,5) can carry an id here while the disputed one
-//   (4,3) cannot, per the bundled-claim rule, or whether the whole bundle
-//   is withdrawn again as its sibling was, is decided once the RTL is read
-//   -- not assumed here.
+//   names the SAME dispute SPRXCTL-BITS-6-4-SPAN-IS-DISPUTED above
+//   declines: appendix C p303 names bits 4 and 3 SHSH1/SHSH0,
+//   "unimplemented ... in the ECS chips only", against the chapter's and
+//   appendix A's "unused". The undisputed sub-span is bits 6 and 5, which
+//   this file's own MEASURED note above (not a claim, not asserted)
+//   reports as inert on OCS (ecs=0) and live on ECS (ecs=1). These four
+//   ids restate the identical BUNDLED span -- bits 6 through 3 together,
+//   not split per bit -- from two further pages and two further readers
+//   (disposition below: recorded, the bundle withdrawn whole).
 //
-// NEW-2 SPRXCTL-CHIP-COLUMN-CONFLICT (2 ids: APPB2-conf.c1, APPB2-conf.c2):
+// R2 SPRXCTL-CHIP-COLUMN-CONFLICT (2 ids: APPB2-conf.c1, APPB2-conf.c2):
 //   appendix B p291 gives SPR0CTL's chip column as "A D(E)"; p292 gives
 //   SPR1CTL's as "A D", no qualifier -- the Denise/ECS-qualifier half of
 //   the same five-way chip-column conflict this package's own
@@ -291,7 +265,7 @@
 //   field: "REGRESSION-CLASS: ch4-source-conflicts (record both readings,
 //   assert neither)"; both restatements end "Recorded, not resolved."
 //
-// NEW-3 SPR0POS-PCT-MARK-FREQUENCY (1 id: APPB2-conf.c5): appendix B p291's
+// R3 SPR0POS-PCT-MARK-FREQUENCY (1 id: APPB2-conf.c5): appendix B p291's
 //   "%" mark on SPR0POS, chapter p128 ("normally only written by the sprite
 //   DMA channel itself") and appendix A p284 ("may be loaded by either
 //   processor at any time") all state a RELATIVE FREQUENCY for the same
@@ -303,32 +277,31 @@
 //   here because the mark is the only one of the three that is
 //   machine-readable per register."
 //
-// NEW-4 SPRXPOS-SPRXCTL-JOINT-SIZE-ECS (1 id: CH4-appC-position.c6):
+// R4 SPRXPOS-SPRXCTL-JOINT-SIZE-ECS (1 id: CH4-appC-position.c6):
 //   appendix C p303, the ECS appendix: "The ECS registers SPRxPOS and
 //   SPRxCTL work together as position, size and sprite feature control
 //   registers." Same substance as p284's "position, size and feature"
-//   wording this package's own AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-
-//   SPRXCTL assertion already cites (APPA-sprpair.c1) -- but sourced from
-//   the ECS appendix specifically, and that existing measurement was taken
-//   at this fixture's default ecs=0. Whether the existing OCS-mode
-//   measurement already establishes an ECS-scoped claim, or an independent
-//   ecs=1 measurement is needed, is a step-3 decision once the RTL's ecs
-//   port is open again -- not assumed here.
+//   wording (APPA-sprpair.c1, recorded beside this package's own
+//   AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL assertion, which
+//   measures the position and size components at this fixture's default
+//   ecs=0) -- but sourced from the ECS appendix specifically, so it needs
+//   an independent ecs=1 measurement (disposition below: graded on
+//   SPRXPOS-SPRXCTL-JOINT-SIZE-ECS).
 //
-// NEW-5 SPRXCTL-ECS-MAP-ROW (4 ids: APPC2-SPRxCTL.addr, APPC2-SPRxCTL.v20,
+// R5 SPRXCTL-ECS-MAP-ROW (4 ids: APPC2-SPRxCTL.addr, APPC2-SPRxCTL.v20,
 //   APPC2-SPRxCTL.acc, APPC2-SPRxCTL.chip): one printed row, appendix C
 //   p298's ECS register map, "142  SPRxCTL  chg   W  A   Sprite x position
 //   and control data", read column by column: address $142 (.addr),
 //   version-2.0 status "chg" i.e. changed-not-new (.v20), access "W" i.e.
 //   write (.acc), chip column "A" alone i.e. Agnus (.chip). classify's own
 //   conflict_resolution on two of these (.chip, and the related .conf1
-//   below) already separates an undisputed sub-claim -- SPRxCTL is an
+//   below) separates an undisputed sub-claim -- SPRxCTL is an
 //   Agnus register -- from a disputed one -- whether Denise also
 //   implements it, kept record-only -- the same split this package's own
-//   AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL assertion already makes
+//   AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL assertion makes
 //   for the appendix A/B readings of the same fact.
 //
-// NEW-6 SPRXCTL-ECS-MAP-ROW-CONFLICTS (2 ids: APPC2-SPRxCTL.conf1,
+// R6 SPRXCTL-ECS-MAP-ROW-CONFLICTS (2 ids: APPC2-SPRxCTL.conf1,
 //   APPC2-SPRxCTL.conf3): the same appendix C p298 row's chip column read
 //   against four other printed readings of the same column (map p298 "A"
 //   alone; appendix A p284 "A D( E )"; appendix B p291 "A D(E)" for
@@ -339,56 +312,49 @@
 //   $142, is not stated by the source (APPC2-SPRxCTL.conf3). Both
 //   restatements end "Recorded, not resolved."
 //
-// Disposition, as first assessed against the full claims file and the
-// RTL, opened after the commit above -- 9 ids graded, 5 recorded. An
-// independent validation found five of those nine grades did not
-// establish the whole of what their claim states (each measured only
-// sprite 0, or only ecs=0, or graded one side of a stated ambiguity).
-// REPAIRED below: 4 ids graded, 10 recorded.
+// DISPOSITION: 4 ids graded, 10 recorded. A graded id sits on an
+// assertion that establishes the whole of what its claim states -- all 8
+// channels where the claim names the indexed family, ecs=1 where the
+// source is ECS-scoped -- and an id that states an ambiguity, or bundles
+// a half this fixture cannot observe, is recorded instead.
 //
 //   GRADED (4 ids):
 //     SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS: APPC2-SPRxCTL.v20 (1 id
-//       -- moved here from SPRXCTL-CHG-IS-ECS-DEPENDENT, which measured
-//       sprite 0 only; this assertion measures all 8 channels and is true
-//       under either reading of whether "SPRxCTL chg" at $142 names one
-//       register or the whole indexed family)
-//     SPRXPOS-SPRXCTL-JOINT-SIZE-ECS (new): CH4-appC-position.c6 (1 id --
-//       moved here from SPRXPOS-BYTE-IS-SV70-VSTART/SPRXCTL-BYTE-IS-EV70-
-//       VSTOP, which measured ecs=0 only; this is appendix C's own
-//       ECS-scoped source and needs an ecs=1 measurement)
-//     SPRXCTL-ECS-MAP-ROW-LIVE-AT-ECS1 (new): APPC2-SPRxCTL.addr,
-//       APPC2-SPRxCTL.acc (2 ids -- moved here from SPRXPOS-SPRXCTL-
-//       ADDRESS-MAP and AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL,
-//       which measured the ECS register map's row at ecs=0 only)
+//       -- this assertion measures all 8 channels, not sprite 0 alone as
+//       SPRXCTL-CHG-IS-ECS-DEPENDENT does, and is true under either
+//       reading of whether "SPRxCTL chg" at $142 names one register or the
+//       whole indexed family)
+//     SPRXPOS-SPRXCTL-JOINT-SIZE-ECS: CH4-appC-position.c6 (1 id --
+//       appendix C's own ECS-scoped source needs an ecs=1 measurement;
+//       SPRXPOS-BYTE-IS-SV70-VSTART/SPRXCTL-BYTE-IS-EV70-VSTOP measure at
+//       ecs=0 only)
+//     SPRXCTL-ECS-MAP-ROW-LIVE-AT-ECS1: APPC2-SPRxCTL.addr,
+//       APPC2-SPRxCTL.acc (2 ids -- the ECS register map's row, measured
+//       at ecs=1; SPRXPOS-SPRXCTL-ADDRESS-MAP and
+//       AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL measure it at ecs=0
+//       only)
 //     1+1+2 = 4.
 //
-//   RECORDED (10 ids -- the 5 original plus 5 more withdrawn on repair):
+//   RECORDED (10 ids):
 //     SPRXCTL-CHIP-COLUMN-DENISE-ECS-QUALIFIER-CONFLICT: APPB2-conf.c1,
 //       APPB2-conf.c2 (2 ids)
 //     SPRXCTL-CHIP-COLUMN-FIVE-WAY-CONFLICT: APPC2-SPRxCTL.conf1,
 //       APPC2-SPRxCTL.chip (2 ids)
 //     SPR0POS-PCT-MARK-FREQUENCY: APPB2-conf.c5 (1 id)
-//     SPRXCTL-BITS-6-3-BUNDLED-SPAN-HALF-UNTESTED (new): CH4-p107.c8,
+//     SPRXCTL-BITS-6-3-BUNDLED-SPAN-HALF-UNTESTED: CH4-p107.c8,
 //       CH4-sprctl.c6, CH4-p128.c14, CH4-sctl.c13 (4 ids -- the claim
-//       bundles bits 6/5, which SPRXCTL-BITS-6-3-UNUSED-AT-ECS0 still
+//       bundles bits 6/5, which SPRXCTL-BITS-6-3-UNUSED-AT-ECS0
 //       establishes at ecs=0, with bits 4/3, which reach no wire in this
 //       module under any ecs value; a bundled claim is withdrawn whole)
-//     SPRXCTL-CHG-CHANGE-SCOPE-AMBIGUOUS (new): APPC2-SPRxCTL.conf3 (1 id
-//       -- this id IS an ambiguity record ("recorded, not resolved"); the
-//       assertion it sat on graded one resolution of it)
+//     SPRXCTL-CHG-CHANGE-SCOPE-AMBIGUOUS: APPC2-SPRxCTL.conf3 (1 id --
+//       this id IS an ambiguity record ("recorded, not resolved"); grading
+//       it would grade one resolution of it)
 //     2+2+1+4+1 = 10.
 //
-// RESULTS: 14 passed, 0 failed. No RTL deviation found among the 4 ids
-// carried by a checks.expect() after repair: the ECS register map's "chg"
-// row for SPRxCTL is real and ecs-gated for all 8 channels, and appendix
-// C's "position, size and feature" claim and the ECS map's $142
-// request/write claims both hold at Harness(ecs=1), not only at this
-// fixture's default ecs=0.
-//
-// MUTATION LOG (extension, same protocol as the original MUTATION LOG
-// above -- build with -DMUT_NAME=1, rebuild, run, confirm the named
+// MUTATION LOG, ROUTED-CLAIM ASSERTIONS (same protocol as the MUTATION
+// LOG above -- build with -DMUT_NAME=1, rebuild, run, confirm the named
 // assertion and only that assertion changed colour, rebuild with no
-// flags, confirm 14/0 restored):
+// flags, confirm the baseline restored):
 //
 // MUTATION SPRXCTL-BITS-6-3-UNUSED-AT-ECS0 stimulus red: -DMUT_BITS63=1
 // switches ecs on (was off) for the bits-6-3-set side of the comparison
@@ -399,9 +365,9 @@
 // withholds bit 6 in the probe (was set) -> FAIL ("13 passed, 1 failed"),
 // only this assertion newly red (the ecs=0 and ecs=1 measurements become
 // equal, since the one bit that differs between them was never written).
-// Rebuilt with no flags: 14/0 restored. (This assertion now carries no
-// claim id -- see the disposition above; kept as a sprite-0 sub-case of
-// SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS, still mutation-tested.)
+// Rebuilt with no flags: 14/0 restored. (This assertion carries no claim
+// id -- see the disposition above; it is the sprite-0 sub-case of
+// SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS, mutation-tested on its own.)
 // MUTATION SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS stimulus red:
 // -DMUT_ALLCHANNELS=1 restricts the bit6 stimulus to sprite channel 0
 // only (channels 1-7 always get it clear, were all set) -> FAIL ("13
@@ -516,7 +482,7 @@ public:
     int failed = 0;
 };
 
-// Word-address register map, reused from hrm/agnus_spritedma/
+// Word-address register map, as in hrm/agnus_spritedma/
 // test_agnus_spritedma.cpp for this same module, generalised to all 8
 // sprite channels per this package's own classify.evidence ("reg_address_
 // in[8:6]==$140[8:6] with [2:1] selecting POS/CTL and [5:3] the channel"):
@@ -528,9 +494,8 @@ constexpr int DataByteAddr(int n) { return 0x144 + 8 * n; }
 constexpr int DatbByteAddr(int n) { return 0x146 + 8 * n; }
 
 // One isolated DUT: fresh reset, clk7_en 4-cycle-per-hpos clocking and the
-// reg_address_in/data_in write sequencing are reused verbatim from the
-// already-built, already-verified sibling harness for this SAME module
-// (see ORDER OF WORK above), not learned from this package's own RTL.
+// reg_address_in/data_in write sequencing are those of the sibling
+// harness for this SAME module (see HARNESS AND STIMULUS SOURCES above).
 class Harness {
 public:
     explicit Harness(uint8_t ecs = 0, uint8_t aga = 0) : dut(new Vagnus_spritedma) {
@@ -614,10 +579,9 @@ struct Window {
 // automatic POS/CTL re-fetch competes with a value already written
 // directly before this call), granting ackdma immediately whenever reqdma
 // is seen -- reqdma is always sampled by its OWN eval() BEFORE ackdma is
-// asserted and evaluated again, never the reverse (the exact bug this
-// package's own build brief warns caused a prior harness's data path to
-// look silently dead: "the DMA grant was set inside the same eval() that
-// sampled the request").
+// asserted and evaluated again, never the reverse: setting the DMA grant
+// inside the same eval() that samples the request makes a harness's data
+// path look silently dead.
 Window measure_window(Harness& h, int sprite_idx, int vpos_max) {
     Window w;
     const int data_byte = DataByteAddr(sprite_idx);
@@ -692,8 +656,8 @@ int main(int argc, char** argv) {
 
     // ------------- [control] FIXTURE-DELIVERS-DISTINCT-VALUES-IN-ORDER -------------
     {
-        // Stimulus reused directly from this package's own
-        // classify.evidence measurement (see ORDER OF WORK above):
+        // Stimulus from this package's own classify.evidence
+        // measurement (see HARNESS AND STIMULUS SOURCES above):
         // SPR0POS=$28 (VSTART=40), SPR0CTL=$2C (VSTOP=44) -> window
         // [40,44); SPR0CTL=$2E (VSTOP=46) -> window [40,46).
         Harness h1;
@@ -855,17 +819,12 @@ int main(int argc, char** argv) {
         write_pos(ha, 0, 0xFF);               // VSTART low byte maxed (255).
         write_ctl(ha, 0, 0xFF, false, true);   // SV8=0, VSTOP=511 (EV8 set) so
                                                 // VSTOP cannot coincide with
-                                                // VSTART=255 -- a real RTL fact
-                                                // (agnus_spritedma.v:242, VSTOP
-                                                // is checked before VSTART on a
-                                                // simultaneous match) discovered
-                                                // only after opening the RTL; an
-                                                // earlier draft of this stimulus
-                                                // used VSTOP=255 too, which would
-                                                // have made this sprite never
-                                                // activate at all. Stimulus fix
-                                                // only -- the expected value
-                                                // (start==255) is unchanged.
+                                                // VSTART=255: agnus_spritedma.v:242
+                                                // checks VSTOP before VSTART on a
+                                                // simultaneous match, so VSTOP=255
+                                                // would keep this sprite from ever
+                                                // activating (see STIMULUS
+                                                // CHOICES above).
         Window wa = measure_window(ha, 0, 260);
 
         Harness hb;
@@ -944,9 +903,8 @@ int main(int argc, char** argv) {
     // not asserted -- no claim id, no pass/fail. bit6 feeds vstart[9] (so
     // its effect shows on Window::start) and bit5 feeds vstop[9] (so its
     // effect shows on Window::end) -- two DIFFERENT fields, per
-    // agnus_spritedma.v:221/225, read directly once the RTL was open
-    // (this file's own classify.evidence already said as much before
-    // that, at the spec-only stage). VSTART=4/VSTOP=8 (baseline, both
+    // agnus_spritedma.v:221/225 and this package's own
+    // classify.evidence. VSTART=4/VSTOP=8 (baseline, both
     // bits clear) are chosen distinct from each other and small, so a
     // +512 shift on either stays inside a single, shared sweep ceiling
     // without the two colliding.
@@ -976,10 +934,10 @@ int main(int argc, char** argv) {
             std::to_string(ecs0_bit5.end) + "; ecs=1: base=" +
             std::to_string(ecs1_base.end) + " bit5=" +
             std::to_string(ecs1_bit5.end) + ". Per this package's own "
-            "classify.evidence, and confirmed directly against "
-            "agnus_spritedma.v:221 ('{data_in[15:8],data_in[6],"
-            "data_in[5],data_in[2],data_in[1]}') and :225/242/244 once "
-            "the RTL was opened: bit6 is vstart[9] and bit5 is vstop[9], "
+            "classify.evidence and agnus_spritedma.v:221 "
+            "('{data_in[15:8],data_in[6],data_in[5],data_in[2],"
+            "data_in[1]}') and :225/242/244: bit6 is vstart[9] and bit5 "
+            "is vstop[9], "
             "each gated by the ecs input -- a fact no printed source in "
             "this package's 178 claims states. If a delta lands outside "
             "the swept range, that too is part of what was measured, not "
@@ -1230,25 +1188,20 @@ int main(int argc, char** argv) {
     }
 
     // ============================================================
-    // EXTENSION: the 14 claims documented in the header
-    // EXTENSION section above, dispositioned against the full claims file
-    // and the RTL, opened after the specification commit. Everything above
-    // this point is unchanged, except four label-only additions (an id in
-    // full, per the one allowed change) on SPRXPOS-SPRXCTL-ADDRESS-MAP,
-    // SPRXPOS-BYTE-IS-SV70-VSTART, SPRXCTL-BYTE-IS-EV70-VSTOP and
-    // AGNUS-IS-WRITE-TARGET-FOR-SPRXPOS-AND-SPRXCTL, which already
-    // establish the new claim.
+    // ROUTED CLAIMS: the 14 ids described in the header's ROUTED CLAIMS
+    // section -- 4 graded below, 10 recorded (see DISPOSITION there).
     // ============================================================
 
     // ------------- SPRXCTL-BITS-6-3-UNUSED-AT-ECS0 -------------
     {
-        // (CH4-p107.c8, CH4-sprctl.c6, CH4-p128.c14,
-        // CH4-sctl.c13 -- identical text on all four): "Hold ecs=0 (this
+        // Routing of CH4-p107.c8, CH4-sprctl.c6, CH4-p128.c14,
+        // CH4-sctl.c13 (identical text on all four; the ids themselves are
+        // recorded below): "Hold ecs=0 (this
         // RTL uses bits 6/5 as ECS V9 bits) and assert SPRxCTL with bits
         // 6..3 set leaves the reqdma/reg_address_out window identical to
         // bits clear; the package's probe already measures bits 6/5 at
-        // ecs=0." Reuses that same probe technique (see the MEASURED note
-        // above), now as a graded comparison instead of a report.
+        // ecs=0." Uses the same probe technique as the MEASURED note
+        // above, graded here instead of reported.
         Harness h0(/*ecs=*/false);
         write_pos(h0, 0, 0x04);
         write_ctl(h0, 0, 0x08, false, false, false, false, false, false);
@@ -1314,13 +1267,14 @@ int main(int argc, char** argv) {
 
     // ------------- SPRXCTL-CHG-IS-ECS-DEPENDENT -------------
     {
-        // (APPC2-SPRxCTL.v20): "The ecs input is the one
-        // chipset switch here, and it changes what SPRxCTL does ...
-        // promote the package's bits-6/5 probe to an assertion that the
-        // same SPRxCTL value behaves differently at ecs=0 and ecs=1,
-        // without claiming the SHSH change p303 names." Same probe as the
-        // MEASURED note above (VSTART=4, SPR0CTL upper byte=8, bit 6
-        // set), now graded.
+        // Routing of APPC2-SPRxCTL.v20 (the id itself sits on
+        // SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS below): "The ecs input
+        // is the one chipset switch here, and it changes what SPRxCTL
+        // does ... promote the package's bits-6/5 probe to an assertion
+        // that the same SPRxCTL value behaves differently at ecs=0 and
+        // ecs=1, without claiming the SHSH change p303 names." Same probe
+        // as the MEASURED note above (VSTART=4, SPR0CTL upper byte=8, bit
+        // 6 set), graded here.
         auto probe = [](bool ecs) -> Window {
             Harness h(ecs);
             write_pos(h, 0, 0x04);
@@ -1356,7 +1310,8 @@ int main(int argc, char** argv) {
 
     // ------- SPRXCTL-CHG-APPLIES-TO-ALL-EIGHT-CHANNELS -------
     {
-        // (APPC2-SPRxCTL.conf3): "sprctl is one bank of eight
+        // Routing of APPC2-SPRxCTL.conf3 (the id itself is recorded
+        // below): "sprctl is one bank of eight
         // under one ecs gate; write each of $142, $14A, ..., $17A with the
         // same ecs-sensitive value and assert every channel's window
         // changes with ecs, not sprite 0's only." Independent measurement,
