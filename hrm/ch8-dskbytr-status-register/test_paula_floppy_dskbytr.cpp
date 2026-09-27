@@ -7,8 +7,7 @@
 //   p.278), and the "synchronize to rotation" framing (p.248). Package
 //   ch8-dskbytr-status-register, fixture paula_floppy.v +
 //   paula_floppy_fifo.v (paula_floppy_ebr.v deliberately excluded -- it
-//   declares a second `module paula_floppy`, a rig hazard given by the build
-//   brief).
+//   declares a second `module paula_floppy`, a rig hazard).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 247, 248, 278.
@@ -25,82 +24,56 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// REPAIR NOTE (independent validation, 2026-09-15): a Stage-8 independent
-//   read withdrew all five of this package's original A5/A6/A7/A9/A10 --
-//   sound in every case (see below), because the shared fixture defect
-//   named by that validation was real: read_reg() spans no clock edge at
-//   all (two eval()-only combinational peeks), so a "cleared on read"
-//   claim could never have been exercised regardless of what the RTL
-//   implements, and A9's original DATA-field check compared two arbitrary
-//   snapshots with no independent ground truth for either. This file adds
-//   read_reg_clocked() (a genuine, address-held, clk7_en-qualified read
-//   cycle) for A6, a known-byte-binding technique via the DSKDATR/FIFO
-//   marker path (reused from the already-accepted sibling
-//   ch8-mfm-cell-encoding package) for A9, and a real-output-port
-//   (`syncint`) match/mismatch oracle for A7. A5 and A10 are declined --
-//   see each assertion's own comment for why a sound repair is not
-//   available at this boundary. DSKDATR ($008) and the FIFO/MFM-encoder
-//   pipeline behind it remain a different register and a different
-//   package's subject in general, but A9 now reads DSKDATR (via
-//   non-destructive peeks and real pops) to bind a known byte to the
-//   DSKBYTR sampling instant -- this is grading DSKBYTR only, using
-//   DSKDATR solely as an independently-live ground-truth source, exactly
-//   as the task instructions for this repair direct.
-//
-// REPAIR NOTE / LOT F (independent validation, 2026-09-15, against
-//   DOKTRIN.md/LOS-F.md). Four more items and a defect inside the previous
-//   repair itself:
+// WHAT IS GRADED AND WHY.
+//   - A6 reads through read_reg_clocked() (a genuine, address-held,
+//     clk7_en-qualified read cycle): read_reg() spans no clock edge at all
+//     (two eval()-only combinational peeks), so a "cleared on read" claim
+//     could never be exercised through it, whatever the RTL implements.
+//   - A7 samples WORDEQUAL at a proved match and across a proved mismatch,
+//     with the real output port `syncint` as the match/mismatch oracle
+//     (see run_wordequal_trial()).
+//   - A9 binds a known byte to the DSKBYTR sampling instant via the
+//     DSKDATR/FIFO marker technique ch8-mfm-cell-encoding also uses; two
+//     arbitrary DSKBYTR snapshots would have no independent ground truth
+//     for either. DSKDATR ($008) and the FIFO/MFM-encoder pipeline behind
+//     it are a different register and another package's subject; A9 reads
+//     DSKDATR (non-destructive peeks and real pops) only as an
+//     independently-live ground-truth source and grades DSKBYTR alone. The
+//     binding is a PRECONDITION, not a conjunct: 0xFFFF, the marker word,
+//     is NOT a page-legal MFM encoding of 0xFF (p.250 makes 0xFF ->
+//     0x5555; 0xFFFF is what this RTL's own non-conformant, context-free
+//     encoder -- candidate C9 -- produces for a run of one-bits), so a
+//     correct encoder would never produce it. When the marker cannot be
+//     located A9 declines (record()); when it can -- as against this RTL --
+//     the DATA field is graded (expect()): RED, bound=1, DSKBYTR=0xd000,
+//     DATA=0x00.
+//   - A2 (DSKBYTR-IS-A-REAL-READABLE-REGISTER) uses bits 13 (DISKWRITE)
+//     and 14 (DMAON) as its decode marker, both page-defined and both shown
+//     to move by A3/A4: p.278 gives DSKBYTR no reset or idle word at all,
+//     so idle bit 15 (DSKBYT) = 1 cannot serve.
+//   - A4's graded label carries no uid: opus:8-dskbytr.c8,
+//     sol:8-dskbytr.c9 and opus:8-appA-dskbytr.c10 state a compound
+//     DSKLEN-and-DMACON condition, and the ledger reads uids, not the
+//     "DSKLEN clause"/"DMACON clause" qualifiers beside them. The three
+//     uids sit once, on the DMAON-DMACON-HALF record() line, which names
+//     the graded assertion where their DSKLEN half is measured.
+//   - A5, A8 and A10 are DECLINED (record()) -- see each one's own
+//     comment. A8 (UNUSED-BITS-11-8-CARRY-NO-DEFINED-FUNCTION): p.264 says
+//     outright not to rely on unused bits' values at all, and any value
+//     is page-compatible.
 //   - A1 (FIXTURE-LIVENESS-KNOWN-DISTINCT-DSKLEN-STATES) and A6-CONTROL
-//     (REAL-READ-CYCLE-IS-LIVE) carry no claim uid -- withdrawn to note(),
-//     per the mechanical rule that a no-uid assertion was never
-//     conformance evidence. A6-CONTROL's own note also now says plainly
-//     what its measurement does and does not establish: it proves
-//     read_reg_clocked() samples correctly, not that a real bus cycle
-//     reaches a synchronous read-side-effect mechanism, since the two
-//     bits it reads (DMAON, DISKWRITE) are combinational and would move
-//     the same way through the old eval()-only helper too.
-//   - A2 (DSKBYTR-IS-A-REAL-READABLE-REGISTER) used idle bit 15 (DSKBYT)
-//     = 1 as its decode marker, but p.278 gives DSKBYTR no reset or idle
-//     word at all. Repaired, not withdrawn: narrowed to bits 13
-//     (DISKWRITE) and 14 (DMAON), both page-defined and both proven to
-//     move by A3/A4.
-//   - A8 (UNUSED-BITS-11-8-CARRY-NO-FUNCTION) required bits 11-8 to read
-//     zero; p.264 says outright not to rely on unused bits' values at
-//     all, and any value is page-compatible. Declined (record()).
-//   - A4's own graded label repeated three uids (opus:8-dskbytr.c8,
-//     sol:8-dskbytr.c9, opus:8-appA-dskbytr.c10) that ALSO sit on this
-//     same block's DMAON-DMACON-HALF record() line -- a uid-placement
-//     defect (the ledger reads uids, not the "DSKLEN clause"/"DMACON
-//     clause" qualifiers beside them). Repaired: the graded label no
-//     longer carries these three uids; they are recorded, once, on the
-//     record() line, which now also names the graded assertion where
-//     their DSKLEN half is empirically measured.
-//   - A9 (DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES) is RED and IS a
-//     genuine finding (bound=1, DSKBYTR=0xd000, DATA=0x00) -- but its own
-//     guard was unsound: it searched DSKDATR for the word 0xFFFF as a
-//     "known 0xFF byte" marker, and 0xFFFF is NOT a page-legal MFM
-//     encoding of 0xFF (p.250 makes 0xFF -> 0x5555; 0xFFFF is only what
-//     this RTL's own non-conformant, context-free encoder -- candidate
-//     C9 -- produces for a run of one-bits). Because the old guard was a
-//     CONJUNCT of the grading expression, a CORRECT encoder would never
-//     produce the marker, bound_ok would be false, and the assertion
-//     would fail anyway -- reporting a DATA-field defect that would not
-//     be there, for the wrong reason. Repaired so the binding is a
-//     PRECONDITION that declines (record()) when the marker cannot be
-//     located, and grades (expect()) the DATA field only when it can --
-//     against the RTL actually under test here, the marker is reliably
-//     found and the red finding is unchanged.
-//   No RTL was touched, no debug port was added, and no oracle was
-//   adjusted by any of this.
+//     (REAL-READ-CYCLE-IS-LIVE) carry no claim uid and are note()s, not
+//     conformance evidence. A6-CONTROL proves read_reg_clocked() samples
+//     correctly, not that a real bus cycle reaches a synchronous
+//     read-side-effect mechanism, since the two bits it reads (DMAON,
+//     DISKWRITE) are combinational and would move the same way through
+//     read_reg() too.
 //
 // CLAIM SOURCE:
 //   hrm-testpipeline/work/ch8-s2-build/
 //   ch8-dskbytr-status-register.jsonl -- 48 claim records.
 //
-// BOUNDARY: nanomig/src/minimig-aga/paula_floppy.v module header (read
-//   directly by this agent AFTER SPECIFICATION.md was committed, per the
-//   build brief's order of work -- no port name, register address or RTL
-//   line appears anywhere in that file) -- ports clk, clk7_en, clk7n_en,
+// BOUNDARY: nanomig/src/minimig-aga/paula_floppy.v module header -- ports clk, clk7_en, clk7n_en,
 //   reset, ntsc, sof, enable, reg_address_in[8:1], data_in[15:0],
 //   data_out[15:0], dmal, dmas, _step, direc, _sel[3:0], side, _motor,
 //   _track0, _change, _ready, _wprot, index, blckint, syncint, wordsync,
@@ -116,9 +89,8 @@
 //   (DMAON), dsklen[14] (DISKWRITE), 1'b1 (WORDEQUAL), 4'b0000 (bits 11-8),
 //   8'h00 (DATA)} when addressed, else 16'h0000. Bits 15, 12, 11-8 and 7-0
 //   are literal constants in that expression -- no signal anywhere in the
-//   module can move them, confirming the build brief's disclosed
-//   background (candidate C6) directly against the source. Only bits 14
-//   and 13 are ever anything other than their fixed value.
+//   module can move them (candidate C6). Only bits 14 and 13 are ever
+//   anything other than their fixed value.
 //
 // (2) DISKWRITE (bit 13) is dsklen[14], and DSKLEN's low 15 bits latch on
 //   ANY single write while clk7_en is high (paula_floppy.v:711-721, no
@@ -130,29 +102,24 @@
 //   raises once dskstate has actually transitioned to DISKDMA_ACTIVE.
 //   That transition needs dma_active = dmaen && !lenzero && enable
 //   (paula_floppy.v:248) to be true for one clk7_en edge before the NEXT
-//   edge moves dskstate. `dmaen` itself needs the double DSKLEN write the
-//   build brief's own rig-hazard note already named
+//   edge moves dskstate. `dmaen` itself needs the double DSKLEN write
 //   (paula_floppy.v:735-743: "start disk dma if second write in a row with
-//   dsklen[15] set") -- confirmed directly against the source, not
-//   re-derived. `enable` is this module's own external port; at the
-//   paula_floppy boundary it is simply held asserted throughout (it
-//   represents DMACON's own product at the wider `paula` boundary this
-//   package was not assigned -- see the DMAON-DMACON-HALF decline below).
+//   dsklen[15] set"; see RIG HAZARDS). `enable` is this module's own
+//   external port; at the paula_floppy boundary it is simply held asserted
+//   throughout (it represents DMACON's own product at the wider `paula`
+//   boundary, outside this fixture -- see the DMAON-DMACON-HALF decline
+//   below).
 //
-// (4) The SD-byte-feed protocol reused for A9's DATA-field measurement
+// (4) The SD-byte-feed protocol used for A9's DATA-field measurement
 //   (request a sector on `dma_active` entering state 0 with the read
 //   direction, wait for `sdc_busy`, then drive 512 bytes on
 //   sdc_byte_in_strobe/sdc_byte_addr/sdc_byte_in_data, paula_floppy.v:
-//   263-336) is the same protocol the sibling package hrm/paula_floppy's
-//   own accepted test already exercises end-to-end on this exact RTL --
-//   its timing (poll for sdc_rd, assert sdc_busy, drive 512 strobed
-//   bytes) is reused here, not re-derived from this package's own reading,
-//   for exactly the byte-delivery mechanics; DSKDATR/the FIFO/the MFM
-//   encoder downstream of that feed are that sibling's own subject and are
-//   never read by this file's own assertions -- only DSKBYTR is.
+//   263-336; poll for sdc_rd, assert sdc_busy, drive 512 strobed bytes)
+//   covers exactly the byte-delivery mechanics. DSKDATR/the FIFO/the MFM
+//   encoder downstream of that feed are other packages' subject; A9 reads
+//   DSKDATR only as a ground-truth source and grades DSKBYTR alone.
 //
-// RIG HAZARDS, both already disclosed by the build brief and confirmed
-//   directly against the source now that it is open:
+// RIG HAZARDS, both confirmed against the source:
 //   - `dsktrack` (paula_floppy.v:129) carries no reset term
 //     (paula_floppy.v:671-680 only ever increments/decrements it, never
 //     clears it) -- every assertion below allocates its own fresh
@@ -160,23 +127,21 @@
 //     the two/three trials inside one assertion.
 //   - DSKLEN needs the double write (paula_floppy.v:743) to arm dmaen; a
 //     single write leaves DISKWRITE (bit 13, dsklen[14]) already following
-//     the write, but DMAON (bit 14) clear -- confirmed directly, matching
-//     the build brief's own disclosed measurement (0x9000/fdd_led=0 after
-//     one write, 0xD000/fdd_led=1/sdc_rd=1 after two).
+//     the write, but DMAON (bit 14) clear (0x9000/fdd_led=0 after one
+//     write, 0xD000/fdd_led=1/sdc_rd=1 after two).
 //
-// CONTROL CASES: A2 (register genuinely address-decoded, narrowed to bits
-//   13/14 -- Lot F), A3 (DISKWRITE genuinely mirrors DSKLEN) and A4 (DMAON
+// CONTROL CASES: A2 (register genuinely address-decoded, on bits 13/14),
+//   A3 (DISKWRITE genuinely mirrors DSKLEN) and A4 (DMAON
 //   genuinely responds to DSKLEN's own double-write arming) are this
 //   package's PASS-shaped, GRADED measurements on read_reg(), proving the
 //   harness's combinational read path is live. A1 (fixture liveness),
 //   A6-CONTROL (read_reg_clocked() liveness) and A8 (the unused bits'
 //   measured, ungraded value) are the same kind of proof but carry no
-//   claim uid or, for A8, grade against a value the page does not require
-//   -- all three are MEASURED via note()/record(), not GRADED, per Lot F.
+//   claim uid or, for A8, would grade against a value the page does not
+//   require -- all three are MEASURED via note()/record(), not GRADED.
 //
-// ON RED-BASELINE MUTATION, per the build brief: "a stimulus mutation
-//   proves an assertion CAN fail, and one already failing cannot fail
-//   harder." A6, A7 and A9 are all expected RED (DSKBYTR's own constant
+// ON RED-BASELINE MUTATION: a stimulus mutation proves an assertion CAN
+//   fail, and one already failing cannot fail harder. A6, A7 and A9 are all expected RED (DSKBYTR's own constant
 //   bits per candidate C6). Each one's mutation record instead substitutes
 //   a DIFFERENT, PROVEN-LIVE mechanism from elsewhere in this same file --
 //   DISKWRITE (bit 13, proven live by A3) or DMAON (bit 14, proven live by
@@ -186,23 +151,20 @@
 //   exactly the shape ch5-audio-dmacon-adkcon's own
 //   DMACONR-NOT-DECODED-BY-PAULA mutation record already established as
 //   this suite's precedent for a red-baseline assertion. A5 and A10 are
-//   DECLINED (record(), not expect()) and carry no mutation record: per
-//   the build brief, "a uid on a graded line counts as ASSERTED... Declines
-//   go on record() lines and nowhere else" -- there is no graded line to
-//   pair a mutation against. A1, A6-CONTROL and A8 lost their mutation
-//   records for the same reason when Lot F withdrew them from expect() --
-//   converting an expect() to note()/record() orphans its mutation record.
+//   DECLINED (record(), not expect()) and carry no mutation record: a uid
+//   on a graded line counts as asserted, and declines go on record()
+//   lines and nowhere else -- there is no graded line to pair a mutation
+//   against. A1, A6-CONTROL and A8 (note()/record()) carry none for the
+//   same reason.
 //
-// MUTATION LOG (every entry actually run by this agent under WSL/
-//   Verilator: `make clean && make MUT=<NAME>` -> run -> confirm the named
-//   assertion, and only that one, newly flips colour against the baseline
-//   -> `make clean && make` -> confirm the baseline exactly restored,
-//   before moving to the next one). Only assertions still graded via
-//   expect() carry one -- A1, A6-CONTROL and A8's entries were removed
-//   with their conversion to note()/record() (Lot F):
+// MUTATION LOG (each entry replayed under WSL/Verilator: `make clean &&
+//   make MUT=<NAME>` -> run -> confirm the named assertion, and only that
+//   one, newly flips colour against the baseline -> `make clean && make`
+//   -> confirm the baseline exactly restored, before moving to the next
+//   one). Only assertions graded via expect() carry one:
 //
-// MUTATION DSKBYTR-IS-A-REAL-READABLE-REGISTER stimulus red (repaired
-//   stimulus, Lot F): the "read at the decoded DSKBYTR address" trial's
+// MUTATION DSKBYTR-IS-A-REAL-READABLE-REGISTER stimulus red: the "read at
+//   the decoded DSKBYTR address" trial's
 //   address changed to the unmapped address used by the OTHER half of
 //   this same assertion -> that half's own DISKWRITE-set expectation
 //   (bit 13) now reads 0 instead of 1 (the unmapped address always
@@ -234,22 +196,18 @@
 //   known-bound marker instant -> bit 13 reads two genuinely different
 //   values (1 then 0) where the real assertion's known-byte comparison
 //   never moves DATA at all -> only this assertion newly green. Reverted.
-//   (Lot F's guard repair to the unmutated branch does not touch this
-//   branch; re-run and confirmed still isolates correctly after the
-//   repair.)
+//   (The unmutated branch's bound_ok precondition does not touch this
+//   branch.)
 //
-// RESULTS (WSL/Verilator, re-measured 2026-09-15, Lot F): 3 passed, 3
-//   failed, 3 declined, 3 measured-not-graded (plus A9's own internal
-//   decline branch, not taken against this RTL). A2
-//   (DSKBYTR-IS-A-REAL-READABLE-REGISTER, repaired oracle), A3
+// RESULTS (make -B test): 3 passed, 3 failed, 3 declined, 3
+//   measured-not-graded (plus A9's own internal decline branch, not taken
+//   against this RTL). A2 (DSKBYTR-IS-A-REAL-READABLE-REGISTER), A3
 //   (DISKWRITE-BIT13-TRACKS-DSKLEN-WRITE-BIT) and A4
-//   (DMAON-BIT14-TRACKS-DSKLEN-DMA-ENABLE, uid-placement repaired) are
-//   GREEN. A6 (DSKBYT-NOT-CLEARED-ON-READ), A7
-//   (WORDEQUAL-DOES-NOT-TRACK-DSKSYNC-MATCH) and A9
-//   (DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES, guard repaired) are RED
-//   -- sound measurements, unchanged in substance by Lot F's repairs. A5,
-//   A8 and A10 are DECLINED (RECORDED). A1 and A6-CONTROL are MEASURED
-//   (note(), not graded). See out.txt for the run this header describes.
+//   (DMAON-BIT14-TRACKS-DSKLEN-DMA-ENABLE) are GREEN. A6
+//   (DSKBYT-NOT-CLEARED-ON-READ), A7 (WORDEQUAL-DOES-NOT-TRACK-DSKSYNC-MATCH)
+//   and A9 (DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES) are RED. A5, A8
+//   and A10 are DECLINED (RECORDED). A1 and A6-CONTROL are MEASURED
+//   (note(), not graded). `make test` writes the run to out.txt.
 
 #include <cstdint>
 #include <cstdio>
@@ -263,8 +221,8 @@
 
 namespace {
 
-// Fixed per the build brief: expect() grades, note() measures without
-// grading, record() declines with a reason and is never a measurement.
+// expect() grades, note() measures without grading, record() declines
+// with a reason and is never a measurement.
 class Checks {
 public:
     void expect(bool condition, const std::string& label) {
@@ -279,9 +237,9 @@ public:
 // Register word addresses (reg_address_in carries bits [8:1] of the
 // manual's own byte address), confirmed directly against
 // paula_floppy.v:120-124's own parameter declarations.
-constexpr int A_DSKDATR  = 0x008 >> 1;  // read path, not this package's subject -- used only to drive the SD-feed protocol in A9, never read by an assertion.
+constexpr int A_DSKDATR  = 0x008 >> 1;  // read path, not this package's subject -- peeked and popped in A9 only as the known byte's ground-truth source, never graded.
 constexpr int A_DSKLEN   = 0x024 >> 1;
-constexpr int A_DSKDAT   = 0x026 >> 1;  // write-only; used as a plainly-not-DSKBYTR unmapped-shaped address in A2's control half.
+constexpr int A_DSKDAT   = 0x026 >> 1;  // write-only; not used by any trial here (A2's control half reads A_UNMAPPED).
 constexpr int A_DSKBYTR  = 0x01a >> 1;
 constexpr int A_DSKSYNC  = 0x07e >> 1;
 constexpr int A_UNMAPPED = 0x000;       // decodes to none of the above.
@@ -370,11 +328,10 @@ public:
     // same bus-cycle shape every register WRITE in this module uses
     // (paula_floppy.v:703-743's own `if (clk7_en)` gate) -- so a
     // synchronous "clear on read" implementation would have a real chance
-    // to observe this as an actual read cycle. Repairs the fixture defect
-    // named by the independent validation (2026-09-15): the plain
-    // read_reg() above spans no clock edge at all and is a bare
-    // combinational peek, incapable of ever exercising a synchronous
-    // read-side-effect regardless of whether the RTL implements one.
+    // to observe this as an actual read cycle. The plain read_reg() above
+    // spans no clock edge at all and is a bare combinational peek,
+    // incapable of ever exercising a synchronous read-side-effect
+    // regardless of whether the RTL implements one.
     uint16_t read_reg_clocked(int addr_w) {
         dut->reg_address_in = static_cast<uint16_t>(addr_w & 0x1FF);
         dut->data_in = 0;
@@ -404,9 +361,7 @@ public:
 
     // Waits (bounded) for the module to request a sector via sdc_rd, then
     // acks it and streams the given 512 bytes in through the strobed SD
-    // interface (paula_floppy.v:263-336) -- the same protocol the sibling
-    // paula_floppy package's own accepted test exercises end-to-end on
-    // this exact RTL (METHODOLOGY (4)).
+    // interface (paula_floppy.v:263-336; METHODOLOGY (4)).
     void feed_sector(const uint8_t* bytes /* 512 */) {
         bool requested = false;
         for (int i = 0; i < 200 && !requested; ++i) {
@@ -443,8 +398,7 @@ public:
 
     // Arms DMA in the given direction (write_dir=false: read, true: write)
     // with the given 14-bit length, via the double-write DSKLEN needs
-    // (paula_floppy.v:735-743, a rig hazard the build brief already
-    // disclosed and this METHODOLOGY confirms directly). Leaves enough
+    // (paula_floppy.v:735-743; see RIG HAZARDS). Leaves enough
     // margin (settle_ticks) for dskstate to actually transition into
     // DISKDMA_ACTIVE afterward.
     void arm_dma(bool write_dir, uint16_t length, int settle_ticks = 40) {
@@ -475,8 +429,7 @@ struct WordequalTrial {
 // syncint becomes EXACTLY sync_match = dsksync==floppy_data &&
 // fifo_reading_sector && trackrd (paula_floppy.v:915) throughout -- a
 // decisive, RTL-confirmed proof of match or non-match, not an inference
-// from delivery counts or an idle-vs-active guess (the defect the
-// independent validation, 2026-09-15, found in the withdrawn assertion).
+// from delivery counts or an idle-vs-active guess.
 // want_match=true: DSKSYNC is set to 0x4489, the generator's own fixed
 // sync word AND its own reset default (paula_floppy.v:485,705) -- proved
 // the instant `syncint` first pulses. want_match=false: DSKSYNC is set to
@@ -552,12 +505,11 @@ int main(int argc, char** argv) {
     // states must arrive at DSKBYTR distinctly before anything else here
     // is trusted.
     //
-    // WITHDRAWN TO note() (independent validation, 2026-09-15, Lot F): this
-    // assertion carries no claim uid -- it was never conformance evidence,
-    // only a fixture control, so grading it through expect() cost no
-    // coverage to remove and only ever risked a false conformance reading.
-    // Printed as a measurement, not graded. Its mutation record is removed
-    // with it (a note() has no baseline colour to defend).
+    // A note(), not an expect(): it carries no claim uid, so it is a
+    // fixture control, not conformance evidence, and grading it would only
+    // risk a false conformance reading. Printed as a measurement, not
+    // graded. It carries no mutation record (a note() has no baseline
+    // colour to defend).
     {
         Harness h1;
         h1.write_reg(A_DSKLEN, 0x4000);
@@ -582,11 +534,10 @@ int main(int argc, char** argv) {
     // (p.247 opus:8-dma.c31, sol:8-dskdma.c9; p.248 opus:8-dskbytr.c1,
     //  sol:8-dskbytr.c1; p.278 opus:8-appA-dskbytr.c5)
     //
-    // REPAIRED (independent validation, 2026-09-15, Lot F): the withdrawn
-    // form used idle bit 15 (DSKBYT) = 1 as its decode marker. p.278 gives
-    // DSKBYTR NO reset or idle word at all -- requiring any specific idle
-    // value, on any bit, is requiring something the page never states.
-    // Narrowed to two bits the page DOES define and that MOVE: DISKWRITE
+    // p.278 gives DSKBYTR NO reset or idle word at all -- requiring any
+    // specific idle value, on any bit (idle bit 15, DSKBYT = 1, included),
+    // is requiring something the page never states. The decode marker is
+    // therefore two bits the page DOES define and that MOVE: DISKWRITE
     // (bit 13, proven live by A3) after a plain DSKLEN write with the
     // WRITE bit set, and DMAON (bit 14, proven live by A4) once DMA is
     // armed -- both are page-cited, state-dependent values, not an
@@ -686,16 +637,14 @@ int main(int argc, char** argv) {
             "disclosed background) confirms bit 14 set here too. Measured "
             "v=" + hex16(v) + ".");
 
-        // Repaired (independent validation, 2026-09-15, Lot F --
-        // uid-placement defect): opus:8-dskbytr.c8, sol:8-dskbytr.c9 and
-        // opus:8-appA-dskbytr.c10 previously appeared on BOTH the graded
-        // expect() label above (as its "DSKLEN clause") AND this record()
-        // line (as its "DMACON clause") -- the coverage ledger reads uids,
-        // not the "clause" qualifier beside them, so it counted these
-        // three as fully asserted while this record() simultaneously
-        // declined them. Per the uid-placement rule, an assertion that
-        // grades only part of a claim keeps its expect() label uid-free
-        // and carries the uid on a record() line alone -- moved here.
+        // opus:8-dskbytr.c8, sol:8-dskbytr.c9 and opus:8-appA-dskbytr.c10
+        // sit on this record() line alone, not on the graded expect()
+        // label above: the coverage ledger reads uids, not a "DSKLEN
+        // clause"/"DMACON clause" qualifier beside them, so a uid on both
+        // lines would count as fully asserted while this record() declined
+        // it. Per the uid-placement rule, an assertion that grades only
+        // part of a claim keeps its expect() label uid-free and carries the
+        // uid on a record() line alone.
         checks.record(
             "opus:8-dskbytr.c8, sol:8-dskbytr.c9, opus:8-appA-dskbytr.c10 "
             "(p.248, p.278; DMAON's own printed definition is a compound "
@@ -731,18 +680,18 @@ int main(int argc, char** argv) {
     //  sol:8-dskbytr.c7; p.278 opus:8-appA-dskbytr.c7,
     //  opus:8-appA-dskbytr.c8, sol:8-appa-dskbytr.c8, sol:8-appa-dskbytr.c9)
     //
-    // DECLINED (independent validation, 2026-09-15): neither p.248 nor
-    // p.278 defines DSKBYT's RESET value. "As each byte is received...
-    // DSKBYT is set true" states what RECEIPT does; it says nothing about
-    // what a fresh, byte-never-received reset state reads. The withdrawn
-    // assertion silently required "receipt sets it" to also mean "reset
-    // clears it", which is not printed anywhere.
+    // DECLINED: neither p.248 nor p.278 defines DSKBYT's RESET value. "As
+    // each byte is received... DSKBYT is set true" states what RECEIPT
+    // does; it says nothing about what a fresh, byte-never-received reset
+    // state reads. Grading receipt from reset would silently require
+    // "receipt sets it" to also mean "reset clears it", which is not
+    // printed anywhere.
     //
     // A sound receipt test needs a genuinely CLEARED starting state,
     // reached through the manual's own documented clearing action (p.248
     // "cleared when the DSKBYTR register is read"; p.278 "(reset by
     // reading this register)"), followed by a delivered known byte, then
-    // an observed 0->1 transition. A6 below -- now driven through a
+    // an observed 0->1 transition. A6 below -- driven through a
     // genuine, address-held, clk7_en-qualified read cycle, not a bare
     // combinational peek -- PROVES that documented clearing action does
     // not exist in this RTL: DSKBYT reads 1 both before and after a real
@@ -752,8 +701,8 @@ int main(int argc, char** argv) {
     // to restructure this assertion would only restate A6's own finding
     // under a different name, not test receipt.
     //
-    // Per the build brief: "an assertion that tests more than its page
-    // states produces a red finding about nothing." Declining.
+    // An assertion that tests more than its page states produces a red
+    // finding about nothing. Declining.
     {
         checks.record(
             "DSKBYT-NOT-SET-ONLY-ON-RECEIPT (p.248 opus:8-dskbytr.c3, "
@@ -773,12 +722,11 @@ int main(int argc, char** argv) {
     }
 
     // ================= A6-CONTROL: REAL-READ-CYCLE-IS-LIVE =================
-    // No claim uid. WITHDRAWN TO note() (independent validation,
-    // 2026-09-15, Lot F): this control reads bit 14 (DMAON) and bit 13
+    // No claim uid, so a note(): this control reads bit 14 (DMAON) and bit 13
     // (DISKWRITE) through read_reg_clocked() and watches them move as
     // DSKLEN is driven -- but both bits are COMBINATIONAL mirrors of
     // DSKLEN's own state (paula_floppy.v:699): they would move exactly
-    // the same way through the OLD eval()-only read_reg() helper too,
+    // the same way through the eval()-only read_reg() helper too,
     // since nothing about their value depends on the read itself being a
     // genuine, qualifying bus cycle. This measurement therefore shows
     // read_reg_clocked() samples data_out correctly at the point it
@@ -787,8 +735,7 @@ int main(int argc, char** argv) {
     // (the thing "cleared when read" would need). Carries no claim uid,
     // so note() -- printed with that scope stated explicitly, so a later
     // reader does not take this as proof that A6's own read cycle reaches
-    // a clocked side effect it may not. Its mutation record is removed
-    // with it.
+    // a clocked side effect it may not. It carries no mutation record.
     {
         Harness h1;
         uint16_t before14 = h1.read_reg_clocked(A_DSKBYTR);
@@ -807,7 +754,7 @@ int main(int argc, char** argv) {
             "correctly observes DMAON (bit 14) rise once DMA is armed "
             "(A4) and DISKWRITE (bit 13) rise once DSKLEN's WRITE bit is "
             "set (A3). Both are COMBINATIONAL mirrors of DSKLEN and would "
-            "move identically through the old eval()-only read_reg() "
+            "move identically through the plain eval()-only read_reg() "
             "helper -- this shows the read function samples correctly, "
             "NOT that a real bus cycle reaches a synchronous read-side-"
             "effect mechanism, which nothing read here has. A6 below "
@@ -822,17 +769,14 @@ int main(int argc, char** argv) {
     // (p.248 opus:8-dskbytr.c4, opus:8-dskbytr.c7, sol:8-dskbytr.c8; p.278
     //  opus:8-appA-dskbytr.c9, sol:8-appa-dskbytr.c10)
     //
-    // REPAIRED (independent validation, 2026-09-15): the withdrawn form's
-    // read_reg() spanned no clock edge at all (two eval()-only
-    // combinational peeks), so it could never have observed a synchronous
-    // read-side-effect even if this RTL implemented one. Repaired to use
-    // read_reg_clocked() -- holding the address across a genuine
-    // clk7_en-qualified rising edge, the SAME cycle shape A6-CONTROL just
-    // proved faithfully observes bits that do move -- for both reads
-    // below. Still RED: paula_floppy.v:699 hardwires bit 15 to the literal
-    // constant 1'b1, so it cannot clear regardless of how genuine the read
-    // cycle is; this is now a sound measurement of that fact, not an
-    // artifact of a read that was never really a read.
+    // Both reads below use read_reg_clocked() -- holding the address
+    // across a genuine clk7_en-qualified rising edge, the SAME cycle shape
+    // A6-CONTROL shows faithfully observes bits that do move -- because
+    // read_reg() spans no clock edge at all (two eval()-only combinational
+    // peeks) and could never observe a synchronous read-side-effect even
+    // if this RTL implemented one. RED: paula_floppy.v:699 hardwires bit
+    // 15 to the literal constant 1'b1, so it cannot clear regardless of
+    // how genuine the read cycle is.
     {
         Harness h;
         uint16_t read1 = h.read_reg_clocked(A_DSKBYTR);
@@ -872,12 +816,11 @@ int main(int argc, char** argv) {
     //  sol:8-dskbytr.c15, opus:8-dskbytr.c12, sol:8-dskbytr.c16; p.278
     //  opus:8-appA-dskbytr.c13, sol:8-appa-dskbytr.c14)
     //
-    // REPAIRED (independent validation, 2026-09-15): the withdrawn form
-    // compared an IDLE state against an ACTIVE-BUT-MISMATCHING state and
-    // required them to differ -- but p.248 requires WORDEQUAL false on a
-    // non-match; it never requires idle and active-mismatching to differ
-    // from each other. Repaired to sample bit 12 during a PROVED MATCH and
-    // during a PROVED MISMATCH, using `syncint` (see run_wordequal_trial
+    // p.248 requires WORDEQUAL false on a non-match; it never requires an
+    // IDLE state and an ACTIVE-BUT-MISMATCHING state to differ from each
+    // other, so comparing those two would grade something unprinted. Bit
+    // 12 is sampled during a PROVED MATCH and during a PROVED MISMATCH,
+    // using `syncint` (see run_wordequal_trial
     // above) -- a real output port that, with dmaen held 1 throughout an
     // armed transfer, is EXACTLY sync_match for the whole run -- as the
     // oracle for "matching right now", not an inference from idle-vs-busy.
@@ -931,20 +874,16 @@ int main(int argc, char** argv) {
 
     // ================= A8: UNUSED-BITS-11-8-CARRY-NO-DEFINED-FUNCTION -- DECLINED =================
     //
-    // DECLINED (independent validation, 2026-09-15, Lot F): p.278 marks
-    // bits 11-8 "X  Not used", and p.264 says outright: "do not rely on
-    // the values of unused bits when reading from a read only register."
-    // The withdrawn form required these bits to read exactly zero in
-    // three states -- but the page does not require zero, it requires
-    // that a reader not depend on ANY particular value. Any value on
-    // these bits is compatible with the page; requiring zero grades
-    // against something the manual never states. The withdrawn
-    // assertion's own mutation record justified "unfalsifiable, no
-    // stimulus" by pointing at this RTL's own literal 4'b0000
-    // (paula_floppy.v:699) -- implementation-derived reasoning, exactly
-    // what the build brief and DOKTRIN.md both rule out as a basis for an
-    // oracle. Declining rather than grading a value the page leaves
-    // unspecified.
+    // DECLINED: p.278 marks bits 11-8 "X  Not used", and p.264 says
+    // outright: "do not rely on the values of unused bits when reading
+    // from a read only register." The page does not require zero, it
+    // requires that a reader not depend on ANY particular value. Any value
+    // on these bits is compatible with the page; requiring zero grades
+    // against something the manual never states. Calling that requirement
+    // "unfalsifiable, no stimulus" because this RTL has a literal 4'b0000
+    // there (paula_floppy.v:699) would be implementation-derived
+    // reasoning, which is no basis for an oracle. Declining rather than
+    // grading a value the page leaves unspecified.
     {
         Harness h;
         uint16_t idle = h.read_reg(A_DSKBYTR);
@@ -970,11 +909,10 @@ int main(int argc, char** argv) {
             "unused' / 'Not used', and p.264, 'do not rely on the values "
             "of unused bits when reading from a read only register.' Any "
             "value on bits 11-8 is compatible with the page -- requiring "
-            "zero (the withdrawn form's own oracle) grades against a value "
-            "the manual never states, and the withdrawn form's own "
-            "justification for treating that requirement as unfalsifiable "
-            "cited this RTL's own literal constant, not the page. "
-            "Declining rather than grading an unstated value.");
+            "zero grades against a value the manual never states, and "
+            "treating that requirement as unfalsifiable would rest on this "
+            "RTL's own literal constant, not the page. Declining rather "
+            "than grading an unstated value.");
     }
 
     // ================= A9: DATA-FIELD-DOES-NOT-REFLECT-INCOMING-DISK-BYTES =================
@@ -983,18 +921,18 @@ int main(int argc, char** argv) {
     //  opus:8-appA-dskbytr.c15, sol:8-appa-dskbytr.c7,
     //  sol:8-appa-dskbytr.c16)
     //
-    // REPAIRED (independent validation, 2026-09-15): the withdrawn form
-    // compared two arbitrary DSKBYTR snapshots (after uniform 0x11 and
-    // 0xEE feeds) for inequality, with no independent ground truth for
+    // Two arbitrary DSKBYTR snapshots (say after uniform 0x11 and 0xEE
+    // feeds) compared for inequality have no independent ground truth for
     // EITHER sample -- both reading 0x00 is compatible with a conforming
     // implementation whose DATA field simply had not yet caught up. This
     // is THE SAME UNDERLYING FACT as ch8-disk-register-map-paula-floppy/B4
     // and ch8-disk-controller-overview/opus:8-dsk.c9+sol:8-dsk.c9 -- one
-    // fact, repaired identically in all three packages that carry it.
+    // fact, graded against a known, bound byte in all three packages that
+    // carry it (those two locate the byte at a fixed payload-start index;
+    // this one calibrates the index by search, below).
     //
-    // Repaired to bind a KNOWN incoming byte to the DSKBYTR sampling
-    // instant via the DSKDATR/FIFO marker technique already established
-    // and accepted by the sibling ch8-mfm-cell-encoding package: a uniform
+    // A KNOWN incoming byte is bound to the DSKBYTR sampling instant via
+    // the DSKDATR/FIFO marker technique ch8-mfm-cell-encoding also uses: a uniform
     // 0xFF sector's payload word can only ever arrive as exactly 0xFFFF
     // (its clock cell is a constant 1 for every payload bit, so an all-1s
     // fed byte is the one pattern this fixture's own encoder cannot
@@ -1007,27 +945,22 @@ int main(int argc, char** argv) {
     // are 0xFF, sidestepping any high/low-byte ordering ambiguity in what
     // "the current byte" means.
     //
-    // DEFECT FOUND IN THIS REPAIR, AND FIXED (independent validation,
-    // 2026-09-15, Lot F): the red below IS a genuine finding -- bound=1,
-    // DSKBYTR=0xd000, DATA=0x00 -- and it must survive. But 0xFFFF is NOT
-    // a page-legal MFM encoding of 0xFF: p.250's own table makes "1 -> 01"
-    // unconditional, so a uniform 0xFF byte page-encodes to 0x5555, not
-    // 0xFFFF. 0xFFFF is only what THIS RTL's own non-conformant,
-    // context-free encoder (candidate C9, graded in
+    // The binding is a PRECONDITION that DECLINES, not a conjunct that
+    // grades. 0xFFFF is NOT a page-legal MFM encoding of 0xFF: p.250's own
+    // table makes "1 -> 01" unconditional, so a uniform 0xFF byte
+    // page-encodes to 0x5555, not 0xFFFF. 0xFFFF is only what THIS RTL's
+    // own non-conformant, context-free encoder (candidate C9, graded in
     // ch8-mfm-cell-encoding's A2/A4) happens to produce for a run of
-    // one-bits. The withdrawn guard used `bound_ok` -- "was the 0xFFFF
-    // marker found" -- as a CONJUNCT of the grading expression
-    // (`ok = bound_ok && (data_field == known_byte)`), so against a
-    // CORRECT encoder the marker would never be found, bound_ok would be
-    // false, and this assertion would FAIL anyway -- reporting a
-    // DATA-field defect that would not be there, for the wrong reason.
-    // Repaired so the binding is a PRECONDITION that DECLINES, not a
-    // conjunct that grades: when the marker cannot be located, record()
-    // states plainly that no known byte could be bound, and nothing about
-    // the DATA field is claimed either way; when it CAN be located (as it
-    // reliably is, against this exact RTL), the DATA-field comparison is
-    // graded via expect() exactly as before. Against the RTL actually
-    // under test here, bound_ok is true and the finding is unchanged.
+    // one-bits. With `bound_ok` -- "was the 0xFFFF marker found" -- as a
+    // CONJUNCT of the grading expression (`ok = bound_ok && (data_field ==
+    // known_byte)`), a CORRECT encoder would never produce the marker,
+    // bound_ok would be false, and this assertion would FAIL -- reporting
+    // a DATA-field defect that would not be there. So when the marker
+    // cannot be located, record() states plainly that no known byte could
+    // be bound, and nothing about the DATA field is claimed either way;
+    // when it CAN be located (as it reliably is, against this exact RTL),
+    // the DATA-field comparison is graded via expect(). The red below IS a
+    // genuine finding -- bound=1, DSKBYTR=0xd000, DATA=0x00.
     {
         int marker_index = -1;
         {
@@ -1108,8 +1041,8 @@ int main(int argc, char** argv) {
 #else
         // MUTATION (already-red baseline; substitute a proven-live
         // mechanism through the same comparator): compare bit 13 after
-        // two genuinely different DSKLEN writes instead of DATA after two
-        // genuinely different SD sector feeds.
+        // two genuinely different DSKLEN writes instead of DATA at the
+        // known-bound marker instant.
         Harness h1;
         h1.write_reg(A_DSKLEN, 0x4000);
         uint16_t v1 = h1.read_reg(A_DSKBYTR);
@@ -1130,13 +1063,13 @@ int main(int argc, char** argv) {
     // ================= A10: DSKBYTR-DOES-NOT-VARY-WITH-ROTATION-OR-DIRECTION -- DECLINED =================
     // (p.248 opus:8-dskbytr.c5, sol:8-dskbytr.c5, sol:8-dskbytr.c6)
     //
-    // DECLINED (independent validation, 2026-09-15): the cited sentence,
+    // DECLINED: the cited sentence,
     // "DSKBYTR may be used to synchronize the processor to the disk
     // rotation before issuing a read or write under DMA control", is
     // programmer ADVICE about a USE of the register. It promises neither
     // that any two arbitrarily-chosen sampled instants differ, nor any
-    // minimum separation, nor that idle sampling (no DMA armed -- what the
-    // withdrawn form did) exercises the rotation-tracking mechanism it is
+    // minimum separation, nor that idle sampling (no DMA armed) exercises
+    // the rotation-tracking mechanism it is
     // advising about at all: two points in a periodic byte stream may
     // legitimately repeat, and "before issuing a read or write" describes
     // WHEN a programmer would consult it, not a state this fixture can
