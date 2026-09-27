@@ -30,6 +30,8 @@
 ;   P3_MUT_G4       -- G4's own mutation: the set-MOVE's data word is
 ;                       written as $8006 instead of $8004 (an extra bit,
 ;                       INTENA bit 1, that no P3 check reads).
+;   P3_MUT_G6       -- G6's own mutation: about 2 extra lines of delay
+;                       land in every monitor-loop iteration.
 
         include "nanomig.i"
         include "ch2move.i"
@@ -87,6 +89,13 @@ start:
         move.w  #$FFFF,(a1)+            ; park
         move.w  #$FFFE,(a1)+
 
+        ; Decoy park D ($0E8000-$0E8003, SPECIFICATION.md 4.2): a
+        ; well-formed, never-satisfied WAIT, so a landing here (G3's own
+        ; mutation) reads a defined instruction rather than uninitialized
+        ; RAM.
+        move.w  #$FFFF,$0E8000.l
+        move.w  #$FFFE,$0E8002.l
+
         ; ---- step 5: start the Copper (p.30's own sequence) -----------
         ifd     P3_MUT_G3
         move.l  #$0E8000,COP1LCH(a0)    ; G3's mutation: decoy park D instead of L_3
@@ -115,6 +124,12 @@ start:
 .mloop: move.w  INTENAR(a0),(a1)+
         move.w  VPOSR(a0),(a1)+
         move.w  VHPOSR(a0),(a1)+
+        ifd     P3_MUT_G6
+        ; G6's own mutation: extra delay lands in every iteration, so
+        ; every line drops well under 5 kept samples.
+        move.l  #12,d5
+.mdly:  dbra    d5,.mdly
+        endif
         subq.l  #1,d6
         bne.s   .mloop
 

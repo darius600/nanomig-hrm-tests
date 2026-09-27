@@ -10,7 +10,10 @@
 ;                       Ma and Mb.
 ;   P4_MUT_CLEARLATE -- P4-p2's own mutation: the clearing loop moves after
 ;                        Mb instead of before Ma.
-;   P4_MUT_SWAP     -- the P4 contrasting case: D0's two halves exchanged.
+;   P4_MUT_SWAP     -- the P4 contrasting case: D0 and D1's halves
+;                       exchanged, and W1's own immediate written
+;                       pre-swapped too (so every one of the eight forms
+;                       diverges from the unchanged, main-run comparator).
 
         include "nanomig.i"
         include "ch2move.i"
@@ -21,10 +24,13 @@ MARK_B          equ     $0E7002
 
         ifd     P4_MUT_SWAP
 D0_VAL          equ     $3C5AA5C3
+D1_VAL          equ     $E1F00F1E
+W1_VAL          equ     $3C5AA5C3
         else
 D0_VAL          equ     $A5C33C5A
-        endif
 D1_VAL          equ     $0F1EE1F0
+W1_VAL          equ     $A5C33C5A
+        endif
 
         org     PROGRAM_ORG
 
@@ -40,7 +46,7 @@ start:
 
         ; W1: MOVE.L #$A5C33C5A,(A0'), target $0E6000 -- immediate, not D0.
         movea.l #SCR,a1
-        move.l  #$A5C33C5A,(a1)
+        move.l  #W1_VAL,(a1)
 
         ; W2: MOVE.L D0,(A1)+, A1 = $0E6010 -> target $0E6010.
         move.l  #D0_VAL,d0

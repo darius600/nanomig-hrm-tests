@@ -20,6 +20,10 @@
 ;                    instead of INTENA (set run only).
 ;   P1A_C2       -- contrasting case C2: b_0's IR2 is $8002 instead of
 ;                    $8001 (set run only).
+;   P1A_CLEAR_C1 -- the clear run's own contrasting case: b_0's IR2 is
+;                    $0002 instead of $0001 (with P1A_CLEAR).
+;   P1A_NOCOPEN  -- G1's own baseline for P1-A: DMACON started $8200 (no
+;                    COPEN) instead of $8280.
 
         include "nanomig.i"
         include "ch2move.i"
@@ -67,7 +71,11 @@ start:
         include "p1a_list_set_p1p1.i"
         else
         ifd     P1A_CLEAR
+        ifd     P1A_CLEAR_C1
+        include "p1a_list_clear_c1.i"
+        else
         include "p1a_list_clear.i"
+        endif
         else
         include "p1a_list_set.i"
         endif
@@ -83,7 +91,11 @@ start:
         move.w  #0,COPJMP1(a0)
         move.w  VHPOSR(a0),MARK_M0.l     ; marker M0
 
+        ifd     P1A_NOCOPEN
+        move.w  #$8200,DMACON(a0)       ; SET/CLR, DMAEN only (no COPEN)
+        else
         move.w  #$8280,DMACON(a0)       ; SET/CLR, DMAEN, COPEN
+        endif
         move.w  DMACONR(a0),DMACONR_SAVE.l
 
         ; ---- step 6: monitor loop (I2) ---------------------------------

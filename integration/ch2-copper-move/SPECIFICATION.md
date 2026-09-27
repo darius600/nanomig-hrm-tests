@@ -306,8 +306,8 @@ still hold unless the contrast is aimed at them.
 | G1 | Copper reads are identifiable | A baseline run of the same program writes DMACON $8200 (no COPEN) instead of $8280. It shows no read in any Copper region over the same capture. | In the baseline, the CPU program also executes one `MOVE.W $0E1000,D0` | G1 red: one read in a Copper region |
 | G2 | Copper DMA is on | The DMACONR value stored at $0E7100 has bits 9 and 7 set (p.278: "09 DMAEN", "07 COPEN") | DMACON written $8200 | Bit 7 reads 0 and G2 goes red (no Copper reads either) |
 | G3 | The list starts where it was put | The first Copper instruction fetch after marker M0 is at L (p.25: "the corresponding location register is loaded into the Copper program counter ... from which its next instruction will be fetched"; p.30) | COP1LCH is written with D instead of L | First fetch at D, G3 red |
-| G4 | The words the Copper reads are the specified words | The data of every Copper read equals the word this specification prescribes for that address, as the setup writes at the port show. Where a run modifies a word, the prescribed word before or after the modification applies. | Step 3 writes one list word differently (for example the IR2 of L_A half-step b0 as $8002) | G4 red at that address |
-| G5 | The monitor's beam readings are sane | Within a field V never decreases and H stays within $00-$E2 (p.23: "a value of $0 to $E2"). In PAL, successive line starts, taken as the first sample of each new V, are 227 +/- 1 sample spacing memory cycles apart (p.23: "In PAL, they are all 227 long"). NTSC runs allow 227 and 228 (p.23). | The same program run with NTSC selected, checked with the PAL rule | G5 red: lines of 228 occur (p.23: "Every other line is a long line (228 color clocks") |
+| G4 | The words the Copper reads are the specified words | The data of every Copper read equals the word this specification prescribes for that address, as the setup writes at the port show. For a contrasting case (or a precondition's own mutation), "prescribed" means that run's own words -- whatever its own setup actually wrote -- not the main run's; a check's own dedicated mutation, which deliberately writes a word this specification does not prescribe, is the one exception, and is graded against the main run's words so that the divergence is what turns it red. | Step 3 writes one list word differently (for example the IR2 of L_A half-step b0 as $8002) | G4 red at that address |
+| G5 | The monitor's beam readings are sane | Within a field V never decreases and H stays within $00-$E2 (p.23: "a value of $0 to $E2"). Line starts are the first sample of each new V; for each one, the smallest (its own port cycle - the clk_sys-per-memory-cycle ratio (I4) times its own H) among that line's own samples estimates the true line-start cycle without the monitor loop's own detection lag (I2: the beam values are read shortly after the sample's own time s, so H says how far past the boundary the sample was taken; a read only ever takes longer, never less time, so the smallest such estimate is the least lag-corrupted one). Two such estimates a gross 40 memory cycles or more apart (catching a lost sync, not ordinary jitter) fail outright; short of that, the *mean* of every corrected gap in the capture (excluding each field's own first, possibly-partial line) must be 227 +/- 0.3 memory cycles (p.23: "In PAL, they are all 227 long") -- tight enough that only random, symmetric jitter passes, not a systematic shift. NTSC runs allow 227 and 228 (p.23): the alternation's own mean, 227.5, fails this same bound. | The same program run with NTSC selected, checked with the PAL rule | G5 red: the mean line length is 227.5, not 227 (p.23: "Every other line is a long line (228 color clocks)") |
 | G6 | Enough samples | Every interval that a check counts holds at least 5 kept samples | The monitor loop has a delay of about 2 lines added per iteration | G6 red |
 
 ---
@@ -981,34 +981,49 @@ every program below.
   `prog_p4_mut_swap.s`: P4.
 - `prog_p3.s`, with `prog_p3_nocopen.s`, `prog_p3_nocopen_mut.s`,
   `prog_p3_mut_wait0.s`, `prog_p3_mut_noclear.s`, `prog_p3_c1.s`,
-  `prog_p3_c2.s`, `prog_p3_g3.s` and `prog_p3_g4.s`: P3, and the first
-  demonstration of the shared instruments G1-G6 (section 4.5). P1-A below
-  reuses the same, unchanged instrument code and restates G2/G3/G6 on its
-  own captures; it does not repeat G1/G4/G5's own dedicated mutations,
-  since those would exercise the same measuring apparatus P3 already
-  demonstrated, not a further proposition-specific claim.
+  `prog_p3_c2.s`, `prog_p3_g3.s`, `prog_p3_g4.s` and `prog_p3_g6.s`: P3,
+  and the first demonstration of the shared instruments G1-G6 (section
+  4.5). P1-A below reuses the same, unchanged instrument code and
+  restates every one of G1-G6 on its own two captures; it does not repeat
+  G1/G4/G5's own dedicated mutations, since those would exercise the same
+  measuring apparatus P3 already demonstrated, not a further
+  proposition-specific claim.
 - `prog_p1a.s`, with `prog_p1a_clear.s`, `prog_p1a_mut_p1p1.s`,
-  `prog_p1a_mut_p1p2.s`, `prog_p1a_c1.s` and `prog_p1a_c2.s`, and the list
-  content held in `p1a_list_set.i`, `p1a_list_clear.i`,
-  `p1a_list_set_p1p1.i`, `p1a_list_set_c1.i` and `p1a_list_set_c2.i`: P1's
+  `prog_p1a_mut_p1p2.s`, `prog_p1a_c1.s`, `prog_p1a_c2.s`,
+  `prog_p1a_clear_c1.s` and `prog_p1a_nocopen.s`, and the list content
+  held in `p1a_list_set.i`, `p1a_list_clear.i`, `p1a_list_set_p1p1.i`,
+  `p1a_list_set_c1.i`, `p1a_list_set_c2.i` and `p1a_list_clear_c1.i`: P1's
   instrument A.
 
 **Measured values.** I4's own ratio (one memory cycle to `clk_sys`
-cycles): confirmed at 8 on both cores from the capture itself; a small
-fraction of intra-line sample pairs drift by a few memory cycles, which
-three separately contended register reads per sample (INTENAR, VPOSR,
-VHPOSR) account for. The monitor loop's own iteration cost ("sample
-spacing", section 4.4's I2): about 30-38 memory cycles per sample on this
-RTL, used as the tolerance for the PAL line-length check (227 plus or
-minus one sample spacing), since the loop samples less often than once
-per memory cycle. Every capture in this package runs the monitor loop for
-a fixed 30000 iterations, comfortably longer than any proposition's own
-field count; 13 to 15 fields were observed per run, on both cores.
+cycles) is asserted, not assumed: every line's own first-to-last-sample
+ratio is measured and required to round to the same integer over the
+whole capture (4.4). It is 8 on both cores, in every capture this package
+runs, with every line agreeing. G5's mean line length (4.5), over every
+corrected gap in the capture, sits within 0.3 memory cycles of 227 in
+every capture this package runs, fx68k and TG68K alike; no single
+corrected gap in any capture reaches the 40-memory-cycle gross bound.
+Every capture in this package runs the monitor loop for a fixed 30000
+iterations, comfortably longer than
+any proposition's own field count; 13 to 15 fields were observed per
+run, on both cores.
 
 **Mutations.** Every `NMH_MUTATE` value the test file's header names ran
-once on both cores; each went red through the clause its header comment
-names, on both cores, with no exception. Three of them (`P3-P1`, `P3-P2`,
-`P3-G3`) also turn other checks red as a direct, explained consequence of
-the same stimulus change (the WAIT line or the list's own start address
-moves for the whole run, not only for the clause under test); the
-package's own report to the lead names each one.
+on both cores. Most go red through exactly the clause(s) their header
+names, with the rest of the setup unaffected. The exceptions, each for a
+reason the header states: `P3-P1` (WAIT line 0) also turns `P3-i` and
+`P3-iii` red, the page's own consequence of an instantly-satisfied WAIT,
+not a separate fault; `P3-C2` (the WAIT replaced by a park) reaches
+neither a WAIT-shaped nor a set-MOVE fetch, so `P3-fixture` goes red and
+`P3-ii`/`P3-iv` are recorded, not graded; `P3-G6` (added monitor-loop
+delay) also carries away I4 and G5 on TG68K, a natural consequence of
+too few samples per line for either to measure anything, not a separate
+fault. `G2`'s own contrast is demonstrated on the no-COPEN baseline
+every run already builds for G1 (`prog_p3_nocopen.bin`), not a separate
+mutation. `P3-G5` (the same program run with NTSC selected, checked with
+the PAL rule) does not reach a red: the mean line length measured is
+still 227.0 under NTSC selection too, both cores, so p.23's own 227/228
+alternation is not reproduced at this boundary. This is recorded, not
+graded, and does not weaken G5's own PAL-rule assertion, which is
+graded, on every capture, against every capture's own measured ratio
+(4.4) rather than an assumed one.
