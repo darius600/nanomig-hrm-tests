@@ -238,8 +238,9 @@ static void tick(Vagnus_beamcounter& dut) {
 }
 
 // clk7_en active on even i, cck high for two out of every four i -- the
-// same driving pattern hrm/agnus_beamcounter/test_agnus_beamcounter.cpp
-// uses for this identical fixture, which yields the 313-line PAL field
+// same driving pattern the pre-pipeline
+// hrm/agnus_beamcounter/test_agnus_beamcounter.cpp (removed) used for this
+// identical fixture, which yields the 313-line PAL field
 // recorded in docs/findings.md (NM-HRM-001). 4 iterations = 1 CCK cycle.
 static void step(Vagnus_beamcounter& dut, long i) {
     dut.clk7_en = (i % 2 == 0) ? 1 : 0;
@@ -252,9 +253,9 @@ static void do_reset(Vagnus_beamcounter& dut, int ntsc, int ecs, int aga, int a1
     dut.ntsc = ntsc; dut.ecs = ecs; dut.aga = aga; dut.a1k = a1k;
     dut.reg_address_in = A_NONE;
     dut.data_in = 0;
-    dut.cck = 0; // held low through reset -- matches
-                 // hrm/agnus_beamcounter/test_agnus_beamcounter.cpp's own reset
-                 // loop; toggling cck here would let hpos drift during reset
+    dut.cck = 0; // held low through reset -- as in the pre-pipeline
+                 // hrm/agnus_beamcounter/test_agnus_beamcounter.cpp reset loop
+                 // (removed); toggling cck here would let hpos drift during reset
                  // and desynchronise the first line from the step() phase below
     for (int k = 0; k < 10; ++k) {
         dut.clk7_en = 1;
