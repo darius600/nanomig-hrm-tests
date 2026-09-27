@@ -187,9 +187,11 @@ finding is the argument against it rather than for it.
 Everything that weakens [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) weakens this
 one identically, and for the same reason: it is the same question.
 
-- **Three of four implementations do what NanoMig does** at the register. At the
-  address Agnus drives, WinUAE and vAmiga narrow on OCS; only Denise fetches
-  with no chipset term.
+- **One of the four fetches as NanoMig does.** Denise drives the stored pointer
+  with no chipset term; WinUAE, vAmiga and Copperline narrow it on OCS. That
+  WinUAE, vAmiga and Denise keep all five bits in the register itself weakens
+  nothing: DSKPTH is write-only, so the stored value shows only in the address
+  the DMA drives.
 - **[NM-HRM-014](NM-HRM-014.md) records that the manual applies its own ECS pointer extension
   inconsistently.** If the manual is not self-consistent about how widely the
   extension reaches, then four findings each quoting one of its sentences are
