@@ -292,10 +292,8 @@
 //   -DMUT_CHIP=1, which writes to DMACON_W+1 (the
 //   wrong address) instead of DMACON_W -> 17/2, only DMACON-ADDRESS-AND-
 //   WRITE-ONLY newly red (measured before=0 after=0 but side_effect_seen
-//   false, i.e. auden never moved) -- DMACON-DECODED-BY-PAULA, sharing the
-//   same measurement code path, moved the same direction but the grep
-//   output only surfaced the first of the two labels; both are covered by
-//   this one flag since they use the identical write/observe technique.
+//   false, i.e. auden never moved). DMACON-DECODED-BY-PAULA's harness has
+//   no MUT_CHIP guard and stays green under this flag.
 //   Rebuilt with no flags: 18/1 restored.
 // MUTATION ADKCON-BIT11-UARTBRK-FORCES-TXD-LOW stimulus red: built with
 //   -CFLAGS -DMUT_UARTBRK=1, which writes bit 10 (WORDSYNC) instead of bit
