@@ -31,22 +31,20 @@
 //   `work/2026-09-17_appHJ_packages.jsonl` in the sibling repository
 //   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
-// THE STAGE-5 MERGE, executed here: p.379 and p.381 describe two chip
+// ONE PROPOSITION, ONE ASSERTION: p.379 and p.381 describe two chip
 //   generations of the SAME module (`agnus` -- NanoMig implements one RTL
-//   module for both, per the coordinator's own stage-5 decision). Where
+//   module for both). Where
 //   both pages state the same proposition, it is graded ONCE below, citing
 //   both pages' uids on that one line -- not built as two assertions for
 //   one fact. SIX of the nine p.379 propositions recur on p.381 this way:
 //   reset (RES*/RST*), int3 (INT3*/INT3*), dmal (DMAL/DMAL), bls
-//   (BLS*/BLS*), dbr (DBR*/DBR*) and dbwe (ARW*/RRW). That is ONE more than
-//   this package's own build task's headline "five of the nine" -- checked,
-//   not silently followed: ARW*(p.379)/RRW(p.381) are treated here as the
+//   (BLS*/BLS*), dbr (DBR*/DBR*) and dbwe (ARW*/RRW). ARW*(p.379)/RRW(p.381)
+//   are treated here as the
 //   SAME proposition (Agnus's own memory-write strobe is an output) under
-//   two different printed names, by the IDENTICAL reasoning the build task
-//   itself applies to RES*/RST* (a naming difference across generations
+//   two different printed names, by the IDENTICAL reasoning that applies
+//   to RES*/RST* (a naming difference across generations
 //   that does not reach the direction claim) -- see DBWE-IS-OUTPUT below,
-//   which states this explicitly rather than assuming the "five" figure
-//   forecloses it. The remaining three p.379-only propositions collapse
+//   which states this explicitly. The remaining three p.379-only propositions collapse
 //   further: D8-D0 and D15-D9 are two printed ROWS (a package pin-range
 //   split, 01-09 and 42-48) for the SAME pair of RTL ports (`data_in`/
 //   `data_out`) on the SAME page -- also graded once, not twice. The other
@@ -68,25 +66,20 @@
 //   NTSC-IS-INPUT              sol:J-174 opus:AHJ-308
 //   DECLINED (CSY*)            sol:J-034 opus:AHJ-165
 //
-// THE PORT LIST THE BUILD TASK HANDED DOWN WAS NOT EXHAUSTIVE, checked: it
-//   named 9 signals (clk, reset, aen, dbr, dbwe, int3, audio_dmal,
-//   disk_dmal, bls, ntsc, all verified at the cited agnus.v line numbers --
-//   confirmed correct, every line number matches) but the 36 claims'
+// TWO PORTS BEYOND THE CONTROL SIGNALS: besides clk, reset, aen, dbr,
+//   dbwe, int3, audio_dmal, disk_dmal, bls and ntsc, the 36 claims'
 //   classify.evidence fields also cite `data_in`/`data_out` (agnus.v:64-65)
-//   and `_csync` (agnus.v:75), neither in that list. Both were resolved
-//   independently: data_in/data_out has no prior assertion anywhere in
+//   and `_csync` (agnus.v:75). data_in/data_out has no prior assertion
+//   anywhere in
 //   hrm/ grading its direction (grep across every non-obj_dir *.cpp in the
 //   suite for data_in/data_out/D8-D0/D15-D9/DATA-BUS found nothing on this
 //   axis) and is graded fresh, below. `_csync` DOES have one -- see the
-//   DECLINED block. This is worth flagging precisely because the omission
-//   could be read either way (accidental, or a hint to decline); it turned
-//   out to be one of each.
+//   DECLINED block.
 //
-// TWO IDENTIFICATIONS CHECKED PER THE BUILD TASK'S OWN INSTRUCTION, not
-//   taken on faith:
+// TWO IDENTIFICATIONS, CHECKED rather than taken on faith:
 //   - RRW/ARW* -> `dbwe`: `grep -ri arw` and `grep -ri rrw` over
-//     nanomig/src/minimig-aga and nanomig/src/misc (independently re-run
-//     for this build, not merely quoted from classify.evidence) return
+//     nanomig/src/minimig-aga and nanomig/src/misc (run directly, not
+//     merely quoted from classify.evidence) return
 //     ZERO hits for both. Neither printed name occurs anywhere in the RTL;
 //     the binding rests on two RTL comments (agnus.v:71, minimig.v:333)
 //     plus the FUNCTION gloss. The ENCODING differs (RRW reads as one
@@ -94,20 +87,18 @@
 //     plain write-enable). CONCLUSION: the DIRECTION axis survives both
 //     facts -- whatever encodes it, Agnus drives it -- and DBWE-IS-OUTPUT
 //     below grades exactly that, stating the weak identity in its own
-//     label rather than hiding it. Kept, not demoted: unlike CLK below,
+//     label rather than hiding it. Unlike CLK below,
 //     a genuine stimulus mutation exists (drive a read DMA instead of a
 //     write DMA), so there is no vacuity question here.
 //   - 28MHZ -> `clk`: THINNEST claim in this package. CONCLUSION: its
 //     mutation IS vacuous -- freezing `clk` would be tautologically true
 //     by Verilog's own clocked-register semantics, testing the language
-//     rather than this RTL -- so it is demoted from a `stimulus red`
-//     mutation to `none impossible`, paired with a positive-control
-//     liveness measurement, exactly as this package's build task
-//     instructed and as hrm/appDE-fire-buttons-userio models. See
+//     rather than this RTL -- so its mutation record is `none impossible`,
+//     paired with a positive-control liveness measurement, as
+//     hrm/appDE-fire-buttons-userio models. See
 //     CLK-IS-INPUT below for the argument in full.
 //
-// THE DMAL COUNT SUBTLETY the build task named and this file does not
-//   rediscover, only confirms and records: p.379/p.381 each print ONE DMAL
+// THE DMAL COUNT SUBTLETY, confirmed and recorded: p.379/p.381 each print ONE DMAL
 //   row ("DMA request line" / "Request audio/disk DMA"). NanoMig implements
 //   FIVE separate request wires: `audio_dmal[3:0]` (agnus.v:90, 4 bits) and
 //   `disk_dmal` (agnus.v:92, 1 bit). "DMAL is an input" holds for all five
@@ -116,7 +107,7 @@
 //   after that assertion.
 //
 // NOT IN THIS PACKAGE'S 36, CONFIRMED BY READING EVERY ONE OF THE 36
-//   CLAIM RECORDS DIRECTLY (not merely trusting the build task's say-so):
+//   CLAIM RECORDS DIRECTLY:
 //   `LP*`, `CCK`, `CCKQ` and `RGA8-RGA1` -- the appendix contradicts itself
 //   on all four across its two Agnus tables (corpus-defects.md's own
 //   "Where this appendix disagrees with appendix H" section, and its
@@ -125,13 +116,12 @@
 //   ever does, that is a stage-3/4 classification defect to report, not a
 //   row to grade -- none was found here.
 //
-// CORPUS DEFECTS READ FOR THIS BUILD (appJ-pinlist/corpus-defects.md,
-//   fourth version) and how each claim's own quote was verified against
-//   them, not merely trusted:
+// CORPUS DEFECTS (appJ-pinlist/corpus-defects.md) and how each claim's
+//   own quote was verified against them, not merely trusted:
 //   - p.379's FUNCTION column is column-displaced against the PIN column,
-//     by an offset that GROWS BY ONE PER ROW (not a fixed two, an earlier
-//     version of that note's own error) -- corpus-defects.md's corrected
-//     table (independently reproduced there from figures/p379.png) reads:
+//     by an offset that GROWS BY ONE PER ROW (not a fixed two) --
+//     corpus-defects.md's table (reproduced there from figures/p379.png)
+//     reads:
 //       01-09 D8-D0  "Data bus lines 8 to 0"    I/O
 //       11    RES*   "System reset"              I
 //       12    INT3*  "Interrupt level 3"          O
@@ -160,17 +150,17 @@
 //     of this package's claims depend on pin NUMBER at all, so this does
 //     not touch any assertion below.
 //
-// RTL read in full before this file was drafted: agnus.v (the whole
+// RTL read in full: agnus.v (the whole
 //   module), plus the relevant fragments of agnus_diskdma.v, agnus_blitter.v
 //   and agnus_beamcounter.v cited inline below. hrm/ch1-agnus-what-it-
 //   contains/test_agnus.cpp and hrm/appDE-ciab-port-signals/
 //   test_appDE-ciab-port-signals.cpp were read in full as this package's
-//   two named models (Harness/register-bus plumbing from the first, the
+//   two models (Harness/register-bus plumbing from the first, the
 //   port-direction-via-behavioural-proxy grading shape from the second).
 //   hrm/ch8-video-signal-set/test_minimig.cpp was read in full for the
 //   DECLINED block below and for `record()`'s "structural, compile-time
-//   fact no runtime stimulus can change" language this package's own build
-//   task quotes. hrm/appDE-fire-buttons-userio/test_userio.cpp was read in
+//   fact no runtime stimulus can change" language.
+//   hrm/appDE-fire-buttons-userio/test_userio.cpp was read in
 //   full as the `none impossible` + positive-control model for CLK-IS-INPUT.
 //
 // A PORT-DIRECTION FACT IS COMPILE-TIME, NOT RUNTIME, and every mutation
@@ -264,8 +254,8 @@ struct ClkGen {
     }
 };
 
-// Harness: register-bus plumbing reused from hrm/ch1-agnus-what-it-contains
-// (this package's named model), extended with an `ntsc_init` constructor
+// Harness: register-bus plumbing from hrm/ch1-agnus-what-it-contains
+// (this package's model), extended with an `ntsc_init` constructor
 // parameter (NTSC-IS-INPUT needs `ntsc` held stable through the initial
 // reset, since agnus_beamcounter.v:171 samples it only `if (reset)`) and an
 // `aen_high` parameter on write_reg/read_reg (AEN-IS-INPUT needs to drive
@@ -472,16 +462,14 @@ int main(int argc, char** argv) {
     // same direction, graded once).
     // =========================================================================
     {
-        // Measured while designing this assertion, and recorded rather
-        // than silently worked around: disk DMA's own grant (`dma_dsk`,
+        // Disk DMA's own grant (`dma_dsk`,
         // wired straight from agnus_diskdma's `dma = dmal & dmaslot &
         // hpos[0]`, agnus_diskdma.v:49) has NO DMACON dependency at all --
         // unlike bitplane/copper/blitter/sprite (agnus.v:299-302, each
-        // `... & dmacon[9]`). A first draft of this assertion tried to
-        // falsify it by withholding DMAEN with disk_dmal held, built and
-        // ran it (`make test MUT=MUT_DBR_WITHHOLD_DMAEN`), and got 10
-        // passed / 0 failed -- the mutation was vacuous, not the
-        // assertion wrong. Rebuilt on the blitter channel instead, where
+        // `... & dmacon[9]`) -- so withholding DMAEN with disk_dmal held
+        // cannot falsify a disk-DMA version of this assertion (measured:
+        // that mutation comes out 10 passed / 0 failed). The assertion
+        // therefore uses the blitter channel, where
         // `blten = dmacon[6] & dmacon[9]` (agnus.v:301) is a real gate.
         Harness h;
         const uint32_t DEST = 0x00500;
@@ -498,11 +486,10 @@ int main(int argc, char** argv) {
         // enable of its own, presents address_out==0 on its own granted
         // cycles, and would otherwise satisfy a generic dbr check even
         // with the blitter fully disabled, making the mutation below a
-        // no-op (measured: an earlier draft of this assertion used the
-        // generic check and MUT_DBR_WITHHOLD_DMAEN still came out green --
-        // fixed here to the same address-qualified check
+        // no-op (measured: with the generic check, MUT_DBR_WITHHOLD_DMAEN
+        // comes out green). This is the same address-qualified check
         // hrm/ch1-agnus-what-it-contains's own SPECIAL-PURPOSE-HARDWARE-
-        // TAKES-BUS-FROM-PROCESSOR assertion uses for the same reason).
+        // TAKES-BUS-FROM-PROCESSOR assertion uses for the same reason.
         bool seen_dbr = false;
         for (int i = 0; i < 8000 && !seen_dbr; ++i) {
             h.tick();
@@ -683,7 +670,7 @@ int main(int argc, char** argv) {
             "DMAL-IS-INPUT above grades; \"DMAL is one line\" does not "
             "hold and is NOT asserted anywhere in this file -- the "
             "count/multiplexing difference is recorded here, not graded "
-            "either true or false, per this package's own build task. The "
+            "either true or false. The "
             "corroborating audio_dmal[0] cycle above (note, not graded) "
             "shows the width split is a genuine, separately-drivable "
             "second request path, not a cosmetic renaming of the same "
@@ -738,7 +725,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // CLK-IS-INPUT (p.381 pin 34 28MHZ only -- no p.379 counterpart).
-    // THINNEST claim in this package, demoted from `stimulus red` to
+    // THINNEST claim in this package; its mutation record is
     // `none impossible`; see the file header for why.
     // =========================================================================
     {
@@ -809,9 +796,9 @@ int main(int argc, char** argv) {
 #endif
         // A PAL field measures ~568,000 raw ticks (312 lines); seeing TWO
         // sof edges needs up to two full fields in the worst case (an
-        // unlucky start just after one), so 1,000,000 was measured to be
-        // too tight (first run: t_pal=-1, t_ntsc=477,608) -- widened here
-        // with comfortable headroom.
+        // unlucky start just after one), so the budget carries comfortable
+        // headroom over that (1,000,000 measures too tight: t_pal=-1,
+        // t_ntsc=477,608).
         const long long BUDGET = 2500000;
         long long t_pal = measure_field_ticks(h_pal, BUDGET);
         long long t_ntsc = measure_field_ticks(h_ntsc, BUDGET);
