@@ -966,3 +966,49 @@ Every claim in `claims-spec-stage.jsonl`, in page order.
 | 290 | `ch2-appb-table.c43.s2` | Section 1 |
 | 309 | `ch2-appc-ecs.c3.s2`, `c8.s2` | P5 (in part) |
 | 310 | `ch2-appc-ecs.c14.s2` | Section 1 |
+
+## 7. What the build added
+
+This package builds P3, P4 and P1's instrument A (P1-A: INTENA read back
+through INTENAR) only. P1's instrument B (COP2LC, the 40-target address
+chain), P2, P5, P6 and P7 are not built.
+
+**Programs.** `ch2move.i` holds the custom-register offsets nanomig.i does
+not define and the common frame macro (section 4.3, steps 1-2), shared by
+every program below.
+
+- `prog_p4.s`, with `prog_p4_mut_extra.s`, `prog_p4_mut_clearlate.s` and
+  `prog_p4_mut_swap.s`: P4.
+- `prog_p3.s`, with `prog_p3_nocopen.s`, `prog_p3_nocopen_mut.s`,
+  `prog_p3_mut_wait0.s`, `prog_p3_mut_noclear.s`, `prog_p3_c1.s`,
+  `prog_p3_c2.s`, `prog_p3_g3.s` and `prog_p3_g4.s`: P3, and the first
+  demonstration of the shared instruments G1-G6 (section 4.5). P1-A below
+  reuses the same, unchanged instrument code and restates G2/G3/G6 on its
+  own captures; it does not repeat G1/G4/G5's own dedicated mutations,
+  since those would exercise the same measuring apparatus P3 already
+  demonstrated, not a further proposition-specific claim.
+- `prog_p1a.s`, with `prog_p1a_clear.s`, `prog_p1a_mut_p1p1.s`,
+  `prog_p1a_mut_p1p2.s`, `prog_p1a_c1.s` and `prog_p1a_c2.s`, and the list
+  content held in `p1a_list_set.i`, `p1a_list_clear.i`,
+  `p1a_list_set_p1p1.i`, `p1a_list_set_c1.i` and `p1a_list_set_c2.i`: P1's
+  instrument A.
+
+**Measured values.** I4's own ratio (one memory cycle to `clk_sys`
+cycles): confirmed at 8 on both cores from the capture itself; a small
+fraction of intra-line sample pairs drift by a few memory cycles, which
+three separately contended register reads per sample (INTENAR, VPOSR,
+VHPOSR) account for. The monitor loop's own iteration cost ("sample
+spacing", section 4.4's I2): about 30-38 memory cycles per sample on this
+RTL, used as the tolerance for the PAL line-length check (227 plus or
+minus one sample spacing), since the loop samples less often than once
+per memory cycle. Every capture in this package runs the monitor loop for
+a fixed 30000 iterations, comfortably longer than any proposition's own
+field count; 13 to 15 fields were observed per run, on both cores.
+
+**Mutations.** Every `NMH_MUTATE` value the test file's header names ran
+once on both cores; each went red through the clause its header comment
+names, on both cores, with no exception. Three of them (`P3-P1`, `P3-P2`,
+`P3-G3`) also turn other checks red as a direct, explained consequence of
+the same stimulus change (the WAIT line or the list's own start address
+moves for the whole run, not only for the clause under test); the
+package's own report to the lead names each one.
