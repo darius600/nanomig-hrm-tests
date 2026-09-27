@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertions `P4` and `P5` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red. Two greens on the same page's other half (`P2`, `P3`) pass in the same run |
-| **Verdict of the four** | **two of the four narrow by chipset**: Copperline masks the stored pointer, WinUAE masks the address the DMA drives (`memory.cpp:2619-2623`), by Agnus revision. vAmiga and Denise do not. Here Copperline's has a test naming DSKPT explicitly. **The first three sightings said Copperline alone; all four are corrected — O59** |
+| **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Memory.cpp:1621-1623`) mask the address the DMA drives, by Agnus revision. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Here Copperline's has a test naming DSKPT explicitly |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter), [NM-HRM-024](NM-HRM-024.md) (audio) — **this is the fourth sighting of the same cause.** And [NM-HRM-014](NM-HRM-014.md), on the manual's own inconsistency about this extension |
 
 ---
@@ -32,16 +32,17 @@ unconditionally. Six sites, no `ecs` term among them:
 | audio | [`agnus_audiodma.v:82`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v#L82) — `audlch[audlcsel] <= #1 data_in[4:0];` |
 | bitplane | [`agnus_bitplanedma.v:220`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L220) — `assign bplpth_in = dma ? newpt[20:16] : data_in[4:0];` |
 | blitter | [`agnus_blitter_adrgen.v:62`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter_adrgen.v#L62) — `assign bltptr_in[20:1] = enaptr ? newptr[20:1] : {data_in[4:0], data_in[15:1]};` |
-| Copper | [`agnus_copper.v:144`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L144) and [`:161`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L161) — `cop1lch[20:16] <= data_in[4:0];` |
+| Copper | [`agnus_copper.v:144`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L144) and [`:161`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L161) — `cop1lch[20:16] <= data_in[4:0];` and `cop2lch[20:16] <= data_in[4:0];` |
 | **disk** | [`agnus_diskdma.v:56`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56) — `assign address_outnew[20:1] = dma ? address_out[20:1]+1'b1 : {data_in[4:0],data_in[15:1]};` |
 | sprite | [`agnus_spritedma.v:179`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_spritedma.v#L179) — `assign sprpth_in = ackdma ? newptr[20:16] : data_in[4:0];` |
 
-The disk line and the blitter line are the same expression, a space apart.
+The disk line and the blitter line load the pointer with the same expression, a
+space apart.
 
-**The `ecs` signal exists and is threaded to four of these modules.** `agnus.v`
+**The `ecs` signal exists and is threaded to four of these engines.** `agnus.v`
 passes it to `agnus_bitplanedma`, `agnus_spritedma`, `agnus_copper`,
 `agnus_blitter` and `agnus_beamcounter`, and each of those uses it — for DIWHIGH
-and the DDF H3 bit, for the sprite VSTART/VSTOP ninth bit, for the Copper's own
+and the DDF H2 bit, for the sprite VSTART/VSTOP ninth bit, for the Copper's own
 danger range, for `BLTCON0L`/`BLTSIZH`. **None of them uses it for a pointer.**
 
 `agnus_diskdma` and `agnus_audiodma` do not even have the port.
@@ -90,7 +91,7 @@ At the `agnus` boundary, where `ecs` is a real, drivable port — not at
 `agnus_diskdma`, which cannot put the question:
 
     FAIL: P4  the (E) mark: driving the real ecs port at the agnus boundary
-              changes what DSKPTH loads   [sol:8-appb-dskpth.c8, p.289 with p.288]
+              changes what DSKPTH loads   [sol:8-appb-dskpth.c8, p.289 composed with p.288]
     FAIL: P5  on OCS, DSKPTH holds only the high three bits
                                           [sol:8-appb-dskpth.c9, p.289]
 
@@ -116,29 +117,28 @@ looked for.
 |---|---|---|
 | **Copperline** | [`src/chipset/agnus.rs:113-118`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L113-L118)<br>[`src/floppy/mod.rs:1250-1252`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L1250-L1252) | the same central `dma_addr_capability_mask()` the other three findings cite (`Ocs => 0x0007_FFFF`), reaching the floppy through `configure_chip_dma_masks` at [`src/bus.rs:4991-5002`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L4991-L5002). **It narrows DSKPT by Agnus revision** |
 | **WinUAE** | [`memory.cpp:2619-2624`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2619-L2624) | **not in the register — on the bus.** `DSKPTH` stores all sixteen bits ([`disk.cpp:5208-5211`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L5208-L5211)), but every Agnus-side chip-RAM access masks with `chipmem_full_mask`, and that is set to `0x80000 - 1` when `CSMASK_ECS_AGNUS` is clear. See the caveat below |
-| **vAmiga** | — | no narrowing of the pointer. `ptrMask` is per-revision ([`Agnus.cpp:190-194`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L190-L194)) but reaches only an `assert`, the inspector and an `xfiles("DSKPT %08x out of range")` log line at [`AgnusRegs.cpp:715-717`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L715-L717). The fetched address is `dskpt` unmasked ([`AgnusDma.cpp:84-96`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusDma.cpp#L84-L96)) |
+| **vAmiga** | [`Core/Components/Memory/Memory.cpp:1621-1623`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L1621-L1623) | **not in the register — on the bus**, as WinUAE does. `setDSKPTH` keeps the whole high word (`dskpt = REPLACE_HI_WORD(dskpt, value);`, [`AgnusRegs.cpp:713`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L713)), and `ptrMask` there only feeds an `xfiles("DSKPT %08x out of range")` log line ([`AgnusRegs.cpp:715-717`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L715-L717)). The disk fetch is `mem.peek16 <Accessor::AGNUS> (dskpt)` ([`AgnusDma.cpp:84-96`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusDma.cpp#L84-L96)), and that accessor begins `addr &= agnus.ptrMask;` (writes likewise, `Memory.cpp:2157-2159`), with `ptrMask` set per revision, `0x07FFFF` for an OCS Agnus ([`Agnus.cpp:190-194`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L190-L194)) |
 | **Denise** | — | masks `dskpt` at the DSKPTH write, but with `dmaChipMemMask`, which is the installed chip-RAM mask ([`memory.cpp:693-698`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/memory.cpp#L693-L698)). The one `ecs()` term there *widens* it, for the Slow-RAM mirror. No chipset narrowing |
 | **MiSTer** | six sites, byte-identical to NanoMig's: [`rtl/agnus_audiodma.v:82`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_audiodma.v#L82), [`rtl/agnus_bitplanedma.v:220`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L220), [`rtl/agnus_blitter_adrgen.v:62`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter_adrgen.v#L62), [`rtl/agnus_copper.v:144,161`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L144), [`rtl/agnus_diskdma.v:56`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56), [`rtl/agnus_spritedma.v:179`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_spritedma.v#L179) | descendant — : `rtl/agnus_audiodma.v:82` (`audlch[audlcsel] <= #1 data_in[4:0];`), `rtl/agnus_bitplanedma.v:220` (`assign bplpth_in = dma ? newpt[20:16] : data_in[4:0];`), `rtl/agnus_blitter_adrgen.v:62` (`assign bltptr_in[20:1] = enaptr ? newptr[20:1] : {data_in[4:0], data_in[15:1]};`), `rtl/agnus_copper.v:144,161` (`cop1lch`/`cop2lch[20:16] <= data_in[4:0];`) and `rtl/agnus_diskdma.v:56` — five statements, byte-identical to NanoMig's, no `ecs` term at any of them — plus `rtl/agnus_spritedma.v:179` (`assign sprpth_in = ackdma ? newptr[20:16] : data_in[4:0];`), also identical. `rtl/agnus.v:281-295` instantiates `agnus_diskdma` with NanoMig's same twelve ports and no `.ecs`. none of the six carries an `ecs` term. |
 | **TC64** | the same six statements, byte-identical (line numbers move only where an unrelated rewrite precedes the site): [`rtl/minimig/agnus_audiodma.v:82`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_audiodma.v#L82), [`rtl/minimig/agnus_bitplanedma.v:194`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L194), [`rtl/minimig/agnus_blitter_adrgen.v:62`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_blitter_adrgen.v#L62), [`rtl/minimig/agnus_copper.v:144,161`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L144), [`rtl/minimig/agnus_diskdma.v:57`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_diskdma.v#L57), [`rtl/minimig/agnus_spritedma.v:179`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_spritedma.v#L179) | descendant — : `rtl/minimig/agnus_audiodma.v:82`, `rtl/minimig/agnus_bitplanedma.v:194`, `rtl/minimig/agnus_blitter_adrgen.v:62`, `rtl/minimig/agnus_copper.v:144,161`, `rtl/minimig/agnus_diskdma.v:57` and `rtl/minimig/agnus_spritedma.v:179` — the same six statements, byte-identical (line numbers move only where an unrelated rewrite precedes the site). `rtl/minimig/agnus.v:327-342` instantiates `agnus_diskdma` with a thirteenth port, `.turbo(turbo)`, unrelated to ECS, and still no `.ecs`. Both forks thread `ecs` to exactly the same five modules NanoMig does — bitplane, sprite, Copper, blitter and beamcounter — and to neither disk nor audio. A fix at any of the six sites, in any of the seven files, diverges from neither line |
 
 **Copperline states the rule in a test, on this register by name.**
-[`src/bus/tests.rs:2787-2802`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/tests.rs#L2787-L2802)
+[`src/bus/tests.rs:2785-2802`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/tests.rs#L2785-L2802)
 walks `$001F`/`$FFFE` into every DMA pointer at each of three Agnus revisions and
 asserts `bus.floppy.dskpt() == mask`, with `0x0007_FFFE` for OCS. Its comment
 reads *"walk every DMA pointer register and check the writable high bits follow
 the Agnus revision's address-bus reach"*. The disk pointer is not an afterthought
 there.
 
-### One refinement to the sibling entries' WinUAE row
+### WinUAE and vAmiga narrow the bus, not the register
 
-[NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) each record WinUAE as *"no chipset
-narrowing"*, with a dash — which in [NM-HRM-024](NM-HRM-024.md)'s own convention means the
-source had not been read for that finding. **Read for this one, WinUAE does
-narrow by chipset, just not where those entries looked.** The register keeps
-every bit; the Agnus-side access mask does the work, and an OCS configuration
-gets 19 bits — the manual's OCS reach exactly.
+[NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) record the same for their
+engines. **Neither narrows the register; both narrow the address Agnus
+drives.** The register keeps every bit; the Agnus-side access mask does the
+work, and an OCS configuration gets 19 bits — the manual's OCS reach exactly. In
+vAmiga the mask is `ptrMask`, set by Agnus revision alone.
 
-Two caveats keep this from being a clean fifth vote for the manual: `cs_agnussize`
+Two caveats keep WinUAE's from being a clean vote for the manual: `cs_agnussize`
 overrides the mask in either direction
 ([`memory.cpp:2627-2644`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2627-L2644)),
 and with JIT enabled
@@ -147,17 +147,14 @@ resets it to the allocated chip-RAM size, dropping the chipset term altogether.
 It is a memory-map behaviour that happens to produce the pointer width, not a
 model of the register.
 
-**This does not change the verdict of the four for any of the four findings** —
-Copperline is still the only one that narrows the pointer itself — but it does
-change what "nobody else models this" is worth as an argument. Whoever revisits
-[NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) or [NM-HRM-024](NM-HRM-024.md) should carry this across rather than
-re-derive it.
+Copperline is still the only one that narrows the pointer itself, but the bus
+masks change what "nobody else models this" is worth as an argument.
 
 ## Suggested change
 
 **The same one, and it is one change, not four.** [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-022](NM-HRM-022.md)
 already set out the two coherent actions; this finding adds only that the count
-is six pointer sites in six modules, two of which have no chipset input at all:
+is six pointer sites in six engines, two of which have no chipset input at all:
 
 1. **Model it once, centrally**, the way Copperline does — a mask derived from the
    Agnus revision and applied to every assembled DMA pointer. That closes four
@@ -190,7 +187,9 @@ finding is the argument against it rather than for it.
 Everything that weakens [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) weakens this
 one identically, and for the same reason: it is the same question.
 
-- **Three of four implementations do what NanoMig does** at the register.
+- **Three of four implementations do what NanoMig does** at the register. At the
+  address Agnus drives, WinUAE and vAmiga narrow on OCS; only Denise fetches
+  with no chipset term.
 - **[NM-HRM-014](NM-HRM-014.md) records that the manual applies its own ECS pointer extension
   inconsistently.** If the manual is not self-consistent about how widely the
   extension reaches, then four findings each quoting one of its sentences are

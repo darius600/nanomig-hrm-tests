@@ -24,14 +24,14 @@ This entry grades **p.278** and only p.278.
 **Chapter 8, printed p.248**, Table 8-7, bit 14:
 
 ```
-     14      DMAON      Indicates when DMA is actually enabled.  All the
-                        various DMA bits must be true.  This means the
-                        DMAEN bit in  DSKLEN , and the DSKEN & DMAEN bits
-                        in  DMACON .
+14      DMAON       Indicates when DMA is actually enabled. All the various
+                    DMA bits must be true. This means the DMAEN bit in
+                    DKSLEN, and the DSKEN & DMAEN bits in DMACON.
 ```
 
 Three terms, named individually, with "all the various DMA bits must be true"
-standing in front of them.
+standing in front of them. `DKSLEN` is the print's spelling of `DSKLEN` in this
+row; the bit 13 row below it spells it `DSKLEN`.
 
 **Appendix A, printed p.278**, the DSKBYTR bit table:
 
@@ -40,9 +40,9 @@ standing in front of them.
                                   ANDed with Bit09 (DMAEN) in  DMACON
 ```
 
-Two terms. DSKEN — DMACON bit 04, the neighbour of the bit 09 this row does
-name — is not among them, and p.278 offers no "and the other DMA bits" clause
-that would let it in.
+Two terms. DSKEN — DMACON bit 04, printed in the DMACON table directly above
+this row on the same page — is not among them, and p.278 offers no "and the
+other DMA bits" clause that would let it in.
 
 **The two readings differ on exactly one input.** Hold DSKLEN's DMAEN armed and
 DMACON's master DMAEN true, then vary DMACON's DSKEN: p.248 predicts DMAON
@@ -88,7 +88,9 @@ where `dmacon[4]` is DMACON's DSKEN and the local `dmaen` there is DMACON bit
                  &  DMACON.DMAEN (master)
                  &  DSKLEN[13:0] != 0
 
-— p.248's three terms, and a nonzero-length term that neither page names.
+— p.248's three terms, and a nonzero-length term that neither page names. The
+length term gates the start of a transfer: in write mode `trackwr` stays set in
+`DISKDMA_ACTIVE` after the count reaches zero, until the FIFO has drained.
 
 **A note on naming.** The module has an internal register also called `dmaon`
 ([`#L137`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L137)),
@@ -141,11 +143,11 @@ arming as well — p.248's reading, in four independent codebases.
 | **TC64** | [`rtl/minimig/paula_floppy.v:633`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L633) and [`rtl/minimig/paula.v:188`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L188)/[`:264`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L264) | descendant — `rtl/minimig/paula_floppy.v:633` and `rtl/minimig/paula.v:188`/`:264` — the same DSKBYTR composition and the same `dsken` wiring, unchanged. The three-term composition p.278 does not print — DSKLEN.DMAEN, DMACON.DSKEN, DMACON.DMAEN — is built from the same signals in all three trees. The red is against the manual's own appendix, not against any of the RTL, so no fix belongs to any of the three |
 
 **The agreement is total among the four independent implementations, and it is
-on p.248's side.** Four implementations written independently, in three
+on p.248's side.** Four implementations written independently, in two
 languages, from the same manual, each arrived at the three-term composition.
 NanoMig makes five — and both maintained Minimig lines carry the identical
 signals, so as descendants they add a sixth and seventh instance of the same
-inherited two-term line, not a second reading of the page.
+inherited three-term composition, not a second reading of the page.
 
 **None of them decides this finding.** They are reported because a unanimous
 verdict is itself a result: p.278's line is not a reading anybody has taken.
@@ -187,8 +189,9 @@ than a hardware one.
   DSKEN is arguably assumed by the fact that disk DMA is running at all. The
   page does not say so, which is why it is graded as printed — the same
   treatment [NM-HRM-042](NM-HRM-042.md) gives the "32-bit wide address" sentences.
-- **The nonzero-length term appears on no page at all.** NanoMig, WinUAE,
-  vAmiga, Denise and Copperline all require a non-empty transfer, and neither
+- **The nonzero-length term appears on no page at all.** NanoMig, vAmiga and
+  Copperline require a non-empty transfer, and WinUAE and Denise do unless
+  ADKCON's WORDSYNC holds the transfer waiting for a sync word; neither
   p.248 nor p.278 names that condition. It falls outside this finding's claim,
   but it means neither page is a complete specification of the bit.
 

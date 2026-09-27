@@ -65,7 +65,7 @@ alone, not because it adds a third statement.
 
 **The `*` on DSKPTH is a property of an address range, not a judgement about the
 disk pointer.** Every row from `$000` to `$03E` on p.289 carries `*`, and every
-row from `$040` to `$07E` carries `~`. The manual marked two blocks of addresses,
+row from `$040` to `$07E`, running onto the top of p.290, carries `~`. The manual marked two blocks of addresses,
 and DSKPTH is inside the first. That does not weaken the contradiction — the mark
 means what the legend says it means wherever it appears — but it does mean nobody
 should read the `*` as a considered statement about *this* register.
@@ -113,7 +113,7 @@ which appendix B's `*` and appendix C's ECS relaxation of the low address range
 do not interact, and the ECS-plus-CDANG case is [NM-HRM-004](NM-HRM-004.md)'s territory rather
 than a fresh number. The package's own run records the boundary it did not cross:
 
-> **MEASURED:** this package never drives a Copper MOVE at `ecs`=1/`cdang`=1
+> **MEASURED:** NM-HRM-004 check: this package never drives a Copper MOVE at `ecs`=1/`cdang`=1
 > against the $008-$026 range … Nothing in this package's build fell into that
 > territory.
 
@@ -160,12 +160,12 @@ NanoMig does.
 
 | | code | |
 |---|---|---|
-| **WinUAE** | [`custom.cpp:2806-2818`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2806-L2818) | <pre>int addr = reg & 0x01fe;<br>if (addr &lt; ((copcon & 2) ? (ecs_agnus ? 0 : 0x40) : 0x80)) {</pre> floor `$80` with CDANG clear, `$40` with CDANG set on OCS, `0` on ECS. $020 blocked in both OCS cases. The same branch stops the Copper for the line |
+| **WinUAE** | [`custom.cpp:2806-2818`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2806-L2818) | <pre>int addr = reg & 0x01fe;<br>if (addr &lt; ((copcon & 2) ? (ecs_agnus ? 0 : 0x40) : 0x80)) {</pre> floor `$80` with CDANG clear, `$40` with CDANG set on OCS, `0` on ECS. $020 blocked in both OCS cases. In the Copper's normal path, `generate_copper`, the same test (`:9134`) clears `validmove`, so the write is dropped and no further instruction is fetched: the Copper stops until it is restarted |
 | **vAmiga** | [`Copper.cpp:394-402`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.cpp#L394-L402) | <pre>if (cdang) {<br>&nbsp;&nbsp;return agnus.isOCS() ? addr &lt; 0x40 : false;<br>} else {<br>&nbsp;&nbsp;return addr &lt; 0x80;<br>}</pre> the identical three cases. [`CopperEvents.cpp:144-145`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/CopperEvents.cpp#L144-L145) cancels the Copper slot on an illegal address |
 | **Denise** | [`emulation/libami/agnus/copper.cpp:341-343`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L341-L343) | <pre>cdang = (value & 2) ? (agnus.ecsAndHigher() ? 0 : 0x40) : 0x80;</pre> stores the floor rather than the bit, then at [`:203-207`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L203-L207) `if (reg < cdang) { state = Off; ... }` — same three cases, same halt |
 | **Copperline** | [`src/bus/dma_slots.rs:697-708`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L697-L708) | <pre>if off &lt;= 0x03E {<br>&nbsp;&nbsp;&nbsp;&nbsp;return !matches!(self.agnus.revision(), AgnusRevision::Ocs)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&& self.agnus.copper_danger_enabled();<br>}</pre> the only one of the four that writes the two address blocks out as p.289 marks them — `<= 0x03E` needing both ECS and CDANG, `0x040..=0x07E` needing CDANG |
 | **MiSTer** | [`rtl/agnus_copper.v:220-228`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L220-L228) | descendant — byte-identical to NanoMig, same line numbers, comments included: `if (ir2[8:7]==2'b00 && !cdang \|\| ir2[8:6]==3'b000 && !ecs) illegalreg = 1'b1;`. $020 is blocked exactly as it is in NanoMig; this line is what NanoMig's own "What NanoMig does" section already cites as identical to Minimig-AGA |
-| **TC64** | [`rtl/minimig/agnus_copper.v:220-228`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L220-L228) | descendant — byte-identical as well, same line numbers, same comments, confirmed by a direct diff against both NanoMig's and MiSTer's lines. No citation for this row existed before this page; it was opened for this table rather than reused from an `Upstream` row, since this entry is a source observation and carries none |
+| **TC64** | [`rtl/minimig/agnus_copper.v:220-228`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L220-L228) | descendant — byte-identical as well, same line numbers, same comments, confirmed by a direct diff against both NanoMig's and MiSTer's lines |
 
 ### How to read that unanimity, and how not to
 
