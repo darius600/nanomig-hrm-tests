@@ -31,8 +31,7 @@
 //    dedicated sibling package (ch3-sprite-registers / hrm/denise_sprites)
 //    for sprite conformance. Exercising real sprite pixel output here would
 //    need sprite-register addresses this package's own claim inventory
-//    never cites, and would duplicate that sibling package's own claims --
-//    exactly what the build brief says not to do.
+//    never cites, and would duplicate that sibling package's own claims.
 //  * Dual-playfield transparency (3-dual.c12) -- covered by the sibling
 //    ch3-dual-playfield package.
 //  * DMA fetch / memory-picture byte counts (3-big.c04, 3-large.c3,
@@ -59,14 +58,9 @@
 //    sits relative to that -- declined, needs a wider (whole-system/CRT-
 //    timing) boundary than this fixture.
 //
-// NEW CLAIMS -- SPECIFICATION ONLY, FROM QUOTATIONS ALONE (this package's
-// full claims file, with its routing and evidence, and the RTL, are not yet
-// open when this paragraph is written -- see ORDER OF WORK below for why
-// that order matters). These seven propositions are added to this
-// package's specification from ch3-horizontal-display-window-spec-stage's
-// own quote/restatement/page fields alone; each is resolved into an
-// assertion, a note, or a decline only in the commit that follows, once the
-// full claims file and the RTL are open:
+// ROUTED CLAIMS -- seven propositions routed to this package, from
+// ch3-horizontal-display-window-spec-stage's own quote/restatement/page
+// fields; where each is graded is in SEVEN ROUTED CLAIMS below:
 //
 //  * 3-video.c28 (p.42, text): "Also, the dimensions of the playfield in
 //    memory are often larger than the playfield displayed on the screen."
@@ -96,8 +90,8 @@
 //    thick border drawn around the display window -- the area outside the
 //    display window shows the background colour.
 //
-// BOUNDARY (from PACKAGE.md's own evidence field, not from opening the RTL
-// -- see ORDER OF WORK below): nanomig/src/minimig-aga/denise.v:56-57
+// BOUNDARY (from PACKAGE.md's own evidence field):
+// nanomig/src/minimig-aga/denise.v:56-57
 // (DIWSTRT custom address 9'h08E, DIWSTOP 9'h090), hdiwstrt l.293-305,
 // hdiwstop l.307-320 (H8 forced 0 for start, 1 for stop), window compare
 // l.328-334, border select l.489-498 (outside the window clut_data is
@@ -121,9 +115,9 @@
 // (also the exact convention this repository's own hrm/denise/
 // test_denise.cpp already uses: its BPLCON4 write at reg_address_in 0x86
 // is custom address 0x10C, i.e. the same BPLCON0=0x100/.../BPLCON4=0x10C
-// ladder), not read out of nanomig/'s own denise.v before the spec commit.
+// ladder).
 //
-// THE C1/C3 TRAP (build-brief warning, not itself a claim): amiga_clk.v:
+// THE C1/C3 TRAP (not itself a claim): amiga_clk.v:
 // 58-61 makes c3 the registered 7MHz clock and c1 = ~c3 delayed one further
 // 28MHz cycle, so across one 7MHz cycle's four 28MHz phases, c1 and c3 are
 // BOTH high in one phase and BOTH low in another -- they are not two
@@ -170,27 +164,18 @@
 // that uses it compares a MEASURED sample count against that quoted
 // constant, not the other way around.
 //
-// ORDER OF WORK: this file (Harness, expected values, claim-id coverage)
-// was written and committed from claims.jsonl's quotations and PACKAGE.md's
-// own evidence field, plus the two build-brief traps above -- denise.v
-// itself was not opened until after that commit. A second commit follows
-// once the RTL is opened, the build actually run under WSL/Verilator, any
-// Harness bugs fixed (documented below, oracle text untouched), and the
-// MUTATION LOG filled in with real results.
-//
 // CLAIM COVERAGE: all 181 records of claims.jsonl are accounted for below
 // -- 146 inside an expect() assertion string (thirteen grouped assertions
-// -- G11 split into its own BRDRBLNK-works and BRDNTRAN-dead-code halves
-// once the RTL was opened, see RTL OPENED below -- plus
-// the ungrouped control), 35 inside a note() call with a stated reason
+// plus the ungrouped control), 35 inside a note() call with a stated reason
 // (five groups: sprites out of boundary, dual-playfield out of boundary,
 // DMA/memory-picture bytes out of boundary, vertical-axis/wrong-chip
 // claims, and Figure 3-9's physical-screen-geometry reading). Every id is
 // written out in full, in the assertion or note string itself, not only in
 // a header comment or grouping name.
 //
-// SEVEN CLAIMS ADDED (3-video.c28, 3-colortable.c8, 3-colortable.c9,
-// 3-ct.c04, 3-ct.c05, 3-max-window.c31, 3-hscr.f07 -- see NEW CLAIMS above):
+// SEVEN ROUTED CLAIMS (3-video.c28, 3-colortable.c8, 3-colortable.c9,
+// 3-ct.c04, 3-ct.c05, 3-max-window.c31, 3-hscr.f07 -- see ROUTED CLAIMS
+// above):
 // 3-video.c28 sits on G2-WINDOW-DEFINES-VISIBLE-AREA and 3-max-window.c31 on
 // G7-ECS-DIWHIGH-EXPANDS-RANGE, each already fully established by that
 // block's own measurement. The other five (3-colortable.c9, 3-ct.c05,
@@ -203,20 +188,16 @@
 // reading", never "follows the programmed register". G13 varies it. No
 // claim of the seven was declined.
 //
-// RTL OPENED, BUILT AND RUN, 11.09.2026 (all after the spec-only commit
-// above; built under WSL/Verilator 5.052). Every port name and address
-// assumed in the spec-only commit (clk, clk7_en, c1, c3, cck, reset,
-// strhor, reg_address_in[8:1], data_in[16], chip48[48], blank, a1k, ecs,
-// aga, red/green/blue out; DIWSTRT=$08E, DIWSTOP=$090, DIWHIGH=$1E4,
-// COLORBASE=$180, BPLCON0=$100, BPLCON1=$102, BPLCON3=$106, BPL1DAT=$110)
-// matched exactly -- no port name, width, or address needed changing.
-// denise.v's own module header additionally confirmed hires/shres are
-// OUTPUTS of this module (derived from BPLCON0, not settable ports), which
-// the spec-only Harness never assumed otherwise.
+// RTL NOTES (WSL/Verilator 5.052). The ports and addresses this file
+// drives (clk, clk7_en, c1, c3, cck, reset, strhor, reg_address_in[8:1],
+// data_in[16], chip48[48], blank, a1k, ecs, aga, red/green/blue out;
+// DIWSTRT=$08E, DIWSTOP=$090, DIWHIGH=$1E4, COLORBASE=$180, BPLCON0=$100,
+// BPLCON1=$102, BPLCON3=$106, BPL1DAT=$110) are denise.v's own. hires/shres
+// are OUTPUTS of this module (derived from BPLCON0, not settable ports).
 //
-// FOUR THINGS THE SPEC-ONLY COMMIT COULD NOT HAVE KNOWN, ALL FOUND BY
-// READING denise.v ITSELF, EACH FIXED AS A HARNESS/STIMULUS CHANGE WITH NO
-// ORACLE TEXT TOUCHED (full detail at each fix's own call site above):
+// FOUR PROPERTIES OF denise.v THE HARNESS ACCOUNTS FOR, EACH AS A
+// STIMULUS/HARNESS MEASURE WITH NO ORACLE TEXT INVOLVED (full detail at
+// each one's own call site below):
 //
 // 1. hpos <= 9'd2 on strhor (denise.v:139), not 0 -- so DIWSTRT raw values
 //    $00/$01 are structurally unreachable in a single line. The G3-BITS
@@ -229,28 +210,24 @@
 //    (hdiwstrt=0) combined with hpos free-running from its own zero-init
 //    the moment clk7_en starts pulsing (well before any real DIWSTRT
 //    write) spuriously latches `window` to 1 before this Harness has
-//    written anything at all, and it then stays stuck there (found by a
-//    diagnostic dump showing window==1 from sample 0 of an ordinary
-//    DIWSTRT=$30/DIWSTOP=$50 scan). Fixed with Harness::prime_window_closed
-//    (called once, automatically, at the end of the constructor): force
-//    DIWSTOP to its smallest actual value ($00 -> hdiwstop=256) and run
-//    hpos all the way up to it once, so `window` is driven to a real,
-//    verified 0 before any test-specific register is ever written.
+//    written anything at all, and it then stays stuck there (a dump shows
+//    window==1 from sample 0 of an ordinary DIWSTRT=$30/DIWSTOP=$50 scan
+//    without the priming below). Harness::prime_window_closed (called
+//    once, automatically, at the end of the constructor) forces DIWSTOP to
+//    its smallest actual value ($00 -> hdiwstop=256) and runs hpos all the
+//    way up to it once, so `window` is driven to a real, verified 0 before
+//    any test-specific register is ever written.
 //
 // 3. The saturating BPL1DAT retrigger (THE HPOS[3:2] TRAP's own mitigation)
-//    needed two rounds of strengthening, both found by tracing raw
-//    `bpldata` in a diagnostic build, not by reasoning about the RTL in
-//    the abstract: retriggering every four samples left a measured gap
-//    between retriggers (fixed: retrigger every sample); even retriggering
-//    every sample, the very first ~9 samples after a single one-shot
-//    pre-load showed a genuine warm-up transient (a stray single 1-bit,
-//    then back to 0, before the shifter's own load/shift pipeline actually
-//    caught up) -- fixed by continuously retriggering for a full
-//    kSaturateWarmupSamples=24-sample warm-up window BEFORE reset_line(),
-//    not just once, so the shifter is already in steady continuous
-//    saturation by the time hpos starts counting from the real start of
-//    the line. See Harness::scan_window's own header comment for the full
-//    two-stage account.
+//    re-presents the write on EVERY sample (every fourth sample leaves a
+//    measured gap between retriggers) and runs a kSaturateWarmupSamples=24
+//    warm-up of continuous retriggering BEFORE reset_line(): after a
+//    single one-shot pre-load, raw `bpldata` shows a warm-up transient
+//    over the first ~9 samples (a stray single 1-bit, then back to 0,
+//    before the shifter's own load/shift pipeline catches up), so the
+//    shifter must already be in steady continuous saturation by the time
+//    hpos starts counting from the real start of the line. See
+//    Harness::scan_window's own header comment.
 //
 // 4. DIWHIGH's two H8 bits are NOT independently latched -- hdiwstrt[8]
 //    and hdiwstop[8] both come from whichever register write most
@@ -259,9 +236,8 @@
 //    whichever one a caller "meant" to change. G8's own isolation writes
 //    therefore hold the OTHER bit at the value DIWSTRT/DIWSTOP's own
 //    forcing already produced, so only the bit under test actually moves
-//    anything -- this is not a Harness workaround so much as a precise
-//    reading of 'it sets direct start and stop positions' (p.306, plural,
-//    both) once the RTL made that literal.
+//    anything -- a precise reading of 'it sets direct start and stop
+//    positions' (p.306, plural, both).
 //
 // D-BRDNTRAN-HAS-NO-EFFECT DECLINES ITS SEVEN CLAIMS AS ABSENT (NM-HRM-015,
 // withdrawn): BPLCON3 bit 4 (BRDNTRAN) is named only among the genlock
@@ -279,24 +255,12 @@
 // the manual's own mnemonic table names that effect, 'BRDRBLNK Border
 // blank' (Appendix C, p.307).
 //
-// First build after all four fixes: 12 passed, 1 failed -- matching every
-// prediction this file's assertions were written against before the RTL
-// was opened, with the single exception of D-BRDNTRAN-HAS-NO-EFFECT itself
-// (predicted as a possible finding in the spec-only commit's own BORDER-
-// BLANK-OPAQUE framing, confirmed red once measured) and two small
-// pre-RTL arithmetic slips caught by the mutation-testing pass below
-// (G7's old_scheme_holds and G8's stop_untouched_by_start_bit each
-// compared a measured close_idx against a bare raw DIWSTOP byte instead of
-// that byte plus the +256 G4 itself establishes -- both are stimulus/
-// expected-value bookkeeping fixes, not oracle changes: the underlying
-// manual claim and its wording were never touched).
-//
-// MUTATION LOG (all 12 entries actually run under WSL/Verilator on
-// 11.09.2026: edit -> rebuild -> run -> confirm the named assertion red
-// -> revert -> rebuild -> confirm the full suite back to 11 passed, 1
-// failed -- before moving to the next one. Every mutation is a STIMULUS
-// change to this file's own inputs or Harness call sites; no expected
-// value or oracle text was ever touched, and nanomig/ was never touched):
+// MUTATION LOG (each entry run under WSL/Verilator as edit -> rebuild ->
+// run -> confirm the named assertion red -> revert -> rebuild -> confirm
+// the baseline again; the pass/fail totals quoted in an entry are those of
+// the run that recorded it. Every mutation is a STIMULUS change to this
+// file's own inputs or Harness call sites; no expected value or oracle
+// text is touched, and nanomig/ is never touched):
 //
 // MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: the BPL1DAT trigger write
 //   changed from 0xACE1 to 0x0000 -> FAIL ("10 passed, 2 failed"), only
@@ -352,14 +316,9 @@
 // assertion -- there is no red/green state for a mutation to move it
 // between.
 //
-// Final rebuild after the last revert: 11 passed, 1 failed, confirmed
-// again immediately before this commit.
-//
-// EXTENSION MUTATION LOG (the one new assertion added for this extension;
-// G2's and G7's own mutations above already cover the ids added to their
-// labels, since a mutation record pairs against an assertion's own leading
-// id token, not its full id list -- adding ids after the colon does not
-// change what those mutations replay):
+// G12 and G13 (a mutation record pairs against an assertion's own leading
+// id token, not its full id list, so G2's and G7's mutations above cover
+// every id on their labels):
 //
 // MUTATION G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT stimulus red: a single
 //   non-zero BPL1DAT sample (0xFFFF) is written at scan index 100, well
@@ -370,13 +329,11 @@
 //   Replayable as MUTATE=G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT. Reverted:
 //   12/1.
 //
-// Final rebuild after this extension's revert: 12 passed, 1 failed,
-// confirmed again immediately before this commit.
-//
-// IDS MOVED, ONE ASSERTION ADDED: 3-colortable.c9, 3-ct.c05, 3-hscr.f07
-// (off G2-WINDOW-DEFINES-VISIBLE-AREA) and 3-colortable.c8, 3-ct.c04 (off
-// G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT) sit on
-// G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 instead: G2's and G12's own
+// WHY FIVE IDS SIT ON G13: 3-colortable.c9, 3-ct.c05, 3-hscr.f07,
+// 3-colortable.c8 and 3-ct.c04 sit on
+// G13-BORDER-AND-BACKGROUND-TRACK-COLOR00, not on
+// G2-WINDOW-DEFINES-VISIBLE-AREA or G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT:
+// G2's and G12's own
 // "border" readings are both taken under the SAME COLOR00 write that
 // programs the window itself, so neither ever varies COLOR00 and neither
 // can establish that a rendering IS the programmed value rather than some
@@ -386,8 +343,7 @@
 // in-window-with-no-object (background) readings to move together between
 // the two runs while matching each other within a single run -- and its own
 // companion saturated run shows the window open independently of BPL1DAT,
-// which G12 never did. G2 and G12 keep their own verdict, expected value
-// and measurement unchanged; only the five ids moved.
+// which G12 does not.
 //
 // MUTATION G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 stimulus red: the second
 //   run's COLOR00 write changed from $00A to the same $0F0 the first run
@@ -396,9 +352,6 @@
 //   G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 newly red (alongside the
 //   already-red D-BRDNTRAN-HAS-NO-EFFECT). Replayable as
 //   MUTATE=G13-BORDER-AND-BACKGROUND-TRACK-COLOR00. Reverted: 13/1.
-//
-// Final rebuild after this repair's revert: 13 passed, 1 failed, confirmed
-// again immediately before this commit.
 
 #include <array>
 #include <cstdint>
@@ -483,15 +436,13 @@ constexpr uint16_t kColor01Value = 0xF00;
 // constant".
 constexpr uint16_t kColor00AltValue = 0x00A;
 
-// Reused clocking mechanics for this fixture, on the same port set this
-// repository's own already-committed hrm/denise/test_denise.cpp declares
-// on its Vdenise object (clk, clk7_en, c1, c3, cck, reset, strhor,
-// reg_address_in, data_in, chip48, blank, a1k, ecs, aga; red/green/blue
-// out) -- reused as infrastructure, not read as a claim of this package's
-// own inventory. `cck` itself is not cited by any evidence field text
-// either; it is driven the same phase-0-or-1 pattern that file's own
-// (broken) c1 signal happened to occupy, as a placeholder pending RTL
-// confirmation -- see HARNESS FIXES below once the RTL is opened.
+// Clocking mechanics for this fixture, on the same port set this
+// repository's own hrm/denise/test_denise.cpp declares on its Vdenise
+// object (clk, clk7_en, c1, c3, cck, reset, strhor, reg_address_in,
+// data_in, chip48, blank, a1k, ecs, aga; red/green/blue out) --
+// infrastructure, not a claim of this package's own inventory. `cck`
+// itself is not cited by any evidence field text either; it is driven
+// high in phases 0 and 1 (see tick()).
 class Harness {
 public:
     Harness() : dut(new Vdenise) {
@@ -559,8 +510,8 @@ public:
         dut->strhor = 0;
     }
 
-    // HARNESS FIX (found once the RTL was opened -- see RTL OPENED below;
-    // a stimulus/methodology fix, oracle text untouched): denise.v's
+    // WHY THIS EXISTS (a stimulus/methodology measure, no oracle text
+    // involved): denise.v's
     // `window` register (l.328-334) has NO reset clause at all -- it only
     // ever changes on `hpos==hdiwstrt` (-> 1) or `hpos==hdiwstop` (-> 0),
     // otherwise holding. hdiwstrt/hdiwstop themselves also default to 0 on
@@ -570,9 +521,10 @@ public:
     // before any DIWSTRT/DIWSTOP write happens -- so hpos crosses 0 almost
     // immediately, matching the stale hdiwstrt=0 default, and `window`
     // latches to 1 before this Harness has written anything at all. It
-    // then stays stuck at 1 (measured directly: a diagnostic dump showed
-    // window==1 from the very first sample of an otherwise-ordinary
-    // DIWSTRT=$30/DIWSTOP=$50 scan, even at hpos values far below $30)
+    // then stays stuck at 1 (measured directly: without this priming, a
+    // dump shows window==1 from the very first sample of an
+    // otherwise-ordinary DIWSTRT=$30/DIWSTOP=$50 scan, even at hpos values
+    // far below $30)
     // until hpos happens to reach whatever hdiwstop is currently set to --
     // which, because DIWSTOP's own H8 is forced 1, is never smaller than
     // 256, so the spurious open persists for the entire low end of any
@@ -586,9 +538,9 @@ public:
     // -- but a single Harness call that only ever scans one line's worth
     // of samples past a single strhor pulse needs `window` to already be
     // in a known state before that pulse, which normal hardware gets for
-    // free from every PRIOR line and this Harness does not. Fixed once,
-    // in the constructor, before any test writes DIWSTRT/DIWSTOP for
-    // real: force DIWSTOP to its smallest possible actual value ($00,
+    // free from every PRIOR line and this Harness does not. So, once, in
+    // the constructor, before any test writes DIWSTRT/DIWSTOP for real:
+    // force DIWSTOP to its smallest possible actual value ($00,
     // hdiwstop=256 exactly) and run hpos all the way up to it once, so
     // `window` is driven to a real, verified 0 before any measurement
     // begins.
@@ -618,33 +570,29 @@ public:
     // entirely. Returns the packed rgb value at each of the n sampled
     // steps.
     //
-    // HARNESS FIX (found once the RTL was opened, in two stages -- a
-    // stimulus/methodology fix both times, oracle text untouched):
+    // WHY EVERY SAMPLE, AND WHY THE WARM-UP (stimulus/methodology
+    // measures, no oracle text involved):
     //
-    // Stage 1: re-presenting the saturating write only every FOUR samples
-    // (this file's own predicted "one shift per four ticks" lores rate)
-    // left a measured gap between retriggers. Fixed by re-presenting the
-    // identical write on every single sample instead of every fourth.
+    // Re-presenting the saturating write only every FOUR samples (the
+    // "one shift per four ticks" lores rate) leaves a measured gap between
+    // retriggers, so the identical write is re-presented on every single
+    // sample.
     //
-    // Stage 2: even with every-sample retriggering, a diagnostic trace of
-    // `bpldata` itself (not just the window/clut_data logic, which was
-    // already correct) for an early DIWSTRT value showed a genuine
-    // warm-up transient: a single stray 1-bit at sample index 4 (the
-    // tail of the ONE pre-line write this Harness used to do before
-    // reset_line()), back to 0 for several samples, then permanently 1
-    // only from around sample index 9 onward -- i.e. it took roughly 9
-    // samples of CONTINUOUS retriggering, measured from the first
-    // retrigger, before the shifter's own load/shift pipeline actually
-    // caught up and stayed caught up. A single one-shot pre-load (this
-    // Harness's original approach) never gives that pipeline the chance
-    // to reach steady state before reset_line() starts the timed part of
-    // the scan, so an early DIWSTRT value could land inside the transient
-    // and be measured against a still-settling shifter. Fixed by
-    // continuously retriggering BPL1DAT for a full warm-up window BEFORE
-    // reset_line() (not just once), long enough (kSaturateWarmupSamples,
-    // well past the ~9-sample settling point actually measured) that the
-    // shifter is already in steady continuous saturation by the time
-    // hpos starts counting from the real start of the line.
+    // After a single one-shot pre-line write of BPL1DAT, a trace of
+    // `bpldata` itself for an early DIWSTRT value shows a warm-up
+    // transient: a single stray 1-bit at sample index 4, back to 0 for
+    // several samples, then permanently 1 only from around sample index 9
+    // onward -- roughly 9 samples of CONTINUOUS retriggering before the
+    // shifter's own load/shift pipeline catches up and stays caught up. A
+    // one-shot pre-load never gives that pipeline the chance to reach
+    // steady state before reset_line() starts the timed part of the scan,
+    // so an early DIWSTRT value could land inside the transient and be
+    // measured against a still-settling shifter. Hence BPL1DAT is
+    // retriggered continuously for a full warm-up window BEFORE
+    // reset_line(), long enough (kSaturateWarmupSamples, well past the
+    // ~9-sample settling point measured) that the shifter is already in
+    // steady continuous saturation by the time hpos starts counting from
+    // the real start of the line.
     static constexpr int kSaturateWarmupSamples = 24;
     std::vector<uint32_t> scan_window(int n, bool saturate) {
         if (saturate) {
@@ -716,7 +664,7 @@ Edges find_edges(const std::vector<uint32_t>& samples, uint32_t border) {
 // saturated (see Harness::scan_window). bplcon0_extra ORs in additional
 // BPLCON0 bits (HIRES=bit15, LACE=bit2) for the mode-invariance group.
 //
-// HARNESS FIX (found once the RTL was opened): hpos is a 9-bit counter
+// HPOS WRAP: hpos is a 9-bit counter
 // (denise.v:69, 139) that does not stop on its own -- left running past
 // sample index ~509 (hpos 511, the counter's own top) it wraps to 0 and
 // keeps counting, which (since hdiwstrt is still the same value that
@@ -869,20 +817,19 @@ int main(int argc, char** argv) {
     }
 
     // ==================== G2: WINDOW-DEFINES-VISIBLE-AREA ====================
-    // One id added to this assertion's label below (3-video.c28): it
-    // restates the same p.42 sentence this label already quotes ('the
-    // playfield in memory are often larger than the playfield displayed on
-    // the screen... by specifying a different size for the display
-    // window') -- narrowing DIWSTOP while the saturated data stays constant
-    // is exactly that mechanism, already fully established by the
-    // measurement this block already makes.
+    // 3-video.c28 on this assertion's label restates the same p.42
+    // sentence this label quotes ('the playfield in memory are often
+    // larger than the playfield displayed on the screen... by specifying a
+    // different size for the display window') -- narrowing DIWSTOP while
+    // the saturated data stays constant is exactly that mechanism,
+    // established by the measurement this block makes.
     //
     // 3-colortable.c9, 3-ct.c05 and 3-hscr.f07 do NOT sit here: this
     // block's border sample comes from measure_window's own calibration
     // Harness, written with the identical COLOR00 value as the window
     // under test, so nothing here ever varies COLOR00 -- the comparison
     // only ever shows "outside reads differently from inside", never
-    // "outside reads COLOR00's own programmed value". Moved to
+    // "outside reads COLOR00's own programmed value". They sit on
     // G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 below, which does vary it.
     {
         auto narrow = measure_window(0x30, 0x40);  // 16-lores-pixel-wide window
@@ -950,7 +897,7 @@ int main(int argc, char** argv) {
     }
 
     // ==================== Shared H-bit sweeps (reused by G3-BITS and G4) ====================
-    // RTL NOTE (found once denise.v was opened, see RTL OPENED below): on
+    // RTL NOTE (see RTL NOTES in the header): on
     // strhor, hpos <= 9'd2, not 0 (denise.v:139) -- so DIWSTRT raw byte
     // values $00 and $01 (actual hpos positions 0 and 1) can NEVER be
     // matched during a single, non-wrapped scan from line start; hpos
@@ -1147,13 +1094,12 @@ int main(int argc, char** argv) {
     }
 
     // ==================== G7: ECS-DIWHIGH-EXPANDS-RANGE ====================
-    // One id added to this assertion's label below (3-max-window.c31): its
-    // p.80 sentence is the same one this label already quotes ('in the
-    // [ECS] the limits... have been changed') and is already fully
-    // established by measurement (a) below (the unmodified DIWSTRT/DIWSTOP
-    // byte's OCS-era 0-255/256-511 range) against measurement (b) (DIWHIGH
-    // reaching a position that range can never hold) -- not by any new
-    // code.
+    // 3-max-window.c31 on this assertion's label: its p.80 sentence is the
+    // one this label quotes ('in the [ECS] the limits... have been
+    // changed'), established by measurement (a) below (the unmodified
+    // DIWSTRT/DIWSTOP byte's OCS-era 0-255/256-511 range) against
+    // measurement (b) (DIWHIGH reaching a position that range can never
+    // hold).
     Edges base_no_diwhigh = measure_window(0x30, 0x50);  // DIWHIGH never written in this call
     {
         // (a) DIWHIGH untouched: the old OCS scheme holds -- literally true
@@ -1214,7 +1160,7 @@ int main(int argc, char** argv) {
 
     // ==================== G8: DIWHIGH-H8-BITS-OVERRIDE ====================
     {
-        // RTL NOTE (found once denise.v was opened): hdiwstrt[8] and
+        // RTL NOTE: hdiwstrt[8] and
         // hdiwstop[8] both come from THE SAME MOST RECENT register write
         // that touched either of them -- a DIWSTRT write always forces
         // hdiwstrt[8]<=0 (denise.v:301-302), a DIWSTOP write always forces
@@ -1353,7 +1299,7 @@ int main(int argc, char** argv) {
 
     // ==================== G11: BORDER-BLANK-OPAQUE (BPLCON3) ====================
     {
-        // RTL NOTE (found once denise.v was opened): brdrblnk is gated by
+        // RTL NOTE: brdrblnk is gated by
         // ecsena (denise.v:253, `assign brdrblnk = bplcon3[5] & ecsena;`),
         // and ecsena is itself BPLCON0 bit 0 (denise.v:192,
         // `assign ecsena = bplcon0[0];`), NOT the `ecs` top-level port --
@@ -1361,9 +1307,8 @@ int main(int argc, char** argv) {
         // of an effect. t_blank (denise.v:515) only forces black outside
         // the window (`~window_del`) once display_ena is set (the first
         // BPL1DAT write in the line, which this Harness's saturation
-        // already performs before reset_line()). This is a Harness fix
-        // (BPLCON0 = 0x1000 | ecsena, not a bare 0x1000) -- the oracle
-        // text is untouched.
+        // already performs before reset_line()). Hence BPLCON0 =
+        // 0x1000 | ecsena here, not a bare 0x1000.
         //
         // brdntran itself (denise.v:235,254) is commented out in this
         // file -- `//wire brdntran; //assign brdntran = bplcon3[4] &
@@ -1444,7 +1389,7 @@ int main(int argc, char** argv) {
     // *some* fixed reading, never that the reading is COLOR00's own
     // programmed value. It also never shows the $30-$90 window actually
     // opened in this harness; that is asserted separately, by the
-    // saturated companion run inside measure_color_track. Moved to
+    // saturated companion run inside measure_color_track. They sit on
     // G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 below, which establishes
     // both.
     {
@@ -1506,8 +1451,9 @@ int main(int argc, char** argv) {
     }
 
     // ==================== G13: BORDER-AND-BACKGROUND-TRACK-COLOR00 ====================
-    // Establishes 3-colortable.c9, 3-ct.c05, 3-hscr.f07 (moved off G2) and
-    // 3-colortable.c8, 3-ct.c04 (moved off G12): neither block above ever
+    // Establishes 3-colortable.c9, 3-ct.c05, 3-hscr.f07 and
+    // 3-colortable.c8, 3-ct.c04, which G2 and G12 cannot: neither block
+    // above ever
     // varies COLOR00 -- each takes its "border" reading from a calibration
     // Harness written with the SAME COLOR00 value as the window under
     // test, so each can only show "outside/no-object reads a fixed
