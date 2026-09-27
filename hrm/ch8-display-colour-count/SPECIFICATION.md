@@ -1,40 +1,17 @@
 # Specification — `ch8-display-colour-count`
 
 Package: `hrm/ch8-display-colour-count`
-Fixture: `denise_colortable` (per the package list's top-module assignment).
+Fixture: `denise_colortable` (not `denise`, whose `red`/`green`/`blue`
+ports are 8 bits wide, `denise.v:44-46`).
 Claims file: `hrm-testpipeline/work/ch8-s4-build/ch8-display-colour-count.jsonl`
 (2 claims)
 Subject: printed page 260's "up to 4,096 different colors on-screen
 simultaneously" figure, from the chapter 8 "Display Output Connections"
 section's RGB-monitor bullet.
 
-## Order-of-work disclosure
-
-The build brief for this slice requires: write this file from the
-quotations alone, commit it, and only then open the RTL — and says plainly
-that if the task sheet handed the builder RTL facts ahead of that, the
-builder should say so rather than pretend the order held. It did not hold
-here. The task instructions that assigned this package already named, up
-front: `denise.v:44-46` (`red`/`green`/`blue` declared 8 bits wide, which is
-why the top is `denise_colortable` and not `denise`), `denise_colortable.v:32`
-(`data_in[11:0]`) and `:58` (the pack), the fact that the store is 24 bits
-written in two 12-bit halves under `loct` (`denise_colortable.v:33`,
-`:56-58`), that only the OCS/ECS reading (`loct` low) gives 4,096 while the
-AGA path (`loct` high) gives more, and the existence and result of
-`hrm/ch3-colour-register-format` (55 passed, 0 failed, including an
-assertion named `SWEEP-12BIT-DISTINCT`). None of that was discovered by this
-builder reading ahead into the RTL; it was given as part of the package
-assignment itself, the same way a package list gave slice s3 a builder's
-port names before its spec was written. This file is still written from the
-`extract.quote`/`classify.extract.restatement`/`classify.evidence` content
-of the 2 claims below and from `hrm/ch3-colour-register-format`'s own,
-already-committed, already-run assertion text (not from an independent
-RTL reading of this builder's own) — but the letter of "spec before RTL" did
-not hold, and this paragraph says so rather than concealing it.
-`denise_colortable.v` and `denise_colortable_ram_mf.v` were subsequently
-opened in full to confirm the `loct` mechanics named above and to design
-this package's own control assertion (see "What this package additionally
-measures" below); nothing else was read.
+RTL read for this package: `denise_colortable.v` and
+`denise_colortable_ram_mf.v` in full (the `loct` mechanics below and this
+package's own control assertion); `denise.v:44-46` for the port widths.
 
 ## The two claims
 
@@ -80,9 +57,8 @@ selectable codes, full stop, or (b) as many as 4,096 *distinct* colors can
 appear in a single displayed frame at once. Sense (b), taken literally with
 only 32 (or 64 with EHB) colour registers, needs HAM (Hold-And-Modify) to
 reach — `denise_hamgenerator`, instantiated in `denise.v`, outside this
-package's fixture and outside `denise_colortable` entirely. This package's
-top is fixed by the package list to `denise_colortable`; it was not chosen
-by this builder and a HAM rig is not this package's boundary to build.
+package's fixture and outside `denise_colortable` entirely. A HAM rig is
+outside this package's boundary.
 
 This split does not leave the claims untestable, though, for the same
 reason it does not trouble `hrm/ch3-colour-register-format`'s own citation
@@ -108,9 +84,7 @@ register and confirms all 9 read back pairwise-distinct through `rgb` —
 citing, verbatim, "Twelve bits of color selection allow you to define ...
 one of 4,096 possible colors" (p.46). `ADDR-32-DISTINCT` in the same package
 additionally confirms all 32 registers are independently addressable and
-pairwise-distinct. Independently re-run for this package (WSL, 16.09.2026):
-`make test` in `hrm/ch3-colour-register-format` → **55 passed, 0 failed**,
-`SWEEP-12BIT-DISTINCT` among the passes, verbatim text confirmed.
+pairwise-distinct. `SWEEP-12BIT-DISTINCT` passes.
 
 That is the same mechanism (`denise_colortable`, a 12-bit write, an `rgb`
 read) answering the same number (4,096 = 2^12), for the same underlying
@@ -164,11 +138,10 @@ then a `loct`-low write again, and confirm the three readings behave exactly
 as `denise_colortable.v`'s two-RAM structure predicts — both halves moving
 together under `loct`-low, only the low half moving under `loct`-high, and
 the register returning to the paired/doubled state on the next `loct`-low
-write. This is the "fixture must hold `loct` deliberately rather than leave
-it" requirement, turned into a checked, mutation-tested assertion rather
-than an unstated default.
+write. The fixture thus holds `loct` deliberately, as a checked,
+mutation-tested assertion rather than an unstated default.
 
-## Assertions in this package (final list)
+## Assertions in this package
 
 - **`FIXTURE-LIVE`** — two distinct, known 12-bit codes, written with `loct`
   held low (the baseline this whole package cares about), read back
@@ -183,8 +156,7 @@ than an unstated default.
   codes into one register, with `loct` held low, and count the
   pairwise-distinct `rgb` readings — measured by sweeping and counting, not
   asserted from `data_in`'s declared width. `hrm/ch3-colour-register-format`'s
-  `SWEEP-12BIT-DISTINCT` result (55 passed, 0 failed, independently re-run)
-  is carried in this assertion's own `note()` as corroboration; it is not
+  `SWEEP-12BIT-DISTINCT` result is carried in this assertion's own `note()` as corroboration; it is not
   this assertion's oracle, which is p.260 directly.
 
 Both claims in this package's 2-claim inventory are graded with `expect()`

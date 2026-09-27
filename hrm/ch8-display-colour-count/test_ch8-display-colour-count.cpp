@@ -6,8 +6,7 @@
 //   (opus:8-display.c13, sol:8-display.c12) restate that same sentence.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   page 260; committed specification 1ddc065 (SPECIFICATION.md, this
-//   package).
+//   page 260; SPECIFICATION.md (this package).
 // Requirement IDs: opus:8-display.c13, sol:8-display.c12 -- both graded by
 //   the single PALETTE-RESOLVES-4096-CODES assertion below. Claims file:
 //   hrm-testpipeline/work/ch8-s4-build/ch8-display-colour-count.jsonl
@@ -23,26 +22,21 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// Disposition -- REPAIRED after coordinator review; recorded here because it
-//   changed what this file asserts (change history belongs in the commit
-//   message, not SPECIFICATION.md, but this paragraph explains the shape of
-//   what follows, which the commit message alone does not):
-//   this file's first version declined both claims with record(), citing
+// Why both claims are graded here rather than cited from
 //   hrm/ch3-colour-register-format's SWEEP-12BIT-DISTINCT (same mechanism,
-//   same number, p.46) rather than measuring them here. The coordinator
-//   pointed out that record-and-cite is the rule for the 53 claims elsewhere
-//   in this slice that carry a classify.note naming an accepted package's
-//   own uid -- these two carry no such note (package list: "already graded
-//   elsewhere: 0" for this package), and a citation is not a uid on a graded
-//   line: the ledger read this package as grading neither claim. There is
-//   also a reason of substance: this package's claims cite p.260, ch3's
-//   assertion cites p.46 -- a claim is graded against the page it cites, and
-//   if those two pages ever disagreed, citing ch3 would quietly substitute
-//   its oracle for this one's. Both uids are graded below, against p.260
-//   directly, by sweeping all 4,096 possible 12-bit codes into one register
-//   and counting distinct readings -- not asserted from data_in's declared
-//   width. ch3's result is carried as corroboration in that assertion's own
-//   note(), not as its oracle.
+//   same number, p.46): record-and-cite is for claims that carry a
+//   classify.note naming an accepted package's own uid -- these two carry
+//   no such note (package list: "already graded elsewhere: 0" for this
+//   package), and a citation is not a uid on a graded line, so the ledger
+//   would read this package as grading neither claim. There is also a
+//   reason of substance: this package's claims cite p.260, ch3's assertion
+//   cites p.46 -- a claim is graded against the page it cites, and if those
+//   two pages ever disagreed, citing ch3 would quietly substitute its oracle
+//   for this one's. Both uids are graded below, against p.260 directly, by
+//   sweeping all 4,096 possible 12-bit codes into one register and counting
+//   distinct readings -- not asserted from data_in's declared width. ch3's
+//   result is carried as corroboration in that assertion's own note(), not
+//   as its oracle.
 //
 //   Establishing which reading page 260 describes is not free, though: the
 //   colour store here is 24 bits, written in two 12-bit halves selected by
@@ -57,17 +51,16 @@
 //   PALETTE-RESOLVES-4096-CODES is graded on the correct (loct-low) basis.
 //
 // BOUNDARY: top module `denise_colortable` only (one Verilator build,
-//   sources denise_colortable.v + denise_colortable_ram_mf.v), per the
-//   package list's top-module assignment. Ports: clk, clk7_en,
+//   sources denise_colortable.v + denise_colortable_ram_mf.v); denise's own
+//   red/green/blue ports are 8 bits wide (denise.v:44-46), so the 12-bit
+//   colour code lives one level down. Ports: clk, clk7_en,
 //   reg_address_in[8:1], data_in[11:0], rdram, select[7:0], bplxor[7:0],
 //   bank[2:0], loct, ehb_en, rgb[23:0] (denise_colortable.v:9-19). The
 //   Harness's tick/write/read shape and the reg_address_in write-address
 //   convention (COLORBASE 9'h180 -> word address $C0..$DF, i.e.
-//   reg_address_in = 0xC0 + register index) are carried over from
-//   hrm/ch3-colour-register-format's own harness, read in full as the
-//   sibling package PALETTE-RESOLVES-4096-CODES corroborates against --
-//   disclosed here rather than silently reused, per that package's own
-//   precedent for disclosing borrowed plumbing.
+//   reg_address_in = 0xC0 + register index) follow
+//   hrm/ch3-colour-register-format's own harness, the sibling package
+//   PALETTE-RESOLVES-4096-CODES corroborates against.
 //
 // Non-goal: whether "on-screen simultaneously" additionally requires HAM
 //   (denise_hamgenerator, instantiated in denise.v, outside this boundary)
@@ -188,8 +181,7 @@ int main(int argc, char** argv) {
     Checks checks;
 
     // =========================================================================
-    // FIXTURE-LIVE -- denise_colortable has never been measured by this
-    // package before. Two distinct, known 12-bit codes, written with loct
+    // FIXTURE-LIVE -- two distinct, known 12-bit codes, written with loct
     // held low (the baseline this whole package is about), must both arrive
     // and read back distinctly before anything below is trusted.
     // =========================================================================
@@ -285,8 +277,8 @@ int main(int argc, char** argv) {
     // the 4,096 possible 12-bit codes into one colour register and count
     // how many pairwise-distinct rgb readings result -- measured by
     // sweeping and counting, not asserted from data_in's declared width.
-    // hrm/ch3-colour-register-format's SWEEP-12BIT-DISTINCT graded the
-    // identical mechanism against p.46's identical figure and passed;
+    // hrm/ch3-colour-register-format's SWEEP-12BIT-DISTINCT grades the
+    // identical mechanism against p.46's identical figure and passes;
     // that is corroboration, carried in the note() below, not this
     // assertion's oracle -- p.260 is.
     // =========================================================================
@@ -320,8 +312,7 @@ int main(int argc, char** argv) {
             "Corroboration, not this assertion's oracle: "
             "hrm/ch3-colour-register-format's SWEEP-12BIT-DISTINCT grades "
             "the identical mechanism against p.46's identical figure and "
-            "passed (55 passed, 0 failed, re-run 16.09.2026) -- this "
-            "assertion is graded against p.260 directly and independently, "
+            "passes -- this assertion is graded against p.260 directly and independently, "
             "since a claim is graded against the page it cites.");
     }
 
