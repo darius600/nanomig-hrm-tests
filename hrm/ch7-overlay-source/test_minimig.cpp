@@ -2,9 +2,9 @@
 //
 // Test purpose: where the overlay signal (`ovl`) comes from -- set by reset,
 //   and specifically what write clears it. Package ch7-overlay-source,
-//   fixture `minimig` (the whole minimig.v chipset module, per
-//   AUFTRAG-ch7-overlay-source.md -- gary.v alone cannot carry this claim,
-//   `ovl` is a free input there; minimig.v:165 is where it is a register).
+//   fixture `minimig` (the whole minimig.v chipset module -- gary.v alone
+//   cannot carry this claim, `ovl` is a free input there; minimig.v:165 is
+//   where it is a register).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.223. Claims file ch7-overlay-source.jsonl, 5 records (3 propositions
@@ -41,27 +41,17 @@
 //   commit strobe happens in the brief window once DTACK is recognized, not
 //   before, discovered empirically while building this harness below).
 //
-// ORDER OF WORK: SPECIFICATION.md (this package's 3 propositions, PROP-A/
-// PROP-B/PROP-C) was written and committed from ch7-overlay-source-spec-
-// stage.jsonl's quotations alone -- commit b4cec3b -- before minimig.v,
-// gary.v, minimig_syscontrol.v or minimig_m68k_bridge.v were opened.
-//
-// FIXTURE SIZE, MEASURED: this build Verilates 53 modules (11.1MB source)
-// in ~4s. The `_cpu_reset` release this harness needs (see
-// CONTROL-RESET-RELEASES below) needs on the order of 2.27M clk28 ticks --
-// STEP3-NOTES-ch7-overlay-source.md reported 2,271,634 measured on its own
-// diag_minimig harness; this harness's own independent measurement is
-// printed at run time (see CONTROL-RESET-RELEASES's label) and is *not*
-// hardcoded from that note. In wall-clock terms this cost about 2 seconds
-// per full run in the environment this was built in -- large in tick count,
+// FIXTURE SIZE, MEASURED: the `_cpu_reset` release this harness needs (see
+// CONTROL-RESET-RELEASES below) needs on the order of 2.27M clk28 ticks,
+// measured and printed at run time by this harness itself (see
+// CONTROL-RESET-RELEASES's label), not hardcoded. Large in tick count,
 // cheap in wall time, so budgeting one long-lived Harness per binary
 // (constructed once in main(), reused for every assertion below) rather
 // than one per assertion was a real design choice, not an afterthought: a
-// naive "fresh Harness per assertion" design in the style of some sibling
-// packages' small, fast fixtures would have re-paid the reset cost 6+
-// times per build and made the mutation matrix (7 separate builds)
-// noticeably slower for no benefit, since nothing about the CIA-write
-// assertions requires a fresh power-on.
+// "fresh Harness per assertion" design would re-pay the reset cost on every
+// one of the seven builds (baseline plus six mutation variants) for no
+// benefit, since nothing about the CIA-write assertions requires a fresh
+// power-on.
 //
 // A HARNESS-CONSTRUCTION SURPRISE, recorded because it shaped the bus_cycle
 // helper below: minimig_m68k_bridge.v's `_ta_n` (the register `_dtack`
@@ -92,13 +82,11 @@
 //     graded, for that reason.
 //   sol:7-reset.c8 + opus:7-reset.c4 (twins; p.223, "The OVL bit in one of
 //     the 8520 Chips disables the overlay") -- carries TWO graded
-//     assertions, deliberately not collapsed into one (the lead's
-//     instruction): OVL-BIT-WRITE-CLEARS-OVERLAY (the sentence's plain
+//     assertions, deliberately not collapsed into one, since collapsing
+//     would under-cite the manual: OVL-BIT-WRITE-CLEARS-OVERLAY (the sentence's plain
 //     reading: a write that reaches the OVL bit clears the overlay) and
 //     OTHER-CIA-A-REGISTER-ALSO-CLEARS (the sentence's other, narrower
-//     half -- "THE OVL bit", not "any CIA-A register" -- reproducing
-//     STEP3-NOTES-ch7-overlay-source.md's candidate finding independently
-//     rather than trusting it).
+//     half -- "THE OVL bit", not "any CIA-A register").
 //   sol:7-reset.c12 + opus:7-reset.c9 (twins; p.223, "The 68000 RESET
 //     instruction works much like external reset or power on") -- worded,
 //     per both claims' own `split`, as the reset LINE rather than the CPU
@@ -118,29 +106,24 @@
 // PRECONDITION: every "does this write/pulse change ovl" assertion below is
 // preceded by its own graded expect() confirming ovl's value beforehand
 // (ovl==1 before each of the four CIA-write assertions, ovl==0 before the
-// reset-line assertion) -- per the lead's explicit correction, this is an
-// expect(), not a comment, since a green "cleared/restored" reading is
-// meaningless if the signal was never in the opposite state to begin with.
-//
-// RESULTS: baseline (no MUT flag) is 10 passed, 1 failed -- the DDRA
-// finding below is the one red. Full pass/fail-by-assertion listing is in
-// the report already sent to the lead.
+// reset-line assertion) -- this is an expect(), not a comment, since a
+// green "cleared/restored" reading is meaningless if the signal was never
+// in the opposite state to begin with.
 //
 // PER-ASSERTION MUTATION RECORD. Six variants, each its own full build+run
-// (`make MUT=<switch>`, e.g. `make MUT=MUT_1`), already built, run,
-// confirmed and reverted -- not re-run for this header update. Format
-// (tools/check_gates.py): // MUTATION <assertion-label> <oracle|stimulus|
-// none> <red|green|impossible> <what changed>. Every mutation below is
-// `stimulus` -- what the module is asked to do -- never `oracle`; the
-// expected value in the matching expect() is never touched, per
-// BUILD-BRIEF.md's "flipping an expected value proves nothing".
+// (`make MUT=<switch>`, e.g. `make MUT=MUT_1`). Format (tools/check_gates.py):
+// // MUTATION <assertion-label> <oracle|stimulus|none> <red|green|impossible>
+// <what changed>. Every mutation below is `stimulus` -- what the module is
+// asked to do -- never `oracle`; the expected value in the matching expect()
+// is never touched, per BUILD-BRIEF.md's "flipping an expected value proves
+// nothing".
 //
-// MUTATION CONTROL-RESET-RELEASES stimulus red MUT_RESET holds rst_ext (master reset) asserted forever, so minimig_syscontrol.v's rst_cnt never advances and _cpu_reset never rises within the 3,000,000-tick budget; baseline PASS (measured tick=2,273,642) goes red.
-// MUTATION OVL-BIT-WRITE-CLEARS-OVERLAY stimulus red MUT_1 issues a read instead of a write to the same CIA-A PRA address ($BFE001), so cpu_lwr/cpu_hwr never assert; baseline PASS (ovl clears) goes red (ovl stays 1).
-// MUTATION OTHER-CIA-A-REGISTER-ALSO-CLEARS stimulus green MUT_2 skips the CIA-A timer-A write ($BFE401) entirely -- no bus cycle at all. This is the one assertion that is ALREADY red at baseline (the manual/RTL disagreement this package exists to report), so its mutation runs the opposite direction from every other assertion here: a red claim's mutation must go GREEN under a genuinely different stimulus, or the red would be unfalsifiable/vacuous instead of a real measurement. With no CIA-A access at all, ovl stays at its precondition value (1), so "ovl==1 after" reads green -- proof the baseline FAIL is attributable to the write happening, not to an always-red assertion. (An earlier draft of this mutation swapped DDRA for PRA instead; that was rejected before being recorded here because both addresses already clear ovl identically on this RTL, so the swap changes nothing observable and would not have been a real mutation -- see the inline comment at MUT_2 in the body.)
-// MUTATION CIAB-WRITE-DOES-NOT-CLEAR stimulus red MUT_3 redirects the same write from CIA-B ($BFD000) to CIA-A PRA ($BFE001); baseline PASS (ovl stays set) goes red (ovl clears).
-// MUTATION CHIPRAM-WRITE-DOES-NOT-CLEAR stimulus red MUT_4 redirects the same write from chip RAM ($000100) to CIA-A PRA ($BFE001); baseline PASS (ovl stays set) goes red (ovl clears).
-// MUTATION RESET-LINE-RESTORES-OVERLAY stimulus red MUT_5 skips the _cpu_reset_in low/high pulse entirely; baseline PASS (ovl restored to 1) goes red (ovl stays at 0).
+// MUTATION CONTROL-RESET-RELEASES stimulus red MUT_RESET holds rst_ext (master reset) asserted forever, so minimig_syscontrol.v's rst_cnt never advances and _cpu_reset never rises within the 3,000,000-tick budget; baseline PASS (measured tick=2,273,642) goes red (measured tick=-1, budget exhausted; no assertion below it runs).
+// MUTATION OVL-BIT-WRITE-CLEARS-OVERLAY stimulus red MUT_1 issues a read instead of a write to CIA-A PRA ($BFE001), and skips the DDRA setup write too (a DDRA write is itself a write to CIA-A, which this RTL's own OTHER-CIA-A-REGISTER-ALSO-CLEARS finding shows moves ovl regardless of register, so it would confound the mutation) -- no write reaches CIA-A at all; baseline PASS (ovl clears, measured ovl=0) goes red (measured ovl=1).
+// MUTATION OTHER-CIA-A-REGISTER-ALSO-CLEARS stimulus green MUT_2 skips the CIA-A timer-A write ($BFE401) entirely -- no bus cycle at all. This is the one assertion that is ALREADY red at baseline (the manual/RTL disagreement this package exists to report), so its mutation runs the opposite direction from every other assertion here: a red claim's mutation must go GREEN under a genuinely different stimulus, or the red would be unfalsifiable/vacuous instead of a real measurement. With no CIA-A access at all, ovl stays at its precondition value (1), so "ovl==1 after" reads green -- confirmed (baseline FAIL goes to 11 passed, 0 failed under MUT_2). Redirecting the write to DDRA or PRA instead would not be a real mutation on this RTL: every CIA-A address clears ovl identically, so the swap would change nothing observable -- see the inline comment at MUT_2 in the body.
+// MUTATION CIAB-WRITE-DOES-NOT-CLEAR stimulus red MUT_3 redirects the same write from CIA-B ($BFD000) to CIA-A PRA ($BFE001), DDRA set to output first; baseline PASS (ovl stays set, measured ovl=1) goes red (measured ovl=0).
+// MUTATION CHIPRAM-WRITE-DOES-NOT-CLEAR stimulus red MUT_4 redirects the same write from chip RAM ($000100) to CIA-A PRA ($BFE001), DDRA set to output first; baseline PASS (ovl stays set, measured ovl=1) goes red (measured ovl=0).
+// MUTATION RESET-LINE-RESTORES-OVERLAY stimulus red MUT_5 skips the _cpu_reset_in low/high pulse entirely; baseline PASS (ovl restored to 1, measured ovl=1) goes red (measured ovl=0).
 
 #include <cstdint>
 #include <cstdio>
@@ -255,16 +238,16 @@ public:
         // must never release within the budget below.
         dut->rst_ext = 1;
 #endif
-        // _cpu_reset_in released early (matches STEP3-NOTES' own harness
-        // procedure) so Agnus's free-running beam counters (agnus_beam-
-        // counter.v's hpos/vpos -- NOT gated by `reset` at all, verified by
-        // reading the file: no `if(reset)` clause touches either counter)
-        // can produce the `sof` pulses minimig_syscontrol.v needs to count
-        // down. Holding it low first models power-on/external reset.
+        // _cpu_reset_in released early so Agnus's free-running beam counters
+        // (agnus_beamcounter.v's hpos/vpos -- NOT gated by `reset` at all,
+        // verified by reading the file: no `if(reset)` clause touches
+        // either counter) can produce the `sof` pulses minimig_syscontrol.v
+        // needs to count down. Holding it low first models power-on/
+        // external reset.
         for (int i = 0; i < 8; ++i) tick();
         dut->_cpu_reset_in = 1;
 
-        const long long BUDGET = 3000000; // STEP3 notes measured 2,271,634; budget with headroom
+        const long long BUDGET = 3000000; // measured empirically at ~2,271,634 by this harness (see CONTROL-RESET-RELEASES below); budget with headroom
         for (long long i = 0; i < BUDGET && !reset_released; ++i) {
             tick();
             if (dut->_cpu_reset == 1) {
@@ -292,6 +275,9 @@ public:
     // write (r_w=0) or read (r_w=1) cycle -- MUT_1's hook. Byte lane
     // (uds/lds) follows the address's own parity, matching CIA-A(odd)/
     // CIA-B(even) convention above; irrelevant for non-CIA addresses.
+    // `data` is the byte value a write carries, placed on the active lane
+    // only (the other lane's strobe stays deasserted, so its half of the
+    // bus is never sampled) -- a read ignores it.
     // minimig_m68k_bridge.v's `lwr`/`hwr` require `~l_dtack` (the write-
     // commit strobe happens in the window right after DTACK is
     // recognized, not before -- discovered empirically while building
@@ -299,11 +285,11 @@ public:
     // first seen and every CIA-A write silently failed to clear `ovl`),
     // so the cycle is held open a little longer after dtack before
     // releasing _as.
-    bool bus_cycle(uint32_t byte_addr, bool is_write) {
+    bool bus_cycle(uint32_t byte_addr, bool is_write, uint8_t data = 0) {
         bool low_byte = (byte_addr & 1u) != 0;
         dut->cpu_address = (byte_addr >> 1) & 0x7FFFFFu;
         dut->cpu_r_w = is_write ? 0 : 1;
-        dut->cpudata_in = 0;
+        dut->cpudata_in = low_byte ? (uint32_t)data : ((uint32_t)data << 8);
         if (low_byte) { dut->_cpu_uds = 1; dut->_cpu_lds = 0; }
         else          { dut->_cpu_uds = 0; dut->_cpu_lds = 1; }
         dut->_cpu_as = 0;
@@ -317,7 +303,7 @@ public:
         for (int i = 0; i < 8; ++i) tick();
         return dtack_seen;
     }
-    bool write_word(uint32_t byte_addr) { return bus_cycle(byte_addr, true); }
+    bool write_word(uint32_t byte_addr, uint8_t data = 0) { return bus_cycle(byte_addr, true, data); }
     bool read_word(uint32_t byte_addr)  { return bus_cycle(byte_addr, false); }
 
     // Sets ovl=1 via the reset line alone, AFTER the long power-on reset
@@ -327,8 +313,14 @@ public:
     // Used both as RESET-LINE-RESTORES-OVERLAY's own stimulus and as the
     // ovl==1 precondition-setter for the CIA-write assertions.
     void pulse_reset_line() {
+        // Held low for a full period of this harness's own clk7_en pulse
+        // (ClkGen::step above asserts it on exactly one out of every four
+        // ticks it produces), so the low level is guaranteed to overlap an
+        // asserted clk7_en tick regardless of which phase clk7_cnt happens
+        // to be in when the pulse starts. A 2-tick hold gave no such
+        // guarantee and could land entirely between two clk7_en pulses.
         dut->_cpu_reset_in = 0;
-        tick(); tick();
+        for (int i = 0; i < 8; ++i) tick();
         dut->_cpu_reset_in = 1;
         for (int i = 0; i < 8; ++i) tick();
     }
@@ -368,10 +360,7 @@ int main(int argc, char** argv) {
             h.reset_released,
             std::string("CONTROL-RESET-RELEASES: _cpu_reset rose within a 3,000,000-tick "
                         "budget after rst_ext/_cpu_reset_in were released (measured "
-                        "tick=") + tickbuf + ", or -1 if the budget was exhausted). "
-                        "STEP3-NOTES-ch7-overlay-source.md reported 2,271,634 for the "
-                        "same transition under its own harness; this is this harness's "
-                        "own independent measurement, not that number adopted. No "
+                        "tick=") + tickbuf + ", or -1 if the budget was exhausted). No "
                         "manual page (harness precondition).");
     }
 
@@ -418,7 +407,11 @@ int main(int argc, char** argv) {
     // OVL-BIT-WRITE-CLEARS-OVERLAY (p.223) -- sol:7-reset.c8, opus:7-reset.c4.
     // "The OVL bit in one of the 8520 Chips disables the overlay." A write
     // that reaches CIA-A's PRA (where the OVL bit lives, manual + Appendix F)
-    // clears ovl.
+    // clears ovl -- but p.341 ("If a DDR bit is set to a 0, the
+    // corresponding PR bit is defined as an input") makes that only true
+    // once DDRA has set the OVL bit's direction to output; p.339 gives the
+    // post-reset address map's DDRA as "set to 0x03" (PA0 and PA1 driven).
+    // So DDRA is written first, then PRA with the OVL bit written clear.
     // =========================================================================
     {
         h.pulse_reset_line();
@@ -429,45 +422,47 @@ int main(int argc, char** argv) {
             "set to begin with.");
 
 #if MUT_1
-        // MUTATION: read instead of write. Same address (still selects
-        // CIA-A/the OVL-bit register), cpu_r_w left at 1 (read) so
-        // minimig_m68k_bridge.v's `lwr`/`hwr` never assert -- the module is
-        // asked to READ the OVL-bit register, not write it. Expected value
-        // (ovl==0 after) is left alone.
+        // MUTATION: read instead of write, and no write reaches CIA-A at
+        // all -- not even the DDRA setup below, since a DDRA write is
+        // itself a write to CIA-A and this repository's own
+        // OTHER-CIA-A-REGISTER-ALSO-CLEARS finding is that any such write
+        // moves ovl on this RTL, which would silently make the read/write
+        // choice at PRA unobservable. cpu_r_w stays at its reset value (a
+        // read) so minimig_m68k_bridge.v's `lwr`/`hwr` never assert -- the
+        // module is asked to READ the OVL-bit register, not write it.
+        // Expected value (ovl==0 after) is left alone.
         h.read_word(CIAA_PRA);
 #else
-        h.write_word(CIAA_PRA);
+        h.write_word(CIAA_DDRA, 0x03); // p.339: DDRA "set to 0x03" -- PA0 (OVL) and PA1 driven as outputs
+        h.write_word(CIAA_PRA, 0x00); // PRA bit 0 (OVL) written clear, DDRA already selects output
 #endif
         checks.expect(h.dut->ovl == 0,
-            "OVL-BIT-WRITE-CLEARS-OVERLAY (p.223): a write to CIA-A PRA "
-            "($BFE001, the OVL bit's register) clears ovl -- \"The OVL bit "
-            "in one of the 8520 Chips disables the overlay\" (p.223, "
-            "restored quote adds \"(See Appendix F for the bit location)\"). "
-            "sol:7-reset.c8, opus:7-reset.c4. "
-            "MUTATION: read instead of write at the same address -- ovl "
-            "must stay 1.");
+            std::string("OVL-BIT-WRITE-CLEARS-OVERLAY (p.223): a write to CIA-A PRA "
+            "($BFE001, the OVL bit's register), DDRA bit 0 set to output "
+            "first ($BFE201=0x03, p.339) so the write reaches the pin "
+            "(p.341), clears ovl -- \"The OVL bit in one of the 8520 Chips "
+            "disables the overlay\" (p.223, restored quote adds \"(See "
+            "Appendix F for the bit location)\"). sol:7-reset.c8, "
+            "opus:7-reset.c4. MUTATION: read instead of write at the same "
+            "address -- ovl must stay 1. Measured ovl=") +
+            std::to_string((int)h.dut->ovl) + ".");
     }
 
     // =========================================================================
     // OTHER-CIA-A-REGISTER-ALSO-CLEARS (p.223) -- same two claims' other,
     // narrower half: "THE OVL bit" (not "any CIA-A register") disables the
-    // overlay. Reproducing STEP3-NOTES-ch7-overlay-source.md's candidate
-    // finding independently: minimig.v:862 keys on `sel_cia_a &
-    // (cpu_lwr|cpu_hwr)` alone -- it never reads `cpu_address_out[11:8]`
-    // (register select) or the data written -- so a write to a CIA-A
-    // register that has nothing to do with port A is expected, by the
-    // manual's specific wording, NOT to clear ovl. A red result here is
-    // the RTL disagreeing with the manual, not a wrong assertion.
+    // overlay. A write to a CIA-A register that has nothing to do with
+    // port A is expected, by the manual's specific wording, NOT to clear
+    // ovl. A red result here is the RTL disagreeing with the manual, not a
+    // wrong assertion.
     //
-    // STIMULUS CHANGED AT STAGE 8. This wrote CIA-A DDRA ($BFE201) until
-    // the independent validation pointed out that DDRA is the DIRECTION
-    // register for port A -- including the OVL bit itself -- so writing it
-    // is not "a register that is not the OVL bit", and the manual says
-    // nothing about what the overlay does when OVL's own direction is
-    // changed. Timer A low ($BFE401) carries no relation to port A at all.
-    // The measured outcome is the same, because minimig.v:862 ignores the
-    // register select entirely -- which is the finding -- but the red now
-    // rests on a stimulus the manual's wording actually licenses.
+    // The stimulus is timer A low ($BFE401), not DDRA ($BFE201): DDRA is
+    // the DIRECTION register for port A, including the OVL bit itself, so
+    // a write to it is not "a register that is not the OVL bit" -- the
+    // manual says nothing about what the overlay does when OVL's own
+    // direction is changed. Timer A low carries no relation to port A at
+    // all, so it is the register the manual's wording actually licenses as
+    // a control for "a register that is not the OVL bit".
     // =========================================================================
     {
         h.pulse_reset_line();
@@ -476,18 +471,18 @@ int main(int argc, char** argv) {
             "the CIA-A timer-A write.");
 
 #if MUT_2
-        // MUTATION: do not perform the DDRA write at all. Baseline on this
-        // RTL is already red (ovl clears on ANY CIA-A write, DDRA
-        // included -- that is the finding), so swapping DDRA for PRA
-        // would not move this assertion: both addresses clear ovl
-        // identically on this RTL, which would make that swap a non-
-        // mutation (same outcome, not a real stimulus change as far as
-        // this assertion can tell). Skipping the write instead is the
-        // change that actually moves the needle: with no CIA-A access at
-        // all, ovl must stay at its precondition value (1), flipping this
-        // specific assertion from red (baseline) to green -- proof the
-        // FAIL above is attributable to the write happening, not to a
-        // vacuous/always-red assertion.
+        // MUTATION: do not perform the timer-A write at all. Baseline on
+        // this RTL is already red (ovl clears on ANY CIA-A write, timer A
+        // included -- that is the finding), so redirecting the write to a
+        // different CIA-A register (DDRA or PRA) would not move this
+        // assertion: every CIA-A address clears ovl identically on this
+        // RTL, which would make that swap a non-mutation (same outcome,
+        // not a real stimulus change as far as this assertion can tell).
+        // Skipping the write instead is the change that actually moves the
+        // needle: with no CIA-A access at all, ovl must stay at its
+        // precondition value (1), flipping this specific assertion from
+        // red (baseline) to green -- proof the FAIL above is attributable
+        // to the write happening, not to a vacuous/always-red assertion.
 #else
         h.write_word(CIAA_TALO);
 #endif
@@ -520,8 +515,12 @@ int main(int argc, char** argv) {
 #if MUT_3
         // MUTATION: redirect to CIA-A PRA instead of CIA-B -- same "expect
         // ovl==1 after" check, now asked to hit the chip that SHOULD clear
-        // it.
-        h.write_word(CIAA_PRA);
+        // it. DDRA is set first (p.339: "set to 0x03"; p.341: a PR bit
+        // drives the pin only once its DDR bit selects output), the same
+        // setup OVL-BIT-WRITE-CLEARS-OVERLAY uses, so the redirected write
+        // reaches an OVL bit actually configured as output.
+        h.write_word(CIAA_DDRA, 0x03);
+        h.write_word(CIAA_PRA, 0x00);
 #else
         h.write_word(CIAB_PRA);
 #endif
@@ -545,7 +544,10 @@ int main(int argc, char** argv) {
             "chip-RAM write.");
 
 #if MUT_4
-        h.write_word(CIAA_PRA);
+        // MUTATION: redirect to CIA-A PRA instead of chip RAM. DDRA is set
+        // first, same as MUT_3 above and OVL-BIT-WRITE-CLEARS-OVERLAY.
+        h.write_word(CIAA_DDRA, 0x03);
+        h.write_word(CIAA_PRA, 0x00);
 #else
         h.write_word(CHIPRAM_ADDR);
 #endif
@@ -570,12 +572,18 @@ int main(int argc, char** argv) {
     // at cold start.
     // =========================================================================
     {
-        h.write_word(CIAA_PRA); // clear ovl first (reuses the already-proven mechanism)
+        // DDRA set to output first (p.339/p.341), same as
+        // OVL-BIT-WRITE-CLEARS-OVERLAY -- without it the PRA write below
+        // would not be a write the page's OVL sentence covers at all.
+        h.write_word(CIAA_DDRA, 0x03);
+        h.write_word(CIAA_PRA, 0x00); // clear ovl first (reuses the already-proven mechanism)
         checks.expect(h.dut->ovl == 0,
-            "RESET-LINE-RESTORES-OVERLAY precondition: ovl==0 before the "
-            "reset-line pulse (established via a CIA-A PRA write) -- a "
-            "green \"restored\" reading below would mean nothing if ovl "
-            "were never cleared to begin with.");
+            std::string("RESET-LINE-RESTORES-OVERLAY precondition: ovl==0 before the "
+            "reset-line pulse (established via a CIA-A DDRA write setting "
+            "PA0 to output, $BFE201=0x03 p.339, then a CIA-A PRA write "
+            "clearing the OVL bit, p.223/p.341) -- a green \"restored\" "
+            "reading below would mean nothing if ovl were never cleared to "
+            "begin with. Measured ovl=") + std::to_string((int)h.dut->ovl) + ".");
 
 #if MUT_5
         // MUTATION: do not pulse the reset line at all. Expected value
@@ -584,14 +592,14 @@ int main(int argc, char** argv) {
         h.pulse_reset_line();
 #endif
         checks.expect(h.dut->ovl == 1,
-            "RESET-LINE-RESTORES-OVERLAY (p.223): pulsing _cpu_reset_in "
+            std::string("RESET-LINE-RESTORES-OVERLAY (p.223): pulsing _cpu_reset_in "
             "low then high again, AFTER _cpu_reset has already released, "
             "restores ovl to 1 from a running state where a CIA-A write "
             "had cleared it -- \"The 68000 RESET instruction works much "
             "like external reset or power on\" (p.223), worded as the "
             "reset line per both claims' own split. sol:7-reset.c12, "
             "opus:7-reset.c9. MUTATION: do not pulse the reset line -- ovl "
-            "must stay at 0.");
+            "must stay at 0. Measured ovl=") + std::to_string((int)h.dut->ovl) + ".");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

@@ -6,12 +6,10 @@ Claims file: `hrm-testpipeline/work/ch7-build/ch7-overlay-source-spec-stage.json
 Subject: where the overlay signal comes from — printed p.223's account of it
 being entered by reset and turned off by a CIA write.
 
-This file is written from the `quote` / `restatement` fields of the 5 claims
-alone. No RTL file for this package, `STEP3-NOTES-ch7-overlay-source.md`, or
-the full `ch7-overlay-source.jsonl` has been opened yet. It fixes the
-printed propositions to be tested; concrete port names, signal names,
-stimulus values and the `expect()` assertions themselves are added only
-after this file is committed and step 3 begins, per `BUILD-BRIEF.md`.
+This file fixes the printed propositions under test, from the `quote` /
+`restatement` fields of the 5 claims in `ch7-overlay-source.jsonl` alone.
+Concrete port names, signal names, stimulus values and the `expect()`
+assertions themselves live in `test_minimig.cpp`.
 
 ## Claim inventory (all 5, grouped by proposition)
 
@@ -23,7 +21,7 @@ after this file is committed and step 3 begins, per `BUILD-BRIEF.md`.
 | 4 | `sol:7-reset.c12` | 223 | PROP-C, primary |
 | 5 | `opus:7-reset.c9` | 223 | PROP-C, twin of #4 |
 
-All 5 claims are accounted for; none is left unassigned at this stage.
+All 5 claims are accounted for; none is left unassigned.
 
 ## PROP-A — Power-on / external reset enters the overlay memory-map state
 
@@ -62,23 +60,20 @@ proposition under test is the behaviour ("the OVL bit disables/clears the
 overlay"), not the bit's numeric position within the chip.
 
 **Wording note:** both quotations name "one of the 8520 Chips" without
-saying which — neither says CIA-A. The task sheet's subject line names
-CIA-A, but that identification is not supported by either quotation in this
-claims file, so this specification does not assert it. Which CIA instance
-carries the OVL bit, and its port/signal name, is a step-3 question,
-answered by reading the RTL port list — not something this claims file
-settles.
+saying which — neither says CIA-A. This specification does not assert
+CIA-A; that identification is not supported by either quotation in this
+claims file. Which CIA instance carries the OVL bit, and its port/signal
+name, is identified in the fixture (`test_minimig.cpp`'s `CIAA_PRA` /
+`CIAA_DDRA`), not settled by this claims-derived specification.
 
-**Precondition, carried forward for step 3:** a write that "disables" the
-overlay is only a meaningful, checkable transition if the overlay was
-previously enabled (set) — that precondition is exactly PROP-A's (and
-PROP-C's) proposition. Per `BUILD-BRIEF.md`'s precondition rule, the
-eventual test should assert that the overlay was set before the CIA write,
-not only that it reads clear afterward.
+**Precondition:** a write that "disables" the overlay is only a
+meaningful, checkable transition if the overlay was previously enabled
+(set) — that precondition is exactly PROP-A's (and PROP-C's) proposition.
+The test asserts that the overlay was set before the CIA write, not only
+that it reads clear afterward.
 
-Status: testable (subject to the step-3 identification of the specific CIA
-instance and port; the CIA-A identity is not asserted by this
-specification).
+Status: testable (the specific CIA instance and port are identified in the
+fixture; the CIA-A identity is not asserted by this specification).
 
 ## PROP-C — Invoking the 68000 RESET (line) has the same effect as external reset or power-on
 
@@ -114,10 +109,13 @@ citations, even though they may end up measured the same way at the
 fixture boundary (a single reset-line stimulus): PROP-A is grounded in the
 power-on/external-reset sentence, PROP-C in the
 RESET-instruction-works-like-external-reset-or-power-on sentence.
-Collapsing them into one assertion would under-cite the manual. If step 3
-finds the two reduce to one indistinguishable stimulus on `minimig`'s
-boundary, that is a step-3 finding to report, not a reason to merge them
-now.
+Collapsing them into one assertion would under-cite the manual. In the
+fixture both end up driving the same pin (`_cpu_reset_in`), but they are
+not interchangeable measurements: PROP-A's transition is confounded with
+the internal power-on reset chain and is measured, not graded (see
+`test_minimig.cpp`'s CLAIM COVERAGE note); PROP-C isolates the same pin
+after that chain has already released, and is graded as
+RESET-LINE-RESTORES-OVERLAY.
 
 ## Claims not assigned an assertion
 
@@ -129,9 +127,8 @@ exact uid-to-proposition mapping).
 ## What this specification deliberately does not contain
 
 Port names, signal names, which of the two 8520 CIAs carries the OVL bit,
-and concrete stimulus values are absent by design. Per `BUILD-BRIEF.md`'s
-order of work, they are added only after this file is committed and
-`STEP3-NOTES-ch7-overlay-source.md`, `ch7-overlay-source.jsonl`, and the RTL
-are read for step 3. PROP-A, PROP-B and PROP-C above are the three
-propositions that become this package's `expect()` assertions, each with
-its own control case and stimulus mutation, once that step opens.
+and concrete stimulus values are absent by design: this file fixes the
+printed propositions the claims license, independent of the RTL's own
+naming. PROP-A, PROP-B and PROP-C above are the three propositions that
+become `test_minimig.cpp`'s `expect()` assertions, each with its own
+control case and stimulus mutation.
