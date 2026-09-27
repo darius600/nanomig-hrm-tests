@@ -1,9 +1,9 @@
 # ch8-adkcon-disk-control-bits — SPECIFICATION
 
-Written from the quotations in
-`work/ch8-s2-build/ch8-adkcon-disk-control-bits.jsonl` alone (the thirteen
-claims assigned to this package). No RTL file has been opened by me yet. This
-document is committed before that happens.
+The package grades the quotations in
+`work/ch8-s2-build/ch8-adkcon-disk-control-bits.jsonl` (the thirteen claims
+assigned to this package), and the two further WORDSYNC claims in the
+extension at the end.
 
 ## Source claims (verbatim quotations)
 
@@ -31,31 +31,29 @@ All thirteen carry `disposition: new` and name this package
 The package purpose recorded on every one of these thirteen claims:
 "ADKCON/ADKCONR's disk half: PRECOMP 1-0, WORDSYNC's name and position, and
 the 'controls disk' half of every function-column row." Two adjacent
-propositions are named explicitly as **not** this package's to grade, and I
-verified none of the thirteen quotations above touch either:
+propositions are named explicitly as **not** this package's to grade, and
+none of the thirteen quotations above touches either:
 
 - **The audio half of the same function-row cells and the ADKCON bits 0-7
   attach/modulation claims.** `hrm/ch5-audio-dmacon-adkcon` already carries
-  that red. None of my thirteen quotations mention audio, channels, or bits
-  0-7 — confirmed by rereading the table above line by line — so there is
-  nothing here to duplicate.
+  that red. None of the thirteen quotations mentions audio, channels, or
+  bits 0-7, so there is nothing here to duplicate.
 - **The UART third of the three-part appendix rows** (`opus:8-appB-adkcon.c5`
   and `sol:8-appb-adkcon.c5` each explicitly split their cell into
   audio/disk/UART thirds and name only the disk third as this package's).
   Bit 11 (UARTBRK) belongs to a package named
-  `ADKCON-BIT11-UARTBRK` in that split note — not this one, and none of my
-  thirteen quotations assert anything about bit 11.
+  `ADKCON-BIT11-UARTBRK` in that split note — not this one, and none of the
+  thirteen quotations asserts anything about bit 11.
 
-## The package's headline is finding candidate C8, and where my claims sit in it
+## C8: ADKCON bits that store and drive nothing, and where this package's claims sit
 
-`work/2026-09-15_ch8_s2_finding_candidates.md`, candidate C8: ADKCON has
-exactly two consumers in all of `src/minimig-aga` — bit 11 (UARTBRK, out of
-scope here per above) and bit 10 (WORDSYNC). Measured (by the classify stage,
-not yet by me): bits 0-14 all store and read back individually, bit 15 never
-stores. **PRECOMP (14-13), MFMPREC (12), MSBSYNC (9) and FAST (8) are storage
-with no consumer.**
+C8 is the finding that ADKCON has exactly two consumers in all of
+`src/minimig-aga` — bit 11 (UARTBRK, out of scope here per above) and bit
+10 (WORDSYNC) (paula.v:211, :269). Bits 0-14 all store and read back
+individually, bit 15 never stores. **PRECOMP (14-13), MFMPREC (12), MSBSYNC
+(9) and FAST (8) are storage with no consumer.**
 
-None of my thirteen claims assert an *effect* for PRECOMP, and none name
+None of the thirteen claims asserts an *effect* for PRECOMP, and none names
 MFMPREC, MSBSYNC or FAST at all:
 
 - `opus:8-appA-adkcon.c11`'s own `split` field says it outright: "The
@@ -75,41 +73,29 @@ MFMPREC, MSBSYNC or FAST at all:
   storage-only four.
 
 **So every claim in this specific package is expected GREEN.** The red half
-of C8 (PRECOMP/MFMPREC/MSBSYNC/FAST *doing* nothing) is real and is this
-package's finding to report, but no claim assigned to me asserts it as a
-testable proposition — it will be surfaced as a `note()` (MEASURED, graded by
-nothing) rather than invented as an `expect()` with no citation behind it.
-Grading an effect nobody claimed would be the overreach this suite's rules
-exist to prevent, the same shape as the DSKDATR "only" warning elsewhere in
-the build brief.
+of C8 (PRECOMP/MFMPREC/MSBSYNC/FAST *doing* nothing) is real, but no claim
+assigned to this package asserts it as a testable proposition — it is
+surfaced as a `note()` (MEASURED, graded by nothing) rather than invented as
+an `expect()` with no citation behind it. Grading an effect nobody claimed
+would be the overreach this suite's rules exist to prevent.
 
-## Fixture boundary: `paula`, not `paula_floppy` — and why, on the evidence disclosed to me
+## Fixture boundary: `paula`, not `paula_floppy`
 
-My build brief states plainly, and the finding-candidates document
-independently confirms under "A correction to the classify brief": ADKCON
-($09E) and ADKCONR ($010) are decoded inside `paula`, and `paula_floppy` has
-no `adkcon` port at all — only a one-bit input named `wordsync` crosses that
-boundary. I have not opened `paula.v` or `paula_floppy.v` myself yet to
-verify this; I am treating it as disclosed evidence, the same posture
-`hrm/ch8-drive-select-motor-led`'s own specification took toward its
-disclosed `paula_floppy.v` citations before its own RTL-reading step. Taking
-it on faith is exactly what the next step (after this commit) resolves by
-reading the port list directly.
+ADKCON ($09E) and ADKCONR ($010) are decoded inside `paula` (paula.v:126-127,
+the register-write block at :182-195, the read mux at :198), and
+`paula_floppy` has no `adkcon` port at all — only a one-bit input named
+`wordsync` crosses that boundary (paula.v:269).
 
-Because of this boundary, `hrm/ch5-audio-dmacon-adkcon` is disclosed as
-already using `paula` as its top module — I am told to read its Makefile for
-how the module is brought up (which submodule files a `paula` build needs)
-and to cite nothing from it as an oracle. That happens after this commit,
-alongside opening `paula.v` itself.
+`hrm/ch5-audio-dmacon-adkcon` also uses `paula` as its top module; its
+Makefile shows which submodule files a `paula` build needs, and nothing is
+cited from it as an oracle.
 
-## Rig hazard disclosed for this fixture, not yet independently verified
+## Rig hazard
 
-`paula_floppy_ebr.v` is disclosed to declare a second `module paula_floppy`,
-and the recommended route is to compile `paula_floppy.v` +
-`paula_floppy_fifo.v` and leave the EBR file out entirely, rather than the
-older `-Wno-fatal` workaround. Since `paula` is disclosed to instantiate
-`paula_floppy` internally, this applies to my build too. Confirming it is
-part of the RTL-reading step.
+`paula_floppy_ebr.v` declares a second `module paula_floppy`, so the build
+compiles `paula_floppy.v` + `paula_floppy_fifo.v` and leaves the EBR file
+out entirely. `paula` instantiates `paula_floppy` internally, so this
+applies to this package's build.
 
 ## Reduction to six testable propositions, plus fixture liveness
 
@@ -135,9 +121,9 @@ part of the RTL-reading step.
   individually stores and reads back. **Expected green.**
 - **A6 — WORDSYNC-BIT10-EFFECT** (`opus:8-appA-adkcon.c20`,
   `sol:8-appa-adkbit.c11`, p.265). Bit 10, WORDSYNC, has a real effect
-  reaching disk-side logic (unlike PRECOMP/MFMPREC/MSBSYNC/FAST) — the exact
-  observable used to demonstrate this is decided once `paula.v`'s and
-  `paula_floppy.v`'s ports are read; the proposition graded is "toggling bit
+  reaching disk-side logic (unlike PRECOMP/MFMPREC/MSBSYNC/FAST) — the
+  observable is the first word DSKDATR delivers (the test source's header
+  gives the mechanism read from `paula_floppy.v`); the proposition graded is "toggling bit
   10 changes something reachable at `paula`'s boundary that toggling a
   storage-only bit does not," which is the load-bearing half of the page's
   "enables disk read synchronizing" sentence at this module boundary.
@@ -147,19 +133,20 @@ Plus, ungraded by any citation but required by this suite's own rules:
 
 - **LIVENESS (fixture liveness)** — the ADKCON/ADKCONR data path can deliver
   two distinct, recognisable words and read them back correctly before any
-  of A1-A6 is trusted to have measured one.
+  of A1-A6 is trusted to have measured one. A `note()`, MEASURED and not
+  graded: it carries no claim uid, so it is a fixture control, not
+  conformance evidence.
 
-All six citation-bearing propositions are expected **green**. There is no
-claim in this package's thirteen that I expect to grade red — the deliberate
-non-effect scoping of A3/A4/A5, and the real-consumer scoping of A1/A2/A6,
-is what keeps every one of them inside what the RTL, per the disclosed
-evidence, actually does. The red half of C8 will be reported via `note()`
-lines for MFMPREC (bit 12), MSBSYNC (bit 9) and FAST (bit 8) — each measured
-as storing and reading back individually while reaching no consumer, per the
-disclosed evidence, and independently confirmed once I read `paula.v`
-myself — since no claim in my thirteen names those three bits and inventing
-an assertion for a proposition nobody in this package's claim file made
-would be the overreach this suite's process exists to prevent.
+All six citation-bearing propositions are expected **green**. No claim in
+this package's thirteen is expected red — the deliberate non-effect scoping
+of A3/A4/A5, and the real-consumer scoping of A1/A2/A6, is what keeps every
+one of them inside what the RTL actually does. The red half of C8 is
+reported via `note()` lines for MFMPREC (bit 12), MSBSYNC (bit 9) and FAST
+(bit 8) — each measured as storing and reading back individually while
+reaching no consumer (paula.v's instantiations, read in full) — since no
+claim in the thirteen names those three bits and inventing an assertion for
+a proposition nobody in this package's claim file made would be the
+overreach this suite's process exists to prevent.
 
 ## Every claim accounted for
 
@@ -172,36 +159,14 @@ separately-authored claims.)
 
 ## Mutation plan
 
-Each of LIVENESS, A1-A6 gets its own
+Each of A1-A7 gets its own
 `// MUTATION <label> <oracle|stimulus|none> <red|green|impossible> <what changed>`
-record in the C++ source once built, `<label>` being the exact leading token
-of the string literal passed to `expect()`. Planned kind for all seven:
-**stimulus**, changing what the rig asks the module to do (which bit is
-written, or to which address) while leaving the expected value alone,
-confirming the targeted assertion alone goes red, then reverting. Since every
-assertion is expected green at baseline, `stimulus red` is the correct shape
-for all seven — none of them is expected red at baseline, so the "substitute
-a different live mechanism" alternative path should not be needed. Which path
-actually applies is decided from the measured baseline once the package is
-built, not guessed here.
-
-## What happens next
-
-Only after this file is committed: read `paula.v` in full (port list, the
-ADKCON/ADKCONR decode and the `adkcon` register's two fan-outs), read
-`paula_floppy.v` far enough to see the `wordsync` port and what it gates,
-read `hrm/ch5-audio-dmacon-adkcon/Makefile` and
-`hrm/ch5-audio-dmacon-adkcon/test_paula.cpp` for this suite's build pattern
-at this exact fixture (disclosed as existing precedent, not HRM conformance
-evidence itself, and not to be cited as an oracle), then write this
-package's own Makefile and test source. Everything opened beyond what is
-named here will be disclosed in the next commit's file header.
-
-## Repair addendum (Lot F, 2026-09-15)
-
-LIVENESS withdrawn to `note()` — it carries no claim uid, so it was never
-conformance evidence; grading it through `expect()` cost no coverage to
-remove. All six graded assertions (A1-A6) are unchanged and still GREEN.
+record in the C++ source, `<label>` being the exact leading token of the
+string literal passed to `expect()`. Kind for all seven: **stimulus**,
+changing what the rig asks the module to do (which bit is written, or to
+which address) while leaving the expected value alone, confirming the
+targeted assertion alone goes red, then reverting. Since every assertion is
+green at baseline, `stimulus red` is the shape for all seven.
 
 ## Extension: two further claims on WORDSYNC (bit 10)
 
@@ -215,7 +180,7 @@ Both quote the same appendix-A WORDSYNC sentence A6 already cites
 same proposition: bit 10 is WORDSYNC and enables disk-read synchronisation
 to the word at address (3F)*2. Neither carries a clause A6 does not already
 establish — opus's "$07E (DSKSYNC)" is arithmetic on the same cited address
-((3F)*2 = $07E), not an additional manual statement. On that basis these two
-are expected to be graded by adding their ids to A6's existing label, not by
-a new assertion — confirmed once the full claims file and A6's assertion
-text are reopened after this commit.
+((3F)*2 = $07E), not an additional manual statement. On that basis both ids
+are cited on A6's existing label rather than on a new assertion, and on A7,
+which grades the sentence's other half — that the word WORDSYNC waits for is
+the content of the register at "address (3F)*2" (see the test source).

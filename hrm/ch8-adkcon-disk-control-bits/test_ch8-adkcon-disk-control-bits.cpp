@@ -5,27 +5,21 @@
 // there; none declined.
 //
 // Extension: sol:5-appA-p265.c19 and opus:A-adkcon.b10 quote the same
-// p.265 WORDSYNC sentence A6 already grades and restate the same
-// proposition, so both ids were added to A6's label rather than given a
-// duplicate assertion. Routing on these two also named a clause A6 alone
+// p.265 WORDSYNC sentence A6 grades and restate the same proposition, so
+// both ids are cited on A6's label rather than given a duplicate
+// assertion. The same sentence also carries a clause A6 alone
 // does not cover -- the sentence's "located in address (3F)*2" half, i.e.
 // that the sync word WORDSYNC waits for is the content of the register at
 // that address (paula_floppy.v's DSKSYNC, parameter 9'h07e, ($07E>>1)=$3F
 // matching the page's own "(3F)*2") and not a value fixed elsewhere. A7
 // below is that one further trial. Both ids are cited on A7 too, since
-// between A6 and A7 the sentence is now fully established through expect()
-// -- neither carries the other's clause as an unmeasured caveat.
+// between A6 and A7 the sentence is fully established through expect()
+// -- neither carries the other's clause as an unmeasured caveat. A7's
+// DSKSYNC targets are two calibrated, mutually distinct header words, not
+// 0xAAAA, which A6's own clear-WORDSYNC trial delivers with no
+// synchronisation at all -- see A7's own block below.
 //
-// REPAIR: A7 previously loaded DSKSYNC with 0xAAAA, which is also the word
-// A6's own clear-WORDSYNC trial delivers with no synchronisation at all --
-// a probe with A7's DSKSYNC write removed left A7 green, so it could not
-// tell "matched the register" from "never synchronised". Corrected in
-// place, same ids, same label, same page -- see A7's own block below for
-// the fixed mechanism (two calibrated, mutually distinct header words used
-// as DSKSYNC targets instead of the aliasing 0xAAAA).
-//
-// Boundary correction (disclosed by the build brief, independently
-// confirmed here by reading paula.v myself): ADKCON/ADKCONR decode inside
+// Boundary (read from paula.v): ADKCON/ADKCONR decode inside
 // `paula` (paula.v:126-127, the register-write block at :182-195, the
 // read mux at :198). `paula` instantiates `paula_floppy` directly
 // (paula.v:243-286); `adkcon` has exactly two fan-outs anywhere in
@@ -64,7 +58,7 @@
 //   docs/legacy-names.md explains the vocabulary.
 //
 // WORDSYNC mechanism, read from paula_floppy.v (trackrdok/sync_match,
-// :508-509, :914-926) after SPECIFICATION.md was committed: `dsksync`
+// :508-509, :914-926): `dsksync`
 // resets to 0x4489 (:704-705) and the fixed value `floppy_data` emits at
 // word-count 2/3 (the synthesised sync mark, :485) is also 0x4489, so
 // `sync_match` (:914-915) fires as soon as a track read reaches that
@@ -82,21 +76,19 @@
 // to wait for that first push before popping, so no fixed cycle count is
 // guessed at.
 //
-// This mechanism was checked against the DMA-arming and SD-sector-feed
-// pattern already built and running in `hrm/ch8-dsklen-dma-arming` and
-// `hrm/ch8-drive-select-motor-led` (read for build/rig plumbing only, per
-// the build brief and this package's own SPECIFICATION.md -- their
-// specific claim/assertion content is not cited as an oracle here, only
-// the mechanics of driving DSKLEN's double write and the sdc_byte_in_*
-// sector-feed handshake, which are properties of this same RTL, not of
-// those packages' own findings). `hrm/ch5-audio-dmacon-adkcon`'s Makefile
-// was read for the `paula` submodule file list, also not cited as an
-// oracle -- see the Makefile's own comment for the (superset, since it
-// also compiled paula_audio's tree) list it used, and this package's
-// Makefile for the corrected, paula_floppy_fifo-including list.
+// The DMA-arming and SD-sector-feed mechanics follow
+// `hrm/ch8-dsklen-dma-arming` and `hrm/ch8-drive-select-motor-led`
+// (build/rig plumbing only -- their specific claim/assertion content is
+// not cited as an oracle here, only the mechanics of driving DSKLEN's
+// double write and the sdc_byte_in_* sector-feed handshake, which are
+// properties of this same RTL, not of those packages' own findings).
+// `hrm/ch5-audio-dmacon-adkcon`'s Makefile lists the `paula` submodule
+// files (a superset: it also compiles paula_audio's tree), not cited as an
+// oracle; this package's Makefile carries its own list, including
+// paula_floppy_fifo.
 //
 // Fixture: a fresh Vpaula per trial (paula_floppy's dsktrack has no reset
-// term -- disclosed rig hazard. A1-A6 never touch it. A7's repair (below)
+// term -- a known rig hazard. A1-A6 never touch it. A7 (below)
 // does, through `track`'s fold into the sector header words it calibrates
 // against, and says so at the point it relies on it; the same fresh-model
 // discipline is followed throughout regardless).
@@ -105,9 +97,8 @@
 // (see SPECIFICATION.md "Every claim accounted for" and "Extension: two
 // further claims on WORDSYNC (bit 10)").
 //
-// MUTATION records: see the bottom of this header, filled in after each
-// mutation was actually built and run (build brief: baseline colour must
-// stand beside the mutation result).
+// MUTATION records: at the bottom of this file, each built and run, with
+// the baseline colour beside the mutation result.
 
 #include <verilated.h>
 #include "Vpaula.h"
@@ -317,16 +308,15 @@ int main(int argc, char** argv) {
     Checks checks;
 
     // ========================================================================
-    // LIVENESS -- no claim id, no manual page: the build brief's own
-    // requirement that the fixture prove it can deliver a known, distinct
-    // word before any read-based assertion is trusted. Two distinct, known
+    // LIVENESS -- no claim id, no manual page: the fixture proves it can
+    // deliver a known, distinct word before any read-based assertion is
+    // trusted. Two distinct, known
     // ADKCON writes (set then clear the same recognisable pattern) must
     // arrive, unmodified and mutually distinguishable, at ADKCONR.
     //
-    // WITHDRAWN TO note() (independent validation, 2026-09-15, Lot F): this
-    // assertion carries no claim uid -- it was never conformance evidence,
-    // only a fixture control, so grading it through expect() cost no
-    // coverage to remove. Its mutation record is removed with it.
+    // A note(), not an expect(): it carries no claim uid, so it is a
+    // fixture control, not conformance evidence, and has no mutation
+    // record.
     // ========================================================================
     {
         Rig rig;
@@ -514,18 +504,16 @@ int main(int argc, char** argv) {
     // register at "address (3F)*2" (DSKSYNC, paula_floppy.v parameter
     // 9'h07e), not a value fixed elsewhere in the design.
     //
-    // REPAIR: the previous A7 loaded DSKSYNC with 0xAAAA -- the SAME word
-    // A6's own clear-WORDSYNC trial already delivers first with no
-    // synchronisation at all (the raw, unfiltered gap/preamble filler,
-    // paula_floppy.v:500 `floppy_data = ... : 16'haaaa`). A7 therefore
-    // could not tell "matched the loaded register" from "never
-    // synchronised, delivered the first word anyway": a probe with A7's
-    // DSKSYNC write removed left A7 green (7 passed, 0 failed) -- a
-    // control that could not tell its two cases apart, corrected here
-    // directly, same ids, same label, same page.
+    // DSKSYNC is NOT loaded with 0xAAAA: that is the SAME word A6's own
+    // clear-WORDSYNC trial delivers first with no synchronisation at all
+    // (the raw, unfiltered gap/preamble filler, paula_floppy.v:500
+    // `floppy_data = ... : 16'haaaa`), so a trial loading it cannot tell
+    // "matched the loaded register" from "never synchronised, delivered
+    // the first word anyway" (measured: with 0xAAAA as the target, the
+    // trial stays green with its DSKSYNC write removed).
     //
-    // Fix: use a DSKSYNC value that cannot alias the two fixed constants
-    // (0xAAAA gap, 0x4489 sync mark). The sector header words (fifo_word_
+    // A7 therefore uses a DSKSYNC value that cannot alias the two fixed
+    // constants (0xAAAA gap, 0x4489 sync mark). The sector header words (fifo_word_
     // counter 4-7, paula_floppy.v:438 `sector_header_word = {8'hff, track,
     // sector, 8'd11-sector}`, MFM-encoded through mfm_encoder_odd/even at
     // :442-462) are non-default and, unlike the data region (fed-byte
@@ -536,13 +524,13 @@ int main(int argc, char** argv) {
     // target), are computed combinationally from `track`/`sector` alone and
     // so are already present, correctly, during the scan.
     //
-    // A second RTL fact this repair measured rather than assumed: sync_
+    // A second RTL fact, measured rather than assumed: sync_
     // match (paula_floppy.v:914-915) and trackrdok's latch (:920-926) are
     // one cycle apart -- trackrdok used by `fifo_wr` (:771) is the value
     // from BEFORE the matching cycle, so the word that CAUSES the match is
     // itself dropped, and the word immediately after it is what is
-    // actually delivered first (verified by a probe: loading DSKSYNC with
-    // the measured word-4 value delivered word 5's value, not word 4's).
+    // actually delivered first (the trials below show it: loading DSKSYNC
+    // with the calibrated word-4 value delivers word 5's value, not word 4's).
     // This is invisible in A6, only because words 2 and 3 both carry the
     // same fixed 0x4489, so the off-by-one delivers the same value either
     // way.
@@ -555,8 +543,8 @@ int main(int argc, char** argv) {
     // graded trials below load DSKSYNC with each and check the delivered
     // word is the calibrated NEXT word, for two independent, mutually
     // distinct targets -- closing both the "hardcoded 0x4489" and the
-    // "any non-default value happens to pass" alternatives. (Measured this
-    // build: word4=0x5500, word5=0x0005, word6=0x5501, word7=0x0001 -- the
+    // "any non-default value happens to pass" alternatives. (Measured on
+    // the pinned revision: word4=0x5500, word5=0x0005, word6=0x5501, word7=0x0001 -- the
     // four values used here are what `track`/`sector` this exact fixture
     // presents, not a hand-picked constant; `track` folds in `dsktrack`,
     // which this file's own fixture note above discloses has no RTL reset
@@ -635,9 +623,8 @@ int main(int argc, char** argv) {
     // ========================================================================
     // C8's red half, ungraded: no claim in this package's fifteen asserts
     // an effect for MFMPREC (12), MSBSYNC (9) or FAST (8), so none is
-    // graded through expect(). Measured here and reported via note() only,
-    // confirming the finding candidates document's own disclosed
-    // measurement independently, at this package's own fixture.
+    // graded through expect(). Measured here, at this package's own
+    // fixture, and reported via note() only.
     // ========================================================================
     {
         Rig rig;
@@ -659,8 +646,8 @@ int main(int argc, char** argv) {
     return checks.failed == 0 ? 0 : 1;
 }
 
-// LIVENESS -- no claim uid; withdrawn to note() (Lot F, 2026-09-15). No
-// mutation record (not graded through expect()).
+// LIVENESS -- no claim uid; a note(), not graded through expect(), so no
+// mutation record.
 // MUTATION A2-ADKCONR-DISK-READ stimulus red: bit 11 (UARTBRK) was written
 // instead of bit 10 (WORDSYNC), while the check still reads bit 10 and
 // still expects it set (MUTATE=A2).
@@ -684,7 +671,4 @@ int main(int argc, char** argv) {
 // MUTATION A7-WORDSYNC-DSKSYNC-REGISTER stimulus red: DSKSYNC was left at
 // its reset default (0x4489) for trial X instead of being loaded with the
 // calibrated word4 value, while the check still expects the calibrated
-// word5 value as trial X's first delivered word (MUTATE=A7). The previous
-// mutation (leaving DSKSYNC at default while expecting the loaded value to
-// equal 0xAAAA) could not have distinguished the two cases either, for the
-// same reason the baseline couldn't -- see A7's block above.
+// word5 value as trial X's first delivered word (MUTATE=A7).
