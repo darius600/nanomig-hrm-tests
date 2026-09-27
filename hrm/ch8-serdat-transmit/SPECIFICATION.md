@@ -343,10 +343,9 @@ at ALLZERO-NO-TX is measured against.
 measured by the classify stage, cited here as the reason this red is
 anticipated rather than stumbled on, not as this package's own evidence):
 writing `0x0000` to SERDAT still drives a start-bit low cell on `txd`. This
-package's own step-2 measurement re-runs that stimulus independently (per
-"measurement erst machen, dann hinschreiben" — a prior party's measurement
-does not substitute for this package's own), with WRITE-STARTS-TX as the
-same-basis control the build brief requires.
+package re-runs that stimulus itself -- another party's measurement does
+not substitute for this package's own -- with WRITE-STARTS-TX as the
+same-basis control.
 
 ### RESTART-ON-RELOAD (p.259 `sol:8-serdat.c28`)
 
