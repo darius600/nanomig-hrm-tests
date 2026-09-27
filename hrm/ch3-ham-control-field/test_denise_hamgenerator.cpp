@@ -45,7 +45,8 @@
 //
 // HARNESS: the clocking mechanics (clk/clk7_en toggling, COLORBASE write
 // sequencing, ticks-per-pixel) are those of hrm/denise_hamgenerator/
-// test_denise_hamgenerator.cpp, the sibling harness for the SAME module.
+// test_denise_hamgenerator.cpp, the pre-pipeline harness for the SAME
+// module (removed).
 //
 // THE BPLCON0 ENABLE BIT: NOT ASSERTED, RECORDED AS A MEASUREMENT, NOT
 // RESOLVED. The manual disagrees with itself about which bit of BPLCON0
@@ -184,8 +185,8 @@ public:
     int failed = 0;
 };
 
-// Taken from hrm/denise_hamgenerator/test_denise_hamgenerator.cpp's
-// harness for this same module: clk/clk7_en toggling, a
+// Taken from the pre-pipeline hrm/denise_hamgenerator/
+// test_denise_hamgenerator.cpp harness for this same module (removed): clk/clk7_en toggling, a
 // COLORBASE=0x180 (word address 0xC0) CPU-style register write, and 4 ticks
 // to settle one pixel's `select` through to `rgb`. Nothing about this
 // mechanism is a claim of this package's own inventory; it is
