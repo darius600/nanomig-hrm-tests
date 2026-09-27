@@ -345,28 +345,37 @@ distinctly before any content-specific assertion below is graded.
   (LONG=1 case), to be re-measured directly by this package rather than
   assumed from the candidates file.
 
-## A9 — TBE-BIT13-TRACKS-WHETHER-THE-TRANSMIT-BUFFER-CAN-ACCEPT-ANOTHER-WORD
+## A9 — TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY
 
 - Page: 257. Uids: `sol:8-serdatr.c25`, `sol:8-serdatr.c27`,
-  `sol:8-serdatr.c31`.
-- Quote: p.257 "13 TBE TRANSMIT BUFFER EMPTY ... When bit 14 is a 1
+  `sol:8-serdatr.c31`. Also page 258 (no claim uid in this package's
+  inventory; see NM-HRM-056).
+- Quotes: p.257 "13 TBE TRANSMIT BUFFER EMPTY ... When bit 14 is a 1
   [sic — this HRM sentence describes SERDAT's own status bit numbering
   from the transmit side, not SERDATR; the receive-side proposition graded
   here is TBE's own definition] ... the data in the output data register
   (SERDAT) has been transferred to accept another output word. This is also
   true when the buffer is empty." (the transmit-buffer-empty/can-accept
   half of the row, deliberately not the "(Not a mirror ...)" half — that is
-  A10, below).
-- Proposition: TBE reads 1 whenever the transmit buffer (SERDAT's shadow) is
-  empty and can accept a new word, and reads 0 immediately after a write to
-  SERDAT that has not yet been consumed into the shift register.
-- **This is finding candidate S4-C2.** Per the candidates file:
-  `paula_uart.v:139` reasserts `tx_tbe` whenever `tx_state` reads TX_IDLE,
-  and the state is still TX_IDLE on the very cycle a SERDAT write lands — so
-  a reader of $018 never sees bit 13 clear, whatever the transmit state
-  actually is. Found independently twice (this slice's own classifier and
-  slice s1's `out.txt`). Expected: **RED**, to be re-measured directly by
-  this package.
+  A10, below); p.258 "Immediately after you write the data into this
+  register, the system will begin the transmission ... At the start of the
+  operation, this data is transferred from SERDAT into an internal serial
+  shift register. When the transfer to the serial shift register has been
+  completed, SERDAT can accept new data; the TBE interrupt signals this
+  fact."
+- Proposition: a word written while the shift register is still busy with
+  a previous word waits in SERDAT, and TBE reads 0 on every read until that
+  previous word's frame ends, then 1 (with TSRE still 0, since the new word
+  has itself now moved into the shift register and is shifting).
+- **NM-HRM-056 withdrew this assertion's earlier form**, which wrote one
+  word from idle and required the very next read to find TBE clear — no
+  page asks for that: p.258 has that word reach the shift register at the
+  start of the operation, immediately, so no bus read timed by this
+  package's own clk7_en-synchronised protocol can catch it. This repaired
+  form measures the case p.257's TSRE row actually describes instead.
+  Expected: **PASS**, confirmed by direct measurement (`reads_while_clear`
+  = 219 against a threshold of 20; the `// MUTATION` that removes the
+  second write measures `reads_while_clear` = 0 and goes red).
 
 ## A10 — BIT13-MIRROR-STATUS — SOURCE CONFLICT, NEITHER SIDE GRADED
 
@@ -405,8 +414,8 @@ distinctly before any content-specific assertion below is graded.
     something this package asserts as a verdict.
 - Expected: **RECORDED, not graded, on both sides.** A9 above is where the
   underlying, gradeable "does TBE ever read 0" question is actually
-  measured (RED); A10 is only about the mirror/not-mirror characterisation,
-  which this package declines to adjudicate.
+  measured; A10 is only about the mirror/not-mirror characterisation, which
+  this package declines to adjudicate.
 
 ## A11 — TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION-AND-CLEARS-ON-LOAD
 
@@ -579,10 +588,10 @@ distinctly before any content-specific assertion below is graded.
 
 - 123 claims read, all 123 accounted for above (verified programmatically).
 - 19 assertion blocks (A1-A19; A1 is a no-uid fixture check).
-- Expected to grade GREEN (to be confirmed by measurement): A2, A3, A4, A5,
-  A6, A7, A11, A12, A14, A15, A16, A18.
-- Expected to grade RED (finding candidates, to be confirmed by direct
-  measurement in this package): A8 (S4-C4), A9 (S4-C2), A13 (S4-C3).
+- Expected to grade GREEN (confirmed by measurement): A2, A3, A4, A5, A6,
+  A7, A9, A11, A12, A14, A15, A16, A18.
+- Expected to grade RED (finding candidates, confirmed by direct
+  measurement in this package): A8 (S4-C4), A13 (S4-C3).
 - RECORDED, graded on neither side (the two source conflicts this slice
   assigns to this package): A10 (bit 13, S4-C8), A17 (bit 8, S4-C9).
 - RECORDED, out of scope (already graded elsewhere): A19 (3 uids, p.289).

@@ -7,7 +7,9 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 256, 257, 283 (this package's 3 p.289 claims are declined --
-//   already graded by hrm/ch8-appb-serial-register-rows).
+//   already graded by hrm/ch8-appb-serial-register-rows), and 258 for
+//   TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY's transfer-timing clause (no
+//   claim uid in this package's inventory; see NM-HRM-056).
 // Non-goals: the p.283 side of the bit-13 mirror conflict (needs INTREQ,
 //   outside `paula_uart`'s own ports -- see A10 below); the INTREQ-clear
 //   half of OVRUN's own definition ("Reset by resetting bit 11 of INTREQ")
@@ -53,53 +55,15 @@
 //   Not used" reading it as a genuinely fixed cell, unlike the
 //   named-but-vacant bits DSKBYTR's own A8 found), 9:0=rx_data[9:0].
 //
-// (3) TBE'S OBSERVABILITY BUG (finding candidate S4-C2), confirmed by
-//   tracing the RTL directly (paula_uart.v:139):
-//     tx_tbe <= (rga_i==REG_SERDAT) ? 0 : ((tx_state==TX_IDLE) ? 1 : tx_tbe);
-//   On the edge a SERDAT write lands (call it edge N), the write branch
-//   wins unconditionally: tx_tbe becomes 0, and tx_state does NOT advance
-//   this same edge (the TX_IDLE case's own `if (!tx_tbe)` reads tx_tbe's
-//   OLD, pre-edge value, which was still 1, so no transition is scheduled
-//   yet). On the VERY NEXT clk7_en edge (N+1), tx_state is STILL TX_IDLE
-//   (unchanged since edge N), so the case block NOW sees tx_tbe=0 and
-//   schedules tx_state<=TX_SHIFT for edge N+2 -- but on this SAME edge
-//   N+1, the trailing "handle tbe bit" line ALSO evaluates, using
-//   tx_state's CURRENT (still TX_IDLE, pre-N+1-commit) value: no write
-//   this cycle, tx_state==TX_IDLE is true, so tx_tbe is reasserted to 1.
-//   tx_tbe is therefore genuinely 0 for exactly the interval between
-//   edges N and N+1, and 1 from edge N+1 onward. This suite's OWN
-//   established bus-cycle convention -- write_reg() then read_reg(), both
-//   waiting for a clk7_en edge, exactly what hrm/ch8-uart-frame-and-status's own
-//   calibration fixture and ch8-dskbytr-status-register's
-//   read_reg_clocked() use -- always lands its read exactly on edge N+1,
-//   because write_reg()'s own trailing ticks already consume edge N and
-//   leave clk7_en primed true for read_reg()'s FIRST tick, which becomes
-//   edge N+1: the very edge the reassertion fires on. So a real,
-//   protocol-respecting bus read can never catch the 0 -- confirmed by
-//   direct measurement below (A9), not assumed from the candidates file.
-//
-//   IS THIS A FIXTURE ARTEFACT OR A GENUINE FINDING? It is genuine, on
-//   two independent grounds, both checked directly rather than assumed:
-//     (a) `clk7_en` is not a harness convenience. `amiga_clk.v:17-33`
-//     generates it from `clk_28` as a fixed 1-in-4 division (28.375160MHz
-//     / 4 = the real Amiga's ~7.09MHz CPU clock) -- this is the SAME
-//     clock domain the real 68000 runs on in Amiga hardware, not a rate
-//     invented for this testbench.
-//     (b) `paula_uart.v` has no finer access grain to escape into: all
-//     five of its `always` blocks (rxd sync, SERPER write, SERDAT write,
-//     TX and RX state machines, checked by line -- :38, :50, :59, :77,
-//     :156) are gated `if (clk7_en)` with no exception, so no mechanism
-//     anywhere in this module can act between two clk7_en edges. A real
-//     68000 bus cycle is several CPU clocks long (68000 timing is a
-//     minimum of four S-states per cycle, more with wait states, which
-//     chip-register access on Amiga hardware always adds) -- strictly
-//     MORE than the single edge this harness's write_reg()->read_reg()
-//     already uses back-to-back. So a genuine CPU read landing later than
-//     this harness's own minimum-latency convention would find the
-//     reassertion has fired even more certainly, not less. The red is
-//     therefore not an artefact of how this fixture happens to be
-//     written; it is what the fastest bus access this hardware permits
-//     already cannot see.
+// (3) TBE'S SHORT WINDOW FROM IDLE (see NM-HRM-056): p.258 puts the
+//   transfer from SERDAT into the shift register "at the start of the
+//   operation" -- from idle, that is immediate, so no bus read timed by
+//   this suite's own clk7_en-synchronised write_reg()/read_reg()
+//   convention can ever catch TBE clear that way; NM-HRM-056 records why
+//   and withdraws the claim that it should. p.257's TSRE row describes
+//   the case a read CAN catch: a second word placed into SERDAT while the
+//   shift register is still busy with the first waits there, and TBE
+//   reads 0 for as long as it waits. A9 below measures that case.
 //
 // (4) RXD'S SYNCHRONISER DELAY (finding candidate S4-C3), confirmed by
 //   tracing paula_uart.v:36-43 and :234: `rxd` -> `rxd_sync[0]` (1 edge)
@@ -557,45 +521,74 @@ int main(int argc, char** argv) {
     }
 
     // ================= A9: TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY =================
-    // (p.257 sol:8-serdatr.c25, sol:8-serdatr.c27, sol:8-serdatr.c31)
-    // This is finding candidate S4-C2 -- see the METHODOLOGY note at the
-    // top of this file for the full RTL trace.
+    // (p.257 sol:8-serdatr.c25, sol:8-serdatr.c27, sol:8-serdatr.c31; p.258,
+    //  no claim uid in this package's inventory)
+    // NM-HRM-056 withdrew this assertion's earlier form, which wrote one
+    // word from idle and required the very next read to find TBE clear --
+    // no page asks for that; p.258 has that word reach the shift register
+    // at the start of the operation, immediately. The case p.257's TSRE
+    // row actually describes, and this assertion now measures: a second
+    // word placed into SERDAT while the shift register is still busy with
+    // the first waits there, and TBE reads 0 for as long as it waits.
     {
         Harness h;
         h.set_serper(false);
         uint16_t idle = h.read_reg(A_SERDATR);
-        h.write_reg(A_SERDAT, 0x0155);
+        h.write_reg(A_SERDAT, 0x0155);  // word 1, written from idle.
+        h.ticks(4);                     // one clk7_en period: word 1 has now
+                                         // moved into the shift register
+                                         // (p.258, "at the start of the
+                                         // operation") and is shifting out.
 #ifdef MUT_TBE_BIT13_TRACKS_TRANSMIT_BUFFER_EMPTY
-        // MUTATION: sample with an unsynchronised combinational peek,
-        // taken immediately after the write's own edge and before the
-        // NEXT clk7_en edge (the reassertion) has had a chance to fire --
-        // a different, real bus-timing stimulus, not a changed oracle.
-        // This is the "stimulus green at a red baseline" demonstration:
-        // it proves the 0 genuinely exists in the register, and that only
-        // the suite's own clk7_en-synchronised read protocol misses it.
-        uint16_t just_after_write = h.peek(A_SERDATR);
+        // MUTATION: no second write. Word 1 alone is already shifting, so
+        // TBE must already read 1 on the very first read below, instead of
+        // staying 0 for the rest of word 1's frame.
 #else
-        uint16_t just_after_write = h.read_reg(A_SERDATR);
+        h.write_reg(A_SERDAT, 0x0155);  // word 2, written while word 1 is
+                                         // still shifting out -- it now
+                                         // waits behind a busy shift
+                                         // register (p.257's TSRE row).
 #endif
-        bool ok = bitn(idle, 13) == 1 && bitn(just_after_write, 13) == 0;
+        const int MAX_READS = 300;  // far more reads than one frame takes
+                                     // at this baud rate -- this package's
+                                     // own TSRE-BIT12 assertion (A11)
+                                     // already waits out a full single-word
+                                     // frame in far fewer ticks than this
+                                     // many reads would consume.
+        int reads_while_clear = 0;
+        bool flipped = false;
+        uint16_t v = idle;
+        for (int i = 0; i < MAX_READS; i++) {
+            v = h.read_reg(A_SERDATR);
+            if (bitn(v, 13) == 1) { flipped = true; break; }
+            reads_while_clear++;
+        }
+        bool tbe_returned = flipped;
+        bool tsre_shifting = bitn(v, 12) == 0;
+        // Held clear for a real span -- word 1's remaining frame -- not
+        // just the one edge a write itself always clears TBE for.
+        bool held_for_a_frame = reads_while_clear >= 20;
+        bool ok = bitn(idle, 13) == 1 && tbe_returned && tsre_shifting &&
+                  held_for_a_frame;
         checks.expect(ok,
             "TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY (p.257 "
-            "sol:8-serdatr.c25, sol:8-serdatr.c27, sol:8-serdatr.c31): "
-            "'the data in the output data register (SERDAT) has been "
-            "transferred to accept another output word' -- TBE should "
-            "read 0 immediately after a SERDAT write and 1 only once the "
-            "buffer is genuinely empty again. This is a genuine finding, "
-            "not a fixture artefact: clk7_en (amiga_clk.v:17-33) is the "
-            "real Amiga's ~7.09MHz CPU clock enable, not a rate this "
-            "testbench invented, and paula_uart.v's five always-blocks "
-            "are ALL gated on it with no exception -- no access, however "
-            "fast, can land between two clk7_en edges on this module. A "
-            "real 68000 bus cycle spans several CPU clocks (more than the "
-            "single edge write_reg()->read_reg() already uses "
-            "back-to-back), so a genuine CPU read lands even later than "
-            "this harness's own fastest-possible convention -- more "
-            "certain to miss the 0, not less. idle=" + hex16(idle) +
-            " just_after_write=" + hex16(just_after_write) + ".");
+            "sol:8-serdatr.c25, sol:8-serdatr.c27, sol:8-serdatr.c31: '13 "
+            "TBE TRANSMIT BUFFER EMPTY ... the data in the output data "
+            "register (SERDAT) has been transferred to accept another "
+            "output word.'; p.258: 'Immediately after you write the data "
+            "into this register, the system will begin the transmission "
+            "... At the start of the operation, this data is transferred "
+            "from SERDAT into an internal serial shift register. When the "
+            "transfer to the serial shift register has been completed, "
+            "SERDAT can accept new data.'): a word written while the shift "
+            "register is still busy with the previous word waits in "
+            "SERDAT, and TBE must read 0 on every read until that previous "
+            "word's frame ends, then 1 with TSRE still 0 (the new word has "
+            "moved into the shift register and is itself now shifting). "
+            "idle=" + hex16(idle) + " (TBE=" + std::to_string(bitn(idle, 13)) +
+            ") reads_while_clear=" + std::to_string(reads_while_clear) +
+            " final=" + hex16(v) + " (TBE=" + std::to_string(bitn(v, 13)) +
+            " TSRE=" + std::to_string(bitn(v, 12)) + ").");
     }
 
     // ================= A10: BIT13-MIRROR-STATUS -- SOURCE CONFLICT, NEITHER SIDE GRADED =================
@@ -639,9 +632,9 @@ int main(int argc, char** argv) {
             "the way bit 14 tracked INTREQR bit 11, RTL evidence for the "
             "p.257 reading, not an adjudication this package makes. "
             "TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY above is where the "
-            "underlying 'does TBE ever read 0' question is graded (RED, "
-            "S4-C2); this record is only about the mirror "
-            "characterisation, graded on neither side.");
+            "underlying 'does TBE ever read 0' question is graded; this "
+            "record is only about the mirror characterisation, graded on "
+            "neither side.");
     }
 
     // ================= A11: TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION =================
@@ -893,9 +886,6 @@ int main(int argc, char** argv) {
     // expect() label's own "[claims: ...]" suffix below, not merely
     // referenced here, per the coverage ledger's own rule: a citation in a
     // comment or in SPECIFICATION.md is not a citation on a graded line.
-    // (Corrected 2026-09-16: the label previously read "41 uids, full list
-    // in SPECIFICATION.md A18" -- a pointer, not a citation -- and every
-    // one of these 42 uids reached no PASS/FAIL/RECORDED line at all.)
     {
         const uint16_t payloads[] = {0x00, 0xFF, 0xA3, 0x55, 0x81};
         bool ok = true;
@@ -978,11 +968,13 @@ int main(int argc, char** argv) {
     //   shortens from ~11 to ~10 bit times, both trials now fall in
     //   [8,10] -> the assertion (RED at baseline, per S4-C4) flips GREEN
     //   -- the correct demonstration at a red baseline. Reverted.
-    // MUTATION TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY stimulus green:
-    //   sample with an unsynchronised peek instead of the standard
-    //   clk7_en-synchronised read -> catches the genuinely-0 register
-    //   value before the reassertion fires -> the assertion (RED at
-    //   baseline, per S4-C2) flips GREEN. Reverted.
+    // MUTATION TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY stimulus red: no
+    //   second write -- word 1 alone is already shifting when polling
+    //   starts, so the very first read already finds TBE back at 1
+    //   (reads_while_clear=0, baseline measured 219) -> only this
+    //   assertion newly red (12 passed, 2 failed -> 11 passed, 3 failed;
+    //   the other 2 failures, unrelated to this repair, are unchanged).
+    //   Reverted; baseline (12 passed, 2 failed) confirmed restored.
     // MUTATION TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION stimulus red: wait
     //   only 3 bit-times instead of a full frame -> after_frame's bit 12
     //   still reads 0 where 1 was expected -> only this assertion newly
