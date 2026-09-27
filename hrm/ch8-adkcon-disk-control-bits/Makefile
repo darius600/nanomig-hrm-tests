@@ -3,15 +3,14 @@ NANOMIG ?= ../../nanomig
 
 TOP := paula
 # paula.v instantiates paula_uart, paula_intcontroller, paula_floppy and
-# paula_audio directly (confirmed by reading paula.v's own instantiations,
-# after SPECIFICATION.md was committed); paula_audio in turn instantiates
+# paula_audio directly; paula_audio in turn instantiates
 # paula_audio_channel and paula_audio_mixer, which itself instantiates
-# paula_audio_volume. paula_floppy in turn instantiates paula_floppy_fifo
-# (confirmed by reading paula_floppy.v). paula_floppy_ebr.v and
-# paula_floppy_dma_buf.v are deliberately NOT in this list: paula_floppy.v
-# does not instantiate either of them, and paula_floppy_ebr.v declares a
-# second `module paula_floppy` (build brief rig hazard) that must not be
-# compiled alongside paula_floppy.v.
+# paula_audio_volume. paula_floppy in turn instantiates paula_floppy_fifo.
+# paula_floppy_ebr.v and paula_floppy_dma_buf.v are deliberately NOT in
+# this list: paula_floppy.v does not instantiate either of them, and
+# paula_floppy_ebr.v declares a second `module paula_floppy` that must not
+# be compiled alongside paula_floppy.v (Verilator, run with -Wno-fatal as
+# here, only warns MODDUP and builds one of the two).
 SRC := $(NANOMIG)/src/minimig-aga/paula.v \
        $(NANOMIG)/src/minimig-aga/paula_uart.v \
        $(NANOMIG)/src/minimig-aga/paula_intcontroller.v \
