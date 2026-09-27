@@ -245,7 +245,8 @@ addresses, not over an inference.**
   overrides it for ECS.
 - **The marks are an address range, printed without exception.** Every row from
   `$000` to `$03E` carries `*` and every row from `$040` to `$07E` carries `~`,
-  reserved addresses included, and the `*` does not hold under ECS with CDANG set
-  in any implementation ([NM-HRM-053](NM-HRM-053.md)). The `~` on the `(E)` rows
+  reserved addresses included, and the `*` does not hold under ECS with CDANG set,
+  by p. 310's own sentence and in every implementation ([NM-HRM-053](NM-HRM-053.md),
+  withdrawn for that reason). The `~` on the `(E)` rows
   may be the range's mark carried onto new rows rather than a statement about ECS.
   The implementations and the AA specification side with NanoMig either way.
