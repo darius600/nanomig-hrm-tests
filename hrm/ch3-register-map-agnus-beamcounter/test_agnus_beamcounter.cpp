@@ -46,7 +46,7 @@
 //   This BOUNDARY text, the register-address table below, and the Harness
 //   mechanics (tick/run_cck/write_reg/read/force_vpos) are shared with two
 //   fixtures FOR THIS SAME MODULE: hrm/agnus_beamcounter/
-//   test_agnus_beamcounter.cpp (the base harness -- clk7_en/cck
+//   test_agnus_beamcounter.cpp (pre-pipeline, removed; the base harness -- clk7_en/cck
 //   relationship, reset sequencing) and hrm/ch3-beam-counters-and-blanking/
 //   test_agnus_beamcounter.cpp (the register-address table, write_reg/read,
 //   force_vpos, and the specific gating facts cited in METHODOLOGY below);
