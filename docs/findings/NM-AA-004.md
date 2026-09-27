@@ -12,7 +12,7 @@
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 29, the VPOSR entry |
 | **Assertions** | 4 graded; `make mutate` turns the three green ones red and this one green, which is the established shape for a red baseline |
 | **Verdict of the four** | **three of three against the document.** Every one of the four that models an identifier at all returns **$23** for AGA — the value this RTL returns — and none returns the document's $22. Denise casts no vote: its AGA term lands in the wrong bit position. See [What the others say](#what-the-others-say) |
-| **See also** | [NM-HRM-034](NM-HRM-034.md), which raises the same word against the Hardware Reference Manual — where the field is printed as unused rather than as an identifier |
+| **See also** | [NM-HRM-034](NM-HRM-034.md), withdrawn: the Hardware Reference Manual's p. 299 prints the same field as an identifier, with 10 for an OCS NTSC Agnus |
 
 ## What the AA specification says
 
