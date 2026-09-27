@@ -13,15 +13,14 @@
 //   values (6-appc-big-blits.c22's "1024-line maximum") - that IS "zero
 //   meaning 64 and 1024", the exact phrase packages.md item 8 assigns to
 //   PKG-BLT-SIZE, and is orthogonal to `ecs` (the encoding is the same
-//   whichever chipset is selected); pixel-count figures that require the
-//   manual's own word-to-pixel (x16) or the width/height-to-area scaling
-//   ("32768 pixels", "32K by 32K pixels") - this RTL exposes only a
-//   word-count field (width) and a line-count field (height), never a pixel
-//   count, so converting either to "pixels" is the programmer's own
-//   arithmetic, not something observable at this boundary (see NOT ASSERTED
-//   below; the same treatment PKG-BLT-LINE gives the dy/dx modulo-value
-//   formulas and PKG-BLT-SIZE's own "width in words versus height in lines"
-//   framing already establishes the convention); register read-back /
+//   whichever chipset is selected); a pixel count as a port of its own -
+//   this RTL exposes only a word-count field (width) and a line-count field
+//   (height), never a pixel count. The 32768-pixel ceilings ("32768
+//   pixels", "32K by 32K pixels") are graded anyway, on the word and line
+//   counts the zero-wrap reaches and the manual's own 16 pixels per word
+//   (BLTSIZH-WIDTH-ZERO-WRAPS-TO-2048-WORDS, BLTSIZV-HEIGHT-ZERO-WRAPS-TO-
+//   32768-ROWS); only the OCS 1024-pixel width figure is left under NOT
+//   ASSERTED below, as PKG-BLT-SIZE's territory; register read-back /
 //   write-only completeness for BLTCON0L, BLTSIZH, BLTSIZV
 //   (PKG-BLT-REGDECODE's job - this module has no host-read datapath for any
 //   register at all, so nothing here could show a register behaving
@@ -839,8 +838,8 @@ int main(int argc, char** argv) {
             "[fixture check] TEST-DATA-DELIVERY-ECS: four distinct C words fed into the "
             "fixture arrive at data_out, in order, at the we cycles they were fetched on - "
             "proves the DMA grant handshake actually delivers data, which every "
-            "data-dependent assertion below depends on. Reproduced from "
-            "hrm/ch6-blitter-status's TEST-DATA-DELIVERY first, per the build brief, "
+            "data-dependent assertion below depends on. The same check as "
+            "hrm/ch6-blitter-status's TEST-DATA-DELIVERY, run first, "
             "before anything data-dependent.");
     }
 
