@@ -43,8 +43,7 @@ addresses is written. The table is the sweep's, whose expected set starts at
 
 *Addresses here are the manual's byte addresses. A Copper instruction encodes
 DA8-1, so the module's register ports carry them halved and the sweep prints them
-that way. An earlier version of this entry quoted the halved form without saying
-so, which made it impossible to reconcile with the test it cited.*
+that way.*
 
 ---
 
@@ -55,9 +54,9 @@ so, which made it impossible to reconcile with the test it cited.*
 | **WinUAE** | — | blocks below `$80` |
 | **vAmiga** | — | blocks below `$80` |
 | **Denise** | [`emulation/libami/agnus/copper.cpp:342`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L342) | <pre>cdang = (value & 2) ? (agnus.ecsAndHigher() ? 0 : 0x40) : 0x80;</pre> floor `$80` when the danger bit is clear |
-| **Copperline** | [`src/bus/dma_slots.rs:697-701`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L697-L701) | <pre>pub(super) fn copper_can_write_custom(&self, off: u16) -&gt; bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;let off = off & 0x01FE;<br>&nbsp;&nbsp;&nbsp;&nbsp;if off &lt;= 0x03E {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return !matches!(self.agnus.revision(), AgnusRevision::Ocs)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&& self.agnus.copper_danger_enabled();</pre> needs the bit **set** for `$040`–`$07E` |
+| **Copperline** | [`src/bus/dma_slots.rs:697-705`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L697-L705) | <pre>pub(super) fn copper_can_write_custom(&self, off: u16) -&gt; bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;let off = off & 0x01FE;<br>&nbsp;&nbsp;&nbsp;&nbsp;if off &lt;= 0x03E {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return !matches!(self.agnus.revision(), AgnusRevision::Ocs)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&& self.agnus.copper_danger_enabled();<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;&nbsp;if (0x040..=0x07E).contains(&off) {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.agnus.copper_danger_enabled();</pre> needs the bit **set** for `$040`–`$07E`, on every revision |
 | **MiSTer** | [`rtl/agnus_copper.v:225`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L225) | descendant — identical to NanoMig: `if (ir2[8:7]==2'b00 && !cdang \|\| ir2[8:6]==3'b000 && !ecs) // illegal access`, the same CDANG-clear range |
-| **TC64** | [`rtl/minimig/agnus_copper.v:225`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L225) | descendant — the same line, byte for byte. Neither fork's only edit to this file (the blocking-assignment change at lines 234-274) reaches the CDANG decode. If the manual's reading is upheld, a fix diverges from neither line |
+| **TC64** | [`rtl/minimig/agnus_copper.v:225`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L225) | descendant — the same line, byte for byte. The only difference either line has from NanoMig in this file (blocking where NanoMig assigns non-blocking, lines 234-274) does not reach the CDANG decode. If the manual's reading is upheld, a fix diverges from neither line |
 
 **All four independent implementations read appendix C p. 310 the other way
 round** — that `CDANG` must be set, not clear, to reach the low range on ECS.
@@ -96,13 +95,12 @@ knows what the ECS Copper actually does, not a patch.
 
 **Corroborated on both sides, though not three ways.**
 
-- **The manual side carries in two editions.** The Developer-CD text and the OCR
+- **The manual side carries in both readings of the 3rd edition.** The Developer-CD text and the OCR
   of the printed book give the sentence word for word.
 - **The measured side** has the single-address probe and the exhaustive sweep
   agreeing.
 
-An earlier version counted appendix B's marker column as a third corroboration.
-**It is not one.** That column describes the standard chip set, where the RTL
+Appendix B's marker column is **not** a third corroboration. That column describes the standard chip set, where the RTL
 already agrees with it, so it cannot disagree with the design here — and a record
 that cannot disagree with the design is not evidence.
 

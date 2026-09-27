@@ -140,20 +140,21 @@ interest:
 
 | start here | because | what it takes |
 |---|---|---|
-| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and two of the four implementations already do what the manual says | a scope decision, read together with NM-HRM-022 and NM-HRM-024; one central mask would close all three |
+| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and three of the four implementations already do what the manual says | a scope decision, read together with NM-HRM-022 and NM-HRM-024; one central mask would close all three |
 | [NM-HRM-004](findings/NM-HRM-004.md) | all four implementations read the appendix the other way round from the manual — the clearest four-way signal in the register | re-reading one page, appendix C p. 310; most likely no change |
 | [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and a one-line fix: stop advertising the shut-up the whole Minimig family never implemented | one `case` entry, then one package run |
 
 **[NM-HRM-002](findings/NM-HRM-002.md) sorts first and is the worst starting
-point**: the manual contradicts itself there and the four implementations split
-evenly, so it is the one finding in the register that reports to nowhere. Read
+point**: the manual contradicts itself there, and it is the one finding in the
+register that reports to nowhere; three of the four implementations and the
+8364R7 silicon side with the pin list, as NanoMig does. Read
 it for what an unresolvable case looks like, not for something to do.
 
 
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
-| [NM-HRM-002](findings/NM-HRM-002.md) | audio channels on the wrong stereo side | open · RTL · **red** | `hrm/ch5-audio-stereo-routing` | **2–2**: WinUAE and vAmiga with chapter 5; Denise and Copperline with the pin list |
-| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | open · RTL · **red** | `hrm/ch2-copper-control`, `hrm/ch2-copper-locreg-width` | **Copperline narrows the REGISTER to 19 bits on OCS**, matching the manual; **WinUAE narrows the BUS** on OCS (`memory.cpp:2619-2623`), which has the same effect on a fetched address; Denise and vAmiga neither |
+| [NM-HRM-002](findings/NM-HRM-002.md) | audio channels on the wrong stereo side | open · RTL · **red** | `hrm/ch5-audio-stereo-routing` | **3–1**: WinUAE, Denise and Copperline with the pin list; vAmiga with chapter 5 |
+| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | open · RTL · **red** | `hrm/ch2-copper-control`, `hrm/ch2-copper-locreg-width` | **Copperline narrows the REGISTER to 19 bits on OCS**, matching the manual; **WinUAE and vAmiga narrow the BUS** on OCS (`memory.cpp:2619-2623`, `Memory.cpp:1623`), which has the same effect on a fetched address; Denise neither |
 | [NM-HRM-004](findings/NM-HRM-004.md) | ECS danger bit admits too small a range | open · RTL · **red** | `hrm/ch2-copper-move-range`, `hrm/ch2-copper-move-sweep` | both block below `$80` regardless of chipset |
 | [NM-HRM-005](findings/NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | open · RTL · **red** | `hrm/ch2-copper-cycle-times`, `hrm/ch2-copper-cycles` | vAmiga gives NanoMig's three numbers |
 | [NM-HRM-006](findings/NM-HRM-006.md) | DDFSTRT bit H3 is respected in lores, where p.91 says hires only | open · page · **red** | `hrm/ch3-ddf-fetch-window` | **unanimous with NanoMig**: all four respect H3 at every resolution; what they gate on the chipset is register bit 1 |
@@ -230,7 +231,7 @@ again.
 
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
-| [NM-HRM-001](findings/NM-HRM-001.md) | PAL field terminates at 313 lines, not 312 | **withdrawn** | `hrm/ch3-field-geometry` | **all four** run a 313-line PAL field; Table 7-5 sanctions 313 |
+| [NM-HRM-001](findings/NM-HRM-001.md) | PAL field terminates at 313 lines, not 312 | **withdrawn** | `hrm/ch3-field-geometry` | **all four** run a 313-line PAL field with the long-frame bit set (WinUAE clears it at hard reset); Table 7-5 sanctions 313 |
 | [NM-HRM-009](findings/NM-HRM-009.md) | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** | `hrm/ch3-collision-registers` | **all four** set bit 15 on every CLXDAT read |
 | [NM-HRM-012](findings/NM-HRM-012.md) | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** | `hrm/ch3-sprite-registers` | all four take SH0 at every resolution, as NanoMig does |
 | [NM-HRM-013](findings/NM-HRM-013.md) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn** | `hrm/ch3-sprite-registers` | bit 4 is real from ECS on, bit 3 only on AGA -- the split this was withdrawn into |

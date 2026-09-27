@@ -73,9 +73,9 @@ window; none cuts the last word at $D8.
 | **WinUAE** | — | 50 words at the limits |
 | **vAmiga** | — | 50 words at the limits |
 | **Denise** | — | not read for this finding |
-| **Copperline** | [`src/chipset/ddf_sequencer.rs:662`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/ddf_sequencer.rs#L662) | <pre>assert_eq!(plane0 % 2, 0);</pre> two words per plane per 8-cck hires unit |
+| **Copperline** | [`src/chipset/ddf_sequencer.rs:662`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/ddf_sequencer.rs#L662) | <pre>assert_eq!(plane0 % 2, 0);</pre> two words per plane per 8-cck hires unit, tested at the standard `$3C`/`$D4` window, not at the limits |
 | **MiSTer** | [`rtl/agnus_bitplanedma.v:339,349`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339) | descendant — identical to NanoMig: both DDF comparisons end in the trailing `1'b0` that forces start and stop onto even `hpos[8:1]` positions |
-| **TC64** | [`rtl/minimig/agnus_bitplanedma.v:313,323`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L313) | descendant — the same two expressions, byte for byte, despite 88 lines of unrelated `hde`-generation rewrite elsewhere in the file. Both forks share NanoMig's structurally-even fetch window; a fix diverges from neither |
+| **TC64** | [`rtl/minimig/agnus_bitplanedma.v:313,323`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L313) | descendant — the same two expressions, byte for byte, despite 74 differing lines elsewhere in the file, most of them the `hde` and display-window logic. Both forks share NanoMig's structurally-even fetch window; a fix diverges from neither |
 
 **Copperline states the even word count as an invariant in its own test** — which
 is NanoMig's structural argument, arrived at independently and written down as an

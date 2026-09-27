@@ -36,7 +36,8 @@
 | satisfied `WAIT` | 6 | **8** |
 | `WAIT` − `MOVE` | 2 | **4** |
 
-Every figure is exactly double, which was the first thing to rule out.
+`SKIP` and `WAIT` − `MOVE` are exactly double the printed figure; a satisfied
+`WAIT` is 8 against 6.
 
 **Where the cycles are spent.** The counting happens in one combinational state
 machine: `agnus_copper.v:384-548` decodes `copper_state` and decides, per DMA
@@ -49,8 +50,7 @@ line range is where to look for a cause, not where the measurement is taken.
 **The unit question is settled.** Appendix A p. 275 defines the bus cycle against
 the memory cycle time and gives the factor two, so the two readings are
 comparable and the deviation is real rather than an artefact of counting in
-different units. That check mattered: a suite that reports everything at double
-the printed value usually has a units error, and this one does not.
+different units.
 
 ---
 
@@ -59,11 +59,11 @@ the printed value usually has a units error, and this one does not.
 | | |
 |---|---|
 | **WinUAE** | not compared |
-| **vAmiga** | **4 / 8 / 8** — NanoMig's three numbers |
+| **vAmiga** | **4 / 8 / 8** for `MOVE` / `SKIP` / satisfied `WAIT` — NanoMig's numbers. Each Copper state is scheduled two DMA cycles after the one before ([`Core/Components/Agnus/Copper/Copper.h:331`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.h#L331): `void schedule(EventID next, int delay = 2);`); a `MOVE` passes `COP_FETCH` and `COP_MOVE`, a `SKIP` `COP_FETCH`, `COP_WAIT_OR_SKIP`, `COP_SKIP1` and `COP_SKIP2`, and a satisfied `WAIT` `COP_FETCH`, `COP_WAIT_OR_SKIP`, `COP_WAIT1` and `COP_WAIT2` before the next fetch (`CopperEvents.cpp`) |
 | **Denise** | — |
 | **Copperline** | — |
-| **MiSTer** | descendant — `rtl/agnus_copper.v:473-522` — identical to NanoMig's `WAITSKIP1`/`WAITSKIP2` states and their cycle counts |
-| **TC64** | descendant — `rtl/minimig/agnus_copper.v:473-522` — the same states, byte for byte. Neither fork's own edit to this file (the blocking-assignment change at lines 234-274) touches the WAIT/SKIP timing; the three numbers this finding measures come from code both lines share unchanged with NanoMig |
+| **MiSTer** | descendant — `rtl/agnus_copper.v:473-536` — identical to NanoMig's `WAITSKIP1`/`WAITSKIP2` states and their cycle counts |
+| **TC64** | descendant — `rtl/minimig/agnus_copper.v:473-536` — the same states, byte for byte. The only difference either line has from NanoMig in this file (blocking where NanoMig assigns non-blocking, lines 234-274) does not touch the WAIT/SKIP timing; the three numbers this finding measures come from code both lines share unchanged with NanoMig |
 
 **vAmiga measures what NanoMig measures.** That is the single most useful fact on
 this page, and it points away from the RTL.
