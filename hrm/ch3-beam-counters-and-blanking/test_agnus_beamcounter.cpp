@@ -1930,17 +1930,25 @@ int main(int argc, char** argv) {
     // Appendix C under "ECS Hardware and the Graphics Library". Two chipset
     // scopes, not two descriptions of one.
     //
-    // The real tension is p.238 against p.216/p.285, and it is
-    // registered: hrm/ch7-beam-position-word-layout grades "the 14-1 band
-    // carries no value under OCS" -- green at ntsc=0, RED at ntsc=1, which is
-    // NM-HRM-034. p.238 says that band IS the chip identification code, which
-    // weighs FOR the implementation and against the manual's own p.216/p.285.
+    // The real tension is p.238 against p.216/p.285: hrm/ch7-beam-position-
+    // word-layout's VPOSR-OCS-BITS-14-1-UNUSED once graded "the 14-1 band
+    // carries no value under OCS" as green at ntsc=0, RED at ntsc=1 -- that
+    // was finding NM-HRM-034, now withdrawn. p.264's own preamble ("do not
+    // rely on the values of unused bits when reading from a read only
+    // register") and p.299's identification field give the manual two
+    // readings of that band, and neither page decides which one an OCS
+    // machine returns once p.299's identification exists; that package now
+    // declines the band's claims via record() rather than grading either
+    // reading.
     checks.record(
         "NOT ASSERTED -- this band is contested between three printed pages (2 claims): opus:8-lpen.c22, "
         "sol:8-pen.c24. Printed p.238 says 'Bits 14-1  Chip ID code.  Do not "
-        "depend on value!'. That band is graded under OCS by "
-        "hrm/ch7-beam-position-word-layout, which grades the OPPOSITE reading (p.216/p.285: the band carries no value) and is RED there at ntsc=1, not "
-        "here -- this package grades the band's sub-fields "
+        "depend on value!'. hrm/ch7-beam-position-word-layout's "
+        "VPOSR-OCS-BITS-14-1-UNUSED once graded the OPPOSITE reading "
+        "(p.216/p.285: the band carries no value); that was finding "
+        "NM-HRM-034, now withdrawn, and that package declines those claims "
+        "via record() rather than grading either reading -- this package "
+        "grades the band's sub-fields "
         "(VPOSR-IDENTIFICATION-FIELD-BITS-14-7, VPOSR-BITS-6-3-UNUSED, "
         "VPOSR-BITS-2-0-VERTICAL-POSITION) and each is green. MEASURED here: "
         "bits 13/12 follow the ecs and ntsc inputs and bits 9-8 follow aga, so "
@@ -1949,9 +1957,9 @@ int main(int argc, char** argv) {
         "1 carry V10 and V9. p.299 is NOT in conflict with p.238: it is "
         "Appendix C's ECS material and VPOSR is marked '(E)' -- changed in "
         "ECS -- on p.289, defined on p.288. What p.238 does conflict with is "
-        "p.216 and p.285, which call the same band unused; that conflict is "
-        "NM-HRM-034 and p.238 is printed evidence on the implementation's "
-        "side of it.");
+        "p.216 and p.285, which call the same band unused; that was "
+        "NM-HRM-034, now withdrawn, since p.264 and p.299 together give the "
+        "manual two readings of the band, not one decided by either page.");
 
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed.\n";
