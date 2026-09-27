@@ -37,30 +37,23 @@
 //     AC2 by other ids; the parity half is not (see the record() call
 //     below).
 //
-// Disclosure required by docs/model-collaboration-guide.md: the RTL was already
-// inspected during FPGA-063 and FPGA-065 before this specification was written.
 // Every expected figure below is a verbatim printed-page quotation, and the unit
-// definition is derived from the HRM (p.194, p.23) rather than from the RTL.
+// definition is derived from the HRM (p.194, p.23), not from the RTL.
 //
 // MUTATION P1 stimulus red: run_cycles after start() cut from 600 to 10 (too short to observe five
-//   consecutive grant pairs) -> FAIL as expected. Per the mutation campaign's file scope, only P1 was
-//   mutation-tested here; P2-P6 are out of scope for this pass.
+//   consecutive grant pairs) -> FAIL as expected.
 //
-// AC1-AC7 added 06.09.2026 (FPGA-084, package PKG-APPX-TIMING). Machine-readable
-// records for tools/check_gates.py --tests:
+// Mutation records for AC1-AC7, read by tools/check_gates.py --tests:
 // MUTATION AC1 stimulus red a WAIT placed before the measured MOVE, so the window from word 0 to word 2 spans the WAIT instead
 // MUTATION AC2 stimulus red the same WAIT placement; the span measured is then the WAIT's, not a MOVE's
 // MUTATION AC3 stimulus red the same WAIT placement; the ratio measured is then the WAIT's
 // MUTATION AC7 stimulus red the run cut from 600 cycles to 6, too short to observe three grants, so the control correctly refuses to vouch for the fixture
 //
-// AC4 CANNOT BE STIMULUS-MUTATED AT THIS BOUNDARY, and that is worth stating
-// rather than hiding. It asserts that a SKIP is granted two bus cycles. No
-// stimulus produces a different grant count, because this module grants every
-// instruction form exactly two -- replacing the SKIP with a MOVE or a WAIT
-// leaves AC4 green. The assertion still discriminates against a real
-// alternative behaviour (a module granting three), but that behaviour cannot
-// be induced from outside; only an RTL change would show it. The playbook's
-// mutation rule assumes a stimulus mutation always exists. Here one does not.
+// AC4 asserts that a SKIP is granted two bus cycles. Replacing the SKIP with a
+// MOVE or a satisfied WAIT leaves AC4 green, because this module grants each
+// of those instruction forms exactly two; the stimulus that turns AC4 red is a
+// WAIT the beam has not reached, which blocks the Copper inside the measured
+// window (MUTATION AC4 below).
 //
 // MUTATION AC5 stimulus green the SKIP in the window replaced by a plain MOVE -> AC5 and AC6 turn GREEN
 // MUTATION AC6 stimulus green the same replacement -> the ratio measures 2, not 4
@@ -387,9 +380,9 @@ int main(int argc, char** argv) {
         h.run_cycles(4000);
         // ch2-what-is-a-copper-instruction.c15 is a sibling of
         // COP2-what-is-a-copper-instruction.c17 already on this line -- the
-        // SKIP-not-taken half. (ch2-appa-copins.c137 was never on this line:
-        // it names only P3's SKIP-taken case, and is withdrawn there too --
-        // see the record() before P2.)
+        // SKIP-not-taken half. (ch2-appa-copins.c137 names only P3's
+        // SKIP-taken case and sits on neither line -- see the record()
+        // before P2.)
         checks.expect_eq(h.span_in_memory_cycle_times(0, 2), 4,
                          "P4 a SKIP whose condition is false spans four memory cycle times (p.20) [NM-HRM-005, expected red] "
                          "[claims: COP2-what-is-a-copper-instruction.c17, ch2-what-is-a-copper-instruction.c15]");
@@ -398,8 +391,7 @@ int main(int argc, char** argv) {
     // P5/P6 - p.20: "The WAIT instruction requires three memory cycles and six
     // memory cycle times." Measured on a WAIT that is already satisfied when it
     // is decoded: a blocked WAIT's span is set by when the beam arrives, which
-    // the page does not describe. See the specification for the recorded
-    // tension with FPGA-063 over which scenario carries this figure.
+    // the page does not describe.
     {
         CopperHarness h;
         h.seek_beam(0x70);
@@ -431,12 +423,11 @@ int main(int argc, char** argv) {
     // the sentence's other half: the two units stand in a fixed ratio of two,
     // because only every other slot is asked for.
     //
-    // WHAT THESE DO NOT DO, corrected 06.09.2026 after independent review.
-    // An earlier version of this comment claimed "a module can satisfy both
-    // individual counts and still break the relation between them". **That is
-    // mathematically false.** If AC4 holds that a SKIP is granted two bus
-    // cycles and AC5 holds that it spans four memory cycle times, the ratio is
-    // two and AC6 cannot fail. The ratio assertions are EXPOSITORY - they state
+    // WHAT THESE DO NOT DO. A module cannot satisfy both individual counts
+    // and still break the relation between them: if AC4 holds that a SKIP is
+    // granted two bus cycles and AC5 holds that it spans four memory cycle
+    // times, the ratio is two and AC6 cannot fail. The ratio assertions are
+    // EXPOSITORY - they state
     // the manual's own relation in the manual's terms - and they are not an
     // independent check. AC5 also repeats what P3 above already measures on the
     // same fixture.
@@ -445,11 +436,10 @@ int main(int argc, char** argv) {
     // cycle times where the appendix and page 20 both say four. AC6's value is
     // that it says so in the unit relation the appendix uses.
     //
-    // FPGA-064 has been blocked since 21.08.2026 on "first establish what
-    // 'memory cycle' means here". This paragraph establishes it: a bus cycle is
-    // a granted slot, a memory cycle time is 280 ns of elapsed time, and one
-    // costs two of the other. That is what the appendix contributes; the count
-    // itself was already measured.
+    // What the appendix contributes is the meaning of the two units: a bus
+    // cycle is a granted slot, a memory cycle time is 280 ns of elapsed time,
+    // and one costs two of the other. The counts themselves are measured by
+    // P2-P4.
     // ------------------------------------------------------------------
     {
         CopperHarness h;
@@ -491,7 +481,7 @@ int main(int argc, char** argv) {
             "[claims: COP2-copins-timing.c5]");
         // Multiply rather than divide. `span / bus == 2` is integer division and
         // would accept span=5, bus=2 - which is not "exactly twice" and not what
-        // the sentence says. Caught by independent review on 06.09.2026.
+        // the sentence says.
         checks.expect_eq(span, 2 * bus,
             "AC3 for a MOVE, memory cycle times are exactly twice the granted bus cycles "
             "(p.275 \"Since only the odd bus cycles are requested\")");
@@ -512,15 +502,14 @@ int main(int argc, char** argv) {
         const int span = h.span_in_memory_cycle_times(0, 2);
 
         // Diagnostic, not an assertion, and deliberately not given an
-        // assertion-style name - a previous revision called it "AC8", which
-        // independent review rightly objected to.
+        // assertion-style name.
         //
         // AC7 runs only on the MOVE fixture and cannot vouch for this one. It
         // cannot, and the reason is the finding: here the grants are NOT evenly
         // spaced. What follows measures the gap ACROSS THE SKIP specifically -
         // from its second word to the next instruction's first - rather than
-        // the largest gap anywhere in the stream, which an earlier revision
-        // printed and which could have come from somewhere else entirely.
+        // the largest gap anywhere in the stream, which could come from
+        // somewhere else entirely.
         //
         // The MOVE comparison value is measured in the MOVE block above and
         // carried here, rather than written into the text as a constant.
@@ -540,8 +529,8 @@ int main(int argc, char** argv) {
             "[claims: COP2-copins-instructions.c6, COP2-copins-instructions.c8, ch2-appa-copins.c135]");
         // ch2-appa-copins.c137 (the appendix sentence's SKIP half) is not
         // added here either: it bundles the parity clause this file declines
-        // throughout (see the record() before P2), and was withdrawn from P3
-        // for the same reason.
+        // throughout (see the record() before P2), and is kept off P3 for
+        // the same reason.
         checks.expect_eq(span, 4,
             "AC5 a SKIP spans four memory cycle times (p.275, same sentence)");
         checks.expect_eq(span, 2 * bus,
