@@ -397,8 +397,9 @@ public:
         dut->eval();
     }
 
-    // One full colour-clock period (clk7_en/cck relationship proven in
-    // hrm/agnus_beamcounter/test_agnus_beamcounter.cpp's own main loop).
+    // One full colour-clock period (the clk7_en/cck relationship of the
+    // pre-pipeline hrm/agnus_beamcounter/test_agnus_beamcounter.cpp main
+    // loop, removed).
     void run_cck(int periods = 1) {
         for (int p = 0; p < periods; ++p) {
             for (int i = 0; i < 4; ++i) {
