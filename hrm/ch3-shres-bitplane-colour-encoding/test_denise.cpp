@@ -28,39 +28,33 @@
 // table places those letters into the sixteen lower colour registers: row
 // n carries colour (n mod 4)'s own letters in bits 11-10, 7-6, 3-2 and
 // colour (n div 4)'s own letters in bits 9-8, 5-4, 1-0. The page does not
-// say which register, or which half of it, a given 35 ns SuperHires pixel
-// reads -- p.297 only promises "new color register interpretations". This
-// package fixes ONE concrete, documented addressing convention to turn
-// that promise into a runnable measurement (ADDRESSING CONVENTION below);
-// the convention is the package's own stimulus choice, not a page claim,
-// and no assertion below treats it as one.
+// say which two pixels share a register -- adjacent pixels, or pixels 0/2
+// and 1/3 -- nor what a pixel shows in the positions the legend leaves
+// blank. Nothing graded below depends on either choice: a SOLID run (both
+// live bitplanes held at one constant value v) addresses register 5*v
+// under EITHER pairing, because both ticks of a solid pair carry the same
+// raw value regardless of which one a pairing calls "first".
 //
-// ADDRESSING CONVENTION (this package's own choice, used to build stimuli
-// and to classify which register a given run can legitimately move -- not
-// itself graded): a SuperHires pixel pair is two consecutive 35 ns ticks;
-// the first tick of a pair shows the register's own bits 11-10/7-6/3-2,
-// the second tick shows bits 9-8/5-4/1-0; the pair's register index is
-// 4*(first tick's raw two-bitplane value) + (second tick's raw value).
-// Under this convention: a SOLID run of colour v (both bitplanes constant)
-// addresses register 5*v on every pair. Two MIXED runs are also driven,
-// each loading a 16-bit shift pattern into the two live bitplanes and
-// sampling every 35 ns tick as it shifts out: pat1 = BPL1DAT/BPL2DAT =
-// 0xAAAA/0xCCCC (adjacent pairs cycle registers 4 and 14) and pat2 =
-// 0xF0F0/0xFF00 (adjacent pairs cycle registers 0, 5, 10 and 15). Six runs
-// total: SOLID-0..SOLID-3, MIXED-1, MIXED-2.
-//
-// A register's own bit is graded by running the six-run battery once with
-// a fixed base palette (four colours, pairwise-distinct two-bit R/G/B
-// fields) written into all sixteen registers via the row formula above,
-// and once more with that ONE bit of that ONE register inverted: FAIL if
-// any run this convention does NOT tie to that register changes (an
-// untied run/component moving is the RTL disagreeing with the table, or
-// with this package's own addressing choice, either way a red result);
-// PASS if a tied run changes and no untied run does; otherwise the
-// register/bit is recorded, not graded, as not observable -- this
-// package's own six-run battery never reaches it. bpu is held at 2
-// throughout every SuperHires stimulus (p.300: "The maximum plane depth
-// for a SuperHires viewport is 2 bitplanes").
+// GRADING (pairing-independent). All sixteen registers are written from a
+// fixed base palette (four colours, pairwise-distinct two-bit R/G/B
+// fields) via the row formula above; one register's one bit is then
+// inverted (all sixteen register-bus bits -- the twelve the key marks
+// significant and the four it prints unused, bits 15-12 -- since this
+// fixture's own register-bus write path carries all sixteen) and the four
+// SOLID runs (SOLID-0..SOLID-3, one per colour) are re-measured against
+// the unperturbed baseline, tick by tick, not by their most frequent
+// sample: if the register is COLOR(5*v) for some v, the flip must move
+// SOLID-v and no other solid run (FAIL otherwise); if the register is not
+// COLOR(5*v) for any v, the flip must move no solid run (FAIL otherwise).
+// Two MIXED runs are also driven on every one of the same runs, each
+// loading a 16-bit shift pattern into the two live bitplanes and sampling
+// every 35 ns tick as it shifts out: pat1 = BPL1DAT/BPL2DAT =
+// 0xAAAA/0xCCCC and pat2 = 0xF0F0/0xFF00. Which register a mixed pair
+// addresses, and which of its two halves a given pixel shows, is exactly
+// the choice p.301 leaves open, so MIXED-1 and MIXED-2 are measured and
+// recorded alongside each register's verdict -- never graded. bpu is held
+// at 2 throughout every SuperHires stimulus (p.300: "The maximum plane
+// depth for a SuperHires viewport is 2 bitplanes").
 //
 // Register bus addressing: BPLCON0 = $100, COLORxx = $180 + xx,
 // BPL1DAT/BPL2DAT/BPL3DAT/BPL4DAT = $110/$112/$114/$116, DIWSTRT/DIWSTOP =
@@ -83,54 +77,70 @@
 //   SHRES-REINTERPRETS-SAME-REGISTERS (2 ids)      -- C-shr.c06,
 //                                                      C-superhires-color.c1
 //   SHRES-BITPLANE-TABLE-COLOR-00 .. -0F (16 assertions, 288 ids total):
-//     each cites its own row id (C-shrc.rXX) plus its own twelve
-//     significant-bit C-shres-bpl-bits.cNNN ids; COLOR-00, -05, -0A and
-//     -0F (the four diagonal rows) additionally cite that source colour's
-//     own legend row and its three symbol ids.
+//     each cites its own row id (C-shrc.rXX), its own twelve
+//     significant-bit C-shres-bpl-bits.cNNN ids and its own four
+//     printed-unused-bit ids (bits 15-12, also C-shres-bpl-bits.cNNN);
+//     COLOR-00, -05, -0A and -0F (the four diagonal rows) additionally
+//     cite that source colour's own legend row and its three symbol ids.
 //   SHRES-USES-SIXTEEN-LOWER-REGISTERS (2 ids)     -- C-shrc.c04, c05
 //   SHRES-TWO-BITS-RESOLUTION (2 ids)              -- C-shrc.c01, c02
 //   Tally: 4 + 2 + 288 + 2 + 2 = 298 distinct ids. Declined: 3. 298+3=301.
 //
-// RESULTS: 5 passed, 7 failed (12 graded assertions; 15 more recorded,
-// not graded -- 12 declined-by-construction COLOR-04..-0F entries plus 3
-// declined claims). Passing: CONTROL-KNOWN-VALUES-ARRIVE, FIXTURE-DATA-
-// PATH-LIVE, OCS-BASELINE-0RGB-FORMAT, SELECT-REGISTER-ADDRESSES-
-// CORRECTLY, SHRES-USES-SIXTEEN-LOWER-REGISTERS's own Hires control.
-// Failing: SHRES-REINTERPRETS-SAME-REGISTERS, SHRES-BITPLANE-TABLE-
-// COLOR-00 through -03, SHRES-USES-SIXTEEN-LOWER-REGISTERS, SHRES-TWO-
-// BITS-RESOLUTION. Every assertion's own label states what it measured.
+// RESULTS: 15 passed, 9 failed (24 graded assertions; 3 claims declined,
+// RECORDED, NOT GRADED). Passing: CONTROL-KNOWN-VALUES-ARRIVE, FIXTURE-
+// DATA-PATH-LIVE, SELECT-REGISTER-ADDRESSES-CORRECTLY, OCS-BASELINE-0RGB-
+// FORMAT, SHRES-BITPLANE-TABLE-COLOR-00, -04, -06, -07, -08, -09, -0B,
+// -0C, -0D, -0E, and SHRES-USES-SIXTEEN-LOWER-REGISTERS's own Hires
+// control. Failing: SHRES-REINTERPRETS-SAME-REGISTERS, SHRES-BITPLANE-
+// TABLE-COLOR-01, -02, -03, -05, -0A, -0F, SHRES-USES-SIXTEEN-LOWER-
+// REGISTERS, SHRES-TWO-BITS-RESOLUTION. Every assertion's own label states
+// what it measured and, for SHRES-BITPLANE-TABLE-COLOR-nn, how many of
+// its sixteen register-bus bits passed or failed and why.
 //
-// MUTATION LOG (every changed or new assertion, actually built with its
-// own -DMUT_*=1 flag via EXTRA_CFLAGS, rerun, and reverted):
-//   MUT_REINTERP: forces h1's own register content to differ from h0's
-//     unrelated to shres -- baseline FAIL (0x4499EE both) -> PASS
-//     (0x4499EE vs 0xBB6611). Confirms the equality check is not
-//     vacuously false.
-//   MUT_COLORTABLE: misclassifies every run as tied for register 1 only
-//     -- COLOR-01 baseline FAIL (12 of 12 bits untied) -> PASS (12 of 12
-//     tied). Confirms the untied/tied classification drives the verdict.
-//   MUT_SIXTEEN: probes COLOR01 (directly reachable) instead of COLOR0A
-//     -- the main assertion FAIL (no run changed) -> PASS (a run
-//     changed), and its own Hires control PASS (no run changed) -> FAIL
-//     (a run changed) in lockstep, both for the same reason (COLOR01 is
-//     reachable, unlike COLOR0A, regardless of mode).
+// MUTATION LOG (every changed or new assertion, built with its own
+// -DMUT_*=1 flag via EXTRA_CFLAGS and run):
+//   MUT_REINTERP (input): COLOR05 is written to equal COLOR01's own
+//     content, so a page-following shres reading of a solid colour-1 run
+//     (COLOR05) equals the ocs reading (COLOR01) -- the page predicts
+//     PASS at baseline and FAIL under this mutation. On NanoMig the
+//     result is unchanged (still FAIL, 0x4499EE both): NanoMig never
+//     reads COLOR05 for this run, so the write has no effect there --
+//     which is the finding. Confirms the equality check is not vacuously
+//     true.
+//   MUT_COLORTABLE (input): inside the COLOR sweep's own four-solid-run
+//     battery, the run labelled SOLID-v is driven with raw value v^1
+//     instead of v, so it addresses a different register than the one
+//     its own label ties it to -- a stimulus that makes a solid run read
+//     a different register. COLOR-00 flips PASS -> FAIL (its own tied run
+//     is now driven under a different label and no longer moves it);
+//     COLOR-05, -0A, -0F stay FAIL and COLOR-01..-04, -06..-09, -0B..-0E
+//     stay as at baseline. Confirms the per-register verdict tracks which
+//     register a run actually addresses, not its label.
+//   MUT_SIXTEEN: probes COLOR01 (one of COLOR00-03, reachable directly
+//     regardless of mode) instead of COLOR0A; the label states which
+//     register class applies under the flag instead of asserting the
+//     unmutated case unconditionally. Main assertion FAIL -> PASS, Hires
+//     control PASS -> FAIL, in lockstep, both because COLOR01 is directly
+//     reachable regardless of mode.
 //   MUT_TWOBITS: substitutes colour 1 (the tested run's own colour) for
-//     the "other colours" loop -- 6 of 6 tested variants differ (versus
-//     6 of 18 at baseline), confirming the per-variant tick comparison
-//     is not vacuous; the aggregate verdict stays FAIL either way, for a
-//     different, genuine reason (colour 0's own presence in COLOR01's
-//     low half at baseline).
-//   MUT_CONTROL, MUT_FIXTURE, MUT_OCSBASELINE, MUT_SELECTREG (pre-
-//     existing controls, unchanged claims, re-verified after this
-//     package's harness timing was retuned): each flips its own control
-//     PASS to FAIL as before.
+//     the "other colours" loop; the label states this under the flag
+//     instead of asserting "the other three colours" unconditionally. 6
+//     of 6 variants differ (0 identical), versus 6 of 18 at baseline;
+//     verdict stays FAIL either way, for the same reason (colour 0's own
+//     bits reach COLOR01's low half at baseline; colour 1's own bits
+//     always reach it here).
+//   MUT_CONTROL, MUT_FIXTURE, MUT_OCSBASELINE, MUT_SELECTREG (controls):
+//     each flips its own control from PASS to FAIL, unchanged from
+//     before.
+//   Every mutation above was built and run (out.txt reflects the
+//   unmutated build; each mutated run's own PASS/FAIL line is quoted
+//   above).
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
-#include <map>
 #include <set>
 #include <sstream>
 #include <string>
@@ -180,8 +190,9 @@ static const char* const kRowIds[16] = {
     "C-shrc.r0C", "C-shrc.r0D", "C-shrc.r0E", "C-shrc.r0F",
 };
 
-// Per-register bit-claim id lists, bit 11 down to bit 0 (the twelve
-// significant bits; bits 15-12 are printed unused and carry no id).
+// Per-register bit-claim id lists, bit 11 down to bit 0 -- the twelve
+// bits the key marks significant. The four bits it prints unused
+// (15-12) have their own ids, in kUnusedBitIds below.
 static const char* const kBitIds[16][12] = {
     { "C-shres-bpl-bits.c5", "C-shres-bpl-bits.c6", "C-shres-bpl-bits.c7", "C-shres-bpl-bits.c8", "C-shres-bpl-bits.c9", "C-shres-bpl-bits.c10", "C-shres-bpl-bits.c11", "C-shres-bpl-bits.c12", "C-shres-bpl-bits.c13", "C-shres-bpl-bits.c14", "C-shres-bpl-bits.c15", "C-shres-bpl-bits.c16" }, // COLOR00
     { "C-shres-bpl-bits.c21", "C-shres-bpl-bits.c22", "C-shres-bpl-bits.c23", "C-shres-bpl-bits.c24", "C-shres-bpl-bits.c25", "C-shres-bpl-bits.c26", "C-shres-bpl-bits.c27", "C-shres-bpl-bits.c28", "C-shres-bpl-bits.c29", "C-shres-bpl-bits.c30", "C-shres-bpl-bits.c31", "C-shres-bpl-bits.c32" }, // COLOR01
@@ -199,6 +210,30 @@ static const char* const kBitIds[16][12] = {
     { "C-shres-bpl-bits.c229", "C-shres-bpl-bits.c230", "C-shres-bpl-bits.c231", "C-shres-bpl-bits.c232", "C-shres-bpl-bits.c233", "C-shres-bpl-bits.c234", "C-shres-bpl-bits.c235", "C-shres-bpl-bits.c236", "C-shres-bpl-bits.c237", "C-shres-bpl-bits.c238", "C-shres-bpl-bits.c239", "C-shres-bpl-bits.c240" }, // COLOR0D
     { "C-shres-bpl-bits.c117", "C-shres-bpl-bits.c118", "C-shres-bpl-bits.c119", "C-shres-bpl-bits.c120", "C-shres-bpl-bits.c121", "C-shres-bpl-bits.c122", "C-shres-bpl-bits.c123", "C-shres-bpl-bits.c124", "C-shres-bpl-bits.c125", "C-shres-bpl-bits.c126", "C-shres-bpl-bits.c127", "C-shres-bpl-bits.c128" }, // COLOR0E
     { "C-shres-bpl-bits.c245", "C-shres-bpl-bits.c246", "C-shres-bpl-bits.c247", "C-shres-bpl-bits.c248", "C-shres-bpl-bits.c249", "C-shres-bpl-bits.c250", "C-shres-bpl-bits.c251", "C-shres-bpl-bits.c252", "C-shres-bpl-bits.c253", "C-shres-bpl-bits.c254", "C-shres-bpl-bits.c255", "C-shres-bpl-bits.c256" }, // COLOR0F
+};
+
+// Per-register bit-claim id lists for the four bits the key prints
+// unused, bit 15 down to bit 12 ("COLORnn bit 15 is unused" and so on).
+// This fixture's own register-bus write path (Harness::write_color_raw,
+// 16 bits wide) can drive every one of them, so they are graded, not
+// declined.
+static const char* const kUnusedBitIds[16][4] = {
+    { "C-shres-bpl-bits.c1", "C-shres-bpl-bits.c2", "C-shres-bpl-bits.c3", "C-shres-bpl-bits.c4" }, // COLOR00
+    { "C-shres-bpl-bits.c17", "C-shres-bpl-bits.c18", "C-shres-bpl-bits.c19", "C-shres-bpl-bits.c20" }, // COLOR01
+    { "C-shres-bpl-bits.c33", "C-shres-bpl-bits.c34", "C-shres-bpl-bits.c35", "C-shres-bpl-bits.c36" }, // COLOR02
+    { "C-shres-bpl-bits.c49", "C-shres-bpl-bits.c50", "C-shres-bpl-bits.c51", "C-shres-bpl-bits.c52" }, // COLOR03
+    { "C-shres-bpl-bits.c129", "C-shres-bpl-bits.c130", "C-shres-bpl-bits.c131", "C-shres-bpl-bits.c132" }, // COLOR04
+    { "C-shres-bpl-bits.c145", "C-shres-bpl-bits.c146", "C-shres-bpl-bits.c147", "C-shres-bpl-bits.c148" }, // COLOR05
+    { "C-shres-bpl-bits.c161", "C-shres-bpl-bits.c162", "C-shres-bpl-bits.c163", "C-shres-bpl-bits.c164" }, // COLOR06
+    { "C-shres-bpl-bits.c177", "C-shres-bpl-bits.c178", "C-shres-bpl-bits.c179", "C-shres-bpl-bits.c180" }, // COLOR07
+    { "C-shres-bpl-bits.c65", "C-shres-bpl-bits.c66", "C-shres-bpl-bits.c67", "C-shres-bpl-bits.c68" }, // COLOR08
+    { "C-shres-bpl-bits.c193", "C-shres-bpl-bits.c194", "C-shres-bpl-bits.c195", "C-shres-bpl-bits.c196" }, // COLOR09
+    { "C-shres-bpl-bits.c81", "C-shres-bpl-bits.c82", "C-shres-bpl-bits.c83", "C-shres-bpl-bits.c84" }, // COLOR0A
+    { "C-shres-bpl-bits.c97", "C-shres-bpl-bits.c98", "C-shres-bpl-bits.c99", "C-shres-bpl-bits.c100" }, // COLOR0B
+    { "C-shres-bpl-bits.c209", "C-shres-bpl-bits.c210", "C-shres-bpl-bits.c211", "C-shres-bpl-bits.c212" }, // COLOR0C
+    { "C-shres-bpl-bits.c225", "C-shres-bpl-bits.c226", "C-shres-bpl-bits.c227", "C-shres-bpl-bits.c228" }, // COLOR0D
+    { "C-shres-bpl-bits.c113", "C-shres-bpl-bits.c114", "C-shres-bpl-bits.c115", "C-shres-bpl-bits.c116" }, // COLOR0E
+    { "C-shres-bpl-bits.c241", "C-shres-bpl-bits.c242", "C-shres-bpl-bits.c243", "C-shres-bpl-bits.c244" }, // COLOR0F
 };
 
 // The four diagonal (single-source-colour) registers additionally cite
@@ -322,8 +357,15 @@ public:
         tick(4); // settle margin
     }
 
+    // Writes all sixteen bits of a colour register's own bus word -- this
+    // fixture's data_in port is 16 bits wide end to end (Harness ctor),
+    // so bits 15-12 (the key prints them unused) reach the register bus
+    // exactly like bits 11-0 do; nothing here masks them off.
+    void write_color_raw(int idx, uint16_t val16) {
+        write_reg(static_cast<uint16_t>(kAddrColor0 + idx), val16);
+    }
     void write_color(int idx, uint16_t val12) {
-        write_reg(static_cast<uint16_t>(kAddrColor0 + idx), val12 & 0x0FFF);
+        write_color_raw(idx, static_cast<uint16_t>(val12 & 0x0FFF));
     }
 
     void set_mode(bool shres_on, int bpu, bool hires_on = false) {
@@ -434,9 +476,9 @@ std::vector<uint32_t> mixed_run(Harness& h, uint16_t pat1, uint16_t pat2, int to
 }
 
 // The six-run battery: SOLID-0..SOLID-3, MIXED-1 (0xAAAA/0xCCCC), MIXED-2
-// (0xF0F0/0xFF00). invertReg/invertBit >= 0 flips one bit of one
-// register's row-formula content before driving; invertReg < 0 runs the
-// base palette unperturbed.
+// (0xF0F0/0xFF00). invertReg/invertBit >= 0 flips one bit (0-15; bits
+// 15-12 are the ones the key prints unused) of one register's row-formula
+// content before driving; invertReg < 0 runs the base palette unperturbed.
 using Battery = std::array<std::vector<uint32_t>, 6>;
 
 Battery run_battery(const Colour2 A[4], int invertReg, int invertBit) {
@@ -446,61 +488,34 @@ Battery run_battery(const Colour2 A[4], int invertReg, int invertBit) {
         write_all_registers(h, A);
         if (invertReg >= 0) {
             uint16_t cur = registerValue(A, invertReg);
-            h.write_color(invertReg, static_cast<uint16_t>(cur ^ (1u << invertBit)));
+            h.write_color_raw(invertReg, static_cast<uint16_t>(cur ^ (1u << invertBit)));
         }
     };
     for (int v = 0; v < 4; ++v) {
         Harness h; setup(h);
-        out[static_cast<size_t>(v)] = solid_run(h, v, 24);
+        int driveV = v;
+#if MUT_COLORTABLE
+        driveV ^= 1; // MUTATION (input): the run labelled SOLID-v is
+                     // driven with raw value v^1 instead of v, so it
+                     // addresses a different register than its own label.
+#endif
+        out[static_cast<size_t>(v)] = solid_run(h, driveV, 24);
     }
     { Harness h; setup(h); out[4] = mixed_run(h, 0xAAAA, 0xCCCC, 40); }
     { Harness h; setup(h); out[5] = mixed_run(h, 0xF0F0, 0xFF00, 40); }
     return out;
 }
 
-// The steady value a solid run settled to: its most frequent sample,
-// robust to a harness-timing artefact this package's own settle-and-
-// refresh procedure cannot fully avoid (a handful of samples at either
-// end of a run occasionally show a transient value while the pipeline
-// this fixture's own colour path uses catches up or a fresh reload's own
-// settle count happens to straddle a boundary) -- see FIXTURE-DATA-PATH-
-// LIVE, the control this package establishes the same measurement basis
-// against. The steady value dominates every run this package drives.
-uint32_t steadyValue(const std::vector<uint32_t>& samples) {
-    std::map<uint32_t, int> counts;
-    for (auto v : samples) ++counts[v];
-    uint32_t best = samples.empty() ? 0 : samples.front();
-    int bestCount = -1;
-    for (auto& kv : counts) {
-        if (kv.second > bestCount) { bestCount = kv.second; best = kv.first; }
-    }
-    return best;
-}
-
-// A run has "changed" if its steady value differs (solid runs, runs 0-3)
-// or if the set of distinct RGB values it produced differs (mixed runs,
-// runs 4-5 -- a mixed run's own tick-to-bit alignment is not this
-// package's to pin down, only which colours it produced).
+// A run has "changed" if its own tick vector differs (solid runs, runs
+// 0-3 -- compared sample by sample, not by their most frequent value, so
+// a change confined to half of a run's ticks is not hidden) or if the set
+// of distinct RGB values it produced differs (mixed runs, runs 4-5 -- a
+// mixed run's own tick-to-bit alignment is not this package's to pin
+// down, only which colours it produced).
 bool runDiffers(int runIdx, const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
-    if (runIdx < 4) return steadyValue(a) != steadyValue(b);
+    if (runIdx < 4) return a != b;
     std::set<uint32_t> sa(a.begin(), a.end()), sb(b.begin(), b.end());
     return sa != sb;
-}
-
-// Which of the six runs this package's ADDRESSING CONVENTION ties to
-// register nn (see header). Diagonal registers (nn a multiple of 5) tie
-// to their own solid run and to MIXED-2; registers 4 and 14 tie to
-// MIXED-1; every other register ties to nothing this battery reaches.
-// selfTieMutation additionally, and wrongly, ties EVERY run to register
-// 1 specifically -- MUT_COLORTABLE's controlled misclassification,
-// blinding the untied-contamination check for that one register only, to
-// show the FAIL path is reachable (see main()).
-std::array<bool, 6> tiedRuns(int nn, bool selfTieMutation) {
-    std::array<bool, 6> tied{};
-    if (nn % 5 == 0) { tied[static_cast<size_t>(nn / 5)] = true; tied[5] = true; }
-    if (nn == 4 || nn == 14) tied[4] = true;
-    if (selfTieMutation && nn == 1) tied.fill(true);
-    return tied;
 }
 
 std::string join(std::initializer_list<const char*> ids) {
@@ -513,9 +528,9 @@ std::string join(std::initializer_list<const char*> ids) {
     }
     return os.str();
 }
-std::string join12(const char* const* ids) {
+std::string joinArr(const char* const* ids, int n) {
     std::ostringstream os;
-    for (int i = 0; i < 12; ++i) {
+    for (int i = 0; i < n; ++i) {
         if (i) os << ", ";
         os << ids[i];
     }
@@ -687,7 +702,11 @@ int main(int argc, char** argv) {
         write_all_registers(h1, kPaletteA);
         h1.set_mode(true, 2);
 #if MUT_REINTERP
-        h1.write_color(1, static_cast<uint16_t>(registerValue(kPaletteA, 1) ^ 0x0FFF)); // MUTATION: force a difference unrelated to shres
+        // MUTATION (input): COLOR05 written to equal COLOR01's own content,
+        // so a page-following shres reading of this run (COLOR05) equals
+        // the ocs reading (COLOR01) -- the page predicts PASS at baseline,
+        // FAIL here.
+        h1.write_color(5, registerValue(kPaletteA, 1));
 #endif
         h1.drive_value2(1);
         uint32_t shres = h1.rgb();
@@ -704,82 +723,115 @@ int main(int argc, char** argv) {
     }
 
     // =====================================================================
-    // SHRES-BITPLANE-TABLE-COLOR-00 .. -0F -- the main sweep. All sixteen
-    // registers written from the base palette (row formula); for each
-    // register, each of its twelve significant bits is inverted in turn
-    // and the six-run battery (see header, ADDRESSING CONVENTION) is
-    // re-measured against the unperturbed baseline. FAIL if a run this
-    // package's own convention does not tie to that register changes;
-    // PASS if a tied run changes and no untied run does; otherwise the
-    // bit is not observable through this battery.
+    // SHRES-BITPLANE-TABLE-COLOR-00 .. -0F -- the main sweep, pairing-
+    // independent (see header, GRADING). All sixteen registers written
+    // from the base palette (row formula); for each register, each of its
+    // sixteen register-bus bits (twelve the key marks significant, four
+    // it prints unused) is inverted in turn and the four SOLID runs are
+    // re-measured against the unperturbed baseline, tick by tick. A solid
+    // run of value v addresses COLOR(5*v) under either printed pairing, so
+    // for this register's own twelve significant bits: if it is
+    // COLOR(5*v), the flip must move SOLID-v and no other solid run (FAIL
+    // otherwise); otherwise the flip must move no solid run (FAIL
+    // otherwise). Its four printed-unused bits (15-12) must move no solid
+    // run either way -- the key marks them unused in every row, not only
+    // the off-diagonal ones. MIXED-1 and MIXED-2 are driven and sampled on
+    // every one of the same runs and their own movement is reported
+    // alongside the verdict -- measured and recorded, never graded, since
+    // p.301 does not fix which register a mixed pair addresses or which
+    // half of it a given pixel shows.
     // =====================================================================
     Battery baseline = run_battery(kPaletteA, -1, 0);
 
+    static const char* const kRunNames[4] = { "SOLID-0", "SOLID-1", "SOLID-2", "SOLID-3" };
+
     for (int nn = 0; nn < 16; ++nn) {
-        int failCount = 0, passCount = 0, notObsCount = 0;
-        int firstFailBit = -1, firstFailRun = -1, firstPassBit = -1;
-        for (int bit = 0; bit < 12; ++bit) {
+        bool isDiag = (nn % 5 == 0);
+        int diagV = nn / 5;
+        int sigFail = 0, sigPass = 0, unusedFail = 0, unusedPass = 0;
+        int firstSigFailBit = -1, firstSigFailRun = -1;
+        int firstUnusedFailBit = -1, firstUnusedFailRun = -1;
+        int mixed1Changed = 0, mixed2Changed = 0;
+
+        for (int bit = 0; bit < 16; ++bit) {
             Battery modified = run_battery(kPaletteA, nn, bit);
-            auto tied = tiedRuns(nn, MUT_COLORTABLE != 0);
-            bool changedTied = false, changedUntied = false;
-            int untiedRun = -1;
-            for (int r = 0; r < 6; ++r) {
-                if (runDiffers(r, baseline[static_cast<size_t>(r)], modified[static_cast<size_t>(r)])) {
-                    if (tied[static_cast<size_t>(r)]) changedTied = true;
-                    else { changedUntied = true; if (untiedRun < 0) untiedRun = r; }
+            bool solidChanged[4];
+            for (int r = 0; r < 4; ++r)
+                solidChanged[r] = runDiffers(r, baseline[static_cast<size_t>(r)], modified[static_cast<size_t>(r)]);
+
+            // The "must move SOLID-v alone" requirement applies only to the
+            // twelve significant bits of a diagonal register; the four
+            // bits the key prints unused (12-15) must move no solid run,
+            // on EVERY register, diagonal or not -- p.301 marks them
+            // unused in every row of the table, not only the off-diagonal
+            // ones.
+            bool requireMove = isDiag && bit < 12;
+            bool ok; int failRun = -1;
+            if (requireMove) {
+                bool sawOther = false;
+                for (int r = 0; r < 4; ++r) {
+                    if (r != diagV && solidChanged[r]) { sawOther = true; failRun = r; }
+                }
+                ok = solidChanged[diagV] && !sawOther;
+                if (!ok && failRun < 0) failRun = diagV; // didn't move its own tied run
+            } else {
+                ok = true;
+                for (int r = 0; r < 4; ++r) {
+                    if (solidChanged[r]) { ok = false; failRun = r; break; }
                 }
             }
-            if (changedUntied) {
-                ++failCount;
-                if (firstFailBit < 0) { firstFailBit = bit; firstFailRun = untiedRun; }
-            } else if (changedTied) {
-                ++passCount;
-                if (firstPassBit < 0) firstPassBit = bit;
+            if (bit < 12) {
+                if (ok) ++sigPass;
+                else { ++sigFail; if (firstSigFailBit < 0) { firstSigFailBit = bit; firstSigFailRun = failRun; } }
             } else {
-                ++notObsCount;
+                if (ok) ++unusedPass;
+                else { ++unusedFail; if (firstUnusedFailBit < 0) { firstUnusedFailBit = bit; firstUnusedFailRun = failRun; } }
             }
-        }
 
-        static const char* const kRunNames[6] = {
-            "SOLID-0", "SOLID-1", "SOLID-2", "SOLID-3", "MIXED-1(0xAAAA/0xCCCC)", "MIXED-2(0xF0F0/0xFF00)",
-        };
+            if (runDiffers(4, baseline[4], modified[4])) ++mixed1Changed;
+            if (runDiffers(5, baseline[5], modified[5])) ++mixed2Changed;
+        }
+        int failCount = sigFail + unusedFail;
 
         std::string label = "SHRES-BITPLANE-TABLE-COLOR-" + hexReg(nn) +
-            " (p.301, " + std::string(kRowIds[nn]) + ", " + join12(kBitIds[nn]) + ")";
+            " (p.301, " + std::string(kRowIds[nn]) + ", " + joinArr(kBitIds[nn], 12) +
+            ", " + joinArr(kUnusedBitIds[nn], 4) + ")";
         for (auto& lc : kLegend) {
             if (lc.reg == nn) {
                 label += ", legend " + std::string(lc.srcb) + ", " +
                          join({lc.sym[0], lc.sym[1], lc.sym[2]});
             }
         }
-        label += ": of 12 significant bits, " + std::to_string(failCount) +
-            " moved a run/component this package's own addressing "
-            "convention does not tie to this register (bit " +
-            std::to_string(firstFailBit) + " moved " +
-            (firstFailRun >= 0 ? std::string(kRunNames[firstFailRun]) : std::string("-")) +
-            "), " + std::to_string(passCount) + " moved only the tied "
-            "run(s) (first: bit " + std::to_string(firstPassBit) + "), " +
-            std::to_string(notObsCount) + " moved nothing this package's "
-            "six-run battery samples.";
-
-        if (failCount > 0) {
-            checks.expect(false, label);
-        } else if (passCount > 0) {
-            checks.expect(true, label);
+        if (isDiag) {
+            label += ": COLOR(5v), v=" + std::to_string(diagV) + ". Of its 12 significant "
+                "bits, " + std::to_string(sigFail) + " did not move SOLID-" +
+                std::to_string(diagV) + " alone (first: bit " + std::to_string(firstSigFailBit) +
+                ", " + (firstSigFailRun >= 0 ? std::string(kRunNames[firstSigFailRun]) : std::string("-")) +
+                "), " + std::to_string(sigPass) + " did.";
         } else {
-            checks.record(label);
+            label += ": not COLOR(5v) for any v. Of its 12 significant bits, " +
+                std::to_string(sigFail) + " moved a solid run anyway (first: bit " +
+                std::to_string(firstSigFailBit) + ", " +
+                (firstSigFailRun >= 0 ? std::string(kRunNames[firstSigFailRun]) : std::string("-")) +
+                "), " + std::to_string(sigPass) + " moved none.";
         }
+        label += " Of its 4 printed-unused bits (15-12), " + std::to_string(unusedFail) +
+            " moved a solid run anyway (first: bit " + std::to_string(firstUnusedFailBit) + ", " +
+            (firstUnusedFailRun >= 0 ? std::string(kRunNames[firstUnusedFailRun]) : std::string("-")) +
+            "), " + std::to_string(unusedPass) + " moved none, as printed.";
+        label += " MIXED-1 changed on " + std::to_string(mixed1Changed) + " of 16 flips, "
+            "MIXED-2 on " + std::to_string(mixed2Changed) + " of 16 -- measured, not graded "
+            "(p.301 does not fix a mixed pair's own register or half).";
+
+        checks.expect(failCount == 0, label);
     }
 
     // =====================================================================
     // SHRES-USES-SIXTEEN-LOWER-REGISTERS (p.301) -- XORs $0FFF into
     // COLOR0A (one of the twelve registers outside COLOR00-03), and
     // re-measures the four solid runs (SOLID-0..SOLID-3, the two live
-    // bitplanes' own raw addressing -- the two mixed runs never move
-    // register 0xA under this package's own addressing convention either,
-    // see tiedRuns, so the solid runs alone already give this check its
-    // best chance to observe something): green if any of the four
-    // changes at all. Control: the identical XOR under plain Hires
+    // bitplanes' own raw addressing), tick by tick: green if any of the
+    // four changes at all. Control: the identical XOR under plain Hires
     // (BPLCON0 = hires=1, bpu=2, shres=0), where none should ever change.
     // =====================================================================
     {
@@ -803,31 +855,42 @@ int main(int argc, char** argv) {
         for (int v = 0; v < 4; ++v) {
             Harness hb; setupPlain(hb, false);
             Harness hx; setupXor(hx, false);
-            if (steadyValue(solid_run(hb, v, 24)) != steadyValue(solid_run(hx, v, 24))) anyChange = true;
+            if (solid_run(hb, v, 24) != solid_run(hx, v, 24)) anyChange = true;
         }
         checks.expect(anyChange,
             "SHRES-USES-SIXTEEN-LOWER-REGISTERS (p.301, " +
             join({"C-shrc.c04", "C-shrc.c05"}) +
-            "): COLOR" + hexReg(probeReg) + " (one of the twelve registers "
-            "outside COLOR00-03) XORed with $0FFF against the base "
-            "palette, re-measured across all four solid runs -- " +
+            "): COLOR" + hexReg(probeReg) + " (" +
+#if MUT_SIXTEEN
+            std::string("MUTATION: one of COLOR00-03, reachable directly regardless of mode") +
+#else
+            std::string("one of the twelve registers outside COLOR00-03") +
+#endif
+            ") XORed with $0FFF against the base palette, re-measured "
+            "across all four solid runs, tick by tick -- " +
             (anyChange ? std::string("at least one run changed.")
                        : std::string("no run changed.")) +
             " 'SuperHires bitplane colors are specially encoded in the "
             "sixteen lower color registers.'");
 
         // Control: identical XOR of the same register under plain Hires.
+        // shres=0 shifts at roughly half SHRES's rate; a chunk as wide as
+        // the SHRES-tuned default leaves the tail of each chunk stale
+        // (still reading the previous load) before the next reload, which
+        // a most-frequent-sample comparison hid but a tick-vector compare
+        // does not, so this keeps the planes reloaded on a short chunk
+        // that stays inside every sample's own window instead.
         bool hiresChanged = false;
         for (int v = 0; v < 4; ++v) {
             Harness hb; setupPlain(hb, true);
             Harness hx; setupXor(hx, true);
-            if (steadyValue(solid_run(hb, v, 24)) != steadyValue(solid_run(hx, v, 24))) hiresChanged = true;
+            if (solid_run(hb, v, 24, 32, 4) != solid_run(hx, v, 24, 32, 4)) hiresChanged = true;
         }
         checks.expect(!hiresChanged,
             "[control] SHRES-USES-SIXTEEN-LOWER-REGISTERS, HIRES BPU=2 "
             "($A001): the identical XOR of COLOR" + hexReg(probeReg) +
             " under plain Hires (shres=0), re-measured across all four "
-            "solid runs -- " +
+            "solid runs, tick by tick -- " +
             (hiresChanged ? std::string("some run changed.") : std::string("no run changed.")) +
             " Control basis for the SuperHires measurement above.");
     }
@@ -890,7 +953,14 @@ int main(int argc, char** argv) {
             "SHRES-TWO-BITS-RESOLUTION (p.301, " +
             join({"C-shrc.c01", "C-shrc.c02"}) +
             "): a solid run of colour-index 1 against " + std::to_string(totalTested) +
-            " one-bit changes of the other three colours -- " + std::to_string(identical) +
+            " one-bit changes of " +
+#if MUT_TWOBITS
+            std::string("MUTATION: colour-index 1 itself (the tested run's own colour, "
+                        "not an \"other\" colour)") +
+#else
+            std::string("the other three colours") +
+#endif
+            " -- " + std::to_string(identical) +
             " of " + std::to_string(totalTested) + " left the run's own ticks identical, " +
             std::to_string(differing) + " changed it" +
             (differing > 0 ? (" (first: " + firstDiffDesc + ")") : std::string()) +
