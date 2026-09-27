@@ -15,17 +15,18 @@ and specifies no value.
 |---|---|
 | `ch2-horizontal-beam-position.c14`, `COP2-horizontal-beam-position.c16` (p.23: "The display sees all these lines as 227 1/2 color clocks long") | The display's line length reaches the test only as the timing of the video output, and that output passes a line doubler. Nothing the test sees separates the doubler's timing from the chip set's: a doubler that re-times its output would show uniform lines whatever the chip set does, so a green result would not be evidence. No page names another observable that follows the 227 1/2 figure (the beam counter and the Copper see 227 or 228, see P2 and P3); inventing one, for example an alternating offset between Copper colour changes and the display window edge, would need an assumption about where the display window is compared that no page states. The sentence is also unclear for PAL (section 7, item 6). |
 | `ch2-vertical-beam-position.c21`, `COP2-vertical-beam-position.c24` (p.24: "processor is twice this") | The processor clock is internal to the CPU. The test sees only the CPU's bus accesses at the Chip-memory port, and no page states how many processor clock cycles a bus access or an instruction takes (p.196 says only that "The 68000 uses only the even-numbered memory access cycles"). No observation converts into processor clock cycles. The pages agree on the rate itself (p.24: 3,579,545 Hz times two; p.2: "7.15909 MHz"), but not on what "system clock" names (section 7, item 9). |
+| `COP2-copins-timing.c6` (p.275: "memory cycles are 280 ns") | The claim is a duration in nanoseconds. The test sees time only in `clk_sys` cycles of a simulation whose clock the test bench supplies, and the harness states no period for that clock (`nanomig_harness.h`), so no duration in nanoseconds is observable. Other pages give 279.365 ns (NTSC) and 281.937 ns (PAL) (p.141) and "approximately 280 ns" (p.194). P4 uses p.275's sentence only as the reason why one horizontal count lasts one memory cycle (p.285 gives the same 280 ns for one step of the horizontal beam position); that relation is `COP2-vertical-beam-position.c23`. |
+| `COP2-putting-together-a-copper-instruction-list.c9`, `COP2-putting-together-a-copper-instruction-list.c10` (p.27: end of display (226,262) NTSC, (226,312) PAL) | The claim is one coordinate, and neither of its values can be graded as stated. The y value: p.24 and p.34 give 262 and 312 lines; counted from line 0 (p.27 itself starts at (0,0)) the last line is 261 or 311, not 262 or 312. The x value for NTSC: p.23 says long lines run to $E3 = 227, and no page says whether an NTSC field ends on a long or a short line. See section 7, item 1. P3 grades the horizontal count's range on PAL lines, which agrees with x = 226 for PAL, but not the coordinate. |
+| `COP2-horizontal-beam-position.c8`, `ch2-horizontal-beam-position.c7` (p.23: unused portion "$04 to $47") | The claim is a pair of positions on the counter. No page gives the delay from a counter value to a displayed pixel, the pages place the standard screen's first pixel at different counter values, and $04 to $47 inclusive plus a 320-pixel screen is one count longer than a 227-count line. See section 7, item 5. P9 grades what the rest of the line shows, not where it lies on the counter. |
+| `COP2-horizontal-beam-position.c6`, `ch2-horizontal-beam-position.c6` (p.23: blanking "$0F to $35") | The claim is a range of positions on the counter, for the reason above; the position of the interval against the counter is not observable. No proposition grades a part of it. |
+| `COP2-vertical-beam-position.c10` (p.24: "the total of 256 + 6 = 262 lines of video beam travel during which Copper instructions can be executed") | The claim covers every one of the 262 lines. Copper execution on the lines of vertical blanking depends on where the Copper restarts, which the pages state two ways (section 7, item 8): a restart at the end of vertical blanking leaves the first lines of a field without Copper execution. P8 grades the six lines after line 255 and the absence of a line 262, not the whole claim. |
 
-Claims used only in part:
+Claims graded for NTSC only, because their page states them for NTSC:
 
-| Claim | Part graded | Part not graded, and why |
+| Claim | Graded by | Why this is the whole claim |
 |---|---|---|
-| `COP2-copins-timing.c6` (p.275: "memory cycles are 280 ns") | P4: one horizontal count lasts one memory cycle (p.285 gives the same 280 ns for one step of the horizontal beam position). | The absolute 280 ns: the test sees time only in clock cycles of a simulation whose clock the test bench supplies. Other pages give 279.365 ns (NTSC) and 281.937 ns (PAL) (p.141) and "approximately 280 ns" (p.194). |
-| `COP2-putting-together-a-copper-instruction-list.c9`, `COP2-putting-together-a-copper-instruction-list.c10` (p.27: end of display (226,262) NTSC, (226,312) PAL) | P3: the horizontal count ends at 226 = $E2 on PAL lines (and on NTSC short lines). | The y value: p.24 and p.34 give 262 and 312 lines; counted from line 0 (p.27 itself starts at (0,0)) the last line is 261 or 311, not 262 or 312. The x value for NTSC: p.23 says long lines run to $E3 = 227, and no page says whether an NTSC field ends on a long or a short line. See section 7, item 1. |
-| `COP2-horizontal-beam-position.c8`, `ch2-horizontal-beam-position.c7` (p.23: unused portion "$04 to $47") | P9: the unused portion shows only background, and it contains the horizontal blanking with background on both sides of it. | The positions $04 and $47 as counter values on screen: no page gives the delay from a counter value to a displayed pixel, the pages place the standard screen's first pixel at different counter values, and $04 to $47 inclusive plus a 320-pixel screen is one count longer than a 227-count line. See section 7, item 5. |
-| `COP2-horizontal-beam-position.c6`, `ch2-horizontal-beam-position.c6` (p.23: blanking "$0F to $35") | P10: one blanking interval per line, no longer than $35 - $0F + 1 = 39 counts. | The position of the interval against the counter, for the reason above. The page says blanking "falls in the range of"; that bounds the interval, it does not say it fills the range. |
-| `COP2-vertical-beam-position.c9`, `COP2-vertical-beam-position.c10` (p.24: vertical 0 through 5 cover the last six lines; 256 + 6 = 262) | P8, NTSC only. | PAL: the six lines are NTSC's 262 - 256; the page gives no PAL counterpart. The recipe's first step read literally cannot work (section 7, item 7); the stimulus enters line 256 by a route every page supports. Copper execution on the lines of vertical blanking before the Copper restarts is not graded (section 7, item 8). |
-| `COP2-vertical-beam-position.c11` (p.24: "There are alternating long and short lines") | P2, NTSC. | PAL: p.23 says "In PAL, they are all 227 long." |
+| `COP2-vertical-beam-position.c9` (p.24: vertical 0 through 5 cover the last six lines) | P8, NTSC. | The page's numbers are NTSC's: "256 + 6 = 262", while the same page gives 312 lines for PAL. In PAL, vertical 0 through 5 are not the last six lines, and the page states no PAL counterpart. The recipe's first step read literally cannot work (section 7, item 7); the stimulus enters line 256 by a route every page supports. |
+| `COP2-vertical-beam-position.c11` (p.24: "There are alternating long and short lines") | P2, NTSC. | p.23 restricts the alternation to NTSC ("All lines are not the same length in NTSC", "In PAL, they are all 227 long"), and the p.24 box that states c11 says "This alternation of lines and fields produces the standard NTSC 4 field repeating pattern". |
 
 ## 2. Claim map
 
@@ -33,37 +34,88 @@ Claims used only in part:
 |---|---|---|
 | P1 Lines per field; the beam starts at (0,0) | `COP2-vertical-beam-position.c3`, `COP2-vertical-beam-position.c4`; `COP2-using-the-copper-in-interlaced-mode.c2`, `COP2-using-the-copper-in-interlaced-mode.c4`; `COP2-putting-together-a-copper-instruction-list.c7` | 24, 34, 27 |
 | P2 Line length as the Copper sees it | `COP2-horizontal-beam-position.c10`, `COP2-horizontal-beam-position.c11`, `COP2-horizontal-beam-position.c12`, `COP2-horizontal-beam-position.c14`, `COP2-horizontal-beam-position.c15`; `COP2-vertical-beam-position.c11` | 23, 24 |
-| P3 Range of the horizontal beam count | `COP2-horizontal-beam-position.c13`, `COP2-horizontal-beam-position.c12`, `COP2-horizontal-beam-position.c15`; x part of `COP2-putting-together-a-copper-instruction-list.c9`, `COP2-putting-together-a-copper-instruction-list.c10` | 23, 27 |
-| P4 Copper horizontal positions: one count per memory cycle, 113 positions, nothing beyond $E2 | `COP2-horizontal-beam-position.c3`; `COP2-vertical-beam-position.c23`; `COP2-copins-timing.c6` (as a relation) | 23, 24, 275 |
+| P3 Range of the horizontal beam count | `COP2-horizontal-beam-position.c13` | 23, 27 |
+| P4 Copper horizontal positions: one count per memory cycle, 113 positions, nothing beyond $E2 | `COP2-horizontal-beam-position.c3`; `COP2-vertical-beam-position.c23` | 23, 24, 275 |
 | P5 One Copper position is 4 low-resolution or 8 high-resolution pixels | `COP2-horizontal-beam-position.c4`, `COP2-horizontal-beam-position.c5`; `ch2-horizontal-beam-position.c4`, `ch2-horizontal-beam-position.c5` | 23 |
 | P6 WAIT on line $FF: $FF is reached, $FFE2 is the largest value, $FFFE never | `COP2-the-wait-instruction.c26`, `COP2-the-wait-instruction.c27`, `COP2-the-wait-instruction.c28`, `COP2-the-wait-instruction.c29` | 23 |
 | P7 Line 256 appears as zero in the comparison; the counter does not wrap | `COP2-the-wait-instruction.c22`, `COP2-the-wait-instruction.c23`; `COP2-vertical-beam-position.c7` | 23, 24 |
-| P8 NTSC: vertical 0 through 5 after line 255 are the last six lines | `COP2-vertical-beam-position.c9`, `COP2-vertical-beam-position.c10` | 24 |
-| P9 Standard screen: 320 pixels, only background in the unused portion | `COP2-horizontal-beam-position.c7`, `COP2-horizontal-beam-position.c8`, `COP2-horizontal-beam-position.c9`; `ch2-horizontal-beam-position.c7`, `ch2-horizontal-beam-position.c8` | 23 |
-| P10 Horizontal blanking | `COP2-horizontal-beam-position.c6`; `ch2-horizontal-beam-position.c6` | 23 |
+| P8 NTSC: vertical 0 through 5 after line 255 are the last six lines | `COP2-vertical-beam-position.c9` | 24 |
+| P9 Standard screen: 320 pixels, only background in the unused portion | `COP2-horizontal-beam-position.c7`, `COP2-horizontal-beam-position.c9`; `ch2-horizontal-beam-position.c8` | 23 |
 
 ## 3. Conventions
 
 ### 3.1 Configurations
 
-- Every run: Enhanced Chip Set, 2 MB Chip memory, PAL unless the run says
-  NTSC, executed once with each of the two CPU cores. Each expectation must
-  hold for both cores.
-- Runs A, B and C are also executed with OCS selected. Chapter 2 states these
-  points without reference to a chip set, and Appendix C (pp.298-310) lists
-  no change to line lengths, the beam counter's range or the Copper's
-  comparison.
-- PAL or NTSC is selected only through the test system. The program never
-  writes BEAMCON0 (p.305: "Do not write to this register").
+- Every run: 2 MB Chip memory, executed once with each of the two CPU
+  cores. Each expectation must hold for both cores.
+- The chip set and the video standard are harness configuration. The builder
+  takes them from the `Config` values `nanomig_harness.h` documents:
+  `chipset_config` bit 3 selects the Enhanced Chip Set ("ECS: bit 3 sets the
+  ecs input of Agnus and Denise", set in the default `Config`), bit 4 AGA,
+  which stays off; OCS is the same `Config` with bit 3 clear. `Config`
+  documents no value that selects PAL or NTSC. A configuration the harness
+  cannot make leaves its runs recorded as not made, not graded. This
+  includes the contrasting cases below that select the other standard.
+- Every run is made with ECS; Runs A, B and C are also made with OCS.
+  Chapter 2 states these points without reference to a chip set. Appendix C
+  (pp.298-310) lists no change to line lengths, the beam counter's range or
+  the Copper's comparison other than through BEAMCON0 (p.305, among its bits
+  "LOLDIS Disable long line/short line toggle" and "VARBEAMEN Variable beam
+  counter comparator enable") and the VPOSR bits v10 and v9 (p.299), which
+  RF2 ignores.
+- Which standard a made run has is read from the chip identification in
+  VPOSR bits 14-8, which no graded clause depends on. p.299: "8361 (regular
+  NTSC) or 8370 (fat NTSC) = 10 for NTSC Agnus", "8367 (regular PAL) or 8371
+  (fat PAL) = 00 for PAL Agnus", "8368 (hr) or 8372 (fat-hr) = 20 for PAL,
+  30 for NTSC". Runs A, B and C carry it in every trace sample; Runs D and E
+  store one VPOSR word at RESULTS (3.4, step 6). The run is graded against
+  the values the pages give for that standard. An identification that names
+  neither standard leaves the run recorded, not graded. Each run below names
+  the standards it is graded for.
+- BEAMCON0 is never written (p.305: "Do not write to this register"), and no
+  page gives its value after reset. The ECS runs assume a reset state that
+  changes nothing this package measures: its variable-timing and sync bits,
+  among them LOLDIS (bit 11) and VARBEAMEN (bit 7), are 0, and its PAL bit
+  (bit 5) agrees with the chip identification. An ECS run of A, B or C whose
+  field lengths (the number of distinct V values per complete field, RF2)
+  or, in Run A, line lengths (P2's L(v)) differ from those of the same run
+  made with OCS shows otherwise: it is recorded with both sets of values,
+  not graded. Where the OCS run is not made, the ECS run is graded under the
+  assumption and its record says that the assumption was not checked. Runs
+  D and E are made with ECS only; what they grade (P5: a ratio of widths;
+  P9: a run of pixels) does not depend on line or field length.
 
 ### 3.2 Time
 
 All times are in memory slots. One slot is one memory cycle, the unit that
-Figure 6-9 (p.195) numbers along a line. The test converts the harness's
-access times to slot numbers with the harness's fixed number of clock cycles
-per memory cycle. "slot(x)" is the slot of access x. Several pages use
-"system clock" for different clocks (section 7, item 9), so this document
-does not use the term.
+Figure 6-9 (p.195) numbers along a line and draws 280 ns wide.
+
+The harness logs each Chip-memory access with its `clk_sys` cycle and
+states no memory-cycle length: `nanomig_harness.h` samples the RAM port once
+per 7 MHz bus period and names no number of clock cycles per memory cycle.
+The slot length S, in `clk_sys` cycles, is therefore measured in every run
+from an event the pages fix, the memory refresh:
+
+- p.194: per line, "4 cycles for memory refresh"; p.285: "There are four
+  refresh time slots".
+- Figure 6-9 draws the four refresh slots at the start of every line, each
+  separated from the next by one slot not used for refresh.
+- The refresh accesses are seen at the ports: the port list has an output
+  `refresh` ("ram refresh cycle"), and the Chip-memory port log shows the
+  accesses made in those slots.
+- S is half the spacing, in `clk_sys` cycles, of consecutive refresh
+  accesses of one line.
+
+"slot(x)" is floor((c(x) - c_R) / S), where c(x) is the `clk_sys` cycle the
+harness logs for access x and c_R is the cycle of a refresh access of the
+run. Only differences of slots are used. The harness logs one entry per
+7 MHz bus period, two per slot, and one bus cycle can span several entries;
+entries are first merged per bus cycle (`coalesce()` in
+`nanomig_harness.h`), and an access logged between two slot boundaries
+belongs to the slot that began before it.
+
+Several pages use "system clock" for different clocks (section 7, item 9),
+so this document does not use the term.
 
 ### 3.3 Copper instruction notation
 
@@ -80,23 +132,41 @@ The encodings are from p.21, p.22 and Table 2-2 (p.36).
 - `MOVE(r,d)`: first word r (register offset, bit 0 = 0), second word d
   (p.21).
 - `MARK(t)`: `MOVE($1FE,t)`, a move to NO-OP(NULL) at $1FE (p.293). The
-  Copper may write any register at $80 or above (p.26). The data word t is
-  unique within its list, so each marker is identified by its address and
-  its data.
+  Copper may write it: Appendix B marks with "*" an "Address not writable
+  by the Copper" and with "~" one that needs the Copper danger bit (p.287),
+  and NO-OP(NULL) carries neither mark (p.293); nor do COP1LCH, COP1LCL
+  (p.290), BPL1PTH, BPL1PTL (p.291) and COLOR00 (p.292), the other registers
+  a list here writes. The data word t is unique within its list, so each
+  marker is identified by its address and its data.
 - `END`: `$FFFF,$FFFE` (p.23 and p.29, "Wait for line 255, H = 254 (ends
   Copper list)").
 
 ### 3.4 Program skeleton
 
+Every program is assembled for the 68000, vasm's default CPU. With
+`-m68010` or higher vasm assembles `MOVE #0,<ea>` as `CLR <ea>`, which on a
+68000 reads the destination before writing it; step 5 depends on a plain
+write of COPJMP1, and the program writes, never reads, every register it
+sets.
+
 1. Write DMACON = $7FFF and INTENA = $7FFF, which clears every DMA enable
    and interrupt enable (p.222: bit 15 is SET/CLR).
-2. Prepare the data and Copper lists in Chip memory (p.20: "the Copper can
-   retrieve its instructions only from the chip RAM area").
-3. Write the display registers the run names. BPLCON0 bit 0 (ENBPLCN3) is
+2. Clear the ROM overlay. After reset "An additional copy of the system ROM
+   responds starting at memory location $00000000. The system RAM that would
+   normally be located at this address is not available", and "The OVL bit
+   in one of the 8520 Chips disables the overlay" (p.223). Write $03 to
+   CIA-A DDRA at $BFE201 ("Direction for port A (BFE001);1-output (set to
+   0x03)", p.339), then write $00 to CIA-A PRA at $BFE001, whose bit 0 is
+   OVL (p.339). The Copper lists and the bitplane data lie below $080000
+   (3.6), where the overlay covers Chip memory until this step.
+3. Prepare the data and Copper lists in Chip memory at the addresses of 3.6
+   (p.20: "the Copper can retrieve its instructions only from the chip RAM
+   area").
+4. Write the display registers the run names. BPLCON0 bit 0 (ENBPLCN3) is
    always 0, so BPLCON3 is not in use (p.307). DIWHIGH is never written, so
    "the old scheme for DIWSTRT and DIWSTOP described above holds" (p.306).
    BEAMCON0 and COPCON are never written.
-4. Write the list's address to COP1LCH as one long-word write (p.25), then
+5. Write the list's address to COP1LCH as one long-word write (p.25), then
    write COPJMP1 (p.26: "When you write to a Copper strobe address, the
    Copper reloads its program counter"). Only then write DMACON = $8280
    (SET, DMAEN, COPEN), or $8380 when bitplanes are shown (adds BPLEN). This
@@ -104,12 +174,19 @@ The encodings are from p.21, p.22 and Table 2-2 (p.36).
    location registers (COP1LC or COP2LC) and write to its strobe address
    before Copper DMA is turned on." (p.30's example code performs a read of
    COPJMP1; the text and p.26 say write. The program writes.)
-5. Runs A, B and C: run the beam trace (RF2) until its buffer is full. Runs
-   D and E: wait the number of fields the run names by polling VPOSR.
-6. Write the completion word $600D to a fixed Chip-memory address, then loop
-   in place.
+6. Runs A, B and C: run the beam trace (RF2) until its buffer is full. Runs
+   D and E: store the first VPOSR word read at RESULTS ($0C0000), for the
+   chip identification (3.1), then wait the number of fields the run names
+   by polling VPOSR.
+7. Execute `DONE` (`nanomig.i`): it writes the completion word $600D
+   (DONE_VALUE) to DONE_ADDR, $0C0FFE, then loops in place.
 
 Sprite, audio, disk and blitter DMA are never enabled.
+
+Precondition of every run (L1): the Copper's first fetches from the list,
+after step 5, read the words the program wrote there in step 3, as the
+Chip-memory port log shows both. This shows that step 2 opened the memory
+below $080000 to the CPU's writes. Contrasting case: leave out step 2.
 
 ### 3.5 Copper events
 
@@ -125,21 +202,49 @@ Sprite, audio, disk and blitter DMA are never enabled.
   the video beam counters are equal to (or greater than) the coordinates").
 - **W waited** means delay(W) > λ_min.
 
+### 3.6 Memory layout
+
+| Addresses | Use | Why there |
+|---|---|---|
+| $010000 - $01FFFF | Copper lists of every run | Every Copper list pointer reaches it. p.25: COP1LCH holds the "High 3 bits" and "you write the 18-bit address"; p.290: "high 3 bits, high 5 bits if ECS". Runs A, B and C also run with OCS (3.1), where a list at $080000 or above is beyond the pointer. |
+| $020000 - $02FFFF | Bitplane data of Runs D and E | BPL1PTH holds the "high 3 bits" (p.291), and p.309 lists no extension of the bitplane pointers under ECS, so plane data at $080000 or above may lie beyond the pointer. The largest use is D-hi: 40 words per line. |
+| $080400 upward | the program | PROGRAM_ORG (`nanomig.i`). |
+| $0C0000 - $0C0FFF | RESULTS: the VPOSR word of Runs D and E at $0C0000; DONE_ADDR at $0C0FFE | `nanomig.i`. Nothing else is written there. |
+| below $0FFF00 | stack | PROGRAM_STACK (`nanomig.i`). |
+| $100000 - $1FFFFF | trace buffer (RF2) | Only the CPU reads or writes it, so no DMA pointer has to reach it; `nanomig.i` gives $080000 - $1FFFFF as the Chip memory the harness maps one-to-one. It lies clear of DONE_ADDR: a stored VHPOSR word can have the value $600D (line $60, count $0D), and `run_until_write()` in `nanomig_harness.h` would end the run at such a write to DONE_ADDR. |
+
+The two areas below $080000 are written only after step 2 of 3.4. The test
+finds a list's and the plane data's words in the Chip-memory port log at the
+addresses where the program's writes of them appear.
+
 ## 4. Reference frames
 
 ### RF1: Memory slots
 
-Defined in 3.2. Anchor check: no two logged accesses occupy the same slot.
+Defined in 3.2. Anchor checks (precondition S1), in every run:
+
+- Every line has four refresh accesses, consecutive ones equally spaced,
+  and that spacing, 2S, is the same in every line of the run (Figure 6-9,
+  p.194, p.285).
+- No two logged accesses, merged per bus cycle, occupy the same slot.
+
+The program has no input that changes the refresh; S1 has no contrasting
+case at this boundary.
 
 ### RF2: Beam trace
 
 **Stimulus.** After the start sequence, the program repeats one step: read
-the long word at $DFF004 and store it to the next long word of a trace
-buffer in Chip memory. The high word of that long word is VPOSR and the low
+the long word at $DFF004 and store it to the next long word of the trace
+buffer (3.6). The high word of that long word is VPOSR and the low
 word is VHPOSR (p.216: "the address pairs VPOSR,VHPOSR ... can be read ...
 as long words, with the most significant addresses being VPOSR"). The
 program stops when the buffer is full. The buffer holds at least the number
-of complete fields the run names.
+of complete fields the run names. BPLCON0 bit 3, LPEN, is 0 in every run
+(section 5; p.239: "To enable the light pen input, write a 1 into bit 3
+(LPEN) of BPLCON0"), so the read returns the beam position and not a
+light-pen position (p.216: "when you are using a light pen, this same
+address is used to read the light pen position rather than the beam
+position").
 
 **Reading a sample.** Sample i is the pair of words the CPU writes, as
 logged at the Chip-memory port. Its time w_i is the slot of the later of
@@ -149,14 +254,22 @@ the two writes.
 - V7-V0 are bits 15-8 of the VHPOSR word, and the horizontal count H is
   bits 7-0 (H8-H1; p.216, p.285: "RESOLUTION = 1/160 of screen width (280
   ns)").
-- V = 256·V8 + V7-V0. All other VPOSR bits are ignored: LOF; under ECS the
-  chip identification in bits 14-8, LOL in bit 7, and v10 and v9 in bits
-  2-1 (p.299).
+- V = 256·V8 + V7-V0. All other VPOSR bits are ignored for V: LOF; the chip
+  identification in bits 14-8, which only names the run's standard (3.1);
+  under ECS LOL in bit 7, and v10 and v9 in bits 2-1 (p.299).
 
 **Trusted samples.** A sample is trusted when H ≥ 16. Its two words come
 from two reads within one loop step, and one step lasts at most 16 slots
 (precondition T1). If a line began between the two reads, H is below 16
 and V8 may belong to the previous line.
+
+**Parity coverage.** A trace has parity coverage when its samples contain H
+values of both parities. p.196 says "The 68000 uses only the even-numbered
+memory access cycles", Figure 6-9 numbers the cycles along each line, and no
+page says which count a CPU read of VHPOSR returns (section 7, item 15). The
+reads may therefore fall on counts of one parity only, the "observed
+parity". Parity coverage is not a precondition: P1 and P3 grade one of two
+forms according to it.
 
 **Preconditions of every run that uses RF2**
 
@@ -195,14 +308,18 @@ is exactly one restart.
 - An **output line** is the run of pixels between consecutive horizontal
   sync pulses. A pixel's position is its index from the first pixel after
   the sync pulse. A colour is the 12-bit value of 4-bit red, green and blue.
+- The video output passes a line doubler. `nanomig_harness.h`
+  (`find_lines()`) splits the capture at every rising edge of `hs` and
+  states that such a line "is one scan-doubler output line, not one Amiga
+  scanline". Each counter line therefore appears in more than one output
+  line. Every output line is measured on its own, and every condition below
+  on the runs of "a line" applies per output line.
 - Runs of equal colour are taken cyclically within the output line: a run
   that touches both the start and the end of the line counts once, and its
   two parts add.
 - **P_lo** is the length, in output pixel clocks, of one low-resolution
   pixel, measured in Run D-lo. **P_hi** is the same for a high-resolution
   pixel, measured in Run D-hi.
-- **c_px** is output pixel clocks per horizontal count, measured in Run
-  D-sweep (P5).
 - A field of output lines lies between vertical sync pulses. Only complete
   fields after the first restart are graded.
 
@@ -223,14 +340,20 @@ WAIT($00,$00)  MARK($A000)                       ; λ_min
 for v = $30 .. $FF:
   WAIT(v,$40)  MARK(v)                           ; m_v
 WAIT($FF,$E2)  MARK($A0E2)                       ; m_E2
-MARK($A0F0) MARK($A0F1) ... MARK($A0F7)          ; 8 moves: padding
+MARK($A0F0) MARK($A0F1) ... MARK($A0FF)          ; 16 moves: padding
 for n = 0 .. N:          (N = 6 for NTSC, N = $37 for PAL)
   WAIT(n,$60)  MARK($0100+n)                     ; m_(256+n)
 END
 ```
 
-The 8 padding moves put the next WAIT's fetch well inside line 256, where
-RF2 can identify it.
+The 16 padding moves put the next WAIT's fetch well inside line 256, where
+RF2 can identify it. RF2 places an event on a line only when a trusted
+sample of that line (H ≥ 16) was written before the event; with steps of up
+to 16 slots (T1) and the time from a sample's read to its write, the first
+such sample can be written more than 32 counts into the line. A MOVE takes
+four memory cycle times (p.20: "four memory cycle times are required per
+instruction"), so the 16 moves put the fetch of `WAIT(0,$60)` about 64
+counts into line 256, still before its position $60.
 
 Variants:
 
@@ -242,6 +365,11 @@ Variants:
   field boundary, then keeps tracing.
 - **A-anchor**: every `WAIT(v,$40)` of the first loop becomes
   `WAIT(v+1,$40)`, with v running $30 ... $FE.
+- **A-shift**: `WAIT($80,$42)` in place of `WAIT($80,$40)`.
+- **A-hold**: the program reads the long word at $DFF004 once, after
+  polling VHPOSR until H ≥ $20, and stores that same long word in every
+  step.
+- **A-short**: PAL, the trace buffer holds 64 samples.
 
 ### Run B: WAIT on line $FF beyond $E2 (PAL; NTSC; OCS)
 
@@ -269,8 +397,14 @@ Variants:
 - **B-FE**: one extra field whose list is `WAIT($00,$00) MARK(λ)`, the
   COP1LC moves, `WAIT($FE,$FE)` (first word `$FEFF`) `MARK($B300)`,
   `WAIT($FF,$40)` `MARK($B301)`, END.
-- **B-late**: in L_1, `WAIT($FF,$E2) MARK($B400)` is inserted before
-  `WAIT($FF,h_1)`.
+- **B-late**: in L_1, `WAIT($FF,$E2) MARK($B400)` followed by 16 padding
+  moves `MARK($B410)` ... `MARK($B41F)` is inserted before `WAIT($FF,h_1)`.
+  As in List A, the padding puts the WAIT's fetch well inside line 256,
+  where RF2 can identify its line.
+- **B-254**: in L_2, `WAIT($FF,$40)` becomes `WAIT($FE,$40)`, and
+  `WAIT($FF,$30) MARK($B502)` is inserted directly after `MARK($B102)`. a_2
+  is then fetched on line 254, and `WAIT($FF,h_2)` is still fetched on line
+  255, after count $30.
 
 ### Run C: horizontal position sweep (PAL; NTSC; OCS)
 
@@ -297,6 +431,8 @@ Variants:
 
 - **C-shift**: for k = 50 (h = $64), `WAIT(u_50,$66)` instead of
   `WAIT(u_50,$64)`.
+- **C-shift-end**: for k = 106 (h = $D4), `WAIT(u_106,$D6)` instead of
+  `WAIT(u_106,$D4)`, the position of k = 107.
 - **C-late**: for k = 90 (h = $B4), the reference is
   `WAIT(u_90,$C4) MARK($C290)`, placed before `WAIT(u_90,$B4)`.
 - **C-next**: for j = 5, `WAIT(w_5+1,$20)` instead of `WAIT(w_5,g_5)`.
@@ -352,7 +488,7 @@ Variants:
 - **D-shift**: on line $50 (sub-sweep 1, n = 24), the second WAIT is at
   $36 + 2·24 + 2.
 - **D-drop**: on line $50 the second `MOVE($180,B)` is left out.
-- **D-flat**: D-lo with every plane word $FFFF.
+- **D-flat**: D-lo, and D-hi, with every plane word $FFFF.
 - **D-late**: on line $50 the second WAIT is at $3A.
 
 ### Run E: standard screen (PAL; NTSC; ECS)
@@ -372,7 +508,10 @@ Variants:
 - **E-widefetch**: DDFSTRT = $0030, DDFSTOP = $00D8, 22 words of $FFFF per
   line (p.60: "DDFSTRT = DDFSTOP - (8 * (word count - 1))"; p.80: $D8 is the
   hardware limit), window unchanged.
-- **E-widewindow**: E-widefetch with DIWSTRT = $2C71 and DIWSTOP = $2CD1.
+- **E-widewindow**: E-widefetch with DIWSTRT = $2C71 and DIWSTOP = $2CD1
+  (PAL) or $F4D1 (NTSC): the horizontal values widen the window, and the
+  vertical stop keeps the normal value for each standard (p.59: "Normally,
+  the VSTOP is set to ($F4) for NTSC, ($2C) for PAL").
 - **E-black**: COLOR00 = $000.
 
 ## 6. Propositions
@@ -400,7 +539,14 @@ Trusted samples only.
     normally".
   - The same figures are on p.40.
 - In every complete field, the first trusted sample has V = 0.
-- H = 0 occurs in the trace (in any sample).
+- With parity coverage (RF2): H = 0 occurs in the trace (in any sample).
+- Without parity coverage: the lowest value of the observed parity occurs,
+  $00 if the H values read are even and $01 if they are odd; p.196 gives
+  the 68000 one parity ("The 68000 uses only the even-numbered memory access
+  cycles"). If the observed parity is odd, count 0 cannot be read, so
+  `COP2-putting-together-a-copper-instruction-list.c7` is not graded whole:
+  the assertion is made without that id, and the id goes on a record line
+  with this reason.
 - p.27: "The video beam traverses the screen from position (0,0) in the
   upper left hand corner".
 - Quantifier: every complete field of the trace, at least 6.
@@ -409,7 +555,7 @@ Trusted samples only.
 **Preconditions.**
 
 - The completion word is written.
-- T1, T2 and R1 hold.
+- S1, L1, T1, T2 and R1 hold.
 - At least 6 complete fields are traced.
 
 **Contrasting cases.**
@@ -420,11 +566,16 @@ Trusted samples only.
   (interlace only) ... in PAL, 312, then 313 lines" (p.34 agrees: "625 in
   interlaced mode"). A field with 313 distinct values appears, and "every
   field has 312" goes red.
+- First trusted sample at V = 0, and H = 0 (or the lowest value of the
+  observed parity) occurs: no input exists for which the pages predict a
+  field that starts on another line, or a line without its first count.
+  These clauses have no contrasting case at this boundary; the normal run
+  exercises them.
 - T1: A-slow. Lines are missed and T1 fails.
-- T2: read $DFF002 (DMACONR) instead of $DFF004. H no longer counts and T2
-  fails.
+- T2: A-hold. Every sample is trusted (H ≥ $20), V never changes and H never
+  increases, so T2 fails while T1 still holds.
 - R1: A-noCop. Fields after the third have no restart and R1 fails.
-- Completion word: leave out step 6.
+- Completion word: leave out step 7.
 
 **Reference frame.** RF2 and RF3. The field boundary is checked against the
 restart by R1.
@@ -442,8 +593,10 @@ restart by R1.
 **Observation.**
 
 - L(v) = time(m_{v+1}) - time(m_v), in slots, for v = $30 ... $FE.
-- L(v) = time(m_{v+1}) - time(m_v) for v = 256 ... 256+N-1 (the markers
-  after the wrap all use $60).
+- L(v) = time(m_{v+1}) - time(m_v) for v = 256 ... 310 (PAL) or 256 ... 260
+  (NTSC): pairs of markers after the wrap, all at $60, on consecutive lines
+  of one field. m_262 (NTSC) lies on no line of its field (P8) and is not
+  used.
 - Every complete field.
 
 **Expected.**
@@ -469,14 +622,19 @@ restart by R1.
 
 **Preconditions.**
 
-- Every `WAIT(v,$40)` and `WAIT(n,$60)` waited.
+- Every `WAIT(v,$40)`, and every `WAIT(n,$60)` for n = 0 ... $37 (PAL) or
+  0 ... 5 (NTSC), waited.
 - A-anchor: every m_v lies on line v (RF2).
-- T1, T2, R1.
+- S1, L1, T1, T2, R1.
 
 **Contrasting cases.**
 
 - Main: select NTSC for the PAL check. L alternates, so "every L = 227" is
   red. Select PAL for the NTSC check. No alternation, so it is red.
+- Main, the values 227 and 228: A-shift. m_$80 comes 2 slots later, so
+  L($7F) is 229 or 230 and L($80) is 225 or 226 (PAL: 229 and 225), outside
+  both expected sets, while m_$80 still lies on line $80 and its WAIT still
+  waited.
 - "waited": insert `WAIT($7F,$40)` directly after `MARK($7F)`. It is
   fetched after its target has passed, so its delay equals λ_min.
 - A-anchor: variant A-anchor. The markers lie on line v + 1.
@@ -488,9 +646,12 @@ restart by R1.
 
 ### P3. The horizontal beam count runs 0 to $E2 on PAL lines; NTSC long lines reach $E3, and only they do
 
-**Claims.** `COP2-horizontal-beam-position.c13`, `COP2-horizontal-beam-position.c12`, `COP2-horizontal-beam-position.c15` (p.23); x
-part of `COP2-putting-together-a-copper-instruction-list.c9`, `COP2-putting-together-a-copper-instruction-list.c10`
-(p.27).
+**Claims.** `COP2-horizontal-beam-position.c13` (p.23).
+
+**Not claimed here.** The line lengths of `COP2-horizontal-beam-position.c12`
+and `COP2-horizontal-beam-position.c15` are graded, and claimed, by P2. The
+PAL range below agrees with p.27's x = 226, whose claims are declined
+(section 1).
 
 **Stimulus.** Run A (PAL and NTSC).
 
@@ -503,6 +664,10 @@ part of `COP2-putting-together-a-copper-instruction-list.c9`, `COP2-putting-toge
 
 **Expected.**
 
+The form graded depends on parity coverage (RF2).
+
+With parity coverage:
+
 - PAL: the set of H values observed is exactly {$00, ..., $E2}.
   - p.23: "The horizontal beam position has a value of $0 to $E2".
   - p.27: the end of the display has x = 226 = $E2.
@@ -514,24 +679,57 @@ part of `COP2-putting-together-a-copper-instruction-list.c9`, `COP2-putting-toge
 - Quantifier: "0-$E3" is graded as the full set of values and as the
   restriction of $E3 to long lines.
 
+Without parity coverage, where the H values read have one parity only
+(p.196 gives the 68000 one parity: "The 68000 uses only the even-numbered
+memory access cycles"; section 7, item 15):
+
+- PAL: every H is at most $E2, and every value of the observed parity is
+  present, from the lowest ($00 or $01) to the highest not above $E2 ($E2
+  or $E1).
+- NTSC: every H is at most $E3, and every value of the observed parity is
+  present, from the lowest ($00 or $01) to the highest not above $E3 ($E2
+  or $E3). If the observed parity is odd, no sample with H = $E3 lies on a
+  line with L(v) = 227. If it is even, $E3 cannot be read and that clause
+  is not graded.
+- One end of "0-$E3" cannot be read in this form ($00 is even, $E3 is
+  odd), so `COP2-horizontal-beam-position.c13` is not graded whole: the
+  assertion is made without the id, and the id goes on a record line with
+  this reason.
+
 **Preconditions.**
 
-- T1 and T2.
-- NTSC coverage: H ≥ $E0 is observed on at least 20 distinct lines with
-  L(v) = 228 and on at least 20 distinct lines with L(v) = 227. This shows
-  that lines of both types were sampled near their end, so "only long lines
-  reach $E3" is not green merely because short lines were never sampled
-  there. Samples fall on shifting positions because lines are 227 or 228
-  slots long, and the CPU uses the even memory cycles (p.196).
+- S1, L1, T1 and T2.
+- NTSC coverage, for "no $E3 on a line with L(v) = 227": H ≥ $E0 is
+  observed on at least 20 distinct lines with L(v) = 228 and on at least 20
+  distinct lines with L(v) = 227. This shows that lines of both types were
+  sampled near their end, so "only long lines reach $E3" is not green
+  merely because short lines were never sampled there. Samples fall on
+  shifting positions because lines are 227 or 228 slots long, and the CPU
+  uses the even memory cycles (p.196).
 - PAL needs no coverage precondition. The expected set itself requires every
-  value up to $E2 to be seen, so sampling that never reaches the end of a
-  line turns the check red, not green.
+  value up to $E2 (of the observed parity, without parity coverage) to be
+  seen, so sampling that never reaches the end of a line turns the check
+  red, not green.
 - P2's preconditions, for the NTSC line types.
 
 **Contrasting cases.**
 
-- Main: the PAL check under NTSC ($E3 appears: red). The NTSC check under
-  PAL ($E3 absent: red).
+- Main, with parity coverage: the PAL check under NTSC ($E3 appears: red).
+  The NTSC check under PAL ($E3 absent: red).
+- Main, without parity coverage:
+  - PAL check under NTSC: red when the observed parity is odd, as $E3
+    appears. When it is even, no input exists for which the pages predict
+    an even value above $E2; the bound then has no contrasting case at this
+    boundary.
+  - NTSC check under PAL: red when the observed parity is odd, as $E3 is
+    absent. When it is even, both standards give the same even values, and
+    the check has no contrasting case at this boundary.
+- Every value present, in both forms: A-short (PAL). The trace ends after
+  64 samples, about four lines, so most values are never read, while S1,
+  L1, T1 and T2 still hold.
+- "$E3 only on lines with L(v) = 228": no input exists for which the pages
+  predict $E3 on a short line; this clause has no contrasting case at this
+  boundary.
 - NTSC coverage: select PAL. No line has L(v) = 228, so the coverage
   precondition fails.
 
@@ -542,8 +740,10 @@ part of `COP2-putting-together-a-copper-instruction-list.c9`, `COP2-putting-toge
 ### P4. The Copper's horizontal comparison advances one count per memory cycle, gives 113 distinct positions $02 ... $E2, and has no position beyond $E2
 
 **Claims.** `COP2-horizontal-beam-position.c3` (p.23);
-`COP2-vertical-beam-position.c23` (p.24); `COP2-copins-timing.c6` (p.275,
-as a relation).
+`COP2-vertical-beam-position.c23` (p.24).
+
+**Not claimed here.** p.275's 280 ns is used below only as a reason; its
+claim, `COP2-copins-timing.c6`, is declined (section 1).
 
 **Stimulus.** Run C (PAL and NTSC).
 
@@ -569,20 +769,34 @@ h_k ≤ $80 and $10 otherwise. For $C0 the difference is negative.
 - Both WAITs of a line end at even counts in the same line, so the fixed
   wake-up of p.20 ("it takes one extra memory cycle to wake up") cancels.
 
-(b) For h_k in $D2 ... $E2 (k = 105 ... 113):
+(b) For h_k in $D2 ... $E2 (k = 105 ... 113): D_k strictly increases with
+k.
 
-- D_k - (h_k - $10) is 0 or 1.
-- D_k strictly increases with k.
+Near the end of a line the pages leave the Copper's fetch slots open
+(section 7, item 14). A 227-count line ends at $E2 and the next begins at
+$00, so the slot parity breaks there, and a fetch that would fall past the
+end of the line moves by one slot:
 
-The Copper "requests the bus only during odd-numbered memory cycles" (p.20).
-A 227-count line ends at $E2 and the next begins at $00, so two even cycles
-follow each other there. A fetch that would fall past the end of the line
-moves one slot later. The pages do not say how many slots after the end of a
-wait the next fetch comes, so they do not say which of these positions are
-affected. The spacing of 2 counts per position, and the 113 distinct values
-$02 ... $E2, are graded exactly through (a) and through the strict ordering
-of (b). p.32 confirms the upper end: "Position $E2 is horizontal position
-113 for the Copper and the last real horizontal position available."
+- Reading A, p.20 taken literally in count numbering: the Copper "requests
+  the bus only during odd-numbered memory cycles", so the two slots $E2 and
+  $00 in a row are both closed to it and the fetch comes one slot later:
+  D_k - (h_k - $10) is 0 or 1.
+- Reading B, Figure 6-9's numbering: refresh, disk, audio and sprite slots
+  are drawn on odd counts, and p.20 says the Copper's cycles do not collide
+  with them ("This prevents collision with audio, disk, refresh, sprites"),
+  so the Copper uses even counts, $E2 and $00 are both open to it, and the
+  fetch comes one slot earlier: D_k - (h_k - $10) is -1 or 0.
+
+Neither band is graded. D_k - (h_k - $10) for k = 105 ... 113 is recorded
+as a measurement, per core, with both readings named. The pages also do not
+say how many slots after the end of a wait the next fetch comes, so they do
+not say which of these positions are affected. The strict ordering holds
+under both readings, because consecutive positions are 2 counts apart and
+the shift is at most one slot. The spacing of 2 counts per position, and
+the 113 distinct values $02 ... $E2, are graded exactly through (a) and
+through the strict ordering of (b). p.32 confirms the upper end: "Position
+$E2 is horizontal position 113 for the Copper and the last real horizontal
+position available."
 
 (c) For every j: E_j = $40, and r2_j lies on line w_j + 1.
 
@@ -605,11 +819,13 @@ at the same moment as any wait for a position beyond $E2 on the line before
   second-word WAITs, and `WAIT(w_j,g_j)`.
 - For every j, r1_j lies on line w_j. The WAIT for g_j was then fetched
   during line w_j and was pending when that line ended.
-- T1, T2, R1.
+- S1, L1, T1, T2, R1.
 
 **Contrasting cases.**
 
 - (a): C-shift. D_50 changes by 2 slots.
+- (b): C-shift-end. mark_106 waits for $D6, the position of k = 107, so
+  D_106 is not below D_107 and the strict ordering is red.
 - (c): C-next. The wait ends at count $20 of line w_5 + 1, so E_5 = $20.
 - "waited": C-late. The WAIT for $B4 is fetched after count $C4, so its
   delay equals λ_min.
@@ -653,13 +869,12 @@ NTSC in addition).
   of a MOVE goes "at IR2 time directly from RAM to the address given by the
   DA field" (p.275), so the delay from wait to colour change is the same for
   both edges and cancels.
-- c_px = w_u / (2 n_u) must then be the same for every u. It is used by
-  P10.
 - Quantifier: every position from $36 to $D0 is an edge position, and every
   single step between neighbouring positions in that range is covered.
   Sub-sweep 1 gives w for consecutive n at the second edge; sub-sweep 2 does
-  the same at the first edge. Positions in $0F-$35 are blanked (P10) and
-  cannot be seen. Positions after $D0 are not graded for the reason in
+  the same at the first edge. Positions in $0F-$35 fall in the horizontal
+  blanking (p.23: "Horizontal blanking falls in the range of $0F to $35")
+  and cannot be seen. Positions after $D0 are not graded for the reason in
   P4(b). Positions $00-$0E are not graded, because a width that crosses the
   counter's line boundary depends on where the displayed line begins
   relative to the counter line, which no page states.
@@ -671,15 +886,16 @@ NTSC in addition).
     COLOR01 runs and the 159 COLOR00 runs between them have one common
     length.
   - D-hi: 320 COLOR01 runs, likewise of one common length.
-- Edges present: every sweep line u shows exactly one run of A_u, with B
-  before and after it on the same output line.
+- Edges present: A_u appears for every sweep line u, and every output line
+  that shows A_u shows exactly one run of it, with B before and after it on
+  that output line.
 - Every sweep WAIT waited.
-- The completion word is written; R1 holds.
+- The completion word is written; S1, L1 and R1 hold.
 
 **Contrasting cases.**
 
 - Main: D-shift. w on line $50 becomes 4 · 25 · P_lo while n = 24.
-- Calibration: D-flat. There are no alternating runs.
+- Calibration: D-flat, for D-lo and for D-hi. There are no alternating runs.
 - Edges present: D-drop. Line $50 has no A→B edge.
 - "waited": D-late. The second WAIT of line $50 is already satisfied when it
   is fetched, so its delay equals λ_min.
@@ -705,16 +921,18 @@ NTSC in addition).
 Also:
 
 - the line of a_j (RF2);
-- for j = 0, time(x_0) - time(a_0).
+- for j = 0, time(x_0) - time(a_0), recorded, not graded.
 
 **Expected.**
 
 - a_j lies on line 255 in every field. p.23: "When waiting for $FFFE, the
   line $FF will be reached".
-- j = 0 (h = $E2): x_0 is fetched in the same field, and time(x_0) -
-  time(a_0) is $E2 - $40 = $A2, or $A3 (P4(b)). p.23: "The horizontal
-  position has a maximum value of $E2. This means that the largest number
-  that will ever appear in the comparison is $FFE2."
+- j = 0 (h = $E2): x_0 is fetched in the same field, after a_0. p.23: "The
+  horizontal position has a maximum value of $E2. This means that the
+  largest number that will ever appear in the comparison is $FFE2."
+- time(x_0) - time(a_0) is not graded. It is recorded as a measurement, per
+  core, against both readings of P4(b): $E2 - $40 = $A2, or $A3, under
+  reading A; $A1 or $A2 under reading B (section 7, item 14).
 - j = 1 ... 14 (h = $E4 ... $FE), and every field of L_15: x_j is never
   fetched, and no Copper fetch at all occurs between the second word of
   `WAIT($FF,h_j)` and the next restart.
@@ -734,17 +952,20 @@ Also:
 - Each restart fetches the list L_{j+1}, or L_15, that the previous list
   named. This shows the chain works and each field ran the intended list.
 - Every `WAIT($FF,$40)` waited.
-- T1, T2, R1.
+- S1, L1, T1, T2, R1.
 
 **Contrasting cases.**
 
+- "a_j lies on line 255": B-254. a_2 lies on line 254, while the
+  preconditions still hold for L_2.
 - Main: B-FE. `WAIT($FE,$FE)` ends when line $FF begins, so its marker is
   fetched, and time($B301) - time($B300) = $40. p.23: "If the vertical
   position is not $FF, then as soon as the line number becomes higher than
   the entered number, the comparison will evaluate to true and the wait
   will end."
 - "$E2 reached": give L_0 h = $E4. x_0 is not fetched.
-- "fetched on line 255": B-late. The WAIT for h_1 is fetched on line 256.
+- "fetched on line 255": B-late. The WAIT for h_1 is fetched on line 256,
+  after the padding.
 - Chain: point L_3's COP1LC at L_5. The restart after L_3 fetches L_5, not
   L_4.
 - "waited", T1, T2, R1: as in P2 and P1.
@@ -758,13 +979,13 @@ Also:
 **Claims.** `COP2-the-wait-instruction.c22`, `COP2-the-wait-instruction.c23` (p.23);
 `COP2-vertical-beam-position.c7` (p.24).
 
-**Stimulus.** Run A (PAL and NTSC). After `WAIT($FF,$E2)` and 8 padding
+**Stimulus.** Run A (PAL and NTSC). After `WAIT($FF,$E2)` and 16 padding
 moves, `WAIT(n,$60)` with `MARK($0100+n)`, for n = 0 ... N.
 
 **Observation.**
 
-- The line of each marker m_(256+n) (RF2), and V8 of the samples on that
-  line.
+- The line of each marker m_(256+n) (RF2), and the words of the two samples
+  that place it (s⁻ and s⁺ of RF2).
 - The delay of `WAIT($00,$60)`.
 - Every complete field.
 
@@ -773,7 +994,8 @@ moves, `WAIT(n,$60)` with `MARK($0100+n)`, for n = 0 ... N.
 - `WAIT($00,$60)` waited.
 - Every m_(256+n) lies on line 256 + n: n = 0 ... 5 in NTSC, n = 0 ... $37
   (lines 256 ... 311) in PAL.
-- Every trace sample on those lines has V8 = 1.
+- The samples that place m_(256+n) have V8 = 1 and V7-V0 = n: the beam
+  counter reads 256 + n where the comparison sees n.
 - Sources:
   - p.23: "Since 255 is the maximum number, the next line will wrap to zero
     (line 256 will appear as a zero in the comparison.)"
@@ -791,7 +1013,7 @@ moves, `WAIT(n,$60)` with `MARK($0100+n)`, for n = 0 ... N.
 
 - The second word of `WAIT($00,$60)` is fetched on line 256 (RF2).
 - m_E2 is fetched.
-- A-anchor, T1, T2, R1.
+- A-anchor, S1, L1, T1, T2, R1.
 
 **Contrasting cases.**
 
@@ -807,7 +1029,10 @@ moves, `WAIT(n,$60)` with `MARK($0100+n)`, for n = 0 ... N.
 
 ### P8. NTSC: after line 255, vertical positions 0 through 5 are the last six lines of the field before vertical blanking, 256 to 261; there is no line 262
 
-**Claims.** `COP2-vertical-beam-position.c9`, `COP2-vertical-beam-position.c10` (p.24).
+**Claims.** `COP2-vertical-beam-position.c9` (p.24).
+
+**Not claimed here.** `COP2-vertical-beam-position.c10`, Copper execution
+on all 262 lines, is not graded whole; it is declined (section 1).
 
 **Stimulus.** Run A, NTSC. The markers m_256 ... m_261 are from
 `WAIT(0,$60)` ... `WAIT(5,$60)`; m_262 is from `WAIT(6,$60)`.
@@ -831,7 +1056,8 @@ moves, `WAIT(n,$60)` with `MARK($0100+n)`, for n = 0 ... N.
   ... Thus the total of 256 + 6 = 262 lines of video beam travel during
   which Copper instructions can be executed."
 - Quantifier: every complete field.
-- Not graded:
+- Not graded, and the reason `COP2-vertical-beam-position.c10` is declined
+  (section 1):
   - Whether m_262 is fetched after the boundary. That depends on where the
     Copper restarts, which the pages disagree on (section 7, item 8).
   - Copper execution on the lines of vertical blanking before the restart,
@@ -851,8 +1077,13 @@ moves, `WAIT(n,$60)` with `MARK($0100+n)`, for n = 0 ... N.
 
 ### P9. The standard screen is 320 low-resolution pixels wide; in the rest of each of its lines only the background colour is displayed, and the horizontal blanking lies inside that rest with background on both sides
 
-**Claims.** `COP2-horizontal-beam-position.c7`, `COP2-horizontal-beam-position.c8`, `COP2-horizontal-beam-position.c9`;
-`ch2-horizontal-beam-position.c7`, `ch2-horizontal-beam-position.c8` (p.23).
+**Claims.** `COP2-horizontal-beam-position.c7`, `COP2-horizontal-beam-position.c9`;
+`ch2-horizontal-beam-position.c8` (p.23), all graded by (a).
+
+**Not claimed here.** The claims of the positions "$04 to $47"
+(`COP2-horizontal-beam-position.c8`, `ch2-horizontal-beam-position.c7`) are
+declined (section 1). (b) grades only the order that p.23's two ranges
+imply, and carries no claim.
 
 **Stimulus.**
 
@@ -896,7 +1127,7 @@ graded (section 1).
 - Each window line has exactly one run of pixels of value 0.
 - The number of window lines per field is at least 1. The vertical extent
   is not graded.
-- The completion word is written; R1 holds.
+- The completion word is written; L1 and R1 hold.
 
 **Contrasting cases.**
 
@@ -911,55 +1142,6 @@ graded (section 1).
 - Calibration: D-flat.
 
 **Reference frame.** RF4.
-
----
-
-### P10. Each line has one horizontal blanking interval, no longer than the range $0F to $35 (39 counts)
-
-**Claims.** `COP2-horizontal-beam-position.c6`;
-`ch2-horizontal-beam-position.c6` (p.23).
-
-**Stimulus.** Run E, PAL.
-
-**Observation.** In every window line (as in P9), the length of the run of
-pixels of value 0 (RGB all zero), in output pixel clocks, divided by c_px.
-This is the blanking length in counts.
-
-**Expected.**
-
-- Exactly one such run per line, of at most 39 counts.
-- p.23: "Horizontal blanking falls in the range of $0F to $35." From $0F to
-  $35 inclusive is 39 counts.
-- The sentence bounds where the blanking lies; it does not say that
-  blanking fills the whole range, so no lower bound is graded.
-- p.80 is consistent: "horizontal blanking actually limits the displayable
-  video to 368 low resolution pixels (23 words)", which fits within the 188
-  counts a 39-count blanking leaves.
-- Quantifier: every window line of every complete field.
-- NTSC is not graded. The page says the display sees NTSC lines differently
-  from the counter (227 1/2 against 227 or 228) and does not say in which
-  of the two the blanking is placed.
-
-**Preconditions.**
-
-- c_px is valid: P5's D-sweep precondition holds and c_px is the same on
-  every sweep line, in the same configuration.
-- The output line carries the whole counter line: the length of every window
-  output line is 227 · c_px pixel clocks. Only then does a pixel run measure
-  counts of the chip set's line and not the line doubler's.
-- COLOR00 ≠ 0 and COLOR01 ≠ 0, so the only zero pixels are blanking.
-- R1 holds.
-
-**Contrasting cases.**
-
-- Main: E-black. The zero run now includes the background of the unused
-  portion, and its length exceeds 39 counts.
-- "whole counter line": select NTSC. Lines are no longer 227 counts each
-  (P2), and the PAL-valued check fails.
-- "COLOR00 ≠ 0": E-black.
-- c_px: D-shift makes c_px differ on line $50.
-
-**Reference frame.** RF4, with c_px from P5.
 
 ## 7. Where the pages disagree or leave things open
 
@@ -1048,3 +1230,31 @@ This is the blanking length in counts.
     all of these.
 13. **VPOSR bit 7 under ECS.** p.299 names it "LOL" without describing it.
     It is not used.
+14. **The Copper's slot parity.**
+    - p.20: "The Copper is a two-cycle processor that requests the bus only
+      during odd-numbered memory cycles. This prevents collision with audio,
+      disk, refresh, sprites, and most low resolution display DMA access,
+      all of which use only the even-numbered memory cycles."
+    - Figure 6-9 (p.195) numbers the slots of a line by count and draws the
+      refresh slots at $01, $03 and $05 and the disk slots after them on odd
+      counts.
+    - Read in count numbering, p.20's "odd-numbered" gives the Copper odd
+      counts (reading A); read with Figure 6-9's allocation and p.20's
+      "prevents collision", it gives the Copper even counts (reading B).
+    - Specified: only what both readings agree on, P4(b)'s ordering. The
+      offsets near the end of a line, P4(b) and P6's time(x_0) - time(a_0),
+      are recorded against both readings.
+15. **The count a CPU read returns.**
+    - p.196: "The 68000 uses only the even-numbered memory access cycles",
+      and Figure 6-9 numbers the cycles along each line; no page says which
+      count a read of VHPOSR returns.
+    - If the reads fall on counts of one parity only, half the counter's
+      values cannot be read. Specified: P1 and P3 grade the whole range when
+      both parities are read, and the values of the one parity read
+      otherwise.
+16. **BEAMCON0 after reset.** p.305 lists its bits, among them "LOLDIS
+    Disable long line/short line toggle", "VARBEAMEN Variable beam counter
+    comparator enable" and "PAL Programmable pal mode enable", and says "Do
+    not write to this register"; no page gives its value after reset.
+    Specified: it is not written, and the ECS runs rest on the assumption
+    stated in 3.1, checked against the OCS runs.
