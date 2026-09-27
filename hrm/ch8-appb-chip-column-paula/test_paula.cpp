@@ -3,7 +3,7 @@
 //   POTGO, composed with p.287's chip-letter legend ("P=Paula chip"),
 //   against the `paula` module compiled alone. 14 claims, from
 //   work/ch8-s1-build/ch8-appb-chip-column-paula.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 7f65534 before this file was written).
+//   SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.289 (Appendix B row for each register), composed with printed p.287
@@ -37,14 +37,11 @@
 //   regardless, since both rows carrying it (POT0DAT, POT1DAT) are declined
 //   below for the boundary reason next.
 //
-// REPAIR 15.09.2026 -- the chip-column boundary rule was one-way; it is now
-//   symmetric. Independent validation (2026-09-14_ch8_s1_sol_validation_A.md,
-//   defect 8) found that this file graded SERDATR/SERDAT/SERPER `expect()`
-//   green because their decode sits inside `paula`'s own instantiated
-//   hierarchy, while it declined POT0DAT/POT1DAT/POTGOR/POTGO with record()
-//   because theirs sits in sibling `userio.v` -- treating structural
-//   presence as proof and structural absence as merely unobservable, in the
-//   same package, on the same kind of evidence.
+// THE CHIP-COLUMN RULE -- symmetric. SERDATR/SERDAT/SERPER's decode sits
+//   inside `paula`'s own instantiated hierarchy; POT0DAT/POT1DAT/POTGOR/
+//   POTGO's sits in sibling `userio.v`. Grading the first as proof while
+//   declining the second as merely unobservable would treat the same kind of
+//   evidence two ways in one package.
 //
 //   Printed p.287 -- the only page that defines what a CHIP-column letter
 //   means -- says exactly this and nothing more:
@@ -61,31 +58,24 @@
 //   three original chips' silicon boundaries. So a decode's presence inside
 //   the Verilog module named `paula` is evidence about this clone's source
 //   layout, not evidence that the physical *Paula chip* answers there --
-//   exactly as its absence from `paula` was already (correctly) treated as
-//   no evidence either way for POT0DAT/POT1DAT/POTGOR/POTGO. Presence and
-//   absence are the same kind of structural fact and now get the same
+//   exactly as its absence from `paula` is no evidence either way for
+//   POT0DAT/POT1DAT/POTGOR/POTGO. Presence and
+//   absence are the same kind of structural fact and get the same
 //   verdict: DECLINED. All seven rows (14 claims) are declined with
-//   record() below; none is asserted with expect(). This adopts defect 8's
-//   "reading 2" ("RTL hierarchy is not a semantic proxy for physical-chip
-//   ownership"), because the legend text itself supports no other reading:
-//   it names a chip, not an implementation. The chapter 7
-//   paula_intcontroller precedent this file previously cited for
-//   INTENAR/INTREQR is not re-litigated here -- it may or may not have the
-//   same defect; this repair is scoped to this package's own two claims
-//   files, per this task's instructions.
+//   record() below; none is asserted with expect(). RTL hierarchy is not a
+//   semantic proxy for physical-chip ownership, because the legend text
+//   itself supports no other reading: it names a chip, not an
+//   implementation. (Chapter 7's accepted paula_intcontroller package reads
+//   INTENAR/INTREQR's presence inside its own hierarchy as ownership; this
+//   package does not re-examine it.)
 //
-//   T4/T5/T6's former MUTATION records (T4-SERDATR-CONTENT-ARRIVES,
-//   T5-SERDAT-WRITE-TRIGGERS-TX, T6-SERPER-CONTROLS-BIT-PERIOD, and the
-//   cross-reddening note between T5 and T6) are removed below, not orphaned:
-//   they no longer name an expect()-graded assertion, and record() declines
-//   get no mutation entry, per BUILD-BRIEF ("record() declines are not
-//   assertions and get no mutation entry"). The measurement technique that
-//   produced them is kept as MEASURED/RECORDED evidence -- a working,
-//   content-bearing UART really does sit inside `paula`'s own hierarchy --
-//   only the conclusion drawn from that fact changes.
+//   T1-T7 carry no MUTATION record: record() declines are not assertions.
+//   The SERDATR/SERDAT/SERPER measurements are kept as MEASURED/RECORDED
+//   evidence -- a working, content-bearing UART really does sit inside
+//   `paula`'s own hierarchy -- without a CHIP-column verdict drawn from
+//   that fact.
 //
-// THE CHIP-COLUMN BOUNDARY SPLIT, restated after REPAIR. The RTL measurement
-//   is unchanged from before the repair; only the verdict drawn from it is:
+// WHAT THE FIXTURE FINDS PER ROW:
 //   POT0DAT ($012), POT1DAT ($014), POTGOR/"POTINP" ($016) and POTGO ($034)
 //   are decoded nowhere in `paula`'s own hierarchy (grep over paula.v and
 //   every module it instantiates, zero hits for "POT" anywhere). They ARE
@@ -96,9 +86,9 @@
 //   SERDATR ($018), SERDAT ($030) and SERPER ($032) ARE decoded inside
 //   paula_uart.v (paula_uart.v:21-23), instantiated as `pu1` inside paula.v
 //   at paula.v:203.
-//   Both facts are real and both are kept in the RECORDED text below. After
-//   REPAIR, neither one, by itself, settles a CHIP-column claim -- see
-//   REPAIR above. All seven rows are DECLINED with record(), naming the
+//   Both facts are real and both are kept in the RECORDED text below.
+//   Neither one, by itself, settles a CHIP-column claim -- see the rule
+//   above. All seven rows are DECLINED with record(), naming the
 //   structural fact found either way.
 //
 // FIXTURE LIVENESS (A0). Independent of any claim: paula.v's OWN internal
@@ -138,9 +128,9 @@
 //   `txd` whose width is governed purely by SERPER. The SERDATR loopback uses
 //   a separate, richer stimulus (0x00AA) so the received content is
 //   distinguishable from the all-zero/idle case.
-//   After REPAIR these three measurements are RECORDED, not asserted: they
+//   These three measurements are RECORDED, not asserted: they
 //   show the `paula` fixture's own UART hierarchy genuinely works, content
-//   and all, but per the REPAIR note above that is a fact about this
+//   and all, but per the chip-column rule above that is a fact about this
 //   clone's source layout, not, by the p.287 legend's own words, proof of
 //   which physical chip owns the address.
 //
@@ -150,14 +140,13 @@
 //   unset) and every mutation run (MUTATE=<id>, one id per assertion). Each
 //   mutation changes what the module is ASKED TO DO (a written value, a
 //   driven address) and leaves the `expect()` call's own expected-value code
-//   untouched, per BUILD-BRIEF. After REPAIR, the two remaining
+//   untouched. The two
 //   `expect()`-graded assertions are both A0 liveness; T1-T7 are all
-//   `record()` declines and carry no mutation (per BUILD-BRIEF: "record()
-//   declines are not assertions and get no mutation entry"). Both A0
+//   `record()` declines and carry no mutation (record() declines are not
+//   assertions and get no mutation entry). Both A0
 //   mutations were run with their own id, confirmed red, then reverted
 //   (MUTATE unset) and confirmed green again; results are logged next to
-//   each assertion and summarised in the build report. Baseline with MUTATE
-//   unset, after REPAIR: 2 passed, 0 failed.
+//   each assertion. Baseline with MUTATE unset: 2 passed, 0 failed.
 //
 // MUTATION A0-LIVENESS-ADKCON-FIRST stimulus red: a different first word (0x00AA) is written to ADKCON (MUTATE=A0_1)
 // MUTATION A0-LIVENESS-ADKCON-SECOND stimulus red: the stale first word is replayed as the second (MUTATE=A0_2)
@@ -293,7 +282,7 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page: the
-    // BUILD-BRIEF's own requirement that the fixture prove it can deliver a
+    // fixture proves it can deliver a
     // known, distinct word before any read-based assertion is trusted. Uses
     // paula.v's own ADKCON/ADKCONR pair (paula.v:126-127, 182-198), not any
     // of the seven claim rows, so it cannot be confused with any of them.
@@ -335,8 +324,8 @@ int main(int argc, char** argv) {
             "address; this fixture never receives userio.v's decode logic and so can return neither a yes nor a no "
             "about it. userio.v is the module that would decide this claim -- p.287's legend ('A=Agnus chip, "
             "D=Denise chip, P=Paula chip.') names a chip, not a module, so this absence is not read as disproof "
-            "either, the same symmetric rule applied to SERDATR/SERDAT/SERPER's presence below (see file header, "
-            "REPAIR). The row's '(E)' mark is additionally out of scope here regardless (see header) -- moot, since "
+            "either, the same symmetric rule applied to SERDATR/SERDAT/SERPER's presence below (see file "
+            "header). The row's '(E)' mark is additionally out of scope here regardless (see header) -- moot, since "
             "the P half itself is declined for this boundary reason, not for the (E) reason.");
     }
     do_reset();
@@ -350,7 +339,7 @@ int main(int argc, char** argv) {
             "module it instantiates (measured: grep, zero hits). It IS decoded in userio.v (parameter POT1DAT = "
             "9'h014, userio.v:58), instantiated as USERIO1 in minimig.v:551, never inside paula.v and not in this "
             "package's SRC list. userio.v is the module that would decide this claim -- symmetric with "
-            "SERDATR/SERDAT/SERPER's presence below (see file header, REPAIR), p.287's legend names a chip, not a "
+            "SERDATR/SERDAT/SERPER's presence below (see file header), p.287's legend names a chip, not a "
             "module, so this absence is not read as disproof. The '(E)' mark is additionally out of scope here "
             "regardless (see header) -- moot, since the P half itself is declined for this boundary reason, not for "
             "the (E) reason.");
@@ -367,7 +356,7 @@ int main(int argc, char** argv) {
             "name for the same address, parameter POTINP = 9'h016 (userio.v:59, matching the manual's own parenthetical "
             "'formerly POTINP'), instantiated as USERIO1 in minimig.v:551, never inside paula.v and not in this "
             "package's SRC list. userio.v is the module that would decide this claim -- symmetric with "
-            "SERDATR/SERDAT/SERPER's presence below (see file header, REPAIR), p.287's legend names a chip, not a "
+            "SERDATR/SERDAT/SERPER's presence below (see file header), p.287's legend names a chip, not a "
             "module, so this absence is not read as disproof.");
     }
     do_reset();
@@ -381,12 +370,12 @@ int main(int argc, char** argv) {
             "module it instantiates (measured: grep, zero hits). It IS decoded in userio.v (parameter POTGO = "
             "9'h034, userio.v:60), instantiated as USERIO1 in minimig.v:551, never inside paula.v and not in this "
             "package's SRC list. userio.v is the module that would decide this claim -- symmetric with "
-            "SERDATR/SERDAT/SERPER's presence below (see file header, REPAIR), p.287's legend names a chip, not a "
+            "SERDATR/SERDAT/SERPER's presence below (see file header), p.287's legend names a chip, not a "
             "module, so this absence is not read as disproof.");
     }
 
     // ========================================================================
-    // T5/T6 -- SERDAT, SERPER: DECLINED after REPAIR (see file header). A
+    // T5/T6 -- SERDAT, SERPER: DECLINED (see file header). A
     // write to SERDAT's own address starts a transmission (observed on
     // txd); SERPER's content sets that transmission's bit period (observed
     // as the start-bit pulse's width) -- both real, measured facts about
@@ -418,7 +407,7 @@ int main(int argc, char** argv) {
             "P=Paula chip.'): not asserted -- a write at SERDAT's own address ($030) does start a transmission "
             "(txd left its idle-high state and returned to it, low_at=" + std::to_string(low_at) + " high_at=" +
             std::to_string(high_at) + "), which only paula_uart's TX logic (instantiated inside this fixture as pu1, "
-            "paula.v:203) can produce. Per the REPAIR note above, a working transmitter inside the module named "
+            "paula.v:203) can produce. Per the chip-column rule in the file header, a working transmitter inside the module named "
             "`paula` is not, by the p.287 legend's own words, proof that the physical Paula chip owns this address -- "
             "the legend names a chip, not this clone's module layout.");
     }
@@ -445,12 +434,12 @@ int main(int argc, char** argv) {
             "P=Paula chip.'): not asserted -- SERPER's own content, written at its own address ($032), does set "
             "the width of the transmission SERDAT starts (measured fast=" + std::to_string(width_fast) + " ticks, slow=" +
             std::to_string(width_slow) + " ticks, a far larger SERPER value producing a measurably wider pulse). Per "
-            "the REPAIR note above, this is a fact about `paula`'s own module hierarchy in this clone, not evidence "
+            "the chip-column rule in the file header, this is a fact about `paula`'s own module hierarchy in this clone, not evidence "
             "for or against which physical chip the p.287 legend names.");
     }
 
     // ========================================================================
-    // T4 -- SERDATR: DECLINED after REPAIR (see file header). An external
+    // T4 -- SERDATR: DECLINED (see file header). An external
     // loopback (dut->rxd = dut->txd, wired only in this testbench, every
     // tick) lets a real transmission be received back through paula_uart's
     // own RX state machine, and content that differs from both the reset
@@ -485,8 +474,8 @@ int main(int argc, char** argv) {
             "has looped back through paula_uart's RX state machine does return content that differs from both the "
             "reset baseline (0x" + baseline_hex +
             ") and an unaddressed 0x0000 -- the data genuinely arrived at this register's own read address, which "
-            "only paula_uart (instantiated inside this fixture, pu1, paula.v:203) can produce. Per the REPAIR note "
-            "above, a working, content-carrying UART inside the module named `paula` is not, by the p.287 legend's "
+            "only paula_uart (instantiated inside this fixture, pu1, paula.v:203) can produce. Per the chip-column rule "
+            "in the file header, a working, content-carrying UART inside the module named `paula` is not, by the p.287 legend's "
             "own words, proof that the physical Paula chip owns this address -- the same non-evidentiary status "
             "this package already gives the POT rows' absence from `paula`.");
     }
