@@ -188,7 +188,7 @@ documents say*.
 | Commodore technical manuals | *A500/A2000 Technical Reference Manual*, 1987 | one |
 | Commodore-Amiga patents | US 4,777,621, filed 1985, granted 1988; US 4,874,164 and 5,103,499, filed 1986, granted 1989 and 1992; US 4,829,473, filed 1986, granted 1989; US 4,780,844, filed 1986, granted 1988 | one each, except 4,874,164 and 5,103,499, which carry one specification and count once |
 | Commodore articles | *AmigaMail* vol. 1, 1989 | one each |
-| silicon | 6502.org's dissection of Paula 8364R7, 2023; techtravels' analysis of Paula's floppy controller, 2026 | witnesses, like the emulators: third-party reverse engineering of one chip revision, not a statement of Commodore's intent |
+| silicon | 6502.org's dissection of Paula 8364R7, 2023; techtravels' analysis of Paula's floppy controller, 2026; 6502.org's dissection of Denise 8373R4, a work in progress, undated | witnesses, like the emulators: third-party reverse engineering of one chip revision, not a statement of Commodore's intent |
 
 Each year is the document's own -- a copyright line, a revision block, a
 patent's filing and grant dates -- and where none is printed the document is

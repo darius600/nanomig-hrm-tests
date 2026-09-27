@@ -11,7 +11,7 @@
 | **Test** | [`integration/ch4-shres-sprite-b`](../../integration/ch4-shres-sprite-b) · `PC2w`, a precondition that carries no claim id, run on both CPU cores, red on fx68k and on TG68K |
 | **Chapter** | 4 — Sprite Hardware, printed pp. 101, 124, 128 and 131; Appendix C, printed pp. 297, 300 and 303; 1 — Introduction, printed p. 3 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red on each core: `PC2w` (26 passed, 1 failed on fx68k and on TG68K). The package's colour propositions `P1`–`P4` are green on both cores; the claims that state the width are graded nowhere (see *What grades it*) |
-| **Verdict of the four** | **unanimous with NanoMig and with the AA specification**: WinUAE, vAmiga, Denise and Copperline all show an ECS sprite pixel for 70 ns in SuperHires and for 140 ns in the other resolutions. None keeps p. 101's low-resolution pixel in SuperHires |
+| **Verdict of the four** | **unanimous with NanoMig and with the AA specification**: WinUAE, vAmiga, Denise and Copperline all show an ECS sprite pixel for 70 ns in SuperHires and for 140 ns in the other resolutions. None keeps p. 101's low-resolution pixel in SuperHires; outside the emulators, the 8373R4 dissection shifts a sprite out two pixels per 140 ns in SuperHires, 70 ns each — see *What other Commodore documents say* |
 | **See also** | [NM-HRM-016](NM-HRM-016.md) (SuperHires sprite colour encoding), [NM-HRM-019](NM-HRM-019.md) (SHSH1, SuperHires sprite positioning) |
 
 ---
@@ -243,6 +243,19 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
+- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 6f, 6g/6h, 6j1, 6k, 8c, 7j and 6l — **agrees with NanoMig**:
+
+  *Read from the drawing, not quoted:* sprite 0's shift register advances under S0NSFT or S0HSFT, which sheet 6f forms as NOR(is_SPR0, S_HRES) and NOR(is_SPR0, S_HRES#). Under S0NSFT bit 15 takes bit 14, under S0HSFT it takes bit 13 (sheets 6g and 6h), on the same C7M1/C7M2 cycle: one bit per 140 ns outside SuperHires, two in it. Bits 15 and 14 leave as S0_AF and S0_AG (sheet 6j1). In SuperHires S0_AG to S3_AG take the channels of sprites 4 to 7, SA4 to SA7 and SB4 to SB7 (sheet 6k), and there the colour-index PLA on sheet 8c takes index bits CNA1 and CNA0 from channels 0 to 3 and CNA3 and CNA2 from channels 4 to 7, so both pixels reach the display. S_HRES is BPLCON0 bit 6, latched from D6in on sheet 7j and again on CAS1 on sheet 6l.
+  <!-- drawing: denise-8373r4-dissection/sheet_030.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_031.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_034.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_036.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_059.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_049.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_037.txt -->
+
+  Two sprite pixels per 140 ns cycle is a 70 ns sprite pixel in SuperHires and a 140 ns one in the other resolutions: NanoMig's width and the AA specification's `SHRES=70nS`, against p. 101's low-resolution pixel. The shift, output and channel paths are traced in the netlist for sprite 0; the PLA of sheet 8c is read from its drawn crosspoints. As drawn, sprites 4 to 7 have no channel of their own in SuperHires. The 8373R4 is an ECS Denise, so the dissection says nothing about the original chip set's configuration under *For the specialists*. It is a work in progress, and of one revision.
+
 - **US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989** — **agrees with the manual**, for the original chip set:
 
   > "The shift occurs once during each low resolution pixel time and continues until all 16 bits have been transferred to the sprite bus 349."
@@ -340,6 +353,10 @@ that does not repeat it.
 - **The implementations may not be independent on this point.** Their code
   gives its own reasoning only in vAmiga's *"Same as OCS/ECS"* and Copperline's
   *"retains its 70 ns sprite serializer"*; none cites the hardware behind it.
+  The silicon now speaks to it: the 8373R4 dissection shifts a sprite out two
+  bits per 140 ns cycle in SuperHires, 70 ns a pixel (*What other Commodore
+  documents say*). It is a third-party reading of one revision, and a work in
+  progress.
 
 ---
 

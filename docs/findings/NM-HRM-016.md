@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-shres-sprite-colour-encoding`](../../hrm/ch3-shres-sprite-colour-encoding) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | **one of four** reads `$10`–`$1F` as the page describes (WinUAE, ECS Denise only); vAmiga pair-encodes only the lower sixteen registers; Denise and Copperline do not pair-encode |
+| **Verdict of the four** | **one of four** reads `$10`–`$1F` as the page describes (WinUAE, ECS Denise only); vAmiga pair-encodes only the lower sixteen registers; Denise and Copperline do not pair-encode; outside the emulators, the 8373R4 dissection indexes the upper sixteen registers by two sprite pixels and shows two bits per component, as WinUAE does — see *What other Commodore documents say* |
 | **See also** | [NM-HRM-017](NM-HRM-017.md), the bitplane half of the same mechanism |
 
 ---
@@ -190,7 +190,17 @@ Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
 [the findings README](README.md#second-documents).
 
-None of them speaks to this point.
+- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 8c, 9a, 6j1, 6k and 9h — agrees with the manual:
+
+  *Read from the drawing, not quoted:* in SuperHires the colour-index PLA on sheet 8c sets CNA1 and CNA0 from the B and A bits of channels 0 to 3, which carry the first of the two 70 ns pixels a sprite shows per 140 ns cycle, S0_AF to S3_AF (sheet 6j1), and CNA3 and CNA2 from channels 4 to 7, which in SuperHires carry the second, S0_AG to S3_AG (sheet 6k). The rows that put the sprite pair's number into CNA3 and CNA2 act only outside SuperHires, and no SuperHires row has an attach term. CNA0 to CNA3 select one of rCOLOR16 to rCOLOR31, the sixteen upper registers (sheet 9a). In SuperHires the output stage of sheet 9h joins red outputs R0 with R2 and R1 with R3 and drives them from register bits 11 and 10 in one 70 ns half and from bits 9 and 8 in the other.
+  <!-- drawing: denise-8373r4-dissection/sheet_059.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_071.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_034.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_036.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_079.txt -->
+
+  A SuperHires sprite reads COLOR(16 + 4 × second + first) for each pair of its pixels and shows each pixel's two bits per component from one half of that register: the arrangement of p. 302's table, and the pair lookup of WinUAE that *What the test measures* sets against NanoMig. A solid run of value 01 reads COLOR21, whose row the table fills with Colour 17 alone. As drawn, sprites 4 to 7 have no channel of their own in SuperHires. The PLA and the read decoder are read from their drawn crosspoints, not from a netlist; the output stage is traced in the netlist for red, the one component drawn in full, and green and blue draw only their bit 0. The dissection is a work in progress, and of one revision.
+
 Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS), 1988; US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989; US patent 5,103,499, Commodore-Amiga, filed 1989 as a division of the 1986 application, granted 1992.
 
 ---
@@ -206,3 +216,9 @@ two bits per component.
 only the lower sixteen registers. So the first question is not how to implement
 it but whether ECS Denise really does — and that is what WinUAE, which
 reinterprets for ECS Denise only, is evidence for.
+
+The 8373R4 dissection answers that question for one revision: in SuperHires it
+indexes the upper sixteen registers by two sprite pixels and shows each pixel's
+two bits per component (*What other Commodore documents say*). It is a
+third-party reading of that chip's silicon, and a work in progress, not a
+Commodore document.
