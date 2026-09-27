@@ -857,7 +857,7 @@ int main(int argc, char** argv) {
               std::to_string(measuredPeriodRaw) + " raw ticks = " +
               std::to_string(measuredPeriodCck) + " cck ticks (both while dmaena=0 the whole "
               "run) -- both cited ids restate the identical sentence (5-direct.c7 is the opus "
-              "twin, reclassified testable by V-10 and added here 2026-09-12); one measurement "
+              "twin of 5-p157.c16); one measurement "
               "establishes both", g_f);
 
         TimelineParams mp = baseP; mp.skip_audper_write = true;
@@ -872,7 +872,7 @@ int main(int argc, char** argv) {
                   "the " + std::to_string(baseP.audper) + " this package wrote); measured "
                   "period now = " + std::to_string(mPeriodCck) + " cck ticks -- correctly no "
                   "longer matches the value this claim's baseline relies on having been "
-                  "written. Covers 5-direct.c7 as well as 5-p157.c16 (added 2026-09-12): both "
+                  "written. Covers 5-direct.c7 as well as 5-p157.c16: both "
                   "ids restate the same sentence and this CHECK's single g_f boolean is what "
                   "either id's own claim reduces to, so one mutation discriminates both.");
     }
