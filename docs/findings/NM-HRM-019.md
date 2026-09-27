@@ -1,14 +1,14 @@
-# NM-HRM-019 — SPRxCTL bit 4 (SHSH1) is not implemented [RTL review]
+# NM-HRM-019 — SPRxCTL bit 4 (SHSH1) is not implemented
 
 | | |
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
+| **Evidence** | seen in the RTL source; no test yet |
+| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. The package's one red assertion sets bit 4 outside SuperHires, where p. 303 gives it no position; *What the test measures* says what it must measure instead. |
 | **Module** | `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
-| **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) |
+| **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) — `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` is red, `10 passed, 1 failed`, but sets bit 4 at the lores sprite rate, outside SuperHires |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **all four implement it**, and on ECS all four confine its effect on position to SuperHires, as the page's Warning states |
 | **Origin** | the surviving half of the withdrawn [NM-HRM-013](NM-HRM-013.md) |
@@ -22,27 +22,139 @@ a requirement rather than a mention:
 
 ```
 04      SHSH1     Start horizontal (SHR mode) 70ns increment
+00      SH0       Start horiz. value Low bit 140 ns increment
 ```
 
-scoped by the page's own Warning — *"70ns sprite positions are only available in
-SuperHires mode"* — and by the ECS note.
+scoped by the page's own note and Warning:
+
+> "Note: bits 3 and 4 are in the ECS chips only."
+
+> "70ns sprite positions are only available in SuperHires mode. Attempting to
+> use 70ns sprite positioning with Hires mode under the current system may lead
+> to unpredictable results."
+
+So the row asks one thing: in SuperHires, bit 4 moves the sprite's start by 70
+ns, half of SH0's 140 ns. Outside SuperHires the page gives it no position, and
+in Hires it promises nothing at all.
 
 **Compare bit 3 on the same page**, which the manual prints as `(unimplemented)`.
-That contrast is the whole reason this half survived and the other did not.
+
+**Three other pages give the bit no function**, without naming a chip set:
+chapter 4's sprite-control word on printed p. 107,
+
+```
+          Bits 6-3        Unused (make zero)
+```
+
+its summary on p. 128,
+
+> "Bits 6-3 are reserved for future use (make zero)."
+
+and Appendix A's SPRxCTL table on p. 284, on a row marked `D( E )`:
+
+```
+                 06-04    X        Not used
+```
+
+Appendix A itself sends the reader to Appendix C for what the ECS changed
+(printed p. 264):
+
+> "Registers denoted with an "(E)" in the chip column means that those
+> registers have been changed the Enhanced Chip Set(ECS)."
+
+> "See the register map in Appendix C for information on which ECS registers
+> are new and which have been modified."
+
+So for an ECS Denise the manual's word on bit 4 is p. 303's.
 
 ---
 
 ## What NanoMig does
 
-Nothing with it. Bit 4 is not read in the sprite path.
+Nothing with it. A write to SPRxCTL keeps bits 7 and 0 and no other, in both
+builds of the shifter, with and without `DENISE_EBR`:
 
-### Measured
+[`src/minimig-aga/denise_sprites_shifter.v#L133-L138`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites_shifter.v#L133-L138)
 
-[`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) sets SPR0CTL bit
-4 alone, all other bits including SH0 held at 0, and checks whether the full
-`sprdata` trace across `hpos` 0..511 changes, which is what the row promises
-— `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`, red, one of the package's `10
-passed, 1 failed`.
+```verilog
+// CTL register
+always @(posedge clk)
+  if (clk7_en) begin
+    if (aen && address==CTL)
+      {attach,hstart[0]} <= {data_in[7],data_in[0]};
+  end
+```
+
+In SuperHires the start still moves only in 140 ns steps. `denise.v` hands the
+sprite module `spres` = `2'b10` whenever BPLCON0's SHRES bit is set and
+BPLCON3's SPRES field reads 0, which without AGA it always does
+([`denise.v#L252`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L252)):
+
+[`src/minimig-aga/denise.v#L390-L391`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L390-L391)
+
+```verilog
+wire [1:0] spres_d;
+assign spres_d = (spres == 2'b00) ? shres ? 2'b10 : 2'b01 : spres;
+```
+
+At `2'b10` the sprite's pixels shift out at 70 ns, `2'b10   : shift = ~c1 ^ c3;`
+([`denise_sprites.v#L161-L164`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v#L161-L164)),
+but the start is compared once per 7 MHz cycle against the 9-bit `hstart`,
+whose low bit is SH0
+([`denise_sprites_shifter.v#L113-L116`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites_shifter.v#L113-L116)).
+Nothing places the start on the 70 ns position between two SH0 steps.
+
+---
+
+## What the test measures
+
+`SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` in `hrm/ch3-sprite-registers` arms
+sprite 0 at SPR0POS = `$40`, writes SPR0CTL = `$10` against `$00`, and requires
+the `sprdata` trace to change (`test_denise_sprites.cpp:1017-1019`):
+
+```cpp
+Meas base = measure(/*pos=*/0x40, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+Meas mut = measure(/*pos=*/0x40, static_cast<uint8_t>(1u << 4), /*spres=*/0, /*aga=*/0);
+bool differs = base.trace != mut.trace;
+```
+
+It is red, one of the package's `10 passed, 1 failed`, but it does not grade the
+row:
+
+- `spres` = 0 is the module's default case, a 140 ns lores shift
+  (`denise_sprites.v:164`), and a value `denise.v:391` never supplies. p. 303
+  gives bit 4 no position outside SuperHires, and none of the four
+  implementations gives it one there or changes a lores sprite for it. An
+  implementation that does what p. 303 describes leaves this trace identical
+  and fails the assertion too.
+- `measure()` samples `sprdata` once per `hpos` step, 140 ns apart
+  (`test_denise_sprites.cpp:631-636`), so even in SuperHires it could not see a
+  start that moves by 70 ns.
+
+**What it must measure instead**, on the same `denise_sprites` fixture with
+`aga` = 0:
+
+- `spres` = `2'b10`, the value `denise.v:391` supplies when SHRES is set;
+- sprite 0 armed as now (SPR0POS `$40`, SPR0DATB `$0000`, SPR0DATA `$8000`),
+  once each with SPR0CTL `$00`, `$01` (SH0 alone) and `$10` (SHSH1 alone), each
+  on a fresh DUT;
+- `sprdata` sampled at every 28 MHz clock, 35 ns apart, not once per `hpos`
+  step;
+- expected, from the two rows' "70ns increment" and "140 ns increment": SHSH1
+  alone moves the first non-zero sample later by half as many samples as SH0
+  alone does, two against four.
+
+Outside SuperHires the page asks only that bit 4 give no 70 ns position, and in
+Hires nothing at all. The package's own `superhires_spres` cannot stand in for
+`2'b10`: it is the first `spres` at which SH0 moves the start
+(`test_denise_sprites.cpp:848-852`), SH0 moves it at every value, and so it is
+1, the lores default.
+
+[`integration/ch4-sprite-registers`](../../integration/ch4-sprite-registers)
+specifies the same measurement at the video output: P1 sweeps the start in 70
+ns steps with SHRES set and expects each step to move the sprite's edge by one
+70 ns output pixel, and P2 expects only 140 ns multiples in Lores. It has no
+test source yet.
 
 ---
 
