@@ -10,7 +10,7 @@
 | **Report to** | **nowhere in code.** The defect is in a 1991 Commodore document, and the company is gone. It is filed so that no AA claim rests on SPRHDAT's row being complete |
 | **Test** | [`aa/aa-copper-register-map`](../../aa/aa-copper-register-map) · seven graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF pp. 6 and 7, the address-ordered register list |
-| **Assertions** | 7 green, each with its own mutation; `make mutate` reports 0 passed, 7 failed |
+| **Assertions** | 7 green, each with its own mutation; `make mutate` runs the seven one at a time, and each run reports `6 passed, 1 failed` with exactly its own assertion red |
 | **Verdict of the four** | **unanimous, and all four implement a RANGE where the document prints a per-register mark.** Every one of them blocks a Coprocessor MOVE to `$078` with CDANG clear by comparing the address against `$080`, none consults a table of marks, and so the mark SPRHDAT's row is missing is one no implementation would read. See [What the others say](#what-the-others-say) |
 
 ## What the AA specification says
@@ -65,23 +65,18 @@ address-list rows and compares the two:
 marked `~` by the document      : 58
 below $080, the RTL's ECS rule  : 59
 
-marked `~` but at or above $080 (RTL would allow the Coprocessor): 0
-below $080 but NOT marked `~` (RTL blocks, document is silent)   : 1
+marked `~` but at or above $080 (RTL would allow the Copper): 0
+
+below $080 but NOT marked `~` (RTL blocks, document is silent): 1
     SPRHDAT    $078  p7
 ```
 
 **Zero over-marks and one under-mark.** The document never claims a restriction
 the RTL does not enforce; it omits one the RTL does.
 
-These counts read 231 rows, 57 and 58 until 21.09.2026, and the conclusion is
-the one thing that did not move. The row pattern held the mark column as the
-character range `a-h`, which excludes `p` — a mark both legends define — and
-could not read a name the document prints in brackets. Six rows were dropped in
-silence: BPLCON4 and CLXCON2 (`p`), BPL7DAT and BPL8DAT (`&p`), FMODE (`P`), and
-`(BPLHDAT)`. BPLHDAT is marked `~` and sits at $07A, so it joins both columns
-and cancels out; SPRHDAT is still the single register the RTL blocks and the
-document does not mark. Found by two blind readers of different slices
-reporting the same shape, and confirmed by counting the rows both ways.
+Both counts include `(BPLHDAT)`, the name the list prints in brackets: it is
+marked `~` and sits at $07A, so it joins both columns and cancels out. SPRHDAT
+is the single register the RTL blocks and the document does not mark.
 
 ## What holds this up
 
@@ -90,8 +85,8 @@ reach `reg_address_out` with CDANG clear and does reach it with CDANG set —
 which is what the RTL does for every address the list marks `~`, done for the
 one it does not.
 
-Two independent readers of the corpus reported the missing mark from the page
-before this comparison was made, each calling SPRHDAT the one row in the
+Two independent readers of the corpus reported the missing mark from the page,
+each calling SPRHDAT the one row in the
 $000-$07E span printed without it, and each declining to claim it as a
 Coprocessor-access fact because the page states nothing there. The brief tells a
 reader to put such an absence in its report rather than in a claim, and both

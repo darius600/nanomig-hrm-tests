@@ -5,19 +5,20 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | a test passes; the page's other reading fails |
-| **What is asked of a reader** | Nothing in the RTL. NanoMig takes all four bits as one shift field, which is what the page's own legend asks for. What is asked is whether `ASA0` is a typographic slip for `ASH0` — which the same row's second column, the legend two lines below it, and the three cells above it all say — or a name this document means. |
+| **What is asked of a reader** | Nothing in the RTL. NanoMig takes all four bits as one shift field, which is what the page's own legend asks for. What is asked is whether `ASA0` is a typographic slip for `ASH0` — which the same row's second column, the legend below the table, and the three cells above it all say — or a name this document means. |
 | **Module** | `src/minimig-aga/agnus_blitter.v:232` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L232) at the pinned revision |
 | **Report to** | **nowhere in code.** The defect is in a 1991 Commodore document, and the company is gone. It is filed so that no AA claim rests on BLTCON0 bit 12 carrying a field name of its own |
 | **Test** | [`aa/aa-blitter-function-and-shift`](../../aa/aa-blitter-function-and-shift) · five graded assertions — all green. Run it with `hrm/run_all.sh --in ../aa` |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 14, the BLTCON0/BLTCON1 bit table |
-| **Assertions** | 5 green, each with its own mutation; `make mutate` reports 0 passed, 5 failed |
+| **Assertions** | 5 green, each with its own mutation; `make mutate` runs the five one at a time, and each run reports `4 passed, 1 failed` with exactly its own assertion red |
 | **Verdict of the four** | **unanimous, and not one of them reads bit 12 apart from bits 15-13.** Every implementation takes `bltcon0[15:12]` in a single expression as the A shift value, and two of them name that field ASH. The spelling `ASA0` appears in the source of none of the six. See [What the others say](#what-the-others-say) |
 | **See also** | [NM-AA-001](NM-AA-001.md), the other place where two statements of the same register disagree inside this document |
 
 ## What the AA specification says
 
-Page 14 prints BLTCON0 and BLTCON1 as one table with two columns — area mode on
-the left, line mode on the right. The top four rows:
+BLTCON0 and BLTCON1 are printed as one table with two halves — area mode on
+the left, line mode on the right, as the heading at the foot of p. 13 labels
+them. Its rows are on p. 14, and the top four read:
 
 ```
                     15   ASH3        BSH3        15   ASH3        BSH3
@@ -26,7 +27,7 @@ the left, line mode on the right. The top four rows:
                     12   ASA0        BSH0        12   ASH0        BSH0
 ```
 
-Three cells below, the same page's field legend reads:
+Below the table's last row, the same page's field legend reads:
 
 ```
                     ASH3-0  Shift value of A source
@@ -84,7 +85,7 @@ source by k places before the blit — and runs k = 1, 2, 4 and 8. k = 1 is bit 
 alone.
 
 The direction is not asserted, because the legend prints none: the assertion
-accepts either and reports which it found. The equivalence is swept over all
+accepts either. The equivalence is swept over all
 eight minterm select lines rather than one chosen constant, and the line/shift
 pairs where moving the source does not move the output are counted and skipped
 as proving nothing:
@@ -130,7 +131,7 @@ cell over the legend would have had no way to tell.
 
 It does not claim the AA specification is wrong about the blitter. It claims one
 cell of one table disagrees with the three cells above it, with the other half
-of its own row, and with the legend three lines below — and that the disagreement
+of its own row, and with the legend below the table — and that the disagreement
 is in the document rather than in a scan.
 
 Nor does it grade what `LF7-0` means. The same table names the eight minterm

@@ -16,7 +16,8 @@
 
 ## What the AA specification says
 
-Page 24's HTOTAL entry is two sentences:
+Below its bit table, page 24's HTOTAL entry says in two sentences what a line
+lasts, and then closes with `Active if VARBEAMEN=1 or DUAL=1.`:
 
 ```
 Horiz line has this many + 1 280ns increments. If the PAL bit & LOLDIS are
@@ -31,7 +32,9 @@ them differently.
 
 ## What NanoMig does
 
-The condition is implemented exactly as printed:
+The condition is implemented as printed whenever VARBEAMEN is set, which is
+when the entry says HTOTAL is active; without VARBEAMEN the RTL ignores LOLDIS,
+which is [NM-HRM-033](NM-HRM-033.md):
 
 ```verilog
 if (end_of_line)
@@ -90,10 +93,12 @@ might report an intention.
 
 Eight further assertions in the same package are green, which is what makes
 this a reading of the line length rather than of a broken fixture: the line
-wraps where HTOTAL says, it lasts HTOTAL+1 clocks, the eight bits above the
-value are ignored exactly as the table's `x` cells mark them, sync starts and
-stops where HSSTRT and HSSTOP say, blanking starts and stops where HBSTRT and
-HBSTOP say, and none of it happens until VARBEAMEN is set.
+wraps where HTOTAL says, it lasts HTOTAL+1 clocks, HTOTAL decides it only
+while VARBEAMEN is set, the eight bits above the value are ignored exactly as
+the table's `x` cells mark them, sync starts and stops where HSSTRT and HSSTOP
+say and only once VARHSYEN is set as well, blanking starts and stops where
+HBSTRT and HBSTOP say, and the interlace enable arrives from BPLCON0 bit 2 and
+powers up clear.
 
 ## What the others say
 
@@ -106,8 +111,8 @@ alternate line last one colour clock longer?
 | **vAmiga** | [`Beam.h:80`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Beam.h#L80), [`AgnusRegs.cpp:567`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L567), [`:570`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusRegs.cpp#L570) | **lengthens the line, and cannot answer for a programmed HTOTAL.** `hCnt() const { return lol ? 228 : 227; }` is the whole model of the long line, and the toggle is keyed on NTSC and LOLDIS. HTOTAL is stored under a comment saying these registers *"are recognized and stored, but have no effect yet"* |
 | **Denise** | [`events.cpp:479-480`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/events.cpp#L479-L480), [`register.cpp:565`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/register.cpp#L565) | **both halves.** The next line is scheduled as `updateEvent<EVENT_HTOTAL>((beamCon & VARBEAMEN) ? (hTotal + lol) : (0xe2 + lol))` — the programmed total plus the toggle — and the condition is `lolToggle = !(value & LOLDIS) && !(value & BEAM_PAL)`, the document's two terms |
 | **Copperline** | [`agnus.rs:855-858`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L855-L858), [`:899-904`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L899-L904) | **deliberately neither.** `long_line_toggles()` requires `programmable_line_cck().is_none()`, under a comment that says *"only when the beam is not programmable (VARBEAMEN fixes the line length)"*. With HTOTAL programmed nothing toggles, nothing reports, and every line is HTOTAL+1 |
-| **MiSTer** | [`rtl/agnus_beamcounter.v:257`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L257), [`:283-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L283-L285) | descendant — the identical toggle and the identical `hpos[8:0]=={htotal[8:1],1'b0}` comparison with no `long_line` term |
-| **TC64** | [`rtl/minimig/agnus_beamcounter.v:319`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L319), [`:344-346`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L344-L346) | descendant — the same two places, the same absence |
+| **MiSTer** | [`rtl/agnus_beamcounter.v:256`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L256), [`:282-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L282-L285) | descendant — the identical toggle and the identical `hpos[8:0]=={htotal[8:1],1'b0}` comparison with no `long_line` term |
+| **TC64** | [`rtl/minimig/agnus_beamcounter.v:318`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L318), [`:343-346`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L343-L346) | descendant — the same two places, the same absence |
 
 **What the four agree on is that the two halves travel together.** Where the
 toggle runs the line grows (WinUAE, Denise, and vAmiga on its fixed NTSC line);
@@ -128,7 +133,7 @@ not ask.
 
 None is proposed. Lengthening the alternate line touches the one comparison
 every other timing in the module hangs off, and the feature exists to model an
-NTSC line of 227.5 colour clocks — which is half a clock, not one, and which
+NTSC line of 227.5 colour clocks on average — 228 and 227 alternately — which
 this core does not claim to support anywhere. The honest report is that the
 document describes a behaviour, the bit that selects it is implemented and
 visible to software, and the behaviour itself is not.
@@ -137,7 +142,8 @@ visible to software, and the behaviour itself is not.
 
 The document's sentence is one line and the reading of it is not in doubt: the
 same quotation supports both halves, and the half about the condition is green
-against this RTL, so the sentence is being read correctly. The RTL's own
+against this RTL for its PAL-bit term (the package never sets LOLDIS), so the
+sentence is being read correctly. The RTL's own
 comments name the gap twice.
 
 ## For the specialists
@@ -145,7 +151,9 @@ comments name the gap twice.
 1. **Does any software notice?** A program that reads VPOSR bit 7 to decide
    where to put a sprite on an alternate line will be told the line is long
    and find it is not.
-2. **Is half a colour clock representable here at all?** The document says
-   HTOTAL+2 of its 280 ns increments; real NTSC silicon lengthens the line by
-   half a colour clock, not a whole one. Which of the two NanoMig would want
-   is the question before any edit.
+2. **Is the long line wanted here at all?** The document says HTOTAL+2 of its
+   280 ns increments, one colour clock more than the short line, and its
+   STRLONG entry on p. 29 says the same for NTSC and for a programmed line:
+   *"lines with long counts(228- NTSC, HTOTAL+2- VARBEAMEN=1"*. No line lasts half a colour
+   clock; the NTSC 227.5 is the average of 228 and 227. Whether NanoMig
+   wants the alternation at all is the question before any edit.
