@@ -1,12 +1,13 @@
-# Wo liegt der NanoMig-Checkout? Standard ist das Submodul in diesem Repo.
+# Where is the NanoMig checkout? Default is the submodule in this repo.
 NANOMIG ?= ../../nanomig
 
 TOP_MODULE = paula_floppy
 SRC = $(NANOMIG)/src/minimig-aga/paula_floppy.v \
       $(NANOMIG)/src/minimig-aga/paula_floppy_fifo.v
 # paula_floppy_ebr.v declares a SECOND `module paula_floppy` and must never
-# be compiled alongside the above (build brief rig hazard) -- deliberately
-# not listed here.
+# be compiled alongside the above -- Verilator, run with -Wno-fatal as here,
+# only warns MODDUP and builds one of the two -- so it is deliberately not
+# listed here.
 
 # MUT=<NAME> replays one guarded mutation (see the "// MUTATION <NAME> ..."
 # line in test_paula_floppy_dskbytr.cpp) by defining MUT_<NAME>=1 for the

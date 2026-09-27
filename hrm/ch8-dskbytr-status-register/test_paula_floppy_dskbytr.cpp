@@ -630,11 +630,10 @@ int main(int argc, char** argv) {
             "(DMAEN) in DSKLEN' -- graded here only for the DSKLEN half "
             "both pages state identically; the DMACON half is declined "
             "below, out of this fixture's boundary. Two identical DSKLEN "
-            "writes with the DMA-enable bit set (the double write the "
-            "build brief's own rig-hazard note already named) bring DMAON "
-            "(bit 14) up; this package's own measured DSKLEN<<800A "
-            "double-write value (0xD000, matching the build brief's "
-            "disclosed background) confirms bit 14 set here too. Measured "
+            "writes with the DMA-enable bit set (the double write DSKLEN "
+            "needs to arm DMA -- see the file header's RIG HAZARDS) bring "
+            "DMAON (bit 14) up; the DSKBYTR word RIG HAZARDS records after "
+            "that double write (0xD000) has bit 14 set too. Measured "
             "v=" + hex16(v) + ".");
 
         // opus:8-dskbytr.c8, sol:8-dskbytr.c9 and opus:8-appA-dskbytr.c10
