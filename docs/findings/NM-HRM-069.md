@@ -73,8 +73,8 @@ and sprites — and does not name the 68000; p. 196 does, and says *only*.
 parities the other way round. In p. 20's words the Copper "requests the bus
 only during odd-numbered memory cycles", while audio, disk, refresh, sprites
 and most low resolution display DMA "use only the even-numbered memory
-cycles"; p. 275 says the same in shorter words. Neither page mentions the
-68000. Whichever labels are used, every page that speaks of the 68000 gives it
+cycles"; p. 275 says the same in shorter words. Neither page says which
+cycles the 68000 uses. Whichever labels are used, every page that does gives it
 one parity, the one opposite the fixed DMA, and the reds below are CPU
 accesses on both.
 
@@ -136,7 +136,7 @@ wherever the count ends, of either parity.
 
 [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing)
 runs a counting loop — `addq.w #1,d0`, `move.w d0,(a1)`, `bra.s` — once with no
-DMA at all (`prog_sharing.s`) and once beside a share-mode A-to-D blit
+DMA but memory refresh (`prog_sharing.s`) and once beside a share-mode A-to-D blit
 (`prog_sharing_share.s`), on fx68k and on TG68K, and logs every access at the
 chip RAM port. It numbers the slots of each line from that line's own refresh
 group, its last refresh read being Figure 6-9's $05, and checks the numbering
@@ -200,8 +200,8 @@ the colour clock, and where does a non-nasty blitter hand the bus back?
 | **TC64** | [`rtl/minimig/minimig_m68k_bridge.v:206`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/minimig_m68k_bridge.v#L206), [`rtl/minimig/agnus.v:430-437`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus.v#L430-L437) | descendant — the same acknowledge, `if (!l_as && cck && ((!vpa && !(dbr && dbs)) \|\| (vpa && vma && eclk[8])) && !nrdy)`, and the same counter, which also counts in turbo mode, `if (!cck \|\| turbo)`. Nothing in either line holds the CPU to a parity |
 
 **None of the four holds the 68000 to one parity.** Each makes a CPU access
-wait while DMA owns the colour clock and for no other reason, and the three
-whose 68000 cores are cycle-exact spend BRA's internal operation as one colour
+wait while DMA owns the colour clock and for no other reason, and WinUAE,
+vAmiga and Denise spend BRA's internal operation as one colour
 clock and then fetch in the next free one — the 3-slot step fx68k shows with no
 DMA. **Beside a non-nasty blitter all four release the bus by counting missed
 cycles** — three in WinUAE's constant, Denise's comment and Copperline's

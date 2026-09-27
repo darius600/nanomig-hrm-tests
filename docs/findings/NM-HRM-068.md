@@ -64,6 +64,12 @@ if (pal || (loldis && varbeamen))
     long_line <= 1'b0;
 ```
 
+That bit reaches only VPOSR's LOL bit,
+[`#L110`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L110);
+the line ends where the counter meets the constant,
+[`#L250`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L250),
+in either standard.
+
 ### Measured
 
 [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking)
@@ -89,7 +95,7 @@ The question put to each: how long is a PAL line?
 
 | | code | |
 |---|---|---|
-| **WinUAE** | [`include/custom.h:116-117`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/include/custom.h#L116-L117), [`custom.cpp:2054`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2054), [`:2328-2333`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2328-L2333) | <pre>#define MAXHPOS_PAL 227<br>#define MAXHPOS_NTSC 227</pre> The line in use is `maxhpos = maxhpos_short + lol;`, and the toggle runs only without the PAL bit: `linetoggle = !(new_beamcon0 & BEAMCON0_PAL) && !(new_beamcon0 & BEAMCON0_LOLDIS);`. **Every PAL line is 227** |
+| **WinUAE** | [`include/custom.h:116-117`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/include/custom.h#L116-L117), [`custom.cpp:10970-10975`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L10970-L10975), [`:2328-2333`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2328-L2333) | <pre>#define MAXHPOS_PAL 227<br>#define MAXHPOS_NTSC 227</pre> The line in use is `maxhpos = maxhpos_short + lol;`, and at the start of each line `lol` flips only without the PAL bit, `if (!(new_beamcon0 & BEAMCON0_PAL) && !(new_beamcon0 & BEAMCON0_LOLDIS)) {` / `lol = lol ? false : true;`, and is cleared otherwise. **Every PAL line is 227** |
 | **vAmiga** | [`Core/Components/Agnus/Beam.h:80`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Beam.h#L80), [`Beam.cpp:283-301`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Beam.cpp#L283-L301) | <pre>isize hCnt() const { return lol ? 228 : 227; }</pre> and `switchMode` sets `lolToggle = false;` for PAL and `lolToggle = true;` for NTSC. **Every PAL line is 227** |
 | **Denise** | [`emulation/libami/agnus/agnus.cpp:217-219`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L217-L219), [`:1028-1032`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L1028-L1032), [`events.cpp:479-480`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/events.cpp#L479-L480) | <pre>if (lolToggle) lol ^= 1;<br>updateEvent&lt;EVENT_HTOTAL&gt;((beamCon & VARBEAMEN) ? (hTotal + lol) : (0xe2 + lol));</pre> with `lolToggle = ntsc;` at reset, and the frame rate computed as `fps = (double)frequency() / (227.0 * 313.0);` for PAL against `227.5 * 263.0` for NTSC. **Every PAL line is 227** |
 | **Copperline** | [`src/chipset/agnus.rs:9`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L9), [`:18`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L18), [`:841-859`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L841-L859) | <pre>if matches!(self.video_standard, VideoStandard::Ntsc) && lol {<br>&nbsp;&nbsp;&nbsp;&nbsp;NTSC_LONG_COLORCLOCKS_PER_LINE<br>} else {<br>&nbsp;&nbsp;&nbsp;&nbsp;COLORCLOCKS_PER_LINE<br>}</pre> with `pub const COLORCLOCKS_PER_LINE: u32 = 227;`, and `long_line_toggles()` is true only for NTSC. **Every PAL line is 227** |
