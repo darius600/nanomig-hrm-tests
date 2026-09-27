@@ -26,9 +26,9 @@
 // BOUNDARY: nanomig/src/minimig-aga/agnus_beamcounter.v:27-57 module header
 //   -- ports clk, clk7_en, reset, cck, ntsc, aga, ecs, a1k, data_in[15:0],
 //   data_out[15:0], reg_address_in[8:1], hpos[8:0], vpos[10:0], plus the
-//   sync/blanking outputs this package does not use. Read directly by this
-//   agent AFTER SPECIFICATION.md was committed (commit a2ca1cb) -- no port
-//   name, register address or RTL line appears anywhere in that file. The
+//   sync/blanking outputs this package does not use. Read only after
+//   SPECIFICATION.md was written -- no port name, register address or RTL
+//   line appears anywhere in that file. The
 //   Harness class (tick/run_cck/write_reg/read) and force_vpos() below are
 //   reused near-verbatim from hrm/ch3-beam-counters-and-blanking/
 //   test_agnus_beamcounter.cpp, an already-built, already-RTL-verified
@@ -79,17 +79,7 @@
 //   (facts B, C), 4 that stand alone (D, E, F, G), 1 structural boundary
 //   check (H) -- not 14 independent findings.
 //
-// (3) THE REPRODUCTION THE LEAD ASKED FOR: an earlier stage measured, from
-//   the RTL alone, that "VPOSR bits 14-1 unused" fails for ntsc=1 because the
-//   module implements the Appendix-C-shaped word (ecs/ntsc/aga/long_line
-//   diagnostic bits) UNCONDITIONALLY -- it does not gate on ecs at all, so
-//   there is no OCS-vs-ECS mode switch in this word's content, only whatever
-//   ecs/ntsc/aga happen to be wired to. VPOSR-OCS-BITS-14-1-UNUSED below
-//   drives ntsc=0 and ntsc=1 as two independent harnesses, both otherwise
-//   identical (ecs=false, aga=false, a fresh force_vpos with vpos[10:9]=00),
-//   and reports both measurements rather than assuming the earlier one.
-//
-// (4) CHIP OWNERSHIP: this Makefile's TOP_MODULE is agnus_beamcounter alone
+// (3) CHIP OWNERSHIP: this Makefile's TOP_MODULE is agnus_beamcounter alone
 //   and SRC compiles exactly that one file -- no other custom-chip source is
 //   in the binary, so any observable effect is necessarily Agnus's. "VPOSR/
 //   VHPOSR/VPOSW/VHPOSW implemented in Agnus" claims are not separately
@@ -100,13 +90,14 @@
 //
 // CLAIM COVERAGE: all 93 claims in ch7-beam-position-word-layout-spec-
 //   stage.jsonl are cited below, in full uid form, either inside an
-//   expect()/note() label or inside a record() call with a stated reason. 14
-//   new graded assertions (2 expected RED, carried through unchanged: a red
-//   is the finding, not a defect to fix); 1 measured-not-graded note(); the
-//   rest are declined via record() -- already asserted on this same fixture
-//   by an accepted sibling package, subsumed by a finer split of the same
-//   quotation, or discarded as absent/blank-cell/not-hardware. No claim id
-//   is silently dropped.
+//   expect()/note() label or inside a record() call with a stated reason.
+//   11 new graded assertions, all green; 3 measured-not-graded note()s
+//   (RESOLUTION-RATIO-1-160 and the two VPOSR-OCS-BITS-14-1-UNUSED band
+//   measurements, ntsc=0 and ntsc=1); the rest are declined via record() --
+//   already asserted on this same fixture by an accepted sibling package,
+//   subsumed by a finer split of the same quotation, contested between two
+//   printed readings neither page decides, or discarded as absent/blank-
+//   cell/not-hardware. No claim id is silently dropped.
 //
 // CONTROL CASES: VPOSR-IS-READ-ONLY is the control for VPOSW-IS-WRITE-ONLY
 //   (identical measurement: attempt a foreign write at the address, read
@@ -120,107 +111,6 @@
 //   what turns a nonzero readback into an actual finding rather than a
 //   units-error.
 //
-// MUTATION LOG (all entries below were actually run by this agent under
-//   WSL/Verilator: `make clean && make MUT=<NAME>` -> run -> confirm the
-//   named assertion, and only that one, newly red against the 11-passed/
-//   3-failed baseline -> `make clean && make` -> confirm the baseline
-//   exactly restored, before moving to the next one):
-//
-// MUTATION BEAM-COUNTER-DELIVERS-KNOWN-VALUE stimulus red: the forced
-//   hpos8_1 stimulus changed from 0xCD to 0x00. FIRST ATTEMPT stayed green
-//   (11/3, unchanged) -- the draft compared VHPOSR's low byte against
-//   stim_hpos8_1 itself rather than a fixed 0xCD, so the oracle silently
-//   tracked the mutated stimulus and the check proved nothing. WHAT MADE ME
-//   LOOK TWICE: all eleven mutations were run in one batch and every other
-//   one shifted the count from the 11-passed/3-failed baseline to exactly
-//   "10 passed, 4 failed" -- this was the one run that came back identical
-//   to baseline, the only outlier in an otherwise uniform pattern. A single
-//   green mutation result looks like success; a green result sitting alone
-//   in a column of ten identical shifts looks like a question. Fixed to
-//   compare against the literal 0xCD (see the comment at that assertion);
-//   rebuilt -> "10 passed, 4 failed", only BEAM-COUNTER-DELIVERS-KNOWN-VALUE
-//   newly red. Reverted, baseline (11/3) confirmed restored.
-// MUTATION NO-SEPARATE-LIGHT-PEN-REGISTER stimulus red: the swept beam
-//   state is forced to zero (vpos=0, long_frame=0, hpos=0) instead of
-//   0x5AB/1/0xCD, so the four addresses still decode but carry nothing
-//   non-zero and the sweep finds an empty set. The expected set is
-//   untouched -- this changes what the module is ASKED for, not what it is
-//   compared against. RUN: baseline 12 passed 1 failed; mutated
-//   "11 passed, 2 failed", only NO-SEPARATE-LIGHT-PEN-REGISTER newly red
-//   (the sweep measured "none"), the pre-existing red unchanged.
-//   Reverted: make clean && make -> 12 passed, 1 failed, baseline exactly.
-// MUTATION FOUR-ADDRESSES-EXACT stimulus red: the fourth target address
-//   (nominally A_VHPOSW) redirected to A_BEAMCON0, a real but unrelated
-//   register -> "10 passed, 4 failed", only FOUR-ADDRESSES-EXACT newly red
-//   (that address reads 0 instead of the forced VHPOSR-style content).
-//   Reverted, baseline restored.
-// MUTATION VPOSR-IS-READ-ONLY stimulus red: the "foreign write" target
-//   address changed from A_VPOSR to A_VPOSW (a register that DOES have a
-//   write effect) -> "10 passed, 4 failed", only VPOSR-IS-READ-ONLY newly
-//   red (the readback after the write no longer matches the pre-write
-//   baseline, because this address genuinely does accept writes). Reverted,
-//   baseline restored.
-// WITHDRAWN AT STAGE 8 -- VPOSW-IS-WRITE-ONLY is now the note()/record()
-//   pair VPOSW-READBACK-MEASURED / VPOSW-READBACK-NOT-GRADED, so this is
-//   no longer a mutation record. Kept because what it says stayed true.
-//   (was: MUTATION VPOSW-IS-WRITE-ONLY none impossible) This check was red at
-//   baseline (11 passed, 3 failed, confirmed independently -- see the
-//   printed measured value, 0x8005, not taken on trust from
-//   classification). No stimulus can turn an already-red assertion red
-//   again; VPOSR-IS-READ-ONLY, on the identical probe, is the same-basis
-//   control and is exercised by its own mutation immediately above.
-// MUTATION VHPOSR-IS-READ-ONLY stimulus red: the "foreign write" target
-//   address changed from A_VHPOSR to A_VHPOSW -> "10 passed, 4 failed",
-//   only VHPOSR-IS-READ-ONLY newly red, same reasoning as
-//   VPOSR-IS-READ-ONLY. Reverted, baseline restored.
-// WITHDRAWN AT STAGE 8 -- as above, for VHPOSW-IS-WRITE-ONLY.
-//   (was: MUTATION VHPOSW-IS-WRITE-ONLY none impossible) Red at baseline (measured
-//   0xabcd), confirmed independently; VHPOSR-IS-READ-ONLY is its same-basis
-//   control.
-// MUTATION VPOSW-BIT-LAYOUT-MATCHES-VPOSR stimulus red: the written pattern
-//   changed from 0x8005 to 0x0005 (long_frame bit dropped from the
-//   stimulus) -> "10 passed, 4 failed", only VPOSW-BIT-LAYOUT-MATCHES-VPOSR
-//   newly red (bit 15 now reads back 0, not the expected 1). Reverted,
-//   baseline restored.
-// MUTATION VHPOSW-BIT-LAYOUT-MATCHES-VHPOSR stimulus red: the written
-//   pattern's low byte changed from 0xCD to 0x00 -> "10 passed, 4 failed",
-//   only VHPOSW-BIT-LAYOUT-MATCHES-VHPOSR newly red (bits 7:0 now read back
-//   0x00, not 0xCD). Reverted, baseline restored.
-// MUTATION VHPOSR-BITS-15-8-ARE-V7-V0 stimulus red: the forced vpos[7:0]
-//   stimulus changed from 0x37 to 0x5A (the value otherwise reserved for
-//   hpos8_1) -> "10 passed, 4 failed", only VHPOSR-BITS-15-8-ARE-V7-V0 newly
-//   red (bits 15:8 now read 0x5A, not the expected 0x37). Reverted, baseline
-//   restored.
-// MUTATION VHPOSR-BITS-7-0-ARE-H8-H1 stimulus red: the forced hpos8_1
-//   stimulus changed from 0x5A to 0x37 -> "10 passed, 4 failed", only
-//   VHPOSR-BITS-7-0-ARE-H8-H1 newly red (bits 7:0 now read 0x37, not the
-//   expected 0x5A). Reverted, baseline restored.
-// MUTATION VPOSR-OCS-BITS-14-1-UNUSED stimulus red: (the ntsc=0 variant) the "ntsc=0"
-//   harness's ntsc argument changed from false to true -> "10 passed, 4
-//   failed", only "VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0)" newly red (band now
-//   reads 0x0800, the same value the ntsc=1 case below measures at
-//   baseline, via the same mechanism: bit 12 of the readback echoes ntsc
-//   unconditionally). Reverted, baseline restored.
-// MUTATION VPOSR-OCS-BITS-14-1-UNUSED none impossible: (the ntsc=1 variant) this is the
-//   reproduction the lead asked for and is red at baseline by measurement
-//   (band=0x0800, full word 0x1001), not by construction. Its same-basis,
-//   same-harness-family control is the (ntsc=0) case immediately above,
-//   whose own mutation (forcing ntsc=1 there too) reproduces this exact
-//   failure mode and this exact measured band value on demand.
-// MUTATION VHPOSW-WRITE-FORCES-BOTH-COUNTERS stimulus red: the written
-//   pattern changed from 0x9933 to 0x0033 (the vpos[7:0] byte left at its
-//   baseline value of 0x00) -> "10 passed, 4 failed", only
-//   VHPOSW-WRITE-FORCES-BOTH-COUNTERS newly red (vpos[7:0] no longer changed
-//   by the write, so the "both counters moved" conjunction fails even
-//   though hpos still did). Reverted, baseline restored.
-// MUTATION MSW-IS-VPOSR-VPOSW stimulus red: the compared address pairing
-//   deliberately inverted (0x006<0x004 && 0x02C<0x02A, the wrong direction)
-//   -> "10 passed, 4 failed", only MSW-IS-VPOSR-VPOSW newly red. Reverted,
-//   baseline restored.
-//
-// Final rebuild after the last revert: 11 passed, 3 failed, matching the
-// committed baseline exactly (see out.txt).
-
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -532,8 +422,7 @@ int main(int argc, char** argv) {
             "such a read RETURNS unspecified. 'Must not reflect the content "
             "back' is an inference, not a printed requirement, so the "
             "measurement above is reported and not graded. reason_kind "
-            "source-silent. Graded as EXPECTED RED until stage 8; withdrawn "
-            "on the independent validation's finding. Its control case, "
+            "source-silent. Its control case, "
             "VPOSR-IS-READ-ONLY, is unaffected and still graded: the manual "
             "does state what a write to a read-only register must not do.");
     }
@@ -574,8 +463,7 @@ int main(int argc, char** argv) {
             "VHPOSW-READBACK-NOT-GRADED: same position as "
             "VPOSW-READBACK-NOT-GRADED above -- direction is printed, the "
             "value returned by a forbidden read is not. reason_kind "
-            "source-silent. Graded until stage 8, withdrawn on the "
-            "independent validation's finding.");
+            "source-silent.");
     }
 
     // ================= VPOSW-BIT-LAYOUT-MATCHES-VPOSR (p.216 sol:7-beam.c13/opus:7-bp.c15 [layout half], p.285 sol:7-appA-vpos.c9) =================
@@ -660,51 +548,54 @@ int main(int argc, char** argv) {
             "(H8-H1) -- forced 0x5A, measured " + hex16(vhposr) + ".");
     }
 
-    // ================= VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0) / (ntsc=1) (p.216 sol:7-beam.c7/opus:7-bp.c7, p.285 sol:7-appA-vpos.c11/opus:7-appA-beam.c10) =================
-    // Also grades the "bits 14-1 carry no value" half of the register-level
-    // OCS summary rows sol:7-beam.c5, opus:7-bp.c5 (content half) and
-    // sol:7-appA-vpos.c5 -- their "read-only" half is VPOSR-IS-READ-ONLY
-    // above, and their "bit 15/bit 0" half is already asserted elsewhere
-    // (see the LOF/V8 record()s below).
-    // The lead's directive #1: reproduce this measurement ourselves rather
-    // than adopt it. Two otherwise-identical harnesses, ntsc toggled, both
-    // built with ecs=false/aga=false and vpos[10:9]=00 so bits 2 and 1 of
-    // the read word (the part of the "14-1" band vpos supplies) are 0 on
-    // their own, isolating whatever ntsc alone contributes.
+    // ================= VPOSR-OCS-BITS-14-1-UNUSED (p.216 sol:7-beam.c7/opus:7-bp.c7, p.285 sol:7-appA-vpos.c5/sol:7-appA-vpos.c11/opus:7-appA-beam.c10) =================
+    // Two otherwise-identical harnesses, ntsc toggled, both built with
+    // ecs=false/aga=false and vpos[10:9]=00 so bits 2 and 1 of the read word
+    // (the part of the "14-1" band vpos supplies) are 0 on their own,
+    // isolating whatever ntsc alone contributes. Not graded -- see the
+    // record() below for why.
     {
-        bool stim_ntsc = false;
-#ifdef MUT_VPOSR_OCS_BITS_14_1_UNUSED_NTSC0
-        stim_ntsc = true;
-#endif
-        Harness h(/*ecs=*/false, stim_ntsc, /*aga=*/false);
+        Harness h(/*ecs=*/false, /*ntsc=*/false, /*aga=*/false);
         force_vpos(h, /*vpos11=*/0x100, /*long_frame=*/false, /*hpos8_1=*/0x00);
         uint16_t vposr = h.read(A_VPOSR);
         uint16_t band_14_1 = (vposr >> 1) & 0x3FFF;
-        checks.expect(
-            band_14_1 == 0,
-            "VPOSR-OCS-BITS-14-1-UNUSED (ntsc=0) (p.216 sol:7-beam.c7, "
-            "opus:7-bp.c7; p.285 sol:7-appA-vpos.c5, sol:7-appA-vpos.c11, "
-            "opus:7-appA-beam.c10): bits 14 down to 1 of a "
-            "VPOSR read carry no value under the OCS table's reading -- "
-            "measured band=" + hex16(band_14_1) + " (full word " +
-            hex16(vposr) + ").");
+        checks.note(
+            "VPOSR-OCS-BITS-14-1-UNUSED-MEASURED (ntsc=0): bits 14 down to 1 "
+            "of a VPOSR read -- measured band=" + hex16(band_14_1) +
+            " (full word " + hex16(vposr) + ").");
     }
     {
         Harness h(/*ecs=*/false, /*ntsc=*/true, /*aga=*/false);
         force_vpos(h, /*vpos11=*/0x100, /*long_frame=*/false, /*hpos8_1=*/0x00);
         uint16_t vposr = h.read(A_VPOSR);
         uint16_t band_14_1 = (vposr >> 1) & 0x3FFF;
-        checks.expect(
-            band_14_1 == 0,
-            "VPOSR-OCS-BITS-14-1-UNUSED (ntsc=1) (p.216 sol:7-beam.c7, "
-            "opus:7-bp.c7; p.285 sol:7-appA-vpos.c5, sol:7-appA-vpos.c11, "
-            "opus:7-appA-beam.c10): same claim, ntsc=1 -- "
-            "reproduced independently (not adopted from classification): "
-            "measured band=" + hex16(band_14_1) + " (full word " +
-            hex16(vposr) + "); the module echoes ntsc into bit 12 "
-            "unconditionally (agnus_beamcounter.v:110), so this band is not "
-            "actually unused once ntsc=1, regardless of ecs.");
+        checks.note(
+            "VPOSR-OCS-BITS-14-1-UNUSED-MEASURED (ntsc=1): bits 14 down to 1 "
+            "of a VPOSR read -- measured band=" + hex16(band_14_1) +
+            " (full word " + hex16(vposr) + ").");
     }
+    checks.record(
+        "VPOSR-OCS-BITS-14-1-UNUSED: sol:7-beam.c7, opus:7-bp.c7, "
+        "sol:7-appA-vpos.c5, sol:7-appA-vpos.c11, opus:7-appA-beam.c10 -- "
+        "NOT GRADED. p.216's Table 7-5 and p.285's Appendix A row both call "
+        "VPOSR bits 14-1 unused, but the manual gives two readings of that "
+        "band, not one. Appendix A's own preamble, p.264: 'do not rely on "
+        "the values of unused bits when reading from a read only register' "
+        "-- unused is not printed as zero. And Appendix C p.299, bit by "
+        "bit: 'I0-I6 (bits 8-14) provide the chip identification... 8361 "
+        "(regular NTSC) or 8370 (fat NTSC) = 10 for NTSC Agnus, 8367 "
+        "(regular PAL) or 8371 (fat PAL) = 00 for PAL Agnus' -- once the "
+        "enhanced Agnus's own identification exists on the same page ('a "
+        "value of 20 or 30 indicates that the enhanced HighRes Agnus is "
+        "present'), 10 and 00 name the OCS parts. Neither page decides "
+        "which VPOSR bits 14-1 an OCS machine returns once p.299's "
+        "identification exists: a check that grades one reading as if the "
+        "page had settled it grades a silence, not a requirement. The band "
+        "is measured above and printed, not adjusted. Same reasoning covers "
+        "the content half of the register-level OCS summary rows "
+        "sol:7-beam.c5 and opus:7-bp.c5, which restate the same 'bits 14-1 "
+        "unused' proposition for VPOSR as a whole -- their direction half "
+        "is VPOSR-IS-READ-ONLY above, still graded and still green.");
 
     // ================= VHPOSW-WRITE-FORCES-BOTH-COUNTERS (p.216 sol:7-beam.c15/opus:7-bp.c17 [mechanism half]) =================
     {

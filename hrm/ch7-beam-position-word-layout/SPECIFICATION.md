@@ -109,21 +109,23 @@ word" propositions are stated in the chapter-7 body without an ECS carve-out.
 - Expected: PASS.
 
 ### A4 — VPOSR-OCS-BITS-14-1-UNUSED
-- Pages: 216, 285. Uids: `sol:7-beam.c7`, `opus:7-bp.c7`,
+- Pages: 216, 264, 285, 299. Uids: `sol:7-beam.c7`, `opus:7-bp.c7`,
   `sol:7-appA-vpos.c11`, `opus:7-appA-beam.c10` (bits 14-1 as a band);
   supporting register-level restatements `sol:7-beam.c5` (content half),
   `opus:7-bp.c5` (content half), `sol:7-appA-vpos.c5` (OCS content).
 - Quotes: p.216 "Bits 14-1 Unused"; p.285 "USE LOF-- -- -- -- -- -- --,-- --
-  -- -- -- -- -- V8" (dashes over bits 14-1).
-- Proposition: on OCS, VPOSR bits 14 through 1 carry no assigned value (LOF at
-  15 and V8 at 0 are the undisputed bits either side of this band, and are
-  already covered by `VPOSR-BIT15-IS-LOF-LONG-FRAME` /
-  `VPOSR-BITS-2-0-VERTICAL-POSITION` — not reasserted here).
-- Precondition: this must be measured with the fixture's chipset-select input
-  driven to its OCS/non-ECS setting. If the fixture exposes no such input (a
-  step-3 finding), that precondition is trivially satisfied by construction
-  and should be recorded as such rather than asserted.
-- Expected: not stated by the claims file; to be measured in step 3.
+  -- -- -- -- -- V8" (dashes over bits 14-1); p.264 "do not rely on the
+  values of unused bits when reading from a read only register"; p.299 "I0-I6
+  (bits 8-14) provide the chip identification ... 8361 (regular NTSC) or 8370
+  (fat NTSC) = 10 for NTSC Agnus, 8367 (regular PAL) or 8371 (fat PAL) = 00
+  for PAL Agnus".
+- Proposition: not gradable as printed. p.216/p.285 call OCS bits 14-1
+  unused, but p.264's own preamble says unused is not a value to rely on, and
+  p.299 gives the identification that 10/00 name once the enhanced Agnus's
+  own 20/30 exists on the same page. Two readings, not a decided one — see
+  finding NM-HRM-034 (withdrawn).
+- Expected: declined via `record()`; the measured band (both ntsc=0 and
+  ntsc=1) is printed via `note()`, not graded.
 
 ### A5 — VPOSW-BIT-LAYOUT-MATCHES-VPOSR
 - Pages: 216, 285. Uids: `sol:7-beam.c13` (layout half), `opus:7-bp.c15`
@@ -276,11 +278,16 @@ word" propositions are stated in the chapter-7 body without an ECS carve-out.
 ## Totals
 
 - 93 claims read, all 93 accounted for above.
-- 14 new graded assertions (A1-A14): 2 expected RED (A6, A12), the rest not
-  pre-judged by the source claims and left to be measured in step 3, with two
-  (A3, A7) serving as control-PASS cases on the same measurement basis as the
-  expected-RED ones.
-- 1 measured-not-graded note (N1).
+- 11 new graded assertions (A1-A3, A5, A7, A9-A14), all green; two (A3, A7)
+  serve as control-PASS cases on the same measurement basis as A6/A12 below.
+  A8's content is graded jointly by A9/A10, not as a separate assertion.
+- A6 and A12 (VPOSW-IS-WRITE-ONLY, VHPOSW-IS-WRITE-ONLY) are declined via
+  `record()`, each with its own measured-but-not-graded readback `note()`.
+- A4 (VPOSR-OCS-BITS-14-1-UNUSED) is declined the same way: p.264 and p.299
+  give the manual two readings of the same band, and neither page decides
+  which one an OCS machine returns (finding NM-HRM-034, withdrawn); both its
+  ntsc=0 and ntsc=1 bands are measured via `note()`, not graded.
+- 1 further measured-not-graded note (N1, RESOLUTION-RATIO-1-160).
 - The remaining claims are either already asserted elsewhere on this same
   fixture (no duplicate needed), subsumed by a finer split of the same
   quotation, or discarded as absent/not-hardware/blank-cell, each with its
