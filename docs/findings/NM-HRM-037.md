@@ -7,7 +7,7 @@
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L153-L176) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L174-L195) |
-| **Report to** | **Minimig-AGA and NanoMig.** No other implementation does this |
+| **Report to** | **Minimig-AGA and NanoMig.** No independent implementation does this |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge), [`hrm/ch8-pot-pins-as-digital-io`](../../hrm/ch8-pot-pins-as-digital-io), [`hrm/ch8-controller-pin-function-map`](../../hrm/ch8-controller-pin-function-map), [`hrm/ch8-potgo-register-bit-layout`](../../hrm/ch8-potgo-register-bit-layout) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 14 red across four packages. Controls pass on the same measurement basis in each |
@@ -48,8 +48,9 @@ pin's **driven** value. The difference is the conjunction. The left counter ANDs
 it with `_mthird`, which is `~mouse_btn[2]` and a real module input; the right
 counter ANDs it with nothing.
 
-`_joy1`, `_joy2` and `mouse_btn` are the only external inputs `userio.v` has,
-and none reaches `potcap[2]`. **The signal is named for a connector pin it does
+`_joy1`, `_joy2` and `mouse_btn` are the controller inputs `userio.v` uses
+(`joy_ana1` and `joy_ana2` sit behind `joy_ana_en = 1'b0`), and none reaches
+`potcap[2]`; only the POTGO register does. **The signal is named for a connector pin it does
 not sense.**
 
 ### Measured
@@ -71,14 +72,14 @@ same measurement basis moves on the live channel and not on the dead one.
 | **Denise** | [`libami/paula/pot.cpp:132-139`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/pot.cpp#L132-L139) | four structurally identical blocks; POT1X's is identical to its siblings |
 | **Copperline** | [`chipset/paula.rs:1305`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1305) | `for i in 0..self.pot_counters.len()` with no index singled out; index 2 is filled from `p2.pot_x_released()` |
 | **MiSTer** | [`rtl/userio.v:188`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L188) | descendant — byte-identical to NanoMig: `potcap[2] <= joy2_pin5;`, no external term |
-| **TC64** | [`rtl/minimig/userio.v:224`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L224) | descendant — `potcap[2] <= _mthird1 & joy2_pin5;` looks different but isn't: this tree's default build (`` `MINIMIG_PS2_MOUSE` ``, set in `rtl/soc/minimig_defines.vh:13`) hardwires `_mthird1` to `1'b1` (`userio.v:517`), so the AND term is a no-op and the built behaviour is NanoMig's missing gate exactly. Only the non-default build path gives it a live term, and that term is a second host mouse's button (`userio.v:574`), not a joystick pin. A fix diverges from both lines' shipped behaviour; neither already has it |
+| **TC64** | [`rtl/minimig/userio.v:224`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L224) | descendant — `potcap[2] <= _mthird1 & joy2_pin5;` behaves differently per board. The builds whose top level is `minimig_virtual_top.v`, the Chameleon (TC64) builds among them, define `` `MINIMIG_PS2_MOUSE` `` (`rtl/soc/minimig_defines.vh:13`, under `MINIMIG_VIRTUAL`), which hardwires `_mthird1` to `1'b1` (`userio.v:517`): there the AND term is a no-op and the built behaviour is NanoMig's missing gate exactly. The MiST and SiDi builds (`minimig_mist_top.v`) do not define it, and there the term is live: a second host mouse's middle button (`userio.v:574`), not a joystick pin |
 
 **The asymmetry is NanoMig's and Minimig-AGA's alone, textually.** It was not
 inherited from a shared reading of the manual, because nobody else reads it
-that way. TC64's line looks like the fix — it does AND `potcap[2]` with
-something — but as built, that something is a constant `1`, so its shipped
-behaviour is the same missing gate as NanoMig's and MiSTer's. No maintained
-line has a live external term on this pin.
+that way. TC64's line ANDs `potcap[2]` with something: in its MiST and SiDi
+builds a second mouse's middle button, a live external term, and in its
+Chameleon builds a constant `1`, the same missing gate as NanoMig's and
+MiSTer's. MiSTer has no external term on this pin in any build.
 
 Two unrelated defects were found while reading and belong to those projects
 rather than to this finding: vAmiga accumulates all four pot charge deltas into
@@ -106,7 +107,8 @@ who knows the wiring.
 - A control on the same comparator, in the same run, on the port that works.
 - No implementation of four agrees with the RTL.
 - The gap is visible in the source without running anything: `potcap[2]`'s
-  right-hand side contains no signal that leaves the module.
+  right-hand side contains nothing from a controller port, only the POTGO
+  register.
 
 ---
 

@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch7-overlay-source`](../../hrm/ch7-overlay-source) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | `OTHER-CIA-A-REGISTER-ALSO-CLEARS` — red. Its precondition line shares the label stem and is green; `CIAB-WRITE-DOES-NOT-CLEAR` is the control |
-| **Verdict of the four** | **all four tie the overlay to the value of the OVL bit**; three say in code that only port-A registers can move it |
+| **Verdict of the four** | **vAmiga, Denise and Copperline tie the overlay to the value of the OVL bit**, and only a port-A register write can move it; **WinUAE splits by model**: its default and A500/A2000-class models do the same, its A600, A1200, CD32 and CDTV-CR models release the overlay on the first write to any CIA-A register, as NanoMig does |
 
 ---
 
@@ -19,10 +19,11 @@
 
 **Printed p. 223**, on leaving the post-reset memory map:
 
-> "THE OVL bit ... disables the overlay"
+> "The OVL bit in one of the 8520 Chips disables the overlay (See Appendix F for the bit location)."
 
-The sentence names **one bit**: OVL, which is CIA-A port A bit 0 at `$BFE001`. It
-does not name the chip, and it does not name its address range.
+The sentence names **one bit**: OVL, which Appendix F (printed p. 339) places at
+CIA-A port A bit 0, `$BFE001`. It names the chip only as "one of the 8520 Chips",
+and it does not name its address range.
 
 ---
 
@@ -46,8 +47,8 @@ register number, is never consulted, and neither is the data.
 | | |
 |---|---|
 | precondition — `ovl` before the write | **1** |
-| after a word write to CIA-A **timer A low** (`$BFE401`) | `ovl` reads **0** |
-| the mutation — the same run with no CIA-A access at all | `ovl` stays **1** |
+| after a byte write (lower data strobe) to CIA-A **timer A low** (`$BFE401`) | `ovl` reads **0** |
+| the mutation — the same test built with that write left out, no CIA-A access at all | `ovl` stays **1** |
 | the control — a write to **CIA-B** | `ovl` stays **1** |
 
 Timer A low is a register with no relation to port A whatsoever. On the manual's
@@ -55,19 +56,19 @@ wording the overlay must survive it.
 
 ---
 
-## The stimulus this finding nearly rested on
+## Why the stimulus is a timer register
 
-The assertion originally wrote **CIA-A DDRA** (`$BFE201`), reasoning that DDRA is
-"CIA-A, but not the OVL bit". The independent validation rejected that: DDRA is
-the **direction** register for port A, including the OVL bit itself, so a write
-to it changes what the OVL pin drives, and the manual says nothing about the
-overlay's fate when a bit's direction changes.
+The stimulus is not **CIA-A DDRA** (`$BFE201`), although DDRA too is "CIA-A, but
+not the OVL bit": DDRA is the **direction** register for port A, including the
+OVL bit itself, so a write to it changes what the OVL pin drives, and the manual
+says nothing about the overlay's fate when a bit's direction changes.
 
-Three of the four emulators say the same thing in their own code — WinUAE folds
+The emulators say the same thing in their own code — WinUAE folds
 `dra` into the effective pin, vAmiga computes `(internal & ddra) | (external &
-~ddra)`, and Copperline lists `REG_DDRA` beside `REG_PRA` as the two registers
-that may move the overlay line. The stimulus is now a timer register, and the red
-survived the change.
+~ddra)`, Denise computes `lines.pra | ~lines.ddra`
+([`cia/new/register.cpp:194`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/cia/new/register.cpp#L194)),
+and Copperline lists `REG_DDRA` beside `REG_PRA` as the two registers that may
+move the overlay line. Timer A low has no relation to port A.
 
 ---
 
@@ -78,20 +79,23 @@ at the pinned revision named in the link.
 
 | | code | |
 |---|---|---|
-| **WinUAE** | [`cia.cpp:1464-1477`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1464-L1477) | <pre>uae_u8 v = cia[0].pra;<br>v \|= ~cia[0].dra;<br>if (currprefs.cs_ciaoverlay && (v & 1) != oldovl) { ... map_overlay ... }</pre> the effective pin, and only on a change |
+| **WinUAE** | [`cia.cpp:1464-1477`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1464-L1477) | <pre>uae_u8 v = cia[0].pra;<br>v \|= ~cia[0].dra;<br>if (currprefs.cs_ciaoverlay && (v & 1) != oldovl) { ... map_overlay ... }</pre> the effective pin, and only on a change, when `cs_ciaoverlay` is set: the default, and the A500/A2000-class models. The A600, A1200, CD32 and CDTV-CR models clear it ([`cfgfile.cpp:9975-9979`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cfgfile.cpp#L9975-L9979) for the A1200), and then the top of `WriteCIAA`, before the register is decoded, releases the overlay on any CIA-A write: [`cia.cpp:2118-2121`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2118-L2121) <pre>if (!currprefs.cs_ciaoverlay && oldovl) {<br>&nbsp;&nbsp;&nbsp;&nbsp;map_overlay(1);<br>&nbsp;&nbsp;&nbsp;&nbsp;oldovl = 0;<br>}</pre> |
 | **vAmiga** | [`Core/Components/CIA/CIA.cpp:852-855`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L852-L855) | <pre>// Check the OVL bit which controls the Kickstart ROM overlay<br>if ((oldpa ^ pa) & 0b00000001) mem.updateMemSrcTables();</pre> |
 | **Denise** | [`emulation/libami/system/system.cpp:70-72`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/system/system.cpp#L70-L72) | <pre>if (port == PORTA) {<br>&nbsp;&nbsp;&nbsp;&nbsp;if ((lines-&gt;ioa ^ lines-&gt;ioaOld) & 1)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;agnus.setOVL(lines-&gt;ioa & 1);</pre> |
 | **Copperline** | [`src/chipset/cia.rs:689-695`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L689-L695) | <pre>if self.which == Which::A && matches!(reg, REG_PRA \| REG_DDRA) {<br>&nbsp;&nbsp;&nbsp;&nbsp;let now_no_overlay = self.cia_a_no_overlay_line();<br>&nbsp;&nbsp;&nbsp;&nbsp;if !prev_no_overlay && now_no_overlay { effect.disable_overlay = true; }<br>}</pre> |
 | **MiSTer** | [`rtl/minimig.v:933-934`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L933-L934) | descendant — byte-identical: `if(~_cpu_reset \| ~_cpu_reset_in) ovl <= 1; else if(sel_cia_a & (cpu_lwr\|cpu_hwr)) ovl <= 0;`, the same any-write clear |
-| **TC64** | `rtl/minimig/minimig.v` | descendant — `rtl/minimig/minimig.v` has no such lines at all — `ovl` is a plain `wire` (`:343`), tied directly to CIA-A's own port-A output bit: `.porta_out({_fire1_dat,_fire0_dat,_led,ovl})` at `:922`. That output is computed in `ciaa.v` from `regporta` gated by `ddrporta` — the effective-pin formula the four independent implementations use, not an any-write rule. A fix in `minimig.v` meets MiSTer where NanoMig already is; TC64 has already moved this decision out of `minimig.v` entirely, to a place where it tracks the OVL bit's value by construction |
+| **TC64** | `rtl/minimig/minimig.v` | descendant — `rtl/minimig/minimig.v` has no such lines at all — `ovl` is a plain `wire` (`:343`), tied directly to CIA-A's own port-A output bit: `.porta_out({_fire1_dat,_fire0_dat,_led,ovl})` at `:922`. That output is computed in `ciaa.v` from `regporta` gated by `ddrporta` — the effective-pin formula vAmiga, Denise, Copperline and WinUAE's A500/A2000-class models use, not an any-write rule. A fix in `minimig.v` meets MiSTer where NanoMig already is; TC64 has already moved this decision out of `minimig.v` entirely, to a place where it tracks the OVL bit's value by construction |
 
-**All four independent implementations follow the OVL bit's value.** None of
-them clears the overlay because a write happened to land somewhere in the chip,
-and Copperline states the restriction explicitly by naming the only two
-registers that may move the line. TC64 reaches the same formula by construction
-— its `ovl` is not a register a write clears at all, but a wire computed the
-way the four independent implementations compute it — while MiSTer carries the
-same any-write clear NanoMig has, unchanged.
+**vAmiga, Denise and Copperline follow the OVL bit's value, and so does WinUAE
+on its default and A500/A2000-class models.** None of those clears the overlay
+because a write happened to land somewhere in the chip, and Copperline states
+the restriction explicitly by naming the only two registers that may move the
+line. WinUAE's A600, A1200, CD32 and CDTV-CR models do clear it that way: the
+first write to any CIA-A register, whatever its value, releases the overlay,
+which is NanoMig's behaviour. TC64 reaches the effective-pin formula by
+construction — its `ovl` is not a register a write clears at all, but a wire
+computed the way vAmiga, Denise and Copperline compute it — while MiSTer carries
+the same any-write clear NanoMig has, unchanged.
 
 
 ---
@@ -149,9 +153,8 @@ question for someone who knows the boot sequence.
   write, so the red is a transition and not a stuck value.
 - **The mutation moves it**: with no CIA-A access at all the assertion reads
   green, so the FAIL is attributable to the write happening.
-- **The stimulus survived being attacked.** Its first form was rejected as not
-  genuinely unrelated; the replacement is a timer register, and the result did
-  not change.
+- **The stimulus is unrelated to port A**: a timer register, neither the OVL
+  bit nor its direction.
 
 ---
 

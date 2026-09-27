@@ -10,7 +10,7 @@
 | **Test** | [`hrm/ch7-reset-overlay`](../../hrm/ch7-reset-overlay) measures the bank sweep and declines to grade it |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a sentence graded without the paragraph that qualifies it** |
-| **Verdict of the four** | **3–1**: vAmiga, Denise and Copperline each replace only the ROM's own 512K; only WinUAE makes "all memory" literally true |
+| **Verdict of the four** | **3–1**: vAmiga, Denise and Copperline each replace only the ROM's own 512K; only WinUAE, outside its aliased 0.5 MB + 0.5 MB configuration, makes "all memory" literally true for chip RAM |
 
 ---
 
@@ -78,13 +78,14 @@ at the pinned revision named in the link.
 | **vAmiga** | [`Core/Components/Memory/Memory.cpp:940-943`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L940-L943) | <pre>// Blend in Rom in lower memory area if the overlay line (OVL) is high<br>if (ovl) {<br>&nbsp;&nbsp;&nbsp;&nbsp;for (isize i = 0; i &lt; 8 && ...; i++)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cpuMemSrc[i] = cpuMemSrc[0xF8 + i];<br>}</pre> eight pages of $10000 — **512K** |
 | **Denise** | [`emulation/libami/agnus/memory.cpp:762-766`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/memory.cpp#L762-L766) | <pre>if (state) {<br>&nbsp;&nbsp;&nbsp;&nbsp;for (int i = 0x0; i &lt; 0x8; i++)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mapper[i] = mapper[0xf8 + i];</pre> the same eight banks |
 | **Copperline** | [`src/cpu.rs:4733-4738`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/cpu.rs#L4733-L4738) | <pre>if !self.bus.mem.overlay { return None; }<br>region_offset(self.bus.mem.rom.len(), CHIP_RAM_BASE, addr, size)</pre> exactly the ROM's own length from `$0` |
-| **WinUAE** | [`memory.cpp:2923-2936`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2923-L2936) | <pre>if (size &lt; 32 && bogomem_aliasing == 0)<br>&nbsp;&nbsp;&nbsp;&nbsp;size = 32;<br>...<br>map_banks(rb, 0, size, 0x80000);</pre> the ROM mirrored across **at least 2 MB** |
-| **MiSTer** | [`rtl/gary.v:172-175`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L172-L175) | descendant — byte-identical: banks 1-3 decoded unconditionally, only bank 0 gated by `(!ovl \| cpu_hlt)` |
+| **WinUAE** | [`memory.cpp:2923-2936`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2923-L2936) | <pre>if (size &lt; 32 && bogomem_aliasing == 0)<br>&nbsp;&nbsp;&nbsp;&nbsp;size = 32;<br>...<br>map_banks(rb, 0, size, 0x80000);</pre> the ROM mirrored across **at least 2 MB**, except where WinUAE emulates 0.5 MB chip plus 0.5 MB slow RAM as aliased 1 MB chip RAM: there `if (bogomem_aliasing) size = 8;` ([`memory.cpp:2889-2890`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2889-L2890)) maps it over 512K only |
+| **MiSTer** | [`rtl/gary.v:172-175`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L172-L175) | descendant — byte-identical: banks 1-3 decoded unconditionally, only bank 0 gated by `(!ovl \|\| cpu_hlt)` |
 | **TC64** | [`rtl/minimig/gary.v:150-153`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/gary.v#L150-L153) | descendant — the same shape, banks 1-3 unconditional, but bank 0's gate is narrower: `!ovl` alone, without the `cpu_hlt` term NanoMig and MiSTer both carry. All three still leave banks 1-3 unconditional, which is what this finding is about; gating them on `ovl` would diverge from both lines equally |
 
 **Three of the four independent implementations replace only the ROM's own
 512K**, exactly as NanoMig does. Only WinUAE mirrors the ROM over the whole
-low 2 MB and so makes the printed sentence literally true. MiSTer and TC64
+low 2 MB, outside its aliased 0.5 MB + 0.5 MB configuration, and so makes the
+printed sentence literally true for chip memory. MiSTer and TC64
 have no ROM-mirroring question to answer here at all — what they carry is the
 same unconditional decode of banks 1-3 that is this finding's actual subject.
 
@@ -117,8 +118,7 @@ Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 
 
 ## Why this entry is kept
 
-It was a documented red for ten days, first against the RTL and then against the
-printed page, and three of four implementations agreeing with NanoMig made the
-"manual defect" reading look settled. A reader of p. 223 who stops at the RESET
+Three of four implementations agreeing with NanoMig make the "manual defect"
+reading look settled. A reader of p. 223 who stops at the RESET
 paragraph will find the same red again; this page is where they find the
 paragraph above it.
