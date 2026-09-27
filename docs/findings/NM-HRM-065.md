@@ -114,7 +114,7 @@ the CPU core or on the Verilator-only TG68K instance.
 
 | | register 48 in the `$E8` block, Zorro III board | |
 |---|---|---|
-| **WinUAE** | `expansion.cpp:873-906` — the `$E8` handler `expamem_bput` is `case 0x48: if (expamem_type() == zorroII) { …configure… } else { expamem_lo = value & 0xff; }`, and `case 0x44: if (expamem_type() == zorroIII) { expamemz3_map(); …configure… }` | **latches only; configures on 44 — same as NanoMig** |
+| **WinUAE** | `expansion.cpp:873-906` — the `$E8` handler `expamem_bput` is `case 0x48: if (expamem_type() == zorroII) { … } else { expamem_lo = value & 0xff; }`, and `case 0x44: if (expamem_type() == zorroIII) { expamemz3_map(); … }`, where each elided branch configures the board | **latches only; configures on 44 — same as NanoMig** |
 | **Copperline** | `src/zorro.rs:1020-1047` — at `AUTOCONFIG_BASE`, `EC_Z3_BASEADDRESS_PHYS` (`0x44`) configures when `board.spec.version == ZorroVersion::III` and the write is 16 bits or wider (`size >= 2`), and `EC_BASEADDRESS_PHYS` (`0x48`) configures only when the version is `ZorroVersion::II`. Its own comment: "Zorro III boards take a 16-bit write of the base address high word here, which both assigns and configures" | **configures on 44 — same as NanoMig** |
 | **vAmiga** | `Core/Components/Zorro/ZorroBoard.cpp:132` — `case 0x48:` sets `state = BoardState::ACTIVE` unconditionally. There is **no `0x44` case and no Zorro III board type** in `Core/Components/Zorro/` | **cannot speak** |
 | **Denise** | `emulation/libami/expansionPort/expansionPort.cpp:17` — `case 0x48:` sets `boardState = BoardState::Configured` unconditionally. **No `0x44` case**, no Zorro III board type | **cannot speak** |

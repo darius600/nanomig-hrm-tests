@@ -72,7 +72,7 @@ six assertions and the inverse control in full.
 |---|---|---|
 | **WinUAE** | [`expansion.cpp:833`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/expansion.cpp#L833) and `:917` advance the AUTOCONFIG chain on a 4C write, and device backends call it explicitly — `a2091.cpp:2646` is `if (addr == 0x4c && !wd->configured) expamem_shutup(&wd->bank);` | **yes** |
 | **vAmiga** | `Core/Components/Zorro/ZorroBoard.cpp:130-149` — `pokeACF8` switches on `0x48` and `0x4A` and has **no `0x4C` case**. `ZorroBoard::shutup()` exists at `:166-170` and nothing in `Core/` calls it | **no** |
-| **Denise** | **keeps both halves of the contract.** `expansionPort/fastMem.cpp:43` answers register 08 with `encNibble(0)` under its own comment *"any space ok and can be shut up"* — bit 6 clear, the promise — and `expansionPort/expansionPort.cpp:27-30` honours it: `case 0x4c: if (canBeShutUp()) boardState = BoardState::ShutUp;`. (`canBeShutUp()` at `expansionPort.h:51` is a virtual returning `true` with no override anywhere in `emulation/`, so it is the shape of the gate rather than a per-board capability. Copperline has the real per-board form: `zorro.rs` `if board.spec.no_shutup { return; }`) | **yes** |
+| **Denise** | **keeps both halves of the contract.** `expansionPort/fastMem.cpp:43` answers register 08 with `encNibble(0)` under its own comment *"any space ok and can be shut up"* — bit 6 clear, the promise — and `expansionPort/expansionPort.cpp:27-30` honours it: `case 0x4c: if (canBeShutUp()) boardState = BoardState::ShutUp;`. (`canBeShutUp()` at `expansionPort.h:51` is a virtual returning `true` with no override anywhere in `emulation/`, so it is the shape of the gate rather than a per-board capability. Copperline has the real per-board form, a `no_shutup` flag on each board, in its row below.) | **yes** |
 | **Copperline** | `src/zorro.rs:1054-1060` — the `EC_SHUTUP_PHYS` (`0x4C`) arm of `config_write` sets `BoardState::ShutUp` unless `board.spec.no_shutup`, which its Zorro II `fast_ram` board leaves `false` (`:212`). The CDTV DMAC, first in the chain when present, has its own: `src/cdtv.rs:406-407` — `0x4C => { self.shut_up = true; }`, and `:348` makes an un-configured, un-shut-up board the only one that answers | **yes** |
 | **MiSTer** | descendant — **has the same responder in the same file.** `rtl/cpu_wrapper.v:518-520` decodes 4C (`6'b100110`) and ends the card, **but only in its CDTV arm**; the memory-card arm at `:522-527` has 0x48 and nothing else, exactly like NanoMig, and its register 08 reads bit 6 clear as NanoMig's does | **for CDTV, not for RAM** |
 | **TC64** | descendant — `rtl/minimig/minimig_autoconfig.v:154` decodes `9'h04c`, commented *"Zorro II / III shut up register"*, for the Toccata sound card and the control board. **Not for a RAM board**, and `rtl/minimig/minimig.v:1250` leaves `.board_shutup()` unconnected | **for two cards, not for RAM** |
@@ -94,7 +94,7 @@ memory card it descends from does too.
 
 **vAmiga's omission is the same omission.** Its boards are a fixed internal
 set — `DiagBoard`, `HdController`, `RamExpansion` — and each answers register
-08 with bit 6 clear: `RamExpansion::flags()` is `0x80` (`RamExpansion.h:86`),
+08 with bit 6 clear: `flags()` is `0x80` (`RamExpansion.h:86`),
 the other two `0x00` (`DiagBoard.h:94`, `HdController.h:171`). vAmiga makes
 NanoMig's promise and, with no `0x4C` case, does not keep it.
 

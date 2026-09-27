@@ -86,7 +86,7 @@ graded lines the package records the direction-independence above: with
 
 ## What the port is actually used for here
 
-`minimig.v:624` wires `.portb_in({_joy4[0..3],_joy3[0..3]})` — **CIA-A port B is
+`minimig.v:624` wires `.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],_joy3[0],_joy3[1],_joy3[2],_joy3[3]}),` — **CIA-A port B is
 this tree's four-player joystick adapter.** That is a real Amiga use of the
 parallel connector, and it explains the design decision; it does not make the
 port bi-directional.
