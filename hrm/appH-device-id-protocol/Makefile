@@ -4,7 +4,8 @@ NANOMIG ?= ../../nanomig
 TOP := paula_floppy
 # paula_floppy_ebr.v is deliberately NOT in this list: it declares a second
 # `module paula_floppy` and must not be compiled alongside paula_floppy.v
-# (see hrm/appDE-disk-interface/Makefile, same rig hazard, same module).
+# -- Verilator, run with -Wno-fatal as here, only warns MODDUP and builds
+# one of the two (see hrm/appDE-disk-interface/Makefile, same module).
 SRC := $(NANOMIG)/src/minimig-aga/paula_floppy.v \
        $(NANOMIG)/src/minimig-aga/paula_floppy_fifo.v
 TEST_SRC := test_appH-device-id-protocol.cpp
