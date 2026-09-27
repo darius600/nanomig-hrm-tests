@@ -117,8 +117,8 @@
 // clk7_en 4-cycle-per-hpos clocking, reg_address_in/data_in write
 // sequencing, the reqdma/ackdma same-cycle-sample-then-grant handshake,
 // and the word-address map ($140->0xA0 for SPR0POS, +4 words per sprite)
-// are those of hrm/agnus_spritedma/test_agnus_spritedma.cpp, the sibling
-// harness for this SAME module. Three numeric stimulus values
+// are those of hrm/agnus_spritedma/test_agnus_spritedma.cpp, the
+// pre-pipeline harness for this SAME module (removed). Three numeric stimulus values
 // (SPR0POS=$28/VSTART=40, SPR0CTL=$2C/VSTOP=44, and the second
 // SPR0CTL=$2E/VSTOP=46) come from this package's own classify.evidence
 // field, which reports them as measured:
@@ -482,7 +482,7 @@ public:
     int failed = 0;
 };
 
-// Word-address register map, as in hrm/agnus_spritedma/
+// Word-address register map, as in the pre-pipeline (removed) hrm/agnus_spritedma/
 // test_agnus_spritedma.cpp for this same module, generalised to all 8
 // sprite channels per this package's own classify.evidence ("reg_address_
 // in[8:6]==$140[8:6] with [2:1] selecting POS/CTL and [5:3] the channel"):
@@ -494,7 +494,7 @@ constexpr int DataByteAddr(int n) { return 0x144 + 8 * n; }
 constexpr int DatbByteAddr(int n) { return 0x146 + 8 * n; }
 
 // One isolated DUT: fresh reset, clk7_en 4-cycle-per-hpos clocking and the
-// reg_address_in/data_in write sequencing are those of the sibling
+// reg_address_in/data_in write sequencing are those of the pre-pipeline
 // harness for this SAME module (see HARNESS AND STIMULUS SOURCES above).
 class Harness {
 public:
