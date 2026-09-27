@@ -35,64 +35,44 @@
 //   resolve in the claim files that hrm-testpipeline/acceptance/ch5.json lists
 //   under `inventories`.
 //
-// ORDER OF WORK: this file's assertions, expected values, and claim-id
-//   coverage were written and committed from claims.jsonl's quotations
-//   alone, plus the RTL line numbers and verbatim RTL fragments already
-//   quoted, unsolicited, inside that same claims file and inside this
-//   task's own BOUNDARIES.md/CANDIDATES.md (the chapter's classifiers had
-//   already opened paula_audio_channel.v and quoted it before this package
-//   existed; this agent did not open the file itself before the first
-//   commit of this test). Ports (clk, clk7_en, cck, reset, aen, dmaena,
+// HARNESS AND SIGNAL SOURCES: ports (clk, clk7_en, cck, reset, aen, dmaena,
 //   reg_address_in[3:1], data[15:0], intpen, strhor, sample[7:0],
 //   sample_okk[7:0], intreq, dmareq, dmas, volume[6:0]) and the register
 //   convention (reg_address_in = byte address >> 1; AUDLEN=0x4, AUDPER=0x6,
 //   AUDVOL=0x8, AUDDAT=0xA) and the clk7_en/cck/strhor clocking pattern (a
 //   4-tick clk7_en divider, a further 2-tick cck divider, strhor pulsed once
-//   per 227-cck line at hpos==13) are reused verbatim from
-//   hrm/paula_audio_channel/test_paula_audio_channel.cpp, an already-
-//   committed, already-built sibling harness for this SAME fixture -- its
-//   own successful run (PASS: sample sequence 0x12 then 0x34 from one 0x1234
-//   DMA word) is what establishes that this clocking/DMA-answering pattern
-//   drives real dmareq/sample/intreq/dmas activity, which matters given
-//   this chapter's own two silence traps (see BOUNDARY). Internal signal
-//   names (percnt, percntrld, percount, perfin, audper, volcnt, volcntrld,
-//   audvol, lencnt, lencntrld, lenfin, audlen, datbuf, auddat, penhi,
-//   pbufld1, silence), reached via --public-flat-rw, are exactly the
-//   identifiers this task's own brief and BOUNDARIES.md/CANDIDATES.md and
-//   this package's own claims.jsonl "evidence" fields already quoted by
-//   exact line number -- given as task input, not discovered by opening the
-//   file directly. Their Verilator access path
-//   (dut->rootp->paula_audio_channel__DOT__<name>) matches the pattern
-//   already used successfully by hrm/ch5-audio-channel-state, a sibling
-//   TEST file on the same fixture (not this package's own RTL).
+//   per 227-cck line at hpos==13) are those of the pre-pipeline harness for
+//   this SAME fixture, hrm/paula_audio_channel/test_paula_audio_channel.cpp
+//   (removed); the FIXTURE-LIVENESS check below confirms that this
+//   clocking/DMA-answering pattern drives real dmareq/sample/intreq/dmas
+//   activity, which matters given this chapter's own two silence traps
+//   (see BOUNDARY). Internal signal names (percnt, percntrld, percount,
+//   perfin, audper, volcnt, volcntrld, audvol, lencnt, lencntrld, lenfin,
+//   audlen, datbuf, auddat, penhi, pbufld1, silence), reached via
+//   --public-flat-rw, are the identifiers this package's own claims.jsonl
+//   "evidence" fields quote by exact line number. Their Verilator access
+//   path (dut->rootp->paula_audio_channel__DOT__<name>) is the one
+//   hrm/ch5-audio-channel-state, a sibling test on the same fixture, uses.
 //
-// HARNESS DEBUGGING, disclosed for the record (this is C++ testbench
-//   plumbing, not an oracle or expected-value change, and touched no
-//   quotation, expected value, or claim-id mapping written above):
-//   Harness::tick() originally left every purely-combinational FSM output
-//   (AUDxDR, perfin, percntrld, percount, volcntrld, pbufld1) one eval()
-//   behind the `cck`/`clk7_en` values it read alongside them, because
-//   setting those two inputs for the NEXT edge was never followed by a
-//   settling eval() call. That one-epoch lag is invisible for signals held
-//   stable across many ticks but silently drops or mistimes a single-cck-
-//   wide combinational pulse -- it first surfaced as a DMA responder that
-//   answered three requests, then stalled forever (diagnosed with a
-//   temporary, since-removed DEBUG_TRACE dump of state/cck/AUDxDR/perfin
-//   per tick). Fixed by one extra `dut->eval()` at the end of tick(), after
-//   clk7_en/cck are set for the upcoming edge (see the comment there). A
-//   second, independent bug (a DMA word generator, 0x1000+i, that
-//   coincidentally produced 0x1010 -- a word whose own high and low bytes
-//   are equal -- silently swallowing one of its two expected sample
-//   transitions) was found the same way and fixed by keeping every
-//   generated word's low byte odd, so it can never equal a shared high
-//   byte. Neither fix touched an expected value, a quotation, or which
-//   claim ids a CHECK cites.
+// HARNESS SETTLING AND WORD CHOICE (C++ testbench plumbing, not an oracle
+//   or an expected value): Harness::tick() ends with one extra
+//   `dut->eval()` after clk7_en/cck are set for the upcoming edge (see the
+//   comment there). Without it every purely-combinational FSM output
+//   (AUDxDR, perfin, percntrld, percount, volcntrld, pbufld1) sits one
+//   eval() behind the `cck`/`clk7_en` values read alongside it -- invisible
+//   for signals held stable across many ticks, but it silently drops or
+//   mistimes a single-cck-wide combinational pulse (a DMA responder would
+//   answer three requests, then stall forever). And every generated DMA
+//   word keeps its low byte odd, so it can never equal a shared high byte:
+//   a word whose own high and low bytes are equal (0x1010 from a 0x1000+i
+//   generator) silently swallows one of its two expected sample
+//   transitions.
 //
 // BOUNDARY: this chapter's module has two silence traps, both guarded
 //   against here.
 //   (1) paula_audio_channel latches on cck and strhor as well as clk7_en --
-//       Harness::tick()/outerStep() drive all three exactly as the proven
-//       sibling harness does (never held low), and every scenario runs
+//       Harness::tick()/outerStep() drive all three (never held low), and
+//       every scenario runs
 //       thousands of cck ticks before any absence of dmareq/sample/dmas
 //       would mean anything.
 //   (2) the AMR silence latch at paula_audio_channel.v:172-184: after
@@ -134,7 +114,7 @@
 //   changed and the observed result. No expected value, quotation, or
 //   comparison threshold is ever changed by a mutation -- only stimulus.
 //
-// CLAIM COVERAGE: all 53 original records of claims.jsonl are cited below, in
+// CLAIM COVERAGE: all 53 records of claims.jsonl are cited below, in
 //   full, inside a CHECK(...) call's own text -- merged into 31 assertions
 //   where two, three or four ids extract the IDENTICAL quoted sentence (sol's
 //   page-based lot and opus's page/glossary-based lot independently read
@@ -143,14 +123,12 @@
 //   sample size" sentences). Merging is by identical quotation only, and
 //   every merged id still appears, spelled out, inside its group's CHECK
 //   text -- coverage is counted per id, not per group. No claim in this
-//   package's original 53 is declined; classify already marked all 53
-//   "testable".
+//   package's 53 is declined; classify marks all 53 "testable".
 //
-// GAP CLOSURE (V-10 reclassification): nine further claims, previously
-//   discarded as `not-hardware` on the reasoning that no port carries a
-//   Hertz-valued frequency, are asserted below as the DIMENSIONLESS ratios
-//   they actually state (a ratio needs no seconds-valued constant; only an
-//   absolute Hz figure does):
+// RATIO CLAIMS: nine further claims are asserted below as the
+//   DIMENSIONLESS ratios they state. No port carries a Hertz-valued
+//   frequency, but a ratio needs no seconds-valued constant; only an
+//   absolute Hz figure does:
 //     G_FORMULA_P141 (5-p141.c7, 5-p141.c8, 5-rate.c11, page 141) and
 //       G_FORMULA_P142 (5-p142.c1, 5-p142.c2, 5-per.c13, page 142) assert
 //       the tick-domain half of "Period value = sample/desired interval /
@@ -171,12 +149,12 @@
 //       (--public-flat-rw; the raw port pulses too unconditionally at
 //       DMA-enable/pointer-reload to serve as a per-block marker on this
 //       harness, the same limitation hrm/ch5-audio-channel-registers'
-//       dma_advance() already documents for this identical port on this
+//       dma_advance() documents for this identical port on this
 //       identical fixture).
 //   All nine are measured and asserted in cck ticks alone; none computes a
 //   frequency or introduces a seconds-valued constant.
 //
-// NOT ASSERTED (measured and reported only, per this chapter's own brief):
+// NOT ASSERTED (measured and reported only):
 //   (1) AUDxLEN=1 specifically. The G_LEN_VALUE family below asserts
 //       "exactly AUDxLEN words between dmas restarts" for AUDxLEN in
 //       {2,4,8,16,32,64,128} -- all seven measured clean and steady. AUDxLEN
@@ -192,18 +170,18 @@
 //       extra transient restart).
 //   (2) The period's absolute rate in Hertz. cck is a free simulation input
 //       whose rate this fixture chooses; every period/length assertion
-//       below is stated and measured in cck ticks, never seconds or Hertz,
-//       for exactly the reason this chapter's own brief gives.
+//       below is stated and measured in cck ticks, never seconds or Hertz.
 //   (3) The NTSC clock constant 3579545 has no realisation anywhere in the
 //       audio path (cck here is a free input; on real NanoMig hardware cck
 //       = clk_28/8 = 3546895 Hz, the PAL constant, and `ntsc` never reaches
 //       audio) -- recorded because it is relevant to a wider question for
 //       specialists, not because any claim in this package's 53 asserts it.
 //
-// RESULTS: built and run under WSL (verilator 5.052) against
+// RESULTS: run under WSL against
 //   $(NANOMIG)/src/minimig-aga/paula_audio_channel.v. 35/35 assertions
-//   GREEN, 0 red, 0 declined. Every one of the 62 claim ids (53 original +
-//   9 from the V-10 gap closure) is cited inside a passing CHECK's own text.
+//   GREEN, 0 red, 0 declined. Every one of the 62 claim ids (the 53 of
+//   claims.jsonl + the 9 ratio claims) is cited inside a passing CHECK's
+//   own text.
 //   No red result was found against this package's own claims -- Chapter 5's
 //   registered deviations (state-code identity, the interrupt moment,
 //   volume's two disagreeing paths) belong to other packages' own
@@ -222,7 +200,7 @@
 //   different AUDPER and observing no change), and the third because a
 //   responder that stops mid-block starves the state machine into waiting
 //   forever rather than producing a wrong count to compare. None was
-//   manufactured by touching an expected value. The four gap-closure
+//   manufactured by touching an expected value. The four ratio-claim
 //   mutations (G_FORMULA_P141, G_FORMULA_P142, G_OCTAVE_RATIO,
 //   G_INTERRUPT_RATE) all went red as expected; none is `impossible`.
 
@@ -263,7 +241,7 @@ static void MEASURED(const std::string& text) {
 
 // ---------------------------------------------------------------------------
 // Register addresses on this fixture (byte address; reg_address_in receives
-// addr>>1, reused verbatim from hrm/paula_audio_channel's own harness).
+// addr>>1, as in the pre-pipeline hrm/paula_audio_channel harness, removed).
 // ---------------------------------------------------------------------------
 static const int REG_AUDLEN = 0x4;
 static const int REG_AUDPER = 0x6;
@@ -271,8 +249,9 @@ static const int REG_AUDVOL = 0x8;
 static const int REG_AUDDAT = 0xA;
 
 // ---------------------------------------------------------------------------
-// Harness: DUT + the proven clk7_en/cck/strhor clocking pattern, reused from
-// hrm/paula_audio_channel/test_paula_audio_channel.cpp.
+// Harness: DUT + the clk7_en/cck/strhor clocking pattern of the
+// pre-pipeline hrm/paula_audio_channel/test_paula_audio_channel.cpp
+// (removed).
 // ---------------------------------------------------------------------------
 struct Harness {
     Vpaula_audio_channel* dut;
@@ -328,9 +307,8 @@ struct Harness {
         dut->data = 0;
     }
 
-    // One "outer" step: advance the clock, maintain hpos/strhor exactly like
-    // the proven original harness (strhor pulses once per 227-cck line, at
-    // hpos==13).
+    // One "outer" step: advance the clock, maintain hpos/strhor (strhor
+    // pulses once per 227-cck line, at hpos==13).
     void outerStep() {
         tick();
         if (dut->cck) {
@@ -340,9 +318,8 @@ struct Harness {
         }
     }
 
-    // --- internal signal access (--public-flat-rw), all names quoted
-    // verbatim in this package's own claims.jsonl / BOUNDARIES.md /
-    // CANDIDATES.md before this file was written. ---
+    // --- internal signal access (--public-flat-rw), all names as quoted
+    // in this package's own claims.jsonl evidence fields. ---
     int percnt()     { return dut->rootp->paula_audio_channel__DOT__percnt; }
     int percntrld()  { return dut->rootp->paula_audio_channel__DOT__percntrld; }
     int percount()   { return dut->rootp->paula_audio_channel__DOT__percount; }
@@ -459,12 +436,12 @@ static DmaRun runDma(uint16_t audlen_val, uint16_t audper_val, int nRestarts,
     // fresh request appears, matching this package's own claims.jsonl recipe
     // ("strhor clears dmareq, then a word is written to AUDxDAT"), not gated to
     // a specific hpos slot (that slot-arbitration policy belongs to Agnus, i.e.
-    // to hrm/agnus_audiodma / hrm/ch5-audio-location-pointer, outside this
+    // to hrm/ch5-audio-location-pointer, outside this
     // package's boundary on paula_audio_channel alone). AUDxDR (internal,
     // paula_audio_channel.v:217 `else if (AUDxDR && cck) begin dmareq<=1; ...`)
     // is a COMBINATIONAL, exactly-one-cck-wide pulse per fresh request -- it
     // must be read BEFORE the edge that consumes it (same reasoning as
-    // runPeriod's percntrld/volcntrld fix above), unlike `dmareq` itself
+    // runPeriod's percntrld/volcntrld read above), unlike `dmareq` itself
     // (registered, held high across many ticks until strhor clears it, which
     // cannot distinguish "still the same request" from "a new one already").
     long budget = (long)audlen_val * (2L * audper_val + 8) * (nRestarts + 3) + 20000 + extraBudget;
@@ -597,7 +574,7 @@ int main(int argc, char** argv) {
         // it qualifies (pbufld1 && cck is what actually clocks datbuf,
         // paula_audio_channel.v:195-196) -- reading it AFTER that edge sees
         // whatever the FSM's new state already recomputed it to, not the pulse
-        // that drove the edge (same reasoning as runPeriod's percntrld fix).
+        // that drove the edge (same reasoning as runPeriod's percntrld read).
         for (int i = 0; i < 4000 && !pbufld1Seen; i++) {
             bool qualifies = h.dut->cck && h.pbufld1();
             h.outerStep();
@@ -757,7 +734,7 @@ int main(int argc, char** argv) {
         // percount is combinational (like pbufld1/AUDxDR): read it BEFORE the
         // edge it gates, then compare the registered percnt across that same
         // edge -- reading it via a post-edge falling-edge trick (as this
-        // package's own percntrld/pbufld1 fixes above already found) samples
+        // package's own percntrld/pbufld1 reads above show) samples
         // percnt AT the reload it doesn't gate, not the decrement it does.
         long lastPercnt = -1;
         int checked = 0;
@@ -1063,8 +1040,8 @@ int main(int argc, char** argv) {
     // oversight: measured separately below (NOT ASSERTED section),
     // AUDLEN=1 gives wordsPerRestart=[0,4,33,32,...] -- it never settles to
     // a steady "1 word per restart" cadence at all. This is exactly the
-    // length<=1 silence-path behaviour this chapter's own brief warns is
-    // unruled by the manual (paula_audio_channel.v:169-170, `if(audlen==1 ||
+    // length<=1 silence-path behaviour the manual does not rule on
+    // (paula_audio_channel.v:169-170, `if(audlen==1 ||
     // audlen==0) silence<=1`) -- asserting "1" here would move the red onto
     // this correct-but-erratic behaviour instead of reporting it honestly.
     // -------------------------------------------------------------------
@@ -1152,10 +1129,9 @@ int main(int argc, char** argv) {
     }
 
     // -------------------------------------------------------------------
-    // GAP CLOSURE (V-10 reclassification) -- four further assertion groups,
-    // nine claim ids, all measured in cck ticks alone. See this file's own
-    // header for why each was previously discarded and why the discard was
-    // too broad.
+    // RATIO CLAIMS -- four further assertion groups, nine claim ids, all
+    // measured in cck ticks alone. See this file's own header (RATIO
+    // CLAIMS) for why each is asserted as a dimensionless ratio.
     // -------------------------------------------------------------------
 
     // -------------------------------------------------------------------
@@ -1322,11 +1298,11 @@ int main(int argc, char** argv) {
         }
         MEASURED("absolute rate in Hertz: not computed anywhere in this file. cck is a free "
                   "simulation input; every gap/duration above is stated and measured in cck "
-                  "ticks only, per this chapter's own brief.");
+                  "ticks only.");
         MEASURED("the NTSC clock constant 3579545: has no realisation in this fixture or the "
                   "real audio path (cck here is a free input; on hardware cck=clk_28/8=3546895 Hz, "
-                  "the PAL constant, and `ntsc` never reaches audio) -- not asserted, per "
-                  "CANDIDATES.md item 3.");
+                  "the PAL constant, and `ntsc` never reaches audio) -- not asserted; no "
+                  "claim in this package states it.");
     }
 
     // -------------------------------------------------------------------
