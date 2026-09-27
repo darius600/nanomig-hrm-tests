@@ -18,28 +18,27 @@ the printed page.
 | sol:8-pen.c47 | 239 | Same sentence, same reason. |
 | opus:8-lpen.c54 | 239 | "cannot be relied on as a counter" is advice to software. No observation can contradict it. The behaviour behind the warning is tested in P5 to P8. |
 | sol:8-pen.c48 | 239 | Same sentence, same reason. |
-| opus:8-lpen.c41 | 239 | "There is no single bit in the system that indicates a light pen trigger" says that something does not exist anywhere in the system. A test can read only the custom registers of Appendix B, not the whole system (the CIAs, for example, are outside it). The sentence names no register and no value. Comparing the custom registers could never establish "no bit in the system". Its practical consequence, that a trigger can only be found by reading VPOSR, is what P11 and P12 test. |
+| opus:8-lpen.c41 | 239 | "There is no single bit in the system that indicates a light pen trigger" says that something does not exist anywhere in the system. The sentence names no register and no value. A program can read the custom registers of Appendix B and the CIA registers of Appendix F, but not every bit of the system, so no set of readings could establish "no bit in the system". Its practical consequence, that a trigger can only be found by reading VPOSR, is what P11 and P12 test. |
 | sol:8-pen.c40 | 239 | Same sentence, same reason. |
 | opus:8-lpen.c34 | 239 | Only names bit 3 "LPEN", and a name cannot be observed. Also, the quoted "(LPEN)" is not on the printed page 239, which reads "To enable the light pen input, write a 1 into bit 3 of BPLCON0." The name is printed on p.89 ("Bit 3 - LPEN (light pen enable)") and p.271 ("LPEN =Light pen enable"). |
-
-One claim is used only in part. opus:8-intro.c2 (p.227, "Two multiple purpose
-mouse/joystick/light pen control ports") reads, as its `says` puts it, that
-*each* port serves a light pen. p.238 ties the light pen to one port per model.
-P1 therefore grades only "at least one port" (see 10.4).
+| opus:8-intro.c2 | 227 | Its `says` reads "Two multiple purpose mouse/joystick/light pen control ports" as *each* port serving a light pen. p.238 ties the light pen to one port per model ("On the A1000, the light pen must be connected to port 1. [...] On the A500, A2000 and A3000 the default is port 2. An internal jumper can select port 1."), and the system under test is none of those models. P1 grades that at least one port captures and reports which; "each" is not graded, so the id is not claimed (10.4). |
+| sol:8-pen.c39 | 239 | Its `says` places the release "at vertical position 20". The pages place the end of vertical blanking differently: p.239 "(vertical position 20)"; p.219 "The range starts at line 0 and ends at line 20 for NTSC or line 25 for PAL"; p.79 "Vertical Blank Stop $15 (21)" (NTSC) and "$1D (29)" (PAL). P8 grades the release only within the span all pages allow (latched through line 19, running from line 21 in NTSC and 29 in PAL) and reports the line where it happens, so line 20 is not graded (10.1). The release at the end of internal vertical blanking, without a line number, is graded in P8 through opus:8-lpen.c39. |
+| opus:8-lpen.c12 | 238 | p.238 step 1: "Just as the system exits vertical blank, the capture circuitry for the light pen is automatically enabled." "Just as" places the enabling at the exit of vertical blank, neither before nor after it, and part of that stays ungraded. Not before: every vertical blank of phase B is already latched, by a capture or by the end of the field before (p.239), and that latch is released at the end of blanking anyway, so a capture inside blanking that does not overwrite the frozen value leaves nothing at the ports. P9 (a) grades only that no pulse inside blanking is held over the release, and P5 (line 10) and P8 (a) (line 19) grade only that such a pulse does not overwrite the frozen value. Not after: the pages end vertical blanking at line 20, 21, 25 or 29 (10.1), and lines 20 to 31 are not probed. The three checks together do not grade the whole sentence, so the id is declined whole. P9 grades the observable part without it. |
+| sol:8-pen.c12 | 238 | Same sentence, same reason. |
 
 ## 2. Propositions and the claims they rest on
 
 | Proposition | Claims | Pages |
 |---|---|---|
-| P1 A light pen is accepted on one of the controller ports | opus:8-lpen.c1, sol:8-pen.c1, opus:8-intro.c12, sol:8-overview.c6, opus:8-intro.c2 (in part) | 238, 227 |
+| P1 A light pen is accepted on one of the controller ports | opus:8-lpen.c1, sol:8-pen.c1, opus:8-intro.c12, sol:8-overview.c6 | 238, 227 |
 | P2 Pin 6 is the beam-trigger line; the other signal pins are not | opus:8-lpen.c16, sol:8-pen.c17, opus:8-tbl8-1.c20, sol:8-pin.c22 | 238, 228 |
 | P3 A trigger captures the beam position exactly at its instant | opus:8-lpen.c17, opus:8-lpen.c18, sol:8-pen.c18, sol:8-pen.c19, sol:8-pen.c20 | 238 |
 | P4 VPOSR holds the high-order bit, VHPOSR the low-order bits of the pen position | opus:8-regs.c18, opus:8-regs.c20, sol:8-reg.c20, sol:8-reg.c22 | 229 |
 | P5 After a trigger, VPOSR is frozen until the release | opus:8-lpen.c36, sol:8-pen.c36 | 239 |
 | P6 While latched, VPOSR never shows the current beam position | opus:8-lpen.c38, sol:8-pen.c38 | 239 |
 | P7 Without a trigger, the counters latch at the end of the field | opus:8-lpen.c37, sol:8-pen.c37 | 239 |
-| P8 The freeze is released at the end of internal vertical blanking | opus:8-lpen.c39, sol:8-pen.c39 | 239 |
-| P9 The capture circuitry re-arms by itself as vertical blank ends | opus:8-lpen.c12, sol:8-pen.c12 | 238 |
+| P8 The freeze is released at the end of internal vertical blanking | opus:8-lpen.c39 | 239 |
+| P9 The capture circuitry re-arms by itself as vertical blank ends | none (opus:8-lpen.c12 and sol:8-pen.c12 are declined, §1) | 238 |
 | P10 Bit 3 of BPLCON0 enables the light pen input and latch | opus:8-lpen.c35, sol:8-pen.c35, opus:8-regs.c16, sol:8-reg.c18 | 239, 229 |
 | P11 The two-read detection method gives the right answer | opus:8-lpen.c43, sol:8-pen.c41, opus:8-lpen.c47, sol:8-pen.c44, opus:8-lpen.c48, sol:8-pen.c45, sol:8-pen.c46 | 239 |
 | P12 The single read during vertical blanking gives the right answer | opus:8-lpen.c52 | 239 |
@@ -57,24 +56,37 @@ P11, and P12 grades the same sentence in the second method.
   memory. Each contrasting run of §8 is made in ECS/PAL with both CPU cores.
   K1 and K2 are also made in OCS/NTSC, because the release lines and the
   threshold comparison depend on the standard.
+- **Standard.** PAL or NTSC is a configuration of the machine, not of the
+  program: p.295, "the chips from the US factory are configured for NTSC mode.
+  In order to use them on a PAL system, you may have to reset the motherboard
+  jumpers". The program never writes BEAMCON0 (whose bit 5 is "PAL
+  Programmable pal mode enable", p.305). A2 (5.4) confirms from the measured
+  field length that each run is in the standard it is graded as.
+- **Harness configuration.** The chipset (OCS or ECS) and the standard (PAL or
+  NTSC) are harness configuration. The builder takes them from the harness's
+  documented `Config` values (`nanomig_harness.h`). A configuration the
+  harness cannot make leaves its runs, main or contrasting, recorded as not
+  made, not graded.
 - **ECS.** The program never writes BEAMCON0. On p.305, bit 13 is
   "LPENDIS    Ignore latched pen value on vertical pos read", and the page adds
   "Do not write to this register." The pages give no reset value for LPENDIS.
   The ECS expectation that the latch can be seen without touching BEAMCON0
   rests on p.295: "These chip revisions support advanced features in addition
   to all of the standard features previously available" and "plug-compatible
-  replacements". Suppose an ECS run shows no latch at all while the OCS run of
-  the same standard does. The report must then name LPENDIS as the open point,
-  alongside the red result.
+  replacements". An ECS run whose phase B shows no latch at all (every
+  phase-B sample current: no pen capture and no end-of-field latch) is not
+  graded red on the propositions that need a latch (P1 to P9, P10 (a), P11,
+  P12). It is recorded instead, naming the unknown reset value of LPENDIS
+  (p.305) as the open point. P10 (b) and P13 are graded in that run as usual.
 - **Idle inputs.** Apart from the changes listed in §6, every input stays
   released throughout. On both controller ports, pins 1-4, 5, 6 and 9 are at
   the level of an open switch (high). Mouse counts do not change, no keyboard
   code is sent, and serial RxD is idle.
 - **Pin 6 is only driven by the harness.** p.229 lists "CIAAPRA ($BFE001) Input
   and output for pin 6", and p.241 says the fire buttons "can also be
-  configured as outputs" through CIAADDRA. The program never touches the CIA
-  registers, which are not in Appendix B. Pin 6 therefore stays an input that
-  only the harness drives.
+  configured as outputs" through CIAADDRA. The program writes no CIA
+  register; its one CIA access is the read of CIAAPRA that CP3 uses. Pin 6
+  therefore stays an input that only the harness drives.
 - **Registers the program never writes:** BEAMCON0, VPOSW, VHPOSW, DIWHIGH,
   COP1LC/COP2LC, CIA registers. The only exceptions are the contrasting runs
   that name one of them.
@@ -94,6 +106,8 @@ set").
                                         ;   sprite, audio, disk or blitter DMA; only refresh remains
         move.w  #$0000,$100(a6)         ; BPLCON0: BPU=0, HIRES=0, LACE=0 (non-interlaced), ERSY=0, LPEN=0
         move.w  #M0,MARK
+        move.b  $bfe001,FIRE            ; CIAAPRA, read only: bit 6 port 1 and bit 7 port 2 pin 6,
+                                        ;   1 = "switch open" (p.229, p.232); for CP3
 ; ---- phase A: beam counter, light pen off
         lea     BUFA,a0
         lea     BUFA_END,a1
@@ -138,13 +152,31 @@ wait150 move.l  $dff004,d0              ; wait until a read shows vertical posit
         rts
 ```
 
-- `MARK` is one word address in Chip memory. The marker writes M0 to M4 (five
-  distinct values) are visible at the Chip-memory port. They bracket the
-  BPLCON0 writes and mark where each phase starts. The buffers must not overlap
-  the program. The builder sizes them from the sample rate measured in phase A,
-  with at least 10 % spare, so that CP5 holds: phase A at least 4.5 fields,
-  phase B up to line 40 of field B21, phase C up to line 40 of field C3, and
-  phase D at least 12 ms.
+- The program is assembled for the 68000, vasm's default, with no `-m` option.
+  With `-m68010` or higher, vasm assembles `move.w #$0000,$100(a6)` as
+  `clr.w $100(a6)`, which on a 68000 reads the write-only BPLCON0 before
+  writing it; the listing must show MOVE for every BPLCON0 write.
+- `MARK` is one word address in Chip memory, `FIRE` one byte. The marker writes
+  M0 to M4 (five distinct values) are visible at the Chip-memory port. They
+  bracket the BPLCON0 writes and mark where each phase starts. The builder
+  sizes the buffers from the sample rate measured in phase A, with at least
+  10 % spare, so that CP5 holds: phase A at least 4.5 fields, phase B up to
+  line 40 of field B21, phase C up to line 40 of field C3, and phase D at
+  least 12 ms.
+- **Placement.** `MARK`, `FIRE` and all four buffers lie in the Chip memory
+  that the harness maps one to one, $080000-$1FFFFF (`nanomig.i`: "Program,
+  stack and results all live in chip RAM that nanomig.v maps one-to-one
+  ($080000-$1FFFFF with 2 MB chip RAM)"). Nothing is placed below $080000.
+  p.223: after reset "An additional copy of the system ROM responds starting
+  at memory location $00000000. [...] Software must assume that memory is not
+  available. The OVL bit in one of the 8520 Chips disables the overlay"
+  (CIAAPRA bit 0, p.339). The program never writes CIA-A, so the overlay
+  stays on, and `nanomig_harness.h` says "A test program must not write
+  inside the overlay window". No two of these areas overlap, and none
+  overlaps the program (from `PROGRAM_ORG` = $080400), the supervisor stack,
+  which grows down from `PROGRAM_STACK` = $0FFF00 and holds the return
+  address of `bsr wait150`, or `DONE_ADDR` = $0C0FFE. The 1 MB from $100000
+  to $1FFFFF lies above all of these.
 - Within phase B the program writes no custom register. It only reads $DFF004
   and $DFF006 and writes Chip memory. P9 depends on this.
 - `wait150` runs in phase A, where the counter runs. At the end of phase B it
@@ -191,11 +223,23 @@ wait150 move.l  $dff004,d0              ; wait until a read shows vertical posit
 
 ### 5.3 The beam model
 
-The model is fitted on the samples of phase A, when bit 3 is clear and
+The model is fitted on samples of phase A, when bit 3 is clear and
 VPOSR/VHPOSR read the beam counter. p.216 describes VHPOSR as "Read vertical
 and horizontal position of the counter that is producing the beam on the
 screen". p.238 says "The light pen register is at the same address as the
 beam counters".
+
+Only the phase-A samples of lines Vrun to L - 1 enter the fit and A1. Lines 0
+to Vrun - 1 and line L are left out: whether they read the running counter
+while bit 3 is clear is part of what P10 (b) grades (the end-of-field latch
+and its release, p.239), and the anchor does not rest on it. The fitted
+samples are chosen by their read values. A field of reads ends where the read
+V falls and the next sample stays below the value before the fall. L is the
+largest V read in a field of reads (for the cut fields at the two ends of
+phase A, the L of the complete fields), and the fit takes the samples whose
+read V lies from Vrun to L - 1. Torn samples (below) are left out of the fit
+and do not end a field of reads. The model extends to lines 0 to Vrun - 1 and
+to line L by its fitted line lengths and phase.
 
 - The model gives a position beam(t) for any time t of the run. Within a line,
   H advances by one per colour clock.
@@ -205,7 +249,7 @@ beam counters".
   two fields.
 - Because the read instant is only known within [a, b], beam(t) is an
   interval of width u.
-- H_ref(t) is the model computed with every phase-A read instant taken at b.
+- H_ref(t) is the model computed with every fitted read instant taken at b.
   It is used only for differences (P3 c).
 - A sample is **current** when its position lies in beam(t) for some t in its
   [a, b].
@@ -217,10 +261,18 @@ contains such a change are exempt from every check.
 
 ### 5.4 Anchors
 
-- **A1.** Every phase-A sample that is not torn is current.
+- **A1.** Every phase-A sample in model lines Vrun to L - 1 that is not torn is
+  current.
 - **A2.** Phase A covers at least two full periods of the model (at least four
-  fields). Within a field V never decreases, and V returns to 0 exactly once
-  per field. u is at most 6 colour clocks.
+  fields). Within the fitted lines of a field V never decreases, and line Vrun
+  of each field begins L + 1 model lines after line Vrun of the field before
+  (L of that earlier field), so the counter numbers lines 0 to L and returns
+  to 0 exactly once per field. u is at most 6 colour clocks. Every model field
+  has 262 or 263 lines in the NTSC runs and 312 or 313 lines in the PAL runs
+  (p.24: "In NTSC, the fields are 262, then 263 lines and in PAL, 312, then
+  313 lines"; p.40: "Each complete set of lines (262/NTSC or 312/PAL) is
+  called a display field"). This confirms that the run is in the standard it
+  is graded as.
 - **A3 (refresh).** In every model line of phases A, B and C there is one group
   of four refresh accesses at the Chip-memory port, at the same model H in
   every line. p.194 lists "4 cycles for memory refresh" per line, and
@@ -275,6 +327,19 @@ latched for long stretches and cannot serve as its own reference.
   0"). A low pulse contains both a falling and a rising edge, so the capture
   window [t_on, t_off] covers either edge (10.5).
 
+### 5.7 Microseconds
+
+Phase D (§6), CP2 and P13 give times in milliseconds and microseconds, the
+unit of p.240's "up to 300 microseconds". They are counted in colour clocks of
+the grid of 5.2 and converted with the colour-clock length the pages give.
+p.255: "All timing is done on the basis of a "color clock," which is 279.36ns
+long on NTSC machines and 281.94ns on PAL machines." p.141 gives the same
+interval, "Clock Interval 0.279365 0.281937 microseconds per interval" (NTSC,
+PAL). A duration of t microseconds is the smallest whole number of colour
+clocks that lasts at least t at that length: t / 0.27936 in NTSC and
+t / 0.28194 in PAL, rounded up. Phase D time 0 is the M3 write at the
+Chip-memory port.
+
 ## 6. Input schedule
 
 Line and H are model values. Each pulse is 4 colour clocks at the fixed grid
@@ -301,7 +366,7 @@ phase. "Both" means the same pin on port 1 and port 2 at the same time.
 | C0 | 0 from line 150 | none (not graded) |
 | C1 | 0 | pin 6 both at (100, 100) |
 | C2, C3 | 0 | none |
-| D | (POTGO = $FF00) | times from M3: 2-4 ms port 1 pin 5 low; 5-7 ms port 2 pin 5 low; 8-10 ms port 1 pin 9 and port 2 pin 9 low; released otherwise, up to 12 ms |
+| D | (POTGO = $FF00) | times from M3, counted as in 5.7: 2-4 ms port 1 pin 5 low; 5-7 ms port 2 pin 5 low; 8-10 ms port 1 pin 9 and port 2 pin 9 low; released otherwise, up to 12 ms |
 
 ## 7. Common preconditions
 
@@ -311,11 +376,11 @@ evaluated, not as green.
 
 | Id | Precondition | Contrasting run |
 |---|---|---|
-| CP1 | The beam model is anchored on phase A: A1 and A2 of 5.4 hold. | K4 |
-| CP2 | Sampling is dense. In phases A to C, consecutive read instants are at most 56 colour clocks apart (a quarter line), and every line of every graded window holds at least two samples. In phase D, consecutive POTGOR samples are at most 50 microseconds apart. | K5 |
-| CP3 | No stray trigger reaches the latch from the idle inputs. Every sample of RUN(B1) is current. | K11 |
+| CP1 | The beam model is anchored on phase A: A1 and A2 of 5.4 hold. | K17 (A1, A2), K15 (A2, standard) |
+| CP2 | Sampling is dense. In phases A to C, consecutive read instants are at most 56 colour clocks apart (a quarter line), and every line of every graded window holds at least two samples. In phase D, consecutive POTGOR samples are at most 50 microseconds apart (5.7). | K5 |
+| CP3 | No trigger is presented outside the schedule: pin 6 of both ports stays at the level of an open switch except during the scheduled pin-6 pulses. (a) The CIAAPRA read of §4, made in phase A, has bits 6 and 7 = 1. p.229: "CIAAPRA ($BFE001) Input and output for pin 6 (port 1 and 2 fire buttons)"; p.232: "Port 1 uses bit 6 and port 2 uses bit 7. A logic state of 1 means "switch open."" (b) By the harness's own record, pin 6 of both ports was at that same level throughout phases A to C, except during the scheduled pin-6 pulses. The pin is read through the CIA, not through the light-pen latch, so CP3 does not rest on any clause that P1 to P12 grade. | K11 |
 | CP4 | Inputs are delivered as scheduled. Each input change in the schedule of the run being made took place, by the harness's own record, at its scheduled model line and H (exactly, at the fixed grid phase), and each pulse lasted 4 colour clocks. No other input changed in phases A to D. For a contrasting run, "the schedule" is its changed schedule. | K12 |
-| CP5 | The program ran as specified. M0 to M4 appear in order. The BPLCON0 writes fall between the last read of `wait150` and M1 or M2, at line 150. Coverage: phase A at least two model periods, phase B up to line 40 of B21, phase C up to line 40 of C3, phase D at least 12 ms after M3. | K13 |
+| CP5 | The program ran as specified. M0 to M4 appear in order. The BPLCON0 writes fall between the last read of `wait150` and M1 or M2, at line 150. Coverage: phase A at least two model periods, phase B up to line 40 of B21, phase C up to line 40 of C3, phase D at least 12 ms after M3. A proposition depends only on the part of CP5 for the phases it observes: P1 to P9, P10 (a), P11 and P12 on M0, M1, the phase-B write and the coverage of phases A and B; P10 (b) on M0, M2, the phase-C write and the coverage of phases A and C; P13 on M3, M4 and the coverage of phase D. The `wait150` that ends phase B reads VPOSR with bit 3 set, so it returns only after a release (P8). If it never returns, the phase-B propositions are graded on the stored phase-B samples, P10 (b) is graded on phase A only, and P13 is not evaluated. | K13 |
 | CP6 | The beam keeps its timing in phases B and C: A3 and A4 hold there. | K14 |
 
 ## 8. Contrasting runs
@@ -327,21 +392,25 @@ the preconditions other than the one a run targets still hold.
 
 | Run | Change | What the pages predict | Red |
 |---|---|---|---|
-| K1 | Phase B writes BPLCON0 = $0000 instead of $0008. | No light pen input and no latch in phase B. p.239: "To enable the light pen input, write a 1 into bit 3 of BPLCON0". p.229: "Bit 3 enables the light pen latch". | P1, P2 (ii), P3, P4, P5, P6, P7 (b), P8 (a), P9 (b), P10 (a), P11, P12 |
+| K1 | Phase B writes BPLCON0 = $0000 instead of $0008. | No light pen input and no latch in phase B. p.239: "To enable the light pen input, write a 1 into bit 3 of BPLCON0". p.229: "Bit 3 enables the light pen latch". | P1, P2 (ii), P3, P4, P5, P6, P7 (b), P8 (a), P9 (b)(c), P10 (a), P11, P12 |
 | K2 | A pin-6 pulse (both ports) at (100, 100) is added in B2 and in B3. | Captures in B2 and B3, with VB(B3) and VB(B4) holding those positions (p.238 step 4, p.239). | P7 (a)(b), P8 (b), P11, P12 |
 | K3 | Phase C writes BPLCON0 = $0008 instead of $0000. | The C1 pulse is captured and the C1 and C2 field ends latch. | P10 (b) |
-| K4 | Phase A writes BPLCON0 = $0008 instead of $0000. | Phase-A field ends latch (p.239: "If no trigger is seen, the counters latch at the end of the display field"). | CP1 (A1) |
+| K4 | Phase A writes BPLCON0 = $0008 instead of $0000. | Phase-A field ends latch (p.239: "If no trigger is seen, the counters latch at the end of the display field"), so lines 0 to 19 of the phase-A fields hold the latched value. The latch is released at the end of vertical blanking, before line Vrun (p.239, 10.1), so the fitted lines still run and CP1 holds. | P10 (b) (phase A) |
 | K5 | The phase-B loop gets a delay of at least 300 colour clocks per sample. | Samples more than a line apart. | CP2 |
 | K6 | The line-10 pulse of B15 and the line-19 pulse of B17 are moved to line 30 (H = 100). | Line 30 is after vertical blank on every page, so these pulses are captured (p.238 step 1). | P9 (a)(b) |
 | K7 | The line-32 pulses of B15 and B17 are moved to line 12. | Inside vertical blank, so they are not captured. | P9 (b) |
 | K8 | The first pulse of B14 (line 80) is removed. | The capture happens at (150, 100) instead. | P5 |
 | K9 | In B18, the pin-1 pulse at line 40 is replaced by a pin-6 pulse. | Capture at (40, 100). | P2 (i) |
+| K9b | The pin-6 pulses of B4 (port 1), B5 (port 2) and B18 (both ports) are moved to pin 9 of the same ports, at the same positions. | No capture in B4, B5 or B18: the trigger line is pin 6 (p.238: "the "Beam Trigger" line (pin 6)"), and Table 8-1 (p.228) gives pin 9 of the light pen "button 2**". | P1, P2 (ii) |
 | K10 | In phase D, pin 9 is driven low in the windows where the main run drives pin 5 low. | Bits 8 and 12 of POTGOR stay 1 (p.240, Table 8-4: pin 9 is bits 10 and 14). | P13 |
 | K10b | In phase D, port 1 pin 5 is held low throughout. | Bit 8 reads 0 in every window. | P13 |
-| K11 | A pin-6 pulse (both ports) at (100, 100) is added in B1. | Capture in B1. | CP3 |
+| K11 | Pin 6 of both ports is held closed (low) from the start of the run until one field after M0, then released. Bit 3 is clear throughout, so the light pen latch is not involved. | CIAAPRA bits 6 and 7 read 0 (p.232: "A logic state of 0 means "switch closed.""), and the pin is off the open-switch level outside any scheduled pulse. | CP3 (a)(b) |
 | K12 | Every pulse is placed one line later than the schedule says. | Placement differs from the schedule. | CP4 |
 | K13 | The phase-B buffer is shortened so that phase B ends in B19. | Coverage missing. | CP5 |
 | K14 | Directly after the `wait150` that ends phase B (line 150, after every graded phase-B window), the program writes VHPOSW = $6400 once (line 100, H 0). p.285: "Write vertical and horizontal position of beam or lightpen"; Appendix B p.289: "Write vert and horiz position of beam". | The counter jumps back 50 lines and to H 0. The refresh group, drawn at a fixed place in the line (p.195), and the field boundary no longer sit where the model puts them in phase C. | CP6 (A3 or A4) |
+| K15 | The standard of the ECS/PAL run is switched: its harness `Config` selects NTSC, and its input schedule is the NTSC one (B19 at (261, 100)). | Fields of 262 or 263 lines, where the ECS/PAL run's A2 expects 312 or 313 (p.24, p.40). | CP1 (A2) |
+| K16 | The B7 pulse is placed at (100, 122) instead of (100, 102), and the B11 pulse at (41, 100) instead of (40, 100). P3 is graded with the main schedule's onsets. | Captures at (100, 122) and (41, 100): the value of the counter "at the instant the beam passed the light pen" (p.238). | P3 (a) for B11; P3 (b) and (c) for B7 |
+| K17 | As K4, and a pin-6 pulse (both ports) at (200, 100) is added in every phase-A field. | Each pulse is captured and VPOSR stays frozen until the end of vertical blanking (p.238 step 4, p.239), so the phase-A samples of lines 200 to L - 1 are not current and the largest V read in each field is 200, not L. Line 200 comes after the line 150 that `wait150` waits for, so the program still finishes. | CP1 (A1 or A2) |
 
 ---
 
@@ -353,7 +422,7 @@ the preconditions other than the one a run targets still hold.
    ports is captured as a light-pen trigger. Which port it is, the pages leave
    open.
    Claims: opus:8-lpen.c1, sol:8-pen.c1 (p.238); opus:8-intro.c12,
-   sol:8-overview.c6, opus:8-intro.c2 in part (p.227).
+   sol:8-overview.c6 (p.227).
 2. **Stimulus.** Program of §4. The pin-6 pulse in B4 is on port 1 only, and in
    B5 on port 2 only, both at (100, 100). There are no other inputs in these
    fields.
@@ -372,9 +441,12 @@ the preconditions other than the one a run targets still hold.
      model and to a jumper, and this system is none of the models it names.
      p.227's "Two multiple purpose mouse/joystick/light pen control ports"
      could be read as both ports, which p.238 contradicts for every model it
-     names (10.4).
+     names (10.4). opus:8-intro.c2, whose `says` reads it that way, is
+     declined (§1).
 5. **Preconditions.** CP1 to CP6.
-6. **Contrasting case.** K1: neither pulse is captured, so the check is red.
+6. **Contrasting case.** K9b: both pulses are on pin 9, the page predicts no
+   capture, so the check is red through the trigger pin. K1: neither pulse is
+   captured, so the check is red.
 7. **Reference frame.** 5.3 to 5.6.
 
 ### P2 — Pin 6 is the beam-trigger line; the other signal pins are not
@@ -400,8 +472,9 @@ the preconditions other than the one a run targets still hold.
      cannot be driven.
 5. **Preconditions.** CP1 to CP6. By CP4, the six pulses were delivered on
    both ports at their lines.
-6. **Contrasting case.** K9 predicts a capture at line 40, so (i) is red. K1
-   predicts no capture, so (ii) is red.
+6. **Contrasting case.** K9 predicts a capture at line 40, so (i) is red. K9b
+   moves the line-160 pulse to pin 9 and predicts no capture, so (ii) is red
+   through the pin. K1 predicts no capture, so (ii) is red too.
 7. **Reference frame.** 5.3 to 5.6.
 
 ### P3 — A trigger captures the beam position exactly at its instant
@@ -443,8 +516,15 @@ the preconditions other than the one a run targets still hold.
    - Quantifier: every graded pulse.
 5. **Preconditions.** CP1 to CP6. By CP4, the H sweep and the lines were placed
    as scheduled.
-6. **Contrasting case.** K1: the page predicts no capture. POST(p) holds
-   current samples, so (a), (b) and (c) are red.
+6. **Contrasting case.**
+   - K16: the page predicts captures at (41, 100) in B11 and (100, 122) in B7.
+     Graded with the main schedule's onsets, (a) is red for B11. For B7 the
+     captured H is 20 colour clocks after the main onset, beyond the window
+     of (b), whose width is 4 + u with u at most 6 (A2), and 20 away from the
+     common offset of (c); so (b) and (c) are red, each through the captured
+     value.
+   - K1: the page predicts no capture. POST(p) holds current samples, so (a),
+     (b) and (c) are red.
 7. **Reference frame.** 5.2 (grid, u), 5.3 (beam, H_ref), 5.6 (onset phase).
 
 ### P4 — VPOSR holds the high-order bit, VHPOSR the low-order bits of the pen position
@@ -517,7 +597,8 @@ the preconditions other than the one a run targets still hold.
 2. **Stimulus.** Phase B:
    - pen captures: every graded capture of P3;
    - end-of-field latches: the ends of B1, B2, B3 and B20, fields with no
-     input change.
+     input change. B16 also has none; its end is left out for the reason
+     given in P7.
 3. **Observation.** Two kinds of latched window:
    - after a pen capture in field k: the samples of POST(p) whose read
      interval starts at least one line (227 colour clocks) after t_off, up to
@@ -547,8 +628,11 @@ the preconditions other than the one a run targets still hold.
    the beam counters as read through VPOSR/VHPOSR latch at the end of that
    field.
    Claims: opus:8-lpen.c37, sol:8-pen.c37 (p.239).
-2. **Stimulus.** Fields B1, B2, B3 and B20. They have no input change and lie
-   wholly under bit 3 = 1.
+2. **Stimulus.** Fields B1, B2, B3 and B20. They have no input change, lie
+   wholly under bit 3 = 1, and the vertical blank after each of them has no
+   input change either. B16 also has no input change, but VB(B17) holds the
+   line-19 pulse that P9 grades, so a red there could come through P9's
+   clause; its end is not graded here.
 3. **Observation.** For each such field k:
    - RUN(k);
    - the samples of line L_k, which are not graded;
@@ -565,20 +649,25 @@ the preconditions other than the one a run targets still hold.
    - The page gives no H for "the end of the display field". The samples of
      line L_k are not graded, and H(F_k) is graded only through (c).
    - How F_k compares with $10500 is graded in P11 and P12.
-   - Quantifier: every no-trigger field end, four per run.
-5. **Preconditions.** CP1 to CP6. CP3 shows that the idle inputs do not
-   trigger.
+   - Quantifier: every no-trigger field end whose following vertical blank
+     has no input change, four per run.
+5. **Preconditions.** CP1 to CP6. By CP3 and CP4, pin 6 stays at the
+   open-switch level through these fields, so no trigger is seen in them.
 6. **Contrasting case.** K2: the page predicts pen captures in B2 and B3. RUN
    of those fields stops being current from line 100, and VB(B3) and VB(B4)
    hold line-100 positions, so (a) and (b) are red. K1: no latch, so (b) is red
-   for all four fields.
+   for all four fields. (c) has no contrasting input: every latch the pages
+   describe comes after the last current read of its field, so no input makes
+   them predict m(F_k) < m(R_k). (c) is unfalsifiable by stimulus at this
+   boundary.
 7. **Reference frame.** 5.3 to 5.5 (L_k, field boundaries).
 
 ### P8 — The freeze is released at the end of internal vertical blanking
 
 1. **Proposition.** Every latch holds until the end of internal vertical
    blanking and no longer. After that, VPOSR shows the current position again.
-   Claims: opus:8-lpen.c39, sol:8-pen.c39 (p.239).
+   Claim: opus:8-lpen.c39 (p.239). sol:8-pen.c39, which fixes the release at
+   vertical position 20, is declined (§1).
 2. **Stimulus.** Phase B. Every latched window ending in fields B2 to B21, from
    captures as well as from no-trigger field ends. Whichever port P1 finds, the
    ends of B4 and B5 are latched either way.
@@ -608,9 +697,11 @@ the preconditions other than the one a run targets still hold.
 ### P9 — The capture circuitry re-arms by itself as vertical blank ends
 
 1. **Proposition.** At the end of vertical blank the capture circuitry is
-   enabled again without any action by the program. A pulse before that point
-   is not captured, and a pulse after it is.
-   Claims: opus:8-lpen.c12, sol:8-pen.c12 (p.238).
+   enabled again without any action by the program. A pulse after that point
+   is captured, and a pulse inside vertical blank is not held over the
+   release.
+   Claims: none. opus:8-lpen.c12 and sol:8-pen.c12, which state p.238 step 1,
+   are declined (§1): its "Just as" is not graded whole.
 2. **Stimulus.**
    - B15: pin-6 pulses at (10, 100) and (32, 100), after B14's capture.
    - B17: pin-6 pulses at (19, 100) and (32, 100), after the no-trigger field
@@ -623,9 +714,13 @@ the preconditions other than the one a run targets still hold.
 4. **Expected.**
    - The page. p.238: "Just as the system exits vertical blank, the capture
      circuitry for the light pen is automatically enabled."
-   - (a) A pulse inside vertical blank is not captured. Every sample of
-     RUN(B15) and RUN(B17) is current, so neither the line-10 nor the line-19
-     pulse is held over the release.
+   - (a) No hold-over past the release. Every sample of RUN(B15) and
+     RUN(B17) is current, so neither the line-10 nor the line-19 pulse is held
+     over the release. (a) grades only that. Every vertical blank of phase B
+     is already latched (p.239), so a capture inside it that does not
+     overwrite the frozen value leaves nothing at the ports. An overwrite is
+     graded in P5 (the line-10 pulse of B15) and P8 (a) (the line-19 pulse of
+     B17).
    - (b) A pulse after vertical blank is captured without software action. In
      B15 and in B17, POST of the line-32 pulse holds that pulse's position
      (P3 (a) and (b)).
@@ -634,7 +729,8 @@ the preconditions other than the one a run targets still hold.
      enable.
    - "Just as" is graded only as far as all pages agree. Lines 10 and 19 are
      inside vertical blank on every page, and line 32 is after it on every
-     page (10.1). Lines 20 to 31 are not probed.
+     page (10.1). Lines 20 to 31 are not probed. This, and the limit of (a),
+     are why the p.238 claims are declined.
 5. **Preconditions.** CP1 to CP6. The builder asserts from the program listing
    that the phase-B loop contains no write to a custom register.
 6. **Contrasting case.**
@@ -643,6 +739,7 @@ the preconditions other than the one a run targets still hold.
      red.
    - K7: the page predicts no capture at line 12. POST shows current samples,
      so (b) is red.
+   - K1: the page predicts no capture in phase B, so (c) is red.
 7. **Reference frame.** 5.3 to 5.6; Vrun from 10.1.
 
 ### P10 — Bit 3 of BPLCON0 enables the light pen input and latch
@@ -657,6 +754,9 @@ the preconditions other than the one a run targets still hold.
    - Phase C: C1 has a pin-6 pulse (both ports) at (100, 100); C2 and C3 have
      no input change.
 3. **Observation.**
+   - Phase A: VB(k) of every phase-A field k whose preceding field end comes
+     after M0. These lines are left out of the model fit and of A1 (5.3), so
+     they are graded here and not assumed by the anchor.
    - Phase B: the P3 and P7 windows.
    - Phase C: C1 from Vrun to L - 1, including after the pulse; all lines of C2
      (0 to L - 1); VB(C3).
@@ -666,15 +766,17 @@ the preconditions other than the one a run targets still hold.
      p.271: "LPEN =Light pen enable (reset on power up)".
    - (a) Bit 3 = 1: every graded pin-6 pulse is captured (P3 (a)), and every
      no-trigger field end latches (P7 (b)).
-   - (b) Bit 3 = 0: every sample of the phase-C windows is current. The C1
-     pulse is not captured, and neither the C1 nor the C2 field end latches.
+   - (b) Bit 3 = 0: every sample of the phase-A and phase-C windows is
+     current. No phase-A field end latches, the C1 pulse is not captured, and
+     neither the C1 nor the C2 field end latches.
    - Not graded: B0, C0 and VB(C1). These are the fields in which bit 3
      changes, and the field end they reach. The pages do not say when a change
      of bit 3 takes effect relative to the automatic enabling at the end of
      vertical blank (p.238 step 1).
 5. **Preconditions.** CP1 to CP6. By CP5, the BPLCON0 writes are bracketed by
    markers.
-6. **Contrasting case.** K1 makes (a) red. K3 makes (b) red.
+6. **Contrasting case.** K1 makes (a) red. K3 makes (b) red in phase C, and
+   K4 in phase A.
 7. **Reference frame.** 5.3 to 5.5.
 
 ### P11 — The two-read detection method gives the right answer
@@ -726,7 +828,7 @@ the preconditions other than the one a run targets still hold.
    - Quantifier: every graded pair.
 5. **Preconditions.** CP1 to CP6. By CP4 and the schedule, both classes occur:
    pairs with T true (after 13 or more captures) and latched equal pairs with T
-   false (four no-trigger field ends).
+   false (the ends of the no-trigger fields B1, B2, B3, B16 and B20).
 6. **Contrasting case.**
    - K1: after the pulses the pairs are unequal while T is true, so the check
      is red.
@@ -763,7 +865,8 @@ the preconditions other than the one a run targets still hold.
      leaves m = $10500 without an answer, so that value is not graded.
    - Quantifier: every sample of every listed window.
 5. **Preconditions.** CP1 to CP6. By the schedule, windows of both kinds exist:
-   after captures (B7 to B19) and after no-trigger fields (B2, B3, B4, B21).
+   after captures (B7 to B16, B18, B19) and after no-trigger fields (B2, B3,
+   B4, B17, B21).
 6. **Contrasting case.**
    - K1: the samples are current, with m below 256*20. That is "triggered"
      where the truth is "not triggered", and not the pen position where it is
@@ -817,8 +920,8 @@ the preconditions other than the one a run targets still hold.
 6. **Contrasting case.** K10: pin 9 instead of pin 5, so the page predicts bits
    8 and 12 stay 1, and the check is red. K10b: pin 5 held low throughout, so
    bit 8 is 0 where 1 is expected, and the check is red.
-7. **Reference frame.** Time from M3 at the Chip-memory port; the input record
-   of the harness.
+7. **Reference frame.** Time from M3 at the Chip-memory port, in microseconds
+   as 5.7 counts them; the input record of the harness.
 
 ---
 
@@ -835,7 +938,8 @@ the preconditions other than the one a run targets still hold.
    - All pages agree only that lines 0 to 19 are blanked and that blanking is
      over by line 21 (NTSC) or 29 (PAL). P5, P6 and P8 grade the latch through
      line 19. P8 and P9 grade the running counter or re-arming from Vrun = 21
-     or 29 and report the line where it actually happens.
+     or 29 and report the line where it actually happens. sol:8-pen.c39,
+     whose `says` fixes the release at line 20, is therefore declined (§1).
 2. **The threshold $10500 (V=261) against captures at or below line 261.**
    - p.239 step 4 answers "not triggered" for any value above $10500.
    - p.238 step 4 says the captured value is the pen's exact position. That
@@ -853,7 +957,8 @@ the preconditions other than the one a run targets still hold.
      A3000, with a jumper for port 1.
    - p.227: "Two multiple purpose mouse/joystick/light pen control ports".
    - The system under test is none of those models. P1 grades "at least one
-     port" and reports which.
+     port" and reports which. opus:8-intro.c2, whose `says` reads p.227 as
+     each port, is declined (§1).
 5. **Trigger polarity, pulse width, delay.**
    - p.238 says only "an electrical pulse".
    - p.333 names the line LPENTG* and p.381 LP*, active low in the manual's
@@ -888,7 +993,8 @@ the preconditions other than the one a run targets still hold.
 11. **The value exactly $10500** is neither "greater" nor "less". The page
     gives no answer for it, and it is not graded.
 12. **ECS LPENDIS reset value:** not stated (p.305). BEAMCON0 is not written
-    (§3).
+    (§3). An ECS run whose phase B shows no latch at all is recorded with
+    LPENDIS as the open point, not graded red on the latch propositions (§3).
 13. **Text layer against print, no effect on expectations.**
     - p.239: the text layer adds "(LPEN)", which is not printed.
     - p.238: the print reads "the right or middle button on a mouse".
