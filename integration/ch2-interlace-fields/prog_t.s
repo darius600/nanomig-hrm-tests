@@ -13,6 +13,7 @@
 ;   M1_DELAY       T-f  M1 waits between samples (see m1.i)
 ;   T_SKIP10       T-g  the WAIT and MOVE of line 10 are deleted
 ;   T_NOCOPEN      T-h  DMACON = $8300 (COPEN not set)
+;   T_BADFIX       T-i  FIXMARK stores $DEAD, not $BEEF
 
         include "nanomig.i"
         include "ch2.i"
@@ -37,7 +38,11 @@ start:
 
         ; The fixture proves it can deliver a known value before anything
         ; else reads one.
+        ifd     T_BADFIX
+        move.w  #$DEAD,FIXMARK.l
+        else
         move.w  #$BEEF,FIXMARK.l
+        endif
 
         ; PLANE: 11,000 bytes of $0000 (section 4.1).
         lea     PLANE,a1

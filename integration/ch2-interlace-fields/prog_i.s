@@ -16,6 +16,8 @@
 ;   M1_DELAY     I-j   M1 waits between samples (see m1.i)
 ;   I_NOTAG      I-k   PIC filled with $0000, not the tags
 ;   I_LATEPTR    I-l   the BPL1PT MOVEs placed after WAIT $2D01,$FF00
+;   I_LATESPR    I-m   the SPR0PT MOVEs placed after WAIT $2D01,$FF00
+;   I_BADFIX     I-n   FIXMARK stores $DEAD, not $BEEF
 
         include "nanomig.i"
         include "ch2.i"
@@ -38,8 +40,10 @@ FIXMARK         equ     $087400         ; the fixture's own known-value proof
         org     PROGRAM_ORG
 
 start:
-        ; Release the reset-time overlay (ch2.i) so the interrupt vector at
-        ; $6C can be written below; see ch2.i's own comment.
+        ; Release the reset-time overlay so the interrupt vector at $6C
+        ; can be written below (ch2.i: CIA-A PRA bit 0 is OVL, p339/p223;
+        ; DDRA is written first, as p339 gives it).
+        move.b  #$03,CIAADDRA.l
         move.b  #0,CIAAPRA.l
 
         clr.w   HCNT.l
@@ -47,7 +51,11 @@ start:
 
         ; The fixture proves it can deliver a known value before anything
         ; else reads one.
+        ifd     I_BADFIX
+        move.w  #$DEAD,FIXMARK.l
+        else
         move.w  #$BEEF,FIXMARK.l
+        endif
 
         move.l  #i_handler,$6C.w
 
@@ -177,8 +185,10 @@ i_handler:
         endif
         endif
         ifnd    I_NOSPRLIST
+        ifnd    I_LATESPR
         dc.w    SPR0PTH,(SPR>>16)&$FFFF
         dc.w    SPR0PTL,SPR&$FFFF
+        endif
         endif
         dc.w    SPR1PTH,(NULLSPR>>16)&$FFFF
         dc.w    SPR1PTL,NULLSPR&$FFFF
@@ -199,6 +209,12 @@ i_handler:
         ifnd    I_NOPTRLIST
         dc.w    BPL1PTH,(PIC>>16)&$FFFF
         dc.w    BPL1PTL,PIC&$FFFF
+        endif
+        endif
+        ifd     I_LATESPR
+        ifnd    I_NOSPRLIST
+        dc.w    SPR0PTH,(SPR>>16)&$FFFF
+        dc.w    SPR0PTL,SPR&$FFFF
         endif
         endif
         dc.w    INTREQ,$8010
@@ -217,8 +233,10 @@ i_handler:
         endif
         endif
         ifnd    I_NOSPRLIST
+        ifnd    I_LATESPR
         dc.w    SPR0PTH,(SPR>>16)&$FFFF
         dc.w    SPR0PTL,SPR&$FFFF
+        endif
         endif
         dc.w    SPR1PTH,(NULLSPR>>16)&$FFFF
         dc.w    SPR1PTL,NULLSPR&$FFFF
@@ -244,6 +262,12 @@ i_handler:
         dc.w    BPL1PTH,((PIC+40)>>16)&$FFFF
         dc.w    BPL1PTL,(PIC+40)&$FFFF
         endif
+        endif
+        endif
+        ifd     I_LATESPR
+        ifnd    I_NOSPRLIST
+        dc.w    SPR0PTH,(SPR>>16)&$FFFF
+        dc.w    SPR0PTL,SPR&$FFFF
         endif
         endif
         dc.w    INTREQ,$8010

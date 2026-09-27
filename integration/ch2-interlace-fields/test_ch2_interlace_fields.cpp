@@ -23,31 +23,34 @@
 // NMH_MUTATE=<label> against both cores' builds. Where it disagrees with
 // the record's own prediction, that disagreement is kept, not tuned away.
 //
-// MUTATION P1 stimulus red NMH_MUTATE=P1: LACE=0 (I-a) -- measured: red on fx68k, red on tg68k
-// MUTATION PI-3 stimulus red NMH_MUTATE=PI-3: LACE=0 (I-a) -- measured: red on fx68k, red on tg68k
-// MUTATION P4a stimulus red NMH_MUTATE=P4a: both lists omit the BPL1PT MOVEs (I-c) -- measured: red on fx68k, red on tg68k
-// MUTATION P4b stimulus red NMH_MUTATE=P4b: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast P4e measured green on fx68k, green on tg68k
-// MUTATION P4c stimulus red NMH_MUTATE=P4c: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast P4e measured green on fx68k, green on tg68k
-// MUTATION P4d stimulus red NMH_MUTATE=P4d: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast P4e measured green on fx68k, green on tg68k
-// MUTATION P4e stimulus red NMH_MUTATE=P4e: the handler never repoints COP1LC (I-d) -- measured: red on fx68k, red on tg68k; contrast PI-5 measured green on fx68k, green on tg68k
-// MUTATION P5 stimulus red NMH_MUTATE=P5: both lists omit the BPL1PT MOVEs (I-c) -- measured: red on fx68k, red on tg68k
+// MUTATION P1 stimulus red NMH_MUTATE=P1: LACE=0 (I-a) -- measured: red on fx68k, red on tg68k; contrast (all 8 lengths equal) green on fx68k, green on tg68k; contrast PI-1/PI-2/PI-4 green on fx68k, green on tg68k
+// MUTATION PI-3 stimulus red NMH_MUTATE=PI-3: LACE=0 (I-a) -- measured: red on fx68k, red on tg68k; contrast (all 8 lengths equal) green on fx68k, green on tg68k; contrast PI-1/PI-2/PI-4 green on fx68k, green on tg68k
+// MUTATION P4a stimulus red NMH_MUTATE=P4a: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast PI-1/PI-2/PI-4/PI-5/PI-6/PI-7/PI-8/P4e green on fx68k, green on tg68k
+// MUTATION P4b stimulus red NMH_MUTATE=P4b: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast P4e green on fx68k, green on tg68k
+// MUTATION P4c stimulus red NMH_MUTATE=P4c: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast P4e green on fx68k, green on tg68k
+// MUTATION P4d stimulus red NMH_MUTATE=P4d: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast P4e green on fx68k, green on tg68k
+// MUTATION P4e stimulus red NMH_MUTATE=P4e: the handler never repoints COP1LC (I-d) -- measured: red on fx68k, red on tg68k; contrast PI-5 green on fx68k, green on tg68k
+// MUTATION P5 stimulus red NMH_MUTATE=P5: both lists omit the BPL1PT MOVEs (I-c) -- measured: red on fx68k, red on tg68k, through the first bitplane fetch's own address measured wherever it lies
 // MUTATION P6 stimulus red NMH_MUTATE=P6: both lists omit the SPR0PT MOVEs (I-e) -- measured: red on fx68k, red on tg68k
 // MUTATION PI-1 stimulus red NMH_MUTATE=PI-1: M1 waits between samples (I-j) -- measured: red on fx68k, red on tg68k
 // MUTATION PI-2 stimulus red NMH_MUTATE=PI-2: DMACON leaves COPEN clear (I-f) -- measured: red on fx68k, red on tg68k
 // MUTATION PI-4 stimulus red NMH_MUTATE=PI-4: DMACON leaves BPLEN clear (I-h) -- measured: red on fx68k, red on tg68k
 // MUTATION PI-5 stimulus red NMH_MUTATE=PI-5: INTENA leaves COPER clear (I-g) -- measured: red on fx68k, red on tg68k
-// MUTATION PI-6 stimulus red NMH_MUTATE=PI-6: PIC filled with $0000 (I-k) -- measured: red on fx68k, red on tg68k
-// MUTATION PI-7 stimulus red NMH_MUTATE=PI-7: BPL1PT MOVEs placed after the WAIT (I-l) -- measured: GREEN on fx68k, GREEN on tg68k (mismatch: WAIT $2D01 is satisfied at once at this restart, ~36 colour clocks in, not after ~45 lines; see the PI-7 dispatch code and SPECIFICATION.md's Build section)
+// MUTATION PI-6 stimulus red NMH_MUTATE=PI-6: PIC filled with $0000 (I-k) -- measured: red on fx68k, red on tg68k; contrast PI-1 green on fx68k, green on tg68k
+// MUTATION PI-7(bpl) stimulus red NMH_MUTATE=PI-7(bpl): BPL1PT MOVEs placed after the WAIT (I-l) -- measured: red on fx68k, red on tg68k, through the field's first bitplane fetch read at the list's real offset
+// MUTATION PI-7(spr) stimulus red NMH_MUTATE=PI-7(spr): SPR0PT MOVEs placed after the WAIT (I-m) -- measured: red on fx68k, red on tg68k
 // MUTATION PI-8 stimulus red NMH_MUTATE=PI-8: DMACON leaves SPREN clear (I-i) -- measured: red on fx68k, red on tg68k
+// MUTATION FIX-I stimulus red NMH_MUTATE=FIX-I: FIXMARK stores $DEAD, not $BEEF (I-n) -- measured: red on fx68k, red on tg68k
 // MUTATION P2 stimulus red NMH_MUTATE=P2: PAL selected instead of NTSC (T-b) -- measured: red on fx68k, red on tg68k
-// MUTATION P3 stimulus red NMH_MUTATE=P3: PAL selected instead of NTSC (T-b) -- measured: red on fx68k, red on tg68k
+// MUTATION P3 (already red at baseline; contrast, not a stimulus) NMH_MUTATE=P3: PAL selected instead of NTSC (T-b) -- measured: also red on fx68k and tg68k, through the field-type clause; contrast PT-5 green on fx68k, green on tg68k; no input in this package makes P3's own comparator green
 // MUTATION PT-1 stimulus red NMH_MUTATE=PT-1: M1 waits between samples (T-f) -- measured: red on fx68k, red on tg68k
 // MUTATION PT-2 stimulus red NMH_MUTATE=PT-2: DIWSTOP is the normal NTSC value (T-e) -- measured: red on fx68k, red on tg68k
 // MUTATION PT-3 stimulus red NMH_MUTATE=PT-3: line 100's mark uses H=$C0 (T-d) -- measured: red on fx68k, red on tg68k
-// MUTATION PT-4 stimulus red NMH_MUTATE=PT-4: the first WAIT is (0,$00) (T-c) -- measured: red on fx68k, red on tg68k
-// MUTATION PT-5 stimulus red NMH_MUTATE=PT-5: line 10's WAIT+MOVE is deleted (T-g) -- measured: red on fx68k, red on tg68k
-// MUTATION PT-6 stimulus red NMH_MUTATE=PT-6: LACE=0 (T-a) -- measured: red on fx68k, red on tg68k
+// MUTATION PT-4 stimulus red NMH_MUTATE=PT-4: the first WAIT is (0,$00) (T-c) -- measured: red on fx68k, red on tg68k, through line 0-to-1 (3528 clk_sys), not through the restart-to-mark margin (64 clk_sys on both cores)
+// MUTATION PT-5 stimulus red NMH_MUTATE=PT-5: line 10's WAIT+MOVE is deleted (T-g) -- measured: red on fx68k, red on tg68k; contrast PT-3 (using T-g's own list map) green on fx68k, green on tg68k; contrast PT-1 green on tg68k, RED on fx68k
+// MUTATION PT-6 stimulus red NMH_MUTATE=PT-6: LACE=0 (T-a) -- measured: red on fx68k, red on tg68k; contrast PT-1 green on tg68k, RED on fx68k
 // MUTATION PT-7 stimulus red NMH_MUTATE=PT-7: DMACON leaves COPEN clear (T-h) -- measured: red on fx68k, red on tg68k
+// MUTATION FIX-T stimulus red NMH_MUTATE=FIX-T: FIXMARK stores $DEAD, not $BEEF (T-i) -- measured: red on fx68k, red on tg68k
 
 #include <cstdio>
 #include <cstdint>
@@ -403,39 +406,48 @@ bool pi6_tags(const IAnalysis& a) {
     return true;
 }
 
-// lateLayout selects I-l's own list layout (prog_i_l.s): the BPL1PT MOVEs
-// sit after SPR0PT/SPR1-7PT and the WAIT $2D01,$FF00 (offset 36 bytes),
-// not at the list's first word (offset 0) as in the normal (I-0) layout.
-bool pi7_bpl(const IAnalysis& a, bool lateLayout = false) {
+// Finds the port cycle of the earliest read of word address `wa` within
+// [begin,end), or UINT64_MAX if there is none.
+uint64_t first_read_cycle(const Run& r, uint32_t wa, uint64_t begin, uint64_t end) {
+    for (const auto& acc : r.log)
+        if (!acc.is_write && acc.word_addr == wa && acc.cycle >= begin && acc.cycle < end) return acc.cycle;
+    return UINT64_MAX;
+}
+
+// bplLate selects I-l's own list layout (prog_i_l.s): the BPL1PT MOVEs sit
+// after the SPR0-7PT MOVEs and the WAIT $2D01,$FF00 (byte offset 68), not
+// at their normal position (offset 0). I-m (SPECIFICATION.md 3.5) moves
+// the SPR0PT MOVEs instead, which does not shift BPL1PT's own offset.
+bool pi7_bpl(const IAnalysis& a, bool bplLate = false) {
     if (!a.matched) return false;
     for (const auto& f : a.fields) {
         uint32_t listbase = (f.list == 'A') ? kI_LISTA : kI_LISTB;
-        uint32_t wa = (listbase + (lateLayout ? 36u : 0u)) / 2;
-        uint64_t ptrCycle = UINT64_MAX;
-        for (const auto& acc : a.r.log)
-            if (!acc.is_write && acc.word_addr == wa && acc.cycle >= f.begin && acc.cycle < f.end) { ptrCycle = acc.cycle; break; }
-        if (ptrCycle == UINT64_MAX) return false;
-        if (f.bpl.empty() || ptrCycle >= f.bpl.front().cycle) return false;
+        uint32_t off = bplLate ? 68u : 0u;
+        uint64_t cycH = first_read_cycle(a.r, (listbase + off) / 2, f.begin, f.end);
+        uint64_t cycL = first_read_cycle(a.r, (listbase + off + 4) / 2, f.begin, f.end);
+        if (cycH == UINT64_MAX || cycL == UINT64_MAX) return false;
+        if (f.bpl.empty() || cycH >= f.bpl.front().cycle) return false;
     }
     return true;
 }
 
-// lateLayout: under I-l, SPR0PTH is the list's first word (offset 0),
-// not offset 4 as in the normal layout (which has the BPL1PT MOVEs first).
-bool pi7_spr(const IAnalysis& a, bool lateLayout = false) {
+// bplLate/sprLate: under I-l the BPL1PT MOVEs move out, so SPR0PT becomes
+// the list's first word (offset 0, not 8); under I-m the SPR0PT MOVEs
+// themselves move to after the WAIT (offset 68, the same place I-l puts
+// BPL1PT). Neither variant moves both at once.
+bool pi7_spr(const IAnalysis& a, bool bplLate = false, bool sprLate = false) {
     if (!a.matched) return false;
     for (const auto& f : a.fields) {
         uint32_t listbase = (f.list == 'A') ? kI_LISTA : kI_LISTB;
-        uint32_t wa = (listbase + (lateLayout ? 0u : 4u)) / 2;
-        uint64_t ptrCycle = UINT64_MAX;
-        for (const auto& acc : a.r.log)
-            if (!acc.is_write && acc.word_addr == wa && acc.cycle >= f.begin && acc.cycle < f.end) { ptrCycle = acc.cycle; break; }
-        if (ptrCycle == UINT64_MAX) return false;
+        uint32_t off = sprLate ? 68u : (bplLate ? 0u : 8u);
+        uint64_t cycH = first_read_cycle(a.r, (listbase + off) / 2, f.begin, f.end);
+        uint64_t cycL = first_read_cycle(a.r, (listbase + off + 4) / 2, f.begin, f.end);
+        if (cycH == UINT64_MAX || cycL == UINT64_MAX) return false;
         uint64_t firstSpr = UINT64_MAX;
         for (const auto& acc : a.r.log)
             if (!acc.is_write && acc.word_addr * 2 >= kI_SPR && acc.word_addr * 2 < kI_SPR + 16 &&
                 acc.cycle >= f.begin && acc.cycle < f.end) { firstSpr = acc.cycle; break; }
-        if (firstSpr == UINT64_MAX || ptrCycle >= firstSpr) return false;
+        if (firstSpr == UINT64_MAX || cycH >= firstSpr) return false;
     }
     return true;
 }
@@ -452,12 +464,25 @@ bool p4a(const IAnalysis& a) {
     return true;
 }
 
+// Every B-field directly preceded by an A-field, wherever in the recorded
+// sequence it falls -- no page fixes which list the first recorded field
+// runs (I-j can record the first field as either), so pairing is by
+// adjacency, not by a fixed even/odd index.
+std::vector<std::pair<int,int>> ab_pairs(const IAnalysis& a) {
+    std::vector<std::pair<int,int>> out;
+    for (int k = 1; k < kI_K; ++k)
+        if (a.fields[(size_t)k - 1].list == 'A' && a.fields[(size_t)k].list == 'B')
+            out.push_back({k - 1, k});
+    return out;
+}
+
 bool p4b(const IAnalysis& a) {
     if (!a.matched) return false;
-    for (int k = 0; k + 1 < kI_K; k += 2) {
-        const auto& fa = a.fields[(size_t)k];
-        const auto& fb = a.fields[(size_t)k + 1];
-        if (fa.list != 'A' || fb.list != 'B') return false;
+    auto pairs = ab_pairs(a);
+    if (pairs.empty()) return false;
+    for (const auto& pr : pairs) {
+        const auto& fa = a.fields[(size_t)pr.first];
+        const auto& fb = a.fields[(size_t)pr.second];
         if (fa.bpl.empty() || fb.bpl.empty()) return false;
         if (fb.bpl.front().addr * 2 - fa.bpl.front().addr * 2 != 40) return false;
     }
@@ -477,10 +502,11 @@ bool p4c(const IAnalysis& a) {
 
 bool p4d(const IAnalysis& a) {
     if (!a.matched) return false;
-    for (int k = 0; k + 1 < kI_K; k += 2) {
-        const auto& fa = a.fields[k];
-        const auto& fb = a.fields[k + 1];
-        if (fa.list != 'A' || fb.list != 'B') return false;
+    auto pairs = ab_pairs(a);
+    if (pairs.empty()) return false;
+    for (const auto& pr : pairs) {
+        const auto& fa = a.fields[(size_t)pr.first];
+        const auto& fb = a.fields[(size_t)pr.second];
         if (fa.bpl.size() != 256 || fb.bpl.size() != 256) return false;
         for (int i = 0; i < 256; ++i) {
             uint32_t addrA = fa.bpl[(size_t)i].addr * 2, addrB = fb.bpl[(size_t)i].addr * 2;
@@ -490,9 +516,12 @@ bool p4d(const IAnalysis& a) {
     return true;
 }
 
+// Alternation without a fixed first list: no two consecutive fields run
+// the same list, and every field runs one of the two.
 bool p4e(const IAnalysis& a) {
     if (!a.matched) return false;
-    for (int k = 0; k < kI_K; ++k) if (a.fields[(size_t)k].list != (k % 2 == 0 ? 'A' : 'B')) return false;
+    for (const auto& f : a.fields) if (f.list != 'A' && f.list != 'B') return false;
+    for (int k = 0; k + 1 < kI_K; ++k) if (a.fields[(size_t)k].list == a.fields[(size_t)k + 1].list) return false;
     return true;
 }
 
@@ -525,8 +554,9 @@ void run_program_i_assertions(const std::string& dir) {
         "PI-1: Program I's fixture -- the completion word was written and all 8 M1 records are valid "
         "(first V is 0, gap flag clear, last V >= 255)");
     checks.expect(pi2_anchor(a),
-        "PI-2: between the first and last recorded wrap there are exactly 8 Copper restarts, each the "
-        "first word of LISTA or LISTB");
+        "PI-2: between the first and last recorded wrap there are exactly 8 reads of LISTA's or LISTB's "
+        "first word (located by address; whether each is the first Copper fetch after $FFFF,$FFFE, as "
+        "section 2.6 defines a restart, is not itself checked)");
     checks.expect(pi4_groups(a),
         "PI-4: every recorded field contains exactly 256 groups of 20 consecutive ascending bitplane fetches");
     checks.expect(pi5_hcnt(a),
@@ -556,6 +586,26 @@ void run_program_i_assertions(const std::string& dir) {
         checks.note("P1 field lengths N_0..N_7 = " + s);
     }
 
+    // ch2-vertical-beam-position.c12's "(interlace only)": a LACE=0 control
+    // case (I-a), run here (not as a mutation) so the quantifier itself
+    // gets a PASS/FAIL line -- all 8 field lengths equal, none alternating.
+    IAnalysis ctrl = analyze_i(dir, "prog_i_a");
+    std::vector<int> ctrlN;
+    bool ctrlEq = ctrl.m1.back().present;
+    if (ctrlEq) {
+        for (int k = 0; k < kI_K; ++k) {
+            if (!ctrl.m1[(size_t)k].present) { ctrlEq = false; break; }
+            ctrlN.push_back(ctrl.m1[(size_t)k].lastV + 1);
+        }
+    }
+    bool ctrlAllEqual = ctrlEq;
+    for (size_t k = 1; k < ctrlN.size(); ++k) if (ctrlN[k] != ctrlN[0]) ctrlAllEqual = false;
+    checks.expect(ctrlAllEqual,
+        "ch2-vertical-beam-position.c12: with LACE clear (I-a), all 8 recorded PAL field lengths are "
+        "equal -- long and short fields do not occur without interlace");
+    if (ctrlAllEqual && !ctrlN.empty())
+        checks.note("LACE=0 control: N=" + std::to_string(ctrlN[0]) + " on all 8 fields");
+
     checks.expect(p4a(a),
         "P4a p34 ch2-using-the-copper-in-interlaced-mode.c16 COP2-using-the-copper-in-interlaced-mode.c15: the "
         "first bitplane fetch of every A-field is at PIC and of every B-field at PIC+40");
@@ -564,21 +614,24 @@ void run_program_i_assertions(const std::string& dir) {
         "COP2-using-the-copper-in-interlaced-mode.c16 COP2-using-the-copper-in-interlaced-mode.c17: "
         "every B-field's starting address is 40 bytes past the A-field directly before it (one picture line)");
     checks.expect(p4c(a),
-        "P4c p34 ch2-using-the-copper-in-interlaced-mode.c8 ch2-using-the-copper-in-interlaced-mode.c9 "
-        "ch2-using-the-copper-in-interlaced-mode.c10 ch2-using-the-copper-in-interlaced-mode.c13 "
-        "ch2-using-the-copper-in-interlaced-mode.c14 COP2-using-the-copper-in-interlaced-mode.c8 "
-        "COP2-using-the-copper-in-interlaced-mode.c9 COP2-using-the-copper-in-interlaced-mode.c12 "
+        "P4c p34 ch2-using-the-copper-in-interlaced-mode.c10 ch2-using-the-copper-in-interlaced-mode.c13 "
+        "ch2-using-the-copper-in-interlaced-mode.c14 COP2-using-the-copper-in-interlaced-mode.c12 "
         "COP2-using-the-copper-in-interlaced-mode.c13: in every A-field, fetch group i reads memory line 2i, "
         "and in every B-field, group i reads 2i+1");
+    checks.record("P4c: ch2-using-the-copper-in-interlaced-mode.c8, .c9, COP2-using-the-copper-in-interlaced-mode.c8 "
+        "and .c9 are not graded here -- their says is about what a scan displays on screen, and P4c grades "
+        "only fetch addresses");
     checks.expect(p4d(a),
         "P4d p34 ch2-using-the-copper-in-interlaced-mode.c15 ch2-using-the-copper-in-interlaced-mode.c19 "
         "COP2-using-the-copper-in-interlaced-mode.c18 COP2-using-the-copper-in-interlaced-mode.c19: every "
         "A-field/B-field pair together fetches memory lines 0..511 each exactly once, rising by 40 bytes at "
         "every step in screen order");
     checks.expect(p4e(a),
-        "P4e p34,p35 ch2-using-the-copper-in-interlaced-mode.c11 ch2-using-the-copper-in-interlaced-mode.c12 "
-        "ch2-using-the-copper-in-interlaced-mode.c20.s2: over the 8 recorded fields the restart list "
-        "alternates LISTA, LISTB, LISTA, ... (order only -- the 16.6ms figure label is not graded)");
+        "P4e p34,p35 ch2-using-the-copper-in-interlaced-mode.c11 ch2-using-the-copper-in-interlaced-mode.c20.s2: "
+        "over the recorded fields the restart list strictly alternates between LISTA and LISTB, so every "
+        "B-field is the field directly after an A-field (order only, whichever list runs first)");
+    checks.record("P4e: ch2-using-the-copper-in-interlaced-mode.c12 is not graded -- its 16.6ms figure is "
+        "declined (section 1), and the id bundles that figure with the ordering claim P4e does grade");
 
     checks.expect(p5(a),
         "P5 p27 ch2-putting-together-a-copper-instruction-list.c3 ch2-using-the-copper-in-interlaced-mode.c16 "
@@ -594,13 +647,15 @@ void run_program_i_assertions(const std::string& dir) {
 void run_i_mutation(const std::string& dir, const std::string& label) {
     static const std::map<std::string, std::string> kProg = {
         {"P1", "prog_i_a"}, {"PI-3", "prog_i_a"},
-        {"P4a", "prog_i_c"},
+        {"P4a", "prog_i_b"},
         {"P4b", "prog_i_b"}, {"P4c", "prog_i_b"}, {"P4d", "prog_i_b"},
         {"P4e", "prog_i_d"},
-        {"P5", "prog_i_c"}, {"PI-7", "prog_i_l"},
+        {"P5", "prog_i_c"},
+        {"PI-7(bpl)", "prog_i_l"}, {"PI-7(spr)", "prog_i_m"},
         {"P6", "prog_i_e"},
         {"PI-1", "prog_i_j"}, {"PI-2", "prog_i_f"}, {"PI-4", "prog_i_h"},
         {"PI-5", "prog_i_g"}, {"PI-6", "prog_i_k"}, {"PI-8", "prog_i_i"},
+        {"FIX-I", "prog_i_n"},
     };
     auto it = kProg.find(label);
     if (it == kProg.end()) { checks.record("NMH_MUTATE=" + label + " names no Program-I mutation"); return; }
@@ -612,27 +667,81 @@ void run_i_mutation(const std::string& dir, const std::string& label) {
         if (eq) { for (int k = 0; k < kI_K; ++k) { if (!a.m1[(size_t)k].present) { eq = false; break; } N.push_back(a.m1[(size_t)k].lastV + 1); } }
         bool allEqual = eq; for (size_t k = 1; k < N.size(); ++k) if (N[k] != N[0]) allEqual = false;
         checks.expect(!p1_alternation(a), label + " MUTATION stimulus red: LACE=0 -- P1's own alternation check fails");
-        if (allEqual) checks.record(label + " MUTATION contrast: all 8 non-interlaced field lengths equal N=" + std::to_string(N.empty()?0:N[0]) + " (recorded, not graded)");
+        checks.expect(allEqual, label + " MUTATION contrast: all 8 non-interlaced field lengths are equal (the contrast's own graded result)");
+        if (allEqual && !N.empty()) checks.note(label + " MUTATION measured: N=" + std::to_string(N[0]) + " on all 8 fields");
+        checks.expect(pi1_valid(a), label + " MUTATION contrast: PI-1 (all M1 records valid)");
+        checks.expect(pi2_anchor(a), label + " MUTATION contrast stays green: PI-2");
+        checks.expect(pi4_groups(a), label + " MUTATION contrast stays green: PI-4");
     } else if (label == "P4a") {
-        checks.expect(!p4a(a), label + " MUTATION stimulus red: both lists omit the BPL1PT MOVEs -- only the first field starts at the rewritten address");
-    } else if (label == "P4e") {
-        checks.expect(!p4e(a), label + " MUTATION stimulus red: the handler never repoints COP1LC -- every field runs LISTA, the restart list never alternates");
-        checks.expect(pi5_hcnt(a), label + " MUTATION contrast stays green: PI-5 (the handler still runs and still counts)");
-    } else if (label == "P4b" || label == "P4c" || label == "P4d") {
-        checks.expect(!(p4b(a) && p4c(a) && p4d(a)), label + " MUTATION stimulus red: LISTB writes PIC (not PIC+40) -- P4b/P4c/P4d go red");
+        checks.expect(!p4a(a),
+            label + " MUTATION stimulus red: LISTB writes PIC, not PIC+40 (I-b) -- every B-field's first "
+            "fetch is at PIC, so (a) as worded (\"of every B-field at PIC + 40\") goes red");
+        checks.expect(pi1_valid(a), label + " MUTATION contrast: PI-1 (all M1 records valid)");
+        checks.expect(pi2_anchor(a), label + " MUTATION contrast stays green: PI-2");
+        checks.expect(pi4_groups(a), label + " MUTATION contrast stays green: PI-4");
+        checks.expect(pi5_hcnt(a), label + " MUTATION contrast stays green: PI-5");
+        checks.expect(pi6_tags(a), label + " MUTATION contrast stays green: PI-6");
+        checks.expect(pi7_bpl(a) && pi7_spr(a), label + " MUTATION contrast stays green: PI-7");
+        checks.expect(pi8_spr_fetched(a), label + " MUTATION contrast stays green: PI-8");
         checks.expect(p4e(a), label + " MUTATION contrast stays green: P4e (the restart list still alternates LISTA, LISTB)");
-        // Section 5's own contrast note also claims (a) stays green under
-        // I-b ("every field still starts where its own list pointed").
-        // Measured: p4a (as its proposition is literally worded -- "of
-        // every B-field at PIC + 40") goes red on both cores too, since
-        // under I-b every B-field starts at PIC, not PIC + 40. Not
-        // asserted either way; see the halt reported for P4a/I-b.
+    } else if (label == "P4e") {
+        checks.expect(!p4e(a), label + " MUTATION stimulus red: the handler never repoints COP1LC -- every field runs the same list, the restart list never alternates");
+        checks.expect(pi5_hcnt(a), label + " MUTATION contrast stays green: PI-5 (the handler still runs and still counts)");
+    } else if (label == "P4b") {
+        checks.expect(!p4b(a),
+            label + " MUTATION stimulus red: LISTB writes PIC, not PIC+40 -- every B-field's starting "
+            "address is no longer 40 bytes past the A-field directly before it");
+        checks.expect(p4e(a), label + " MUTATION contrast stays green: P4e (the restart list still alternates LISTA, LISTB)");
+    } else if (label == "P4c") {
+        checks.expect(!p4c(a),
+            label + " MUTATION stimulus red: LISTB writes PIC, not PIC+40 -- in every B-field, group i no "
+            "longer reads memory line 2i+1");
+        checks.expect(p4e(a), label + " MUTATION contrast stays green: P4e (the restart list still alternates LISTA, LISTB)");
+    } else if (label == "P4d") {
+        checks.expect(!p4d(a),
+            label + " MUTATION stimulus red: LISTB writes PIC, not PIC+40 -- A-field/B-field pairs no "
+            "longer fetch memory lines 0..511 each exactly once");
+        checks.expect(p4e(a), label + " MUTATION contrast stays green: P4e (the restart list still alternates LISTA, LISTB)");
     } else if (label == "P5") {
-        checks.expect(!p5(a), label + " MUTATION stimulus red: both lists omit the BPL1PT MOVEs -- P5 goes red");
+        // I-c: no BPL1PT rewrite. The field's first bitplane fetch is
+        // measured wherever it lies -- found by its own 20-word signature
+        // (section 2.7) -- not confined to PIC's original window, so this
+        // goes red through a real address mismatch, never through an
+        // empty population. The search starts at PIC and runs to the top
+        // of the identity-mapped chip RAM the harness documents as the
+        // program's data area, wide enough to find the fetch wherever the
+        // free-running pointer has drifted to, while excluding the
+        // program's own code below PIC, whose instruction fetches would
+        // otherwise break the 20-word adjacency test.
+        bool haveAll = a.matched;
+        bool allAtStart = true;
+        std::vector<BplGroup> firstOfField;
+        for (size_t k = 0; k < a.fields.size() && haveAll; ++k) {
+            const auto& f = a.fields[k];
+            auto groups = group_reads_in(a.r, kI_PIC, nmh::kChipIdentityHi, f.begin, f.end);
+            const BplGroup* found = nullptr;
+            for (const auto& g : groups) if (g.len == 20) { found = &g; break; }
+            if (!found) { haveAll = false; break; }
+            firstOfField.push_back(*found);
+            uint32_t addr = found->addr * 2;
+            uint32_t want = (f.list == 'A') ? kI_PIC : kI_PIC + 40;
+            if (addr != want) allAtStart = false;
+        }
+        checks.expect(haveAll && !allAtStart,
+            label + " MUTATION stimulus red: both lists omit the BPL1PT MOVEs -- fields after the first "
+            "no longer start at PIC or PIC+40, measured wherever the 20-word fetch lies");
+        if (haveAll && firstOfField.size() >= 2) {
+            const auto& g0 = firstOfField[0];
+            uint32_t predicted = (g0.addr + 20u - 1u) * 2u + 2u + 40u;
+            uint32_t measured = firstOfField[1].addr * 2;
+            checks.note(label + " MUTATION (I-c) p61's predicted next address = " + std::to_string(predicted) +
+                        ", measured field 1's first fetch = " + std::to_string(measured));
+        }
     } else if (label == "P6") {
         checks.expect(!p6(a), label + " MUTATION stimulus red: both lists omit the SPR0PT MOVEs -- P6 goes red");
     } else if (label == "PI-1") {
         checks.expect(!pi1_valid(a), label + " MUTATION stimulus red: M1 waits between samples -- records are no longer all valid");
+        if (a.m1[0].present) checks.note(label + " MUTATION measured: M1 record 0's first V = " + std::to_string(a.m1[0].firstV));
     } else if (label == "PI-2") {
         checks.expect(!pi2_anchor(a), label + " MUTATION stimulus red: DMACON leaves COPEN clear -- no Copper restarts occur");
     } else if (label == "PI-4") {
@@ -641,17 +750,31 @@ void run_i_mutation(const std::string& dir, const std::string& label) {
         checks.expect(!pi5_hcnt(a), label + " MUTATION stimulus red: INTENA leaves COPER clear -- the handler never runs, HCNT never rises");
     } else if (label == "PI-6") {
         checks.expect(!pi6_tags(a), label + " MUTATION stimulus red: PIC filled with $0000 -- fetched values no longer match the tag formula");
-    } else if (label == "PI-7") {
-        // Measured (both cores): this stays GREEN, not red -- the moved
-        // BPL1PT MOVE's own fetch lands only ~288 clk_sys cycles (~36
-        // colour clocks, well under one line) after the restart, and
-        // ~80,000 cycles (~44 lines) before the field's first bitplane
-        // fetch: WAIT $2D01 (V>=45, horizontal ignored) is satisfied
-        // essentially at once, not after ~45 lines. Reported as measured,
-        // not tuned to pass: see SPECIFICATION.md's Build section.
-        checks.expect(!(pi7_bpl(a, true) && pi7_spr(a, true)), label + " MUTATION stimulus red: the BPL1PT MOVEs are placed after the WAIT -- the pointer fetch no longer precedes the field's first bitplane fetch");
+        checks.expect(pi1_valid(a), label + " MUTATION contrast: PI-1 (all M1 records valid)");
+    } else if (label == "PI-7(bpl)") {
+        checks.expect(!pi7_bpl(a, /*bplLate=*/true),
+            label + " MUTATION stimulus red: the BPL1PT MOVEs are placed after the WAIT -- the pointer "
+            "fetch no longer precedes the field's first bitplane fetch");
+        if (a.matched && !a.fields.empty()) {
+            const auto& f = a.fields[0];
+            uint64_t bplhCycle = first_read_cycle(a.r, (f.list == 'A' ? kI_LISTA : kI_LISTB) / 2 + 34, f.begin, f.end);
+            if (bplhCycle != UINT64_MAX && !f.bpl.empty()) {
+                int64_t sinceRestartH = ((int64_t)bplhCycle - (int64_t)f.begin) / (int64_t)kClkSysPerColourClock;
+                int64_t firstBplSinceRestart = ((int64_t)f.bpl.front().cycle - (int64_t)f.begin) / (int64_t)kClkSysPerColourClock;
+                checks.note(label + " MUTATION field 0 measured: BPL1PTH fetch at " + std::to_string(sinceRestartH) +
+                            " colour clocks after the restart, field's first bitplane fetch at " +
+                            std::to_string(firstBplSinceRestart) + " colour clocks after the restart");
+            }
+        }
+    } else if (label == "PI-7(spr)") {
+        checks.expect(!pi7_spr(a, /*bplLate=*/false, /*sprLate=*/true),
+            label + " MUTATION stimulus red: the SPR0PT MOVEs are placed after the WAIT -- the pointer "
+            "fetch no longer precedes the field's first sprite-0 fetch");
     } else if (label == "PI-8") {
         checks.expect(!pi8_spr_fetched(a), label + " MUTATION stimulus red: DMACON leaves SPREN clear -- the sprite structure is never fetched");
+    } else if (label == "FIX-I") {
+        checks.expect(!(ok(a.r) && W(a.r, kI_FIXMARK) && *W(a.r, kI_FIXMARK) == 0xBEEF),
+            label + " MUTATION stimulus red: the fixture stores $DEAD, not $BEEF -- the known-value check fails");
     }
 }
 
@@ -697,10 +820,12 @@ struct TAnalysis {
     std::vector<TField> fields;
     bool matched = false;
     std::map<uint32_t, std::vector<uint64_t>> readsByAddr; // word_addr -> cycles, ascending
+    bool skip10 = false; // T-g's own list map: line 10's WAIT+MOVE is absent
 };
 
-TAnalysis analyze_t(const std::string& dir, const std::string& prog, bool ntsc) {
+TAnalysis analyze_t(const std::string& dir, const std::string& prog, bool ntsc, bool skip10 = false) {
     TAnalysis a;
+    a.skip10 = skip10;
     a.r = run_program(dir + "/" + prog + ".bin", t_config(ntsc), kRunBudgetT);
     a.m1 = read_m1(a.r, kT_M1_RECBASE, kT_K);
     a.startCycle = start_cycle_of(a.r, kT_M1_STARTW);
@@ -772,7 +897,7 @@ bool pt3_delta(const TAnalysis& a, int64_t* delta_out = nullptr) {
         const auto& f = a.fields[(size_t)k];
         if (f.N < 0) return false;
         for (int v = 44; v <= 254 && v <= f.N - 1; ++v) {
-            auto mc = copper_mark(a, k, v, false);
+            auto mc = copper_mark(a, k, v, a.skip10);
             int i = v - 44;
             if (!mc || i >= (int)f.bpl.size()) return false;
             int64_t d = (int64_t)*mc - (int64_t)f.bpl[(size_t)i].cycle;
@@ -787,40 +912,42 @@ bool pt4_restart_wait(const TAnalysis& a) {
     if (!a.matched) return false;
     for (int k = 0; k < kT_K; ++k) {
         const auto& f = a.fields[(size_t)k];
-        auto mc0 = copper_mark(a, k, 0, false);
-        auto mc1 = copper_mark(a, k, 1, false);
+        auto mc0 = copper_mark(a, k, 0, a.skip10);
+        auto mc1 = copper_mark(a, k, 1, a.skip10);
         if (!mc0 || !mc1) return false;
         int64_t sinceRestart = (int64_t)*mc0 - (int64_t)f.begin;
-        if (sinceRestart <= 6) return false;
+        if (sinceRestart <= 6 * (int64_t)kClkSysPerColourClock) return false;
         int64_t line01 = (int64_t)*mc1 - (int64_t)*mc0;
         if (line01 != 227 * (int64_t)kClkSysPerColourClock && line01 != 228 * (int64_t)kClkSysPerColourClock) return false;
     }
     return true;
 }
 
-// line lengths (colour clocks) for v = 0..N_k-1 of field k, using the
-// formulas of section 2.7. Needs field k+1's v=0 Copper mark for the
-// last line, so only k = 0..K-2 are computable this way.
+// line lengths, in raw clk_sys (not colour clocks: dividing before
+// comparing against 227/228 would let a value anywhere in an 8-wide band
+// pass as either), for v = 0..N_k-1 of field k, using the formulas of
+// section 2.7. Needs field k+1's v=0 Copper mark for the last line, so
+// only k = 0..K-2 are computable this way.
 bool line_lengths(const TAnalysis& a, int k, int64_t delta, std::vector<int64_t>& out) {
     const auto& f = a.fields[(size_t)k];
     if (f.N < 0) return false;
     out.clear();
     for (int v = 0; v <= 253 && v + 1 <= f.N - 1; ++v) {
-        auto c0 = copper_mark(a, k, v, false), c1 = copper_mark(a, k, v + 1, false);
+        auto c0 = copper_mark(a, k, v, a.skip10), c1 = copper_mark(a, k, v + 1, a.skip10);
         if (!c0 || !c1) return false;
-        out.push_back(((int64_t)*c1 - (int64_t)*c0) / (int64_t)kClkSysPerColourClock);
+        out.push_back((int64_t)*c1 - (int64_t)*c0);
     }
-    for (int v = 254; v + 1 <= f.N - 2; ++v) {
+    for (int v = 254; v + 1 <= f.N - 1; ++v) {
         int i0 = v - 44, i1 = v + 1 - 44;
         if (i1 >= (int)f.bpl.size()) return false;
-        out.push_back(((int64_t)f.bpl[(size_t)i1].cycle - (int64_t)f.bpl[(size_t)i0].cycle) / (int64_t)kClkSysPerColourClock);
+        out.push_back((int64_t)f.bpl[(size_t)i1].cycle - (int64_t)f.bpl[(size_t)i0].cycle);
     }
     // last line: v = N_k - 1
     if (k + 1 >= kT_K) return false; // needs the next field
-    auto c_next0 = copper_mark(a, k + 1, 0, false);
+    auto c_next0 = copper_mark(a, k + 1, 0, a.skip10);
     int iLast = (f.N - 1) - 44;
     if (!c_next0 || iLast < 0 || iLast >= (int)f.bpl.size()) return false;
-    int64_t lastLen = ((int64_t)*c_next0 - (int64_t)f.bpl[(size_t)iLast].cycle - delta) / (int64_t)kClkSysPerColourClock;
+    int64_t lastLen = (int64_t)*c_next0 - (int64_t)f.bpl[(size_t)iLast].cycle - delta;
     out.push_back(lastLen);
     return true;
 }
@@ -831,7 +958,8 @@ bool pt5_line_lengths(const TAnalysis& a) {
     for (int k = 0; k + 1 < kT_K; ++k) {
         std::vector<int64_t> lens;
         if (!line_lengths(a, k, delta, lens)) return false;
-        for (int64_t L : lens) if (L != 227 && L != 228) return false;
+        for (int64_t L : lens)
+            if (L != 227 * (int64_t)kClkSysPerColourClock && L != 228 * (int64_t)kClkSysPerColourClock) return false;
     }
     return true;
 }
@@ -868,7 +996,7 @@ bool p3(const TAnalysis& a, int* phase_out = nullptr) {
             if (!line_lengths(a, k, delta, lens) || lens.empty()) { allMatch = false; break; }
             int64_t xk = lens.back();
             int slot = (k + phase) % 4;
-            if (isLong != Qlong[slot] || xk != Qlen[slot]) allMatch = false;
+            if (isLong != Qlong[slot] || xk != (int64_t)Qlen[slot] * (int64_t)kClkSysPerColourClock) allMatch = false;
         }
         if (allMatch) { if (phase_out) *phase_out = phase; return true; }
     }
@@ -897,14 +1025,20 @@ void run_program_t_assertions(const std::string& dir) {
     checks.expect(pt5_line_lengths(a),
         "PT-5: every measured line length (section 2.7) is 227 or 228 colour clocks");
     checks.expect(pt7_anchor(a),
-        "PT-7: between the first and last recorded wrap there are exactly 13 Copper restarts, each the "
-        "first word of LISTT");
+        "PT-7: between the first and last recorded wrap there are exactly 13 reads of LISTT's first word "
+        "(located by address; whether each is the first Copper fetch after $FFFF,$FFFE, as section 2.6 "
+        "defines a restart, is not itself checked)");
 
     bool p2ok = p2(a);
     checks.expect(p2ok,
-        "P2 p24,p34 COP2-vertical-beam-position.c13 COP2-using-the-copper-in-interlaced-mode.c3 "
-        "COP2-using-the-copper-in-interlaced-mode.c7 COP2-vertical-beam-position.c14: every NTSC "
-        "interlaced field has 262 or 263 lines, and no two consecutive fields are both 263");
+        "P2 p24,p34: every NTSC interlaced field has 262 or 263 lines, and no two consecutive fields are "
+        "both 263");
+    checks.record("P2: COP2-vertical-beam-position.c13 (\"the first field length ... is 262\"), "
+        "COP2-vertical-beam-position.c14 (\"the next field length ... is 263\"), "
+        "COP2-using-the-copper-in-interlaced-mode.c3 (\"an interlaced NTSC display has 524 lines\") and "
+        ".c7 (\"262 lines at a time\") are not graded -- P2 allows 262 or 263 but requires neither an "
+        "order, an alternation, nor a specific total, and the measurement (262 and 263 both occur) "
+        "contradicts .c3 and .c7");
 
     bool gate = pt6_gate(a);
     checks.expect(gate,
@@ -925,38 +1059,81 @@ void run_program_t_assertions(const std::string& dir) {
     }
 }
 
+struct TMutSpec { std::string prog; bool ntsc; bool skip10; };
+
 void run_t_mutation(const std::string& dir, const std::string& label) {
-    static const std::map<std::string, std::pair<std::string,bool>> kProg = {
-        {"P2", {"prog_t", false}},
-        {"P3", {"prog_t", false}},
-        {"PT-1", {"prog_t_f", true}},
-        {"PT-2", {"prog_t_e", true}},
-        {"PT-3", {"prog_t_d", true}},
-        {"PT-4", {"prog_t_c", true}},
-        {"PT-5", {"prog_t_g", true}},
-        {"PT-6", {"prog_t_a", true}},
-        {"PT-7", {"prog_t_h", true}},
+    static const std::map<std::string, TMutSpec> kProg = {
+        {"P2", {"prog_t", false, false}},
+        {"P3", {"prog_t", false, false}},
+        {"PT-1", {"prog_t_f", true, false}},
+        {"PT-2", {"prog_t_e", true, false}},
+        {"PT-3", {"prog_t_d", true, false}},
+        {"PT-4", {"prog_t_c", true, false}},
+        {"PT-5", {"prog_t_g", true, true}},
+        {"PT-6", {"prog_t_a", true, false}},
+        {"PT-7", {"prog_t_h", true, false}},
+        {"FIX-T", {"prog_t_i", true, false}},
     };
     auto it = kProg.find(label);
     if (it == kProg.end()) { checks.record("NMH_MUTATE=" + label + " names no Program-T mutation"); return; }
-    TAnalysis a = analyze_t(dir, it->second.first, it->second.second);
+    TAnalysis a = analyze_t(dir, it->second.prog, it->second.ntsc, it->second.skip10);
 
-    if (label == "P2" || label == "P3") {
+    if (label == "P2") {
         checks.expect(!p2(a), label + " MUTATION stimulus red: PAL selected instead of NTSC -- P2's {262,263} check fails");
+    } else if (label == "P3") {
+        // P3 is already red at baseline (T-0, NTSC): see the normal run's
+        // own PASS/FAIL line. For an assertion that is already red, the
+        // record shows a proven-live input through the same comparator
+        // going green instead of a stimulus that goes red.
+        bool anyLongField = false;
+        for (const auto& f : a.fields) if (f.N == 263) anyLongField = true;
+        int phase = -1;
+        checks.expect(!p3(a, &phase),
+            label + " MUTATION (T-b, PAL): P3's comparator is also red here, through the field-type "
+            "clause (isLong never matches Q's alternating pattern), not through x_k, which measures 227 "
+            "throughout, as p23 predicts for PAL");
+        checks.note(std::string(label) + " MUTATION (T-b) measured: any field with N=263? " + (anyLongField ? "yes" : "no"));
+        checks.expect(pt5_line_lengths(a),
+            label + " MUTATION (T-b) contrast stays green: PT-5, the shared line-length comparator (227 "
+            "or 228 colour clocks) -- 227 is one of the two accepted values");
+        checks.record(label + " MUTATION: no input built in this package turns P3's own comparator green "
+            "-- unfalsifiable at this boundary while NTSC never produces a long line and PAL never "
+            "produces a 263-line field");
     } else if (label == "PT-1") {
         checks.expect(!pt1_valid(a), label + " MUTATION stimulus red: M1 waits between samples -- records are no longer all valid");
+        if (a.m1[0].present) checks.note(label + " MUTATION measured: M1 record 0's first V = " + std::to_string(a.m1[0].firstV));
     } else if (label == "PT-2") {
         checks.expect(!pt2_groups(a), label + " MUTATION stimulus red: DIWSTOP is the normal NTSC value -- the display window closes before the field ends, so groups no longer equal N_k-44");
     } else if (label == "PT-3") {
         checks.expect(!pt3_delta(a), label + " MUTATION stimulus red: line 100's mark uses H=$C0 -- Delta is no longer single-valued");
     } else if (label == "PT-4") {
-        checks.expect(!pt4_restart_wait(a), label + " MUTATION stimulus red: the first WAIT is (0,$00) -- it is satisfied at once, so the restart-to-mark margin collapses");
+        bool red = !pt4_restart_wait(a);
+        checks.expect(red,
+            label + " MUTATION stimulus red: the first WAIT is (0,$00) -- red through line 0-to-1 (no "
+            "longer 227 or 228 colour clocks), not through the restart-to-mark margin");
+        if (a.matched && !a.fields.empty()) {
+            auto mc0 = copper_mark(a, 0, 0, a.skip10);
+            auto mc1 = copper_mark(a, 0, 1, a.skip10);
+            if (mc0 && mc1) {
+                int64_t sinceRestart = (int64_t)*mc0 - (int64_t)a.fields[0].begin;
+                int64_t line01 = (int64_t)*mc1 - (int64_t)*mc0;
+                checks.note(label + " MUTATION field 0 measured: restart-to-mark margin = " +
+                            std::to_string(sinceRestart) + " clk_sys, line 0-to-1 = " +
+                            std::to_string(line01) + " clk_sys");
+            }
+        }
     } else if (label == "PT-5") {
         checks.expect(!pt5_line_lengths(a), label + " MUTATION stimulus red: line 10's WAIT+MOVE is deleted -- one measured line length is no longer 227 or 228");
+        checks.expect(pt1_valid(a), label + " MUTATION contrast: PT-1 (all M1 records valid)");
+        checks.expect(pt3_delta(a), label + " MUTATION contrast: PT-3 (Delta is single-valued, using T-g's own list map)");
     } else if (label == "PT-6") {
         checks.expect(!pt6_gate(a), label + " MUTATION stimulus red: LACE=0 -- field lengths no longer alternate, the gate closes");
+        checks.expect(pt1_valid(a), label + " MUTATION contrast: PT-1 (all M1 records valid)");
     } else if (label == "PT-7") {
         checks.expect(!pt7_anchor(a), label + " MUTATION stimulus red: DMACON leaves COPEN clear -- no Copper restarts occur");
+    } else if (label == "FIX-T") {
+        checks.expect(!(ok(a.r) && W(a.r, kT_FIXMARK) && *W(a.r, kT_FIXMARK) == 0xBEEF),
+            label + " MUTATION stimulus red: the fixture stores $DEAD, not $BEEF -- the known-value check fails");
     }
 }
 
