@@ -25,9 +25,11 @@
 //   declined; classify already marked all 19 "testable". A red result below
 //   means paula_audio_channel.v disagrees with the manual, not that the
 //   assertion is wrong -- no expected value here was, or should be, adjusted
-//   to make the RTL pass. ONE red is EXPECTED and was disclosed, with its
-//   evidence, before this file was built -- see GROUP C / CANDIDATE 5 below.
-//   It is not assigned an NM-HRM-nnn key here; the lead issues those.
+//   to make the RTL pass. GROUP C's clause was repaired after NM-HRM-027 was
+//   withdrawn: it had graded the write's own Figure 5-8 000->010 arc against
+//   a sentence (p157) that, read with p164 and the figure's OTHER arc
+//   (011->010), names the later word-transition moment instead -- see GROUP
+//   C below for what it now measures.
 // Non-goals: anything outside the `paula_audio_channel` fixture this package
 //   builds, and any claim it does not name. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
@@ -92,22 +94,14 @@
 //   changed and the observed result. Every mutation is a FRESH,
 //   independently-reset rerun (new Vpaula_audio_channel, new reset_all())
 //   with exactly one stimulus parameter changed; no expected value,
-//   quotation, or comparison threshold is ever changed by a mutation. Group
-//   C's mutation is the one exception worth flagging in advance: its
-//   baseline is already red (a disclosed finding candidate), so its
-//   mutation does not try to turn red into green -- it varies the written
-//   data value and confirms the SAME deviation reproduces, which is what
-//   demonstrates the deviation is a structural (control-path) fact about
-//   line 285, not an artifact of one specific stimulus word. This is
-//   recorded as kind "stimulus", result "red" (the check is still red under
-//   changed stimulus).
+//   quotation, or comparison threshold is ever changed by a mutation.
 //
 // CLAIM COVERAGE: all 19 ids of claims.jsonl are cited below, in full,
 //   inside a CHECK(...) call's own text, PLUS one further id added
 //   2026-09-12 (see GAP CLOSURE below) -- 20 in total:
 //   GROUP A  5-p157.c10 5-direct.c1
 //   GROUP B  5-p157.c11 5-direct.c2
-//   GROUP C  5-p157.c13 5-direct.c4   (CANDIDATE 5 -- expected RED)
+//   GROUP C  5-p157.c13 5-direct.c4
 //   GROUP D  5-p157.c14 5-direct.c5
 //   GROUP E  5-p157.c15 5-direct.c6
 //   GROUP F  5-p157.c16 5-direct.c7   (5-direct.c7 added 2026-09-12, see
@@ -136,12 +130,11 @@
 //   discarded upstream" is superseded by this reclassification and is
 //   removed from this header.
 //
-// CONTROL CASE: GROUP H (immediate transfer to the output state on a
-//   qualifying write) is measured from the exact same trace event as GROUP
-//   C (the interrupt-moment finding) and is expected to, and does, read
-//   GREEN. Without a passing case on the same measurement basis, GROUP C's
-//   red would not survive the units-error objection -- GROUP H is that
-//   case, and each group's CHECK text says so.
+// CONTROL: GROUP H (immediate transfer to the output state on a qualifying
+//   write) is measured from the same early trace event GROUP C's own text
+//   also reports for context (the write's Figure 5-8 000->010 arc, not
+//   graded there), and is expected to, and does, read GREEN in its own
+//   right (p164's "transfer ... occurs immediately after data is written").
 //
 // PRECONDITIONS asserted alongside their dependent claims (a green that
 //   depends on a precondition that might never occur gets the precondition
@@ -150,18 +143,15 @@
 //   actually in the state (raised / held low) their claim depends on.
 //
 // RESULTS (after opening paula_audio_channel.v and building/running):
-//   11 PASS, 1 FAIL, 0 declined -- all 20 claim ids covered (19 from
+//   12 PASS, 0 FAIL, 0 declined -- all 20 claim ids covered (19 from
 //   claims.jsonl plus 5-direct.c7, added to GROUP F 2026-09-12 per GAP
-//   CLOSURE above). The single FAIL
-//   is GROUP C / candidate 5 (5-p157.c13 5-direct.c4), disclosed as expected
-//   before this file was built: measured first AUDxIR/intreq at the very
-//   AUDxDAT-write tick, state still 000, sample still the pre-write value --
-//   paula_audio_channel.v:283-285 sets AUDxIR unconditionally in the
-//   idle-exit CPU branch, before any byte of the word has left the channel,
-//   where the manual (printed p157) puts it after one full word is output.
-//   Not assigned an NM-HRM-nnn key here.
-//   GROUP H (the control case, same trace event) reads GREEN, so the red is
-//   not a broken-harness artifact.
+//   CLOSURE above). GROUP C (5-p157.c13 5-direct.c4), repaired after
+//   NM-HRM-027 was withdrawn, now measures the word-transition pulse p164
+//   and Figure 5-8's 011->010 arc name: write at tick 80 (AUDxIR at the
+//   write itself, Figure 5-8's OTHER arc, 000->010, reported for context
+//   only), high byte at 88, low byte at 136, word-transition AUDxIR at 176,
+//   next high byte at 184 -- the required pulse falls inside the window and
+//   the check reads GREEN.
 //   Reading the RTL also settled BOUNDARY (2) empirically rather than by
 //   assumption: paula_audio_channel.v:163-185 (the length/silence block) has
 //   NO reset branch of its own, and `silence`/`silence_d` are set to 1 only
@@ -198,9 +188,9 @@
 //   own `// MUTATION <id> ...` line above for the per-assertion detail. In
 //   summary: GROUPS A, B, F, G, H (stimulus removed/blocked/skipped) all
 //   correctly went red under a stimulus that should defeat their claim.
-//   GROUP C's mutation (a different written word, 0x0000 instead of
-//   0xA5C3) reproduces the SAME red, confirming the deviation is a
-//   control-path fact and not an artifact of one specific data value.
+//   GROUP C's mutation (intpen raised right after the write, before the
+//   word transition) correctly goes red: with the interrupt still pending
+//   at that edge, no word-transition AUDxIR is raised.
 //   GROUP D's mutation (intpen never raised) correctly goes red (output
 //   does NOT cease when the claim's own precondition is absent). GROUP I's
 //   mutation (intpen raised right after word1 instead of after word3)
@@ -417,6 +407,7 @@ struct TimelineParams {
     bool raise_intpen_early      = false; // mutation for GROUP I (right after word1)
     bool never_raise_intpen      = false; // mutation for GROUP D / GROUP J
     bool write_during_hold       = false; // mutation for GROUP E
+    bool raise_intpen_right_after_write = false; // mutation for GROUP C (word transition)
 
     long gap_between_writes      = 3000;
     long starve_wait_ticks        = 6000;
@@ -503,6 +494,22 @@ static TimelineResult run_timeline(const TimelineParams& p) {
         size_t hiIdx = idxAtOrAfter(h, r.word1_pulse_idx, isHi);
         size_t idx = (hiIdx == (size_t)-1) ? (size_t)-1 : idxAtOrAfter(h, hiIdx + 1, isIdle);
         r.fallback_tick = (idx == (size_t)-1) ? -1 : h.history[idx].t;
+        return r;
+    }
+
+    if (p.raise_intpen_right_after_write) {
+        // Raise the pending interrupt right after the write that starts
+        // direct output (word1 has already entered the output path by this
+        // point -- see the settle above) and hold it. Whatever word-
+        // transition action the page's own clause depends on next either
+        // fires with this precondition absent, or it does not; GROUP C
+        // reads the same window on this rerun that it reads on the
+        // baseline.
+        h.dut->intpen = 1;
+        for (long i = 0; i < p.starve_wait_ticks; i++) h.tick();
+        size_t hiIdx2 = idxAtOrAfter(h, r.word1_pulse_idx, isHi);
+        size_t idx2 = (hiIdx2 == (size_t)-1) ? (size_t)-1 : idxAtOrAfter(h, hiIdx2 + 1, isIdle);
+        r.fallback_tick = (idx2 == (size_t)-1) ? -1 : h.history[idx2].t;
         return r;
     }
 
@@ -697,59 +704,74 @@ int main(int argc, char** argv) {
     }
 
     // -------------------------------------------------------------------
-    // GROUP C -- 5-p157.c13 5-direct.c4 -- CANDIDATE 5, EXPECTED RED
+    // GROUP C -- 5-p157.c13 5-direct.c4
     // -------------------------------------------------------------------
     {
-        long firstAudxir = base.have_word1 ? tickAtOrAfter(H, base.word1_pulse_idx, isAudxir) : -1;
-        long firstIntreq = base.have_word1 ? tickAtOrAfter(H, base.word1_pulse_idx, isIntreq) : -1;
+        long writeTick = base.have_word1 ? H.history[base.word1_pulse_idx].t : -1;
+        long writeAudxir = base.have_word1 ? tickAtOrAfter(H, base.word1_pulse_idx, isAudxir) : -1;
         long tHi1 = base.have_word1 ? firstSampleEquals(H, base.word1_pulse_idx, w1hi) : -1;
         long tLo1 = (tHi1 >= 0) ? firstSampleEquals(H, idxAtTick(H, tHi1) + 1, w1lo) : -1;
-        int stateAtPulse = base.have_word1 ? H.history[base.word1_pulse_idx].state : -1;
-        uint8_t sampleAtPulse = base.have_word1 ? H.history[base.word1_pulse_idx].sample : 0xFF;
+        // The word-transition pulse: Figure 5-8 draws AUDxIR on its OTHER
+        // arc, 011->010, and p164 says the same in words ("Interrupts are
+        // generated on every word transition (011->010)"). Measured as the
+        // next AUDxIR strictly after tLo1, once the low byte itself has
+        // reached `sample`.
+        long tTransitionIR = (tLo1 >= 0) ? tickAtOrAfter(H, idxAtTick(H, tLo1) + 1, isAudxir) : -1;
+        // The next high byte after tLo1: the transition's own destination,
+        // and the "no later than" upper bound the claim allows.
+        long tHi2 = (tLo1 >= 0) ? firstSampleEquals(H, idxAtTick(H, tLo1) + 1, w1hi) : -1;
 
-        // Manual: interrupt occurs AFTER one full data word (both bytes) has
-        // been output, i.e. at/after tLo1. Measured: at the write itself, in
-        // state 000, before any byte of the word has left the channel.
-        bool per_manual = (firstAudxir >= 0 && tLo1 >= 0 && firstAudxir >= tLo1);
-        bool measured_at_write_in_idle = base.have_word1 &&
-              (firstAudxir == H.history[base.word1_pulse_idx].t) &&
-              (stateAtPulse == MANUAL_IDLE) && (sampleAtPulse != w1hi) && (sampleAtPulse != w1lo);
+        // p157: "in direct audio output, the interrupt occurs after one data
+        // word has been output", read with p164 and Figure 5-8's 011->010
+        // arc: an AUDxIR pulse is required after the low byte (one full word
+        // out) and no later than the next high byte (the transition's own
+        // destination). The write's own AUDxIR (Figure 5-8's OTHER arc,
+        // 000->010, at the write itself) sits before tLo1 by construction
+        // and is outside this window -- it cannot fail this check.
+        bool wordTransitionPulse = (tLo1 >= 0) && (tTransitionIR >= 0) &&
+              (tTransitionIR > tLo1) && (tHi2 >= 0) && (tTransitionIR <= tHi2);
 
         std::ostringstream d;
-        d << "5-p157.c13 5-direct.c4 (p157) \"The normal interrupt occurs after a data "
-             "address has been read; in direct audio output, the interrupt occurs after "
-             "one data word has been output\" -- EXPECTED RED, CANDIDATE 5 (not assigned "
-             "an NM-HRM key here): manual wants first AUDxIR/intreq at/after tick "
-          << tLo1 << " (word1's low byte, i.e. after the full word is out); measured "
-             "first AUDxIR/intreq at tick " << firstAudxir << ", coincident with the "
-             "AUDxDAT write itself (tick " << H.history[base.word1_pulse_idx].t
-          << "), state=" << stateAtPulse << " (000=idle), sample=0x"
-          << std::hex << (int)sampleAtPulse << std::dec
-          << " -- i.e. before any byte of the word has left the channel "
-             "(paula_audio_channel.v:283-285 sets AUDxIR unconditionally in the idle-exit "
-             "CPU branch, at the write, not after output). CONTROL: GROUP H below reads "
-             "the SAME trace event (state 000->010 timing) and is expected green, so this "
-             "red is not a units-error / broken-harness artifact.";
-        CHECK(d.str(), per_manual);
-        CHECK("[diagnostic, same claims 5-p157.c13 5-direct.c4] measured moment matches "
-              "the disclosed finding exactly (AUDxIR at the write tick, state 000, sample "
-              "not yet either byte) = " + std::string(measured_at_write_in_idle?"yes":"no"),
-              measured_at_write_in_idle);
+        d << "5-p157.c13 5-direct.c4 (p157) \"...in direct audio output, the interrupt "
+             "occurs after one data word has been output\", read with (p164) \"Interrupts "
+             "are generated on every word transition (011->010)\" and Figure 5-8's own "
+             "011->010 arc: measured write at tick " << writeTick << " (AUDxIR=" << writeAudxir
+          << ", Figure 5-8's OTHER arc, 000->010 -- reported for context, not graded here), "
+             "high byte at " << tHi1 << ", low byte at " << tLo1
+          << "; required an AUDxIR pulse after the low byte and no later than the next high "
+             "byte (tick " << tHi2 << ") -- measured at tick " << tTransitionIR;
+        CHECK(d.str(), wordTransitionPulse);
 
-        TimelineParams mp = baseP; mp.word1 = 0x0000; // different stimulus, same question
+        bool distinctArcs = writeAudxir >= 0 && tTransitionIR >= 0 && tTransitionIR > writeAudxir;
+        CHECK("[diagnostic, same claims 5-p157.c13 5-direct.c4] the word-transition pulse "
+              "measured for this check (tick " + std::to_string(tTransitionIR) +
+              ") is a distinct, later event from the write's own 000->010 pulse (tick " +
+              std::to_string(writeAudxir) + "), not the same sample re-read = " +
+              std::string(distinctArcs?"yes":"no"), distinctArcs);
+
+        // MUTATION: p164's own alternate branch -- taken instead of the
+        // word-transition arc when the interrupt is still pending at that
+        // edge -- raises no new request. Raise intpen right after the write
+        // that starts direct output (well before the word transition) and
+        // hold it, so the page predicts no word-transition pulse here.
+        TimelineParams mp = baseP; mp.raise_intpen_right_after_write = true;
         TimelineResult mr = run_timeline(mp);
-        long mFirstAudxir = mr.have_word1 ? tickAtOrAfter(mr.h, mr.word1_pulse_idx, isAudxir) : -1;
-        int mStateAtPulse = mr.have_word1 ? mr.h.history[mr.word1_pulse_idx].state : -1;
-        bool mStillEarly = mr.have_word1 && mFirstAudxir == mr.h.history[mr.word1_pulse_idx].t
-                            && mStateAtPulse == MANUAL_IDLE;
-        MUTATION("5-p157.c13", "stimulus", mStillEarly ? "red" : "green",
-                  "written word changed to 0x0000 (baseline was 0x" +
-                  [&]{std::ostringstream o;o<<std::hex<<baseP.word1;return o.str();}() +
-                  "); AUDxIR still fires at the write, in state 000, before output = " +
-                  std::string(mStillEarly?"yes":"no") + " -- this is a robustness check on "
-                  "an already-red finding candidate, not a red-to-green flip: it confirms "
-                  "the deviation is a control-path fact (independent of which data is "
-                  "written), not an artifact of the one word this package's baseline used.");
+        Harness& MH = mr.h;
+        long mTHi1 = mr.have_word1 ? firstSampleEquals(MH, mr.word1_pulse_idx, w1hi) : -1;
+        long mTLo1 = (mTHi1 >= 0) ? firstSampleEquals(MH, idxAtTick(MH, mTHi1) + 1, w1lo) : -1;
+        long mTTransitionIR = (mTLo1 >= 0) ? tickAtOrAfter(MH, idxAtTick(MH, mTLo1) + 1, isAudxir) : -1;
+        long mTHi2 = (mTLo1 >= 0) ? firstSampleEquals(MH, idxAtTick(MH, mTLo1) + 1, w1hi) : -1;
+        bool mWordTransitionPulse = (mTLo1 >= 0) && (mTTransitionIR >= 0) &&
+              (mTTransitionIR > mTLo1) && (mTHi2 >= 0) && (mTTransitionIR <= mTHi2);
+        MUTATION("5-p157.c13", "stimulus", mWordTransitionPulse ? "green" : "red",
+                  "intpen raised right after the write (stimulus changed: the pending "
+                  "interrupt is never cleared before the low byte's period expires); "
+                  "word-transition AUDxIR pulse measured = " +
+                  std::string(mWordTransitionPulse?"yes":"no") +
+                  "; machine instead returned to idle at tick " + std::to_string(mr.fallback_tick) +
+                  " -- with the interrupt still pending at that edge, the page's own "
+                  "'otherwise' branch is selected instead of the word-transition arc, and no "
+                  "new request is raised.");
     }
 
     // -------------------------------------------------------------------
@@ -931,10 +953,9 @@ int main(int argc, char** argv) {
               "the processor\": state at the write = " + std::to_string(stateAtPulse) +
               " (000=idle); state at the first output byte = " + std::to_string(stateAtHi1) +
               " (010); no state other than 000/010 observed in between = " +
-              std::string(noIntermediateState?"yes":"no") + " -- CONTROL CASE: this is the "
-              "SAME trace event GROUP C reads for the interrupt-moment finding, and this "
-              "check is expected, and found, GREEN, so GROUP C's red is not a broken-"
-              "harness artifact.", g_h);
+              std::string(noIntermediateState?"yes":"no") + " -- this is the same early "
+              "trace event GROUP C's own text reports for context (Figure 5-8's 000->010 "
+              "arc), read here as its own claim.", g_h);
 
         TimelineParams mp = baseP; mp.skip_all_writes = true;
         TimelineResult mr = run_timeline(mp);
