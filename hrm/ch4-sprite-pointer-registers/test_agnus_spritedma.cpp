@@ -69,10 +69,11 @@
 //
 // MEASUREMENT BASIS: every address-valued check below arms exactly one
 // sprite x (SPRxPOS=$2000 i.e. vstart=32, SPRxCTL=$2200 i.e. vstop=34,
-// the same window hrm/agnus_spritedma/test_agnus_spritedma.cpp already
-// uses for sprite 0) on a freshly reset DUT, writes that sprite's own
+// the same window the pre-pipeline
+// hrm/agnus_spritedma/test_agnus_spritedma.cpp, removed, used for sprite 0)
+// on a freshly reset DUT, writes that sprite's own
 // SPRxPTH/SPRxPTL, sweeps vpos 32..33 (vstart and one body line -- NOT
-// the vblend line the sibling harness also sweeps, see FIRST-GRANT-IS-
+// the vblend line that harness also swept, see FIRST-GRANT-IS-
 // CLEAN below) and, for each line, the full hpos 0..453 DMA slot table,
 // and records `address_out` at the FIRST and SECOND cycles
 // reg_address_out (word address, restored to a byte address by <<1)
