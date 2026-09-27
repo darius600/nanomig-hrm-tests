@@ -507,3 +507,99 @@ The RxD driver behaves the same in both runs:
 - R2 confirms the standard.
 - R4 gives the line levels.
 - The s_j come from the driver's own schedule.
+
+---
+
+## 4. Build
+
+This section records what the build added: the programs, the values it
+measured, and the mutations it ran. Propositions and expected values above
+are unchanged from what this document committed to before the build.
+
+### 4.1 Programs
+
+`Makefile`, `test_ch8_disk_serial.cpp`; `ch8_defs.i` (register offsets from
+Appendix B not already in `nanomig.i`, and the bounded-poll macro `POLLBIT`
+every program uses for G4); `tx_core.s` (P1/P2/P3's shared engine) and its
+nine wrappers `prog_tx_n0[.s]`, `prog_tx_n371[.s]`, `prog_tx_n32396[.s]`,
+their three `_plus1` contrast variants, and `prog_tx_n371_1c/1d/1e.s`
+(precondition contrasts); `fast_core.s` (P4's shared engine) and its six
+wrappers `prog_fast0.s`, `prog_fast1.s`, `prog_fast1_4c/4d/4e/4f.s`; `rx_core.s`
+(P5's shared engine, driven from the C++ test's own RxD schedule) and its six
+wrappers `prog_rx_a.s`, `prog_rx_b.s`, `prog_rx_a_5b/5c/5d/5e.s` (precondition
+contrasts; (a)'s, 5f's and (c)'s own contrasts are driver/comparator-level,
+needing no separate program).
+
+**Tuned, not page-defined.** Every poll loop is bounded at least 3x its own
+expected wait (G4): `BND_VERTB` = 500000 iterations (VERTB's wait is at
+most one field, independent of SERPER); `BND_TBE` = 500 (TBE's wait is a
+near-instant register-to-shift-register transfer, independent of the bit
+period); `BND_TSRE` is set per program from that program's own N and W (200
+for N=0, 15000 for N=371, 200000 for N=32396); P4's `BND_POLL` = 200000;
+P5's `BND_VERTB` = 500000, `BND_RBF` = 200000 (RBF's own wait scales with
+the driver's schedule, not with a program-visible quantity, so one bound
+covers every character). None of these bounds is reached in an unmutated
+run; 1e's, 4d's and 5c's own contrasts are the cases built to reach one (5c
+deliberately delays past the bound of a different poll, its own next one,
+rather than exhausting its own).
+
+### 4.2 Measured values
+
+- R1's C measured 8.000000 (clk_sys cycles per colour-clock slot) on every
+  capture, both standards, both cores.
+- R2's field-line count measured 263 (NTSC) and 313 (PAL) on every capture,
+  both cores.
+- P4: no read of the disk buffer (DBUF = B = $20000, p.246) is observed in
+  ram_log() at all, on any of NTSC/PAL x FAST=0/FAST=1, both cores. See 4.3.
+- P5's (c): mean_j D_j(run A) - mean_j D_j(run B) measured 2945.0 cycles
+  against T=2976.0 (0.9896T), inside [T/2,3T/2].
+
+### 4.3 What the build found
+
+**P1, P2(ii) and P3 are red on both cores, on the same run.** Measured on
+the N=371, W=4 NTSC run (both standards, both cores): the main grid check
+matches 20 of 40 changes (words 1-2 land inside the +/-C/2 tolerance,
+words 3-4 do not); the single-word runs (N=0, N=32396) match 10 of 10. P2's
+own uniform-grid check (i) passes on every run; P2(ii)'s pairwise U
+comparison, whose tolerance is under a thousandth of a colour clock, is red
+already from the N=371 run alone (measured |U0-U371| = 0.000827, tolerance
+0.000579-0.889440 depending on the pair). Not exercised by N=0 or the other
+single-word runs, only by back-to-back transmission (W>1); the cause is in
+the report to the lead, not here.
+
+**P4's own proposition, and preconditions 4d/4e/4f, are halted, not red: the
+stimulus in this document does not produce an observable disk-buffer read on
+this harness.** Measured: on every capture (both standards, both FAST
+settings, both cores), no read of word B+2i for any i up to 192 appears in
+ram_log() at all, so the window opus:8-adkcon.c33, 4d, 4e, 4f and P4-MAIN
+grade cannot be formed. Precondition 4c (ADKCONR reads back the bit the
+program wrote) does not depend on that window and still holds on every
+capture, with its own contrast (NMH_MUTATE=P4-4C) still showing a genuine
+SETCLR error can be caught. Reported to the lead, not reasoned about here.
+
+**P5's mechanism preconditions (5a-5e) and derived checks (b, c) all pass on
+both runs, both cores; (a) and 5f are red on an open, unresolved anomaly in
+one specific character, not a mechanism failure.** Every character except
+index 2 (0-based; the third of eight, byte $81) reads back correctly on
+both run A and run B: RESULT bits 7-0 match byte_j, bit 9 and bit 8 read 1
+on run A, and the G5 brackets, RBF-observed and no-early-signal checks all
+hold. Character 2's own RESULT reads back $0800 on both runs -- SERDATR's
+own RXD-level bit (bit 11) set, every other bit including the data bits
+zero, which is what SERDATR shows before any character is ever received --
+yet
+5d's own check (an RBF=0 sample precedes the first RBF=1 sample inside that
+same character's own poll window) still passes for it, and 5c's own check
+(no OVRUN) also passes for it. Byte $81 is the only one of the eight bytes
+with a run of six consecutive same-level data bits (d1-d6, all 0); the
+byte with the next-longest run, $C3 (four consecutive 0s, d2-d5), reads
+back correctly. The build could not root-cause this within budget: it is
+reported here, not compensated for by loosening (a) or 5f, per this
+package's own rule that a check that went red stays red until the cause is
+found and fixed.
+
+### 4.4 Mutations
+
+See `test_ch8_disk_serial.cpp`'s own header comment for the full list, the
+`NMH_MUTATE` value each uses, and which labels each one flips (several
+share a binary or a capture, so one substitution can flip more than one
+label). 4f's mutation is recorded, not graded, per 4.3.
