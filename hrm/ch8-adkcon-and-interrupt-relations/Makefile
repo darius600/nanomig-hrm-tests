@@ -3,19 +3,16 @@ NANOMIG ?= ../../nanomig
 
 TOP := paula
 # paula.v instantiates paula_uart, paula_intcontroller, paula_floppy and
-# paula_audio directly (confirmed by reading paula.v myself, after
-# SPECIFICATION.md was committed -- paula.v:203,220,243,289); paula_audio in
+# paula_audio directly (paula.v:203,220,243,289); paula_audio in
 # turn instantiates paula_audio_channel and paula_audio_mixer, which itself
 # instantiates paula_audio_volume. paula_floppy in turn instantiates
 # paula_floppy_fifo. paula_floppy_ebr.v and paula_floppy_dma_buf.v are
-# deliberately NOT in this list, matching the disclosed rig hazard also
-# recorded by hrm/ch8-adkcon-disk-control-bits's own Makefile: paula_floppy.v
-# does not instantiate either of them, and paula_floppy_ebr.v declares a
-# second `module paula_floppy` that must not be compiled alongside
-# paula_floppy.v. This file list is the same one that package's Makefile
-# uses; not re-derived independently beyond confirming paula.v's own four
-# instantiations, per the build brief's "read a sibling's Makefile for the
-# build pattern only" allowance.
+# deliberately NOT in this list, as in hrm/ch8-adkcon-disk-control-bits's
+# Makefile: paula_floppy.v does not instantiate either of them, and
+# paula_floppy_ebr.v declares a second `module paula_floppy` that must not
+# be compiled alongside paula_floppy.v (Verilator, run with -Wno-fatal as
+# here, only warns MODDUP and builds one of the two). This file list is the
+# same one that package's Makefile uses.
 SRC := $(NANOMIG)/src/minimig-aga/paula.v \
        $(NANOMIG)/src/minimig-aga/paula_uart.v \
        $(NANOMIG)/src/minimig-aga/paula_intcontroller.v \
@@ -50,7 +47,7 @@ all: test
 # newer than its listed prerequisites, which would silently reuse a STALE
 # binary across `make MUT=X test` invocations (MUT is not a file, so it
 # can never make a file target look out of date) and report the previous
-# build's result as the new mutation's -- the build brief's own named trap.
+# build's result as the new mutation's.
 test: $(SRC) $(TEST_SRC) Makefile
 	rm -rf $(OBJ_DIR)
 	$(VERILATOR) $(FLAGS) --Mdir $(OBJ_DIR) --top-module $(TOP) $(SRC) $(TEST_SRC)
