@@ -1,4 +1,4 @@
-# Wo liegt der NanoMig-Checkout? Standard ist das Submodul in diesem Repo.
+# Where is the NanoMig checkout? Default is the submodule in this repo.
 NANOMIG ?= ../../nanomig
 
 # Pass MUT=<NAME> to build one mutation variant, e.g. `make MUT=MUT_STOPBIT_LOW`.
