@@ -105,7 +105,10 @@ struct Config {
     // pointer reaches 512 KB (p.170). AGA (bit 4) stays off, so COLOR00 is a 12-bit
     // RGB444 register.
     uint8_t chipset_config = 0x08;
-    uint8_t floppy_config  = 0x00; // 0 = no floppy drives; sdc_* stays idle
+    uint8_t floppy_config  = 0x00; // 0 = one drive (DF0), write-enabled, normal speed; sdc_* stays idle, so no disk is served
+    // nanomig.v passes floppy_config through unchanged. NanoMig's board tops build it as
+    // {drives-1 [3:2], write protect [1], turbo [0]}, and the upstream bench uses 1 for
+    // "one fast drive" and 5 for "two fast drives"; no value means "no drives".
     uint8_t video_config   = 0x00; // filters/scanlines off
     uint8_t turbo_config   = 0x00; // 000 = no turbo chip/kick/data cache; every CPU access uses the
                                     // slow chip bus (cpu_wrapper.v:150-168 ramsel stays 0), so it is
