@@ -4,7 +4,8 @@ NANOMIG ?= ../../nanomig
 TOP := paula_floppy
 # paula_floppy_ebr.v is deliberately NOT in this list: it declares a second
 # `module paula_floppy` and must not be compiled alongside paula_floppy.v
-# (see hrm/ch8-drive-sense-lines/SPECIFICATION.md, build brief rig hazard).
+# -- Verilator, run with -Wno-fatal as here, only warns MODDUP and builds
+# one of the two (see hrm/ch8-drive-sense-lines/SPECIFICATION.md).
 SRC := $(NANOMIG)/src/minimig-aga/paula_floppy.v \
        $(NANOMIG)/src/minimig-aga/paula_floppy_fifo.v
 TEST_SRC := test_appH-drive-sense-and-motor.cpp
