@@ -26,7 +26,8 @@ and immediately below it, at `:24`, the conditional mark:
        ~     Address not writable by the Copper unless the "copper danger bit",
              COPCON is set true.
 
-**The `*` carries no condition and no chipset.** The `~` carries both. The two
+**The `*` carries no condition and no chipset.** The `~` carries a condition,
+and no chipset either. The two
 marks are printed two lines apart for exactly the purpose of distinguishing an
 absolute prohibition from a conditional one, and p.289 puts `*` on SERDATR
 (`*018`), SERDAT (`*030`) and SERPER (`*032`).
@@ -67,9 +68,9 @@ in almost the same characters:
 | **WinUAE** | `if (addr < ((copcon & 2) ? (ecs_agnus ? 0 : 0x40) : 0x80))` — `custom.cpp:2809`. With CDANG set on ECS the threshold is **0**: nothing is blocked |
 | **vAmiga** | `if (cdang) { return agnus.isOCS() ? addr < 0x40 : false; } else { return addr < 0x80; }` — `Copper.cpp:396-402`. With CDANG set and not OCS, no address is illegal |
 | **Denise** | `cdang = (value & 2) ? (agnus.ecsAndHigher() ? 0 : 0x40) : 0x80;` — `copper.cpp:342`, tested at `:203` as `if (reg < cdang)`. ECS with CDANG gives a threshold of 0 |
-| **Copperline** | ships a test table for it. `copper_forbidden_move_ranges_match_copcon_cdang_on_ocs_and_ecs` (`src/bus/tests.rs:4165`) asserts `$000` and `$03E` **blocked** with CDANG on OCS and **allowed** with CDANG on ECS |
-| **MiSTer** | `rtl/agnus_copper.v:225` — descendant, byte-identical: `if (ir2[8:7]==2'b00 && !cdang \|\| ir2[8:6]==3'b000 && !ecs) // illegal access`, the same decode that lifts the block at `ecs & cdang` |
-| **TC64** | `rtl/minimig/agnus_copper.v:225` — descendant, the identical line. The file differs from NanoMig by 18 lines on both Minimig lines, but they are the same 18: nine `<=` assignments converted to `=` (`copjmp1`, `copjmp2`, `strobe1`, `strobe2`, `strobe`, at `:237-271`), a blocking-vs-non-blocking edit unrelated to this decode and made identically by both. A fix here diverges from both lines equally; the manual is what disagrees, not either ancestor |
+| **Copperline** | `copper_can_write_custom` lets a MOVE reach `$000-$03E` only when the Agnus is not OCS and CDANG is set (`src/bus/dma_slots.rs:697-702`), and it ships a test table for it. `copper_forbidden_move_ranges_match_copcon_cdang_on_ocs_and_ecs` (`src/bus/tests.rs:4165`) asserts `$000` and `$03E` **blocked** with CDANG on OCS and **allowed** with CDANG on ECS |
+| **MiSTer** | `rtl/agnus_copper.v:225` — descendant, identical: `if (ir2[8:7]==2'b00 && !cdang \|\| ir2[8:6]==3'b000 && !ecs) // illegal access`, the same decode that lifts the block at `ecs & cdang` |
+| **TC64** | `rtl/minimig/agnus_copper.v:225` — descendant, the identical line. The file differs from NanoMig by 18 lines on both Minimig lines, but they are the same 18: nine assignments that are `<=` in NanoMig and `=` in both lines (`copjmp1`, `copjmp2`, `strobe1`, `strobe2`, `strobe`, at `:237-271`), a blocking-vs-non-blocking difference unrelated to this decode and the same in both. A fix here diverges from both lines equally; the manual is what disagrees, not either ancestor |
 
 Four independent implementations, one formula, and one of them treats it as a
 property worth a regression test. **The page's `*` describes OCS.** Appendix B
@@ -80,11 +81,15 @@ have said so is the `~` two lines below it.
 
 **Not [NM-HRM-044](NM-HRM-044.md).** That finding rests on two printed passages
 in genuine conflict — p.279 permits Copper initialisation of DSKPTH and p.289
-forbids it. Here there is no second passage: p.265 and p.283, this slice's own
-Appendix A pages for these four registers, **do not mention the Copper at
-all** — measured, `grep -in copper` over both returns nothing. So this is the
-plainer case, a single unconditional statement that no implementation honours,
-and it is graded rather than declined as a source conflict.
+forbids it. Here no register-specific passage stands opposite: p.265 and
+p.283, the Appendix A pages for these three registers and ADKCONR, **do not
+mention the Copper at all** — measured, `grep -in copper` over both returns
+nothing. The passage that does stand opposite is general, Appendix C's COPCON
+sentence on p.310: *"Now, in the ECS, if this bit is set, the Copper can access
+all of the Amiga chip registers."* This package grades p.289's mark rather than
+declining it as a source conflict;
+[`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep) grades the same
+`ecs=1`, `cdang=1` corner against p.310, and it is green there.
 
 **Not [NM-HRM-004](NM-HRM-004.md)**, which is a different corner of the same
 decode — the `~` range at ECS with CDANG clear — and is untouched by these

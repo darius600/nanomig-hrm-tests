@@ -22,9 +22,8 @@ connector on the back panel of the computer"* — and bi-directional is the word
 the claim rests on. A port is bi-directional when a bit configured as an output
 carries the value written to it.
 
-**Appendix F, p.341, states it outright, and this finding no longer rests on one
-word.** The appendix was extracted on 17.09.2026, after this finding was written,
-and it specifies the part:
+**Appendix F, p.341, states it outright, so this finding does not rest on one
+word.** The appendix specifies the part:
 
 > Ports A and B each consist of an 8-bit peripheral data register (PR) and an
 > 8-bit data direction register (DDR). If a bit in the DDR is set to a 1, the
@@ -33,14 +32,14 @@ and it specifies the part:
 
 So the manual says each port **consists of** a peripheral data register and a
 direction register. NanoMig's CIA-A port B has the DDR and no PR — `regportb` is
-commented out in full. The finding's own title is now the manual's wording rather
-than an inference from p.259.
+commented out in full. The finding's title is the manual's wording rather than
+an inference from p.259.
 
 The same page's read rule looks at first like it licenses the implementation and
 does not:
 
 > When you READ a PR register, you read the actual current state of the I/O pins
-> (PA0-PA7, PB0-PB7), regardless of whether you have set them to be inputs or
+> (PA0-PA7, PB0-PB7, regardless of whether you have set them to be inputs or
 > outputs.
 
 A read does return the pin. But with a PR present and its DDR bit set, the PR
@@ -77,10 +76,13 @@ CIAADDRB between all-input and all-output gives an identical read both times.
 ### Measured
 
 [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction)
-holds `portb_in` at `0x3C` and reads CIAAPRB with `CIAADDRB=0x00` and
-`CIAADDRB=0xFF`: `0x3C` both times — `PROP-1`, red, one of the package's `2
-passed, 1 failed`. The identical comparator pointed at CIA-A port A instead —
-`CONTROL-PA0-OUTPUT` — is green on the same fixture.
+sets bit 0 of CIAADDRB to output, writes 0 and then 1 to bit 0 of CIAAPRB, and
+reads each back: the 1 reads back as the pin's 0 — `PROP-1`, red, one of the
+package's `2 passed, 1 failed`. The identical comparator pointed at CIA-A port
+A instead — `CONTROL-PA0-OUTPUT` — is green on the same fixture. Beside the
+graded lines the package records the direction-independence above: with
+`portb_in` held at `0x3C`, CIAAPRB reads `0x3C` under `CIAADDRB=0x00` and
+`CIAADDRB=0xFF` alike.
 
 ## What the port is actually used for here
 
@@ -124,11 +126,11 @@ be told it works.
 | | |
 |---|---|
 | **WinUAE** | `c->prb = val;` on the CIA-A write (`cia.cpp:2143`), and the value goes on to a printer (`doprinter(val)`) and to the Arcadia parallel port. A real data register with real consumers |
-| **vAmiga** | stores `prb` and reads it back through the direction mask: `result = (result & ~ddrb) \| (prb & ddrb)` (`Core/Components/CIA/CIA.cpp:931`, `:1114`) — the exact behaviour p.259's "bi-directional" names |
-| **Denise** | keeps `prb` beside `ddrb` in its CIA line state (`emulation/cia/new/cia.h:20-31`) and serialises both (`cia.cpp:455`, `:463`) |
+| **vAmiga** | stores `prb` and reads it back through the direction mask: `CIAA::computePB` returns `(internal & ddrb) \| (external & ~ddrb)` with `internal` being `prb` (`Core/Components/CIA/CIA.cpp:919`, `:937-940`) — the exact behaviour p.259's "bi-directional" names |
+| **Denise** | keeps `prb` beside `ddrb` in its CIA line state (`emulation/cia/new/cia.h:20-31`), serialises both (`cia.cpp:455`, `:457`), and reads CIA-A port B through the direction mask: `out = (lines->prb & lines->ddrb) \| (out & ~lines->ddrb);` (`emulation/libami/system/system.cpp:60`) |
 | **Copperline** | keeps both in its register file and documents the same board wiring NanoMig has — *"the parallel-port joystick adapter's switches on CIA-A PB0-7"* (`src/chipset/cia.rs:460-465`) — while still storing the data register |
-| **MiSTer** | descendant — no counterpart; `regportb` does not exist here at all, not even commented out. `rtl/ciaa.v:312` names the section *"Port B - Parallel port (simplified, mostly unused in Amiga)"*, and `:141` calls the unused wire out directly, *"Port B output (unused)"*. |
-| **TC64** | descendant — live, not commented out: `regportb` is written and drives `portb_out` (`rtl/minimig/ciaa.v:243,247-253,276`), but CIA-A's own instantiation never connects `.portb_out` (`rtl/minimig/minimig.v:906-927`) and the read mux still returns `portb_in` unconditionally on a PRB read (`ciaa.v:268`). The register exists and reaches nothing. |
+| **MiSTer** | descendant — the same gap without the commented-out register: `regportb` does not exist here at all, and a PRB read returns `portb_in` (`rtl/ciaa.v:328-329`). `rtl/ciaa.v:312` names the section *"Port B - Parallel port (simplified, mostly unused in Amiga)"*, and `:141` calls the unused wire out directly, *"Port B output (unused)"*. |
+| **TC64** | descendant — live, not commented out: `regportb` is written and drives `portb_out` (`rtl/minimig/ciaa.v:243,247-253,276`), but `portb_out` is a wire inside `ciaa` (`:111`), not one of its ports, so CIA-A's instantiation has nothing to connect (`rtl/minimig/minimig.v:906-927`), and the read mux still returns `portb_in` unconditionally on a PRB read (`ciaa.v:268`). The register exists and reaches nothing. |
 
 Copperline is the interesting one: it models **the same joystick-adapter use of
 the connector** that NanoMig wires, and still implements the register, because

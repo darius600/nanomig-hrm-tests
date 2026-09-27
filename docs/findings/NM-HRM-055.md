@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) `ALLZERO-NO-TX`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `E6` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red, in two packages built by different agents from different claim sets |
-| **Verdict of the four** | **split, 2–1–1.** vAmiga and Denise implement the sentence in one token; Copperline writes an explicit branch to transmit anyway; WinUAE does not model the line at this level |
+| **Verdict of the four** | **3–1, with a split inside one of them.** vAmiga and Denise implement the sentence in one token; WinUAE implements it in its ordinary path and not in its `ser_accurate` one; Copperline writes an explicit branch to transmit anyway |
 
 ---
 
@@ -46,8 +46,9 @@ package's `48 passed, 3 failed`.
 
 ## The control that makes it a finding
 
-The same fixture writing a non-zero word transmits correctly, and
-`STARTBIT-INDEP` grades the start bit's appearance on its own printed sentence.
+The same fixture writing a non-zero word transmits correctly —
+`WRITE-STARTS-TX`, green — and `STARTBIT-AUTO` grades the start bit's
+appearance on its own printed sentence.
 So the red is not "this fixture cannot see a transmission" — it is "this
 transmission should not have happened".
 
@@ -57,18 +58,18 @@ transmission should not have happened".
 |---|---|
 | **vAmiga** | **implements it.** `if (transmitShiftReg == 0 && transmitBuffer != 0)` — `Core/Components/Paula/UART/UART.cpp:137`. The `!= 0` is the page's sentence |
 | **Denise** | **implements it.** `if (value && !serShifter)` — `emulation/libami/paula/uart.cpp:42`. The same guard, one token |
-| **WinUAE** | **implements it in one of its two paths.** `od-win32/serial_win32.cpp:999-1004` returns early on `if (!w)`, with a log line that calls the case out by name: *"zero serial word written?!"*. In `ser_accurate` mode (`:983-992`) there is no such guard and the word is loaded unconditionally |
+| **WinUAE** | **implements it in one of its two paths.** `od-win32/serial_win32.cpp:999-1004` returns early on `if (!w)`, with a log line that calls the case out by name: *"zero serial word written?!"*. In `ser_accurate` mode (`:983-992`), which cycle-exact memory or a 68020 or lower in compatible mode at `m68k_speed == 0` selects (`:1388`), there is no such guard and the word is loaded unconditionally |
 | **Copperline** | **deliberately does not.** `write_serdat` loads any word (`src/chipset/paula.rs:1079-1082`), and `serial_tx_total_bits` carries an explicit branch for it: `if word == 0 { return if long { 11 } else { 10 }; }` (`:1575-1578`) — a full frame, written on purpose |
-| **MiSTer** | descendant — the same gap in the same file: `rtl/paula_uart.v:77-140` is byte-identical to NanoMig's, with no test of the written value anywhere in the transmit path |
-| **TC64** | descendant — byte-identical too, line numbers included; the whole 262-line file matches NanoMig line for line, confirmed by a full-file comparison and not only the cited range. The all-zero-still-transmits gap is inherited unchanged by both lines |
+| **MiSTer** | descendant — the same gap in the same file: `rtl/paula_uart.v:77-140` is identical to NanoMig's, with no test of the written value anywhere in the transmit path |
+| **TC64** | descendant — identical too, line numbers included; the whole 262-line file matches NanoMig line for line, confirmed by a full-file comparison and not only the cited range. The all-zero-still-transmits gap is inherited unchanged by both lines |
 
 **Three of the four independent implementations implement the sentence
 somewhere**, two of them with a single added token. That is what makes the
 omission worth reporting rather than excusing.
 
-The two dissents are the interesting part and neither is an oversight.
+The two dissents are the interesting part.
 Copperline wrote a branch to transmit a zero word. WinUAE implements the rule in
-its ordinary path and drops it in its cycle-accurate one — which is the opposite
+its ordinary path and drops it in its `ser_accurate` one — which is the opposite
 of what one would expect if the rule were simply true of the silicon.
 **NanoMig's behaviour matches those two.**
 
@@ -76,19 +77,6 @@ Whether p.259 describes the silicon or prescribes an interface is the question
 an Amiga hardware person has to settle, and `paula.rs:1575` and
 `serial_win32.cpp:983` are the two places to read before concluding the page is
 unambiguous. The measurement is not in doubt.
-
-## A citation withdrawn
-
-An earlier version of this entry cited `winuae/serial.cpp:174` and `:199` and
-described WinUAE as unable to answer. **That file is not in WinUAE's build** —
-the MSVC project's `serial.cpp` entries are `pcem\serial.cpp`, the PC-emulation
-subsystem, and the live model is `od-win32/serial_win32.cpp`. The root
-`serial.cpp` is 1996-era UAE whose serial body sits behind a `POSIX_SERIAL` its
-own line 22 undefines.
-
-Citing it was the defect this project names as *a dead citation is worse than a
-dash*: the file exists, the function exists, the line says what it appears to
-say, and none of it runs.
 
 ---
 

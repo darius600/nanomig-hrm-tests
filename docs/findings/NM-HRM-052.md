@@ -67,7 +67,7 @@ them appears on a graded line.
 | **Denise** | `0x64, 0x65` adjacent in the modifier group of its key table (`emulation/libami/input/keyboard/keyboard.cpp:18`) |
 | **Copperline** | `AltLeft => 0x64`, `AltRight => 0x65` (`src/video/window/host_input.rs:185-186`) |
 | **MiSTer** | descendant — **moot, and not applicable**: this finding is about the manual, not about an implementation. `amiga_keymap.v` is absent from the pinned `rtl/` in any case, so there is no keymap here to consult |
-| **TC64** | descendant — **the same**: no `amiga_keymap.v` in its `rtl/minimig/` either |
+| **TC64** | descendant — no `amiga_keymap.v`, but the keymap its builds with `MINIMIG_PS2_KEYBOARD` use takes the table too: `$64` for the left Alt and `$65` for the right (`rtl/minimig/ciaa_ps2keyboard_map.v:430`, `:686`) |
 
 Four independent implementations all took the table and none took the figures.
 That is worth recording — but it is evidence about what implementers read, not

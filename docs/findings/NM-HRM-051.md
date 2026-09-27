@@ -46,11 +46,12 @@ per-key branch and no `data_in[7]` branch:
 ```
 
 and there is no register anywhere in the module that remembers a press count or
-a lock state — `grep -rni caps` over the whole pinned submodule returns exactly
-two lines, `minimig.v:139` (a changelog comment about autofire) and
+a lock state — `grep -rni caps` over the pinned submodule's HDL sources returns
+exactly two lines, `minimig.v:139` (a changelog comment about autofire) and
 `amiga_keymap.v:79` (the key's table entry), neither of them a branch.
 
-MEASURED over `hid.v` + `amiga_keymap.v`, two press/release cycles of HID `$39`:
+What `hid.v:101-104` and `amiga_keymap.v:79` give for two press/release cycles
+of HID `$39`; the package measures the first three rows (below):
 
 | | reported? | `kbd_mouse_data` | bit 7 | p.359 requires |
 |---|---|---|---|---|
@@ -64,8 +65,8 @@ distinguish the two presses never changes.
 
 ### Measured
 
-[`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events) presses and
-releases HID `$39` (Caps Lock) twice: every release reports an event —
+[`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events) presses HID `$39`
+(Caps Lock), releases it and presses it again: the release reports an event —
 `CAPS-LOCK-RELEASE-NOT-ACCEPTED`, red — where p.359 says none should fire, and
 the second press still carries bit 7 clear — `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE`,
 red — where p.359's LED rule needs it set. Two of the package's `13 passed, 2
@@ -91,12 +92,12 @@ apart.
 
 | | |
 |---|---|
-| **WinUAE** | **Conformant, by mirroring the host.** `target_checkcapslock` replaces the physical up/down state with the host machine's own caps-lock state before the event is translated (`od-win32/keyboard_win32.cpp:573`, `od-unix/input.cpp:1402-1418`), so the byte's up/down bit follows the lock and not the key. In raw keyboard modes (`currprefs.keyboard_mode > 0`) it returns early and passes the key through unchanged |
+| **WinUAE** | **Conformant, by mirroring the host.** `target_checkcapslock` drops the key's release (`if (*state == 0) return -1;`, which its caller skips with `continue`, `inputdevice.cpp:8565-8567`) and replaces the press's up/down state with the host machine's own caps-lock state before the event is translated (`od-win32/keyboard_win32.cpp:573-598`, `od-unix/input.cpp:1402-1418`), so the byte's up/down bit follows the lock and not the key. In raw keyboard modes (`currprefs.keyboard_mode > 0`) it returns early and passes the key through unchanged |
 | **vAmiga** | **Not conformant — the same shape as NanoMig.** `Core/Peripherals/Keyboard/Keyboard.cpp` has no `0x62` case: `press()` queues the code and `release()` queues `keycode \| 0x80` for every key alike. Its one lock mechanism (`lock()` / `isLocked()`) exists for the Cmd/Amiga key combination, not for Caps Lock |
 | **Denise** | **Conformant, both halves, explicitly.** The release returns before emitting anything — `if (stroke == 0x62) // Caps Lock release  return;` (`emulation/libami/input/keyboard/keyboard.cpp:203-204`) — and the press toggles the modelled LED and sets bit 7 when that press turns it off (`:230-234`) |
 | **Copperline** | **Conformant, and documented as the keyboard's own behaviour.** The `caps_lock_on` field's comment reads *"owned by the keyboard: the key toggles it, sending a press code on toggle-on and a release code on toggle-off; the physical key release sends nothing"* (`src/chipset/keyboard.rs:272-275`) |
 | **MiSTer** | descendant — **no counterpart.** No `hid.v` and no `keymap` in the pinned tree: `rtl/minimig.v:207` takes `kbd_mouse_data` as a top-level input and the keyboard's own behaviour is decided in software above the chipset |
-| **TC64** | descendant — **no counterpart either**: no `hid.v` in its `rtl/minimig/` |
+| **TC64** | descendant — no `hid.v`, but a Caps Lock rule of its own in the builds with `MINIMIG_PS2_KEYBOARD` (`rtl/minimig/amiga_keyboard.v:70`): `ciaa_ps2keyboard.v` toggles a `capslock` register on each press and suppresses every Caps Lock event while it is set (`rtl/minimig/ciaa_ps2keyboard.v:351-366`). Read from the source, the first press sends `$62`, the first release and the second press send nothing, and the second release sends `$E2`: the page's two bytes, the second one on the release rather than the press. Its MiST builds take `kbd_mouse_data` already decoded (`rtl/minimig/amiga_keyboard.v:156-202`) |
 
 Three of the four independent implementations arrive at the page's byte
 sequence by three different routes — mirroring the host's lock, modelling the

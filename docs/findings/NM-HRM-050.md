@@ -27,9 +27,10 @@ have.
 
 ## What NanoMig does
 
-`keymap` is a single combinational table, `code` in and `amiga` out, and a
-128-value sweep of `code` is an exhaustive statement about all of it. **No input
-produces `$30`.** Both international keys produce `$2B`:
+`keymap` is a single combinational table, `code` in and `amiga` out, and its
+98 entries and its `7'h7f` default, read in full, are an exhaustive statement
+about all of it. **No input produces `$30`.** Both international keys produce
+`$2B`:
 
 ```verilog
   (code == 7'h32)?7'h2b:   // 32: EUR-1      amiga_keymap.v:72
@@ -49,8 +50,8 @@ the two keys the page distinguishes are collapsed onto one code.
 
 ### Measured
 
-[`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) sweeps `code` and
-reads `amiga`: HID `$64`, the left-Shift cutout, returns `$2B` instead of
+[`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) drives `code` with
+each key's input and reads `amiga`: HID `$64`, the left-Shift cutout, returns `$2B` instead of
 `$30` — `CUTOUT-30`, red, one of the package's `97 passed, 1 failed` — the
 same value HID `$32`, the Return cutout, returns — `KEY-$2B`, green, on the
 same measurement basis.
@@ -61,7 +62,8 @@ The two entries are not equally wrong. `keymap`'s input side is the FPGA
 Companion code space, which its own header describes as *"mainly the USB HID key
 codes with the modifier keys mapped into the 0x68+ range"* — and FPGA
 Companion's `core_map_key` confirms it, returning the host's usage code
-unchanged for a non-legacy core (`src/core.c:60-82`). So the input side has an
+unchanged for a non-legacy core (`src/core.c:60-82`), which NanoMig is: it
+reports core id 0, *"Generic core"* (`src/misc/sysctrl.v:186`). So the input side has an
 oracle outside this tree, and the USB HID usage names settle it:
 
 | HID usage | USB HID name | where the key sits | Amiga code | NanoMig gives |
@@ -88,12 +90,11 @@ p.252's sentence, and it places the two keys at opposite ends of the board.
 broken fixture is ruled out by the package's own control. The defect is that
 the *other* key is given the same answer.
 
-The two stimuli were bound the wrong way round in the first build, by
-`amiga_keymap.v`'s own naming order rather than against any oracle for what
-those inputs physically are. Corrected and rebuilt: the red stays red and the
-green stays green, because both RTL entries emit `$2B` whichever is driven —
-but the red is now against the key p.252 names, and the green is a control on
-the key that is right, instead of a pass standing on the defect.
+The two stimuli are bound by the USB HID usage names above, not by
+`amiga_keymap.v`'s own `EUR-1`/`EUR-2` labels. Both RTL entries emit `$2B`
+whichever is driven, so the binding does not change the colours; it decides
+that the red is against the key p.252 names and the green is a control on the
+key that is right.
 
 ## What the others say
 
@@ -104,7 +105,7 @@ the key that is right, instead of a pass standing on the defect.
 | **Denise** | Both, adjacent in its key table: `0x2b, 0x30` (`emulation/libami/input/keyboard/keyboard.cpp:19`) |
 | **Copperline** | `0x30` sits in the A500 key matrix taken from the keyboard's own wiring (`src/chipset/keyboard.rs:133`) |
 | **MiSTer** | descendant — **no counterpart.** The pinned Minimig-AGA tree has no `amiga_keymap.v`, no `keymap` and no `hid.v`: `rtl/minimig.v:207` takes the already-decoded `kbd_mouse_data` as a top-level input, and the translation happens in software above the chipset |
-| **TC64** | descendant — **no counterpart either**: no `amiga_keymap.v` in its `rtl/minimig/`. Other Minimig boards solve it differently again |
+| **TC64** | descendant — no `amiga_keymap.v`, but a keymap of its own: builds with `MINIMIG_PS2_KEYBOARD` (`rtl/minimig/amiga_keyboard.v:70`), among them the Chameleon boards, translate PS/2 scan codes in `rtl/minimig/ciaa_ps2keyboard_map.v`, which gives the two cutout keys two codes, `$2B` (`:506`) and `$30` (`:510`), as the page does. Its MiST builds take `kbd_mouse_data` already decoded (`rtl/minimig/amiga_keyboard.v:156-202`) |
 
 None of the four independent implementations reaches `$30` by accident and none
 of them omits it. The page's two cutout keys are two keys everywhere else.
