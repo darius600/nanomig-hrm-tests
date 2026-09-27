@@ -10,7 +10,7 @@
 | **Report to** | **Minimig-AGA and NanoMig.** No independent implementation does this |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge), [`hrm/ch8-pot-pins-as-digital-io`](../../hrm/ch8-pot-pins-as-digital-io), [`hrm/ch8-controller-pin-function-map`](../../hrm/ch8-controller-pin-function-map), [`hrm/ch8-potgo-register-bit-layout`](../../hrm/ch8-potgo-register-bit-layout) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 14 red across four packages. Controls pass on the same measurement basis in each |
+| **Assertions** | 14 red across four packages: `opus:8-pot.c1`, `sol:8-pot.c1`, `sol:8-appa-pot.c15`, `opus:8-appa-pot.c12` and `opus:8-appa-pot.c13` in `hrm/ch8-pot-counter-start-and-charge`, whose other four reds are [NM-HRM-038](NM-HRM-038.md)'s; `opus:8-dio.c32`, `opus:8-dio.c33`, `sol:8-dio.c30` and `sol:8-dio.c31` in `hrm/ch8-pot-pins-as-digital-io`; `opus:8-tbl8-1.c15`, `sol:8-pin.c17`, `opus:8-tbl8-1.c16` and `sol:8-pin.c18` in `hrm/ch8-controller-pin-function-map`; `PROP-4` in `hrm/ch8-potgo-register-bit-layout`. Controls pass on the same measurement basis in each |
 | **Verdict of the four** | **none reproduces it** — all four give the right-hand X counter the same external treatment as the other three |
 
 ---

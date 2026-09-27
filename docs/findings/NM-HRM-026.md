@@ -10,6 +10,7 @@
 | **Report to** | **nowhere, as it stands** — see *Suggested change* |
 | **Test** | [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 8 red, all reading `audio_state` inside the module: `5-p164.c4`, `5-p166.c1`, `5-p164.c18`, `5-p164.c9`, `5-p164.c10`, `5-p166.c6`, `5-sm.c8`, `5-p166.c3` |
 | **Verdict of the four** | **all four use the figure's own numbering**, `101` included |
 | **Boundary** | **inside the module.** All eight red assertions read `audio_state` through `--public-flat-rw` and do not exist at the pins |
 

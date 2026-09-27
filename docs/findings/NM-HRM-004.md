@@ -10,7 +10,7 @@
 | **Report to** | **the manual, not the implementation.** NanoMig, both Minimig lines, all four implementations and Commodore's AA specification block the range with CDANG clear |
 | **Test** | [`hrm/ch2-copper-move-range`](../../hrm/ch2-copper-move-range), [`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 3 red: `T9` (`$040`) and `T16` (both ends Appendix C prints, `$03E` and `$07E`, claim `ch2-appc-ecs.c21`) in `hrm/ch2-copper-move-range`, and the `ecs=1 cdang=0` sweep in `hrm/ch2-copper-move-sweep` |
+| **Assertions** | 3 red: `T9` (`$040`) and `T16` (both ends Appendix C prints, `$03E` and `$07E`, claim `ch2-appc-ecs.c21`) in `hrm/ch2-copper-move-range`, and `SWEEP`, the `ecs=1 cdang=0` sweep, in `hrm/ch2-copper-move-sweep` |
 | **Verdict of the four** | **unanimous with NanoMig and with Appendix B**: WinUAE, vAmiga, Denise and Copperline all block a Copper MOVE below `$080` while CDANG is clear, whatever the chipset; none cites Appendix C, and Copperline asserts `$040` and `$07E` blocked on its ECS Agnus in a test |
 
 ---

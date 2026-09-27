@@ -10,6 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 1 red: `ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS` in `hrm/ch5-audio-dmacon-adkcon` |
 | **Verdict of the four** | **all four route a modulator's words into the next channel, and on the package's stimulus all four leave the modulators silent**; they split 2-2 on p. 150's rule that either attach bit disables the channel's output: WinUAE (`audio.cpp:2761-2769`) and Copperline (`paula.rs:2326-2328`) mute a modulator's output, while vAmiga and Denise only stop loading its output buffer under a volume attach, so a period-only modulator still plays its words |
 
 ---

@@ -10,6 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
 | **Test** | [`hrm/ch2-copper-control`](../../hrm/ch2-copper-control), [`hrm/ch2-copper-locreg-width`](../../hrm/ch2-copper-locreg-width) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 4 red: `T4` in `hrm/ch2-copper-control`; `LW1`, `LW3` and `LW4` in `hrm/ch2-copper-locreg-width`, of which `LW3` is the one that matters (*Which assertion carries the finding*) |
 | **Verdict of the four** | **three of the four narrow by chipset**, to 19 bits on OCS: Copperline masks the stored pointer, WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Memory.cpp:1623`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. The three do it in different places and the effect on a fetched address is the same |
 | **See also** | [NM-HRM-022](NM-HRM-022.md) (blitter) and [NM-HRM-024](NM-HRM-024.md) (audio) — the same decision in two other engines |
 

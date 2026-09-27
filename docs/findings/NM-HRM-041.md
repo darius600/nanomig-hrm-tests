@@ -10,7 +10,7 @@
 | **Report to** | **Minimig-AGA and NanoMig.** All four other implementations implement all three fields |
 | **Test** | [`hrm/ch8-dskbytr-status-register`](../../hrm/ch8-dskbytr-status-register), [`hrm/ch8-disk-controller-overview`](../../hrm/ch8-disk-controller-overview), [`hrm/ch8-disk-register-map-paula-floppy`](../../hrm/ch8-disk-register-map-paula-floppy) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 7 red across three packages, from five printed pages. DISKWRITE and DMAON pass through the identical read cycle in the same run |
+| **Assertions** | 7 red across three packages, from five printed pages: `DSKBYT-NOT-CLEARED-ON-READ`, `WORDEQUAL-DOES-NOT-TRACK-DSKSYNC-MATCH` and `DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES` in `hrm/ch8-dskbytr-status-register`; `opus:8-dsk.c9` and `sol:8-dsk.c9` in `hrm/ch8-disk-controller-overview`; `B4-DSKBYTR-DATA-BYTE-HALF` and `B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS` in `hrm/ch8-disk-register-map-paula-floppy`. DISKWRITE and DMAON pass through the identical read cycle in the same run. The AA suite's `aa/aa-disk-status-bits` is red on two of the three fields, `DSKBYT-IS-CLEARED-BY-THE-READ` and `WORDEQUAL-IS-TRUE-ONLY-WHILE-DSKSYNC-MATCHES` (*A second document says the same thing*) |
 | **Verdict of the four** | **unanimous against.** All four clear DSKBYT on the read, drive WORDEQUAL from a live comparator and put a real disk byte in DATA; two of them implement the page's own "as little as two microseconds" window |
 
 ---

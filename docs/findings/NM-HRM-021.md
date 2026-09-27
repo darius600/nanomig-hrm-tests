@@ -10,6 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs) |
 | **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 1 red: `DOFF-NO-OBSERVABLE-EFFECT` in `hrm/ch6-blitter-ecs` |
 | **Verdict of the four** | three of four implement it, each gated on ECS Agnus; vAmiga does not |
 
 ---

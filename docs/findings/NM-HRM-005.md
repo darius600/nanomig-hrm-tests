@@ -10,6 +10,7 @@
 | **Report to** | **nowhere yet** — this one needs hardware, not a patch. See *Suggested change* |
 | **Test** | [`hrm/ch2-copper-cycle-times`](../../hrm/ch2-copper-cycle-times), [`hrm/ch2-copper-cycles`](../../hrm/ch2-copper-cycles) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 8 red: `P3` and `P4` (`SKIP`), `P5` (satisfied `WAIT`), `P6` (`WAIT` − `MOVE`), `AC5` and `AC6` (`SKIP`, p. 275) in `hrm/ch2-copper-cycle-times`; `C5` (satisfied `WAIT`) and `C6` (`WAIT` − `MOVE`) in `hrm/ch2-copper-cycles`. `AC6` is expository, not independent (*What holds the finding up*) |
 | **Verdict of the four** | vAmiga measures exactly NanoMig's three numbers |
 
 ---

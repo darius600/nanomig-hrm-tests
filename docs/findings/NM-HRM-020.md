@@ -10,6 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs) |
 | **Chapter** | 6 — Blitter · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 1 red: `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` in `hrm/ch6-blitter-ecs` |
 | **Verdict of the four** | **all four gate it on ECS. NanoMig alone does not.** |
 
 ---

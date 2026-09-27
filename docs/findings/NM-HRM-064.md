@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** and NanoMig — the responder is **inherited**, and MiSTer's Zorro II memory card makes the same promise; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge. See *Where the responder comes from* below |
 | **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · six graded assertions — **all red** |
 | **Chapter** | Appendix K — Zorro Expansion Bus · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed pp. 433 and 436 |
-| **Assertions** | 6 red, with an inverse control that turns green when register 48 is written in place of 4C |
+| **Assertions** | 6 red, the same six in `hrm/appK-autoconfig-base-address` and in its fx68k build `hrm/appK-autoconfig-base-address-fx68k`: `sol:K-0740`, `sol:K-0849`, `sol:K-0850`, `opus:K-0889`, `sol:K-0848` and `opus:K-0888`, with an inverse control that turns green when register 48 is written in place of 4C |
 | **Verdict of the four** | **three of four implement it; vAmiga does not** |
 
 ---

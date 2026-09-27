@@ -10,6 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale), [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 4 red: `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` in `hrm/ch5-audio-register-map`; `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`) and `TABLE-5-9-HAS-65-VOLUME-LEVELS` in `hrm/ch5-audio-volume-scale`, whose two other reds are [NM-HRM-002](NM-HRM-002.md)'s (*Confirming a fix, and what stays red afterwards*) |
 | **Verdict of the four** | all four clamp at 64 and keep it distinct from 63 |
 
 ---

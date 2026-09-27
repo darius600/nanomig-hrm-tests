@@ -10,6 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-shres-sprite-colour-encoding`](../../hrm/ch3-shres-sprite-colour-encoding) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 16 red: `SHRES-MODE-CHANGES-OUTPUT`; `REG-0x11`, `REG-0x12`, `REG-0x13`; `REG-0x14`, `REG-0x15`, `REG-0x16`, `REG-0x17`, `REG-0x18`, `REG-0x19`, `REG-0x1A`, `REG-0x1B`, `REG-0x1C`, `REG-0x1D`, `REG-0x1E`, `REG-0x1F`. `REG-0x10` is declined (`3 passed, 16 failed, 1 declined`; *What the test measures*) |
 | **Verdict of the four** | **one of four** reads `$10`–`$1F` as the page describes (WinUAE, ECS Denise only); vAmiga pair-encodes only the lower sixteen registers; Denise and Copperline do not pair-encode; outside the emulators, the 8373R4 dissection indexes the upper sixteen registers by two sprite pixels and shows two bits per component, as WinUAE does — see *What other Commodore documents say* |
 | **See also** | [NM-HRM-017](NM-HRM-017.md), the bitplane half of the same mechanism |
 

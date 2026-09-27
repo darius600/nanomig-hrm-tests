@@ -10,7 +10,7 @@
 | **Report to** | **the Minimig family** if it is reported at all — the behaviour is **inherited**, identical in MiSTer and reached independently by TC64. No RTL change is proposed; the question is whether printed page 436 describes what Commodore's own system software did |
 | **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · two graded assertions — **both red** |
 | **Chapter** | Appendix K — Zorro Expansion Bus · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed pp. 435 and 436 |
-| **Assertions** | 2 red, with an inverse control that turns green for a Zorro II board on the identical write |
+| **Assertions** | 2 red, the same two in `hrm/appK-autoconfig-base-address` and in its fx68k build `hrm/appK-autoconfig-base-address-fx68k`: `sol:K-0844` and `opus:K-0881`, with an inverse control that turns green for a Zorro II board on the identical write |
 | **Verdict of the four** | **two of four do exactly what NanoMig does; the other two have no Zorro III board to disagree with** |
 
 ---

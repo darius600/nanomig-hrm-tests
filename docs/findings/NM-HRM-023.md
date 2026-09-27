@@ -10,6 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch4-attached-sprites`](../../hrm/ch4-attached-sprites) |
 | **Chapter** | 4 — Sprites · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 1 red: `ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE` in `hrm/ch4-attached-sprites` |
 | **Verdict of the four** | **three of four take the bit from the odd sprite only**, as the manual states; outside the emulators, the 8373R4 dissection stores bit 7 for the odd sprites only — see *What other Commodore documents say* |
 
 ---

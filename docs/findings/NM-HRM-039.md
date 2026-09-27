@@ -10,7 +10,7 @@
 | **Report to** | **probably nobody.** See *Suggested change* |
 | **Test** | [`hrm/ch8-mouse-counter-wraparound`](../../hrm/ch8-mouse-counter-wraparound) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 3 red, all on the two wrapping rows and their footnotes. The two non-wrapping rows are green in the same package |
+| **Assertions** | 3 red, all on the two wrapping rows and their footnotes: `opus:8-limits.c15`, `opus:8-limits.c20` (with `sol:8-mouse-limit.c17`) and `opus:8-limits.c21` (with `sol:8-mouse-limit.c18`). The two non-wrapping rows are green in the same package |
 | **Verdict of the four** | **unanimous on the half they can answer** — 256 states per axis in all four, and not one uses 255 as a modulus |
 
 ---

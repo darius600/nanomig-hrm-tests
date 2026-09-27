@@ -10,6 +10,7 @@
 | **Report to** | **the manual, not the RTL.** p. 137 is contradicted by p. 326 of the same manual, by three of the four independent implementations and by the 8364R7 silicon, and Commodore's A500, A2000 and B2000 schematics wire the jacks as p. 326 describes; vAmiga alone plays p. 137 as printed — see *Why this is filed against the page* |
 | **Test** | [`hrm/ch5-audio-stereo-routing`](../../hrm/ch5-audio-stereo-routing), [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale) |
 | **Chapter** | 5 — Audio, printed p. 137; Appendix E — I/O Connectors and Interfaces, printed p. 326 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 6 red: `channel 0 routes right`, `channel 1 routes left`, `channel 2 routes left` and `channel 3 routes right` in `hrm/ch5-audio-stereo-routing`; `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT` in `hrm/ch5-audio-volume-scale`, which read the same two p. 137 sides on the mixer's multiply-then-sum path |
 | **Verdict of the four** | **three against one**: WinUAE, Denise and Copperline with the pin list, vAmiga with chapter 5; outside the emulators, the 8364R7 silicon sides with the pin list, and Commodore's A500, A2000 and B2000 schematics wire the board as p. 326 describes — see *What other Commodore documents say* |
 
 ---

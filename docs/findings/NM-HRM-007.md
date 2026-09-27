@@ -10,6 +10,7 @@
 | **Report to** | **nowhere yet** — NanoMig and both emulators read fetch 50, the manual's formula window uncut; the manual says the last word at $D8 is not fetched. See *For the specialists* |
 | **Test** | [`hrm/ch3-ddf-fetch-window`](../../hrm/ch3-ddf-fetch-window), [`hrm/ch3-bitplane-memory-layout`](../../hrm/ch3-bitplane-memory-layout) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 2 red: `MAX-WORDS-49-HIRES-AT-HW-LIMITS` in `hrm/ch3-ddf-fetch-window`, at $18/$D8, and `MAX-WORDS-49-HIRES` in `hrm/ch3-bitplane-memory-layout`, driven from beyond both limits |
 | **Verdict of the four** | WinUAE and vAmiga fetch 50, as NanoMig does; Copperline's own test requires an even count; the manual says 49 |
 
 ---

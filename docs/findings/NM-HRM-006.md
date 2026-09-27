@@ -10,6 +10,7 @@
 | **Report to** | **nobody.** NanoMig and all four independent implementations respect H3 at every resolution |
 | **Test** | [`hrm/ch3-ddf-fetch-window`](../../hrm/ch3-ddf-fetch-window) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 1 red: `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE` in `hrm/ch3-ddf-fetch-window` |
 | **Verdict of the four** | **unanimous with NanoMig**: all four respect H3 in lores and hires, on OCS and ECS. What they gate on the chipset is register bit 1, which p.277 lists as unused |
 
 ---
