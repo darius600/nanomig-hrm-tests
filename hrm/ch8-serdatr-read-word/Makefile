@@ -1,4 +1,4 @@
-# Wo liegt der NanoMig-Checkout? Standard ist das Submodul in diesem Repo.
+# Where is the NanoMig checkout? Default is the submodule in this repo.
 NANOMIG ?= ../../nanomig
 
 TOP_MODULE = paula_uart
@@ -8,8 +8,7 @@ SRC = $(NANOMIG)/src/minimig-aga/paula_uart.v
 # line in test_ch8-serdatr-read-word.cpp) by defining MUT_<NAME>=1 for the
 # build. `rm -rf $(OBJ_DIR)` lives in the test recipe itself (not just
 # clean) so `make MUT=X test` can never silently relink a stale binary
-# whose prerequisites did not list MUT -- the build brief names this trap
-# by name.
+# whose prerequisites did not list MUT.
 OBJ_DIR = obj_dir
 MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)
 
