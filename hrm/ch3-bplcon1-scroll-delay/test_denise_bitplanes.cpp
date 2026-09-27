@@ -49,11 +49,11 @@
 // numbers) but are taken as this module's own top-level ports on the same
 // basis the Harness's whole clocking scheme rests on: they are the
 // identical port names, at the identical two-flip-flop-apart c1/c3
-// relationship, that this repository's OWN sibling
-// harnesses for two OTHER modules in the same denise_* family declare on
-// their Vdut objects -- hrm/denise_sprites/test_denise_sprites.cpp (clk,
-// clk7_en, c1, c3, reset, aga, reg_address_in, data_in, chip48, hpos, all
-// present) and hrm/denise_bitplane_shifter/test_denise_bitplane_shifter.cpp
+// relationship, that the pre-pipeline harnesses for two OTHER modules in
+// the same denise_* family (both removed) declared on their Vdut objects
+// -- hrm/denise_sprites/test_denise_sprites.cpp (clk, clk7_en, c1, c3,
+// reset, aga, reg_address_in, data_in, chip48, hpos, all present) and
+// hrm/denise_bitplane_shifter/test_denise_bitplane_shifter.cpp
 // (clk, clk7_en, c1, c3 on the shifter itself, the same module instantiated
 // inside this fixture). Reused as infrastructure, not read as a claim of
 // this package's own inventory.
@@ -66,8 +66,9 @@
 // !c1&&!c3. This Harness uses the measured-working four-phase pattern
 // (clk7_en=(phase==0), c1=(phase==0||phase==1), c3=(phase==1||phase==2) --
 // phase 1 has both high, phase 3 has both low), the same relationship
-// (rotated) already proven live in this repository's own hrm/denise_sprites and
-// hrm/denise_bitplane_shifter harnesses. FIXTURE-DATA-PATH-LIVE below
+// (rotated) the pre-pipeline hrm/denise_sprites and
+// hrm/denise_bitplane_shifter harnesses (both removed) used.
+// FIXTURE-DATA-PATH-LIVE below
 // exists specifically to prove this Harness's own c1/c3 pattern actually
 // delivers a loaded, non-zero BPLxDAT value to bpldata BEFORE any scroll
 // claim below is asserted from it -- not a formality here.
@@ -82,8 +83,8 @@
 //
 // TIMING MODEL (checked against the RTL, see WHY THE PF1H NIBBLE IS THE
 // DELAY below): denise_bitplane_shifter shifts one lores pixel per four 28MHz ticks
-// (cited evidence above; independently measured by this repository's own
-// hrm/denise_bitplane_shifter harness: "Lowres bit width expected 4
+// (cited evidence above; also measured by the pre-pipeline
+// hrm/denise_bitplane_shifter harness, removed: "Lowres bit width expected 4
 // ticks"). Page 82's "up to 15 pixels of delay" is read as PF1H/PF2H
 // counting in that same four-tick lores-pixel unit regardless of hires/
 // shres mode -- which is also the mechanism that would produce page 82's
@@ -387,8 +388,8 @@ public:
 // address -- the same convention this repository's own sibling Denise
 // harnesses use (e.g. hrm/ch3-ham-control-field's write_color: COLORBASE
 // $180 -> reg_address_in 0xC0 == $180>>1) and the same relationship
-// hrm/denise_sprites/test_denise_sprites.cpp assumes for its own
-// reg_address_in writes.
+// the pre-pipeline hrm/denise_sprites/test_denise_sprites.cpp (removed)
+// assumed for its reg_address_in writes.
 constexpr uint16_t kBplcon1Addr = 0x102;
 constexpr uint16_t kBpl1DatAddr = 0x110;
 constexpr uint16_t kBpl2DatAddr = 0x112;
