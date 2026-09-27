@@ -21,84 +21,57 @@
 //   `work/ch5_packages/ch5-audio-interrupt.jsonl` in the sibling repository
 //   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
-// THIS PACKAGE EXTENDS hrm/paula_intcontroller, IT DOES NOT REPLACE IT.
-//   hrm/paula_intcontroller/test_paula_intcontroller.cpp is HRM_CONFORMANCE
-//   against chapter 7, printed pp.217-222 (FPGA-038/039/040) - a DIFFERENT
-//   chapter's reading of the SAME module. That file is not opened, modified,
-//   weakened, or duplicated by this one. Its three existing checks are:
-//     FPGA-038: INTENA/INTREQ write + INTENAR/INTREQR readback, one clear.
-//     FPGA-039: a VBLANK hardware pulse latches into INTREQ.
-//     FPGA-040: _ipl inactive (7) with nothing enabled; VBLANK alone enabled
-//       gives level 3; VBLANK+COPER both enabled+pending still gives level 3
-//       (same level, not a priority contest); EXTERNAL alone gives level 6.
-//   None of those four scenarios is repeated here. This package's own 106
-//   claims are chapter 5's first reading of pp.165/280/289-290 and cover
-//   ground FPGA-038/039/040 does not: the AUDxIP/AUDxIR signal identity
-//   itself; the full 14-source bit/level table (chapter 7's package only
-//   ever exercises VBLANK, COPER and EXTERNAL - AUD0-3, DSKSYN, RBF, BLIT,
-//   PORTS, SOFT, DSKBLK and TBE are untouched by it); the write-only
-//   address's constant read-back; bit 15 SET/CLR semantics as their own
-//   assertion, including "both a set and a clear operation are required to
-//   load arbitrary data"; the sticky/must-clear-by-write behaviour as its
-//   own assertion; and the bit 14 INTEN/no-request-counterpart conflict with
-//   the RTL, which chapter 7's package does not mention.
+// WHAT THIS PACKAGE ADDS TO CHAPTER 7: chapter 7's packages
+//   (hrm/ch7-interrupt-priority-encoder, hrm/ch7-interrupt-register-
+//   semantics) read the SAME module against printed pp.217-222. This
+//   package's own 106 claims are chapter 5's reading of pp.165/280/289-290:
+//   the AUDxIP/AUDxIR signal identity itself; the full 14-source bit/level
+//   table; the write-only address's constant read-back; bit 15 SET/CLR
+//   semantics as their own assertion, including "both a set and a clear
+//   operation are required to load arbitrary data"; the sticky/must-clear-
+//   by-write behaviour as its own assertion; and the bit 14 INTEN
+//   "no request" question.
 //
-// A CONFLICT THIS PACKAGE'S TASK NAMED THAT ITS OWN 106 CLAIMS DO NOT
-//   CONTAIN, REPORTED RATHER THAN PAPERED OVER. The task briefing for this
-//   package describes a four-way conflict about the MOMENT the audio
-//   interrupt is raised (printed p.147, p.157, p.164, appendix A p.265) and
-//   a channel-boundary measurement ("first intreq two delivered words after
-//   DMA start"). A search of this package's own claim file,
-//   work/ch5_packages/ch5-audio-interrupt.jsonl (106 lines), for pages 147,
-//   157, 164 or 265, and for the string "conflict", returns ZERO matches -
-//   verified twice, once by page number and once by keyword, before any
-//   code below was written. That conflict is CANDIDATES.md item 5 ("In
-//   direct mode the interrupt is raised before a word is output"), measured
-//   at paula_audio_channel.v:283-285 - a different module, assigned to a
-//   different package (this chapter's channel/direct-output/register
-//   packages, not this one). It is also, independently, outside what THIS
-//   module's ports can see: paula_intcontroller.v's audint[3:0] input is the
-//   channel's ALREADY-DECIDED interrupt pulse (AUDxIR, p.165) - this module
-//   has no DMA-start signal, no delivered-word count and no channel state
-//   anywhere on its port list, so there is no cadence to measure "two
-//   delivered words after DMA start" against at this boundary even if a
-//   claim asked for it. Per BRIEF.md's HALT-AND-REPORT conditions ("a claim
-//   cannot be settled by the port list or by a measurement"; "the package
-//   needs a wider module boundary than the one assigned"), this package
-//   asserts nothing, measures nothing and records nothing about that
-//   four-way conflict: there is no claim of its own to turn into an
-//   assertion, and the fixture this package was assigned could not measure
-//   it even if there were one. See the build report for the same statement
-//   made to the lead directly.
+// THE INTERRUPT-MOMENT CONFLICT IS NOT IN THIS PACKAGE'S CLAIMS: the
+//   four-way conflict about the MOMENT the audio interrupt is raised
+//   (printed p.147, p.157, p.164, appendix A p.265) and a channel-boundary
+//   measurement ("first intreq two delivered words after DMA start") appear
+//   nowhere in this package's own claim file,
+//   work/ch5_packages/ch5-audio-interrupt.jsonl (106 lines): its claims
+//   quote pages 165, 280, 289 and 290 only, and none says "conflict". The
+//   moment is decided in paula_audio_channel.v - in direct mode the
+//   interrupt is raised before a word is output, measured at :283-285 - a
+//   different module, the territory of this chapter's channel/direct-output
+//   packages. It
+//   is also, independently, outside what THIS module's ports can see:
+//   paula_intcontroller.v's audint[3:0] input is the channel's
+//   ALREADY-DECIDED interrupt pulse (AUDxIR, p.165) - this module has no
+//   DMA-start signal, no delivered-word count and no channel state anywhere
+//   on its port list, so there is no cadence to measure "two delivered
+//   words after DMA start" against at this boundary even if a claim asked
+//   for it. This package asserts nothing, measures nothing and records
+//   nothing about that four-way conflict.
 //
-// REPAIR (2026-09-12, following independent validation finding V-07): bit 14
-//   (INTEN) is "Master interrupt (enable only, no request)" (appendix A
-//   p.280) - TWO separable propositions in one sentence. The original build
-//   of this package asserted only the enable-gate half (assertion 5) but
-//   cited BOTH claim ids on that single passing assertion, then printed the
-//   "no request" half's known failure as a MEASURED-only line - so two
-//   claims whose full text is known to fail were reported covered by a
-//   green. That was wrong: a claim citation on an assertion means that
-//   assertion actually exercises it. The proposition is now split into two
-//   assertions, each with its own citation, its own control and its own
-//   mutation:
+// BIT 14 IS TWO PROPOSITIONS: bit 14 (INTEN) is "Master interrupt (enable
+//   only, no request)" (appendix A p.280) - TWO separable propositions in
+//   one sentence, and a claim citation on an assertion means that
+//   assertion exercises it:
 //     5.  MASTER-ENABLE-BIT14-GATE      - the ENABLE half. GREEN (RTL
-//         conforms). Claims 5-appA-p280.c20, A-int.b14.
+//         conforms). Cites no claim id: both ids also state the "no
+//         request" half, which this assertion does not test.
 //     5B. MASTER-BIT14-NO-REQUEST       - the "no request" half. MEASURED
-//         AND REPORTED, NOT GRADED, since 13.09.2026: paula_intcontroller.v:134 `intreq[14] <=
+//         AND REPORTED, NOT GRADED: paula_intcontroller.v:134 `intreq[14] <=
 //         tmp[14]` gives this bit a genuine request path (the RTL's own
 //         comment there calls it "undocumented interrupt"; paula.v's
 //         instantiation comment calls the same wire "implementation of
 //         intreq[14] (Unreal needs it)" - a deliberate compatibility
-//         addition, not an oversight, but still a deviation from the
-//         printed claim). Claims 5-appA-p280.c20, A-int.b14 - the SAME two
-//         ids as assertion 5, legitimately cited on both assertions because
-//         each half is now genuinely, separately exercised.
-//   This package reads 9 passed, 0 failed. 5B was graded and red from
-//   12.09.2026 until 13.09.2026, when it was demoted: appendix A p.280's
-//   parenthesis has two readings the manual does not settle between, and
-//   chapter 7 declined the same proposition from the same pages. The
-//   deviation is not withdrawn -- it is NM-HRM-031.
+//         addition, not an oversight). Claims 5-appA-p280.c20, A-int.b14,
+//         recorded at MASTER-BIT14-NO-REQUEST-NOT-GRADED.
+//   This package reads 9 passed, 0 failed. The pages contradict each other
+//   on bit 14: p.280's parenthesis and p.218's warning say it creates no
+//   request, while Figure 7-4 on p.221 serves INTEN at hardware priority 6.
+//   Chapter 7 declines the same proposition from the same pages, and the
+//   disagreement is NM-HRM-031, filed against the page.
 //
 // Scope, in detail: anything about paula_audio_channel's own state machine
 //   or the
@@ -109,19 +82,17 @@
 //   priority LEVEL are this chapter's claims, from the same appendix A
 //   table that lists the audio bits); simultaneous same-level or
 //   multi-level priority contests beyond the single-source-at-a-time
-//   sweep assertion 6 performs (chapter 7's package already covers one
-//   two-source-same-level case; this package's claims do not ask for more).
+//   sweep assertion 6 performs (this package's claims do not ask for them).
 //
 // ============================================================================
-// SPECIFICATION - written from the 106 claims' manual quotations alone,
-// before paula_intcontroller.v was opened. Nine assertions (0-8). Every one
-// of the 106 claim ids appears in exactly the assertion(s) below whose
-// proposition it states.
+// SPECIFICATION - from the 106 claims' manual quotations. Nine assertions
+// (0-8); 5B beside assertion 5 is measured and recorded, not graded. Every
+// one of the 106 claim ids appears in exactly the assertion(s) or record
+// below whose proposition it states.
 // ============================================================================
 //
 // 0. TEST-DATA-DELIVERY (fixture check, no claim id, no manual page).
-//    Per the build brief's own silence-trap requirement: prove the fixture
-//    can deliver KNOWN, DISTINCT values through both halves of this module's
+//    Prove the fixture can deliver KNOWN, DISTINCT values through both halves of this module's
 //    register interface - a write/read round trip through INTENA/INTENAR,
 //    and an audint[3:0] pulse arriving at audpen[3:0] - before trusting any
 //    assertion below that depends on data or a pulse actually moving through
@@ -269,11 +240,9 @@
 //    Claims: 5-appA-p280.c38, 5-appA-p280.c39, A-intreq.c4 .
 //
 // ============================================================================
-// RTL DISCLOSURE - paula_intcontroller.v (176 lines) opened for the first
-// time by this builder only AFTER the SPECIFICATION above was committed. No
-// expected value above changed as a result of this reading; what follows is
-// the mechanics needed to WRITE the harness, plus one thing worth flagging
-// that goes beyond what the claims' own evidence fields already said.
+// RTL NOTES - paula_intcontroller.v (176 lines): the mechanics the harness
+// needs, none of them an expected value, plus one thing worth flagging that
+// goes beyond what the claims' own evidence fields say.
 //
 // Full port list: clk, clk7_en, reset (SYNCHRONOUS - only takes effect on a
 //   clk7_en-aligned posedge, matching every other package in this tree);
@@ -282,8 +251,7 @@
 //   (a mirror of intreq[11] for the UART SERDATR register - no claim in this
 //   package's 106 names it, so it is left unconnected/unchecked); _ipl[2:0].
 //
-// Register addresses confirmed exactly as the claims' evidence already
-//   stated: INTENAR=9'h01c, INTREQR=9'h01e, INTENA=9'h09a, INTREQ=9'h09c
+// Register addresses, as the claims' evidence states: INTENAR=9'h01c, INTREQR=9'h01e, INTENA=9'h09a, INTREQ=9'h09c
 //   (:27-30), compared against reg_address_in[8:1] - i.e. WORD addresses,
 //   byte_address>>1, the same to_reg() convention every package in this tree
 //   uses.
@@ -311,14 +279,12 @@
 //   (COPER), 5:vblint(VERTB), 6:int3(BLIT), 7:audint[0](AUD0),
 //   8:audint[1](AUD1), 9:audint[2](AUD2), 10:audint[3](AUD3), 11:rxint(RBF),
 //   12:syncint(DSKSYN), 13:int6(EXTER), 14:NONE-tmp-only. Confirms the
-//   evidence already quoted for COPER/SOFT (software-only, no hardware pin)
-//   and, WORTH FLAGGING: the RTL's OWN comment at :133 calls bit 14
+//   evidence quoted for COPER/SOFT (software-only, no hardware pin) and,
+//   WORTH FLAGGING: the RTL's OWN comment at :133 calls bit 14
 //   "undocumented interrupt" - stronger than the evidence field's citation
 //   of paula.v's "Unreal needs it" comment on the same wire. This module's
 //   own source calls it undocumented, not merely a compatibility footnote
-//   elsewhere. Still not asserted, per the header note above and per the
-//   task's explicit instruction - recorded here because it is a stronger
-//   statement than what was already known before this file was opened.
+//   elsewhere. Not graded, per the header note above.
 //
 // audpen[3:0] = intreq[10:7] (:42) - a continuous `assign`, NOT gated by
 //   clk7_en - it mirrors whatever intreq[10:7] last latched to, immediately.
@@ -335,8 +301,7 @@
 //   read of the JUST-updated intreq - so a hardware interrupt pin pulsed for
 //   one clk7_en window needs a further clk7_en edge before _ipl reflects it;
 //   the harness below always waits several clk7_en cycles, never one, before
-//   sampling _ipl, matching the settling margin hrm/paula_intcontroller's
-//   own chapter-7 harness already uses.
+//   sampling _ipl.
 // ============================================================================
 
 #include <cstdint>
@@ -455,8 +420,7 @@ public:
     }
 
     // Drive one hardware interrupt PIN high for one clk7_en-aligned window,
-    // then low - the same shape hrm/paula_intcontroller's own chapter-7
-    // harness uses for vblint. Returns false (does nothing) for the two
+    // then low. Returns false (does nothing) for the two
     // software-only sources, which the caller must raise with write_reg()
     // to INTREQ instead - there is no pin for them on this module.
     bool pulse_pin(int bit) {
@@ -502,8 +466,7 @@ public:
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
     }
-    // The other two of BUILD-BRIEF's three verbs, added 13.09.2026 when
-    // assertion 5B was demoted: note() MEASURES without grading, record()
+    // Beside expect(): note() MEASURES without grading, record()
     // DECLINES with a reason. Neither is coverage, and the difference is
     // load-bearing -- a decline is not a measurement.
     void note(const std::string& msg)   { std::cout << "MEASURED: " << msg << "\n"; }
@@ -517,9 +480,9 @@ public:
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks checks;
-    // 8192, not 4096: one assertion's citation list reached 1532 bytes when
-    // chapter 7's claims were cited here, and `detail` below may hold 2048,
-    // so GCC's worst case no longer fits. Nothing is truncated in practice
+    // 8192, not 4096: one assertion's citation list reaches 1532 bytes with
+    // chapter 7's claims cited here, and `detail` below may hold 2048, so
+    // 4096 does not fit GCC's worst case. Nothing is truncated in practice
     // -- the longest line printed is 2565 characters -- but a silent cut
     // would drop citations and make covered claims read as uncovered.
     char buf[8192];
@@ -794,13 +757,12 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- 5B. MASTER-BIT14-NO-REQUEST (MEASURED, RECORDED) ----
-    // Split out of assertion 5 per the 2026-09-12 repair (independent
-    // validation finding V-07): the enable half above is asserted and
-    // green; this is the "no request" half of the SAME appendix A p.280
-    // sentence, measured on its own and RECORDED, not graded, because
-    // paula_intcontroller.v:134 gives bit 14 a real request path that the
-    // manual's wording says should not exist, and the page does not settle
-    // between two readings of that wording (see the record below).
+    // The enable half above is asserted and green; this is the "no
+    // request" half of the SAME appendix A p.280 sentence, measured on its
+    // own and RECORDED, not graded, because paula_intcontroller.v:134 gives
+    // bit 14 a real request path that p.280's wording says should not
+    // exist, while Figure 7-4 on p.221 serves it at level 6 -- the pages
+    // contradict each other (see the record below).
     {
         Harness h;
         h.reset_registers();
@@ -841,22 +803,23 @@ int main(int argc, char** argv) {
         checks.note(buf);
         checks.record(
             "MASTER-BIT14-NO-REQUEST-NOT-GRADED (5-appA-p280.c20, A-int.b14): "
-            "the measurement above is reported, not graded. Appendix A p.280's "
-            "\"enable only, no request\" has two readings the manual does not "
-            "settle between -- p.218 says INTREQ exists so the processor can "
-            "FORCE an interrupt, which makes \"no request\" a statement that "
-            "bit 14 has no HARDWARE source (what the RTL implements, its own "
-            "comment calling the bit undocumented), while p.221's Figure 7-4 "
-            "lists INTEN among the sources. reason_kind source-silent. "
+            "the measurement above is reported, not graded. The pages "
+            "contradict each other on bit 14: appendix A p.280's \"enable "
+            "only, no request\" and p.218's warning (\"It creates no interrupt "
+            "request\") say it takes no request, while Figure 7-4 on p.221 "
+            "gives INTEN hardware priority 6 beside EXTER, and p.218 calls "
+            "positions 14-0 of INTREQ bit selectors without excepting bit 14. "
+            "The RTL builds the bit Figure 7-4 describes, its own comment "
+            "calling it undocumented. reason_kind source-silent. "
             "Chapter 7 measured the same proposition from the same pages and "
             "declined it too, as P19-INTEN-SELF-REQUEST-DISPUTED in "
-            "hrm/ch7-interrupt-priority-encoder. Graded as EXPECTED RED from "
-            "12.09.2026 until 13.09.2026; demoted because an assertion that is "
-            "red on conformant behaviour moves the red onto correct behaviour "
-            "and leaves a real deviation green. The deviation itself is not "
-            "withdrawn: it is NM-HRM-031, which records that two of the four "
-            "emulators also let bit 14 be set as a request and that Denise's "
-            "0x7fff mask spares it deliberately.");
+            "hrm/ch7-interrupt-register-semantics and P19-BIT14-INTEN in "
+            "hrm/ch7-interrupt-priority-encoder. Grading it as an expected red "
+            "would put a red on behaviour one of the manual's own pages "
+            "describes. The disagreement is NM-HRM-031, filed against the "
+            "page: all four independent implementations -- WinUAE, vAmiga, "
+            "Denise and Copperline -- store a written bit 14, read it back "
+            "through INTREQR and serve it at level 6, as NanoMig does.");
     }
 
     // ---------------- 6. INTERRUPT-SOURCE-BIT-AND-PRIORITY-LEVEL-TABLE ----
@@ -1007,18 +970,13 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION TESTING - one stimulus mutation per assertion, run after the
-// clean baseline below was confirmed, each applied, rebuilt, observed,
-// reverted, and the revert confirmed byte-identical to the pre-mutation
-// file by `diff` before moving to the next. Every expected value (every
-// oracle constant compared against) was left untouched throughout - only
-// what the module was ASKED TO DO was changed, per the build brief's own
-// rule that flipping an expected value proves nothing.
-//
-// Baseline for assertions 0-4 and 6-8, confirmed by a clean
-// `make clean && make` immediately before this series and reproduced after
-// every single revert: 9 passed, 0 failed (this was the whole package's
-// result before the 2026-09-12 repair below split assertion 5).
+// MUTATION TESTING - one stimulus mutation per assertion, each applied,
+// rebuilt, observed and reverted, the revert confirmed byte-identical to the
+// pre-mutation file by `diff`. Every expected value (every oracle constant
+// compared against) is left untouched - only what the module is ASKED TO
+// DO changes, because flipping an expected value proves nothing. The
+// pass/fail totals quoted in an entry are those of the run that recorded
+// it.
 //
 // MUTATION TEST-DATA-DELIVERY stimulus red: assertion 0's INTENA write pattern changed from
 //   0x2AAA to 0x2AAB (one bit different) while the read-back oracle
@@ -1061,32 +1019,9 @@ int main(int argc, char** argv) {
 //   first place, so "stayed set" is false from the very first sample; 8
 //   passed, 1 failed.
 //
-// Every mutation above was reverted immediately after observing its
-// printed result, and a final `diff` against the pre-mutation file showed
-// byte-identical content before a clean `make clean && make` reproduced
-// the 9 passed / 0 failed baseline (assertions 0-4, 6-8) one more time.
-//
-// ----------------------------------------------------------------------------
-// REPAIR (2026-09-12, V-07) - assertion 5B added. New whole-package baseline,
-// confirmed by a clean `make clean && make` before this mutation and
-// reproduced by another clean `make clean && make` after the revert below:
-// 9 passed, 1 failed (assertion 5B, MASTER-BIT14-NO-REQUEST, is the one
-// failure - EXPECTED, per its own header note and the RTL disclosure above).
-//
-// WITHDRAWN 13.09.2026 -- MASTER-BIT14-NO-REQUEST is now the note()/record()
-//   pair described at the assertion, so this no longer pairs with an
-//   assertion. The run it records happened and is kept as evidence.
-//   (was: MUTATION MASTER-BIT14-NO-REQUEST stimulus green) Assertion 5B's SET write
-//   changed from `(1 << BIT_INTEN)` to `(1 << BIT_TBE)` (a different,
-//   legitimate request bit) while the check still reads back bit 14 only
-//   -> PASS, INTREQR bit 14 stays 0 because bit 14 itself was never
-//   written (the control also still reads 0x0000, unaffected) -> whole
-//   package 10 passed, 0 failed. This is the expected DIRECTION for a
-//   baseline-red assertion's mutation: it proves the check is sensitive to
-//   what the module is asked to do (green under a stimulus that does not
-//   touch bit 14) rather than being permanently red regardless of input,
-//   which would make the red meaningless. Reverted immediately; a `diff`
-//   against the pre-mutation file showed byte-identical content, and a
-//   clean `make clean && make` reproduced 9 passed / 1 failed once more.
+// MASTER-BIT14-NO-REQUEST (5B) has no mutation record: it is a
+//   note()/record() pair, not an assertion, so there is no red/green state
+//   for a mutation to move. Its own control -- bit 14 read back when never
+//   written returns 0x0000 -- shows the readback is live and not stuck.
 // ============================================================================
 
