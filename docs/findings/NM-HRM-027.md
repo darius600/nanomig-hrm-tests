@@ -7,7 +7,7 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. Figure 5-8 raises the interrupt at the write, where NanoMig raises it. |
 | **Module** | `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L283-L285) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L283-L285) |
-| **Test** | [`hrm/ch5-audio-direct-output`](../../hrm/ch5-audio-direct-output) — its `5-p157.c13` / `5-direct.c4` assertion still fails, because it forbids the interrupt Figure 5-8 draws at the write |
+| **Test** | [`hrm/ch5-audio-direct-output`](../../hrm/ch5-audio-direct-output) — its `5-p157.c13` / `5-direct.c4` assertion requires an AUDxIR pulse at the word transition that ends word 1 (p. 157, p. 164, Figure 5-8's 011→010 arc) and no longer forbids the one Figure 5-8 draws at the write; measured at tick 176, green; `12 passed, 0 failed` |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a sentence graded without the figure that completes it** |
 | **Verdict of the four** | **unanimous with NanoMig and with Figure 5-8**: WinUAE, vAmiga, Denise and Copperline all raise the interrupt at the write that starts direct output, and again at every word transition; Copperline asserts both in its own tests |

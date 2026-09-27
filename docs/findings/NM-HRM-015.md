@@ -7,7 +7,7 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. BRDNTRAN keeps the border from being replaced by a genlock's video; the manual gives it no effect on the border's colour, and NanoMig's Denise has no genlock output for it to act on. |
 | **Module** | `denise.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v) |
-| **Test** | [`hrm/ch3-horizontal-display-window`](../../hrm/ch3-horizontal-display-window) — `D-BRDNTRAN-HAS-NO-EFFECT` still fails, because it requires the border's colour to change; `13 passed, 1 failed` |
+| **Test** | [`hrm/ch3-horizontal-display-window`](../../hrm/ch3-horizontal-display-window) — `D-BRDNTRAN-HAS-NO-EFFECT` is a `record()` that declines its seven claims as absent at this boundary, because BRDNTRAN acts on the ZD* background indicator (p. 380), which the `denise` fixture does not have; `13 passed, 0 failed` |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **none changes the border's colour**: WinUAE and Copperline implement `BRDNTRAN` as genlock keying only, Copperline with a test that asserts the colour unchanged; vAmiga and Denise model no genlock and do not read the bit |
 
