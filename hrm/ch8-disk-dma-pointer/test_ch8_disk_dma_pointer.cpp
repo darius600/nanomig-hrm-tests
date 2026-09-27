@@ -2,7 +2,7 @@
 // / DSKPTL ($DFF022), the disk DMA pointer, at the `agnus_diskdma` boundary,
 // per SPECIFICATION.md. Headline: P11A -- the pointer is printed "32 bits"
 // (p.241, p.246) but stores only 20 word-address bits ([20:1]); that is the
-// printed-width inconsistency this package still asserts, distinct from the
+// printed-width inconsistency this package asserts, distinct from the
 // OCS-18/ECS-20 conditioning question declined below.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -17,58 +17,48 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// REPAIRED 2026-09-15 (independent stage-8 validation,
-// hrm-testpipeline/work/2026-09-15_ch8_s2_stage8_validation.md and
-// _sol_validation_A.md sections 6/9/10): P4A, P4B and P11B were withdrawn as
-// red findings because each restates the SAME underlying fact -- DSKPTH's
-// high field is five bits wide and loads unconditionally -- that is kept
-// once, properly, at the sibling package `ch8-disk-pointer-ecs-and-copper`'s
-// `agnus` boundary, where `ecs` is a real, drivable port. `agnus_diskdma`
-// (this fixture) has no `ecs` port at all (agnus.v:326-340 connects none),
-// so it can only observe the unconditional width; it cannot put the OCS/ECS
-// conditional question the sibling's P4/P5 ask and answer. All three are
-// declined below via record(), each naming the sibling assertion that
-// carries the fact. P11A is unaffected by this repair: it is the
-// p.241/p.246 "32 bits" wording against the stored 20 bits, not the
-// OCS-18/ECS-20 conditioning fact, and stays RED.
+// Declined, not graded: P4A, P4B and P11B each restate the SAME underlying
+// fact -- DSKPTH's high field is five bits wide and loads unconditionally --
+// which is graded once, at the sibling package
+// `ch8-disk-pointer-ecs-and-copper`'s `agnus` boundary, where `ecs` is a
+// real, drivable port. `agnus_diskdma` (this fixture) has no `ecs` port at
+// all (agnus.v:326-340 connects none), so it can only observe the
+// unconditional width; it cannot put the OCS/ECS conditional question the
+// sibling's P4/P5 ask and answer. All three are declined below via
+// record(), each naming the sibling assertion that carries the fact. P11A
+// is a different fact: the p.241/p.246 "32 bits" wording against the
+// stored 20 bits, not the OCS-18/ECS-20 conditioning fact, and it is RED.
 //
-// REPAIRED 2026-09-15 (repair lot D, LOS-D.md, following DOKTRIN.md): P3,
-// P6, P7 and P10 were withdrawn (shape 3: nothing grades their claims
-// elsewhere in the suite, checked before declining). P3's expect(true, ...)
-// was an assertion no design behaviour could fail -- converted to record().
-// P6 required address_out to discard DSKPTL bit 0 -- the manual's
-// even-address rule is a precondition on software (p.246, p.287, p.289); it
-// does not specify hardware masking behaviour for a misaligned write, so
-// grading that RTL behaviour made the RTL its own oracle. Declined. P7's
-// testable form (a DSKPTH-alone write leaves the low field untouched) shows
-// only that the two registers decode and write independently -- already
-// established by P1/P2 -- and does not distinguish this from any two
-// unrelated write-only registers; the "single long word" claims it also
-// cited are a CPU bus-width fact already excluded as a non-goal, and the
-// "+  pair" claims' remaining (pair-membership) half is not actually put to
-// the question by this measurement. Declined. P10 observes only which
-// Paula register address `dmas` selects; agnus_diskdma's port list carries
-// no RAM data bus at all (only reg_address_out, wr, address_out), so the
-// transfer itself -- the source/destination claims' actual subject -- is
-// not observable here. Declined. P8 and P9 were narrowed rather than
-// declined: P8's expect() no longer requires exactly 3 grants at the
-// implementation's own hpos slots (a correct implementation scheduling
-// differently would have failed it); it now grades the page's own
-// requirement directly -- every granted cycle observes address_out already
-// holding the next word and advancing by exactly one word afterward, with
-// at least one grant observed. P9 no longer grades mere holding (which the
-// cited claims do not describe); it now performs an explicit reload of
-// DSKPTH/DSKPTL after DMA stops and confirms the FIRST subsequent granted
-// cycle uses exactly the freshly reloaded pointer, not the address where
-// the previous transfer stopped -- genuinely exercising "must be reloaded
-// before use". This repair also clears this package's uid-placement
-// offenses (tools/check_uid_placement.py): 7 uids previously sat on both a
-// graded line and a record() line (P7's opus:8-dma.c10/opus:8-reglist.c15/
-// sol:8-dskpth.c6/opus:8-appB-dskpth.c2/opus:8-appB-dskptl.c2, P9's
-// sol:8-appb-ptrlegend.c2/sol:8-appa-dskptr.c2); declining P7 and stripping
-// P9's label of its literal uid tokens (kept only on the existing record()
-// lines, which already name P7/P9 as the assertion carrying the graded
-// half) resolves all 7.
+// Also declined, not graded: P3, P6, P7 and P10 (nothing grades their
+// claims elsewhere in the suite). P3: write-only follows from the port list
+// alone, so an expect() here could only restate it -- no design behaviour
+// could fail it. P6: the manual's even-address rule is a precondition on
+// software (p.246, p.287, p.289); it does not specify hardware masking
+// behaviour for a misaligned write, so grading whether address_out discards
+// DSKPTL bit 0 would make the RTL its own oracle. P7: a DSKPTH-alone write
+// leaving the low field untouched shows only that the two registers decode
+// and write independently -- already established by P1/P2 -- and does not
+// distinguish this from any two unrelated write-only registers; the "single
+// long word" claims are a CPU bus-width fact excluded as a non-goal, and
+// the "+  pair" claims' pair-membership half is not put to the question by
+// this measurement. P10 observes only which Paula register address `dmas`
+// selects; agnus_diskdma's port list carries no RAM data bus at all (only
+// reg_address_out, wr, address_out), so the transfer itself -- the
+// source/destination claims' actual subject -- is not observable here.
+// P8 grades the page's own requirement: every granted cycle observes
+// address_out already holding the next word and advancing by exactly one
+// word afterward, with at least one grant observed; it does not require
+// particular hpos slots, which a correct implementation scheduling
+// differently would not match. P9 grades "must be reloaded before use" as
+// cause and effect, not mere holding (which the cited claims do not
+// describe): an explicit reload of DSKPTH/DSKPTL after DMA stops, and the
+// FIRST subsequent granted cycle uses exactly the freshly reloaded pointer,
+// not the address where the previous transfer stopped. No uid sits on both
+// a graded line and a record() line (tools/check_uid_placement.py): P7's
+// opus:8-dma.c10/opus:8-reglist.c15/sol:8-dskpth.c6/opus:8-appB-dskpth.c2/
+// opus:8-appB-dskptl.c2 and P9's sol:8-appb-ptrlegend.c2/sol:8-appa-dskptr.c2
+// appear only on record() lines, which name P7/P9 as the assertion carrying
+// the graded half.
 //
 // Oracle, in detail: the manual quotations cited inline (see SPECIFICATION.md
 // for full citations and page numbers), not the RTL. The red result at
@@ -84,10 +74,9 @@
 // sibling package ch8-disk-pointer-ecs-and-copper's P4/P5). This package
 // also does not grade the exclusivity ("only") of DSKDATR/DSKDAT to the
 // disk DMA channel -- that pair of claims belongs to the sibling package
-// ch8-disk-dma-data-channel, not to this one. P10 is fully declined
-// (2026-09-15, repair lot D): it observed only which Paula register
-// address `dmas` selects, never the RAM transfer itself the
-// source/destination claims describe -- see record().
+// ch8-disk-dma-data-channel, not to this one. P10 is declined: it observes
+// only which Paula register address `dmas` selects, never the RAM transfer
+// itself the source/destination claims describe -- see record().
 //
 // Fixture: the unmodified agnus_diskdma.v, compiled standalone. No reset
 // port exists on this module (confirmed by its port list) -- relevant to
@@ -96,14 +85,13 @@
 // address_out is declared [20:1] (20 bits). As a plain Verilated integer,
 // named bit 1 is integer bit 0 and named bit 20 is integer bit 19, so the
 // DSKPTH-loaded field (address_out[20:16]) is (address_out>>15)&0x1F and
-// the DSKPTL-loaded field (address_out[15:1]) is address_out&0x7FFF. This
-// was cross-checked against the classify-stage measurement before any code
-// was written: DSKPTH<=0x0007, DSKPTL<=0x2468 packs to 0x39234 by this
-// formula, matching opus:8-dsk.c32's MEASURED value exactly.
+// the DSKPTL-loaded field (address_out[15:1]) is address_out&0x7FFF. The
+// formula agrees with the classify-stage measurement: DSKPTH<=0x0007,
+// DSKPTL<=0x2468 packs to 0x39234 by this formula, matching
+// opus:8-dsk.c32's MEASURED value exactly.
 //
-// MUTATION records: see the bottom of this header, filled in after each
-// mutation was actually built and run (BUILD-BRIEF: baseline colour must
-// stand beside the mutation result).
+// MUTATION records: below, each with the baseline colour beside the
+// mutation result.
 //
 // MUTATION LIVENESS stimulus red: both DSKPTH/DSKPTL writes changed to
 // 0x0000 (from 0x0015/0x2C6A), expected value left computed from the
@@ -116,35 +104,20 @@
 // MUTATION P2 stimulus red: the probe value was written to $020 instead of
 // $022. Baseline green. Went red (address_out's low field stayed at its
 // established prior value). Reverted, rebuilt, back to green.
-// MUTATION P3: REMOVED 2026-09-15 (repair lot D). Declined via record(),
-// not graded through expect() any more -- no mutation record remains with
-// its assertion.
-// MUTATION P4A, P4B: REMOVED 2026-09-15 (repair). Both assertions were
-// declined, not merely mutated -- see the REPAIRED note above. Per
-// BUILD-BRIEF, a mutation record is removed with its assertion; these two
-// no longer grade anything through expect(), so no record remains.
 // MUTATION P5 stimulus red: one bit of the value written to DSKPTL was
 // flipped from the value the expected computation still uses. Baseline
 // green. Went red. Reverted, rebuilt, back to green.
-// MUTATION P6: REMOVED 2026-09-15 (repair lot D). Declined via record() --
-// the even-address rule is a software precondition, not a hardware masking
-// behaviour either citing page specifies; no mutation record remains.
-// MUTATION P7: REMOVED 2026-09-15 (repair lot D). Declined via record() --
-// see the REPAIRED note above; no mutation record remains.
 // MUTATION P8 stimulus red: dmal held low throughout instead of high, so no
 // DMA cycle is ever granted. Baseline green (grant_count>=1 && all_matched:
 // 3 granted cycles observed, each address_out matching the running
 // next-word counter). Went red (0 grants observed, failing grant_count>=1).
 // Reverted, rebuilt, back to green.
-// MUTATION P9 stimulus red (REPAIRED 2026-09-15, repair lot D -- retargeted
-// to the new reload-and-use mechanism): the post-stop DSKPTH/DSKPTL reload
-// writes are skipped instead of performed, so the pointer is never actually
-// reloaded before DMA restarts. Baseline green (first_use == reloaded_ptr).
+// MUTATION P9 stimulus red: the post-stop DSKPTH/DSKPTL reload writes are
+// skipped instead of performed, so the pointer is never actually reloaded
+// before DMA restarts. Baseline green (first_use == reloaded_ptr).
 // Went red (with no reload, the first subsequent grant's address_out equals
 // `stopped`, not `reloaded_ptr`, failing first_use==reloaded_ptr). Reverted,
 // rebuilt, back to green.
-// MUTATION P10: REMOVED 2026-09-15 (repair lot D). Declined via record() --
-// see the REPAIRED note above; no mutation record remains.
 // MUTATION P11A oracle green: the compared width was substituted from 32
 // (the page's claim) to 20 (the classify-stage measured width). Baseline
 // red (32 bits are not reachable; the all-ones value tops out at 20 bits).
@@ -152,14 +125,9 @@
 // comparison is sensitive and the red is real -- the correct and only
 // demonstration available for an assertion that is RED at baseline (a
 // stimulus mutation would only make it fail differently). Reverted,
-// rebuilt, back to red baseline. Token corrected 2026-09-16: this record
-// previously read "oracle red->green", which the gate's regex parses as
-// kind=oracle, result=red -- indistinguishable from an ordinary oracle
-// mutation on a green baseline, so it was flagged as carrying no stimulus
-// demonstration. The intended, and accurate, result token is "green" (the
-// mutated build's own result), matching this suite's established
-// oracle-green convention for red-baseline assertions (e.g.
-// ch8-drive-step-timing's RATIO-A).
+// rebuilt, back to red baseline. The result token is the mutated build's
+// own result, "green", as in this suite's other oracle records for
+// red-baseline assertions (e.g. ch8-drive-step-timing's RATIO-A).
 // MUTATION P11A none impossible: DSKPTH and DSKPTL are already driven
 // all-ones above (0xFFFF/0xFFFF) -- the maximal possible stimulus. address_out
 // is declared [20:1] in agnus_diskdma.v; no bit beyond position 20 exists in
@@ -168,16 +136,11 @@
 // stimulus, not just the one presented -- there is no green result here for
 // a stimulus mutation to break. The oracle-green record above is the
 // complete demonstration of sensitivity this RED baseline admits.
-// MUTATION P11B: REMOVED 2026-09-15 (repair). Declined, not merely mutated
-// -- see the REPAIRED note above; no record remains with its assertion.
+// P3, P4A, P4B, P6, P7, P10 and P11B are declined via record(), not graded
+// through expect(), so they carry no mutation record.
 //
-// Run tally, baseline (no -D flags), before the 2026-09-15 repair (P4A,
-// P4B, P11B decline): 10 passed, 4 failed. After that repair, before repair
-// lot D (this repair): 10 passed, 1 failed (P11A red). After repair lot D:
-// see the build report below -- P3, P6, P7 and P10 are no longer graded
-// (declined via record()); P8 and P9 remain graded, with their oracles
-// narrowed to what the pages actually require; P11A is unchanged, red by
-// design.
+// Run tally, baseline (no -D flags): 6 passed, 1 failed (P11A, red by
+// design).
 
 #include <verilated.h>
 #include "Vagnus_diskdma.h"
@@ -324,14 +287,13 @@ int main(int argc, char** argv) {
             " expected 0x" + hex32(expected_low));
     }
 
-    // --- P3 (DECLINED, REPAIRED 2026-09-15, repair lot D): write-only was
-    // graded via expect(true, ...), an assertion no design behaviour can
-    // fail -- it restated the module's lack of a data-output port as its
-    // own result, proving neither register write-only rather than testing
-    // it. Converted to record(): the fixture has no rd/hwr/lwr strobe and,
-    // per its evidence-recorded port list, no data-output port of any kind,
-    // so no stimulus can ever construct a read-back path to falsify
-    // against -- unfalsifiable by construction, at this boundary. ---
+    // --- P3 (DECLINED): an expect() of write-only here could only restate
+    // the module's lack of a data-output port as its own result, which no
+    // design behaviour can fail, proving neither register write-only rather
+    // than testing it. Declined via record(): the fixture has no rd/hwr/lwr
+    // strobe and, per its evidence-recorded port list, no data-output port
+    // of any kind, so no stimulus can ever construct a read-back path to
+    // falsify against -- unfalsifiable by construction, at this boundary. ---
     checks.note("P3: agnus_diskdma's compiled port list (reg_address_in, data_in, address_out, "
                  "reg_address_out, dmal, dmas, dma, wr, hpos, speed) has no data-output port of "
                  "any kind -- DSKPTH/DSKPTL cannot be read back through this boundary");
@@ -342,18 +304,16 @@ int main(int argc, char** argv) {
         "opus:8-appB-dskptl.c4, sol:8-appb-dskptl.c6 (p.289, composed): declined here, not "
         "asserted. This boundary's compiled port list carries no rd/hwr/lwr strobe and no "
         "data-output port of any kind, so no stimulus can ever construct a read-back path to "
-        "falsify against -- the previous expect(true, ...) form was unfalsifiable by "
-        "construction (the literal condition true), proving neither register write-only rather "
-        "than testing it. Not re-asserted here.");
+        "falsify against -- an expect() here would be unfalsifiable by construction, "
+        "proving neither register write-only rather than testing it. Not asserted here.");
 
-    // --- P4A/P4B (declined, REPAIRED 2026-09-15): both readings of the
-    // appendix row restate the SAME unconditional-five-bit DSKPTH fact
-    // graded properly, once, at the sibling package
-    // ch8-disk-pointer-ecs-and-copper's `agnus` boundary, where a real,
-    // drivable `ecs` port exists. `agnus_diskdma` has none at all
+    // --- P4A/P4B (declined): both readings of the appendix row restate the
+    // SAME unconditional-five-bit DSKPTH fact graded once, at the sibling
+    // package ch8-disk-pointer-ecs-and-copper's `agnus` boundary, where a
+    // real, drivable `ecs` port exists. `agnus_diskdma` has none at all
     // (agnus.v:326-340 connects none). The measurements below feed the
     // record() calls that decline these claims; neither is graded through
-    // expect() any more. ---
+    // expect(). ---
     {
         write_reg(DSKPTH_ADDR, 0x1F); // all 5 low bits set
         uint32_t field_1F = high_field();
@@ -417,7 +377,7 @@ int main(int argc, char** argv) {
             "observed=0x" + hex32(observed) + " expected=0x" + hex32(expected));
     }
 
-    // --- P6 (DECLINED, REPAIRED 2026-09-15, repair lot D): the printed
+    // --- P6 (DECLINED): the printed
     // even-address rule (p.246 "The lowest bit of the address must be
     // zero..."; p.287/p.289 "+" mark composed) is a precondition ON
     // SOFTWARE -- what a programmer must write -- not a description of what
@@ -426,8 +386,8 @@ int main(int argc, char** argv) {
     // bit 0" would make the RTL its own oracle. The only fact this boundary
     // can measure (no storage exists for bit 0 at all) is already the
     // content of this package's own green P5 control (DSKPTL's
-    // data_in[15:1], fifteen bits, feeds address_out[15:1]) -- P6 added
-    // nothing beyond restating P5 under an "evenness" label. Converted to
+    // data_in[15:1], fifteen bits, feeds address_out[15:1]) -- an assertion
+    // here would only restate P5 under an "evenness" label. Declined via
     // record(). ---
     {
         write_reg(DSKPTL_ADDR, 0x2468);
@@ -452,7 +412,7 @@ int main(int argc, char** argv) {
             "control (DSKPTL's fifteen-bit load). Not re-asserted here.");
     }
 
-    // --- P7 (DECLINED, REPAIRED 2026-09-15, repair lot D): the testable
+    // --- P7 (DECLINED): the testable
     // form here (a DSKPTH-alone write leaves the low field at its prior
     // value) shows only that DSKPTH and DSKPTL decode and load
     // independently -- already established by this package's own green
@@ -462,8 +422,8 @@ int main(int argc, char** argv) {
     // bus-width half of the same opus:8-dma.c10/sol:8-dskpth.c6/
     // opus:8-reglist.c15 claims). Any two unrelated write-only registers
     // feeding independent bit ranges would pass this identical measurement;
-    // it does not put the manual's pairing claim to a real test. Converted
-    // to record(). ---
+    // it does not put the manual's pairing claim to a real test. Declined
+    // via record(). ---
     {
         write_reg(DSKPTH_ADDR, 0x0A);
         write_reg(DSKPTL_ADDR, 0x1234);
@@ -539,9 +499,8 @@ int main(int argc, char** argv) {
             "in this build, not required to be exactly those slots)");
     }
 
-    // --- P9 (REPAIRED 2026-09-15, repair lot D): narrowed from grading mere
-    // holding -- which the cited claims do not describe -- to an explicit
-    // reload-and-use sequence. "Must be reloaded before use" is a
+    // --- P9: an explicit reload-and-use sequence, not mere holding, which
+    // the cited claims do not describe. "Must be reloaded before use" is a
     // cause-and-effect claim: after DMA stops, an explicit DSKPTH/DSKPTL
     // write is what the NEXT transfer actually uses, not whatever the
     // pointer happened to hold. Uids cited only via record() below, per
@@ -599,14 +558,14 @@ int main(int argc, char** argv) {
             " stopped=0x" + hex32(stopped_value));
     }
 
-    // --- P10 (DECLINED, REPAIRED 2026-09-15, repair lot D): this only
+    // --- P10 (DECLINED): this only
     // observes which Paula register address dmas selects (reg_address_out).
     // agnus_diskdma's own port list carries no RAM data bus at all -- only
     // reg_address_out, wr and address_out -- so the actual transfer the
     // source/destination claims describe (data moving between DSKDATR/
     // DSKDAT and RAM) is not observable here; a reversed or entirely
     // broken RAM transfer direction would pass this identical measurement.
-    // Converted to record(). ---
+    // Declined via record(). ---
     {
         uint8_t dmas_trialA = 0, dmas_trialB = 1;
         top->dmal = 1;
@@ -638,7 +597,7 @@ int main(int argc, char** argv) {
     // --- P11A: the "32 bits" width reading fails -- 20 word-address bits,
     // not 32. This is the p.241/p.246 wording against the stored width,
     // NOT the OCS-18/ECS-20 conditioning fact below -- keep them apart.
-    // P11B (declined, REPAIRED 2026-09-15): see record() below. ---
+    // P11B (declined): see record() below. ---
     {
         write_reg(DSKPTH_ADDR, 0xFFFF);
         write_reg(DSKPTL_ADDR, 0xFFFF);
@@ -686,25 +645,23 @@ int main(int argc, char** argv) {
         "32-bit-wide bus cycle rather than two 16-bit ones. Not observable at "
         "reg_address_in/data_in, where a longword write arrives as two ordinary 16-bit "
         "register writes regardless of which instruction produced them. (The two-register-"
-        "split half of the same claims was graded as P7 until the 2026-09-15 repair lot D; "
-        "P7 is now also declined -- see its own record() above for why the split measurement "
-        "does not actually put this claim's pairing to the test. Both halves of these three "
-        "claims are declined in this package now.)");
+        "split half of the same claims is declined at P7 -- see its own record() above for "
+        "why the split measurement does not put this claim's pairing to the test. Both "
+        "halves of these three claims are declined in this package.)");
     checks.record(
         "sol:8-appb-ptrlegend.c2 (p.288), sol:8-appa-dskptr.c2 (p.279): the 'by a processor' "
         "/ 'by the processor or Copper' requester-identity half. reg_address_in/data_in carry "
         "an address and a value and no requester identity; nothing at this boundary "
         "discriminates who issued a write (the 'must be reloaded/initialized before use' half "
-        "of the same claims IS graded, as P9, via an explicit reload-and-use measurement since "
-        "the 2026-09-15 repair lot D)");
+        "of the same claims IS graded, as P9, via an explicit reload-and-use measurement)");
     checks.record(
         "opus:8-appB-dskpth.c2, opus:8-appB-dskptl.c2 (p.289, composed with the p.287 '+' "
         "legend): the 'pointing to chip memory' half. Whether the loaded address lands in "
         "chip RAM is a fact about the memory map, observable at gary, not at agnus_diskdma -- "
-        "a wider module boundary than assigned. Graded elsewhere per these claims' own split "
+        "a wider module boundary than this package's. Graded elsewhere per these claims' own split "
         "notes (sol:8-appb-legend.c6, sol:8-appb-dskpth.c4), outside this package's 55 claims. "
         "(These same two claims' pair-membership half is also declined in this package, at P7 "
-        "above, since the 2026-09-15 repair lot D -- see P7's own record() for why.)");
+        "above -- see P7's own record() for why.)");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
 
