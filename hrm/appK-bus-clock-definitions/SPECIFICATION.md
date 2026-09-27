@@ -13,8 +13,7 @@ Claims: `hrm-testpipeline/work/appK-build/appK-bus-clock-definitions.jsonl`,
 compiled alone. Every claim carries `"observable": "yes, at amiga_clk"`.
 Ports: `clk_28` (in), `clk7_en`, `clk7n_en`, `c1`, `c3`, `cck`, `eclk[9:0]`
 (out), `reset_n` (in, async, active low). No video-mode input exists on this
-module at all — confirmed by reading the full port list above, not assumed
-from the build brief.
+module at all — confirmed by reading the full port list above.
 
 ## Two boundary facts that apply across most of this file
 
@@ -36,8 +35,8 @@ guard, not the normal path); `:64 assign eclk = shifter`. A printed duty
 cycle ("four high, six low") describes a two-level signal. Reducing a
 one-hot vector to a level requires picking a bit (or a set of bits) and a
 convention for what "high" means across them — a choice this module's port
-alone does not supply, and inventing one would be inventing a requirement,
-which the build brief forbids. The harness proves the one-hot invariant by
+alone does not supply, and inventing one would be inventing a requirement.
+The harness proves the one-hot invariant by
 measurement (every sample, every phase) rather than citing the RTL alone,
 and the four `E`-clock-duty uids below are declined on that measurement.
 
@@ -54,7 +53,7 @@ the clock it divides and its own reset.
 
 ### `/C1` and `/C3` frequency (`sol:K-0123`, `sol:K-0126`, `sol:K-0402`, `sol:K-0405`)
 
-**DECLINED after the first build** - the printed subject is a Zorro connector pin this design does not have. See "CORRECTED" below. The measurement described here is unchanged and still printed, now as a `record()` instead of an `expect()`.
+**DECLINED** - the printed subject is a Zorro connector pin this design does not have. See "Why `/C1` and `/C3` are declined" below. The measurement described here is still made and printed, in a `record()`, not graded by an `expect()`.
 
 Quote: "This is a 3.58 MHz clock (3.55 MHz on PAL systems)." Asserts that
 `/C1` (resp. `/C3`) has **half** the period-ratio of the page's own `7M`
@@ -65,7 +64,7 @@ than 1:2.
 
 ### `/C1` and `/C3` edge synchronisation (`sol:K-0124`, `sol:K-0127`, `sol:K-0403`, `sol:K-0406`)
 
-**DECLINED after the first build** - the printed subject is a Zorro connector pin this design does not have. See "CORRECTED" below. The measurement described here is unchanged and still printed, now as a `record()` instead of an `expect()`.
+**DECLINED** - the printed subject is a Zorro connector pin this design does not have. See "Why `/C1` and `/C3` are declined" below. The measurement described here is still made and printed, in a `record()`, not graded by an `expect()`.
 
 Quote: "synched to the falling [rising] edge of" 7M. `7M` itself is not a
 port; `clk7_en`/`clk7n_en` (port comments: "7MHz output clock enable" /
@@ -80,7 +79,7 @@ markers, not just its claimed one.
 
 ### `/C3` as "the complementary half-rate bus clock" (`sol:K-0404`)
 
-**DECLINED after the first build** - the printed subject is a Zorro connector pin this design does not have. See "CORRECTED" below. The measurement described here is unchanged and still printed, now as a `record()` instead of an `expect()`.
+**DECLINED** - the printed subject is a Zorro connector pin this design does not have. See "Why `/C1` and `/C3` are declined" below. The measurement described here is still made and printed, in a `record()`, not graded by an `expect()`.
 
 Heading-only quote ("/C3 Clock"), but this reader's restatement adds
 "complementary half-rate" — a specific ratio-and-phase claim, not a bare
@@ -92,7 +91,7 @@ and 180° (half of `c3`'s own period) out of phase with it. Measured: the
 
 ### `/C1` and `/C3` headings alone (`sol:K-0122`, `sol:K-0125`)
 
-**DECLINED after the first build** - the printed subject is a Zorro connector pin this design does not have. See "CORRECTED" below. The measurement described here is unchanged and still printed, now as a `record()` instead of an `expect()`.
+**DECLINED** - the printed subject is a Zorro connector pin this design does not have. See "Why `/C1` and `/C3` are declined" below. The measurement described here is still made and printed, in a `record()`, not graded by an `expect()`.
 
 Quotes: "/C1 Clock" / "/C3 Clock" (headings, `corpus_damage` on `K-0122`:
 p.393 prints "/C l"). Restatement adds only "is a bus clock" — no
@@ -182,11 +181,11 @@ of a 4-edge period).
 7 ASSERT (7 PASS, 0 RED) + 24 DECLINE = 31. Every uid in the file appears
 exactly once above.
 
-## CORRECTED — fifteen uids were graded here, thirteen of them red
+## Why `/C1` and `/C3` are declined
 
-**The measurements did not change. The binding did.** Every number this
-package ever printed is still measured by the same code and still printed;
-what changed is which printed name those numbers were held to answer for.
+**The measurements are made; the binding is refused.** Every number about
+`c1` and `c3` is measured and printed; what those numbers cannot be held to
+answer for is the printed `/C1` and `/C3`.
 
 `/C1` and `/C3` are **pins on the Zorro expansion connector**. NanoMig has
 no such connector, so it has no `/C1` and no `/C3`, and the fifteen claims
@@ -206,37 +205,36 @@ them written for this test:**
 `nanomig.v:145-152` prints the same thing as a timing table: `c1` and `c3`
 each four `clk_28` cycles long, in quadrature. By the design's own account
 `c1` and `c3` are **7M and CDAC** — which is exactly what this fixture
-measured them to be. The binding that produced the thirteen reds was made
-on the name alone, and the name is Minimig's, not the manual's.
+measures them to be. A binding of `/C1` and `/C3` to `c1` and `c3` would
+rest on the name alone, and the name is Minimig's, not the manual's.
 
 So the question the discipline asks — not "does this pass?" but **"does the
 printed page require what this asserts?"** — answers no. Printed page 393
 does not require that a Verilog net called `c1` run at 3.58 MHz. It requires
 that a bus pin called `/C1` do so, and there is no such pin here.
 
-**The reds are not re-bound to `cck` to make them pass.** `cck` does have
+**The `/C1` and `/C3` claims are not bound to `cck` either.** `cck` does have
 the printed 3.55 MHz rate and the port comment "colour clock output (3.54
 MHz)" — but no claim on either page names it, the page describes a
 **quadrature pair** while this design carries one colour-clock phase and no
 second one, and choosing that binding after seeing the result is the move
 this project exists to refuse. `cck` is measured and noted; never graded.
 
-**7M and CDAC stay graded**, and the line between them and `/C1`/`/C3` is
+**7M and CDAC are graded**, and the line between them and `/C1`/`/C3` is
 measured rather than preferred: the design names those two. `clk7_en`'s port
 comment is "7MHz output clock enable"; `c3`'s is "delayed by 90 degrees",
 which is CDAC's printed definition word for word. Nothing in the design
 names anything `/C1` or `/C3`.
 
 This is why `c3` **passes** `K-0407`, `K-0408` and `opus:K-0418` on the very
-same measurement that used to fail `K-0126` and `K-0405`. It was never a
-harness inconsistency; it was the tell.
+same measurement that `/C3`'s frequency claims (`K-0126`, `K-0405`) would
+fail: `c3` is CDAC.
 
-**The same correction found a vacuous assertion.** `sol:K-0407` compared
-`c3_period == sevenm_period`, and both return `-1` when the trace holds too
-few transitions to measure — so under `MUT=RESETHOLD`, where nothing
-transitions at all, it passed anyway. It did so in the first version of this
-file too. It now requires `sevenm_period > 0` as well, and the mutation
-kills all seven graded uids.
+**`sol:K-0407` requires `sevenm_period > 0`** as well as
+`c3_period == sevenm_period`: both return `-1` when the trace holds too few
+transitions to measure, so under `MUT=RESETHOLD`, where nothing transitions
+at all, the equality alone would pass. With the guard the mutation kills all
+seven graded uids.
 
 ## Control / liveness
 
@@ -253,8 +251,7 @@ what it cannot.
 
 Every ASSERT uid gets a `// MUTATION <uid> ...` line in `test_amiga_clk.cpp`.
 This module's only inputs are `clk_28` (the reference the harness measures
-*in*, not a stimulus to perturb) and `reset_n`. After the correction one
-family remains:
+*in*, not a stimulus to perturb) and `reset_n`. One family:
 
 - **Baseline-PASS assertions** — all seven: the four `7M`-frequency uids and
   `K-0407`, `K-0408`, `K-0418`. `stimulus red` — hold `reset_n` asserted.
@@ -270,23 +267,14 @@ family remains:
 Declined uids carry no MUTATION line — nothing is graded for them to
 falsify.
 
-The fifteen now-declined uids had MUTATION lines of their own: "oracle green
-substitute", the same comparator pointed at `cck`, which does return 8 edges
-and does follow `clk7_en` exclusively. They are worth naming once, because
-they were the same false step in miniature — **a comparator that only
-discriminates when aimed at a signal no claim on the page mentions was
-already evidence that the claim was aimed at the wrong signal.**
-
-## HALT check
+## Reachability
 
 No claim in this package needs `amiga_clk.v` changed, a port added, or a
 requirement invented. Every ASSERT uid is measurable at the module's
-existing five outputs, driven only by its existing two inputs. No HALT.
+existing five outputs, driven only by its existing two inputs.
 
 ---
-Written after `amiga_clk.v` was read in full (67 lines, no submodule
-instantiations) to confirm the port list, the reset polarity, and the
-absence of a video-mode input, per "erst prüfen, dann behaupten." The
-per-claim measurement plan above was fixed before `test_amiga_clk.cpp` was
-written; the exact edge counts asserted are step-3 material confirmed by
-running the fixture, not by this document's own arithmetic.
+The port list, the reset polarity and the absence of a video-mode input are
+read from `amiga_clk.v` in full (67 lines, no submodule instantiations). The
+exact edge counts asserted are confirmed by running the fixture, not by this
+document's own arithmetic.

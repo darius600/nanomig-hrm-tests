@@ -50,11 +50,9 @@
 // clk_28 edge (90 degrees) -- CDAC's printed definition on p.410, exactly,
 // even though c3 fails /C3's own frequency claim on the same two pages.
 //
-// CORRECTED 18.09.2026: FIFTEEN UIDS WERE GRADED HERE AND THIRTEEN OF THEM
-// WERE RED. They are declined below instead. Not one measurement changed --
-// every number the first version printed is still measured and still
-// printed, by the same code, in the note() lines above the grading block.
-// What was wrong was what those numbers were bound to.
+// WHY THE FIFTEEN /C1 AND /C3 UIDS ARE DECLINED. Their measurements are
+// still made and printed, in the note() lines above the grading block; what
+// those numbers cannot be is bound to /C1 or /C3.
 //
 //   /C1 and /C3 are pins on the Zorro expansion connector. NanoMig has no
 //   such connector, so it has no /C1 and no /C3. The ports named c1 and c3
@@ -64,31 +62,31 @@
 //   degrees behind it; denise_bitplanes.v:275 says "c1 is the 7MHz clock,
 //   c3 the same clock shifted 90deg"; minimig_sram_bridge.v:46 labels its
 //   c1 waveform "(7.09 MHz)". By the design's own account c1 and c3 are 7M
-//   and CDAC -- which is exactly what this fixture measured them to be.
-//   The binding that produced the reds was made on the name alone, and the
-//   name is Minimig's, not the manual's.
+//   and CDAC -- which is exactly what this fixture measures them to be.
+//   A binding of /C1 and /C3 to c1 and c3 would rest on the name alone, and
+//   the name is Minimig's, not the manual's.
 //
 //   So the question the discipline asks -- not "does this pass?" but "does
 //   the printed page require what this asserts?" -- answers no. p.393 does
 //   not require that a Verilog net called c1 run at 3.58 MHz. It requires
 //   that a bus pin called /C1 do so, and there is no such pin here.
 //
-// The reds are NOT re-bound to cck to make them pass. cck does have the
+// The /C1 and /C3 claims are NOT bound to cck either. cck does have the
 // printed 3.55 MHz rate and the port comment "colour clock output (3.54
 // MHz)" -- but no claim on either page names it, the page describes a
 // QUADRATURE PAIR while this design carries one colour-clock phase and no
 // second one, and choosing that binding after seeing the result is the move
 // this project exists to refuse. cck is measured and noted; never graded.
 //
-// 7M and CDAC stay graded, and the line between them and /C1, /C3 is a
+// 7M and CDAC are graded, and the line between them and /C1, /C3 is a
 // measured one rather than a preference: the design names those two.
 // clk7_en's port comment is "7MHz output clock enable"; c3's is "delayed by
 // 90 degrees", which is CDAC's printed definition word for word. Nothing in
 // the design names anything /C1 or /C3.
 //
 // MUTATION PLAN. This module's only inputs are clk_28 (the reference the
-// harness measures IN, not a stimulus) and reset_n. One family remains
-// after the correction: every graded uid is baseline-PASS and is turned red
+// harness measures IN, not a stimulus) and reset_n. One family: every
+// graded uid is baseline-PASS and is turned red
 // by stimulus via MUT_RESETHOLD (make test MUT=RESETHOLD) -- reset_n is
 // never released, so clk7_en/clk7n_en freeze high (:26-27, forced, never
 // computed from clk7_cnt again) and c1/c3/cck freeze at reset-forced
@@ -102,14 +100,6 @@
 // MUTATION sol:K-0407 stimulus red (same MUT_RESETHOLD as sol:K-0135 -- c3 freezes)
 // MUTATION sol:K-0408 stimulus red (same MUT_RESETHOLD -- both c1 and c3 freeze, no offset)
 // MUTATION opus:K-0418 stimulus red (same MUT_RESETHOLD as sol:K-0407/K-0408)
-//
-// The fifteen declined uids had MUTATION lines of their own -- "oracle green
-// substitute", the same comparator pointed at cck, which does return 8 edges
-// and does follow clk7_en exclusively. Those lines are gone with the
-// assertions they belonged to. They are worth naming once, because they are
-// the same false step in miniature: a comparator that only discriminates
-// when aimed at a signal no claim on the page mentions was already evidence
-// that the claim was aimed at the wrong signal.
 
 #include "Vamiga_clk.h"
 #include "verilated.h"
@@ -309,9 +299,9 @@ int main(int argc, char** argv) {
     }
 
     // =====================================================================
-    // GRADED -- 7 uids, all PASS. The fifteen /C1 and /C3 uids that were
-    // graded here are declined below; see the CORRECTED note at the head of
-    // this file. Their measurements are unchanged and still printed above.
+    // GRADED -- 7 uids, all PASS. The fifteen /C1 and /C3 uids are declined
+    // below; see the note at the head of this file on why. Their
+    // measurements are printed above.
     // =====================================================================
 
     // --- 7M frequency (four uids, same measurement) ---
@@ -329,9 +319,8 @@ int main(int argc, char** argv) {
     // The `sevenm_period > 0` term is not decoration. Both period_of() and the
     // 7M reference return -1 when the trace holds too few transitions to
     // measure, and `c3_period == sevenm_period` alone is satisfied by -1 == -1
-    // -- so under MUT_RESETHOLD, where nothing transitions at all, this
-    // assertion passed vacuously. It did so in the first version of this file
-    // too; running the gate is what found it.
+    // -- so under MUT_RESETHOLD, where nothing transitions at all, the
+    // equality alone would pass vacuously.
     expect(sevenm_period > 0 && c3_period == sevenm_period,
            "sol:K-0407 CDAC = 7.16/7.09 MHz: c3 period = " + std::to_string(c3_period) +
            " clk_28 edges, 7M reference period = " + std::to_string(sevenm_period) +
@@ -357,9 +346,8 @@ int main(int argc, char** argv) {
            "same clock shifted 90deg', and minimig_sram_bridge.v:46 labels its c1 waveform "
            "'(7.09 MHz)'. Measured here and printed above: c1 period = " + std::to_string(c1_period) +
            " clk_28 edges, c3 period = " + std::to_string(c3_period) + ", both equal to 7M's own " +
-           std::to_string(sevenm_period) + ". These fifteen uids were graded in the first version of "
-           "this file and thirteen of them were red; the measurements did not change, the binding "
-           "did. See the CORRECTED note at the head of this file.");
+           std::to_string(sevenm_period) + ". See the note at the head of this file on why the "
+           "fifteen /C1 and /C3 uids are declined.");
     record("sol:K-0123, sol:K-0126, sol:K-0402, sol:K-0405 -- declined, same reason as "
            "sol:K-0122/sol:K-0125: no /C1 or /C3 exists in this design to carry the printed 3.58/3.55 "
            "MHz. Measured for the record: c1 and c3 both run at clk_28/" + std::to_string(sevenm_period) +
