@@ -1081,3 +1081,93 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
     exclude one of the memory refresh cycles. This is not the case. Actual
     system hardware demands certain specific values … Therefore this timing
     chart has been 'adjusted'". No slot number from the figure is used.
+
+
+---
+
+## 5. What the build added
+
+Programs, measured values and mutations the build committed. Section 2's
+common ground is unchanged; this records what implementing it against
+`nanomig.v` measured.
+
+### 5.1 Memory layout
+
+Every program clears the overlay first (a write to $BFE001, the CIA-A
+port), so the low $000000-$07FFFF area used for Copper lists and
+DMA-channel data regions (2.1) is reachable for both CPU writes and
+channel fetches; without it, measured, the region answers no access at
+all. This package's own map: LIST1-LIST4 at $001000/$001200/$001400/
+$001600, DATA1/DATA2 at $002000/$004000 (all below $80000, reachable once
+the overlay is clear); RESULTS, marker cells (MARKBUF, $0C1000) and the
+beam/poll sample buffer (RECBUF, $0C4000) in the ordinary identity-mapped
+chip RAM above $80000.
+
+### 5.2 Reference frame B (2.4)
+
+Each record's three words (INTREQR, then VPOSR/VHPOSR as one long word)
+are written by the 68000 program; the C++ side finds each word's own store
+time from the RAM-port log, the same log the fetch/channel checks use,
+never assuming a fixed sampling cadence. A dense, fixed-iteration loop
+around the sample, with no per-iteration beam-position decode, is what
+reaches the anchor B2 density (>= 8 records/line); decoding the position
+inline, tried first, measured under 4 records/line and failed B2 on both
+cores.
+
+Measured, on both cores: at a fixed H (around $CA), roughly every 13th
+line, H drops back to $01 while V stays the same -- one line runs
+measurably longer before V advances. This package's own anchor B1 (2.4) is
+graded on V alone for this reason: it derives no line length from the
+pages (4.10 already records the pages disagree, 227 vs 227.5 colour
+clocks), and no proposition in this package grades within-line H ordering.
+
+Measured, on both cores: the harness's own first video field after boot()
+is short and irregular (well under half a nominal PAL frame) before the
+design's video timing settles. "Two complete frames" is measured skipping
+this one field, not the literal first two wrap-to-wrap spans captured.
+
+A whole-frame membership question (does a fetch fall within complete frame
+k) is measured on that frame's own time range, taken from the two
+neighbouring wrap-detecting records' own store times (extended back to the
+previous frame's last record, forward to the next frame's first): a
+Copper restart's own fetch measures consistently just before the record
+that first shows the lower V, in the same few-hundred-cycle gap on both
+cores.
+
+### 5.3 P4: Run 2, Run 3 and Run 3-reorder not asserted
+
+Measured, on both cores: in Run 2 (COP1LC=A, COP2LC=B, COPJMP2), the first
+Copper fetch after M1 is A's IR1, not B's -- with a diagnostic marker (M0,
+right after the run-specific writes) showing no frame wrap between the
+writes and M1 either. Run 3 and Run 3-reorder measure the same: A's IR1,
+not B's or C's. Claim `ch2-starting-the-copper-after-reset.c2.s2` (Run 2's
+own claim) is therefore not asserted. Run 3 and its reorder carry no claim
+id of their own (section 1's table lists only c1.s2 and c2.s2 for P4) and
+are recorded for the same reason. Run 1 (COP1LC=A, COPJMP1) is unaffected
+and is asserted normally.
+
+### 5.4 Mutations: measured per core
+
+Every mutation below was run once on each core (`NMH_MUTATE=<value>`)
+after the normal run. Each measured a FAIL on exactly its own precondition,
+on both cores, with every other check unchanged from the normal run
+(P2c aside, 5.5):
+
+| Mutation | Precondition | fx68k | TG68K |
+|---|---|---|---|
+| P1-A | P1a | FAIL | FAIL |
+| P1-B | P1b | FAIL | FAIL |
+| P1-C | P1c | FAIL | FAIL |
+| P2-A | P2a | FAIL | FAIL |
+| P2-B | P2b | FAIL | FAIL |
+| P2-C | P2c | FAIL | FAIL |
+| P4-A | P4a | FAIL | FAIL |
+| P4-B | P4b | FAIL | FAIL |
+| P4-C | P4c | FAIL | FAIL |
+
+### 5.5 P2c: cores disagree
+
+Measured: P2c (anchor checks B1-B3 over the two complete frames after M2)
+reads FAIL on fx68k and PASS on TG68K, in the normal run and in every
+mutation run alike (independent of `NMH_MUTATE`). Both cores otherwise
+agree on every check in this package.
