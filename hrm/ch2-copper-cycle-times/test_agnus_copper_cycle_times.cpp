@@ -4,18 +4,16 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, print
 //   pages 19, 20, 23 and 194; frozen specification 7177fce.
 // Requirement IDs: COP-01, COP-02
-// Non-goals: Granted accesses per instruction (FPGA-063 covers those).
-//   Contended timing when a higher-priority channel takes the slot
-//   (FPGA-066). Absolute slot parity, whose numbering origin the HRM does
-//   not fix at this module boundary. NTSC long/short lines. A blocked WAIT,
+// Non-goals: Granted accesses per instruction (hrm/ch2-copper-cycles
+//   covers those). Contended timing when a higher-priority channel takes
+//   the slot (hrm/ch2-copper-bus-behaviour). Absolute slot parity, whose
+//   numbering origin the HRM does not fix at this module boundary. NTSC
+//   long/short lines. A blocked WAIT,
 //   whose span is set by the beam rather than by the instruction.
 // Claim ids: ids such as `COP2-about-the-copper.c20` and
 //   `COP2-copins-timing.c1` name one sentence of the manual in this chapter's
 //   reading. They carry no reader prefix, and they resolve in the claim files
 //   that hrm-testpipeline/acceptance/ch2.json lists under `inventories`.
-//   `FPGA-nnn` is a task number in the private workspace where this work was
-//   planned; it resolves nowhere public, and docs/legacy-names.md gives the
-//   finding keys that replaced the ones that were findings.
 //   A `frozen specification` named above was the suite's first oracle, a note
 //   written from the Verilog before the pipeline existed; docs/legacy-names.md
 //   describes it.
