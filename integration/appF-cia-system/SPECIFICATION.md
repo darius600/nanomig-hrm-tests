@@ -621,3 +621,27 @@ The sentence of opus:F-timers.c6 names no value. Each capability it lists is sho
 8. **The CIAA TOD source** is "VSync or line tick" (p339). P8.7 grades CIAA only in a way that holds for either source.
 9. **p352's example** sets one-shot mode before writing TAHI, so its TAHI write already starts the timer (p342). Its DMACON write carries the comment "Kill all chip interrupts". This spec takes from p352 only the latch write order.
 10. **The claims' text readings of the bitmaps on p349 and p350** print "=" as "*" or "-" and "1" as "l". The printed images confirm the readings used here.
+
+---
+
+## 4. Build
+
+`floppy_config` is left at the harness's own documented default (`nanomig_harness.h`, `Config::floppy_config = 0x00`) for every run, including the O2-grading runs: it is the only value the harness documents, and the build states it here as the spec requires. No disk image is mounted for any run (no claim in this package needs one).
+
+## 5. What was measured, P1 and P2
+
+Both cores agree on every value in this section; nothing here separates fx68k from TG68K.
+
+**P1-MAIN, P1-OTHERBITS, P1-PRE1.1-1.3.** All four instances' r0, a2, a1, b1, c1, d1, d2, i1, i2 were read back and compared to the expected bit pattern of each leg. Pre1.1-1.3 hold on all four instances (r0 bit n = 1; exactly one underflow before leg A1, its own flag set; no underflow during leg C). The "other bits" clause (bits other than n in a1, a2 match r0; bit o of b1, c1 matches r0) holds on all four instances. The main clause -- that PBON forces the pin to the timer's own output level -- does not: on every instance, a2, a1, b1 and c1 read back exactly the DDRB/PR-data value the step itself wrote (or, for a1, the value the previous leg left there), never the timer's own toggle/pulse state. d1 and d2, which do not depend on PBON's own override (CR is $00 there), read as the page predicts.
+
+**P1-CONTRAST.** The dedicated PBON=0 run (`p1_ciab_tb_pbon0.bin`) reads a2, a1, b1 and c1 identically, bit for bit, to the PBON=1 run. The comparator that grades the main clause cannot tell the two settings apart from any input at `nanomig.v`'s ports: `checks.record()`s this as unfalsifiable at this boundary rather than grading it.
+
+**P1-LP, P1-O2.** LP's own three checks were made: the LED before boot, after the "on" leg's R-SELECT, and after the "off" leg's R-SELECT. The LED reads off in all three cases -- it never turns on. LP fails on its own second leg, so the four O2 legs (LED-A1, LED-C, LED-D1, LED-D2) are reported, not graded, exactly as O2's own calibration-failure rule states.
+
+**P2-LEGR, P2-MAIN, P2-LEGH.** r1 was read on all four instances (leg R); the 64-sample s_k arrays were read for all four starts on all four instances (leg S); h1, h2, h3 and ih were read (leg H). r1 reads the DDRB/pull-up level, not 0, on every instance: leg R's own clause is not established. Every s_k array is constant at the pull-up level for its entire 64 samples, on every instance and every start: no rise is ever observed, so leg S's own clause ("every start ... sets it high") is not established either -- there is no level for a start to raise from or to. h1 and h3 both read 1 on every instance, matching the page's own prediction for leg H, but by the same pull-up level leg R and leg S show throughout; PBON is $00 nowhere in leg H's own stimulus, so this leg's own reading does not by itself separate "set high by a start" from "reads high because undriven".
+
+**P2-CONTRAST, Pre2.1, Pre2.3.** The start-4-not-started run, the extra-start-before-leg-R run, and the PBON=0-at-start-1 run were each compared word-for-word against the plain CIAB/timer-B run's own r1, z_1 and s_4. Every one of the three mutated runs reads identically to the baseline on the channel its own clause is graded through (r1, z_1, or s_4's rise count). `checks.record()`s each as unfalsifiable at this boundary.
+
+**Pre2.2, Pre2.4.** These two are graded through the ICR flag (i_1's TB bit, ih's TB bit), not through PRB: the $FFFF-latch run reads i_1's TB flag clear where the baseline's own start 1 reads it set (Pre2.2), and the $0008-latch run reads ih's TB flag set where the baseline's own leg H reads it clear (Pre2.4). Both mutations are live and both assertions grade green.
+
+**EP1, EP2, EP3, F1 anchor.** All four hold on every run, and all four contrasts flip as the page predicts: EP1's own write-before-read returns $0A; EP2's own Copper fetch of $0C3000 appears inside the marker window that the unmutated run shows clear of anything but CPU and refresh accesses; EP3's own no-DONE program times out with no final marker; F1's own anchor check passes at the measured T_CPU and fails when the same comparator is fed 1.25x that value.
