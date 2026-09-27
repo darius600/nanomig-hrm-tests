@@ -838,7 +838,7 @@ void run_normal(const std::string& dir, Checks& checks) {
             if (!fa.ok || !colour_check(c1.video, fa).all_ok()) anchor_ok = false;
         }
     }
-    checks.expect(anchor_ok, "R1 p.301 p.303 (anchor): with HIRES (SHRES=0) instead of SuperHires, "
+    checks.expect(anchor_ok, "R1 p.301 (anchor): with HIRES (SHRES=0) instead of SuperHires, "
                              "COLOR17-COLOR19 read as ordinary 0x0RGB registers already show the section 3.5 "
                              "U values for every group, establishing the channel and bit order before P1-P4 "
                              "are graded");
