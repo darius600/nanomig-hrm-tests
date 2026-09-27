@@ -13,7 +13,7 @@ Conventions of this document:
 
 ## 1. Claims that give no proposition
 
-Each claim below is either not turned into a proposition or only partly used. The reason is given; a test must not grade what these claims state.
+Each claim below is declined: no assertion carries its id. Where a proposition checks part of what a claim states, the row names that part; the id is still declined whole, because no assertion grades all of it. The reason is given; a test must not grade what these claims state.
 
 | Claims | Reason |
 |---|---|
@@ -24,10 +24,12 @@ Each claim below is either not turned into a proposition or only partly used. Th
 | opus:AA-clxcon2.c13; sol:AA-clxcon2.c18 (the line `**k**XRESET BY ECSENA*****` after CLXCON2's table) | The printed page does not carry this line. The scan (`bands\p18_band3.png`) ends with the row "01 MVBP8 Match value for Bit Plane 8 collision" and the frame of the box; nothing follows. The claim itself records that the line comes from one OCR reading only. Even read as "RESET BY ECSENA" it does not say which bits it governs, and the pages that list what ECSENA controls (p.4, p.17) name only five BPLCON3 bits: "BRDRBLNK,BRDNTRAN,ZDCLKEN,BRDSPRT, and EXTBLKEN" (p.17). No expected value. |
 | opus:AA-sprxdatb.c12; sol:AA-sprxdata.c19 (the sentence "In lowres mode," continues on p.29) | These records state only that a sentence breaks across a page. Its continuation (p.29, "1 sprite pixel is 1 bitplane pixel wide. In HRES and SHRES mode, 1 sprite pixel is 2 bitplane pixels.") is not a claim of this package. |
 | sol:AA-bplxpth.c11 (misprint `x=1,2,3,45,6,7,8`) | A record of a misprint (confirmed on the scan, `bands\p15_band2.png`). It changes nothing a test can see: the entry prints eight addresses and BPLxPTL prints "x=1,2,3,4,5,6,7,8". The addresses are used in B1. |
-| opus:AA-bplxdat.c10 and sol:AA-bplxdat.c26, the "32/64 pixels" part | Used for the 16-pixel word (B3). The 32- and 64-pixel words cannot be given an expected value that a test can see: the pages give the fetch increment per FMODE setting (p.23) but not how many fetch cycles a line takes in the wide modes, nor how a 32- or 64-bit fetch appears at a Chip-memory port that reports word addresses. On the display, a 32-pixel word shown in memory order is indistinguishable from two 16-pixel words. |
-| opus:AA-sprxctl.c18 and sol:AA-sprxctl.c32, the "during horizontal blank" part | Used for "loaded by the Sprite DMA channel" (S13). "Usually ... during horizontal blank" grades nothing ("usually" admits exceptions), and the chip's horizontal blanking interval is not visible: the video output passes a line doubler, and the pages give no fixed horizontal-blank position for the default beam. |
-| opus:AA-sprhstop.c9, the word "only" in "(ECS and later chips only)" | Used for the positive part: SPRHWRM acts with ECS and with AA behaviour (S16). The "only" cannot be checked: with OCS behaviour there are no UHRES pointers at all (p.16, UHRES "(hires chips only)"), so there is no UHRES cycle whose direction could be seen. |
-| opus:AA-sprhstop.c8, sol:AA-sprhstop.c22, the purpose "so that external devices can detect the RGA" | Used for the swapped ARW* polarity (S16). The register address bus (RGA) and the SPRHDAT identifier on it are not visible to a test. |
+| opus:AA-bplxdat.c10; sol:AA-bplxdat.c26 (a bit-plane word is "16/32/64 pixels") | B3 checks the 16-pixel word (FMODE = 0) only. The 32- and 64-pixel words cannot be given an expected value that a test can see: the pages give the fetch increment per FMODE setting (p.23) but not how many fetch cycles a line takes in the wide modes, nor how a 32- or 64-bit fetch appears at a Chip-memory port that reports word addresses. On the display, a 32-pixel word shown in memory order is indistinguishable from two 16-pixel words. |
+| opus:AA-sprxctl.c18; sol:AA-sprxctl.c32 (POS and CTL "are usually loaded by the Sprite DMA channel, during horizontal blank") | S13 checks the loading by the Sprite DMA channel only. "Usually ... during horizontal blank" grades nothing ("usually" admits exceptions), and the chip's horizontal blanking interval is not visible: the video output passes a line doubler, and the pages give no fixed horizontal-blank position for the default beam. |
+| opus:AA-sprhstop.c9 (SPRHWRM "(ECS and later chips only)") | S16 checks the positive part only: SPRHWRM acts with ECS and with AA behaviour. The "only" cannot be checked: with OCS behaviour there are no UHRES pointers at all (p.16, UHRES "(hires chips only)"), so there is no UHRES cycle whose direction could be seen. |
+| opus:AA-sprhstop.c8 (SPRHWRM swaps ARW* "so that external devices can detect the RGA and put things into memory") | S16 checks the swapped ARW* polarity only; sol:AA-sprhstop.c22 states that part alone and is graded by S16. The register address bus (RGA) and the SPRHDAT identifier on it are not visible to a test. |
+| opus:AA-clxcon2.c7; sol:AA-clxcon2.c7 (CLXCON2's bits are "INITIALIZED BY RESET") | C5 checks the reset value of ENBP8 and ENBP7 only (sol:AA-clxcon2.c11, c13). The reset values of the unused bits and of MVBP7 and MVBP8 cannot reach any output (rows above). |
+| opus:AA-clxcon.c6; sol:AA-clxcon.c6; opus:AA-clxcon2.c6; sol:AA-clxcon2.c6 (a write to CLXCON resets the bits of CLXCON2) | C4 checks that a CLXCON write clears ENBP7 and ENBP8 only. That it clears MVBP7, MVBP8 and the unused bits cannot be seen: a match value acts only while its enable is 1, the enable can only become 1 again through a CLXCON2 write, and that write rewrites the match value; the unused bits have no function. C4 remains a check and carries no claim id. |
 
 No claim in this package needs data read from or written to a disk surface.
 
@@ -37,14 +39,17 @@ No claim in this package needs data read from or written to a disk surface.
 
 ### 2.1 System and runs
 
-- AA chip set selected (harness `Config.chipset_config = 0x10`), PAL, 2 MB Chip memory, the 68000 core. The 68010/68020 settings add nothing here: none of these claims concerns the CPU type. S16 also runs with ECS behaviour selected (stated there).
-- Every run starts from system reset, and the test program is the only software. Each run lasts until the last frame the proposition observes has ended; the program then idles in a loop.
+- AA chip set selected (harness `Config.chipset_config = 0x10`), 2 MB Chip memory (harness `Config.memory_config = 0x03`), 68000 CPU behaviour (`Config.cpu_config = 0x00`). The 68010/68020 settings add nothing here: none of these claims concerns the CPU type. S16 also runs with ECS behaviour selected (stated there).
+- **Graded build.** Every assertion of this package is graded on the TG68K build only: `nanomig.mk` builds it with `-DENABLE_AGA`, NanoMig's AGA configuration. The fx68k build is NanoMig's non-AGA configuration (`nanomig.mk` builds it without `-DENABLE_AGA`); it runs the same programs, and its results are recorded, not graded. No proposition, precondition or anchor depends on the fx68k build having an AA feature.
+- **PAL.** The harness has no PAL setting (its `Config` fields are memory, fast RAM, CPU, chip set, floppy, video, turbo and IDE), so the program selects PAL itself: the first write of its setup is BEAMCON0 (1DC) = `0x0020`. p.12: "5 PAL", "PAL= Set appropriate decodes (in normal mode) for PAL." The long frame LF writes its own BEAMCON0 value in place of this one, with PAL also set (2.9). The PAL field is needed: D-STD's window, S8 and S15 (k = 8) use lines above 0x105, the last line of an NTSC field (HRM p.79 table: vertical blank stop "$15 (21)" NTSC, "$1D (29)" PAL, then 241 and 283 displayable lines), and 2.11 uses the PAL line length.
+- Every run starts from system reset, and the test program is the only software. Each run lasts until the last frame the proposition observes has ended; the program then executes `DONE` (`nanomig.i`), which writes `DONE_VALUE` to `DONE_ADDR` and stops in place.
 - The program writes custom registers with word writes. A pointer pair is written high word (PTH) first, then the low word (PTL).
+- Every program is assembled for the 68000 (vasm's default CPU, no `-m68010` or higher). With `-m68010` or higher vasm assembles `MOVE #0,<ea>` as `CLR`, and on the 68000 CLR reads its operand before writing it. B2, B4, S2, S3, S7 and C2-C5 write 0 to write-only registers (BPL1PTL, SPR0PTL, BPLxDAT, SPRxCTL, CLXCON) and specify exactly one write each time.
 - **Setup marker.** When setup is complete, the program writes `0x5E7F` to the setup-marker word (2.3). This write is seen at the Chip-memory port.
 
 ### 2.2 Pointer value
 
-A pointer pair addresses a byte address `A(PTH, PTL) = ((PTH & 0x001F) << 16) | (PTL & 0xFFFE)`. The Chip-memory port reports the word address `A / 2`. This follows from:
+A pointer pair addresses a byte address `A(PTH, PTL) = ((PTH & 0x001F) << 16) | (PTL & 0xFFFE)`. The Chip-memory port reports the word address `A / 2` for every address in the identity-mapped Chip memory, where all regions of 2.3 lie. This follows from:
 
 - p.6: "+=Address register pair.Low word uses DB1-DB15,High word DB0-DB4."
 - p.15 and p.28: "(High 5 bits)", "(Low 15 bits)".
@@ -54,32 +59,35 @@ The program always writes PTH bits 15-5 and PTL bit 0 as 0. The pages give these
 
 ### 2.3 Memory map (byte addresses)
 
+Every region lies in the Chip memory the harness maps one-to-one, `0x080000-0x1FFFFF` (`nanomig_harness.h`: `kChipIdentityLo`, `kChipIdentityHi`). Only there is the word address at the Chip-memory port the logical address / 2; `peek_logical()` states: "Outside that range the physical and logical addresses differ". Below `0x080000` the ROM overlay is active after reset (HRM p.223: "The OVL bit in one of the 8520 Chips disables the overlay"), and the harness states: "A test program must not write inside the overlay window." The program does not clear the overlay and uses no address below `0x080000`. The harness's memory model starts as zeros (`NanomigHarness` constructor, `mem_(kRamWordCount, 0)`), so Z, the T regions and every L_x the program does not write hold zeros.
+
 | Region | Address | Use |
 |---|---|---|
-| Program, stack, vectors | `0x000000-0x00FFFF` | test program |
-| CL | `0x050000` | Copper list |
-| RES | `0x060000` | results: setup marker at `0x060000`; stored register reads and beam re-reads from `0x060010` on |
-| Z | `0x070000` (16 KB) | zeros; bit-plane data for planes that are not under test |
+| Program | from `0x080400` (`PROGRAM_ORG`, `nanomig.i`), ending below `0x090000` | test program; the harness loads it there and places the reset vectors itself |
+| Stack | down from `0x0FFF00` (`PROGRAM_STACK`) | no other region lies in `0x0F0000-0x0FFFFF` |
 | P_k, k = 1..8 | `0x090000 + 0x4000*(k-1)` | bit-plane data for plane k |
 | L_x, x = 0..7 | `0x0B0000 + 0x1000*x` | sprite x's DMA list; alternative lists at `0x0B8000 + 0x1000*x` |
-| U | `0x0D0000` | UHRES sprite pointer target |
-| U2 | `0x0E0000` | UHRES bit-plane pointer target |
+| RES | `0x0C0000` (`RESULTS`, `nanomig.i`) | results: setup marker at `0x0C0000`; stored register reads and beam re-reads from `0x0C0010` on, below `DONE_ADDR` (`0x0C0FFE`) |
+| U | `0x0D0000`; region `[0x0D0000, 0x0E0000)` | UHRES sprite pointer target |
+| U2 | `0x0E0000`; region `[0x0E0000, 0x0F0000)` | UHRES bit-plane pointer target |
+| CL | `0x100000` (16 KB) | Copper list |
+| Z | `0x104000` (16 KB) | zeros; bit-plane data for planes that are not under test |
 | T_i, i = 1..8 | see below | wide-address regions, used only by B1 and S1 |
 
-The table regions put each of the five PTH bits and each of PTL bits 15-1 at 1 in some region and at 0 in another:
+The table regions put each of the five PTH bits and each of PTL bits 15-1 at 1 in some region and at 0 in another. Inside the identity-mapped range PTH is at least 0x08; PTH bit 4 is 0 in T_5, and PTH bit 3 is 0 in T_1, T_2, T_3 and T_6.
 
 | i | h_i (PTH) | l_i (PTL) | A_i |
 |---|---|---|---|
-| 1 | 0x01 | 0x0000 | 0x010000 |
-| 2 | 0x02 | 0x5554 | 0x025554 |
-| 3 | 0x04 | 0x2AAA | 0x042AAA |
-| 4 | 0x08 | 0x8000 | 0x088000 |
-| 5 | 0x10 | 0xC002 | 0x10C002 |
-| 6 | 0x03 | 0x4444 | 0x034444 |
-| 7 | 0x0C | 0x1110 | 0x0C1110 |
+| 1 | 0x11 | 0x0000 | 0x110000 |
+| 2 | 0x12 | 0x5554 | 0x125554 |
+| 3 | 0x14 | 0x2AAA | 0x142AAA |
+| 4 | 0x18 | 0x8000 | 0x188000 |
+| 5 | 0x0C | 0xC002 | 0x0CC002 |
+| 6 | 0x13 | 0x4444 | 0x134444 |
+| 7 | 0x1C | 0x1110 | 0x1C1110 |
 | 8 | 0x1F | 0xA000 | 0x1FA000 |
 
-Region T_i spans `[A_i, A_i + 0x3000)`. B1 and S1 use no other data region except CL, RES and Z.
+Region T_i spans `[A_i, A_i + 0x3000)`. B1 and S1 use no other data region except CL, RES and Z. No two regions of this section overlap. One plane's data for one frame of D-STD (a 320-pixel window, 0x81-0x1C1, of 16-pixel words on the 256 lines 0x2C-0x12B: `0x2800` bytes) fits in every T, P and Z region.
 
 ### 2.4 Standard display D-STD
 
@@ -127,7 +135,7 @@ COLOR00 carries the line tag (2.6).
 
 ### 2.6 Copper list CL-STD
 
-Setup follows p.21: "It is important that one of the jump registers be initalized and it's jump strobe address hit, after power up but before Coprocessor DMA is initalized." The program writes COP1LCH/COP1LCL (080/082) = `0x050000`, writes the strobe COPJMP1 (088), and only then sets COPEN and DMAEN in DMACON.
+Setup follows p.21: "It is important that one of the jump registers be initalized and it's jump strobe address hit, after power up but before Coprocessor DMA is initalized." The program writes COP1LCH/COP1LCL (080/082) = `0x100000` (CL), writes the strobe COPJMP1 (088), and only then sets COPEN and DMAEN in DMACON.
 
 The encodings are from p.20:
 
@@ -136,7 +144,7 @@ The encodings are from p.20:
 
 The list consists of:
 
-1. **Vertical-blank block.** MOVE COLOR00 = `0x000`; MOVEs of the pointers the test uses (bit-plane, sprite, UHRES); any other per-test MOVE said to be "in the VB block".
+1. **Vertical-blank block.** MOVE COLOR00 = `0x000`; MOVEs of the pointers the test uses (bit-plane, sprite, UHRES); any other per-test MOVE said to be "in the VB block". Whenever SPREN is set, all eight sprite pointers are written in every frame: a sprite pointer that the test does not load otherwise gets the address of that sprite's list L_x, which holds only the end pair (2.7). p.28: "These address registers must be initialized by the processor or coprocessor every vertical blank time."
 2. **Tag block.** For n = 0x2C .. 0xFF in order: WAIT(VP = n, HP = 0), then MOVE COLOR00 = tag(n). Per-test Copper events at (line e, H = h) are placed in line order as WAIT(e, h) followed by their MOVEs.
 3. **End.** WAIT with first word `0xFFFF` and second word `0xFFFE`. It is never satisfied before the next restart.
 
@@ -183,7 +191,7 @@ For bit 9 (and, for S15, bit 10) of a vertical value, a field longer than 512 (1
 
 - HTOTAL (1C0) = `0x00E2` (p.24: "Horiz line has this many + 1 280ns increments")
 - VTOTAL (1C8) = `0x05FF` (p.29: "It's the line number to reset the counter, so there's this many + 1 in a field")
-- BEAMCON0 (1DC) = `0x08A0` (p.12: bit 11 LOLDIS, bit 7 VARBEAMEN, bit 5 PAL; p.24: "If the PAL bit & LOLDIS are not high, long line/short line toggle will occur")
+- BEAMCON0 (1DC) = `0x08A0`, in place of the `0x0020` of 2.1 (p.12: bit 11 LOLDIS, bit 7 VARBEAMEN, bit 5 PAL; p.24: "If the PAL bit & LOLDIS are not high, long line/short line toggle will occur")
 
 The field then has 1536 lines. The Copper tag block still covers lines 0x2C-0xFF only.
 
@@ -211,7 +219,7 @@ p.19 also says: "NOTE: Playfield 1 is all odd numbered enabled bit planes. Playf
 - **Line anchor.** t_tag_i(n) is the time of the fetch of the first word of the MOVE COLOR00 that follows WAIT(n) in frame i. Chip line n of frame i is `[t_tag_i(n), t_tag_i(n+1))`. An access in that interval is "on line n". This attribution is used only for accesses well inside a line (bit-plane fetches), never for accesses at the very start of a line.
 - **Line period.** P = t_tag(n+1) - t_tag(n), in system clock cycles.
 - **Output lines.** The output of chip line n in frame i is the first pair of consecutive output lines that shows background tag(n) after t_tag_i(n). The line doubler shows each chip line twice; the first of the two is graded. Pixel columns are counted from horizontal sync.
-- **Output pixel.** The harness states that "every second pixel of the fastest resolution is not visible". So one output pixel stands for 70 ns, a lores pixel (140 ns) covers exactly two output pixels, and a shift by 70 ns moves an edge by exactly one output pixel.
+- **Output pixel.** The unit is measured at the ports, not assumed. A PAL line is 227 colour clocks (HRM p.23: "In PAL, they are all 227 long"), and a colour clock is 280 ns (p.21: "memory cycles are 280 ns"; p.29, VHPOSR: "(280 NS)"). So a chip line is 908 intervals of 70 ns, and it lasts P clk_sys cycles. The video port is sampled once per clk_sys cycle (`nanomig_harness.h`, `VideoSample`), and the scan doubler shows each chip line twice within those P cycles (`find_lines()`: "hs toggles at roughly twice the rate of the chipset's own horizontal sync"). So 70 ns of chip time occupies u = P / 1816 video samples of the output. One **output pixel** is u samples: a lores pixel (140 ns) covers exactly two output pixels, and a shift by 70 ns moves an edge by exactly one output pixel. PC-PIXEL (2.12) measures u. A 35-ns pixel is half an output pixel; whether and how it reaches the output is measured where it matters (S6).
 - **Beam marker.** The CPU polls VPOSR (004; bits 2-0 = V10, V9, V8, p.29) and VHPOSR (006; bits 15-8 = V7-V0, bits 7-0 = H8-H1, p.29) until the target line is reached and H is at least the target. It then performs the action, re-reads VPOSR/VHPOSR, and writes the two readings and a marker word to RES. These writes are seen at the port with their times.
 - **Line-offset measure LOM.** For an event seen in two runs (or two frames), with t measured from the t_F of its own frame: `Δ = round((t2 - t1) / P)`. The result is valid only if `|(t2 - t1) - Δ*P| ≤ P/8`; otherwise the comparison is invalid, not red. LOM compares positions without needing to know where in a line a DMA slot lies, which the pages do not state.
 
@@ -226,13 +234,14 @@ p.19 also says: "NOTE: Playfield 1 is all odd numbered enabled bit planes. Playf
 | PC-MOVE | Each Copper MOVE that writes a pointer or register under test is fetched in the intended frame and line with the intended data word (seen at the port). | Put a wrong data word into the list: the fetched value differs. |
 | PC-BEAM | Every beam marker's re-read shows the target line. | Target H = 0xE0: the action spills into the next line and the re-read shows line + 1. |
 | PC-STATIC(reg) | The program and the Copper list contain no write to reg before the check (checked on the program image). | Add such a write: the static check flags it. |
-| PC-SETUP | The setup marker is seen before t_F(1). | Move the marker after a delay of two frames: it follows t_F(1). |
+| PC-SETUP | The setup marker `0x5E7F` is seen as a write to `0x0C0000` at the port. t_F(1) follows it by the definition of t_F (2.11). | Leave out the marker write: no marker is seen, and no frame can be anchored. |
+| PC-PIXEL | In the graded frame, t_tag(0xFF) - t_tag(0x2C) = 211 * 1816 * u clk_sys cycles for a whole number u ≥ 1 (2.11, "Output pixel"). Every count of output pixels uses this u. It is a precondition of every proposition that reads a pixel pattern or counts output pixels: B3, B4, S3-S7, S10-S14, C1. | With BEAMCON0 = `0x08A0` and HTOTAL (1C0) = `0x00E3` every line is 228 colour clocks (p.24: "Horiz line has this many + 1 280ns increments"), and the tag spacing is no whole multiple of 211 * 1816. |
 
 ---
 
 ## 3. Propositions
 
-There are 25 propositions: B1-B4 (bit planes), S1-S16 (sprites), C1-C5 (collision control). For each one, "Claims" lists every claim it rests on.
+There are 25 propositions: B1-B4 (bit planes), S1-S16 (sprites), C1-C5 (collision control). For each one, "Claims" lists every claim it rests on. Four joint assertions J1-J4 follow them: each carries claims that no single proposition grades whole, and passes only if every proposition grading a part of them passes.
 
 ### B1. Bit-plane pointers: addresses, and the address they hold
 
@@ -314,7 +323,7 @@ For the preconditions: CPU variant with the write delayed to line 0x80 (by beam 
 
 ### B3. Bit-plane data registers receive the DMA data, 16-pixel words, MSB first
 
-**Claims (p.15; the sentence ends on p.16):** opus:AA-bplxdat.c4, c6, c10, c11; sol:AA-bplxdat.c21, c22, c26, c27.
+**Claims (p.15; the sentence ends on p.16):** opus:AA-bplxdat.c4, c6, c11; sol:AA-bplxdat.c21, c22, c27. The claims that a word is "16/32/64 pixels" are declined (section 1); B3 checks the 16-pixel word without carrying them.
 
 **Proposition.** For each plane x = 1..8, the words that plane x's pointer fetches reach the display as 16-pixel words (FMODE = 0), most significant bit first, that is, leftmost.
 
@@ -371,8 +380,8 @@ For the preconditions: clear BPLEN (PC-BPL fails); remove the tag MOVEs (PC-TAG 
 
 **Expected.**
 
-1. On the output of line e_k, Q_k appears as cON pixels (each bit 2 output pixels, bit 15 leftmost) at least once, bounded by non-cON pixels. On line 0xA0 the pattern of `Q_1|...|Q_8 = 0xC1FE` appears.
-2. For each D_k, Q_k's pattern appears on none of the outputs of lines g_k .. g_k + 3, and it appears on line g_k + 4.
+1. On the output of line e_k, the line of the trigger, Q_k's pattern occurs at least once. A word's **pattern** is a run of 32 consecutive output pixels, bit 15 leftmost, each bit 2 output pixels, cON for a 1 and non-cON for a 0. The pixels on either side of the run are not graded: the page does not say what the output shows before the trigger or after the 16 bits. On the output of line 0xA0 the pattern of `Q_1|...|Q_8 = 0xC1FE` occurs at least once.
+2. For each D_k, Q_k's pattern occurs on none of the outputs of lines g_k .. g_k + 3, and it occurs on the output of line g_k + 4.
 3. Lines 0x30 .. e_1 - 1 show no cON pixel (the buffers were cleared).
 
 Page: "They may also be written by either micro. They act as a 8 word parallel to serial buffer for up to 8 memory "Bit Planes". (x=1-8 The parallel to serial conversion is triggered whenever bit plane #1 is written, indicing the completion of all bit planes for that word (16/32/64 pixels). The MSB is output first". "Either micro" is read as the 68000 and the Copper, which the pages call "processor or coprocessor".
@@ -400,7 +409,7 @@ For the preconditions: set BPLEN (reads appear); PC-BEAM with target H = 0xE0 (t
 
 ### S1. Sprite pointers: addresses, and the address they hold
 
-**Claims (p.28):** opus:AA-sprxpth.c1, c2, c4; sol:AA-sprxpth.c1, c2, c12; opus:AA-sprxptl.c1, c2, c4, c6; sol:AA-sprxptl.c1, c2, c12.
+**Claims (p.28):** opus:AA-sprxpth.c1, c2, c4; sol:AA-sprxpth.c1, c2, c12; opus:AA-sprxptl.c1, c2, c4; sol:AA-sprxptl.c1, c2, c12. S1 is also a part of the joint assertion J4 (opus:AA-sprxptl.c6), which carries that id.
 
 **Proposition.** For each x = 0..7:
 
@@ -501,7 +510,7 @@ Quantifier "corresponding": each of the eight sprites is disabled while the othe
 - F1: all eight columns show the pattern on every graded line (see S4).
 - PC-STATIC(SPREN is never set).
 
-**Contrasting case.** (1) Omit the SPRxCTL write at d_x: column x is present on lines d_x + 1 .. d_x + 7. (2) Omit the SPRxDATA write at d_x + 8: column x stays absent until the end of F2.
+**Contrasting case.** (1) Omit the SPRxCTL write at d_x: column x is present on lines d_x + 1 .. d_x + 7. (2) Omit the SPRxDATA write at d_x + 8: column x stays absent until the end of F2. (3) Write SPRxDATA instead of SPRxDATB at d_x + 4: column x is present on lines d_x + 5 .. d_x + 7, which the "DATB alone does not arm" clause forbids.
 
 For the preconditions: SPRxDATA = SPRxDATB = 0 at setup, so column x is absent in F1; the PC-BEAM change.
 
@@ -540,7 +549,7 @@ For the preconditions: as S3.
 
 ### S5. Horizontal start bits SH10-SH1
 
-**Claims (p.28):** opus:AA-sprxpos.c7, c8; sol:AA-sprxpos.c4, c14; opus:AA-sprxctl.c10, c14, c17; sol:AA-sprxctl.c24, c30, c31.
+**Claims (p.28):** opus:AA-sprxpos.c7; opus:AA-sprxctl.c10, c14; sol:AA-sprxctl.c24, c30. S5 is also a part of the joint assertions J1, J2 and J3 (section 3, end), which carry sol:AA-sprxpos.c4; opus:AA-sprxpos.c8; sol:AA-sprxpos.c14; opus:AA-sprxctl.c17; sol:AA-sprxctl.c31.
 
 **Proposition.** The sprite's horizontal start is one value, SH10..SH0:
 
@@ -606,13 +615,13 @@ For the preconditions: clear SPREN (no reads, no pixel).
 - `{V(0xAAAA, 0), V(0xAAAA, 1)} = {0, 8}`: one of the two settings shows all eight alternate pixels, the other shows none.
 - `V(0x5555, 1) = V(0xAAAA, 0)`.
 
-The reasoning: a 16-pixel sprite of 35-ns pixels covers 8 output pixels, and the output shows every second 35-ns pixel. A 35-ns shift moves an alternating pattern from the shown pixels to the hidden ones. Page: "03 SH0=0 start horiz. value, 35nS increment".
+The reasoning: a 16-pixel sprite of 35-ns pixels covers 8 output pixels, two 35-ns pixels per output pixel (2.11). The precondition below measures that exactly one of each pair reaches the output. A 35-ns shift then moves an alternating pattern from the shown pixels to the hidden ones. Page: "03 SH0=0 start horiz. value, 35nS increment".
 
 **Preconditions.**
 
 - PC-FRAME, PC-TAG, PC-SPR(x).
 - `V(0xFFFF, 0) = V(0xFFFF, 1) = 8`: the sprite is shown and is 8 output pixels wide.
-- `V(0xAAAA, s) + V(0x5555, s) = 8` for s = 0, 1: exactly one of each pair of 35-ns pixels reaches the output. This is the harness property the check rests on.
+- `V(0xAAAA, s) + V(0x5555, s) = 8` for s = 0, 1: exactly one of each pair of 35-ns pixels reaches the output. This is the output property the check rests on; it is measured here, not assumed.
 
 **Contrasting case.** SH0 = 0 in both runs: V is equal, and the first relation goes red.
 
@@ -638,10 +647,11 @@ For the preconditions: SPRES = 01 (140-ns sprites) makes `V(0xFFFF)` exceed 8; c
 | R0s | `0x0CC0` (SPRES = 11) | as R0, but DATA = DATB = `0xAAAA` | none |
 | R1s | as R0s | as R0s | `0x0000` |
 | R2s | as R0s | as R0s | `0x0008` (SH0 = 1) |
+| R1f | as R0s | as R0s, but DATA = DATB = `0xFFFF` | `0x0000` |
 
 D-STD's SPRxCTL write is left out in R0 and R0s.
 
-**Observation.** In F1: X per column (R0, R1, R2) and V per column as in S6 (R0s, R1s, R2s).
+**Observation.** In F1: X per column (R0, R1, R2) and V per column (R0s, R1s, R2s, R1f). X is the output-pixel index of the leftmost cS pixel (as in S5). V is the number of cS output pixels, per graded line, within the 16 output pixels that begin 4 output pixels left of column x's leftmost cS pixel in R1f. R1f locates the sprite, because with `0xAAAA` a column may show no cS pixel at all. The window holds the 8-output-pixel SHRES sprite at every position the unknown reset values of SH2 and SH1 and the reset value of SH0 can give it (at most 2 + 1 + 1/2 output pixels right of R1f), and it lies inside column x's 48-output-pixel spacing.
 
 **Expected.**
 
@@ -655,7 +665,7 @@ The reset values of SH2, SV8, SV9, EV8, EV9, ATT and EV7-EV0 are not stated anyw
 **Preconditions.**
 
 - The run starts from reset (2.1). PC-STATIC(SPR0CTL..SPR7CTL) in R0 and R0s.
-- `X(R2) - X(R1) = 1`, i.e. SH1 acts (S5). `V(R1s) ≠ V(R2s)`, i.e. SH0 acts (S6).
+- `X(R2) - X(R1) = 1`, i.e. SH1 acts (S5). `V(R1s) ≠ V(R2s)`, i.e. SH0 acts (S6). `V(R1f) = 8` in every column: the SHRES sprite is shown and is 8 output pixels wide.
 - The SH0 relation must hold before the SH1 relation is graded. If SH0 were 1, the lores X in R0 could move by half a pixel, and the set {0, 2} would not apply.
 
 **Contrasting case.** R0 with SPRxCTL = `0x0010` written: `X - X(R1) ∈ {1, 3}`, red. R0s with SPRxCTL = `0x0008` written: V equals V(R2s), red.
@@ -841,7 +851,7 @@ Where the sprite then appears (at the position without SH10, and possibly a seco
 
 Quantifier: all eight sprites.
 
-**Preconditions.** PC-FRAME, PC-TAG, PC-BEAM. Every band shows the sprite in the run SSCAN2 = 0, SH10 = 0.
+**Preconditions.** PC-FRAME, PC-TAG, PC-BEAM. Every band shows the sprite in the run SSCAN2 = 0, SH10 = 0. Every band shows at least one cS pixel in each of the two SSCAN2 = 1 runs: p.28 disables the SH10 compare, not the sprite, so the identity is never graded on two empty bands.
 
 **Contrasting case.** SSCAN2 = 0 in the identity pair: the lines differ, red.
 
@@ -891,7 +901,7 @@ For the preconditions: clear SPREN.
 
 ### S13. The sprite DMA channel loads POS, CTL, DATA and DATB
 
-**Claims (p.28):** opus:AA-sprxctl.c18; sol:AA-sprxctl.c32; opus:AA-sprxdatb.c6; sol:AA-sprxdata.c13.
+**Claims (p.28):** opus:AA-sprxdatb.c6; sol:AA-sprxdata.c13. The POS/CTL part carries no claim id: the claims that state it also place the load "during horizontal blank" and are declined (section 1).
 
 **Proposition.** With sprite DMA, the words read from sprite x's list become its position and control (POS, CTL) and its image data (DATA, DATB).
 
@@ -1032,7 +1042,7 @@ For the preconditions: clear the BPLCON0 UHRES bit, so there are no U accesses.
 
 ### S16. SPRHWRM swaps the read/write direction of the UHRES sprite cycle
 
-**Claims (p.28):** sol:AA-sprhstop.c6; opus:AA-sprhstop.c8, c9; sol:AA-sprhstop.c22.
+**Claims (p.28):** sol:AA-sprhstop.c6, c22. The ECS runs carry no claim id: the claim that states the chip sets says "only" and is declined (section 1).
 
 **Proposition.** With SPRHSTOP bit 15 (SPRHWRM) set, the UHRES sprite's memory cycles become writes. With the bit clear they are reads. This holds with ECS and with AA behaviour.
 
@@ -1052,7 +1062,7 @@ For the preconditions: clear the BPLCON0 UHRES bit, so there are no U accesses.
 
 The data a swapped cycle writes come from an external device and have no expected value.
 
-Page: "SPRHWRM= Swaps the polarity of ARW* when the SPRHDAT comes out so that external devices can detect the RGA and put things into memory. (ECS  and later chips only)". The twin bit on p.15 reads the same: "BPLHWRM= ... (ECS and later versions)".
+Page: "SPRHWRM= Swaps the polarity of ARW* when the SPRHDAT comes out so that external devices can detect the RGA and put things into memory. (ECS  and later chips only)". The twin bit on p.15 reads the same: "BPLHWRM= ... (ECS and later versions)". ARW* is the chip's RAM write strobe: HRM p.379, Agnus pin 16, "ARW* Agnus RAM write O" (read on the scan, `appJ-pinlist\figures\p379.png`; the text layer displaces that column). A swapped ARW* therefore turns the cycle's read into a write, which the Chip-memory port shows as a write.
 
 The "only" is not graded (section 1).
 
@@ -1191,11 +1201,11 @@ For the preconditions: remove sprite 0's data (DATA = 0), so the other-group bit
 
 - As C2, for k = 7 and k = 8. In each frame the CPU first writes CLXCON = `0x0000`, then CLXCON2. The order matters, because a CLXCON write resets CLXCON2 (C4).
 - CLXCON2 values: k = 7 uses ENBP7 = `0x0040`, MVBP7 = `0x0001`; k = 8 uses ENBP8 = `0x0080`, MVBP8 = `0x0002`.
-- **Address.** p.8 lists "CLXCON2 p 10E W D", while p.18 prints "CLXCON2 P 10C", the address p.8 and p.16 give to BPLCON4 (section 4). The graded runs write CLXCON2 at `0x10E`. If the precondition "the CLXCON2 write has an effect" fails there, the C3-C5 runs are repeated with CLXCON2 written at `0x10C`, and those runs are graded. The report states which address was effective. A write at `0x10C` also sets BPLCON4 on pages 8 and 16, which changes only colour-table addresses; no collision observable depends on it.
+- **Address.** The pages disagree: p.8 lists "CLXCON2 p 10E W D", while p.18 prints "CLXCON2 P 10C", the address p.8 and p.16 give to BPLCON4 (section 4). Every C3 run is therefore made twice, each time in its own run: once with CLXCON2 written at `0x10E` (p.8), once at `0x10C` (p.18). Neither address's runs depend on the other's result. A write at `0x10C` also sets BPLCON4 on pages 8 and 16, which changes only colour-table addresses; no collision observable depends on it.
 
-**Observation.** As C2 (group bit 1 for plane 7, bit 5 for plane 8).
+**Observation.** As C2 (group bit 1 for plane 7, bit 5 for plane 8), for the runs at each address.
 
-**Expected.** The C2 table with k = 7 and k = 8.
+**Expected.** The C2 table with k = 7 and k = 8, whole: every row, both planes, both data polarities. C3 passes if the runs at one of the two addresses satisfy the whole table, and fails if the runs at neither address do. The record states which address satisfied it (or that both did).
 
 Page (p.18):
 
@@ -1204,11 +1214,11 @@ Page (p.18):
 
 The row for bit 00 is printed at the top of p.19: "00 MVBP7 Match value for Bit Plane 7 collision" (checked on `bands\p19_band1.png`). Claim opus:AA-clxcon2.c12 is right that p.18 alone prints no row for bit 00.
 
-**Preconditions.** As C2. The "effect" precondition: the frame with ENBP enabled, MV = 0 and data 1 gives group bit 0.
+**Preconditions.** As C2, for the runs at each address. No precondition concerns whether the CLXCON2 write has an effect: that effect is the table under test.
 
-**Contrasting case.** As C2.
+**Contrasting case.** As C2. In addition: leave out the CLXCON2 write at both addresses; the rows that expect 0 then show group bit 1 at both, and C3 fails.
 
-For the preconditions: leave out the CLXCON2 write, so the group bit stays 1.
+For the preconditions: as C2.
 
 **Reference frame.** The CF window.
 
@@ -1216,7 +1226,7 @@ For the preconditions: leave out the CLXCON2 write, so the group bit stays 1.
 
 ### C4. A write to CLXCON resets CLXCON2
 
-**Claims (p.18):** opus:AA-clxcon.c6; sol:AA-clxcon.c6; opus:AA-clxcon2.c6; sol:AA-clxcon2.c6.
+**Claims:** none. The four claims that state this rule (opus:AA-clxcon.c6; sol:AA-clxcon.c6; opus:AA-clxcon2.c6; sol:AA-clxcon2.c6) say that all bits of CLXCON2 are reset; C4 sees only ENBP7 and ENBP8, so they are declined (section 1). C4 is kept as a check.
 
 **Proposition.** Any write to CLXCON clears the bits of CLXCON2. After it, planes 7 and 8 no longer take part in collision detection.
 
@@ -1254,7 +1264,9 @@ Only ENBP7 and ENBP8 are observed. MVBP7 and MVBP8 cannot be observed after the 
 
 Quantifier "Writing to this register": two different written values are graded.
 
-**Preconditions.** PC-FRAME, PC-BPL, PC-SPR(0), the CF window, PC-BEAM. F2 and F4 give 0: CLXCON2 is in effect. If this fails at `0x10E`, the address procedure of C3 applies.
+**Address.** As in C3, every C4 run is made twice, each time in its own run: with CLXCON2 written at `0x10E` and at `0x10C`. C4 is graded at each address where F2 and F4 give 0, i.e. where CLXCON2 is in effect; that is C3's clause, not C4's. C4 passes if F3 and F5 give 1 at every such address, and fails otherwise. The record states the address or addresses.
+
+**Preconditions.** PC-FRAME, PC-BPL, PC-SPR(0), the CF window, PC-BEAM. At one address at least, F2 and F4 give 0 (CLXCON2 is in effect there). If neither address gives it, C4 is not graded; C3 then fails.
 
 **Contrasting case.** Leave out the CLXCON writes in F3 and F5: bits 1 and 5 stay 0.
 
@@ -1266,7 +1278,7 @@ For the preconditions: leave out the CLXCON2 write in F2, so the bits are 1 alre
 
 ### C5. CLXCON2 is initialised by reset
 
-**Claims (p.18):** opus:AA-clxcon2.c7; sol:AA-clxcon2.c7, c11, c13.
+**Claims (p.18):** sol:AA-clxcon2.c11, c13. The claims that all bits of CLXCON2 are initialised by reset are declined (section 1).
 
 **Proposition.** After reset, and with neither CLXCON nor CLXCON2 written, planes 7 and 8 are not included in collision detection (ENBP7 = ENBP8 = 0).
 
@@ -1277,22 +1289,23 @@ For the preconditions: leave out the CLXCON2 write in F2, so the bits are 1 alre
 - CLXCON's own content after reset is not stated (it is not among the registers p.2 and p.4 name for RST_). So the plane data make the result independent of it. Every line of every plane repeats one 16-pixel pattern:
   - planes 1, 3, 5 = `0x3333`, `0x0F0F`, `0x00FF`;
   - planes 2, 4, 6 = the same three words;
-  - planes 7 and 8 = `0xFFFF`.
+  - planes 7 and 8 = `0xFFFF` in run A, and `0x0000` in run B.
   Any 16 consecutive pixels then contain all eight value combinations of planes 1, 3, 5 (and of planes 2, 4, 6). Whatever CLXCON's ENBP and MVBP bits for planes 1-6 are, some pixel under sprite 0 matches them.
+- Two runs, because the reset values of MVBP7 and MVBP8 are not seen (section 1): an ENBP7 or ENBP8 left at 1 by reset prevents the collision in run A if its match value is 0, and in run B if its match value is 1. Together the two runs show both enables at 0 whatever the match values are.
 - The odd sprites have empty lists and are disarmed by the SPRxCTL writes of D-STD.
 
-**Observation.** The CF result in F2.
+**Observation.** The CF result in F2 of each run.
 
-**Expected.** Bits 1 and 5 = 1. Page: "***** BITS INITIALIZED BY RESET *****" (p.18). The value is 0: p.4 "RST_ pin resets all bits in all registers new to AA. These registers include: BPLCON3,BPLCON4,CLXCON2,DIWHIGH,FMODE", and p.2 says the same.
+**Expected.** Bits 1 and 5 = 1 in run A and in run B. p.19: "Disabled Bit Planes cannot prevent collisions." Page: "***** BITS INITIALIZED BY RESET *****" (p.18). The value is 0: p.4 "RST_ pin resets all bits in all registers new to AA. These registers include: BPLCON3,BPLCON4,CLXCON2,DIWHIGH,FMODE", and p.2 says the same.
 
 **Preconditions.** The run starts from reset. PC-STATIC(no write to `0x098`, `0x10C` or `0x10E`). PC-FRAME, PC-BPL, PC-SPR(0), the CF window.
 
 **Contrasting case.**
 
-- CLXCON2 = `0x00C0` written (no CLXCON write): bits 1 and 5 = 0, since planes 7 and 8 are then included with the wrong value.
-- CLXCON2 = `0x00C3`: bits 1 and 5 = 1.
+- Run A with CLXCON2 = `0x00C0` written (no CLXCON write): bits 1 and 5 = 0, since planes 7 and 8 are then included with the match value 0 that their data never have.
+- Run B with CLXCON2 = `0x00C3` written (no CLXCON write): bits 1 and 5 = 0, since planes 7 and 8 are then included with the match value 1 that their data never have.
 
-The address procedure of C3 applies to these runs.
+Each contrast run is made twice, each time in its own run, with CLXCON2 written at `0x10E` and at `0x10C` (as in C3). It shows bits 1 and 5 = 0 at every address where C3 found CLXCON2 in effect.
 
 For the preconditions: add a CLXCON write (the static check fails).
 
@@ -1300,9 +1313,24 @@ For the preconditions: add a CLXCON write (the static check fails).
 
 ---
 
+### J1-J4. Joint assertions
+
+Each claim below states something that two or more propositions grade in parts. Its id is carried by one joint assertion, and by nothing else: the part propositions carry no part of these ids. A joint assertion adds no stimulus and no observation. It passes only if every part proposition passes (on the graded build, 2.1), and fails if any part fails or is not graded. Its record names the verdict of each part.
+
+| Id | Claims | What the claim states | Parts, and what each grades |
+|---|---|---|---|
+| J1 | sol:AA-sprxpos.c4 | SPRxPOS is the "Sprite x Vert-Horiz start position data" (p.28) | S5: horizontal start, SPRxPOS bits 7-0 = SH10-SH3. S8: vertical start, SPRxPOS bits 15-8 = SV7-SV0. |
+| J2 | opus:AA-sprxpos.c8; sol:AA-sprxpos.c14 | SPRxPOS bits 7-0 are SH10-SH3; the "Low-order 3 bits are in SPRxCTL register below" (p.28) | S5: SH10-SH3, SH2 and SH1. S6: SH0. |
+| J3 | opus:AA-sprxctl.c17; sol:AA-sprxctl.c31 | "These 2 registers work together as position, size and feature Sprite control registers." (p.28) | Position: S5 (SH10-SH1), S6 (SH0), S8 (SV9-SV0). Size: S9 (EV9-EV0). Feature: the two functions p.28 gives these registers beyond position and size, S10 ("07 ATT Sprite attach control bit") and S12 (SH10 "free to be used by ALICE as an individual scan double enable"). |
+| J4 | opus:AA-sprxptl.c6 | "This pair of registers contains the 20 bit address of Sprite x (x=0,1,2,3,4,5,6,7) DMA data." (p.28) | S1: the 20-bit address each pair holds. S14: its part (b) ties the list read through pointer x to sprite x (a write to SPRxPOS moves exactly that column). |
+
+**Contrasting case.** The contrasting case of any part makes that part fail, and with it the joint assertion.
+
+---
+
 ## 4. Where the pages disagree or leave something open
 
-1. **CLXCON2's address.** p.18 prints "CLXCON2 P 10C W D Extended Collision Control". p.8 prints "BPLCON4 p 10C W D ..." and "CLXCON2 p 10E W D Extended collision control register". p.16 prints "BPLCON4 P 10C W D". All three are confirmed on the scans. Two pages give 10C to BPLCON4, and one gives it to CLXCON2. C3-C5 grade the CLXCON2 behaviour at 10E, fall back to 10C, and report which. They do not grade the address itself.
+1. **CLXCON2's address.** p.18 prints "CLXCON2 P 10C W D Extended Collision Control". p.8 prints "BPLCON4 p 10C W D ..." and "CLXCON2 p 10E W D Extended collision control register". p.16 prints "BPLCON4 P 10C W D". All three are confirmed on the scans. Two pages give 10C to BPLCON4, and one gives it to CLXCON2. C3 grades its whole table at both addresses, each in its own run, with no gate: it passes if either address satisfies the table, fails if neither does, and records which address did. C4 is graded at every address where CLXCON2 is in effect, and C5's contrast runs are made at both addresses. None of them grades the address itself.
 2. **Which bit enables plane 8.** p.5: "ENBP7 and ENBP6 are the enable bits for bitplanes 7 and 8,respectively. Similarly, MVBP7 and MVBP8 are their match value bits." (confirmed on the scan). p.18 names plane 8's enable ENBP8 (CLXCON2 bit 07), and ENBP6 is CLXCON bit 11 for plane 6. p.5 gives no bit positions, so the only difference is a name. The tests use p.18's positions.
 3. **CLXCON2 bit 00.** p.18's table ends at bit 01. The row "00 MVBP7" is printed at the top of p.19.
 4. **The line after CLXCON2's table.** The line `**k**XRESET BY ECSENA*****` is not on the printed page (section 1).
