@@ -10,8 +10,8 @@ All 218 claims sit on printed page 301 (217 claims) and page 302 (1 claim), Appe
 
 None. Every one of the 218 claims is the basis of at least one proposition below. Three limits set how far some of them can be graded. Each limit is repeated where it applies.
 
-- **L1: the 192 table claims (`APPC-bpltab.*`) can come out "not observable".** Each one gets its own proposition (P4). But the pages never say which of the sixteen registers, or which half of a register, the chip reads for a given pixel. And the video output the test sees hides every second SuperHires pixel. So a register bit whose half never drives a visible pixel cannot be seen by any test with this output. P4 reports such a claim as NOT OBSERVABLE, which is neither a pass nor a failure. How many claims end up that way depends on the chip, not on the pages. For example, if the chip took the two pixels of one hires period from the two halves of one register, which the table's layout suggests but no page states, only one half of each register could ever reach a visible pixel.
-- **L2: the dashes in the key give no expected value.** The key writes each component as `ab--`, with two encoded bits and two positions marked `-`. The pages do not say what the video output shows in those two lower bit positions. The test checks only that they carry no information beyond the two encoded bits (P2). It never checks them against a value.
+- **L1: the 192 table claims (`APPC-bpltab.*`) can come out "not observable".** Each one gets its own proposition (P4). But the pages never say which of the sixteen registers, or which half of a register, the chip reads for a given pixel. And the test reads one output sample per hires period (R0), so every second SuperHires pixel is hidden from it. So a register bit whose half never drives a visible pixel cannot be seen by any test with this output. P4 reports such a claim as NOT OBSERVABLE, which is neither a pass nor a failure. How many claims end up that way depends on the chip, not on the pages. For example, if the chip took the two pixels of one hires period from the two halves of one register, which the table's layout suggests but no page states, only one half of each register could ever reach a visible pixel.
+- **L2: the dashes in the key give no expected value.** The key writes each component as `ab--`, with two encoded bits and two positions marked `-`. The pages do not say what the video output shows in those two lower bit positions. The test checks only that they carry no information beyond the two encoded bits (P2). It never checks them against a value. The dashes state that those two bits are not encoded: no register bit stores them, since every bit 11–0 of COLOR00–0F carries one of the letters a–x, which P4 grades bit by bit.
 - **L3: `APPC-shr.c9` (sprites) is checked for sprite 0 only.** The sprite key on p.302 names Colors 16–19. Chapter 4 assigns 17–19 to sprites 0 and 1 and says the first register of each group is never shown (p.103). So Color 16, with letters A–F, cannot appear on screen. No page says how sprites 2–7 are coloured in SuperHires mode. Nothing is specified for them.
 
 ---
@@ -23,10 +23,13 @@ None. Every one of the 218 claims is the basis of at least one proposition below
 | 301 | The claims: the SuperHires paragraphs, the bitplane key and the sixteen-row bitplane table |
 | 302 | The sprite claim, the sprite key and table, and "loss of lower bits of precision" |
 | 296, 297 | SuperHires is provided by the enhanced Denise. "There are new color register interpretations as part of the SuperHires mode." |
-| 299 | VPOSR chip identification and DENISEID ($FC) |
+| 299 | VPOSR chip identification ("A value of 20 or 30 indicates that the enhanced Hires Agnus is present") and DENISEID ($FC) |
 | 300 | The 35 ns pixel rate, 2-bitplane maximum, and BPLCON0 bits HIRES, BPU, SHRES |
 | 303 | SPRxCTL bits SHSH1/SHSH0 (left 0) |
+| 23, 194 | A Copper horizontal position of two colour clocks "corresponds to 4 pixels in low resolution and 8 pixels in high resolution"; a memory cycle (colour clock) is about 280 ns |
 | 29, 30 | Copper list example (MOVE, WAIT, colour changes mid-display), and the Copper start sequence |
+| 223, 337, 339 | After reset a copy of the ROM responds from $00000000 and "Software must assume that memory is not available"; "The OVL bit in one of the 8520 Chips disables the overlay": CIA-A PRA ($BFE001) bit 0, DDRA ($BFE201) "set to 0x03" |
+| 272, 285, 309 | BPLxPTH and SPRxPTH hold the "high 3 bits" of an 18-bit pointer; the ECS list of pointers with two additional bits names DSKPTH, BLTxPTH, COP1LCH, COP2LCH and AUDxLCH only |
 | 42–44 | Colour indirection. Plane 1 is the least significant bit of a pixel's value (Figure 3-4). |
 | 46, 47, 92 | Colour register layout (bits 15–12 unused, set to 0; 11–8 red, 7–4 green, 3–0 blue). 4,096 colours. Colour registers are write-only. |
 | 48, 49, 90 | BPLCON0 BPU and HIRES |
@@ -43,7 +46,7 @@ None. Every one of the 218 claims is the basis of at least one proposition below
 
 ## 3. Notation
 
-**SuperHires pixel, hires period, visible pixel.** "SuperHires mode provides a 35ns pixel display rate - twice the horizontal resolution of Hires mode, and four times the Lores rates" (p.300). A hires period is the time of one hires pixel, which is two SuperHires pixels. The test's video output shows one pixel per hires period, so every second SuperHires pixel is invisible. A *visible pixel* is one output pixel position x on an output line, counted from that line's horizontal sync at the hires pixel rate.
+**SuperHires pixel, hires period, visible pixel.** "SuperHires mode provides a 35ns pixel display rate - twice the horizontal resolution of Hires mode, and four times the Lores rates" (p.300). A hires period is the time of one hires pixel, which is two SuperHires pixels. The test reads one output sample per hires period (R0), so at most one of the two SuperHires pixels of a period is visible to it. A *visible pixel* is that sample, at position x on an output line, counted in hires periods from that line's horizontal sync (R0).
 
 **Value of a pixel.** v = 2·(bit from plane 2) + (bit from plane 1). "Values in the highest numbered bitplane have the highest significance" (p.43; Figure 3-4 on p.44 marks plane 1 "least significant"). With two bitplanes, values run from 0 to 3.
 
@@ -91,7 +94,7 @@ Row labels are hexadecimal register numbers. Row `0A` is COLOR10, at address $19
 
 Bits 15–12 are 0 because p.92 says of those bits "Unused (set these to 0)". The sprite table on p.302 has the same layout at rows 10–1F, which are COLOR16–COLOR31, holding Colors 16–19.
 
-**Palettes.** Each palette gives the three two-bit components of Colors 0–3, followed by the sixteen register values that result from the formula. Q0 makes all four Colors differ in every component. Q1–Q5 set letter number l (a = 0 … x = 23) to bit j−1 of (l + 1), so any two letters differ in some palette. Z and O set every letter to 0 and to 1. Across Q0–Q5, Z and O, every component of every Color takes all four values, and every letter is both 0 and 1. S0–S3 are Q0 with Color 1 set to (s, s, s). Q3x is Q3 with Colors 1 and 2 exchanged; it is used only in contrast V1.
+**Palettes.** Each palette gives the three two-bit components of Colors 0–3, followed by the sixteen register values that result from the formula. Q0 makes all four Colors differ in every component. Q1–Q5 set letter number l (a = 0 … x = 23) to bit j−1 of (l + 1), so any two letters differ in some palette. Z and O set every letter to 0 and to 1. Across Q0–Q5, Z and O, every component of every Color takes all four values, and every letter is both 0 and 1. S0–S3 are Q0 with Color 1 set to (s, s, s). Q3x is Q3 with Colors 0 and 2 exchanged and Colors 1 and 3 exchanged, which inverts every letter of Q3 (each register is Q3's XOR $0FFF); it is used only in contrast V1.
 
 | Palette | Color 0 (R,G,B) | Color 1 | Color 2 | Color 3 |
 |---|---|---|---|---|
@@ -107,7 +110,7 @@ Bits 15–12 are 0 because p.92 says of those bits "Unused (set these to 0)". Th
 | S1 | 0,1,2 | 1,1,1 | 2,3,0 | 3,0,1 |
 | S2 | 0,1,2 | 2,2,2 | 2,3,0 | 3,0,1 |
 | S3 | 0,1,2 | 3,3,3 | 2,3,0 | 3,0,1 |
-| Q3x | 0,1,3 | 3,2,0 | 2,0,1 | 1,3,2 |
+| Q3x | 3,2,0 | 1,3,2 | 0,1,3 | 2,0,1 |
 
 | Palette | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 0A | 0B | 0C | 0D | 0E | 0F |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -123,7 +126,7 @@ Bits 15–12 are 0 because p.92 says of those bits "Unused (set these to 0)". Th
 | S1 | 005A | 0456 | 08D2 | 0C16 | 0159 | 0555 | 09D1 | 0D15 | 0278 | 0674 | 0AF0 | 0E34 | 0349 | 0745 | 0BC1 | 0F05 |
 | S2 | 005A | 089A | 08D2 | 0C16 | 026A | 0AAA | 0AE2 | 0E26 | 0278 | 0AB8 | 0AF0 | 0E34 | 0349 | 0B89 | 0BC1 | 0F05 |
 | S3 | 005A | 0CDE | 08D2 | 0C16 | 037B | 0FFF | 0BF3 | 0F37 | 0278 | 0EFC | 0AF0 | 0E34 | 0349 | 0FCD | 0BC1 | 0F05 |
-| Q3x | 005F | 0C93 | 0817 | 04DB | 036C | 0FA0 | 0B24 | 07E8 | 024D | 0E81 | 0A05 | 06C9 | 017E | 0DB2 | 0936 | 05FA |
+| Q3x | 0FA0 | 07E8 | 036C | 0B24 | 0DB2 | 05FA | 017E | 0936 | 0C93 | 04DB | 005F | 0817 | 0E81 | 06C9 | 024D | 0A05 |
 
 The sprite palettes are T0, where Color 16+v = (v, v+1, v+2) mod 4, and its complement T0c. They are written to COLOR16–31 (rows 10–1F):
 
@@ -138,10 +141,11 @@ The sprite palettes are T0, where Color 16+v = (v, v+1, v+2) mod 4, and its comp
 
 ### 4.1 System
 
-- Enhanced Chip Set, PAL, 2 MB Chip memory.
+- Enhanced Chip Set and 2 MB Chip memory, the harness's default `Config` (`nanomig_harness.h`: `chipset_config` bit 3 selects ECS, `memory_config` 2.0 MB).
 - The program uses only 68000 instructions and no timing loops. The Copper paces every frame. The program runs unchanged on both CPU cores, each separately, with the second core in its default 68000 behaviour. The claims say nothing about the CPU, so no 68010 or 68020 setting is required.
-- All data, Copper lists and results are placed below $80000, so the OCS contrast (C1) can use the same program.
-- The claims name no video standard. NTSC is not required. The geometry below is valid under NTSC unchanged.
+- Bitplane buffers, sprite structures and Copper lists lie below $80000 (§4.2). BPLxPTH and SPRxPTH hold only the "high 3 bits" of an 18-bit word pointer (p.272, p.285), which reaches byte addresses up to $7FFFE; p.309 extends the Copper, blitter, disk and audio pointers under ECS, not these. The same placement lets the OCS contrast (C1) run the same program. That range is covered by the ROM overlay after reset (p.223), so the program clears the overlay before it writes there (§4.5).
+- The program, its stack and its results stay where the harness puts and reads them (`nanomig.i`): the program at `PROGRAM_ORG` ($080400), the stack below `PROGRAM_STACK` ($0FFF00), the results from `RESULTS` ($0C0000), and the completion mark `DONE_VALUE` at `DONE_ADDR` ($0C0FFE). The harness reads stored words only in the identity-mapped range $080000–$1FFFFF (`peek_logical()`).
+- The claims name no video standard, and the harness `Config` names no video-standard setting. The test runs in the standard the configuration gives and reports it from VPOSR (p.299: "20 for PAL, 30 for NTSC"). The geometry below is valid in both.
 
 ### 4.2 Data in Chip memory
 
@@ -151,12 +155,28 @@ The sprite palettes are T0, where Color 16+v = (v, v+1, v+2) mod 4, and its comp
   - Pattern pixel j of pattern word k goes to bit 15−j of that word: plane 1 takes bit 0 of the value and plane 2 takes bit 1.
   - The first pattern words are plane 1 $AC41 $C956 $EBAD $15F3 and plane 2 $CE9D $9A90 $89DC $A548, so the builder can check the generator.
   - Nothing in a check depends on these values. The expected values are always taken from the words the port shows were fetched (§5, R2). The stream exists to cover every neighbour context (C8).
+  - The stream takes 520,192 generator steps (32512 pattern words, 16 pixels each). Its words may be computed when the program is assembled, carried in the program image, and copied into place by the program.
 - **Zero buffer.** 32768 words of $0000. Both plane pointers may point at it.
 - **Sprite 0 structure** (p.105–108). The control words are SPR0POS = $5060 and SPR0CTL = $8C00. That gives VSTART $50, VSTOP $8C, lores HSTART $C0, H0 = 0, and SHSH1 = SHSH0 = 0 (p.303).
   - 60 data line pairs follow, each written as low word then high word. Line j with j mod 3 = 0 has value 1 ($FFFF, $0000). j mod 3 = 1 has value 2 ($0000, $FFFF). j mod 3 = 2 has value 3 ($FFFF, $FFFF).
   - The structure ends with $0000, $0000.
 - **Null sprite.** $0000, $0000.
-- **Copper lists** F0–F10 (§4.4), and a result area.
+- **Copper lists** F0–F10 (§4.4). A contrast variant of a list takes that list's place.
+
+The addresses are fixed as follows. Everything the chips fetch lies in $010000–$04BFFF, below $80000 and clear of the 68000 exception vectors at $000000–$0003FF. Nothing overlaps.
+
+| Item | Addresses |
+|---|---|
+| Plane-1 stream buffer (32768 words) | $010000–$01FFFF |
+| Plane-2 stream buffer (32768 words) | $020000–$02FFFF |
+| Zero buffer (32768 words) | $030000–$03FFFF |
+| Sprite 0 structure (124 words) | $040000–$0400F7 |
+| Null sprite (2 words) | $040100–$040103 |
+| Copper list Ff, f = 0…10 (at most 4 KB each) | $041000 + f·$1000, so F10 at $04B000–$04BFFF |
+| Program (`PROGRAM_ORG`) | from $080400 |
+| Stored VPOSR, DENISEID | `RESULTS` ($0C0000), `RESULTS`+2 |
+| Completion mark (`DONE`) | `DONE_ADDR` ($0C0FFE) |
+| Stack | below `PROGRAM_STACK` ($0FFF00) |
 
 ### 4.3 Register values written by each frame's Copper header
 
@@ -190,11 +210,12 @@ A band change that writes a whole palette (sixteen MOVEs, four memory cycles eac
 ### 4.5 The 68000 program
 
 1. Write DMACON ($096) = $7FFF (all DMA off).
-2. Read VPOSR ($004) and DENISEID ($07C) and store both words in the result area.
-3. Build every buffer and Copper list of §4.2 and §4.4.
-4. Start the Copper exactly as p.30 prescribes: "you must initialize one of the Copper location registers (COP1LC or COP2LC) and write to its strobe address before Copper DMA is turned on". Write COP1LC (longword to $080) = address of F0, strobe COPJMP1 ($088), then write DMACON = $83A0 (SET, DMAEN, BPLEN, COPEN, SPREN; p.278).
-5. Wait until at least 12 vertical blanks have passed. Poll VPOSR/VHPOSR for the wrap of the vertical position. The CPU must not write any buffer or list while it waits.
-6. Store a completion word in the result area.
+2. Read VPOSR ($004) and DENISEID ($07C) and store both words at `RESULTS` and `RESULTS`+2.
+3. Clear the ROM overlay before any write below $80000 (p.223): write CIA-A DDRA ($BFE201) = $03 ("set to 0x03", p.339), then PRA ($BFE001) = $00, which makes OVL (PRA bit 0, the "ROM/RAM overlay bit", p.337) an output at 0. That the writes below $80000 landed is shown at the port by C3 (fetched data equal to what the program wrote).
+4. Build every buffer and Copper list of §4.2 and §4.4 at the addresses of §4.2.
+5. Start the Copper exactly as p.30 prescribes: "you must initialize one of the Copper location registers (COP1LC or COP2LC) and write to its strobe address before Copper DMA is turned on". Write COP1LC (longword to $080) = address of F0, strobe COPJMP1 ($088), then write DMACON = $83A0 (SET, DMAEN, BPLEN, COPEN, SPREN; p.278).
+6. Wait until at least 12 vertical blanks have passed. Poll VPOSR/VHPOSR for the wrap of the vertical position. The CPU must not write any buffer or list while it waits.
+7. End with `DONE` (`nanomig.i`), which writes `DONE_VALUE` to `DONE_ADDR`.
 
 ### 4.6 Frame plan
 
@@ -228,7 +249,15 @@ A *graded pixel* is a visible pixel x on an output copy of a graded line, with x
 
 ## 5. Reference frames and how the test checks their anchors
 
-**R1: source line to output line.** Output lines are delimited by horizontal sync and frames by vertical sync. Source line k of a frame is paired with output line k + Δ. Δ is the one shift for which the output lines that show the Color-3 run of R3 are exactly the copies of the *pure R lines*, the source lines whose fetched words all lie in the R section. Check: Δ exists, is unique, and is the same in every frame.
+**R0: output samples to visible pixels.** The pages fix pixel times against each other, not against `clk_sys`: a SuperHires pixel is 35 ns, half a hires pixel (p.300), and a colour clock of about 280 ns is four hires pixels (p.23, p.194). How many output samples one hires pixel lasts is measured:
+
+- On the graded lines of F5's top Q0 lines, a hires frame in which each fetched bit is one pixel (p.272; Table 3-18, p.94) and Q0's COLOR00–03 all differ, every run of constant r, g, b between two changes is a whole multiple of one sample count w, and the shortest of them is w samples long. Only runs strictly inside the stretch of the line where the colour keeps changing are used; runs that touch blanking or the border are not.
+- Their boundaries fall on samples t_hs + φ + k·w, where t_hs is the output line's hs rising edge and φ (0 ≤ φ < w) is one phase for every line.
+- Visible pixel x of any output line is the sample t_hs + φ + x·w. The same w and φ serve every frame, because a hires period lasts the same time in every mode (p.300).
+
+Check: w and φ exist and are unique.
+
+**R1: source line to output lines.** Output lines are delimited by rising edges of horizontal sync and frames by rising edges of vertical sync, as `find_lines()` and `find_frames()` in `nanomig_harness.h` split them. The harness notes there that its scan doubler shows each source line as two output lines; the test does not assume the number. Source line k of a frame is shown on output lines m·k + Δ … m·k + Δ + m − 1. m and Δ are the one pair for which the output lines that show the run of R3 are exactly the copies of the *pure R lines*, the source lines whose fetched words all lie in the R section. Check: m and Δ exist, are unique, and are the same in every frame.
 
 **R2: pixel index.** On a graded line with F fetched word pairs, pixel i (0 ≤ i < 16F) is bit 15 − (i mod 16) of the ⌊i/16⌋-th fetched word of each plane.
 
@@ -239,14 +268,16 @@ A *graded pixel* is a visible pixel x on an output copy of a graded line, with x
   - hires frames: i = x − s
   - lores frame: i = ⌊(x − s)/2⌋
 
-s is a constant per frame. It is found on the frame's top Q0 lines (lines 0–23; in F7–F10, lines 0–29) as the single s for which every graded pixel of those lines matches:
+s is a constant per frame. It is found on the frame's top Q0 lines (lines 0–23; in F7–F10, lines 0–29) as the single s for which, over every graded pixel of those lines, the shown value is a function of v[i], one value per pixel value:
 
-- SuperHires frames: bits 3 and 2 of R, G and B equal Q0's letters of Color v[i] (P1)
-- hires and lores frames: all twelve bits equal register v[i] of Q0 (p.94, p.273)
+- SuperHires frames: bits 3 and 2 of R, G and B. The pages predict Q0's letters of Color v[i] there (P1), and Q0's four Colors differ in every component (§3).
+- hires and lores frames: all twelve bits. The pages predict register v[i] of Q0 (p.94, p.273), and Q0's COLOR00–03 all differ.
 
-Check: exactly one s fits, and in F1–F6 the same s fits the bottom Q0 lines. If none fits, that is a failure of P1 (SuperHires) or of the hires/lores baseline on those lines. If more than one fits, the stimulus is ambiguous and nothing is graded in that frame. In SuperHires frames, s mod 2 tells which SuperHires pixel of a hires period the output shows. The test reports it and no proposition depends on its value.
+No expected colour enters the fit. A wrong letter or register therefore fails only the proposition that grades it, on lines whose pixel positions are still known.
 
-**R3: check interval.** On every pure R line of the frame, the output shows a single run [xL, xR] of Color 3, meaning bits 3–2 of R, G and B equal 3, 0 and 1, which is Q0's Color 3. In hires and lores frames the run is $C16, the Q0 value of COLOR03. The run is the display window where fetched data is shown. The check interval is x from xL + 8 to xR − 8 that also satisfies 16 ≤ i(x) ≤ 16F − 17. That excludes one data word at each end of the fetch and 8 visible pixels at each edge of the run. Check: C6.
+Check: exactly one s fits, and in F1–F6 the same s fits the bottom Q0 lines. In a SuperHires frame, if no s fits i = 2x − s but one fits the hires mapping i = x − s, the frame did not run in SuperHires mode and C5 fails. Otherwise, if none fits, or more than one fits because all four values are shown alike, the pages' prediction of four different appearances fails: that is a failure of P1 (SuperHires) or of the hires/lores baseline on those lines, and nothing else is graded in that frame. In SuperHires frames, s mod 2 tells which SuperHires pixel of a hires period the output shows. The test reports it and no proposition depends on its value.
+
+**R3: check interval.** On every pure R line of the frame, the output shows a single run [xL, xR] of visible pixels with one constant value, bounded on both sides by pixels of another value. The value compared is bits 3–2 of R, G and B in SuperHires frames and all twelve bits in hires and lores frames. Every pixel fetched on a pure R line has value 3 (C3 shows the words), so the pages predict one appearance along the run. Which colour it is does not enter the anchor: in SuperHires frames P1 grades it on the same lines (Q0's Color 3, letters 3, 0, 1), and in hires and lores frames the baseline expects $C16, the Q0 value of COLOR03. The run is the display window where fetched data is shown. The check interval is x from xL + 8 to xR − 8 that also satisfies 16 ≤ i(x) ≤ 16F − 17. That excludes one data word at each end of the fetch and 8 visible pixels at each edge of the run. Check: C6.
 
 **R4: letters to output bits.** A component's upper letter is output bit 3 and its lower letter is output bit 2 (§3). Bits 1–0 carry no letter (L2).
 
@@ -260,12 +291,12 @@ Each precondition is asserted before any proposition is graded. It is followed b
 
 | | Precondition | How the test knows | Contrast that must make it fail |
 |---|---|---|---|
-| C1 | The Enhanced Chip Set is present, because SuperHires "is provided by" the enhanced Denise (p.296) | The stored DENISEID has low byte $FC ("The enhanced HighRes Denise (8373) will return $FC in the lower 8 bits", p.299). The stored VPOSR bits 14–8 equal $20 ("20 for PAL", p.299). | Select OCS. p.299: the original Denise returns "whatever value is left over on the bus", and the PAL Agnus reports $00. |
-| C2 | The program ran to its end | The completion word is present in the result area | Omit step 6 |
+| C1 | The Enhanced Chip Set is present, because SuperHires "is provided by" the enhanced Denise (p.296) | The stored DENISEID has low byte $FC ("The enhanced HighRes Denise (8373) will return $FC in the lower 8 bits", p.299). The stored VPOSR bits 14–8 equal $20 or $30 ("A value of 20 or 30 indicates that the enhanced Hires Agnus is present", p.299); the test reports which ("20 for PAL, 30 for NTSC"). | Select OCS. p.299: the original Denise returns "whatever value is left over on the bus", and the original Agnus reports $00 (PAL) or $10 (NTSC). |
+| C2 | The program ran to its end | `DONE_VALUE` is written to `DONE_ADDR` (`DONE`, `nanomig.i`) | Omit step 7 |
 | C3 | Bitplane DMA fetched two planes on every graded line | At the port, each graded line has F ≥ 16 fetches from each plane buffer, the same count per plane, consecutive addresses inside the buffers, no other bitplane addresses, and data equal to what the program wrote | BPLCON0 = $1040 (one plane). Only plane-1 addresses are fetched. |
 | C4 | Each frame ran its own list with the planned header | The Copper fetch addresses per frame follow F0→F1→…→F10. The header MOVEs (BPLCON0–2, DIW, DDF, modulos, pointers) carry the §4.3 data and are fetched before the frame's first bitplane fetch. | Make F5's list point at itself instead of F6. The frame order fails. |
 | C5 | The claims' condition "In SuperHires mode" holds while pixels are counted | In SuperHires frames a unique s fits with the mapping i = 2x − s (R2), on the top and on the bottom Q0 lines. Only a 35 ns pixel rate makes two consecutive fetched pixels per hires period line up with the output. | BPLCON0 = $A000 in F1. No s fits the SuperHires mapping and one fits the hires mapping. |
-| C6 | The check interval exists and lies inside the window | The Color-3 run has identical ends on all pure R lines. Its width is at least 256 and at most 576 hires periods: the window is 288 lores pixels, and a lores pixel is two hires periods (p.57 "resolution … one low resolution pixel", p.300). The check interval is at least 256 wide. If it is narrower with DDF $3C/$D4, the whole run is repeated with $28/$D8. If it is still narrower, the setup is reported as unable to display the pattern, which is not a finding about any claim. | DIWSTRT = $2CC1, DIWSTOP = $F401, a window of 64 lores pixels. The run can be at most 128 periods wide ("You cannot display objects outside of the defined display window", p.57). |
+| C6 | The check interval exists and lies inside the window | The run of R3 has identical ends on all pure R lines. Its width is at least 256 and at most 576 hires periods: the window is 288 lores pixels, and a lores pixel is two hires periods (p.57 "resolution … one low resolution pixel", p.300). The check interval is at least 256 wide. If it is narrower with DDF $3C/$D4, the whole run is repeated with $28/$D8. If it is still narrower, the setup is reported as unable to display the pattern, which is not a finding about any claim. | DIWSTRT = $2CC1, DIWSTOP = $F401, a window of 64 lores pixels. The run can be at most 128 periods wide ("You cannot display objects outside of the defined display window", p.57). |
 | C7 | No colour or control register changes while a graded line is shown | Every Copper MOVE to a colour register, BPLCON0–2 or a bitplane pointer follows a WAIT with horizontal position $00. Each is fetched after the previous line's last bitplane fetch and, except on the planned spacer lines, before its own line's first bitplane fetch. Every line of the frame plan that is not a spacer line is graded. | Put one perturbation band's MOVEs behind `WAIT (line, $80)`. That line is not graded, and C7 reports a planned line that is missing. |
 | C8 | Every neighbour context occurs visibly in every band of F1–F4 | On the graded pixels of every band (i = 2x − s), each of the 16 ordered pairs (p, q) occurs both as (v[i], v[i+1]) and as (v[i−1], v[i]). So every value is seen as the left and as the right member of every pair, whichever pixel of a hires period the output shows. | Restrict the pattern section to values 0 and 3 |
 | C9 | No sprite pixels in F1–F6 | All sprite fetches in F1–F6 read only $0000 control words | Point SPR0PT at the sprite 0 structure in F1 |
@@ -293,7 +324,9 @@ Each precondition is asserted before any proposition is graded. It is followed b
 | P1.3G | APPC-bplkeykey.c3g | 3 | green | u, v |
 | P1.3B | APPC-bplkeykey.c3b | 3 | blue | w, x |
 
-All twelve also rest on APPC-shr.c8. Page 301.
+Page 301. The sentence of APPC-shr.c8 introduces the key and is the source of the expectation (item 4), but no P1 proposition carries that id. A display that showed register c as 0x0RGB for pixel value c would pass P1: rows 00–03 of the table hold Color c's own letters in bits 11–10, 7–6 and 3–2 (§3), which are bits 3–2 of R, G and B read as 0x0RGB. So "rather than held in four" cannot fail through P1; P5.L grades it, and P7.3 carries the id.
+
+Each key claim also says that the two dashes after its letters mark bits that are not encoded. That means no register bit stores them: every bit 11–0 of COLOR00–0F carries one of the letters a–x (p.301 table), which the 192 P4 propositions grade bit by bit. P1 asserts the two letters.
 
 **2. Stimulus.** Setup §4 and frame F1: palettes Q0, Q1–Q5, Z, O and S0–S3, each written as the table prescribes. Further instances are the Q0 lines of F2–F4 and lines 0–29 of F7–F9. F5, F6 and F10 are not SuperHires frames and are not P1 instances.
 
@@ -313,9 +346,9 @@ Quantifiers:
 
 **5. Preconditions.** C1–C9.
 
-**6. Contrast (V1).** In F1, write Q3x instead of Q3 for the Q3 band and keep the expectation of Q3. Colors 1 and 2 of Q3 differ in an encoded bit of every component: (2,0,1) against (3,2,0). The pages therefore predict that value-1 and value-2 pixels of that band show the other Color, and P1 fails there. Every precondition still holds.
+**6. Contrast (V1).** In F1, write Q3x instead of Q3 for the Q3 band and keep the expectation of Q3. Q3x inverts every letter of Q3 (§3). The pages therefore predict that pixels of every value show, in bits 3 and 2 of every component, the opposite of both letters Q3 gives them, so each of the twelve P1 propositions fails there through both of its letters. Every precondition still holds: the anchors lie on the top Q0 lines and the pure R lines.
 
-**7. Reference frame.** R2 gives i and s, R3 the check interval, R4 the output bits. All three are checked by C5, C6 and R2's bottom-line check.
+**7. Reference frame.** R0 and R1 place output samples and lines, R2 gives i and s, R3 the check interval, R4 the output bits. R0 and R1 carry their own checks; the others are checked by C5, C6 and R2's bottom-line check.
 
 ### P2: only two bits of red, green and blue per pixel (3 propositions)
 
@@ -323,9 +356,9 @@ Quantifiers:
 
 | Id | Claims | Component |
 |---|---|---|
-| P2.R | APPC-shr.c3, CH4-appC-context.c3; the `--` half of APPC-bplkeykey.c{0..3}r | red |
-| P2.G | APPC-shr.c4, CH4-appC-context.c4; the `--` half of APPC-bplkeykey.c{0..3}g | green |
-| P2.B | APPC-shr.c5, CH4-appC-context.c5; the `--` half of APPC-bplkeykey.c{0..3}b | blue |
+| P2.R | APPC-shr.c3, CH4-appC-context.c3 | red |
+| P2.G | APPC-shr.c4, CH4-appC-context.c4 | green |
+| P2.B | APPC-shr.c5, CH4-appC-context.c5 | blue |
 
 Page 301.
 
@@ -335,7 +368,7 @@ Page 301.
 
 **4. Expected relation.** Within each group, one single 4-bit value.
 
-The source is "There are only two bits of red, green and blue color resolution per hires pixel" (p.301), and the key's `--`. The pages give no value for bits 1–0 (L2), so the test checks only that they are a function of the two letters, never what they are.
+The source is "There are only two bits of red, green and blue color resolution per hires pixel" (p.301). The key's `--` is not a source here: it states that no register bit stores bits 1–0, which P4 grades (L2). The pages give no value for bits 1–0 (L2), so the test checks only that they are a function of the two letters, never what they are.
 
 The quantifier "only":
 - Within SuperHires mode, no program that writes the registers as the table prescribes can make a value-c pixel show more than four distinct values of X, one per pair of letters.
@@ -357,10 +390,10 @@ Applied to the hires pixels, P2 fails. In hires a value-c pixel shows all of reg
 
 | Id | Claims | Comparison |
 |---|---|---|
-| P3.H | APPC-shr.c1, CH4-appC-context.c1 | SuperHires coarser than Hires |
-| P3.L | APPC-shr.c1, CH4-appC-context.c2 | SuperHires coarser than Lores |
+| P3.H | CH4-appC-context.c1 | SuperHires coarser than Hires |
+| P3.L | CH4-appC-context.c2 | SuperHires coarser than Lores |
 
-Page 301.
+Page 301. APPC-shr.c1 names both comparisons ("than either Hires or Lores modes"), so neither half carries it; P7.1 does.
 
 **2. Stimulus.**
 - SuperHires: the S0–S3 bands of F1. Color 1 = (s, s, s), every register written by the table.
@@ -380,9 +413,10 @@ The source for the comparison is "SuperHires mode has a coarser granularity of c
 
 **6. Contrasts.**
 - V3a (SuperHires half): run F1 with BPLCON0 = $A000 and replace the S0–S3 bands by sixteen bands with COLOR01 = $0kkk. The pages predict sixteen levels, so "exactly four" fails.
-- V3b (Hires half): in F5, write COLOR01 = ($0kkk AND $0CCC). The pages predict four levels, so "sixteen" fails.
+- V3b (Hires half of P3.H): in F5, write COLOR01 = ($0kkk AND $0CCC). The pages predict four levels, so "sixteen" fails.
+- V3c (Lores half of P3.L): in F6, write COLOR01 = ($0kkk AND $0CCC). The pages predict four levels (p.46, p.92; Table 3-17 on p.93 selects register 1 for value 00001 in low resolution), so "sixteen" fails for Lores.
 
-Preconditions hold in both.
+V3a is the contrast of the SuperHires half of both P3.H and P3.L. Preconditions hold in all three.
 
 **7. Reference frame.** R2 in each mode's form, and R3.
 
@@ -396,9 +430,9 @@ The claim is APPC-bpltab.r{n}b{b}, with n = 00…0F (hexadecimal, as the table's
 
 **3. Observation.**
 - Every graded pixel of the band's two lines is compared with its *baseline*.
-- For bits 3–2 of each component, the baseline is P1's expectation under Q0.
-- For bits 1–0, the baseline is the value shown on the same frame's Q0 lines by visible pixels with the same (v[i−1], v[i], v[i+1]).
-- A pixel whose triple never occurs visibly on those Q0 lines is excluded from the bits 1–0 comparison, and the count is reported.
+- The baseline, in all twelve bits, is the value shown on the same frame's Q0 lines (top and bottom) by visible pixels with the same (v[i−1], v[i], v[i+1]).
+- A pixel whose triple never occurs visibly on those Q0 lines, or occurs there with more than one value, is excluded, and the count is reported.
+- The baseline is observed, not predicted, so P4 does not depend on P1: a table defect that already shows on the Q0 lines, and fails P1 there, is still caught where its bit is inverted.
 
 **4. Expected result and verdict.**
 - **FAIL** if any graded pixel differs from its baseline anywhere other than the allowed places: bit 3 or 2 of X (per L) and bits 1–0 of X, on pixels of value c. A change on a pixel of another value in any of its twelve bits, in another component, or in the other encoded bit of X fails.
@@ -411,55 +445,69 @@ The report lists, for every OBSERVED instance, the triples of the pixels that ch
 
 **5. Preconditions.**
 - C1–C9.
-- The frame's Q0 lines pass P1, since they are the baseline.
 - The band has at least one graded line.
 
 **6. Contrasts.**
 - V4a: in one band of F2 whose bit was reported OBSERVED, also invert a bit that carries a letter of another Color and was OBSERVED in its own band. The pages predict a change on pixels of that other value, so P4 fails for the first band.
-- V4b: run F2 with BPLCON0 = $A000 (hires). Inverting bit 09 of COLOR01, which carries `a` of Color 0, then changes R1 of value-1 pixels (p.94, p.273), so P4.01.09 fails. Preconditions hold in hires form.
+- V4b: run F2–F4 with BPLCON0 = $A000 (hires); the plan does not fix which of the three frames carries a given bit. Inverting bit 09 of COLOR01, which carries `a` of Color 0, then changes R1 of value-1 pixels (p.94, p.273), so P4.01.09 fails. Preconditions hold in hires form.
 - V4c, the null case: a band that restores Q0 without a new inversion is predicted to change nothing. It must come out not OBSERVED.
+- V4d, a contrast for every P4.n.b: run F2–F4 with every band inverting, besides its own bit b of register n, bit b XOR 1 of the same register. By the table that bit carries the other letter of the same component of the same Color (bits 11/10, 9/8, 7/6, 5/4, 3/2 and 1/0 each hold the upper and lower letter of one component, §3). The pages predict a change of the other encoded bit of X, which P4.n.b does not allow, so P4.n.b fails in every band where P4.n.(b XOR 1) was OBSERVED in its own band. For a bit whose partner is never OBSERVED no input can show the clause failing at this output (L1); the test lists those bits.
 
 **7. Reference frame.** R2, R3, and R5 for band boundaries.
 
-### P5: the bitplane colours use more of the lower registers than the four a normal display uses (1 proposition)
+### P5: the bitplane colours are held in the sixteen lower registers, in more of them than the four a normal display uses (2 propositions)
 
-**1. Proposition.** In SuperHires mode, some visible playfield pixel depends on a register outside COLOR00–COLOR03. In Hires, with the same two bitplanes, none does.
+**1. Propositions.**
+- **P5.L** (CH4-appC-context.c7; pages 301, 94): In SuperHires mode, some visible playfield pixel depends on a register outside COLOR00–COLOR03. In Hires, with the same two bitplanes, no playfield pixel depends on a register outside COLOR00–COLOR03. The bitplane half of APPC-shr.c6 is graded here; that id names sprites as well, so P7.2 carries it.
+- **P5.U** (no id of its own; pages 301, 302): In SuperHires mode, no visible playfield pixel depends on an upper register (COLOR16–COLOR31).
 
-Claims: APPC-shr.c6 (bitplane part), CH4-appC-context.c7, APPC-shr.c8. Pages 301, 94.
+APPC-shr.c8 says the bitplane colours are "specially encoded in the sixteen lower color registers" instead of being "stored as 0x0RGB in four color registers". That names both clauses: more than the four registers (P5.L), and the lower sixteen rather than the upper (P5.U). Neither carries it alone; P7.3 does.
 
-**2. Stimulus.** The perturbation bands of F2–F4 with n = 04…0F, and F5's inversion bands.
+**2. Stimulus.**
+- P5.L: the perturbation bands of F2–F4 with n = 04…0F, and F5's inversion bands.
+- P5.U: F7's inversion blocks 2–14 (COLOR16, 20–31, each XOR $0FFF) over the value-0 SuperHires playfield of the zero buffer (§4.6).
 
-**3. Observation.** Graded pixels of those bands against their baseline, as in P4. In F5 the baseline is register v[i] of Q0 in all twelve bits.
+**3. Observation.**
+- P5.L: graded pixels of the F2–F5 bands against their baseline, as in P4. In F5 the baseline is taken the same way from F5's own Q0 lines.
+- P5.U: in F7, the graded pixels outside the sprite run [xa, xb] of P6 on the lines of blocks 2–14, against the pixel at the same x on F7's baseline sprite lines of the same sprite value. On a line where F7 shows no run, every graded pixel of the line is outside it.
 
 **4. Expected relation.**
-- SuperHires: at least one of the 144 bands with n = 04…0F changes at least one graded pixel. Any change counts, whether P4 grades it PASS or FAIL.
-- Hires: the bands inverting n = 04…0F change no graded pixel. The bands inverting n = 00…03 invert all twelve bits of exactly the pixels with v[i] = n.
+- P5.L, SuperHires: at least one of the 144 bands with n = 04…0F changes at least one graded pixel. Any change counts, whether P4 grades it PASS or FAIL.
+- P5.L, Hires: the bands inverting n = 04…0F change no graded pixel. The bands inverting n = 00…03 invert all twelve bits of exactly the pixels with v[i] = n.
+- P5.U: in F7, no inversion block changes any graded pixel outside the run, in any of its twelve bits.
 
 The sources:
-- "In order to decode sprite and bitplane color information in SuperHires mode, certain multiplexing occurs in the use of the registers. Instead of 4 bits of red, green, and blue for bitplane registers 0-3 stored as 0x0RGB in four color registers, SuperHires bitplane colors are specially encoded in the sixteen lower color registers" (p.301).
-- Table 3-18 (p.94): two bitplanes select registers 0–3.
-- p.297: "There are new color register interpretations as part of the SuperHires mode."
+- P5.L: "In order to decode sprite and bitplane color information in SuperHires mode, certain multiplexing occurs in the use of the registers. Instead of 4 bits of red, green, and blue for bitplane registers 0-3 stored as 0x0RGB in four color registers, SuperHires bitplane colors are specially encoded in the sixteen lower color registers" (p.301); Table 3-18 (p.94): two bitplanes select registers 0–3; p.297: "There are new color register interpretations as part of the SuperHires mode."
+- P5.U: "SuperHires bitplane colors are specially encoded in the sixteen lower color registers" (p.301) and "SuperHires sprites are encoded in the upper sixteen color registers" (p.302): the upper sixteen are the sprites', the lower sixteen the bitplanes'.
 
-The quantifier: "certain multiplexing occurs" is existential. The report lists, for each register 04–0F, whether any of its bits changed a pixel. No register is required individually (L1).
+The quantifiers:
+- P5.L: "certain multiplexing occurs" is existential. The report lists, for each register 04–0F, whether any of its bits changed a pixel. No register is required individually (L1).
+- P5.U: "in the sixteen lower color registers" is universal for the upper registers: one changed playfield pixel fails it.
 
-**5. Preconditions.** C1–C9, in hires form for F5.
+**5. Preconditions.**
+- P5.L: C1–C9, in hires form for F5.
+- P5.U: C1, C2, C4 and C5 on lines 0–29 of F7, C7 including the block changes, C10 and C11 (P6).
 
-**6. Contrast (V5).** Run F2–F4 with BPLCON0 = $A000. Table 3-18 predicts that no register 04–0F changes a pixel, so the SuperHires half fails. F5 carries this case in the plan.
+**6. Contrasts.**
+- V5 (P5.L, SuperHires): run F2–F4 with BPLCON0 = $A000. Table 3-18 predicts that no register 04–0F changes a pixel, so the SuperHires clause of P5.L fails. F5 carries this case in the plan.
+- V5b (P5.L, Hires): in F5, the band planned to invert COLOR05 inverts COLOR01 instead, and the expectation of the COLOR05 band (no graded pixel changes) is kept. Table 3-18 and p.273 predict that the value-1 pixels change in all twelve bits, so the Hires clause of P5.L fails.
+- V5c (P5.U): in F7, the block change of block 2 also writes Q0 with Color 0 set to (3, 2, 1), every letter of Color 0 inverted, into the seven lower registers that hold Color 0's letters: COLOR00 = $0FA5, COLOR01 = $07AD, COLOR02 = $0BE1, COLOR03 = $0F25, COLOR04 = $0DA7, COLOR08 = $0EB4, COLOR0C = $0F85 (§3 formula). Block 3's change restores them. The first lines of blocks 2 and 3 are spacer lines of the variant. The expectation of block 2 (no pixel outside the run changes) is kept. The pages predict that the value-0 playfield pixels of block 2's graded lines show Color 0's inverted letters in bits 3–2 (P1), so P5.U fails. C10 and C11 hold, since the baseline blocks are unchanged.
 
-**7. Reference frame.** As P4.
+**7. Reference frame.** P5.L as P4. P5.U as P6: R0, R1, R5 and the run.
 
 ### P6: SuperHires sprite colours are encoded in the upper sixteen registers (2 propositions)
 
 **1. Propositions.**
 - **P6.1** (APPC-shr.c9, p.302): In SuperHires mode, with COLOR16–COLOR31 written as the p.302 table prescribes for Colors 16–19, the inner pixels of a sprite-0 line of value v show the encoded letters of Color 16+v in bits 3–2 of R, G and B. They do not depend on COLOR00–COLOR15.
-- **P6.2** (APPC-shr.c6 sprite part, CH4-appC-context.c6, p.301): In SuperHires mode, some inner sprite-0 pixel depends on an upper register other than COLOR17–19. In Hires none does.
+- **P6.2** (CH4-appC-context.c6, p.301; the sprite half of APPC-shr.c6 is graded here, and P7.2 carries that id): In SuperHires mode, some inner sprite-0 pixel depends on an upper register other than COLOR17–19. In Hires none does.
 
 **2. Stimulus.** F7–F10: sprite 0 over a value-0 SuperHires playfield from line 30, with BPLCON2 = $0024 and SPREN set. Each block of three lines carries values 1, 2 and 3. F7 has T0 above and Q0 below, with inversions of COLOR16 and 20–31. F8 has T0c above. F9 has Q1 below. F10 is Hires.
 
 **3. Observation.**
 - Sprite lines are the source lines on which the port shows sprite 0 fetching a data pair. The value v of the line is taken from that pair (p.107: "the high order word … contribute[s] the leftmost digit").
-- The *run* on a sprite line is the maximal set of consecutive visible pixels whose bits 3–2 differ from Q0's Color 0 in at least one component. It is found on F7's baseline lines.
-- The run must have the same ends [xa, xb] on all of them, and a length of 32 ± 1 hires periods (C11).
+- The *run* on a sprite line is the maximal set of consecutive visible pixels whose twelve bits differ from those at the same x on window lines 31–35 of the same frame, which show the same value-0 playfield without sprite 0 (sprite 0 starts at window line 36). It is found on F7's baseline lines. No expected colour enters it.
+- The run must have the same ends [xa, xb] on all of them that show one, and a length of 32 ± 1 hires periods (C11).
+- A baseline sprite line of F7 that shows no run although C10 holds is a failure of P6.1 on that line, not a missing anchor: under T0 each of Colors 17–19 differs from Q0's Color 0 in bits 3–2 of at least one component (§3), so the pages predict a run on every sprite line. The ends [xa, xb] are then taken from the lines that do show one. If no baseline line shows a run, P6.1 fails and P6.2 is not graded, having no inner pixels.
 - The *inner pixels* are xa+1 … xb−1. They are graded at the same positions in F8 and F9. F10 uses its own run (item 7).
 - The pixels at xa and xb are not graded, because the pages do not say how a SuperHires pixel pair made of one sprite and one playfield pixel is coloured.
 
@@ -468,28 +516,47 @@ The quantifier: "certain multiplexing occurs" is existential. The report lists, 
   - F7 baseline blocks: bits 3–2 of R, G and B equal the letters of Color 16+v under T0, which is (v, v+1, v+2) mod 4. For example, v = 1 gives Color 17, `GH-- IJ-- KL--`, equal to 1, 2, 3.
   - F8: the same under T0c.
   - F9: all twelve bits of every inner pixel equal those of the same position and value in F7's baseline blocks, although COLOR00–0F changed from Q0 to Q1.
-  - F7: no upper-register inversion changes any graded pixel outside the run.
-  - Sources: "SuperHires sprites are encoded in the upper sixteen color registers using a similar scheme:" and the key and table that follow (p.302); "SuperHires bitplane colors are specially encoded in the sixteen lower color registers" (p.301).
+  - Sources: "SuperHires sprites are encoded in the upper sixteen color registers using a similar scheme:" and the key and table that follow (p.302).
+  - Whether the playfield outside the run depends on the upper registers is a question about the bitplane colours; P5.U grades it.
 - **P6.2**
   - F7: at least one of the thirteen inversion blocks (16, 20–31) changes at least one inner pixel.
   - F10: none of those thirteen changes any inner pixel. The blocks inverting 17, 18 and 19 invert all twelve bits of the inner pixels of the lines with v = 1, 2 and 3 respectively. Baseline inner pixels show all twelve bits of register 16+v.
   - Sources: the multiplexing sentence (p.301); "Sprite channel 0, for example, takes its colors from registers 17 - 19" (p.108, Table 4-2); "The color value of the first register in each group of four registers is ignored by sprites" (p.103).
-  - The quantifier is existential, as in P5.
+  - The quantifier is existential, as in P5.L.
 
 **5. Preconditions.**
 - C1, C2, C4, and C5 on lines 0–29.
 - C7, including the block changes, which follow WAIT (line, $00).
 - **C10:** in each of F7–F10, the port shows sprite 0 fetching its two control words and 60 data pairs, and sprites 1–7 fetching only $0000 control words.
-- **C11:** the run is found and is 32 ± 1 hires periods long. p.101 says sprites are 16 pixels wide and "changing the resolution or interlace mode of the playfield has no effect on the size or resolution of a sprite". A lores pixel is two hires periods.
+- **C11:** the run, on every baseline line that shows one, is 32 ± 1 hires periods long. p.101 says sprites are 16 pixels wide and "changing the resolution or interlace mode of the playfield has no effect on the size or resolution of a sprite". A lores pixel is two hires periods. The ±1 is not a tolerance: the sprite covers 64 SuperHires pixels starting on a 140 ns boundary (SH0, p.303, with SHSH1 = SHSH0 = 0), and the pages fix neither where the output's hires periods fall against that boundary nor how a period of one sprite and one playfield pixel is shown. So the run is 32 whole periods, or 31 whole periods and up to two mixed ones.
 
-Contrasts for C10 and C11: point SPR0PT at the null sprite. No sprite data is fetched and no run is found.
+Contrast for C10: point SPR0PT at the null sprite. No sprite data is fetched. Contrast for C11: write sprite 0's data words as $FF00 where they are $FFFF (8 pixels wide). C10 still holds, and the run is 16 ± 1 periods long.
 
 **6. Contrasts.**
 - V6a: in F7, write COLOR10–1F = T0c instead of T0 and keep F7's expectation (T0). The pages predict T0c's letters, so P6.1 fails. The run is still found, because each T0c Color 17–19 differs from Q0's Color 0 in at least one component.
 - V6b: in F9, also write COLOR10–1F = T0c. The pages predict that the sprite changes, so "unchanged by the lower sixteen" fails.
 - V6c: run F7 with BPLCON0 = $A000. p.108 and p.103 predict that none of the thirteen inversions changes sprite 0, so P6.2's SuperHires half fails. F10 is this case in the plan.
+- V6d (P6.2's Hires half): in F10, the block planned to invert COLOR20 inverts COLOR17 instead, and the expectation of the COLOR20 block (no inner pixel changes) is kept. p.108 predicts that the inner pixels of that block's value-1 line change in all twelve bits, so the Hires half fails.
 
-**7. Reference frame.** R1, R5, and sprite lines identified at the port. The run's ends in F7 anchor the inner positions for F8 and F9. In F8 the run found the same way must have the same ends. In F10 (Hires) the run is found anew on its baseline lines with the same rule, and must meet C11. Hires COLOR00 = $05A has the same bits 3–2 as Q0's Color 0, so the rule applies unchanged.
+**7. Reference frame.** R0, R1, R5, and sprite lines identified at the port. The run's ends in F7 anchor the inner positions for F8 and F9. In F8 the run found the same way must have the same ends. In F10 (Hires) the run is found anew on its baseline lines with the same rule, and must meet C11. The rule uses no colour, so it applies unchanged in Hires.
+
+### P7: claims that name the clauses of two propositions at once (3 propositions)
+
+**1. Propositions.**
+
+| Id | Claim | Graded as |
+|---|---|---|
+| P7.1 | APPC-shr.c1 | P3.H and P3.L together |
+| P7.2 | APPC-shr.c6 | P5.L and P6.2 together |
+| P7.3 | APPC-shr.c8 | P5.L and P5.U together |
+
+APPC-shr.c1 says SuperHires is coarser "than either Hires or Lores modes"; APPC-shr.c6 says multiplexing occurs "to decode sprite and bitplane color information"; APPC-shr.c8 says the bitplane colours are "specially encoded in the sixteen lower color registers" instead of "in four color registers". Each half is graded by its own proposition. P3.H, P3.L, P5.L and P6.2 carry their own context claims; P5.U carries none. Page 301.
+
+**2.–5. Stimulus, observation, expected value, preconditions.** Those of the two halves, unchanged. The verdict is PASS when both halves pass, FAIL when either fails, and not graded when either is not graded.
+
+**6. Contrasts.** Those of the halves: V3a and V3b fail P7.1 through P3.H, V3a and V3c through P3.L; V5 and V5b fail P7.2 through P5.L, V6c and V6d through P6.2; V5 and V5b fail P7.3 through P5.L, V5c through P5.U.
+
+**7. Reference frame.** Those of the halves.
 
 ---
 
@@ -497,21 +564,22 @@ Contrasts for C10 and C11: point SPR0PT at the null sprite. No sprite data is fe
 
 | Claims | Proposition(s) |
 |---|---|
-| APPC-bplkeykey.c0r … c3b (12) | P1.cX, one each. The `--` half goes to P2.X. |
+| APPC-bplkeykey.c0r … c3b (12) | P1.cX, one each. P1 grades the two letters; the `--` (no register bit stores bits 1–0) is graded by P4 over all 192 register bits. |
 | APPC-bpltab.r00b00 … r0Fb11 (192) | P4.n.b, one each |
-| APPC-shr.c1 | P3.H, P3.L |
+| APPC-shr.c1 | P7.1 (P3.H and P3.L together) |
 | CH4-appC-context.c1 | P3.H |
 | CH4-appC-context.c2 | P3.L |
 | APPC-shr.c3, CH4-appC-context.c3 | P2.R |
 | APPC-shr.c4, CH4-appC-context.c4 | P2.G |
 | APPC-shr.c5, CH4-appC-context.c5 | P2.B |
-| APPC-shr.c6 | P5 (bitplanes), P6.2 (sprites) |
+| APPC-shr.c6 | P7.2 (P5.L for bitplanes and P6.2 for sprites, together) |
 | CH4-appC-context.c6 | P6.2 |
-| CH4-appC-context.c7 | P5 |
-| APPC-shr.c8 | P1 (all), P5 |
+| CH4-appC-context.c7 | P5.L |
+| APPC-shr.c8 | P7.3 (P5.L and P5.U together); its sentence is also the source of P1's expectation (§7 P1) |
 | APPC-shr.c9 | P6.1 |
+| (none) | P5.U, graded for P7.3 |
 
-That makes 212 propositions: 12 + 3 + 2 + 192 + 1 + 2.
+That makes 216 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 3.
 
 ---
 
@@ -519,10 +587,10 @@ That makes 212 propositions: 12 + 3 + 2 + 192 + 1 + 2.
 
 - **Which register and which half a pixel is drawn from.** The table says where each letter is stored, never when the chip reads it. No test may assume it (L1, P4). The table's layout, with each row holding one Color in its upper halves and one in its lower halves, suggests that two neighbouring pixels select a register together. The pages do not say so. Nothing here depends on it.
 - **The lower two output bits.** The key writes `ab--`, and p.302 speaks of "the loss of lower bits of precision". No page says what the output shows there (L2).
-- **"per hires pixel".** p.301 says "only two bits of red, green and blue color resolution per hires pixel" in a paragraph about SuperHires pixels, which are half a hires pixel. P2 reads it as per displayed pixel. Under the literal reading, per hires period, the test's output shows one value per hires period anyway, so P2's check is the same either way.
-- **p.273 (Appendix A) against p.301.** p.273 says of COLORxx: "One of these registers at a time is selected (by the BPLxDAT serialized video code) for presentation at the RGB video output pins". Read into SuperHires, that would mean register c shown as 0x0RGB, which p.301 replaces ("Instead of 4 bits … stored as 0x0RGB in four color registers"). p.297 states that SuperHires brings "new color register interpretations". The specification treats Appendix A as describing the other modes and specifies SuperHires from Appendix C. The hires contrasts (V2, V4b, V5, V6c) use p.273 and p.94 only in Hires, where both pages agree.
+- **"per hires pixel".** p.301 says "only two bits of red, green and blue color resolution per hires pixel" in a paragraph about SuperHires pixels, which are half a hires pixel. P2 reads it as per displayed pixel. Under the literal reading, per hires period, the test reads one value per hires period anyway (R0), so P2's check is the same either way.
+- **p.273 (Appendix A) against p.301.** p.273 says of COLORxx: "One of these registers at a time is selected (by the BPLxDAT serialized video code) for presentation at the RGB video output pins". Read into SuperHires, that would mean register c shown as 0x0RGB, which p.301 replaces ("Instead of 4 bits … stored as 0x0RGB in four color registers"). p.297 states that SuperHires brings "new color register interpretations". The specification treats Appendix A as describing the other modes and specifies SuperHires from Appendix C. The hires and lores contrasts (V2, V3a, V3b, V3c, V4b, V5, V5b, V6c, V6d) use p.273, p.93 and p.94 only in Hires and Lores, where the pages agree.
 - **One bitplane.** p.300 allows a SuperHires depth of "1 or 2". The key and table cover four Colors. No page says which registers a one-bitplane SuperHires display uses. Only two bitplanes are used here.
 - **HIRES and SHRES both set.** p.300 says only "Set it to zero if SHRES enabled". The result of setting both is not stated and is not tested.
-- **Data fetch in SuperHires.** DDFSTRT and DDFSTOP values are given for Lores and Hires only (p.60). p.91 says bit H3 is "only respected in Hires Mode" and is silent on SuperHires. The test therefore derives every position from what the port fetched and the output showed (R2, R3), not from the fetch registers.
+- **Data fetch in SuperHires.** DDFSTRT and DDFSTOP values are given for Lores and Hires only (p.60). p.91 says bit H3 is "only respected in Hires Mode" and is silent on SuperHires. The test therefore derives every position from what the port fetched and the output showed (R0–R3), not from the fetch registers.
 - **Sprites.** The sprite key names Color 16, but p.103 says the first register of each group is never shown. The pages do not say how sprites 2–7, or attached sprites, are coloured in SuperHires, nor how a hires period made of one sprite and one playfield pixel is coloured (L3; P6 grades inner pixels only).
 - **HAM and dual playfield.** p.300 marks HAM "Incompatible" and DPF "Compatible" with SuperHires, but gives no encoding for either. Neither is used.
