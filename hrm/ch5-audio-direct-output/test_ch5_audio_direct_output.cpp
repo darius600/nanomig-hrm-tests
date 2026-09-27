@@ -4,10 +4,7 @@
 //   at a time...") and printed page 164 (the two idle-exit paths, Figure
 //   5-8: "One of the paths out of the idle state is designed for
 //   interrupt-driven operation (processor provides the data)..."). Fixture:
-//   paula_audio_channel.v ALONE -- the same file hrm/paula_audio_channel/
-//   already builds and runs against as an RTL_REGRESSION (frozen FPGA-042
-//   spec); this package stands beside it, reads the same file, and does not
-//   touch it, delete it, or weaken it.
+//   paula_audio_channel.v ALONE.
 //
 //   dmaena is held at 0 for this package's ENTIRE run: every scenario below,
 //   including every mutation, leaves dmaena at the value reset_all() gives
